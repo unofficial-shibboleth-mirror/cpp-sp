@@ -6,6 +6,11 @@
  * $Id$
  */
 
+// SAML Runtime
+#include <saml/saml.h>
+#include <shib/shib.h>
+#include <shib-target/shib-target.h>
+
 // Apache specific header files
 #include "httpd.h"
 #include "http_config.h"
@@ -15,11 +20,6 @@
 #define CORE_PRIVATE
 #include "http_core.h"
 #include "http_log.h"
-
-// SAML Runtime
-#include <saml/saml.h>
-#include <shib/shib.h>
-#include <shib-target/shib-target.h>
 
 #include <xercesc/util/regx/RegularExpression.hpp>
 
@@ -414,10 +414,10 @@ extern "C" int shibrm_check_auth(request_rec* r)
     }
 
     // Export the attributes -- XXX: Assumes one statement!
-    Iterator<SAMLAttribute*> i = RM::getAttributes(*(assertions[0]));
-    while (i.hasNext())
+    Iterator<SAMLAttribute*> j = RM::getAttributes(*(assertions[0]));
+    while (j.hasNext())
     {
-      SAMLAttribute* attr=i.next();
+      SAMLAttribute* attr=j.next();
 
       // Are we supposed to export it?
       map<xstring,string>::const_iterator iname=g_mapAttribNames.find(attr->getName());
@@ -448,8 +448,8 @@ extern "C" int shibrm_check_auth(request_rec* r)
     }
 
     // clean up memory
-    for (int i = 0; i < assertions.size(); i++)
-      delete assertions[i];
+    for (int k = 0; k < assertions.size(); k++)
+      delete assertions[k];
 
     // mod_auth clone
 
@@ -559,7 +559,11 @@ extern "C" int shibrm_check_auth(request_rec* r)
                     {
                         auto_ptr<RegularExpression> re;
                         if (regexp)
-                            re.reset(new RegularExpression(w));
+                        {
+                            delete re.release();
+                            auto_ptr<RegularExpression> temp(new RegularExpression(w));
+                            re=temp;
+                        }
                         
                         string vals_str(vals);
                         int j = 0;
