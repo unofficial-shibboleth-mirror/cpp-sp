@@ -276,8 +276,11 @@ void InternalCCache::remove(const char* key)
 void InternalCCache::cleanup()
 {
   Mutex* mutex = Mutex::create();
+  saml::NDC ndc("InternalCCache::cleanup()");
 
   mutex->lock();
+
+  log->debug("Cleanup thread started...");
 
   while (shutdown == false) {
     struct timespec ts;
@@ -288,6 +291,8 @@ void InternalCCache::cleanup()
 
     if (shutdown == true)
       break;
+
+    log->info("Cleanup thread running...");
 
     // Ok, let's run through the cleanup process and clean out
     // really old sessions.  This is a two-pass process.  The
@@ -309,6 +314,8 @@ void InternalCCache::cleanup()
 	stale_keys.push_back(i->first);
     }
     lock->unlock();
+
+    log->info("deleting %d old items.", stale_keys.size());
 
     // Pass 2: walk through the list of stale entries and remove them from
     // the database
