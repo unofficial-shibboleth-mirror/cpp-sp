@@ -486,7 +486,8 @@ short XMLApplication::acceptNode(const DOMNode* node) const
     if (XMLString::compareString(node->getNamespaceURI(),ShibTargetConfig::SHIBTARGET_NS))
         return FILTER_ACCEPT;
     const XMLCh* name=node->getLocalName();
-    if (!XMLString::compareString(name,SHIBT_L(AAPProvider)) ||
+    if (!XMLString::compareString(name,SHIBT_L(Application)) ||
+        !XMLString::compareString(name,SHIBT_L(AAPProvider)) ||
         !XMLString::compareString(name,SHIBT_L(CredentialUse)) ||
         !XMLString::compareString(name,SHIBT_L(FederationProvider)) ||
         !XMLString::compareString(name,SHIBT_L(RevocationProvider)) ||
