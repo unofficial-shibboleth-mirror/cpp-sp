@@ -5,7 +5,7 @@ AUTOMAKE_OPTIONS = foreign
 pkglogdir = ${localstatedir}/log/@PACKAGE@
 shirelogdir = ${localstatedir}/log/httpd
 pkgxmldir = $(datadir)/xml/@PACKAGE@
-varrundir = /var/run
+varrundir = $(localstatedir)/run
 pkgsysconfdir = $(sysconfdir)/@PACKAGE@
 pkgsysconf_DATA = \
 	apache.config \

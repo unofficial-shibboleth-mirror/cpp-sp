@@ -2,13 +2,17 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-varrundir = /var/run
+varrundir = $(localstatedir)/run
 BUILDFILES = shibshar.fc
 CLEANFILES = $(BUILDFILES)
 
-all-data-local: $(BUILDFILES)
+sepolicy = targeted
+selinuxdir = $(sysconfdir)/selinux/src/policy 
+fcfiledir = $(selinuxdir)/file_contexts/program
+fcfile_DATA = shibshar.fc
 
-install-data-local:	all-data-local
+tefiledir = $(selinuxdir)/domains/program
+tefile_DATA = shibshar.te
 
 shibshar.fc: ${srcdir}/shibshar.fc.in Makefile ${top_builddir}/config.status
 	rm -f $@.tmp
