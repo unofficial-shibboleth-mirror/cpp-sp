@@ -127,9 +127,21 @@ bool ScopedAttribute::accept(DOMElement* e) const
         const pair<xstring,bool>& p=domains.next();
         if (p.second)
         {
-            RegularExpression re(p.first.c_str());
-            if (re.matches(this_scope))
-                return true;
+            try
+            {
+                RegularExpression re(p.first.c_str());
+                if (re.matches(this_scope))
+                    return true;
+            }
+            catch (XMLException& ex)
+            {
+                auto_ptr<char> tmp(XMLString::transcode(ex.getMessage()));
+                NDC ndc("accept");
+                log4cpp::Category& log=log4cpp::Category::getInstance("eduPerson.ScopedAttribute");
+                log.errorStream() << "caught exception while parsing regular expression: " << tmp.get()
+                    << log4cpp::CategoryStream::ENDLINE;
+                return false;
+            }
         }
         else if (p.first==this_scope)
             return true;
