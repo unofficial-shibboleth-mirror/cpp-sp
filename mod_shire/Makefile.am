@@ -2,7 +2,8 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-lib_LTLIBRARIES = mod_shire.la
+shiredir = $(libexecdir)
+shire_LTLIBRARIES = mod_shire.la
 
 mod_shire_la_SOURCES = mod_shire.cpp
 
@@ -12,7 +13,7 @@ mod_shire_la_LIBADD = $(top_builddir)/shib/libshib.la $(top_builddir)/shib-targe
 
 mod_shire_la_LDFLAGS = -module -avoid-version -lapreq
 
-if HAVE_APXS
+if DO_APXS_INSTALL
 install-exec-local:
 	$(APXS) -i -A -n shire .libs/mod_shire.so
 endif

@@ -264,6 +264,12 @@ dnl        ])
 dnl    LIBS="$saved_LIBS"
     CPPFLAGS="$saved_CPPFLAGS"
 
+    AC_ARG_ENABLE([apxs-install],
+	AC_HELP_STRING([--enable-apxs-install],
+			[use apxs to install the apache modules]),
+	APXS_INSTALL="yes", )
+
+
     AC_SUBST(APXS_CFLAGS)
     AC_SUBST(APXS_INCLUDE)
     AC_SUBST(APXS_LIBEXEC)
@@ -273,6 +279,8 @@ dnl    LIBS="$saved_LIBS"
     WANT_SUBDIRS="$WANT_SUBDIRS mod_shire mod_shibrm"
     AC_CONFIG_FILES([mod_shire/Makefile mod_shibrm/Makefile])
 fi
+
+AM_CONDITIONAL(DO_APXS_INSTALL,test -n "$APXS_INSTALL")
 
 AC_SUBST(WANT_SUBDIRS)
 
