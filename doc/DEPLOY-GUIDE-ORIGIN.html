@@ -677,10 +677,10 @@ and <span class="fixedwidth">JSP specification 1.2</span>.</b></p>
         <li>Ensure you have already obtained the proper
         <a href="http://shibboleth.internet2.edu/release/shib-download.html">.tarball</a>.</li>
         <li>The archive will expand into a <span class="fixedwidth">
-        shibboleth-origin-1.0/</span> directory(<span class="fixedwidth">/opt/</span> 
+        shibboleth-origin-1.1/</span> directory(<span class="fixedwidth">/opt/</span> 
         recommended).</li>
         <li>Run the following command to move the Java files into Tomcat&#39;s tree:<blockquote>
-            <p><span class="fixedwidth">cp /opt/shibboleth-origin-1.0/dist/shibboleth.war 
+            <p><span class="fixedwidth">cp /opt/shibboleth-origin-1.1/dist/shibboleth.war 
             /usr/local/tomcat/webapps/</span> </p>
         </blockquote>
         </li>
@@ -689,7 +689,7 @@ and <span class="fixedwidth">JSP specification 1.2</span>.</b></p>
         that Sun includes with their JVM. To deal with this problem use the 
         following command, adjusting paths as needed:<blockquote>
             <p><span class="fixedwidth">$ cp 
-            /opt/shibboleth-origin-1.0/endorsed/*.jar /usr/local/tomcat/common/endorsed</span>
+            /opt/shibboleth-origin-1.1/endorsed/*.jar /usr/local/tomcat/common/endorsed</span>
             </p>
         </blockquote>
         <p>Different versions of Tomcat or other Java servers may have other 
@@ -1555,7 +1555,7 @@ Java keystores <font color="#5555EE">(optional)</font></h4>
         step-by-step procedure for your situation from the following guides.</p>
         <p>Before running <span class="fixedwidth">extkeytool</span>, the 
         variable SHIB_HOME must be set to the path to the directory where the 
-        Shibboleth tarball was exploded(typically /usr/local/shibboleth-origin-1.0/).</p>
+        Shibboleth tarball was exploded(typically /opt/shibboleth-origin-1.1/).</p>
         <p><b>If you have a pre-exiting RSA key/certificate combination in a 
         keystore and you would like to use it with Apache:</b></p>
         <ol type="1">
@@ -1709,12 +1709,12 @@ Java keystores <font color="#5555EE">(optional)</font></h4>
     depends. Each data connector consists of a string identifier which is used 
     by attribute definitions that refer to it, and one or more elements specific 
     to the configuration of that data connector.</p>
-    <p>Shibboleth comes with two attribute definitions provided in version 1.0: 
+    <p>Shibboleth comes with two attribute definitions provided in version 1.1: 
     the <span class="fixedwidth">SimpleAttributeDefinition</span>, which acts as 
     a basic proxy for attributes supplied by data connectors with some name 
     conversion and attribute scoping added, and a <span class="fixedwidth">
     CustomAttributeDefinition</span>, which can be used to configure 
-    user-created attribute definition plugins. Similarly, Shibboleth 1.0 comes 
+    user-created attribute definition plugins. Similarly, Shibboleth 1.1 comes 
     with two data connectors: the <span class="fixedwidth">
     JNDIDirectoryDataConnector</span>, which pulls data from any source for 
     which there is a JNDI Directory Context implementation, including LDAP, NDS, 
@@ -1863,7 +1863,7 @@ Java keystores <font color="#5555EE">(optional)</font></h4>
     <ol>
         <li>Set the shell variable <span class="fixedwidth">SHIB_HOME</span> to 
         the directory path where the Shibboleth tarball was exploded (typically
-        <span class="fixedwidth">/opt/shibboleth-origin-1.0/</span>).</li>
+        <span class="fixedwidth">/opt/shibboleth-origin-1.1/</span>).</li>
         <li>Move to $SHIB_HOME/bin</li>
     </ol>
     <p><span class="fixedwidth">resolvertest</span> may then be used by 
