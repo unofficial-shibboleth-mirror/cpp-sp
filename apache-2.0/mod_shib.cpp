@@ -610,7 +610,7 @@ extern "C" int shib_shire_handler (request_rec* r)
 
     ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,
 		  "shire_post_handler() about to read using get_client_block");
-    string cgistr;
+    string cgistr = "";
     char buff[BUFSIZ];
     //ap_hard_timeout("[mod_shib] CGI Parser", r);
 
@@ -625,18 +625,13 @@ extern "C" int shib_shire_handler (request_rec* r)
     cgi = CgiParse::ParseCGI(cgistr);
 
     ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,
-		  "shire_post_handler() CGI parsed...");
+		  "shire_post_handler() CGI parsed... (%p)", cgi);
 
     if (!cgi)
       throw ShibTargetException (SHIBRPC_OK, "CgiParse failed");
     
     // Make sure the target parameter exists
-    const string target_str = cgi->get_value("TARGET");
-
-    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,
-		  "shire_post_handler() obtained target string from CGI...");
-
-    const char *target = target_str.c_str();
+    const char *target = cgi->get_value("TARGET");
 
     ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,
 		  "shire_post_handler() obtained target...");
@@ -650,8 +645,7 @@ extern "C" int shib_shire_handler (request_rec* r)
 		  "shire_post_handler() obtained target...");
 
     // Make sure the SAML Response parameter exists
-    const string poststr = cgi->get_value("SAMLResponse");
-    const char *post = poststr.c_str();
+    const char *post = cgi->get_value("SAMLResponse");
     if (!post || *post == '\0')
       // invalid post
       throw ShibTargetException (SHIBRPC_OK,

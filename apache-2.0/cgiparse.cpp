@@ -67,10 +67,10 @@
 using namespace shibtarget;
 using namespace std;
 
-class CgiParseImpl {
+class CgiParseImpl : CgiParse{
 public:
-  CgiParseImpl(string& cgi);
   ~CgiParseImpl() {};
+  CgiParseImpl(string& cgi);
   const char * get_value(const string& name) const;
 
 private:
@@ -185,10 +185,10 @@ CgiParseImpl::CgiParseImpl(string& cgi)
     }
     else
         return NULL;
-#endif
-
+#else
     pch = cgi.c_str();
     cl = strlen(pch);
+#endif
         
     while (cl && pch)
     {
@@ -217,7 +217,8 @@ CgiParseImpl::get_value(const string& name) const
 }
 
 CgiParse*
-CgiParse::ParseCGI(string& cgi)
+CgiParse::ParseCGI(string& input)
 {
-  return (CgiParse*)(new CgiParseImpl(cgi));
+  CgiParseImpl* res = new CgiParseImpl(input);
+  return (CgiParse*) res;
 }
