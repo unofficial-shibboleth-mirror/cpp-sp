@@ -79,7 +79,7 @@ using namespace shibtarget;
 
 // globals
 namespace {
-    static const XMLCh name[] = { chLatin_h, chLatin_o, chLatin_s, chLatin_t, chNull };
+    static const XMLCh name[] = { chLatin_n, chLatin_a, chLatin_m, chLatin_e, chNull };
     static const XMLCh port[] = { chLatin_p, chLatin_o, chLatin_r, chLatin_t, chNull };
     static const XMLCh scheme[] = { chLatin_s, chLatin_c, chLatin_h, chLatin_e, chLatin_m, chLatin_e, chNull };
     static const XMLCh id[] = { chLatin_i, chLatin_d, chNull };
