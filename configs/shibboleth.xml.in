@@ -5,7 +5,7 @@
         <Library path="@-LIBEXECDIR-@/xmlproviders.so" fatal="true"/>
     </Extensions>
 
-    <SHAR logger="@-PKGSYSCONFDIR-@/shar.logger">
+    <SHAR logger="@-LOGDIR-@/shar.logger">
 
         <Extensions>
             <Library path="@-LIBEXECDIR-@/shib-mysql-ccache.so" fatal="false"/>
@@ -30,7 +30,7 @@
         </MySQLSessionCache>
     </SHAR>
     
-    <SHIRE logger="@-PKGSYSCONFDIR-@/shire.logger">
+    <SHIRE logger="@-LOGDIR-@/shire.logger">
         <!--
         To customize behavior, map hostnames and path components to application names.
         Can be either a pointer to an external file or an inline configuration.
@@ -139,7 +139,9 @@
         
         <CredentialUse TLS="defcreds" Signing="defcreds">
             <!-- RelyingParty elements customize credentials for specific origins or federations -->
+            <!--
             <RelyingParty Name="urn:mace:inqueue" TLS="inqueuecreds" Signing="inqueuecreds"/>
+            -->
         </CredentialUse>
         
 
