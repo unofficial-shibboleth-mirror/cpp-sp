@@ -360,18 +360,22 @@ AM_CONDITIONAL(DO_APXS_INSTALL,test -n "$APXS_INSTALL")
 AC_CONFIG_FILES([shib-mysql-ccache/Makefile])
 
 # determine whether we should enable the mysql ccache
-enable_mysql=default
 AC_ARG_ENABLE([mysql],
-	AC_HELP_STRING([--disable-mysql], [disable the MySQL Credential Cache]))
-if test "x$enable_mysql" = "x" ; then
-   enable_mysql=yes
+	AC_HELP_STRING([--disable-mysql], [disable the MySQL Credential Cache]),
+	[mysql_enabled=$enableval], [mysql_enabled=default])
+
+if test "x$mysql_enabled" = "x" ; then
+   mysql_enabled=yes
 fi
 
 # Are we trying to build MySQL?
 AC_MSG_CHECKING(whether to build the MySQL ccache)
-if test "$enable_mysql" = "yes" -o "$enable_mysql" = "default" ; then
+if test "$mysql_enabled" = "yes" ; then
    build_mysql=yes
    AC_MSG_RESULT(yes)
+elif test "$mysql_enabled" = "default" ; then
+   build_mysql=yes
+   AC_MSG_RESULT([yes, if it can be found])
 else
    build_mysql=no
    AC_MSG_RESULT(no)
@@ -393,7 +397,7 @@ if test "$build_mysql" = "yes" ; then
    AC_PATH_PROG(MYSQL_CONFIG, mysql_config, no, $mysql_dir $PATH )
 
    if test "$MYSQL_CONFIG" = no ; then
-      if test "$enable_mysql" = yes ; then
+      if test "$mysql_enabled" = "yes" ; then
         AC_MSG_ERROR(Cannot find mysql_config)
       else
         AC_MSG_WARN(MySQL not found.  skipping.)
@@ -409,7 +413,7 @@ if test "$MYSQL_CONFIG" != no ; then
    mysql_version_ok=yes
    if test $mysql_major_version -lt 4 ; then
      mysql_version_ok=no
-     if test "$enable_mysql" = yes ; then
+     if test "$mysql_enabled" = "yes" ; then
        AC_MSG_ERROR(You need MySQL version >= 4, found $mysql_version)
      fi
      AC_MSG_RESULT(no.. skipping MySQL)
@@ -424,7 +428,7 @@ if test "$mysql_version_ok" = "yes" ; then
    MYSQL_LIBS=`$MYSQL_CONFIG --libmysqld-libs`
    if test $? != 0 ; then
       found_mysql=no
-      if test "$enable_mysql" = yes ; then
+      if test "$mysql_enabled" = "yes" ; then
         AC_MSG_ERROR(Could not find the MySQL Embedded-server libraries.)
       else
         AC_MSG_RESULT(no.. skipping MySQL)
@@ -445,7 +449,7 @@ if test "$found_mysql" = yes ; then
    CPPFLAGS="$CPPFLAGS $MYSQL_CFLAGS"
 
    AC_CHECK_HEADER([mysql.h], [have_mysql_h=yes], [have_mysql_h=no])
-   if test "$have_mysql_h" = no -a "$enable_mysql" = yes ; then
+   if test "$have_mysql_h" = no -a "$mysql_enabled" = "yes" ; then
      AC_MSG_ERROR(unable to find MySQL header files)
    fi
 
@@ -461,7 +465,7 @@ if test "$found_mysql" = yes ; then
       LIBS="$save_LIBS"
 
       if test "$have_mysql_libs" = no ; then
-         if "$enable_mysql" = yes ; then
+         if "$mysql_enabled" = "yes" ; then
             AC_MSG_ERROR([unable to link with MySQL Embedded Server Library])
 	 else
 	    AC_MSG_RESULT(no.  skipping MySQL)
