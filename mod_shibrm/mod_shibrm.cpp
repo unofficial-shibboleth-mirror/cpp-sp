@@ -506,7 +506,7 @@ extern "C" int shibrm_check_auth(request_rec* r)
                                         "shibrm_check_auth caught exception while parsing regular expression (%s): %s",w,tmp.get());
                     }
                 }
-                if (!strcmp(r->connection->user,w))
+                else if (!strcmp(r->connection->user,w))
                 {
                     ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,"shibrm_check_auth() accepting user: %s",w);
                     return OK;
@@ -544,7 +544,6 @@ extern "C" int shibrm_check_auth(request_rec* r)
             }
             else
             {
-                auto_ptr<RegularExpression> re;
                 bool regexp=false;
                 const char* vals=ap_table_get(r->headers_in,i->second.c_str());
                 while (*t && vals)
@@ -558,6 +557,7 @@ extern "C" int shibrm_check_auth(request_rec* r)
 
                     try
                     {
+                        auto_ptr<RegularExpression> re;
                         if (regexp)
                             re.reset(new RegularExpression(w));
                         
@@ -581,8 +581,8 @@ extern "C" int shibrm_check_auth(request_rec* r)
         
                                 string val = vals_str.substr(j, i-j);
                                 j = i+1;
-        
-                                if ((regexp && re->matches(val.c_str())) || val==w) {
+                                
+                                if ((regexp && re->matches(val.c_str())) || (!regexp && val==w)) {
                                     ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
                                                     "shibrm_check_auth() expecting %s, got %s: authorization granted", w, val.c_str());
                                     return OK;
@@ -595,7 +595,7 @@ extern "C" int shibrm_check_auth(request_rec* r)
                         }
         
                         string val = vals_str.substr(j, vals_str.length()-j);
-                        if ((regexp && re->matches(val.c_str())) || val==w) {
+                        if ((regexp && re->matches(val.c_str())) || (!regexp && val==w)) {
                             ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
                                             "shibrm_check_auth() expecting %s, got %s: authorization granted", w, val.c_str());
                             return OK;
