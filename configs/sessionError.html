@@ -15,25 +15,20 @@
 <h1>Inter-institutional Access System Failure</h1>
 </div>
 
-<p>The inter-institutional access system experienced a technical failure at
-<shibmlp now /><br>
-<shibmlp errorDesc /></p>
+<p>The inter-institutional access system experienced a technical failure at <shibmlp now /></p>
 
-<p>
 <shibmlpif originContactName>
-If the error reports itself as a problem with your identity provider,
-please contact your site's administrator, <shibmlp originContactName/>,
-at <a href="mailto:<shibmlp originContactEmail/>"><shibmlp originContactEmail/></a>.
+<h3><u>Identity Provider Support Information</u></h3>
+<div>Contact: <shibmlp originContactName/> </div>
+<div>E-Mail: <a href="mailto:<shibmlp originContactEmail/>"><shibmlp originContactEmail/></a></div>
 </shibmlpif>
-
 <shibmlpif originErrorURL>
-<br>If you need more assistance, you can try your helpdesk at
-<a href="<shibmlp originErrorURL/>"><shibmlp originErrorURL/></a>.
+<div>URL: <a href="<shibmlp originErrorURL/>"><shibmlp originErrorURL/></a></div>
 </shibmlpif>
-</p>
 
-<p>Otherwise, please contact the application's administrator at
-<a href="mailto:<shibmlp supportContact/>"><shibmlp supportContact/></a>.</p>
+<p>To report this error, please contact the site administrator at
+<a href="mailto:<shibmlp supportContact/>"><shibmlp supportContact/></a>.
+</p>
 
 <p>Please include the following error message in any email:</p>
 <p class="error">Session creation failure at (<shibmlp requestURL/>)</p>
