@@ -1,4 +1,4 @@
-log4j.rootCategory=DEBUG, syslog
+log4j.rootCategory=WARN, syslog
 
 log4j.appender.syslog=org.apache.log4j.SyslogAppender
 log4j.appender.syslog.syslogName=shib
