@@ -179,8 +179,8 @@ STConfig::STConfig(const char* app_name, const char* inifile)
   if (!strcmp (app_name, SHIBTARGET_SHAR))
     g_shibTargetCCache = CCache::getInstance(NULL);
 
-  // Load any extensions
-  string ext = "extensions";
+  // Load any saml extensions
+  string ext = "extensions:saml";
   if (ini->exists(ext)) {
     saml::NDC ndc("load extensions");
     ShibINI::Iterator* iter = ini->tag_iterator(ext);
