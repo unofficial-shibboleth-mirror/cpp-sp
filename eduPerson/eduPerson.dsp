@@ -97,6 +97,10 @@ SOURCE=.\Constants.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\eduPerson.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\include\eduPerson.h
 # End Source File
 # Begin Source File
