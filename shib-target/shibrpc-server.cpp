@@ -339,10 +339,13 @@ shibrpc_new_session_2_svc(
         &origin,
         argp->packet,
         recipient.get(),
-        SAMLBrowserProfile::Post,   // For now, we only handle POST.
+        SAMLBrowserProfile::Post | SAMLBrowserProfile::Artifact,
         (!checkReplay.first || checkReplay.second) ? conf->getReplayCache() : NULL,
         artifactMapper.get()
         );
+
+      // Blow it away to clear any locks that might be held.
+      delete artifactMapper.release();
 
       // Try and map to metadata for support purposes.
       const IEntityDescriptor* provider=m.lookup(origin);
