@@ -59,7 +59,6 @@
 #ifndef __shib_h__
 #define __shib_h__
 
-#include <ctime>
 #include <saml/saml.h>
 
 #ifdef WIN32
@@ -95,6 +94,15 @@ namespace shibboleth
     DECLARE_SHIB_EXCEPTION(UnsupportedProtocolException,SAMLException);
     DECLARE_SHIB_EXCEPTION(OriginSiteMapperException,SAMLException);
 
+    struct SHIB_EXPORTS IContactInfo
+    {
+        enum ContactType { technical, administrative, billing, other };
+        virtual ContactType getType() const=0;
+        virtual const char* getName() const=0;
+        virtual const char* getEmail() const=0;
+        virtual ~IContactInfo()=0;
+    };
+
 #ifdef SHIB_INSTANTIATE
 # ifdef NO_RTTI
     const unsigned short RTTI_UnsupportedProtocolException=     RTTI_EXTENSION_BASE;
@@ -102,17 +110,19 @@ namespace shibboleth
 # endif
     template class SHIB_EXPORTS saml::Iterator<std::pair<saml::xstring,bool> >;
     template class SHIB_EXPORTS saml::ArrayIterator<std::pair<saml::xstring,bool> >;
+    template class SHIB_EXPORTS saml::Iterator<const IContactInfo*>;
+    template class SHIB_EXPORTS saml::ArrayIterator<const IContactInfo*>;
 #endif
 
     struct SHIB_EXPORTS IOriginSiteMapper
     {
-        virtual const char* getContactName(const XMLCh* originSite) const=0;
-        virtual const char* getContactEmail(const XMLCh* originSite) const=0;
+        virtual saml::Iterator<const IContactInfo*> getContacts(const XMLCh* originSite) const=0;
         virtual const char* getErrorURL(const XMLCh* originSite) const=0;
         virtual saml::Iterator<saml::xstring> getHandleServiceNames(const XMLCh* originSite) const=0;
         virtual XSECCryptoX509* getHandleServiceCert(const XMLCh* handleService) const=0;
         virtual saml::Iterator<std::pair<saml::xstring,bool> > getSecurityDomains(const XMLCh* originSite) const=0;
         virtual time_t getTimestamp() const=0;
+        virtual ~IOriginSiteMapper()=0;
     };
 
     class SHIB_EXPORTS OriginSiteMapper : public IOriginSiteMapper
@@ -120,8 +130,7 @@ namespace shibboleth
     public:
         OriginSiteMapper();
         ~OriginSiteMapper();
-        virtual const char* getContactName(const XMLCh* originSite) const;
-        virtual const char* getContactEmail(const XMLCh* originSite) const;
+        virtual saml::Iterator<const IContactInfo*> getContacts(const XMLCh* originSite) const;
         virtual const char* getErrorURL(const XMLCh* originSite) const;
         virtual saml::Iterator<saml::xstring> getHandleServiceNames(const XMLCh* originSite) const;
         virtual XSECCryptoX509* getHandleServiceCert(const XMLCh* handleService) const;
@@ -289,9 +298,9 @@ namespace shibboleth
             // Shibboleth vocabulary
             static const XMLCh AttributeValueType[];
 
-            static const XMLCh ContactEmail[];
-            static const XMLCh ContactName[];
+            static const XMLCh Contact[];
             static const XMLCh Domain[];
+            static const XMLCh Email[];
             static const XMLCh ErrorURL[];
             static const XMLCh HandleService[];
             static const XMLCh InvalidHandle[];
@@ -309,6 +318,11 @@ namespace shibboleth
             static const XMLCh literal[];
             static const XMLCh regexp[];
             static const XMLCh xpath[];
+
+            static const XMLCh technical[];
+            static const XMLCh administrative[];
+            static const XMLCh billing[];
+            static const XMLCh other[];
 
             // XML vocabulary
             static const XMLCh xmlns_shib[];

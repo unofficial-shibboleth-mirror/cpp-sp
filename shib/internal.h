@@ -83,8 +83,7 @@ namespace shibboleth
         XMLOriginSiteMapper(const char* pathname);
         ~XMLOriginSiteMapper();
 
-        virtual const char* getContactName(const XMLCh* originSite) const;
-        virtual const char* getContactEmail(const XMLCh* originSite) const;
+        virtual saml::Iterator<const IContactInfo*> getContacts(const XMLCh* originSite) const;
         virtual const char* getErrorURL(const XMLCh* originSite) const;
         virtual saml::Iterator<saml::xstring> getHandleServiceNames(const XMLCh* originSite) const;
         virtual XSECCryptoX509* getHandleServiceCert(const XMLCh* handleService) const;
@@ -94,11 +93,25 @@ namespace shibboleth
     private:
         struct OriginSite
         {
-            OriginSite(const XMLCh* contactName, const XMLCh* contactEmail, const XMLCh* errorURL) :
-                m_contactName(XMLString::transcode(contactName)), m_contactEmail(XMLString::transcode(contactEmail)),
-                m_errorURL(XMLString::transcode(errorURL)) {}
+            OriginSite(const XMLCh* errorURL) : m_errorURL(XMLString::transcode(errorURL)) {}
+            ~OriginSite();
 
-            std::auto_ptr<char> m_contactName,m_contactEmail,m_errorURL;
+            class ContactInfo : public IContactInfo
+            {
+            public:
+                ContactInfo(ContactType type, const XMLCh* name, const XMLCh* email);
+                
+                ContactType getType() const { return m_type; }
+                const char* getName() const { return m_name.get(); }            
+                const char* getEmail() const { return m_email.get(); }
+                
+            private:
+                ContactType m_type;
+                std::auto_ptr<char> m_name, m_email;
+            };
+            
+            std::vector<const IContactInfo*> m_contacts;
+            std::auto_ptr<char> m_errorURL;
             std::vector<saml::xstring> m_handleServices;
             std::vector<std::pair<saml::xstring,bool> > m_domains;
         };

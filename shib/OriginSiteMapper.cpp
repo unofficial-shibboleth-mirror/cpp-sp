@@ -68,14 +68,9 @@ OriginSiteMapper::~OriginSiteMapper()
     ShibConfig::getConfig().releaseMapper(m_mapper);
 }
 
-const char* OriginSiteMapper::getContactName(const XMLCh* originSite) const
+Iterator<const IContactInfo*> OriginSiteMapper::getContacts(const XMLCh* originSite) const
 {
-    return m_mapper->getContactName(originSite);
-}
-
-const char* OriginSiteMapper::getContactEmail(const XMLCh* originSite) const
-{
-    return m_mapper->getContactEmail(originSite);
+    return m_mapper->getContacts(originSite);
 }
 
 const char* OriginSiteMapper::getErrorURL(const XMLCh* originSite) const

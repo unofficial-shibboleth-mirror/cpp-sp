@@ -120,6 +120,7 @@ const XMLCh* ShibPOSTProfile::getOriginSite(const saml::SAMLResponse& r)
                 return as->getSubject()->getNameQualifier();
         }
     }
+    return NULL;
 }
 
 SAMLResponse* ShibPOSTProfile::accept(const XMLByte* buf, XMLCh** originSitePtr)

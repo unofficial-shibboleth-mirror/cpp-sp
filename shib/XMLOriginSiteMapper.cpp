@@ -114,11 +114,7 @@ XMLOriginSiteMapper::XMLOriginSiteMapper(const char* pathname) : m_filestamp(0)
 			if (!os_name.get() || !*os_name)
 				continue;
 
-			OriginSite* os_obj = new OriginSite(
-                os_e->getAttributeNS(NULL,XML::Literals::ContactName),
-                os_e->getAttributeNS(NULL,XML::Literals::ContactEmail),
-                os_e->getAttributeNS(NULL,XML::Literals::ErrorURL)
-                );
+			OriginSite* os_obj = new OriginSite(os_e->getAttributeNS(NULL,XML::Literals::ErrorURL));
 			m_sites[os_name.get()]=os_obj;
 
 			DOMNode* os_child = nlist->item(i)->getFirstChild();
@@ -132,7 +128,27 @@ XMLOriginSiteMapper::XMLOriginSiteMapper(const char* pathname) : m_filestamp(0)
 
 				// Process the various kinds of OriginSite children that we care about...
                 if (!XMLString::compareString(XML::SHIB_NS,os_child->getNamespaceURI()) &&
-					!XMLString::compareString(XML::Literals::HandleService,os_child->getLocalName()))
+                    !XMLString::compareString(XML::Literals::Contact,os_child->getLocalName()))
+                {
+                    OriginSite::ContactInfo::ContactType type;
+                    DOMElement* contact=static_cast<DOMElement*>(os_child);
+                    if (!XMLString::compareString(contact->getAttributeNS(NULL,XML::Literals::Type),XML::Literals::technical))
+                        type=IContactInfo::technical;
+                    else if (!XMLString::compareString(contact->getAttributeNS(NULL,XML::Literals::Type),XML::Literals::administrative))
+                        type=IContactInfo::administrative;
+                    else if (!XMLString::compareString(contact->getAttributeNS(NULL,XML::Literals::Type),XML::Literals::billing))
+                        type=IContactInfo::billing;
+                    else if (!XMLString::compareString(contact->getAttributeNS(NULL,XML::Literals::Type),XML::Literals::other))
+                        type=IContactInfo::other;
+                    OriginSite::ContactInfo* cinfo=new OriginSite::ContactInfo(
+                        type,
+                        contact->getAttributeNS(NULL,XML::Literals::Name),
+                        contact->getAttributeNS(NULL,XML::Literals::Email)
+                        );
+                    os_obj->m_contacts.push_back(cinfo);
+                }
+                else if (!XMLString::compareString(XML::SHIB_NS,os_child->getNamespaceURI()) &&
+					      !XMLString::compareString(XML::Literals::HandleService,os_child->getLocalName()))
                 {
                     auto_ptr<XMLCh> hs_name(XMLString::replicate(static_cast<DOMElement*>(os_child)->getAttributeNS(NULL,XML::Literals::Name)));
                     XMLString::trim(hs_name.get());
@@ -213,20 +229,21 @@ XMLOriginSiteMapper::~XMLOriginSiteMapper()
         delete j->second;
 }
 
-const char* XMLOriginSiteMapper::getContactName(const XMLCh* originSite) const
+XMLOriginSiteMapper::OriginSite::ContactInfo::ContactInfo(ContactType type, const XMLCh* name, const XMLCh* email)
+    : m_type(type), m_name(XMLString::transcode(name)), m_email(XMLString::transcode(email)) {}
+
+XMLOriginSiteMapper::OriginSite::~OriginSite()
 {
-    map<xstring,OriginSite*>::const_iterator i=m_sites.find(originSite);
-    if (i==m_sites.end())
-        return NULL;
-    return i->second->m_contactName.get();
+    for (vector<const IContactInfo*>::iterator i=m_contacts.begin(); i!=m_contacts.end(); i++)
+        delete const_cast<IContactInfo*>(*i);
 }
 
-const char* XMLOriginSiteMapper::getContactEmail(const XMLCh* originSite) const
+Iterator<const IContactInfo*> XMLOriginSiteMapper::getContacts(const XMLCh* originSite) const
 {
     map<xstring,OriginSite*>::const_iterator i=m_sites.find(originSite);
     if (i==m_sites.end())
-        return NULL;
-    return i->second->m_contactEmail.get();
+        return Iterator<const IContactInfo*>();
+    return Iterator<const IContactInfo*>(i->second->m_contacts);
 }
 
 const char* XMLOriginSiteMapper::getErrorURL(const XMLCh* originSite) const

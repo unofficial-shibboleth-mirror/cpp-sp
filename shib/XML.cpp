@@ -82,14 +82,14 @@ const XMLCh XML::Literals::AttributeValueType[] =
   chLatin_V, chLatin_a, chLatin_l, chLatin_u, chLatin_e, chLatin_T, chLatin_y, chLatin_p, chLatin_e, chNull
 };
 
-const XMLCh XML::Literals::ContactEmail[]=
-{ chLatin_C, chLatin_o, chLatin_n, chLatin_t, chLatin_a, chLatin_c, chLatin_t, chLatin_E, chLatin_m, chLatin_a, chLatin_i, chLatin_l, chNull };
-
-const XMLCh XML::Literals::ContactName[]=
-{ chLatin_C, chLatin_o, chLatin_n, chLatin_t, chLatin_a, chLatin_c, chLatin_t, chLatin_N, chLatin_a, chLatin_m, chLatin_e, chNull };
+const XMLCh XML::Literals::Contact[]=
+{ chLatin_C, chLatin_o, chLatin_n, chLatin_t, chLatin_a, chLatin_c, chLatin_t, chNull };
 
 const XMLCh XML::Literals::Domain[]=
 { chLatin_D, chLatin_o, chLatin_m, chLatin_a, chLatin_i, chLatin_n, chNull };
+
+const XMLCh XML::Literals::Email[]=
+{ chLatin_E, chLatin_m, chLatin_a, chLatin_i, chLatin_l, chNull };
 
 const XMLCh XML::Literals::ErrorURL[]=
 { chLatin_E, chLatin_r, chLatin_r, chLatin_o, chLatin_r, chLatin_U, chLatin_R, chLatin_L, chNull };
@@ -142,6 +142,18 @@ const XMLCh XML::Literals::regexp[] =
 
 const XMLCh XML::Literals::xpath[] =
 { chLatin_x, chLatin_p, chLatin_a, chLatin_t, chLatin_h, chNull };
+
+const XMLCh XML::Literals::technical[] =
+{ chLatin_t, chLatin_e, chLatin_c, chLatin_h, chLatin_n, chLatin_i, chLatin_c, chLatin_a, chLatin_l, chNull };
+
+const XMLCh XML::Literals::administrative[] =
+{ chLatin_a, chLatin_m, chLatin_i, chLatin_n, chLatin_i, chLatin_s, chLatin_t, chLatin_r, chLatin_a, chLatin_t, chLatin_i, chLatin_v, chLatin_e, chNull };
+
+const XMLCh XML::Literals::billing[] =
+{ chLatin_b, chLatin_i, chLatin_l, chLatin_l, chLatin_i, chLatin_n, chLatin_g, chNull };
+
+const XMLCh XML::Literals::other[] =
+{ chLatin_o, chLatin_t, chLatin_h, chLatin_e, chLatin_r, chNull };
 
 const XMLCh XML::Literals::xmlns_shib[]=
 { chLatin_x, chLatin_m, chLatin_l, chLatin_n, chLatin_s, chColon, chLatin_s, chLatin_h, chLatin_i, chLatin_b, chNull };
