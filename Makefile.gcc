@@ -1,7 +1,7 @@
 OUTDIR		= lib
 BINDIR		= bin
 CC		= g++3
-CFLAGS		= -fpic -Iinclude -I../../opensaml/c/include \
+CFLAGS		= -g -fpic -Iinclude -I../../opensaml/c/include \
                   -I/usr/local/include
 CCFLAGS		= $(CFLAGS)
 LDFLAGS		= -L/usr/local/lib -L$(OUTDIR) -L../../opensaml/c/lib \
@@ -13,6 +13,11 @@ SHIB_OBJS 	= \
 	shib/XML.o
 
 EDUPERSON_OBJS = \
+	eduPerson/Constants.o \
+	eduPerson/EPPNAttribute.o \
+	eduPerson/AffiliationAttribute.o \
+	eduPerson/PrimaryAffiliationAttribute.o \
+	eduPerson/EntitlementAttribute.o \
 	eduPerson/ScopedAttribute.o
 
 

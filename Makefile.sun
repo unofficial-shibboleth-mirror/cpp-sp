@@ -12,8 +12,12 @@ SHIB_OBJS 	= \
 	shib/XML.o
 
 EDUPERSON_OBJS = \
+	eduPerson/Constants.o \
+	eduPerson/EPPNAttribute.o \
+	eduPerson/AffiliationAttribute.o \
+	eduPerson/PrimaryAffiliationAttribute.o \
+	eduPerson/EntitlementAttribute.o \
 	eduPerson/ScopedAttribute.o
-
 
 all:	dirs $(OUTDIR)/libshib.so $(OUTDIR)/libeduPerson.so bin/ $(BINDIR)/shibtest
 	chmod 755 $(OUTDIR)/*
