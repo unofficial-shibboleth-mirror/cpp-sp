@@ -1,0 +1,14 @@
+/aclocal.m4
+/config.h.in
+/config.h
+/*.cache
+/install-sh
+/mkinstalldirs
+/missing
+/config.*
+/stamp*
+/Makefile.in
+/Makefile
+/depcomp
+/configure
+/libtool
