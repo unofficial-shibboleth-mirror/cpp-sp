@@ -2,7 +2,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-bin_PROGRAMS = siterefresh
+sbin_PROGRAMS = siterefresh
 
 AM_CXXFLAGS = -DDEFAULT_SCHEMA_DIR=\"$(sysconfdir)/@PACKAGE@/\"
 

@@ -2,7 +2,8 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-bin_PROGRAMS = shar test-client
+bin_PROGRAMS = test-client
+sbin_PROGRAMS = shar
 
 if USE_OUR_ONCRPC
 AM_CFLAGS = -I${top_srcdir}/oncrpc
