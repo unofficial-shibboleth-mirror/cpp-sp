@@ -98,15 +98,9 @@ namespace {
 
 IPlugIn* XMLCredentialsFactory(const DOMElement* e)
 {
-    XMLCredentials* creds=new XMLCredentials(e);
-    try {
-        creds->getImplementation();
-    }
-    catch (...) {
-        delete creds;
-        throw;
-    }
-    return creds;    
+    auto_ptr<XMLCredentials> creds(new XMLCredentials(e));
+    creds->getImplementation();
+    return creds.release();
 }
 
 ReloadableXMLFileImpl* XMLCredentials::newImplementation(const char* pathname, bool first) const
@@ -121,7 +115,9 @@ ReloadableXMLFileImpl* XMLCredentials::newImplementation(const DOMElement* e, bo
 
 void XMLCredentialsImpl::init()
 {
-    NDC ndc("XMLCredentialsImpl");
+#ifdef _DEBUG
+    saml::NDC ndc("XMLCredentialsImpl");
+#endif
     Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".XMLCredentialsImpl");
 
     try {
@@ -168,16 +164,16 @@ void XMLCredentialsImpl::init()
     }
     catch (SAMLException& e) {
         log.errorStream() << "Error while parsing creds configuration: " << e.what() << CategoryStream::ENDLINE;
-        for (resolvermap_t::iterator j=m_resolverMap.begin(); j!=m_resolverMap.end(); j++)
-            delete j->second;
+        this->~XMLCredentialsImpl();
         throw;
     }
+#ifndef _DEBUG
     catch (...) {
         log.error("Unexpected error while parsing creds configuration");
-        for (resolvermap_t::iterator j=m_resolverMap.begin(); j!=m_resolverMap.end(); j++)
-            delete j->second;
+        this->~XMLCredentialsImpl();
         throw;
     }
+#endif
 }
 
 XMLCredentialsImpl::~XMLCredentialsImpl()

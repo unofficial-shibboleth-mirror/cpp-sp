@@ -115,15 +115,9 @@ namespace {
 
 IPlugIn* XMLRevocationFactory(const DOMElement* e)
 {
-    XMLRevocation* r=new XMLRevocation(e);
-    try {
-        r->getImplementation();
-    }
-    catch (...) {
-        delete r;
-        throw;
-    }
-    return r;
+    auto_ptr<XMLRevocation> r(new XMLRevocation(e));
+    r->getImplementation();
+    return r.release();
 }
 
 
@@ -145,7 +139,9 @@ XMLRevocationImpl::KeyAuthority::~KeyAuthority()
 
 void XMLRevocationImpl::init()
 {
-    NDC ndc("XMLRevocationImpl");
+#ifdef _DEBUG
+    saml::NDC ndc("XMLRevocationImpl");
+#endif
     Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".XMLRevocationImpl");
 
     try {
@@ -253,16 +249,16 @@ void XMLRevocationImpl::init()
     }
     catch (SAMLException& e) {
         log.errorStream() << "Error while parsing revocation configuration: " << e.what() << CategoryStream::ENDLINE;
-        for (vector<KeyAuthority*>::iterator i=m_keyauths.begin(); i!=m_keyauths.end(); i++)
-            delete (*i);
+        this->~XMLRevocationImpl();
         throw;
     }
+#ifndef _DEBUG
     catch (...) {
         log.error("Unexpected error while parsing revocation configuration");
-        for (vector<KeyAuthority*>::iterator i=m_keyauths.begin(); i!=m_keyauths.end(); i++)
-            delete (*i);
+        this->~XMLRevocationImpl();
         throw;
     }
+#endif
 }
 
 XMLRevocationImpl::~XMLRevocationImpl()

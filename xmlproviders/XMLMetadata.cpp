@@ -149,14 +149,14 @@ namespace {
             ~KeyDescriptor();
             
             KeyUse getUse() const { return m_use; }
-            DSIGKeyInfoList* getKeyInfo() const { return &m_klist; }
+            DSIGKeyInfoList* getKeyInfo() const { return m_klist; }
             saml::Iterator<const XENCEncryptionMethod*> getEncryptionMethods() const { return m_methods; }
             const DOMElement* getElement() const { return m_root; }
         
         private:
             const DOMElement* m_root;
             KeyUse m_use;
-            mutable DSIGKeyInfoList m_klist;
+            mutable DSIGKeyInfoList* m_klist;
             vector<const XENCEncryptionMethod*> m_methods;
         };
         
@@ -436,15 +436,9 @@ namespace {
 
 IPlugIn* XMLMetadataFactory(const DOMElement* e)
 {
-    XMLMetadata* m=new XMLMetadata(e);
-    try {
-        m->getImplementation();
-    }
-    catch (...) {
-        delete m;
-        throw;
-    }
-    return m;    
+    auto_ptr<XMLMetadata> m(new XMLMetadata(e));
+    m->getImplementation();
+    return m.release();
 }
 
 ReloadableXMLFileImpl* XMLMetadata::newImplementation(const DOMElement* e, bool first) const
@@ -579,6 +573,8 @@ XMLMetadataImpl::KeyDescriptor::KeyDescriptor(const DOMElement* e) : m_root(e), 
     else if (!XMLString::compareString(e->getAttributeNS(NULL,SHIB_L(use)),SHIB_L(signing)))
         m_use=signing;
     
+    m_klist = new DSIGKeyInfoList(NULL);
+
     // Process ds:KeyInfo
     e=saml::XML::getFirstChildElement(e);
 
@@ -587,7 +583,7 @@ XMLMetadataImpl::KeyDescriptor::KeyDescriptor(const DOMElement* e) : m_root(e), 
     DOMElement* child=saml::XML::getFirstChildElement(e);
     while (child) {
         try {
-            if (!m_klist.addXMLKeyInfo(child)) {
+            if (!m_klist->addXMLKeyInfo(child)) {
                 Category::getInstance(XMLPROVIDERS_LOGCAT".XMLMetadataImpl.KeyDescriptor").warn(
                     "skipped unsupported ds:KeyInfo child element");
             }
@@ -609,6 +605,7 @@ XMLMetadataImpl::KeyDescriptor::~KeyDescriptor()
 {
     for (vector<const XENCEncryptionMethod*>::iterator i=m_methods.begin(); i!=m_methods.end(); i++)
         delete const_cast<XENCEncryptionMethod*>(*i);
+    delete m_klist;
 }
 
 XMLMetadataImpl::Role::Role(const EntityDescriptor* provider, time_t validUntil, const DOMElement* e)
@@ -1066,7 +1063,9 @@ XMLMetadataImpl::EntitiesDescriptor::~EntitiesDescriptor()
 
 void XMLMetadataImpl::init()
 {
+#ifdef _DEBUG
     NDC ndc("XMLMetadataImpl");
+#endif
     Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".XMLMetadataImpl");
 
     try
@@ -1090,12 +1089,14 @@ void XMLMetadataImpl::init()
         this->~XMLMetadataImpl();
         throw;
     }
+#ifndef _DEBUG
     catch (...)
     {
         log.error("Unexpected error while parsing SAML metadata");
         this->~XMLMetadataImpl();
         throw;
     }
+#endif
 }
 
 XMLMetadataImpl::~XMLMetadataImpl()

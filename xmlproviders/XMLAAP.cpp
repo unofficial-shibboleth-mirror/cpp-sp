@@ -160,17 +160,9 @@ namespace {
 
 IPlugIn* XMLAAPFactory(const DOMElement* e)
 {
-    XMLAAP* aap=new XMLAAP(e);
-    try
-    {
-        aap->getImplementation();
-    }
-    catch (...)
-    {
-        delete aap;
-        throw;
-    }
-    return aap;
+    auto_ptr<XMLAAP> aap(new XMLAAP(e));
+    aap->getImplementation();
+    return aap.release();
 }
 
 ReloadableXMLFileImpl* XMLAAP::newImplementation(const DOMElement* e, bool first) const
@@ -185,7 +177,9 @@ ReloadableXMLFileImpl* XMLAAP::newImplementation(const char* pathname, bool firs
 
 void XMLAAPImpl::init()
 {
+#ifdef _DEBUG
     NDC ndc("XMLAAPImpl");
+#endif
     Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".XMLAAPImpl");
 
     try
@@ -232,18 +226,17 @@ void XMLAAPImpl::init()
     catch (SAMLException& e)
     {
         log.errorStream() << "Error while parsing AAP: " << e.what() << CategoryStream::ENDLINE;
-        for (attrmap_t::iterator i=m_attrMap.begin(); i!=m_attrMap.end(); i++)
-            delete i->second;
+        this->~XMLAAPImpl();
         throw;
     }
+#ifndef _DEBUG
     catch (...)
     {
         log.error("Unexpected error while parsing AAP");
-        for (attrmap_t::iterator i=m_attrMap.begin(); i!=m_attrMap.end(); i++)
-            delete i->second;
+        this->~XMLAAPImpl();
         throw;
     }
-
+#endif
 }
 
 XMLAAPImpl::~XMLAAPImpl()
@@ -629,7 +622,7 @@ bool XMLAAPImpl::AttributeRule::accept(const DOMElement* e, const IScopedRoleDes
     if (log.isWarnEnabled()) {
         auto_ptr_char temp(m_name);
         auto_ptr_char temp2(n->getNodeValue());
-        log.warn("%sattribute %svalue {%s} could not be validated by policy, rejecting it",
+        log.warn("%sattribute (%s) value {%s} could not be validated by policy, rejecting it",
                  (bSimple ? "" : "complex "),temp.get(),temp2.get());
     }
     return false;

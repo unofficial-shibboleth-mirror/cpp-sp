@@ -144,15 +144,9 @@ namespace {
 
 IPlugIn* XMLTrustFactory(const DOMElement* e)
 {
-    XMLTrust* t=new XMLTrust(e);
-    try {
-        t->getImplementation();
-    }
-    catch (...) {
-        delete t;
-        throw;
-    }
-    return t;    
+    auto_ptr<XMLTrust> t(new XMLTrust(e));
+    t->getImplementation();
+    return t.release();
 }
 
 
@@ -211,7 +205,9 @@ public:
 
 void XMLTrustImpl::init()
 {
-    NDC ndc("XMLTrustImpl");
+#ifdef _DEBUG
+    saml::NDC ndc("XMLTrustImpl");
+#endif
     Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".XMLTrustImpl");
 
     try {
@@ -378,20 +374,16 @@ void XMLTrustImpl::init()
     }
     catch (SAMLException& e) {
         log.errorStream() << "Error while parsing trust configuration: " << e.what() << CategoryStream::ENDLINE;
-        for (vector<KeyAuthority*>::iterator i=m_keyauths.begin(); i!=m_keyauths.end(); i++)
-            delete (*i);
-        for (vector<DSIGKeyInfoList*>::iterator j=m_keybinds.begin(); j!=m_keybinds.end(); j++)
-            delete (*j);
+        this->~XMLTrustImpl();
         throw;
     }
+#ifndef _DEBUG
     catch (...) {
         log.error("Unexpected error while parsing trust configuration");
-        for (vector<KeyAuthority*>::iterator i=m_keyauths.begin(); i!=m_keyauths.end(); i++)
-            delete (*i);
-        for (vector<DSIGKeyInfoList*>::iterator j=m_keybinds.begin(); j!=m_keybinds.end(); j++)
-            delete (*j);
+        this->~XMLTrustImpl();
         throw;
     }
+#endif
 }
 
 XMLTrustImpl::~XMLTrustImpl()
@@ -931,6 +923,9 @@ bool XMLTrust::validate(
                 log.warn("failed to add CRL");
             }
         }
+        
+        // Install error callback.
+        X509_STORE_CTX_set_verify_cb(ctx,logging_callback);
     
         int result=X509_verify_cert(ctx);
         sk_X509_pop_free(chain,X509_free);
