@@ -136,6 +136,12 @@ CLIENT * RPCHandle::connect(void)
     throw new ShibTargetException (SHIBRPC_UNKNOWN_ERROR, rpcerror);
   }
 
+  // Set the RPC timeout to a fairly high value...
+  struct timeval tv;
+  tv.tv_sec = 600;		/* change timeout to 10 minutes */
+  tv.tv_usec = 0;		/* this should always be set  */
+  clnt_control(clnt, CLSET_TIMEOUT, (char*)&tv);
+
   m_priv->m_clnt = clnt;
   m_priv->m_sock = sock;
 
