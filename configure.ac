@@ -667,14 +667,15 @@ if test "$found_mysql" = yes ; then
       LIBS="$LIBS $MYSQL_LIBS"
       AC_MSG_CHECKING(if we can link againt mysql)
       AC_TRY_LINK(
-        [#include <mysql.h>],
+        [#include <mysql.h>
+	 #include <stdio.h>],
         [mysql_server_init(0, NULL, NULL)],
 	[have_mysql_libs=yes],
 	[have_mysql_libs=no])
       LIBS="$save_LIBS"
 
       if test "$have_mysql_libs" = no ; then
-         if "$mysql_enabled" = "yes" ; then
+         if test "$mysql_enabled" = "yes" ; then
             AC_MSG_ERROR([unable to link with MySQL Embedded Server Library])
 	 else
 	    AC_MSG_RESULT(no.  skipping MySQL)
