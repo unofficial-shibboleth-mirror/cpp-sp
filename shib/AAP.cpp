@@ -199,15 +199,15 @@ void XMLAAPImpl::regAttributes() const
         else
         {
             saml::NDC ndc("regAttributes");
-            Category::getInstance(SHIB_LOGCAT".XMLAAPImpl").error("do not support custom attribute factories yet");
+            Category::getInstance(SHIB_LOGCAT".XMLAAPImpl").error("unknown attribute factory: %s", i->second->getFactory());
         }
     }
 }
 
 XMLAAPImpl::AttributeRule::AttributeRule(const DOMElement* e) :
-    m_factory(XMLString::transcode(e->getAttributeNS(NULL,SHIB_L(Factory)))),
-    m_alias(XMLString::transcode(e->getAttributeNS(NULL,SHIB_L(Alias)))),
-    m_header(XMLString::transcode(e->getAttributeNS(NULL,SHIB_L(Header))))
+    m_factory(e->hasAttributeNS(NULL,SHIB_L(Factory)) ? XMLString::transcode(e->getAttributeNS(NULL,SHIB_L(Factory))) : NULL),
+    m_alias(e->hasAttributeNS(NULL,SHIB_L(Alias)) ? XMLString::transcode(e->getAttributeNS(NULL,SHIB_L(Alias))) : NULL),
+    m_header(e->hasAttributeNS(NULL,SHIB_L(Header)) ? XMLString::transcode(e->getAttributeNS(NULL,SHIB_L(Header))) : NULL)
     
 {
     m_name=e->getAttributeNS(NULL,SHIB_L(Name));
