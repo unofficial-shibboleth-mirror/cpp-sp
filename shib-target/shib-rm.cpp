@@ -245,6 +245,7 @@ void RM::serialize(SAMLAssertion &assertion, string &result)
   XMLByte* serialized = Base64::encode(reinterpret_cast<XMLByte*>(assn),
 				       os.str().length(), &outlen);
   result = (char*) serialized;
+  XMLString::release(&serialized);
 }
 
 Iterator<SAMLAttribute*> RM::getAttributes(SAMLAssertion &assertion)
