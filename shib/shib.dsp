@@ -43,7 +43,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "SHIB_EXPORTS" /YX /FD /c
-# ADD CPP /nologo /MD /W3 /GR /GX /O2 /I "C:\xmlsec\include" /I "C:\xml2\include" /I "C:\iconv\include" /I "C:\xslt\include" /I "." /I "C:\log4cpp\include" /I "C:\curl\include" /I "C:\openssl\include" /I "C:\xerces-c\include" /I "..\..\..\opensaml\c" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /YX /FD /c
+# ADD CPP /nologo /MD /W3 /GR /GX /O2 /I "C:\log4cpp-0.3.2rc4\include" /I "C:\xmlsec\include" /I "C:\xml2\include" /I "C:\iconv\include" /I "C:\xslt\include" /I "." /I "C:\log4cpp\include" /I "C:\curl\include" /I "C:\openssl-0.9.7\inc32" /I "C:\xerces-c2_1_0-win32\include" /I "..\..\..\opensaml\c" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /YX /FD /c
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
@@ -53,7 +53,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386
-# ADD LINK32 log4cpp.lib xerces-c_2.lib saml.lib libxmlsec.lib libxml2.lib /nologo /dll /machine:I386 /libpath:"C:\log4cpp\lib" /libpath:"C:\xerces-c\lib" /libpath:"..\..\..\opensaml\c\saml\Release" /libpath:"C:\xmlsec\lib" /libpath:"C:\xml2\lib"
+# ADD LINK32 log4cpp.lib xerces-c_2.lib saml.lib libxmlsec.lib libxml2.lib /nologo /dll /machine:I386 /libpath:"..\..\..\opensaml\c\saml\Release" /libpath:"C:\log4cpp-0.3.2rc4\msvc6\log4cppDLL\Release" /libpath:"C:\xmlsec\lib" /libpath:"C:\xml2\lib" /libpath:"C:\xerces-c2_1_0-win32\lib"
 
 !ELSEIF  "$(CFG)" == "shib - Win32 Debug"
 
@@ -69,7 +69,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "SHIB_EXPORTS" /YX /FD /GZ /c
-# ADD CPP /nologo /MDd /W3 /Gm /GR /GX /ZI /Od /I "C:\xmlsec\include" /I "C:\xml2\include" /I "C:\iconv\include" /I "C:\xslt\include" /I "." /I "C:\log4cpp\include" /I "C:\curl\include" /I "C:\openssl\include" /I "C:\xerces-c\include" /I "..\..\..\opensaml\c" /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /FR /YX /FD /GZ /c
+# ADD CPP /nologo /MDd /W3 /Gm /GR /GX /ZI /Od /I "C:\log4cpp-0.3.2rc4\include" /I "C:\xmlsec\include" /I "C:\xml2\include" /I "C:\iconv\include" /I "C:\xslt\include" /I "." /I "C:\log4cpp\include" /I "C:\curl\include" /I "C:\openssl-0.9.7\inc32" /I "C:\xerces-c2_1_0-win32\include" /I "..\..\..\opensaml\c" /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /FR /YX /FD /GZ /c
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
@@ -79,7 +79,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 log4cppD.lib libxmlsec.lib libxml2.lib xerces-c_2D.lib saml.lib /nologo /dll /debug /machine:I386 /pdbtype:sept /libpath:"C:\debug\log4cpp\lib" /libpath:"C:\xmlsec\lib" /libpath:"C:\xml2\lib" /libpath:"..\..\..\opensaml\c\saml\Debug" /libpath:"C:\debug\xerces-c\lib"
+# ADD LINK32 log4cppD.lib libxmlsec.lib libxml2.lib xerces-c_2D.lib saml.lib /nologo /dll /debug /machine:I386 /pdbtype:sept /libpath:"..\..\..\opensaml\c\saml\Debug" /libpath:"C:\log4cpp-0.3.2rc4\msvc6\log4cppDLL\Debug" /libpath:"C:\xmlsec\lib" /libpath:"C:\xml2\lib" /libpath:"C:\xerces-c2_1_0-win32\lib"
 
 !ENDIF 
 
