@@ -184,8 +184,7 @@ namespace shibboleth
     struct SHIB_EXPORTS ISSOProviderRole : public virtual IProviderRole
     {
         virtual saml::Iterator<const IEndpoint*> getSingleLogoutServices() const=0;
-        virtual saml::Iterator<const IEndpoint*> getFederationTerminationServices() const=0;
-        virtual saml::Iterator<const IEndpoint*> getRegisterNameIdentifierServices() const=0;
+        virtual saml::Iterator<const IEndpoint*> getManageNameIdentifierServices() const=0;
         virtual ~ISSOProviderRole() {}
     };
     
@@ -215,21 +214,21 @@ namespace shibboleth
         virtual ~IAttributeAuthorityRole() {}
     };
 
-    struct SHIB_EXPORTS IAttributeConsumingService
+    struct SHIB_EXPORTS IAttributeRequestingService
     {
         virtual const XMLCh* getName(const XMLCh* lang) const=0;
         virtual const XMLCh* getDescription(const XMLCh* lang) const=0;
         virtual saml::Iterator<std::pair<const saml::SAMLAttributeDesignator*,bool> > getWantedAttributes() const=0;
         virtual const DOMElement* getElement() const=0;
-        virtual ~IAttributeConsumingService() {}
+        virtual ~IAttributeRequestingService() {}
     };
 
-    struct SHIB_EXPORTS IAttributeConsumerRole : public virtual IProviderRole
+    struct SHIB_EXPORTS IAttributeRequesterRole : public virtual IProviderRole
     {
-        virtual const IAttributeConsumingService* getDefaultAttributeConsumingService() const=0;
-        virtual const IAttributeConsumingService* getAttributeConsumingService(const XMLCh* id) const=0;
-        virtual saml::Iterator<const IAttributeConsumingService*> getAttributeConsumingServices() const=0;
-        virtual ~IAttributeConsumerRole() {}
+        virtual const IAttributeRequestingService* getDefaultAttributeRequestingService() const=0;
+        virtual const IAttributeRequestingService* getAttributeRequestingService(const XMLCh* id) const=0;
+        virtual saml::Iterator<const IAttributeRequestingService*> getAttributeRequestingServices() const=0;
+        virtual ~IAttributeRequesterRole() {}
     };
 
     struct SHIB_EXPORTS IProvider

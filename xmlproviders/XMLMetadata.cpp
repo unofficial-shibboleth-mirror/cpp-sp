@@ -167,8 +167,7 @@ namespace {
             SSORole(const Provider* provider, const DOMElement* e) : Role(provider,e) {}
             ~SSORole() {}
             Iterator<const IEndpoint*> getSingleLogoutServices() const {return EMPTY(const IEndpoint*);}
-            Iterator<const IEndpoint*> getFederationTerminationServices() const {return EMPTY(const IEndpoint*);}
-            Iterator<const IEndpoint*> getRegisterNameIdentifierServices() const {return EMPTY(const IEndpoint*);}
+            Iterator<const IEndpoint*> getManageNameIdentifierServices() const {return EMPTY(const IEndpoint*);}
         };
         
         class IDPRole : public SSORole, public virtual IIDPProviderRole
