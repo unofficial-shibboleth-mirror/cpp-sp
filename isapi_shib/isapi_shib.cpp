@@ -513,8 +513,11 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
         if (buf.empty() || !(session_id=strstr(buf,shib_cookie.c_str())) || *(session_id+shib_cookie.length())!='=')
         {
             // Redirect to WAYF.
+            char timebuf[16];
+            sprintf(timebuf,"%u",time(NULL));
             string wayf("Location: ");
-            wayf+=wayfLocation + "?shire=" + url_encode(shire_url.c_str()) + "&target=" + url_encode(target_url.c_str()) + "\r\n";
+            wayf+=wayfLocation + "?shire=" + url_encode(shire_url.c_str()) + "&target=" + url_encode(target_url.c_str()) +
+                "&time=" + timebuf + "&providerId=" + application_id + "\r\n";
             // Insert the headers.
             pfc->AddResponseHeaders(pfc,const_cast<char*>(wayf.c_str()),0);
             pfc->ServerSupportFunction(pfc,SF_REQ_SEND_RESPONSE_HEADER,"302 Please Wait",0,0);
@@ -558,8 +561,11 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
             if (status->isRetryable()) {
                 // Redirect to WAYF.
                 delete status;
+                char timebuf[16];
+                sprintf(timebuf,"%u",time(NULL));
                 string wayf("Location: ");
-                wayf+=wayfLocation + "?shire=" + url_encode(shire_url.c_str()) + "&target=" + url_encode(target_url.c_str()) + "\r\n";
+                wayf+=wayfLocation + "?shire=" + url_encode(shire_url.c_str()) + "&target=" + url_encode(target_url.c_str()) +
+                    "&time=" + timebuf + "&providerId=" + application_id + "\r\n";
                 // Insert the headers.
                 pfc->AddResponseHeaders(pfc,const_cast<char*>(wayf.c_str()),0);
                 pfc->ServerSupportFunction(pfc,SF_REQ_SEND_RESPONSE_HEADER,"302 Please Wait",0,0);
@@ -909,7 +915,10 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
         if (status->isError()) {
             if (status->isRetryable()) {
                 delete status;
-                string wayf=wayfLocation + "?shire=" + url_encode(shire_url.c_str()) + "&target=" + url_encode(target);
+                char timebuf[16];
+                sprintf(timebuf,"%u",time(NULL));
+                string wayf=wayfLocation + "?shire=" + url_encode(shire_url.c_str()) + "&target=" + url_encode(target) +
+                    "&time=" + timebuf + "&providerId=" + application_id;
                 DWORD len=wayf.length();
                 if (lpECB->ServerSupportFunction(lpECB->ConnID,HSE_REQ_SEND_URL_REDIRECT_RESP,(LPVOID)wayf.c_str(),&len,0))
                     return HSE_STATUS_SUCCESS;
