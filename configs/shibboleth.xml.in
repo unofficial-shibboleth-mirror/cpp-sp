@@ -88,8 +88,9 @@
         setting of "; secure" in that case. The default wayfURL is the InQueue federation's service.
         Change to https://localhost/shibboleth/HS for internal testing against your own origin.
         -->
-        <Sessions lifetime="7200" timeout="3600" checkAddress="true" checkReplay="true"
-            shireURL="/Shibboleth.shire" shireSSL="false" wayfURL="https://wayf.internet2.edu/InQueue/WAYF"/>
+        <Sessions lifetime="7200" timeout="3600" checkAddress="true"
+        	wayfURL="https://wayf.internet2.edu/InQueue/WAYF"
+            shireURL="/Shibboleth.shire" shireSSL="false"/>
 
         <!-- You should customize the pages! You can add attributes with values that can be plugged in. -->
         <Errors shire="@-PKGSYSCONFDIR-@/shireError.html"
@@ -99,7 +100,7 @@
             logoLocation="/shibtarget/logo.jpg"
             styleSheet="/shibtarget/main.css"/>
             
-        <Policy signRequest="false" signedResponse="false" signedAssertions="false">
+        <Policy>
             <!-- use designators to request specific attributes or none to ask for all -->
             <!--
             <saml:AttributeDesignator AttributeName="urn:mace:dir:attribute-def:eduPersonScopedAffiliation"
@@ -171,13 +172,17 @@
         include all attributes you want to apply, as they will not be inherited. Similarly, if you
         specify elements within <Policy> such as <FederationProvider>, they are not additive with the
         defaults, but replace them.
+        
+        The example below shows a special application that requires use of SSL when establishing
+        sessions, restricts the session cookie to SSL and a specific folder, and inherits most other
+        behavior except that it requests only EPPN from the origin instead of asking for all attributes.
         -->
         <!-- 
         <Application id="foo-admin">
 	        <Sessions lifetime="7200" timeout="3600" checkAddress="true"
-	            shireURL="/secure/admin/Shibboleth.shire" shireSSL="true" wayfURL="https://wayf.internet2.edu/InQueue/WAYF"/>
+	            shireURL="/secure/admin/Shibboleth.shire" shireSSL="true" cookieProps="; path=/secure/admin; secure"
+	            wayfURL="https://wayf.internet2.edu/InQueue/WAYF"/>
             <Policy>
-            	<!-- All behavior is either inherited or defaulted, except that we will request only EPPN. -->
                 <saml:AttributeDesignator AttributeName="urn:mace:dir:attribute-def:eduPersonPrincipalName"
                     AttributeNamespace="urn:mace:shibboleth:1.0:attributeNamespace:uri"/> 
             </Policy>
