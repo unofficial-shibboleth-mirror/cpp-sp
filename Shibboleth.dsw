@@ -150,6 +150,24 @@ Package=<4>
 
 ###############################################################################
 
+Project: "shib_mysql_ccache"=".\shib-mysql-ccache\shib_mysql_ccache.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name shib
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name shibtarget
+    End Project Dependency
+}}}
+
+###############################################################################
+
 Project: "shibtarget"=".\shib-target\shibtarget.dsp" - Package Owner=<4>
 
 Package=<5>
