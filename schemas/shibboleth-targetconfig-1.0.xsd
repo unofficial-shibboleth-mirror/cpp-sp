@@ -131,6 +131,7 @@
 						</sequence>
 						<attributeGroup ref="conf:SessionCacheProperties"/>
 						<attribute name="mysqlTimeout" type="unsignedInt" use="optional" default="14400"/>
+						<attribute name="storeAttributes" type="boolean" use="optional" default="false"/>
 						<anyAttribute namespace="##other" processContents="lax"/>
 					</complexType>
 				</element>
