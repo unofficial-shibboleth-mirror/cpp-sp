@@ -216,22 +216,20 @@ namespace shibtarget {
   class SHIBTARGET_EXPORTS ShibTargetException : public std::exception
   {
   public:
-    explicit ShibTargetException() { m_code = SHIBRPC_OK; }
-    explicit ShibTargetException(ShibRpcStatus code, const char* msg,
-				 const XMLCh* origin = NULL)
-	{ m_code = code; if (msg) m_msg=msg; if (origin) m_origin = origin; }
-    explicit ShibTargetException(ShibRpcStatus code, const std::string& msg,
-				 const XMLCh* origin = NULL) : m_msg(msg)
-	{ m_code=code; if(origin) m_origin = origin; }
-    virtual ~ShibTargetException() throw () {}
+    explicit ShibTargetException() : m_origin(NULL), m_code(SHIBRPC_OK) {}
+    explicit ShibTargetException(ShibRpcStatus code, const char* msg, const XMLCh* origin = NULL) : m_code(code)
+    { if (msg) m_msg=msg; m_origin = XMLString::replicate(origin); }
+    explicit ShibTargetException(ShibRpcStatus code, const std::string& msg, const XMLCh* origin = NULL) : m_msg(msg)
+	{ m_code=code; m_origin = XMLString::replicate(origin); }
+    virtual ~ShibTargetException() throw () { if (m_origin) XMLString::release(&m_origin); }
     virtual const char* what() const throw () { return (m_msg.c_str()); }
     virtual ShibRpcStatus which() const throw () { return (m_code); }
-    virtual const XMLCh* where() const throw () { return m_origin.c_str(); }
+    virtual const XMLCh* where() const throw () { return m_origin; }
 
   private:
-    ShibRpcStatus	m_code;
-    std::string		m_msg;
-    saml::xstring	m_origin;
+    ShibRpcStatus m_code;
+    std::string m_msg;
+    XMLCh* m_origin;
   };
 
   class RPCErrorPriv;

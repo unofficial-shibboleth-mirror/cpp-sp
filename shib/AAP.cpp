@@ -110,12 +110,22 @@ public:
         };
 
         SiteRule m_anySiteRule;
-        map<xstring,SiteRule> m_siteMap;
+#ifdef HAVE_GOOD_STL
+        typedef map<xstring,SiteRule> sitemap_t;
+#else
+        typedef map<string,SiteRule> sitemap_t;
+#endif
+        sitemap_t m_siteMap;
     };
 
     vector<const IAttributeRule*> m_attrs;
     map<string,const IAttributeRule*> m_aliasMap;
-    map<xstring,AttributeRule*> m_attrMap;
+#ifdef HAVE_GOOD_STL
+    typedef map<xstring,AttributeRule*> attrmap_t;
+#else
+    typedef map<string,AttributeRule*> attrmap_t;
+#endif
+    attrmap_t m_attrMap;
     DOMDocument* m_doc;
 };
 
@@ -147,7 +157,22 @@ XMLAAPImpl::XMLAAPImpl(const char* pathname) : m_doc(NULL)
         for (int i=0; nlist && i<nlist->getLength(); i++)
         {
             AttributeRule* rule=new AttributeRule(static_cast<DOMElement*>(nlist->item(i)));
-            m_attrMap[xstring(rule->getName()) + chBang + chBang + (rule->getNamespace() ? rule->getNamespace() : Constants::SHIB_ATTRIBUTE_NAMESPACE_URI)]=rule;
+#ifdef HAVE_GOOD_STL
+            xstring key=rule->getName();
+            key=key + chBang + chBang + (rule->getNamespace() ? rule->getNamespace() : Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
+#else
+            auto_ptr<char> aname(XMLString::transcode(rule->getName()));
+            string key(aname.get());
+            key+="!!";
+            if (rule->getNamespace())
+            {
+                auto_ptr<char> ans(XMLString::transcode(rule->getNamespace()));
+                key+=ans.get();
+            }
+            else
+                key+="urn:mace:shibboleth:1.0:attributeNamespace:uri";
+#endif
+            m_attrMap[key]=rule;
             m_attrs.push_back(rule);
             if (rule->getAlias())
                 m_aliasMap[rule->getAlias()]=rule;
@@ -156,7 +181,7 @@ XMLAAPImpl::XMLAAPImpl(const char* pathname) : m_doc(NULL)
     catch (SAMLException& e)
     {
         log.errorStream() << "XML error while parsing AAP: " << e.what() << CategoryStream::ENDLINE;
-        for (map<xstring,AttributeRule*>::iterator i=m_attrMap.begin(); i!=m_attrMap.end(); i++)
+        for (attrmap_t::iterator i=m_attrMap.begin(); i!=m_attrMap.end(); i++)
             delete i->second;
         if (m_doc)
             m_doc->release();
@@ -165,7 +190,7 @@ XMLAAPImpl::XMLAAPImpl(const char* pathname) : m_doc(NULL)
     catch (...)
     {
         log.error("Unexpected error while parsing AAP");
-        for (map<xstring,AttributeRule*>::iterator i=m_attrMap.begin(); i!=m_attrMap.end(); i++)
+        for (attrmap_t::iterator i=m_attrMap.begin(); i!=m_attrMap.end(); i++)
             delete i->second;
         if (m_doc)
             m_doc->release();
@@ -176,7 +201,7 @@ XMLAAPImpl::XMLAAPImpl(const char* pathname) : m_doc(NULL)
 
 XMLAAPImpl::~XMLAAPImpl()
 {
-    for (map<xstring,AttributeRule*>::iterator i=m_attrMap.begin(); i!=m_attrMap.end(); i++)
+    for (attrmap_t::iterator i=m_attrMap.begin(); i!=m_attrMap.end(); i++)
     {
         SAMLAttribute::unregFactory(i->second->getName(),i->second->getNamespace());
         delete i->second;
@@ -187,7 +212,7 @@ XMLAAPImpl::~XMLAAPImpl()
 
 void XMLAAPImpl::regAttributes() const
 {
-    for (map<xstring,AttributeRule*>::const_iterator i=m_attrMap.begin(); i!=m_attrMap.end(); i++)
+    for (attrmap_t::const_iterator i=m_attrMap.begin(); i!=m_attrMap.end(); i++)
     {
         SAMLAttributeFactory* f=ShibConfig::getConfig().getAttributeFactory(i->second->getFactory());
         if (f)
@@ -259,8 +284,15 @@ XMLAAPImpl::AttributeRule::AttributeRule(const DOMElement* e) :
     DOMNodeList* slist = e->getElementsByTagNameNS(XML::SHIB_NS,SHIB_L(SiteRule));
     for (int k=0; slist && k<slist->getLength(); k++)
     {
-        m_siteMap[static_cast<DOMElement*>(slist->item(k))->getAttributeNS(NULL,SHIB_L(Name))]=SiteRule();
-        SiteRule& srule=m_siteMap[static_cast<DOMElement*>(slist->item(k))->getAttributeNS(NULL,SHIB_L(Name))];
+        const XMLCh* srulename=static_cast<DOMElement*>(slist->item(k))->getAttributeNS(NULL,SHIB_L(Name));
+#ifdef HAVE_GOOD_STL
+        m_siteMap[srulename]=SiteRule();
+        SiteRule& srule=m_siteMap[srulename];
+#else
+        auto_ptr<char> srulename2(XMLString::transcode(srulename));
+        m_siteMap[srulename2.get()]=SiteRule();
+        SiteRule& srule=m_siteMap[srulename2.get()];
+#endif
 
         // Process Scope elements.
         DOMNodeList* vlist = static_cast<DOMElement*>(slist->item(k))->getElementsByTagNameNS(XML::SHIB_NS,SHIB_L(Scope));
@@ -393,9 +425,22 @@ void XMLAAP::unlock()
 
 const IAttributeRule* XMLAAP::lookup(const XMLCh* attrName, const XMLCh* attrNamespace) const
 {
-    map<xstring,XMLAAPImpl::AttributeRule*>::const_iterator i=m_impl->m_attrMap.find(
-        xstring(attrName) + chBang + chBang + (attrNamespace ? attrNamespace : Constants::SHIB_ATTRIBUTE_NAMESPACE_URI)
-        );
+#ifdef HAVE_GOOD_STL
+    xstring key=attrName;
+    key=key + chBang + chBang + (attrNamespace ? attrNamespace : Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
+#else
+    auto_ptr<char> aname(XMLString::transcode(attrName));
+    string key=aname.get();
+    key+="!!";
+    if (attrNamespace)
+    {
+        auto_ptr<char> ans(XMLString::transcode(attrNamespace));
+        key+=ans.get();
+    }
+    else
+        key+="urn:mace:shibboleth:1.0:attributeNamespace:uri";
+#endif
+    XMLAAPImpl::attrmap_t::const_iterator i=m_impl->m_attrMap.find(key);
     return (i==m_impl->m_attrMap.end()) ? NULL : i->second;
 }
 
@@ -461,7 +506,13 @@ bool XMLAAPImpl::AttributeRule::scopeCheck(const XMLCh* originSite, const DOMEle
             log.warn("scope checking does not permit XPath rules");
     }
 
-    map<xstring,SiteRule>::const_iterator srule=m_siteMap.find(originSite);
+#ifdef HAVE_GOOD_STL
+    const XMLCh* os=originSite;
+#else
+    auto_ptr<char> pos(XMLString::transcode(originSite));
+    const char* os=pos.get();
+#endif
+    sitemap_t::const_iterator srule=m_siteMap.find(os);
     if (srule!=m_siteMap.end())
     {
         // Site-specific denials...
@@ -570,7 +621,13 @@ bool XMLAAPImpl::AttributeRule::accept(const XMLCh* originSite, const DOMElement
             log.warn("implementation does not support XPath value rules");
     }
 
-    map<xstring,SiteRule>::const_iterator srule=m_siteMap.find(originSite);
+#ifdef HAVE_GOOD_STL
+    const XMLCh* os=originSite;
+#else
+    auto_ptr<char> pos(XMLString::transcode(originSite));
+    const char* os=pos.get();
+#endif
+    sitemap_t::const_iterator srule=m_siteMap.find(os);
     if (srule==m_siteMap.end())
     {
         if (log.isWarnEnabled())

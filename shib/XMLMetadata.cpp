@@ -131,7 +131,12 @@ public:
         vector<const XMLCh*> m_groups;
     };
 
-    std::map<saml::xstring,OriginSite*> m_sites;
+#ifdef HAVE_GOOD_STL
+    typedef map<xstring,OriginSite*> sitemap_t;
+#else
+    typedef map<string,OriginSite*> sitemap_t;
+#endif
+    sitemap_t m_sites;
     DOMDocument* m_doc;
 };
 
@@ -178,8 +183,13 @@ XMLMetadataImpl::XMLMetadataImpl(const char* pathname) : m_doc(NULL)
 
             OriginSite* os_obj =
                 new OriginSite(os_name,static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,XML::Literals::ErrorURL));
+#ifdef HAVE_GOOD_STL
             m_sites[os_name]=os_obj;
-            
+#else
+            auto_ptr<char> os_name2(XMLString::transcode(os_name));
+            m_sites[os_name2.get()]=os_obj;
+#endif
+
             // Record all the SiteGroups containing this site.
             DOMNode* group=nlist->item(i)->getParentNode();
             while (group && group->getNodeType()==DOMNode::ELEMENT_NODE)
@@ -254,7 +264,7 @@ XMLMetadataImpl::XMLMetadataImpl(const char* pathname) : m_doc(NULL)
     catch (SAMLException& e)
     {
         log.errorStream() << "XML error while parsing site configuration: " << e.what() << CategoryStream::ENDLINE;
-        for (map<xstring,OriginSite*>::iterator i=m_sites.begin(); i!=m_sites.end(); i++)
+        for (sitemap_t::iterator i=m_sites.begin(); i!=m_sites.end(); i++)
             delete i->second;
         if (m_doc)
             m_doc->release();
@@ -263,7 +273,7 @@ XMLMetadataImpl::XMLMetadataImpl(const char* pathname) : m_doc(NULL)
     catch (...)
     {
         log.error("Unexpected error while parsing site configuration");
-        for (map<xstring,OriginSite*>::iterator i=m_sites.begin(); i!=m_sites.end(); i++)
+        for (sitemap_t::iterator i=m_sites.begin(); i!=m_sites.end(); i++)
             delete i->second;
         if (m_doc)
             m_doc->release();
@@ -273,7 +283,7 @@ XMLMetadataImpl::XMLMetadataImpl(const char* pathname) : m_doc(NULL)
 
 XMLMetadataImpl::~XMLMetadataImpl()
 {
-    for (map<xstring,OriginSite*>::iterator i=m_sites.begin(); i!=m_sites.end(); i++)
+    for (sitemap_t::iterator i=m_sites.begin(); i!=m_sites.end(); i++)
         delete i->second;
     if (m_doc)
         m_doc->release();
@@ -356,6 +366,11 @@ void XMLMetadata::unlock()
 
 const ISite* XMLMetadata::lookup(const XMLCh* site) const
 {
-    map<xstring,XMLMetadataImpl::OriginSite*>::const_iterator i=m_impl->m_sites.find(site);
+#ifdef HAVE_GOOD_STL
+    XMLMetadataImpl::sitemap_t::const_iterator i=m_impl->m_sites.find(site);
+#else
+    auto_ptr<char> temp(XMLString::transcode(site));
+    XMLMetadataImpl::sitemap_t::const_iterator i=m_impl->m_sites.find(temp.get());
+#endif
     return (i==m_impl->m_sites.end()) ? NULL : i->second;
 }

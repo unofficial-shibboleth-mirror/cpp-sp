@@ -154,7 +154,7 @@ public:
 
   int		status;
   string	error_msg;
-  xstring	origin;
+  XMLCh*	origin;
   SAMLException* except;
 };
 
@@ -166,7 +166,7 @@ RPCErrorPriv::RPCErrorPriv(int stat, const char* msg, const XMLCh* originSite)
 
   rpcerror_init();
 
-  if (originSite) origin = originSite;
+  origin = XMLString::replicate(originSite);
 
   if (status == SHIBRPC_SAML_EXCEPTION) {
     istringstream estr(msg);
@@ -185,7 +185,7 @@ RPCErrorPriv::RPCErrorPriv(int stat, const char* msg, const XMLCh* originSite)
       log.error ("Caught exception building SAMLException!");
       log.error ("XML: %s", msg);
     }
-    if (dynaptr(ContentTypeException, except)!=NULL)
+    if (dynamic_cast<ContentTypeException*>(except)!=NULL)
         error_msg = 
 	  "We were unable to contact your identity provider and cannot grant "
 	  "access at this time. Please contact your provider's help desk or "
@@ -204,6 +204,8 @@ RPCErrorPriv::~RPCErrorPriv()
 {
   if (except)
     delete except;
+  if (origin)
+      XMLString::release(&origin);
 }
 
 RPCError::RPCError(ShibRpcError* error)
@@ -308,9 +310,9 @@ int RPCError::getCode() { return m_priv->status; }
 string RPCError::getOriginErrorURL()
 {
     string res="No URL Available";
-    if (!m_priv->origin.empty())
+    if (m_priv->origin)
     {
-        OriginMetadata mapper(m_priv->origin.c_str());
+        OriginMetadata mapper(m_priv->origin);
         if (!mapper.fail())
         {
             const char* temp=mapper->getErrorURL();
@@ -324,9 +326,9 @@ string RPCError::getOriginErrorURL()
 string RPCError::getOriginContactName()
 { 
     string res="No Name Available";
-    if (!m_priv->origin.empty())
+    if (m_priv->origin)
     {
-        OriginMetadata mapper(m_priv->origin.c_str());
+        OriginMetadata mapper(m_priv->origin);
         Iterator<const IContactInfo*> i=
             mapper.fail() ? EMPTY(const IContactInfo*) : mapper->getContacts();
         while (i.hasNext())
@@ -345,9 +347,9 @@ string RPCError::getOriginContactName()
 string RPCError::getOriginContactEmail()
 {
     string res="No Email Available";
-    if (!m_priv->origin.empty())
+    if (m_priv->origin)
     {
-        OriginMetadata mapper(m_priv->origin.c_str());
+        OriginMetadata mapper(m_priv->origin);
         Iterator<const IContactInfo*> i=
             mapper.fail() ? EMPTY(const IContactInfo*) : mapper->getContacts();
         while (i.hasNext())

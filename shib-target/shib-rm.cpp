@@ -184,7 +184,7 @@ RPCError* RM::getAssertions(const char* cookie, const char* ip,
 	    Iterator<SAMLCondition*> conds=as->getConditions();
 	    while (conds.hasNext())
 	    {
-	      SAMLAudienceRestrictionCondition* cond=dynaptr(SAMLAudienceRestrictionCondition,conds.next());
+	      SAMLAudienceRestrictionCondition* cond=dynamic_cast<SAMLAudienceRestrictionCondition*>(conds.next());
 	      if (!cond->eval(ShibTargetConfig::getConfig().getPolicies()))
 	      {
 		m_priv->log->warn("Assertion failed AudienceRestrictionCondition check, skipping it...");

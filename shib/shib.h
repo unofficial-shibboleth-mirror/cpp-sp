@@ -84,14 +84,14 @@ namespace shibboleth
         class SHIB_EXPORTS name : public saml::base \
         { \
         public: \
-            name(const char* msg) : saml::base(msg) {RTTI(name); m_typename=#name;} \
-            name(const std::string& msg) : saml::base(msg) {RTTI(name); m_typename=#name;} \
-            name(const saml::Iterator<saml::QName>& codes, const char* msg) : saml::base(codes,msg) {RTTI(name); m_typename=#name;} \
-            name(const saml::Iterator<saml::QName>& codes, const std::string& msg) : saml::base(codes, msg) {RTTI(name); m_typename=#name;} \
-            name(const saml::QName& code, const char* msg) : saml::base(code,msg) {RTTI(name); m_typename=#name;} \
-            name(const saml::QName& code, const std::string& msg) : saml::base(code, msg) {RTTI(name); m_typename=#name;} \
-            name(DOMElement* e) : saml::base(e) {RTTI(name); m_typename=#name;} \
-            name(std::istream& in) : saml::base(in) {RTTI(name); m_typename=#name;} \
+            name(const char* msg) : saml::base(msg) {RTTI(name);} \
+            name(const std::string& msg) : saml::base(msg) {RTTI(name);} \
+            name(const saml::Iterator<saml::QName>& codes, const char* msg) : saml::base(codes,msg) {RTTI(name);} \
+            name(const saml::Iterator<saml::QName>& codes, const std::string& msg) : saml::base(codes, msg) {RTTI(name);} \
+            name(const saml::QName& code, const char* msg) : saml::base(code,msg) {RTTI(name);} \
+            name(const saml::QName& code, const std::string& msg) : saml::base(code, msg) {RTTI(name);} \
+            name(DOMElement* e) : saml::base(e) {RTTI(name);} \
+            name(std::istream& in) : saml::base(in) {RTTI(name);} \
             virtual ~name() throw () {} \
         }
 
@@ -179,8 +179,8 @@ namespace shibboleth
     const unsigned short RTTI_UnsupportedProtocolException=     RTTI_EXTENSION_BASE;
     const unsigned short RTTI_MetadataException=                RTTI_EXTENSION_BASE+1;
 # endif
-    template class SHIB_EXPORTS saml::Iterator<std::pair<saml::xstring,bool> >;
-    template class SHIB_EXPORTS saml::ArrayIterator<std::pair<saml::xstring,bool> >;
+//    template class SHIB_EXPORTS saml::Iterator<std::pair<saml::xstring,bool> >;
+//    template class SHIB_EXPORTS saml::ArrayIterator<std::pair<saml::xstring,bool> >;
     template class SHIB_EXPORTS saml::Iterator<const IContactInfo*>;
     template class SHIB_EXPORTS saml::ArrayIterator<const IContactInfo*>;
     template class SHIB_EXPORTS saml::Iterator<const IAuthority*>;
@@ -222,14 +222,14 @@ namespace shibboleth
         virtual DOMNode* toDOM(DOMDocument* doc=NULL, bool xmlns=true) const;
         virtual saml::SAMLObject* clone() const;
 
-        virtual saml::Iterator<saml::xstring> getValues() const;
+        virtual saml::Iterator<const XMLCh*> getValues() const;
         virtual saml::Iterator<std::string> getSingleByteValues() const;
 
     protected:
         virtual bool addValue(DOMElement* e);
 
-        std::vector<saml::xstring> m_scopes;
-        mutable std::vector<saml::xstring> m_scopedValues;
+        std::vector<const XMLCh*> m_scopes;
+        mutable std::vector<const XMLCh*> m_scopedValues;
     };
 
     class SHIB_EXPORTS ShibPOSTProfile

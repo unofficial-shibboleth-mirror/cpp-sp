@@ -139,11 +139,11 @@ int main(int argc,char* argv[])
                     {
                         SAMLAttribute* attr=attrs.next();
                         cout << "Attribute Name: "; xmlout(cout,attr->getName()); cout << endl;
-                        Iterator<xstring> vals=attr->getValues();
+                        Iterator<const XMLCh*> vals=attr->getValues();
                         while (vals.hasNext())
                         {
                             cout << "Attribute Value: ";
-                            xmlout(cout,vals.next().c_str());
+                            xmlout(cout,vals.next());
                             cout << endl;
                         }
                     }

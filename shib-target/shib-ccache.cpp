@@ -437,11 +437,11 @@ InternalCCacheEntry::InternalCCacheEntry(SAMLAuthenticationStatement *s, const c
 
   m_subject = s->getSubject();
 
-  xstring name = m_subject->getName();
-  xstring qual = m_subject->getNameQualifier();
+  const XMLCh* name = m_subject->getName();
+  const XMLCh* qual = m_subject->getNameQualifier();
 
-  auto_ptr<char> h(XMLString::transcode(name.c_str()));
-  auto_ptr<char> d(XMLString::transcode(qual.c_str()));
+  auto_ptr<char> h(XMLString::transcode(name));
+  auto_ptr<char> d(XMLString::transcode(qual));
 
   m_handle = h.get();
   m_originSite = d.get();

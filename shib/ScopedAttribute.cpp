@@ -75,34 +75,60 @@ ScopedAttribute::ScopedAttribute(const XMLCh* name, const XMLCh* ns, long lifeti
         throw MalformedException(SAMLException::RESPONDER,"ScopedAttribute() requires the number of scopes to equal the number of values");
 
     while (scopes.hasNext())
-        m_values.push_back(scopes.next());
+        m_scopes.push_back(XMLString::replicate(scopes.next()));
 }
 
 ScopedAttribute::ScopedAttribute(DOMElement* e) : SimpleAttribute(e) {}
 
-ScopedAttribute::~ScopedAttribute() {}
+ScopedAttribute::~ScopedAttribute()
+{
+    if (m_bOwnStrings)
+    {
+        for (vector<const XMLCh*>::iterator i=m_scopes.begin(); i!=m_scopes.end(); i++)
+        {
+            XMLCh* p = const_cast<XMLCh*>(*i);
+            XMLString::release(&p);
+        }
+    }
+
+    // We always own any scoped values we've built.
+    for (vector<const XMLCh*>::iterator i=m_scopedValues.begin(); i!=m_scopedValues.end(); i++)
+    {
+        XMLCh* p = const_cast<XMLCh*>(*i);
+        XMLString::release(&p);
+    }
+}
 
 bool ScopedAttribute::addValue(DOMElement* e)
 {
-    static XMLCh empty[] = {chNull};
     if (SAMLAttribute::addValue(e))
     {
         DOMAttr* scope=e->getAttributeNodeNS(NULL,SHIB_L(Scope));
-        m_scopes.push_back(scope ? scope->getNodeValue() : empty);
+        m_scopes.push_back(scope ? scope->getNodeValue() : &chNull);
         return true;
     }
     return false;
 }
 
-Iterator<xstring> ScopedAttribute::getValues() const
+Iterator<const XMLCh*> ScopedAttribute::getValues() const
 {
+    static XMLCh at[]={chAt, chNull};
+
     if (m_scopedValues.empty())
     {
-        vector<xstring>::const_iterator j=m_scopes.begin();
-        for (vector<xstring>::const_iterator i=m_values.begin(); i!=m_values.end(); i++, j++)
-            m_scopedValues.push_back((*i) + chAt + (!j->empty() ? (*j) : m_originSite));
+        vector<const XMLCh*>::const_iterator j=m_scopes.begin();
+        for (vector<const XMLCh*>::const_iterator i=m_values.begin(); i!=m_values.end(); i++, j++)
+        {
+            const XMLCh* scope=((*j) ? (*j) : m_originSite);
+            XMLCh* temp=new XMLCh[XMLString::stringLen(*i) + XMLString::stringLen(scope) + 2];
+            temp[0]=chNull;
+            XMLString::catString(temp,*i);
+            XMLString::catString(temp,at);
+            XMLString::catString(temp,scope);
+            m_scopedValues.push_back(temp);
+        }
     }
-    return Iterator<xstring>(m_scopedValues);
+    return m_scopedValues;
 }
 
 Iterator<string> ScopedAttribute::getSingleByteValues() const
@@ -110,9 +136,9 @@ Iterator<string> ScopedAttribute::getSingleByteValues() const
     getValues();
     if (m_sbValues.empty())
     {
-        for (vector<xstring>::const_iterator i=m_scopedValues.begin(); i!=m_scopedValues.end(); i++)
+        for (vector<const XMLCh*>::const_iterator i=m_scopedValues.begin(); i!=m_scopedValues.end(); i++)
         {
-            auto_ptr<char> temp(toUTF8(i->c_str()));
+            auto_ptr<char> temp(toUTF8(*i));
             if (temp.get())
                 m_sbValues.push_back(temp.get());
         }
@@ -122,10 +148,7 @@ Iterator<string> ScopedAttribute::getSingleByteValues() const
 
 SAMLObject* ScopedAttribute::clone() const
 {
-    ScopedAttribute* dest=new ScopedAttribute(m_name,m_namespace,m_lifetime);
-    dest->m_values.assign(m_values.begin(),m_values.end());
-    dest->m_scopes.assign(m_scopes.begin(),m_scopes.end());
-    return dest;
+    return new ScopedAttribute(m_name,m_namespace,m_lifetime,m_scopes,m_values);
 }
 
 DOMNode* ScopedAttribute::toDOM(DOMDocument* doc,bool xmlns) const
@@ -138,7 +161,7 @@ DOMNode* ScopedAttribute::toDOM(DOMDocument* doc,bool xmlns) const
     {
         if (n->getNodeType()==DOMNode::ELEMENT_NODE)
         {
-            static_cast<DOMElement*>(n)->setAttributeNS(NULL,SHIB_L(Scope),m_scopes[i].c_str());
+            static_cast<DOMElement*>(n)->setAttributeNS(NULL,SHIB_L(Scope),m_scopes[i]);
             i++;
         }
         n=n->getNextSibling();

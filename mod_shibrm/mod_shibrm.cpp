@@ -39,7 +39,6 @@ namespace {
 
 	map<string,string> g_mapAttribNameToHeader;
     map<string,string> g_mapAttribRuleToHeader;
-    map<xstring,string> g_mapAttribNames;
 }
 
 extern "C" const char*
@@ -146,14 +145,6 @@ extern "C" void shibrm_child_init(server_rec* s, pool* p)
     // Create the RPC Handle TLS key.
     rpc_handle_key=ThreadKey::create(destroy_handle);
 
-	// Transcode the attribute names we know about for quick handling map access.
-    for (map<string,string>::const_iterator i=g_mapAttribNameToHeader.begin();
-	 i!=g_mapAttribNameToHeader.end(); i++)
-    {
-        auto_ptr<XMLCh> temp(XMLString::transcode(i->first.c_str()));
-        g_mapAttribNames[temp.get()]=i->first;
-    }
-    
     ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,s,"shibrm_child_init() done");
 }
 
@@ -428,9 +419,10 @@ extern "C" int shibrm_check_auth(request_rec* r)
             hname=wrapper->getHeader();
         if (!hname)
         {
-        	map<xstring,string>::const_iterator iname=g_mapAttribNames.find(attr->getName());
-        	if (iname!=g_mapAttribNames.end())
-	        	hname=g_mapAttribNameToHeader[iname->second].c_str();
+            auto_ptr<char> tname(XMLString::transcode(attr->getName()));
+        	map<string,string>::const_iterator iname=g_mapAttribNameToHeader.find(tname.get());
+        	if (iname!=g_mapAttribNameToHeader.end())
+	        	hname=iname->second.c_str();
         }
         if (hname)
         {
