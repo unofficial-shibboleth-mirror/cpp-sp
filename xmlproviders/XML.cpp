@@ -210,9 +210,6 @@ const XMLCh XML::Literals::InvalidHandle[]=
 { chLatin_I, chLatin_n, chLatin_v, chLatin_a, chLatin_l, chLatin_i, chLatin_d,
   chLatin_H, chLatin_a, chLatin_n, chLatin_d, chLatin_l, chLatin_e, chNull };
 
-const XMLCh XML::Literals::Location[]=
-{ chLatin_L, chLatin_o, chLatin_c, chLatin_a, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chNull };
-
 const XMLCh XML::Literals::Name[]=
 { chLatin_N, chLatin_a, chLatin_m, chLatin_e, chNull };
 

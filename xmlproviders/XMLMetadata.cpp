@@ -211,7 +211,7 @@ namespace {
         public:
             Endpoint(const DOMElement* e) : m_root(e),
                 m_binding(e->getAttributeNS(NULL,L(Binding))),
-                m_location(e->getAttributeNS(NULL,SHIB_L(Location))),
+                m_location(e->getAttributeNS(NULL,L(Location))),
                 m_resploc(e->getAttributeNS(NULL,SHIB_L(ResponseLocation))) {}
             Endpoint(const XMLCh* binding, const XMLCh* loc)
                 : m_root(NULL), m_binding(binding), m_location(loc), m_resploc(NULL) {}
@@ -889,7 +889,7 @@ XMLMetadataImpl::IDPRole::IDPRole(const EntityDescriptor* provider, time_t valid
         for (i=0; nlist && i<nlist->getLength(); i++) {
             // Manufacture an endpoint for the "Shib" binding.
             m_sso.add(
-                new Endpoint(Constants::SHIB_AUTHNREQUEST_PROFILE_URI,static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIB_L(Location)))
+                new Endpoint(Constants::SHIB_AUTHNREQUEST_PROFILE_URI,static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,L(Location)))
                 );
 
             // We're going to "mock up" a KeyDescriptor that contains the specified Name as a ds:KeyName.
@@ -974,7 +974,7 @@ XMLMetadataImpl::AARole::AARole(const EntityDescriptor* provider, time_t validUn
             m_query.add(
                 new Endpoint(
                     SAMLBinding::SOAP,
-                    static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIB_L(Location))
+                    static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,L(Location))
                     )
                 );
 

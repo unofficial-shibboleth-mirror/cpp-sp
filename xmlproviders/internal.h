@@ -136,7 +136,6 @@ public:
         static const XMLCh ErrorURL[];
         static const XMLCh HandleService[];
         static const XMLCh InvalidHandle[];
-        static const XMLCh Location[];
         static const XMLCh Name[];
         static const XMLCh OriginSite[];
         static const XMLCh SiteGroup[];
