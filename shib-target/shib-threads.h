@@ -26,6 +26,7 @@ namespace shibtarget {
 
     virtual int detach() = 0;
     virtual int join(void** thread_return) = 0;
+    virtual int kill(int signo) = 0;
   };
 
   class Mutex {

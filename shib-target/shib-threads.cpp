@@ -37,6 +37,7 @@ public:
 
   int detach() { return pthread_detach(thread_id); }
   int join(void** thread_return) { return pthread_join(thread_id, thread_return); }
+  int kill(int signo) { return pthread_kill(thread_id, signo); }
 
   pthread_t	thread_id;
 };
