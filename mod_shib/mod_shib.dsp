@@ -53,7 +53,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386
-# ADD LINK32 log4cpp.lib xerces-c_1.lib saml.lib ApacheCore.lib /nologo /dll /machine:I386 /libpath:"C:\log4cpp\lib" /libpath:"C:\xerces-c\lib" /libpath:"..\..\..\opensaml\c\saml\Release" /libpath:"C:\apache_1.3.26\src\Release"
+# ADD LINK32 log4cpp.lib xerces-c_2.lib saml.lib ApacheCore.lib xsec_lib_01.lib /nologo /dll /machine:I386 /libpath:"..\..\..\opensaml\c\saml\Release" /libpath:"C:\apache_1.3.26\src\Release"
 
 !ELSEIF  "$(CFG)" == "mod_shib - Win32 Debug"
 
@@ -69,7 +69,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "MOD_SHIB_EXPORTS" /YX /FD /GZ /c
-# ADD CPP /nologo /MDd /W3 /Gm /GR /GX /ZI /Od /I "c:\log4cpp\include" /I "..\..\..\opensaml\c\include" /I "C:\curl\include" /I "C:\xerces-c\include" /I "..\include" /I "C:\Apache\include" /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "EAPI" /FR /YX /FD /GZ /c
+# ADD CPP /nologo /MDd /W3 /Gm /GR /GX /ZI /Od /I "..\..\..\opensaml\c\include" /I "C:\Apache\include" /D "_WINDOWS" /D "EAPI" /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "XSEC_NO_XALAN" /FR /YX /FD /GZ /c
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
@@ -79,7 +79,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 log4cppD.lib xerces-c_1D.lib saml.lib ApacheCore.lib /nologo /dll /debug /machine:I386 /pdbtype:sept /libpath:"C:\debug\log4cpp\lib" /libpath:"C:\debug\xerces-c\lib" /libpath:"..\..\..\opensaml\c\saml\Debug" /libpath:"C:\apache_1.3.26\src\Debug"
+# ADD LINK32 log4cppD.lib xerces-c_2D.lib saml.lib ApacheCore.lib xsec_lib_01D.lib /nologo /dll /debug /machine:I386 /pdbtype:sept /libpath:"..\..\..\opensaml\c\saml\Debug" /libpath:"C:\apache_1.3.26\src\Debug"
 
 !ENDIF 
 
