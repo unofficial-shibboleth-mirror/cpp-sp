@@ -95,18 +95,17 @@ static int get_winsock_errno(void)
 // else a unix errno
 static int map_winsock_result(int rc)
 {
- if(rc!=SOCKET_ERROR)
-  return 0;
- return get_winsock_errno();
+    if(rc!=SOCKET_ERROR)
+        return 0;
+    return get_winsock_errno();
 }
 
-int
-shib_sock_create (ShibSocket *sock)
+int shib_sock_create(ShibSocket *sock)
 {
-  int rc=socket(AF_INET,SOCK_STREAM,0);
-  if(rc==SOCKET_ERROR)
-    return get_winsock_errno();
-  return rc;
+    *sock=socket(AF_INET,SOCK_STREAM,0);
+    if(*sock==INVALID_SOCKET)
+        return get_winsock_errno();
+    return 0;
 }
 
 static void setup_sockaddr(SHIBADDR *addr, short aport)
@@ -118,40 +117,33 @@ static void setup_sockaddr(SHIBADDR *addr, short aport)
   addr->sin_addr.s_addr=inet_addr(LOOPBACK_IP);
 }
 
-int
-shib_sock_bind (ShibSocket s, ShibSockName name)
+int shib_sock_bind(ShibSocket s, ShibSockName name)
 {
   SHIBADDR addr;
   setup_sockaddr(&addr,name);
   return map_winsock_result(bind(s,(struct sockaddr *)&addr,sizeof(addr)));
 }
 
-int
-shib_sock_connect (ShibSocket s, ShibSockName name)
+int shib_sock_connect(ShibSocket s, ShibSockName name)
 {
   SHIBADDR addr;
   setup_sockaddr(&addr,name);
   return map_winsock_result(connect(s,(struct sockaddr *)&addr,sizeof(addr)));
 }
 
-void
-shib_sock_close (ShibSocket s, ShibSockName name)
+void shib_sock_close(ShibSocket s, ShibSockName name)
 {
   int rc=map_winsock_result(closesocket(s));
 }
 
-int shib_sock_accept (ShibSocket listener, ShibSocket* s)
+int shib_sock_accept(ShibSocket listener, ShibSocket* s)
 {
-  int rc;
   if (!s) return EINVAL;
-  rc=accept(listener,NULL,NULL);
-  if(rc==INVALID_SOCKET)
+  *s=accept(listener,NULL,NULL);
+  if(*s==INVALID_SOCKET)
     return get_winsock_errno();
-  *s=rc;
   return 0;
 }
-
-/* XXX */
 
 #else /* !WIN32 (== UNIX) */
 
@@ -160,8 +152,7 @@ int shib_sock_accept (ShibSocket listener, ShibSocket* s)
 #endif
 
 /* Create a ShibSocket -- return 0 on success; non-zero on error */
-int
-shib_sock_create (ShibSocket *sock)
+int shib_sock_create(ShibSocket *sock)
 {
   if (!sock) return EINVAL;
 
@@ -178,8 +169,7 @@ shib_sock_create (ShibSocket *sock)
  *
  * NOTE: This will close the socket on failure 
  */
-int
-shib_sock_bind (ShibSocket s, ShibSockName name)
+int shib_sock_bind(ShibSocket s, ShibSockName name)
 {
   struct sockaddr_un sunaddr;
 
@@ -209,8 +199,7 @@ shib_sock_bind (ShibSocket s, ShibSockName name)
 }
 
 /* Connect the socket to the local host and "port name" */
-int
-shib_sock_connect (ShibSocket s, ShibSockName name)
+int shib_sock_connect(ShibSocket s, ShibSockName name)
 {
   struct sockaddr_un sunaddr;
 
@@ -227,8 +216,7 @@ shib_sock_connect (ShibSocket s, ShibSockName name)
 }
 
 /* close the socket (and remove the file) */
-void
-shib_sock_close (ShibSocket s, ShibSockName name)
+void shib_sock_close(ShibSocket s, ShibSockName name)
 {
   if (name) {
     if (unlink (name))
@@ -237,7 +225,7 @@ shib_sock_close (ShibSocket s, ShibSockName name)
   close (s);
 }
 
-int shib_sock_accept (ShibSocket listener, ShibSocket* s)
+int shib_sock_accept(ShibSocket listener, ShibSocket* s)
 {
   if (!s) return EINVAL;
 
