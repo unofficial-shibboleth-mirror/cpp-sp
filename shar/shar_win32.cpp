@@ -357,6 +357,7 @@ void CmdInstallService(LPCSTR name)
 
     char szPath[256];
     char dispName[512];
+    char realName[512];
     char cmd[512];
 
     if ( GetModuleFileName( NULL, szPath, 256 ) == 0 )
@@ -366,6 +367,7 @@ void CmdInstallService(LPCSTR name)
     }
     
     sprintf(dispName,"Shibboleth Attribute Requester (%s)",name);
+    sprintf(realName,"SHAR_%s",name);
     
     if (lpszConfig)
         sprintf(cmd,"%s -config %s",szPath,lpszConfig);
@@ -381,7 +383,7 @@ void CmdInstallService(LPCSTR name)
     {
         schService = CreateService(
             schSCManager,               // SCManager database
-            name,                       // name of service
+            realName,                   // name of service
             dispName,                   // name to display
             SERVICE_ALL_ACCESS,         // desired access
             SERVICE_WIN32_OWN_PROCESS,  // service type
@@ -414,6 +416,9 @@ void CmdRemoveService(LPCSTR name)
 {
     SC_HANDLE   schService;
     SC_HANDLE   schSCManager;
+    char        realName[512];
+
+    sprintf(realName,"SHAR_%s",name);
 
     schSCManager = OpenSCManager(
                         NULL,                   // machine (NULL == local)
@@ -429,7 +434,7 @@ void CmdRemoveService(LPCSTR name)
             // try to stop the service
             if ( ControlService( schService, SERVICE_CONTROL_STOP, &ssStatus ) )
             {
-                printf("Stopping %s.", name);
+                printf("Stopping SHAR (%s).", name);
                 Sleep( 1000 );
 
                 while( QueryServiceStatus( schService, &ssStatus ) )
