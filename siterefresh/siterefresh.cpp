@@ -47,15 +47,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/* siterefresh.cpp - command-line tool to refresh and verify site metadata
+/* siterefresh.cpp - command-line tool to refresh and verify metadata
 
    Scott Cantor
    5/12/03
 
-   $History:$
+   $Id$
 */
 
-#include "../shib/shib.h"
+#include "../shib-target/shib-target.h"
 
 #include <fstream>
 #include <log4cpp/Category.hh>
@@ -70,10 +70,6 @@
 #include <xsec/dsig/DSIGTransformC14n.hpp>
 #include <xsec/dsig/DSIGReference.hpp>
 #include <xsec/dsig/DSIGTransformList.hpp>
-
-#ifndef DEFAULT_SCHEMA_DIR
-#define DEFAULT_SCHEMA_DIR "/opt/shibboleth/etc/shibboleth/"
-#endif
 
 using namespace std;
 using namespace saml;
@@ -159,7 +155,9 @@ int main(int argc,char* argv[])
     char* url_param=NULL;
     char* cert_param=NULL;
     char* out_param=NULL;
-    char* path=DEFAULT_SCHEMA_DIR;
+    char* path=getenv("SHIBSCHEMAS");
+    char* ns_param=NULL;
+    char* name_param=NULL;
 
     for (int i=1; i<argc; i++) {
         if (!strcmp(argv[i],"--schema") && i+1<argc)
@@ -170,30 +168,28 @@ int main(int argc,char* argv[])
             cert_param=argv[++i];
         else if (!strcmp(argv[i],"--out") && i+1<argc)
             out_param=argv[++i];
+        else if (!strcmp(argv[i],"--rootns") && i+1<argc)
+            ns_param=argv[++i];
+        else if (!strcmp(argv[i],"--rootname") && i+1<argc)
+            name_param=argv[++i];
     }
 
     if (!url_param || !out_param) {
-        cout << "usage: " << argv[0] << " --url <URL of metadata> --out <pathname to copy data into> [--cert <PEM Certificate> --schema <schema path>]" << endl;
+        cout << "usage: " << argv[0] << " --url <URL of metadata> --out <pathname to copy data to> "
+            "[--cert <PEM Certificate> --schema <schema path> --rootns <root element XML namespace> "
+            "--rootname <root element name>]" << endl;
         exit(0);
     }
 
     Category& log=Category::getInstance("siterefresh");
     Category::setRootPriority(Priority::ERROR);
-    conf.schema_dir=path;
+    conf.schema_dir=path ? path : SHIB_SCHEMAS;
     if (!conf.init())
         return -10;
 
-    static const XMLCh CREDS_NS[] = // urn:mace:shibboleth:credentials:1.0
-    { chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
-      chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
-      chLatin_c, chLatin_r, chLatin_e, chLatin_d, chLatin_e, chLatin_n, chLatin_t, chLatin_i, chLatin_a, chLatin_l, chLatin_s, chColon,
-      chDigit_1, chPeriod, chDigit_0, chNull
-    };
-
-    static const XMLCh CREDS_SCHEMA_ID[] = // credentials.xsd
-    { chLatin_c, chLatin_r, chLatin_e, chLatin_d, chLatin_e, chLatin_n, chLatin_t, chLatin_i, chLatin_a, chLatin_l, chLatin_s,
-      chPeriod, chLatin_x, chLatin_s, chLatin_d, chNull
-    };
+    static const XMLCh Trust[] = { chLatin_T, chLatin_r, chLatin_u, chLatin_s, chLatin_t, chNull };
+    static const XMLCh SiteGroup[] =
+    { chLatin_S, chLatin_i, chLatin_t, chLatin_e, chLatin_G, chLatin_r, chLatin_o, chLatin_u, chLatin_p, chNull };
 
     static const XMLCh TRUST_NS[] = // urn:mace:shibboleth:trust:1.0
     { chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
@@ -207,18 +203,12 @@ int main(int argc,char* argv[])
       chLatin_x, chLatin_s, chLatin_d, chNull
     };
 
-    static const XMLCh SHIB_NS[] = // urn:mace:shibboleth:1.0
-    { chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
-      chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
-      chDigit_1, chPeriod, chDigit_0, chNull
-    };
-
     static const XMLCh SHIB_SCHEMA_ID[] = // shibboleth.xsd
-    { chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, 
-      chPeriod, chLatin_x, chLatin_s, chLatin_d, chNull
+    { chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chPeriod,
+      chLatin_x, chLatin_s, chLatin_d, chNull
     };
 
-    saml::XML::registerSchema(SHIB_NS,SHIB_SCHEMA_ID);
+    saml::XML::registerSchema(shibboleth::Constants::SHIB_NS,SHIB_SCHEMA_ID);
     saml::XML::registerSchema(TRUST_NS,TRUST_SCHEMA_ID);
 
     try {
@@ -228,6 +218,17 @@ int main(int argc,char* argv[])
         URLInputSource src(base,url_param);
         Wrapper4InputSource dsrc(&src,false);
         DOMDocument* doc=p.parse(dsrc);
+
+        // Check root element.
+        if (ns_param && name_param) {
+            auto_ptr_XMLCh ns(ns_param);
+            auto_ptr_XMLCh name(name_param);
+            if (!saml::XML::isElementNamed(doc->getDocumentElement(),ns.get(),name.get()))
+                throw MalformedException(string("Root element does not match specified QName of {") + ns_param + "}:" + name_param);
+        }
+        else if (!saml::XML::isElementNamed(doc->getDocumentElement(),shibboleth::Constants::SHIB_NS,SiteGroup) &&
+                    !saml::XML::isElementNamed(doc->getDocumentElement(),TRUST_NS,Trust))
+            throw MalformedException("Root element does not match SiteGroup or Trust");
 
         // If we're verifying, grab the embedded signature.
         if (cert_param) {
@@ -262,13 +263,15 @@ int main(int argc,char* argv[])
     catch(XSECException& e) {
         auto_ptr_char temp(e.getMsg());
         log.errorStream() << "caught an XMLSec exception: " << temp.get() << CategoryStream::ENDLINE;
+        ret=-4;
     }
     catch(XSECCryptoException& e) {
         log.errorStream() << "caught an XMLSecCrypto exception: " << e.getMsg() << CategoryStream::ENDLINE;
+        ret=-5;
     }
     catch(...) {
         log.errorStream() << "caught an unknown exception" << CategoryStream::ENDLINE;
-        ret=-4;
+        ret=-6;
     }
 
     conf.term();

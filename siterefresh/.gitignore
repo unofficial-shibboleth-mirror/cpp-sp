@@ -6,3 +6,5 @@
 /*.plg
 /Debug
 /Release
+/*.dep
+/*.mak
