@@ -362,12 +362,24 @@ extern "C" int shire_check_user(request_rec* r)
     const char* cookies=ap_table_get(r->headers_in,"Cookie");
 
     if (cookies)
-      ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
-                    "shire_check_user() cookies found: %s",cookies);		      
-
-    if (!cookies || !(session_id=strstr(cookies,shib_cookie.c_str())))
     {
-        // No cookie.  Redirect to WAYF.
+        ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
+                        "shire_check_user() cookies found: %s",cookies);
+        if (session_id=strstr(cookies,shib_cookie.c_str()))
+        {
+            // Yep, we found a cookie -- pull it out (our session_id)
+            session_id+=strlen(shib_cookie.c_str()) + 1; /* Skip over the '=' */
+            char* cookiebuf = ap_pstrdup(r->pool,session_id);
+            char* cookieend = strchr(cookiebuf,';');
+            if (cookieend)
+                *cookieend = '\0';    /* Ignore anyting after a ; */
+            session_id=cookiebuf;
+        }
+    }
+
+    if (!session_id || !*session_id)
+    {
+        // No acceptable cookie.  Redirect to WAYF.
         ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
 		      "shire_check_user() no cookie found -- redirecting to WAYF");
         char* wayf=ap_pstrcat(r->pool,wayfLocation.c_str(),
@@ -376,14 +388,6 @@ extern "C" int shire_check_user(request_rec* r)
         ap_table_setn(r->headers_out,"Location",wayf);
         return REDIRECT;
     }
-
-    // Yep, we found a cookie -- pull it out (our session_id)
-    session_id+=strlen(shib_cookie.c_str()) + 1;	/* Skip over the '=' */
-    char* cookiebuf = ap_pstrdup(r->pool,session_id);
-    char* cookieend = strchr(cookiebuf,';');
-    if (cookieend)
-        *cookieend = '\0';	/* Ignore anyting after a ; */
-    session_id=cookiebuf;
 
     // Make sure this session is still valid
     RPCError* status = NULL;
