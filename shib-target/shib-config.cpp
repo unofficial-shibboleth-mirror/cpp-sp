@@ -261,6 +261,7 @@ void STConfig::init()
   // as attribute metadata. We load this for anything, not just the SHIRE.
   if (init->get_tag(SHIBTARGET_SHIRE, "aap-uri", false, &tag))
   {
+    log.warn("using DEPRECATED aap-uri setting for backward compatibility, please read the latest target deploy guide");
     log.info("registering metadata provider: type=edu.internet2.middleware.shibboleth.target.AAP.XML, source=%s",tag.c_str());
     if (!shibConf.addMetadata("edu.internet2.middleware.shibboleth.target.AAP.XML",tag.c_str()))
     {
