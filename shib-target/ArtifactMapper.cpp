@@ -86,6 +86,8 @@ SAMLBrowserProfile::ArtifactMapper::ArtifactMapperResponse STArtifactMapper::map
     
     SAMLBrowserProfile::ArtifactMapper::ArtifactMapperResponse amr;
 
+    const IPropertySet* credUse=m_app->getCredentialUse(entity);
+
     // Depends on type of artifact.
     const SAMLArtifactType0001* type1=dynamic_cast<const SAMLArtifactType0001*>(artifact);
     if (type1) {
@@ -100,7 +102,7 @@ SAMLBrowserProfile::ArtifactMapper::ArtifactMapperResponse STArtifactMapper::map
                 if (amr.binding) {
                     auto_ptr_char loc(ep->getLocation());
                     amr.endpoint = loc.get();
-                    amr.callCtx = new ShibHTTPHook::ShibHTTPHookCallContext(m_app->getTLSCred(entity),idp);
+                    amr.callCtx = new ShibHTTPHook::ShibHTTPHookCallContext(credUse ? credUse->getString("TLS").second : NULL,idp);
                     return amr;
                 }
             }
@@ -117,7 +119,7 @@ SAMLBrowserProfile::ArtifactMapper::ArtifactMapperResponse STArtifactMapper::map
                 if (amr.binding) {
                     auto_ptr_char loc(ep->getLocation());
                     amr.endpoint = loc.get();
-                    amr.callCtx = new ShibHTTPHook::ShibHTTPHookCallContext(m_app->getTLSCred(entity),idp);
+                    amr.callCtx = new ShibHTTPHook::ShibHTTPHookCallContext(credUse ? credUse->getString("TLS").second : NULL,idp);
                     return amr;
                 }
             }
@@ -138,7 +140,7 @@ SAMLBrowserProfile::ArtifactMapper::ArtifactMapperResponse STArtifactMapper::map
                         amr.binding = m_app->getBinding(ep->getBinding());
                         if (amr.binding) {
                             amr.endpoint = loc.get();
-                            amr.callCtx = new ShibHTTPHook::ShibHTTPHookCallContext(m_app->getTLSCred(entity),idp);
+                            amr.callCtx = new ShibHTTPHook::ShibHTTPHookCallContext(credUse ? credUse->getString("TLS").second : NULL,idp);
                             return amr;
                         }
                     }
@@ -157,7 +159,7 @@ SAMLBrowserProfile::ArtifactMapper::ArtifactMapperResponse STArtifactMapper::map
                         amr.binding = m_app->getBinding(ep->getBinding());
                         if (amr.binding) {
                             amr.endpoint = loc.get();
-                            amr.callCtx = new ShibHTTPHook::ShibHTTPHookCallContext(m_app->getTLSCred(entity),idp);
+                            amr.callCtx = new ShibHTTPHook::ShibHTTPHookCallContext(credUse ? credUse->getString("TLS").second : NULL,idp);
                             return amr;
                         }
                     }
