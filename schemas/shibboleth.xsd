@@ -24,11 +24,7 @@
 
     <!--
     Relaxes SAML AttributeValue type definition. Xerces-C has a bug that prevents
-    anyAttribute content appearing on anyType. As a hack, we define the SAML schema
-    such that AttributeValue now derives from an extended type, and we then extend
-    that type here. 1.1 origins will specify this xsi:type. 1.2 origins will leave
-    it out, and the SAML schema hack will allow it to validate.
-    In 1.1 targets, this type was defined differently.
+    anyAttribute content appearing on anyType. It works in 2.2 but not in later versions.
     -->
 
 	<complexType name="AttributeValueType" mixed="true">
@@ -38,7 +34,7 @@
 			</documentation>
 		</annotation>
 		<complexContent>
-			<extension base="saml:AttributeValueType"/>
+			<extension base="anyType"/>
 		</complexContent>
 	</complexType>
     

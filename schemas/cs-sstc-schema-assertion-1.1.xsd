@@ -201,10 +201,5 @@
 			</extension>
 		</complexContent>
 	</complexType>
-	<element name="AttributeValue" type="saml:AttributeValueType"/>
-	<complexType name="AttributeValueType">
-		<complexContent>
-			<extension base="anyType"/>
-		</complexContent>
-	</complexType>
+	<element name="AttributeValue" type="anyType"/>
 </schema>
