@@ -3,8 +3,6 @@ AUTOMAKE_OPTIONS = foreign
 
 SUBDIRS = . rpc
 
-AM_CFLAGS = -D_rpc_dtablesize=getdtablesize
-
 lib_LTLIBRARIES = liboncrpc.la
 
 liboncrpc_la_SOURCES = \

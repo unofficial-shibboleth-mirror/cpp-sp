@@ -75,7 +75,7 @@ svc_run()
 #ifdef WIN32
 		switch (select(0 /* unused in winsock */, &readfds, (int *)0, (int *)0,
 #else
-		switch (select(_rpc_dtablesize(), &readfds, NULL, NULL,
+		switch (select(FD_SETSIZE, &readfds, NULL, NULL,
 #endif
 			       (struct timeval *)0)) {
 		case -1:

@@ -131,7 +131,7 @@ xprt_register(xprt)
 		nt_rpc_report(str);
 	}
 #else
-	if (sock < _rpc_dtablesize()) {
+	if (sock < FD_SETSIZE) {
 		xports[sock] = xprt;
 		FD_SET(sock, &svc_fdset);
 	}
@@ -160,7 +160,7 @@ xprt_unregister(xprt)
 		xports[sock] = (SVCXPRT *)0;
 		FD_CLR((unsigned)sock, &svc_fdset);
 #else
-	if ((sock < _rpc_dtablesize()) && (xports[sock] == xprt)) {
+	if ((sock < FD_SETSIZE) && (xports[sock] == xprt)) {
 		xports[sock] = (SVCXPRT *)0;
 		FD_CLR(sock, &svc_fdset);
 #endif
@@ -481,7 +481,7 @@ svc_getreqset(readfds)
 		/* sock has input waiting */
 		xprt = xports[sock];
 #else
-	setsize = _rpc_dtablesize();	
+	setsize = FD_SETSIZE;	
 	maskp = (u_long *)readfds->fds_bits;
 	for (sock = 0; sock < setsize; sock += NFDBITS) {
 	    for (mask = *maskp++; bit = ffs(mask); mask ^= (1 << (bit - 1))) {

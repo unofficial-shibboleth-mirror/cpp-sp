@@ -504,7 +504,7 @@ readtcp(ct, buf, len)
 	}
 	return (len);
 #else
-		switch (select(_rpc_dtablesize(), &readfds, NULL, NULL,
+		switch (select(FD_SETSIZE, &readfds, NULL, NULL,
 			       &(ct->ct_wait))) {
 		case 0:
 			ct->ct_error.re_status = RPC_TIMEDOUT;

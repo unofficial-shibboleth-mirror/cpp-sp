@@ -74,11 +74,8 @@
 
 #include "shar-utils.h"
 
-#ifdef WIN32
-int getdtablesize()
-{
-    return 0;
-}
+#ifndef FD_SETSIZE
+# define FD_SETSIZE 1024
 #endif
 
 void shibrpc_prog_1(struct svc_req *rqstp, register SVCXPRT *transp);
@@ -147,7 +144,7 @@ static void shar_svc_run(ShibSocket listener, const ShibRPCProtocols protos[], i
     FD_SET(listener, &readfds);
     tv.tv_sec = 5;
 
-    switch (select (getdtablesize(), &readfds, 0, 0, &tv)) {
+    switch (select(FD_SETSIZE, &readfds, 0, 0, &tv)) {
 
     case -1:
       if (errno == EINTR) continue;

@@ -362,7 +362,7 @@ clnt_broadcast(prog, vers, proc, xargs, argsp, xresults, resultsp, eachresult)
 #ifdef WIN32
 		switch (select(0 /* unused in winsock */, &readfds, (int *)NULL, (int*)NULL,
 #else
-	        switch (select(_rpc_dtablesize(), &readfds, NULL, NULL,
+	        switch (select(FD_SETSIZE, &readfds, NULL, NULL,
 #endif
 			       &t)) {
 		case 0:  /* timed out */
