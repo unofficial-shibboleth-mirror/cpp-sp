@@ -395,7 +395,7 @@ shibrpc_new_session_2_svc(
     }
     catch (ReplayedAssertionException& e) {
       // Specific case where we have an error code.
-      if (!role) {
+      if (!role && origin) {
           // Try and map to metadata for support purposes.
           const IEntityDescriptor* provider=m.lookup(origin);
           if (provider) {
@@ -409,7 +409,7 @@ shibrpc_new_session_2_svc(
       log.error ("caught SAML exception: %s", e.what());
       ostringstream os;
       os << e;
-      if (!role) {
+      if (!role && origin) {
           // Try and map to metadata for support purposes.
           const IEntityDescriptor* provider=m.lookup(origin);
           if (provider) {
