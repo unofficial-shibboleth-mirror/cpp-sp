@@ -85,16 +85,17 @@ if test "x$PKG_CONFIG" = x || test "x$PKG_CONFIG" = "xno" ; then
     AC_ARG_WITH(openssl, 
             AC_HELP_STRING([--with-openssl=PATH], [where openssl is installed]),
             [if test x_$with_openssl != x_/usr; then
-	    SSLLIBS="-L${with_openssl}/lib -lssl -lcrypto"
+	    SSLLIBS="-L${with_openssl}/lib"
 	    SSLFLAGS="-I${with_openssl}/include"
             fi])
+    SSLLIBS="$SSLLIBS -lssl -lcrypto"
 else
     SSLLIBS="`$PKG_CONFIG --libs openssl`"
     SSLFLAGS="`$PKG_CONFIG --cflags openssl`"
 fi
 AC_MSG_CHECKING(for OpenSSL libraries)
 AC_MSG_RESULT($SSLLIBS)
-LDFLAGS="$SSLLIBS $LDFLAGS"
+LIBS="$LIBS $SSLLIBS"
 AC_MSG_CHECKING(for OpenSSL cflags)
 AC_MSG_RESULT($SSLFLAGS)
 CPPFLAGS="$SSLFLAGS $CPPFLAGS"
