@@ -56,6 +56,7 @@ struct shib_dir_config
     // RM Configuration
     char* szAuthGrpFile;	// Auth GroupFile name
     int bExportAssertion;       // export SAML assertion to the environment?
+    int bRequireAll;		// all require directives must match, otherwise OR logic
     int bDisableRM;		// disable the RM functionality?
 
     // SHIRE Configuration
@@ -71,6 +72,7 @@ extern "C" void* create_shib_dir_config (apr_pool_t* p, char* d)
     shib_dir_config* dc=(shib_dir_config*)apr_pcalloc(p,sizeof(shib_dir_config));
     dc->szAuthGrpFile = NULL;
     dc->bExportAssertion = -1;
+    dc->bRequireAll = -1;
     dc->bDisableRM = -1;
 
     dc->bBasicHijack = -1;
@@ -96,6 +98,8 @@ extern "C" void* merge_shib_dir_config (apr_pool_t* p, void* base, void* sub)
 
     dc->bExportAssertion=((child->bExportAssertion==-1) ?
 			  parent->bExportAssertion : child->bExportAssertion);
+    dc->bRequireAll=((child->bRequireAll==-1) ?
+			  parent->bRequireAll : child->bRequireAll);
     dc->bDisableRM=((child->bDisableRM==-1) ?
 		    parent->bDisableRM : child->bDisableRM);
 
@@ -936,8 +940,25 @@ extern "C" int shib_auth_checker(request_rec *r)
 
     require_line* reqs=(require_line*)reqs_arr->elts;
 
+    //XXX
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,
+		 "REQUIRE nelts: %d", reqs_arr->nelts);
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,
+		 "REQUIRE all: %d", dc->bRequireAll);
+
+    bool auth_OK[reqs_arr->nelts];
+
+#define SHIB_AP_CHECK_IS_OK { 		\
+	    if (dc->bRequireAll < 1) 	\
+	        return OK;		\
+	    auth_OK[x] = true;		\
+	    continue;			\
+}
+
     for (int x=0; x<reqs_arr->nelts; x++)
     {
+    	auth_OK[x] = false;
+
         if (!(reqs[x].method_mask & (1 << m)))
             continue;
         method_restricted=true;
@@ -947,8 +968,9 @@ extern "C" int shib_auth_checker(request_rec *r)
 
     	if (!strcmp(w,"valid-user"))
     	{
-            ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,"shib_auth_checker() accepting valid-user");
-            return OK;
+            ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,
+			  "shib_auth_checker() accepting valid-user");
+	    SHIB_AP_CHECK_IS_OK;
     	}
     	else if (!strcmp(w,"user") && r->user)
     	{
@@ -971,8 +993,9 @@ extern "C" int shib_auth_checker(request_rec *r)
                         RegularExpression re(trans.get());
                         auto_ptr<XMLCh> trans2(fromUTF8(r->user));
                         if (re.matches(trans2.get())) {
-                            ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,"shib_auth_checker() accepting user: %s",w);
-                            return OK;
+                            ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,
+					  "shib_auth_checker() accepting user: %s",w);
+			    SHIB_AP_CHECK_IS_OK;
                         }
                     }
                     catch (XMLException& ex)
@@ -984,8 +1007,9 @@ extern "C" int shib_auth_checker(request_rec *r)
                 }
                 else if (!strcmp(r->user,w))
                 {
-                    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,"shib_auth_checker() accepting user: %s",w);
-                    return OK;
+                    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,
+				  "shib_auth_checker() accepting user: %s",w);
+		    SHIB_AP_CHECK_IS_OK;
                 }
     	    }
     	}
@@ -994,8 +1018,9 @@ extern "C" int shib_auth_checker(request_rec *r)
     	    apr_table_t* grpstatus=NULL;
     	    if (dc->szAuthGrpFile && r->user)
     	    {
-                ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,"shib_auth_checker() using groups file: %s\n",
-                                dc->szAuthGrpFile);
+                ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,
+			      "shib_auth_checker() using groups file: %s\n",
+			      dc->szAuthGrpFile);
                 grpstatus=groups_for_user(r,r->user,dc->szAuthGrpFile);
             }
     	    if (!grpstatus)
@@ -1006,8 +1031,9 @@ extern "C" int shib_auth_checker(request_rec *r)
     	        w=ap_getword_conf(r->pool,&t);
                 if (apr_table_get(grpstatus,w))
                 {
-                    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,"shib_auth_checker() accepting group: %s",w);
-                    return OK;
+                    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,
+				  "shib_auth_checker() accepting group: %s",w);
+		    SHIB_AP_CHECK_IS_OK;
                 }
             }
         }
@@ -1071,13 +1097,13 @@ extern "C" int shib_auth_checker(request_rec *r)
                                     if (re->matches(trans.get())) {
                                         ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,
                                                         "shib_auth_checker() expecting %s, got %s: authorization granted", w, val.c_str());
-                                        return OK;
+					SHIB_AP_CHECK_IS_OK;
                                     }
                                 }
                                 else if (val==w) {
                                     ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,
                                                     "shib_auth_checker() expecting %s, got %s: authorization granted", w, val.c_str());
-                                    return OK;
+				    SHIB_AP_CHECK_IS_OK;
                                 }
                                 else {
                                     ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,
@@ -1092,13 +1118,13 @@ extern "C" int shib_auth_checker(request_rec *r)
                             if (re->matches(trans.get())) {
                                 ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,
                                                 "shib_auth_checker() expecting %s, got %s: authorization granted", w, val.c_str());
-                                return OK;
+				SHIB_AP_CHECK_IS_OK;
                             }
                         }
                         else if (val==w) {
                             ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,
                                             "shib_auth_checker() expecting %s, got %s: authorization granted", w, val.c_str());
-                            return OK;
+			    SHIB_AP_CHECK_IS_OK;
                         }
                         else {
                             ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,
@@ -1115,6 +1141,14 @@ extern "C" int shib_auth_checker(request_rec *r)
     	    }
     	}
     }
+
+    // check if all require directives are true
+    bool auth_all_OK = true;
+    for (int i= 0; i<reqs_arr->nelts; i++) {
+        auth_all_OK &= auth_OK[i];
+    } 
+    if (auth_all_OK)
+        return OK;
 
     if (!method_restricted)
         return OK;
@@ -1214,6 +1248,9 @@ static command_rec shib_cmds[] = {
   AP_INIT_FLAG("ShibExportAssertion", (config_fn_t)ap_set_flag_slot,
 	       (void *) offsetof (shib_dir_config, bExportAssertion),
 	       OR_AUTHCFG, "Export SAML assertion to Shibboleth-defined header?"),
+  AP_INIT_FLAG("ShibRequireAll", (config_fn_t)ap_set_flag_slot,
+	       (void *) offsetof (shib_dir_config, bRequireAll),
+	       OR_AUTHCFG, "All require directives must match!"),
   AP_INIT_FLAG("DisableRM", (config_fn_t)ap_set_flag_slot,
 	       (void *) offsetof (shib_dir_config, bDisableRM),
 	       OR_AUTHCFG, "Disable the Shibboleth Resource Manager?"),
