@@ -253,20 +253,10 @@ extern void	svcerr_systemerr(DOTS);
  * dynamic; must be inspected before each call to select 
  */
 #ifdef FD_SETSIZE
-#ifdef WIN32
-#ifdef ONCRPCDLL
-extern fd_set onc_svc_fdset;
-#else
-#ifdef __BORLANDC__
-extern __import fd_set onc_svc_fdset;
-#else
-_declspec(dllimport) fd_set onc_svc_fdset;
+#define svc_fdset (*_thr_svc_fdset())
+#ifndef WIN32
+#define svc_fds svc_fdset.fds_bits[0]	/* compatibility */
 #endif
-#endif
-#else
-extern fd_set onc_svc_fdset;
-#endif
-#define svc_fds onc_svc_fdset.fds_bits[0]	/* compatibility */
 #else
 extern int svc_fds;
 #endif /* def FD_SETSIZE */

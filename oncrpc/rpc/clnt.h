@@ -327,11 +327,12 @@ char *clnt_sperror(/* CLIENT *clnt, char *msg */DOTS);	/* string */
 /* 
  * If a creation fails, the following allows the user to figure out why.
  */
-struct rpc_createerr {
+struct rpc_createerr_t {
 	enum clnt_stat cf_stat;
 	struct rpc_err cf_error; /* useful when cf_stat == RPC_PMAPFAILURE */
 };
 
+/*
 #ifdef WIN32
 #ifdef ONCRPCDLL
 extern struct rpc_createerr rpc_createerr;
@@ -345,7 +346,8 @@ _declspec(dllimport) struct rpc_createerr rpc_createerr;
 #else
 extern struct rpc_createerr rpc_createerr;
 #endif
-
+*/
+#define rpc_createerr (*_thr_rpc_createerr())
 
 /*
  * Copy error message to buffer.

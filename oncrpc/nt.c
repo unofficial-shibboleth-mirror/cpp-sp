@@ -38,6 +38,31 @@ int rpc_nt_exit(void)
     return WSACleanup();
 }
 
+BOOL WINAPI DllMain(
+  HINSTANCE hinstDLL,
+  DWORD fdwReason,
+  LPVOID lpvReserved
+)
+{
+    switch (fdwReason) {
+        case DLL_PROCESS_ATTACH:
+            __thr_key = TlsAlloc();
+            break;
+
+        case DLL_PROCESS_DETACH:
+            TlsFree(__thr_key);
+            break;
+
+        case DLL_THREAD_DETACH: {
+            LPVOID ptr=TlsGetValue(__thr_key);
+            if (ptr)
+                free(ptr);
+            }
+            break;
+    }
+    return TRUE;
+}
+
 VOID
 nt_rpc_report(LPTSTR lpszMsg)
 {

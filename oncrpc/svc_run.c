@@ -68,7 +68,7 @@ svc_run()
 
 	for (;;) {
 #ifdef FD_SETSIZE
-		readfds = onc_svc_fdset;
+		readfds = svc_fdset;
 #else
 		readfds = svc_fds;
 #endif /* def FD_SETSIZE */

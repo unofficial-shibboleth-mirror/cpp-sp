@@ -165,6 +165,7 @@ typedef struct {
 #define auth_destroy(auth)		\
 		((*((auth)->ah_ops->ah_destroy))(auth))
 
+/*
 #ifdef WIN32
 #ifdef ONCRPCDLL
 extern struct opaque_auth _null_auth;
@@ -178,7 +179,8 @@ _declspec(dllimport) struct opaque_auth _null_auth;
 #else
 extern struct opaque_auth _null_auth;
 #endif
-
+*/
+#define _null_auth (*_thr_null_auth())
 
 /*
  * These are the various implementations of client side authenticators.

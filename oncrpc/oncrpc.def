@@ -85,6 +85,7 @@ xdrrec_skiprecord
 xdrstdio_create
 xprt_register
 xprt_unregister
-onc_svc_fdset DATA
-rpc_createerr DATA
-_null_auth DATA
+DllMain
+_thr_svc_fdset
+_thr_rpc_createerr
+_thr_null_auth
