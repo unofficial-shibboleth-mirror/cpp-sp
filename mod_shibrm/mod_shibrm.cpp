@@ -36,52 +36,24 @@ namespace {
     RPCHandle *rpc_handle = NULL;
     ShibTargetConfig* g_Config = NULL;
 
-    map<string,string> g_mapAttribNameToHeader;
+    map<xstring,string> g_mapAttribNameToHeader;
     map<string,string> g_mapAttribRuleToHeader;
-    map<xstring,string> g_mapAttribNames;
 }
 
 extern "C" const char*
 ap_set_attribute_mapping(cmd_parms* parms, void*, const char* attrName,
-			 const char* headerName, const char* ruleName)
+                            const char* headerName, const char* ruleName)
 {
-    g_mapAttribNameToHeader[attrName]=headerName;
+    ap_log_error(APLOG_MARK,APLOG_WARNING|APLOG_NOERRNO,parms->server,
+                "ShibMapAttribute command has been deprecated, please transfer this information to your AAP file(s).");
+    auto_ptr<XMLCh> temp(XMLString::transcode(attrName));
+    g_mapAttribNameToHeader[temp.get()]=headerName;
     if (ruleName)
-	g_mapAttribRuleToHeader[ruleName]=headerName;
+        g_mapAttribRuleToHeader[ruleName]=headerName;
     return NULL;
 }
 
 extern "C" module MODULE_VAR_EXPORT shibrm_module;
-
-// per-server configuration structure
-struct shibrm_server_config
-{
-    char* serverName;		// Name of this server
-};
-
-// creates the per-server configuration
-extern "C" void* create_shibrm_server_config (pool * p, server_rec * s)
-{
-    shibrm_server_config* sc=(shibrm_server_config*)ap_pcalloc(p,sizeof(shibrm_server_config));
-    return sc;
-}
-
-// overrides server configuration in virtual servers
-extern "C" void* merge_shibrm_server_config (pool* p, void* base, void* sub)
-{
-    shibrm_server_config* sc=(shibrm_server_config*)ap_pcalloc(p,sizeof(shibrm_server_config));
-    shibrm_server_config* parent=(shibrm_server_config*)base;
-    shibrm_server_config* child=(shibrm_server_config*)sub;
-
-    if (child->serverName)
-        sc->serverName=ap_pstrdup(p,child->serverName);
-    else if (parent->serverName)
-        sc->serverName=ap_pstrdup(p,parent->serverName);
-    else
-        sc->serverName=NULL;
-
-    return sc;
-}
 
 // per-dir module configuration structure
 struct shibrm_dir_config
@@ -116,15 +88,6 @@ extern "C" void* merge_shibrm_dir_config (pool* p, void* base, void* sub)
 
     dc->bExportAssertion=((child->bExportAssertion==-1) ? parent->bExportAssertion : child->bExportAssertion);
     return dc;
-}
-
-// generic per-server slot handlers
-extern "C" const char* ap_set_server_string_slot(cmd_parms* parms, void*, const char* arg)
-{
-    char* base=(char*)ap_get_module_config(parms->server->module_config,&shibrm_module);
-    int offset=(int)parms->info;
-    *((char**)(base + offset))=ap_pstrdup(parms->pool,arg);
-    return NULL;
 }
 
 typedef const char* (*config_fn_t)(void);
@@ -176,14 +139,6 @@ extern "C" void shibrm_child_init(server_rec* s, pool* p)
     // Create the RPC Handle..  Note: this should be per _thread_
     // if there is some way to do that reasonably..
     rpc_handle = new RPCHandle(g_Config->m_SocketName, SHIBRPC_PROG, SHIBRPC_VERS_1);
-
-    // Transcode the attribute names we know about for quick handling map access.
-    for (map<string,string>::const_iterator i=g_mapAttribNameToHeader.begin();
-	 i!=g_mapAttribNameToHeader.end(); i++)
-    {
-        auto_ptr<XMLCh> temp(XMLString::transcode(i->first.c_str()));
-        g_mapAttribNames[temp.get()]=i->first;
-    }
 
     ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,s,"shibrm_child_init() done");
 }
@@ -257,25 +212,11 @@ static int shibrm_error_page(request_rec* r, const char* filename, ShibMLP& mlp)
   return DONE;
 }
 
-// Return the "name" of this server to look up configuration options
-static const char* get_service_name(request_rec* r)
-{
-  shibrm_server_config* sc =
-    (shibrm_server_config*) ap_get_module_config(r->server->module_config,
-						 &shibrm_module);
-
-  if (sc->serverName)
-    return sc->serverName;
-
-  return ap_get_server_name(r);
-}
-
 // return the "normalized" target URL
 static const char* get_target(request_rec* r, const char* target)
 {
-  const char* serverName = get_service_name(r);
   string tag;
-  if ((g_Config->getINI()).get_tag (serverName, "normalizeRequest", true, &tag))
+  if ((g_Config->getINI()).get_tag (ap_get_server_name(r), "normalizeRequest", true, &tag))
   {
     if (ShibINI::boolean (tag))
     {
@@ -299,7 +240,7 @@ extern "C" int shibrm_check_auth(request_rec* r)
     saml::NDC ndc(threadid.str().c_str());
 
     ShibINI& ini = g_Config->getINI();
-    const char* serverName = get_service_name (r);
+    const char* serverName = ap_get_server_name(r);
 
     shibrm_dir_config* dc=
         (shibrm_dir_config*)ap_get_module_config(r->per_dir_config,&shibrm_module);
@@ -396,17 +337,39 @@ extern "C" int shibrm_check_auth(request_rec* r)
       return shibrm_error_page (r, rmError.c_str(), markupProcessor);
     }
 
-    // Clear out the list of mapped attributes
-    for (map<string,string>::const_iterator i=g_mapAttribNameToHeader.begin();
-	 i!=g_mapAttribNameToHeader.end(); i++)
-      ap_table_unset(r->headers_in, i->second.c_str());
+    // Get the AAP providers, which contain the attribute policy info.
+    Iterator<IAAP*> provs=ShibConfig::getConfig().getAAPProviders();
 
-    // Maybe export the assertion
+    // Clear out the list of mapped attributes
+    while (provs.hasNext())
+    {
+        IAAP* aap=provs.next();
+        aap->lock();
+        try
+        {
+            Iterator<const IAttributeRule*> rules=aap->getAttributeRules();
+            while (rules.hasNext())
+            {
+                const char* header=rules.next()->getHeader();
+                if (header)
+                    ap_table_unset(r->headers_in,header);
+            }
+        }
+        catch(...)
+        {
+            aap->unlock();
+            throw;
+        }
+        aap->unlock();
+    }
+    provs.reset();
+    
+    // Maybe export the assertion.
     ap_table_unset(r->headers_in,"Shib-Attributes");
     if (dc->bExportAssertion==1 && assertions.size()==1) {
-      string assertion;
-      RM::serialize(*(assertions[0]), assertion);
-      ap_table_set(r->headers_in,"Shib-Attributes", assertion.c_str());
+        string assertion;
+        RM::serialize(*(assertions[0]), assertion);
+        ap_table_set(r->headers_in,"Shib-Attributes", assertion.c_str());
     }
 
     // Export the SAML AuthnMethod and the origin site name.
@@ -420,19 +383,27 @@ extern "C" int shibrm_check_auth(request_rec* r)
         ap_table_set(r->headers_in,"Shib-Authentication-Method", am.get());
     }
 
-    // Export the attributes -- XXX: Assumes one statement!
+    // Export the attributes. Only supports a single statement.
     Iterator<SAMLAttribute*> j = assertions.size()==1 ? RM::getAttributes(*(assertions[0])) : EMPTY(SAMLAttribute*);
     while (j.hasNext())
     {
         SAMLAttribute* attr=j.next();
 
         // Are we supposed to export it?
-        map<xstring,string>::const_iterator iname=g_mapAttribNames.find(attr->getName());
-        if (iname!=g_mapAttribNames.end())
+        const char* hname=NULL;
+        AAP wrapper(attr->getName(),attr->getNamespace());
+        if (!wrapper.fail())
+            hname=wrapper->getHeader();
+        if (!hname)
         {
-            string hname=g_mapAttribNameToHeader[iname->second];
+            map<xstring,string>::const_iterator fallback=g_mapAttribNameToHeader.find(attr->getName());
+            if (fallback!=g_mapAttribNameToHeader.end())
+                hname=fallback->second.c_str();
+        }
+        if (hname)
+        {
             Iterator<string> vals=attr->getSingleByteValues();
-            if (hname=="REMOTE_USER" && vals.hasNext())
+            if (!strcmp(hname,"REMOTE_USER") && vals.hasNext())
                 r->connection->user=ap_pstrdup(r->connection->pool,vals.next().c_str());
             else
             {
@@ -450,7 +421,7 @@ extern "C" int shibrm_check_auth(request_rec* r)
                         header=ap_pstrcat(r->pool, header, ";", value.c_str(), NULL);
                     }
                 }
-                ap_table_setn(r->headers_in, hname.c_str(), header);
+                ap_table_setn(r->headers_in, hname, header);
     	    }
         }
     }
@@ -548,15 +519,25 @@ extern "C" int shibrm_check_auth(request_rec* r)
         }
         else
         {
-            map<string,string>::const_iterator i=g_mapAttribRuleToHeader.find(w);
-            if (i==g_mapAttribRuleToHeader.end()) {
+            const char* hname=NULL;
+            AAP wrapper(w);
+            if (!wrapper.fail())
+                hname=wrapper->getHeader();
+            if (!hname)
+            {
+                map<string,string>::const_iterator fallback=g_mapAttribRuleToHeader.find(w);
+                if (fallback!=g_mapAttribRuleToHeader.end())
+                    hname=fallback->second.c_str();
+            }
+            
+            if (!hname) {
                 ap_log_rerror(APLOG_MARK,APLOG_WARNING|APLOG_NOERRNO,r,
                                 "shibrm_check_auth() didn't recognize require rule: %s\n",w);
             }
             else
             {
                 bool regexp=false;
-                const char* vals=ap_table_get(r->headers_in,i->second.c_str());
+                const char* vals=ap_table_get(r->headers_in,hname);
                 while (*t && vals)
                 {
                     w=ap_getword_conf(r->pool,&t);
@@ -664,8 +645,8 @@ module MODULE_VAR_EXPORT shibrm_module = {
     mod_shibrm_init,		/* initializer */
     create_shibrm_dir_config,	/* dir config creater */
     merge_shibrm_dir_config,	/* dir merger --- default is to override */
-    create_shibrm_server_config,	/* server config */
-    merge_shibrm_server_config,	/* merge server config */
+    NULL,               	/* server config */
+    NULL,	                  /* merge server config */
     shibrm_cmds,			/* command table */
     NULL,			/* handlers */
     NULL,			/* filename translation */
