@@ -108,10 +108,10 @@ namespace shibboleth
                                             const XMLCh* nameQualifier,
                                             const XMLCh* subjectIP,
                                             const XMLCh* authMethod,
-                                            time_t authInstant,
+                                            std::time_t authInstant,
                                             const saml::Iterator<saml::SAMLAuthorityBinding*>& bindings,
-                                            const saml::Key& responseKey, const saml::X509Certificate* responseCert,
-                                            const saml::Key* assertionKey, const saml::X509Certificate* assertionCert);
+                                            const saml::Key& responseKey, const saml::X509Certificate* responseCert=NULL,
+                                            const saml::Key* assertionKey=NULL, const saml::X509Certificate* assertionCert=NULL);
         virtual bool checkReplayCache(const saml::SAMLAssertion& a);
 
     protected:
@@ -142,10 +142,10 @@ namespace shibboleth
                                             const XMLCh* nameQualifier,
                                             const XMLCh* subjectIP,
                                             const XMLCh* authMethod,
-                                            time_t authInstant,
+                                            std::time_t authInstant,
                                             const saml::Iterator<saml::SAMLAuthorityBinding*>& bindings,
-                                            const saml::Key& responseKey, const saml::X509Certificate* responseCert,
-                                            const saml::Key* assertionKey, const saml::X509Certificate* assertionCert);
+                                            const saml::Key& responseKey, const saml::X509Certificate* responseCert=NULL,
+                                            const saml::Key* assertionKey=NULL, const saml::X509Certificate* assertionCert=NULL);
 
     protected:
         virtual bool verifySignature(const saml::SAMLSignedObject& obj, const XMLCh* signerName,
