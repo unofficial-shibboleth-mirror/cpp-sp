@@ -262,28 +262,28 @@ namespace shibtarget {
 
     void refresh(void);
 
-    const std::string& get (const std::string& header, const std::string& tag) const;
-    const std::string& get (const char* header, const char* tag) const {
+    const std::string& get (const std::string& header, const std::string& tag);
+    const std::string& get (const char* header, const char* tag) {
       std::string h = header, t = tag;
       return get(h,t);
     }
 
-    const std::string& operator() (const std::string& header, const std::string& tag) const {
+    const std::string& operator() (const std::string& header, const std::string& tag)  {
       return get(header,tag);
     }
-    const std::string& operator() (const char* header, const char* tag) const {
+    const std::string& operator() (const char* header, const char* tag) {
       std::string h = header, t = tag;
       return get(h,t);
     }
 
-    bool exists(const std::string& header) const;
-    bool exists(const std::string& header, const std::string& tag) const;
+    bool exists(const std::string& header);
+    bool exists(const std::string& header, const std::string& tag);
 
-    bool exists(const char* header) const {
+    bool exists(const char* header) {
       std::string s = header;
       return exists(s);
     }
-    bool exists(const char* header, const char* tag) const {
+    bool exists(const char* header, const char* tag) {
       std::string h = header, t = tag;
       return exists(h,t);
     }
@@ -291,22 +291,22 @@ namespace shibtarget {
     // Special method to look for a tag in one header and maybe in the
     // 'SHIBTARGET_GENERAL' header
     bool get_tag(std::string& header, std::string& tag, bool try_general,
-		 std::string* result) const;
+		 std::string* result);
 
     bool get_tag(std::string& header, const char* tag, bool try_general,
-		 std::string* result) const {
+		 std::string* result) {
       std::string t = tag;
       return get_tag (header,t,try_general,result);
     }
 
     bool get_tag(const char* header, const char* tag, bool try_general,
-		 std::string* result) const {
+		 std::string* result) {
       std::string h = header, t = tag;
       return get_tag (h,t,try_general,result);
     }
 
     // Dump out the inifile to the output stream
-    void dump(std::ostream& os) const;
+    void dump(std::ostream& os);
 
     // Iterators
 
@@ -326,8 +326,8 @@ namespace shibtarget {
       virtual const std::string* next() = 0;
     };
 
-    Iterator* header_iterator() const;
-    Iterator* tag_iterator(const std::string& header) const;
+    Iterator* header_iterator();
+    Iterator* tag_iterator(const std::string& header);
 
   private:
     ShibINIPriv *m_priv;

@@ -12,6 +12,9 @@
 #include <fstream>
 #include <ctype.h>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+
 #include <log4cpp/Category.hh>
 
 using namespace std;
@@ -53,6 +56,8 @@ public:
   map<string, map<string, string> > table;
   string file;
   bool cs;
+
+  unsigned long	modtime;
 };
 
 ShibINIPriv::ShibINIPriv()
@@ -97,6 +102,23 @@ void ShibINI::init (string& f, bool case_sensitive)
 
 void ShibINI::refresh(void)
 {
+  saml::NDC ndc("refresh");
+
+  // check if we need to refresh
+#ifdef _WIN32
+  struct _stat stat_buf;
+  if (_stat (m_priv->file.c_str(), &stat_buf) < 0)
+#else
+  struct stat stat_buf;
+  if (stat (m_priv->file.c_str(), &stat_buf) < 0)
+#endif
+    m_priv->log->error("stat failed: %s", m_priv->file.c_str());
+
+  if (m_priv->modtime == stat_buf.st_mtime)
+    return;
+
+  m_priv->modtime = stat_buf.st_mtime;
+
   // clear the existing maps
   m_priv->table.clear();
 
@@ -189,8 +211,10 @@ void ShibINI::refresh(void)
   }
 }
 
-const std::string& ShibINI::get (const string& header, const string& tag) const
+const std::string& ShibINI::get (const string& header, const string& tag)
 {
+  refresh();
+
   static string empty = "";
 
   string h = header;
@@ -209,16 +233,20 @@ const std::string& ShibINI::get (const string& header, const string& tag) const
   return i->second;
 }
 
-bool ShibINI::exists(const std::string& header) const
+bool ShibINI::exists(const std::string& header)
 {
+  refresh();
+
   string h = header;
   if (!m_priv->cs) to_lowercase (h);
 
   return (m_priv->table.find(h) != m_priv->table.end());
 }
 
-bool ShibINI::exists(const std::string& header, const std::string& tag) const
+bool ShibINI::exists(const std::string& header, const std::string& tag)
 {
+  refresh();
+
   string h = header;
   string t = tag;
 
@@ -231,9 +259,11 @@ bool ShibINI::exists(const std::string& header, const std::string& tag) const
   return (m_priv->table[h].find(t) != m_priv->table[h].end());
 }
 
-bool ShibINI::get_tag (string& header, string& tag, bool try_general, string* result) const
+bool ShibINI::get_tag (string& header, string& tag, bool try_general, string* result)
 {
   if (!result) return false;
+
+  refresh();
 
   if (exists (header, tag)) {
     *result = get (header, tag);
@@ -247,8 +277,10 @@ bool ShibINI::get_tag (string& header, string& tag, bool try_general, string* re
 }
 
 
-void ShibINI::dump (ostream& os) const
+void ShibINI::dump (ostream& os)
 {
+  refresh();
+
   os << "File: " << m_priv->file << "\n";
   os << "Case-Sensitive: " << ( m_priv->cs ? "Yes\n" : "No\n" );
   os << "File Entries:\n";
@@ -268,14 +300,16 @@ void ShibINI::dump (ostream& os) const
   os << "END\n";
 }
 
-ShibINI::Iterator* ShibINI::header_iterator() const
+ShibINI::Iterator* ShibINI::header_iterator()
 {
+  refresh();
   HeaderIterator* iter = new HeaderIterator(m_priv);
   return (ShibINI::Iterator*) iter;
 }
 
-ShibINI::Iterator* ShibINI::tag_iterator(const std::string& header) const
+ShibINI::Iterator* ShibINI::tag_iterator(const std::string& header)
 {
+  refresh();
   TagIterator* iter = new TagIterator(m_priv, header);
   return (ShibINI::Iterator*) iter;
 }
