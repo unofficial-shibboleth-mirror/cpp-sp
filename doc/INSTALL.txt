@@ -1,5 +1,5 @@
-6/1/03
-Version 1.0
+7/25/03
+Version 1.0.1
 
 Binary distributions of the Shibboleth code are available.
 Information on obtaining and installing binaries can be found at
@@ -15,6 +15,8 @@ thoroughly to understand the issues. All the requirements in that file
 apply, mainly because you need to build OpenSAML, and almost all the
 dependencies are the same. Once you reach the end of that build process and
 have some confidence it worked, you can come back and continue here.
+
+--- Apache
 
 You'll next need to get an Apache in place. If you're building from source,
 you don't have to use the "real" Apache code, or use mod_ssl. You will
@@ -34,17 +36,46 @@ $ ./configure --prefix=/opt/shibboleth --enable-static=no \
 $ make
 $ make install
 
+--- MySQL (optional)
+
+The distribution now includes a session cache plugin using embedded MySQL.
+This plugin will be included in the build by default if the embedded MySQL
+library (libmysqld.a) can be found, or if the --with-mysql option is passed
+to configure. You can force exclude the plugin with the --disable-mysql option.
+
+Many default installs of MySQL will not include the embedded library, so don't
+be surprised if it's not there. Also, just as with PHP and certain other packages
+that include C++, you'll need to build it with the same compiler used to build
+Shibboleth unless g++ 3.2 or higher was used.
+
+The MySQL 4.0.x build is currently not clean on either platform. There are errors
+in several Makefile.in files that have to corrected to get the build to work.
+The patch for the pre-configure Makefile.in files in version 4.0.12 is included
+in this directory as the file "mysql-4.0.12.diff", which can be applied from the
+mysql-4.0.12 directory.
+
+After patching, to get it to build, the --with-embedded-server option is used
+with MySQL. An example build is below:
+
+$ cd mysql-4.0.12
+$ env CFLAGS="-fPIC -DPIC" CXXFLAGS="-fPIC -DPIC"
+$ ./configure --prefix=/opt/mysql \
+    --libexecdir='${exec_prefix}/sbin' \
+    --enable-thread-safe-client --enable-assembler --enable-local-infile \
+    --with-extra-charsets=complex --with-embedded-server \
+    --with-berkeley-db --with-innodb --with-raid
+$ make all
+$ make install
+
+MySQL has a lot of options, so some local customization may be needed. The
+command to set the compiler flags is critical on Solaris, because the flags
+are needed to get a correct build of the library to link against.
+
+--- Shibboleth
 
 Building the Shibboleth target libraries, shar, test programs, and Apache
 modules is more or less like building OpenSAML. You can get the code from
-CVS and run the bootstrap script if you want (remember to get new versions
-of autoconf/autoheader if you're running old pre-1.5 autoconf stuff):
-
-$ cvs -d:pserver:anoncvs@cvs.internet2.edu:/home/cvs/shibboleth login
-$ cvs -d:pserver:anoncvs@cvs.internet2.edu:/home/cvs/shibboleth co -r Rel_1_0 shibboleth
-$ cd shibboleth/c
-$ ./bootstrap
-
+CVS and run the bootstrap script if you want, or just use a source tarball.
 With the source distribution or the results of your bootstrap:
 
 $ ./configure --prefix=/opt/shibboleth --with-xmlsec=/opt/shibboleth --with-apxs -C
@@ -53,8 +84,7 @@ $ make install
 
 This will build the Apache modules by extracting build settings from apxs.
 The configure script will look in normal spots for the script
-(/usr/bin/apxs, /usr/local/apache/bin/apxs) but you can point it if you need
-to.
+(/usr/bin/apxs, /usr/local/apache/bin/apxs) but you can point it if you need to.
 
 If you want to build the modules but not use apxs, you can use the
 --without-apxs option, and provide flags using the APXS_PREFIX, APXS_CFLAGS,
