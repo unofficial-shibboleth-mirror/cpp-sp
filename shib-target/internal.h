@@ -170,13 +170,14 @@ namespace shibtarget {
     {
     public:
         STArtifactMapper(const IApplication* application)
-            : m_app(application), m_metadata(application->getMetadataProviders()), m_ctx(NULL) {}
+            : m_app(application), m_localcopy(application->getMetadataProviders()), m_metadata(m_localcopy), m_ctx(NULL) {}
         virtual ~STArtifactMapper() {delete m_ctx;}
     
         saml::SAMLBrowserProfile::ArtifactMapper::ArtifactMapperResponse map(const saml::SAMLArtifact* artifact);
     
     private:
         const IApplication* m_app;
+        saml::Iterator<shibboleth::IMetadata*> m_localcopy;
         shibboleth::Metadata m_metadata;    // scopes lock around use of role descriptor by hook context
         shibboleth::ShibHTTPHook::ShibHTTPHookCallContext* m_ctx;
     };
