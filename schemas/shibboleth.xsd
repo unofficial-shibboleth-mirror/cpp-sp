@@ -228,10 +228,12 @@
 		</sequence>
 		<attribute name="VerifyDepth" type="unsignedByte" use="optional"/>
 		<attribute name="Type" use="optional" default="authority">
-			<restriction base="string">
-				<enumeration value="authority"/>
-				<enumeration value="entity"/>
-			</restriction>
+			<simpleType>
+				<restriction base="string">
+					<enumeration value="authority"/>
+					<enumeration value="entity"/>
+				</restriction>
+			</simpleType>
 		</attribute>
 	</complexType>
 	<element name="KeyAuthority" type="shib:KeyAuthorityType"/>
@@ -245,11 +247,11 @@
 				<element ref="shib:KeyAuthority" maxOccurs="unbounded"/>
 				<element ref="ds:Signature" minOccurs="0"/>
 			</sequence>
+	        <attribute name="lastChanged" type="dateTime" use="optional"/>
+	        <attribute name="validUntil" type="dateTime" use="optional"/>
+	        <attribute name="cacheDuration" type="duration" use="optional"/>
+	        <anyAttribute/>
 		</complexType>
-        <attribute name="lastChanged" type="dateTime" use="optional"/>
-        <attribute name="validUntil" type="dateTime" use="optional"/>
-        <attribute name="cacheDuration" type="duration" use="optional"/>
-        <anyAttribute/>
 	</element>
 
 	<complexType name="JavaKeyInfoType">
@@ -273,11 +275,13 @@
 			which relying parties are capable of accepting them.
 			</documentation>
 		</annotation>
-		<extension base="shib:KeyAuthorityType">
-			<sequence>
-				<element name="RelyingParty" type="shib:regexp_string" minOccurs="0" maxOccurs="unbounded"/>
-			</sequence>
-		</extension>
+		<complexContent>
+			<extension base="shib:KeyAuthorityType">
+				<sequence>
+					<element name="RelyingParty" type="shib:regexp_string" minOccurs="0" maxOccurs="unbounded"/>
+				</sequence>
+			</extension>
+		</complexContent>
 	</complexType>	
 	<element name="KeyUse" type="shib:KeyUseType"/>
 	
@@ -289,8 +293,8 @@
 			<sequence>
 				<element ref="shib:KeyUse" maxOccurs="unbounded"/>
 			</sequence>
+	        <anyAttribute/>
 		</complexType>
-        <anyAttribute/>
 	</element>
 	
 </schema>
