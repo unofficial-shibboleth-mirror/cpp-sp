@@ -31,6 +31,7 @@ CONFIGFILES = \
 	accessError.html \
 	rmError.html \
 	sessionError.html \
+	metadataError.html \
 	shar.key \
 	shar.crt
 
@@ -114,6 +115,7 @@ EXTRA_DIST = .cvsignore \
 	accessError.html \
 	rmError.html \
 	sessionError.html \
+	metadataError.html \
 	AAP.xml.in \
 	IQ-sites.xml.in \
 	IQ-trust.xml.in \
