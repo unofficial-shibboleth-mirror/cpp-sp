@@ -14,7 +14,7 @@
 #endif
 
 #include "shib-target.h"
-#include "shib-threads.h"
+#include <shib/shib-threads.h>
 
 #include <sstream>
 #include <iostream>
@@ -27,6 +27,7 @@
 #include <log4cpp/Category.hh>
 
 using namespace std;
+using namespace shibboleth;
 using namespace shibtarget;
 
 class HeaderIterator : public shibtarget::ShibINI::Iterator {

@@ -7,7 +7,7 @@
  */
 
 #include "shib-target.h"
-#include "shib-threads.h"
+#include <shib/shib-threads.h>
 
 #include <log4cpp/PropertyConfigurator.hh>
 #include <log4cpp/Category.hh>

@@ -15,9 +15,10 @@
 #include "config.h"
 
 #include "shar-utils.h"
-#include <shib-target/shib-threads.h>
+#include <shib/shib-threads.h>
 
 using namespace std;
+using namespace shibboleth;
 using namespace shibtarget;
 
 //
