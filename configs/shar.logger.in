@@ -1,12 +1,33 @@
+# define the appenders
+
+log4j.appender.shar_log=org.apache.log4j.RollingFileAppender
+log4j.appender.shar_log.fileName=@-LOGDIR-@/shar.log
+log4j.appender.shar_log.maxFileSize=1000000
+log4j.appender.shar_log.maxBackupIndex=10
+# DO NOT USE the PatternLayout option on platforms without threadsafe timezone
+# calls in libc. And nothing seems to have that, so...
+# If you enable it and get crashes under load, turn it off!
+log4j.appender.shar_log.layout=org.apache.log4j.BasicLayout
+#log4j.appender.shar_log.layout=org.apache.log4j.PatternLayout
+#log4j.appender.shar_log.layout.ConversionPattern=%d{%Y-%m-%d %H:%M:%S} %p %c %x: %m%n
+
+log4j.appender.tran_log=org.apache.log4j.RollingFileAppender
+log4j.appender.tran_log.fileName=@-LOGDIR-@/transaction.log
+log4j.appender.tran_log.maxFileSize=1000000
+log4j.appender.tran_log.maxBackupIndex=20
+# We can get away with the PatternLayout for this log because
+# there's locking done by the Shibboleth system internally.
+log4j.appender.shar_log.layout=org.apache.log4j.PatternLayout
+log4j.appender.shar_log.layout.ConversionPattern=%d{%Y-%m-%d %H:%M:%S} %p %c %x: %m%n
+
+# set overall behavior
 log4j.rootCategory=INFO, shar_log
 
 # these are fairly verbose for DEBUG, so generally leave at INFO
 log4j.category.SAML.XML=INFO
 log4j.category.shibtarget.XMLApplication=INFO
 
-log4j.appender.shar_log=org.apache.log4j.RollingFileAppender
-log4j.appender.shar_log.fileName=@-LOGDIR-@/shar.log
-log4j.appender.shar_log.maxFileSize=1000000
-log4j.appender.shar_log.maxBackupIndex=10
-log4j.appender.shar_log.layout=org.apache.log4j.PatternLayout
-log4j.appender.shar_log.layout.ConversionPattern=%d{%Y-%m-%d %H:%M:%S} %p %c %x: %m%n
+# the tran log blocks the "default" appender(s) at runtime
+# Level should be left at INFO for this category
+log4j.category.Shibboleth-TRANSACTION=INFO, tran_log
+log4j.additivity.Shibboleth-TRANSACTION=false
