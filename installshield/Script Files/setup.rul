@@ -419,7 +419,7 @@ begin
         // Now install the new Default
         svSharExe = TARGETDIR + "\\bin\\shar.exe";
         svSharInstallParms = "-install Default -config " + (TARGETDIR + "\\etc\\shibboleth\\shibboleth.xml -schemadir ") +
-            (TARGETDIR + "\\etc\shibboleth");
+            (TARGETDIR + "\\etc\\shibboleth");
         nResult = LaunchAppAndWait(svSharExe, svSharInstallParms, WAIT);
         if (nResult < 0) then
             MessageBox("SHAR service installation FAILED!", WARNING);
