@@ -57,16 +57,12 @@
  * $Id$
  */
 
+#include "internal.h"
+
 #if HAVE_UNISTD_H
 # include <unistd.h>
 #endif
 
-#ifdef WIN32
-# define SHIBTARGET_EXPORTS __declspec(dllexport)
-#endif
-
-#include "shib-target.h"
-#include "ccache-utils.h"
 #include <shib/shib-threads.h>
 
 #include <log4cpp/Category.hh>
@@ -77,11 +73,6 @@
 #ifdef HAVE_LIBDMALLOCXX
 #include <dmalloc.h>
 #endif
-
-using namespace std;
-using namespace saml;
-using namespace shibboleth;
-using namespace shibtarget;
 
 class InternalCCache;
 class InternalCCacheEntry : public CCacheEntry

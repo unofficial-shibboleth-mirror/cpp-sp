@@ -383,7 +383,7 @@ namespace shibtarget {
 
     class SHIBTARGET_EXPORTS Iterator {
     public:
-      virtual ~Iterator() = 0;
+      virtual ~Iterator() {}
       virtual const std::string* begin() = 0;
       virtual const std::string* next() = 0;
     };

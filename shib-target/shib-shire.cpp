@@ -55,24 +55,13 @@
  * $Id$
  */
 
+#include "internal.h"
+
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
 #endif
 
-#ifdef WIN32
-# define SHIBTARGET_EXPORTS __declspec(dllexport)
-#endif
-
-#include "shib-target.h"
-
-#include <log4cpp/Category.hh>
-
 #include <stdexcept>
-
-using namespace std;
-using namespace saml;
-using namespace shibboleth;
-using namespace shibtarget;
 
 class shibtarget::SHIREPriv
 {

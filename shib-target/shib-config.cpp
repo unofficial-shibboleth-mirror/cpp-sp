@@ -55,22 +55,12 @@
  * $Id$
  */
 
-#ifdef WIN32
-# define SHIBTARGET_EXPORTS __declspec(dllexport)
-#endif
+#include "internal.h"
 
-#include "shib-target.h"
-#include "ccache-utils.h"
 #include <shib/shib-threads.h>
 
 #include <log4cpp/PropertyConfigurator.hh>
 #include <log4cpp/Category.hh>
-
-using namespace saml;
-using namespace shibboleth;
-using namespace shibtarget;
-using namespace std;
-using namespace log4cpp;
 
 #ifndef SHIBTARGET_INIFILE
 #define SHIBTARGET_INIFILE "/opt/shibboleth/etc/shibboleth/shibboleth.ini"

@@ -55,26 +55,15 @@
  * $Id$
  */
 
+#include "internal.h"
+
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
 #endif
 
-#ifdef WIN32
-# define SHIBTARGET_EXPORTS __declspec(dllexport)
-#endif
-
-#include "shib-target.h"
-
 #include <stdexcept>
 #include <sstream>
 #include <typeinfo>
-
-#include <log4cpp/Category.hh>
-
-using namespace std;
-using namespace shibtarget;
-using namespace shibboleth;
-using namespace saml;
 
 namespace {
   int initializing = 0;

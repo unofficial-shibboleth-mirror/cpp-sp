@@ -47,28 +47,43 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/*
- * shib-rpcutil.c -- RPC Utility functions for the SHIB Target
- *
- * Created By:	Derek Atkins <derek@ihtfp.com>
- *
- * $Id$
- */
+
+/* internal.h - internally visible declarations
+
+   Scott Cantor
+   6/29/03
+
+   $History:$
+*/
+
+#ifndef __shibtarget_internal_h__
+#define __shibtarget_internal_h__
 
 #ifdef WIN32
-# include <winsock.h>
-#else
-# include <sys/socket.h>
+# define SHIBTARGET_EXPORTS __declspec(dllexport)
 #endif
 
-#include "internal.h"
+// eventually we might be able to support autoconf via cygwin...
+#if defined (_MSC_VER) || defined(__BORLANDC__)
+# include "config_win32.h"
+#else
+# include "config.h"
+#endif
 
-CLIENT* shibrpc_client_create (ShibSocket sock, u_long program, u_long version)
-{
-  struct sockaddr_in sin;
+#include "shib-target.h"
 
-  memset (&sin, 0, sizeof (sin));
-  sin.sin_port = 1;
+#ifdef __cplusplus
 
-  return clnttcp_create (&sin, program, version, &sock, 0, 0);
-}
+#include "ccache-utils.h"
+
+#include <log4cpp/Category.hh>
+
+using namespace std;
+using namespace log4cpp;
+using namespace saml;
+using namespace shibboleth;
+using namespace shibtarget;
+
+#endif
+
+#endif

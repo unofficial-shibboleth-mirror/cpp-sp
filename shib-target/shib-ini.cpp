@@ -55,18 +55,8 @@
  * $Id$
  */
 
-// eventually we might be able to support autoconf via cygwin...
-#if defined (_MSC_VER) || defined(__BORLANDC__)
-# include "config_win32.h"
-#else
-# include "config.h"
-#endif
+#include "internal.h"
 
-#ifdef WIN32
-# define SHIBTARGET_EXPORTS __declspec(dllexport)
-#endif
-
-#include "shib-target.h"
 #include <shib/shib-threads.h>
 
 #include <sstream>
@@ -76,12 +66,6 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-
-#include <log4cpp/Category.hh>
-
-using namespace std;
-using namespace shibboleth;
-using namespace shibtarget;
 
 class HeaderIterator : public shibtarget::ShibINI::Iterator {
 public:
@@ -553,4 +537,3 @@ bool ShibINI::boolean(string& value)
   return false;
 }
 
-ShibINI::Iterator::~Iterator() {}

@@ -55,20 +55,11 @@
  * $Id$
  */
 
-#ifdef WIN32
-# define SHIBTARGET_EXPORTS __declspec(dllexport)
-#endif
+#include "internal.h"
 
-#include "shib-target.h"
 #include <sstream>
 #include <ctype.h>
 #include <xercesc/util/XercesDefs.hpp>
-
-#include <log4cpp/Category.hh>
-
-using namespace std;
-using namespace shibtarget;
-using namespace saml;
 
 class shibtarget::ShibMLPPriv {
 public:

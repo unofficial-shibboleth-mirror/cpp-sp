@@ -57,27 +57,17 @@
  * $Id$
  */
 
-#ifdef WIN32
-# define SHIBTARGET_EXPORTS __declspec(dllexport)
-#endif
+#include "internal.h"
 
-#include "shib-target.h"
 #include "shibrpc.h"
-#include "ccache-utils.h"
 
-#include <log4cpp/Category.hh>
 #include <sstream>
 
 #ifdef HAVE_LIBDMALLOCXX
 #include <dmalloc.h>
 #endif
 
-using namespace std;
-using namespace saml;
-using namespace shibboleth;
-using namespace shibtarget;
-
-static std::string get_threadid (const char* proc)
+static string get_threadid (const char* proc)
 {
   static u_long counter = 0;
   ostringstream buf;
@@ -85,10 +75,10 @@ static std::string get_threadid (const char* proc)
   return buf.str();
 }
 
-static log4cpp::Category& get_category (void)
+static Category& get_category (void)
 {
   string ctx = "shibtarget.rpc-server";
-  return log4cpp::Category::getInstance(ctx);
+  return Category::getInstance(ctx);
 }
 
 extern "C" bool_t
@@ -124,7 +114,7 @@ shibrpc_session_is_valid_1_svc(shibrpc_session_is_valid_args_1 *argp,
 			       shibrpc_session_is_valid_ret_1 *result,
 			       struct svc_req *rqstp)
 {
-  log4cpp::Category& log = get_category();
+  Category& log = get_category();
   string ctx = get_threadid("session_is_valid");
   saml::NDC ndc(ctx);
 
@@ -216,7 +206,7 @@ extern "C" bool_t
 shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
 			  shibrpc_new_session_ret_1 *result, struct svc_req *rqstp)
 {
-  log4cpp::Category& log = get_category();
+  Category& log = get_category();
   string ctx = get_threadid("new_session");
   saml::NDC ndc(ctx);
 
@@ -372,7 +362,7 @@ extern "C" bool_t
 shibrpc_get_assertions_1_svc(shibrpc_get_assertions_args_1 *argp,
 			shibrpc_get_assertions_ret_1 *result, struct svc_req *rqstp)
 {
-  log4cpp::Category& log = get_category();
+  Category& log = get_category();
   string ctx = get_threadid("get_assertions");
   saml::NDC ndc(ctx);
 

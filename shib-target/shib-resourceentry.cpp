@@ -55,26 +55,15 @@
  * $Id$
  */
 
+#include "internal.h"
+
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
 #endif
 
-#ifdef WIN32
-# define SHIBTARGET_EXPORTS __declspec(dllexport)
-#endif
-
-#include "shib-target.h"
-#include "ccache-utils.h"
-
-#include <log4cpp/Category.hh>
-
 #ifdef HAVE_LIBDMALLOCXX
 #include <dmalloc.h>
 #endif
-
-using namespace std;
-using namespace saml;
-using namespace shibtarget;
 
 class shibtarget::ResourceEntryPriv
 {

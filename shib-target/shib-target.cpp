@@ -55,18 +55,7 @@
  * $Id$
  */
 
-#ifdef WIN32
-# define SHIBTARGET_EXPORTS __declspec(dllexport)
-#endif
-
-#include "shib-target.h"
-
-#include <log4cpp/Category.hh>
-
-using namespace saml;
-using namespace shibboleth;
-using namespace shibtarget;
-using namespace std;
+#include "internal.h"
 
 /* shib-target.cpp */
 
