@@ -6,6 +6,7 @@ AM_CONFIG_HEADER(config.h)
 AM_INIT_AUTOMAKE
 
 sinclude(acx_pthread.m4)
+sinclude(acx_rpctest.m4)
 
 AC_PROG_CC([gcc3 gcc cc])
 AC_PROG_CXX([g++3 g++ c++ CC])
@@ -22,15 +23,24 @@ AC_STRUCT_TM
 # Checks for library functions.
 AC_FUNC_STRFTIME
 AC_CHECK_FUNCS([strchr strdup strstr gmtime_r])
-AC_CHECK_HEADERS([dlfcn.h])
+AC_CHECK_HEADERS([dlfcn.h stropts.h])
 
 # C++ requirements
 AC_CXX_REQUIRE_STL
 AC_CXX_NAMESPACES
 
-AC_CHECK_FUNC(xdr_uint64_t,,
+
+old_LIBS="$LIBS"
+AC_SEARCH_LIBS(xdr_uint64_t,nsl,,
 	[CFLAGS="$CFLAGS -DNEED_XDR_LONGLONG"
 	 CXXFLAGS="$CXXFLAGS -DNEED_XDR_LONGLONG"])
+LIBS="$old_LIBS"
+
+ACX_RPCTEST([rpctest="yes"],[rpctest="no"])
+if test $rpctest = "no"; then
+    CFLAGS="-DNEED_RPC_TLI $CFLAGS"
+    ACX_RPCTEST(,AC_MSG_ERROR([neither style of ONC RPC worked]))
+fi
 
 # checks for pthreads
 ACX_PTHREAD([enable_threads="pthread"],[enable_threads="no"])
@@ -110,12 +120,12 @@ AC_CHECK_LIB([ssl], [SSL_library_init],,
 
 AC_CHECK_HEADER([libxml/parser.h],,
                 AC_MSG_ERROR([unable to find libxml2 header files]))
-AC_CHECK_LIB([xml2], [xmlInitParser],,
+AC_CHECK_LIB([xml2], [xmlInitParser],echo "foo" > /dev/null,
              AC_MSG_ERROR([unable to link with libxml2]))
 
 AC_CHECK_HEADER([xmlsec/xmlsec.h],,
                 AC_MSG_ERROR([unable to find xmlsec header files]))
-AC_CHECK_LIB([xmlsec], [xmlSecInit],,
+AC_CHECK_LIB([xmlsec], [xmlSecInit],echo "foo" > /dev/null,
              AC_MSG_ERROR([unable to link with xmlsec]))
 
 AC_CHECK_HEADER([log4cpp/Category.hh],,
