@@ -6,6 +6,7 @@ lib_LTLIBRARIES = libshib.la
 
 libshibdir = $(includedir)/shib
 libshib_HEADERS = shib.h
+noinst_HEADERS = internal.h
 
 libshib_la_SOURCES = \
                     ClubShibPOSTProfile.cpp \
