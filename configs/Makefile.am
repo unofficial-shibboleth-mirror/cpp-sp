@@ -79,6 +79,7 @@ all-data-local: $(BUILTCONFIGFILES)
 
 install-data-local:	all-data-local
 	$(mkinstalldirs) $(DESTDIR)$(pkglogdir)
+	$(mkinstalldirs) $(DESTDIR)$(shirelogdir)
 	$(mkinstalldirs) $(DESTDIR)$(pkgxmldir)
 	$(mkinstalldirs) $(DESTDIR)$(prefix)/data
 	$(mkinstalldirs) $(DESTDIR)$(pkgsysconfdir)
