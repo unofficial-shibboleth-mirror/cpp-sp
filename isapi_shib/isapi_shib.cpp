@@ -887,7 +887,8 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
 
         // Make sure we only process the SHIRE requests.
         if (!strstr(targeturl.c_str(),shireURL))
-            return WriteClientError(lpECB,"The request's application and associated shireURL setting are inconsistent.");;
+            return WriteClientError(lpECB,"ISAPI extension can only be invoked to process incoming sessions."
+                "Make sure the mapped file extension doesn't match actual content.");
 
         pair<const char*,const char*> shib_cookie=shire.getCookieNameProps();
 
