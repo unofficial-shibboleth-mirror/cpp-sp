@@ -31,7 +31,7 @@
 #include <shib/shib-threads.h>
 #include <log4cpp/Category.hh>
 
-#ifndef USE_OUR_ONCRPC
+#ifndef !HAVE_DECL_SVCFD_CREATE
   extern "C" SVCXPRT* svcfd_create(int, u_int, u_int);
 #endif
 
