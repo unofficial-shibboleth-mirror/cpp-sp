@@ -14,7 +14,6 @@
 #include <signal.h>
 
 #include "config.h"
-
 #include "shar-utils.h"
 
 #ifdef NEED_SVCFD_CREATE_DEFN
@@ -150,7 +149,7 @@ static int parse_args(int argc, char* argv[])
     case 'f':
 #ifndef WIN32
       /* XXX: I know that this is a string on Unix */
-      unlink (ShibTargetConfig::getConfig().m_SocketName);
+      unlink (shib_target_sockname());
 #endif
       break;
     default:
@@ -184,7 +183,7 @@ main (int argc, char *argv[])
     return -3;
 
   /* Bind to the proper port */
-  if (shib_sock_bind (sock, ShibTargetConfig::getConfig().m_SocketName) != 0)
+  if (shib_sock_bind (sock, shib_target_sockname) != 0)
     return -4;
 
   /* Initialize the SHAR Utilitites */
@@ -196,7 +195,7 @@ main (int argc, char *argv[])
   /* Finalize the SHAR, close all clients */
   shar_utils_fini();
 
-  shib_sock_close(sock, ShibTargetConfig::getConfig().m_SocketName);
+  shib_sock_close(sock, shib_target_sockname);
   fprintf (stderr, "shar_svc_run returned.\n");
   return 0;
 }

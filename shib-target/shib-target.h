@@ -98,6 +98,7 @@ void shib_sock_close (ShibSocket s, ShibSockName name);
 /* initialize and finalize the target library (return 0 on success, 1 on failure) */
 int shib_target_initialize (const char* application, const char* ini_file);
 void shib_target_finalize (void);
+ShibSockName shib_target_sockname(void);
 
 #ifdef __cplusplus
 }
