@@ -30,11 +30,11 @@ AC_CXX_REQUIRE_STL
 AC_CXX_NAMESPACES
 
 
-old_LIBS="$LIBS"
-AC_SEARCH_LIBS(xdr_uint64_t,nsl,,
-	[CFLAGS="$CFLAGS -DNEED_XDR_LONGLONG"
-	 CXXFLAGS="$CXXFLAGS -DNEED_XDR_LONGLONG"])
-LIBS="$old_LIBS"
+# old_LIBS="$LIBS"
+# AC_SEARCH_LIBS(xdr_uint64_t,nsl,,
+# 	[CFLAGS="$CFLAGS -DNEED_XDR_LONGLONG"
+# 	 CXXFLAGS="$CXXFLAGS -DNEED_XDR_LONGLONG"])
+# LIBS="$old_LIBS"
 
 # checks for pthreads
 ACX_PTHREAD([enable_threads="pthread"],[enable_threads="no"])
