@@ -92,6 +92,7 @@ namespace shibtarget {
     
     static char x2c(char *what);
     static void url_decode(char *url);
+    static string url_encode(const char* s);
   private:
     char * fmakeword(char stop, unsigned int *cl, const char** ppch);
     char * makeword(char *line, char stop);
@@ -106,10 +107,10 @@ namespace shibtarget {
     ShibTargetPriv();
     ~ShibTargetPriv();
 
-    string url_encode(const char* s);
     void get_application(const string& protocol, const string& hostname, int port, const string& uri);
-    const char* getSessionId(ShibTarget* st);
-    const char* getRelayState(ShibTarget* st);
+    const char* getCookie(ShibTarget* st, const string& name);
+    //const char* getSessionId(ShibTarget* st);
+    //const char* getRelayState(ShibTarget* st);
 
   private:
     friend class ShibTarget;
@@ -117,9 +118,7 @@ namespace shibtarget {
     const IApplication *m_app;
     string m_shireURL;
 
-    string m_cookies;
-    const char* session_id;
-    const char* relay_state;
+    map<string,string> m_cookieMap;
 
     ShibProfile m_sso_profile;
     string m_provider_id;
@@ -178,9 +177,9 @@ void ShibTarget::init(
 #endif
 
   if (m_priv->m_app)
-    throw runtime_error("ShibTarget Already Initialized");
+    throw SAMLException("Request initialization occurred twice!");
   if (!config)
-    throw runtime_error("config is NULL.  Oops.");
+    throw SAMLException("SP configuration not supplied.");
 
   if (protocol) m_priv->m_protocol = protocol;
   if (content_type) m_priv->m_content_type = content_type;
@@ -232,7 +231,8 @@ ShibTarget::doCheckAuthN(bool requireSessionFlag, bool handleProfile)
                 requireSession.second=true;
         }
 
-        const char* session_id = m_priv->getSessionId(this);
+        pair<string,const char*> shib_cookie = getCookieNameProps("_shibsession_");
+        const char* session_id = m_priv->getCookie(this,shib_cookie.first);
         if (!session_id || !*session_id) {
             // No session.  Maybe that's acceptable?
             if (!requireSession.second)
@@ -256,6 +256,8 @@ ShibTarget::doCheckAuthN(bool requireSessionFlag, bool handleProfile)
                 );
         }
         catch (SAMLException& e) {
+            log(LogLevelError, string("session processing failed: ") + e.what());
+
             // If no session is required, bail now.
             if (!requireSession.second)
                 // Has to be OK because DECLINED will just cause Apache
@@ -274,7 +276,7 @@ ShibTarget::doCheckAuthN(bool requireSessionFlag, bool handleProfile)
 
         // We're done.  Everything is okay.  Nothing to report.  Nothing to do..
         // Let the caller decide how to proceed.
-        log(LogLevelInfo, "doCheckAuthN succeeded");
+        log(LogLevelDebug, "doCheckAuthN succeeded");
         return pair<bool,void*>(false,NULL);
     }
     catch (SAMLException& e) {
@@ -324,7 +326,7 @@ ShibTarget::doHandleProfile(void)
             throw SAMLException("Unable to map request to application session settings, check configuration.");
 
         // Process incoming request.
-        pair<bool,bool> shireSSL=sessionProps->getBool("shireSSL");
+        pair<bool,bool> shireSSL=sessionProps->getBool("handlerSSL");
       
         // Make sure this is SSL, if it should be
         if ((!shireSSL.first || shireSSL.second) && m_priv->m_protocol != "https")
@@ -353,7 +355,7 @@ ShibTarget::doHandleProfile(void)
         }
 	
         // Process the submission
-        string cookie,target,provider;
+        string cookie,target,providerId;
         try {
             sessionNew(
                 SAML11_POST | SAML11_ARTIFACT,
@@ -361,7 +363,7 @@ ShibTarget::doHandleProfile(void)
                 m_priv->m_remote_addr.c_str(),
                 target,
                 cookie,
-                provider
+                providerId
                 );
         }
         catch (SAMLException& e) {
@@ -382,24 +384,33 @@ ShibTarget::doHandleProfile(void)
         }
         else if (target=="cookie") {
             // Pull the target value from the "relay state" cookie.
-            const char* relay_state = m_priv->getRelayState(this);
+            pair<string,const char*> relay_cookie = getCookieNameProps("_shibstate_");
+            const char* relay_state = m_priv->getCookie(this,relay_cookie.first);
             if (!relay_state || !*relay_state) {
                 // No apparent relay state value to use, so fall back on the default.
                 pair<bool,const char*> homeURL=m_priv->m_app->getString("homeURL");
                 target=homeURL.first ? homeURL.second : "/";
             }
             else {
-                CgiParse::url_decode((char*)relay_state);
-                target=relay_state;
+                char* rscopy=strdup(relay_state);
+                CgiParse::url_decode(rscopy);
+                target=rscopy;
+                free(rscopy);
             }
         }
     
-        // We've got a good session, set the cookie...
+        // We've got a good session, set the session cookie.
         pair<string,const char*> shib_cookie=getCookieNameProps("_shibsession_");
-        cookie += shib_cookie.second;
-        setCookie(shib_cookie.first, cookie);
-    
-        // ... and redirect to the target
+        setCookie(shib_cookie.first, cookie + shib_cookie.second);
+
+        pair<bool,bool> idpHistory=sessionProps->getBool("idpHistory");
+        if (!idpHistory.first || idpHistory.second) {
+            // Set an IdP history cookie locally (essentially just a CDC).
+            CommonDomainCookie cdc(m_priv->getCookie(this,CommonDomainCookie::CDCName));
+            setCookie(CommonDomainCookie::CDCName,string(cdc.set(providerId.c_str())) + shib_cookie.second);
+        }
+
+        // Now redirect to the target.
         return pair<bool,void*>(true, sendRedirect(target));
     }
     catch (MetadataException& e) {
@@ -450,17 +461,15 @@ ShibTarget::doCheckAuthZ(void)
             throw SAMLException("System uninitialized, application did not supply request information.");
 
         targetURL = m_priv->m_url.c_str();
-        const char *session_id = m_priv->getSessionId(this);
 
         // Do we have an access control plugin?
         if (m_priv->m_settings.second) {
             Locker acllock(m_priv->m_settings.second);
             if (!m_priv->m_settings.second->authorized(*m_priv->m_sso_statement,
                 m_priv->m_post_response ? m_priv->m_post_response->getAssertions() : EMPTY(SAMLAssertion*))) {
-                log(LogLevelError, "doCheckAuthZ() access control provider denied access");
+                log(LogLevelWarn, "doCheckAuthZ() access control provider denied access");
                 if (targetURL)
                     mlp.insert("requestURL", targetURL);
-                // TODO: check setting and return 403
                 return pair<bool,void*>(true,sendError("access", mlp));
             }
         }
@@ -689,7 +698,8 @@ ShibTarget::doExportAssertions(bool exportAssertion)
             throw SAMLException("System uninitialized, application did not supply request information.");
 
         targetURL = m_priv->m_url.c_str();
-        const char *session_id = m_priv->getSessionId(this);
+        pair<string,const char*> shib_cookie=getCookieNameProps("_shibsession_");
+        const char *session_id = m_priv->getCookie(this,shib_cookie.first);
 
         if (!m_priv->m_sso_statement) {
             // No data yet, so we need to get the session. This can only happen
@@ -731,7 +741,7 @@ ShibTarget::doExportAssertions(bool exportAssertion)
             os << *(m_priv->m_pre_response);
             unsigned int outlen;
             XMLByte* serialized = Base64::encode(reinterpret_cast<XMLByte*>((char*)os.str().c_str()), os.str().length(), &outlen);
-	    XMLByte *pos, *pos2;
+            XMLByte *pos, *pos2;
             for (pos=serialized, pos2=serialized; *pos2; pos2++)
                 if (isgraph(*pos2))
                     *pos++=*pos2;
@@ -954,19 +964,19 @@ string ShibTarget::getAuthnRequest(const char* resource)
     if (props) {
         pair<bool,const char*> wayf=props->getString("wayfURL");
         if (wayf.first) {
-            req=req + wayf.second + "?shire=" + m_priv->url_encode(getShireURL(resource)) + "&time=" + timebuf;
+            req=req + wayf.second + "?shire=" + CgiParse::url_encode(getShireURL(resource)) + "&time=" + timebuf;
             
             // How should the target value be preserved?
             pair<bool,bool> localRelayState=m_priv->m_conf->getPropertySet("Local")->getBool("localRelayState");
             if (!localRelayState.first || !localRelayState.second) {
                 // The old way, just send it along.
-                req = req + "&target=" + m_priv->url_encode(resource);
+                req = req + "&target=" + CgiParse::url_encode(resource);
             }
             else {
                 // Here we store the state in a cookie and send a fixed
                 // value to the IdP so we can recognize it on the way back.
                 pair<string,const char*> shib_cookie=getCookieNameProps("_shibstate_");
-                setCookie(shib_cookie.first,m_priv->url_encode(resource) + shib_cookie.second);
+                setCookie(shib_cookie.first,CgiParse::url_encode(resource) + shib_cookie.second);
                 req += "&target=cookie";
             }
             
@@ -974,7 +984,7 @@ string ShibTarget::getAuthnRequest(const char* resource)
             if (!old.first || !old.second) {
                 wayf=m_priv->m_app->getString("providerId");
                 if (wayf.first)
-                    req=req + "&providerId=" + m_priv->url_encode(wayf.second);
+                    req=req + "&providerId=" + CgiParse::url_encode(wayf.second);
             }
         }
     }
@@ -1269,7 +1279,7 @@ void* ShibTarget::sendError(const char* page, ShibMLP &mlp)
  * Shib Target Private implementation
  */
 
-ShibTargetPriv::ShibTargetPriv() : m_app(NULL), m_mapper(NULL), m_conf(NULL), m_Config(NULL), session_id(NULL), relay_state(NULL),
+ShibTargetPriv::ShibTargetPriv() : m_app(NULL), m_mapper(NULL), m_conf(NULL), m_Config(NULL),
     m_sso_profile(PROFILE_UNSPECIFIED), m_sso_statement(NULL), m_pre_response(NULL), m_post_response(NULL) {}
 
 ShibTargetPriv::~ShibTargetPriv()
@@ -1293,29 +1303,6 @@ ShibTargetPriv::~ShibTargetPriv()
   }
   m_app = NULL;
   m_Config = NULL;
-}
-
-static inline char hexchar(unsigned short s)
-{
-    return (s<=9) ? ('0' + s) : ('A' + s - 10);
-}
-
-string
-ShibTargetPriv::url_encode(const char* s)
-{
-    static char badchars[]="\"\\+<>#%{}|^~[]`;/?:@=&";
-
-    string ret;
-    for (; *s; s++) {
-        if (strchr(badchars,*s) || *s<=0x1F || *s>=0x7F) {
-            ret+='%';
-        ret+=hexchar(*s >> 4);
-        ret+=hexchar(*s & 0x0F);
-        }
-        else
-            ret+=*s;
-    }
-    return ret;
 }
 
 void
@@ -1361,55 +1348,35 @@ ShibTargetPriv::get_application(const string& protocol, const string& hostname, 
   m_url += uri;
 }
 
-const char* ShibTargetPriv::getSessionId(ShibTarget* st)
+const char* ShibTargetPriv::getCookie(ShibTarget* st, const string& name)
 {
-  if (session_id) {
-    //string m = string("getSessionId returning precreated session_id: ") + session_id;
-    //st->log(ShibTarget::LogLevelDebug, m);
-    return session_id;
-  }
+    if (m_cookieMap.empty()) {
+        string cookies=st->getCookies();
 
-  char *sid;
-  pair<string,const char*> shib_cookie = st->getCookieNameProps("_shibsession_");
-  if (m_cookies.empty())
-      m_cookies = st->getCookies();
-  if (!m_cookies.empty()) {
-    if (sid = strstr(m_cookies.c_str(), shib_cookie.first.c_str())) {
-      // We found a cookie.  pull it out (our session_id)
-      sid += shib_cookie.first.length() + 1; // skip over the '='
-      char *cookieend = strchr(sid, ';');
-      if (cookieend)
-        *cookieend = '\0';
-      session_id = sid;
+        string::size_type pos=0,cname,namelen,val,vallen;
+        while (pos !=string::npos && pos < cookies.length()) {
+            while (isspace(cookies[pos])) pos++;
+            cname=pos;
+            pos=cookies.find_first_of("=",pos);
+            if (pos == string::npos)
+                break;
+            namelen=pos-cname;
+            pos++;
+            if (pos==cookies.length())
+                break;
+            val=pos;
+            pos=cookies.find_first_of(";",pos);
+            if (pos != string::npos) {
+                vallen=pos-val;
+                pos++;
+                m_cookieMap.insert(make_pair(cookies.substr(cname,namelen),cookies.substr(val,vallen)));
+            }
+            else
+                m_cookieMap.insert(make_pair(cookies.substr(cname,namelen),cookies.substr(val)));
+        }
     }
-  }
-
-  //string m = string("getSessionId returning new session_id: ") + session_id;
-  //st->log(ShibTarget::LogLevelDebug, m);
-  return session_id;
-}
-
-const char* ShibTargetPriv::getRelayState(ShibTarget* st)
-{
-  if (relay_state)
-    return relay_state;
-
-  char *sid;
-  pair<string,const char*> shib_cookie = st->getCookieNameProps("_shibstate_");
-  if (m_cookies.empty())
-      m_cookies = st->getCookies();
-  if (!m_cookies.empty()) {
-    if (sid = strstr(m_cookies.c_str(), shib_cookie.first.c_str())) {
-      // We found a cookie.  pull it out
-      sid += shib_cookie.first.length() + 1; // skip over the '='
-      char *cookieend = strchr(sid, ';');
-      if (cookieend)
-        *cookieend = '\0';
-      relay_state = sid;
-    }
-  }
-
-  return relay_state;
+    map<string,string>::const_iterator lookup=m_cookieMap.find(name);
+    return (lookup==m_cookieMap.end()) ? NULL : lookup->second.c_str();
 }
 
 /*************************************************************************
@@ -1537,6 +1504,27 @@ CgiParse::url_decode(char *url)
     url[x] = '\0';
 }
 
+static inline char hexchar(unsigned short s)
+{
+    return (s<=9) ? ('0' + s) : ('A' + s - 10);
+}
+
+string CgiParse::url_encode(const char* s)
+{
+    static char badchars[]="\"\\+<>#%{}|^~[]`;/?:@=&";
+
+    string ret;
+    for (; *s; s++) {
+        if (strchr(badchars,*s) || *s<=0x1F || *s>=0x7F) {
+            ret+='%';
+        ret+=hexchar(*s >> 4);
+        ret+=hexchar(*s & 0x0F);
+        }
+        else
+            ret+=*s;
+    }
+    return ret;
+}
 // Subclasses may not need to override these particular virtual methods.
 string ShibTarget::getAuthType(void)
 {
@@ -1557,4 +1545,77 @@ HTAccessInfo* ShibTarget::getAccessInfo(void)
 HTGroupTable* ShibTarget::getGroupTable(string &user)
 {
   return NULL;
+}
+
+// CDC implementation
+
+const char CommonDomainCookie::CDCName[] = "_saml_idp";
+
+CommonDomainCookie::CommonDomainCookie(const char* cookie) : m_decoded(NULL)
+{
+    if (!cookie)
+        return;
+        
+    // Copy it so we can URL-decode it.
+    char* b64=strdup(cookie);
+    CgiParse::url_decode(b64);
+    
+    // Now Base64 decode it into the decoded delimited list.
+    unsigned int len;
+    m_decoded=Base64::decode(reinterpret_cast<XMLByte*>(b64),&len);
+    free(b64);
+    if (!m_decoded) {
+        Category::getInstance("CommonDomainCookie").warn("cookie does not appear to be base64-encoded");
+        return;
+    }
+    
+    // Chop it up and save off pointers.
+    char* ptr=reinterpret_cast<char*>(m_decoded);
+    while (*ptr) {
+        while (isspace(*ptr)) ptr++;
+        m_list.push_back(ptr);
+        while (*ptr && !isspace(*ptr)) ptr++;
+        if (*ptr)
+            *ptr++='\0';
+    }
+}
+
+CommonDomainCookie::~CommonDomainCookie()
+{
+    if (m_decoded)
+        XMLString::release(&m_decoded);
+}
+
+const char* CommonDomainCookie::set(const char* providerId)
+{
+    // First scan the list for this IdP.
+    for (vector<const char*>::iterator i=m_list.begin(); i!=m_list.end(); i++) {
+        if (!strcmp(providerId,*i)) {
+            m_list.erase(i);
+            break;
+        }
+    }
+    
+    // Append it to the end, after storing locally.
+    m_additions.push_back(providerId);
+    m_list.push_back(m_additions.back().c_str());
+    
+    // Now rebuild the delimited list.
+    string delimited;
+    for (vector<const char*>::const_iterator j=m_list.begin(); j!=m_list.end(); j++) {
+        if (!delimited.empty()) delimited += ' ';
+        delimited += *j;
+    }
+    
+    // Base64 and URL encode it.
+    unsigned int len;
+    XMLByte* b64=Base64::encode(reinterpret_cast<const XMLByte*>(delimited.c_str()),delimited.length(),&len);
+    XMLByte *pos, *pos2;
+    for (pos=b64, pos2=b64; *pos2; pos2++)
+        if (isgraph(*pos2))
+            *pos++=*pos2;
+    *pos=0;
+    m_encoded=CgiParse::url_encode(reinterpret_cast<char*>(b64));
+    XMLString::release(&b64);
+    return m_encoded.c_str();
 }
