@@ -150,31 +150,87 @@ static const char* get_shire_location(request_rec* r, const char* target,
 {
   ShibINI& ini = g_Config->getINI();
   string shire_location;
+  const char *server_name = ap_get_server_name(r);
+  bool shire_ssl_only = false;
 
-  if (! ini.get_tag (ap_get_server_name(r), "shireURL", true, &shire_location)) {
-    ap_log_rerror(APLOG_MARK,APLOG_ERR,0,r,
+  // Determine if this is supposed to be ssl-only (default == false)
+  if (ini.get_tag (server_name, "shireSSLOnly", true, &shire_location))
+    shire_ssl_only = ShibINI::boolean(shire_location);
+
+  // Grab the specified shire-location from the config file
+  if (! ini.get_tag (server_name, "shireURL", true, &shire_location)) {
+    ap_log_rerror(APLOG_MARK,APLOG_CRIT,0,r,
 		  "shire_get_location() no shireURL configuration for %s",
 		  ap_get_server_name(r));
     return NULL;
   }
 
-  const char* shire = shire_location.c_str();
+  //
+  // The "shireURL" can be one of three formats:
+  //
+  // 1) a full URI:		http://host/foo/bar
+  // 2) a partial URI:		http:///foo/bar
+  // 3) a relative path:	/foo/bar
+  //
+  // #  Protocol  Host	  Path
+  // 1  shire     shire   shire
+  // 2  shire     target  shire
+  // 3  target    target  shire
+  //
+  // note: if shire_ssl_only is true, make sure the protocol is https
+  //
 
+  const char* shire = shire_location.c_str();
+  const char* path = NULL;
+
+  // Decide whether to use the shire or the target for the "protocol"
+  const char* prot;
   if (*shire != '/') {
-    if (encode)
-      return url_encode(r,shire);
-    else
-      return apr_pstrdup(r->pool,shire);
-    }    
-    const char* colon=strchr(target,':');
-    const char* slash=strchr(colon+3,'/');
-    if (encode)
-      return url_encode(r,apr_pstrcat(r->pool,
-				     apr_pstrndup(r->pool,target,slash-target),
-				     shire,NULL));
-    else
-      return apr_pstrcat(r->pool, apr_pstrndup(r->pool,target,slash-target),
-			shire, NULL);
+    prot = shire;
+  } else {
+    prot = target;
+    path = shire;
+  }
+
+  //  ap_log_rerror(APLOG_MARK,APLOG_DEBUG,0,r,
+  //		"get_shire_location: prot=%s, path=%s", prot,
+  //		path ? path : "(null)");
+
+  // break apart the "protocol" string into protocol, host, and "the rest"
+  const char* colon=strchr(prot,':');
+  colon += 3;
+  const char* slash=strchr(colon,'/');
+  if (!path)
+    path = slash;
+
+  // Compute the actual protocol
+  const char* proto;
+  if (shire_ssl_only)
+    proto = "https://";
+  else
+    proto = apr_pstrndup(r->pool, prot, colon-prot);
+
+  // create the "host" from either the colon/slash or from the target string
+  // If prot == shire then we're in either #1 or #2, else #3.
+  // If slash == colon then we're in #2
+  if (prot != shire || slash == colon) {
+    colon = strchr(target, ':');
+    colon += 3;		// Get past the ://
+    slash = strchr(colon, '/');
+  }
+  const char *host = apr_pstrndup(r->pool, colon, slash-colon);
+
+  // Build the shire URL
+  shire = apr_pstrcat(r->pool, proto, host, path, NULL);
+
+  //  ap_log_rerror(APLOG_MARK,APLOG_DEBUG,0,r,
+  //		"get_shire_location -> %s (host=%s, colon=%s, slash=%s)",
+  //		shire, host, colon, slash);
+
+  if (encode)
+    return url_encode(r, shire);
+  else
+    return shire;
 }
 
 static bool is_shire_location(request_rec* r, const char* target)
