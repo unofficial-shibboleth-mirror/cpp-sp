@@ -112,7 +112,9 @@ IPlugIn* FileCredResolverFactory(const DOMElement* e)
 
 FileResolver::FileResolver(const DOMElement* e)
 {
+#ifdef _DEBUG
     saml::NDC ndc("FileResolver");
+#endif
     static const XMLCh cPEM[] = { chLatin_P, chLatin_E, chLatin_M, chNull };
     static const XMLCh cDER[] = { chLatin_D, chLatin_E, chLatin_R, chNull };
     
@@ -192,6 +194,14 @@ FileResolver::FileResolver(const DOMElement* e)
                 }
             }
         }
+        else {
+            log_openssl();
+            if (in) {
+                BIO_free(in);
+                in=NULL;
+            }
+            throw CredentialException("FileResolver() unable to load PEM certificate(s) from file");
+        }
         if (in) {
             BIO_free(in);
             in=NULL;
@@ -268,7 +278,9 @@ FileResolver::~FileResolver()
 
 void FileResolver::attach(void* ctx) const
 {
+#ifdef _DEBUG
     saml::NDC ndc("FileResolver");
+#endif
     
     SSL_CTX* ssl_ctx=reinterpret_cast<SSL_CTX*>(ctx);
 
