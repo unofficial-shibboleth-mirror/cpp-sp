@@ -34,7 +34,7 @@
     <element name="ApplicationMap">
         <complexType>
             <sequence>
-                <element ref="appmap:VirtualHost" maxOccurs="unbounded"/>
+                <element ref="appmap:VirtualHost" minOccurs="0" maxOccurs="unbounded"/>
             </sequence>
     		<attribute name="ApplicationID" type="anyURI" use="required"/>
             <anyAttribute namespace="##any" processContents="lax"/>
