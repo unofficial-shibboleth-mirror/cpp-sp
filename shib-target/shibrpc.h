@@ -15,6 +15,12 @@ extern "C" {
 #endif
 
 
+/* Define NEED_XDR_LONGLONG in the cases where uint64_t is not defined */
+#ifdef NEED_XDR_LONGLONG
+#define uint64_t ulonglong_t
+#endif
+
+
 enum ShibRpcStatus {
 	SHIBRPC_OK = 0,
 	SHIBRPC_UNKNOWN_ERROR = 1,

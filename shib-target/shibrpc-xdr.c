@@ -10,6 +10,7 @@
 #define xdr_enum_t xdr_enum
 #endif
 
+
 bool_t
 xdr_ShibRpcStatus (XDR *xdrs, ShibRpcStatus *objp)
 {

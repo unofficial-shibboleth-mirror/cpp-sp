@@ -12,6 +12,16 @@
 %#ifndef xdr_enum_t
 %#define xdr_enum_t xdr_enum
 %#endif
+%
+#endif
+
+#ifdef RPC_HDR
+%
+%/* Define NEED_XDR_LONGLONG in the cases where uint64_t is not defined */
+%#ifdef NEED_XDR_LONGLONG
+%#define uint64_t ulonglong_t
+%#endif
+%
 #endif
 
 enum ShibRpcStatus {
