@@ -98,14 +98,30 @@ void shib_target_finalize (void);
 #include <shib.h>
 
 namespace shibtarget {
+  class ResourcePriv;
+  class Resource
+  {
+  public:
+    Resource(const char* resource_url);
+    Resource(std::string resource_url);
+    ~Resource();
+
+    const char* getResource();
+    const char* getURL();
+    bool equals(Resource*);
+
+  private:
+    ResourcePriv *m_priv;
+  };
+
+
   class CCache;
   class CCacheEntry
   {
   public:
     virtual ~CCacheEntry();
 
-    virtual saml::Iterator<saml::SAMLAttribute*> getAttributes(const char *resource_url) = 0;
-    virtual const char* getSerializedAssertion(const char* resource_url) = 0;
+    virtual saml::Iterator<saml::SAMLAssertion*> getAssertions(Resource& resource) = 0;
     virtual bool isSessionValid(time_t lifetime, time_t timeout) = 0;
     virtual const char* getClientAddress() = 0;
 
@@ -136,22 +152,6 @@ namespace shibtarget {
   };    
 
   extern CCache* g_shibTargetCCache;
-
-  class ResourcePriv;
-  class Resource
-  {
-  public:
-    Resource(const char* resource_url);
-    Resource(std::string resource_url);
-    ~Resource();
-
-    const char* getResource();
-    bool equals(Resource*);
-
-  private:
-    ResourcePriv *m_priv;
-  };
-
 
   class RPCHandleInternal;
   class RPCHandle
@@ -241,11 +241,11 @@ namespace shibtarget {
     RM(RPCHandle *rpc, RMConfig config);
     ~RM();
 
-    RPCError* getAttributes(const char* cookie, const char* ip,
-			    Resource *resource,
-			    std::vector<saml::QName*> attr_requests,
-			    std::vector<saml::SAMLAttribute*> &attr_replies,
-			    std::string &assertion);
+    RPCError* getAssertions(const char* cookie, const char* ip,
+			    const char* url,
+			    std::vector<saml::SAMLAssertion*> &assertions);
+    static void serialize(saml::SAMLAssertion &assertion, std::string &result);
+    static saml::Iterator<saml::SAMLAttribute*> getAttributes(saml::SAMLAssertion &assertion);
   private:
     RMPriv *m_priv;
   };

@@ -37,10 +37,10 @@ shibrpc_new_session_1(shibrpc_new_session_args_1 *argp, shibrpc_new_session_ret_
 }
 
 enum clnt_stat 
-shibrpc_get_attrs_1(shibrpc_get_attrs_args_1 *argp, shibrpc_get_attrs_ret_1 *clnt_res, CLIENT *clnt)
+shibrpc_get_assertions_1(shibrpc_get_assertions_args_1 *argp, shibrpc_get_assertions_ret_1 *clnt_res, CLIENT *clnt)
 {
-	return (clnt_call(clnt, shibrpc_get_attrs,
-		(xdrproc_t) xdr_shibrpc_get_attrs_args_1, (caddr_t) argp,
-		(xdrproc_t) xdr_shibrpc_get_attrs_ret_1, (caddr_t) clnt_res,
+	return (clnt_call(clnt, shibrpc_get_assertions,
+		(xdrproc_t) xdr_shibrpc_get_assertions_args_1, (caddr_t) argp,
+		(xdrproc_t) xdr_shibrpc_get_assertions_ret_1, (caddr_t) clnt_res,
 		TIMEOUT));
 }

@@ -33,21 +33,11 @@ xdr_ShibRpcHttpCookie_1 (XDR *xdrs, ShibRpcHttpCookie_1 *objp)
 }
 
 bool_t
-xdr_ShibRpcAttrReq_1 (XDR *xdrs, ShibRpcAttrReq_1 *objp)
+xdr_ShibRpcAssertion_1 (XDR *xdrs, ShibRpcAssertion_1 *objp)
 {
 	register int32_t *buf;
 
-	 if (!xdr_string (xdrs, &objp->req, ~0))
-		 return FALSE;
-	return TRUE;
-}
-
-bool_t
-xdr_ShibRpcAttrRep_1 (XDR *xdrs, ShibRpcAttrRep_1 *objp)
-{
-	register int32_t *buf;
-
-	 if (!xdr_string (xdrs, &objp->rep, ~0))
+	 if (!xdr_string (xdrs, &objp->assertion, ~0))
 		 return FALSE;
 	return TRUE;
 }
@@ -111,7 +101,7 @@ xdr_shibrpc_new_session_ret_1 (XDR *xdrs, shibrpc_new_session_ret_1 *objp)
 }
 
 bool_t
-xdr_shibrpc_get_attrs_args_1 (XDR *xdrs, shibrpc_get_attrs_args_1 *objp)
+xdr_shibrpc_get_assertions_args_1 (XDR *xdrs, shibrpc_get_assertions_args_1 *objp)
 {
 	register int32_t *buf;
 
@@ -121,14 +111,11 @@ xdr_shibrpc_get_attrs_args_1 (XDR *xdrs, shibrpc_get_attrs_args_1 *objp)
 		 return FALSE;
 	 if (!xdr_string (xdrs, &objp->url, ~0))
 		 return FALSE;
-	 if (!xdr_array (xdrs, (char **)&objp->attr_reqs.attr_reqs_val, (u_int *) &objp->attr_reqs.attr_reqs_len, ~0,
-		sizeof (ShibRpcAttrReq_1), (xdrproc_t) xdr_ShibRpcAttrReq_1))
-		 return FALSE;
 	return TRUE;
 }
 
 bool_t
-xdr_shibrpc_get_attrs_ret_1 (XDR *xdrs, shibrpc_get_attrs_ret_1 *objp)
+xdr_shibrpc_get_assertions_ret_1 (XDR *xdrs, shibrpc_get_assertions_ret_1 *objp)
 {
 	register int32_t *buf;
 
@@ -136,10 +123,8 @@ xdr_shibrpc_get_attrs_ret_1 (XDR *xdrs, shibrpc_get_attrs_ret_1 *objp)
 		 return FALSE;
 	 if (!xdr_string (xdrs, &objp->error_msg, ~0))
 		 return FALSE;
-	 if (!xdr_array (xdrs, (char **)&objp->attr_reps.attr_reps_val, (u_int *) &objp->attr_reps.attr_reps_len, ~0,
-		sizeof (ShibRpcAttrRep_1), (xdrproc_t) xdr_ShibRpcAttrRep_1))
-		 return FALSE;
-	 if (!xdr_string (xdrs, &objp->assertion, ~0))
+	 if (!xdr_array (xdrs, (char **)&objp->assertions.assertions_val, (u_int *) &objp->assertions.assertions_len, ~0,
+		sizeof (ShibRpcAssertion_1), (xdrproc_t) xdr_ShibRpcAssertion_1))
 		 return FALSE;
 	return TRUE;
 }

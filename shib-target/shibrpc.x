@@ -44,15 +44,9 @@ struct ShibRpcHttpCookie_1 {
   string	client_addr<>;
 };
 
-/* Types for Attribute "Requests" and "Replies" -- sent as Base64-encoded strings */
-struct ShibRpcAttrReq_1 {
-  string	req<>;
+struct ShibRpcAssertion_1 {
+  string	assertion<>;
 };
-
-struct ShibRpcAttrRep_1 {
-  string	rep<>;
-};
-
 
 /* function argument and response structures */
 
@@ -82,18 +76,16 @@ struct shibrpc_new_session_ret_1 {
 };
 
 
-struct shibrpc_get_attrs_args_1 {
+struct shibrpc_get_assertions_args_1 {
   ShibRpcHttpCookie_1	cookie;
   bool			checkIPAddress;
   string		url<>;
-  ShibRpcAttrReq_1	attr_reqs<>;
 };
 
-struct shibrpc_get_attrs_ret_1 {
+struct shibrpc_get_assertions_ret_1 {
   ShibRpcStatus		status;
   string		error_msg<>;
-  ShibRpcAttrRep_1	attr_reps<>;
-  string		assertion<>;
+  ShibRpcAssertion_1	assertions<>;
 };
 
 /* Define the Shib Target RPC interface */
@@ -115,8 +107,8 @@ program SHIBRPC_PROG {
 
     /* RM RPCs */
 
-    /* Get the attributes (and assertion) from the SHAR */
-    shibrpc_get_attrs_ret_1 shibrpc_get_attrs (shibrpc_get_attrs_args_1) = 3;
+    /* Get the assertions from the SHAR */
+    shibrpc_get_assertions_ret_1 shibrpc_get_assertions (shibrpc_get_assertions_args_1) = 3;
 
   } = 1;
 } = 123456;			/* XXX: Pick an RPC Program Number */

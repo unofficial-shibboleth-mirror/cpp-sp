@@ -335,19 +335,15 @@ extern "C" int shibrm_check_auth(request_rec* r)
     // Now grab the attributes...
     dc->config.checkIPAddress = (dc->checkIPAddress == 1 ? true : false);
     RM rm(rpc_handle, dc->config);
-    Resource resource(targeturl);
 
-    vector<saml::QName*> request;
-    vector<SAMLAttribute*> response;
-    string assertion;
+    vector<SAMLAssertion*> assertions;
 
-    RPCError* status = rm.getAttributes(session_id, r->connection->remote_ip,
-				       &resource, request, response, assertion);
-
+    RPCError* status = rm.getAssertions(session_id, r->connection->remote_ip,
+					targeturl, assertions);
 
     if (status->isError()) {
       ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
-		    "shibrm_check_auth() getAttributes failed: %s",
+		    "shibrm_check_auth() getAssertions failed: %s",
 		    status->error_msg.c_str());
 
       const string& rmError = ini.get (SHIBTARGET_HTTP, "rmError");
@@ -357,20 +353,34 @@ extern "C" int shibrm_check_auth(request_rec* r)
     }
     delete status;
 
+    const string& rmError = ini.get (SHIBTARGET_HTTP, "accessError");
+
+    // Only allow a single assertion...
+    if (assertions.size() != 1) {
+      ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
+		    "shibrm_check_auth() found %d assertions (should be 1)",
+		    assertions.size());
+    }
+
+    if (assertions.size() < 1)
+      return shibrm_error_page (r, rmError.c_str(), markupProcessor);
+
+
     // Clear out the list of mapped attributes
     for (map<string,string>::const_iterator i=g_mapAttribNameToHeader.begin();
 	 i!=g_mapAttribNameToHeader.end(); i++)
       ap_table_unset(r->headers_in, i->second.c_str());
 
-
     // Maybe export the assertion
     ap_table_unset(r->headers_in,"Shib-Attributes");
-    if (dc->bExportAssertion==1)
+    if (dc->bExportAssertion==1) {
+      string assertion;
+      RM::serialize(*(assertions[0]), assertion);
       ap_table_setn(r->headers_in,"Shib-Attributes", assertion.c_str());
+    }
 
-
-    // Export the attributes
-    Iterator<SAMLAttribute*> i=Iterator<SAMLAttribute*>(response);
+    // Export the attributes -- XXX: Assumes one statement!
+    Iterator<SAMLAttribute*> i = RM::getAttributes(*(assertions[0]));
     while (i.hasNext())
     {
       SAMLAttribute* attr=i.next();
@@ -392,6 +402,10 @@ extern "C" int shibrm_check_auth(request_rec* r)
 	}
       }
     }
+
+    // clean up memory
+    for (int i = 0; i < assertions.size(); i++)
+      delete assertions[i];
 
     // mod_auth clone
 
@@ -480,7 +494,6 @@ extern "C" int shibrm_check_auth(request_rec* r)
     if (!method_restricted)
         return OK;
 
-    const string& rmError = ini.get (SHIBTARGET_HTTP, "accessError");
     return shibrm_error_page (r, rmError.c_str(), markupProcessor);
 }
 

@@ -23,13 +23,13 @@ shibrpc_prog_1(struct svc_req *rqstp, register SVCXPRT *transp)
 		int shibrpc_ping_1_arg;
 		shibrpc_session_is_valid_args_1 shibrpc_session_is_valid_1_arg;
 		shibrpc_new_session_args_1 shibrpc_new_session_1_arg;
-		shibrpc_get_attrs_args_1 shibrpc_get_attrs_1_arg;
+		shibrpc_get_assertions_args_1 shibrpc_get_assertions_1_arg;
 	} argument;
 	union {
 		int shibrpc_ping_1_res;
 		shibrpc_session_is_valid_ret_1 shibrpc_session_is_valid_1_res;
 		shibrpc_new_session_ret_1 shibrpc_new_session_1_res;
-		shibrpc_get_attrs_ret_1 shibrpc_get_attrs_1_res;
+		shibrpc_get_assertions_ret_1 shibrpc_get_assertions_1_res;
 	} result;
 	bool_t retval;
 	xdrproc_t _xdr_argument, _xdr_result;
@@ -54,10 +54,10 @@ shibrpc_prog_1(struct svc_req *rqstp, register SVCXPRT *transp)
 		local = (bool_t (*) (char *, void *,  struct svc_req *))shibrpc_new_session_1_svc;
 		break;
 
-	case shibrpc_get_attrs:
-		_xdr_argument = (xdrproc_t) xdr_shibrpc_get_attrs_args_1;
-		_xdr_result = (xdrproc_t) xdr_shibrpc_get_attrs_ret_1;
-		local = (bool_t (*) (char *, void *,  struct svc_req *))shibrpc_get_attrs_1_svc;
+	case shibrpc_get_assertions:
+		_xdr_argument = (xdrproc_t) xdr_shibrpc_get_assertions_args_1;
+		_xdr_result = (xdrproc_t) xdr_shibrpc_get_assertions_ret_1;
+		local = (bool_t (*) (char *, void *,  struct svc_req *))shibrpc_get_assertions_1_svc;
 		break;
 
 	default:

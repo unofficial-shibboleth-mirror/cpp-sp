@@ -61,7 +61,6 @@
 
 #include "shib-target.h"
 
-#include <xercesc/util/Base64.hpp>
 #include <log4cpp/Category.hh>
 
 #include <strstream>
@@ -78,16 +77,13 @@ public:
   ResourceEntry(SAMLResponse* response);
   ~ResourceEntry();
 
-  bool isAssertionValid();
-  Iterator<SAMLAttribute*> getAttributes();
-  const char* getSerializedAssertion();
+  bool isValid();
+  Iterator<SAMLAssertion*> getAssertions();
 
-  static vector<SAMLAttribute*> g_emptyVector;
+  static vector<SAMLAssertion*> g_emptyVector;
 
 private:
   SAMLResponse* m_response;
-  SAMLAssertion* m_assertion;
-  char* m_serialized;
 
   log4cpp::Category* log;
 };
@@ -99,18 +95,17 @@ public:
   InternalCCacheEntry(SAMLAuthenticationStatement *s, const char *client_addr);
   virtual ~InternalCCacheEntry();
 
-  virtual Iterator<SAMLAttribute*> getAttributes(const char* resource_url);
-  virtual const char* getSerializedAssertion(const char* resource_url);
+  virtual Iterator<SAMLAssertion*> getAssertions(Resource& resource);
   virtual bool isSessionValid(time_t lifetime, time_t timeout);
   virtual const char* getClientAddress() { return m_clientAddress.c_str(); }
 
   virtual void setCache(CCache *cache);
 
 private:
-  ResourceEntry* populate(const char* resource_url);
-  ResourceEntry* find(const char* resource_url);
-  void insert(const char* resource_url, ResourceEntry* entry);
-  void remove(const char* resource_url);
+  ResourceEntry* populate(Resource& resource);
+  ResourceEntry* find(const char* resource);
+  void insert(const char* resource, ResourceEntry* entry);
+  void remove(const char* resource);
 
   string m_originSite;
   string m_handle;
@@ -172,7 +167,7 @@ void CCache::setCache(CCacheEntry* entry)
 // static members
 saml::QName InternalCCacheEntry::g_authorityKind(saml::XML::SAMLP_NS,L(AttributeQuery));
 saml::QName InternalCCacheEntry::g_respondWith(saml::XML::SAML_NS,L(AttributeStatement));
-vector<SAMLAttribute*> ResourceEntry::g_emptyVector;
+vector<SAMLAssertion*> ResourceEntry::g_emptyVector;
 
 
 /******************************************************************************/
@@ -301,39 +296,31 @@ void InternalCCacheEntry::setCache(CCache *cache)
   m_cache = cache;
 }
 
-Iterator<SAMLAttribute*> InternalCCacheEntry::getAttributes(const char* resource_url)
+Iterator<SAMLAssertion*> InternalCCacheEntry::getAssertions(Resource& resource)
 {
-  saml::NDC ndc("getAttributes");
-  ResourceEntry* entry = populate(resource_url);
+  saml::NDC ndc("getAssertions");
+  ResourceEntry* entry = populate(resource);
   if (entry)
-    return entry->getAttributes();
-  return Iterator<SAMLAttribute*>(ResourceEntry::g_emptyVector);
+    return entry->getAssertions();
+  return Iterator<SAMLAssertion*>(ResourceEntry::g_emptyVector);
 }
 
-const char* InternalCCacheEntry::getSerializedAssertion(const char* resource_url)
-{
-  saml::NDC ndc("getSerializedAssertion");
-  ResourceEntry* entry = populate(resource_url);
-  if (entry)
-    return entry->getSerializedAssertion();
-  return NULL;
-}
-
-ResourceEntry* InternalCCacheEntry::populate(const char* resource_url)
+ResourceEntry* InternalCCacheEntry::populate(Resource& resource)
 {
   saml::NDC ndc("populate");
-  log->debug("populating entry for %s", resource_url);
+  log->debug("populating entry for %s (%s)",
+	     resource.getResource(), resource.getURL());
 
   // Can we use what we have?
-  ResourceEntry *entry = find(resource_url);
+  ResourceEntry *entry = find(resource.getResource());
   if (entry) {
     log->debug("found resource");
-    if (entry->isAssertionValid())
+    if (entry->isValid())
       return entry;
 
     // entry is invalid (expired) -- go fetch a new one.
     log->debug("removing resource cache; assertion is invalid");
-    remove (resource_url);
+    remove (resource.getResource());
     delete entry;
   }
 
@@ -345,9 +332,9 @@ ResourceEntry* InternalCCacheEntry::populate(const char* resource_url)
   }
 
   log->info("trying to request attributes for %s@%s -> %s",
-	    m_handle.c_str(), m_originSite.c_str(), resource_url);
+	    m_handle.c_str(), m_originSite.c_str(), resource.getURL());
 
-  auto_ptr<XMLCh> resource(XMLString::transcode(resource_url));
+  auto_ptr<XMLCh> resourceURL(XMLString::transcode(resource.getURL()));
   Iterator<saml::QName> respond_withs = ArrayIterator<saml::QName>(&g_respondWith);
 
   // Clone the subject...
@@ -356,7 +343,7 @@ ResourceEntry* InternalCCacheEntry::populate(const char* resource_url)
   SAMLSubject* subject=static_cast<SAMLSubject*>(m_subject->clone());
 
   // Build a SAML Request....
-  SAMLAttributeQuery* q=new SAMLAttributeQuery(subject,resource.get());
+  SAMLAttributeQuery* q=new SAMLAttributeQuery(subject,resourceURL.get());
   SAMLRequest* req=new SAMLRequest(q,respond_withs);
 
   // Try this request against all the bindings in the AuthenticationStatement
@@ -383,7 +370,7 @@ ResourceEntry* InternalCCacheEntry::populate(const char* resource_url)
   }
 
   entry = new ResourceEntry(response);
-  insert (resource_url, entry);
+  insert (resource.getResource(), entry);
 
   log->info("fetched and stored SAML response");
   return entry;
@@ -401,16 +388,16 @@ ResourceEntry* InternalCCacheEntry::find(const char* resource_url)
   return i->second;
 }
 
-void InternalCCacheEntry::insert(const char* resource_url, ResourceEntry* entry)
+void InternalCCacheEntry::insert(const char* resource, ResourceEntry* entry)
 {
-  log->debug("inserting %s", resource_url);
-  m_resources[resource_url]=entry;
+  log->debug("inserting %s", resource);
+  m_resources[resource]=entry;
 }
 
-void InternalCCacheEntry::remove(const char* resource_url)
+void InternalCCacheEntry::remove(const char* resource)
 {
-  log->debug("removing %s", resource_url);
-  m_resources.erase(resource_url);
+  log->debug("removing %s", resource);
+  m_resources.erase(resource);
 }
 
 /******************************************************************************/
@@ -418,7 +405,6 @@ void InternalCCacheEntry::remove(const char* resource_url)
 /******************************************************************************/
 
 ResourceEntry::ResourceEntry(SAMLResponse* response)
-  : m_assertion(NULL), m_serialized(NULL)
 {
   string ctx = "shibtarget::ResourceEntry";
   log = &(log4cpp::Category::getInstance(ctx));
@@ -426,77 +412,58 @@ ResourceEntry::ResourceEntry(SAMLResponse* response)
   log->info("caching resource entry");
 
   m_response = response;
-
-  // Store off the assertion for quick access.
-  // Memory mgmt is based on the response pointer.
-  Iterator<SAMLAssertion*> i=m_response->getAssertions();
-  if (i.hasNext())
-    m_assertion=i.next();
 }
 
 ResourceEntry::~ResourceEntry()
 {
   delete m_response;
-  delete[] m_serialized;
 }
 
-Iterator<SAMLAttribute*> ResourceEntry::getAttributes()
+Iterator<SAMLAssertion*> ResourceEntry::getAssertions()
 {
-  saml::NDC ndc("getAttributes");
-  if (m_assertion)
-    {
-      Iterator<SAMLStatement*> i=m_assertion->getStatements();
-      if (i.hasNext())
-	{
-	  SAMLAttributeStatement* s=static_cast<SAMLAttributeStatement*>(i.next());
-	  if (s)
-	    return s->getAttributes();
-	}
-    }
-  return Iterator<SAMLAttribute*>(g_emptyVector);
+  saml::NDC ndc("getAssertions");
+  return m_response->getAssertions();
 }
 
-const char* ResourceEntry::getSerializedAssertion()
+bool ResourceEntry::isValid()
 {
-  saml::NDC ndc("getSerializedAssertion");
-  if (m_serialized)
-    return m_serialized;
-  if (!m_assertion)
-    return NULL;
-  ostrstream os;
-  os << *m_assertion;
-  unsigned int outlen;
-  XMLByte* serialized=Base64::encode(reinterpret_cast<XMLByte*>(os.str()),os.pcount(),&outlen);
-  return m_serialized=(char*)serialized;
-}
-
-bool ResourceEntry::isAssertionValid()
-{
-  saml::NDC ndc("isAssertionValid");
+  saml::NDC ndc("isValid");
 
   log->info("checking validity");
-  if (m_assertion && m_assertion->getNotOnOrAfter())
-  {
-    // This is awful, but the XMLDateTime class is truly horrible.
-    time_t now=time(NULL);
-#ifdef WIN32
-    struct tm* ptime=gmtime(&now);
-#else
-    struct tm res;
-    struct tm* ptime=gmtime_r(&now,&res);
-#endif
-    char timebuf[32];
-    strftime(timebuf,32,"%Y-%m-%dT%H:%M:%SZ",ptime);
-    auto_ptr<XMLCh> timeptr(XMLString::transcode(timebuf));
-    XMLDateTime curDateTime(timeptr.get());
-    int result=XMLDateTime::compareOrder(&curDateTime,
-					 m_assertion->getNotOnOrAfter());
-    if (result == XMLDateTime::LESS_THAN) {
-      log->debug("yes, still valid");
-      return true;
-    }
-  }
 
-  log->debug("not valid");
-  return false;
+  // This is awful, but the XMLDateTime class is truly horrible.
+  time_t now=time(NULL);
+#ifdef WIN32
+  struct tm* ptime=gmtime(&now);
+#else
+  struct tm res;
+  struct tm* ptime=gmtime_r(&now,&res);
+#endif
+  char timebuf[32];
+  strftime(timebuf,32,"%Y-%m-%dT%H:%M:%SZ",ptime);
+  auto_ptr<XMLCh> timeptr(XMLString::transcode(timebuf));
+  XMLDateTime curDateTime(timeptr.get());
+
+  Iterator<SAMLAssertion*> iter = getAssertions();
+
+  while (iter.hasNext()) {
+    SAMLAssertion* assertion = iter.next();
+
+    log->debug ("testing assertion...");
+
+    if (! assertion->getNotOnOrAfter()) {
+      log->debug ("getNotOnOrAfter failed.");
+      return false;
+    }
+
+    int result=XMLDateTime::compareOrder(&curDateTime,
+					 assertion->getNotOnOrAfter());
+    if (result != XMLDateTime::LESS_THAN) {
+      log->debug("nope, not still valid");
+      return false;
+    }
+  } // while
+
+  log->debug("yep, all still valid");
+  return true;
 }

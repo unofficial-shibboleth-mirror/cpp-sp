@@ -43,7 +43,7 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp, shibrpc_new_session_
 }
 
 bool_t
-shibrpc_get_attrs_1_svc(shibrpc_get_attrs_args_1 *argp, shibrpc_get_attrs_ret_1 *result, struct svc_req *rqstp)
+shibrpc_get_assertions_1_svc(shibrpc_get_assertions_args_1 *argp, shibrpc_get_assertions_ret_1 *result, struct svc_req *rqstp)
 {
 	bool_t retval;
 

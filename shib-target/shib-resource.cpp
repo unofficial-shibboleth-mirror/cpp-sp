@@ -24,6 +24,7 @@ public:
   ~ResourcePriv();
 
   string m_url;
+  string m_resource;
   log4cpp::Category* log;
 };
 
@@ -32,8 +33,14 @@ ResourcePriv::ResourcePriv(const char *str)
   string ctx = "shibtarget.Resource";
   log = &(log4cpp::Category::getInstance(ctx));
 
-  log->info("creating resource: \"%s\"", str);
   m_url = str;
+
+  // XXX: The Resource is just the hostname!
+  const char* colon=strchr(str,':');
+  const char* slash=strchr(colon+3,'/');
+  m_resource = m_url.substr(0, slash-str);
+
+  log->info("creating resource: \"%s\" -> \"%s\"", str, m_resource.c_str());
 }
 
 ResourcePriv::~ResourcePriv() {}
@@ -57,6 +64,11 @@ Resource::~Resource()
 }
 
 const char* Resource::getResource()
+{
+  return m_priv->m_resource.c_str();
+}
+
+const char* Resource::getURL()
 {
   return m_priv->m_url.c_str();
 }

@@ -257,11 +257,11 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
 }
 
 extern "C" bool_t
-shibrpc_get_attrs_1_svc(shibrpc_get_attrs_args_1 *argp,
-			shibrpc_get_attrs_ret_1 *result, struct svc_req *rqstp)
+shibrpc_get_assertions_1_svc(shibrpc_get_assertions_args_1 *argp,
+			shibrpc_get_assertions_ret_1 *result, struct svc_req *rqstp)
 {
   log4cpp::Category& log = get_category();
-  string ctx = get_threadid("get_attrs");
+  string ctx = get_threadid("get_assertions");
   saml::NDC ndc(ctx);
 
   if (!argp || !result) {
@@ -270,7 +270,6 @@ shibrpc_get_attrs_1_svc(shibrpc_get_attrs_args_1 *argp,
   }
 
   memset (result, 0, sizeof (*result));
-  result->assertion = strdup("");
 
   log.debug ("get attrs for client at %s", argp->cookie.client_addr);
   log.debug ("cookie: %s", argp->cookie.cookie);
@@ -297,33 +296,38 @@ shibrpc_get_attrs_1_svc(shibrpc_get_attrs_args_1 *argp,
     return TRUE;
   }
 
-  // grab the attributes for this entry/url
-  Iterator<SAMLAttribute*> iter=entry->getAttributes(argp->url);
-  u_int size = iter.size();
-  result->attr_reps.attr_reps_len = size;
+  try {
+    // grab the attributes for this resource
+    Resource resource(argp->url);
+    Iterator<SAMLAssertion*> iter = entry->getAssertions(resource);
+    u_int size = iter.size();
+    result->assertions.assertions_len = size;
 
-  // if we have attributes...
-  if (size) {
+    // if we have assertions...
+    if (size) {
 
-    // Build the response section
-    ShibRpcAttrRep_1* av = (ShibRpcAttrRep_1*) malloc (size * 
-						       sizeof (ShibRpcAttrRep_1));
-    result->attr_reps.attr_reps_val = av;
+      // Build the response section
+      ShibRpcAssertion_1* av =
+	(ShibRpcAssertion_1*) malloc (size * sizeof (ShibRpcAssertion_1));
+      result->assertions.assertions_val = av;
 
-    // and then serialize them all...
-    u_int i = 0;
-    while (iter.hasNext()) {
-      SAMLAttribute* attr = iter.next();
-      ostringstream os;
-      os << *attr;
-      av[i++].rep = strdup(os.str().c_str());
+      // and then serialize them all...
+      u_int i = 0;
+      while (iter.hasNext()) {
+	SAMLAssertion* as = iter.next();
+	ostringstream os;
+	os << *as;
+	av[i++].assertion = strdup(os.str().c_str());
+      }
     }
+  } catch (SAMLException& e) {
+    log.error ("received SAML exception");
+    ostringstream os;
+    os << e;
+    result->status = SHIBRPC_SAML_EXCEPTION;
+    result->error_msg = strdup(os.str().c_str());
+    return TRUE;
   }
-
-  // grab the serialized assertion
-  char* assn = strdup(entry->getSerializedAssertion(argp->url));
-  free (result->assertion);
-  result->assertion = assn;	// freed by RPC
 
   // and let it fly
   result->status = SHIBRPC_OK;

@@ -80,7 +80,7 @@ private:
 
 DummyMapper::DummyMapper()
 {
-    auto_ptr<XMLCh> buf(XMLString::transcode("shibprod0.internet2.edu"));
+    auto_ptr<XMLCh> buf(XMLString::transcode("wayf.internet2.edu"));
     m_hsnames.push_back(buf.get());
 }
 
