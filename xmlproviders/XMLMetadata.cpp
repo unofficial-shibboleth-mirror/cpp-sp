@@ -160,6 +160,20 @@ namespace {
             vector<const XENCEncryptionMethod*> m_methods;
         };
         
+        class KeyAuthority : public IKeyAuthority
+        {
+        public:
+            KeyAuthority(const DOMElement* e);
+            ~KeyAuthority();
+            
+            int getVerifyDepth() const { return m_depth; }
+            Iterator<DSIGKeyInfoList*> getKeyInfos() const { return m_klists; }
+        
+        private:
+            int m_depth;
+            vector<DSIGKeyInfoList*> m_klists;
+        };
+        
         class Role : public virtual IRoleDescriptor
         {
         public:
@@ -338,7 +352,7 @@ namespace {
             vector<const SAMLAttribute*> m_attrs;
         };
     
-        class EntityDescriptor : public IEntityDescriptor
+        class EntityDescriptor : public IExtendedEntityDescriptor
         {
         public:
             EntityDescriptor(
@@ -361,8 +375,9 @@ namespace {
             const IAffiliationDescriptor* getAffiliationDescriptor() const {return NULL;}
             const IOrganization* getOrganization() const {return m_org;}
             Iterator<const IContactPerson*> getContactPersons() const {return m_contacts;}
-            saml::Iterator<std::pair<const XMLCh*,const XMLCh*> > getAdditionalMetadataLocations() const {return m_locs;}
+            Iterator<pair<const XMLCh*,const XMLCh*> > getAdditionalMetadataLocations() const {return m_locs;}
             const IEntitiesDescriptor* getEntitiesDescriptor() const {return m_parent;}
+            Iterator<const IKeyAuthority*> getKeyAuthorities() const {return m_keyauths;}
             const DOMElement* getElement() const {return m_root;}
 
             // Used internally
@@ -377,10 +392,11 @@ namespace {
             vector<const IContactPerson*> m_contacts;
             vector<const IRoleDescriptor*> m_roles;
             vector<pair<const XMLCh*,const XMLCh*> > m_locs;
+            vector<const IKeyAuthority*> m_keyauths;
             time_t m_validUntil;
         };
 
-        class EntitiesDescriptor : public IEntitiesDescriptor
+        class EntitiesDescriptor : public IExtendedEntitiesDescriptor
         {
         public:
             EntitiesDescriptor(
@@ -394,8 +410,9 @@ namespace {
             const XMLCh* getName() const {return m_name;}
             bool isValid() const {return time(NULL) < m_validUntil;}
             const IEntitiesDescriptor* getEntitiesDescriptor() const {return m_parent;}
-            saml::Iterator<const IEntitiesDescriptor*> getEntitiesDescriptors() const {return m_groups;}
-            saml::Iterator<const IEntityDescriptor*> getEntityDescriptors() const {return m_providers;}
+            Iterator<const IEntitiesDescriptor*> getEntitiesDescriptors() const {return m_groups;}
+            Iterator<const IEntityDescriptor*> getEntityDescriptors() const {return m_providers;}
+            Iterator<const IKeyAuthority*> getKeyAuthorities() const {return m_keyauths;}
             const DOMElement* getElement() const {return m_root;}
         
         private:
@@ -404,6 +421,7 @@ namespace {
             const XMLCh* m_name;
             vector<const IEntitiesDescriptor*> m_groups;
             vector<const IEntityDescriptor*> m_providers;
+            vector<const IKeyAuthority*> m_keyauths;
             time_t m_validUntil;
         };
 
@@ -622,6 +640,48 @@ XMLMetadataImpl::KeyDescriptor::~KeyDescriptor()
     for (vector<const XENCEncryptionMethod*>::iterator i=m_methods.begin(); i!=m_methods.end(); i++)
         delete const_cast<XENCEncryptionMethod*>(*i);
     delete m_klist;
+}
+
+XMLMetadataImpl::KeyAuthority::KeyAuthority(const DOMElement* e) : m_depth(1)
+{
+    if (e->hasAttributeNS(NULL,SHIB_L(VerifyDepth)))
+        m_depth=XMLString::parseInt(e->getAttributeNS(NULL,SHIB_L(VerifyDepth)));
+    
+    // Process ds:KeyInfo children
+    e=saml::XML::getFirstChildElement(e,saml::XML::XMLSIG_NS,L(KeyInfo));
+    while (e) {
+        auto_ptr<DSIGKeyInfoList> klist(new DSIGKeyInfoList(NULL));
+
+        // We let XMLSec hack through anything it can. This should evolve over time, or we can
+        // plug in our own KeyResolver later...
+        DOMElement* child=saml::XML::getFirstChildElement(e);
+        while (child) {
+            try {
+                if (!klist->addXMLKeyInfo(child)) {
+                    Category::getInstance(XMLPROVIDERS_LOGCAT".XMLMetadataImpl.KeyAuthority").warn(
+                        "skipped unresolvable ds:KeyInfo child element");
+                }
+            }
+            catch (XSECCryptoException& xe) {
+                Category::getInstance(XMLPROVIDERS_LOGCAT".XMLMetadataImpl.KeyAuthority").error(
+                    "unable to process ds:KeyInfo child element: %s",xe.getMsg());
+            }
+            child=saml::XML::getNextSiblingElement(child);
+        }
+        
+        if (klist->getSize()>0)
+            m_klists.push_back(klist.release());
+        else
+            Category::getInstance(XMLPROVIDERS_LOGCAT".XMLMetadataImpl.KeyAuthority").warn(
+                "skipping ds:KeyInfo with no resolvable child elements");
+        e=saml::XML::getNextSiblingElement(e,saml::XML::XMLSIG_NS,L(KeyInfo));
+    }
+}
+
+XMLMetadataImpl::KeyAuthority::~KeyAuthority()
+{
+    for (vector<DSIGKeyInfoList*>::iterator i=m_klists.begin(); i!=m_klists.end(); i++)
+        delete (*i);
 }
 
 XMLMetadataImpl::Role::Role(const EntityDescriptor* provider, time_t validUntil, const DOMElement* e)
@@ -935,7 +995,14 @@ XMLMetadataImpl::EntityDescriptor::EntityDescriptor(
         DOMElement* child=saml::XML::getFirstChildElement(e);
         while (child) {
             // Process the various kinds of children that we care about...
-            if (saml::XML::isElementNamed(child,::XML::SAML2META_NS,SHIB_L(ContactPerson))) {
+            if (saml::XML::isElementNamed(e,::XML::SAML2META_NS,SHIB_L(Extensions))) {
+                DOMElement* ext = saml::XML::getFirstChildElement(child,::XML::SHIBMETA_NS,SHIB_L(KeyAuthority));
+                while (ext) {
+                    m_keyauths.push_back(new KeyAuthority(ext));
+                    ext = saml::XML::getNextSiblingElement(ext,::XML::SHIBMETA_NS,SHIB_L(KeyAuthority));
+                }
+            }
+            else if (saml::XML::isElementNamed(child,::XML::SAML2META_NS,SHIB_L(ContactPerson))) {
                 m_contacts.push_back(new ContactPerson(child));
             }
             else if (saml::XML::isElementNamed(child,::XML::SAML2META_NS,SHIB_L(Organization))) {
@@ -1036,6 +1103,8 @@ XMLMetadataImpl::EntityDescriptor::~EntityDescriptor()
         delete const_cast<IContactPerson*>(*i);
     for (vector<const IRoleDescriptor*>::iterator j=m_roles.begin(); j!=m_roles.end(); j++)
         delete const_cast<IRoleDescriptor*>(*j);
+    for (vector<const IKeyAuthority*>::iterator k=m_keyauths.begin(); k!=m_keyauths.end(); k++)
+        delete const_cast<IKeyAuthority*>(*k);
 }
 
 XMLMetadataImpl::EntitiesDescriptor::EntitiesDescriptor(
@@ -1053,7 +1122,14 @@ XMLMetadataImpl::EntitiesDescriptor::EntitiesDescriptor(
 
         e=saml::XML::getFirstChildElement(e);
         while (e) {
-            if (saml::XML::isElementNamed(e,::XML::SAML2META_NS,SHIB_L(EntitiesDescriptor)))
+            if (saml::XML::isElementNamed(e,::XML::SAML2META_NS,SHIB_L(Extensions))) {
+                DOMElement* ext = saml::XML::getFirstChildElement(e,::XML::SHIBMETA_NS,SHIB_L(KeyAuthority));
+                while (ext) {
+                    m_keyauths.push_back(new KeyAuthority(ext));
+                    ext = saml::XML::getNextSiblingElement(ext,::XML::SHIBMETA_NS,SHIB_L(KeyAuthority));
+                }
+            }
+            else if (saml::XML::isElementNamed(e,::XML::SAML2META_NS,SHIB_L(EntitiesDescriptor)))
                 m_groups.push_back(new EntitiesDescriptor(e,wrapper,m_validUntil,this));
             else if (saml::XML::isElementNamed(e,::XML::SAML2META_NS,SHIB_L(EntityDescriptor)))
                 m_providers.push_back(new EntityDescriptor(e,wrapper,m_validUntil,this));
@@ -1078,6 +1154,8 @@ XMLMetadataImpl::EntitiesDescriptor::~EntitiesDescriptor()
         delete const_cast<IEntityDescriptor*>(*i);
     for (vector<const IEntitiesDescriptor*>::iterator j=m_groups.begin(); j!=m_groups.end(); j++)
         delete const_cast<IEntitiesDescriptor*>(*j);
+    for (vector<const IKeyAuthority*>::iterator k=m_keyauths.begin(); k!=m_keyauths.end(); k++)
+        delete const_cast<IKeyAuthority*>(*k);
 }
 
 void XMLMetadataImpl::init()
