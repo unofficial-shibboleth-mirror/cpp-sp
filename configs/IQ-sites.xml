@@ -26,7 +26,7 @@
 		<Alias>Example State University</Alias>
 		<Contact Type="technical" Name="InQueue Support" Email="inqueue-support@internet2.edu"/>
 		<AssertionConsumerServiceURL Location="https://wayf.internet2.edu/Shibboleth.shire"/>
-		<AttributeRequester Name="CN=wayf.internet2.edu, OU=TSG, O=University Corporation for Advanced Internet Development, L=Ann Arbor, ST=Michigan, C=US"/>
+		<AttributeRequester Name="wayf.internet2.edu"/>
 	</DestinationSite>
 
 	<DestinationSite Name="urn:mace:inqueue:shibdev.edu">
@@ -34,6 +34,6 @@
 		<Contact Type="technical" Name="Scott Cantor" Email="cantor.2@osu.edu"/>
 		<AssertionConsumerServiceURL Location="http://shib2.internet2.edu/Shibboleth.shire"/>
 		<AssertionConsumerServiceURL Location="https://shib2.internet2.edu/Shibboleth.shire"/>
-		<AttributeRequester Name="Email=root@shib2.internet2.edu, CN=shib2.internet2.edu, O=UCAID, L=Ann Arbor, ST=Michigan, C=US"/>
+		<AttributeRequester Name="shib2.internet2.edu"/>
 	</DestinationSite>
 </SiteGroup>

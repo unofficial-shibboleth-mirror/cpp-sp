@@ -10,13 +10,12 @@
  	To bind a key to an entity directly, the key must be specified within the
  	<ds:KeyInfo> as either a <ds:KeyValue> (a bare key) or a <ds:X509Certificate>
  	within <ds:X509Data>. One or more "names" can be associated with the key
- 	using <ds:KeyName> or <ds:X509Subject> in <ds:X509Data>. In both cases, use
- 	of a full distinguished name in LDAP/RFC2253 format is suggested (reverse
- 	order of RDNs from X.500, separated by a comma and a space). This syntax
- 	is mandatory when using <ds:X509Subject>. It is permissible in <ds:KeyName>
- 	to just specify the entity's common name (CN) or a DNS subjectAltName, as
- 	typically done when evaluating TLS certificates, but we suggest using the
- 	complete DN to simplify matching.
+ 	using <ds:KeyName> or <ds:X509Subject> in <ds:X509Data>. It is suggested in
+	<ds:KeyName> to just specify the entity's common name (CN) or a DNS subjectAltName,
+	as typically done when evaluating TLS certificates. For specialized cases, we
+	support use of a full distinguished name in LDAP/RFC2253 format (reverse
+ 	order of RDNs from X.500, separated by a comma). This syntax is mandatory
+	when using <ds:X509Subject>.
  	
  	To output the subject of a certificate in this form, use the following
  	OpenSSL command:
@@ -30,14 +29,14 @@
 
  	Here is an example that binds a key directly to a host using a certificate.
  	Note that trust metadata does not define what this host is or what role it
- 	performs. This is typically handled by referencing the corresponding name
+ 	performs. This is typically handled by referencing the corresponding key name
  	in operational metadata. Also note that no validation of a certificate
  	specified in this form will be done, the key is merely extracted. To
  	revoke or expire the key binding, the entry must be removed.
  	-->
 
     <ds:KeyInfo>
-    	<ds:KeyName>CN=localhost, O=Shibboleth Project, C=US</ds:KeyName>
+    	<ds:KeyName>localhost</ds:KeyName>
         <ds:X509Data>
             <ds:X509Certificate>MIICtjCCAh+gAwIBAgIBADANBgkqhkiG9w0BAQQFADA+MQswCQYDVQQGEwJVUzEb
 MBkGA1UEChMSU2hpYmJvbGV0aCBQcm9qZWN0MRIwEAYDVQQDEwlsb2NhbGhvc3Qw
@@ -76,8 +75,7 @@ o/72FFuLImOT2CUdJ/FonPKo2w0NhOTP4Hc=
 	the names of entities or groups of entities (such as federations) to which
 	the succeeding CA information applies. The name should be specified either
 	as a URI (for entities such as SAML identity and service providers and
-	federations) or an LDAP DN for system-level entities. Shorthand common names
-	can also be used but are best avoided.
+	federations) or a CN for system-level entities.
 	
 	These names are followed by an arbitrary sequence of <ds:KeyInfo> elements
 	which are interpreted specifically for this context. All the embedded
@@ -119,7 +117,7 @@ o/72FFuLImOT2CUdJ/FonPKo2w0NhOTP4Hc=
     -->
 
     <KeyAuthority VerifyDepth="0">
-        <ds:KeyName>CN=localhost, O=Shibboleth Project, C=US</ds:KeyName>
+        <ds:KeyName>localhost</ds:KeyName>
         <ds:KeyInfo>
             <ds:X509Data>
                 <ds:X509Certificate>MIICtjCCAh+gAwIBAgIBADANBgkqhkiG9w0BAQQFADA+MQswCQYDVQQGEwJVUzEb
