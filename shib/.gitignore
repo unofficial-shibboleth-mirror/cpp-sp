@@ -4,3 +4,8 @@
 /.deps
 /*.lo
 /*.la
+/Debug
+/Release
+/*.dep
+/*.mak
+/*.plg
