@@ -221,8 +221,7 @@ void STConfig::init()
         log.info("registering metadata provider: type=%s, source=%s",prov->c_str(),source.c_str());
         if (!shibConf.addMetadata(prov->c_str(),source.c_str()))
         {
-            log.fatal("error adding metadata provider");
-            throw runtime_error("error adding metadata provider");
+            log.crit("error adding metadata provider: type=%s, source=%s",prov->c_str(),source.c_str());
         }
     }
     delete iter;
