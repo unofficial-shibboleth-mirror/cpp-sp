@@ -6,3 +6,4 @@
 /test-client
 /*.plg
 /testclient___Win32_Debug
+/testclient___Win32_Release
