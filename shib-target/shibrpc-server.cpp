@@ -206,6 +206,10 @@ shibrpc_session_is_valid_1_svc(shibrpc_session_is_valid_args_1 *argp,
       os << e;
       throw ShibTargetException(SHIBRPC_SAML_EXCEPTION, os.str().c_str(), origin);
     }
+    catch (ShibTargetException&) {
+      // These are caught and handled down below.
+      throw;
+    }
 #ifndef _DEBUG
     catch (...) {
       log.error ("prefetch caught an unknown exception");
@@ -518,19 +522,20 @@ shibrpc_get_assertions_1_svc(shibrpc_get_assertions_args_1 *argp,
       os << e;
       throw ShibTargetException(SHIBRPC_SAML_EXCEPTION, os.str().c_str(), origin);
     }
-#ifndef _DEBUG
-    catch (...) {
-      log.error ("caught an unknown exception");
-      throw ShibTargetException(SHIBRPC_UNKNOWN_ERROR,
-            "An unknown error occured while fetching attributes.", origin);
-    }
-#endif
   }
   catch (ShibTargetException &e) {
     entry->unlock();
     set_rpc_status(&result->status, e);
     return TRUE;
   }
+#ifndef _DEBUG
+  catch (...) {
+    entry->unlock();
+    log.error ("caught an unknown exception");
+    throw ShibTargetException(SHIBRPC_UNKNOWN_ERROR,
+          "An unexpected error occured while fetching attributes.", origin);
+  }
+#endif
 
 
   // Now grab the serialized authentication statement
