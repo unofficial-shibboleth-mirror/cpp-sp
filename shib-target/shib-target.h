@@ -342,49 +342,6 @@ namespace shibtarget {
         std::map<std::string,std::string> m_map;
         std::string m_generated;
     };
-
-  class SHIBTARGET_EXPORTS ShibTargetResponse
-  {
-  public:
-    // What to do with the response
-    enum ReturnValue {
-      OK = 0,
-      DECLINED,
-      REDIRECT,
-      INTERNAL_ERROR
-    };
-
-    // How to log the message, if any.  (NONE implies no log_msg)
-    enum LogLevel {
-      NONE = 0,
-      DEBUG,
-      INFO,
-      ERR,
-      CRIT
-    };
-
-    ReturnValue	status;
-    LogLevel	log_level;
-    bool	has_mlp;
-
-    std::string	log_msg;	// message to log if log_level != NONE
-    std::string	redirect_to;	// where to redirect if status == REDIRECT
-    ShibMLP	mlp;		// MLP information if has_mlp == true
-  };
-
-  // The ShibTargetError is used by the high-level SHIRE and RM methods
-  // to notify the handlers of high-level errors.
-
-  class SHIBTARGET_EXPORTS ShibTargetError : public std::exception
-  {
-  public:
-    explicit ShibTargetError(ShibTargetResponse *resp = NULL) { m_resp = resp; }
-    virtual ~ShibTargetError() throw () { if (m_resp) delete m_resp; }
-    virtual const ShibTargetResponse* getError() { return m_resp; }
-
-  private:
-    ShibTargetResponse *m_resp;
-  };
 }
 
 #endif /* SHIB_TARGET_H */
