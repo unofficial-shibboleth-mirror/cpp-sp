@@ -94,7 +94,9 @@ char *makeword(char *line, char stop)
         ++x;
     y=0;
 
-    while(line[y++] = line[x++]);
+    while(line[x])
+      line[y++] = line[x++];
+    line[y] = '\0';
     return word;
 }
 
