@@ -58,10 +58,12 @@ void set_rpc_status(ShibRpcError *error, ShibRpcStatus status,
 void set_rpc_status_x(ShibRpcError *error, ShibRpcStatus status,
 		      const char* msg, const XMLCh* origin)
 {
-  if (!status)
-    return set_rpc_status(error, status, NULL, NULL);
+  if (!status) {
+    set_rpc_status(error, status, NULL, NULL);
+    return;
+  }
   auto_ptr<char> orig(XMLString::transcode(origin));
-  return set_rpc_status(error, status, msg, orig.get());
+  set_rpc_status(error, status, msg, orig.get());
 }
 
 extern "C" bool_t
