@@ -64,6 +64,7 @@ using namespace std;
 ClubShibPOSTProfile::ClubShibPOSTProfile(const Iterator<const XMLCh*>& policies, const XMLCh* receiver, int ttlSeconds)
     : ShibPOSTProfile(policies,receiver,ttlSeconds)
 {
+    return;
     bool found=false;
     for (vector<const XMLCh*>::iterator i=m_policies.begin(); !found && i!=m_policies.end(); i++)
         if (!XMLString::compareString(Constants::POLICY_INCOMMON,*i))
@@ -75,6 +76,7 @@ ClubShibPOSTProfile::ClubShibPOSTProfile(const Iterator<const XMLCh*>& policies,
 ClubShibPOSTProfile::ClubShibPOSTProfile(const Iterator<const XMLCh*>& policies, const XMLCh* issuer)
     : ShibPOSTProfile(policies,issuer)
 {
+    return;
     bool found=false;
     for (vector<const XMLCh*>::iterator i=m_policies.begin(); !found && i!=m_policies.end(); i++)
         if (!XMLString::compareString(Constants::POLICY_INCOMMON,*i))
