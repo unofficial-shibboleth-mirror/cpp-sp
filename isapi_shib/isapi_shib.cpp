@@ -923,6 +923,136 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
     return WriteClientError(pfc,"Server reached unreachable code, save my walrus!");
 }
 
+/****************************************************************************/
+// ISAPI Extension
+
+class ShibTargetIsapiE : public ShibTarget
+{
+public:
+  ShibTargetIsapiE(LPEXTENSION_CONTROL_BLOCK lpECB, const site_t& site) :
+    m_cookie(NULL)
+  {
+    dynabuf ssl(5);
+    GetServerVariable(lpECB,"HTTPS",ssl,5);
+    bool SSL=(ssl=="on" || ssl=="ON");
+
+    // URL path always come from IIS.
+    dynabuf url(256);
+    GetServerVariable(lpECB,"URL",url,255);
+
+    // Port may come from IIS or from site def.
+    dynabuf port(11);
+    if (site.m_port.empty() || !g_bNormalizeRequest)
+        GetServerVariable(lpECB,"SERVER_PORT",port,10);
+    else {
+        strncpy(port,site.m_port.c_str(),10);
+        static_cast<char*>(port)[10]=0;
+    }
+
+    // Scheme may come from site def or be derived from IIS.
+    const char* scheme=site.m_scheme.c_str();
+    if (!scheme || !*scheme || !g_bNormalizeRequest) {
+        scheme = SSL ? "https" : "http";
+    }
+
+    // Get the remote address
+    dynabuf remote_addr(16);
+    GetServerVariable(lpECB, "REMOTE_ADDR", remote_addr, 16);
+
+    init(g_Config, string(scheme), site.m_name, atoi(port),
+	 string(url), string(lpECB->lpszContentType ? lpECB->lpszContentType : ""),
+	 string(remote_addr), string(lpECB->lpszMethod)
+	 ); 
+
+    m_lpECB = lpECB;
+  }
+  ~ShibTargetIsapiE() { }
+
+  virtual void log(ShibLogLevel level, const string &msg) {
+    LogEvent(NULL, (level == LogLevelDebug : EVENTLOG_DEBUG_TYPE ?
+		    (level == LogLevelInfo : EVENTLOG_INFORMATION_TYPE ?
+		     (level == LogLevelWarn : EVENTLOG_WARNING_TYPE ?
+		      EVENTLOG_ERROR_TYPE))),
+	     2100, NULL, msg.c_str());
+  }
+  // Not used in the extension.
+  //virtual string getCookies(void) { }
+  virtual void setCookie(const string &name, const string &value) {
+    // Set the cookie for later.  Use it during the redirect.
+    m_cookie += "Set-Cookie: " + name + "=" + value + "\r\n";
+  }
+  virtual string getArgs(void) {
+    return string(m_lpECB->lpszQueryString ? m_lpECB->lpszQueryString : "");
+  }
+  virtual string getPostData(void) {
+    if (m_lpECB->cbTotalBytes > 1024*1024) // 1MB?
+      throw ShibTargetException(SHIBRPC_OK,
+				"blocked too-large a post to SHIRE POST processor");
+    else if (m_lpECB->cbTotalBytes != lpECB->cbAvailable) {
+      string cgistr;
+      char buf[8192];
+      DWORD datalen=m_lpECB->cbTotalBytes;
+      while (datalen) {
+	DWORD buflen=8192;
+	BOOL ret = m_lpECB->ReadClient(m_lpECB->ConnID, buf, &buflen);
+	if (!ret || !buflen)
+	  throw ShibTargetException(SHIBRPC_OK,
+				    "error reading POST data from browser");
+	cgistr.append(buf, buflen);
+	datalen-=buflen;
+      }
+      return cgistr;
+    }
+    else
+      return string(reinterpret_cast<char*>(m_lpECB->lpbData),m_lpECB->cbAvailable);
+  }
+  // Not used in the Extension
+  //virtual void clearHeader(const string &name) {  }
+  //virtual void setHeader(const string &name, const string &value) {  }
+  //virtual string getHeader(const string &name) {  }
+  //virtual void setRemoteUser(const string &user) { }
+  //virtual string getRemoteUser(void) { }
+  virtual void* sendPage(const string &msg, const string content_type,
+			 const pair<string, string> headers[], int code) {
+    string hdr = string ("Connection: close\r\nContent-type: ") + content_type + "\r\n";
+    for (int k = 0; k < headers.size(); k++) {
+      hdr += headers[k].first + ": " + headers[k].second + "\r\n";
+    }
+    hdr += "\r\n";
+    // XXX Need to handle "code"
+    m_lpECB->ServerSupportFunction(m_lpECB->ConnID, HSE_REQ_SEND_RESPONSE_HEADER,
+				   "200 OK", (LPDWORD)hdr.c_str());
+    DWORD resplen = msg.size();
+    m_lpECB->WriteClient(m_lpECB->ConnID, (LPVOID)msg.c_str(), &resplen, HSE_IO_SYNC);
+    return (void*)HSE_STATUS_SUCCESS;
+  }
+  virtual void* sendRedirect(const string url) {
+    // XXX: Don't support the httpRedirect option, yet.
+    string hdrs = m_cookie + "Location: " + url + "\r\n"
+      "Content-Type: text/html\r\n"
+      "Content-Length: 40\r\n"
+      "Expires: 01-Jan-1997 12:00:00 GMT\r\n"
+      "Cache-Control: private,no-store,no-cache\r\n\r\n";
+    m_lpECB->ServerSupportFunction(m_lpECB->ConnID, HSE_REQ_SEND_RESPONSE_HEADER,
+				 "302 Moved", 0, (LPDWORD)hdrs.c_str());
+    static const char* redmsg="<HTML><BODY>Redirecting...</BODY></HTML>";
+    DWORD resplen=40;
+    m_lpECB->WriteClient(m_lpECB->ConnID, (LPVOID)redmsg, &resplen, HSE_IO_SYNC);
+    return (void*)HSE_STATUS_SUCCESS;
+  }
+  // Decline happens in the POST processor if this isn't the shire url
+  // Note that it can also happen with HTAccess, but we don't suppor that, yet.
+  virtual void* returnDecline(void) {
+    return (void*)
+      WriteClientError(m_lpECB, "UISAPA extension can only be unvoked to process incoming sessions."
+		       "Make sure the mapped file extension doesn't match actual content.");
+  }
+  virtual void* returnOK(void) { return (void*) HSE_STATUS_SUCCESS; }
+
+  LPEXTENSION_CONTROL_BLOCK m_lpECB;
+  string m_cookie;
+};
+
 IRequestMapper::Settings map_request(
     LPEXTENSION_CONTROL_BLOCK lpECB, IRequestMapper* mapper, const site_t& site, string& target
     )
