@@ -263,37 +263,53 @@ const char* RPCError::getDesc()
 
 int RPCError::getCode() { return m_priv->status; }
 
-typedef const char* (OriginSiteMapper::* Pmember)(const XMLCh*) const;
-const char* get_mapper_string(const char* defaultStr, Pmember fcn,
-			      const XMLCh* originSite)
-{
-  const char* res = NULL;
-
-  if (originSite) {
-    OriginSiteMapper mapper;
-    res = (mapper.*fcn)(originSite);
-  }
-
-  if (res && *res)
-    return res;
-
-  return defaultStr;
-}
-
 const char* RPCError::getOriginErrorURL()
 {
-  return get_mapper_string("No URL Available", &OriginSiteMapper::getErrorURL,
-			   m_priv->origin.c_str());
+    const char* res="No URL Available";
+    if (!m_priv->origin.empty())
+    {
+        OriginSiteMapper mapper;
+        res=mapper.getErrorURL(m_priv->origin.c_str());
+    }
+    return res;
 }
 
 const char* RPCError::getOriginContactName()
 { 
-  return get_mapper_string("No Name Available", &OriginSiteMapper::getContactName,
-			   m_priv->origin.c_str());
+    const char* res="No Name Available";
+    if (!m_priv->origin.empty())
+    {
+        OriginSiteMapper mapper;
+        Iterator<const IContactInfo*> i=mapper.getContacts(m_priv->origin.c_str());
+        while (i.hasNext())
+        {
+            const IContactInfo* c=i.next();
+            if (c->getType()==IContactInfo::technical)
+            {
+                res=c->getName();
+                break;
+            }
+        }
+    }
+    return res;
 }
 
 const char* RPCError::getOriginContactEmail()
 {
-  return get_mapper_string("No Email Available", &OriginSiteMapper::getContactEmail,
-			   m_priv->origin.c_str());
+    const char* res="No Email Available";
+    if (!m_priv->origin.empty())
+    {
+        OriginSiteMapper mapper;
+        Iterator<const IContactInfo*> i=mapper.getContacts(m_priv->origin.c_str());
+        while (i.hasNext())
+        {
+            const IContactInfo* c=i.next();
+            if (c->getType()==IContactInfo::technical)
+            {
+                res=c->getEmail();
+                break;
+            }
+        }
+    }
+    return res;
 }
