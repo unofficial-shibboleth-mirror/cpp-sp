@@ -363,7 +363,7 @@
 					<attribute name="wayfURL" type="anyURI" use="required"/>
 					<attribute name="shireURL" type="anyURI" use="required"/>
 					<attribute name="shireSSL" type="boolean" use="optional"/>
-					<attribute name="cookieName" type="string" use="required"/>
+					<attribute name="cookieName" type="string" use="optional"/>
 					<attribute name="cookieProps" type="string" use="optional"/>
 					<attribute name="lifetime" type="unsignedInt" use="optional"/>
 					<attribute name="timeout" type="unsignedInt" use="optional"/>
