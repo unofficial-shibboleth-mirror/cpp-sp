@@ -257,6 +257,19 @@ void STConfig::init()
     delete iter;
   }
   
+  // Backward-compatibility-hack to pull in aap-uri from [shire] and load
+  // as attribute metadata. We load this for anything, not just the SHIRE.
+  if (init->get_tag(SHIBTARGET_SHIRE, "aap-uri", false, &tag))
+  {
+    log.info("registering metadata provider: type=edu.internet2.middleware.shibboleth.target.AAP.XML, source=%s",tag.c_str());
+    if (!shibConf.addMetadata("edu.internet2.middleware.shibboleth.target.AAP.XML",tag.c_str()))
+    {
+        log.crit("error adding metadata provider: type=edu.internet2.middleware.shibboleth.target.AAP.XML, source=%s",tag.c_str());
+        if (!strcmp(app.c_str(), SHIBTARGET_SHAR))
+            throw runtime_error("error adding metadata provider");
+    }
+  }
+  
   // Load SAML policies.
   if (ini->exists(SHIBTARGET_POLICIES)) {
     log.info("loading SAML policies");
