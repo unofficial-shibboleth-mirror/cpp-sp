@@ -602,6 +602,8 @@ extern "C" void shib_child_init(server_rec* s, pool* p)
     SAMLconf.ssl_keyfile=g_szSSLKeyFile;
     SAMLconf.ssl_keypass=g_szSSLKeyPass;
     SAMLconf.ssl_calist=g_szSSLCAList;
+    SAMLconf.bVerbose=(s->loglevel==APLOG_DEBUG);
+
     if (!SAMLConfig::init(&SAMLconf))
     {
         std::fprintf(stderr,"shib_child_init() failed to initialize OpenSAML\n");
