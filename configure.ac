@@ -154,8 +154,8 @@ AC_TRY_LINK(
         ])
 
 # output the underlying makefiles
-WANT_SUBDIRS="shib schemas configs shib-target shar siterefresh test"
-AC_CONFIG_FILES([Makefile shib/Makefile schemas/Makefile \
+WANT_SUBDIRS="doc shib schemas configs shib-target shar siterefresh test"
+AC_CONFIG_FILES([Makefile doc/Makefile shib/Makefile schemas/Makefile \
 		 configs/Makefile oncrpc/Makefile oncrpc/rpc/Makefile \
 		 shib-target/Makefile shar/Makefile siterefresh/Makefile \
 		 test/Makefile])
