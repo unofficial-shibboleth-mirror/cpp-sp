@@ -1,3 +1,53 @@
+11/15/04
+Version 1.2.1
+
+This release is a fully compatible minor update
+to the Shibboleth 1.2.1 release. It addesses problems
+and small functional gaps identified since the release
+of the previous version.
+
+New features in 1.2
+-------------------
+Support for the target software on Mac OS X
+
+Improved target RequestMap handling of web sites
+running on both http and https.
+
+Bug Fixes
+---------
+Target build scripts better detect and handle threading
+and RPC issues.
+
+Variety of target race conditions and exceptions in RPC
+and socket handling.
+
+Bugs in assertion condition handling.
+
+Target RequestMap should ignore query strings.
+
+Fixed the library path in Windows resolvertest batch 
+file loader.
+
+Fixed a crash in extkeytool program.
+
+Fixed a file descriptor leak in the IdP.
+
+Fixed a bug that prevented the HS from supporting 
+multiple SAML Name Identifier formats.
+
+The attribute resolver now retains the order of attribute 
+values obtained from data connectors.
+
+The JDBC Data Connector ignores case when mapping 
+sourceName to the attribute name.
+
+Minor udpates to documentation.
+
+Rev'd dependant java libraries (Xerces, Commons Pool, 
+Commons DBCP)
+
+
+-------
 4/30/04
 Version 1.2
 
