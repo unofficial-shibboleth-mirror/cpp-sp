@@ -190,7 +190,7 @@ bool TCPListener::bind(ShibSocket& s, bool force) const
 
     // XXX: Do we care about the return value from setsockopt?
     int opt = 1;
-    setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+    ::setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (const char*)&opt, sizeof(opt));
 
 #ifdef WIN32
     if (SOCKET_ERROR==::bind(s,(struct sockaddr *)&addr,sizeof(addr)) || SOCKET_ERROR==::listen(s,3)) {
