@@ -689,7 +689,7 @@ SAMLResponse* InternalCCacheEntry::getNewResponse()
             providerID.second,
             application->getAttributeDesignators().clone()
             );
-        auto_ptr<SAMLRequest> req(new SAMLRequest(EMPTY(QName),q));
+        auto_ptr<SAMLRequest> req(new SAMLRequest(q,EMPTY(QName)));
         
         // Sign it? Highly doubtful we'll ever use this, but just for fun...
         if (signRequest.first && signRequest.second) {
