@@ -411,7 +411,9 @@ namespace shibtarget {
       return sendPage(m);
     }
 
-    virtual void* sendRedirect(const std::string url)=0;
+    virtual void* sendError(const char* page, ShibMLP &mlp);
+    virtual void* sendRedirect(const std::string& url)=0;
+    
 
     // These next two APIs are used to obtain the module-specific "OK"
     // and "Decline" results.  OK means "we believe that this request
@@ -479,8 +481,9 @@ namespace shibtarget {
         int supported_profiles,
         const char* packet,
         const char* ip,
+        std::string& target,
         std::string& cookie,
-        std::string& target
+        std::string& provider_id
         ) const;
 
     void sessionGet(

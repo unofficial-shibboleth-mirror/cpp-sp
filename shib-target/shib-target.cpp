@@ -108,7 +108,6 @@ namespace shibtarget {
 
     string url_encode(const char* s);
     void get_application(const string& protocol, const string& hostname, int port, const string& uri);
-    void* sendError(ShibTarget* st, string page, ShibMLP &mlp);
     const char* getSessionId(ShibTarget* st);
     const char* getRelayState(ShibTarget* st);
 
@@ -292,7 +291,7 @@ ShibTarget::doCheckAuthN(bool requireSessionFlag, bool handleProfile)
     if (targetURL)
         mlp.insert("requestURL", targetURL);
 
-    return pair<bool,void*>(true,m_priv->sendError(this, "session", mlp));
+    return pair<bool,void*>(true,sendError("session", mlp));
 }
 
 pair<bool,void*>
@@ -354,14 +353,15 @@ ShibTarget::doHandleProfile(void)
         }
 	
         // Process the submission
-        string cookie,target;
+        string cookie,target,provider;
         try {
             sessionNew(
                 SAML11_POST | SAML11_ARTIFACT,
                 cgistr.c_str(),
                 m_priv->m_remote_addr.c_str(),
+                target,
                 cookie,
-                target
+                provider
                 );
         }
         catch (SAMLException& e) {
@@ -402,6 +402,20 @@ ShibTarget::doHandleProfile(void)
         // ... and redirect to the target
         return pair<bool,void*>(true, sendRedirect(target));
     }
+    catch (MetadataException& e) {
+        mlp.insert(e);
+        // See if a metadata error page is installed.
+        const IPropertySet* props=m_priv->m_app->getPropertySet("Errors");
+        if (props) {
+            pair<bool,const char*> p=props->getString("metadata");
+            if (p.first) {
+                mlp.insert("errorType", procState);
+                if (targetURL)
+                    mlp.insert("requestURL", targetURL);
+                return pair<bool,void*>(true,sendError("metadata", mlp));
+            }
+        }
+    }
     catch (SAMLException& e) {
         mlp.insert(e);
     }
@@ -417,7 +431,7 @@ ShibTarget::doHandleProfile(void)
     if (targetURL)
         mlp.insert("requestURL", targetURL);
 
-    return pair<bool,void*>(true,m_priv->sendError(this, "session", mlp));
+    return pair<bool,void*>(true,sendError("session", mlp));
 }
 
 pair<bool,void*>
@@ -447,7 +461,7 @@ ShibTarget::doCheckAuthZ(void)
                 if (targetURL)
                     mlp.insert("requestURL", targetURL);
                 // TODO: check setting and return 403
-                return pair<bool,void*>(true,m_priv->sendError(this, "access", mlp));
+                return pair<bool,void*>(true,sendError("access", mlp));
             }
         }
 
@@ -656,7 +670,7 @@ ShibTarget::doCheckAuthZ(void)
     if (targetURL)
         mlp.insert("requestURL", targetURL);
 
-    return pair<bool,void*>(true,m_priv->sendError(this, "access", mlp));
+    return pair<bool,void*>(true,sendError("access", mlp));
 }
 
 pair<bool,void*>
@@ -669,7 +683,6 @@ ShibTarget::doExportAssertions(bool exportAssertion)
     ShibMLP mlp;
     const char *procState = "Attribute Processing Error";
     const char *targetURL = NULL;
-    char *page = "rm";
 
     try {
         if (!m_priv->m_app)
@@ -822,7 +835,7 @@ ShibTarget::doExportAssertions(bool exportAssertion)
     if (targetURL)
         mlp.insert("requestURL", targetURL);
 
-    return pair<bool,void*>(true,m_priv->sendError(this, page, mlp));
+    return pair<bool,void*>(true,sendError("rm", mlp));
 }
 
 
@@ -981,8 +994,9 @@ void ShibTarget::sessionNew(
     int supported_profiles,
     const char* packet,
     const char* ip,
+    string& target,
     string& cookie,
-    string& target
+    string& provider_id
     ) const
 {
 #ifdef _DEBUG
@@ -1069,8 +1083,9 @@ void ShibTarget::sessionNew(
 #endif
     }
     else {
-        log.debug("new session cookie: %s", ret.cookie);
+        log.debug("new session from IdP (%s) with key (%s)", ret.provider_id, ret.cookie);
         cookie = ret.cookie;
+        provider_id = ret.provider_id;
         if (ret.target)
             target = ret.target;
     }
@@ -1225,6 +1240,28 @@ void ShibTarget::sessionGet(
     }
 }
 
+void* ShibTarget::sendError(const char* page, ShibMLP &mlp)
+{
+    const IPropertySet* props=m_priv->m_app->getPropertySet("Errors");
+    if (props) {
+        pair<bool,const char*> p=props->getString(page);
+        if (p.first) {
+            ifstream infile(p.second);
+            if (!infile.fail()) {
+                const char* res = mlp.run(infile,props);
+                if (res)
+                    return sendPage(res);
+            }
+        }
+    }
+
+    string errstr = string("sendError could not process error template (") + page + ") for application (";
+    errstr += m_priv->m_app->getId();
+    errstr += ")";
+    log(ShibTarget::LogLevelError, errstr);
+    return sendPage("Internal Server Error. Please contact the site administrator.");
+}
+
 /*************************************************************************
  * Shib Target Private implementation
  */
@@ -1319,30 +1356,6 @@ ShibTargetPriv::get_application(const string& protocol, const string& hostname, 
   if ((protocol == "http" && port != 80) || (protocol == "https" && port != 443))
     m_url += ":" + port;
   m_url += uri;
-}
-
-
-void*
-ShibTargetPriv::sendError(ShibTarget* st, string page, ShibMLP &mlp)
-{
-    const IPropertySet* props=m_app->getPropertySet("Errors");
-    if (props) {
-        pair<bool,const char*> p=props->getString(page.c_str());
-        if (p.first) {
-            ifstream infile(p.second);
-            if (!infile.fail()) {
-                const char* res = mlp.run(infile,props);
-                if (res)
-                    return st->sendPage(res);
-            }
-        }
-    }
-
-    string errstr = "sendError could not process the error template for application (";
-    errstr += m_app->getId();
-    errstr += ")";
-    st->log(ShibTarget::LogLevelError, errstr);
-    return st->sendPage("Internal Server Error. Please contact the site administrator.");
 }
 
 const char* ShibTargetPriv::getSessionId(ShibTarget* st)
