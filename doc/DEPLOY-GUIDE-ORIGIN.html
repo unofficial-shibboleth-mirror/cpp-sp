@@ -3,8 +3,6 @@
 
 <head>
 <meta http-equiv="Content-Language" content="en-us">
-<meta name="generator" content="Microsoft FrontPage 5.0">
-<meta name="ProgId" content="FrontPage.Editor.Document">
 <title>Shibboleth Origin Deployment Guide</title>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <style type="text/css">
@@ -149,7 +147,7 @@ color: #00FF00
 </center>
 <p>Shibboleth Origin Deployment Guide<br>
 Shibboleth Version 1.1<br>
-July 28, 2003<br>
+December 3, 2003<br>
 </p>
 <h3>This version of the deploy guide is for Shibboleth v1.1. For documentation 
 related to prior versions of Shibboleth, please consult the appropriate branch 
@@ -1466,7 +1464,7 @@ configuration</h4>
                 the containing element. Otherwise evaluates to
                 <span class="fixedwidth">FALSE</span>. Regular expressions are 
                 evaluated in accordance with the the
-                <a href="http://java.sun.com/j2se/1.4/docs/api/java/util/%20%20%20%20%20%20%20%20%20%20%20%20%20%20regex/Pattern.html#sum">
+                <a href="http://java.sun.com/j2se/1.4.2/docs/api/java/util/regex/package-summary.html">
                 Java 1.4 Pattern API</a>.</p>
             </blockquote>
             </li>
@@ -1801,6 +1799,13 @@ Java keystores <font color="#5555EE">(optional)</font></h4>
         connector includes a pre-existing scope (<span class="fixedwidth">bob@foo.edu</span>), 
         that scope is used instead. Contained within the
         <span class="fixedwidth">SimpleAttributeDefinition</span> element.</dd>
+        <dd class="attributeopt"><span class="fixedwidth">&lt;lifeTime 
+        &quot;&lt;seconds&gt;&quot;/&gt;</span> </dd>
+        <dd class="valueopt">Specifies in the attribute assertion 
+        how long the attribute should be cached and retained by the target upon 
+        receipt. Federations and trust agreements may have some bearing on the 
+        population and use of this field. Contained within the
+        <span class="fixedwidth">SimpleAttributeDefinition</span> element.</dd>
         <dd class="attributeopt"><span class="fixedwidth">sourceName = 
         &quot;&lt;string&gt;&quot;</span> </dd>
         <dd class="valueopt">Specifies a different source attribute name to be 
@@ -1813,27 +1818,18 @@ Java keystores <font color="#5555EE">(optional)</font></h4>
         SimpleAttributeDefinition</span> element.</dd>
         <dd class="attributeopt"><span class="fixedwidth">&lt;cacheTime 
         &quot;&lt;seconds&gt;&quot;/&gt;</span> </dd>
-        <dd class="valueopt">An element of the element <span class="fixedwidth">
-        SimpleAttributeDefinition</span>. Specifies an optional duration in
+        <dd class="valueopt">Specifies an optional duration in
         <span class="fixedwidth">seconds</span> for which the attribute resolver 
-        may cache this attribute for use in additional assertions.</dd>
-        <dd class="attributeopt"><span class="fixedwidth">&lt;lifeTime 
-        &quot;&lt;seconds&gt;&quot;/&gt;</span> </dd>
-        <dd class="valueopt">An element of the element <span class="fixedwidth">
-        SimpleAttributeDefinition</span>. Specifies in the attribute assertion 
-        how long the attribute should be cached and retained by the target upon 
-        receipt. Federations and trust agreements may have some bearing on the 
-        population and use of this field.</dd>
+        may cache this attribute for use in additional assertions.  Contained within
+        the <span class="fixedwidth">SimpleAttributeDefinition</span> element.</dd>
     </dl>
     <p>A representation of a properly constructed <span class="fixedwidth">
     SimpleAttributeDefinition</span> element would look like:</p>
     <blockquote>
-        <p><span class="fixedwidth">&lt;SimpleAttributeDefinition id=&quot;urn:mace:dir:attribute-def:eduPersonPrincipalName&quot; 
-        smartScope=&quot;shibdev.edu&quot; sourceName=&quot;universityPerson&quot;&gt;<br>
+        <p><span class="fixedwidth">&lt;SimpleAttributeDefinition id=&quot;urn:mace:dir:attribute-def:eduPersonPrincipalName&quot;<br> 
+        smartScope=&quot;shibdev.edu&quot; cacheTime=&quot;600&quot; lifeTime=&quot;3600&quot;  sourceName=&quot;universityPerson&quot;&gt;<br>
         &nbsp;&nbsp;&lt;DataConnectorDependency requires=&quot;dataConnector&quot;/&gt;<br>
         &nbsp;&nbsp;&lt;AttributeDependency requires=&quot;urn:mace:dir:attribute-def:eduPersonScopedAffiliation&quot;/&gt;<br>
-        &nbsp;&nbsp;&lt;cacheTime=&quot;600&quot;/&gt;&lt;br&gt;<br>
-        &nbsp;&nbsp;&lt;lifeTime=&quot;3600&quot;/&gt;&lt;br&gt;<br>
         &lt;/SimpleAttributeDefinition&gt; </span></p>
     </blockquote>
     <p>A properly formed <span class="fixedwidth">resolver.xml</span> file to 

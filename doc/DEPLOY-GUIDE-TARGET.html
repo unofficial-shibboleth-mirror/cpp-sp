@@ -150,7 +150,7 @@ color: #00FF00
 </center>
 <p>Shibboleth Target Deployment Guide<br>
 Shibboleth Version 1.1<br />
-July 25, 2003<br />
+December 3, 2003<br />
 </p>
 <h3>This version of the deploy guide is for Shibboleth v1.1. For documentation 
 related to prior versions of Shibboleth, please consult the appropriate branch 
@@ -975,11 +975,17 @@ most minor &quot;letter&quot; updates should be usable.</p>
             web site. Right click on the machine icon on the left, and edit the 
             WWW Service master properties. On the &quot;Home Directory&quot; tab, add a 
             script mapping using the &quot;Configuration&quot; button. The &quot;Executable&quot; 
-            box should point to the filter/extension library, and the 
-            &quot;Extension&quot; can be set to anything unlike to conflict, but
+            box should point to <span class="fixed">isapi_shib.dll</span>, and the 
+            &quot;Extension&quot; can be set to anything unlikely to conflict, but
             <span class="fixed">.shire</span> is assumed (and the dot must be 
             included). You should select the option to limit verbs to POST, and 
             you must uncheck the &quot;Check that file exists&quot; box.</li>
+            <li type="a"><font color=#444499>(IIS 6 Only)</font>  A new Web
+            Service Extension must be defined for Shibboleth; without this, the
+            mapping from <span class="fixed">*.shire</span> to <span
+            class="fixed">isapi_shib.dll</span> won't occur and a file error
+            will show.  Add this extension with an arbitrary name and associate
+            it with <span class="fixed">isapi_shib.dll</span>.</li>
         </ol>
         </li>
         <li>All other aspects of configuration are handled via the
