@@ -63,25 +63,25 @@ public:
     ~DummyMapper();
     virtual Iterator<xstring> getHandleServiceNames(const XMLCh* originSite) { return Iterator<xstring>(); }
     virtual Key* getHandleServiceKey(const XMLCh* handleService) { return NULL; }
-    virtual Iterator<xstring> getSecurityDomains(const XMLCh* originSite);
+    virtual Iterator<pair<xstring,bool> > getSecurityDomains(const XMLCh* originSite);
     virtual const char* getTrustedRoots() { return NULL; }
 
 private:
-    typedef map<xstring,vector<xstring>*> domains_t;
+    typedef map<xstring,vector<pair<xstring,bool> >*> domains_t;
     domains_t m_domains;
 };
 
-Iterator<xstring> DummyMapper::getSecurityDomains(const XMLCh* originSite)
+Iterator<pair<xstring,bool> > DummyMapper::getSecurityDomains(const XMLCh* originSite)
 {
     domains_t::iterator i=m_domains.find(originSite);
     if (i==m_domains.end())
     {
-        vector<xstring>* pv=new vector<xstring>();
-        pv->push_back(originSite);
+        vector<pair<xstring,bool> >* pv=new vector<pair<xstring,bool> >();
+        pv->push_back(pair<xstring,bool>(originSite,false));
         pair<domains_t::iterator,bool> p=m_domains.insert(domains_t::value_type(originSite,pv));
         i=p.first;
     }
-    return Iterator<xstring>(*(i->second));
+    return Iterator<pair<xstring,bool> >(*(i->second));
 }
 
 DummyMapper::~DummyMapper()
