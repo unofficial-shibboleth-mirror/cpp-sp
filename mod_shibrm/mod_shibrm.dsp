@@ -40,6 +40,7 @@ RSC=rc.exe
 # PROP Use_Debug_Libraries 0
 # PROP Output_Dir "Release"
 # PROP Intermediate_Dir "Release"
+# PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "MOD_SHIBRM_EXPORTS" /YX /FD /c
 # ADD CPP /nologo /MD /W3 /GR /GX /O2 /I "..\oncrpc" /I ".." /I "..\..\..\opensaml\c" /I "\Apache\include" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "EAPI" /YX /FD /c
@@ -52,7 +53,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386
-# ADD LINK32 log4cpp.lib xerces-c_2.lib saml.lib ApacheCore.lib /nologo /dll /machine:I386 /libpath:"../../../opensaml/c/saml/Release" /libpath:"\Apache\libexec"
+# ADD LINK32 log4cpp.lib xerces-c_2.lib ApacheCore.lib saml_3.lib /nologo /dll /machine:I386 /libpath:"../../../opensaml/c/saml/Release" /libpath:"\Apache\libexec"
 
 !ELSEIF  "$(CFG)" == "mod_shibrm - Win32 Debug"
 
@@ -78,7 +79,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 log4cppD.lib xerces-c_2D.lib saml.lib ApacheCore.lib /nologo /dll /debug /machine:I386 /pdbtype:sept /libpath:"../../../opensaml/c/saml/Debug" /libpath:"\Apache\libexec"
+# ADD LINK32 log4cppD.lib xerces-c_2D.lib ApacheCore.lib saml_3D.lib /nologo /dll /debug /machine:I386 /pdbtype:sept /libpath:"../../../opensaml/c/saml/Debug" /libpath:"\Apache\libexec"
 
 !ENDIF 
 
