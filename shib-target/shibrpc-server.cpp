@@ -157,7 +157,7 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
   auto_ptr<XMLCh> location(XMLString::transcode(argp->shire_location));
 
   // Pull in the Policies
-  Iterator<xstring> policies=ShibTargetConfig::getConfig().getPolicies();
+  Iterator<const XMLCh*> policies=ShibTargetConfig::getConfig().getPolicies();
 
   // And grab the Profile
   // XXX: Create a "Global" POSTProfile instance per location...

@@ -412,7 +412,7 @@ namespace shibtarget {
     static ShibTargetConfig& getConfig();
     virtual void shutdown() = 0;
     virtual ShibINI& getINI() = 0;
-    Iterator<const XMLCh*> getPolicies() = 0;
+    virtual saml::Iterator<const XMLCh*> getPolicies() = 0;
   };
 
 } // namespace

@@ -76,7 +76,7 @@ ShibTargetConfig& ShibTargetConfig::init(const char* app_name, const char* inifi
   return *g_Config;
 }
 
-static ShibTargetConfig& ShibTargetConfig::getConfig()
+ShibTargetConfig& ShibTargetConfig::getConfig()
 {
     if (!g_Config)
         throw SAMLException("ShibTargetConfig::getConfig() called with NULL configuration");
@@ -215,7 +215,7 @@ STConfig::STConfig(const char* app_name, const char* inifile)
     ShibINI::Iterator* iter = ini->tag_iterator(SHIBTARGET_POLICIES);
 
     for (const string* str = iter->begin(); str; str = iter->next()) {
-        policies.push_back(XMLString::transcode(ini->get(ext, *str)));
+        policies.push_back(XMLString::transcode(ini->get(ext, *str).c_str()));
     }
     delete iter;
   }

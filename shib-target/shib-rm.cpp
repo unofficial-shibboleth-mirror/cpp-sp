@@ -139,13 +139,13 @@ RPCError* RM::getAssertions(const char* cookie, const char* ip,
         // XXX: Should move this audience check up to the RPC server side, and cache each assertion one
         // by one instead of the whole response.
         bool ok=true;
-        Iteration<SAMLCondition*> conds=as->getConditions();
+        Iterator<SAMLCondition*> conds=as->getConditions();
         while (conds.hasNext())
         {
             SAMLAudienceRestrictionCondition* cond=dynaptr(SAMLAudienceRestrictionCondition,conds.next());
             if (!cond->eval(ShibTargetConfig::getConfig().getPolicies()))
             {
-                m_priv->log->warning("Assertion failed AudienceRestrictionCondition check, skipping it...");
+                m_priv->log->warn("Assertion failed AudienceRestrictionCondition check, skipping it...");
                 ok=false;
             }
         }
