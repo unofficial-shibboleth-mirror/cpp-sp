@@ -19,8 +19,8 @@ else
     GCC_CXXFLAGS="$CXXFLAGS -O2 -DNDEBUG"
 fi
 
-AC_PROG_CC([gcc3 gcc cc])
-AC_PROG_CXX([g++3 g++ c++ CC])
+AC_PROG_CC([gcc gcc3 cc])
+AC_PROG_CXX([g++ g++3 c++ CC])
 
 if test "$GCC" = "yes" ; then
     CFLAGS="$GCC_CFLAGS"
