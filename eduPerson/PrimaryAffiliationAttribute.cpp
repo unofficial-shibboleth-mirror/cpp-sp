@@ -60,6 +60,8 @@
 # define EDUPERSON_EXPORTS __declspec(dllexport)
 #endif
 
+#include <log4cpp/Category.hh>
+
 #include "../shib/shib.h"
 #include "eduPerson.h"
 using namespace saml;
@@ -67,9 +69,11 @@ using namespace shibboleth;
 using namespace eduPerson;
 using namespace std;
 
+#define SAML_log (*reinterpret_cast<log4cpp::Category*>(m_log))
+
 PrimaryAffiliationAttribute::PrimaryAffiliationAttribute(const XMLCh* defaultScope, long lifetime, const XMLCh* scope, const XMLCh* value)
     : ScopedAttribute(eduPerson::Constants::EDUPERSON_PRIMARY_AFFILIATION,
-		              shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,defaultScope,NULL,lifetime,
+                      shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,defaultScope,NULL,lifetime,
                       ArrayIterator<const XMLCh*>(&scope),ArrayIterator<const XMLCh*>(&value))
 {
     m_type=new saml::QName(eduPerson::XML::EDUPERSON_NS,eduPerson::Constants::EDUPERSON_AFFILIATION_TYPE);
@@ -77,18 +81,50 @@ PrimaryAffiliationAttribute::PrimaryAffiliationAttribute(const XMLCh* defaultSco
 
 PrimaryAffiliationAttribute::PrimaryAffiliationAttribute(DOMElement* e) : ScopedAttribute(e) {}
 
-void PrimaryAffiliationAttribute::addValues(DOMElement* e)
+bool PrimaryAffiliationAttribute::addValue(DOMElement* e)
 {
-    // Our only special job is to check the type and verify at most one value.
-    DOMNodeList* nlist=e->getElementsByTagNameNS(saml::XML::SAML_NS,L(AttributeValue));
-    if (nlist && nlist->getLength()>1)
-      throw InvalidAssertionException(SAMLException::RESPONDER,"PrimaryAffiliationAttribute::addValues() detected multiple attribute values");
+    saml::NDC("addValue");
 
-    m_type=saml::QName::getQNameAttribute(static_cast<DOMElement*>(nlist->item(0)),saml::XML::XSI_NS,L(type));
-    if (!m_type || XMLString::compareString(m_type->getNamespaceURI(),eduPerson::XML::EDUPERSON_NS) ||
-        XMLString::compareString(m_type->getLocalName(),eduPerson::Constants::EDUPERSON_AFFILIATION_TYPE))
-        throw MalformedException(SAMLException::RESPONDER,"PrimaryAffiliationAttribute() found an invalid attribute value type");
-    addValue(static_cast<DOMElement*>(nlist->item(0)));
+    if (m_values.size()>0)
+    {
+        SAML_log.warn("multiple values found for single-valued attribute");
+        return false;
+    }
+
+    // If xsi:type is specified, validate it, otherwise look at content model.
+    auto_ptr<saml::QName> type(saml::QName::getQNameAttribute(e,saml::XML::XSI_NS,L(type)));
+    if (type.get())
+    {
+        if (XMLString::compareString(type->getNamespaceURI(),eduPerson::XML::EDUPERSON_NS) ||
+            XMLString::compareString(type->getLocalName(),eduPerson::Constants::EDUPERSON_AFFILIATION_TYPE))
+        {
+            SAML_log.warn("invalid attribute value xsi:type");
+            return false;
+        }
+        if (!m_type)
+            m_type=type.release();
+    }
+    else
+    {
+        DOMNode* n=e->getFirstChild();
+        if (!n || n->getNodeType()!=DOMNode::TEXT_NODE)
+        {
+            SAML_log.warn("invalid attribute value content model");
+            return false;
+        }
+        else if (XMLString::compareString(n->getNodeValue(),eduPerson::XML::Literals::affiliate) &&
+                 XMLString::compareString(n->getNodeValue(),eduPerson::XML::Literals::alum) &&
+                 XMLString::compareString(n->getNodeValue(),eduPerson::XML::Literals::employee) &&
+                 XMLString::compareString(n->getNodeValue(),eduPerson::XML::Literals::faculty) &&
+                 XMLString::compareString(n->getNodeValue(),eduPerson::XML::Literals::member) &&
+                 XMLString::compareString(n->getNodeValue(),eduPerson::XML::Literals::staff) &&
+                 XMLString::compareString(n->getNodeValue(),eduPerson::XML::Literals::student))
+        {
+            SAML_log.warn("invalid attribute value");
+            return false;
+        }
+    }
+    return ScopedAttribute::addValue(e);
 }
 
 PrimaryAffiliationAttribute::~PrimaryAffiliationAttribute() {}

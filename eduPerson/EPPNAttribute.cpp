@@ -60,12 +60,16 @@
 # define EDUPERSON_EXPORTS __declspec(dllexport)
 #endif
 
+#include <log4cpp/Category.hh>
+
 #include "../shib/shib.h"
 #include "eduPerson.h"
 using namespace saml;
 using namespace shibboleth;
 using namespace eduPerson;
 using namespace std;
+
+#define SAML_log (*reinterpret_cast<log4cpp::Category*>(m_log))
 
 EPPNAttribute::EPPNAttribute(const XMLCh* defaultScope, long lifetime, const XMLCh* scope, const XMLCh* value)
     : ScopedAttribute(eduPerson::Constants::EDUPERSON_PRINCIPAL_NAME,
@@ -77,18 +81,39 @@ EPPNAttribute::EPPNAttribute(const XMLCh* defaultScope, long lifetime, const XML
 
 EPPNAttribute::EPPNAttribute(DOMElement* e) : ScopedAttribute(e) {}
 
-void EPPNAttribute::addValues(DOMElement* e)
+bool EPPNAttribute::addValue(DOMElement* e)
 {
-    // Our only special job is to check the type and verify at most one value.
-    DOMNodeList* nlist=e->getElementsByTagNameNS(saml::XML::SAML_NS,L(AttributeValue));
-    if (nlist && nlist->getLength()>1)
-      throw InvalidAssertionException(SAMLException::RESPONDER,"EPPNAttribute::addValues() detected multiple attribute values");
+    saml::NDC("addValue");
 
-    m_type=saml::QName::getQNameAttribute(static_cast<DOMElement*>(nlist->item(0)),saml::XML::XSI_NS,L(type));
-    if (!m_type || XMLString::compareString(m_type->getNamespaceURI(),eduPerson::XML::EDUPERSON_NS) ||
-        XMLString::compareString(m_type->getLocalName(),eduPerson::Constants::EDUPERSON_PRINCIPAL_NAME_TYPE))
-        throw MalformedException(SAMLException::RESPONDER,"EPPNAttribute() found an invalid attribute value type");
-    addValue(static_cast<DOMElement*>(nlist->item(0)));
+    if (m_values.size()>0)
+    {
+        SAML_log.warn("multiple values found for single-valued attribute");
+        return false;
+    }
+
+    // If xsi:type is specified, validate it, otherwise look at content model.
+    auto_ptr<saml::QName> type(saml::QName::getQNameAttribute(e,saml::XML::XSI_NS,L(type)));
+    if (type.get())
+    {
+        if (XMLString::compareString(type->getNamespaceURI(),eduPerson::XML::EDUPERSON_NS) ||
+            XMLString::compareString(type->getLocalName(),eduPerson::Constants::EDUPERSON_PRINCIPAL_NAME_TYPE))
+        {
+            SAML_log.warn("invalid attribute value xsi:type");
+            return false;
+        }
+        if (!m_type)
+            m_type=type.release();
+    }
+    else
+    {
+        DOMNode* n=e->getFirstChild();
+        if (!n || n->getNodeType()!=DOMNode::TEXT_NODE || XMLString::indexOf(n->getNodeValue(),chAt)<0)
+        {
+            SAML_log.warn("invalid attribute value content model");
+            return false;
+        }
+    }
+    return ScopedAttribute::addValue(e);
 }
 
 EPPNAttribute::~EPPNAttribute() {}

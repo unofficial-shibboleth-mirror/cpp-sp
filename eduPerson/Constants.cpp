@@ -73,6 +73,30 @@ const XMLCh eduPerson::XML::EDUPERSON_SCHEMA_ID[] = // eduPerson.xsd
   chLatin_x, chLatin_s, chLatin_d, chNull
 };
 
+const XMLCh eduPerson::XML::Literals::anyURI[]=
+{ chLatin_a, chLatin_n, chLatin_y, chLatin_U, chLatin_R, chLatin_I, chNull };
+
+const XMLCh eduPerson::XML::Literals::faculty[] =
+{ chLatin_f, chLatin_a, chLatin_c, chLatin_u, chLatin_l, chLatin_t, chLatin_y, chNull };
+
+const XMLCh eduPerson::XML::Literals::student[] =
+{ chLatin_s, chLatin_t, chLatin_u, chLatin_d, chLatin_e, chLatin_n, chLatin_t, chNull };
+
+const XMLCh eduPerson::XML::Literals::staff[] =
+{ chLatin_s, chLatin_t, chLatin_a, chLatin_f, chLatin_f, chNull };
+
+const XMLCh eduPerson::XML::Literals::alum[] =
+{ chLatin_a, chLatin_l, chLatin_u, chLatin_m, chNull };
+
+const XMLCh eduPerson::XML::Literals::member[] =
+{ chLatin_m, chLatin_e, chLatin_m, chLatin_b, chLatin_e, chLatin_r, chNull };
+
+const XMLCh eduPerson::XML::Literals::affiliate[] =
+{ chLatin_a, chLatin_f, chLatin_f, chLatin_i, chLatin_l, chLatin_i, chLatin_a, chLatin_t, chLatin_e, chNull };
+
+const XMLCh eduPerson::XML::Literals::employee[] =
+{ chLatin_e, chLatin_m, chLatin_p, chLatin_l, chLatin_o, chLatin_y, chLatin_e, chLatin_e, chNull };
+
 const XMLCh eduPerson::Constants::EDUPERSON_PRINCIPAL_NAME[] = // urn:mace:eduPerson:1.0:eduPersonPrincipalName
 { chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
   chLatin_e, chLatin_d, chLatin_u, chLatin_P, chLatin_e, chLatin_r, chLatin_s, chLatin_o, chLatin_n, chColon,

@@ -102,10 +102,11 @@ namespace eduPerson
     public:
         EPPNAttribute(const XMLCh* defaultScope, long lifetime=0, const XMLCh* scope=NULL, const XMLCh* value=NULL);
         EPPNAttribute(DOMElement* e);
+        virtual saml::SAMLObject* clone() const;
         virtual ~EPPNAttribute();
 
-        virtual void addValues(DOMElement* e);
-        virtual saml::SAMLObject* clone() const;
+    protected:
+        virtual bool addValue(DOMElement* e);
     };
 
     class EDUPERSON_EXPORTS AffiliationAttribute : public ScopedAttribute
@@ -115,10 +116,11 @@ namespace eduPerson
                              const saml::Iterator<const XMLCh*>& scopes=saml::Iterator<const XMLCh*>(),
                              const saml::Iterator<const XMLCh*>& values=saml::Iterator<const XMLCh*>());
         AffiliationAttribute(DOMElement* e);
+        virtual saml::SAMLObject* clone() const;
         virtual ~AffiliationAttribute();
 
-        virtual void addValues(DOMElement* e);
-        virtual saml::SAMLObject* clone() const;
+    protected:
+        virtual bool addValue(DOMElement* e);
     };
 
     class EDUPERSON_EXPORTS PrimaryAffiliationAttribute : public ScopedAttribute
@@ -126,10 +128,11 @@ namespace eduPerson
     public:
         PrimaryAffiliationAttribute(const XMLCh* defaultScope, long lifetime=0, const XMLCh* scope=NULL, const XMLCh* value=NULL);
         PrimaryAffiliationAttribute(DOMElement* e);
+        virtual saml::SAMLObject* clone() const;
         virtual ~PrimaryAffiliationAttribute();
 
-        virtual void addValues(DOMElement* e);
-        virtual saml::SAMLObject* clone() const;
+    protected:
+        virtual bool addValue(DOMElement* e);
     };
 
     class EDUPERSON_EXPORTS EntitlementAttribute : public saml::SAMLAttribute
@@ -137,16 +140,29 @@ namespace eduPerson
     public:
         EntitlementAttribute(long lifetime=0, const saml::Iterator<const XMLCh*>& values=saml::Iterator<const XMLCh*>());
         EntitlementAttribute(DOMElement* e);
+        virtual saml::SAMLObject* clone() const;
         virtual ~EntitlementAttribute();
 
-        virtual void addValues(DOMElement* e);
-        virtual saml::SAMLObject* clone() const;
+    protected:
+        virtual bool addValue(DOMElement* e);
     };
 
     struct EDUPERSON_EXPORTS XML
     {
         static const XMLCh EDUPERSON_NS[];
         static const XMLCh EDUPERSON_SCHEMA_ID[];
+
+        struct EDUPERSON_EXPORTS Literals
+        {
+            static const XMLCh anyURI[];
+            static const XMLCh faculty[];
+            static const XMLCh student[];
+            static const XMLCh staff[];
+            static const XMLCh alum[];
+            static const XMLCh member[];
+            static const XMLCh affiliate[];
+            static const XMLCh employee[];
+        };
     };
 
     struct EDUPERSON_EXPORTS Constants

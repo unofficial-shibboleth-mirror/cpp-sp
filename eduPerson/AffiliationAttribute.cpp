@@ -60,6 +60,8 @@
 # define EDUPERSON_EXPORTS __declspec(dllexport)
 #endif
 
+#include <log4cpp/Category.hh>
+
 #include "../shib/shib.h"
 #include "eduPerson.h"
 using namespace saml;
@@ -67,12 +69,14 @@ using namespace shibboleth;
 using namespace eduPerson;
 using namespace std;
 
+#define SAML_log (*reinterpret_cast<log4cpp::Category*>(m_log))
+
 AffiliationAttribute::AffiliationAttribute(const XMLCh* defaultScope, long lifetime,
                                            const Iterator<const XMLCh*>& scopes,
                                            const Iterator<const XMLCh*>& values)
     : ScopedAttribute(eduPerson::Constants::EDUPERSON_AFFILIATION,
-		      shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,
-		      defaultScope,NULL,lifetime,scopes,values)
+                      shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,
+                      defaultScope,NULL,lifetime,scopes,values)
 {
     m_type=new saml::QName(eduPerson::XML::EDUPERSON_NS,eduPerson::Constants::EDUPERSON_AFFILIATION_TYPE);
 }
@@ -81,20 +85,44 @@ AffiliationAttribute::AffiliationAttribute(DOMElement* e) : ScopedAttribute(e) {
 
 AffiliationAttribute::~AffiliationAttribute() {}
 
-void AffiliationAttribute::addValues(DOMElement* e)
+bool AffiliationAttribute::addValue(DOMElement* e)
 {
-    // Our only special job is to check the type.
-    DOMNodeList* nlist=e->getElementsByTagNameNS(saml::XML::SAML_NS,L(AttributeValue));
-    for (int i=0; nlist && i<nlist->getLength(); i++)
+    saml::NDC("addValue");
+
+    // If xsi:type is specified, validate it, otherwise look at content model.
+    auto_ptr<saml::QName> type(saml::QName::getQNameAttribute(e,saml::XML::XSI_NS,L(type)));
+    if (type.get())
     {
-        auto_ptr<saml::QName> type(saml::QName::getQNameAttribute(static_cast<DOMElement*>(nlist->item(0)),saml::XML::XSI_NS,L(type)));
-        if (!type.get() || XMLString::compareString(type->getNamespaceURI(),eduPerson::XML::EDUPERSON_NS) ||
+        if (XMLString::compareString(type->getNamespaceURI(),eduPerson::XML::EDUPERSON_NS) ||
             XMLString::compareString(type->getLocalName(),eduPerson::Constants::EDUPERSON_AFFILIATION_TYPE))
-            throw MalformedException(SAMLException::RESPONDER,"AffiliationAttribute() found an invalid attribute value type");
+        {
+            SAML_log.warn("invalid attribute value xsi:type");
+            return false;
+        }
         if (!m_type)
             m_type=type.release();
-        addValue(static_cast<DOMElement*>(nlist->item(i)));
     }
+    else
+    {
+        DOMNode* n=e->getFirstChild();
+        if (!n || n->getNodeType()!=DOMNode::TEXT_NODE)
+        {
+            SAML_log.warn("invalid attribute value content model");
+            return false;
+        }
+        else if (XMLString::compareString(n->getNodeValue(),eduPerson::XML::Literals::affiliate) &&
+                 XMLString::compareString(n->getNodeValue(),eduPerson::XML::Literals::alum) &&
+                 XMLString::compareString(n->getNodeValue(),eduPerson::XML::Literals::employee) &&
+                 XMLString::compareString(n->getNodeValue(),eduPerson::XML::Literals::faculty) &&
+                 XMLString::compareString(n->getNodeValue(),eduPerson::XML::Literals::member) &&
+                 XMLString::compareString(n->getNodeValue(),eduPerson::XML::Literals::staff) &&
+                 XMLString::compareString(n->getNodeValue(),eduPerson::XML::Literals::student))
+        {
+            SAML_log.warn("invalid attribute value");
+            return false;
+        }
+    }
+    return ScopedAttribute::addValue(e);
 }
 
 SAMLObject* AffiliationAttribute::clone() const

@@ -60,6 +60,9 @@
 # define EDUPERSON_EXPORTS __declspec(dllexport)
 #endif
 
+#include <log4cpp/Category.hh>
+#include <xercesc/util/XMLUri.hpp>
+
 #include "../shib/shib.h"
 #include "eduPerson.h"
 using namespace saml;
@@ -67,33 +70,56 @@ using namespace shibboleth;
 using namespace eduPerson;
 using namespace std;
 
-static XMLCh anyURI[]={ chLatin_a, chLatin_n, chLatin_y, chLatin_U, chLatin_R, chLatin_I, chNull };
+#define SAML_log (*reinterpret_cast<log4cpp::Category*>(m_log))
 
 EntitlementAttribute::EntitlementAttribute(long lifetime, const Iterator<const XMLCh*>& values)
     : SAMLAttribute(eduPerson::Constants::EDUPERSON_ENTITLEMENT,
-		            shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,NULL,lifetime,values)
+                    shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,NULL,lifetime,values)
 {
-    m_type=new saml::QName(saml::XML::XSD_NS,anyURI);
+    m_type=new saml::QName(saml::XML::XSD_NS,eduPerson::XML::Literals::anyURI);
 }
 
 EntitlementAttribute::EntitlementAttribute(DOMElement* e) : SAMLAttribute(e) {}
 
 EntitlementAttribute::~EntitlementAttribute() {}
 
-void EntitlementAttribute::addValues(DOMElement* e)
+bool EntitlementAttribute::addValue(DOMElement* e)
 {
-    // Our only special job is to check the type.
-    DOMNodeList* nlist=e->getElementsByTagNameNS(saml::XML::SAML_NS,L(AttributeValue));
-    for (int i=0; nlist && i<nlist->getLength(); i++)
+    saml::NDC("addValue");
+
+    // If xsi:type is specified, validate it, otherwise look at content model.
+    auto_ptr<saml::QName> type(saml::QName::getQNameAttribute(e,saml::XML::XSI_NS,L(type)));
+    if (type.get())
     {
-        auto_ptr<saml::QName> type(saml::QName::getQNameAttribute(static_cast<DOMElement*>(nlist->item(0)),saml::XML::XSI_NS,L(type)));
-        if (!type.get() || XMLString::compareString(type->getNamespaceURI(),saml::XML::XSD_NS) ||
-            XMLString::compareString(type->getLocalName(),anyURI))
-            throw MalformedException(SAMLException::RESPONDER,"EntitlementAttribute() found an invalid attribute value type");
+        if (XMLString::compareString(type->getNamespaceURI(),saml::XML::XSD_NS) ||
+            XMLString::compareString(type->getLocalName(),eduPerson::XML::Literals::anyURI))
+        {
+            SAML_log.warn("invalid attribute value xsi:type");
+            return false;
+        }
         if (!m_type)
             m_type=type.release();
-        addValue(static_cast<DOMElement*>(nlist->item(i)));
     }
+    else
+    {
+        DOMNode* n=e->getFirstChild();
+        if (!n || n->getNodeType()!=DOMNode::TEXT_NODE)
+        {
+            SAML_log.warn("invalid attribute value content model");
+            return false;
+        }
+
+        try
+        {
+            XMLUri uri(n->getNodeValue());
+        }
+        catch (XMLException&)
+        {
+            SAML_log.warn("non-URI value ignored");
+            return false;
+        }
+    }
+    return SAMLAttribute::addValue(e);
 }
 
 SAMLObject* EntitlementAttribute::clone() const
