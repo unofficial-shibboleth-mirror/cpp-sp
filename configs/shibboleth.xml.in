@@ -124,8 +124,8 @@
             <FederationProvider type="edu.internet2.middleware.shibboleth.common.provider.XMLMetadata"
                 uri="@-PKGSYSCONFDIR-@/sites.xml"/>
             <FederationProvider type="edu.internet2.middleware.shibboleth.common.provider.XMLMetadata">
-				<SiteGroup Name="https://localhost/shibboleth" xmlns="urn:mace:shibboleth:1.0">
-					<OriginSite Name="https://localhost/shibboleth/origin">
+				<SiteGroup Name="https://example.org/shibboleth" xmlns="urn:mace:shibboleth:1.0">
+					<OriginSite Name="https://example.org/shibboleth/origin">
 						<Alias>Localhost Test Deployment</Alias>
 						<Contact Type="technical" Name="Your Name Here" Email="root@localhost"/>
 						<HandleService Location="https://localhost/shibboleth/HS" Name="CN=localhost,O=Shibboleth Project,C=US"/>
