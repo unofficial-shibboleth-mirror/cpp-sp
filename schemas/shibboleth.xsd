@@ -58,7 +58,7 @@
                     </simpleContent>
     			</complexType>
     		</element>
-	        <choice>
+	        <choice minOccurs="0">
 	        	<element name="AnyValue">
 	        		<complexType>
 	        			<sequence/>
