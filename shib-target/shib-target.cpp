@@ -105,6 +105,7 @@ namespace shibtarget {
     void get_application(string protocol, string hostname, int port, string uri);
     void* sendError(ShibTarget* st, string page, ShibMLP &mlp);
     const char *getSessionId(ShibTarget* st);
+    bool get_assertions(ShibTarget *st, const char *session_id, ShibMLP &mlp);
 
     IRequestMapper::Settings m_settings;
     const IApplication *m_app;
@@ -116,6 +117,9 @@ namespace shibtarget {
     const char *session_id;
     string m_cookies;
 
+    vector<SAMLAssertion*> m_assertions;
+    SAMLAuthenticationStatement* m_sso_statement;
+    
     // These are the actual request parameters set via the init method.
     string m_url;
     string m_method;
@@ -415,7 +419,51 @@ ShibTarget::doCheckAuthZ(void)
 {
   saml::NDC ndc("ShibTarget::doCheckAuthZ");
 
-  return pair<bool,void*>(false,NULL);
+  ShibMLP mlp;
+  const char *procState = "Authorization Processing Error";
+  const char *targetURL = NULL;
+
+  try {
+    if (! m_priv->m_app)
+      throw ShibTargetException(SHIBRPC_OK, "ShibTarget Uninitialized.  Application did not supply request information.");
+
+    targetURL = m_priv->m_url.c_str();
+    const char *session_id = m_priv->getSessionId(this);
+
+    if (m_priv->get_assertions(this, session_id, mlp))
+      goto out;
+
+    // Do we have an access control plugin?
+    if (m_priv->m_settings.second) {
+      Locker acllock(m_priv->m_settings.second);
+      if (!m_priv->m_settings.second->authorized(*m_priv->m_sso_statement,
+						 m_priv->m_assertions)) {
+	log(LogLevelError, "doCheckAuthZ: access control provider denied access");
+	goto out;
+      }
+    }
+
+    // I guess it's all okay, so just let it go.
+    return pair<bool,void*>(false, NULL);
+
+  } catch (ShibTargetException &e) {
+    mlp.insert("errorText", e.what());
+
+#ifndef _DEBUG
+  } catch (...) {
+    mlp.insert("errorText", "Unexpected Exception");
+#endif
+  }
+
+  // If we get here then we've got an error.
+  mlp.insert("errorType", procState);
+  mlp.insert("errorDesc", "An error occurred while processing your request.");
+
+ out:
+  if (targetURL)
+    mlp.insert("requestURL", targetURL);
+
+  return pair<bool,void*>(true,m_priv->sendError(this, "access", mlp));
 }
 
 pair<bool,void*>
@@ -423,9 +471,6 @@ ShibTarget::doExportAssertions(bool exportAssertion)
 {
   saml::NDC ndc("ShibTarget::doExportAssertions");
 
-  vector<SAMLAssertion*> assertions;
-  SAMLAuthenticationStatement* sso_statement=NULL;
-  RPCError *status = NULL;
   ShibMLP mlp;
   const char *procState = "Attribute Processing Error";
   const char *targetURL = NULL;
@@ -438,24 +483,16 @@ ShibTarget::doExportAssertions(bool exportAssertion)
     targetURL = m_priv->m_url.c_str();
     const char *session_id = m_priv->getSessionId(this);
 
-    status = getAssertions(session_id, m_priv->m_remote_addr.c_str(),
-			   assertions, &sso_statement);
-
-    if (status->isError()) {
-
-      string er = "getAssertions failed: ";
-      er += status->getText();
-      log(LogLevelError, er);
-      mlp.insert(*status);
-      delete status;
+    if (m_priv->get_assertions(this, session_id, mlp))
       goto out;
-    }
-    delete status;
+
+    // XXX: This portions should get moved into doCheckAuthZ()
 
     // Do we have an access control plugin?
     if (m_priv->m_settings.second) {
       Locker acllock(m_priv->m_settings.second);
-      if (!m_priv->m_settings.second->authorized(*sso_statement,assertions)) {
+      if (!m_priv->m_settings.second->authorized(*m_priv->m_sso_statement,
+						 m_priv->m_assertions)) {
 	log(LogLevelError, "doExportAssertions: access control provider denied access");
 	page = "access";
 	goto out;
@@ -492,9 +529,9 @@ ShibTarget::doExportAssertions(bool exportAssertion)
     if (!exp.first || !exp.second)
       if (exportAssertion)
 	exp.second=true;
-    if (exp.second && assertions.size()) {
+    if (exp.second && m_priv->m_assertions.size()) {
       string assertion;
-      RM::serialize(*(assertions[0]), assertion);
+      RM::serialize(*(m_priv->m_assertions[0]), assertion);
       setHeader("Shib-Attributes", assertion.c_str());
     }
 
@@ -502,18 +539,18 @@ ShibTarget::doExportAssertions(bool exportAssertion)
     clearHeader("Shib-Origin-Site");
     clearHeader("Shib-Authentication-Method");
     clearHeader("Shib-NameIdentifier-Format");
-    auto_ptr_char os(sso_statement->getSubject()->getNameIdentifier()->getNameQualifier());
-    auto_ptr_char am(sso_statement->getAuthMethod());
+    auto_ptr_char os(m_priv->m_sso_statement->getSubject()->getNameIdentifier()->getNameQualifier());
+    auto_ptr_char am(m_priv->m_sso_statement->getAuthMethod());
     setHeader("Shib-Origin-Site", os.get());
     setHeader("Shib-Authentication-Method", am.get());
     
     // Export NameID?
     AAP wrapper(provs,
-		sso_statement->getSubject()->getNameIdentifier()->getFormat(),
+		m_priv->m_sso_statement->getSubject()->getNameIdentifier()->getFormat(),
 		Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
     if (!wrapper.fail() && wrapper->getHeader()) {
-      auto_ptr_char form(sso_statement->getSubject()->getNameIdentifier()->getFormat());
-      auto_ptr_char nameid(sso_statement->getSubject()->getNameIdentifier()->getName());
+      auto_ptr_char form(m_priv->m_sso_statement->getSubject()->getNameIdentifier()->getFormat());
+      auto_ptr_char nameid(m_priv->m_sso_statement->getSubject()->getNameIdentifier()->getName());
       setHeader("Shib-NameIdentifier-Format", form.get());
       if (!strcmp(wrapper->getHeader(),"REMOTE_USER"))
 	setRemoteUser(nameid.get());
@@ -525,7 +562,7 @@ ShibTarget::doExportAssertions(bool exportAssertion)
     setHeader("Shib-Application-ID", m_priv->m_app->getId());
 
     // Export the attributes.
-    Iterator<SAMLAssertion*> a_iter(assertions);
+    Iterator<SAMLAssertion*> a_iter(m_priv->m_assertions);
     while (a_iter.hasNext()) {
       SAMLAssertion* assert=a_iter.next();
       Iterator<SAMLStatement*> statements=assert->getStatements();
@@ -568,11 +605,6 @@ ShibTarget::doExportAssertions(bool exportAssertion)
       }
     }
 
-    // clean up memory
-    for (int k = 0; k < assertions.size(); k++)
-      delete assertions[k];
-    delete sso_statement;
-
     return pair<bool,void*>(false,NULL);
 
   } catch (ShibTargetException &e) {
@@ -592,12 +624,6 @@ ShibTarget::doExportAssertions(bool exportAssertion)
  out:
   if (targetURL)
     mlp.insert("requestURL", targetURL);
-
-  // clean up memory
-  for (int k = 0; k < assertions.size(); k++)
-    delete assertions[k];
-  if (sso_statement)
-    delete sso_statement;
 
   return pair<bool,void*>(true,m_priv->sendError(this, page, mlp));
 }
@@ -1065,14 +1091,26 @@ ShibTarget::serialize(saml::SAMLAssertion &assertion, std::string &result)
  */
 
 ShibTargetPriv::ShibTargetPriv() : m_parser(NULL), m_app(NULL), m_mapper(NULL),
-				   m_conf(NULL), m_Config(NULL)
+				   m_conf(NULL), m_Config(NULL), m_assertions()
 {
   session_id = NULL;
+  m_sso_statement = NULL;
 }
 
 ShibTargetPriv::~ShibTargetPriv()
 {
-  if (m_parser) delete m_parser;
+  if (m_sso_statement) {
+    delete m_sso_statement;
+    m_sso_statement = NULL;
+  }
+  for (int k = 0; k < m_assertions.size(); k++)
+    delete m_assertions[k];
+  m_assertions = vector<SAMLAssertion*>(); 
+
+  if (m_parser) {
+    delete m_parser;
+    m_parser = NULL;
+  }
   if (m_mapper) {
     m_mapper->unlock();
     m_mapper = NULL;
@@ -1201,6 +1239,29 @@ ShibTargetPriv::getSessionId(ShibTarget* st)
   //st->log(ShibTarget::LogLevelDebug, m);
   return session_id;
 }
+
+bool
+ShibTargetPriv::get_assertions(ShibTarget* st, const char *session_id, ShibMLP &mlp)
+{
+  if (m_sso_statement)
+    return false;
+
+  RPCError *status = NULL;
+  status = st->getAssertions(session_id, m_remote_addr.c_str(),
+			     m_assertions, &m_sso_statement);
+
+  if (status->isError()) {
+    string er = "getAssertions failed: ";
+    er += status->getText();
+    st->log(ShibTarget::LogLevelError, er);
+    mlp.insert(*status);
+    delete status;
+    return true;
+  }
+  delete status;
+  return false;
+}
+
 
 /*************************************************************************
  * CGI Parser implementation
