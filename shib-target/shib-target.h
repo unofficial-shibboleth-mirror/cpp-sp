@@ -181,6 +181,9 @@ namespace shibtarget {
     const char* getType();
     const char* getText();
     const char* getDesc();
+    const char* getOriginErrorURL();
+    const char* getOriginContactName();
+    const char* getOriginContactEmail();
     int getCode();
 
   private:

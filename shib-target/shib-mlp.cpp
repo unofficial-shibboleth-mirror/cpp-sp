@@ -130,4 +130,7 @@ void ShibMLP::insert (RPCError& e)
   insert ("errorType", e.getType());
   insert ("errorText", e.getText());
   insert ("errorDesc", e.getDesc());
+  insert ("originErrorURL", e.getOriginErrorURL());
+  insert ("originContactName", e.getOriginContactName());
+  insert ("originContactEmail", e.getOriginContactEmail());
 }

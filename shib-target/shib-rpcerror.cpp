@@ -247,4 +247,19 @@ const char* RPCError::getDesc()
     return "An error occurred processing your request";
 }
 
+const char* RPCError::getOriginErrorURL()
+{
+  return "No URL Available";
+}
+
+const char* RPCError::getOriginContactName()
+{
+  return "No Name Available";
+}
+
+const char* RPCError::getOriginContactEmail()
+{
+  return "No Email Available";
+}
+
 int RPCError::getCode() { return m_priv->status; }
