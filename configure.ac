@@ -174,7 +174,7 @@ fi
 AM_CONDITIONAL(USE_OUR_ONCRPC,test "$rpctest" = "no")
 
 
-# Apache 1.3 (mod_shire/mod_shibrm)
+# Apache 1.3 (mod_shire)
 #   --with-apache-13 (static build, no idea how to do this yet, so not supported)
 #   --with-apxs      (DSO build, the normal way, uses apxs to derive build flags)
 #   --without-apxs   (DSO build, you tell us how to build using the environment)
@@ -322,7 +322,7 @@ if test "$WANT_APACHE_13" = "yes"; then
     AC_SUBST(APXS_SYSCONFDIR)
 
     # output the Apache 1.3 makefiles
-    WANT_SUBDIRS="$WANT_SUBDIRS mod_shire mod_shibrm"
+    WANT_SUBDIRS="$WANT_SUBDIRS mod_shire"
 fi
 # always output the Makefile, even if we don't use it
 AC_CONFIG_FILES([mod_shire/Makefile])
