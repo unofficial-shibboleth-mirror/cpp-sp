@@ -80,9 +80,25 @@ const XMLCh XML::SHIB_SCHEMA_ID[] = // shibboleth.xsd
 
 // Shibboleth vocabulary literals
 
+const XMLCh XML::Literals::Domain[]=
+{ chLatin_D, chLatin_o, chLatin_m, chLatin_a, chLatin_i, chLatin_n, chNull };
+
+const XMLCh XML::Literals::HandleService[]=
+{ chLatin_H, chLatin_a, chLatin_n, chLatin_d, chLatin_l, chLatin_e,
+  chLatin_S, chLatin_e, chLatin_r, chLatin_v, chLatin_i, chLatin_c, chLatin_e, chNull };
+
 const XMLCh XML::Literals::InvalidHandle[]=
 { chLatin_I, chLatin_n, chLatin_v, chLatin_a, chLatin_l, chLatin_i, chLatin_d,
   chLatin_H, chLatin_a, chLatin_n, chLatin_d, chLatin_l, chLatin_e, chNull };
+
+const XMLCh XML::Literals::Name[]=
+{ chLatin_N, chLatin_a, chLatin_m, chLatin_e, chNull };
+
+const XMLCh XML::Literals::OriginSite[]=
+{ chLatin_O, chLatin_r, chLatin_i, chLatin_g, chLatin_i, chLatin_n, chLatin_S, chLatin_i, chLatin_t, chLatin_e, chNull };
+
+const XMLCh XML::Literals::Sites[]=
+{ chLatin_S, chLatin_i, chLatin_t, chLatin_e, chLatin_s, chNull };
 
 const XMLCh XML::Literals::xmlns_shib[]=
 { chLatin_x, chLatin_m, chLatin_l, chLatin_n, chLatin_s, chColon, chLatin_s, chLatin_h, chLatin_i, chLatin_b, chNull };
