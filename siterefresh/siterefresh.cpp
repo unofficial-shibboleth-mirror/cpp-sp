@@ -59,6 +59,7 @@
 
 #include <fstream>
 #include <log4cpp/Category.hh>
+#include <log4cpp/OstreamAppender.hh>
 #include <xercesc/framework/URLInputSource.hpp>
 #include <xsec/enc/XSECCryptoProvider.hpp>
 #include <xsec/enc/XSECKeyInfoResolverDefault.hpp>
