@@ -384,6 +384,7 @@ namespace shibboleth
         virtual void regFactory(const char* type, MetadataFactory* factory)=0;
         virtual void regFactory(const char* type, TrustFactory* factory)=0;
         virtual void regFactory(const char* type, AAPFactory* factory)=0;
+        virtual void regFactory(const char* type, saml::SAMLAttributeFactory* factory)=0;
         virtual void unregFactory(const char* type)=0;
         
         // builds a specific metadata lookup object
@@ -392,6 +393,7 @@ namespace shibboleth
         virtual saml::Iterator<IMetadata*> getMetadataProviders() const=0;
         virtual saml::Iterator<ITrust*> getTrustProviders() const=0;
         virtual saml::Iterator<IAAP*> getAAPProviders() const=0;
+        virtual saml::SAMLAttributeFactory* getAttributeFactory(const char* type) const=0;
     };
 
     struct SHIB_EXPORTS Constants

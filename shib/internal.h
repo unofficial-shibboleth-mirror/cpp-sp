@@ -146,6 +146,7 @@ namespace shibboleth
         void regFactory(const char* type, MetadataFactory* factory);
         void regFactory(const char* type, TrustFactory* factory);
         void regFactory(const char* type, AAPFactory* factory);
+        void regFactory(const char* type, saml::SAMLAttributeFactory* factory);
         void unregFactory(const char* type);
         
         bool addMetadata(const char* type, const char* source);
@@ -153,6 +154,7 @@ namespace shibboleth
         saml::Iterator<IMetadata*> getMetadataProviders() const {return m_providers;}
         saml::Iterator<ITrust*> getTrustProviders() const {return m_trust_providers;}
         saml::Iterator<IAAP*> getAAPProviders() const {return m_aap_providers;}
+        saml::SAMLAttributeFactory* getAttributeFactory(const char* type) const;
 
     private:
         friend class OriginMetadata;
@@ -162,9 +164,11 @@ namespace shibboleth
         typedef std::map<std::string, MetadataFactory*> MetadataFactoryMap;
         typedef std::map<std::string, TrustFactory*> TrustFactoryMap;
         typedef std::map<std::string, AAPFactory*> AAPFactoryMap;
+        typedef std::map<std::string, saml::SAMLAttributeFactory*> AttributeFactoryMap;
         MetadataFactoryMap m_metadataFactoryMap;
         TrustFactoryMap m_trustFactoryMap;
         AAPFactoryMap m_aapFactoryMap;
+        AttributeFactoryMap m_attrFactoryMap;
         std::vector<IMetadata*> m_providers;
         std::vector<ITrust*> m_trust_providers;
         std::vector<IAAP*> m_aap_providers;

@@ -68,16 +68,6 @@ using namespace std;
 #include <xercesc/framework/URLInputSource.hpp>
 #include <xercesc/util/regx/RegularExpression.hpp>
 
-extern "C" SAMLAttribute* AttributeFactory(DOMElement* e)
-{
-    DOMNode* n=e->getFirstChild();
-    while (n && n->getNodeType()!=DOMNode::ELEMENT_NODE)
-        n=n->getNextSibling();
-    if (n && static_cast<DOMElement*>(n)->hasAttributeNS(NULL,SHIB_L(Scope)))
-        return new ScopedAttribute(e);
-    return new SimpleAttribute(e);
-}
-
 class shibboleth::XMLAAPImpl
 {
 public:
@@ -199,13 +189,9 @@ void XMLAAPImpl::regAttributes() const
 {
     for (map<xstring,AttributeRule*>::const_iterator i=m_attrMap.begin(); i!=m_attrMap.end(); i++)
     {
-        if (i->second->getFactory()==NULL)
-            SAMLAttribute::regFactory(i->second->getName(),i->second->getNamespace(),AttributeFactory);
-        else
-        {
-            saml::NDC ndc("regAttributes");
-            Category::getInstance(SHIB_LOGCAT".XMLAAPImpl").error("unknown attribute factory: %s", i->second->getFactory());
-        }
+        SAMLAttributeFactory* f=ShibConfig::getConfig().getAttributeFactory(i->second->getFactory());
+        if (f)
+            SAMLAttribute::regFactory(i->second->getName(),i->second->getNamespace(),f);
     }
 }
 

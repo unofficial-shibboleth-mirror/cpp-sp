@@ -95,6 +95,17 @@ extern "C" IAAP* XMLAAPFactory(const char* source)
     return new XMLAAP(source);
 }
 
+extern "C" SAMLAttribute* ShibAttributeFactory(DOMElement* e)
+{
+    DOMNode* n=e->getFirstChild();
+    while (n && n->getNodeType()!=DOMNode::ELEMENT_NODE)
+        n=n->getNextSibling();
+    if (n && static_cast<DOMElement*>(n)->hasAttributeNS(NULL,SHIB_L(Scope)))
+        return new ScopedAttribute(e);
+    return new SimpleAttribute(e);
+}
+
+
 bool ShibInternalConfig::init()
 {
     saml::NDC ndc("init");
@@ -108,6 +119,7 @@ bool ShibInternalConfig::init()
     regFactory("edu.internet2.middleware.shibboleth.metadata.XML",&XMLMetadataFactory);
     regFactory("edu.internet2.middleware.shibboleth.trust.XML",&XMLTrustFactory);
     regFactory("edu.internet2.middleware.shibboleth.target.AAP.XML",&XMLAAPFactory);
+    regFactory("edu.internet2.middleware.shibboleth.target.AttributeFactory",&ShibAttributeFactory);
 
     return true;
 }
@@ -140,6 +152,12 @@ void ShibInternalConfig::regFactory(const char* type, AAPFactory* factory)
         m_aapFactoryMap[type]=factory;
 }
 
+void ShibInternalConfig::regFactory(const char* type, SAMLAttributeFactory* factory)
+{
+    if (type && factory)
+        m_attrFactoryMap[type]=factory;
+}
+
 void ShibInternalConfig::unregFactory(const char* type)
 {
     if (type)
@@ -148,6 +166,19 @@ void ShibInternalConfig::unregFactory(const char* type)
         m_trustFactoryMap.erase(type);
         m_aapFactoryMap.erase(type);
     }
+}
+
+SAMLAttributeFactory* ShibInternalConfig::getAttributeFactory(const char* type) const
+{
+    AttributeFactoryMap::const_iterator i =
+        m_attrFactoryMap.find((type && *type) ? type : "edu.internet2.middleware.shibboleth.target.AttributeFactory");
+    if (i==m_attrFactoryMap.end())
+    {
+        saml::NDC ndc("getAttributeFactory");
+        Category::getInstance(SHIB_LOGCAT".ShibInternalConfig").error("unknown attribute factory: %s",type);
+        return NULL;
+    }
+    return i->second;
 }
 
 bool ShibInternalConfig::addMetadata(const char* type, const char* source)
