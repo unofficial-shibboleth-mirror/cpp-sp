@@ -36,6 +36,7 @@ extern "C" int shib_target_initialize (const char* app_name, const char* inifile
   try {
     g_Config = &(ShibTargetConfig::init(app_name, inifile));
   } catch (runtime_error &e) {
+    fprintf(stderr,"shib_target_initialize failed: %s\n",e.what());
     return 1;
   }
 
