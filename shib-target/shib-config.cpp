@@ -27,6 +27,7 @@ public:
   STConfig(const char* app_name, const char* inifile);
   ~STConfig();
   void shutdown();
+  void init();
   ShibINI& getINI() { return *ini; }
 
   Iterator<const XMLCh*> getPolicies() { return Iterator<const XMLCh*>(policies); }
@@ -36,6 +37,7 @@ private:
   SAMLConfig& samlConf;
   ShibConfig& shibConf;
   ShibINI* ini;
+  string m_app_name;
   int refcount;
   vector<const XMLCh*> policies;
 };
@@ -64,7 +66,6 @@ ShibTargetConfig& ShibTargetConfig::init(const char* app_name, const char* inifi
 
   if (!app_name)
     throw runtime_error ("No Application name");
-
   Lock lock(g_lock);
 
   if (g_Config) {
@@ -73,6 +74,7 @@ ShibTargetConfig& ShibTargetConfig::init(const char* app_name, const char* inifi
   }
 
   g_Config = new STConfig(app_name, inifile);
+  g_Config->init();
   return *g_Config;
 }
 
@@ -95,7 +97,8 @@ ShibTargetConfig::~ShibTargetConfig()
 // STConfig
 
 STConfig::STConfig(const char* app_name, const char* inifile)
-  :  samlConf(SAMLConfig::getConfig()), shibConf(ShibConfig::getConfig())
+  :  samlConf(SAMLConfig::getConfig()), shibConf(ShibConfig::getConfig()),
+     m_app_name(app_name)
 {
   try {
     ini = new ShibINI((inifile ? inifile : SHIBTARGET_INIFILE));
@@ -104,8 +107,11 @@ STConfig::STConfig(const char* app_name, const char* inifile)
       (inifile ? inifile : SHIBTARGET_INIFILE) << endl;
     throw;
   }
+}
 
-  string app = app_name;
+void STConfig::init()
+{
+  string app = m_app_name;
   string tag;
 
   // Initialize Log4cpp
@@ -184,7 +190,7 @@ STConfig::STConfig(const char* app_name, const char* inifile)
   }
 
   // Initialize the SHAR Cache
-  if (!strcmp (app_name, SHIBTARGET_SHAR)) {
+  if (!strcmp (app.c_str(), SHIBTARGET_SHAR)) {
     const char * cache_type = NULL;
     if (ini->get_tag (app, SHIBTARGET_TAG_CACHETYPE, true, &tag))
       cache_type = tag.c_str();

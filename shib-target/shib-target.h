@@ -418,6 +418,7 @@ namespace shibtarget {
     static void preinit();
     static ShibTargetConfig& init(const char* app_name, const char* inifile);
     static ShibTargetConfig& getConfig();
+    virtual void init() = 0;
     virtual void shutdown() = 0;
     virtual ~ShibTargetConfig();
     virtual ShibINI& getINI() = 0;
