@@ -131,5 +131,9 @@ make -W load
 %{_sysconfdir}/selinux/targeted/src/policy/domain/program/*.te
 
 %changelog
+* Fri Apr  1 2005  Derek Atkins  <derek@ihtfp.com>  - 1.3-0
+- Add selinux-targeted-policy package
+- move shar to sbindir
+
 * Tue Oct 19 2004  Derek Atkins  <derek@ihtfp.com>  - 1.2-1
 - Create SPEC file based on various versions in existence.
