@@ -3,7 +3,7 @@ dnl $Id$
 AC_PREREQ([2.50])
 AC_INIT([shibboleth], [0.1], [mace-shib-users@internet2.edu], [shibboleth])
 AM_CONFIG_HEADER(config.h)
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE(shibboleth, 0.1)
 
 sinclude(acx_pthread.m4)
 sinclude(acx_rpctest.m4)
