@@ -80,7 +80,7 @@ ScopedAttribute::ScopedAttribute(const XMLCh* name, const XMLCh* ns, const XMLCh
         m_defaultScope=defaultScope;
 
     while (scopes.hasNext())
-        m_values.push_back(*scopes.next());
+        m_values.push_back(scopes.next());
 }
 
 ScopedAttribute::ScopedAttribute(IDOM_Element* e) : SAMLAttribute(e)
@@ -119,7 +119,7 @@ bool ScopedAttribute::accept(IDOM_Element* e) const
         this_scope=m_defaultScope.c_str();
 
     while (domains.hasNext())
-        if (*domains.next()==this_scope)
+        if (domains.next()==this_scope)
             return true;
     return false;
 }

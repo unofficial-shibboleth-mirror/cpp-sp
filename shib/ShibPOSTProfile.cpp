@@ -73,7 +73,7 @@ ShibPOSTProfile::ShibPOSTProfile(const Iterator<const XMLCh*>& policies, IOrigin
     m_receiver = XMLString::replicate(receiver);
 
     while (policies.hasNext())
-        m_policies.push_back(XMLString::replicate(*policies.next()));
+        m_policies.push_back(XMLString::replicate(policies.next()));
 }
 
 ShibPOSTProfile::ShibPOSTProfile(const Iterator<const XMLCh*>& policies, const XMLCh* issuer)
@@ -85,7 +85,7 @@ ShibPOSTProfile::ShibPOSTProfile(const Iterator<const XMLCh*>& policies, const X
     m_issuer = XMLString::replicate(issuer);
 
     while (policies.hasNext())
-        m_policies.push_back(XMLString::replicate(*policies.next()));
+        m_policies.push_back(XMLString::replicate(policies.next()));
 }
 
 ShibPOSTProfile::~ShibPOSTProfile()
@@ -137,7 +137,7 @@ SAMLResponse* ShibPOSTProfile::accept(const XMLByte* buf)
     Iterator<xstring> hsNames = m_mapper->getHandleServiceNames(originSite);
     bool bFound = false;
     while (!bFound && hsNames.hasNext())
-        if (!XMLString::compareString(hsNames.next()->c_str(),handleService))
+        if (!XMLString::compareString(hsNames.next().c_str(),handleService))
             bFound = true;
     if (!bFound)
         throw SAMLException(SAMLException::RESPONDER, "ShibPOSTProfile::accept() detected an untrusted HS for the origin site");
@@ -179,7 +179,7 @@ SAMLResponse* ShibPOSTProfile::prepare(const XMLCh* recipient,
     SAMLResponse* r = SAMLPOSTProfile::prepare(recipient,m_issuer,Iterator<const XMLCh*>(m_policies),name,
                                                nameQualifier,NULL,subjectIP,authMethod,authDateTime,bindings);
     if (assertionKey)
-        (*r->getAssertions().next())->sign(m_algorithm,*assertionKey,assertionCert);
+        (r->getAssertions().next())->sign(m_algorithm,*assertionKey,assertionCert);
 
     r->sign(m_algorithm,responseKey,responseCert);
 

@@ -163,7 +163,7 @@ int main(int argc,char* argv[])
         Iterator<SAMLAssertion*> i=resp->getAssertions();
         if (i.hasNext())
         {
-            SAMLAssertion* a=*i.next();
+            SAMLAssertion* a=i.next();
             cout << "Issuer: "; xmlout(cout,a->getIssuer()); cout << endl;
             const XMLDateTime* exp=a->getNotOnOrAfter();
             cout << "Expires: ";
@@ -176,7 +176,7 @@ int main(int argc,char* argv[])
             Iterator<SAMLStatement*> j=a->getStatements();
             if (j.hasNext())
             {
-                SAMLAttributeStatement* s=dynamic_cast<SAMLAttributeStatement*>(*j.next());
+                SAMLAttributeStatement* s=dynamic_cast<SAMLAttributeStatement*>(j.next());
                 if (s)
                 {
                     const SAMLSubject* sub=s->getSubject();
@@ -186,7 +186,7 @@ int main(int argc,char* argv[])
                     Iterator<SAMLAttribute*> attrs=s->getAttributes();
                     while (attrs.hasNext())
                     {
-                        SAMLAttribute* attr=*attrs.next();
+                        SAMLAttribute* attr=attrs.next();
                         cout << "Attribute Name: "; xmlout(cout,attr->getName()); cout << endl;
                         cout << "Attribute Type: {";
                         xmlout(cout,attr->getType()->getNamespaceURI());
@@ -198,7 +198,7 @@ int main(int argc,char* argv[])
                         while (vals.hasNext())
                         {
                             cout << "Attribute Value: ";
-                            xmlout(cout,vals.next()->c_str());
+                            xmlout(cout,vals.next().c_str());
                             cout << endl;
                         }
                     }
