@@ -58,11 +58,9 @@
 #ifndef SHIB_TARGET_H
 #define SHIB_TARGET_H
 
-#ifdef __cplusplus
-# include <saml/saml.h>
-# include <shib/shib.h>
-# include <shib/shib-threads.h>
-#endif
+#include <saml/saml.h>
+#include <shib/shib.h>
+#include <shib/shib-threads.h>
 
 #ifdef WIN32
 # ifndef SHIBTARGET_EXPORTS
@@ -74,202 +72,273 @@
 
 #include <shib-target/shibrpc.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#ifdef WIN32
-
-#include <winsock.h>
-typedef SOCKET ShibSocket;
-#define SHIB_SHAR_SOCKET "127.0.0.1:12345"  /* TCP host:port */
-
-#else  /* UNIX */
-
-typedef int ShibSocket;
-#define SHIB_SHAR_SOCKET "/tmp/shar-socket" /* Unix domain socket */
-
-#endif
-
-/* shib-rpcutil.c */
-
-/* Create an RPC Client handle for the _connected_ socket sock, attaching
- * the RPC program and version.
- *
- * returns a CLIENT on success, or NULL on error.  The caller can
- * call clnt_pcreateerror ("<string>") to output an error message from
- * the RPC library.
- */
-SHIBTARGET_EXPORTS CLIENT * shibrpc_client_create (ShibSocket sock, u_long program, u_long version);
-
-/* shib-sock.c */
-
-/* Create a new socket and put it into sock.
- *
- * Returns 0 on success, non-zero on error 
- */
-SHIBTARGET_EXPORTS int shib_sock_create (ShibSocket *sock);
-
-/*
- * bind the socket s to the "port" name.
- *
- * Returns 0 on success; non-zero on error.
- *
- * SIDE EFFECT: On error, the socket is closed!
- */
-SHIBTARGET_EXPORTS int shib_sock_bind (ShibSocket s, const char* name);
-
-/*
- * connect the socket s to the "port" name on the local host.
- *
- * Returns 0 on success; non-zero on error.
- */
-SHIBTARGET_EXPORTS int shib_sock_connect (ShibSocket s, const char* name);
-
-/*
- * accept a connection.  Returns 0 on success, non-zero on failure.
- */
-SHIBTARGET_EXPORTS int shib_sock_accept (ShibSocket listener, ShibSocket* s);
-
-/*
- * close the socket
- */
-SHIBTARGET_EXPORTS void shib_sock_close (ShibSocket s, const char* name);
-
-/* shib-target.cpp */
-
-/* application names */
-#define SHIBTARGET_GENERAL  "general"
-#define SHIBTARGET_SHAR     "shar"
-#define SHIBTARGET_SHIRE    "shire"
-#define SHIBTARGET_RM       "rm"
-#define SHIBTARGET_POLICIES "policies"
-
-/* configuration tags */
-#define SHIBTARGET_TAG_LOGGER   "logger"
-#define SHIBTARGET_TAG_SCHEMAS  "schemadir"
-#define SHIBTARGET_TAG_CERTFILE "certfile"
-#define SHIBTARGET_TAG_KEYFILE  "keyfile"
-#define SHIBTARGET_TAG_KEYPASS  "keypass"
-#define SHIBTARGET_TAG_CALIST   "calist"
-
-#define SHIBTARGET_TAG_AATIMEOUT    "AATimeout"
-#define SHIBTARGET_TAG_AACONNECTTO  "AAConnectTimeout"
-#define SHIBTARGET_TAG_SAMLCOMPAT   "SAMLCompat"
-
-#define SHIBTARGET_TAG_METADATA "metadata"
-#define SHIBTARGET_TAG_REVOCATION "revocation"
-#define SHIBTARGET_TAG_TRUST    "trust"
-#define SHIBTARGET_TAG_CREDS    "credentials"
-#define SHIBTARGET_TAG_AAP      "aap"
-#define SHIBTARGET_TAG_APPMAPPER "applicationMap"
-
-#define SHIBTARGET_TAG_CACHETYPE    "cacheType"
-#define SHIBTARGET_TAG_CACHECLEAN   "cacheClean"
-#define SHIBTARGET_TAG_CACHETIMEOUT "cacheTimeout"
-
-#define SHIBTARGET_TAG_REQATTRS     "requestAttributes"
-
-/* initialize and finalize the target library (return 0 on success, 1 on failure) */
-SHIBTARGET_EXPORTS int shib_target_initialize (const char* application, const char* ini_file);
-SHIBTARGET_EXPORTS void shib_target_finalize (void);
-
-/* access socket specifics from C code */
-SHIBTARGET_EXPORTS const char* shib_target_sockname(void);
-SHIBTARGET_EXPORTS const char* shib_target_sockacl(unsigned int index);
-
-#ifdef __cplusplus
-}
-
-
 namespace shibtarget {
   
   class SHIBTARGET_EXPORTS ShibTargetException : public std::exception
   {
   public:
-    explicit ShibTargetException() : m_origin(NULL), m_code(SHIBRPC_OK) {}
-    explicit ShibTargetException(ShibRpcStatus code, const char* msg, const XMLCh* origin = NULL)
-        : m_code(code), m_origin(XMLString::replicate(origin)) { if (msg) m_msg=msg; }
-    explicit ShibTargetException(ShibRpcStatus code, const std::string& msg, const XMLCh* origin = NULL)
-        : m_code(code), m_msg(msg), m_origin(XMLString::replicate(origin)) {}
-    ShibTargetException(const ShibTargetException& src)
-        : m_code(src.m_code), m_msg(src.m_msg), m_origin(XMLString::replicate(src.m_origin)) {}
+    explicit ShibTargetException() : m_code(SHIBRPC_OK) {}
+    explicit ShibTargetException(ShibRpcStatus code, const char* msg, const shibboleth::IProvider* provider);
+    explicit ShibTargetException(ShibRpcStatus code, const char* msg, const shibboleth::IProviderRole* role=NULL);
     
-    virtual ~ShibTargetException() throw () { if (m_origin) XMLString::release(&m_origin); }
-    virtual const char* what() const throw () { return (m_msg.c_str()); }
-    virtual ShibRpcStatus which() const throw () { return (m_code); }
-    virtual const XMLCh* where() const throw () { return m_origin; }
+    virtual ~ShibTargetException() throw () {}
+    virtual ShibRpcStatus which() const throw () { return m_code; }
+    virtual const char* what() const throw () { return m_msg.c_str(); }
+    virtual const char* syswho() const throw() { return m_providerId.c_str(); }
+    virtual const char* where() const throw () { return m_errorURL.c_str(); }
+    virtual const char* who() const throw () { return m_contact.c_str(); }
+    virtual const char* how() const throw () { return m_email.c_str(); }
 
   private:
     ShibRpcStatus m_code;
     std::string m_msg;
-    XMLCh* m_origin;
+    std::string m_providerId;
+    std::string m_errorURL;
+    std::string m_contact;
+    std::string m_email;
   };
 
   class RPCErrorPriv;
   class SHIBTARGET_EXPORTS RPCError
   {
   public:
-    RPCError() { init(0, "", NULL); }
-    RPCError(ShibRpcError* error);
-    RPCError(int s, char const* st, const XMLCh* orig = NULL) { init (s,st,orig); }
-    RPCError(ShibTargetException &exp) { init(exp.which(), exp.what(), exp.where()); }
+    RPCError();
+    RPCError(ShibRpcError* e);
+    RPCError(int s, const char* st);
+    RPCError(ShibTargetException &exp);
     ~RPCError();
 
-    bool	isError();
-    bool	isRetryable();
+    bool isError();
+    bool isRetryable();
 
-    // Return a set of strings that corresponds to the type, text, and desc
+    // Return a set of strings that correspond to the error properties
     const char* getType();
     const char* getText();
     const char* getDesc();
-    std::string getOriginErrorURL();
-    std::string getOriginContactName();
-    std::string getOriginContactEmail();
+    const char* getProviderId();
+    const char* getErrorURL();
+    const char* getContactName();
+    const char* getContactEmail();
     int getCode();
 
   private:
-    void init(int stat, char const* msg, const XMLCh* origin);
     RPCErrorPriv* m_priv;
   };
 
-  // The ShibTargetError is used by the high-level SHIRE and RM methods
-  // to notify the handlers of high-level errors.
+    // Abstract APIs for access to configuration information
+    
+    struct SHIBTARGET_EXPORTS IPropertySet
+    {
+        virtual std::pair<bool,bool> getBool(const char* name, const char* ns=NULL) const=0;
+        virtual std::pair<bool,const char*> getString(const char* name, const char* ns=NULL) const=0;
+        virtual std::pair<bool,const XMLCh*> getXMLString(const char* name, const char* ns=NULL) const=0;
+        virtual std::pair<bool,unsigned int> getUnsignedInt(const char* name, const char* ns=NULL) const=0;
+        virtual std::pair<bool,int> getInt(const char* name, const char* ns=NULL) const=0;
+        virtual const IPropertySet* getPropertySet(const char* name, const char* ns="urn:mace:shibboleth:target:config:1.0") const=0;
+        virtual const DOMElement* getElement() const=0;
+        virtual ~IPropertySet() {}
+    };
 
-  class ShibMLPPriv;
-  class SHIBTARGET_EXPORTS ShibMLP {
-  public:
-    ShibMLP();
-    ~ShibMLP();
+    struct SHIBTARGET_EXPORTS IListener : public virtual shibboleth::IPlugIn
+    {
+#ifdef WIN32
+        typedef SOCKET ShibSocket;
+#else
+        typedef int ShibSocket;
+#endif
+        virtual bool create(ShibSocket& s) const=0;
+        virtual bool bind(ShibSocket& s, bool force=false) const=0;
+        virtual bool connect(ShibSocket& s) const=0;
+        virtual bool close(ShibSocket& s) const=0;
+        virtual bool accept(ShibSocket& listener, ShibSocket& s) const=0;
+        virtual CLIENT* getClientHandle(ShibSocket& s, u_long program, u_long version) const=0;
+        virtual ~IListener() {}
+    };
 
-    void insert (const std::string& key, const std::string& value);
-    void insert (const std::string& key, const char* value) {
-      std::string v = value;
-      insert (key, v);
-    }
-    void insert (const char* key, const std::string& value) {
-      std::string k = key;
-      insert (k, value);
-    }
-    void insert (const char* key, const char* value) {
-      std::string k = key, v = value;
-      insert(k,v);
-    }
-    void insert (RPCError& e);
+    struct SHIBTARGET_EXPORTS IAccessControl : public virtual shibboleth::ILockable, public virtual shibboleth::IPlugIn
+    {
+        virtual bool authorized(const saml::Iterator<saml::SAMLAssertion*>& creds) const=0;
+        virtual ~IAccessControl() {}
+    };
 
-    void clear () { m_map.clear(); }
+    struct SHIBTARGET_EXPORTS IRequestMapper : public virtual shibboleth::ILockable, public virtual shibboleth::IPlugIn
+    {
+        typedef std::pair<const IPropertySet*,IAccessControl*> Settings;
+        virtual Settings getSettingsFromURL(const char* url) const=0;
+        virtual Settings getSettingsFromParsedURL(
+            const char* scheme, const char* hostname, unsigned int port, const char* path=NULL
+            ) const=0;
+        virtual ~IRequestMapper() {}
+    };
+    
+    struct SHIBTARGET_EXPORTS IApplication : public virtual IPropertySet
+    {
+        virtual const char* getId() const=0;
+        virtual saml::Iterator<saml::SAMLAttributeDesignator*> getAttributeDesignators() const=0;
+        virtual saml::Iterator<shibboleth::IAAP*> getAAPProviders() const=0;
+        virtual saml::Iterator<shibboleth::IMetadata*> getMetadataProviders() const=0;
+        virtual saml::Iterator<shibboleth::ITrust*> getTrustProviders() const=0;
+        virtual saml::Iterator<shibboleth::IRevocation*> getRevocationProviders() const=0;
+        virtual saml::Iterator<const XMLCh*> getAudiences() const=0;
+        virtual const char* getTLSCred(const shibboleth::IProvider* provider) const=0;
+        virtual const char* getSigningCred(const shibboleth::IProvider* provider) const=0;
+        virtual ~IApplication() {}
+    };
 
-    std::string run (std::istream& s) const;
-    std::string run (const std::string& input) const;
-    std::string run (const char* input) const {
-      std::string i = input;
-      return run(i);
-    }
+        struct SHIBTARGET_EXPORTS ISessionCacheEntry : public virtual shibboleth::ILockable
+    {
+        virtual bool isValid(time_t lifetime, time_t timeout) const=0;
+        virtual const char* getClientAddress() const=0;
+        virtual const char* getSerializedStatement() const=0;
+        virtual const saml::SAMLAuthenticationStatement* getStatement() const=0;
+        virtual void preFetch(int prefetch_window)=0;
+        virtual saml::Iterator<saml::SAMLAssertion*> getAssertions()=0;
+        virtual ~ISessionCacheEntry() {}
+    };
 
-  private:
-    ShibMLPPriv *m_priv;
-    std::map<std::string,std::string> m_map;
-  };
+    struct SHIBTARGET_EXPORTS ISessionCache : public virtual shibboleth::IPlugIn
+    {
+        virtual void thread_init()=0;
+        virtual void thread_end()=0;
+        virtual std::string generateKey() const=0;
+        virtual void insert(
+            const char* key,
+            const IApplication* application,
+            saml::SAMLAuthenticationStatement *s,
+            const char* client_addr,
+            saml::SAMLResponse* r=NULL
+            )=0;
+        virtual ISessionCacheEntry* find(const char* key)=0;
+        virtual void remove(const char* key)=0;
+        virtual ~ISessionCache() {}
+    };
+
+    struct SHIBTARGET_EXPORTS IConfig : public virtual shibboleth::ILockable, public virtual IPropertySet, public virtual shibboleth::IPlugIn
+    {
+        virtual const IListener* getListener() const=0;
+        virtual ISessionCache* getSessionCache() const=0;
+        virtual IRequestMapper* getRequestMapper() const=0;
+        virtual const IApplication* getApplication(const char* applicationId) const=0;
+        virtual saml::Iterator<shibboleth::ICredentials*> getCredentialsProviders() const=0;
+        virtual ~IConfig() {}
+    };
+
+    class SHIBTARGET_EXPORTS ShibTargetConfig
+    {
+    public:
+        ShibTargetConfig() : m_ini(NULL), m_features(0) {}
+        virtual ~ShibTargetConfig() {}
+
+        virtual bool init(const char* schemadir, const char* config) = 0;
+        virtual void shutdown() = 0;
+
+        enum components_t {
+            Listener = 1,
+            SessionCache = 2,
+            Metadata = 4,
+            Trust = 8,
+            Credentials = 16,
+            AAP = 32,
+            RequestMapper = 64,
+            SHARExtensions = 128,
+            SHIREExtensions = 256
+        };
+        void setFeatures(long enabled) {m_features = enabled;}
+        bool isEnabled(components_t feature) {return (m_features & feature)>0;}
+        virtual IConfig* getINI() const {return m_ini;}
+
+        static const XMLCh SHIBTARGET_NS[];
+        static ShibTargetConfig& getConfig();
+
+    protected:
+        IConfig* m_ini;
+        
+    private:
+        unsigned long m_features;
+    };
+
+    class CgiParse;
+    class SHIBTARGET_EXPORTS SHIRE
+    {
+    public:
+        SHIRE(const IApplication* app) : m_app(app), m_parser(NULL) {}
+        ~SHIRE();
+    
+        // Find the default assertion consumer service for the resource
+        const char* getShireURL(const char* resource);
+        
+        // Generate a Shib 1.x AuthnRequest redirect URL for the resource
+        const char* getAuthnRequest(const char* resource);
+        
+        // Process a lazy session setup request and turn it into an AuthnRequest
+        const char* getLazyAuthnRequest(const char* query_string);
+        
+        // Process a POST profile submission, and return (SAMLResponse,TARGET) pair.
+        std::pair<const char*,const char*> getFormSubmission(const char* post);
+        
+        RPCError* sessionCreate(const char* response, const char* ip, std::string &cookie);
+        RPCError* sessionIsValid(const char* session_id, const char* ip);
+    
+    private:
+        const IApplication* m_app;
+        std::string m_shireURL;
+        std::string m_authnRequest;
+        CgiParse* m_parser;
+    };
+
+    class SHIBTARGET_EXPORTS RM
+    {
+    public:
+        RM(const IApplication* app) : m_app(app) {}
+        ~RM() {}
+    
+        RPCError* getAssertions(
+            const char* cookie,
+            const char* ip,
+            std::vector<saml::SAMLAssertion*>& assertions,
+            saml::SAMLAuthenticationStatement **statement = NULL
+            );
+        static void serialize(saml::SAMLAssertion &assertion, std::string &result);
+    
+    private:
+        const IApplication* m_app;
+    };
+
+    class ShibMLPPriv;
+    class SHIBTARGET_EXPORTS ShibMLP {
+    public:
+        ShibMLP(const IApplication* app=NULL);
+        ~ShibMLP();
+
+        void insert (const std::string& key, const std::string& value);
+        void insert (const std::string& key, const char* value) {
+          std::string v = value;
+          insert (key, v);
+        }
+        void insert (const char* key, const std::string& value) {
+          std::string k = key;
+          insert (k, value);
+        }
+        void insert (const char* key, const char* value) {
+          std::string k = key, v = value;
+          insert(k,v);
+        }
+        void insert (RPCError& e);
+
+        void clear () { m_map.clear(); }
+
+        const char* run (std::istream& s);
+        const char* run (const std::string& input);
+        const char* run (const char* input) {
+            std::string i = input;
+            return run(i);
+        }
+
+    private:
+        ShibMLPPriv *m_priv;
+        std::map<std::string,std::string> m_map;
+        std::string m_generated;
+    };
 
   class SHIBTARGET_EXPORTS ShibTargetResponse
   {
@@ -300,6 +369,9 @@ namespace shibtarget {
     ShibMLP	mlp;		// MLP information if has_mlp == true
   };
 
+  // The ShibTargetError is used by the high-level SHIRE and RM methods
+  // to notify the handlers of high-level errors.
+
   class SHIBTARGET_EXPORTS ShibTargetError : public std::exception
   {
   public:
@@ -310,194 +382,6 @@ namespace shibtarget {
   private:
     ShibTargetResponse *m_resp;
   };
-
-  class SHIBTARGET_EXPORTS SHIREConfig
-  {
-  public:
-    bool	checkIPAddress;
-    time_t	lifetime;
-    time_t	timeout;
-  };
-
-  class SHIREPriv;
-  class SHIBTARGET_EXPORTS ShibINI;
-  class SHIBTARGET_EXPORTS SHIRE
-  {
-  public:
-    SHIRE(SHIREConfig config, const char* shire_url);
-    ~SHIRE();
-
-    RPCError* sessionIsValid(const char* cookie, const char* ip, const char* application_id);
-    RPCError* sessionCreate(const char* post, const char* ip, const char* application_id, std::string &cookie);
-
-  private:
-    SHIREPriv *m_priv;
-  };
-
-  class SHIBTARGET_EXPORTS RMConfig
-  {
-  public:
-    bool	checkIPAddress;
-  };
-
-  class RMPriv;
-  class SHIBTARGET_EXPORTS RM
-  {
-  public:
-    RM(RMConfig config);
-    ~RM();
-
-    RPCError* getAssertions(const char* cookie, const char* ip, const char* application_id,
-			    std::vector<saml::SAMLAssertion*> &assertions,
-			    saml::SAMLAuthenticationStatement **statement = NULL);
-    static void serialize(saml::SAMLAssertion &assertion, std::string &result);
-  private:
-    RMPriv *m_priv;
-  };
-
-  class ShibINIPriv;
-  class SHIBTARGET_EXPORTS ShibINI {
-  public:
-    ShibINI (std::string& file, bool case_sensitive = true) { init(file,case_sensitive); }
-    ShibINI (const char *file, bool case_sensitive = true) {
-      std::string f = file;
-      init(f, case_sensitive);
-    }
-    ~ShibINI ();
-
-    bool refresh(void);
-
-    const std::string get (const std::string& header, const std::string& tag);
-    const std::string get (const char* header, const char* tag) {
-      std::string h = header, t = tag;
-      return get(h,t);
-    }
-
-    const std::string operator() (const std::string& header, const std::string& tag)  {
-      return get(header,tag);
-    }
-    const std::string operator() (const char* header, const char* tag) {
-      std::string h = header, t = tag;
-      return get(h,t);
-    }
-
-    bool exists(const std::string& header);
-    bool exists(const std::string& header, const std::string& tag);
-
-    bool exists(const char* header) {
-      std::string s = header;
-      return exists(s);
-    }
-    bool exists(const char* header, const char* tag) {
-      std::string h = header, t = tag;
-      return exists(h,t);
-    }
-
-    // Special method to look for a tag in one header and maybe in the
-    // 'SHIBTARGET_GENERAL' header
-    bool get_tag(std::string& header, std::string& tag, bool try_general,
-		 std::string* result);
-
-    bool get_tag(std::string& header, const char* tag, bool try_general,
-		 std::string* result) {
-      std::string t = tag;
-      return get_tag (header,t,try_general,result);
-    }
-
-    bool get_tag(const char* header, const char* tag, bool try_general,
-		 std::string* result) {
-      std::string h = header, t = tag;
-      return get_tag (h,t,try_general,result);
-    }
-
-    // Dump out the inifile to the output stream
-    void dump(std::ostream& os);
-
-    // Iterators
-
-    // The begin() functions reset the iterator and return the first element
-    // (or 0 if there are no elements.)
-    // The next() functions return the next element, or 0 if there are no
-    // elements left.
-    //
-    // Example:
-    // for (const foo* current = begin(); current; current = next()) {
-    //   ...
-    // }
-    //
-    // NOTE: Holding an Iterator will lock the INI file and cause it to
-    // stop updating itself.  You should destroy the iterator as soon as
-    // you are done with it.
-    //
-    // ALSO NOTE: the string* returned from the Iterator is only valid
-    // while you hold the iterator.  You should copy the de-reference
-    // of the pointer to your own copy if you want to keep the string.
-
-    class SHIBTARGET_EXPORTS Iterator {
-    public:
-      virtual ~Iterator() {}
-      virtual const std::string* begin() = 0;
-      virtual const std::string* next() = 0;
-    };
-
-    Iterator* header_iterator();
-    Iterator* tag_iterator(const std::string& header);
-
-    static bool boolean(std::string& value);
-
-  private:
-    ShibINIPriv *m_priv;
-    void init(std::string& file, bool case_sensitive);
-  };
-
-    // Abstract API to map URLs to application names
-    struct SHIBTARGET_EXPORTS IApplicationMapper : public virtual shibboleth::ILockable
-    {
-        virtual const char* getApplicationFromURL(const char* url) const=0;
-        virtual const XMLCh* getXMLChApplicationFromURL(const char* url) const=0;
-        virtual const char* getApplicationFromParsedURL(
-            const char* scheme, const char* hostname, unsigned int port, const char* path=NULL
-            ) const=0;
-        virtual const XMLCh* getXMLChApplicationFromParsedURL(
-            const char* scheme, const char* hostname, unsigned int port, const char* path=NULL
-            ) const=0;
-        virtual ~IApplicationMapper() {}
-    };
-
-    // A helper class to wrap the lock/unlock sequence.
-    class SHIBTARGET_EXPORTS ApplicationMapper
-    {
-    public:
-        ApplicationMapper();
-        ~ApplicationMapper() {if (m_mapper) m_mapper->unlock();}
-        const IApplicationMapper* operator->() const {return m_mapper;}
-        operator const IApplicationMapper*() const {return m_mapper;}
-        
-    private:
-        ApplicationMapper(const ApplicationMapper&);
-        void operator=(const ApplicationMapper&);
-        IApplicationMapper* m_mapper;
-    };
-    
-  class SHIBTARGET_EXPORTS ShibTargetConfig
-  {
-  public:
-    static void preinit();
-    static ShibTargetConfig& init(const char* app_name, const char* inifile);
-    static ShibTargetConfig& getConfig();
-    virtual void init() = 0;
-    virtual void shutdown() = 0;
-    virtual shibtarget::ShibINI& getINI() const = 0;
-    virtual IApplicationMapper* getApplicationMapper() const = 0;
-    virtual saml::Iterator<shibboleth::IMetadata*> getMetadataProviders() const = 0;
-    virtual saml::Iterator<shibboleth::IRevocation*> getRevocationProviders() const = 0;
-    virtual saml::Iterator<shibboleth::ITrust*> getTrustProviders() const = 0;
-    virtual saml::Iterator<shibboleth::ICredentials*> getCredentialProviders() const = 0;
-    virtual saml::Iterator<shibboleth::IAAP*> getAAPProviders() const = 0;
-    virtual ~ShibTargetConfig() {}
-  };
-
-} // namespace
-#endif
+}
 
 #endif /* SHIB_TARGET_H */

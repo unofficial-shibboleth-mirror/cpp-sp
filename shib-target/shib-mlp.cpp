@@ -75,12 +75,7 @@ public:
   log4cpp::Category *log;
 };  
 
-ShibMLPPriv::ShibMLPPriv()
-{
-  string ctx = "shibtarget.ShibMLP";
-  log = &(log4cpp::Category::getInstance(ctx));
-}
-
+ShibMLPPriv::ShibMLPPriv() : log(&(log4cpp::Category::getInstance("shibtarget.ShibMLP"))) {}
 
 static void trimspace (string& s)
 {
@@ -96,14 +91,26 @@ static void trimspace (string& s)
   s = s.substr(start, end - start + 1);
 }
 
-ShibMLP::ShibMLP ()
+ShibMLP::ShibMLP (const IApplication* app)
 {
   m_priv = new ShibMLPPriv ();
 
   // Create a timestamp
   time_t now = time(NULL);
-  string now_s = ctime(&now);
-  insert ("now", now_s);
+  insert("now", ctime(&now));
+  
+  // Insert any available information.
+  if (app) {
+      const IPropertySet* props=app->getPropertySet("Errors");
+      if (props) {
+        pair<bool,const char*> p=props->getString("supportContact");
+        if (p.first)
+            insert("supportContact",p.second);
+        p=props->getString("logoLocation");
+        if (p.first)
+            insert("logoLocation",p.second);
+      }
+  }
 }
 
 ShibMLP::~ShibMLP ()
@@ -111,14 +118,13 @@ ShibMLP::~ShibMLP ()
   delete m_priv;
 }
 
-string ShibMLP::run (const string& is) const
+const char* ShibMLP::run (const string& is)
 {
-  string res;
-
   const char* line = is.c_str();
   const char* lastpos = line;
   const char* thispos;
 
+  m_generated.erase();
   m_priv->log->info("Processing string");
 
   //
@@ -130,11 +136,11 @@ string ShibMLP::run (const string& is) const
   //
   while ((thispos = strstr(lastpos, "<")) != NULL) {
     // save the string up to this token
-    res += is.substr(lastpos-line, thispos-lastpos);
+    m_generated += is.substr(lastpos-line, thispos-lastpos);
 
     // Make sure this token matches our token.
     if (strnicmp (thispos, "<shibmlp ", 9)) {
-      res += "<";
+      m_generated += "<";
       lastpos = thispos + 1;
       continue;
     }
@@ -151,24 +157,25 @@ string ShibMLP::run (const string& is) const
 
       map<string,string>::const_iterator i=m_map.find(key);
       if (i == m_map.end()) {
-	static string s1 = "<!-- Unknown SHIBMLP key: ";
-	static string s2 = "/>";
-	res += s1 + key + s2;
-	m_priv->log->debug("key unknown");
-      } else {
-	res += i->second;
-	m_priv->log->debug("key maps to \"%s\"", i->second.c_str());
+        static string s1 = "<!-- Unknown SHIBMLP key: ";
+        static string s2 = "/>";
+        m_generated += s1 + key + s2;
+        m_priv->log->debug("key unknown");
+      }
+      else {
+        m_generated += i->second;
+        m_priv->log->debug("key maps to \"%s\"", i->second.c_str());
       }
 
       lastpos = thispos + 2;	// strlen("/>")
     }
   }
-  res += is.substr(lastpos-line);
+  m_generated += is.substr(lastpos-line);
 
-  return res;
+  return m_generated.c_str();
 }
 
-string ShibMLP::run (istream& is) const
+const char* ShibMLP::run (istream& is)
 {
   static string eol = "\r\n";
   string str, line;
@@ -183,17 +190,16 @@ string ShibMLP::run (istream& is) const
 
 void ShibMLP::insert (RPCError& e)
 {
-  insert ("errorType", e.getType());
-  insert ("errorText", e.getText());
-  insert ("errorDesc", e.getDesc());
-  insert ("originErrorURL", e.getOriginErrorURL());
-  insert ("originContactName", e.getOriginContactName());
-  insert ("originContactEmail", e.getOriginContactEmail());
+    insert ("errorType", e.getType() ? e.getType() : "Unknown Type");
+    insert ("errorText", e.getText() ? e.getText() : "No Message");
+    insert ("errorDesc", e.getDesc() ? e.getDesc() : "No Description");
+    insert ("originErrorURL", e.getErrorURL() ? e.getErrorURL() : "No Error URL");
+    insert ("originContactName", e.getContactName() ? e.getContactName() : "No Contact Name");
+    insert ("originContactEmail", e.getContactEmail() ? e.getContactEmail() : "No Contact Email");
 }
 
 void ShibMLP::insert (const std::string& key, const std::string& value)
 {
-  saml::NDC ndc("insert");
   m_priv->log->debug("inserting %s -> %s", key.c_str(), value.c_str());
   m_map[key] = value;
 }

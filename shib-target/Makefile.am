@@ -34,7 +34,7 @@ libshib_target_la_SOURCES = \
 	shibrpc-svc.c \
 	shibrpc-xdr.c \
 	XML.cpp \
-	XMLApplicationMapper.cpp
+	XMLRequestMapper.cpp
 
 # this is different from the project version
 # http://sources.redhat.com/autobook/autobook/autobook_91.html

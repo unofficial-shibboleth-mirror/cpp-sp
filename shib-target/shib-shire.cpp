@@ -50,7 +50,7 @@
 /*
  * shib-shire.cpp -- Shibboleth SHIRE functions
  *
- * Created by:	Derek Atkins <derek@ihtfp.com>
+ * Created by:    Derek Atkins <derek@ihtfp.com>
  *
  * $Id$
  */
@@ -70,66 +70,313 @@ using namespace saml;
 using namespace shibboleth;
 using namespace shibtarget;
 
-class shibtarget::SHIREPriv
+/* Parsing routines modified from NCSA source. */
+static char *makeword(char *line, char stop)
 {
-public:
-  SHIREPriv(SHIREConfig cfg, const char* shire_url);
-  ~SHIREPriv() {}
+    int x = 0,y;
+    char *word = (char *) malloc(sizeof(char) * (strlen(line) + 1));
 
-  SHIREConfig	m_config;
-  string	    m_shire_url;
+    for(x=0;((line[x]) && (line[x] != stop));x++)
+        word[x] = line[x];
 
-  log4cpp::Category* log;
-};
+    word[x] = '\0';
+    if(line[x])
+        ++x;
+    y=0;
 
-SHIREPriv::SHIREPriv(SHIREConfig cfg, const char* shire_url)
-{
-  log = &(log4cpp::Category::getInstance("shibtarget.SHIRE"));
-  m_config = cfg;
-  m_shire_url = shire_url;
+    while(line[x])
+      line[y++] = line[x++];
+    line[y] = '\0';
+    return word;
 }
 
-SHIRE::SHIRE(SHIREConfig cfg, const char* shire_url)
+static char *fmakeword(char stop, int *cl, const char** ppch)
 {
-  m_priv = new SHIREPriv(cfg, shire_url);
-  m_priv->log->debug("New SHIRE handle created: %p", m_priv);
+    int wsize;
+    char *word;
+    int ll;
+
+    wsize = 1024;
+    ll=0;
+    word = (char *) malloc(sizeof(char) * (wsize + 1));
+
+    while(1)
+    {
+        word[ll] = *((*ppch)++);
+        if(ll==wsize-1)
+        {
+            word[ll+1] = '\0';
+            wsize+=1024;
+            word = (char *)realloc(word,sizeof(char)*(wsize+1));
+        }
+        --(*cl);
+        if((word[ll] == stop) || word[ll] == EOF || (!(*cl)))
+        {
+            if(word[ll] != stop)
+                ll++;
+            word[ll] = '\0';
+            return word;
+        }
+        ++ll;
+    }
+}
+
+static char x2c(char *what)
+{
+    register char digit;
+
+    digit = (what[0] >= 'A' ? ((what[0] & 0xdf) - 'A')+10 : (what[0] - '0'));
+    digit *= 16;
+    digit += (what[1] >= 'A' ? ((what[1] & 0xdf) - 'A')+10 : (what[1] - '0'));
+    return(digit);
+}
+
+static void unescape_url(char *url)
+{
+    register int x,y;
+
+    for(x=0,y=0;url[y];++x,++y)
+    {
+        if((url[x] = url[y]) == '%')
+        {
+            url[x] = x2c(&url[y+1]);
+            y+=2;
+        }
+    }
+    url[x] = '\0';
+}
+
+static void plustospace(char *str)
+{
+    register int x;
+
+    for(x=0;str[x];x++)
+        if(str[x] == '+') str[x] = ' ';
+}
+
+static inline char hexchar(unsigned short s)
+{
+    return (s<=9) ? ('0' + s) : ('A' + s - 10);
+}
+
+static string url_encode(const char* s)
+{
+    static char badchars[]="\"\\+<>#%{}|^~[]`;/?:@=&";
+
+    string ret;
+    for (; *s; s++) {
+        if (strchr(badchars,*s) || *s<=0x1F || *s>=0x7F) {
+            ret+='%';
+        ret+=hexchar(*s >> 4);
+        ret+=hexchar(*s & 0x0F);
+        }
+        else
+            ret+=*s;
+    }
+    return ret;
+}
+
+namespace shibtarget {
+    class CgiParse
+    {
+    public:
+        CgiParse(const char* data);
+        ~CgiParse();
+        const char* get_value(const char* name) const;
+    
+    private:
+        map<string,char*> kvp_map;
+    };
+}
+
+CgiParse::CgiParse(const char* data)
+{
+    const char* pch = data;
+    int cl = strlen(data);
+        
+    while (cl && pch) {
+        char *name;
+        char *value;
+        value=fmakeword('&',&cl,&pch);
+        plustospace(value);
+        unescape_url(value);
+        name=makeword(value,'=');
+        kvp_map[name]=value;
+        free(name);
+    }
+}
+
+CgiParse::~CgiParse()
+{
+    for (map<string,char*>::iterator i=kvp_map.begin(); i!=kvp_map.end(); i++)
+        free(i->second);
+}
+
+const char* CgiParse::get_value(const char* name) const
+{
+    map<string,char*>::const_iterator i=kvp_map.find(name);
+    if (i==kvp_map.end())
+        return NULL;
+    return i->second;
 }
 
 SHIRE::~SHIRE()
 {
-  delete m_priv;
+    delete m_parser;
 }
 
+const char* SHIRE::getShireURL(const char* resource)
+{
+    if (!m_shireURL.empty())
+        return m_shireURL.c_str();
 
-RPCError* SHIRE::sessionIsValid(const char* cookie, const char* ip, const char* application_id)
+    bool shire_ssl_only=false;
+    const char* shire=NULL;
+    const IPropertySet* props=m_app->getPropertySet("Sessions");
+    if (props) {
+        pair<bool,bool> p=props->getBool("shireSSL");
+        if (p.first)
+            shire_ssl_only=p.second;
+        pair<bool,const char*> p2=props->getString("shireURL");
+        if (p2.first)
+            shire=p2.second;
+    }
+    
+    // Should never happen...
+    if (!shire)
+        return NULL;
+
+    // The "shireURL" property can be in one of three formats:
+    //
+    // 1) a full URI:       http://host/foo/bar
+    // 2) a hostless URI:   http:///foo/bar
+    // 3) a relative path:  /foo/bar
+    //
+    // #  Protocol  Host        Path
+    // 1  shire     shire       shire
+    // 2  shire     resource    shire
+    // 3  resource  resource    shire
+    //
+    // note: if shire_ssl_only is true, make sure the protocol is https
+
+    const char* path = NULL;
+
+    // Decide whether to use the shire or the resource for the "protocol"
+    const char* prot;
+    if (*shire != '/') {
+        prot = shire;
+    }
+    else {
+        prot = resource;
+        path = shire;
+    }
+
+    // break apart the "protocol" string into protocol, host, and "the rest"
+    const char* colon=strchr(prot,':');
+    colon += 3;
+    const char* slash=strchr(colon,'/');
+    if (!path)
+        path = slash;
+
+    // Compute the actual protocol and store in member.
+    if (shire_ssl_only)
+        m_shireURL.assign("https://");
+    else
+        m_shireURL.assign(prot, colon-prot);
+
+    // create the "host" from either the colon/slash or from the target string
+    // If prot == shire then we're in either #1 or #2, else #3.
+    // If slash == colon then we're in #2.
+    if (prot != shire || slash == colon) {
+        colon = strchr(resource, ':');
+        colon += 3;      // Get past the ://
+        slash = strchr(colon, '/');
+    }
+    string host(colon, slash-colon);
+
+    // Build the shire URL
+    m_shireURL+=host + path;
+    return m_shireURL.c_str();
+}
+
+const char* SHIRE::getAuthnRequest(const char* resource)
+{
+    if (!m_authnRequest.empty())
+        return m_authnRequest.c_str();
+        
+    char timebuf[16];
+    sprintf(timebuf,"%u",time(NULL));
+    
+    const IPropertySet* props=m_app->getPropertySet("Sessions");
+    if (props) {
+        pair<bool,const char*> wayf=props->getString("wayfURL");
+        if (wayf.first) {
+            m_authnRequest=m_authnRequest + wayf.second + "?shire=" + url_encode(getShireURL(resource)) +
+                "&target=" + url_encode(resource) + "&time=" + timebuf;
+            wayf=m_app->getString("providerId");
+            if (wayf.first)
+                m_authnRequest=m_authnRequest + "&provider_id=" + wayf.second;
+        }
+    }
+    return m_authnRequest.c_str();
+}
+
+const char* SHIRE::getLazyAuthnRequest(const char* query_string)
+{
+    CgiParse parser(query_string);
+    const char* target=parser.get_value("target");
+    if (!target || !*target)
+        return NULL;
+    return getAuthnRequest(target);
+}
+
+pair<const char*,const char*> SHIRE::getFormSubmission(const char* post)
+{
+    m_parser = new CgiParse(post);
+    return pair<const char*,const char*>(m_parser->get_value("SAMLResponse"),m_parser->get_value("TARGET"));
+}
+
+RPCError* SHIRE::sessionIsValid(const char* session_id, const char* ip)
 {
   saml::NDC ndc("sessionIsValid");
+  Category& log = Category::getInstance("shibtarget.SHIRE");
 
-  if (!cookie || *cookie == '\0') {
-    m_priv->log->error ("No cookie value was provided");
+  if (!session_id || !*session_id) {
+    log.error ("No cookie value was provided");
     return new RPCError(SHIBRPC_NO_SESSION, "No cookie value was provided");
   }
 
-  if (!ip) {
-    m_priv->log->error ("No IP");
-    return new RPCError(-1, "Invalid IP Address");
+  if (!ip || !*ip) {
+    log.error ("Invalid IP Address");
+    return new RPCError(SHIBRPC_IPADDR_MISSING, "Invalid IP Address");
   }
 
-  // make sure we pass _something_ to the server
-  if (!application_id) application_id = "";
-
-  m_priv->log->info ("is session valid: %s", ip);
-  m_priv->log->debug ("session cookie: %s", cookie);
+  log.info ("is session valid: %s", ip);
+  log.debug ("session cookie: %s", session_id);
 
   shibrpc_session_is_valid_args_1 arg;
 
-  arg.cookie.cookie = (char*)cookie;
+  arg.cookie.cookie = (char*)session_id;
   arg.cookie.client_addr = (char *)ip;
-  arg.application_id = (char *)application_id;
-  arg.lifetime = m_priv->m_config.lifetime;
-  arg.timeout = m_priv->m_config.timeout;
-  arg.checkIPAddress = m_priv->m_config.checkIPAddress;
-
+  arg.application_id = (char *)m_app->getId();
+  
+  // Get rest of input from the application Session properties.
+  arg.lifetime = 3600;
+  arg.timeout = 1800;
+  arg.checkIPAddress = true;
+  const IPropertySet* props=m_app->getPropertySet("Sessions");
+  if (props) {
+      pair<bool,unsigned int> p=props->getUnsignedInt("lifetime");
+      if (p.first)
+          arg.lifetime = p.second;
+      p=props->getUnsignedInt("timeout");
+      if (p.first)
+          arg.timeout = p.second;
+      pair<bool,bool> pcheck=props->getBool("checkAddress");
+      if (pcheck.first)
+          arg.checkIPAddress = pcheck.second;
+  }
+  
   shibrpc_session_is_valid_ret_1 ret;
   memset (&ret, 0, sizeof(ret));
 
@@ -141,12 +388,12 @@ RPCError* SHIRE::sessionIsValid(const char* cookie, const char* ip, const char* 
     clnt = rpc->connect();
     if (shibrpc_session_is_valid_1(&arg, &ret, clnt) != RPC_SUCCESS) {
       // FAILED.  Release, disconnect, and try again...
-      m_priv->log->debug("RPC Failure: %p (%p): %s", m_priv, clnt, clnt_spcreateerror(""));
+      log.debug("RPC Failure: %p (%p): %s", this, clnt, clnt_spcreateerror(""));
       rpc->disconnect();
       if (retry)
-	       retry--;
+          retry--;
       else {
-        m_priv->log->error("RPC Failure: %p (%p)", m_priv, clnt);
+        log.error("RPC Failure: %p (%p)", this, clnt);
         return new RPCError(-1, "RPC Failure");
       }
     }
@@ -157,7 +404,7 @@ RPCError* SHIRE::sessionIsValid(const char* cookie, const char* ip, const char* 
     }
   } while (retry>=0);
 
-  m_priv->log->debug("RPC completed with status %d, %p", ret.status.status, m_priv);
+  log.debug("RPC completed with status %d, %p", ret.status.status, this);
 
   RPCError* retval;
   if (ret.status.status)
@@ -167,35 +414,40 @@ RPCError* SHIRE::sessionIsValid(const char* cookie, const char* ip, const char* 
 
   clnt_freeres (clnt, (xdrproc_t)xdr_shibrpc_session_is_valid_ret_1, (caddr_t)&ret);
 
-  m_priv->log->debug("returning");
+  log.debug("returning");
   return retval;
 }
 
-RPCError* SHIRE::sessionCreate(const char* post, const char* ip, const char* application_id, string& cookie)
+RPCError* SHIRE::sessionCreate(const char* response, const char* ip, string& cookie)
 {
   saml::NDC ndc("sessionCreate");
+  Category& log = Category::getInstance("shibtarget.SHIRE");
 
-  if (!post || *post == '\0') {
-    m_priv->log->error ("No POST");
-    return new RPCError(-1,  "Invalid POST string");
+  if (!response || !*response) {
+    log.error ("Empty SAML response content");
+    return new RPCError(-1,  "Empty SAML response content");
   }
 
-  if (!ip) {
-    m_priv->log->error ("No IP");
-    return new RPCError(-1, "Invalid IP Address");
+  if (!ip || !*ip) {
+    log.error ("Invalid IP address");
+    return new RPCError(-1, "Invalid IP address");
   }
-
-  // make sure we pass _something_ to the server
-  if (!application_id) application_id = "";
-
-  m_priv->log->info ("create session for user at %s", ip);
-
+  
   shibrpc_new_session_args_1 arg;
-  arg.shire_location = (char*) (m_priv->m_shire_url.c_str());
-  arg.application_id = (char*) application_id;
-  arg.saml_post = (char*)post;
+  arg.shire_location = (char*) m_shireURL.c_str();
+  arg.application_id = (char*) m_app->getId();
+  arg.saml_post = (char*)response;
   arg.client_addr = (char*)ip;
-  arg.checkIPAddress = m_priv->m_config.checkIPAddress;
+  arg.checkIPAddress = true;
+
+  log.info ("create session for user at %s for application %s", ip, arg.application_id);
+
+  const IPropertySet* props=m_app->getPropertySet("Sessions");
+  if (props) {
+      pair<bool,bool> pcheck=props->getBool("checkAddress");
+      if (pcheck.first)
+          arg.checkIPAddress = pcheck.second;
+  }
 
   shibrpc_new_session_ret_1 ret;
   memset (&ret, 0, sizeof(ret));
@@ -208,12 +460,12 @@ RPCError* SHIRE::sessionCreate(const char* post, const char* ip, const char* app
     clnt = rpc->connect();
     if (shibrpc_new_session_1 (&arg, &ret, clnt) != RPC_SUCCESS) {
       // FAILED.  Release, disconnect, and retry
-      m_priv->log->debug("RPC Failure: %p (%p): %s", m_priv, clnt, clnt_spcreateerror (""));
+      log.debug("RPC Failure: %p (%p): %s", this, clnt, clnt_spcreateerror (""));
       rpc->disconnect();
       if (retry)
-	    retry--;
+       retry--;
       else {
-        m_priv->log->error("RPC Failure: %p (%p)", m_priv, clnt);
+        log.error("RPC Failure: %p (%p)", this, clnt);
         return new RPCError(-1, "RPC Failure");
       }
     }
@@ -224,19 +476,19 @@ RPCError* SHIRE::sessionCreate(const char* post, const char* ip, const char* app
     }
   } while (retry>=0);
 
-  m_priv->log->debug("RPC completed with status %d (%p)", ret.status.status, m_priv);
+  log.debug("RPC completed with status %d (%p)", ret.status.status, this);
 
   RPCError* retval;
   if (ret.status.status)
     retval = new RPCError(&ret.status);
   else {
-    m_priv->log->debug ("new cookie: %s", ret.cookie);
+    log.debug ("new cookie: %s", ret.cookie);
     cookie = ret.cookie;
     retval = new RPCError();
   }
 
   clnt_freeres(clnt, (xdrproc_t)xdr_shibrpc_new_session_ret_1, (caddr_t)&ret);
 
-  m_priv->log->debug ("returning");
+  log.debug("returning");
   return retval;
 }

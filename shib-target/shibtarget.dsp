@@ -91,10 +91,6 @@ LINK32=link.exe
 # Name "shibtarget - Win32 Debug"
 # Begin Source File
 
-SOURCE=".\ccache-utils.h"
-# End Source File
-# Begin Source File
-
 SOURCE=.\internal.h
 # End Source File
 # Begin Source File
@@ -127,19 +123,11 @@ SOURCE=".\shib-rpchandle.cpp"
 # End Source File
 # Begin Source File
 
-SOURCE=".\shib-rpcutil.c"
-# End Source File
-# Begin Source File
-
 SOURCE=".\shib-shire.cpp"
 # End Source File
 # Begin Source File
 
-SOURCE=".\shib-sock.c"
-# End Source File
-# Begin Source File
-
-SOURCE=".\shib-target.cpp"
+SOURCE=".\shib-sock.cpp"
 # End Source File
 # Begin Source File
 
@@ -171,7 +159,7 @@ SOURCE=.\XML.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\XMLApplicationMapper.cpp
+SOURCE=.\XMLRequestMapper.cpp
 # End Source File
 # End Target
 # End Project

@@ -33,7 +33,10 @@ typedef enum ShibRpcStatus ShibRpcStatus;
 
 struct ShibRpcErr {
 	char *error;
-	char *origin;
+	char *provider;
+	char *url;
+	char *contact;
+	char *email;
 };
 typedef struct ShibRpcErr ShibRpcErr;
 

@@ -48,9 +48,7 @@
  */
 
 /*
- * shib-ini.h -- INI file handling
- *
- * Created By:	Derek Atkins <derek@ihtfp.com>
+ * shib-ini.h -- config file handling, now XML-based
  *
  * $Id$
  */
@@ -59,11 +57,7 @@
 
 #include <shib/shib-threads.h>
 #include <log4cpp/Category.hh>
-
-#include <sstream>
-#include <iostream>
-#include <fstream>
-#include <ctype.h>
+#include <log4cpp/PropertyConfigurator.hh>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -72,479 +66,868 @@ using namespace std;
 using namespace saml;
 using namespace shibboleth;
 using namespace shibtarget;
+using namespace log4cpp;
 
-class HeaderIterator : public shibtarget::ShibINI::Iterator {
-public:
-  HeaderIterator (ShibINIPriv* ini);
-  ~HeaderIterator ();
+namespace shibtarget {
 
-  const string* begin();
-  const string* next();
-private:
-  ShibINIPriv* ini;
-  map<string, map<string,string> >::const_iterator iter;
-  bool valid;
-};
+    // Application configuration wrapper
+    class XMLApplication : public virtual IApplication, public XMLPropertySet, public DOMNodeFilter
+    {
+    public:
+        XMLApplication(const DOMElement* e, const XMLApplication* base=NULL);
+        ~XMLApplication();
+    
+        // IPropertySet
+        pair<bool,bool> getBool(const char* name, const char* ns=NULL) const;
+        pair<bool,const char*> getString(const char* name, const char* ns=NULL) const;
+        pair<bool,const XMLCh*> getXMLString(const char* name, const char* ns=NULL) const;
+        pair<bool,unsigned int> getUnsignedInt(const char* name, const char* ns=NULL) const;
+        pair<bool,int> getInt(const char* name, const char* ns=NULL) const;
+        const IPropertySet* getPropertySet(const char* name, const char* ns="urn:mace:shibboleth:target:config:1.0") const;
 
-class TagIterator : public ShibINI::Iterator {
-public:
-  TagIterator (ShibINIPriv* ini, const string& header);
-  ~TagIterator ();
-
-  const string* begin();
-  const string* next();
-private:
-  ShibINIPriv* ini;
-  string header;
-  map<string,string>::const_iterator iter;
-  bool valid;
-};
-
-class shibtarget::ShibINIPriv {
-public:
-  ShibINIPriv();
-  ~ShibINIPriv() { delete rwlock; }
-  log4cpp::Category *log;
-
-  map<string, map<string, string> > table;
-  string file;
-  bool cs;
-
-  unsigned long	modtime;
-
-  unsigned long iterators;
-  RWLock *rwlock;
-
-  bool exists(const std::string& header);
-  bool exists(const std::string& header, const std::string& tag);
-};
-
-ShibINIPriv::ShibINIPriv()
-{
-  string ctx = "shibtarget.ShibINI";
-  log = &(log4cpp::Category::getInstance(ctx));
-  rwlock = RWLock::create();
-  modtime = 0;
-  iterators = 0;
-}
-
-static void trimline (string& s)
-{
-  int end = s.size() - 1, start = 0;
-
-  // Trim stuff on right.
-  while (end > 0 && !isgraph(s[end])) end--;
-
-  // Trim stuff on left.
-  while (start < end && !isgraph(s[start])) start++;
-
-  // Modify the string.
-  s = s.substr(start, end - start + 1);
-}
-
-static void to_lowercase (string& s)
-{
-  for (int i = 0, sz = s.size(); i < sz; i++)
-    s[i] = tolower(s[i]);
-}
-
-ShibINI::~ShibINI() {
-  delete m_priv;
-}
-
-void ShibINI::init (string& f, bool case_sensitive)
-{
-  m_priv = new ShibINIPriv();
-  m_priv->file = f;
-  m_priv->cs = case_sensitive;
-  m_priv->log->info ("initializing INI file: %s (sensitive=%s)", f.c_str(),
-		     (case_sensitive ? "true" : "false"));
-
-  ReadLock lock(m_priv->rwlock);
-  if (!refresh())
-    throw runtime_error("Cannot read ini file");
-}
-
-//
-// Must be called holding the ReadLock.
-//
-bool ShibINI::refresh(void)
-{
-  saml::NDC ndc("refresh");
-
-  // check if we need to refresh
-#ifdef _WIN32
-  struct _stat stat_buf;
-  if (_stat (m_priv->file.c_str(), &stat_buf) < 0)
+        // IApplication
+        const char* getId() const {return getString("id").second;}
+        Iterator<SAMLAttributeDesignator*> getAttributeDesignators() const;
+        Iterator<IAAP*> getAAPProviders() const;
+        Iterator<IMetadata*> getMetadataProviders() const;
+        Iterator<ITrust*> getTrustProviders() const;
+        Iterator<IRevocation*> getRevocationProviders() const;
+        Iterator<const XMLCh*> getAudiences() const;
+        const char* getTLSCred(const IProvider* provider) const {return getCredentialUse(provider).first.c_str();}
+        const char* getSigningCred(const IProvider* provider) const {return getCredentialUse(provider).second.c_str();}
+        
+        // Provides filter to exclude special config elements.
+        short acceptNode(const DOMNode* node) const;
+    
+    private:
+        const XMLApplication* m_base;
+        vector<SAMLAttributeDesignator*> m_designators;
+        vector<IAAP*> m_aaps;
+        vector<IMetadata*> m_metadatas;
+        vector<ITrust*> m_trusts;
+        vector<IRevocation*> m_revocations;
+        vector<const XMLCh*> m_audiences;
+        pair<string,string> m_credDefault;
+#ifdef HAVE_GOOD_STL
+        map<xstring,pair<string,string> > m_credMap;
 #else
-  struct stat stat_buf;
-  if (stat (m_priv->file.c_str(), &stat_buf) < 0)
+        map<const XMLCh*,pair<string,string> > m_credMap;
 #endif
-  {
-    m_priv->log->error("stat failed: %s", m_priv->file.c_str());
-    return false;
-  }
+        const pair<string,string>& getCredentialUse(const IProvider* provider) const;
+    };
 
-#ifdef DEBUG
-  m_priv->log->info("refresh: last modtime at %d; file is %d; iters: %d",
-		    m_priv->modtime, stat_buf.st_mtime, m_priv->iterators);
-#endif
+    // Top-level configuration implementation
+    class XMLConfig;
+    class XMLConfigImpl : public ReloadableXMLFileImpl, public XMLPropertySet, public DOMNodeFilter
+    {
+    public:
+        XMLConfigImpl(const char* pathname, bool first, const XMLConfig* outer)
+            : ReloadableXMLFileImpl(pathname), m_outer(outer), m_requestMapper(NULL) { init(first); }
+        XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* outer)
+            : ReloadableXMLFileImpl(e), m_outer(outer), m_requestMapper(NULL) { init(first); }
+        ~XMLConfigImpl();
+        
+        IRequestMapper* m_requestMapper;
+        map<string,IApplication*> m_appmap;
+        vector<ICredentials*> m_creds;
+        
+        // Provides filter to exclude special config elements.
+        short acceptNode(const DOMNode* node) const;
 
-  if (m_priv->modtime >= stat_buf.st_mtime || m_priv->iterators > 0)
-    return true;
+    private:
+        void init(bool first);
+        const XMLConfig* m_outer;
+    };
+    
+    class XMLConfig : public IConfig, public ReloadableXMLFile
+    {
+    public:
+        XMLConfig(const DOMElement* e) : ReloadableXMLFile(e), m_listener(NULL), m_cache(NULL) {}
+        ~XMLConfig() {delete m_listener; delete m_cache;}
 
-  // Release the read lock -- grab the write lock.  Don't worry if
-  // this is non-atomic -- we'll recheck the status.
-  m_priv->rwlock->unlock();
-  m_priv->rwlock->wrlock();
+        // IPropertySet
+        pair<bool,bool> getBool(const char* name, const char* ns=NULL) const {return static_cast<XMLConfigImpl*>(m_impl)->getBool(name,ns);}
+        pair<bool,const char*> getString(const char* name, const char* ns=NULL) const {return static_cast<XMLConfigImpl*>(m_impl)->getString(name,ns);}
+        pair<bool,const XMLCh*> getXMLString(const char* name, const char* ns=NULL) const {return static_cast<XMLConfigImpl*>(m_impl)->getXMLString(name,ns);}
+        pair<bool,unsigned int> getUnsignedInt(const char* name, const char* ns=NULL) const {return static_cast<XMLConfigImpl*>(m_impl)->getUnsignedInt(name,ns);}
+        pair<bool,int> getInt(const char* name, const char* ns=NULL) const {return static_cast<XMLConfigImpl*>(m_impl)->getInt(name,ns);}
+        const IPropertySet* getPropertySet(const char* name, const char* ns="urn:mace:shibboleth:target:config:1.0") const {return static_cast<XMLConfigImpl*>(m_impl)->getPropertySet(name,ns);}
+        const DOMElement* getElement() const {return static_cast<XMLConfigImpl*>(m_impl)->getElement();}
 
-  // Recheck the modtime
-  if (m_priv->modtime >= stat_buf.st_mtime) {
-    // Yep, another thread got to it.  We can exit now...  Release
-    // the write lock and reaquire the read-lock.
+        // IConfig
+        const IListener* getListener() const {return m_listener;}
+        ISessionCache* getSessionCache() const {return m_cache;}
+        IRequestMapper* getRequestMapper() const {return static_cast<XMLConfigImpl*>(m_impl)->m_requestMapper;}
+        const IApplication* getApplication(const char* applicationId) const
+        {
+            map<string,IApplication*>::const_iterator i=static_cast<XMLConfigImpl*>(m_impl)->m_appmap.find(applicationId);
+            return (i!=static_cast<XMLConfigImpl*>(m_impl)->m_appmap.end()) ? i->second : NULL;
+        }
+        Iterator<ICredentials*> getCredentialsProviders() const {return static_cast<XMLConfigImpl*>(m_impl)->m_creds;}
 
-    m_priv->rwlock->unlock();
-    m_priv->rwlock->rdlock();
-    return true;
-  }
+    protected:
+        virtual ReloadableXMLFileImpl* newImplementation(const char* pathname, bool first=true) const;
+        virtual ReloadableXMLFileImpl* newImplementation(const DOMElement* e, bool first=true) const;
 
-  // Ok, we've got the write lock.  Let's update our state.
+    private:
+        friend class XMLConfigImpl;
+        mutable IListener* m_listener;
+        mutable ISessionCache* m_cache;
+    };
+}
 
-  m_priv->modtime = stat_buf.st_mtime;
-
-  // clear the existing maps
-  m_priv->table.clear();
-
-  m_priv->log->info("reading %s", m_priv->file.c_str());
-  
-  // read the file
-  try
-  {
-    ifstream infile (m_priv->file.c_str());
-    if (!infile) {
-      m_priv->log->warn("cannot open file: %s", m_priv->file.c_str());
-      m_priv->rwlock->unlock();
-      m_priv->rwlock->rdlock();
-      return true;
+IConfig* STConfig::ShibTargetConfigFactory(const DOMElement* e)
+{
+    XMLConfig* ret=new XMLConfig(e);
+    try {
+        ret->getImplementation();
     }
-
-    const int MAXLEN = 1024;
-    char linebuffer[MAXLEN];
-    string current_header;
-    bool have_header = false;
-
-    while (infile) {
-      infile.getline (linebuffer, MAXLEN);
-      string line (linebuffer);
-
-      if (line[0] == '#') continue;
-
-      trimline (line);
-      if (line.size() <= 1) continue;
-
-      if (line[0] == '[') {
-	// this is a header
-
-#ifdef DEBUG
-	m_priv->log->info("Found what appears to be a header line");
-#endif
-
-	have_header = false;
-
-	// find the end of the header
-	int endpos = line.find (']');
-	if (endpos == line.npos) {
-#ifdef DEBUG
-	  m_priv->log->info("Weird: no end found.. punting");
-#endif
-	  continue; // HUH?  No end?
-	}
-
-	// found it
-	current_header = line.substr (1, endpos-1);
-	trimline (current_header);
-
-	if (!m_priv->cs) to_lowercase (current_header);
-
-	m_priv->table[current_header] = map<string,string>();
-	have_header = true;
-#ifdef DEBUG
-	m_priv->log->info("current header: \"%s\"", current_header.c_str());
-#endif
-
-      } else if (have_header) {
-	// this is a tag
-
-#ifdef DEBUG
-	m_priv->log->info("Found what appears to be a tag line");
-#endif
-
-	string tag, setting;
-	int mid = line.find ('=');
-
-	if (mid == line.npos) {
-#ifdef DEBUG
-	  m_priv->log->info("Weird: no '=' found.. punting");
-#endif
-	  continue; // Can't find the value's setting
-	}
-
-	tag = line.substr (0,mid);
-	setting = line.substr (mid+1, line.size()-mid);
-
-	trimline (tag);
-	trimline (setting);
-
-	if (!m_priv->cs) to_lowercase (tag);
-
-	// If it already exists, log an error and do not save it
-	if (m_priv->exists (current_header, tag))
-	  m_priv->log->error("Duplicate tag found in section %s: \"%s\"",
-			     current_header.c_str(), tag.c_str());
-	else
-	  (m_priv->table[current_header])[tag] = setting;
-
-#ifdef DEBUG
-	m_priv->log->info("new tag: \"%s\" = \"%s\"",
-			  tag.c_str(), setting.c_str());
-#endif
-
-      }
-
-    } // until the file ends
-
-  } catch (...) {
-    // In case there are exceptions.
-  }
-
-  // Now release the write lock and reaquire the read lock
-  m_priv->rwlock->unlock();
-  m_priv->rwlock->rdlock();
-  return true;
-}
-
-const std::string ShibINI::get (const string& header, const string& tag)
-{
-  ReadLock rwlock(m_priv->rwlock);
-  refresh();
-
-  static string empty = "";
-
-  string h = header;
-  string t = tag;
-
-  if (!m_priv->cs) {
-    to_lowercase (h);
-    to_lowercase (t);
-  }
-
-  if (!m_priv->exists(h)) return empty;
-
-  map<string,string>::const_iterator i = m_priv->table[h].find(t);
-  if (i == m_priv->table[h].end())
-    return empty;
-  return i->second;
-}
-
-bool ShibINIPriv::exists(const std::string& header)
-{
-  string h = header;
-  if (!cs) to_lowercase (h);
-
-  return (table.find(h) != table.end());
-}
-
-bool ShibINI::exists(const std::string& header)
-{
-  ReadLock rwlock(m_priv->rwlock);
-  refresh();
-
-  return m_priv->exists(header);
-}
-
-bool ShibINIPriv::exists(const std::string& header, const std::string& tag)
-{
-  string h = header;
-  string t = tag;
-
-  if (!cs) {
-    to_lowercase (h);
-    to_lowercase (t);
-  }
-
-  if (!exists(h)) return false;
-  return (table[h].find(t) != table[h].end());
-}
-
-bool ShibINI::exists(const std::string& header, const std::string& tag)
-{
-  ReadLock rwlock(m_priv->rwlock);
-  refresh();
-
-  return m_priv->exists(header, tag);
-}
-
-bool ShibINI::get_tag (string& header, string& tag, bool try_general, string* result)
-{
-  if (!result) return false;
-
-  m_priv->rwlock->rdlock();
-  refresh();
-  m_priv->rwlock->unlock();
-
-  if (m_priv->exists (header, tag)) {
-    *result = get (header, tag);
-    return true;
-  }
-  if (try_general && exists (SHIBTARGET_GENERAL, tag)) {
-    *result = get (SHIBTARGET_GENERAL, tag);
-    return true;
-  }
-  return false;
-}
-
-
-void ShibINI::dump (ostream& os)
-{
-  ReadLock rwlock(m_priv->rwlock);
-  refresh();
-
-  os << "File: " << m_priv->file << "\n";
-  os << "Case-Sensitive: " << ( m_priv->cs ? "Yes\n" : "No\n" );
-  os << "File Entries:\n";
-
-  for (map<string, map<string, string> >::const_iterator i = m_priv->table.begin();
-       i != m_priv->table.end(); i++) {
-
-    os << "[" << i->first << "]\n";
-
-    for (map<string,string>::const_iterator j=i->second.begin();
-	 j != i->second.end(); j++) {
-
-      os << "  " << j->first << " = " << j->second << "\n";
+    catch (...) {
+        delete ret;
+        throw;
     }
-  }
-
-  os << "END\n";
+    return ret;
 }
 
-ShibINI::Iterator* ShibINI::header_iterator()
+XMLPropertySet::~XMLPropertySet()
 {
-  ReadLock rwlock(m_priv->rwlock);
-  refresh();
-  HeaderIterator* iter = new HeaderIterator(m_priv);
-  return (ShibINI::Iterator*) iter;
+    for (map<string,pair<char*,const XMLCh*> >::iterator i=m_map.begin(); i!=m_map.end(); i++)
+        XMLString::release(&(i->second.first));
+    for (map<string,IPropertySet*>::iterator j=m_nested.begin(); j!=m_nested.end(); j++)
+        delete j->second;
 }
 
-ShibINI::Iterator* ShibINI::tag_iterator(const std::string& header)
+void XMLPropertySet::load(const DOMElement* e, Category& log, DOMNodeFilter* filter)
 {
-  ReadLock rwlock(m_priv->rwlock);
-  refresh();
-  TagIterator* iter = new TagIterator(m_priv, header);
-  return (ShibINI::Iterator*) iter;
+    NDC ndc("load");
+    m_root=e;
+
+    // Process each attribute as a property.
+    DOMNamedNodeMap* attrs=m_root->getAttributes();
+    for (XMLSize_t i=0; i<attrs->getLength(); i++) {
+        DOMNode* a=attrs->item(i);
+        if (!XMLString::compareString(a->getNamespaceURI(),saml::XML::XMLNS_NS))
+            continue;
+        char* val=XMLString::transcode(a->getNodeValue());
+        if (val && *val) {
+            auto_ptr_char ns(a->getNamespaceURI());
+            auto_ptr_char name(a->getLocalName());
+            if (ns.get()) {
+                m_map[string("{") + ns.get() + '}' + name.get()]=pair<char*,const XMLCh*>(val,a->getNodeValue());
+                log.debug("added property {%s}%s (%s)",ns.get(),name.get(),val);
+            }
+            else {
+                m_map[name.get()]=pair<char*,const XMLCh*>(val,a->getNodeValue());
+                log.debug("added property %s (%s)",name.get(),val);
+            }
+        }
+    }
+    
+    // Process non-excluded elements as nested sets.
+    DOMTreeWalker* walker=
+        static_cast<DOMDocumentTraversal*>(
+            m_root->getOwnerDocument())->createTreeWalker(const_cast<DOMElement*>(m_root),DOMNodeFilter::SHOW_ELEMENT,filter,false
+            );
+    e=static_cast<DOMElement*>(walker->firstChild());
+    while (e) {
+        auto_ptr_char ns(e->getNamespaceURI());
+        auto_ptr_char name(e->getLocalName());
+        string key;
+        if (ns.get())
+            key=string("{") + ns.get() + '}' + name.get();
+        else
+            key=name.get();
+        if (m_nested.find(key)!=m_nested.end())
+            log.warn("load() skipping duplicate property set: %s",key.c_str());
+        else {
+            XMLPropertySet* set=new XMLPropertySet();
+            set->load(e,log,filter);
+            m_nested[key]=set;
+            log.debug("added nested property set: %s",key.c_str());
+        }
+        e=static_cast<DOMElement*>(walker->nextSibling());
+    }
+    walker->release();
 }
 
-//
-// XXX: FIXME: there may be a race condition in the iterators if a
-// caller holds an active Iterator, the underlying file changes, and
-// then calls one of the get() routines.  It's possible the iterator
-// may screw up -- I don't know whether the iterator actually depends
-// on the underlying infrastructure or not.
-//
-
-HeaderIterator::HeaderIterator (ShibINIPriv* inip)
+pair<bool,bool> XMLPropertySet::getBool(const char* name, const char* ns) const
 {
-  saml::NDC ndc("HeaderIterator");
-  ini = inip;
-  valid = false;
-  ini->rwlock->rdlock();
-  ini->iterators++;
-  ini->log->debug("iterators: %d", ini->iterators);
+    pair<bool,bool> ret=pair<bool,bool>(false,false);
+    map<string,pair<char*,const XMLCh*> >::const_iterator i;
+
+    if (ns)
+        i=m_map.find(string("{") + ns + '}' + name);
+    else
+        i=m_map.find(name);
+
+    if (i!=m_map.end()) {
+        ret.first=true;
+        ret.second=(!strcmp(i->second.first,"true") || !strcmp(i->second.first,"1"));
+    }
+    return ret;
 }
 
-HeaderIterator::~HeaderIterator ()
+pair<bool,const char*> XMLPropertySet::getString(const char* name, const char* ns) const
 {
-  saml::NDC ndc("~HeaderIterator");
-  ini->iterators--;
-  ini->rwlock->unlock();
-  ini->log->debug("iterators: %d", ini->iterators);
+    pair<bool,const char*> ret=pair<bool,const char*>(false,NULL);
+    map<string,pair<char*,const XMLCh*> >::const_iterator i;
+
+    if (ns)
+        i=m_map.find(string("{") + ns + '}' + name);
+    else
+        i=m_map.find(name);
+
+    if (i!=m_map.end()) {
+        ret.first=true;
+        ret.second=i->second.first;
+    }
+    return ret;
 }
 
-const string* HeaderIterator::begin ()
+pair<bool,const XMLCh*> XMLPropertySet::getXMLString(const char* name, const char* ns) const
 {
-  iter = ini->table.begin();
-  if (iter == ini->table.end()) {
-    valid = false;
-    return 0;
-  }
-  valid = true;
-  return &iter->first;
+    pair<bool,const XMLCh*> ret=pair<bool,const XMLCh*>(false,NULL);
+    map<string,pair<char*,const XMLCh*> >::const_iterator i;
+
+    if (ns)
+        i=m_map.find(string("{") + ns + '}' + name);
+    else
+        i=m_map.find(name);
+
+    if (i!=m_map.end()) {
+        ret.first=true;
+        ret.second=i->second.second;
+    }
+    return ret;
 }
 
-const string* HeaderIterator::next ()
+pair<bool,unsigned int> XMLPropertySet::getUnsignedInt(const char* name, const char* ns) const
 {
-  if (!valid)
-    return 0;
-  iter++;
-  if (iter == ini->table.end()) {
-    valid = false;
-    return 0;
-  }
-  return &iter->first;
+    pair<bool,unsigned int> ret=pair<bool,unsigned int>(false,0);
+    map<string,pair<char*,const XMLCh*> >::const_iterator i;
+
+    if (ns)
+        i=m_map.find(string("{") + ns + '}' + name);
+    else
+        i=m_map.find(name);
+
+    if (i!=m_map.end()) {
+        ret.first=true;
+        ret.second=strtol(i->second.first,NULL,10);
+    }
+    return ret;
 }
 
-TagIterator::TagIterator (ShibINIPriv* inip, const string& headerp)
-  : header(headerp)
+pair<bool,int> XMLPropertySet::getInt(const char* name, const char* ns) const
 {
-  saml::NDC ndc("TagIterator");
-  ini = inip;
-  valid = false;
-  ini->rwlock->rdlock();
-  ini->iterators++;
-  ini->log->debug("iterators: %d", ini->iterators);
+    pair<bool,int> ret=pair<bool,int>(false,0);
+    map<string,pair<char*,const XMLCh*> >::const_iterator i;
+
+    if (ns)
+        i=m_map.find(string("{") + ns + '}' + name);
+    else
+        i=m_map.find(name);
+
+    if (i!=m_map.end()) {
+        ret.first=true;
+        ret.second=atoi(i->second.first);
+    }
+    return ret;
 }
 
-TagIterator::~TagIterator ()
+const IPropertySet* XMLPropertySet::getPropertySet(const char* name, const char* ns) const
 {
-  saml::NDC ndc("~TagIterator");
-  ini->iterators--;
-  ini->rwlock->unlock();
-  ini->log->debug("iterators: %d", ini->iterators);
+    map<string,IPropertySet*>::const_iterator i;
+
+    if (ns)
+        i=m_nested.find(string("{") + ns + '}' + name);
+    else
+        i=m_nested.find(name);
+
+    return (i!=m_nested.end()) ? i->second : NULL;
 }
 
-const string* TagIterator::begin ()
+XMLApplication::XMLApplication(const DOMElement* e, const XMLApplication* base) : m_base(base)
 {
-  iter = ini->table[header].begin();
-  if (iter == ini->table[header].end()) {
-    valid = false;
-    return 0;
-  }
-  valid = true;
-  return &iter->first;
+    NDC ndc("XMLApplication");
+    Category& log=Category::getInstance("shibtarget.XMLApplication");
+
+    try {
+        // First load any property sets.
+        load(e,log,this);
+
+        // The rest of the content if any is inside the Policy container.
+        ShibTargetConfig& conf=ShibTargetConfig::getConfig();
+        const IPropertySet* policy=getPropertySet("Policy");
+        if (policy) {
+            int i;
+            DOMNodeList* nlist=policy->getElement()->getElementsByTagNameNS(saml::XML::SAML_NS,L(AttributeDesignator));
+            for (i=0; nlist && i<nlist->getLength(); i++) {
+                m_designators.push_back(new SAMLAttributeDesignator(static_cast<DOMElement*>(nlist->item(i))));
+            }
+
+            nlist=policy->getElement()->getElementsByTagNameNS(saml::XML::SAML_NS,L(Audience));
+            for (i=0; nlist && i<nlist->getLength(); i++) {
+                m_audiences.push_back(nlist->item(i)->getFirstChild()->getNodeValue());
+            }
+
+            if (conf.isEnabled(ShibTargetConfig::AAP)) {
+                nlist=policy->getElement()->getElementsByTagNameNS(ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(AAPProvider));
+                for (i=0; nlist && i<nlist->getLength(); i++) {
+                    auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
+                    log.info("building AAP provider of type %s...",type.get());
+                    IPlugIn* plugin=ShibConfig::getConfig().m_plugMgr.newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
+                    IAAP* aap=dynamic_cast<IAAP*>(plugin);
+                    if (aap)
+                        m_aaps.push_back(aap);
+                    else {
+                        delete plugin;
+                        log.fatal("plugin was not an AAP provider");
+                        throw UnsupportedExtensionException("plugin was not an AAP provider");
+                    }
+                }
+            }
+
+            if (conf.isEnabled(ShibTargetConfig::Metadata)) {
+                nlist=policy->getElement()->getElementsByTagNameNS(ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(FederationProvider));
+                for (i=0; nlist && i<nlist->getLength(); i++) {
+                    auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
+                    log.info("building federation/metadata provider of type %s...",type.get());
+                    IPlugIn* plugin=ShibConfig::getConfig().m_plugMgr.newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
+                    IMetadata* md=dynamic_cast<IMetadata*>(plugin);
+                    if (md)
+                        m_metadatas.push_back(md);
+                    else {
+                        delete plugin;
+                        log.fatal("plugin was not a federation/metadata provider");
+                        throw UnsupportedExtensionException("plugin was not a federation/metadata provider");
+                    }
+                }
+            }
+
+            if (conf.isEnabled(ShibTargetConfig::Trust)) {
+                nlist=policy->getElement()->getElementsByTagNameNS(ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(TrustProvider));
+                for (i=0; nlist && i<nlist->getLength(); i++) {
+                    auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
+                    log.info("building trust provider of type %s...",type.get());
+                    IPlugIn* plugin=ShibConfig::getConfig().m_plugMgr.newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
+                    ITrust* trust=dynamic_cast<ITrust*>(plugin);
+                    if (trust)
+                        m_trusts.push_back(trust);
+                    else {
+                        delete plugin;
+                        log.fatal("plugin was not a trust provider");
+                        throw UnsupportedExtensionException("plugin was not a trust provider");
+                    }
+                }
+                nlist=policy->getElement()->getElementsByTagNameNS(ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(RevocationProvider));
+                for (i=0; nlist && i<nlist->getLength(); i++) {
+                    auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
+                    log.info("building revocation provider of type %s...",type.get());
+                    IPlugIn* plugin=ShibConfig::getConfig().m_plugMgr.newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
+                    IRevocation* rev=dynamic_cast<IRevocation*>(plugin);
+                    if (rev)
+                        m_revocations.push_back(rev);
+                    else {
+                        delete plugin;
+                        log.fatal("plugin was not a revocation provider");
+                        throw UnsupportedExtensionException("plugin was not a revocation provider");
+                    }
+                }
+            }
+        }
+        
+        // Finally, load credential mappings.
+        const DOMElement* cu=saml::XML::getFirstChildElement(e,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(CredentialUse));
+        if (cu) {
+            auto_ptr_char TLS(cu->getAttributeNS(NULL,SHIBT_L(TLS)));
+            auto_ptr_char Signing(cu->getAttributeNS(NULL,SHIBT_L(Signing)));
+            m_credDefault.first=TLS.get();
+            m_credDefault.second=Signing.get();
+            cu=saml::XML::getFirstChildElement(cu,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(RelyingParty));
+            while (cu) {
+                auto_ptr_char TLS2(cu->getAttributeNS(NULL,SHIBT_L(TLS)));
+                auto_ptr_char Signing2(cu->getAttributeNS(NULL,SHIBT_L(Signing)));
+                m_credMap[cu->getAttributeNS(NULL,SHIBT_L(Name))]=pair<string,string>(TLS2.get(),Signing2.get());
+                cu=saml::XML::getNextSiblingElement(cu,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(RelyingParty));
+            }
+        }
+    }
+    catch (...) {
+        this->~XMLApplication();    // does this work?
+        throw;
+    }
 }
 
-const string* TagIterator::next ()
+XMLApplication::~XMLApplication()
 {
-  if (!valid)
-    return 0;
-  iter++;
-  if (iter == ini->table[header].end()) {
-    valid = false;
-    return 0;
-  }
-  return &iter->first;
+    Iterator<SAMLAttributeDesignator*> i(m_designators);
+    while (i.hasNext())
+        delete i.next();
+    Iterator<IAAP*> j(m_aaps);
+    while (j.hasNext())
+        delete j.next();
+    Iterator<IMetadata*> k(m_metadatas);
+    while (k.hasNext())
+        delete k.next();
+    Iterator<ITrust*> l(m_trusts);
+    while (l.hasNext())
+        delete l.next();
+    Iterator<IRevocation*> m(m_revocations);
+    while (m.hasNext())
+        delete m.next();
 }
 
-bool ShibINI::boolean(string& value)
+short XMLApplication::acceptNode(const DOMNode* node) const
 {
-  const char* v = value.c_str();
-#ifdef HAVE_STRCASECMP
-  if (!strncasecmp (v, "on", 2) || !strncasecmp (v, "true", 4) || !strncmp(v, "1", 1))
-    return true;
+    if (saml::XML::isElementNamed(static_cast<const DOMElement*>(node),saml::XML::SAML_NS,L(AttributeDesignator)))
+        return FILTER_REJECT;
+    else if (saml::XML::isElementNamed(static_cast<const DOMElement*>(node),saml::XML::SAML_NS,L(Audience)))
+        return FILTER_REJECT;
+    if (XMLString::compareString(node->getNamespaceURI(),ShibTargetConfig::SHIBTARGET_NS))
+        return FILTER_ACCEPT;
+    const XMLCh* name=node->getLocalName();
+    if (!XMLString::compareString(name,SHIBT_L(AAPProvider)) ||
+        !XMLString::compareString(name,SHIBT_L(CredentialUse)) ||
+        !XMLString::compareString(name,SHIBT_L(FederationProvider)) ||
+        !XMLString::compareString(name,SHIBT_L(RevocationProvider)) ||
+        !XMLString::compareString(name,SHIBT_L(TrustProvider)))
+        return FILTER_REJECT;
+
+    return FILTER_ACCEPT;
+}
+
+pair<bool,bool> XMLApplication::getBool(const char* name, const char* ns) const
+{
+    pair<bool,bool> ret=XMLPropertySet::getBool(name,ns);
+    if (ret.first)
+        return ret;
+    return m_base ? m_base->getBool(name,ns) : ret;
+}
+
+pair<bool,const char*> XMLApplication::getString(const char* name, const char* ns) const
+{
+    pair<bool,const char*> ret=XMLPropertySet::getString(name,ns);
+    if (ret.first)
+        return ret;
+    return m_base ? m_base->getString(name,ns) : ret;
+}
+
+pair<bool,const XMLCh*> XMLApplication::getXMLString(const char* name, const char* ns) const
+{
+    pair<bool,const XMLCh*> ret=XMLPropertySet::getXMLString(name,ns);
+    if (ret.first)
+        return ret;
+    return m_base ? m_base->getXMLString(name,ns) : ret;
+}
+
+pair<bool,unsigned int> XMLApplication::getUnsignedInt(const char* name, const char* ns) const
+{
+    pair<bool,unsigned int> ret=XMLPropertySet::getUnsignedInt(name,ns);
+    if (ret.first)
+        return ret;
+    return m_base ? m_base->getUnsignedInt(name,ns) : ret;
+}
+
+pair<bool,int> XMLApplication::getInt(const char* name, const char* ns) const
+{
+    pair<bool,int> ret=XMLPropertySet::getInt(name,ns);
+    if (ret.first)
+        return ret;
+    return m_base ? m_base->getInt(name,ns) : ret;
+}
+
+const IPropertySet* XMLApplication::getPropertySet(const char* name, const char* ns) const
+{
+    const IPropertySet* ret=XMLPropertySet::getPropertySet(name,ns);
+    if (ret || !m_base)
+        return ret;
+    return m_base->getPropertySet(name,ns);
+}
+
+Iterator<SAMLAttributeDesignator*> XMLApplication::getAttributeDesignators() const
+{
+    if (!m_designators.empty() || !m_base)
+        return m_designators;
+    return m_base->getAttributeDesignators();
+}
+
+Iterator<IAAP*> XMLApplication::getAAPProviders() const
+{
+    return (m_aaps.empty() && m_base) ? m_base->getAAPProviders() : m_aaps;
+}
+
+Iterator<IMetadata*> XMLApplication::getMetadataProviders() const
+{
+    return (m_metadatas.empty() && m_base) ? m_base->getMetadataProviders() : m_metadatas;
+}
+
+Iterator<ITrust*> XMLApplication::getTrustProviders() const
+{
+    return (m_trusts.empty() && m_base) ? m_base->getTrustProviders() : m_trusts;
+}
+
+Iterator<IRevocation*> XMLApplication::getRevocationProviders() const
+{
+    return (m_revocations.empty() && m_base) ? m_base->getRevocationProviders() : m_revocations;
+}
+
+Iterator<const XMLCh*> XMLApplication::getAudiences() const
+{
+    return (m_audiences.empty() && m_base) ? m_base->getAudiences() : m_audiences;
+}
+
+const pair<string,string>& XMLApplication::getCredentialUse(const IProvider* provider) const
+{
+    if (m_credDefault.first.empty() && m_base)
+        return m_base->getCredentialUse(provider);
+        
+#ifdef HAVE_GOOD_STL
+    map<xstring,pair<string,string> >::const_iterator i=m_credMap.find(provider->getId());
+    if (i!=m_credMap.end())
+        return i->second;
+    Iterator<const XMLCh*> groups=provider->getGroups();
+    while (groups.hasNext()) {
+        i=m_credMap.find(groups.next());
+        if (i!=m_credMap.end())
+            return i->second;
+    }
 #else
-  if (!strnicmp (v, "on", 2) || !strnicmp (v, "true", 4) || !strncmp(v, "1", 1))
-    return true;
+    map<const XMLCh*,pair<string,string> >::const_iterator i=m_credMap.begin();
+    for (; i!=m_credMap.end(); i++) {
+        if (!XMLString::compareString(i->first,provider->getId()))
+            return i->second;
+        Iterator<const XMLCh*> groups=provider->getGroups();
+        while (groups.hasNext()) {
+            if (!XMLString::compareString(i->first,groups.next()))
+                return i->second;
+        }
+    }
 #endif
-  return false;
+    return m_credDefault;
 }
 
+ReloadableXMLFileImpl* XMLConfig::newImplementation(const char* pathname, bool first) const
+{
+    return new XMLConfigImpl(pathname,first,this);
+}
+
+ReloadableXMLFileImpl* XMLConfig::newImplementation(const DOMElement* e, bool first) const
+{
+    return new XMLConfigImpl(e,first,this);
+}
+
+short XMLConfigImpl::acceptNode(const DOMNode* node) const
+{
+    if (XMLString::compareString(node->getNamespaceURI(),ShibTargetConfig::SHIBTARGET_NS))
+        return FILTER_ACCEPT;
+    const XMLCh* name=node->getLocalName();
+    if (!XMLString::compareString(name,SHIBT_L(Applications)) ||
+        !XMLString::compareString(name,SHIBT_L(CredentialsProvider)) ||
+        !XMLString::compareString(name,SHIBT_L(Extensions)) ||
+        !XMLString::compareString(name,SHIBT_L(Implementation)) ||
+        !XMLString::compareString(name,SHIBT_L(Listener)) ||
+        !XMLString::compareString(name,SHIBT_L(MemorySessionCache)) ||
+        !XMLString::compareString(name,SHIBT_L(MySQLSessionCache)) ||
+        !XMLString::compareString(name,SHIBT_L(RequestMap)) ||
+        !XMLString::compareString(name,SHIBT_L(RequestMapProvider)) ||
+        !XMLString::compareString(name,SHIBT_L(SessionCache)) ||
+        !XMLString::compareString(name,SHIBT_L(TCPListener)) ||
+        !XMLString::compareString(name,SHIBT_L(UnixListener)))
+        return FILTER_REJECT;
+
+    return FILTER_ACCEPT;
+}
+
+void XMLConfigImpl::init(bool first)
+{
+    NDC ndc("XMLConfigImpl");
+    Category& log=Category::getInstance("shibtarget.XMLConfig");
+
+    try {
+        if (!saml::XML::isElementNamed(ReloadableXMLFileImpl::m_root,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(ShibbolethTargetConfig))) {
+            log.error("Construction requires a valid configuration file: (conf:ShibbolethTargetConfig as root element)");
+            throw MalformedException("Construction requires a valid configuration file: (conf:ShibbolethTargetConfig as root element)");
+        }
+
+        ShibConfig& shibConf=ShibConfig::getConfig();
+        ShibTargetConfig& conf=ShibTargetConfig::getConfig();
+        const DOMElement* SHAR=saml::XML::getFirstChildElement(ReloadableXMLFileImpl::m_root,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(SHAR));
+        const DOMElement* SHIRE=saml::XML::getFirstChildElement(ReloadableXMLFileImpl::m_root,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(SHIRE));
+
+        // Initialize log4cpp manually in order to redirect log messages as soon as possible.
+        const XMLCh* logger=NULL;
+        if (conf.isEnabled(ShibTargetConfig::SHARExtensions))
+            logger=SHAR->getAttributeNS(NULL,SHIBT_L(logger));
+        else if (conf.isEnabled(ShibTargetConfig::SHIREExtensions))
+            logger=SHIRE->getAttributeNS(NULL,SHIBT_L(logger));
+        if (!logger || !*logger)
+            logger=ReloadableXMLFileImpl::m_root->getAttributeNS(NULL,SHIBT_L(logger));
+        if (logger && *logger) {
+            auto_ptr_char logpath(logger);
+            cerr << "loading new logging configuration from " << logpath.get() << "\n";
+            try {
+                PropertyConfigurator::configure(logpath.get());
+                cerr << "New logging configuration loaded, check log destination for process status..." << "\n";
+            }
+            catch (ConfigureFailure& e) {
+                cerr << "Error reading logging configuration: " << e.what() << "\n";
+            }
+        }
+        else {
+            Category::getRoot().setPriority(Priority::DEBUG);
+        }
+        
+        // First load any property sets.
+        load(ReloadableXMLFileImpl::m_root,log,this);
+
+        // Much of the processing can only occur on the first instantiation.
+        if (first) {
+            // Now load any extensions to insure any needed plugins are registered.
+            DOMElement* exts=
+                saml::XML::getFirstChildElement(ReloadableXMLFileImpl::m_root,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(Extensions));
+            if (exts) {
+                exts=saml::XML::getFirstChildElement(exts,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(Library));
+                while (exts) {
+                    auto_ptr_char path(exts->getAttributeNS(NULL,SHIBT_L(path)));
+                    try {
+                        SAMLConfig::getConfig().saml_register_extension(path.get(),exts);
+                        log.debug("loaded global extension library %s",path.get());
+                    }
+                    catch (SAMLException& e) {
+                        const XMLCh* fatal=exts->getAttributeNS(NULL,SHIBT_L(fatal));
+                        if (fatal && (*fatal==chLatin_t || *fatal==chDigit_1)) {
+                            log.fatal("unable to load mandatory global extension library %s: %s", path.get(), e.what());
+                            throw;
+                        }
+                        else
+                            log.crit("unable to load optional global extension library %s: %s", path.get(), e.what());
+                    }
+                    exts=saml::XML::getNextSiblingElement(exts,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(Library));
+                }
+            }
+            
+            if (conf.isEnabled(ShibTargetConfig::SHARExtensions)) {
+                exts=saml::XML::getFirstChildElement(SHAR,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(Extensions));
+                if (exts) {
+                    exts=saml::XML::getFirstChildElement(exts,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(Library));
+                    while (exts) {
+                        auto_ptr_char path(exts->getAttributeNS(NULL,SHIBT_L(path)));
+                        try {
+                            SAMLConfig::getConfig().saml_register_extension(path.get(),exts);
+                            log.debug("loaded SHAR extension library %s",path.get());
+                        }
+                        catch (SAMLException& e) {
+                            const XMLCh* fatal=exts->getAttributeNS(NULL,SHIBT_L(fatal));
+                            if (fatal && (*fatal==chLatin_t || *fatal==chDigit_1)) {
+                                log.fatal("unable to load mandatory SHAR extension library %s: %s", path.get(), e.what());
+                                throw;
+                            }
+                            else
+                                log.crit("unable to load optional SHAR extension library %s: %s", path.get(), e.what());
+                        }
+                        exts=saml::XML::getNextSiblingElement(exts,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(Library));
+                    }
+                }
+            }
+
+            if (conf.isEnabled(ShibTargetConfig::SHIREExtensions)) {
+                exts=saml::XML::getFirstChildElement(SHIRE,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(Extensions));
+                if (exts) {
+                    exts=saml::XML::getFirstChildElement(exts,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(Library));
+                    while (exts) {
+                        auto_ptr_char path(exts->getAttributeNS(NULL,SHIBT_L(path)));
+                        try {
+                            SAMLConfig::getConfig().saml_register_extension(path.get(),exts);
+                            log.debug("loaded SHIRE extension library %s",path.get());
+                        }
+                        catch (SAMLException& e) {
+                            const XMLCh* fatal=exts->getAttributeNS(NULL,SHIBT_L(fatal));
+                            if (fatal && (*fatal==chLatin_t || *fatal==chDigit_1)) {
+                                log.fatal("unable to load mandatory SHIRE extension library %s: %s", path.get(), e.what());
+                                throw;
+                            }
+                            else
+                                log.crit("unable to load optional SHIRE extension library %s: %s", path.get(), e.what());
+                        }
+                        exts=saml::XML::getNextSiblingElement(exts,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(Library));
+                    }
+                }
+            }
+            
+            // Instantiate the Listener and SessionCache objects.
+            if (conf.isEnabled(ShibTargetConfig::Listener)) {
+                IPlugIn* plugin=NULL;
+                exts=saml::XML::getFirstChildElement(SHAR,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(UnixListener));
+                if (exts) {
+                    log.info("building Listener of type %s...",shibtarget::XML::UnixListenerType);
+                    plugin=shibConf.m_plugMgr.newPlugin(shibtarget::XML::UnixListenerType,exts);
+                }
+                else {
+                    exts=saml::XML::getFirstChildElement(SHAR,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(TCPListener));
+                    if (exts) {
+                        log.info("building Listener of type %s...",shibtarget::XML::TCPListenerType);
+                        plugin=shibConf.m_plugMgr.newPlugin(shibtarget::XML::TCPListenerType,exts);
+                    }
+                    else {
+                        exts=saml::XML::getFirstChildElement(SHAR,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(Listener));
+                        if (exts) {
+                            auto_ptr_char type(exts->getAttributeNS(NULL,SHIBT_L(type)));
+                            log.info("building Listener of type %s...",type.get());
+                            plugin=shibConf.m_plugMgr.newPlugin(type.get(),exts);
+                        }
+                        else {
+                            log.fatal("can't build Listener object, missing conf:Listener element?");
+                            throw MalformedException("can't build Listener object, missing conf:Listener element?");
+                        }
+                    }
+                }
+                if (plugin) {
+                    IListener* listen=dynamic_cast<IListener*>(plugin);
+                    if (listen)
+                        m_outer->m_listener=listen;
+                    else {
+                        delete plugin;
+                        log.fatal("plugin was not a Listener object");
+                        throw UnsupportedExtensionException("plugin was not a Listener object");
+                    }
+                }
+            }
+
+            if (conf.isEnabled(ShibTargetConfig::SessionCache)) {
+                IPlugIn* plugin=NULL;
+                exts=saml::XML::getFirstChildElement(SHAR,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(MemorySessionCache));
+                if (exts) {
+                    log.info("building Session Cache of type %s...",shibtarget::XML::MemorySessionCacheType);
+                    plugin=shibConf.m_plugMgr.newPlugin(shibtarget::XML::MemorySessionCacheType,exts);
+                }
+                else {
+                    exts=saml::XML::getFirstChildElement(SHAR,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(MySQLSessionCache));
+                    if (exts) {
+                        log.info("building Session Cache of type %s...",shibtarget::XML::MySQLSessionCacheType);
+                        plugin=shibConf.m_plugMgr.newPlugin(shibtarget::XML::MySQLSessionCacheType,exts);
+                    }
+                    else {
+                        exts=saml::XML::getFirstChildElement(SHAR,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(SessionCache));
+                        if (exts) {
+                            auto_ptr_char type(exts->getAttributeNS(NULL,SHIBT_L(type)));
+                            log.info("building Session Cache of type %s...",type.get());
+                            plugin=shibConf.m_plugMgr.newPlugin(type.get(),exts);
+                        }
+                        else {
+                            log.fatal("can't build Session Cache object, missing conf:SessionCache element?");
+                            throw MalformedException("can't build Session Cache object, missing conf:SessionCache element?");
+                        }
+                    }
+                }
+                if (plugin) {
+                    ISessionCache* cache=dynamic_cast<ISessionCache*>(plugin);
+                    if (cache)
+                        m_outer->m_cache=cache;
+                    else {
+                        delete plugin;
+                        log.fatal("plugin was not a Session Cache object");
+                        throw UnsupportedExtensionException("plugin was not a Session Cache object");
+                    }
+                }
+            }
+        }
+        
+        // Back to the fully dynamic stuff...next up is the Request Mapper.
+        if (conf.isEnabled(ShibTargetConfig::RequestMapper)) {
+            IPlugIn* plugin=NULL;
+            const DOMElement* child=saml::XML::getFirstChildElement(SHIRE,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(RequestMap));
+            if (child) {
+                log.info("building Request Mapper of type %s...",shibtarget::XML::RequestMapType);
+                plugin=shibConf.m_plugMgr.newPlugin(shibtarget::XML::RequestMapType,child);
+            }
+            else {
+                child=saml::XML::getFirstChildElement(SHIRE,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(RequestMapProvider));
+                if (child) {
+                    auto_ptr_char type(child->getAttributeNS(NULL,SHIBT_L(type)));
+                    log.info("building Request Mapper of type %s...",type.get());
+                    plugin=shibConf.m_plugMgr.newPlugin(type.get(),child);
+                }
+                else {
+                    log.fatal("can't build Request Mapper object, missing conf:RequestMapProvider element?");
+                    throw MalformedException("can't build Request Mapper object, missing conf:RequestMapProvider element?");
+                }
+            }
+            if (plugin) {
+                IRequestMapper* reqmap=dynamic_cast<IRequestMapper*>(plugin);
+                if (reqmap)
+                    m_requestMapper=reqmap;
+                else {
+                    delete plugin;
+                    log.fatal("plugin was not a Request Mapper object");
+                    throw UnsupportedExtensionException("plugin was not a Request Mapper object");
+                }
+            }
+        }
+        
+        // Load the default application. This actually has a fixed ID of "default". ;-)
+        const DOMElement* app=saml::XML::getFirstChildElement(
+            ReloadableXMLFileImpl::m_root,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(Applications)
+            );
+        if (!app) {
+            log.fatal("can't build default Application object, missing conf:Applications element?");
+            throw SAMLException("can't build default Application object, missing conf:Applications element?");
+        }
+        XMLApplication* defapp=new XMLApplication(app);
+        m_appmap[defapp->getId()]=defapp;
+        
+        // Load any overrides.
+        DOMNodeList* nlist=app->getElementsByTagNameNS(ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(Application));
+        for (int i=0; nlist && i<nlist->getLength(); i++) {
+            XMLApplication* iapp=new XMLApplication(static_cast<DOMElement*>(nlist->item(i)),defapp);
+            if (m_appmap.find(iapp->getId())!=m_appmap.end()) {
+                log.fatal("found conf:Application element with duplicate Id attribute");
+                throw SAMLException("found conf:Application element with duplicate Id attribute");
+            }
+            m_appmap[iapp->getId()]=iapp;
+        }
+        
+        // Finally we load any credentials providers.
+        if (conf.isEnabled(ShibTargetConfig::Credentials)) {
+            nlist=ReloadableXMLFileImpl::m_root->getElementsByTagNameNS(
+                ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(CredentialsProvider)
+                );
+            for (int i=0; nlist && i<nlist->getLength(); i++) {
+                auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
+                log.info("building Credentials provider of type %s...",type.get());
+                IPlugIn* plugin=shibConf.m_plugMgr.newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
+                if (plugin) {
+                    ICredentials* creds=dynamic_cast<ICredentials*>(plugin);
+                    if (creds)
+                        m_creds.push_back(creds);
+                    else {
+                        delete plugin;
+                        log.fatal("plugin was not a Credentials provider");
+                        throw UnsupportedExtensionException("plugin was not a Credentials provider");
+                    }
+                }
+            }
+        }
+    }
+    catch (SAMLException& e) {
+        log.errorStream() << "Error while loading target configuration: " << e.what() << CategoryStream::ENDLINE;
+        this->~XMLConfigImpl();
+        throw;
+    }
+#ifndef _DEBUG
+    catch (...) {
+        log.error("Unexpected error while loading target configuration");
+        this->~XMLConfigImpl();
+        throw;
+    }
+#endif
+}
+
+XMLConfigImpl::~XMLConfigImpl()
+{
+    delete m_requestMapper;
+    for (map<string,IApplication*>::iterator i=m_appmap.begin(); i!=m_appmap.end(); i++)
+        delete i->second;
+    for (vector<ICredentials*>::iterator j=m_creds.begin(); j!=m_creds.end(); j++)
+        delete (*j);
+}

@@ -72,24 +72,61 @@ using namespace saml;
 using namespace shibboleth;
 using namespace shibtarget;
 
+ShibTargetException::ShibTargetException(ShibRpcStatus code, const char* msg, const IProvider* provider) : m_code(code)
+{
+    if (msg) m_msg=msg;
+    if (provider) {
+        auto_ptr_char id(provider->getId());
+        m_providerId=id.get();
+        Iterator<const IProviderRole*> roles=provider->getRoles();
+        while (roles.hasNext()) {
+            const char* temp=roles.next()->getErrorURL();
+            if (temp) {
+                m_errorURL=temp;
+                break;
+            }
+        }
+
+        Iterator<const IContactPerson*> i=provider->getContacts();
+        while (i.hasNext()) {
+            const IContactPerson* c=i.next();
+            if ((c->getType()==IContactPerson::technical || c->getType()==IContactPerson::support)) {
+                m_contact=c->getName();
+                Iterator<string> emails=c->getEmails();
+                if (emails.hasNext())
+                    m_email=emails.next();
+                return;
+            }
+        }
+    }
+}
+
+ShibTargetException::ShibTargetException(ShibRpcStatus code, const char* msg, const IProviderRole* role) : m_code(code)
+{
+    if (msg) m_msg=msg;
+    if (role) {
+        auto_ptr_char id(role->getProvider()->getId());
+        m_providerId=id.get();
+
+        const char* temp=role->getErrorURL();
+        if (temp)
+            m_errorURL=temp;
+
+        Iterator<const IContactPerson*> i=role->getContacts();
+        while (i.hasNext()) {
+            const IContactPerson* c=i.next();
+            if ((c->getType()==IContactPerson::technical || c->getType()==IContactPerson::support)) {
+                m_contact=c->getName();
+                Iterator<string> emails=c->getEmails();
+                if (emails.hasNext())
+                    m_email=emails.next();
+                return;
+            }
+        }
+    }
+}
+
 namespace {
-  int initializing = 0;
-  int initialized = 0;
-  const type_info* type_MalformedException = NULL;
-  const type_info* type_UnsupportedExtensionException = NULL;
-  const type_info* type_InvalidCryptoException = NULL;
-  const type_info* type_TrustException = NULL;
-  const type_info* type_BindingException = NULL;
-  const type_info* type_SOAPException = NULL;
-  const type_info* type_ContentTypeException = NULL;
-
-  const type_info* type_ProfileException = NULL;
-  const type_info* type_FatalProfileException = NULL;
-  const type_info* type_RetryableProfileException = NULL;
-  const type_info* type_ExpiredAssertionException = NULL;
-  const type_info* type_InvalidAssertionException = NULL;
-  const type_info* type_ReplayedAssertionException = NULL;
-
   const XMLCh code_InvalidHandle[] = // InvalidHandle
     { chLatin_I, chLatin_n, chLatin_v, chLatin_a, chLatin_l, chLatin_i, chLatin_d,
       chLatin_H, chLatin_a, chLatin_n, chLatin_d, chLatin_l, chLatin_e, 
@@ -97,138 +134,139 @@ namespace {
     };
 }
 
-void rpcerror_init (void)
-{
-  if (initialized)
-    return;
-
-  if (initializing++) {
-    while (!initialized);
-    return;
-  }
-
-  type_MalformedException = &typeid(MalformedException);
-  type_UnsupportedExtensionException = &typeid(UnsupportedExtensionException);
-  type_InvalidCryptoException = &typeid(InvalidCryptoException);
-  type_TrustException = &typeid(TrustException);
-  type_BindingException = &typeid(BindingException);
-  type_SOAPException = &typeid(SOAPException);
-  type_ContentTypeException = &typeid(ContentTypeException);
-
-  type_ProfileException = &typeid(ProfileException);
-  type_FatalProfileException = &typeid(FatalProfileException);
-  type_RetryableProfileException = &typeid(RetryableProfileException);
-  type_ExpiredAssertionException = &typeid(ExpiredAssertionException);
-  type_InvalidAssertionException = &typeid(InvalidAssertionException);
-  type_ReplayedAssertionException = &typeid(ReplayedAssertionException);
-
-  initialized = 1;
-}
-
-#define TEST_TYPE(type,str) { if (type && *type == info) return str; }
 const char* rpcerror_exception_type(SAMLException* e)
 {
-  if (!e)
-    return "Invalid (NULL) exception";
+    if (!e) return "Invalid (NULL) exception";
 
-  const type_info& info = typeid(*e);
+    const type_info& info = typeid(*e);
+    if (info==typeid(MalformedException))
+        return "Exception: XML object is malformed";
+    if (info==typeid(UnsupportedExtensionException))
+        return "Exception: an unsupported extension was required";
+    if (info==typeid(InvalidCryptoException))
+        return "Exception: cryptographic checking failed";
+    if (info==typeid(TrustException))
+        return "Exception: trust error";
+    if (info==typeid(BindingException))
+        return "Exception: an error occurred binding to an Attribute Authority";
+    if (info==typeid(SOAPException))
+        return "Exception: SOAP error";
+    if (info==typeid(ContentTypeException))
+        return "Exception: Content Type Failure";
 
-  TEST_TYPE(type_MalformedException, "Exception: XML object is malformed");
-  TEST_TYPE(type_UnsupportedExtensionException,
-	    "Exception: an unsupported extention was accessed");
-  TEST_TYPE(type_InvalidCryptoException, "Exception: cryptographic check failed");
-  TEST_TYPE(type_TrustException, "Exception: trust failed");
-  TEST_TYPE(type_BindingException,
-	    "Exception: an error occurred in binding to the AA");
-  TEST_TYPE(type_SOAPException, "Exception: SOAP error");
-  TEST_TYPE(type_ContentTypeException, "Exception: Content Type Failure");
+    if (info==typeid(ProfileException))
+        return "Exception: Profile Error";
+    if (info==typeid(FatalProfileException))
+        return "Exception: Fatal Profile Error";
+    if (info==typeid(RetryableProfileException))
+        return "Exception: Retryable Profile Error";
+    if (info==typeid(ExpiredAssertionException))
+        return "Exception: Expired Assertion";
+    if (info==typeid(InvalidAssertionException))
+        return "Exception: Invalid Assertion";
+    if (info==typeid(ReplayedAssertionException))
+        return "Exception: Replayed Assertion";
 
-  TEST_TYPE(type_ProfileException, "Exception: Profile Error");
-  TEST_TYPE(type_FatalProfileException, "Exception: Fatal Profile Error");
-  TEST_TYPE(type_RetryableProfileException, "Exception: Retryable Profile Error");
-  TEST_TYPE(type_ExpiredAssertionException, "Exception: Expired Assertion");
-  TEST_TYPE(type_InvalidAssertionException, "Exception: Invalid Assertion");
-  TEST_TYPE(type_ReplayedAssertionException, "Exception: Replayed Assertion");
+    if (info==typeid(MetadataException))
+        return "Exception: metadata error";
+    if (info==typeid(CredentialException))
+        return "Exception: credential access error";
 
-  return "Unknown SAML Exception";
+    return "Unknown SAML Exception";
 }
-#undef TEST_TYPE
 
 class shibtarget::RPCErrorPriv {
 public:
-  RPCErrorPriv(int stat, const char* msg, const XMLCh* originSite);
+  RPCErrorPriv(
+    int stat=0,
+    const char* msg=NULL,
+    const char* provider=NULL,
+    const char* url=NULL,
+    const char* contact=NULL,
+    const char* email=NULL
+    );
   ~RPCErrorPriv();
 
-  int		status;
-  string	error_msg;
-  XMLCh*	origin;
+  int status;
+  string error_msg,m_provider,m_url,m_contact,m_email;
   SAMLException* except;
 };
 
-RPCErrorPriv::RPCErrorPriv(int stat, const char* msg, const XMLCh* originSite)
+RPCErrorPriv::RPCErrorPriv(
+    int stat, const char* msg, const char* provider, const char* url, const char* contact, const char* email
+    ) : status(stat), except(NULL)
 {
-  status = stat;
-  string ctx = "shibtarget.RPCErrorPriv";
-  log4cpp::Category& log = log4cpp::Category::getInstance(ctx);
+  log4cpp::Category& log = log4cpp::Category::getInstance("shibtarget.RPCErrorPriv");
 
-  rpcerror_init();
-
-  origin = XMLString::replicate(originSite);
+  if (provider)
+    m_provider=provider;
+  if (url)
+    m_url=url;
+  if (contact)
+    m_contact=contact;
+  if (email)
+    m_email=email;
 
   if (status == SHIBRPC_SAML_EXCEPTION) {
     istringstream estr(msg);
     try { 
       except = NULL;
       except = SAMLException::getInstance(estr);
-    } catch (SAMLException& e) {
-      log.error ("Caught SAML Exception while building the SAMLException: %s",
-		 e.what());
-      log.error ("XML: %s", msg);
-    } catch (XMLException& e) {
-      log.error ("Caught XML Exception building SAMLException: %s",
-		 e.getMessage());
-      log.error ("XML: %s", msg);
-    } catch (...) {
-      log.error ("Caught exception building SAMLException!");
-      log.error ("XML: %s", msg);
     }
-    if (dynamic_cast<ContentTypeException*>(except)!=NULL)
-        error_msg = 
-	  "We were unable to contact your identity provider and cannot grant "
-	  "access at this time. Please contact your provider's help desk or "
-	  "administrator so that the appropriate steps can be taken.  "
-	  "Be sure to describe what you're trying to access and useful "
-	  "context like the current time.";
-    else
-        error_msg = (except ? except->what() : msg);
-  } else {
-    error_msg = msg;
-    except = NULL;
+    catch (SAMLException& e) {
+      log.error("Caught SAML Exception while building the SAMLException: %s", e.what());
+      log.error("XML: %s", msg);
+    }
+    catch (XMLException& e) {
+      log.error("Caught XML Exception building SAMLException: %s", e.getMessage());
+      log.error("XML: %s", msg);
+    }
+    catch (...) {
+      log.error("Caught exception building SAMLException!");
+      log.error("XML: %s", msg);
+    }
+    if (dynamic_cast<ContentTypeException*>(except))
+        error_msg =
+          "We were unable to contact your identity provider and cannot grant "
+          "access at this time. Please contact your provider's help desk or "
+          "administrator so that the appropriate steps can be taken.  "
+          "Be sure to describe what you're trying to access and useful "
+          "context like the current time.";
+    else if (except)
+        error_msg = except->what();
+    else if (msg)
+        error_msg = msg;
   }
+  else if (msg)
+    error_msg = msg;
 }
 
 RPCErrorPriv::~RPCErrorPriv()
 {
   if (except)
     delete except;
-  if (origin)
-      XMLString::release(&origin);
 }
 
-RPCError::RPCError(ShibRpcError* error)
+RPCError::RPCError() : m_priv(new RPCErrorPriv()) {}
+
+RPCError::RPCError(ShibRpcError* e)
 {
-  if (!error || !error->status)
-    init(0, "", NULL);
-  else {
-    auto_ptr_XMLCh origin(error->ShibRpcError_u.e.origin);
-    init(error->status, error->ShibRpcError_u.e.error, origin.get());
-  }
+    if (!e || !e->status)
+        m_priv=new RPCErrorPriv();
+    m_priv=new RPCErrorPriv(
+        e->status,
+        e->ShibRpcError_u.e.error,
+        e->ShibRpcError_u.e.provider,
+        e->ShibRpcError_u.e.url,
+        e->ShibRpcError_u.e.contact,
+        e->ShibRpcError_u.e.email
+        );
 }
 
-void RPCError::init(int stat, char const* msg, const XMLCh* origin)
-{
-  m_priv = new RPCErrorPriv(stat,msg,origin);
-}
+RPCError::RPCError(int s, const char* st) : m_priv(new RPCErrorPriv(s,st)) {}
+
+RPCError::RPCError(ShibTargetException& exc)
+    : m_priv(new RPCErrorPriv(exc.which(),exc.what(),exc.syswho(),exc.where(),exc.who(),exc.how())) {}
 
 RPCError::~RPCError()
 {
@@ -237,7 +275,6 @@ RPCError::~RPCError()
 
 bool RPCError::isError() { return (m_priv->status != 0); }
 
-#define TEST_TYPE(type) { if (type && *type == info) return true; }
 bool RPCError::isRetryable()
 {
   switch (m_priv->status) {
@@ -247,49 +284,43 @@ bool RPCError::isRetryable()
 
   case SHIBRPC_SAML_EXCEPTION:
     if (m_priv->except) {
-      const type_info& info = typeid(*m_priv->except);
-
-      TEST_TYPE(type_RetryableProfileException);
-      //TEST_TYPE(type_ExpiredAssertionException);
+      if (typeid(*m_priv->except)==typeid(RetryableProfileException))
+        return true;
 
       Iterator<saml::QName> codes = m_priv->except->getCodes();
       while (codes.hasNext()) {
-	saml::QName name = codes.next();
-
-	if (!XMLString::compareString(name.getNamespaceURI(),
-				      shibboleth::Constants::SHIB_NS)) {
-	  if (!XMLString::compareString(name.getLocalName(), code_InvalidHandle)) {
-	    return true;
-	  }
-	}
+        saml::QName name = codes.next();
+        if (!XMLString::compareString(name.getNamespaceURI(),shibboleth::Constants::SHIB_NS) &&
+	           !XMLString::compareString(name.getLocalName(), code_InvalidHandle)) {
+            return true;
+        }
       }
     }
 
     // FALLTHROUGH
-  default:
-    return false;
+    default:
+        return false;
   }
 }
-#undef TEST_TYPE
 
 const char* RPCError::getType()
 {
   switch (m_priv->status) {
-  case SHIBRPC_OK:		return "No Error";
-  case SHIBRPC_UNKNOWN_ERROR:	return "Unknown error";
-  case SHIBRPC_INTERNAL_ERROR:	return "Internal Error";
-  case SHIBRPC_XML_EXCEPTION:	return "Xerces XML Exception";
-  case SHIBRPC_SAX_EXCEPTION:	return "Xerces SAX Exception";
-  case SHIBRPC_SAML_EXCEPTION:	return rpcerror_exception_type(m_priv->except);
+  case SHIBRPC_OK:                  return "No Error";
+  case SHIBRPC_UNKNOWN_ERROR:       return "Unknown error";
+  case SHIBRPC_INTERNAL_ERROR:      return "Internal Error";
+  case SHIBRPC_XML_EXCEPTION:       return "Xerces XML Exception";
+  case SHIBRPC_SAX_EXCEPTION:       return "Xerces SAX Exception";
+  case SHIBRPC_SAML_EXCEPTION:      return rpcerror_exception_type(m_priv->except);
 
-  case SHIBRPC_NO_SESSION:	return "No Session";
-  case SHIBRPC_SESSION_EXPIRED:	return "Session Expired";
-  case SHIBRPC_IPADDR_MISMATCH:	return "IP Address Mismatch";
+  case SHIBRPC_NO_SESSION:          return "No Session";
+  case SHIBRPC_SESSION_EXPIRED:     return "Session Expired";
+  case SHIBRPC_IPADDR_MISMATCH:     return "IP Address Mismatch";
 
-  case SHIBRPC_IPADDR_MISSING:	return "IP Address Missing";
-  case SHIBRPC_RESPONSE_MISSING:	return "SAML Response Missing";
-  case SHIBRPC_ASSERTION_REPLAYED:	return "SAML Assertion Replayed";
-  default:			return "Unknown Shibboleth RPC error";
+  case SHIBRPC_IPADDR_MISSING:      return "IP Address Missing";
+  case SHIBRPC_RESPONSE_MISSING:    return "SAML Response Missing";
+  case SHIBRPC_ASSERTION_REPLAYED:  return "SAML Assertion Replayed";
+  default:                          return "Unknown Shibboleth RPC error";
   }
 }
 
@@ -302,64 +333,21 @@ const char* RPCError::getDesc()
 {
   if (m_priv->except) {
     Iterator<saml::QName> i=m_priv->except->getCodes();
-    if (i.hasNext() &&
-	XMLString::compareString(L(Responder),i.next().getLocalName()))
-      return
-	"An error occurred at the target system while processing your request";
+    if (i.hasNext() && XMLString::compareString(L(Responder),i.next().getLocalName()))
+      return "An error occurred within the target system while processing your request";
     else
-      return "An error occurred at your origin site while processing your request";
-  } else
-    return "An error occurred processing your request";
+      return "An error occurred at your identity provider while processing your request";
+  }
+  else
+    return "An error occurred while processing your request";
 }
 
 int RPCError::getCode() { return m_priv->status; }
 
-string RPCError::getOriginErrorURL()
-{
-    if (m_priv->origin) {
-        Metadata mapper(ShibTargetConfig::getConfig().getMetadataProviders());
-        const IProvider* provider=mapper.lookup(m_priv->origin);
-        if (provider) {
-            Iterator<const IProviderRole*> roles=provider->getRoles();
-            while (roles.hasNext()) {
-            const char* temp=roles.next()->getErrorURL();
-            if (temp)
-                return temp;
-            }
-        }
-    }
-    return "No URL Available";
-}
+const char* RPCError::getProviderId() { return m_priv->m_provider.c_str(); }
 
-string RPCError::getOriginContactName()
-{ 
-    if (m_priv->origin) {
-        Metadata mapper(ShibTargetConfig::getConfig().getMetadataProviders());
-        const IProvider* provider=mapper.lookup(m_priv->origin);
-        Iterator<const IContactPerson*> i=provider ? provider->getContacts() : EMPTY(const IContactPerson*);
-        while (i.hasNext()) {
-            const IContactPerson* c=i.next();
-            if ((c->getType()==IContactPerson::technical || c->getType()==IContactPerson::support) && c->getName())
-                return c->getName();
-        }
-    }
-    return "No Name Available";
-}
+const char* RPCError::getErrorURL() { return m_priv->m_url.c_str(); }
 
-string RPCError::getOriginContactEmail()
-{
-    if (m_priv->origin) {
-        Metadata mapper(ShibTargetConfig::getConfig().getMetadataProviders());
-        const IProvider* provider=mapper.lookup(m_priv->origin);
-        Iterator<const IContactPerson*> i=provider ? provider->getContacts() : EMPTY(const IContactPerson*);
-        while (i.hasNext()) {
-            const IContactPerson* c=i.next();
-            if (c->getType()==IContactPerson::technical || c->getType()==IContactPerson::support) {
-                Iterator<string> emails=c->getEmails();
-                if (emails.hasNext())
-                    return emails.next();
-            }
-        }
-    }
-    return "No Email Available";
-}
+const char* RPCError::getContactName() { return m_priv->m_contact.c_str(); }
+
+const char* RPCError::getContactEmail() { return m_priv->m_email.c_str(); }

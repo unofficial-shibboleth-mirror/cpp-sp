@@ -80,26 +80,58 @@ using namespace saml;
 using namespace shibboleth;
 using namespace shibtarget;
 
+static const XMLCh cleanupInterval[] =
+{ chLatin_c, chLatin_l, chLatin_e, chLatin_a, chLatin_n, chLatin_u, chLatin_p,
+  chLatin_I, chLatin_n, chLatin_t, chLatin_e, chLatin_r, chLatin_v, chLatin_a, chLatin_l, chNull
+};
+static const XMLCh cacheTimeout[] =
+{ chLatin_c, chLatin_a, chLatin_c, chLatin_h, chLatin_e,
+  chLatin_T, chLatin_i, chLatin_m, chLatin_e, chLatin_o, chLatin_u, chLatin_t, chNull
+};
+static const XMLCh AAConnectTimeout[] =
+{ chLatin_A, chLatin_A, chLatin_C, chLatin_o, chLatin_n, chLatin_n, chLatin_e, chLatin_c, chLatin_t,
+  chLatin_T, chLatin_i, chLatin_m, chLatin_e, chLatin_o, chLatin_u, chLatin_t, chNull
+};
+static const XMLCh AATimeout[] =
+{ chLatin_A, chLatin_A, chLatin_T, chLatin_i, chLatin_m, chLatin_e, chLatin_o, chLatin_u, chLatin_t, chNull };
+
+static const XMLCh defaultLifetime[] =
+{ chLatin_d, chLatin_e, chLatin_f, chLatin_a, chLatin_u, chLatin_l, chLatin_t,
+  chLatin_L, chLatin_i, chLatin_f, chLatin_e, chLatin_t, chLatin_i, chLatin_m, chLatin_e, chNull
+};
+static const XMLCh retryInterval[] =
+{ chLatin_r, chLatin_e, chLatin_t, chLatin_r, chLatin_y,
+  chLatin_I, chLatin_n, chLatin_t, chLatin_e, chLatin_r, chLatin_v, chLatin_a, chLatin_l, chNull
+};
+static const XMLCh strictValidity[] =
+{ chLatin_s, chLatin_t, chLatin_r, chLatin_i, chLatin_c, chLatin_t,
+  chLatin_V, chLatin_a, chLatin_l, chLatin_i, chLatin_d, chLatin_i, chLatin_t, chLatin_y, chNull
+};
+static const XMLCh propagateErrors[] =
+{ chLatin_p, chLatin_r, chLatin_o, chLatin_p, chLatin_a, chLatin_g, chLatin_a, chLatin_t, chLatin_e,
+  chLatin_E, chLatin_r, chLatin_r, chLatin_o, chLatin_r, chLatin_s, chNull
+};
+
 class InternalCCache;
-class InternalCCacheEntry : public CCacheEntry
+class InternalCCacheEntry : public ISessionCacheEntry
 {
 public:
-  InternalCCacheEntry(const char* application_id, SAMLAuthenticationStatement* s, const char *client_addr, SAMLResponse* r=NULL);
+  InternalCCacheEntry(const IApplication* application, SAMLAuthenticationStatement* s, const char *client_addr, SAMLResponse* r=NULL);
   ~InternalCCacheEntry();
 
-  virtual bool isSessionValid(time_t lifetime, time_t timeout);
-  virtual const char* getClientAddress() { return m_clientAddress.c_str(); }
-  virtual const char* getSerializedStatement() { return m_statement.c_str(); }
-  virtual const SAMLAuthenticationStatement* getStatement() { return p_auth; }
+  void lock() { m_lock->lock(); }
+  void unlock() { m_lock->unlock(); }
 
-  virtual Iterator<SAMLAssertion*> getAssertions();
-  virtual void preFetch(int prefetch_window);
+  bool isValid(time_t lifetime, time_t timeout) const;
+  const char* getClientAddress() const { return m_clientAddress.c_str(); }
+  const char* getSerializedStatement() const { return m_statement.c_str(); }
+  const SAMLAuthenticationStatement* getStatement() const { return p_auth; }
 
-  virtual void release() { m_lock->unlock(); }
+  Iterator<SAMLAssertion*> getAssertions();
+  void preFetch(int prefetch_window);
 
   void setCache(InternalCCache *cache) { m_cache = cache; }
-  void lock() { m_lock->lock(); }
-  time_t lastAccess() { return m_lastAccess; }
+  time_t lastAccess() const { return m_lastAccess; }
 
 private:
   bool responseValid(int slop);
@@ -113,7 +145,7 @@ private:
   string m_clientAddress;
   time_t m_sessionCreated;
   time_t m_responseCreated;
-  time_t m_lastAccess;
+  mutable time_t m_lastAccess;
   time_t m_lastRetry;
 
   const SAMLSubject* m_subject;
@@ -126,22 +158,28 @@ private:
   Mutex* m_lock;
 };
 
-class InternalCCache : public CCache
+class InternalCCache : public ISessionCache
 {
 public:
-  InternalCCache();
+  InternalCCache(const DOMElement* e);
   virtual ~InternalCCache();
 
-  virtual CCacheEntry* find(const char* key);
-  virtual void insert(const char* key, const char* application_id, SAMLAuthenticationStatement* s, const char *client_addr, SAMLResponse* r=NULL);
-  virtual void remove(const char* key);
+  void thread_init() {};
+  void thread_end() {};
+
+  string generateKey() const;
+  ISessionCacheEntry* find(const char* key);
+  void insert(
+    const char* key, const IApplication* application, SAMLAuthenticationStatement* s, const char *client_addr, SAMLResponse* r=NULL
+    );
+  void remove(const char* key);
 
   InternalCCacheEntry* findi(const char* key);
   void	cleanup();
 
 private:
+  const DOMElement* m_root;         // Only valid during initialization
   RWLock *lock;
-
   map<string,InternalCCacheEntry*> m_hashtable;
 
   log4cpp::Category* log;
@@ -151,73 +189,66 @@ private:
   CondWait*	shutdown_wait;
   Thread*	cleanup_thread;
   
-  // cached config settings
-  int AATimeout,AAConnectTimeout;
-  int defaultLifetime,retryInterval;
-  bool strictValidity,propagateErrors;
+  // extracted config settings
+  unsigned int m_AATimeout,m_AAConnectTimeout;
+  unsigned int m_defaultLifetime,m_retryInterval;
+  bool m_strictValidity,m_propagateErrors;
   friend class InternalCCacheEntry;
 };
 
-namespace {
-  map<string,CCache::CCacheFactory> g_ccacheFactoryDB;
-};
-
-// Global Constructors & Destructors
-CCache::~CCache() { }
-
-void CCache::registerFactory(const char* name, CCache::CCacheFactory factory)
+IPlugIn* MemoryCacheFactory(const DOMElement* e)
 {
-  log4cpp::Category& log = log4cpp::Category::getInstance("shibtarget.CCache");
-  saml::NDC ndc("registerFactory");
-
-  log.info ("Registered factory %p for CCache %s", factory, name);
-  g_ccacheFactoryDB[name] = factory;
+    return new InternalCCache(e);
 }
 
-CCache* CCache::getInstance(const char* type)
-{
-  log4cpp::Category& log = log4cpp::Category::getInstance("shibtarget.CCache");
-  saml::NDC ndc("getInstance");
-
-  map<string,CCache::CCacheFactory>::const_iterator i=g_ccacheFactoryDB.find(type);
-  if (i!=g_ccacheFactoryDB.end()) {
-    log.info ("Loading CCache: %s at %p", type, i->second);
-    return ((i->second)());
-  }
-
-  log.info ("Loading default memory CCache");
-  return (CCache*) new InternalCCache();
-}
-
-
 /******************************************************************************/
-/* InternalCCache:  A Credential Cache                                        */
+/* InternalCCache:  in memory session cache                                   */
 /******************************************************************************/
 
-InternalCCache::InternalCCache()
-    : AATimeout(30), AAConnectTimeout(15), defaultLifetime(1800), retryInterval(300), strictValidity(true), propagateErrors(false)
+InternalCCache::InternalCCache(const DOMElement* e)
+    : m_root(e), m_AATimeout(30), m_AAConnectTimeout(15), m_defaultLifetime(1800), m_retryInterval(300),
+        m_strictValidity(true), m_propagateErrors(false), lock(RWLock::create()),
+        log (&Category::getInstance("shibtarget.InternalCCache"))
 {
-  log = &(log4cpp::Category::getInstance("shibtarget.InternalCCache"));
-  lock = RWLock::create();
+    const XMLCh* tag=m_root->getAttributeNS(NULL,AATimeout);
+    if (tag && *tag) {
+        m_AATimeout = XMLString::parseInt(tag);
+        if (!m_AATimeout)
+            m_AATimeout=30;
+    }
 
-  string tag;
-  ShibINI& ini = ShibTargetConfig::getConfig().getINI();
-  if (ini.get_tag(SHIBTARGET_SHAR, SHIBTARGET_TAG_AATIMEOUT, false, &tag))
-    AATimeout = atoi(tag.c_str());
-  if (ini.get_tag(SHIBTARGET_SHAR, SHIBTARGET_TAG_AACONNECTTO, false, &tag))
-    AAConnectTimeout = atoi(tag.c_str());
-  if (ini.get_tag(SHIBTARGET_SHAR, "defaultLifetime", false, &tag))
-    defaultLifetime=atoi(tag.c_str());
-  if (ini.get_tag(SHIBTARGET_SHAR, "retryInterval", false, &tag))
-    retryInterval=atoi(tag.c_str());
-  if (ini.get_tag(SHIBTARGET_SHAR, "strictValidity", false, &tag))
-    strictValidity=ShibINI::boolean(tag);
-  if (ini.get_tag(SHIBTARGET_SHAR, "propagateErrors", false, &tag))
-    propagateErrors=ShibINI::boolean(tag);
+    tag=m_root->getAttributeNS(NULL,AAConnectTimeout);
+    if (tag && *tag) {
+        m_AAConnectTimeout = XMLString::parseInt(tag);
+        if (!m_AAConnectTimeout)
+            m_AAConnectTimeout=15;
+    }
+    
+    tag=m_root->getAttributeNS(NULL,defaultLifetime);
+    if (tag && *tag) {
+        m_defaultLifetime = XMLString::parseInt(tag);
+        if (!m_defaultLifetime)
+            m_defaultLifetime=1800;
+    }
 
-  shutdown_wait = CondWait::create();
-  shutdown = false;
-  cleanup_thread = Thread::create(&cleanup_fcn, (void*)this);
+    tag=m_root->getAttributeNS(NULL,retryInterval);
+    if (tag && *tag) {
+        m_retryInterval = XMLString::parseInt(tag);
+        if (!m_retryInterval)
+            m_retryInterval=300;
+    }
+    
+    tag=m_root->getAttributeNS(NULL,strictValidity);
+    if (tag && (*tag==chDigit_0 || *tag==chLatin_f))
+        m_strictValidity=false;
+        
+    tag=m_root->getAttributeNS(NULL,propagateErrors);
+    if (tag && (*tag==chDigit_1 || *tag==chLatin_t))
+        m_propagateErrors=true;
+
+    shutdown_wait = CondWait::create();
+    shutdown = false;
+    cleanup_thread = Thread::create(&cleanup_fcn, (void*)this);
 }
 
 InternalCCache::~InternalCCache()
@@ -233,10 +264,17 @@ InternalCCache::~InternalCCache()
   delete shutdown_wait;
 }
 
-// assumed a lock is held..
+string InternalCCache::generateKey() const
+{
+    SAMLIdentifier id;
+    auto_ptr_char c(id);
+    return c.get();
+}
+
+// assumes a lock is held..
 InternalCCacheEntry* InternalCCache::findi(const char* key)
 {
-  log->debug("FindI: \"%s\"", key);
+  log->debug("findI: \"%s\"", key);
 
   map<string,InternalCCacheEntry*>::const_iterator i=m_hashtable.find(key);
   if (i==m_hashtable.end()) {
@@ -248,7 +286,7 @@ InternalCCacheEntry* InternalCCache::findi(const char* key)
   return i->second;
 }
 
-CCacheEntry* InternalCCache::find(const char* key)
+ISessionCacheEntry* InternalCCache::find(const char* key)
 {
   log->debug("Find: \"%s\"", key);
   ReadLock rwlock(lock);
@@ -256,16 +294,18 @@ CCacheEntry* InternalCCache::find(const char* key)
   InternalCCacheEntry* entry = findi(key);
   if (!entry) return NULL;
 
-  // Lock the "database record" for the caller -- they have to release the item.
+  // Lock the "database record" for the caller -- they have to unlock the item.
   entry->lock();
   return entry;
 }
 
-void InternalCCache::insert(const char* key, const char* application_id, SAMLAuthenticationStatement* s, const char* client_addr, SAMLResponse* r)
+void InternalCCache::insert(
+    const char* key, const IApplication* application, SAMLAuthenticationStatement* s, const char* client_addr, SAMLResponse* r
+    )
 {
-  log->debug("caching new entry for application %s: \"%s\"", application_id, key);
+  log->debug("caching new entry for application %s: \"%s\"", application->getId(), key);
 
-  InternalCCacheEntry* entry = new InternalCCacheEntry(application_id, s, client_addr, r);
+  InternalCCacheEntry* entry = new InternalCCacheEntry(application, s, client_addr, r);
   entry->setCache(this);
 
   lock->wrlock();
@@ -282,7 +322,7 @@ void InternalCCache::remove(const char* key)
   lock->wrlock();
 
   // grab the entry from the database.
-  CCacheEntry* entry = findi(key);
+  ISessionCacheEntry* entry = findi(key);
 
   if (!entry) {
     lock->unlock();
@@ -295,7 +335,7 @@ void InternalCCache::remove(const char* key)
   lock->unlock();
 
   // we can release the entry lock because we know we're not in the cache anymore
-  entry->release();
+  entry->unlock();
 
   // Now delete the entry
   delete entry;
@@ -306,22 +346,23 @@ void InternalCCache::cleanup()
   Mutex* mutex = Mutex::create();
   saml::NDC ndc("InternalCCache::cleanup()");
 
-  ShibINI& ini = ShibTargetConfig::getConfig().getINI();
-
   int rerun_timer = 0;
   int timeout_life = 0;
 
-  string tag;
-  if (ini.get_tag (SHIBTARGET_SHAR, SHIBTARGET_TAG_CACHECLEAN, true, &tag))
-    rerun_timer = atoi(tag.c_str());
-  if (ini.get_tag (SHIBTARGET_SHAR, SHIBTARGET_TAG_CACHETIMEOUT, true, &tag))
-    timeout_life = atoi(tag.c_str());
+  // Load our configuration details...
+  const XMLCh* tag=m_root->getAttributeNS(NULL,cleanupInterval);
+  if (tag && *tag)
+    rerun_timer = XMLString::parseInt(tag);
 
+  tag=m_root->getAttributeNS(NULL,cacheTimeout);
+  if (tag && *tag)
+    timeout_life = XMLString::parseInt(tag);
+  
   if (rerun_timer <= 0)
-    rerun_timer = 300;		// rerun every 5 minutes
+    rerun_timer = 300;        // rerun every 5 minutes
 
   if (timeout_life <= 0)
-    timeout_life = 28800;	// timeout after 8 hours
+    timeout_life = 28800; // timeout after 8 hours
 
   mutex->lock();
 
@@ -354,7 +395,7 @@ void InternalCCache::cleanup()
       // If the last access was BEFORE the stale timeout...
       i->second->lock();
       time_t last=i->second->lastAccess();
-      i->second->release();
+      i->second->unlock();
       if (last < stale)
         stale_keys.push_back(i->first);
     }
@@ -364,12 +405,8 @@ void InternalCCache::cleanup()
 
     // Pass 2: walk through the list of stale entries and remove them from
     // the database
-    for (vector<string>::iterator j = stale_keys.begin();
-	 j != stale_keys.end(); j++)
-    {
+    for (vector<string>::iterator j = stale_keys.begin(); j != stale_keys.end(); j++)
       remove (j->c_str());
-    }
-
   }
 
   log->debug("Cleanup thread finished.");
@@ -381,7 +418,7 @@ void InternalCCache::cleanup()
 
 void* InternalCCache::cleanup_fcn(void* cache_p)
 {
-  InternalCCache* cache = (InternalCCache*)cache_p;
+  InternalCCache* cache = reinterpret_cast<InternalCCache*>(cache_p);
 
   // First, let's block all signals 
   Thread::mask_all_signals();
@@ -395,24 +432,21 @@ void* InternalCCache::cleanup_fcn(void* cache_p)
 /* InternalCCacheEntry:  A Credential Cache Entry                             */
 /******************************************************************************/
 
-InternalCCacheEntry::InternalCCacheEntry(const char* application_id, SAMLAuthenticationStatement *s, const char* client_addr, SAMLResponse* r)
-  : m_response(r), m_responseCreated(r ? time(NULL) : 0), m_lastRetry(0)
+InternalCCacheEntry::InternalCCacheEntry(
+    const IApplication* application, SAMLAuthenticationStatement *s, const char* client_addr, SAMLResponse* r
+    ) : m_response(r), m_responseCreated(r ? time(NULL) : 0), m_lastRetry(0),
+        log(&Category::getInstance("shibtarget::InternalCCacheEntry"))
 {
-  log = &(log4cpp::Category::getInstance("shibtarget::InternalCCacheEntry"));
-
   if (s == NULL) {
     log->error("NULL auth statement");
-    throw runtime_error("InternalCCacheEntry() was passed an empty SAML Statement");
+    throw SAMLException("InternalCCacheEntry() passed an empty SAML Statement");
   }
 
-  if (application_id)
-    m_application_id=application_id;
+  m_application_id=application->getId();
 
   m_subject = s->getSubject();
-
   auto_ptr_char h(m_subject->getName());
   auto_ptr_char d(m_subject->getNameQualifier());
-
   m_handle = h.get();
   m_originSite = d.get();
 
@@ -429,15 +463,14 @@ InternalCCacheEntry::InternalCCacheEntry(const char* application_id, SAMLAuthent
 
   if (r) {
     // Run pushed data through the AAP. Note that we could end up with an empty response!
-    ShibTargetConfig& conf=ShibTargetConfig::getConfig();
-    Metadata m(conf.getMetadataProviders());
+    Metadata m(application->getMetadataProviders());
     const IProvider* site=m.lookup(m_subject->getNameQualifier());
     if (!site)
         throw MetadataException("unable to locate origin site's metadata during attribute acceptance processing");
     Iterator<SAMLAssertion*> assertions=r->getAssertions();
     for (unsigned long i=0; i < assertions.size();) {
         try {
-            AAP::apply(conf.getAAPProviders(),site,*(assertions[i]));
+            AAP::apply(application->getAAPProviders(),site,*(assertions[i]));
             i++;
         }
         catch (SAMLException&) {
@@ -461,9 +494,9 @@ InternalCCacheEntry::~InternalCCacheEntry()
   delete m_lock;
 }
 
-bool InternalCCacheEntry::isSessionValid(time_t lifetime, time_t timeout)
+bool InternalCCacheEntry::isValid(time_t lifetime, time_t timeout) const
 {
-  saml::NDC ndc("isSessionValid");
+  saml::NDC ndc("isValid");
   log->debug("test session %s@%s, (lifetime=%ld, timeout=%ld)",
 	     m_handle.c_str(), m_originSite.c_str(), lifetime, timeout);
   time_t now=time(NULL);
@@ -485,9 +518,7 @@ Iterator<SAMLAssertion*> InternalCCacheEntry::getAssertions()
   saml::NDC ndc("getAssertions");
   populate(0);
   
-  if (m_response)
-    return m_response->getAssertions();
-  return EMPTY(SAMLAssertion*);
+  return (m_response) ? m_response->getAssertions() : EMPTY(SAMLAssertion*);
 }
 
 void InternalCCacheEntry::preFetch(int prefetch_window)
@@ -545,7 +576,7 @@ bool InternalCCacheEntry::responseValid(int slop)
   // If we didn't find any assertions with times, then see if we're
   // older than the default response lifetime.
   if (!count) {
-      if ((now - m_responseCreated) > m_cache->defaultLifetime) {
+      if ((now - m_responseCreated) > m_cache->m_defaultLifetime) {
         log->debug("response is beyond default life, so it's invalid");
         return false;
       }
@@ -567,7 +598,7 @@ void InternalCCacheEntry::populate(int slop)
         return;
       
       // If we're being strict, dump what we have and reset timestamps.
-      if (m_cache->strictValidity) {
+      if (m_cache->m_strictValidity) {
         log->info("strictly enforcing attribute validity, dumping expired data");
         delete m_response;
         m_response=NULL;
@@ -589,7 +620,7 @@ void InternalCCacheEntry::populate(int slop)
     }
   }
   catch (...) {
-    if (m_cache->propagateErrors)
+    if (m_cache->m_propagateErrors)
         throw;
     log->warn("suppressed exception caught while trying to fetch attributes");
   }
@@ -598,89 +629,109 @@ void InternalCCacheEntry::populate(int slop)
 SAMLResponse* InternalCCacheEntry::getNewResponse()
 {
     // The retryInterval determines how often to poll an AA that might be down.
-    if ((time(NULL) - m_lastRetry) < m_cache->retryInterval)
+    if ((time(NULL) - m_lastRetry) < m_cache->m_retryInterval)
         return NULL;
     if (m_lastRetry)
         log->debug("retry interval exceeded, so trying again");
     m_lastRetry=time(NULL);
     
-    if (p_auth->getBindings().size()==0) {
-        // XXX: need to start using metadata for this...
-        log->error("no AA bindings available");
-        throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"No AA bindings available.",m_subject->getNameQualifier());
-    }
-
     log->info("trying to request attributes for %s@%s -> %s", m_handle.c_str(), m_originSite.c_str(), m_application_id.c_str());
 
-    string tag;
-    ShibTargetConfig& conf=ShibTargetConfig::getConfig();
-    ShibINI& ini = conf.getINI();
-    if (!ini.get_tag(m_application_id, "providerID", true, &tag))
-        throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,string("unable to determine ProviderID for request, not set?"));
-    auto_ptr_XMLCh providerID(tag.c_str());
+    // Lookup application for session to get providerId and attributes to request.
+    IConfig* conf=ShibTargetConfig::getConfig().getINI();
+    Locker locker(conf);
+    const IApplication* application=conf->getApplication(m_application_id.c_str());
+    if (!application)
+        throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"Unable to locate application for session, deleted?");
+    pair<bool,const XMLCh*> providerID=application->getXMLString("providerId");
+    if (!providerID.first)
+        throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"Unable to determine ProviderID for application, not set?");
 
-    vector<SAMLAttributeDesignator*> designators;
-
-    // Look up attributes to request based on resource ID
-    if (ini.get_tag(m_application_id, SHIBTARGET_TAG_REQATTRS, true, &tag)) {
-        // Now parse the request attributes tag...
-        log->debug("Request Attributes: \"%s\"", tag.c_str());
-
-        auto_ptr<char> tag_str(strdup(tag.c_str()));
-        char *tags = tag_str.get(), *tagptr = NULL, *the_tag;
-#ifdef HAVE_STRTOK_R
-        while ((the_tag = strtok_r(tags, " \t\r\n", &tagptr)) != NULL && *the_tag) {
-#else
-        while ((the_tag = strtok(tags, " \t\r\n")) != NULL && *the_tag) {
-#endif
-            // Make sure we don't loop ad-infinitum
-            tags = NULL;
-      
-            // transcode the attribute string from the tag
-            auto_ptr_XMLCh temp(the_tag);
-
-            // Now create the SAML AttributeDesignator from this name
-            designators.push_back(new SAMLAttributeDesignator(temp.get(),shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI));
-        }
+    // Get signing policies.
+    bool signRequest=false;
+    bool signedResponse=false;
+    bool signedAssertions=false;
+    const IPropertySet* props=application->getPropertySet("Policy");
+    if (props) {
+        pair<bool,bool> flag=props->getBool("signRequest");
+        if (flag.first)
+            signRequest=flag.second;
+        flag=props->getBool("signedResponse");
+        if (flag.first)
+            signedResponse=flag.second;
+        flag=props->getBool("signedAssertions");
+        if (flag.first)
+            signedAssertions=flag.second;
     }
-    else
-        log->debug ("No request-attributes found, requesting any/all");
-
-    // Build a SAML Request....
-    SAMLAttributeQuery* q=new SAMLAttributeQuery(
-        static_cast<SAMLSubject*>(m_subject->clone()),providerID.get(),designators
-        );
-    auto_ptr<SAMLRequest> req(new SAMLRequest(EMPTY(QName),q));
     
-    // Try this request. The wrapper class handles all of the details.
-    Metadata m(conf.getMetadataProviders());
+    // Try this request. The binding wrapper class handles most of the details.
+    Metadata m(application->getMetadataProviders());
     const IProvider* site=m.lookup(m_subject->getNameQualifier());
     if (!site)
-        throw MetadataException("unable to locate origin site's metadata during attribute query");
+        throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"Unable to locate origin site's metadata during attribute query.");
 
-    log->debug("Trying to query an AA...");
+    // Try to locate an AA role.
+    const IAttributeAuthorityRole* AA=NULL;
+    Iterator<const IProviderRole*> roles=site->getRoles();
+    while (!AA && roles.hasNext()) {
+        const IProviderRole* role=roles.next();
+        if (dynamic_cast<const IAttributeAuthorityRole*>(role)) {
+            // Check for SAML 1.x protocol support.
+            if (role->hasSupport(saml::XML::SAMLP_NS))
+                AA=dynamic_cast<const IAttributeAuthorityRole*>(role);
+        }
+    }
+    if (!AA)
+        throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"Unable to locate metadata for origin site's Attribute Authority.",site);
+
+
     SAMLResponse* response = NULL;
-    ShibBinding binding(conf.getRevocationProviders(),conf.getTrustProviders(),conf.getCredentialProviders());
     try {
+        // Build a SAML Request....
+        SAMLAttributeQuery* q=new SAMLAttributeQuery(
+            static_cast<SAMLSubject*>(m_subject->clone()),providerID.second,application->getAttributeDesignators().clone()
+            );
+        auto_ptr<SAMLRequest> req(new SAMLRequest(EMPTY(QName),q));
+        
+        // Sign it? Highly doubtful we'll ever use this, but just for fun...
+        if (signRequest) {
+            Credentials creds(conf->getCredentialsProviders());
+            const ICredResolver* signingCred=creds.lookup(application->getSigningCred(site));
+            req->sign(SIGNATURE_RSA,signingCred->getKey(),signingCred->getCertificates());
+        }
+            
+        log->debug("Trying to query an AA...");
+
         SAMLConfig::SAMLBindingConfig bindconf;
-        bindconf.timeout=m_cache->AATimeout;
-        bindconf.conn_timeout=m_cache->AAConnectTimeout;
-        response=binding.send(*req,site,NULL,p_auth->getBindings(),bindconf);
+        bindconf.timeout=m_cache->m_AATimeout;
+        bindconf.conn_timeout=m_cache->m_AAConnectTimeout;
+        ShibBinding binding(application->getRevocationProviders(),application->getTrustProviders(),conf->getCredentialsProviders());
+        response=binding.send(*req,AA,application->getTLSCred(site),application->getAudiences(),p_auth->getBindings(),bindconf);
     }
     catch (SAMLException& e) {
         log->error("caught SAML exception during query to AA: %s", e.what());
     }
     // See if we got a response.
     if (!response) {
-        log->error("No response obtained");
-        throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"Unable to obtain attributes from user's origin site.",site->getId());
+        log->error("no response obtained");
+        throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"Unable to obtain attributes from user's origin site.",AA);
+    }
+    else if (signedResponse && !response->isSigned()) {
+        delete response;
+        log->error("unsigned response obtained, but we were told it must be signed.");
+        throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"Unable to obtain attributes from user's origin site.",AA);
     }
 
     // Run it through the AAP. Note that we could end up with an empty response!
     Iterator<SAMLAssertion*> a=response->getAssertions();
     for (unsigned long i=0; i < a.size();) {
         try {
-            AAP::apply(conf.getAAPProviders(),site,*(a[i]));
+            if (signedAssertions && !(a[i]->isSigned())) {
+                log->warn("removing unsigned assertion from response, in accordance with signedAssertions policy");
+                response->removeAssertion(i);
+                continue;
+            }
+            AAP::apply(application->getAAPProviders(),site,*(a[i]));
             i++;
         }
         catch (SAMLException&) {

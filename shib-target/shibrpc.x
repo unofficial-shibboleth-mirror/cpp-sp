@@ -36,10 +36,13 @@ enum ShibRpcStatus {
   /* get_attrs errors */
 };
 
-/* Hold an error and origin */
+/* Hold an error, providerId, and support data */
 struct ShibRpcErr {
   string	error<>;
-  string	origin<>;
+  string	provider<>;
+  string	url<>;
+  string	contact<>;
+  string	email<>;
 };
 
 /* A type for RPC Errors */

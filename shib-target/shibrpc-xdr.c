@@ -28,7 +28,13 @@ xdr_ShibRpcErr (XDR *xdrs, ShibRpcErr *objp)
 
 	 if (!xdr_string (xdrs, &objp->error, ~0))
 		 return FALSE;
-	 if (!xdr_string (xdrs, &objp->origin, ~0))
+	 if (!xdr_string (xdrs, &objp->provider, ~0))
+		 return FALSE;
+	 if (!xdr_string (xdrs, &objp->url, ~0))
+		 return FALSE;
+	 if (!xdr_string (xdrs, &objp->contact, ~0))
+		 return FALSE;
+	 if (!xdr_string (xdrs, &objp->email, ~0))
 		 return FALSE;
 	return TRUE;
 }

@@ -71,9 +71,7 @@ using namespace saml;
 using namespace shibboleth;
 using namespace shibtarget;
 
-RPCHandle::RPCHandle(const char* shar, u_long program, u_long version)
-    : m_shar(shar), m_program(program), m_version(version), m_clnt(NULL), m_sock((ShibSocket)NULL),
-        log(&(log4cpp::Category::getInstance("shibtarget.RPCHandle")))
+RPCHandle::RPCHandle() : m_clnt(NULL), m_sock((IListener::ShibSocket)NULL), log(&(log4cpp::Category::getInstance("shibtarget.RPCHandle")))
 {
     log->debug("New RPCHandle created: %p", this);
 }
@@ -88,13 +86,11 @@ void RPCHandle::disconnect()
 {
     if (m_clnt) {
         clnt_destroy(m_clnt);
-#ifdef WIN32
-        closesocket(m_sock);
-#else
-        close(m_sock);
-#endif
         m_clnt=NULL;
-        m_sock=(ShibSocket)NULL;
+        IConfig* conf=ShibTargetConfig::getConfig().getINI();
+        Locker locker(conf);
+        conf->getListener()->close(m_sock);
+        m_sock=(IListener::ShibSocket)NULL;
     }
 }
 
@@ -107,10 +103,13 @@ CLIENT* RPCHandle::connect()
         return m_clnt;
     }
 
-    log->debug("trying to connect to SHAR at %s",m_shar);
+    log->debug("trying to connect to SHAR");
 
-    ShibSocket sock;
-    if (shib_sock_create(&sock) != 0) {
+    IListener::ShibSocket sock;
+    IConfig* conf=ShibTargetConfig::getConfig().getINI();
+    Locker locker(conf);
+    const IListener* listener=conf->getListener();
+    if (!listener->create(sock)) {
         log->error("cannot create socket");
         throw ShibTargetException(SHIBRPC_UNKNOWN_ERROR, "Cannot create socket");
     }
@@ -119,40 +118,32 @@ CLIENT* RPCHandle::connect()
     int num_tries = 3;
 
     for (int i = num_tries-1; i >= 0; i--) {
-    if (shib_sock_connect(sock, m_shar) == 0) {
-        connected = true;
-        break;
-    }
+        if (listener->connect(sock)) {
+            connected = true;
+            break;
+        }
+    
+        log->warn ("cannot connect %p to SHAR... %s", this, (i > 0 ? "retrying" : ""));
 
-    log->warn ("cannot connect %p to SHAR... %s", this, (i > 0 ? "retrying" : ""));
-
-    if (i)
+        if (i)
 #ifdef WIN32
-        Sleep(2000*(num_tries-i));
+            Sleep(2000*(num_tries-i));
 #else
-        sleep(2*(num_tries-i));
+            sleep(2*(num_tries-i));
 #endif
     }
 
     if (!connected) {
         log->crit("SHAR Unavailable..  Failing.");
-#ifdef WIN32
-        closesocket(sock);
-#else
-        close (sock);
-#endif
+        listener->close(sock);
         throw ShibTargetException(SHIBRPC_UNKNOWN_ERROR, "Cannot connect to SHAR process, target site adminstrator should be notified");
     }
 
-    CLIENT *clnt = shibrpc_client_create(sock, m_program, m_version);
+    CLIENT *clnt = listener->getClientHandle(sock, SHIBRPC_PROG, SHIBRPC_VERS_1);
     if (!clnt) {
         const char* rpcerror = clnt_spcreateerror("RPCHandle::connect");
         log->crit("RPC failed for %p: %s", this, rpcerror);
-#ifdef WIN32
-        closesocket(sock);
-#else
-        close (sock);
-#endif
+        listener->close(sock);
         throw ShibTargetException(SHIBRPC_UNKNOWN_ERROR, rpcerror);
     }
 
@@ -182,7 +173,7 @@ RPCHandle* RPCHandlePool::get()
     m_lock->lock();
     if (m_pool.empty()) {
         m_lock->unlock();
-        return new RPCHandle(shib_target_sockname(), SHIBRPC_PROG, SHIBRPC_VERS_1);
+        return new RPCHandle();
     }
     RPCHandle* ret=m_pool.top();
     m_pool.pop();

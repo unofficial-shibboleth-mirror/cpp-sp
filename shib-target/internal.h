@@ -72,11 +72,10 @@
 
 #include "shib-target.h"
 
-#ifdef __cplusplus
-
-#include "ccache-utils.h"
-
 #include <log4cpp/Category.hh>
+
+#define SHIBT_L(s) shibtarget::XML::Literals::s
+#define SHIBT_L_QNAME(p,s) shibtarget::XML::Literals::p##_##s
 
 namespace shibtarget {
 
@@ -84,7 +83,7 @@ namespace shibtarget {
     class RPCHandle
     {
     public:
-        RPCHandle(const char* shar, u_long program, u_long version);
+        RPCHandle();
         ~RPCHandle();
 
         CLIENT* connect(void);  // connects and returns the CLIENT handle
@@ -92,11 +91,8 @@ namespace shibtarget {
 
     private:
         log4cpp::Category* log;
-        const char* m_shar;
-        u_long m_program;
-        u_long m_version;
-        CLIENT*  m_clnt;
-        ShibSocket m_sock;
+        CLIENT* m_clnt;
+        IListener::ShibSocket m_sock;
     };
   
     // Manages the pool of connections
@@ -127,89 +123,110 @@ namespace shibtarget {
         RPCHandle* m_handle;
     };
 
-    // An implementation of the URL->application mapping API using an XML file
-    class XMLApplicationMapper : public IApplicationMapper, public shibboleth::ReloadableXMLFile
+    // Generic class, which handles the IPropertySet configuration interface.
+    // Most of the basic configuration details are exposed via this interface.
+    // This implementation extracts the XML tree structure and caches it in a map
+    // with the attributes stored in the various possible formats they might be fetched.
+    // Elements are treated as nested IPropertySets.
+    // The "trick" to this is to pass in an "exclude list" using a DOMNodeFilter. Nested
+    // property sets are extracted by running a TreeWalker againt the filter for the
+    // immediate children. The filter should skip any excluded elements that will be
+    // processed separately.
+    class XMLPropertySet : public virtual IPropertySet
     {
     public:
-        XMLApplicationMapper(const DOMElement* e) : shibboleth::ReloadableXMLFile(e) {}
-        ~XMLApplicationMapper() {}
+        XMLPropertySet() {}
+        ~XMLPropertySet();
 
-        const char* getApplicationFromURL(const char* url) const;
-        const XMLCh* getXMLChApplicationFromURL(const char* url) const;
-        const char* getApplicationFromParsedURL(
-            const char* scheme, const char* hostname, unsigned int port, const char* path=NULL
-            ) const;
-        const XMLCh* getXMLChApplicationFromParsedURL(
-            const char* scheme, const char* hostname, unsigned int port, const char* path=NULL
-            ) const;
-
+        std::pair<bool,bool> getBool(const char* name, const char* ns=NULL) const;
+        std::pair<bool,const char*> getString(const char* name, const char* ns=NULL) const;
+        std::pair<bool,const XMLCh*> getXMLString(const char* name, const char* ns=NULL) const;
+        std::pair<bool,unsigned int> getUnsignedInt(const char* name, const char* ns=NULL) const;
+        std::pair<bool,int> getInt(const char* name, const char* ns=NULL) const;
+        const IPropertySet* getPropertySet(const char* name, const char* ns="urn:mace:shibboleth:target:config:1.0") const;
+        const DOMElement* getElement() const {return m_root;}
+    
     protected:
-        virtual shibboleth::ReloadableXMLFileImpl* newImplementation(const char* pathname) const;
-        virtual shibboleth::ReloadableXMLFileImpl* newImplementation(const DOMElement* e) const;
-    };
+        void load(const DOMElement* e, log4cpp::Category& log, DOMNodeFilter* filter);
 
+    private:
+        const DOMElement* m_root;
+        std::map<std::string,std::pair<char*,const XMLCh*> > m_map;
+        std::map<std::string,IPropertySet*> m_nested;
+    };
+    
     class STConfig : public ShibTargetConfig
     {
     public:
-        STConfig(const char* app_name, const char* inifile);
-        ~STConfig();
-        void ref();
-        void init();
-        void shutdown();
-        ShibINI& getINI() const { return *ini; }
-        IApplicationMapper* getApplicationMapper() const { return m_applicationMapper; }
-        saml::Iterator<shibboleth::IMetadata*> getMetadataProviders() const { return metadatas; }
-        saml::Iterator<shibboleth::IRevocation*> getRevocationProviders() const { return revocations; }
-        saml::Iterator<shibboleth::ITrust*> getTrustProviders() const { return trusts; }
-        saml::Iterator<shibboleth::ICredentials*> getCredentialProviders() const { return creds; }
-        saml::Iterator<shibboleth::IAAP*> getAAPProviders() const { return aaps; }
-        saml::Iterator<const XMLCh*> getPolicies() const { return saml::Iterator<const XMLCh*>(policies); }
-        RPCHandlePool& getRPCHandlePool() { return m_rpcpool; }
-     
-    private:
-        saml::SAMLConfig& samlConf;
-        shibboleth::ShibConfig& shibConf;
-        ShibINI* ini;
-        std::string m_app_name;
-        int refcount;
-        std::vector<const XMLCh*> policies;
-        std::string m_SocketName;
-#ifdef WANT_TCP_SHAR
-        std::vector<std::string> m_SocketACL;
-#endif
-        IApplicationMapper* m_applicationMapper;
-        std::vector<shibboleth::IMetadata*> metadatas;
-        std::vector<shibboleth::IRevocation*> revocations;
-        std::vector<shibboleth::ITrust*> trusts;
-        std::vector<shibboleth::ICredentials*> creds;
-        std::vector<shibboleth::IAAP*> aaps;
+        STConfig() {}
+        ~STConfig() {}
         
+        bool init(const char* schemadir, const char* config);
+        void shutdown();
+        
+        RPCHandlePool& getRPCHandlePool() {return m_rpcpool;}
+    private:
         RPCHandlePool m_rpcpool;
-      
-        friend const char* ::shib_target_sockname();
-        friend const char* ::shib_target_sockacl(unsigned int);
+        static IConfig* ShibTargetConfigFactory(const DOMElement* e);
     };
 
     class XML
     {
     public:
-        // URI constants
-        static const XMLCh APPMAP_NS[];
-        static const XMLCh APPMAP_SCHEMA_ID[];
-
+        static const XMLCh SHIBTARGET_SCHEMA_ID[];
+    
+        static const char htaccessType[];
+        static const char MemorySessionCacheType[];
+        static const char MySQLSessionCacheType[];
+        static const char RequestMapType[];
+        static const char TCPListenerType[];
+        static const char UnixListenerType[];
+    
         struct Literals
         {
-            static const XMLCh ApplicationID[];
-            static const XMLCh ApplicationMap[];
+            static const XMLCh AAPProvider[];
+            static const XMLCh AccessControlProvider[];
+            static const XMLCh AND[];
+            static const XMLCh applicationId[];
+            static const XMLCh Application[];
+            static const XMLCh Applications[];
+            static const XMLCh CredentialsProvider[];
+            static const XMLCh CredentialUse[];
+            static const XMLCh Extensions[];
+            static const XMLCh fatal[];
+            static const XMLCh FederationProvider[];
             static const XMLCh Host[];
+            static const XMLCh htaccess[];
+            static const XMLCh Implementation[];
+            static const XMLCh Library[];
+            static const XMLCh Listener[];
+            static const XMLCh logger[];
+            static const XMLCh MemorySessionCache[];
+            static const XMLCh MySQLSessionCache[];
+            static const XMLCh name[];
             static const XMLCh Name[];
+            static const XMLCh NOT[];
+            static const XMLCh OR[];
             static const XMLCh Path[];
-            static const XMLCh Port[];
-            static const XMLCh Scheme[];
+            static const XMLCh path[];
+            static const XMLCh RelyingParty[];
+            static const XMLCh RequestMap[];
+            static const XMLCh RequestMapProvider[];
+            static const XMLCh require[];
+            static const XMLCh RevocationProvider[];
+            static const XMLCh Rule[];
+            static const XMLCh SessionCache[];
+            static const XMLCh SHAR[];
+            static const XMLCh ShibbolethTargetConfig[];
+            static const XMLCh SHIRE[];
+            static const XMLCh Signing[];
+            static const XMLCh TCPListener[];
+            static const XMLCh TLS[];
+            static const XMLCh TrustProvider[];
+            static const XMLCh type[];
+            static const XMLCh UnixListener[];
         };
     };
 }
-
-#endif
 
 #endif
