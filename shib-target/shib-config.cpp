@@ -148,13 +148,13 @@ void STConfig::init()
   if (ini->get_tag (app, SHIBTARGET_TAG_SCHEMAS, true, &tag))
     samlConf.schema_dir = tag;
   if (ini->get_tag (app, SHIBTARGET_TAG_CERTFILE, true, &tag))
-    samlConf.ssl_certfile = tag;
+    samlConf.binding_defaults.ssl_certfile = tag;
   if (ini->get_tag (app, SHIBTARGET_TAG_KEYFILE, true, &tag))
-    samlConf.ssl_keyfile = tag;
+    samlConf.binding_defaults.ssl_keyfile = tag;
   if (ini->get_tag (app, SHIBTARGET_TAG_KEYPASS, true, &tag))
-    samlConf.ssl_keypass = tag;
+    samlConf.binding_defaults.ssl_keypass = tag;
   if (ini->get_tag (app, SHIBTARGET_TAG_CALIST, true, &tag))
-    samlConf.ssl_calist = tag;
+    samlConf.binding_defaults.ssl_calist = tag;
 
   try {
     if (!samlConf.init()) {
