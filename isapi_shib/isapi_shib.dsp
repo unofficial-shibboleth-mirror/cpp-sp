@@ -43,7 +43,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ISAPI_SHIB_EXPORTS" /YX /FD /c
-# ADD CPP /nologo /MD /W3 /GR /GX /O2 /I "..\..\..\opensaml\c\include" /I "C:\curl\include" /I "C:\log4cpp\include" /I "C:\xerces-c\include" /I "..\include" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /YX /FD /c
+# ADD CPP /nologo /MD /W3 /GR /GX /O2 /I "..\..\..\opensaml\c" /I ".." /I "..\oncrpc" /I "." /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /YX /FD /c
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
@@ -53,7 +53,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386
-# ADD LINK32 log4cpp.lib xerces-c_1.lib kernel32.lib saml.lib /nologo /dll /machine:I386 /libpath:"C:\log4cpp\lib" /libpath:"C:\xerces-c\lib" /libpath:"..\..\..\opensaml\c\saml\Release" /export:TerminateFilter /export:HttpFilterProc /export:GetFilterVersion
+# ADD LINK32 log4cpp.lib xerces-c_2.lib xsec_lib_02.lib advapi32.lib kernel32.lib saml.lib /nologo /dll /machine:I386 /libpath:"C:\log4cpp\lib" /libpath:"C:\xerces-c\lib" /libpath:"..\..\..\opensaml\c\saml\Release" /export:TerminateFilter /export:HttpFilterProc /export:GetFilterVersion
 # SUBTRACT LINK32 /pdb:none
 
 !ELSEIF  "$(CFG)" == "isapi_shib - Win32 Debug"
@@ -70,7 +70,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ISAPI_SHIB_EXPORTS" /YX /FD /GZ /c
-# ADD CPP /nologo /MDd /W3 /Gm /GR /GX /ZI /Od /I "..\..\..\opensaml\c\include" /I "C:\curl\include" /I "C:\log4cpp\include" /I "C:\xerces-c\include" /I "..\include" /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /FR /YX /FD /GZ /c
+# ADD CPP /nologo /MDd /W3 /Gm /GR /GX /ZI /Od /I "..\..\..\opensaml\c" /I ".." /I "..\oncrpc" /I "." /D "_WINDOWS" /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_AFXDLL" /FR /YX /FD /GZ /c
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
@@ -80,7 +80,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 log4cppD.lib xerces-c_1D.lib kernel32.lib saml.lib /nologo /dll /debug /machine:I386 /pdbtype:sept /libpath:"C:\debug\log4cpp\lib" /libpath:"C:\debug\xerces-c\lib" /libpath:"..\..\..\opensaml\c\saml\Debug" /export:TerminateFilter /export:HttpFilterProc /export:GetFilterVersion
+# ADD LINK32 log4cppD.lib xerces-c_2D.lib xsec_lib_02D.lib advapi32.lib kernel32.lib saml.lib /nologo /dll /debug /machine:I386 /pdbtype:sept /libpath:"C:\debug\log4cpp\lib" /libpath:"C:\debug\xerces-c\lib" /libpath:"..\..\..\opensaml\c\saml\Debug" /export:TerminateFilter /export:HttpFilterProc /export:GetFilterVersion
 # SUBTRACT LINK32 /pdb:none
 
 !ENDIF 
@@ -89,6 +89,14 @@ LINK32=link.exe
 
 # Name "isapi_shib - Win32 Release"
 # Name "isapi_shib - Win32 Debug"
+# Begin Source File
+
+SOURCE=.\cgiparse.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\cgiparse.h
+# End Source File
 # Begin Source File
 
 SOURCE=.\isapi_shib.cpp
