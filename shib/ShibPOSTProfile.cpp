@@ -96,12 +96,12 @@ ShibPOSTProfile::~ShibPOSTProfile()
         delete[] const_cast<XMLCh*>(*i);
 }
 
-SAMLAssertion& ShibPOSTProfile::getSSOAssertion(const SAMLResponse& r)
+SAMLAssertion* ShibPOSTProfile::getSSOAssertion(const SAMLResponse& r)
 {
     return SAMLPOSTProfile::getSSOAssertion(r,Iterator<const XMLCh*>(m_policies));
 }
 
-SAMLAuthenticationStatement& ShibPOSTProfile::getSSOStatement(const SAMLAssertion& a)
+SAMLAuthenticationStatement* ShibPOSTProfile::getSSOStatement(const SAMLAssertion& a)
 {
     return SAMLPOSTProfile::getSSOStatement(a);
 }
@@ -115,16 +115,16 @@ SAMLResponse* ShibPOSTProfile::accept(const XMLByte* buf)
 
     // Now we do some more non-crypto (ie. cheap) work to match up the origin site
     // with its associated data.
-    const SAMLAssertion& assertion = getSSOAssertion(*r);
-    const SAMLAuthenticationStatement& sso = getSSOStatement(assertion);
+    const SAMLAssertion* assertion = getSSOAssertion(*r);
+    const SAMLAuthenticationStatement* sso = getSSOStatement(*assertion);
 
     // Examine the subject information.
-    const SAMLSubject* subject = sso.getSubject();
+    const SAMLSubject* subject = sso->getSubject();
     if (!subject->getNameQualifier())
         throw InvalidAssertionException(SAMLException::RESPONDER, "ShibPOSTProfile::accept() requires subject name qualifier");
 
     const XMLCh* originSite = subject->getNameQualifier();
-    const XMLCh* handleService = assertion.getIssuer();
+    const XMLCh* handleService = assertion->getIssuer();
 
     // Is this a trusted HS?
     Iterator<xstring> hsNames=ShibConfig::getConfig().origin_mapper->getHandleServiceNames(originSite);
@@ -139,8 +139,8 @@ SAMLResponse* ShibPOSTProfile::accept(const XMLByte* buf)
 
     // Signature verification now takes place. We check the assertion and the response.
     // Assertion signing is optional, response signing is mandatory.
-    if (assertion.isSigned())
-        verifySignature(assertion, handleService, hsKey);
+    if (assertion->isSigned())
+        verifySignature(*assertion, handleService, hsKey);
     verifySignature(*r, handleService, hsKey);
 
     return r.release();
