@@ -1013,8 +1013,7 @@ DWORD WriteClientError(LPEXTENSION_CONTROL_BLOCK lpECB, const char* msg)
 class ShibTargetIsapiE : public ShibTarget
 {
 public:
-  ShibTargetIsapiE(LPEXTENSION_CONTROL_BLOCK lpECB, const site_t& site) :
-    m_cookie(NULL)
+  ShibTargetIsapiE(LPEXTENSION_CONTROL_BLOCK lpECB, const site_t& site)
   {
     dynabuf ssl(5);
     GetServerVariable(lpECB,"HTTPS",ssl,5);
@@ -1155,16 +1154,16 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
         if (map_i==g_Sites.end())
             return WriteClientError(lpECB, "Shibboleth Extension not configured for this web site.");
 
-	ShibTargetIsapiE ste(lpECB, map_i->second);
-	pair<bool,void*> res = ste.doHandleProfile();
-	if (res.first) return (DWORD)res.second;
+        ShibTargetIsapiE ste(lpECB, map_i->second);
+        pair<bool,void*> res = ste.doHandleProfile();
+        if (res.first) return (DWORD)res.second;
+        
+        return WriteClientError(lpECB, "Shibboleth Extension failed to process request");
 
-	return WriteClientError(lpECB, "Shibboleth Extension failed to process POST");
-
-    } catch (...) {
+    }
+    catch (...) {
       return WriteClientError(lpECB,
-			      "Shibboleth Extension caught an unknown error. "
-			      "Memory Failure?");
+			      "Shibboleth Extension caught an unknown error.");
     }
 
     // If we get here we've got an error.
