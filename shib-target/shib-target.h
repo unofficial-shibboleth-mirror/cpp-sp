@@ -17,8 +17,9 @@ extern "C" {
 
 #ifdef WIN32
 
-#error "Need to define ShibSocket"
-typedef in_port_t ShibSockName;
+#include <winsock.h>
+typedef SOCKET* ShibSocket;
+typedef u_short ShibSockName;
 #define SHIB_SHAR_SOCKET 12345	/* shar portnumber */
 
 #else  /* UNIX */

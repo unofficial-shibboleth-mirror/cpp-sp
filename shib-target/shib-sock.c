@@ -6,11 +6,16 @@
  * $Id$
  */
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/stat.h>		/* for chmod() */
+#ifdef WIN32
+# include <winsock.h>
+#else
+# include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
+#endif
+
+#include <sys/types.h>
+#include <sys/stat.h>		/* for chmod() */
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>

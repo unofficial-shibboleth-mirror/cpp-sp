@@ -548,4 +548,6 @@ svc_getreqset(readfds)
 		} while (stat == XPRT_MOREREQS);
 	    }
 	}
+#if !defined(FD_SETSIZE) || !defined(WIN32)
 }
+#endif

@@ -6,7 +6,11 @@
  * $Id$
  */
 
-#include <sys/socket.h>
+#ifdef WIN32
+# include <winsock.h>
+#else
+# include <sys/socket.h>
+#endif
 
 #include "config.h"
 

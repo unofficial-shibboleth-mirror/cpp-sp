@@ -57,7 +57,7 @@ static	char sccsid[] = "@(#)portmap.c 1.2 85/03/13 Copyr 1984 Sun Micro";
  */
 
 #include <rpc/rpc.h>
-#include <rpc/pmap_pro.h>
+#include <rpc/pmap_prot.h>
 #include <stdio.h>
 
 int reg_service();

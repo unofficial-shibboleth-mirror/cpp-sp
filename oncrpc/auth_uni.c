@@ -350,8 +350,11 @@ marshal_new_auth(auth)
 	if ((! xdr_opaque_auth(xdrs, &(auth->ah_cred))) ||
 	    (! xdr_opaque_auth(xdrs, &(auth->ah_verf)))) {
 		perror("auth_none.c - Fatal marshalling problem");
+        XDR_DESTROY(xdrs);
+        return FALSE;
 	} else {
 		au->au_mpos = XDR_GETPOS(xdrs);
 	}
 	XDR_DESTROY(xdrs);
+    return TRUE;
 }

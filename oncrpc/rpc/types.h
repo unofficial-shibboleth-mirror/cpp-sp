@@ -83,6 +83,10 @@ typedef char *caddr_t;
 typedef unsigned int u_int;
 typedef unsigned long u_long;
 typedef unsigned short u_short;
+typedef __int32 int32_t;
+typedef unsigned int uint32_t;
+typedef __int64 int64_t;
+typedef UINT64 uint64_t;
 #endif
 
 #endif /* ndef __TYPES_RPC_HEADER__ */

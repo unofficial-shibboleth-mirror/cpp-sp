@@ -9,8 +9,13 @@
 #include <rpc/pmap_clnt.h>
 #include <string.h>
 #include <memory.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
+
+#ifdef WIN32
+# include <winsock.h>
+#else
+# include <sys/socket.h>
+# include <netinet/in.h>
+#endif
 
 #ifndef SIG_PF
 #define SIG_PF void(*)(int)

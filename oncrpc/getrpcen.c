@@ -207,7 +207,7 @@ interpret(val, len)
 	register char *cp, **q;
 
 	if (d == 0)
-		return;
+		return NULL;
 	strncpy(d->line, val, len);
 	p = d->line;
 	d->line[len] = '\n';
