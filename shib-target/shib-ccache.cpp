@@ -350,7 +350,7 @@ ResourceEntry* InternalCCacheEntry::populate(Resource& resource)
 
   // Build a SAML Request....
   SAMLAttributeQuery* q=new SAMLAttributeQuery(subject,resourceURL.get());
-  SAMLRequest* req=new SAMLRequest(q,respond_withs);
+  SAMLRequest* req=new SAMLRequest(respond_withs,q);
 
   // Try this request against all the bindings in the AuthenticationStatement
   // (i.e. send it to each AA in the list of bindings)
