@@ -109,12 +109,28 @@
                     </simpleContent>
                 </complexType>
             </element>
+            <element name="Contact" type="shib:ContactType" minOccurs="0" maxOccurs="unbounded"/>
         </sequence>
         <attribute name="Name" type="string" use="required"/>
-        <attribute name="ContactName" type="string" use="optional"/>
-        <attribute name="ContactEmail" type="string" use="optional"/>
         <attribute name="ErrorURL" type="anyURI" use="optional"/>
     </complexType>
+
+	<simpleType name="ContactTypeType">
+		<restriction base="string">
+            <enumeration value="technical"/>
+            <enumeration value="administrative"/>
+            <enumeration value="billing"/>
+            <enumeration value="other"/>
+        </restriction>
+    </simpleType>
+
+	<complexType name="ContactType">
+		<annotation>A human contact for a site.</annotation>
+		<sequence/>
+        <attribute name="Type" type="shib:ContactTypeType" use="required"/>
+        <attribute name="Name" type="string" use="required"/>
+        <attribute name="Email" type="string" use="optional"/>
+	</complexType>
 
     <complexType name="regexp_string">
         <annotation> A string element with an optional attribute signaling regexp content. </annotation>
