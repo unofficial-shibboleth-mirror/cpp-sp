@@ -138,6 +138,8 @@ public:
 
   void setCache(InternalCCache *cache) { m_cache = cache; }
   time_t lastAccess() const { return m_lastAccess; }
+  
+  bool checkApplication(const IApplication* application) { return (m_application_id==application->getId()); }
 
 private:
   bool responseValid(int slop);
@@ -173,7 +175,7 @@ public:
   void thread_end() {};
 
   string generateKey() const;
-  ISessionCacheEntry* find(const char* key);
+  ISessionCacheEntry* find(const char* key, const IApplication* application);
   void insert(
     const char* key, const IApplication* application, SAMLAuthenticationStatement* s, const char *client_addr, SAMLResponse* r=NULL
     );
@@ -291,13 +293,18 @@ InternalCCacheEntry* InternalCCache::findi(const char* key)
   return i->second;
 }
 
-ISessionCacheEntry* InternalCCache::find(const char* key)
+ISessionCacheEntry* InternalCCache::find(const char* key, const IApplication* application)
 {
   log->debug("Find: \"%s\"", key);
   ReadLock rwlock(lock);
 
   InternalCCacheEntry* entry = findi(key);
-  if (!entry) return NULL;
+  if (!entry)
+    return NULL;
+  else if (!entry->checkApplication(application)) {
+    log->crit("An application (%s) attempted to access another application's session!", application->getId());
+    return NULL;
+  }
 
   // Lock the "database record" for the caller -- they have to unlock the item.
   entry->lock();

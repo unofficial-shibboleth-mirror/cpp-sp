@@ -213,7 +213,7 @@ namespace shibtarget {
             const char* client_addr,
             saml::SAMLResponse* r=NULL
             )=0;
-        virtual ISessionCacheEntry* find(const char* key)=0;
+        virtual ISessionCacheEntry* find(const char* key, const IApplication* application)=0;
         virtual void remove(const char* key)=0;
         virtual ~ISessionCache() {}
     };

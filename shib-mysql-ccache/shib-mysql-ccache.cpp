@@ -101,7 +101,7 @@ public:
   virtual void thread_end() {}
 
   virtual string generateKey() const {return m_cache->generateKey();}
-  virtual ISessionCacheEntry* find(const char* key);
+  virtual ISessionCacheEntry* find(const char* key, const IApplication* application);
   virtual void insert(
         const char* key,
         const IApplication* application,
@@ -233,10 +233,10 @@ ShibMySQLCCache::~ShibMySQLCCache()
   mysql_server_end();
 }
 
-ISessionCacheEntry* ShibMySQLCCache::find(const char* key)
+ISessionCacheEntry* ShibMySQLCCache::find(const char* key, const IApplication* application)
 {
   saml::NDC ndc("mysql::find");
-  ISessionCacheEntry* res = m_cache->find(key);
+  ISessionCacheEntry* res = m_cache->find(key,application);
   if (!res) {
 
     log->debug("Looking in database...");
@@ -273,6 +273,11 @@ ISessionCacheEntry* ShibMySQLCCache::find(const char* key)
         mysql_free_result(rows);
         throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"unable to locate application for session, deleted?");
     }
+    else if (strcmp(row[0],application->getId())) {
+        log->crit("An application (%s) attempted to access another application's (%s) session!", application->getId(), row[0]);
+        mysql_free_result(rows);
+        return NULL;
+    }
 
     istringstream str(row[2]);
     SAMLAuthenticationStatement *s = NULL;
@@ -291,7 +296,7 @@ ISessionCacheEntry* ShibMySQLCCache::find(const char* key)
 
     // Free the results, and then re-run the 'find' query
     mysql_free_result(rows);
-    res = m_cache->find(key);
+    res = m_cache->find(key,application);
     if (!res)
       return NULL;
   }

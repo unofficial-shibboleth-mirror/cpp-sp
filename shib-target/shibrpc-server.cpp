@@ -157,7 +157,16 @@ shibrpc_session_is_valid_1_svc(shibrpc_session_is_valid_args_1 *argp,
   // See if the cookie exists...
   IConfig* conf=ShibTargetConfig::getConfig().getINI();
   Locker locker(conf);
-  ISessionCacheEntry* entry = conf->getSessionCache()->find(argp->cookie.cookie);
+  log.debug ("application: %s", argp->application_id);
+  const IApplication* app=conf->getApplication(argp->application_id);
+  if (!app) {
+    // Something's horribly wrong.
+    log.error("couldn't find application for session");
+    set_rpc_status(&result->status, SHIBRPC_UNKNOWN_ERROR, "Unable to locate application for session, deleted?");
+    return TRUE;
+  }
+
+  ISessionCacheEntry* entry = conf->getSessionCache()->find(argp->cookie.cookie,app);
 
   // If not, leave now..
   if (!entry) {
@@ -168,14 +177,6 @@ shibrpc_session_is_valid_1_svc(shibrpc_session_is_valid_args_1 *argp,
 
   // TEST the session...
   try {
-
-    // Try and locate support metadata for errors we throw.
-    log.debug ("application: %s", argp->application_id);
-    const IApplication* app=conf->getApplication(argp->application_id);
-    if (!app)
-        // Something's horribly wrong. Flush the session.
-        throw ShibTargetException(SHIBRPC_NO_SESSION,"Unable to locate application for session, deleted?");
-
     Metadata m(app->getMetadataProviders());
     const IProvider* origin=m.lookup(entry->getStatement()->getSubject()->getNameIdentifier()->getNameQualifier());
 
@@ -473,23 +474,24 @@ shibrpc_get_assertions_1_svc(shibrpc_get_assertions_args_1 *argp,
   // Find this session
   IConfig* conf=ShibTargetConfig::getConfig().getINI();
   Locker locker(conf);
-  ISessionCacheEntry* entry = conf->getSessionCache()->find(argp->cookie.cookie);
+
+  // Try and locate support metadata for errors we throw.
+  log.debug ("application: %s", argp->application_id);
+  const IApplication* app=conf->getApplication(argp->application_id);
+  if (!app) {
+      // Something's horribly wrong.
+      log.error("couldn't find application for session");
+      set_rpc_status(&result->status, SHIBRPC_INTERNAL_ERROR, "Unable to locate application for session, deleted?");
+      return TRUE;
+  }
+
+  ISessionCacheEntry* entry = conf->getSessionCache()->find(argp->cookie.cookie,app);
 
   // If it does not exist, leave now..
   if (!entry) {
     log.error ("No Session");
     set_rpc_status(&result->status, SHIBRPC_NO_SESSION, "getattrs Internal error: no session");
     return TRUE;
-  }
-
-  // Try and locate support metadata for errors we throw.
-  log.debug ("application: %s", argp->application_id);
-  const IApplication* app=conf->getApplication(argp->application_id);
-  if (!app) {
-      // Something's horribly wrong. Flush the session.
-      log.error ("couldn't find application for session");
-      set_rpc_status(&result->status, SHIBRPC_NO_SESSION, "Unable to locate application for session, deleted?");
-      return TRUE;
   }
 
   Metadata m(app->getMetadataProviders());
