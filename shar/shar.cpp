@@ -156,6 +156,10 @@ int real_main(int preinit)
             config=getenv("SHIBCONFIG");
         if (!schemadir)
             schemadir=getenv("SHIBSCHEMAS");
+	if (!schemadir)
+	    schemadir=SHIB_SCHEMAS;
+	if (!config)
+	    config=SHIB_CONFIG;
         if (!conf.init(schemadir,config))
             return -2;
 
@@ -278,6 +282,10 @@ int main(int argc, char *argv[])
         schemadir=getenv("SHIBSCHEMAS");
     if (!config)
         config=getenv("SHIBCONFIG");
+    if (!schemadir)
+        schemadir=SHIB_SCHEMAS;
+    if (!config)
+        config=SHIB_CONFIG;
 
     // initialize the shib-target library
     ShibTargetConfig& conf=ShibTargetConfig::getConfig();

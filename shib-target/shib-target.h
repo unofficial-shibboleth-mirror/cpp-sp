@@ -61,6 +61,7 @@
 #include <saml/saml.h>
 #include <shib/shib.h>
 #include <shib/shib-threads.h>
+#include <shib-target/shib-paths.h>
 
 #ifdef WIN32
 # ifndef SHIBTARGET_EXPORTS

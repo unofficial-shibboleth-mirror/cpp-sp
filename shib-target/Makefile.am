@@ -2,6 +2,8 @@
 
 AUTOMAKE_OPTIONS = foreign
 
+pkgsysconfdir = $(sysconfdir)/@PACKAGE@
+
 lib_LTLIBRARIES = libshib-target.la
 
 if USE_OUR_ONCRPC
@@ -14,7 +16,7 @@ INIFLAGS = -DSHIBTARGET_INIFILE=\"$(sysconfdir)/@PACKAGE@/shibboleth.ini\"
 AM_CXXFLAGS = $(MY_AM_CXXFLAGS) $(INIFLAGS)
 
 libshib_targetdir = $(includedir)/shib-target
-libshib_target_HEADERS = shib-target.h shibrpc.h
+libshib_target_HEADERS = shib-target.h shibrpc.h shib-paths.h
 noinst_HEADERS = internal.h
 
 libshib_target_la_SOURCES = \
@@ -57,4 +59,12 @@ do_rpcgen:
 	$(RM) $(RPCGEN_TARGET)
 	$(RPCGEN) $(RPCGEN_ARGS) -o $(RPCGEN_TARGET) $(RPCGEN_SRC)
 
-EXTRA_DIST = shibtarget.dsp
+shib-paths.h: ${srcdir}/shib-paths.h.in Makefile ${top_builddir}/config.status
+	rm -f $@.tmp
+	sed < ${srcdir}/$@.in > $@.tmp \
+	    -e 's:@-PKGSYSCONFDIR-@:${pkgsysconfdir}:'
+	cmp -s $@ $@.tmp || mv $@.tmp $@
+	rm -f $@.tmp
+
+EXTRA_DIST = shibtarget.dsp shib-paths.h.in
+BUILT_SOURCES = shib-paths.h

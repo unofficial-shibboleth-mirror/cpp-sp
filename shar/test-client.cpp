@@ -4,9 +4,6 @@
 using namespace std;
 using namespace shibtarget;
 
-#define SCHEMAS "/opt/shibboleth/etc/shibboleth"
-#define CONFIG "/opt/shibboleth/etc/shibboleth/shibboleth.xml"
-
 int main (int argc, char *argv[])
 {
   int res,start;
@@ -14,10 +11,10 @@ int main (int argc, char *argv[])
 
   const char* config=getenv("SHIBCONFIG");
   if (!config)
-    config=SCHEMAS;
+    config=SHIB_CONFIG;
   const char* schemadir=getenv("SHIBSCHEMAS");
   if (!schemadir)
-    schemadir=SCHEMAS;
+    schemadir=SHIB_SCHEMAS;
 
   ShibTargetConfig& conf=ShibTargetConfig::getConfig();
   conf.setFeatures(ShibTargetConfig::Listener);
