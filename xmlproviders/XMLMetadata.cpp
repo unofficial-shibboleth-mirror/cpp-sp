@@ -623,15 +623,15 @@ XMLMetadataImpl::Role::Role(const EntityDescriptor* provider, time_t validUntil,
         if (e->hasAttributeNS(NULL,SHIB_L(errorURL)))
             m_errorURL=toUTF8(e->getAttributeNS(NULL,SHIB_L(errorURL)));
         
-        // Chop the protocol list into pieces...assume any whitespace can appear in between.   
+        // Chop the protocol list into pieces...assume any whitespace can appear in between.
         m_protocolEnumCopy=XMLString::replicate(e->getAttributeNS(NULL,SHIB_L(protocolSupportEnumeration)));
         XMLCh* temp=m_protocolEnumCopy;
         while (temp && *temp) {
             XMLCh* start=temp++;
             while (*temp && !XMLChar1_1::isWhitespace(*temp)) temp++;
-            *temp=chNull;
+            if (*temp)
+                *temp++=chNull;
             m_protocolEnum.push_back(start);
-            temp++;
             while (*temp && XMLChar1_1::isWhitespace(*temp)) temp++;
         }
         
