@@ -10,5 +10,4 @@ pkgsysconf_DATA = \
                 xmldsig-core-schema.xsd \
                 xmldsig-filter2.xsd \
                 xml.xsd \
-                eduPerson.xsd \
                 shibboleth.xsd

@@ -128,6 +128,46 @@ namespace shibboleth
         IOriginSiteMapper* m_mapper;
     };
 
+    class SHIB_EXPORTS SimpleAttribute : public saml::SAMLAttribute
+    {
+    public:
+        SimpleAttribute(const XMLCh* name, const XMLCh* ns, long lifetime=0,
+                        const saml::Iterator<const XMLCh*>& values=saml::Iterator<const XMLCh*>());
+        SimpleAttribute(DOMElement* e);
+        virtual saml::SAMLObject* clone() const;
+        virtual ~SimpleAttribute();
+
+    protected:
+        virtual bool accept(DOMElement* e) const;
+
+        saml::xstring m_originSite;
+    };
+
+    class SHIB_EXPORTS ScopedAttribute : public SimpleAttribute
+    {
+    public:
+        ScopedAttribute(const XMLCh* name, const XMLCh* ns, long lifetime=0,
+                        const saml::Iterator<const XMLCh*>& scopes=saml::Iterator<const XMLCh*>(),
+                        const saml::Iterator<const XMLCh*>& values=saml::Iterator<const XMLCh*>());
+        ScopedAttribute(DOMElement* e);
+        virtual ~ScopedAttribute();
+
+        virtual DOMNode* toDOM(DOMDocument* doc=NULL, bool xmlns=true) const;
+        virtual saml::SAMLObject* clone() const;
+
+        virtual saml::Iterator<saml::xstring> getValues() const;
+        virtual saml::Iterator<std::string> getSingleByteValues() const;
+
+        static const XMLCh Scope[];
+
+    protected:
+        virtual bool accept(DOMElement* e) const;
+        virtual bool addValue(DOMElement* e);
+
+        std::vector<saml::xstring> m_scopes;
+        mutable std::vector<saml::xstring> m_scopedValues;
+    };
+
     class SHIB_EXPORTS ShibPOSTProfile
     {
     public:
@@ -208,6 +248,7 @@ namespace shibboleth
         virtual void releaseMapper(IOriginSiteMapper* mapper)=0;
 
     /* start of external configuration */
+        std::string aapURL;
         std::string mapperURL;
         saml::X509Certificate* mapperCert;
         time_t mapperRefreshInterval;
@@ -219,6 +260,7 @@ namespace shibboleth
         static const XMLCh POLICY_INCOMMON[];
         static const XMLCh SHIB_ATTRIBUTE_NAMESPACE_URI[];
         static const XMLCh SHIB_NAMEID_FORMAT_URI[];
+        static saml::QName SHIB_ATTRIBUTE_VALUE_TYPE; 
     };
 
     class SHIB_EXPORTS XML
@@ -231,13 +273,25 @@ namespace shibboleth
         struct SHIB_EXPORTS Literals
         {
             // Shibboleth vocabulary
+            static const XMLCh AttributeValueType[];
+
             static const XMLCh Domain[];
             static const XMLCh HandleService[];
             static const XMLCh InvalidHandle[];
             static const XMLCh Name[];
             static const XMLCh OriginSite[];
-            static const XMLCh regexp[];
             static const XMLCh Sites[];
+
+            static const XMLCh AnySite[];
+            static const XMLCh AttributeAcceptancePolicy[];
+            static const XMLCh AttributeRule[];
+            static const XMLCh SiteRule[];
+            static const XMLCh Type[];
+            static const XMLCh Value[];
+
+            static const XMLCh literal[];
+            static const XMLCh regexp[];
+            static const XMLCh xpath[];
 
             // XML vocabulary
             static const XMLCh xmlns_shib[];

@@ -48,10 +48,10 @@
  */
 
 
-/* Constants.cpp - Shibboleth URI constants
+/* SimpleAttribute.cpp - simple attribute implementation with AAP-support
 
    Scott Cantor
-   2/20/02
+   12/19/02
 
    $History:$
 */
@@ -60,27 +60,31 @@
 
 using namespace shibboleth;
 
-const XMLCh Constants::POLICY_INCOMMON[] = // urn:mace:InCommon:2003
-{ chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
-  chLatin_I, chLatin_n, chLatin_C, chLatin_o, chLatin_m, chLatin_m, chLatin_o, chLatin_n, chColon,
-  chDigit_2, chDigit_0, chDigit_0, chDigit_3, chNull
-};
+SimpleAttribute::SimpleAttribute(const XMLCh* name, const XMLCh* ns, long lifetime, const saml::Iterator<const XMLCh*>& values)
+    : SAMLAttribute(name,ns,&Constants::SHIB_ATTRIBUTE_VALUE_TYPE,lifetime,values) {}
 
-const XMLCh Constants::SHIB_ATTRIBUTE_NAMESPACE_URI[] = // urn:mace:shibboleth:1.0:attributeNamespace:uri
+SimpleAttribute::SimpleAttribute(DOMElement* e) : SAMLAttribute(e)
 {
-  chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
-  chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
-  chDigit_1, chPeriod, chDigit_0, chColon,
-  chLatin_a, chLatin_t, chLatin_t, chLatin_r, chLatin_i, chLatin_b, chLatin_u, chLatin_t, chLatin_e, chLatin_N, chLatin_a, chLatin_m, chLatin_e, chLatin_s, chLatin_p, chLatin_a, chLatin_c, chLatin_e, chColon,
-  chLatin_u, chLatin_r, chLatin_i, chNull
-};
+    // Default scope comes from subject.
+    DOMNodeList* nlist=
+        static_cast<DOMElement*>(e->getParentNode())->getElementsByTagNameNS(saml::XML::SAML_NS,L(NameIdentifier));
+    if (!nlist || nlist->getLength() != 1)
+        throw saml::MalformedException(saml::SAMLException::RESPONDER,"SimpleAttribute() can't find saml:NameIdentifier in enclosing statement");
+    m_originSite=static_cast<DOMElement*>(nlist->item(0))->getAttributeNS(NULL,L(NameQualifier));
+}
 
-const XMLCh Constants::SHIB_NAMEID_FORMAT_URI[] = // urn:mace:shibboleth:1.0:nameIdentifier
+SimpleAttribute::~SimpleAttribute() {}
+
+saml::SAMLObject* SimpleAttribute::clone() const
 {
-  chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
-  chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
-  chDigit_1, chPeriod, chDigit_0, chColon,
-  chLatin_n, chLatin_a, chLatin_m, chLatin_e, chLatin_I, chLatin_d, chLatin_e, chLatin_n, chLatin_t, chLatin_i, chLatin_f, chLatin_i, chLatin_e, chLatin_r, chNull
-};
+    SimpleAttribute* dest=new SimpleAttribute(m_name,m_namespace,m_lifetime);
+    dest->m_originSite=m_originSite;
+    dest->m_values.assign(m_values.begin(),m_values.end());
+    return dest;
+}
 
-saml::QName Constants::SHIB_ATTRIBUTE_VALUE_TYPE(XML::SHIB_NS,XML::Literals::AttributeValueType);
+bool SimpleAttribute::accept(DOMElement* e) const
+{
+    ShibInternalConfig& conf=dynamic_cast<ShibInternalConfig&>(ShibConfig::getConfig());
+    return conf.m_AAP ? conf.m_AAP->accept(m_name,m_originSite.c_str(),e) : true;
+}

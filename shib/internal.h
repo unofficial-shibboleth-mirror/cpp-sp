@@ -79,29 +79,6 @@
 
 namespace shibboleth
 {
-    class ShibInternalConfig : public ShibConfig
-    {
-    public:
-        ShibInternalConfig() : m_mapper(NULL), m_manager(NULL), m_lock(NULL), m_shutdown_wait(NULL), m_refresh_thread(NULL), m_shutdown(false) {}
-
-        // global per-process setup and shutdown of runtime
-        bool init();
-        void term();
-
-        IOriginSiteMapper* getMapper();
-        void releaseMapper(IOriginSiteMapper* mapper);
-        void refresh();
-
-    private:
-        IOriginSiteMapper* m_mapper;
-        xmlSecKeysMngrPtr m_manager;
-        RWLock* m_lock;
-        static void* refresh_fn(void*);
-        bool m_shutdown;
-        CondWait* m_shutdown_wait;
-        Thread*	m_refresh_thread;
-    };
-
     class SHIB_EXPORTS XMLOriginSiteMapper : public IOriginSiteMapper
     {
     public:
@@ -127,6 +104,48 @@ namespace shibboleth
         std::map<saml::xstring,saml::X509Certificate*> m_hsCerts;
     };
 
+    class AAP
+    {
+    public:
+        AAP(const char* uri);
+        bool accept(const XMLCh* name, const XMLCh* originSite, DOMElement* e);
+
+    private:
+        struct AttributeRule
+        {
+            enum value_type { literal, regexp, xpath };
+            typedef std::vector<std::pair<value_type,saml::xstring> > SiteRule;
+            SiteRule m_anySiteRule;
+            std::map<saml::xstring,SiteRule> m_siteMap;
+        };
+
+        std::map<saml::xstring,AttributeRule> m_attrMap;
+    };
+
+    class ShibInternalConfig : public ShibConfig
+    {
+    public:
+        ShibInternalConfig() : m_AAP(NULL), m_mapper(NULL), m_manager(NULL), m_lock(NULL),
+            m_shutdown_wait(NULL), m_refresh_thread(NULL), m_shutdown(false) {}
+
+        // global per-process setup and shutdown of runtime
+        bool init();
+        void term();
+
+        IOriginSiteMapper* getMapper();
+        void releaseMapper(IOriginSiteMapper* mapper);
+        void refresh();
+
+        AAP* m_AAP;
+    private:
+        IOriginSiteMapper* m_mapper;
+        xmlSecKeysMngrPtr m_manager;
+        RWLock* m_lock;
+        static void* refresh_fn(void*);
+        bool m_shutdown;
+        CondWait* m_shutdown_wait;
+        Thread*  m_refresh_thread;
+    };
 }
 
 #endif

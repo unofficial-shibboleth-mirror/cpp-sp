@@ -70,6 +70,16 @@ using namespace shibboleth;
 SAML_EXCEPTION_FACTORY(UnsupportedProtocolException);
 SAML_EXCEPTION_FACTORY(OriginSiteMapperException);
 
+extern "C" SAMLAttribute* ScopedFactory(DOMElement* e)
+{
+    return new ScopedAttribute(e);
+}
+
+extern "C" SAMLAttribute* SimpleFactory(DOMElement* e)
+{
+    return new SimpleAttribute(e);
+}
+
 namespace {
     ShibInternalConfig g_config;
 }
@@ -86,6 +96,19 @@ bool ShibInternalConfig::init()
     // Register extension schema.
     saml::XML::registerSchema(XML::SHIB_NS,XML::SHIB_SCHEMA_ID);
 
+    if (!aapURL.empty())
+    {
+        try
+        {
+            m_AAP=new AAP(aapURL.c_str());
+        }
+        catch(SAMLException& e)
+        {
+            log4cpp::Category::getInstance(SHIB_LOGCAT".ShibConfig").fatal("init: failed to initialize AAP: %s", e.what());
+            return false;
+        }
+    }
+
     m_lock=RWLock::create();
     m_shutdown_wait = CondWait::create();
     if (!m_lock || !m_shutdown_wait)
@@ -93,6 +116,7 @@ bool ShibInternalConfig::init()
         log4cpp::Category::getInstance(SHIB_LOGCAT".ShibConfig").fatal("init: failed to create mapper locks");
         delete m_lock;
         delete m_shutdown_wait;
+        delete m_AAP;
         return false;
     }
 
@@ -105,6 +129,7 @@ bool ShibInternalConfig::init()
         log4cpp::Category::getInstance(SHIB_LOGCAT".ShibConfig").fatal("init: failed to initialize origin site mapper: %s", e.what());
         delete m_lock;
         delete m_shutdown_wait;
+        delete m_AAP;
         return false;
     }
 
@@ -117,6 +142,7 @@ bool ShibInternalConfig::init()
         delete m_mapper;
         delete m_lock;
         delete m_shutdown_wait;
+        delete m_AAP;
         return false;
     }
     SAMLConfig::getConfig().xmlsig_ptr=m_manager;
@@ -142,6 +168,7 @@ void ShibInternalConfig::term()
     delete mapperCert;
     delete m_lock;
     delete m_shutdown_wait;
+    delete m_AAP;
 }
 
 IOriginSiteMapper* ShibInternalConfig::getMapper()

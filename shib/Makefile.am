@@ -9,6 +9,7 @@ libshib_HEADERS = shib.h shib-threads.h
 noinst_HEADERS = internal.h
 
 libshib_la_SOURCES = \
+					AAP.cpp \
                     ClubShibPOSTProfile.cpp \
                     Constants.cpp \
                     OriginSiteMapper.cpp \
@@ -16,6 +17,8 @@ libshib_la_SOURCES = \
                     ShibConfig.cpp \
                     ShibPOSTProfile.cpp \
                     ShibPOSTProfileFactory.cpp \
+                    ScopedAttribute.cpp \
+                    SimpleAttribute.cpp \
                     XML.cpp \
                     XMLOriginSiteMapper.cpp \
                     shib-threads.cpp

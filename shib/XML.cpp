@@ -77,6 +77,11 @@ const XMLCh XML::SHIB_SCHEMA_ID[] = // shibboleth.xsd
 
 // Shibboleth vocabulary literals
 
+const XMLCh XML::Literals::AttributeValueType[] =
+{ chLatin_A, chLatin_t, chLatin_t, chLatin_r, chLatin_i, chLatin_b, chLatin_u, chLatin_t, chLatin_e,
+  chLatin_V, chLatin_a, chLatin_l, chLatin_u, chLatin_e, chLatin_T, chLatin_y, chLatin_p, chLatin_e, chNull
+};
+
 const XMLCh XML::Literals::Domain[]=
 { chLatin_D, chLatin_o, chLatin_m, chLatin_a, chLatin_i, chLatin_n, chNull };
 
@@ -94,11 +99,40 @@ const XMLCh XML::Literals::Name[]=
 const XMLCh XML::Literals::OriginSite[]=
 { chLatin_O, chLatin_r, chLatin_i, chLatin_g, chLatin_i, chLatin_n, chLatin_S, chLatin_i, chLatin_t, chLatin_e, chNull };
 
-const XMLCh XML::Literals::regexp[]=
-{ chLatin_r, chLatin_e, chLatin_g, chLatin_e, chLatin_x, chLatin_p, chNull };
-
 const XMLCh XML::Literals::Sites[]=
 { chLatin_S, chLatin_i, chLatin_t, chLatin_e, chLatin_s, chNull };
+
+const XMLCh XML::Literals::AnySite[]=
+{ chLatin_A, chLatin_n, chLatin_y, chLatin_S, chLatin_i, chLatin_t, chLatin_e, chNull };
+
+const XMLCh XML::Literals::AttributeAcceptancePolicy[] =
+{ chLatin_A, chLatin_t, chLatin_t, chLatin_r, chLatin_i, chLatin_b, chLatin_u, chLatin_t, chLatin_e,
+  chLatin_A, chLatin_c, chLatin_c, chLatin_e, chLatin_p, chLatin_t, chLatin_a, chLatin_n, chLatin_c, chLatin_e,
+  chLatin_P, chLatin_o, chLatin_l, chLatin_i, chLatin_c, chLatin_y, chNull
+};
+
+const XMLCh XML::Literals::AttributeRule[] =
+{ chLatin_A, chLatin_t, chLatin_t, chLatin_r, chLatin_i, chLatin_b, chLatin_u, chLatin_t, chLatin_e,
+  chLatin_R, chLatin_u, chLatin_l, chLatin_e, chNull
+};
+
+const XMLCh XML::Literals::SiteRule[] =
+{ chLatin_S, chLatin_i, chLatin_t, chLatin_e, chLatin_R, chLatin_u, chLatin_l, chLatin_e, chNull };
+
+const XMLCh XML::Literals::Type[]=
+{ chLatin_T, chLatin_y, chLatin_p, chLatin_e, chNull };
+
+const XMLCh XML::Literals::Value[] =
+{ chLatin_V, chLatin_a, chLatin_l, chLatin_u, chLatin_e, chNull };
+
+const XMLCh XML::Literals::literal[] =
+{ chLatin_l, chLatin_i, chLatin_t, chLatin_e, chLatin_r, chLatin_a, chLatin_l, chNull };
+
+const XMLCh XML::Literals::regexp[] =
+{ chLatin_r, chLatin_e, chLatin_g, chLatin_e, chLatin_x, chLatin_p, chNull };
+
+const XMLCh XML::Literals::xpath[] =
+{ chLatin_x, chLatin_p, chLatin_a, chLatin_t, chLatin_h, chNull };
 
 const XMLCh XML::Literals::xmlns_shib[]=
 { chLatin_x, chLatin_m, chLatin_l, chLatin_n, chLatin_s, chColon, chLatin_s, chLatin_h, chLatin_i, chLatin_b, chNull };
