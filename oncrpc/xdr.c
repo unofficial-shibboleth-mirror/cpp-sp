@@ -51,7 +51,9 @@ static char sccsid[] = "@(#)xdr.c 1.35 87/08/12";
  * most common data items.  See xdr.h for more info on the interface to
  * xdr.
  */
-
+#ifdef HAVE_STDINT_H
+# include <stdint.h>
+#endif
 #include <stdio.h>
 #ifndef WIN32
 void *malloc();
