@@ -385,4 +385,12 @@ bool UnixListener::accept(ShibSocket& listener, ShibSocket& s) const
     return true;
 }
 
+CLIENT* UnixListener::getClientHandle(ShibSocket& s, u_long program, u_long version) const
+{
+    struct sockaddr_in sin;
+    memset (&sin, 0, sizeof (sin));
+    sin.sin_port = 1;
+    return clnttcp_create(&sin, program, version, &s, 0, 0);
+}
+
 #endif /* !WIN32 */
