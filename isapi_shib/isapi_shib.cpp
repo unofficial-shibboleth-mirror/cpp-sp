@@ -144,6 +144,7 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
 
     try
     {
+        ShibTargetConfig::preinit();
         g_Config = &(ShibTargetConfig::init(SHIBTARGET_SHIRE, getenv("SHIBCONFIG")));
         ShibINI& ini = g_Config->getINI();
 
@@ -196,10 +197,9 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
                 "Filter startup failed with SAML exception, check shire log for help.");
         return FALSE;
     }
-    catch (...)
+    catch (runtime_error& e)
     {
-        LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL,
-                "Filter startup failed with unexpected exception, check shire log for help.");
+        LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, e.what());
         return FALSE;
     }
 
@@ -673,9 +673,9 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
         {
             string assertion;
             RM::serialize(*(assertions[0]), assertion);
-//            string::size_type lfeed;
-//            while ((lfeed=exp.find('\n'))!=string::npos)
-//                exp.erase(lfeed,1);
+            string::size_type lfeed;
+            while ((lfeed=assertion.find('\n'))!=string::npos)
+                assertion.erase(lfeed,1);
             pn->SetHeader(pfc,"Shib-Attributes:",const_cast<char*>(assertion.c_str()));
         }
         
@@ -723,7 +723,8 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
                         else
                             header=header + ';' + value;
                     }
-                    pn->SetHeader(pfc,const_cast<char*>(hname),const_cast<char*>(header.c_str()));
+                    string hname2=string(hname) + ':';
+                    pn->SetHeader(pfc,const_cast<char*>(hname2.c_str()),const_cast<char*>(header.c_str()));
                 }
             }
         }
@@ -744,11 +745,11 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
         if (e==ERROR_NO_DATA)
             return WriteClientError(pfc,"A required variable or header was empty.");
         else
-            WriteClientError(pfc,"Server detected unexpected IIS error.");
+            return WriteClientError(pfc,"Server detected unexpected IIS error.");
     }
     catch(...)
     {
-        WriteClientError(pfc,"Server caught an unknown exception.");
+        return WriteClientError(pfc,"Server caught an unknown exception.");
     }
 
     return WriteClientError(pfc,"Server reached unreachable code!");

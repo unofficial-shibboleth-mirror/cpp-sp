@@ -61,8 +61,6 @@
 
 #include "cgiparse.h"
 
-__declspec(thread) char* pch=NULL;
-
 /* Parsing routines modified from NCSA source. */
 char *makeword(char *line, char stop)
 {
@@ -81,7 +79,7 @@ char *makeword(char *line, char stop)
     return word;
 }
 
-char *fmakeword(char stop, int *cl)
+char *fmakeword(char stop, int *cl, char** ppch)
 {
     int wsize;
     char *word;
@@ -93,7 +91,7 @@ char *fmakeword(char stop, int *cl)
 
     while(1)
     {
-        word[ll] = *(pch++);
+        word[ll] = *((*ppch)++);
         if(ll==wsize-1)
         {
             word[ll+1] = '\0';
@@ -155,6 +153,7 @@ typedef struct Query
 HQUERY ParseQuery(LPEXTENSION_CONTROL_BLOCK lpECB)
 {
     int cl;
+    char* pch;
     HQUERY hQuery=NULL;
     HQUERY hLast=NULL;
 
@@ -190,7 +189,7 @@ HQUERY ParseQuery(LPEXTENSION_CONTROL_BLOCK lpECB)
         }
 
         /* hLast is now the current block to use. */
-        hLast->value=fmakeword('&',&cl);
+        hLast->value=fmakeword('&',&cl,&pch);
         plustospace(hLast->value);
         unescape_url(hLast->value);
         hLast->name=makeword(hLast->value,'=');
