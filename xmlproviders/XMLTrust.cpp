@@ -465,7 +465,11 @@ bool XMLTrust::attach(const Iterator<IRevocation*>& revocations, const IProvider
         
             // Apply store to this context.
             SSL_CTX_set_verify(reinterpret_cast<SSL_CTX*>(ctx),SSL_VERIFY_PEER,logging_callback);
+#if (OPENSSL_VERSION_NUMBER > 0x00907000L)
+            SSL_CTX_set_cert_verify_callback(reinterpret_cast<SSL_CTX*>(ctx),verify_callback,NULL);
+#else
             SSL_CTX_set_cert_verify_callback(reinterpret_cast<SSL_CTX*>(ctx),reinterpret_cast<int (*)()>(verify_callback),NULL);
+#endif
             SSL_CTX_set_cert_store(reinterpret_cast<SSL_CTX*>(ctx),store);
             SSL_CTX_set_verify_depth(reinterpret_cast<SSL_CTX*>(ctx),kauth->m_depth);
         }
@@ -874,7 +878,7 @@ bool XMLTrust::validate(
             return false;
         }
     
-#if (OPENSSL_VERSION_NUMBER > 0x009070000L)
+#if (OPENSSL_VERSION_NUMBER > 0x00907000L)
         if (X509_STORE_CTX_init(ctx,store,sk_X509_value(chain,0),chain)!=1) {
             log_openssl();
             unlock();
