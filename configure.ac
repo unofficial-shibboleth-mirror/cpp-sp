@@ -329,8 +329,9 @@ dnl    LIBS="$saved_LIBS"
 
     # output the Apache 1.3 makefiles
     WANT_SUBDIRS="$WANT_SUBDIRS mod_shire mod_shibrm"
-    AC_CONFIG_FILES([mod_shire/Makefile mod_shibrm/Makefile])
 fi
+# always output the Makefile, even if we don't use it
+AC_CONFIG_FILES([mod_shire/Makefile mod_shibrm/Makefile])
 
 AM_CONDITIONAL(DO_APXS_INSTALL,test -n "$APXS_INSTALL")
 
