@@ -269,7 +269,7 @@ const char* SHIRE::getShireURL(const char* resource) const
     }
     
     // Should never happen...
-    if (!shire)
+    if (!shire || (*shire!='/' && strncmp(shire,"http:",5) && strncmp(shire,"https:",6)))
         return NULL;
 
     // The "shireURL" property can be in one of three formats:
