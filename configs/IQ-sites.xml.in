@@ -1,7 +1,7 @@
 <EntitiesDescriptor
     xmlns="urn:oasis:names:tc:SAML:2.0:metadata"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="urn:oasis:names:tc:SAML:2.0:metadata @-PKGXMLDIR-@/sstc-saml-schema-metadata-2.0.xsd urn:mace:shibboleth:metadata:1.0 @-PKGXMLDIR-@/shibboleth-metadata-1.0.xsd"
+    xsi:schemaLocation="urn:oasis:names:tc:SAML:2.0:metadata @-PKGXMLDIR-@/saml-schema-metadata-2.0.xsd urn:mace:shibboleth:metadata:1.0 @-PKGXMLDIR-@/shibboleth-metadata-1.0.xsd"
     Name="urn:mace:inqueue"
     validUntil="2010-01-01T00:00:00Z">
 
