@@ -734,56 +734,52 @@ bool XMLTrust::validate(
             }
             BIO_free(b);
             BIO_free(b2);
-            
+
             if (!match) {
-                log.debug("unable to match DN, trying TLS-style hostname match");
-                memset(buf,0,sizeof(buf));
-                if (X509_NAME_get_text_by_NID(subject,NID_commonName,buf,255)>0) {
-                    for (vector<string>::const_iterator n=keynames.begin(); n!=keynames.end(); n++) {
-    #ifdef HAVE_STRCASECMP
-                        if (!strcasecmp(buf,n->c_str())) {
-    #else
-                        if (!stricmp(buf,n->c_str())) {
-    #endif
-                            log.info("matched subject CN to a key name");
-                            match=true;
-                            break;
-                        }
-                    }
-                }
-                else
-                    log.warn("no common name in certificate subject");
-                
-                if (!match) {
-                    log.debug("unable to match CN, trying DNS subjectAltName");     // I seriously doubt this works.
-                    int extcount=X509_get_ext_count(x);
-                    for (int c=0; c<extcount; c++) {
-                        X509_EXTENSION* ext=X509_get_ext(x,c);
-                        const char* extstr=OBJ_nid2sn(OBJ_obj2nid(X509_EXTENSION_get_object(ext)));
-                        if (!strcmp(extstr,"subjectAltName")) {
-                            X509V3_EXT_METHOD* meth=X509V3_EXT_get(ext);
-                            if (!meth || !meth->d2i || !meth->i2v || !ext->value->data) // had to add all these to prevent crashing
-                                break;
-                            unsigned char* data=ext->value->data;
-                            STACK_OF(CONF_VALUE)* val=meth->i2v(meth,meth->d2i(NULL,&data,ext->value->length),NULL);
-                            for (int j=0; j<sk_CONF_VALUE_num(val); j++) {
-                                CONF_VALUE* nval=sk_CONF_VALUE_value(val,j);
-                                if (!strcmp(nval->name,"DNS") || !strcmp(nval->name,"URI")) {
-                                    for (vector<string>::const_iterator n=keynames.begin(); n!=keynames.end(); n++) {
-    #ifdef HAVE_STRCASECMP
-                                        if (!strcasecmp(nval->value,n->c_str())) {
-    #else
-                                        if (!stricmp(nval->value,n->c_str())) {
-    #endif
-                                            log.info("matched DNS subjectAltName to a key name");
-                                            match=true;
-                                            break;
-                                        }
-                                    }
+                log.debug("unable to match DN, trying TLS subjectAltName match");
+                STACK_OF(GENERAL_NAME)* altnames=(STACK_OF(GENERAL_NAME)*)X509_get_ext_d2i(x, NID_subject_alt_name, NULL, NULL);
+                if (altnames) {
+                    int numalts = sk_GENERAL_NAME_num(altnames);
+                    for (int an=0; !match && an<numalts; an++) {
+                        const GENERAL_NAME* check = sk_GENERAL_NAME_value(altnames, an);
+                        if (check->type==GEN_DNS || check->type==GEN_URI) {
+                            const char* altptr = (char*)ASN1_STRING_data(check->d.ia5);
+                            const int altlen = ASN1_STRING_length(check->d.ia5);
+                            
+                            for (vector<string>::const_iterator n=keynames.begin(); n!=keynames.end(); n++) {
+#ifdef HAVE_STRCASECMP
+                                if (!strncasecmp(altptr,n->c_str(),altlen)) {
+#else
+                                if (!strnicmp(altptr,n->c_str(),altlen)) {
+#endif
+                                    log.info("matched DNS/URI subjectAltName to a key name");
+                                    match=true;
+                                    break;
                                 }
                             }
                         }
                     }
+                    GENERAL_NAMES_free(altnames);
+                }
+                
+                if (!match) {
+                    log.debug("unable to match subjectAltName, trying TLS CN match");
+                    memset(buf,0,sizeof(buf));
+                    if (X509_NAME_get_text_by_NID(subject,NID_commonName,buf,255)>0) {
+                        for (vector<string>::const_iterator n=keynames.begin(); n!=keynames.end(); n++) {
+#ifdef HAVE_STRCASECMP
+                            if (!strcasecmp(buf,n->c_str())) {
+#else
+                            if (!stricmp(buf,n->c_str())) {
+#endif
+                                log.info("matched subject CN to a key name");
+                                match=true;
+                                break;
+                            }
+                        }
+                    }
+                    else
+                        log.warn("no common name in certificate subject");
                 }
             }
         }
