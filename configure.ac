@@ -28,6 +28,10 @@ AC_CHECK_HEADERS([dlfcn.h])
 AC_CXX_REQUIRE_STL
 AC_CXX_NAMESPACES
 
+AC_CHECK_FUNC(xdr_uint64_t,,
+	[CFLAGS="$CFLAGS -DNEED_XDR_LONGLONG"
+	 CXXFLAGS="$CXXFLAGS -DNEED_XDR_LONGLONG"])
+
 # checks for pthreads
 ACX_PTHREAD([enable_threads="pthread"],[enable_threads="no"])
 if test $enable_threads != "pthread"; then
