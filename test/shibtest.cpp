@@ -93,9 +93,10 @@ int main(int argc,char* argv[])
     if (!conf1.init())
         cerr << "unable to initialize SAML runtime" << endl;
 
-    conf2.mapperFile="http://wayf.internet2.edu/shibboleth/sites.xml";
     if (!conf2.init())
         cerr << "unable to initialize Shibboleth runtime" << endl;
+
+    conf2.addMapper("edu.internet2.middleware.shibboleth.metadata.origin.XML","http://wayf.internet2.edu/shibboleth/sites.xml");
 
     try
     {
