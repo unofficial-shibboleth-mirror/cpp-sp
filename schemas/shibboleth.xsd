@@ -207,6 +207,15 @@
         <complexContent>
 	        <extension base="shib:SiteType">
 	            <sequence>
+	            	<element name="AssertionConsumerServiceURL" maxOccurs="unbounded">
+	            		<complexType>
+	            			<simpleContent>
+	            				<extension base="anyURI">
+	            					<attribute name="Id" type="string" use="optional"/>
+	            				</extension>
+	            			</simpleContent>
+	            		</complexType>
+	            	</element>
 	                <element name="AttributeRequester" type="shib:AuthorityType" maxOccurs="unbounded"/>
 	            </sequence>
 	        </extension>
