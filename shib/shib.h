@@ -81,14 +81,14 @@ namespace shibboleth
         class SHIB_EXPORTS name : public saml::base \
         { \
         public: \
-            name(const char* msg) : saml::base(msg) {RTTI(name);} \
-            name(const std::string& msg) : saml::base(msg) {RTTI(name);} \
-            name(const saml::Iterator<saml::QName>& codes, const char* msg) : saml::base(codes,msg) {RTTI(name);} \
-            name(const saml::Iterator<saml::QName>& codes, const std::string& msg) : saml::base(codes, msg) {RTTI(name);} \
-            name(const saml::QName& code, const char* msg) : saml::base(code,msg) {RTTI(name);} \
-            name(const saml::QName& code, const std::string& msg) : saml::base(code, msg) {RTTI(name);} \
-            name(DOMElement* e) : saml::base(e) {RTTI(name);} \
-            name(std::istream& in) : saml::base(in) {RTTI(name);} \
+            name(const char* msg) : saml::base(msg) {RTTI(name); m_typename=#name;} \
+            name(const std::string& msg) : saml::base(msg) {RTTI(name); m_typename=#name;} \
+            name(const saml::Iterator<saml::QName>& codes, const char* msg) : saml::base(codes,msg) {RTTI(name); m_typename=#name;} \
+            name(const saml::Iterator<saml::QName>& codes, const std::string& msg) : saml::base(codes, msg) {RTTI(name); m_typename=#name;} \
+            name(const saml::QName& code, const char* msg) : saml::base(code,msg) {RTTI(name); m_typename=#name;} \
+            name(const saml::QName& code, const std::string& msg) : saml::base(code, msg) {RTTI(name); m_typename=#name;} \
+            name(DOMElement* e) : saml::base(e) {RTTI(name); m_typename=#name;} \
+            name(std::istream& in) : saml::base(in) {RTTI(name); m_typename=#name;} \
             virtual ~name() throw () {} \
         }
 
