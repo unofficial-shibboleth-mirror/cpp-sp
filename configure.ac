@@ -228,10 +228,10 @@ LIBS="-lsaml $LIBS"
 AC_TRY_LINK(
 	[#include <saml/saml.h>
 #include <saml/version.h>],
-	[#if _OPENSAML_VERSION >= 10000
+	[#if _OPENSAML_VERSION >= 10100
 saml::SAMLConfig::getConfig();
 #else
-#error Need OpenSAML version 1.0 or higher
+#error Need OpenSAML version 1.1 or higher
 #endif],
         [AC_DEFINE(HAVE_SAML,1,[Define if saml library was found])],
         [AC_MSG_ERROR([unable to link with saml, or version too old])])
