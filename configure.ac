@@ -186,7 +186,7 @@ AC_CHECK_HEADER([xercesc/dom/DOM.hpp],,
 AC_MSG_CHECKING([Xerces version])
 AC_PREPROC_IFELSE(
         [AC_LANG_PROGRAM([#include <xercesc/util/XercesVersion.hpp>],
-[#if  _XERCES_VERSION != 20601
+[#if  _XERCES_VERSION == 20601
 int i = 0;
 #else
 #error must use patched version 2.6.1 provided by Shibboleth project (http://wayf.internet2.edu/shibboleth/)
@@ -208,7 +208,7 @@ AC_ARG_WITH(xmlsec,
                 CPPFLAGS="-I${with_xmlsec}/include $CPPFLAGS"
             fi])
 LIBS="-lxml-security-c $LIBS"
-AC_CHECK_HEADER([xsec/xenc/XENCEncryptionMethod.hpp],,AC_MSG_ERROR([unable to find xml-security 1.1 header files]))
+AC_CHECK_HEADER([xsec/xenc/XENCEncryptionMethod.hpp],,AC_MSG_ERROR([unable to find xml-security 1.1 header files]),[#include <xercesc/dom/DOM.hpp>])
 AC_TRY_LINK(
         [#include <xsec/utils/XSECPlatformUtils.hpp>],
         [XSECPlatformUtils::Initialise()],
