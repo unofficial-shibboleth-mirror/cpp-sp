@@ -633,6 +633,8 @@ void InternalCCacheEntry::populate(int slop)
 
 SAMLResponse* InternalCCacheEntry::getNewResponse()
 {
+    saml::NDC ndc("getNewResponse");
+
     // The retryInterval determines how often to poll an AA that might be down.
     if ((time(NULL) - m_lastRetry) < m_cache->m_retryInterval)
         return NULL;
@@ -646,11 +648,15 @@ SAMLResponse* InternalCCacheEntry::getNewResponse()
     IConfig* conf=ShibTargetConfig::getConfig().getINI();
     Locker locker(conf);
     const IApplication* application=conf->getApplication(m_application_id.c_str());
-    if (!application)
+    if (!application) {
+        log->crit("unable to locate application for session, deleted?");
         throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"Unable to locate application for session, deleted?");
+    }
     pair<bool,const XMLCh*> providerID=application->getXMLString("providerId");
-    if (!providerID.first)
+    if (!providerID.first) {
+        log->crit("unable to determine ProviderID for application, not set?");
         throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"Unable to determine ProviderID for application, not set?");
+    }
 
     // Get signing policies.
     bool signRequest=false;
@@ -672,8 +678,10 @@ SAMLResponse* InternalCCacheEntry::getNewResponse()
     // Try this request. The binding wrapper class handles most of the details.
     Metadata m(application->getMetadataProviders());
     const IProvider* site=m.lookup(m_subject->getNameQualifier());
-    if (!site)
+    if (!site) {
+        log->error("unable to locate origin site's metadata during attribute query");
         throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"Unable to locate origin site's metadata during attribute query.");
+    }
 
     // Try to locate an AA role.
     const IAttributeAuthorityRole* AA=NULL;
@@ -686,8 +694,10 @@ SAMLResponse* InternalCCacheEntry::getNewResponse()
                 AA=dynamic_cast<const IAttributeAuthorityRole*>(role);
         }
     }
-    if (!AA)
+    if (!AA) {
+        log->error("unable to locate metadata for origin site's Attribute Authority");
         throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"Unable to locate metadata for origin site's Attribute Authority.",site);
+    }
 
 
     SAMLResponse* response = NULL;
