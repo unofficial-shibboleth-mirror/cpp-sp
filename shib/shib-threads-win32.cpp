@@ -348,6 +348,10 @@ public:
 // public "static" creation functions
 //
 
+void Thread::mask_all_signals(void)
+{
+}
+
 Thread* Thread::create(void* (*start_routine)(void*), void* arg)
 {
   return new ThreadImpl(start_routine, arg);

@@ -142,6 +142,13 @@ void Thread::exit(void* return_val)
   pthread_exit (return_val);
 }
     
+void Thread::mask_all_signals(void)
+{
+  sigset_t sigmask;
+  sigfillset(&sigmask);
+  Thread::mask_signals(SIG_BLOCK, &sigmask, NULL);
+}
+
 int Thread::mask_signals(int how, const sigset_t *newmask, sigset_t *oldmask)
 {
   return pthread_sigmask(how,newmask,oldmask);

@@ -24,6 +24,7 @@ namespace shibboleth {
   public:
     static Thread* create(void* (*start_routine)(void*), void* arg);
     static void exit(void* return_val);
+    static void mask_all_signals(void);
 #ifndef WIN32
     static int mask_signals(int how, const sigset_t *newmask, sigset_t *oldmask);
 #endif
