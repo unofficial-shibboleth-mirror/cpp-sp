@@ -118,6 +118,7 @@ void ShibConfig::term()
     CRYPTO_set_locking_callback(NULL);
     for (vector<Mutex*>::iterator i=g_openssl_locks.begin(); i!=g_openssl_locks.end(); i++)
         delete (*i);
+    g_openssl_locks.clear();
 }
 
 void PlugManager::regFactory(const char* type, Factory* factory)
