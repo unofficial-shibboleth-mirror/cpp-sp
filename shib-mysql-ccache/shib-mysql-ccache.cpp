@@ -136,7 +136,7 @@ MYSQL* ShibMySQLCCache::getMYSQL()
 
 void ShibMySQLCCache::thread_init()
 {
-  saml::NDC ndc("open_db");
+  saml::NDC ndc("thread_init");
 
   // Connect to the database
   MYSQL* mysql = mysql_init(NULL);
@@ -305,7 +305,7 @@ void ShibMySQLCCache::remove(const char* key)
 void ShibMySQLCCache::cleanup()
 {
   Mutex* mutex = Mutex::create();
-  saml::NDC ndc("mysql::cleanup()");
+  saml::NDC ndc("mysql::cleanup");
 
   thread_init();
 
@@ -369,6 +369,8 @@ void ShibMySQLCCache::cleanup()
 
     mysql_free_result(rows);
   }
+
+  log->debug("cleanup thread exiting...");
 
   mutex->unlock();
   delete mutex;
