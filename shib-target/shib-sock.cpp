@@ -267,7 +267,7 @@ class UnixListener : public IListener
 {
 public:
     UnixListener(const DOMElement* e);
-    ~UnixListener() {}
+    ~UnixListener() {if (m_bound) unlink(m_address.c_str());}
 
     bool create(ShibSocket& s) const;
     bool bind(ShibSocket& s, bool force=false) const;
@@ -280,6 +280,7 @@ private:
     bool log_error() const;
 
     string m_address;
+    bool m_bound;
     Category& m_log;
 };
 
@@ -288,7 +289,7 @@ IPlugIn* UnixListenerFactory(const DOMElement* e)
     return new UnixListener(e);
 }
 
-UnixListener::UnixListener(const DOMElement* e) : m_address("/tmp/shar-socket"),
+UnixListener::UnixListener(const DOMElement* e) : m_address("/tmp/shar-socket"), m_bound(false),
     m_log(Category::getInstance("shibtarget.UnixListener"))
 {
     // We're stateless, but we need to load the configuration.
@@ -352,7 +353,7 @@ bool UnixListener::bind(ShibSocket& s, bool force) const
     }
 
     listen(s, 3);
-    return true;
+    return m_bound=true;
 }
 
 bool UnixListener::connect(ShibSocket& s) const
@@ -369,10 +370,6 @@ bool UnixListener::connect(ShibSocket& s) const
 
 bool UnixListener::close(ShibSocket& s) const
 {
-    if (!m_address.empty()) {
-        if (unlink(m_address.c_str()))
-            log_error();
-    }
     ::close(s);
     return true;
 }
