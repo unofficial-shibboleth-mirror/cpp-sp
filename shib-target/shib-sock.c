@@ -24,30 +24,78 @@
 
 #ifdef WIN32
 
-#error "Need to define functions for Win32"
+typedef struct sockaddr_in SHIBADDR;
+
+// called when there was definitly an error
+// return the winsock errno to use as a unix errno
+// but make sure it is >=1 so failures stay failures
+static int get_winsock_errno(void)
+{
+  int rc=WSAGetLastError();
+  if(rc<=0)
+    rc=1;
+  return rc;
+}
+
+// map a winsock call result to:
+// 0-success
+// else a unix errno
+static int map_winsock_result(int rc)
+{
+ if(rc!=SOCKET_ERROR)
+  return 0;
+ return get_winsock_errno();
+}
 
 int
 shib_sock_create (ShibSocket *sock)
 {
+  int rc=socket(AF_INET,SOCK_STREAM,0);
+  if(rc==SOCKET_ERROR)
+    return get_winsock_errno();
+  return rc;
+}
+
+static void setup_sockaddr(SHIBADDR *addr, short aport)
+{
+  const char *LOOPBACK_IP="127.0.0.1";
+  memset(addr,0,sizeof(SHIBADDR));
+  addr->sin_family=AF_INET;
+  addr->sin_port=htons(aport);
+  addr->sin_addr.s_addr=inet_addr(LOOPBACK_IP);
 }
 
 int
 shib_sock_bind (ShibSocket s, ShibSockName name)
 {
+  SHIBADDR addr;
+  setup_sockaddr(&addr,name);
+  return map_winsock_result(bind(s,(struct sockaddr *)&addr,sizeof(addr)));
 }
 
 int
 shib_sock_connect (ShibSocket s, ShibSockName name)
 {
+  SHIBADDR addr;
+  setup_sockaddr(&addr,name);
+  return map_winsock_result(connect(s,(struct sockaddr *)&addr,sizeof(addr)));
 }
 
 void
 shib_sock_close (ShibSocket s, ShibSockName name)
 {
+  int rc=map_winsock_result(closesocket(s));
 }
 
 int shib_sock_accept (ShibSocket listener, ShibSocket* s)
 {
+  int rc;
+  if (!s) return EINVAL;
+  rc=accept(listener,NULL,NULL);
+  if(rc==INVALID_SOCKET)
+    return get_winsock_errno();
+  *s=rc;
+  return 0;
 }
 
 /* XXX */

@@ -32,6 +32,17 @@ public:
   vector<SAMLAttribute*> designators;
 };
 
+#ifdef USE_STRTOK
+// for systems that dont have strtok_r (reenttrant version) where
+// the system strtok is already threadsafe
+#define strtok_r local_strtok_r_mumble
+static char *strtok_r(char *parse_me,const char *break_on,void *foo)
+{
+	return strtok(parse_me,break_on);
+}
+
+#endif
+
 ResourcePriv::ResourcePriv(const char *str)
 {
   string ctx = "shibtarget.Resource";
