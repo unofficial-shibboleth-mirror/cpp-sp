@@ -96,6 +96,12 @@ void shib_sock_close (ShibSocket s, ShibSockName name);
 #define SHIBTARGET_TAG_SITESCERT "sitesCertFile"
 #define SHIBTARGET_TAG_SITESREFRESH "sitesRefresh"
 
+#define SHIBTARGET_TAG_CACHETYPE	"cacheType"
+#define SHIBTARGET_TAG_CACHECLEAN	"cacheClean"
+#define SHIBTARGET_TAG_CACHETIMEOUT	"cacheTimeout"
+
+#define SHIBTARGET_TAG_REQATTRS		"requestAttributes"
+
 /* initialize and finalize the target library (return 0 on success, 1 on failure) */
 int shib_target_initialize (const char* application, const char* ini_file);
 void shib_target_finalize (void);

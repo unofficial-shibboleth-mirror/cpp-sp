@@ -184,8 +184,13 @@ STConfig::STConfig(const char* app_name, const char* inifile)
   }
 
   // Initialize the SHAR Cache
-  if (!strcmp (app_name, SHIBTARGET_SHAR))
-    g_shibTargetCCache = CCache::getInstance(NULL);
+  if (!strcmp (app_name, SHIBTARGET_SHAR)) {
+    const char * cache_type = NULL;
+    if (ini->get_tag (app, SHIBTARGET_TAG_CACHETYPE, true, &tag))
+      cache_type = tag.c_str();
+
+    g_shibTargetCCache = CCache::getInstance(cache_type);
+  }
 
   // Load any SAML extensions
   string ext = "extensions:saml";

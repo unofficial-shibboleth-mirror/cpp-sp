@@ -326,14 +326,33 @@ void InternalCCache::cleanup()
   Mutex* mutex = Mutex::create();
   saml::NDC ndc("InternalCCache::cleanup()");
 
+  ShibTargetConfig& config = ShibTargetConfig::getConfig();
+  ShibINI& ini = config.getINI();
+
+  int rerun_timer = 0;
+  int timeout_life = 0;
+
+  string tag;
+  if (ini.get_tag (SHIBTARGET_SHAR, SHIBTARGET_TAG_CACHECLEAN, true, &tag))
+    rerun_timer = atoi(tag.c_str());
+  if (ini.get_tag (SHIBTARGET_SHAR, SHIBTARGET_TAG_CACHETIMEOUT, true, &tag))
+    timeout_life = atoi(tag.c_str());
+
+  if (rerun_timer <= 0)
+    rerun_timer = 300;		// rerun every 5 minutes
+
+  if (timeout_life <= 0)
+    timeout_life = 28800;	// timeout after 8 hours
+
   mutex->lock();
 
-  log->debug("Cleanup thread started...");
+  log->debug("Cleanup thread started...  Run every %d secs; timeout after %d secs",
+	     rerun_timer, timeout_life);
 
   while (shutdown == false) {
     struct timespec ts;
     memset (&ts, 0, sizeof(ts));
-    ts.tv_sec = time(NULL) + 3600;	// run every hour
+    ts.tv_sec = time(NULL) + rerun_timer;
 
     shutdown_wait->timedwait(mutex, &ts);
 
@@ -351,7 +370,7 @@ void InternalCCache::cleanup()
     // Pass 1: iterate over the map and find all entries that have not been
     // used in X hours
     vector<string> stale_keys;
-    time_t stale = time(NULL) - 8 * 3600; // XXX: 8 hour timeout.
+    time_t stale = time(NULL) - timeout_life;
 
     lock->rdlock();
     for (map<string,InternalCCacheEntry*>::iterator i=m_hashtable.begin();
@@ -374,6 +393,8 @@ void InternalCCache::cleanup()
     }
 
   }
+
+  log->debug("Cleanup thread finished.");
 
   mutex->unlock();
   delete mutex;
