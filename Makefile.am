@@ -22,6 +22,7 @@ EXTRA_DIST = \
 	configs/shibboleth.logger \
 	configs/rmError.html \
 	configs/shire.logger \
+        configs/AAP.xml \
 	libtool.m4 acx_pthread.m4 acx_rpctest.m4
 
 SUBDIRS = @WANT_SUBDIRS@

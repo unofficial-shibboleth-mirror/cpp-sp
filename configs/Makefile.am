@@ -12,4 +12,5 @@ pkgsysconf_DATA = \
                 ca-bundle.crt \
                 accessError.html \
                 rmError.html \
-                shireError.html
+                shireError.html \
+		AAP.xml
