@@ -20,6 +20,18 @@
         "InvalidHandle"
             Used with samlp:Requester, signals AA did not recognize handle as valid
     -->
+
+    <!-- Relaxes SAML AttributeValue type definition -->
+
+	<complexType name="AttributeValueType" mixed="true">
+		<annotation>
+			<documentation xml:lang="en">By convention, all Shibboleth attribute values carry this unconstrained xsi:type.</documentation>
+		</annotation>
+		<sequence>
+			<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+		</sequence>
+		<anyAttribute namespace="##any" processContents="lax"/>
+	</complexType>
     
     <!-- Attribute Acceptance Policies -->
 	
