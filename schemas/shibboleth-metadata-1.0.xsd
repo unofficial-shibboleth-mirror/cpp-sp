@@ -24,13 +24,13 @@
 	</element>
 
 	<element name="KeyAuthority">
+		<annotation>
+			<documentation>
+			Binds keying authorities to the system entity/entities to which the enclosing
+			metadata element applies.
+			</documentation>
+		</annotation>
 		<complexType>
-			<annotation>
-				<documentation>
-				Binds keying authorities to the system entity/entities to which the enclosing
-				metadata element applies.
-				</documentation>
-			</annotation>
 			<sequence>
 				<element ref="ds:KeyInfo" maxOccurs="unbounded"/>
 			</sequence>
