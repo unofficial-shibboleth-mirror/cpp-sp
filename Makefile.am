@@ -33,6 +33,3 @@ SUBDIRS = $(WANT_SUBDIRS)
 DIST_SUBDIRS = doc oncrpc shib schemas configs shib-target shar test \
 	mod_shire mod_shibrm siterefresh
 
-dist-hook:
-	cp ../*.txt ../*.html $(distdir)
-
