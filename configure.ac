@@ -49,20 +49,6 @@ fi
 # Test RPC now -- deal with it later
 ACX_RPCTEST([rpctest="yes"],[rpctest="no"])
 
-# Determine whether to use TCP for the shar socket
-AC_ARG_ENABLE([tcp],
-    AC_HELP_STRING([--enable-tcp], [enable the SHAR to use a TCP socket on Unix]),
-    [tcp_enabled=$enableval], [tcp_enabled=default])
-
-if test "x$tcp_enabled" = "x" ; then
-   tcp_enabled=yes
-fi
-
-if test "$tcp_enabled" = "yes" ; then
-    CFLAGS="$CFLAGS -DWANT_TCP_SHAR"
-    CXXFLAGS="$CXXFLAGS -DWANT_TCP_SHAR"
-fi
-
 AC_ARG_WITH(dmalloc,
             AC_HELP_STRING([--with-dmalloc=PATH], [where dmalloc is installed]),
             [if test x_$with_dmalloc != x_/usr; then
