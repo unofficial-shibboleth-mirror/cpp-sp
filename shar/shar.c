@@ -15,12 +15,6 @@
 
 #include "config.h"
 
-#ifdef NEED_RPC_TLI
-#ifdef HAVE_STROPTS_H
-#include <stropts.h>
-#endif
-#endif
-
 #include <shib-target/shib-target.h>
 
 typedef struct {
@@ -48,18 +42,6 @@ new_connection (ShibSocket listener, const ShibRPCProtocols protos[], int numpro
     fprintf (stderr, "ACCEPT failed\n");
     return -1;
   }
-
-#ifdef NEED_RPC_TLI
-  /*
-   * there's an undocumented restriction that the fd you pass in
-   * needs to support the TLI operations.
-   */
-  if (ioctl (sock, I_PUSH, "timod") < 0) {
-    perror("I_PUSH");
-    close (sock);
-    return -2;
-  }
-#endif
 
   /* Wrap an RPC Service around the new connection socket */
   svc = svcfd_create (sock, 0, 0);

@@ -48,6 +48,20 @@
 #ifndef __RPC_HEADER__
 #define __RPC_HEADER__
 
+/* A bunch of defines to hide this implementation, to make sure it
+ * doesn't shadow the system RPC library...
+ */
+
+#define clnttcp_create	onc_clnttcp_create
+#define clnt_destroy	onc_clnt_destroy
+#define clnt_spcreateerror	onc_clnt_spcreateerror
+
+#define svcfd_create	onc_svcfd_create
+#define svc_register	onc_svc_register
+#define svc_destroy	onc_svc_destroy
+#define svc_getreqset	onc_svc_getreqset
+
+
 #ifdef WIN32
 #define FD_SETSIZE	128
 
