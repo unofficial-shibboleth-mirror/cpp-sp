@@ -134,8 +134,8 @@ XMLMetadataImpl::OriginSite::~OriginSite()
         delete const_cast<IContactInfo*>(*i);
     for (vector<const IAuthority*>::iterator j=m_handleServices.begin(); j!=m_handleServices.end(); j++)
         delete const_cast<IAuthority*>(*j);
-    for (j=m_attributes.begin(); j!=m_attributes.end(); j++)
-        delete const_cast<IAuthority*>(*j);
+    for (vector<const IAuthority*>::iterator k=m_attributes.begin(); k!=m_attributes.end(); k++)
+        delete const_cast<IAuthority*>(*k);
 }
 
 XMLMetadataImpl::XMLMetadataImpl(const char* pathname)
