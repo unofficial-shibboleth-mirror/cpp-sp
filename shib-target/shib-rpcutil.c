@@ -37,7 +37,7 @@ shibrpc_client_create (ShibSocket sock, u_long program, u_long version)
     return NULL;
   }
 
-  return cnlt_tli_create (sock, NULL, NULL, program, version, 0, 0);
+  return clnt_tli_create (sock, NULL, NULL, program, version, 0, 0);
 #endif
 
   return clnttcp_create (&sin, program, version, &sock, 0, 0);
