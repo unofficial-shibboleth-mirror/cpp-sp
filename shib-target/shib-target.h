@@ -405,7 +405,7 @@ namespace shibtarget {
     }
     ~ShibINI ();
 
-    void refresh(void);
+    bool refresh(void);
 
     const std::string get (const std::string& header, const std::string& tag);
     const std::string get (const char* header, const char* tag) {

@@ -1178,7 +1178,7 @@ extern "C" int shib_post_config(apr_pool_t* pconf, apr_pool_t* plog,
 
     ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,s,"shib_post_config() done");
 
-    return 0;
+    return OK;
 }
 
 extern "C" void shib_register_hooks (apr_pool_t *p)

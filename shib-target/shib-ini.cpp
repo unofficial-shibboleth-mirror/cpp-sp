@@ -155,13 +155,14 @@ void ShibINI::init (string& f, bool case_sensitive)
 		     (case_sensitive ? "true" : "false"));
 
   ReadLock lock(m_priv->rwlock);
-  refresh();
+  if (!refresh())
+    throw runtime_error("Cannot read ini file");
 }
 
 //
 // Must be called holding the ReadLock.
 //
-void ShibINI::refresh(void)
+bool ShibINI::refresh(void)
 {
   saml::NDC ndc("refresh");
 
@@ -173,7 +174,10 @@ void ShibINI::refresh(void)
   struct stat stat_buf;
   if (stat (m_priv->file.c_str(), &stat_buf) < 0)
 #endif
+  {
     m_priv->log->error("stat failed: %s", m_priv->file.c_str());
+    return false;
+  }
 
 #ifdef DEBUG
   m_priv->log->info("refresh: last modtime at %d; file is %d; iters: %d",
@@ -181,7 +185,7 @@ void ShibINI::refresh(void)
 #endif
 
   if (m_priv->modtime >= stat_buf.st_mtime || m_priv->iterators > 0)
-    return;
+    return true;
 
   // Release the read lock -- grab the write lock.  Don't worry if
   // this is non-atomic -- we'll recheck the status.
@@ -195,7 +199,7 @@ void ShibINI::refresh(void)
 
     m_priv->rwlock->unlock();
     m_priv->rwlock->rdlock();
-    return;
+    return true;
   }
 
   // Ok, we've got the write lock.  Let's update our state.
@@ -215,7 +219,7 @@ void ShibINI::refresh(void)
       m_priv->log->warn("cannot open file: %s", m_priv->file.c_str());
       m_priv->rwlock->unlock();
       m_priv->rwlock->rdlock();
-      return;
+      return true;
     }
 
     const int MAXLEN = 1024;
@@ -310,6 +314,7 @@ void ShibINI::refresh(void)
   // Now release the write lock and reaquire the read lock
   m_priv->rwlock->unlock();
   m_priv->rwlock->rdlock();
+  return true;
 }
 
 const std::string ShibINI::get (const string& header, const string& tag)
