@@ -1,11 +1,11 @@
 <ShibbolethTargetConfig	xmlns="urn:mace:shibboleth:target:config:1.0"
-        logger="@-LOGDIR-@/shibboleth.logger">
+        logger="@-PKGSYSCONFDIR-@/shibboleth.logger">
 
     <Extensions>
         <Library path="@-LIBEXECDIR-@/xmlproviders.so" fatal="true"/>
     </Extensions>
 
-    <SHAR logger="@-LOGDIR-@/shar.logger">
+    <SHAR logger="@-PKGSYSCONFDIR-@/shar.logger">
 
         <Extensions>
             <Library path="@-LIBEXECDIR-@/shib-mysql-ccache.so" fatal="false"/>
@@ -30,7 +30,7 @@
         </MySQLSessionCache>
     </SHAR>
     
-    <SHIRE logger="@-LOGDIR-@/shire.logger">
+    <SHIRE logger="@-PKGSYSCONFDIR-@/shire.logger">
         <!--
         To customize behavior, map hostnames and path components to application names.
         Can be either a pointer to an external file or an inline configuration.
@@ -147,7 +147,7 @@
         <!-- customize behavior of specific applications -->
         <!-- 
         <Application id="foo-admin">
-            <Sessions shireURL="https://foo.com/admin/Shibboleth.shire" cookieName="shib-foo-admin"/>
+            <Sessions shireURL="https:///admin/Shibboleth.shire" cookieName="shib-foo-admin"/>
             <Policy>
                 <saml:AttributeDesignator AttributeName="urn:mace:dir:attribute-def:eduPersonPrincipalName"
                     AttributeNamespace="urn:mace:shibboleth:1.0:attributeNamespace:uri"/> 
