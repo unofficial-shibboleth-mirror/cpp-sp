@@ -49,13 +49,10 @@ static char sccsid[] = "@(#)pmap_prot2.c 1.3 87/08/11 Copyr 1984 Sun Micro";
  * Copyright (C) 1984, Sun Microsystems, Inc.
  */
 
+#include <rpc/rpc.h>
 #include <rpc/types.h>
 #include <rpc/xdr.h>
-#ifdef WIN32
-#include <rpc/pmap_pro.h>
-#else
 #include <rpc/pmap_prot.h>
-#endif
 
 /* 
  * What is going on with linked lists? (!)
