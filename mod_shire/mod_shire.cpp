@@ -20,9 +20,9 @@
 #include <libapreq/apache_request.h>
 
 // SAML Runtime
-#include <saml.h>
-#include <shib.h>
-#include <shib-target.h>
+#include <saml/saml.h>
+#include <shib/shib.h>
+#include <shib-target/shib-target.h>
 
 #include <fstream>
 #include <strstream>
