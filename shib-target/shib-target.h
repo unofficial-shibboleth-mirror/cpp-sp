@@ -224,7 +224,7 @@ namespace shibtarget {
     ShibTargetException(const ShibTargetException& src)
         : m_code(src.m_code), m_msg(src.m_msg), m_origin(XMLString::replicate(src.m_origin)) {}
 
-    virtual ~ShibTargetException() throw () { if (m_origin) XMLString::release(&m_origin); }
+    virtual ~ShibTargetException() throw () { }
 
     virtual const char* what() const throw () { return (m_msg.c_str()); }
     virtual ShibRpcStatus which() const throw () { return (m_code); }
