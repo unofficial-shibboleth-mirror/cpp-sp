@@ -2,7 +2,7 @@
     <OriginSite Name="urn:mace:incommon:pilot:example.edu">
         <Alias>Example State University</Alias>
         <Contact Type="technical" Name="Alfred E. Neuman" Email="(no email)"/>
-        <HandleService Location="https://wayf.internet2.edu/shibboleth/HS" Name="wayf.internet2.edu"/>
+        <HandleService Location="https://wayf.internet2.edu/InCommon/HS" Name="wayf.internet2.edu"/>
         <Domain>example.edu</Domain>
     </OriginSite>
     <OriginSite Name="urn:mace:incommon:pilot:shibdev.edu">
