@@ -382,8 +382,8 @@ public:
   }
 
   virtual void* sendPage(
-    const string &msg,
-    const string content_type,
+    const string& msg,
+    const string& content_type,
 	const saml::Iterator<header_t>& headers=EMPTY(header_t),
     int code=200
     ) {
@@ -396,7 +396,7 @@ public:
     ap_rprintf(m_req, msg.c_str());
     return (void*)DONE;
   }
-  virtual void* sendRedirect(const string url) {
+  virtual void* sendRedirect(const string& url) {
     ap_table_set(m_req->headers_out, "Location", url.c_str());
     return (void*)REDIRECT;
   }

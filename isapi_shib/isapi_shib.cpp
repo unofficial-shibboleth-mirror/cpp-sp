@@ -445,7 +445,7 @@ public:
   virtual string getRemoteUser(void) {
     return getHeader(string("remote-user"));
   }
-  virtual void* sendPage(const string &msg, const string content_type,
+  virtual void* sendPage(const string& msg, const string& content_type,
       const Iterator<header_t>& headers=EMPTY(header_t), int code=200) {
     string hdr = string ("Connection: close\r\nContent-type: ") + content_type + "\r\n";
     while (headers.hasNext()) {
@@ -459,7 +459,7 @@ public:
     m_pfc->WriteClient(m_pfc, (LPVOID)msg.c_str(), &resplen, 0);
     return (void*)SF_STATUS_REQ_FINISHED;
   }
-  virtual void* sendRedirect(const string url) {
+  virtual void* sendRedirect(const string& url) {
     // XXX: Don't support the httpRedirect option, yet.
     string hdrs=m_cookie + string("Location: ") + url + "\r\n"
       "Content-Type: text/html\r\n"
@@ -1112,7 +1112,7 @@ public:
     else
       return string(reinterpret_cast<char*>(m_lpECB->lpbData),m_lpECB->cbAvailable);
   }
-  virtual void* sendPage(const string &msg, const string content_type,
+  virtual void* sendPage(const string &msg, const string& content_type,
 			 const Iterator<header_t>& headers=EMPTY(header_t), int code=200) {
     string hdr = string ("Connection: close\r\nContent-type: ") + content_type + "\r\n";
     for (int k = 0; k < headers.size(); k++) {
@@ -1126,7 +1126,7 @@ public:
     m_lpECB->WriteClient(m_lpECB->ConnID, (LPVOID)msg.c_str(), &resplen, HSE_IO_SYNC);
     return (void*)HSE_STATUS_SUCCESS;
   }
-  virtual void* sendRedirect(const string url) {
+  virtual void* sendRedirect(const string& url) {
     // XXX: Don't support the httpRedirect option, yet.
     string hdrs = m_cookie + "Location: " + url + "\r\n"
       "Content-Type: text/html\r\n"
@@ -1141,10 +1141,10 @@ public:
     return (void*)HSE_STATUS_SUCCESS;
   }
   // Decline happens in the POST processor if this isn't the shire url
-  // Note that it can also happen with HTAccess, but we don't suppor that, yet.
+  // Note that it can also happen with HTAccess, but we don't support that, yet.
   virtual void* returnDecline(void) {
     return (void*)
-      WriteClientError(m_lpECB, "UISAPA extension can only be unvoked to process incoming sessions."
+      WriteClientError(m_lpECB, "ISAPA extension can only be invoked to process incoming sessions."
 		       "Make sure the mapped file extension doesn't match actual content.");
   }
   virtual void* returnOK(void) { return (void*) HSE_STATUS_SUCCESS; }
