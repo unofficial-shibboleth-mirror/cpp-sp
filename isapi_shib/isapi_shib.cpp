@@ -464,6 +464,84 @@ public:
   PHTTP_FILTER_PREPRC_HEADERS m_pn
 };
 
+DWORD WriteClientError(PHTTP_FILTER_CONTEXT pfc, const char* msg)
+{
+    LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, msg);
+    static const char* ctype="Connection: close\r\nContent-Type: text/html\r\n\r\n";
+    pfc->ServerSupportFunction(pfc,SF_REQ_SEND_RESPONSE_HEADER,"200 OK",(DWORD)ctype,0);
+    static const char* xmsg="<HTML><HEAD><TITLE>Shibboleth Filter Error</TITLE></HEAD><BODY>"
+                            "<H1>Shibboleth Filter Error</H1>";
+    DWORD resplen=strlen(xmsg);
+    pfc->WriteClient(pfc,(LPVOID)xmsg,&resplen,0);
+    resplen=strlen(msg);
+    pfc->WriteClient(pfc,(LPVOID)msg,&resplen,0);
+    static const char* xmsg2="</BODY></HTML>";
+    resplen=strlen(xmsg2);
+    pfc->WriteClient(pfc,(LPVOID)xmsg2,&resplen,0);
+    return SF_STATUS_REQ_FINISHED;
+}
+
+extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificationType, LPVOID pvNotification)
+{
+    // Is this a log notification?
+    if (notificationType==SF_NOTIFY_LOG)
+    {
+        if (pfc->pFilterContext)
+            ((PHTTP_FILTER_LOG)pvNotification)->pszClientUserName=static_cast<LPCSTR>(pfc->pFilterContext);
+        return SF_STATUS_REQ_NEXT_NOTIFICATION;
+    }
+
+    PHTTP_FILTER_PREPROC_HEADERS pn=(PHTTP_FILTER_PREPROC_HEADERS)pvNotification;
+    try
+    {
+        // Determine web site number. This can't really fail, I don't think.
+        dynabuf buf(128);
+        GetServerVariable(pfc,"INSTANCE_ID",buf,10);
+
+        // Match site instance to host name, skip if no match.
+        map<string,site_t>::const_iterator map_i=g_Sites.find(static_cast<char*>(buf));
+        if (map_i==g_Sites.end())
+            return SF_STATUS_REQ_NEXT_NOTIFICATION;
+            
+        ostringstream threadid;
+        threadid << "[" << getpid() << "] isapi_shib" << '\0';
+        saml::NDC ndc(threadid.str().c_str());
+
+	ShibTargetIsapiF stf(pfc, pn, map_i->second);
+
+	// "false" because we don't override the Shib settings
+	pair<bool,void*> res = ste.doCheckAuthN(false);
+	if (res.first) return (DWORD)res.second;
+
+	// "false" because we don't override the Shib settings
+	res = ste.doExportAssertions(false);
+	if (res.first) return (DWORD)res.second;
+
+	res = ste.doCheckAuthZ();
+	if (res.first) return (DWORD)res.second;
+
+        return SF_STATUS_REQ_NEXT_NOTIFICATION;
+    }
+    catch(bad_alloc) {
+        return WriteClientError(pfc,"Out of Memory");
+    }
+    catch(DWORD e) {
+        if (e==ERROR_NO_DATA)
+            return WriteClientError(pfc,"A required variable or header was empty.");
+        else
+            return WriteClientError(pfc,"Server detected unexpected IIS error.");
+    }
+#ifndef _DEBUG
+    catch(...) {
+        return WriteClientError(pfc,"Server caught an unknown exception.");
+    }
+#endif
+
+    return WriteClientError(pfc,"Server reached unreachable code, save my walrus!");
+}
+        
+
+#if 0
 IRequestMapper::Settings map_request(
     PHTTP_FILTER_CONTEXT pfc, PHTTP_FILTER_PREPROC_HEADERS pn, IRequestMapper* mapper, const site_t& site, string& target
     )
@@ -505,23 +583,6 @@ IRequestMapper::Settings map_request(
         target+=static_cast<char*>(url);
     
     return mapper->getSettingsFromParsedURL(scheme,site.m_name.c_str(),strtoul(port,NULL,10),url);
-}
-
-DWORD WriteClientError(PHTTP_FILTER_CONTEXT pfc, const char* msg)
-{
-    LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, msg);
-    static const char* ctype="Connection: close\r\nContent-Type: text/html\r\n\r\n";
-    pfc->ServerSupportFunction(pfc,SF_REQ_SEND_RESPONSE_HEADER,"200 OK",(DWORD)ctype,0);
-    static const char* xmsg="<HTML><HEAD><TITLE>Shibboleth Filter Error</TITLE></HEAD><BODY>"
-                            "<H1>Shibboleth Filter Error</H1>";
-    DWORD resplen=strlen(xmsg);
-    pfc->WriteClient(pfc,(LPVOID)xmsg,&resplen,0);
-    resplen=strlen(msg);
-    pfc->WriteClient(pfc,(LPVOID)msg,&resplen,0);
-    static const char* xmsg2="</BODY></HTML>";
-    resplen=strlen(xmsg2);
-    pfc->WriteClient(pfc,(LPVOID)xmsg2,&resplen,0);
-    return SF_STATUS_REQ_FINISHED;
 }
 
 DWORD WriteClientError(PHTTP_FILTER_CONTEXT pfc, const IApplication* app, const char* page, ShibMLP& mlp)
@@ -922,6 +983,7 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
 
     return WriteClientError(pfc,"Server reached unreachable code, save my walrus!");
 }
+#endif // 0
 
 /****************************************************************************/
 // ISAPI Extension
@@ -1053,6 +1115,58 @@ public:
   string m_cookie;
 };
 
+DWORD WriteClientError(LPEXTENSION_CONTROL_BLOCK lpECB, const char* msg)
+{
+    LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, msg);
+    static const char* ctype="Connection: close\r\nContent-Type: text/html\r\n\r\n";
+    lpECB->ServerSupportFunction(lpECB->ConnID,HSE_REQ_SEND_RESPONSE_HEADER,"200 OK",0,(LPDWORD)ctype);
+    static const char* xmsg="<HTML><HEAD><TITLE>Shibboleth Error</TITLE></HEAD><BODY><H1>Shibboleth Error</H1>";
+    DWORD resplen=strlen(xmsg);
+    lpECB->WriteClient(lpECB->ConnID,(LPVOID)xmsg,&resplen,HSE_IO_SYNC);
+    resplen=strlen(msg);
+    lpECB->WriteClient(lpECB->ConnID,(LPVOID)msg,&resplen,HSE_IO_SYNC);
+    static const char* xmsg2="</BODY></HTML>";
+    resplen=strlen(xmsg2);
+    lpECB->WriteClient(lpECB->ConnID,(LPVOID)xmsg2,&resplen,HSE_IO_SYNC);
+    return HSE_STATUS_SUCCESS;
+}
+
+extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
+{
+    string targeturl;
+    const IApplication* application=NULL;
+    try
+    {
+        ostringstream threadid;
+        threadid << "[" << getpid() << "] shire_handler" << '\0';
+        saml::NDC ndc(threadid.str().c_str());
+
+        // Determine web site number. This can't really fail, I don't think.
+        dynabuf buf(128);
+        GetServerVariable(lpECB,"INSTANCE_ID",buf,10);
+
+        // Match site instance to host name, skip if no match.
+        map<string,site_t>::const_iterator map_i=g_Sites.find(static_cast<char*>(buf));
+        if (map_i==g_Sites.end())
+            return WriteClientError(lpECB, "Shibboleth Extension not configured for this web site.");
+
+	ShibTargetIsapiE ste(lpECB, map_i->second);
+	pair<bool,void*> res = ste.doHandlePOST();
+	if (res.first) return (DWORD)res.second;
+
+	return WriteClientError(lpECB, "Shibboleth Extension failed to process POST");
+
+    } catch (...) {
+      return WriteClientError(lpECB,
+			      "Shibboleth Extension caught an unknown error. "
+			      "Memory Failure?");
+    }
+
+    // If we get here we've got an error.
+    return HSE_STATUS_ERROR;
+}
+
+#if 0
 IRequestMapper::Settings map_request(
     LPEXTENSION_CONTROL_BLOCK lpECB, IRequestMapper* mapper, const site_t& site, string& target
     )
@@ -1099,22 +1213,6 @@ IRequestMapper::Settings map_request(
         target+=static_cast<char*>(url);
     
     return mapper->getSettingsFromParsedURL(scheme,site.m_name.c_str(),strtoul(port,NULL,10),url);
-}
-
-DWORD WriteClientError(LPEXTENSION_CONTROL_BLOCK lpECB, const char* msg)
-{
-    LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, msg);
-    static const char* ctype="Connection: close\r\nContent-Type: text/html\r\n\r\n";
-    lpECB->ServerSupportFunction(lpECB->ConnID,HSE_REQ_SEND_RESPONSE_HEADER,"200 OK",0,(LPDWORD)ctype);
-    static const char* xmsg="<HTML><HEAD><TITLE>Shibboleth Error</TITLE></HEAD><BODY><H1>Shibboleth Error</H1>";
-    DWORD resplen=strlen(xmsg);
-    lpECB->WriteClient(lpECB->ConnID,(LPVOID)xmsg,&resplen,HSE_IO_SYNC);
-    resplen=strlen(msg);
-    lpECB->WriteClient(lpECB->ConnID,(LPVOID)msg,&resplen,HSE_IO_SYNC);
-    static const char* xmsg2="</BODY></HTML>";
-    resplen=strlen(xmsg2);
-    lpECB->WriteClient(lpECB->ConnID,(LPVOID)xmsg2,&resplen,HSE_IO_SYNC);
-    return HSE_STATUS_SUCCESS;
 }
 
 DWORD WriteClientError(LPEXTENSION_CONTROL_BLOCK lpECB, const IApplication* app, const char* page, ShibMLP& mlp)
@@ -1384,6 +1482,7 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
         }
     }
 #endif
-    
+
     return HSE_STATUS_ERROR;
 }
+#endif // 0
