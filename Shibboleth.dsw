@@ -238,6 +238,10 @@ Global:
 
 Package=<5>
 {{{
+    begin source code control
+    "$/NSAPI", WNAAAAAA
+    ..\..\..\documents and settings\cantor.2.saidin\my documents\visual studio projects\nsapi
+    end source code control
 }}}
 
 Package=<3>
