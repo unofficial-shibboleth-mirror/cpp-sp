@@ -130,7 +130,7 @@ SAMLResponse* ShibPOSTProfile::accept(const XMLByte* buf, XMLCh** originSitePtr)
     // The built-in SAML functionality will do most of the basic non-crypto checks.
     // Note that if the response only contains a status error, it gets tossed out
     // as an exception.
-    auto_ptr<SAMLResponse> r(SAMLPOSTProfile::accept(buf, m_receiver, m_ttlSeconds, false));
+    SAMLResponse* r=SAMLPOSTProfile::accept(buf, m_receiver, m_ttlSeconds, false);
 
     // Now we do some more non-crypto (ie. cheap) work to match up the origin site
     // with its associated data.
@@ -147,49 +147,77 @@ SAMLResponse* ShibPOSTProfile::accept(const XMLByte* buf, XMLCh** originSitePtr)
         // We want to try our best to locate an origin site name so we can fill it in.
         if (originSitePtr)
             *originSitePtr=XMLString::replicate(getOriginSite(*r));
+        delete r;
         throw;
     }
     
     // Finish SAML processing.
-    SAMLPOSTProfile::process(*r, m_receiver, m_ttlSeconds);
-
-    // Examine the subject information.
-    const SAMLSubject* subject = sso->getSubject();
-    if (!subject->getNameQualifier())
-        throw InvalidAssertionException(SAMLException::RESPONDER, "ShibPOSTProfile::accept() requires subject name qualifier");
-
-    const XMLCh* originSite = subject->getNameQualifier();
-    if (originSitePtr)
-        *originSitePtr=XMLString::replicate(originSite);
-    const XMLCh* handleService = assertion->getIssuer();
-
-    // Is this a trusted HS?
-    const IAuthority* hs=NULL;
-    OriginMetadata mapper(originSite);
-    Iterator<const IAuthority*> hsi=mapper.fail() ? Iterator<const IAuthority*>() : mapper->getHandleServices();
-    bool bFound = false;
-    while (!bFound && hsi.hasNext())
+    try
     {
-        hs=hsi.next();
-        if (!XMLString::compareString(hs->getName(),handleService))
-            bFound = true;
-    }
-    if (!bFound)
-        throw TrustException(SAMLException::RESPONDER, "ShibPOSTProfile::accept() detected an untrusted HS for the origin site");
-
-    Trust t;
-    Iterator<XSECCryptoX509*> certs=t.getCertificates(hs->getName());
-    Iterator<XSECCryptoX509*> certs2=t.getCertificates(originSite);
-
-    // Signature verification now takes place. We check the assertion and the response.
-    // Assertion signing is optional, response signing is mandatory.
-    bool bVerified=false;
-    if (assertion->isSigned())
-    {
+        SAMLPOSTProfile::process(*r, m_receiver, m_ttlSeconds);
+    
+        // Examine the subject information.
+        const SAMLSubject* subject = sso->getSubject();
+        if (!subject->getNameQualifier())
+            throw InvalidAssertionException(SAMLException::RESPONDER, "ShibPOSTProfile::accept() requires subject name qualifier");
+    
+        const XMLCh* originSite = subject->getNameQualifier();
+        if (originSitePtr)
+            *originSitePtr=XMLString::replicate(originSite);
+        const XMLCh* handleService = assertion->getIssuer();
+    
+        // Is this a trusted HS?
+        const IAuthority* hs=NULL;
+        OriginMetadata mapper(originSite);
+        Iterator<const IAuthority*> hsi=mapper.fail() ? Iterator<const IAuthority*>() : mapper->getHandleServices();
+        bool bFound = false;
+        while (!bFound && hsi.hasNext())
+        {
+            hs=hsi.next();
+            if (!XMLString::compareString(hs->getName(),handleService))
+                bFound = true;
+        }
+        if (!bFound)
+            throw TrustException(SAMLException::RESPONDER, "ShibPOSTProfile::accept() detected an untrusted HS for the origin site");
+    
+        Trust t;
+        Iterator<XSECCryptoX509*> certs=t.getCertificates(hs->getName());
+        Iterator<XSECCryptoX509*> certs2=t.getCertificates(originSite);
+    
+        // Signature verification now takes place. We check the assertion and the response.
+        // Assertion signing is optional, response signing is mandatory.
+        bool bVerified=false;
+        if (assertion->isSigned())
+        {
+            while (!bVerified && certs.hasNext())
+            {
+                try {
+                    verifySignature(*assertion, mapper, handleService, certs.next()->clonePublicKey());
+                    bVerified=true;
+                }
+                catch (InvalidCryptoException&) {
+                    // continue trying others
+                }
+            }
+            while (!bVerified && certs2.hasNext())
+            {
+                try {
+                    verifySignature(*assertion, mapper, handleService, certs2.next()->clonePublicKey());
+                    bVerified=true;
+                }
+                catch (InvalidCryptoException&) {
+                    // continue trying others
+                }
+            }
+            if (!bVerified)
+                verifySignature(*assertion, mapper, handleService);
+        }
+    
+        bVerified=false;
         while (!bVerified && certs.hasNext())
         {
             try {
-                verifySignature(*assertion, mapper, handleService, certs.next()->clonePublicKey());
+                verifySignature(*r, mapper, handleService, certs.next()->clonePublicKey());
                 bVerified=true;
             }
             catch (InvalidCryptoException&) {
@@ -199,7 +227,7 @@ SAMLResponse* ShibPOSTProfile::accept(const XMLByte* buf, XMLCh** originSitePtr)
         while (!bVerified && certs2.hasNext())
         {
             try {
-                verifySignature(*assertion, mapper, handleService, certs2.next()->clonePublicKey());
+                verifySignature(*r, mapper, handleService, certs2.next()->clonePublicKey());
                 bVerified=true;
             }
             catch (InvalidCryptoException&) {
@@ -207,34 +235,14 @@ SAMLResponse* ShibPOSTProfile::accept(const XMLByte* buf, XMLCh** originSitePtr)
             }
         }
         if (!bVerified)
-            verifySignature(*assertion, mapper, handleService);
+            verifySignature(*r, mapper, handleService);
     }
-
-    bVerified=false;
-    while (!bVerified && certs.hasNext())
+    catch (...)
     {
-        try {
-            verifySignature(*r, mapper, handleService, certs.next()->clonePublicKey());
-            bVerified=true;
-        }
-        catch (InvalidCryptoException&) {
-            // continue trying others
-        }
+        delete r;
+        throw;
     }
-    while (!bVerified && certs2.hasNext())
-    {
-        try {
-            verifySignature(*r, mapper, handleService, certs2.next()->clonePublicKey());
-            bVerified=true;
-        }
-        catch (InvalidCryptoException&) {
-            // continue trying others
-        }
-    }
-    if (!bVerified)
-        verifySignature(*r, mapper, handleService);
-
-    return r.release();
+    return r;
 }
 
 SAMLResponse* ShibPOSTProfile::prepare(
