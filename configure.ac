@@ -186,13 +186,13 @@ AC_CHECK_HEADER([xercesc/dom/DOM.hpp],,
 AC_MSG_CHECKING([Xerces version])
 AC_PREPROC_IFELSE(
         [AC_LANG_PROGRAM([#include <xercesc/util/XercesVersion.hpp>],
-[#if  _XERCES_VERSION != 20600 && _XERCES_VERSION >= 20300
+[#if  _XERCES_VERSION != 20601
 int i = 0;
 #else
-#error cannot use version = 2.6.0 or < 2.3.0
+#error must use patched version 2.6.1 provided by Shibboleth project (http://wayf.internet2.edu/shibboleth/)
 #endif])],
         [AC_MSG_RESULT(OK)],
-        [AC_MSG_FAILURE([Shibboleth requires a Xerces version > 2.3.0, but cannot use 2.6.0 -- a 2.6.1 patched release is available from us])])
+        [AC_MSG_FAILURE([Shibboleth requires patched Xerces version 2.6.1 (http://wayf.internet2.edu/shibboleth/)])])
 AC_TRY_LINK(
         [#include <xercesc/util/PlatformUtils.hpp>],
         [xercesc::XMLPlatformUtils::Initialize()],
@@ -208,12 +208,12 @@ AC_ARG_WITH(xmlsec,
                 CPPFLAGS="-I${with_xmlsec}/include $CPPFLAGS"
             fi])
 LIBS="-lxml-security-c $LIBS"
-AC_CHECK_HEADER([xsec/utils/XSECPlatformUtils.hpp],,AC_MSG_ERROR([unable to find xsec header files]))
+AC_CHECK_HEADER([xsec/xenc/XENCEncryptionMethod.hpp],,AC_MSG_ERROR([unable to find xml-security 1.1 header files]))
 AC_TRY_LINK(
         [#include <xsec/utils/XSECPlatformUtils.hpp>],
         [XSECPlatformUtils::Initialise()],
         [AC_DEFINE(HAVE_LIBXSEC,1,[Define if XML-Sec library was found])],
-        [AC_MSG_ERROR([unable to link with XML-Sec])])
+        [AC_MSG_ERROR([unable to link with xml-security])])
 
 # OpenSAML settings
 AC_ARG_WITH(saml,
