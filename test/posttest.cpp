@@ -112,7 +112,7 @@ int main(int argc,char* argv[])
             cin >> ch;
         }
 
-        SAMLBrowserProfile::BrowserProfileResponse bpr=p.receive(NULL,buf.c_str(),recip.get(),SAMLBrowserProfile::Post);
+        SAMLBrowserProfile::BrowserProfileResponse bpr=p.receive(buf.c_str(),recip.get(),SAMLBrowserProfile::Post);
         cout << "Consumed Response: " << endl << *bpr.response << endl;
         bpr.clear();
     }
