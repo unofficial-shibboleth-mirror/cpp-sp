@@ -1,9 +1,9 @@
 dnl $Id$ 
 
 AC_PREREQ([2.50])
-AC_INIT([shibboleth], [0.8], [mace-shib-users@internet2.edu], [shibboleth])
+AC_INIT([shibboleth], [1.0], [mace-shib-users@internet2.edu], [shibboleth])
 AM_CONFIG_HEADER(config.h)
-AM_INIT_AUTOMAKE(shibboleth, 0.8)
+AM_INIT_AUTOMAKE(shibboleth, 1.0)
 
 sinclude(acx_pthread.m4)
 sinclude(acx_rpctest.m4)
@@ -84,9 +84,9 @@ AC_ARG_WITH(log4cpp,
 
 AC_ARG_WITH(xmlsec,
             AC_HELP_STRING([--with-xmlsec=PATH], [where xmlsec is installed]),
-            [if test -f "${with_xmlsec}/bin/xmlsec-config"; then
-                LDFLAGS="`${with_xmlsec}/bin/xmlsec-config --libs` $LDFLAGS"
-                CPPFLAGS="`${with_xmlsec}/bin/xmlsec-config --cflags` $CPPFLAGS"
+            [if test x_$with_xmlsec != x_/usr; then
+                LDFLAGS="-L${with_xmlsec}/lib $LDFLAGS"
+                CPPFLAGS="-I${with_xmlsec}/include $CPPFLAGS"
             fi])
 
 AC_ARG_WITH(saml,
@@ -108,22 +108,24 @@ AC_TRY_LINK(
 		LIBS="$saved_LIBS"
 	])
 
+AC_CHECK_HEADER([xsec/utils/XSECPlatformUtils.hpp],,
+                AC_MSG_ERROR([unable to find xsec header files]))
+saved_LIBS="$LIBS"
+LIBS="-lxml-security-c $LIBS"
+AC_TRY_LINK(
+        [#include <xsec/utils/XSECPlatformUtils.hpp>],
+        [XSECPlatformUtils::Initialise()],
+        [AC_DEFINE(HAVE_LIBXSEC,1,[Define if XML-Sec library was found])],
+        [AC_MSG_ERROR([unable to link with XML-Sec])
+                LIBS="$saved_LIBS"
+        ])
+
 AC_CHECK_HEADER([openssl/ssl.h],,
                 AC_MSG_ERROR([unable to find openssl header files]))
 AC_CHECK_LIB([crypto], [ERR_load_CRYPTO_strings],,
              AC_MSG_ERROR([unable to link with openssl libraries]))
 AC_CHECK_LIB([ssl], [SSL_library_init],, 
              AC_MSG_ERROR([unable to link with openssl libraries]))
-
-AC_CHECK_HEADER([libxml/parser.h],,
-                AC_MSG_ERROR([unable to find libxml2 header files]))
-AC_CHECK_LIB([xml2], [xmlInitParser],echo "foo" > /dev/null,
-             AC_MSG_ERROR([unable to link with libxml2]))
-
-AC_CHECK_HEADER([xmlsec/xmlsec.h],,
-                AC_MSG_ERROR([unable to find xmlsec header files]))
-AC_CHECK_LIB([xmlsec], [xmlSecInit],echo "foo" > /dev/null,
-             AC_MSG_ERROR([unable to link with xmlsec]), [-lxml2])
 
 AC_CHECK_HEADER([log4cpp/Category.hh],,
                 AC_MSG_ERROR([unable to find log4cpp header files]))
