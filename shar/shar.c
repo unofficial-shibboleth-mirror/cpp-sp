@@ -22,7 +22,9 @@ extern SVCXPRT* svcfd_create ();
 
 extern void shibrpc_prog_1(struct svc_req *, SVCXPRT *);
 static int shar_run = 1;
+#if 0
 static int foreground = 0;
+#endif
 
 int
 shar_create_svc(ShibSocket sock, const ShibRPCProtocols protos[], int numprotos)
@@ -138,7 +140,9 @@ static void usage(char* whoami)
 {
   fprintf (stderr, "usage: %s [-f]\n", whoami);
   fprintf (stderr, "  -f\tforce removal of listener socket\n");
+#if 0
   fprintf (stderr, "  -F\trun in the foreground.\n");
+#endif
   fprintf (stderr, "  -h\tprint this help message.\n");
   exit (1);
 }
@@ -155,9 +159,11 @@ static int parse_args(int argc, char* argv[])
       unlink (shib_target_sockname());
 #endif
       break;
+#if 0
     case 'F':
       foreground++;
       break;
+#endif
     default:
       return -1;
     }
@@ -192,10 +198,12 @@ main (int argc, char *argv[])
   if (shib_sock_bind (sock, shib_target_sockname()) != 0)
     return -4;
 
+#if 0
 #ifndef WIN32
   /* (maybe) Put myself into the background. */
   if (!foreground)
     daemon(0, 1);		/* chdir to /, but do not redirect stdout/stderr */
+#endif
 #endif
 
   /* Initialize the SHAR Utilitites */
