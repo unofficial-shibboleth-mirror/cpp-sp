@@ -6,7 +6,7 @@ EXTRA_DIST = \
 	schemas doc isapi_shib isapi_shib_gui \
 	Shibboleth.dsw libtool.m4 acx_pthread.m4 acx_rpctest.m4 depcomp \
 	config_win32.h posttest/posttest.dsp shibtest/shibtest.dsp \
-	shibboleth.spec.in
+	shibboleth.spec.in shibboleth.spec
 
 dist-hook:
 	rm -rf `find $(distdir)/schemas -name CVS`
@@ -27,9 +27,9 @@ DIST_SUBDIRS = doc oncrpc shib schemas configs shib-target shar test \
 all-local: shibboleth.spec
 
 shibboleth.spec: shibboleth.spec.in Makefile
-        rm -f $@.tmp
-        sed < $< > $@.tmp \
-            -e 's:@-VERSION-@:${VERSION}:'
-        mv $@.tmp $@
+	rm -f $@.tmp
+	sed < $< > $@.tmp \
+	    -e 's:@-VERSION-@:${VERSION}:'
+	mv $@.tmp $@
 
 DISTCLEANFILES = shibboleth.spec

@@ -32,3 +32,4 @@
 /libtool
 /*.opt
 /*.ncb
+/shibboleth.spec
