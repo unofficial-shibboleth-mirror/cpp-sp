@@ -465,7 +465,7 @@ bool XMLTrust::attach(const Iterator<IRevocation*>& revocations, const IProvider
         
             // Apply store to this context.
             SSL_CTX_set_verify(reinterpret_cast<SSL_CTX*>(ctx),SSL_VERIFY_PEER,logging_callback);
-            SSL_CTX_set_cert_verify_callback(reinterpret_cast<SSL_CTX*>(ctx),verify_callback,NULL);
+            SSL_CTX_set_cert_verify_callback(reinterpret_cast<SSL_CTX*>(ctx),reinterpret_cast<int (*)()>(verify_callback),NULL);
             SSL_CTX_set_cert_store(reinterpret_cast<SSL_CTX*>(ctx),store);
             SSL_CTX_set_verify_depth(reinterpret_cast<SSL_CTX*>(ctx),kauth->m_depth);
         }
