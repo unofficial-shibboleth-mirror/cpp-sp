@@ -135,6 +135,12 @@ const XMLCh XML::Literals::Application[] =
 const XMLCh XML::Literals::Applications[] =
 { chLatin_A, chLatin_p, chLatin_p, chLatin_l, chLatin_i, chLatin_c, chLatin_a, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chLatin_s, chNull };
 
+const XMLCh XML::Literals::AssertionConsumerService[] =
+{ chLatin_A, chLatin_s, chLatin_s, chLatin_e, chLatin_r, chLatin_t, chLatin_i, chLatin_o, chLatin_n,
+  chLatin_C, chLatin_o, chLatin_n, chLatin_s, chLatin_u, chLatin_m, chLatin_e, chLatin_r,
+  chLatin_S, chLatin_e, chLatin_r, chLatin_v, chLatin_i, chLatin_c, chLatin_e, chNull
+};
+
 const XMLCh XML::Literals::CredentialsProvider[] =
 { chLatin_C, chLatin_r, chLatin_e, chLatin_d, chLatin_e, chLatin_n, chLatin_t, chLatin_i, chLatin_a, chLatin_l, chLatin_s,
   chLatin_P, chLatin_r, chLatin_o, chLatin_v, chLatin_i, chLatin_d, chLatin_e, chLatin_r, chNull
@@ -165,6 +171,12 @@ const XMLCh XML::Literals::htaccess[]=
 
 const XMLCh XML::Literals::Implementation[] =
 { chLatin_I, chLatin_m, chLatin_p, chLatin_l, chLatin_e, chLatin_m, chLatin_e, chLatin_n, chLatin_t, chLatin_a, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chNull };
+
+const XMLCh XML::Literals::index[] =
+{ chLatin_i, chLatin_n, chLatin_d, chLatin_e, chLatin_x, chNull };
+
+const XMLCh XML::Literals::isDefault[] =
+{ chLatin_i, chLatin_s, chLatin_D, chLatin_e, chLatin_f, chLatin_a, chLatin_u, chLatin_l, chLatin_t, chNull };
 
 const XMLCh XML::Literals::Library[] =
 { chLatin_L, chLatin_i, chLatin_b, chLatin_r, chLatin_a, chLatin_r, chLatin_y, chNull };
@@ -228,6 +240,11 @@ const XMLCh XML::Literals::SessionCache[] =
   chLatin_C, chLatin_a, chLatin_c, chLatin_h, chLatin_e, chNull
 };
 
+const XMLCh XML::Literals::SessionInitiator[] =
+{ chLatin_S, chLatin_e, chLatin_s, chLatin_s, chLatin_i, chLatin_o, chLatin_n,
+  chLatin_I, chLatin_n, chLatin_i, chLatin_t, chLatin_i, chLatin_a, chLatin_t, chLatin_o, chLatin_r, chNull
+};
+
 const XMLCh XML::Literals::SHAR[]= { chLatin_S, chLatin_H, chLatin_A, chLatin_R, chNull };
 
 const XMLCh XML::Literals::ShibbolethTargetConfig[] =
@@ -239,6 +256,12 @@ const XMLCh XML::Literals::ShibbolethTargetConfig[] =
 const XMLCh XML::Literals::SHIRE[]= { chLatin_S, chLatin_H, chLatin_I, chLatin_R, chLatin_E, chNull };
 
 const XMLCh XML::Literals::Signing[] = { chLatin_S, chLatin_i, chLatin_g, chLatin_n, chLatin_i, chLatin_n, chLatin_g, chNull };
+
+const XMLCh XML::Literals::SingleLogoutService[] =
+{ chLatin_S, chLatin_i, chLatin_n, chLatin_g, chLatin_l, chLatin_e,
+  chLatin_L, chLatin_o, chLatin_g, chLatin_o, chLatin_u, chLatin_t,
+  chLatin_S, chLatin_e, chLatin_r, chLatin_v, chLatin_i, chLatin_c, chLatin_e, chNull
+};
 
 const XMLCh XML::Literals::SPConfig[] =
 { chLatin_S, chLatin_P, chLatin_C, chLatin_o, chLatin_n, chLatin_f, chLatin_i, chLatin_g, chNull };

@@ -412,8 +412,7 @@ public:
 
 extern "C" int shib_check_user(request_rec* r)
 {
-  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),
-		"shib_check_user(%d): ENTER\n", (int)getpid());
+  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_check_user(%d): ENTER\n", (int)getpid());
 
   ostringstream threadid;
   threadid << "[" << getpid() << "] shib_check_user" << '\0';
@@ -424,7 +423,7 @@ extern "C" int shib_check_user(request_rec* r)
 #endif
     ShibTargetApache sta(r);
 
-    // Check user authentication, the set the post handler bypass
+    // Check user authentication, the set the handler bypass
     pair<bool,void*> res = sta.doCheckAuthN((sta.m_dc->bRequireSession == 1), true);
     apr_pool_userdata_setn((const void*)42,g_UserDataKey,NULL,r->pool);
     if (res.first) return (int)res.second;
@@ -438,50 +437,46 @@ extern "C" int shib_check_user(request_rec* r)
 
 #ifndef _DEBUG
   } catch (...) {
-    ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r),
-		  "shib_check_user threw an uncaught exception!");
+    ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_check_user threw an uncaught exception!");
     return SERVER_ERROR;
   }
 #endif
 }
 
-extern "C" int shib_post_handler(request_rec* r)
+extern "C" int shib_handler(request_rec* r)
 {
   ostringstream threadid;
-  threadid << "[" << getpid() << "] shib_post_handler" << '\0';
+  threadid << "[" << getpid() << "] shib_handler" << '\0';
   saml::NDC ndc(threadid.str().c_str());
 
 #ifndef SHIB_APACHE_13
   // With 2.x, this handler always runs, though last.
-  // We check if shib_check_user ran, because it will detect a SHIRE request
+  // We check if shib_check_user ran, because it will detect a handler request
   // and dispatch it directly.
   void* data;
   apr_pool_userdata_get(&data,g_UserDataKey,r->pool);
   if (data==(const void*)42) {
-    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_post_handler skipped since check_user ran");
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_handler skipped since check_user ran");
     return DECLINED;
   }
 #endif
 
-  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),
-		"shib_post_handler(%d): ENTER", (int)getpid());
+  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_handler(%d): ENTER", (int)getpid());
 
 #ifndef _DEBUG
   try {
 #endif
     ShibTargetApache sta(r);
 
-    pair<bool,void*> res = sta.doHandleProfile();
+    pair<bool,void*> res = sta.doHandler();
     if (res.first) return (int)res.second;
 
-    ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r),
-		  "doHandleProfile() did not do anything.");
+    ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "doHandler() did not do anything.");
     return SERVER_ERROR;
 
 #ifndef _DEBUG
   } catch (...) {
-    ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r),
-		  "shib_post_handler threw an uncaught exception!");
+    ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_handler threw an uncaught exception!");
     return SERVER_ERROR;
   }
 #endif
@@ -493,8 +488,7 @@ extern "C" int shib_post_handler(request_rec* r)
  */
 extern "C" int shib_auth_checker(request_rec* r)
 {
-  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),
-		"shib_auth_checker(%d): ENTER", (int)getpid());
+  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_auth_checker(%d): ENTER", (int)getpid());
 
   ostringstream threadid;
   threadid << "[" << getpid() << "] shib_auth_checker" << '\0';
@@ -513,8 +507,7 @@ extern "C" int shib_auth_checker(request_rec* r)
 
 #ifndef _DEBUG
   } catch (...) {
-    ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r),
-		  "shib_auth_checker threw an uncaught exception!");
+    ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_auth_checker threw an uncaught exception!");
     return SERVER_ERROR;
   }
 #endif
@@ -1333,6 +1326,10 @@ extern "C" int shib_auth_checker(request_rec* r)
  */
 extern "C" apr_status_t shib_exit(void* data)
 {
+    if (g_Config) {
+        g_Config->shutdown();
+        g_Config = NULL;
+    }
     ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,NULL,"shib_exit() done\n");
     return OK;
 }
@@ -1447,7 +1444,7 @@ static command_rec shire_cmds[] = {
 
 extern "C"{
 handler_rec shib_handlers[] = {
-  { "shib-shire-post", shib_post_handler },
+  { "shib-handler", shib_handler },
   { NULL }
 };
 
@@ -1480,7 +1477,7 @@ extern "C" void shib_register_hooks (apr_pool_t *p)
   ap_hook_child_init(shib_child_init, NULL, NULL, APR_HOOK_MIDDLE);
   ap_hook_check_user_id(shib_check_user, NULL, NULL, APR_HOOK_MIDDLE);
   ap_hook_auth_checker(shib_auth_checker, NULL, NULL, APR_HOOK_FIRST);
-  ap_hook_handler(shib_post_handler, NULL, NULL, APR_HOOK_LAST);
+  ap_hook_handler(shib_handler, NULL, NULL, APR_HOOK_LAST);
 }
 
 // SHIB Module commands

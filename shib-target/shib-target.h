@@ -78,6 +78,7 @@
 namespace shibtarget {
   
     DECLARE_SAML_EXCEPTION(SHIBTARGET_EXPORTS,ListenerException,SAMLException);
+    DECLARE_SAML_EXCEPTION(SHIBTARGET_EXPORTS,ConfigurationException,SAMLException);
 
     // Abstract APIs for access to configuration information
     
@@ -131,6 +132,7 @@ namespace shibtarget {
     {
         virtual const char* getId() const=0;
         virtual const char* getHash() const=0;
+        
         virtual saml::Iterator<saml::SAMLAttributeDesignator*> getAttributeDesignators() const=0;
         virtual saml::Iterator<shibboleth::IAAP*> getAAPProviders() const=0;
         virtual saml::Iterator<shibboleth::IMetadata*> getMetadataProviders() const=0;
@@ -145,6 +147,17 @@ namespace shibtarget {
 
         // caller is given ownership of object, must use and delete within scope of config lock
         virtual saml::SAMLBrowserProfile::ArtifactMapper* getArtifactMapper() const=0;
+
+        // Used to locate a default or designated session initiator for automatic sessions
+        virtual const IPropertySet* getDefaultSessionInitiator() const=0;
+        virtual const IPropertySet* getSessionInitiatorById(const char* id) const=0;
+        
+        // Used by session initiators to get endpoint to forward to IdP/WAYF
+        virtual const IPropertySet* getDefaultAssertionConsumerService() const=0;
+        virtual const IPropertySet* getAssertionConsumerServiceByIndex(unsigned short index) const=0;
+        
+        // Used by dispatcher to locate a handler for a Shibboleth request
+        virtual const IPropertySet* getHandler(const char* path) const=0;
 
         virtual ~IApplication() {}
     };
@@ -397,8 +410,8 @@ namespace shibtarget {
     virtual HTAccessInfo* getAccessInfo(void);
     virtual HTGroupTable* getGroupTable(std::string &user);
 
-    // We're done.  Finish up.  Send either a result (error?) page or a redirect.
-    // If there are no headers supplied assume the content-type == text/html
+    // We're done.  Finish up.  Send specific result content or a redirect.
+    // If there are no headers supplied assume the content-type is text/html
     typedef std::pair<std::string, std::string> header_t;
     virtual void* sendPage(
         const std::string& msg,
@@ -410,11 +423,9 @@ namespace shibtarget {
       std::string m = msg;
       return sendPage(m);
     }
-
-    virtual void* sendError(const char* page, ShibMLP &mlp);
     virtual void* sendRedirect(const std::string& url)=0;
+    virtual void* sendError(const char* page, ShibMLP &mlp);
     
-
     // These next two APIs are used to obtain the module-specific "OK"
     // and "Decline" results.  OK means "we believe that this request
     // should be accepted".  Declined means "we believe that this is
@@ -449,36 +460,16 @@ namespace shibtarget {
     //   automatically call doHandlePOST() when it encounters a request for
     //   the ShireURL;  if false it will call returnOK() instead.
     //
-    std::pair<bool,void*> doCheckAuthN(bool requireSession = false, bool handleProfile = false);
-    std::pair<bool,void*> doHandleProfile();
+    std::pair<bool,void*> doCheckAuthN(bool requireSession = false, bool handler = false);
+    std::pair<bool,void*> doHandler();
     std::pair<bool,void*> doCheckAuthZ();
     std::pair<bool,void*> doExportAssertions(bool exportAssertion = false);
-
-    //**************************************************************************
-    // These APIs are for backwards-compatibility.  Hopefully they can
-    // eventually go away.
-
-    // SHIRE APIs
-
-    // Get the session cookie name and properties for the application
-    std::pair<std::string,const char*> getCookieNameProps(const char* prefix) const;
-
-    // Find the default assertion consumer service for the resource
-    const char* getShireURL(const char* resource) const;
-        
-    // Generate a Shib 1.x AuthnRequest redirect URL for the resource
-    std::string getAuthnRequest(const char* resource);
-        
-    // Process a lazy session setup request and turn it into an AuthnRequest
-    std::string getLazyAuthnRequest(const char* query_string);
-        
-  protected:
-    ShibTarget();
 
     // Currently wraps remoted interface.
     // TODO: Move this functionality behind IListener
     void sessionNew(
         int supported_profiles,
+        const std::string& recipient,
         const char* packet,
         const char* ip,
         std::string& target,
@@ -496,6 +487,11 @@ namespace shibtarget {
         saml::SAMLResponse** attr_response_post=NULL
         ) const;
 
+  protected:
+    ShibTarget();
+
+    // Internal APIs
+
     // Initialize the request from the parsed URL
     // protocol == http, https, etc
     // hostname == server name
@@ -504,14 +500,14 @@ namespace shibtarget {
     // method == GET, POST, etc.
     void init(
         ShibTargetConfig *config,
-	    const char* protocol,
+        const char* protocol,
         const char* hostname,
         int port,
-	    const char* uri,
+        const char* uri,
         const char* content_type,
         const char* remote_host,
-	    const char* method
-       );
+        const char* method
+        );
 
   private:
     mutable ShibTargetPriv *m_priv;

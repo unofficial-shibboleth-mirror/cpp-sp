@@ -107,18 +107,32 @@ namespace shibtarget {
     ShibTargetPriv();
     ~ShibTargetPriv();
 
+    // Helper functions
     void get_application(const string& protocol, const string& hostname, int port, const string& uri);
-    const char* getCookie(ShibTarget* st, const string& name);
-    //const char* getSessionId(ShibTarget* st);
-    //const char* getRelayState(ShibTarget* st);
+    const char* getCookie(ShibTarget* st, const string& name) const;
+    pair<string,const char*> getCookieNameProps(const char* prefix) const;
+    const char* getHandlerURL(const char* resource) const;
+    
+    // Handlers do the real Shibboleth work
+    pair<bool,void*> doSessionInitiator(ShibTarget* st, const IPropertySet* handler, bool isHandler=true) const;
+    pair<bool,void*> doAssertionConsumer(ShibTarget* st, const IPropertySet* handler) const;
+    pair<bool,void*> doLogout(ShibTarget* st, const IPropertySet* handler) const;
+
+    // And the binding/profile handlers do the low level packing and unpacking.
+    pair<bool,void*> ShibAuthnRequest(
+        ShibTarget* st,
+        const IPropertySet* shire,
+        const char* dest,
+        const char* target,
+        const char* providerId
+        ) const;
 
   private:
     friend class ShibTarget;
     IRequestMapper::Settings m_settings;
     const IApplication *m_app;
-    string m_shireURL;
-
-    map<string,string> m_cookieMap;
+    mutable string m_handlerURL;
+    mutable map<string,string> m_cookieMap;
 
     ShibProfile m_sso_profile;
     string m_provider_id;
@@ -173,7 +187,7 @@ void ShibTarget::init(
     )
 {
 #ifdef _DEBUG
-  saml::NDC ndc("ShibTarget::init");
+  saml::NDC ndc("init");
 #endif
 
   if (m_priv->m_app)
@@ -193,29 +207,30 @@ void ShibTarget::init(
 // These functions implement the server-agnostic shibboleth engine
 // The web server modules implement a subclass and then call into 
 // these methods once they instantiate their request object.
-pair<bool,void*>
-ShibTarget::doCheckAuthN(bool requireSessionFlag, bool handleProfile)
+
+pair<bool,void*> ShibTarget::doCheckAuthN(bool requireSessionFlag, bool handler)
 {
 #ifdef _DEBUG
-    saml::NDC ndc("ShibTarget::doCheckAuthN");
+    saml::NDC ndc("doCheckAuthN");
 #endif
 
-    const char *targetURL = NULL;
-    const char *procState = "Request Setup Error";
+    const char *procState = "Request Processing Error";
+    const char *targetURL = m_priv->m_url.c_str();
     ShibMLP mlp;
 
     try {
         if (!m_priv->m_app)
-            throw SAMLException("System uninitialized, application did not supply request information.");
+            throw ConfigurationException("System uninitialized, application did not supply request information.");
 
-        targetURL = m_priv->m_url.c_str();
-        const char *shireURL = getShireURL(targetURL);
-        if (!shireURL)
-            throw SAMLException("Cannot determine assertion consumer service from resource URL, check configuration.");
+        const char* handlerURL = m_priv->getHandlerURL(targetURL);
+        if (!handlerURL)
+            throw ConfigurationException("Cannot determine handler from resource URL, check configuration.");
 
-        if (strstr(targetURL,shireURL)) {
-            if (handleProfile)
-                return doHandleProfile();
+        // If the request URL contains the handler base URL for this application, either dispatch
+        // directly (mainly Apache 2.0) or just pass back control.
+        if (strstr(targetURL,handlerURL)) {
+            if (handler)
+                return doHandler();
             else
                 return pair<bool,void*>(true, returnOK());
         }
@@ -231,15 +246,17 @@ ShibTarget::doCheckAuthN(bool requireSessionFlag, bool handleProfile)
                 requireSession.second=true;
         }
 
-        pair<string,const char*> shib_cookie = getCookieNameProps("_shibsession_");
+        pair<string,const char*> shib_cookie = m_priv->getCookieNameProps("_shibsession_");
         const char* session_id = m_priv->getCookie(this,shib_cookie.first);
         if (!session_id || !*session_id) {
             // No session.  Maybe that's acceptable?
             if (!requireSession.second)
                 return pair<bool,void*>(true,returnOK());
 
-            // No cookie, but we require a session.  Generate an AuthnRequest.
-            return pair<bool,void*>(true,sendRedirect(getAuthnRequest(targetURL)));
+            // No cookie, but we require a session. Initiate a new session using the default method.
+            procState = "Session Initiator Error";
+            const IPropertySet* initiator=m_priv->m_app->getDefaultSessionInitiator();
+            return m_priv->doSessionInitiator(this, initiator ? initiator : m_priv->m_app->getPropertySet("Sessions"), false);
         }
 
         procState = "Session Processing Error";
@@ -265,11 +282,20 @@ ShibTarget::doCheckAuthN(bool requireSessionFlag, bool handleProfile)
                 // AuthType.  No session plus requireSession false means
                 // do not authenticate the user at this time.
                 return pair<bool,void*>(true, returnOK());
-            
-            // TODO: need to test this...may need an actual reference cast
-            if (typeid(e)==typeid(RetryableProfileException)) {
-                // Session is invalid but we can retry -- generate an AuthnRequest
-                return pair<bool,void*>(true,sendRedirect(getAuthnRequest(targetURL)));
+
+            // Try and cast down. This should throw an exception if it fails.
+            bool retryable=false;
+            try {
+                RetryableProfileException& trycast=dynamic_cast<RetryableProfileException&>(e);
+                retryable=true;
+            }
+            catch (exception&) {
+            }
+            if (retryable) {
+                // Session is invalid but we can retry -- initiate a new session.
+                procState = "Session Initiator Error";
+                const IPropertySet* initiator=m_priv->m_app->getDefaultSessionInitiator();
+                return m_priv->doSessionInitiator(this, initiator ? initiator : m_priv->m_app->getPropertySet("Sessions"), false);
             }
             throw;    // send it to the outer handler
         }
@@ -291,127 +317,77 @@ ShibTarget::doCheckAuthN(bool requireSessionFlag, bool handleProfile)
     // If we get here then we've got an error.
     mlp.insert("errorType", procState);
     if (targetURL)
-        mlp.insert("requestURL", targetURL);
+        mlp.insert("requestURL", m_priv->m_url.substr(0,m_priv->m_url.find('?')));
 
     return pair<bool,void*>(true,sendError("session", mlp));
 }
 
-pair<bool,void*>
-ShibTarget::doHandleProfile(void)
+pair<bool,void*> ShibTarget::doHandler(void)
 {
 #ifdef _DEBUG
-    saml::NDC ndc("ShibTarget::doHandleProfile");
+    saml::NDC ndc("doHandler");
 #endif
 
-    const char *targetURL = NULL;
-    const char *procState = "Session Creation Service Error";
+    const char *procState = "Shibboleth Handler Error";
+    const char* targetURL = m_priv->m_url.c_str();
     ShibMLP mlp;
 
     try {
         if (!m_priv->m_app)
-            throw SAMLException("System uninitialized, application did not supply request information.");
+            throw ConfigurationException("System uninitialized, application did not supply request information.");
 
-        targetURL = m_priv->m_url.c_str();
-        const char* shireURL = getShireURL(targetURL);
+        const char* handlerURL = m_priv->getHandlerURL(targetURL);
+        if (!handlerURL)
+            throw ConfigurationException("Cannot determine handler from resource URL, check configuration.");
 
-        if (!shireURL)
-            throw SAMLException("Cannot determine assertion consumer service, check configuration.");
-
-        // Make sure we only process the SHIRE requests.
-        if (!strstr(targetURL, shireURL))
+        // Make sure we only process handler requests.
+        if (!strstr(targetURL,handlerURL))
             return pair<bool,void*>(true, returnDecline());
 
         const IPropertySet* sessionProps=m_priv->m_app->getPropertySet("Sessions");
         if (!sessionProps)
-            throw SAMLException("Unable to map request to application session settings, check configuration.");
+            throw ConfigurationException("Unable to map request to application session settings, check configuration.");
 
         // Process incoming request.
-        pair<bool,bool> shireSSL=sessionProps->getBool("handlerSSL");
+        pair<bool,bool> handlerSSL=sessionProps->getBool("handlerSSL");
       
         // Make sure this is SSL, if it should be
-        if ((!shireSSL.first || shireSSL.second) && m_priv->m_protocol != "https")
-            throw FatalProfileException("Blocked non-SSL access to session creation service.");
+        if ((!handlerSSL.first || handlerSSL.second) && m_priv->m_protocol != "https")
+            throw FatalProfileException("Blocked non-SSL access to Shibboleth handler.");
 
+        // We dispatch based on our path info. We know the request URL begins with or equals the handler URL,
+        // so the path info is the next character (or null).
+        const IPropertySet* handler=m_priv->m_app->getHandler(targetURL + strlen(handlerURL));
+        if (handler) {
+            if (saml::XML::isElementNamed(handler->getElement(),shibtarget::XML::SAML2META_NS,SHIBT_L(AssertionConsumerService))) {
+                procState = "Session Creation Error";
+                return m_priv->doAssertionConsumer(this,handler);
+            }
+            else if (saml::XML::isElementNamed(handler->getElement(),ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(SessionInitiator))) {
+                procState = "Session Initiator Error";
+                return m_priv->doSessionInitiator(this,handler);
+            }
+            else if (saml::XML::isElementNamed(handler->getElement(),shibtarget::XML::SAML2META_NS,SHIBT_L(SingleLogoutService))) {
+                procState = "Session Termination Error";
+                return m_priv->doLogout(this,handler);
+            }
+            else
+                throw ConfigurationException("Endpoint is mapped to unrecognized handler element.");
+        }
+        
+        if (strlen(targetURL)>strlen(handlerURL) && targetURL[strlen(handlerURL)]!='?')
+            throw SAMLException("Shibboleth handler invoked at an unconfigured location.");
+        
+        // This is a legacy direct execution of the handler (the old shireURL).
         // If this is a GET, we see if it's a lazy session request, otherwise
-        // assume it's a profile response and process it.
-        string cgistr;
+        // assume it's a SAML 1.x POST profile response and process it.
         if (!strcasecmp(m_priv->m_method.c_str(), "GET")) {
-            cgistr = getArgs();
-            string areq;
-            if (!cgistr.empty())
-                areq=getLazyAuthnRequest(cgistr.c_str());
-            if (!areq.empty())
-                return pair<bool,void*>(true, sendRedirect(areq));
+            procState = "Session Initiator Error";
+            return m_priv->doSessionInitiator(this, sessionProps);
         }
-        else if (!strcasecmp(m_priv->m_method.c_str(), "POST")) {
-            if (m_priv->m_content_type.empty() || strcasecmp(m_priv->m_content_type.c_str(),"application/x-www-form-urlencoded")) {
-                throw FatalProfileException(
-                    "Blocked invalid POST content-type ($1) to session creation service.",
-                    params(1,m_priv->m_content_type.c_str())
-                    );
-            }
-            // Read the POST Data
-            cgistr = getPostData();
-        }
-	
-        // Process the submission
-        string cookie,target,providerId;
-        try {
-            sessionNew(
-                SAML11_POST | SAML11_ARTIFACT,
-                cgistr.c_str(),
-                m_priv->m_remote_addr.c_str(),
-                target,
-                cookie,
-                providerId
-                );
-        }
-        catch (SAMLException& e) {
-            log(LogLevelError, string("profile processing failed: ") + e.what());
-    
-            // TODO: need to test this...may need an actual reference cast
-            if (typeid(e)==typeid(RetryableProfileException)) {
-                return pair<bool,void*>(true, sendRedirect(getAuthnRequest(target.c_str())));
-            }
-            throw;    // send it to the outer handler
-        }
-
-        log(LogLevelDebug, string("profile processing succeeded, new session created (") + cookie + ")");
-
-        if (target=="default") {
-            pair<bool,const char*> homeURL=m_priv->m_app->getString("homeURL");
-            target=homeURL.first ? homeURL.second : "/";
-        }
-        else if (target=="cookie") {
-            // Pull the target value from the "relay state" cookie.
-            pair<string,const char*> relay_cookie = getCookieNameProps("_shibstate_");
-            const char* relay_state = m_priv->getCookie(this,relay_cookie.first);
-            if (!relay_state || !*relay_state) {
-                // No apparent relay state value to use, so fall back on the default.
-                pair<bool,const char*> homeURL=m_priv->m_app->getString("homeURL");
-                target=homeURL.first ? homeURL.second : "/";
-            }
-            else {
-                char* rscopy=strdup(relay_state);
-                CgiParse::url_decode(rscopy);
-                target=rscopy;
-                free(rscopy);
-            }
-        }
-    
-        // We've got a good session, set the session cookie.
-        pair<string,const char*> shib_cookie=getCookieNameProps("_shibsession_");
-        setCookie(shib_cookie.first, cookie + shib_cookie.second);
-
-        pair<bool,bool> idpHistory=sessionProps->getBool("idpHistory");
-        if (!idpHistory.first || idpHistory.second) {
-            // Set an IdP history cookie locally (essentially just a CDC).
-            CommonDomainCookie cdc(m_priv->getCookie(this,CommonDomainCookie::CDCName));
-            setCookie(CommonDomainCookie::CDCName,string(cdc.set(providerId.c_str())) + shib_cookie.second);
-        }
-
-        // Now redirect to the target.
-        return pair<bool,void*>(true, sendRedirect(target));
+        
+        procState = "Session Creation Error";
+        return m_priv->doAssertionConsumer(this, sessionProps);
     }
     catch (MetadataException& e) {
         mlp.insert(e);
@@ -440,27 +416,24 @@ ShibTarget::doHandleProfile(void)
     mlp.insert("errorType", procState);
 
     if (targetURL)
-        mlp.insert("requestURL", targetURL);
+        mlp.insert("requestURL", m_priv->m_url.substr(0,m_priv->m_url.find('?')));
 
     return pair<bool,void*>(true,sendError("session", mlp));
 }
 
-pair<bool,void*>
-ShibTarget::doCheckAuthZ(void)
+pair<bool,void*> ShibTarget::doCheckAuthZ(void)
 {
 #ifdef _DEBUG
-    saml::NDC ndc("ShibTarget::doCheckAuthZ");
+    saml::NDC ndc("doCheckAuthZ");
 #endif
 
     ShibMLP mlp;
     const char *procState = "Authorization Processing Error";
-    const char *targetURL = NULL;
+    const char *targetURL = m_priv->m_url.c_str();
 
     try {
         if (!m_priv->m_app)
-            throw SAMLException("System uninitialized, application did not supply request information.");
-
-        targetURL = m_priv->m_url.c_str();
+            throw ConfigurationException("System uninitialized, application did not supply request information.");
 
         // Do we have an access control plugin?
         if (m_priv->m_settings.second) {
@@ -677,28 +650,26 @@ ShibTarget::doCheckAuthZ(void)
     mlp.insert("errorType", procState);
 
     if (targetURL)
-        mlp.insert("requestURL", targetURL);
+        mlp.insert("requestURL", m_priv->m_url.substr(0,m_priv->m_url.find('?')));
 
     return pair<bool,void*>(true,sendError("access", mlp));
 }
 
-pair<bool,void*>
-ShibTarget::doExportAssertions(bool exportAssertion)
+pair<bool,void*> ShibTarget::doExportAssertions(bool exportAssertion)
 {
 #ifdef _DEBUG
-    saml::NDC ndc("ShibTarget::doExportAssertions");
+    saml::NDC ndc("doExportAssertions");
 #endif
 
     ShibMLP mlp;
     const char *procState = "Attribute Processing Error";
-    const char *targetURL = NULL;
+    const char *targetURL = m_priv->m_url.c_str();
 
     try {
         if (!m_priv->m_app)
-            throw SAMLException("System uninitialized, application did not supply request information.");
+            throw ConfigurationException("System uninitialized, application did not supply request information.");
 
-        targetURL = m_priv->m_url.c_str();
-        pair<string,const char*> shib_cookie=getCookieNameProps("_shibsession_");
+        pair<string,const char*> shib_cookie=m_priv->getCookieNameProps("_shibsession_");
         const char *session_id = m_priv->getCookie(this,shib_cookie.first);
 
         if (!m_priv->m_sso_statement) {
@@ -844,165 +815,15 @@ ShibTarget::doExportAssertions(bool exportAssertion)
     mlp.insert("errorType", procState);
 
     if (targetURL)
-        mlp.insert("requestURL", targetURL);
+        mlp.insert("requestURL", m_priv->m_url.substr(0,m_priv->m_url.find('?')));
 
     return pair<bool,void*>(true,sendError("rm", mlp));
 }
 
 
-// Low level APIs
-
-// Get the session cookie name and properties for the application
-pair<string,const char*> ShibTarget::getCookieNameProps(const char* prefix) const
-{
-    static const char* defProps="; path=/";
-    
-    const IPropertySet* props=m_priv->m_app ? m_priv->m_app->getPropertySet("Sessions") : NULL;
-    if (props) {
-        pair<bool,const char*> p=props->getString("cookieProps");
-        if (!p.first)
-            p.second=defProps;
-        pair<bool,const char*> p2=props->getString("cookieName");
-        if (p2.first)
-            return make_pair(string(prefix) + p2.second,p.second);
-        return make_pair(string(prefix) + m_priv->m_app->getHash(),p.second);
-    }
-    
-    // Shouldn't happen, but just in case..
-    return make_pair(prefix,defProps);
-}
-        
-// Find the default assertion consumer service for the resource
-const char*
-ShibTarget::getShireURL(const char* resource) const
-{
-    if (!m_priv->m_shireURL.empty())
-        return m_priv->m_shireURL.c_str();
-
-    // XXX: what to do is m_app is NULL?
-
-    bool shire_ssl_only=false;
-    const char* shire=NULL;
-    const IPropertySet* props=m_priv->m_app->getPropertySet("Sessions");
-    if (props) {
-        pair<bool,bool> p=props->getBool("handlerSSL");
-        if (p.first)
-            shire_ssl_only=p.second;
-        pair<bool,const char*> p2=props->getString("handlerURL");
-        if (p2.first)
-            shire=p2.second;
-    }
-    
-    // Should never happen...
-    if (!shire || (*shire!='/' && strncmp(shire,"http:",5) && strncmp(shire,"https:",6)))
-        return NULL;
-
-    // The "shireURL" property can be in one of three formats:
-    //
-    // 1) a full URI:       http://host/foo/bar
-    // 2) a hostless URI:   http:///foo/bar
-    // 3) a relative path:  /foo/bar
-    //
-    // #  Protocol  Host        Path
-    // 1  shire     shire       shire
-    // 2  shire     resource    shire
-    // 3  resource  resource    shire
-    //
-    // note: if shire_ssl_only is true, make sure the protocol is https
-
-    const char* path = NULL;
-
-    // Decide whether to use the shire or the resource for the "protocol"
-    const char* prot;
-    if (*shire != '/') {
-        prot = shire;
-    }
-    else {
-        prot = resource;
-        path = shire;
-    }
-
-    // break apart the "protocol" string into protocol, host, and "the rest"
-    const char* colon=strchr(prot,':');
-    colon += 3;
-    const char* slash=strchr(colon,'/');
-    if (!path)
-        path = slash;
-
-    // Compute the actual protocol and store in member.
-    if (shire_ssl_only)
-        m_priv->m_shireURL.assign("https://");
-    else
-        m_priv->m_shireURL.assign(prot, colon-prot);
-
-    // create the "host" from either the colon/slash or from the target string
-    // If prot == shire then we're in either #1 or #2, else #3.
-    // If slash == colon then we're in #2.
-    if (prot != shire || slash == colon) {
-        colon = strchr(resource, ':');
-        colon += 3;      // Get past the ://
-        slash = strchr(colon, '/');
-    }
-    string host(colon, slash-colon);
-
-    // Build the shire URL
-    m_priv->m_shireURL+=host + path;
-    return m_priv->m_shireURL.c_str();
-}
-        
-// Generate a Shib 1.x AuthnRequest redirect URL for the resource,
-// using whatever relay state mechanism is specified for the app.
-string ShibTarget::getAuthnRequest(const char* resource)
-{
-    // XXX: what to do if m_app is NULL?
-
-    string req;
-    char timebuf[16];
-    sprintf(timebuf,"%u",time(NULL));
-    
-    const IPropertySet* props=m_priv->m_app ? m_priv->m_app->getPropertySet("Sessions") : NULL;
-    if (props) {
-        pair<bool,const char*> wayf=props->getString("wayfURL");
-        if (wayf.first) {
-            req=req + wayf.second + "?shire=" + CgiParse::url_encode(getShireURL(resource)) + "&time=" + timebuf;
-            
-            // How should the target value be preserved?
-            pair<bool,bool> localRelayState=m_priv->m_conf->getPropertySet("Local")->getBool("localRelayState");
-            if (!localRelayState.first || !localRelayState.second) {
-                // The old way, just send it along.
-                req = req + "&target=" + CgiParse::url_encode(resource);
-            }
-            else {
-                // Here we store the state in a cookie and send a fixed
-                // value to the IdP so we can recognize it on the way back.
-                pair<string,const char*> shib_cookie=getCookieNameProps("_shibstate_");
-                setCookie(shib_cookie.first,CgiParse::url_encode(resource) + shib_cookie.second);
-                req += "&target=cookie";
-            }
-            
-            pair<bool,bool> old=m_priv->m_app->getBool("oldAuthnRequest");
-            if (!old.first || !old.second) {
-                wayf=m_priv->m_app->getString("providerId");
-                if (wayf.first)
-                    req=req + "&providerId=" + CgiParse::url_encode(wayf.second);
-            }
-        }
-    }
-    return req;
-}
-        
-// Process a lazy session setup request and turn it into an AuthnRequest
-string ShibTarget::getLazyAuthnRequest(const char* query_string)
-{
-    CgiParse parser(query_string,strlen(query_string));
-    const char* target=parser.get_value("target");
-    if (!target || !*target)
-        return "";
-    return getAuthnRequest(target);
-}
-
 void ShibTarget::sessionNew(
     int supported_profiles,
+    const string& recipient,
     const char* packet,
     const char* ip,
     string& target,
@@ -1031,8 +852,8 @@ void ShibTarget::sessionNew(
     }
   
     shibrpc_new_session_args_2 arg;
-    arg.recipient = (char*) m_priv->m_shireURL.c_str();
-    arg.application_id = (char*) m_priv->m_app->getId();
+    arg.recipient = (char*)recipient.c_str();
+    arg.application_id = (char*)m_priv->m_app->getId();
     arg.packet = (char*)packet;
     arg.client_addr = (char*)ip;
     arg.supported_profiles = supported_profiles;
@@ -1105,7 +926,7 @@ void ShibTarget::sessionNew(
     rpc.pool();
     if (except) {
         auto_ptr<SAMLException> wrapper(except);
-        throw *wrapper;
+        wrapper->raise();
     }
 }
 
@@ -1247,7 +1068,7 @@ void ShibTarget::sessionGet(
     rpc.pool();
     if (except) {
         auto_ptr<SAMLException> wrapper(except);
-        throw *wrapper;
+        wrapper->raise();
     }
 }
 
@@ -1305,8 +1126,7 @@ ShibTargetPriv::~ShibTargetPriv()
   m_Config = NULL;
 }
 
-void
-ShibTargetPriv::get_application(const string& protocol, const string& hostname, int port, const string& uri)
+void ShibTargetPriv::get_application(const string& protocol, const string& hostname, int port, const string& uri)
 {
   if (m_app)
     return;
@@ -1348,7 +1168,7 @@ ShibTargetPriv::get_application(const string& protocol, const string& hostname, 
   m_url += uri;
 }
 
-const char* ShibTargetPriv::getCookie(ShibTarget* st, const string& name)
+const char* ShibTargetPriv::getCookie(ShibTarget* st, const string& name) const
 {
     if (m_cookieMap.empty()) {
         string cookies=st->getCookies();
@@ -1377,6 +1197,351 @@ const char* ShibTargetPriv::getCookie(ShibTarget* st, const string& name)
     }
     map<string,string>::const_iterator lookup=m_cookieMap.find(name);
     return (lookup==m_cookieMap.end()) ? NULL : lookup->second.c_str();
+}
+
+// Get the session cookie name and properties for the application
+pair<string,const char*> ShibTargetPriv::getCookieNameProps(const char* prefix) const
+{
+    static const char* defProps="; path=/";
+    
+    const IPropertySet* props=m_app ? m_app->getPropertySet("Sessions") : NULL;
+    if (props) {
+        pair<bool,const char*> p=props->getString("cookieProps");
+        if (!p.first)
+            p.second=defProps;
+        pair<bool,const char*> p2=props->getString("cookieName");
+        if (p2.first)
+            return make_pair(string(prefix) + p2.second,p.second);
+        return make_pair(string(prefix) + m_app->getHash(),p.second);
+    }
+    
+    // Shouldn't happen, but just in case..
+    return make_pair(prefix,defProps);
+}
+
+const char* ShibTargetPriv::getHandlerURL(const char* resource) const
+{
+    if (!m_handlerURL.empty())
+        return m_handlerURL.c_str();
+
+    if (!m_app)
+        throw ConfigurationException("Internal error in ShibTargetPriv::getHandlerURL, missing application pointer.");
+
+    bool ssl_only=false;
+    const char* handler=NULL;
+    const IPropertySet* props=m_app->getPropertySet("Sessions");
+    if (props) {
+        pair<bool,bool> p=props->getBool("handlerSSL");
+        if (p.first)
+            ssl_only=p.second;
+        pair<bool,const char*> p2=props->getString("handlerURL");
+        if (p2.first)
+            handler=p2.second;
+    }
+    
+    // Should never happen...
+    if (!handler || (*handler!='/' && strncmp(handler,"http:",5) && strncmp(handler,"https:",6)))
+        throw ConfigurationException(
+            "Invalid handlerURL property ($1) in Application ($2)",
+            params(2, handler ? handler : "null", m_app->getId())
+            );
+
+    // The "handlerURL" property can be in one of three formats:
+    //
+    // 1) a full URI:       http://host/foo/bar
+    // 2) a hostless URI:   http:///foo/bar
+    // 3) a relative path:  /foo/bar
+    //
+    // #  Protocol  Host        Path
+    // 1  handler   handler     handler
+    // 2  handler   resource    handler
+    // 3  resource  resource    handler
+    //
+    // note: if ssl_only is true, make sure the protocol is https
+
+    const char* path = NULL;
+
+    // Decide whether to use the handler or the resource for the "protocol"
+    const char* prot;
+    if (*handler != '/') {
+        prot = handler;
+    }
+    else {
+        prot = resource;
+        path = handler;
+    }
+
+    // break apart the "protocol" string into protocol, host, and "the rest"
+    const char* colon=strchr(prot,':');
+    colon += 3;
+    const char* slash=strchr(colon,'/');
+    if (!path)
+        path = slash;
+
+    // Compute the actual protocol and store in member.
+    if (ssl_only)
+        m_handlerURL.assign("https://");
+    else
+        m_handlerURL.assign(prot, colon-prot);
+
+    // create the "host" from either the colon/slash or from the target string
+    // If prot == handler then we're in either #1 or #2, else #3.
+    // If slash == colon then we're in #2.
+    if (prot != handler || slash == colon) {
+        colon = strchr(resource, ':');
+        colon += 3;      // Get past the ://
+        slash = strchr(colon, '/');
+    }
+    string host(colon, slash-colon);
+
+    // Build the shire URL
+    m_handlerURL+=host + path;
+    return m_handlerURL.c_str();
+}
+
+pair<bool,void*> ShibTargetPriv::doSessionInitiator(ShibTarget* st, const IPropertySet* handler, bool isHandler) const
+{
+    string dupresource;
+    const char* resource=NULL;
+    const IPropertySet* ACS=NULL;
+    
+    if (isHandler) {
+        // We're running as an actual handler, so check to see if we understand the binding.
+        pair<bool,const XMLCh*> binding=handler->getXMLString("Binding");
+        if (binding.first && XMLString::compareString(binding.second,Constants::SHIB_SESSIONINIT_PROFILE_URI))
+            throw UnsupportedProfileException(
+                "Unsupported session initiator binding ($1).", params(1,handler->getString("Binding").second)
+                );
+        
+        /* 
+         * Binding is CGI query string with:
+         *  target      the resource to direct back to later
+         *  acsIndex    optional index of an ACS to use on the way back in
+         *  providerId  optional direct invocation of a specific IdP
+         */
+        string query=st->getArgs();
+        CgiParse parser(query.c_str(),query.length());
+
+        const char* option=parser.get_value("acsIndex");
+        if (option)
+            ACS=m_app->getAssertionConsumerServiceByIndex(atoi(option));
+        option=parser.get_value("providerId");
+        
+        resource=parser.get_value("target");
+        if (!resource || !*resource) {
+            pair<bool,const char*> home=m_app->getString("homeURL");
+            if (home.first)
+                resource=home.second;
+            else
+                throw FatalProfileException("Session initiator requires a target parameter or a homeURL application property.");
+        }
+        else if (!option) {
+            dupresource=resource;
+            resource=dupresource.c_str();
+        }
+        
+        if (option) {
+            // Here we actually use metadata to invoke the SSO service directly.
+            // The only currently understood binding is the Shibboleth profile.
+            Metadata m(m_app->getMetadataProviders());
+            const IEntityDescriptor* entity=m.lookup(option);
+            if (!entity)
+                throw MetadataException("Session initiator unable to locate metadata for provider ($1).", params(1,option));
+            const IIDPSSODescriptor* role=entity->getIDPSSODescriptor(saml::XML::SAML11_PROTOCOL_ENUM);
+            if (!role)
+                throw MetadataException(
+                    "Session initiator unable to locate SAML identity provider role for provider ($1).", params(1,option)
+                    );
+            const IEndpointManager* SSO=role->getSingleSignOnServiceManager();
+            const IEndpoint* ep=SSO->getEndpointByBinding(Constants::SHIB_AUTHNREQUEST_PROFILE_URI);
+            if (!ep)
+                throw MetadataException(
+                    "Session initiator unable to locate compatible SSO service for provider ($1).", params(1,option)
+                    );
+            auto_ptr_char dest(ep->getLocation());
+            return ShibAuthnRequest(
+                st,ACS ? ACS : m_app->getDefaultAssertionConsumerService(),dest.get(),resource,m_app->getString("providerId").second
+                );
+        }
+    }
+    else {
+        // We're running as a "virtual handler" from within the filter.
+        // The target resource is the current one and everything else is defaulted.
+        resource=m_url.c_str();
+    }
+    
+    if (!ACS) ACS=m_app->getDefaultAssertionConsumerService();
+    
+    // For now, we only support external session initiation via a wayfURL
+    pair<bool,const char*> wayfURL=handler->getString("wayfURL");
+    if (!wayfURL.first)
+        throw ConfigurationException("Session initiator is missing wayfURL property.");
+
+    pair<bool,const XMLCh*> wayfBinding=handler->getXMLString("wayfBinding");
+    if (!wayfBinding.first || !XMLString::compareString(wayfBinding.second,Constants::SHIB_AUTHNREQUEST_PROFILE_URI))
+        // Standard Shib 1.x
+        return ShibAuthnRequest(st,ACS,wayfURL.second,resource,m_app->getString("providerId").second);
+    else if (!XMLString::compareString(wayfBinding.second,Constants::SHIB_LEGACY_AUTHNREQUEST_PROFILE_URI))
+        // Shib pre-1.2
+        return ShibAuthnRequest(st,ACS,wayfURL.second,resource,NULL);
+    else if (!strcmp(handler->getString("wayfBinding").second,"urn:mace:shibboleth:1.0:profiles:EAuth")) {
+        // TODO: Finalize E-Auth profile URI
+        pair<bool,bool> localRelayState=m_conf->getPropertySet("Local")->getBool("localRelayState");
+        if (!localRelayState.first || !localRelayState.second)
+            throw ConfigurationException("Federal E-Authn requests cannot include relay state, so localRelayState must be enabled.");
+
+        // Here we store the state in a cookie.
+        pair<string,const char*> shib_cookie=getCookieNameProps("_shibstate_");
+        st->setCookie(shib_cookie.first,CgiParse::url_encode(resource) + shib_cookie.second);
+        return make_pair(true, st->sendRedirect(wayfURL.second));
+    }
+   
+    throw UnsupportedProfileException("Unsupported WAYF binding ($1).", params(1,handler->getString("wayfBinding").second));
+}
+
+// Handles Shib 1.x AuthnRequest profile.
+pair<bool,void*> ShibTargetPriv::ShibAuthnRequest(
+    ShibTarget* st,
+    const IPropertySet* shire,
+    const char* dest,
+    const char* target,
+    const char* providerId
+    ) const
+{
+    // Compute the ACS URL. We add the ACS location to the handler baseURL.
+    // Legacy configs will not have an ACS specified, so no suffix will be added.
+    string ACSloc=getHandlerURL(target);
+    if (shire) ACSloc+=shire->getString("Location").second;
+    
+    char timebuf[16];
+    sprintf(timebuf,"%u",time(NULL));
+    string req=string(dest) + "?shire=" + CgiParse::url_encode(ACSloc.c_str()) + "&time=" + timebuf;
+
+    // How should the resource value be preserved?
+    pair<bool,bool> localRelayState=m_conf->getPropertySet("Local")->getBool("localRelayState");
+    if (!localRelayState.first || !localRelayState.second) {
+        // The old way, just send it along.
+        req+="&target=" + CgiParse::url_encode(target);
+    }
+    else {
+        // Here we store the state in a cookie and send a fixed
+        // value to the IdP so we can recognize it on the way back.
+        pair<string,const char*> shib_cookie=getCookieNameProps("_shibstate_");
+        st->setCookie(shib_cookie.first,CgiParse::url_encode(target) + shib_cookie.second);
+        req+="&target=cookie";
+    }
+    
+    // Only omitted for 1.1 style requests.
+    if (providerId)
+        req+="&providerId=" + CgiParse::url_encode(providerId);
+
+    return make_pair(true, st->sendRedirect(req));
+}
+
+pair<bool,void*> ShibTargetPriv::doAssertionConsumer(ShibTarget* st, const IPropertySet* handler) const
+{
+    int profile=0;
+    string input,cookie,target,providerId;
+
+    // Right now, this only handles SAML 1.1.
+    pair<bool,const XMLCh*> binding=handler->getXMLString("Binding");
+    if (!binding.first || !XMLString::compareString(binding.second,SAMLBrowserProfile::BROWSER_POST)) {
+        if (strcasecmp(m_method.c_str(), "POST"))
+            throw FatalProfileException(
+                "SAML 1.1 Browser/POST handler does not support HTTP method ($1).", params(1,m_method.c_str())
+                );
+        
+        if (m_content_type.empty() || strcasecmp(m_content_type.c_str(),"application/x-www-form-urlencoded"))
+            throw FatalProfileException(
+                "Blocked invalid content-type ($1) submitted to SAML 1.1 Browser/POST handler.", params(1,m_content_type.c_str())
+                );
+        input=st->getPostData();
+        profile|=SAML11_POST;
+    }
+    else if (!XMLString::compareString(binding.second,SAMLBrowserProfile::BROWSER_ARTIFACT)) {
+        if (strcasecmp(m_method.c_str(), "GET"))
+            throw FatalProfileException(
+                "SAML 1.1 Browser/Artifact handler does not support HTTP method ($1).", params(1,m_method.c_str())
+                );
+        input=st->getArgs();
+        profile|=SAML11_ARTIFACT;
+    }
+    
+    if (input.empty())
+        throw FatalProfileException("SAML 1.1 Browser Profile handler received no data from browser.");
+            
+    pair<bool,const char*> loc=handler->getString("Location");
+    st->sessionNew(
+        profile,
+        loc.first ? m_handlerURL + loc.second : m_handlerURL,
+        input.c_str(),
+        m_remote_addr.c_str(),
+        target,
+        cookie,
+        providerId
+        );
+
+    st->log(ShibTarget::LogLevelDebug, string("profile processing succeeded, new session created (") + cookie + ")");
+
+    if (target=="default") {
+        pair<bool,const char*> homeURL=m_app->getString("homeURL");
+        target=homeURL.first ? homeURL.second : "/";
+    }
+    else if (target=="cookie") {
+        // Pull the target value from the "relay state" cookie.
+        pair<string,const char*> relay_cookie = getCookieNameProps("_shibstate_");
+        const char* relay_state = getCookie(st,relay_cookie.first);
+        if (!relay_state || !*relay_state) {
+            // No apparent relay state value to use, so fall back on the default.
+            pair<bool,const char*> homeURL=m_app->getString("homeURL");
+            target=homeURL.first ? homeURL.second : "/";
+        }
+        else {
+            char* rscopy=strdup(relay_state);
+            CgiParse::url_decode(rscopy);
+            target=rscopy;
+            free(rscopy);
+        }
+    }
+
+    // We've got a good session, set the session cookie.
+    pair<string,const char*> shib_cookie=getCookieNameProps("_shibsession_");
+    st->setCookie(shib_cookie.first, cookie + shib_cookie.second);
+
+    const IPropertySet* sessionProps=m_app->getPropertySet("Sessions");
+    pair<bool,bool> idpHistory=sessionProps->getBool("idpHistory");
+    if (!idpHistory.first || idpHistory.second) {
+        // Set an IdP history cookie locally (essentially just a CDC).
+        CommonDomainCookie cdc(getCookie(st,CommonDomainCookie::CDCName));
+
+        // Either leave in memory or set an expiration.
+        pair<bool,unsigned int> days=sessionProps->getUnsignedInt("idpHistoryDays");
+            if (!days.first || days.second==0)
+                st->setCookie(CommonDomainCookie::CDCName,string(cdc.set(providerId.c_str())) + shib_cookie.second);
+            else {
+                time_t now=time(NULL) + (days.second * 24 * 60 * 60);
+#ifdef HAVE_GMTIME_R
+                struct tm res;
+                struct tm* ptime=gmtime_r(&now,&res);
+#else
+                struct tm* ptime=gmtime(&now);
+#endif
+                char timebuf[64];
+                strftime(timebuf,64,"%a, %d %b %Y %H:%M:%S GMT",ptime);
+                st->setCookie(
+                    CommonDomainCookie::CDCName,
+                    string(cdc.set(providerId.c_str())) + shib_cookie.second + "; expires=" + timebuf
+                    );
+        }
+    }
+
+    // Now redirect to the target.
+    return pair<bool,void*>(true, st->sendRedirect(target));
+}
+
+pair<bool,void*> ShibTargetPriv::doLogout(ShibTarget* st, const IPropertySet* handler) const
+{
+    throw UnsupportedProfileException("Logout not yet supported.");
 }
 
 /*************************************************************************

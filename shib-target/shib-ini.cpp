@@ -99,6 +99,11 @@ namespace shibtarget {
         const SAMLBinding* getBinding(const XMLCh* binding) const
             {return XMLString::compareString(SAMLBinding::SOAP,binding) ? NULL : m_binding;}
         SAMLBrowserProfile::ArtifactMapper* getArtifactMapper() const {return new STArtifactMapper(this);}
+        const IPropertySet* getDefaultSessionInitiator() const;
+        const IPropertySet* getSessionInitiatorById(const char* id) const;
+        const IPropertySet* getDefaultAssertionConsumerService() const;
+        const IPropertySet* getAssertionConsumerServiceByIndex(unsigned short index) const;
+        const IPropertySet* getHandler(const char* path) const;
         
         // Provides filter to exclude special config elements.
         short acceptNode(const DOMNode* node) const;
@@ -117,6 +122,11 @@ namespace shibtarget {
         ShibBrowserProfile* m_profile;
         SAMLBinding* m_binding;
         ShibHTTPHook* m_bindingHook;
+        map<string,XMLPropertySet*> m_handlerMap;
+        map<unsigned int,const IPropertySet*> m_acsMap;
+        const IPropertySet* m_acsDefault;
+        map<string,const IPropertySet*> m_sessionInitMap;
+        const IPropertySet* m_sessionInitDefault;
         XMLPropertySet* m_credDefault;
 #ifdef HAVE_GOOD_STL
         map<xstring,XMLPropertySet*> m_credMap;
@@ -168,8 +178,7 @@ namespace shibtarget {
         ISessionCache* getSessionCache() const {return m_sessionCache;}
         IReplayCache* getReplayCache() const {return m_replayCache;}
         IRequestMapper* getRequestMapper() const {return static_cast<XMLConfigImpl*>(m_impl)->m_requestMapper;}
-        const IApplication* getApplication(const char* applicationId) const
-        {
+        const IApplication* getApplication(const char* applicationId) const {
             map<string,IApplication*>::const_iterator i=static_cast<XMLConfigImpl*>(m_impl)->m_appmap.find(applicationId);
             return (i!=static_cast<XMLConfigImpl*>(m_impl)->m_appmap.end()) ? i->second : NULL;
         }
@@ -375,8 +384,13 @@ const IPropertySet* XMLPropertySet::getPropertySet(const char* name, const char*
     return (i!=m_nested.end()) ? i->second : NULL;
 }
 
-XMLApplication::XMLApplication(const IConfig* ini, const Iterator<ICredentials*>& creds, const DOMElement* e, const XMLApplication* base)
-    : m_ini(ini), m_base(base), m_profile(NULL), m_binding(NULL), m_bindingHook(NULL), m_credDefault(NULL)
+XMLApplication::XMLApplication(
+    const IConfig* ini,
+    const Iterator<ICredentials*>& creds,
+    const DOMElement* e,
+    const XMLApplication* base
+    ) : m_ini(ini), m_base(base), m_profile(NULL), m_binding(NULL), m_bindingHook(NULL),
+        m_credDefault(NULL), m_sessionInitDefault(NULL), m_acsDefault(NULL)
 {
 #ifdef _DEBUG
     saml::NDC ndc("XMLApplication");
@@ -387,10 +401,15 @@ XMLApplication::XMLApplication(const IConfig* ini, const Iterator<ICredentials*>
         // First load any property sets.
         map<string,string> root_remap;
         root_remap["shire"]="session";
+        root_remap["shireURL"]="handlerURL";
+        root_remap["shireSSL"]="handlerSSL";
         load(e,log,this,&root_remap);
         const IPropertySet* propcheck=getPropertySet("Errors");
         if (propcheck && !propcheck->getString("session").first)
-            throw MalformedException("<Errors> element requires 'session' (or deprecated 'shire') attribute");
+            throw ConfigurationException("<Errors> element requires 'session' (or deprecated 'shire') attribute");
+        propcheck=getPropertySet("Sessions");
+        if (propcheck && !propcheck->getString("handlerURL").first)
+            throw ConfigurationException("<Sessions> element requires 'handlerURL' (or deprecated 'shireURL') attribute");
 
         m_hash=getId();
         m_hash+=getString("providerId").second;
@@ -398,16 +417,61 @@ XMLApplication::XMLApplication(const IConfig* ini, const Iterator<ICredentials*>
 
         ShibTargetConfig& conf=ShibTargetConfig::getConfig();
         SAMLConfig& shibConf=SAMLConfig::getConfig();
+
+        if (conf.isEnabled(ShibTargetConfig::RequestMapper)) {
+            // Process handlers.
+            bool hardACS=false, hardSessionInit=false;
+            DOMElement* handler=saml::XML::getFirstChildElement(propcheck->getElement());
+            while (handler) {
+                XMLPropertySet* hprops=new XMLPropertySet();
+                hprops->load(handler,log,this); // filter irrelevant for now, no embedded elements expected
+                m_handlerMap[hprops->getString("Location").second]=hprops;
+                
+                // If it's an ACS or SI, handle lookup mappings and defaulting.
+                if (saml::XML::isElementNamed(handler,shibtarget::XML::SAML2META_NS,SHIBT_L(AssertionConsumerService))) {
+                    m_acsMap[hprops->getUnsignedInt("index").second]=hprops;
+                    if (!hardACS) {
+                        pair<bool,bool> defprop=hprops->getBool("isDefault");
+                        if (defprop.first) {
+                            if (defprop.second) {
+                                hardACS=true;
+                                m_acsDefault=hprops;
+                            }
+                        }
+                        else if (!m_acsDefault)
+                            m_acsDefault=hprops;
+                    }
+                }
+                else if (saml::XML::isElementNamed(handler,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(SessionInitiator))) {
+                    pair<bool,const char*> si_id=hprops->getString("id");
+                    if (si_id.first && si_id.second)
+                        m_sessionInitMap[si_id.second]=hprops;
+                    if (!hardSessionInit) {
+                        pair<bool,bool> defprop=hprops->getBool("isDefault");
+                        if (defprop.first) {
+                            if (defprop.second) {
+                                hardSessionInit=true;
+                                m_sessionInitDefault=hprops;
+                            }
+                        }
+                        else if (!m_sessionInitDefault)
+                            m_sessionInitDefault=hprops;
+                    }
+                }
+                handler=saml::XML::getNextSiblingElement(handler);
+            }
+        }
+        
+        // Process general configuration elements.
         int i;
         DOMNodeList* nlist=e->getElementsByTagNameNS(saml::XML::SAML_NS,L(AttributeDesignator));
-        for (i=0; nlist && i<nlist->getLength(); i++) {
+        for (i=0; nlist && i<nlist->getLength(); i++)
             m_designators.push_back(new SAMLAttributeDesignator(static_cast<DOMElement*>(nlist->item(i))));
-        }
 
         nlist=e->getElementsByTagNameNS(saml::XML::SAML_NS,L(Audience));
-        for (i=0; nlist && i<nlist->getLength(); i++) {
+        for (i=0; nlist && i<nlist->getLength(); i++)
             m_audiences.push_back(nlist->item(i)->getFirstChild()->getNodeValue());
-        }
+
         // Always include our own providerId as an audience.
         m_audiences.push_back(getXMLString("providerId").second);
 
@@ -530,6 +594,11 @@ void XMLApplication::cleanup()
     delete m_bindingHook;
     delete m_binding;
     delete m_profile;
+    map<string,XMLPropertySet*>::iterator h=m_handlerMap.begin();
+    while (h!=m_handlerMap.end()) {
+        delete h->second;
+        h++;
+    }
     delete m_credDefault;
 #ifdef HAVE_GOOD_STL
     map<xstring,XMLPropertySet*>::iterator c=m_credMap.begin();
@@ -567,6 +636,9 @@ short XMLApplication::acceptNode(const DOMNode* node) const
         return FILTER_ACCEPT;
     const XMLCh* name=node->getLocalName();
     if (!XMLString::compareString(name,SHIBT_L(Application)) ||
+        !XMLString::compareString(name,SHIBT_L(AssertionConsumerService)) ||
+        !XMLString::compareString(name,SHIBT_L(SingleLogoutService)) ||
+        !XMLString::compareString(name,SHIBT_L(SessionInitiator)) ||
         !XMLString::compareString(name,SHIBT_L(AAPProvider)) ||
         !XMLString::compareString(name,SHIBT_L(CredentialUse)) ||
         !XMLString::compareString(name,SHIBT_L(RelyingParty)) ||
@@ -690,6 +762,39 @@ const IPropertySet* XMLApplication::getCredentialUse(const IEntityDescriptor* pr
     return m_credDefault;
 }
 
+const IPropertySet* XMLApplication::getDefaultSessionInitiator() const
+{
+    if (m_sessionInitDefault) return m_sessionInitDefault;
+    return m_base ? m_base->getDefaultSessionInitiator() : NULL;
+}
+
+const IPropertySet* XMLApplication::getSessionInitiatorById(const char* id) const
+{
+    map<string,const IPropertySet*>::const_iterator i=m_sessionInitMap.find(id);
+    if (i!=m_sessionInitMap.end()) return i->second;
+    return m_base ? m_base->getSessionInitiatorById(id) : NULL;
+}
+
+const IPropertySet* XMLApplication::getDefaultAssertionConsumerService() const
+{
+    if (m_acsDefault) return m_acsDefault;
+    return m_base ? m_base->getDefaultAssertionConsumerService() : NULL;
+}
+
+const IPropertySet* XMLApplication::getAssertionConsumerServiceByIndex(unsigned short index) const
+{
+    map<unsigned int,const IPropertySet*>::const_iterator i=m_acsMap.find(index);
+    if (i!=m_acsMap.end()) return i->second;
+    return m_base ? m_base->getAssertionConsumerServiceByIndex(index) : NULL;
+}
+
+const IPropertySet* XMLApplication::getHandler(const char* path) const
+{
+    string wrap(path);
+    map<string,XMLPropertySet*>::const_iterator i=m_handlerMap.find(wrap.substr(0,wrap.find('?')));
+    return (i!=m_handlerMap.end()) ? i->second : NULL;
+}
+
 ReloadableXMLFileImpl* XMLConfig::newImplementation(const char* pathname, bool first) const
 {
     return new XMLConfigImpl(pathname,first,this);
@@ -735,7 +840,7 @@ void XMLConfigImpl::init(bool first)
         if (!saml::XML::isElementNamed(ReloadableXMLFileImpl::m_root,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(ShibbolethTargetConfig)) &&
             !saml::XML::isElementNamed(ReloadableXMLFileImpl::m_root,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(SPConfig))) {
             log.error("Construction requires a valid configuration file: (conf:SPConfig as root element)");
-            throw MalformedException("Construction requires a valid configuration file: (conf:SPConfig as root element)");
+            throw ConfigurationException("Construction requires a valid configuration file: (conf:SPConfig as root element)");
         }
 
         SAMLConfig& shibConf=SAMLConfig::getConfig();
@@ -872,7 +977,7 @@ void XMLConfigImpl::init(bool first)
                         }
                         else {
                             log.fatal("can't build Listener object, missing conf:Listener element?");
-                            throw MalformedException("can't build Listener object, missing conf:Listener element?");
+                            throw ConfigurationException("can't build Listener object, missing conf:Listener element?");
                         }
                     }
                 }
@@ -910,7 +1015,7 @@ void XMLConfigImpl::init(bool first)
                         }
                         else {
                             log.fatal("can't build Session Cache object, missing conf:SessionCache element?");
-                            throw MalformedException("can't build Session Cache object, missing conf:SessionCache element?");
+                            throw ConfigurationException("can't build Session Cache object, missing conf:SessionCache element?");
                         }
                     }
                 }
@@ -967,7 +1072,7 @@ void XMLConfigImpl::init(bool first)
             }
             else {
                 log.fatal("can't build Request Mapper object, missing conf:RequestMapProvider element?");
-                throw MalformedException("can't build Request Mapper object, missing conf:RequestMapProvider element?");
+                throw ConfigurationException("can't build Request Mapper object, missing conf:RequestMapProvider element?");
             }
         }
         
@@ -1000,7 +1105,7 @@ void XMLConfigImpl::init(bool first)
             );
         if (!app) {
             log.fatal("can't build default Application object, missing conf:Applications element?");
-            throw SAMLException("can't build default Application object, missing conf:Applications element?");
+            throw ConfigurationException("can't build default Application object, missing conf:Applications element?");
         }
         XMLApplication* defapp=new XMLApplication(m_outer, m_creds, app);
         m_appmap[defapp->getId()]=defapp;
@@ -1011,7 +1116,7 @@ void XMLConfigImpl::init(bool first)
             XMLApplication* iapp=new XMLApplication(m_outer,m_creds,static_cast<DOMElement*>(nlist->item(i)),defapp);
             if (m_appmap.find(iapp->getId())!=m_appmap.end()) {
                 log.fatal("found conf:Application element with duplicate Id attribute");
-                throw SAMLException("found conf:Application element with duplicate Id attribute");
+                throw ConfigurationException("found conf:Application element with duplicate Id attribute");
             }
             m_appmap[iapp->getId()]=iapp;
         }

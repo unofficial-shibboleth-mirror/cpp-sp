@@ -247,7 +247,7 @@ namespace shibtarget {
             static const XMLCh applicationId[];
             static const XMLCh Application[];
             static const XMLCh Applications[];
-            //static const XMLCh AssertionConsumerService[];
+            static const XMLCh AssertionConsumerService[];
             static const XMLCh CredentialsProvider[];
             static const XMLCh CredentialUse[];
             static const XMLCh Extensions[];
@@ -257,6 +257,8 @@ namespace shibtarget {
             static const XMLCh Host[];
             static const XMLCh htaccess[];
             static const XMLCh Implementation[];
+            static const XMLCh index[];
+            static const XMLCh isDefault[];
             static const XMLCh Library[];
             static const XMLCh Listener[];
             static const XMLCh Local[];
@@ -278,10 +280,12 @@ namespace shibtarget {
             static const XMLCh RevocationProvider[];
             static const XMLCh Rule[];
             static const XMLCh SessionCache[];
+            static const XMLCh SessionInitiator[];
             static const XMLCh SHAR[];
             static const XMLCh ShibbolethTargetConfig[];
             static const XMLCh SHIRE[];
             static const XMLCh Signing[];
+            static const XMLCh SingleLogoutService[];
             static const XMLCh SPConfig[];
             static const XMLCh TCPListener[];
             static const XMLCh TLS[];

@@ -328,7 +328,7 @@ void GetServerVariable(LPEXTENSION_CONTROL_BLOCK lpECB, LPSTR lpszVariable, dyna
     s.erase();
     size=s.size();
 
-    while (lpECB->GetServerVariable(lpECB->ConnID,lpszVariable,s,&size))
+    while (!lpECB->GetServerVariable(lpECB->ConnID,lpszVariable,s,&size))
     {
         // Grumble. Check the error.
         DWORD e=GetLastError();
@@ -402,7 +402,6 @@ public:
     dynabuf remote_addr(16),method(5),content_type(32),hostname(32);
     GetServerVariable(pfc,"SERVER_NAME",hostname,32);
     GetServerVariable(pfc,"REMOTE_ADDR",remote_addr,16);
-    // The last two appear to be unavailable to this filter hook, but we don't need them.
     GetServerVariable(pfc,"REQUEST_METHOD",method,5,false);
     GetServerVariable(pfc,"CONTENT_TYPE",content_type,32,false);
 
@@ -1053,7 +1052,7 @@ class ShibTargetIsapiE : public ShibTarget
   
 public:
   ShibTargetIsapiE(LPEXTENSION_CONTROL_BLOCK lpECB, const site_t& site)
-    : m_log(&Category::getInstance("isapi_shib"))
+    : m_log(&Category::getInstance("isapi_shib_filter"))
   {
     dynabuf ssl(5);
     GetServerVariable(lpECB,"HTTPS",ssl,5);
@@ -1092,7 +1091,42 @@ public:
     if (site.m_name!=host && site.m_aliases.find(host)==site.m_aliases.end())
         host=site.m_name.c_str();
 
-    init(g_Config, scheme, host, atoi(port), url, lpECB->lpszContentType, remote_addr, lpECB->lpszMethod);
+    /*
+     * IIS screws us over on PATH_INFO (the hits keep on coming). We need to figure out if
+     * the server is set up for proper PATH_INFO handling, or "IIS sucks rabid weasels mode",
+     * which is the default. No perfect way to tell, but we can take a good guess by checking
+     * whether the URL is a substring of the PATH_INFO:
+     * 
+     * e.g. for /Shibboleth.sso/SAML/POST
+     * 
+     *  Bad mode (default):
+     *      URL:        /Shibboleth.sso
+     *      PathInfo:   /Shibboleth.sso/SAML/POST
+     * 
+     *  Good mode:
+     *      URL:        /Shibboleth.sso
+     *      PathInfo:   /SAML/POST
+     */
+    
+    string fullurl;
+    
+    // Clearly we're only in bad mode if path info exists at all.
+    if (lpECB->lpszPathInfo && *(lpECB->lpszPathInfo)) {
+        if (strstr(lpECB->lpszPathInfo,url))
+            // Pretty good chance we're in bad mode, unless the PathInfo repeats the path itself.
+            fullurl=lpECB->lpszPathInfo;
+        else {
+            fullurl+=url;
+            fullurl+=lpECB->lpszPathInfo;
+        }
+    }
+    
+    // For consistency with Apache, let's add the query string.
+    if (lpECB->lpszQueryString && *(lpECB->lpszQueryString)) {
+        fullurl+='?';
+        fullurl+=lpECB->lpszQueryString;
+    }
+    init(g_Config, scheme, host, atoi(port), fullurl.c_str(), lpECB->lpszContentType, remote_addr, lpECB->lpszMethod);
 
     m_lpECB = lpECB;
   }
@@ -1128,12 +1162,12 @@ public:
       char buf[8192];
       DWORD datalen=m_lpECB->cbTotalBytes;
       while (datalen) {
-	DWORD buflen=8192;
-	BOOL ret = m_lpECB->ReadClient(m_lpECB->ConnID, buf, &buflen);
-	if (!ret || !buflen)
-	  throw FatalProfileException("Error reading profile submission from browser.");
-	cgistr.append(buf, buflen);
-	datalen-=buflen;
+        DWORD buflen=8192;
+        BOOL ret = m_lpECB->ReadClient(m_lpECB->ConnID, buf, &buflen);
+        if (!ret || !buflen)
+          throw FatalProfileException("Error reading profile submission from browser.");
+        cgistr.append(buf, buflen);
+        datalen-=buflen;
       }
       return cgistr;
     }
@@ -1179,7 +1213,7 @@ public:
   // Note that it can also happen with HTAccess, but we don't support that, yet.
   virtual void* returnDecline(void) {
     return (void*)
-      WriteClientError(m_lpECB, "ISAPA extension can only be invoked to process incoming sessions."
+      WriteClientError(m_lpECB, "ISAPI extension can only be invoked to process Shibboleth protocol requests."
 		       "Make sure the mapped file extension doesn't match actual content.");
   }
   virtual void* returnOK(void) { return (void*) HSE_STATUS_SUCCESS; }
@@ -1198,7 +1232,7 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
     const IApplication* application=NULL;
     try {
         ostringstream threadid;
-        threadid << "[" << getpid() << "] shire_handler" << '\0';
+        threadid << "[" << getpid() << "] isapi_shib_extension" << '\0';
         saml::NDC ndc(threadid.str().c_str());
 
         // Determine web site number. This can't really fail, I don't think.
@@ -1211,7 +1245,7 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
             return WriteClientError(lpECB, "Shibboleth Extension not configured for this web site.");
 
         ShibTargetIsapiE ste(lpECB, map_i->second);
-        pair<bool,void*> res = ste.doHandleProfile();
+        pair<bool,void*> res = ste.doHandler();
         if (res.first) return (DWORD)res.second;
         
         return WriteClientError(lpECB, "Shibboleth Extension failed to process request");
