@@ -170,6 +170,20 @@ static int shib_error_page(request_rec* r, const IApplication* app, const char* 
     return SERVER_ERROR;
 }
 
+static char* shib_get_targeturl(request_rec* r, const char* scheme=NULL)
+{
+    // On 1.3, this is always canonical, but on 2.0, UseCanonicalName comes into play.
+    // However, we also have a setting to forcibly replace the scheme for esoteric cases.
+    if (scheme) {
+        unsigned port = ap_get_server_port(r);
+        if ((!strcmp(scheme,"http") && port==80) || (!strcmp(scheme,"https") && port==443)) {
+            return ap_pstrcat(r->pool, scheme, "://", ap_get_server_name(r), r->unparsed_uri, NULL);
+        }
+        return ap_psprintf(r->pool, "%s://%s:%u%s", scheme, ap_get_server_name(r), port, r->unparsed_uri);
+    }
+    return ap_construct_url(r->pool,r->unparsed_uri,r);
+}
+
 extern "C" int shib_check_user(request_rec* r)
 {
     ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_check_user: ENTER");
@@ -180,14 +194,7 @@ extern "C" int shib_check_user(request_rec* r)
     threadid << "[" << getpid() << "] shib_check_user" << '\0';
     saml::NDC ndc(threadid.str().c_str());
 
-    // This will always be normalized, because Apache uses ap_get_server_name in this API call.
-    // However, we have a setting to forcibly replace the scheme for esoteric cases.
-    const char* targeturl=ap_construct_url(r->pool,r->unparsed_uri,r);
-    if (sc->szScheme) {
-        const char* col=strchr(targeturl,':');
-        if (col)
-            targeturl = ap_pstrcat(r->pool, sc->szScheme, col, NULL);
-    }
+    const char* targeturl=shib_get_targeturl(r,sc->szScheme);
 
     // We lock the configuration system for the duration.
     IConfig* conf=g_Config->getINI();
@@ -550,14 +557,8 @@ extern "C" int shib_post_handler(request_rec* r)
 int shib_handler(request_rec* r, const IApplication* application, SHIRE& shire)
 {
     shib_server_config* sc=(shib_server_config*)ap_get_module_config(r->server->module_config,&mod_shib);
-    
-    // Prime the pump...
-    const char* targeturl = ap_construct_url(r->pool,r->unparsed_uri,r);
-    if (sc->szScheme) {
-        const char* col=strchr(targeturl,':');
-        if (col)
-            targeturl = ap_pstrcat(r->pool, sc->szScheme, col, NULL);
-    }
+
+    const char* targeturl=shib_get_targeturl(r,sc->szScheme);
 
     // Make sure we only process the SHIRE requests.
     if (!strstr(targeturl,shire.getShireURL(targeturl)))
