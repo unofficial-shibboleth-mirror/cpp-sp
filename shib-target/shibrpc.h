@@ -8,7 +8,9 @@
 
 #include <rpc/rpc.h>
 
-#include <pthread.h>
+#ifdef HAVE_PTHREAD
+# include <pthread.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {
