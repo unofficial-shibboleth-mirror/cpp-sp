@@ -266,7 +266,7 @@ static int parse_args(int argc, char* argv[])
 {
     int opt;
 
-    while ((opt = getopt(argc, argv, "cdfFh")) > 0) {
+    while ((opt = getopt(argc, argv, "c:d:fth")) > 0) {
         switch (opt) {
             case 'c':
                 shar_config=optarg;
