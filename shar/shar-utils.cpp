@@ -33,9 +33,9 @@
 
 #ifdef USE_OUR_ONCRPC
 # define svc_fdset onc_svc_fdset
+#else
+  extern "C" SVCXPRT* svcfd_create(int, u_int, u_int);
 #endif
-
-extern "C" SVCXPRT* svcfd_create(int, u_int, u_int);
 
 using namespace std;
 using namespace saml;
