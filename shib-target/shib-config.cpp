@@ -153,6 +153,9 @@ bool STConfig::init(const char* schemadir, const char* config)
         dummy->setAttributeNS(NULL,uri,src.get());
         m_ini=ShibTargetConfigFactory(dummy);
         dummydoc->release();
+        
+        pair<bool,unsigned int> skew=m_ini->getUnsignedInt("clockSkew");
+        samlConf.clock_skew_secs=skew.first ? skew.second : 180;
     }
     catch (...) {
         log.fatal("caught exception while loading/initializing configuration");
