@@ -97,6 +97,10 @@ SOURCE=.\internal.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\resource.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\ScopedAttribute.cpp
 # End Source File
 # Begin Source File
@@ -118,6 +122,10 @@ SOURCE=.\XMLMetadata.cpp
 # Begin Source File
 
 SOURCE=.\XMLProviders.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\xmlproviders.rc
 # End Source File
 # Begin Source File
 
