@@ -202,6 +202,11 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
         LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, e.what());
         return FALSE;
     }
+    catch (...)
+    {
+        LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, "Filter startup failed with unexpected exception.");
+        return FALSE;
+    }
 
     pVer->dwFilterVersion=HTTP_FILTER_REVISION;
     strncpy(pVer->lpszFilterDesc,"Shibboleth ISAPI Filter",SF_MAX_FILTER_DESC_LEN);
