@@ -9,14 +9,13 @@ endif
 modshibdir = $(libexecdir)
 modshib_LTLIBRARIES = mod_shib.la
 
-mod_shib_la_SOURCES = mod_shib.cpp cgiparse.cpp
-noinst_HEADERS = cgiparse.h
+mod_shib_la_SOURCES = mod_shib.cpp
 
 AM_CXXFLAGS = $(APXS2_CFLAGS) -I$(APXS2_INCLUDE) $(RPC_CFLAGS)
 
 mod_shib_la_LIBADD = $(top_builddir)/shib/libshib.la $(top_builddir)/shib-target/libshib-target.la
 
-mod_shib_la_LDFLAGS = -module -avoid-version -lapreq
+mod_shib_la_LDFLAGS = -module -avoid-version
 
 if DO_APXS2_INSTALL
 install-exec-local:
