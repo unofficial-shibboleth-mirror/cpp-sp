@@ -178,8 +178,10 @@ void STConfig::shutdown()
     Category& log = Category::getInstance("shibtarget.STConfig");
     log.info("shutting down the library");
     delete m_tranLogLock;
+    m_tranLogLock = NULL;
     //delete m_tranLog; // This is crashing for some reason, but we're shutting down anyway.
     delete m_ini;
+    m_ini = NULL;
     ShibConfig::getConfig().term();
     SAMLConfig::getConfig().term();
     log.info("library shutdown complete");
