@@ -61,7 +61,6 @@ int main(int argc,char* argv[])
     char* h_param=NULL;
     char* q_param=NULL;
     char* f_param=NULL;
-    char* url_param=NULL;
     char* r_param=NULL;
     char* ca_param=NULL;
     char* path="";
@@ -76,53 +75,54 @@ int main(int argc,char* argv[])
             q_param=argv[++i];
         else if (!strcmp(argv[i],"-f") && i+1<argc)
             f_param=argv[++i];
-        else if (!strcmp(argv[i],"-a") && i+1<argc)
-            url_param=argv[++i];
         else if (!strcmp(argv[i],"-r") && i+1<argc)
             r_param=argv[++i];
-        else if (!strcmp(argv[i],"-ca") && i+1<argc)
-            ca_param=argv[++i];
     }
 
-    if (!h_param || !q_param || !url_param)
+    if (!h_param || !q_param)
     {
-        cerr << "usage: shibtest -h <handle> -q <origin_site> -a <AA URL> [-f <format URI> -r <resource URL> -d <schema path>]" << endl;
+        cerr << "usage: shibtest -h <handle> -q <origin_site> -r <requester> [-f <format URI> -d <schema path>]" << endl;
         exit(0);
     }
 
     conf1.schema_dir=path;
-    if (ca_param)
-        conf1.binding_defaults.ssl_calist=ca_param;
     if (!conf1.init())
         cerr << "unable to initialize SAML runtime" << endl;
 
     if (!conf2.init())
         cerr << "unable to initialize Shibboleth runtime" << endl;
 
-    // conf2.addMetadata("edu.internet2.middleware.shibboleth.metadata.XML","http://wayf.internet2.edu/shibboleth/sites.xml");
-
     try
     {
-        auto_ptr_XMLCh url(url_param);
         auto_ptr_XMLCh domain(q_param);
         auto_ptr_XMLCh handle(h_param);
         auto_ptr_XMLCh format(f_param);
-        auto_ptr_XMLCh resource(r_param);
-        SAMLAuthorityBinding binfo(saml::QName(saml::XML::SAMLP_NS,L(AttributeQuery)),SAMLBinding::SAML_SOAP_HTTPS,url.get());
+        auto_ptr_XMLCh requester(r_param);
         SAMLRequest* req=new SAMLRequest(
             EMPTY(saml::QName),
             new SAMLAttributeQuery(
                 new SAMLSubject(handle.get(),domain.get(),format.get()),
-                resource.get()
+                requester.get()
                 )
             );
-       
-        Iterator<IMetadata*> empty=Iterator<IMetadata*>(); 
-        OriginMetadata site(empty,domain.get());
-        SAMLBinding* pBinding=SAMLBindingFactory::getInstance(EMPTY(IMetadata*),EMPTY(ITrust*),EMPTY(ICredentials*),resource.get(),site);
-        SAMLResponse* resp=pBinding->send(binfo,*req);
+
+        DOMImplementation* impl=DOMImplementationRegistry::getDOMImplementation(NULL);
+        DOMDocument* dummydoc=impl->createDocument();
+        DOMElement* dummy = dummydoc->createElementNS(NULL,L(Request));
+        static const XMLCh url[] = { chLatin_u, chLatin_r, chLatin_l, chNull };
+        auto_ptr_XMLCh src("/opt/shibboleth/etc/shibboleth/sites.xml");
+        dummy->setAttributeNS(NULL,url,src.get());
+
+        IMetadata* metadatas[1];
+        metadatas[0]=conf2.newMetadata("edu.internet2.middleware.shibboleth.metadata.provider.XML",dummy);
+        dummydoc->release();
+        ArrayIterator<IMetadata*> sites(metadatas);
+        
+        Metadata m(sites);
+
+        ShibBinding binding(EMPTY(IRevocation*),EMPTY(ITrust*),EMPTY(ICredentials*));
+        SAMLResponse* resp=binding.send(*req,m.lookup(domain.get()),NULL);
         delete req;
-        delete pBinding;
 
         Iterator<SAMLAssertion*> i=resp->getAssertions();
         if (i.hasNext())

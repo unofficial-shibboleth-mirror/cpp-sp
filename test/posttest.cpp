@@ -61,28 +61,6 @@ using namespace std;
 using namespace saml;
 using namespace shibboleth;
 
-SAMLResponse* HS(const char* key)
-{
-    XMLDateTime now();
-
-    auto_ptr<XMLCh> hsname(XMLString::transcode("wayf.internet2.edu"));
-    auto_ptr<XMLCh> recip(XMLString::transcode("https://shire.target.com"));
-    auto_ptr<XMLCh> handle(XMLString::transcode("foo"));
-    auto_ptr<XMLCh> domain(XMLString::transcode("urn:mace:incommon:pilot:example.edu"));
-    auto_ptr<XMLCh> method(XMLString::transcode("urn:mace:shibboleth:authmethod"));
-
-    ShibPOSTProfile* p=ShibPOSTProfileFactory::getInstance(EMPTY(IMetadata*),EMPTY(ICredentials*),EMPTY(const XMLCh*),hsname.get());
-    return p->prepare(
-            recip.get(),
-            handle.get(),
-            domain.get(),
-            (XMLCh*)NULL,
-            method.get(),
-            time(NULL),
-            Iterator<SAMLAuthorityBinding*>(),
-            NULL);
-}
-
 int main(int argc,char* argv[])
 {
     SAMLConfig& conf1=SAMLConfig::getConfig();
@@ -107,13 +85,23 @@ int main(int argc,char* argv[])
 
     try
     {
-//        SAMLResponse* r=HS();
-//        cout << "Generated Response: " << endl << *r << endl;
-        auto_ptr<XMLCh> recip(XMLString::transcode("https://shib2.internet2.edu/shib/SHIRE"));
-        ShibPOSTProfile* p=ShibPOSTProfileFactory::getInstance(EMPTY(IMetadata*),EMPTY(ITrust*),EMPTY(const XMLCh*),recip.get(),300);
 
-//        auto_ptr<XMLByte> buf(r->toBase64(NULL));
-//        delete r;
+        DOMImplementation* impl=DOMImplementationRegistry::getDOMImplementation(NULL);
+        DOMDocument* dummydoc=impl->createDocument();
+        DOMElement* dummy = dummydoc->createElementNS(NULL,L(Request));
+        static const XMLCh url[] = { chLatin_u, chLatin_r, chLatin_l, chNull };
+        auto_ptr_XMLCh src("/opt/shibboleth/etc/shibboleth/sites.xml");
+        dummy->setAttributeNS(NULL,url,src.get());
+
+        IMetadata* metadatas[1];
+        metadatas[0]=conf2.newMetadata("edu.internet2.middleware.shibboleth.metadata.provider.XML",dummy);
+        dummydoc->release();
+        ArrayIterator<IMetadata*> sites(metadatas);
+        
+        Metadata m(sites);
+
+        auto_ptr<XMLCh> recip(XMLString::transcode("https://shib2.internet2.edu/shib/SHIRE"));
+        ShibPOSTProfile p (sites,EMPTY(IRevocation*),EMPTY(ITrust*),EMPTY(ICredentials*));
 
         char ch;
         string buf;
@@ -124,12 +112,12 @@ int main(int argc,char* argv[])
             cin >> ch;
         }
 
-        SAMLResponse* r2=p->accept((const XMLByte*)buf.c_str());
+        SAMLResponse* r2=p.accept((const XMLByte*)buf.c_str(),recip.get(),300);
         cout << "Consumed Response: " << endl << *r2 << endl;
 
-        const SAMLAssertion* a=p->getSSOAssertion(*r2);
-        const SAMLAuthenticationStatement* s=p->getSSOStatement(*a);
-        if (!p->checkReplayCache(*a))
+        const SAMLAssertion* a=p.getSSOAssertion(*r2);
+        const SAMLAuthenticationStatement* s=p.getSSOStatement(*a);
+        if (!p.checkReplayCache(*a))
             throw ReplayedAssertionException("detected replay attack");
 
         delete r2;
@@ -142,10 +130,10 @@ int main(int argc,char* argv[])
     {
         cerr << "caught an XML exception: "; xmlout(cerr,e.getMessage()); cerr << endl;
     }
-/*    catch(...)
+    catch(...)
     {
         cerr << "caught an unknown exception" << endl;
-    }*/
+    }
 
     conf2.term();
     conf1.term();

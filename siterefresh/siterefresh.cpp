@@ -118,7 +118,8 @@ void verifySignature(DOMDocument* doc, DOMElement* sigNode, const char* cert)
                     {
                         if (tlist->item(i)->getTransformType()==TRANSFORM_ENVELOPED_SIGNATURE)
                             valid=true;
-                        else if (tlist->item(i)->getTransformType()!=TRANSFORM_EXC_C14N)
+                        else if (tlist->item(i)->getTransformType()!=TRANSFORM_EXC_C14N &&
+                                 tlist->item(i)->getTransformType()!=TRANSFORM_C14N)
                         {
                             valid=false;
                             break;
@@ -160,8 +161,7 @@ int main(int argc,char* argv[])
     char* out_param=NULL;
     char* path=DEFAULT_SCHEMA_DIR;
 
-    for (int i=1; i<argc; i++)
-    {
+    for (int i=1; i<argc; i++) {
         if (!strcmp(argv[i],"--schema") && i+1<argc)
             path=argv[++i];
         else if (!strcmp(argv[i],"--url") && i+1<argc)
@@ -172,22 +172,56 @@ int main(int argc,char* argv[])
             out_param=argv[++i];
     }
 
-    if (!url_param || !out_param)
-    {
+    if (!url_param || !out_param) {
         cout << "usage: " << argv[0] << " --url <URL of metadata> --out <pathname to copy data into> [--cert <PEM Certificate> --schema <schema path>]" << endl;
         exit(0);
     }
 
+    Category& log=Category::getInstance("siterefresh");
     Category::setRootPriority(Priority::ERROR);
     conf.schema_dir=path;
     if (!conf.init())
         return -10;
 
-    Category& log=Category::getInstance("siterefresh");
-    saml::XML::registerSchema(shibboleth::XML::SHIB_NS,shibboleth::XML::SHIB_SCHEMA_ID);
+    static const XMLCh CREDS_NS[] = // urn:mace:shibboleth:credentials:1.0
+    { chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
+      chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
+      chLatin_c, chLatin_r, chLatin_e, chLatin_d, chLatin_e, chLatin_n, chLatin_t, chLatin_i, chLatin_a, chLatin_l, chLatin_s, chColon,
+      chDigit_1, chPeriod, chDigit_0, chNull
+    };
 
-    try
-    {
+    static const XMLCh CREDS_SCHEMA_ID[] = // credentials.xsd
+    { chLatin_c, chLatin_r, chLatin_e, chLatin_d, chLatin_e, chLatin_n, chLatin_t, chLatin_i, chLatin_a, chLatin_l, chLatin_s,
+      chPeriod, chLatin_x, chLatin_s, chLatin_d, chNull
+    };
+
+    static const XMLCh TRUST_NS[] = // urn:mace:shibboleth:trust:1.0
+    { chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
+      chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
+      chLatin_t, chLatin_r, chLatin_u, chLatin_s, chLatin_t, chColon, chDigit_1, chPeriod, chDigit_0, chNull
+    };
+
+    static const XMLCh TRUST_SCHEMA_ID[] = // shibboleth-trust-1.0.xsd
+    { chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chDash,
+      chLatin_t, chLatin_r, chLatin_u, chLatin_s, chLatin_t, chDash, chDigit_1, chPeriod, chDigit_0, chPeriod,
+      chLatin_x, chLatin_s, chLatin_d, chNull
+    };
+
+    static const XMLCh SHIB_NS[] = // urn:mace:shibboleth:1.0
+    { chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
+      chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
+      chDigit_1, chPeriod, chDigit_0, chNull
+    };
+
+    static const XMLCh SHIB_SCHEMA_ID[] = // shibboleth.xsd
+    { chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, 
+      chPeriod, chLatin_x, chLatin_s, chLatin_d, chNull
+    };
+
+    saml::XML::registerSchema(SHIB_NS,SHIB_SCHEMA_ID);
+    saml::XML::registerSchema(TRUST_NS,TRUST_SCHEMA_ID);
+
+    try {
         // Parse the specified document.
         saml::XML::Parser p;
         static XMLCh base[]={chLatin_f, chLatin_i, chLatin_l, chLatin_e, chColon, chForwardSlash, chForwardSlash, chForwardSlash, chNull};
@@ -195,68 +229,44 @@ int main(int argc,char* argv[])
         Wrapper4InputSource dsrc(&src,false);
         DOMDocument* doc=p.parse(dsrc);
 
-        // Examine the root element to be sure we know what we have.
-		DOMElement* e=doc->getDocumentElement();
-        if (XMLString::compareString(shibboleth::XML::SHIB_NS,e->getNamespaceURI()) ||
-            (XMLString::compareString(shibboleth::XML::Literals::SiteGroup,e->getLocalName())) &&
-                XMLString::compareString(shibboleth::XML::Literals::Trust,e->getLocalName()))
-        {
-            doc->release();
-			log.error("requires a valid site file: (shib:SiteGroup or shib:Trust as root element)");
-			throw MetadataException("Construction requires a valid site file: (shib:SiteGroup or shib:Trust as root element)");
-		}
-
         // If we're verifying, grab the embedded signature.
-        if (cert_param)
-        {
-            DOMNode* n=e->getLastChild();
-            while (n && n->getNodeType()!=DOMNode::ELEMENT_NODE)
-                n=n->getPreviousSibling();
-            if (n && !XMLString::compareString(saml::XML::XMLSIG_NS,n->getNamespaceURI()) &&
-                !XMLString::compareString(L(Signature),n->getLocalName()))
-            {
-                verifySignature(doc,static_cast<DOMElement*>(n),cert_param);
-            }
-            else
-            {
+        if (cert_param) {
+            DOMElement* n=saml::XML::getLastChildElement(doc->getDocumentElement(),saml::XML::XMLSIG_NS,L(Signature));
+            if (n)
+                verifySignature(doc,n,cert_param);
+            else {
                 doc->release();
 			    log.error("unable to locate a signature to verify in document");
-			    throw MetadataException("Verification implies that the document must be signed");
+			    throw InvalidCryptoException("Verification implies that the document must be signed");
             }
         }
 
         // Output the data to the specified file.
         ofstream outfile(out_param);
-        outfile << *e;
-        
+        outfile << *(doc->getDocumentElement());
+
         doc->release();
     }
-    catch (MetadataException&)
-    {
+    catch (InvalidCryptoException&) {
         ret=-1;
     }
-    catch(SAMLException& e)
-    {
+    catch(SAMLException& e) {
         log.errorStream() << "caught a SAML exception: " << e << CategoryStream::ENDLINE;
         ret=-2;
     }
-    catch(XMLException& e)
-    {
-        auto_ptr<char> temp(XMLString::transcode(e.getMessage()));
+    catch(XMLException& e) {
+        auto_ptr_char temp(e.getMessage());
         log.errorStream() << "caught an XML exception: " << temp.get() << CategoryStream::ENDLINE;
         ret=-3;
     }
-    catch(XSECException& e)
-    {
-        auto_ptr<char> temp(XMLString::transcode(e.getMsg()));
+    catch(XSECException& e) {
+        auto_ptr_char temp(e.getMsg());
         log.errorStream() << "caught an XMLSec exception: " << temp.get() << CategoryStream::ENDLINE;
     }
-    catch(XSECCryptoException& e)
-    {
+    catch(XSECCryptoException& e) {
         log.errorStream() << "caught an XMLSecCrypto exception: " << e.getMsg() << CategoryStream::ENDLINE;
     }
-    catch(...)
-    {
+    catch(...) {
         log.errorStream() << "caught an unknown exception" << CategoryStream::ENDLINE;
         ret=-4;
     }
