@@ -90,6 +90,7 @@ extern "C" void shibrpc_prog_1(struct svc_req* rqstp, register SVCXPRT* transp);
 int shar_run = 1;
 const char* shar_config = NULL;
 const char* shar_schemadir = NULL;
+bool shar_checkonly = false;
 static int unlink_socket = 0;
 
 static bool new_connection(IListener::ShibSocket& listener, const Iterator<ShibRPCProtocols>& protos)
@@ -154,7 +155,8 @@ int real_main(int preinit)
             ShibTargetConfig::Trust |
             ShibTargetConfig::Credentials |
             ShibTargetConfig::AAP |
-            ShibTargetConfig::SHARExtensions
+            ShibTargetConfig::SHARExtensions |
+            (shar_checkonly ? (ShibTargetConfig::SHIREExtensions | ShibTargetConfig::RequestMapper) : 0)
             );
         if (!shar_config)
             shar_config=getenv("SHIBCONFIG");
@@ -164,8 +166,16 @@ int real_main(int preinit)
             shar_schemadir=SHIB_SCHEMAS;
         if (!shar_config)
             shar_config=SHIB_CONFIG;
-        if (!conf.init(shar_schemadir,shar_config))
+        if (!conf.init(shar_schemadir,shar_config)) {
+            fprintf(stderr, "configuration is invalid, check log for specific problems\n");
             return -2;
+        }
+
+        // If just a test run, bail.
+        if (shar_checkonly) {
+            fprintf(stderr, "overall configuration is loadable, check log for non-fatal problems\n");
+            return 0;
+        }
 
         const IListener* listener=conf.getINI()->getListener();
         
@@ -182,13 +192,17 @@ int real_main(int preinit)
     }
     else {
         // Run the listener
-        shar_svc_run(sock, ArrayIterator<ShibRPCProtocols>(protos,1));
-        fprintf(stderr,"shar_svc_run returned\n");
+        if (!shar_checkonly) {
+            shar_svc_run(sock, ArrayIterator<ShibRPCProtocols>(protos,1));
+            fprintf(stderr,"shar_svc_run returned\n");
 
-        // Finalize the SHAR, close all clients
-        SHARUtils::fini();
-        conf.getINI()->getListener()->close(sock);
+            // Finalize the SHAR, close all clients
+            SHARUtils::fini();
+            conf.getINI()->getListener()->close(sock);
+        }
+
         conf.shutdown();
+        fprintf(stderr, "shar shutdown complete\n");
     }
     return 0;
 }
@@ -239,9 +253,10 @@ static int setup_signals(void)
 
 static void usage(char* whoami)
 {
-    fprintf(stderr, "usage: %s [-f]\n", whoami);
+    fprintf(stderr, "usage: %s [-fcdt]\n", whoami);
     fprintf(stderr, "  -c\tconfig file to use.\n");
     fprintf(stderr, "  -d\tschema directory to use.\n");
+    fprintf(stderr, "  -t\tcheck configuration file for problems.\n");
     fprintf(stderr, "  -f\tforce removal of listener socket.\n");
     fprintf(stderr, "  -h\tprint this help message.\n");
     exit(1);
@@ -261,6 +276,9 @@ static int parse_args(int argc, char* argv[])
                 break;
             case 'f':
                 unlink_socket = 1;
+                break;
+            case 't':
+                shar_checkonly=true;
                 break;
             default:
                 return -1;
@@ -300,36 +318,43 @@ int main(int argc, char *argv[])
         ShibTargetConfig::Trust |
         ShibTargetConfig::Credentials |
         ShibTargetConfig::AAP |
-        ShibTargetConfig::SHARExtensions
+        ShibTargetConfig::SHARExtensions |
+        (shar_checkonly ? (ShibTargetConfig::SHIREExtensions | ShibTargetConfig::RequestMapper) : 0)
         );
-    if (!conf.init(shar_schemadir,shar_config))
+    if (!conf.init(shar_schemadir,shar_config)) {
+        fprintf(stderr, "configuration is invalid, check log for specific problems\n");
         return -2;
+    }
 
-    const IListener* listener=conf.getINI()->getListener();
+    if (shar_check_only)
+        fprintf(stderr, "overall configuration is loadable, check log for non-fatal problems\n");
+    else {
+        const IListener* listener=conf.getINI()->getListener();
+        
+        // Create the SHAR listener socket
+        if (!listener->create(sock))
+            return -3;
     
-    // Create the SHAR listener socket
-    if (!listener->create(sock))
-        return -3;
-
-    // Bind to the proper port
-    if (!listener->bind(sock, unlink_socket==1))
-        return -4;
-
-    // Initialize the SHAR Utilitites
-    SHARUtils::init();
-
-    // Run the listener
-    shar_svc_run(sock, ArrayIterator<ShibRPCProtocols>(protos,1));
-
-    /* Finalize the SHAR, close all clients */
-    SHARUtils::fini();
-    fprintf(stderr, "shar utils finalized\n");
-
-    listener->close(sock);
-    fprintf(stderr, "shib socket closed\n");
-
+        // Bind to the proper port
+        if (!listener->bind(sock, unlink_socket==1))
+            return -4;
+    
+        // Initialize the SHAR Utilitites
+        SHARUtils::init();
+    
+        // Run the listener
+        shar_svc_run(sock, ArrayIterator<ShibRPCProtocols>(protos,1));
+    
+        /* Finalize the SHAR, close all clients */
+        SHARUtils::fini();
+        fprintf(stderr, "shar utils finalized\n");
+    
+        listener->close(sock);
+        fprintf(stderr, "shib socket closed\n");
+    }
+    
     conf.shutdown();
-    fprintf(stderr, "shar finished.  bye bye.\n");
+    fprintf(stderr, "shar shutdown complete\n");
     return 0;
 }
 

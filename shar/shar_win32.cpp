@@ -61,6 +61,7 @@
 extern int shar_run;                    // signals shutdown to Unix side
 extern const char* shar_schemadir;
 extern const char* shar_config;
+extern bool shar_checkonly;
 
 // internal variables
 SERVICE_STATUS          ssStatus;       // current status of the service
@@ -124,6 +125,12 @@ int main(int argc, char *argv[])
         {
             i++;
             bConsole = TRUE;
+        }
+        else if (_stricmp( "check", argv[i]+1) == 0)
+        {
+            i++;
+            bConsole = TRUE;
+            shar_checkonly=true;
         }
         else if (_stricmp( "config", argv[i]+1) == 0)
         {
