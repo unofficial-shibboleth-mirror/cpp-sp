@@ -1,0 +1,58 @@
+<Credentials xmlns="urn:mace:shibboleth:1.0" xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+    
+    <!--
+    
+    <KeyUse> elements map TLS keys and certificates in <ds:KeyInfo> to <Subject> and
+    <RelyingParty> data. Omitting either acts as a wildcard (any subject / any relying party).
+    
+    <Subject> elements refer to the application identifier that is requesting attributes.
+    Currently this is of the form http(s)://<hostname>, and matches the root URL of the
+    vhost that is being accessed by the browser. In future versions, this will be a more
+    generic URI identifier.
+    
+    <RelyingParty> elements refer to the origin site identifier of the SAML authority that
+    is being contacted over TLS/SSL.
+    
+    Both elements can contain a regexp="true" attribute to indicate a pattern match instead
+    of literal matching.
+    
+    In the <ds:KeyInfo> element, the usual approach is to reference other files that contain
+    the information using the <ds:RetrievalMethod> element. The following method types are
+    supported:
+    
+    	http://www.w3.org/2000/09/xmldsig#rawX509Certificate	DER/ASN.1 binary X.509 cert
+    	urn:mace:shibboleth:1.0:xmldsig:pemX509Certificate		PEM format X.509 cert or cert chain
+    	urn:mace:shibboleth:1.0:xmldsig:pemRSAPrivateKey		PEM format RSA private key w/o a password
+   	
+   	A certificate chain can also be embedded directly using the <ds:X509Data> element with
+   	embedded <ds:X509Certificate> elements. The chain should be ordered with the end-cert last.
+
+	Here is an example that uses a PEM-based key/cert pair with any requesting application
+	for a specific set of origin sites:
+	
+	<KeyUse>
+        <ds:KeyInfo>
+        	<ds:RetrievalMethod	Type="urn:mace:shibboleth:1.0:xmldsig:pemX509Certificate"
+        			URI="/opt/shibboleth/etc/shibboleth/shar.crt"/>
+        	<ds:RetrievalMethod Type="urn:mace:shibboleth:1.0:xmldsig:pemRSAPrivateKey"
+        			URI="/opt/shibboleth/etc/shibboleth/shar.key"/>
+        </ds:KeyInfo>
+        <RelyingParty regexp="true">^urn:mace:inqueue:.+$</RelyingParty>
+    </KeyUse>
+
+	The default element below is a catch-all that maps the specified credentials to
+	every SSL request. It should be modified as needed or the necessary files can
+	be placed in the locations specified.
+
+    -->
+    
+    <KeyUse>
+        <ds:KeyInfo>
+        	<ds:RetrievalMethod	Type="urn:mace:shibboleth:1.0:xmldsig:pemX509Certificate"
+        			URI="/opt/shibboleth/etc/shibboleth/shar.crt"/>
+        	<ds:RetrievalMethod Type="urn:mace:shibboleth:1.0:xmldsig:pemRSAPrivateKey"
+        			URI="/opt/shibboleth/etc/shibboleth/shar.key"/>
+        </ds:KeyInfo>
+    </KeyUse>
+
+</Credentials>
