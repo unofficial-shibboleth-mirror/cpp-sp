@@ -16,12 +16,6 @@ mod_shib_13_la_LIBADD = \
   $(top_builddir)/shib/libshib.la \
   $(top_builddir)/shib-target/libshib-target.la
 
-if DO_APXS_INSTALL
-install-exec-local::
-	$(APXS) -i -n shib_13 .libs/mod_shib_13.so
-	for la in $(modshib13_LTLIBRARIES) ; do rm -f `$(APXS) -q LIBEXECDIR`/$$la ; done
-endif
-
 install-exec-hook:
 	for la in $(modshib13_LTLIBRARIES) ; do rm -f $(DESTDIR)$(modshib13dir)/$$la ; done
 
@@ -36,12 +30,6 @@ mod_shib_20_la_LDFLAGS = -module -avoid-version
 mod_shib_20_la_LIBADD = \
   $(top_builddir)/shib/libshib.la \
   $(top_builddir)/shib-target/libshib-target.la
-
-if DO_APXS2_INSTALL
-install-exec-local::
-	$(APXS2) -i -n shib_20 .libs/mod_shib_20.so
-	for la in $(modshib20_LTLIBRARIES) ; do rm -f `$(APXS2) -q LIBEXECDIR`/$$la ; done
-endif 
 
 install-exec-hook:
 	for la in $(modshib20_LTLIBRARIES) ; do rm -f $(DESTDIR)$(modshib20dir)/$$la ; done
