@@ -17,14 +17,18 @@
     -->
     
     <element name="RealTimeReleaseURL" type="anyURI">
-        <annotation>Used by AA in samlp:StatusDetail to signal user wants real-time attribute release.</annotation>
+        <annotation>
+        	<documentation xml:lang="en">Used by AA in samlp:StatusDetail to signal user wants real-time attribute release.</documentation>
+        </annotation>
     </element>
     
 
     <!-- Relaxes SAML AttributeValue type definition -->
 
 	<complexType name="AttributeValueType" mixed="true">
-		<annotation>By convention, all Shibboleth attribute values carry this unconstrained xsi:type.</annotation>
+		<annotation>
+			<documentation xml:lang="en">By convention, all Shibboleth attribute values carry this unconstrained xsi:type.</documentation>
+		</annotation>
 		<sequence>
 			<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
 		</sequence>
@@ -103,7 +107,9 @@
     <!-- Shibboleth Metadata -->
     
     <complexType name="SiteType">
-        <annotation>All sites have a Name attribute, plus optional i18n-ized aliases.</annotation>
+        <annotation>
+        	<documentation xml:lang="en">All sites have a Name attribute, plus optional i18n-ized aliases.</documentation>
+        </annotation>
         <sequence>
             <element name="Alias" minOccurs="0" maxOccurs="unbounded">
                 <complexType>
@@ -130,7 +136,7 @@
     </simpleType>
 
 	<complexType name="ContactType">
-		<annotation>A human contact for a site.</annotation>
+		<annotation><documentation xml:lang="en">A human contact for a site.</documentation></annotation>
 		<sequence/>
         <attribute name="Type" type="shib:ContactTypeType" use="required"/>
         <attribute name="Name" type="string" use="required"/>
@@ -138,7 +144,9 @@
 	</complexType>
 
     <complexType name="regexp_string">
-        <annotation>A string element with an optional attribute signaling regexp content.</annotation>
+        <annotation>
+        	<documentation xml:lang="en">A string element with an optional attribute signaling regexp content.</documentation>
+        </annotation>
         <simpleContent>
             <extension base="string">
                 <attribute name="regexp" type="boolean" use="optional" default="false"/>
@@ -147,14 +155,18 @@
     </complexType>    
 
 	<complexType name="AuthorityType">
-		<annotation>Metadata about a SAML authority.</annotation>
+		<annotation>
+			<documentation xml:lang="en">Metadata about a SAML authority.</documentation>
+		</annotation>
         <sequence/>
         <attribute name="Name" type="string" use="required"/>
         <attribute name="Location" type="anyURI" use="required"/>
 	</complexType>
 
     <complexType name="OriginSiteType">
-        <annotation>Origin sites add at least one handle service (with a name and optional KeyInfo), plus optional domains trusted for attribute scoping.</annotation>
+        <annotation>
+        	<documentation xml:lang="en">Origin sites add at least one handle service (with a name and optional KeyInfo), plus optional domains trusted for attribute scoping.</documentation>
+        </annotation>
         <complexContent>
 	        <extension base="shib:SiteType">
 	            <sequence>
@@ -167,7 +179,9 @@
     </complexType>
 
     <complexType name="SiteGroupType">
-        <annotation>Used to logically group sites together, optionally signed.</annotation>
+        <annotation>
+        	<documentation xml:lang="en">Used to logically group sites together, optionally signed.</documentation>
+        </annotation>
         <sequence>
             <choice maxOccurs="unbounded">
                 <element ref="shib:OriginSite"/>
@@ -184,7 +198,9 @@
     <element name="SiteGroup" type="shib:SiteGroupType"/>
 
 	<complexType name="KeyAuthorityType">
-		<annotation>Binds a set of keying material to one or more named system entities.</annotation>
+		<annotation>
+			<documentation xml:lang="en">Binds a set of keying material to one or more named system entities.</documentation>
+		</annotation>
 		<sequence>
 			<element ref="ds:KeyInfo"/>
 			<element name="Subject" type="shib:regexp_string" maxOccurs="unbounded"/>
@@ -194,7 +210,9 @@
 	<element name="KeyAuthority" type="shib:KeyAuthorityType"/>
 	
 	<element name="Trust">
-		<annotation>An optionally signed collection of KeyAuthority data.</annotation>
+		<annotation>
+			<documentation xml:lang="en">An optionally signed collection of KeyAuthority data.</documentation>
+		</annotation>
 		<complexType>
 			<sequence>
 				<element ref="shib:KeyAuthority" maxOccurs="unbounded"/>
