@@ -89,9 +89,14 @@ void init(void)
 
 int main(int argc, char* argv[])
 {
+  cout << "Running init 1.." << endl;
   init();
+  cout << "Running shutdown 1.." << endl;
   shutdown();
+  cout << "Running init 2.." << endl;
   init();
+  cout << "Running shutdown 2.." << endl;
   shutdown();
+  cout << "Done." << endl;
   exit(0);
 }
