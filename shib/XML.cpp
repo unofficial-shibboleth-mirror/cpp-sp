@@ -114,6 +114,9 @@ const XMLCh XML::Literals::Sites[]=
 const XMLCh XML::Literals::AnySite[]=
 { chLatin_A, chLatin_n, chLatin_y, chLatin_S, chLatin_i, chLatin_t, chLatin_e, chNull };
 
+const XMLCh XML::Literals::AnyValue[]=
+{ chLatin_A, chLatin_n, chLatin_y, chLatin_V, chLatin_a, chLatin_l, chLatin_u, chLatin_e, chNull };
+
 const XMLCh XML::Literals::AttributeAcceptancePolicy[] =
 { chLatin_A, chLatin_t, chLatin_t, chLatin_r, chLatin_i, chLatin_b, chLatin_u, chLatin_t, chLatin_e,
   chLatin_A, chLatin_c, chLatin_c, chLatin_e, chLatin_p, chLatin_t, chLatin_a, chLatin_n, chLatin_c, chLatin_e,

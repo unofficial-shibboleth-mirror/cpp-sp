@@ -111,26 +111,42 @@ AAP::AAP(const char* uri)
             if (anysite && !XMLString::compareString(XML::SHIB_NS,static_cast<DOMElement*>(anysite)->getNamespaceURI()) &&
                 !XMLString::compareString(XML::Literals::AnySite,static_cast<DOMElement*>(anysite)->getLocalName()))
             {
-                // Process each Value element.
-                DOMNodeList* vlist = static_cast<DOMElement*>(anysite)->getElementsByTagNameNS(XML::SHIB_NS,XML::Literals::Value);
-                for (int j=0; vlist && j<vlist->getLength(); j++)
+                // Check for an AnyValue rule.
+                DOMNode* anyval = anysite->getFirstChild();
+    			while (anyval && anyval->getNodeType()!=DOMNode::ELEMENT_NODE)
                 {
-                    DOMElement* ve=static_cast<DOMElement*>(vlist->item(j));
-                    DOMNode* valnode=ve->getFirstChild();
-                    if (valnode && valnode->getNodeType()==DOMNode::TEXT_NODE)
+		    		anyval = anyval->getNextSibling();
+			    	continue;
+			    }
+
+                if (anyval && !XMLString::compareString(XML::SHIB_NS,static_cast<DOMElement*>(anyval)->getNamespaceURI()) &&
+                    !XMLString::compareString(XML::Literals::AnyValue,static_cast<DOMElement*>(anyval)->getLocalName()))
+                {
+                    arule.m_anySiteRule.anyValue=true;
+                }
+                else
+                {
+                    // Process each Value element.
+                    DOMNodeList* vlist = static_cast<DOMElement*>(anysite)->getElementsByTagNameNS(XML::SHIB_NS,XML::Literals::Value);
+                    for (int j=0; vlist && j<vlist->getLength(); j++)
                     {
-                        if (!XMLString::compareString(XML::Literals::literal,ve->getAttributeNS(NULL,XML::Literals::Type)))
-                            arule.m_anySiteRule.push_back(
-                                pair<AttributeRule::value_type,xstring>(AttributeRule::literal,valnode->getNodeValue())
-                                );
-                        else if (!XMLString::compareString(XML::Literals::regexp,ve->getAttributeNS(NULL,XML::Literals::Type)))
-                            arule.m_anySiteRule.push_back(
-                                pair<AttributeRule::value_type,xstring>(AttributeRule::regexp,valnode->getNodeValue())
-                                );
-                        else if (!XMLString::compareString(XML::Literals::xpath,ve->getAttributeNS(NULL,XML::Literals::Type)))
-                            arule.m_anySiteRule.push_back(
-                                pair<AttributeRule::value_type,xstring>(AttributeRule::xpath,valnode->getNodeValue())
-                                );
+                        DOMElement* ve=static_cast<DOMElement*>(vlist->item(j));
+                        DOMNode* valnode=ve->getFirstChild();
+                        if (valnode && valnode->getNodeType()==DOMNode::TEXT_NODE)
+                        {
+                            if (!XMLString::compareString(XML::Literals::literal,ve->getAttributeNS(NULL,XML::Literals::Type)))
+                                arule.m_anySiteRule.valueRules.push_back(
+                                    pair<AttributeRule::value_type,xstring>(AttributeRule::literal,valnode->getNodeValue())
+                                    );
+                            else if (!XMLString::compareString(XML::Literals::regexp,ve->getAttributeNS(NULL,XML::Literals::Type)))
+                                arule.m_anySiteRule.valueRules.push_back(
+                                    pair<AttributeRule::value_type,xstring>(AttributeRule::regexp,valnode->getNodeValue())
+                                    );
+                            else if (!XMLString::compareString(XML::Literals::xpath,ve->getAttributeNS(NULL,XML::Literals::Type)))
+                                arule.m_anySiteRule.valueRules.push_back(
+                                    pair<AttributeRule::value_type,xstring>(AttributeRule::xpath,valnode->getNodeValue())
+                                    );
+                        }
                     }
                 }
             }
@@ -142,26 +158,42 @@ AAP::AAP(const char* uri)
                 arule.m_siteMap[static_cast<DOMElement*>(slist->item(k))->getAttributeNS(NULL,XML::Literals::Name)]=AttributeRule::SiteRule();
                 AttributeRule::SiteRule& srule=arule.m_siteMap[static_cast<DOMElement*>(slist->item(k))->getAttributeNS(NULL,XML::Literals::Name)];
 
-                // Process each Value element.
-                DOMNodeList* vlist = static_cast<DOMElement*>(slist->item(k))->getElementsByTagNameNS(XML::SHIB_NS,XML::Literals::Value);
-                for (int j=0; vlist && j<vlist->getLength(); j++)
+                // Check for an AnyValue rule.
+                DOMNode* anyval = slist->item(k)->getFirstChild();
+    			while (anyval && anyval->getNodeType()!=DOMNode::ELEMENT_NODE)
                 {
-                    DOMElement* ve=static_cast<DOMElement*>(vlist->item(j));
-                    DOMNode* valnode=ve->getFirstChild();
-                    if (valnode && valnode->getNodeType()==DOMNode::TEXT_NODE)
+		    		anyval = anyval->getNextSibling();
+			    	continue;
+			    }
+
+                if (anyval && !XMLString::compareString(XML::SHIB_NS,static_cast<DOMElement*>(anyval)->getNamespaceURI()) &&
+                    !XMLString::compareString(XML::Literals::AnyValue,static_cast<DOMElement*>(anyval)->getLocalName()))
+                {
+                    srule.anyValue=true;
+                }
+                else
+                {
+                    // Process each Value element.
+                    DOMNodeList* vlist = static_cast<DOMElement*>(slist->item(k))->getElementsByTagNameNS(XML::SHIB_NS,XML::Literals::Value);
+                    for (int j=0; vlist && j<vlist->getLength(); j++)
                     {
-                        if (!XMLString::compareString(XML::Literals::literal,ve->getAttributeNS(NULL,XML::Literals::Type)))
-                            srule.push_back(
-                                pair<AttributeRule::value_type,xstring>(AttributeRule::literal,valnode->getNodeValue())
-                                );
-                        else if (!XMLString::compareString(XML::Literals::regexp,ve->getAttributeNS(NULL,XML::Literals::Type)))
-                            srule.push_back(
-                                pair<AttributeRule::value_type,xstring>(AttributeRule::regexp,valnode->getNodeValue())
-                                );
-                        else if (!XMLString::compareString(XML::Literals::xpath,ve->getAttributeNS(NULL,XML::Literals::Type)))
-                            srule.push_back(
-                                pair<AttributeRule::value_type,xstring>(AttributeRule::xpath,valnode->getNodeValue())
-                                );
+                        DOMElement* ve=static_cast<DOMElement*>(vlist->item(j));
+                        DOMNode* valnode=ve->getFirstChild();
+                        if (valnode && valnode->getNodeType()==DOMNode::TEXT_NODE)
+                        {
+                            if (!XMLString::compareString(XML::Literals::literal,ve->getAttributeNS(NULL,XML::Literals::Type)))
+                                srule.valueRules.push_back(
+                                    pair<AttributeRule::value_type,xstring>(AttributeRule::literal,valnode->getNodeValue())
+                                    );
+                            else if (!XMLString::compareString(XML::Literals::regexp,ve->getAttributeNS(NULL,XML::Literals::Type)))
+                                srule.valueRules.push_back(
+                                    pair<AttributeRule::value_type,xstring>(AttributeRule::regexp,valnode->getNodeValue())
+                                    );
+                            else if (!XMLString::compareString(XML::Literals::xpath,ve->getAttributeNS(NULL,XML::Literals::Type)))
+                                srule.valueRules.push_back(
+                                    pair<AttributeRule::value_type,xstring>(AttributeRule::xpath,valnode->getNodeValue())
+                                    );
+                        }
                     }
                 }
             }
@@ -211,7 +243,14 @@ bool AAP::accept(const XMLCh* name, const XMLCh* originSite, DOMElement* e)
         return false;
     }
 
-    for (AttributeRule::SiteRule::const_iterator i=arule->second.m_anySiteRule.begin(); i!=arule->second.m_anySiteRule.end(); i++)
+    if (arule->second.m_anySiteRule.anyValue)
+    {
+        log.debug("any site, any value, match");
+        return true;
+    }
+
+    for (vector<pair<AttributeRule::value_type,xstring> >::const_iterator i=arule->second.m_anySiteRule.valueRules.begin();
+            i!=arule->second.m_anySiteRule.valueRules.end(); i++)
     {
         if (i->first==AttributeRule::literal && i->second==n->getNodeValue())
         {
@@ -247,7 +286,14 @@ bool AAP::accept(const XMLCh* name, const XMLCh* originSite, DOMElement* e)
         return false;
     }
 
-    for (AttributeRule::SiteRule::const_iterator j=srule->second.begin(); j!=srule->second.end(); j++)
+    if (srule->second.anyValue)
+    {
+        log.debug("matching site, any value, match");
+        return true;
+    }
+
+    for (vector<pair<AttributeRule::value_type,xstring> >::const_iterator j=srule->second.valueRules.begin();
+            j!=srule->second.valueRules.end(); j++)
     {
         if (j->first==AttributeRule::literal && j->second==n->getNodeValue())
         {

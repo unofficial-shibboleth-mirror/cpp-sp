@@ -309,6 +309,7 @@ namespace shibboleth
             static const XMLCh Sites[];
 
             static const XMLCh AnySite[];
+            static const XMLCh AnyValue[];
             static const XMLCh AttributeAcceptancePolicy[];
             static const XMLCh AttributeRule[];
             static const XMLCh SiteRule[];

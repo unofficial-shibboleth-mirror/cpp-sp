@@ -131,7 +131,13 @@ namespace shibboleth
         struct AttributeRule
         {
             enum value_type { literal, regexp, xpath };
-            typedef std::vector<std::pair<value_type,saml::xstring> > SiteRule;
+            struct SiteRule
+            {
+                SiteRule() : anyValue(false) {}
+                bool anyValue;
+                std::vector<std::pair<value_type,saml::xstring> > valueRules;
+            };
+
             SiteRule m_anySiteRule;
             std::map<saml::xstring,SiteRule> m_siteMap;
         };
