@@ -297,19 +297,19 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
 
   // Cache this session with the cookie
   g_shibTargetCCache->insert(cookie, as, argp->client_addr);
-
+  
   // Delete the response...
   delete r;
 
   // Delete the origin...
-  delete origin;
+  XMLString::release(&origin);
 
   // And let the user know.
-  free (result->cookie);
+  if (result->cookie) free(result->cookie);
   result->cookie = strdup(cookie);
   set_rpc_status(&result->status, SHIBRPC_OK, NULL, NULL);
 
-  log.debug ("new session id: %s", cookie);
+  log.debug("new session id: %s", cookie);
   return TRUE;
 }
 
