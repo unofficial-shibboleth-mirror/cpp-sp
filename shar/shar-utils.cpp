@@ -15,10 +15,10 @@
 
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
+# include <sys/select.h>
 #endif
 
 #include <stdio.h>
-#include <sys/select.h>
 #include <errno.h>
 #include <signal.h>
 
