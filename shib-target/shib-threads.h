@@ -56,6 +56,14 @@ namespace shibtarget {
     virtual int unlock() = 0;
   };
 
+  class ThreadKey {
+  public:
+    static ThreadKey* create (void (*destroy_fcn)(void*));
+
+    virtual int setData(void* data) = 0;
+    virtual void* getData() = 0;
+  };
+
   //
   // Helper classes.
   //

@@ -82,9 +82,20 @@ public:
   pthread_rwlock_t lock;
 };
 
+class ThreadKeyImpl : public ThreadKey {
+public:
+  ThreadKeyImpl(void (*destroy_fcn)(void*));
+  ~ThreadKeyImpl() { pthread_key_delete (key); }
 
+  int setData(void* data) { return pthread_setspecific (key,data); }
+  void* getData() { return pthread_getspecific (key); }
 
+  pthread_key_t key;
+};
+
+//
 // Constructor Implementation follows...
+//
 
 ThreadImpl::ThreadImpl(void* (*start_routine)(void*), void* arg)
 {
@@ -110,6 +121,11 @@ RWLockImpl::RWLockImpl()
     throw runtime_error("pthread_rwlock_init failed");
 }
 
+ThreadKeyImpl::ThreadKeyImpl(void (*destroy_fcn)(void*))
+{
+  if (pthread_key_create (&key, destroy_fcn) != 0)
+    throw runtime_error("pthread_key_create failed");
+}
 
 //
 // public "static" creation functions
@@ -138,4 +154,9 @@ CondWait * CondWait::create()
 RWLock * RWLock::create()
 {
   return new RWLockImpl();
+}
+
+ThreadKey* ThreadKey::create (void (*destroy_fcn)(void*))
+{
+  return new ThreadKeyImpl(destroy_fcn);
 }
