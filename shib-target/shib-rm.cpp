@@ -97,12 +97,14 @@ RPCError* RM::getAssertions(const char* cookie, const char* ip,
     clnt = m_priv->m_rpc->connect();
     if (shibrpc_get_assertions_1 (&arg, &ret, clnt) != RPC_SUCCESS) {
       // FAILED.  Release, disconnect, and try again.
+      m_priv->log->debug ("RPC Failure: %p (%p): %s", m_priv, clnt,
+			  clnt_spcreateerror (""));
       m_priv->m_rpc->release();
       m_priv->m_rpc->disconnect();
       if (retry)
 	retry--;
       else {
-	m_priv->log->error ("RPC Failure");
+	m_priv->log->error ("RPC Failure: %p, %p", m_priv, clnt);
 	return new RPCError(-1, "RPC Failure");
       }
     } else {
@@ -112,7 +114,7 @@ RPCError* RM::getAssertions(const char* cookie, const char* ip,
     }
   } while (retry >= 0);
 
-  m_priv->log->debug ("RPC completed with status %d", ret.status.status);
+  m_priv->log->debug ("RPC completed with status %d (%p)", ret.status.status, m_priv);
 
   RPCError* retval = NULL;
   if (ret.status.status)

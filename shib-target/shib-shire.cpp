@@ -49,7 +49,7 @@ SHIREPriv::~SHIREPriv() {}
 SHIRE::SHIRE(RPCHandle *rpc, SHIREConfig cfg, string shire_url)
 {
   m_priv = new SHIREPriv(rpc, cfg, shire_url);
-  m_priv->log->info ("New SHIRE handle created");
+  m_priv->log->info ("New SHIRE handle created: %p", m_priv);
 }
 
 SHIRE::~SHIRE()
@@ -97,12 +97,14 @@ RPCError* SHIRE::sessionIsValid(const char* cookie, const char* ip, const char* 
     clnt = m_priv->m_rpc->connect();
     if (shibrpc_session_is_valid_1 (&arg, &ret, clnt) != RPC_SUCCESS) {
       // FAILED.  Release, disconnect, and try again...
+      m_priv->log->debug ("RPC Failure: %p (%p): %s", m_priv, clnt,
+			  clnt_spcreateerror (""));
       m_priv->m_rpc->release();
       m_priv->m_rpc->disconnect();
       if (retry)
 	retry--;
       else {
-	m_priv->log->error ("RPC Failure");
+	m_priv->log->error ("RPC Failure: %p (%p)", m_priv, clnt);
 	return new RPCError(-1, "RPC Failure");
       }
     } else {
@@ -112,7 +114,7 @@ RPCError* SHIRE::sessionIsValid(const char* cookie, const char* ip, const char* 
     }
   } while (retry >= 0);
 
-  m_priv->log->debug ("RPC completed with status %d", ret.status.status);
+  m_priv->log->debug ("RPC completed with status %d, %p", ret.status.status, m_priv);
 
   RPCError* retval;
   if (ret.status.status)
@@ -158,12 +160,14 @@ RPCError* SHIRE::sessionCreate(const char* post, const char* ip, string& cookie)
     clnt = m_priv->m_rpc->connect();
     if (shibrpc_new_session_1 (&arg, &ret, clnt) != RPC_SUCCESS) {
       // FAILED.  Release, disconnect, and retry
+      m_priv->log->debug ("RPC Failure: %p (%p): %s", m_priv, clnt,
+			  clnt_spcreateerror (""));
       m_priv->m_rpc->release();
       m_priv->m_rpc->disconnect();
       if (retry)
 	retry--;
       else {
-	m_priv->log->error ("RPC Failure");
+	m_priv->log->error ("RPC Failure: %p (%p)", m_priv, clnt);
 	return new RPCError(-1, "RPC Failure");
       }
     } else {
@@ -173,7 +177,7 @@ RPCError* SHIRE::sessionCreate(const char* post, const char* ip, string& cookie)
     }
   } while (retry >= 0);
 
-  m_priv->log->debug ("RPC completed with status %d", ret.status.status);
+  m_priv->log->debug ("RPC completed with status %d (%p)", ret.status.status, m_priv);
 
   RPCError* retval;
   if (ret.status.status)

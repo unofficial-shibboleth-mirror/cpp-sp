@@ -58,12 +58,12 @@ RPCHandle::RPCHandle(ShibSockName shar, u_long program, u_long version)
   m_priv->m_program = program;
   m_priv->m_version = version;
 
-  m_priv->log->info("New RPCHandle created");
+  m_priv->log->info("New RPCHandle created: %p", m_priv);
 }
 
 RPCHandle::~RPCHandle()
 {
-  m_priv->log->info("Destroying RPC Handle");
+  m_priv->log->info("Destroying RPC Handle: %p", m_priv);
   if (m_priv->m_clnt) {
     disconnect();
   }
@@ -76,8 +76,10 @@ CLIENT * RPCHandle::connect(void)
 
   m_priv->mutex->lock();
 
-  if (m_priv->m_clnt)
+  if (m_priv->m_clnt) {
+    m_priv->log->debug ("just returning: %p -> %p", m_priv, m_priv->m_clnt);
     return m_priv->m_clnt;
+  }
 
 #ifdef WIN32
   m_priv->log->info ("trying to connect to SHAR at %u.",m_priv->m_shar);
@@ -101,7 +103,7 @@ CLIENT * RPCHandle::connect(void)
       break;
     }
 
-    m_priv->log->warn ("Cannot connect to SHAR... %s",
+    m_priv->log->warn ("Cannot connect %p to SHAR... %s", m_priv,
 			(i > 0 ? "retrying" : ""));
 
     if (i)
@@ -126,7 +128,7 @@ CLIENT * RPCHandle::connect(void)
   CLIENT *clnt = shibrpc_client_create (sock, m_priv->m_program, m_priv->m_version);
   if (!clnt) {
     const char * rpcerror = clnt_spcreateerror ("RPCHandle::connect");
-    m_priv->log->error ("RPC failed: %s", rpcerror);
+    m_priv->log->error ("RPC failed for %p: %s", m_priv, rpcerror);
 #ifdef WIN32
     closesocket(sock);
 #else
@@ -145,7 +147,7 @@ CLIENT * RPCHandle::connect(void)
   m_priv->m_clnt = clnt;
   m_priv->m_sock = sock;
 
-  m_priv->log->debug ("success");
+  m_priv->log->debug ("success: %p -> %p", m_priv, m_priv->m_clnt);
   return m_priv->m_clnt;
 }
 
@@ -160,6 +162,7 @@ void RPCHandle::disconnect(void)
   Lock lock(m_priv->mutex);
 
   if (m_priv->m_clnt) {
+    m_priv->log->debug ("destroying: %p -> %p", m_priv, m_priv->m_clnt);
     clnt_destroy (m_priv->m_clnt);
 #ifdef WIN32
     closesocket(m_priv->m_sock);
