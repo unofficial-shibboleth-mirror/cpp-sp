@@ -213,7 +213,7 @@ RPCError::RPCError(ShibRpcError* error)
   if (!error || !error->status)
     init(0, "", NULL);
   else {
-    auto_ptr<XMLCh> origin(XMLString::transcode(error->ShibRpcError_u.e.origin));
+    auto_ptr_XMLCh origin(error->ShibRpcError_u.e.origin);
     init(error->status, error->ShibRpcError_u.e.error, origin.get());
   }
 }
