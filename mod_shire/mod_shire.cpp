@@ -369,10 +369,10 @@ extern "C" int shire_check_user(request_rec* r)
       return SERVER_ERROR;
     }
 
-    string wayfError;
-    if (! ini.get_tag (serverName, "wayfError", true, &wayfError)) {
+    string shireError;
+    if (! ini.get_tag (serverName, "shireError", true, &shireError)) {
       ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
-		    "shire_check_user: no wayfError configuration for %s",
+		    "shire_check_user: no shireError configuration for %s",
 		    serverName);
       return SERVER_ERROR;
     }
@@ -462,7 +462,7 @@ extern "C" int shire_check_user(request_rec* r)
 	
 	markupProcessor.insert ("errorType", "SHIRE Processing Error");
 	markupProcessor.insert ("errorText", e.what());
-	return shire_error_page (r, wayfError.c_str(), markupProcessor);
+	return shire_error_page (r, shireError.c_str(), markupProcessor);
       }
 
       // Check the status
@@ -534,10 +534,10 @@ extern "C" int shire_post_handler (request_rec* r)
     return SERVER_ERROR;
   }
 
-  string wayfError;
-  if (! ini.get_tag (serverName, "wayfError", true, &wayfError)) {
+  string shireError;
+  if (! ini.get_tag (serverName, "shireError", true, &shireError)) {
     ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
-		  "shire_check_user: no wayfError configuration for %s",
+		  "shire_check_user: no shireError configuration for %s",
 		  serverName);
     return SERVER_ERROR;
   }
@@ -634,7 +634,7 @@ extern "C" int shire_post_handler (request_rec* r)
       // return this error to the user.
       markupProcessor.insert (*status);
       delete status;
-      return shire_error_page (r, wayfError.c_str(), markupProcessor);
+      return shire_error_page (r, shireError.c_str(), markupProcessor);
     }
     delete status;
 
@@ -665,7 +665,7 @@ extern "C" int shire_post_handler (request_rec* r)
 	
     markupProcessor.insert ("errorType", "SHIRE Processing Error");
     markupProcessor.insert ("errorText", e.what());
-    return shire_error_page (r, wayfError.c_str(), markupProcessor);
+    return shire_error_page (r, shireError.c_str(), markupProcessor);
   }
 
   ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,

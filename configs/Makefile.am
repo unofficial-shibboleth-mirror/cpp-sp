@@ -12,4 +12,4 @@ pkgsysconf_DATA = \
                 ca-bundle.crt \
                 accessError.html \
                 rmError.html \
-                wayfError.html
+                shireError.html
