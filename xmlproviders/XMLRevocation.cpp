@@ -302,9 +302,8 @@ Iterator<void*> XMLRevocation::getRevocationLists(const IProvider* provider, con
 #else
         // Without a decent STL, we trade-off the transcoding by doing a linear search.
         for (vector<XMLRevocationImpl::KeyAuthority*>::const_iterator keyauths=impl->m_keyauths.begin(); keyauths!=impl->m_keyauths.end(); keyauths++) {
-            for (vector<const XMLCh*>::const_iterator subs=keyauths->m_subjects.begin(); subs!=keyauths->m_subjects.end(); subs++) {
+            for (vector<const XMLCh*>::const_iterator subs=(*keyauths)->m_subjects.begin(); subs!=(*keyauths)->m_subjects.end(); subs++) {
                 if (!XMLString::compareString(*name,*subs)) {
-                    kauth=*keyauths;
                     if (log.isDebugEnabled()) {
                         auto_ptr_char temp(*name);
                         log.debug("revocation list match on %s",temp.get());
