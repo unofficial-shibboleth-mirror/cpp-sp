@@ -79,6 +79,7 @@ static SVCXPRT* xprt = NULL;]],
         AC_DEFINE(HAVE_WORKING_SVC_DESTROY,1,[Define if RPC SVC macros work on this platform]),)
 	AC_LANG_POP(C++)
 else
+	AC_DEFINE(HAVE_DECL_SVCFD_CREATE,1,[ Define to 1 if you have the declaration of svcfd_create, and to 0 if you don't.])
 	AC_DEFINE(HAVE_WORKING_SVC_DESTROY,1,[Define if RPC SVC macros work on this platform])
 fi
 
