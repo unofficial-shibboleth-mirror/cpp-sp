@@ -24,6 +24,12 @@ however need to provide the necessary build flags during configure, or
 ideally, let our configure script use your Apache's apxs script to extract
 the necessary information.
 
+Also, at a minimum, Apache needs to be built with mod_so enabled for
+dynamically loading modules. If you encounter problems with crashing
+or apparent module conflicts, make sure you've built Apache and any
+modules with threading support and ideally as much dynamically as
+possible.
+
 --- MySQL (optional)
 
 The distribution now includes a session cache plugin using embedded MySQL.
@@ -67,13 +73,14 @@ CVS and run the bootstrap script if you want, or just use a source tarball.
 With the source distribution or the results of your bootstrap:
 
 $ ./configure --prefix=/opt/shibboleth --with-log4cpp=/opt/shibboleth \
-    --enable-apache-13 --with-apxs -C
+    --enable-apache-13 --with-apxs --enable-apache-20 --with-apxs2 -C
 $ make
 $ make install
 
-This will build the Apache 1.x modules by extracting build settings from apxs.
-The configure script will look in normal spots for the script
-(/usr/bin/apxs, /usr/local/apache/bin/apxs) but you can point it if you need to.
+This will build the Apache 1.x and 2.x modules by extracting build settings
+from apxs. The configure script will look in normal spots for the script
+(/usr/bin/apxs, /usr/local/apache/bin/apxs) but you can point to it so that
+both modules can be built at once.
 
 If you want to build the modules but not use apxs, you can use the
 --without-apxs option, and provide flags using the APXS_PREFIX, APXS_CFLAGS,
