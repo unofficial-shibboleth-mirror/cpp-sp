@@ -17,7 +17,7 @@ extern "C" {
 
 /* Define NEED_XDR_LONGLONG in the cases where uint64_t is not defined */
 #ifdef NEED_XDR_LONGLONG
-#define uint64_t ulonglong_t
+#define xdr_uint64_t xdr_ulonglong_t
 #endif
 
 
