@@ -357,9 +357,8 @@ extern "C" int shibrm_check_auth(request_rec* r)
     RM rm(rpc_handle, dc->config);
 
     vector<SAMLAssertion*> assertions;
-
-    RPCError* status = rm.getAssertions(session_id, r->connection->remote_ip,
-					targeturl, assertions);
+    SAMLAuthenticationStatement* sso_statement=NULL;
+    RPCError* status = rm.getAssertions(session_id, r->connection->remote_ip, targeturl, assertions, &sso_statement);
 
     if (status->isError()) {
       ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
@@ -411,6 +410,17 @@ extern "C" int shibrm_check_auth(request_rec* r)
       string assertion;
       RM::serialize(*(assertions[0]), assertion);
       ap_table_set(r->headers_in,"Shib-Attributes", assertion.c_str());
+    }
+
+    // Export the SAML AuthnMethod and the origin site name.
+    ap_table_unset(r->headers_in,"Shib-Origin-Site");
+    ap_table_unset(r->headers_in,"Shib-Authentication-Method");
+    if (sso_statement)
+    {
+        auto_ptr<char> os(XMLString::transcode(sso_statement->getSubject()->getNameQualifier()));
+        auto_ptr<char> am(XMLString::transcode(sso_statement->getAuthMethod()));
+        ap_table_set(r->headers_in,"Shib-Origin-Site", os.get());
+        ap_table_set(r->headers_in,"Shib-Authentication-Method", am.get());
     }
 
     // Export the attributes -- XXX: Assumes one statement!
