@@ -66,6 +66,10 @@
 #include <sstream>
 #include <stdexcept>
 
+#ifdef HAVE_LIBDMALLOCXX
+#include <dmalloc.h>
+#endif
+
 using namespace std;
 using namespace saml;
 using namespace shibboleth;

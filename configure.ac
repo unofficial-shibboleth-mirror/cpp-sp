@@ -43,6 +43,16 @@ else
     CXXFLAGS="$PTHREAD_CFLAGS $CXXFLAGS"
 fi
 
+AC_ARG_WITH(dmalloc,
+            AC_HELP_STRING([--with-dmalloc=PATH], [where dmalloc is installed]),
+            [if test x_$with_dmalloc != x_/usr; then
+                LDFLAGS="-L${with_dmalloc}/lib $LDFLAGS"
+                CPPFLAGS="-I${with_dmalloc}/include $CPPFLAGS"
+            fi
+	    AC_CHECK_LIB(dmallocxx, dmalloc_shutdown,,
+		         AC_MSG_ERROR([unable to find dmallocxx library]))
+	    ])
+
 AC_ARG_WITH(xerces, 
             AC_HELP_STRING([--with-xerces=PATH], [where xerces-c is installed]),
             [if test x_$with_xerces != x_/usr; then

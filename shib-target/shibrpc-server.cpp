@@ -14,11 +14,14 @@
 #include <log4cpp/Category.hh>
 #include <sstream>
 
+#ifdef HAVE_LIBDMALLOCXX
+#include <dmalloc.h>
+#endif
+
 using namespace std;
 using namespace saml;
 using namespace shibboleth;
 using namespace shibtarget;
-
 
 static std::string get_threadid (const char* proc)
 {
