@@ -56,11 +56,8 @@
    $History:$
 */
 
-#ifdef WIN32
-# define SHIB_EXPORTS __declspec(dllexport)
-#endif
+#include "internal.h"
 
-#include "shib.h"
 using namespace shibboleth;
 using namespace saml;
 

@@ -1,5 +1,5 @@
 /*
- * The Shibboleth License, Version 1.
+ * The OpenSAML License, Version 1.
  * Copyright (c) 2002
  * University Corporation for Advanced Internet Development, Inc.
  * All rights reserved
@@ -20,15 +20,15 @@
  * may appear in the software itself, if and wherever such third-party
  * acknowledgments normally appear.
  *
- * Neither the name of Shibboleth nor the names of its contributors, nor
+ * Neither the name of OpenSAML nor the names of its contributors, nor
  * Internet2, nor the University Corporation for Advanced Internet Development,
  * Inc., nor UCAID may be used to endorse or promote products derived from this
  * software without specific prior written permission. For written permission,
- * please contact shibboleth@shibboleth.org
+ * please contact opensaml@opensaml.org
  *
- * Products derived from this software may not be called Shibboleth, Internet2,
+ * Products derived from this software may not be called OpenSAML, Internet2,
  * UCAID, or the University Corporation for Advanced Internet Development, nor
- * may Shibboleth appear in their name, without prior written permission of the
+ * may OpenSAML appear in their name, without prior written permission of the
  * University Corporation for Advanced Internet Development.
  *
  *
@@ -48,54 +48,48 @@
  */
 
 
-/* XML.cpp - XML constants
+/* internal.h - internally visible classes
 
    Scott Cantor
-   6/4/02
+   9/6/02
 
    $History:$
 */
 
-#include "internal.h"
+#ifndef __shib_internal_h__
+#define __shib_internal_h__
 
-using namespace shibboleth;
+#ifdef WIN32
+# define SHIB_EXPORTS __declspec(dllexport)
+#endif
 
+// eventually we might be able to support autoconf via cygwin...
+#if defined (_MSC_VER) || defined(__BORLANDC__)
+# include "config_win32.h"
+#else
+# include "config.h"
+#endif
 
-// Namespace and schema string literals
+#include <xmlsec/keysmngr.h>
 
-const XMLCh XML::SHIB_NS[] = // urn:mace:shibboleth:1.0
-{ chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
-  chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, 
-  chColon, chDigit_1, chPeriod, chDigit_0, chNull
-};
+#include "shib.h"
 
-const XMLCh XML::SHIB_SCHEMA_ID[] = // shibboleth.xsd
-{ chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, 
-  chPeriod, chLatin_x, chLatin_s, chLatin_d, chNull
-};
+#define SHIB_LOGCAT "Shibboleth"
 
+namespace shibboleth
+{
+    class ShibInternalConfig : public ShibConfig
+    {
+    public:
+        ShibInternalConfig() : m_manager(NULL) {}
 
-// Shibboleth vocabulary literals
+        // global per-process setup and shutdown of runtime
+        bool init();
+        void term();
 
-const XMLCh XML::Literals::Domain[]=
-{ chLatin_D, chLatin_o, chLatin_m, chLatin_a, chLatin_i, chLatin_n, chNull };
+    private:
+        xmlSecKeysMngrPtr m_manager;
+    };
+}
 
-const XMLCh XML::Literals::HandleService[]=
-{ chLatin_H, chLatin_a, chLatin_n, chLatin_d, chLatin_l, chLatin_e,
-  chLatin_S, chLatin_e, chLatin_r, chLatin_v, chLatin_i, chLatin_c, chLatin_e, chNull };
-
-const XMLCh XML::Literals::InvalidHandle[]=
-{ chLatin_I, chLatin_n, chLatin_v, chLatin_a, chLatin_l, chLatin_i, chLatin_d,
-  chLatin_H, chLatin_a, chLatin_n, chLatin_d, chLatin_l, chLatin_e, chNull };
-
-const XMLCh XML::Literals::Name[]=
-{ chLatin_N, chLatin_a, chLatin_m, chLatin_e, chNull };
-
-const XMLCh XML::Literals::OriginSite[]=
-{ chLatin_O, chLatin_r, chLatin_i, chLatin_g, chLatin_i, chLatin_n, chLatin_S, chLatin_i, chLatin_t, chLatin_e, chNull };
-
-const XMLCh XML::Literals::Sites[]=
-{ chLatin_S, chLatin_i, chLatin_t, chLatin_e, chLatin_s, chNull };
-
-const XMLCh XML::Literals::xmlns_shib[]=
-{ chLatin_x, chLatin_m, chLatin_l, chLatin_n, chLatin_s, chColon, chLatin_s, chLatin_h, chLatin_i, chLatin_b, chNull };
+#endif

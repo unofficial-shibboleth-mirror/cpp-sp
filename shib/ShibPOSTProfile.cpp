@@ -55,12 +55,10 @@
    $History:$
 */
 
-#ifdef WIN32
-# define SHIB_EXPORTS __declspec(dllexport)
-#endif
+#include "internal.h"
 
 #include <ctime>
-#include "shib.h"
+
 using namespace shibboleth;
 using namespace saml;
 using namespace std;
@@ -144,14 +142,12 @@ SAMLResponse* ShibPOSTProfile::accept(const XMLByte* buf)
         throw SAMLException(SAMLException::RESPONDER, "ShibPOSTProfile::accept() detected an untrusted HS for the origin site");
 
     const Key* hsKey=ShibConfig::getConfig().origin_mapper->getHandleServiceKey(handleService);
-    Iterator<X509Certificate*> roots=ShibConfig::getConfig().origin_mapper->getTrustedRoots();
 
     // Signature verification now takes place. We check the assertion and the response.
     // Assertion signing is optional, response signing is mandatory.
-    if (assertion->isSigned() && !verifySignature(*assertion, handleService, roots, hsKey))
-        throw SAMLException(SAMLException::RESPONDER, "ShibPOSTProfile::accept() detected an invalid assertion signature");
-    if (!verifySignature(*r, handleService, roots, hsKey))
-        throw SAMLException(SAMLException::RESPONDER, "ShibPOSTProfile::accept() detected an invalid response signature");
+    if (assertion->isSigned())
+        verifySignature(*assertion, handleService, hsKey);
+    verifySignature(*r, handleService, hsKey);
 
     return r;
 }
@@ -180,9 +176,15 @@ SAMLResponse* ShibPOSTProfile::prepare(const XMLCh* recipient,
     SAMLResponse* r = SAMLPOSTProfile::prepare(recipient,m_issuer,Iterator<const XMLCh*>(m_policies),name,
                                                nameQualifier,NULL,subjectIP,authMethod,authDateTime,bindings);
     if (assertionKey)
-        (r->getAssertions().next())->sign(m_algorithm,*assertionKey,assertionCert);
+    {
+        const X509Certificate* acerts[]={ assertionCert };
+        (r->getAssertions().next())->sign(m_algorithm,*assertionKey,
+            assertionCert ? ArrayIterator<const X509Certificate*>(acerts) : Iterator<const X509Certificate*>());
+    }
 
-    r->sign(m_algorithm,responseKey,responseCert);
+    const X509Certificate* rcerts[]={ responseCert };
+    r->sign(m_algorithm,responseKey,
+        assertionCert ? ArrayIterator<const X509Certificate*>(rcerts) : Iterator<const X509Certificate*>());
 
     return r;
 }
@@ -193,9 +195,10 @@ bool ShibPOSTProfile::checkReplayCache(const SAMLAssertion& a)
     return SAMLPOSTProfile::checkReplayCache(a);
 }
 
-bool ShibPOSTProfile::verifySignature(const SAMLSignedObject& obj, const XMLCh* signerName,
-                                      const saml::Iterator<saml::X509Certificate*>& roots,
-                                      const saml::Key* knownKey)
+void ShibPOSTProfile::verifySignature(const SAMLSignedObject& obj, const XMLCh* signerName, const saml::Key* knownKey)
 {
-    return knownKey ? obj.verify(*knownKey) : obj.verify();
+    if (knownKey)
+        obj.verify(*knownKey);
+    else
+        obj.verify();
 }

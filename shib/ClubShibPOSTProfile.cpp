@@ -55,11 +55,8 @@
    $History:$
 */
 
-#ifdef WIN32
-# define SHIB_EXPORTS __declspec(dllexport)
-#endif
+#include "internal.h"
 
-#include "shib.h"
 using namespace shibboleth;
 using namespace saml;
 using namespace std;
@@ -100,20 +97,18 @@ SAMLResponse* ClubShibPOSTProfile::prepare(const XMLCh* recipient,
                                            const saml::Key& responseKey, const saml::X509Certificate* responseCert,
                                            const saml::Key* assertionKey, const saml::X509Certificate* assertionCert)
 {
-    if (responseKey.getType()!=Key::RSA)
-        throw InvalidCryptoException(SAMLException::RESPONDER, "ClubShibPOSTProfile::prepare() requires the response key be an RSA private key");
-    if (assertionKey && assertionKey->getType()!=Key::RSA)
-        throw InvalidCryptoException(SAMLException::RESPONDER, "ClubShibPOSTProfile::prepare() requires the assertion key be an RSA private key");
+    if (responseKey.getType()!=Key::RSA_PRIV)
+        throw TrustException(SAMLException::RESPONDER, "ClubShibPOSTProfile::prepare() requires the response key be an RSA private key");
+    if (assertionKey && assertionKey->getType()!=Key::RSA_PRIV)
+        throw TrustException(SAMLException::RESPONDER, "ClubShibPOSTProfile::prepare() requires the assertion key be an RSA private key");
 
     return ShibPOSTProfile::prepare(recipient,name,nameQualifier,subjectIP,authMethod,authInstant,bindings,
                                     responseKey,responseCert,assertionKey,assertionCert);
 }
 
-bool ClubShibPOSTProfile::verifySignature(const SAMLSignedObject& obj, const XMLCh* signerName,
-                                          const saml::Iterator<saml::X509Certificate*>& roots,
-                                          const saml::Key* knownKey)
+void ClubShibPOSTProfile::verifySignature(const SAMLSignedObject& obj, const XMLCh* signerName, const saml::Key* knownKey)
 {
-    if (!ShibPOSTProfile::verifySignature(obj,signerName,roots,knownKey))
-        return false;
-    return (obj.getSignatureAlgorithm()==SAMLSignedObject::RSA_SHA1);
+    ShibPOSTProfile::verifySignature(obj,signerName,knownKey);
+    if (obj.getSignatureAlgorithm()!=SAMLSignedObject::RSA_SHA1)
+        throw TrustException("ClubShibPOSTProfile::verifySignature() requires the RSA-SHA1 signature algorithm");
 }

@@ -56,27 +56,41 @@
    $History:$
 */
 
-#ifdef WIN32
-# define SHIB_EXPORTS __declspec(dllexport)
-#endif
+#include "internal.h"
+#include <log4cpp/Category.hh>
 
-#include "shib.h"
+using namespace saml;
 using namespace shibboleth;
 
 namespace {
-    ShibConfig g_config;
+    ShibInternalConfig g_config;
 }
 
-bool ShibConfig::init()
+bool ShibInternalConfig::init()
 {
+    saml::NDC ndc("init");
+
     // Register extension schema.
     saml::XML::registerSchema(XML::SHIB_NS,XML::SHIB_SCHEMA_ID);
+
+    m_manager=xmlSecSimpleKeysMngrCreate();
+    if (origin_mapper && origin_mapper->getTrustedRoots() &&
+        xmlSecSimpleKeysMngrLoadPemCert(m_manager,origin_mapper->getTrustedRoots(),true) < 0)
+    {
+        log4cpp::Category::getInstance(SHIB_LOGCAT".ShibConfig").fatal("init: failed to load CAs into simple key manager");
+        xmlSecSimpleKeysMngrDestroy(m_manager);
+        m_manager=NULL;
+        return false;
+    }
+    SAMLConfig::getConfig().xmlsig_ptr=m_manager;
 
     return true;
 }
 
-void ShibConfig::term()
+void ShibInternalConfig::term()
 {
+    if (m_manager)
+        xmlSecSimpleKeysMngrDestroy(m_manager);
 }
 
 ShibConfig& ShibConfig::getConfig()

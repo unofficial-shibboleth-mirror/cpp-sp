@@ -55,12 +55,12 @@
    $History:$
 */
 
-#ifdef WIN32
-# define SHIB_EXPORTS __declspec(dllexport)
-#endif
-
-#include "shib.h"
+#include "internal.h"
 #include <log4cpp/Category.hh>
+
+#include <xmlsec/xmltree.h>
+#include <xmlsec/xmldsig.h>
+
 using namespace shibboleth;
 using namespace saml;
 using namespace log4cpp;
@@ -68,15 +68,17 @@ using namespace std;
 
 #include <xercesc/framework/URLInputSource.hpp>
 
-XMLOriginSiteMapper::XMLOriginSiteMapper(const char* registryURI,
-                                         const Iterator<X509Certificate*>& roots,
-                                         Key* verifyKey)
+
+XMLOriginSiteMapper::XMLOriginSiteMapper(const char* registryURI, const char* calist, const X509Certificate* verifyKey)
 {
     NDC ndc("XMLOriginSiteMapper");
     Category& log=Category::getInstance(SHIB_LOGCAT".XMLOriginSiteMapper");
 
     // Register extension schema.
     saml::XML::registerSchema(XML::SHIB_NS,XML::SHIB_SCHEMA_ID);
+
+    if (calist)
+        m_calist=calist;
 
     saml::XML::Parser p;
     DOMDocument* doc=NULL;
@@ -155,12 +157,12 @@ XMLOriginSiteMapper::XMLOriginSiteMapper(const char* registryURI,
 
 		if (verifyKey)
         {
-			log.info("Initialized with a key: attempting to verify document signature.");
-            log.error("Signature verification not implemented yet, this may be a forged file!");
-			// validateSignature(verifyKey, e);
+			log.info("initialized with a key: attempting to verify document signature");
+			validateSignature(verifyKey, e);
+			log.info("verified document signature");
 		}
         else
-			log.info("Initialized without key: skipping signature verification.");
+			log.info("initialized without key: skipping signature verification");
     }
     catch (SAMLException& e)
     {
@@ -183,66 +185,9 @@ XMLOriginSiteMapper::~XMLOriginSiteMapper()
 {
     for (map<xstring,OriginSite*>::iterator i=m_sites.begin(); i!=m_sites.end(); i++)
         delete i->second;
+    for (map<xstring,Key*>::iterator j=m_hsKeys.begin(); j!=m_hsKeys.end(); j++)
+        delete j->second;
 }
-
-/* TBD...
-private void validateSignature(Key verifyKey, Element e) throws OriginSiteMapperException {
-
-	Node n = e.getLastChild();
-	while (n != null && n.getNodeType() != Node.ELEMENT_NODE)
-		n = n.getPreviousSibling();
-
-	if (n != null
-		&& org.opensaml.XML.XMLSIG_NS.equals(n.getNamespaceURI())
-		&& "Signature".equals(n.getLocalName())) {
-			log.info("Located signature in document... verifying.");
-		try {
-			XMLSignature sig = new XMLSignature((Element) n, null);
-			if (sig.checkSignatureValue(verifyKey)) {
-				// Now we verify that what is signed is what we expect.
-				SignedInfo sinfo = sig.getSignedInfo();
-				if (sinfo.getLength() == 1
-					&& (sinfo
-						.getCanonicalizationMethodURI()
-						.equals(Canonicalizer.ALGO_ID_C14N_WITH_COMMENTS)
-						|| sinfo.getCanonicalizationMethodURI().equals(
-							Canonicalizer.ALGO_ID_C14N_OMIT_COMMENTS))) {
-					Reference ref = sinfo.item(0);
-					if (ref.getURI() == null || ref.getURI().equals("")) {
-						Transforms trans = ref.getTransforms();
-						if (trans.getLength() == 1
-							&& trans.item(0).getURI().equals(Transforms.TRANSFORM_ENVELOPED_SIGNATURE))
-							log.info("Signature verification successful.");
-							return;
-					}
-					log.error(
-						"Unable to verify signature on registry file: Unsupported dsig reference or transform data submitted with signature.");
-					throw new OriginSiteMapperException("Unable to verify signature on registry file: Unsupported dsig reference or transform data submitted with signature.");
-				} else {
-					log.error(
-						"Unable to verify signature on registry file: Unsupported canonicalization method.");
-					throw new OriginSiteMapperException("Unable to verify signature on registry file: Unsupported canonicalization method.");
-				}
-			} else {
-				log.error(
-					"Unable to verify signature on registry file: signature cannot be verified with the specified key.");
-				throw new OriginSiteMapperException("Unable to verify signature on registry file: signature cannot be verified with the specified key.");
-			}
-		} catch (Exception sigE) {
-			log.error(
-				"Unable to verify signature on registry file: An error occured while attempting to verify the signature:"
-					+ sigE);
-			throw new OriginSiteMapperException(
-				"Unable to verify signature on registry file: An error occured while attempting to verify the signature:"
-					+ sigE);
-		}
-	} else {
-		log.error("Unable to verify signature on registry file: no signature found in document.");
-		throw new OriginSiteMapperException("Unable to verify signature on registry file: no signature found in document.");
-	}
-
-}
-*/
 
 Iterator<xstring> XMLOriginSiteMapper::getHandleServiceNames(const XMLCh* originSite)
 {
@@ -252,7 +197,7 @@ Iterator<xstring> XMLOriginSiteMapper::getHandleServiceNames(const XMLCh* origin
     return Iterator<xstring>(i->second->m_handleServices);
 }
 
-Key* XMLOriginSiteMapper::getHandleServiceKey(const XMLCh* handleService)
+const Key* XMLOriginSiteMapper::getHandleServiceKey(const XMLCh* handleService)
 {
     map<xstring,Key*>::const_iterator i=m_hsKeys.find(handleService);
     return (i!=m_hsKeys.end()) ? i->second : NULL;
@@ -266,8 +211,146 @@ Iterator<xstring> XMLOriginSiteMapper::getSecurityDomains(const XMLCh* originSit
     return Iterator<xstring>(i->second->m_domains);
 }
 
-Iterator<X509Certificate*> XMLOriginSiteMapper::getTrustedRoots()
+const char* XMLOriginSiteMapper::getTrustedRoots()
 {
-	return Iterator<X509Certificate*>(m_roots);
+    return m_calist.c_str();
 }
 
+void XMLOriginSiteMapper::validateSignature(const X509Certificate* verifyKey, DOMElement* e)
+{
+    if (verifyKey->getFormat()!=X509Certificate::PEM)
+        throw OriginSiteMapperException("XMLOriginSiteMapper::validateSignature() requires a PEM certificate");
+
+    ostringstream os;
+    os << *e;
+    string libxmlbuf(os.str());
+
+    // Parse the document with libxml
+    xmlLoadExtDtdDefaultValue = XML_DETECT_IDS | XML_COMPLETE_ATTRS;
+    xmlSubstituteEntitiesDefault(1);
+    xmlDocPtr libxmlDoc=xmlParseMemory(libxmlbuf.c_str(),libxmlbuf.length());
+    if (!libxmlDoc || !xmlDocGetRootElement(libxmlDoc))
+        throw OriginSiteMapperException("XMLOriginSiteMapper::validateSignature() unable to parse with libxml");
+
+    // Look for a ds:Signature below the root element.
+    xmlNodePtr sigNode=xmlSecFindNode(xmlDocGetRootElement(libxmlDoc),(xmlChar*)"Signature",xmlSecDSigNs);
+    if (!sigNode)
+    {
+        xmlFreeDoc(libxmlDoc);
+        throw OriginSiteMapperException("XMLOriginSiteMapper::validateSignature() unable to find a ds:Signature");
+    }
+
+    // To get the bloody key to work, we have to do things to fool xmlsec into allowing it.
+    // First we load the cert in as a trusted root.
+    xmlSecX509StorePtr pStore=xmlSecX509StoreCreate();
+    if (!pStore)
+    {
+        xmlFreeDoc(libxmlDoc);
+        throw bad_alloc();
+    }
+
+    int ret=xmlSecX509StoreLoadPemCert(pStore,verifyKey->getPath(),1);
+    if (ret<0)
+    {
+        xmlSecX509StoreDestroy(pStore);
+        xmlFreeDoc(libxmlDoc);
+        throw OriginSiteMapperException(
+            string("XMLOriginSiteMapper::validateSignature() unable to load certificate from file: ") + verifyKey->getPath());
+    }
+
+    xmlSecX509DataPtr pX509=xmlSecX509DataCreate();
+    if (!pX509)
+    {
+        xmlSecX509StoreDestroy(pStore);
+        xmlFreeDoc(libxmlDoc);
+        throw bad_alloc();
+    }
+
+    // Now load the cert again and "verify" the cert against itself, which will mark it verified.
+    if (xmlSecX509DataReadPemCert(pX509,verifyKey->getPath())<0 || xmlSecX509StoreVerify(pStore,pX509)<0)
+    {
+        xmlSecX509DataDestroy(pX509);
+        xmlSecX509StoreDestroy(pStore);
+        xmlFreeDoc(libxmlDoc);
+        throw OriginSiteMapperException("XMLOriginSiteMapper::validateSignature() unable to load certificate and verify against itself");
+    }
+
+    // Now we can get the key out.
+    xmlSecKeyPtr key=xmlSecX509DataCreateKey(pX509);
+    if (!key)
+    {
+//        xmlSecX509DataDestroy(pX509);
+        xmlSecX509StoreDestroy(pStore);
+        xmlFreeDoc(libxmlDoc);
+        throw OriginSiteMapperException("XMLOriginSiteMapper::validateSignature() failed to extract key from certificate");
+    }
+
+    // Set up for validation.
+    xmlSecKeysMngrPtr keymgr=xmlSecSimpleKeysMngrCreate();
+    if (!keymgr)
+    {
+        xmlSecKeyDestroy(key);
+//        xmlSecX509DataDestroy(pX509);
+        xmlSecX509StoreDestroy(pStore);
+        xmlFreeDoc(libxmlDoc);
+        throw bad_alloc();
+    }
+
+    xmlSecDSigCtxPtr context=xmlSecDSigCtxCreate(keymgr);
+    if (!context)
+    {
+        xmlSecSimpleKeysMngrDestroy(keymgr);
+        xmlSecKeyDestroy(key);
+//        xmlSecX509DataDestroy(pX509);
+        xmlSecX509StoreDestroy(pStore);
+        xmlFreeDoc(libxmlDoc);
+        throw bad_alloc();
+    }
+    context->processManifests=0;
+    context->storeSignatures=0;
+    context->storeReferences=0;
+    context->fakeSignatures=0;
+
+    // Finally...check the bloody thing.
+    xmlSecDSigResultPtr result=NULL;
+    ret=xmlSecDSigValidate(context,NULL,key,sigNode,&result);
+    xmlSecKeyDestroy(key);
+//    xmlSecX509DataDestroy(pX509);
+    xmlSecX509StoreDestroy(pStore);
+    if (ret<0 || result->result!=xmlSecTransformStatusOk)
+    {
+        if (result)
+            xmlSecDSigResultDestroy(result);
+        xmlSecDSigCtxDestroy(context);
+        xmlSecSimpleKeysMngrDestroy(keymgr);
+        xmlFreeDoc(libxmlDoc);
+        throw InvalidCryptoException("XMLOriginSiteMapper::validateSignature() failed to validate signature");
+    }
+
+    // Now check for any trust violations (wrong stuff signed, etc.)
+    string msg;
+
+    if (result->signMethod!=xmlSecSignRsaSha1)
+        msg="XMLOriginSiteMapper::validateSignature() rejected signature algorithm";
+    else if (result->firstSignRef!=result->lastSignRef)
+        msg="XMLOriginSiteMapper::validateSignature() found more than one ds:Reference";
+    else
+    {
+        xmlSecReferenceResultPtr ref=result->firstSignRef;
+        if (ref->digestMethod!=xmlSecDigestSha1)
+            msg="XMLOriginSiteMapper::validateSignature() rejected digest algorithm";
+        else if (ref->uri && ref->uri[0])
+            msg="XMLOriginSiteMapper::validateSignature() found a ds:Reference with a non-empty URL";
+        else
+        {
+        }
+    }
+    
+    xmlSecDSigResultDestroy(result);
+    xmlSecDSigCtxDestroy(context);
+    xmlSecSimpleKeysMngrDestroy(keymgr);
+    xmlFreeDoc(libxmlDoc);
+
+    if (!msg.empty())
+        throw TrustException(msg);
+}
