@@ -279,7 +279,7 @@ FileResolver::~FileResolver()
 void FileResolver::attach(void* ctx) const
 {
 #ifdef _DEBUG
-    saml::NDC ndc("FileResolver");
+    saml::NDC ndc("attach");
 #endif
     
     SSL_CTX* ssl_ctx=reinterpret_cast<SSL_CTX*>(ctx);

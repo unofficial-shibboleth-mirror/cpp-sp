@@ -178,9 +178,9 @@ ReloadableXMLFileImpl* XMLAAP::newImplementation(const char* pathname, bool firs
 void XMLAAPImpl::init()
 {
 #ifdef _DEBUG
-    NDC ndc("XMLAAPImpl");
+    saml::NDC ndc("init");
 #endif
-    Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".XMLAAPImpl");
+    Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".AAP");
 
     try
     {
@@ -439,7 +439,7 @@ bool XMLAAPImpl::AttributeRule::scopeCheck(
 #ifdef _DEBUG
     saml::NDC ndc("scopeCheck");
 #endif
-    Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".XMLAAPImpl");
+    Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".AAP");
 
     // Are we scoped?
     const XMLCh* scope=e->getAttributeNS(NULL,SHIB_L(Scope));
@@ -508,7 +508,7 @@ bool XMLAAPImpl::AttributeRule::accept(const DOMElement* e, const IScopedRoleDes
 #ifdef _DEBUG
     saml::NDC ndc("accept");
 #endif
-    Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".XMLAAPImpl");
+    Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".AAP");
     
     if (log.isDebugEnabled()) {
         auto_ptr_char temp(m_name);

@@ -140,9 +140,9 @@ XMLRevocationImpl::KeyAuthority::~KeyAuthority()
 void XMLRevocationImpl::init()
 {
 #ifdef _DEBUG
-    saml::NDC ndc("XMLRevocationImpl");
+    saml::NDC ndc("init");
 #endif
-    Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".XMLRevocationImpl");
+    Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".Revocation");
 
     try {
         if (!saml::XML::isElementNamed(m_root,::XML::TRUST_NS,SHIB_L(Trust))) {
@@ -269,8 +269,10 @@ XMLRevocationImpl::~XMLRevocationImpl()
 
 Iterator<void*> XMLRevocation::getRevocationLists(const IEntityDescriptor* provider, const IRoleDescriptor* role) const
 {
+#ifdef _DEBUG
     saml::NDC ndc("getRevocationLists");
-    Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".XMLRevocation");
+#endif
+    Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".Revocation");
     XMLRevocationImpl* impl=dynamic_cast<XMLRevocationImpl*>(getImplementation());
 
     // Build a list of the names to match. We include any named KeyDescriptors, and the provider ID and its groups.

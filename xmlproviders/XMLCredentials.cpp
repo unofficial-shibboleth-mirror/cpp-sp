@@ -116,9 +116,9 @@ ReloadableXMLFileImpl* XMLCredentials::newImplementation(const DOMElement* e, bo
 void XMLCredentialsImpl::init()
 {
 #ifdef _DEBUG
-    saml::NDC ndc("XMLCredentialsImpl");
+    saml::NDC ndc("init");
 #endif
-    Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".XMLCredentialsImpl");
+    Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".Credentials");
 
     try {
         if (!saml::XML::isElementNamed(m_root,::XML::CREDS_NS,SHIB_L(Credentials))) {

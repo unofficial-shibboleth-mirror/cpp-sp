@@ -206,9 +206,9 @@ public:
 void XMLTrustImpl::init()
 {
 #ifdef _DEBUG
-    saml::NDC ndc("XMLTrustImpl");
+    saml::NDC ndc("init");
 #endif
-    Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".XMLTrustImpl");
+    Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".Trust");
 
     try {
         if (!saml::XML::isElementNamed(m_root,::XML::TRUST_NS,SHIB_L(Trust))) {
@@ -399,7 +399,7 @@ bool XMLTrust::attach(const Iterator<IRevocation*>& revocations, const IRoleDesc
     lock();
     try {
         saml::NDC ndc("attach");
-        Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".XMLTrust");
+        Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".Trust");
         XMLTrustImpl* impl=dynamic_cast<XMLTrustImpl*>(getImplementation());
     
         // Build a list of the names to match. We include any named KeyDescriptors, and the provider ID and its groups.
@@ -505,8 +505,8 @@ bool XMLTrust::validate(
 {
     lock();
     try {
-        NDC ndc("validate");
-        Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".XMLTrust");
+        saml::NDC ndc("validate");
+        Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".Trust");
         XMLTrustImpl* impl=dynamic_cast<XMLTrustImpl*>(getImplementation());
     
         // This is where we're going to hide all the juicy SAML trust bits. If we botch it
