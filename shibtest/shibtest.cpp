@@ -44,7 +44,7 @@ MyMapper::MyMapper()
 {
 }
 
-SAMLAttribute* scopedFactory(IDOM_Element* e)
+extern "C" SAMLAttribute* scopedFactory(IDOM_Element* e)
 {
     return new ScopedAttribute(e);
 }
@@ -58,7 +58,7 @@ int main(int argc,char* argv[])
     char* q_param=NULL;
     char* url_param=NULL;
     char* r_param=NULL;
-    char* path=NULL;
+    char* path="";
 
     for (int i=1; i<argc; i++)
     {
@@ -87,7 +87,6 @@ int main(int argc,char* argv[])
     conf2.origin_mapper=&mapper;
     if (!ShibConfig::init(&conf2))
         cerr << "unable to initialize Shibboleth runtime" << endl;
-
 
     saml::XML::registerSchema(EDUPERSON_NS,EDUPERSON_SCHEMA_ID);
 
