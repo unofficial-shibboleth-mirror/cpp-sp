@@ -2,7 +2,8 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-logdir=${localstatedir}/log/shibboleth
+pkglogdir=${localstatedir}/log/@PACKAGE@
+pkgxmldir = $(datadir)/xml/@PACKAGE@
 pkgsysconfdir = $(sysconfdir)/@PACKAGE@
 pkgsysconf_DATA = \
 	apache.config \
@@ -36,7 +37,8 @@ do-build-file:
 	    -e 's:@-PREFIX-@:${prefix}:' \
 	    -e 's:@-LIBEXECDIR-@:${libexecdir}:' \
 	    -e 's:@-PKGSYSCONFDIR-@:${pkgsysconfdir}:' \
-	    -e 's:@-LOGDIR-@:${logdir}:'
+	    -e 's:@-PKGXMLDIR-@:${pkgxmldir}:' \
+	    -e 's:@-PKGLOGDIR-@:${pkglogdir}:'
 	cmp -s ${FILE} ${FILE}.tmp || mv ${FILE}.tmp ${FILE}
 	rm -f ${FILE}.tmp
 
@@ -55,10 +57,20 @@ shire.logger: ${srcdir}/shire.logger.in Makefile ${top_builddir}/config.status
 shibboleth.xml: ${srcdir}/shibboleth.xml.in Makefile ${top_builddir}/config.status
 	$(MAKE) do-build-file FILE=$@
 
+AAP.xml: ${srcdir}/AAP.xml.in Makefile ${top_builddir}/config.status
+	$(MAKE) do-build-file FILE=$@
+
+IQ-sites.xml: ${srcdir}/IQ-sites.xml.in Makefile ${top_builddir}/config.status
+	$(MAKE) do-build-file FILE=$@
+
+IQ-trust.xml: ${srcdir}/IQ-trust.xml.in Makefile ${top_builddir}/config.status
+	$(MAKE) do-build-file FILE=$@
+
 all-data-local: $(CONFIGFILES)
 
 install-data-local:	all-data-local
-	$(mkinstalldirs) $(DESTDIR)$(logdir)
+	$(mkinstalldirs) $(DESTDIR)$(pkglogdir)
+	$(mkinstalldirs) $(DESTDIR)$(pkgxmldir)
 	$(mkinstalldirs) $(DESTDIR)$(prefix)/data
 	$(mkinstalldirs) $(DESTDIR)$(pkgsysconfdir)
 	for f in $(CONFIGFILES); do \
@@ -73,7 +85,10 @@ CLEANFILES = \
 	apache2.config \
 	shar.logger \
 	shire.logger \
-	shibboleth.xml
+	shibboleth.xml \
+	AAP.xml \
+	IQ-sites.xml \
+	IQ-trust.xml
 
 EXTRA_DIST = .cvsignore \
 	shibboleth.xml.in \
@@ -85,9 +100,9 @@ EXTRA_DIST = .cvsignore \
 	accessError.html \
 	rmError.html \
 	shireError.html \
-	AAP.xml \
-	IQ-sites.xml \
-	IQ-trust.xml \
+	AAP.xml.in \
+	IQ-sites.xml.in \
+	IQ-trust.xml.in \
 	inqueue.pem \
 	shar.key \
 	shar.crt

@@ -11,7 +11,7 @@ log4j.category.Shibboleth-TRANSACTION=WARN
 # define the appenders
 
 log4j.appender.shire_log=org.apache.log4j.RollingFileAppender
-log4j.appender.shire_log.fileName=@-LOGDIR-@/shire.log
+log4j.appender.shire_log.fileName=@-PKGLOGDIR-@/shire.log
 log4j.appender.shire_log.maxFileSize=1000000e
 log4j.appender.shire_log.maxBackupIndex=10
 #log4j.appender.shire_log.layout=org.apache.log4j.BasicLayout

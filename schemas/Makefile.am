@@ -2,8 +2,8 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-pkgsysconfdir = $(sysconfdir)/@PACKAGE@
-pkgsysconf_DATA = \
+pkgxmldir = $(datadir)/xml/@PACKAGE@
+pkgxml_DATA = \
                 credentials.xsd \
                 cs-sstc-schema-assertion-01.xsd \
                 cs-sstc-schema-protocol-01.xsd \
@@ -19,4 +19,4 @@ pkgsysconf_DATA = \
                 shibboleth-targetconfig-1.0.xsd \
 				sstc-saml-schema-assertion-2.0.xsd \
 				sstc-saml-schema-metadata-2.0.xsd
-				
+		
