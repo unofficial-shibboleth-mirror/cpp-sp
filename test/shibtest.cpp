@@ -56,43 +56,8 @@ using namespace saml;
 using namespace shibboleth;
 using namespace eduPerson;
 
-class DummyMapper : public IOriginSiteMapper
-{
-public:
-    DummyMapper() {}
-    ~DummyMapper();
-    virtual Iterator<xstring> getHandleServiceNames(const XMLCh* originSite) { return Iterator<xstring>(); }
-    virtual const Key* getHandleServiceKey(const XMLCh* handleService) { return NULL; }
-    virtual Iterator<pair<xstring,bool> > getSecurityDomains(const XMLCh* originSite);
-    virtual const char* getTrustedRoots() { return NULL; }
-
-private:
-    typedef map<xstring,vector<pair<xstring,bool> >*> domains_t;
-    domains_t m_domains;
-};
-
-Iterator<pair<xstring,bool> > DummyMapper::getSecurityDomains(const XMLCh* originSite)
-{
-    domains_t::iterator i=m_domains.find(originSite);
-    if (i==m_domains.end())
-    {
-        vector<pair<xstring,bool> >* pv=new vector<pair<xstring,bool> >();
-        pv->push_back(pair<xstring,bool>(originSite,false));
-        pair<domains_t::iterator,bool> p=m_domains.insert(domains_t::value_type(originSite,pv));
-        i=p.first;
-    }
-    return Iterator<pair<xstring,bool> >(*(i->second));
-}
-
-DummyMapper::~DummyMapper()
-{
-    for (domains_t::iterator i=m_domains.begin(); i!=m_domains.end(); i++)
-        delete i->second;
-}
-
 int main(int argc,char* argv[])
 {
-    DummyMapper mapper;
     SAMLConfig& conf1=SAMLConfig::getConfig();
     ShibConfig& conf2=ShibConfig::getConfig();
     char* h_param=NULL;
@@ -125,7 +90,7 @@ int main(int argc,char* argv[])
     if (!conf1.init())
         cerr << "unable to initialize SAML runtime" << endl;
 
-    conf2.origin_mapper=&mapper;
+    conf2.mapperURL="http://wayf.internet2.edu/shibboleth/sites.xml";
     if (!conf2.init())
         cerr << "unable to initialize Shibboleth runtime" << endl;
 
