@@ -142,7 +142,6 @@ void SharChild::run()
 #else
       close(sock);
 #endif
-      perror("SharChild::run(): - out of sockets, check FD_SETSIZE");
   }
 }
 
