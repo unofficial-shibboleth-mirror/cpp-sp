@@ -57,7 +57,7 @@ shibboleth.xml: ${srcdir}/shibboleth.xml.in Makefile ${top_builddir}/config.stat
 
 all-data-local: $(CONFIGFILES)
 
-install-data-local:
+install-data-local:	all-data-local
 	$(mkinstalldirs) $(DESTDIR)$(logdir)
 	$(mkinstalldirs) $(DESTDIR)$(prefix)/data
 	$(mkinstalldirs) $(DESTDIR)$(pkgsysconfdir)
