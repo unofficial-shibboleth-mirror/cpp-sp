@@ -1,39 +1,57 @@
-<SiteGroup Name="urn:mace:inqueue" xmlns="urn:mace:shibboleth:1.0">
+<EntitiesDescriptor
+    xmlns="urn:oasis:names:tc:SAML:2.0:metadata"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="urn:oasis:names:tc:SAML:2.0:metadata @-PKGDATADIR-@/sstc-saml-schema-metadata-2.0.xsd"
+    Name="urn:mace:inqueue">
 
 	<!--
-	This is a starter set of example and development origins used within the
+	This is a starter set of metadata for the example system used within the
 	InQueue test federation. The InQueue deployment guide describes how to use
-	metadatatool and siterefresh to pick up the most current signed files.
+	metadatatool or siterefresh to pick up the most current signed files.
 	-->
 
-	<OriginSite Name="urn:mace:inqueue:example.edu" ErrorURL="http://wayf.internet2.edu/InQueue/error.html">
-		<Alias>Example State University</Alias>
-		<Contact Type="technical" Name="InQueue Support" Email="inqueue-support@internet2.edu"/>
-		<HandleService Location="https://wayf.internet2.edu/shibboleth-1.2/HS" Name="wayf.internet2.edu"/>
-		<AttributeAuthority Location="https://wayf.internet2.edu/shibboleth-1.2/AA" Name="wayf.internet2.edu"/>
-		<Domain>example.edu</Domain>
-	</OriginSite>
+	<EntityDescriptor entityID="urn:mace:inqueue:example.edu">
+		<IDPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:1.1:protocol">
+			<Extensions>
+		        <shib:Domain xmlns:shib="urn:mace:shibboleth:1.0">example.edu</shib:Domain>
+			</Extensions>
+			<KeyDescriptor use="signing">
+			    <ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+			        <ds:KeyName>wayf.internet2.edu</ds:KeyName>
+			    </ds:KeyInfo>
+			</KeyDescriptor>
+			<NameIDFormat>urn:mace:shibboleth:1.0:nameIdentifier</NameIDFormat>
+			<SingleSignOnService Binding="urn:mace:shibboleth:1.0:profiles:AuthnRequest"
+			    Location="https://wayf.internet2.edu/shibboleth-1.2/HS"/>
+		</IDPSSODescriptor>
+		<AttributeAuthorityDescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:1.1:protocol">
+			<Extensions>
+		        <shib:Domain xmlns:shib="urn:mace:shibboleth:1.0">example.edu</shib:Domain>
+			</Extensions>
+			<AttributeService Binding="urn:oasis:names:tc:SAML:1.0:bindings:SOAP-binding"
+			    Location="https://wayf.internet2.edu/shibboleth-1.2/AA"/>
+			<NameIDFormat>urn:mace:shibboleth:1.0:nameIdentifier</NameIDFormat>
+		</AttributeAuthorityDescriptor>
+		<SPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:1.1:protocol">
+			<KeyDescriptor>
+			    <ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+			        <ds:KeyName>wayf.internet2.edu</ds:KeyName>
+			    </ds:KeyInfo>
+			</KeyDescriptor>
+			<NameIDFormat>urn:mace:shibboleth:1.0:nameIdentifier</NameIDFormat>
+		    <AssertionConsumerService index="0"
+		        Binding="urn:oasis:names:tc:SAML:1.0:profiles:browser-post"
+		        Location="https://wayf.internet2.edu/Shibboleth.shire"/>
+		</SPSSODescriptor>
+		<Organization>
+		    <OrganizationName xml:lang="en">Example State University</OrganizationName>
+		    <OrganizationDisplayName xml:lang="en">Example State University</OrganizationDisplayName>
+		    <OrganizationURL xml:lang="en">http://shibboleth.internet2.edu/</OrganizationURL>
+		</Organization>
+		<ContactPerson contactType="technical">
+		    <SurName>InQueue Support</SurName>
+		    <EmailAddress>inqueue-support@internet2.edu</EmailAddress>
+		</ContactPerson>
+	</EntityDescriptor>
 
-	<OriginSite Name="urn:mace:inqueue:shibdev.edu">
-		<Alias>Shibboleth Development Origin</Alias>
-		<Contact Type="technical" Name="Scott Cantor" Email="cantor.2@osu.edu"/>
-		<HandleService Location="https://shib2.internet2.edu/shibboleth/HS" Name="shib2.internet2.edu"/>
-		<AttributeAuthority Location="https://shib2.internet2.edu/shibboleth/AA" Name="shib2.internet2.edu"/>
-		<Domain>shibdev.edu</Domain>
-	</OriginSite>
-	
-	<DestinationSite Name="urn:mace:inqueue:example.edu">
-		<Alias>Example State University</Alias>
-		<Contact Type="technical" Name="InQueue Support" Email="inqueue-support@internet2.edu"/>
-		<AssertionConsumerServiceURL Location="https://wayf.internet2.edu/Shibboleth.shire"/>
-		<AttributeRequester Name="wayf.internet2.edu"/>
-	</DestinationSite>
-
-	<DestinationSite Name="urn:mace:inqueue:shibdev.edu">
-		<Alias>Shibboleth Development Target</Alias>
-		<Contact Type="technical" Name="Scott Cantor" Email="cantor.2@osu.edu"/>
-		<AssertionConsumerServiceURL Location="http://shib2.internet2.edu/Shibboleth.shire"/>
-		<AssertionConsumerServiceURL Location="https://shib2.internet2.edu/Shibboleth.shire"/>
-		<AttributeRequester Name="shib2.internet2.edu"/>
-	</DestinationSite>
-</SiteGroup>
+</EntitiesDescriptor>
