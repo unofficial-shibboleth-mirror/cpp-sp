@@ -240,11 +240,11 @@ const char* RPCError::getDesc()
     if (i.hasNext() &&
 	XMLString::compareString(L(Responder),i.next().getLocalName()))
       return
-	"An error occurred at the target system while proccessing your request";
+	"An error occurred at the target system while processing your request";
     else
-      return "An error occurred at your origin site while proccessing your request";
+      return "An error occurred at your origin site while processing your request";
   } else
-    return "An error occurred proccessing your request";
+    return "An error occurred processing your request";
 }
 
 int RPCError::getCode() { return m_priv->status; }
