@@ -75,6 +75,9 @@ XMLOriginSiteMapper::XMLOriginSiteMapper(const char* registryURI,
     NDC ndc("XMLOriginSiteMapper");
     Category& log=Category::getInstance(SHIB_LOGCAT".XMLOriginSiteMapper");
 
+    // Register extension schema.
+    saml::XML::registerSchema(XML::SHIB_NS,XML::SHIB_SCHEMA_ID);
+
     saml::XML::Parser p;
     DOMDocument* doc=NULL;
 	try
