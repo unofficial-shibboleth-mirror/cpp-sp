@@ -46,6 +46,8 @@ Minor udpates to documentation.
 Rev'd dependant java libraries (Xerces, Commons Pool, 
 Commons DBCP)
 
+Fixed a ClassCastException that occurred when specific
+attributes were requested via an <saml:AttributeDesignator/>
 
 -------
 4/30/04
