@@ -51,6 +51,14 @@ static char sccsid[] = "@(#)xdr.c 1.35 87/08/12";
  * most common data items.  See xdr.h for more info on the interface to
  * xdr.
  */
+
+// eventually we might be able to support autoconf via cygwin...
+#if defined (_MSC_VER) || defined(__BORLANDC__)
+# include "config_win32.h"
+#else
+# include "config.h"
+#endif
+
 #ifdef HAVE_STDINT_H
 # include <stdint.h>
 #endif
