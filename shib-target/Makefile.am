@@ -54,3 +54,5 @@ rpcgen:
 do_rpcgen:
 	$(RM) $(RPCGEN_TARGET)
 	$(RPCGEN) $(RPCGEN_ARGS) -o $(RPCGEN_TARGET) $(RPCGEN_SRC)
+
+EXTRA_DIST = shibtarget.dsp

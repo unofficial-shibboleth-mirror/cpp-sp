@@ -16,3 +16,5 @@ libshib_mysql_ccache_la_SOURCES = \
 # this is different from the project version
 # http://sources.redhat.com/autobook/autobook/autobook_91.html
 libshib_mysql_ccache_la_LDFLAGS = -version-info 1:0:0
+
+EXTRA_DIST = shib_mysql_ccache.dsp
