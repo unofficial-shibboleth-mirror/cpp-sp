@@ -15,5 +15,4 @@ mod_shire_la_LDFLAGS = -module -avoid-version -lapreq
 if HAVE_APXS
 install-exec-local:
 	$(APXS) -i -A -n shire .libs/mod_shire.so
-endif HAVE_APXS
-
+endif
