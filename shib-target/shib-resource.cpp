@@ -32,17 +32,6 @@ public:
   vector<SAMLAttribute*> designators;
 };
 
-#ifdef USE_STRTOK
-// for systems that dont have strtok_r (reenttrant version) where
-// the system strtok is already threadsafe
-#define strtok_r local_strtok_r_mumble
-static char *strtok_r(char *parse_me,const char *break_on,void *foo)
-{
-	return strtok(parse_me,break_on);
-}
-
-#endif
-
 ResourcePriv::ResourcePriv(const char *str)
 {
   string ctx = "shibtarget.Resource";
@@ -74,8 +63,11 @@ ResourcePriv::ResourcePriv(const char *str)
     auto_ptr<char> tag_str(strdup(tag.c_str()));
 
     char *tags = tag_str.get(), *tagptr = NULL, *the_tag;
+#ifdef HAVE_STRTOK_R
     while ((the_tag = strtok_r(tags, " \t\r\n", &tagptr)) != NULL && *the_tag) {
-
+#else
+    while ((the_tag = strtok(tags, " \t\r\n")) != NULL && *the_tag) {
+#endif
       // Make sure we don't loop ad-infinitum
       tags = NULL;
 
