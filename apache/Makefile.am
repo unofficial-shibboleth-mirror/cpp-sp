@@ -36,4 +36,4 @@ install-exec-hook:
 
 endif
 
-EXTRA_DIST = mod_apache.cpp
+EXTRA_DIST = mod_apache.cpp mod_shib_13.cpp mod_shib_20.cpp
