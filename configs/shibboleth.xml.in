@@ -1,5 +1,7 @@
 <ShibbolethTargetConfig	xmlns="urn:mace:shibboleth:target:config:1.0"
-        logger="@-PKGSYSCONFDIR-@/shibboleth.logger" clockSkew="180">
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="urn:mace:shibboleth:target:config:1.0 @-PKGXMLDIR-@/shibboleth-targetconfig-1.0.xsd"
+	logger="@-PKGSYSCONFDIR-@/shibboleth.logger" clockSkew="180">
 
     <Extensions>
         <Library path="@-LIBEXECDIR-@/xmlproviders.so" fatal="true"/>
