@@ -13,8 +13,8 @@ file is located in the root of the distribution. It assumes that OpenSAML has
 been built and is available, by default, alongside the location where this
 archive is unpacked:
 
-	/opensaml/
-	/shibboleth/
+	/opensaml-1.0/
+	/shibboleth-1.2/
 
 If you use a copy of OpenSAML installed elsewhere, just define the INCLUDE
 and LIB locations to the compiler.
@@ -25,7 +25,8 @@ need or want one or more of them.
 To build the MySQL cache plugin, a fairly customized build of MySQL is required,
 which we haven't fully documented. At a minimum, you must build from source using
 the MySQL Visual C++ workspace, the projects must all be modified to use the
-DLL C/C++ runtime, and the USE_TLS macro must be defined for the projects.
+DLL C/C++ runtime, and the USE_TLS macro must be defined for the projects. If you
+need specifics, ask for help.
 
 For more information about Windows builds, please read the OpenSAML
 INSTALL-WIN32.txt file.

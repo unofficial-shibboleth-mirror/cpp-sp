@@ -499,6 +499,7 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
             // No acceptable cookie, and we require a session.  Generate an AuthnRequest.
             string loc("Location: ");
             loc+=shire.getAuthnRequest(targeturl.c_str());
+            loc+="\r\n";
             pfc->AddResponseHeaders(pfc,const_cast<char*>(loc.c_str()),0);
             pfc->ServerSupportFunction(pfc,SF_REQ_SEND_RESPONSE_HEADER,"302 Please Wait",0,0);
             return SF_STATUS_REQ_FINISHED;
@@ -538,6 +539,7 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
                 delete status;
                 string loc("Location: ");
                 loc+=shire.getAuthnRequest(targeturl.c_str());
+                loc+="\r\n";
                 pfc->AddResponseHeaders(pfc,const_cast<char*>(loc.c_str()),0);
                 pfc->ServerSupportFunction(pfc,SF_REQ_SEND_RESPONSE_HEADER,"302 Please Wait",0,0);
                 return SF_STATUS_REQ_FINISHED;
