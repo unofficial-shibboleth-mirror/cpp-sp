@@ -129,6 +129,22 @@ namespace shibtarget {
         RPCHandlePool& m_pool;
         RPCHandle* m_handle;
     };
+    
+    // Helper class for SAML 2.0 Common Domain Cookie operations
+    class CommonDomainCookie
+    {
+    public:
+        CommonDomainCookie(const char* cookie);
+        ~CommonDomainCookie();
+        saml::Iterator<const char*> get() {return m_list;}
+        const char* set(const char* providerId);
+        static const char CDCName[];
+    private:
+        XMLByte* m_decoded;
+        std::string m_encoded;
+        std::vector<const char*> m_list;
+        std::vector<std::string> m_additions;
+    };
 
     // Generic class, which handles the IPropertySet configuration interface.
     // Most of the basic configuration details are exposed via this interface.
@@ -231,6 +247,7 @@ namespace shibtarget {
             static const XMLCh applicationId[];
             static const XMLCh Application[];
             static const XMLCh Applications[];
+            //static const XMLCh AssertionConsumerService[];
             static const XMLCh CredentialsProvider[];
             static const XMLCh CredentialUse[];
             static const XMLCh Extensions[];
