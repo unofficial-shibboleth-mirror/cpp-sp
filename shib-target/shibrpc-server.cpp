@@ -344,8 +344,9 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
             auto_ptr_char this_ip(ip);
             if (strcmp(argp->client_addr, this_ip.get()))
                 throw ShibTargetException(SHIBRPC_IPADDR_MISMATCH,
-	                "The IP address provided by your origin site did not match your current address. "
-	                "To correct this problem, you may need to bypass a local proxy server.",
+	                "Your client's current IP address differs from the one used when you authenticated "
+                    "to your identity provider. To correct this problem, you may need to bypass a proxy server. "
+                    "Please contact your local support staff or help desk for assistance.",
 				     role);
         }
       }
