@@ -59,6 +59,9 @@
 #define svc_register	onc_svc_register
 #define svc_getreqset	onc_svc_getreqset
 
+#ifndef FD_SETSIZE
+# define FD_SETSIZE 1024
+#endif
 
 #ifdef WIN32
 
