@@ -486,13 +486,12 @@ extern "C" int shib_post_handler(request_rec* r)
 
 /*
  * shib_auth_checker() -- a simple resource manager to
- * process the .htaccess settings and copy attributes
- * into the HTTP headers.
+ * process the .htaccess settings
  */
 extern "C" int shib_auth_checker(request_rec* r)
 {
   ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),
-		"shib_check_user(%d): ENTER", (int)getpid());
+		"shib_auth_checker(%d): ENTER", (int)getpid());
 
   ostringstream threadid;
   threadid << "[" << getpid() << "] shib_auth_checker" << '\0';
