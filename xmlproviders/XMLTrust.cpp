@@ -298,7 +298,7 @@ void XMLTrustImpl::init()
             if (wildcard) {
                 if (!m_wildcard) {
                     log.warn("found a wildcard KeyAuthority element, make sure this is what you intend");
-                    m_wildcard=ka;a
+                    m_wildcard=ka;
                 }
                 else
                     log.warn("found multiple wildcard KeyAuthority elements, ignoring all but the first");
