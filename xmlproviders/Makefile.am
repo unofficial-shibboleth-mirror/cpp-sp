@@ -27,5 +27,5 @@ xmlproviders_la_LDFLAGS = -module -avoid-version
 install-exec-hook:
 	for la in $(plugin_LTLIBRARIES) ; do rm -f $(DESTDIR)$(plugindir)/$$la ; done
 
-EXTRA_DIST = xmlproviders.dsp
+EXTRA_DIST = xmlproviders.dsp resource.h xmlproviders.rc
 
