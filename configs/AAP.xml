@@ -35,6 +35,18 @@
         </SiteRule>
 	</AttributeRule>
 
+	<AttributeRule Name="urn:mace:dir:attribute-def:eduPersonAffiliation" Header="Shib-EP-UnscopedAffiliation" Alias="unscoped-affiliation">
+        <AnySite>
+            <Value Type="regexp">^[M|m][E|e][M|m][B|b][E|e][R|r]$</Value>
+            <Value Type="regexp">^[F|f][A|a][C|c][U|u][L|l][T|t][Y|y]$</Value>
+            <Value Type="regexp">^[S|s][T|t][U|u][D|d][E|e][N|n][T|t]$</Value>
+            <Value Type="regexp">^[S|s][T|t][A|a][F|f][F|f]$</Value>
+            <Value Type="regexp">^[A|a][L|l][U|u][M|m]$</Value>
+            <Value Type="regexp">^[A|a][F|f][F|f][I|i][L|l][I|i][A|a][T|t][E|e]$</Value>
+            <Value Type="regexp">^[E|e][M|m][P|p][L|l][O|o][Y|y][E|e][E|e]$</Value>
+        </AnySite>
+	</AttributeRule>
+	
     <AttributeRule Name="urn:mace:dir:attribute-def:eduPersonPrincipalName" Header="REMOTE_USER" Alias="user">
 		<!-- Basic rule to pass through any value. -->
         <AnySite>
@@ -77,19 +89,6 @@
         </AnySite>
 	</AttributeRule>
 
-	<AttributeRule Name="urn:mace:dir:attribute-def:eduPersonAffiliation" Header="Shib-EP-UnscopedAffiliation">
-        <AnySite>
-            <Value Type="regexp">^[M|m][E|e][M|m][B|b][E|e][R|r]$</Value>
-            <Value Type="regexp">^[F|f][A|a][C|c][U|u][L|l][T|t][Y|y]$</Value>
-            <Value Type="regexp">^[S|s][T|t][U|u][D|d][E|e][N|n][T|t]$</Value>
-            <Value Type="regexp">^[S|s][T|t][A|a][F|f][F|f]$</Value>
-            <Value Type="regexp">^[A|a][L|l][U|u][M|m]$</Value>
-            <Value Type="regexp">^[A|a][F|f][F|f][I|i][L|l][I|i][A|a][T|t][E|e]$</Value>
-            <Value Type="regexp">^[E|e][M|m][P|p][L|l][O|o][Y|y][E|e][E|e]$</Value>
-        </AnySite>
-	</AttributeRule>
-	
-	
 	<AttributeRule Name="urn:mace:dir:attribute-def:eduPersonPrimaryAffiliation" Header="Shib-EP-PrimaryAffiliation">
         <AnySite>
             <Value Type="regexp">^[M|m][E|e][M|m][B|b][E|e][R|r]$</Value>
