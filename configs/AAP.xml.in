@@ -37,7 +37,7 @@
         </SiteRule>
 	</AttributeRule>
 
-	<--
+	<!--
 	This attribute is provided mostly to ease testing because an IdP out of the box only
 	sends the unscoped version. It has little use because it lacks the context needed to
 	work in a multi-domain scenario and is a subset of the scoped version anyway.
