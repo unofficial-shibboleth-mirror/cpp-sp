@@ -87,7 +87,7 @@ void verifySignature(DOMDocument* doc, DOMElement* sigNode, const char* cert)
     Category& log=Category::getInstance("siterefresh");
 
     // Load the certificate, stripping the first and last lines.
-    string certbuf,line
+    string certbuf,line;
     auto_ptr<OpenSSLCryptoX509> x509(new OpenSSLCryptoX509());
     ifstream infile(cert);
     while (!getline(infile,line).fail())
