@@ -68,32 +68,38 @@ OriginSiteMapper::~OriginSiteMapper()
     ShibConfig::getConfig().releaseMapper(m_mapper);
 }
 
-inline const char* OriginSiteMapper::getContactName(const XMLCh* originSite) const
+const char* OriginSiteMapper::getContactName(const XMLCh* originSite) const
 {
     return m_mapper->getContactName(originSite);
 }
 
-inline const char* OriginSiteMapper::getContactEmail(const XMLCh* originSite) const
+const char* OriginSiteMapper::getContactEmail(const XMLCh* originSite) const
 {
     return m_mapper->getContactEmail(originSite);
 }
 
-inline const char* OriginSiteMapper::getErrorURL(const XMLCh* originSite) const
+const char* OriginSiteMapper::getErrorURL(const XMLCh* originSite) const
 {
     return m_mapper->getErrorURL(originSite);
 }
 
-inline Iterator<xstring> OriginSiteMapper::getHandleServiceNames(const XMLCh* originSite) const
+Iterator<xstring> OriginSiteMapper::getHandleServiceNames(const XMLCh* originSite) const
 {
     return m_mapper->getHandleServiceNames(originSite);
 }
 
-inline XSECCryptoX509* OriginSiteMapper::getHandleServiceCert(const XMLCh* handleService) const
+XSECCryptoX509* OriginSiteMapper::getHandleServiceCert(const XMLCh* handleService) const
 {
     return m_mapper->getHandleServiceCert(handleService);
 }
 
-inline Iterator<pair<xstring,bool> > OriginSiteMapper::getSecurityDomains(const XMLCh* originSite) const
+Iterator<pair<xstring,bool> > OriginSiteMapper::getSecurityDomains(const XMLCh* originSite) const
 {
     return m_mapper->getSecurityDomains(originSite);
 }
+
+time_t OriginSiteMapper::getTimestamp() const
+{
+    return m_mapper->getTimestamp();
+}
+
