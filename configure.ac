@@ -20,6 +20,7 @@ AC_STRUCT_TM
 
 # Checks for library functions.
 AC_FUNC_STRFTIME
+AC_FUNC_STRERROR_R
 AC_CHECK_FUNCS([strchr strdup strstr gmtime_r strtok_r strcasecmp])
 AC_CHECK_HEADERS([dlfcn.h])
 
@@ -368,7 +369,7 @@ dnl    LIBS="$saved_LIBS"
     WANT_SUBDIRS="$WANT_SUBDIRS mod_shire mod_shibrm"
 fi
 # always output the Makefile, even if we don't use it
-AC_CONFIG_FILES([mod_shire/Makefile mod_shibrm/Makefile])
+AC_CONFIG_FILES([mod_shire/Makefile])
 AM_CONDITIONAL(HAVE_APXS,test -n "$APXS")
 AM_CONDITIONAL(DO_APXS_INSTALL,test -n "$APXS_INSTALL")
 

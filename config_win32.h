@@ -67,6 +67,9 @@
 /* Define to 1 if you have the `strtok_r' function. */
 /* #undef HAVE_STRTOK_R */
 
+/* Define to 1 if you have the `strerror_r' function. */
+/* #undef HAVE_STRERROR_R */
+
 /* Define to 1 if you have the <sys/stat.h> header file. */
 #define HAVE_SYS_STAT_H 1
 

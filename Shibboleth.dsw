@@ -11,6 +11,12 @@ Package=<5>
 
 Package=<4>
 {{{
+    Begin Project Dependency
+    Project_Dep_Name shibtarget
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name shib
+    End Project Dependency
 }}}
 
 ###############################################################################
@@ -28,24 +34,6 @@ Package=<4>
     End Project Dependency
     Begin Project Dependency
     Project_Dep_Name shibtarget
-    End Project Dependency
-}}}
-
-###############################################################################
-
-Project: "mod_shibrm"=.\mod_shibrm\mod_shibrm.dsp - Package Owner=<4>
-
-Package=<5>
-{{{
-}}}
-
-Package=<4>
-{{{
-    Begin Project Dependency
-    Project_Dep_Name shibtarget
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name shib
     End Project Dependency
 }}}
 
@@ -235,6 +223,10 @@ Global:
 
 Package=<5>
 {{{
+    begin source code control
+    "$/NSAPI", WNAAAAAA
+    ..\..\..\documents and settings\cantor.2.saidin\my documents\visual studio projects\nsapi
+    end source code control
 }}}
 
 Package=<3>
