@@ -76,7 +76,7 @@ edu.internet2.middleware.shibboleth.metadata.provider.XML=@-PKGSYSCONFDIR-@/site
 [aap]
 edu.internet2.middleware.shibboleth.target.AAP.provider.XML=@-PKGSYSCONFDIR-@/AAP.xml
 
-[creds]
+[credentials]
 #edu.internet2.middleware.shibboleth.common.Credentials=@-PKGSYSCONFDIR-@/creds.xml
 
 [trust]
