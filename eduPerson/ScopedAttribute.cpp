@@ -157,7 +157,7 @@ SAMLObject* ScopedAttribute::clone() const
     return dest;
 }
 
-IDOM_Node* ScopedAttribute::toDOM(IDOM_Document* doc)
+IDOM_Node* ScopedAttribute::toDOM(IDOM_Document* doc) const
 {
     // Already built?
     if (m_root)

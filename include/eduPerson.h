@@ -80,7 +80,7 @@ namespace eduPerson
         ScopedAttribute(IDOM_Element* e);
         virtual ~ScopedAttribute();
 
-        virtual IDOM_Node* toDOM(IDOM_Document* doc=NULL);
+        virtual IDOM_Node* toDOM(IDOM_Document* doc=NULL) const;
         virtual saml::SAMLObject* clone() const;
 
         virtual saml::Iterator<saml::xstring> getValues() const;
