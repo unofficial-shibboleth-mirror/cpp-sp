@@ -183,7 +183,7 @@ namespace shibboleth
 
         virtual saml::SAMLAssertion* getSSOAssertion(const saml::SAMLResponse& r);
         virtual saml::SAMLAuthenticationStatement* getSSOStatement(const saml::SAMLAssertion& a);
-        virtual saml::SAMLResponse* accept(const XMLByte* buf);
+        virtual saml::SAMLResponse* accept(const XMLByte* buf, XMLCh** originSitePtr=NULL);
         virtual saml::SAMLResponse* prepare(
             const XMLCh* recipient,
             const XMLCh* name,
@@ -198,6 +198,8 @@ namespace shibboleth
             const saml::Iterator<XSECCryptoX509*>& assertionCerts=saml::Iterator<XSECCryptoX509*>()
             );
         virtual bool checkReplayCache(const saml::SAMLAssertion& a);
+
+        virtual const XMLCh* getOriginSite(const saml::SAMLResponse& r);
 
     protected:
         virtual void verifySignature(const saml::SAMLSignedObject& obj, const XMLCh* signerName, XSECCryptoKey* knownKey);
