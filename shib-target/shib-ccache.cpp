@@ -769,7 +769,7 @@ pair<SAMLResponse*,SAMLResponse*> InternalCCacheEntry::getNewResponse()
                     if (!XMLString::compareString(code.getNamespaceURI(),shibboleth::Constants::SHIB_NS) &&
                         !XMLString::compareString(code.getLocalName(), shibboleth::Constants::InvalidHandle)) {
                         codes.reset();
-                        throw InvalidHandleException(codes,e.what());
+                        throw InvalidHandleException(e.what(),params(),codes);
                     }
                 }
             }
