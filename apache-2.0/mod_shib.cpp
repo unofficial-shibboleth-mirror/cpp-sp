@@ -137,7 +137,7 @@ extern "C" int shib_check_user(request_rec* r)
     shib_dir_config* dc=(shib_dir_config*)ap_get_module_config(r->per_dir_config,&mod_shib);
 
     ostringstream threadid;
-    threadid << "[" << getpid() << "] shib" << '\0';
+    threadid << "[" << getpid() << "] shib_check_user" << '\0';
     saml::NDC ndc(threadid.str().c_str());
 
     // This will always be normalized, because Apache uses ap_get_server_name in this API call.
@@ -227,7 +227,7 @@ extern "C" int shib_check_user(request_rec* r)
     if (!session_id || !*session_id) {
         // If no session required, bail now.
         if (!requireSession.second)
-            return DECLINED;
+            return OK;
 
         // No acceptable cookie, and we require a session.  Generate an AuthnRequest.
         ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,"shib_check_user: no cookie found -- redirecting to WAYF");
@@ -267,7 +267,7 @@ extern "C" int shib_check_user(request_rec* r)
             
         // If no session required, bail now.
         if (!requireSession.second)
-            return DECLINED;
+            return OK;
         else if (status->isRetryable()) {
             // Oops, session is invalid. Generate AuthnRequest.
             apr_table_setn(r->headers_out,"Location",apr_pstrdup(r->pool,shire.getAuthnRequest(targeturl)));
@@ -496,7 +496,6 @@ int shib_handler(request_rec* r, const IApplication* application, const IPropert
     if (!strstr(targeturl,shire.getShireURL(targeturl)))
         return DECLINED;
 
-
     ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,"shib_handler() running");
 
     pair<bool,const char*> shib_cookie=sessionProps->getString("cookieName");
@@ -693,20 +692,6 @@ extern "C" int shib_auth_checker(request_rec *r)
     IConfig* conf=g_Config->getINI();
     Locker locker(conf);
     
-    const char* application_id=apr_table_get(r->headers_in,"Shib-Application-ID");
-    if (!application_id) {
-        ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,0,r,
-           "shib_check_auth: Shib-Application-ID header not found in request");
-        return HTTP_FORBIDDEN;
-    }
-
-    const IApplication* application=conf->getApplication(application_id);
-    if (!application) {
-        ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,0,r,
-           "shib_check_auth: unable to map request to application settings, check configuration");
-        return HTTP_INTERNAL_SERVER_ERROR;
-    }
-
     // mod_auth clone
 
     int m=r->method_number;
@@ -798,6 +783,20 @@ extern "C" int shib_auth_checker(request_rec *r)
             }
         }
         else {
+            const char* application_id=apr_table_get(r->headers_in,"Shib-Application-ID");
+            if (!application_id) {
+                ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,0,r,
+                   "shib_check_auth: Shib-Application-ID header not found in request");
+                return HTTP_FORBIDDEN;
+            }
+        
+            const IApplication* application=conf->getApplication(application_id);
+            if (!application) {
+                ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,0,r,
+                   "shib_check_auth: unable to map request to application settings, check configuration");
+                return HTTP_INTERNAL_SERVER_ERROR;
+            }
+        
             Iterator<IAAP*> provs=application->getAAPProviders();
             AAP wrapper(provs,w);
             if (wrapper.fail()) {
