@@ -56,20 +56,7 @@
    $History:$
 */
 
-#ifdef WIN32
-# define EDUPERSON_EXPORTS __declspec(dllexport)
-#endif
-
-#include <log4cpp/Category.hh>
-
-#include "../shib/shib.h"
-#include "eduPerson.h"
-using namespace saml;
-using namespace shibboleth;
-using namespace eduPerson;
-using namespace std;
-
-#define SAML_log (*reinterpret_cast<log4cpp::Category*>(m_log))
+#include "internal.h"
 
 AffiliationAttribute::AffiliationAttribute(const XMLCh* defaultScope, long lifetime,
                                            const Iterator<const XMLCh*>& scopes,

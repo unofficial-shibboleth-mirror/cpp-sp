@@ -53,21 +53,9 @@
    9/1/02
 */
 
-#ifdef WIN32
-# define EDUPERSON_EXPORTS __declspec(dllexport)
-#endif
-
 #define EDUPERSON_INSTANTIATE
 
-#include "../shib/shib.h"
-#include "../shib-target/shib-target.h"
-#include "eduPerson.h"
-
-using namespace std;
-using namespace saml;
-using namespace shibboleth;
-using namespace shibtarget;
-using namespace eduPerson;
+#include "internal.h"
 
 #ifdef WIN32
 
@@ -109,35 +97,13 @@ extern "C" SAMLAttribute* SimpleFactory(DOMElement* e)
 }
 
 namespace {
-    ShibINI* ini=NULL;
+    ShibINI* g_ShibINI=NULL;
 }
+
+EDUPERSON_EXPORTS AAP* eduPerson::g_AAP=NULL;
 
 extern "C" EDUPERSON_EXPORTS int saml_extension_init(void* context)
 {
-    ini=reinterpret_cast<shibtarget::ShibINI*>(context);
-    if (ini)
-    {
-        ShibINI::Iterator* i=ini->tag_iterator("attributes");
-        for (const string* attrname=i->begin(); attrname; attrname=i->next())
-        {
-            const string& factory=ini->get("attributes",*attrname);
-            if (factory=="scoped")
-            {
-                auto_ptr<XMLCh> temp(XMLString::transcode(attrname->c_str()));
-                SAMLAttribute::regFactory(
-                    temp.get(),shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,
-                    &ScopedFactory);
-            }
-            else if (factory=="simple")
-            {
-                auto_ptr<XMLCh> temp(XMLString::transcode(attrname->c_str()));
-                SAMLAttribute::regFactory(
-                    temp.get(),shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,
-                    &SimpleFactory);
-            }
-        }
-    }
-
     // Register extension schema and attribute factories.
     saml::XML::registerSchema(eduPerson::XML::EDUPERSON_NS,eduPerson::XML::EDUPERSON_SCHEMA_ID);
 
@@ -153,6 +119,46 @@ extern "C" EDUPERSON_EXPORTS int saml_extension_init(void* context)
     SAMLAttribute::regFactory(eduPerson::Constants::EDUPERSON_ENTITLEMENT,
                               shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,
                               &EntitlementFactory);
+
+    g_ShibINI=reinterpret_cast<shibtarget::ShibINI*>(context);
+
+    // Register additional attributes and create AAP object.
+    if (g_ShibINI)
+    {
+        ShibINI::Iterator* i=g_ShibINI->tag_iterator("attributes");
+        for (const string* attrname=i->begin(); attrname; attrname=i->next())
+        {
+            const string& factory=g_ShibINI->get("attributes",*attrname);
+            if (factory=="scoped")
+            {
+                auto_ptr<XMLCh> temp(XMLString::transcode(attrname->c_str()));
+                SAMLAttribute::regFactory(
+                    temp.get(),shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,
+                    &ScopedFactory);
+            }
+            else if (factory=="simple")
+            {
+                auto_ptr<XMLCh> temp(XMLString::transcode(attrname->c_str()));
+                SAMLAttribute::regFactory(
+                    temp.get(),shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,
+                    &SimpleFactory);
+            }
+        }
+
+        if (g_ShibINI->exists(SHIBTARGET_GENERAL,"aap-uri"))
+        {
+            const string& uri=g_ShibINI->get(SHIBTARGET_GENERAL,"aap-uri");
+            try
+            {
+                g_AAP=new AAP(uri.c_str());
+            }
+            catch(...)
+            {
+                return -1;
+            }
+        }
+    }
+
     return 0;
 }
 
@@ -167,12 +173,14 @@ extern "C" EDUPERSON_EXPORTS void saml_extension_term()
     SAMLAttribute::unregFactory(eduPerson::Constants::EDUPERSON_ENTITLEMENT,
                                 shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
 
-    if (ini)
+    if (g_ShibINI)
     {
-        ShibINI::Iterator* i=ini->tag_iterator("attributes");
+        delete g_AAP;
+
+        ShibINI::Iterator* i=g_ShibINI->tag_iterator("attributes");
         for (const string* attrname=i->begin(); attrname; attrname=i->next())
         {
-            const string& factory=ini->get("attributes",*attrname);
+            const string& factory=g_ShibINI->get("attributes",*attrname);
             if (factory=="scoped")
             {
                 auto_ptr<XMLCh> temp(XMLString::transcode(attrname->c_str()));

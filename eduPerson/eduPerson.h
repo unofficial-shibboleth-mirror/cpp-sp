@@ -71,6 +71,22 @@
 
 namespace eduPerson
 {
+    class EDUPERSON_EXPORTS SimpleAttribute : public saml::SAMLAttribute
+    {
+    public:
+        SimpleAttribute(const XMLCh* name, const XMLCh* ns, const saml::QName* type=NULL, long lifetime=0,
+                        const saml::Iterator<const XMLCh*>& values=saml::Iterator<const XMLCh*>());
+        SimpleAttribute(DOMElement* e);
+        virtual saml::SAMLObject* clone() const;
+        virtual ~SimpleAttribute();
+
+    protected:
+        virtual bool accept(DOMElement* e) const;
+
+    private:
+        saml::xstring m_originSite;
+    };
+
     class EDUPERSON_EXPORTS ScopedAttribute : public saml::SAMLAttribute
     {
     public:
@@ -135,7 +151,7 @@ namespace eduPerson
         virtual bool addValue(DOMElement* e);
     };
 
-    class EDUPERSON_EXPORTS EntitlementAttribute : public saml::SAMLAttribute
+    class EDUPERSON_EXPORTS EntitlementAttribute : public SimpleAttribute
     {
     public:
         EntitlementAttribute(long lifetime=0, const saml::Iterator<const XMLCh*>& values=saml::Iterator<const XMLCh*>());
@@ -147,6 +163,26 @@ namespace eduPerson
         virtual bool addValue(DOMElement* e);
     };
 
+    class EDUPERSON_EXPORTS AAP
+    {
+    public:
+        AAP(const char* uri);
+        bool accept(const XMLCh* name, const XMLCh* originSite, DOMElement* e);
+
+    private:
+        struct AttributeRule
+        {
+            enum value_type { literal, regexp, xpath };
+            typedef std::vector<std::pair<value_type,saml::xstring> > SiteRule;
+            SiteRule m_anySiteRule;
+            std::map<saml::xstring,SiteRule> m_siteMap;
+        };
+
+        std::map<saml::xstring,AttributeRule> m_attrMap;
+    };
+
+    extern EDUPERSON_EXPORTS AAP* g_AAP;
+
     struct EDUPERSON_EXPORTS XML
     {
         static const XMLCh EDUPERSON_NS[];
@@ -155,6 +191,19 @@ namespace eduPerson
         struct EDUPERSON_EXPORTS Literals
         {
             static const XMLCh anyURI[];
+            
+            static const XMLCh AnySite[];
+            static const XMLCh AttributeAcceptancePolicy[];
+            static const XMLCh AttributeRule[];
+            static const XMLCh Name[];
+            static const XMLCh SiteRule[];
+            static const XMLCh Type[];
+            static const XMLCh Value[];
+
+            static const XMLCh literal[];
+            static const XMLCh regexp[];
+            static const XMLCh xpath[];
+
             static const XMLCh faculty[];
             static const XMLCh student[];
             static const XMLCh staff[];

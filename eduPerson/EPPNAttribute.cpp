@@ -56,20 +56,8 @@
    $History:$
 */
 
-#ifdef WIN32
-# define EDUPERSON_EXPORTS __declspec(dllexport)
-#endif
+#include "internal.h"
 
-#include <log4cpp/Category.hh>
-
-#include "../shib/shib.h"
-#include "eduPerson.h"
-using namespace saml;
-using namespace shibboleth;
-using namespace eduPerson;
-using namespace std;
-
-#define SAML_log (*reinterpret_cast<log4cpp::Category*>(m_log))
 
 EPPNAttribute::EPPNAttribute(const XMLCh* defaultScope, long lifetime, const XMLCh* scope, const XMLCh* value)
     : ScopedAttribute(eduPerson::Constants::EDUPERSON_PRINCIPAL_NAME,

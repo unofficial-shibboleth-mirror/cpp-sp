@@ -76,6 +76,41 @@ const XMLCh eduPerson::XML::EDUPERSON_SCHEMA_ID[] = // eduPerson.xsd
 const XMLCh eduPerson::XML::Literals::anyURI[]=
 { chLatin_a, chLatin_n, chLatin_y, chLatin_U, chLatin_R, chLatin_I, chNull };
 
+const XMLCh eduPerson::XML::Literals::AnySite[]=
+{ chLatin_A, chLatin_n, chLatin_y, chLatin_S, chLatin_i, chLatin_t, chLatin_e, chNull };
+
+const XMLCh eduPerson::XML::Literals::AttributeAcceptancePolicy[] =
+{ chLatin_A, chLatin_t, chLatin_t, chLatin_r, chLatin_i, chLatin_b, chLatin_u, chLatin_t, chLatin_e,
+  chLatin_A, chLatin_c, chLatin_c, chLatin_e, chLatin_p, chLatin_t, chLatin_a, chLatin_n, chLatin_c, chLatin_e,
+  chLatin_P, chLatin_o, chLatin_l, chLatin_i, chLatin_c, chLatin_y, chNull
+};
+
+const XMLCh eduPerson::XML::Literals::AttributeRule[] =
+{ chLatin_A, chLatin_t, chLatin_t, chLatin_r, chLatin_i, chLatin_b, chLatin_u, chLatin_t, chLatin_e,
+  chLatin_R, chLatin_u, chLatin_l, chLatin_e, chNull
+};
+
+const XMLCh eduPerson::XML::Literals::Name[]=
+{ chLatin_N, chLatin_a, chLatin_m, chLatin_e, chNull };
+
+const XMLCh eduPerson::XML::Literals::SiteRule[] =
+{ chLatin_S, chLatin_i, chLatin_t, chLatin_e, chLatin_R, chLatin_u, chLatin_l, chLatin_e, chNull };
+
+const XMLCh eduPerson::XML::Literals::Type[]=
+{ chLatin_T, chLatin_y, chLatin_p, chLatin_e, chNull };
+
+const XMLCh eduPerson::XML::Literals::Value[] =
+{ chLatin_V, chLatin_a, chLatin_l, chLatin_u, chLatin_e, chNull };
+
+const XMLCh eduPerson::XML::Literals::literal[] =
+{ chLatin_l, chLatin_i, chLatin_t, chLatin_e, chLatin_r, chLatin_a, chLatin_l, chNull };
+
+const XMLCh eduPerson::XML::Literals::regexp[] =
+{ chLatin_r, chLatin_e, chLatin_g, chLatin_e, chLatin_x, chLatin_p, chNull };
+
+const XMLCh eduPerson::XML::Literals::xpath[] =
+{ chLatin_x, chLatin_p, chLatin_a, chLatin_t, chLatin_h, chNull };
+
 const XMLCh eduPerson::XML::Literals::faculty[] =
 { chLatin_f, chLatin_a, chLatin_c, chLatin_u, chLatin_l, chLatin_t, chLatin_y, chNull };
 

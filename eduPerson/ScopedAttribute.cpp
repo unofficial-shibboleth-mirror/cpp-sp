@@ -56,20 +56,9 @@
    $History:$
 */
 
-#ifdef WIN32
-# define EDUPERSON_EXPORTS __declspec(dllexport)
-#endif
+#include "internal.h"
 
-#include "../shib/shib.h"
-#include "eduPerson.h"
-
-#include <log4cpp/Category.hh>
 #include <xercesc/util/regx/RegularExpression.hpp>
-
-using namespace saml;
-using namespace shibboleth;
-using namespace eduPerson;
-using namespace std;
 
 ScopedAttribute::ScopedAttribute(const XMLCh* name, const XMLCh* ns, const XMLCh* defaultScope,
                                  const saml::QName* type, long lifetime,
@@ -137,8 +126,7 @@ bool ScopedAttribute::accept(DOMElement* e) const
             {
                 auto_ptr<char> tmp(XMLString::transcode(ex.getMessage()));
                 NDC ndc("accept");
-                log4cpp::Category& log=log4cpp::Category::getInstance("eduPerson.ScopedAttribute");
-                log.errorStream() << "caught exception while parsing regular expression: " << tmp.get()
+                SAML_log.errorStream() << "caught exception while parsing regular expression: " << tmp.get()
                     << log4cpp::CategoryStream::ENDLINE;
                 return false;
             }
@@ -148,11 +136,10 @@ bool ScopedAttribute::accept(DOMElement* e) const
     }
 
     NDC ndc("accept");
-    log4cpp::Category& log=log4cpp::Category::getInstance("eduPerson.ScopedAttribute");
-    if (log.isWarnEnabled())
+    if (SAML_log.isWarnEnabled())
     {
         auto_ptr<char> tmp(XMLString::transcode(this_scope));
-        log.warn("rejecting value with scope of %s",tmp.get());
+        SAML_log.warn("rejecting value with scope of %s",tmp.get());
     }
     return false;
 }

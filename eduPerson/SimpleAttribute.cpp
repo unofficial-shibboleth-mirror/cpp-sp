@@ -48,72 +48,42 @@
  */
 
 
-/* EntitlementAttribute.cpp - eduPersonEntitlement implementation
+/* SimpleAttribute.cpp - simple attribute implementation with AAP-support
 
    Scott Cantor
-   6/21/02
+   12/19/02
 
    $History:$
 */
 
 #include "internal.h"
 
-#include <xercesc/util/XMLUri.hpp>
+SimpleAttribute::SimpleAttribute(const XMLCh* name, const XMLCh* ns, const saml::QName* type, long lifetime,
+                                 const Iterator<const XMLCh*>& values)
+    : SAMLAttribute(name,ns,type,lifetime,values) {}
 
-
-EntitlementAttribute::EntitlementAttribute(long lifetime, const Iterator<const XMLCh*>& values)
-    : SimpleAttribute(eduPerson::Constants::EDUPERSON_ENTITLEMENT,
-                      shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,NULL,lifetime,values)
+SimpleAttribute::SimpleAttribute(DOMElement* e) : SAMLAttribute(e)
 {
-    m_type=new saml::QName(saml::XML::XSD_NS,eduPerson::XML::Literals::anyURI);
+    // Default scope comes from subject.
+    DOMNodeList* nlist=
+        static_cast<DOMElement*>(e->getParentNode())->getElementsByTagNameNS(saml::XML::SAML_NS,L(NameIdentifier));
+    if (!nlist || nlist->getLength() != 1)
+        throw MalformedException(SAMLException::RESPONDER,"SimpleAttribute() can't find saml:NameIdentifier in enclosing statement");
+    m_originSite=static_cast<DOMElement*>(nlist->item(0))->getAttributeNS(NULL,L(NameQualifier));
 }
 
-EntitlementAttribute::EntitlementAttribute(DOMElement* e) : SimpleAttribute(e) {}
+SimpleAttribute::~SimpleAttribute() {}
 
-EntitlementAttribute::~EntitlementAttribute() {}
-
-bool EntitlementAttribute::addValue(DOMElement* e)
+SAMLObject* SimpleAttribute::clone() const
 {
-    saml::NDC("addValue");
-
-    // If xsi:type is specified, validate it, otherwise look at content model.
-    auto_ptr<saml::QName> type(saml::QName::getQNameAttribute(e,saml::XML::XSI_NS,L(type)));
-    if (type.get())
-    {
-        if (XMLString::compareString(type->getNamespaceURI(),saml::XML::XSD_NS) ||
-            XMLString::compareString(type->getLocalName(),eduPerson::XML::Literals::anyURI))
-        {
-            SAML_log.warn("invalid attribute value xsi:type");
-            return false;
-        }
-        if (!m_type)
-            m_type=type.release();
-    }
-    else
-    {
-        DOMNode* n=e->getFirstChild();
-        if (!n || n->getNodeType()!=DOMNode::TEXT_NODE)
-        {
-            SAML_log.warn("invalid attribute value content model");
-            return false;
-        }
-
-        try
-        {
-            XMLUri uri(n->getNodeValue());
-        }
-        catch (XMLException&)
-        {
-            SAML_log.warn("non-URI value ignored");
-            return false;
-        }
-    }
-    return SAMLAttribute::addValue(e);
-}
-
-SAMLObject* EntitlementAttribute::clone() const
-{
-    EntitlementAttribute* dest=new EntitlementAttribute(m_lifetime);
+    SimpleAttribute* dest=new SimpleAttribute(m_name,m_namespace,m_type,m_lifetime);
     dest->m_values.assign(m_values.begin(),m_values.end());
     return dest;
+}
+
+bool SimpleAttribute::accept(DOMElement* e) const
+{
+    if (g_AAP)
+        return g_AAP->accept(m_name,m_originSite.c_str(),e);
+    return true;
 }

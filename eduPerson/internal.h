@@ -1,5 +1,5 @@
 /*
- * The Shibboleth License, Version 1.
+ * The OpenSAML License, Version 1.
  * Copyright (c) 2002
  * University Corporation for Advanced Internet Development, Inc.
  * All rights reserved
@@ -20,15 +20,15 @@
  * may appear in the software itself, if and wherever such third-party
  * acknowledgments normally appear.
  *
- * Neither the name of Shibboleth nor the names of its contributors, nor
+ * Neither the name of OpenSAML nor the names of its contributors, nor
  * Internet2, nor the University Corporation for Advanced Internet Development,
  * Inc., nor UCAID may be used to endorse or promote products derived from this
  * software without specific prior written permission. For written permission,
- * please contact shibboleth@shibboleth.org
+ * please contact opensaml@opensaml.org
  *
- * Products derived from this software may not be called Shibboleth, Internet2,
+ * Products derived from this software may not be called OpenSAML, Internet2,
  * UCAID, or the University Corporation for Advanced Internet Development, nor
- * may Shibboleth appear in their name, without prior written permission of the
+ * may OpenSAML appear in their name, without prior written permission of the
  * University Corporation for Advanced Internet Development.
  *
  *
@@ -48,72 +48,41 @@
  */
 
 
-/* EntitlementAttribute.cpp - eduPersonEntitlement implementation
+/* internal.h - internally visible classes
 
    Scott Cantor
-   6/21/02
+   9/6/02
 
    $History:$
 */
 
-#include "internal.h"
+#ifndef __eduPerson_internal_h__
+#define __eduPerson_internal_h__
 
-#include <xercesc/util/XMLUri.hpp>
+#ifdef WIN32
+# define EDUPERSON_EXPORTS __declspec(dllexport)
+#endif
 
+// eventually we might be able to support autoconf via cygwin...
+#if defined (_MSC_VER) || defined(__BORLANDC__)
+# include "config_win32.h"
+#else
+# include "config.h"
+#endif
 
-EntitlementAttribute::EntitlementAttribute(long lifetime, const Iterator<const XMLCh*>& values)
-    : SimpleAttribute(eduPerson::Constants::EDUPERSON_ENTITLEMENT,
-                      shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,NULL,lifetime,values)
-{
-    m_type=new saml::QName(saml::XML::XSD_NS,eduPerson::XML::Literals::anyURI);
-}
+#include "../shib/shib.h"
+#include "../shib-target/shib-target.h"
+#include "eduPerson.h"
 
-EntitlementAttribute::EntitlementAttribute(DOMElement* e) : SimpleAttribute(e) {}
+#include <log4cpp/Category.hh>
 
-EntitlementAttribute::~EntitlementAttribute() {}
+using namespace std;
+using namespace saml;
+using namespace shibboleth;
+using namespace shibtarget;
+using namespace eduPerson;
+using namespace log4cpp;
 
-bool EntitlementAttribute::addValue(DOMElement* e)
-{
-    saml::NDC("addValue");
+#define SAML_log (*reinterpret_cast<log4cpp::Category*>(m_log))
 
-    // If xsi:type is specified, validate it, otherwise look at content model.
-    auto_ptr<saml::QName> type(saml::QName::getQNameAttribute(e,saml::XML::XSI_NS,L(type)));
-    if (type.get())
-    {
-        if (XMLString::compareString(type->getNamespaceURI(),saml::XML::XSD_NS) ||
-            XMLString::compareString(type->getLocalName(),eduPerson::XML::Literals::anyURI))
-        {
-            SAML_log.warn("invalid attribute value xsi:type");
-            return false;
-        }
-        if (!m_type)
-            m_type=type.release();
-    }
-    else
-    {
-        DOMNode* n=e->getFirstChild();
-        if (!n || n->getNodeType()!=DOMNode::TEXT_NODE)
-        {
-            SAML_log.warn("invalid attribute value content model");
-            return false;
-        }
-
-        try
-        {
-            XMLUri uri(n->getNodeValue());
-        }
-        catch (XMLException&)
-        {
-            SAML_log.warn("non-URI value ignored");
-            return false;
-        }
-    }
-    return SAMLAttribute::addValue(e);
-}
-
-SAMLObject* EntitlementAttribute::clone() const
-{
-    EntitlementAttribute* dest=new EntitlementAttribute(m_lifetime);
-    dest->m_values.assign(m_values.begin(),m_values.end());
-    return dest;
-}
+#endif
