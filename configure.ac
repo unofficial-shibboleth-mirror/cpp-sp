@@ -185,22 +185,26 @@ AM_CONDITIONAL(USE_OUR_ONCRPC,test "$rpctest" = "no")
 # types (Apache 1/2, iPlanet, others).
 
 # Apache 1.3 (mod_shire/mod_shibrm)
-#   --with-apache   (static build, no idea how to do this yet, so not supported)
-#   --with-apxs     (DSO build, the normal way, uses apxs to derive build flags)
-#   --without-apxs  (DSO build, you tell us how to build using the environment)
+#   --with-apache-13 (static build, no idea how to do this yet, so not supported)
+#   --with-apxs      (DSO build, the normal way, uses apxs to derive build flags)
+#   --without-apxs   (DSO build, you tell us how to build using the environment)
 
 AC_ARG_ENABLE(apache-13,
-	AC_HELP_STRING([--disable-apache-13], [disable the Apache 1.3 modules]))
-if test "x$enable_apache_13" = "x" ; then
-   enable_apache_13=yes
+	AC_HELP_STRING([--enable-apache-13], [enable the Apache 1.3 modules]),
+	[ if test "x$enableval" = "x" ; then
+              WANT_APACHE_13=yes
+	  else
+	      WANT_APACHE_13="$enableval"
+	  fi
+	], [ WANT_APACHE_13=no ])
+AC_MSG_CHECKING(whether to build Apache-1.3 support)
+if test "$WANT_APACHE_13" != yes && test "$WANT_APACHE_13" != no ; then
+   WANT_APACHE_13=yes
 fi
+AC_MSG_RESULT($WANT_APACHE_13)
 
-if test "$enable_apache_13" != yes ; then
-   AC_MSG_WARN(Building without Apache...)
-   WANT_APACHE=no
-else
+if test "$WANT_APACHE_13" = yes ; then
 
-AC_MSG_CHECKING([for dynamic Apache module support (w/ or w/o APXS)])
 AC_ARG_WITH(apxs,
 [  --with-apxs[=FILE]        Build shared Apache module(s). FILE is the optional
                           pathname to the Apache apxs tool; defaults to "apxs".],
@@ -217,8 +221,12 @@ AC_ARG_WITH(apxs,
     else
       APXS="$withval"
     fi
+],
+[
+    AC_PATH_PROG(APXS, apxs, no)
 ])
 
+AC_MSG_CHECKING([for dynamic Apache-1.3 module support (w/ or w/o APXS)])
 if test "$APXS" = "no"; then
 
     # --without-apxs means you want the modules,
@@ -281,7 +289,7 @@ if test "$APXS" = "no"; then
     fi
     AC_MSG_NOTICE([APXS_SYSCONFDIR is $APXS_SYSCONFDIR])
 
-    WANT_APACHE="yes"
+    WANT_APACHE_13="yes"
 
 elif test -n "$APXS"; then
 
@@ -302,19 +310,16 @@ elif test -n "$APXS"; then
     more information.])
     fi
 
-    WANT_APACHE="yes"
+    WANT_APACHE_13="yes"
 
 else
     # guess we're not doing Apache 1.3
     AC_MSG_RESULT(no)
-    WANT_APACHE="no"
+    WANT_APACHE_13="no"
+fi
 fi
 
-fi
-
-AM_CONDITIONAL(HAVE_APXS,test -n "$APXS")
-
-if test "$WANT_APACHE" = "yes"; then
+if test "$WANT_APACHE_13" = "yes"; then
     AC_ARG_WITH(apreq,
                 AC_HELP_STRING([--with-apreq=PATH], [where libapreq is installed]),
                 [if test x_$with_apreq != x_/usr; then
@@ -361,8 +366,197 @@ dnl    LIBS="$saved_LIBS"
 fi
 # always output the Makefile, even if we don't use it
 AC_CONFIG_FILES([mod_shire/Makefile mod_shibrm/Makefile])
-
+AM_CONDITIONAL(HAVE_APXS,test -n "$APXS")
 AM_CONDITIONAL(DO_APXS_INSTALL,test -n "$APXS_INSTALL")
+
+
+# Apache 2.0 (mod_shib in apache-2.0)
+#   --with-apache-20   (static build, no idea how to do this yet, so not supported)
+#   --with-apxs2       (DSO build, the normal way, uses apxs to derive build flags)
+#   --without-apxs2    (DSO build, you tell us how to build using the environment)
+
+AC_ARG_ENABLE(apache-20,
+	AC_HELP_STRING([--enable-apache-20], [enable the Apache 2.0 modules]),
+	[ if test "x$enableval" = "x" ; then
+              WANT_APACHE_20=yes
+	  else
+	      WANT_APACHE_20="$enableval"
+	  fi
+	], [ WANT_APACHE_20=no ])
+
+AC_MSG_CHECKING(whether to build Apache-2.0 support)
+if test "$WANT_APACHE_20" != yes && test "$WANT_APACHE_20" != no ; then
+   WANT_APACHE_20=yes
+fi
+AC_MSG_RESULT($WANT_APACHE_20)
+
+if test "$WANT_APACHE_20" = yes ; then
+
+AC_ARG_WITH(apxs2,
+[  --with-apxs2[=FILE]        Build shared Apache module(s). FILE is the optional
+                          pathname to the Apache apxs tool; defaults to "apxs".],
+[
+    if test "$withval" = "yes"; then
+      for i in /usr/sbin /usr/local/apache/bin ; do
+        if test -f "$i/apxs"; then
+          APXS2="$i/apxs"
+        fi
+      done
+      if test -z "$APXS2"; then
+        APXS2=apxs
+      fi
+    else
+      APXS2="$withval"
+    fi
+],
+[
+    AC_PATH_PROG(APXS2, apxs, no)
+])
+
+AC_MSG_CHECKING([for dynamic Apache-2 module support (w/ or w/o APXS)])
+if test "$APXS2" = "no"; then
+
+    # --without-apxs2 means you want the modules,
+    #       but want to tell us how to build them
+    AC_MSG_RESULT(yes, but use environment, not apxs)
+    echo
+    echo "Did you set one or more of these?"
+    echo
+    echo "APXS2_CFLAGS APXS2_PREFIX APXS2_INCLUDE APXS2_LIBEXEC APXS2_SYSCONFDIR"
+    echo
+
+    AC_MSG_NOTICE([APXS2_CFLAGS is $APXS2_CFLAGS])
+
+    # try and find the Apache root
+    if test -z "$APXS2_PREFIX"; then
+        if test -d "/usr/local/apache"; then
+            APXS2_PREFIX="/usr/local/apache"
+        else
+            AC_MSG_ERROR([You MUST set APXS2_PREFIX so the right Apache-2 can be located!])
+        fi
+    elif test ! -d "$APXS2_PREFIX"; then
+        AC_MSG_ERROR([APXS2_PREFIX of $APXS2_PREFIX cannot be found])
+    fi
+    AC_MSG_NOTICE([APXS2_PREFIX is $APXS2_PREFIX])
+    
+
+    # other subfolders might be derived from APXS2_PREFIX
+    if test -z "$APXS2_INCLUDE"; then
+        if test -f "$APXS2_PREFIX/include/httpd.h"; then
+            APXS2_INCLUDE="$APXS2_PREFIX/include"
+        else
+            AC_MSG_ERROR([can't find Apache-2 include files beneath $APXS2_PREFIX])
+        fi
+    elif ! test -f "$APXS2_INCLUDE/httpd.h"; then
+        AC_MSG_ERROR([APXS2_INCLUDE of $APXS2_INCLUDE does not contain Apache-2 headers])
+    fi
+    AC_MSG_NOTICE([APXS2_INCLUDE is $APXS2_INCLUDE])
+
+    if test -z "$APXS2_LIBEXEC"; then
+        if test -d "$APXS2_PREFIX/libexec"; then
+            APXS2_LIBEXEC="$APXS2_PREFIX/libexec"
+        elif test -d "$APXS2_PREFIX/modules"; then
+            APXS2_LIBEXEC="$APXS2_PREFIX/modules"
+        else
+            AC_MSG_ERROR([can't find Apache-2 libexec/module directory beneath $APXS2_PREFIX])
+        fi
+    elif ! test -d "$APXS2_LIBEXEC"; then
+        AC_MSG_ERROR([APXS2_LIBEXEC of $APXS2_LIBEXEC does not exist])
+    fi
+    AC_MSG_NOTICE([APXS2_LIBEXEC is $APXS2_LIBEXEC])
+
+    if test -z "$APXS2_SYSCONFDIR"; then
+        if test -d "$APXS2_PREFIX/conf"; then
+            APXS2_SYSCONFDIR="$APXS2_PREFIX/conf"
+        else
+            AC_MSG_ERROR([can't find Apache-2 conf directory beneath $APXS2_PREFIX])
+        fi
+    elif ! test -d "$APXS2_SYSCONFDIR"; then
+        AC_MSG_ERROR([APXS2_SYSCONFDIR of $APXS2_SYSCONFDIR does not exist])
+    fi
+    AC_MSG_NOTICE([APXS2_SYSCONFDIR is $APXS2_SYSCONFDIR])
+
+    WANT_APACHE_20="yes"
+
+elif test -n "$APXS2"; then
+
+    # extract settings we need from APXS2 -q
+    APXS2_CC="`$APXS2 -q CC`"
+    APXS2_CFLAGS="`$APXS2 -q CFLAGS` `$APXS2 -q CFLAGS_SHLIB`"
+    APXS2_INCLUDE="`$APXS2 -q INCLUDEDIR`"
+    APXS2_LIBEXEC="`$APXS2 -q LIBEXECDIR`"
+    APXS2_SYSCONFDIR="`$APXS2 -q SYSCONFDIR`"
+
+    AC_SUBST(APXS2)
+    AC_MSG_RESULT(found at $APXS2)
+
+    if test -z "`$APXS2 -q LD_SHLIB`" && test -z "`$APXS2 -q LIBEXECDIR`" \
+       || test "$APXS2_LIBEXEC" = "modules"; then
+	    AC_MSG_ERROR(
+[Your APXS installation is broken and cannot be used.
+    Please see http://www.webdav.org/mod_dav/install.html#apxs for
+    more information.])
+    fi
+
+    WANT_APACHE_20="yes"
+
+else
+    # guess we're not doing Apache 2.0
+    AC_MSG_RESULT(no)
+    WANT_APACHE_20="no"
+fi
+fi
+
+if test "$WANT_APACHE_20" = "yes"; then
+    AC_ARG_WITH(apreq2,
+                AC_HELP_STRING([--with-apreq2=PATH], [where http-apreq-2 is installed]),
+                [if test x_$with_apreq2 != x_/usr; then
+                    LDFLAGS="-L${with_apreq2}/lib $LDFLAGS"
+                    CPPFLAGS="-I${with_apreq2}/include $CPPFLAGS"
+                fi])
+
+    saved_CPPFLAGS="$CPPFLAGS"
+    CPPFLAGS="-I$APXS2_INCLUDE $APXS2_CFLAGS $CPPFLAGS"
+    AC_TRY_COMPILE([#include <apreq.h>],
+                   [int i=0],
+                   test_apreq2="yes",test_apreq2="no")
+    if test "$test_apreq2" = "no"; then
+        CPPFLAGS="$CPPFLAGS -U_XOPEN_SOURCE"
+        APXS2_CFLAGS="$APXS2_CFLAGS -U_XOPEN_SOURCE"
+        AC_CHECK_HEADER([apreq.h],,
+            AC_MSG_ERROR([unable to find a usable libapreq2 header]))
+    fi
+
+dnl    saved_LIBS="$LIBS"
+dnl    LIBS="-lapreq $LIBS"
+dnl    AC_TRY_LINK(
+dnl        [#include <apreq.h>],
+dnl        [apreq_param],
+dnl        [AC_DEFINE(HAVE_APREQ2,1,[Define if apreq2 library was found])],
+dnl        [AC_MSG_ERROR([unable to link with apreq2])
+dnl        ])
+dnl    LIBS="$saved_LIBS"
+    CPPFLAGS="$saved_CPPFLAGS"
+
+    AC_ARG_ENABLE([apxs2-install],
+	AC_HELP_STRING([--enable-apxs2-install],
+			[use apxs to install the apache-2 modules]),
+	APXS2_INSTALL="yes", )
+
+
+    AC_SUBST(APXS2_CFLAGS)
+    AC_SUBST(APXS2_INCLUDE)
+    AC_SUBST(APXS2_LIBEXEC)
+    AC_SUBST(APXS2_SYSCONFDIR)
+
+    # output the Apache 2.0 makefiles
+    WANT_SUBDIRS="$WANT_SUBDIRS apache-2.0"
+fi
+# always output the Makefile, even if we don't use it
+AC_CONFIG_FILES([apache-2.0/Makefile])
+AM_CONDITIONAL(HAVE_APXS2,test -n "$APXS2")
+AM_CONDITIONAL(DO_APXS2_INSTALL,test -n "$APXS2_INSTALL")
+
 
 #
 # Implement the checks of the MySQL Credential Cache
@@ -505,11 +699,23 @@ AC_SUBST(WANT_SUBDIRS)
 
 if test -n "$APXS_CC" && test "$APXS_CC" != "$CC" ; then
   echo "=================================================================="
-  echo "WARNING: You have chosen to compile Apache modules with a different"
+  echo "WARNING: You have chosen to compile Apache-1.3 modules with a different"
   echo "         compiler than the one used to compile Apache."
   echo ""
   echo "    Current compiler:      $CC"
   echo "   Apache's compiler:      $APXS_CC"
+  echo ""
+  echo "This could cause some problems."
+  echo "=================================================================="
+fi
+
+if test -n "$APXS2_CC" && test "$APXS2_CC" != "$CC" ; then
+  echo "=================================================================="
+  echo "WARNING: You have chosen to compile Apache-2 modules with a different"
+  echo "         compiler than the one used to compile Apache."
+  echo ""
+  echo "    Current compiler:      $CC"
+  echo "   Apache's compiler:      $APXS2_CC"
   echo ""
   echo "This could cause some problems."
   echo "=================================================================="
