@@ -38,10 +38,20 @@ Project: "shibtest"=.\shibtest\shibtest.dsp - Package Owner=<4>
 
 Package=<5>
 {{{
+    begin source code control
+    "$/Shibboleth/shibtest", BYIAAAAA
+    .\shibtest
+    end source code control
 }}}
 
 Package=<4>
 {{{
+    Begin Project Dependency
+    Project_Dep_Name eduPerson
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name shib
+    End Project Dependency
 }}}
 
 ###############################################################################
