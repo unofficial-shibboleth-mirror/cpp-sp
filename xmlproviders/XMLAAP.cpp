@@ -261,7 +261,7 @@ XMLAAPImpl::AttributeRule::AttributeRule(const DOMElement* e) :
     m_caseSensitive=(!caseSensitive || !*caseSensitive || *caseSensitive==chDigit_1 || *caseSensitive==chLatin_t);
     
     const XMLCh* scoped=e->getAttributeNS(NULL,SHIB_L(Scoped));
-    m_scoped=(scoped && (*scoped==chDigit_1 || !XMLString::compareString(scoped,wTrue)));
+    m_scoped=(scoped && (*scoped==chDigit_1 || *scoped==chLatin_t));
     
     // Check for an AnySite rule.
     DOMNode* anysite = e->getFirstChild();
