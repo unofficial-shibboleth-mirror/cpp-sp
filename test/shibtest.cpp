@@ -64,6 +64,7 @@ int main(int argc,char* argv[])
     char* q_param=NULL;
     char* url_param=NULL;
     char* r_param=NULL;
+    char* ca_param=NULL;
     char* path="";
 
     for (int i=1; i<argc; i++)
@@ -78,6 +79,8 @@ int main(int argc,char* argv[])
             url_param=argv[++i];
         else if (!strcmp(argv[i],"-r") && i+1<argc)
             r_param=argv[++i];
+        else if (!strcmp(argv[i],"-ca") && i+1<argc)
+            ca_param=argv[++i];
     }
 
     if (!h_param || !q_param || !url_param)
@@ -87,6 +90,8 @@ int main(int argc,char* argv[])
     }
 
     conf1.schema_dir=path;
+    if (ca_param)
+        conf1.ssl_calist=ca_param;
     if (!conf1.init())
         cerr << "unable to initialize SAML runtime" << endl;
 
@@ -143,12 +148,6 @@ int main(int argc,char* argv[])
                     {
                         SAMLAttribute* attr=attrs.next();
                         cout << "Attribute Name: "; xmlout(cout,attr->getName()); cout << endl;
-                        cout << "Attribute Type: {";
-                        xmlout(cout,attr->getType()->getNamespaceURI());
-                        cout << "}:";
-                        xmlout(cout,attr->getType()->getLocalName());
-                        cout << endl;
-                        
                         Iterator<xstring> vals=attr->getValues();
                         while (vals.hasNext())
                         {
