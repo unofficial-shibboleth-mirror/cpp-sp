@@ -163,12 +163,12 @@ bool STConfig::init(const char* schemadir, const char* config)
 #endif
         // Register plugin types.
 #ifndef WIN32
-        samlConf.m_plugMgr.regFactory(shibtarget::XML::UnixListenerType,&UnixListenerFactory);
+        samlConf.getPlugMgr().regFactory(shibtarget::XML::UnixListenerType,&UnixListenerFactory);
 #endif
         samlConf.getPlugMgr().regFactory(shibtarget::XML::TCPListenerType,&TCPListenerFactory);
         samlConf.getPlugMgr().regFactory(shibtarget::XML::MemorySessionCacheType,&MemoryCacheFactory);
         samlConf.getPlugMgr().regFactory(shibtarget::XML::RequestMapType,&XMLRequestMapFactory);
-        //shibConf.m_plugMgr.regFactory(shibtarget::XML::htaccessType,&htaccessFactory);
+        //shibConf.getPlugMgr().regFactory(shibtarget::XML::htaccessType,&htaccessFactory);
         saml::XML::registerSchema(ShibTargetConfig::SHIBTARGET_NS,shibtarget::XML::SHIBTARGET_SCHEMA_ID);
         
         log.info("loading configuration file: %s", config);
