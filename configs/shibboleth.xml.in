@@ -95,7 +95,8 @@
             rm="@-PKGSYSCONFDIR-@/rmError.html"
             access="@-PKGSYSCONFDIR-@/accessError.html"
             supportContact="root@localhost"
-            logoLocation="/logo.gif"/>
+            logoLocation="/shibtarget/logo.jpg"
+            styleSheet="/shibtarget/main.css"/>
             
         <Policy signRequest="false" signedResponse="false" signedAssertions="false">
             <!-- use designators to request specific attributes or none to ask for all -->
