@@ -169,7 +169,7 @@ SAMLResponse* ShibPOSTProfile::prepare(const XMLCh* recipient,
     struct tm* ptime=gmtime(&authInstant);
 #else
     struct tm res;
-    struct tm* ptime=gmtime_r(&now,&res);
+    struct tm* ptime=gmtime_r(&authInstant,&res);
 #endif
     char timebuf[32];
     strftime(timebuf,32,"%Y-%m-%dT%H:%M:%SZ",ptime);
