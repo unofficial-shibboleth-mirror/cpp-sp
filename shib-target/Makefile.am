@@ -18,6 +18,7 @@ libshib_target_HEADERS = shib-target.h shibrpc.h shib-paths.h
 noinst_HEADERS = internal.h
 
 libshib_target_la_SOURCES = \
+	ArtifactMapper.cpp \
 	shib-ccache.cpp \
 	shib-config.cpp \
 	shib-ini.cpp \

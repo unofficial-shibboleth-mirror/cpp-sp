@@ -98,6 +98,7 @@ namespace shibtarget {
         const SAMLBrowserProfile* getBrowserProfile() const {return m_profile;}
         const SAMLBinding* getBinding(const XMLCh* binding) const
             {return XMLString::compareString(SAMLBinding::SOAP,binding) ? NULL : m_binding;}
+        SAMLBrowserProfile::ArtifactMapper* getArtifactMapper() const {return new STArtifactMapper(this);}
         
         // Provides filter to exclude special config elements.
         short acceptNode(const DOMNode* node) const;

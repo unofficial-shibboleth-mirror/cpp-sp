@@ -160,6 +160,22 @@ namespace shibtarget {
         std::map<std::string,std::pair<char*,const XMLCh*> > m_map;
         std::map<std::string,IPropertySet*> m_nested;
     };
+
+    // ST-aware class that maps SAML artifacts to appropriate binding information
+    class STArtifactMapper : public virtual saml::SAMLBrowserProfile::ArtifactMapper
+    {
+    public:
+        STArtifactMapper(const IApplication* application)
+            : m_app(application), m_metadata(application->getMetadataProviders()), m_ctx(NULL) {}
+        virtual ~STArtifactMapper() {delete m_ctx;}
+    
+        saml::SAMLBrowserProfile::ArtifactMapper::ArtifactMapperResponse map(const saml::SAMLArtifact* artifact);
+    
+    private:
+        const IApplication* m_app;
+        shibboleth::Metadata m_metadata;    // scopes lock around use of role descriptor by hook context
+        shibboleth::ShibHTTPHook::ShibHTTPHookCallContext* m_ctx;
+    };
     
     class STConfig : public ShibTargetConfig
     {

@@ -331,6 +331,8 @@ shibrpc_new_session_2_svc(
       
     try
     {
+      auto_ptr<SAMLBrowserProfile::ArtifactMapper> artifactMapper(app->getArtifactMapper());
+      
       // Try and run the profile.
       log.debug ("Executing browser profile...");
       bpr=app->getBrowserProfile()->receive(
@@ -338,7 +340,8 @@ shibrpc_new_session_2_svc(
         argp->packet,
         recipient.get(),
         SAMLBrowserProfile::Post,   // For now, we only handle POST.
-        (!checkReplay.first || checkReplay.second) ? conf->getReplayCache() : NULL
+        (!checkReplay.first || checkReplay.second) ? conf->getReplayCache() : NULL,
+        artifactMapper.get()
         );
 
       // Try and map to metadata for support purposes.
