@@ -297,6 +297,7 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
 	                "The IP address provided by your origin site did not match your current address. "
 	                "To correct this problem, you may need to bypass a local proxy server.",
 				     origin);
+	}
       }
     }
     catch (SAMLException &e)    // XXX refine this handler to catch and log different profile exceptions
