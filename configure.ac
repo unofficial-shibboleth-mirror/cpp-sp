@@ -67,8 +67,33 @@ else
 fi
 
 # Test RPC now -- finish dealing with it later
+AC_ARG_ENABLE(native-rpc,
+	AC_HELP_STRING([--enable-native-rpc], [use the OS-supplied Sun RPC library, default is NO, except Linux]),
+	[ if test "x$enableval" = "x" ; then
+              NATIVE_RPC=yes
+	  else
+	      NATIVE_RPC="$enableval"
+	  fi
+	], [ NATIVE_RPC=no ])
 ACX_RPCTEST([rpctest="yes"],[rpctest="no"])
-if test $rpctest = "yes" ; then
+AC_MSG_NOTICE([does the native Sun RPC library support svcfd_create...$rpctest])
+if test $NATIVE_RPC = "no"; then
+	case "${host}" in
+		*-*-linux*)
+			if test $rpctest = "yes"; then
+				AC_MSG_WARN([embedded Sun RPC library does not support Linux])
+				NATIVE_RPC="yes"
+			else
+				AC_MSG_ERROR([embedded Sun RPC library won't work, but neither will native version])
+			fi
+		;;
+	esac
+fi
+if test $NATIVE_RPC = "yes" && test $rpctest = "no"; then
+	AC_MSG_WARN([native Sun RPC won't work, using internal version])
+	NATIVE_RPC = "no"
+fi
+if test $NATIVE_RPC = "yes"; then
 	AC_CHECK_DECLS([svcfd_create],,,[#include <rpc/rpc.h>])
 	AC_LANG_PUSH(C++)
 	AC_COMPILE_IFELSE(
@@ -79,6 +104,8 @@ static SVCXPRT* xprt = NULL;]],
         AC_DEFINE(HAVE_WORKING_SVC_DESTROY,1,[Define if RPC SVC macros work on this platform]),)
 	AC_LANG_POP(C++)
 else
+	AC_CHECK_TYPES([struct rpcent],,,[#include <netdb.h>])
+	AC_CHECK_DECLS(sys_errlist)
 	AC_DEFINE(HAVE_DECL_SVCFD_CREATE,1,[ Define to 1 if you have the declaration of svcfd_create, and to 0 if you don't.])
 	AC_DEFINE(HAVE_WORKING_SVC_DESTROY,1,[Define if RPC SVC macros work on this platform])
 fi
@@ -212,11 +239,11 @@ AC_CONFIG_FILES([Makefile doc/Makefile shib/Makefile schemas/Makefile \
 
 
 # now deal with the rpc library, to see if we need to build our own
-if test $rpctest = "no"; then
+if test $NATIVE_RPC = "no"; then
     WANT_SUBDIRS="oncrpc $WANT_SUBDIRS"
 	AC_DEFINE(USE_OUR_ONCRPC,1,[Define if using embedded version of ONC RPC.])
 fi
-AM_CONDITIONAL(USE_OUR_ONCRPC,test "$rpctest" = "no")
+AM_CONDITIONAL(USE_OUR_ONCRPC,test "$NATIVE_RPC" = "no")
 
 
 # Apache 1.3 (mod_shib_13)
