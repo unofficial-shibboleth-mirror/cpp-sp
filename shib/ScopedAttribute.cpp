@@ -87,7 +87,7 @@ bool ScopedAttribute::addValue(DOMElement* e)
     static XMLCh empty[] = {chNull};
     if (SAMLAttribute::addValue(e))
     {
-        DOMAttr* scope=e->getAttributeNodeNS(NULL,Scope);
+        DOMAttr* scope=e->getAttributeNodeNS(NULL,SHIB_L(Scope));
         m_scopes.push_back(scope ? scope->getNodeValue() : empty);
         return true;
     }
@@ -103,7 +103,7 @@ bool ScopedAttribute::accept(DOMElement* e) const
     Iterator<pair<const XMLCh*,bool> > domains=
         (mapper.fail()) ? Iterator<pair<const XMLCh*,bool> >() : mapper->getSecurityDomains();
     const XMLCh* this_scope=NULL;
-    DOMAttr* scope=e->getAttributeNodeNS(NULL,Scope);
+    DOMAttr* scope=e->getAttributeNodeNS(NULL,SHIB_L(Scope));
     if (scope)
         this_scope=scope->getNodeValue();
     if (!this_scope || !*this_scope)
@@ -189,7 +189,7 @@ DOMNode* ScopedAttribute::toDOM(DOMDocument* doc,bool xmlns) const
     {
         if (n->getNodeType()==DOMNode::ELEMENT_NODE)
         {
-            static_cast<DOMElement*>(n)->setAttributeNS(NULL,Scope,
+            static_cast<DOMElement*>(n)->setAttributeNS(NULL,SHIB_L(Scope),
                 (!m_scopes[i].empty() ? m_scopes[i].c_str() : m_originSite.c_str()));
             i++;
         }
@@ -199,4 +199,3 @@ DOMNode* ScopedAttribute::toDOM(DOMDocument* doc,bool xmlns) const
     return m_root;
 }
 
-const XMLCh ScopedAttribute::Scope[] = { chLatin_S, chLatin_c, chLatin_o, chLatin_p, chLatin_e, chNull };

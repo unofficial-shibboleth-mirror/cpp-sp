@@ -90,6 +90,11 @@ extern "C" ITrust* XMLTrustFactory(const char* source)
     return new XMLTrust(source);
 }
 
+extern "C" IAAP* XMLAAPFactory(const char* source)
+{
+    return new XMLAAP(source);
+}
+
 bool ShibInternalConfig::init()
 {
     saml::NDC ndc("init");
@@ -100,21 +105,9 @@ bool ShibInternalConfig::init()
     // Register extension schema.
     saml::XML::registerSchema(XML::SHIB_NS,XML::SHIB_SCHEMA_ID);
 
-    if (!aapFile.empty())
-    {
-        try
-        {
-            m_AAP=new AAP(aapFile.c_str());
-        }
-        catch(SAMLException& e)
-        {
-            Category::getInstance(SHIB_LOGCAT".ShibConfig").fatal("init: failed to initialize AAP: %s", e.what());
-            return false;
-        }
-    }
-
     regFactory("edu.internet2.middleware.shibboleth.metadata.XML",&XMLMetadataFactory);
     regFactory("edu.internet2.middleware.shibboleth.trust.XML",&XMLTrustFactory);
+    regFactory("edu.internet2.middleware.shibboleth.target.AAP.XML",&XMLAAPFactory);
 
     return true;
 }
@@ -123,7 +116,10 @@ void ShibInternalConfig::term()
 {
     for (vector<IMetadata*>::iterator i=m_providers.begin(); i!=m_providers.end(); i++)
         delete *i;
-    delete m_AAP;
+    for (vector<ITrust*>::iterator j=m_trust_providers.begin(); j!=m_trust_providers.end(); j++)
+        delete *j;
+    for (vector<IAAP*>::iterator k=m_aap_providers.begin(); k!=m_aap_providers.end(); k++)
+        delete *k;
 }
 
 void ShibInternalConfig::regFactory(const char* type, MetadataFactory* factory)
@@ -138,12 +134,19 @@ void ShibInternalConfig::regFactory(const char* type, TrustFactory* factory)
         m_trustFactoryMap[type]=factory;
 }
 
+void ShibInternalConfig::regFactory(const char* type, AAPFactory* factory)
+{
+    if (type && factory)
+        m_aapFactoryMap[type]=factory;
+}
+
 void ShibInternalConfig::unregFactory(const char* type)
 {
     if (type)
     {
         m_metadataFactoryMap.erase(type);
         m_trustFactoryMap.erase(type);
+        m_aapFactoryMap.erase(type);
     }
 }
 
@@ -169,7 +172,16 @@ bool ShibInternalConfig::addMetadata(const char* type, const char* source)
                 ret=true;
             }
             else
-                throw MetadataException("ShibConfig::addMetadata() unable to locate a metadata factory of the requested type");
+            {
+                AAPFactoryMap::const_iterator k=m_aapFactoryMap.find(type);
+                if (k!=m_aapFactoryMap.end())
+                {
+                    m_aap_providers.push_back((k->second)(source));
+                    ret=true;
+                }
+                else
+                    throw MetadataException("ShibConfig::addMetadata() unable to locate a metadata factory of the requested type");
+            }
         }
     }
     catch (SAMLException& e)

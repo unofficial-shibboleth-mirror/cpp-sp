@@ -85,6 +85,6 @@ saml::SAMLObject* SimpleAttribute::clone() const
 
 bool SimpleAttribute::accept(DOMElement* e) const
 {
-    ShibInternalConfig& conf=dynamic_cast<ShibInternalConfig&>(ShibConfig::getConfig());
-    return conf.m_AAP ? conf.m_AAP->accept(m_name,m_originSite.c_str(),e) : true;
+    AAP aap(m_name,m_namespace);
+    return aap.fail() ? false : aap->accept(m_originSite.c_str(),e);
 }

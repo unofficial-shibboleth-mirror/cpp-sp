@@ -63,16 +63,17 @@ using namespace std;
 
 OriginMetadata::OriginMetadata(const XMLCh* site) : m_mapper(NULL), m_site(NULL)
 {
-    ShibInternalConfig& config=dynamic_cast<ShibInternalConfig&>(ShibConfig::getConfig());
-    for (vector<IMetadata*>::iterator i=config.m_providers.begin(); i!=config.m_providers.end(); i++)
+    Iterator<IMetadata*> it=ShibConfig::getConfig().getMetadataProviders();
+    while (it.hasNext())
     {
-        (*i)->lock();
-        if (m_site=dynamic_cast<const IOriginSite*>((*i)->lookup(site)))
+        IMetadata* i=it.next();
+        i->lock();
+        if (m_site=dynamic_cast<const IOriginSite*>(i->lookup(site)))
         {
-            m_mapper=*i;
+            m_mapper=i;
             break;
         }
-        (*i)->unlock();
+        i->unlock();
     }
 }
 
@@ -90,17 +91,18 @@ Iterator<XSECCryptoX509*> Trust::getCertificates(const XMLCh* subject)
         m_mapper=NULL;
     }
     
-    ShibInternalConfig& config=dynamic_cast<ShibInternalConfig&>(ShibConfig::getConfig());
-    for (vector<ITrust*>::iterator i=config.m_trust_providers.begin(); i!=config.m_trust_providers.end(); i++)
+    Iterator<ITrust*> it=ShibConfig::getConfig().getTrustProviders();
+    while (it.hasNext())
     {
-        (*i)->lock();
-        Iterator<XSECCryptoX509*> iter=(*i)->getCertificates(subject);
+        ITrust* i=it.next();
+        i->lock();
+        Iterator<XSECCryptoX509*> iter=i->getCertificates(subject);
         if (iter.size())
         {
-            m_mapper=*i;
+            m_mapper=i;
             return iter;
         }
-        (*i)->unlock();
+        i->unlock();
     }
     return EMPTY(XSECCryptoX509*);
 }
@@ -108,12 +110,13 @@ Iterator<XSECCryptoX509*> Trust::getCertificates(const XMLCh* subject)
 bool Trust::validate(const ISite* site, Iterator<XSECCryptoX509*> certs) const
 {
     bool ret=false;
-    ShibInternalConfig& config=dynamic_cast<ShibInternalConfig&>(ShibConfig::getConfig());
-    for (vector<ITrust*>::iterator i=config.m_trust_providers.begin(); !ret && i!=config.m_trust_providers.end(); i++)
+    Iterator<ITrust*> it=ShibConfig::getConfig().getTrustProviders();
+    while (!ret && it.hasNext())
     {
-        (*i)->lock();
-        ret=(*i)->validate(site,certs);
-        (*i)->unlock();
+        ITrust* i=it.next();
+        i->lock();
+        ret=i->validate(site,certs);
+        i->unlock();
     }
     return ret;
 }
@@ -121,17 +124,56 @@ bool Trust::validate(const ISite* site, Iterator<XSECCryptoX509*> certs) const
 bool Trust::validate(const ISite* site, Iterator<const XMLCh*> certs) const
 {
     bool ret=false;
-    ShibInternalConfig& config=dynamic_cast<ShibInternalConfig&>(ShibConfig::getConfig());
-    for (vector<ITrust*>::iterator i=config.m_trust_providers.begin(); !ret && i!=config.m_trust_providers.end(); i++)
+    Iterator<ITrust*> it=ShibConfig::getConfig().getTrustProviders();
+    while (!ret && it.hasNext())
     {
-        (*i)->lock();
-        ret=(*i)->validate(site,certs);
-        (*i)->unlock();
+        ITrust* i=it.next();
+        i->lock();
+        ret=i->validate(site,certs);
+        i->unlock();
     }
     return ret;
 }
 
 Trust::~Trust()
+{
+    if (m_mapper)
+        m_mapper->unlock();
+}
+
+AAP::AAP(const XMLCh* attrName, const XMLCh* attrNamespace) : m_mapper(NULL), m_rule(NULL)
+{
+    Iterator<IAAP*> it=ShibConfig::getConfig().getAAPProviders();
+    while (it.hasNext())
+    {
+        IAAP* i=it.next();
+        i->lock();
+        if (m_rule=i->lookup(attrName,attrNamespace))
+        {
+            m_mapper=i;
+            break;
+        }
+        i->unlock();
+    }
+}
+
+AAP::AAP(const char* alias) : m_mapper(NULL), m_rule(NULL)
+{
+    Iterator<IAAP*> it=ShibConfig::getConfig().getAAPProviders();
+    while (it.hasNext())
+    {
+        IAAP* i=it.next();
+        i->lock();
+        if (m_rule=i->lookup(alias))
+        {
+            m_mapper=i;
+            break;
+        }
+        i->unlock();
+    }
+}
+
+AAP::~AAP()
 {
     if (m_mapper)
         m_mapper->unlock();

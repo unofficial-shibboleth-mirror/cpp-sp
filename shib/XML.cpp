@@ -82,6 +82,8 @@ const XMLCh XML::Literals::AttributeValueType[] =
   chLatin_V, chLatin_a, chLatin_l, chLatin_u, chLatin_e, chLatin_T, chLatin_y, chLatin_p, chLatin_e, chNull
 };
 
+const XMLCh XML::Literals::Scope[] = { chLatin_S, chLatin_c, chLatin_o, chLatin_p, chLatin_e, chNull };
+
 const XMLCh XML::Literals::AttributeAuthority[] =
 { chLatin_A, chLatin_t, chLatin_t, chLatin_r, chLatin_i, chLatin_b, chLatin_u, chLatin_t, chLatin_e,
   chLatin_A, chLatin_u, chLatin_t, chLatin_h, chLatin_o, chLatin_r, chLatin_i, chLatin_t, chLatin_y, chNull
@@ -126,6 +128,9 @@ const XMLCh XML::Literals::KeyAuthority[] =
 const XMLCh XML::Literals::Trust[] =
 { chLatin_T, chLatin_r, chLatin_u, chLatin_s, chLatin_t, chNull };
 
+const XMLCh XML::Literals::Alias[]=
+{ chLatin_A, chLatin_l, chLatin_i, chLatin_a, chLatin_s, chNull };
+
 const XMLCh XML::Literals::AnySite[]=
 { chLatin_A, chLatin_n, chLatin_y, chLatin_S, chLatin_i, chLatin_t, chLatin_e, chNull };
 
@@ -142,6 +147,15 @@ const XMLCh XML::Literals::AttributeRule[] =
 { chLatin_A, chLatin_t, chLatin_t, chLatin_r, chLatin_i, chLatin_b, chLatin_u, chLatin_t, chLatin_e,
   chLatin_R, chLatin_u, chLatin_l, chLatin_e, chNull
 };
+
+const XMLCh XML::Literals::Factory[]=
+{ chLatin_F, chLatin_a, chLatin_c, chLatin_t, chLatin_o, chLatin_r, chLatin_y, chNull };
+
+const XMLCh XML::Literals::Header[]=
+{ chLatin_H, chLatin_e, chLatin_a, chLatin_d, chLatin_e, chLatin_r, chNull };
+
+const XMLCh XML::Literals::Namespace[]=
+{ chLatin_N, chLatin_a, chLatin_m, chLatin_e, chLatin_s, chLatin_p, chLatin_a, chLatin_c, chLatin_e, chNull };
 
 const XMLCh XML::Literals::SiteRule[] =
 { chLatin_S, chLatin_i, chLatin_t, chLatin_e, chLatin_R, chLatin_u, chLatin_l, chLatin_e, chNull };

@@ -68,175 +68,350 @@ using namespace std;
 #include <xercesc/framework/URLInputSource.hpp>
 #include <xercesc/util/regx/RegularExpression.hpp>
 
-AAP::AAP(const char* uri)
+extern "C" SAMLAttribute* AttributeFactory(DOMElement* e)
 {
-    NDC ndc("AAP");
-    Category& log=Category::getInstance(SHIB_LOGCAT".AAP");
+    DOMNode* n=e->getFirstChild();
+    while (n && n->getNodeType()!=DOMNode::ELEMENT_NODE)
+        n=n->getNextSibling();
+    if (n && static_cast<DOMElement*>(n)->hasAttributeNS(NULL,SHIB_L(Scope)))
+        return new ScopedAttribute(e);
+    return new SimpleAttribute(e);
+}
+
+class shibboleth::XMLAAPImpl
+{
+public:
+    XMLAAPImpl(const char* pathname);
+    ~XMLAAPImpl();
+    
+    void regAttributes() const;
+
+    class AttributeRule : public IAttributeRule
+    {
+    public:
+        AttributeRule(const DOMElement* e);
+        ~AttributeRule() {}
+        
+        const XMLCh* getName() const { return m_name; }
+        const XMLCh* getNamespace() const { return m_namespace; }
+        const char* getFactory() const { return m_factory.get(); }
+        const char* getAlias() const { return m_alias.get(); }
+        const char* getHeader() const { return m_header.get(); }
+        bool accept(const XMLCh* originSite, const DOMElement* e) const;
+
+    private:    
+        const XMLCh* m_name;
+        const XMLCh* m_namespace;
+        auto_ptr<char> m_factory;
+        auto_ptr<char> m_alias;
+        auto_ptr<char> m_header;
+        
+        enum value_type { literal, regexp, xpath };
+        struct SiteRule
+        {
+            SiteRule() : anyValue(false) {}
+            bool anyValue;
+            vector<pair<value_type,const XMLCh*> > valueRules;
+        };
+
+        SiteRule m_anySiteRule;
+        map<xstring,SiteRule> m_siteMap;
+    };
+
+    vector<const IAttributeRule*> m_attrs;
+    map<string,const IAttributeRule*> m_aliasMap;
+    map<xstring,AttributeRule*> m_attrMap;
+    DOMDocument* m_doc;
+};
+
+XMLAAPImpl::XMLAAPImpl(const char* pathname) : m_doc(NULL)
+{
+    NDC ndc("XMLAAPImpl");
+    Category& log=Category::getInstance(SHIB_LOGCAT".XMLAAPImpl");
 
     saml::XML::Parser p;
-    DOMDocument* doc=NULL;
-	try
+    try
     {
         static XMLCh base[]={chLatin_f, chLatin_i, chLatin_l, chLatin_e, chColon, chForwardSlash, chForwardSlash, chForwardSlash, chNull};
-        URLInputSource src(base,uri);
+        URLInputSource src(base,pathname);
         Wrapper4InputSource dsrc(&src,false);
-		doc=p.parse(dsrc);
+        m_doc=p.parse(dsrc);
 
-        log.infoStream() << "Loaded and parsed AAP (" << uri << ")" << CategoryStream::ENDLINE;
+        log.infoStream() << "Loaded and parsed AAP file (" << pathname << ")" << CategoryStream::ENDLINE;
 
-		DOMElement* e = doc->getDocumentElement();
+        DOMElement* e = m_doc->getDocumentElement();
         if (XMLString::compareString(XML::SHIB_NS,e->getNamespaceURI()) ||
-            XMLString::compareString(XML::Literals::AttributeAcceptancePolicy,e->getLocalName()))
+            XMLString::compareString(SHIB_L(AttributeAcceptancePolicy),e->getLocalName()))
         {
-			log.error("Construction requires a valid AAP file: (shib:AttributeAcceptancePolicy as root element)");
-			throw MalformedException("Construction requires a valid site file: (shib:AttributeAcceptancePolicy as root element)");
-		}
+            log.error("Construction requires a valid AAP file: (shib:AttributeAcceptancePolicy as root element)");
+            throw MalformedException("Construction requires a valid AAP file: (shib:AttributeAcceptancePolicy as root element)");
+        }
 
-		// Loop over the AttributeRule elements.
-        DOMNodeList* nlist = e->getElementsByTagNameNS(XML::SHIB_NS,XML::Literals::AttributeRule);
-		for (int i=0; nlist && i<nlist->getLength(); i++)
+        // Loop over the AttributeRule elements.
+        DOMNodeList* nlist = e->getElementsByTagNameNS(XML::SHIB_NS,SHIB_L(AttributeRule));
+        for (int i=0; nlist && i<nlist->getLength(); i++)
         {
-            // Insert an empty rule, then get a reference to it.
-            m_attrMap[static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,XML::Literals::Name)]=AttributeRule();
-            AttributeRule& arule=m_attrMap[static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,XML::Literals::Name)];
-
-            // Check for an AnySite rule.
-			DOMNode* anysite = nlist->item(i)->getFirstChild();
-			while (anysite && anysite->getNodeType()!=DOMNode::ELEMENT_NODE)
-            {
-				anysite = anysite->getNextSibling();
-				continue;
-			}
-
-            if (anysite && !XMLString::compareString(XML::SHIB_NS,static_cast<DOMElement*>(anysite)->getNamespaceURI()) &&
-                !XMLString::compareString(XML::Literals::AnySite,static_cast<DOMElement*>(anysite)->getLocalName()))
-            {
-                // Check for an AnyValue rule.
-                DOMNode* anyval = anysite->getFirstChild();
-    			while (anyval && anyval->getNodeType()!=DOMNode::ELEMENT_NODE)
-                {
-		    		anyval = anyval->getNextSibling();
-			    	continue;
-			    }
-
-                if (anyval && !XMLString::compareString(XML::SHIB_NS,static_cast<DOMElement*>(anyval)->getNamespaceURI()) &&
-                    !XMLString::compareString(XML::Literals::AnyValue,static_cast<DOMElement*>(anyval)->getLocalName()))
-                {
-                    arule.m_anySiteRule.anyValue=true;
-                }
-                else
-                {
-                    // Process each Value element.
-                    DOMNodeList* vlist = static_cast<DOMElement*>(anysite)->getElementsByTagNameNS(XML::SHIB_NS,XML::Literals::Value);
-                    for (int j=0; vlist && j<vlist->getLength(); j++)
-                    {
-                        DOMElement* ve=static_cast<DOMElement*>(vlist->item(j));
-                        DOMNode* valnode=ve->getFirstChild();
-                        if (valnode && valnode->getNodeType()==DOMNode::TEXT_NODE)
-                        {
-                            if (!XMLString::compareString(XML::Literals::literal,ve->getAttributeNS(NULL,XML::Literals::Type)))
-                                arule.m_anySiteRule.valueRules.push_back(
-                                    pair<AttributeRule::value_type,xstring>(AttributeRule::literal,valnode->getNodeValue())
-                                    );
-                            else if (!XMLString::compareString(XML::Literals::regexp,ve->getAttributeNS(NULL,XML::Literals::Type)))
-                                arule.m_anySiteRule.valueRules.push_back(
-                                    pair<AttributeRule::value_type,xstring>(AttributeRule::regexp,valnode->getNodeValue())
-                                    );
-                            else if (!XMLString::compareString(XML::Literals::xpath,ve->getAttributeNS(NULL,XML::Literals::Type)))
-                                arule.m_anySiteRule.valueRules.push_back(
-                                    pair<AttributeRule::value_type,xstring>(AttributeRule::xpath,valnode->getNodeValue())
-                                    );
-                        }
-                    }
-                }
-            }
-
-            // Loop over the SiteRule elements.
-            DOMNodeList* slist = static_cast<DOMElement*>(nlist->item(i))->getElementsByTagNameNS(XML::SHIB_NS,XML::Literals::SiteRule);
-		    for (int k=0; slist && k<slist->getLength(); k++)
-            {
-                arule.m_siteMap[static_cast<DOMElement*>(slist->item(k))->getAttributeNS(NULL,XML::Literals::Name)]=AttributeRule::SiteRule();
-                AttributeRule::SiteRule& srule=arule.m_siteMap[static_cast<DOMElement*>(slist->item(k))->getAttributeNS(NULL,XML::Literals::Name)];
-
-                // Check for an AnyValue rule.
-                DOMNode* anyval = slist->item(k)->getFirstChild();
-    			while (anyval && anyval->getNodeType()!=DOMNode::ELEMENT_NODE)
-                {
-		    		anyval = anyval->getNextSibling();
-			    	continue;
-			    }
-
-                if (anyval && !XMLString::compareString(XML::SHIB_NS,static_cast<DOMElement*>(anyval)->getNamespaceURI()) &&
-                    !XMLString::compareString(XML::Literals::AnyValue,static_cast<DOMElement*>(anyval)->getLocalName()))
-                {
-                    srule.anyValue=true;
-                }
-                else
-                {
-                    // Process each Value element.
-                    DOMNodeList* vlist = static_cast<DOMElement*>(slist->item(k))->getElementsByTagNameNS(XML::SHIB_NS,XML::Literals::Value);
-                    for (int j=0; vlist && j<vlist->getLength(); j++)
-                    {
-                        DOMElement* ve=static_cast<DOMElement*>(vlist->item(j));
-                        DOMNode* valnode=ve->getFirstChild();
-                        if (valnode && valnode->getNodeType()==DOMNode::TEXT_NODE)
-                        {
-                            if (!XMLString::compareString(XML::Literals::literal,ve->getAttributeNS(NULL,XML::Literals::Type)))
-                                srule.valueRules.push_back(
-                                    pair<AttributeRule::value_type,xstring>(AttributeRule::literal,valnode->getNodeValue())
-                                    );
-                            else if (!XMLString::compareString(XML::Literals::regexp,ve->getAttributeNS(NULL,XML::Literals::Type)))
-                                srule.valueRules.push_back(
-                                    pair<AttributeRule::value_type,xstring>(AttributeRule::regexp,valnode->getNodeValue())
-                                    );
-                            else if (!XMLString::compareString(XML::Literals::xpath,ve->getAttributeNS(NULL,XML::Literals::Type)))
-                                srule.valueRules.push_back(
-                                    pair<AttributeRule::value_type,xstring>(AttributeRule::xpath,valnode->getNodeValue())
-                                    );
-                        }
-                    }
-                }
-            }
-		}
+            AttributeRule* rule=new AttributeRule(static_cast<DOMElement*>(nlist->item(i)));
+            m_attrMap[xstring(rule->getName()) + chBang + chBang + (rule->getNamespace() ? rule->getNamespace() : Constants::SHIB_ATTRIBUTE_NAMESPACE_URI)]=rule;
+            m_attrs.push_back(rule);
+            if (rule->getAlias())
+                m_aliasMap[rule->getAlias()]=rule;
+        }
     }
     catch (SAMLException& e)
     {
         log.errorStream() << "XML error while parsing AAP: " << e.what() << CategoryStream::ENDLINE;
-        if (doc)
-            doc->release();
-		throw;
-	}
+        for (map<xstring,AttributeRule*>::iterator i=m_attrMap.begin(); i!=m_attrMap.end(); i++)
+            delete i->second;
+        if (m_doc)
+            m_doc->release();
+        throw;
+    }
     catch (...)
     {
-		log.error("Unexpected error while parsing AAP");
-        if (doc)
-            doc->release();
-		throw;
+        log.error("Unexpected error while parsing AAP");
+        for (map<xstring,AttributeRule*>::iterator i=m_attrMap.begin(); i!=m_attrMap.end(); i++)
+            delete i->second;
+        if (m_doc)
+            m_doc->release();
+        throw;
     }
 
 }
 
-bool AAP::accept(const XMLCh* name, const XMLCh* originSite, DOMElement* e)
+XMLAAPImpl::~XMLAAPImpl()
+{
+    for (map<xstring,AttributeRule*>::iterator i=m_attrMap.begin(); i!=m_attrMap.end(); i++)
+    {
+        SAMLAttribute::unregFactory(i->second->getName(),i->second->getNamespace());
+        delete i->second;
+    }
+    if (m_doc)
+        m_doc->release();
+}
+
+void XMLAAPImpl::regAttributes() const
+{
+    for (map<xstring,AttributeRule*>::const_iterator i=m_attrMap.begin(); i!=m_attrMap.end(); i++)
+    {
+        if (i->second->getFactory()==NULL)
+            SAMLAttribute::regFactory(i->second->getName(),i->second->getNamespace(),AttributeFactory);
+        else
+        {
+            saml::NDC ndc("regAttributes");
+            Category::getInstance(SHIB_LOGCAT".XMLAAPImpl").error("do not support custom attribute factories yet");
+        }
+    }
+}
+
+XMLAAPImpl::AttributeRule::AttributeRule(const DOMElement* e) :
+    m_factory(XMLString::transcode(e->getAttributeNS(NULL,SHIB_L(Factory)))),
+    m_alias(XMLString::transcode(e->getAttributeNS(NULL,SHIB_L(Alias)))),
+    m_header(XMLString::transcode(e->getAttributeNS(NULL,SHIB_L(Header))))
+    
+{
+    m_name=e->getAttributeNS(NULL,SHIB_L(Name));
+    m_namespace=e->getAttributeNS(NULL,SHIB_L(Namespace));
+    if (!m_namespace || !*m_namespace)
+        m_namespace=Constants::SHIB_ATTRIBUTE_NAMESPACE_URI;
+    
+    // Check for an AnySite rule.
+    DOMNode* anysite = e->getFirstChild();
+    while (anysite && anysite->getNodeType()!=DOMNode::ELEMENT_NODE)
+    {
+        anysite = anysite->getNextSibling();
+        continue;
+    }
+
+    if (anysite && !XMLString::compareString(XML::SHIB_NS,static_cast<DOMElement*>(anysite)->getNamespaceURI()) &&
+        !XMLString::compareString(SHIB_L(AnySite),static_cast<DOMElement*>(anysite)->getLocalName()))
+    {
+        // Check for an AnyValue rule.
+        DOMNode* anyval = anysite->getFirstChild();
+        while (anyval && anyval->getNodeType()!=DOMNode::ELEMENT_NODE)
+        {
+            anyval = anyval->getNextSibling();
+            continue;
+        }
+
+        if (anyval && !XMLString::compareString(XML::SHIB_NS,static_cast<DOMElement*>(anyval)->getNamespaceURI()) &&
+            !XMLString::compareString(SHIB_L(AnyValue),static_cast<DOMElement*>(anyval)->getLocalName()))
+        {
+            m_anySiteRule.anyValue=true;
+        }
+        else
+        {
+            // Process each Value element.
+            DOMNodeList* vlist = static_cast<DOMElement*>(anysite)->getElementsByTagNameNS(XML::SHIB_NS,XML::Literals::Value);
+            for (int j=0; vlist && j<vlist->getLength(); j++)
+            {
+                DOMElement* ve=static_cast<DOMElement*>(vlist->item(j));
+                DOMNode* valnode=ve->getFirstChild();
+                if (valnode && valnode->getNodeType()==DOMNode::TEXT_NODE)
+                {
+                    if (!XMLString::compareString(SHIB_L(literal),ve->getAttributeNS(NULL,SHIB_L(Type))))
+                        m_anySiteRule.valueRules.push_back(pair<value_type,const XMLCh*>(literal,valnode->getNodeValue()));
+                    else if (!XMLString::compareString(SHIB_L(regexp),ve->getAttributeNS(NULL,SHIB_L(Type))))
+                        m_anySiteRule.valueRules.push_back(pair<value_type,const XMLCh*>(regexp,valnode->getNodeValue()));
+                    else if (!XMLString::compareString(SHIB_L(xpath),ve->getAttributeNS(NULL,SHIB_L(Type))))
+                        m_anySiteRule.valueRules.push_back(pair<value_type,const XMLCh*>(xpath,valnode->getNodeValue()));
+                }
+            }
+        }
+    }
+
+    // Loop over the SiteRule elements.
+    DOMNodeList* slist = e->getElementsByTagNameNS(XML::SHIB_NS,SHIB_L(SiteRule));
+    for (int k=0; slist && k<slist->getLength(); k++)
+    {
+        m_siteMap[static_cast<DOMElement*>(slist->item(k))->getAttributeNS(NULL,SHIB_L(Name))]=SiteRule();
+        SiteRule& srule=m_siteMap[static_cast<DOMElement*>(slist->item(k))->getAttributeNS(NULL,SHIB_L(Name))];
+
+        // Check for an AnyValue rule.
+        DOMNode* anyval = slist->item(k)->getFirstChild();
+        while (anyval && anyval->getNodeType()!=DOMNode::ELEMENT_NODE)
+        {
+            anyval = anyval->getNextSibling();
+            continue;
+        }
+
+        if (anyval && !XMLString::compareString(XML::SHIB_NS,static_cast<DOMElement*>(anyval)->getNamespaceURI()) &&
+            !XMLString::compareString(SHIB_L(AnyValue),static_cast<DOMElement*>(anyval)->getLocalName()))
+        {
+            srule.anyValue=true;
+        }
+        else
+        {
+            // Process each Value element.
+            DOMNodeList* vlist = static_cast<DOMElement*>(slist->item(k))->getElementsByTagNameNS(XML::SHIB_NS,SHIB_L(Value));
+            for (int j=0; vlist && j<vlist->getLength(); j++)
+            {
+                DOMElement* ve=static_cast<DOMElement*>(vlist->item(j));
+                DOMNode* valnode=ve->getFirstChild();
+                if (valnode && valnode->getNodeType()==DOMNode::TEXT_NODE)
+                {
+                    if (!XMLString::compareString(SHIB_L(literal),ve->getAttributeNS(NULL,SHIB_L(Type))))
+                        srule.valueRules.push_back(pair<value_type,const XMLCh*>(literal,valnode->getNodeValue()));
+                    else if (!XMLString::compareString(SHIB_L(regexp),ve->getAttributeNS(NULL,SHIB_L(Type))))
+                        srule.valueRules.push_back(pair<value_type,const XMLCh*>(regexp,valnode->getNodeValue()));
+                    else if (!XMLString::compareString(SHIB_L(xpath),ve->getAttributeNS(NULL,SHIB_L(Type))))
+                        srule.valueRules.push_back(pair<value_type,const XMLCh*>(xpath,valnode->getNodeValue()));
+                }
+            }
+        }
+    }
+}
+
+XMLAAP::XMLAAP(const char* pathname) : m_filestamp(0), m_source(pathname), m_impl(NULL)
+{
+#ifdef WIN32
+    struct _stat stat_buf;
+    if (_stat(pathname, &stat_buf) == 0)
+#else
+    struct stat stat_buf;
+    if (stat(pathname, &stat_buf) == 0)
+#endif
+        m_filestamp=stat_buf.st_mtime;
+    m_impl=new XMLAAPImpl(pathname);
+    SAMLConfig::getConfig().saml_lock();
+    m_impl->regAttributes();
+    SAMLConfig::getConfig().saml_unlock();
+    m_lock=RWLock::create();
+}
+
+XMLAAP::~XMLAAP()
+{
+    delete m_lock;
+    delete m_impl;
+}
+
+void XMLAAP::lock()
+{
+    m_lock->rdlock();
+
+    // Check if we need to refresh.
+#ifdef WIN32
+    struct _stat stat_buf;
+    if (_stat(m_source.c_str(), &stat_buf) == 0)
+#else
+    struct stat stat_buf;
+    if (stat(m_source.c_str(), &stat_buf) == 0)
+#endif
+    {
+        if (m_filestamp>0 && m_filestamp<stat_buf.st_mtime)
+        {
+            // Elevate lock and recheck.
+            m_lock->unlock();
+            m_lock->wrlock();
+            if (m_filestamp>0 && m_filestamp<stat_buf.st_mtime)
+            {
+                try
+                {
+                    XMLAAPImpl* new_mapper=new XMLAAPImpl(m_source.c_str());
+                    SAMLConfig::getConfig().saml_lock();
+                    delete m_impl;
+                    m_impl=new_mapper;
+                    m_impl->regAttributes();
+                    SAMLConfig::getConfig().saml_unlock();
+                    m_filestamp=stat_buf.st_mtime;
+                    m_lock->unlock();
+                }
+                catch(SAMLException& e)
+                {
+                    m_lock->unlock();
+                    saml::NDC ndc("lock");
+                    Category::getInstance(SHIB_LOGCAT".XMLAAP").error("failed to reload AAP, sticking with what we have: %s", e.what());
+                }
+                catch(...)
+                {
+                    m_lock->unlock();
+                    saml::NDC ndc("lock");
+                    Category::getInstance(SHIB_LOGCAT".XMLAAP").error("caught an unknown exception, sticking with what we have");
+                }
+            }
+            else
+            {
+                m_lock->unlock();
+            }
+            m_lock->rdlock();
+        }
+    }
+}
+
+void XMLAAP::unlock()
+{
+    m_lock->unlock();
+}
+
+const IAttributeRule* XMLAAP::lookup(const XMLCh* attrName, const XMLCh* attrNamespace) const
+{
+    map<xstring,XMLAAPImpl::AttributeRule*>::const_iterator i=m_impl->m_attrMap.find(
+        xstring(attrName) + chBang + chBang + (attrNamespace ? attrNamespace : Constants::SHIB_ATTRIBUTE_NAMESPACE_URI)
+        );
+    return (i==m_impl->m_attrMap.end()) ? NULL : i->second;
+}
+
+const IAttributeRule* XMLAAP::lookup(const char* alias) const
+{
+    map<string,const IAttributeRule*>::const_iterator i=m_impl->m_aliasMap.find(alias);
+    return (i==m_impl->m_aliasMap.end()) ? NULL : i->second;
+}
+
+Iterator<const IAttributeRule*> XMLAAP::getAttributeRules() const
+{
+    return m_impl->m_attrs;
+}
+
+bool XMLAAPImpl::AttributeRule::accept(const XMLCh* originSite, const DOMElement* e) const
 {
     NDC ndc("accept");
-    log4cpp::Category& log=log4cpp::Category::getInstance(SHIB_LOGCAT".AAP");
+    log4cpp::Category& log=log4cpp::Category::getInstance(SHIB_LOGCAT".XMLAAPImpl");
     
     if (log.isDebugEnabled())
     {
-        auto_ptr<char> temp(XMLString::transcode(name));
+        auto_ptr<char> temp(XMLString::transcode(m_name));
         auto_ptr<char> temp2(XMLString::transcode(originSite));
         log.debug("evaluating value for attribute %s from site %s",temp.get(),temp2.get());
-    }
-
-    map<xstring,AttributeRule>::const_iterator arule=m_attrMap.find(name);
-    if (arule==m_attrMap.end())
-    {
-        if (log.isWarnEnabled())
-        {
-            auto_ptr<char> temp(XMLString::transcode(name));
-            log.warn("attribute %s not found in AAP, any value is rejected",temp.get());
-        }
-        return false;
     }
 
     // Don't currently support non-simple content models...
@@ -247,28 +422,27 @@ bool AAP::accept(const XMLCh* name, const XMLCh* originSite, DOMElement* e)
         return false;
     }
 
-    if (arule->second.m_anySiteRule.anyValue)
+    if (m_anySiteRule.anyValue)
     {
         log.debug("any site, any value, match");
         return true;
     }
 
-    for (vector<pair<AttributeRule::value_type,xstring> >::const_iterator i=arule->second.m_anySiteRule.valueRules.begin();
-            i!=arule->second.m_anySiteRule.valueRules.end(); i++)
+    for (vector<pair<value_type,const XMLCh*> >::const_iterator i=m_anySiteRule.valueRules.begin(); i!=m_anySiteRule.valueRules.end(); i++)
     {
-        if (i->first==AttributeRule::literal)
+        if (i->first==literal)
         {
-            if (i->second==n->getNodeValue())
+            if (!XMLString::compareString(i->second,n->getNodeValue()))
             {
                 log.debug("any site, literal match");
                 return true;
             }
         }
-        else if (i->first==AttributeRule::regexp)
+        else if (i->first==regexp)
         {
             try
             {
-                RegularExpression re(i->second.c_str());
+                RegularExpression re(i->second);
                 if (re.matches(n->getNodeValue()))
                 {
                     log.debug("any site, regexp match");
@@ -286,12 +460,12 @@ bool AAP::accept(const XMLCh* name, const XMLCh* originSite, DOMElement* e)
             log.warn("implementation does not support XPath value rules");
     }
 
-    map<xstring,AttributeRule::SiteRule>::const_iterator srule=arule->second.m_siteMap.find(originSite);
-    if (srule==arule->second.m_siteMap.end())
+    map<xstring,SiteRule>::const_iterator srule=m_siteMap.find(originSite);
+    if (srule==m_siteMap.end())
     {
         if (log.isWarnEnabled())
         {
-            auto_ptr<char> temp(XMLString::transcode(name));
+            auto_ptr<char> temp(XMLString::transcode(m_name));
             auto_ptr<char> temp2(XMLString::transcode(originSite));
             log.warn("site %s not found in attribute %s ruleset, any value is rejected",temp2.get(),temp.get());
         }
@@ -304,22 +478,21 @@ bool AAP::accept(const XMLCh* name, const XMLCh* originSite, DOMElement* e)
         return true;
     }
 
-    for (vector<pair<AttributeRule::value_type,xstring> >::const_iterator j=srule->second.valueRules.begin();
-            j!=srule->second.valueRules.end(); j++)
+    for (vector<pair<value_type,const XMLCh*> >::const_iterator j=srule->second.valueRules.begin(); j!=srule->second.valueRules.end(); j++)
     {
-        if (j->first==AttributeRule::literal)
+        if (j->first==literal)
         {
-            if (j->second==n->getNodeValue())
+            if (!XMLString::compareString(j->second,n->getNodeValue()))
             {
                 log.debug("matching site, literal match");
                 return true;
             }
         }
-        else if (j->first==AttributeRule::regexp)
+        else if (j->first==regexp)
         {
             try
             {
-                RegularExpression re(j->second.c_str());
+                RegularExpression re(j->second);
                 if (re.matches(n->getNodeValue()))
                 {
                     log.debug("matching site, regexp match");
@@ -339,7 +512,7 @@ bool AAP::accept(const XMLCh* name, const XMLCh* originSite, DOMElement* e)
 
     if (log.isWarnEnabled())
     {
-        auto_ptr<char> temp(XMLString::transcode(name));
+        auto_ptr<char> temp(XMLString::transcode(m_name));
         auto_ptr<char> temp2(XMLString::transcode(n->getNodeValue()));
         log.warn("attribute %s value {%s} could not be validated by AAP, rejecting it",temp.get(),temp2.get());
     }

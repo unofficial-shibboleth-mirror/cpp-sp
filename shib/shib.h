@@ -70,6 +70,9 @@
 # define SHIB_EXPORTS
 #endif
 
+#define SHIB_L(s) shibboleth::XML::Literals::s
+#define SHIB_L_QNAME(p,s) shibboleth::XML::Literals::p##_##s
+
 namespace shibboleth
 {
 #ifdef NO_RTTI
@@ -149,6 +152,27 @@ namespace shibboleth
         virtual bool validate(const ISite* site, saml::Iterator<const XMLCh*> certs) const=0;
         virtual ~ITrust() {}
     };
+    
+    struct SHIB_EXPORTS IAttributeRule
+    {
+        virtual const XMLCh* getName() const=0;
+        virtual const XMLCh* getNamespace() const=0;
+        virtual const char* getFactory() const=0;
+        virtual const char* getAlias() const=0;
+        virtual const char* getHeader() const=0;
+        virtual bool accept(const XMLCh* originSite, const DOMElement* e) const=0;
+        virtual ~IAttributeRule() {}
+    };
+    
+    struct SHIB_EXPORTS IAAP
+    {
+        virtual void lock()=0;
+        virtual void unlock()=0;
+        virtual const IAttributeRule* lookup(const XMLCh* attrName, const XMLCh* attrNamespace=NULL) const=0;
+        virtual const IAttributeRule* lookup(const char* alias) const=0;
+        virtual saml::Iterator<const IAttributeRule*> getAttributeRules() const=0;
+        virtual ~IAAP() {}
+    };
 
 #ifdef SHIB_INSTANTIATE
 # ifdef NO_RTTI
@@ -161,13 +185,21 @@ namespace shibboleth
     template class SHIB_EXPORTS saml::ArrayIterator<const IContactInfo*>;
     template class SHIB_EXPORTS saml::Iterator<const IAuthority*>;
     template class SHIB_EXPORTS saml::ArrayIterator<const IAuthority*>;
+    template class SHIB_EXPORTS saml::Iterator<const IAttributeRule*>;
+    template class SHIB_EXPORTS saml::ArrayIterator<const IAttributeRule*>;
+    template class SHIB_EXPORTS saml::Iterator<IMetadata*>;
+    template class SHIB_EXPORTS saml::ArrayIterator<IMetadata*>;
+    template class SHIB_EXPORTS saml::Iterator<ITrust*>;
+    template class SHIB_EXPORTS saml::ArrayIterator<ITrust*>;
+    template class SHIB_EXPORTS saml::Iterator<IAAP*>;
+    template class SHIB_EXPORTS saml::ArrayIterator<IAAP*>;
 #endif
 
     class SHIB_EXPORTS SimpleAttribute : public saml::SAMLAttribute
     {
     public:
         SimpleAttribute(const XMLCh* name, const XMLCh* ns, long lifetime=0,
-                        const saml::Iterator<const XMLCh*>& values=saml::Iterator<const XMLCh*>());
+                        const saml::Iterator<const XMLCh*>& values=EMPTY(const XMLCh*));
         SimpleAttribute(DOMElement* e);
         virtual saml::SAMLObject* clone() const;
         virtual ~SimpleAttribute();
@@ -182,8 +214,8 @@ namespace shibboleth
     {
     public:
         ScopedAttribute(const XMLCh* name, const XMLCh* ns, long lifetime=0,
-                        const saml::Iterator<const XMLCh*>& scopes=saml::Iterator<const XMLCh*>(),
-                        const saml::Iterator<const XMLCh*>& values=saml::Iterator<const XMLCh*>());
+                        const saml::Iterator<const XMLCh*>& scopes=EMPTY(const XMLCh*),
+                        const saml::Iterator<const XMLCh*>& values=EMPTY(const XMLCh*));
         ScopedAttribute(DOMElement* e);
         virtual ~ScopedAttribute();
 
@@ -222,9 +254,9 @@ namespace shibboleth
             time_t authInstant,
             const saml::Iterator<saml::SAMLAuthorityBinding*>& bindings,
             XSECCryptoKey* responseKey,
-            const saml::Iterator<XSECCryptoX509*>& responseCerts=saml::Iterator<XSECCryptoX509*>(),
+            const saml::Iterator<XSECCryptoX509*>& responseCerts=EMPTY(XSECCryptoX509*),
             XSECCryptoKey* assertionKey=NULL,
-            const saml::Iterator<XSECCryptoX509*>& assertionCerts=saml::Iterator<XSECCryptoX509*>()
+            const saml::Iterator<XSECCryptoX509*>& assertionCerts=EMPTY(XSECCryptoX509*)
             );
         virtual bool checkReplayCache(const saml::SAMLAssertion& a);
 
@@ -264,9 +296,9 @@ namespace shibboleth
             time_t authInstant,
             const saml::Iterator<saml::SAMLAuthorityBinding*>& bindings,
             XSECCryptoKey* responseKey,
-            const saml::Iterator<XSECCryptoX509*>& responseCerts=saml::Iterator<XSECCryptoX509*>(),
+            const saml::Iterator<XSECCryptoX509*>& responseCerts=EMPTY(XSECCryptoX509*),
             XSECCryptoKey* assertionKey=NULL,
-            const saml::Iterator<XSECCryptoX509*>& assertionCerts=saml::Iterator<XSECCryptoX509*>()
+            const saml::Iterator<XSECCryptoX509*>& assertionCerts=EMPTY(XSECCryptoX509*)
             );
 
     protected:
@@ -317,8 +349,26 @@ namespace shibboleth
         ITrust* m_mapper;
     };
 
+    class SHIB_EXPORTS AAP
+    {
+    public:
+        AAP(const XMLCh* attrName, const XMLCh* attrNamespace=NULL);
+        AAP(const char* alias);
+        ~AAP();
+        bool fail() const {return m_mapper==NULL;}
+        const IAttributeRule* operator->() const {return m_rule;}
+        operator const IAttributeRule*() const {return m_rule;}
+        
+    private:
+        AAP(const AAP&);
+        void operator=(const AAP&);
+        IAAP* m_mapper;
+        const IAttributeRule* m_rule;
+    };
+
     extern "C" { typedef IMetadata* MetadataFactory(const char* source); }
     extern "C" { typedef ITrust* TrustFactory(const char* source); }
+    extern "C" { typedef IAAP* AAPFactory(const char* source); }
     
     class SHIB_EXPORTS ShibConfig
     {
@@ -336,14 +386,15 @@ namespace shibboleth
         // allows pluggable implementations of metadata
         virtual void regFactory(const char* type, MetadataFactory* factory)=0;
         virtual void regFactory(const char* type, TrustFactory* factory)=0;
+        virtual void regFactory(const char* type, AAPFactory* factory)=0;
         virtual void unregFactory(const char* type)=0;
         
         // builds a specific metadata lookup object
         virtual bool addMetadata(const char* type, const char* source)=0;
         
-    /* start of external configuration */
-        std::string aapFile;
-    /* end of external configuration */
+        virtual saml::Iterator<IMetadata*> getMetadataProviders() const=0;
+        virtual saml::Iterator<ITrust*> getTrustProviders() const=0;
+        virtual saml::Iterator<IAAP*> getAAPProviders() const=0;
     };
 
     struct SHIB_EXPORTS Constants
@@ -365,6 +416,8 @@ namespace shibboleth
             // Shibboleth vocabulary
             static const XMLCh AttributeValueType[];
 
+            static const XMLCh Scope[];
+
             static const XMLCh AttributeAuthority[];
             static const XMLCh Contact[];
             static const XMLCh Domain[];
@@ -380,10 +433,14 @@ namespace shibboleth
             static const XMLCh KeyAuthority[];
             static const XMLCh Trust[];
 
+            static const XMLCh Alias[];
             static const XMLCh AnySite[];
             static const XMLCh AnyValue[];
             static const XMLCh AttributeAcceptancePolicy[];
             static const XMLCh AttributeRule[];
+            static const XMLCh Factory[];
+            static const XMLCh Header[];
+            static const XMLCh Namespace[];
             static const XMLCh SiteRule[];
             static const XMLCh Type[];
             static const XMLCh Value[];

@@ -359,34 +359,3 @@ const ISite* XMLMetadata::lookup(const XMLCh* site) const
     map<xstring,XMLMetadataImpl::OriginSite*>::const_iterator i=m_impl->m_sites.find(site);
     return (i==m_impl->m_sites.end()) ? NULL : i->second;
 }
-
-                        /*
-                        // Look for ds:KeyInfo.
-                        DOMNode* ki=os_child->getFirstChild();
-                        while (ki && ki->getNodeType()!=DOMNode::ELEMENT_NODE)
-                            ki=ki->getNextSibling();
-                        if (ki && !XMLString::compareString(saml::XML::XMLSIG_NS,ki->getNamespaceURI()) &&
-                            !XMLString::compareString(saml::XML::Literals::KeyInfo,ki->getNamespaceURI()))
-                        {
-                            // Look for ds:X509Data.
-                            DOMNode* xdata=ki->getFirstChild();
-                            while (xdata && xdata->getNodeType()!=DOMNode::ELEMENT_NODE)
-                                xdata=xdata->getNextSibling();
-                            if (xdata && !XMLString::compareString(saml::XML::XMLSIG_NS,xdata->getNamespaceURI()) &&
-                                !XMLString::compareString(saml::XML::Literals::X509Data,xdata->getNamespaceURI()))
-                            {
-                                // Look for ds:X509Certificate.
-                                DOMNode* x509=xdata->getFirstChild();
-                                while (x509 && x509->getNodeType()!=DOMNode::ELEMENT_NODE)
-                                    x509=x509->getNextSibling();
-                                if (x509 && !XMLString::compareString(saml::XML::XMLSIG_NS,x509->getNamespaceURI()) &&
-                                    !XMLString::compareString(saml::XML::Literals::X509Certificate,x509->getNamespaceURI()))
-                                {
-                                    auto_ptr<char> blob(XMLString::transcode(x509->getFirstChild()->getNodeValue()));
-                                    XSECCryptoX509* cert=new OpenSSLCryptoX509();
-                                    cert->loadX509Base64Bin(blob.get(),strlen(blob.get()));
-                                    m_hsCerts[hs_name.get()]=cert;
-                                }
-                            }
-                        }
-                        */

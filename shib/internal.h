@@ -115,56 +115,59 @@ namespace shibboleth
         XMLTrustImpl* m_impl;
     };
 
-    class AAP
+    class XMLAAPImpl;
+    class SHIB_EXPORTS XMLAAP : public IAAP
     {
     public:
-        AAP(const char* uri);
-        bool accept(const XMLCh* name, const XMLCh* originSite, DOMElement* e);
+        XMLAAP(const char* pathname);
+        ~XMLAAP();
+        
+        void lock();
+        void unlock();
+        const IAttributeRule* lookup(const XMLCh* attrName, const XMLCh* attrNamespace=NULL) const;
+        const IAttributeRule* lookup(const char* alias) const;
+        saml::Iterator<const IAttributeRule*> getAttributeRules() const;
 
     private:
-        struct AttributeRule
-        {
-            enum value_type { literal, regexp, xpath };
-            struct SiteRule
-            {
-                SiteRule() : anyValue(false) {}
-                bool anyValue;
-                std::vector<std::pair<value_type,saml::xstring> > valueRules;
-            };
-
-            SiteRule m_anySiteRule;
-            std::map<saml::xstring,SiteRule> m_siteMap;
-        };
-
-        std::map<saml::xstring,AttributeRule> m_attrMap;
+        std::string m_source;
+        time_t m_filestamp;
+        RWLock* m_lock;
+        XMLAAPImpl* m_impl;
     };
-
+    
     class ShibInternalConfig : public ShibConfig
     {
     public:
-        ShibInternalConfig() : m_AAP(NULL) {}
+        ShibInternalConfig() {}
 
         bool init();
         void term();
 
         void regFactory(const char* type, MetadataFactory* factory);
         void regFactory(const char* type, TrustFactory* factory);
+        void regFactory(const char* type, AAPFactory* factory);
         void unregFactory(const char* type);
         
         bool addMetadata(const char* type, const char* source);
 
-        AAP* m_AAP;
-        
+        saml::Iterator<IMetadata*> getMetadataProviders() const {return m_providers;}
+        saml::Iterator<ITrust*> getTrustProviders() const {return m_trust_providers;}
+        saml::Iterator<IAAP*> getAAPProviders() const {return m_aap_providers;}
+
     private:
         friend class OriginMetadata;
         friend class Trust;
+        friend class AAP;
         
         typedef std::map<std::string, MetadataFactory*> MetadataFactoryMap;
         typedef std::map<std::string, TrustFactory*> TrustFactoryMap;
-        MetadataFactoryMap m_metadataFactoryMap;        
-        TrustFactoryMap m_trustFactoryMap;        
+        typedef std::map<std::string, AAPFactory*> AAPFactoryMap;
+        MetadataFactoryMap m_metadataFactoryMap;
+        TrustFactoryMap m_trustFactoryMap;
+        AAPFactoryMap m_aapFactoryMap;
         std::vector<IMetadata*> m_providers;
         std::vector<ITrust*> m_trust_providers;
+        std::vector<IAAP*> m_aap_providers;
     };
 }
 
