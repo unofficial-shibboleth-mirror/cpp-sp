@@ -1,0 +1,43 @@
+OUTDIR		= lib
+BINDIR		= bin
+CFLAGS		= -DSOLARIS -Kpic -mt -fast -I. -Iinclude -I../../opensaml/c/include \
+              -I/usr/local/include
+CCFLAGS		= $(CFLAGS)
+LDFLAGS		= -lCrun -lCstd -L/usr/local/lib -L$(OUTDIR) -L../../opensaml/c/lib \
+              -luuid -lcurl -lxerces-c1_7_0 -lsaml
+SHIB_OBJS 	= \
+	shib/Constants.o \
+	shib/SAMLBindingFactory.o \
+	shib/ShibConfig.o \
+	shib/XML.o
+
+EDUPERSON_OBJS = \
+	eduPerson/ScopedAttribute.o
+
+
+all:	dirs $(OUTDIR)/libshib.so $(OUTDIR)/libeduPerson.so bin/ $(BINDIR)/shibtest
+	chmod 755 $(OUTDIR)/*
+	@echo
+	@echo "finished building shib libraries"
+	@echo
+
+dirs:
+	if test ! -d $(OUTDIR); then mkdir $(OUTDIR); fi
+	if test ! -d $(BINDIR); then mkdir $(BINDIR); fi
+
+$(OUTDIR)/libshib.so:	$(SHIB_OBJS)
+	$(CCC) $(CCFLAGS) $(SHIB_OBJS) -o $@ -G $(LDFLAGS)
+
+$(OUTDIR)/libeduPerson.so:	$(EDUPERSON_OBJS)
+	$(CCC) $(CCFLAGS) $(EDUPERSON_OBJS) -o $@ -G $(LDFLAGS) -lshib
+
+$(BINDIR)/shibtest: shibtest/shibtest.cpp
+	$(CCC) $(CCFLAGS) shibtest/shibtest.cpp -o $@ $(LDFLAGS) -lshib -leduPerson
+
+.SUFFIXES:	.cpp
+
+.cpp.o:
+	$(COMPILE.C) $< -o $*.o
+
+clean:
+	rm -f shib/*.o eduPerson.*.o shibtest/*.o $(OUTDIR)/* $(BINDIR)/*
