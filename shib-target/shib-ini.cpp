@@ -356,85 +356,82 @@ XMLApplication::XMLApplication(const DOMElement* e, const XMLApplication* base) 
         // First load any property sets.
         load(e,log,this);
 
-        // The rest of the content if any is inside the Policy container.
         ShibTargetConfig& conf=ShibTargetConfig::getConfig();
-        const IPropertySet* policy=getPropertySet("Policy");
-        if (policy) {
-            int i;
-            DOMNodeList* nlist=policy->getElement()->getElementsByTagNameNS(saml::XML::SAML_NS,L(AttributeDesignator));
+        ShibConfig& shibConf=ShibConfig::getConfig();
+        int i;
+        DOMNodeList* nlist=e->getElementsByTagNameNS(saml::XML::SAML_NS,L(AttributeDesignator));
+        for (i=0; nlist && i<nlist->getLength(); i++) {
+            m_designators.push_back(new SAMLAttributeDesignator(static_cast<DOMElement*>(nlist->item(i))));
+        }
+
+        nlist=e->getElementsByTagNameNS(saml::XML::SAML_NS,L(Audience));
+        for (i=0; nlist && i<nlist->getLength(); i++) {
+            m_audiences.push_back(nlist->item(i)->getFirstChild()->getNodeValue());
+        }
+        // Always include our own providerId as an audience.
+        m_audiences.push_back(getXMLString("providerId").second);
+
+        if (conf.isEnabled(ShibTargetConfig::AAP)) {
+            nlist=e->getElementsByTagNameNS(ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(AAPProvider));
             for (i=0; nlist && i<nlist->getLength(); i++) {
-                m_designators.push_back(new SAMLAttributeDesignator(static_cast<DOMElement*>(nlist->item(i))));
+                auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
+                log.info("building AAP provider of type %s...",type.get());
+                IPlugIn* plugin=shibConf.m_plugMgr.newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
+                IAAP* aap=dynamic_cast<IAAP*>(plugin);
+                if (aap)
+                    m_aaps.push_back(aap);
+                else {
+                    delete plugin;
+                    log.fatal("plugin was not an AAP provider");
+                    throw UnsupportedExtensionException("plugin was not an AAP provider");
+                }
             }
+        }
 
-            nlist=policy->getElement()->getElementsByTagNameNS(saml::XML::SAML_NS,L(Audience));
+        if (conf.isEnabled(ShibTargetConfig::Metadata)) {
+            nlist=e->getElementsByTagNameNS(ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(FederationProvider));
             for (i=0; nlist && i<nlist->getLength(); i++) {
-                m_audiences.push_back(nlist->item(i)->getFirstChild()->getNodeValue());
-            }
-            // Always include our own providerId as an audience.
-            m_audiences.push_back(getXMLString("providerId").second);
-
-            if (conf.isEnabled(ShibTargetConfig::AAP)) {
-                nlist=policy->getElement()->getElementsByTagNameNS(ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(AAPProvider));
-                for (i=0; nlist && i<nlist->getLength(); i++) {
-                    auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
-                    log.info("building AAP provider of type %s...",type.get());
-                    IPlugIn* plugin=ShibConfig::getConfig().m_plugMgr.newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
-                    IAAP* aap=dynamic_cast<IAAP*>(plugin);
-                    if (aap)
-                        m_aaps.push_back(aap);
-                    else {
-                        delete plugin;
-                        log.fatal("plugin was not an AAP provider");
-                        throw UnsupportedExtensionException("plugin was not an AAP provider");
-                    }
+                auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
+                log.info("building federation/metadata provider of type %s...",type.get());
+                IPlugIn* plugin=shibConf.m_plugMgr.newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
+                IMetadata* md=dynamic_cast<IMetadata*>(plugin);
+                if (md)
+                    m_metadatas.push_back(md);
+                else {
+                    delete plugin;
+                    log.fatal("plugin was not a federation/metadata provider");
+                    throw UnsupportedExtensionException("plugin was not a federation/metadata provider");
                 }
             }
+        }
 
-            if (conf.isEnabled(ShibTargetConfig::Metadata)) {
-                nlist=policy->getElement()->getElementsByTagNameNS(ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(FederationProvider));
-                for (i=0; nlist && i<nlist->getLength(); i++) {
-                    auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
-                    log.info("building federation/metadata provider of type %s...",type.get());
-                    IPlugIn* plugin=ShibConfig::getConfig().m_plugMgr.newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
-                    IMetadata* md=dynamic_cast<IMetadata*>(plugin);
-                    if (md)
-                        m_metadatas.push_back(md);
-                    else {
-                        delete plugin;
-                        log.fatal("plugin was not a federation/metadata provider");
-                        throw UnsupportedExtensionException("plugin was not a federation/metadata provider");
-                    }
+        if (conf.isEnabled(ShibTargetConfig::Trust)) {
+            nlist=e->getElementsByTagNameNS(ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(TrustProvider));
+            for (i=0; nlist && i<nlist->getLength(); i++) {
+                auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
+                log.info("building trust provider of type %s...",type.get());
+                IPlugIn* plugin=shibConf.m_plugMgr.newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
+                ITrust* trust=dynamic_cast<ITrust*>(plugin);
+                if (trust)
+                    m_trusts.push_back(trust);
+                else {
+                    delete plugin;
+                    log.fatal("plugin was not a trust provider");
+                    throw UnsupportedExtensionException("plugin was not a trust provider");
                 }
             }
-
-            if (conf.isEnabled(ShibTargetConfig::Trust)) {
-                nlist=policy->getElement()->getElementsByTagNameNS(ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(TrustProvider));
-                for (i=0; nlist && i<nlist->getLength(); i++) {
-                    auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
-                    log.info("building trust provider of type %s...",type.get());
-                    IPlugIn* plugin=ShibConfig::getConfig().m_plugMgr.newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
-                    ITrust* trust=dynamic_cast<ITrust*>(plugin);
-                    if (trust)
-                        m_trusts.push_back(trust);
-                    else {
-                        delete plugin;
-                        log.fatal("plugin was not a trust provider");
-                        throw UnsupportedExtensionException("plugin was not a trust provider");
-                    }
-                }
-                nlist=policy->getElement()->getElementsByTagNameNS(ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(RevocationProvider));
-                for (i=0; nlist && i<nlist->getLength(); i++) {
-                    auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
-                    log.info("building revocation provider of type %s...",type.get());
-                    IPlugIn* plugin=ShibConfig::getConfig().m_plugMgr.newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
-                    IRevocation* rev=dynamic_cast<IRevocation*>(plugin);
-                    if (rev)
-                        m_revocations.push_back(rev);
-                    else {
-                        delete plugin;
-                        log.fatal("plugin was not a revocation provider");
-                        throw UnsupportedExtensionException("plugin was not a revocation provider");
-                    }
+            nlist=e->getElementsByTagNameNS(ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(RevocationProvider));
+            for (i=0; nlist && i<nlist->getLength(); i++) {
+                auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
+                log.info("building revocation provider of type %s...",type.get());
+                IPlugIn* plugin=shibConf.m_plugMgr.newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
+                IRevocation* rev=dynamic_cast<IRevocation*>(plugin);
+                if (rev)
+                    m_revocations.push_back(rev);
+                else {
+                    delete plugin;
+                    log.fatal("plugin was not a revocation provider");
+                    throw UnsupportedExtensionException("plugin was not a revocation provider");
                 }
             }
         }

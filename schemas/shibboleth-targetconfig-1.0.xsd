@@ -319,15 +319,25 @@
 		</annotation>
 		<complexType>
 			<sequence>
+				<any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
 				<element ref="conf:Sessions"/>
 				<element ref="conf:Errors"/>
-				<element ref="conf:Policy" minOccurs="0"/>
 				<element ref="conf:CredentialUse" minOccurs="0"/>
+				<choice minOccurs="0" maxOccurs="unbounded">
+                    <element ref="saml:AttributeDesignator"/>
+                    <element ref="saml:Audience"/>
+                    <element name="AAPProvider" type="conf:PluggableType"/>
+                    <element name="FederationProvider" type="conf:PluggableType"/>
+                    <element name="TrustProvider" type="conf:PluggableType"/>
+                    <element name="RevocationProvider" type="conf:PluggableType"/>
+				</choice>
 				<element ref="conf:Application" minOccurs="0" maxOccurs="unbounded"/>
-				<any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
 			</sequence>
 			<attribute name="id" type="string" fixed="default"/>
 			<attribute name="providerId" type="anyURI" use="required"/>
+			<attribute name="signRequest" type="boolean" use="optional" default="false"/>
+			<attribute name="signedResponse" type="boolean" use="optional" default="false"/>
+			<attribute name="signedAssertions" type="boolean" use="optional" default="false"/>
 	        <anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>
@@ -340,14 +350,24 @@
 		</annotation>
 		<complexType>
 			<sequence>
+				<any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
 				<element ref="conf:Sessions"/>
 				<element ref="conf:Errors" minOccurs="0"/>
-				<element ref="conf:Policy" minOccurs="0"/>
 				<element ref="conf:CredentialUse" minOccurs="0"/>
-				<any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+				<choice minOccurs="0" maxOccurs="unbounded">
+                    <element ref="saml:AttributeDesignator"/>
+                    <element ref="saml:Audience"/>
+                    <element name="AAPProvider" type="conf:PluggableType"/>
+                    <element name="FederationProvider" type="conf:PluggableType"/>
+                    <element name="TrustProvider" type="conf:PluggableType"/>
+                    <element name="RevocationProvider" type="conf:PluggableType"/>
+				</choice>
 			</sequence>
 			<attribute name="id" type="string" use="required"/>
 			<attribute name="providerId" type="anyURI" use="optional"/>
+			<attribute name="signRequest" type="boolean" use="optional" default="false"/>
+			<attribute name="signedResponse" type="boolean" use="optional" default="false"/>
+			<attribute name="signedAssertions" type="boolean" use="optional" default="false"/>
 	        <anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>
@@ -391,29 +411,6 @@
 		</complexType>
 	</element>
 
-	<element name="Policy">
-		<annotation>
-			<documentation>
-			Container for specifying various policies for attributes, trust, and federations
-			</documentation>
-		</annotation>
-		<complexType>
-			<sequence>
-				<element ref="saml:AttributeDesignator" minOccurs="0" maxOccurs="unbounded"/>
-				<element name="AAPProvider" type="conf:PluggableType" minOccurs="0" maxOccurs="unbounded"/>
-				<element name="FederationProvider" type="conf:PluggableType" minOccurs="0" maxOccurs="unbounded"/>
-				<element name="TrustProvider" type="conf:PluggableType" minOccurs="0" maxOccurs="unbounded"/>
-				<element name="RevocationProvider" type="conf:PluggableType" minOccurs="0" maxOccurs="unbounded"/>
-				<element ref="saml:Audience"  minOccurs="0" maxOccurs="unbounded"/>
-				<any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
-			</sequence>
-			<attribute name="signRequest" type="boolean" use="optional" default="false"/>
-			<attribute name="signedResponse" type="boolean" use="optional" default="false"/>
-			<attribute name="signedAssertions" type="boolean" use="optional" default="false"/>
-	        <anyAttribute namespace="##other" processContents="lax"/>
-		</complexType>
-	</element>
-	
 	<element name="CredentialUse">
 		<annotation>
 			<documentation>Container for specifying credentials to use</documentation>

@@ -92,76 +92,77 @@
         	wayfURL="https://wayf.internet2.edu/InQueue/WAYF"
             shireURL="/Shibboleth.shire" shireSSL="false"/>
 
-        <!-- You should customize the pages! You can add attributes with values that can be plugged in. -->
+        <!--
+        You should customize these pages! You can add attributes with values that can be plugged
+        into your templates.
+        -->
         <Errors shire="@-PKGSYSCONFDIR-@/shireError.html"
             rm="@-PKGSYSCONFDIR-@/rmError.html"
             access="@-PKGSYSCONFDIR-@/accessError.html"
             supportContact="root@localhost"
             logoLocation="/shibtarget/logo.jpg"
             styleSheet="/shibtarget/main.css"/>
-            
-        <Policy>
-            <!-- use designators to request specific attributes or none to ask for all -->
-            <!--
-            <saml:AttributeDesignator AttributeName="urn:mace:dir:attribute-def:eduPersonScopedAffiliation"
-                AttributeNamespace="urn:mace:shibboleth:1.0:attributeNamespace:uri"/>
-            <saml:AttributeDesignator AttributeName="urn:mace:dir:attribute-def:eduPersonTargetedID"
-                AttributeNamespace="urn:mace:shibboleth:1.0:attributeNamespace:uri"/>
-            -->
 
-            <!-- AAP can be inline or in a separate file -->
-            <AAPProvider type="edu.internet2.middleware.shibboleth.target.provider.XMLAAP" uri="@-PKGSYSCONFDIR-@/AAP.xml"/>
-            <!--
-            <AAPProvider type="edu.internet2.middleware.shibboleth.target.provider.XMLAAP"
-                <AttributeAcceptancePolicy xmlns="urn:mace:shibboleth:aap:1.0">
-                    <AttributeRule Name="urn:mace:dir:attribute-def:eduPersonPrincipalName" Header="REMOTE_USER" Alias="user">
-                        <AnySite>
-                            <AnyValue/>
-                        </AnySite>
-                    </AttributeRule>
-                </AttributeAcceptancePolicy>
-            </AAPProvider>
-            -->
-            
-            <!-- Metadata consists of site/operational metadata, trust, revocation providers. Can be external or inline. -->
-            <FederationProvider type="edu.internet2.middleware.shibboleth.common.provider.XMLMetadata"
-                uri="@-PKGSYSCONFDIR-@/IQ-sites.xml"/>
-            <FederationProvider type="edu.internet2.middleware.shibboleth.common.provider.XMLMetadata">
-				<SiteGroup Name="https://example.org/shibboleth" xmlns="urn:mace:shibboleth:1.0">
-					<OriginSite Name="https://example.org/shibboleth/origin">
-						<Alias>Localhost Test Deployment</Alias>
-						<Contact Type="technical" Name="Your Name Here" Email="root@localhost"/>
-						<HandleService Location="https://localhost/shibboleth/HS" Name="CN=localhost, O=Shibboleth Project, C=US"/>
-						<AttributeAuthority Location="https://localhost/shibboleth/AA" Name="CN=localhost, O=Shibboleth Project, C=US"/>
-						<Domain>localhost</Domain>
-					</OriginSite>
-				</SiteGroup>
-            </FederationProvider>
-            
-            <TrustProvider type="edu.internet2.middleware.shibboleth.common.provider.XMLTrust"
-                uri="@-PKGSYSCONFDIR-@/IQ-trust.xml"/>
-
-			<!--
-			Revocation using X.509 CRLs is an optional feature in some trust metadata or you may
-			supply your own revocation information locally.
-			-->
-            <!--
-            <RevocationProvider type="edu.internet2.middleware.shibboleth.common.provider.XMLRevocation"
-                uri="@-PKGSYSCONFDIR-@/IQ-trust.xml"/>
-            -->
-                        
-            <!-- zero or more SAML Audience condition matches -->
-            <saml:Audience>urn:mace:inqueue</saml:Audience>
-        </Policy>
-        
+		<!-- Indicates what credentials to use when communicating -->
         <CredentialUse TLS="defcreds" Signing="defcreds">
             <!-- RelyingParty elements customize credentials for specific origins or federations -->
             <!--
             <RelyingParty Name="urn:mace:inqueue" TLS="inqueuecreds" Signing="inqueuecreds"/>
             -->
         </CredentialUse>
-        
+            
+        <!-- Use designators to request specific attributes or none to ask for all -->
+        <!--
+        <saml:AttributeDesignator AttributeName="urn:mace:dir:attribute-def:eduPersonScopedAffiliation"
+            AttributeNamespace="urn:mace:shibboleth:1.0:attributeNamespace:uri"/>
+        <saml:AttributeDesignator AttributeName="urn:mace:dir:attribute-def:eduPersonTargetedID"
+            AttributeNamespace="urn:mace:shibboleth:1.0:attributeNamespace:uri"/>
+        -->
 
+        <!-- AAP can be inline or in a separate file -->
+        <AAPProvider type="edu.internet2.middleware.shibboleth.target.provider.XMLAAP" uri="@-PKGSYSCONFDIR-@/AAP.xml"/>
+        <!--
+        <AAPProvider type="edu.internet2.middleware.shibboleth.target.provider.XMLAAP"
+            <AttributeAcceptancePolicy xmlns="urn:mace:shibboleth:aap:1.0">
+                <AttributeRule Name="urn:mace:dir:attribute-def:eduPersonPrincipalName" Header="REMOTE_USER" Alias="user">
+                    <AnySite>
+                        <AnyValue/>
+                    </AnySite>
+                </AttributeRule>
+            </AttributeAcceptancePolicy>
+        </AAPProvider>
+        -->
+        
+        <!-- Metadata consists of site/operational metadata, trust, revocation providers. Can be external or inline. -->
+        <FederationProvider type="edu.internet2.middleware.shibboleth.common.provider.XMLMetadata"
+            uri="@-PKGSYSCONFDIR-@/IQ-sites.xml"/>
+        <FederationProvider type="edu.internet2.middleware.shibboleth.common.provider.XMLMetadata">
+			<SiteGroup Name="https://example.org/shibboleth" xmlns="urn:mace:shibboleth:1.0">
+				<OriginSite Name="https://example.org/shibboleth/origin">
+					<Alias>Localhost Test Deployment</Alias>
+					<Contact Type="technical" Name="Your Name Here" Email="root@localhost"/>
+					<HandleService Location="https://localhost/shibboleth/HS" Name="CN=localhost, O=Shibboleth Project, C=US"/>
+					<AttributeAuthority Location="https://localhost/shibboleth/AA" Name="CN=localhost, O=Shibboleth Project, C=US"/>
+					<Domain>localhost</Domain>
+				</OriginSite>
+			</SiteGroup>
+        </FederationProvider>
+        
+        <TrustProvider type="edu.internet2.middleware.shibboleth.common.provider.XMLTrust"
+            uri="@-PKGSYSCONFDIR-@/IQ-trust.xml"/>
+
+		<!--
+		Revocation using X.509 CRLs is an optional feature in some trust metadata or you may
+		supply your own revocation information locally.
+		-->
+        <!--
+        <RevocationProvider type="edu.internet2.middleware.shibboleth.common.provider.XMLRevocation"
+            uri="@-PKGSYSCONFDIR-@/IQ-trust.xml"/>
+        -->
+                    
+        <!-- zero or more SAML Audience condition matches -->
+        <saml:Audience>urn:mace:inqueue</saml:Audience>
+        
         <!--
         You can customize behavior of specific applications here. You must supply a complete <Sessions>
         element to inidicate a distinct shireURL and wayfURL for this application, along with any other
@@ -170,8 +171,8 @@
         RequestMap. The default elements inside the outer <Applications> element generally have to be
         overridden in an all or nothing fashion. That is, if you supply an <Errors> override, you MUST
         include all attributes you want to apply, as they will not be inherited. Similarly, if you
-        specify elements within <Policy> such as <FederationProvider>, they are not additive with the
-        defaults, but replace them.
+        specify an element such as <FederationProvider>, it is not additive with the defaults, but
+        replaces them.
         
         The example below shows a special application that requires use of SSL when establishing
         sessions, restricts the session cookie to SSL and a specific folder, and inherits most other
@@ -182,10 +183,8 @@
 	        <Sessions lifetime="7200" timeout="3600" checkAddress="true"
 	            shireURL="/secure/admin/Shibboleth.shire" shireSSL="true" cookieProps="; path=/secure/admin; secure"
 	            wayfURL="https://wayf.internet2.edu/InQueue/WAYF"/>
-            <Policy>
-                <saml:AttributeDesignator AttributeName="urn:mace:dir:attribute-def:eduPersonPrincipalName"
-                    AttributeNamespace="urn:mace:shibboleth:1.0:attributeNamespace:uri"/> 
-            </Policy>
+            <saml:AttributeDesignator AttributeName="urn:mace:dir:attribute-def:eduPersonPrincipalName"
+                AttributeNamespace="urn:mace:shibboleth:1.0:attributeNamespace:uri"/> 
         </Application>
         -->
 

@@ -684,21 +684,9 @@ SAMLResponse* InternalCCacheEntry::getNewResponse()
     }
 
     // Get signing policies.
-    bool signRequest=false;
-    bool signedResponse=false;
-    bool signedAssertions=false;
-    const IPropertySet* props=application->getPropertySet("Policy");
-    if (props) {
-        pair<bool,bool> flag=props->getBool("signRequest");
-        if (flag.first)
-            signRequest=flag.second;
-        flag=props->getBool("signedResponse");
-        if (flag.first)
-            signedResponse=flag.second;
-        flag=props->getBool("signedAssertions");
-        if (flag.first)
-            signedAssertions=flag.second;
-    }
+    pair<bool,bool> signRequest=application->getBool("signRequest");
+    pair<bool,bool> signedResponse=application->getBool("signedResponse");
+    pair<bool,bool> signedAssertions=application->getBool("signedAssertions");
     
     // Try this request. The binding wrapper class handles most of the details.
     Metadata m(application->getMetadataProviders());
@@ -736,7 +724,7 @@ SAMLResponse* InternalCCacheEntry::getNewResponse()
         auto_ptr<SAMLRequest> req(new SAMLRequest(EMPTY(QName),q));
         
         // Sign it? Highly doubtful we'll ever use this, but just for fun...
-        if (signRequest) {
+        if (signRequest.first && signRequest.second) {
             Credentials creds(conf->getCredentialsProviders());
             const ICredResolver* signingCred=creds.lookup(application->getSigningCred(site));
             req->sign(SIGNATURE_RSA,signingCred->getKey(),signingCred->getCertificates());
@@ -764,7 +752,7 @@ SAMLResponse* InternalCCacheEntry::getNewResponse()
         log->error("no response obtained");
         throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"Unable to obtain attributes from user's origin site.",AA);
     }
-    else if (signedResponse && !response->isSigned()) {
+    else if (signedResponse.first && signedResponse.second && !response->isSigned()) {
         delete response;
         log->error("unsigned response obtained, but we were told it must be signed.");
         throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"Unable to obtain attributes from user's origin site.",AA);
@@ -774,7 +762,7 @@ SAMLResponse* InternalCCacheEntry::getNewResponse()
     Iterator<SAMLAssertion*> a=response->getAssertions();
     for (unsigned long i=0; i < a.size();) {
         try {
-            if (signedAssertions && !(a[i]->isSigned())) {
+            if (signedAssertions.first && signedAssertions.second && !(a[i]->isSigned())) {
                 log->warn("removing unsigned assertion from response, in accordance with signedAssertions policy");
                 response->removeAssertion(i);
                 continue;
