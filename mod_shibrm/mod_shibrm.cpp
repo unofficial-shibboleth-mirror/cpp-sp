@@ -152,9 +152,9 @@ static command_rec shibrm_cmds[] = {
   {"ShibCookieName", (config_fn_t)ap_set_server_string_slot,
    (void *) XtOffsetOf (shibrm_server_config, szCookieName),
    RSRC_CONF, TAKE1, "Name of cookie to use as session token."},
-#endif
   {"ShibNormalizeRequest", (config_fn_t)set_normalize, NULL,
    RSRC_CONF, TAKE1, "Normalize/convert browser requests using server name when redirecting."},
+#endif
 
   {"AuthGroupFile", (config_fn_t)ap_set_file_slot,
    (void *) XtOffsetOf (shibrm_dir_config, szAuthGrpFile),
@@ -162,9 +162,12 @@ static command_rec shibrm_cmds[] = {
   {"ShibExportAssertion", (config_fn_t)ap_set_flag_slot,
    (void *) XtOffsetOf (shibrm_dir_config, bExportAssertion),
    OR_AUTHCFG, FLAG, "Export SAML assertion to Shibboleth-defined header?"},
+
+#if 0
   {"ShibCheckAddress", (config_fn_t)ap_set_flag_slot,
    (void *) XtOffsetOf (shibrm_dir_config, checkIPAddress),
    OR_AUTHCFG, FLAG, "Verify IP address of requester matches token?"},
+#endif
 
   {NULL}
 };

@@ -147,7 +147,7 @@ extern "C" const char* ap_set_server_string_slot(cmd_parms* parms, void*, const 
 
 extern "C" const char* set_normalize(cmd_parms* parms, shire_server_config* sc, const char* arg)
 {
-    sc->bNormalizeRequest=atoi(arg);
+    sc->bNormalizeRequest=(atoi(arg) || !strcasecmp(arg, "on"));
     return NULL;
 }
 
@@ -188,9 +188,10 @@ static command_rec shire_cmds[] = {
   {"ShibCookieName", (config_fn_t)ap_set_server_string_slot,
    (void *) XtOffsetOf (shire_server_config, szCookieName),
    RSRC_CONF, TAKE1, "Name of cookie to use as session token."},
+#endif
+
   {"ShibNormalizeRequest", (config_fn_t)set_normalize, NULL,
    RSRC_CONF, TAKE1, "Normalize/convert browser requests using server name when redirecting."},
-#endif
 
   {"ShibBasicHijack", (config_fn_t)ap_set_flag_slot,
    (void *) XtOffsetOf (shire_dir_config, bBasicHijack),
