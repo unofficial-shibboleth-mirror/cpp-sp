@@ -79,13 +79,11 @@ SAMLBrowserProfile::ArtifactMapper::ArtifactMapperResponse STArtifactMapper::map
         throw MetadataException("ArtifactMapper::map() metadata lookup failed, unable to determine artifact issuer");
     }
     
-    if (log.isInfoEnabled()) {
-        auto_ptr_char issuer(entity->getId());
-        log.info("lookup succeeded, artifact issued by (%s)", issuer.get());
-    }
-    
     SAMLBrowserProfile::ArtifactMapper::ArtifactMapperResponse amr;
-
+    auto_ptr_char issuer(entity->getId());
+    log.info("lookup succeeded, artifact issued by (%s)", issuer.get());
+    amr.source=issuer.get();
+    
     const IPropertySet* credUse=m_app->getCredentialUse(entity);
 
     // Depends on type of artifact.
@@ -175,5 +173,7 @@ SAMLBrowserProfile::ArtifactMapper::ArtifactMapperResponse STArtifactMapper::map
     }
     
     log.error("unable to locate acceptable binding endpoint to resolve artifact");
-    throw MetadataException("ArtifactMapper::map() unable to locate acceptable binding endpoint to resolve artifact");
+    MetadataException ex("Unable to locate acceptable binding endpoint to resolve artifact.");
+    annotateException(ex,entity,false);
+    throw ex;
 }

@@ -226,7 +226,7 @@ public:
   HTGroupTableApache(request_rec* r, const char *user, char *grpfile) {
     groups = groups_for_user(r, user, grpfile);
     if (!groups)
-      throw ShibTargetException(SHIBRPC_OK, "EEP");
+      throw ResourceAccessException("Unable to access group file ($1) for user ($2)",params(2,grpfile,user));
   }
   ~HTGroupTableApache() {}
   bool lookup(const char *entry) { return (ap_table_get(groups, entry)!=NULL); }
@@ -273,12 +273,11 @@ public:
   virtual string getPostData(void) {
     // Read the posted data
     if (ap_setup_client_block(m_req, REQUEST_CHUNKED_ERROR))
-      throw ShibTargetException(SHIBRPC_OK, "CGI setup_client_block failed");
+        throw FatalProfileException("Apache function (setup_client_block) failed while reading profile submission.");
     if (!ap_should_client_block(m_req))
-      throw ShibTargetException(SHIBRPC_OK, "CGI should_client_block failed");
+        throw FatalProfileException("Apache function (should_client_block) failed while reading profile submission.");
     if (m_req->remaining > 1024*1024)
-      throw ShibTargetException (SHIBRPC_OK, "CGI length too long...");
-
+        throw FatalProfileException("Blocked too-large a submission to profile endpoint.");
     string cgistr;
     char buff[HUGE_STRING_LEN];
     ap_hard_timeout("[mod_shib] getPostData", m_req);

@@ -77,63 +77,7 @@
 
 namespace shibtarget {
   
-  //******************************************************************************
-  // You probably don't care about much below this line
-  // unless you are using the lower-layer APIs provided by
-  // the shib target library.  Go to the end of the file to
-  // find the ShibTarget class -- you probably wnat to use that.
-  //
-
-  class SHIBTARGET_EXPORTS ShibTargetException : public std::exception
-  {
-  public:
-    explicit ShibTargetException() : m_code(SHIBRPC_OK) {}
-    explicit ShibTargetException(ShibRpcStatus code, const char* msg, const shibboleth::IEntityDescriptor* provider);
-    explicit ShibTargetException(ShibRpcStatus code, const char* msg, const shibboleth::IRoleDescriptor* role=NULL);
-    
-    virtual ~ShibTargetException() throw () {}
-    virtual ShibRpcStatus which() const throw () { return m_code; }
-    virtual const char* what() const throw () { return m_msg.c_str(); }
-    virtual const char* syswho() const throw() { return m_providerId.c_str(); }
-    virtual const char* where() const throw () { return m_errorURL.c_str(); }
-    virtual const char* who() const throw () { return m_contact.c_str(); }
-    virtual const char* how() const throw () { return m_email.c_str(); }
-
-  private:
-    ShibRpcStatus m_code;
-    std::string m_msg;
-    std::string m_providerId;
-    std::string m_errorURL;
-    std::string m_contact;
-    std::string m_email;
-  };
-
-  class RPCErrorPriv;
-  class SHIBTARGET_EXPORTS RPCError
-  {
-  public:
-    RPCError();
-    RPCError(ShibRpcError* e);
-    RPCError(int s, const char* st);
-    RPCError(ShibTargetException &exp);
-    ~RPCError();
-
-    bool isError();
-    bool isRetryable();
-
-    // Return a set of strings that correspond to the error properties
-    const char* getType();
-    const char* getText();
-    const char* getDesc();
-    const char* getProviderId();
-    const char* getErrorURL();
-    const char* getContactName();
-    const char* getContactEmail();
-    int getCode();
-
-  private:
-    RPCErrorPriv* m_priv;
-  };
+    DECLARE_SAML_EXCEPTION(SHIBTARGET_EXPORTS,ListenerException,SAMLException);
 
     // Abstract APIs for access to configuration information
     
@@ -312,7 +256,7 @@ namespace shibtarget {
           std::string k = key, v = value;
           insert(k,v);
         }
-        void insert (RPCError& e);
+        void insert (saml::SAMLException& e);
 
         void clear () { m_map.clear(); }
 
@@ -328,11 +272,6 @@ namespace shibtarget {
         std::map<std::string,std::string> m_map;
         std::string m_generated;
     };
-
-  //******************************************************************************
-  //
-  // This is the interface you're looking for.
-  //
 
   class HTAccessInfo {
   public:
@@ -535,8 +474,8 @@ namespace shibtarget {
     ShibTarget();
 
     // Currently wraps remoted interface.
-    // TODO: Move this functionality behind ISessionCache
-    RPCError* sessionNew(
+    // TODO: Move this functionality behind IListener
+    void sessionNew(
         int supported_profiles,
         const char* packet,
         const char* ip,
@@ -544,7 +483,7 @@ namespace shibtarget {
         std::string& target
         ) const;
 
-    RPCError* sessionGet(
+    void sessionGet(
         const char* cookie,
         const char* ip,
         ShibProfile& profile,

@@ -15,52 +15,14 @@
 %
 #endif
 
-enum ShibRpcStatus {
-  SHIBRPC_OK = 0,
-  SHIBRPC_UNKNOWN_ERROR = 1,
-  SHIBRPC_INTERNAL_ERROR = 2,
-  SHIBRPC_XML_EXCEPTION = 3,
-  SHIBRPC_SAX_EXCEPTION = 4,
-  SHIBRPC_SAML_EXCEPTION = 5,
-
-  /* session_is_valid errors */
-  SHIBRPC_NO_SESSION = 10,
-  SHIBRPC_SESSION_EXPIRED = 11,
-  SHIBRPC_IPADDR_MISMATCH = 12,
-
-  /* new_session errors */
-  SHIBRPC_IPADDR_MISSING = 20,
-  SHIBRPC_RESPONSE_MISSING = 21,
-  SHIBRPC_ASSERTION_REPLAYED = 22
-
-  /* get_attrs errors */
-};
-
-/* Hold an error, providerId, and support data */
-struct ShibRpcErr {
-  string	error<>;
-  string	provider<>;
-  string	url<>;
-  string	contact<>;
-  string	email<>;
-};
-
-/* A type for RPC Errors */
-union ShibRpcError switch(ShibRpcStatus status) {
- case SHIBRPC_OK:
-   void;
- default:
-   ShibRpcErr	e;
-};
-
 /* enumerate profiles/bindings to support */
 enum ShibProfile {
   PROFILE_UNSPECIFIED = 0,
-  SAML_10_POST = 1,
-  SAML_10_ARTIFACT = 2,
-  SAML_11_POST = 4,
-  SAML_11_ARTIFACT = 8,
-  SAML_20_SSO = 16
+  SAML10_POST = 1,
+  SAML10_ARTIFACT = 2,
+  SAML11_POST = 4,
+  SAML11_ARTIFACT = 8,
+  SAML20_SSO = 16
 };
 
 /* function argument and response structures */
@@ -74,7 +36,7 @@ struct shibrpc_new_session_args_2 {
 };
 
 struct shibrpc_new_session_ret_2 {
-  ShibRpcError	status;
+  string	status<>;				/* empty string or a SAMLException */
   string	target<>;				/* profile-specific state token from client */
   string	cookie<>;				/* session key manufactured for client */
 };
@@ -86,7 +48,7 @@ struct shibrpc_get_session_args_2 {
 };
 
 struct shibrpc_get_session_ret_2 {
-  ShibRpcError	status;
+  string		status<>;				/* empty string or a SAMLException */
   ShibProfile	profile;				/* profile used in creating session */
   string		provider_id<>;			/* authenticating IdP */
   string		auth_statement<>;		/* SAML authn statement */

@@ -17,46 +17,13 @@ extern "C" {
 #endif
 
 
-enum ShibRpcStatus {
-	SHIBRPC_OK = 0,
-	SHIBRPC_UNKNOWN_ERROR = 1,
-	SHIBRPC_INTERNAL_ERROR = 2,
-	SHIBRPC_XML_EXCEPTION = 3,
-	SHIBRPC_SAX_EXCEPTION = 4,
-	SHIBRPC_SAML_EXCEPTION = 5,
-	SHIBRPC_NO_SESSION = 10,
-	SHIBRPC_SESSION_EXPIRED = 11,
-	SHIBRPC_IPADDR_MISMATCH = 12,
-	SHIBRPC_IPADDR_MISSING = 20,
-	SHIBRPC_RESPONSE_MISSING = 21,
-	SHIBRPC_ASSERTION_REPLAYED = 22,
-};
-typedef enum ShibRpcStatus ShibRpcStatus;
-
-struct ShibRpcErr {
-	char *error;
-	char *provider;
-	char *url;
-	char *contact;
-	char *email;
-};
-typedef struct ShibRpcErr ShibRpcErr;
-
-struct ShibRpcError {
-	ShibRpcStatus status;
-	union {
-		ShibRpcErr e;
-	} ShibRpcError_u;
-};
-typedef struct ShibRpcError ShibRpcError;
-
 enum ShibProfile {
 	PROFILE_UNSPECIFIED = 0,
-	SAML_10_POST = 1,
-	SAML_10_ARTIFACT = 2,
-	SAML_11_POST = 4,
-	SAML_11_ARTIFACT = 8,
-	SAML_20_SSO = 16,
+	SAML10_POST = 1,
+	SAML10_ARTIFACT = 2,
+	SAML11_POST = 4,
+	SAML11_ARTIFACT = 8,
+	SAML20_SSO = 16,
 };
 typedef enum ShibProfile ShibProfile;
 
@@ -70,7 +37,7 @@ struct shibrpc_new_session_args_2 {
 typedef struct shibrpc_new_session_args_2 shibrpc_new_session_args_2;
 
 struct shibrpc_new_session_ret_2 {
-	ShibRpcError status;
+	char *status;
 	char *target;
 	char *cookie;
 };
@@ -84,7 +51,7 @@ struct shibrpc_get_session_args_2 {
 typedef struct shibrpc_get_session_args_2 shibrpc_get_session_args_2;
 
 struct shibrpc_get_session_ret_2 {
-	ShibRpcError status;
+	char *status;
 	ShibProfile profile;
 	char *provider_id;
 	char *auth_statement;
@@ -124,9 +91,6 @@ extern int shibrpc_prog_2_freeresult ();
 /* the xdr functions */
 
 #if defined(__STDC__) || defined(__cplusplus)
-extern  bool_t xdr_ShibRpcStatus (XDR *, ShibRpcStatus*);
-extern  bool_t xdr_ShibRpcErr (XDR *, ShibRpcErr*);
-extern  bool_t xdr_ShibRpcError (XDR *, ShibRpcError*);
 extern  bool_t xdr_ShibProfile (XDR *, ShibProfile*);
 extern  bool_t xdr_shibrpc_new_session_args_2 (XDR *, shibrpc_new_session_args_2*);
 extern  bool_t xdr_shibrpc_new_session_ret_2 (XDR *, shibrpc_new_session_ret_2*);
@@ -134,9 +98,6 @@ extern  bool_t xdr_shibrpc_get_session_args_2 (XDR *, shibrpc_get_session_args_2
 extern  bool_t xdr_shibrpc_get_session_ret_2 (XDR *, shibrpc_get_session_ret_2*);
 
 #else /* K&R C */
-extern bool_t xdr_ShibRpcStatus ();
-extern bool_t xdr_ShibRpcErr ();
-extern bool_t xdr_ShibRpcError ();
 extern bool_t xdr_ShibProfile ();
 extern bool_t xdr_shibrpc_new_session_args_2 ();
 extern bool_t xdr_shibrpc_new_session_ret_2 ();

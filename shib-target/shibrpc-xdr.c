@@ -12,52 +12,6 @@
 
 
 bool_t
-xdr_ShibRpcStatus (XDR *xdrs, ShibRpcStatus *objp)
-{
-	register int32_t *buf;
-
-	 if (!xdr_enum (xdrs, (enum_t *) objp))
-		 return FALSE;
-	return TRUE;
-}
-
-bool_t
-xdr_ShibRpcErr (XDR *xdrs, ShibRpcErr *objp)
-{
-	register int32_t *buf;
-
-	 if (!xdr_string (xdrs, &objp->error, ~0))
-		 return FALSE;
-	 if (!xdr_string (xdrs, &objp->provider, ~0))
-		 return FALSE;
-	 if (!xdr_string (xdrs, &objp->url, ~0))
-		 return FALSE;
-	 if (!xdr_string (xdrs, &objp->contact, ~0))
-		 return FALSE;
-	 if (!xdr_string (xdrs, &objp->email, ~0))
-		 return FALSE;
-	return TRUE;
-}
-
-bool_t
-xdr_ShibRpcError (XDR *xdrs, ShibRpcError *objp)
-{
-	register int32_t *buf;
-
-	 if (!xdr_ShibRpcStatus (xdrs, &objp->status))
-		 return FALSE;
-	switch (objp->status) {
-	case SHIBRPC_OK:
-		break;
-	default:
-		 if (!xdr_ShibRpcErr (xdrs, &objp->ShibRpcError_u.e))
-			 return FALSE;
-		break;
-	}
-	return TRUE;
-}
-
-bool_t
 xdr_ShibProfile (XDR *xdrs, ShibProfile *objp)
 {
 	register int32_t *buf;
@@ -90,7 +44,7 @@ xdr_shibrpc_new_session_ret_2 (XDR *xdrs, shibrpc_new_session_ret_2 *objp)
 {
 	register int32_t *buf;
 
-	 if (!xdr_ShibRpcError (xdrs, &objp->status))
+	 if (!xdr_string (xdrs, &objp->status, ~0))
 		 return FALSE;
 	 if (!xdr_string (xdrs, &objp->target, ~0))
 		 return FALSE;
@@ -118,7 +72,7 @@ xdr_shibrpc_get_session_ret_2 (XDR *xdrs, shibrpc_get_session_ret_2 *objp)
 {
 	register int32_t *buf;
 
-	 if (!xdr_ShibRpcError (xdrs, &objp->status))
+	 if (!xdr_string (xdrs, &objp->status, ~0))
 		 return FALSE;
 	 if (!xdr_ShibProfile (xdrs, &objp->profile))
 		 return FALSE;

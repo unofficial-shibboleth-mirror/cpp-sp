@@ -87,6 +87,8 @@ PlugManager::Factory MemoryCacheFactory;
 PlugManager::Factory XMLRequestMapFactory;
 //PlugManager::Factory htaccessFactory;
 
+SAML_EXCEPTION_FACTORY(ListenerException);
+
 ShibTargetConfig& ShibTargetConfig::getConfig()
 {
     return g_Config;
@@ -162,6 +164,7 @@ bool STConfig::init(const char* schemadir, const char* config)
 
     try {
         // Register plugin types.
+        REGISTER_EXCEPTION_FACTORY(ListenerException);
 #ifndef WIN32
         samlConf.getPlugMgr().regFactory(shibtarget::XML::UnixListenerType,&UnixListenerFactory);
 #endif

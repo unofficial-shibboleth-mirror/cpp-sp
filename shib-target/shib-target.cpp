@@ -163,10 +163,16 @@ ShibTarget::~ShibTarget(void)
   if (m_priv) delete m_priv;
 }
 
-void ShibTarget::init(ShibTargetConfig *config,
-		      string protocol, string hostname, int port,
-		      string uri, string content_type, string remote_host,
-		      string method)
+void ShibTarget::init(
+    ShibTargetConfig *config,
+    string protocol,
+    string hostname,
+    int port,
+    string uri,
+    string content_type,
+    string remote_host,
+    string method
+    )
 {
 #ifdef _DEBUG
   saml::NDC ndc("ShibTarget::init");
@@ -193,286 +199,270 @@ pair<bool,void*>
 ShibTarget::doCheckAuthN(bool requireSessionFlag, bool handleProfile)
 {
 #ifdef _DEBUG
-  saml::NDC ndc("ShibTarget::doCheckAuthN");
+    saml::NDC ndc("ShibTarget::doCheckAuthN");
 #endif
 
-  const char *targetURL = NULL;
-  const char *procState = "Process Initialization Error";
-  ShibMLP mlp;
+    const char *targetURL = NULL;
+    const char *procState = "Request Setup Error";
+    ShibMLP mlp;
 
-  try {
-    if (! m_priv->m_app)
-      throw ShibTargetException(SHIBRPC_OK, "ShibTarget Uninitialized.  Application did not supply request information.");
+    try {
+        if (!m_priv->m_app)
+            throw SAMLException("System uninitialized, application did not supply request information.");
 
-    targetURL = m_priv->m_url.c_str();
-    const char *shireURL = getShireURL(targetURL);
-    if (! shireURL)
-      throw ShibTargetException(SHIBRPC_OK, "Cannot map target URL to Shire URL.  Check configuration");
+        targetURL = m_priv->m_url.c_str();
+        const char *shireURL = getShireURL(targetURL);
+        if (!shireURL)
+            throw SAMLException("Cannot determine assertion consumer service from resource URL, check configuration.");
 
-    if (strstr(targetURL,shireURL)) {
-      if (handleProfile)
-        return doHandleProfile();
-      else
-        return pair<bool,void*>(true, returnOK());
+        if (strstr(targetURL,shireURL)) {
+            if (handleProfile)
+                return doHandleProfile();
+            else
+                return pair<bool,void*>(true, returnOK());
+        }
+
+        string auth_type = getAuthType();
+        if (strcasecmp(auth_type.c_str(),"shibboleth"))
+            return pair<bool,void*>(true,returnDecline());
+
+        pair<bool,bool> requireSession = m_priv->m_settings.first->getBool("requireSession");
+        if (!requireSession.first || !requireSession.second) {
+            // Web server might override.
+            if (requireSessionFlag)
+                requireSession.second=true;
+        }
+
+        const char* session_id = m_priv->getSessionId(this);
+        if (!session_id || !*session_id) {
+            // No session.  Maybe that's acceptable?
+            if (!requireSession.second)
+                return pair<bool,void*>(true,returnOK());
+
+            // No cookie, but we require a session.  Generate an AuthnRequest.
+            return pair<bool,void*>(true,sendRedirect(getAuthnRequest(targetURL)));
+        }
+
+        procState = "Session Processing Error";
+        try {
+            // Localized exception throw if the session isn't valid.
+            sessionGet(
+                session_id,
+                m_priv->m_remote_addr.c_str(),
+                m_priv->m_sso_profile,
+                m_priv->m_provider_id,
+                &m_priv->m_sso_statement,
+                &m_priv->m_pre_response,
+                &m_priv->m_post_response
+                );
+        }
+        catch (SAMLException& e) {
+            // If no session is required, bail now.
+            if (!requireSession.second)
+                // Has to be OK because DECLINED will just cause Apache
+                // to fail when it can't locate anything to process the
+                // AuthType.  No session plus requireSession false means
+                // do not authenticate the user at this time.
+                return pair<bool,void*>(true, returnOK());
+            
+            // TODO: need to test this...may need an actual reference cast
+            if (typeid(e)==typeid(RetryableProfileException)) {
+                // Session is invalid but we can retry -- generate an AuthnRequest
+                return pair<bool,void*>(true,sendRedirect(getAuthnRequest(targetURL)));
+            }
+            throw;    // send it to the outer handler
+        }
+
+        // We're done.  Everything is okay.  Nothing to report.  Nothing to do..
+        // Let the caller decide how to proceed.
+        log(LogLevelInfo, "doCheckAuthN succeeded");
+        return pair<bool,void*>(false,NULL);
     }
-
-    string auth_type = getAuthType();
-    if (strcasecmp(auth_type.c_str(),"shibboleth"))
-      return pair<bool,void*>(true,returnDecline());
-
-    pair<bool,bool> requireSession =
-      m_priv->m_settings.first->getBool("requireSession");
-    if (!requireSession.first || !requireSession.second)
-      if (requireSessionFlag)
-	requireSession.second=true;
-
-    const char* session_id = m_priv->getSessionId(this);
-    if (!session_id || !*session_id) {
-      // No session.  Maybe that's acceptable?
-
-      if (!requireSession.second)
-        return pair<bool,void*>(true,returnOK());
-
-      // No cookie, but we require a session.  Generate an AuthnRequest.
-      return pair<bool,void*>(true,sendRedirect(getAuthnRequest(targetURL)));
+    catch (SAMLException& e) {
+        mlp.insert(e);
     }
-
-    procState = "Session Processing Error";
-    auto_ptr<RPCError> status(
-        sessionGet(
-            session_id,
-            m_priv->m_remote_addr.c_str(),
-            m_priv->m_sso_profile,
-            m_priv->m_provider_id,
-            &m_priv->m_sso_statement,
-            &m_priv->m_pre_response,
-            &m_priv->m_post_response
-            )
-         );
-
-    if (status->isError()) {
-
-      // If no session is required, bail now.
-      if (!requireSession.second)
-        return pair<bool,void*>(true, returnOK());
-                   // XXX: Or should this be DECLINED?
-                   // Has to be OK because DECLINED will just cause Apache
-                   // to fail when it can't locate anything to process the
-                   // AuthType.  No session plus requireSession false means
-                   // do not authenticate the user at this time.
-      else if (status->isRetryable()) {
-        // Session is invalid but we can retry the auth -- generate an AuthnRequest
-        return pair<bool,void*>(true,sendRedirect(getAuthnRequest(targetURL)));
-
-      } else {
-        string er = "Unretryable error: " ;
-        er += status->getText();
-        log(LogLevelError, er);
-        mlp.insert(*status);
-        goto out;
-      }
-    }
-
-    // We're done.  Everything is okay.  Nothing to report.  Nothing to do..
-    // Let the caller decide how to proceed.
-    log(LogLevelInfo, "doCheckAuthN Succeeded\n");
-    return pair<bool,void*>(false,NULL);
-
-  }
-  catch (ShibTargetException &e) {
-    mlp.insert("errorText", e.what());
-  }
 #ifndef _DEBUG
-  catch (...) {
-    mlp.insert("errorText", "Unexpected Exception");
-  }
+    catch (...) {
+        mlp.insert("errorText", "Caught an unknown exception.");
+    }
 #endif
 
-  // If we get here then we've got an error.
-  mlp.insert("errorType", procState);
-  mlp.insert("errorDesc", "An error occurred while processing your request.");
+    // If we get here then we've got an error.
+    mlp.insert("errorType", procState);
+    if (targetURL)
+        mlp.insert("requestURL", targetURL);
 
- out:
-  if (targetURL)
-    mlp.insert("requestURL", targetURL);
-
-  return pair<bool,void*>(true,m_priv->sendError(this, "session", mlp));
+    return pair<bool,void*>(true,m_priv->sendError(this, "session", mlp));
 }
 
 pair<bool,void*>
 ShibTarget::doHandleProfile(void)
 {
 #ifdef _DEBUG
-  saml::NDC ndc("ShibTarget::doHandleProfile");
+    saml::NDC ndc("ShibTarget::doHandleProfile");
 #endif
 
-  const char *targetURL = NULL;
-  const char *procState = "Session Creation Service Error";
-  ShibMLP mlp;
+    const char *targetURL = NULL;
+    const char *procState = "Session Creation Service Error";
+    ShibMLP mlp;
 
-  try {
-    if (! m_priv->m_app)
-      throw ShibTargetException(SHIBRPC_OK, "ShibTarget Uninitialized.  Application did not supply request information.");
+    try {
+        if (!m_priv->m_app)
+            throw SAMLException("System uninitialized, application did not supply request information.");
 
-    targetURL = m_priv->m_url.c_str();
-    const char *shireURL = getShireURL(targetURL);
+        targetURL = m_priv->m_url.c_str();
+        const char* shireURL = getShireURL(targetURL);
 
-    if (!shireURL)
-      throw ShibTargetException(SHIBRPC_OK, "doHandleProfile() unable to map request to a proper shireURL setting.  Check Configuration.");
+        if (!shireURL)
+            throw SAMLException("Cannot determine assertion consumer service, check configuration.");
 
+        // Make sure we only process the SHIRE requests.
+        if (!strstr(targetURL, shireURL))
+            return pair<bool,void*>(true, returnDecline());
 
-    // Make sure we only process the SHIRE requests.
-    if (!strstr(targetURL, shireURL))
-      return pair<bool,void*>(true, returnDecline());
+        const IPropertySet* sessionProps=m_priv->m_app->getPropertySet("Sessions");
+        if (!sessionProps)
+            throw SAMLException("Unable to map request to application session settings, check configuration.");
 
-    const IPropertySet* sessionProps=m_priv->m_app->getPropertySet("Sessions");
-    if (!sessionProps)
-      throw ShibTargetException(SHIBRPC_OK, "doHandleProfile() unable to map request to application session settings.  Check configuration");
-
-    // Process SHIRE request
+        // Process incoming request.
+        pair<bool,bool> shireSSL=sessionProps->getBool("shireSSL");
       
-    pair<bool,bool> shireSSL=sessionProps->getBool("shireSSL");
-      
-    // Make sure this is SSL, if it should be
-    if ((!shireSSL.first || shireSSL.second) && m_priv->m_protocol == "https")
-      throw ShibTargetException(SHIBRPC_OK, "blocked non-SSL access to session creation service");
+        // Make sure this is SSL, if it should be
+        if ((!shireSSL.first || shireSSL.second) && m_priv->m_protocol != "https")
+            throw FatalProfileException("Blocked non-SSL access to session creation service.");
 
-    // If this is a GET, we see if it's a lazy session request, otherwise
-    // assume it's a profile response and process it.
-    string cgistr;
-    if (!strcasecmp(m_priv->m_method.c_str(), "GET")) {
-      cgistr = getArgs();
-      string areq;
-      if (!cgistr.empty())
-          areq=getLazyAuthnRequest(cgistr.c_str());
-      if (!areq.empty())
-        return pair<bool,void*>(true, sendRedirect(areq));
-    }
-    else if (!strcasecmp(m_priv->m_method.c_str(), "POST")) {
-        if (m_priv->m_content_type.empty() || strcasecmp(m_priv->m_content_type.c_str(),"application/x-www-form-urlencoded")) {
-            string er = string("blocked invalid POST content-type to session creation service: ") + m_priv->m_content_type;
-            throw ShibTargetException(SHIBRPC_OK, er.c_str());
+        // If this is a GET, we see if it's a lazy session request, otherwise
+        // assume it's a profile response and process it.
+        string cgistr;
+        if (!strcasecmp(m_priv->m_method.c_str(), "GET")) {
+            cgistr = getArgs();
+            string areq;
+            if (!cgistr.empty())
+                areq=getLazyAuthnRequest(cgistr.c_str());
+            if (!areq.empty())
+                return pair<bool,void*>(true, sendRedirect(areq));
         }
-        // Read the POST Data
-        cgistr = getPostData();
-    }
+        else if (!strcasecmp(m_priv->m_method.c_str(), "POST")) {
+            if (m_priv->m_content_type.empty() || strcasecmp(m_priv->m_content_type.c_str(),"application/x-www-form-urlencoded")) {
+                throw FatalProfileException(
+                    "Blocked invalid POST content-type ($1) to session creation service.",
+                    params(1,m_priv->m_content_type)
+                    );
+            }
+            // Read the POST Data
+            cgistr = getPostData();
+        }
 	
-    // process the submission
-    string cookie,target;
-    auto_ptr<RPCError> status(
-        sessionNew(
-            SAML_11_POST | SAML_11_ARTIFACT,
-            cgistr.c_str(),
-            m_priv->m_remote_addr.c_str(),
-            cookie,
-            target
-            )
-        );
+        // Process the submission
+        string cookie,target;
+        try {
+            sessionNew(
+                SAML11_POST | SAML11_ARTIFACT,
+                cgistr.c_str(),
+                m_priv->m_remote_addr.c_str(),
+                cookie,
+                target
+                );
+        }
+        catch (SAMLException& e) {
+            log(LogLevelError, string("profile processing failed: ") + e.what());
+    
+            // TODO: need to test this...may need an actual reference cast
+            if (typeid(e)==typeid(RetryableProfileException)) {
+                return pair<bool,void*>(true, sendRedirect(getAuthnRequest(target.c_str())));
+            }
+            throw;    // send it to the outer handler
+        }
 
-    if (status->isError()) {
-      char buf[25];
-      sprintf(buf, "(%d): ", status->getCode());
-      string er = string("doHandleProfile() profile processing failed ") + buf + status->getText();
-      log(LogLevelError, er);
+        log(LogLevelDebug, string("profile processing succeeded, new session created (") + cookie + ")");
 
-      if (status->isRetryable()) {
-        return pair<bool,void*>(true, sendRedirect(getAuthnRequest(target.c_str())));
-      }
-
-      // return this error to the user.
-      mlp.insert(*status);
-      goto out;
-    }
-
-    log(LogLevelDebug, string("doHandleProfile() profile processing succeeded, new session(") + cookie + ")");
-
-    if (target=="default") {
-        pair<bool,const char*> homeURL=m_priv->m_app->getString("homeURL");
-        target=homeURL.first ? homeURL.second : "/";
-    }
-    else if (target=="42") {
-        // Pull the target value from the "relay state" cookie.
-        const char* relay_state = m_priv->getRelayState(this);
-        if (!relay_state || !*relay_state) {
-            // No apparent relay state value to use, so fall back on the default.
+        if (target=="default") {
             pair<bool,const char*> homeURL=m_priv->m_app->getString("homeURL");
             target=homeURL.first ? homeURL.second : "/";
         }
-        else {
-            CgiParse::url_decode((char*)relay_state);
-            target=relay_state;
+        else if (target=="cookie") {
+            // Pull the target value from the "relay state" cookie.
+            const char* relay_state = m_priv->getRelayState(this);
+            if (!relay_state || !*relay_state) {
+                // No apparent relay state value to use, so fall back on the default.
+                pair<bool,const char*> homeURL=m_priv->m_app->getString("homeURL");
+                target=homeURL.first ? homeURL.second : "/";
+            }
+            else {
+                CgiParse::url_decode((char*)relay_state);
+                target=relay_state;
+            }
         }
+    
+        // We've got a good session, set the cookie...
+        pair<string,const char*> shib_cookie=getCookieNameProps("_shibsession_");
+        cookie += shib_cookie.second;
+        setCookie(shib_cookie.first, cookie);
+    
+        // ... and redirect to the target
+        return pair<bool,void*>(true, sendRedirect(target));
     }
-
-    // We've got a good session, set the cookie...
-    pair<string,const char*> shib_cookie=getCookieNameProps("_shibsession_");
-    cookie += shib_cookie.second;
-    setCookie(shib_cookie.first, cookie);
-
-    // ... and redirect to the target
-    return pair<bool,void*>(true, sendRedirect(target));
-
-  }
-  catch (ShibTargetException &e) {
-    mlp.insert("errorText", e.what());
-  }
+    catch (SAMLException& e) {
+        mlp.insert(e);
+    }
 #ifndef _DEBUG
-  catch (...) {
-    mlp.insert("errorText", "Unexpected Exception");
-  }
+    catch (...) {
+        mlp.insert("errorText", "Caught an unknown exception.");
+    }
 #endif
 
-  // If we get here then we've got an error.
-  mlp.insert("errorType", procState);
-  mlp.insert("errorDesc", "An error occurred while processing your request.");
+    // If we get here then we've got an error.
+    mlp.insert("errorType", procState);
 
- out:
-  if (targetURL)
-    mlp.insert("requestURL", targetURL);
+    if (targetURL)
+        mlp.insert("requestURL", targetURL);
 
-  return pair<bool,void*>(true,m_priv->sendError(this, "session", mlp));
+    return pair<bool,void*>(true,m_priv->sendError(this, "session", mlp));
 }
 
 pair<bool,void*>
 ShibTarget::doCheckAuthZ(void)
 {
 #ifdef _DEBUG
-  saml::NDC ndc("ShibTarget::doCheckAuthZ");
+    saml::NDC ndc("ShibTarget::doCheckAuthZ");
 #endif
 
-  ShibMLP mlp;
-  const char *procState = "Authorization Processing Error";
-  const char *targetURL = NULL;
-  HTAccessInfo *ht = NULL;
-  HTGroupTable* grpstatus = NULL;
+    ShibMLP mlp;
+    const char *procState = "Authorization Processing Error";
+    const char *targetURL = NULL;
+    HTAccessInfo *ht = NULL;
+    HTGroupTable* grpstatus = NULL;
 
-  try {
-    if (! m_priv->m_app)
-      throw ShibTargetException(SHIBRPC_OK, "ShibTarget Uninitialized.  Application did not supply request information.");
+    try {
+        if (!m_priv->m_app)
+            throw SAMLException("System uninitialized, application did not supply request information.");
 
-    targetURL = m_priv->m_url.c_str();
-    const char *session_id = m_priv->getSessionId(this);
+        targetURL = m_priv->m_url.c_str();
+        const char *session_id = m_priv->getSessionId(this);
 
-    // Do we have an access control plugin?
-    if (m_priv->m_settings.second) {
-      Locker acllock(m_priv->m_settings.second);
-      if (!m_priv->m_settings.second->authorized(*m_priv->m_sso_statement,
-            m_priv->m_post_response ? m_priv->m_post_response->getAssertions() : EMPTY(SAMLAssertion*))) {
-        log(LogLevelError, "doCheckAuthZ: access control provider denied access");
-        goto out;
-      }
-    }
+        // Do we have an access control plugin?
+        if (m_priv->m_settings.second) {
+            Locker acllock(m_priv->m_settings.second);
+            if (!m_priv->m_settings.second->authorized(*m_priv->m_sso_statement,
+                m_priv->m_post_response ? m_priv->m_post_response->getAssertions() : EMPTY(SAMLAssertion*))) {
+                log(LogLevelError, "doCheckAuthZ() access control provider denied access");
+                if (targetURL)
+                    mlp.insert("requestURL", targetURL);
+                // TODO: check setting and return 403
+                return pair<bool,void*>(true,m_priv->sendError(this, "access", mlp));
+            }
+        }
 
-    // Perform HTAccess Checks
-    ht = getAccessInfo();
+        // Perform HTAccess Checks
+        ht = getAccessInfo();
 
-    // No Info means OK.  Just return
-    if (!ht)
-      return pair<bool,void*>(false, NULL);
+        // No Info means OK.  Just return
+        if (!ht)
+            return pair<bool,void*>(false, NULL);
 
-    vector<bool> auth_OK(ht->elements.size(), false);
-    bool method_restricted=false;
-    string remote_user = getRemoteUser();
+        vector<bool> auth_OK(ht->elements.size(), false);
+        bool method_restricted=false;
+        string remote_user = getRemoteUser();
 
     #define CHECK_OK do { \
       if (ht->requireAll) { \
@@ -484,383 +474,367 @@ ShibTarget::doCheckAuthZ(void)
       continue; \
     } while (0)
 
-    for (int x = 0; x < ht->elements.size(); x++) {
-      auth_OK[x] = false;
-      HTAccessInfo::RequireLine *line = ht->elements[x];
-      if (! line->use_line)
-        continue;
-      method_restricted = true;
+        for (int x = 0; x < ht->elements.size(); x++) {
+            auth_OK[x] = false;
+            HTAccessInfo::RequireLine *line = ht->elements[x];
+            if (! line->use_line)
+                continue;
+            method_restricted = true;
 
-      const char *w = line->tokens[0].c_str();
+            const char *w = line->tokens[0].c_str();
 
-      if (!strcasecmp(w,"Shibboleth")) {
-        // This is a dummy rule needed because Apache conflates authn and authz.
-        // Without some require rule, AuthType is ignored and no check_user hooks run.
-        CHECK_OK;
-      }
-      else if (!strcmp(w,"valid-user")) {
-        log(LogLevelDebug, "doCheckAuthZ accepting valid-user");
-        CHECK_OK;
-      }
-      else if (!strcmp(w,"user") && !remote_user.empty()) {
-        bool regexp=false;
-        for (int i = 1; i < line->tokens.size(); i++) {
-          w = line->tokens[i].c_str();
-          if (*w == '~') {
-            regexp = true;
-            continue;
-          }
+            if (!strcasecmp(w,"Shibboleth")) {
+                // This is a dummy rule needed because Apache conflates authn and authz.
+                // Without some require rule, AuthType is ignored and no check_user hooks run.
+                CHECK_OK;
+            }
+            else if (!strcmp(w,"valid-user")) {
+                log(LogLevelDebug, "doCheckAuthZ accepting valid-user");
+                CHECK_OK;
+            }
+            else if (!strcmp(w,"user") && !remote_user.empty()) {
+                bool regexp=false;
+                for (int i = 1; i < line->tokens.size(); i++) {
+                    w = line->tokens[i].c_str();
+                    if (*w == '~') {
+                        regexp = true;
+                        continue;
+                    }
                 
-          if (regexp) {
-            try {
-              // To do regex matching, we have to convert from UTF-8.
-              auto_ptr<XMLCh> trans(fromUTF8(w));
-              RegularExpression re(trans.get());
-              auto_ptr<XMLCh> trans2(fromUTF8(remote_user.c_str()));
-              if (re.matches(trans2.get())) {
-                log(LogLevelDebug, string("doCheckAuthZ accepting user: ") + w);
-                CHECK_OK;
-              }
+                    if (regexp) {
+                        try {
+                            // To do regex matching, we have to convert from UTF-8.
+                            auto_ptr<XMLCh> trans(fromUTF8(w));
+                            RegularExpression re(trans.get());
+                            auto_ptr<XMLCh> trans2(fromUTF8(remote_user.c_str()));
+                            if (re.matches(trans2.get())) {
+                                log(LogLevelDebug, string("doCheckAuthZ accepting user: ") + w);
+                                CHECK_OK;
+                            }
+                        }
+                        catch (XMLException& ex) {
+                            auto_ptr_char tmp(ex.getMessage());
+                            log(LogLevelError, string("doCheckAuthZ caught exception while parsing regular expression (")
+                    	       + w + "): " + tmp.get());
+                        }
+                    }
+                    else if (!strcmp(remote_user.c_str(), w)) {
+                        log(LogLevelDebug, string("doCheckAuthZ accepting user: ") + w);
+                        CHECK_OK;
+                    }
+                }
             }
-            catch (XMLException& ex) {
-              auto_ptr_char tmp(ex.getMessage());
-              log(LogLevelError, string("doCheckAuthZ caught exception while parsing regular expression (")
-        	  + w + "): " + tmp.get());
-            }
-          }
-          else if (!strcmp(remote_user.c_str(), w)) {
-            log(LogLevelDebug, string("doCheckAuthZ accepting user: ") + w);
-            CHECK_OK;
-          }
-        }
-      }
-      else if (!strcmp(w,"group")) {
-        grpstatus = getGroupTable(remote_user);
-
-        if (!grpstatus) {
-          delete ht;
-          return pair<bool,void*>(true, returnDecline());
-        }
+            else if (!strcmp(w,"group")) {
+                grpstatus = getGroupTable(remote_user);
+                if (!grpstatus) {
+                    delete ht;
+                    return pair<bool,void*>(true, returnDecline());
+                }
     
-        for (int i = 1; i < line->tokens.size(); i++) {
-          w = line->tokens[i].c_str();
-          if (grpstatus->lookup(w)) {
-            log(LogLevelDebug, string("doCheckAuthZ accepting group: ") + w);
-            CHECK_OK;
-          }
-        }
-        delete grpstatus;
-        grpstatus = NULL;
-      }
-      else {
-        Iterator<IAAP*> provs = m_priv->m_app->getAAPProviders();
-        AAP wrapper(provs, w);
-        if (wrapper.fail()) {
-          log(LogLevelWarn, string("doCheckAuthZ didn't recognize require rule: ") + w);
-          continue;
-        }
-
-        bool regexp = false;
-        string vals = getHeader(wrapper->getHeader());
-        for (int i = 1; i < line->tokens.size() && !vals.empty(); i++) {
-          w = line->tokens[i].c_str();
-          if (*w == '~') {
-            regexp = true;
-            continue;
-          }
-
-          try {
-            auto_ptr<RegularExpression> re;
-            if (regexp) {
-              delete re.release();
-              auto_ptr<XMLCh> trans(fromUTF8(w));
-              auto_ptr<RegularExpression> temp(new RegularExpression(trans.get()));
-              re=temp;
-            }
-                    
-            string vals_str(vals);
-            int j = 0;
-            for (int i = 0;  i < vals_str.length();  i++) {
-              if (vals_str.at(i) == ';') {
-                if (i == 0) {
-                  log(LogLevelError, string("doCheckAuthZ invalid header encoding") +
-                    vals + ": starts with a semicolon");
-                  goto out;
+                for (int i = 1; i < line->tokens.size(); i++) {
+                    w = line->tokens[i].c_str();
+                    if (grpstatus->lookup(w)) {
+                        log(LogLevelDebug, string("doCheckAuthZ accepting group: ") + w);
+                        CHECK_OK;
+                    }
                 }
-
-                if (vals_str.at(i-1) == '\\') {
-                  vals_str.erase(i-1, 1);
-                  i--;
-                  continue;
-                }
-
-                string val = vals_str.substr(j, i-j);
-                j = i+1;
-                if (regexp) {
-                  auto_ptr<XMLCh> trans(fromUTF8(val.c_str()));
-                  if (re->matches(trans.get())) {
-                    log(LogLevelDebug, string("doCheckAuthZ expecting ") + w +
-                	", got " + val + ": authorization granted");
-                    CHECK_OK;
-                  }
-                }
-                else if ((wrapper->getCaseSensitive() && val==w) ||
-                 (!wrapper->getCaseSensitive() && !strcasecmp(val.c_str(),w))) {
-                  log(LogLevelDebug, string("doCheckAuthZ expecting ") + w +
-                  ", got " + val + ": authorization granted.");
-                  CHECK_OK;
-                }
-                else {
-                    log(LogLevelDebug, string("doCheckAuthZ expecting ") + w +
-                        ", got " + val + ": authoritzation not granted.");
-                }
-              }
-            }
-    
-            string val = vals_str.substr(j, vals_str.length()-j);
-            if (regexp) {
-              auto_ptr<XMLCh> trans(fromUTF8(val.c_str()));
-              if (re->matches(trans.get())) {
-                log(LogLevelDebug, string("doCheckAuthZ expecting ") + w +
-                    ", got " + val + ": authorization granted.");
-                CHECK_OK;
-              }
-            }
-            else if ((wrapper->getCaseSensitive() && val==w) ||
-                    (!wrapper->getCaseSensitive() && !strcasecmp(val.c_str(),w))) {
-              log(LogLevelDebug, string("doCheckAuthZ expecting ") + w +
-              ", got " + val + ": authorization granted");
-              CHECK_OK;
+                delete grpstatus;
+                grpstatus = NULL;
             }
             else {
-              log(LogLevelDebug, string("doCheckAuthZ expecting ") + w +
-              ", got " + val + ": authorization not granted");
+                Iterator<IAAP*> provs = m_priv->m_app->getAAPProviders();
+                AAP wrapper(provs, w);
+                if (wrapper.fail()) {
+                    log(LogLevelWarn, string("doCheckAuthZ didn't recognize require rule: ") + w);
+                    continue;
+                }
+
+                bool regexp = false;
+                string vals = getHeader(wrapper->getHeader());
+                for (int i = 1; i < line->tokens.size() && !vals.empty(); i++) {
+                    w = line->tokens[i].c_str();
+                    if (*w == '~') {
+                        regexp = true;
+                        continue;
+                    }
+
+                    try {
+                        auto_ptr<RegularExpression> re;
+                        if (regexp) {
+                            delete re.release();
+                            auto_ptr<XMLCh> trans(fromUTF8(w));
+                            auto_ptr<RegularExpression> temp(new RegularExpression(trans.get()));
+                            re=temp;
+                        }
+                    
+                        string vals_str(vals);
+                        int j = 0;
+                        for (int i = 0;  i < vals_str.length();  i++) {
+                            if (vals_str.at(i) == ';') {
+                                if (i == 0) {
+                                    log(LogLevelError, string("doCheckAuthZ invalid header encoding") +
+                                        vals + ": starts with a semicolon");
+                                    throw SAMLException("Invalid information supplied to authorization module.");
+                                }
+
+                                if (vals_str.at(i-1) == '\\') {
+                                    vals_str.erase(i-1, 1);
+                                    i--;
+                                    continue;
+                                }
+
+                                string val = vals_str.substr(j, i-j);
+                                j = i+1;
+                                if (regexp) {
+                                    auto_ptr<XMLCh> trans(fromUTF8(val.c_str()));
+                                    if (re->matches(trans.get())) {
+                                        log(LogLevelDebug, string("doCheckAuthZ expecting ") + w +
+                                    	   ", got " + val + ": authorization granted");
+                                        CHECK_OK;
+                                    }
+                                }
+                                else if ((wrapper->getCaseSensitive() && val==w) ||
+                                        (!wrapper->getCaseSensitive() && !strcasecmp(val.c_str(),w))) {
+                                    log(LogLevelDebug, string("doCheckAuthZ expecting ") + w +
+                                        ", got " + val + ": authorization granted.");
+                                    CHECK_OK;
+                                }
+                                else {
+                                    log(LogLevelDebug, string("doCheckAuthZ expecting ") + w +
+                                        ", got " + val + ": authoritzation not granted.");
+                                }
+                            }
+                        }
+    
+                        string val = vals_str.substr(j, vals_str.length()-j);
+                        if (regexp) {
+                            auto_ptr<XMLCh> trans(fromUTF8(val.c_str()));
+                            if (re->matches(trans.get())) {
+                                log(LogLevelDebug, string("doCheckAuthZ expecting ") + w +
+                                    ", got " + val + ": authorization granted.");
+                                CHECK_OK;
+                            }
+                        }
+                        else if ((wrapper->getCaseSensitive() && val==w) ||
+                                (!wrapper->getCaseSensitive() && !strcasecmp(val.c_str(),w))) {
+                            log(LogLevelDebug, string("doCheckAuthZ expecting ") + w +
+                                ", got " + val + ": authorization granted");
+                            CHECK_OK;
+                        }
+                        else {
+                            log(LogLevelDebug, string("doCheckAuthZ expecting ") + w +
+                                ", got " + val + ": authorization not granted");
+                        }
+                    }
+                    catch (XMLException& ex) {
+                        auto_ptr_char tmp(ex.getMessage());
+                            log(LogLevelError, string("doCheckAuthZ caught exception while parsing regular expression (")
+                                + w + "): " + tmp.get());
+                    }
+                }
             }
-          }
-          catch (XMLException& ex) {
-            auto_ptr_char tmp(ex.getMessage());
-            log(LogLevelError, string("doCheckAuthZ caught exception while parsing regular expression (")
-                + w + "): " + tmp.get());
-          }
+        } // for x
+
+
+        // check if all require directives are true
+        bool auth_all_OK = true;
+        for (int i = 0; i < ht->elements.size(); i++) {
+            auth_all_OK &= auth_OK[i];
         }
-      }
-    } // for x
 
+        delete ht;
+        if (grpstatus) delete grpstatus;
+        if (auth_all_OK || !method_restricted)
+            return pair<bool,void*>(false, NULL);
 
-    // check if all require directives are true
-    bool auth_all_OK = true;
-    for (int i = 0; i < ht->elements.size(); i++) {
-        auth_all_OK &= auth_OK[i];
+        // If we get here there's an access error, so just fall through
     }
-
-    delete ht;
-    if (grpstatus) delete grpstatus;
-    if (auth_all_OK || !method_restricted)
-      return pair<bool,void*>(false, NULL);
-
-    // If we get here there's an access error, so just fall through
-
-  }
-  catch (ShibTargetException &e) {
-    mlp.insert("errorText", e.what());
-  }
+    catch (SAMLException& e) {
+        mlp.insert(e);
+    }
 #ifndef _DEBUG
-  catch (...) {
-    mlp.insert("errorText", "Unexpected Exception");
-  }
+    catch (...) {
+        mlp.insert("errorText", "Caught an unknown exception.");
+    }
 #endif
 
-  // If we get here then we've got an error.
-  mlp.insert("errorType", procState);
-  mlp.insert("errorDesc", "An error occurred while processing your request.");
+    // If we get here then we've got an error.
+    mlp.insert("errorType", procState);
 
- out:
-  if (targetURL)
-    mlp.insert("requestURL", targetURL);
+    if (targetURL)
+        mlp.insert("requestURL", targetURL);
 
-  if (ht)
     delete ht;
 
-  return pair<bool,void*>(true,m_priv->sendError(this, "access", mlp));
+    return pair<bool,void*>(true,m_priv->sendError(this, "access", mlp));
 }
 
 pair<bool,void*>
 ShibTarget::doExportAssertions(bool exportAssertion)
 {
 #ifdef _DEBUG
-  saml::NDC ndc("ShibTarget::doExportAssertions");
+    saml::NDC ndc("ShibTarget::doExportAssertions");
 #endif
 
-  ShibMLP mlp;
-  const char *procState = "Attribute Processing Error";
-  const char *targetURL = NULL;
-  char *page = "rm";
+    ShibMLP mlp;
+    const char *procState = "Attribute Processing Error";
+    const char *targetURL = NULL;
+    char *page = "rm";
 
-  try {
-    if (! m_priv->m_app)
-      throw ShibTargetException(SHIBRPC_OK, "ShibTarget Uninitialized.  Application did not supply request information.");
+    try {
+        if (!m_priv->m_app)
+            throw SAMLException("System uninitialized, application did not supply request information.");
 
-    targetURL = m_priv->m_url.c_str();
-    const char *session_id = m_priv->getSessionId(this);
+        targetURL = m_priv->m_url.c_str();
+        const char *session_id = m_priv->getSessionId(this);
 
-    if (!m_priv->m_sso_statement) {
-        // No data yet, so we need to get the session. This can only happen
-        // if the call to doCheckAuthn doesn't happen in the same object lifetime.
-        RPCError* status = sessionGet(
-            session_id,
-            m_priv->m_remote_addr.c_str(),
-            m_priv->m_sso_profile,
-            m_priv->m_provider_id,
-            &m_priv->m_sso_statement,
-            &m_priv->m_pre_response,
-            &m_priv->m_post_response
-            );
-        if (status->isError()) {
-            string er = "sessionGet failed: ";
-            er += status->getText();
-            log(ShibTarget::LogLevelError, er);
-            mlp.insert(*status);
-            delete status;
-            goto out;
+        if (!m_priv->m_sso_statement) {
+            // No data yet, so we need to get the session. This can only happen
+            // if the call to doCheckAuthn doesn't happen in the same object lifetime.
+            sessionGet(
+                session_id,
+                m_priv->m_remote_addr.c_str(),
+                m_priv->m_sso_profile,
+                m_priv->m_provider_id,
+                &m_priv->m_sso_statement,
+                &m_priv->m_pre_response,
+                &m_priv->m_post_response
+                );
         }
-        delete status;
-    }
 
-    // Get the AAP providers, which contain the attribute policy info.
-    Iterator<IAAP*> provs=m_priv->m_app->getAAPProviders();
+        // Get the AAP providers, which contain the attribute policy info.
+        Iterator<IAAP*> provs=m_priv->m_app->getAAPProviders();
 
-    // Clear out the list of mapped attributes
-    while (provs.hasNext()) {
-      IAAP* aap=provs.next();
-      Locker locker(aap);
-      Iterator<const IAttributeRule*> rules=aap->getAttributeRules();
-      while (rules.hasNext()) {
-          const char* header=rules.next()->getHeader();
-          if (header)
-            clearHeader(header);
-      }
-    }
-    
-    // Maybe export the first assertion.
-    clearHeader("Shib-Attributes");
-    pair<bool,bool> exp=m_priv->m_settings.first->getBool("exportAssertion");
-    if (!exp.first || !exp.second)
-      if (exportAssertion)
-        exp.second=true;
-    if (exp.second && m_priv->m_pre_response) {
-      ostringstream os;
-      os << *(m_priv->m_pre_response);
-      unsigned int outlen;
-      char* resp = (char*)os.str().c_str();
-      XMLByte* serialized = Base64::encode(reinterpret_cast<XMLByte*>(resp), os.str().length(), &outlen);
-      setHeader("Shib-Attributes", reinterpret_cast<char*>(serialized));
-      XMLString::release(&serialized);
-    }
-
-    // Export the SAML AuthnMethod and the origin site name, and possibly the NameIdentifier.
-    clearHeader("Shib-Origin-Site");
-    clearHeader("Shib-Identity-Provider");
-    clearHeader("Shib-Authentication-Method");
-    clearHeader("Shib-NameIdentifier-Format");
-    setHeader("Shib-Origin-Site", m_priv->m_provider_id.c_str());
-    setHeader("Shib-Identity-Provider", m_priv->m_provider_id.c_str());
-    auto_ptr_char am(m_priv->m_sso_statement->getAuthMethod());
-    setHeader("Shib-Authentication-Method", am.get());
-    
-    // Export NameID?
-    provs.reset();
-    while (provs.hasNext()) {
-        IAAP* aap=provs.next();
-        Locker locker(aap);
-        const IAttributeRule* rule=aap->lookup(m_priv->m_sso_statement->getSubject()->getNameIdentifier()->getFormat());
-        if (rule && rule->getHeader()) {
-          auto_ptr_char form(m_priv->m_sso_statement->getSubject()->getNameIdentifier()->getFormat());
-          auto_ptr_char nameid(m_priv->m_sso_statement->getSubject()->getNameIdentifier()->getName());
-          setHeader("Shib-NameIdentifier-Format", form.get());
-          if (!strcmp(rule->getHeader(),"REMOTE_USER"))
-            setRemoteUser(nameid.get());
-          else
-            setHeader(rule->getHeader(), nameid.get());
-        }
-    }
-    
-    clearHeader("Shib-Application-ID");
-    setHeader("Shib-Application-ID", m_priv->m_app->getId());
-
-    // Export the attributes.
-    Iterator<SAMLAssertion*> a_iter(m_priv->m_post_response ? m_priv->m_post_response->getAssertions() : EMPTY(SAMLAssertion*));
-    while (a_iter.hasNext()) {
-      SAMLAssertion* assert=a_iter.next();
-      Iterator<SAMLStatement*> statements=assert->getStatements();
-      while (statements.hasNext()) {
-        SAMLAttributeStatement* astate=dynamic_cast<SAMLAttributeStatement*>(statements.next());
-        if (!astate)
-            continue;
-        Iterator<SAMLAttribute*> attrs=astate->getAttributes();
-        while (attrs.hasNext()) {
-          SAMLAttribute* attr=attrs.next();
-        
-          // Are we supposed to export it?
-          provs.reset();
-          while (provs.hasNext()) {
+        // Clear out the list of mapped attributes
+        while (provs.hasNext()) {
             IAAP* aap=provs.next();
             Locker locker(aap);
-            const IAttributeRule* rule=aap->lookup(attr->getName(),attr->getNamespace());
-            if (!rule || !rule->getHeader()) {
-                continue;
+            Iterator<const IAttributeRule*> rules=aap->getAttributeRules();
+            while (rules.hasNext()) {
+                const char* header=rules.next()->getHeader();
+                if (header)
+                    clearHeader(header);
             }
-                
-            Iterator<string> vals=attr->getSingleByteValues();
-            if (!strcmp(rule->getHeader(),"REMOTE_USER") && vals.hasNext())
-                setRemoteUser(vals.next());
-            else {
-                int it=0;
-                string header = getHeader(rule->getHeader());
-                if (!header.empty())
-                  it++;
-                for (; vals.hasNext(); it++) {
-                  string value = vals.next();
-                  for (string::size_type pos = value.find_first_of(";", string::size_type(0));
-            	   pos != string::npos;
-            	   pos = value.find_first_of(";", pos)) {
-            	value.insert(pos, "\\");
-            	pos += 2;
-                  }
-                  if (it)
-            	header += ";";
-                  header += value;
-                }
-                setHeader(rule->getHeader(), header);
-            }
-          }
         }
-      }
+        
+        // Maybe export the first assertion.
+        clearHeader("Shib-Attributes");
+        pair<bool,bool> exp=m_priv->m_settings.first->getBool("exportAssertion");
+        if (!exp.first || !exp.second)
+            if (exportAssertion)
+                exp.second=true;
+        if (exp.second && m_priv->m_pre_response) {
+            ostringstream os;
+            os << *(m_priv->m_pre_response);
+            unsigned int outlen;
+            char* resp = (char*)os.str().c_str();
+            XMLByte* serialized = Base64::encode(reinterpret_cast<XMLByte*>(resp), os.str().length(), &outlen);
+            // TODO: strip linefeeds
+            setHeader("Shib-Attributes", reinterpret_cast<char*>(serialized));
+            XMLString::release(&serialized);
+        }
+    
+        // Export the SAML AuthnMethod and the origin site name, and possibly the NameIdentifier.
+        clearHeader("Shib-Origin-Site");
+        clearHeader("Shib-Identity-Provider");
+        clearHeader("Shib-Authentication-Method");
+        clearHeader("Shib-NameIdentifier-Format");
+        setHeader("Shib-Origin-Site", m_priv->m_provider_id.c_str());
+        setHeader("Shib-Identity-Provider", m_priv->m_provider_id.c_str());
+        auto_ptr_char am(m_priv->m_sso_statement->getAuthMethod());
+        setHeader("Shib-Authentication-Method", am.get());
+        
+        // Export NameID?
+        provs.reset();
+        while (provs.hasNext()) {
+            IAAP* aap=provs.next();
+            Locker locker(aap);
+            const IAttributeRule* rule=aap->lookup(m_priv->m_sso_statement->getSubject()->getNameIdentifier()->getFormat());
+            if (rule && rule->getHeader()) {
+                auto_ptr_char form(m_priv->m_sso_statement->getSubject()->getNameIdentifier()->getFormat());
+                auto_ptr_char nameid(m_priv->m_sso_statement->getSubject()->getNameIdentifier()->getName());
+                setHeader("Shib-NameIdentifier-Format", form.get());
+                if (!strcmp(rule->getHeader(),"REMOTE_USER"))
+                    setRemoteUser(nameid.get());
+                else
+                    setHeader(rule->getHeader(), nameid.get());
+            }
+        }
+        
+        clearHeader("Shib-Application-ID");
+        setHeader("Shib-Application-ID", m_priv->m_app->getId());
+    
+        // Export the attributes.
+        Iterator<SAMLAssertion*> a_iter(m_priv->m_post_response ? m_priv->m_post_response->getAssertions() : EMPTY(SAMLAssertion*));
+        while (a_iter.hasNext()) {
+            SAMLAssertion* assert=a_iter.next();
+            Iterator<SAMLStatement*> statements=assert->getStatements();
+            while (statements.hasNext()) {
+                SAMLAttributeStatement* astate=dynamic_cast<SAMLAttributeStatement*>(statements.next());
+                if (!astate)
+                    continue;
+                Iterator<SAMLAttribute*> attrs=astate->getAttributes();
+                while (attrs.hasNext()) {
+                    SAMLAttribute* attr=attrs.next();
+            
+                    // Are we supposed to export it?
+                    provs.reset();
+                    while (provs.hasNext()) {
+                        IAAP* aap=provs.next();
+                        Locker locker(aap);
+                        const IAttributeRule* rule=aap->lookup(attr->getName(),attr->getNamespace());
+                        if (!rule || !rule->getHeader())
+                            continue;
+                    
+                        Iterator<string> vals=attr->getSingleByteValues();
+                        if (!strcmp(rule->getHeader(),"REMOTE_USER") && vals.hasNext())
+                            setRemoteUser(vals.next());
+                        else {
+                            int it=0;
+                            string header = getHeader(rule->getHeader());
+                            if (!header.empty())
+                                it++;
+                            for (; vals.hasNext(); it++) {
+                                string value = vals.next();
+                                for (string::size_type pos = value.find_first_of(";", string::size_type(0));
+                                        pos != string::npos;
+                                        pos = value.find_first_of(";", pos)) {
+                                    value.insert(pos, "\\");
+                                    pos += 2;
+                                }
+                                if (it)
+                                    header += ";";
+                                header += value;
+                            }
+                            setHeader(rule->getHeader(), header);
+                        }
+                    }
+                }
+            }
+        }
+    
+        return pair<bool,void*>(false,NULL);
     }
-
-    return pair<bool,void*>(false,NULL);
-  }
-  catch (ShibTargetException &e) {
-    mlp.insert("errorText", e.what());
-  }
+    catch (SAMLException& e) {
+        mlp.insert(e);
+    }
 #ifndef _DEBUG
-  catch (...) {
-    mlp.insert("errorText", "Unexpected Exception");
-  }
+    catch (...) {
+        mlp.insert("errorText", "Caught an unknown exception.");
+    }
 #endif
 
-  // If we get here then we've got an error.
-  mlp.insert("errorType", procState);
-  mlp.insert("errorDesc", "An error occurred while processing your request.");
+    // If we get here then we've got an error.
+    mlp.insert("errorType", procState);
 
- out:
-  if (targetURL)
-    mlp.insert("requestURL", targetURL);
+    if (targetURL)
+        mlp.insert("requestURL", targetURL);
 
-  return pair<bool,void*>(true,m_priv->sendError(this, page, mlp));
+    return pair<bool,void*>(true,m_priv->sendError(this, page, mlp));
 }
 
 
-// SHIRE APIs
+// Low level APIs
 
 // Get the session cookie name and properties for the application
 pair<string,const char*> ShibTarget::getCookieNameProps(const char* prefix) const
@@ -987,7 +961,7 @@ string ShibTarget::getAuthnRequest(const char* resource)
                 // value to the IdP so we can recognize it on the way back.
                 pair<string,const char*> shib_cookie=getCookieNameProps("_shibstate_");
                 setCookie(shib_cookie.first,m_priv->url_encode(resource) + shib_cookie.second);
-                req += "&target=42";
+                req += "&target=cookie";
             }
             
             pair<bool,bool> old=m_priv->m_app->getBool("oldAuthnRequest");
@@ -1011,7 +985,7 @@ string ShibTarget::getLazyAuthnRequest(const char* query_string)
     return getAuthnRequest(target);
 }
 
-RPCError* ShibTarget::sessionNew(
+void ShibTarget::sessionNew(
     int supported_profiles,
     const char* packet,
     const char* ip,
@@ -1020,79 +994,104 @@ RPCError* ShibTarget::sessionNew(
     ) const
 {
 #ifdef _DEBUG
-  saml::NDC ndc("sessionNew");
+    saml::NDC ndc("sessionNew");
 #endif
-  Category& log = Category::getInstance("shibtarget.ShibTarget");
+    Category& log = Category::getInstance("shibtarget.ShibTarget");
 
-  if (!packet || !*packet) {
-    log.error("Empty profile content");
-    return new RPCError(SHIBRPC_RESPONSE_MISSING, "Empty profile content");
-  }
+    if (!packet || !*packet) {
+        log.error("missing profile response");
+        throw FatalProfileException("Profile response missing.");
+    }
 
-  if (!ip || !*ip) {
-    log.error("Invalid IP address");
-    return new RPCError(SHIBRPC_IPADDR_MISSING, "Invalid IP address");
-  }
+    if (!ip || !*ip) {
+        log.error("missing client address");
+        throw FatalProfileException("Invalid client address.");
+    }
   
-  if (supported_profiles <= 0) {
-    log.error("No profile support indicated");
-    return new RPCError(SHIBRPC_INTERNAL_ERROR, "No profile support indicated");
-  }
+    if (supported_profiles <= 0) {
+        log.error("no profile support indicated");
+        throw FatalProfileException("No profile support indicated.");
+    }
   
-  shibrpc_new_session_args_2 arg;
-  arg.recipient = (char*) m_priv->m_shireURL.c_str();
-  arg.application_id = (char*) m_priv->m_app->getId();
-  arg.packet = (char*)packet;
-  arg.client_addr = (char*)ip;
-  arg.supported_profiles = supported_profiles;
+    shibrpc_new_session_args_2 arg;
+    arg.recipient = (char*) m_priv->m_shireURL.c_str();
+    arg.application_id = (char*) m_priv->m_app->getId();
+    arg.packet = (char*)packet;
+    arg.client_addr = (char*)ip;
+    arg.supported_profiles = supported_profiles;
 
-  log.info("create session for user at (%s) for application (%s)", ip, arg.application_id);
+    log.info("create session for user at (%s) for application (%s)", ip, arg.application_id);
 
-  shibrpc_new_session_ret_2 ret;
-  memset(&ret, 0, sizeof(ret));
+    shibrpc_new_session_ret_2 ret;
+    memset(&ret, 0, sizeof(ret));
 
-  // Loop on the RPC in case we lost contact the first time through
-  int retry = 1;
-  CLIENT* clnt;
-  RPC rpc;
-  do {
-    clnt = rpc->connect();
-    clnt_stat status = shibrpc_new_session_2 (&arg, &ret, clnt);
-    if (status != RPC_SUCCESS) {
-      // FAILED.  Release, disconnect, and retry
-      log.error("RPC Failure: %p (%p) (%d): %s", this, clnt, status, clnt_spcreateerror("shibrpc_new_session_2"));
-      rpc->disconnect();
-      if (retry)
-        retry--;
-      else
-        return new RPCError(-1, "RPC Failure");
+    // Loop on the RPC in case we lost contact the first time through
+    int retry = 1;
+    CLIENT* clnt;
+    RPC rpc;
+    do {
+        clnt = rpc->connect();
+        clnt_stat status = shibrpc_new_session_2 (&arg, &ret, clnt);
+        if (status != RPC_SUCCESS) {
+            // FAILED.  Release, disconnect, and retry
+            log.error("RPC Failure: %p (%p) (%d): %s", this, clnt, status, clnt_spcreateerror("shibrpc_new_session_2"));
+            rpc->disconnect();
+            if (retry)
+                retry--;
+            else
+                throw ListenerException("Failure passing session setup information to listener.");
+        }
+        else {
+            // SUCCESS.  Pool and continue
+            retry = -1;
+        }
+    } while (retry>=0);
+
+    if (ret.status && *ret.status)
+        log.debug("RPC completed with exception: %s", ret.status);
+    else
+        log.debug("RPC completed successfully");
+
+    SAMLException* except=NULL;
+    if (ret.status && *ret.status) {
+        // Reconstitute exception object.
+        try { 
+            istringstream estr(ret.status);
+            except=SAMLException::getInstance(estr);
+        }
+        catch (SAMLException& e) {
+            log.error("caught SAML Exception while building the SAMLException: %s", e.what());
+            log.error("XML was: %s", ret.status);
+            clnt_freeres(clnt, (xdrproc_t)xdr_shibrpc_new_session_ret_2, (caddr_t)&ret);
+            rpc.pool();
+            throw FatalProfileException("An unrecoverable error occurred while creating your session.");
+        }
+#ifndef _DEBUG
+        catch (...) {
+            log.error("caught unknown exception building SAMLException");
+            log.error("XML was: %s", ret.status);
+            clnt_freeres(clnt, (xdrproc_t)xdr_shibrpc_new_session_ret_2, (caddr_t)&ret);
+            rpc.pool();
+            throw;
+        }
+#endif
     }
     else {
-      // SUCCESS.  Pool and continue
-      retry = -1;
+        log.debug("new session cookie: %s", ret.cookie);
+        cookie = ret.cookie;
+        if (ret.target)
+            target = ret.target;
     }
-  } while (retry>=0);
 
-  log.debug("RPC completed with status %d (%p)", ret.status.status, this);
-
-  RPCError* retval;
-  if (ret.status.status)
-    retval = new RPCError(&ret.status);
-  else {
-    log.debug ("new session cookie: %s", ret.cookie);
-    cookie = ret.cookie;
-    if (ret.target)
-        target = ret.target;
-    retval = new RPCError();
-  }
-
-  clnt_freeres(clnt, (xdrproc_t)xdr_shibrpc_new_session_ret_2, (caddr_t)&ret);
-  rpc.pool();
-
-  return retval;
+    clnt_freeres(clnt, (xdrproc_t)xdr_shibrpc_new_session_ret_2, (caddr_t)&ret);
+    rpc.pool();
+    if (except) {
+        auto_ptr<SAMLException> wrapper(except);
+        throw *wrapper;
+    }
 }
 
-RPCError* ShibTarget::sessionGet(
+void ShibTarget::sessionGet(
     const char* cookie,
     const char* ip,
     ShibProfile& profile,
@@ -1103,120 +1102,135 @@ RPCError* ShibTarget::sessionGet(
     ) const
 {
 #ifdef _DEBUG
-  saml::NDC ndc("sessionGet");
+    saml::NDC ndc("sessionGet");
 #endif
-  Category& log = Category::getInstance("shibtarget.ShibTarget");
+    Category& log = Category::getInstance("shibtarget.ShibTarget");
 
-  if (!cookie || !*cookie) {
-    log.error("No cookie value was provided");
-    return new RPCError(SHIBRPC_NO_SESSION, "No cookie value was provided");
-  }
-  else if (strchr(cookie,'=')) {
-    log.error("The cookie value wasn't extracted successfully, use a more unique cookie name for your installation.");
-    return new RPCError(SHIBRPC_INTERNAL_ERROR, "The cookie value wasn't extracted successfully, use a more unique cookie name for your installation.");
-  }
+    if (!cookie || !*cookie) {
+        log.error("no session key provided");
+        throw InvalidSessionException("No session key was provided.");
+    }
+    else if (strchr(cookie,'=')) {
+        log.error("cookie value not extracted successfully, probably overlapping cookies across domains");
+        throw InvalidSessionException("The session key wasn't extracted successfully from the browser cookie.");
+    }
 
-  if (!ip || !*ip) {
-    log.error("Invalid IP Address");
-    return new RPCError(SHIBRPC_IPADDR_MISSING, "Invalid IP Address");
-  }
+    if (!ip || !*ip) {
+        log.error("invalid client Address");
+        throw FatalProfileException("Invalid client address.");
+    }
 
-  log.info("getting session for client at (%s)", ip);
-  log.debug("session cookie (%s)", cookie);
+    log.info("getting session for client at (%s)", ip);
+    log.debug("session cookie (%s)", cookie);
 
-  shibrpc_get_session_args_2 arg;
+    shibrpc_get_session_args_2 arg;
+    arg.cookie = (char*)cookie;
+    arg.client_addr = (char*)ip;
+    arg.application_id = (char*)m_priv->m_app->getId();
 
-  arg.cookie = (char*)cookie;
-  arg.client_addr = (char*)ip;
-  arg.application_id = (char*)m_priv->m_app->getId();
+    shibrpc_get_session_ret_2 ret;
+    memset (&ret, 0, sizeof(ret));
 
-  shibrpc_get_session_ret_2 ret;
-  memset (&ret, 0, sizeof(ret));
+    // Loop on the RPC in case we lost contact the first time through
+    int retry = 1;
+    CLIENT *clnt;
+    RPC rpc;
+    do {
+        clnt = rpc->connect();
+        clnt_stat status = shibrpc_get_session_2(&arg, &ret, clnt);
+        if (status != RPC_SUCCESS) {
+            // FAILED.  Release, disconnect, and try again...
+            log.error("RPC Failure: %p (%p) (%d) %s", this, clnt, status, clnt_spcreateerror("shibrpc_get_session_2"));
+            rpc->disconnect();
+            if (retry)
+                retry--;
+            else
+                throw ListenerException("Failure requesting session information from listener.");
+        }
+        else {
+            // SUCCESS
+            retry = -1;
+        }
+    } while (retry>=0);
 
-  // Loop on the RPC in case we lost contact the first time through
-  int retry = 1;
-  CLIENT *clnt;
-  RPC rpc;
-  do {
-    clnt = rpc->connect();
-    clnt_stat status = shibrpc_get_session_2(&arg, &ret, clnt);
-    if (status != RPC_SUCCESS) {
-      // FAILED.  Release, disconnect, and try again...
-      log.error("RPC Failure: %p (%p) (%d) %s", this, clnt, status, clnt_spcreateerror("shibrpc_get_session_2"));
-      rpc->disconnect();
-      if (retry)
-          retry--;
-      else
-          return new RPCError(-1, "RPC Failure");
+    if (ret.status && *ret.status)
+        log.debug("RPC completed with exception: %s", ret.status);
+    else
+        log.debug("RPC completed successfully");
+
+    SAMLException* except=NULL;
+    if (ret.status && *ret.status) {
+        // Reconstitute exception object.
+        try { 
+            istringstream estr(ret.status);
+            except=SAMLException::getInstance(estr);
+        }
+        catch (SAMLException& e) {
+            log.error("caught SAML Exception while building the SAMLException: %s", e.what());
+            log.error("XML was: %s", ret.status);
+            clnt_freeres(clnt, (xdrproc_t)xdr_shibrpc_get_session_ret_2, (caddr_t)&ret);
+            rpc.pool();
+            throw FatalProfileException("An unrecoverable error occurred while accessing your session.");
+        }
+        catch (...) {
+            log.error("caught unknown exception building SAMLException");
+            log.error("XML was: %s", ret.status);
+            clnt_freeres(clnt, (xdrproc_t)xdr_shibrpc_get_session_ret_2, (caddr_t)&ret);
+            rpc.pool();
+            throw;
+        }
     }
     else {
-      // SUCCESS
-      retry = -1;
-    }
-  } while (retry>=0);
-
-  log.debug("RPC completed with status %d, %p", ret.status.status, this);
-
-  RPCError* retval = NULL;
-  if (ret.status.status)
-    retval = new RPCError(&ret.status);
-  else {
-    try {
-      try {
-        profile = ret.profile;
-        provider_id = ret.provider_id;
+        try {
+            profile = ret.profile;
+            provider_id = ret.provider_id;
         
-        // return the Authentication Statement
-        if (auth_statement) {
-          istringstream authstream(ret.auth_statement);
-          
-          log.debugStream() << "Trying to decode authentication statement: "
-                << ret.auth_statement << CategoryStream::ENDLINE;
-          *auth_statement = new SAMLAuthenticationStatement(authstream);
+            // return the Authentication Statement
+            if (auth_statement) {
+                istringstream authstream(ret.auth_statement);
+                log.debugStream() << "trying to decode authentication statement: "
+                    << ret.auth_statement << CategoryStream::ENDLINE;
+                *auth_statement = new SAMLAuthenticationStatement(authstream);
+            }
+    
+            // return the unfiltered Response
+            if (attr_response_pre) {
+                istringstream prestream(ret.attr_response_pre);
+                log.debugStream() << "trying to decode unfiltered attribute response: "
+                    << ret.attr_response_pre << CategoryStream::ENDLINE;
+                *attr_response_pre = new SAMLResponse(prestream);
+            }
+    
+            // return the filtered Response
+            if (attr_response_post) {
+                istringstream poststream(ret.attr_response_post);
+                log.debugStream() << "trying to decode filtered attribute response: "
+                    << ret.attr_response_post << CategoryStream::ENDLINE;
+                *attr_response_post = new SAMLResponse(poststream);
+            }
         }
-
-        // return the unfiltered Response
-        if (attr_response_pre) {
-          istringstream prestream(ret.attr_response_pre);
-          
-          log.debugStream() << "Trying to decode unfiltered attribute response: "
-                << ret.attr_response_pre << CategoryStream::ENDLINE;
-          *attr_response_pre = new SAMLResponse(prestream);
+        catch (SAMLException& e) {
+            log.error("caught SAML exception while reconstituting session objects: %s", e.what());
+            clnt_freeres (clnt, (xdrproc_t)xdr_shibrpc_get_session_ret_2, (caddr_t)&ret);
+            rpc.pool();
+            throw;
         }
-
-        // return the filtered Response
-        if (attr_response_post) {
-          istringstream poststream(ret.attr_response_post);
-          
-          log.debugStream() << "Trying to decode filtered attribute response: "
-                << ret.attr_response_post << CategoryStream::ENDLINE;
-          *attr_response_post = new SAMLResponse(poststream);
+#ifndef _DEBUG
+        catch (...) {
+            log.error("caught unknown exception while reconstituting session objects");
+            clnt_freeres (clnt, (xdrproc_t)xdr_shibrpc_get_session_ret_2, (caddr_t)&ret);
+            rpc.pool();
+            throw;
         }
-      }
-      catch (SAMLException& e) {
-        log.error ("SAML Exception: %s", e.what());
-        ostringstream os;
-        os << e;
-        throw ShibTargetException(SHIBRPC_SAML_EXCEPTION, os.str().c_str());
-      }
-      catch (XMLException& e) {
-        log.error ("XML Exception: %s", e.getMessage());
-        auto_ptr_char msg(e.getMessage());
-        throw ShibTargetException (SHIBRPC_XML_EXCEPTION, msg.get());
-      }
-    }
-    catch (ShibTargetException &e) {
-      retval = new RPCError(e);
+#endif
     }
 
-    if (!retval)
-      retval = new RPCError();
-  }
-
-  clnt_freeres (clnt, (xdrproc_t)xdr_shibrpc_get_session_ret_2, (caddr_t)&ret);
-  rpc.pool();
-
-  return retval;
+    clnt_freeres (clnt, (xdrproc_t)xdr_shibrpc_get_session_ret_2, (caddr_t)&ret);
+    rpc.pool();
+    if (except) {
+        auto_ptr<SAMLException> wrapper(except);
+        throw *wrapper;
+    }
 }
 
 /*************************************************************************
@@ -1302,7 +1316,7 @@ ShibTargetPriv::get_application(const string& protocol, const string& hostname, 
     m_mapper = NULL;
     m_conf->unlock();
     m_conf = NULL;
-    throw ShibTargetException(SHIBRPC_OK, "unable to map request to application settings.  Check configuration");
+    throw SAMLException("Unable to map request to application settings, check configuration.");
   }
 
   // Store the application for later use
@@ -1319,23 +1333,24 @@ ShibTargetPriv::get_application(const string& protocol, const string& hostname, 
 void*
 ShibTargetPriv::sendError(ShibTarget* st, string page, ShibMLP &mlp)
 {
-  const IPropertySet* props=m_app->getPropertySet("Errors");
-  if (props) {
-    pair<bool,const char*> p=props->getString(page.c_str());
-    if (p.first) {
-      ifstream infile(p.second);
-      if (!infile.fail()) {
-	const char* res = mlp.run(infile,props);
-	if (res)
-	  return st->sendPage(res);
-      }
+    const IPropertySet* props=m_app->getPropertySet("Errors");
+    if (props) {
+        pair<bool,const char*> p=props->getString(page.c_str());
+        if (p.first) {
+            ifstream infile(p.second);
+            if (!infile.fail()) {
+                const char* res = mlp.run(infile,props);
+                if (res)
+                    return st->sendPage(res);
+            }
+        }
     }
-  }
 
-  string errstr = "sendError could not process the error template for application ";
-  errstr += m_app->getId();
-  st->log(ShibTarget::LogLevelError, errstr);
-  return st->sendPage("Internal Server Error.  Please contact the server administrator.");
+    string errstr = "sendError could not process the error template for application (";
+    errstr += m_app->getId();
+    errstr += ")";
+    st->log(ShibTarget::LogLevelError, errstr);
+    return st->sendPage("Internal Server Error. Please contact the site administrator.");
 }
 
 const char* ShibTargetPriv::getSessionId(ShibTarget* st)

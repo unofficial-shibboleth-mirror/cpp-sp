@@ -14,7 +14,7 @@ AM_CXXFLAGS = -I${top_srcdir}/oncrpc
 endif
 
 libshib_targetdir = $(includedir)/shib-target
-libshib_target_HEADERS = shib-target.h shibrpc.h shib-paths.h
+libshib_target_HEADERS = shib-target.h shibrpc.h shib-paths.h hresult.h
 noinst_HEADERS = internal.h
 
 libshib_target_la_SOURCES = \

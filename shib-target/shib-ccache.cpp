@@ -666,7 +666,7 @@ void InternalCCacheEntry::populate()
   catch (...) {
     if (m_cache->m_propagateErrors)
         throw;
-    log->warn("suppressed exception caught while trying to fetch attributes");
+    log->warn("suppressed unknown exception caught while trying to fetch attributes");
   }
 }
 
@@ -692,12 +692,12 @@ pair<SAMLResponse*,SAMLResponse*> InternalCCacheEntry::getNewResponse()
     const IApplication* application=conf->getApplication(m_application_id.c_str());
     if (!application) {
         log->crit("unable to locate application for session, deleted?");
-        throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"Unable to locate application for session, deleted?");
+        throw SAMLException("Unable to locate application for session, deleted?");
     }
     pair<bool,const XMLCh*> providerID=application->getXMLString("providerId");
     if (!providerID.first) {
         log->crit("unable to determine ProviderID for application, not set?");
-        throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"Unable to determine ProviderID for application, not set?");
+        throw SAMLException("Unable to determine ProviderID for application, not set?");
     }
 
     // Try this request.
@@ -705,14 +705,15 @@ pair<SAMLResponse*,SAMLResponse*> InternalCCacheEntry::getNewResponse()
     const IEntityDescriptor* site=m.lookup(m_provider_id.c_str());
     if (!site) {
         log->error("unable to locate identity provider's metadata during attribute query");
-        throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"Unable to locate identity provider's metadata during attribute query.");
+        throw MetadataException("Unable to locate identity provider's metadata during attribute query.");
     }
 
     // Try to locate an AA role.
     const IAttributeAuthorityDescriptor* AA=site->getAttributeAuthorityDescriptor(saml::XML::SAML11_PROTOCOL_ENUM);
     if (!AA) {
         log->error("unable to locate metadata for identity provider's Attribute Authority");
-        throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"Unable to locate metadata for identity provider's Attribute Authority.",site);
+        MetadataException ex("Unable to locate metadata for identity provider's Attribute Authority.");
+        annotateException(ex,site);
     }
 
     // Get protocol signing policy.
@@ -788,15 +789,13 @@ pair<SAMLResponse*,SAMLResponse*> InternalCCacheEntry::getNewResponse()
     }
     catch (SAMLException& e) {
         log->error("caught SAML exception during query to AA: %s", e.what());
-        if (typeid(e)==typeid(InvalidHandleException))
-            throw;
-        ostringstream os;
-        os << e;
-        throw ShibTargetException(SHIBRPC_SAML_EXCEPTION, os.str().c_str(), AA);
+        annotateException(e,AA);
     }
     
     log->error("no response obtained");
-    throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"Unable to obtain attributes from user's identity provider.",AA);
+    SAMLException ex("Unable to obtain attributes from user's identity provider.");
+    annotateException(ex,AA,false);
+    throw ex;
 }
 
 SAMLResponse* InternalCCacheEntry::filter(SAMLResponse* r, const IApplication* application, const IRoleDescriptor* source)

@@ -1066,8 +1066,7 @@ public:
   }
   virtual string getPostData(void) {
     if (m_lpECB->cbTotalBytes > 1024*1024) // 1MB?
-      throw ShibTargetException(SHIBRPC_OK,
-				"blocked too-large a post to SHIRE POST processor");
+      throw FatalProfileException("Blocked too-large a submission to profile endpoint.");
     else if (m_lpECB->cbTotalBytes != m_lpECB->cbAvailable) {
       string cgistr;
       char buf[8192];
@@ -1076,8 +1075,7 @@ public:
 	DWORD buflen=8192;
 	BOOL ret = m_lpECB->ReadClient(m_lpECB->ConnID, buf, &buflen);
 	if (!ret || !buflen)
-	  throw ShibTargetException(SHIBRPC_OK,
-				    "error reading POST data from browser");
+	  throw FatalProfileException("Error reading profile submission from browser.");
 	cgistr.append(buf, buflen);
 	datalen-=buflen;
       }

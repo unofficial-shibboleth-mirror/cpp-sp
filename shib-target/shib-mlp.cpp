@@ -286,14 +286,16 @@ const char* ShibMLP::run(istream& is, const IPropertySet* props, std::string* ou
   return run(str,props,output);
 }
 
-void ShibMLP::insert (RPCError& e)
+void ShibMLP::insert(SAMLException& e)
 {
-    insert ("errorType", e.getType() ? e.getType() : "Unknown Type");
-    insert ("errorText", e.getText() ? e.getText() : "No Message");
-    insert ("errorDesc", e.getDesc() ? e.getDesc() : "No Description");
-    insert ("originErrorURL", e.getErrorURL() ? e.getErrorURL() : "No Error URL");
-    insert ("originContactName", e.getContactName() ? e.getContactName() : "No Contact Name");
-    insert ("originContactEmail", e.getContactEmail() ? e.getContactEmail() : "No Contact Email");
+    insert("errorType", e.classname());
+    if (typeid(e)==typeid(ContentTypeException))
+        insert("errorText", "A problem was detected with your identity provider's software configuration.");
+    else
+        insert("errorText", e.getMessage() ? e.getMessage() : "No Message");
+    insert("originErrorURL", e.getProperty("errorURL") ? e.getProperty("errorURL") : "No Error URL");
+    insert("originContactName", e.getProperty("contactName") ? e.getProperty("contactName") : "No Contact Name");
+    insert("originContactEmail", e.getProperty("contactEmail") ? e.getProperty("contactEmail") : "No Contact Email");
 }
 
 void ShibMLP::insert (const std::string& key, const std::string& value)

@@ -71,6 +71,7 @@
 #endif
 
 #include "shib-target.h"
+#include "hresult.h"
 
 #include <log4cpp/Category.hh>
 #include <log4cpp/FixedContextCategory.hh>
@@ -122,7 +123,7 @@ namespace shibtarget {
         RPC();
         ~RPC() {delete m_handle;}
         RPCHandle* operator->() {return m_handle;}
-        void pool() {m_pool.put(m_handle); m_handle=NULL;}
+        void pool() {if (m_handle) m_pool.put(m_handle); m_handle=NULL;}
     
     private:
         RPCHandlePool& m_pool;

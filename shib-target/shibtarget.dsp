@@ -95,6 +95,10 @@ SOURCE=.\ArtifactMapper.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\hresult.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\internal.h
 # End Source File
 # Begin Source File
@@ -116,10 +120,6 @@ SOURCE=".\shib-ini.cpp"
 # Begin Source File
 
 SOURCE=".\shib-mlp.cpp"
-# End Source File
-# Begin Source File
-
-SOURCE=".\shib-rpcerror.cpp"
 # End Source File
 # Begin Source File
 

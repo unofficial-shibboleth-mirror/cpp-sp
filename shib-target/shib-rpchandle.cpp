@@ -100,14 +100,15 @@ void RPCHandle::disconnect()
 
 CLIENT* RPCHandle::connect()
 {
+#ifdef _DEBUG
     saml::NDC ndc("connect");
-
+#endif
     if (m_clnt) {
-        log->debug ("returning existing connection: %p -> %p", this, m_clnt);
+        log->debug("returning existing connection: %p -> %p", this, m_clnt);
         return m_clnt;
     }
 
-    log->debug("trying to connect to SHAR");
+    log->debug("trying to connect to listener");
 
     IListener::ShibSocket sock;
     IConfig* conf=ShibTargetConfig::getConfig().getINI();
@@ -115,7 +116,7 @@ CLIENT* RPCHandle::connect()
     const IListener* listener=conf->getListener();
     if (!listener->create(sock)) {
         log->error("cannot create socket");
-        throw ShibTargetException(SHIBRPC_UNKNOWN_ERROR, "Cannot create socket");
+        throw ListenerException("Cannot create socket");
     }
 
     bool connected = false;
@@ -127,20 +128,21 @@ CLIENT* RPCHandle::connect()
             break;
         }
     
-        log->warn ("cannot connect %p to SHAR... %s", this, (i > 0 ? "retrying" : ""));
+        log->warn("cannot connect %p to listener...%s", this, (i > 0 ? "retrying" : ""));
 
-        if (i)
+        if (i) {
 #ifdef WIN32
             Sleep(2000*(num_tries-i));
 #else
             sleep(2*(num_tries-i));
 #endif
+        }
     }
 
     if (!connected) {
-        log->crit("SHAR Unavailable..  Failing.");
+        log->crit("listener unavailable, failing");
         listener->close(sock);
-        throw ShibTargetException(SHIBRPC_UNKNOWN_ERROR, "Cannot connect to SHAR process, target site adminstrator should be notified");
+        throw ListenerException("Cannot connect to listener process, a site adminstrator should be notified.");
     }
 
     CLIENT *clnt = listener->getClientHandle(sock, SHIBRPC_PROG, SHIBRPC_VERS_2);
@@ -148,7 +150,7 @@ CLIENT* RPCHandle::connect()
         const char* rpcerror = clnt_spcreateerror("RPCHandle::connect");
         log->crit("RPC failed for %p: %s", this, rpcerror);
         listener->close(sock);
-        throw ShibTargetException(SHIBRPC_UNKNOWN_ERROR, rpcerror);
+        throw ListenerException(rpcerror);
     }
 
     // Set the RPC timeout to a fairly high value...
