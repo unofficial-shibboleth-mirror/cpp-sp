@@ -228,5 +228,8 @@ else
         acx_pthread_ok=no
         $2
 fi
+
+AC_CHECK_FUNCS([pthread_rwlock_init])
+
 AC_LANG_RESTORE
 ])dnl ACX_PTHREAD
