@@ -30,8 +30,8 @@ file1=\mysql-4.0.13\share\english\errmsg.txt
 [lib\debug]
 file0=\xml-security-c-1.1.0\Build\Win32\VC6\Debug\xsec_1_1_0D.dll
 file1=\xml-security-c-1.1.0\Build\Win32\VC6\Debug\xsec_1D.lib
-file2=\curl-7.11.1\lib\libcurld.lib
-file3=\curl-7.11.1\lib\libcurld.dll
+file2=\curl-7.12.2\lib\libcurld.lib
+file3=\curl-7.12.2\lib\libcurld.dll
 file4=\openssl-0.9.7d\out32dll.dbg\ssleay32.lib
 file5=\openssl-0.9.7d\out32dll.dbg\libeay32.lib
 file6=\openssl-0.9.7d\out32dll.dbg\ssleay32.dll
@@ -58,9 +58,10 @@ file16=..\oncrpc\Release\oncrpc.dll
 file17=\log4cpp-0.3.5rc1\msvc6\log4cppDLL\Release\NTEventLogAppender.dll
 file1=\xml-security-c-1.1.0\Build\Win32\VC6\Release\xsec_1_1_0.dll
 file18=\mysql-4.0.13\lib_release\libmysqld.dll
+file19=\curl-7.12.2\src\release\curl.exe
 file2=\xerces-c2_6_1-win32\bin\xerces-c_2_6.dll
 file3=\openssl-0.9.7d\out32dll\ssleay32.dll
-file4=\curl-7.11.1\lib\libcurl.dll
+file4=\curl-7.12.2\lib\libcurl.dll
 file5=\openssl-0.9.7d\out32dll\libeay32.dll
 file6=\log4cpp-0.3.5rc1\msvc6\log4cppDLL\Release\log4cpp.dll
 file7=\openssl-0.9.7d\out32dll\openssl.exe
@@ -177,6 +178,7 @@ file2=..\shar\Debug\shar.exe
 file3=..\shibtest\Debug\shibtest.exe
 file4=..\..\..\opensaml\c\test\Debug\signtest.exe
 file5=..\siterefresh\Debug\siterefresh.exe
+file6=\curl-7.12.2\src\debug\curl.exe
 
 [data]
 
@@ -208,9 +210,9 @@ file15=..\shib-target\Release\shibtarget_4.dll
 file16=..\shib\Release\shib_5.lib
 file17=..\shib\Release\shib_5.dll
 file18=\openssl-0.9.7d\out32dll\ssleay32.lib
-file2=\curl-7.11.1\lib\libcurl.lib
+file2=\curl-7.12.2\lib\libcurl.lib
 file19=\openssl-0.9.7d\out32dll\ssleay32.dll
-file3=\curl-7.11.1\lib\libcurl.dll
+file3=\curl-7.12.2\lib\libcurl.dll
 file4=\openssl-0.9.7d\out32dll\libeay32.lib
 file5=\openssl-0.9.7d\out32dll\libeay32.dll
 file6=\mysql-4.0.13\lib_release\libmysqld.dll
