@@ -106,7 +106,7 @@ SAMLAuthenticationStatement* ShibPOSTProfile::getSSOStatement(const SAMLAssertio
     return SAMLPOSTProfile::getSSOStatement(a);
 }
 
-const XMLCh* getOriginSite(const saml::SAMLResponse& r)
+const XMLCh* ShibPOSTProfile::getOriginSite(const saml::SAMLResponse& r)
 {
     Iterator<SAMLAssertion*> ia=r.getAssertions();
     while (ia.hasNext())
