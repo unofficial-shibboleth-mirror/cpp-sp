@@ -93,8 +93,8 @@ DummyMapper::~DummyMapper()
 int main(int argc,char* argv[])
 {
     DummyMapper mapper;
-    SAMLConfig conf1;
-    ShibConfig conf2;
+    SAMLConfig& conf1=SAMLConfig::getConfig();
+    ShibConfig& conf2=ShibConfig::getConfig();
     char* h_param=NULL;
     char* q_param=NULL;
     char* url_param=NULL;
@@ -122,18 +122,17 @@ int main(int argc,char* argv[])
     }
 
     conf1.schema_dir=path;
-    conf1.bVerbose=true;
-    if (!SAMLConfig::init(&conf1))
+    if (!conf1.init())
         cerr << "unable to initialize SAML runtime" << endl;
 
     conf2.origin_mapper=&mapper;
-    if (!ShibConfig::init(&conf2))
+    if (!conf2.init())
         cerr << "unable to initialize Shibboleth runtime" << endl;
 
 #ifdef WIN32
-    SAMLConfig::getConfig()->saml_register_extension("eduPerson.dll");
+    conf1.saml_register_extension("eduPerson.dll");
 #else
-    SAMLConfig::getConfig()->saml_register_extension("libeduPerson.so");
+    conf1.saml_register_extension("libeduPerson.so");
 #endif
 
     try
@@ -212,7 +211,7 @@ int main(int argc,char* argv[])
         cerr << "caught an unknown exception" << endl;
     }*/
 
-    ShibConfig::term();
-    SAMLConfig::term();
+    conf2.term();
+    conf1.term();
     return 0;
 }
