@@ -66,8 +66,33 @@ else
     CXXFLAGS="$PTHREAD_CFLAGS $CXXFLAGS"
 fi
 
-# Test RPC now -- deal with it later
-ACX_RPCTEST([rpctest="yes"],[rpctest="no"])
+# what SunRPC library should we use?
+AC_MSG_NOTICE([checking for which SunRPC library to use])
+AC_ARG_ENABLE(native-rpc,
+			AC_HELP_STRING([--enable-native-rpc, [Use the OS-supplied Sun RPC library]),
+			[if test "x$enableval" = "x" ; then
+            	enable_native_rpc=yes
+            else
+				enable_native_rpc="$enableval"
+			fi],
+			[enable_native_rpc=unknown])
+AC_CANONICAL_HOST
+case "${host}" in
+        *-*-linux*)     if test $enable_native_rpc = "no" ; then
+        					AC_MSG_WARN([appears to be Linux, but you said not to use native RPC library])
+        				elif test $enable_native_rpc = "unknown" ; then
+        					enable_native_rpc=yes
+        				fi
+        ;;
+        
+        *)				if test $enable_native_rpc = "yes" ; then
+        					AC_MSG_ERROR([Native RPC library not known to be safe on any non-Linux platform])
+        				elif test $enable_native_rpc = "unknown" ; then
+        					enable_native_rpc=no
+        				fi
+        ;;
+esac
+AC_MSG_NOTICE([using native SunRPC library: $enable_native_rpc])
 
 AC_ARG_WITH(dmalloc,
             AC_HELP_STRING([--with-dmalloc=PATH], [where dmalloc is installed]),
@@ -196,13 +221,11 @@ AC_CONFIG_FILES([Makefile doc/Makefile shib/Makefile schemas/Makefile \
 		 shib-target/Makefile shar/Makefile siterefresh/Makefile \
 		 test/Makefile xmlproviders/Makefile])
 
-
-# now deal with the rpc library, to see if we need to build our own
-if test $rpctest = "no"; then
+if test $enable_native_rpc = "no"; then
     WANT_SUBDIRS="oncrpc $WANT_SUBDIRS"
 	AC_DEFINE(USE_OUR_ONCRPC,1,[Define if using embedded version of ONC RPC.])
 fi
-AM_CONDITIONAL(USE_OUR_ONCRPC,test "$rpctest" = "no")
+AM_CONDITIONAL(USE_OUR_ONCRPC,test "$enable_native_rpc" = "no")
 
 
 # Apache 1.3 (mod_shib_13)
