@@ -353,8 +353,8 @@ begin
 	Delay(2);
 	SdShowMsg("",FALSE);
 	
-	// Add the Shibconfig environment variable to the Windows System environment
-	SdShowMsg("Adding the shibconfig environment variable to the windows system environment ...", TRUE);
+	// Add environment variables to the Windows System environment
+	SdShowMsg("Adding environment variables to the windows system environment ...", TRUE);
 	AddShibConfigEnvironmentVar();
 	Delay(2);
 	SdShowMsg("",FALSE);	

@@ -28,6 +28,8 @@ file0=\mysql-4.0.13\share\english\errmsg.sys
 file1=\mysql-4.0.13\share\english\errmsg.txt
 
 [lib\debug]
+file0=\xml-security-c-1.1.0\Build\Win32\VC6\Debug\xsec_1_1_0D.dll
+file1=\xml-security-c-1.1.0\Build\Win32\VC6\Debug\xsec_1D.lib
 file2=\curl-7.11.1\lib\libcurld.lib
 file3=\curl-7.11.1\lib\libcurld.dll
 file4=\openssl-0.9.7d\out32dll.dbg\ssleay32.lib
@@ -39,9 +41,7 @@ file9=\log4cpp-0.3.4b\msvc6\log4cppDLL\Debug\log4cppD.lib
 file20=\xerces-c2_5_0-win32\bin\xerces-c_2_5_0D.dll
 file21=\xerces-c2_5_0-win32\lib\xerces-c_2D.lib
 file10=\log4cpp-0.3.4b\msvc6\log4cppDLL\Debug\log4cppD.dll
-file22=\xml-security-c-1.1.0\Build\Win32\VC6\Debug\xsec_1D.lib
 file11=\log4cpp-0.3.4b\msvc6\log4cppDLL\Debug\NTEventLogAppender.dll
-file23=\xml-security-c-1.1.0\Build\Win32\VC6\Debug\xsec_1_1_0D.dll
 file12=..\oncrpc\Debug\oncrpc.lib
 file13=..\oncrpc\Debug\oncrpc.dll
 file14=..\..\..\opensaml\c\saml\Debug\saml_4D.lib
@@ -78,10 +78,10 @@ SubDir0=doc\opensaml
 SubDir1=doc\shibboleth
 
 [include]
-SubDir4=include\rpc
-SubDir5=include\saml
-SubDir6=include\shib
-SubDir7=include\shib-target
+SubDir0=include\rpc
+SubDir1=include\saml
+SubDir2=include\shib
+SubDir3=include\shib-target
 
 [doc\opensaml]
 file0=..\..\..\opensaml\c\doc\CURL.LICENSE
@@ -203,6 +203,8 @@ file6=..\..\..\opensaml\c\schemas\xmldsig-core-schema.xsd
 file7=..\..\..\opensaml\c\schemas\cs-sstc-schema-assertion-01.xsd
 
 [lib]
+file0=\xml-security-c-1.1.0\Build\Win32\VC6\Release\xsec_1.lib
+file1=\xml-security-c-1.1.0\Build\Win32\VC6\Release\xsec_1_1_0.dll
 file15=..\shib-target\Release\shibtarget_4.dll
 file16=..\shib\Release\shib_5.lib
 file17=..\shib\Release\shib_5.dll
@@ -221,8 +223,6 @@ file20=\xerces-c2_5_0-win32\lib\xerces-c_2.lib
 file21=\xerces-c2_5_0-win32\bin\xerces-c_2_5_0.dll
 file10=..\oncrpc\Release\oncrpc.lib
 file11=..\oncrpc\Release\oncrpc.dll
-file22=\xml-security-c-1.1.0\Build\Win32\VC6\Release\xsec_1.lib
-file23=\xml-security-c-1.1.0\Build\Win32\VC6\Release\xsec_1_1_0.dll
 file12=..\..\..\opensaml\c\saml\Release\saml_4.dll
 file13=..\..\..\opensaml\c\saml\Release\saml_4.lib
 file14=..\shib-target\Release\shibtarget_4.lib
