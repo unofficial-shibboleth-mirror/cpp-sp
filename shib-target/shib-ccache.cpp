@@ -295,18 +295,13 @@ void InternalCCache::remove(const char* key)
 {
   log->debug("removing cache entry \"key\"", key);
 
-  // grab the entry from the database.  We'll have a readlock on it.
-  CCacheEntry* entry = findi(key);
-
-  if (!entry)
-    return;
-
-  // grab the cache write lock
+  // lock the cache for writing, which means we know nobody is sitting in find()
   lock->wrlock();
 
-  // verify we've still got the same entry.
-  if (entry != findi(key)) {
-    // Nope -- must've already been removed.
+  // grab the entry from the database.
+  CCacheEntry* entry = findi(key);
+
+  if (!entry) {
     lock->unlock();
     return;
   }
