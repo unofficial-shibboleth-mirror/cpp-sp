@@ -731,7 +731,8 @@ ShibTarget::doExportAssertions(bool exportAssertion)
             os << *(m_priv->m_pre_response);
             unsigned int outlen;
             XMLByte* serialized = Base64::encode(reinterpret_cast<XMLByte*>((char*)os.str().c_str()), os.str().length(), &outlen);
-            for (XMLByte* pos=serialized, *pos2=serialized; *pos2; pos2++)
+	    XMLByte *pos, *pos2;
+            for (pos=serialized, pos2=serialized; *pos2; pos2++)
                 if (isgraph(*pos2))
                     *pos++=*pos2;
             *pos=0;
