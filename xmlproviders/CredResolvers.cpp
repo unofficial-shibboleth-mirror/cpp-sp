@@ -102,7 +102,7 @@ protected:
     vector<XSECCryptoX509*> m_xseccerts;
 };
 
-extern "C" ICredResolver* FileCredResolverFactory(const DOMElement* e)
+IPlugIn* FileCredResolverFactory(const DOMElement* e)
 {
     return new FileResolver(e);
 }

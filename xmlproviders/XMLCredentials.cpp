@@ -90,13 +90,13 @@ namespace {
         const ICredResolver* lookup(const char* id) const;
 
     protected:
-        virtual ReloadableXMLFileImpl* newImplementation(const char* pathname) const;
-        virtual ReloadableXMLFileImpl* newImplementation(const DOMElement* e) const;
+        virtual ReloadableXMLFileImpl* newImplementation(const char* pathname, bool first=true) const;
+        virtual ReloadableXMLFileImpl* newImplementation(const DOMElement* e, bool first=true) const;
     };
 
 }
 
-extern "C" ICredentials* XMLCredentialsFactory(const DOMElement* e)
+IPlugIn* XMLCredentialsFactory(const DOMElement* e)
 {
     XMLCredentials* creds=new XMLCredentials(e);
     try {
@@ -109,12 +109,12 @@ extern "C" ICredentials* XMLCredentialsFactory(const DOMElement* e)
     return creds;    
 }
 
-ReloadableXMLFileImpl* XMLCredentials::newImplementation(const char* pathname) const
+ReloadableXMLFileImpl* XMLCredentials::newImplementation(const char* pathname, bool first) const
 {
     return new XMLCredentialsImpl(pathname);
 }
 
-ReloadableXMLFileImpl* XMLCredentials::newImplementation(const DOMElement* e) const
+ReloadableXMLFileImpl* XMLCredentials::newImplementation(const DOMElement* e, bool first) const
 {
     return new XMLCredentialsImpl(e);
 }
@@ -144,14 +144,18 @@ void XMLCredentialsImpl::init()
             
             if (!cr_type.empty()) {
                 try {
-                    ICredResolver* cr=ShibConfig::getConfig().newCredResolver(cr_type.c_str(),child);
-                    if (!cr)
-                        throw CredentialException("unknown or unimplemented type of credential resolver");
-                    m_resolverMap[id.get()]=cr;
+                    IPlugIn* plugin=ShibConfig::getConfig().m_plugMgr.newPlugin(cr_type.c_str(),child);
+                    ICredResolver* cr=dynamic_cast<ICredResolver*>(plugin);
+                    if (cr)
+                        m_resolverMap[id.get()]=cr;
+                    else {
+                        log.error("plugin was not a credential resolver");
+                        throw UnsupportedExtensionException("plugin was not a credential resolver");
+                    }
                 }
                 catch (SAMLException& e) {
                     log.error("failed to instantiate credential resolver (%s): %s", id.get(), e.what());
-                    throw CredentialException("Failed to instantiate credential resolver");
+                    throw;
                 }
             }
             else {
@@ -184,9 +188,11 @@ XMLCredentialsImpl::~XMLCredentialsImpl()
 
 const ICredResolver* XMLCredentials::lookup(const char* id) const
 {
-    XMLCredentialsImpl* impl=dynamic_cast<XMLCredentialsImpl*>(getImplementation());
-    XMLCredentialsImpl::resolvermap_t::const_iterator i=impl->m_resolverMap.find(id);
-    if (i!=impl->m_resolverMap.end())
-        return i->second;
+    if (id) {
+        XMLCredentialsImpl* impl=dynamic_cast<XMLCredentialsImpl*>(getImplementation());
+        XMLCredentialsImpl::resolvermap_t::const_iterator i=impl->m_resolverMap.find(id);
+        if (i!=impl->m_resolverMap.end())
+            return i->second;
+    }
     return NULL;
 }

@@ -72,12 +72,13 @@ using namespace log4cpp;
 
 // Metadata Factories
 
-extern "C" IMetadata* XMLMetadataFactory(const DOMElement* source);
-extern "C" IRevocation* XMLRevocationFactory(const DOMElement* source);
-extern "C" ITrust* XMLTrustFactory(const DOMElement* source);
-extern "C" ICredentials* XMLCredentialsFactory(const DOMElement* source);
-extern "C" IAAP* XMLAAPFactory(const DOMElement* source);
-extern "C" ICredResolver* FileCredResolverFactory(const DOMElement* e);
+PlugManager::Factory XMLMetadataFactory;
+PlugManager::Factory XMLRevocationFactory;
+PlugManager::Factory XMLTrustFactory;
+PlugManager::Factory XMLCredentialsFactory;
+PlugManager::Factory XMLAAPFactory;
+PlugManager::Factory FileCredResolverFactory;
+
 
 extern "C" SAMLAttribute* ShibAttributeFactory(DOMElement* e)
 {
@@ -140,12 +141,12 @@ extern "C" int XML_EXPORTS saml_extension_init(void*)
 
     // Register metadata factories
     ShibConfig& conf=ShibConfig::getConfig();
-    conf.regFactory("edu.internet2.middleware.shibboleth.metadata.provider.XML",&XMLMetadataFactory);
-    conf.regFactory("edu.internet2.middleware.shibboleth.revocation.provider.XML",&XMLRevocationFactory);
-    conf.regFactory("edu.internet2.middleware.shibboleth.trust.provider.XML",&XMLTrustFactory);
-    conf.regFactory("edu.internet2.middleware.shibboleth.common.Credentials",&XMLCredentialsFactory);
-    conf.regFactory("edu.internet2.middleware.shibboleth.common.Credentials.FileCredentialResolver",&FileCredResolverFactory);
-    conf.regFactory("edu.internet2.middleware.shibboleth.target.AAP.provider.XML",&XMLAAPFactory);
+    conf.m_plugMgr.regFactory("edu.internet2.middleware.shibboleth.common.provider.XMLMetadata",&XMLMetadataFactory);
+    conf.m_plugMgr.regFactory("edu.internet2.middleware.shibboleth.common.provider.XMLRevocation",&XMLRevocationFactory);
+    conf.m_plugMgr.regFactory("edu.internet2.middleware.shibboleth.common.provider.XMLTrust",&XMLTrustFactory);
+    conf.m_plugMgr.regFactory("edu.internet2.middleware.shibboleth.common.Credentials",&XMLCredentialsFactory);
+    conf.m_plugMgr.regFactory("edu.internet2.middleware.shibboleth.common.Credentials.FileCredentialResolver",&FileCredResolverFactory);
+    conf.m_plugMgr.regFactory("edu.internet2.middleware.shibboleth.target.provider.XMLAAP",&XMLAAPFactory);
 
     SAMLAttribute::setFactory(&ShibAttributeFactory);
 

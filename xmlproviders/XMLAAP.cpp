@@ -141,13 +141,13 @@ namespace {
         Iterator<const IAttributeRule*> getAttributeRules() const;
 
     protected:
-        virtual ReloadableXMLFileImpl* newImplementation(const char* pathname) const;
-        virtual ReloadableXMLFileImpl* newImplementation(const DOMElement* e) const;
+        virtual ReloadableXMLFileImpl* newImplementation(const char* pathname, bool first=true) const;
+        virtual ReloadableXMLFileImpl* newImplementation(const DOMElement* e, bool first=true) const;
     };
 
 }
 
-extern "C" IAAP* XMLAAPFactory(const DOMElement* e)
+IPlugIn* XMLAAPFactory(const DOMElement* e)
 {
     XMLAAP* aap=new XMLAAP(e);
     try
@@ -162,12 +162,12 @@ extern "C" IAAP* XMLAAPFactory(const DOMElement* e)
     return aap;
 }
 
-ReloadableXMLFileImpl* XMLAAP::newImplementation(const DOMElement* e) const
+ReloadableXMLFileImpl* XMLAAP::newImplementation(const DOMElement* e, bool first) const
 {
     return new XMLAAPImpl(e);
 }
 
-ReloadableXMLFileImpl* XMLAAP::newImplementation(const char* pathname) const
+ReloadableXMLFileImpl* XMLAAP::newImplementation(const char* pathname, bool first) const
 {
     return new XMLAAPImpl(pathname);
 }

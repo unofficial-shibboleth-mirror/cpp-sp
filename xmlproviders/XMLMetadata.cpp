@@ -126,6 +126,7 @@ namespace {
             // External contract
             const IProvider* getProvider() const {return m_provider;}
             Iterator<const XMLCh*> getProtocolSupportEnumeration() const {return m_protocolEnum;}
+            bool hasSupport(const XMLCh* version) const;
             Iterator<const IKeyDescriptor*> getKeyDescriptors() const {return m_keys;}
             const IOrganization* getOrganization() const {return NULL;}
             Iterator<const IContactPerson*> getContacts() const {return m_provider->getContacts();}
@@ -243,12 +244,12 @@ namespace {
         const IProvider* lookup(const XMLCh* providerId) const;
         
     protected:
-        virtual ReloadableXMLFileImpl* newImplementation(const char* pathname) const;
-        virtual ReloadableXMLFileImpl* newImplementation(const DOMElement* e) const;
+        virtual ReloadableXMLFileImpl* newImplementation(const char* pathname, bool first=true) const;
+        virtual ReloadableXMLFileImpl* newImplementation(const DOMElement* e, bool first=true) const;
     };
 }
 
-extern "C" IMetadata* XMLMetadataFactory(const DOMElement* e)
+IPlugIn* XMLMetadataFactory(const DOMElement* e)
 {
     XMLMetadata* m=new XMLMetadata(e);
     try {
@@ -261,12 +262,12 @@ extern "C" IMetadata* XMLMetadataFactory(const DOMElement* e)
     return m;    
 }
 
-ReloadableXMLFileImpl* XMLMetadata::newImplementation(const DOMElement* e) const
+ReloadableXMLFileImpl* XMLMetadata::newImplementation(const DOMElement* e, bool first) const
 {
     return new XMLMetadataImpl(e);
 }
 
-ReloadableXMLFileImpl* XMLMetadata::newImplementation(const char* pathname) const
+ReloadableXMLFileImpl* XMLMetadata::newImplementation(const char* pathname, bool first) const
 {
     return new XMLMetadataImpl(pathname);
 }
@@ -275,6 +276,16 @@ XMLMetadataImpl::Role::~Role()
 {
     for (vector<const IKeyDescriptor*>::iterator i=m_keys.begin(); i!=m_keys.end(); i++)
         delete const_cast<IKeyDescriptor*>(*i);
+}
+
+bool XMLMetadataImpl::Role::hasSupport(const XMLCh* version) const
+{
+    Iterator<const XMLCh*> i(m_protocolEnum);
+    while (i.hasNext()) {
+        if (!XMLString::compareString(version,i.next()))
+            return true;
+    }
+    return false;
 }
 
 XMLMetadataImpl::ContactPerson::ContactPerson(const DOMElement* e) : m_root(e), m_name(e->getAttributeNS(NULL,SHIB_L(Name)))

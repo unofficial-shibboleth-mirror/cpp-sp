@@ -107,13 +107,13 @@ namespace {
         Iterator<void*> getRevocationLists(const IProvider* provider, const IProviderRole* role=NULL) const;
 
     protected:
-        virtual ReloadableXMLFileImpl* newImplementation(const char* pathname) const;
-        virtual ReloadableXMLFileImpl* newImplementation(const DOMElement* e) const;
+        virtual ReloadableXMLFileImpl* newImplementation(const char* pathname, bool first=true) const;
+        virtual ReloadableXMLFileImpl* newImplementation(const DOMElement* e, bool first=true) const;
     };
 
 }
 
-extern "C" IRevocation* XMLRevocationFactory(const DOMElement* e)
+IPlugIn* XMLRevocationFactory(const DOMElement* e)
 {
     XMLRevocation* r=new XMLRevocation(e);
     try {
@@ -127,12 +127,12 @@ extern "C" IRevocation* XMLRevocationFactory(const DOMElement* e)
 }
 
 
-ReloadableXMLFileImpl* XMLRevocation::newImplementation(const char* pathname) const
+ReloadableXMLFileImpl* XMLRevocation::newImplementation(const char* pathname, bool first) const
 {
     return new XMLRevocationImpl(pathname);
 }
 
-ReloadableXMLFileImpl* XMLRevocation::newImplementation(const DOMElement* e) const
+ReloadableXMLFileImpl* XMLRevocation::newImplementation(const DOMElement* e, bool first) const
 {
     return new XMLRevocationImpl(e);
 }
