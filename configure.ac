@@ -1,7 +1,7 @@
 AC_PREREQ([2.50])
-AC_INIT([shibboleth], [1.2], [shibboleth-users@internet2.edu], [shibboleth])
+AC_INIT([shibboleth], [1.2.1], [shibboleth-users@internet2.edu], [shibboleth])
 AM_CONFIG_HEADER(config.h)
-AM_INIT_AUTOMAKE(shibboleth, 1.2)
+AM_INIT_AUTOMAKE([shibboleth],[1.2.1])
 
 sinclude(acx_pthread.m4)
 sinclude(acx_rpctest.m4)
@@ -145,7 +145,7 @@ AC_TRY_LINK(
         [#if _XERCES_VERSION >= 20300
 xercesc::XMLPlatformUtils::Initialize();
 #else
-#error Need Xerces-C version 2.3 or higher
+#error Need Xerces-C version 2.3+ only
 #endif],
 	[AC_DEFINE(HAVE_LIBXERCESC,1,[Define if Xerces-C library was found])],
 	[AC_MSG_ERROR([unable to link with Xerces])])
