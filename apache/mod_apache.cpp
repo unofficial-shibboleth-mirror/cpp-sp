@@ -154,6 +154,12 @@ extern "C" const char* shib_set_server_string_slot(cmd_parms* parms, void*, cons
     return NULL;
 }
 
+extern "C" const char* shib_ap_set_file_slot(cmd_parms* parms, void* arg1, const char* arg2)
+{
+  ap_set_file_slot(parms, arg1, arg2);
+  return DECLINE_CMD;
+}
+
 /********************************************************************************/
 // Some other useful helper function(s)
 
@@ -1415,7 +1421,7 @@ static command_rec shire_cmds[] = {
   {"ShibExportAssertion", (config_fn_t)ap_set_flag_slot,
    (void *) XtOffsetOf (shib_dir_config, bExportAssertion),
    OR_AUTHCFG, FLAG, "Export SAML assertion to Shibboleth-defined header?"},
-  {"AuthGroupFile", (config_fn_t)ap_set_file_slot,
+  {"AuthGroupFile", (config_fn_t)shib_ap_set_file_slot,
    (void *) XtOffsetOf (shib_dir_config, szAuthGrpFile),
    OR_AUTHCFG, TAKE1, "text file containing group names and member user IDs"},
   {"ShibRequireAll", (config_fn_t)ap_set_flag_slot,
@@ -1488,7 +1494,7 @@ static command_rec shib_cmds[] = {
   AP_INIT_FLAG("ShibExportAssertion", (config_fn_t)ap_set_flag_slot,
          (void *) offsetof (shib_dir_config, bExportAssertion),
         OR_AUTHCFG, "Export SAML assertion to Shibboleth-defined header?"),
-  AP_INIT_TAKE1("AuthGroupFile", (config_fn_t)ap_set_file_slot,
+  AP_INIT_TAKE1("AuthGroupFile", (config_fn_t)shib_ap_set_file_slot,
 		(void *) offsetof (shib_dir_config, szAuthGrpFile),
 		OR_AUTHCFG, "text file containing group names and member user IDs"),
   AP_INIT_FLAG("ShibRequireAll", (config_fn_t)ap_set_flag_slot,
