@@ -55,6 +55,7 @@ using namespace std;
 using namespace saml;
 using namespace shibboleth;
 using namespace shibtarget;
+using namespace log4cpp;
 
 #define PLUGIN_VER_MAJOR 1
 #define PLUGIN_VER_MINOR 0
@@ -133,11 +134,11 @@ private:
   void upgradeDatabase(MYSQL*);
   void getVersion(MYSQL*, int* major_p, int* minor_p);
   bool repairTable(MYSQL*&, const char* table);
-  void mysqlInit(void);
 };
 
 // Forward declarations
 extern "C" void shib_mysql_destroy_handle(void* data);
+void mysqlInit(const DOMElement* e, Category& log);
 
 /*************************************************************************
  * The CCache here talks to a MySQL database.  The database stores
@@ -153,7 +154,9 @@ MYSQL* ShibMySQLCCache::getMYSQL() const
 
 void ShibMySQLCCache::thread_init()
 {
+#ifdef _DEBUG
   saml::NDC ndc("thread_init");
+#endif
 
   // Connect to the database
   MYSQL* mysql = mysql_init(NULL);
@@ -199,20 +202,22 @@ void ShibMySQLCCache::thread_init()
 
 ShibMySQLCCache::ShibMySQLCCache(const DOMElement* e)
 {
+#ifdef _DEBUG
   saml::NDC ndc("shibmysql::ShibMySQLCCache");
+#endif
 
   m_mysql = ThreadKey::create(&shib_mysql_destroy_handle);
-  log = &(log4cpp::Category::getInstance("shibmysql::ShibMySQLCCache"));
+  log = &(Category::getInstance("shibmysql::ShibMySQLCCache"));
 
   m_root=e;
   initialized = false;
-  mysqlInit();
+  mysqlInit(e,*log);
   thread_init();
   initialized = true;
 
   m_cache = dynamic_cast<ISessionCache*>(
       SAMLConfig::getConfig().getPlugMgr().newPlugin(
-        "edu.internet2.middleware.shibboleth.target.provider.MemorySessionCache", e
+        "edu.internet2.middleware.shibboleth.sp.provider.MemorySessionCacheProvider", e
         )
     );
 
@@ -238,7 +243,10 @@ ShibMySQLCCache::~ShibMySQLCCache()
 
 ISessionCacheEntry* ShibMySQLCCache::find(const char* key, const IApplication* application)
 {
+#ifdef _DEBUG
   saml::NDC ndc("ShibMySQLCCache::find");
+#endif
+
   ISessionCacheEntry* res = m_cache->find(key, application);
   if (!res) {
 
@@ -321,7 +329,9 @@ void ShibMySQLCCache::insert(
     saml::SAMLResponse* r,
     const IRoleDescriptor* source)
 {
+#ifdef _DEBUG
   saml::NDC ndc("ShibMySQLCCache::insert");
+#endif
   ostringstream os;
   os << *s;
 
@@ -348,7 +358,9 @@ void ShibMySQLCCache::insert(
 
 void ShibMySQLCCache::remove(const char* key)
 {
+#ifdef _DEBUG
   saml::NDC ndc("ShibMySQLCCache::remove");
+#endif
 
   // Remove the cached version
   m_cache->remove(key);
@@ -369,9 +381,11 @@ void ShibMySQLCCache::remove(const char* key)
 
 void ShibMySQLCCache::cleanup()
 {
-  Mutex* mutex = Mutex::create();
+#ifdef _DEBUG
   saml::NDC ndc("ShibMySQLCCache::cleanup");
+#endif
 
+  Mutex* mutex = Mutex::create();
   thread_init();
 
   int rerun_timer = 0;
@@ -594,16 +608,21 @@ void ShibMySQLCCache::getVersion(MYSQL* mysql, int* major_p, int* minor_p)
   throw SAMLException("ShibMySQLCCache::getVersion(): error reading version");
 }
 
-void ShibMySQLCCache::mysqlInit(void)
+void mysqlInit(const DOMElement* e, Category& log)
 {
-  log->info ("Opening MySQL Database");
+  static bool done = false;
+  if (done) {
+    log.info("MySQL embedded server already initialized");
+    return;
+  }
+  log.info("initializing MySQL embedded server");
 
   // Setup the argument array
   vector<string> arg_array;
-  arg_array.push_back("shar");
+  arg_array.push_back("shibboleth");
 
   // grab any MySQL parameters from the config file
-  const DOMElement* e=saml::XML::getFirstChildElement(m_root,ShibTargetConfig::SHIBTARGET_NS,Argument);
+  e=saml::XML::getFirstChildElement(e,ShibTargetConfig::SHIBTARGET_NS,Argument);
   while (e) {
       auto_ptr_char arg(e->getFirstChild()->getNodeValue());
       if (arg.get())
@@ -621,6 +640,7 @@ void ShibMySQLCCache::mysqlInit(void)
   mysql_server_init(arg_count, (char **)args, NULL);
 
   delete[] args;
+  done = true;
 }  
 
 /*************************************************************************
@@ -667,18 +687,26 @@ IPlugIn* new_mysql_ccache(const DOMElement* e)
   return new ShibMySQLCCache(e);
 }
 
-#define PLUGINTYPE "edu.internet2.middleware.shibboleth.target.provider.MySQLSessionCache"
+IPlugIn* new_mysql_replay(const DOMElement* e)
+{
+  return NULL;
+}
+
+#define REPLAYPLUGINTYPE "edu.internet2.middleware.shibboleth.sp.provider.MySQLReplayCacheProvider"
+#define SESSIONPLUGINTYPE "edu.internet2.middleware.shibboleth.sp.provider.MySQLSessionCacheProvider"
 
 extern "C" int SHIBMYSQL_EXPORTS saml_extension_init(void*)
 {
   // register this ccache type
-  SAMLConfig::getConfig().getPlugMgr().regFactory(PLUGINTYPE, &new_mysql_ccache);
+  SAMLConfig::getConfig().getPlugMgr().regFactory(REPLAYPLUGINTYPE, &new_mysql_replay);
+  SAMLConfig::getConfig().getPlugMgr().regFactory(SESSIONPLUGINTYPE, &new_mysql_ccache);
   return 0;
 }
 
 extern "C" void SHIBMYSQL_EXPORTS saml_extension_term()
 {
-  SAMLConfig::getConfig().getPlugMgr().unregFactory(PLUGINTYPE);
+  SAMLConfig::getConfig().getPlugMgr().unregFactory(REPLAYPLUGINTYPE);
+  SAMLConfig::getConfig().getPlugMgr().unregFactory(SESSIONPLUGINTYPE);
 }
 
 /*************************************************************************
