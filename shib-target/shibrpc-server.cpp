@@ -105,7 +105,7 @@ void set_rpc_status_x(ShibRpcError *error, ShibRpcStatus status,
     set_rpc_status(error, status, NULL, NULL);
     return;
   }
-  auto_ptr<char> orig(XMLString::transcode(origin));
+  auto_ptr_char orig(origin);
   set_rpc_status(error, status, msg, orig.get());
 }
 
@@ -223,7 +223,7 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
   log.debug ("shire location: %s", argp->shire_location);
 
   XMLByte* post=reinterpret_cast<XMLByte*>(argp->saml_post);
-  auto_ptr<XMLCh> location(XMLString::transcode(argp->shire_location));
+  auto_ptr_XMLCh location(argp->shire_location);
 
   // Pull in the Policies
   Iterator<const XMLCh*> policies=ShibTargetConfig::getConfig().getPolicies();
@@ -287,7 +287,7 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
 	
 	log.debug ("verify client address");
 	// Verify the client address matches authentication
-	auto_ptr<char> this_ip(XMLString::transcode(ip));
+	auto_ptr_char this_ip(ip);
 	if (strcmp (argp->client_addr, this_ip.get()))
 	  throw ShibTargetException(SHIBRPC_IPADDR_MISMATCH,
 	    "The IP address provided by your origin site did not match "
@@ -306,7 +306,7 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
     catch (XMLException &e)
     {
       log.error ("received XML exception");
-      auto_ptr<char> msg(XMLString::transcode(e.getMessage()));
+      auto_ptr_char msg(e.getMessage());
       throw ShibTargetException (SHIBRPC_XML_EXCEPTION, msg.get(), origin);
     }
   }
@@ -337,8 +337,8 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
 
   // Create a new cookie
   SAMLIdentifier id;
-  auto_ptr<char> c(XMLString::transcode(id));
-  char *cookie = c.get();
+  auto_ptr_char c(id);
+  const char *cookie = c.get();
 
   // Cache this session with the cookie
   g_shibTargetCCache->insert(cookie, as, argp->client_addr);
