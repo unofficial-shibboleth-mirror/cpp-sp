@@ -34,11 +34,7 @@ public:
 
   time_t createTime;
   int defaultLife;
-
-  static saml::QName g_respondWith;
 };
-
-saml::QName ResourceEntryPriv::g_respondWith(saml::XML::SAML_NS,L(AttributeStatement));
 
 /******************************************************************************/
 /* ResourceEntry:  A Credential Cache Entry for a particular Resource URL     */
@@ -77,7 +73,6 @@ ResourceEntry::ResourceEntry(const Resource &resource,
   auto_ptr<ResourceEntryPriv> priv(new ResourceEntryPriv());
 
   auto_ptr<XMLCh> resourceURL(XMLString::transcode(resource.getURL()));
-  ArrayIterator<saml::QName> respond_withs(&ResourceEntryPriv::g_respondWith);
 
   // Clone the subject...
   // 1) I know the static_cast is safe from clone()
@@ -88,7 +83,7 @@ ResourceEntry::ResourceEntry(const Resource &resource,
   SAMLAttributeQuery* q=new SAMLAttributeQuery(subject.get(),resourceURL.get(),
 					       resource.getDesignators().clone());
   subject.release();
-  auto_ptr<SAMLRequest> req(new SAMLRequest(respond_withs,q));
+  auto_ptr<SAMLRequest> req(new SAMLRequest(EMPTY(QName),q));
 
   // Try this request against all the bindings in the AuthenticationStatement
   // (i.e. send it to each AA in the list of bindings)
