@@ -93,6 +93,14 @@ namespace shibboleth
                 : saml::base(code,msg,p,detail) {RTTI(name);} \
             name(const saml::QName& code, const std::string& msg, const saml::namedparams& p, DOMElement* detail=NULL) \
                 : saml::base(code,msg,p,detail) {RTTI(name);} \
+            name(HRESULT code, const char* msg, const saml::params& p=saml::params(), DOMElement* detail=NULL) \
+                : saml::base(code,msg,p,detail) {RTTI(name);} \
+            name(HRESULT code, const char* msg, const saml::namedparams& p, DOMElement* detail=NULL) \
+                : saml::base(code,msg,p,detail) {RTTI(name);} \
+            name(HRESULT code, const std::string& msg, const saml::params& p=saml::params(), DOMElement* detail=NULL) \
+                : saml::base(code,msg,p,detail) {RTTI(name);} \
+            name(HRESULT code, const std::string& msg, const saml::namedparams& p, DOMElement* detail=NULL) \
+                : saml::base(code,msg,p,detail) {RTTI(name);} \
             name(DOMElement* e) : saml::base(e) {RTTI(name);} \
             name(std::istream& in) : saml::base(in) {RTTI(name);} \
             virtual ~name() throw () {} \
