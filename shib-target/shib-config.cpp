@@ -107,6 +107,7 @@ bool STConfig::init(const char* schemadir, const char* config)
     SAMLConfig& samlConf=SAMLConfig::getConfig();
     if (schemadir)
         samlConf.schema_dir = schemadir;
+    SAMLSOAPBinding::version=string("Shibboleth: ") + PACKAGE_VERSION;
     try {
         if (!samlConf.init()) {
             log.fatal("Failed to initialize SAML Library");
