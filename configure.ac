@@ -22,7 +22,7 @@ AC_STRUCT_TM
 
 # Checks for library functions.
 AC_FUNC_STRFTIME
-AC_CHECK_FUNCS([strchr strdup strstr gmtime_r])
+AC_CHECK_FUNCS([strchr strdup strstr gmtime_r strcasecmp])
 AC_CHECK_HEADERS([dlfcn.h])
 
 # C++ requirements
