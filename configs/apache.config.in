@@ -24,6 +24,13 @@ ShibConfig @-PKGSYSCONFDIR-@/shibboleth.xml
 <Files *.shire>
 SetHandler shib-shire-post
 </Files>
+#
+# Another way of addressing this is to apply Shibboleth
+# globally to the site in "lazy" session mode:
+# <Location />
+# AuthType shibboleth
+# require shibboleth
+# </Location>
 
 #
 # Used for example logo and style sheet in error templates.
