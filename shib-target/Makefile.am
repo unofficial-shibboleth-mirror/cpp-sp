@@ -14,7 +14,7 @@ INIFLAGS = -DSHIBTARGET_INIFILE=\"$(sysconfdir)/@PACKAGE@/shibboleth.ini\"
 AM_CXXFLAGS = $(MY_AM_CXXFLAGS) $(INIFLAGS)
 
 libshib_targetdir = $(includedir)/shib-target
-libshib_target_HEADERS = shib-target.h shibrpc.h ccache-utils.h
+libshib_target_HEADERS = shib-target.h shibrpc.h
 noinst_HEADERS = internal.h
 
 libshib_target_la_SOURCES = \
