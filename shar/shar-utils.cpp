@@ -104,7 +104,7 @@ void SharChild::run()
 {
   NDC ndc("run");
   if (SHARUtils::shar_create_svc(sock, v_protos) != 0)
-    return;
+   return;
 
   fd_set readfds;
   struct timeval tv = { 0, 0 };

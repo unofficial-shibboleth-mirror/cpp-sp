@@ -73,11 +73,13 @@
 #include <signal.h>
 
 #include "shar-utils.h"
+#include <log4cpp/Category.hh>
 
 using namespace std;
 using namespace saml;
 using namespace shibboleth;
 using namespace shibtarget;
+using namespace log4cpp;
 
 #ifndef FD_SETSIZE
 # define FD_SETSIZE 1024
@@ -95,7 +97,7 @@ static bool new_connection(IListener::ShibSocket& listener, const Iterator<ShibR
     IListener::ShibSocket sock;
 
     // Accept the connection.
-    if (ShibTargetConfig::getConfig().getINI()->getListener()->accept(listener, sock))
+    if (!ShibTargetConfig::getConfig().getINI()->getListener()->accept(listener, sock))
         return false;
 
     // We throw away the result because the children manage themselves...
@@ -106,6 +108,7 @@ static bool new_connection(IListener::ShibSocket& listener, const Iterator<ShibR
 static void shar_svc_run(IListener::ShibSocket& listener, const Iterator<ShibRPCProtocols>& protos)
 {
     NDC ndc("shar_svc_run");
+    Category& log=Category::getInstance("SHAR");
 
     while (shar_run) {
         fd_set readfds;
@@ -124,10 +127,11 @@ static void shar_svc_run(IListener::ShibSocket& listener, const Iterator<ShibRPC
                 continue;
         
             default:
-                new_connection(listener, protos);
+                if (!new_connection(listener, protos))
+                    log.error("new_connection failed");
         }
     }
-    printf("shar_svc_run ended\n");
+    log.info("shar_svc_run ended");
 }
 
 #ifdef WIN32
