@@ -374,6 +374,10 @@ RPCError* SHIRE::sessionIsValid(const char* session_id, const char* ip) const
     log.error ("No cookie value was provided");
     return new RPCError(SHIBRPC_NO_SESSION, "No cookie value was provided");
   }
+  else if (strchr(session_id,'=')) {
+    log.error ("The cookie value wasn't extracted successfully, use a more unique cookie name for your installation.");
+    return new RPCError(SHIBRPC_INTERNAL_ERROR, "The cookie value wasn't extracted successfully, use a more unique cookie name for your installation.");
+  }
 
   if (!ip || !*ip) {
     log.error ("Invalid IP Address");
