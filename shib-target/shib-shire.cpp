@@ -72,6 +72,9 @@ RPCError* SHIRE::sessionIsValid(const char* cookie, const char* ip, const char* 
     return new RPCError(-1, "Invalid IP Address");
   }
 
+  // make sure we pass _something_ to the server
+  if (!url) url = "";
+
   m_priv->log->info ("is session valid: %s", ip);
   m_priv->log->debug ("session cookie: %s", cookie);
 
