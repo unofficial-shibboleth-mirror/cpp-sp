@@ -328,29 +328,24 @@ ShibTarget::doHandleProfile(void)
     if ((!shireSSL.first || shireSSL.second) && m_priv->m_protocol == "https")
       throw ShibTargetException(SHIBRPC_OK, "blocked non-SSL access to session creation service");
 
-    // If this is a GET, we manufacture an AuthnRequest.
+    // If this is a GET, we see if it's a lazy session request, otherwise
+    // assume it's a profile response and process it.
+    string cgistr;
     if (!strcasecmp(m_priv->m_method.c_str(), "GET")) {
-      string args = getArgs();
-      const char* areq=args.empty() ? NULL : getLazyAuthnRequest(args.c_str());
-      if (!areq)
-        throw ShibTargetException(SHIBRPC_OK, "malformed GET arguments to request a new session");
-      return pair<bool,void*>(true, sendRedirect(areq));
+      cgistr = getArgs();
+      const char* areq=cgistr.empty() ? NULL : getLazyAuthnRequest(cgistr.c_str());
+      if (areq)
+        return pair<bool,void*>(true, sendRedirect(areq));
     }
-    else if (strcasecmp(m_priv->m_method.c_str(), "POST")) {
-      throw ShibTargetException(SHIBRPC_OK, "blocked non-POST to SHIRE POST processor");
-    }
-
-    // Make sure this POST is an appropriate content type
-    if (m_priv->m_content_type.empty() ||
-        strcasecmp(m_priv->m_content_type.c_str(),"application/x-www-form-urlencoded")) {
-      string er = string("blocked bad content-type to SHIRE POST processor: ") +
-        m_priv->m_content_type;
-      throw ShibTargetException(SHIBRPC_OK, er.c_str());
+    else if (!strcasecmp(m_priv->m_method.c_str(), "POST")) {
+        if (m_priv->m_content_type.empty() || strcasecmp(m_priv->m_content_type.c_str(),"application/x-www-form-urlencoded")) {
+            string er = string("blocked bad content-type to SHIRE POST processor: ") + m_priv->m_content_type;
+            throw ShibTargetException(SHIBRPC_OK, er.c_str());
+        }
+        // Read the POST Data
+        cgistr = getPostData();
     }
 	
-    // Read the POST Data
-    string cgistr = getPostData();
-
     // process the submission
     string cookie,target;
     RPCError* status = sessionNew(cgistr.c_str(), m_priv->m_remote_addr.c_str(),cookie,target);
