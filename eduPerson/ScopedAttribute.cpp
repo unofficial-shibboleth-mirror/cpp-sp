@@ -62,6 +62,9 @@
 
 #include "../shib/shib.h"
 #include "eduPerson.h"
+
+#include <log4cpp/Category.hh>
+
 using namespace saml;
 using namespace shibboleth;
 using namespace eduPerson;
@@ -98,7 +101,7 @@ ScopedAttribute::~ScopedAttribute() {}
 bool ScopedAttribute::addValue(DOMElement* e)
 {
     static XMLCh empty[] = {chNull};
-    if (accept(e) && SAMLAttribute::addValue(e))
+    if (SAMLAttribute::addValue(e))
     {
         DOMAttr* scope=e->getAttributeNodeNS(NULL,Scope);
         m_scopes.push_back(scope ? scope->getNodeValue() : empty);
@@ -121,6 +124,14 @@ bool ScopedAttribute::accept(DOMElement* e) const
     while (domains.hasNext())
         if (domains.next()==this_scope)
             return true;
+
+    NDC ndc("accept");
+    log4cpp::Category& log=log4cpp::Category::getInstance("eduPerson.ScopedAttribute");
+    if (log.isWarnEnabled())
+    {
+        auto_ptr<char> tmp(XMLString::transcode(this_scope));
+        log.warn("rejecting value with scope of %s",tmp.get());
+    }
     return false;
 }
 
