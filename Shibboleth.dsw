@@ -54,6 +54,90 @@ Package=<4>
 
 ###############################################################################
 
+Project: "mod_shibrm"=.\mod_shibrm\mod_shibrm.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name shibtarget
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name shib
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "mod_shire"=.\mod_shire\mod_shire.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name shibtarget
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name shib
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "oncrpc"=.\oncrpc\oncrpc.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "posttest"=.\posttest\posttest.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name shib
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "shar"=.\shar\shar.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name oncrpc
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name shib
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name shibtarget
+    End Project Dependency
+}}}
+
+###############################################################################
+
 Project: "shib"=.\shib\shib.dsp - Package Owner=<4>
 
 Package=<5>
@@ -74,6 +158,12 @@ Package=<5>
 
 Package=<4>
 {{{
+    Begin Project Dependency
+    Project_Dep_Name shib
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name oncrpc
+    End Project Dependency
 }}}
 
 ###############################################################################
@@ -87,8 +177,20 @@ Package=<5>
 Package=<4>
 {{{
     Begin Project Dependency
-    Project_Dep_Name eduPerson
+    Project_Dep_Name shib
     End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "siterefresh"=.\siterefresh\siterefresh.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
     Begin Project Dependency
     Project_Dep_Name shib
     End Project Dependency
