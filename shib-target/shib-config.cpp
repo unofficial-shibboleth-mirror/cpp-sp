@@ -29,7 +29,7 @@ public:
   void shutdown();
   ShibINI& getINI() { return *ini; }
 
-  Iterator<xstring> getPolicies() { return Iterator<xstring>(policies); }
+  Iterator<const XMLCh*> getPolicies() { return Iterator<const XMLCh*>(policies); }
 
   void ref();
 private:
@@ -37,7 +37,7 @@ private:
   ShibConfig& shibConf;
   ShibINI* ini;
   int refcount;
-  vector<xstring> policies;
+  vector<const XMLCh*> policies;
 };
 
 namespace {
@@ -215,8 +215,7 @@ STConfig::STConfig(const char* app_name, const char* inifile)
     ShibINI::Iterator* iter = ini->tag_iterator(SHIBTARGET_POLICIES);
 
     for (const string* str = iter->begin(); str; str = iter->next()) {
-        auto_ptr<XMLCh> temp(XMLString::transcode(ini->get(ext, *str)));
-        policies.push_back(temp.get());
+        policies.push_back(XMLString::transcode(ini->get(ext, *str)));
     }
     delete iter;
   }
@@ -227,6 +226,9 @@ STConfig::STConfig(const char* app_name, const char* inifile)
 
 STConfig::~STConfig()
 {
+  for (vector<const XMLCh*>::iterator i=policies.begin(); i!=policies.end(); i++)
+    delete const_cast<XMLCh*>(*i);
+    
   if (ini) delete ini;
   
   if (g_shibTargetCCache)
