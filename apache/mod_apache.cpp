@@ -269,7 +269,10 @@ extern "C" int shib_check_user(request_rec* r)
 
         // If no session required, bail now.
         if (!requireSession.second)
-            return DECLINED;	// XXX: Or should this be OK?
+            return OK;	// XXX: Or should this be DECLINED?
+                        // Has to be OK because DECLINED will just cause Apache to fail when it can't locate
+                        // anything to process the AuthType. No session plus requireSession false means 
+                        // do not authenticate the user.
         else if (status->isRetryable()) {
             // Oops, session is invalid. Generate AuthnRequest.
             ap_table_setn(r->headers_out,"Location",ap_pstrdup(r->pool,shire.getAuthnRequest(targeturl)));
@@ -747,7 +750,12 @@ extern "C" int shib_auth_checker(request_rec* r)
         t = reqs[x].requirement;
         w = ap_getword_white(r->pool, &t);
 
-        if (!strcmp(w,"valid-user")) {
+        if (!strcasecmp(w,"Shibboleth")) {
+            // This is a dummy rule needed because Apache conflates authn and authz.
+            // Without some require rule, AuthType is ignored and no check_user hooks run.
+            SHIB_AP_CHECK_IS_OK;
+        }
+        else if (!strcmp(w,"valid-user") && application_id) {
             ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_auth_checker() accepting valid-user");
             SHIB_AP_CHECK_IS_OK;
         }
