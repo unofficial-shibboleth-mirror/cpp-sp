@@ -103,9 +103,11 @@
 					<element name="MemorySessionCache">
 						<complexType>
 							<complexContent>
-								<extension base="anyType">
+								<restriction base="anyType" mixed="false">
+									<sequence/>
 									<attributeGroup ref="conf:SessionCacheProperties"/>
-								</extension>
+									<anyAttribute namespace="##other" processContents="lax"/>
+								</restriction>
 							</complexContent>
 						</complexType>
 					</element>
@@ -366,7 +368,6 @@
 					<attribute name="lifetime" type="unsignedInt" use="optional"/>
 					<attribute name="timeout" type="unsignedInt" use="optional"/>
 					<attribute name="checkAddress" type="boolean" use="optional"/>
-			        <anyAttribute namespace="##other" processContents="lax"/>
                 </extension>
             </complexContent>
 		</complexType>
@@ -382,9 +383,9 @@
                 	<attribute name="shire" type="anyURI" use="required"/>
                 	<attribute name="rm" type="anyURI" use="required"/>
                 	<attribute name="access" type="anyURI" use="required"/>
-                	<attribute name="supportContact" type="string" use="required"/>
-                	<attribute name="logoLocation" type="anyURI" use="required"/>
-                	<anyAttribute namespace="##any" processContents="lax"/>
+                	<attribute name="supportContact" type="string" use="optional"/>
+                	<attribute name="logoLocation" type="anyURI" use="optional"/>
+                	<attribute name="styleSheet" type="anyURI" use="optional"/>
                 </extension>
             </complexContent>
 		</complexType>
