@@ -79,14 +79,9 @@ namespace {
 
 ShibConfig::~ShibConfig() {}
 
-extern "C" IOriginSiteMapper* XMLMapperFactory(const char* source)
+extern "C" IOriginSiteMapper* XMLSiteMapperFactory(const char* source)
 {
     return new XMLOriginSiteMapper(source,false);
-}
-
-extern "C" IOriginSiteMapper* XMLTrustMapperFactory(const char* source)
-{
-    return new XMLOriginSiteMapper(source,true);
 }
 
 bool ShibInternalConfig::init()
@@ -120,8 +115,7 @@ bool ShibInternalConfig::init()
         return false;
     }
     
-    regFactory("edu.internet2.middleware.shibboleth.metadata.origin.XML",&XMLMapperFactory);
-    regFactory("edu.internet2.middleware.shibboleth.metadata.origin.XMLTrust",&XMLTrustMapperFactory);
+    regFactory("edu.internet2.middleware.shibboleth.metadata.origin.XML",&XMLSiteMapperFactory);
 
     return true;
 }
