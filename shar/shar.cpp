@@ -102,13 +102,21 @@ static bool new_connection(IListener::ShibSocket& listener, const Iterator<ShibR
         return false;
 
     // We throw away the result because the children manage themselves...
-    new SharChild(sock,protos);
+    try {
+        new SharChild(sock,protos);
+    }
+    catch (...) {
+        saml::NDC ndc("new_connection");
+        Category& log=Category::getInstance("SHAR");
+        log.crit("error starting new child thread to service request");
+        return false;
+    }
     return true;
 }
 
 static void shar_svc_run(IListener::ShibSocket& listener, const Iterator<ShibRPCProtocols>& protos)
 {
-    NDC ndc("shar_svc_run");
+    saml::NDC ndc("shar_svc_run");
     Category& log=Category::getInstance("SHAR");
 
     while (shar_run) {
@@ -129,7 +137,7 @@ static void shar_svc_run(IListener::ShibSocket& listener, const Iterator<ShibRPC
         
             default:
                 if (!new_connection(listener, protos))
-                    log.error("new_connection failed");
+                    log.crit("new_connection failed");
         }
     }
     log.info("shar_svc_run ended");
