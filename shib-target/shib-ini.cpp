@@ -357,7 +357,7 @@ XMLApplication::XMLApplication(const DOMElement* e, const XMLApplication* base) 
         load(e,log,this);
 
         ShibTargetConfig& conf=ShibTargetConfig::getConfig();
-        ShibConfig& shibConf=ShibConfig::getConfig();
+        SAMLConfig& shibConf=SAMLConfig::getConfig();
         int i;
         DOMNodeList* nlist=e->getElementsByTagNameNS(saml::XML::SAML_NS,L(AttributeDesignator));
         for (i=0; nlist && i<nlist->getLength(); i++) {
@@ -652,7 +652,7 @@ void XMLConfigImpl::init(bool first)
             throw MalformedException("Construction requires a valid configuration file: (conf:ShibbolethTargetConfig as root element)");
         }
 
-        ShibConfig& shibConf=ShibConfig::getConfig();
+        SAMLConfig& shibConf=SAMLConfig::getConfig();
         ShibTargetConfig& conf=ShibTargetConfig::getConfig();
         const DOMElement* SHAR=saml::XML::getFirstChildElement(ReloadableXMLFileImpl::m_root,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(SHAR));
         const DOMElement* SHIRE=saml::XML::getFirstChildElement(ReloadableXMLFileImpl::m_root,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(SHIRE));

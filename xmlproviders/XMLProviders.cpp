@@ -143,7 +143,7 @@ extern "C" int XML_EXPORTS saml_extension_init(void*)
     saml::XML::registerSchema(::XML::XMLENC_NS,::XML::XMLENC_SCHEMA_ID);
 
     // Register metadata factories
-    ShibConfig& conf=ShibConfig::getConfig();
+    SAMLConfig& conf=SAMLConfig::getConfig();
     conf.m_plugMgr.regFactory("edu.internet2.middleware.shibboleth.common.provider.XMLMetadata",&XMLMetadataFactory);
     conf.m_plugMgr.regFactory("edu.internet2.middleware.shibboleth.common.provider.XMLRevocation",&XMLRevocationFactory);
     conf.m_plugMgr.regFactory("edu.internet2.middleware.shibboleth.common.provider.XMLTrust",&XMLTrustFactory);
@@ -159,7 +159,7 @@ extern "C" int XML_EXPORTS saml_extension_init(void*)
 extern "C" void XML_EXPORTS saml_extension_term()
 {
     // Unregister metadata factories
-    ShibConfig& conf=ShibConfig::getConfig();
+    SAMLConfig& conf=SAMLConfig::getConfig();
     conf.m_plugMgr.unregFactory("edu.internet2.middleware.shibboleth.common.provider.XMLMetadata");
     conf.m_plugMgr.unregFactory("edu.internet2.middleware.shibboleth.common.provider.XMLRevocation");
     conf.m_plugMgr.unregFactory("edu.internet2.middleware.shibboleth.common.provider.XMLTrust");

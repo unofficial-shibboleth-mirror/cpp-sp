@@ -162,14 +162,14 @@ void Override::loadACL(const DOMElement* e, Category& log)
     const DOMElement* acl=saml::XML::getFirstChildElement(e,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(htaccess));
     if (acl) {
         log.info("building htaccess provider...");
-        plugin=ShibConfig::getConfig().m_plugMgr.newPlugin(shibtarget::XML::htaccessType,acl);
+        plugin=SAMLConfig::getConfig().m_plugMgr.newPlugin(shibtarget::XML::htaccessType,acl);
     }
     else {
         acl=saml::XML::getFirstChildElement(e,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(AccessControlProvider));
         if (acl) {
             auto_ptr_char type(acl->getAttributeNS(NULL,SHIBT_L(type)));
             log.info("building Access Control provider of type %s...",type.get());
-            plugin=ShibConfig::getConfig().m_plugMgr.newPlugin(type.get(),acl);
+            plugin=SAMLConfig::getConfig().m_plugMgr.newPlugin(type.get(),acl);
         }
     }
     if (plugin) {

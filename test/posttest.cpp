@@ -94,7 +94,7 @@ int main(int argc,char* argv[])
         dummy->setAttributeNS(NULL,url,src.get());
 
         IMetadata* metadatas[1];
-        metadatas[0]=dynamic_cast<IMetadata*>(conf2.m_plugMgr.newPlugin("edu.internet2.middleware.shibboleth.provider.XMLMetadata",dummy));
+        metadatas[0]=dynamic_cast<IMetadata*>(conf1.m_plugMgr.newPlugin("edu.internet2.middleware.shibboleth.provider.XMLMetadata",dummy));
         dummydoc->release();
         ArrayIterator<IMetadata*> sites(metadatas,1);
         

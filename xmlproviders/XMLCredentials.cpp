@@ -144,7 +144,7 @@ void XMLCredentialsImpl::init()
             
             if (!cr_type.empty()) {
                 try {
-                    IPlugIn* plugin=ShibConfig::getConfig().m_plugMgr.newPlugin(cr_type.c_str(),child);
+                    IPlugIn* plugin=SAMLConfig::getConfig().m_plugMgr.newPlugin(cr_type.c_str(),child);
                     ICredResolver* cr=dynamic_cast<ICredResolver*>(plugin);
                     if (cr)
                         m_resolverMap[id.get()]=cr;

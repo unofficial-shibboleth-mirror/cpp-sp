@@ -121,26 +121,6 @@ void ShibConfig::term()
     g_openssl_locks.clear();
 }
 
-void PlugManager::regFactory(const char* type, Factory* factory)
-{
-    if (type && factory)
-        m_map[type]=factory;
-}
-
-IPlugIn* PlugManager::newPlugin(const char* type, const DOMElement* source)
-{
-    FactoryMap::const_iterator i=m_map.find(type);
-    if (i==m_map.end())
-        throw saml::UnsupportedExtensionException(std::string("unable to build plugin of type '") + type + "'");
-    return i->second(source);
-}
-
-void PlugManager::unregFactory(const char* type)
-{
-    if (type)
-        m_map.erase(type);
-}
-
 ShibConfig& ShibConfig::getConfig()
 {
     return g_config;

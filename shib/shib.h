@@ -92,38 +92,6 @@ namespace shibboleth
     DECLARE_SHIB_EXCEPTION(CredentialException,SAMLException);
     DECLARE_SHIB_EXCEPTION(InvalidHandleException,RetryableProfileException);
 
-    // Manages pluggable implementations of interfaces
-    // Would prefer this to be a template, but the Windows STL isn't DLL-safe.
-
-    struct SHIB_EXPORTS IPlugIn
-    {
-        virtual ~IPlugIn() {}
-    };
-
-    class SHIB_EXPORTS PlugManager
-    {
-    public:
-        PlugManager() {}
-        ~PlugManager() {}
-
-        typedef IPlugIn* Factory(const DOMElement* source);
-        void regFactory(const char* type, Factory* factory);
-        void unregFactory(const char* type);
-        IPlugIn* newPlugin(const char* type, const DOMElement* source);
-
-    private:
-        typedef std::map<std::string, Factory*> FactoryMap;
-        FactoryMap m_map;
-    };
-
-    // Various interfaces inherit from this to support locking
-    struct SHIB_EXPORTS ILockable
-    {
-        virtual void lock()=0;
-        virtual void unlock()=0;
-        virtual ~ILockable() {}
-    };    
-
     // Metadata abstract interfaces, based on SAML 2.0
     
     struct SHIB_EXPORTS IContactPerson
@@ -311,13 +279,13 @@ namespace shibboleth
         virtual ~IScopedRoleDescriptor() {}
     };
        
-    struct SHIB_EXPORTS IMetadata : public virtual ILockable, public virtual IPlugIn
+    struct SHIB_EXPORTS IMetadata : public virtual saml::ILockable, public virtual saml::IPlugIn
     {
         virtual const IEntityDescriptor* lookup(const XMLCh* id) const=0;
         virtual ~IMetadata() {}
     };
 
-    struct SHIB_EXPORTS IRevocation : public virtual ILockable, public virtual IPlugIn
+    struct SHIB_EXPORTS IRevocation : public virtual saml::ILockable, public virtual saml::IPlugIn
     {
         virtual saml::Iterator<void*> getRevocationLists(const IEntityDescriptor* provider, const IRoleDescriptor* role=NULL) const=0;
         virtual ~IRevocation() {}
@@ -326,7 +294,7 @@ namespace shibboleth
     // Trust interface hides *all* details of signature and SSL validation.
     // Pluggable providers can fully override the Shibboleth trust model here.
     
-    struct SHIB_EXPORTS ITrust : public virtual IPlugIn
+    struct SHIB_EXPORTS ITrust : public virtual saml::IPlugIn
     {
         virtual bool validate(
             const saml::Iterator<IRevocation*>& revocations,
@@ -339,7 +307,7 @@ namespace shibboleth
 
     // Credentials interface abstracts access to "owned" keys and certificates.
     
-    struct SHIB_EXPORTS ICredResolver : public virtual IPlugIn
+    struct SHIB_EXPORTS ICredResolver : public virtual saml::IPlugIn
     {
         virtual void attach(void* ctx) const=0;
         virtual XSECCryptoKey* getKey() const=0;
@@ -349,7 +317,7 @@ namespace shibboleth
         virtual ~ICredResolver() {}
     };
 
-    struct SHIB_EXPORTS ICredentials : public virtual ILockable, public virtual IPlugIn
+    struct SHIB_EXPORTS ICredentials : public virtual saml::ILockable, public virtual saml::IPlugIn
     {
         virtual const ICredResolver* lookup(const char* id) const=0;
         virtual ~ICredentials() {}
@@ -369,7 +337,7 @@ namespace shibboleth
         virtual ~IAttributeRule() {}
     };
     
-    struct SHIB_EXPORTS IAAP : public virtual ILockable, public virtual IPlugIn
+    struct SHIB_EXPORTS IAAP : public virtual saml::ILockable, public virtual saml::IPlugIn
     {
         virtual bool anyAttribute() const=0;
         virtual const IAttributeRule* lookup(const XMLCh* attrName, const XMLCh* attrNamespace=NULL) const=0;
@@ -410,18 +378,6 @@ namespace shibboleth
     };
 
     // Glue classes between abstract metadata and concrete providers
-    
-    class SHIB_EXPORTS Locker
-    {
-    public:
-        Locker(ILockable* lockee) : m_lockee(lockee) {m_lockee->lock();}
-        ~Locker() {if (m_lockee) m_lockee->unlock();}
-        
-    private:
-        Locker(const Locker&);
-        void operator=(const Locker&);
-        ILockable* m_lockee;
-    };
     
     class SHIB_EXPORTS Metadata
     {
@@ -595,9 +551,6 @@ namespace shibboleth
 
         // enables runtime and clients to access configuration
         static ShibConfig& getConfig();
-
-        // allows pluggable implementations of metadata and configuration data
-        PlugManager m_plugMgr;
     };
 
     /* Helper classes for implementing reloadable XML-based config files
@@ -618,7 +571,7 @@ namespace shibboleth
         const DOMElement* m_root;
     };
 
-    class SHIB_EXPORTS ReloadableXMLFile : protected virtual ILockable
+    class SHIB_EXPORTS ReloadableXMLFile : protected virtual saml::ILockable
     {
     public:
         ReloadableXMLFile(const DOMElement* e);

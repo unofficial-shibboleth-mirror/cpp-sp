@@ -210,7 +210,7 @@ ShibMySQLCCache::ShibMySQLCCache(const DOMElement* e)
   initialized = true;
 
   m_cache = dynamic_cast<ISessionCache*>(
-      ShibConfig::getConfig().m_plugMgr.newPlugin(
+      SAMLConfig::getConfig().m_plugMgr.newPlugin(
         "edu.internet2.middleware.shibboleth.target.provider.MemorySessionCache", e
         )
     );
@@ -619,13 +619,13 @@ IPlugIn* new_mysql_ccache(const DOMElement* e)
 extern "C" int SHIBMYSQL_EXPORTS saml_extension_init(void*)
 {
   // register this ccache type
-  ShibConfig::getConfig().m_plugMgr.regFactory(PLUGINTYPE, &new_mysql_ccache);
+  SAMLConfig::getConfig().m_plugMgr.regFactory(PLUGINTYPE, &new_mysql_ccache);
   return 0;
 }
 
 extern "C" void SHIBMYSQL_EXPORTS saml_extension_term()
 {
-  ShibConfig::getConfig().m_plugMgr.unregFactory(PLUGINTYPE);
+  SAMLConfig::getConfig().m_plugMgr.unregFactory(PLUGINTYPE);
 }
 
 /*************************************************************************

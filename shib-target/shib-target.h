@@ -149,7 +149,7 @@ namespace shibtarget {
         virtual ~IPropertySet() {}
     };
 
-    struct SHIBTARGET_EXPORTS IListener : public virtual shibboleth::IPlugIn
+    struct SHIBTARGET_EXPORTS IListener : public virtual saml::IPlugIn
     {
 #ifdef WIN32
         typedef SOCKET ShibSocket;
@@ -165,7 +165,7 @@ namespace shibtarget {
         virtual ~IListener() {}
     };
 
-    struct SHIBTARGET_EXPORTS IAccessControl : public virtual shibboleth::ILockable, public virtual shibboleth::IPlugIn
+    struct SHIBTARGET_EXPORTS IAccessControl : public virtual saml::ILockable, public virtual saml::IPlugIn
     {
         virtual bool authorized(
             const saml::SAMLAuthenticationStatement& authn, const saml::Iterator<saml::SAMLAssertion*>& attrs
@@ -173,7 +173,7 @@ namespace shibtarget {
         virtual ~IAccessControl() {}
     };
 
-    struct SHIBTARGET_EXPORTS IRequestMapper : public virtual shibboleth::ILockable, public virtual shibboleth::IPlugIn
+    struct SHIBTARGET_EXPORTS IRequestMapper : public virtual saml::ILockable, public virtual saml::IPlugIn
     {
         typedef std::pair<const IPropertySet*,IAccessControl*> Settings;
         virtual Settings getSettingsFromURL(const char* url) const=0;
@@ -197,7 +197,7 @@ namespace shibtarget {
         virtual ~IApplication() {}
     };
 
-        struct SHIBTARGET_EXPORTS ISessionCacheEntry : public virtual shibboleth::ILockable
+        struct SHIBTARGET_EXPORTS ISessionCacheEntry : public virtual saml::ILockable
     {
         virtual bool isValid(time_t lifetime, time_t timeout) const=0;
         virtual const char* getClientAddress() const=0;
@@ -208,7 +208,7 @@ namespace shibtarget {
         virtual ~ISessionCacheEntry() {}
     };
 
-    struct SHIBTARGET_EXPORTS ISessionCache : public virtual shibboleth::IPlugIn
+    struct SHIBTARGET_EXPORTS ISessionCache : public virtual saml::IPlugIn
     {
         virtual void thread_init()=0;
         virtual void thread_end()=0;
@@ -226,7 +226,7 @@ namespace shibtarget {
         virtual ~ISessionCache() {}
     };
 
-    struct SHIBTARGET_EXPORTS IConfig : public virtual shibboleth::ILockable, public virtual IPropertySet, public virtual shibboleth::IPlugIn
+    struct SHIBTARGET_EXPORTS IConfig : public virtual saml::ILockable, public virtual IPropertySet, public virtual saml::IPlugIn
     {
         virtual const IListener* getListener() const=0;
         virtual ISessionCache* getSessionCache() const=0;
