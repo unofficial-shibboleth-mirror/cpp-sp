@@ -20,7 +20,7 @@ extern "C" {
 #include <winsock.h>
 typedef SOCKET ShibSocket;
 typedef u_short ShibSockName;
-#define SHIB_SHAR_SOCKET 12345	/* shar portnumber */
+#define SHIB_SHAR_SOCKET 12345  /* shar portnumber */
 
 #else  /* UNIX */
 
@@ -79,7 +79,7 @@ void shib_sock_close (ShibSocket s, ShibSockName name);
 
 /* application names */
 #define SHIBTARGET_GENERAL	"general"
-#define SHIBTARGET_SHAR		"shar"
+#define SHIBTARGET_SHAR	    "shar"
 #define SHIBTARGET_SHIRE	"shire"
 #define SHIBTARGET_RM		"rm"
 #define SHIBTARGET_POLICIES "policies"
@@ -411,8 +411,11 @@ namespace shibtarget {
     static ShibTargetConfig& init(const char* app_name, const char* inifile);
     static ShibTargetConfig& getConfig();
     virtual void shutdown() = 0;
+    virtual ~ShibTargetConfig();
     virtual ShibINI& getINI() = 0;
     virtual saml::Iterator<const XMLCh*> getPolicies() = 0;
+    
+    ShibSockName m_SocketName;
   };
 
 } // namespace

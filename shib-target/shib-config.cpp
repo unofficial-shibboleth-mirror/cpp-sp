@@ -83,6 +83,13 @@ ShibTargetConfig& ShibTargetConfig::getConfig()
     return *g_Config;
 }
 
+ShibTargetConfig::~ShibTargetConfig()
+{
+#ifdef WIN32
+#else
+    if (m_SocketName) free(m_SocketName);
+#endif
+}
 
 /****************************************************************************/
 // STConfig
@@ -219,6 +226,19 @@ STConfig::STConfig(const char* app_name, const char* inifile)
     }
     delete iter;
   }
+  
+  string sockname=ini->get(SHIBTARGET_GENERAL, "sharsocket");
+#ifdef WIN32
+  if (sockname.length()>0)
+    m_SocketName=atoi(sockname.c_str());
+  else
+    m_SocketName=SHIB_SHAR_SOCKET;
+#else
+  if (sockname.length()>0)
+    m_SocketName=strdup(sockname.c_str());
+  else
+    m_SocketName=strdup(SHIB_SHAR_SOCKET);
+#endif
 
   ref();
   log.debug("finished");

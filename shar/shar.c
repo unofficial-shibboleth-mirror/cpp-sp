@@ -150,7 +150,7 @@ static int parse_args(int argc, char* argv[])
     case 'f':
 #ifndef WIN32
       /* XXX: I know that this is a string on Unix */
-      unlink (SHIB_SHAR_SOCKET);
+      unlink (ShibTargetConfig::getConfig().m_SocketName);
 #endif
       break;
     default:
@@ -169,9 +169,6 @@ main (int argc, char *argv[])
     { SHIBRPC_PROG, SHIBRPC_VERS_1, shibrpc_prog_1 }
   };
 
-  if (parse_args (argc, argv) != 0)
-    usage(argv[0]);
-
   if (setup_signals() != 0)
     return -1;
 
@@ -179,12 +176,15 @@ main (int argc, char *argv[])
   if (shib_target_initialize(SHIBTARGET_SHAR, config))
     return -2;
 
+  if (parse_args (argc, argv) != 0)
+    usage(argv[0]);
+
   /* Create the SHAR listener socket */
   if (shib_sock_create (&sock) != 0)
     return -3;
 
   /* Bind to the proper port */
-  if (shib_sock_bind (sock, SHIB_SHAR_SOCKET) != 0)
+  if (shib_sock_bind (sock, ShibTargetConfig::getConfig().m_SocketName) != 0)
     return -4;
 
   /* Initialize the SHAR Utilitites */
@@ -196,7 +196,7 @@ main (int argc, char *argv[])
   /* Finalize the SHAR, close all clients */
   shar_utils_fini();
 
-  shib_sock_close(sock, SHIB_SHAR_SOCKET);
+  shib_sock_close(sock, ShibTargetConfig::getConfig().m_SocketName);
   fprintf (stderr, "shar_svc_run returned.\n");
   return 0;
 }

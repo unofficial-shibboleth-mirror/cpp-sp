@@ -32,7 +32,7 @@ using namespace shibtarget;
 
 namespace {
     RPCHandle *rpc_handle = NULL;
-    ShibTargetConfig* g_szConfig = NULL;
+    ShibTargetConfig* g_Config = NULL;
 
     map<string,string> g_mapAttribNameToHeader;
     map<string,string> g_mapAttribRuleToHeader;
@@ -154,7 +154,7 @@ extern "C" void shibrm_child_init(server_rec* s, pool* p)
     ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,s,
 		 "shibrm_child_init() starting");
 
-    if (g_szConfig) {
+    if (g_Config) {
       ap_log_error(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,s,
 		   "shibrm_child_init(): already initialized!");
       exit (1);
@@ -162,7 +162,7 @@ extern "C" void shibrm_child_init(server_rec* s, pool* p)
 
     try {
       // Assume that we've been initialized from the SHIRE module!
-      g_szConfig = &(ShibTargetConfig::init(SHIBTARGET_RM, "NOOP"));
+      g_Config = &(ShibTargetConfig::init(SHIBTARGET_RM, "NOOP"));
     } catch (...) {
       ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,s,
 		   "shibrm_child_init() failed to initialize SHIB Target");
@@ -173,7 +173,7 @@ extern "C" void shibrm_child_init(server_rec* s, pool* p)
 
     // Create the RPC Handle..  Note: this should be per _thread_
     // if there is some way to do that reasonably..
-    rpc_handle = new RPCHandle(SHIB_SHAR_SOCKET, SHIBRPC_PROG, SHIBRPC_VERS_1);
+    rpc_handle = new RPCHandle(g_Config->m_SocketName, SHIBRPC_PROG, SHIBRPC_VERS_1);
 
     // Transcode the attribute names we know about for quick handling map access.
     for (map<string,string>::const_iterator i=g_mapAttribNameToHeader.begin();
@@ -194,8 +194,8 @@ extern "C" void shibrm_child_init(server_rec* s, pool* p)
 extern "C" void shibrm_child_exit(server_rec* s, pool* p)
 {
     delete rpc_handle;
-    g_szConfig->shutdown();
-    g_szConfig = NULL;
+    g_Config->shutdown();
+    g_Config = NULL;
     ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,s,"shibrm_child_exit() done");
 }
 
@@ -273,7 +273,7 @@ static const char* get_target(request_rec* r, const char* target)
 {
   const char* serverName = get_service_name(r);
   string tag;
-  if ((g_szConfig->getINI()).get_tag (serverName, "normalizeRequest", true, &tag))
+  if ((g_Config->getINI()).get_tag (serverName, "normalizeRequest", true, &tag))
   {
     if (ShibINI::boolean (tag))
     {
@@ -296,7 +296,7 @@ extern "C" int shibrm_check_auth(request_rec* r)
     threadid << "[" << getpid() << "] shibrm" << '\0';
     saml::NDC ndc(threadid.str().c_str());
 
-    ShibINI& ini = g_szConfig->getINI();
+    ShibINI& ini = g_Config->getINI();
     const char* serverName = get_service_name (r);
 
     shibrm_dir_config* dc=

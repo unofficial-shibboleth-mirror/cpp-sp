@@ -40,7 +40,7 @@ namespace {
     char* g_szSHIREURL = NULL;
     char* g_szSHIREConfig = NULL;
     RPCHandle *rpc_handle = NULL;
-    ShibTargetConfig * g_szConfig = NULL;
+    ShibTargetConfig * g_Config = NULL;
 }
 
 // per-server configuration structure
@@ -171,14 +171,14 @@ extern "C" void shire_child_init(server_rec* s, pool* p)
     ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,s,
 		 "shire_child_init() starting");
 
-    if (g_szConfig) {
+    if (g_Config) {
       ap_log_error(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,s,
 		   "shire_child_init(): already initialized!");
       exit (1);
     }
 
     try {
-      g_szConfig = &(ShibTargetConfig::init(SHIBTARGET_SHIRE, g_szSHIREConfig));
+      g_Config = &(ShibTargetConfig::init(SHIBTARGET_SHIRE, g_szSHIREConfig));
     } catch (...) {
       ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,s,
 		   "shire_child_init() failed to initialize SHIB Target");
@@ -187,7 +187,7 @@ extern "C" void shire_child_init(server_rec* s, pool* p)
 
     // Create the RPC Handle..  Note: this should be per _thread_
     // if there is some way to do that reasonably..
-    rpc_handle = new RPCHandle(SHIB_SHAR_SOCKET, SHIBRPC_PROG, SHIBRPC_VERS_1);
+    rpc_handle = new RPCHandle(g_Config->m_SocketName, SHIBRPC_PROG, SHIBRPC_VERS_1);
 
     ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,s,"shire_child_init() done");
 }
@@ -200,8 +200,8 @@ extern "C" void shire_child_init(server_rec* s, pool* p)
 extern "C" void shire_child_exit(server_rec* s, pool* p)
 {
     delete rpc_handle;
-    g_szConfig->shutdown();
-    g_szConfig = NULL;
+    g_Config->shutdown();
+    g_Config = NULL;
     ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,s,"shire_child_exit() done");
 }
 
@@ -249,7 +249,7 @@ static const char* get_target(request_rec* r, const char* target)
 {
   const char* serverName = get_service_name(r);
   string tag;
-  if ((g_szConfig->getINI()).get_tag (serverName, "normalizeRequest", true, &tag))
+  if ((g_Config->getINI()).get_tag (serverName, "normalizeRequest", true, &tag))
   {
     if (ShibINI::boolean (tag))
     {
@@ -268,7 +268,7 @@ static const char* get_target(request_rec* r, const char* target)
 
 static const char* get_shire_location(request_rec* r, const char* target, bool encode)
 {
-  ShibINI& ini = g_szConfig->getINI();
+  ShibINI& ini = g_Config->getINI();
   const char* serverName = get_service_name(r);
   string shire_location;
 
@@ -334,7 +334,7 @@ extern "C" int shire_check_user(request_rec* r)
     threadid << "[" << getpid() << "] shire" << '\0';
     saml::NDC ndc(threadid.str().c_str());
 
-    ShibINI& ini = g_szConfig->getINI();
+    ShibINI& ini = g_Config->getINI();
     ShibMLP markupProcessor;
 
     ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
@@ -506,7 +506,7 @@ extern "C" int shire_post_handler (request_rec* r)
   threadid << "[" << getpid() << "] shire" << '\0';
   saml::NDC ndc(threadid.str().c_str());
 
-  ShibINI& ini = g_szConfig->getINI();
+  ShibINI& ini = g_Config->getINI();
   ShibMLP markupProcessor;
 
   ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
