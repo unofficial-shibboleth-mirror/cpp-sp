@@ -35,9 +35,11 @@ using namespace shibtarget;
 
 extern "C" module MODULE_VAR_EXPORT shire_module;
 
-static char* g_szSHIREConfig = NULL;
-static RPCHandle *rpc_handle = NULL;
-static ShibTargetConfig * g_szConfig = NULL;
+namespace {
+    char* g_szSHIREConfig = NULL;
+    RPCHandle *rpc_handle = NULL;
+    ShibTargetConfig * g_szConfig = NULL;
+}
 
 // per-server configuration structure
 struct shire_server_config

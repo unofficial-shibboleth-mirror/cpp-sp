@@ -30,12 +30,14 @@ using namespace saml;
 using namespace shibboleth;
 using namespace shibtarget;
 
-static RPCHandle *rpc_handle = NULL;
-static ShibTargetConfig* g_szConfig = NULL;
+namespace {
+    RPCHandle *rpc_handle = NULL;
+    ShibTargetConfig* g_szConfig = NULL;
 
-map<string,string> g_mapAttribNameToHeader;
-map<string,string> g_mapAttribRuleToHeader;
-map<xstring,string> g_mapAttribNames;
+    map<string,string> g_mapAttribNameToHeader;
+    map<string,string> g_mapAttribRuleToHeader;
+    map<xstring,string> g_mapAttribNames;
+}
 
 extern "C" const char*
 ap_set_attribute_mapping(cmd_parms* parms, void*, const char* attrName,
