@@ -102,14 +102,14 @@ STConfig::STConfig(const char* app_name, const char* inifile)
     samlConf.ssl_calist = tag;
 
   if (!samlConf.init()) {
-    log.error ("Failed to initialize SAML Library");
+    log.fatal ("Failed to initialize SAML Library");
     throw runtime_error ("Failed to initialize SAML Library");
   } else
     log.debug ("SAML Initialized");
 
   // Init Shib
   if (! ini->get_tag (app, SHIBTARGET_TAG_SITES, true, &tag)) {
-    log.crit("No Sites File found in configuration");
+    log.fatal("No Sites File found in configuration");
     throw runtime_error ("No Sites File found in configuration");
   }
 
@@ -120,15 +120,23 @@ STConfig::STConfig(const char* app_name, const char* inifile)
     verifyKey = new X509Certificate (X509Certificate::PEM, tag.c_str());
   }
 
-  shibConf.origin_mapper = new XMLOriginSiteMapper(sitesFile.c_str(),
+  try
+  {
+    shibConf.origin_mapper = new XMLOriginSiteMapper(sitesFile.c_str(),
 						   samlConf.ssl_calist.c_str(),
 						   verifyKey);
+  }
+  catch (SAMLException& ex)
+  {
+      log.fatal("Failed to initialize OriginSiteMapper");
+      throw runtime_error(string("Failed to initialize OriginSiteMapper: ") + ex.what());
+  }
 
   if (verifyKey)
     delete verifyKey;
   
   if (!shibConf.init()) {
-    log.error ("Failed to initialize Shib library");
+    log.fatal ("Failed to initialize Shib library");
     throw runtime_error ("Failed to initialize Shib Library");
   } else
     log.debug ("Shib Initialized");
@@ -147,12 +155,12 @@ STConfig::STConfig(const char* app_name, const char* inifile)
       string file = ini->get(ext, *str);
       try
       {
-	samlConf.saml_register_extension(file.c_str(),ini);
-	log.debug("%s: loading %s", str->c_str(), file.c_str());
+        samlConf.saml_register_extension(file.c_str(),ini);
+        log.debug("%s: loading %s", str->c_str(), file.c_str());
       }
       catch (SAMLException& e)
       {
-	log.error("%s: %s", str->c_str(), e.what());
+        log.crit("%s: %s", str->c_str(), e.what());
       }
     }
     delete iter;
