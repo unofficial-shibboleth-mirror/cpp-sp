@@ -194,16 +194,15 @@ namespace shibtarget {
         virtual saml::Iterator<const XMLCh*> getAudiences() const=0;
         virtual const char* getTLSCred(const shibboleth::IEntityDescriptor* provider) const=0;
         virtual const char* getSigningCred(const shibboleth::IEntityDescriptor* provider) const=0;
+        virtual saml::SAMLBrowserProfile* getBrowserProfile() const=0;
         virtual ~IApplication() {}
     };
 
-        struct SHIBTARGET_EXPORTS ISessionCacheEntry : public virtual saml::ILockable
+    struct SHIBTARGET_EXPORTS ISessionCacheEntry : public virtual saml::ILockable
     {
         virtual bool isValid(time_t lifetime, time_t timeout) const=0;
         virtual const char* getClientAddress() const=0;
-        virtual const char* getSerializedStatement() const=0;
-        virtual const saml::SAMLAuthenticationStatement* getStatement() const=0;
-        virtual void preFetch(int prefetch_window)=0;
+        virtual const saml::SAMLAuthenticationStatement* getAuthnStatement() const=0;
         virtual saml::Iterator<saml::SAMLAssertion*> getAssertions()=0;
         virtual ~ISessionCacheEntry() {}
     };
@@ -230,6 +229,7 @@ namespace shibtarget {
     {
         virtual const IListener* getListener() const=0;
         virtual ISessionCache* getSessionCache() const=0;
+        virtual saml::IReplayCache* getReplayCache() const=0;
         virtual IRequestMapper* getRequestMapper() const=0;
         virtual const IApplication* getApplication(const char* applicationId) const=0;
         virtual saml::Iterator<shibboleth::ICredentials*> getCredentialsProviders() const=0;
@@ -269,24 +269,6 @@ namespace shibtarget {
         
     private:
         unsigned long m_features;
-    };
-
-    class SHIBTARGET_EXPORTS RM
-    {
-    public:
-        RM(const IApplication* app) : m_app(app) {}
-        ~RM() {}
-    
-        RPCError* getAssertions(
-            const char* cookie,
-            const char* ip,
-            std::vector<saml::SAMLAssertion*>& assertions,
-            saml::SAMLAuthenticationStatement **statement = NULL
-            );
-        static void serialize(saml::SAMLAssertion &assertion, std::string &result);
-    
-    private:
-        const IApplication* m_app;
     };
 
     class ShibMLPPriv;
@@ -457,10 +439,11 @@ namespace shibtarget {
 
     // We're done.  Finish up.  Send either a result (error?) page or a redirect.
     // If there are no headers supplied assume the content-type == text/html
+    typedef std::pair<std::string, std::string> header_t;
     virtual void* sendPage(
 			   const std::string &msg,
 			   const std::string content_type = "text/html",
-			   const std::pair<std::string, std::string> headers[] = NULL,
+			   const saml::Iterator<header_t>& headers = EMPTY(header_t),
 			   int code = 200
 			   )=0;
     void* sendPage(const char *msg) {
@@ -500,14 +483,13 @@ namespace shibtarget {
     //   exportAssertion values passed in here are only used if the
     //   settings resource is negative.
     //
-    //   The handlePost argument declares whether doCheckAuthN() should
+    //   The handleProfile argument declares whether doCheckAuthN() should
     //   automatically call doHandlePOST() when it encounters a request for
     //   the ShireURL;  if false it will call returnOK() instead.
     //
-    std::pair<bool,void*> doCheckAuthN(bool requireSession = false,
-				       bool handlePost = false);
-    std::pair<bool,void*> doHandlePOST(void);
-    std::pair<bool,void*> doCheckAuthZ(void);
+    std::pair<bool,void*> doCheckAuthN(bool requireSession = false, bool handleProfile = false);
+    std::pair<bool,void*> doHandleProfile();
+    std::pair<bool,void*> doCheckAuthZ();
     std::pair<bool,void*> doExportAssertions(bool exportAssertion = false);
 
     //**************************************************************************
@@ -528,30 +510,24 @@ namespace shibtarget {
     // Process a lazy session setup request and turn it into an AuthnRequest
     const char* getLazyAuthnRequest(const char* query_string) const;
         
-    // Process a POST profile submission, and return (SAMLResponse,TARGET) pair.
-    std::pair<const char*,const char*>
-      getFormSubmission(const char* post, unsigned int len) const;
-        
-    RPCError* sessionCreate(
-			    const char* response,
-			    const char* ip,
-			    std::string &cookie
-			    ) const;
-    RPCError* sessionIsValid(const char* session_id, const char* ip) const;
-
-    // RM APIS
-
-    RPCError* getAssertions(
-			    const char* cookie,
-			    const char* ip,
-			    std::vector<saml::SAMLAssertion*>& assertions,
-			    saml::SAMLAuthenticationStatement **statement = NULL
-			    ) const;
-    static void serialize(saml::SAMLAssertion &assertion, std::string &result);
-
-
   protected:
-    ShibTarget(void);
+    ShibTarget();
+
+    // Currently wraps remoted interface.
+    // TODO: Move this functionality behind ISessionCache
+    RPCError* sessionNew(
+               const char* packet,
+               const char* ip,
+               std::string& cookie,
+                std::string& target
+             ) const;
+
+    RPCError* sessionGet(
+             const char* cookie,
+               const char* ip,
+               std::vector<saml::SAMLAssertion*>& assertions,
+                saml::SAMLAuthenticationStatement **statement = NULL
+              ) const;
 
     // Initialize the request from the parsed URL
     // protocol == http, https, etc
@@ -567,52 +543,6 @@ namespace shibtarget {
   private:
     mutable ShibTargetPriv *m_priv;
   };
-
-  //******************************************************************************
-  // You probably don't care about much below this line
-  // unless you are using the lower-layer APIs provided by
-  // the shib target library.
-  /*
-    class SHIBTARGET_EXPORTS SHIRE
-    {
-    public:
-        SHIRE(const IApplication* app) { m_st = new ShibTarget(app); }
-        ~SHIRE() { delete m_st; }
-        
-        // Get the session cookie name and properties for the application
-        std::pair<const char*,const char*> getCookieNameProps() const
-	  { return m_st->getCookieNameProps(); }
-        
-        // Find the default assertion consumer service for the resource
-        const char* getShireURL(const char* resource) const
-	  { return m_st->getShireURL(resource); }
-        
-        // Generate a Shib 1.x AuthnRequest redirect URL for the resource
-        const char* getAuthnRequest(const char* resource) const
-	  { return m_st->getAuthnRequest(resource); }
-        
-        // Process a lazy session setup request and turn it into an AuthnRequest
-        const char* getLazyAuthnRequest(const char* query_string) const
-	  { return m_st->getLazyAuthnRequest(query_string); }
-        
-        // Process a POST profile submission, and return (SAMLResponse,TARGET) pair.
-        std::pair<const char*,const char*> getFormSubmission(const char* post, unsigned int len) const
-	  { return m_st->getFormSubmission(post, len); }
-        
-        RPCError* sessionCreate(const char* response, const char* ip, std::string &cookie) const
-	  { return m_st->sessionCreate(response, ip, cookie); }
-        RPCError* sessionIsValid(const char* session_id, const char* ip) const
-	  { return m_st->sessionIsValid(session_id, ip); }
-    
-    private:
-	ShibTarget *m_st;
-        //const IApplication* m_app;
-        //mutable std::string m_cookieName;
-        //mutable std::string m_shireURL;
-        //mutable std::string m_authnRequest;
-        //mutable CgiParse* m_parser;
-    };
-    */
 }
 
 #endif /* SHIB_TARGET_H */

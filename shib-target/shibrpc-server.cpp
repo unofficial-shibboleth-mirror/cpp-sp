@@ -89,7 +89,7 @@ static Category& get_category (void)
 }
 
 extern "C" bool_t
-shibrpc_ping_1_svc(int *argp, int *result, struct svc_req *rqstp)
+shibrpc_ping_2_svc(int *argp, int *result, struct svc_req *rqstp)
 {
   *result = (*argp)+1;
   return TRUE;
@@ -121,23 +121,12 @@ void set_rpc_status(ShibRpcError *error, ShibTargetException& exc)
   }
 }
 
-/*
-void set_rpc_status_x(ShibRpcError *error, ShibRpcStatus status,
-                        const char* msg=NULL, const XMLCh* origin=NULL)
-{
-  if (!status) {
-    set_rpc_status(error, status);
-    return;
-  }
-  auto_ptr_char orig(origin);
-  set_rpc_status(error, status, msg, orig.get());
-}
-*/
-
 extern "C" bool_t
-shibrpc_session_is_valid_1_svc(shibrpc_session_is_valid_args_1 *argp,
-			       shibrpc_session_is_valid_ret_1 *result,
-			       struct svc_req *rqstp)
+shibrpc_get_session_2_svc(
+    shibrpc_get_session_args_2 *argp,
+    shibrpc_get_session_ret_2 *result,
+    struct svc_req *rqstp
+    )
 {
   Category& log = get_category();
   string ctx = get_threadid("session_is_valid");
@@ -149,12 +138,13 @@ shibrpc_session_is_valid_1_svc(shibrpc_session_is_valid_args_1 *argp,
   }
 
   memset (result, 0, sizeof (*result));
+  result->auth_statement.xml_string = strdup("");
   
   log.debug ("checking: %s@%s (checkAddr=%s)",
-	     argp->cookie.cookie, argp->cookie.client_addr,
-	     argp->checkIPAddress ? "true" : "false");
+	     argp->cookie, argp->client_addr, argp->checkIPAddress ? "true" : "false");
 
-  // See if the cookie exists...
+  // See if the session exists...
+  
   IConfig* conf=ShibTargetConfig::getConfig().getINI();
   Locker locker(conf);
   log.debug ("application: %s", argp->application_id);
@@ -166,76 +156,111 @@ shibrpc_session_is_valid_1_svc(shibrpc_session_is_valid_args_1 *argp,
     return TRUE;
   }
 
-  ISessionCacheEntry* entry = conf->getSessionCache()->find(argp->cookie.cookie,app);
+  ISessionCacheEntry* entry = conf->getSessionCache()->find(argp->cookie,app);
 
   // If not, leave now..
   if (!entry) {
     log.debug ("Not found");
-    set_rpc_status(&result->status, SHIBRPC_NO_SESSION, "No session exists for this cookie");
+    set_rpc_status(&result->status, SHIBRPC_NO_SESSION, "No session exists for this key value");
     return TRUE;
   }
 
   // TEST the session...
   try {
     Metadata m(app->getMetadataProviders());
-    const IEntityDescriptor* origin=m.lookup(entry->getStatement()->getSubject()->getNameIdentifier()->getNameQualifier());
+    const IEntityDescriptor* origin=m.lookup(entry->getAuthnStatement()->getSubject()->getNameIdentifier()->getNameQualifier());
 
     // Verify the address is the same
     if (argp->checkIPAddress) {
       log.debug ("Checking address against %s", entry->getClientAddress());
-      if (strcmp (argp->cookie.client_addr, entry->getClientAddress())) {
+      if (strcmp (argp->client_addr, entry->getClientAddress())) {
         log.debug ("IP Address mismatch");
         throw ShibTargetException(SHIBRPC_IPADDR_MISMATCH,
-            "Your IP address does not match the address in the original authentication.", origin);
+            "Your IP address does not match the address recorded at the time the session was established.", origin);
       }
     }
 
     // and that the session is still valid...
     if (!entry->isValid(argp->lifetime, argp->timeout)) {
       log.debug ("Session expired");
-      throw ShibTargetException(SHIBRPC_SESSION_EXPIRED, "Your session has expired, must re-authenticate.", origin);
+      throw ShibTargetException(SHIBRPC_SESSION_EXPIRED, "Your session has expired, and you must re-authenticate.", origin);
     }
 
-    // and now try to prefetch the attributes .. this could cause an
-    // "error", which is why we call it here.
     try {
-      entry->preFetch(15);	// give a 15-second window for the RM
+      // Now grab the serialized authentication statement
+      ostringstream os;
+      os << *(entry->getAuthnStatement());
+      free(result->auth_statement.xml_string);
+      result->auth_statement.xml_string = strdup(os.str().c_str());
+     
+      // grab the attributes for this session
+      Iterator<SAMLAssertion*> iter = entry->getAssertions();
+      u_int size = iter.size();
+    
+      // if we have assertions...
+      if (size) {
+          // Build the response section
+          ShibRpcXML* av = (ShibRpcXML*) malloc (size * sizeof (ShibRpcXML));
+    
+          // and then serialize them all...
+          u_int i = 0;
+          while (iter.hasNext()) {
+            SAMLAssertion* as = iter.next();
+            ostringstream os2;
+            os2 << *as;
+            av[i++].xml_string = strdup(os2.str().c_str());
+          }
+    
+          // Set the results, once we know we've succeeded.
+          result->assertions.assertions_len = size;
+          result->assertions.assertions_val = av;
+      }
     }
     catch (SAMLException &e) {
-      log.debug ("prefetch failed with a SAML Exception: %s", e.what());
+      log.error ("caught SAML exception: %s", e.what());
       ostringstream os;
       os << e;
       throw ShibTargetException(SHIBRPC_SAML_EXCEPTION, os.str().c_str(), origin);
     }
-    catch (ShibTargetException&) {
-      // These are caught and handled down below.
-      throw;
-    }
-#ifndef _DEBUG
-    catch (...) {
-      log.error ("prefetch caught an unknown exception");
-      throw ShibTargetException(SHIBRPC_UNKNOWN_ERROR,
-            "An unknown error occured while pre-fetching attributes.", origin);
-    }
-#endif
   }
   catch (ShibTargetException &e) {
-    entry->unlock();
-    conf->getSessionCache()->remove(argp->cookie.cookie);
-    set_rpc_status(&result->status, e);
-    // Transaction Logging
-    STConfig& stc=static_cast<STConfig&>(ShibTargetConfig::getConfig());
-    stc.getTransactionLog().infoStream() <<
-        "Destroyed invalid session (ID: " <<
-            argp->cookie.cookie <<
-        ") with (applicationId: " <<
-            argp->application_id <<
-        "), request was from (ClientAddress: " <<
-            argp->cookie.client_addr <<
-        ")";
-    stc.releaseTransactionLog();
-    return TRUE;
+      entry->unlock();
+      log.error ("FAILED: %s", e.what());
+      conf->getSessionCache()->remove(argp->cookie);
+      set_rpc_status(&result->status, e);
+      // Transaction Logging
+      STConfig& stc=static_cast<STConfig&>(ShibTargetConfig::getConfig());
+      stc.getTransactionLog().infoStream() <<
+          "Destroyed invalid session (ID: " <<
+              argp->cookie <<
+          ") with (applicationId: " <<
+              argp->application_id <<
+          "), request was from (ClientAddress: " <<
+              argp->client_addr <<
+          ")";
+      stc.releaseTransactionLog();
+      return TRUE;
   }
+#ifndef _DEBUG
+  catch (...) {
+      entry->unlock();
+      log.error ("Unknown exception");
+      conf->getSessionCache()->remove(argp->cookie);
+      set_rpc_status(&result->status, SHIBRPC_UNKNOWN_ERROR, "An unknown exception occurred");
+      // Transaction Logging
+      STConfig& stc=static_cast<STConfig&>(ShibTargetConfig::getConfig());
+      stc.getTransactionLog().infoStream() <<
+          "Destroyed invalid session (ID: " <<
+              argp->cookie <<
+          ") with (applicationId: " <<
+              argp->application_id <<
+          "), request was from (ClientAddress: " <<
+              argp->client_addr <<
+          ")";
+      stc.releaseTransactionLog();
+      return TRUE;
+  }
+#endif
 
   // Ok, just release it.
   entry->unlock();
@@ -247,8 +272,11 @@ shibrpc_session_is_valid_1_svc(shibrpc_session_is_valid_args_1 *argp,
 }
 
 extern "C" bool_t
-shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
-			  shibrpc_new_session_ret_1 *result, struct svc_req *rqstp)
+shibrpc_new_session_2_svc(
+    shibrpc_new_session_args_2 *argp,
+    shibrpc_new_session_ret_2 *result,
+    struct svc_req *rqstp
+    )
 {
   Category& log = get_category();
   string ctx=get_threadid("new_session");
@@ -262,13 +290,13 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
   // Initialize the result structure
   memset (result, 0, sizeof(*result));
   result->cookie = strdup ("");
+  result->target = strdup ("");
 
   log.debug ("creating session for %s", argp->client_addr);
-  log.debug ("shire location: %s", argp->shire_location);
+  log.debug ("recipient: %s", argp->recipient);
   log.debug ("application: %s", argp->application_id);
 
-  XMLByte* post=reinterpret_cast<XMLByte*>(argp->saml_post);
-  auto_ptr_XMLCh location(argp->shire_location);
+  auto_ptr_XMLCh recipient(argp->recipient);
 
   SAMLResponse* r = NULL;
   const SAMLAuthenticationStatement* auth_st = NULL;
@@ -285,6 +313,8 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
       return TRUE;
   }
 
+  // TODO: Sub in call to getReplayCache() as the determinant.
+  // For now, we always have a cache and use the flag...
   pair<bool,bool> checkReplay=pair<bool,bool>(false,false);
   const IPropertySet* props=app->getPropertySet("Sessions");
   if (props)
@@ -292,21 +322,24 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
  
   const IRoleDescriptor* role=NULL;
   Metadata m(app->getMetadataProviders());
+  SAMLBrowserProfile::BrowserProfileResponse bpr;
   try
   {
     if (!app)
         // Something's horribly wrong.
         throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"Unable to locate application configuration, deleted?");
       
-    // And build the POST profile wrapper.
-    log.debug("create the POST profile");
-    ShibPOSTProfile profile(app->getMetadataProviders(),app->getRevocationProviders(),app->getTrustProviders());
-    
     try
     {
-      // Try and accept the response...
-      log.debug ("Trying to accept the post");
-      r = profile.accept(post,location.get(),300,app->getAudiences(),&origin);
+      // Try and run the profile.
+      log.debug ("Executing browser profile...");
+      bpr=app->getBrowserProfile()->receive(
+        &origin,
+        argp->packet,
+        recipient.get(),
+        SAMLBrowserProfile::Post,   // For now, we only handle POST.
+        (!checkReplay.first || checkReplay.second) ? conf->getReplayCache() : NULL
+        );
 
       // Try and map to metadata for support purposes.
       const IEntityDescriptor* provider=m.lookup(origin);
@@ -319,36 +352,13 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
         throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,
             "Unable to locate role-specific metadata for identity provider", provider);
     
-      // Make sure we got a response
-      if (!r)
-        throw ShibTargetException(SHIBRPC_RESPONSE_MISSING, "Failed to accept the response.", role);
-
-      // Find the SSO Assertion
-      log.debug ("Get the SSOAssertion");
-      const SAMLAssertion* ssoAssertion = profile.getSSOAssertion(*r,app->getAudiences());
-
-      // Check against the replay cache?
-      if (checkReplay.first && !checkReplay.second)
-        log.warn("replay checking is off, this is a security risk unless you're testing");
-      else {
-        log.debug ("check replay cache");
-        if (!profile.checkReplayCache(*ssoAssertion))
-            throw ShibTargetException(SHIBRPC_ASSERTION_REPLAYED, "Duplicate assertion detected.", role);
-      }
-
-      // Get the authentication statement we need.
-      log.debug ("get SSOStatement");
-      auth_st = profile.getSSOStatement(*ssoAssertion);
-
       // Maybe verify the origin address....
       if (argp->checkIPAddress) {
-        log.debug ("check IP Address");
+        log.debug ("verify client address");
 
         // Verify the client address exists
-        const XMLCh* ip = auth_st->getSubjectIP();
+        const XMLCh* ip = bpr.authnStatement->getSubjectIP();
         if (ip && *ip) {
-            log.debug ("verify client address");
-
             // Verify the client address matches authentication
             auto_ptr_char this_ip(ip);
             if (strcmp(argp->client_addr, this_ip.get()))
@@ -359,24 +369,46 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
 				     role);
         }
       }
+      
+      // Verify condition(s) on authentication assertion.
+      // Attribute assertions get filtered later, essentially just like an AAP.
+      Iterator<SAMLCondition*> conditions=bpr.assertion->getConditions();
+      while (conditions.hasNext()) {
+        SAMLCondition* cond=conditions.next();
+        const SAMLAudienceRestrictionCondition* ac=dynamic_cast<const SAMLAudienceRestrictionCondition*>(cond);
+        if (!ac) {
+            ostringstream os;
+            os << *cond;
+            log.error("Unrecognized Condition in authentication assertion (%s), tossing it.",os.str().c_str());
+            throw FatalProfileException("Unable to start session due to unrecognized condition in authentication assertion.");
+        }
+        else if (!ac->eval(app->getAudiences())) {
+            ostringstream os;
+            os << *ac;
+            log.error("Unacceptable AudienceRestrictionCondition in authentication assertion (%s), tossing it.",os.str().c_str());
+            throw FatalProfileException("Unable to start session due to unacceptable AudienceRestrictionCondition in authentication assertion.");
+        }
+      }
     }
-    catch (SAMLException &e)
-    {
+    catch (ReplayedAssertionException& e) {
+      // Specific case where we have an error code.
+      throw ShibTargetException(SHIBRPC_ASSERTION_REPLAYED, e.what(), role);
+    }
+    catch (SAMLException& e) {
       log.error ("caught SAML exception: %s", e.what());
       ostringstream os;
       os << e;
       throw ShibTargetException (SHIBRPC_SAML_EXCEPTION, os.str().c_str(), role);
     }
-    catch (XMLException &e)
-    {
-      log.error ("received XML exception");
+    catch (XMLException& e) {
+      log.error ("caught XML exception");
       auto_ptr_char msg(e.getMessage());
       throw ShibTargetException (SHIBRPC_XML_EXCEPTION, msg.get(), role);
     }
   }
-  catch (ShibTargetException &e) {
-    log.info ("FAILED: %s", e.what());
-    delete r;
+  catch (ShibTargetException& e) {
+    log.error ("FAILED: %s", e.what());
+    bpr.clear();
     if (origin) XMLString::release(&origin);
     set_rpc_status(&result->status, e);
     return TRUE;
@@ -384,7 +416,7 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
 #ifndef _DEBUG
   catch (...) {
     log.error ("Unknown error");
-    delete r;
+    bpr.clear();
     if (origin) XMLString::release(&origin);
     set_rpc_status(&result->status, SHIBRPC_UNKNOWN_ERROR, "An unknown exception occurred");
     return TRUE;
@@ -394,14 +426,17 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
   // It passes all our tests -- create a new session.
   log.info ("Creating new session");
 
-  SAMLAuthenticationStatement* as=static_cast<SAMLAuthenticationStatement*>(auth_st->clone());
+  // Clone the statement so we can store it.
+  // TODO: we need to extract the Issuer and propagate that around as the origin site along
+  // with the statement and attribute assertions.
+  SAMLAuthenticationStatement* as=static_cast<SAMLAuthenticationStatement*>(bpr.authnStatement->clone());
 
-  // Create a new cookie
+  // Create a new session key.
   string cookie = conf->getSessionCache()->generateKey();
 
   // Cache this session, possibly including response if attributes appear present.
   bool attributesPushed=false;
-  Iterator<SAMLAssertion*> assertions=r->getAssertions();
+  Iterator<SAMLAssertion*> assertions=bpr.response->getAssertions();
   while (!attributesPushed && assertions.hasNext()) {
       Iterator<SAMLStatement*> statements=assertions.next()->getStatements();
       while (!attributesPushed && statements.hasNext()) {
@@ -409,16 +444,18 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
             attributesPushed=true;
       }
   }
-  conf->getSessionCache()->insert(cookie.c_str(), app, as, argp->client_addr, (attributesPushed ? r : NULL), role);
+  conf->getSessionCache()->insert(cookie.c_str(), app, as, argp->client_addr, (attributesPushed ? bpr.response : NULL), role);
   
-  // Maybe delete the response...
-  if (!attributesPushed)
-    delete r;
-
   // And let the user know.
   if (result->cookie) free(result->cookie);
+  if (result->target) free(result->target);
   result->cookie = strdup(cookie.c_str());
+  result->target = strdup(bpr.TARGET.c_str());
   set_rpc_status(&result->status, SHIBRPC_OK);
+
+  // Maybe delete the response...
+  if (!attributesPushed)
+    bpr.clear();
 
   log.debug("new session id: %s", cookie.c_str());
   
@@ -447,124 +484,8 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
   return TRUE;
 }
 
-extern "C" bool_t
-shibrpc_get_assertions_1_svc(shibrpc_get_assertions_args_1 *argp,
-			shibrpc_get_assertions_ret_1 *result, struct svc_req *rqstp)
-{
-  Category& log = get_category();
-  string ctx = get_threadid("get_assertions");
-  saml::NDC ndc(ctx);
-
-  if (!argp || !result) {
-    log.error ("Invalid RPC arguments");
-    return FALSE;
-  }
-
-  memset (result, 0, sizeof (*result));
-  result->auth_statement.xml_string = strdup("");
-
-  log.debug ("get attrs for client at %s", argp->cookie.client_addr);
-  log.debug ("cookie: %s", argp->cookie.cookie);
-  log.debug ("application: %s", argp->application_id);
-
-  // Find this session
-  IConfig* conf=ShibTargetConfig::getConfig().getINI();
-  Locker locker(conf);
-
-  // Try and locate support metadata for errors we throw.
-  log.debug ("application: %s", argp->application_id);
-  const IApplication* app=conf->getApplication(argp->application_id);
-  if (!app) {
-      // Something's horribly wrong.
-      log.error("couldn't find application for session");
-      set_rpc_status(&result->status, SHIBRPC_INTERNAL_ERROR, "Unable to locate application for session, deleted?");
-      return TRUE;
-  }
-
-  ISessionCacheEntry* entry = conf->getSessionCache()->find(argp->cookie.cookie,app);
-
-  // If it does not exist, leave now..
-  if (!entry) {
-    log.error ("No Session");
-    set_rpc_status(&result->status, SHIBRPC_NO_SESSION, "getattrs Internal error: no session");
-    return TRUE;
-  }
-
-  Metadata m(app->getMetadataProviders());
-  const IEntityDescriptor* origin=m.lookup(entry->getStatement()->getSubject()->getNameIdentifier()->getNameQualifier());
-
-  try {
-    try {
-      // Validate the client address (again?)
-      if (argp->checkIPAddress && strcmp (argp->cookie.client_addr, entry->getClientAddress())) {
-        entry->unlock();
-        log.error("IP Mismatch");
-        throw ShibTargetException(SHIBRPC_IPADDR_MISMATCH,
-            "Your IP address does not match the address in the original authentication.", origin);
-      }
-
-      // grab the attributes for this resource
-      Iterator<SAMLAssertion*> iter = entry->getAssertions();
-      u_int size = iter.size();
-
-      // if we have assertions...
-      if (size) {
-
-        // Build the response section
-	ShibRpcXML* av = (ShibRpcXML*) malloc (size * sizeof (ShibRpcXML));
-
-        // and then serialize them all...
-        u_int i = 0;
-        while (iter.hasNext()) {
-          SAMLAssertion* as = iter.next();
-          ostringstream os;
-          os << *as;
-          av[i++].xml_string = strdup(os.str().c_str());
-        }
-
-	// Set the results, once we know we've succeeded.
-	result->assertions.assertions_len = size;
-	result->assertions.assertions_val = av;
-      }
-    }
-    catch (SAMLException &e) {
-      entry->unlock();
-      log.error ("caught SAML exception: %s", e.what());
-      ostringstream os;
-      os << e;
-      throw ShibTargetException(SHIBRPC_SAML_EXCEPTION, os.str().c_str(), origin);
-    }
-  }
-  catch (ShibTargetException &e) {
-    entry->unlock();
-    set_rpc_status(&result->status, e);
-    return TRUE;
-  }
-#ifndef _DEBUG
-  catch (...) {
-    entry->unlock();
-    log.error ("caught an unknown exception");
-    throw ShibTargetException(SHIBRPC_UNKNOWN_ERROR,
-          "An unexpected error occured while fetching attributes.", origin);
-  }
-#endif
-
-
-  // Now grab the serialized authentication statement
-  free(result->auth_statement.xml_string);
-  result->auth_statement.xml_string = strdup(entry->getSerializedStatement());
- 
-  entry->unlock();
-
-  // and let it fly
-  set_rpc_status(&result->status, SHIBRPC_OK);
-
-  log.debug ("returning");
-  return TRUE;
-}
-
 extern "C" int
-shibrpc_prog_1_freeresult (SVCXPRT *transp, xdrproc_t xdr_result, caddr_t result)
+shibrpc_prog_2_freeresult (SVCXPRT *transp, xdrproc_t xdr_result, caddr_t result)
 {
 	xdr_free (xdr_result, result);
 

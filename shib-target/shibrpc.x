@@ -53,78 +53,57 @@ union ShibRpcError switch(ShibRpcStatus status) {
    ShibRpcErr	e;
 };
 
-/* A type to pass a Cookie, which contains the HTTP cookie string
- * and the IP Address of the client */
-struct ShibRpcHttpCookie_1 {
-  string	cookie<>;
-  string	client_addr<>;
-};
-
 struct ShibRpcXML {
   string	xml_string<>;
 };
 
 /* function argument and response structures */
 
-struct shibrpc_session_is_valid_args_1 {
-  ShibRpcHttpCookie_1	cookie;
+struct shibrpc_new_session_args_2 {
+  string	application_id<>;
+  string	packet<>;
+  string	recipient<>;
+  string	client_addr<>;
+  bool		checkIPAddress;
+};
+
+struct shibrpc_new_session_ret_2 {
+  ShibRpcError	status;
+  string	target<>;
+  string	cookie<>;
+};
+
+struct shibrpc_get_session_args_2 {
   string		application_id<>;
+  string		cookie<>;
+  string		client_addr<>;
   bool			checkIPAddress;
   long			lifetime;
   long			timeout;
 };
 
-struct shibrpc_session_is_valid_ret_1 {
+struct shibrpc_get_session_ret_2 {
   ShibRpcError	status;
+  ShibRpcXML	auth_statement;
+  ShibRpcXML	assertions<>;
 };
 
-struct shibrpc_new_session_args_1 {
-  string	application_id<>;
-  string	shire_location<>;
-  string	saml_post<>;
-  string	client_addr<>;
-  bool		checkIPAddress;
-};
-
-struct shibrpc_new_session_ret_1 {
-  ShibRpcError	status;
-  string	cookie<>;
-};
-
-
-struct shibrpc_get_assertions_args_1 {
-  ShibRpcHttpCookie_1	cookie;
-  bool			checkIPAddress;
-  string		application_id<>;
-};
-
-struct shibrpc_get_assertions_ret_1 {
-  ShibRpcError		status;
-  ShibRpcXML		auth_statement;
-  ShibRpcXML		assertions<>;
-};
 
 /* Define the Shib Target RPC interface */
 program SHIBRPC_PROG {
-  version SHIBRPC_VERS_1 {
+  version SHIBRPC_VERS_2 {
 
     /* Ping the rpcsvc to make sure it is alive. */
     int shibrpc_ping (int) = 0;
 
-    /* SHIRE RPCs */
+    /* Session Cache Remoting RPCs */
 
-    /* Is the HTTP Cookie valid? Is the session still active?
+    /* Create a new session for this user (SAML Browser Profile Consumer) */
+    shibrpc_new_session_ret_2 shibrpc_new_session (shibrpc_new_session_args_2) = 1;
+
+    /* Validate and access data associated with existing session.
      * Returns 0 for TRUE, a non-zero error code for FALSE */
-    shibrpc_session_is_valid_ret_1 shibrpc_session_is_valid (shibrpc_session_is_valid_args_1) = 1;
+    shibrpc_get_session_ret_2 shibrpc_get_session (shibrpc_get_session_args_2) = 2;
 
-    /* Create a new session for this user (SAML POST Profile Consumer) */
-    shibrpc_new_session_ret_1 shibrpc_new_session (shibrpc_new_session_args_1)
-      = 2;
-
-    /* RM RPCs */
-
-    /* Get the assertions from the SHAR */
-    shibrpc_get_assertions_ret_1 shibrpc_get_assertions (shibrpc_get_assertions_args_1) = 3;
-
-  } = 1;
-} = 123456;			/* XXX: Pick an RPC Program Number */
+  } = 2;
+} = 123456;			/* Arbitrary RPC Program Number */

@@ -131,11 +131,8 @@ public:
 
   bool isValid(time_t lifetime, time_t timeout) const;
   const char* getClientAddress() const { return m_clientAddress.c_str(); }
-  const char* getSerializedStatement() const { return m_statement.c_str(); }
-  const SAMLAuthenticationStatement* getStatement() const { return p_auth; }
-
+  const SAMLAuthenticationStatement* getAuthnStatement() const { return p_auth; }
   Iterator<SAMLAssertion*> getAssertions();
-  void preFetch(int prefetch_window);
 
   void setCache(InternalCCache *cache) { m_cache = cache; }
   time_t lastAccess() const { return m_lastAccess; }
@@ -143,13 +140,14 @@ public:
   bool checkApplication(const IApplication* application) { return (m_application_id==application->getId()); }
 
 private:
-  bool responseValid(int slop);
-  void populate(int slop);
-  SAMLResponse* getNewResponse();
+  void populate();                  // wraps process of checking cache, and repopulating if need be
+  bool responseValid();             // checks validity of existing response
+  SAMLResponse* getNewResponse();   // wraps an actual query
+  
+  void filter(SAMLResponse* r, const IApplication* application, const IRoleDescriptor* source);
   
   string m_id;
   string m_application_id;
-  string m_statement;
   string m_originSite;
   string m_clientAddress;
   time_t m_sessionCreated;
@@ -451,7 +449,12 @@ void* InternalCCache::cleanup_fcn(void* cache_p)
 /******************************************************************************/
 
 InternalCCacheEntry::InternalCCacheEntry(
-    const char* id, const IApplication* application, SAMLAuthenticationStatement *s, const char* client_addr, SAMLResponse* r, const IRoleDescriptor* source
+    const char* id,
+    const IApplication* application,
+    SAMLAuthenticationStatement *s,
+    const char* client_addr,
+    SAMLResponse* r,
+    const IRoleDescriptor* source
     ) : m_response(r), m_responseCreated(r ? time(NULL) : 0), m_lastRetry(0),
         log(&Category::getInstance("shibtarget::InternalCCacheEntry"))
 {
@@ -473,25 +476,9 @@ InternalCCacheEntry::InternalCCacheEntry(
   // Save for later.
   p_auth = s;
   
-  // Save the serialized version of the auth statement
-  ostringstream os;
-  os << *s;
-  m_statement = os.str();
-
-  if (r) {
-    // Run pushed data through the AAP. Note that we could end up with an empty response!
-    Iterator<SAMLAssertion*> assertions=r->getAssertions();
-    for (unsigned long i=0; i < assertions.size();) {
-        try {
-            AAP::apply(application->getAAPProviders(),*(assertions[i]),source);
-            i++;
-        }
-        catch (SAMLException&) {
-            log->info("no statements remain, removing assertion");
-            r->removeAssertion(i);
-        }
-    }
-  }
+  // If pushing attributes, filter the response.
+  if (r)
+    filter(r, application, source);
 
   m_lock = Mutex::create();
 
@@ -512,16 +499,21 @@ InternalCCacheEntry::~InternalCCacheEntry()
 
 bool InternalCCacheEntry::isValid(time_t lifetime, time_t timeout) const
 {
+#ifdef _DEBUG
   saml::NDC ndc("isValid");
-  log->debug("testing session (ID: %s) (lifetime=%ld, timeout=%ld)", m_id.c_str(), lifetime, timeout);
+#endif
+  
+  log->debug("testing session (ID: %s) (lifetime=%ld, timeout=%ld)",
+    m_id.c_str(), lifetime, timeout);
+    
   time_t now=time(NULL);
   if (lifetime > 0 && now > m_sessionCreated+lifetime) {
-    log->debug("session beyond lifetime (ID: %s)", m_id.c_str());
+    log->info("session beyond lifetime (ID: %s)", m_id.c_str());
     return false;
   }
 
   if (timeout > 0 && now-m_lastAccess >= timeout) {
-    log->debug("session timed out (ID: %s)", m_id.c_str());
+    log->info("session timed out (ID: %s)", m_id.c_str());
     return false;
   }
   m_lastAccess=now;
@@ -530,22 +522,20 @@ bool InternalCCacheEntry::isValid(time_t lifetime, time_t timeout) const
 
 Iterator<SAMLAssertion*> InternalCCacheEntry::getAssertions()
 {
+#ifdef _DEBUG
   saml::NDC ndc("getAssertions");
-  populate(0);
+#endif
+  populate();
   return (m_response) ? m_response->getAssertions() : EMPTY(SAMLAssertion*);
 }
 
-void InternalCCacheEntry::preFetch(int prefetch_window)
+bool InternalCCacheEntry::responseValid()
 {
-  saml::NDC ndc("preFetch");
-  populate(prefetch_window);
-}
-
-bool InternalCCacheEntry::responseValid(int slop)
-{
+#ifdef _DEBUG
   saml::NDC ndc("responseValid");
-
-  log->debug("checking AA response validity");
+#endif
+  log->debug("checking attribute data validity");
+  time_t now=time(NULL) - SAMLConfig::getConfig().clock_skew_secs;
 
   int count = 0;
   Iterator<SAMLAssertion*> iter = m_response->getAssertions();
@@ -562,7 +552,7 @@ bool InternalCCacheEntry::responseValid(int slop)
 
     count++;
 
-    if (time(NULL)+slop >= thistime->getEpoch()) {
+    if (now >= thistime->getEpoch()) {
       log->debug("nope, not still valid");
       return false;
     }
@@ -571,7 +561,7 @@ bool InternalCCacheEntry::responseValid(int slop)
   // If we didn't find any assertions with times, then see if we're
   // older than the default response lifetime.
   if (!count) {
-      if ((time(NULL)+slop - m_responseCreated) > m_cache->m_defaultLifetime) {
+      if ((now - m_responseCreated) > m_cache->m_defaultLifetime) {
         log->debug("response is beyond default life, so it's invalid");
         return false;
       }
@@ -581,15 +571,17 @@ bool InternalCCacheEntry::responseValid(int slop)
   return true;
 }
 
-void InternalCCacheEntry::populate(int slop)
+void InternalCCacheEntry::populate()
 {
+#ifdef _DEBUG
   saml::NDC ndc("populate");
+#endif
   log->debug("populating attributes for session (ID: %s)", m_id.c_str());
 
   // Do we have any data cached?
   if (m_response) {
       // Can we use what we have?
-      if (responseValid(slop))
+      if (responseValid())
         return;
       
       // If we're being strict, dump what we have and reset timestamps.
@@ -602,10 +594,7 @@ void InternalCCacheEntry::populate(int slop)
       }
   }
 
-  // Need to try and get a new response.
-
   try {
-
     // Transaction Logging
     STConfig& stc=static_cast<STConfig&>(ShibTargetConfig::getConfig());
     stc.getTransactionLog().infoStream() <<
@@ -643,14 +632,17 @@ void InternalCCacheEntry::populate(int slop)
 
 SAMLResponse* InternalCCacheEntry::getNewResponse()
 {
+#ifdef _DEBUG
     saml::NDC ndc("getNewResponse");
+#endif
 
     // The retryInterval determines how often to poll an AA that might be down.
-    if ((time(NULL) - m_lastRetry) < m_cache->m_retryInterval)
+    time_t now=time(NULL);
+    if ((now - m_lastRetry) < m_cache->m_retryInterval)
         return NULL;
     if (m_lastRetry)
         log->debug("retry interval exceeded, so trying again");
-    m_lastRetry=time(NULL);
+    m_lastRetry=now;
     
     log->info("trying to get new attributes for session (ID=%s)", m_id.c_str());
 
@@ -668,10 +660,9 @@ SAMLResponse* InternalCCacheEntry::getNewResponse()
         throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"Unable to determine ProviderID for application, not set?");
     }
 
-    // Get signing policies.
+    // Get protocol signing policy.
     pair<bool,bool> signRequest=application->getBool("signRequest");
     pair<bool,bool> signedResponse=application->getBool("signedResponse");
-    pair<bool,bool> signedAssertions=application->getBool("signedAssertions");
     
     // Try this request. The binding wrapper class handles most of the details.
     Metadata m(application->getMetadataProviders());
@@ -687,7 +678,6 @@ SAMLResponse* InternalCCacheEntry::getNewResponse()
         log->error("unable to locate metadata for identity provider's Attribute Authority");
         throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"Unable to locate metadata for identity provider's Attribute Authority.",site);
     }
-
 
     SAMLResponse* response = NULL;
     try {
@@ -713,6 +703,16 @@ SAMLResponse* InternalCCacheEntry::getNewResponse()
         bindconf.conn_timeout=m_cache->m_AAConnectTimeout;
         ShibBinding binding(application->getRevocationProviders(),application->getTrustProviders(),conf->getCredentialsProviders());
         response=binding.send(*req,AA,application->getTLSCred(site),application->getAudiences(),p_auth->getBindings(),bindconf);
+
+        if (signedResponse.first && signedResponse.second && !response->isSigned()) {
+            delete response;
+            response=NULL;
+            log->error("unsigned response obtained, but we were told it must be signed.");
+        }
+        else {
+            // Run it through the filter. Note that we could end up with an empty response.
+            filter(response,application,AA);
+        }
     }
     catch (SAMLException& e) {
         log->error("caught SAML exception during query to AA: %s", e.what());
@@ -726,31 +726,56 @@ SAMLResponse* InternalCCacheEntry::getNewResponse()
     // See if we got a response.
     if (!response) {
         log->error("no response obtained");
-        throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"Unable to obtain attributes from user's origin site.",AA);
+        throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"Unable to obtain attributes from user's identity provider.",AA);
     }
-    else if (signedResponse.first && signedResponse.second && !response->isSigned()) {
-        delete response;
-        log->error("unsigned response obtained, but we were told it must be signed.");
-        throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"Unable to obtain attributes from user's origin site.",AA);
-    }
+    return response;
+}
 
-    // Run it through the AAP. Note that we could end up with an empty response!
-    Iterator<SAMLAssertion*> a=response->getAssertions();
-    for (unsigned long i=0; i < a.size();) {
+void InternalCCacheEntry::filter(SAMLResponse* r, const IApplication* application, const IRoleDescriptor* source)
+{
+    Trust t(application->getTrustProviders());
+    pair<bool,bool> signedAssertions=application->getBool("signedAssertions");
+
+    // Examine each new assertion...
+    Iterator<SAMLAssertion*> assertions=r->getAssertions();
+    for (unsigned long i=0; i < assertions.size();) {
         try {
-            if (signedAssertions.first && signedAssertions.second && !(a[i]->isSigned())) {
+            // Check signing policy.
+            if (signedAssertions.first && signedAssertions.second && !(assertions[i]->isSigned())) {
                 log->warn("removing unsigned assertion from response, in accordance with signedAssertions policy");
-                response->removeAssertion(i);
+                r->removeAssertion(i);
                 continue;
             }
-            AAP::apply(application->getAAPProviders(),*(a[i]),AA);
+
+            // Check any conditions.
+            bool pruned=false;
+            Iterator<SAMLCondition*> conds=assertions[i]->getConditions();
+            while (conds.hasNext()) {
+                SAMLAudienceRestrictionCondition* cond=dynamic_cast<SAMLAudienceRestrictionCondition*>(conds.next());
+                if (!cond || !cond->eval(application->getAudiences())) {
+                    log->warn("assertion condition invalid, removing it");
+                    r->removeAssertion(i);
+                    pruned=true;
+                    break;
+                }
+            }
+            if (pruned)
+                continue;
+            
+            // Check token signature.
+            if (assertions[i]->isSigned() && !t.validate(application->getRevocationProviders(),source,*(assertions[i]))) {
+                log->warn("signed assertion failed to validate, removing it");
+                r->removeAssertion(i);
+                continue;
+            }
+
+            // Finally, filter the content.
+            AAP::apply(application->getAAPProviders(),*(assertions[i]),source);
             i++;
         }
         catch (SAMLException&) {
-            log->info("no statements remain, removing assertion");
-            response->removeAssertion(i);
+            log->info("no statements remain after AAP, removing assertion");
+            r->removeAssertion(i);
         }
     }
-
-    return response;
 }

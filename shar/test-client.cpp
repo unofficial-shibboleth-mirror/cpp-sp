@@ -35,7 +35,7 @@ int main (int argc, char *argv[])
     return -2;
   }
 
-  CLIENT* clnt = listener->getClientHandle(sock,SHIBRPC_PROG, SHIBRPC_VERS_1);
+  CLIENT* clnt = listener->getClientHandle(sock,SHIBRPC_PROG, SHIBRPC_VERS_2);
   if (!clnt) {
     clnt_pcreateerror("shibrpc_client_create");
     cerr << "shibrpc_client_create failed\n";
@@ -43,7 +43,7 @@ int main (int argc, char *argv[])
   }
 
   res = start = 0;
-  clnt_stat = shibrpc_ping_1 (&start, &res, clnt);
+  clnt_stat = shibrpc_ping_2 (&start, &res, clnt);
 
   if (clnt_stat != RPC_SUCCESS) {
     clnt_perror (clnt, "rpc");

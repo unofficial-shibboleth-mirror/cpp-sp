@@ -74,7 +74,7 @@ namespace shibtarget {
     class XMLApplication : public virtual IApplication, public XMLPropertySet, public DOMNodeFilter
     {
     public:
-        XMLApplication(const DOMElement* e, const XMLApplication* base=NULL);
+        XMLApplication(const IConfig*, const DOMElement* e, const XMLApplication* base=NULL);
         ~XMLApplication();
     
         // IPropertySet
@@ -95,11 +95,13 @@ namespace shibtarget {
         Iterator<const XMLCh*> getAudiences() const;
         const char* getTLSCred(const IEntityDescriptor* provider) const {return getCredentialUse(provider).first.c_str();}
         const char* getSigningCred(const IEntityDescriptor* provider) const {return getCredentialUse(provider).second.c_str();}
+        SAMLBrowserProfile* getBrowserProfile() const {return m_profile;}
         
         // Provides filter to exclude special config elements.
         short acceptNode(const DOMNode* node) const;
     
     private:
+        const IConfig* m_ini;   // this is ok because its locking scope includes us
         const XMLApplication* m_base;
         vector<SAMLAttributeDesignator*> m_designators;
         vector<IAAP*> m_aaps;
@@ -108,6 +110,7 @@ namespace shibtarget {
         vector<IRevocation*> m_revocations;
         vector<const XMLCh*> m_audiences;
         pair<string,string> m_credDefault;
+        ShibBrowserProfile* m_profile;
 #ifdef HAVE_GOOD_STL
         map<xstring,pair<string,string> > m_credMap;
 #else
@@ -142,8 +145,8 @@ namespace shibtarget {
     class XMLConfig : public IConfig, public ReloadableXMLFile
     {
     public:
-        XMLConfig(const DOMElement* e) : ReloadableXMLFile(e), m_listener(NULL), m_cache(NULL) {}
-        ~XMLConfig() {delete m_listener; delete m_cache;}
+        XMLConfig(const DOMElement* e) : ReloadableXMLFile(e), m_listener(NULL), m_sessionCache(NULL), m_replayCache(NULL) {}
+        ~XMLConfig() {delete m_listener; delete m_sessionCache; delete m_replayCache;}
 
         // IPropertySet
         pair<bool,bool> getBool(const char* name, const char* ns=NULL) const {return static_cast<XMLConfigImpl*>(m_impl)->getBool(name,ns);}
@@ -156,7 +159,8 @@ namespace shibtarget {
 
         // IConfig
         const IListener* getListener() const {return m_listener;}
-        ISessionCache* getSessionCache() const {return m_cache;}
+        ISessionCache* getSessionCache() const {return m_sessionCache;}
+        IReplayCache* getReplayCache() const {return m_replayCache;}
         IRequestMapper* getRequestMapper() const {return static_cast<XMLConfigImpl*>(m_impl)->m_requestMapper;}
         const IApplication* getApplication(const char* applicationId) const
         {
@@ -172,7 +176,8 @@ namespace shibtarget {
     private:
         friend class XMLConfigImpl;
         mutable IListener* m_listener;
-        mutable ISessionCache* m_cache;
+        mutable ISessionCache* m_sessionCache;
+        mutable IReplayCache* m_replayCache;
     };
 }
 
@@ -347,7 +352,8 @@ const IPropertySet* XMLPropertySet::getPropertySet(const char* name, const char*
     return (i!=m_nested.end()) ? i->second : NULL;
 }
 
-XMLApplication::XMLApplication(const DOMElement* e, const XMLApplication* base) : m_base(base)
+XMLApplication::XMLApplication(const IConfig* ini, const DOMElement* e, const XMLApplication* base)
+    : m_ini(ini), m_base(base), m_profile(NULL)
 {
     NDC ndc("XMLApplication");
     Category& log=Category::getInstance("shibtarget.XMLApplication");
@@ -451,6 +457,15 @@ XMLApplication::XMLApplication(const DOMElement* e, const XMLApplication* base) 
                 cu=saml::XML::getNextSiblingElement(cu,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(RelyingParty));
             }
         }
+        
+        if (conf.isEnabled(ShibTargetConfig::SessionCache)) {
+            // Really finally, build a local browser profile object.
+            m_profile=new ShibBrowserProfile(
+                getMetadataProviders(),
+                getRevocationProviders(),
+                getTrustProviders()
+                );
+        }
     }
     catch (...) {
         this->~XMLApplication();    // does this work?
@@ -460,6 +475,7 @@ XMLApplication::XMLApplication(const DOMElement* e, const XMLApplication* base) 
 
 XMLApplication::~XMLApplication()
 {
+    delete m_profile;
     Iterator<SAMLAttributeDesignator*> i(m_designators);
     while (i.hasNext())
         delete i.next();
@@ -824,13 +840,17 @@ void XMLConfigImpl::init(bool first)
                 if (plugin) {
                     ISessionCache* cache=dynamic_cast<ISessionCache*>(plugin);
                     if (cache)
-                        m_outer->m_cache=cache;
+                        m_outer->m_sessionCache=cache;
                     else {
                         delete plugin;
                         log.fatal("plugin was not a Session Cache object");
                         throw UnsupportedExtensionException("plugin was not a Session Cache object");
                     }
                 }
+                
+                // For now, just default the replay cache.
+                // TODO: make it configurable/pluggable
+                m_outer->m_replayCache=IReplayCache::getInstance();
             }
         }
         
@@ -858,29 +878,8 @@ void XMLConfigImpl::init(bool first)
             }
         }
         
-        // Load the default application. This actually has a fixed ID of "default". ;-)
-        const DOMElement* app=saml::XML::getFirstChildElement(
-            ReloadableXMLFileImpl::m_root,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(Applications)
-            );
-        if (!app) {
-            log.fatal("can't build default Application object, missing conf:Applications element?");
-            throw SAMLException("can't build default Application object, missing conf:Applications element?");
-        }
-        XMLApplication* defapp=new XMLApplication(app);
-        m_appmap[defapp->getId()]=defapp;
-        
-        // Load any overrides.
-        DOMNodeList* nlist=app->getElementsByTagNameNS(ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(Application));
-        for (int i=0; nlist && i<nlist->getLength(); i++) {
-            XMLApplication* iapp=new XMLApplication(static_cast<DOMElement*>(nlist->item(i)),defapp);
-            if (m_appmap.find(iapp->getId())!=m_appmap.end()) {
-                log.fatal("found conf:Application element with duplicate Id attribute");
-                throw SAMLException("found conf:Application element with duplicate Id attribute");
-            }
-            m_appmap[iapp->getId()]=iapp;
-        }
-        
-        // Finally we load any credentials providers.
+        // Now we load any credentials providers.
+        DOMNodeList* nlist;
         if (conf.isEnabled(ShibTargetConfig::Credentials)) {
             nlist=ReloadableXMLFileImpl::m_root->getElementsByTagNameNS(
                 ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(CredentialsProvider)
@@ -900,6 +899,28 @@ void XMLConfigImpl::init(bool first)
                     }
                 }
             }
+        }
+
+        // Load the default application. This actually has a fixed ID of "default". ;-)
+        const DOMElement* app=saml::XML::getFirstChildElement(
+            ReloadableXMLFileImpl::m_root,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(Applications)
+            );
+        if (!app) {
+            log.fatal("can't build default Application object, missing conf:Applications element?");
+            throw SAMLException("can't build default Application object, missing conf:Applications element?");
+        }
+        XMLApplication* defapp=new XMLApplication(m_outer, app);
+        m_appmap[defapp->getId()]=defapp;
+        
+        // Load any overrides.
+        nlist=app->getElementsByTagNameNS(ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(Application));
+        for (int i=0; nlist && i<nlist->getLength(); i++) {
+            XMLApplication* iapp=new XMLApplication(m_outer,static_cast<DOMElement*>(nlist->item(i)),defapp);
+            if (m_appmap.find(iapp->getId())!=m_appmap.end()) {
+                log.fatal("found conf:Application element with duplicate Id attribute");
+                throw SAMLException("found conf:Application element with duplicate Id attribute");
+            }
+            m_appmap[iapp->getId()]=iapp;
         }
     }
     catch (SAMLException& e) {

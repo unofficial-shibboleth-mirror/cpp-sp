@@ -85,7 +85,7 @@ using namespace log4cpp;
 # define FD_SETSIZE 1024
 #endif
 
-extern "C" void shibrpc_prog_1(struct svc_req* rqstp, register SVCXPRT* transp);
+extern "C" void shibrpc_prog_2(struct svc_req* rqstp, register SVCXPRT* transp);
 
 int shar_run = 1;
 const char* shar_config = NULL;
@@ -154,7 +154,7 @@ int real_main(int preinit)
 {
     static IListener::ShibSocket sock;
     ShibRPCProtocols protos[1] = {
-        { SHIBRPC_PROG, SHIBRPC_VERS_1, shibrpc_prog_1 }
+        { SHIBRPC_PROG, SHIBRPC_VERS_2, shibrpc_prog_2 }
     };
 
     ShibTargetConfig& conf=ShibTargetConfig::getConfig();

@@ -13,7 +13,7 @@ libshib_la_SOURCES = \
                     Metadata.cpp \
                     ReloadableXMLFile.cpp \
                     ShibConfig.cpp \
-                    ShibPOSTProfile.cpp \
+                    ShibBrowserProfile.cpp \
                     ShibBinding.cpp \
                     shib-threads.cpp
 

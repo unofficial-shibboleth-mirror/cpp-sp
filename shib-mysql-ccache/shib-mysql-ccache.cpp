@@ -78,10 +78,8 @@ public:
   virtual void unlock() { m_cacheEntry->unlock(); delete this; }
   virtual bool isValid(time_t lifetime, time_t timeout) const;
   virtual const char* getClientAddress() const { return m_cacheEntry->getClientAddress(); }
-  virtual const char* getSerializedStatement() const { return m_cacheEntry->getSerializedStatement(); }
-  virtual const SAMLAuthenticationStatement* getStatement() const { return m_cacheEntry->getStatement(); }
+  virtual const SAMLAuthenticationStatement* getAuthnStatement() const { return m_cacheEntry->getAuthnStatement(); }
   virtual Iterator<SAMLAssertion*> getAssertions() { return m_cacheEntry->getAssertions(); }
-  virtual void preFetch(int prefetch_window) { m_cacheEntry->preFetch(prefetch_window); }
 
 private:
   bool touch() const;

@@ -133,31 +133,6 @@ SAMLResponse* ShibBinding::send(
             auto_ptr<SAMLResponse> r(m_binding->send(*ab, req, conf));
             if (r->isSigned() && !t.validate(m_revocations,m_AA,*r))
                 throw TrustException("ShibBinding::send() unable to verify signed response");
-                
-            unsigned long i;
-            Iterator<SAMLAssertion*> _a=r->getAssertions();
-            for (i=0; i < _a.size(); i++) {
-                // Check any conditions.
-                Iterator<SAMLCondition*> conds=_a[i]->getConditions();
-                while (conds.hasNext()) {
-                    SAMLAudienceRestrictionCondition* cond=dynamic_cast<SAMLAudienceRestrictionCondition*>(conds.next());
-                    if (!cond || !cond->eval(audiences)) {
-                        log.warn("assertion condition invalid, removing it");
-                        r->removeAssertion(i);
-                        i--;
-                        break;
-                    }
-                }
-            }
-            
-            for (i=0; i < _a.size(); i++) {
-                // Check signature.
-                if (_a[i]->isSigned() && !t.validate(m_revocations,m_AA,*(_a[i]))) {
-                    log.warn("signed assertion failed to validate, removing it");
-                    r->removeAssertion(i);
-                    i--;
-                }
-            }
             return r.release();
         }
         catch (SAMLException& e) {
@@ -190,30 +165,6 @@ SAMLResponse* ShibBinding::send(
             auto_ptr<SAMLResponse> r(m_binding->send(ab, req, conf));
             if (r->isSigned() && !t.validate(m_revocations,m_AA,*r))
                 throw TrustException("ShibBinding::send() unable to verify signed response");
-
-            unsigned long i;
-            Iterator<SAMLAssertion*> _a=r->getAssertions();
-            for (i=0; i < _a.size(); i++) {
-                // Check any conditions.
-                Iterator<SAMLCondition*> conds=_a[i]->getConditions();
-                while (conds.hasNext()) {
-                    SAMLAudienceRestrictionCondition* cond=dynamic_cast<SAMLAudienceRestrictionCondition*>(conds.next());
-                    if (!cond || !cond->eval(audiences)) {
-                        log.warn("assertion condition invalid, removing it");
-                        r->removeAssertion(i);
-                        i--;
-                    }
-                }
-            }
-            
-            for (i=0; i < _a.size(); i++) {
-                // Check signature.
-                if (_a[i]->isSigned() && !t.validate(m_revocations,m_AA,*(_a[i]))) {
-                    log.warn("signed assertion failed to validate, removing it");
-                    r->removeAssertion(i);
-                    i--;
-                }
-            }
             return r.release();
         }
         catch (SAMLException& e) {

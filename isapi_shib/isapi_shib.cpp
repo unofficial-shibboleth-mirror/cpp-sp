@@ -355,7 +355,7 @@ void GetHeader(PHTTP_FILTER_PREPROC_HEADERS pn, PHTTP_FILTER_CONTEXT pfc,
 class ShibTargetIsapiF : public ShibTarget
 {
 public:
-  ShibTargetIsapiF(PHTTP_FILTER_CONTEXT pfc, PHTTP_FILTER_PREPRC_HEADERS pn,
+  ShibTargetIsapiF(PHTTP_FILTER_CONTEXT pfc, PHTTP_FILTER_PREPROC_HEADERS pn,
 		   const site_t& site) {
 
     // URL path always come from IIS.
@@ -393,20 +393,17 @@ public:
   ~ShibTargetIsapiF() { }
 
   virtual void log(ShibLogLevel level, const string &msg) {
-    LogEvent(NULL, (level == LogLevelDebug : EVENTLOG_DEBUG_TYPE ?
-		    (level == LogLevelInfo : EVENTLOG_INFORMATION_TYPE ?
-		     (level == LogLevelWarn : EVENTLOG_WARNING_TYPE ?
-		      EVENTLOG_ERROR_TYPE))),
+      LogEvent(NULL, (level == LogLevelDebug ? EVENTLOG_INFORMATION_TYPE :
+                      (level == LogLevelInfo ? EVENTLOG_INFORMATION_TYPE :
+                      (level == LogLevelWarn ? EVENTLOG_WARNING_TYPE : EVENTLOG_ERROR_TYPE))),
 	     2100, NULL, msg.c_str());
   }
   virtual string getCookies(void) {
     dynabuf buf(128);
     GetHeader(m_pn, m_pfc, "Cookie:", buf, 128, false);
+    return buf.empty() ? "" : buf;
   }
-  // XXX: the filter never processes the POST.
-  //virtual void setCookie(const string &name, const string &value) {  }
-  //virtual string getArgs(void) {  }
-  //virtual string getPostData(void) {  }
+  
   virtual void clearHeader(const string &name) {
     string hdr = name + ":";
     m_pn->SetHeader(m_pfc, const_cast<char*>(hdr.c_str()), "");
@@ -419,7 +416,7 @@ public:
   virtual string getHeader(const string &name) {
     string hdr = name + ":";
     dynabuf buf(1024);
-    GetHeader(m_pn, m_pfc, hdr.c_str(), buf, 1024, false);
+    GetHeader(m_pn, m_pfc, const_cast<char*>(hdr.c_str()), buf, 1024, false);
     return string(buf);
   }
   virtual void setRemoteUser(const string &user) {
@@ -429,15 +426,15 @@ public:
     return getHeader(string("remote-user"));
   }
   virtual void* sendPage(const string &msg, const string content_type,
-			 const pair<string, string> headers[], int code) {
+      const Iterator<header_t>& headers=EMPTY(header_t), int code=200) {
     string hdr = string ("Connection: close\r\nContent-type: ") + content_type + "\r\n";
-    for (int k = 0; k < headers.size(); k++) {
-      hdr += headers[k].first + ": " + headers[k].second + "\r\n";
+    while (headers.hasNext()) {
+        const header_t& h=headers.next();
+        hdr += h.first + ": " + h.second + "\r\n";
     }
     hdr += "\r\n";
     // XXX Need to handle "code"
-    m_pfc->ServerSupportFunction(m_pfc, SF_REQ_SEND_RESPONSE_HEADER, "200 OK",
-				 (dword)hdr.c_str(), 0);
+    m_pfc->ServerSupportFunction(m_pfc, SF_REQ_SEND_RESPONSE_HEADER, "200 OK", (DWORD)hdr.c_str(), 0);
     DWORD resplen = msg.size();
     m_pfc->WriteClient(m_pfc, (LPVOID)msg.c_str(), &resplen, 0);
     return (void*)SF_STATUS_REQ_FINISHED;
@@ -454,14 +451,19 @@ public:
     static const char* redmsg="<HTML><BODY>Redirecting...</BODY></HTML>";
     DWORD resplen=40;
     m_pfc->WriteClient(m_pfc, (LPVOID)redmsg, &resplen, 0);
-    return SF_STATUS_REQ_FINISHED;
+    return reinterpret_cast<void*>(SF_STATUS_REQ_FINISHED);
   }
   // XXX: We might not ever hit the 'decline' status in this filter.
   //virtual void* returnDecline(void) { }
   virtual void* returnOK(void) { return (void*) SF_STATUS_REQ_NEXT_NOTIFICATION; }
 
+  // The filter never processes the POST, so stub these methods.
+  virtual void setCookie(const string &name, const string &value) { throw runtime_error("setCookie not implemented"); }
+  virtual string getArgs(void) { throw runtime_error("getArgs not implemented"); }
+  virtual string getPostData(void) { throw runtime_error("getPostData not implemented"); }
+  
   PHTTP_FILTER_CONTEXT m_pfc;
-  PHTTP_FILTER_PREPRC_HEADERS m_pn
+  PHTTP_FILTER_PREPROC_HEADERS m_pn;
 };
 
 DWORD WriteClientError(PHTTP_FILTER_CONTEXT pfc, const char* msg)
@@ -510,14 +512,14 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
 	ShibTargetIsapiF stf(pfc, pn, map_i->second);
 
 	// "false" because we don't override the Shib settings
-	pair<bool,void*> res = ste.doCheckAuthN();
+	pair<bool,void*> res = stf.doCheckAuthN();
 	if (res.first) return (DWORD)res.second;
 
 	// "false" because we don't override the Shib settings
-	res = ste.doExportAssertions();
+	res = stf.doExportAssertions();
 	if (res.first) return (DWORD)res.second;
 
-	res = ste.doCheckAuthZ();
+	res = stf.doCheckAuthZ();
 	if (res.first) return (DWORD)res.second;
 
         return SF_STATUS_REQ_NEXT_NOTIFICATION;
@@ -988,6 +990,23 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
 /****************************************************************************/
 // ISAPI Extension
 
+DWORD WriteClientError(LPEXTENSION_CONTROL_BLOCK lpECB, const char* msg)
+{
+    LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, msg);
+    static const char* ctype="Connection: close\r\nContent-Type: text/html\r\n\r\n";
+    lpECB->ServerSupportFunction(lpECB->ConnID,HSE_REQ_SEND_RESPONSE_HEADER,"200 OK",0,(LPDWORD)ctype);
+    static const char* xmsg="<HTML><HEAD><TITLE>Shibboleth Error</TITLE></HEAD><BODY><H1>Shibboleth Error</H1>";
+    DWORD resplen=strlen(xmsg);
+    lpECB->WriteClient(lpECB->ConnID,(LPVOID)xmsg,&resplen,HSE_IO_SYNC);
+    resplen=strlen(msg);
+    lpECB->WriteClient(lpECB->ConnID,(LPVOID)msg,&resplen,HSE_IO_SYNC);
+    static const char* xmsg2="</BODY></HTML>";
+    resplen=strlen(xmsg2);
+    lpECB->WriteClient(lpECB->ConnID,(LPVOID)xmsg2,&resplen,HSE_IO_SYNC);
+    return HSE_STATUS_SUCCESS;
+}
+
+
 class ShibTargetIsapiE : public ShibTarget
 {
 public:
@@ -1031,14 +1050,11 @@ public:
   ~ShibTargetIsapiE() { }
 
   virtual void log(ShibLogLevel level, const string &msg) {
-    LogEvent(NULL, (level == LogLevelDebug : EVENTLOG_DEBUG_TYPE ?
-		    (level == LogLevelInfo : EVENTLOG_INFORMATION_TYPE ?
-		     (level == LogLevelWarn : EVENTLOG_WARNING_TYPE ?
-		      EVENTLOG_ERROR_TYPE))),
+      LogEvent(NULL, (level == LogLevelDebug ? EVENTLOG_INFORMATION_TYPE :
+                        (level == LogLevelInfo ? EVENTLOG_INFORMATION_TYPE :
+                        (level == LogLevelWarn ? EVENTLOG_WARNING_TYPE : EVENTLOG_ERROR_TYPE))),
 	     2100, NULL, msg.c_str());
   }
-  // Not used in the extension.
-  //virtual string getCookies(void) { }
   virtual void setCookie(const string &name, const string &value) {
     // Set the cookie for later.  Use it during the redirect.
     m_cookie += "Set-Cookie: " + name + "=" + value + "\r\n";
@@ -1050,7 +1066,7 @@ public:
     if (m_lpECB->cbTotalBytes > 1024*1024) // 1MB?
       throw ShibTargetException(SHIBRPC_OK,
 				"blocked too-large a post to SHIRE POST processor");
-    else if (m_lpECB->cbTotalBytes != lpECB->cbAvailable) {
+    else if (m_lpECB->cbTotalBytes != m_lpECB->cbAvailable) {
       string cgistr;
       char buf[8192];
       DWORD datalen=m_lpECB->cbTotalBytes;
@@ -1068,14 +1084,8 @@ public:
     else
       return string(reinterpret_cast<char*>(m_lpECB->lpbData),m_lpECB->cbAvailable);
   }
-  // Not used in the Extension
-  //virtual void clearHeader(const string &name) {  }
-  //virtual void setHeader(const string &name, const string &value) {  }
-  //virtual string getHeader(const string &name) {  }
-  //virtual void setRemoteUser(const string &user) { }
-  //virtual string getRemoteUser(void) { }
   virtual void* sendPage(const string &msg, const string content_type,
-			 const pair<string, string> headers[], int code) {
+			 const Iterator<header_t>& headers=EMPTY(header_t), int code=200) {
     string hdr = string ("Connection: close\r\nContent-type: ") + content_type + "\r\n";
     for (int k = 0; k < headers.size(); k++) {
       hdr += headers[k].first + ": " + headers[k].second + "\r\n";
@@ -1083,7 +1093,7 @@ public:
     hdr += "\r\n";
     // XXX Need to handle "code"
     m_lpECB->ServerSupportFunction(m_lpECB->ConnID, HSE_REQ_SEND_RESPONSE_HEADER,
-				   "200 OK", (LPDWORD)hdr.c_str());
+				   "200 OK", 0, (LPDWORD)hdr.c_str());
     DWORD resplen = msg.size();
     m_lpECB->WriteClient(m_lpECB->ConnID, (LPVOID)msg.c_str(), &resplen, HSE_IO_SYNC);
     return (void*)HSE_STATUS_SUCCESS;
@@ -1111,25 +1121,17 @@ public:
   }
   virtual void* returnOK(void) { return (void*) HSE_STATUS_SUCCESS; }
 
+  // Not used in the extension.
+  virtual string getCookies(void) { throw runtime_error("getCookies not implemented"); }
+  virtual void clearHeader(const string &name) { throw runtime_error("clearHeader not implemented"); }
+  virtual void setHeader(const string &name, const string &value) { throw runtime_error("setHeader not implemented"); }
+  virtual string getHeader(const string &name) { throw runtime_error("getHeader not implemented"); }
+  virtual void setRemoteUser(const string &user) { throw runtime_error("setRemoteUser not implemented"); }
+  virtual string getRemoteUser(void) { throw runtime_error("getRemoteUser not implemented"); }
+
   LPEXTENSION_CONTROL_BLOCK m_lpECB;
   string m_cookie;
 };
-
-DWORD WriteClientError(LPEXTENSION_CONTROL_BLOCK lpECB, const char* msg)
-{
-    LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, msg);
-    static const char* ctype="Connection: close\r\nContent-Type: text/html\r\n\r\n";
-    lpECB->ServerSupportFunction(lpECB->ConnID,HSE_REQ_SEND_RESPONSE_HEADER,"200 OK",0,(LPDWORD)ctype);
-    static const char* xmsg="<HTML><HEAD><TITLE>Shibboleth Error</TITLE></HEAD><BODY><H1>Shibboleth Error</H1>";
-    DWORD resplen=strlen(xmsg);
-    lpECB->WriteClient(lpECB->ConnID,(LPVOID)xmsg,&resplen,HSE_IO_SYNC);
-    resplen=strlen(msg);
-    lpECB->WriteClient(lpECB->ConnID,(LPVOID)msg,&resplen,HSE_IO_SYNC);
-    static const char* xmsg2="</BODY></HTML>";
-    resplen=strlen(xmsg2);
-    lpECB->WriteClient(lpECB->ConnID,(LPVOID)xmsg2,&resplen,HSE_IO_SYNC);
-    return HSE_STATUS_SUCCESS;
-}
 
 extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
 {
@@ -1151,7 +1153,7 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
             return WriteClientError(lpECB, "Shibboleth Extension not configured for this web site.");
 
 	ShibTargetIsapiE ste(lpECB, map_i->second);
-	pair<bool,void*> res = ste.doHandlePOST();
+	pair<bool,void*> res = ste.doHandleProfile();
 	if (res.first) return (DWORD)res.second;
 
 	return WriteClientError(lpECB, "Shibboleth Extension failed to process POST");

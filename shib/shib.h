@@ -462,51 +462,34 @@ namespace shibboleth
         const IAttributeRule* m_rule;
     };
 
-    // Wrapper classes around the POST profile and SAML binding
+    // Subclasses around the OpenSAML browser profile and binding interfaces,
+    // these incoporate additional functionality using Shib-defined APIs.
 
-    class SHIB_EXPORTS ShibPOSTProfile
+    class SHIB_EXPORTS ShibBrowserProfile : virtual public saml::SAMLBrowserProfile
     {
     public:
-        ShibPOSTProfile(
+        ShibBrowserProfile(
             const saml::Iterator<IMetadata*>& metadatas=EMPTY(IMetadata*),
             const saml::Iterator<IRevocation*>& revocations=EMPTY(IRevocation*),
-            const saml::Iterator<ITrust*>& trusts=EMPTY(ITrust*),
-            const saml::Iterator<ICredentials*>& creds=EMPTY(ICredentials*)
+            const saml::Iterator<ITrust*>& trusts=EMPTY(ITrust*)
             );
-        virtual ~ShibPOSTProfile() {}
+        virtual ~ShibBrowserProfile();
 
-        virtual const saml::SAMLAssertion* getSSOAssertion(
-            const saml::SAMLResponse& r, const saml::Iterator<const XMLCh*>& audiences=EMPTY(const XMLCh*)
-            );
-        virtual const saml::SAMLAuthenticationStatement* getSSOStatement(const saml::SAMLAssertion& a);
-        virtual saml::SAMLResponse* accept(
-            const XMLByte* buf,
+        virtual void setVersion(int major, int minor);
+        virtual saml::SAMLBrowserProfile::BrowserProfileResponse receive(
+            XMLCh** pIssuer,
+            const char* packet,
             const XMLCh* recipient,
-            int ttlSeconds,
-            const saml::Iterator<const XMLCh*>& audiences=EMPTY(const XMLCh*),
-            XMLCh** pproviderId=NULL
+            int supportedProfiles,
+            saml::IReplayCache* replayCache=NULL,
+            saml::SAMLBinding* callback=NULL
             );
-        virtual saml::SAMLResponse* prepare(
-            const IIDPSSODescriptor* role,
-            const char* credResolverId,
-            const XMLCh* recipient,
-            const XMLCh* authMethod,
-            const saml::SAMLDateTime& authInstant,
-            const XMLCh* name,
-            const XMLCh* format=Constants::SHIB_NAMEID_FORMAT_URI,
-            const XMLCh* nameQualifier=NULL,
-            const XMLCh* subjectIP=NULL,
-            const saml::Iterator<const XMLCh*>& audiences=EMPTY(const XMLCh*),
-            const saml::Iterator<saml::SAMLAuthorityBinding*>& bindings=EMPTY(saml::SAMLAuthorityBinding*)
-            );
-        virtual bool checkReplayCache(const saml::SAMLAssertion& a);
-        virtual const XMLCh* getProviderId(const saml::SAMLResponse& r);
 
-    protected:
-        const saml::Iterator<IMetadata*>& m_metadatas;
-        const saml::Iterator<IRevocation*>& m_revocations;
-        const saml::Iterator<ITrust*>& m_trusts;
-        const saml::Iterator<ICredentials*>& m_creds;
+    private:
+        saml::SAMLBrowserProfile* m_profile;
+        saml::Iterator<IMetadata*> m_metadatas;
+        saml::Iterator<IRevocation*> m_revocations;
+        saml::Iterator<ITrust*> m_trusts;
     };
 
     class SHIB_EXPORTS ShibBinding

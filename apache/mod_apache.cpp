@@ -378,10 +378,17 @@ public:
     return NULL;
   }
 
-  virtual void* sendPage(const string &msg, const string content_type,
-			 const pair<string, string> headers[], int code) {
+  virtual void* sendPage(
+    const string &msg,
+    const string content_type,
+	const saml::Iterator<header_t>& headers=EMPTY(header_t),
+    int code=200
+    ) {
     m_req->content_type = ap_psprintf(m_req->pool, content_type.c_str());
-    // XXX: push headers and code into the response
+    while (headers.hasNext()) {
+        const header_t& h=headers.next();
+        ap_table_setn(m_req->headers_out, h.first.c_str(), h.second.c_str());
+    }
     ap_send_http_header(m_req);
     ap_rprintf(m_req, msg.c_str());
     return (void*)DONE;
@@ -462,11 +469,11 @@ extern "C" int shib_post_handler(request_rec* r)
 #endif
     ShibTargetApache sta(r);
 
-    pair<bool,void*> res = sta.doHandlePOST();
+    pair<bool,void*> res = sta.doHandleProfile();
     if (res.first) return (int)res.second;
 
     ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r),
-		  "doHandlePOST() did not do anything.");
+		  "doHandleProfile() did not do anything.");
     return SERVER_ERROR;
 
 #ifndef _DEBUG

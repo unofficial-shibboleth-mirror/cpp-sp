@@ -101,7 +101,7 @@ int main(int argc,char* argv[])
         Metadata m(sites);
 
         auto_ptr<XMLCh> recip(XMLString::transcode("https://shib2.internet2.edu/shib/SHIRE"));
-        ShibPOSTProfile p (sites,EMPTY(IRevocation*),EMPTY(ITrust*),EMPTY(ICredentials*));
+        ShibBrowserProfile p (sites,EMPTY(IRevocation*),EMPTY(ITrust*));
 
         char ch;
         string buf;
@@ -112,15 +112,9 @@ int main(int argc,char* argv[])
             cin >> ch;
         }
 
-        SAMLResponse* r2=p.accept((const XMLByte*)buf.c_str(),recip.get(),300);
-        cout << "Consumed Response: " << endl << *r2 << endl;
-
-        const SAMLAssertion* a=p.getSSOAssertion(*r2);
-        const SAMLAuthenticationStatement* s=p.getSSOStatement(*a);
-        if (!p.checkReplayCache(*a))
-            throw ReplayedAssertionException("detected replay attack");
-
-        delete r2;
+        SAMLBrowserProfile::BrowserProfileResponse bpr=p.receive(NULL,buf.c_str(),recip.get(),SAMLBrowserProfile::Post);
+        cout << "Consumed Response: " << endl << *bpr.response << endl;
+        bpr.clear();
     }
     catch(SAMLException& e)
     {

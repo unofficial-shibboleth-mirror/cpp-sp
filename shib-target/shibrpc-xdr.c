@@ -58,18 +58,6 @@ xdr_ShibRpcError (XDR *xdrs, ShibRpcError *objp)
 }
 
 bool_t
-xdr_ShibRpcHttpCookie_1 (XDR *xdrs, ShibRpcHttpCookie_1 *objp)
-{
-	register int32_t *buf;
-
-	 if (!xdr_string (xdrs, &objp->cookie, ~0))
-		 return FALSE;
-	 if (!xdr_string (xdrs, &objp->client_addr, ~0))
-		 return FALSE;
-	return TRUE;
-}
-
-bool_t
 xdr_ShibRpcXML (XDR *xdrs, ShibRpcXML *objp)
 {
 	register int32_t *buf;
@@ -80,13 +68,47 @@ xdr_ShibRpcXML (XDR *xdrs, ShibRpcXML *objp)
 }
 
 bool_t
-xdr_shibrpc_session_is_valid_args_1 (XDR *xdrs, shibrpc_session_is_valid_args_1 *objp)
+xdr_shibrpc_new_session_args_2 (XDR *xdrs, shibrpc_new_session_args_2 *objp)
 {
 	register int32_t *buf;
 
-	 if (!xdr_ShibRpcHttpCookie_1 (xdrs, &objp->cookie))
-		 return FALSE;
 	 if (!xdr_string (xdrs, &objp->application_id, ~0))
+		 return FALSE;
+	 if (!xdr_string (xdrs, &objp->packet, ~0))
+		 return FALSE;
+	 if (!xdr_string (xdrs, &objp->recipient, ~0))
+		 return FALSE;
+	 if (!xdr_string (xdrs, &objp->client_addr, ~0))
+		 return FALSE;
+	 if (!xdr_bool (xdrs, &objp->checkIPAddress))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_shibrpc_new_session_ret_2 (XDR *xdrs, shibrpc_new_session_ret_2 *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_ShibRpcError (xdrs, &objp->status))
+		 return FALSE;
+	 if (!xdr_string (xdrs, &objp->target, ~0))
+		 return FALSE;
+	 if (!xdr_string (xdrs, &objp->cookie, ~0))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_shibrpc_get_session_args_2 (XDR *xdrs, shibrpc_get_session_args_2 *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_string (xdrs, &objp->application_id, ~0))
+		 return FALSE;
+	 if (!xdr_string (xdrs, &objp->cookie, ~0))
+		 return FALSE;
+	 if (!xdr_string (xdrs, &objp->client_addr, ~0))
 		 return FALSE;
 	 if (!xdr_bool (xdrs, &objp->checkIPAddress))
 		 return FALSE;
@@ -98,61 +120,7 @@ xdr_shibrpc_session_is_valid_args_1 (XDR *xdrs, shibrpc_session_is_valid_args_1 
 }
 
 bool_t
-xdr_shibrpc_session_is_valid_ret_1 (XDR *xdrs, shibrpc_session_is_valid_ret_1 *objp)
-{
-	register int32_t *buf;
-
-	 if (!xdr_ShibRpcError (xdrs, &objp->status))
-		 return FALSE;
-	return TRUE;
-}
-
-bool_t
-xdr_shibrpc_new_session_args_1 (XDR *xdrs, shibrpc_new_session_args_1 *objp)
-{
-	register int32_t *buf;
-
-	 if (!xdr_string (xdrs, &objp->application_id, ~0))
-		 return FALSE;
-	 if (!xdr_string (xdrs, &objp->shire_location, ~0))
-		 return FALSE;
-	 if (!xdr_string (xdrs, &objp->saml_post, ~0))
-		 return FALSE;
-	 if (!xdr_string (xdrs, &objp->client_addr, ~0))
-		 return FALSE;
-	 if (!xdr_bool (xdrs, &objp->checkIPAddress))
-		 return FALSE;
-	return TRUE;
-}
-
-bool_t
-xdr_shibrpc_new_session_ret_1 (XDR *xdrs, shibrpc_new_session_ret_1 *objp)
-{
-	register int32_t *buf;
-
-	 if (!xdr_ShibRpcError (xdrs, &objp->status))
-		 return FALSE;
-	 if (!xdr_string (xdrs, &objp->cookie, ~0))
-		 return FALSE;
-	return TRUE;
-}
-
-bool_t
-xdr_shibrpc_get_assertions_args_1 (XDR *xdrs, shibrpc_get_assertions_args_1 *objp)
-{
-	register int32_t *buf;
-
-	 if (!xdr_ShibRpcHttpCookie_1 (xdrs, &objp->cookie))
-		 return FALSE;
-	 if (!xdr_bool (xdrs, &objp->checkIPAddress))
-		 return FALSE;
-	 if (!xdr_string (xdrs, &objp->application_id, ~0))
-		 return FALSE;
-	return TRUE;
-}
-
-bool_t
-xdr_shibrpc_get_assertions_ret_1 (XDR *xdrs, shibrpc_get_assertions_ret_1 *objp)
+xdr_shibrpc_get_session_ret_2 (XDR *xdrs, shibrpc_get_session_ret_2 *objp)
 {
 	register int32_t *buf;
 

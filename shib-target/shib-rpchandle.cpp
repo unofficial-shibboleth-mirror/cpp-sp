@@ -143,7 +143,7 @@ CLIENT* RPCHandle::connect()
         throw ShibTargetException(SHIBRPC_UNKNOWN_ERROR, "Cannot connect to SHAR process, target site adminstrator should be notified");
     }
 
-    CLIENT *clnt = listener->getClientHandle(sock, SHIBRPC_PROG, SHIBRPC_VERS_1);
+    CLIENT *clnt = listener->getClientHandle(sock, SHIBRPC_PROG, SHIBRPC_VERS_2);
     if (!clnt) {
         const char* rpcerror = clnt_spcreateerror("RPCHandle::connect");
         log->crit("RPC failed for %p: %s", this, rpcerror);

@@ -133,11 +133,11 @@ SOURCE=.\ShibBinding.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\ShibConfig.cpp
+SOURCE=.\ShibBrowserProfile.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\ShibPOSTProfile.cpp
+SOURCE=.\ShibConfig.cpp
 # End Source File
 # End Target
 # End Project

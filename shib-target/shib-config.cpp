@@ -159,7 +159,9 @@ bool STConfig::init(const char* schemadir, const char* config)
         return false;
     }
 
+#ifndef _DEBUG
     try {
+#endif
         // Register plugin types.
 #ifndef WIN32
         samlConf.m_plugMgr.regFactory(shibtarget::XML::UnixListenerType,&UnixListenerFactory);
@@ -188,6 +190,7 @@ bool STConfig::init(const char* schemadir, const char* config)
         m_tranLogLock = Mutex::create();
 
         m_rpcpool = new RPCHandlePool;
+#ifndef _DEBUG
     }
     catch (...) {
         log.fatal("caught exception while loading/initializing configuration");
@@ -197,6 +200,7 @@ bool STConfig::init(const char* schemadir, const char* config)
         samlConf.term();
         return false;
     }
+#endif
   
     log.info("finished initializing");
 
