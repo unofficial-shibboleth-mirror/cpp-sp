@@ -221,8 +221,15 @@ extern "C" int shib_check_user(request_rec* r)
     // Declare SHIRE object for this request.
     SHIRE shire(application);
     
+    const char* shireURL=shire.getShireURL(targeturl);
+    if (!shireURL) {
+        ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,SH_AP_R(r),
+           "shib_check_user: unable to map request to proper shireURL setting, check configuration");
+        return SERVER_ERROR;
+    }
+    
     // Get location of this application's assertion consumer service and see if this is it.
-    if (strstr(targeturl,shire.getShireURL(targeturl))) {
+    if (strstr(targeturl,shireURL)) {
         return shib_handler(r,application,shire);
     }
 
@@ -564,8 +571,15 @@ int shib_handler(request_rec* r, const IApplication* application, SHIRE& shire)
 
     const char* targeturl=shib_get_targeturl(r,sc->szScheme);
 
+    const char* shireURL=shire.getShireURL(targeturl);
+    if (!shireURL) {
+        ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,SH_AP_R(r),
+           "shib_post_handler: unable to map request to proper shireURL setting, check configuration");
+        return SERVER_ERROR;
+    }
+
     // Make sure we only process the SHIRE requests.
-    if (!strstr(targeturl,shire.getShireURL(targeturl)))
+    if (!strstr(targeturl,shireURL))
         return DECLINED;
 
     ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_handler() running");

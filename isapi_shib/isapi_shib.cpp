@@ -467,9 +467,13 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
         
         // Declare SHIRE object for this request.
         SHIRE shire(application);
+        
+        const char* shireURL=shire.getShireURL(targeturl.c_str());
+        if (!shireURL)
+            return WriteClientError(pfc,"Unable to map request to proper shireURL setting, check configuration.");
 
         // If the user is accessing the SHIRE acceptance point, pass it on.
-        if (targeturl.find(shire.getShireURL(targeturl.c_str()))!=string::npos)
+        if (targeturl.find(shireURL)!=string::npos)
             return SF_STATUS_REQ_NEXT_NOTIFICATION;
 
         // Now check the policy for this request.
@@ -862,9 +866,13 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
             return WriteClientError(lpECB,"Unable to map request to application session settings, check configuration.");
 
         SHIRE shire(application);
+        
+        const char* shireURL=shire.getShireURL(targeturl.c_str());
+        if (!shireURL)
+            return WriteClientError(lpECB,"Unable to map request to proper shireURL setting, check configuration.");
 
         // Make sure we only process the SHIRE requests.
-        if (!strstr(targeturl.c_str(),shire.getShireURL(targeturl.c_str())))
+        if (!strstr(targeturl.c_str(),shireURL))
             return WriteClientError(lpECB,"The request's application and associated shireURL setting are inconsistent.");;
 
         pair<const char*,const char*> shib_cookie=shire.getCookieNameProps();
