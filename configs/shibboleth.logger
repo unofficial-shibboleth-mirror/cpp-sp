@@ -1,6 +1,11 @@
-log4j.rootCategory=WARN, syslog
+log4j.rootCategory=INFO, syslog
+
+# these are fairly verbose for DEBUG, so generally leave at INFO
+log4j.category.SAML.XML=INFO
+log4j.category.shibtarget.XMLApplication=INFO
 
 log4j.appender.syslog=org.apache.log4j.SyslogAppender
 log4j.appender.syslog.syslogName=shib
 log4j.appender.syslog.syslogHost=localhost
-log4j.appender.syslog.layout=org.apache.log4j.BasicLayout
+log4j.appender.syslog.layout=org.apache.log4j.PatternLayout
+log4j.appender.syslog.layout.ConversionPattern=%d{%Y-%m-%d %H:%M:%S} %p %c %x: %m%n

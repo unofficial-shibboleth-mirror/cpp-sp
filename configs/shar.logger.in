@@ -1,5 +1,9 @@
 log4j.rootCategory=INFO, shar_log
 
+# these are fairly verbose for DEBUG, so generally leave at INFO
+log4j.category.SAML.XML=INFO
+log4j.category.shibtarget.XMLApplication=INFO
+
 log4j.appender.shar_log=org.apache.log4j.RollingFileAppender
 log4j.appender.shar_log.fileName=@-LOGDIR-@/shar.log
 log4j.appender.shar_log.maxFileSize=1000000
