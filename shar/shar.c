@@ -89,6 +89,7 @@ extern SVCXPRT* svcfd_create ();
 
 int shar_run = 1;
 static const char* config = NULL;
+static int unlink_socket = 0;
 #if 0
 static int foreground = 0;
 #endif
@@ -271,8 +272,7 @@ static int parse_args(int argc, char* argv[])
       config=optarg;
       break;
     case 'f':
-      if (*(shib_target_sockname())=='/')
-        unlink(shib_target_sockname());
+      unlink_socket = 1;
       break;
 #if 0
     case 'F':
@@ -305,6 +305,9 @@ int main(int argc, char *argv[])
   /* initialize the shib-target library */
   if (shib_target_initialize(SHIBTARGET_SHAR, config))
     return -2;
+
+  if (unlink_socket && *(shib_target_sockname())=='/')
+      unlink(shib_target_sockname());
 
   /* Create the SHAR listener socket */
   if (shib_sock_create(&sock) != 0)
