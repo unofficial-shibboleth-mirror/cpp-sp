@@ -676,8 +676,7 @@ extern "C" int shib_auth_checker(request_rec *r)
     shib_dir_config* dc=
         (shib_dir_config*)ap_get_module_config(r->per_dir_config,&mod_shib);
 
-    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,
-		  "shib_auth_checker() executing");
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,"shib_auth_checker() executing");
 
     // Regular access to arbitrary resource...check AuthType
     const char* auth_type=ap_auth_type(r);
@@ -692,6 +691,11 @@ extern "C" int shib_auth_checker(request_rec *r)
     IConfig* conf=g_Config->getINI();
     Locker locker(conf);
     
+    const char* application_id=apr_table_get(r->headers_in,"Shib-Application-ID");
+    const IApplication* application=NULL;
+    if (application_id)
+        application = conf->getApplication(application_id);
+
     // mod_auth clone
 
     int m=r->method_number;
@@ -783,21 +787,7 @@ extern "C" int shib_auth_checker(request_rec *r)
             }
         }
         else {
-            const char* application_id=apr_table_get(r->headers_in,"Shib-Application-ID");
-            if (!application_id) {
-                ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,0,r,
-                   "shib_check_auth: Shib-Application-ID header not found in request");
-                return HTTP_FORBIDDEN;
-            }
-        
-            const IApplication* application=conf->getApplication(application_id);
-            if (!application) {
-                ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,0,r,
-                   "shib_check_auth: unable to map request to application settings, check configuration");
-                return HTTP_INTERNAL_SERVER_ERROR;
-            }
-        
-            Iterator<IAAP*> provs=application->getAAPProviders();
+            Iterator<IAAP*> provs=application ? application->getAAPProviders() : EMPTY(IAAP*);
             AAP wrapper(provs,w);
             if (wrapper.fail()) {
                 ap_log_rerror(APLOG_MARK,APLOG_WARNING|APLOG_NOERRNO,0,r,
@@ -899,6 +889,17 @@ extern "C" int shib_auth_checker(request_rec *r)
 
     if (!method_restricted)
         return OK;
+
+    if (!application_id) {
+        ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,0,r,
+           "shib_check_auth: Shib-Application-ID header not found in request");
+        return HTTP_FORBIDDEN;
+    }
+    else if (!application) {
+        ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,0,r,
+           "shib_check_auth: unable to map request to application settings, check configuration");
+        return HTTP_FORBIDDEN;
+    }
 
     ShibMLP markupProcessor(application);
     markupProcessor.insert("requestURL", ap_construct_url(r->pool,r->unparsed_uri,r));
