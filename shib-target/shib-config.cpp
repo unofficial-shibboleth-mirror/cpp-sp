@@ -159,9 +159,10 @@ void STConfig::init()
 
   // Initialize Log4cpp
   if (ini->get_tag (app, SHIBTARGET_TAG_LOGGER, true, &tag)) {
-    cerr << "Trying to load logger configuration: " << tag << "\n";
+    cerr << "Loading new logging configuration from " << tag << "\n";
     try {
       PropertyConfigurator::configure(tag);
+      cerr << "New logging configuration loaded, check log destination for process status..." << "\n";
     } catch (ConfigureFailure& e) {
       cerr << "Error reading configuration: " << e.what() << "\n";
     }
