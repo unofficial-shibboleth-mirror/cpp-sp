@@ -1,5 +1,5 @@
-6/1/03
-Version 1.0
+7/31/03
+Version 1.1
 
 Welcome to Internet2's Shibboleth
 
@@ -42,3 +42,7 @@ Foundation (http://www.apache.org/).
 
 This project uses libraries covered by the Lesser GNU Public License.
 Source code for these libraries is available on request.
+
+This project includes software developed by the National Research Council 
+of Canada.
+
