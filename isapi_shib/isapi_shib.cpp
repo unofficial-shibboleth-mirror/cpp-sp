@@ -433,6 +433,30 @@ DWORD WriteClientError(PHTTP_FILTER_CONTEXT pfc, const IApplication* app, const 
     return WriteClientError(pfc,"Unable to open error template, check settings.");
 }
 
+DWORD WriteRedirectPage(PHTTP_FILTER_CONTEXT pfc, const IApplication* app, const char* file, ShibMLP& mlp, const char* headers=NULL)
+{
+    ifstream infile(file);
+    if (!infile.fail()) {
+        const char* res = mlp.run(infile,app->getPropertySet("Errors"));
+        if (res) {
+            char buf[255];
+            sprintf(buf,"Content-Length: %u\r\nContent-Type: text/html\r\n\r\n",strlen(res));
+            if (headers) {
+                string h(headers);
+                h+=buf;
+                pfc->ServerSupportFunction(pfc,SF_REQ_SEND_RESPONSE_HEADER,"200 OK",(DWORD)h.c_str(),0);
+            }
+            else
+                pfc->ServerSupportFunction(pfc,SF_REQ_SEND_RESPONSE_HEADER,"200 OK",(DWORD)buf,0);
+            DWORD resplen=strlen(res);
+            pfc->WriteClient(pfc,(LPVOID)res,&resplen,0);
+            return SF_STATUS_REQ_FINISHED;
+        }
+    }
+    LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, "Extension unable to open redirect template.");
+    return WriteClientError(pfc,"Unable to open redirect template, check settings.");
+}
+
 extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificationType, LPVOID pvNotification)
 {
     // Is this a log notification?
@@ -487,6 +511,10 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
         // Now check the policy for this request.
         pair<bool,bool> requireSession=settings.first->getBool("requireSession");
         pair<const char*,const char*> shib_cookie=shire.getCookieNameProps();
+        pair<bool,bool> httpRedirects=application->getPropertySet("Sessions")->getBool("httpRedirects");
+        pair<bool,const char*> redirectPage=application->getPropertySet("Sessions")->getString("redirectPage");
+        if (httpRedirects.first && !httpRedirects.second && !redirectPage.first)
+            return WriteClientError(pfc,"HTML-based redirection requires a redirectPage property.");
 
         // Check for session cookie.
         const char* session_id=NULL;
@@ -505,12 +533,24 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
                 return SF_STATUS_REQ_NEXT_NOTIFICATION;
     
             // No acceptable cookie, and we require a session.  Generate an AuthnRequest.
-            string loc("Location: ");
-            loc+=shire.getAuthnRequest(targeturl.c_str());
-            loc+="\r\n";
-            pfc->AddResponseHeaders(pfc,const_cast<char*>(loc.c_str()),0);
-            pfc->ServerSupportFunction(pfc,SF_REQ_SEND_RESPONSE_HEADER,"302 Please Wait",0,0);
-            return SF_STATUS_REQ_FINISHED;
+            const char* areq = shire.getAuthnRequest(targeturl.c_str());
+            if (!httpRedirects.first || httpRedirects.second) {
+                string hdrs=string("Location: ") + areq + "\r\n"
+                    "Content-Type: text/html\r\n"
+                    "Content-Length: 40\r\n"
+                    "Expires: 01-Jan-1997 12:00:00 GMT\r\n"
+                    "Cache-Control: private,no-store,no-cache\r\n\r\n";
+                pfc->ServerSupportFunction(pfc,SF_REQ_SEND_RESPONSE_HEADER,"302 Please Wait",(DWORD)hdrs.c_str(),0);
+                static const char* redmsg="<HTML><BODY>Redirecting...</BODY></HTML>";
+                DWORD resplen=40;
+                pfc->WriteClient(pfc,(LPVOID)redmsg,&resplen,0);
+                return SF_STATUS_REQ_FINISHED;
+            }
+            else {
+                ShibMLP markupProcessor;
+                markupProcessor.insert("requestURL",areq);
+                return WriteRedirectPage(pfc, application, redirectPage.second, markupProcessor);
+            }
         }
 
         // Make sure this session is still valid.
@@ -545,12 +585,23 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
             else if (status->isRetryable()) {
                 // Oops, session is invalid. Generate AuthnRequest.
                 delete status;
-                string loc("Location: ");
-                loc+=shire.getAuthnRequest(targeturl.c_str());
-                loc+="\r\n";
-                pfc->AddResponseHeaders(pfc,const_cast<char*>(loc.c_str()),0);
-                pfc->ServerSupportFunction(pfc,SF_REQ_SEND_RESPONSE_HEADER,"302 Please Wait",0,0);
-                return SF_STATUS_REQ_FINISHED;
+                const char* areq = shire.getAuthnRequest(targeturl.c_str());
+                if (!httpRedirects.first || httpRedirects.second) {
+                    string hdrs=string("Location: ") + areq + "\r\n"
+                        "Content-Type: text/html\r\n"
+                        "Content-Length: 40\r\n"
+                        "Expires: 01-Jan-1997 12:00:00 GMT\r\n"
+                        "Cache-Control: private,no-store,no-cache\r\n\r\n";
+                    pfc->ServerSupportFunction(pfc,SF_REQ_SEND_RESPONSE_HEADER,"302 Please Wait",(DWORD)hdrs.c_str(),0);
+                    static const char* redmsg="<HTML><BODY>Redirecting...</BODY></HTML>";
+                    DWORD resplen=40;
+                    pfc->WriteClient(pfc,(LPVOID)redmsg,&resplen,0);
+                    return SF_STATUS_REQ_FINISHED;
+                }
+                else {
+                    markupProcessor.insert("requestURL",areq);
+                    return WriteRedirectPage(pfc, application, redirectPage.second, markupProcessor);
+                }
             }
             else {
                 // return the error page to the user
