@@ -237,8 +237,8 @@ static int parse_args(int argc, char* argv[])
   while ((opt = getopt(argc, argv, "fFh")) > 0) {
     switch (opt) {
     case 'f':
-      /* XXX: I know that this is a string on Unix */
-      unlink (shib_target_sockname());
+      if (*(shib_target_sockname())=='/')
+        unlink(shib_target_sockname());
       break;
 #if 0
     case 'F':
