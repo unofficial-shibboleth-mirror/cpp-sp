@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="US-ASCII"?>
+<schema targetNamespace="urn:mace:shibboleth:1.0:metadata"
+	xmlns="http://www.w3.org/2001/XMLSchema"
+	elementFormDefault="unqualified"
+	attributeFormDefault="unqualified"
+	version="1.0">
+
+	<element name="Domain">
+		<annotation>
+			<documentation>
+			SAML metadata extension used to regulate allowable attribute scopes.
+			</documentation>
+		</annotation>
+		<complexType>
+			<simpleContent>
+				<extension base="string">
+					<attribute name="regexp" type="boolean" use="optional" default="false"/>
+				</extension>
+			</simpleContent>
+		</complexType>
+	</element>
+</schema>
