@@ -245,7 +245,7 @@ bool TCPListener::accept(ShibSocket& listener, ShibSocket& s) const
     char* client=inet_ntoa(addr.sin_addr);
     for (vector<string>::const_iterator i=m_acl.begin(); i!=m_acl.end(); i++) {
         if (*i==client)
-            return 0;
+            return true;
     }
     close(s);
     s=-1;
