@@ -389,15 +389,12 @@ extern "C" int shibrm_check_auth(request_rec* r)
     }
 
     // Only allow a single assertion...
-    if (assertions.size() != 1) {
+    if (assertions.size() > 1) {
       ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
-		    "shibrm_check_auth() found %d assertions (should be 1)",
+		    "shibrm_check_auth() found %d assertions (only handle 1 currently)",
 		    assertions.size());
-    }
-
-    if (assertions.size() < 1)
       return shibrm_error_page (r, rmError.c_str(), markupProcessor);
-
+    }
 
     // Clear out the list of mapped attributes
     for (map<string,string>::const_iterator i=g_mapAttribNameToHeader.begin();
@@ -406,7 +403,7 @@ extern "C" int shibrm_check_auth(request_rec* r)
 
     // Maybe export the assertion
     ap_table_unset(r->headers_in,"Shib-Attributes");
-    if (dc->bExportAssertion==1) {
+    if (dc->bExportAssertion==1 && assertions.size()==1) {
       string assertion;
       RM::serialize(*(assertions[0]), assertion);
       ap_table_set(r->headers_in,"Shib-Attributes", assertion.c_str());
@@ -424,7 +421,7 @@ extern "C" int shibrm_check_auth(request_rec* r)
     }
 
     // Export the attributes -- XXX: Assumes one statement!
-    Iterator<SAMLAttribute*> j = RM::getAttributes(*(assertions[0]));
+    Iterator<SAMLAttribute*> j = assertions.size()==1 ? RM::getAttributes(*(assertions[0])) : EMPTY(SAMLAttribute*);
     while (j.hasNext())
     {
         SAMLAttribute* attr=j.next();
