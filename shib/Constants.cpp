@@ -65,7 +65,8 @@ const XMLCh Constants::SHIB_ATTRIBUTE_NAMESPACE_URI[] = // urn:mace:shibboleth:1
   chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
   chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
   chDigit_1, chPeriod, chDigit_0, chColon,
-  chLatin_a, chLatin_t, chLatin_t, chLatin_r, chLatin_i, chLatin_b, chLatin_u, chLatin_t, chLatin_e, chLatin_N, chLatin_a, chLatin_m, chLatin_e, chLatin_s, chLatin_p, chLatin_a, chLatin_c, chLatin_e, chColon,
+  chLatin_a, chLatin_t, chLatin_t, chLatin_r, chLatin_i, chLatin_b, chLatin_u, chLatin_t, chLatin_e,
+    chLatin_N, chLatin_a, chLatin_m, chLatin_e, chLatin_s, chLatin_p, chLatin_a, chLatin_c, chLatin_e, chColon,
   chLatin_u, chLatin_r, chLatin_i, chNull
 };
 
@@ -74,7 +75,45 @@ const XMLCh Constants::SHIB_NAMEID_FORMAT_URI[] = // urn:mace:shibboleth:1.0:nam
   chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
   chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
   chDigit_1, chPeriod, chDigit_0, chColon,
-  chLatin_n, chLatin_a, chLatin_m, chLatin_e, chLatin_I, chLatin_d, chLatin_e, chLatin_n, chLatin_t, chLatin_i, chLatin_f, chLatin_i, chLatin_e, chLatin_r, chNull
+  chLatin_n, chLatin_a, chLatin_m, chLatin_e,
+    chLatin_I, chLatin_d, chLatin_e, chLatin_n, chLatin_t, chLatin_i, chLatin_f, chLatin_i, chLatin_e, chLatin_r, chNull
+};
+
+const XMLCh Constants::XMLSIG_RETMETHOD_RAWX509[] = // http://www.w3.org/2000/09/xmldsig#rawX509Certificate
+{
+  chLatin_h, chLatin_t, chLatin_t, chLatin_p, chColon, chForwardSlash, chForwardSlash,
+  chLatin_w, chLatin_w, chLatin_w, chPeriod, chLatin_w, chDigit_3, chPeriod, chLatin_o, chLatin_r, chLatin_g, chForwardSlash,
+  chDigit_2, chDigit_0, chDigit_0, chDigit_0, chForwardSlash, chDigit_0, chDigit_9, chForwardSlash,
+  chLatin_x, chLatin_m, chLatin_l, chLatin_d, chLatin_s, chLatin_i, chLatin_g, chPound,
+  chLatin_r, chLatin_a, chLatin_w, chLatin_X, chDigit_5, chDigit_0, chDigit_9,
+    chLatin_C, chLatin_e, chLatin_r, chLatin_t, chLatin_i, chLatin_f, chLatin_i, chLatin_c, chLatin_a, chLatin_t, chLatin_e, chNull
+};
+
+const XMLCh Constants::SHIB_RETMETHOD_PEMX509[] = // urn:mace:shibboleth:1.0:xmldsig:pemX509Certificate
+{
+  chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
+  chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
+  chDigit_1, chPeriod, chDigit_0, chColon, chLatin_x, chLatin_m, chLatin_l, chLatin_d, chLatin_s, chLatin_i, chLatin_g, chColon,
+  chLatin_p, chLatin_e, chLatin_m, chLatin_X, chDigit_5, chDigit_0, chDigit_9,
+    chLatin_C, chLatin_e, chLatin_r, chLatin_t, chLatin_i, chLatin_f, chLatin_i, chLatin_c, chLatin_a, chLatin_t, chLatin_e, chNull
+};
+
+const XMLCh Constants::SHIB_RETMETHOD_DERRSA[] = // urn:mace:shibboleth:1.0:xmldsig:derRSAPrivateKey
+{
+  chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
+  chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
+  chDigit_1, chPeriod, chDigit_0, chColon, chLatin_x, chLatin_m, chLatin_l, chLatin_d, chLatin_s, chLatin_i, chLatin_g, chColon,
+  chLatin_d, chLatin_e, chLatin_r, chLatin_R, chLatin_S, chLatin_A,
+    chLatin_P, chLatin_r, chLatin_i, chLatin_v, chLatin_a, chLatin_t, chLatin_e, chLatin_K, chLatin_e, chLatin_y, chNull
+};
+
+const XMLCh Constants::SHIB_RETMETHOD_PEMRSA[] = // urn:mace:shibboleth:1.0:xmldsig:pemRSAPrivateKey
+{
+  chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
+  chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
+  chDigit_1, chPeriod, chDigit_0, chColon, chLatin_x, chLatin_m, chLatin_l, chLatin_d, chLatin_s, chLatin_i, chLatin_g, chColon,
+  chLatin_p, chLatin_e, chLatin_m, chLatin_R, chLatin_S, chLatin_A,
+    chLatin_P, chLatin_r, chLatin_i, chLatin_v, chLatin_a, chLatin_t, chLatin_e, chLatin_K, chLatin_e, chLatin_y, chNull
 };
 
 saml::QName Constants::SHIB_ATTRIBUTE_VALUE_TYPE(XML::SHIB_NS,XML::Literals::AttributeValueType);

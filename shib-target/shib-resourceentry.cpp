@@ -130,12 +130,16 @@ ResourceEntry::ResourceEntry(const Resource &resource,
   // Try this request against all the bindings in the AuthenticationStatement
   // (i.e. send it to each AA in the list of bindings)
   SAMLResponse* response = NULL;
+  OriginMetadata site(subject->getNameQualifier());
+  if (site.fail())
+      throw MetadataException("unable to locate origin site's metadata during attribute query");
+  auto_ptr<XMLCh> caller(XMLString::transcode(resource.getResource()));
+  auto_ptr<SAMLBinding> pBinding(SAMLBindingFactory::getInstance(caller.get(),site));
 
   while (!response && AAbindings.hasNext()) {
     SAMLAuthorityBinding* binding = AAbindings.next();
 
     priv->log->debug("Trying binding...");
-    SAMLBinding* pBinding=m_cache->getBinding(binding->getBinding());
     priv->log->debug("Sending request");
     response=pBinding->send(*binding,*req);
   }

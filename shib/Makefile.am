@@ -17,11 +17,13 @@ libshib_la_SOURCES = \
                     ShibConfig.cpp \
                     ShibPOSTProfile.cpp \
                     ShibPOSTProfileFactory.cpp \
+                    ShibSOAPBinding.cpp \
                     ScopedAttribute.cpp \
                     SimpleAttribute.cpp \
                     XML.cpp \
                     XMLMetadata.cpp \
                     XMLTrust.cpp \
+                    XMLCredentials.cpp \
                     shib-threads.cpp
 
 

@@ -88,12 +88,15 @@ public:
     
     struct KeyAuthority
     {
-        KeyAuthority() : m_store(NULL) {}
+        KeyAuthority() : m_store(NULL), m_depth(0), m_type(authority) {}
         ~KeyAuthority();
-        X509_STORE* getX509Store();
+        X509_STORE* getX509Store(bool cached=true);
 
         vector<XSECCryptoX509*> m_certs;
+        vector<X509*> m_nativecerts;
         X509_STORE* m_store;
+        unsigned short m_depth;
+        enum {authority, entity} m_type;
     };
     
     vector<KeyAuthority*> m_keyauths;
@@ -103,57 +106,63 @@ public:
     DOMDocument* m_doc;
 };
 
-X509_STORE* XMLTrustImpl::KeyAuthority::getX509Store()
+X509_STORE* XMLTrustImpl::KeyAuthority::getX509Store(bool cached)
 {
     // We cache them once they're built...
-    if (m_store)
+    if (m_store && cached)
         return m_store;
-
-    NDC ndc("getX509Store");
-
-    // Load the cert vector into a store.
     
-    if (!(m_store=X509_STORE_new()))
+    NDC ndc("getX509Store");
+    Category& log=Category::getInstance(SHIB_LOGCAT".XMLTrust");
+
+    // Do we need to convert to native cert format?
+    if (m_nativecerts.empty())
+    {
+        for (vector<XSECCryptoX509*>::const_iterator i=m_certs.begin(); i!=m_certs.end(); i++)
+        {
+            X509* x509=B64_to_X509((*i)->getDEREncodingSB().rawCharBuffer());
+            if (!x509)
+            {
+                log.warn("failed to parse X509 buffer: %s", (*i)->getDEREncodingSB().rawCharBuffer());
+                continue;
+            }
+            m_nativecerts.push_back(x509);
+        }
+    }
+    
+    // Load the cert vector into a store.
+    X509_STORE* store=NULL;
+    if (!(store=X509_STORE_new()))
     {
         log_openssl();
         return NULL;
     }
     
-    X509_STORE_set_verify_cb_func(m_store,verify_callback);
+    X509_STORE_set_verify_cb_func(store,verify_callback);
 
-    Category& log=Category::getInstance(SHIB_LOGCAT".XMLTrustImpl");
-
-    for (vector<XSECCryptoX509*>::const_iterator i=m_certs.begin(); i!=m_certs.end(); i++)
+    for (vector<X509*>::iterator j=m_nativecerts.begin(); j!=m_nativecerts.end(); j++)
     {
-        X509* x509=B64_to_X509((*i)->getDEREncodingSB().rawCharBuffer());
-        if (!x509)
-        {
-	    //X509_STORE_free(m_store);
-            //return m_store=NULL;
-	    log.warn("failed to parse X509 buffer: %s",
-		     (*i)->getDEREncodingSB().rawCharBuffer());
-	    continue;
-        }
-
-        if (!X509_STORE_add_cert(m_store,x509))
+        if (!X509_STORE_add_cert(store,X509_dup(*j)))
         {
             log_openssl();
-	    log.warn("failed to add cert: %s", x509->name);
-            X509_free(x509);
-            //X509_STORE_free(m_store);
-            //return m_store=NULL;
-	    continue;
+            log.warn("failed to add cert: %s", (*j)->name);
+            continue;
         }
     }
 
-    return m_store;
+    if (cached)
+        m_store=store;
+    return store;
 }
 
 XMLTrustImpl::KeyAuthority::~KeyAuthority()
 {
-    for (vector<XSECCryptoX509*>::iterator i=m_certs.begin(); i!=m_certs.end(); i++)
-        delete (*i);
-    X509_STORE_free(m_store);
+    if (m_store)
+        X509_STORE_free(m_store);
+    for (vector<X509*>::iterator i=m_nativecerts.begin(); i!=m_nativecerts.end(); i++)
+        X509_free(*i);
+    for (vector<XSECCryptoX509*>::iterator j=m_certs.begin(); j!=m_certs.end(); j++)
+        delete (*j);
 }
 
 XMLTrustImpl::XMLTrustImpl(const char* pathname) : m_doc(NULL)
@@ -173,19 +182,27 @@ XMLTrustImpl::XMLTrustImpl(const char* pathname) : m_doc(NULL)
 
         DOMElement* e = m_doc->getDocumentElement();
         if (XMLString::compareString(XML::SHIB_NS,e->getNamespaceURI()) ||
-            XMLString::compareString(XML::Literals::Trust,e->getLocalName()))
+            XMLString::compareString(SHIB_L(Trust),e->getLocalName()))
         {
             log.error("Construction requires a valid trust file: (shib:Trust as root element)");
             throw MetadataException("Construction requires a valid trust file: (shib:Trust as root element)");
         }
 
         // Loop over the KeyAuthority elements.
-        DOMNodeList* nlist=e->getElementsByTagNameNS(XML::SHIB_NS,XML::Literals::KeyAuthority);
+        DOMNodeList* nlist=e->getElementsByTagNameNS(XML::SHIB_NS,SHIB_L(KeyAuthority));
         for (int i=0; nlist && i<nlist->getLength(); i++)
         {
             KeyAuthority* ka=new KeyAuthority();
             m_keyauths.push_back(ka);
             
+            const XMLCh* depth=static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIB_L(VerifyDepth));
+            if (depth && *depth)
+                ka->m_depth=XMLString::parseInt(depth);
+            
+            const XMLCh* type=static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIB_L(Type));
+            if (type && *type==chLatin_e)
+                ka->m_type=KeyAuthority::entity;
+
             // Very rudimentary, grab up all the X509Certificate elements, and flatten into one list.
             DOMNodeList* certlist=static_cast<DOMElement*>(nlist->item(i))->getElementsByTagNameNS(
                 saml::XML::XMLSIG_NS,L(X509Certificate)
@@ -200,7 +217,8 @@ XMLTrustImpl::XMLTrustImpl(const char* pathname) : m_doc(NULL)
             
             // Now map the subjects to the list of certs.
             DOMNodeList* subs=static_cast<DOMElement*>(nlist->item(i))->getElementsByTagNameNS(XML::SHIB_NS,L(Subject));
-            for (int k=0; subs && k<subs->getLength(); k++)
+            int k=0;
+            while (subs && k<subs->getLength())
             {
                 const XMLCh* name=subs->item(k)->getFirstChild()->getNodeValue();
                 if (name && *name)
@@ -208,16 +226,20 @@ XMLTrustImpl::XMLTrustImpl(const char* pathname) : m_doc(NULL)
                     static const XMLCh one[]={ chDigit_1, chNull };
                     static const XMLCh tru[]={ chLatin_t, chLatin_r, chLatin_u, chLatin_e, chNull };
                     const XMLCh* regexp=
-                        static_cast<DOMElement*>(subs->item(k))->getAttributeNS(NULL,XML::Literals::regexp);
+                        static_cast<DOMElement*>(subs->item(k))->getAttributeNS(NULL,SHIB_L(regexp));
                     bool flag=(!XMLString::compareString(regexp,one) || !XMLString::compareString(regexp,tru));
                     m_bindings[pair<const XMLCh*,bool>(name,flag)]=ka;
                 }
+                k++;
             }
+            // If no Subjects, this is a catch-all binding.
+            if (k==0)
+                m_bindings[pair<const XMLCh*,bool>(NULL,false)]=ka;
         }
     }
     catch (SAMLException& e)
     {
-        log.errorStream() << "XML error while parsing site configuration: " << e.what() << CategoryStream::ENDLINE;
+        log.errorStream() << "XML error while parsing trust configuration: " << e.what() << CategoryStream::ENDLINE;
         for (vector<KeyAuthority*>::iterator i=m_keyauths.begin(); i!=m_keyauths.end(); i++)
             delete (*i);
         if (m_doc)
@@ -226,7 +248,7 @@ XMLTrustImpl::XMLTrustImpl(const char* pathname) : m_doc(NULL)
     }
     catch (...)
     {
-        log.error("Unexpected error while parsing site configuration");
+        log.error("Unexpected error while parsing trust configuration");
         for (vector<KeyAuthority*>::iterator i=m_keyauths.begin(); i!=m_keyauths.end(); i++)
             delete (*i);
         if (m_doc)
@@ -297,12 +319,12 @@ void XMLTrust::lock()
                     saml::NDC ndc("lock");
                     Category::getInstance(SHIB_LOGCAT".XMLTrust").error("failed to reload trust metadata, sticking with what we have: %s", e.what());
                 }
-                catch(...)
+/*                catch(...)
                 {
                     m_lock->unlock();
                     saml::NDC ndc("lock");
                     Category::getInstance(SHIB_LOGCAT".XMLTrust").error("caught an unknown exception, sticking with what we have");
-                }
+                } */
             }
             else
             {
@@ -320,10 +342,17 @@ void XMLTrust::unlock()
 
 Iterator<XSECCryptoX509*> XMLTrust::getCertificates(const XMLCh* subject) const
 {
-    // Find the first matching binding.
+    // Find the first matching entity binding.
     for (XMLTrustImpl::BindingMap::const_iterator i=m_impl->m_bindings.begin(); i!=m_impl->m_bindings.end(); i++)
     {
-        if (i->first.second)   // regexp
+        if (i->second->m_type!=XMLTrustImpl::KeyAuthority::entity)
+            continue;
+            
+        if (i->first.first==NULL)   // catch-all entry
+        {
+            return i->second->m_certs;
+        }
+        else if (i->first.second)   // regexp
         {
             try
             {
@@ -340,12 +369,78 @@ Iterator<XSECCryptoX509*> XMLTrust::getCertificates(const XMLCh* subject) const
                     << CategoryStream::ENDLINE;
             }
         }
-        else if (!XMLString::compareString(subject,i->first.first))
+        else if (!XMLString::compareString(subject,i->first.first))     // exact match
         {
             return i->second->m_certs;
         }
     }
     return EMPTY(XSECCryptoX509*);
+}
+
+bool XMLTrust::attach(const ISite* site, SSL_CTX* ctx) const
+{
+    NDC ndc("attach");
+
+    // Use the matching bindings.
+    for (XMLTrustImpl::BindingMap::const_iterator i=m_impl->m_bindings.begin(); i!=m_impl->m_bindings.end(); i++)
+    {
+        if (i->second->m_type!=XMLTrustImpl::KeyAuthority::authority)
+            continue;
+
+        bool match=false;
+        if (i->first.first==NULL)   // catch-all entry
+        {
+            match=true;
+        }
+        else if (i->first.second)   // regexp
+        {
+            try
+            {
+                RegularExpression re(i->first.first);
+                if (re.matches(site->getName()))
+                    match=true;
+                else
+                {
+                    Iterator<const XMLCh*> groups=site->getGroups();
+                    while (!match && groups.hasNext())
+                        if (re.matches(groups.next()))
+                            match=true;
+                }
+            }
+            catch (XMLException& ex)
+            {
+                auto_ptr<char> tmp(XMLString::transcode(ex.getMessage()));
+                Category& log=Category::getInstance(SHIB_LOGCAT".XMLTrust");
+                log.errorStream() << "caught exception while parsing regular expression: " << tmp.get()
+                    << CategoryStream::ENDLINE;
+            }
+        }
+        else if (!XMLString::compareString(site->getName(),i->first.first))     // exact match
+        {
+            match=true;
+        }
+        else
+        {
+            Iterator<const XMLCh*> groups=site->getGroups();
+            while (!match && groups.hasNext())
+                if (!XMLString::compareString(i->first.first,groups.next()))
+                    match=true;
+        }
+
+        // If we have a match, use the associated keyauth and load it into the context's store.
+        if (match)
+        {
+            X509_STORE* store=i->second->getX509Store(false);
+            if (store)
+            {
+                SSL_CTX_set_cert_store(ctx,store);
+                SSL_CTX_set_verify_depth(ctx,i->second->m_depth);
+            }
+            return true;
+        }
+    }
+
+    return false;
 }
 
 bool XMLTrust::validate(const ISite* site, Iterator<XSECCryptoX509*> certs) const
@@ -376,8 +471,15 @@ bool XMLTrust::validate(const ISite* site, Iterator<const XMLCh*> certs) const
     // Use the matching bindings.
     for (XMLTrustImpl::BindingMap::const_iterator i=m_impl->m_bindings.begin(); i!=m_impl->m_bindings.end(); i++)
     {
+        if (i->second->m_type!=XMLTrustImpl::KeyAuthority::authority)
+            continue;
+
         bool match=false;
-        if (i->first.second)   // regexp
+        if (i->first.first==NULL)   // catch-all entry
+        {
+            match=true;
+        }
+        else if (i->first.second)   // regexp
         {
             try
             {
@@ -395,13 +497,12 @@ bool XMLTrust::validate(const ISite* site, Iterator<const XMLCh*> certs) const
             catch (XMLException& ex)
             {
                 auto_ptr<char> tmp(XMLString::transcode(ex.getMessage()));
-                NDC ndc("getCertificates");
                 Category& log=Category::getInstance(SHIB_LOGCAT".XMLTrust");
                 log.errorStream() << "caught exception while parsing regular expression: " << tmp.get()
                     << CategoryStream::ENDLINE;
             }
         }
-        else if (!XMLString::compareString(site->getName(),i->first.first))
+        else if (!XMLString::compareString(site->getName(),i->first.first))     // exact match
         {
             match=true;
         }
@@ -436,6 +537,8 @@ bool XMLTrust::validate(const ISite* site, Iterator<const XMLCh*> certs) const
 #else
                 X509_STORE_CTX_init(ctx,store,sk_X509_value(chain,0),chain);
 #endif
+                if (i->second->m_depth)
+                    X509_STORE_CTX_set_depth(ctx,i->second->m_depth);
                 if (X509_verify_cert(ctx)==1)
                 {
                     sk_X509_pop_free(chain,X509_free);

@@ -188,13 +188,13 @@ void STConfig::init()
   if (ini->get_tag (app, SHIBTARGET_TAG_AACONNECTTO, true, &tag))
     samlConf.binding_defaults.conn_timeout = atoi(tag.c_str());
   if (ini->get_tag (app, SHIBTARGET_TAG_CERTFILE, true, &tag))
-    samlConf.binding_defaults.ssl_certfile = tag;
+      log.error("using OBSOLETE certfile setting, please migrate to the XML-based credential format (see the latest target deploy guide)");
   if (ini->get_tag (app, SHIBTARGET_TAG_KEYFILE, true, &tag))
-    samlConf.binding_defaults.ssl_keyfile = tag;
+      log.error("using OBSOLETE keyfile setting, please migrate to the XML-based credential format (see the latest target deploy guide)");
   if (ini->get_tag (app, SHIBTARGET_TAG_KEYPASS, true, &tag))
-    samlConf.binding_defaults.ssl_keypass = tag;
+      log.error("using OBSOLETE keypass setting, please migrate to the XML-based credential format (see the latest target deploy guide)");
   if (ini->get_tag (app, SHIBTARGET_TAG_CALIST, true, &tag))
-    samlConf.binding_defaults.ssl_calist = tag;
+      log.error("using OBSOLETE calist setting, please use the XML-based trust format (see the latest target deploy guide)");
 
   try {
     if (!samlConf.init()) {

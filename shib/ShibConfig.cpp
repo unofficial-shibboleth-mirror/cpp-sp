@@ -90,6 +90,11 @@ extern "C" ITrust* XMLTrustFactory(const char* source)
     return new XMLTrust(source);
 }
 
+extern "C" ICredentials* XMLCredentialsFactory(const char* source)
+{
+    return new XMLCredentials(source);
+}
+
 extern "C" IAAP* XMLAAPFactory(const char* source)
 {
     return new XMLAAP(source);
@@ -118,6 +123,7 @@ bool ShibInternalConfig::init()
 
     regFactory("edu.internet2.middleware.shibboleth.metadata.XML",&XMLMetadataFactory);
     regFactory("edu.internet2.middleware.shibboleth.trust.XML",&XMLTrustFactory);
+    regFactory("edu.internet2.middleware.shibboleth.creds.XML",&XMLCredentialsFactory);
     regFactory("edu.internet2.middleware.shibboleth.target.AAP.XML",&XMLAAPFactory);
     regFactory("edu.internet2.middleware.shibboleth.target.AttributeFactory",&ShibAttributeFactory);
 
@@ -130,8 +136,10 @@ void ShibInternalConfig::term()
         delete *i;
     for (vector<ITrust*>::iterator j=m_trust_providers.begin(); j!=m_trust_providers.end(); j++)
         delete *j;
-    for (vector<IAAP*>::iterator k=m_aap_providers.begin(); k!=m_aap_providers.end(); k++)
+    for (vector<ICredentials*>::iterator k=m_cred_providers.begin(); k!=m_cred_providers.end(); k++)
         delete *k;
+    for (vector<IAAP*>::iterator l=m_aap_providers.begin(); l!=m_aap_providers.end(); l++)
+        delete *l;
 }
 
 void ShibInternalConfig::regFactory(const char* type, MetadataFactory* factory)
@@ -144,6 +152,15 @@ void ShibInternalConfig::regFactory(const char* type, TrustFactory* factory)
 {
     if (type && factory)
         m_trustFactoryMap[type]=factory;
+}
+
+void ShibInternalConfig::regFactory(const char* type, CredentialsFactory* factory)
+{
+    if (type && factory)
+    {
+        m_credFactoryMap[type]=factory;
+        SAMLConfig::getConfig().binding_defaults.ssl_ctx_callback=ssl_ctx_callback;
+    }
 }
 
 void ShibInternalConfig::regFactory(const char* type, AAPFactory* factory)
@@ -164,6 +181,7 @@ void ShibInternalConfig::unregFactory(const char* type)
     {
         m_metadataFactoryMap.erase(type);
         m_trustFactoryMap.erase(type);
+        m_credFactoryMap.erase(type);
         m_aapFactoryMap.erase(type);
     }
 }
@@ -204,14 +222,23 @@ bool ShibInternalConfig::addMetadata(const char* type, const char* source)
             }
             else
             {
-                AAPFactoryMap::const_iterator k=m_aapFactoryMap.find(type);
-                if (k!=m_aapFactoryMap.end())
+                CredentialsFactoryMap::const_iterator k=m_credFactoryMap.find(type);
+                if (k!=m_credFactoryMap.end())
                 {
-                    m_aap_providers.push_back((k->second)(source));
+                    m_cred_providers.push_back((k->second)(source));
                     ret=true;
                 }
                 else
-                    throw MetadataException("ShibConfig::addMetadata() unable to locate a metadata factory of the requested type");
+                {
+                    AAPFactoryMap::const_iterator l=m_aapFactoryMap.find(type);
+                    if (l!=m_aapFactoryMap.end())
+                    {
+                        m_aap_providers.push_back((l->second)(source));
+                        ret=true;
+                    }
+                    else
+                        throw MetadataException("ShibConfig::addMetadata() unable to locate a metadata factory of the requested type");
+                }
             }
         }
     }

@@ -121,12 +121,41 @@ const XMLCh XML::Literals::OriginSite[]=
 const XMLCh XML::Literals::SiteGroup[]=
 { chLatin_S, chLatin_i, chLatin_t, chLatin_e, chLatin_G, chLatin_r, chLatin_o, chLatin_u, chLatin_p, chNull };
 
+const XMLCh XML::Literals::Credentials[] =
+{ chLatin_C, chLatin_r, chLatin_e, chLatin_d, chLatin_e, chLatin_n, chLatin_t, chLatin_i, chLatin_a, chLatin_l, chLatin_s, chNull };
+
+const XMLCh XML::Literals::Exponent[] =
+{ chLatin_E, chLatin_x, chLatin_p, chLatin_o, chLatin_n, chLatin_e, chLatin_n, chLatin_t, chNull };
+
 const XMLCh XML::Literals::KeyAuthority[] =
 { chLatin_K, chLatin_e, chLatin_y,
   chLatin_A, chLatin_u, chLatin_t, chLatin_h, chLatin_o, chLatin_r, chLatin_i, chLatin_t, chLatin_y, chNull };
 
+const XMLCh XML::Literals::KeyUse[] =
+{ chLatin_K, chLatin_e, chLatin_y, chLatin_U, chLatin_s, chLatin_e, chNull };
+
+const XMLCh XML::Literals::Modulus[] =
+{ chLatin_M, chLatin_o, chLatin_d, chLatin_u, chLatin_l, chLatin_u, chLatin_s, chNull };
+
+const XMLCh XML::Literals::RelyingParty[] =
+{ chLatin_R, chLatin_e, chLatin_l, chLatin_y, chLatin_i, chLatin_n, chLatin_g,
+  chLatin_P, chLatin_a, chLatin_r, chLatin_t, chLatin_y, chNull };
+
+const XMLCh XML::Literals::RetrievalMethod[] =
+{ chLatin_R, chLatin_e, chLatin_t, chLatin_r, chLatin_i, chLatin_e, chLatin_v, chLatin_a, chLatin_l,
+  chLatin_M, chLatin_e, chLatin_t, chLatin_h, chLatin_o, chLatin_d, chNull };
+
+const XMLCh XML::Literals::RSAKeyValue[] =
+{ chLatin_R, chLatin_S, chLatin_A, chLatin_K, chLatin_e, chLatin_y, chLatin_V, chLatin_a, chLatin_l, chLatin_u, chLatin_e, chNull };
+
 const XMLCh XML::Literals::Trust[] =
 { chLatin_T, chLatin_r, chLatin_u, chLatin_s, chLatin_t, chNull };
+
+const XMLCh XML::Literals::URI[] =
+{ chLatin_U, chLatin_R, chLatin_I, chNull };
+
+const XMLCh XML::Literals::VerifyDepth[] =
+{ chLatin_V, chLatin_e, chLatin_r, chLatin_i, chLatin_f, chLatin_y, chLatin_D, chLatin_e, chLatin_p, chLatin_t, chLatin_h, chNull };
 
 const XMLCh XML::Literals::Accept[]=
 { chLatin_A, chLatin_c, chLatin_c, chLatin_e, chLatin_p, chLatin_t, chNull };

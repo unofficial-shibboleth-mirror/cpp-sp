@@ -86,8 +86,6 @@ namespace shibtarget {
   public:
     virtual ~CCache() = 0;
 
-    virtual saml::SAMLBinding* getBinding(const XMLCh* bindingProt) = 0;
-
     // insert() the Auth Statement into the CCache.
     //
     // Make sure you do not hold any open CCacheEntry objects before

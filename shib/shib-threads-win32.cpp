@@ -339,7 +339,7 @@ private:
 
 public:
   ThreadKeyImpl(void (*destroy_fcn)(void*)) : destroy_hook(destroy_fcn) { key=TlsAlloc(); };
-  virtual ~ThreadKeyImpl() { destroy_hook(TlsGetValue(key)); TlsFree(key); }
+  virtual ~ThreadKeyImpl() { if (destroy_hook) destroy_hook(TlsGetValue(key)); TlsFree(key); }
 
   int setData(void* data) { TlsSetValue(key,data); return 0;}
   void* getData() { return TlsGetValue(key); }

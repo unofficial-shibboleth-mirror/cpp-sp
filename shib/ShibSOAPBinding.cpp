@@ -48,23 +48,61 @@
  */
 
 
-/* SAMLBindingFactory.cpp - SAML binding factory implementation
+/* ShibSOAPBinding.cpp - Shibboleth version of SOAP Binding with SSL callback
 
    Scott Cantor
-   6/4/02
+   10/30/03
    
    $History:$
 */
 
 #include "internal.h"
 
+#include <log4cpp/Category.hh>
+
+using namespace std;
+using namespace log4cpp;
 using namespace shibboleth;
 using namespace saml;
 
-SAMLBinding* SAMLBindingFactory::getInstance(const XMLCh* subject, const ISite* relyingParty, const XMLCh* protocol)
+SAMLResponse* ShibSOAPBinding::send(const SAMLAuthorityBinding& bindingInfo, SAMLRequest& req, SAMLConfig::SAMLBindingConfig& conf)
 {
-    if (!protocol || XMLString::compareString(protocol,SAMLBinding::SAML_SOAP_HTTPS))
-        throw UnsupportedProtocolException("SAMLBindingFactory::getInstance() unable to find binding implementation for specified protocol");
+    conf.ssl_ctx_callback=ssl_ctx_callback;
+    conf.ssl_ctx_data=this;
+    
+    return SAMLSOAPBinding::send(bindingInfo, req, conf);
+}
 
-    return new ShibSOAPBinding(subject, relyingParty);
+bool shibboleth::ssl_ctx_callback(void* ssl_ctx, void* userptr)
+{
+    try
+    {
+        ShibSOAPBinding* b = reinterpret_cast<ShibSOAPBinding*>(userptr);
+        if (!Credentials::attach(b->m_subject, b->m_relyingParty, reinterpret_cast<ssl_ctx_st*>(ssl_ctx)))
+        {
+            NDC("ssl_ctx_callback");
+            Category::getInstance(SHIB_LOGCAT".ShibSOAPBinding").warn("found no appropriate credentials to attach, request will be anonymous");
+        }
+
+        Trust t;
+        if (!t.attach(b->m_relyingParty, reinterpret_cast<ssl_ctx_st*>(ssl_ctx)))
+        {
+            NDC("ssl_ctx_callback");
+            Category::getInstance(SHIB_LOGCAT".ShibSOAPBinding").warn("found no appropriate authorities to attach, request will be unverified");
+        }
+    }
+    catch (SAMLException& e)
+    {
+        NDC("ssl_ctx_callback");
+        Category::getInstance(SHIB_LOGCAT".ShibSOAPBinding").error(string("caught a SAML exception while attaching credentials to request: ") + e.what());
+        return false;
+    }
+    catch (...)
+    {
+        NDC("ssl_ctx_callback");
+        Category::getInstance(SHIB_LOGCAT".ShibSOAPBinding").error("caught an unknown exception while attaching credentials to request: ");
+        return false;
+    }
+
+    return true;
 }

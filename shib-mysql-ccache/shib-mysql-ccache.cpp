@@ -89,8 +89,6 @@ public:
   ShibMySQLCCache();
   virtual ~ShibMySQLCCache();
 
-  virtual SAMLBinding* getBinding(const XMLCh* bindingProt)
-  	{ return m_cache->getBinding(bindingProt); }
   virtual CCacheEntry* find(const char* key);
   virtual void insert(const char* key, SAMLAuthenticationStatement *s,
 		      const char *client_addr);

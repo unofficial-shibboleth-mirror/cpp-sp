@@ -73,12 +73,14 @@
 #include "shib.h"
 #include "shib-threads.h"
 
+#include <openssl/x509.h>
+
 #define SHIB_LOGCAT "Shibboleth"
 
 namespace shibboleth
 {
     class XMLMetadataImpl;
-    class SHIB_EXPORTS XMLMetadata : public IMetadata
+    class XMLMetadata : public IMetadata
     {
     public:
         XMLMetadata(const char* pathname);
@@ -96,7 +98,7 @@ namespace shibboleth
     };
 
     class XMLTrustImpl;
-    class SHIB_EXPORTS XMLTrust : public ITrust
+    class XMLTrust : public ITrust
     {
     public:
         XMLTrust(const char* pathname);
@@ -107,6 +109,7 @@ namespace shibboleth
         saml::Iterator<XSECCryptoX509*> getCertificates(const XMLCh* subject) const;
         bool validate(const ISite* site, saml::Iterator<XSECCryptoX509*> certs) const;
         bool validate(const ISite* site, saml::Iterator<const XMLCh*> certs) const;
+        bool attach(const ISite* site, SSL_CTX* ctx) const;
 
     private:
         std::string m_source;
@@ -115,8 +118,25 @@ namespace shibboleth
         XMLTrustImpl* m_impl;
     };
 
+    class XMLCredentialsImpl;
+    class XMLCredentials : public ICredentials
+    {
+    public:
+        XMLCredentials(const char* pathname);
+        ~XMLCredentials();
+        bool attach(const XMLCh* subject, const ISite* relyingParty, SSL_CTX* ctx) const;
+
+    private:
+        void lock();
+        void unlock();
+        std::string m_source;
+        time_t m_filestamp;
+        RWLock* m_lock;
+        XMLCredentialsImpl* m_impl;
+    };
+
     class XMLAAPImpl;
-    class SHIB_EXPORTS XMLAAP : public IAAP
+    class XMLAAP : public IAAP
     {
     public:
         XMLAAP(const char* pathname);
@@ -135,6 +155,53 @@ namespace shibboleth
         XMLAAPImpl* m_impl;
     };
     
+    class ClubShibPOSTProfile : public ShibPOSTProfile
+    {
+    public:
+        ClubShibPOSTProfile(const saml::Iterator<const XMLCh*>& policies, const XMLCh* receiver, int ttlSeconds);
+        ClubShibPOSTProfile(const saml::Iterator<const XMLCh*>& policies, const XMLCh* issuer);
+        virtual ~ClubShibPOSTProfile();
+
+        virtual saml::SAMLResponse* prepare(
+            const XMLCh* recipient,
+            const XMLCh* name,
+            const XMLCh* nameQualifier,
+            const XMLCh* subjectIP,
+            const XMLCh* authMethod,
+            time_t authInstant,
+            const saml::Iterator<saml::SAMLAuthorityBinding*>& bindings,
+            XSECCryptoKey* responseKey,
+            const saml::Iterator<XSECCryptoX509*>& responseCerts=EMPTY(XSECCryptoX509*),
+            XSECCryptoKey* assertionKey=NULL,
+            const saml::Iterator<XSECCryptoX509*>& assertionCerts=EMPTY(XSECCryptoX509*)
+            );
+
+    protected:
+        virtual void verifySignature(
+            const saml::SAMLSignedObject& obj,
+            const IOriginSite* originSite,
+            const XMLCh* signerName,
+            XSECCryptoKey* knownKey=NULL);
+    };
+    
+    class ShibSOAPBinding : public saml::SAMLSOAPBinding
+    {
+    public:
+        ShibSOAPBinding(const XMLCh* subject, const ISite* relyingParty) : m_subject(subject), m_relyingParty(relyingParty) {}
+        virtual ~ShibSOAPBinding() {}
+
+        virtual saml::SAMLResponse* send(
+            const saml::SAMLAuthorityBinding& bindingInfo,
+            saml::SAMLRequest& req,
+            saml::SAMLConfig::SAMLBindingConfig& conf=saml::SAMLConfig::getConfig().binding_defaults
+            );
+
+    private:
+        friend bool ssl_ctx_callback(void* ssl_ctx, void* userptr);
+        const XMLCh* m_subject;
+        const ISite* m_relyingParty;
+    };
+
     class ShibInternalConfig : public ShibConfig
     {
     public:
@@ -145,6 +212,7 @@ namespace shibboleth
 
         void regFactory(const char* type, MetadataFactory* factory);
         void regFactory(const char* type, TrustFactory* factory);
+        void regFactory(const char* type, CredentialsFactory* factory);
         void regFactory(const char* type, AAPFactory* factory);
         void regFactory(const char* type, saml::SAMLAttributeFactory* factory);
         void unregFactory(const char* type);
@@ -153,26 +221,42 @@ namespace shibboleth
 
         saml::Iterator<IMetadata*> getMetadataProviders() const {return m_providers;}
         saml::Iterator<ITrust*> getTrustProviders() const {return m_trust_providers;}
+        saml::Iterator<ICredentials*> getCredentialProviders() const {return m_cred_providers;}
         saml::Iterator<IAAP*> getAAPProviders() const {return m_aap_providers;}
         saml::SAMLAttributeFactory* getAttributeFactory(const char* type) const;
 
     private:
         friend class OriginMetadata;
         friend class Trust;
+        friend class Credentials;
         friend class AAP;
         
         typedef std::map<std::string, MetadataFactory*> MetadataFactoryMap;
         typedef std::map<std::string, TrustFactory*> TrustFactoryMap;
+        typedef std::map<std::string, CredentialsFactory*> CredentialsFactoryMap;
         typedef std::map<std::string, AAPFactory*> AAPFactoryMap;
         typedef std::map<std::string, saml::SAMLAttributeFactory*> AttributeFactoryMap;
         MetadataFactoryMap m_metadataFactoryMap;
         TrustFactoryMap m_trustFactoryMap;
+        CredentialsFactoryMap m_credFactoryMap;
         AAPFactoryMap m_aapFactoryMap;
         AttributeFactoryMap m_attrFactoryMap;
         std::vector<IMetadata*> m_providers;
         std::vector<ITrust*> m_trust_providers;
+        std::vector<ICredentials*> m_cred_providers;
         std::vector<IAAP*> m_aap_providers;
     };
+
+    // OpenSSL Utilities
+    
+    // Custom metadata-driven SSL context callback
+    bool ssl_ctx_callback(void* ssl_ctx, void* userptr);
+    
+    // Log errors from OpenSSL error queue
+    void log_openssl();
+
+    // build an OpenSSL cert out of a base-64 encoded DER buffer (XML style)
+    X509* B64_to_X509(const char* buf);
 }
 
 #endif

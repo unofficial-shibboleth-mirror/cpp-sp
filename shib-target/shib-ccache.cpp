@@ -149,7 +149,6 @@ public:
   InternalCCache();
   virtual ~InternalCCache();
 
-  virtual SAMLBinding* getBinding(const XMLCh* bindingProt);
   virtual CCacheEntry* find(const char* key);
   virtual void insert(const char* key, SAMLAuthenticationStatement *s,
 		      const char *client_addr);
@@ -161,7 +160,6 @@ public:
 private:
   RWLock *lock;
 
-  SAMLBinding* m_SAMLBinding;
   map<string,InternalCCacheEntry*> m_hashtable;
 
   log4cpp::Category* log;
@@ -215,7 +213,6 @@ vector<SAMLAssertion*> InternalCCacheEntry::g_emptyVector;
 
 InternalCCache::InternalCCache()
 {
-  m_SAMLBinding=SAMLBindingFactory::getInstance();
   string ctx="shibtarget.InternalCCache";
   log = &(log4cpp::Category::getInstance(ctx));
   lock = RWLock::create();
@@ -232,21 +229,10 @@ InternalCCache::~InternalCCache()
   shutdown_wait->signal();
   cleanup_thread->join(NULL);
 
-  delete m_SAMLBinding;
   for (map<string,InternalCCacheEntry*>::iterator i=m_hashtable.begin(); i!=m_hashtable.end(); i++)
     delete i->second;
   delete lock;
   delete shutdown_wait;
-}
-
-SAMLBinding* InternalCCache::getBinding(const XMLCh* bindingProt)
-{
-  log->debug("looking for binding...");
-  if (!XMLString::compareString(bindingProt,SAMLBinding::SAML_SOAP_HTTPS)) {
-    log->debug("https binding found");
-    return m_SAMLBinding;
-  }
-  return NULL;
 }
 
 // assumed a lock is held..

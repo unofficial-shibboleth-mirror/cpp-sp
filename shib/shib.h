@@ -60,7 +60,7 @@
 #define __shib_h__
 
 #include <saml/saml.h>
-#include <openssl/x509.h>
+#include <openssl/ssl.h>
 
 #ifdef WIN32
 # ifndef SHIB_EXPORTS
@@ -75,11 +75,6 @@
 
 namespace shibboleth
 {
-#ifdef NO_RTTI
-  extern SHIB_EXPORTS const unsigned short RTTI_UnsupportedProtocolException;
-  extern SHIB_EXPORTS const unsigned short RTTI_OriginSiteMapperException;
-#endif
-
     #define DECLARE_SHIB_EXCEPTION(name,base) \
         class SHIB_EXPORTS name : public saml::base \
         { \
@@ -150,7 +145,16 @@ namespace shibboleth
         virtual saml::Iterator<XSECCryptoX509*> getCertificates(const XMLCh* subject) const=0;
         virtual bool validate(const ISite* site, saml::Iterator<XSECCryptoX509*> certs) const=0;
         virtual bool validate(const ISite* site, saml::Iterator<const XMLCh*> certs) const=0;
+        virtual bool attach(const ISite* site, SSL_CTX* ctx) const=0;
         virtual ~ITrust() {}
+    };
+    
+    struct SHIB_EXPORTS ICredentials
+    {
+        virtual void lock()=0;
+        virtual void unlock()=0;
+        virtual bool attach(const XMLCh* subject, const ISite* relyingParty, SSL_CTX* ctx) const=0;
+        virtual ~ICredentials() {}
     };
     
     struct SHIB_EXPORTS IAttributeRule
@@ -175,12 +179,6 @@ namespace shibboleth
     };
 
 #ifdef SHIB_INSTANTIATE
-# ifdef NO_RTTI
-    const unsigned short RTTI_UnsupportedProtocolException=     RTTI_EXTENSION_BASE;
-    const unsigned short RTTI_MetadataException=                RTTI_EXTENSION_BASE+1;
-# endif
-//    template class SHIB_EXPORTS saml::Iterator<std::pair<saml::xstring,bool> >;
-//    template class SHIB_EXPORTS saml::ArrayIterator<std::pair<saml::xstring,bool> >;
     template class SHIB_EXPORTS saml::Iterator<const IContactInfo*>;
     template class SHIB_EXPORTS saml::ArrayIterator<const IContactInfo*>;
     template class SHIB_EXPORTS saml::Iterator<const IAuthority*>;
@@ -191,6 +189,8 @@ namespace shibboleth
     template class SHIB_EXPORTS saml::ArrayIterator<IMetadata*>;
     template class SHIB_EXPORTS saml::Iterator<ITrust*>;
     template class SHIB_EXPORTS saml::ArrayIterator<ITrust*>;
+    template class SHIB_EXPORTS saml::Iterator<ICredentials*>;
+    template class SHIB_EXPORTS saml::ArrayIterator<ICredentials*>;
     template class SHIB_EXPORTS saml::Iterator<IAAP*>;
     template class SHIB_EXPORTS saml::ArrayIterator<IAAP*>;
 #endif
@@ -277,35 +277,6 @@ namespace shibboleth
         ShibPOSTProfile& operator=(const ShibPOSTProfile&) {return *this;}
     };
 
-    class SHIB_EXPORTS ClubShibPOSTProfile : public ShibPOSTProfile
-    {
-    public:
-        ClubShibPOSTProfile(const saml::Iterator<const XMLCh*>& policies, const XMLCh* receiver, int ttlSeconds);
-        ClubShibPOSTProfile(const saml::Iterator<const XMLCh*>& policies, const XMLCh* issuer);
-        virtual ~ClubShibPOSTProfile();
-
-        virtual saml::SAMLResponse* prepare(
-            const XMLCh* recipient,
-            const XMLCh* name,
-            const XMLCh* nameQualifier,
-            const XMLCh* subjectIP,
-            const XMLCh* authMethod,
-            time_t authInstant,
-            const saml::Iterator<saml::SAMLAuthorityBinding*>& bindings,
-            XSECCryptoKey* responseKey,
-            const saml::Iterator<XSECCryptoX509*>& responseCerts=EMPTY(XSECCryptoX509*),
-            XSECCryptoKey* assertionKey=NULL,
-            const saml::Iterator<XSECCryptoX509*>& assertionCerts=EMPTY(XSECCryptoX509*)
-            );
-
-    protected:
-        virtual void verifySignature(
-            const saml::SAMLSignedObject& obj,
-            const IOriginSite* originSite,
-            const XMLCh* signerName,
-            XSECCryptoKey* knownKey=NULL);
-    };
-
     class SHIB_EXPORTS ShibPOSTProfileFactory
     {
     public:
@@ -339,11 +310,18 @@ namespace shibboleth
         saml::Iterator<XSECCryptoX509*> getCertificates(const XMLCh* subject);
         bool validate(const ISite* site, saml::Iterator<XSECCryptoX509*> certs) const;
         bool validate(const ISite* site, saml::Iterator<const XMLCh*> certs) const;
+        bool attach(const ISite* site, SSL_CTX* ctx) const;
         
     private:
         Trust(const Trust&);
         void operator=(const Trust&);
         ITrust* m_mapper;
+    };
+    
+    class SHIB_EXPORTS Credentials
+    {
+    public:
+        static bool attach(const XMLCh* subject, const ISite* relyingParty, SSL_CTX* ctx);
     };
 
     class SHIB_EXPORTS AAP
@@ -365,6 +343,7 @@ namespace shibboleth
 
     extern "C" { typedef IMetadata* MetadataFactory(const char* source); }
     extern "C" { typedef ITrust* TrustFactory(const char* source); }
+    extern "C" { typedef ICredentials* CredentialsFactory(const char* source); }
     extern "C" { typedef IAAP* AAPFactory(const char* source); }
     
     class SHIB_EXPORTS ShibConfig
@@ -383,6 +362,7 @@ namespace shibboleth
         // allows pluggable implementations of metadata
         virtual void regFactory(const char* type, MetadataFactory* factory)=0;
         virtual void regFactory(const char* type, TrustFactory* factory)=0;
+        virtual void regFactory(const char* type, CredentialsFactory* factory)=0;
         virtual void regFactory(const char* type, AAPFactory* factory)=0;
         virtual void regFactory(const char* type, saml::SAMLAttributeFactory* factory)=0;
         virtual void unregFactory(const char* type)=0;
@@ -392,6 +372,7 @@ namespace shibboleth
         
         virtual saml::Iterator<IMetadata*> getMetadataProviders() const=0;
         virtual saml::Iterator<ITrust*> getTrustProviders() const=0;
+        virtual saml::Iterator<ICredentials*> getCredentialProviders() const=0;
         virtual saml::Iterator<IAAP*> getAAPProviders() const=0;
         virtual saml::SAMLAttributeFactory* getAttributeFactory(const char* type) const=0;
     };
@@ -400,6 +381,12 @@ namespace shibboleth
     {
         static const XMLCh SHIB_ATTRIBUTE_NAMESPACE_URI[];
         static const XMLCh SHIB_NAMEID_FORMAT_URI[];
+        
+        static const XMLCh XMLSIG_RETMETHOD_RAWX509[];  // DER X.509 defined by xmlsig
+        static const XMLCh SHIB_RETMETHOD_PEMX509[];    // PEM cert chain
+        static const XMLCh SHIB_RETMETHOD_DERRSA[];     // PKCS1/DER RSA private key
+        static const XMLCh SHIB_RETMETHOD_PEMRSA[];     // PEM RSA private key
+        
         static saml::QName SHIB_ATTRIBUTE_VALUE_TYPE; 
     };
 
@@ -429,8 +416,17 @@ namespace shibboleth
             static const XMLCh OriginSite[];
             static const XMLCh SiteGroup[];
             
+            static const XMLCh Credentials[];
+            static const XMLCh Exponent[];
             static const XMLCh KeyAuthority[];
+            static const XMLCh KeyUse[];
+            static const XMLCh Modulus[];
+            static const XMLCh RelyingParty[];
+            static const XMLCh RetrievalMethod[];
+            static const XMLCh RSAKeyValue[];
             static const XMLCh Trust[];
+            static const XMLCh URI[];
+            static const XMLCh VerifyDepth[];
 
             static const XMLCh Accept[];
             static const XMLCh Alias[];
@@ -459,20 +455,14 @@ namespace shibboleth
         };
     };
 
-
     class SHIB_EXPORTS SAMLBindingFactory
     {
     public:
-        static saml::SAMLBinding* getInstance(const XMLCh* protocol=saml::SAMLBinding::SAML_SOAP_HTTPS);
+        static saml::SAMLBinding* getInstance(
+            const XMLCh* subject,
+            const ISite* relyingParty,
+            const XMLCh* protocol=saml::SAMLBinding::SAML_SOAP_HTTPS);
     };
-
-    // OpenSSL Utilities
-
-    // Log errors from OpenSSL error queue.
-    void log_openssl();
-
-    // build an OpenSSL cert out of a base-64 encoded DER buffer (XML style)
-    X509* B64_to_X509(const char* buf);
 }
 
 #endif

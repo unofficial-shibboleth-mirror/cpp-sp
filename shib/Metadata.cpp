@@ -135,10 +135,39 @@ bool Trust::validate(const ISite* site, Iterator<const XMLCh*> certs) const
     return ret;
 }
 
+bool Trust::attach(const ISite* site, SSL_CTX* ctx) const
+{
+    bool ret=false;
+    Iterator<ITrust*> it=ShibConfig::getConfig().getTrustProviders();
+    while (!ret && it.hasNext())
+    {
+        ITrust* i=it.next();
+        i->lock();
+        ret=i->attach(site,ctx);
+        i->unlock();
+    }
+    return ret;
+}
+
 Trust::~Trust()
 {
     if (m_mapper)
         m_mapper->unlock();
+}
+
+bool Credentials::attach(const XMLCh* subject, const ISite* relyingParty, SSL_CTX* ctx)
+{
+    bool ret=false;
+    Iterator<ICredentials*> it=ShibConfig::getConfig().getCredentialProviders();
+    while (!ret && it.hasNext())
+    {
+        ICredentials* i=it.next();
+        i->lock();
+        ret=i->attach(subject,relyingParty,ctx);
+        i->unlock();
+        
+    }
+    return ret;
 }
 
 AAP::AAP(const XMLCh* attrName, const XMLCh* attrNamespace) : m_mapper(NULL), m_rule(NULL)

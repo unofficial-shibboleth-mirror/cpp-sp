@@ -176,16 +176,27 @@ SAMLResponse* ShibPOSTProfile::accept(const XMLByte* buf, XMLCh** originSitePtr)
 
     Trust t;
     Iterator<XSECCryptoX509*> certs=t.getCertificates(hs->getName());
+    Iterator<XSECCryptoX509*> certs2=t.getCertificates(originSite);
 
     // Signature verification now takes place. We check the assertion and the response.
     // Assertion signing is optional, response signing is mandatory.
     bool bVerified=false;
     if (assertion->isSigned())
     {
-        while (certs.hasNext())
+        while (!bVerified && certs.hasNext())
         {
             try {
                 verifySignature(*assertion, mapper, handleService, certs.next()->clonePublicKey());
+                bVerified=true;
+            }
+            catch (InvalidCryptoException&) {
+                // continue trying others
+            }
+        }
+        while (!bVerified && certs2.hasNext())
+        {
+            try {
+                verifySignature(*assertion, mapper, handleService, certs2.next()->clonePublicKey());
                 bVerified=true;
             }
             catch (InvalidCryptoException&) {
@@ -197,10 +208,20 @@ SAMLResponse* ShibPOSTProfile::accept(const XMLByte* buf, XMLCh** originSitePtr)
     }
 
     bVerified=false;
-    while (certs.hasNext())
+    while (!bVerified && certs.hasNext())
     {
         try {
             verifySignature(*r, mapper, handleService, certs.next()->clonePublicKey());
+            bVerified=true;
+        }
+        catch (InvalidCryptoException&) {
+            // continue trying others
+        }
+    }
+    while (!bVerified && certs2.hasNext())
+    {
+        try {
+            verifySignature(*r, mapper, handleService, certs2.next()->clonePublicKey());
             bVerified=true;
         }
         catch (InvalidCryptoException&) {

@@ -54,6 +54,7 @@
                         <extension base="string">
                         	<attribute name="Accept" type="boolean" use="optional" default="true"/>
                             <attribute name="Type" type="shib:AttributeRuleValueType" use="optional" default="literal"/>
+                            <anyAttribute namespace="##any" processContents="lax"/>
                         </extension>
                     </simpleContent>
     			</complexType>
@@ -62,6 +63,7 @@
 	        	<element name="AnyValue">
 	        		<complexType>
 	        			<sequence/>
+	        			<anyAttribute namespace="##any" processContents="lax"/>
 	        		</complexType>
 	        	</element>
 	            <element name="Value" maxOccurs="unbounded">
@@ -69,6 +71,7 @@
 	                    <simpleContent>
 	                        <extension base="string">
 	                            <attribute name="Type" type="shib:AttributeRuleValueType" use="optional" default="literal"/>
+	                            <anyAttribute namespace="##any" processContents="lax"/>
 	                        </extension>
 	                    </simpleContent>
 	                </complexType>
@@ -83,6 +86,7 @@
             <complexContent>
                 <extension base="shib:SiteRuleType">
                     <attribute name="Name" type="string" use="required"/>
+                    <anyAttribute namespace="##any" processContents="lax"/>
                 </extension>
             </complexContent>
         </complexType>
@@ -98,6 +102,7 @@
         <attribute name="Factory" type="string" use="optional"/>
         <attribute name="Alias" type="string" use="optional"/>
 		<attribute name="Header" type="string" use="optional"/>
+		<anyAttribute namespace="##any" processContents="lax"/>
     </complexType>
 
     <element name="AttributeRule" type="shib:AttributeRuleType">
@@ -112,6 +117,7 @@
             <sequence>
                 <element ref="shib:AttributeRule" minOccurs="0" maxOccurs="unbounded"/>
             </sequence>
+            <anyAttribute namespace="##any" processContents="lax"/>
         </complexType>
     </element>
 
@@ -136,6 +142,7 @@
         </sequence>
         <attribute name="Name" type="string" use="required"/>
         <attribute name="ErrorURL" type="anyURI" use="optional"/>
+        <anyAttribute namespace="##any" processContents="lax"/>
     </complexType>
 
 	<simpleType name="ContactTypeType">
@@ -173,6 +180,7 @@
         <sequence/>
         <attribute name="Name" type="string" use="required"/>
         <attribute name="Location" type="anyURI" use="required"/>
+        <anyAttribute namespace="##any" processContents="lax"/>
 	</complexType>
 
     <complexType name="OriginSiteType">
@@ -206,7 +214,7 @@
         <attribute name="lastChanged" type="dateTime" use="optional"/>
         <attribute name="validUntil" type="dateTime" use="optional"/>
         <attribute name="cacheDuration" type="duration" use="optional"/>
-        <anyAttribute/>
+        <anyAttribute namespace="##any" processContents="lax"/>
     </complexType>    
 
     <element name="OriginSite" type="shib:OriginSiteType"/>
@@ -235,6 +243,7 @@
 				</restriction>
 			</simpleType>
 		</attribute>
+		<anyAttribute namespace="##any" processContents="lax"/>
 	</complexType>
 	<element name="KeyAuthority" type="shib:KeyAuthorityType"/>
 
@@ -250,7 +259,7 @@
 	        <attribute name="lastChanged" type="dateTime" use="optional"/>
 	        <attribute name="validUntil" type="dateTime" use="optional"/>
 	        <attribute name="cacheDuration" type="duration" use="optional"/>
-	        <anyAttribute/>
+	        <anyAttribute namespace="##any" processContents="lax"/>
 		</complexType>
 	</element>
 
@@ -293,7 +302,7 @@
 			<sequence>
 				<element ref="shib:KeyUse" maxOccurs="unbounded"/>
 			</sequence>
-	        <anyAttribute/>
+	        <anyAttribute namespace="##any" processContents="lax"/>
 		</complexType>
 	</element>
 	
