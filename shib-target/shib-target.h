@@ -380,7 +380,7 @@ namespace shibtarget {
     //
 
     // Send a message to the Webserver log
-    virtual void log(ShibLogLevel level, const std::string &msg);
+    virtual void log(ShibLogLevel level, const std::string &msg)=0;
 
     void log(ShibLogLevel level, const char *msg) {
       std::string s = msg;
@@ -388,8 +388,8 @@ namespace shibtarget {
     }
 
     // Get/Set a cookie for this connection
-    virtual std::string getCookies(void);
-    virtual void setCookie(const std::string &name, const std::string &value);
+    virtual std::string getCookies(void)=0;
+    virtual void setCookie(const std::string &name, const std::string &value)=0;
 
     void setCookie(const char *name, const char *value) {
       std::string ns = name;
@@ -403,19 +403,19 @@ namespace shibtarget {
 
 
     // Get the request's GET arguments or POST data from the server
-    virtual std::string getArgs(void);
-    virtual std::string getPostData(void);
+    virtual std::string getArgs(void)=0;
+    virtual std::string getPostData(void)=0;
 
     // Clear a header, set a header
     // These APIs are used for exporting the Assertions into the
     // Headers.  It will clear some well-known headers first to make
     // sure none remain.  Then it will process the set of assertions
     // and export them via setHeader().
-    virtual void clearHeader(const std::string &name);
-    virtual void setHeader(const std::string &name, const std::string &value);
-    virtual std::string getHeader(const std::string &name);
-    virtual void setRemoteUser(const std::string &user);
-    virtual std::string getRemoteUser(void);
+    virtual void clearHeader(const std::string &name)=0;
+    virtual void setHeader(const std::string &name, const std::string &value)=0;
+    virtual std::string getHeader(const std::string &name)=0;
+    virtual void setRemoteUser(const std::string &user)=0;
+    virtual std::string getRemoteUser(void)=0;
 
     void clearHeader(const char *n) {
       std::string s = n;
@@ -462,13 +462,13 @@ namespace shibtarget {
 			   const std::string content_type = "text/html",
 			   const std::pair<std::string, std::string> headers[] = NULL,
 			   int code = 200
-			   );
+			   )=0;
     void* sendPage(const char *msg) {
       std::string m = msg;
       return sendPage(m);
     }
 
-    virtual void* sendRedirect(const std::string url);
+    virtual void* sendRedirect(const std::string url)=0;
 
     // These next two APIs are used to obtain the module-specific "OK"
     // and "Decline" results.  OK means "we believe that this request
@@ -572,7 +572,7 @@ namespace shibtarget {
   // You probably don't care about much below this line
   // unless you are using the lower-layer APIs provided by
   // the shib target library.
-
+  /*
     class SHIBTARGET_EXPORTS SHIRE
     {
     public:
@@ -612,7 +612,7 @@ namespace shibtarget {
         //mutable std::string m_authnRequest;
         //mutable CgiParse* m_parser;
     };
-
+    */
 }
 
 #endif /* SHIB_TARGET_H */

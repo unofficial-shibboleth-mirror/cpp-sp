@@ -47,7 +47,9 @@ using namespace shibboleth;
 using namespace shibtarget;
 
 extern "C" module MODULE_VAR_EXPORT mod_shib;
+#if 0
 int shib_handler(request_rec* r, const IApplication* application, SHIRE& shire);
+#endif
 
 namespace {
     char* g_szSHIBConfig = NULL;

@@ -1581,60 +1581,6 @@ CgiParse::url_decode(char *url)
     url[x] = '\0';
 }
 
-/*
- * We need to implement this so the SHIRE (and RM) recodes work
- * in terms of the ShibTarget
- */
-void ShibTarget::log(ShibLogLevel level, const string &msg)
-{
-  throw runtime_error("Invalid Usage");
-}
-string ShibTarget::getCookies(void)
-{
-  throw runtime_error("Invalid Usage");
-}
-void ShibTarget::setCookie(const string &name, const string &value)
-{
-  throw runtime_error("Invalid Usage");
-}
-void ShibTarget::clearHeader(const string &name)
-{
-  throw runtime_error("Invalid Usage");
-}
-void ShibTarget::setHeader(const string &name, const string &value)
-{
-  throw runtime_error("Invalid Usage");
-}
-string ShibTarget::getHeader(const string &name)
-{
-  throw runtime_error("Invalid Usage");
-}
-void ShibTarget::setRemoteUser(const string &name)
-{
-  throw runtime_error("Invalid Usage");
-}
-string ShibTarget::getRemoteUser(void)
-{
-  throw runtime_error("Invalid Usage");
-}
-string ShibTarget::getArgs(void)
-{
-  throw runtime_error("Invalid Usage");
-}
-string ShibTarget::getPostData(void)
-{
-  throw runtime_error("Invalid Usage");
-}
-//virtual HTAccessInfo& getAccessInfo(void);
-void* ShibTarget::sendPage(const string &msg, const string content_type, const pair<string,string> headers[], int code)
-{
-  throw runtime_error("Invalid Usage");
-}
-void* ShibTarget::sendRedirect(const std::string url)
-{
-  throw runtime_error("Invalid Usage");
-}
-
 // Subclasses may not need to override these particular virtual methods.
 string ShibTarget::getAuthType(void)
 {
