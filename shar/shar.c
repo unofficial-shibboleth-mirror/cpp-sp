@@ -183,7 +183,7 @@ main (int argc, char *argv[])
     return -3;
 
   /* Bind to the proper port */
-  if (shib_sock_bind (sock, shib_target_sockname) != 0)
+  if (shib_sock_bind (sock, shib_target_sockname()) != 0)
     return -4;
 
   /* Initialize the SHAR Utilitites */
@@ -195,7 +195,7 @@ main (int argc, char *argv[])
   /* Finalize the SHAR, close all clients */
   shar_utils_fini();
 
-  shib_sock_close(sock, shib_target_sockname);
+  shib_sock_close(sock, shib_target_sockname());
   fprintf (stderr, "shar_svc_run returned.\n");
   return 0;
 }
