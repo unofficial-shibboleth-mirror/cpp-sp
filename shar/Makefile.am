@@ -12,7 +12,7 @@ endif
 
 test_client_SOURCES = test-client.c
 
-shar_SOURCES = shar.c shar-utils.cpp
+shar_SOURCES = shar.cpp shar-utils.cpp
 noinst_HEADERS = shar-utils.h
 
 test_client_LDADD = \

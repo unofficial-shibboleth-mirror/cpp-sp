@@ -23,35 +23,19 @@
 #include <signal.h>
 
 #include "shar-utils.h"
+
 #include <shib/shib-threads.h>
-#include <shib-target/ccache-utils.h>
+#include <log4cpp/Category.hh>
 
 #ifdef USE_OUR_ONCRPC
 # define svc_fdset onc_svc_fdset
 #endif
 
 using namespace std;
+using namespace saml;
 using namespace shibboleth;
 using namespace shibtarget;
-
-//
-// PRIVATE interfaces
-//
-
-class SharChild {
-public:
-  SharChild(ShibSocket, const ShibRPCProtocols protos[], int numprotos);
-  ~SharChild();
-
-  void	run();
-
-  ShibSocket	sock;
-  const ShibRPCProtocols *protos;
-  int		numprotos;
-
-  Thread*	child;
-  Mutex*	lock;
-};
+using namespace log4cpp;
 
 namespace {
   map<Thread*,int> children;
@@ -60,29 +44,31 @@ namespace {
   bool		running;
 };
 
-void*
-shar_client_thread (void* arg)
+void* shar_client_thread (void* arg)
 {
   SharChild* child = (SharChild*)arg;
 
   // First, let's block all signals
   Thread::mask_all_signals();
 
-  g_shibTargetCCache->thread_init();
+  ShibTargetConfig::getConfig().getINI()->getSessionCache()->thread_init();
 
   // the run the child until they exit.
   child->run();
 
-  g_shibTargetCCache->thread_end();
+  ShibTargetConfig::getConfig().getINI()->getSessionCache()->thread_end();
 
   // now we can clean up and exit the thread.
   delete child;
   return NULL;
 }
 
-SharChild::SharChild(ShibSocket a_sock, const ShibRPCProtocols a_protos[], int a_numprotos)
-  : sock(a_sock), protos(a_protos), numprotos(a_numprotos)
+SharChild::SharChild(IListener::ShibSocket& s, const Iterator<ShibRPCProtocols>& protos) : sock(s)
 {
+  protos.reset();
+  while (protos.hasNext())
+    v_protos.push_back(protos.next());
+  
   // Create the lock and then lock this child
   lock = Mutex::create();
   Lock tl(lock);
@@ -110,7 +96,8 @@ SharChild::~SharChild()
 
 void SharChild::run()
 {
-  if (shar_create_svc(sock, protos, numprotos) != 0)
+  NDC ndc("run");
+  if (SHARUtils::shar_create_svc(sock, v_protos) != 0)
     return;
 
   fd_set readfds;
@@ -125,7 +112,7 @@ void SharChild::run()
 
     case -1:
       if (errno == EINTR) continue;
-      perror ("SharChild::run(): - select failed");
+      SHARUtils::log_error();
       return;
 
     case 0:
@@ -137,34 +124,59 @@ void SharChild::run()
   }
 
   if (running) {
-#ifdef WIN32
-      closesocket(sock);
-#else
-      close(sock);
-#endif
+      ShibTargetConfig::getConfig().getINI()->getListener()->close(sock);
   }
 }
 
-//
-// PUBLIC interfaces -- used by SHAR
-//
-
-extern "C" void
-shar_new_connection(ShibSocket sock, const ShibRPCProtocols protos[], int numprotos)
+void SHARUtils::log_error()
 {
-  SharChild* child = new SharChild(sock, protos, numprotos);
+#ifdef WIN32
+    int rc=WSAGetLastError();
+#else
+    int rc=errno;
+#endif
+#ifdef HAVE_STRERROR_R
+    char buf[256];
+    strerror_r(rc,buf,sizeof(buf));
+    buf[255]=0;
+    Category::getInstance("SHAR.SHARUtils").error("system call resulted in error (%d): %s",rc,buf);
+#else
+    Category::getInstance("SHAR.SHARUtils").error("system call resulted in error (%d): %s",rc,strerror(rc));
+#endif
 }
 
-extern "C" void
-shar_utils_init()
+int SHARUtils::shar_create_svc(IListener::ShibSocket& sock, const Iterator<ShibRPCProtocols>& protos)
+{
+  NDC ndc("shar_create_svc");
+
+  /* Wrap an RPC Service around the new connection socket */
+  SVCXPRT* svc = svcfd_create (sock, 0, 0);
+  if (!svc) {
+    Category::getInstance("SHAR.SHARUtils").error("cannot create RPC listener");
+    return -1;
+  }
+
+  /* Register the SHIBRPC RPC Program */
+  while (protos.hasNext()) {
+    const ShibRPCProtocols& p=protos.next();
+    if (!svc_register (svc, p.prog, p.vers, p.dispatch, 0)) {
+      svc_destroy(svc);
+      ShibTargetConfig::getConfig().getINI()->getListener()->close(sock);
+      Category::getInstance("SHAR.SHARUtils").error("cannot register RPC program");
+      return -2;
+    }
+  }
+  return 0;
+}
+
+void SHARUtils::init()
 {
   child_lock = Mutex::create();
   child_wait = CondWait::create();
   running = true;
 }
 
-extern "C" void
-shar_utils_fini()
+void SHARUtils::fini()
 {
   running = false;
 

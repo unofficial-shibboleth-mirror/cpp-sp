@@ -58,7 +58,9 @@
 #include "config_win32.h"
 #include "shar-utils.h"
 
-extern "C" int shar_run;                    // signals shutdown to Unix side
+extern int shar_run;                    // signals shutdown to Unix side
+extern const char* schemadir;
+extern const char* config;
 
 // internal variables
 SERVICE_STATUS          ssStatus;       // current status of the service
@@ -66,7 +68,6 @@ SERVICE_STATUS_HANDLE   sshStatusHandle;
 DWORD                   dwErr = 0;
 BOOL                    bConsole = FALSE;
 char                    szErr[256];
-LPCSTR                  lpszConfig = NULL;
 LPCSTR                  lpszInstall = NULL;
 LPCSTR                  lpszRemove = NULL;
 
@@ -102,7 +103,7 @@ BOOL WINAPI BreakHandler(DWORD dwCtrlType)
 }
 
 
-extern "C" int real_main(const char*, int);  // The revised two-phase main() in shar.c
+int real_main(int);  // The revised two-phase main() in shar.cpp
 
 int main(int argc, char *argv[])
 {
@@ -127,7 +128,12 @@ int main(int argc, char *argv[])
         else if (_stricmp( "config", argv[i]+1) == 0)
         {
             if (argc > ++i)
-                lpszConfig = argv[i++];
+                config = argv[i++];
+        }
+        else if (_stricmp( "schemadir", argv[i]+1) == 0)
+        {
+            if (argc > ++i)
+                schemadir = argv[i++];
         }
         else
         {
@@ -139,12 +145,12 @@ int main(int argc, char *argv[])
     {
         // Install break handler, then run the C routine twice, once to setup, once to start running.
         SetConsoleCtrlHandler(&BreakHandler,TRUE);
-        if (real_main(lpszConfig,1)!=0)
+        if (real_main(1)!=0)
         {
             LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, "SHAR startup failed, check shar log for help.");
             return -1;
         }
-        return real_main(lpszConfig,0);
+        return real_main(0);
     }
     else if (lpszInstall)
     {
@@ -166,7 +172,8 @@ int main(int argc, char *argv[])
         printf("%s -install <name>   to install the named service\n", argv[0]);
         printf("%s -remove <name>    to remove the named service\n", argv[0]);
         printf("%s -console          to run as a console app for debugging\n", argv[0]);
-        printf("%s -config           to specify the config file to use\n", argv[0]);
+        printf("%s -config <file>    to specify the config file to use\n", argv[0]);
+        printf("%s -schemadir <dir>  to specify where schemas are\n", argv[0]);
         printf("\nService starting.\nThis may take several seconds. Please wait.\n" );
 
     SERVICE_TABLE_ENTRY dispatchTable[] =
@@ -189,7 +196,7 @@ int main(int argc, char *argv[])
 VOID ServiceStart (DWORD dwArgc, LPSTR *lpszArgv)
 {
 
-    if (real_main(lpszConfig,1)!=0)
+    if (real_main(1)!=0)
     {
         LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, "SHAR startup failed, check shar log for help.");
         return;
@@ -200,7 +207,7 @@ VOID ServiceStart (DWORD dwArgc, LPSTR *lpszArgv)
     if (!ReportStatusToSCMgr(SERVICE_RUNNING, NO_ERROR, 0))
         return;
 
-    real_main(lpszConfig,0);
+    real_main(0);
 }
 
 
@@ -358,7 +365,7 @@ void CmdInstallService(LPCSTR name)
     char szPath[256];
     char dispName[512];
     char realName[512];
-    char cmd[512];
+    char cmd[2048];
 
     if ( GetModuleFileName( NULL, szPath, 256 ) == 0 )
     {
@@ -368,9 +375,14 @@ void CmdInstallService(LPCSTR name)
     
     sprintf(dispName,"Shibboleth Attribute Requester (%s)",name);
     sprintf(realName,"SHAR_%s",name);
-    
-    if (lpszConfig)
-        sprintf(cmd,"%s -config %s",szPath,lpszConfig);
+    if (config && schemadir)
+        sprintf(cmd,"%s -config %s -schemadir %s",szPath,config,schemadir);
+    else if (config)
+        sprintf(cmd,"%s -config %s",szPath,config);
+    else if (schemadir)
+        sprintf(cmd,"%s -schemadir %s",szPath,schemadir);
+    else
+        sprintf(cmd,"%s",szPath);
 
     schSCManager = OpenSCManager(
                         NULL,                   // machine (NULL == local)
@@ -389,7 +401,7 @@ void CmdInstallService(LPCSTR name)
             SERVICE_WIN32_OWN_PROCESS,  // service type
             SERVICE_AUTO_START,         // start type
             SERVICE_ERROR_NORMAL,       // error control type
-            lpszConfig ? cmd : szPath,  // service's command line
+            cmd,                        // service's command line
             NULL,                       // no load ordering group
             NULL,                       // no tag identifier
             NULL,                       // dependencies
