@@ -78,6 +78,7 @@ public:
     void run();
 
 private:
+    bool svc_create();
     shibtarget::IListener::ShibSocket sock;
     std::vector<ShibRPCProtocols> v_protos;
     shibboleth::Thread* child;
@@ -88,7 +89,6 @@ struct SHARUtils
 {
     static void init();
     static void fini();
-    static int shar_create_svc(shibtarget::IListener::ShibSocket& s, const saml::Iterator<ShibRPCProtocols>& protos);
     static void log_error();
 };
 

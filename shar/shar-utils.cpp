@@ -31,9 +31,7 @@
 #include <shib/shib-threads.h>
 #include <log4cpp/Category.hh>
 
-#ifdef USE_OUR_ONCRPC
-# define svc_fdset onc_svc_fdset
-#else
+#ifndef USE_OUR_ONCRPC
   extern "C" SVCXPRT* svcfd_create(int, u_int, u_int);
 #endif
 
@@ -106,7 +104,7 @@ SharChild::~SharChild()
 
 void SharChild::run()
 {
-  if (SHARUtils::shar_create_svc(sock, v_protos) != 0)
+  if (!svc_create())
    return;
 
   fd_set readfds;
@@ -118,7 +116,6 @@ void SharChild::run()
     tv.tv_sec = 1;
 
     switch (select(sock+1, &readfds, 0, 0, &tv)) {
-
 #ifdef WIN32
     case SOCKET_ERROR:
 #else
@@ -126,7 +123,7 @@ void SharChild::run()
 #endif
       if (errno == EINTR) continue;
       SHARUtils::log_error();
-      Category::getInstance("SHAR.SharChild").error("select() on incoming request socket returned error");
+      Category::getInstance("SHAR.SharChild").error("select() on incoming request socket (%u) returned error",sock);
       return;
 
     case 0:
@@ -136,10 +133,30 @@ void SharChild::run()
       svc_getreqset(&readfds);
     }
   }
+}
 
-  if (running) {
-      ShibTargetConfig::getConfig().getINI()->getListener()->close(sock);
+bool SharChild::svc_create()
+{
+  /* Wrap an RPC Service around the new connection socket. */
+  SVCXPRT* transp = svcfd_create(sock, 0, 0);
+  if (!transp) {
+    NDC ndc("svc_create");
+    Category::getInstance("SHAR.SharChild").error("cannot create RPC listener");
+    return false;
   }
+
+  /* Register the SHIBRPC RPC Program */
+  Iterator<ShibRPCProtocols> i(v_protos);
+  while (i.hasNext()) {
+    const ShibRPCProtocols& p=i.next();
+    if (!svc_register (transp, p.prog, p.vers, p.dispatch, 0)) {
+      svc_destroy(transp);
+      NDC ndc("svc_create");
+      Category::getInstance("SHAR.SharChild").error("cannot register RPC program");
+      return false;
+    }
+  }
+  return true;
 }
 
 void SHARUtils::log_error()
@@ -157,38 +174,6 @@ void SHARUtils::log_error()
 #else
     Category::getInstance("SHAR.SHARUtils").error("system call resulted in error (%d): %s",rc,strerror(rc));
 #endif
-}
-
-int SHARUtils::shar_create_svc(IListener::ShibSocket& sock, const Iterator<ShibRPCProtocols>& protos)
-{
-  NDC ndc("shar_create_svc");
-  Category::getInstance("SHAR.SHARUtils").debug("creating RPC listener around socket (%u)",sock);
-
-  /*
-   Wrap an RPC Service around the new connection socket.
-   This appears to be one of the key critical sections left unprotected in the ONC code.
-   It writes to global variables and actually does a malloc/calloc of one of them
-   in-line inside the xprt_register code.
-  */
-  child_lock->lock();
-  SVCXPRT* svc = svcfd_create (sock, 0, 0);
-  child_lock->unlock();
-  if (!svc) {
-    Category::getInstance("SHAR.SHARUtils").error("cannot create RPC listener");
-    return -1;
-  }
-
-  /* Register the SHIBRPC RPC Program */
-  while (protos.hasNext()) {
-    const ShibRPCProtocols& p=protos.next();
-    if (!svc_register (svc, p.prog, p.vers, p.dispatch, 0)) {
-      svc_destroy(svc);
-      ShibTargetConfig::getConfig().getINI()->getListener()->close(sock);
-      Category::getInstance("SHAR.SHARUtils").error("cannot register RPC program");
-      return -2;
-    }
-  }
-  return 0;
 }
 
 void SHARUtils::init()
