@@ -88,14 +88,14 @@ int main(int argc,char* argv[])
     if (!ShibConfig::init(&conf2))
         cerr << "unable to initialize Shibboleth runtime" << endl;
 
-    saml::XML::registerSchema(EDUPERSON_NS,EDUPERSON_SCHEMA_ID);
+    saml::XML::registerSchema(eduPerson::XML::EDUPERSON_NS,eduPerson::XML::EDUPERSON_SCHEMA_ID);
 
-    auto_ptr<XMLCh> ATTRNS(XMLString::transcode("urn:mace:shibboleth:1.0:attributeNamespace:uri"));
-    auto_ptr<XMLCh> EPPN(XMLString::transcode("urn:mace:eduPerson:1.0:eduPersonPrincipalName"));
-    auto_ptr<XMLCh> AFFIL(XMLString::transcode("urn:mace:eduPerson:1.0:eduPersonAffiliation"));
-
-    SAMLAttribute::regFactory(EPPN.get(),ATTRNS.get(),&scopedFactory);
-    SAMLAttribute::regFactory(AFFIL.get(),ATTRNS.get(),&scopedFactory);
+    SAMLAttribute::regFactory(eduPerson::Constants::EDUPERSON_PRINCIPAL_NAME,
+                              shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,
+                              &scopedFactory);
+    SAMLAttribute::regFactory(eduPerson::Constants::EDUPERSON_AFFILIATION,
+                              shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,
+                              &scopedFactory);
 
     try
     {
@@ -106,9 +106,9 @@ int main(int argc,char* argv[])
         auto_ptr<XMLCh> resource(XMLString::transcode(r_param));
         SAMLRequest* req=new SAMLRequest(new SAMLAttributeQuery (new SAMLSubject(handle.get(),domain.get()),resource.get()));
 
-        const XMLCh* policies[]={Constants::POLICY_CLUBSHIB};
+        const XMLCh* policies[]={shibboleth::Constants::POLICY_CLUBSHIB};
         
-        SAMLBinding* pBinding=SAMLBindingFactory::getInstance(SAMLBinding::SAML_SOAP_HTTPS);
+        SAMLBinding* pBinding=SAMLBindingFactory::getInstance();
         SAMLResponse* resp=pBinding->send(binfo,*req);
         delete pBinding;
 
