@@ -15,7 +15,7 @@ AM_CXXFLAGS = $(APXS_CFLAGS) -I$(APXS_INCLUDE) $(RPC_CFLAGS)
 
 mod_shire_la_LIBADD = $(top_builddir)/shib/libshib.la $(top_builddir)/shib-target/libshib-target.la
 
-mod_shire_la_LDFLAGS = -module -avoid-version -lapreq
+mod_shire_la_LDFLAGS = -module -avoid-version
 
 if DO_APXS_INSTALL
 install-exec-local:
