@@ -71,11 +71,7 @@
 #include <xsec/dsig/DSIGReference.hpp>
 #include <xsec/dsig/DSIGTransformList.hpp>
 
-#ifdef WIN32
-# define DEFAULT_SCHEMA_DIR "/shibboleth/etc/shibboleth/"
-#else
-# define DEFAULT_SCHEMA_DIR "/opt/shibboleth/etc/shibboleth/"
-#endif
+#define DEFAULT_SCHEMA_DIR "/opt/shibboleth/etc/shibboleth/"
 
 using namespace std;
 using namespace saml;
