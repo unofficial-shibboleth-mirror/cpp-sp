@@ -17,7 +17,7 @@ using namespace shibtarget;
 using namespace std;
 
 #ifndef SHIBTARGET_INIFILE
-#define SHIBTARGET_INIFILE "/etc/shibboleth.ini"
+#define SHIBTARGET_INIFILE "/opt/shibboleth/etc/shibboleth/shibboleth.ini"
 #endif
 
 class STConfig : public ShibTargetConfig
@@ -147,7 +147,7 @@ STConfig::STConfig(const char* app_name, const char* inifile)
       string file = ini->get(ext, *str);
       try
       {
-	samlConf.saml_register_extension(file.c_str());
+	samlConf.saml_register_extension(file.c_str(),ini);
 	log.debug("%s: loading %s", str->c_str(), file.c_str());
       }
       catch (SAMLException& e)
