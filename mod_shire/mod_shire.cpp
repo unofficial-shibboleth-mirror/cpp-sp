@@ -632,7 +632,7 @@ int shire_handler(request_rec* r, const IApplication* application, const IProper
         ap_kill_timeout(r);
 
         // Parse the submission.
-        pair<const char*,const char*> elements=shire.getFormSubmission(cgistr.c_str());
+        pair<const char*,const char*> elements=shire.getFormSubmission(cgistr.c_str(),cgistr.length());
     
         // Make sure the SAML Response parameter exists
         if (!elements.first || !*elements.first)
@@ -673,7 +673,7 @@ int shire_handler(request_rec* r, const IApplication* application, const IProper
     
         // We've got a good session, set the cookie...
         char* val = ap_psprintf(r->pool,"%s=%s%s",shib_cookie.second,cookie.c_str(),
-            shib_cookie_props.first ? shib_cookie_props.second : "");
+            shib_cookie_props.first ? shib_cookie_props.second : "; path=/");
         ap_table_setn(r->err_headers_out, "Set-Cookie", val);
         ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r, "shire_handler() setting cookie: %s", val);
     		    
