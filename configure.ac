@@ -69,14 +69,13 @@ fi
 # what SunRPC library should we use?
 AC_MSG_NOTICE([checking for which SunRPC library to use])
 AC_ARG_ENABLE(native-rpc,
-			AC_HELP_STRING([--enable-native-rpc, [Use the OS-supplied Sun RPC library]),
+			AC_HELP_STRING([--enable-native-rpc], [Use the OS-supplied Sun RPC library]),
 			[if test "x$enableval" = "x" ; then
             	enable_native_rpc=yes
             else
 				enable_native_rpc="$enableval"
 			fi],
 			[enable_native_rpc=unknown])
-AC_CANONICAL_HOST
 case "${host}" in
         *-*-linux*)     if test $enable_native_rpc = "no" ; then
         					AC_MSG_WARN([appears to be Linux, but you said not to use native RPC library])
