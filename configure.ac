@@ -1,5 +1,5 @@
 AC_PREREQ([2.50])
-AC_INIT([shibboleth], [1.2.1], [shibboleth-users@internet2.edu], [shibboleth])
+AC_INIT([shibboleth], [1.2.1a], [shibboleth-users@internet2.edu], [shibboleth])
 AM_CONFIG_HEADER(config.h)
 AM_INIT_AUTOMAKE([shibboleth],[1.2.1])
 
