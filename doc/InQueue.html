@@ -229,6 +229,18 @@
 						HEPKI Test CA</a></li>
 					<li><a href="http://www.cren.net/crenca/">CREN CA</a></li>
 				</ul>
+				
+				<p>For origins, OpenSSL must also be configured to use the
+				appropriate set of trusted roots for the issuance of SSL
+				certificates that Shibboleth trusts.  For InQueue, this list may
+				be obtained from <span
+				class="fixedwidth">http://wayf.internet2.edu/InQueue/ca-bundle.
+				crt</span>.  This list should then be copied for <span
+				class="fixedwidth">mod_ssl</span>, which will typically need to
+				be to <span
+				class="fixedwidth">/conf/ssl.crt/ca-bundle.crt</span>.  This
+				list of CA's is <b>not</b> rigorous nor secure and may contain
+				CA's which have no level of assurance or are questionable.</p>
 			</blockquote>
 
 			<h4>2.4  Attributes</h4>
