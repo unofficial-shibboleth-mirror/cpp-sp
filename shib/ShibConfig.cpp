@@ -63,8 +63,9 @@
 #include <shib.h>
 using namespace shibboleth;
 
-
-ShibConfig g_config;
+namespace {
+    ShibConfig g_config;
+}
 
 bool ShibConfig::init()
 {
