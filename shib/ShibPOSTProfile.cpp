@@ -178,7 +178,7 @@ SAMLResponse* ShibPOSTProfile::prepare(const XMLCh* recipient,
 
     const X509Certificate* rcerts[]={ responseCert };
     r->sign(m_algorithm,responseKey,
-        assertionCert ? ArrayIterator<const X509Certificate*>(rcerts) : Iterator<const X509Certificate*>());
+        assertionCert ? ArrayIterator<const X509Certificate*>(rcerts) : Iterator<const X509Certificate*>(),true);
 
     return r;
 }
@@ -191,8 +191,10 @@ bool ShibPOSTProfile::checkReplayCache(const SAMLAssertion& a)
 
 void ShibPOSTProfile::verifySignature(const SAMLSignedObject& obj, const XMLCh* signerName, const saml::Key* knownKey)
 {
+    const SAMLObject* pobj=&obj;
+    const SAMLResponse* ptr=dynaptr(SAMLResponse,pobj);
     if (knownKey)
-        obj.verify(*knownKey);
+        obj.verify(*knownKey,ptr ? true : false);
     else
-        obj.verify();
+        obj.verify(ptr ? true : false);
 }
