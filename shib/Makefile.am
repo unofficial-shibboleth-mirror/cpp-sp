@@ -14,7 +14,7 @@ libshib_la_SOURCES = \
                     ReloadableXMLFile.cpp \
                     ShibConfig.cpp \
                     ShibBrowserProfile.cpp \
-                    ShibBinding.cpp \
+                    ShibHTTPHook.cpp \
                     shib-threads.cpp
 
 

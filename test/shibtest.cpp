@@ -101,7 +101,8 @@ int main(int argc,char* argv[])
         ShibTargetConfig::Trust |
         ShibTargetConfig::Credentials |
         ShibTargetConfig::AAP |
-        ShibTargetConfig::SHARExtensions
+        ShibTargetConfig::SHARExtensions |
+        ShibTargetConfig::SessionCache
         );
     if (!conf.init(path,config))
         return -10;
@@ -143,8 +144,40 @@ int main(int argc,char* argv[])
         if (!AA)
             throw SAMLException("Unable to locate metadata for origin site's Attribute Authority.");
 
-        ShibBinding binding(app->getRevocationProviders(),app->getTrustProviders(),conf.getINI()->getCredentialsProviders());
-        auto_ptr<SAMLResponse> response(binding.send(*req,AA,app->getTLSCred(site),app->getAudiences()));
+        ShibHTTPHook::ShibHTTPHookCallContext ctx(app->getTLSCred(site),AA);
+        Trust t(app->getTrustProviders());
+
+        SAMLResponse* response=NULL;
+        Iterator<const IEndpoint*> endpoints=AA->getAttributeServices()->getEndpoints();
+        while (!response && endpoints.hasNext()) {
+            const IEndpoint* ep=endpoints.next();
+            try {
+                // Get a binding object for this protocol.
+                SAMLBinding* binding = app->getBinding(ep->getBinding());
+                if (!binding) {
+                    continue;
+                }
+                auto_ptr<SAMLResponse> r(binding->send(ep->getLocation(), *(req.get()), &ctx));
+                if (r->isSigned() && !t.validate(app->getRevocationProviders(),AA,*r))
+                    throw TrustException("unable to verify signed response");
+                response = r.release();
+            }
+            catch (SAMLException& e) {
+                // Check for shib:InvalidHandle error and propagate it out.
+                Iterator<saml::QName> codes=e.getCodes();
+                if (codes.size()>1) {
+                    const saml::QName& code=codes[1];
+                    if (!XMLString::compareString(code.getNamespaceURI(),shibboleth::Constants::SHIB_NS) &&
+                        !XMLString::compareString(code.getLocalName(), shibboleth::Constants::InvalidHandle)) {
+                        codes.reset();
+                        throw InvalidHandleException(codes,e.what());
+                    }
+                }
+            }
+        }
+
+        if (!response)
+            throw SAMLException("unable to successfully query for attributes");
 
         // Run it through the AAP. Note that we could end up with an empty response!
         Iterator<SAMLAssertion*> a=response->getAssertions();

@@ -129,15 +129,15 @@ SOURCE=.\shib.rc
 # End Source File
 # Begin Source File
 
-SOURCE=.\ShibBinding.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\ShibBrowserProfile.cpp
 # End Source File
 # Begin Source File
 
 SOURCE=.\ShibConfig.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\ShibHTTPHook.cpp
 # End Source File
 # End Target
 # End Project

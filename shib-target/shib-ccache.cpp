@@ -222,6 +222,7 @@ InternalCCache::InternalCCache(const DOMElement* e)
         if (!m_AATimeout)
             m_AATimeout=30;
     }
+    SAMLConfig::getConfig().timeout = m_AATimeout;
 
     tag=m_root->getAttributeNS(NULL,AAConnectTimeout);
     if (tag && *tag) {
@@ -229,6 +230,7 @@ InternalCCache::InternalCCache(const DOMElement* e)
         if (!m_AAConnectTimeout)
             m_AAConnectTimeout=15;
     }
+    SAMLConfig::getConfig().conn_timeout = m_AAConnectTimeout;
     
     tag=m_root->getAttributeNS(NULL,defaultLifetime);
     if (tag && *tag) {
@@ -664,7 +666,7 @@ SAMLResponse* InternalCCacheEntry::getNewResponse()
     pair<bool,bool> signRequest=application->getBool("signRequest");
     pair<bool,bool> signedResponse=application->getBool("signedResponse");
     
-    // Try this request. The binding wrapper class handles most of the details.
+    // Try this request.
     Metadata m(application->getMetadataProviders());
     const IEntityDescriptor* site=m.lookup(m_nameid->getNameQualifier());
     if (!site) {
@@ -698,11 +700,75 @@ SAMLResponse* InternalCCacheEntry::getNewResponse()
             
         log->debug("trying to query an AA...");
 
-        SAMLConfig::SAMLBindingConfig bindconf;
-        bindconf.timeout=m_cache->m_AATimeout;
-        bindconf.conn_timeout=m_cache->m_AAConnectTimeout;
-        ShibBinding binding(application->getRevocationProviders(),application->getTrustProviders(),conf->getCredentialsProviders());
-        response=binding.send(*req,AA,application->getTLSCred(site),application->getAudiences(),p_auth->getBindings(),bindconf);
+
+        // Call context object
+        ShibHTTPHook::ShibHTTPHookCallContext ctx(application->getTLSCred(site),AA);
+        Trust t(application->getTrustProviders());
+        
+        // First try any bindings provided by caller. This is for compatibility with
+        // old releases. Metadata should be used going forward.
+        Iterator<SAMLAuthorityBinding*> bindings=p_auth->getBindings();
+        while (!response && bindings.hasNext()) {
+            SAMLAuthorityBinding* ab=bindings.next();
+            try {
+                // Get a binding object for this protocol.
+                SAMLBinding* binding = application->getBinding(ab->getBinding());
+                if (!binding) {
+                    auto_ptr_char prot(ab->getBinding());
+                    log->warn("skipping binding on unsupported protocol (%s)", prot.get());
+                    continue;
+                }
+                auto_ptr<SAMLResponse> r(binding->send(ab->getLocation(), *(req.get()), &ctx));
+                if (r->isSigned() && !t.validate(application->getRevocationProviders(),AA,*r))
+                    throw TrustException("CCacheEntry::getNewResponse() unable to verify signed response");
+                response = r.release();
+            }
+            catch (SAMLException& e) {
+                log->error("caught SAML exception during SAML attribute query: %s", e.what());
+                // Check for shib:InvalidHandle error and propagate it out.
+                Iterator<saml::QName> codes=e.getCodes();
+                if (codes.size()>1) {
+                    const saml::QName& code=codes[1];
+                    if (!XMLString::compareString(code.getNamespaceURI(),shibboleth::Constants::SHIB_NS) &&
+                        !XMLString::compareString(code.getLocalName(), shibboleth::Constants::InvalidHandle)) {
+                        codes.reset();
+                        throw InvalidHandleException(codes,e.what());
+                    }
+                }
+            }
+        }
+
+        // Now try metadata.
+        Iterator<const IEndpoint*> endpoints=AA->getAttributeServices()->getEndpoints();
+        while (!response && endpoints.hasNext()) {
+            const IEndpoint* ep=endpoints.next();
+            try {
+                // Get a binding object for this protocol.
+                SAMLBinding* binding = application->getBinding(ep->getBinding());
+                if (!binding) {
+                    auto_ptr_char prot(ep->getBinding());
+                    log->warn("skipping binding on unsupported protocol (%s)", prot.get());
+                    continue;
+                }
+                auto_ptr<SAMLResponse> r(binding->send(ep->getLocation(), *(req.get()), &ctx));
+                if (r->isSigned() && !t.validate(application->getRevocationProviders(),AA,*r))
+                    throw TrustException("CCacheEntry::getNewResponse() unable to verify signed response");
+                response = r.release();
+            }
+            catch (SAMLException& e) {
+                log->error("caught SAML exception during SAML attribute query: %s", e.what());
+                // Check for shib:InvalidHandle error and propagate it out.
+                Iterator<saml::QName> codes=e.getCodes();
+                if (codes.size()>1) {
+                    const saml::QName& code=codes[1];
+                    if (!XMLString::compareString(code.getNamespaceURI(),shibboleth::Constants::SHIB_NS) &&
+                        !XMLString::compareString(code.getLocalName(), shibboleth::Constants::InvalidHandle)) {
+                        codes.reset();
+                        throw InvalidHandleException(codes,e.what());
+                    }
+                }
+            }
+        }
 
         if (signedResponse.first && signedResponse.second && !response->isSigned()) {
             delete response;

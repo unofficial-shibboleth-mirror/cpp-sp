@@ -74,7 +74,7 @@ namespace shibtarget {
     class XMLApplication : public virtual IApplication, public XMLPropertySet, public DOMNodeFilter
     {
     public:
-        XMLApplication(const IConfig*, const DOMElement* e, const XMLApplication* base=NULL);
+        XMLApplication(const IConfig*, const Iterator<ICredentials*>& creds, const DOMElement* e, const XMLApplication* base=NULL);
         ~XMLApplication();
     
         // IPropertySet
@@ -96,6 +96,8 @@ namespace shibtarget {
         const char* getTLSCred(const IEntityDescriptor* provider) const {return getCredentialUse(provider).first.c_str();}
         const char* getSigningCred(const IEntityDescriptor* provider) const {return getCredentialUse(provider).second.c_str();}
         SAMLBrowserProfile* getBrowserProfile() const {return m_profile;}
+        SAMLBinding* getBinding(const XMLCh* binding) const
+            {return XMLString::compareString(SAMLBinding::SOAP,binding) ? NULL : m_binding;}
         
         // Provides filter to exclude special config elements.
         short acceptNode(const DOMNode* node) const;
@@ -111,6 +113,8 @@ namespace shibtarget {
         vector<const XMLCh*> m_audiences;
         pair<string,string> m_credDefault;
         ShibBrowserProfile* m_profile;
+        SAMLBinding* m_binding;
+        ShibHTTPHook* m_bindingHook;
 #ifdef HAVE_GOOD_STL
         map<xstring,pair<string,string> > m_credMap;
 #else
@@ -352,7 +356,7 @@ const IPropertySet* XMLPropertySet::getPropertySet(const char* name, const char*
     return (i!=m_nested.end()) ? i->second : NULL;
 }
 
-XMLApplication::XMLApplication(const IConfig* ini, const DOMElement* e, const XMLApplication* base)
+XMLApplication::XMLApplication(const IConfig* ini, const Iterator<ICredentials*>& creds, const DOMElement* e, const XMLApplication* base)
     : m_ini(ini), m_base(base), m_profile(NULL)
 {
     NDC ndc("XMLApplication");
@@ -382,7 +386,7 @@ XMLApplication::XMLApplication(const IConfig* ini, const DOMElement* e, const XM
             for (i=0; nlist && i<nlist->getLength(); i++) {
                 auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
                 log.info("building AAP provider of type %s...",type.get());
-                IPlugIn* plugin=shibConf.m_plugMgr.newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
+                IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
                 IAAP* aap=dynamic_cast<IAAP*>(plugin);
                 if (aap)
                     m_aaps.push_back(aap);
@@ -399,7 +403,7 @@ XMLApplication::XMLApplication(const IConfig* ini, const DOMElement* e, const XM
             for (i=0; nlist && i<nlist->getLength(); i++) {
                 auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
                 log.info("building federation/metadata provider of type %s...",type.get());
-                IPlugIn* plugin=shibConf.m_plugMgr.newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
+                IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
                 IMetadata* md=dynamic_cast<IMetadata*>(plugin);
                 if (md)
                     m_metadatas.push_back(md);
@@ -416,7 +420,7 @@ XMLApplication::XMLApplication(const IConfig* ini, const DOMElement* e, const XM
             for (i=0; nlist && i<nlist->getLength(); i++) {
                 auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
                 log.info("building trust provider of type %s...",type.get());
-                IPlugIn* plugin=shibConf.m_plugMgr.newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
+                IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
                 ITrust* trust=dynamic_cast<ITrust*>(plugin);
                 if (trust)
                     m_trusts.push_back(trust);
@@ -430,7 +434,7 @@ XMLApplication::XMLApplication(const IConfig* ini, const DOMElement* e, const XM
             for (i=0; nlist && i<nlist->getLength(); i++) {
                 auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
                 log.info("building revocation provider of type %s...",type.get());
-                IPlugIn* plugin=shibConf.m_plugMgr.newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
+                IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
                 IRevocation* rev=dynamic_cast<IRevocation*>(plugin);
                 if (rev)
                     m_revocations.push_back(rev);
@@ -459,12 +463,24 @@ XMLApplication::XMLApplication(const IConfig* ini, const DOMElement* e, const XM
         }
         
         if (conf.isEnabled(ShibTargetConfig::SessionCache)) {
-            // Really finally, build a local browser profile object.
+            // Really finally, build local browser profile and binding objects.
             m_profile=new ShibBrowserProfile(
                 getMetadataProviders(),
                 getRevocationProviders(),
                 getTrustProviders()
                 );
+            m_bindingHook=new ShibHTTPHook(
+                getRevocationProviders(),
+                getTrustProviders(),
+                creds
+                );
+            m_binding=SAMLBinding::getInstance(SAMLBinding::SOAP);
+            SAMLSOAPHTTPBinding* bptr=dynamic_cast<SAMLSOAPHTTPBinding*>(m_binding);
+            if (!bptr) {
+                log.fatal("binding implementation was not SOAP over HTTP");
+                throw UnsupportedExtensionException("binding implementation was not SOAP over HTTP");
+            }
+            bptr->addHook(m_bindingHook,m_bindingHook); // the hook is its own global context
         }
     }
     catch (...) {
@@ -475,6 +491,8 @@ XMLApplication::XMLApplication(const IConfig* ini, const DOMElement* e, const XM
 
 XMLApplication::~XMLApplication()
 {
+    delete m_bindingHook;
+    delete m_binding;
     delete m_profile;
     Iterator<SAMLAttributeDesignator*> i(m_designators);
     while (i.hasNext())
@@ -778,20 +796,20 @@ void XMLConfigImpl::init(bool first)
                 exts=saml::XML::getFirstChildElement(SHAR,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(UnixListener));
                 if (exts) {
                     log.info("building Listener of type %s...",shibtarget::XML::UnixListenerType);
-                    plugin=shibConf.m_plugMgr.newPlugin(shibtarget::XML::UnixListenerType,exts);
+                    plugin=shibConf.getPlugMgr().newPlugin(shibtarget::XML::UnixListenerType,exts);
                 }
                 else {
                     exts=saml::XML::getFirstChildElement(SHAR,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(TCPListener));
                     if (exts) {
                         log.info("building Listener of type %s...",shibtarget::XML::TCPListenerType);
-                        plugin=shibConf.m_plugMgr.newPlugin(shibtarget::XML::TCPListenerType,exts);
+                        plugin=shibConf.getPlugMgr().newPlugin(shibtarget::XML::TCPListenerType,exts);
                     }
                     else {
                         exts=saml::XML::getFirstChildElement(SHAR,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(Listener));
                         if (exts) {
                             auto_ptr_char type(exts->getAttributeNS(NULL,SHIBT_L(type)));
                             log.info("building Listener of type %s...",type.get());
-                            plugin=shibConf.m_plugMgr.newPlugin(type.get(),exts);
+                            plugin=shibConf.getPlugMgr().newPlugin(type.get(),exts);
                         }
                         else {
                             log.fatal("can't build Listener object, missing conf:Listener element?");
@@ -816,20 +834,20 @@ void XMLConfigImpl::init(bool first)
                 exts=saml::XML::getFirstChildElement(SHAR,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(MemorySessionCache));
                 if (exts) {
                     log.info("building Session Cache of type %s...",shibtarget::XML::MemorySessionCacheType);
-                    plugin=shibConf.m_plugMgr.newPlugin(shibtarget::XML::MemorySessionCacheType,exts);
+                    plugin=shibConf.getPlugMgr().newPlugin(shibtarget::XML::MemorySessionCacheType,exts);
                 }
                 else {
                     exts=saml::XML::getFirstChildElement(SHAR,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(MySQLSessionCache));
                     if (exts) {
                         log.info("building Session Cache of type %s...",shibtarget::XML::MySQLSessionCacheType);
-                        plugin=shibConf.m_plugMgr.newPlugin(shibtarget::XML::MySQLSessionCacheType,exts);
+                        plugin=shibConf.getPlugMgr().newPlugin(shibtarget::XML::MySQLSessionCacheType,exts);
                     }
                     else {
                         exts=saml::XML::getFirstChildElement(SHAR,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(SessionCache));
                         if (exts) {
                             auto_ptr_char type(exts->getAttributeNS(NULL,SHIBT_L(type)));
                             log.info("building Session Cache of type %s...",type.get());
-                            plugin=shibConf.m_plugMgr.newPlugin(type.get(),exts);
+                            plugin=shibConf.getPlugMgr().newPlugin(type.get(),exts);
                         }
                         else {
                             log.fatal("can't build Session Cache object, missing conf:SessionCache element?");
@@ -860,7 +878,7 @@ void XMLConfigImpl::init(bool first)
             if (child) {
                 auto_ptr_char type(child->getAttributeNS(NULL,SHIBT_L(type)));
                 log.info("building Request Mapper of type %s...",type.get());
-                IPlugIn* plugin=shibConf.m_plugMgr.newPlugin(type.get(),child);
+                IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),child);
                 if (plugin) {
                     IRequestMapper* reqmap=dynamic_cast<IRequestMapper*>(plugin);
                     if (reqmap)
@@ -887,7 +905,7 @@ void XMLConfigImpl::init(bool first)
             for (int i=0; nlist && i<nlist->getLength(); i++) {
                 auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
                 log.info("building Credentials provider of type %s...",type.get());
-                IPlugIn* plugin=shibConf.m_plugMgr.newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
+                IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
                 if (plugin) {
                     ICredentials* creds=dynamic_cast<ICredentials*>(plugin);
                     if (creds)
@@ -909,13 +927,13 @@ void XMLConfigImpl::init(bool first)
             log.fatal("can't build default Application object, missing conf:Applications element?");
             throw SAMLException("can't build default Application object, missing conf:Applications element?");
         }
-        XMLApplication* defapp=new XMLApplication(m_outer, app);
+        XMLApplication* defapp=new XMLApplication(m_outer, m_creds, app);
         m_appmap[defapp->getId()]=defapp;
         
         // Load any overrides.
         nlist=app->getElementsByTagNameNS(ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(Application));
         for (int i=0; nlist && i<nlist->getLength(); i++) {
-            XMLApplication* iapp=new XMLApplication(m_outer,static_cast<DOMElement*>(nlist->item(i)),defapp);
+            XMLApplication* iapp=new XMLApplication(m_outer,m_creds,static_cast<DOMElement*>(nlist->item(i)),defapp);
             if (m_appmap.find(iapp->getId())!=m_appmap.end()) {
                 log.fatal("found conf:Application element with duplicate Id attribute");
                 throw SAMLException("found conf:Application element with duplicate Id attribute");

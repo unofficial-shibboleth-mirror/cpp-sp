@@ -462,9 +462,8 @@ namespace shibboleth
         const IAttributeRule* m_rule;
     };
 
-    // Subclasses around the OpenSAML browser profile and binding interfaces,
-    // these incoporate additional functionality using Shib-defined APIs.
-
+    // Subclass around the OpenSAML browser profile interface,
+    // incoporates additional functionality using Shib-defined APIs.
     class SHIB_EXPORTS ShibBrowserProfile : virtual public saml::SAMLBrowserProfile
     {
     public:
@@ -492,34 +491,40 @@ namespace shibboleth
         saml::Iterator<ITrust*> m_trusts;
     };
 
-    class SHIB_EXPORTS ShibBinding
+    // Instead of wrapping the binding to deal with mutual authentication, we
+    // just use the HTTP hook functionality offered by OpenSAML. The hook will
+    // register "itself" as a globalCtx pointer with the SAML binding and the caller
+    // will declare and pass the embedded struct as callCtx for use by the hook.
+    class SHIB_EXPORTS ShibHTTPHook : virtual public saml::SAMLSOAPHTTPBinding::HTTPHook
     {
     public:
-        ShibBinding(
+        ShibHTTPHook(
             const saml::Iterator<IRevocation*>& revocations,
             const saml::Iterator<ITrust*>& trusts,
             const saml::Iterator<ICredentials*>& creds
-            ) : m_revocations(revocations), m_trusts(trusts), m_creds(creds),
-                m_credResolverId(NULL), m_AA(NULL), m_binding(NULL) {}
-        virtual ~ShibBinding() {delete m_binding;}
+            ) : m_revocations(revocations), m_trusts(trusts), m_creds(creds) {}
+        virtual ~ShibHTTPHook() {}
+        
+        // Only hook we need here is for outgoing connection to server.
+        virtual bool outgoing(saml::HTTPClient* conn, void* globalCtx=NULL, void* callCtx=NULL);
 
-        saml::SAMLResponse* send(
-            saml::SAMLRequest& req,
-            const IRoleDescriptor* AA,
-            const char* credResolverId=NULL,
-            const saml::Iterator<const XMLCh*>& audiences=EMPTY(const XMLCh*),
-            const saml::Iterator<saml::SAMLAuthorityBinding*>& bindings=EMPTY(saml::SAMLAuthorityBinding*),
-            saml::SAMLConfig::SAMLBindingConfig& conf=saml::SAMLConfig::getConfig().binding_defaults
-            );
-
+        // Client declares a context object and pass as callCtx to send() method.
+        class SHIB_EXPORTS ShibHTTPHookCallContext {
+        public:
+            ShibHTTPHookCallContext(const char* credResolverId, const IRoleDescriptor* role)
+                : m_credResolverId(credResolverId), m_role(role), m_hook(NULL) {}
+        private:
+            const char* m_credResolverId;
+            const IRoleDescriptor* m_role;
+            ShibHTTPHook* m_hook;
+            friend class ShibHTTPHook;
+            friend bool ssl_ctx_callback(void* ssl_ctx, void* userptr);
+        };
     private:
         friend bool ssl_ctx_callback(void* ssl_ctx, void* userptr);
-        const saml::Iterator<IRevocation*>& m_revocations;
-        const saml::Iterator<ITrust*>& m_trusts;
-        const saml::Iterator<ICredentials*>& m_creds;
-        const char* m_credResolverId;
-        const IRoleDescriptor* m_AA;
-        saml::SAMLBinding* m_binding;
+        saml::Iterator<IRevocation*> m_revocations;
+        saml::Iterator<ITrust*> m_trusts;
+        saml::Iterator<ICredentials*> m_creds;
     };
 
     class SHIB_EXPORTS ShibConfig
