@@ -60,6 +60,7 @@ int main(int argc,char* argv[])
     ShibConfig& conf2=ShibConfig::getConfig();
     char* h_param=NULL;
     char* q_param=NULL;
+    char* f_param=NULL;
     char* url_param=NULL;
     char* r_param=NULL;
     char* ca_param=NULL;
@@ -73,6 +74,8 @@ int main(int argc,char* argv[])
             h_param=argv[++i];
         else if (!strcmp(argv[i],"-q") && i+1<argc)
             q_param=argv[++i];
+        else if (!strcmp(argv[i],"-f") && i+1<argc)
+            f_param=argv[++i];
         else if (!strcmp(argv[i],"-a") && i+1<argc)
             url_param=argv[++i];
         else if (!strcmp(argv[i],"-r") && i+1<argc)
@@ -83,7 +86,7 @@ int main(int argc,char* argv[])
 
     if (!h_param || !q_param || !url_param)
     {
-        cerr << "usage: shibtest -h <handle> -q <origin_site> -a <AA URL> [-r <resource URL> -d <schema path>]" << endl;
+        cerr << "usage: shibtest -h <handle> -q <origin_site> -a <AA URL> [-f <format URI> -r <resource URL> -d <schema path>]" << endl;
         exit(0);
     }
 
@@ -104,8 +107,15 @@ int main(int argc,char* argv[])
         SAMLAuthorityBinding binfo(saml::QName(saml::XML::SAMLP_NS,L(AttributeQuery)),SAMLBinding::SAML_SOAP_HTTPS,url.get());
         auto_ptr<XMLCh> domain(XMLString::transcode(q_param));
         auto_ptr<XMLCh> handle(XMLString::transcode(h_param));
+        auto_ptr<XMLCh> format(XMLString::transcode(f_param));
         auto_ptr<XMLCh> resource(XMLString::transcode(r_param));
-        SAMLRequest* req=new SAMLRequest(Iterator<saml::QName>(),new SAMLAttributeQuery (new SAMLSubject(handle.get(),domain.get()),resource.get()));
+        SAMLRequest* req=new SAMLRequest(
+            EMPTY(saml::QName),
+            new SAMLAttributeQuery(
+                new SAMLSubject(handle.get(),domain.get(),format.get()),
+                resource.get()
+                )
+            );
 
         SAMLBinding* pBinding=SAMLBindingFactory::getInstance();
         SAMLResponse* resp=pBinding->send(binfo,*req);
@@ -131,6 +141,7 @@ int main(int argc,char* argv[])
                 if (s)
                 {
                     const SAMLSubject* sub=s->getSubject();
+                    cout << "Format: "; xmlout(cout,sub->getFormat()); cout << endl;
                     cout << "Domain: "; xmlout(cout,sub->getNameQualifier()); cout << endl;
                     cout << "Handle: "; xmlout(cout,sub->getName()); cout << endl;
 
