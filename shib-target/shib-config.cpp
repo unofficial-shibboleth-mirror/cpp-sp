@@ -327,10 +327,8 @@ STConfig::~STConfig()
   for (vector<const XMLCh*>::iterator i=policies.begin(); i!=policies.end(); i++)
     delete const_cast<XMLCh*>(*i);
   
-  if (ini) delete ini;
-  
-  if (g_shibTargetCCache)
-    delete g_shibTargetCCache;
+  delete g_shibTargetCCache;
+  delete ini;
 
   shibConf.term();
   samlConf.term();
