@@ -50,8 +50,8 @@
         </RequestMapProvider>
         
         <Implementation>
-            <ISAPI>
-                <Site InstanceID="1" Host="foo.com"/>    <!-- Maps IIS IID values to the vhost name. -->
+            <ISAPI normalizeRequest="true">
+                <Site id="1" host="www.foo.com"/>    <!-- Maps IIS IID values to the vhost name. -->
             </ISAPI>
             <Apache apacheConfig="false"/>  <!-- whether httpd.conf or the RequestMap controls session behavior. -->
         </Implementation>
@@ -66,7 +66,7 @@
         the value that applies based on the resource. Using shireSSL="true" will force the protocol
         to be https. You should also add "; secure" to the cookieProps in that case.
         -->
-        <Sessions lifetime="7200" timeout="3600" normalizeRequest="true" checkAddress="true"
+        <Sessions lifetime="7200" timeout="3600" checkAddress="true"
             shireURL="/Shibboleth.shire" shireSSL="false" cookieName="shib-default-app" cookieProps="; path=/"
             wayfURL="https://wayf.internet2.edu/InQueue/WAYF"/>
 
