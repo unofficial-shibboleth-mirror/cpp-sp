@@ -56,8 +56,18 @@ bool ScopedAttribute::addValue(IDOM_Element* e)
 bool ScopedAttribute::accept(IDOM_Element* e) const
 {
     IOriginSiteMapper* mapper=ShibConfig::getConfig()->origin_mapper;
+    Iterator<xstring> domains=mapper->getSecurityDomains(m_defaultScope.c_str());
+    const XMLCh* this_scope=NULL;
+    IDOM_Attr* scope=e->getAttributeNodeNS(NULL,Scope);
+    if (scope)
+        this_scope=scope->getNodeValue();
+    if (!this_scope || !*this_scope)
+        this_scope=m_defaultScope.c_str();
 
-    return true;
+    while (domains.hasNext())
+        if (domains.next()==this_scope)
+            return true;
+    return false;
 }
 
 Iterator<xstring> ScopedAttribute::getValues() const
@@ -69,6 +79,20 @@ Iterator<xstring> ScopedAttribute::getValues() const
             m_scopedValues.push_back((*i) + chAt + ((*j)!=m_defaultScope && !j->empty() ? (*j) : m_defaultScope));
     }
     return Iterator<xstring>(m_scopedValues);
+}
+
+Iterator<string> ScopedAttribute::getSingleByteValues() const
+{
+    getValues();
+    if (m_sbValues.empty())
+    {
+        for (vector<xstring>::const_iterator i=m_scopedValues.begin(); i!=m_scopedValues.end(); i++)
+	{
+	    auto_ptr<char> temp(XMLString::transcode(i->c_str()));
+	    m_sbValues.push_back(temp.get());
+	}
+    }
+    return Iterator<string>(m_sbValues);
 }
 
 SAMLObject* ScopedAttribute::clone() const

@@ -33,6 +33,7 @@ namespace eduPerson
         virtual saml::SAMLObject* clone() const;
 
         virtual saml::Iterator<saml::xstring> getValues() const;
+        virtual saml::Iterator<std::string> getSingleByteValues() const;
 
         static const XMLCh Scope[];
 
