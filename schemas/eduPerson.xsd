@@ -40,6 +40,7 @@
         <simpleContent>
             <restriction base="edu:ScopedStringValueType">
                 <pattern value="[^\s@]+"/>
+                <attribute name="Scope" type="string" use="optional"/>
             </restriction>
         </simpleContent>
     </complexType>
@@ -54,6 +55,7 @@
                 <enumeration value="member"/>
                 <enumeration value="affiliate"/>
                 <enumeration value="employee"/>
+                <attribute name="Scope" type="string" use="optional"/>
             </restriction>
         </simpleContent>
     </complexType>
