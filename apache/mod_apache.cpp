@@ -269,7 +269,7 @@ extern "C" int shib_check_user(request_rec* r)
 
         // If no session required, bail now.
         if (!requireSession.second)
-            return DECLINED;
+            return DECLINED;	// XXX: Or should this be OK?
         else if (status->isRetryable()) {
             // Oops, session is invalid. Generate AuthnRequest.
             ap_table_setn(r->headers_out,"Location",ap_pstrdup(r->pool,shire.getAuthnRequest(targeturl)));
