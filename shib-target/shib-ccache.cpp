@@ -124,7 +124,9 @@ public:
     const char* providerId,
     SAMLAuthenticationStatement* s,
     SAMLResponse* r=NULL,
-    const IRoleDescriptor* source=NULL
+    const IRoleDescriptor* source=NULL,
+    time_t created=0,
+    time_t accessed=0
     );
   ~InternalCCacheEntry();
 
@@ -136,7 +138,7 @@ public:
   ShibProfile getProfile() const { return m_profile; }
   const char* getProviderId() const { return m_provider_id.c_str(); }
   const SAMLAuthenticationStatement* getAuthnStatement() const { return m_auth_statement; }
-  const SAMLResponse* getResponse(bool filtered=true);
+  CachedResponse getResponse();
 
   void setCache(InternalCCache *cache) { m_cache = cache; }
   time_t lastAccess() const { return m_lastAccess; }
@@ -148,7 +150,7 @@ private:
   bool responseValid();             // checks validity of existing response
   pair<SAMLResponse*,SAMLResponse*> getNewResponse();   // wraps an actual query
   
-  void filter(SAMLResponse* r, const IApplication* application, const IRoleDescriptor* source);
+  SAMLResponse* filter(SAMLResponse* r, const IApplication* application, const IRoleDescriptor* source);
   
   string m_id;
   string m_application_id;
@@ -188,7 +190,9 @@ public:
     const char* providerId,
     SAMLAuthenticationStatement* s,
     SAMLResponse* r=NULL,
-    const IRoleDescriptor* source=NULL
+    const IRoleDescriptor* source=NULL,
+    time_t created=0,
+    time_t accessed=0
     );
   void remove(const char* key);
 
@@ -330,12 +334,25 @@ void InternalCCache::insert(
     const char* providerId,
     SAMLAuthenticationStatement* s,
     SAMLResponse* r,
-    const IRoleDescriptor* source
+    const IRoleDescriptor* source,
+    time_t created,
+    time_t accessed
     )
 {
   log->debug("caching new entry for application %s: \"%s\"", application->getId(), key);
 
-  InternalCCacheEntry* entry = new InternalCCacheEntry(key, application, client_addr, profile, providerId, s, r, source);
+  InternalCCacheEntry* entry = new InternalCCacheEntry(
+    key,
+    application,
+    client_addr,
+    profile,
+    providerId,
+    s,
+    r,
+    source,
+    created,
+    accessed
+    );
   entry->setCache(this);
 
   lock->wrlock();
@@ -475,7 +492,9 @@ InternalCCacheEntry::InternalCCacheEntry(
     const char* providerId,
     SAMLAuthenticationStatement* s,
     SAMLResponse* r,
-    const IRoleDescriptor* source
+    const IRoleDescriptor* source,
+    time_t created,
+    time_t accessed
     ) : m_application_id(application->getId()), m_profile(profile), m_auth_statement(s), m_response_pre(r), m_response_post(NULL),
         m_responseCreated(r ? time(NULL) : 0), m_lastRetry(0), log(&Category::getInstance("shibtarget::InternalCCacheEntry"))
 {
@@ -487,7 +506,8 @@ InternalCCacheEntry::InternalCCacheEntry(
   m_id=key;
   m_clientAddress = client_addr;
   m_provider_id = providerId;
-  m_sessionCreated = m_lastAccess = time(NULL);
+  m_sessionCreated = (created==0) ? time(NULL) : created;
+  m_lastAccess = (accessed==0) ? time(NULL) : accessed;
 
   // If pushing attributes, filter the response.
   if (r) {
@@ -537,13 +557,13 @@ bool InternalCCacheEntry::isValid(time_t lifetime, time_t timeout) const
   return true;
 }
 
-const SAMLResponse* InternalCCacheEntry::getResponse(bool filtered)
+ISessionCacheEntry::CachedResponse InternalCCacheEntry::getResponse()
 {
 #ifdef _DEBUG
-  saml::NDC ndc("getAssertions");
+  saml::NDC ndc("getResponse");
 #endif
   populate();
-  return filtered ? m_response_post : m_response_pre;
+  return CachedResponse(m_response_pre,m_response_post);
 }
 
 bool InternalCCacheEntry::responseValid()
@@ -755,17 +775,15 @@ pair<SAMLResponse*,SAMLResponse*> InternalCCacheEntry::getNewResponse()
             }
         }
 
-        if (response && signedResponse.first && signedResponse.second && !response->isSigned()) {
-            delete response;
-            response=NULL;
-            log->error("unsigned response obtained, but we were told it must be signed.");
-        }
-        
         if (response) {
-            // Run a copy through the filter. Note that we could end up with an empty response.
-            SAMLResponse* copy = static_cast<SAMLResponse*>(response->clone());
-            filter(copy,application,AA);
-            return make_pair(response,copy);
+            if (signedResponse.first && signedResponse.second && !response->isSigned()) {
+                delete response;
+                log->error("unsigned response obtained, but we were told it must be signed.");
+                throw TrustException("CCacheEntry::getNewResponse() unable to obtain a signed response");
+            }
+            
+            // Run it through the filter.
+            return make_pair(response,filter(response,application,AA));
         }
     }
     catch (SAMLException& e) {
@@ -781,53 +799,63 @@ pair<SAMLResponse*,SAMLResponse*> InternalCCacheEntry::getNewResponse()
     throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"Unable to obtain attributes from user's identity provider.",AA);
 }
 
-void InternalCCacheEntry::filter(SAMLResponse* r, const IApplication* application, const IRoleDescriptor* source)
+SAMLResponse* InternalCCacheEntry::filter(SAMLResponse* r, const IApplication* application, const IRoleDescriptor* source)
 {
     const IPropertySet* credUse=application->getCredentialUse(source->getEntityDescriptor());
     pair<bool,bool> signedAssertions=credUse ? credUse->getBool("signedAssertions") : make_pair(false,false);
     Trust t(application->getTrustProviders());
 
-    // Examine each new assertion...
-    r->toDOM();
+    // Examine each original assertion...
     Iterator<SAMLAssertion*> assertions=r->getAssertions();
     for (unsigned long i=0; i < assertions.size();) {
+        // Check signing policy.
+        if (signedAssertions.first && signedAssertions.second && !(assertions[i]->isSigned())) {
+            log->warn("removing unsigned assertion from response, in accordance with signedAssertions policy");
+            r->removeAssertion(i);
+            continue;
+        }
+
+        // Check any conditions.
+        bool pruned=false;
+        Iterator<SAMLCondition*> conds=assertions[i]->getConditions();
+        while (conds.hasNext()) {
+            SAMLAudienceRestrictionCondition* cond=dynamic_cast<SAMLAudienceRestrictionCondition*>(conds.next());
+            if (!cond || !cond->eval(application->getAudiences())) {
+                log->warn("assertion condition invalid, removing it");
+                r->removeAssertion(i);
+                pruned=true;
+                break;
+            }
+        }
+        if (pruned)
+            continue;
+        
+        // Check token signature.
+        if (assertions[i]->isSigned() && !t.validate(application->getRevocationProviders(),source,*(assertions[i]))) {
+            log->warn("signed assertion failed to validate, removing it");
+            r->removeAssertion(i);
+            continue;
+        }
+        i++;
+    }
+
+    // Make a copy of whatever's left and process that against the AAP.
+    auto_ptr<SAMLResponse> copy(static_cast<SAMLResponse*>(r->clone()));
+    copy->toDOM();
+
+    Iterator<SAMLAssertion*> copies=copy->getAssertions();
+    for (unsigned long j=0; j < copies.size();) {
         try {
-            // Check signing policy.
-            if (signedAssertions.first && signedAssertions.second && !(assertions[i]->isSigned())) {
-                log->warn("removing unsigned assertion from response, in accordance with signedAssertions policy");
-                r->removeAssertion(i);
-                continue;
-            }
-
-            // Check any conditions.
-            bool pruned=false;
-            Iterator<SAMLCondition*> conds=assertions[i]->getConditions();
-            while (conds.hasNext()) {
-                SAMLAudienceRestrictionCondition* cond=dynamic_cast<SAMLAudienceRestrictionCondition*>(conds.next());
-                if (!cond || !cond->eval(application->getAudiences())) {
-                    log->warn("assertion condition invalid, removing it");
-                    r->removeAssertion(i);
-                    pruned=true;
-                    break;
-                }
-            }
-            if (pruned)
-                continue;
-            
-            // Check token signature.
-            if (assertions[i]->isSigned() && !t.validate(application->getRevocationProviders(),source,*(assertions[i]))) {
-                log->warn("signed assertion failed to validate, removing it");
-                r->removeAssertion(i);
-                continue;
-            }
-
             // Finally, filter the content.
-            AAP::apply(application->getAAPProviders(),*(assertions[i]),source);
-            i++;
+            AAP::apply(application->getAAPProviders(),*(copies[j]),source);
+            j++;
+
         }
         catch (SAMLException&) {
             log->info("no statements remain after AAP, removing assertion");
-            r->removeAssertion(i);
+            copy->removeAssertion(j);
         }
     }
+    
+    return copy.release();
 }

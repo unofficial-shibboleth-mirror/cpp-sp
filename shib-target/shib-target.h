@@ -211,7 +211,16 @@ namespace shibtarget {
         virtual ShibProfile getProfile() const=0;
         virtual const char* getProviderId() const=0;
         virtual const saml::SAMLAuthenticationStatement* getAuthnStatement() const=0;
-        virtual const saml::SAMLResponse* getResponse(bool filtered=true)=0;
+        struct SHIBTARGET_EXPORTS CachedResponse {
+            CachedResponse(const saml::SAMLResponse* unfiltered, const saml::SAMLResponse* filtered) {
+                this->unfiltered=unfiltered;
+                this->filtered=filtered;
+            }
+            bool empty() {return unfiltered==NULL;}
+            const saml::SAMLResponse* unfiltered;
+            const saml::SAMLResponse* filtered;
+        };
+        virtual CachedResponse getResponse()=0;
         virtual ~ISessionCacheEntry() {}
     };
 
@@ -228,7 +237,9 @@ namespace shibtarget {
             const char* providerId,
             saml::SAMLAuthenticationStatement* s,
             saml::SAMLResponse* r=NULL,
-            const shibboleth::IRoleDescriptor* source=NULL
+            const shibboleth::IRoleDescriptor* source=NULL,
+            time_t created=0,
+            time_t accessed=0
             )=0;
         virtual ISessionCacheEntry* find(const char* key, const IApplication* application)=0;
         virtual void remove(const char* key)=0;
