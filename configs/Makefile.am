@@ -2,7 +2,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-logdir=${pkgsysconfdir}
+logdir=${localstatedir}/log/shibboleth
 pkgsysconfdir = $(sysconfdir)/@PACKAGE@
 pkgsysconf_DATA = \
 	shibboleth.xml \
@@ -48,6 +48,10 @@ shire.logger: ${srcdir}/shire.logger.in Makefile ${top_builddir}/config.status
 
 shibboleth.xml: ${srcdir}/shibboleth.xml.in Makefile ${top_builddir}/config.status
 	$(MAKE) do-build-file FILE=$@
+
+install-data-local:
+	$(mkinstalldirs) $(DESTDIR)$(logdir)
+	$(mkinstalldirs) $(DESTDIR)$(prefix)/data
 
 CLEANFILES = \
 	apache.config \
