@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="US-ASCII"?>
+<schema targetNamespace="urn:mace:eduPerson:1.0" xmlns:edu="urn:mace:eduPerson:1.0" xmlns="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+
+    <!--
+    Attribute Identifiers:
+    
+    urn:mace:eduPerson:1.0:eduPersonPrincipalName
+        - AttributeValue xsi:type is eduPersonPrincipalNameType
+        - AttributeValue element contains the LHS of the eduPerson-defined EPPN
+        - Scope, if any, contains the RHS of the eduPerson-defined EPPN
+        - MUST be singly occurring value
+    
+    urn:mace:eduPerson:1.0:eduPersonAffiliation
+        - AttributeValue xsi:type is eduPersonAffiliationType
+        - AttributeValue elements contain an eduPerson-defined affiliation token
+        - Scope, if any, contains a DNS-style organization name
+        - MAY be multi-valued
+    
+    urn:mace:eduPerson:1.0:eduPersonPrimaryAffiliation
+        - AttributeValue xsi:type is eduPersonAffiliationType
+        - AttributeValue element contains an eduPerson-defined affiliation token
+        - Scope, if any, contains a DNS-style organization name
+        - MUST be singly occurring value
+    
+    urn:mace:eduPerson:1.0:eduPersonEntitlement
+        - AttributeValue xsi:type is xsd:anyURI
+        - AttributeValue elements contain a URI representing the entitlement
+        - MAY be multi-valued
+    -->
+    
+    <complexType name="ScopedStringValueType">
+        <simpleContent>
+            <extension base="string">
+                <attribute name="Scope" type="string" use="optional"/>
+            </extension>
+        </simpleContent>
+    </complexType>
+    
+    <complexType name="eduPersonPrincipalNameType">
+        <simpleContent>
+            <restriction base="edu:ScopedStringValueType">
+                <pattern value="[^\s@]+"/>
+            </restriction>
+        </simpleContent>
+    </complexType>
+    
+    <complexType name="eduPersonAffiliationType">
+        <simpleContent>
+            <restriction base="edu:ScopedStringValueType">
+                <enumeration value="faculty"/>
+                <enumeration value="student"/>
+                <enumeration value="staff"/>
+                <enumeration value="alum"/>
+                <enumeration value="member"/>
+                <enumeration value="affiliate"/>
+                <enumeration value="employee"/>
+            </restriction>
+        </simpleContent>
+    </complexType>
+    
+</schema>

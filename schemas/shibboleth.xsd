@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="US-ASCII"?>
+<schema targetNamespace="urn:mace:shibboleth:1.0" xmlns="http://www.w3.org/2001/XMLSchema" xmlns:ds="http://www.w3.org/2000/09/xmldsig#" xmlns:xml="http://www.w3.org/XML/1998/namespace" xmlns:shib="urn:mace:shibboleth:1.0" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <import namespace="http://www.w3.org/2000/09/xmldsig#" schemaLocation="http://www.w3.org/TR/xmldsig-core/xmldsig-core-schema.xsd"/>
+    <import namespace="http://www.w3.org/XML/1998/namespace" schemaLocation="http://www.w3.org/2001/xml.xsd"/>
+    
+    <element name="RealTimeReleaseURL" type="anyURI">
+        <annotation>Used by AA in samlp:StatusDetail to signal user wants real-time attribute release.</annotation>
+    </element>
+    
+    <!--
+    The following SAML sub-status codes are defined in this namespace:
+    
+        "RealTimeRelease"
+            Used with samlp:Responder, signals user wants real-time attribute release
+        
+        "InvalidHandle"
+            Used with samlp:Requester, signals AA did not recognize handle as valid
+    -->
+    
+    <complexType name="SiteType">
+        <annotation> All sites have a Name attribute, plus optional i18n-ized aliases. </annotation>
+        <sequence>
+            <element name="Alias" minOccurs="0" maxOccurs="unbounded">
+                <complexType>
+                    <simpleContent>
+                        <extension base="string">
+                            <attribute ref="xml:lang"/>
+                        </extension>
+                    </simpleContent>
+                </complexType>
+            </element>
+        </sequence>
+        <attribute name="Name" type="string" use="required"/>
+    </complexType>
+    
+    <complexType name="OriginSiteType">
+        <annotation>Origin sites add at least one handle service (with a name and optional KeyInfo), plus optional domains trusted for attribute scoping.</annotation>
+        <complexContent>
+            <extension base="shib:SiteType">
+                <sequence>
+                    <element name="HandleService" maxOccurs="unbounded">
+                        <complexType>
+                            <sequence>
+                                <element ref="ds:KeyInfo" minOccurs="0"/>
+                            </sequence>
+                            <attribute name="Name" type="string" use="required"/>
+                            <attribute name="Location" type="anyURI" use="required"/>
+                        </complexType>
+                    </element>
+                    <element name="Domain" type="string" minOccurs="0" maxOccurs="unbounded"/>
+                </sequence>
+            </extension>
+        </complexContent>
+    </complexType>
+
+    <complexType name="SiteGroupType">
+        <annotation>Used to logically group sites together.</annotation>
+        <sequence>
+            <choice maxOccurs="unbounded">
+                <element ref="shib:OriginSite"/>
+                <element ref="shib:DestinationSite"/>
+                <element ref="shib:SiteGroup"/>
+            </choice>
+        </sequence>
+        <attribute name="Name" type="string" use="required"/>
+    </complexType>    
+
+    <element name="OriginSite" type="shib:OriginSiteType"/>
+    <element name="DestinationSite" type="shib:SiteType"/>
+    <element name="SiteGroup" type="shib:SiteGroupType"/>
+
+    <element name="Sites">
+        <annotation>The registry of sites plus an optional enveloped signature.</annotation>
+        <complexType>
+            <sequence>
+                <choice maxOccurs="unbounded">
+                    <element ref="shib:OriginSite"/>
+                    <element ref="shib:DestinationSite"/>
+                    <element ref="shib:SiteGroup"/>
+                </choice>
+                <element ref="ds:Signature" minOccurs="0"/>
+            </sequence>
+        </complexType>
+    </element>
+</schema>
