@@ -169,7 +169,7 @@ SAMLResponse* ShibPOSTProfile::prepare(const XMLCh* recipient,
     XMLDateTime authDateTime(timeptr.get());
 
     SAMLResponse* r = SAMLPOSTProfile::prepare(recipient,m_issuer,Iterator<const XMLCh*>(m_policies),name,
-                                               nameQualifier,NULL,subjectIP,authMethod,authDateTime,bindings);
+                                               nameQualifier,Constants::SHIB_NAMEID_FORMAT_URI,subjectIP,authMethod,authDateTime,bindings);
     if (assertionKey)
     {
         const X509Certificate* acerts[]={ assertionCert };
