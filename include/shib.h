@@ -127,7 +127,7 @@ namespace shibboleth
     class SHIB_EXPORTS ShibPOSTProfile
     {
     public:
-        ShibPOSTProfile(const saml::Iterator<const XMLCh*>& policies, IOriginSiteMapper* mapper, const XMLCh* receiver, int ttlSeconds);
+        ShibPOSTProfile(const saml::Iterator<const XMLCh*>& policies, const XMLCh* receiver, int ttlSeconds);
         ShibPOSTProfile(const saml::Iterator<const XMLCh*>& policies, const XMLCh* issuer);
         virtual ~ShibPOSTProfile();
 
@@ -150,7 +150,6 @@ namespace shibboleth
                                      const saml::Iterator<saml::X509Certificate*>& roots, const saml::Key* knownKey);
 
         saml::SAMLSignedObject::sigs_t m_algorithm;
-        IOriginSiteMapper* m_mapper;
         std::vector<const XMLCh*> m_policies;
         XMLCh* m_issuer;
         XMLCh* m_receiver;
@@ -164,7 +163,7 @@ namespace shibboleth
     class SHIB_EXPORTS ClubShibPOSTProfile : public ShibPOSTProfile
     {
     public:
-        ClubShibPOSTProfile(const saml::Iterator<const XMLCh*>& policies, IOriginSiteMapper* mapper, const XMLCh* receiver, int ttlSeconds);
+        ClubShibPOSTProfile(const saml::Iterator<const XMLCh*>& policies, const XMLCh* receiver, int ttlSeconds);
         ClubShibPOSTProfile(const saml::Iterator<const XMLCh*>& policies, const XMLCh* issuer);
         virtual ~ClubShibPOSTProfile();
 
@@ -186,8 +185,7 @@ namespace shibboleth
     class SHIB_EXPORTS ShibPOSTProfileFactory
     {
     public:
-        static ShibPOSTProfile* getInstance(const saml::Iterator<const XMLCh*>& policies, IOriginSiteMapper* mapper,
-                                            const XMLCh* receiver, int ttlSeconds);
+        static ShibPOSTProfile* getInstance(const saml::Iterator<const XMLCh*>& policies, const XMLCh* receiver, int ttlSeconds);
         static ShibPOSTProfile* getInstance(const saml::Iterator<const XMLCh*>& policies, const XMLCh* issuer);
     };
 

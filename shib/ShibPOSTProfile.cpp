@@ -65,10 +65,10 @@ using namespace shibboleth;
 using namespace saml;
 using namespace std;
 
-ShibPOSTProfile::ShibPOSTProfile(const Iterator<const XMLCh*>& policies, IOriginSiteMapper* mapper, const XMLCh* receiver, int ttlSeconds)
-    : m_mapper(mapper), m_ttlSeconds(ttlSeconds), m_algorithm(SAMLSignedObject::RSA_SHA1), m_issuer(NULL)
+ShibPOSTProfile::ShibPOSTProfile(const Iterator<const XMLCh*>& policies, const XMLCh* receiver, int ttlSeconds)
+    : m_ttlSeconds(ttlSeconds), m_algorithm(SAMLSignedObject::RSA_SHA1), m_issuer(NULL)
 {
-    if (!mapper || !receiver || !*receiver || ttlSeconds <= 0)
+    if (!receiver || !*receiver || ttlSeconds <= 0)
         throw SAMLException(SAMLException::REQUESTER, "ShibPOSTProfile() found a null or invalid argument");
 
     m_receiver = XMLString::replicate(receiver);
@@ -78,7 +78,7 @@ ShibPOSTProfile::ShibPOSTProfile(const Iterator<const XMLCh*>& policies, IOrigin
 }
 
 ShibPOSTProfile::ShibPOSTProfile(const Iterator<const XMLCh*>& policies, const XMLCh* issuer)
-    : m_mapper(NULL), m_ttlSeconds(0), m_algorithm(SAMLSignedObject::RSA_SHA1), m_receiver(NULL)
+    : m_ttlSeconds(0), m_algorithm(SAMLSignedObject::RSA_SHA1), m_receiver(NULL)
 {
     if (!issuer || !*issuer)
         throw SAMLException(SAMLException::REQUESTER, "ShibPOSTProfile() found a null or invalid argument");
@@ -135,7 +135,7 @@ SAMLResponse* ShibPOSTProfile::accept(const XMLByte* buf)
     const XMLCh* handleService = assertion->getIssuer();
 
     // Is this a trusted HS?
-    Iterator<xstring> hsNames = m_mapper->getHandleServiceNames(originSite);
+    Iterator<xstring> hsNames=ShibConfig::getConfig().origin_mapper->getHandleServiceNames(originSite);
     bool bFound = false;
     while (!bFound && hsNames.hasNext())
         if (!XMLString::compareString(hsNames.next().c_str(),handleService))
@@ -143,8 +143,8 @@ SAMLResponse* ShibPOSTProfile::accept(const XMLByte* buf)
     if (!bFound)
         throw SAMLException(SAMLException::RESPONDER, "ShibPOSTProfile::accept() detected an untrusted HS for the origin site");
 
-    const Key* hsKey=m_mapper->getHandleServiceKey(handleService);
-    Iterator<X509Certificate*> roots = m_mapper->getTrustedRoots();
+    const Key* hsKey=ShibConfig::getConfig().origin_mapper->getHandleServiceKey(handleService);
+    Iterator<X509Certificate*> roots=ShibConfig::getConfig().origin_mapper->getTrustedRoots();
 
     // Signature verification now takes place. We check the assertion and the response.
     // Assertion signing is optional, response signing is mandatory.

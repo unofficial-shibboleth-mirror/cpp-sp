@@ -64,9 +64,8 @@ using namespace shibboleth;
 using namespace saml;
 using namespace std;
 
-ClubShibPOSTProfile::ClubShibPOSTProfile(const Iterator<const XMLCh*>& policies, IOriginSiteMapper* mapper,
-                                         const XMLCh* receiver, int ttlSeconds)
-    : ShibPOSTProfile(policies,mapper,receiver,ttlSeconds)
+ClubShibPOSTProfile::ClubShibPOSTProfile(const Iterator<const XMLCh*>& policies, const XMLCh* receiver, int ttlSeconds)
+    : ShibPOSTProfile(policies,receiver,ttlSeconds)
 {
     bool found=false;
     for (vector<const XMLCh*>::iterator i=m_policies.begin(); !found && i!=m_policies.end(); i++)
