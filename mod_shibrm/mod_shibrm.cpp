@@ -36,8 +36,9 @@ namespace {
     RPCHandle *rpc_handle = NULL;
     ShibTargetConfig* g_Config = NULL;
 
-    map<xstring,string> g_mapAttribNameToHeader;
+	map<string,string> g_mapAttribNameToHeader;
     map<string,string> g_mapAttribRuleToHeader;
+    map<xstring,string> g_mapAttribNames;
 }
 
 extern "C" const char*
@@ -46,8 +47,7 @@ ap_set_attribute_mapping(cmd_parms* parms, void*, const char* attrName,
 {
     ap_log_error(APLOG_MARK,APLOG_WARNING|APLOG_NOERRNO,parms->server,
                 "ShibMapAttribute command has been deprecated, please transfer this information to your AAP file(s).");
-    auto_ptr<XMLCh> temp(XMLString::transcode(attrName));
-    g_mapAttribNameToHeader[temp.get()]=headerName;
+    g_mapAttribNameToHeader[attrName]=headerName;
     if (ruleName)
         g_mapAttribRuleToHeader[ruleName]=headerName;
     return NULL;
@@ -140,6 +140,14 @@ extern "C" void shibrm_child_init(server_rec* s, pool* p)
     // if there is some way to do that reasonably..
     rpc_handle = new RPCHandle(g_Config->m_SocketName, SHIBRPC_PROG, SHIBRPC_VERS_1);
 
+	// Transcode the attribute names we know about for quick handling map access.
+    for (map<string,string>::const_iterator i=g_mapAttribNameToHeader.begin();
+	 i!=g_mapAttribNameToHeader.end(); i++)
+    {
+        auto_ptr<XMLCh> temp(XMLString::transcode(i->first.c_str()));
+        g_mapAttribNames[temp.get()]=i->first;
+    }
+    
     ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,s,"shibrm_child_init() done");
 }
 
@@ -396,9 +404,9 @@ extern "C" int shibrm_check_auth(request_rec* r)
             hname=wrapper->getHeader();
         if (!hname)
         {
-            map<xstring,string>::const_iterator fallback=g_mapAttribNameToHeader.find(attr->getName());
-            if (fallback!=g_mapAttribNameToHeader.end())
-                hname=fallback->second.c_str();
+        	map<xstring,string>::const_iterator iname=g_mapAttribNames.find(attr->getName());
+        	if (iname!=g_mapAttribNames.end())
+	        	hname=g_mapAttribNameToHeader[iname->second].c_str();
         }
         if (hname)
         {
