@@ -16,4 +16,7 @@ pkgsysconf_DATA = \
                 xml.xsd \
                 shibboleth.xsd \
                 shibboleth-trust-1.0.xsd \
-                shibboleth-targetconfig-1.0.xsd
+                shibboleth-targetconfig-1.0.xsd \
+				sstc-saml-schema-assertion-2.0.xsd \
+				sstc-saml-schema-metadata-2.0.xsd
+				
