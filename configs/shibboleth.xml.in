@@ -77,7 +77,7 @@
         The default wayfURL is the InQueue federation's service. Change to https://localhost/shibboleth/HS
         for internal testing against your own origin.
         -->
-        <Sessions lifetime="7200" timeout="3600" checkAddress="true"
+        <Sessions lifetime="7200" timeout="3600" checkAddress="true" checkReplay="true"
             shireURL="/Shibboleth.shire" shireSSL="false" cookieName="shib-default-app" cookieProps="; path=/"
             wayfURL="https://wayf.internet2.edu/InQueue/WAYF"/>
 
@@ -146,7 +146,7 @@
         <!-- customize behavior of specific applications -->
         <!-- 
         <Application id="foo-admin">
-            <Sessions shireURL="https://foo.com/admin/Shibboleth.shire</shireURL" cookieName="shib-foo-admin"/>
+            <Sessions shireURL="https://foo.com/admin/Shibboleth.shire" cookieName="shib-foo-admin"/>
             <Policy>
                 <saml:AttributeDesignator AttributeName="urn:mace:dir:attribute-def:eduPersonPrincipalName"
                     AttributeNamespace="urn:mace:shibboleth:1.0:attributeNamespace:uri"/> 
