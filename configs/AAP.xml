@@ -11,7 +11,7 @@
 	-->
 	
 	<!-- Filtering rule to limit values to eduPerson-defined enumeration. -->
-	<AttributeRule Name="urn:mace:dir:eduperson#eduPersonScopedAffiliation">
+	<AttributeRule Name="urn:mace:dir:attribute-def:eduPersonScopedAffiliation">
         <AnySite>
             <Value>member</Value>
             <Value>faculty</Value>
@@ -24,14 +24,14 @@
 	</AttributeRule>
 
 	<!-- Basic rule to pass through any value. -->
-    <AttributeRule Name="urn:mace:dir:eduperson#eduPersonPrincipalName">
+    <AttributeRule Name="urn:mace:dir:attribute-def:eduPersonPrincipalName">
         <AnySite>
             <AnyValue/>
         </AnySite>
     </AttributeRule>
 
 	<!-- Entitlements tend to be filtered per-site. -->
-	<AttributeRule Name="urn:mace:dir:eduperson#eduPersonEntitlement">
+	<AttributeRule Name="urn:mace:dir:attribute-def:eduPersonEntitlement">
 
 		<!--
 		Optional site rule that applies to any site
