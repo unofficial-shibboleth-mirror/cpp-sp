@@ -97,7 +97,6 @@ public:
         
         const XMLCh* getName() const { return m_name; }
         const char* getURL() const { return m_url.get(); }
-        Iterator<XSECCryptoX509*> getCertificates() const { return Iterator<XSECCryptoX509*>(); }
         
     private:
         const XMLCh* m_name;

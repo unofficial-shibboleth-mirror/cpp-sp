@@ -174,7 +174,8 @@ SAMLResponse* ShibPOSTProfile::accept(const XMLByte* buf, XMLCh** originSitePtr)
     if (!bFound)
         throw TrustException(SAMLException::RESPONDER, "ShibPOSTProfile::accept() detected an untrusted HS for the origin site");
 
-    Iterator<XSECCryptoX509*> certs=hs->getCertificates();
+    Trust t;
+    Iterator<XSECCryptoX509*> certs=t.getCertificates(hs->getName());
 
     // Signature verification now takes place. We check the assertion and the response.
     // Assertion signing is optional, response signing is mandatory.

@@ -121,7 +121,6 @@ namespace shibboleth
     {
         virtual const XMLCh* getName() const=0;
         virtual const char* getURL() const=0;
-        virtual saml::Iterator<XSECCryptoX509*> getCertificates() const=0;
         virtual ~IAuthority() {}
     };
 
