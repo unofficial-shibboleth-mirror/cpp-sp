@@ -400,11 +400,11 @@ extern "C" int shire_check_user(request_rec* r)
 
 	// Sure sure this POST is an appropriate content type
 	const char *ct = ap_table_get (r->headers_in, "Content-type");
-	if (strcasecmp (ct, "application/x-www-form-urlencoded"))
+	if (!ct || strcasecmp (ct, "application/x-www-form-urlencoded"))
 	  throw ShibTargetException (SHIBRPC_OK,
 				     ap_psprintf(r->pool,
 				     "blocked bad content-type to SHIRE POST processor: %s",
-						 ct));
+						 (ct ? ct : "")));
 	
 	// Make sure the "bytes sent" is a reasonable number
 	if (r->bytes_sent > 1024*1024) // 1MB?
