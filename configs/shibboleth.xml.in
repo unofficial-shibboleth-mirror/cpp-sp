@@ -84,8 +84,7 @@
         for internal testing against your own origin.
         -->
         <Sessions lifetime="7200" timeout="3600" checkAddress="true" checkReplay="true"
-            shireURL="/Shibboleth.shire" shireSSL="false" cookieName="shib-default-app" cookieProps="; path=/"
-            wayfURL="https://wayf.internet2.edu/InQueue/WAYF"/>
+            shireURL="/Shibboleth.shire" shireSSL="false" wayfURL="https://wayf.internet2.edu/InQueue/WAYF"/>
 
         <!-- You should customize the pages! You can add attributes with values that can be plugged in. -->
         <Errors shire="@-PKGSYSCONFDIR-@/shireError.html"
@@ -155,7 +154,7 @@
         <!-- customize behavior of specific applications -->
         <!-- 
         <Application id="foo-admin">
-            <Sessions shireURL="https:///admin/Shibboleth.shire" cookieName="shib-foo-admin"/>
+            <Sessions shireURL="https:///admin/Shibboleth.shire"/>
             <Policy>
                 <saml:AttributeDesignator AttributeName="urn:mace:dir:attribute-def:eduPersonPrincipalName"
                     AttributeNamespace="urn:mace:shibboleth:1.0:attributeNamespace:uri"/> 
