@@ -46,6 +46,7 @@ typedef struct ShibRpcXML ShibRpcXML;
 
 struct shibrpc_session_is_valid_args_1 {
 	ShibRpcHttpCookie_1 cookie;
+	char *url;
 	bool_t checkIPAddress;
 	long lifetime;
 	long timeout;

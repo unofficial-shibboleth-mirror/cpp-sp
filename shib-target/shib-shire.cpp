@@ -58,7 +58,7 @@ SHIRE::~SHIRE()
 }
 
 
-RPCError* SHIRE::sessionIsValid(const char* cookie, const char* ip)
+RPCError* SHIRE::sessionIsValid(const char* cookie, const char* ip, const char* url)
 {
   saml::NDC ndc("sessionIsValid");
 
@@ -79,6 +79,7 @@ RPCError* SHIRE::sessionIsValid(const char* cookie, const char* ip)
 
   arg.cookie.cookie = (char*)cookie;
   arg.cookie.client_addr = (char *)ip;
+  arg.url = (char *)url;
   arg.lifetime = m_priv->m_config.lifetime;
   arg.timeout = m_priv->m_config.timeout;
   arg.checkIPAddress = m_priv->m_config.checkIPAddress;

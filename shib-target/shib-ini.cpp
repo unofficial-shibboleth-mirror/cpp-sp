@@ -80,6 +80,7 @@ ShibINIPriv::ShibINIPriv()
   string ctx = "shibtarget.ShibINI";
   log = &(log4cpp::Category::getInstance(ctx));
   rwlock = RWLock::create();
+  modtime = 0;
   iterators = 0;
 }
 
@@ -136,6 +137,11 @@ void ShibINI::refresh(void)
 #endif
     m_priv->log->error("stat failed: %s", m_priv->file.c_str());
 
+#ifdef DEBUG
+  m_priv->log->info("refresh: last modtime at %d; file is %d; iters: %d",
+		    m_priv->modtime, stat_buf.st_mtime, m_priv->iterators);
+#endif
+
   if (m_priv->modtime >= stat_buf.st_mtime || m_priv->iterators > 0)
     return;
 
@@ -191,14 +197,18 @@ void ShibINI::refresh(void)
       if (line[0] == '[') {
 	// this is a header
 
-	m_priv->log->debug("Found what appears to be a header line");
+#ifdef DEBUG
+	m_priv->log->info("Found what appears to be a header line");
+#endif
 
 	have_header = false;
 
 	// find the end of the header
 	int endpos = line.find (']');
 	if (endpos == line.npos) {
-	  m_priv->log->debug("Weird: no end found.. punting");
+#ifdef DEBUG
+	  m_priv->log->info("Weird: no end found.. punting");
+#endif
 	  continue; // HUH?  No end?
 	}
 
@@ -210,18 +220,24 @@ void ShibINI::refresh(void)
 
 	m_priv->table[current_header] = map<string,string>();
 	have_header = true;
-	m_priv->log->debug("current header: \"%s\"", current_header.c_str());
+#ifdef DEBUG
+	m_priv->log->info("current header: \"%s\"", current_header.c_str());
+#endif
 
       } else if (have_header) {
 	// this is a tag
 
-	m_priv->log->debug("Found what appears to be a tag line");
+#ifdef DEBUG
+	m_priv->log->info("Found what appears to be a tag line");
+#endif
 
 	string tag, setting;
 	int mid = line.find ('=');
 
 	if (mid == line.npos) {
-	  m_priv->log->debug("Weird: no '=' found.. punting");
+#ifdef DEBUG
+	  m_priv->log->info("Weird: no '=' found.. punting");
+#endif
 	  continue; // Can't find the value's setting
 	}
 
@@ -240,8 +256,10 @@ void ShibINI::refresh(void)
 	else
 	  (m_priv->table[current_header])[tag] = setting;
 
-	m_priv->log->debug("new tag: \"%s\" = \"%s\"",
+#ifdef DEBUG
+	m_priv->log->info("new tag: \"%s\" = \"%s\"",
 			  tag.c_str(), setting.c_str());
+#endif
 
       }
 

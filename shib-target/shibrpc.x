@@ -53,6 +53,7 @@ struct ShibRpcXML {
 
 struct shibrpc_session_is_valid_args_1 {
   ShibRpcHttpCookie_1	cookie;
+  string		url<>;
   bool			checkIPAddress;
   long			lifetime;
   long			timeout;

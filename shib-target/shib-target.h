@@ -129,6 +129,8 @@ namespace shibtarget {
   {
   public:
     virtual saml::Iterator<saml::SAMLAssertion*> getAssertions(Resource& resource) = 0;
+    virtual void preFetch(Resource& resource, int prefetch_window) = 0;
+
     virtual bool isSessionValid(time_t lifetime, time_t timeout) = 0;
     virtual const char* getClientAddress() = 0;
     virtual void release() = 0;
@@ -243,7 +245,7 @@ namespace shibtarget {
     SHIRE(RPCHandle *rpc, SHIREConfig config, std::string shire_url);
     ~SHIRE();
 
-    RPCError* sessionIsValid(const char* cookie, const char* ip);
+    RPCError* sessionIsValid(const char* cookie, const char* ip, const char* url);
     RPCError* sessionCreate(const char* post, const char* ip,
 			     std::string &cookie);
   private:

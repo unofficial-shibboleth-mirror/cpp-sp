@@ -50,6 +50,8 @@ xdr_shibrpc_session_is_valid_args_1 (XDR *xdrs, shibrpc_session_is_valid_args_1 
 
 	 if (!xdr_ShibRpcHttpCookie_1 (xdrs, &objp->cookie))
 		 return FALSE;
+	 if (!xdr_string (xdrs, &objp->url, ~0))
+		 return FALSE;
 	 if (!xdr_bool (xdrs, &objp->checkIPAddress))
 		 return FALSE;
 	 if (!xdr_long (xdrs, &objp->lifetime))

@@ -151,6 +151,9 @@ static command_rec shibrm_cmds[] = {
  */
 extern "C" void shibrm_child_init(server_rec* s, pool* p)
 {
+    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,s,
+		 "shibrm_child_init() starting");
+
     if (g_szConfig) {
       ap_log_error(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,s,
 		   "shibrm_child_init(): already initialized!");

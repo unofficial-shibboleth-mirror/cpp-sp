@@ -75,30 +75,55 @@ shibrpc_session_is_valid_1_svc(shibrpc_session_is_valid_args_1 *argp,
     return TRUE;
   }
 
-  // Verify the address is the same
-  if (argp->checkIPAddress) {
-    log.debug ("Checking address against %s", entry->getClientAddress());
-    if (strcmp (argp->cookie.client_addr, entry->getClientAddress())) {
-      log.debug ("IP Address mismatch");
-      result->status = SHIBRPC_IPADDR_MISMATCH;
-      result->error_msg = 
-	strdup ("Your IP address does not match the address in the original authentication.");
-      entry->release();
-      g_shibTargetCCache->remove (argp->cookie.cookie);
-      return TRUE;
-    }
-  }
+  // TEST the session...
+  try {
 
-  // and that the session is still valid...
-  if (!entry->isSessionValid(argp->lifetime, argp->timeout)) {
-    log.debug ("Session expired");
-    result->status = SHIBRPC_SESSION_EXPIRED;
-    result->error_msg = strdup ("Your session has expired.  Re-authenticate.");
+    // Verify the address is the same
+    if (argp->checkIPAddress) {
+      log.debug ("Checking address against %s", entry->getClientAddress());
+      if (strcmp (argp->cookie.client_addr, entry->getClientAddress())) {
+	log.debug ("IP Address mismatch");
+
+	throw ShibTargetException(SHIBRPC_IPADDR_MISMATCH,
+  "Your IP address does not match the address in the original authentication.");
+      }
+    }
+
+    // and that the session is still valid...
+    if (!entry->isSessionValid(argp->lifetime, argp->timeout)) {
+      log.debug ("Session expired");
+      throw ShibTargetException(SHIBRPC_SESSION_EXPIRED,
+				"Your session has expired.  Re-authenticate.");
+    }
+
+    // and now try to prefetch the attributes .. this could cause an
+    // "error", which is why we call it here.
+    try {
+      log.debug ("resource: %s", argp->url);
+      Resource r(argp->url);
+      entry->preFetch(r,15);	// give a 15-second window for the RM
+
+    } catch (SAMLException &e) {
+      log.debug ("prefetch failed with a SAML Exception: %s", e.what());
+      ostringstream os;
+      os << e;
+      throw ShibTargetException(SHIBRPC_SAML_EXCEPTION, os.str());
+
+    } catch (...) {
+      log.error ("prefetch caught an unknown exception");
+      throw ShibTargetException(SHIBRPC_UNKNOWN_ERROR,
+		"An unknown error occured while pre-fetching attributes.");
+    }
+
+  } catch (ShibTargetException &e) {
     entry->release();
     g_shibTargetCCache->remove (argp->cookie.cookie);
+    result->status = e.which();
+    result->error_msg = strdup(e.what());
     return TRUE;
   }
 
+  // Ok, just release it.
   entry->release();
 
   // ok, we've succeeded..

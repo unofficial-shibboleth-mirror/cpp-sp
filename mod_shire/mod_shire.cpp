@@ -168,6 +168,9 @@ extern "C" void shire_child_init(server_rec* s, pool* p)
 {
     // Initialize runtime components.
 
+    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,s,
+		 "shire_child_init() starting");
+
     if (g_szConfig) {
       ap_log_error(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,s,
 		   "shire_child_init(): already initialized!");
@@ -455,7 +458,8 @@ extern "C" int shire_check_user(request_rec* r)
       RPCError* status = NULL;
 
       try {
-	status = shire.sessionIsValid(session_id, r->connection->remote_ip);
+	status = shire.sessionIsValid(session_id, r->connection->remote_ip,
+				      targeturl);
 
       } catch (ShibTargetException &e) {
 	ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,

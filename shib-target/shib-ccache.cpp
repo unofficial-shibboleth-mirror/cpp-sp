@@ -84,7 +84,7 @@ public:
   ResourceEntry(SAMLResponse* response);
   ~ResourceEntry();
 
-  bool isValid();
+  bool isValid(int slop);
   Iterator<SAMLAssertion*> getAssertions();
 
   static vector<SAMLAssertion*> g_emptyVector;
@@ -103,6 +103,7 @@ public:
   ~InternalCCacheEntry();
 
   virtual Iterator<SAMLAssertion*> getAssertions(Resource& resource);
+  virtual void preFetch(Resource& resource, int prefetch_window);
   virtual bool isSessionValid(time_t lifetime, time_t timeout);
   virtual const char* getClientAddress() { return m_clientAddress.c_str(); }
   virtual void release() { cacheitem_lock->unlock(); }
@@ -113,7 +114,7 @@ public:
   void wrlock() { cacheitem_lock->wrlock(); }
 
 private:
-  ResourceEntry* populate(Resource& resource);
+  ResourceEntry* populate(Resource& resource, int slop);
   ResourceEntry* find(const char* resource);
   void insert(const char* resource, ResourceEntry* entry);
   void remove(const char* resource);
@@ -479,13 +480,19 @@ bool InternalCCacheEntry::isSessionValid(time_t lifetime, time_t timeout)
 Iterator<SAMLAssertion*> InternalCCacheEntry::getAssertions(Resource& resource)
 {
   saml::NDC ndc("getAssertions");
-  ResourceEntry* entry = populate(resource);
+  ResourceEntry* entry = populate(resource, 0);
   if (entry)
     return entry->getAssertions();
   return Iterator<SAMLAssertion*>(ResourceEntry::g_emptyVector);
 }
 
-ResourceEntry* InternalCCacheEntry::populate(Resource& resource)
+void InternalCCacheEntry::preFetch(Resource& resource, int prefetch_window)
+{
+  saml::NDC ndc("preFetch");
+  ResourceEntry* entry = populate(resource, prefetch_window);
+}
+
+ResourceEntry* InternalCCacheEntry::populate(Resource& resource, int slop)
 {
   saml::NDC ndc("populate");
   log->debug("populating entry for %s (%s)",
@@ -498,7 +505,7 @@ ResourceEntry* InternalCCacheEntry::populate(Resource& resource)
   ResourceEntry *entry = find(resource.getResource());
   if (entry) {
     log->debug("found resource");
-    if (entry->isValid())
+    if (entry->isValid(slop))
       return entry;
 
     // entry is invalid (expired) -- go fetch a new one.
@@ -652,14 +659,14 @@ Iterator<SAMLAssertion*> ResourceEntry::getAssertions()
   return m_response->getAssertions();
 }
 
-bool ResourceEntry::isValid()
+bool ResourceEntry::isValid(int slop)
 {
   saml::NDC ndc("isValid");
 
   log->info("checking validity");
 
   // This is awful, but the XMLDateTime class is truly horrible.
-  time_t now=time(NULL);
+  time_t now=time(NULL)+slop;
 #ifdef WIN32
   struct tm* ptime=gmtime(&now);
 #else
@@ -670,6 +677,7 @@ bool ResourceEntry::isValid()
   strftime(timebuf,32,"%Y-%m-%dT%H:%M:%SZ",ptime);
   auto_ptr<XMLCh> timeptr(XMLString::transcode(timebuf));
   XMLDateTime curDateTime(timeptr.get());
+  curDateTime.parseDateTime();
 
   Iterator<SAMLAssertion*> iter = getAssertions();
 
@@ -678,13 +686,17 @@ bool ResourceEntry::isValid()
 
     log->debug ("testing assertion...");
 
-    if (! assertion->getNotOnOrAfter()) {
+    const XMLDateTime* thistime = assertion->getNotOnOrAfter();
+
+    if (! thistime) {
       log->debug ("getNotOnOrAfter failed.");
       return false;
     }
 
-    int result=XMLDateTime::compareOrder(&curDateTime,
-					 assertion->getNotOnOrAfter());
+    log->debug ("comparing now (%s) to %s", curDateTime.toString(),
+		thistime->toString());
+    int result=XMLDateTime::compareOrder(&curDateTime, thistime);
+
     if (result != XMLDateTime::LESS_THAN) {
       log->debug("nope, not still valid");
       return false;
