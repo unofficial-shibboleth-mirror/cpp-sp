@@ -1,22 +1,35 @@
-6/1/03
-Version 1.0
+7/31/03
+Version 1.1
 
-This is the fourth major public release of code for the Shibboleth project,
-and the first to be considered ready for production use.
+This release represents a fully compatible minor update to the Shibboleth 1.0 release,
+and is considered to be ready for production use.
 
-Features and Changes
+Features and Changes in 1.0 and 1.1
 
 Origin
 
 New OpenSAML jarfile (see OpenSAML NEWS file)
 
 Rewritten Attribute Resolver system in AA to support easy
-addition of attributes at runtime, and simpler development
+addition of attributes at runtime and simpler development
 of alternate attribute sources using Java.
 
 Bug fixes to attribute-specific queries
 
 Support for SAML authentication method
+
+A sample resolver file for using standard LDAP person and 
+inetOrgPerson attributes is included. [1.1]
+
+Support for a runtime-derived per-requester persistent 
+identifier attribute to support anonymous personalization 
+by targets has been added via an attribute plugin. [1.1]
+
+Specialized sites without privacy needs can configure 
+identity-based handles interoperable with other SAML 
+deployments. [1.1]
+
+Security enhancements in the Crypto Handle Repository. [1.1]
 
 
 Target
@@ -34,4 +47,18 @@ Support for contact information in error pages
 Fixes to handling of Unicode characters
 
 Support for alternate session backing stores
-(MySQL version shipped separately due to licensing)
+
+The SHAR can use TCP sockets when responding to the Apache 
+module, for specialized deployment behind firewalls. [1.1]
+
+Attribute acceptance policies have been greatly enhanced, and 
+are now used to configure all aspects of attribute handling by 
+the target, except for requesting specific attributes by 
+sitename. Adding attributes now takes place in one configuration 
+step. [1.1]
+
+Support for Apache 1.3 on Windows NT/2000/XP/2003 has been added. 
+[1.1]
+
+Microsoft IIS web server support has been added via an ISAPI 
+filter and extension. [1.1] 
