@@ -69,7 +69,7 @@ void* shar_client_thread (void* arg)
   return NULL;
 }
 
-SharChild::SharChild(IListener::ShibSocket& s, const Iterator<ShibRPCProtocols>& protos) : sock(s)
+SharChild::SharChild(IListener::ShibSocket& s, const Iterator<ShibRPCProtocols>& protos) : sock(s), lock(NULL), child(NULL)
 {
   protos.reset();
   while (protos.hasNext())
@@ -91,13 +91,17 @@ SharChild::SharChild(IListener::ShibSocket& s, const Iterator<ShibRPCProtocols>&
 SharChild::~SharChild()
 {
   // Lock this object
-  Lock tl(lock);
+  lock->lock();
 
   // Then lock the children map, remove this thread, signal waiters, and return
   child_lock->lock();
   children.erase(child);
   child_lock->unlock();
   child_wait->signal();
+  
+  lock->unlock();
+  delete lock;
+  delete child;
 }
 
 void SharChild::run()
@@ -185,7 +189,7 @@ void SHARUtils::fini()
 {
   running = false;
 
-  // wait for all childred to exit.
+  // wait for all children to exit.
   child_lock->lock();
   while (children.size())
     child_wait->wait(child_lock);
