@@ -173,6 +173,7 @@ public:
         static const XMLCh Factory[];
         static const XMLCh Header[];
         static const XMLCh Namespace[];
+        static const XMLCh Scoped[];
         static const XMLCh SiteRule[];
         static const XMLCh Type[];
         static const XMLCh Value[];

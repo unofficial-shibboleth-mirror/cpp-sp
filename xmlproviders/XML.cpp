@@ -273,6 +273,8 @@ const XMLCh XML::Literals::Header[]=
 const XMLCh XML::Literals::Namespace[]=
 { chLatin_N, chLatin_a, chLatin_m, chLatin_e, chLatin_s, chLatin_p, chLatin_a, chLatin_c, chLatin_e, chNull };
 
+const XMLCh XML::Literals::Scoped[] = { chLatin_S, chLatin_c, chLatin_o, chLatin_p, chLatin_e, chLatin_d, chNull };
+
 const XMLCh XML::Literals::SiteRule[] =
 { chLatin_S, chLatin_i, chLatin_t, chLatin_e, chLatin_R, chLatin_u, chLatin_l, chLatin_e, chNull };
 
