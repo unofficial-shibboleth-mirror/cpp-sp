@@ -62,9 +62,7 @@ shar_client_thread (void* arg)
   SharChild* child = (SharChild*)arg;
 
   // First, let's block all signals
-  sigset_t sigmask;
-  sigfillset(&sigmask);
-  Thread::mask_signals(SIG_BLOCK, &sigmask, NULL);
+  Thread::mask_all_signals();
 
   g_shibTargetCCache->thread_init();
 
