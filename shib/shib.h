@@ -216,7 +216,7 @@ namespace shibboleth
 
     struct SHIB_EXPORTS Constants
     {
-        static const XMLCh POLICY_CLUBSHIB[];
+        static const XMLCh POLICY_INCOMMON[];
         static const XMLCh SHIB_ATTRIBUTE_NAMESPACE_URI[];
     };
 

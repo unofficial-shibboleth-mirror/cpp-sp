@@ -66,10 +66,10 @@ ClubShibPOSTProfile::ClubShibPOSTProfile(const Iterator<const XMLCh*>& policies,
 {
     bool found=false;
     for (vector<const XMLCh*>::iterator i=m_policies.begin(); !found && i!=m_policies.end(); i++)
-        if (!XMLString::compareString(Constants::POLICY_CLUBSHIB,*i))
+        if (!XMLString::compareString(Constants::POLICY_INCOMMON,*i))
             found=true;
     if (!found)
-        throw SAMLException(SAMLException::REQUESTER, "ClubShibPOSTProfile() policy array must include Club Shib");
+        throw SAMLException(SAMLException::REQUESTER, "ClubShibPOSTProfile() policy array must include InCommon");
 }
 
 ClubShibPOSTProfile::ClubShibPOSTProfile(const Iterator<const XMLCh*>& policies, const XMLCh* issuer)
@@ -77,10 +77,10 @@ ClubShibPOSTProfile::ClubShibPOSTProfile(const Iterator<const XMLCh*>& policies,
 {
     bool found=false;
     for (vector<const XMLCh*>::iterator i=m_policies.begin(); !found && i!=m_policies.end(); i++)
-        if (!XMLString::compareString(Constants::POLICY_CLUBSHIB,*i))
+        if (!XMLString::compareString(Constants::POLICY_INCOMMON,*i))
             found=true;
     if (!found)
-        throw SAMLException(SAMLException::REQUESTER, "ClubShibPOSTProfile() policy array must include Club Shib");
+        throw SAMLException(SAMLException::REQUESTER, "ClubShibPOSTProfile() policy array must include InCommon");
 }
 
 ClubShibPOSTProfile::~ClubShibPOSTProfile()

@@ -63,16 +63,10 @@ using namespace std;
 
 ShibPOSTProfile* ShibPOSTProfileFactory::getInstance(const Iterator<const XMLCh*>& policies, const XMLCh* receiver, int ttlSeconds)
 {
-    if (policies.size()!=1 || XMLString::compareString(Constants::POLICY_CLUBSHIB,policies.next()))
-        return NULL;
-    policies.reset();
     return new ClubShibPOSTProfile(policies,receiver,ttlSeconds);
 }
 
 ShibPOSTProfile* ShibPOSTProfileFactory::getInstance(const Iterator<const XMLCh*>& policies, const XMLCh* issuer)
 {
-    if (policies.size()!=1 || XMLString::compareString(Constants::POLICY_CLUBSHIB,policies.next()))
-        return NULL;
-    policies.reset();
     return new ClubShibPOSTProfile(policies,issuer);
 }
