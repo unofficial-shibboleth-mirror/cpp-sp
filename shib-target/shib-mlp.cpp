@@ -293,9 +293,12 @@ void ShibMLP::insert(SAMLException& e)
         insert("errorText", "A problem was detected with your identity provider's software configuration.");
     else
         insert("errorText", e.getMessage() ? e.getMessage() : "No Message");
-    insert("originErrorURL", e.getProperty("errorURL") ? e.getProperty("errorURL") : "No Error URL");
-    insert("originContactName", e.getProperty("contactName") ? e.getProperty("contactName") : "No Contact Name");
-    insert("originContactEmail", e.getProperty("contactEmail") ? e.getProperty("contactEmail") : "No Contact Email");
+    if (e.getProperty("errorURL"))
+        insert("originErrorURL", e.getProperty("errorURL"));
+    if (e.getProperty("contactName"))
+        insert("originContactName", e.getProperty("contactName"));
+    if (e.getProperty("contactEmail"))
+        insert("originContactEmail", e.getProperty("contactEmail"));
 }
 
 void ShibMLP::insert (const std::string& key, const std::string& value)
