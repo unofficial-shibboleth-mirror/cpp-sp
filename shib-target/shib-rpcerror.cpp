@@ -80,7 +80,7 @@ ShibTargetException::ShibTargetException(ShibRpcStatus code, const char* msg, co
         m_providerId=id.get();
         Iterator<const IRoleDescriptor*> roles=provider->getRoleDescriptors();
         while (roles.hasNext()) {
-            IRoleDescriptor* role=roles.next();
+            const IRoleDescriptor* role=roles.next();
             if (role->isValid()) {
                 const char* temp=role->getErrorURL();
                 if (temp) {
