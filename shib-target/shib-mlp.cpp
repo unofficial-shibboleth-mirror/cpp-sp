@@ -127,19 +127,7 @@ string ShibMLP::run (istream& is) const
 
 void ShibMLP::insert (RPCError& e)
 {
-  insert ("errorType", e.toString());
-
-  if (e.m_except) {
-    insert ("errorText", e.m_except->what());
-
-    Iterator<saml::QName> i=e.m_except->getCodes();
-    if (i.hasNext() && XMLString::compareString(L(Responder),i.next().getLocalName()))
-      insert ("errorDesc", "An error occurred at the target system while proccessing your request");
-    else
-      insert ("errorDesc", "An error occurred at your origin site while proccessing your request");
-  
-  } else {
-    insert ("errorText", e.error_msg);
-    insert ("errorDesc", "An error occurred proccessing your request");
-  }
+  insert ("errorType", e.getType());
+  insert ("errorText", e.getText());
+  insert ("errorDesc", e.getDesc());
 }

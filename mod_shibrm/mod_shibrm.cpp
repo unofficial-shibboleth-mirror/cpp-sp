@@ -364,7 +364,7 @@ extern "C" int shibrm_check_auth(request_rec* r)
     if (status->isError()) {
       ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
 		    "shibrm_check_auth() getAssertions failed: %s",
-		    status->error_msg.c_str());
+		    status->getText());
 
       string rmError;
       if (! ini.get_tag (serverName, "rmError", true, &rmError)) {

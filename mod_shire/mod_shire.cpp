@@ -476,7 +476,7 @@ extern "C" int shire_check_user(request_rec* r)
 
 	ap_log_rerror(APLOG_MARK,APLOG_INFO|APLOG_NOERRNO,r,
 		      "shire_check_user() session invalid: %s",
-		      status->error_msg.c_str());
+		      status->getText());
 
 	if (status->isRetryable()) {
 
@@ -633,7 +633,7 @@ extern "C" int shire_post_handler (request_rec* r)
     if (status->isError()) {
       ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
 		    "shire_post_handler() POST process failed (%d): %s",
-		    status->status, status->error_msg.c_str());
+		    status->getCode(), status->getText());
 
       if (status->isRetryable()) {
 	ap_log_rerror(APLOG_MARK,APLOG_INFO|APLOG_NOERRNO,r,

@@ -104,10 +104,20 @@ const char* rpcerror_exception_type(SAMLException* e)
 }
 #undef TEST_TYPE
 
-void RPCError::init(int stat, char const* msg)
+class shibtarget::RPCErrorPriv {
+public:
+  RPCErrorPriv(int stat, const char* msg);
+  ~RPCErrorPriv();
+
+  int		status;
+  string	error_msg;
+  SAMLException* except;
+};
+
+RPCErrorPriv::RPCErrorPriv(int stat, const char* msg)
 {
   status = stat;
-  string ctx = "shibtarget.RPCError";
+  string ctx = "shibtarget.RPCErrorPriv";
   log4cpp::Category& log = log4cpp::Category::getInstance(ctx);
 
   rpcerror_init();
@@ -115,8 +125,8 @@ void RPCError::init(int stat, char const* msg)
   if (status == SHIBRPC_SAML_EXCEPTION) {
     istringstream estr(msg);
     try { 
-      m_except = NULL;
-      m_except = SAMLException::getInstance(estr);
+      except = NULL;
+      except = SAMLException::getInstance(estr);
     } catch (SAMLException& e) {
       log.error ("Caught SAML Exception while building the SAMLException: %s",
 		 e.what());
@@ -129,59 +139,55 @@ void RPCError::init(int stat, char const* msg)
       log.error ("Caught exception building SAMLException!");
       log.error ("XML: %s", msg);
     }
-    if (dynaptr(ContentTypeException,m_except)!=NULL)
-        error_msg = "We were unable to contact your identity provider and cannot grant access at this time. Please contact your provider's help desk or administrator so that the appropriate steps can be taken. Be sure to describe what you're trying to access and useful context like the current time.";
+    if (dynaptr(ContentTypeException, except)!=NULL)
+        error_msg = 
+	  "We were unable to contact your identity provider and cannot grant "
+	  "access at this time. Please contact your provider's help desk or "
+	  "administrator so that the appropriate steps can be taken.  "
+	  "Be sure to describe what you're trying to access and useful "
+	  "context like the current time.";
     else
-        error_msg = (m_except ? m_except->what() : msg);
+        error_msg = (except ? except->what() : msg);
   } else {
     error_msg = msg;
-    m_except = NULL;
+    except = NULL;
   }
 }
 
-RPCError::~RPCError() 
+RPCErrorPriv::~RPCErrorPriv()
 {
-  if (m_except)
-    delete m_except;
+  if (except)
+    delete except;
 }
 
-const char* RPCError::toString()
+void RPCError::init(int stat, char const* msg)
 {
-  switch (status) {
-  case SHIBRPC_OK:		return "No Error";
-  case SHIBRPC_UNKNOWN_ERROR:	return "Unknown error";
-  case SHIBRPC_IPADDR_MISMATCH:	return "IP Address Mismatch";
-  case SHIBRPC_NO_SESSION:	return "No Session";
-  case SHIBRPC_XML_EXCEPTION:	return "Xerces XML Exception";
-  case SHIBRPC_SAML_EXCEPTION:	return rpcerror_exception_type(m_except);
-  case SHIBRPC_INTERNAL_ERROR:	return "Internal Error";
-  case SHIBRPC_SAX_EXCEPTION:	return "Xerces SAX Exception";
-  case SHIBRPC_SESSION_EXPIRED:	return "Session Expired";
-  case SHIBRPC_AUTHSTATEMENT_MISSING:	return "Authentication Statement Missing";
-  case SHIBRPC_IPADDR_MISSING:	return "IP Address Missing";
-  case SHIBRPC_RESPONSE_MISSING:	return "SAML Response Missing";
-  case SHIBRPC_ASSERTION_MISSING:	return "SAML Assertion Missing";
-  case SHIBRPC_ASSERTION_REPLAYED:	return "SAML Assertion Replayed";
-  default:			return "Unknown Shibboleth RPC error";
-  }
+  m_priv = new RPCErrorPriv(stat,msg);
 }
+
+RPCError::~RPCError()
+{
+  delete m_priv;
+}
+
+bool RPCError::isError() { return (m_priv->status != 0); }
 
 #define TEST_TYPE(type) { if (type && *type == info) return true; }
 bool RPCError::isRetryable()
 {
-  switch (status) {
+  switch (m_priv->status) {
   case SHIBRPC_NO_SESSION:
   case SHIBRPC_SESSION_EXPIRED:
     return true;
 
   case SHIBRPC_SAML_EXCEPTION:
-    if (m_except) {
-      const type_info& info = typeid(*m_except);
+    if (m_priv->except) {
+      const type_info& info = typeid(*m_priv->except);
 
       TEST_TYPE(type_RetryableProfileException);
       TEST_TYPE(type_ExpiredAssertionException);
 
-      Iterator<saml::QName> codes = m_except->getCodes();
+      Iterator<saml::QName> codes = m_priv->except->getCodes();
       while (codes.hasNext()) {
 	saml::QName name = codes.next();
 
@@ -200,3 +206,45 @@ bool RPCError::isRetryable()
   }
 }
 #undef TEST_TYPE
+
+const char* RPCError::getType()
+{
+  switch (m_priv->status) {
+  case SHIBRPC_OK:		return "No Error";
+  case SHIBRPC_UNKNOWN_ERROR:	return "Unknown error";
+  case SHIBRPC_IPADDR_MISMATCH:	return "IP Address Mismatch";
+  case SHIBRPC_NO_SESSION:	return "No Session";
+  case SHIBRPC_XML_EXCEPTION:	return "Xerces XML Exception";
+  case SHIBRPC_SAML_EXCEPTION:	return rpcerror_exception_type(m_priv->except);
+  case SHIBRPC_INTERNAL_ERROR:	return "Internal Error";
+  case SHIBRPC_SAX_EXCEPTION:	return "Xerces SAX Exception";
+  case SHIBRPC_SESSION_EXPIRED:	return "Session Expired";
+  case SHIBRPC_AUTHSTATEMENT_MISSING:	return "Authentication Statement Missing";
+  case SHIBRPC_IPADDR_MISSING:	return "IP Address Missing";
+  case SHIBRPC_RESPONSE_MISSING:	return "SAML Response Missing";
+  case SHIBRPC_ASSERTION_MISSING:	return "SAML Assertion Missing";
+  case SHIBRPC_ASSERTION_REPLAYED:	return "SAML Assertion Replayed";
+  default:			return "Unknown Shibboleth RPC error";
+  }
+}
+
+const char* RPCError::getText()
+{
+  return m_priv->error_msg.c_str();
+}
+
+const char* RPCError::getDesc()
+{
+  if (m_priv->except) {
+    Iterator<saml::QName> i=m_priv->except->getCodes();
+    if (i.hasNext() &&
+	XMLString::compareString(L(Responder),i.next().getLocalName()))
+      return
+	"An error occurred at the target system while proccessing your request";
+    else
+      return "An error occurred at your origin site while proccessing your request";
+  } else
+    return "An error occurred proccessing your request";
+}
+
+int RPCError::getCode() { return m_priv->status; }

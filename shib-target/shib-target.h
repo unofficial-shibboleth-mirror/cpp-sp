@@ -224,15 +224,14 @@ namespace shibtarget {
     RPCError(ShibTargetException &exp) { init(exp.which(), exp.what()); }
     ~RPCError();
 
-    bool	isError() { return (status != 0); }
+    bool	isError();
     bool	isRetryable();
 
-    // Return a string that corresponds to the "status"
-    const char* toString();
-
-    int		status;
-    std::string	error_msg;
-    saml::SAMLException* m_except;
+    // Return a set of strings that corresponds to the type, text, and desc
+    const char* getType();
+    const char* getText();
+    const char* getDesc();
+    int getCode();
 
   private:
     void init(int code, char const* msg);
