@@ -71,10 +71,10 @@ void ScopedAttribute::valueToDOM(unsigned int index, DOMElement* e) const
     e->setAttributeNS(NULL,SHIB_L(Scope),m_scopes[index]);
 }
 
-ScopedAttribute::ScopedAttribute(const XMLCh* name, const XMLCh* ns, long lifetime,
+ScopedAttribute::ScopedAttribute(const XMLCh* name, const XMLCh* ns, const saml::QName* type, long lifetime,
                                  const saml::Iterator<const XMLCh*>& scopes,
                                  const saml::Iterator<const XMLCh*>& values)
-    : SAMLAttribute(name,ns,NULL,lifetime,values)
+    : SAMLAttribute(name,ns,type,lifetime,values)
 {
     if (scopes.size()!=values.size())
         throw MalformedException(SAMLException::RESPONDER,"ScopedAttribute() requires the number of scopes to equal the number of values");
@@ -179,5 +179,5 @@ void ScopedAttribute::removeValue(unsigned int index)
 
 SAMLObject* ScopedAttribute::clone() const
 {
-    return new ScopedAttribute(m_name,m_namespace,m_lifetime,m_scopes,m_values);
+    return new ScopedAttribute(m_name,m_namespace,m_type,m_lifetime,m_scopes,m_values);
 }

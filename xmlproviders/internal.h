@@ -79,7 +79,7 @@ X509* B64_to_X509(const char* buf);
 class ScopedAttribute : public saml::SAMLAttribute
 {
 public:
-    ScopedAttribute(const XMLCh* name, const XMLCh* ns, long lifetime=0,
+    ScopedAttribute(const XMLCh* name, const XMLCh* ns, const saml::QName* type=NULL, long lifetime=0,
                     const saml::Iterator<const XMLCh*>& scopes=EMPTY(const XMLCh*),
                     const saml::Iterator<const XMLCh*>& values=EMPTY(const XMLCh*));
     ScopedAttribute(DOMElement* e);
