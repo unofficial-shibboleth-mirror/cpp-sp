@@ -32,6 +32,12 @@ AC_PROG_LIBTOOL
 
 AC_LANG(C++)
 
+# C++ requirements
+AC_CXX_REQUIRE_STL
+AC_CXX_NAMESPACES
+
+AC_LANG(C)
+
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
 AC_TYPE_SIZE_T
@@ -42,11 +48,6 @@ AC_FUNC_STRFTIME
 AC_FUNC_STRERROR_R
 AC_CHECK_FUNCS([strchr strdup strstr gmtime_r strtok_r strcasecmp])
 AC_CHECK_HEADERS([dlfcn.h])
-
-# C++ requirements
-AC_CXX_REQUIRE_STL
-AC_CXX_NAMESPACES
-
 
 # old_LIBS="$LIBS"
 # AC_SEARCH_LIBS(xdr_uint64_t,nsl,,
@@ -109,6 +110,8 @@ AC_MSG_CHECKING(for SSL_library_init)
 AC_TRY_LINK_FUNC([SSL_library_init],, 
              AC_MSG_ERROR([unable to link with openssl libraries]))
 AC_MSG_RESULT(yes)
+
+AC_LANG(C++)
 
 # log4cpp settings
 AC_PATH_PROG(LOG4CPP_CONFIG,log4cpp-config)
