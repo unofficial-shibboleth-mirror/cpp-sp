@@ -100,6 +100,8 @@ void shib_sock_close (ShibSocket s, ShibSockName name);
 #define SHIBTARGET_TAG_AAP      "aap-uri"
 #define SHIBTARGET_TAG_SITES	"sitesFile"
 
+#define SHIBTARGET_TAG_DEFAULTLIFE	"defaultLife"
+
 #define SHIBTARGET_TAG_CACHETYPE	"cacheType"
 #define SHIBTARGET_TAG_CACHECLEAN	"cacheClean"
 #define SHIBTARGET_TAG_CACHETIMEOUT	"cacheTimeout"
