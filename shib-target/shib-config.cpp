@@ -36,9 +36,11 @@ private:
   int refcount;
 };
 
-static STConfig * g_Config = NULL;
-CCache* shibtarget::g_shibTargetCCache = NULL;
+namespace {
+  STConfig * g_Config = NULL;
+}
 
+CCache* shibtarget::g_shibTargetCCache = NULL;
 
 /****************************************************************************/
 // External Interface
@@ -55,6 +57,7 @@ ShibTargetConfig& ShibTargetConfig::init(const char* app_name, const char* inifi
   }
 
   g_Config = new STConfig(app_name, inifile);
+  return *g_Config;
 }
 
 
