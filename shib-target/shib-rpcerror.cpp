@@ -143,49 +143,6 @@ ShibTargetException::ShibTargetException(ShibRpcStatus code, const char* msg, co
     }
 }
 
-const char* rpcerror_exception_type(SAMLException* e)
-{
-    if (!e) return "Invalid (NULL) exception";
-
-    const type_info& info = typeid(*e);
-    if (info==typeid(MalformedException))
-        return "Exception: XML object is malformed";
-    if (info==typeid(UnsupportedExtensionException))
-        return "Exception: an unsupported extension was required";
-    if (info==typeid(InvalidCryptoException))
-        return "Exception: cryptographic checking failed";
-    if (info==typeid(TrustException))
-        return "Exception: trust error";
-    if (info==typeid(BindingException))
-        return "Exception: an error occurred binding to an Attribute Authority";
-    if (info==typeid(SOAPException))
-        return "Exception: SOAP error";
-    if (info==typeid(ContentTypeException))
-        return "Exception: Content Type Failure";
-
-    if (info==typeid(ProfileException))
-        return "Exception: Profile Error";
-    if (info==typeid(FatalProfileException))
-        return "Exception: Fatal Profile Error";
-    if (info==typeid(RetryableProfileException))
-        return "Exception: Retryable Profile Error";
-    if (info==typeid(ExpiredAssertionException))
-        return "Exception: Expired Assertion";
-    if (info==typeid(InvalidAssertionException))
-        return "Exception: Invalid Assertion";
-    if (info==typeid(ReplayedAssertionException))
-        return "Exception: Replayed Assertion";
-
-    if (info==typeid(MetadataException))
-        return "Exception: metadata error";
-    if (info==typeid(CredentialException))
-        return "Exception: credential access error";
-    if (info==typeid(InvalidHandleException))
-        return "Exception: subject name identifier is invalid";
-
-    return "Unknown SAML Exception";
-}
-
 class shibtarget::RPCErrorPriv {
 public:
   RPCErrorPriv(
@@ -311,7 +268,7 @@ const char* RPCError::getType()
   case SHIBRPC_INTERNAL_ERROR:      return "Internal Error";
   case SHIBRPC_XML_EXCEPTION:       return "Xerces XML Exception";
   case SHIBRPC_SAX_EXCEPTION:       return "Xerces SAX Exception";
-  case SHIBRPC_SAML_EXCEPTION:      return rpcerror_exception_type(m_priv->except);
+  case SHIBRPC_SAML_EXCEPTION:      return m_priv->except->classname();
 
   case SHIBRPC_NO_SESSION:          return "No Session";
   case SHIBRPC_SESSION_EXPIRED:     return "Session Expired";
