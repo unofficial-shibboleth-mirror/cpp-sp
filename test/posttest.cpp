@@ -64,12 +64,11 @@ using namespace shibboleth;
 SAMLResponse* HS(const char* key)
 {
     XMLDateTime now();
-//    const XMLCh* policies[]={Constants::POLICY_INCOMMON};
 
     auto_ptr<XMLCh> hsname(XMLString::transcode("wayf.internet2.edu"));
     auto_ptr<XMLCh> recip(XMLString::transcode("https://shire.target.com"));
     auto_ptr<XMLCh> handle(XMLString::transcode("foo"));
-    auto_ptr<XMLCh> domain(XMLString::transcode("example.edu"));
+    auto_ptr<XMLCh> domain(XMLString::transcode("urn:mace:incommon:pilot:example.edu"));
     auto_ptr<XMLCh> method(XMLString::transcode("urn:mace:shibboleth:authmethod"));
 
     ShibPOSTProfile* p=ShibPOSTProfileFactory::getInstance(Iterator<const XMLCh*>(),hsname.get());
@@ -107,16 +106,14 @@ int main(int argc,char* argv[])
     if (!conf2.init())
         cerr << "unable to initialize Shibboleth runtime" << endl;
 
-    conf2.addMetadata("edu.internet2.middleware.shibboleth.metadata.XML","http://wayf.internet2.edu/shibboleth/sites.xml");
+    conf2.addMetadata("edu.internet2.middleware.shibboleth.metadata.XML","http://wayf.internet2.edu/incommon/sites.xml");
 
     try
     {
 //        SAMLResponse* r=HS();
 //        cout << "Generated Response: " << endl << *r << endl;
-        auto_ptr<XMLCh> pol(XMLString::transcode("urn:mace:InCommon:pilot:2003"));
-        const XMLCh* policies[]={pol.get()};
         auto_ptr<XMLCh> recip(XMLString::transcode("https://shib2.internet2.edu/shib/SHIRE"));
-        ShibPOSTProfile* p=ShibPOSTProfileFactory::getInstance(ArrayIterator<const XMLCh*>(policies),recip.get(),300);
+        ShibPOSTProfile* p=ShibPOSTProfileFactory::getInstance(EMPTY(const XMLCh*),recip.get(),300);
 
 //        auto_ptr<XMLByte> buf(r->toBase64(NULL));
 //        delete r;
