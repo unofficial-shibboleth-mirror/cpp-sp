@@ -236,6 +236,7 @@ void STConfig::init()
 
   // Register attributes based on built-in classes.
   if (ini->exists("attributes")) {
+    log.info("registering attributes");
     ShibINI::Iterator* iter=ini->tag_iterator("attributes");
     for (const string* attrname=iter->begin(); attrname; attrname=iter->next())
     {
@@ -244,11 +245,13 @@ void STConfig::init()
         {
             auto_ptr<XMLCh> temp(XMLString::transcode(attrname->c_str()));
             SAMLAttribute::regFactory(temp.get(),shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,&ScopedFactory);
+            log.info("registered scoped attribute (%s)",attrname.c_str());
         }
         else if (factory=="simple")
         {
             auto_ptr<XMLCh> temp(XMLString::transcode(attrname->c_str()));
             SAMLAttribute::regFactory(temp.get(),shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,&SimpleFactory);
+            log.info("registered simple attribute (%s)",attrname.c_str());
         }
     }
 	delete iter;
@@ -256,7 +259,7 @@ void STConfig::init()
 
   // Load SAML policies.
   if (ini->exists(SHIBTARGET_POLICIES)) {
-    log.debug("loading SAML policies");
+    log.info("loading SAML policies");
     ShibINI::Iterator* iter = ini->tag_iterator(SHIBTARGET_POLICIES);
 
     for (const string* str = iter->begin(); str; str = iter->next()) {
