@@ -1,14 +1,14 @@
 <ShibbolethTargetConfig	xmlns="urn:mace:shibboleth:target:config:1.0"
-		logger="@-PKGSYSCONFDIR-@/shibboleth.logger">
+		logger="@-LOGDIR-@/shibboleth.logger">
 
     <Extensions>
-    	<Library path="/opt/shibboleth/libexec/xmlproviders.so" fatal="true"/>
+    	<Library path="@-LIBEXECDIR-@/xmlproviders.so" fatal="true"/>
     </Extensions>
 
     <SHAR logger="@-PKGSYSCONFDIR-@/shar.logger">
 
 	    <Extensions>
-	    	<Library path="/opt/shibboleth/libexec/shib-mysql-ccache.so" fatal="false"/>
+	    	<Library path="@-LIBEXECDIR-@/shib-mysql-ccache.so" fatal="false"/>
 	    </Extensions>
 	
         <UnixListener address="/tmp/shar-socket"/>
@@ -25,8 +25,8 @@
         <MySQLSessionCache cleanupInterval="300" cacheTimeout="3600" AATimeout="30" AAConnectTimeout="15"
            	defaultLifetime="1800" retryInterval="300" strictValidity="true" propagateErrors="false"
            	mysqlTimeout="14400">
-            <Argument>--language=/opt/shibboleth/share/english</Argument>
-            <Argument>--datadir=/opt/shibboleth/data</Argument>
+            <Argument>--language=@-PREFIX-@/share/english</Argument>
+            <Argument>--datadir=@-PREFIX-@/data</Argument>
         </MySQLSessionCache>
     </SHAR>
     
