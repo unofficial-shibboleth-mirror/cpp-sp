@@ -101,7 +101,7 @@ int main(int argc,char* argv[])
     }
 
     conf1.schema_dir=path;
-    conf1.ssl_calist="/opt/shibboleth/etc/shibboleth/ca-bundle.crt";
+    conf1.binding_defaults.ssl_calist="/opt/shibboleth/etc/shibboleth/ca-bundle.crt";
     if (!conf1.init())
         cerr << "unable to initialize SAML runtime" << endl;
 

@@ -89,7 +89,7 @@ int main(int argc,char* argv[])
 
     conf1.schema_dir=path;
     if (ca_param)
-        conf1.ssl_calist=ca_param;
+        conf1.binding_defaults.ssl_calist=ca_param;
     if (!conf1.init())
         cerr << "unable to initialize SAML runtime" << endl;
 
