@@ -39,6 +39,7 @@ struct shibrpc_new_session_ret_2 {
   string	status<>;				/* empty string or a SAMLException */
   string	target<>;				/* profile-specific state token from client */
   string	cookie<>;				/* session key manufactured for client */
+  string	provider_id<>;			/* authenticating IdP */
 };
 
 struct shibrpc_get_session_args_2 {

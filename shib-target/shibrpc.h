@@ -40,6 +40,7 @@ struct shibrpc_new_session_ret_2 {
 	char *status;
 	char *target;
 	char *cookie;
+	char *provider_id;
 };
 typedef struct shibrpc_new_session_ret_2 shibrpc_new_session_ret_2;
 

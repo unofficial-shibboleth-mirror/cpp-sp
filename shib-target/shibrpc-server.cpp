@@ -286,6 +286,7 @@ shibrpc_new_session_2_svc(
     memset (result, 0, sizeof(*result));
     result->cookie = strdup ("");
     result->target = strdup ("");
+    result->provider_id = strdup("");
 
     log.debug ("creating session for %s", argp->client_addr);
     log.debug ("recipient: %s", argp->recipient);
@@ -483,8 +484,10 @@ shibrpc_new_session_2_svc(
     // And let the user know.
     if (result->cookie) free(result->cookie);
     if (result->target) free(result->target);
+    if (result->provider_id) free(result->provider_id);
     result->cookie = strdup(cookie.c_str());
     result->target = strdup(bpr.TARGET.c_str());
+    result->provider_id = strdup(oname.get());
     result->status = strdup("");
 
     // Maybe delete the response...
@@ -501,7 +504,7 @@ shibrpc_new_session_2_svc(
         ") with (applicationId: " <<
             argp->application_id <<
         ") for principal from (IdP: " <<
-            oname.get() <<
+            result->provider_id <<
         ") at (ClientAddress: " <<
             argp->client_addr <<
         ") with (NameIdentifier: " <<

@@ -50,6 +50,8 @@ xdr_shibrpc_new_session_ret_2 (XDR *xdrs, shibrpc_new_session_ret_2 *objp)
 		 return FALSE;
 	 if (!xdr_string (xdrs, &objp->cookie, ~0))
 		 return FALSE;
+	 if (!xdr_string (xdrs, &objp->provider_id, ~0))
+		 return FALSE;
 	return TRUE;
 }
 
