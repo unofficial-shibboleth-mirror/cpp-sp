@@ -385,6 +385,9 @@ namespace shibboleth
         static const XMLCh SHIB_ATTRIBUTE_NAMESPACE_URI[];
         static const XMLCh SHIB_NAMEID_FORMAT_URI[];
         static const XMLCh SHIB_AUTHNREQUEST_PROFILE_URI[];
+        static const XMLCh SHIB_LEGACY_AUTHNREQUEST_PROFILE_URI[];
+        static const XMLCh SHIB_SESSIONINIT_PROFILE_URI[];
+        static const XMLCh SHIB_LOGOUT_PROFILE_URI[];
         static const XMLCh SHIB_NS[];
         static const XMLCh InvalidHandle[];
     };

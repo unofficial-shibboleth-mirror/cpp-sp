@@ -67,8 +67,7 @@ const XMLCh Constants::SHIB_NS[] = // urn:mace:shibboleth:1.0
 };
 
 const XMLCh Constants::SHIB_ATTRIBUTE_NAMESPACE_URI[] = // urn:mace:shibboleth:1.0:attributeNamespace:uri
-{
-  chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
+{ chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
   chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
   chDigit_1, chPeriod, chDigit_0, chColon,
   chLatin_a, chLatin_t, chLatin_t, chLatin_r, chLatin_i, chLatin_b, chLatin_u, chLatin_t, chLatin_e,
@@ -77,22 +76,44 @@ const XMLCh Constants::SHIB_ATTRIBUTE_NAMESPACE_URI[] = // urn:mace:shibboleth:1
 };
 
 const XMLCh Constants::SHIB_NAMEID_FORMAT_URI[] = // urn:mace:shibboleth:1.0:nameIdentifier
-{
-  chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
+{ chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
   chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
   chDigit_1, chPeriod, chDigit_0, chColon,
   chLatin_n, chLatin_a, chLatin_m, chLatin_e,
     chLatin_I, chLatin_d, chLatin_e, chLatin_n, chLatin_t, chLatin_i, chLatin_f, chLatin_i, chLatin_e, chLatin_r, chNull
 };
 
-const XMLCh Constants::SHIB_AUTHNREQUEST_PROFILE_URI[] = //
-{
-  chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
+const XMLCh Constants::SHIB_LEGACY_AUTHNREQUEST_PROFILE_URI[] = // urn:mace:shibboleth:1.0:profiles:LegacyAuthnRequest
+{ chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
+  chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
+  chDigit_1, chPeriod, chDigit_0, chColon,
+  chLatin_p, chLatin_r, chLatin_o, chLatin_f, chLatin_i, chLatin_l, chLatin_e, chLatin_s, chColon,
+  chLatin_L, chLatin_e, chLatin_g, chLatin_a, chLatin_c, chLatin_y,
+  chLatin_A, chLatin_u, chLatin_t, chLatin_h, chLatin_n,
+  chLatin_R, chLatin_e, chLatin_q, chLatin_u, chLatin_e, chLatin_s, chLatin_t, chNull
+};
+
+const XMLCh Constants::SHIB_AUTHNREQUEST_PROFILE_URI[] = // urn:mace:shibboleth:1.0:profiles:AuthnRequest
+{ chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
   chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
   chDigit_1, chPeriod, chDigit_0, chColon,
   chLatin_p, chLatin_r, chLatin_o, chLatin_f, chLatin_i, chLatin_l, chLatin_e, chLatin_s, chColon,
   chLatin_A, chLatin_u, chLatin_t, chLatin_h, chLatin_n,
   chLatin_R, chLatin_e, chLatin_q, chLatin_u, chLatin_e, chLatin_s, chLatin_t, chNull
+};
+
+const XMLCh Constants::SHIB_SESSIONINIT_PROFILE_URI[] = // urn:mace:shibboleth:sp:1.3:SessionInit
+{ chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
+  chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
+  chLatin_s, chLatin_p, chColon, chDigit_1, chPeriod, chDigit_3, chColon,
+  chLatin_S, chLatin_e, chLatin_s, chLatin_s, chLatin_i, chLatin_o, chLatin_n, chLatin_I, chLatin_n, chLatin_i, chLatin_t, chNull
+};
+
+const XMLCh Constants::SHIB_LOGOUT_PROFILE_URI[] = // urn:mace:shibboleth:sp:1.3:Logout
+{ chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
+  chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
+  chLatin_s, chLatin_p, chColon, chDigit_1, chPeriod, chDigit_3, chColon,
+  chLatin_L, chLatin_o, chLatin_g, chLatin_o, chLatin_u, chLatin_t, chNull
 };
 
 const XMLCh Constants::InvalidHandle[] =
