@@ -60,12 +60,6 @@
 
 using namespace shibboleth;
 
-const XMLCh Constants::POLICY_INCOMMON[] = // urn:mace:InCommon:2003
-{ chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
-  chLatin_I, chLatin_n, chLatin_C, chLatin_o, chLatin_m, chLatin_m, chLatin_o, chLatin_n, chColon,
-  chDigit_2, chDigit_0, chDigit_0, chDigit_3, chNull
-};
-
 const XMLCh Constants::SHIB_ATTRIBUTE_NAMESPACE_URI[] = // urn:mace:shibboleth:1.0:attributeNamespace:uri
 {
   chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,

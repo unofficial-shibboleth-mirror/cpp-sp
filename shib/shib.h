@@ -348,7 +348,6 @@ namespace shibboleth
 
     struct SHIB_EXPORTS Constants
     {
-        static const XMLCh POLICY_INCOMMON[];
         static const XMLCh SHIB_ATTRIBUTE_NAMESPACE_URI[];
         static const XMLCh SHIB_NAMEID_FORMAT_URI[];
         static saml::QName SHIB_ATTRIBUTE_VALUE_TYPE; 
