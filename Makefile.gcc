@@ -21,7 +21,8 @@ SHIB_OBJS 	= \
         shib/ShibConfig.o \
         shib/ShibPOSTProfile.o \
         shib/ShibPOSTProfileFactory.o \
-        shib/XML.o
+        shib/XML.o \
+	shib/XMLOriginSiteMapper.cpp
 
 EDUPERSON_OBJS = \
 	eduPerson/Constants.o \
