@@ -637,6 +637,7 @@ int shib_handler(request_rec* r, const IApplication* application, SHIRE& shire)
         ap_hard_timeout("[mod_shib] CGI Parser", r);
         memset(buff, 0, sizeof(buff));
         while (ap_get_client_block(r, buff, sizeof(buff)-1) > 0) {
+            ap_reset_timeout(r);
             cgistr += buff;
             memset(buff, 0, sizeof(buff));
         }
