@@ -149,7 +149,7 @@ XMLTrustImpl::KeyAuthority::~KeyAuthority()
     X509_STORE_free(m_store);
 }
 
-XMLTrustImpl::XMLTrustImpl(const char* pathname)
+XMLTrustImpl::XMLTrustImpl(const char* pathname) : m_doc(NULL)
 {
     NDC ndc("XMLTrustImpl");
     Category& log=Category::getInstance(SHIB_LOGCAT".XMLTrustImpl");

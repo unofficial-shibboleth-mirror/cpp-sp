@@ -145,7 +145,7 @@ XMLMetadataImpl::OriginSite::~OriginSite()
         delete const_cast<IAuthority*>(*k);
 }
 
-XMLMetadataImpl::XMLMetadataImpl(const char* pathname)
+XMLMetadataImpl::XMLMetadataImpl(const char* pathname) : m_doc(NULL)
 {
     NDC ndc("XMLMetadataImpl");
     Category& log=Category::getInstance(SHIB_LOGCAT".XMLMetadataImpl");
