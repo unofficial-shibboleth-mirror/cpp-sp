@@ -6,6 +6,7 @@ bin_PROGRAMS = shar test-client
 
 if USE_OUR_ONCRPC
 AM_CFLAGS = -I${top_srcdir}/oncrpc
+AM_CXXFLAGS = -I${top_srcdir}/oncrpc
 ONCRPC_LIBS = ${top_builddir}/oncrpc/liboncrpc.la
 endif
 
