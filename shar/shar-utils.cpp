@@ -26,6 +26,10 @@
 #include <shib/shib-threads.h>
 #include <shib-target/ccache-utils.h>
 
+#ifdef USE_OUR_ONCRPC
+# define svc_fdset onc_svc_fdset
+#endif
+
 using namespace std;
 using namespace shibboleth;
 using namespace shibtarget;
@@ -112,7 +116,7 @@ void SharChild::run()
   fd_set readfds;
   struct timeval tv = { 0, 0 };
 
-  while(running && FD_ISSET(sock, &onc_svc_fdset)) {
+  while(running && FD_ISSET(sock, &svc_fdset)) {
     FD_ZERO(&readfds);
     FD_SET(sock, &readfds);
     tv.tv_sec = 1;
