@@ -109,6 +109,10 @@ SOURCE=.\ReloadableXMLFile.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\resource.h
+# End Source File
+# Begin Source File
+
 SOURCE=".\shib-threads-win32.cpp"
 # End Source File
 # Begin Source File
@@ -118,6 +122,10 @@ SOURCE=".\shib-threads.h"
 # Begin Source File
 
 SOURCE=.\shib.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\shib.rc
 # End Source File
 # Begin Source File
 

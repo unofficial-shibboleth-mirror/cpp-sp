@@ -1,7 +1,7 @@
 AC_PREREQ([2.50])
-AC_INIT([shibboleth], [1.2], [shibboleth-users@internet2.edu], [shibboleth])
+AC_INIT([shibboleth], [1.2.1], [shibboleth-users@internet2.edu], [shibboleth])
 AM_CONFIG_HEADER(config.h)
-AM_INIT_AUTOMAKE(shibboleth, 1.2)
+AM_INIT_AUTOMAKE([shibboleth],[1.2.1])
 
 sinclude(acx_pthread.m4)
 sinclude(acx_rpctest.m4)
@@ -19,8 +19,8 @@ else
     GCC_CXXFLAGS="$CXXFLAGS -O2 -DNDEBUG"
 fi
 
-AC_PROG_CC([gcc3 gcc cc])
-AC_PROG_CXX([g++3 g++ c++ CC])
+AC_PROG_CC([gcc gcc3 cc])
+AC_PROG_CXX([g++ g++3 c++ CC])
 
 if test "$GCC" = "yes" ; then
     CFLAGS="$GCC_CFLAGS"
@@ -32,6 +32,12 @@ AC_PROG_LIBTOOL
 
 AC_LANG(C++)
 
+# C++ requirements
+AC_CXX_REQUIRE_STL
+AC_CXX_NAMESPACES
+
+AC_LANG(C)
+
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
 AC_TYPE_SIZE_T
@@ -42,11 +48,6 @@ AC_FUNC_STRFTIME
 AC_FUNC_STRERROR_R
 AC_CHECK_FUNCS([strchr strdup strstr gmtime_r strtok_r strcasecmp])
 AC_CHECK_HEADERS([dlfcn.h])
-
-# C++ requirements
-AC_CXX_REQUIRE_STL
-AC_CXX_NAMESPACES
-
 
 # old_LIBS="$LIBS"
 # AC_SEARCH_LIBS(xdr_uint64_t,nsl,,
@@ -65,8 +66,49 @@ else
     CXXFLAGS="$PTHREAD_CFLAGS $CXXFLAGS"
 fi
 
-# Test RPC now -- deal with it later
+# Test RPC now -- finish dealing with it later
+AC_ARG_ENABLE(native-rpc,
+	AC_HELP_STRING([--enable-native-rpc], [use the OS-supplied Sun RPC library, default is NO, except Linux]),
+	[ if test "x$enableval" = "x" ; then
+              NATIVE_RPC=yes
+	  else
+	      NATIVE_RPC="$enableval"
+	  fi
+	], [ NATIVE_RPC=no ])
 ACX_RPCTEST([rpctest="yes"],[rpctest="no"])
+AC_MSG_NOTICE([does the native Sun RPC library support svcfd_create...$rpctest])
+if test $NATIVE_RPC = "no"; then
+	case "${host}" in
+		*-*-linux*)
+			if test $rpctest = "yes"; then
+				AC_MSG_WARN([embedded Sun RPC library does not support Linux])
+				NATIVE_RPC="yes"
+			else
+				AC_MSG_ERROR([embedded Sun RPC library won't work, but neither will native version])
+			fi
+		;;
+	esac
+fi
+if test $NATIVE_RPC = "yes" && test $rpctest = "no"; then
+	AC_MSG_WARN([native Sun RPC won't work, using internal version])
+	NATIVE_RPC = "no"
+fi
+if test $NATIVE_RPC = "yes"; then
+	AC_CHECK_DECLS([svcfd_create],,,[#include <rpc/rpc.h>])
+	AC_LANG_PUSH(C++)
+	AC_COMPILE_IFELSE(
+		AC_LANG_PROGRAM(
+			[[#include <rpc/rpc.h>
+static SVCXPRT* xprt = NULL;]],
+        	[[svc_destroy(xprt);]]),
+        AC_DEFINE(HAVE_WORKING_SVC_DESTROY,1,[Define if RPC SVC macros work on this platform]),)
+	AC_LANG_POP(C++)
+else
+	AC_CHECK_TYPES([struct rpcent],,,[#include <netdb.h>])
+	AC_CHECK_DECLS(sys_errlist)
+	AC_DEFINE(HAVE_DECL_SVCFD_CREATE,1,[ Define to 1 if you have the declaration of svcfd_create, and to 0 if you don't.])
+	AC_DEFINE(HAVE_WORKING_SVC_DESTROY,1,[Define if RPC SVC macros work on this platform])
+fi
 
 AC_ARG_WITH(dmalloc,
             AC_HELP_STRING([--with-dmalloc=PATH], [where dmalloc is installed]),
@@ -110,6 +152,8 @@ AC_TRY_LINK_FUNC([SSL_library_init],,
              AC_MSG_ERROR([unable to link with openssl libraries]))
 AC_MSG_RESULT(yes)
 
+AC_LANG(C++)
+
 # log4cpp settings
 AC_PATH_PROG(LOG4CPP_CONFIG,log4cpp-config)
 AC_ARG_WITH(log4cpp,
@@ -139,16 +183,22 @@ AC_ARG_WITH(xerces,
 LIBS="-lxerces-c $LIBS"
 AC_CHECK_HEADER([xercesc/dom/DOM.hpp],,
                 AC_MSG_ERROR([unable to find xerces header files]))
-AC_TRY_LINK(
-	[#include <xercesc/util/PlatformUtils.hpp>
-#include <xercesc/util/XercesVersion.hpp>],
-        [#if _XERCES_VERSION >= 20300
-xercesc::XMLPlatformUtils::Initialize();
+AC_MSG_CHECKING([Xerces version])
+AC_PREPROC_IFELSE(
+        [AC_LANG_PROGRAM([#include <xercesc/util/XercesVersion.hpp>],
+[#if  _XERCES_VERSION != 20600 && _XERCES_VERSION >= 20300
+int i = 0;
 #else
-#error Need Xerces-C version 2.3 or higher
-#endif],
-	[AC_DEFINE(HAVE_LIBXERCESC,1,[Define if Xerces-C library was found])],
-	[AC_MSG_ERROR([unable to link with Xerces])])
+#error cannot use version = 2.6.0 or < 2.3.0
+#endif])],
+        [AC_MSG_RESULT(OK)],
+        [AC_MSG_FAILURE([Shibboleth requires a Xerces version > 2.3.0, but cannot use 2.6.0 -- a 2.6.1 patched release is available from us])])
+AC_TRY_LINK(
+        [#include <xercesc/util/PlatformUtils.hpp>],
+        [xercesc::XMLPlatformUtils::Initialize()],
+        [AC_DEFINE(HAVE_LIBXERCESC,1,[Define if Xerces-C library was found])],
+        [AC_MSG_ERROR([unable to link with Xerces])])
+
 
 # XML-Security settings
 AC_ARG_WITH(xmlsec,
@@ -195,11 +245,11 @@ AC_CONFIG_FILES([Makefile doc/Makefile shib/Makefile schemas/Makefile \
 
 
 # now deal with the rpc library, to see if we need to build our own
-if test $rpctest = "no"; then
+if test $NATIVE_RPC = "no"; then
     WANT_SUBDIRS="oncrpc $WANT_SUBDIRS"
 	AC_DEFINE(USE_OUR_ONCRPC,1,[Define if using embedded version of ONC RPC.])
 fi
-AM_CONDITIONAL(USE_OUR_ONCRPC,test "$rpctest" = "no")
+AM_CONDITIONAL(USE_OUR_ONCRPC,test "$NATIVE_RPC" = "no")
 
 
 # Apache 1.3 (mod_shib_13)

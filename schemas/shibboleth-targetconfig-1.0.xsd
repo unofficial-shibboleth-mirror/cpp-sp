@@ -278,7 +278,7 @@
 	            </choice>
     			<element ref="conf:Path" minOccurs="0" maxOccurs="unbounded"/>
     		</sequence>
-    		<attribute name="scheme" use="optional" default="http">
+    		<attribute name="scheme" use="optional">
 			    <simpleType>
 			        <restriction base="string">
 			            <enumeration value="http"/>
