@@ -693,8 +693,10 @@ bool ResourceEntry::isValid(int slop)
       return false;
     }
 
-    log->debug ("comparing now (%s) to %s", curDateTime.toString(),
-		thistime->toString());
+    auto_ptr<char> nowptr(XMLString::transcode(curDateTime.toString()));
+    auto_ptr<char> assnptr(XMLString::transcode(thistime->toString()));
+
+    log->debug ("comparing now (%s) to %s", nowptr.get(), assnptr.get());
     int result=XMLDateTime::compareOrder(&curDateTime, thistime);
 
     if (result != XMLDateTime::LESS_THAN) {
