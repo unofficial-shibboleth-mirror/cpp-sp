@@ -124,7 +124,7 @@ int main(int argc,char* argv[])
             new SAMLRequest(
                 EMPTY(saml::QName),
                 new SAMLAttributeQuery(
-                    new SAMLSubject(handle.get(),domain.get(),format.get()),
+                    new SAMLSubject(new SAMLNameIdentifier(handle.get(),domain.get(),format.get())),
                     resource.get(),
                     app->getAttributeDesignators().clone()
                     )
@@ -184,7 +184,7 @@ int main(int argc,char* argv[])
                 SAMLAttributeStatement* s=dynamic_cast<SAMLAttributeStatement*>(j.next());
                 if (s)
                 {
-                    const SAMLSubject* sub=s->getSubject();
+                    const SAMLNameIdentifier* sub=s->getSubject()->getNameIdentifier();
                     cout << "Format: "; xmlout(cout,sub->getFormat()); cout << endl;
                     cout << "Domain: "; xmlout(cout,sub->getNameQualifier()); cout << endl;
                     cout << "Handle: "; xmlout(cout,sub->getName()); cout << endl;

@@ -94,8 +94,8 @@ const XMLCh* ShibPOSTProfile::getProviderId(const saml::SAMLResponse& r)
         Iterator<SAMLStatement*> is=a->getStatements();
         while (is.hasNext()) {
             SAMLAuthenticationStatement* as=dynamic_cast<SAMLAuthenticationStatement*>(is.next());
-            if (as && as->getSubject()->getNameQualifier())
-                return as->getSubject()->getNameQualifier();
+            if (as && as->getSubject()->getNameIdentifier()->getNameQualifier())
+                return as->getSubject()->getNameIdentifier()->getNameQualifier();
         }
     }
     return ret;
@@ -146,10 +146,10 @@ SAMLResponse* ShibPOSTProfile::accept(
     }
     else {
         // Might be a down-level origin.
-        provider=m.lookup(sso->getSubject()->getNameQualifier());
+        provider=m.lookup(sso->getSubject()->getNameIdentifier()->getNameQualifier());
         if (provider) {
             if (pproviderId)
-                *pproviderId=XMLString::replicate(sso->getSubject()->getNameQualifier());
+                *pproviderId=XMLString::replicate(sso->getSubject()->getNameIdentifier()->getNameQualifier());
             log.debug("matched subject name qualifier against metadata");
         }
     }
@@ -157,7 +157,7 @@ SAMLResponse* ShibPOSTProfile::accept(
     // No metadata at all.        
     if (!provider) {
         auto_ptr_char issuer(assertion->getIssuer());
-        auto_ptr_char nq(sso->getSubject()->getNameQualifier());
+        auto_ptr_char nq(sso->getSubject()->getNameIdentifier()->getNameQualifier());
         log.error("assertion issuer not found in metadata (Issuer='%s', NameQualifier='%s'",
             issuer.get(), (nq.get() ? nq.get() : "null"));
         throw MetadataException("ShibPOSTProfile::accept() metadata lookup failed, unable to process assertion");
@@ -193,7 +193,7 @@ SAMLResponse* ShibPOSTProfile::accept(
     }
 
     auto_ptr_char issuer(assertion->getIssuer());
-    auto_ptr_char nq(sso->getSubject()->getNameQualifier());
+    auto_ptr_char nq(sso->getSubject()->getNameIdentifier()->getNameQualifier());
     log.error("metadata for assertion issuer indicates no SAML 1.x identity provider role (Issuer='%s', NameQualifier='%s'",
         issuer.get(), (nq.get() ? nq.get() : "null"));
     throw MetadataException("ShibPOSTProfile::accept() metadata lookup failed, issuer not registered as SAML identity provider");

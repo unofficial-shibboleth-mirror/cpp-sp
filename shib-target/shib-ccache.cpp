@@ -148,7 +148,7 @@ private:
   mutable time_t m_lastAccess;
   time_t m_lastRetry;
 
-  const SAMLSubject* m_subject;
+  const SAMLNameIdentifier* m_nameid;
   SAMLAuthenticationStatement* p_auth;
   SAMLResponse* m_response;
   InternalCCache *m_cache;
@@ -444,9 +444,9 @@ InternalCCacheEntry::InternalCCacheEntry(
 
   m_application_id=application->getId();
 
-  m_subject = s->getSubject();
-  auto_ptr_char h(m_subject->getName());
-  auto_ptr_char d(m_subject->getNameQualifier());
+  m_nameid = s->getSubject()->getNameIdentifier();
+  auto_ptr_char h(m_nameid->getName());
+  auto_ptr_char d(m_nameid->getNameQualifier());
   m_handle = h.get();
   m_originSite = d.get();
 
@@ -464,7 +464,7 @@ InternalCCacheEntry::InternalCCacheEntry(
   if (r) {
     // Run pushed data through the AAP. Note that we could end up with an empty response!
     Metadata m(application->getMetadataProviders());
-    const IProvider* site=m.lookup(m_subject->getNameQualifier());
+    const IProvider* site=m.lookup(m_nameid->getNameQualifier());
     if (!site)
         throw MetadataException("unable to locate origin site's metadata during attribute acceptance processing");
     Iterator<SAMLAssertion*> assertions=r->getAssertions();
@@ -677,7 +677,7 @@ SAMLResponse* InternalCCacheEntry::getNewResponse()
     
     // Try this request. The binding wrapper class handles most of the details.
     Metadata m(application->getMetadataProviders());
-    const IProvider* site=m.lookup(m_subject->getNameQualifier());
+    const IProvider* site=m.lookup(m_nameid->getNameQualifier());
     if (!site) {
         log->error("unable to locate origin site's metadata during attribute query");
         throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"Unable to locate origin site's metadata during attribute query.");
@@ -704,7 +704,9 @@ SAMLResponse* InternalCCacheEntry::getNewResponse()
     try {
         // Build a SAML Request....
         SAMLAttributeQuery* q=new SAMLAttributeQuery(
-            static_cast<SAMLSubject*>(m_subject->clone()),providerID.second,application->getAttributeDesignators().clone()
+            new SAMLSubject(static_cast<SAMLNameIdentifier*>(m_nameid->clone())),
+            providerID.second,
+            application->getAttributeDesignators().clone()
             );
         auto_ptr<SAMLRequest> req(new SAMLRequest(EMPTY(QName),q));
         

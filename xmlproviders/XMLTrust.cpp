@@ -530,8 +530,8 @@ bool XMLTrust::validate(
                         Iterator<SAMLStatement*> statements=assertion->getStatements();
                         while (!provider && statements.hasNext()) {
                             SAMLSubjectStatement* statement=dynamic_cast<SAMLSubjectStatement*>(statements.next());
-                            if (statement && statement->getSubject()->getNameQualifier())
-                                provider=metadata.lookup(statement->getSubject()->getNameQualifier());
+                            if (statement && statement->getSubject()->getNameIdentifier()->getNameQualifier())
+                                provider=metadata.lookup(statement->getSubject()->getNameIdentifier()->getNameQualifier());
                         }
                     }
                 }
@@ -542,8 +542,8 @@ bool XMLTrust::validate(
                     Iterator<SAMLStatement*> statements=dynamic_cast<const SAMLAssertion&>(token).getStatements();
                     while (!provider && statements.hasNext()) {
                         SAMLSubjectStatement* statement=dynamic_cast<SAMLSubjectStatement*>(statements.next());
-                        if (statement && statement->getSubject()->getNameQualifier())
-                            provider=metadata.lookup(statement->getSubject()->getNameQualifier());
+                        if (statement && statement->getSubject()->getNameIdentifier()->getNameQualifier())
+                            provider=metadata.lookup(statement->getSubject()->getNameIdentifier()->getNameQualifier());
                     }
                 }
             }

@@ -609,7 +609,7 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
 
         // Export the SAML AuthnMethod and the origin site name.
         if (sso_statement) {
-            auto_ptr_char os(sso_statement->getSubject()->getNameQualifier());
+            auto_ptr_char os(sso_statement->getSubject()->getNameIdentifier()->getNameQualifier());
             auto_ptr_char am(sso_statement->getAuthMethod());
             pn->SetHeader(pfc,"Shib-Origin-Site:", const_cast<char*>(os.get()));
             pn->SetHeader(pfc,"Shib-Authentication-Method:", const_cast<char*>(am.get()));

@@ -177,7 +177,7 @@ shibrpc_session_is_valid_1_svc(shibrpc_session_is_valid_args_1 *argp,
         throw ShibTargetException(SHIBRPC_NO_SESSION,"Unable to locate application for session, deleted?");
 
     Metadata m(app->getMetadataProviders());
-    const IProvider* origin=m.lookup(entry->getStatement()->getSubject()->getNameQualifier());
+    const IProvider* origin=m.lookup(entry->getStatement()->getSubject()->getNameIdentifier()->getNameQualifier());
 
     // Verify the address is the same
     if (argp->checkIPAddress) {
@@ -445,7 +445,7 @@ shibrpc_get_assertions_1_svc(shibrpc_get_assertions_args_1 *argp,
       throw ShibTargetException(SHIBRPC_NO_SESSION,"Unable to locate application for session, deleted?");
 
   Metadata m(app->getMetadataProviders());
-  const IProvider* origin=m.lookup(entry->getStatement()->getSubject()->getNameQualifier());
+  const IProvider* origin=m.lookup(entry->getStatement()->getSubject()->getNameIdentifier()->getNameQualifier());
 
   try {
     try {

@@ -388,7 +388,7 @@ extern "C" int shib_check_user(request_rec* r)
     ap_table_unset(r->headers_in,"Shib-Origin-Site");
     ap_table_unset(r->headers_in,"Shib-Authentication-Method");
     if (sso_statement) {
-        auto_ptr_char os(sso_statement->getSubject()->getNameQualifier());
+        auto_ptr_char os(sso_statement->getSubject()->getNameIdentifier()->getNameQualifier());
         auto_ptr_char am(sso_statement->getAuthMethod());
         ap_table_set(r->headers_in,"Shib-Origin-Site", os.get());
         ap_table_set(r->headers_in,"Shib-Authentication-Method", am.get());
