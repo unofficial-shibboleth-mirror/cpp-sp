@@ -370,6 +370,8 @@ XMLApplication::XMLApplication(const DOMElement* e, const XMLApplication* base) 
             for (i=0; nlist && i<nlist->getLength(); i++) {
                 m_audiences.push_back(nlist->item(i)->getFirstChild()->getNodeValue());
             }
+            // Always include our own providerId as an audience.
+            m_audiences.push_back(getXMLString("providerId").second);
 
             if (conf.isEnabled(ShibTargetConfig::AAP)) {
                 nlist=policy->getElement()->getElementsByTagNameNS(ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(AAPProvider));
