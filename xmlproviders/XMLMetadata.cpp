@@ -173,7 +173,7 @@ namespace {
             const char* getErrorURL() const {return (m_errorURL ? m_errorURL : m_provider->getErrorURL());}
             bool isValid() const {return time(NULL) < m_validUntil;}
             Iterator<const IKeyDescriptor*> getKeyDescriptors() const {return m_keys;}
-            const IOrganization* getOrganization() const {return m_org;}
+            const IOrganization* getOrganization() const {return m_org ? m_org : m_provider->getOrganization();}
             Iterator<const IContactPerson*> getContactPersons() const
                 {return (m_contacts.empty() ? m_provider->getContactPersons() : m_contacts);}
             const DOMElement* getElement() const {return m_root;}
