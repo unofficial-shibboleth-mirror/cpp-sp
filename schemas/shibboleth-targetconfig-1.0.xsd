@@ -86,8 +86,9 @@
 				<any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
 			</sequence>
 			<attribute name="logger" type="anyURI" use="optional"/>
-			<attribute name="AATimeout" type="integer" use="optional"/>
-			<attribute name="AAConnectTimeout" type="integer" use="optional"/>
+			<attribute name="AATimeout" type="unsignedInt" use="optional"/>
+			<attribute name="AAConnectTimeout" type="unsignedInt" use="optional"/>
+			<attribute name="defaultLifetime" type="unsignedInt" use="optional"/>
 			<anyAttribute namespace="##any" processContents="lax"/>
 		</complexType>
 	</element>
