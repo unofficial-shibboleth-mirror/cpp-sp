@@ -263,7 +263,7 @@ int main(int argc,char* argv[])
         ret=-1;
     }
     catch(SAMLException& e) {
-        log.errorStream() << "caught a SAML exception: " << e << CategoryStream::ENDLINE;
+        log.errorStream() << "caught a SAML exception: " << e.what() << CategoryStream::ENDLINE;
         ret=-2;
     }
     catch(XMLException& e) {
