@@ -451,7 +451,19 @@ extern "C" int shire_check_user(request_rec* r)
       session_id=cookiebuf;
 
       // Make sure this session is still valid
-      RPCError* status = shire.sessionIsValid(session_id, r->connection->remote_ip);
+      RPCError* status = NULL;
+
+      try {
+	status = shire.sessionIsValid(session_id, r->connection->remote_ip);
+
+      } catch (ShibTargetException &e) {
+	ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
+		      "shire_check_user(): %s", e.what());
+	
+	markupProcessor.insert ("errorType", "SHIRE Processing Error");
+	markupProcessor.insert ("errorText", e.what());
+	return shire_error_page (r, wayfError.c_str(), markupProcessor);
+      }
 
       // Check the status
       if (status->isError()) {
