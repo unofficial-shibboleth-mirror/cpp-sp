@@ -2,8 +2,10 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-pkglogdir=${localstatedir}/log/@PACKAGE@
+pkglogdir = ${localstatedir}/log/@PACKAGE@
+shirelogdir = ${localstatedir}/log/httpd
 pkgxmldir = $(datadir)/xml/@PACKAGE@
+varrundir = $(localstatedir)/run
 pkgsysconfdir = $(sysconfdir)/@PACKAGE@
 pkgsysconf_DATA = \
 	apache.config \
@@ -42,7 +44,9 @@ do-build-file:
 	    -e 's:@-LIBEXECDIR-@:${libexecdir}:' \
 	    -e 's:@-PKGSYSCONFDIR-@:${pkgsysconfdir}:' \
 	    -e 's:@-PKGXMLDIR-@:${pkgxmldir}:' \
-	    -e 's:@-PKGLOGDIR-@:${pkglogdir}:'
+	    -e 's:@-PKGLOGDIR-@:${pkglogdir}:' \
+	    -e 's:@-SHIRELOGDIR-@:${shirelogdir}:' \
+	    -e 's:@-VARRUNDIR-@:${varrundir}:'
 	cmp -s ${FILE} ${FILE}.tmp || mv ${FILE}.tmp ${FILE}
 	rm -f ${FILE}.tmp
 
