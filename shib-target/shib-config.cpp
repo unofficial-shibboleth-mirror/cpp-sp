@@ -212,7 +212,6 @@ void STConfig::init()
   }
 
   // Load the specified metadata.
-  bool anyAdded=false;
   if (ini->get_tag(app, SHIBTARGET_TAG_METADATA, true, &tag) && ini->exists(tag))
   {
     ShibINI::Iterator* iter=ini->tag_iterator(tag);
@@ -220,15 +219,13 @@ void STConfig::init()
     {
         const string source=ini->get(tag,*prov);
         log.info("registering metadata provider: type=%s, source=%s",prov->c_str(),source.c_str());
-        if (shibConf.addMetadata(prov->c_str(),source.c_str()))
-            anyAdded=true;
+        if (!shibConf.addMetadata(prov->c_str(),source.c_str()))
+        {
+            log.fatal("error adding metadata provider");
+            throw runtime_error("error adding metadata provider");
+        }
     }
     delete iter;
-  }
-  if (!anyAdded)
-  {
-    log.fatal("No metadata providers successfully added");
-    throw runtime_error("No metadata providers successfully added");
   }
   
   // Register attributes based on built-in classes.
