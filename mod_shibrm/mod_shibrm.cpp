@@ -243,6 +243,17 @@ static const char* get_target(request_rec* r, const char* target)
 
 extern "C" int shibrm_check_auth(request_rec* r)
 {
+    shibrm_dir_config* dc=
+        (shibrm_dir_config*)ap_get_module_config(r->per_dir_config,&shibrm_module);
+
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
+		  "shibrm_check_auth() executing");
+
+    // Regular access to arbitrary resource...check AuthType
+    const char* auth_type=ap_auth_type(r);
+    if (!auth_type || strcasecmp(auth_type,"shibboleth"))
+        return DECLINED;
+
     ostringstream threadid;
     threadid << "[" << getpid() << "] shibrm" << '\0';
     saml::NDC ndc(threadid.str().c_str());
@@ -250,36 +261,17 @@ extern "C" int shibrm_check_auth(request_rec* r)
     ShibINI& ini = g_Config->getINI();
     const char* serverName = ap_get_server_name(r);
 
-    shibrm_dir_config* dc=
-        (shibrm_dir_config*)ap_get_module_config(r->per_dir_config,&shibrm_module);
-
-    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
-		  "shibrm_check_auth() executing");
-
-    const char* targeturl=get_target(r,ap_construct_url(r->pool,r->unparsed_uri,r));
-
-    // Regular access to arbitrary resource...check AuthType
-    const char* auth_type=ap_auth_type(r);
-    if (!auth_type || strcasecmp(auth_type,"shibboleth"))
-        return DECLINED;
-
     // Ok, this is a SHIB target; grab the cookie
 
     string shib_cookie;
-    if (! ini.get_tag (serverName, "cookieName", true, &shib_cookie)) {
+    if (!ini.get_tag(serverName, "cookieName", true, &shib_cookie)) {
       ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
 		    "shibrm_check_user: no cookieName configuration for %s",
 		    serverName);
       return SERVER_ERROR;
     }
 
-    ShibMLP markupProcessor;
-    string tag;
-    bool has_tag = ini.get_tag (serverName, "supportContact", true, &tag);
-    markupProcessor.insert ("supportContact", has_tag ? tag : "");
-    has_tag = ini.get_tag (serverName, "logoLocation", true, &tag);
-    markupProcessor.insert ("logoLocation", has_tag ? tag : "");
-    markupProcessor.insert ("requestURL", targeturl);
+    const char* targeturl=get_target(r,ap_construct_url(r->pool,r->unparsed_uri,r));
 
     const char* session_id=NULL;
     const char* cookies=ap_table_get(r->headers_in,"Cookie");
@@ -300,6 +292,14 @@ extern "C" int shibrm_check_auth(request_rec* r)
       *cookieend = '\0';	/* Ignore anyting after a ; */
     session_id=cookiebuf;
 
+    ShibMLP markupProcessor;
+    string tag;
+    bool has_tag = ini.get_tag(serverName, "supportContact", true, &tag);
+    markupProcessor.insert("supportContact", has_tag ? tag : "");
+    has_tag = ini.get_tag(serverName, "logoLocation", true, &tag);
+    markupProcessor.insert("logoLocation", has_tag ? tag : "");
+    markupProcessor.insert("requestURL", targeturl);
+
     // Now grab the attributes...
     has_tag = ini.get_tag (serverName, "checkIPAddress", true, &tag);
     dc->config.checkIPAddress = (has_tag ? ShibINI::boolean (tag) : false);
@@ -315,34 +315,41 @@ extern "C" int shibrm_check_auth(request_rec* r)
 		    status->getText());
 
       string rmError;
-      if (! ini.get_tag (serverName, "rmError", true, &rmError)) {
-	ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
+      if (!ini.get_tag(serverName, "rmError", true, &rmError)) {
+        ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
 		      "shibrm_check_auth: no rmError configuration for %s",
 		      serverName);
-	delete status;
-	return SERVER_ERROR;	
+        delete status;
+        return SERVER_ERROR;	
       }
-      markupProcessor.insert (*status);
+      markupProcessor.insert(*status);
       delete status;
       return shibrm_error_page (r, rmError.c_str(), markupProcessor);
     }
     delete status;
 
     string rmError;
-    if (! ini.get_tag (serverName, "accessError", true, &rmError)) {
-      ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
-		    "shibrm_check_auth: no accessError configuration for %s",
-		    serverName);
-      delete status;
-      return SERVER_ERROR;	
+    if (!ini.get_tag(serverName, "accessError", true, &rmError)) {
+        ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
+           "shibrm_check_auth: no accessError configuration for %s",
+            serverName);
+
+        delete status;
+        for (int k = 0; k < assertions.size(); k++)
+          delete assertions[k];
+        delete sso_statement;
+        return SERVER_ERROR;  
     }
 
     // Only allow a single assertion...
     if (assertions.size() > 1) {
-      ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
+        ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
 		    "shibrm_check_auth() found %d assertions (only handle 1 currently)",
 		    assertions.size());
-      return shibrm_error_page (r, rmError.c_str(), markupProcessor);
+        for (int k = 0; k < assertions.size(); k++)
+          delete assertions[k];
+        delete sso_statement;
+        return shibrm_error_page (r, rmError.c_str(), markupProcessor);
     }
 
     // Get the AAP providers, which contain the attribute policy info.
@@ -366,6 +373,9 @@ extern "C" int shibrm_check_auth(request_rec* r)
         catch(...)
         {
             aap->unlock();
+            for (int k = 0; k < assertions.size(); k++)
+              delete assertions[k];
+            delete sso_statement;
             throw;
         }
         aap->unlock();
@@ -437,6 +447,7 @@ extern "C" int shibrm_check_auth(request_rec* r)
     // clean up memory
     for (int k = 0; k < assertions.size(); k++)
       delete assertions[k];
+    delete sso_statement;
 
     // mod_auth clone
 
@@ -639,7 +650,7 @@ extern "C" int shibrm_check_auth(request_rec* r)
     if (!method_restricted)
         return OK;
 
-    return shibrm_error_page (r, rmError.c_str(), markupProcessor);
+    return shibrm_error_page(r, rmError.c_str(), markupProcessor);
 }
 
 extern "C" void mod_shibrm_init (server_rec*r, pool* p)
