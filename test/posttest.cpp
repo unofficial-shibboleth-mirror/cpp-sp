@@ -93,13 +93,12 @@ int main(int argc,char* argv[])
     }
 
     conf1.schema_dir=path;
-    conf1.ssl_calist="C:/shib/etc/ca-bundle.crt";
+    conf1.ssl_calist="/opt/shibboleth/etc/shibboleth/ca-bundle.crt";
     if (!conf1.init())
         cerr << "unable to initialize SAML runtime" << endl;
 
-    conf2.mapperURL="/Tomcat4.0/webapps/shibboleth/sites.xml";
-    conf2.mapperCert=new X509Certificate(X509Certificate::PEM,"C:/shib/etc/internet2.pem");
-    //XMLOriginSiteMapper mapper("http://wayf.internet2.edu/shibboleth/sites.xml","/shib/etc/ca-bundle.crt",&cert);
+    conf2.mapperURL="/var/tomcat/webapps/shibboleth/sites.xml";
+    conf2.mapperCert=new X509Certificate(X509Certificate::PEM,"/opt/shibboleth/etc/shibboleth/internet2.pem");
     if (!conf2.init())
         cerr << "unable to initialize Shibboleth runtime" << endl;
 
@@ -112,8 +111,8 @@ int main(int argc,char* argv[])
         auto_ptr<XMLCh> recip(XMLString::transcode("https://shire.target.com"));
         ShibPOSTProfile* p=ShibPOSTProfileFactory::getInstance(ArrayIterator<const XMLCh*>(policies),recip.get(),300);
 
-        //auto_ptr<XMLByte> buf(r->toBase64(NULL));
-        //delete r;
+//        auto_ptr<XMLByte> buf(r->toBase64(NULL));
+//        delete r;
 
         char ch;
         string buf;
