@@ -698,40 +698,42 @@ bool XMLTrust::validate(
         char buf[256];
         X509_NAME* subject=X509_get_subject_name(x);
         if (subject) {
-            // The best way is a direct match to the subject DN. We should encourage this.
+            // One way is a direct match to the subject DN.
             // Seems that the way to do the compare is to write the X509_NAME into a BIO.
             BIO* b = BIO_new(BIO_s_mem());
-            if (b) {
-                BIO_set_mem_eof_return(b, 0);
-                // The flags give us LDAP order instead of X.500, with a comma/space separator.
-                int len=X509_NAME_print_ex(b,subject,0,XN_FLAG_RFC2253|XN_FLAG_SEP_CPLUS_SPC);
-                if (len) {
-                    BIO_flush(b);
-                    string subjectstr;
-                    while ((len = BIO_read(b, buf, 255)) > 0) {
-                        buf[len] = '\0';
-                        subjectstr+=buf;
-                    }
-                    log.infoStream() << "certificate subject: " << subjectstr << CategoryStream::ENDLINE;
-                    // Check each keyname.
-                    for (vector<string>::const_iterator n=keynames.begin(); n!=keynames.end(); n++) {
-    #ifdef HAVE_STRCASECMP
-                        if (!strcasecmp(n->c_str(),subjectstr.c_str())) {
-    #else
-                        if (!stricmp(n->c_str(),subjectstr.c_str())) {
-    #endif
-                            log.info("matched full subject DN to a key name");
-                            match=true;
-                            break;
-                        }
-                    }
-                }
-                else
-                    log.error("certificate has no subject?!");
-                BIO_free(b);
+            BIO* b2 = BIO_new(BIO_s_mem());
+            BIO_set_mem_eof_return(b, 0);
+            BIO_set_mem_eof_return(b2, 0);
+            // The flags give us LDAP order instead of X.500, with a comma/space separator.
+            int len=X509_NAME_print_ex(b,subject,0,XN_FLAG_RFC2253|XN_FLAG_SEP_CPLUS_SPC);
+            string subjectstr,subjectstr2;
+            BIO_flush(b);
+            while ((len = BIO_read(b, buf, 255)) > 0) {
+                buf[len] = '\0';
+                subjectstr+=buf;
             }
-            else
-                log.error("unable to obtain memory BIO from OpenSSL");
+            log.infoStream() << "certificate subject: " << subjectstr << CategoryStream::ENDLINE;
+            len=X509_NAME_print_ex(b2,subject,0,XN_FLAG_RFC2253);
+            BIO_flush(b2);
+            while ((len = BIO_read(b2, buf, 255)) > 0) {
+                buf[len] = '\0';
+                subjectstr2+=buf;
+            }
+            
+            // Check each keyname.
+            for (vector<string>::const_iterator n=keynames.begin(); n!=keynames.end(); n++) {
+#ifdef HAVE_STRCASECMP
+                if (!strcasecmp(n->c_str(),subjectstr.c_str()) || !strcasecmp(n->c_str(),subjectstr2.c_str())) {
+#else
+                if (!stricmp(n->c_str(),subjectstr.c_str()) || !stricmp(n->c_str(),subjectstr2.c_str())) {
+#endif
+                    log.info("matched full subject DN to a key name");
+                    match=true;
+                    break;
+                }
+            }
+            BIO_free(b);
+            BIO_free(b2);
             
             if (!match) {
                 log.debug("unable to match DN, trying TLS-style hostname match");
