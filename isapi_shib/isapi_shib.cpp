@@ -61,12 +61,16 @@
 #include <shib.h>
 #include <eduPerson.h>
 
+#include <log4cpp/Category.hh>
+#include <log4cpp/PropertyConfigurator.hh>
 #include <xercesc/util/Base64.hpp>
 
+#include <ctime>
 #include <strstream>
 #include <stdexcept>
 
 using namespace std;
+using namespace log4cpp;
 using namespace saml;
 using namespace shibboleth;
 using namespace eduPerson;
@@ -317,6 +321,10 @@ const XMLByte* CCacheEntry::getSerializedAssertion(const char* resource_url, set
 
 void CCacheEntry::populate(const char* resource_url, settings_t* pSite)
 {
+#undef FUNC
+#define FUNC populate
+    Category& log=Category::getInstance("isapi_shib.CCacheEntry");
+
     // Can we use what we have?
     if (m_assertion && m_assertion->getNotOnOrAfter())
     {
@@ -336,12 +344,14 @@ void CCacheEntry::populate(const char* resource_url, settings_t* pSite)
         m_assertion=NULL;
         m_response=NULL;
         m_serialized=NULL;
+
+        log.info("%s: cached attributes have expired",FUNC);
     }
 
     if (!m_binding)
         return;
 
-    auto_ptr<XMLCh> resource(XMLString::transcode(resource_url));    
+    auto_ptr<XMLCh> resource(XMLString::transcode(resource_url));
 
     // Build a SAML Request and send it to the AA.
     SAMLSubject* subject=new SAMLSubject(m_handle.c_str(),m_originSite.c_str());
@@ -358,13 +368,13 @@ void CCacheEntry::populate(const char* resource_url, settings_t* pSite)
 
     auto_ptr<char> h(XMLString::transcode(m_handle.c_str()));
     auto_ptr<char> d(XMLString::transcode(m_originSite.c_str()));
-    fprintf(stderr,"CCacheEntry::populate() fetched and stored SAML response for %s@%s\n",h.get(),d.get());
+    log.info("%s: fetched and stored SAML response for %s@%s",FUNC,h.get(),d.get());
 }
 
 class DummyMapper : public IOriginSiteMapper
 {
 public:
-    DummyMapper() {}
+    DummyMapper() { InitializeCriticalSection(&m_lock); }
     ~DummyMapper();
     virtual Iterator<xstring> getHandleServiceNames(const XMLCh* originSite) { return Iterator<xstring>(); }
     virtual Key* getHandleServiceKey(const XMLCh* handleService) { return NULL; }
@@ -374,11 +384,12 @@ public:
 private:
     typedef map<xstring,vector<xstring>*> domains_t;
     domains_t m_domains;
+    CRITICAL_SECTION m_lock;
 };
 
 Iterator<xstring> DummyMapper::getSecurityDomains(const XMLCh* originSite)
 {
-    SAMLConfig::getConfig()->saml_lock();
+    EnterCriticalSection(&m_lock);
     vector<xstring>* pv=NULL;
     domains_t::iterator i=m_domains.find(originSite);
     if (i==m_domains.end())
@@ -390,7 +401,7 @@ Iterator<xstring> DummyMapper::getSecurityDomains(const XMLCh* originSite)
     }
     else
         pv=i->second;
-    SAMLConfig::getConfig()->saml_unlock();
+    LeaveCriticalSection(&m_lock);
     return Iterator<xstring>(*pv);
 }
 
@@ -398,17 +409,13 @@ DummyMapper::~DummyMapper()
 {
     for (domains_t::iterator i=m_domains.begin(); i!=m_domains.end(); i++)
         delete i->second;
+    DeleteCriticalSection(&m_lock);
 }
 
 // globals
 HINSTANCE g_hinstDLL;
 ULONG g_ulMaxSite=1;                        // max IIS site instance to handle
 settings_t* g_Sites=NULL;                   // array of site settings
-string g_SchemaPath;                        // location of XML schemas
-string g_SSLCertFile;                       // PKI components for SHAR
-string g_SSLKeyFile;
-string g_SSLKeyPass;
-string g_SSLCAList;
 map<string,string> g_mapAttribNameToHeader; // attribute mapping
 map<xstring,string> g_mapAttribNames;
 
@@ -442,45 +449,54 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
 
     try
     {
+        SAMLConfig& SAMLconf=SAMLConfig::getConfig();
+        
+        GetPrivateProfileString("shibboleth","ShibLogConfig","",buf,sizeof(buf),inifile);
+        if (*buf)
+            PropertyConfigurator::configure(buf);
+        Category& log=Category::getInstance("isapi_shib.GetFilterVersion");
+        log.info("using INI file: %s",inifile);
+
         GetPrivateProfileString("shibboleth","ShibSchemaPath","",buf,sizeof(buf),inifile);
         if (!*buf)
         {
-            WritePrivateProfileString("startlog","bailed-at","ShibSchemaPath",inifile);
+            log.fatal("ShibSchemaPath missing");
             return FALSE;
         }
-        g_SchemaPath=buf;
-        if (*g_SchemaPath.end()!='\\')
-            g_SchemaPath+='\\';
+        SAMLconf.schema_dir=buf;
+        if (*SAMLconf.schema_dir.end()!='\\')
+            SAMLconf.schema_dir+='\\';
 
         GetPrivateProfileString("shibboleth","ShibSSLCertFile","",buf,sizeof(buf),inifile);
         if (!*buf)
         {
-            WritePrivateProfileString("startlog","bailed-at","ShibSSLCertFile",inifile);
+            log.fatal("ShibSSLCertFile missing");
             return FALSE;
         }
-        g_SSLCertFile=buf;
+        SAMLconf.ssl_certfile=buf;
 
         GetPrivateProfileString("shibboleth","ShibSSLKeyFile","",buf,sizeof(buf),inifile);
         if (!*buf)
         {
-            WritePrivateProfileString("startlog","bailed-at","ShibSSLKeyFile",inifile);
+            log.fatal("ShibSSLKeyFile missing");
             return FALSE;
         }
-        g_SSLKeyFile=buf;
+        SAMLconf.ssl_keyfile=buf;
 
         GetPrivateProfileString("shibboleth","ShibSSLKeyPass","",buf,sizeof(buf),inifile);
-        g_SSLKeyPass=buf;
+        SAMLconf.ssl_keypass=buf;
 
         GetPrivateProfileString("shibboleth","ShibSSLCAList","",buf,sizeof(buf),inifile);
-        g_SSLCAList=buf;
+        SAMLconf.ssl_calist=buf;
 
         // Read site count and allocate site array.
         g_ulMaxSite=GetPrivateProfileInt("shibboleth","max-site",0,inifile);
         if (g_ulMaxSite==0)
         {
-            WritePrivateProfileString("startlog","bailed-at","max-site check",inifile);
+            log.fatal("max-site was 0 or invalid");
             return FALSE;
         }
+        log.debug("max-site is %d",g_ulMaxSite);
         g_Sites=new settings_t[g_ulMaxSite];
 
         // Read site-specific settings for each site.
@@ -489,13 +505,16 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
             ultoa(i+1,buf3,10);
             GetPrivateProfileString(buf3,"ShibSiteName","X",buf,sizeof(buf),inifile);
             if (!strcmp(buf,"X"))
+            {
+                log.info("skipping site %d (no ShibSiteName)",i);
                 continue;
+            }
 
             GetPrivateProfileString(buf3,"ShibCookieName","",buf,sizeof(buf),inifile);
             if (!*buf)
             {
                 delete[] g_Sites;
-                WritePrivateProfileString("startlog","bailed-at","ShibCookieName",inifile);
+                log.fatal("ShibCookieName missing in site %d",i);
                 return FALSE;
             }
             g_Sites[i].g_CookieName=buf;
@@ -504,7 +523,7 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
             if (!*buf)
             {
                 delete[] g_Sites;
-                WritePrivateProfileString("startlog","bailed-at","WAYFLocation",inifile);
+                log.fatal("WAYFLocation missing in site %d",i);
                 return FALSE;
             }
             g_Sites[i].g_WAYFLocation=buf;
@@ -513,7 +532,7 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
             if (!*buf)
             {
                 delete[] g_Sites;
-                WritePrivateProfileString("startlog","bailed-at","GarbageCollector",inifile);
+                log.fatal("GarbageCollector missing in site %d",i);
                 return FALSE;
             }
             g_Sites[i].g_GarbageCollector=buf;
@@ -522,7 +541,7 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
             if (!*buf)
             {
                 delete[] g_Sites;
-                WritePrivateProfileString("startlog","bailed-at","SHIRELocation",inifile);
+                log.fatal("SHIRELocation missing in site %d",i);
                 return FALSE;
             }
             g_Sites[i].g_SHIRELocation=buf;
@@ -531,7 +550,7 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
             if (!*buf)
             {
                 delete[] g_Sites;
-                WritePrivateProfileString("startlog","bailed-at","SHIRESessionPath",inifile);
+                log.fatal("SHIRESessionPath missing in site %d",i);
                 return FALSE;
             }
             g_Sites[i].g_SHIRESessionPath=buf;
@@ -546,11 +565,17 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
             {
                 *sep='\0';
                 if (*start)
+                {
                     g_Sites[i].g_MustContain.push_back(start);
+                    log.info("site %d told to match against %s",i,start);
+                }
                 start=sep+1;
             }
             if (*start)
+            {
                 g_Sites[i].g_MustContain.push_back(start);
+                log.info("site %d told to match against %s",i,start);
+            }
             
             if (GetPrivateProfileInt(buf3,"ShibSSLOnly",1,inifile)==0)
                 g_Sites[i].g_bSSLOnly=false;
@@ -564,35 +589,24 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
             g_Sites[i].g_Timeout=GetPrivateProfileInt(buf3,"ShibAuthTimeout",3600,inifile);
             if (g_Sites[i].g_Timeout<=0)
                 g_Sites[i].g_Timeout=3600;
-            WritePrivateProfileString("startlog","site-complete",buf3,inifile);
+            log.info("configuration of site %d complete",i);
         }
 
-        static SAMLConfig SAMLconf;
-        static ShibConfig Shibconf;
+        ShibConfig& Shibconf=ShibConfig::getConfig();
         static DummyMapper mapper;
 
-        SAMLconf.schema_dir=g_SchemaPath;
-        SAMLconf.ssl_certfile=g_SSLCertFile;
-        SAMLconf.ssl_keyfile=g_SSLKeyFile;
-        SAMLconf.ssl_keypass=g_SSLKeyPass;
-        SAMLconf.ssl_calist=g_SSLCAList;
-#ifdef _DEBUG
-        SAMLconf.bVerbose=true;
-#else
-        SAMLconf.bVerbose=false;
-#endif
-        if (!SAMLConfig::init(&SAMLconf))
+        if (!SAMLconf.init())
         {
             delete[] g_Sites;
-            WritePrivateProfileString("startlog","bailed-at","SAML init failed",inifile);
+            log.fatal("SAML initialization failed");
             return FALSE;
         }
 
         Shibconf.origin_mapper=&mapper;
-        if (!ShibConfig::init(&Shibconf))
+        if (!Shibconf.init())
         {
             delete[] g_Sites;
-            WritePrivateProfileString("startlog","bailed-at","Shib init failed",inifile);
+            log.fatal("Shibboleth initialization failed");
             return FALSE;
         }
 
@@ -601,7 +615,7 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
         if (res==sizeof(buf2)-2)
         {
             delete[] g_Sites;
-            WritePrivateProfileString("startlog","bailed-at","ShibMapAttributes too big",inifile);
+            log.fatal("ShibMapAttributes INI section was larger than 32k");
             return FALSE;
         }
 
@@ -611,15 +625,16 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
             if (!delim)
             {
                 delete[] g_Sites;
-                WritePrivateProfileString("startlog","bailed-at","ShibMapAttributes bad key format",inifile);
+                log.fatal("unrecognizable ShibMapAttributes directive: %s",attr);
                 return FALSE;
             }
             *delim++=0;
             g_mapAttribNameToHeader[attr]=(string(delim) + ':');
+            log.info("mapping attribute %s to request header %s",attr,delim);
             attr=delim + strlen(delim);
         }
 
-        WritePrivateProfileString("startlog","attributes","complete",inifile);
+        log.info("configuration of attributes complete");
 
         // Transcode the attribute names we know about for quick handling map access.
         for (map<string,string>::const_iterator j=g_mapAttribNameToHeader.begin();
@@ -633,26 +648,32 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
         if (res==sizeof(buf2)-2)
         {
             delete[] g_Sites;
-            WritePrivateProfileString("startlog","bailed-at","ShibExtensions too big",inifile);
+            log.fatal("ShibExtensions INI section was larger than 32k");
             return FALSE;
         }
 
         for (char* libpath=buf2; *libpath; libpath+=strlen(libpath)+1)
-            SAMLConfig::getConfig()->saml_register_extension(libpath);
+            SAMLconf.saml_register_extension(libpath);
 
-        WritePrivateProfileString("startlog","extensions","complete",inifile);
+        log.info("completed loading of extension libraries");
     }
     catch (bad_alloc)
     {
         delete[] g_Sites;
-        WritePrivateProfileString("startlog","bailed-at","bad_alloc caught",inifile);
+        Category::getInstance("isapi_shib.GetFilterVersion").fatal("out of memory");
+        return FALSE;
+    }
+    catch (log4cpp::ConfigureFailure& ex)
+    {
+        delete[] g_Sites;
+        WritePrivateProfileString("startlog","bailed-at","log4cpp exception caught",inifile);
+        WritePrivateProfileString("startlog","log4cpp",ex.what(),inifile);
         return FALSE;
     }
     catch (SAMLException& ex)
     {
         delete[] g_Sites;
-        WritePrivateProfileString("startlog","bailed-at","SAML Exception caught",inifile);
-        WritePrivateProfileString("startlog","SAMLException",ex.what(),inifile);
+        Category::getInstance("isapi_shib.GetFilterVersion").fatal("caught SAML exception: %s",ex.what());
         return FALSE;
     }
 
@@ -668,10 +689,12 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
 
 extern "C" BOOL WINAPI TerminateFilter(DWORD dwFlags)
 {
+    Category::getInstance("isapi_shib.TerminateFilter").info("shutting down...");
     delete[] g_Sites;
     g_Sites=NULL;
-    ShibConfig::term();
-    SAMLConfig::term();
+    ShibConfig::getConfig().term();
+    SAMLConfig::getConfig().term();
+    Category::getInstance("isapi_shib.TerminateFilter").info("shut down complete");
     return TRUE;
 }
 
@@ -826,6 +849,8 @@ string get_shire_location(PHTTP_FILTER_CONTEXT pfc, settings_t* pSite, const cha
 
 DWORD WriteClientError(PHTTP_FILTER_CONTEXT pfc, const char* msg)
 {
+    Category::getInstance("isapi_shib.WriteClientError").error("sending error page to browser: %s",msg);
+
     pfc->ServerSupportFunction(pfc,SF_REQ_SEND_RESPONSE_HEADER,"200 OK",0,0);
     static const char* xmsg="<HTML><HEAD><TITLE>Shibboleth Filter Error</TITLE></HEAD><BODY>"
                             "<H1>Shibboleth Filter Error</H1>";
@@ -841,6 +866,9 @@ DWORD WriteClientError(PHTTP_FILTER_CONTEXT pfc, const char* msg)
 
 DWORD shib_shar_error(PHTTP_FILTER_CONTEXT pfc, SAMLException& e)
 {
+    Category::getInstance("isapi_shib.shib_shar_error").errorStream()
+        << "exception during SHAR request: " << e;
+
     pfc->ServerSupportFunction(pfc,SF_REQ_SEND_RESPONSE_HEADER,"200 OK",0,0);
     
     static const char* msg="<HTML><HEAD><TITLE>Shibboleth Attribute Exchange Failed</TITLE></HEAD>\n"
@@ -887,6 +915,7 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
     settings_t* pSite=NULL;
     bool bLocked=false;
     PHTTP_FILTER_PREPROC_HEADERS pn=(PHTTP_FILTER_PREPROC_HEADERS)pvNotification;
+    Category& log=Category::getInstance("isapi_shib.HttpFilterProc");
     try
     {
         // Determine web site number.
@@ -905,11 +934,15 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
 
         // If the user is accessing the SHIRE acceptance point, pass on.
         if (targeturl.find(pSite->g_SHIRELocation)!=string::npos)
+        {
+            log.debug("passing on SHIRE acceptance request");
             return SF_STATUS_REQ_NEXT_NOTIFICATION;
+        }
 
         // If this is the garbage collection service, do a cache sweep.
         if (targeturl==pSite->g_GarbageCollector)
         {
+            log.notice("garbage collector triggered");
             pSite->g_AuthCache.lock();
             bLocked=true;
             pSite->g_AuthCache.sweep(pSite->g_Lifetime);
@@ -935,6 +968,7 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
         // SSL check.
         if (pSite->g_bSSLOnly && !pfc->fIsSecurePort)
         {
+            log.warn("blocking non-SSL request");
             xmsg="<HTML><HEAD><TITLE>Access Denied</TITLE></HEAD><BODY>"
                  "<H1>Access Denied</H1>"
                  "This server is configured to deny non-SSL requests for secure resources. "
@@ -952,6 +986,8 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
         if (buf.empty() || !(session_id=strstr(buf,pSite->g_CookieName.c_str())) ||
             *(session_id+pSite->g_CookieName.length())!='=')
         {
+            log.info("session cookie not found, redirecting to WAYF");
+
             // Redirect to WAYF.
             string wayf("Location: ");
             wayf+=pSite->g_WAYFLocation + "?shire=" + get_shire_location(pfc,pSite,targeturl.c_str()) +
@@ -987,10 +1023,14 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
                 }
                 catch (runtime_error e)
                 {
+                    log.info("unable to load session from file '%s', redirecting to WAYF",sessionFile.c_str());
+
                     // Redirect to WAYF.
                     string wayf("Location: ");
                     wayf+=pSite->g_WAYFLocation + "?shire=" + get_shire_location(pfc,pSite,targeturl.c_str()) +
                                                   "&target=" + url_encode(targeturl.c_str()) + "\r\n";
+                    wayf+="Set-Cookie: " + pSite->g_CookieName + "=; path=/; expires=19-Mar-1971 08:23:00 GMT\r\n";
+
                     // Insert the headers.
                     pfc->AddResponseHeaders(pfc,const_cast<char*>(wayf.c_str()),0);
                     pfc->ServerSupportFunction(pfc,SF_REQ_SEND_RESPONSE_HEADER,"302 Please Wait",0,0);
@@ -999,6 +1039,7 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
                 pSite->g_AuthCache.lock();    // ---> Get cache lock
                 bLocked=true;
                 pSite->g_AuthCache.insert(session_id,entry);
+                log.info("new session established: %s",session_id);
             }
             
             if (!entry->isSessionValid(pSite->g_Lifetime,pSite->g_Timeout))
@@ -1008,10 +1049,14 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
                 bLocked=false;
                 delete entry;
 
+                log.warn("invalidating session because of timeout, redirecting to WAYF");
+
                 // Redirect to WAYF.
                 string wayf("Location: ");
                 wayf+=pSite->g_WAYFLocation + "?shire=" + get_shire_location(pfc,pSite,targeturl.c_str()) +
                                               "&target=" + url_encode(targeturl.c_str()) + "\r\n";
+                wayf+="Set-Cookie: " + pSite->g_CookieName + "=; path=/; expires=19-Mar-1971 08:23:00 GMT\r\n";
+
                 // Insert the headers.
                 pfc->AddResponseHeaders(pfc,const_cast<char*>(wayf.c_str()),0);
                 pfc->ServerSupportFunction(pfc,SF_REQ_SEND_RESPONSE_HEADER,"302 Please Wait",0,0);
@@ -1028,6 +1073,11 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
                     pSite->g_AuthCache.unlock();  // ---> Release cache lock
                     bLocked=false;
 
+                    log.warn("IP address mismatch detected, clearing session");
+
+                    string clearcookie("Set-Cookie: ");
+                    clearcookie+=pSite->g_CookieName + "=; path=/; expires=19-Mar-1971 08:23:00 GMT\r\n";
+                    pfc->AddResponseHeaders(pfc,const_cast<char*>(clearcookie.c_str()),0);
                     return WriteClientError(pfc,
                         "Your session was terminated because the network address associated "
                         "with it does not match your current address. This is usually caused "
@@ -1104,10 +1154,14 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
                     pSite->g_AuthCache.unlock();  // ---> Release cache lock
                     delete entry;
 
+                    log.info("invaliding session due to shib:InvalidHandle code from AA");
+
                     // Redirect to WAYF.
                     string wayf("Location: ");
                     wayf+=pSite->g_WAYFLocation + "?shire=" + get_shire_location(pfc,pSite,targeturl.c_str()) +
                                                   "&target=" + url_encode(targeturl.c_str()) + "\r\n";
+                    wayf+="Set-Cookie: " + pSite->g_CookieName + "=; path=/; expires=19-Mar-1971 08:23:00 GMT\r\n";
+
                     // Insert the headers.
                     pfc->AddResponseHeaders(pfc,const_cast<char*>(wayf.c_str()),0);
                     pfc->ServerSupportFunction(pfc,SF_REQ_SEND_RESPONSE_HEADER,"302 Please Wait",0,0);
@@ -1115,6 +1169,8 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
                 }
                 break;
             }
+            if (bLocked)
+                pSite->g_AuthCache.unlock();
 	        return shib_shar_error(pfc,e);
         }
         catch (XMLException& e)
@@ -1129,6 +1185,7 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
     catch(bad_alloc)
     {
         xmsg="Out of memory.";
+        log.error("out of memory");
     }
     catch(DWORD e)
     {
