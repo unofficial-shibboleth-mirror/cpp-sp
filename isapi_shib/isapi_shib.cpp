@@ -158,7 +158,8 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
             ShibTargetConfig::Metadata |
             ShibTargetConfig::AAP |
             ShibTargetConfig::RequestMapper |
-            ShibTargetConfig::SHIREExtensions
+            ShibTargetConfig::SHIREExtensions |
+            ShibTargetConfig::Logging
             );
         if (!g_Config->init(schemadir,config)) {
             g_Config=NULL;

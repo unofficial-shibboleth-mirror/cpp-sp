@@ -244,7 +244,8 @@ namespace shibtarget {
             AAP = 32,
             RequestMapper = 64,
             SHARExtensions = 128,
-            SHIREExtensions = 256
+            SHIREExtensions = 256,
+            Logging = 512
         };
         void setFeatures(long enabled) {m_features = enabled;}
         bool isEnabled(components_t feature) {return (m_features & feature)>0;}

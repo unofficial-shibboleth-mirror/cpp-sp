@@ -658,26 +658,25 @@ void XMLConfigImpl::init(bool first)
         const DOMElement* SHIRE=saml::XML::getFirstChildElement(ReloadableXMLFileImpl::m_root,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(SHIRE));
 
         // Initialize log4cpp manually in order to redirect log messages as soon as possible.
-        const XMLCh* logger=NULL;
-        if (conf.isEnabled(ShibTargetConfig::SHARExtensions))
-            logger=SHAR->getAttributeNS(NULL,SHIBT_L(logger));
-        else if (conf.isEnabled(ShibTargetConfig::SHIREExtensions))
-            logger=SHIRE->getAttributeNS(NULL,SHIBT_L(logger));
-        if (!logger || !*logger)
-            logger=ReloadableXMLFileImpl::m_root->getAttributeNS(NULL,SHIBT_L(logger));
-        if (logger && *logger) {
-            auto_ptr_char logpath(logger);
-            cerr << "loading new logging configuration from " << logpath.get() << "\n";
-            try {
-                PropertyConfigurator::configure(logpath.get());
-                cerr << "New logging configuration loaded, check log destination for process status..." << "\n";
+        if (conf.isEnabled(ShibTargetConfig::Logging)) {
+            const XMLCh* logger=NULL;
+            if (conf.isEnabled(ShibTargetConfig::SHARExtensions))
+                logger=SHAR->getAttributeNS(NULL,SHIBT_L(logger));
+            else if (conf.isEnabled(ShibTargetConfig::SHIREExtensions))
+                logger=SHIRE->getAttributeNS(NULL,SHIBT_L(logger));
+            if (!logger || !*logger)
+                logger=ReloadableXMLFileImpl::m_root->getAttributeNS(NULL,SHIBT_L(logger));
+            if (logger && *logger) {
+                auto_ptr_char logpath(logger);
+                cerr << "loading new logging configuration from " << logpath.get() << "\n";
+                try {
+                    PropertyConfigurator::configure(logpath.get());
+                    cerr << "New logging configuration loaded, check log destination for process status..." << "\n";
+                }
+                catch (ConfigureFailure& e) {
+                    cerr << "Error reading logging configuration: " << e.what() << "\n";
+                }
             }
-            catch (ConfigureFailure& e) {
-                cerr << "Error reading logging configuration: " << e.what() << "\n";
-            }
-        }
-        else {
-            Category::getRoot().setPriority(Priority::DEBUG);
         }
         
         // First load any property sets.

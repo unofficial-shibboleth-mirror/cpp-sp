@@ -156,7 +156,7 @@ int real_main(int preinit)
             ShibTargetConfig::Credentials |
             ShibTargetConfig::AAP |
             ShibTargetConfig::SHARExtensions |
-            (shar_checkonly ? (ShibTargetConfig::SHIREExtensions | ShibTargetConfig::RequestMapper) : 0)
+            (shar_checkonly ? (ShibTargetConfig::SHIREExtensions | ShibTargetConfig::RequestMapper) : ShibTargetConfig::Logging)
             );
         if (!shar_config)
             shar_config=getenv("SHIBCONFIG");
@@ -319,7 +319,7 @@ int main(int argc, char *argv[])
         ShibTargetConfig::Credentials |
         ShibTargetConfig::AAP |
         ShibTargetConfig::SHARExtensions |
-        (shar_checkonly ? (ShibTargetConfig::SHIREExtensions | ShibTargetConfig::RequestMapper) : 0)
+        (shar_checkonly ? (ShibTargetConfig::SHIREExtensions | ShibTargetConfig::RequestMapper) : ShibTargetConfig::Logging)
         );
     if (!conf.init(shar_schemadir,shar_config)) {
         fprintf(stderr, "configuration is invalid, check log for specific problems\n");
