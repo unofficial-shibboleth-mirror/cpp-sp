@@ -107,8 +107,6 @@ int main(int argc,char* argv[])
         auto_ptr<XMLCh> resource(XMLString::transcode(r_param));
         SAMLRequest* req=new SAMLRequest(Iterator<saml::QName>(),new SAMLAttributeQuery (new SAMLSubject(handle.get(),domain.get()),resource.get()));
 
-        const XMLCh* policies[]={shibboleth::Constants::POLICY_INCOMMON};
-        
         SAMLBinding* pBinding=SAMLBindingFactory::getInstance();
         SAMLResponse* resp=pBinding->send(binfo,*req);
         delete pBinding;

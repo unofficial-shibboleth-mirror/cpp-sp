@@ -64,8 +64,7 @@ using namespace shibboleth;
 SAMLResponse* HS(const char* key)
 {
     XMLDateTime now();
-//    Key k(Key::RSA_PRIV,Key::PEM,"C:/shib/etc/internet2.pem");
-    const XMLCh* policies[]={Constants::POLICY_INCOMMON};
+//    const XMLCh* policies[]={Constants::POLICY_INCOMMON};
 
     auto_ptr<XMLCh> hsname(XMLString::transcode("wayf.internet2.edu"));
     auto_ptr<XMLCh> recip(XMLString::transcode("https://shire.target.com"));
@@ -73,7 +72,7 @@ SAMLResponse* HS(const char* key)
     auto_ptr<XMLCh> domain(XMLString::transcode("example.edu"));
     auto_ptr<XMLCh> method(XMLString::transcode("urn:mace:shibboleth:authmethod"));
 
-    ShibPOSTProfile* p=ShibPOSTProfileFactory::getInstance(ArrayIterator<const XMLCh*>(policies),hsname.get());
+    ShibPOSTProfile* p=ShibPOSTProfileFactory::getInstance(Iterator<const XMLCh*>(),hsname.get());
     return p->prepare(
             recip.get(),
             handle.get(),
