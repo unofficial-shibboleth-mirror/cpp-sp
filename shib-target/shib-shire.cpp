@@ -105,8 +105,8 @@ RPCError* SHIRE::sessionIsValid(const char* cookie, const char* ip, const char* 
   saml::NDC ndc("sessionIsValid");
 
   if (!cookie || *cookie == '\0') {
-    m_priv->log->error ("No cookie");
-    return new RPCError(-1, "No such cookie");
+    m_priv->log->error ("No cookie value was provided");
+    return new RPCError(SHIBRPC_NO_SESSION, "No cookie value was provided");
   }
 
   if (!ip) {
