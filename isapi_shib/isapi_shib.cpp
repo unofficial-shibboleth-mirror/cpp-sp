@@ -158,6 +158,11 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
 {
     if (!pVer)
         return FALSE;
+    else if (g_Config) {
+        LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL,
+                "Reentrant filter initialization, ignoring...");
+        return TRUE;
+    }
 
     try
     {
@@ -207,6 +212,9 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
     catch (...)
     {
         LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, "Filter startup failed with an exception.");
+#ifdef _DEBUG
+        throw;
+#endif
         return FALSE;
     }
 
@@ -362,23 +370,25 @@ IRequestMapper::Settings map_request(
     const char* scheme=site.m_scheme.c_str();
     if (!scheme || !*scheme || !g_bNormalizeRequest)
         scheme=pfc->fIsSecurePort ? "https" : "http";
-    
-    // Start with path.
-    if (!url.empty())
-        target=static_cast<char*>(url);
-    
-    // If port is non-default, prepend it.
-    if ((!strcmp(scheme,"http") && port!="80") || (!strcmp(scheme,"https") && port!="443"))
-        target = ':' + static_cast<char*>(port) + target;
 
+    // Start with scheme and hostname.
     if (g_bNormalizeRequest) {
-        target = string(scheme) + "://" + site.m_name + target;
+        target = string(scheme) + "://" + site.m_name;
     }
     else {
         dynabuf name(64);
         GetServerVariable(pfc,"SERVER_NAME",name,64);
-        target = string(scheme) + "://" + static_cast<char*>(name) + target;
+        target = string(scheme) + "://" + static_cast<char*>(name);
     }
+    
+    // If port is non-default, append it.
+    if ((!strcmp(scheme,"http") && port!="80") || (!strcmp(scheme,"https") && port!="443"))
+        target = target + ':' + static_cast<char*>(port);
+
+    // Append path.
+    if (!url.empty())
+        target+=static_cast<char*>(url);
+    
     return mapper->getSettingsFromParsedURL(scheme,site.m_name.c_str(),strtoul(port,NULL,10),url);
 }
 
@@ -774,23 +784,25 @@ IRequestMapper::Settings map_request(
     const char* scheme=site.m_scheme.c_str();
     if (!scheme || !*scheme || !g_bNormalizeRequest)
         scheme=lpECB->lpszMethod;
-    
-    // Start with path.
-    if (!url.empty())
-        target=static_cast<char*>(url);
-    
-    // If port is non-default, prepend it.
-    if ((!strcmp(scheme,"http") && port!="80") || (!strcmp(scheme,"https") && port!="443"))
-        target = ':' + static_cast<char*>(port) + target;
 
+    // Start with scheme and hostname.
     if (g_bNormalizeRequest) {
-        target = string(scheme) + "://" + site.m_name + target;
+        target = string(scheme) + "://" + site.m_name;
     }
     else {
         dynabuf name(64);
         GetServerVariable(lpECB,"SERVER_NAME",name,64);
-        target = string(scheme) + "://" + static_cast<char*>(name) + target;
+        target = string(scheme) + "://" + static_cast<char*>(name);
     }
+    
+    // If port is non-default, append it.
+    if ((!strcmp(scheme,"http") && port!="80") || (!strcmp(scheme,"https") && port!="443"))
+        target = target + ':' + static_cast<char*>(port);
+
+    // Append path.
+    if (!url.empty())
+        target+=static_cast<char*>(url);
+    
     return mapper->getSettingsFromParsedURL(scheme,site.m_name.c_str(),strtoul(port,NULL,10),url);
 }
 

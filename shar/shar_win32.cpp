@@ -418,7 +418,7 @@ void CmdInstallService(LPCSTR name)
 
         if ( schService )
         {
-            printf("%s installed.\n",name);
+            printf("%s installed.\n",realName);
             CloseServiceHandle(schService);
         }
         else
@@ -447,7 +447,7 @@ void CmdRemoveService(LPCSTR name)
                         );
     if ( schSCManager )
     {
-        schService = OpenService(schSCManager, name, SERVICE_ALL_ACCESS);
+        schService = OpenService(schSCManager, realName, SERVICE_ALL_ACCESS);
 
         if (schService)
         {
@@ -469,15 +469,15 @@ void CmdRemoveService(LPCSTR name)
                 }
 
                 if ( ssStatus.dwCurrentState == SERVICE_STOPPED )
-                    printf("\n%s stopped.\n", name);
+                    printf("\n%s stopped.\n", realName);
                 else
-                    printf("\n%s failed to stop.\n", name);
+                    printf("\n%s failed to stop.\n", realName);
 
             }
 
             // now remove the service
             if( DeleteService(schService) )
-                printf("%s removed.\n", name);
+                printf("%s removed.\n", realName);
             else
                 printf("DeleteService failed - %s\n", GetLastErrorText(szErr,256));
 
