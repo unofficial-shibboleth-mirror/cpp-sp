@@ -53,7 +53,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386
-# ADD LINK32 log4cpp.lib xerces-c_2.lib xsec_lib_02.lib wsock32.lib saml.lib /nologo /dll /machine:I386 /libpath:"../../../opensaml/c/saml/Release" /export:shibrpc_prog_1
+# ADD LINK32 log4cpp.lib xerces-c_2.lib xsec_lib_02.lib wsock32.lib saml.lib /nologo /dll /machine:I386 /libpath:"../../../opensaml/c/saml/Release" /export:shibrpc_prog_1 /export:shibrpc_ping_1
 # SUBTRACT LINK32 /pdb:none
 
 !ELSEIF  "$(CFG)" == "shibtarget - Win32 Debug"
@@ -80,7 +80,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 log4cppD.lib xerces-c_2D.lib xsec_lib_02D.lib wsock32.lib saml.lib /nologo /dll /debug /machine:I386 /pdbtype:sept /libpath:"../../../opensaml/c/saml/Debug" /export:shibrpc_prog_1
+# ADD LINK32 log4cppD.lib xerces-c_2D.lib xsec_lib_02D.lib wsock32.lib saml.lib /nologo /dll /debug /machine:I386 /pdbtype:sept /libpath:"../../../opensaml/c/saml/Debug" /export:shibrpc_prog_1 /export:shibrpc_ping_1
 # SUBTRACT LINK32 /pdb:none
 
 !ENDIF 
