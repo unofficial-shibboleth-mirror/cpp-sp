@@ -109,7 +109,7 @@ SAMLBrowserProfile::BrowserProfileResponse ShibBrowserProfile::receive(
         // Try our best to attach additional information.
         if (e.getProperty("issuer")) {
             Metadata m(m_metadatas);
-            const IEntityDescriptor* provider=m.lookup(e.getProperty("issuer"));
+            const IEntityDescriptor* provider=m.lookup(e.getProperty("issuer"),false);
             if (provider) {
                 const IIDPSSODescriptor* role=provider->getIDPSSODescriptor(saml::XML::SAML11_PROTOCOL_ENUM);
                 if (role) annotateException(e,role); // throws it
@@ -138,6 +138,14 @@ SAMLBrowserProfile::BrowserProfileResponse ShibBrowserProfile::receive(
         auto_ptr_char nq(bpr.authnStatement->getSubject()->getNameIdentifier()->getNameQualifier());
         log.error("assertion issuer not found in metadata (Issuer='%s', NameQualifier='%s')",
             issuer.get(), (nq.get() ? nq.get() : "none"));
+        
+        // Try a non-strict lookup for more contact info.
+        const IEntityDescriptor* provider=m.lookup(bpr.assertion->getIssuer(),false);
+        if (provider) {
+            bpr.clear();
+            MetadataException ex("metadata lookup failed, unable to process assertion");
+            annotateException(ex,provider);  // throws it
+        }
         bpr.clear();
         throw MetadataException("metadata lookup failed, unable to process assertion",namedparams(1,"issuer",issuer.get()));
     }
