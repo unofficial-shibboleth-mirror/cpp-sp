@@ -725,8 +725,8 @@ bool XMLTrust::validate(
             BIO* b2 = BIO_new(BIO_s_mem());
             BIO_set_mem_eof_return(b, 0);
             BIO_set_mem_eof_return(b2, 0);
-            // The flags give us LDAP order instead of X.500, with a comma/space separator.
-            int len=X509_NAME_print_ex(b,subject,0,XN_FLAG_RFC2253|XN_FLAG_SEP_CPLUS_SPC);
+            // The flags give us LDAP order instead of X.500, with a comma separator.
+            int len=X509_NAME_print_ex(b,subject,0,XN_FLAG_RFC2253);
             string subjectstr,subjectstr2;
             BIO_flush(b);
             while ((len = BIO_read(b, buf, 255)) > 0) {
@@ -734,7 +734,8 @@ bool XMLTrust::validate(
                 subjectstr+=buf;
             }
             log.infoStream() << "certificate subject: " << subjectstr << CategoryStream::ENDLINE;
-            len=X509_NAME_print_ex(b2,subject,0,XN_FLAG_RFC2253);
+            // The flags give us LDAP order instead of X.500, with a comma plus space separator.
+            len=X509_NAME_print_ex(b2,subject,0,XN_FLAG_RFC2253 + XN_FLAG_SEP_CPLUS_SPC - XN_FLAG_SEP_COMMA_PLUS);
             BIO_flush(b2);
             while ((len = BIO_read(b2, buf, 255)) > 0) {
                 buf[len] = '\0';
