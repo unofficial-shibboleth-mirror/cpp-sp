@@ -32,7 +32,7 @@ logoLocation=/logo.gif
 
 [shire]
 logger=@-PKGSYSCONFDIR-@/shire.logger
-#applicationMap=@-PKGSYSCONFDIR-@/applications.xml
+applicationMap=@-PKGSYSCONFDIR-@/applications.xml
 
 [shar]
 logger=@-PKGSYSCONFDIR-@/shar.logger

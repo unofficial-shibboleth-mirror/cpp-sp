@@ -305,19 +305,24 @@ void STConfig::init()
     delete iter;
   }
   
-  if (app == SHIBTARGET_SHIRE && ini->get_tag(app, SHIBTARGET_TAG_APPMAPPER, false, &tag)) {
-    saml::XML::registerSchema(shibtarget::XML::APPMAP_NS,shibtarget::XML::APPMAP_SCHEMA_ID);
-    try {
+  log.debug("about to test for AppMapper -- are we SHIRE...");
+  if (app == SHIBTARGET_SHIRE) {
+    log.debug("yep, we're a shire -- try loading the map...");
+    if (ini->get_tag(app, SHIBTARGET_TAG_APPMAPPER, false, &tag)) {
+      log.debug("loading Application Mapper");
+      saml::XML::registerSchema(shibtarget::XML::APPMAP_NS,shibtarget::XML::APPMAP_SCHEMA_ID);
+      try {
         auto_ptr_XMLCh src(tag.c_str());
         dummy->setAttributeNS(NULL,shibboleth::XML::Literals::url,src.get());
         m_applicationMapper=new XMLApplicationMapper(dummy);
         dynamic_cast<XMLApplicationMapper*>(m_applicationMapper)->getImplementation();
-    }
-    catch (exception& e) {
+      }
+      catch (exception& e) {
         log.crit("caught exception while loading URL->Application mapping file (%s)", e.what());
-    }
-    catch (...) {
+      }
+      catch (...) {
         log.crit("caught unknown exception while loading URL->Application mapping file");
+      }
     }
   }
   

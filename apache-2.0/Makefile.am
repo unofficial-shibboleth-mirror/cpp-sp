@@ -9,7 +9,8 @@ endif
 modshibdir = $(libexecdir)
 modshib_LTLIBRARIES = mod_shib.la
 
-mod_shib_la_SOURCES = mod_shib.cpp
+mod_shib_la_SOURCES = mod_shib.cpp cgiparse.cpp
+noinst_HEADERS = cgiparse.h
 
 AM_CXXFLAGS = $(APXS2_CFLAGS) -I$(APXS2_INCLUDE) $(RPC_CFLAGS)
 

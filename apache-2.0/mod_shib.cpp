@@ -35,6 +35,8 @@
 //-- do we still need this? #undef _XOPEN_SOURCE		// bombs on solaris
 #include <apreq_params.h>
 
+#include "cgiparse.h"
+
 #include <unistd.h>		// for getpid()
 
 using namespace std;
@@ -558,6 +560,8 @@ extern "C" int shib_shire_handler (request_rec* r)
   ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,
 		"shire_post_handler() Beginning SHIRE POST processing");
       
+  CgiParse* cgi = NULL;
+
   try {
     string sslonly;
     if (!ini.get_tag(application_id, "shireSSLOnly", true, &sslonly))
@@ -587,23 +591,67 @@ extern "C" int shib_shire_handler (request_rec* r)
       throw ShibTargetException (SHIBRPC_OK,
 				 "blocked too-large a post to SHIRE POST processor");
 
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,
+		  "shire_post_handler() about to run setup_client_block");
+
     // Read the posted data
-    apreq_request_t *ap_req = apreq_request(r, NULL);
-    if (!ap_req)
-      throw ShibTargetException (SHIBRPC_OK,
-				 apr_psprintf(r->pool, "apreq_request() failed"));
+    if (ap_setup_client_block(r, REQUEST_CHUNKED_ERROR))
+      throw ShibTargetException (SHIBRPC_OK, "CGI setup_client_block failed");
+
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,
+		  "shire_post_handler() about to run should_client_block");
+
+    if (!ap_should_client_block(r))
+      throw ShibTargetException (SHIBRPC_OK, "CGI should_client_block failed");
+
+    long length = r->remaining;
+    if (length > 1024*1024)
+      throw ShibTargetException (SHIBRPC_OK, "CGI length too long...");
+
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,
+		  "shire_post_handler() about to read using get_client_block");
+    string cgistr;
+    char buff[BUFSIZ];
+    //ap_hard_timeout("[mod_shib] CGI Parser", r);
+
+    while (ap_get_client_block(r, buff, sizeof(buff)) > 0)
+      cgistr += buff;
+
+    //ap_kill_timeout(r);
+
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,
+		  "shire_post_handler() about to parse cgi...");
+
+    cgi = CgiParse::ParseCGI(cgistr);
+
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,
+		  "shire_post_handler() CGI parsed...");
+
+    if (!cgi)
+      throw ShibTargetException (SHIBRPC_OK, "CgiParse failed");
     
     // Make sure the target parameter exists
-    apreq_param_t *param = apreq_param(ap_req, "TARGET");
-    const char *target = param ? apreq_param_value(param) : NULL;
+    const string target_str = cgi->get_value("TARGET");
+
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,
+		  "shire_post_handler() obtained target string from CGI...");
+
+    const char *target = target_str.c_str();
+
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,
+		  "shire_post_handler() obtained target...");
+
     if (!target || *target == '\0')
       // invalid post
       throw ShibTargetException (SHIBRPC_OK,
 				 "SHIRE POST failed to find TARGET");
 
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,
+		  "shire_post_handler() obtained target...");
+
     // Make sure the SAML Response parameter exists
-    param = apreq_param(ap_req, "SAMLResponse");
-    const char *post = param ? apreq_param_value(param) : NULL;
+    const string poststr = cgi->get_value("SAMLResponse");
+    const char *post = poststr.c_str();
     if (!post || *post == '\0')
       // invalid post
       throw ShibTargetException (SHIBRPC_OK,
@@ -667,6 +715,7 @@ extern "C" int shib_shire_handler (request_rec* r)
     // ... and redirect to the target
     char* redir=apr_pstrcat(r->pool,url_encode(r,target),NULL);
     apr_table_setn(r->headers_out, "Location", target);
+    delete cgi;
     return HTTP_MOVED_TEMPORARILY;
 
   } catch (ShibTargetException &e) {
@@ -676,6 +725,7 @@ extern "C" int shib_shire_handler (request_rec* r)
     markupProcessor.insert ("errorType", "SHIRE Processing Error");
     markupProcessor.insert ("errorText", e.what());
     markupProcessor.insert ("errorDesc", "An error occurred while processing your request.");
+    if (cgi) delete cgi;
     return shib_error_page (r, shireError.c_str(), markupProcessor);
   }
   catch (...) {
@@ -684,6 +734,7 @@ extern "C" int shib_shire_handler (request_rec* r)
     markupProcessor.insert ("errorType", "SHIRE Processing Error");
     markupProcessor.insert ("errorText", "Unexpected Exception");
     markupProcessor.insert ("errorDesc", "An error occurred while processing your request.");
+    if (cgi) delete cgi;
     return shib_error_page (r, shireError.c_str(), markupProcessor);
   }
 
