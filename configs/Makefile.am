@@ -5,21 +5,27 @@ AUTOMAKE_OPTIONS = foreign
 logdir=${localstatedir}/log/shibboleth
 pkgsysconfdir = $(sysconfdir)/@PACKAGE@
 pkgsysconf_DATA = \
-	shibboleth.xml \
-	shibboleth.logger \
-	shire.logger \
-	shar.logger \
 	shar.key \
 	shar.crt \
 	apache.config \
 	apache2.config \
-	accessError.html \
-	rmError.html \
-	shireError.html \
 	AAP.xml \
 	IQ-sites.xml \
 	IQ-trust.xml \
 	inqueue.pem
+
+# The config files are installed "special".  Unlike the entries in
+# pkgsysconf_DATA, these files are installed as "foo.dist" and only
+# installed as "foo" if "foo" does not already exist.  In other words,
+# the config files will not overwrite existing versions.
+CONFIGFILES = \
+	shibboleth.xml \
+	shibboleth.logger \
+	shire.logger \
+	shar.logger \
+	accessError.html \
+	rmError.html \
+	shireError.html
 
 #
 # Some of these need building
@@ -49,9 +55,18 @@ shire.logger: ${srcdir}/shire.logger.in Makefile ${top_builddir}/config.status
 shibboleth.xml: ${srcdir}/shibboleth.xml.in Makefile ${top_builddir}/config.status
 	$(MAKE) do-build-file FILE=$@
 
+all-data-local: $(CONFIGFILES)
+
 install-data-local:
 	$(mkinstalldirs) $(DESTDIR)$(logdir)
 	$(mkinstalldirs) $(DESTDIR)$(prefix)/data
+	$(mkinstalldirs) $(DESTDIR)$(pkgsysconfdir)
+	for f in $(CONFIGFILES); do \
+		if test ! -f $(DESTDIR)${pkgsysconfdir}/$$f; then \
+			$(INSTALL_DATA) $$f $(DESTDIR)${pkgsysconfdir}; \
+		fi; \
+		$(INSTALL_DATA) $$f $(DESTDIR)${pkgsysconfdir}/$$f.dist; \
+        done
 
 CLEANFILES = \
 	apache.config \
