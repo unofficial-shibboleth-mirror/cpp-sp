@@ -353,7 +353,7 @@ namespace shibtarget {
     //
 
     // Send a message to the Webserver log
-    virtual void log(ShibLogLevel level, std::string &msg);
+    virtual void log(ShibLogLevel level, const std::string &msg);
 
     void log(ShibLogLevel level, const char *msg) {
       std::string s = msg;
@@ -362,7 +362,7 @@ namespace shibtarget {
 
     // Get/Set a cookie for this connection
     virtual std::string getCookies(void);
-    virtual void setCookie(std::string &name, std::string &value);
+    virtual void setCookie(const std::string &name, const std::string &value);
 
     void setCookie(const char *name, const char *value) {
       std::string ns = name;
@@ -373,12 +373,48 @@ namespace shibtarget {
     // Get the request's POST data from the server
     virtual std::string getPostData(void);
 
+    // Clear a header, set a header
+    // These APIs are used for exporting the Assertions into the
+    // Headers.  It will clear some well-known headers first to make
+    // sure none remain.  Then it will process the set of assertions
+    // and export them via setHeader().
+    virtual void clearHeader(const std::string &name);
+    virtual void setHeader(const std::string &name, const std::string &value);
+    virtual std::string getHeader(const std::string &name);
+    virtual void setRemoteUser(const std::string &user);
+
+    void clearHeader(const char *n) {
+      std::string s = n;
+      clearHeader(s);
+    }
+    void setHeader(const char *n, const char *v) {
+      std::string ns = n;
+      std::string vs = v;
+      setHeader(ns, vs);
+    }
+    void setHeader(const std::string &n, const char *v) {
+      std::string vs = v;
+      setHeader(n, vs);
+    }
+    void setHeader(const char *n, const std::string &v) {
+      std::string ns = n;
+      setHeader(ns, v);
+    }
+    std::string getHeader(const char *n) {
+      std::string s = n;
+      return getHeader(s);
+    }
+    void setRemoteUser(const char *n) {
+      std::string s = n;
+      setRemoteUser(s);
+    }
+
     // Not sure if I need these, but I might for something like Apache
     // in order to "fix" the auth type in the case of basicHijack.  In
     // particular we need to maintain some state between the different
     // APIs to know whether or not to proceed with shib processing.
     virtual std::string getAuthType(void);
-    virtual void setAuthType(std::string);
+    virtual void setAuthType(const std::string);
 
     void setAuthType(const char *type) {
       std::string s = type;
@@ -393,12 +429,18 @@ namespace shibtarget {
     //virtual HTAccessInfo& getAccessInfo(void);
 
     // We're done.  Finish up.  Send either a result (error?) page or a redirect.
+    // If there are no headers supplied assume the content-type == text/html
     virtual void* sendPage(
-			   std::string &msg,
-			   std::pair<std::string, std::string> headers[] = NULL,
+			   const std::string &msg,
+			   const std::pair<std::string, std::string> headers[] = NULL,
 			   int code = 200
 			   );
-    virtual void* sendRedirect(std::string url);
+    void* sendPage(const char *msg) {
+      std::string m = msg;
+      return sendPage(m);
+    }
+
+    virtual void* sendRedirect(const std::string url);
 
     // These next two APIs are used to obtain the module-specific "OK"
     // and "Decline" results.  OK means "we believe that this request
@@ -418,12 +460,22 @@ namespace shibtarget {
     // 
     // Return value:
     //   these APIs will always return the result of sendPage(), sendRedirect(),
-    //   returnDecline(), or returnOK().  Exactly what those values are
-    //   is module- (subclass-) implementation specific.
+    //   returnDecline(), or returnOK() in the void* portion of the return code.
+    //   Exactly what those values are is module- (subclass-) implementation
+    //   specific.  The 'bool' part of the return value declares whether the
+    //   void* is valid or not.  If the bool is true then the void* is valid.
+    //   If the bool is false then the API did not call any callback, the void*
+    //   is not valid, and the caller should continue processing (the API Call
+    //   finished successfully).
     //
-    void* doCheckAuthN(void);
-    void* doHandlePOST(void);
-    void* doCheckAuthZ(void);
+    std::pair<bool,void*> doCheckAuthN(void);
+    std::pair<bool,void*> doHandlePOST(void);
+    std::pair<bool,void*> doCheckAuthZ(void);
+    std::pair<bool,void*> doExportAssertions(bool exportAssertion);
+
+    //**************************************************************************
+    // These APIs are for backwards-compatibility.  Hopefully they can
+    // eventually go away.
 
     // SHIRE APIs
 

@@ -63,6 +63,7 @@
 #endif
 
 #include <sstream>
+#include <fstream>
 #include <stdexcept>
 
 #include <shib/shib-threads.h>
@@ -102,6 +103,8 @@ namespace shibtarget {
 
     string url_encode(const char* s);
     void get_application(string protocol, string hostname, int port, string uri);
+    void* sendError(ShibTarget* st, string page, ShibMLP &mlp);
+    const char *getSessionId(ShibTarget* st);
 
     IRequestMapper::Settings m_settings;
     const IApplication *m_app;
@@ -109,6 +112,8 @@ namespace shibtarget {
     string m_shireURL;
     string m_authnRequest;
     CgiParse* m_parser;
+
+    const char *session_id;
 
     // These are the actual request parameters set via the init method.
     string m_url;
@@ -118,6 +123,10 @@ namespace shibtarget {
     int m_total_bytes;
 
     ShibTargetConfig* m_Config;
+
+  private:
+    IConfig* m_conf;
+    IRequestMapper* m_mapper;
   };
 }
 
@@ -147,6 +156,11 @@ void ShibTarget::init(ShibTargetConfig *config,
 		      string uri, string content_type, string remote_host,
 		      int total_bytes)
 {
+  if (m_priv->m_app)
+    throw runtime_error("ShibTarget Already Initialized");
+  if (!config)
+    throw runtime_error("config is NULL.  Oops.");
+
   m_priv->m_method = protocol;
   m_priv->m_content_type = content_type;
   m_priv->m_remote_addr = remote_host;
@@ -159,7 +173,7 @@ void ShibTarget::init(ShibTargetConfig *config,
 // These functions implement the server-agnostic shibboleth engine
 // The web server modules implement a subclass and then call into 
 // these methods once they instantiate their request object.
-void*
+pair<bool,void*>
 ShibTarget::doCheckAuthN(void)
 {
 
@@ -185,33 +199,23 @@ ShibTarget::doCheckAuthN(void)
 #else
     if (stricmp(auth_type.c_str(),"shibboleth"))
 #endif
-      return returnDecline();
+      return pair<bool,void*>(true,returnDecline());
 
     pair<bool,bool> requireSession = getRequireSession(m_priv->m_settings);
-    pair<const char*, const char *> shib_cookie = getCookieNameProps();
 
-    const char *session_id = NULL;
-    string cookies = getCookies();
-    if (!cookies.empty()) {
-      if (session_id = strstr(cookies.c_str(), shib_cookie.first)) {
-	// We found a cookie.  pull it out (our session_id)
-	session_id += strlen(shib_cookie.first) + 1; // skip over the '='
-	char *cookieend = strchr(session_id, ';');
-	if (cookieend)
-	  *cookieend = '\0';
-      }
-    }
+    const char *session_id = m_priv->getSessionId(this);
     
     if (!session_id || !*session_id) {
       // No session.  Maybe that's acceptable?
 
       if (!requireSession.second)
-	return returnOK();
+	return pair<bool,void*>(true,returnOK());
 
       // No cookie, but we require a session.  Generate an AuthnRequest.
-      return sendRedirect(getAuthnRequest(targetURL));
+      return pair<bool,void*>(true,sendRedirect(getAuthnRequest(targetURL)));
     }
 
+    m_priv->session_id = session_id;
     procState = "Session Processing Error";
     RPCError *status = sessionIsValid(session_id, m_priv->m_remote_addr.c_str());
 
@@ -219,7 +223,8 @@ ShibTarget::doCheckAuthN(void)
 
       // If no session is required, bail now.
       if (!requireSession.second)
-	return returnOK(); // XXX: Or should this be DECLINED?
+	return pair<bool,void*>(true, returnOK());
+      			   // XXX: Or should this be DECLINED?
 			   // Has to be OK because DECLINED will just cause Apache
       			   // to fail when it can't locate anything to process the
       			   // AuthType.  No session plus requireSession false means
@@ -227,10 +232,13 @@ ShibTarget::doCheckAuthN(void)
       else if (status->isRetryable()) {
 	// Session is invalid but we can retry the auth -- generate an AuthnRequest
 	delete status;
-	return sendRedirect(getAuthnRequest(targetURL));
+	return pair<bool,void*>(true,sendRedirect(getAuthnRequest(targetURL)));
 
       } else {
 
+	string er = "Unretryable error: " ;
+	er += status->getText();
+	log(LogLevelError, er);
 	mlp.insert(*status);
 	delete status;
 	goto out;
@@ -239,6 +247,11 @@ ShibTarget::doCheckAuthN(void)
       delete status;
       
     }
+
+    // We're done.  Everything is okay.  Nothing to report.  Nothing to do..
+    // Let the caller decide how to proceed.
+    log(LogLevelInfo, "doCheckAuthN Succeeded\n");
+    return pair<bool,void*>(false,NULL);
 
   } catch (ShibTargetException &e) {
     mlp.insert("errorText", e.what());
@@ -256,20 +269,344 @@ ShibTarget::doCheckAuthN(void)
   if (targetURL)
     mlp.insert("requestURL", targetURL);
 
-  string res = "xxx";
-  return sendPage(res);
+  return pair<bool,void*>(true,m_priv->sendError(this, "shire", mlp));
 }
 
-void*
+pair<bool,void*>
 ShibTarget::doHandlePOST(void)
 {
-  return NULL;
+#if 0
+
+  const char* targeturl=shib_get_targeturl(r,sc->szScheme);
+  const char *procState = "Session Creation Service Error";
+
+  ShibMLP mlp;
+  mlp.insert("requestURL", targeturl);
+
+  const char* shireURL=shire.getShireURL(targeturl);
+  if (!shireURL) {
+    ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,SH_AP_R(r),
+		  "shib_post_handler: unable to map request to proper shireURL setting, check configuration");
+    return SERVER_ERROR;
+  }
+
+  // Make sure we only process the SHIRE requests.
+  if (!strstr(targeturl,shireURL))
+    return DECLINED;
+
+  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_handler() running");
+
+  const IPropertySet* sessionProps=application->getPropertySet("Sessions");
+  if (!sessionProps) {
+    ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,SH_AP_R(r),
+		  "shib_post_handler: unable to map request to application session settings, check configuration");
+    return SERVER_ERROR;
+  }
+
+  pair<const char*,const char*> shib_cookie=shire.getCookieNameProps();   // always returns something
+
+  // Process SHIRE request
+  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_handler() Beginning SHIRE processing");
+      
+  try {
+    pair<bool,bool> shireSSL=sessionProps->getBool("shireSSL");
+      
+    // Make sure this is SSL, if it should be
+    if ((!shireSSL.first || shireSSL.second) && strcmp(ap_http_method(r),"https"))
+      throw ShibTargetException(SHIBRPC_OK, "blocked non-SSL access to session creation service");
+
+    // If this is a GET, we manufacture an AuthnRequest.
+    if (!strcasecmp(r->method,"GET")) {
+      const char* areq=r->args ? shire.getLazyAuthnRequest(r->args) : NULL;
+      if (!areq)
+	throw ShibTargetException(SHIBRPC_OK, "malformed arguments to request a new session");
+      ap_table_setn(r->headers_out, "Location", ap_pstrdup(r->pool,areq));
+      return REDIRECT;
+    }
+    else if (strcasecmp(r->method,"POST")) {
+      throw ShibTargetException(SHIBRPC_OK, "blocked non-POST to SHIRE POST processor");
+    }
+
+    // Sure sure this POST is an appropriate content type
+    const char *ct = ap_table_get(r->headers_in, "Content-type");
+    if (!ct || strcasecmp(ct, "application/x-www-form-urlencoded"))
+      throw ShibTargetException(SHIBRPC_OK,
+				ap_psprintf(r->pool, "blocked bad content-type to SHIRE POST processor: %s", (ct ? ct : "")));
+
+    // Read the posted data
+    if (ap_setup_client_block(r, REQUEST_CHUNKED_ERROR))
+      throw ShibTargetException(SHIBRPC_OK, "CGI setup_client_block failed");
+    if (!ap_should_client_block(r))
+      throw ShibTargetException(SHIBRPC_OK, "CGI should_client_block failed");
+    if (r->remaining > 1024*1024)
+      throw ShibTargetException (SHIBRPC_OK, "CGI length too long...");
+
+    string cgistr;
+    char buff[HUGE_STRING_LEN];
+    ap_hard_timeout("[mod_shib] CGI Parser", r);
+    memset(buff, 0, sizeof(buff));
+    while (ap_get_client_block(r, buff, sizeof(buff)-1) > 0) {
+      ap_reset_timeout(r);
+      cgistr += buff;
+      memset(buff, 0, sizeof(buff));
+    }
+    ap_kill_timeout(r);
+
+    // Parse the submission.
+    pair<const char*,const char*> elements=shire.getFormSubmission(cgistr.c_str(),cgistr.length());
+    
+    // Make sure the SAML Response parameter exists
+    if (!elements.first || !*elements.first)
+      throw ShibTargetException(SHIBRPC_OK, "SHIRE POST failed to find SAMLResponse form element");
+    
+    // Make sure the target parameter exists
+    if (!elements.second || !*elements.second)
+      throw ShibTargetException(SHIBRPC_OK, "SHIRE POST failed to find TARGET form element");
+    
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),
+		  "shib_handler() Processing POST for target: %s", elements.second);
+
+    // process the post
+    string cookie;
+    RPCError* status = shire.sessionCreate(elements.first, r->connection->remote_ip, cookie);
+
+    if (status->isError()) {
+      ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,SH_AP_R(r),
+    		    "shib_handler() POST process failed (%d): %s", status->getCode(), status->getText());
+
+      if (status->isRetryable()) {
+	delete status;
+	ap_log_rerror(APLOG_MARK,APLOG_INFO|APLOG_NOERRNO,SH_AP_R(r),
+		      "shib_handler() retryable error, generating new AuthnRequest");
+	ap_table_setn(r->headers_out,"Location",ap_pstrdup(r->pool,shire.getAuthnRequest(elements.second)));
+	return REDIRECT;
+      }
+
+      // return this error to the user.
+      markupProcessor.insert(*status);
+      delete status;
+      return shib_error_page(r, application, "shire", markupProcessor);
+    }
+    delete status;
+
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),
+    		  "shib_handler() POST process succeeded.  New session: %s", cookie.c_str());
+
+    // We've got a good session, set the cookie...
+    char* val = ap_psprintf(r->pool,"%s=%s%s",shib_cookie.first,cookie.c_str(),shib_cookie.second);
+    ap_table_setn(r->err_headers_out, "Set-Cookie", val);
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_handler() setting cookie: %s", val);
+
+    // ... and redirect to the target
+    ap_table_setn(r->headers_out, "Location", ap_pstrdup(r->pool,elements.second));
+    return REDIRECT;
+
+  return pair<bool,void*>(false,NULL);
+
+  } catch (ShibTargetException &e) {
+    mlp.insert("errorText", e.what());
+
+#ifndef _DEBUG
+  } catch (...) {
+    mlp.insert("errorText", "Unexpected Exception");
+#endif
+  }
+
+  // If we get here then we've got an error.
+  mlp.insert("errorType", procState);
+  mlp.insert("errorDesc", "An error occurred while processing your request.");
+
+ out:
+  return pair<bool,void*>(true,m_priv->sendError(this, "shire", mlp));
+#else
+  return pair<bool,void*>(false,NULL);
+#endif
 }
 
-void*
+pair<bool,void*>
 ShibTarget::doCheckAuthZ(void)
 {
-  return NULL;
+  return pair<bool,void*>(false,NULL);
+}
+
+pair<bool,void*>
+ShibTarget::doExportAssertions(bool exportAssertion)
+{
+  vector<SAMLAssertion*> assertions;
+  SAMLAuthenticationStatement* sso_statement=NULL;
+  RPCError *status = NULL;
+  ShibMLP mlp;
+  const char *procState = "Attribute Processing Error";
+  const char *targetURL = NULL;
+  char *page = "rm";
+
+  try {
+    if (! m_priv->m_app)
+      throw ShibTargetException(SHIBRPC_OK, "ShibTarget Uninitialized.  Application did not supply request information.");
+
+    targetURL = m_priv->m_url.c_str();
+    const char *session_id = m_priv->getSessionId(this);
+
+    status = getAssertions(session_id, m_priv->m_remote_addr.c_str(),
+			   assertions, &sso_statement);
+
+    if (status->isError()) {
+
+      string er = "getAssertions failed: ";
+      er += status->getText();
+      log(LogLevelError, er);
+      mlp.insert(*status);
+      delete status;
+      goto out;
+    }
+    delete status;
+
+    // Do we have an access control plugin?
+    if (m_priv->m_settings.second) {
+      Locker acllock(m_priv->m_settings.second);
+      if (!m_priv->m_settings.second->authorized(*sso_statement,assertions)) {
+	log(LogLevelError, "doExportAssertions: access control provider denied access");
+	page = "access";
+	goto out;
+      }
+    }
+
+    // Get the AAP providers, which contain the attribute policy info.
+    Iterator<IAAP*> provs=m_priv->m_app->getAAPProviders();
+
+    // Clear out the list of mapped attributes
+    while (provs.hasNext()) {
+      IAAP* aap=provs.next();
+      aap->lock();
+      try {
+	Iterator<const IAttributeRule*> rules=aap->getAttributeRules();
+	while (rules.hasNext()) {
+	  const char* header=rules.next()->getHeader();
+	  if (header)
+	    clearHeader(header);
+	}
+      }
+      catch(...) {
+	aap->unlock();
+	log(LogLevelError, "caught unexpected error while clearing headers");
+	throw;
+      }
+      aap->unlock();
+    }
+    provs.reset();
+    
+    // Maybe export the first assertion.
+    clearHeader("Shib-Attributes");
+    pair<bool,bool> exp=m_priv->m_settings.first->getBool("exportAssertion");
+    if (!exp.first || !exp.second)
+      if (exportAssertion)
+	exp.second=true;
+    if (exp.second && assertions.size()) {
+      string assertion;
+      RM::serialize(*(assertions[0]), assertion);
+      setHeader("Shib-Attributes", assertion.c_str());
+    }
+
+    // Export the SAML AuthnMethod and the origin site name, and possibly the NameIdentifier.
+    clearHeader("Shib-Origin-Site");
+    clearHeader("Shib-Authentication-Method");
+    clearHeader("Shib-NameIdentifier-Format");
+    auto_ptr_char os(sso_statement->getSubject()->getNameIdentifier()->getNameQualifier());
+    auto_ptr_char am(sso_statement->getAuthMethod());
+    setHeader("Shib-Origin-Site", os.get());
+    setHeader("Shib-Authentication-Method", am.get());
+    
+    // Export NameID?
+    AAP wrapper(provs,
+		sso_statement->getSubject()->getNameIdentifier()->getFormat(),
+		Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
+    if (!wrapper.fail() && wrapper->getHeader()) {
+      auto_ptr_char form(sso_statement->getSubject()->getNameIdentifier()->getFormat());
+      auto_ptr_char nameid(sso_statement->getSubject()->getNameIdentifier()->getName());
+      setHeader("Shib-NameIdentifier-Format", form.get());
+      if (!strcmp(wrapper->getHeader(),"REMOTE_USER"))
+	setRemoteUser(nameid.get());
+      else
+	setHeader(wrapper->getHeader(), nameid.get());
+    }
+    
+    clearHeader("Shib-Application-ID");
+    setHeader("Shib-Application-ID", m_priv->m_app->getId());
+
+    // Export the attributes.
+    Iterator<SAMLAssertion*> a_iter(assertions);
+    while (a_iter.hasNext()) {
+      SAMLAssertion* assert=a_iter.next();
+      Iterator<SAMLStatement*> statements=assert->getStatements();
+      while (statements.hasNext()) {
+	SAMLAttributeStatement* astate=dynamic_cast<SAMLAttributeStatement*>(statements.next());
+	if (!astate)
+	  continue;
+	Iterator<SAMLAttribute*> attrs=astate->getAttributes();
+	while (attrs.hasNext()) {
+	  SAMLAttribute* attr=attrs.next();
+        
+	  // Are we supposed to export it?
+	  AAP wrapper(provs,attr->getName(),attr->getNamespace());
+	  if (wrapper.fail() || !wrapper->getHeader())
+	    continue;
+                
+	  Iterator<string> vals=attr->getSingleByteValues();
+	  if (!strcmp(wrapper->getHeader(),"REMOTE_USER") && vals.hasNext())
+	    setRemoteUser(vals.next());
+	  else {
+	    int it=0;
+	    string header = getHeader(wrapper->getHeader());
+	    if (! header.empty())
+	      it++;
+	    for (; vals.hasNext(); it++) {
+	      string value = vals.next();
+	      for (string::size_type pos = value.find_first_of(";", string::size_type(0));
+		   pos != string::npos;
+		   pos = value.find_first_of(";", pos)) {
+		value.insert(pos, "\\");
+		pos += 2;
+	      }
+	      if (it)
+		header += ";";
+	      header += value;
+	    }
+	    setHeader(wrapper->getHeader(), header);
+	  }
+	}
+      }
+    }
+
+    // clean up memory
+    for (int k = 0; k < assertions.size(); k++)
+      delete assertions[k];
+    delete sso_statement;
+
+    return pair<bool,void*>(false,NULL);
+
+  } catch (ShibTargetException &e) {
+    mlp.insert("errorText", e.what());
+
+  } catch (...) {
+    mlp.insert("errorText", "Unexpected Exception");
+
+  }
+
+  // If we get here then we've got an error.
+  mlp.insert("errorType", procState);
+  mlp.insert("errorDesc", "An error occurred while processing your request.");
+
+ out:
+  if (targetURL)
+    mlp.insert("requestURL", targetURL);
+
+  // clean up memory
+  for (int k = 0; k < assertions.size(); k++)
+    delete assertions[k];
+  if (sso_statement)
+    delete sso_statement;
+
+  return pair<bool,void*>(true,m_priv->sendError(this, page, mlp));
 }
 
 
@@ -734,15 +1071,26 @@ ShibTarget::serialize(saml::SAMLAssertion &assertion, std::string &result)
  * Shib Target Private implementation
  */
 
-ShibTargetPriv::ShibTargetPriv() : m_parser(NULL), m_app(NULL)
+ShibTargetPriv::ShibTargetPriv() : m_parser(NULL), m_app(NULL), m_mapper(NULL),
+				   m_conf(NULL), m_Config(NULL)
 {
   m_total_bytes = 0;
+  session_id = NULL;
 }
 
 ShibTargetPriv::~ShibTargetPriv()
 {
   if (m_parser) delete m_parser;
-  //if (m_app) delete m_app;
+  if (m_mapper) {
+    m_mapper->unlock();
+    m_mapper = NULL;
+  }
+  if (m_conf) {
+    m_conf->unlock();
+    m_conf = NULL;
+  }
+  m_app = NULL;
+  m_Config = NULL;
 }
 
 static inline char hexchar(unsigned short s)
@@ -775,22 +1123,29 @@ ShibTargetPriv::get_application(string protocol, string hostname, int port,
   if (m_app)
     return;
 
+  // XXX: Do we need to keep conf and mapper locked while we hold m_app?
+
   // We lock the configuration system for the duration.
-  IConfig* conf=m_Config->getINI();
-  Locker locker(conf);
+  m_conf=m_Config->getINI();
+  m_conf->lock();
     
   // Map request to application and content settings.
-  IRequestMapper* mapper=conf->getRequestMapper();
-  Locker locker2(mapper);
+  m_mapper=m_conf->getRequestMapper();
+  m_mapper->lock();
 
   // Obtain the application settings from the parsed URL
-  m_settings = mapper->getSettingsFromParsedURL(protocol.c_str(), hostname.c_str(),
-						port, uri.c_str());
+  m_settings = m_mapper->getSettingsFromParsedURL(protocol.c_str(),
+						  hostname.c_str(),
+						  port, uri.c_str());
 
   // Now find the application from the URL settings
   pair<bool,const char*> application_id=m_settings.first->getString("applicationId");
-  const IApplication* application=conf->getApplication(application_id.second);
+  const IApplication* application=m_conf->getApplication(application_id.second);
   if (!application) {
+    m_mapper->unlock();
+    m_mapper = NULL;
+    m_conf->unlock();
+    m_conf = NULL;
     throw ShibTargetException(SHIBRPC_OK, "unable to map request to application settings.  Check configuration");
   }
 
@@ -804,6 +1159,51 @@ ShibTargetPriv::get_application(string protocol, string hostname, int port,
   m_url += uri;
 }
 
+
+void*
+ShibTargetPriv::sendError(ShibTarget* st, string page, ShibMLP &mlp)
+{
+  const IPropertySet* props=m_app->getPropertySet("Errors");
+  if (props) {
+    pair<bool,const char*> p=props->getString(page.c_str());
+    if (p.first) {
+      ifstream infile(p.second);
+      if (!infile.fail()) {
+	const char* res = mlp.run(infile,props);
+	if (res)
+	  return st->sendPage(res);
+      }
+    }
+  }
+
+  string errstr = "sendError could not process the error template for application ";
+  errstr += m_app->getId();
+  st->log(ShibTarget::LogLevelError, errstr);
+  return st->sendPage("Internal Server Error.  Please contact the server administrator.");
+}
+
+const char *
+ShibTargetPriv::getSessionId(ShibTarget* st)
+{
+  if (session_id)
+    return session_id;
+
+  char *sid;
+  pair<const char*, const char *> shib_cookie = st->getCookieNameProps();
+  string cookies = st->getCookies();
+  if (!cookies.empty()) {
+    if (sid = strstr(cookies.c_str(), shib_cookie.first)) {
+      // We found a cookie.  pull it out (our session_id)
+      sid += strlen(shib_cookie.first) + 1; // skip over the '='
+      char *cookieend = strchr(sid, ';');
+      if (cookieend)
+	*cookieend = '\0';
+      session_id = sid;
+    }
+  }
+
+  return session_id;
+}
 
 /*************************************************************************
  * CGI Parser implementation
@@ -934,7 +1334,7 @@ CgiParse::url_decode(char *url)
  * We need to implement this so the SHIRE (and RM) recodes work
  * in terms of the ShibTarget
  */
-void ShibTarget::log(ShibLogLevel level, string &msg)
+void ShibTarget::log(ShibLogLevel level, const string &msg)
 {
   throw runtime_error("Invalid Usage");
 }
@@ -942,7 +1342,23 @@ string ShibTarget::getCookies(void)
 {
   throw runtime_error("Invalid Usage");
 }
-void ShibTarget::setCookie(string &name, string &value)
+void ShibTarget::setCookie(const string &name, const string &value)
+{
+  throw runtime_error("Invalid Usage");
+}
+void ShibTarget::clearHeader(const string &name)
+{
+  throw runtime_error("Invalid Usage");
+}
+void ShibTarget::setHeader(const string &name, const string &value)
+{
+  throw runtime_error("Invalid Usage");
+}
+string ShibTarget::getHeader(const string &name)
+{
+  throw runtime_error("Invalid Usage");
+}
+void ShibTarget::setRemoteUser(const string &name)
 {
   throw runtime_error("Invalid Usage");
 }
@@ -950,16 +1366,16 @@ string ShibTarget::getPostData(void)
 {
   throw runtime_error("Invalid Usage");
 }
-void ShibTarget::setAuthType(std::string)
+void ShibTarget::setAuthType(const std::string)
 {
   throw runtime_error("Invalid Usage");
 }
 //virtual HTAccessInfo& getAccessInfo(void);
-void* ShibTarget::sendPage(string &msg, pair<string,string> headers[], int code)
+void* ShibTarget::sendPage(const string &msg, const pair<string,string> headers[], int code)
 {
   throw runtime_error("Invalid Usage");
 }
-void* ShibTarget::sendRedirect(std::string url)
+void* ShibTarget::sendRedirect(const std::string url)
 {
   throw runtime_error("Invalid Usage");
 }
