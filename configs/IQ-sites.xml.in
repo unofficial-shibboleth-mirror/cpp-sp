@@ -14,7 +14,7 @@
 	-->
 
 	<EntityDescriptor entityID="urn:mace:inqueue:example.edu">
-		<IDPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:1.1:protocol">
+		<IDPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:1.1:protocol urn:mace:shibboleth:1.0">
 			<Extensions>
 		        <shib:Domain xmlns:shib="urn:mace:shibboleth:1.0:metadata">example.edu</shib:Domain>
 			</Extensions>
