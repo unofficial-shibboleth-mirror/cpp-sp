@@ -346,7 +346,7 @@ public:
 		  "REQUIRE all: %d", m_dc->bRequireAll);
 
     HTAccessInfo* ht = new HTAccessInfo();
-    ht->requireAll = (m_dc->bRequireAll >= 0);
+    ht->requireAll = (m_dc->bRequireAll == 1);
     ht->elements.reserve(reqs_arr->nelts);
     for (int x = 0; x < reqs_arr->nelts; x++) {
       HTAccessInfo::RequireLine* rline = new HTAccessInfo::RequireLine();
