@@ -324,6 +324,7 @@ void XMLMetadata::lock()
                     XMLMetadataImpl* new_mapper=new XMLMetadataImpl(m_source.c_str());
                     delete m_impl;
                     m_impl=new_mapper;
+                    m_filestamp=stat_buf.st_mtime;
                     m_lock->unlock();
                 }
                 catch(SAMLException& e)
