@@ -14,4 +14,5 @@ pkgsysconf_DATA = \
                 xmldsig-filter2.xsd \
                 xml.xsd \
                 shibboleth.xsd \
+                shibboleth-trust-1.0.xsd \
                 shibboleth-appmap-1.0.xsd

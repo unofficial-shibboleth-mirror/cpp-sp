@@ -1,7 +1,15 @@
 <?xml version="1.0" encoding="US-ASCII"?>
-<schema targetNamespace="urn:mace:shibboleth:1.0" xmlns="http://www.w3.org/2001/XMLSchema" xmlns:ds="http://www.w3.org/2000/09/xmldsig#" xmlns:xml="http://www.w3.org/XML/1998/namespace" xmlns:shib="urn:mace:shibboleth:1.0" elementFormDefault="qualified" attributeFormDefault="unqualified" version="1.0">
-    <import namespace="http://www.w3.org/2000/09/xmldsig#" schemaLocation="http://www.w3.org/TR/xmldsig-core/xmldsig-core-schema.xsd"/>
-    <import namespace="http://www.w3.org/XML/1998/namespace" schemaLocation="http://www.w3.org/2001/xml.xsd"/>
+<schema targetNamespace="urn:mace:shibboleth:1.0"
+	xmlns="http://www.w3.org/2001/XMLSchema"
+	xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
+	xmlns:xml="http://www.w3.org/XML/1998/namespace"
+	xmlns:shib="urn:mace:shibboleth:1.0"
+	elementFormDefault="qualified"
+	attributeFormDefault="unqualified"
+	version="1.2">
+
+    <import namespace="http://www.w3.org/2000/09/xmldsig#" schemaLocation="xmldsig-core-schema.xsd"/>
+    <import namespace="http://www.w3.org/XML/1998/namespace" schemaLocation="xml.xsd"/>
     
     
     <!-- Status-Related Information -->
@@ -9,33 +17,10 @@
     <!--
     The following SAML sub-status codes are defined in this namespace:
     
-        "RealTimeRelease"
-            Used with samlp:Responder, signals user wants real-time attribute release
-        
         "InvalidHandle"
             Used with samlp:Requester, signals AA did not recognize handle as valid
     -->
     
-    <element name="RealTimeReleaseURL" type="anyURI">
-        <annotation>
-        	<documentation xml:lang="en">Used by AA in samlp:StatusDetail to signal user wants real-time attribute release.</documentation>
-        </annotation>
-    </element>
-    
-
-    <!-- Relaxes SAML AttributeValue type definition -->
-
-	<complexType name="AttributeValueType" mixed="true">
-		<annotation>
-			<documentation xml:lang="en">By convention, all Shibboleth attribute values carry this unconstrained xsi:type.</documentation>
-		</annotation>
-		<sequence>
-			<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
-		</sequence>
-		<anyAttribute namespace="##any" processContents="lax"/>
-	</complexType>
-
-
     <!-- Attribute Acceptance Policies -->
 	
     <simpleType name="AttributeRuleValueType">
@@ -148,6 +133,7 @@
 	<simpleType name="ContactTypeType">
 		<restriction base="string">
             <enumeration value="technical"/>
+            <enumeration value="support"/>
             <enumeration value="administrative"/>
             <enumeration value="billing"/>
             <enumeration value="other"/>
@@ -185,7 +171,9 @@
 
     <complexType name="OriginSiteType">
         <annotation>
-        	<documentation xml:lang="en">Origin sites add at least one handle service (with a name and optional KeyInfo), plus optional domains trusted for attribute scoping.</documentation>
+        	<documentation xml:lang="en">
+        	Origin sites add at least one handle service (with a name), plus optional domains trusted for attribute scoping.
+        	</documentation>
         </annotation>
         <complexContent>
 	        <extension base="shib:SiteType">
@@ -193,6 +181,21 @@
 	                <element name="HandleService" type="shib:AuthorityType" maxOccurs="unbounded"/>
 	                <element name="AttributeAuthority" type="shib:AuthorityType" minOccurs="0" maxOccurs="unbounded"/>
 	                <element name="Domain" type="shib:regexp_string" minOccurs="0" maxOccurs="unbounded"/>
+	            </sequence>
+	        </extension>
+        </complexContent>
+    </complexType>
+
+    <complexType name="DestinationSiteType">
+        <annotation>
+        	<documentation xml:lang="en">
+        	Destination sites add at least one attribute requester (with a name).
+        	</documentation>
+        </annotation>
+        <complexContent>
+	        <extension base="shib:SiteType">
+	            <sequence>
+	                <element name="AttributeRequester" type="shib:AuthorityType" maxOccurs="unbounded"/>
 	            </sequence>
 	        </extension>
         </complexContent>
@@ -218,11 +221,11 @@
     </complexType>    
 
     <element name="OriginSite" type="shib:OriginSiteType"/>
-    <element name="DestinationSite" type="shib:SiteType"/>
+    <element name="DestinationSite" type="shib:DestinationSiteType"/>
     <element name="SiteGroup" type="shib:SiteGroupType"/>
 
 
-	<!-- Trust Metadata -->
+	<!-- Old (pre 1.2) Trust Metadata -->
 
 	<complexType name="KeyAuthorityType">
 		<annotation>
@@ -234,15 +237,6 @@
 			<element ref="ds:KeyInfo"/>
 			<element name="Subject" type="shib:regexp_string" minOccurs="0" maxOccurs="unbounded"/>
 		</sequence>
-		<attribute name="VerifyDepth" type="unsignedByte" use="optional"/>
-		<attribute name="Type" use="optional" default="authority">
-			<simpleType>
-				<restriction base="string">
-					<enumeration value="authority"/>
-					<enumeration value="entity"/>
-				</restriction>
-			</simpleType>
-		</attribute>
 		<anyAttribute namespace="##any" processContents="lax"/>
 	</complexType>
 	<element name="KeyAuthority" type="shib:KeyAuthorityType"/>
@@ -263,92 +257,4 @@
 		</complexType>
 	</element>
 
-	<!-- Credential Access -->
-
-	<complexType name="FileCredResolverType">
-		<annotation>
-			<documentation xml:lang="en">Describes how to access a key or certificate in a file.</documentation>
-		</annotation>
-		<sequence>
-			<element name="Path" type="string"/>
-			<element name="Password" type="string" minOccurs="0"/>
-		</sequence>
-		<attribute name="Id" type="ID" use="required"/>
-		<attribute name="Format" use="optional" default="PEM">
-			<simpleType>
-				<restriction base="string">
-					<enumeration value="PEM"/>
-					<enumeration value="DER"/>
-				</restriction>
-			</simpleType>
-		</attribute>
-		<anyAttribute namespace="##any" processContents="lax"/>
-	</complexType>
-	<element name="FileCredResolver" type="shib:FileCredResolverType"/>
-
-	<complexType name="CustomCredResolverType">
-		<annotation>
-			<documentation xml:lang="en">Describes how to access a credential using an extension class.</documentation>
-		</annotation>
-		<sequence>
-			<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
-		</sequence>
-		<attribute name="Id" type="ID" use="required"/>
-		<attribute name="Class" type="string" use="required"/>
-        <anyAttribute namespace="##any" processContents="lax"/>
-	</complexType>
-	<element name="CustomCredResolver" type="shib:CustomCredResolverType"/>
-
-	<element name="KeyStoreResolver">
-		<annotation>
-			<documentation xml:lang="en">Describes credentials in a Java keystore.</documentation>
-		</annotation>
-		<complexType>
-			<sequence>
-				<element name="Path" type="string"/>
-				<element name="Alias" type="string"/>
-				<element name="Password" type="string"/>
-				<element name="AliasPassword" type="string" minOccurs="0"/>
-			</sequence>
-			<attribute name="Id" type="ID" use="required"/>
-			<attribute name="Type" type="string" use="optional" default="JKS"/>
-			<anyAttribute namespace="##any" processContents="lax"/>
-		</complexType>
-	</element>
-	
-	<complexType name="KeyUseType">
-		<annotation>
-			<documentation xml:lang="en">
-			Binds a set of credentials to one or more named system entities with additional controls over
-			which relying parties are capable of accepting them.
-			</documentation>
-		</annotation>
-		<sequence>
-			<element name="Subject" type="shib:regexp_string" minOccurs="0" maxOccurs="unbounded"/>
-			<element name="RelyingParty" type="shib:regexp_string" minOccurs="0" maxOccurs="unbounded"/>
-		</sequence>
-		<attribute name="KeyRef" type="IDREF" use="required"/>
-		<attribute name="CertificateRef" type="IDREF" use="optional"/>
-        <anyAttribute namespace="##any" processContents="lax"/>
-	</complexType>	
-	<element name="KeyUse" type="shib:KeyUseType"/>
-	
-	<element name="Credentials">
-		<annotation>
-			<documentation xml:lang="en">A set of KeyUse data that provides local credentials.</documentation>
-		</annotation>
-		<complexType>
-			<sequence>
-				<choice maxOccurs="unbounded">
-					<element ref="ds:KeyInfo"/>
-					<element ref="shib:FileCredResolver"/>
-					<element ref="shib:KeyStoreResolver"/>
-					<element ref="shib:CustomCredResolver"/>
-				</choice>
-				<element ref="shib:KeyUse" maxOccurs="unbounded"/>
-			</sequence>
-	        <anyAttribute namespace="##any" processContents="lax"/>
-		</complexType>
-	</element>
-	
 </schema>
