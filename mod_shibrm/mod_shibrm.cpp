@@ -430,14 +430,14 @@ extern "C" int shibrm_check_auth(request_rec* r)
 	 char* header = ap_pstrdup(r->pool, "");
 	 for (int it = 0; vals.hasNext(); it++) {
 		string value = vals.next();
-		for (string::size_type pos = value.find_first_of(":", string::size_type(0)); pos != string::npos; pos = value.find_first_of(":", pos)) {
+		for (string::size_type pos = value.find_first_of(";", string::size_type(0)); pos != string::npos; pos = value.find_first_of(";", pos)) {
 			value.insert(pos, "\\");
 			pos += 2;
 		}
 		if (it == 0) {
 			header=ap_pstrcat(r->pool, value.c_str(), NULL);
 		} else {
-			header=ap_pstrcat(r->pool, header, ":", value.c_str(), NULL);
+			header=ap_pstrcat(r->pool, header, ";", value.c_str(), NULL);
 		}
 	 }
 	 ap_table_setn(r->headers_in, hname.c_str(), header);
