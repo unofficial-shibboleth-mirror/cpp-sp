@@ -136,7 +136,7 @@ AAP::AAP(const char* uri)
                 AttributeRule::SiteRule& srule=arule.m_siteMap[static_cast<DOMElement*>(slist->item(k))->getAttributeNS(NULL,XML::Literals::Name)];
 
                 // Process each Value element.
-                DOMNodeList* vlist = static_cast<DOMElement*>(anysite)->getElementsByTagNameNS(XML::EDUPERSON_NS,XML::Literals::Value);
+                DOMNodeList* vlist = static_cast<DOMElement*>(slist->item(k))->getElementsByTagNameNS(XML::EDUPERSON_NS,XML::Literals::Value);
                 for (int j=0; vlist && j<vlist->getLength(); j++)
                 {
                     DOMElement* ve=static_cast<DOMElement*>(vlist->item(j));
