@@ -31,8 +31,19 @@
 #include <shib/shib-threads.h>
 #include <log4cpp/Category.hh>
 
+// Deal with inadequate Sun RPC libraries
+
 #if !HAVE_DECL_SVCFD_CREATE
   extern "C" SVCXPRT* svcfd_create(int, u_int, u_int);
+#endif
+
+#ifndef HAVE_WORKING_SVC_DESTROY
+struct tcp_conn {  /* kept in xprt->xp_p1 */
+    enum xprt_stat strm_stat;
+    u_long x_id;
+    XDR xdrs;
+    char verf_body[MAX_AUTH_BYTES];
+};
 #endif
 
 using namespace std;
@@ -144,7 +155,23 @@ bool SharChild::svc_create()
   while (i.hasNext()) {
     const ShibRPCProtocols& p=i.next();
     if (!svc_register (transp, p.prog, p.vers, p.dispatch, 0)) {
+#ifdef HAVE_WORKING_SVC_DESTROY
       svc_destroy(transp);
+#else
+      /* we have to inline svc_destroy because we can't pass in the xprt variable */
+      struct tcp_conn *cd = (struct tcp_conn *)transp->xp_p1;
+      xprt_unregister(transp);
+      close(transp->xp_sock);
+      if (transp->xp_port != 0) {
+        /* a rendezvouser socket */
+        transp->xp_port = 0;
+      } else {
+        /* an actual connection socket */
+        XDR_DESTROY(&(cd->xdrs));
+      }
+      mem_free((caddr_t)cd, sizeof(struct tcp_conn));
+      mem_free((caddr_t)transp, sizeof(SVCXPRT));
+#endif
       NDC ndc("svc_create");
       Category::getInstance("SHAR.SharChild").error("cannot register RPC program");
       return false;
