@@ -250,6 +250,7 @@ public:
         static const XMLCh signing[];
         static const XMLCh SingleLogoutService[];
         static const XMLCh SingleSignOnService[];
+        static const XMLCh SourceID[];
         static const XMLCh SPSSODescriptor[];
         static const XMLCh SurName[];
         static const XMLCh TelephoneNumber[];

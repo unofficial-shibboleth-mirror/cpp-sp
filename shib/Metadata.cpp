@@ -81,6 +81,26 @@ const IEntityDescriptor* Metadata::lookup(const XMLCh* id)
     return NULL;
 }
 
+const IEntityDescriptor* Metadata::lookup(const SAMLArtifact* artifact)
+{
+    if (m_mapper) {
+        m_mapper->unlock();
+        m_mapper=NULL;
+    }
+    const IEntityDescriptor* ret=NULL;
+    m_metadatas.reset();
+    while (m_metadatas.hasNext()) {
+        IMetadata* i=m_metadatas.next();
+        i->lock();
+        if (ret=i->lookup(artifact)) {
+            m_mapper=i;
+            return ret;
+        }
+        i->unlock();
+    }
+    return NULL;
+}
+
 Metadata::~Metadata()
 {
     if (m_mapper)

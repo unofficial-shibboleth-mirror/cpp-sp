@@ -611,6 +611,9 @@ const XMLCh XML::Literals::SingleSignOnService[] =
   chLatin_S, chLatin_e, chLatin_r, chLatin_v, chLatin_i, chLatin_c, chLatin_e, chNull
 };
 
+const XMLCh XML::Literals::SourceID[] =
+{ chLatin_S, chLatin_o, chLatin_u, chLatin_r, chLatin_c, chLatin_e, chLatin_I, chLatin_D, chNull };
+
 const XMLCh XML::Literals::SPSSODescriptor[] =
 { chLatin_S, chLatin_P, chLatin_S, chLatin_S, chLatin_O,
   chLatin_D, chLatin_e, chLatin_s, chLatin_c, chLatin_r, chLatin_i, chLatin_p, chLatin_t, chLatin_o, chLatin_r, chNull

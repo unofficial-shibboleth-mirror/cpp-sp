@@ -317,7 +317,8 @@ namespace {
             vector<const XMLCh*> m_attrprofs;
             vector<const SAMLAttribute*> m_attrs;
             bool m_wantAuthnRequestsSigned;
-            //friend class EntityDescriptor;
+            const XMLCh* m_sourceId;
+            friend class EntityDescriptor;
         };
 
         class AARole : public Role, public ScopedRole, public virtual IAttributeAuthorityDescriptor
@@ -411,12 +412,9 @@ namespace {
         void init();
         ~XMLMetadataImpl();
 
-    #ifdef HAVE_GOOD_STL
-        typedef multimap<xstring,const EntityDescriptor*> sitemap_t;
-    #else
         typedef multimap<string,const EntityDescriptor*> sitemap_t;
-    #endif
         sitemap_t m_sites;
+        sitemap_t m_sources;
         EntityDescriptor* m_rootProvider;
         EntitiesDescriptor* m_rootGroup;
     };
@@ -428,6 +426,7 @@ namespace {
         ~XMLMetadata() {}
 
         const IEntityDescriptor* lookup(const XMLCh* providerId) const;
+        const IEntityDescriptor* lookup(const saml::SAMLArtifact* artifact) const;
         
     protected:
         virtual ReloadableXMLFileImpl* newImplementation(const char* pathname, bool first=true) const;
@@ -728,12 +727,20 @@ XMLMetadataImpl::ScopedRole::ScopedRole(const DOMElement* e)
 }
 
 XMLMetadataImpl::IDPRole::IDPRole(const EntityDescriptor* provider, time_t validUntil, const DOMElement* e)
-    : SSORole(provider,validUntil,e), ScopedRole(e), m_wantAuthnRequestsSigned(false)
+    : SSORole(provider,validUntil,e), ScopedRole(e), m_wantAuthnRequestsSigned(false), m_sourceId(NULL)
 {
     // Check the root element namespace. If SAML2, assume it's the std schema.
     if (!XMLString::compareString(e->getNamespaceURI(),::XML::SAML2META_NS)) {
         const XMLCh* flag=e->getAttributeNS(NULL,SHIB_L(WantAuthnRequestsSigned));
         m_wantAuthnRequestsSigned=(flag && (*flag==chDigit_1 || *flag==chLatin_t));
+        
+        // Check for SourceID extension.
+        DOMElement* ext=saml::XML::getFirstChildElement(e,::XML::SAML2META_NS,SHIB_L(Extensions));
+        if (ext) {
+            ext=saml::XML::getFirstChildElement(e,saml::XML::SAML_ARTIFACT_SOURCEID,SHIB_L(SourceID));
+            if (ext && ext->hasChildNodes())
+                m_sourceId=ext->getFirstChild()->getNodeValue();
+        }
         
         int i;
         DOMNodeList* nlist=e->getElementsByTagNameNS(::XML::SAML2META_NS,SHIB_L(SingleSignOnService));
@@ -956,12 +963,29 @@ XMLMetadataImpl::EntityDescriptor::EntityDescriptor(
             child = saml::XML::getNextSiblingElement(child);
         }
     }
-#ifdef HAVE_GOOD_STL
-    wrapper->m_sites.insert(pair<xstring,const EntityDescriptor*>(m_id,this));
-#else
+
     auto_ptr_char id(m_id);
     wrapper->m_sites.insert(pair<string,const EntityDescriptor*>(id.get(),this));
-#endif
+    
+    // Look for an IdP role, and register the artifact source ID and endpoints.
+    const IDPRole* idp=NULL;
+    for (vector<const IRoleDescriptor*>::const_iterator r=m_roles.begin(); r!=m_roles.end(); r++) {
+        if (idp=dynamic_cast<const IDPRole*>(*r)) {
+            if (idp->m_sourceId) {
+                auto_ptr_char sourceid(idp->m_sourceId);
+                wrapper->m_sources.insert(pair<string,const EntityDescriptor*>(sourceid.get(),this));
+            }
+            else {
+                string sourceid=SAMLArtifact::toHex(SAMLArtifactType0001::generateSourceId(id.get()));
+                wrapper->m_sources.insert(pair<string,const EntityDescriptor*>(sourceid,this));
+            }
+            Iterator<const IEndpoint*> locs=idp->getArtifactResolutionServiceManager()->getEndpoints();
+            while (locs.hasNext()) {
+                auto_ptr_char loc(locs.next()->getLocation());
+                wrapper->m_sources.insert(pair<string,const EntityDescriptor*>(loc.get(),this));
+            }
+        }
+    }
 }
 
 const IIDPSSODescriptor* XMLMetadataImpl::EntityDescriptor::getIDPSSODescriptor(const XMLCh* protocol) const
@@ -1078,15 +1102,36 @@ XMLMetadataImpl::~XMLMetadataImpl()
 const IEntityDescriptor* XMLMetadata::lookup(const XMLCh* providerId) const
 {
     XMLMetadataImpl* impl=dynamic_cast<XMLMetadataImpl*>(getImplementation());
-#ifdef HAVE_GOOD_STL
-    pair<XMLMetadataImpl::sitemap_t::const_iterator,XMLMetadataImpl::sitemap_t::const_iterator> range=
-        impl->m_sites.equal_range(providerId);        
-#else
     auto_ptr_char temp(providerId);
     pair<XMLMetadataImpl::sitemap_t::const_iterator,XMLMetadataImpl::sitemap_t::const_iterator> range=
         impl->m_sites.equal_range(temp.get());
-#endif
+
     time_t now=time(NULL);
+    for (XMLMetadataImpl::sitemap_t::const_iterator i=range.first; i!=range.second; i++)
+        if (now < i->second->getValidUntil())
+            return i->second;
+    return NULL;
+}
+
+const IEntityDescriptor* XMLMetadata::lookup(const SAMLArtifact* artifact) const
+{
+    time_t now=time(NULL);
+    XMLMetadataImpl* impl=dynamic_cast<XMLMetadataImpl*>(getImplementation());
+    pair<XMLMetadataImpl::sitemap_t::const_iterator,XMLMetadataImpl::sitemap_t::const_iterator> range;
+    
+    // Depends on type of artifact.
+    const SAMLArtifactType0001* type1=dynamic_cast<const SAMLArtifactType0001*>(artifact);
+    if (type1) {
+        range=impl->m_sources.equal_range(type1->getSourceID());
+    }
+    else {
+        const SAMLArtifactType0002* type2=dynamic_cast<const SAMLArtifactType0002*>(artifact);
+        if (type2) {
+            range=impl->m_sources.equal_range(type2->getSourceLocation());
+        }
+        else
+            return NULL;
+    }
     for (XMLMetadataImpl::sitemap_t::const_iterator i=range.first; i!=range.second; i++)
         if (now < i->second->getValidUntil())
             return i->second;
