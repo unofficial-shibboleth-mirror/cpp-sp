@@ -21,3 +21,5 @@ if DO_APXS_INSTALL
 install-exec-local:
 	$(APXS) -i -A -n shire .libs/mod_shire.so
 endif
+
+EXTRA_DIST = mod_shire.dsp

@@ -28,3 +28,5 @@ libshib_la_SOURCES = \
 # this is different from the project version
 # http://sources.redhat.com/autobook/autobook/autobook_91.html
 libshib_la_LDFLAGS = -version-info 4:0:0
+
+EXTRA_DIST = shib.dsp

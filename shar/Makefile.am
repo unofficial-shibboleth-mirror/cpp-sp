@@ -22,3 +22,5 @@ shar_LDADD = \
   $(top_builddir)/shib-target/libshib-target.la \
   $(top_builddir)/shib/libshib.la \
   $(ONCRPC_LIBS)
+
+EXTRA_DIST = shar.dsp shar_win32.cpp testclient.dsp

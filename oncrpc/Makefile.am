@@ -53,6 +53,7 @@ EXTRA_DIST = \
   makefile.nt \
   oncbcimp.def \
   oncrpc.def \
+  oncrpc.dsp \
   oncrpc.rc \
   oncrpcbc.def \
   bcopy.c \
@@ -60,5 +61,5 @@ EXTRA_DIST = \
   getrpcen.c \
   getrpcpo.c \
   nt.c \
-  portmap.c
-
+  portmap.c \
+  resource.h

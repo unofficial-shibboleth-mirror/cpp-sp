@@ -21,3 +21,5 @@ if DO_APXS_INSTALL
 install-exec-local:
 	$(APXS) -i -A -n shibrm .libs/mod_shibrm.so
 endif 
+
+EXTRA_DIST = mod_shibrm.dsp
