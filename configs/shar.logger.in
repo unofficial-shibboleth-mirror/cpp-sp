@@ -17,8 +17,8 @@ log4j.appender.tran_log.maxFileSize=1000000
 log4j.appender.tran_log.maxBackupIndex=20
 # We can get away with the PatternLayout for this log because
 # there's locking done by the Shibboleth system internally.
-log4j.appender.shar_log.layout=org.apache.log4j.PatternLayout
-log4j.appender.shar_log.layout.ConversionPattern=%d{%Y-%m-%d %H:%M:%S} %p %c %x: %m%n
+log4j.appender.tran_log.layout=org.apache.log4j.PatternLayout
+log4j.appender.tran_log.layout.ConversionPattern=%d{%Y-%m-%d %H:%M:%S} %p %c %x: %m%n
 
 # set overall behavior
 log4j.rootCategory=INFO, shar_log
