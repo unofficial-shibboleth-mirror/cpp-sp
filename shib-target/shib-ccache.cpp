@@ -701,45 +701,11 @@ SAMLResponse* InternalCCacheEntry::getNewResponse()
             
         log->debug("trying to query an AA...");
 
-
         // Call context object
         ShibHTTPHook::ShibHTTPHookCallContext ctx(credUse ? credUse->getString("TLS").second : NULL,AA);
         Trust t(application->getTrustProviders());
         
-        // First try any bindings provided by caller. This is for compatibility with
-        // old releases. Metadata should be used going forward.
-        Iterator<SAMLAuthorityBinding*> bindings=p_auth->getBindings();
-        while (!response && bindings.hasNext()) {
-            SAMLAuthorityBinding* ab=bindings.next();
-            try {
-                // Get a binding object for this protocol.
-                const SAMLBinding* binding = application->getBinding(ab->getBinding());
-                if (!binding) {
-                    auto_ptr_char prot(ab->getBinding());
-                    log->warn("skipping binding on unsupported protocol (%s)", prot.get());
-                    continue;
-                }
-                auto_ptr<SAMLResponse> r(binding->send(ab->getLocation(), *(req.get()), &ctx));
-                if (r->isSigned() && !t.validate(application->getRevocationProviders(),AA,*r))
-                    throw TrustException("CCacheEntry::getNewResponse() unable to verify signed response");
-                response = r.release();
-            }
-            catch (SAMLException& e) {
-                log->error("caught SAML exception during SAML attribute query: %s", e.what());
-                // Check for shib:InvalidHandle error and propagate it out.
-                Iterator<saml::QName> codes=e.getCodes();
-                if (codes.size()>1) {
-                    const saml::QName& code=codes[1];
-                    if (!XMLString::compareString(code.getNamespaceURI(),shibboleth::Constants::SHIB_NS) &&
-                        !XMLString::compareString(code.getLocalName(), shibboleth::Constants::InvalidHandle)) {
-                        codes.reset();
-                        throw InvalidHandleException(codes,e.what());
-                    }
-                }
-            }
-        }
-
-        // Now try metadata.
+        // Use metadata to locate endpoints.
         Iterator<const IEndpoint*> endpoints=AA->getAttributeServiceManager()->getEndpoints();
         while (!response && endpoints.hasNext()) {
             const IEndpoint* ep=endpoints.next();
