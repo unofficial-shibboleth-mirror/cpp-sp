@@ -367,8 +367,14 @@ void GetHeader(PHTTP_FILTER_PREPROC_HEADERS pn, PHTTP_FILTER_CONTEXT pfc,
 
 class ShibTargetIsapiF : public ShibTarget
 {
+  PHTTP_FILTER_CONTEXT m_pfc;
+  PHTTP_FILTER_PREPROC_HEADERS m_pn;
+  string m_cookie;
+  Category* m_log;
 public:
-  ShibTargetIsapiF(PHTTP_FILTER_CONTEXT pfc, PHTTP_FILTER_PREPROC_HEADERS pn, const site_t& site) {
+  ShibTargetIsapiF(PHTTP_FILTER_CONTEXT pfc, PHTTP_FILTER_PREPROC_HEADERS pn, const site_t& site)
+    : m_log(&Category::getInstance("isapi_shib"))
+  {
 
     // URL path always come from IIS.
     dynabuf url(256);
@@ -413,12 +419,16 @@ public:
   ~ShibTargetIsapiF() { }
 
   virtual void log(ShibLogLevel level, const string &msg) {
-      LogEvent(NULL, (level == LogLevelDebug ? EVENTLOG_INFORMATION_TYPE :
-                      (level == LogLevelInfo ? EVENTLOG_INFORMATION_TYPE :
-                      (level == LogLevelWarn ? EVENTLOG_WARNING_TYPE : EVENTLOG_ERROR_TYPE))),
-	     2100, NULL, msg.c_str());
+      if (level == LogLevelError)
+          LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, msg.c_str());
+      m_log->log(
+        (level == LogLevelDebug ? Priority::DEBUG :
+            (level == LogLevelInfo ? Priority::INFO :
+            (level == LogLevelWarn ? Priority::WARN : Priority::ERROR))),
+        msg
+        );
   }
-  virtual string getCookies(void) {
+  virtual string getCookies() const {
     dynabuf buf(128);
     GetHeader(m_pn, m_pfc, "Cookie:", buf, 128, false);
     return buf.empty() ? "" : buf;
@@ -492,10 +502,6 @@ public:
   }
   virtual string getArgs(void) { throw runtime_error("getArgs not implemented"); }
   virtual string getPostData(void) { throw runtime_error("getPostData not implemented"); }
-  
-  PHTTP_FILTER_CONTEXT m_pfc;
-  PHTTP_FILTER_PREPROC_HEADERS m_pn;
-  string m_cookie;
 };
 
 DWORD WriteClientError(PHTTP_FILTER_CONTEXT pfc, const char* msg)
@@ -1041,8 +1047,13 @@ DWORD WriteClientError(LPEXTENSION_CONTROL_BLOCK lpECB, const char* msg)
 
 class ShibTargetIsapiE : public ShibTarget
 {
+  LPEXTENSION_CONTROL_BLOCK m_lpECB;
+  string m_cookie;
+  Category* m_log;
+  
 public:
   ShibTargetIsapiE(LPEXTENSION_CONTROL_BLOCK lpECB, const site_t& site)
+    : m_log(&Category::getInstance("isapi_shib"))
   {
     dynabuf ssl(5);
     GetServerVariable(lpECB,"HTTPS",ssl,5);
@@ -1088,10 +1099,19 @@ public:
   ~ShibTargetIsapiE() { }
 
   virtual void log(ShibLogLevel level, const string &msg) {
-      LogEvent(NULL, (level == LogLevelDebug ? EVENTLOG_INFORMATION_TYPE :
-                        (level == LogLevelInfo ? EVENTLOG_INFORMATION_TYPE :
-                        (level == LogLevelWarn ? EVENTLOG_WARNING_TYPE : EVENTLOG_ERROR_TYPE))),
-	     2100, NULL, msg.c_str());
+      if (level == LogLevelError)
+          LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, msg.c_str());
+      m_log->log(
+        (level == LogLevelDebug ? Priority::DEBUG :
+            (level == LogLevelInfo ? Priority::INFO :
+            (level == LogLevelWarn ? Priority::WARN : Priority::ERROR))),
+        msg
+        );
+  }
+  virtual string getCookies() const {
+    dynabuf buf(128);
+    GetServerVariable(m_lpECB, "HTTP_COOKIE", buf, 128, false);
+    return buf.empty() ? "" : buf;
   }
   virtual void setCookie(const string &name, const string &value) {
     // Set the cookie for later.  Use it during the redirect.
@@ -1164,21 +1184,12 @@ public:
   }
   virtual void* returnOK(void) { return (void*) HSE_STATUS_SUCCESS; }
 
-  virtual string getCookies(void) {
-    dynabuf buf(128);
-    GetServerVariable(m_lpECB, "HTTP_COOKIE", buf, 128, false);
-    return buf.empty() ? "" : buf;
-  }
-
   // Not used in the extension.
   virtual void clearHeader(const string &name) { throw runtime_error("clearHeader not implemented"); }
   virtual void setHeader(const string &name, const string &value) { throw runtime_error("setHeader not implemented"); }
   virtual string getHeader(const string &name) { throw runtime_error("getHeader not implemented"); }
   virtual void setRemoteUser(const string &user) { throw runtime_error("setRemoteUser not implemented"); }
   virtual string getRemoteUser(void) { throw runtime_error("getRemoteUser not implemented"); }
-
-  LPEXTENSION_CONTROL_BLOCK m_lpECB;
-  string m_cookie;
 };
 
 extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
