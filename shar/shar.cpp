@@ -173,7 +173,7 @@ int real_main(int preinit)
 
         // If just a test run, bail.
         if (shar_checkonly) {
-            fprintf(stderr, "overall configuration is loadable, check log for non-fatal problems\n");
+            fprintf(stdout, "overall configuration is loadable, check log for non-fatal problems\n");
             return 0;
         }
 
@@ -194,7 +194,7 @@ int real_main(int preinit)
         // Run the listener
         if (!shar_checkonly) {
             shar_svc_run(sock, ArrayIterator<ShibRPCProtocols>(protos,1));
-            fprintf(stderr,"shar_svc_run returned\n");
+            fprintf(stdout,"shar_svc_run returned\n");
 
             // Finalize the SHAR, close all clients
             SHARUtils::fini();
@@ -202,7 +202,7 @@ int real_main(int preinit)
         }
 
         conf.shutdown();
-        fprintf(stderr, "shar shutdown complete\n");
+        fprintf(stdout, "shar shutdown complete\n");
     }
     return 0;
 }
