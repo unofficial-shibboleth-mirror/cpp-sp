@@ -21,13 +21,13 @@
 	<AttributeRule Name="urn:mace:dir:attribute-def:eduPersonScopedAffiliation" Scoped="true" Header="Shib-EP-Affiliation" Alias="affiliation">
 		<!-- Filtering rule to limit values to eduPerson-defined enumeration. -->
         <AnySite>
-            <Value Type="regexp">^[M|m][E|e][M|m][B|b][E|e][R|r]$</Value>
-            <Value Type="regexp">^[F|f][A|a][C|c][U|u][L|l][T|t][Y|y]$</Value>
-            <Value Type="regexp">^[S|s][T|t][U|u][D|d][E|e][N|n][T|t]$</Value>
-            <Value Type="regexp">^[S|s][T|t][A|a][F|f][F|f]$</Value>
-            <Value Type="regexp">^[A|a][L|l][U|u][M|m]$</Value>
-            <Value Type="regexp">^[A|a][F|f][F|f][I|i][L|l][I|i][A|a][T|t][E|e]$</Value>
-            <Value Type="regexp">^[E|e][M|m][P|p][L|l][O|o][Y|y][E|e][E|e]$</Value>
+            <Value Type="regexp">^[Mm][Ee][Mm][Bb][Ee][Rr]$</Value>
+            <Value Type="regexp">^[Ff][Aa][Cc][Uu][Ll][Tt][Yy]$</Value>
+            <Value Type="regexp">^[Ss][Tt][Uu][Dd][Ee][Nn][Tt]$</Value>
+            <Value Type="regexp">^[Ss][Tt][Aa][Ff][Ff]$</Value>
+            <Value Type="regexp">^[Aa][Ll][Uu][Mm]$</Value>
+            <Value Type="regexp">^[Aa][Ff][Ff][Ii][Ll][Ii][Aa][Tt][Ee]$</Value>
+            <Value Type="regexp">^[Ee][Mm][Pp][Ll][Oo][Yy][Ee][Ee]$</Value>
         </AnySite>
         
         <!-- Example of Scope rule to override site metadata. -->
@@ -37,15 +37,20 @@
         </SiteRule>
 	</AttributeRule>
 
+	<--
+	This attribute is provided mostly to ease testing because an IdP out of the box only
+	sends the unscoped version. It has little use because it lacks the context needed to
+	work in a multi-domain scenario and is a subset of the scoped version anyway.
+	 -->
 	<AttributeRule Name="urn:mace:dir:attribute-def:eduPersonAffiliation" Header="Shib-EP-UnscopedAffiliation" Alias="unscoped-affiliation">
         <AnySite>
-            <Value Type="regexp">^[M|m][E|e][M|m][B|b][E|e][R|r]$</Value>
-            <Value Type="regexp">^[F|f][A|a][C|c][U|u][L|l][T|t][Y|y]$</Value>
-            <Value Type="regexp">^[S|s][T|t][U|u][D|d][E|e][N|n][T|t]$</Value>
-            <Value Type="regexp">^[S|s][T|t][A|a][F|f][F|f]$</Value>
-            <Value Type="regexp">^[A|a][L|l][U|u][M|m]$</Value>
-            <Value Type="regexp">^[A|a][F|f][F|f][I|i][L|l][I|i][A|a][T|t][E|e]$</Value>
-            <Value Type="regexp">^[E|e][M|m][P|p][L|l][O|o][Y|y][E|e][E|e]$</Value>
+            <Value Type="regexp">^[Mm][Ee][Mm][Bb][Ee][Rr]$</Value>
+            <Value Type="regexp">^[Ff][Aa][Cc][Uu][Ll][Tt][Yy]$</Value>
+            <Value Type="regexp">^[Ss][Tt][Uu][Dd][Ee][Nn][Tt]$</Value>
+            <Value Type="regexp">^[Ss][Tt][Aa][Ff][Ff]$</Value>
+            <Value Type="regexp">^[Aa][Ll][Uu][Mm]$</Value>
+            <Value Type="regexp">^[Aa][Ff][Ff][Ii][Ll][Ii][Aa][Tt][Ee]$</Value>
+            <Value Type="regexp">^[Ee][Mm][Pp][Ll][Oo][Yy][Ee][Ee]$</Value>
         </AnySite>
 	</AttributeRule>
 	
@@ -93,13 +98,13 @@
 
 	<AttributeRule Name="urn:mace:dir:attribute-def:eduPersonPrimaryAffiliation" Header="Shib-EP-PrimaryAffiliation">
         <AnySite>
-            <Value Type="regexp">^[M|m][E|e][M|m][B|b][E|e][R|r]$</Value>
-            <Value Type="regexp">^[F|f][A|a][C|c][U|u][L|l][T|t][Y|y]$</Value>
-            <Value Type="regexp">^[S|s][T|t][U|u][D|d][E|e][N|n][T|t]$</Value>
-            <Value Type="regexp">^[S|s][T|t][A|a][F|f][F|f]$</Value>
-            <Value Type="regexp">^[A|a][L|l][U|u][M|m]$</Value>
-            <Value Type="regexp">^[A|a][F|f][F|f][I|i][L|l][I|i][A|a][T|t][E|e]$</Value>
-            <Value Type="regexp">^[E|e][M|m][P|p][L|l][O|o][Y|y][E|e][E|e]$</Value>
+            <Value Type="regexp">^[Mm][Ee][Mm][Bb][Ee][Rr]$</Value>
+            <Value Type="regexp">^[Ff][Aa][Cc][Uu][Ll][Tt][Yy]$</Value>
+            <Value Type="regexp">^[Ss][Tt][Uu][Dd][Ee][Nn][Tt]$</Value>
+            <Value Type="regexp">^[Ss][Tt][Aa][Ff][Ff]$</Value>
+            <Value Type="regexp">^[Aa][Ll][Uu][Mm]$</Value>
+            <Value Type="regexp">^[Aa][Ff][Ff][Ii][Ll][Ii][Aa][Tt][Ee]$</Value>
+            <Value Type="regexp">^[Ee][Mm][Pp][Ll][Oo][Yy][Ee][Ee]$</Value>
         </AnySite>
 	</AttributeRule>
 	
