@@ -120,14 +120,6 @@ extern int xdr_opaque_auth(DOTS);
 #include <rpc/svc.h>		/* service manager and multiplexer */
 #include <rpc/svc_auth.h>	/* service side authenticator */
 
-/*
- * COMMENT OUT THE NEXT INCLUDE IF RUNNING ON SUN OS OR ON A VERSION
- * OF UNIX BASED ON NFSSRC.  These systems will already have the structures
- * defined by <rpc/netdb.h> included in <netdb.h>.
- */
-/* routines for parsing /etc/rpc */
-#include <rpc/netdb.h>		/* structures and routines to parse /etc/rpc */
-
 #ifdef __cplusplus
 extern "C" {
 #endif
