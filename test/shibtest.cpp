@@ -117,7 +117,8 @@ int main(int argc,char* argv[])
                 )
             );
 
-        SAMLBinding* pBinding=SAMLBindingFactory::getInstance();
+        OriginMetadata site(domain.get());
+        SAMLBinding* pBinding=SAMLBindingFactory::getInstance(resource.get(),site);
         SAMLResponse* resp=pBinding->send(binfo,*req);
         delete pBinding;
 
