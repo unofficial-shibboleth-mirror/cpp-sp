@@ -5,7 +5,7 @@ AUTOMAKE_OPTIONS = foreign
 lib_LTLIBRARIES = libshib.la
 
 libshibdir = $(includedir)/shib
-libshib_HEADERS = shib.h shib-threads.h
+libshib_HEADERS = shib.h shib-threads.h hresult.h
 noinst_HEADERS = internal.h
 
 libshib_la_SOURCES = \

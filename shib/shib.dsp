@@ -97,6 +97,10 @@ SOURCE=.\Constants.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\hresult.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\internal.h
 # End Source File
 # Begin Source File
