@@ -155,11 +155,11 @@ AC_CONFIG_FILES([Makefile shib/Makefile schemas/Makefile eduPerson/Makefile \
 		 shib-target/Makefile shar/Makefile test/Makefile])
 
 # now test the rpc library, to see if we need to build our own
-ACX_RPCTEST([rpctest="yes"],[rpctest="no"])
+ACX_RPCTEST([rpctest="no"],[rpctest="yes"])
 if test $rpctest = "no"; then
     WANT_SUBDIRS="oncrpc $WANT_SUBDIRS"
-    AM_CONDITIONAL(USE_OUR_ONCRPC,test "$rpctest" = "no")
 fi
+AM_CONDITIONAL(USE_OUR_ONCRPC,test "$rpctest" = "no")
 
 # Much of this is taken from mod_dav.
 # The basic idea is to use configure options to control whether/which types
