@@ -71,18 +71,23 @@
 
 namespace shibboleth
 {
+#ifdef NO_RTTI
+  extern SHIB_EXPORTS const unsigned short RTTI_UnsupportedProtocolException;
+  extern SHIB_EXPORTS const unsigned short RTTI_OriginSiteMapperException;
+#endif
+
     #define DECLARE_SHIB_EXCEPTION(name,base) \
         class SHIB_EXPORTS name : public saml::base \
         { \
         public: \
-            name(const char* msg) : saml::base(msg) {} \
-            name(const std::string& msg) : saml::base(msg) {} \
-            name(const saml::Iterator<saml::QName>& codes, const char* msg) : saml::base(codes,msg) {} \
-            name(const saml::Iterator<saml::QName>& codes, const std::string& msg) : saml::base(codes, msg) {} \
-            name(const saml::QName& code, const char* msg) : saml::base(code,msg) {} \
-            name(const saml::QName& code, const std::string& msg) : saml::base(code, msg) {} \
-            name(DOMElement* e) : saml::base(e) {} \
-            name(std::istream& in) : saml::base(in) {} \
+            name(const char* msg) : saml::base(msg) {RTTI(name);} \
+            name(const std::string& msg) : saml::base(msg) {RTTI(name);} \
+            name(const saml::Iterator<saml::QName>& codes, const char* msg) : saml::base(codes,msg) {RTTI(name);} \
+            name(const saml::Iterator<saml::QName>& codes, const std::string& msg) : saml::base(codes, msg) {RTTI(name);} \
+            name(const saml::QName& code, const char* msg) : saml::base(code,msg) {RTTI(name);} \
+            name(const saml::QName& code, const std::string& msg) : saml::base(code, msg) {RTTI(name);} \
+            name(DOMElement* e) : saml::base(e) {RTTI(name);} \
+            name(std::istream& in) : saml::base(in) {RTTI(name);} \
             virtual ~name() throw () {} \
         }
 
@@ -90,6 +95,10 @@ namespace shibboleth
     DECLARE_SHIB_EXCEPTION(OriginSiteMapperException,SAMLException);
 
 #ifdef SHIB_INSTANTIATE
+# ifdef NO_RTTI
+    const unsigned short RTTI_UnsupportedProtocolException=     RTTI_EXTENSION_BASE;
+    const unsigned short RTTI_OriginSiteMapperException=        RTTI_EXTENSION_BASE+1;
+# endif
     template class SHIB_EXPORTS saml::Iterator<std::pair<saml::xstring,bool> >;
     template class SHIB_EXPORTS saml::ArrayIterator<std::pair<saml::xstring,bool> >;
 #endif

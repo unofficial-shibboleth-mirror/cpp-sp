@@ -62,6 +62,9 @@
 using namespace saml;
 using namespace shibboleth;
 
+SAML_EXCEPTION_FACTORY(UnsupportedProtocolException);
+SAML_EXCEPTION_FACTORY(OriginSiteMapperException);
+
 namespace {
     ShibInternalConfig g_config;
 }
@@ -69,6 +72,9 @@ namespace {
 bool ShibInternalConfig::init()
 {
     saml::NDC ndc("init");
+
+    REGISTER_EXCEPTION_FACTORY(UnsupportedProtocolException);
+    REGISTER_EXCEPTION_FACTORY(OriginSiteMapperException);
 
     // Register extension schema.
     saml::XML::registerSchema(XML::SHIB_NS,XML::SHIB_SCHEMA_ID);
