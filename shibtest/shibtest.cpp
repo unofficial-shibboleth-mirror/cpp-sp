@@ -56,43 +56,42 @@ using namespace saml;
 using namespace shibboleth;
 using namespace eduPerson;
 
-class MyMapper : public IOriginSiteMapper
+class DummyMapper : public IOriginSiteMapper
 {
 public:
-    MyMapper();
-    Iterator<xstring> getHandleServiceNames(const XMLCh* originSite);
-    void* getHandleServiceKey(const XMLCh* handleService);
-    Iterator<xstring> getSecurityDomains(const XMLCh* originSite);
-    Iterator<void*> getTrustedRoots();
+    DummyMapper() {}
+    ~DummyMapper();
+    virtual Iterator<xstring> getHandleServiceNames(const XMLCh* originSite) { return Iterator<xstring>(v); }
+    virtual void* getHandleServiceKey(const XMLCh* handleService) { return NULL; }
+    virtual Iterator<xstring> getSecurityDomains(const XMLCh* originSite);
+    virtual Iterator<void*> getTrustedRoots() { return Iterator<void*>(v2); }
 
 private:
     vector<xstring> v;
-    vector<void*> v2;
+    vector<void *> v2;
+    typedef map<xstring,vector<xstring>*> domains_t;
+    domains_t m_domains;
 };
 
-Iterator<xstring> MyMapper::getSecurityDomains(const XMLCh* originSite)
+Iterator<xstring> DummyMapper::getSecurityDomains(const XMLCh* originSite)
 {
-    return Iterator<xstring>(v);
+    domains_t::iterator i=m_domains.find(originSite);
+    if (i==m_domains.end())
+    {
+        vector<xstring>* pv=new vector<xstring>();
+        pv->push_back(originSite);
+        pair<domains_t::iterator,bool> p=m_domains.insert(domains_t::value_type(originSite,pv));
+        i=p.first;
+    }
+    return Iterator<xstring>(*(i->second));
 }
 
-Iterator<xstring> MyMapper::getHandleServiceNames(const XMLCh* originSite)
+DummyMapper::~DummyMapper()
 {
-    return Iterator<xstring>(v);
+    for (domains_t::iterator i=m_domains.begin(); i!=m_domains.end(); i++)
+        delete i->second;
 }
 
-void* MyMapper::getHandleServiceKey(const XMLCh* handleService)
-{
-    return NULL;
-}
-
-Iterator<void*> MyMapper::getTrustedRoots()
-{
-    return Iterator<void*>(v2);
-}
-
-MyMapper::MyMapper()
-{
-}
 
 extern "C" SAMLAttribute* scopedFactory(IDOM_Element* e)
 {
@@ -101,7 +100,7 @@ extern "C" SAMLAttribute* scopedFactory(IDOM_Element* e)
 
 int main(int argc,char* argv[])
 {
-    MyMapper mapper;
+    DummyMapper mapper;
     SAMLConfig conf1;
     ShibConfig conf2;
     char* h_param=NULL;
