@@ -959,7 +959,7 @@ extern "C" int shib_post_config(apr_pool_t* pconf, apr_pool_t* plog,
     ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() starting");
 
     if (g_Config) {
-        ap_log_error(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init(): already initialized!");
+        ap_log_error(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() already initialized!");
 #ifdef SHIB_APACHE_13
         exit(1);
 #else
@@ -977,7 +977,7 @@ extern "C" int shib_post_config(apr_pool_t* pconf, apr_pool_t* plog,
             ShibTargetConfig::SHIREExtensions
             );
         if (!g_Config->init(g_szSchemaDir,g_szSHIBConfig)) {
-            ap_log_error(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init(): already initialized!");
+            ap_log_error(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() failed to initialize SHIB Target");
             exit(1);
         }
     }
