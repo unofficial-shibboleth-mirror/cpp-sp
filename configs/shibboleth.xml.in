@@ -1,16 +1,16 @@
 <ShibbolethTargetConfig	xmlns="urn:mace:shibboleth:target:config:1.0"
-		logger="@-LOGDIR-@/shibboleth.logger">
+        logger="@-LOGDIR-@/shibboleth.logger">
 
     <Extensions>
-    	<Library path="@-LIBEXECDIR-@/xmlproviders.so" fatal="true"/>
+        <Library path="@-LIBEXECDIR-@/xmlproviders.so" fatal="true"/>
     </Extensions>
 
     <SHAR logger="@-PKGSYSCONFDIR-@/shar.logger">
 
-	    <Extensions>
-	    	<Library path="@-LIBEXECDIR-@/shib-mysql-ccache.so" fatal="false"/>
-	    </Extensions>
-	
+        <Extensions>
+            <Library path="@-LIBEXECDIR-@/shib-mysql-ccache.so" fatal="false"/>
+        </Extensions>
+    
         <UnixListener address="/tmp/shar-socket"/>
 
         <!--
@@ -19,63 +19,66 @@
         
         <!--
         <MemorySessionCache cleanupInterval="300" cacheTimeout="3600" AATimeout="30" AAConnectTimeout="15"
-        	defaultLifetime="1800" retryInterval="300" strictValidity="true" propagateErrors="false"/>
+            defaultLifetime="1800" retryInterval="300" strictValidity="true" propagateErrors="false"/>
         -->
         
         <MySQLSessionCache cleanupInterval="300" cacheTimeout="3600" AATimeout="30" AAConnectTimeout="15"
-           	defaultLifetime="1800" retryInterval="300" strictValidity="true" propagateErrors="false"
-           	mysqlTimeout="14400">
+               defaultLifetime="1800" retryInterval="300" strictValidity="true" propagateErrors="false"
+               mysqlTimeout="14400">
             <Argument>--language=@-PREFIX-@/share/english</Argument>
             <Argument>--datadir=@-PREFIX-@/data</Argument>
         </MySQLSessionCache>
     </SHAR>
     
     <SHIRE logger="@-PKGSYSCONFDIR-@/shire.logger">
-        <!-- To customize behavior, map hostnames and path components to application names. -->
-        <!-- Can be either a pointer to an external file or an inline configuration. -->
+        <!--
+        To customize behavior, map hostnames and path components to application names.
+        Can be either a pointer to an external file or an inline configuration.
+        -->
         <!--
         <RequestMapProvider type="edu.internet2.middleware.shibboleth.target.provider.XMLRequestMap"
-        	uri="@-PKGSYSCONFDIR-@/applications.xml"/>
+            uri="@-PKGSYSCONFDIR-@/applications.xml"/>
         -->
 
-		<RequestMapProvider type="edu.internet2.middleware.shibboleth.target.provider.XMLRequestMap">
-	        <RequestMap>
-	            <Host name="example.com" scheme="https">
-	                <Path name="admin" applicationId="foo-admin" requireSession="true" exportAssertion="true"/>
-	            </Host>
-	        </RequestMap>
-	    </RequestMapProvider>
+        <RequestMapProvider type="edu.internet2.middleware.shibboleth.target.provider.XMLRequestMap">
+            <RequestMap>
+                <Host name="example.com" scheme="https">
+                    <!-- This requires a session for documents in /secure on the containing host. -->
+                    <Path name="secure" requireSession="true" exportAssertion="true"/>
+                </Host>
+            </RequestMap>
+        </RequestMapProvider>
         
         <Implementation>
             <ISAPI>
-                <Site InstanceID="1" Host="foo.com"/>
+                <Site InstanceID="1" Host="foo.com"/>    <!-- Maps IIS IID values to the vhost name. -->
             </ISAPI>
-            <Apache apacheConfig="false"/>
+            <Apache apacheConfig="false"/>  <!-- whether httpd.conf or the RequestMap controls session behavior. -->
         </Implementation>
     </SHIRE>
 
     <Applications xmlns:saml="urn:oasis:names:tc:SAML:1.0:assertion" providerId="https://wayf.internet2.edu/InQueue/ServiceProvider">
 
-		<!--
-		Controls session lifetimes, address checks, cookie handling, WAYF, and the SHIRE location.
-		You MUST supply a unique shireURL value for each of your applications. The value can be a
-		relative path, a URL with no hostname (https:///path) or a full URL. The system will compute
-		the value that applies based on the resource. Using shireSSL="true" will force the protocol
-		to be https. You should also add "; secure" to the cookieProps in that case.
-		-->
+        <!--
+        Controls session lifetimes, address checks, cookie handling, WAYF, and the SHIRE location.
+        You MUST supply a unique shireURL value for each of your applications. The value can be a
+        relative path, a URL with no hostname (https:///path) or a full URL. The system will compute
+        the value that applies based on the resource. Using shireSSL="true" will force the protocol
+        to be https. You should also add "; secure" to the cookieProps in that case.
+        -->
         <Sessions lifetime="7200" timeout="3600" normalizeRequest="true" checkAddress="true"
             shireURL="/Shibboleth.shire" shireSSL="false" cookieName="shib-default-app" cookieProps="; path=/"
             wayfURL="https://wayf.internet2.edu/InQueue/WAYF"/>
 
-		<!-- You should customize the pages! You can add attributes with values that can be plugged in. -->
+        <!-- You should customize the pages! You can add attributes with values that can be plugged in. -->
         <Errors shire="@-PKGSYSCONFDIR-@/shireError.html"
-        	rm="@-PKGSYSCONFDIR-@/rmError.html"
+            rm="@-PKGSYSCONFDIR-@/rmError.html"
             access="@-PKGSYSCONFDIR-@/accessError.html"
             supportContact="admin@change.this"
             logoLocation="/logo.gif"/>
             
         <Policy signRequest="false" signedResponse="false" signedAssertions="false">
-        	<!-- use designators to request specific attributes or none to ask for all -->
+            <!-- use designators to request specific attributes or none to ask for all -->
             <!--
             <saml:AttributeDesignator AttributeName="urn:mace:dir:attribute-def:eduPersonScopedAffiliation"
                 AttributeNamespace="urn:mace:shibboleth:1.0:attributeNamespace:uri"/>
@@ -99,13 +102,13 @@
             
             <!-- Metadata consists of site/operational metadata, trust, revocation providers. Can be external or inline. -->
             <FederationProvider type="edu.internet2.middleware.shibboleth.common.provider.XMLMetadata"
-            	uri="@-PKGSYSCONFDIR-@/sites.xml"/>
+                uri="@-PKGSYSCONFDIR-@/sites.xml"/>
             <TrustProvider type="edu.internet2.middleware.shibboleth.common.provider.XMLTrust"
-            	uri="@-PKGSYSCONFDIR-@/trust.xml"/>
-			<!--
+                uri="@-PKGSYSCONFDIR-@/trust.xml"/>
+            <!--
             <RevocationProvider type="edu.internet2.middleware.shibboleth.common.provider.XMLRevocation"
-            	uri="@-PKGSYSCONFDIR-@/trust.xml"/>
-          	-->
+                uri="@-PKGSYSCONFDIR-@/trust.xml"/>
+              -->
                         
             <!--
             <FederationProvider type="edu.internet2.middleware.shibboleth.common.provider.XMLMetadata">
@@ -125,14 +128,14 @@
                 </SiteGroup>
             </FederationProvider>
             -->
-			
-			<!-- zero or more SAML Audience condition matches -->
+            
+            <!-- zero or more SAML Audience condition matches -->
             <saml:Audience>urn:mace:inqueue</saml:Audience>
         </Policy>
         
         <CredentialUse TLS="defcreds" Signing="defcreds">
-        	<!-- RelyingParty elements customize credentials for specific origins or federations -->
-        	<!--
+            <!-- RelyingParty elements customize credentials for specific origins or federations -->
+            <!--
             <RelyingParty Name="urn:mace:inqueue" TLS="specialcreds" Signing="specialcreds"/>
             -->
         </CredentialUse>
@@ -153,28 +156,28 @@
     
     <!-- Define all your private keys and certificates here. -->
     <CredentialsProvider type="edu.internet2.middleware.shibboleth.common.Credentials">
-    	<Credentials xmlns="urn:mace:shibboleth:credentials:1.0">
-		    <FileResolver Id="defcreds">
-	            <Key format="PEM">
-	                <Path>@-PKGSYSCONFDIR-@/shar.key</Path>
-	            </Key>
-	            <Certificate format="PEM">
-	                <Path>@-PKGSYSCONFDIR-@/shar.crt</Path>
-	            </Certificate>
-	        </FileResolver>
-	        
-	        <!--
-		    <FileResolver Id="specialcreds">
-	            <Key format="PEM">
-	                <Path>@-PKGSYSCONFDIR-@/supersecret.key</Path>
-	            </Key>
-	            <Certificate format="PEM">
-	                <Path>@-PKGSYSCONFDIR-@/supersecret.crt</Path>
-	            </Certificate>
-	        </FileResolver>
-	        -->
-	    </Credentials>
-	</CredentialsProvider>
+        <Credentials xmlns="urn:mace:shibboleth:credentials:1.0">
+            <FileResolver Id="defcreds">
+                <Key format="PEM">
+                    <Path>@-PKGSYSCONFDIR-@/shar.key</Path>
+                </Key>
+                <Certificate format="PEM">
+                    <Path>@-PKGSYSCONFDIR-@/shar.crt</Path>
+                </Certificate>
+            </FileResolver>
+            
+            <!--
+            <FileResolver Id="specialcreds">
+                <Key format="PEM">
+                    <Path>@-PKGSYSCONFDIR-@/supersecret.key</Path>
+                </Key>
+                <Certificate format="PEM">
+                    <Path>@-PKGSYSCONFDIR-@/supersecret.crt</Path>
+                </Certificate>
+            </FileResolver>
+            -->
+        </Credentials>
+    </CredentialsProvider>
 
 </ShibbolethTargetConfig>
 

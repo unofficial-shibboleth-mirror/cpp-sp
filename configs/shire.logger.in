@@ -1,4 +1,4 @@
-log4j.rootCategory=WARN, syslog
+log4j.rootCategory=INFO, syslog
 
 log4j.appender.syslog=org.apache.log4j.RollingFileAppender
 log4j.appender.syslog.fileName=@-LOGDIR-@/shire.log

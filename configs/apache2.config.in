@@ -23,11 +23,11 @@ ShibConfig @-PKGSYSCONFDIR-@/shibboleth.xml
 # You can now do most of this in shibboleth.xml using the RequestMap
 # but you MUST enable AuthType shibboleth for the module to process
 # any requests, and there MUST be a require command as well.
-# You can turn on require valid-user at the root, and then override
+# You can even turn on require valid-user at the root, and then override
 # as needed. This will not actually force a user session unless
-# you require one. See the deploy guide for details.
+# you tell it to require one. See the documentation for details.
 #
-<Location />
+<Location /secure>
   AuthType shibboleth
   require valid-user
 </Location>
