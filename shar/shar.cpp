@@ -126,10 +126,15 @@ static void shar_svc_run(IListener::ShibSocket& listener, const Iterator<ShibRPC
         struct timeval tv = { 0, 0 };
         tv.tv_sec = 5;
     
-        switch (select(FD_SETSIZE, &readfds, 0, 0, &tv)) {
+        switch (select(listener + 1, &readfds, 0, 0, &tv)) {
+#ifdef WIN32
+            case SOCKET_ERROR:
+#else
             case -1:
+#endif
                 if (errno == EINTR) continue;
                 SHARUtils::log_error();
+                log.error("select() on main listener socket failed");
                 return;
         
             case 0:

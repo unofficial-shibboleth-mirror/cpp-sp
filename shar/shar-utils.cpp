@@ -31,10 +31,19 @@
 #include <shib/shib-threads.h>
 #include <log4cpp/Category.hh>
 
-#ifdef USE_OUR_ONCRPC
-# define svc_fdset onc_svc_fdset
-#else
+// Deal with inadequate Sun RPC libraries
+
+#if !HAVE_DECL_SVCFD_CREATE
   extern "C" SVCXPRT* svcfd_create(int, u_int, u_int);
+#endif
+
+#ifndef HAVE_WORKING_SVC_DESTROY
+struct tcp_conn {  /* kept in xprt->xp_p1 */
+    enum xprt_stat strm_stat;
+    u_long x_id;
+    XDR xdrs;
+    char verf_body[MAX_AUTH_BYTES];
+};
 #endif
 
 using namespace std;
@@ -44,7 +53,7 @@ using namespace shibtarget;
 using namespace log4cpp;
 
 namespace {
-  map<Thread*,int> children;
+  map<IListener::ShibSocket,Thread*> children;
   Mutex* 	child_lock = NULL;
   CondWait*	child_wait = NULL;
   bool		running;
@@ -69,44 +78,38 @@ void* shar_client_thread (void* arg)
   return NULL;
 }
 
-SharChild::SharChild(IListener::ShibSocket& s, const Iterator<ShibRPCProtocols>& protos) : sock(s), lock(NULL), child(NULL)
+SharChild::SharChild(IListener::ShibSocket& s, const Iterator<ShibRPCProtocols>& protos) : sock(s), child(NULL)
 {
   protos.reset();
   while (protos.hasNext())
     v_protos.push_back(protos.next());
   
-  // Create the lock and then lock this child
-  lock = Mutex::create();
-  Lock tl(lock);
-
   // Create the child thread
   child = Thread::create(shar_client_thread, (void*)this);
   child->detach();
-
-  // Lock the children map and add this child
-  Lock cl(child_lock);
-  children[child] = 1;
 }
 
 SharChild::~SharChild()
 {
-  // Lock this object
-  lock->lock();
-
-  // Then lock the children map, remove this thread, signal waiters, and return
+  // Then lock the children map, remove this socket/thread, signal waiters, and return
   child_lock->lock();
-  children.erase(child);
+  children.erase(sock);
   child_lock->unlock();
   child_wait->signal();
   
-  lock->unlock();
-  delete lock;
   delete child;
 }
 
 void SharChild::run()
 {
-  if (SHARUtils::shar_create_svc(sock, v_protos) != 0)
+    // Before starting up, make sure we fully "own" this socket.
+    child_lock->lock();
+    while (children.find(sock)!=children.end())
+        child_wait->wait(child_lock);
+    children[sock] = child;
+    child_lock->unlock();
+    
+  if (!svc_create())
    return;
 
   fd_set readfds;
@@ -117,24 +120,64 @@ void SharChild::run()
     FD_SET(sock, &readfds);
     tv.tv_sec = 1;
 
-    switch (select (sock+1, &readfds, 0, 0, &tv)) {
-
+    switch (select(sock+1, &readfds, 0, 0, &tv)) {
+#ifdef WIN32
+    case SOCKET_ERROR:
+#else
     case -1:
+#endif
       if (errno == EINTR) continue;
       SHARUtils::log_error();
+      Category::getInstance("SHAR.SharChild").error("select() on incoming request socket (%u) returned error",sock);
       return;
 
     case 0:
       break;
 
     default:
-      svc_getreqset (&readfds);
+      svc_getreqset(&readfds);
     }
   }
+}
 
-  if (running) {
-      ShibTargetConfig::getConfig().getINI()->getListener()->close(sock);
+bool SharChild::svc_create()
+{
+  /* Wrap an RPC Service around the new connection socket. */
+  SVCXPRT* transp = svcfd_create(sock, 0, 0);
+  if (!transp) {
+    NDC ndc("svc_create");
+    Category::getInstance("SHAR.SharChild").error("cannot create RPC listener");
+    return false;
   }
+
+  /* Register the SHIBRPC RPC Program */
+  Iterator<ShibRPCProtocols> i(v_protos);
+  while (i.hasNext()) {
+    const ShibRPCProtocols& p=i.next();
+    if (!svc_register (transp, p.prog, p.vers, p.dispatch, 0)) {
+#ifdef HAVE_WORKING_SVC_DESTROY
+      svc_destroy(transp);
+#else
+      /* we have to inline svc_destroy because we can't pass in the xprt variable */
+      struct tcp_conn *cd = (struct tcp_conn *)transp->xp_p1;
+      xprt_unregister(transp);
+      close(transp->xp_sock);
+      if (transp->xp_port != 0) {
+        /* a rendezvouser socket */
+        transp->xp_port = 0;
+      } else {
+        /* an actual connection socket */
+        XDR_DESTROY(&(cd->xdrs));
+      }
+      mem_free((caddr_t)cd, sizeof(struct tcp_conn));
+      mem_free((caddr_t)transp, sizeof(SVCXPRT));
+#endif
+      NDC ndc("svc_create");
+      Category::getInstance("SHAR.SharChild").error("cannot register RPC program");
+      return false;
+    }
+  }
+  return true;
 }
 
 void SHARUtils::log_error()
@@ -152,30 +195,6 @@ void SHARUtils::log_error()
 #else
     Category::getInstance("SHAR.SHARUtils").error("system call resulted in error (%d): %s",rc,strerror(rc));
 #endif
-}
-
-int SHARUtils::shar_create_svc(IListener::ShibSocket& sock, const Iterator<ShibRPCProtocols>& protos)
-{
-  NDC ndc("shar_create_svc");
-
-  /* Wrap an RPC Service around the new connection socket */
-  SVCXPRT* svc = svcfd_create (sock, 0, 0);
-  if (!svc) {
-    Category::getInstance("SHAR.SHARUtils").error("cannot create RPC listener");
-    return -1;
-  }
-
-  /* Register the SHIBRPC RPC Program */
-  while (protos.hasNext()) {
-    const ShibRPCProtocols& p=protos.next();
-    if (!svc_register (svc, p.prog, p.vers, p.dispatch, 0)) {
-      svc_destroy(svc);
-      ShibTargetConfig::getConfig().getINI()->getListener()->close(sock);
-      Category::getInstance("SHAR.SHARUtils").error("cannot register RPC program");
-      return -2;
-    }
-  }
-  return 0;
 }
 
 void SHARUtils::init()
@@ -201,4 +220,3 @@ void SHARUtils::fini()
   delete child_lock;
   child_lock = NULL;
 }
-
