@@ -190,48 +190,53 @@ configuration, but some older commands have been deprecated or replaced.</p>
     repositories, and computing the SAML attribute using business rules). This 
     should greatly simplify the process of configuring the AA to support 
     additional general attributes.</li>
-    <li>An attribute connector for JDBC data sources is now available.
-    <span class="feature">[1.1]</span></li>
+    <li>A sample resolver file for using standard LDAP person and inetOrgPerson 
+    attributes is included. <span class="feature">[1.1]</span></li>
     <li>Support for a runtime-derived per-requester persistent identifier 
     attribute to support anonymous personalization by targets has been added via 
     an attribute plugin. <span class="feature">[1.1]</span></li>
-    <li>Specialized deployments without privacy needs can configure 
-    identity-based handles interoperable with other SAML deployments.
-    <span class="feature">[1.1]</span></li>
+    <li>Specialized sites without privacy needs can configure identity-based 
+    handles interoperable with other SAML deployments. <span class="feature">
+    [1.1]</span></li>
 </ol>
 <h5>Target</h5>
 <ol>
-    <li>Significantly more flexibility in configuring targets to ensure 
-    robustness. Failover and redundant configurations are now supported.</li>
+    <li>Significantly more flexibility in configuring targets is provided to 
+    ensure robustness. Failover and redundant configurations are now supported.</li>
     <li>The SHAR may now optionally store its session and attribute cache in a 
-    back-end database in addition to the previously available in-memory option. 
-    This would allow a site to run an apache server farm, with multiple SHARs, 
-    supporting the same set of sessions.</li>
+    back-end database in addition to the previously available in-memory option.
+    </li>
+&nbsp;<span class="feature">[1.1]</span> </li>
     <li>Federation supplied files (sites.xml and trust.xml) are now refreshed in 
-    a much more robust manner.</li>
+    a much more robust manner. </li>
+    </li>
     <li>The SHAR can be configured to request specific attributes from the 
-    Origin.</li>
+    Origin. </li>
     <li>The SHAR can use TCP sockets when responding to the Apache module, for 
     specialized deployment behind firewalls. <span class="feature">[1.1]</span>
     </li>
     <li>Attribute acceptance policies have been greatly enhanced, and are now 
     used to configure all aspects of attribute handling by the target, except 
     for requesting specific attributes by sitename. Adding attributes now takes 
-    place in one configuration step. <span class="feature">[1.1]</span></li>
+    place in one configuration step. <span class="feature">[1.1]</span> </li>
     <li>Support for Apache 1.3 on Windows NT/2000/XP/2003 has been added.
-    <span class="feature">[1.1]</span></li>
+    <span class="feature">[1.1]</span> </li>
     <li>Microsoft IIS web server support has been added via an ISAPI filter and 
-    extension. <span class="feature">[1.1]</span></li>
+    extension. <span class="feature">[1.1]</span> </li>
 </ol>
 <h5>Miscellaneous</h5>
 <ol>
     <li>Origin sites can configure a value to describe the type of 
-    authentication mechanism used at the origin site(e.g. password, Kerberos, 
-    PKI, etc.). This value is made available on the target side as Shib-Authentication-Method.</li>
+    authentication mechanism used at the origin site (e.g. password, Kerberos, 
+    PKI, etc.). This value is made available on the target side as Shib-Authentication-Method.
+    <br>
+    </li>
     <li>Various improvements to error handling. Origin sites are now able to 
-    supply an error URL and contact information to a federation. When a target 
-    encounters an error, it can include this information in the error page.</li>
-    <li>Local time string values are now used in log files.</li>
+    supply an &quot;error URL&quot; and contact information to a federation. When a target 
+    encounters an error, it can include this information in the error page. <br>
+    </li>
+    <li>Local time string values are now used in log files. <br>
+    </li>
     <li>Internationalization support has been extended.</li>
 </ol>
 <p>Before starting, please sign up for all applicable
@@ -270,7 +275,7 @@ tarball</a> for your operating system.</p>
         <li><a href="#2.c."><font color="black">Security Considerations</font></a></li>
         <li><a href="#2.d."><font color="black">Server Certificates</font></a></li>
         <li><a href="#2.e."><font color="black">Attribute Release Policies</font></a></li>
-        <li><a href="#2.f."><font color="black">Designate Contacts</font></a></li>
+        <li><a href="#2.f."><font color="#000000">Attribute Acceptance Policies</font></a></li>
         <li><a href="#2.g."><font color="black">Browser Requirements</font></a></li>
         <li><a href="#2.h."><font color="black">Clocks</font></a></li>
         <li><a href="#2.i."><font color="black">Other Considerations</font></a></li>
@@ -520,14 +525,20 @@ and requirements for a successful implementation of a Shibboleth target.</p>
     the sets of attributes that both sites expect to correspond using are 
     congruent.</p>
 </blockquote>
-<h4><a name="2.f."></a>2.f. Designate Contacts</h4>
+<h4><a name="2.f."></a>2.f. Attribute Acceptance Policies</h4>
 <blockquote>
-    <p>Since Shibboleth deals both with daily technical and operational issues 
-    and also with contractual issues, a set of contacts should be set up to 
-    support the user base and to facilitate interactions with other Shibboleth 
-    sites and federation members. It is recommended that at least technical and 
-    administrative contacts be designated. Names, titles, e-mail addresses, and 
-    phone numbers may all be useful information to provide.</p>
+    <p>When a target receives a set of attributes, it must evaluate them in the 
+    context of the Attribute Authority that is providing them, to assess their 
+    &quot;reasonableness&quot;. For example, if the value of an attribute is expected to 
+    be from a small set of enumerated choices, the value should be compared 
+    against that list. If a particular attribute or value is only trusted when 
+    asserted by specific origins, that too should be checked.</p>
+    <p>Targets are configured to accept specific attributes that they understand 
+    and care about, and are also configured with the rules to apply before 
+    accepting the attributes for use by the RM or an application. Attributes and 
+    values that don&#39;t meet the target&#39;s requirements are filtered out. The set 
+    of configuration rules to make these decisions is called an Attribute 
+    Acceptance Policy (AAP).</p>
 </blockquote>
 <h4><a name="2.g."></a>2.g. Browser Requirements</h4>
 <blockquote>
@@ -676,12 +687,14 @@ most minor &quot;letter&quot; updates should be usable.</p>
         </li>
         <li>Solaris 2.8:<ul type="disc">
             <li><a HREF="ftp://ftp.openssl.org/source/openssl-0.9.7b.tar.gz">
-            openssl-0.9.7b</a>
+            openssl-0.9.7</a>
             <blockquote>
                 <p>The shared library version of OpenSSL is required by 
                 Shibboleth. The static libraries may be installed as well if 
                 necessary for other applications, but cannot be used within 
-                mod_ssl or any other Apache modules.</p>
+                mod_ssl or any other Apache modules. openssl-0.9.7b, the latest 
+                security fix release, has been tested, but any 0.9.7 version 
+                should work.</p>
             </blockquote>
             </li>
             <li><a href="http://www.apache.org/dist/httpd/">Apache 1.3.27</a><blockquote>
@@ -899,17 +912,17 @@ most minor &quot;letter&quot; updates should be usable.</p>
             <p><span class="fixed">SHIBCONFIG=/opt/shibboleth/etc/shibboleth/shibboleth.ini<br>
             export SHIBCONFIG</span></p>
         </blockquote>
-        <p>If the OpenSSL libraries are not in the system&#39;s search path, they 
-        should be added to <span class="fixed">LD_LIBRARY_PATH</span>. Generally 
-        libtool&#39;s linker options will insure that the modules can locate the 
-        Shibboleth libraries, but if not, you may need to add
-        <span class="fixed">/opt/shibboleth/lib</span> to <span class="fixed">
-        LD_LIBRARY_PATH</span> as well.</p>
         <p>If the SHIBCONFIG environment variable is not specified, Shibboleth 
         will use <span class="fixed">/opt/shibboleth/etc/shibboleth/shibboleth.ini</span> 
         by default.</p>
         <p>On Windows, the installer will set the path and SHIBCONFIG variable 
         for you in the system path, enabling Apache or IIS to be used.</li>
+        <li>If the OpenSSL libraries are not in the system&#39;s search path, they 
+        should be added to <span class="fixed">LD_LIBRARY_PATH</span>. Generally 
+        libtool&#39;s linker options will insure that the modules can locate the 
+        Shibboleth libraries, but if not, you may need to add
+        <span class="fixed">/opt/shibboleth/lib</span> to <span class="fixed">
+        LD_LIBRARY_PATH</span> as well.</li>
         <li>The SHAR must be started along with Apache. Among other methods on 
         Unix, this can be done either by creating a separate SHAR startup script 
         or by modifying Apache&#39;s RC script to start/stop the <span class="fixed">
@@ -1770,7 +1783,7 @@ most minor &quot;letter&quot; updates should be usable.</p>
             <p>A rule that applies to the origin site AA corresponding to the 
             hostname.</p>
         </blockquote>
-        <p><span class="fixed">&lt;Scope Accept=&quot;true|false&quot;&gt; Type=&quot;type&quot;&gt;</span></p>
+        <p><span class="fixed">&lt;Scope Accept=&quot;true|false&quot; Type=&quot;type&quot;&gt;</span></p>
         <blockquote>
             <p>Specifies a value to accept or deny, either directly using
             <span class="fixed">type</span> <span class="fixed">literal</span>, 
