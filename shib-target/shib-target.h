@@ -369,8 +369,14 @@ namespace shibtarget {
       std::string vs = value;
       setCookie(ns, vs);
     }
+    void setCookie(const char *name, const std::string &value) {
+      std::string ns = name;
+      setCookie(ns, value);
+    }
 
-    // Get the request's POST data from the server
+
+    // Get the request's GET arguments or POST data from the server
+    virtual std::string getArgs(void);
     virtual std::string getPostData(void);
 
     // Clear a header, set a header
@@ -517,10 +523,15 @@ namespace shibtarget {
     ShibTarget(void);
 
     // Initialize the request from the parsed URL
+    // protocol == http, https, etc
+    // hostname == server name
+    // port == server port
+    // uri == resource path
+    // method == GET, POST, etc.
     void init(ShibTargetConfig *config,
 	      std::string protocol, std::string hostname, int port,
 	      std::string uri, std::string content_type, std::string remote_host,
-	      int total_bytes);
+	      std::string method, int total_bytes);
 
   private:
     mutable ShibTargetPriv *m_priv;

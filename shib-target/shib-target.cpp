@@ -118,6 +118,7 @@ namespace shibtarget {
     // These are the actual request parameters set via the init method.
     string m_url;
     string m_method;
+    string m_protocol;
     string m_content_type;
     string m_remote_addr;
     int m_total_bytes;
@@ -154,18 +155,19 @@ ShibTarget::~ShibTarget(void)
 void ShibTarget::init(ShibTargetConfig *config,
 		      string protocol, string hostname, int port,
 		      string uri, string content_type, string remote_host,
-		      int total_bytes)
+		      string method, int total_bytes)
 {
   if (m_priv->m_app)
     throw runtime_error("ShibTarget Already Initialized");
   if (!config)
     throw runtime_error("config is NULL.  Oops.");
 
-  m_priv->m_method = protocol;
+  m_priv->m_protocol = protocol;
   m_priv->m_content_type = content_type;
   m_priv->m_remote_addr = remote_host;
   m_priv->m_total_bytes = total_bytes;
   m_priv->m_Config = config;
+  m_priv->m_method = method;
   m_priv->get_application(protocol, hostname, port, uri);
 }
 
@@ -275,85 +277,68 @@ ShibTarget::doCheckAuthN(void)
 pair<bool,void*>
 ShibTarget::doHandlePOST(void)
 {
-#if 0
 
-  const char* targeturl=shib_get_targeturl(r,sc->szScheme);
+  const char *targetURL = NULL;
   const char *procState = "Session Creation Service Error";
-
   ShibMLP mlp;
-  mlp.insert("requestURL", targeturl);
 
-  const char* shireURL=shire.getShireURL(targeturl);
-  if (!shireURL) {
-    ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,SH_AP_R(r),
-		  "shib_post_handler: unable to map request to proper shireURL setting, check configuration");
-    return SERVER_ERROR;
-  }
-
-  // Make sure we only process the SHIRE requests.
-  if (!strstr(targeturl,shireURL))
-    return DECLINED;
-
-  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_handler() running");
-
-  const IPropertySet* sessionProps=application->getPropertySet("Sessions");
-  if (!sessionProps) {
-    ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,SH_AP_R(r),
-		  "shib_post_handler: unable to map request to application session settings, check configuration");
-    return SERVER_ERROR;
-  }
-
-  pair<const char*,const char*> shib_cookie=shire.getCookieNameProps();   // always returns something
-
-  // Process SHIRE request
-  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_handler() Beginning SHIRE processing");
-      
   try {
+    if (! m_priv->m_app)
+      throw ShibTargetException(SHIBRPC_OK, "ShibTarget Uninitialized.  Application did not supply request information.");
+
+    targetURL = m_priv->m_url.c_str();
+    const char *shireURL = getShireURL(targetURL);
+
+    if (!shireURL)
+      throw ShibTargetException(SHIBRPC_OK, "doHandlePOST: unable to map request to a proper shireURL setting.  Check Configuratio.");
+
+
+    // Make sure we only process the SHIRE requests.
+    if (!strstr(targetURL, shireURL))
+      return pair<bool,void*>(true, returnDecline());
+
+    const IPropertySet* sessionProps=m_priv->m_app->getPropertySet("Sessions");
+    if (!sessionProps)
+      throw ShibTargetException(SHIBRPC_OK, "doHandlePOST: unable to map request to application session settings.  Check configuration");
+
+    // this always returns something
+    pair<const char*,const char*> shib_cookie=getCookieNameProps();
+
+    // Process SHIRE request
+      
     pair<bool,bool> shireSSL=sessionProps->getBool("shireSSL");
       
     // Make sure this is SSL, if it should be
-    if ((!shireSSL.first || shireSSL.second) && strcmp(ap_http_method(r),"https"))
+    if ((!shireSSL.first || shireSSL.second) && m_priv->m_protocol == "https")
       throw ShibTargetException(SHIBRPC_OK, "blocked non-SSL access to session creation service");
 
     // If this is a GET, we manufacture an AuthnRequest.
-    if (!strcasecmp(r->method,"GET")) {
-      const char* areq=r->args ? shire.getLazyAuthnRequest(r->args) : NULL;
+    if (!strcasecmp(m_priv->m_method.c_str(), "GET")) {
+      string args = getArgs();
+      const char* areq=args.empty() ? NULL : getLazyAuthnRequest(args.c_str());
       if (!areq)
-	throw ShibTargetException(SHIBRPC_OK, "malformed arguments to request a new session");
-      ap_table_setn(r->headers_out, "Location", ap_pstrdup(r->pool,areq));
-      return REDIRECT;
+	throw ShibTargetException(SHIBRPC_OK, "malformed GET arguments to request a new session");
+      return pair<bool,void*>(true, sendRedirect(areq));
     }
-    else if (strcasecmp(r->method,"POST")) {
+    else if (strcasecmp(m_priv->m_method.c_str(), "POST")) {
       throw ShibTargetException(SHIBRPC_OK, "blocked non-POST to SHIRE POST processor");
     }
 
-    // Sure sure this POST is an appropriate content type
-    const char *ct = ap_table_get(r->headers_in, "Content-type");
-    if (!ct || strcasecmp(ct, "application/x-www-form-urlencoded"))
-      throw ShibTargetException(SHIBRPC_OK,
-				ap_psprintf(r->pool, "blocked bad content-type to SHIRE POST processor: %s", (ct ? ct : "")));
-
-    // Read the posted data
-    if (ap_setup_client_block(r, REQUEST_CHUNKED_ERROR))
-      throw ShibTargetException(SHIBRPC_OK, "CGI setup_client_block failed");
-    if (!ap_should_client_block(r))
-      throw ShibTargetException(SHIBRPC_OK, "CGI should_client_block failed");
-    if (r->remaining > 1024*1024)
-      throw ShibTargetException (SHIBRPC_OK, "CGI length too long...");
-
-    string cgistr;
-    char buff[HUGE_STRING_LEN];
-    ap_hard_timeout("[mod_shib] CGI Parser", r);
-    memset(buff, 0, sizeof(buff));
-    while (ap_get_client_block(r, buff, sizeof(buff)-1) > 0) {
-      ap_reset_timeout(r);
-      cgistr += buff;
-      memset(buff, 0, sizeof(buff));
+    // Make sure this POST is an appropriate content type
+    if (m_priv->m_content_type.empty() ||
+	strcasecmp(m_priv->m_content_type.c_str(),
+		   "application/x-www-form-urlencoded")) {
+      string er = string("blocked bad content-type to SHIRE POST processor: ") +
+	m_priv->m_content_type;
+      throw ShibTargetException(SHIBRPC_OK, er.c_str());
     }
-    ap_kill_timeout(r);
+	
+    // Read the POST Data
+    string cgistr = getPostData();
 
     // Parse the submission.
-    pair<const char*,const char*> elements=shire.getFormSubmission(cgistr.c_str(),cgistr.length());
+    pair<const char*,const char*> elements =
+      getFormSubmission(cgistr.c_str(),cgistr.length());
     
     // Make sure the SAML Response parameter exists
     if (!elements.first || !*elements.first)
@@ -363,45 +348,40 @@ ShibTarget::doHandlePOST(void)
     if (!elements.second || !*elements.second)
       throw ShibTargetException(SHIBRPC_OK, "SHIRE POST failed to find TARGET form element");
     
-    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),
-		  "shib_handler() Processing POST for target: %s", elements.second);
-
     // process the post
     string cookie;
-    RPCError* status = shire.sessionCreate(elements.first, r->connection->remote_ip, cookie);
+    RPCError* status = sessionCreate(elements.first, m_priv->m_remote_addr.c_str(),
+				     cookie);
 
     if (status->isError()) {
-      ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,SH_AP_R(r),
-    		    "shib_handler() POST process failed (%d): %s", status->getCode(), status->getText());
+      char buf[25];
+      sprintf(buf, "(%d): ", status->getCode());
+      string er = string("doHandlePost() POST process failed ") + buf +
+			 status->getText();
+      log(LogLevelError, er);
 
       if (status->isRetryable()) {
 	delete status;
-	ap_log_rerror(APLOG_MARK,APLOG_INFO|APLOG_NOERRNO,SH_AP_R(r),
-		      "shib_handler() retryable error, generating new AuthnRequest");
-	ap_table_setn(r->headers_out,"Location",ap_pstrdup(r->pool,shire.getAuthnRequest(elements.second)));
-	return REDIRECT;
+
+	return pair<bool,void*>(true, sendRedirect(getAuthnRequest(elements.second)));
       }
 
       // return this error to the user.
-      markupProcessor.insert(*status);
+      mlp.insert(*status);
       delete status;
-      return shib_error_page(r, application, "shire", markupProcessor);
+      goto out;
     }
     delete status;
 
-    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),
-    		  "shib_handler() POST process succeeded.  New session: %s", cookie.c_str());
+    log(LogLevelDebug,
+	string("doHandlePost() POST process succeeded. New session: ") + cookie);
 
     // We've got a good session, set the cookie...
-    char* val = ap_psprintf(r->pool,"%s=%s%s",shib_cookie.first,cookie.c_str(),shib_cookie.second);
-    ap_table_setn(r->err_headers_out, "Set-Cookie", val);
-    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_handler() setting cookie: %s", val);
+    cookie += shib_cookie.second;
+    setCookie(shib_cookie.first, cookie);
 
     // ... and redirect to the target
-    ap_table_setn(r->headers_out, "Location", ap_pstrdup(r->pool,elements.second));
-    return REDIRECT;
-
-  return pair<bool,void*>(false,NULL);
+    return pair<bool,void*>(true, sendRedirect(elements.second));
 
   } catch (ShibTargetException &e) {
     mlp.insert("errorText", e.what());
@@ -417,10 +397,10 @@ ShibTarget::doHandlePOST(void)
   mlp.insert("errorDesc", "An error occurred while processing your request.");
 
  out:
+  if (targetURL)
+    mlp.insert("requestURL", targetURL);
+
   return pair<bool,void*>(true,m_priv->sendError(this, "shire", mlp));
-#else
-  return pair<bool,void*>(false,NULL);
-#endif
 }
 
 pair<bool,void*>
@@ -1359,6 +1339,10 @@ string ShibTarget::getHeader(const string &name)
   throw runtime_error("Invalid Usage");
 }
 void ShibTarget::setRemoteUser(const string &name)
+{
+  throw runtime_error("Invalid Usage");
+}
+string ShibTarget::getArgs(void)
 {
   throw runtime_error("Invalid Usage");
 }
