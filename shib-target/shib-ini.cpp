@@ -188,15 +188,9 @@ namespace shibtarget {
 
 IConfig* STConfig::ShibTargetConfigFactory(const DOMElement* e)
 {
-    XMLConfig* ret=new XMLConfig(e);
-    try {
-        ret->getImplementation();
-    }
-    catch (...) {
-        delete ret;
-        throw;
-    }
-    return ret;
+    auto_ptr<XMLConfig> ret(new XMLConfig(e));
+    ret->getImplementation();
+    return ret.release();
 }
 
 XMLPropertySet::~XMLPropertySet()
@@ -209,7 +203,9 @@ XMLPropertySet::~XMLPropertySet()
 
 void XMLPropertySet::load(const DOMElement* e, Category& log, DOMNodeFilter* filter)
 {
-    NDC ndc("load");
+#ifdef _DEBUG
+    saml::NDC ndc("load");
+#endif
     m_root=e;
 
     // Process each attribute as a property.
@@ -360,7 +356,9 @@ const IPropertySet* XMLPropertySet::getPropertySet(const char* name, const char*
 XMLApplication::XMLApplication(const IConfig* ini, const Iterator<ICredentials*>& creds, const DOMElement* e, const XMLApplication* base)
     : m_ini(ini), m_base(base), m_profile(NULL), m_binding(NULL), m_bindingHook(NULL)
 {
+#ifdef _DEBUG
     NDC ndc("XMLApplication");
+#endif
     Category& log=Category::getInstance("shibtarget.XMLApplication");
 
     try {
@@ -484,10 +482,18 @@ XMLApplication::XMLApplication(const IConfig* ini, const Iterator<ICredentials*>
             bptr->addHook(m_bindingHook,m_bindingHook); // the hook is its own global context
         }
     }
-    catch (...) {
-        this->~XMLApplication();    // does this work?
+    catch (SAMLException& e) {
+        log.errorStream() << "Error while processing applicaton element: " << e.what() << CategoryStream::ENDLINE;
+        this->~XMLApplication();
         throw;
     }
+#ifndef _DEBUG
+    catch (...) {
+        log.error("Unexpected error while processing application element");
+        this->~XMLApplication();
+        throw;
+    }
+#endif
 }
 
 XMLApplication::~XMLApplication()
@@ -678,7 +684,9 @@ short XMLConfigImpl::acceptNode(const DOMNode* node) const
 
 void XMLConfigImpl::init(bool first)
 {
-    NDC ndc("XMLConfigImpl");
+#ifdef _DEBUG
+    saml::NDC ndc("XMLConfigImpl");
+#endif
     Category& log=Category::getInstance("shibtarget.XMLConfig");
 
     try {
@@ -943,13 +951,13 @@ void XMLConfigImpl::init(bool first)
         }
     }
     catch (SAMLException& e) {
-        log.errorStream() << "Error while loading target configuration: " << e.what() << CategoryStream::ENDLINE;
+        log.errorStream() << "Error while loading SP configuration: " << e.what() << CategoryStream::ENDLINE;
         this->~XMLConfigImpl();
         throw;
     }
 #ifndef _DEBUG
     catch (...) {
-        log.error("Unexpected error while loading target configuration");
+        log.error("Unexpected error while loading SP configuration");
         this->~XMLConfigImpl();
         throw;
     }

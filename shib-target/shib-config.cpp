@@ -120,7 +120,9 @@ bool STConfig::init(const char* schemadir, const char* config)
         root.setPriority(Priority::FATAL);
     root.setAppender(new OstreamAppender("default",&cerr));
  
+#ifdef _DEBUG
     saml::NDC ndc("init");
+#endif
     Category& log = Category::getInstance("shibtarget.STConfig");
 
     if (!schemadir || !config) {
@@ -193,10 +195,7 @@ bool STConfig::init(const char* schemadir, const char* config)
     }
     catch (...) {
         log.fatal("caught exception while loading/initializing configuration");
-        delete m_ini;
-        delete m_rpcpool;
-        shibConf.term();
-        samlConf.term();
+        shutdown();
         return false;
     }
 #endif
@@ -208,7 +207,9 @@ bool STConfig::init(const char* schemadir, const char* config)
 
 void STConfig::shutdown()
 {
+#ifdef _DEBUG
     saml::NDC ndc("shutdown");
+#endif
     Category& log = Category::getInstance("shibtarget.STConfig");
     log.info("shutting down the library");
     delete m_rpcpool;
