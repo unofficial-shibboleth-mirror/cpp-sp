@@ -287,7 +287,7 @@ map<string,string> g_mapAttribNameToHeader;
 map<string,string> g_mapAttribRuleToHeader;
 map<xstring,string> g_mapAttribNames;
 
-const char* ap_set_attribute_mapping(cmd_parms* parms, void*,
+extern "C" const char* ap_set_attribute_mapping(cmd_parms* parms, void*,
 				     const char* attrName, const char* headerName, const char* ruleName)
 {
     g_mapAttribNameToHeader[attrName]=headerName;
@@ -306,7 +306,7 @@ struct shib_server_config
 };
 
 // creates the per-server configuration
-void* create_shib_server_config (pool * p, server_rec * s)
+extern "C" void* create_shib_server_config (pool * p, server_rec * s)
 {
     shib_server_config* sc=(shib_server_config*)ap_pcalloc(p,sizeof(shib_server_config));
     sc->szCookieName = NULL;
@@ -317,7 +317,7 @@ void* create_shib_server_config (pool * p, server_rec * s)
 }
 
 // overrides server configuration in virtual servers
-void* merge_shib_server_config (pool* p, void* base, void* sub)
+extern "C" void* merge_shib_server_config (pool* p, void* base, void* sub)
 {
     shib_server_config* sc=(shib_server_config*)ap_pcalloc(p,sizeof(shib_server_config));
     shib_server_config* parent=(shib_server_config*)base;
@@ -366,7 +366,7 @@ struct shib_dir_config
 };
 
 // creates per-directory config structure
-void* create_shib_dir_config (pool* p, char* d)
+extern "C" void* create_shib_dir_config (pool* p, char* d)
 {
     shib_dir_config* dc=(shib_dir_config*)ap_pcalloc(p,sizeof(shib_dir_config));
     dc->secLifetime = 3600;
@@ -378,20 +378,20 @@ void* create_shib_dir_config (pool* p, char* d)
 }
 
 // generic global slot handlers
-const char* ap_set_global_string_slot(cmd_parms* parms, void*, const char* arg)
+extern "C" const char* ap_set_global_string_slot(cmd_parms* parms, void*, const char* arg)
 {
     *((char**)(parms->info))=ap_pstrdup(parms->pool,arg);
     return NULL;
 }
 
-const char* ap_set_global_flag_slot(cmd_parms* parms, void*, int arg)
+extern "C" const char* ap_set_global_flag_slot(cmd_parms* parms, void*, int arg)
 {
     *((int*)(parms->info))=arg;
     return NULL;
 }
 
 // generic per-server slot handler
-const char* ap_set_server_string_slot(cmd_parms* parms, void*, const char* arg)
+extern "C" const char* ap_set_server_string_slot(cmd_parms* parms, void*, const char* arg)
 {
     char* base=(char*)ap_get_module_config(parms->server->module_config,&shib_module);
     int offset=(int)parms->info;
@@ -400,19 +400,19 @@ const char* ap_set_server_string_slot(cmd_parms* parms, void*, const char* arg)
 }
 
 // some shortcuts for directory config slots
-const char* set_lifetime(cmd_parms* parms, shib_dir_config* dc, const char* arg)
+extern "C" const char* set_lifetime(cmd_parms* parms, shib_dir_config* dc, const char* arg)
 {
     dc->secLifetime=atoi(arg);
     return NULL;
 }
 
-const char* set_timeout(cmd_parms* parms, shib_dir_config* dc, const char* arg)
+extern "C" const char* set_timeout(cmd_parms* parms, shib_dir_config* dc, const char* arg)
 {
     dc->secTimeout=atoi(arg);
     return NULL;
 }
 
-typedef const char* (*config_fn_t)(void);
+extern "C" typedef const char* (*config_fn_t)(void);
 
 // Shibboleth module commands
 
@@ -482,12 +482,12 @@ private:
 
 Iterator<xstring> DummyMapper::getSecurityDomains(const XMLCh* originSite)
 {
-    domains_t::const_iterator i=m_domains.find(originSite);
+    domains_t::iterator i=m_domains.find(originSite);
     if (i==m_domains.end())
     {
         vector<xstring>* pv=new vector<xstring>();
         pv->push_back(originSite);
-        pair<domains_t::const_iterator,bool> p=m_domains.insert(domains_t::value_type(originSite,pv));
+        pair<domains_t::iterator,bool> p=m_domains.insert(domains_t::value_type(originSite,pv));
 	i=p.first;
     }
     return Iterator<xstring>(*(i->second));
@@ -503,7 +503,7 @@ DummyMapper::~DummyMapper()
  * shib_child_init()
  *  Things to do when the child process is initialized.
  */
-static void shib_child_init(server_rec* s, pool* p)
+extern "C" void shib_child_init(server_rec* s, pool* p)
 {
     // Initialize runtime components.
 
@@ -547,7 +547,7 @@ static void shib_child_init(server_rec* s, pool* p)
  * shib_child_exit()
  *  Cleanup.
  */
-static void shib_child_exit(server_rec* s, pool* p)
+extern "C" void shib_child_exit(server_rec* s, pool* p)
 {
     delete CCache::g_Cache;
     ShibConfig::term();
@@ -760,7 +760,7 @@ extern "C" int shib_check_user(request_rec* r)
     return SERVER_ERROR;
 }
 
-extern "C" table* groups_for_user(request_rec* r, const char* user, char* grpfile)
+table* groups_for_user(request_rec* r, const char* user, char* grpfile)
 {
     configfile_t* f;
     table* grps=ap_make_table(r->pool,15);
