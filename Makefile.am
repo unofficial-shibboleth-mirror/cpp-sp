@@ -4,7 +4,7 @@ ACLOCAL_AMFLAGS = -I .
 
 EXTRA_DIST = \
 	schemas configs doc isapi_shib \
-	Shibboleth.dsw libtool.m4 acx_pthread.m4 acx_rpctest.m4 \
+	Shibboleth.dsw libtool.m4 acx_pthread.m4 acx_rpctest.m4 config_win32.h \
     posttest/posttest.dsp \
     shibtest/shibtest.dsp
 
