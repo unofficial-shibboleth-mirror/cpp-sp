@@ -1,0 +1,93 @@
+Name:		shibboleth
+Summary:	Open source system to enable inter-institutional resource sharing
+Version:	@-VERSION-@
+Release:	1
+Copyright:	University Corporation for Advanced Internet Development, Inc.
+Group:		System Environment/Libraries
+License:	Apache style
+URL:		http://shibboleth.internet2.edu/
+Source0:	http://wayf.internet2.edu/shibboleth/%{name}-%{version}.tar.gz
+Source1:	http://wayf.internet2.edu/shibboleth/%{name}-%{version}.tar.gz.asc
+BuildRoot:	%{_tmppath}/%{name}-%{version}-root
+
+BuildRequires:	openssl-devel, curl-devel >= 7.10.6, xerces-c-devel >= 2.6.1
+BuildRequires:	xml-security-c-devel >= 1.1.0, log4cpp-devel >= 0.3.5
+BuildRequires:	zlib-devel, opensaml-devel, httpd-devel
+%{?_with_mysql:BuildRequires: mysql-devel >= 4}
+
+%description
+Shibboleth, a project of Internet2/MACE, is developing architectures,
+policy structures, practical technologies, and an open source
+implementation to support inter-institutional sharing of web resources
+subject to access controls. In addition, Shibboleth will develop a
+policy framework that will allow inter-operation within the higher
+education community.
+
+This package contains the shibboleth runtime library and apache module.
+
+%package devel
+Summary: Shibboleth development Headers
+Group: Development/Libraries
+Requires: %{name} = %{version}
+
+%description devel
+Shibboleth, a project of Internet2/MACE, is developing architectures,
+policy structures, practical technologies, and an open source
+implementation to support inter-institutional sharing of web resources
+subject to access controls. In addition, Shibboleth will develop a
+policy framework that will allow inter-operation within the higher
+education community.
+
+This package contains the headers and other necessary files to build
+applications that use the shibboleth library.
+
+%prep
+%setup -q
+
+%build
+%configure --enable-apache20 %{?_with_mysql:--enable-mysql} \
+	%{!?_with_mysql:--disable-mysql}
+make
+
+%install
+[ "$RPM_BUILD_ROOT" != "/" ] && rm -rf $RPM_BUILD_ROOT
+rm -rf _docs
+
+make install DESTDIR=$RPM_BUILD_ROOT
+mv $RPM_BUILD_ROOT/doc/shibboleth _docs
+
+%check || :
+make check
+
+%clean
+[ "$RPM_BUILD_ROOT" != "/" ] && rm -rf $RPM_BUILD_ROOT
+
+%post
+/sbin/ldconfig
+
+%postun
+/sbin/ldconfig
+
+%files
+%defattr(-,root,root,-)
+%doc _docs/LICENSE.txt _docs/NEWS.txt _docs/README.txt _docs/TODO.txt
+%{_bindir}/shar
+%{_bindir}/site-refresh
+%exclude %{_bindir}/shibtest
+%exclude %{_bindir}/signtest
+%exclude %{_bindir}/test-client
+%{_libdir}/libshib.so.*
+%{_libexecdir}/mod_shib_20.so
+%{_libexecdir}/xmlproviders.so
+%{_datadir}/shibboleth/*.xsd
+%config %{_datadir}/shibboleth/*.xml
+%{?_with_mysql:%{_libexecdir}/shib-mysql-ccache.so}
+
+%files devel
+%defattr(-,root,root,-)
+%{_includedir}
+%{_libdir}/libshib.so
+
+%changelog
+* Tue Oct 19 2004  Derek Atkins  <derek@ihtfp.com>  - 1.2-1
+- Create SPEC file based on various versions in existence.

@@ -4,9 +4,9 @@ ACLOCAL_AMFLAGS = -I .
 
 EXTRA_DIST = \
 	schemas doc isapi_shib isapi_shib_gui \
-	Shibboleth.dsw libtool.m4 acx_pthread.m4 acx_rpctest.m4 depcomp config_win32.h \
-    posttest/posttest.dsp \
-    shibtest/shibtest.dsp
+	Shibboleth.dsw libtool.m4 acx_pthread.m4 acx_rpctest.m4 depcomp \
+	config_win32.h posttest/posttest.dsp shibtest/shibtest.dsp \
+	shibboleth.spec.in
 
 dist-hook:
 	rm -rf `find $(distdir)/schemas -name CVS`
@@ -23,3 +23,13 @@ SUBDIRS = $(WANT_SUBDIRS)
 
 DIST_SUBDIRS = doc oncrpc shib schemas configs shib-target shar test \
 	apache siterefresh shib-mysql-ccache xmlproviders
+
+all-local: shibboleth.spec
+
+shibboleth.spec: shibboleth.spec.in Makefile
+        rm -f $@.tmp
+        sed < $< > $@.tmp \
+            -e 's:@-VERSION-@:${VERSION}:'
+        mv $@.tmp $@
+
+DISTCLEANFILES = shibboleth.spec
