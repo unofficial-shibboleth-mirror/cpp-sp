@@ -73,7 +73,7 @@ public:
     virtual Iterator<xstring> getHandleServiceNames(const XMLCh* originSite) { return Iterator<xstring>(m_hsnames); }
     virtual Key* getHandleServiceKey(const XMLCh* handleService) { return NULL; }
     virtual Iterator<xstring> getSecurityDomains(const XMLCh* originSite);
-    virtual Iterator<X509Certificate*> getTrustedRoots() { return Iterator<X509Certificate*>(); }
+    virtual const char* getTrustedRoots() { return SAMLConfig::getConfig().ssl_calist.c_str(); }
 
 private:
     typedef map<xstring,vector<xstring>*> domains_t;
@@ -160,8 +160,7 @@ STConfig::STConfig(const char* app_name, const char* inifile)
     throw runtime_error ("No Sites File found in configuration");
   }
 
-  shibConf.origin_mapper = new XMLOriginSiteMapper(tag.c_str(),
-						   Iterator<X509Certificate*>());
+  shibConf.origin_mapper = new XMLOriginSiteMapper(tag.c_str(),samlConf.ssl_calist.c_str());
   
   if (!shibConf.init()) {
     log.error ("Failed to initialize Shib library");

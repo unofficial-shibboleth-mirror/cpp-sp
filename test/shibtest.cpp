@@ -64,7 +64,7 @@ public:
     virtual Iterator<xstring> getHandleServiceNames(const XMLCh* originSite) { return Iterator<xstring>(); }
     virtual Key* getHandleServiceKey(const XMLCh* handleService) { return NULL; }
     virtual Iterator<xstring> getSecurityDomains(const XMLCh* originSite);
-    virtual Iterator<X509Certificate*> getTrustedRoots() { return Iterator<X509Certificate*>(); }
+    virtual const char* getTrustedRoots() { return NULL; }
 
 private:
     typedef map<xstring,vector<xstring>*> domains_t;
