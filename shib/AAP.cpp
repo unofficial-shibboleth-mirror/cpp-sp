@@ -215,7 +215,7 @@ XMLAAPImpl::AttributeRule::AttributeRule(const DOMElement* e) :
     m_header(e->hasAttributeNS(NULL,SHIB_L(Header)) ? XMLString::transcode(e->getAttributeNS(NULL,SHIB_L(Header))) : NULL)
     
 {
-    static const XMLCh wTrue[] = {chLatin_t, chLatin_r, chLatin_u, chLatin_e};
+    static const XMLCh wTrue[] = {chLatin_t, chLatin_r, chLatin_u, chLatin_e, chNull};
 
     m_name=e->getAttributeNS(NULL,SHIB_L(Name));
     m_namespace=e->getAttributeNS(NULL,SHIB_L(Namespace));
@@ -242,7 +242,7 @@ XMLAAPImpl::AttributeRule::AttributeRule(const DOMElement* e) :
             if (valnode && valnode->getNodeType()==DOMNode::TEXT_NODE)
             {
                 const XMLCh* accept=se->getAttributeNS(NULL,SHIB_L(Accept));
-                if (!accept || *accept==chDigit_1 || !XMLString::compareString(accept,wTrue))
+                if (!accept || !*accept || *accept==chDigit_1 || !XMLString::compareString(accept,wTrue))
                     m_anySiteRule.scopeAccepts.push_back(pair<value_type,const XMLCh*>(toValueType(se),valnode->getNodeValue()));
                 else
                     m_anySiteRule.scopeDenials.push_back(pair<value_type,const XMLCh*>(toValueType(se),valnode->getNodeValue()));
