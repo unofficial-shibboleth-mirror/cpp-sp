@@ -318,10 +318,9 @@ public:
         return string("");
     if (strcasecmp(auth_type, "shibboleth")) {
       if (!strcasecmp(auth_type, "basic") && m_dc->bBasicHijack == 1) {
-	core_dir_config* conf= (core_dir_config*)
-	  ap_get_module_config(m_req->per_dir_config,
+        core_dir_config* conf= (core_dir_config*)ap_get_module_config(m_req->per_dir_config,
 			       ap_find_linked_module("http_core.c"));
-	auth_type = conf->ap_auth_type = "shibboleth";
+        auth_type = conf->ap_auth_type = "shibboleth";
       }
     }
     return string(auth_type);
@@ -360,22 +359,22 @@ public:
       const char* w = ap_getword_white(m_req->pool, &t);
       rline->tokens.push_back(w);
       while (*t) {
-	w = ap_getword_conf(m_req->pool, &t);
-	rline->tokens.push_back(w);
+        w = ap_getword_conf(m_req->pool, &t);
+        rline->tokens.push_back(w);
       }
       ht->elements.push_back(rline);
     }
     return ht;
   }
-  virtual HTGroupTable* getGroupTable(string &user) {
+  virtual HTGroupTable* getGroupTable(string& user) {
     if (m_dc->szAuthGrpFile && !user.empty()) {
       ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req),
 		    "getGroupTable() using groups file: %s\n",
 		    m_dc->szAuthGrpFile);
       try {
-	HTGroupTableApache *gt = new HTGroupTableApache(m_req, user.c_str(),
+        HTGroupTableApache *gt = new HTGroupTableApache(m_req, user.c_str(),
 							m_dc->szAuthGrpFile);
-	return gt;
+        return gt;
       } catch (...) { }
     }
     return NULL;
@@ -383,9 +382,9 @@ public:
 
   virtual void* sendPage(
     const string& msg,
-    const string& content_type,
-	const saml::Iterator<header_t>& headers=EMPTY(header_t),
-    int code=200
+    int code=200,
+    const string& content_type="text/html",
+	const Iterator<header_t>& headers=EMPTY(header_t)
     ) {
     m_req->content_type = ap_psprintf(m_req->pool, content_type.c_str());
     while (headers.hasNext()) {
@@ -394,7 +393,7 @@ public:
     }
     ap_send_http_header(m_req);
     ap_rprintf(m_req, msg.c_str());
-    return (void*)DONE;
+    return (void*)((code==200) ? DONE : code);
   }
   virtual void* sendRedirect(const string& url) {
     ap_table_set(m_req->headers_out, "Location", url.c_str());

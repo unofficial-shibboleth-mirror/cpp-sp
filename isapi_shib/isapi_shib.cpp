@@ -445,16 +445,24 @@ public:
   virtual string getRemoteUser(void) {
     return getHeader(string("remote-user"));
   }
-  virtual void* sendPage(const string& msg, const string& content_type,
-      const Iterator<header_t>& headers=EMPTY(header_t), int code=200) {
+  virtual void* sendPage(
+    const string& msg,
+    int code=200,
+    const string& content_type="text/html",
+    const Iterator<header_t>& headers=EMPTY(header_t)) {
     string hdr = string ("Connection: close\r\nContent-type: ") + content_type + "\r\n";
     while (headers.hasNext()) {
         const header_t& h=headers.next();
         hdr += h.first + ": " + h.second + "\r\n";
     }
     hdr += "\r\n";
-    // XXX Need to handle "code"
-    m_pfc->ServerSupportFunction(m_pfc, SF_REQ_SEND_RESPONSE_HEADER, "200 OK", (DWORD)hdr.c_str(), 0);
+    const char* codestr="200 OK";
+    switch (code) {
+        case 403:   codestr="403 Forbidden"; break;
+        case 404:   codestr="404 Not Found"; break;
+        case 500:   codestr="500 Server Error"; break;
+    }
+    m_pfc->ServerSupportFunction(m_pfc, SF_REQ_SEND_RESPONSE_HEADER, (void*)codestr, (DWORD)hdr.c_str(), 0);
     DWORD resplen = msg.size();
     m_pfc->WriteClient(m_pfc, (LPVOID)msg.c_str(), &resplen, 0);
     return (void*)SF_STATUS_REQ_FINISHED;
@@ -1112,16 +1120,23 @@ public:
     else
       return string(reinterpret_cast<char*>(m_lpECB->lpbData),m_lpECB->cbAvailable);
   }
-  virtual void* sendPage(const string &msg, const string& content_type,
-			 const Iterator<header_t>& headers=EMPTY(header_t), int code=200) {
+  virtual void* sendPage(
+    const string &msg,
+    int code=200,
+    const string& content_type="text/html",
+    const Iterator<header_t>& headers=EMPTY(header_t)) {
     string hdr = string ("Connection: close\r\nContent-type: ") + content_type + "\r\n";
     for (int k = 0; k < headers.size(); k++) {
       hdr += headers[k].first + ": " + headers[k].second + "\r\n";
     }
     hdr += "\r\n";
-    // XXX Need to handle "code"
-    m_lpECB->ServerSupportFunction(m_lpECB->ConnID, HSE_REQ_SEND_RESPONSE_HEADER,
-				   "200 OK", 0, (LPDWORD)hdr.c_str());
+    const char* codestr="200 OK";
+    switch (code) {
+        case 403:   codestr="403 Forbidden"; break;
+        case 404:   codestr="404 Not Found"; break;
+        case 500:   codestr="500 Server Error"; break;
+    }
+    m_lpECB->ServerSupportFunction(m_lpECB->ConnID, HSE_REQ_SEND_RESPONSE_HEADER, (void*)codestr, 0, (LPDWORD)hdr.c_str());
     DWORD resplen = msg.size();
     m_lpECB->WriteClient(m_lpECB->ConnID, (LPVOID)msg.c_str(), &resplen, HSE_IO_SYNC);
     return (void*)HSE_STATUS_SUCCESS;

@@ -401,11 +401,11 @@ namespace shibtarget {
     // If there are no headers supplied assume the content-type == text/html
     typedef std::pair<std::string, std::string> header_t;
     virtual void* sendPage(
-			   const std::string& msg,
-			   const std::string& content_type = "text/html",
-			   const saml::Iterator<header_t>& headers = EMPTY(header_t),
-			   int code = 200
-			   )=0;
+        const std::string& msg,
+        int code = 200,
+        const std::string& content_type = "text/html",
+        const saml::Iterator<header_t>& headers = EMPTY(header_t)
+        )=0;
     void* sendPage(const char *msg) {
       std::string m = msg;
       return sendPage(m);
