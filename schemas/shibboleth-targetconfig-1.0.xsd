@@ -162,10 +162,7 @@
 		<complexType>
 			<sequence>
 				<element ref="conf:Extensions" minOccurs="0"/>
-				<choice minOccurs="0">
-					<element ref="conf:RequestMap"/>
-					<element name="RequestMapProvider" type="conf:PluggableType"/>
-				</choice>
+				<element name="RequestMapProvider" type="conf:PluggableType" minOccurs="0"/>
 				<element name="Implementation" minOccurs="0">
 					<complexType>
 						<choice maxOccurs="unbounded">
