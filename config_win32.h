@@ -9,6 +9,10 @@
    don't. */
 #define HAVE_DECL_SVCFD_CREATE 1
 
+/* Define to 1 if you have the declaration of `sys_errlist', and to 0 if you
+   don't. */
+/* #undef HAVE_DECL_SYS_ERRLIST */
+
 /* Define to 1 if you have the <dlfcn.h> header file. */
 /* #undef HAVE_DLFCN_H */
 
@@ -74,6 +78,9 @@
 
 /* Define to 1 if you have the `strtok_r' function. */
 /* #undef HAVE_STRTOK_R */
+
+/* Define to 1 if the system has the type `struct rpcent'. */
+/* #undef HAVE_STRUCT_RPCENT */
 
 /* Define to 1 if you have the `strerror_r' function. */
 /* #undef HAVE_STRERROR_R */
