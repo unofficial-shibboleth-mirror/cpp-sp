@@ -157,10 +157,11 @@ Iterator<string> ScopedAttribute::getSingleByteValues() const
     if (m_sbValues.empty())
     {
         for (vector<xstring>::const_iterator i=m_scopedValues.begin(); i!=m_scopedValues.end(); i++)
-	{
-	    auto_ptr<char> temp(XMLString::transcode(i->c_str()));
-	    m_sbValues.push_back(temp.get());
-	}
+        {
+            auto_ptr<char> temp(XMLString::transcode(i->c_str()));
+            if (temp.get())
+                m_sbValues.push_back(temp.get());
+        }
     }
     return Iterator<string>(m_sbValues);
 }
