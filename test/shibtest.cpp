@@ -120,8 +120,8 @@ int main(int argc,char* argv[])
         
         Metadata m(sites);
 
-        ShibBinding binding(EMPTY(IRevocation*),EMPTY(ITrust*),EMPTY(ICredentials*));
-        SAMLResponse* resp=binding.send(*req,m.lookup(domain.get()),NULL);
+        auto_ptr<ShibBinding> binding(new ShibBinding(EMPTY(IRevocation*),EMPTY(ITrust*),EMPTY(ICredentials*)));
+        SAMLResponse* resp=binding->send(*req,m.lookup(domain.get()));
         delete req;
 
         Iterator<SAMLAssertion*> i=resp->getAssertions();
