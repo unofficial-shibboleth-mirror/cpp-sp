@@ -2,4 +2,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-SUBDIRS = schemas shib eduPerson shib-target shar test
+ACLOCAL_AMFLAGS = -I .
+
+SUBDIRS = @WANT_SUBDIRS@
+

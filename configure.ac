@@ -113,7 +113,162 @@ AC_TRY_LINK(
                 LIBS="$saved_LIBS"
         ])
 
-# output makefiles
-AC_OUTPUT(Makefile shib/Makefile schemas/Makefile eduPerson/Makefile \
-		   shib-target/Makefile test/Makefile shar/Makefile )
+# output the underlying makefiles
+WANT_SUBDIRS="shib schemas eduPerson shib-target shar test"
+AC_CONFIG_FILES([Makefile shib/Makefile schemas/Makefile eduPerson/Makefile \
+		            shib-target/Makefile shar/Makefile test/Makefile])
+
+# Much of this is taken from mod_dav.
+# The basic idea is to use configure options to control whether/which types
+# of web server modules get built. We assume there may eventually be multiple
+# types (Apache 1/2, iPlanet, others).
+
+# Apache 1.3 (mod_shire/mod_shibrm)
+#   --with-apache   (static build, no idea how to do this yet, so not supported)
+#   --with-apxs     (DSO build, the normal way, uses apxs to derive build flags)
+#   --without-apxs  (DSO build, you tell us how to build using the environment)
+
+AC_MSG_CHECKING([for dynamic Apache module support (w/ or w/o APXS)])
+AC_ARG_WITH(apxs,
+[  --with-apxs[=FILE]        Build shared Apache module(s). FILE is the optional
+                          pathname to the Apache apxs tool; defaults to "apxs".],
+[
+    if test "$withval" = "yes"; then
+      for i in /usr/sbin /usr/local/apache/bin ; do
+        if test -f "$i/apxs"; then
+          APXS="$i/apxs"
+        fi
+      done
+      if test -z "$APXS"; then
+        APXS=apxs
+      fi
+    else
+      APXS="$withval"
+    fi
+])
+
+if test "$APXS" = "no"; then
+
+    # --without-apxs means you want the modules,
+    #       but want to tell us how to build them
+    AC_MSG_RESULT(yes, but use environment, not apxs)
+    echo
+    echo "Did you set one or more of these?"
+    echo
+    echo "APXS_CFLAGS APXS_PREFIX APXS_INCLUDE APXS_LIBEXEC APXS_SYSCONFDIR"
+    echo
+
+    AC_MSG_NOTICE([APXS_CFLAGS is $APXS_CFLAGS])
+
+    # try and find the Apache root
+    if test -z "$APXS_PREFIX"; then
+        if test -d "/usr/local/apache"; then
+            APXS_PREFIX="/usr/local/apache"
+        else
+            AC_MSG_ERROR([You MUST set APXS_PREFIX so the right Apache can be located!])
+        fi
+    elif test ! -d "$APXS_PREFIX"; then
+        AC_MSG_ERROR([APXS_PREFIX of $APXS_PREFIX cannot be found])
+    fi
+    AC_MSG_NOTICE([APXS_PREFIX is $APXS_PREFIX])
+    
+
+    # other subfolders might be derived from APXS_PREFIX
+    if test -z "$APXS_INCLUDE"; then
+        if test -f "$APXS_PREFIX/include/httpd.h"; then
+            APXS_INCLUDE="$APXS_PREFIX/include"
+        else
+            AC_MSG_ERROR([can't find Apache include files beneath $APXS_PREFIX])
+        fi
+    elif ! test -f "$APXS_INCLUDE/httpd.h"; then
+        AC_MSG_ERROR([APXS_INCLUDE of $APXS_INCLUDE does not contain Apache headers])
+    fi
+    AC_MSG_NOTICE([APXS_INCLUDE is $APXS_INCLUDE])
+
+    if test -z "$APXS_LIBEXEC"; then
+        if test -d "$APXS_PREFIX/libexec"; then
+            APXS_LIBEXEC="$APXS_PREFIX/libexec"
+        elif test -d "$APXS_PREFIX/modules"; then
+            APXS_LIBEXEC="$APXS_PREFIX/modules"
+        else
+            AC_MSG_ERROR([can't find Apache libexec/module directory beneath $APXS_PREFIX])
+        fi
+    elif ! test -d "$APXS_LIBEXEC"; then
+        AC_MSG_ERROR([APXS_LIBEXEC of $APXS_LIBEXEC does not exist])
+    fi
+    AC_MSG_NOTICE([APXS_LIBEXEC is $APXS_LIBEXEC])
+
+    if test -z "$APXS_SYSCONFDIR"; then
+        if test -d "$APXS_PREFIX/conf"; then
+            APXS_SYSCONFDIR="$APXS_PREFIX/conf"
+        else
+            AC_MSG_ERROR([can't find Apache conf directory beneath $APXS_PREFIX])
+        fi
+    elif ! test -d "$APXS_SYSCONFDIR"; then
+        AC_MSG_ERROR([APXS_SYSCONFDIR of $APXS_SYSCONFDIR does not exist])
+    fi
+    AC_MSG_NOTICE([APXS_SYSCONFDIR is $APXS_SYSCONFDIR])
+
+    WANT_APACHE="yes"
+
+elif test -n "$APXS"; then
+
+    # extract settings we need from APXS -q
+    APXS_CC="`$APXS -q CC`"
+    APXS_CFLAGS="`$APXS -q CFLAGS` `$APXS -q CFLAGS_SHLIB`"
+    APXS_INCLUDE="`$APXS -q INCLUDEDIR`"
+    APXS_LIBEXEC="`$APXS -q LIBEXECDIR`"
+    APXS_SYSCONFDIR="`$APXS -q SYSCONFDIR`"
+
+    AC_SUBST(APXS)
+    AC_MSG_RESULT(found at $APXS)
+
+    if test -z "`$APXS -q LD_SHLIB`" || test "$APXS_LIBEXEC" = "modules"; then
+	    AC_MSG_ERROR(
+[Your APXS installation is broken and cannot be used.
+    Please see http://www.webdav.org/mod_dav/install.html#apxs for
+    more information.])
+    fi
+
+    WANT_APACHE="yes"
+
+else
+    # guess we're not doing Apache 1.3
+    AC_MSG_RESULT(no)
+    WANT_APACHE="no"
+fi
+
+if test "$WANT_APACHE" = "yes"; then
+    AC_ARG_WITH(apreq,
+                AC_HELP_STRING([--with-apreq=PATH], [where libapreq is installed]),
+                [if test x_$with_apreq != x_/usr; then
+                    LDFLAGS="-L${with_apreq}/lib $LDFLAGS"
+                    CPPFLAGS="-I${with_apreq}/include $CPPFLAGS"
+                fi])
+
+    AC_SUBST(APXS_CFLAGS)
+    AC_SUBST(APXS_INCLUDE)
+    AC_SUBST(APXS_LIBEXEC)
+    AC_SUBST(APXS_SYSCONFDIR)
+
+    # output the Apache 1.3 makefiles
+    WANT_SUBDIRS="$WANT_SUBDIRS mod_shire mod_shibrm"
+    AC_CONFIG_FILES([mod_shire/Makefile mod_shibrm/Makefile])
+fi
+
+AC_SUBST(WANT_SUBDIRS)
+
+if test -n "$APXS_CC" && test "$APXS_CC" != "$CC" ; then
+  echo "=================================================================="
+  echo "WARNING: You have chosen to compile Apache modules with a different"
+  echo "         compiler than the one used to compile Apache."
+  echo ""
+  echo "    Current compiler:      $CC"
+  echo "   Apache's compiler:      $APXS_CC"
+  echo ""
+  echo "This could cause some problems."
+  echo "=================================================================="
+fi
+
+AC_OUTPUT
 
