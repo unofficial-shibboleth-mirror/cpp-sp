@@ -116,7 +116,7 @@ extern "C" void eduPerson_child_init(server_rec* s, pool* p)
 			      shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,
 			      &EntitlementFactory);
 
-    std::fprintf(stderr,"eduPerson_child_init() done\n");
+    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,s,"eduPerson_child_init() done");
 }
 
 
@@ -135,7 +135,7 @@ extern "C" void eduPerson_child_exit(server_rec* s, pool* p)
     SAMLAttribute::unregFactory(eduPerson::Constants::EDUPERSON_ENTITLEMENT,
 				shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
 
-    std::fprintf(stderr,"eduPerson_child_exit() done\n");
+    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,s,"eduPerson_child_exit() done");
 }
 
 extern "C"{
