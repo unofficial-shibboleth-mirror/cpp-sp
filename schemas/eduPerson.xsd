@@ -95,7 +95,7 @@
     <element name="AttributeAcceptancePolicy">
         <complexType>
             <sequence>
-                <element ref="edu:AttributeRule" maxOccurs="unbounded"/>
+                <element ref="edu:AttributeRule" minOccurs="0" maxOccurs="unbounded"/>
             </sequence>
         </complexType>
         <key name="AttributeNameKey">
