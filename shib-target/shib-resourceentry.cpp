@@ -77,7 +77,7 @@ ResourceEntry::ResourceEntry(const Resource &resource,
   auto_ptr<ResourceEntryPriv> priv(new ResourceEntryPriv());
 
   auto_ptr<XMLCh> resourceURL(XMLString::transcode(resource.getURL()));
-  Iterator<saml::QName> respond_withs = ArrayIterator<saml::QName>(&ResourceEntryPriv::g_respondWith);
+  ArrayIterator<saml::QName> respond_withs(&ResourceEntryPriv::g_respondWith);
 
   // Clone the subject...
   // 1) I know the static_cast is safe from clone()
