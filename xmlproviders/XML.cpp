@@ -185,8 +185,6 @@ const XMLCh XML::SHIB_RETMETHOD_PEMX509CRL[] = // urn:mace:shibboleth:RetrievalM
 
 // Shibboleth vocabulary literals
 
-const XMLCh XML::Literals::Scope[] = { chLatin_S, chLatin_c, chLatin_o, chLatin_p, chLatin_e, chNull };
-
 const XMLCh XML::Literals::AttributeAuthority[] =
 { chLatin_A, chLatin_t, chLatin_t, chLatin_r, chLatin_i, chLatin_b, chLatin_u, chLatin_t, chLatin_e,
   chLatin_A, chLatin_u, chLatin_t, chLatin_h, chLatin_o, chLatin_r, chLatin_i, chLatin_t, chLatin_y, chNull
@@ -326,6 +324,8 @@ const XMLCh XML::Literals::Header[]=
 const XMLCh XML::Literals::Namespace[]=
 { chLatin_N, chLatin_a, chLatin_m, chLatin_e, chLatin_s, chLatin_p, chLatin_a, chLatin_c, chLatin_e, chNull };
 
+const XMLCh XML::Literals::Scope[] = { chLatin_S, chLatin_c, chLatin_o, chLatin_p, chLatin_e, chNull };
+
 const XMLCh XML::Literals::Scoped[] = { chLatin_S, chLatin_c, chLatin_o, chLatin_p, chLatin_e, chLatin_d, chNull };
 
 const XMLCh XML::Literals::SiteRule[] =
@@ -362,6 +362,9 @@ const XMLCh XML::Literals::technical[] =
 { chLatin_t, chLatin_e, chLatin_c, chLatin_h, chLatin_n, chLatin_i, chLatin_c, chLatin_a, chLatin_l, chNull };
 
 const XMLCh XML::Literals::url[] = { chLatin_u, chLatin_r, chLatin_l, chNull };
+
+const XMLCh XML::Literals::Exclude[] =
+{ chLatin_E, chLatin_x, chLatin_c, chLatin_l, chLatin_u, chLatin_d, chLatin_e, chNull };
 
 const XMLCh XML::Literals::AdditionalMetadataLocation[] =
 { chLatin_A, chLatin_d, chLatin_d, chLatin_i, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chLatin_a, chLatin_l,

@@ -171,8 +171,6 @@ public:
         static const XMLCh X509CRL[];
 
         // SAML attribute constants
-        static const XMLCh Scope[];
-
         static const XMLCh Accept[];
         static const XMLCh Alias[];
         static const XMLCh AnyAttribute[];
@@ -184,6 +182,7 @@ public:
         static const XMLCh Factory[];
         static const XMLCh Header[];
         static const XMLCh Namespace[];
+        static const XMLCh Scope[];
         static const XMLCh Scoped[];
         static const XMLCh SiteRule[];
         static const XMLCh Type[];
@@ -193,6 +192,7 @@ public:
         static const XMLCh regexp[];
         static const XMLCh xpath[];
 
+        static const XMLCh Exclude[];
         static const XMLCh url[];
         
         // new metadata constants
