@@ -6,3 +6,5 @@
 /*.la
 /*.aps
 /*.plg
+/Release
+/Debug
