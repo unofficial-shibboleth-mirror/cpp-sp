@@ -233,6 +233,7 @@ static void usage(char* whoami)
 {
     fprintf(stderr, "usage: %s [-f]\n", whoami);
     fprintf(stderr, "  -c\tconfig file to use.\n");
+    fprintf(stderr, "  -d\tschema directory to use.\n");
     fprintf(stderr, "  -f\tforce removal of listener socket.\n");
     fprintf(stderr, "  -h\tprint this help message.\n");
     exit(1);
@@ -242,7 +243,7 @@ static int parse_args(int argc, char* argv[])
 {
     int opt;
 
-    while ((opt = getopt(argc, argv, "cfFh")) > 0) {
+    while ((opt = getopt(argc, argv, "cdfFh")) > 0) {
         switch (opt) {
             case 'c':
                 config=optarg;
