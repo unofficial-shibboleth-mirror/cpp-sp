@@ -16,6 +16,7 @@
 
 #include "shar-utils.h"
 #include <shib/shib-threads.h>
+#include <shib-target/ccache-utils.h>
 
 using namespace std;
 using namespace shibboleth;
@@ -57,8 +58,12 @@ shar_client_thread (void* arg)
   sigfillset(&sigmask);
   Thread::mask_signals(SIG_BLOCK, &sigmask, NULL);
 
+  g_shibTargetCCache->thread_init();
+
   // the run the child until they exit.
   child->run();
+
+  g_shibTargetCCache->thread_end();
 
   // now we can clean up and exit the thread.
   delete child;

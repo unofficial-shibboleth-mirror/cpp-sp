@@ -205,15 +205,6 @@ void STConfig::init()
     throw;
   }
 
-  // Initialize the SHAR Cache
-  if (!strcmp (app.c_str(), SHIBTARGET_SHAR)) {
-    const char * cache_type = NULL;
-    if (ini->get_tag (app, SHIBTARGET_TAG_CACHETYPE, true, &tag))
-      cache_type = tag.c_str();
-
-    g_shibTargetCCache = CCache::getInstance(cache_type);
-  }
-
   // Load any SAML extensions
   string ext = "extensions:saml";
   if (ini->exists(ext)) {
@@ -269,6 +260,15 @@ void STConfig::init()
     delete iter;
   }
   
+  // Initialize the SHAR Cache
+  if (!strcmp (app.c_str(), SHIBTARGET_SHAR)) {
+    const char * cache_type = NULL;
+    if (ini->get_tag (app, SHIBTARGET_TAG_CACHETYPE, true, &tag))
+      cache_type = tag.c_str();
+
+    g_shibTargetCCache = CCache::getInstance(cache_type);
+  }
+
   string sockname=ini->get(SHIBTARGET_GENERAL, "sharsocket");
 #ifdef WIN32
   if (sockname.length()>0)

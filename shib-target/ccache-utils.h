@@ -54,10 +54,20 @@ namespace shibtarget {
     //
     virtual void remove(const char* key) = 0;
     
+    // Call this first method when you want to access the cache from a
+    // new thread and the second method just before the thread is
+    // going to exit.  This is necessary for some sub-classes.
+    virtual void thread_init() { }
+    virtual void thread_end() { }
+
     // create a CCache instance of the provided type.  A NULL type
     // implies that it should create the default cache type.
     //
     static CCache* getInstance(const char* type);
+
+    // register a CCache type with the system.
+    typedef CCache*(*CCacheFactory)(void);
+    static void registerFactory(const char* name, CCacheFactory factory);
   };    
 
   /* A low-level memory cache of a SAMLResponse object */

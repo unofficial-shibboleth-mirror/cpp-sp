@@ -172,11 +172,36 @@ private:
   Thread*	cleanup_thread;
 };
 
+namespace {
+  map<string,CCache::CCacheFactory> g_ccacheFactoryDB;
+};
+
 // Global Constructors & Destructors
 CCache::~CCache() { }
 
+void CCache::registerFactory(const char* name, CCache::CCacheFactory factory)
+{
+  string ctx = "shibtarget.CCache";
+  log4cpp::Category& log = log4cpp::Category::getInstance(ctx);
+  saml::NDC ndc("registerFactory");
+
+  log.info ("Registered factory %p for CCache %s", factory, name);
+  g_ccacheFactoryDB[name] = factory;
+}
+
 CCache* CCache::getInstance(const char* type)
 {
+  string ctx = "shibtarget.CCache";
+  log4cpp::Category& log = log4cpp::Category::getInstance(ctx);
+  saml::NDC ndc("getInstance");
+
+  map<string,CCache::CCacheFactory>::const_iterator i=g_ccacheFactoryDB.find(type);
+  if (i!=g_ccacheFactoryDB.end()) {
+    log.info ("Loading CCache: %s at %p", type, i->second);
+    return ((i->second)());
+  }
+
+  log.info ("Loading default memory CCache");
   return (CCache*) new InternalCCache();
 }
 
