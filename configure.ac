@@ -295,8 +295,15 @@ if test "$WANT_APACHE" = "yes"; then
 
     saved_CPPFLAGS="$CPPFLAGS"
     CPPFLAGS="-I$APXS_INCLUDE $APXS_CFLAGS $CPPFLAGS"
-    AC_CHECK_HEADER([libapreq/apache_request.h],,
-                AC_MSG_ERROR([unable to find apreq header files]))
+    AC_TRY_COMPILE([#include <libapreq/apache_request.h>],
+                   [int i=0],
+                   test_apreq="yes",test_apreq="no")
+    if test "$test_apreq" = "no"; then
+        CPPFLAGS="$CPPFLAGS -U_XOPEN_SOURCE"
+        APXS_CFLAGS="$APXS_CFLAGS -U_XOPEN_SOURCE"
+        AC_CHECK_HEADER([libapreq/apache_request.h],,
+            AC_MSG_ERROR([unable to find a usable libapreq header]))
+    fi
 
 dnl    saved_LIBS="$LIBS"
 dnl    LIBS="-lapreq $LIBS"
