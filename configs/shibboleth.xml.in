@@ -36,7 +36,7 @@
         <!--
         <MySQLSessionCache cleanupInterval="300" cacheTimeout="3600" AATimeout="30" AAConnectTimeout="15"
                defaultLifetime="1800" retryInterval="300" strictValidity="false" propagateErrors="true"
-               mysqlTimeout="14400">
+               mysqlTimeout="14400" storeAttributes="false">
             <Argument>&#x2D;&#x2D;language=@-PREFIX-@/share/english</Argument>
             <Argument>&#x2D;&#x2D;datadir=@-PREFIX-@/data</Argument>
         </MySQLSessionCache>
@@ -51,7 +51,7 @@
         -->
     </Global>
     
-    <Local logger="@-PKGSYSCONFDIR-@/shire.logger">
+    <Local logger="@-PKGSYSCONFDIR-@/shire.logger" localRelayState="true">
         <!--
         To customize behavior, map hostnames and path components to applicationId and other settings.
         Can be either a pointer to an external file or an inline configuration.
@@ -97,7 +97,8 @@
     </Local>
 
     <Applications xmlns:saml="urn:oasis:names:tc:SAML:1.0:assertion"
-    	id="default" providerId="https://example.org/shibboleth/target">
+    	id="default" providerId="https://sp.example.org/shibboleth"
+    	homeURL="https://sp.example.org/index.html">
 
         <!--
         Controls session lifetimes, address checks, cookie handling, WAYF, and the SHIRE location.

@@ -196,6 +196,7 @@
 			<any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
 		</sequence>
 		<attribute name="logger" type="anyURI" use="optional"/>
+		<attribute name="localRelayState" type="boolean" use="optional" default="false"/>
 		<anyAttribute namespace="##other" processContents="lax"/>
 	</complexType>
 	
@@ -357,6 +358,7 @@
 			</sequence>
 			<attribute name="id" type="string" fixed="default"/>
 			<attribute name="providerId" type="anyURI" use="required"/>
+			<attribute name="homeURL" type="anyURI" use="optional"/>
 	        <anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>
@@ -384,6 +386,7 @@
 			</sequence>
 			<attribute name="id" type="string" use="required"/>
 			<attribute name="providerId" type="anyURI" use="optional"/>
+			<attribute name="homeURL" type="anyURI" use="optional"/>
 	        <anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>
