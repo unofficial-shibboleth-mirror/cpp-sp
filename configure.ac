@@ -69,7 +69,15 @@ fi
 # Test RPC now -- finish dealing with it later
 ACX_RPCTEST([rpctest="yes"],[rpctest="no"])
 if test $rpctest = "yes" ; then
-	AC_CHECK_DECLS([svcfd_create],,,[rpc/rpc.h])
+	AC_CHECK_DECLS([svcfd_create],,,[#include <rpc/rpc.h>])
+	AC_LANG_PUSH(C++)
+	AC_COMPILE_IFELSE(
+		AC_LANG_PROGRAM(
+			[[#include <rpc/rpc.h>
+static SVCXPRT* xprt = NULL;]],
+        	[[svc_destroy(xprt);]]),
+        AC_DEFINE(HAVE_WORKING_SVC_DESTROY,1,[Define if RPC SVC macros work on this platform]),)
+	AC_LANG_POP(C++)
 fi
 
 AC_ARG_WITH(dmalloc,
