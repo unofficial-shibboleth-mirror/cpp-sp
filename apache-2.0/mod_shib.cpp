@@ -615,7 +615,7 @@ extern "C" int shib_shire_handler (request_rec* r)
     //ap_hard_timeout("[mod_shib] CGI Parser", r);
 
     memset(buff, 0, sizeof(buff));
-    while (ap_get_client_block(r, buff, sizeof(buff)) > 0) {
+    while (ap_get_client_block(r, buff, sizeof(buff)-1) > 0) {
       cgistr += buff;
       memset(buff, 0, sizeof(buff));
     }
