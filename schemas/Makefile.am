@@ -15,4 +15,4 @@ pkgsysconf_DATA = \
                 xml.xsd \
                 shibboleth.xsd \
                 shibboleth-trust-1.0.xsd \
-                shibboleth-appmap-1.0.xsd
+                shibboleth-targetconfig-1.0.xsd
