@@ -1,7 +1,7 @@
-7/25/03
-Version 1.0.1, shib Library version "4", shibtarget Library Version "3"
+5/10/04
+Version 1.2, shib Library version "5", shibtarget Library Version "4"
 
-This release works with SAML library version "3".
+This release works with SAML library version "4".
 
 Please read the README.txt and INSTALL.txt files in the same directory
 with this file before continuing. More general information is available
@@ -15,6 +15,9 @@ archive is unpacked:
 
 	/opensaml/
 	/shibboleth/
+
+If you use a copy of OpenSAML installed elsewhere, just define the INCLUDE
+and LIB locations to the compiler.
 
 You can choose which, if any, web server modules to build, in case you don't
 need or want one or more of them.
