@@ -364,9 +364,13 @@ extern "C" int shire_check_user(request_rec* r)
         // No acceptable cookie.  Redirect to WAYF.
         ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
 		      "shire_check_user() no cookie found -- redirecting to WAYF");
+        char timebuf[16];
+        sprintf(timebuf,"%u",time(NULL));
         char* wayf=ap_pstrcat(r->pool,wayfLocation.c_str(),
 			      "?shire=",url_encode(r,unescaped_shire),
-			      "&target=",url_encode(r,targeturl),NULL);
+			      "&target=",url_encode(r,targeturl),
+                  "&time=",timebuf,
+                  "&providerId=",application_id,NULL);
         ap_table_setn(r->headers_out,"Location",wayf);
         return REDIRECT;
     }
@@ -406,9 +410,13 @@ extern "C" int shire_check_user(request_rec* r)
 
         if (status->isRetryable()) {
             // Oops, session is invalid.  Redirect to WAYF.
+            char timebuf[16];
+            sprintf(timebuf,"%u",time(NULL));
             char* wayf=ap_pstrcat(r->pool,wayfLocation.c_str(),
-				"?shire=",url_encode(r,unescaped_shire),
-				"&target=",url_encode(r,targeturl),NULL);
+			          "?shire=",url_encode(r,unescaped_shire),
+			          "&target=",url_encode(r,targeturl),
+                      "&time=",timebuf,
+                      "&providerId=",application_id,NULL);
             ap_table_setn(r->headers_out,"Location",wayf);
 
             delete status;
@@ -563,9 +571,13 @@ extern "C" int shire_post_handler (request_rec* r)
 	  ap_log_rerror(APLOG_MARK,APLOG_INFO|APLOG_NOERRNO,r,
 	        "shire_post_handler() Retrying POST by redirecting to WAYF");
 	
+        char timebuf[16];
+        sprintf(timebuf,"%u",time(NULL));
         char* wayf=ap_pstrcat(r->pool,wayfLocation.c_str(),
 			      "?shire=",url_encode(r,unescaped_shire),
-			      "&target=",url_encode(r,target),NULL);
+			      "&target=",url_encode(r,targeturl),
+                  "&time=",timebuf,
+                  "&providerId=",application_id,NULL);
         ap_table_setn(r->headers_out,"Location",wayf);
         delete status;
         return REDIRECT;
