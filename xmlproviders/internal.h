@@ -115,6 +115,8 @@ public:
     static const XMLCh SAML2ASSERT_SCHEMA_ID[];
     static const XMLCh SAML2META_NS[];
     static const XMLCh SAML2META_SCHEMA_ID[];
+    static const XMLCh XMLENC_NS[];
+    static const XMLCh XMLENC_SCHEMA_ID[];
         
     // ds:KeyInfo RetrievalMethods
     static const XMLCh XMLSIG_RETMETHOD_RAWX509[];  // http://www.w3.org/2000/09/xmldsig#rawX509Certificate
@@ -196,6 +198,7 @@ public:
         static const XMLCh AffiliateMember[];
         static const XMLCh AffiliationDescriptor[];
         static const XMLCh affiliationOwnerID[];
+        static const XMLCh Algorithm[];
         static const XMLCh ArtifactResolutionService[];
         static const XMLCh AssertionConsumerService[];
         static const XMLCh AssertionIDRequestService[];
@@ -225,9 +228,11 @@ public:
         static const XMLCh isDefault[];
         static const XMLCh isRequired[];
         static const XMLCh KeyDescriptor[];
+        static const XMLCh KeySize[];
         static const XMLCh ManageNameIDService[];
         static const XMLCh NameIDFormat[];
         static const XMLCh NameIDMappingService[];
+        static const XMLCh OAEPparams[];
         static const XMLCh Organization[];
         static const XMLCh OrganizationName[];
         static const XMLCh OrganizationDisplayName[];

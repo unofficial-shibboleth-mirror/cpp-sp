@@ -123,6 +123,18 @@ const XMLCh XML::SAML2META_SCHEMA_ID[] = // sstc-saml-schema-metadata-2.0.xsd
   chDigit_2, chPeriod, chDigit_0, chPeriod, chLatin_x, chLatin_s, chLatin_d, chNull
 };
 
+const XMLCh XML::XMLENC_NS[] = // http://www.w3.org/2001/04/xmlenc#
+{ chLatin_h, chLatin_t, chLatin_t, chLatin_p, chColon, chForwardSlash, chForwardSlash,
+  chLatin_w, chLatin_w, chLatin_w, chPeriod, chLatin_w, chDigit_3, chPeriod, chLatin_o, chLatin_r, chLatin_g, chForwardSlash,
+  chDigit_2, chDigit_0, chDigit_0, chDigit_1, chForwardSlash, chDigit_0, chDigit_4, chForwardSlash,
+  chLatin_x, chLatin_m, chLatin_l, chLatin_e, chLatin_n, chLatin_c, chPound, chNull
+};
+
+const XMLCh XML::XMLENC_SCHEMA_ID[] = // xenc-schema.xsd
+{ chLatin_x, chLatin_e, chLatin_n, chLatin_c, chDash,
+  chLatin_s, chLatin_c, chLatin_h, chLatin_e, chLatin_m, chLatin_a, chPeriod, chLatin_x, chLatin_s, chLatin_d, chNull
+};
+
 const XMLCh XML::XMLSIG_RETMETHOD_RAWX509[] = // http://www.w3.org/2000/09/xmldsig#rawX509Certificate
 { chLatin_h, chLatin_t, chLatin_t, chLatin_p, chColon, chForwardSlash, chForwardSlash,
   chLatin_w, chLatin_w, chLatin_w, chPeriod, chLatin_w, chDigit_3, chPeriod, chLatin_o, chLatin_r, chLatin_g, chForwardSlash,
@@ -359,6 +371,9 @@ const XMLCh XML::Literals::affiliationOwnerID[] =
   chLatin_O, chLatin_w, chLatin_n, chLatin_e, chLatin_r, chLatin_I, chLatin_D, chNull
 };
 
+const XMLCh XML::Literals::Algorithm[] =
+{ chLatin_A, chLatin_l, chLatin_g, chLatin_o, chLatin_r, chLatin_i, chLatin_t, chLatin_h, chLatin_m, chNull };
+
 const XMLCh XML::Literals::ArtifactResolutionService[] =
 { chLatin_A, chLatin_r, chLatin_t, chLatin_i, chLatin_f, chLatin_a, chLatin_c, chLatin_t,
   chLatin_R, chLatin_e, chLatin_s, chLatin_o, chLatin_l, chLatin_u, chLatin_t, chLatin_i, chLatin_o, chLatin_n,
@@ -488,7 +503,11 @@ const XMLCh XML::Literals::isRequired[] =
 
 const XMLCh XML::Literals::KeyDescriptor[] =
 { chLatin_K, chLatin_e, chLatin_y,
-  chLatin_D, chLatin_e, chLatin_s, chLatin_c, chLatin_r, chLatin_i, chLatin_p, chLatin_t, chLatin_o, chLatin_r, chNull };
+  chLatin_D, chLatin_e, chLatin_s, chLatin_c, chLatin_r, chLatin_i, chLatin_p, chLatin_t, chLatin_o, chLatin_r, chNull
+};
+
+const XMLCh XML::Literals::KeySize[] =
+{ chLatin_K, chLatin_e, chLatin_y, chLatin_S, chLatin_i, chLatin_z, chLatin_e, chNull };
 
 const XMLCh XML::Literals::ManageNameIDService[] =
 { chLatin_M, chLatin_a, chLatin_n, chLatin_a, chLatin_g, chLatin_e,
@@ -506,6 +525,9 @@ const XMLCh XML::Literals::NameIDMappingService[] =
   chLatin_M, chLatin_a, chLatin_p, chLatin_p, chLatin_i, chLatin_n, chLatin_g,
   chLatin_S, chLatin_e, chLatin_r, chLatin_v, chLatin_i, chLatin_c, chLatin_e, chNull
 };
+
+const XMLCh XML::Literals::OAEParams[] =
+{ chLatin_O, chLatin_A, chLatin_E, chLatin_P, chLatin_a, chLatin_r, chLatin_a, chLatin_m, chLatin_s, chNull };
 
 const XMLCh XML::Literals::Organization[] =
 { chLatin_O, chLatin_r, chLatin_g, chLatin_a, chLatin_n, chLatin_i, chLatin_z, chLatin_a, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chNull };
