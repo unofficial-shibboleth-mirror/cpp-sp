@@ -11,6 +11,7 @@
 #endif
 
 #include "shib-target.h"
+#include "shib-threads.h"
 
 #include <log4cpp/Category.hh>
 
@@ -24,7 +25,7 @@ class shibtarget::RPCHandleInternal
 {
 public:
   RPCHandleInternal();
-  ~RPCHandleInternal();
+  ~RPCHandleInternal() { delete mutex; }
 
   CLIENT *	m_clnt;
   ShibSocket	m_sock;
@@ -34,6 +35,7 @@ public:
   u_long	m_version;
 
   log4cpp::Category* log;
+  Mutex*	mutex;
 };
 
 RPCHandleInternal::RPCHandleInternal()
@@ -41,9 +43,8 @@ RPCHandleInternal::RPCHandleInternal()
   string ctx = "shibtarget.RPCHandle";
   log = &(log4cpp::Category::getInstance(ctx));
   m_clnt = NULL;
+  mutex = Mutex::create();
 }
-
-RPCHandleInternal::~RPCHandleInternal() {}
 
 //*************************************************************************
 // RPCHandle Implementation
@@ -71,6 +72,8 @@ RPCHandle::~RPCHandle()
 CLIENT * RPCHandle::connect(void)
 {
   saml::NDC ndc("connect");
+
+  m_priv->mutex->lock();
 
   if (m_priv->m_clnt)
     return m_priv->m_clnt;
@@ -115,6 +118,7 @@ CLIENT * RPCHandle::connect(void)
 #else
     close (sock);
 #endif
+    m_priv->mutex->unlock();
     throw new ShibTargetException (SHIBRPC_UNKNOWN_ERROR, "Cannot connect to SHAR");
   }
 
@@ -127,6 +131,7 @@ CLIENT * RPCHandle::connect(void)
 #else
     close (sock);
 #endif
+    m_priv->mutex->unlock();
     throw new ShibTargetException (SHIBRPC_UNKNOWN_ERROR, rpcerror);
   }
 
@@ -137,9 +142,16 @@ CLIENT * RPCHandle::connect(void)
   return m_priv->m_clnt;
 }
 
+void RPCHandle::release(void)
+{
+  m_priv->mutex->unlock();
+}
+
 void RPCHandle::disconnect(void)
 {
   m_priv->log->info ("disconnect");
+  Lock lock(m_priv->mutex);
+
   if (m_priv->m_clnt) {
     clnt_destroy (m_priv->m_clnt);
 #ifdef WIN32

@@ -62,6 +62,17 @@ namespace shibtarget {
     virtual int unlock() = 0;
   };
 
+  class ReadLock {
+  public:
+    ReadLock(RWLock* lock) { rwlock = lock; rwlock->rdlock(); }
+    ~ReadLock() { rwlock->unlock(); }
+
+  private:
+    ReadLock(const ReadLock&);
+    void operator=(const ReadLock&);
+    RWLock* rwlock;
+  };
+
 } // namespace
 
 #endif /* __cplusplus */

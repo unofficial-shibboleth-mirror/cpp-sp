@@ -95,6 +95,8 @@ RPCError* RM::getAssertions(const char* cookie, const char* ip,
   do {
     clnt = m_priv->m_rpc->connect();
     if (shibrpc_get_assertions_1 (&arg, &ret, clnt) != RPC_SUCCESS) {
+      // FAILED.  Release, disconnect, and try again.
+      m_priv->m_rpc->release();
       m_priv->m_rpc->disconnect();
       if (retry)
 	retry--;
@@ -102,8 +104,11 @@ RPCError* RM::getAssertions(const char* cookie, const char* ip,
 	m_priv->log->error ("RPC Failure");
 	return new RPCError(-1, "RPC Failure");
       }
-    } else
+    } else {
+      // SUCCESS.  Release the lock.
+      m_priv->m_rpc->release();
       retry = -1;
+    }
   } while (retry >= 0);
 
   m_priv->log->debug ("RPC completed with status %d", ret.status);

@@ -14,6 +14,8 @@
 #endif
 
 #include "shib-target.h"
+#include "shib-threads.h"
+
 #include <sstream>
 #include <iostream>
 #include <fstream>
@@ -30,7 +32,7 @@ using namespace shibtarget;
 class HeaderIterator : public shibtarget::ShibINI::Iterator {
 public:
   HeaderIterator (ShibINIPriv* ini);
-  ~HeaderIterator () { }
+  ~HeaderIterator ();
 
   const string* begin();
   const string* next();
@@ -43,7 +45,7 @@ private:
 class TagIterator : public ShibINI::Iterator {
 public:
   TagIterator (ShibINIPriv* ini, const string& header);
-  ~TagIterator () { }
+  ~TagIterator ();
 
   const string* begin();
   const string* next();
@@ -57,7 +59,7 @@ private:
 class shibtarget::ShibINIPriv {
 public:
   ShibINIPriv();
-  ~ShibINIPriv() { }
+  ~ShibINIPriv() { delete rwlock; }
   log4cpp::Category *log;
 
   map<string, map<string, string> > table;
@@ -65,12 +67,17 @@ public:
   bool cs;
 
   unsigned long	modtime;
+
+  unsigned long iterators;
+  RWLock *rwlock;
 };
 
 ShibINIPriv::ShibINIPriv()
 {
   string ctx = "shibtarget.ShibINI";
   log = &(log4cpp::Category::getInstance(ctx));
+  rwlock = RWLock::create();
+  iterators = 0;
 }
 
 static void trimline (string& s)
@@ -104,9 +111,14 @@ void ShibINI::init (string& f, bool case_sensitive)
   m_priv->cs = case_sensitive;
   m_priv->log->info ("initializing INI file: %s (sensitive=%s)", f.c_str(),
 		     (case_sensitive ? "true" : "false"));
+
+  ReadLock lock(m_priv->rwlock);
   refresh();
 }
 
+//
+// Must be called holding the ReadLock.
+//
 void ShibINI::refresh(void)
 {
   saml::NDC ndc("refresh");
@@ -121,8 +133,24 @@ void ShibINI::refresh(void)
 #endif
     m_priv->log->error("stat failed: %s", m_priv->file.c_str());
 
-  if (m_priv->modtime == stat_buf.st_mtime)
+  if (m_priv->modtime >= stat_buf.st_mtime || m_priv->iterators > 0)
     return;
+
+  // Release the read lock -- grab the write lock.  Don't worry if
+  // this is non-atomic -- we'll recheck the status.
+  m_priv->rwlock->unlock();
+  m_priv->rwlock->wrlock();
+
+  // Recheck the modtime
+  if (m_priv->modtime >= stat_buf.st_mtime) {
+    // Yep, another thread got to it.  We can exit now...  Release
+    // the write lock and reaquire the read-lock.
+    m_priv->rwlock->unlock();
+    m_priv->rwlock->rdlock();
+    return;
+  }
+
+  // Ok, we've got the write lock.  Let's update our state.
 
   m_priv->modtime = stat_buf.st_mtime;
 
@@ -137,6 +165,8 @@ void ShibINI::refresh(void)
     ifstream infile (m_priv->file.c_str());
     if (!infile) {
       m_priv->log->warn("cannot open file: %s", m_priv->file.c_str());
+      m_priv->rwlock->unlock();
+      m_priv->rwlock->rdlock();
       return;
     }
 
@@ -216,10 +246,15 @@ void ShibINI::refresh(void)
   } catch (...) {
     // In case there are exceptions.
   }
+
+  // Now release the write lock and reaquire the read lock
+  m_priv->rwlock->unlock();
+  m_priv->rwlock->rdlock();
 }
 
-const std::string& ShibINI::get (const string& header, const string& tag)
+const std::string ShibINI::get (const string& header, const string& tag)
 {
+  ReadLock rwlock(m_priv->rwlock);
   refresh();
 
   static string empty = "";
@@ -242,6 +277,7 @@ const std::string& ShibINI::get (const string& header, const string& tag)
 
 bool ShibINI::exists(const std::string& header)
 {
+  ReadLock rwlock(m_priv->rwlock);
   refresh();
 
   string h = header;
@@ -252,6 +288,7 @@ bool ShibINI::exists(const std::string& header)
 
 bool ShibINI::exists(const std::string& header, const std::string& tag)
 {
+  ReadLock rwlock(m_priv->rwlock);
   refresh();
 
   string h = header;
@@ -270,6 +307,7 @@ bool ShibINI::get_tag (string& header, string& tag, bool try_general, string* re
 {
   if (!result) return false;
 
+  ReadLock rwlock(m_priv->rwlock);
   refresh();
 
   if (exists (header, tag)) {
@@ -286,6 +324,7 @@ bool ShibINI::get_tag (string& header, string& tag, bool try_general, string* re
 
 void ShibINI::dump (ostream& os)
 {
+  ReadLock rwlock(m_priv->rwlock);
   refresh();
 
   os << "File: " << m_priv->file << "\n";
@@ -309,6 +348,7 @@ void ShibINI::dump (ostream& os)
 
 ShibINI::Iterator* ShibINI::header_iterator()
 {
+  ReadLock rwlock(m_priv->rwlock);
   refresh();
   HeaderIterator* iter = new HeaderIterator(m_priv);
   return (ShibINI::Iterator*) iter;
@@ -316,15 +356,32 @@ ShibINI::Iterator* ShibINI::header_iterator()
 
 ShibINI::Iterator* ShibINI::tag_iterator(const std::string& header)
 {
+  ReadLock rwlock(m_priv->rwlock);
   refresh();
   TagIterator* iter = new TagIterator(m_priv, header);
   return (ShibINI::Iterator*) iter;
 }
 
+//
+// XXX: FIXME: there may be a race condition in the iterators if a
+// caller holds an active Iterator, the underlying file changes, and
+// then calls one of the get() routines.  It's possible the iterator
+// may screw up -- I don't know whether the iterator actually depends
+// on the underlying infrastructure or not.
+//
+
 HeaderIterator::HeaderIterator (ShibINIPriv* inip)
 {
   ini = inip;
   valid = false;
+  ini->rwlock->rdlock();
+  ini->iterators++;
+}
+
+HeaderIterator::~HeaderIterator ()
+{
+  ini->iterators--;
+  ini->rwlock->unlock();
 }
 
 const string* HeaderIterator::begin ()
@@ -355,6 +412,14 @@ TagIterator::TagIterator (ShibINIPriv* inip, const string& headerp)
 {
   ini = inip;
   valid = false;
+  ini->rwlock->rdlock();
+  ini->iterators++;
+}
+
+TagIterator::~TagIterator ()
+{
+  ini->iterators--;
+  ini->rwlock->unlock();
 }
 
 const string* TagIterator::begin ()

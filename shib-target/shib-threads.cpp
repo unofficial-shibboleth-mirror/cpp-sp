@@ -6,7 +6,7 @@
  * $Id$
  */
 
-#include <shib-target/shib-threads.h>
+#include "shib-threads.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

@@ -169,8 +169,9 @@ namespace shibtarget {
     RPCHandle(ShibSockName shar, u_long program, u_long version);
     ~RPCHandle();
 
-    CLIENT *	connect(void);
-    void	disconnect(void);
+    CLIENT *	connect(void);	/* locks the HANDLE and returns the CLIENT */
+    void	release(void);	/* unlocks the HANDLE */
+    void	disconnect(void); /* disconnects */
 
   private:
     RPCHandleInternal *m_priv;
@@ -271,16 +272,16 @@ namespace shibtarget {
 
     void refresh(void);
 
-    const std::string& get (const std::string& header, const std::string& tag);
-    const std::string& get (const char* header, const char* tag) {
+    const std::string get (const std::string& header, const std::string& tag);
+    const std::string get (const char* header, const char* tag) {
       std::string h = header, t = tag;
       return get(h,t);
     }
 
-    const std::string& operator() (const std::string& header, const std::string& tag)  {
+    const std::string operator() (const std::string& header, const std::string& tag)  {
       return get(header,tag);
     }
-    const std::string& operator() (const char* header, const char* tag) {
+    const std::string operator() (const char* header, const char* tag) {
       std::string h = header, t = tag;
       return get(h,t);
     }
@@ -328,6 +329,14 @@ namespace shibtarget {
     // for (const foo* current = begin(); current; current = next()) {
     //   ...
     // }
+    //
+    // NOTE: Holding an Iterator will lock the INI file and cause it to
+    // stop updating itself.  You should destroy the iterator as soon as
+    // you are done with it.
+    //
+    // ALSO NOTE: the string* returned from the Iterator is only valid
+    // while you hold the iterator.  You should copy the de-reference
+    // of the pointer to your own copy if you want to keep the string.
 
     class Iterator {
     public:
