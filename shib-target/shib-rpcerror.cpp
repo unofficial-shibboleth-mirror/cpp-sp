@@ -20,6 +20,7 @@
 
 using namespace std;
 using namespace shibtarget;
+using namespace shibboleth;
 using namespace saml;
 
 namespace {
@@ -247,19 +248,33 @@ const char* RPCError::getDesc()
     return "An error occurred processing your request";
 }
 
+int RPCError::getCode() { return m_priv->status; }
+
+typedef const char* (OriginSiteMapper::* Pmember)(const XMLCh*) const;
+const char* get_mapper_string(const char* defaultStr, Pmember fcn,
+			      XMLCh* originSite)
+{
+  if (originSite) {
+    OriginSiteMapper mapper;
+    return (mapper.*fcn)(originSite);
+  } else
+    return defaultStr;
+}
+
 const char* RPCError::getOriginErrorURL()
 {
-  return "No URL Available";
+  return get_mapper_string("No URL Available", &OriginSiteMapper::getErrorURL,
+			   NULL);
 }
 
 const char* RPCError::getOriginContactName()
-{
-  return "No Name Available";
+{ 
+  return get_mapper_string("No Name Available", &OriginSiteMapper::getContactName,
+			   NULL);
 }
 
 const char* RPCError::getOriginContactEmail()
 {
-  return "No Email Available";
+  return get_mapper_string("No Email Available", &OriginSiteMapper::getContactEmail,
+			   NULL);
 }
-
-int RPCError::getCode() { return m_priv->status; }
