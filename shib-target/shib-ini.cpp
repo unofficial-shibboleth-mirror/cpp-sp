@@ -379,7 +379,7 @@ XMLApplication::XMLApplication(const IConfig* ini, const Iterator<ICredentials*>
     : m_ini(ini), m_base(base), m_profile(NULL), m_binding(NULL), m_bindingHook(NULL), m_credDefault(NULL)
 {
 #ifdef _DEBUG
-    NDC ndc("XMLApplication");
+    saml::NDC ndc("XMLApplication");
 #endif
     Category& log=Category::getInstance("shibtarget.XMLApplication");
 
@@ -727,7 +727,7 @@ short XMLConfigImpl::acceptNode(const DOMNode* node) const
 void XMLConfigImpl::init(bool first)
 {
 #ifdef _DEBUG
-    saml::NDC ndc("XMLConfigImpl");
+    saml::NDC ndc("init");
 #endif
     Category& log=Category::getInstance("shibtarget.XMLConfig");
 

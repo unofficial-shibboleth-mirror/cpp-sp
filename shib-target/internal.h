@@ -206,6 +206,12 @@ namespace shibtarget {
     {
     public:
         static const XMLCh SHIBTARGET_SCHEMA_ID[];
+        static const XMLCh SAML2ASSERT_NS[];
+        static const XMLCh SAML2ASSERT_SCHEMA_ID[];
+        static const XMLCh SAML2META_NS[];
+        static const XMLCh SAML2META_SCHEMA_ID[];
+        static const XMLCh XMLENC_NS[];
+        static const XMLCh XMLENC_SCHEMA_ID[];
     
         static const char htaccessType[];
         static const char MemorySessionCacheType[];

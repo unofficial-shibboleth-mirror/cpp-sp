@@ -173,7 +173,11 @@ bool STConfig::init(const char* schemadir, const char* config)
         samlConf.getPlugMgr().regFactory(shibtarget::XML::LegacyRequestMapType,&XMLRequestMapFactory);
         samlConf.getPlugMgr().regFactory(shibtarget::XML::RequestMapType,&XMLRequestMapFactory);
         //shibConf.getPlugMgr().regFactory(shibtarget::XML::htaccessType,&htaccessFactory);
+        
         saml::XML::registerSchema(ShibTargetConfig::SHIBTARGET_NS,shibtarget::XML::SHIBTARGET_SCHEMA_ID);
+        saml::XML::registerSchema(shibtarget::XML::SAML2META_NS,shibtarget::XML::SAML2META_SCHEMA_ID);
+        saml::XML::registerSchema(shibtarget::XML::SAML2ASSERT_NS,shibtarget::XML::SAML2ASSERT_SCHEMA_ID);
+        saml::XML::registerSchema(shibtarget::XML::XMLENC_NS,shibtarget::XML::XMLENC_SCHEMA_ID);
         
         log.info("loading configuration file: %s", config);
         static const XMLCh uri[] = { chLatin_u, chLatin_r, chLatin_i, chNull };

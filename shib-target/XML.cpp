@@ -75,6 +75,46 @@ const XMLCh XML::SHIBTARGET_SCHEMA_ID[] = // shibboleth-targetconfig-1.0.xsd
   chDigit_1, chPeriod, chDigit_0, chPeriod, chLatin_x, chLatin_s, chLatin_d, chNull
 };
 
+const XMLCh XML::SAML2ASSERT_NS[] = // urn:oasis:names:tc:SAML:2.0:assertion
+{ chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_o, chLatin_a, chLatin_s, chLatin_i, chLatin_s, chColon,
+  chLatin_n, chLatin_a, chLatin_m, chLatin_e, chLatin_s, chColon, chLatin_t, chLatin_c, chColon,
+  chLatin_S, chLatin_A, chLatin_M, chLatin_L, chColon, chDigit_2, chPeriod, chDigit_0, chColon,
+  chLatin_a, chLatin_s, chLatin_s, chLatin_e, chLatin_r, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chNull
+};
+
+const XMLCh XML::SAML2ASSERT_SCHEMA_ID[] = // saml-schema-assertion-2.0.xsd
+{ chLatin_s, chLatin_a, chLatin_m, chLatin_l, chDash,
+  chLatin_s, chLatin_c, chLatin_h, chLatin_e, chLatin_m, chLatin_a, chDash,
+  chLatin_a, chLatin_s, chLatin_s, chLatin_e, chLatin_r, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chDash,
+  chDigit_2, chPeriod, chDigit_0, chPeriod, chLatin_x, chLatin_s, chLatin_d, chNull
+};
+
+const XMLCh XML::SAML2META_NS[] = // urn:oasis:names:tc:SAML:2.0:metadata
+{ chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_o, chLatin_a, chLatin_s, chLatin_i, chLatin_s, chColon,
+  chLatin_n, chLatin_a, chLatin_m, chLatin_e, chLatin_s, chColon, chLatin_t, chLatin_c, chColon,
+  chLatin_S, chLatin_A, chLatin_M, chLatin_L, chColon, chDigit_2, chPeriod, chDigit_0, chColon,
+  chLatin_m, chLatin_e, chLatin_t, chLatin_a, chLatin_d, chLatin_a, chLatin_t, chLatin_a, chNull
+};
+
+const XMLCh XML::SAML2META_SCHEMA_ID[] = // saml-schema-metadata-2.0.xsd
+{ chLatin_s, chLatin_a, chLatin_m, chLatin_l, chDash,
+  chLatin_s, chLatin_c, chLatin_h, chLatin_e, chLatin_m, chLatin_a, chDash,
+  chLatin_m, chLatin_e, chLatin_t, chLatin_a, chLatin_d, chLatin_a, chLatin_t, chLatin_a, chDash,
+  chDigit_2, chPeriod, chDigit_0, chPeriod, chLatin_x, chLatin_s, chLatin_d, chNull
+};
+
+const XMLCh XML::XMLENC_NS[] = // http://www.w3.org/2001/04/xmlenc#
+{ chLatin_h, chLatin_t, chLatin_t, chLatin_p, chColon, chForwardSlash, chForwardSlash,
+  chLatin_w, chLatin_w, chLatin_w, chPeriod, chLatin_w, chDigit_3, chPeriod, chLatin_o, chLatin_r, chLatin_g, chForwardSlash,
+  chDigit_2, chDigit_0, chDigit_0, chDigit_1, chForwardSlash, chDigit_0, chDigit_4, chForwardSlash,
+  chLatin_x, chLatin_m, chLatin_l, chLatin_e, chLatin_n, chLatin_c, chPound, chNull
+};
+
+const XMLCh XML::XMLENC_SCHEMA_ID[] = // xenc-schema.xsd
+{ chLatin_x, chLatin_e, chLatin_n, chLatin_c, chDash,
+  chLatin_s, chLatin_c, chLatin_h, chLatin_e, chLatin_m, chLatin_a, chPeriod, chLatin_x, chLatin_s, chLatin_d, chNull
+};
+
 const XMLCh XML::Literals::AAPProvider[] =
 { chLatin_A, chLatin_A, chLatin_P, chLatin_P, chLatin_r, chLatin_o, chLatin_v, chLatin_i, chLatin_d, chLatin_e, chLatin_r, chNull };
 
