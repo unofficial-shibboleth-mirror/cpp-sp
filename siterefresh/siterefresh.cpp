@@ -185,8 +185,9 @@ int main(int argc,char* argv[])
         return -100;
     }
 
-    Category& log=Category::getInstance("siterefresh");
     Category::setRootPriority(Priority::WARN);
+    Category::getRoot().addAppender(new OstreamAppender("default",&cerr));
+    Category& log=Category::getInstance("siterefresh");
     conf.schema_dir=path ? path : SHIB_SCHEMAS;
     if (!conf.init())
         return -10;
