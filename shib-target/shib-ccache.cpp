@@ -62,6 +62,7 @@
 #endif
 
 #include "shib-target.h"
+#include "shib-threads.h"
 
 #include <log4cpp/Category.hh>
 
@@ -130,6 +131,27 @@ private:
   static saml::QName g_respondWith;
 
   log4cpp::Category* log;
+
+  // This is used to keep track of in-process "populate()" calls,
+  // to make sure that we don't try to populate the same resource
+  // in multiple threads.
+  map<string,Mutex*>	populate_locks;
+  Mutex*	pop_locks_lock;
+
+  Mutex*	access_lock;
+  RWLock*	resource_lock;
+
+  class ResourceLock
+  {
+  public:
+    ResourceLock(InternalCCacheEntry* entry, string resource);
+    ~ResourceLock();
+
+  private:
+    Mutex*			find(string& resource);
+    InternalCCacheEntry*	entry;
+    string			resource;
+  };
 };
 
 class InternalCCache : public CCache
@@ -149,6 +171,7 @@ private:
   map<string,InternalCCacheEntry*> m_hashtable;
 
   log4cpp::Category* log;
+  RWLock *lock;
 };
 
 // Global Constructors & Destructors
@@ -172,6 +195,7 @@ InternalCCache::InternalCCache()
   m_SAMLBinding=SAMLBindingFactory::getInstance();
   string ctx="shibtarget.InternalCCache";
   log = &(log4cpp::Category::getInstance(ctx));
+  lock = RWLock::create();
 }
 
 InternalCCache::~InternalCCache()
@@ -179,6 +203,7 @@ InternalCCache::~InternalCCache()
   delete m_SAMLBinding;
   for (map<string,InternalCCacheEntry*>::iterator i=m_hashtable.begin(); i!=m_hashtable.end(); i++)
     delete i->second;
+  delete lock;
 }
 
 SAMLBinding* InternalCCache::getBinding(const XMLCh* bindingProt)
@@ -194,6 +219,8 @@ SAMLBinding* InternalCCache::getBinding(const XMLCh* bindingProt)
 CCacheEntry* InternalCCache::find(const char* key)
 {
   log->debug("Find: \"%s\"", key);
+  ReadLock rwlock(lock);
+
   map<string,InternalCCacheEntry*>::const_iterator i=m_hashtable.find(key);
   if (i==m_hashtable.end()) {
     log->debug("No Match found");
@@ -211,13 +238,20 @@ void InternalCCache::insert(const char* key, SAMLAuthenticationStatement *s,
   InternalCCacheEntry* entry = new InternalCCacheEntry (s, client_addr);
   entry->setCache(this);
 
+  lock->wrlock();
   m_hashtable[key]=entry;
+  lock->unlock();
 }
 
 void InternalCCache::remove(const char* key)
 {
   log->debug("removing cache entry \"key\"", key);
+
+  // XXX: FIXME? do we need to delete the CacheEntry?
+
+  lock->wrlock();
   m_hashtable.erase(key);
+  lock->unlock();
 }
 
 /******************************************************************************/
@@ -229,6 +263,9 @@ InternalCCacheEntry::InternalCCacheEntry(SAMLAuthenticationStatement *s, const c
 {
   string ctx = "shibtarget::InternalCCacheEntry";
   log = &(log4cpp::Category::getInstance(ctx));
+  pop_locks_lock = Mutex::create();
+  access_lock = Mutex::create();
+  resource_lock = RWLock::create();
 
   if (s == NULL) {
     log->error("NULL auth statement");
@@ -268,6 +305,14 @@ InternalCCacheEntry::~InternalCCacheEntry()
   for (map<string,ResourceEntry*>::iterator i=m_resources.begin();
        i!=m_resources.end(); i++)
     delete i->second;
+
+  for (map<string,Mutex*>::iterator i=populate_locks.begin();
+       i!=populate_locks.end(); i++)
+    delete i->second;
+
+  delete pop_locks_lock;
+  delete resource_lock;
+  delete access_lock;
 }
 
 bool InternalCCacheEntry::isSessionValid(time_t lifetime, time_t timeout)
@@ -280,6 +325,9 @@ bool InternalCCacheEntry::isSessionValid(time_t lifetime, time_t timeout)
     log->debug("session beyond lifetime");
     return false;
   }
+
+  // Lock the access-time from here until we return
+  Lock lock(access_lock);
   if (timeout > 0 && now-m_lastAccess >= timeout) {
     log->debug("session timed out");
     return false;
@@ -303,6 +351,9 @@ ResourceEntry* InternalCCacheEntry::populate(Resource& resource)
   log->debug("populating entry for %s (%s)",
 	     resource.getResource(), resource.getURL());
 
+  // Lock the resource within this entry...
+  InternalCCacheEntry::ResourceLock lock(this, resource.getResource());
+
   // Can we use what we have?
   ResourceEntry *entry = find(resource.getResource());
   if (entry) {
@@ -316,7 +367,7 @@ ResourceEntry* InternalCCacheEntry::populate(Resource& resource)
     delete entry;
   }
 
-  // Nope entry.. Create a new resource entry
+  // Nope, no entry.. Create a new resource entry
 
   if (!m_hasbinding) {
     log->error("No binding!");
@@ -370,6 +421,8 @@ ResourceEntry* InternalCCacheEntry::populate(Resource& resource)
 
 ResourceEntry* InternalCCacheEntry::find(const char* resource_url)
 {
+  ReadLock rwlock(resource_lock);
+
   log->debug("find: %s", resource_url);
   map<string,ResourceEntry*>::const_iterator i=m_resources.find(resource_url);
   if (i==m_resources.end()) {
@@ -383,13 +436,53 @@ ResourceEntry* InternalCCacheEntry::find(const char* resource_url)
 void InternalCCacheEntry::insert(const char* resource, ResourceEntry* entry)
 {
   log->debug("inserting %s", resource);
+
+  resource_lock->wrlock();
   m_resources[resource]=entry;
+  resource_lock->unlock();
 }
 
 void InternalCCacheEntry::remove(const char* resource)
 {
   log->debug("removing %s", resource);
+
+  resource_lock->wrlock();
   m_resources.erase(resource);
+  resource_lock->unlock();
+}
+
+
+// a lock on a resource.  This is a specific "table of locks" that
+// will provide a mutex on a particular resource within a Cache Entry.
+// Just instantiate a ResourceLock within scope of the function and it
+// will obtain and hold the proper lock until it goes out of scope and
+// deconstructs.
+
+InternalCCacheEntry::ResourceLock::ResourceLock(InternalCCacheEntry* entry,
+						string resource) :
+  entry(entry), resource(resource)
+{
+  Mutex *mutex = find(resource);
+  mutex->lock();
+}
+
+InternalCCacheEntry::ResourceLock::~ResourceLock()
+{
+  Mutex *mutex = find(resource);
+  mutex->unlock();
+}
+
+Mutex* InternalCCacheEntry::ResourceLock::find(string& resource)
+{
+  Lock(entry->pop_locks_lock);
+  
+  map<string,Mutex*>::const_iterator i=entry->populate_locks.find(resource);
+  if (i==entry->populate_locks.end()) {
+    Mutex* mutex = Mutex::create();
+    entry->populate_locks[resource] = mutex;
+    return mutex;
+  }
+  return i->second;
 }
 
 /******************************************************************************/
