@@ -765,7 +765,7 @@ IRequestMapper::Settings map_request(
 {
     dynabuf ssl(5);
     GetServerVariable(lpECB,"HTTPS",ssl,5);
-    bool SSL=(ssl=="on");
+    bool SSL=(ssl=="on" || ssl=="ON");
 
     // URL path always come from IIS.
     dynabuf url(256);
@@ -782,8 +782,9 @@ IRequestMapper::Settings map_request(
 
     // Scheme may come from site def or be derived from IIS.
     const char* scheme=site.m_scheme.c_str();
-    if (!scheme || !*scheme || !g_bNormalizeRequest)
-        scheme=lpECB->lpszMethod;
+    if (!scheme || !*scheme || !g_bNormalizeRequest) {
+        scheme = SSL ? "https" : "http";
+    }
 
     // Start with scheme and hostname.
     if (g_bNormalizeRequest) {
