@@ -1,0 +1,227 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html>
+  <head>
+
+    <title>Shibboleth Upgrade Guide</title>
+    <meta http-equiv="Content-Type" content=
+    "text/html; charset=utf-8">
+    <style type="text/css">
+
+html
+{	
+background-color: #FFFFFF;
+color: #000000;
+margin: .5em;
+}
+a:visited
+{
+color: #999999;
+}
+a:link
+{
+color: #990000;
+}
+a:active
+{
+color: #440000;
+}
+dl
+{
+background-color: #DDDDDD;
+background-image: none;
+margin: 5px;
+padding: 0px;
+border-style: solid;
+border-bottom-width: 2px;
+border-top-width: 2px;
+border-left-width: 2px;
+border-right-width: 2px;
+}
+dt
+{
+background-color: #DDDDDD;
+background-image: none;
+margin: 1px;
+padding: 1px;
+}
+dd
+{
+background-color: #DDDDDD;
+background-image: none;
+margin: 0px;
+padding: 1px;
+}
+.attribute
+{
+font-size: 115%;
+font-color: #000000;
+text-align: left;
+background-color: #DDDDDD;
+border: 1px black inset;
+background-image: none;
+margin: 0px;
+padding: 2px;
+}
+.value
+{
+font-color: #000000;
+text-align: left;
+background-color: #EEEEEE;
+background-image: none;
+padding-top: 0em;
+padding-bottom: 0.5em;
+padding-right: 1em;
+padding-left: 5em;
+border-style: solid;
+border-bottom-width: none;
+border-top-width: none;
+border-left-width: 1px;
+border-right-width: 1px;
+}
+.attributeopt
+{
+font-size: 115%;
+font-color: #000000;
+text-align: left;
+background-color: #BCBCEE;
+border: 1px black inset;
+background-image: none;
+margin: 0px;
+padding: 2px;
+}
+.valueopt
+{
+font-color: #000000;
+text-align: left;
+background-color: #DDDDFF;
+background-image: none;
+padding-top: 0em;
+padding-bottom: 0.5em;
+padding-right: 1em;
+padding-left: 5em;
+border-style: solid;
+border-bottom-width: none;
+border-top-width: none;
+border-left-width: 1px;
+border-right-width: 1px;
+}
+.attributelong
+{
+font-size: 85%;
+font-color: #000000;
+text-align: left;
+background-color: #DDDDDD;
+border: 1px black inset;
+background-image: none;
+margin: 0px;
+padding: 2px;
+}
+.attributeoptlong
+{
+font-size: 85%;
+font-color: #000000;
+text-align: left;
+background-color: #BCBCEE;
+border: 1px black inset;
+background-image: none;
+margin: 0px;
+padding: 2px;
+}
+.demo
+{
+background-color: #EEEEEE;
+padding: 3px;
+}
+.fixedwidth
+{
+font-family: monospace;
+font-size: 90%;
+font-color: #121212;
+}
+
+  </style>
+  </head>
+
+  <body link="red" vlink="red" alink="black" bgcolor="white">
+    <center>
+      <h2>Shibboleth Upgrade Guide</h2>
+    </center>
+	Shibboleth Upgrade Guide<br>
+Shibboleth Version 1.1<br>
+July 29, 2003<br>
+
+<br>
+<hr>
+<br>
+
+<center><table width="500" border="0"><tr><td align="center" width="250">
+<a href="#origin">Latest Origin Upgrade</a>
+</td><td align="center" width="250">
+<a href="#target">Latest Target Upgrade</a>
+</td></tr></table></center>
+
+<p>This guide contains suggested steps to upgrade from a Shibboleth 1.0 installation to a Shibboleth 1.1 installation.  There are many ways to do this and some steps may need to be modified to reflect differences in the local installation.</p>
+
+<p>Shibboleth 1.1 is fully backward compatible with Shibboleth 1.0; however, some features have been deprecated, so all deployments are highly encouraged to move to current configurations.  For a full list of new and changed functionality, consult the header of the <a href="http://shibboleth.internet2.edu/">Shibboleth Deployment Guides</a>.</p>
+
+<a name="origin"></a><h3>Origin</h3>
+
+<a name="origin1.0to1.1"></a><h4>v1.0 to v1.1</h4>
+
+<p>All Shibboleth 1.0 configuration specifications are still current as of Shibboleth 1.1.</p>
+
+<ol type="1">
+  <li>Shutdown Tomcat.
+  <li>Copy the following files to a scratch directory:
+    <ol type="a">
+      <li><span class="fixedwidth">origin.properties</span> (defaults to <span class="fixedwidth">$CATALINA_HOME/webapps/shibboleth/WEB-INF/classes/conf/origin.properties</span>)</li>
+      <li><span class="fixedwidth">resolver.xml</span> (defaults to <span class="fixedwidth">$CATALINA_HOME/webapps/shibboleth/WEB-INF/classes/conf/resolver.xml</span>)</li>
+      <li>The logging configuration file (defaults to <span class="fixedwidth">$CATALINA_HOME/webapps/shibboleth/WEB-INF/classes/conf/log4j.properties</span>)</li>
+      <li>The HS' Keystore (defaults to <span class="fixedwidth">$CATALINA_HOME/webapps/shibboleth/WEB-INF/classes/conf/keystore.jks</span>)</li>
+      <li>The web application deployment descriptor (defaults to <span class="fixedwidth">$CATALINA_HOME/webapps/shibboleth/WEB-INF/web.xml</span>)</li>
+      <li>Any created ARP's (defaults to <span class="fixedwidth">$CATALINA_HOME/webapps/shibboleth/WEB-INF/classes/conf/arps/*)</span></li>
+      <li>The crypto handle repository keystore <font color="#5555EE">(if used)</font> (defaults to <span class="fixedwidth">$CATALINA_HOME/webapps/shibboleth/WEB-INF/classes/conf/handle.jks</span>)</li>
+      <li>The targetedId attribute keystore <font color="#5555EE">(if used)</font> (defaults to <span class="fixedwidth">$CATALINA_HOME/webapps/shibboleth/WEB-INF/classes/conf/persistent.jks</span>)</li>
+    </ol>
+  </li>
+  <li>Delete the old origin.</li>
+  <li>Deploy the new origin.</li>
+  <li>Copy over the files from the scratch directory.</li>
+  <li>Start up Tomcat.</li>
+</ol>
+
+<a name="target"></a><h3>Target</h3>
+
+<a name="target1.0to1.1"></a><h4>v1.0 to v1.1</h4>
+
+<p>Shibboleth 1.1 handles attributes differently than 1.0.  Attributes are now added to the target in one place rather than three.  The <span class="fixedwidth">[attributes]</span> section may be deleted
+from <span class="fixedwidth">shibboleth.ini</span>, and all <span class="fixedwidth">ShibMapAttribute</span> commands maybe be removed from the Apache configuration.
+Any customization of the <span class="fixedwidth">ShibMapAttribute</span> parameters needs to be reflected in <span class="fixedwidth">AAP.xml</span>, as documented in the <a href="http://marsalis.internet2.edu/cgi-bin/viewcvs.cgi/*checkout*/shibboleth/c/doc/DEPLOY-GUIDE-TARGET.html?rev=HEAD&amp;only_with_tag=HEAD&amp;content-type=text/html#4.e.">Shibboleth Target Deploy Guide</a>.</p>
+
+<ol>
+  <li>Stop the SHAR and Apache.</li>
+  <li>Move the old Shibboleth to a new folder:
+    <blockquote><span class="fixedwidth">
+      $ mv /opt/shibboleth /opt/shibboleth-old
+    </span></blockquote>
+  </li>
+  <li>Unpack/install the new .tarball into <span class="fixedwidth">/opt/shibboleth</span>.</li>
+  <li>Copy the old configuration files back into the new Shibboleth's folder:
+    <blockquote><span class="fixedwidth">
+      $ cp /opt/shibboleth-old/etc/shibboleth/shibboleth.ini \<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/opt/shibboleth-old/etc/shibboleth/*.xml \<br>
+	  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/opt/shibboleth-old/etc/shibboleth/*.log* \<br>
+	  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/opt/shibboleth-old/etc/shibboleth/*.html \<br>
+	  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/opt/shibboleth/etc/shibboleth
+	</span></blockquote>
+  </li>
+  <li>If changes have been made to <span class="fixedwidth">apache.config</span> and
+it is being used to configure Apache, it should be copied over as well in a similar fashion.</li>
+  <li>Copy over the SHAR's key and certificate if they are stored in the old <span class="fixedwidth">/opt</span> tree.
+  <li>Restart the target.</li>
+</ol>
+
+</body>
+</html>
+
