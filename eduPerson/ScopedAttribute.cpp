@@ -100,7 +100,6 @@ SAMLObject* ScopedAttribute::clone() const
     ScopedAttribute* dest=new ScopedAttribute(m_name,m_namespace,m_defaultScope.c_str(),m_type,m_lifetime);
     dest->m_values.assign(m_values.begin(),m_values.end());
     dest->m_scopes.assign(m_scopes.begin(),m_scopes.end());
-    dest->m_scopedValues.assign(m_scopedValues.begin(),m_scopedValues.end());
     return dest;
 }
 
