@@ -17,11 +17,15 @@
 #include <http_config.h>
 #include <http_protocol.h>
 #include <http_main.h>
+#include <http_request.h>
 #include <util_script.h>
 #include <apr_strings.h>
 #define CORE_PRIVATE
 #include <http_core.h>
 #include <http_log.h>
+#include <apr_pools.h>
+
+#include <xercesc/util/regx/RegularExpression.hpp>
 
 #include <fstream>
 #include <sstream>
@@ -41,7 +45,6 @@ using namespace shibtarget;
 extern "C" AP_MODULE_DECLARE_DATA module mod_shib;
 
 namespace {
-    char* g_szSHIREURL = NULL;
     char* g_szSHIBConfig = NULL;
     ThreadKey* rpc_handle_key = NULL;
     ShibTargetConfig* g_Config = NULL;
@@ -50,6 +53,12 @@ namespace {
 // per-dir module configuration structure
 struct shib_dir_config
 {
+    // RM Configuration
+    char* szAuthGrpFile;	// Auth GroupFile name
+    int bExportAssertion;       // export SAML assertion to the environment?
+    int bDisableRM;		// disable the RM functionality?
+
+    // SHIRE Configuration
     int bBasicHijack;		// activate for AuthType Basic?
     int bSSLOnly;		// only over SSL?
     SHIREConfig config;		// SHIB Configuration
@@ -60,6 +69,10 @@ struct shib_dir_config
 extern "C" void* create_shib_dir_config (apr_pool_t* p, char* d)
 {
     shib_dir_config* dc=(shib_dir_config*)apr_pcalloc(p,sizeof(shib_dir_config));
+    dc->szAuthGrpFile = NULL;
+    dc->bExportAssertion = -1;
+    dc->bDisableRM = -1;
+
     dc->bBasicHijack = -1;
     dc->bSSLOnly = -1;
     dc->config.lifetime = -1;
@@ -74,28 +87,46 @@ extern "C" void* merge_shib_dir_config (apr_pool_t* p, void* base, void* sub)
     shib_dir_config* parent=(shib_dir_config*)base;
     shib_dir_config* child=(shib_dir_config*)sub;
 
-    dc->bBasicHijack=((child->bBasicHijack==-1) ? parent->bBasicHijack : child->bBasicHijack);
+    if (child->szAuthGrpFile)
+        dc->szAuthGrpFile=apr_pstrdup(p,child->szAuthGrpFile);
+    else if (parent->szAuthGrpFile)
+        dc->szAuthGrpFile=apr_pstrdup(p,parent->szAuthGrpFile);
+    else
+        dc->szAuthGrpFile=NULL;
+
+    dc->bExportAssertion=((child->bExportAssertion==-1) ?
+			  parent->bExportAssertion : child->bExportAssertion);
+    dc->bDisableRM=((child->bDisableRM==-1) ?
+		    parent->bDisableRM : child->bDisableRM);
+
+    dc->bBasicHijack=((child->bBasicHijack==-1) ?
+		      parent->bBasicHijack : child->bBasicHijack);
     dc->bSSLOnly=((child->bSSLOnly==-1) ? parent->bSSLOnly : child->bSSLOnly);
-    dc->config.lifetime=((child->config.lifetime==-1) ? parent->config.lifetime : child->config.lifetime);
-    dc->config.timeout=((child->config.timeout==-1) ? parent->config.timeout : child->config.timeout);
+    dc->config.lifetime=((child->config.lifetime==-1) ?
+			 parent->config.lifetime : child->config.lifetime);
+    dc->config.timeout=((child->config.timeout==-1) ?
+			parent->config.timeout : child->config.timeout);
     return dc;
 }
 
 // generic global slot handlers
-extern "C" const char* ap_set_global_string_slot(cmd_parms* parms, void*, const char* arg)
+extern "C" const char* ap_set_global_string_slot(cmd_parms* parms, void*,
+						 const char* arg)
 {
     *((char**)(parms->info))=apr_pstrdup(parms->pool,arg);
     return NULL;
 }
 
 // some shortcuts for directory config slots
-extern "C" const char* set_lifetime(cmd_parms* parms, shib_dir_config* dc, const char* arg)
+extern "C" const char* set_lifetime(cmd_parms* parms, shib_dir_config* dc,
+				    const char* arg)
 {
     dc->config.lifetime=atoi(arg);
     return NULL;
 }
 
-extern "C" const char* set_timeout(cmd_parms* parms, shib_dir_config* dc, const char* arg)
+extern "C" const char* set_timeout(cmd_parms* parms, shib_dir_config* dc,
+				   const char* arg)
 {
     dc->config.timeout=atoi(arg);
     return NULL;
@@ -103,113 +134,24 @@ extern "C" const char* set_timeout(cmd_parms* parms, shib_dir_config* dc, const 
 
 typedef const char* (*config_fn_t)(void);
 
-// SHIB Module commands
-
-static command_rec shib_cmds[] = {
-  {"SHIBConfig", (config_fn_t)ap_set_global_string_slot, &g_szSHIBConfig,
-   RSRC_CONF, TAKE1, "Path to SHIB ini file."},
-  {"SHIREURL", (config_fn_t)ap_set_global_string_slot, &g_szSHIREURL,
-   RSRC_CONF, TAKE1, "SHIRE POST processor URL."},
-
-  {"ShibBasicHijack", (config_fn_t)ap_set_flag_slot,
-   (void *) offsetof (shib_dir_config, bBasicHijack),
-   OR_AUTHCFG, FLAG, "Respond to AuthType Basic and convert to shib?"},
-  {"ShibSSLOnly", (config_fn_t)ap_set_flag_slot,
-   (void *) offsetof (shib_dir_config, bSSLOnly),
-   OR_AUTHCFG, FLAG, "Require SSL when accessing a secured directory?"},
-  {"ShibAuthLifetime", (config_fn_t)set_lifetime, NULL,
-   OR_AUTHCFG, TAKE1, "Lifetime of session in seconds."},
-  {"ShibAuthTimeout", (config_fn_t)set_timeout, NULL,
-   OR_AUTHCFG, TAKE1, "Timeout for session in seconds."},
-
-  {NULL}
-};
-
-namespace {
-    void destroy_handle(void* data)
-    {
-        delete (RPCHandle*)data;
-    }
-}
-
-/* 
- * shib_child_init()
- *  Things to do when the child process is initialized.
- */
-extern "C" void shib_child_init(server_rec* s, apr_pool_t* p)
-{
-    // Initialize runtime components.
-
-    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,s,
-		 "shib_child_init() starting");
-
-    if (g_Config) {
-      ap_log_error(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,0,s,
-		   "shib_child_init(): already initialized!");
-      exit (1);
-    }
-
-    try {
-      g_Config = &(ShibTargetConfig::init(SHIBTARGET_SHIRE, g_szSHIBConfig));
-    } catch (...) {
-      ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,s,
-		   "shib_child_init() failed to initialize SHIB Target");
-      exit (1);
-    }
-
-    // Create the RPC Handle TLS key.
-    rpc_handle_key=ThreadKey::create(destroy_handle);
-
-    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,s,"shib_child_init() done");
-}
-
-
-/*
- * shib_child_exit()
- *  Cleanup.
- */
-extern "C" void shib_child_exit(server_rec* s, apr_pool_t* p)
-{
-    delete rpc_handle_key;
-    g_Config->shutdown();
-    g_Config = NULL;
-    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,s,"shib_child_exit() done");
-}
-
-inline char hexchar(unsigned short s)
-{
-    return (s<=9) ? ('0' + s) : ('A' + s - 10);
-}
-
 static char* url_encode(request_rec* r, const char* s)
 {
-    static char badchars[]="\"\\+<>#%{}|^~[]`;/?:@=&";
-    char* ret=(char*)apr_palloc(r->pool,sizeof(char)*3*strlen(s)+1);
+    int len=strlen(s);
+    char* ret=(char*)apr_palloc(r->pool,sizeof(char)*3*len+1);
 
-    unsigned long count=0;
-    for (; *s; s++)
-    {
-        if (strchr(badchars,*s)!=NULL || *s<=0x1F || *s>=0x7F)
-        {
-	    ret[count++]='%';
-	    ret[count++]=hexchar(*s >> 4);
-	    ret[count++]=hexchar(*s & 0x0F);
-	}
-	else
-	    ret[count++]=*s;
-    }
-    ret[count++]=*s;
+    // apreq_decode takes a string and url-encodes it.  Don't ask why
+    // the name is backwards.
+    apreq_decode(ret, s, len);
     return ret;
 }
 
-static const char* get_shire_location(request_rec* r, const char* target, bool encode)
+static const char* get_shire_location(request_rec* r, const char* target,
+				      bool encode)
 {
   ShibINI& ini = g_Config->getINI();
   string shire_location;
 
-  if (g_szSHIREURL)
-    shire_location = g_szSHIREURL;
-  else if (! ini.get_tag (ap_get_server_name(r), "shireURL", true, &shire_location)) {
+  if (! ini.get_tag (ap_get_server_name(r), "shireURL", true, &shire_location)) {
     ap_log_rerror(APLOG_MARK,APLOG_ERR,0,r,
 		  "shire_get_location() no shireURL configuration for %s",
 		  ap_get_server_name(r));
@@ -260,6 +202,73 @@ static int shib_error_page(request_rec* r, const char* filename, ShibMLP& mlp)
   r->content_type = apr_psprintf(r->pool, "text/html");
   ap_rprintf(r, res.c_str());
   return DONE;
+}
+
+// return the "normalized" target URL
+static const char* get_target(request_rec* r, const char* target)
+{
+  string tag;
+  if ((g_Config->getINI()).get_tag (ap_get_server_name(r), "normalizeRequest", true, &tag))
+  {
+    if (ShibINI::boolean (tag))
+    {
+        const char* colon=strchr(target,':');
+        const char* slash=strchr(colon+3,'/');
+        const char* second_colon=strchr(colon+3,':');
+        return apr_pstrcat(r->pool,apr_pstrndup(r->pool,target,colon+3-target),
+			  ap_get_server_name(r),
+			  (second_colon && second_colon < slash) ?
+			  second_colon : slash,
+			  NULL);
+    }
+  }
+  return target;
+}
+
+static apr_table_t* groups_for_user(request_rec* r, const char* user, char* grpfile)
+{
+    ap_configfile_t* f;
+    apr_table_t* grps=apr_table_make(r->pool,15);
+    char l[MAX_STRING_LEN];
+    const char *group_name, *ll, *w;
+
+    if (ap_pcfg_openfile(&f,r->pool,grpfile) != APR_SUCCESS)
+    {
+        ap_log_rerror(APLOG_MARK,APLOG_ERR,0,r,
+		      "groups_for_user() could not open group file: %s\n", grpfile);
+	return NULL;
+    }
+
+    apr_pool_t* sp;
+    if (apr_pool_create(&sp,r->pool) != APR_SUCCESS)
+    {
+        ap_log_rerror(APLOG_MARK,APLOG_ERR,0,r,
+		      "groups_for_user() could not create a subpool");
+	return NULL;
+    }
+
+    while (!(ap_cfg_getline(l,MAX_STRING_LEN,f)))
+    {
+        if ((*l=='#') || (!*l))
+	    continue;
+	ll = l;
+	apr_pool_clear(sp);
+
+	group_name=ap_getword(sp,&ll,':');
+
+	while (*ll)
+	{
+	    w=ap_getword_conf(sp,&ll);
+	    if (!strcmp(w,user))
+	    {
+	        apr_table_setn(grps,apr_pstrdup(r->pool,group_name),"in");
+		break;
+	    }
+	}
+    }
+    ap_cfg_closefile(f);
+    apr_pool_destroy(sp);
+    return grps;
 }
 
 extern "C" int shib_check_user(request_rec* r)
@@ -448,18 +457,26 @@ extern "C" int shib_check_user(request_rec* r)
     return HTTP_INTERNAL_SERVER_ERROR;
 }
 
-extern "C" int shire_post_handler (request_rec* r)
+extern "C" int shib_shire_handler (request_rec* r)
 {
   ostringstream threadid;
   threadid << "[" << getpid() << "] shire" << '\0';
   saml::NDC ndc(threadid.str().c_str());
 
+  // This will always be normalized, because Apache uses
+  // ap_get_server_name in this API call.
+  char* targeturl=ap_construct_url(r->pool,r->unparsed_uri,r);
+
+  // Make sure we only process the SHIRE posts.
+  // Is the really the best way to determine if this is a POST request?
+  if (!is_shire_location (r, targeturl))
+    return DECLINED;
+
+  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,
+		"shire_post_handler() ENTER");
+
   ShibINI& ini = g_Config->getINI();
   ShibMLP markupProcessor;
-
-  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,"shire_post_handler() ENTER");
-
-  const char* targeturl=ap_construct_url(r->pool,r->unparsed_uri,r);
  
   const char * shire_location = get_shire_location(r,targeturl,true);
   if (!shire_location)
@@ -570,6 +587,9 @@ extern "C" int shire_post_handler (request_rec* r)
     ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,
 		  "shire_post_handler() Processing POST for target: %s", target);
 
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,
+		  "shire_post_handler() POST contents: %s", post);
+
     // process the post
     string cookie;
     RPCError* status = shire.sessionCreate(post, r->connection->remote_ip, cookie);
@@ -641,27 +661,517 @@ extern "C" int shire_post_handler (request_rec* r)
   return HTTP_INTERNAL_SERVER_ERROR;
 }
 
-#if 0
-extern "C"{
-handler_rec shib_handlers[] = {
-  { "shib-shire-post", shire_post_handler },
-  { NULL }
-};
-#endif
-
-extern "C" void mod_shib_init (server_rec*r, apr_pool_t* p)
+/*
+ * shib_auth_checker() -- a simple resource manager to
+ * process the .htaccess settings and copy attributes
+ * into the HTTP headers.
+ */
+extern "C" int shib_auth_checker(request_rec *r)
 {
-  ShibTargetConfig::preinit();
+    shib_dir_config* dc=
+        (shib_dir_config*)ap_get_module_config(r->per_dir_config,&mod_shib);
+
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,
+		  "shib_auth_checker() executing");
+
+    // Regular access to arbitrary resource...check AuthType
+    const char* auth_type=ap_auth_type(r);
+    if (!auth_type || strcasecmp(auth_type,"shibboleth"))
+        return DECLINED;
+
+    ostringstream threadid;
+    threadid << "[" << getpid() << "] shib" << '\0';
+    saml::NDC ndc(threadid.str().c_str());
+
+    ShibINI& ini = g_Config->getINI();
+    const char* serverName = ap_get_server_name(r);
+
+    // Ok, this is a SHIB target; grab the cookie
+
+    string shib_cookie;
+    if (!ini.get_tag(serverName, "cookieName", true, &shib_cookie)) {
+      ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,0,r,
+		    "shib_check_user: no cookieName configuration for %s",
+		    serverName);
+      return HTTP_INTERNAL_SERVER_ERROR;
+    }
+
+    const char* targeturl=get_target(r,ap_construct_url(r->pool,r->unparsed_uri,r));
+
+    const char* session_id=NULL;
+    const char* cookies=apr_table_get(r->headers_in,"Cookie");
+    if (!cookies || !(session_id=strstr(cookies,shib_cookie.c_str())))
+    {
+      // No cookie???  Must be a server error!
+      ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,0,r,
+		    "shib_auth_checker() no cookie found");
+
+      return HTTP_INTERNAL_SERVER_ERROR;
+    }
+
+    // Yep, we found a cookie -- pull it out (our session_id)
+    session_id+=strlen(shib_cookie.c_str()) + 1;	/* Skip over the '=' */
+    char* cookiebuf = apr_pstrdup(r->pool,session_id);
+    char* cookieend = strchr(cookiebuf,';');
+    if (cookieend)
+      *cookieend = '\0';	/* Ignore anyting after a ; */
+    session_id=cookiebuf;
+
+    ShibMLP markupProcessor;
+    string tag;
+    bool has_tag = ini.get_tag(serverName, "supportContact", true, &tag);
+    markupProcessor.insert("supportContact", has_tag ? tag : "");
+    has_tag = ini.get_tag(serverName, "logoLocation", true, &tag);
+    markupProcessor.insert("logoLocation", has_tag ? tag : "");
+    markupProcessor.insert("requestURL", targeturl);
+
+    // Now grab the attributes...
+    has_tag = ini.get_tag (serverName, "checkIPAddress", true, &tag);
+    dc->rm_config.checkIPAddress = (has_tag ? ShibINI::boolean (tag) : false);
+
+    // Get an RPC handle and build the RM object.
+    RPCHandle* rpc_handle = (RPCHandle*)rpc_handle_key->getData();
+    if (!rpc_handle)
+    {
+        rpc_handle = new RPCHandle(shib_target_sockname(), SHIBRPC_PROG, SHIBRPC_VERS_1);
+        rpc_handle_key->setData(rpc_handle);
+    }
+    RM rm(rpc_handle, dc->rm_config);
+
+    vector<SAMLAssertion*> assertions;
+    SAMLAuthenticationStatement* sso_statement=NULL;
+    RPCError* status = rm.getAssertions(session_id, r->connection->remote_ip, targeturl, assertions, &sso_statement);
+
+    if (status->isError()) {
+      ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,0,r,
+		    "shib_auth_checker() getAssertions failed: %s",
+		    status->getText());
+
+      string rmError;
+      if (!ini.get_tag(serverName, "rmError", true, &rmError)) {
+        ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,0,r,
+		      "shib_auth_checker: no rmError configuration for %s",
+		      serverName);
+        delete status;
+        return HTTP_INTERNAL_SERVER_ERROR;	
+      }
+      markupProcessor.insert(*status);
+      delete status;
+      return shib_error_page (r, rmError.c_str(), markupProcessor);
+    }
+    delete status;
+
+    string rmError;
+    if (!ini.get_tag(serverName, "accessError", true, &rmError)) {
+        ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,0,r,
+           "shib_auth_checker: no accessError configuration for %s",
+            serverName);
+
+        delete status;
+        for (int k = 0; k < assertions.size(); k++)
+          delete assertions[k];
+        delete sso_statement;
+        return HTTP_INTERNAL_SERVER_ERROR;  
+    }
+
+    // Only allow a single assertion...
+    if (assertions.size() > 1) {
+        ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,0,r,
+		    "shib_auth_checker() found %d assertions (only handle 1 currently)",
+		    assertions.size());
+        for (int k = 0; k < assertions.size(); k++)
+          delete assertions[k];
+        delete sso_statement;
+        return shib_error_page (r, rmError.c_str(), markupProcessor);
+    }
+
+    // Get the AAP providers, which contain the attribute policy info.
+    Iterator<IAAP*> provs=ShibConfig::getConfig().getAAPProviders();
+
+    // Clear out the list of mapped attributes
+    while (provs.hasNext())
+    {
+        IAAP* aap=provs.next();
+        aap->lock();
+        try
+        {
+            Iterator<const IAttributeRule*> rules=aap->getAttributeRules();
+            while (rules.hasNext())
+            {
+                const char* header=rules.next()->getHeader();
+                if (header)
+                    apr_table_unset(r->headers_in,header);
+            }
+        }
+        catch(...)
+        {
+            aap->unlock();
+            for (int k = 0; k < assertions.size(); k++)
+              delete assertions[k];
+            delete sso_statement;
+            throw;
+        }
+        aap->unlock();
+    }
+    provs.reset();
+    
+    // Maybe export the assertion.
+    apr_table_unset(r->headers_in,"Shib-Attributes");
+    if (dc->bExportAssertion==1 && assertions.size()==1) {
+        string assertion;
+        RM::serialize(*(assertions[0]), assertion);
+        apr_table_set(r->headers_in,"Shib-Attributes", assertion.c_str());
+    }
+
+    // Export the SAML AuthnMethod and the origin site name.
+    apr_table_unset(r->headers_in,"Shib-Origin-Site");
+    apr_table_unset(r->headers_in,"Shib-Authentication-Method");
+    if (sso_statement)
+    {
+        auto_ptr<char> os(XMLString::transcode(sso_statement->getSubject()->getNameQualifier()));
+        auto_ptr<char> am(XMLString::transcode(sso_statement->getAuthMethod()));
+        apr_table_set(r->headers_in,"Shib-Origin-Site", os.get());
+        apr_table_set(r->headers_in,"Shib-Authentication-Method", am.get());
+    }
+
+    // Export the attributes. Only supports a single statement.
+    Iterator<SAMLAttribute*> j = assertions.size()==1 ? RM::getAttributes(*(assertions[0])) : EMPTY(SAMLAttribute*);
+    while (j.hasNext())
+    {
+        SAMLAttribute* attr=j.next();
+
+        // Are we supposed to export it?
+        const char* hname=NULL;
+        AAP wrapper(attr->getName(),attr->getNamespace());
+        if (!wrapper.fail())
+            hname=wrapper->getHeader();
+        if (hname)
+        {
+            Iterator<string> vals=attr->getSingleByteValues();
+            if (!strcmp(hname,"REMOTE_USER") && vals.hasNext())
+                r->user=apr_pstrdup(r->connection->pool,vals.next().c_str());
+            else
+            {
+                char* header = apr_pstrdup(r->pool, "");
+                for (int it = 0; vals.hasNext(); it++) {
+                    string value = vals.next();
+                    for (string::size_type pos = value.find_first_of(";", string::size_type(0)); pos != string::npos; pos = value.find_first_of(";", pos)) {
+                    	value.insert(pos, "\\");
+                    	pos += 2;
+                    }
+                    if (it == 0) {
+                        header=apr_pstrcat(r->pool, value.c_str(), NULL);
+                    }
+                    else {
+                        header=apr_pstrcat(r->pool, header, ";", value.c_str(), NULL);
+                    }
+                }
+                apr_table_setn(r->headers_in, hname, header);
+    	    }
+        }
+    }
+
+    // clean up memory
+    for (int k = 0; k < assertions.size(); k++)
+      delete assertions[k];
+    delete sso_statement;
+
+    // mod_auth clone
+
+    int m=r->method_number;
+    bool method_restricted=false;
+    const char *t, *w;
+    
+    const apr_array_header_t* reqs_arr=ap_requires(r);
+    if (!reqs_arr)
+        return OK;
+
+    require_line* reqs=(require_line*)reqs_arr->elts;
+
+    for (int x=0; x<reqs_arr->nelts; x++)
+    {
+        if (!(reqs[x].method_mask & (1 << m)))
+            continue;
+        method_restricted=true;
+
+        t = reqs[x].requirement;
+        w = ap_getword_white(r->pool, &t);
+
+    	if (!strcmp(w,"valid-user"))
+    	{
+            ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,"shib_auth_checker() accepting valid-user");
+            return OK;
+    	}
+    	else if (!strcmp(w,"user") && r->user)
+    	{
+            bool regexp=false;
+    	    while (*t)
+    	    {
+    	        w=ap_getword_conf(r->pool,&t);
+                if (*w=='~')
+                {
+                    regexp=true;
+                    continue;
+                }
+                
+                if (regexp)
+                {
+                    try
+                    {
+                        // To do regex matching, we have to convert from UTF-8.
+                        auto_ptr<XMLCh> trans(fromUTF8(w));
+                        RegularExpression re(trans.get());
+                        auto_ptr<XMLCh> trans2(fromUTF8(r->user));
+                        if (re.matches(trans2.get())) {
+                            ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,"shib_auth_checker() accepting user: %s",w);
+                            return OK;
+                        }
+                    }
+                    catch (XMLException& ex)
+                    {
+                        auto_ptr<char> tmp(XMLString::transcode(ex.getMessage()));
+                        ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,0,r,
+                                        "shib_auth_checker caught exception while parsing regular expression (%s): %s",w,tmp.get());
+                    }
+                }
+                else if (!strcmp(r->user,w))
+                {
+                    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,"shib_auth_checker() accepting user: %s",w);
+                    return OK;
+                }
+    	    }
+    	}
+    	else if (!strcmp(w,"group"))
+    	{
+    	    apr_table_t* grpstatus=NULL;
+    	    if (dc->szAuthGrpFile && r->user)
+    	    {
+                ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,"shib_auth_checker() using groups file: %s\n",
+                                dc->szAuthGrpFile);
+                grpstatus=groups_for_user(r,r->user,dc->szAuthGrpFile);
+            }
+    	    if (!grpstatus)
+    	        return DECLINED;
+    
+    	    while (*t)
+    	    {
+    	        w=ap_getword_conf(r->pool,&t);
+                if (apr_table_get(grpstatus,w))
+                {
+                    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,"shib_auth_checker() accepting group: %s",w);
+                    return OK;
+                }
+            }
+        }
+        else
+        {
+            const char* hname=NULL;
+            AAP wrapper(w);
+            if (!wrapper.fail())
+                hname=wrapper->getHeader();
+
+            if (!hname) {
+                ap_log_rerror(APLOG_MARK,APLOG_WARNING|APLOG_NOERRNO,0,r,
+                                "shib_auth_checker() didn't recognize require rule: %s\n",w);
+            }
+            else
+            {
+                bool regexp=false;
+                const char* vals=apr_table_get(r->headers_in,hname);
+                while (*t && vals)
+                {
+                    w=ap_getword_conf(r->pool,&t);
+                    if (*w=='~')
+                    {
+                        regexp=true;
+                        continue;
+                    }
+
+                    try
+                    {
+                        auto_ptr<RegularExpression> re;
+                        if (regexp)
+                        {
+                            delete re.release();
+                            auto_ptr<XMLCh> trans(fromUTF8(w));
+                            auto_ptr<RegularExpression> temp(new RegularExpression(trans.get()));
+                            re=temp;
+                        }
+                        
+                        string vals_str(vals);
+                        int j = 0;
+                        for (int i = 0;  i < vals_str.length();  i++)
+                        {
+                            if (vals_str.at(i) == ';') 
+                            {
+                                if (i == 0) {
+                                    ap_log_rerror(APLOG_MARK,APLOG_WARNING|APLOG_NOERRNO,0,r,
+                                                    "shib_auth_checker() invalid header encoding %s: starts with semicolon", vals);
+                                    return HTTP_INTERNAL_SERVER_ERROR;
+                                }
+        
+                                if (vals_str.at(i-1) == '\\') {
+                                    vals_str.erase(i-1, 1);
+                                    i--;
+                                    continue;
+                                }
+        
+                                string val = vals_str.substr(j, i-j);
+                                j = i+1;
+                                if (regexp) {
+                                    auto_ptr<XMLCh> trans(fromUTF8(val.c_str()));
+                                    if (re->matches(trans.get())) {
+                                        ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,
+                                                        "shib_auth_checker() expecting %s, got %s: authorization granted", w, val.c_str());
+                                        return OK;
+                                    }
+                                }
+                                else if (val==w) {
+                                    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,
+                                                    "shib_auth_checker() expecting %s, got %s: authorization granted", w, val.c_str());
+                                    return OK;
+                                }
+                                else {
+                                    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,
+                                                    "shib_auth_checker() expecting %s, got %s: authorization not granted", w, val.c_str());
+                                }
+                            }
+                        }
+        
+                        string val = vals_str.substr(j, vals_str.length()-j);
+                        if (regexp) {
+                            auto_ptr<XMLCh> trans(fromUTF8(val.c_str()));
+                            if (re->matches(trans.get())) {
+                                ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,
+                                                "shib_auth_checker() expecting %s, got %s: authorization granted", w, val.c_str());
+                                return OK;
+                            }
+                        }
+                        else if (val==w) {
+                            ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,
+                                            "shib_auth_checker() expecting %s, got %s: authorization granted", w, val.c_str());
+                            return OK;
+                        }
+                        else {
+                            ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,r,
+                                            "shib_auth_checker() expecting %s, got %s: authorization not granted", w, val.c_str());
+                        }
+                    }
+                    catch (XMLException& ex)
+                    {
+                        auto_ptr<char> tmp(XMLString::transcode(ex.getMessage()));
+                        ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,0,r,
+                                        "shib_auth_checker caught exception while parsing regular expression (%s): %s",w,tmp.get());
+                    }
+                }
+    	    }
+    	}
+    }
+
+    if (!method_restricted)
+        return OK;
+
+    return shib_error_page(r, rmError.c_str(), markupProcessor);
 }
+
+namespace {
+    void destroy_handle(void* data)
+    {
+        delete (RPCHandle*)data;
+    }
+}
+
+/*
+ * shib_exit()
+ *  Cleanup the (per-process) pool info.
+ */
+extern "C" apr_status_t shib_exit(void* data)
+{
+    delete rpc_handle_key;
+    g_Config->shutdown();
+    g_Config = NULL;
+    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,NULL,"shib_exit() done");
+    return OK;
+}
+
+/*
+ * shib_post_config()
+ *  Things to do at process startup after the configs are read
+ */
+extern "C" int shib_post_config(apr_pool_t* pconf, apr_pool_t* plog,
+				apr_pool_t* ptemp, server_rec* s)
+{
+    // Initialize runtime components.
+
+    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,s,
+		 "shib_post_config() starting");
+
+    ShibTargetConfig::preinit();
+
+    if (g_Config) {
+      ap_log_error(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,0,s,
+		   "shib_post_config(): already initialized!");
+      exit (1);
+    }
+
+    try {
+      g_Config = &(ShibTargetConfig::init(SHIBTARGET_SHIRE, g_szSHIBConfig));
+    } catch (...) {
+      ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,s,
+		   "shib_post_config() failed to initialize SHIB Target");
+      exit (1);
+    }
+
+    // Create the RPC Handle TLS key.
+    rpc_handle_key=ThreadKey::create(destroy_handle);
+
+    // Set the cleanup handler
+    apr_pool_cleanup_register(pconf, NULL, shib_exit, NULL);
+
+    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,s,"shib_post_config() done");
+
+    return 0;
+}
+
+extern "C" void shib_register_hooks (apr_pool_t *p)
+{
+  ap_hook_post_config(shib_post_config, NULL, NULL, APR_HOOK_MIDDLE);
+  ap_hook_check_user_id(shib_check_user, NULL, NULL, APR_HOOK_MIDDLE);
+  ap_hook_auth_checker(shib_auth_checker, NULL, NULL, APR_HOOK_FIRST);
+  ap_hook_handler(shib_shire_handler, NULL, NULL, APR_HOOK_MIDDLE);
+}
+
+// SHIB Module commands
 
 extern "C" {
-command_rec shib_commands[] = {
+static command_rec shib_cmds[] = {
+  AP_INIT_TAKE1("SHIBConfig",
+		(config_fn_t)ap_set_global_string_slot, &g_szSHIBConfig,
+		RSRC_CONF, "Path to SHIB ini file."),
 
+  AP_INIT_FLAG("ShibBasicHijack", (config_fn_t)ap_set_flag_slot,
+	       (void *) offsetof (shib_dir_config, bBasicHijack),
+	       OR_AUTHCFG, "Respond to AuthType Basic and convert to shib?"),
+  AP_INIT_FLAG("ShibSSLOnly", (config_fn_t)ap_set_flag_slot,
+	       (void *) offsetof (shib_dir_config, bSSLOnly),
+	       OR_AUTHCFG, "Require SSL when accessing a secured directory?"),
+  AP_INIT_TAKE1("ShibAuthLifetime", (config_fn_t)set_lifetime, NULL,
+		OR_AUTHCFG, "Lifetime of session in seconds."),
+  AP_INIT_TAKE1("ShibAuthTimeout", (config_fn_t)set_timeout, NULL,
+		OR_AUTHCFG, "Timeout for session in seconds."),
+
+  AP_INIT_TAKE1("AuthGroupFile", (config_fn_t)ap_set_file_slot,
+		(void *) offsetof (shib_dir_config, szAuthGrpFile),
+		OR_AUTHCFG, "text file containing group names and member user IDs"),
+  AP_INIT_FLAG("ShibExportAssertion", (config_fn_t)ap_set_flag_slot,
+	       (void *) offsetof (shib_dir_config, bExportAssertion),
+	       OR_AUTHCFG, "Export SAML assertion to Shibboleth-defined header?"),
+  AP_INIT_FLAG("DisableRM", (config_fn_t)ap_set_flag_slot,
+	       (void *) offsetof (shib_dir_config, bDisableRM),
+	       OR_AUTHCFG, "Disable the Shibboleth Resource Manager?"),
+
+  {NULL}
 };
-
-void shib_register_hooks (apr_pool_t *p)
-{
-}
 
 module AP_MODULE_DECLARE_DATA mod_shib = {
     STANDARD20_MODULE_STUFF,
@@ -669,23 +1179,7 @@ module AP_MODULE_DECLARE_DATA mod_shib = {
     merge_shib_dir_config,	/* merge dir config --- default is to override */
     NULL,	                /* create server config */
     NULL,	                /* merge server config */
-    shib_commands,		/* command table */
+    shib_cmds,			/* command table */
     shib_register_hooks		/* register hooks */
 };
-} /* extern "C" */
-
-#if 0
-    shib_handlers,
-    mod_shib_init,		/* initializer */
-    NULL,			/* filename translation */
-    shib_check_user,		/* check_user_id */
-    NULL,			/* check auth */
-    NULL,			/* check access */
-    NULL,			/* type_checker */
-    NULL,			/* fixups */
-    NULL,			/* logger */
-    NULL,			/* header parser */
-    shib_child_init,		/* child_init */
-    shib_child_exit,		/* child_exit */
-    NULL			/* post read-request */
-#endif
+} // extern "C"
