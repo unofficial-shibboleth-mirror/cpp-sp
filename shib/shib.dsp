@@ -53,7 +53,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386
-# ADD LINK32 log4cpp.lib xerces-c_2.lib xsec_lib_02.lib libeay32.lib saml_3.lib /nologo /dll /machine:I386 /out:"Release/shib_4.dll" /libpath:"..\..\..\opensaml\c\saml\Release" /libpath:"\openssl-0.9.7\out32dll"
+# ADD LINK32 log4cpp.lib xerces-c_2.lib xsec_lib_02.lib libeay32.lib saml_3.lib /nologo /dll /machine:I386 /out:"Release/shib_4.dll" /libpath:"..\..\..\opensaml\c\saml\Release" /libpath:"\openssl-0.9.7b\out32dll"
 
 !ELSEIF  "$(CFG)" == "shib - Win32 Debug"
 
@@ -79,7 +79,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 log4cppD.lib xerces-c_2D.lib xsec_lib_02D.lib libeay32.lib saml_3D.lib /nologo /dll /debug /machine:I386 /out:"Debug/shib_4D.dll" /pdbtype:sept /libpath:"..\..\..\opensaml\c\saml\Debug" /libpath:"\openssl-0.9.7\out32dll.dbg"
+# ADD LINK32 log4cppD.lib xerces-c_2D.lib xsec_lib_02D.lib libeay32.lib saml_3D.lib /nologo /dll /debug /machine:I386 /out:"Debug/shib_4D.dll" /pdbtype:sept /libpath:"..\..\..\opensaml\c\saml\Debug" /libpath:"\openssl-0.9.7b\out32dll.dbg"
 
 !ENDIF 
 
