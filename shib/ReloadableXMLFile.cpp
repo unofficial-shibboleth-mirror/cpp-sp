@@ -89,7 +89,7 @@ ReloadableXMLFileImpl::ReloadableXMLFileImpl(const char* pathname) : m_doc(NULL)
     catch (XMLException& e)
     {
         auto_ptr_char msg(e.getMessage());
-        log.errorStream() << "Xerces error while opening configuration file: " << msg.get() << CategoryStream::ENDLINE;
+        log.errorStream() << "Xerces error while opening configuration file (" << pathname << "): " << msg.get() << CategoryStream::ENDLINE;
         if (m_doc) {
             m_doc->release();
             m_doc=NULL;
@@ -98,7 +98,7 @@ ReloadableXMLFileImpl::ReloadableXMLFileImpl(const char* pathname) : m_doc(NULL)
     }
     catch (SAMLException& e)
     {
-        log.errorStream() << "XML error while parsing configuration file: " << e.what() << CategoryStream::ENDLINE;
+        log.errorStream() << "XML error while parsing configuration file (" << pathname << "): " << e.what() << CategoryStream::ENDLINE;
         if (m_doc) {
             m_doc->release();
             m_doc=NULL;
@@ -107,7 +107,7 @@ ReloadableXMLFileImpl::ReloadableXMLFileImpl(const char* pathname) : m_doc(NULL)
     }
     catch (...)
     {
-        log.error("Unexpected error while parsing configuration file");
+        log.errorStream() << "Unexpected error while parsing configuration file (" << pathname << ")" << CategoryStream::ENDLINE;
         if (m_doc) {
             m_doc->release();
             m_doc=NULL;
