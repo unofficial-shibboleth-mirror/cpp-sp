@@ -174,6 +174,17 @@ AM_CONDITIONAL(USE_OUR_ONCRPC,test "$rpctest" = "no")
 #   --with-apxs     (DSO build, the normal way, uses apxs to derive build flags)
 #   --without-apxs  (DSO build, you tell us how to build using the environment)
 
+AC_ARG_ENABLE(apache-13,
+	AC_HELP_STRING([--disable-apache-13], [disable the Apache 1.3 modules]))
+if test "x$enable_apache_13" = "x" ; then
+   enable_apache_13=yes
+fi
+
+if test "$enable_apache_13" != yes ; then
+   AC_MSG_WARN(Building without Apache...)
+   WANT_APACHE=no
+else
+
 AC_MSG_CHECKING([for dynamic Apache module support (w/ or w/o APXS)])
 AC_ARG_WITH(apxs,
 [  --with-apxs[=FILE]        Build shared Apache module(s). FILE is the optional
@@ -282,6 +293,8 @@ else
     # guess we're not doing Apache 1.3
     AC_MSG_RESULT(no)
     WANT_APACHE="no"
+fi
+
 fi
 
 AM_CONDITIONAL(HAVE_APXS,test -n "$APXS")
