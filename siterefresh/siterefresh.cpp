@@ -175,9 +175,9 @@ int main(int argc,char* argv[])
     }
 
     if (!url_param || !out_param) {
-        cout << "usage: " << argv[0] << " --url <URL of metadata> --out <pathname to copy data to> "
-            "[--cert <PEM Certificate> --schema <schema path> --rootns <root element XML namespace> "
-            "--rootname <root element name>]" << endl;
+        cout << "usage: " << argv[0] << endl << "\t--url <URL of metadata>\n\t--out <pathname to copy data to>" << endl <<
+            "\t[--cert <PEM Certificate>]\n\t[--schema <schema path>]\n\t[--rootns <root element XML namespace>]" << endl <<
+            "\t[--rootname <root element name>]" << endl;
         exit(0);
     }
 
