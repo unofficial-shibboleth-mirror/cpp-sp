@@ -3,8 +3,6 @@
 	xmlns="http://www.w3.org/2001/XMLSchema"
 	xmlns:conf="urn:mace:shibboleth:target:config:1.0"
 	xmlns:saml="urn:oasis:names:tc:SAML:1.0:assertion"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="urn:mace:shibboleth:target:config:1.0 shibboleth-targetconfig-1.0.xsd" 
 	elementFormDefault="qualified"
 	attributeFormDefault="unqualified"
 	blockDefault="substitution"
