@@ -4,7 +4,7 @@
 	An AAP is a set of AttributeRule elements, each one
 	referencing a specific attribute by URI. All attributes that
 	are implemented via the built-in Simple and Scoped classes must be
-	listed in the file or they will be filtered.
+	listed in the file or they will be filtered out.
 	
 	Scoped attributes are also filtered on Scope via the Domain elements
 	in the site metadata.
@@ -40,7 +40,7 @@
 		</AnySite>
 		-->
 		
-		<!-- Specific rules for an origin site, these are just development/sample sites. -->
+		<!-- Specific rules for an origin site, these are just InCommon development/sample sites. -->
 		<SiteRule Name="urn:mace:incommon:pilot:example.edu">
 			<Value Type="regexp">^urn:mace:.+$</Value>
 		</SiteRule>
