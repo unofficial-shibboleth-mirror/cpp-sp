@@ -50,7 +50,7 @@
     <AttributeRule Name="urn:mace:dir:attribute-def:eduPersonPrincipalName" Header="REMOTE_USER" Alias="user">
 		<!-- Basic rule to pass through any value. -->
         <AnySite>
-            <AnyValue/>
+            <Value Type="regexp">^[^@]+$</Value>
         </AnySite>
     </AttributeRule>
 
