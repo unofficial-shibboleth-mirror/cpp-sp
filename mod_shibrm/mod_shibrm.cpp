@@ -9,6 +9,7 @@
 // SAML Runtime
 #include <saml/saml.h>
 #include <shib/shib.h>
+#include <shib/shib-threads.h>
 #include <shib-target/shib-target.h>
 
 // Apache specific header files
@@ -33,7 +34,7 @@ using namespace shibboleth;
 using namespace shibtarget;
 
 namespace {
-    RPCHandle *rpc_handle = NULL;
+    ThreadKey* rpc_handle_key = NULL;
     ShibTargetConfig* g_Config = NULL;
 
 	map<string,string> g_mapAttribNameToHeader;
@@ -108,6 +109,12 @@ static command_rec shibrm_cmds[] = {
   {NULL}
 };
 
+namespace {
+    void destroy_handle(void* data)
+    {
+        delete (RPCHandle*)data;
+    }
+}
 
 
 /* 
@@ -136,9 +143,8 @@ extern "C" void shibrm_child_init(server_rec* s, pool* p)
   
     saml::NDC ndc("shibrm_child_init");
 
-    // Create the RPC Handle..  Note: this should be per _thread_
-    // if there is some way to do that reasonably..
-    rpc_handle = new RPCHandle(shib_target_sockname(), SHIBRPC_PROG, SHIBRPC_VERS_1);
+    // Create the RPC Handle TLS key.
+    rpc_handle_key=ThreadKey::create(destroy_handle);
 
 	// Transcode the attribute names we know about for quick handling map access.
     for (map<string,string>::const_iterator i=g_mapAttribNameToHeader.begin();
@@ -158,7 +164,7 @@ extern "C" void shibrm_child_init(server_rec* s, pool* p)
  */
 extern "C" void shibrm_child_exit(server_rec* s, pool* p)
 {
-    delete rpc_handle;
+    delete rpc_handle_key;
     g_Config->shutdown();
     g_Config = NULL;
     ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,s,"shibrm_child_exit() done");
@@ -303,6 +309,14 @@ extern "C" int shibrm_check_auth(request_rec* r)
     // Now grab the attributes...
     has_tag = ini.get_tag (serverName, "checkIPAddress", true, &tag);
     dc->config.checkIPAddress = (has_tag ? ShibINI::boolean (tag) : false);
+
+    // Get an RPC handle and build the RM object.
+    RPCHandle* rpc_handle = (RPCHandle*)rpc_handle_key->getData();
+    if (!rpc_handle)
+    {
+        rpc_handle = new RPCHandle(shib_target_sockname(), SHIBRPC_PROG, SHIBRPC_VERS_1);
+        rpc_handle_key->setData(rpc_handle);
+    }
     RM rm(rpc_handle, dc->config);
 
     vector<SAMLAssertion*> assertions;

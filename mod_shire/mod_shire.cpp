@@ -9,6 +9,7 @@
 // SAML Runtime
 #include <saml/saml.h>
 #include <shib/shib.h>
+#include <shib/shib-threads.h>
 #include <shib-target/shib-target.h>
 
 // Apache specific header files
@@ -39,8 +40,8 @@ extern "C" module MODULE_VAR_EXPORT shire_module;
 namespace {
     char* g_szSHIREURL = NULL;
     char* g_szSHIREConfig = NULL;
-    RPCHandle *rpc_handle = NULL;
-    ShibTargetConfig * g_Config = NULL;
+    ThreadKey* rpc_handle_key = NULL;
+    ShibTargetConfig* g_Config = NULL;
 }
 
 // per-dir module configuration structure
@@ -120,6 +121,12 @@ static command_rec shire_cmds[] = {
   {NULL}
 };
 
+namespace {
+    void destroy_handle(void* data)
+    {
+        delete (RPCHandle*)data;
+    }
+}
 
 /* 
  * shire_child_init()
@@ -146,9 +153,8 @@ extern "C" void shire_child_init(server_rec* s, pool* p)
       exit (1);
     }
 
-    // Create the RPC Handle..  Note: this should be per _thread_
-    // if there is some way to do that reasonably..
-    rpc_handle = new RPCHandle(shib_target_sockname(), SHIBRPC_PROG, SHIBRPC_VERS_1);
+    // Create the RPC Handle TLS key.
+    rpc_handle_key=ThreadKey::create(destroy_handle);
 
     ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,s,"shire_child_init() done");
 }
@@ -160,7 +166,7 @@ extern "C" void shire_child_init(server_rec* s, pool* p)
  */
 extern "C" void shire_child_exit(server_rec* s, pool* p)
 {
-    delete rpc_handle;
+    delete rpc_handle_key;
     g_Config->shutdown();
     g_Config = NULL;
     ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,s,"shire_child_exit() done");
@@ -362,6 +368,13 @@ extern "C" int shire_check_user(request_rec* r)
       return SERVER_ERROR;
     }
     
+    // Get an RPC handle and build the SHIRE object.
+    RPCHandle* rpc_handle = (RPCHandle*)rpc_handle_key->getData();
+    if (!rpc_handle)
+    {
+        rpc_handle = new RPCHandle(shib_target_sockname(), SHIBRPC_PROG, SHIBRPC_VERS_1);
+        rpc_handle_key->setData(rpc_handle);
+    }
     SHIRE shire(rpc_handle, dc->config, shire_url);
 
     // We're in charge, so check for cookie.
@@ -507,7 +520,14 @@ extern "C" int shire_post_handler (request_rec* r)
   markupProcessor.insert("logoLocation", has_tag ? tag : "");
   markupProcessor.insert("requestURL", targeturl);
   
-  SHIRE shire(rpc_handle, config, shire_url);
+    // Get an RPC handle and build the SHIRE object.
+    RPCHandle* rpc_handle = (RPCHandle*)rpc_handle_key->getData();
+    if (!rpc_handle)
+    {
+        rpc_handle = new RPCHandle(shib_target_sockname(), SHIBRPC_PROG, SHIBRPC_VERS_1);
+        rpc_handle_key->setData(rpc_handle);
+    }
+    SHIRE shire(rpc_handle, config, shire_url);
 
   // Process SHIRE POST
 
