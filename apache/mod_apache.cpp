@@ -49,7 +49,6 @@ namespace {
     char* g_szSHIBConfig = NULL;
     char* g_szSchemaDir = NULL;
     ShibTargetConfig* g_Config = NULL;
-    bool g_bApacheConf = false;
     static const char* g_UserDataKey = "_shib_check_user_";
 }
 
@@ -190,14 +189,10 @@ extern "C" int shib_check_user(request_rec* r)
             return DECLINED;
     }
 
-    pair<bool,bool> requireSession = pair<bool,bool>(false,false);
-    if (g_bApacheConf) {
-        // By default, we will require a session.
-        if (dc->bRequireSession!=0)
+    pair<bool,bool> requireSession = settings.first->getBool("requireSession");
+    if (!requireSession.first || !requireSession.second)
+        if (dc->bRequireSession==1)
             requireSession.second=true;
-    }
-    else
-        requireSession = settings.first->getBool("requireSession");
 
     ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_check_user: session check for %s",targeturl);
 
@@ -379,12 +374,11 @@ extern "C" int shib_check_user(request_rec* r)
     
     // Maybe export the first assertion.
     ap_table_unset(r->headers_in,"Shib-Attributes");
-    pair<bool,bool> exp=pair<bool,bool>(false,false);
-    if (g_bApacheConf && dc->bExportAssertion==1)
-        exp.second=exp.first=true;
-    else if (!g_bApacheConf)
-        exp=settings.first->getBool("exportAssertion");
-    if (exp.first && exp.second && assertions.size()) {
+    pair<bool,bool> exp=settings.first->getBool("exportAssertion");
+    if (!exp.first || !exp.second)
+        if (dc->bExportAssertion==1)
+            exp.second=true;
+    if (exp.second && assertions.size()) {
         string assertion;
         RM::serialize(*(assertions[0]), assertion);
         ap_table_set(r->headers_in,"Shib-Attributes", assertion.c_str());
@@ -948,15 +942,6 @@ extern "C" apr_status_t shib_exit(void* data)
 #endif
 }
 
-static const XMLCh Apache[] =
-{ chLatin_A, chLatin_p, chLatin_a, chLatin_c, chLatin_h, chLatin_e, chNull };
-static const XMLCh apacheConfig[] =
-{ chLatin_a, chLatin_p, chLatin_a, chLatin_c, chLatin_h, chLatin_e,
-  chLatin_C, chLatin_o, chLatin_n, chLatin_f, chLatin_i, chLatin_g, chNull
-};
-static const XMLCh Implementation[] =
-{ chLatin_I, chLatin_m, chLatin_p, chLatin_l, chLatin_e, chLatin_m, chLatin_e, chLatin_n, chLatin_t, chLatin_a, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chNull };
-
 /* 
  * shire_child_init()
  *  Things to do when the child process is initialized.
@@ -995,21 +980,6 @@ extern "C" int shib_post_config(apr_pool_t* pconf, apr_pool_t* plog,
             ap_log_error(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init(): already initialized!");
             exit(1);
         }
-        
-        // Access the implementation-specifics for whether to use old Apache config style...
-        IConfig* conf=g_Config->getINI();
-        Locker locker(conf);
-        const IPropertySet* props=conf->getPropertySet("SHIRE");
-        if (props) {
-            const DOMElement* impl=saml::XML::getFirstChildElement(
-                props->getElement(),ShibTargetConfig::SHIBTARGET_NS,Implementation
-                );
-            if (impl && (impl=saml::XML::getFirstChildElement(impl,ShibTargetConfig::SHIBTARGET_NS,Apache))) {
-                const XMLCh* flag=impl->getAttributeNS(NULL,apacheConfig);
-                if (flag && (*flag==chDigit_1 || *flag==chLatin_t))
-                    g_bApacheConf=true;
-            }
-        }
     }
     catch (...) {
         ap_log_error(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() failed to initialize SHIB Target");
@@ -1019,8 +989,7 @@ extern "C" int shib_post_config(apr_pool_t* pconf, apr_pool_t* plog,
     // Set the cleanup handler
     apr_pool_cleanup_register(pconf, NULL, shib_exit, NULL);
 
-    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),
-        "shib_child_init() done, apacheConfig set to %s", g_bApacheConf ? "true" : "false");
+    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() done");
 
 #ifndef SHIB_APACHE_13
     return OK;
