@@ -484,7 +484,6 @@ ShibTarget::doCheckAuthZ(void)
       }
       else if (!strcmp(w,"valid-user")) {
 	log(LogLevelDebug, "doCheckAuthZ accepting valid-user");
-	sleep(60);
 	CHECK_OK;
       }
       else if (!strcmp(w,"user") && !remote_user.empty()) {
