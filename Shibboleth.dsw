@@ -164,6 +164,9 @@ Package=<4>
     Begin Project Dependency
     Project_Dep_Name shib
     End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name shibtarget
+    End Project Dependency
 }}}
 
 ###############################################################################
