@@ -170,7 +170,6 @@
 						<choice maxOccurs="unbounded">
 							<element ref="conf:ISAPI"/>
 							<element ref="conf:NSAPI"/>
-							<element ref="conf:Apache"/>
 							<element ref="conf:Java"/>
 							<any namespace="##other" processContents="lax"/>
 						</choice>
