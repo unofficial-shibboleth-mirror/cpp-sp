@@ -117,18 +117,23 @@ void SharChild::run()
     FD_SET(sock, &readfds);
     tv.tv_sec = 1;
 
-    switch (select (sock+1, &readfds, 0, 0, &tv)) {
+    switch (select(sock+1, &readfds, 0, 0, &tv)) {
 
+#ifdef WIN32
+    case SOCKET_ERROR:
+#else
     case -1:
+#endif
       if (errno == EINTR) continue;
       SHARUtils::log_error();
+      Category::getInstance("SHAR.SharChild").error("select() on incoming request socket returned error");
       return;
 
     case 0:
       break;
 
     default:
-      svc_getreqset (&readfds);
+      svc_getreqset(&readfds);
     }
   }
 
@@ -157,9 +162,17 @@ void SHARUtils::log_error()
 int SHARUtils::shar_create_svc(IListener::ShibSocket& sock, const Iterator<ShibRPCProtocols>& protos)
 {
   NDC ndc("shar_create_svc");
+  Category::getInstance("SHAR.SHARUtils").debug("creating RPC listener around socket (%u)",sock);
 
-  /* Wrap an RPC Service around the new connection socket */
+  /*
+   Wrap an RPC Service around the new connection socket.
+   This appears to be one of the key critical sections left unprotected in the ONC code.
+   It writes to global variables and actually does a malloc/calloc of one of them
+   in-line inside the xprt_register code.
+  */
+  child_lock->lock();
   SVCXPRT* svc = svcfd_create (sock, 0, 0);
+  child_lock->unlock();
   if (!svc) {
     Category::getInstance("SHAR.SHARUtils").error("cannot create RPC listener");
     return -1;
