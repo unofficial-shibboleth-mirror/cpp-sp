@@ -179,8 +179,9 @@ int main(int argc, char *argv[])
         printf("%s -install <name>   to install the named service\n", argv[0]);
         printf("%s -remove <name>    to remove the named service\n", argv[0]);
         printf("%s -console          to run as a console app for debugging\n", argv[0]);
-        printf("%s -config <file>    to specify the config file to use\n", argv[0]);
-        printf("%s -schemadir <dir>  to specify where schemas are\n", argv[0]);
+        printf("%s -check            to run as a console app and check configuration\n", argv[0]);
+        printf("\t-config <file> to specify the config file to use\n");
+        printf("\t-schemadir <dir> to specify where schemas are\n");
         printf("\nService starting.\nThis may take several seconds. Please wait.\n" );
 
     SERVICE_TABLE_ENTRY dispatchTable[] =
