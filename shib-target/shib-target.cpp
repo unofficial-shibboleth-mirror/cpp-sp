@@ -59,5 +59,5 @@ extern "C" void shib_target_finalize (void)
 
 extern "C" ShibSockName shib_target_sockname(void)
 {
-    return (g_Config ? g_Config->m_SocketName : SHIB_SHAR_SOCKET);
+    return (g_Config ? g_Config->m_SocketName : (ShibSockName)0);
 }
