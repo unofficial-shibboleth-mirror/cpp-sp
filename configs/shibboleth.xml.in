@@ -11,6 +11,7 @@
             <Library path="@-LIBEXECDIR-@/shib-mysql-ccache.so" fatal="false"/>
         </Extensions>
     
+    	<!-- only one listener can be defined. -->
         <UnixListener address="/tmp/shar-socket"/>
 
         <!--
@@ -18,12 +19,21 @@
         -->
         
         <!--
-        <MemorySessionCache cleanupInterval="300" cacheTimeout="3600" AATimeout="30" AAConnectTimeout="15"
-            defaultLifetime="1800" retryInterval="300" strictValidity="true" propagateErrors="false"/>
+        See deploy guide for details, but:
+        	cacheTimeout - how long before expired sessions are purged from the cache
+        	AATimeout - how long to wait for an AA to respond
+        	AAConnectTimeout - how long to wait while connecting to an AA
+        	defaultLifetime - if attributes come back without guidance, how long should they last?
+        	strictValidity - if we have expired attrs, and can't get new ones, keep using them?
+        	propagateErrors - suppress errors while getting attrs or let user see them?
+        	retryInterval - if propagateErrors is false and query fails, how long to wait before trying again
         -->
-        
+        <!--
+        <MemorySessionCache cleanupInterval="300" cacheTimeout="3600" AATimeout="30" AAConnectTimeout="15"
+            defaultLifetime="1800" retryInterval="300" strictValidity="false" propagateErrors="false"/>
+        -->
         <MySQLSessionCache cleanupInterval="300" cacheTimeout="3600" AATimeout="30" AAConnectTimeout="15"
-               defaultLifetime="1800" retryInterval="300" strictValidity="true" propagateErrors="false"
+               defaultLifetime="1800" retryInterval="300" strictValidity="false" propagateErrors="false"
                mysqlTimeout="14400">
 			<!-- The character references below are just dashes, but now you can comment out the element. -->
             <Argument>&#x2D;&#x2D;language=@-PREFIX-@/share/english</Argument>
