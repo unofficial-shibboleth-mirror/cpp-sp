@@ -11,5 +11,4 @@ pkgsysconf_DATA = \
                 xmldsig-filter2.xsd \
                 xml.xsd \
                 eduPerson.xsd \
-                shibboleth.xsd \
-                wayfconfig.xsd
+                shibboleth.xsd
