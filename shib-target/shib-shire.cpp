@@ -415,16 +415,15 @@ RPCError* SHIRE::sessionIsValid(const char* session_id, const char* ip) const
   RPC rpc;
   do {
     clnt = rpc->connect();
-    if (shibrpc_session_is_valid_1(&arg, &ret, clnt) != RPC_SUCCESS) {
+    clnt_stat status = shibrpc_session_is_valid_1(&arg, &ret, clnt);
+    if (status != RPC_SUCCESS) {
       // FAILED.  Release, disconnect, and try again...
-      log.debug("RPC Failure: %p (%p): %s", this, clnt, clnt_spcreateerror(""));
+      log.error("RPC Failure: %p (%p) (%d) %s", this, clnt, status, clnt_spcreateerror("shibrpc_session_is_valid_1"));
       rpc->disconnect();
       if (retry)
           retry--;
-      else {
-        log.error("RPC Failure: %p (%p)", this, clnt);
-        return new RPCError(-1, "RPC Failure");
-      }
+      else
+          return new RPCError(-1, "RPC Failure");
     }
     else {
       // SUCCESS.  Return to the pool.
@@ -487,16 +486,15 @@ RPCError* SHIRE::sessionCreate(const char* response, const char* ip, string& coo
   RPC rpc;
   do {
     clnt = rpc->connect();
-    if (shibrpc_new_session_1 (&arg, &ret, clnt) != RPC_SUCCESS) {
+    clnt_stat status = shibrpc_new_session_1 (&arg, &ret, clnt);
+    if (status != RPC_SUCCESS) {
       // FAILED.  Release, disconnect, and retry
-      log.debug("RPC Failure: %p (%p): %s", this, clnt, clnt_spcreateerror (""));
+      log.error("RPC Failure: %p (%p) (%d): %s", this, clnt, status, clnt_spcreateerror("shibrpc_new_session_1"));
       rpc->disconnect();
       if (retry)
-       retry--;
-      else {
-        log.error("RPC Failure: %p (%p)", this, clnt);
+        retry--;
+      else
         return new RPCError(-1, "RPC Failure");
-      }
     }
     else {
       // SUCCESS.  Pool and continue
