@@ -78,9 +78,67 @@ using namespace saml;
 using namespace shibboleth;
 using namespace log4cpp;
 
-void verifySignature(DOMDocument* doc, DOMElement* sigNode, const char* cert=NULL)
+static const XMLCh TRUST_NS[] = // urn:mace:shibboleth:trust:1.0
+{ chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
+  chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
+  chLatin_t, chLatin_r, chLatin_u, chLatin_s, chLatin_t, chColon, chDigit_1, chPeriod, chDigit_0, chNull
+};
+
+static const XMLCh TRUST_SCHEMA_ID[] = // shibboleth-trust-1.0.xsd
+{ chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chDash,
+  chLatin_t, chLatin_r, chLatin_u, chLatin_s, chLatin_t, chDash, chDigit_1, chPeriod, chDigit_0, chPeriod,
+  chLatin_x, chLatin_s, chLatin_d, chNull
+};
+
+static const XMLCh SHIB_SCHEMA_ID[] = // shibboleth.xsd
+{ chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chPeriod,
+  chLatin_x, chLatin_s, chLatin_d, chNull
+};
+
+static const XMLCh SAML2ASSERT_NS[] = // urn:oasis:names:tc:SAML:2.0:assertion
+{ chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_o, chLatin_a, chLatin_s, chLatin_i, chLatin_s, chColon,
+  chLatin_n, chLatin_a, chLatin_m, chLatin_e, chLatin_s, chColon, chLatin_t, chLatin_c, chColon,
+  chLatin_S, chLatin_A, chLatin_M, chLatin_L, chColon, chDigit_2, chPeriod, chDigit_0, chColon,
+  chLatin_a, chLatin_s, chLatin_s, chLatin_e, chLatin_r, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chNull
+};
+
+static const XMLCh SAML2ASSERT_SCHEMA_ID[] = // sstc-saml-schema-assertion-2.0.xsd
+{ chLatin_s, chLatin_s, chLatin_t, chLatin_c, chDash, chLatin_s, chLatin_a, chLatin_m, chLatin_l, chDash,
+  chLatin_s, chLatin_c, chLatin_h, chLatin_e, chLatin_m, chLatin_a, chDash,
+  chLatin_a, chLatin_s, chLatin_s, chLatin_e, chLatin_r, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chDash,
+  chDigit_2, chPeriod, chDigit_0, chPeriod, chLatin_x, chLatin_s, chLatin_d, chNull
+};
+
+static const XMLCh SAML2META_NS[] = // urn:oasis:names:tc:SAML:2.0:metadata
+{ chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_o, chLatin_a, chLatin_s, chLatin_i, chLatin_s, chColon,
+  chLatin_n, chLatin_a, chLatin_m, chLatin_e, chLatin_s, chColon, chLatin_t, chLatin_c, chColon,
+  chLatin_S, chLatin_A, chLatin_M, chLatin_L, chColon, chDigit_2, chPeriod, chDigit_0, chColon,
+  chLatin_m, chLatin_e, chLatin_t, chLatin_a, chLatin_d, chLatin_a, chLatin_t, chLatin_a, chNull
+};
+
+static const XMLCh SAML2META_SCHEMA_ID[] = // sstc-saml-schema-metadata-2.0.xsd
+{ chLatin_s, chLatin_s, chLatin_t, chLatin_c, chDash, chLatin_s, chLatin_a, chLatin_m, chLatin_l, chDash,
+  chLatin_s, chLatin_c, chLatin_h, chLatin_e, chLatin_m, chLatin_a, chDash,
+  chLatin_m, chLatin_e, chLatin_t, chLatin_a, chLatin_d, chLatin_a, chLatin_t, chLatin_a, chDash,
+  chDigit_2, chPeriod, chDigit_0, chPeriod, chLatin_x, chLatin_s, chLatin_d, chNull
+};
+
+static const XMLCh XMLENC_NS[] = // http://www.w3.org/2001/04/xmlenc#
+{ chLatin_h, chLatin_t, chLatin_t, chLatin_p, chColon, chForwardSlash, chForwardSlash,
+  chLatin_w, chLatin_w, chLatin_w, chPeriod, chLatin_w, chDigit_3, chPeriod, chLatin_o, chLatin_r, chLatin_g, chForwardSlash,
+  chDigit_2, chDigit_0, chDigit_0, chDigit_1, chForwardSlash, chDigit_0, chDigit_4, chForwardSlash,
+  chLatin_x, chLatin_m, chLatin_l, chLatin_e, chLatin_n, chLatin_c, chPound, chNull
+};
+
+static const XMLCh XMLENC_SCHEMA_ID[] = // xenc-schema.xsd
+{ chLatin_x, chLatin_e, chLatin_n, chLatin_c, chDash,
+  chLatin_s, chLatin_c, chLatin_h, chLatin_e, chLatin_m, chLatin_a, chPeriod, chLatin_x, chLatin_s, chLatin_d, chNull
+};
+
+void verifySignature(DOMDocument* doc, DOMNode* sigNode, const char* cert=NULL)
 {
     Category& log=Category::getInstance("siterefresh");
+    static const XMLCh ID[]={chLatin_I, chLatin_D, chNull};
 
     // Load the signature.
     XSECProvider prov;
@@ -97,7 +155,8 @@ void verifySignature(DOMDocument* doc, DOMElement* sigNode, const char* cert=NUL
             DSIGReference* ref=refs->item(0);
             if (ref) {
                 const XMLCh* URI=ref->getURI();
-                if (URI==NULL || *URI==0) {
+                if (!URI || !*URI ||
+                        !XMLString::compareString(URI,static_cast<DOMElement*>(sigNode->getParentNode())->getAttributeNS(NULL,ID))) {
                     DSIGTransformList* tlist=ref->getTransforms();
                     for (int i=0; tlist && i<tlist->getSize(); i++) {
                         if (tlist->item(i)->getTransformType()==TRANSFORM_ENVELOPED_SIGNATURE)
@@ -187,6 +246,13 @@ int main(int argc,char* argv[])
         return -100;
     }
 
+    static const XMLCh Trust[] = { chLatin_T, chLatin_r, chLatin_u, chLatin_s, chLatin_t, chNull };
+    static const XMLCh SiteGroup[] =
+    { chLatin_S, chLatin_i, chLatin_t, chLatin_e, chLatin_G, chLatin_r, chLatin_o, chLatin_u, chLatin_p, chNull };
+    static const XMLCh EntitiesDescriptor[] =
+    { chLatin_E, chLatin_n, chLatin_t, chLatin_i, chLatin_t, chLatin_i, chLatin_e, chLatin_s,
+      chLatin_D, chLatin_e, chLatin_s, chLatin_c, chLatin_r, chLatin_i, chLatin_p, chLatin_t, chLatin_o, chLatin_r, chNull };
+
     Category::setRootPriority(Priority::WARN);
     Category::getRoot().addAppender(new OstreamAppender("default",&cerr));
     Category& log=Category::getInstance("siterefresh");
@@ -194,29 +260,11 @@ int main(int argc,char* argv[])
     if (!conf.init())
         return -10;
 
-    static const XMLCh Trust[] = { chLatin_T, chLatin_r, chLatin_u, chLatin_s, chLatin_t, chNull };
-    static const XMLCh SiteGroup[] =
-    { chLatin_S, chLatin_i, chLatin_t, chLatin_e, chLatin_G, chLatin_r, chLatin_o, chLatin_u, chLatin_p, chNull };
-
-    static const XMLCh TRUST_NS[] = // urn:mace:shibboleth:trust:1.0
-    { chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
-      chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
-      chLatin_t, chLatin_r, chLatin_u, chLatin_s, chLatin_t, chColon, chDigit_1, chPeriod, chDigit_0, chNull
-    };
-
-    static const XMLCh TRUST_SCHEMA_ID[] = // shibboleth-trust-1.0.xsd
-    { chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chDash,
-      chLatin_t, chLatin_r, chLatin_u, chLatin_s, chLatin_t, chDash, chDigit_1, chPeriod, chDigit_0, chPeriod,
-      chLatin_x, chLatin_s, chLatin_d, chNull
-    };
-
-    static const XMLCh SHIB_SCHEMA_ID[] = // shibboleth.xsd
-    { chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chPeriod,
-      chLatin_x, chLatin_s, chLatin_d, chNull
-    };
-
-    saml::XML::registerSchema(shibboleth::Constants::SHIB_NS,SHIB_SCHEMA_ID);
+    saml::XML::registerSchema(Constants::SHIB_NS,SHIB_SCHEMA_ID);
     saml::XML::registerSchema(TRUST_NS,TRUST_SCHEMA_ID);
+    saml::XML::registerSchema(SAML2META_NS,SAML2META_SCHEMA_ID);
+    saml::XML::registerSchema(SAML2ASSERT_NS,SAML2ASSERT_SCHEMA_ID);
+    saml::XML::registerSchema(XMLENC_NS,XMLENC_SCHEMA_ID);
 
     try {
         // Parse the specified document.
@@ -241,24 +289,28 @@ int main(int argc,char* argv[])
             if (!saml::XML::isElementNamed(doc->getDocumentElement(),ns.get(),name.get()))
                 throw MalformedException(string("Root element does not match specified QName of {") + ns_param + "}:" + name_param);
         }
-        else if (!saml::XML::isElementNamed(doc->getDocumentElement(),shibboleth::Constants::SHIB_NS,SiteGroup) &&
-                    !saml::XML::isElementNamed(doc->getDocumentElement(),TRUST_NS,Trust))
-            throw MalformedException("Root element does not match SiteGroup or Trust");
+        else if (!saml::XML::isElementNamed(doc->getDocumentElement(),Constants::SHIB_NS,SiteGroup) &&
+                 !saml::XML::isElementNamed(doc->getDocumentElement(),SAML2META_NS,EntitiesDescriptor) &&
+                 !saml::XML::isElementNamed(doc->getDocumentElement(),TRUST_NS,Trust))
+            throw MalformedException("Root element does not signify a known metadata or trust format");
 
-        // If we're verifying, grab the embedded signature.
-        DOMElement* n=saml::XML::getLastChildElement(doc->getDocumentElement(),saml::XML::XMLSIG_NS,L(Signature));
+        // If we're verifying, grab any embedded signatures.
+        DOMNodeList* siglist=doc->getElementsByTagNameNS(saml::XML::XMLSIG_NS,L(Signature));
         if (verify) {
-            if (n)
-                verifySignature(doc,n,cert_param);
+            if (siglist && siglist->getLength()) {
+                for (int i=0; i<siglist->getLength(); i++)
+                    verifySignature(doc,siglist->item(i),cert_param);
+            }
             else {
                 doc->release();
 			    log.error("unable to locate a signature to verify in document");
 			    throw InvalidCryptoException("Verification implies that the document must be signed");
             }
         }
-        else if (n) {
+        else if (siglist && siglist->getLength()) {
             log.warn("verification of signer disabled, make sure you trust the source of this file!");
-            verifySignature(doc,n);
+            for (int i=0; i<siglist->getLength(); i++)
+                verifySignature(doc,siglist->item(i));
         }
         else {
             log.warn("verification disabled, and file is unsigned!");
