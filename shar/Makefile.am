@@ -10,7 +10,7 @@ AM_CXXFLAGS = -I${top_srcdir}/oncrpc
 ONCRPC_LIBS = ${top_builddir}/oncrpc/liboncrpc.la
 endif
 
-test_client_SOURCES = test-client.c
+test_client_SOURCES = test-client.cpp
 
 shar_SOURCES = shar.cpp shar-utils.cpp
 noinst_HEADERS = shar-utils.h
