@@ -183,7 +183,7 @@ int main(int argc,char* argv[])
         exit(0);
     }
 
-    Category::setRootPriority(ERROR);
+    Category::setRootPriority(Priority::ERROR);
     conf.schema_dir=path;
     if (!conf.init())
         return -10;
