@@ -47,7 +47,7 @@ ResourcePriv::ResourcePriv(const char *str)
   log->info("creating resource: \"%s\" -> \"%s\"", str, m_resource.c_str());
 
   // Now figure out the designators
-  string server = m_url.substr(colon-str+3);
+  string server = m_url.substr(colon-str+3, slash-(colon+3));
 
   log->debug("server is \"%s\"", server.c_str());
 
@@ -58,29 +58,41 @@ ResourcePriv::ResourcePriv(const char *str)
   if (ini.get_tag (server, SHIBTARGET_TAG_REQATTRS, true, &tag)) {
     // Now parse the request attributes tag...
 
-    const char * the_tag = tag.c_str();
-    const char * tag_ptr, *end_ptr;
+    log->debug("Request Attributes: \"%s\"", tag.c_str());
 
-    // XXX: should we use strtok_r()?
-    for (tag_ptr = the_tag; tag_ptr && *tag_ptr; tag_ptr = end_ptr) {
-      end_ptr = strchr(tag_ptr, ' ');
+    auto_ptr<char> tag_str(strdup(tag.c_str()));
 
-      // parse out the attribute substring
-      string a = tag.substr(the_tag-tag_ptr, (end_ptr ? end_ptr-tag_ptr : -1));
-      auto_ptr<XMLCh> temp(XMLString::transcode(a.c_str()));
+    char *tags = tag_str.get(), *tagptr = NULL, *the_tag;
+    while ((the_tag = strtok_r(tags, " \t\r\n", &tagptr)) != NULL && *the_tag) {
 
-      log->debug ("Parsed attribute string: \"%s\"", a.c_str());
+      // Make sure we don't loop ad-infinitum
+      tags = NULL;
+
+      log->debug ("Parsed attribute string: \"%s\"", the_tag);
+      log->debug ("tagptr = %p", tagptr);
+      
+      // transcode the attribute string from the tag
+      auto_ptr<XMLCh> temp(XMLString::transcode(the_tag));
 
       // Now create the SAML Attribute from this name
-      
-
-      // and prepare for the next run through the loop.
-      if (end_ptr) end_ptr++;
+      try {
+	SAMLAttribute *attr =
+	  new SAMLAttribute(temp.get(),
+			    shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
+	if (attr)
+	  designators.push_back(attr);
+      } catch ( ... ) { }
     }
-  }
+  } else
+    log->debug ("No request-attributes found");
 }
 
-ResourcePriv::~ResourcePriv() {}
+ResourcePriv::~ResourcePriv()
+{
+  for (vector<SAMLAttribute*>::iterator i = designators.begin();
+       i != designators.end(); i++)
+    delete *i;
+}
 
 // Internal Class Definition
 
