@@ -218,7 +218,7 @@ namespace shibtarget {
   public:
     explicit ShibTargetException() : m_code(SHIBRPC_OK) {}
     explicit ShibTargetException(ShibRpcStatus code, const char* msg, const XMLCh* origin = NULL)
-        : m_code(code)gin(origin) { if (msg) m_msg=msg; if (origin) m_origin=origin; }
+        : m_code(code) { if (msg) m_msg=msg; if (origin) m_origin=origin; }
     explicit ShibTargetException(ShibRpcStatus code, const std::string& msg, const XMLCh* origin = NULL)
         : m_code(code), m_msg(msg) { if (origin) m_origin=origin; }
     ShibTargetException(const ShibTargetException& src)
