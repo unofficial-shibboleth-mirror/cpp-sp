@@ -3,9 +3,8 @@
     <import namespace="http://www.w3.org/2000/09/xmldsig#" schemaLocation="http://www.w3.org/TR/xmldsig-core/xmldsig-core-schema.xsd"/>
     <import namespace="http://www.w3.org/XML/1998/namespace" schemaLocation="http://www.w3.org/2001/xml.xsd"/>
     
-    <element name="RealTimeReleaseURL" type="anyURI">
-        <annotation>Used by AA in samlp:StatusDetail to signal user wants real-time attribute release.</annotation>
-    </element>
+    
+    <!-- Status-Related Information -->
     
     <!--
     The following SAML sub-status codes are defined in this namespace:
@@ -17,8 +16,89 @@
             Used with samlp:Requester, signals AA did not recognize handle as valid
     -->
     
+    <element name="RealTimeReleaseURL" type="anyURI">
+        <annotation>Used by AA in samlp:StatusDetail to signal user wants real-time attribute release.</annotation>
+    </element>
+    
+
+    <!-- Relaxes SAML AttributeValue type definition -->
+
+	<complexType name="AttributeValueType" mixed="true">
+		<annotation>By convention, all Shibboleth attribute values carry this unconstrained xsi:type.</annotation>
+		<sequence>
+			<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+		</sequence>
+		<anyAttribute namespace="##any" processContents="lax"/>
+	</complexType>
+
+
+    <!-- Attribute Acceptance Policies -->
+	
+    <simpleType name="AttributeRuleValueType">
+        <restriction base="string">
+            <enumeration value="literal"/>
+            <enumeration value="regexp"/>
+            <enumeration value="xpath"/>
+        </restriction>
+    </simpleType>
+    
+    <complexType name="SiteRuleType">
+        <sequence>
+            <element name="Value" maxOccurs="unbounded">
+                <complexType>
+                    <simpleContent>
+                        <extension base="string">
+                            <attribute name="Type" type="shib:AttributeRuleValueType" use="optional" default="literal"/>
+                        </extension>
+                    </simpleContent>
+                </complexType>
+            </element>
+        </sequence>
+    </complexType>
+
+    <element name="AnySite" type="shib:SiteRuleType"/>
+    <element name="SiteRule">
+        <complexType>
+            <complexContent>
+                <extension base="shib:SiteRuleType">
+                    <attribute name="Name" type="string" use="required"/>
+                </extension>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <complexType name="AttributeRuleType">
+        <sequence>
+            <element ref="shib:AnySite" minOccurs="0"/>
+            <element ref="shib:SiteRule" minOccurs="0" maxOccurs="unbounded"/>
+        </sequence>
+        <attribute name="Name" type="anyURI"/>
+    </complexType>
+
+    <element name="AttributeRule" type="shib:AttributeRuleType">
+        <key name="SiteRuleKey">
+            <selector xpath="./shib:SiteRule"/>
+            <field xpath="@Name"/>
+        </key>
+    </element>
+
+    <element name="AttributeAcceptancePolicy">
+        <complexType>
+            <sequence>
+                <element ref="shib:AttributeRule" minOccurs="0" maxOccurs="unbounded"/>
+            </sequence>
+        </complexType>
+        <key name="AttributeNameKey">
+            <selector xpath="./shib:AttributeRule"/>
+            <field xpath="@Name"/>
+        </key>
+    </element>
+
+
+    <!-- Shibboleth Metadata -->
+    
     <complexType name="SiteType">
-        <annotation> All sites have a Name attribute, plus optional i18n-ized aliases. </annotation>
+        <annotation>All sites have a Name attribute, plus optional i18n-ized aliases.</annotation>
         <sequence>
             <element name="Alias" minOccurs="0" maxOccurs="unbounded">
                 <complexType>
