@@ -418,6 +418,7 @@ void* InternalCCache::cleanup_fcn(void* cache_p)
 
   // Now run the cleanup process.
   cache->cleanup();
+  return NULL;
 }
 
 /******************************************************************************/
