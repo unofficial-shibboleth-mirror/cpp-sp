@@ -4,6 +4,7 @@ AUTOMAKE_OPTIONS = foreign
 
 pkgsysconfdir = $(sysconfdir)/@PACKAGE@
 pkgsysconf_DATA = \
+                credentials.xsd \
                 cs-sstc-schema-assertion-01.xsd \
                 cs-sstc-schema-protocol-01.xsd \
                 cs-sstc-schema-assertion-1.1.xsd \
