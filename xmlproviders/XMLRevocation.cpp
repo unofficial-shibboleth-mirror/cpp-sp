@@ -293,9 +293,9 @@ Iterator<void*> XMLRevocation::getRevocationLists(const IProvider* provider, con
 #ifdef HAVE_GOOD_STL
         XMLRevocationImpl::AuthMap::const_iterator c=impl->m_map.find(*name);
         if (c!=impl->m_map.end()) {
-            if (log.isDebugEnabled()) {
+            if (log.isInfoEnabled()) {
                 auto_ptr_char temp(*name);
-                log.debug("revocation list match on %s",temp.get());
+                log.info("revocation list match on %s",temp.get());
             }
             return c->second->m_crls;
         }
@@ -304,9 +304,9 @@ Iterator<void*> XMLRevocation::getRevocationLists(const IProvider* provider, con
         for (vector<XMLRevocationImpl::KeyAuthority*>::const_iterator keyauths=impl->m_keyauths.begin(); keyauths!=impl->m_keyauths.end(); keyauths++) {
             for (vector<const XMLCh*>::const_iterator subs=(*keyauths)->m_subjects.begin(); subs!=(*keyauths)->m_subjects.end(); subs++) {
                 if (!XMLString::compareString(*name,*subs)) {
-                    if (log.isDebugEnabled()) {
+                    if (log.isInfoEnabled()) {
                         auto_ptr_char temp(*name);
-                        log.debug("revocation list match on %s",temp.get());
+                        log.info("revocation list match on %s",temp.get());
                     }
                     return (*keyauths)->m_crls;
                 }
@@ -316,10 +316,10 @@ Iterator<void*> XMLRevocation::getRevocationLists(const IProvider* provider, con
     }
     
     if (impl->m_wildcard) {
-        log.debug("no matching revocation list, using wildcard list");
+        log.info("no matching revocation list, using wildcard list");
         return impl->m_wildcard->m_crls;
     }
 
-    log.debug("no matching revocation list");
+    log.info("no matching revocation list");
     return EMPTY(void*);
 }

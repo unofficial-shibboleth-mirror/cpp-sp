@@ -417,9 +417,9 @@ bool XMLTrust::attach(const Iterator<IRevocation*>& revocations, const IProvider
             XMLTrustImpl::AuthMap::const_iterator c=impl->m_authMap.find(*name);
             if (c!=impl->m_authMap.end()) {
                 kauth=c->second;
-                if (log.isDebugEnabled()) {
+                if (log.isInfoEnabled()) {
                     auto_ptr_char temp(*name);
-                    log.debug("KeyAuthority match on %s",temp.get());
+                    log.info("KeyAuthority match on %s",temp.get());
                 }
             }
     #else
@@ -428,9 +428,9 @@ bool XMLTrust::attach(const Iterator<IRevocation*>& revocations, const IProvider
                 for (vector<const XMLCh*>::const_iterator subs=(*keyauths)->m_subjects.begin(); !kauth && subs!=(*keyauths)->m_subjects.end(); subs++) {
                     if (!XMLString::compareString(*name,*subs)) {
                         kauth=*keyauths;
-                        if (log.isDebugEnabled()) {
+                        if (log.isInfoEnabled()) {
                             auto_ptr_char temp(*name);
-                            log.debug("KeyAuthority match on %s",temp.get());
+                            log.info("KeyAuthority match on %s",temp.get());
                         }
                     }
                 }
@@ -581,15 +581,15 @@ bool XMLTrust::validate(
                     continue;
                 XSECCryptoKey* key=keyResolver.resolveKey(KIL);
                 if (key) {
-                    log.debug("found an inline key, trying it...");
+                    log.debug("found an inline key descriptor, trying it...");
                     try {
                         token.verify(key);
                         unlock();
-                        log.info("token verified with inline key, nothing more to verify");
+                        log.info("token verified with inline key descriptor, nothing more to verify");
                         return true;
                     }
                     catch (SAMLException& e) {
-                        log.debug("inline key failed: %s", e.what());
+                        log.warn("inline key descriptor failed: %s", e.what());
                     }
                 }
                 else {
@@ -615,9 +615,9 @@ bool XMLTrust::validate(
             XMLTrustImpl::BindMap::const_iterator c=impl->m_bindMap.find(*name);
             if (c!=impl->m_bindMap.end()) {
                 KIL=c->second;
-                if (log.isDebugEnabled()) {
+                if (log.isInfoEnabled()) {
                     auto_ptr_char temp(*name);
-                    log.debug("KeyInfo match on %s",temp.get());
+                    log.info("KeyInfo match on %s",temp.get());
                 }
             }
     #else
@@ -626,9 +626,9 @@ bool XMLTrust::validate(
                 for (size_t s=0; !KIL && s<(*keybinds)->getSize(); s++) {
                     if (!XMLString::compareString(*name,(*keybinds)->item(s)->getKeyName())) {
                         KIL=*keybinds;
-                        if (log.isDebugEnabled()) {
+                        if (log.isInfoEnabled()) {
                             auto_ptr_char temp(*name);
-                            log.debug("KeyInfo match on %s",temp.get());
+                            log.info("KeyInfo match on %s",temp.get());
                         }
                     }
                 }
@@ -648,7 +648,7 @@ bool XMLTrust::validate(
                     return true;
                 }
                 catch (SAMLException& e) {
-                    log.debug("inline key failed: %s", e.what());
+                    log.warn("inline key failed: %s", e.what());
                 }
             }
             else
@@ -664,7 +664,7 @@ bool XMLTrust::validate(
         }
         catch (SAMLException& e) {
             unlock();
-            log.debug("verification using key inside token failed: %s", e.what());
+            log.warn("verification using key inside token failed: %s", e.what());
             return false;
         }
         
@@ -681,7 +681,7 @@ bool XMLTrust::validate(
         X509* x=B64_to_X509(EE.get());
         if (!x) {
             unlock();
-            log.error("unable to decode X.509 signing certificate");
+            log.error("unable to decode X.509 EE certificate");
             return false;
         }
         
@@ -815,9 +815,9 @@ bool XMLTrust::validate(
             XMLTrustImpl::AuthMap::const_iterator c=impl->m_authMap.find(*name2);
             if (c!=impl->m_authMap.end()) {
                 kauth=c->second;
-                if (log.isDebugEnabled()) {
+                if (log.isInfoEnabled()) {
                     auto_ptr_char temp(*name2);
-                    log.debug("KeyAuthority match on %s",temp.get());
+                    log.info("KeyAuthority match on %s",temp.get());
                 }
             }
 #else
@@ -826,9 +826,9 @@ bool XMLTrust::validate(
                 for (vector<const XMLCh*>::const_iterator subs=(*keyauths)->m_subjects.begin(); !kauth && subs!=(*keyauths)->m_subjects.end(); subs++) {
                     if (!XMLString::compareString(*name2,*subs)) {
                         kauth=*keyauths;
-                        if (log.isDebugEnabled()) {
+                        if (log.isInfoEnabled()) {
                             auto_ptr_char temp(*name2);
-                            log.debug("KeyAuthority match on %s",temp.get());
+                            log.info("KeyAuthority match on %s",temp.get());
                         }
                     }
                 }
