@@ -17,7 +17,6 @@ libeduPerson_la_SOURCES = \
                     AffiliationAttribute.cpp \
                     EPPNAttribute.cpp \
                     EntitlementAttribute.cpp \
-                    PrimaryAffiliationAttribute.cpp \
                     ScopedAttribute.cpp \
                     SimpleAttribute.cpp
 

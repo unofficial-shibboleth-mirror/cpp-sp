@@ -139,18 +139,6 @@ namespace eduPerson
         virtual bool addValue(DOMElement* e);
     };
 
-    class EDUPERSON_EXPORTS PrimaryAffiliationAttribute : public ScopedAttribute
-    {
-    public:
-        PrimaryAffiliationAttribute(const XMLCh* defaultScope, long lifetime=0, const XMLCh* scope=NULL, const XMLCh* value=NULL);
-        PrimaryAffiliationAttribute(DOMElement* e);
-        virtual saml::SAMLObject* clone() const;
-        virtual ~PrimaryAffiliationAttribute();
-
-    protected:
-        virtual bool addValue(DOMElement* e);
-    };
-
     class EDUPERSON_EXPORTS EntitlementAttribute : public SimpleAttribute
     {
     public:
@@ -217,12 +205,11 @@ namespace eduPerson
     struct EDUPERSON_EXPORTS Constants
     {
         static const XMLCh EDUPERSON_PRINCIPAL_NAME[];
-        static const XMLCh EDUPERSON_AFFILIATION[];
-        static const XMLCh EDUPERSON_PRIMARY_AFFILIATION[];
+        static const XMLCh EDUPERSON_SCOPED_AFFILIATION[];
         static const XMLCh EDUPERSON_ENTITLEMENT[];
 
         static const XMLCh EDUPERSON_PRINCIPAL_NAME_TYPE[];
-        static const XMLCh EDUPERSON_AFFILIATION_TYPE[];
+        static const XMLCh EDUPERSON_SCOPED_AFFILIATION_TYPE[];
     };
 }
 

@@ -61,11 +61,11 @@
 AffiliationAttribute::AffiliationAttribute(const XMLCh* defaultScope, long lifetime,
                                            const Iterator<const XMLCh*>& scopes,
                                            const Iterator<const XMLCh*>& values)
-    : ScopedAttribute(eduPerson::Constants::EDUPERSON_AFFILIATION,
+    : ScopedAttribute(eduPerson::Constants::EDUPERSON_SCOPED_AFFILIATION,
                       shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,
                       defaultScope,NULL,lifetime,scopes,values)
 {
-    m_type=new saml::QName(eduPerson::XML::EDUPERSON_NS,eduPerson::Constants::EDUPERSON_AFFILIATION_TYPE);
+    m_type=new saml::QName(eduPerson::XML::EDUPERSON_NS,eduPerson::Constants::EDUPERSON_SCOPED_AFFILIATION_TYPE);
 }
 
 AffiliationAttribute::AffiliationAttribute(DOMElement* e) : ScopedAttribute(e) {}
@@ -81,7 +81,7 @@ bool AffiliationAttribute::addValue(DOMElement* e)
     if (type.get())
     {
         if (XMLString::compareString(type->getNamespaceURI(),eduPerson::XML::EDUPERSON_NS) ||
-            XMLString::compareString(type->getLocalName(),eduPerson::Constants::EDUPERSON_AFFILIATION_TYPE))
+            XMLString::compareString(type->getLocalName(),eduPerson::Constants::EDUPERSON_SCOPED_AFFILIATION_TYPE))
         {
             SAML_log.warn("invalid attribute value xsi:type");
             return false;

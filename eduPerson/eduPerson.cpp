@@ -76,11 +76,6 @@ extern "C" SAMLAttribute* AffiliationFactory(DOMElement* e)
     return new AffiliationAttribute(e);
 }
 
-extern "C" SAMLAttribute* PrimaryAffiliationFactory(DOMElement* e)
-{
-    return new PrimaryAffiliationAttribute(e);
-}
-
 extern "C" SAMLAttribute* EntitlementFactory(DOMElement* e)
 {
     return new EntitlementAttribute(e);
@@ -110,12 +105,9 @@ extern "C" EDUPERSON_EXPORTS int saml_extension_init(void* context)
     SAMLAttribute::regFactory(eduPerson::Constants::EDUPERSON_PRINCIPAL_NAME,
                               shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,
                               &EPPNFactory);
-    SAMLAttribute::regFactory(eduPerson::Constants::EDUPERSON_AFFILIATION,
+    SAMLAttribute::regFactory(eduPerson::Constants::EDUPERSON_SCOPED_AFFILIATION,
                               shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,
                               &AffiliationFactory);
-    SAMLAttribute::regFactory(eduPerson::Constants::EDUPERSON_PRIMARY_AFFILIATION,
-                              shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,
-                              &PrimaryAffiliationFactory);
     SAMLAttribute::regFactory(eduPerson::Constants::EDUPERSON_ENTITLEMENT,
                               shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,
                               &EntitlementFactory);
@@ -166,9 +158,7 @@ extern "C" EDUPERSON_EXPORTS void saml_extension_term()
 {
     SAMLAttribute::unregFactory(eduPerson::Constants::EDUPERSON_PRINCIPAL_NAME,
                                 shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
-    SAMLAttribute::unregFactory(eduPerson::Constants::EDUPERSON_AFFILIATION,
-                                shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
-    SAMLAttribute::unregFactory(eduPerson::Constants::EDUPERSON_PRIMARY_AFFILIATION,
+    SAMLAttribute::unregFactory(eduPerson::Constants::EDUPERSON_SCOPED_AFFILIATION,
                                 shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
     SAMLAttribute::unregFactory(eduPerson::Constants::EDUPERSON_ENTITLEMENT,
                                 shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
