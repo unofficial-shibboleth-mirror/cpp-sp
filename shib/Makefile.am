@@ -9,7 +9,7 @@ libshib_HEADERS = shib.h shib-threads.h
 noinst_HEADERS = internal.h
 
 libshib_la_SOURCES = \
-					AAP.cpp \
+                    AAP.cpp \
                     ClubShibPOSTProfile.cpp \
                     Constants.cpp \
                     Metadata.cpp \
@@ -27,4 +27,4 @@ libshib_la_SOURCES = \
 
 # this is different from the project version
 # http://sources.redhat.com/autobook/autobook/autobook_91.html
-libshib_la_LDFLAGS = -version-info 3:0:0
+libshib_la_LDFLAGS = -version-info 4:0:0
