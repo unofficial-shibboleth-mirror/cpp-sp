@@ -130,7 +130,7 @@ ResourceEntry::ResourceEntry(const Resource &resource,
   // Try this request against all the bindings in the AuthenticationStatement
   // (i.e. send it to each AA in the list of bindings)
   SAMLResponse* response = NULL;
-  OriginMetadata site(p_subject->getNameQualifier());
+  OriginMetadata site(p_subject.getNameQualifier());
   if (site.fail())
       throw MetadataException("unable to locate origin site's metadata during attribute query");
   auto_ptr<XMLCh> caller(XMLString::transcode(resource.getResource()));
