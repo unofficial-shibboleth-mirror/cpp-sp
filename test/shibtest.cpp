@@ -103,11 +103,11 @@ int main(int argc,char* argv[])
 
     try
     {
-        auto_ptr<XMLCh> url(XMLString::transcode(url_param));
-        auto_ptr<XMLCh> domain(XMLString::transcode(q_param));
-        auto_ptr<XMLCh> handle(XMLString::transcode(h_param));
-        auto_ptr<XMLCh> format(XMLString::transcode(f_param));
-        auto_ptr<XMLCh> resource(XMLString::transcode(r_param));
+        auto_ptr_XMLCh url(url_param);
+        auto_ptr_XMLCh domain(q_param);
+        auto_ptr_XMLCh handle(h_param);
+        auto_ptr_XMLCh format(f_param);
+        auto_ptr_XMLCh resource(r_param);
         SAMLAuthorityBinding binfo(saml::QName(saml::XML::SAMLP_NS,L(AttributeQuery)),SAMLBinding::SAML_SOAP_HTTPS,url.get());
         SAMLRequest* req=new SAMLRequest(
             EMPTY(saml::QName),
@@ -116,8 +116,9 @@ int main(int argc,char* argv[])
                 resource.get()
                 )
             );
-        
-        OriginMetadata site(EMPTY(IMetadata*),domain.get());
+       
+        Iterator<IMetadata*> empty=Iterator<IMetadata*>(); 
+        OriginMetadata site(empty,domain.get());
         SAMLBinding* pBinding=SAMLBindingFactory::getInstance(EMPTY(IMetadata*),EMPTY(ITrust*),EMPTY(ICredentials*),resource.get(),site);
         SAMLResponse* resp=pBinding->send(binfo,*req);
         delete req;
