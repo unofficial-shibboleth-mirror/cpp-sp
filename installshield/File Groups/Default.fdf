@@ -1,0 +1,23 @@
+[FileGroups]
+group0=shibboleth
+
+[Info]
+Type=FileGrp
+Version=1.00.000
+Name=
+
+[shibboleth]
+SELFREGISTERING=No
+HTTPLOCATION=
+LANGUAGE=
+OPERATINGSYSTEM=
+FTPLOCATION=
+FILETYPE=No
+INFOTYPE=Standard
+COMMENT=
+COMPRESS=Yes
+COMPRESSDLL=
+LINKTYPE=Static Link
+POTENTIALLY=No
+MISC=
+
