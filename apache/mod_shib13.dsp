@@ -91,5 +91,13 @@ LINK32=link.exe
 
 SOURCE=.\mod_shib_13.cpp
 # End Source File
+# Begin Source File
+
+SOURCE=.\mod_shib_13.rc
+# End Source File
+# Begin Source File
+
+SOURCE=.\resource.h
+# End Source File
 # End Target
 # End Project
