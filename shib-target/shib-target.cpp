@@ -165,13 +165,13 @@ ShibTarget::~ShibTarget(void)
 
 void ShibTarget::init(
     ShibTargetConfig *config,
-    string protocol,
-    string hostname,
+    const char* protocol,
+    const char* hostname,
     int port,
-    string uri,
-    string content_type,
-    string remote_host,
-    string method
+    const char* uri,
+    const char* content_type,
+    const char* remote_host,
+    const char* method
     )
 {
 #ifdef _DEBUG
@@ -183,11 +183,11 @@ void ShibTarget::init(
   if (!config)
     throw runtime_error("config is NULL.  Oops.");
 
-  m_priv->m_protocol = protocol;
-  m_priv->m_content_type = content_type;
-  m_priv->m_remote_addr = remote_host;
+  if (protocol) m_priv->m_protocol = protocol;
+  if (content_type) m_priv->m_content_type = content_type;
+  if (remote_host) m_priv->m_remote_addr = remote_host;
+  if (method) m_priv->m_method = method;
   m_priv->m_Config = config;
-  m_priv->m_method = method;
   m_priv->get_application(protocol, hostname, port, uri);
 }
 

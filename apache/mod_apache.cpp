@@ -242,12 +242,16 @@ public:
 
     m_dc = (shib_dir_config*)ap_get_module_config(req->per_dir_config, &mod_shib);
 
-    const char* ct = ap_table_get(req->headers_in, "Content-type");
-
-    init(g_Config, string(m_sc->szScheme ? m_sc->szScheme : ap_http_method(req)),
-	 string(ap_get_server_name(req)), (int)ap_get_server_port(req),
-	 string(req->unparsed_uri), string(ct ? ct : ""),
-	 string(req->connection->remote_ip), string(req->method));
+    init(
+        g_Config,
+        m_sc->szScheme ? m_sc->szScheme : ap_http_method(req),
+	    ap_get_server_name(req),
+        (int)ap_get_server_port(req),
+	    req->unparsed_uri,
+        ap_table_get(req->headers_in, "Content-type"),
+	    req->connection->remote_ip,
+        req->method
+        );
 
     m_req = req;
   }

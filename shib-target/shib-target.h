@@ -499,10 +499,16 @@ namespace shibtarget {
     // port == server port
     // uri == resource path
     // method == GET, POST, etc.
-    void init(ShibTargetConfig *config,
-	      std::string protocol, std::string hostname, int port,
-	      std::string uri, std::string content_type, std::string remote_host,
-	      std::string method);
+    void init(
+        ShibTargetConfig *config,
+	    const char* protocol,
+        const char* hostname,
+        int port,
+	    const char* uri,
+        const char* content_type,
+        const char* remote_host,
+	    const char* method
+       );
 
   private:
     mutable ShibTargetPriv *m_priv;
