@@ -48,26 +48,29 @@
  */
 
 
-#include "../shib/shib.h"
+#include "../shib-target/shib-target.h"
 
 using namespace std;
 using namespace saml;
 using namespace shibboleth;
+using namespace shibtarget;
+
+#define SCHEMAS "/opt/shibboleth/etc/shibboleth"
+#define CONFIG "/opt/shibboleth/etc/shibboleth/shibboleth.xml"
 
 int main(int argc,char* argv[])
 {
-    SAMLConfig& conf1=SAMLConfig::getConfig();
-    ShibConfig& conf2=ShibConfig::getConfig();
     char* h_param=NULL;
     char* q_param=NULL;
     char* f_param=NULL;
-    char* r_param=NULL;
-    char* ca_param=NULL;
+    char* a_param=NULL;
     char* path="";
+    char* config="";
 
-    for (int i=1; i<argc; i++)
-    {
-        if (!strcmp(argv[i],"-d") && i+1<argc)
+    for (int i=1; i<argc; i++) {
+        if (!strcmp(argv[i],"-c") && i+1<argc)
+            config=argv[++i];
+        else if (!strcmp(argv[i],"-d") && i+1<argc)
             path=argv[++i];
         else if (!strcmp(argv[i],"-h") && i+1<argc)
             h_param=argv[++i];
@@ -75,56 +78,94 @@ int main(int argc,char* argv[])
             q_param=argv[++i];
         else if (!strcmp(argv[i],"-f") && i+1<argc)
             f_param=argv[++i];
-        else if (!strcmp(argv[i],"-r") && i+1<argc)
-            r_param=argv[++i];
+        else if (!strcmp(argv[i],"-a") && i+1<argc)
+            a_param=argv[++i];
     }
 
-    if (!h_param || !q_param)
-    {
-        cerr << "usage: shibtest -h <handle> -q <origin_site> -r <requester> [-f <format URI> -d <schema path>]" << endl;
+    if (!h_param || !q_param || !a_param) {
+        cerr << "usage: shibtest -h <handle> -q <origin_site> -a <application_id> [-f <format URI> -d <schema path> -c <config>]" << endl;
         exit(0);
     }
+    
+    if (!path)
+        path=getenv("SHIBSCHEMAS");
+    if (!path)
+        path=SCHEMAS;
+    if (!config)
+        config=getenv("SHIBCONFIG");
+    if (!config)
+        config=CONFIG;
 
-    conf1.schema_dir=path;
-    if (!conf1.init())
-        cerr << "unable to initialize SAML runtime" << endl;
-
-    if (!conf2.init())
-        cerr << "unable to initialize Shibboleth runtime" << endl;
+    ShibTargetConfig& conf=ShibTargetConfig::getConfig();
+    conf.setFeatures(
+        ShibTargetConfig::Metadata |
+        ShibTargetConfig::Trust |
+        ShibTargetConfig::Credentials |
+        ShibTargetConfig::AAP |
+        ShibTargetConfig::SHARExtensions
+        );
+    if (!conf.init(path,config))
+        return -10;
 
     try
     {
+
+        
+        const IApplication* app=conf.getINI()->getApplication(a_param);
+        if (!app)
+            throw SAMLException("<Application> not found in configuration");
+
         auto_ptr_XMLCh domain(q_param);
         auto_ptr_XMLCh handle(h_param);
         auto_ptr_XMLCh format(f_param);
-        auto_ptr_XMLCh requester(r_param);
-        SAMLRequest* req=new SAMLRequest(
-            EMPTY(saml::QName),
-            new SAMLAttributeQuery(
-                new SAMLSubject(handle.get(),domain.get(),format.get()),
-                requester.get()
+        auto_ptr_XMLCh resource(app->getString("providerId").second);
+
+        auto_ptr<SAMLRequest> req(
+            new SAMLRequest(
+                EMPTY(saml::QName),
+                new SAMLAttributeQuery(
+                    new SAMLSubject(handle.get(),domain.get(),format.get()),
+                    resource.get(),
+                    app->getAttributeDesignators().clone()
+                    )
                 )
             );
 
-        DOMImplementation* impl=DOMImplementationRegistry::getDOMImplementation(NULL);
-        DOMDocument* dummydoc=impl->createDocument();
-        DOMElement* dummy = dummydoc->createElementNS(NULL,L(Request));
-        static const XMLCh url[] = { chLatin_u, chLatin_r, chLatin_l, chNull };
-        auto_ptr_XMLCh src("/opt/shibboleth/etc/shibboleth/sites.xml");
-        dummy->setAttributeNS(NULL,url,src.get());
+        Metadata m(app->getMetadataProviders());
+        const IProvider* site=m.lookup(domain.get());
+        if (!site)
+            throw SAMLException("Unable to locate origin site's metadata.");
 
-        IMetadata* metadatas[1];
-        metadatas[0]=conf2.newMetadata("edu.internet2.middleware.shibboleth.metadata.provider.XML",dummy);
-        dummydoc->release();
-        ArrayIterator<IMetadata*> sites(metadatas);
-        
-        Metadata m(sites);
+        // Try to locate an AA role.
+        const IAttributeAuthorityRole* AA=NULL;
+        Iterator<const IProviderRole*> roles=site->getRoles();
+        while (!AA && roles.hasNext()) {
+            const IProviderRole* role=roles.next();
+            if (dynamic_cast<const IAttributeAuthorityRole*>(role)) {
+                // Check for SAML 1.x protocol support.
+                if (role->hasSupport(saml::XML::SAMLP_NS))
+                    AA=dynamic_cast<const IAttributeAuthorityRole*>(role);
+            }
+        }
+        if (!AA)
+            throw SAMLException("Unable to locate metadata for origin site's Attribute Authority.");
 
-        auto_ptr<ShibBinding> binding(new ShibBinding(EMPTY(IRevocation*),EMPTY(ITrust*),EMPTY(ICredentials*)));
-        SAMLResponse* resp=binding->send(*req,m.lookup(domain.get()));
-        delete req;
+        ShibBinding binding(app->getRevocationProviders(),app->getTrustProviders(),conf.getINI()->getCredentialsProviders());
+        auto_ptr<SAMLResponse> response(binding.send(*req,AA,app->getTLSCred(site),app->getAudiences()));
 
-        Iterator<SAMLAssertion*> i=resp->getAssertions();
+        // Run it through the AAP. Note that we could end up with an empty response!
+        Iterator<SAMLAssertion*> a=response->getAssertions();
+        for (unsigned long c=0; c < a.size();) {
+            try {
+                AAP::apply(app->getAAPProviders(),site,*(a[c]));
+                c++;
+            }
+            catch (SAMLException&) {
+                response->removeAssertion(c);
+            }
+        }
+
+        Iterator<SAMLAssertion*> i=response->getAssertions();
         if (i.hasNext())
         {
             SAMLAssertion* a=i.next();
@@ -164,8 +205,6 @@ int main(int argc,char* argv[])
                 }
             }
         }
-
-        delete resp;
     }
     catch(SAMLException& e)
     {
@@ -180,7 +219,6 @@ int main(int argc,char* argv[])
         cerr << "caught an unknown exception" << endl;
     }
 
-    conf2.term();
-    conf1.term();
+    conf.shutdown();
     return 0;
 }
