@@ -167,23 +167,25 @@ shibrpc_get_session_2_svc(
 
   // TEST the session...
   try {
-    Metadata m(app->getMetadataProviders());
-    const IEntityDescriptor* origin=m.lookup(entry->getAuthnStatement()->getSubject()->getNameIdentifier()->getNameQualifier());
-
     // Verify the address is the same
     if (argp->checkIPAddress) {
       log.debug ("Checking address against %s", entry->getClientAddress());
       if (strcmp (argp->client_addr, entry->getClientAddress())) {
         log.debug ("IP Address mismatch");
+        Metadata m(app->getMetadataProviders());
         throw ShibTargetException(SHIBRPC_IPADDR_MISMATCH,
-            "Your IP address does not match the address recorded at the time the session was established.", origin);
+            "Your IP address does not match the address recorded at the time the session was established.",
+            m.lookup(entry->getAuthnStatement()->getSubject()->getNameIdentifier()->getNameQualifier()));
       }
     }
 
     // and that the session is still valid...
     if (!entry->isValid(argp->lifetime, argp->timeout)) {
       log.debug ("Session expired");
-      throw ShibTargetException(SHIBRPC_SESSION_EXPIRED, "Your session has expired, and you must re-authenticate.", origin);
+      Metadata m(app->getMetadataProviders());
+      throw ShibTargetException(SHIBRPC_SESSION_EXPIRED,
+        "Your session has expired, and you must re-authenticate.",
+        m.lookup(entry->getAuthnStatement()->getSubject()->getNameIdentifier()->getNameQualifier()));
     }
 
     try {
@@ -220,7 +222,9 @@ shibrpc_get_session_2_svc(
       log.error ("caught SAML exception: %s", e.what());
       ostringstream os;
       os << e;
-      throw ShibTargetException(SHIBRPC_SAML_EXCEPTION, os.str().c_str(), origin);
+      Metadata m(app->getMetadataProviders());
+      throw ShibTargetException(SHIBRPC_SAML_EXCEPTION, os.str().c_str(),
+        m.lookup(entry->getAuthnStatement()->getSubject()->getNameIdentifier()->getNameQualifier()));
     }
   }
   catch (ShibTargetException &e) {
