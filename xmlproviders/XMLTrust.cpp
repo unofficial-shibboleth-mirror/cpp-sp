@@ -222,16 +222,26 @@ void XMLTrustImpl::init()
         // Loop over the KeyAuthority elements.
         DOMNodeList* nlist=m_root->getElementsByTagNameNS(::XML::TRUST_NS,SHIB_L(KeyAuthority));
         for (int i=0; nlist && i<nlist->getLength(); i++) {
-            KeyAuthority* ka=new KeyAuthority();
-            m_keyauths.push_back(ka);
+            auto_ptr<KeyAuthority> ka(new KeyAuthority());
             
-            DOMElement* e=static_cast<DOMElement*>(nlist->item(i));
+            const DOMElement* e=static_cast<DOMElement*>(nlist->item(i));
             const XMLCh* depth=e->getAttributeNS(NULL,SHIB_L(VerifyDepth));
             if (depth && *depth)
                 ka->m_depth=XMLString::parseInt(depth);
             
+            const DOMElement* k_child=saml::XML::getLastChildElement(e,saml::XML::XMLSIG_NS,L(KeyInfo));
+            if (!k_child) {
+                log.error("ignoring KeyAuthority element with no ds:KeyInfo");
+                continue;
+            }
+            const DOMElement* badkeyname=saml::XML::getFirstChildElement(k_child,saml::XML::XMLSIG_NS,SHIB_L(KeyName));
+            if (badkeyname) {
+                log.error("ignoring KeyAuthority element with embedded ds:KeyName, these must appear only outside of ds:KeyInfo");
+                continue;
+            }
+            
             // Very rudimentary, grab up all the in-band X509Certificate elements, and flatten into one list.
-            DOMNodeList* certlist=e->getElementsByTagNameNS(saml::XML::XMLSIG_NS,L(X509Certificate));
+            DOMNodeList* certlist=k_child->getElementsByTagNameNS(saml::XML::XMLSIG_NS,L(X509Certificate));
             for (int j=0; certlist && j<certlist->getLength(); j++) {
                 auto_ptr_char blob(certlist->item(j)->getFirstChild()->getNodeValue());
                 X509* x=B64_to_X509(blob.get());
@@ -242,7 +252,7 @@ void XMLTrustImpl::init()
             }
 
             // Now look for externally referenced objects.
-            certlist=e->getElementsByTagNameNS(saml::XML::XMLSIG_NS,SHIB_L(RetrievalMethod));
+            certlist=k_child->getElementsByTagNameNS(saml::XML::XMLSIG_NS,SHIB_L(RetrievalMethod));
             for (int k=0; certlist && k<certlist->getLength(); k++) {
                 DOMElement* cert=static_cast<DOMElement*>(certlist->item(k));
                 if (!XMLString::compareString(cert->getAttributeNS(NULL,SHIB_L(Type)),::XML::XMLSIG_RETMETHOD_RAWX509)) {
@@ -277,6 +287,9 @@ void XMLTrustImpl::init()
                         log.warn("unable to create certificate from externally referenced file");
                 }
             }
+
+            KeyAuthority* ka2=ka.release();
+            m_keyauths.push_back(ka2);
             
             // Now map the ds:KeyName values to the list of certs.
             bool wildcard=true;
@@ -286,9 +299,9 @@ void XMLTrustImpl::init()
                 if (name && *name) {
                     wildcard=false;
 #ifdef HAVE_GOOD_STL
-                    m_authMap[name]=ka;
+                    m_authMap[name]=ka2;
 #else
-                    ka->m_subjects.push_back(name);
+                    ka2->m_subjects.push_back(name);
 #endif
                 }
                 sub=saml::XML::getNextSiblingElement(sub,saml::XML::XMLSIG_NS,SHIB_L(KeyName));
@@ -298,7 +311,7 @@ void XMLTrustImpl::init()
             if (wildcard) {
                 if (!m_wildcard) {
                     log.warn("found a wildcard KeyAuthority element, make sure this is what you intend");
-                    m_wildcard=ka;
+                    m_wildcard=ka2;
                 }
                 else
                     log.warn("found multiple wildcard KeyAuthority elements, ignoring all but the first");
