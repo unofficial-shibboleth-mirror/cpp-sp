@@ -10,9 +10,7 @@ pkgsysconf_DATA = \
 	shire.logger \
 	shar.logger \
 	shar.key \
-	inqueue.key \
 	shar.crt \
-	inqueue.crt \
 	apache.config \
 	apache2.config \
 	accessError.html \
@@ -73,6 +71,4 @@ EXTRA_DIST = .cvsignore \
 	trust.xml \
 	inqueue.pem \
 	shar.key \
-	shar.crt \
-	inqueue.crt \
-	inqueue.key
+	shar.crt
