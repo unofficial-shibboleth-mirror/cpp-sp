@@ -74,7 +74,7 @@ ResourceEntry::ResourceEntry(const Resource &resource,
 {
   saml::NDC ndc("ResourceEntry()");
 
-  m_priv = new ResourceEntryPriv();
+  auto_ptr<ResourceEntryPriv> priv(new ResourceEntryPriv());
 
   auto_ptr<XMLCh> resourceURL(XMLString::transcode(resource.getURL()));
   Iterator<saml::QName> respond_withs = ArrayIterator<saml::QName>(&ResourceEntryPriv::g_respondWith);
@@ -82,12 +82,13 @@ ResourceEntry::ResourceEntry(const Resource &resource,
   // Clone the subject...
   // 1) I know the static_cast is safe from clone()
   // 2) the AttributeQuery will destroy this new subject.
-  SAMLSubject* subject=static_cast<SAMLSubject*>(p_subject.clone());
+  auto_ptr<SAMLSubject> subject(static_cast<SAMLSubject*>(p_subject.clone()));
 
   // Build a SAML Request....
-  SAMLAttributeQuery* q=new SAMLAttributeQuery(subject,resourceURL.get(),
+  SAMLAttributeQuery* q=new SAMLAttributeQuery(subject.get(),resourceURL.get(),
 					       resource.getDesignators().clone());
-  SAMLRequest* req=new SAMLRequest(respond_withs,q);
+  subject.release();
+  auto_ptr<SAMLRequest> req(new SAMLRequest(respond_withs,q));
 
   // Try this request against all the bindings in the AuthenticationStatement
   // (i.e. send it to each AA in the list of bindings)
@@ -96,22 +97,20 @@ ResourceEntry::ResourceEntry(const Resource &resource,
   while (!response && AAbindings.hasNext()) {
     SAMLAuthorityBinding* binding = AAbindings.next();
 
-    m_priv->log->debug("Trying binding...");
+    priv->log->debug("Trying binding...");
     SAMLBinding* pBinding=m_cache->getBinding(binding->getBinding());
-    m_priv->log->debug("Sending request");
+    priv->log->debug("Sending request");
     response=pBinding->send(*binding,*req);
   }
 
-  // ok, we can delete the request now.
-  delete req;
-
   // Make sure we got a response
   if (!response) {
-    m_priv->log->info ("No Response");
+    priv->log->info ("No Response");
     throw new ShibTargetException();
   }
 
-  m_priv->m_response = response;
+  priv->m_response = response;
+  m_priv=priv.release();
 }
 
 ResourceEntry::~ResourceEntry()
