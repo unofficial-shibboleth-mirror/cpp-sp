@@ -111,16 +111,6 @@ STConfig::STConfig(const char* app_name, const char* inifile)
   }
 }
 
-extern "C" SAMLAttribute* ScopedFactory(DOMElement* e)
-{
-    return new ScopedAttribute(e);
-}
-
-extern "C" SAMLAttribute* SimpleFactory(DOMElement* e)
-{
-    return new SimpleAttribute(e);
-}
-
 void STConfig::init()
 {
   string app = m_app_name;
@@ -229,29 +219,6 @@ void STConfig::init()
     delete iter;
   }
   
-  // Register attributes based on built-in classes.
-  if (ini->exists("attributes")) {
-    log.info("registering attributes");
-    ShibINI::Iterator* iter=ini->tag_iterator("attributes");
-    for (const string* attrname=iter->begin(); attrname; attrname=iter->next())
-    {
-        const string factory=ini->get("attributes",*attrname);
-        if (factory=="scoped")
-        {
-            auto_ptr<XMLCh> temp(XMLString::transcode(attrname->c_str()));
-            SAMLAttribute::regFactory(temp.get(),shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,&ScopedFactory);
-            log.info("registered scoped attribute (%s)",attrname->c_str());
-        }
-        else if (factory=="simple")
-        {
-            auto_ptr<XMLCh> temp(XMLString::transcode(attrname->c_str()));
-            SAMLAttribute::regFactory(temp.get(),shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,&SimpleFactory);
-            log.info("registered simple attribute (%s)",attrname->c_str());
-        }
-    }
-	delete iter;
-  }
-
   // Load SAML policies.
   if (ini->exists(SHIBTARGET_POLICIES)) {
     log.info("loading SAML policies");
@@ -294,26 +261,6 @@ STConfig::~STConfig()
   for (vector<const XMLCh*>::iterator i=policies.begin(); i!=policies.end(); i++)
     delete const_cast<XMLCh*>(*i);
     
-  // Unregister attributes based on built-in classes.
-  if (ini && ini->exists("attributes")) {
-    ShibINI::Iterator* iter=ini->tag_iterator("attributes");
-    for (const string* attrname=iter->begin(); attrname; attrname=iter->next())
-    {
-        const string factory=ini->get("attributes",*attrname);
-        if (factory=="scoped")
-        {
-            auto_ptr<XMLCh> temp(XMLString::transcode(attrname->c_str()));
-            SAMLAttribute::unregFactory(temp.get(),shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
-        }
-        else if (factory=="simple")
-        {
-            auto_ptr<XMLCh> temp(XMLString::transcode(attrname->c_str()));
-            SAMLAttribute::unregFactory(temp.get(),shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
-        }
-    }
-	delete iter;
-  }
-
   if (ini) delete ini;
   
   if (g_shibTargetCCache)
