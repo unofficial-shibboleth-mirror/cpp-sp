@@ -95,7 +95,7 @@ bool EPPNAttribute::addValue(DOMElement* e)
     else
     {
         DOMNode* n=e->getFirstChild();
-        if (!n || n->getNodeType()!=DOMNode::TEXT_NODE || XMLString::indexOf(n->getNodeValue(),chAt)<0)
+        if (!n || n->getNodeType()!=DOMNode::TEXT_NODE || XMLString::indexOf(n->getNodeValue(),chAt)>=0)
         {
             SAML_log.warn("invalid attribute value content model");
             return false;
