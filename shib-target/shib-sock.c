@@ -88,6 +88,8 @@ shib_sock_bind (ShibSocket s, ShibSockName name)
     return EINVAL;
   }
 
+  listen (s, 3);
+
   return 0;
 }
 
@@ -115,5 +117,17 @@ shib_sock_close (ShibSocket s)
 {
   close (s);
 }
+
+int shib_sock_accept (ShibSocket listener, ShibSocket* s)
+{
+  if (!s) return EINVAL;
+
+  *s = accept (listener, NULL, NULL);
+  if (*s < 0)
+    return errno;
+
+  return 0;
+}
+
 
 #endif /* WIN32 */

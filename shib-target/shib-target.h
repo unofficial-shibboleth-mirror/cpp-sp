@@ -40,16 +40,6 @@ typedef char * ShibSockName;
  */
 CLIENT * shibrpc_client_create (ShibSocket sock, u_long program, u_long version);
 
-typedef struct {
-  u_long prog;
-  u_long vers;
-  void (*dispatch)();
-} ShibRPCProtocols;
-
-/* Run a set of RPC Services on the listener socket */
-void shibrpc_svc_run (ShibSocket listener, const ShibRPCProtocols protos[],
-		      int numproto);
-
 /* shib-sock.c */
 
 /* Create a new socket and put it into sock.
@@ -73,6 +63,11 @@ int shib_sock_bind (ShibSocket s, ShibSockName name);
  * Returns 0 on success; non-zero on error.
  */
 int shib_sock_connect (ShibSocket s, ShibSockName name);
+
+/*
+ * accept a connection.  Returns 0 on success, non-zero on failure.
+ */
+int shib_sock_accept (ShibSocket listener, ShibSocket* s);
 
 /*
  * close the socket

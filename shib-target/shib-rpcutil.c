@@ -20,29 +20,3 @@ shibrpc_client_create (ShibSocket sock, u_long program, u_long version)
 
   return clnttcp_create (&sin, program, version, &sock, 0, 0);
 }
-
-void
-shibrpc_svc_run (ShibSocket listener, const ShibRPCProtocols protos[], int numproto)
-{
-  SVCXPRT *transp;
-  int i;
-
-  /* Wrap an RPC Service around the listener socket */
-  transp = svctcp_create (listener, 0, 0);
-  if (!transp) {
-    fprintf (stderr, "Cannot create RPC Listener\n");
-    return;
-  }
-
-  /* Register the SHIBRPC RPC Program */
-  for (i = 0; i < numproto; i++) {
-    if (!svc_register (transp, protos[i].prog, protos[i].vers,
-		       protos[i].dispatch, 0)) {
-      fprintf (stderr, "Cannot register RPC Program\n");
-      return;
-    }
-  }
-
-  /* Run RPC */
-  svc_run ();			/* Never Returns */
-}
