@@ -874,10 +874,10 @@ ShibTarget::getShireURL(const char* resource) const
     const char* shire=NULL;
     const IPropertySet* props=m_priv->m_app->getPropertySet("Sessions");
     if (props) {
-        pair<bool,bool> p=props->getBool("shireSSL");
+        pair<bool,bool> p=props->getBool("handlerSSL");
         if (p.first)
             shire_ssl_only=p.second;
-        pair<bool,const char*> p2=props->getString("shireURL");
+        pair<bool,const char*> p2=props->getString("handlerURL");
         if (p2.first)
             shire=p2.second;
     }
@@ -1253,6 +1253,8 @@ void* ShibTarget::sendError(const char* page, ShibMLP &mlp)
                     return sendPage(res);
             }
         }
+        else if (!strcmp(page,"access"))
+            return sendPage("Access Denied", 403);
     }
 
     string errstr = string("sendError could not process error template (") + page + ") for application (";
