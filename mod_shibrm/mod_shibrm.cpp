@@ -125,9 +125,6 @@ extern "C" const char* ap_set_server_string_slot(cmd_parms* parms, void*, const 
     return NULL;
 }
 
-#ifdef SOLARIS
-extern "C"
-#endif
 typedef const char* (*config_fn_t)(void);
 
 // SHIBRM Module commands

@@ -134,9 +134,6 @@ extern "C" const char* set_timeout(cmd_parms* parms, shire_dir_config* dc, const
     return NULL;
 }
 
-#ifdef SOLARIS
-extern "C"
-#endif
 typedef const char* (*config_fn_t)(void);
 
 // SHIRE Module commands
