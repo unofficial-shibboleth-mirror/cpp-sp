@@ -63,53 +63,6 @@ ShibTargetConfig& ShibTargetConfig::init(const char* app_name, const char* inifi
 
 
 /****************************************************************************/
-// Mapper
-
-class DummyMapper : public IOriginSiteMapper
-{
-public:
-    DummyMapper();
-    ~DummyMapper();
-    virtual Iterator<xstring> getHandleServiceNames(const XMLCh* originSite) { return Iterator<xstring>(m_hsnames); }
-    virtual Key* getHandleServiceKey(const XMLCh* handleService) { return NULL; }
-    virtual Iterator<xstring> getSecurityDomains(const XMLCh* originSite);
-    virtual const char* getTrustedRoots() { return SAMLConfig::getConfig().ssl_calist.c_str(); }
-
-private:
-    typedef map<xstring,vector<xstring>*> domains_t;
-    domains_t m_domains;
-    vector<xstring> m_hsnames;
-};
-
-DummyMapper::DummyMapper()
-{
-    auto_ptr<XMLCh> buf(XMLString::transcode("wayf.internet2.edu"));
-    m_hsnames.push_back(buf.get());
-}
-
-Iterator<xstring> DummyMapper::getSecurityDomains(const XMLCh* originSite)
-{
-    domains_t::iterator i=m_domains.find(originSite);
-    if (i==m_domains.end())
-    {
-        vector<xstring>* pv=new vector<xstring>();
-        pv->push_back(originSite);
-        pair<domains_t::iterator,bool> p=m_domains.insert(domains_t::value_type(originSite,pv));
-	i=p.first;
-    }
-    return Iterator<xstring>(*(i->second));
-}
-
-DummyMapper::~DummyMapper()
-{
-    for (domains_t::iterator i=m_domains.begin(); i!=m_domains.end(); i++)
-        delete i->second;
-}
-
-
-
-
-/****************************************************************************/
 // STConfig
 
 STConfig::STConfig(const char* app_name, const char* inifile)
@@ -160,7 +113,19 @@ STConfig::STConfig(const char* app_name, const char* inifile)
     throw runtime_error ("No Sites File found in configuration");
   }
 
-  shibConf.origin_mapper = new XMLOriginSiteMapper(tag.c_str(),samlConf.ssl_calist.c_str());
+  string sitesFile = tag;
+  X509Certificate* verifyKey = NULL;
+
+  if (ini->get_tag (app, SHIBTARGET_TAG_SITESCERT, true, &tag)) {
+    verifyKey = new X509Certificate (X509Certificate::PEM, tag.c_str());
+  }
+
+  shibConf.origin_mapper = new XMLOriginSiteMapper(sitesFile.c_str(),
+						   samlConf.ssl_calist.c_str(),
+						   verifyKey);
+
+  if (verifyKey)
+    delete verifyKey;
   
   if (!shibConf.init()) {
     log.error ("Failed to initialize Shib library");
