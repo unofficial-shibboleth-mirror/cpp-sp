@@ -275,36 +275,10 @@ void ShibPOSTProfile::verifySignature(
 
         bool match=false;
         auto_ptr<char> sn(XMLString::transcode(signerName));
-        int extcount=X509_get_ext_count(x);
-        for (int c=0; c<extcount; c++)
-        {
-            X509_EXTENSION* ext=X509_get_ext(x,c);
-            const char* extstr=OBJ_nid2sn(OBJ_obj2nid(X509_EXTENSION_get_object(ext)));
-            if (!strcmp(extstr,"subjectAltName"))
-            {
-                X509V3_EXT_METHOD* meth=X509V3_EXT_get(ext);
-                if (!meth)
-                    break;
-                unsigned char* data=ext->value->data;
-                STACK_OF(CONF_VALUE)* val=meth->i2v(meth,meth->d2i(NULL,&data,ext->value->length),NULL);
-                for (int j=0; j<sk_CONF_VALUE_num(val); j++)
-                {
-                    CONF_VALUE* nval=sk_CONF_VALUE_value(val,j);
-                    if (!strcmp(nval->name,"DNS") && !strcmp(nval->value,sn.get()))
-                    {
-                        match=true;
-                        break;
-                    }
-                }
-            }
-            if (match)
-                break;
-        }
 
         char data[256];
         X509_NAME* subj;
-        if (!match && (subj=X509_get_subject_name(x)) &&
-            X509_NAME_get_text_by_NID(subj,NID_commonName,data,256)>0)
+        if (subj=X509_get_subject_name(x)) && X509_NAME_get_text_by_NID(subj,NID_commonName,data,256)>0)
         {
             data[255]=0;
 #ifdef HAVE_STRCASECMP
@@ -314,6 +288,35 @@ void ShibPOSTProfile::verifySignature(
             if (!stricmp(data,sn.get()))
                 match=true;
 #endif
+        }
+
+        if (!match)
+        {
+            int extcount=X509_get_ext_count(x);
+            for (int c=0; c<extcount; c++)
+            {
+                X509_EXTENSION* ext=X509_get_ext(x,c);
+                const char* extstr=OBJ_nid2sn(OBJ_obj2nid(X509_EXTENSION_get_object(ext)));
+                if (!strcmp(extstr,"subjectAltName"))
+                {
+                    X509V3_EXT_METHOD* meth=X509V3_EXT_get(ext);
+                    if (!meth || !meth->d2i || !meth->i2v || !ext->value->data)
+                        break;
+                    unsigned char* data=ext->value->data;
+                    STACK_OF(CONF_VALUE)* val=meth->i2v(meth,meth->d2i(NULL,&data,ext->value->length),NULL);
+                    for (int j=0; j<sk_CONF_VALUE_num(val); j++)
+                    {
+                        CONF_VALUE* nval=sk_CONF_VALUE_value(val,j);
+                        if (!strcmp(nval->name,"DNS") && !strcmp(nval->value,sn.get()))
+                        {
+                            match=true;
+                            break;
+                        }
+                    }
+                }
+                if (match)
+                    break;
+            }
         }
 
         X509_free(x);
