@@ -573,8 +573,10 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
                 Iterator<const IAttributeRule*> rules=aap->getAttributeRules();
                 while (rules.hasNext()) {
                     const char* header=rules.next()->getHeader();
-                    if (header)
-                        pn->SetHeader(pfc,const_cast<char*>(header),"");
+                    if (header) {
+                        string hname=string(header) + ':';
+                        pn->SetHeader(pfc,const_cast<char*>(hname.c_str()),"");
+                    }
                 }
             }
             catch(...) {
@@ -606,6 +608,7 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
         
         pn->SetHeader(pfc,"Shib-Origin-Site:","");
         pn->SetHeader(pfc,"Shib-Authentication-Method:","");
+        pn->SetHeader(pfc,"Shib-NameIdentifier-Format:","");
 
         // Export the SAML AuthnMethod and the origin site name.
         if (sso_statement) {
@@ -613,6 +616,25 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
             auto_ptr_char am(sso_statement->getAuthMethod());
             pn->SetHeader(pfc,"Shib-Origin-Site:", const_cast<char*>(os.get()));
             pn->SetHeader(pfc,"Shib-Authentication-Method:", const_cast<char*>(am.get()));
+
+            // Export NameID?
+            AAP wrapper(provs,sso_statement->getSubject()->getNameIdentifier()->getFormat(),Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
+            if (!wrapper.fail() && wrapper->getHeader()) {
+                auto_ptr_char form(sso_statement->getSubject()->getNameIdentifier()->getFormat());
+                auto_ptr_char nameid(sso_statement->getSubject()->getNameIdentifier()->getName());
+                pn->SetHeader(pfc,"Shib-NameIdentifier-Format:",const_cast<char*>(form.get()));
+                if (!strcmp(wrapper->getHeader(),"REMOTE_USER")) {
+                    char* principal=const_cast<char*>(nameid.get());
+                    pn->SetHeader(pfc,"remote-user:",principal);
+                    pfc->pFilterContext=pfc->AllocMem(pfc,strlen(principal)+1,0);
+                    if (pfc->pFilterContext)
+                        strcpy(static_cast<char*>(pfc->pFilterContext),principal);
+                }
+                else {
+                    string hname=string(wrapper->getHeader()) + ':';
+                    pn->SetHeader(pfc,const_cast<char*>(wrapper->getHeader()),const_cast<char*>(nameid.get()));
+                }
+            }
         }
 
         pn->SetHeader(pfc,"Shib-Application-ID:","");
@@ -632,8 +654,8 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
                     SAMLAttribute* attr=attrs.next();
         
                     // Are we supposed to export it?
-                    AAP wrapper(application->getAAPProviders(),attr->getName(),attr->getNamespace());
-                    if (wrapper.fail())
+                    AAP wrapper(provs,attr->getName(),attr->getNamespace());
+                    if (wrapper.fail() || !wrapper->getHeader())
                         continue;
                 
                     Iterator<string> vals=attr->getSingleByteValues();

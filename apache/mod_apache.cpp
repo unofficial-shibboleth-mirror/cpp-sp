@@ -384,14 +384,27 @@ extern "C" int shib_check_user(request_rec* r)
         ap_table_set(r->headers_in,"Shib-Attributes", assertion.c_str());
     }
 
-    // Export the SAML AuthnMethod and the origin site name.
+    // Export the SAML AuthnMethod and the origin site name, and possibly the NameIdentifier.
     ap_table_unset(r->headers_in,"Shib-Origin-Site");
     ap_table_unset(r->headers_in,"Shib-Authentication-Method");
+    ap_table_unset(r->headers_in,"Shib-NameIdentifier-Format");
     if (sso_statement) {
         auto_ptr_char os(sso_statement->getSubject()->getNameIdentifier()->getNameQualifier());
         auto_ptr_char am(sso_statement->getAuthMethod());
         ap_table_set(r->headers_in,"Shib-Origin-Site", os.get());
         ap_table_set(r->headers_in,"Shib-Authentication-Method", am.get());
+        
+        // Export NameID?
+        AAP wrapper(provs,sso_statement->getSubject()->getNameIdentifier()->getFormat(),Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
+        if (!wrapper.fail() && wrapper->getHeader()) {
+            auto_ptr_char form(sso_statement->getSubject()->getNameIdentifier()->getFormat());
+            auto_ptr_char nameid(sso_statement->getSubject()->getNameIdentifier()->getName());
+            ap_table_set(r->headers_in,"Shib-NameIdentifier-Format",form.get());
+            if (!strcmp(wrapper->getHeader(),"REMOTE_USER"))
+                SH_AP_USER(r)=ap_pstrdup(r->pool,nameid.get());
+            else
+                ap_table_set(r->headers_in,wrapper->getHeader(),nameid.get());
+        }
     }
     
     ap_table_unset(r->headers_in,"Shib-Application-ID");
@@ -412,12 +425,12 @@ extern "C" int shib_check_user(request_rec* r)
         
                 // Are we supposed to export it?
                 AAP wrapper(provs,attr->getName(),attr->getNamespace());
-                if (wrapper.fail())
+                if (wrapper.fail() || !wrapper->getHeader())
                     continue;
                 
                 Iterator<string> vals=attr->getSingleByteValues();
                 if (!strcmp(wrapper->getHeader(),"REMOTE_USER") && vals.hasNext())
-		    SH_AP_USER(r)=ap_pstrdup(r->pool,vals.next().c_str());
+                    SH_AP_USER(r)=ap_pstrdup(r->pool,vals.next().c_str());
                 else {
                     int it=0;
                     char* header = (char*)ap_table_get(r->headers_in, wrapper->getHeader());
