@@ -74,6 +74,9 @@ int shib_sock_connect (ShibSocket s, ShibSockName name);
 #define SHIBTARGET_SHIRE	"shire"
 #define SHIBTARGET_RM		"rm"
 
+/* configuration headers */
+#define SHIBTARGET_HTTP		"http"
+
 /* configuration tags */
 #define SHIBTARGET_TAG_LOGGER	"logger"
 #define SHIBTARGET_TAG_SCHEMAS	"schemadir"
@@ -189,7 +192,10 @@ namespace shibtarget {
     ~RPCError();
 
     bool	isError() { return (status != 0); }
-    std::string	getHTML();
+    bool	isRetryable();
+
+    // Return a string that corresponds to the "status"
+    const char* toString();
 
     int		status;
     std::string	error_msg;
@@ -215,9 +221,9 @@ namespace shibtarget {
     SHIRE(RPCHandle *rpc, SHIREConfig config, std::string shire_url);
     ~SHIRE();
 
-    RPCError sessionIsValid(const char* cookie, const char* ip);
-    RPCError sessionCreate(const char* post, const char* ip,
-		      std::string &cookie);
+    RPCError* sessionIsValid(const char* cookie, const char* ip);
+    RPCError* sessionCreate(const char* post, const char* ip,
+			     std::string &cookie);
   private:
     SHIREPriv *m_priv;
   };
@@ -235,11 +241,11 @@ namespace shibtarget {
     RM(RPCHandle *rpc, RMConfig config);
     ~RM();
 
-    RPCError getAttributes(const char* cookie, const char* ip,
-			   Resource *resource,
-			   std::vector<saml::QName*> attr_requests,
-			   std::vector<saml::SAMLAttribute*> &attr_replies,
-			   std::string &assertion);
+    RPCError* getAttributes(const char* cookie, const char* ip,
+			    Resource *resource,
+			    std::vector<saml::QName*> attr_requests,
+			    std::vector<saml::SAMLAttribute*> &attr_replies,
+			    std::string &assertion);
   private:
     RMPriv *m_priv;
   };
@@ -282,6 +288,24 @@ namespace shibtarget {
       return exists(h,t);
     }
 
+    // Special method to look for a tag in one header and maybe in the
+    // 'SHIBTARGET_GENERAL' header
+    bool get_tag(std::string& header, std::string& tag, bool try_general,
+		 std::string* result) const;
+
+    bool get_tag(std::string& header, const char* tag, bool try_general,
+		 std::string* result) const {
+      std::string t = tag;
+      return get_tag (header,t,try_general,result);
+    }
+
+    bool get_tag(const char* header, const char* tag, bool try_general,
+		 std::string* result) const {
+      std::string h = header, t = tag;
+      return get_tag (h,t,try_general,result);
+    }
+
+    // Dump out the inifile to the output stream
     void dump(std::ostream& os) const;
 
     // Iterators
@@ -329,6 +353,7 @@ namespace shibtarget {
       std::string k = key, v = value;
       insert(k,v);
     }
+    void insert (RPCError& e);
 
     void clear () { m_map.clear(); }
 
@@ -344,12 +369,15 @@ namespace shibtarget {
     std::map<std::string,std::string> m_map;
   };
 
+  class ShibTargetConfig
+  {
+  public:
+    static ShibTargetConfig& init(const char* app_name, const char* inifile);
+    virtual void shutdown() = 0;
+    virtual ShibINI& getINI() = 0;
+  };
+
 } // namespace
 #endif
 
 #endif /* SHIB_COMMON_H */
-#if 0
-log2cpp::Category& shibtarget::g_log = log4cpp::Category::getRoot();
-g_log.addAppender(appender);
-g_log.setPriority(log3cpp::Priority::NOTSET);
-#endif

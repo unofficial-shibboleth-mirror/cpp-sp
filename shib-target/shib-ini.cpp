@@ -231,6 +231,22 @@ bool ShibINI::exists(const std::string& header, const std::string& tag) const
   return (m_priv->table[h].find(t) != m_priv->table[h].end());
 }
 
+bool ShibINI::get_tag (string& header, string& tag, bool try_general, string* result) const
+{
+  if (!result) return false;
+
+  if (exists (header, tag)) {
+    *result = get (header, tag);
+    return true;
+  }
+  if (try_general && exists (SHIBTARGET_GENERAL, tag)) {
+    *result = get (SHIBTARGET_GENERAL, tag);
+    return true;
+  }
+  return false;
+}
+
+
 void ShibINI::dump (ostream& os) const
 {
   os << "File: " << m_priv->file << "\n";

@@ -35,11 +35,6 @@ void RPCError::init(int stat, char const* msg)
       log.error ("Caught SAML Exception while building the SAMLException: %s",
 		 e.what());
       log.error ("XML: %s", msg);
-    } catch (SAXException& e) {
-      ostrstream os;
-      xmlout(os, e.getMessage());
-      log.error ("Caught SAX Exception building SAMLException: %s", os.str());
-      log.error ("XML: %s", msg);
     } catch (XMLException& e) {
       log.error ("Caught XML Exception building SAMLException: %s",
 		 e.getMessage());
@@ -48,7 +43,7 @@ void RPCError::init(int stat, char const* msg)
       log.error ("Caught exception building SAMLException!");
       log.error ("XML: %s", msg);
     }
-    error_msg = "";
+    error_msg = (m_except ? m_except->what() : msg);
   } else {
     error_msg = msg;
     m_except = NULL;
@@ -61,96 +56,43 @@ RPCError::~RPCError()
     delete m_except;
 }
 
-string RPCError::getHTML()
+const char* RPCError::toString()
 {
-  string retval;
-
   switch (status) {
-  case SHIBRPC_OK:
-    break;
+  case SHIBRPC_OK:		return "No Error";
+  case SHIBRPC_UNKNOWN_ERROR:	return "Unknown error";
+  case SHIBRPC_IPADDR_MISMATCH:	return "IP Address Mismatch";
+  case SHIBRPC_NO_SESSION:	return "No Session";
+  case SHIBRPC_XML_EXCEPTION:	return "Xerces XML Exception";
+  case SHIBRPC_SAML_EXCEPTION:	return "Unknown OpenSAML Exception";
+  case SHIBRPC_INTERNAL_ERROR:	return "Internal Error";
+  case SHIBRPC_SAX_EXCEPTION:	return "Xerces SAX Exception";
+  case SHIBRPC_SESSION_EXPIRED:	return "Session Expired";
+  case SHIBRPC_AUTHSTATEMENT_MISSING:	return "Authentication Statement Missing";
+  case SHIBRPC_IPADDR_MISSING:	return "IP Address Missing";
+  case SHIBRPC_RESPONSE_MISSING:	return "SAML Response Missing";
+  case SHIBRPC_ASSERTION_MISSING:	return "SAML Assertion Missing";
+  case SHIBRPC_ASSERTION_REPLAYED:	return "SAML Assertion Replayed";
+  default:			return "Unknown Shibboleth RPC error";
+  }
+}
 
-  case SHIBRPC_UNKNOWN_ERROR:
-    retval = "Unknown error: ";
-    break;
-
-  case SHIBRPC_IPADDR_MISMATCH:
-    retval =
-      "IP Address Mismatch: "
-      "Your IP Address does not match the your authentication token.";
-    break;
-
+bool RPCError::isRetryable()
+{
+  switch (status) {
   case SHIBRPC_NO_SESSION:
-    retval =
-      "No Session: "
-      "This server could not find a session for you.  This should not happen.<p>\n"
-      "The only information about this error is:";
-    break;
-
-  case SHIBRPC_XML_EXCEPTION:
-    retval = "Xerces XML Exception: ";
-    break;
+  case SHIBRPC_SESSION_EXPIRED:
+    return true;
 
   case SHIBRPC_SAML_EXCEPTION:
-    retval = "Unknown OpenSAML Exception: ";
-    break;
-
-  case SHIBRPC_INTERNAL_ERROR:
-    retval = "Internal Error: ";
-    break;
-
-  case SHIBRPC_SAX_EXCEPTION:
-    retval = "Xerces SAX Exception: ";
-    break;
-
-  case SHIBRPC_SESSION_EXPIRED:
-    retval =
-      "Session Expired: "
-      "Your Shibboleth Session has expired.  Please log in again.";
-    break;
-
-  case SHIBRPC_AUTHSTATEMENT_MISSING:
-    retval =
-      "Authentication Statement Missing: "
-      "The assertion of your Shibboleth identity was missing or incompatible "
-      "with the policies of this site.";
-    break;
-
-  case SHIBRPC_IPADDR_MISSING:
-    retval =
-      "IP Address Missing: "
-      "This site requires your Shibboleth to provide your IP Address in your "
-      "identity assertion.";
-    break;
-
-  case SHIBRPC_RESPONSE_MISSING:
-    retval =
-      "SAML Response Missing: "
-      "The assertion of your Shibboleth Identity was missing in the response "
-      "or incompatible with the policies of this site.";
-    break;
-
-  case SHIBRPC_ASSERTION_MISSING:
-    retval =
-      "SAML Assertion Missing: "
-      "Could not find the SSO assertion while processing your SAML Response.";
-    break;
-
-  case SHIBRPC_ASSERTION_REPLAYED:
-    retval =
-      "SAML Assertion Replayed: "
-      "This SAML Response has already been seen.  Either you double-clicked "
-      "while submitting the response or someone is trying to attack this server.";
-    break;
-
-  default:
-    retval =
-      "An unknown Shibboleth error occurred at this server.\n"
-      "Contact the server adminstrator for more information.\n";
-    break;
+  {
+    const char* msg = (m_except ? m_except->what() : "");
+    if (!strcmp(msg, "SAMLPOSTProfile::accept() detected expired response"))
+      return true;
   }
 
-  retval.append ("<p>\n");
-  retval.append (error_msg);
-
-  return retval;
+  default:
+    return false;
+  }
 }
+

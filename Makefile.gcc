@@ -4,14 +4,15 @@ INCDIR		= include
 CP		= cp -p
 CC		= gcc3
 CXX		= g++3
-XERCES          = ../../xerces-c-src1_7_0
+XERCES          = ../../xerces-c-src2_1_0
 LOG4CPP		= ../../..
-CFLAGS		= -g -fpic -Iinclude -I../../opensaml/c/include \
+DEBUG		= -g
+CFLAGS		= $(DEBUG) -fpic -Iinclude -I../../opensaml/c/include \
                   -I/usr/local/include -I$(XERCES)/include -I$(LOG4CPP)/include
 CCFLAGS		= $(CFLAGS)
 CXXFLAGS	= $(CFLAGS)
 LDFLAGS		= -L/usr/local/lib -L$(OUTDIR) -L../../opensaml/c/lib \
-                  -L$(XERCES)/lib -luuid -lcurl -lxerces-c1_7_0 -lsaml \
+                  -L$(XERCES)/lib -luuid -lcurl -lxerces-c -lsaml \
 		  -L$(LOG4CPP)/lib -llog4cpp
 SHIB_OBJS 	= \
         shib/ClubShibPOSTProfile.o \
@@ -46,7 +47,8 @@ SHIBTARGET_OBJS = \
 	shib-target/shib-shire.o \
 	shib-target/shib-rm.o \
 	shib-target/shib-ini.o \
-	shib-target/shib-mlp.o
+	shib-target/shib-mlp.o \
+	shib-target/shib-config.o
 
 INC_TARGETS = $(INCDIR)/shibrpc.h
 

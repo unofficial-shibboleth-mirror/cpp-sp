@@ -1,5 +1,6 @@
 #include <log4cpp/Category.hh>
 #include <log4cpp/RemoteSyslogAppender.hh>
+#include <log4cpp/SyslogAppender.hh>
 
 #include <string>
 
@@ -17,4 +18,10 @@ main()
   log.setAppender(app);
 
   log.error("Test Log Entry");
+
+  Category& syslog = Category::getInstance("test");
+  SyslogAppender sapp(name, sysname);
+  syslog.setAppender(sapp);
+
+  syslog.error("test Syslog entry");
 }

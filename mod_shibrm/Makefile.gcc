@@ -6,12 +6,12 @@
 #   the used tools
 CC=g++3
 SAMLRT=../../../opensaml/c
-XERCES=../../../xerces-c-src1_7_0
+XERCES=../../../xerces-c-src2_1_0
 APXS=/usr/sbin/apxs
 APACHECTL=/usr/sbin/apachectl
 SHIB_CFLAGS=-g -I$(SAMLRT)/include -I$(XERCES)/include -I../include
 SHIB_LDFLAGS=-L$(SAMLRT)/lib -L$(XERCES)/lib -L../lib 
-SHIB_LIBS=-lsaml -lshib -lshib-target -lxerces-c1_7_0
+SHIB_LIBS=-lsaml -lshib -lshib-target -lxerces-c
 
 
 # Get all of apxs's internal values.
@@ -45,7 +45,7 @@ mod_shibrm.so: mod_shibrm.o
 
 # install the shared object file into Apache 
 install: all
-	$(APXS) -i -n 'shire_module' mod_shibrm.so
+	$(APXS) -i -n 'shibrm_module' mod_shibrm.so
 
 # display the apxs variables
 check_apxs_vars:

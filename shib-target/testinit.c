@@ -3,5 +3,6 @@
 main()
 {
   char* init = getenv("SHIBCONFIG");
-  shib_target_initialize("Test App", init);
+  char* app = getenv("SHIBTESTAPP");
+  shib_target_initialize((app ? app : "Test App"), init);
 }

@@ -52,7 +52,7 @@ RM::~RM()
   delete m_priv;
 }
 
-RPCError RM::getAttributes(const char* cookie, const char* ip,
+RPCError* RM::getAttributes(const char* cookie, const char* ip,
 			   Resource *resource,
 			   vector<saml::QName*> attr_requests,
 			   vector<SAMLAttribute*> &attr_replies,
@@ -63,17 +63,17 @@ RPCError RM::getAttributes(const char* cookie, const char* ip,
 
   if (!cookie || *cookie == '\0') {
     m_priv->log->error ("no cookie");
-    return RPCError(-1, "No such cookie");
+    return new RPCError(-1, "No such cookie");
   }
 
   if (!ip) {
     m_priv->log->error ("no ip address");
-    return RPCError(-1, "No IP Address");
+    return new RPCError(-1, "No IP Address");
   }
 
   if (!resource) {
     m_priv->log->error ("no resource");
-    return RPCError(-1, "Invalid Resource");
+    return new RPCError(-1, "Invalid Resource");
   }
 
   m_priv->log->info ("request from %s for \"%s\"", ip, resource->getResource());
@@ -101,7 +101,7 @@ RPCError RM::getAttributes(const char* cookie, const char* ip,
 	retry--;
       else {
 	m_priv->log->error ("RPC Failure");
-	return RPCError(-1, "RPC Failure");
+	return new RPCError(-1, "RPC Failure");
       }
     } else
       retry = -1;
@@ -109,19 +109,29 @@ RPCError RM::getAttributes(const char* cookie, const char* ip,
 
   m_priv->log->debug ("RPC completed with status %d", ret.status);
 
-  RPCError retval;
+  RPCError* retval = NULL;
   if (ret.status)
-    retval = RPCError(ret.status, ret.error_msg);
+    retval = new RPCError(ret.status, ret.error_msg);
   else {
-    retval = RPCError();
     for (u_int i = 0; i < ret.attr_reps.attr_reps_len; i++) {
       istrstream attrstream(ret.attr_reps.attr_reps_val[i].rep);
-      SAMLAttribute *attr = new SAMLAttribute(attrstream);
+      SAMLAttribute *attr = NULL;
+      try {
+	m_priv->log->debug("Trying to decode attribute %d: %s", i,
+			   ret.attr_reps.attr_reps_val[i].rep);
+	attr = new SAMLAttribute(attrstream);
+      } catch (XMLException& e) {
+	m_priv->log->error ("XML Exception: %s", e.getMessage());
+	throw;
+      }
 
       if (attr)
 	attr_replies.push_back(attr);
     }
-    assertion = ret.assertion;
+    if (!retval) {
+      retval = new RPCError();
+      assertion = ret.assertion;
+    }
   }
 
   clnt_freeres (clnt, (xdrproc_t)xdr_shibrpc_get_attrs_ret_1, (caddr_t)&ret);

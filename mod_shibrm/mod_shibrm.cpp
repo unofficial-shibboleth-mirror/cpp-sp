@@ -23,6 +23,7 @@
 #include <shib.h>
 #include <shib-target.h>
 
+#include <fstream>
 #include <strstream>
 #include <stdexcept>
 
@@ -32,6 +33,7 @@ using namespace shibboleth;
 using namespace shibtarget;
 
 static RPCHandle *rpc_handle = NULL;
+static ShibTargetConfig* g_szConfig = NULL;
 
 map<string,string> g_mapAttribNameToHeader;
 map<string,string> g_mapAttribRuleToHeader;
@@ -146,9 +148,11 @@ typedef const char* (*config_fn_t)(void);
 static command_rec shibrm_cmds[] = {
   {"ShibMapAttribute", (config_fn_t)ap_set_attribute_mapping, NULL,
    RSRC_CONF, TAKE23, "Define request header name and 'require' alias for an attribute."},
+#if 0
   {"ShibCookieName", (config_fn_t)ap_set_server_string_slot,
    (void *) XtOffsetOf (shibrm_server_config, szCookieName),
    RSRC_CONF, TAKE1, "Name of cookie to use as session token."},
+#endif
   {"ShibNormalizeRequest", (config_fn_t)set_normalize, NULL,
    RSRC_CONF, TAKE1, "Normalize/convert browser requests using server name when redirecting."},
 
@@ -173,7 +177,22 @@ static command_rec shibrm_cmds[] = {
  */
 extern "C" void shibrm_child_init(server_rec* s, pool* p)
 {
-    // XXX: Runtime components are initialized in SHIRE module...
+    if (g_szConfig) {
+      ap_log_error(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,s,
+		   "shibrm_child_init(): already initialized!");
+      exit (1);
+    }
+
+    try {
+      // Assume that we've been initialized from the SHIRE module!
+      g_szConfig = &(ShibTargetConfig::init(SHIBTARGET_RM, "NOOP"));
+    } catch (runtime_error& e) {
+      ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,s,
+		   "shibrm_child_init() failed to initialize SHIB Target");
+      exit (1);
+    }
+  
+    saml::NDC ndc("shibrm_child_init");
 
     // Create the RPC Handle..  Note: this should be per _thread_
     // if there is some way to do that reasonably..
@@ -187,7 +206,7 @@ extern "C" void shibrm_child_init(server_rec* s, pool* p)
 	g_mapAttribNames[temp.get()]=i->first;
     }
 
-    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,s,"shibrm_child_exit() done");
+    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,s,"shibrm_child_init() done");
 }
 
 
@@ -198,48 +217,9 @@ extern "C" void shibrm_child_init(server_rec* s, pool* p)
 extern "C" void shibrm_child_exit(server_rec* s, pool* p)
 {
     delete rpc_handle;
+    g_szConfig->shutdown();
+    g_szConfig = NULL;
     ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,s,"shibrm_child_exit() done");
-}
-
-inline char hexchar(unsigned short s)
-{
-    return (s<=9) ? ('0' + s) : ('A' + s - 10);
-}
-
-static char* url_encode(request_rec* r, const char* s)
-{
-    static char badchars[]="\"\\+<>#%{}|^~[]`;/?:@=&";
-    char* ret=(char*)ap_palloc(r->pool,sizeof(char)*3*strlen(s)+1);
-
-    unsigned long count=0;
-    for (; *s; s++)
-    {
-        if (strchr(badchars,*s)!=NULL || *s<=0x1F || *s>=0x7F)
-        {
-	    ret[count++]='%';
-	    ret[count++]=hexchar(*s >> 4);
-	    ret[count++]=hexchar(*s & 0x0F);
-	}
-	else
-	    ret[count++]=*s;
-    }
-    ret[count++]=*s;
-    return ret;
-}
-
-static const char* get_target(request_rec* r, const char* target)
-{
-    shibrm_server_config* sc=
-        (shibrm_server_config*)ap_get_module_config(r->server->module_config,&shibrm_module);
-    if (sc->bNormalizeRequest)
-    {
-        const char* colon=strchr(target,':');
-        const char* slash=strchr(colon+3,'/');
-        const char* second_colon=strchr(colon+3,':');
-        return ap_pstrcat(r->pool,ap_pstrndup(r->pool,target,colon+3-target),ap_get_server_name(r),
-			  (second_colon && second_colon < slash) ? second_colon : slash,NULL);
-    }
-    return target;
 }
 
 static table* groups_for_user(request_rec* r, const char* user, char* grpfile)
@@ -282,14 +262,37 @@ static table* groups_for_user(request_rec* r, const char* user, char* grpfile)
     return grps;
 }
 
+static int shibrm_error_page(request_rec* r, const char* filename, ShibMLP& mlp)
+{
+  ifstream infile (filename);
+  if (!infile) {
+      ap_log_rerror(APLOG_MARK,APLOG_ERR,r,
+		    "shibrm_error_page() cannot open %s", filename);
+      return SERVER_ERROR;
+  }
+
+  string res = mlp.run(infile);
+  r->content_type = ap_psprintf(r->pool, "text/html");
+  ap_send_http_header(r);
+  ap_rprintf(r, res.c_str());
+  return DONE;
+}
+
 extern "C" int shibrm_check_auth(request_rec* r)
 {
+    ostrstream threadid;
+    threadid << "[" << getpid() << "] shibrm" << '\0';
+    saml::NDC ndc(threadid.str());
+
+    ShibINI& ini = g_szConfig->getINI();
+
     shibrm_server_config* sc=
         (shibrm_server_config*)ap_get_module_config(r->server->module_config,&shibrm_module);
     shibrm_dir_config* dc=
         (shibrm_dir_config*)ap_get_module_config(r->per_dir_config,&shibrm_module);
 
-    ap_log_rerror(APLOG_MARK,APLOG_DEBUG,r,"shibrm_check_auth() executing");
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
+		  "shibrm_check_auth() executing");
 
     char* targeturl=ap_construct_url(r->pool,r->unparsed_uri,r);
 
@@ -300,18 +303,29 @@ extern "C" int shibrm_check_auth(request_rec* r)
 
     // Ok, this is a SHIB target; grab the cookie
 
+    ShibMLP markupProcessor;
+    string tag;
+    bool has_tag = ini.get_tag (SHIBTARGET_HTTP, "supportContact", true, &tag);
+    markupProcessor.insert ("supportContact", has_tag ? tag : "");
+    has_tag = ini.get_tag (SHIBTARGET_HTTP, "logoLocation", true, &tag);
+    markupProcessor.insert ("logoLocation", has_tag ? tag : "");
+    markupProcessor.insert ("requestURL", targeturl);
+
+    const string& shib_cookie = ini.get (SHIBTARGET_HTTP, "cookie");
+
     const char* session_id=NULL;
     const char* cookies=ap_table_get(r->headers_in,"Cookie");
-    if (!cookies || !(session_id=strstr(cookies,sc->szCookieName)))
+    if (!cookies || !(session_id=strstr(cookies,shib_cookie.c_str())))
     {
       // No cookie???  Must be a server error!
-      ap_log_rerror(APLOG_MARK,APLOG_ERR,r,"shibrm_check_auth() no cookie found");
+      ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
+		    "shibrm_check_auth() no cookie found");
 
       return SERVER_ERROR;
     }
 
     // Yep, we found a cookie -- pull it out (our session_id)
-    session_id+=strlen(sc->szCookieName) + 1;	/* Skip over the '=' */
+    session_id+=strlen(shib_cookie.c_str()) + 1;	/* Skip over the '=' */
     char* cookiebuf = ap_pstrdup(r->pool,session_id);
     char* cookieend = strchr(cookiebuf,';');
     if (cookieend)
@@ -327,19 +341,21 @@ extern "C" int shibrm_check_auth(request_rec* r)
     vector<SAMLAttribute*> response;
     string assertion;
 
-    RPCError status = rm.getAttributes(session_id, r->connection->remote_ip,
+    RPCError* status = rm.getAttributes(session_id, r->connection->remote_ip,
 				       &resource, request, response, assertion);
 
 
-    if (status.isError()) {
-      // XXX: return an error page
+    if (status->isError()) {
+      ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
+		    "shibrm_check_auth() getAttributes failed: %s",
+		    status->error_msg.c_str());
 
-      ap_log_rerror(APLOG_MARK,APLOG_ERR,r,
-		    "shibrm_check_auth() getAttributed failed: %s",
-		    status.error_msg.c_str());
-
-      return SERVER_ERROR;
+      const string& rmError = ini.get (SHIBTARGET_HTTP, "rmError");
+      markupProcessor.insert (*status);
+      delete status;
+      return shibrm_error_page (r, rmError.c_str(), markupProcessor);
     }
+    delete status;
 
     // Clear out the list of mapped attributes
     for (map<string,string>::const_iterator i=g_mapAttribNameToHeader.begin();
@@ -464,19 +480,8 @@ extern "C" int shibrm_check_auth(request_rec* r)
     if (!method_restricted)
         return OK;
 
-    r->content_type = ap_psprintf(r->pool, "text/html");
-    ap_send_http_header(r);
-    ap_rprintf(r, "<html>\n");
-    ap_rprintf(r, "<head>\n");
-    ap_rprintf(r, "<title>Authorization Failed</title>\n");
-    ap_rprintf(r, "<h1>Authorization Failed</h1>\n");
-    ap_rprintf(r, "Based on the information provided to this server about you, you are not authorized to access '%s'<br>", targeturl);
-    ap_rprintf(r, "Please contact the administrator of this service or application if you believe this to be an error.<br>");
-    ap_rprintf(r, "</head>\n");
-    ap_rprintf(r, "</html>\n");
-    ap_rflush(r);
-
-    return DONE;
+    const string& rmError = ini.get (SHIBTARGET_HTTP, "accessError");
+    return shibrm_error_page (r, rmError.c_str(), markupProcessor);
 }
 
 extern "C"{

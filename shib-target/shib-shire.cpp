@@ -56,18 +56,18 @@ SHIRE::~SHIRE()
 }
 
 
-RPCError SHIRE::sessionIsValid(const char* cookie, const char* ip)
+RPCError* SHIRE::sessionIsValid(const char* cookie, const char* ip)
 {
   saml::NDC ndc("sessionIsValid");
 
   if (!cookie || *cookie == '\0') {
     m_priv->log->error ("No cookie");
-    return RPCError(-1, "No such cookie");
+    return new RPCError(-1, "No such cookie");
   }
 
   if (!ip) {
     m_priv->log->error ("No IP");
-    return RPCError(-1, "Invalid IP Address");
+    return new RPCError(-1, "Invalid IP Address");
   }
 
   m_priv->log->info ("is session valid: %s", ip);
@@ -95,7 +95,7 @@ RPCError SHIRE::sessionIsValid(const char* cookie, const char* ip)
 	retry--;
       else {
 	m_priv->log->error ("RPC Failure");
-	return RPCError(-1, "RPC Failure");
+	return new RPCError(-1, "RPC Failure");
       }
     } else
       retry = -1;
@@ -103,11 +103,11 @@ RPCError SHIRE::sessionIsValid(const char* cookie, const char* ip)
 
   m_priv->log->debug ("RPC completed with status %d", ret.status);
 
-  RPCError retval;
+  RPCError* retval;
   if (ret.status)
-    retval = RPCError(ret.status, ret.error_msg);
+    retval = new RPCError(ret.status, ret.error_msg);
   else
-    retval = RPCError();
+    retval = new RPCError();
 
   clnt_freeres (clnt, (xdrproc_t)xdr_shibrpc_session_is_valid_ret_1, (caddr_t)&ret);
 
@@ -115,18 +115,18 @@ RPCError SHIRE::sessionIsValid(const char* cookie, const char* ip)
   return retval;
 }
 
-RPCError SHIRE::sessionCreate(const char* post, const char* ip, string& cookie)
+RPCError* SHIRE::sessionCreate(const char* post, const char* ip, string& cookie)
 {
   saml::NDC ndc("sessionCreate");
 
   if (!post || *post == '\0') {
     m_priv->log->error ("No POST");
-    return RPCError(-1,  "Invalid POST string");
+    return new RPCError(-1,  "Invalid POST string");
   }
 
   if (!ip) {
     m_priv->log->error ("No IP");
-    return RPCError(-1, "Invalid IP Address");
+    return new RPCError(-1, "Invalid IP Address");
   }
 
   m_priv->log->info ("create session for user at %s", ip);
@@ -151,7 +151,7 @@ RPCError SHIRE::sessionCreate(const char* post, const char* ip, string& cookie)
 	retry--;
       else {
 	m_priv->log->error ("RPC Failure");
-	return RPCError(-1, "RPC Failure");
+	return new RPCError(-1, "RPC Failure");
       }
     } else
       retry = -1;
@@ -159,13 +159,13 @@ RPCError SHIRE::sessionCreate(const char* post, const char* ip, string& cookie)
 
   m_priv->log->debug ("RPC completed with status %d", ret.status);
 
-  RPCError retval;
+  RPCError* retval;
   if (ret.status)
-    retval = RPCError(ret.status, ret.error_msg);
+    retval = new RPCError(ret.status, ret.error_msg);
   else {
     m_priv->log->debug ("new cookie: %s", ret.cookie);
     cookie = ret.cookie;
-    retval = RPCError();
+    retval = new RPCError();
   }
 
   clnt_freeres (clnt, (xdrproc_t)xdr_shibrpc_new_session_ret_1, (caddr_t)&ret);

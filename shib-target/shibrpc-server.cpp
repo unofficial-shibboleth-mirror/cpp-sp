@@ -199,7 +199,7 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
     catch (SAMLException &e)
     {
       log.error ("received SAML exception");
-      ostrstream os;
+      ostringstream os;
       os << e;
       throw ShibTargetException (SHIBRPC_SAML_EXCEPTION, os.str());
     }
@@ -208,12 +208,6 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
       log.error ("received XML exception");
       auto_ptr<char> msg(XMLString::transcode(e.getMessage()));
       throw ShibTargetException (SHIBRPC_XML_EXCEPTION, msg.get());
-    }
-    catch (SAXException &e)
-    {
-      log.error ("received SAX exception");
-      auto_ptr<char> msg(XMLString::transcode(e.getMessage()));
-      throw ShibTargetException (SHIBRPC_SAX_EXCEPTION, msg.get());
     }
   }
   catch (ShibTargetException &e)
@@ -320,9 +314,9 @@ shibrpc_get_attrs_1_svc(shibrpc_get_attrs_args_1 *argp,
     u_int i = 0;
     while (iter.hasNext()) {
       SAMLAttribute* attr = iter.next();
-      ostrstream os;
+      ostringstream os;
       os << *attr;
-      av[i++].rep = strdup(os.str());
+      av[i++].rep = strdup(os.str().c_str());
     }
   }
 

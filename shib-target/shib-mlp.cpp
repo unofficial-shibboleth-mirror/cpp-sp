@@ -123,3 +123,9 @@ string ShibMLP::run (istream& is) const
 
   return run(str);
 }
+
+void ShibMLP::insert (RPCError& e)
+{
+  insert ("errorType", e.toString());
+  insert ("errorText", (e.m_except ? e.m_except->what() : e.error_msg));
+}

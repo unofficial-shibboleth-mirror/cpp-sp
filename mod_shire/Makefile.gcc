@@ -6,14 +6,14 @@
 #   the used tools
 CC=g++3
 SAMLRT=../../../opensaml/c
-XERCES=../../../xerces-c-src1_7_0
+XERCES=../../../xerces-c-src2_1_0
 LIBAPREQ=../../../libapreq-1.0
 APXS=/usr/sbin/apxs
 APACHECTL=/usr/sbin/apachectl
 SHIB_CFLAGS=-g -I$(SAMLRT)/include -I$(XERCES)/include -I../include \
 	-I$(LIBAPREQ)/include
 SHIB_LDFLAGS=-L$(SAMLRT)/lib -L$(XERCES)/lib -L../lib -L$(LIBAPREQ)/lib
-SHIB_LIBS=-lsaml -lshib -lshib-target -lxerces-c1_7_0 -lapreq
+SHIB_LIBS=-lsaml -lshib -lshib-target -lxerces-c -lapreq
 
 
 # Get all of apxs's internal values.
