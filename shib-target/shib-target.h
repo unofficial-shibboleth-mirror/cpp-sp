@@ -66,6 +66,8 @@
 # ifndef SHIBTARGET_EXPORTS
 #  define SHIBTARGET_EXPORTS __declspec(dllimport)
 # endif
+# define SHIB_SCHEMAS "/opt/shibboleth/etc/shibboleth"
+# define SHIB_CONFIG "/opt/shibboleth/etc/shibboleth/shibboleth.xml"
 #else
 # include <shib-target/shib-paths.h>
 # define SHIBTARGET_EXPORTS

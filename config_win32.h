@@ -118,9 +118,3 @@
 
 /* Define to `unsigned' if <sys/types.h> does not define. */
 /* #undef size_t */
-
-/* SHIB_SCHEMAS defines the default location where the schemas will be installed. */
-#define SHIB_SCHEMAS "/opt/shibboleth/etc/shibboleth"
-
-/* SHIB_CONFIG defines the default location of the Shib Target Configuration File. */
-#define SHIB_CONFIG "/opt/shibboleth/etc/shibboleth/shibboleth.xml"
