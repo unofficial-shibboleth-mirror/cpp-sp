@@ -53,7 +53,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386
-# ADD LINK32 log4cpp.lib xerces-c_2.lib libapr.lib libhttpd.lib saml_5.lib /nologo /dll /machine:I386 /out:"mod_shib20___Win32_Release/mod_shib_20.so" /libpath:"../../../opensaml/c/saml/Release" /libpath:"\httpd-2.0.48\srclib\apr\Release" /libpath:"\httpd-2.0.48\Release"
+# ADD LINK32 log4cpp.lib xerces-c_2.lib libapr.lib libhttpd.lib saml_5.lib /nologo /dll /machine:I386 /out:"mod_shib20___Win32_Release/mod_shib_20.so" /libpath:"../../../opensaml/c/saml/Release" /libpath:"\httpd-2.0.52\srclib\apr\Release" /libpath:"\httpd-2.0.52\Release"
 
 !ELSEIF  "$(CFG)" == "mod_shib20 - Win32 Debug"
 
@@ -79,7 +79,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 log4cppD.lib xerces-c_2D.lib libapr.lib libhttpd.lib saml_5D.lib /nologo /dll /debug /machine:I386 /out:"mod_shib20___Win32_Debug/mod_shib_20.so" /pdbtype:sept /libpath:"../../../opensaml/c/saml/Debug" /libpath:"\httpd-2.0.48\srclib\apr\Debug" /libpath:"\httpd-2.0.48\Debug"
+# ADD LINK32 log4cppD.lib xerces-c_2D.lib libapr.lib libhttpd.lib saml_5D.lib /nologo /dll /debug /machine:I386 /out:"mod_shib20___Win32_Debug/mod_shib_20.so" /pdbtype:sept /libpath:"../../../opensaml/c/saml/Debug" /libpath:"\httpd-2.0.52\srclib\apr\Debug" /libpath:"\httpd-2.0.52\Debug"
 
 !ENDIF 
 
