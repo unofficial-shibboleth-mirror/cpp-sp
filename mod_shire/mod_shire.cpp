@@ -478,15 +478,25 @@ extern "C" int shire_check_user(request_rec* r)
 		      "shire_check_user() session invalid: %s",
 		      status->error_msg.c_str());
 
-        // Oops, session is invalid.  Redirect to WAYF.
-        char* wayf=ap_pstrcat(r->pool,wayfLocation.c_str(),
-			      "?shire=",shire_location,
-			      "&target=",url_encode(r,targeturl),NULL);
-	ap_table_setn(r->headers_out,"Location",wayf);
+	if (status->isRetryable()) {
 
-	delete status;
-	return REDIRECT;
+	  // Oops, session is invalid.  Redirect to WAYF.
+	  char* wayf=ap_pstrcat(r->pool,wayfLocation.c_str(),
+				"?shire=",shire_location,
+				"&target=",url_encode(r,targeturl),NULL);
+	  ap_table_setn(r->headers_out,"Location",wayf);
 
+	  delete status;
+	  return REDIRECT;
+
+	} else {
+
+	  // return the error page to the user
+	  markupProcessor.insert (*status);
+	  delete status;
+	  return shire_error_page (r, shireError.c_str(), markupProcessor);
+
+	}
       } else {
 	delete status;
         ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
