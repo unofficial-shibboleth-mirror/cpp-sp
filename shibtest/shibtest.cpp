@@ -130,6 +130,7 @@ int main(int argc,char* argv[])
     }
 
     conf1.schema_dir=path;
+    conf1.bVerbose=true;
     if (!SAMLConfig::init(&conf1))
         cerr << "unable to initialize SAML runtime" << endl;
 
