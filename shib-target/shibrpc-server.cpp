@@ -283,24 +283,20 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
 
       // Maybe verify the origin address....
       if (argp->checkIPAddress) {
-	log.debug ("check IP Address");
+        log.debug ("check IP Address");
 
-	// Verify the client address exists
-	const XMLCh* ip = auth_st->getSubjectIP();
-	if (!ip)
-	  throw ShibTargetException(SHIBRPC_IPADDR_MISSING,
-		    "The IP Address provided by your origin site was missing.",
-				    origin);
-	
-	log.debug ("verify client address");
-	// Verify the client address matches authentication
-	auto_ptr_char this_ip(ip);
-	if (strcmp (argp->client_addr, this_ip.get()))
-	  throw ShibTargetException(SHIBRPC_IPADDR_MISMATCH,
-	    "The IP address provided by your origin site did not match "
-	    "your current address.  "
-	    "To correct this problem you may need to bypass a local proxy server.",
-				    origin);
+        // Verify the client address exists
+        const XMLCh* ip = auth_st->getSubjectIP();
+        if (ip && *ip) {
+            log.debug ("verify client address");
+
+            // Verify the client address matches authentication
+            auto_ptr_char this_ip(ip);
+            if (strcmp(argp->client_addr, this_ip.get()))
+                throw ShibTargetException(SHIBRPC_IPADDR_MISMATCH,
+	                "The IP address provided by your origin site did not match your current address. "
+	                "To correct this problem, you may need to bypass a local proxy server.",
+				     origin);
       }
     }
     catch (SAMLException &e)    // XXX refine this handler to catch and log different profile exceptions
