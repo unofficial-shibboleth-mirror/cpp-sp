@@ -519,14 +519,51 @@ extern "C" int shibrm_check_auth(request_rec* r)
 		const char* vals=ap_table_get(r->headers_in,i->second.c_str());
 		while (*t && vals)
 		{
-		    string ruleval(" ");
-		    ruleval+=ap_getword_conf(r->pool,&t);
-		    ruleval+=" ";
-		    if (strstr(vals,ruleval.c_str()))
+		    string ruleval(ap_getword_conf(r->pool,&t));
+
+                    string vals_str(vals);
+                    int j = 0;
+                    for (int i = 0;  i < vals_str.length();  i++)
 		    {
-		        ap_log_rerror(APLOG_MARK,APLOG_DEBUG,r,"shibrm_check_auth() accepting rule %s, value%s",
-				      w,ruleval.c_str());
-			return OK;
+			if (vals_str.at(i) == ';') 
+			{
+                            if (i == 0)
+			    {
+			        ap_log_rerror(APLOG_MARK,APLOG_WARNING,r,"shibrm_check_auth() invalid header encoding %s: starts with semicolon", vals);
+                                return SERVER_ERROR;
+			    }
+
+                            if (vals_str.at(i-1) == '\\')
+                            {
+                                vals_str.erase(i-1, 1);
+                                i--;
+                                continue;
+                            }
+
+                            string val = vals_str.substr(j, i-j);
+                            j = i+1;
+
+                            if (val == ruleval)
+                            {
+		                ap_log_rerror(APLOG_MARK,APLOG_DEBUG,r,"shibrm_check_auth() expecting %s, got %s: authorization granted", ruleval.c_str(), val.c_str());
+                                return OK;
+                            }
+                            else
+			    {
+		                ap_log_rerror(APLOG_MARK,APLOG_DEBUG,r,"shibrm_check_auth() expecting %s, got %s: authorization not granted", ruleval.c_str(), val.c_str());
+			    }
+                        }
+		    }
+
+		    string val = vals_str.substr(j, vals_str.length()-j);
+                    if (val == ruleval)
+                    {
+	                ap_log_rerror(APLOG_MARK,APLOG_DEBUG,r,"shibrm_check_auth() expecting %s, got %s: authorization granted", ruleval.c_str(), val.c_str());
+                        return OK;
+                    }
+                    else
+		    {
+	                ap_log_rerror(APLOG_MARK,APLOG_DEBUG,r,"shibrm_check_auth() expecting %s, got %s: authorization not granted", ruleval.c_str(), val.c_str());
 		    }
 		}
 	    }
