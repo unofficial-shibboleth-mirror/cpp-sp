@@ -15,6 +15,10 @@
 
 namespace shibtarget {
 
+  //
+  // core thread objects
+  //
+
   class Thread {
   public:
     static Thread* create(void* (*start_routine)(void*), void* arg);
@@ -30,17 +34,6 @@ namespace shibtarget {
 
     virtual int lock() = 0;
     virtual int unlock() = 0;
-  };
-
-  class Lock {
-  public:
-    Lock(Mutex* mtx) { mutex = mtx; mutex->lock(); }
-    ~Lock() { mutex->unlock(); }
-
-  private:
-    Lock(const Lock&);
-    void operator=(const Lock&);
-    Mutex* mutex;
   };
 
   class CondWait {
@@ -60,6 +53,21 @@ namespace shibtarget {
     virtual int rdlock() = 0;
     virtual int wrlock() = 0;
     virtual int unlock() = 0;
+  };
+
+  //
+  // Helper classes.
+  //
+
+  class Lock {
+  public:
+    Lock(Mutex* mtx) { mutex = mtx; mutex->lock(); }
+    ~Lock() { mutex->unlock(); }
+
+  private:
+    Lock(const Lock&);
+    void operator=(const Lock&);
+    Mutex* mutex;
   };
 
   class ReadLock {

@@ -107,6 +107,7 @@ public:
   virtual const char* getClientAddress() { return m_clientAddress.c_str(); }
 
   void setCache(InternalCCache *cache) { m_cache = cache; }
+  time_t lastAccess() { Lock lock(access_lock); return m_lastAccess; }
 
 private:
   ResourceEntry* populate(Resource& resource);
@@ -166,15 +167,23 @@ public:
 		      const char *client_addr);
   virtual void remove(const char* key);
 
+  void	cleanup();
 private:
   SAMLBinding* m_SAMLBinding;
   map<string,InternalCCacheEntry*> m_hashtable;
 
   log4cpp::Category* log;
   RWLock *lock;
+
+  static void*	cleanup_fcn(void*); // XXX Assumed an InternalCCache
+  bool		shutdown;
+  CondWait*	shutdown_wait;
+  Thread*	cleanup_thread;
 };
 
 // Global Constructors & Destructors
+CCache::~CCache() { }
+
 CCache* CCache::getInstance(const char* type)
 {
   return (CCache*) new InternalCCache();
@@ -196,14 +205,24 @@ InternalCCache::InternalCCache()
   string ctx="shibtarget.InternalCCache";
   log = &(log4cpp::Category::getInstance(ctx));
   lock = RWLock::create();
+
+  shutdown_wait = CondWait::create();
+  shutdown = false;
+  cleanup_thread = Thread::create(&cleanup_fcn, (void*)this);
 }
 
 InternalCCache::~InternalCCache()
 {
+  // Shut down the cleanup thread and let it know...
+  shutdown = true;
+  shutdown_wait->signal();
+  cleanup_thread->join(NULL);
+
   delete m_SAMLBinding;
   for (map<string,InternalCCacheEntry*>::iterator i=m_hashtable.begin(); i!=m_hashtable.end(); i++)
     delete i->second;
   delete lock;
+  delete shutdown_wait;
 }
 
 SAMLBinding* InternalCCache::getBinding(const XMLCh* bindingProt)
@@ -252,6 +271,64 @@ void InternalCCache::remove(const char* key)
   lock->wrlock();
   m_hashtable.erase(key);
   lock->unlock();
+}
+
+void InternalCCache::cleanup()
+{
+  Mutex* mutex = Mutex::create();
+
+  mutex->lock();
+
+  while (shutdown == false) {
+    struct timespec ts;
+    memset (&ts, 0, sizeof(ts));
+    ts.tv_sec = time(NULL) + 3600;	// run every hour
+
+    shutdown_wait->timedwait(mutex, &ts);
+
+    if (shutdown == true)
+      break;
+
+    // Ok, let's run through the cleanup process and clean out
+    // really old sessions.  This is a two-pass process.  The
+    // first pass is done holding a read-lock while we iterate over
+    // the database.  The second pass doesn't need a lock because
+    // the 'deletes' will lock the database.
+
+    // Pass 1: iterate over the map and find all entries that have not been
+    // used in X hours
+    vector<string> stale_keys;
+    time_t stale = time(NULL) - 8 * 3600; // XXX: 8 hour timeout.
+
+    lock->rdlock();
+    for (map<string,InternalCCacheEntry*>::iterator i=m_hashtable.begin();
+	 i != m_hashtable.end(); i++)
+    {
+      // If the last access was BEFORE the stale timeout...
+      if (i->second->lastAccess() < stale)
+	stale_keys.push_back(i->first);
+    }
+    lock->unlock();
+
+    // Pass 2: walk through the list of stale entries and remove them from
+    // the database
+    for (vector<string>::iterator i = stale_keys.begin();
+	 i != stale_keys.end(); i++)
+    {
+      remove (i->c_str());
+    }
+
+  }
+
+  mutex->unlock();
+  delete mutex;
+  Thread::exit(NULL);
+}
+
+void* InternalCCache::cleanup_fcn(void* cache_p)
+{
+  InternalCCache* cache = (InternalCCache*)cache_p;
+  cache->cleanup();
 }
 
 /******************************************************************************/

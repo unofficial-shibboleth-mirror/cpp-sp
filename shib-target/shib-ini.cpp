@@ -70,6 +70,9 @@ public:
 
   unsigned long iterators;
   RWLock *rwlock;
+
+  bool exists(const std::string& header);
+  bool exists(const std::string& header, const std::string& tag);
 };
 
 ShibINIPriv::ShibINIPriv()
@@ -145,6 +148,7 @@ void ShibINI::refresh(void)
   if (m_priv->modtime >= stat_buf.st_mtime) {
     // Yep, another thread got to it.  We can exit now...  Release
     // the write lock and reaquire the read-lock.
+
     m_priv->rwlock->unlock();
     m_priv->rwlock->rdlock();
     return;
@@ -230,7 +234,7 @@ void ShibINI::refresh(void)
 	if (!m_priv->cs) to_lowercase (tag);
 
 	// If it already exists, log an error and do not save it
-	if (exists (current_header, tag))
+	if (m_priv->exists (current_header, tag))
 	  m_priv->log->error("Duplicate tag found in section %s: \"%s\"",
 			     current_header.c_str(), tag.c_str());
 	else
@@ -275,15 +279,34 @@ const std::string ShibINI::get (const string& header, const string& tag)
   return i->second;
 }
 
+bool ShibINIPriv::exists(const std::string& header)
+{
+  string h = header;
+  if (!cs) to_lowercase (h);
+
+  return (table.find(h) != table.end());
+}
+
 bool ShibINI::exists(const std::string& header)
 {
   ReadLock rwlock(m_priv->rwlock);
   refresh();
 
-  string h = header;
-  if (!m_priv->cs) to_lowercase (h);
+  return m_priv->exists(header);
+}
 
-  return (m_priv->table.find(h) != m_priv->table.end());
+bool ShibINIPriv::exists(const std::string& header, const std::string& tag)
+{
+  string h = header;
+  string t = tag;
+
+  if (!cs) {
+    to_lowercase (h);
+    to_lowercase (t);
+  }
+
+  if (!exists(h)) return false;
+  return (table[h].find(t) != table[h].end());
 }
 
 bool ShibINI::exists(const std::string& header, const std::string& tag)
@@ -291,16 +314,7 @@ bool ShibINI::exists(const std::string& header, const std::string& tag)
   ReadLock rwlock(m_priv->rwlock);
   refresh();
 
-  string h = header;
-  string t = tag;
-
-  if (!m_priv->cs) {
-    to_lowercase (h);
-    to_lowercase (t);
-  }
-
-  if (!exists(h)) return false;
-  return (m_priv->table[h].find(t) != m_priv->table[h].end());
+  return m_priv->exists(header, tag);
 }
 
 bool ShibINI::get_tag (string& header, string& tag, bool try_general, string* result)
