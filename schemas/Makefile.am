@@ -12,4 +12,5 @@ pkgsysconf_DATA = \
                 xmldsig-core-schema.xsd \
                 xmldsig-filter2.xsd \
                 xml.xsd \
-                shibboleth.xsd
+                shibboleth.xsd \
+                shibboleth-appmap.xsd

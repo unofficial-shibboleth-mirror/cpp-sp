@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="US-ASCII"?>
+<schema targetNamespace="urn:mace:shibboleth:target:appmapper:1.0" xmlns="http://www.w3.org/2001/XMLSchema" xmlns:appmap="urn:mace:shibboleth:target:appmapper:1.0" elementFormDefault="qualified" attributeFormDefault="unqualified" version="1.0">
+    
+    <!--
+    Defines a schema for creating a ruleset that maps resource URLs to
+    Shibboleth application identifiers, also typically used as SAML 2.0
+    Provider IDs.
+    -->
+
+    <element name="Path">
+        <complexType>
+    		<sequence>
+    			<element ref="appmap:Path" minOccurs="0" maxOccurs="unbounded"/>
+    		</sequence>
+    		<attribute name="Name" type="string" use="required"/>
+    		<attribute name="ApplicationID" type="anyURI" use="optional"/>
+            <anyAttribute namespace="##any" processContents="lax"/>
+        </complexType>
+    </element>
+
+    <element name="VirtualHost">
+    	<complexType>
+    		<sequence>
+    			<element ref="appmap:Path" minOccurs="0" maxOccurs="unbounded"/>
+    		</sequence>
+    		<attribute name="Name" type="string" use="required"/>
+    		<attribute name="Port" type="unsignedInt" use="optional"/>
+    		<attribute name="SSL" type="boolean" use="optional" default="false"/>
+    		<attribute name="ApplicationID" type="anyURI" use="optional"/>
+            <anyAttribute namespace="##any" processContents="lax"/>
+    	</complexType>
+    </element>
+
+    <element name="ApplicationMap">
+        <complexType>
+            <sequence>
+                <element ref="appmap:VirtualHost" maxOccurs="unbounded"/>
+            </sequence>
+    		<attribute name="ApplicationID" type="anyURI" use="required"/>
+            <anyAttribute namespace="##any" processContents="lax"/>
+        </complexType>
+    </element>
+
+</schema>
