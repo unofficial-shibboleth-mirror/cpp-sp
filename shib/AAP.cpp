@@ -252,10 +252,13 @@ bool AAP::accept(const XMLCh* name, const XMLCh* originSite, DOMElement* e)
     for (vector<pair<AttributeRule::value_type,xstring> >::const_iterator i=arule->second.m_anySiteRule.valueRules.begin();
             i!=arule->second.m_anySiteRule.valueRules.end(); i++)
     {
-        if (i->first==AttributeRule::literal && i->second==n->getNodeValue())
+        if (i->first==AttributeRule::literal)
         {
-            log.debug("any site, literal match");
-            return true;
+            if (i->second==n->getNodeValue())
+            {
+                log.debug("any site, literal match");
+                return true;
+            }
         }
         else if (i->first==AttributeRule::regexp)
         {
@@ -295,10 +298,13 @@ bool AAP::accept(const XMLCh* name, const XMLCh* originSite, DOMElement* e)
     for (vector<pair<AttributeRule::value_type,xstring> >::const_iterator j=srule->second.valueRules.begin();
             j!=srule->second.valueRules.end(); j++)
     {
-        if (j->first==AttributeRule::literal && j->second==n->getNodeValue())
+        if (j->first==AttributeRule::literal)
         {
-            log.debug("matching site, literal match");
-            return true;
+            if (j->second==n->getNodeValue())
+            {
+                log.debug("matching site, literal match");
+                return true;
+            }
         }
         else if (j->first==AttributeRule::regexp)
         {
