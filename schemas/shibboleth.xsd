@@ -305,10 +305,10 @@
 		</annotation>
 		<complexType>
 			<sequence>
-				<attribute name="Path" type="string" use="required"/>
-				<attribute name="Alias" type="string" use="required"/>
-				<attribute name="Password" type="string" use="required"/>
-				<attribute name="AliasPassword" type="string" use="optional"/>
+				<element name="Path" type="string"/>
+				<element name="Alias" type="string"/>
+				<element name="Password" type="string"/>
+				<element name="AliasPassword" type="string" minOccurs="0"/>
 			</sequence>
 			<attribute name="Id" type="ID" use="required"/>
 			<attribute name="Type" type="string" use="optional" default="JKS"/>
