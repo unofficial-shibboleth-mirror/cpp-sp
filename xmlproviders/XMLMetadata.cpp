@@ -167,7 +167,6 @@ namespace {
             ~SSORole() {}
             Iterator<const IEndpoint*> getSingleLogoutServices() const {return EMPTY(const IEndpoint*);}
             Iterator<const IEndpoint*> getManageNameIdentifierServices() const {return EMPTY(const IEndpoint*);}
-            Iterator<const IEndpoint*> getNameIdentifierMappingServices() const {return EMPTY(const IEndpoint*);}
         };
         
         class IDPRole : public SSORole, public virtual IIDPProviderRole
@@ -176,6 +175,7 @@ namespace {
             IDPRole(const Provider* provider, const DOMElement* e) : SSORole(provider,e) {m_protocolEnum.push_back(::XML::SHIB_NS);}
             ~IDPRole() {}
             Iterator<const IEndpoint*> getSingleSignOnServices() const {return m_pepv;}
+            Iterator<const IEndpoint*> getNameIdentifierMappingServices() const {return EMPTY(const IEndpoint*);}
         
         private:
             vector<Endpoint> m_epv;

@@ -184,13 +184,13 @@ namespace shibboleth
     {
         virtual saml::Iterator<const IEndpoint*> getSingleLogoutServices() const=0;
         virtual saml::Iterator<const IEndpoint*> getManageNameIdentifierServices() const=0;
-        virtual saml::Iterator<const IEndpoint*> getNameIdentifierMappingServices() const=0;
         virtual ~ISSOProviderRole() {}
     };
     
     struct SHIB_EXPORTS IIDPProviderRole : public virtual ISSOProviderRole
     {
         virtual saml::Iterator<const IEndpoint*> getSingleSignOnServices() const=0;
+        virtual saml::Iterator<const IEndpoint*> getNameIdentifierMappingServices() const=0;
         virtual ~IIDPProviderRole() {}
     };
     
@@ -219,7 +219,7 @@ namespace shibboleth
     {
         virtual const XMLCh* getName(const XMLCh* lang) const=0;
         virtual const XMLCh* getDescription(const XMLCh* lang) const=0;
-        virtual saml::Iterator<std::pair<const saml::SAMLAttributeDesignator*,bool> > getRequestedAttributes() const=0;
+        virtual saml::Iterator<std::pair<const saml::SAMLAttribute*,bool> > getRequestedAttributes() const=0;
         virtual const DOMElement* getElement() const=0;
         virtual ~IAttributeRequestingService() {}
     };
