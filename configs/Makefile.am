@@ -9,6 +9,7 @@ pkgsysconf_DATA = \
 	shire.logger \
 	shar.logger \
 	apache.config \
+	apache2.config \
 	accessError.html \
 	rmError.html \
 	shireError.html \
@@ -16,4 +17,3 @@ pkgsysconf_DATA = \
 	sites.xml \
 	trust.xml \
 	creds.xml
-	
