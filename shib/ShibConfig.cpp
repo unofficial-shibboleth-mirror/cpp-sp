@@ -95,7 +95,7 @@ extern "C" SAMLAttribute* ShibAttributeFactory(DOMElement* e)
         n=n->getNextSibling();
     if (n && static_cast<DOMElement*>(n)->hasAttributeNS(NULL,SHIB_L(Scope)))
         return new ScopedAttribute(e);
-    return new SimpleAttribute(e);
+    return new SAMLAttribute(e);
 }
 
 
@@ -109,6 +109,8 @@ bool ShibInternalConfig::init()
     // Register extension schema.
     saml::XML::registerSchema(XML::SHIB_NS,XML::SHIB_SCHEMA_ID);
 
+    SAMLAttribute::setFactory(&ShibAttributeFactory);
+
     // Register metadata factories (some duplicates for backward-compatibility)
     regFactory("edu.internet2.middleware.shibboleth.metadata.XML",&XMLMetadataFactory);
     regFactory("edu.internet2.middleware.shibboleth.metadata.provider.XML",&XMLMetadataFactory);
@@ -119,21 +121,8 @@ bool ShibInternalConfig::init()
     regFactory("edu.internet2.middleware.shibboleth.creds.provider.KeyInfoResolver",&KeyInfoResolverFactory);
     regFactory("edu.internet2.middleware.shibboleth.target.AAP.XML",&XMLAAPFactory);
     regFactory("edu.internet2.middleware.shibboleth.target.AAP.provider.XML",&XMLAAPFactory);
-    regFactory("edu.internet2.middleware.shibboleth.target.AttributeFactory",&ShibAttributeFactory);
 
     return true;
-}
-
-void ShibInternalConfig::term()
-{
-    for (vector<IMetadata*>::iterator i=m_providers.begin(); i!=m_providers.end(); i++)
-        delete *i;
-    for (vector<ITrust*>::iterator j=m_trust_providers.begin(); j!=m_trust_providers.end(); j++)
-        delete *j;
-    for (vector<ICredentials*>::iterator k=m_cred_providers.begin(); k!=m_cred_providers.end(); k++)
-        delete *k;
-    for (vector<IAAP*>::iterator l=m_aap_providers.begin(); l!=m_aap_providers.end(); l++)
-        delete *l;
 }
 
 void ShibInternalConfig::regFactory(const char* type, MetadataFactory* factory)
@@ -169,12 +158,6 @@ void ShibInternalConfig::regFactory(const char* type, AAPFactory* factory)
         m_aapFactoryMap[type]=factory;
 }
 
-void ShibInternalConfig::regFactory(const char* type, SAMLAttributeFactory* factory)
-{
-    if (type && factory)
-        m_attrFactoryMap[type]=factory;
-}
-
 void ShibInternalConfig::unregFactory(const char* type)
 {
     if (type)
@@ -187,87 +170,64 @@ void ShibInternalConfig::unregFactory(const char* type)
     }
 }
 
-SAMLAttributeFactory* ShibInternalConfig::getAttributeFactory(const char* type) const
+IMetadata* ShibInternalConfig::newMetadata(const char* type, const char* source) const
 {
-    AttributeFactoryMap::const_iterator i =
-        m_attrFactoryMap.find((type && *type) ? type : "edu.internet2.middleware.shibboleth.target.AttributeFactory");
-    if (i==m_attrFactoryMap.end())
+    MetadataFactoryMap::const_iterator i=m_metadataFactoryMap.find(type);
+    if (i==m_metadataFactoryMap.end())
     {
-        NDC ndc("getAttributeFactory");
-        Category::getInstance(SHIB_LOGCAT".ShibInternalConfig").error("unknown attribute factory: %s",type);
+        NDC ndc("newMetadata");
+        Category::getInstance(SHIB_LOGCAT".ShibInternalConfig").error("unknown metadata type: %s",type);
         return NULL;
     }
-    return i->second;
+    return i->second(source);
 }
 
-CredResolverFactory* ShibInternalConfig::getCredResolverFactory(const char* type) const
+ITrust* ShibInternalConfig::newTrust(const char* type, const char* source) const
+{
+    TrustFactoryMap::const_iterator i=m_trustFactoryMap.find(type);
+    if (i==m_trustFactoryMap.end())
+    {
+        NDC ndc("newTrust");
+        Category::getInstance(SHIB_LOGCAT".ShibInternalConfig").error("unknown trust type: %s",type);
+        return NULL;
+    }
+    return i->second(source);
+}
+
+ICredentials* ShibInternalConfig::newCredentials(const char* type, const char* source) const
+{
+    CredentialsFactoryMap::const_iterator i=m_credFactoryMap.find(type);
+    if (i==m_credFactoryMap.end())
+    {
+        NDC ndc("newCredentials");
+        Category::getInstance(SHIB_LOGCAT".ShibInternalConfig").error("unknown credentials type: %s",type);
+        return NULL;
+    }
+    return i->second(source);
+}
+
+IAAP* ShibInternalConfig::newAAP(const char* type, const char* source) const
+{
+    AAPFactoryMap::const_iterator i=m_aapFactoryMap.find(type);
+    if (i==m_aapFactoryMap.end())
+    {
+        NDC ndc("newAAP");
+        Category::getInstance(SHIB_LOGCAT".ShibInternalConfig").error("unknown AAP type: %s",type);
+        return NULL;
+    }
+    return i->second(source);
+}
+
+ICredResolver* ShibInternalConfig::newCredResolver(const char* type, const DOMElement* source) const
 {
     CredResolverFactoryMap::const_iterator i=m_credResolverFactoryMap.find(type);
     if (i==m_credResolverFactoryMap.end())
     {
-        NDC ndc("getCredResolverFactory");
-        Category::getInstance(SHIB_LOGCAT".ShibInternalConfig").error("unknown cred resolver factory: %s",type);
+        NDC ndc("newCredResolver");
+        Category::getInstance(SHIB_LOGCAT".ShibInternalConfig").error("unknown cred resolver type: %s",type);
         return NULL;
     }
-    return i->second;
-}
-
-bool ShibInternalConfig::addMetadata(const char* type, const char* source)
-{
-    saml::NDC ndc("addMetadata");
-
-    bool ret=false;
-    try
-    {
-        MetadataFactoryMap::const_iterator i=m_metadataFactoryMap.find(type);
-        if (i!=m_metadataFactoryMap.end())
-        {
-            m_providers.push_back((i->second)(source));
-            ret=true;
-        }
-        else
-        {
-            TrustFactoryMap::const_iterator j=m_trustFactoryMap.find(type);
-            if (j!=m_trustFactoryMap.end())
-            {
-                m_trust_providers.push_back((j->second)(source));
-                ret=true;
-            }
-            else
-            {
-                CredentialsFactoryMap::const_iterator k=m_credFactoryMap.find(type);
-                if (k!=m_credFactoryMap.end())
-                {
-                    m_cred_providers.push_back((k->second)(source));
-                    ret=true;
-                }
-                else
-                {
-                    AAPFactoryMap::const_iterator l=m_aapFactoryMap.find(type);
-                    if (l!=m_aapFactoryMap.end())
-                    {
-                        m_aap_providers.push_back((l->second)(source));
-                        ret=true;
-                    }
-                    else
-                        throw MetadataException("ShibConfig::addMetadata() unable to locate a metadata factory of the requested type");
-                }
-            }
-        }
-    }
-    catch (SAMLException& e)
-    {
-        Category::getInstance(SHIB_LOGCAT".ShibConfig").error(
-            "failed to add %s provider to system using source '%s': %s", type, source, e.what()
-            );
-    }
-    catch (...)
-    {
-        Category::getInstance(SHIB_LOGCAT".ShibConfig").error(
-            "failed to add %s provider to system using source '%s': unknown exception", type, source
-            );
-    }
-    return ret;
+    return i->second(source);
 }
 
 ShibConfig& ShibConfig::getConfig()

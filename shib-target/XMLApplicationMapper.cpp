@@ -73,18 +73,21 @@ namespace shibtarget {
     
         struct Override
         {
-            Override(const XMLCh* AppID) : m_XMLChAppID(AppID), m_AppID(AppID) {}
+            Override(const XMLCh* AppID) : m_XMLChAppID((AppID && *AppID) ? AppID : NULL),
+                m_AppID((AppID && *AppID) ? AppID : NULL) {}
             ~Override();
             const Override* locate(const char* path) const;
             auto_ptr_char m_AppID;
             const XMLCh* m_XMLChAppID;
             map<string,Override*> m_map;
         };
+        
+        const Override* findOverride(const char* vhost, const char* path) const;
     
-        const XMLCh* m_XMLChAppID;
-        string m_AppID;
         map<string,Override*> m_map;
         map<string,Override*> m_extras;
+        
+        Category* log;
     
     private:
         Override* buildOverride(const XMLCh* appID, DOMElement* root, Category& log);
@@ -102,30 +105,10 @@ XMLApplicationMapperImpl::Override::~Override()
         delete i->second;
 }
 
-XMLApplicationMapperImpl::Override* XMLApplicationMapperImpl::buildOverride(const XMLCh* appID, DOMElement* root, Category& log)
-{
-    Override* o=new Override(appID);
-    DOMNodeList* nlist = root->getElementsByTagNameNS(shibtarget::XML::APPMAP_NS,shibtarget::XML::Literals::Path);
-    for (int i=0; nlist && i<nlist->getLength(); i++)
-    {
-        DOMElement* path=static_cast<DOMElement*>(nlist->item(i));
-        const XMLCh* name=path->getAttributeNS(NULL,shibboleth::XML::Literals::Name);
-        if (!name || !*name)
-        {
-            log.warn("Skipping Path element (%d) with empty Name attribute",i);
-            continue;
-        }
-        
-        auto_ptr_char n(name);
-        o->m_map[n.get()]=buildOverride(path->getAttributeNS(NULL,shibtarget::XML::Literals::ApplicationID),path,log);
-    }
-    return o;
-}
-
 XMLApplicationMapperImpl::XMLApplicationMapperImpl(const char* pathname) : ReloadableXMLFileImpl(pathname)
 {
     NDC ndc("XMLApplicationMapperImpl");
-    Category& log=Category::getInstance("shibtarget.XMLApplicationMapperImpl");
+    log=&Category::getInstance("shibtarget.XMLApplicationMapper");
 
     try
     {
@@ -133,47 +116,40 @@ XMLApplicationMapperImpl::XMLApplicationMapperImpl(const char* pathname) : Reloa
         if (XMLString::compareString(shibtarget::XML::APPMAP_NS,e->getNamespaceURI()) ||
             XMLString::compareString(shibtarget::XML::Literals::ApplicationMap,e->getLocalName()))
         {
-            log.error("Construction requires a valid app mapping file: (appmap:ApplicationMap as root element)");
+            log->error("Construction requires a valid app mapping file: (appmap:ApplicationMap as root element)");
             throw MetadataException("Construction requires a valid app mapping file: (appmap:ApplicationMap as root element)");
         }
         
-        m_XMLChAppID=e->getAttributeNS(NULL,shibtarget::XML::Literals::ApplicationID);
-        if (!m_XMLChAppID || !*m_XMLChAppID)
-        {
-            log.error("Default ApplicationID must be defined");
-            throw MetadataException("Default ApplicationID must be defined");
-        }
-        auto_ptr_char defappid(m_XMLChAppID);
-        m_AppID=defappid.get();
-
         // Loop over the Host elements.
         DOMNodeList* nlist = e->getElementsByTagNameNS(shibtarget::XML::APPMAP_NS,shibtarget::XML::Literals::Host);
         for (int i=0; nlist && i<nlist->getLength(); i++)
         {
             DOMElement* host=static_cast<DOMElement*>(nlist->item(i));
             const XMLCh* scheme=host->getAttributeNS(NULL,shibtarget::XML::Literals::Scheme);
-            const XMLCh* name=host->getAttributeNS(NULL,shibboleth::XML::Literals::Name);
             const XMLCh* port=host->getAttributeNS(NULL,shibtarget::XML::Literals::Port);
+            auto_ptr_XMLCh name(host->getAttributeNS(NULL,shibboleth::XML::Literals::Name));
 
-            if (!name || !*name)
+            if (!name.get() || !*(name.get()))
             {
-                log.warn("Skipping Host element (%d) with empty Name attribute",i);
+                log->warn("Skipping Host element (%d) with empty Name attribute",i);
                 continue;
             }
+            XMLString::lowerCase(const_cast<XMLCh*>(name.get()));
 
-            Override* o=buildOverride(host->getAttributeNS(NULL,shibtarget::XML::Literals::ApplicationID),host,log);
+            Override* o=buildOverride(host->getAttributeNS(NULL,shibtarget::XML::Literals::ApplicationID),host,*log);
 
             auto_ptr_char s(scheme);
-            auto_ptr_char n(name);
+            auto_ptr_char n(name.get());
             auto_ptr_char p(port);
-            string url(s.get() ? s.get() : "http");
+            string url((s.get() && *(s.get())) ? s.get() : "http");
             url=url + "://" + n.get();
-            if (p.get()==NULL)
+            if (p.get()==NULL || *(p.get())=='\0')
             {
                 // First store a port-less version.
                 if (m_map.count(url))
                 {
-                    log.warn("Skipping duplicate Host element (%s)",url.c_str());
+                    log->warn("Skipping duplicate Host element (%s)",url.c_str());
+                    delete o;
                     continue;
                 }
                 m_map[url]=o;
@@ -198,31 +174,35 @@ XMLApplicationMapperImpl::XMLApplicationMapperImpl(const char* pathname) : Reloa
                 url=url + ':' + p.get();
                 if (m_map.count(url))
                 {
-                    log.warn("Skipping duplicate Host element (%s)",url.c_str());
+                    log->warn("Skipping duplicate Host element (%s)",url.c_str());
+                    delete o;
                     continue;
                 }
                 m_map[url]=o;
             }
+            log->debug("Added <Host> mapping for %s",url.c_str());
         }
     }
     catch (SAMLException& e)
     {
-        log.errorStream() << "Error while parsing app mapping configuration: " << e.what() << CategoryStream::ENDLINE;
+        log->errorStream() << "Error while parsing app mapping configuration: " << e.what() << CategoryStream::ENDLINE;
         for (map<string,Override*>::iterator i=m_map.begin(); i!=m_map.end(); i++)
             delete i->second;
         if (m_doc)
             m_doc->release();
         throw;
     }
+#ifndef _DEBUG
     catch (...)
     {
-        log.error("Unexpected error while parsing app mapping configuration");
+        log->error("Unexpected error while parsing app mapping configuration");
         for (map<string,Override*>::iterator i=m_map.begin(); i!=m_map.end(); i++)
             delete i->second;
         if (m_doc)
             m_doc->release();
         throw;
     }
+#endif
 }
 
 XMLApplicationMapperImpl::~XMLApplicationMapperImpl()
@@ -231,17 +211,67 @@ XMLApplicationMapperImpl::~XMLApplicationMapperImpl()
         delete i->second;
 }
 
+XMLApplicationMapperImpl::Override* XMLApplicationMapperImpl::buildOverride(const XMLCh* appID, DOMElement* root, Category& log)
+{
+    Override* o=new Override(appID);
+    DOMNodeList* nlist = root->getElementsByTagNameNS(shibtarget::XML::APPMAP_NS,shibtarget::XML::Literals::Path);
+    for (int i=0; nlist && i<nlist->getLength(); i++)
+    {
+        DOMElement* path=static_cast<DOMElement*>(nlist->item(i));
+        auto_ptr_XMLCh name(path->getAttributeNS(NULL,shibboleth::XML::Literals::Name));
+        if (!name.get() || !*(name.get()))
+        {
+            log.warn("Skipping Path element (%d) with empty Name attribute",i);
+            continue;
+        }
+        XMLString::lowerCase(const_cast<XMLCh*>(name.get()));
+        
+        auto_ptr_char n(name.get());
+        o->m_map[n.get()]=buildOverride(path->getAttributeNS(NULL,shibtarget::XML::Literals::ApplicationID),path,log);
+    }
+    return o;
+}
+
+const XMLApplicationMapperImpl::Override* XMLApplicationMapperImpl::findOverride(const char* vhost, const char* path) const
+{
+    const Override* o=NULL;
+    map<string,Override*>::const_iterator i=m_map.find(vhost);
+    if (i!=m_map.end())
+        o=i->second;
+    else
+    {
+        i=m_extras.find(vhost);
+        if (i!=m_extras.end())
+            o=i->second;
+    }
+    
+    if (o)
+    {
+        const Override* o2=o->locate(path);
+        if (o2)
+            return o2;
+    }
+    return o;
+}
+
 const XMLApplicationMapperImpl::Override* XMLApplicationMapperImpl::Override::locate(const char* path) const
 {
     char* dup=strdup(path);
+    char* sep=strchr(path,'?');
+    if (sep)
+        *sep=0;
+    for (char* pch=dup; *pch; pch++)
+        *pch=tolower(*pch);
+        
+    
     const Override* o=this;
     const Override* specifier=((m_XMLChAppID && *m_XMLChAppID) ? this : NULL);
     
-#ifdef WIN32
-    const char* token=strtok(dup,"/");
-#else
+#ifdef HAVE_STRTOK_R
     char* pos=NULL;
     const char* token=strtok_r(dup,"/",&pos);
+#else
+    const char* token=strtok(dup,"/");
 #endif
     while (token)
     {
@@ -251,10 +281,10 @@ const XMLApplicationMapperImpl::Override* XMLApplicationMapperImpl::Override::lo
         o=i->second;
         if (o->m_XMLChAppID && *(o->m_XMLChAppID))
             specifier=o;
-#ifdef WIN32
-        token=strtok(NULL,"/");
-#else
+#ifdef HAVE_STRTOK_R
         token=strtok_r(NULL,"/",&pos);
+#else
+        token=strtok(NULL,"/");
 #endif
     }
 
@@ -285,38 +315,34 @@ const char* XMLApplicationMapper::getApplicationFromURL(const char* url) const
 {
     string vhost;
     const char* path=split_url(url,vhost);
+
     XMLApplicationMapperImpl* impl=dynamic_cast<XMLApplicationMapperImpl*>(getImplementation());
-    
-    map<string,XMLApplicationMapperImpl::Override*>::const_iterator i=impl->m_map.find(vhost);
-    if (i==impl->m_map.end())
-        i=impl->m_extras.find(vhost);
-    if (i!=impl->m_map.end())
+    const XMLApplicationMapperImpl::Override* o=impl->findOverride(vhost.c_str(), path);
+
+    if (impl->log->isDebugEnabled())
     {
-        const XMLApplicationMapperImpl::Override* o=i->second->locate(path);
-        if (o)
-            return o->m_AppID.get();
+        saml::NDC ndc("getApplicationFromURL");
+        impl->log->debug("mapped %s to %s", url, o ? o->m_AppID.get() : "default application ID");
     }
-    
-    return impl->m_AppID.c_str();
+
+    return o ? o->m_AppID.get() : "";
 }
 
 const XMLCh* XMLApplicationMapper::getXMLChApplicationFromURL(const char* url) const
 {
     string vhost;
     const char* path=split_url(url,vhost);
+
     XMLApplicationMapperImpl* impl=dynamic_cast<XMLApplicationMapperImpl*>(getImplementation());
-    
-    map<string,XMLApplicationMapperImpl::Override*>::const_iterator i=impl->m_map.find(vhost);
-    if (i==impl->m_map.end())
-        i=impl->m_extras.find(vhost);
-    if (i!=impl->m_map.end())
+    const XMLApplicationMapperImpl::Override* o=impl->findOverride(vhost.c_str(), path);
+
+    if (impl->log->isDebugEnabled())
     {
-        const XMLApplicationMapperImpl::Override* o=i->second->locate(path);
-        if (o)
-            return o->m_XMLChAppID;
+        saml::NDC ndc("getXMLChApplicationFromURL");
+        impl->log->debug("mapped %s to %s", url, o ? o->m_AppID.get() : "default application ID");
     }
-    
-    return impl->m_XMLChAppID;
+
+    return o ? o->m_XMLChAppID : &chNull;
 }
 
 const char* XMLApplicationMapper::getApplicationFromParsedURL(
@@ -334,17 +360,15 @@ const char* XMLApplicationMapper::getApplicationFromParsedURL(
     vhost+=buf;
 
     XMLApplicationMapperImpl* impl=dynamic_cast<XMLApplicationMapperImpl*>(getImplementation());
-    map<string,XMLApplicationMapperImpl::Override*>::const_iterator i=impl->m_map.find(vhost);
-    if (i==impl->m_map.end())
-        i=impl->m_extras.find(vhost);
-    if (i!=impl->m_map.end())
+    const XMLApplicationMapperImpl::Override* o=impl->findOverride(vhost.c_str(), path);
+
+    if (impl->log->isDebugEnabled())
     {
-        const XMLApplicationMapperImpl::Override* o=i->second->locate(path);
-        if (o)
-            return o->m_AppID.get();
+        saml::NDC ndc("getApplicationFromParsedURL");
+        impl->log->debug("mapped %s%s to %s", vhost.c_str(), path ? path : "", o ? o->m_AppID.get() : "default application ID");
     }
-    
-    return impl->m_AppID.c_str();
+
+    return o ? o->m_AppID.get() : "";
 }
 
 const XMLCh* XMLApplicationMapper::getXMLChApplicationFromParsedURL(
@@ -362,15 +386,13 @@ const XMLCh* XMLApplicationMapper::getXMLChApplicationFromParsedURL(
     vhost+=buf;
 
     XMLApplicationMapperImpl* impl=dynamic_cast<XMLApplicationMapperImpl*>(getImplementation());
-    map<string,XMLApplicationMapperImpl::Override*>::const_iterator i=impl->m_map.find(vhost);
-    if (i==impl->m_map.end())
-        i=impl->m_extras.find(vhost);
-    if (i!=impl->m_map.end())
+    const XMLApplicationMapperImpl::Override* o=impl->findOverride(vhost.c_str(), path);
+
+    if (impl->log->isDebugEnabled())
     {
-        const XMLApplicationMapperImpl::Override* o=i->second->locate(path);
-        if (o)
-            return o->m_XMLChAppID;
+        saml::NDC ndc("getXMLChApplicationFromParsedURL");
+        impl->log->debug("mapped %s%s to %s", vhost.c_str(), path ? path : "", o ? o->m_AppID.get() : "default application ID");
     }
-    
-    return impl->m_XMLChAppID;
+
+    return o ? o->m_XMLChAppID : &chNull;
 }

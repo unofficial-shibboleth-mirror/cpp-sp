@@ -14,6 +14,7 @@ libshib_la_SOURCES = \
                     Constants.cpp \
                     CredResolvers.cpp \
                     Metadata.cpp \
+                    ReloadableXMLFile.cpp \
                     SAMLBindingFactory.cpp \
                     ShibConfig.cpp \
                     ShibPOSTProfile.cpp \

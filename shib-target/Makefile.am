@@ -22,7 +22,6 @@ libshib_target_la_SOURCES = \
 	shib-config.cpp \
 	shib-ini.cpp \
 	shib-mlp.cpp \
-	shib-resource.cpp \
 	shib-resourceentry.cpp \
 	shib-rm.cpp \
 	shib-rpcerror.cpp \
@@ -34,7 +33,9 @@ libshib_target_la_SOURCES = \
 	shibrpc-clnt.c \
 	shibrpc-server.cpp \
 	shibrpc-svc.c \
-	shibrpc-xdr.c
+	shibrpc-xdr.c \
+	XML.cpp \
+	XMLApplicationMapper.cpp
 
 # this is different from the project version
 # http://sources.redhat.com/autobook/autobook/autobook_91.html

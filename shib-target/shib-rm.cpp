@@ -99,8 +99,7 @@ RM::~RM()
   delete m_priv;
 }
 
-RPCError* RM::getAssertions(const char* cookie, const char* ip,
-			    const char* url,
+RPCError* RM::getAssertions(const char* cookie, const char* ip, const char* resource,
 			    vector<SAMLAssertion*> &assertions,
 			    SAMLAuthenticationStatement **statement)
 {
@@ -117,19 +116,14 @@ RPCError* RM::getAssertions(const char* cookie, const char* ip,
     return new RPCError(-1, "No IP Address");
   }
 
-  if (!url || *url == '\0') {
-    m_priv->log->error ("no URL");
-    return new RPCError(-1, "Invalid URL Resource");
-  }
-
-  m_priv->log->info ("request from %s for \"%s\"", ip, url);
+  m_priv->log->info ("request from %s for \"%s\"", ip, resource);
   m_priv->log->debug ("session cookie: %s", cookie);
 
   shibrpc_get_assertions_args_1 arg;
   arg.cookie.cookie = (char*)cookie;
   arg.cookie.client_addr = (char*)ip;
   arg.checkIPAddress = m_priv->m_config.checkIPAddress;
-  arg.url = (char *)url;
+  arg.application_id = (char *)resource;
 
   shibrpc_get_assertions_ret_1 ret;
   memset (&ret, 0, sizeof(ret));
@@ -185,7 +179,7 @@ RPCError* RM::getAssertions(const char* cookie, const char* ip,
 	    while (conds.hasNext())
 	    {
 	      SAMLAudienceRestrictionCondition* cond=dynamic_cast<SAMLAudienceRestrictionCondition*>(conds.next());
-	      if (!cond->eval(ShibTargetConfig::getConfig().getPolicies()))
+          if (!cond->eval(dynamic_cast<STConfig&>(ShibTargetConfig::getConfig()).getPolicies()))
 	      {
 		m_priv->log->warn("Assertion failed AudienceRestrictionCondition check, skipping it...");
 		ok=false;
@@ -242,22 +236,7 @@ void RM::serialize(SAMLAssertion &assertion, string &result)
   os << assertion;
   unsigned int outlen;
   char* assn = (char*) os.str().c_str();
-  XMLByte* serialized = Base64::encode(reinterpret_cast<XMLByte*>(assn),
-				       os.str().length(), &outlen);
+  XMLByte* serialized = Base64::encode(reinterpret_cast<XMLByte*>(assn), os.str().length(), &outlen);
   result = (char*) serialized;
-}
-
-Iterator<SAMLAttribute*> RM::getAttributes(SAMLAssertion &assertion)
-{
-  // XXX: Only deal with a single statement!!!!
-  Iterator<SAMLStatement*> i = assertion.getStatements();
-  if (i.hasNext()) {
-    SAMLAttributeStatement* s =
-       static_cast<SAMLAttributeStatement*>(const_cast<SAMLStatement*>(i.next()));
-
-    if (s)
-      return s->getAttributes();
-  }
-  
-  return EMPTY(SAMLAttribute*);
+  XMLString::release(&serialized);
 }

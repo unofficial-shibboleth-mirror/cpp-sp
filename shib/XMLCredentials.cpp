@@ -72,7 +72,7 @@ using namespace std;
 
 namespace shibboleth {
     
-    class XMLCredentialsImpl
+    class XMLCredentialsImpl : public ReloadableXMLFileImpl
     {
     public:
         XMLCredentialsImpl(const char* pathname);
@@ -93,31 +93,40 @@ namespace shibboleth {
         vector<KeyUse*> m_keyuses;
         typedef multimap<pair<const XMLCh*,bool>,KeyUse*> BindingMap;
         BindingMap m_bindings;
-        
-        DOMDocument* m_doc;
     };
 
-    class XMLCredentials : public ICredentials
+    class XMLCredentials : public ICredentials, public ReloadableXMLFile
     {
     public:
-        XMLCredentials(const char* pathname);
-        ~XMLCredentials() { delete m_lock; delete m_impl; }
+        XMLCredentials(const char* pathname) : ReloadableXMLFile(pathname) {}
+        ~XMLCredentials() {}
+        
         bool attach(const XMLCh* subject, const ISite* relyingParty, SSL_CTX* ctx) const;
 
-    private:
-        void lock();
-        void unlock() { m_lock->unlock(); }
-        std::string m_source;
-        time_t m_filestamp;
-        RWLock* m_lock;
-        XMLCredentialsImpl* m_impl;
+    protected:
+        virtual ReloadableXMLFileImpl* newImplementation(const char* pathname) const;
     };
 
 }
 
 extern "C" ICredentials* XMLCredentialsFactory(const char* source)
 {
-    return new XMLCredentials(source);
+    XMLCredentials* creds=new XMLCredentials(source);
+    try
+    {
+        creds->getImplementation();
+    }
+    catch (...)
+    {
+        delete creds;
+        throw;
+    }
+    return creds;    
+}
+
+ReloadableXMLFileImpl* XMLCredentials::newImplementation(const char* pathname) const
+{
+    return new XMLCredentialsImpl(pathname);
 }
 
 XMLCredentialsImpl::KeyUse::KeyUse(resolvermap_t& resolverMap, const XMLCh* keyref, const XMLCh* certref) : m_key(NULL), m_cert(NULL)
@@ -138,21 +147,13 @@ XMLCredentialsImpl::KeyUse::KeyUse(resolvermap_t& resolverMap, const XMLCh* keyr
     }
 }
 
-XMLCredentialsImpl::XMLCredentialsImpl(const char* pathname) : m_doc(NULL)
+XMLCredentialsImpl::XMLCredentialsImpl(const char* pathname) : ReloadableXMLFileImpl(pathname)
 {
     NDC ndc("XMLCredentialsImpl");
     Category& log=Category::getInstance(SHIB_LOGCAT".XMLCredentialsImpl");
 
-    saml::XML::Parser p;
     try
     {
-        static XMLCh base[]={chLatin_f, chLatin_i, chLatin_l, chLatin_e, chColon, chForwardSlash, chForwardSlash, chForwardSlash, chNull};
-        URLInputSource src(base,pathname);
-        Wrapper4InputSource dsrc(&src,false);
-        m_doc=p.parse(dsrc);
-
-        log.infoStream() << "Loaded and parsed creds file (" << pathname << ")" << CategoryStream::ENDLINE;
-
         DOMElement* e = m_doc->getDocumentElement();
         if (XMLString::compareString(XML::SHIB_NS,e->getNamespaceURI()) ||
             XMLString::compareString(SHIB_L(Credentials),e->getLocalName()))
@@ -165,24 +166,24 @@ XMLCredentialsImpl::XMLCredentialsImpl(const char* pathname) : m_doc(NULL)
         DOMElement* child=saml::XML::getFirstChildElement(e);
         while (!saml::XML::isElementNamed(child,XML::SHIB_NS,SHIB_L(KeyUse)))
         {
-            CredResolverFactory* factory=NULL;
+            string cr_type;
             auto_ptr<char> id(XMLString::transcode(child->getAttributeNS(NULL,SHIB_L(Id))));
             
             if (saml::XML::isElementNamed(child,XML::SHIB_NS,SHIB_L(FileCredResolver)))
-                factory=ShibConfig::getConfig().getCredResolverFactory("edu.internet2.middleware.shibboleth.creds.provider.FileCredResolver");
+                cr_type="edu.internet2.middleware.shibboleth.creds.provider.FileCredResolver";
             else if (saml::XML::isElementNamed(child,saml::XML::XMLSIG_NS,L(KeyInfo)))
-                factory=ShibConfig::getConfig().getCredResolverFactory("edu.internet2.middleware.shibboleth.creds.provider.KeyInfoResolver");
+                cr_type="edu.internet2.middleware.shibboleth.creds.provider.KeyInfoResolver";
             else if (saml::XML::isElementNamed(child,XML::SHIB_NS,SHIB_L(CustomCredResolver)))
             {
-                auto_ptr<char> c(XMLString::transcode(child->getAttributeNS(NULL,SHIB_L(Class))));
-                factory=ShibConfig::getConfig().getCredResolverFactory(c.get());
+                auto_ptr_char c(child->getAttributeNS(NULL,SHIB_L(Class)));
+                cr_type=c.get();
             }
             
-            if (factory)
+            if (!cr_type.empty())
             {
                 try
                 {
-                    ICredResolver* cr=(*factory)(child);
+                    ICredResolver* cr=ShibConfig::getConfig().newCredResolver(cr_type.c_str(),child);
                     m_resolverMap[id.get()]=cr;
                 }
                 catch (SAMLException& e)
@@ -251,7 +252,7 @@ XMLCredentialsImpl::XMLCredentialsImpl(const char* pathname) : m_doc(NULL)
     }
     catch (SAMLException& e)
     {
-        log.errorStream() << "XML error while parsing creds configuration: " << e.what() << CategoryStream::ENDLINE;
+        log.errorStream() << "Error while parsing creds configuration: " << e.what() << CategoryStream::ENDLINE;
         for (vector<KeyUse*>::iterator i=m_keyuses.begin(); i!=m_keyuses.end(); i++)
             delete (*i);
         for (resolvermap_t::iterator j=m_resolverMap.begin(); j!=m_resolverMap.end(); j++)
@@ -260,6 +261,7 @@ XMLCredentialsImpl::XMLCredentialsImpl(const char* pathname) : m_doc(NULL)
             m_doc->release();
         throw;
     }
+#ifndef _DEBUG
     catch (...)
     {
         log.error("Unexpected error while parsing creds configuration");
@@ -271,6 +273,7 @@ XMLCredentialsImpl::XMLCredentialsImpl(const char* pathname) : m_doc(NULL)
             m_doc->release();
         throw;
     }
+#endif
 }
 
 XMLCredentialsImpl::~XMLCredentialsImpl()
@@ -279,81 +282,15 @@ XMLCredentialsImpl::~XMLCredentialsImpl()
         delete (*i);
     for (resolvermap_t::iterator j=m_resolverMap.begin(); j!=m_resolverMap.end(); j++)
         delete j->second;
-    if (m_doc)
-        m_doc->release();
 }
-
-XMLCredentials::XMLCredentials(const char* pathname) : m_filestamp(0), m_source(pathname), m_impl(NULL)
-{
-#ifdef WIN32
-    struct _stat stat_buf;
-    if (_stat(pathname, &stat_buf) == 0)
-#else
-    struct stat stat_buf;
-    if (stat(pathname, &stat_buf) == 0)
-#endif
-        m_filestamp=stat_buf.st_mtime;
-    m_impl=new XMLCredentialsImpl(pathname);
-    m_lock=RWLock::create();
-}
-
-void XMLCredentials::lock()
-{
-    m_lock->rdlock();
-
-    // Check if we need to refresh.
-#ifdef WIN32
-    struct _stat stat_buf;
-    if (_stat(m_source.c_str(), &stat_buf) == 0)
-#else
-    struct stat stat_buf;
-    if (stat(m_source.c_str(), &stat_buf) == 0)
-#endif
-    {
-        if (m_filestamp>0 && m_filestamp<stat_buf.st_mtime)
-        {
-            // Elevate lock and recheck.
-            m_lock->unlock();
-            m_lock->wrlock();
-            if (m_filestamp>0 && m_filestamp<stat_buf.st_mtime)
-            {
-                try
-                {
-                    XMLCredentialsImpl* new_mapper=new XMLCredentialsImpl(m_source.c_str());
-                    delete m_impl;
-                    m_impl=new_mapper;
-                    m_filestamp=stat_buf.st_mtime;
-                    m_lock->unlock();
-                }
-                catch(SAMLException& e)
-                {
-                    m_lock->unlock();
-                    saml::NDC ndc("lock");
-                    Category::getInstance(SHIB_LOGCAT".XMLCredentials").error("failed to reload credentials metadata, sticking with what we have: %s", e.what());
-                }
-                catch(...)
-                {
-                    m_lock->unlock();
-                    saml::NDC ndc("lock");
-                    Category::getInstance(SHIB_LOGCAT".XMLCredentials").error("caught an unknown exception, sticking with what we have");
-                }
-            }
-            else
-            {
-                m_lock->unlock();
-            }
-            m_lock->rdlock();
-        }
-    }
-}
-
 
 bool XMLCredentials::attach(const XMLCh* subject, const ISite* relyingParty, SSL_CTX* ctx) const
 {
     NDC ndc("attach");
 
     // Use the matching bindings.
-    for (XMLCredentialsImpl::BindingMap::const_iterator i=m_impl->m_bindings.begin(); i!=m_impl->m_bindings.end(); i++)
+    XMLCredentialsImpl* impl=dynamic_cast<XMLCredentialsImpl*>(getImplementation());
+    for (XMLCredentialsImpl::BindingMap::const_iterator i=impl->m_bindings.begin(); i!=impl->m_bindings.end(); i++)
     {
         bool match=false;
         

@@ -77,21 +77,12 @@ using namespace saml;
 using namespace shibboleth;
 using namespace shibtarget;
 
-struct settings_t
-{
-    settings_t() {}
-    settings_t(string& name) : m_name(name) {}
-    
-    string m_name;
-    vector<string> m_mustContain;
-};
-
 // globals
 namespace {
     HINSTANCE g_hinstDLL;
     ThreadKey* rpc_handle_key = NULL;
     ShibTargetConfig* g_Config = NULL;
-    vector<settings_t> g_Sites;
+    vector<string> g_Sites;
 }
 
 void destroy_handle(void* data)
@@ -163,36 +154,13 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
             log.info("configuring for site ID (%d), hostname (%s)",i-1,hostname.empty() ? "null" : hostname.c_str());
 
             // If no section exists for the host, mark it as a "skip" site.
-            if (!ini.exists(hostname))
+            if (hostname == "skip")
             {
                 log.info("skipping site ID (%d)",i-1);
-                g_Sites.push_back(settings_t());
-                sprintf(iid,"%u",i++);
-                continue;
+                hostname.erase();
             }
-            
-            settings_t settings(hostname);
-            
-            // Content matching string.
-            string mustcontain;
-            if (ini.get_tag(hostname,"mustContain",true,&mustcontain) && !mustcontain.empty())
-            {
-                char* buf=strdup(mustcontain.c_str());
-                _strupr(buf);
-                char* start=buf;
-                while (char* sep=strchr(start,';'))
-                {
-                    *sep='\0';
-                    if (*start)
-                        settings.m_mustContain.push_back(start);
-                    start=sep+1;
-                }
-                if (*start)
-                    settings.m_mustContain.push_back(start);
-                free(buf);
-            }
-            
-            g_Sites.push_back(settings);
+
+            g_Sites.push_back(hostname);
             sprintf(iid,"%u",i++);
             hostname.erase();
         }
@@ -370,46 +338,40 @@ string url_encode(const char* url) throw (bad_alloc)
     return s;
 }
 
-string get_target(PHTTP_FILTER_CONTEXT pfc, PHTTP_FILTER_PREPROC_HEADERS pn, settings_t& site)
+void get_target_and_appid(
+    PHTTP_FILTER_CONTEXT pfc, PHTTP_FILTER_PREPROC_HEADERS pn, const char* hostname, string& target, string& appid
+    )
 {
-    // Reconstructing the requested URL is not fun. Apparently, the PREPROC_HEADERS
-    // event means way pre. As in, none of the usual CGI headers are in place yet.
-    // It's actually almost easier, in a way, because all the path-info and query
-    // stuff is in one place, the requested URL, which we can get. But we have to
-    // reconstruct the protocol/host pair using tweezers.
-    string s;
-    if (pfc->fIsSecurePort)
-        s="https://";
-    else
-        s="http://";
+    dynabuf port(10);
+    dynabuf url(256);
+    GetServerVariable(pfc,"SERVER_PORT",port,10);
+    GetHeader(pn,pfc,"url",url,256,false);
+    
+    // First get the appid using the normalized hostname.
+    ApplicationMapper mapper;
+    appid = mapper->getApplicationFromParsedURL((pfc->fIsSecurePort ? "https" : "http"), hostname, atoi(port), url);
 
-    // We use the "normalizeRequest" tag to decide how to obtain the server's name.
-    dynabuf buf(256);
+    target=static_cast<char*>(url);
+    if (port!=(pfc->fIsSecurePort ? "443" : "80"))
+        target = ':' + static_cast<char*>(port) + target;
+
+    // For the target, we use the "normalizeRequest" tag to decide how to set the server's name.
     string tag;
-    if (g_Config->getINI().get_tag(site.m_name,"normalizeRequest",true,&tag) && ShibINI::boolean(tag))
+    if (g_Config->getINI().get_tag(appid,"normalizeRequest",true,&tag) && ShibINI::boolean(tag))
     {
-        s+=site.m_name;
+        target=string(pfc->fIsSecurePort ? "https://" : "http://") + hostname + target;
     }
     else
     {
-        GetServerVariable(pfc,"SERVER_NAME",buf);
-        s+=buf;
+        GetServerVariable(pfc,"SERVER_NAME",url);
+        target=string(pfc->fIsSecurePort ? "https://" : "http://") + static_cast<char*>(url) + target;
     }
-
-    GetServerVariable(pfc,"SERVER_PORT",buf,10);
-    if (buf!=(pfc->fIsSecurePort ? "443" : "80"))
-        s=s + ':' + static_cast<char*>(buf);
-
-    GetHeader(pn,pfc,"url",buf,256,false);
-    s+=buf;
-
-    return s;
 }
 
-string get_shire_location(settings_t& site, const char* target)
+string get_shire_location(const char* application_id, const char* target)
 {
     string shireURL;
-    if (g_Config->getINI().get_tag(site.m_name,"shireURL",true,&shireURL) && !shireURL.empty())
+    if (g_Config->getINI().get_tag(application_id,"shireURL",true,&shireURL) && !shireURL.empty())
     {
         if (shireURL[0]!='/')
             return shireURL;
@@ -476,35 +438,27 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
             return WriteClientError(pfc,"IIS site instance appears to be invalid.");
 
         // Match site instance to site settings.
-        if (site_id>g_Sites.size() || g_Sites[site_id-1].m_name.length()==0)
+        if (site_id>g_Sites.size() || g_Sites[site_id-1].length()==0)
             return SF_STATUS_REQ_NEXT_NOTIFICATION;
-        settings_t& site=g_Sites[site_id-1];
-
-        string target_url=get_target(pfc,pn,site);
-        string shire_url=get_shire_location(site,target_url.c_str());
+        string& site=g_Sites[site_id-1];
+        
+        string application_id;
+        string target_url;
+        get_target_and_appid(pfc,pn,site.c_str(),target_url,application_id);
+        string shire_url=get_shire_location(application_id.c_str(),target_url.c_str());
 
         // If the user is accessing the SHIRE acceptance point, pass it on.
         if (target_url.find(shire_url)!=string::npos)
             return SF_STATUS_REQ_NEXT_NOTIFICATION;
 
-        // Get the url request and scan for the must-contain string.
-        if (!site.m_mustContain.empty())
-        {
-            char* upcased=new char[target_url.length()+1];
-            strcpy(upcased,target_url.c_str());
-            _strupr(upcased);
-            for (vector<string>::const_iterator index=site.m_mustContain.begin(); index!=site.m_mustContain.end(); index++)
-                if (strstr(upcased,index->c_str()))
-                    break;
-            delete[] upcased;
-            if (index==site.m_mustContain.end())
-                return SF_STATUS_REQ_NEXT_NOTIFICATION;
-        }
+        // Now check the policy for this application.
+        string tag;
+        ShibINI& ini=g_Config->getINI();
+        if (!ini.get_tag(application_id,"requireSession",true,&tag) || !ShibINI::boolean(tag))
+            return SF_STATUS_REQ_NEXT_NOTIFICATION;
 
         // SSL content check.
-        ShibINI& ini=g_Config->getINI();
-        string tag;
-        if (ini.get_tag(site.m_name,"contentSSLOnly",true,&tag) && ShibINI::boolean(tag) && !pfc->fIsSecurePort)
+        if (ini.get_tag(application_id,"contentSSLOnly",true,&tag) && ShibINI::boolean(tag) && !pfc->fIsSecurePort)
         {
             return WriteClientError(pfc,
                 "This server is configured to deny non-SSL requests for secure resources. "
@@ -517,30 +471,30 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
 
         // Set SHIRE policies.
         SHIREConfig config;
-        config.checkIPAddress = (ini.get_tag(site.m_name,"checkIPAddress",true,&tag) && ShibINI::boolean(tag));
+        config.checkIPAddress = (ini.get_tag(application_id,"checkIPAddress",true,&tag) && ShibINI::boolean(tag));
         config.lifetime=config.timeout=0;
         tag.erase();
-        if (ini.get_tag(site.m_name, "authLifetime", true, &tag))
+        if (ini.get_tag(application_id, "authLifetime", true, &tag))
             config.lifetime=strtoul(tag.c_str(),NULL,10);
         tag.erase();
-        if (ini.get_tag(site.m_name, "authTimeout", true, &tag))
+        if (ini.get_tag(application_id, "authTimeout", true, &tag))
             config.timeout=strtoul(tag.c_str(),NULL,10);
 
         // Pull the config data we need to handle the various possible conditions.
         string shib_cookie;
-        if (!ini.get_tag(site.m_name, "cookieName", true, &shib_cookie))
+        if (!ini.get_tag(application_id, "cookieName", true, &shib_cookie))
             return WriteClientError(pfc,"The cookieName configuration setting is missing, check configuration.");
     
         string wayfLocation;
-        if (!ini.get_tag(site.m_name, "wayfURL", true, &wayfLocation))
+        if (!ini.get_tag(application_id, "wayfURL", true, &wayfLocation))
             return WriteClientError(pfc,"The wayfURL configuration setting is missing, check configuration.");
     
         string shireError;
-        if (!ini.get_tag(site.m_name, "shireError", true, &shireError))
+        if (!ini.get_tag(application_id, "shireError", true, &shireError))
             return WriteClientError(pfc,"The shireError configuration setting is missing, check configuration.");
 
         string accessError;
-        if (!ini.get_tag(site.m_name, "accessError", true, &shireError))
+        if (!ini.get_tag(application_id, "accessError", true, &shireError))
             return WriteClientError(pfc,"The accessError configuration setting is missing, check configuration.");
         
         // Get an RPC handle and build the SHIRE object.
@@ -550,7 +504,7 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
             rpc_handle = new RPCHandle(shib_target_sockname(), SHIBRPC_PROG, SHIBRPC_VERS_1);
             rpc_handle_key->setData(rpc_handle);
         }
-        SHIRE shire(rpc_handle, config, shire_url);
+        SHIRE shire(rpc_handle, config, shire_url.c_str());
 
         // Check for authentication cookie.
         const char* session_id=NULL;
@@ -575,16 +529,16 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
         // Make sure this session is still valid.
         RPCError* status = NULL;
         ShibMLP markupProcessor;
-        bool has_tag = ini.get_tag(site.m_name, "supportContact", true, &tag);
+        bool has_tag = ini.get_tag(application_id, "supportContact", true, &tag);
         markupProcessor.insert("supportContact", has_tag ? tag : "");
-        has_tag = ini.get_tag(site.m_name, "logoLocation", true, &tag);
+        has_tag = ini.get_tag(application_id, "logoLocation", true, &tag);
         markupProcessor.insert("logoLocation", has_tag ? tag : "");
         markupProcessor.insert("requestURL", target_url);
     
         dynabuf abuf(16);
         GetServerVariable(pfc,"REMOTE_ADDR",abuf,16);
         try {
-            status = shire.sessionIsValid(session_id, abuf, target_url.c_str());
+            status = shire.sessionIsValid(session_id, abuf, application_id.c_str());
         }
         catch (ShibTargetException &e) {
             markupProcessor.insert("errorType", "SHIRE Processing Error");
@@ -628,11 +582,11 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
         // Get the attributes.
         vector<SAMLAssertion*> assertions;
         SAMLAuthenticationStatement* sso_statement=NULL;
-        status = rm.getAssertions(session_id, buf, target_url.c_str(), assertions, &sso_statement);
+        status = rm.getAssertions(session_id, buf, application_id.c_str(), assertions, &sso_statement);
     
         if (status->isError()) {
             string rmError;
-            if (!ini.get_tag(site.m_name, "rmError", true, &shireError))
+            if (!ini.get_tag(application_id, "rmError", true, &shireError))
                 return WriteClientError(pfc,"The rmError configuration setting is missing, check configuration.");
     
             markupProcessor.insert(*status);
@@ -650,7 +604,7 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
         }
 
         // Get the AAP providers, which contain the attribute policy info.
-        Iterator<IAAP*> provs=ShibConfig::getConfig().getAAPProviders();
+        Iterator<IAAP*> provs=g_Config->getAAPProviders();
     
         // Clear out the list of mapped attributes
         while (provs.hasNext())
@@ -685,8 +639,11 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
         pn->SetHeader(pfc,"Shib-Origin-Site:","");
         pn->SetHeader(pfc,"Shib-Authentication-Method:","");
 
+        pn->SetHeader(pfc,"Shib-Application-ID:","");
+        pn->SetHeader(pfc,"Shib-Application-ID:",const_cast<char*>(application_id.c_str()));
+
         // Maybe export the assertion.
-        if (ini.get_tag(site.m_name,"exportAssertion",true,&tag) && ShibINI::boolean(tag))
+        if (ini.get_tag(application_id,"exportAssertion",true,&tag) && ShibINI::boolean(tag))
         {
             string assertion;
             RM::serialize(*(assertions[0]), assertion);
@@ -698,50 +655,54 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
         
         if (sso_statement)
         {
-            auto_ptr<char> os(XMLString::transcode(sso_statement->getSubject()->getNameQualifier()));
-            auto_ptr<char> am(XMLString::transcode(sso_statement->getAuthMethod()));
-            pn->SetHeader(pfc,"Shib-Origin-Site:", os.get());
-            pn->SetHeader(pfc,"Shib-Authentication-Method:", am.get());
+            auto_ptr_char os(sso_statement->getSubject()->getNameQualifier());
+            auto_ptr_char am(sso_statement->getAuthMethod());
+            pn->SetHeader(pfc,"Shib-Origin-Site:", const_cast<char*>(os.get()));
+            pn->SetHeader(pfc,"Shib-Authentication-Method:", const_cast<char*>(am.get()));
         }
 
-        // Export the attributes. Only supports a single statement.
-        Iterator<SAMLAttribute*> j = assertions.size()==1 ? RM::getAttributes(*(assertions[0])) : EMPTY(SAMLAttribute*);
-        while (j.hasNext())
-        {
-            SAMLAttribute* attr=j.next();
-    
-            // Are we supposed to export it?
-            const char* hname=NULL;
-            AAP wrapper(attr->getName(),attr->getNamespace());
-            if (!wrapper.fail())
-                hname=wrapper->getHeader();
-            if (hname)
-            {
-                Iterator<string> vals=attr->getSingleByteValues();
-                if (!strcmp(hname,"REMOTE_USER") && vals.hasNext())
-                {
-                    char* principal=const_cast<char*>(vals.next().c_str());
-                    pn->SetHeader(pfc,"remote-user:",principal);
-                    pfc->pFilterContext=pfc->AllocMem(pfc,strlen(principal)+1,0);
-                    if (pfc->pFilterContext)
-                        strcpy(static_cast<char*>(pfc->pFilterContext),principal);
-                }    
-                else
-                {
-                    string header;
-                    for (int it = 0; vals.hasNext(); it++) {
-                        string value = vals.next();
-                        for (string::size_type pos = value.find_first_of(";", string::size_type(0)); pos != string::npos; pos = value.find_first_of(";", pos)) {
-                            value.insert(pos, "\\");
-                            pos += 2;
-                        }
-                        if (it == 0)
-                            header=value;
-                        else
-                            header=header + ';' + value;
+        // Export the attributes.
+        Iterator<SAMLAssertion*> a_iter(assertions);
+        while (a_iter.hasNext()) {
+            SAMLAssertion* assert=a_iter.next();
+            Iterator<SAMLStatement*> statements=assert->getStatements();
+            while (statements.hasNext()) {
+                SAMLAttributeStatement* astate=dynamic_cast<SAMLAttributeStatement*>(statements.next());
+                if (!astate)
+                    continue;
+                Iterator<SAMLAttribute*> attrs=astate->getAttributes();
+                while (attrs.hasNext()) {
+                    SAMLAttribute* attr=attrs.next();
+        
+                    // Are we supposed to export it?
+                    AAP wrapper(g_Config->getAAPProviders(),attr->getName(),attr->getNamespace());
+                    if (wrapper.fail())
+                        continue;
+                
+                    Iterator<string> vals=attr->getSingleByteValues();
+                    if (!strcmp(wrapper->getHeader(),"REMOTE_USER") && vals.hasNext()) {
+                        char* principal=const_cast<char*>(vals.next().c_str());
+                        pn->SetHeader(pfc,"remote-user:",principal);
+                        pfc->pFilterContext=pfc->AllocMem(pfc,strlen(principal)+1,0);
+                        if (pfc->pFilterContext)
+                            strcpy(static_cast<char*>(pfc->pFilterContext),principal);
                     }
-                    string hname2=string(hname) + ':';
-                    pn->SetHeader(pfc,const_cast<char*>(hname2.c_str()),const_cast<char*>(header.c_str()));
+                    else {
+                        string header;
+                        for (int it = 0; vals.hasNext(); it++) {
+                            string value = vals.next();
+                            for (string::size_type pos = value.find_first_of(";", string::size_type(0)); pos != string::npos; pos = value.find_first_of(";", pos)) {
+                                value.insert(pos, "\\");
+                                pos += 2;
+                            }
+                            if (it == 0)
+                                header=value;
+                            else
+                                header=header + ';' + value;
+                        }
+                        string hname2=string(wrapper->getHeader()) + ':';
+                        pn->SetHeader(pfc,const_cast<char*>(hname2.c_str()),const_cast<char*>(header.c_str()));
+        	        }
                 }
             }
         }
@@ -772,37 +733,35 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
     return WriteClientError(pfc,"Server reached unreachable code!");
 }
 
-string get_target(LPEXTENSION_CONTROL_BLOCK lpECB, settings_t& site)
+void get_target_and_appid(LPEXTENSION_CONTROL_BLOCK lpECB, const char* hostname, string& target, string& appid)
 {
-    string s;
-    dynabuf buf(256);
-    GetServerVariable(lpECB,"HTTPS",buf);
-    bool SSL=(buf=="on");
-    if (SSL)
-        s="https://";
-    else
-        s="http://";
+    dynabuf ssl(5);
+    dynabuf port(10);
+    dynabuf url(256);
+    GetServerVariable(lpECB,"HTTPS",ssl,5);
+    GetServerVariable(lpECB,"SERVER_PORT",port,10);
+    GetServerVariable(lpECB,"URL",url,255);
+    bool SSL=(ssl=="on");
+    
+    // First get the appid using the normalized hostname.
+    ApplicationMapper mapper;
+    appid = mapper->getApplicationFromParsedURL((SSL ? "https" : "http"), hostname, atoi(port), url);
 
-    // We use the "normalizeRequest" tag to decide how to obtain the server's name.
+    target=static_cast<char*>(url);
+    if (port!=(SSL ? "443" : "80"))
+        target = ':' + static_cast<char*>(port) + target;
+
+    // For the target, we use the "normalizeRequest" tag to decide how to set the server's name.
     string tag;
-    if (g_Config->getINI().get_tag(site.m_name,"normalizeRequest",true,&tag) && ShibINI::boolean(tag))
+    if (g_Config->getINI().get_tag(appid,"normalizeRequest",true,&tag) && ShibINI::boolean(tag))
     {
-        s+=site.m_name;
+        target=string(SSL ? "https://" : "http://") + hostname + target;
     }
     else
     {
-        GetServerVariable(lpECB,"SERVER_NAME",buf);
-        s+=buf;
+        GetServerVariable(lpECB,"SERVER_NAME",url);
+        target=string(SSL ? "https://" : "http://") + static_cast<char*>(url) + target;
     }
-
-    GetServerVariable(lpECB,"SERVER_PORT",buf,10);
-    if (buf!=(SSL ? "443" : "80"))
-        s=s + ':' + static_cast<char*>(buf);
-
-    GetServerVariable(lpECB,"URL",buf,255);
-    s+=buf;
-
-    return s;
 }
 
 DWORD WriteClientError(LPEXTENSION_CONTROL_BLOCK lpECB, const char* msg)
@@ -855,40 +814,42 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
             return WriteClientError(lpECB,"IIS site instance appears to be invalid.");
 
         // Match site instance to site settings.
-        if (site_id>g_Sites.size() || g_Sites[site_id-1].m_name.length()==0)
+        if (site_id>g_Sites.size() || g_Sites[site_id-1].length()==0)
             return WriteClientError(lpECB,"Shibboleth filter not configured for this web site.");
-        settings_t& site=g_Sites[site_id-1];
+        string& site=g_Sites[site_id-1];
 
-        if (!ini.get_tag(site.m_name, "shireError", true, &shireError))
+        string target_url,application_id;
+        get_target_and_appid(lpECB,site.c_str(),target_url,application_id);
+
+        if (!ini.get_tag(application_id, "shireError", true, &shireError))
             return WriteClientError(lpECB,"The shireError configuration setting is missing, check configuration.");
 
-        string target_url=get_target(lpECB,site);
-        string shire_url = get_shire_location(site,target_url.c_str());
+        string shire_url = target_url;
 
         // Set SHIRE policies.
         SHIREConfig config;
         string tag;
-        config.checkIPAddress = (ini.get_tag(site.m_name,"checkIPAddress",true,&tag) && ShibINI::boolean(tag));
+        config.checkIPAddress = (ini.get_tag(application_id,"checkIPAddress",true,&tag) && ShibINI::boolean(tag));
         config.lifetime=config.timeout=0;
         tag.erase();
-        if (ini.get_tag(site.m_name, "authLifetime", true, &tag))
+        if (ini.get_tag(application_id, "authLifetime", true, &tag))
             config.lifetime=strtoul(tag.c_str(),NULL,10);
         tag.erase();
-        if (ini.get_tag(site.m_name, "authTimeout", true, &tag))
+        if (ini.get_tag(application_id, "authTimeout", true, &tag))
             config.timeout=strtoul(tag.c_str(),NULL,10);
 
         // Pull the config data we need to handle the various possible conditions.
         string shib_cookie;
-        if (!ini.get_tag(site.m_name, "cookieName", true, &shib_cookie))
+        if (!ini.get_tag(application_id, "cookieName", true, &shib_cookie))
             return WriteClientError(lpECB,"The cookieName configuration setting is missing, check configuration.");
     
         string wayfLocation;
-        if (!ini.get_tag(site.m_name, "wayfURL", true, &wayfLocation))
+        if (!ini.get_tag(application_id, "wayfURL", true, &wayfLocation))
             return WriteClientError(lpECB,"The wayfURL configuration setting is missing, check configuration.");
     
-        bool has_tag = ini.get_tag(site.m_name, "supportContact", true, &tag);
+        bool has_tag = ini.get_tag(application_id, "supportContact", true, &tag);
         markupProcessor.insert("supportContact", has_tag ? tag : "");
-        has_tag = ini.get_tag(site.m_name, "logoLocation", true, &tag);
+        has_tag = ini.get_tag(application_id, "logoLocation", true, &tag);
         markupProcessor.insert("logoLocation", has_tag ? tag : "");
         markupProcessor.insert("requestURL", target_url.c_str());
   
@@ -902,7 +863,7 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
         SHIRE shire(rpc_handle, config, shire_url.c_str());
 
         // Process SHIRE POST
-        if (ini.get_tag(site.m_name, "shireSSLOnly", true, &tag) && ShibINI::boolean(tag))
+        if (ini.get_tag(application_id, "shireSSLOnly", true, &tag) && ShibINI::boolean(tag))
         {
             // Make sure this is SSL, if it should be.
             GetServerVariable(lpECB,"HTTPS",buf,10);
@@ -943,7 +904,7 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
 
         // Process the post.
         string cookie;
-        RPCError* status = shire.sessionCreate(post,buf,cookie);
+        RPCError* status = shire.sessionCreate(post,buf,application_id.c_str(),cookie);
     
         if (status->isError()) {
             if (status->isRetryable()) {

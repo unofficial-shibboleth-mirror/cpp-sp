@@ -198,49 +198,35 @@ static char* url_encode(request_rec* r, const char* s)
     return ret;
 }
 
-static const char* get_shire_location(request_rec* r, const char* target, bool encode)
+static const char* get_application_id(request_rec* r)
 {
-  ShibINI& ini = g_Config->getINI();
-  string shire_location;
+    ApplicationMapper mapper;
+    return ap_pstrdup(r->pool,
+        mapper->getApplicationFromParsedURL(
+            ap_http_method(r), ap_get_server_name(r), ap_get_server_port(r), r->unparsed_uri
+            )
+       );
+}
 
-  if (g_szSHIREURL)
-    shire_location = g_szSHIREURL;
-  else if (! ini.get_tag (ap_get_server_name(r), "shireURL", true, &shire_location)) {
+static const char* get_shire_location(request_rec* r, const char* target, const char* application_id)
+{
+  string shire_location;
+  ShibINI& ini = g_Config->getINI();
+
+  if (!ini.get_tag (application_id, "shireURL", true, &shire_location)) {
     ap_log_rerror(APLOG_MARK,APLOG_ERR,r,
-		  "shire_get_location() no shireURL configuration for %s",
-		  ap_get_server_name(r));
+		  "shire_get_location() no shireURL configuration for %s", application_id);
     return NULL;
   }
 
   const char* shire = shire_location.c_str();
 
-  if (*shire != '/') {
-    if (encode)
-      return url_encode(r,shire);
-    else
+  if (*shire != '/')
       return ap_pstrdup(r->pool,shire);
-    }    
-    const char* colon=strchr(target,':');
-    const char* slash=strchr(colon+3,'/');
-    if (encode)
-      return url_encode(r,ap_pstrcat(r->pool,
-				     ap_pstrndup(r->pool,target,slash-target),
-				     shire,NULL));
-    else
-      return ap_pstrcat(r->pool, ap_pstrndup(r->pool,target,slash-target),
-			shire, NULL);
-}
 
-static bool is_shire_location(request_rec* r, const char* target)
-{
-  const char* shire = get_shire_location(r, target, false);
-
-  if (!shire) return false;
-
-  if (!strstr(target, shire))
-    return false;
-
-  return (!strcmp(target,shire));
+  const char* colon=strchr(target,':');
+  const char* slash=strchr(colon+3,'/');
+  return ap_pstrcat(r->pool, ap_pstrndup(r->pool,target,slash-target), shire, NULL);
 }
 
 static int shire_error_page(request_rec* r, const char* filename, ShibMLP& mlp)
@@ -265,9 +251,15 @@ extern "C" int shire_check_user(request_rec* r)
     shire_dir_config* dc=(shire_dir_config*)ap_get_module_config(r->per_dir_config,&shire_module);
 
     // This will always be normalized, because Apache uses ap_get_server_name in this API call.
-    char* targeturl=ap_construct_url(r->pool,r->unparsed_uri,r);
-
-    if (is_shire_location (r, targeturl)) {
+    const char* targeturl=ap_construct_url(r->pool,r->unparsed_uri,r);
+    
+    // Map request to application ID, which is the key for config lookup.
+    const char* application_id=get_application_id(r);
+    
+    // Get unescaped location of this application's assertion consumer service.
+    const char* unescaped_shire = get_shire_location(r, targeturl, application_id);
+    
+    if (strstr(targeturl,unescaped_shire)) {
       ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
            "shire_check_user: REQUEST FOR SHIRE!  Maybe you did not configure the SHIRE Handler?");
       return SERVER_ERROR;
@@ -298,8 +290,7 @@ extern "C" int shire_check_user(request_rec* r)
       // SSL check.
       if (dc->bSSLOnly==1 && strcmp(ap_http_method(r),"https"))
       {
-        ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
-           "shire_check_user() blocked non-SSL access");
+        ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,"shire_check_user() blocked non-SSL access");
         return SERVER_ERROR;
       }
     }
@@ -313,38 +304,29 @@ extern "C" int shire_check_user(request_rec* r)
     ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
                     "shire_check_user() Shib check for %s", targeturl);
 
-
-    const char * shire_location = get_shire_location(r,targeturl,true);
-    if (!shire_location)
-        return SERVER_ERROR;
-    string shire_url = get_shire_location(r,targeturl,false);
-
-    const char* serverName = ap_get_server_name(r);
+    
     string tag;
-    bool has_tag = ini.get_tag (serverName, "checkIPAddress", true, &tag);
+    bool has_tag = ini.get_tag (application_id, "checkIPAddress", true, &tag);
     dc->config.checkIPAddress = (has_tag ? ShibINI::boolean (tag) : false);
 
     string shib_cookie;
-    if (! ini.get_tag(serverName, "cookieName", true, &shib_cookie)) {
+    if (!ini.get_tag(application_id, "cookieName", true, &shib_cookie)) {
       ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
-		    "shire_check_user: no cookieName configuration for %s",
-		    serverName);
+		    "shire_check_user: no cookieName configuration for %s", application_id);
       return SERVER_ERROR;
     }
 
     string wayfLocation;
-    if (! ini.get_tag(serverName, "wayfURL", true, &wayfLocation)) {
+    if (!ini.get_tag(application_id, "wayfURL", true, &wayfLocation)) {
       ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
-		    "shire_check_user: no wayfURL configuration for %s",
-		    serverName);
+		    "shire_check_user: no wayfURL configuration for %s", application_id);
       return SERVER_ERROR;
     }
 
     string shireError;
-    if (! ini.get_tag(serverName, "shireError", true, &shireError)) {
+    if (!ini.get_tag(application_id, "shireError", true, &shireError)) {
       ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
-		    "shire_check_user: no shireError configuration for %s",
-		    serverName);
+		    "shire_check_user: no shireError configuration for %s", application_id);
       return SERVER_ERROR;
     }
     
@@ -355,7 +337,7 @@ extern "C" int shire_check_user(request_rec* r)
         rpc_handle = new RPCHandle(shib_target_sockname(), SHIBRPC_PROG, SHIBRPC_VERS_1);
         rpc_handle_key->setData(rpc_handle);
     }
-    SHIRE shire(rpc_handle, dc->config, shire_url);
+    SHIRE shire(rpc_handle, dc->config, unescaped_shire);
 
     // We're in charge, so check for cookie.
     const char* session_id=NULL;
@@ -383,7 +365,7 @@ extern "C" int shire_check_user(request_rec* r)
         ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
 		      "shire_check_user() no cookie found -- redirecting to WAYF");
         char* wayf=ap_pstrcat(r->pool,wayfLocation.c_str(),
-			      "?shire=",shire_location,
+			      "?shire=",url_encode(r,unescaped_shire),
 			      "&target=",url_encode(r,targeturl),NULL);
         ap_table_setn(r->headers_out,"Location",wayf);
         return REDIRECT;
@@ -392,14 +374,14 @@ extern "C" int shire_check_user(request_rec* r)
     // Make sure this session is still valid
     RPCError* status = NULL;
     ShibMLP markupProcessor;
-    has_tag = ini.get_tag(serverName, "supportContact", true, &tag);
+    has_tag = ini.get_tag(application_id, "supportContact", true, &tag);
     markupProcessor.insert("supportContact", has_tag ? tag : "");
-    has_tag = ini.get_tag(serverName, "logoLocation", true, &tag);
+    has_tag = ini.get_tag(application_id, "logoLocation", true, &tag);
     markupProcessor.insert("logoLocation", has_tag ? tag : "");
     markupProcessor.insert("requestURL", targeturl);
 
     try {
-        status = shire.sessionIsValid(session_id, r->connection->remote_ip,targeturl);
+        status = shire.sessionIsValid(session_id, r->connection->remote_ip,application_id);
     }
     catch (ShibTargetException &e) {
         ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,"shire_check_user(): %s", e.what());
@@ -425,7 +407,7 @@ extern "C" int shire_check_user(request_rec* r)
         if (status->isRetryable()) {
             // Oops, session is invalid.  Redirect to WAYF.
             char* wayf=ap_pstrcat(r->pool,wayfLocation.c_str(),
-				"?shire=",shire_location,
+				"?shire=",url_encode(r,unescaped_shire),
 				"&target=",url_encode(r,targeturl),NULL);
             ap_table_setn(r->headers_out,"Location",wayf);
 
@@ -441,8 +423,7 @@ extern "C" int shire_check_user(request_rec* r)
     }
     else {
         delete status;
-        ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
-		      "shire_check_user() success");
+        ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,"shire_check_user() success");
         return OK;
     }
 
@@ -461,46 +442,44 @@ extern "C" int shire_post_handler (request_rec* r)
 
   ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,"shire_post_handler() ENTER");
 
-  const char* targeturl=ap_construct_url(r->pool,r->unparsed_uri,r);
- 
-  const char * shire_location = get_shire_location(r,targeturl,true);
-  if (!shire_location)
-      return SERVER_ERROR;
-  string shire_url = get_shire_location(r,targeturl,false);
+  // This will always be normalized, because Apache uses ap_get_server_name in this API call.
+  const char* targeturl = ap_construct_url(r->pool,r->unparsed_uri,r);
+   
+  // Map request to application ID, which is the key for config lookup.
+  const char* application_id = get_application_id(r);
+    
+  // The SHIRE URL is the current request URL, by definition...
+  const char* unescaped_shire = targeturl;
 
-  const char* serverName = ap_get_server_name(r);
   string tag;
-  bool has_tag = ini.get_tag(serverName, "checkIPAddress", true, &tag);
+  bool has_tag = ini.get_tag(application_id, "checkIPAddress", true, &tag);
   SHIREConfig config;
   config.checkIPAddress = (has_tag ? ShibINI::boolean(tag) : false);
 
   string shib_cookie;
-  if (! ini.get_tag(serverName, "cookieName", true, &shib_cookie)) {
+  if (! ini.get_tag(application_id, "cookieName", true, &shib_cookie)) {
     ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
-		  "shire_check_user: no cookieName configuration for %s",
-		  serverName);
+		  "shire_check_user: no cookieName configuration for %s", application_id);
     return SERVER_ERROR;
   }
 
   string wayfLocation;
-  if (! ini.get_tag(serverName, "wayfURL", true, &wayfLocation)) {
+  if (! ini.get_tag(application_id, "wayfURL", true, &wayfLocation)) {
     ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
-		  "shire_check_user: no wayfURL configuration for %s",
-		  serverName);
+		  "shire_check_user: no wayfURL configuration for %s", application_id);
     return SERVER_ERROR;
   }
 
   string shireError;
-  if (! ini.get_tag(serverName, "shireError", true, &shireError)) {
+  if (! ini.get_tag(application_id, "shireError", true, &shireError)) {
     ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
-		  "shire_check_user: no shireError configuration for %s",
-		  serverName);
+		  "shire_check_user: no shireError configuration for %s", application_id);
     return SERVER_ERROR;
   }
 
-  has_tag = ini.get_tag(serverName, "supportContact", true, &tag);
+  has_tag = ini.get_tag(application_id, "supportContact", true, &tag);
   markupProcessor.insert("supportContact", has_tag ? tag : "");
-  has_tag = ini.get_tag(serverName, "logoLocation", true, &tag);
+  has_tag = ini.get_tag(application_id, "logoLocation", true, &tag);
   markupProcessor.insert("logoLocation", has_tag ? tag : "");
   markupProcessor.insert("requestURL", targeturl);
   
@@ -511,7 +490,7 @@ extern "C" int shire_post_handler (request_rec* r)
         rpc_handle = new RPCHandle(shib_target_sockname(), SHIBRPC_PROG, SHIBRPC_VERS_1);
         rpc_handle_key->setData(rpc_handle);
     }
-    SHIRE shire(rpc_handle, config, shire_url);
+    SHIRE shire(rpc_handle, config, unescaped_shire);
 
   // Process SHIRE POST
 
@@ -520,19 +499,17 @@ extern "C" int shire_post_handler (request_rec* r)
       
   try {
     string sslonly;
-    if (!ini.get_tag(serverName, "shireSSLOnly", true, &sslonly))
+    if (!ini.get_tag(application_id, "shireSSLOnly", true, &sslonly))
       ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
 		    "shire_post_handler: no shireSSLOnly configuration");
     
     // Make sure this is SSL, if it should be
     if (ShibINI::boolean(sslonly) && strcmp(ap_http_method(r),"https"))
-      throw ShibTargetException (SHIBRPC_OK,
-				 "blocked non-SSL access to SHIRE POST processor");
+      throw ShibTargetException(SHIBRPC_OK, "blocked non-SSL access to SHIRE POST processor");
 
     // Make sure this is a POST
     if (strcasecmp (r->method, "POST"))
-      throw ShibTargetException (SHIBRPC_OK,
-				 "blocked non-POST to SHIRE POST processor");
+      throw ShibTargetException(SHIBRPC_OK, "blocked non-POST to SHIRE POST processor");
 
     // Sure sure this POST is an appropriate content type
     const char *ct = ap_table_get (r->headers_in, "Content-type");
@@ -575,24 +552,24 @@ extern "C" int shire_post_handler (request_rec* r)
 
     // process the post
     string cookie;
-    RPCError* status = shire.sessionCreate(post, r->connection->remote_ip, cookie);
+    RPCError* status = shire.sessionCreate(post, r->connection->remote_ip, application_id, cookie);
 
     if (status->isError()) {
       ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
 		    "shire_post_handler() POST process failed (%d): %s",
 		    status->getCode(), status->getText());
 
-      if (status->isRetryable()) {
-	ap_log_rerror(APLOG_MARK,APLOG_INFO|APLOG_NOERRNO,r,
-		      "shire_post_handler() Retrying POST by redirecting to WAYF");
+    if (status->isRetryable()) {
+	  ap_log_rerror(APLOG_MARK,APLOG_INFO|APLOG_NOERRNO,r,
+	        "shire_post_handler() Retrying POST by redirecting to WAYF");
 	
-	char* wayf=ap_pstrcat(r->pool,wayfLocation.c_str(),
-			      "?shire=",shire_location,
+        char* wayf=ap_pstrcat(r->pool,wayfLocation.c_str(),
+			      "?shire=",url_encode(r,unescaped_shire),
 			      "&target=",url_encode(r,target),NULL);
-	ap_table_setn(r->headers_out,"Location",wayf);
-	delete status;
-	return REDIRECT;
-      }
+        ap_table_setn(r->headers_out,"Location",wayf);
+        delete status;
+        return REDIRECT;
+    }
 
       // return this error to the user.
       markupProcessor.insert (*status);

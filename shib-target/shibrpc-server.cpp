@@ -169,9 +169,8 @@ shibrpc_session_is_valid_1_svc(shibrpc_session_is_valid_args_1 *argp,
     // and now try to prefetch the attributes .. this could cause an
     // "error", which is why we call it here.
     try {
-      log.debug ("resource: %s", argp->url);
-      Resource r(argp->url);
-      entry->preFetch(r,15);	// give a 15-second window for the RM
+      log.debug ("resource: %s", argp->application_id);
+      entry->preFetch(argp->application_id, 15);	// give a 15-second window for the RM
 
     } catch (SAMLException &e) {
       log.debug ("prefetch failed with a SAML Exception: %s", e.what());
@@ -226,15 +225,16 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
   auto_ptr_XMLCh location(argp->shire_location);
 
   // Pull in the Policies
-  Iterator<const XMLCh*> policies=ShibTargetConfig::getConfig().getPolicies();
+  Iterator<const XMLCh*> policies=dynamic_cast<STConfig&>(ShibTargetConfig::getConfig()).getPolicies();
 
   // And grab the Profile
   // XXX: Create a "Global" POSTProfile instance per location...
   log.debug ("create the POST profile (%d policies)", policies.size());
-  ShibPOSTProfile *profile =
-    ShibPOSTProfileFactory::getInstance(policies,
-					location.get(),
-					3600);
+  ShibPOSTProfile *profile = ShibPOSTProfileFactory::getInstance(
+    ShibTargetConfig::getConfig().getMetadataProviders(),
+    ShibTargetConfig::getConfig().getTrustProviders(),
+    policies,location.get(),3600
+    );
 
   SAMLResponse* r = NULL;
   const SAMLAuthenticationStatement* auth_st = NULL;
@@ -375,7 +375,7 @@ shibrpc_get_assertions_1_svc(shibrpc_get_assertions_args_1 *argp,
 
   log.debug ("get attrs for client at %s", argp->cookie.client_addr);
   log.debug ("cookie: %s", argp->cookie.cookie);
-  log.debug ("resource: %s", argp->url);
+  log.debug ("resource: %s", argp->application_id);
 
   // Find this session
   CCacheEntry* entry = g_shibTargetCCache->find(argp->cookie.cookie);
@@ -404,8 +404,7 @@ shibrpc_get_assertions_1_svc(shibrpc_get_assertions_args_1 *argp,
 
   try {
     // grab the attributes for this resource
-    Resource resource(argp->url);
-    Iterator<SAMLAssertion*> iter = entry->getAssertions(resource);
+    Iterator<SAMLAssertion*> iter = entry->getAssertions(argp->application_id);
     u_int size = iter.size();
     result->assertions.assertions_len = size;
 
@@ -413,17 +412,16 @@ shibrpc_get_assertions_1_svc(shibrpc_get_assertions_args_1 *argp,
     if (size) {
 
       // Build the response section
-      ShibRpcXML* av =
-	(ShibRpcXML*) malloc (size * sizeof (ShibRpcXML));
+      ShibRpcXML* av = (ShibRpcXML*) malloc (size * sizeof (ShibRpcXML));
       result->assertions.assertions_val = av;
 
       // and then serialize them all...
       u_int i = 0;
       while (iter.hasNext()) {
-	SAMLAssertion* as = iter.next();
-	ostringstream os;
-	os << *as;
-	av[i++].xml_string = strdup(os.str().c_str());
+        SAMLAssertion* as = iter.next();
+        ostringstream os;
+        os << *as;
+        av[i++].xml_string = strdup(os.str().c_str());
       }
     }
   } catch (SAMLException& e) {

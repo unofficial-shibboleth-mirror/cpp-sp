@@ -115,10 +115,6 @@ SOURCE=".\shib-mlp.cpp"
 # End Source File
 # Begin Source File
 
-SOURCE=".\shib-resource.cpp"
-# End Source File
-# Begin Source File
-
 SOURCE=".\shib-resourceentry.cpp"
 # End Source File
 # Begin Source File
@@ -172,6 +168,14 @@ SOURCE=".\shibrpc-xdr.c"
 # Begin Source File
 
 SOURCE=.\shibrpc.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\XML.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\XMLApplicationMapper.cpp
 # End Source File
 # End Target
 # End Project

@@ -8,9 +8,7 @@
 
 #include <rpc/rpc.h>
 
-#ifndef WIN32
 #include <pthread.h>
-#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -60,7 +58,7 @@ typedef struct ShibRpcXML ShibRpcXML;
 
 struct shibrpc_session_is_valid_args_1 {
 	ShibRpcHttpCookie_1 cookie;
-	char *url;
+	char *application_id;
 	bool_t checkIPAddress;
 	long lifetime;
 	long timeout;
@@ -73,6 +71,7 @@ struct shibrpc_session_is_valid_ret_1 {
 typedef struct shibrpc_session_is_valid_ret_1 shibrpc_session_is_valid_ret_1;
 
 struct shibrpc_new_session_args_1 {
+	char *application_id;
 	char *shire_location;
 	char *saml_post;
 	char *client_addr;
@@ -89,7 +88,7 @@ typedef struct shibrpc_new_session_ret_1 shibrpc_new_session_ret_1;
 struct shibrpc_get_assertions_args_1 {
 	ShibRpcHttpCookie_1 cookie;
 	bool_t checkIPAddress;
-	char *url;
+	char *application_id;
 };
 typedef struct shibrpc_get_assertions_args_1 shibrpc_get_assertions_args_1;
 

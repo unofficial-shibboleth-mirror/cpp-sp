@@ -5,7 +5,19 @@ sharsocket=/tmp/shar-socket
 
 # SERVER CONFIGURATION
 
-# Optional, may also be set per-server (or per-directory in Apache)
+# Mandatory
+providerID = https://wayf.internet2.edu/InQueue/ServiceProvider
+wayfURL = https://wayf.internet2.edu/InQueue/WAYF
+cookieName = shib-cookie
+shireSSLOnly = false
+shireError=@-PKGSYSCONFDIR-@/shireError.html
+rmError=@-PKGSYSCONFDIR-@/rmError.html
+accessError=@-PKGSYSCONFDIR-@/accessError.html
+shireURL = /Shibboleth.shire
+
+# Optional, may also be set per-application (some are per-directory in Apache)
+#requireSession = false
+#requestAttributes = 
 #normalizeRequest = true
 #checkIPAddress = false
 #contentSSLOnly = false
@@ -18,26 +30,14 @@ sharsocket=/tmp/shar-socket
 supportContact=admin@your.site
 logoLocation=/logo.gif
 
-# Mandatory
-wayfURL = https://wayf.internet2.edu/InQueue/WAYF
-cookieName = shib-cookie
-shireSSLOnly = false
-shireError=@-PKGSYSCONFDIR-@/shireError.html
-rmError=@-PKGSYSCONFDIR-@/rmError.html
-accessError=@-PKGSYSCONFDIR-@/accessError.html
-
-# Mandatory for IIS, set for Apache with SHIREURL command
-shireURL = /Shibboleth.shire
-
 [shire]
 logger=@-PKGSYSCONFDIR-@/shire.logger
-metadata=metadata_shire
+#applicationMap=@-PKGSYSCONFDIR-@/applications.xml
 
 [shar]
 logger=@-PKGSYSCONFDIR-@/shar.logger
 # If using a TCP-based SHAR, space delimit the allowed client IPs
 #sharacl = 127.0.0.1
-metadata=metadata_shar
 
 # Controls timeouts for AA queries (in seconds)
 AATimeout=60
@@ -65,18 +65,20 @@ mysql = @-LIBEXECDIR-@/shib-mysql-ccache.so
 arg1 = --language=@-PREFIX-@/share/english
 arg2 = --datadir=@-PREFIX-@/data
 
-[metadata_shire]
+[metadata]
 edu.internet2.middleware.shibboleth.metadata.provider.XML=@-PKGSYSCONFDIR-@/sites.xml
+
+[aap]
 edu.internet2.middleware.shibboleth.target.AAP.provider.XML=@-PKGSYSCONFDIR-@/AAP.xml
 
-[metadata_shar]
-edu.internet2.middleware.shibboleth.metadata.provider.XML=@-PKGSYSCONFDIR-@/sites.xml
-edu.internet2.middleware.shibboleth.trust.provider.XML=@-PKGSYSCONFDIR-@/trust.xml
+[creds]
 edu.internet2.middleware.shibboleth.creds.provider.XML=@-PKGSYSCONFDIR-@/creds.xml
-edu.internet2.middleware.shibboleth.target.AAP.provider.XML=@-PKGSYSCONFDIR-@/AAP.xml
+
+[trust]
+edu.internet2.middleware.shibboleth.trust.provider.XML=@-PKGSYSCONFDIR-@/trust.xml
 
 [isapi]
-# When using the ISAPI filter version, map IIS Instance IDs to server names.
+# When using the ISAPI filter version, map IIS Instance IDs to server hostnames.
 # 
 #1=my.server.name
 
@@ -85,18 +87,14 @@ edu.internet2.middleware.shibboleth.target.AAP.provider.XML=@-PKGSYSCONFDIR-@/AA
 # You can filter incoming users at a high level by listing the policies to allow.
 InQueue=urn:mace:inqueue
 
-# To define per-server or per-vhost settings, create a section
-# for the server's hostname and set or override configuration.
-#[my.server.name]
+# To define per-application settings, create a section
+# for the application's ID and set or override configuration.
+#[my_application]
 #normalizeRequest = true
 #checkIPAddress = false
 #contentSSLOnly = false
 #authLifetime = 7200
 #authTimeout = 3600
 #exportAssertion = false
-# For IIS, determine what content to protect by specifying strings
-# to match against the request path. Separate matches with semicolons.
-#mustContain = /secure/;/protected/
-# list of attributes to request for server "my.server.name"
-# requests everything if this doesn't exist or is empty
+#requireSession = true
 #requestAttributes = 

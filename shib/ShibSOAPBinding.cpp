@@ -78,13 +78,13 @@ bool shibboleth::ssl_ctx_callback(void* ssl_ctx, void* userptr)
     try
     {
         ShibSOAPBinding* b = reinterpret_cast<ShibSOAPBinding*>(userptr);
-        if (!Credentials::attach(b->m_subject, b->m_relyingParty, reinterpret_cast<ssl_ctx_st*>(ssl_ctx)))
+        if (!Credentials::attach(b->m_creds, b->m_subject, b->m_relyingParty, reinterpret_cast<ssl_ctx_st*>(ssl_ctx)))
         {
             NDC("ssl_ctx_callback");
             Category::getInstance(SHIB_LOGCAT".ShibSOAPBinding").warn("found no appropriate credentials to attach, request will be anonymous");
         }
 
-        Trust t;
+        Trust t(b->m_trusts);
         if (!t.attach(b->m_relyingParty, reinterpret_cast<ssl_ctx_st*>(ssl_ctx)))
         {
             NDC("ssl_ctx_callback");

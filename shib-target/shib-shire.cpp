@@ -66,29 +66,29 @@
 class shibtarget::SHIREPriv
 {
 public:
-  SHIREPriv(RPCHandle *rpc, SHIREConfig cfg, string shire_url);
+  SHIREPriv(RPCHandle *rpc, SHIREConfig cfg, const char* shire_url);
   ~SHIREPriv();
 
   RPCHandle *	m_rpc;
   SHIREConfig	m_config;
-  string	m_url;
+  string	    m_shire_url;
 
   log4cpp::Category* log;
 };
 
-SHIREPriv::SHIREPriv(RPCHandle *rpc, SHIREConfig cfg, string shire_url)
+SHIREPriv::SHIREPriv(RPCHandle *rpc, SHIREConfig cfg, const char* shire_url)
 {
   string ctx = "shibtarget.SHIRE";
   log = &(log4cpp::Category::getInstance(ctx));
   m_rpc = rpc;
   m_config = cfg;
-  m_url = shire_url;
+  m_shire_url = shire_url;
 }
 
 SHIREPriv::~SHIREPriv() {}
 
 
-SHIRE::SHIRE(RPCHandle *rpc, SHIREConfig cfg, string shire_url)
+SHIRE::SHIRE(RPCHandle *rpc, SHIREConfig cfg, const char* shire_url)
 {
   m_priv = new SHIREPriv(rpc, cfg, shire_url);
   m_priv->log->info ("New SHIRE handle created: %p", m_priv);
@@ -100,7 +100,7 @@ SHIRE::~SHIRE()
 }
 
 
-RPCError* SHIRE::sessionIsValid(const char* cookie, const char* ip, const char* url)
+RPCError* SHIRE::sessionIsValid(const char* cookie, const char* ip, const char* application_id)
 {
   saml::NDC ndc("sessionIsValid");
 
@@ -115,7 +115,7 @@ RPCError* SHIRE::sessionIsValid(const char* cookie, const char* ip, const char* 
   }
 
   // make sure we pass _something_ to the server
-  if (!url) url = "";
+  if (!application_id) application_id = "";
 
   m_priv->log->info ("is session valid: %s", ip);
   m_priv->log->debug ("session cookie: %s", cookie);
@@ -124,7 +124,7 @@ RPCError* SHIRE::sessionIsValid(const char* cookie, const char* ip, const char* 
 
   arg.cookie.cookie = (char*)cookie;
   arg.cookie.client_addr = (char *)ip;
-  arg.url = (char *)url;
+  arg.application_id = (char *)application_id;
   arg.lifetime = m_priv->m_config.lifetime;
   arg.timeout = m_priv->m_config.timeout;
   arg.checkIPAddress = m_priv->m_config.checkIPAddress;
@@ -170,7 +170,7 @@ RPCError* SHIRE::sessionIsValid(const char* cookie, const char* ip, const char* 
   return retval;
 }
 
-RPCError* SHIRE::sessionCreate(const char* post, const char* ip, string& cookie)
+RPCError* SHIRE::sessionCreate(const char* post, const char* ip, const char* application_id, string& cookie)
 {
   saml::NDC ndc("sessionCreate");
 
@@ -184,10 +184,14 @@ RPCError* SHIRE::sessionCreate(const char* post, const char* ip, string& cookie)
     return new RPCError(-1, "Invalid IP Address");
   }
 
+  // make sure we pass _something_ to the server
+  if (!application_id) application_id = "";
+
   m_priv->log->info ("create session for user at %s", ip);
 
   shibrpc_new_session_args_1 arg;
-  arg.shire_location = (char*) (m_priv->m_url.c_str());
+  arg.shire_location = (char*) (m_priv->m_shire_url.c_str());
+  arg.application_id = (char*) application_id;
   arg.saml_post = (char*)post;
   arg.client_addr = (char*)ip;
   arg.checkIPAddress = m_priv->m_config.checkIPAddress;

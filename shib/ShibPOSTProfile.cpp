@@ -65,42 +65,34 @@ using namespace shibboleth;
 using namespace saml;
 using namespace std;
 
-ShibPOSTProfile::ShibPOSTProfile(const Iterator<const XMLCh*>& policies, const XMLCh* receiver, int ttlSeconds)
-    : m_ttlSeconds(ttlSeconds), m_algorithm(SIGNATURE_RSA), m_issuer(NULL)
+static Iterator<ITrust*> emptyTrusts;
+static Iterator<ICredentials*> emptyCreds;
+
+ShibPOSTProfile::ShibPOSTProfile(
+    const Iterator<IMetadata*>& metadatas, const Iterator<ITrust*>& trusts,
+    const Iterator<const XMLCh*>& policies, const XMLCh* receiver, int ttlSeconds
+    )
+    : m_ttlSeconds(ttlSeconds), m_algorithm(SIGNATURE_RSA), m_issuer(NULL), m_receiver(receiver),
+        m_metadatas(metadatas), m_trusts(trusts), m_policies(policies), m_creds(emptyCreds)
 {
     if (!receiver || !*receiver || ttlSeconds <= 0)
         throw SAMLException(SAMLException::REQUESTER, "ShibPOSTProfile() found a null or invalid argument");
-
-    m_receiver = XMLString::replicate(receiver);
-
-    while (policies.hasNext())
-        m_policies.push_back(XMLString::replicate(policies.next()));
 }
 
-ShibPOSTProfile::ShibPOSTProfile(const Iterator<const XMLCh*>& policies, const XMLCh* issuer)
-    : m_ttlSeconds(0), m_algorithm(SIGNATURE_RSA), m_receiver(NULL)
+ShibPOSTProfile::ShibPOSTProfile(
+    const saml::Iterator<IMetadata*>& metadatas, const saml::Iterator<ICredentials*>& creds,
+    const Iterator<const XMLCh*>& policies, const XMLCh* issuer
+    )
+    : m_ttlSeconds(0), m_algorithm(SIGNATURE_RSA), m_receiver(NULL), m_issuer(issuer),
+        m_policies(policies), m_metadatas(metadatas), m_creds(creds), m_trusts(emptyTrusts)
 {
     if (!issuer || !*issuer)
         throw SAMLException(SAMLException::REQUESTER, "ShibPOSTProfile() found a null or invalid argument");
-
-    m_issuer = XMLString::replicate(issuer);
-
-    while (policies.hasNext())
-        m_policies.push_back(XMLString::replicate(policies.next()));
-}
-
-ShibPOSTProfile::~ShibPOSTProfile()
-{
-    delete[] m_issuer;
-    delete[] m_receiver;
-
-    for (vector<const XMLCh*>::iterator i=m_policies.begin(); i!=m_policies.end(); i++)
-        delete[] const_cast<XMLCh*>(*i);
 }
 
 const SAMLAssertion* ShibPOSTProfile::getSSOAssertion(const SAMLResponse& r)
 {
-    return SAMLPOSTProfile::getSSOAssertion(r,Iterator<const XMLCh*>(m_policies));
+    return SAMLPOSTProfile::getSSOAssertion(r,m_policies);
 }
 
 const SAMLAuthenticationStatement* ShibPOSTProfile::getSSOStatement(const SAMLAssertion& a)
@@ -168,7 +160,7 @@ SAMLResponse* ShibPOSTProfile::accept(const XMLByte* buf, XMLCh** originSitePtr)
     
         // Is this a trusted HS?
         const IAuthority* hs=NULL;
-        OriginMetadata mapper(originSite);
+        OriginMetadata mapper(m_metadatas,originSite);
         Iterator<const IAuthority*> hsi=mapper.fail() ? Iterator<const IAuthority*>() : mapper->getHandleServices();
         bool bFound = false;
         while (!bFound && hsi.hasNext())
@@ -180,7 +172,7 @@ SAMLResponse* ShibPOSTProfile::accept(const XMLByte* buf, XMLCh** originSitePtr)
         if (!bFound)
             throw TrustException(SAMLException::RESPONDER, "ShibPOSTProfile::accept() detected an untrusted HS for the origin site");
     
-        Trust t;
+        Trust t(m_trusts);
         Iterator<XSECCryptoX509*> certs=t.getCertificates(hs->getName());
         Iterator<XSECCryptoX509*> certs2=t.getCertificates(originSite);
     
@@ -300,13 +292,13 @@ void ShibPOSTProfile::verifySignature(
             certs.push_back(obj.getX509Certificate(i));
 
         // Compare the name in the end entity certificate to the signer's name.
-        auto_ptr<char> temp(XMLString::transcode(certs[0]));
+        auto_ptr_char temp(certs[0]);
         X509* x=B64_to_X509(temp.get());
         if (!x)
             throw TrustException("ShibPOSTProfile::verifySignature() unable to decode X.509 signing certificate");
 
         bool match=false;
-        auto_ptr<char> sn(XMLString::transcode(signerName));
+        auto_ptr_char sn(signerName);
 
         char data[256];
         X509_NAME* subj;
@@ -357,7 +349,7 @@ void ShibPOSTProfile::verifySignature(
             throw TrustException("ShibPOSTProfile::verifySignature() cannot match CN or subjectAltName against signer");
 
         // Ask the site to determine the trustworthiness of the certificate.
-        if (!originSite->validate(certs))
+        if (!originSite->validate(m_trusts,certs))
             throw TrustException("ShibPOSTProfile::verifySignature() cannot validate the provided signing certificate(s)");
     }
 }

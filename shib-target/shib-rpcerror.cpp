@@ -312,7 +312,7 @@ string RPCError::getOriginErrorURL()
     string res="No URL Available";
     if (m_priv->origin)
     {
-        OriginMetadata mapper(m_priv->origin);
+        OriginMetadata mapper(ShibTargetConfig::getConfig().getMetadataProviders(),m_priv->origin);
         if (!mapper.fail())
         {
             const char* temp=mapper->getErrorURL();
@@ -328,7 +328,7 @@ string RPCError::getOriginContactName()
     string res="No Name Available";
     if (m_priv->origin)
     {
-        OriginMetadata mapper(m_priv->origin);
+        OriginMetadata mapper(ShibTargetConfig::getConfig().getMetadataProviders(),m_priv->origin);
         Iterator<const IContactInfo*> i=
             mapper.fail() ? EMPTY(const IContactInfo*) : mapper->getContacts();
         while (i.hasNext())
@@ -349,7 +349,7 @@ string RPCError::getOriginContactEmail()
     string res="No Email Available";
     if (m_priv->origin)
     {
-        OriginMetadata mapper(m_priv->origin);
+        OriginMetadata mapper(ShibTargetConfig::getConfig().getMetadataProviders(),m_priv->origin);
         Iterator<const IContactInfo*> i=
             mapper.fail() ? EMPTY(const IContactInfo*) : mapper->getContacts();
         while (i.hasNext())

@@ -66,39 +66,13 @@
 #define SHIBTARGET_INIFILE "/opt/shibboleth/etc/shibboleth/shibboleth.ini"
 #endif
 
-class STConfig : public ShibTargetConfig
-{
-public:
-  STConfig(const char* app_name, const char* inifile);
-  ~STConfig();
-  void shutdown();
-  void init();
-  ShibINI& getINI() { return *ini; }
-
-  Iterator<const XMLCh*> getPolicies() { return Iterator<const XMLCh*>(policies); }
-
-  void ref();
-private:
-  SAMLConfig& samlConf;
-  ShibConfig& shibConf;
-  ShibINI* ini;
-  string m_app_name;
-  int refcount;
-  vector<const XMLCh*> policies;
-  string m_SocketName;
-#ifdef WANT_TCP_SHAR
-  vector<string> m_SocketACL;
-#endif
-  friend ShibSockName shib_target_sockname();
-  friend ShibSockName shib_target_sockacl(unsigned int);
-};
-
 namespace {
   STConfig * g_Config = NULL;
   Mutex * g_lock = NULL;
 }
 
 CCache* shibtarget::g_shibTargetCCache = NULL;
+
 
 /****************************************************************************/
 // External Interface
@@ -141,7 +115,7 @@ ShibTargetConfig& ShibTargetConfig::getConfig()
 
 STConfig::STConfig(const char* app_name, const char* inifile)
   :  samlConf(SAMLConfig::getConfig()), shibConf(ShibConfig::getConfig()),
-     m_app_name(app_name), refcount(0)
+     m_app_name(app_name), m_applicationMapper(NULL), refcount(0)
 {
   try {
     ini = new ShibINI((inifile ? inifile : SHIBTARGET_INIFILE));
@@ -240,54 +214,67 @@ void STConfig::init()
     delete iter;
   }
 
-  // Load the specified metadata.
-  if (ini->get_tag(app, SHIBTARGET_TAG_METADATA, true, &tag) && ini->exists(tag))
-  {
-    ShibINI::Iterator* iter=ini->tag_iterator(tag);
-    for (const string* prov=iter->begin(); prov; prov=iter->next())
-    {
-        string sources=ini->get(tag,*prov);
-        int j = 0;
-        for (int i = 0; i < sources.length(); i++)
-        {
-            if (sources.at(i) == ';')
-            {
-                string val = sources.substr(j, i-j);
-                j = i+1;
-                log.info("registering metadata provider: type=%s, source=%s",prov->c_str(),val.c_str());
-                if (!shibConf.addMetadata(prov->c_str(),val.c_str()))
-                {
-                    log.crit("error adding metadata provider: type=%s, source=%s",prov->c_str(),val.c_str());
-                    if (app == SHIBTARGET_SHAR)
-                        throw runtime_error("error adding metadata provider");
-                }
-            }
+    // Load the specified metadata, trust, creds, and aap sources.
+    const string* prov;
+    ShibINI::Iterator* iter=ini->tag_iterator(SHIBTARGET_TAG_METADATA);
+    for (prov=iter->begin(); prov; prov=iter->next()) {
+        string source=ini->get(SHIBTARGET_TAG_METADATA,*prov);
+        log.info("building metadata provider: type=%s, source=%s",prov->c_str(),source.c_str());
+        try {
+            metadatas.push_back(shibConf.newMetadata(prov->c_str(),source.c_str()));
         }
-        string val = sources.substr(j, sources.length()-j);
-        log.info("registering metadata provider: type=%s, source=%s",prov->c_str(),val.c_str());
-        if (!shibConf.addMetadata(prov->c_str(),val.c_str()))
-        {
-            log.crit("error adding metadata provider: type=%s, source=%s",prov->c_str(),val.c_str());
+        catch (exception& e) {
+            log.crit("error building metadata provider: type=%s, source=%s (%s)",prov->c_str(),source.c_str(),e.what());
             if (app == SHIBTARGET_SHAR)
-                throw runtime_error("error adding metadata provider");
+                throw;
         }
     }
     delete iter;
-  }
-  
-  // Backward-compatibility-hack to pull in aap-uri from [shire] and load
-  // as attribute metadata. We load this for anything, not just the SHIRE.
-  if (ini->get_tag(SHIBTARGET_SHIRE, "aap-uri", false, &tag))
-  {
-    log.warn("using DEPRECATED aap-uri setting for backward compatibility, please read the latest target deploy guide");
-    log.info("registering metadata provider: type=edu.internet2.middleware.shibboleth.target.AAP.XML, source=%s",tag.c_str());
-    if (!shibConf.addMetadata("edu.internet2.middleware.shibboleth.target.AAP.XML",tag.c_str()))
-    {
-        log.crit("error adding metadata provider: type=edu.internet2.middleware.shibboleth.target.AAP.XML, source=%s",tag.c_str());
-        if (!strcmp(app.c_str(), SHIBTARGET_SHAR))
-            throw runtime_error("error adding metadata provider");
+
+    iter=ini->tag_iterator(SHIBTARGET_TAG_AAP);
+    for (prov=iter->begin(); prov; prov=iter->next()) {
+        string source=ini->get(SHIBTARGET_TAG_AAP,*prov);
+        log.info("building AAP provider: type=%s, source=%s",prov->c_str(),source.c_str());
+        try {
+            aaps.push_back(shibConf.newAAP(prov->c_str(),source.c_str()));
+        }
+        catch (exception& e) {
+            log.crit("error building AAP provider: type=%s, source=%s (%s)",prov->c_str(),source.c_str(),e.what());
+            if (app == SHIBTARGET_SHAR)
+                throw;
+        }
     }
-  }
+    delete iter;
+    
+    if (app == SHIBTARGET_SHAR) {
+        iter=ini->tag_iterator(SHIBTARGET_TAG_TRUST);
+        for (prov=iter->begin(); prov; prov=iter->next()) {
+            string source=ini->get(SHIBTARGET_TAG_TRUST,*prov);
+            log.info("building trust provider: type=%s, source=%s",prov->c_str(),source.c_str());
+            try {
+                trusts.push_back(shibConf.newTrust(prov->c_str(),source.c_str()));
+            }
+            catch (exception& e) {
+                log.crit("error building trust provider: type=%s, source=%s (%s)",prov->c_str(),source.c_str(),e.what());
+                throw;
+            }
+        }
+        delete iter;
+    
+        iter=ini->tag_iterator(SHIBTARGET_TAG_CREDS);
+        for (prov=iter->begin(); prov; prov=iter->next()) {
+            string source=ini->get(SHIBTARGET_TAG_CREDS,*prov);
+            log.info("building creds provider: type=%s, source=%s",prov->c_str(),source.c_str());
+            try {
+                creds.push_back(shibConf.newCredentials(prov->c_str(),source.c_str()));
+            }
+            catch (exception& e) {
+                log.crit("error building creds provider: type=%s, source=%s (%s)",prov->c_str(),source.c_str(),e.what());
+                throw;
+            }
+        }
+        delete iter;
+    }
   
   // Load SAML policies.
   if (ini->exists(SHIBTARGET_POLICIES)) {
@@ -300,8 +287,22 @@ void STConfig::init()
     delete iter;
   }
   
+  if (app == SHIBTARGET_SHIRE && ini->get_tag(app, SHIBTARGET_TAG_APPMAPPER, false, &tag)) {
+    saml::XML::registerSchema(shibtarget::XML::APPMAP_NS,shibtarget::XML::APPMAP_SCHEMA_ID);
+    try {
+        m_applicationMapper=new XMLApplicationMapper(tag.c_str());
+        dynamic_cast<XMLApplicationMapper*>(m_applicationMapper)->getImplementation();
+    }
+    catch (exception& e) {
+        log.crit("caught exception while loading URL->Application mapping file (%s)", e.what());
+    }
+    catch (...) {
+        log.crit("caught unknown exception while loading URL->Application mapping file");
+    }
+  }
+  
   // Initialize the SHAR Cache
-  if (!strcmp (app.c_str(), SHIBTARGET_SHAR)) {
+  if (app == SHIBTARGET_SHAR) {
     const char * cache_type = NULL;
     if (ini->get_tag (app, SHIBTARGET_TAG_CACHETYPE, true, &tag))
       cache_type = tag.c_str();
@@ -341,9 +342,23 @@ void STConfig::init()
 
 STConfig::~STConfig()
 {
+  delete m_applicationMapper;
+
   for (vector<const XMLCh*>::iterator i=policies.begin(); i!=policies.end(); i++)
     delete const_cast<XMLCh*>(*i);
-  
+
+  for (vector<IMetadata*>::iterator j=metadatas.begin(); j!=metadatas.end(); j++)
+    delete (*j);
+
+  for (vector<ITrust*>::iterator k=trusts.begin(); k!=trusts.end(); k++)
+    delete (*k);
+    
+  for (vector<ICredentials*>::iterator l=creds.begin(); l!=creds.end(); l++)
+    delete (*l);
+
+  for (vector<IAAP*>::iterator m=aaps.begin(); m!=aaps.end(); m++)
+    delete (*m);
+
   delete g_shibTargetCCache;
   delete ini;
 
@@ -377,4 +392,11 @@ extern "C" ShibSockName shib_target_sockacl(unsigned int index)
         return g_Config->m_SocketACL[index].c_str();
 #endif
     return (ShibSockName)0;
+}
+
+ApplicationMapper::ApplicationMapper() : m_mapper(ShibTargetConfig::getConfig().getApplicationMapper())
+{
+    if (!m_mapper)
+        throw runtime_error("application mapper not initialized, check log for errors");
+    m_mapper->lock();
 }

@@ -82,7 +82,7 @@ int verify_callback(int ok, X509_STORE_CTX* store)
 
 namespace shibboleth {
 
-    class XMLTrustImpl
+    class XMLTrustImpl : public ReloadableXMLFileImpl
     {
     public:
         XMLTrustImpl(const char* pathname);
@@ -104,35 +104,44 @@ namespace shibboleth {
         vector<KeyAuthority*> m_keyauths;
         typedef map<pair<const XMLCh*,bool>,KeyAuthority*> BindingMap;
         BindingMap m_bindings;
-        
-        DOMDocument* m_doc;
     };
 
-    class XMLTrust : public ITrust
+    class XMLTrust : public ITrust, public ReloadableXMLFile
     {
     public:
-        XMLTrust(const char* pathname);
-        ~XMLTrust() { delete m_lock; delete m_impl; }
+        XMLTrust(const char* pathname) : ReloadableXMLFile(pathname) {}
+        ~XMLTrust() {}
 
-        void lock();
-        void unlock() { m_lock->unlock(); }
         saml::Iterator<XSECCryptoX509*> getCertificates(const XMLCh* subject) const;
-        bool validate(const ISite* site, saml::Iterator<XSECCryptoX509*> certs) const;
-        bool validate(const ISite* site, saml::Iterator<const XMLCh*> certs) const;
+        bool validate(const ISite* site, const saml::Iterator<XSECCryptoX509*>& certs) const;
+        bool validate(const ISite* site, const saml::Iterator<const XMLCh*>& certs) const;
         bool attach(const ISite* site, SSL_CTX* ctx) const;
 
-    private:
-        std::string m_source;
-        time_t m_filestamp;
-        RWLock* m_lock;
-        XMLTrustImpl* m_impl;
+    protected:
+        virtual ReloadableXMLFileImpl* newImplementation(const char* pathname) const;
     };
 
 }
 
 extern "C" ITrust* XMLTrustFactory(const char* source)
 {
-    return new XMLTrust(source);
+    XMLTrust* t=new XMLTrust(source);
+    try
+    {
+        t->getImplementation();
+    }
+    catch (...)
+    {
+        delete t;
+        throw;
+    }
+    return t;    
+}
+
+
+ReloadableXMLFileImpl* XMLTrust::newImplementation(const char* pathname) const
+{
+    return new XMLTrustImpl(pathname);
 }
 
 X509_STORE* XMLTrustImpl::KeyAuthority::getX509Store(bool cached)
@@ -194,21 +203,13 @@ XMLTrustImpl::KeyAuthority::~KeyAuthority()
         delete (*j);
 }
 
-XMLTrustImpl::XMLTrustImpl(const char* pathname) : m_doc(NULL)
+XMLTrustImpl::XMLTrustImpl(const char* pathname) : ReloadableXMLFileImpl(pathname)
 {
     NDC ndc("XMLTrustImpl");
     Category& log=Category::getInstance(SHIB_LOGCAT".XMLTrustImpl");
 
-    saml::XML::Parser p;
     try
     {
-        static XMLCh base[]={chLatin_f, chLatin_i, chLatin_l, chLatin_e, chColon, chForwardSlash, chForwardSlash, chForwardSlash, chNull};
-        URLInputSource src(base,pathname);
-        Wrapper4InputSource dsrc(&src,false);
-        m_doc=p.parse(dsrc);
-
-        log.infoStream() << "Loaded and parsed trust file (" << pathname << ")" << CategoryStream::ENDLINE;
-
         DOMElement* e = m_doc->getDocumentElement();
         if (XMLString::compareString(XML::SHIB_NS,e->getNamespaceURI()) ||
             XMLString::compareString(SHIB_L(Trust),e->getLocalName()))
@@ -268,7 +269,7 @@ XMLTrustImpl::XMLTrustImpl(const char* pathname) : m_doc(NULL)
     }
     catch (SAMLException& e)
     {
-        log.errorStream() << "XML error while parsing trust configuration: " << e.what() << CategoryStream::ENDLINE;
+        log.errorStream() << "Error while parsing trust configuration: " << e.what() << CategoryStream::ENDLINE;
         for (vector<KeyAuthority*>::iterator i=m_keyauths.begin(); i!=m_keyauths.end(); i++)
             delete (*i);
         if (m_doc)
@@ -290,78 +291,13 @@ XMLTrustImpl::~XMLTrustImpl()
 {
     for (vector<KeyAuthority*>::iterator i=m_keyauths.begin(); i!=m_keyauths.end(); i++)
         delete (*i);
-    if (m_doc)
-        m_doc->release();
-}
-
-XMLTrust::XMLTrust(const char* pathname) : m_filestamp(0), m_source(pathname), m_impl(NULL)
-{
-#ifdef WIN32
-    struct _stat stat_buf;
-    if (_stat(pathname, &stat_buf) == 0)
-#else
-    struct stat stat_buf;
-    if (stat(pathname, &stat_buf) == 0)
-#endif
-        m_filestamp=stat_buf.st_mtime;
-    m_impl=new XMLTrustImpl(pathname);
-    m_lock=RWLock::create();
-}
-
-void XMLTrust::lock()
-{
-    m_lock->rdlock();
-
-    // Check if we need to refresh.
-#ifdef WIN32
-    struct _stat stat_buf;
-    if (_stat(m_source.c_str(), &stat_buf) == 0)
-#else
-    struct stat stat_buf;
-    if (stat(m_source.c_str(), &stat_buf) == 0)
-#endif
-    {
-        if (m_filestamp>0 && m_filestamp<stat_buf.st_mtime)
-        {
-            // Elevate lock and recheck.
-            m_lock->unlock();
-            m_lock->wrlock();
-            if (m_filestamp>0 && m_filestamp<stat_buf.st_mtime)
-            {
-                try
-                {
-                    XMLTrustImpl* new_mapper=new XMLTrustImpl(m_source.c_str());
-                    delete m_impl;
-                    m_impl=new_mapper;
-                    m_filestamp=stat_buf.st_mtime;
-                    m_lock->unlock();
-                }
-                catch(SAMLException& e)
-                {
-                    m_lock->unlock();
-                    saml::NDC ndc("lock");
-                    Category::getInstance(SHIB_LOGCAT".XMLTrust").error("failed to reload trust metadata, sticking with what we have: %s", e.what());
-                }
-                catch(...)
-                {
-                    m_lock->unlock();
-                    saml::NDC ndc("lock");
-                    Category::getInstance(SHIB_LOGCAT".XMLTrust").error("caught an unknown exception, sticking with what we have");
-                }
-            }
-            else
-            {
-                m_lock->unlock();
-            }
-            m_lock->rdlock();
-        }
-    }
 }
 
 Iterator<XSECCryptoX509*> XMLTrust::getCertificates(const XMLCh* subject) const
 {
     // Find the first matching entity binding.
-    for (XMLTrustImpl::BindingMap::const_iterator i=m_impl->m_bindings.begin(); i!=m_impl->m_bindings.end(); i++)
+    XMLTrustImpl* impl=dynamic_cast<XMLTrustImpl*>(getImplementation());
+    for (XMLTrustImpl::BindingMap::const_iterator i=impl->m_bindings.begin(); i!=impl->m_bindings.end(); i++)
     {
         if (i->second->m_type!=XMLTrustImpl::KeyAuthority::entity)
             continue;
@@ -400,7 +336,8 @@ bool XMLTrust::attach(const ISite* site, SSL_CTX* ctx) const
     NDC ndc("attach");
 
     // Use the matching bindings.
-    for (XMLTrustImpl::BindingMap::const_iterator i=m_impl->m_bindings.begin(); i!=m_impl->m_bindings.end(); i++)
+    XMLTrustImpl* impl=dynamic_cast<XMLTrustImpl*>(getImplementation());
+    for (XMLTrustImpl::BindingMap::const_iterator i=impl->m_bindings.begin(); i!=impl->m_bindings.end(); i++)
     {
         if (i->second->m_type!=XMLTrustImpl::KeyAuthority::authority)
             continue;
@@ -461,7 +398,7 @@ bool XMLTrust::attach(const ISite* site, SSL_CTX* ctx) const
     return false;
 }
 
-bool XMLTrust::validate(const ISite* site, Iterator<XSECCryptoX509*> certs) const
+bool XMLTrust::validate(const ISite* site, const Iterator<XSECCryptoX509*>& certs) const
 {
     vector<const XMLCh*> temp;
     while (certs.hasNext())
@@ -469,14 +406,14 @@ bool XMLTrust::validate(const ISite* site, Iterator<XSECCryptoX509*> certs) cons
     return validate(site,temp);
 }
 
-bool XMLTrust::validate(const ISite* site, Iterator<const XMLCh*> certs) const
+bool XMLTrust::validate(const ISite* site, const Iterator<const XMLCh*>& certs) const
 {
     NDC ndc("validate");
 
     STACK_OF(X509)* chain=sk_X509_new_null();
     while (certs.hasNext())
     {
-        auto_ptr<char> temp(XMLString::transcode(certs.next()));
+        auto_ptr_char temp(certs.next());
         X509* x=B64_to_X509(temp.get());
         if (!x)
         {
@@ -487,7 +424,8 @@ bool XMLTrust::validate(const ISite* site, Iterator<const XMLCh*> certs) const
     }
 
     // Use the matching bindings.
-    for (XMLTrustImpl::BindingMap::const_iterator i=m_impl->m_bindings.begin(); i!=m_impl->m_bindings.end(); i++)
+    XMLTrustImpl* impl=dynamic_cast<XMLTrustImpl*>(getImplementation());
+    for (XMLTrustImpl::BindingMap::const_iterator i=impl->m_bindings.begin(); i!=impl->m_bindings.end(); i++)
     {
         if (i->second->m_type!=XMLTrustImpl::KeyAuthority::authority)
             continue;
@@ -514,7 +452,7 @@ bool XMLTrust::validate(const ISite* site, Iterator<const XMLCh*> certs) const
             }
             catch (XMLException& ex)
             {
-                auto_ptr<char> tmp(XMLString::transcode(ex.getMessage()));
+                auto_ptr_char tmp(ex.getMessage());
                 Category& log=Category::getInstance(SHIB_LOGCAT".XMLTrust");
                 log.errorStream() << "caught exception while parsing regular expression: " << tmp.get()
                     << CategoryStream::ENDLINE;

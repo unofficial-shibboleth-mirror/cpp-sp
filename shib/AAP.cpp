@@ -70,14 +70,12 @@ using namespace std;
 
 namespace shibboleth {
 
-    class XMLAAPImpl
+    class XMLAAPImpl : public ReloadableXMLFileImpl
     {
     public:
         XMLAAPImpl(const char* pathname);
         ~XMLAAPImpl();
         
-        void regAttributes() const;
-    
         class AttributeRule : public IAttributeRule
         {
         public:
@@ -89,18 +87,19 @@ namespace shibboleth {
             const char* getFactory() const { return m_factory.get(); }
             const char* getAlias() const { return m_alias.get(); }
             const char* getHeader() const { return m_header.get(); }
-            bool accept(const XMLCh* originSite, const DOMElement* e) const;
+            void apply(const IOriginSite* originSite, SAMLAttribute& attribute) const;
     
             enum value_type { literal, regexp, xpath };
         private:    
             const XMLCh* m_name;
             const XMLCh* m_namespace;
-            auto_ptr<char> m_factory;
-            auto_ptr<char> m_alias;
-            auto_ptr<char> m_header;
+            auto_ptr_char m_factory;
+            auto_ptr_char m_alias;
+            auto_ptr_char m_header;
             
             value_type toValueType(const DOMElement* e);
-            bool scopeCheck(const XMLCh* originSite, const DOMElement* e) const;
+            bool scopeCheck(const IOriginSite* originSite, const DOMElement* e) const;
+            bool accept(const IOriginSite* originSite, const DOMElement* e) const;
             
             struct SiteRule
             {
@@ -128,50 +127,51 @@ namespace shibboleth {
         typedef map<string,AttributeRule*> attrmap_t;
     #endif
         attrmap_t m_attrMap;
-        DOMDocument* m_doc;
     };
 
-    class XMLAAP : public IAAP
+    class XMLAAP : public IAAP, public ReloadableXMLFile
     {
     public:
-        XMLAAP(const char* pathname);
-        ~XMLAAP() { delete m_lock; delete m_impl; }
+        XMLAAP(const char* pathname) : ReloadableXMLFile(pathname) {}
+        ~XMLAAP() {}
         
-        void lock();
-        void unlock() { m_lock->unlock(); }
         const IAttributeRule* lookup(const XMLCh* attrName, const XMLCh* attrNamespace=NULL) const;
         const IAttributeRule* lookup(const char* alias) const;
-        saml::Iterator<const IAttributeRule*> getAttributeRules() const;
+        Iterator<const IAttributeRule*> getAttributeRules() const;
 
-    private:
-        std::string m_source;
-        time_t m_filestamp;
-        RWLock* m_lock;
-        XMLAAPImpl* m_impl;
+    protected:
+        virtual ReloadableXMLFileImpl* newImplementation(const char* pathname) const;
     };
 
 }
 
 extern "C" IAAP* XMLAAPFactory(const char* source)
 {
-    return new XMLAAP(source);
+    XMLAAP* aap=new XMLAAP(source);
+    try
+    {
+        aap->getImplementation();
+    }
+    catch (...)
+    {
+        delete aap;
+        throw;
+    }
+    return aap;    
 }
 
-XMLAAPImpl::XMLAAPImpl(const char* pathname) : m_doc(NULL)
+ReloadableXMLFileImpl* XMLAAP::newImplementation(const char* pathname) const
+{
+    return new XMLAAPImpl(pathname);
+}
+
+XMLAAPImpl::XMLAAPImpl(const char* pathname) : ReloadableXMLFileImpl(pathname)
 {
     NDC ndc("XMLAAPImpl");
     Category& log=Category::getInstance(SHIB_LOGCAT".XMLAAPImpl");
 
-    saml::XML::Parser p;
     try
     {
-        static XMLCh base[]={chLatin_f, chLatin_i, chLatin_l, chLatin_e, chColon, chForwardSlash, chForwardSlash, chForwardSlash, chNull};
-        URLInputSource src(base,pathname);
-        Wrapper4InputSource dsrc(&src,false);
-        m_doc=p.parse(dsrc);
-
-        log.infoStream() << "Loaded and parsed AAP file (" << pathname << ")" << CategoryStream::ENDLINE;
-
         DOMElement* e = m_doc->getDocumentElement();
         if (XMLString::compareString(XML::SHIB_NS,e->getNamespaceURI()) ||
             XMLString::compareString(SHIB_L(AttributeAcceptancePolicy),e->getLocalName()))
@@ -189,12 +189,12 @@ XMLAAPImpl::XMLAAPImpl(const char* pathname) : m_doc(NULL)
             xstring key=rule->getName();
             key=key + chBang + chBang + (rule->getNamespace() ? rule->getNamespace() : Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
 #else
-            auto_ptr<char> aname(XMLString::transcode(rule->getName()));
+            auto_ptr_char aname(rule->getName());
             string key(aname.get());
             key+="!!";
             if (rule->getNamespace())
             {
-                auto_ptr<char> ans(XMLString::transcode(rule->getNamespace()));
+                auto_ptr_char ans(rule->getNamespace());
                 key+=ans.get();
             }
             else
@@ -208,7 +208,7 @@ XMLAAPImpl::XMLAAPImpl(const char* pathname) : m_doc(NULL)
     }
     catch (SAMLException& e)
     {
-        log.errorStream() << "XML error while parsing AAP: " << e.what() << CategoryStream::ENDLINE;
+        log.errorStream() << "Error while parsing AAP: " << e.what() << CategoryStream::ENDLINE;
         for (attrmap_t::iterator i=m_attrMap.begin(); i!=m_attrMap.end(); i++)
             delete i->second;
         if (m_doc)
@@ -230,28 +230,13 @@ XMLAAPImpl::XMLAAPImpl(const char* pathname) : m_doc(NULL)
 XMLAAPImpl::~XMLAAPImpl()
 {
     for (attrmap_t::iterator i=m_attrMap.begin(); i!=m_attrMap.end(); i++)
-    {
-        SAMLAttribute::unregFactory(i->second->getName(),i->second->getNamespace());
         delete i->second;
-    }
-    if (m_doc)
-        m_doc->release();
-}
-
-void XMLAAPImpl::regAttributes() const
-{
-    for (attrmap_t::const_iterator i=m_attrMap.begin(); i!=m_attrMap.end(); i++)
-    {
-        SAMLAttributeFactory* f=ShibConfig::getConfig().getAttributeFactory(i->second->getFactory());
-        if (f)
-            SAMLAttribute::regFactory(i->second->getName(),i->second->getNamespace(),f);
-    }
 }
 
 XMLAAPImpl::AttributeRule::AttributeRule(const DOMElement* e) :
-    m_factory(e->hasAttributeNS(NULL,SHIB_L(Factory)) ? XMLString::transcode(e->getAttributeNS(NULL,SHIB_L(Factory))) : NULL),
-    m_alias(e->hasAttributeNS(NULL,SHIB_L(Alias)) ? XMLString::transcode(e->getAttributeNS(NULL,SHIB_L(Alias))) : NULL),
-    m_header(e->hasAttributeNS(NULL,SHIB_L(Header)) ? XMLString::transcode(e->getAttributeNS(NULL,SHIB_L(Header))) : NULL)
+    m_factory(e->hasAttributeNS(NULL,SHIB_L(Factory)) ? e->getAttributeNS(NULL,SHIB_L(Factory)) : NULL),
+    m_alias(e->hasAttributeNS(NULL,SHIB_L(Alias)) ? e->getAttributeNS(NULL,SHIB_L(Alias)) : NULL),
+    m_header(e->hasAttributeNS(NULL,SHIB_L(Header)) ? e->getAttributeNS(NULL,SHIB_L(Header)) : NULL)
     
 {
     static const XMLCh wTrue[] = {chLatin_t, chLatin_r, chLatin_u, chLatin_e, chNull};
@@ -317,7 +302,7 @@ XMLAAPImpl::AttributeRule::AttributeRule(const DOMElement* e) :
         m_siteMap[srulename]=SiteRule();
         SiteRule& srule=m_siteMap[srulename];
 #else
-        auto_ptr<char> srulename2(XMLString::transcode(srulename));
+        auto_ptr_char srulename2(srulename);
         m_siteMap[srulename2.get()]=SiteRule();
         SiteRule& srule=m_siteMap[srulename2.get()];
 #endif
@@ -370,106 +355,38 @@ XMLAAPImpl::AttributeRule::value_type XMLAAPImpl::AttributeRule::toValueType(con
     throw MalformedException("Found an invalid value or scope rule type.");
 }
 
-XMLAAP::XMLAAP(const char* pathname) : m_filestamp(0), m_source(pathname), m_impl(NULL)
-{
-#ifdef WIN32
-    struct _stat stat_buf;
-    if (_stat(pathname, &stat_buf) == 0)
-#else
-    struct stat stat_buf;
-    if (stat(pathname, &stat_buf) == 0)
-#endif
-        m_filestamp=stat_buf.st_mtime;
-    m_impl=new XMLAAPImpl(pathname);
-    SAMLConfig::getConfig().saml_lock();
-    m_impl->regAttributes();
-    SAMLConfig::getConfig().saml_unlock();
-    m_lock=RWLock::create();
-}
-
-void XMLAAP::lock()
-{
-    m_lock->rdlock();
-
-    // Check if we need to refresh.
-#ifdef WIN32
-    struct _stat stat_buf;
-    if (_stat(m_source.c_str(), &stat_buf) == 0)
-#else
-    struct stat stat_buf;
-    if (stat(m_source.c_str(), &stat_buf) == 0)
-#endif
-    {
-        if (m_filestamp>0 && m_filestamp<stat_buf.st_mtime)
-        {
-            // Elevate lock and recheck.
-            m_lock->unlock();
-            m_lock->wrlock();
-            if (m_filestamp>0 && m_filestamp<stat_buf.st_mtime)
-            {
-                try
-                {
-                    XMLAAPImpl* new_mapper=new XMLAAPImpl(m_source.c_str());
-                    SAMLConfig::getConfig().saml_lock();
-                    delete m_impl;
-                    m_impl=new_mapper;
-                    m_impl->regAttributes();
-                    SAMLConfig::getConfig().saml_unlock();
-                    m_filestamp=stat_buf.st_mtime;
-                    m_lock->unlock();
-                }
-                catch(SAMLException& e)
-                {
-                    m_lock->unlock();
-                    saml::NDC ndc("lock");
-                    Category::getInstance(SHIB_LOGCAT".XMLAAP").error("failed to reload AAP, sticking with what we have: %s", e.what());
-                }
-                catch(...)
-                {
-                    m_lock->unlock();
-                    saml::NDC ndc("lock");
-                    Category::getInstance(SHIB_LOGCAT".XMLAAP").error("caught an unknown exception, sticking with what we have");
-                }
-            }
-            else
-            {
-                m_lock->unlock();
-            }
-            m_lock->rdlock();
-        }
-    }
-}
-
 const IAttributeRule* XMLAAP::lookup(const XMLCh* attrName, const XMLCh* attrNamespace) const
 {
 #ifdef HAVE_GOOD_STL
     xstring key=attrName;
     key=key + chBang + chBang + (attrNamespace ? attrNamespace : Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
 #else
-    auto_ptr<char> aname(XMLString::transcode(attrName));
+    auto_ptr_char aname(attrName);
     string key=aname.get();
     key+="!!";
     if (attrNamespace)
     {
-        auto_ptr<char> ans(XMLString::transcode(attrNamespace));
+        auto_ptr_char ans(attrNamespace);
         key+=ans.get();
     }
     else
         key+="urn:mace:shibboleth:1.0:attributeNamespace:uri";
 #endif
-    XMLAAPImpl::attrmap_t::const_iterator i=m_impl->m_attrMap.find(key);
-    return (i==m_impl->m_attrMap.end()) ? NULL : i->second;
+    XMLAAPImpl* impl=dynamic_cast<XMLAAPImpl*>(getImplementation());
+    XMLAAPImpl::attrmap_t::const_iterator i=impl->m_attrMap.find(key);
+    return (i==impl->m_attrMap.end()) ? NULL : i->second;
 }
 
 const IAttributeRule* XMLAAP::lookup(const char* alias) const
 {
-    map<string,const IAttributeRule*>::const_iterator i=m_impl->m_aliasMap.find(alias);
-    return (i==m_impl->m_aliasMap.end()) ? NULL : i->second;
+    XMLAAPImpl* impl=dynamic_cast<XMLAAPImpl*>(getImplementation());
+    map<string,const IAttributeRule*>::const_iterator i=impl->m_aliasMap.find(alias);
+    return (i==impl->m_aliasMap.end()) ? NULL : i->second;
 }
 
 Iterator<const IAttributeRule*> XMLAAP::getAttributeRules() const
 {
-    return m_impl->m_attrs;
+    return dynamic_cast<XMLAAPImpl*>(getImplementation())->m_attrs;
 }
 
 namespace {
@@ -491,7 +408,7 @@ namespace {
     }
 }
 
-bool XMLAAPImpl::AttributeRule::scopeCheck(const XMLCh* originSite, const DOMElement* e) const
+bool XMLAAPImpl::AttributeRule::scopeCheck(const IOriginSite* originSite, const DOMElement* e) const
 {
     // Are we scoped?
     const XMLCh* scope=e->getAttributeNS(NULL,SHIB_L(Scope));
@@ -513,8 +430,8 @@ bool XMLAAPImpl::AttributeRule::scopeCheck(const XMLCh* originSite, const DOMEle
         {
             if (log.isWarnEnabled())
             {
-                auto_ptr<char> temp(XMLString::transcode(m_name));
-                auto_ptr<char> temp2(XMLString::transcode(scope));
+                auto_ptr_char temp(m_name);
+                auto_ptr_char temp2(scope);
                 log.warn("attribute %s scope {%s} denied by any-site AAP, rejecting it",temp.get(),temp2.get());
             }
             return false;
@@ -524,9 +441,9 @@ bool XMLAAPImpl::AttributeRule::scopeCheck(const XMLCh* originSite, const DOMEle
     }
 
 #ifdef HAVE_GOOD_STL
-    const XMLCh* os=originSite;
+    const XMLCh* os=originSite->getName();
 #else
-    auto_ptr<char> pos(XMLString::transcode(originSite));
+    auto_ptr_char pos(originSite->getName());
     const char* os=pos.get();
 #endif
     sitemap_t::const_iterator srule=m_siteMap.find(os);
@@ -540,8 +457,8 @@ bool XMLAAPImpl::AttributeRule::scopeCheck(const XMLCh* originSite, const DOMEle
             {
                 if (log.isWarnEnabled())
                 {
-                    auto_ptr<char> temp(XMLString::transcode(m_name));
-                    auto_ptr<char> temp2(XMLString::transcode(scope));
+                    auto_ptr_char temp(m_name);
+                    auto_ptr_char temp2(scope);
                     log.warn("attribute %s scope {%s} denied by site AAP, rejecting it",temp.get(),temp2.get());
                 }
                 return false;
@@ -581,9 +498,7 @@ bool XMLAAPImpl::AttributeRule::scopeCheck(const XMLCh* originSite, const DOMEle
     }
     
     // If we still can't decide, defer to site metadata.
-    OriginMetadata mapper(originSite);
-    Iterator<pair<const XMLCh*,bool> > domains=
-        (mapper.fail()) ? Iterator<pair<const XMLCh*,bool> >() : mapper->getSecurityDomains();
+    Iterator<pair<const XMLCh*,bool> > domains=originSite->getSecurityDomains();
     while (domains.hasNext())
     {
         const pair<const XMLCh*,bool>& p=domains.next();
@@ -596,22 +511,22 @@ bool XMLAAPImpl::AttributeRule::scopeCheck(const XMLCh* originSite, const DOMEle
 
     if (log.isWarnEnabled())
     {
-        auto_ptr<char> temp(XMLString::transcode(m_name));
-        auto_ptr<char> temp2(XMLString::transcode(scope));
+        auto_ptr_char temp(m_name);
+        auto_ptr_char temp2(scope);
         log.warn("attribute %s scope {%s} not accepted",temp.get(),temp2.get());
     }
     return false;
 }
 
-bool XMLAAPImpl::AttributeRule::accept(const XMLCh* originSite, const DOMElement* e) const
+bool XMLAAPImpl::AttributeRule::accept(const IOriginSite* originSite, const DOMElement* e) const
 {
     NDC ndc("accept");
     Category& log=Category::getInstance(SHIB_LOGCAT".XMLAAPImpl");
     
     if (log.isDebugEnabled())
     {
-        auto_ptr<char> temp(XMLString::transcode(m_name));
-        auto_ptr<char> temp2(XMLString::transcode(originSite));
+        auto_ptr_char temp(m_name);
+        auto_ptr_char temp2(originSite->getName());
         log.debug("evaluating value for attribute %s from site %s",temp.get(),temp2.get());
     }
     
@@ -639,9 +554,9 @@ bool XMLAAPImpl::AttributeRule::accept(const XMLCh* originSite, const DOMElement
     }
 
 #ifdef HAVE_GOOD_STL
-    const XMLCh* os=originSite;
+    const XMLCh* os=originSite->getName();
 #else
-    auto_ptr<char> pos(XMLString::transcode(originSite));
+    auto_ptr_char pos(originSite->getName());
     const char* os=pos.get();
 #endif
     sitemap_t::const_iterator srule=m_siteMap.find(os);
@@ -649,8 +564,8 @@ bool XMLAAPImpl::AttributeRule::accept(const XMLCh* originSite, const DOMElement
     {
         if (log.isWarnEnabled())
         {
-            auto_ptr<char> temp(XMLString::transcode(m_name));
-            auto_ptr<char> temp2(XMLString::transcode(originSite));
+            auto_ptr_char temp(m_name);
+            auto_ptr_char temp2(originSite->getName());
             log.warn("site %s not found in attribute %s ruleset, any value is rejected",temp2.get(),temp.get());
         }
         return false;
@@ -676,10 +591,25 @@ bool XMLAAPImpl::AttributeRule::accept(const XMLCh* originSite, const DOMElement
 
     if (log.isWarnEnabled())
     {
-        auto_ptr<char> temp(XMLString::transcode(m_name));
-        auto_ptr<char> temp2(XMLString::transcode(n->getNodeValue()));
+        auto_ptr_char temp(m_name);
+        auto_ptr_char temp2(n->getNodeValue());
         log.warn("%sattribute %s value {%s} could not be validated by AAP, rejecting it",
                  (bSimple ? "" : "complex "),temp.get(),temp2.get());
     }
     return false;
+}
+
+void XMLAAPImpl::AttributeRule::apply(const IOriginSite* originSite, SAMLAttribute& attribute) const
+{
+    // Check each value.
+    Iterator<const DOMElement*> vals=attribute.getValueElements();
+    for (unsigned int i=0; i < vals.size();) {
+        if (!accept(originSite,vals[i]))
+            attribute.removeValue(i);
+        else
+            i++;
+    }
+    
+    // Now see if we trashed it irrevocably.
+    attribute.checkValidity();
 }

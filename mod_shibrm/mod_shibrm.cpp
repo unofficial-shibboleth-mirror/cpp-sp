@@ -36,21 +36,6 @@ using namespace shibtarget;
 namespace {
     ThreadKey* rpc_handle_key = NULL;
     ShibTargetConfig* g_Config = NULL;
-
-	map<string,string> g_mapAttribNameToHeader;
-    map<string,string> g_mapAttribRuleToHeader;
-}
-
-extern "C" const char*
-ap_set_attribute_mapping(cmd_parms* parms, void*, const char* attrName,
-                            const char* headerName, const char* ruleName)
-{
-    ap_log_error(APLOG_MARK,APLOG_WARNING|APLOG_NOERRNO,parms->server,
-                "ShibMapAttribute command has been deprecated, please transfer this information to your AAP file(s).");
-    g_mapAttribNameToHeader[attrName]=headerName;
-    if (ruleName)
-        g_mapAttribRuleToHeader[ruleName]=headerName;
-    return NULL;
 }
 
 extern "C" module MODULE_VAR_EXPORT shibrm_module;
@@ -95,9 +80,6 @@ typedef const char* (*config_fn_t)(void);
 // SHIBRM Module commands
 
 static command_rec shibrm_cmds[] = {
-  {"ShibMapAttribute", (config_fn_t)ap_set_attribute_mapping, NULL,
-   RSRC_CONF, TAKE23, "Define request header name and 'require' alias for an attribute."},
-
   {"AuthGroupFile", (config_fn_t)ap_set_file_slot,
    (void *) XtOffsetOf (shibrm_dir_config, szAuthGrpFile),
    OR_AUTHCFG, TAKE1, "text file containing group names and member user IDs"},
@@ -217,25 +199,14 @@ static int shibrm_error_page(request_rec* r, const char* filename, ShibMLP& mlp)
   return DONE;
 }
 
-// return the "normalized" target URL
-static const char* get_target(request_rec* r, const char* target)
+static const char* get_application_id(request_rec* r)
 {
-  string tag;
-  if ((g_Config->getINI()).get_tag (ap_get_server_name(r), "normalizeRequest", true, &tag))
-  {
-    if (ShibINI::boolean (tag))
-    {
-        const char* colon=strchr(target,':');
-        const char* slash=strchr(colon+3,'/');
-        const char* second_colon=strchr(colon+3,':');
-        return ap_pstrcat(r->pool,ap_pstrndup(r->pool,target,colon+3-target),
-			  ap_get_server_name(r),
-			  (second_colon && second_colon < slash) ?
-			  second_colon : slash,
-			  NULL);
-    }
-  }
-  return target;
+    ApplicationMapper mapper;
+    return ap_pstrdup(r->pool,
+        mapper->getApplicationFromParsedURL(
+            ap_http_method(r), ap_get_server_name(r), ap_get_server_port(r), r->unparsed_uri
+            )
+       );
 }
 
 extern "C" int shibrm_check_auth(request_rec* r)
@@ -256,28 +227,27 @@ extern "C" int shibrm_check_auth(request_rec* r)
     saml::NDC ndc(threadid.str().c_str());
 
     ShibINI& ini = g_Config->getINI();
-    const char* serverName = ap_get_server_name(r);
+
+    // This will always be normalized, because Apache uses ap_get_server_name in this API call.
+    const char* targeturl=ap_construct_url(r->pool,r->unparsed_uri,r);
+    
+    // Map request to application ID, which is the key for config lookup.
+    const char* application_id=get_application_id(r);
 
     // Ok, this is a SHIB target; grab the cookie
-
     string shib_cookie;
-    if (!ini.get_tag(serverName, "cookieName", true, &shib_cookie)) {
+    if (!ini.get_tag(application_id, "cookieName", true, &shib_cookie)) {
       ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
-		    "shibrm_check_user: no cookieName configuration for %s",
-		    serverName);
+		    "shibrm_check_user: no cookieName configuration for %s", application_id);
       return SERVER_ERROR;
     }
-
-    const char* targeturl=get_target(r,ap_construct_url(r->pool,r->unparsed_uri,r));
 
     const char* session_id=NULL;
     const char* cookies=ap_table_get(r->headers_in,"Cookie");
     if (!cookies || !(session_id=strstr(cookies,shib_cookie.c_str())))
     {
       // No cookie???  Must be a server error!
-      ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
-		    "shibrm_check_auth() no cookie found");
-
+      ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,"shibrm_check_auth() no cookie found");
       return SERVER_ERROR;
     }
 
@@ -291,14 +261,14 @@ extern "C" int shibrm_check_auth(request_rec* r)
 
     ShibMLP markupProcessor;
     string tag;
-    bool has_tag = ini.get_tag(serverName, "supportContact", true, &tag);
+    bool has_tag = ini.get_tag(application_id, "supportContact", true, &tag);
     markupProcessor.insert("supportContact", has_tag ? tag : "");
-    has_tag = ini.get_tag(serverName, "logoLocation", true, &tag);
+    has_tag = ini.get_tag(application_id, "logoLocation", true, &tag);
     markupProcessor.insert("logoLocation", has_tag ? tag : "");
     markupProcessor.insert("requestURL", targeturl);
 
     // Now grab the attributes...
-    has_tag = ini.get_tag (serverName, "checkIPAddress", true, &tag);
+    has_tag = ini.get_tag (application_id, "checkIPAddress", true, &tag);
     dc->config.checkIPAddress = (has_tag ? ShibINI::boolean (tag) : false);
 
     // Get an RPC handle and build the RM object.
@@ -312,7 +282,7 @@ extern "C" int shibrm_check_auth(request_rec* r)
 
     vector<SAMLAssertion*> assertions;
     SAMLAuthenticationStatement* sso_statement=NULL;
-    RPCError* status = rm.getAssertions(session_id, r->connection->remote_ip, targeturl, assertions, &sso_statement);
+    RPCError* status = rm.getAssertions(session_id, r->connection->remote_ip, application_id, assertions, &sso_statement);
 
     if (status->isError()) {
       ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
@@ -320,10 +290,9 @@ extern "C" int shibrm_check_auth(request_rec* r)
 		    status->getText());
 
       string rmError;
-      if (!ini.get_tag(serverName, "rmError", true, &rmError)) {
+      if (!ini.get_tag(application_id, "rmError", true, &rmError)) {
         ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
-		      "shibrm_check_auth: no rmError configuration for %s",
-		      serverName);
+		      "shibrm_check_auth: no rmError configuration for %s", application_id);
         delete status;
         return SERVER_ERROR;	
       }
@@ -334,10 +303,9 @@ extern "C" int shibrm_check_auth(request_rec* r)
     delete status;
 
     string rmError;
-    if (!ini.get_tag(serverName, "accessError", true, &rmError)) {
+    if (!ini.get_tag(application_id, "accessError", true, &rmError)) {
         ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
-           "shibrm_check_auth: no accessError configuration for %s",
-            serverName);
+           "shibrm_check_auth: no accessError configuration for %s", application_id);
 
         delete status;
         for (int k = 0; k < assertions.size(); k++)
@@ -346,19 +314,8 @@ extern "C" int shibrm_check_auth(request_rec* r)
         return SERVER_ERROR;  
     }
 
-    // Only allow a single assertion...
-    if (assertions.size() > 1) {
-        ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
-		    "shibrm_check_auth() found %d assertions (only handle 1 currently)",
-		    assertions.size());
-        for (int k = 0; k < assertions.size(); k++)
-          delete assertions[k];
-        delete sso_statement;
-        return shibrm_error_page (r, rmError.c_str(), markupProcessor);
-    }
-
     // Get the AAP providers, which contain the attribute policy info.
-    Iterator<IAAP*> provs=ShibConfig::getConfig().getAAPProviders();
+    Iterator<IAAP*> provs=g_Config->getAAPProviders();
 
     // Clear out the list of mapped attributes
     while (provs.hasNext())
@@ -387,9 +344,9 @@ extern "C" int shibrm_check_auth(request_rec* r)
     }
     provs.reset();
     
-    // Maybe export the assertion.
+    // Maybe export the first assertion.
     ap_table_unset(r->headers_in,"Shib-Attributes");
-    if (dc->bExportAssertion==1 && assertions.size()==1) {
+    if (dc->bExportAssertion==1 && assertions.size()) {
         string assertion;
         RM::serialize(*(assertions[0]), assertion);
         ap_table_set(r->headers_in,"Shib-Attributes", assertion.c_str());
@@ -400,53 +357,49 @@ extern "C" int shibrm_check_auth(request_rec* r)
     ap_table_unset(r->headers_in,"Shib-Authentication-Method");
     if (sso_statement)
     {
-        auto_ptr<char> os(XMLString::transcode(sso_statement->getSubject()->getNameQualifier()));
-        auto_ptr<char> am(XMLString::transcode(sso_statement->getAuthMethod()));
+        auto_ptr_char os(sso_statement->getSubject()->getNameQualifier());
+        auto_ptr_char am(sso_statement->getAuthMethod());
         ap_table_set(r->headers_in,"Shib-Origin-Site", os.get());
         ap_table_set(r->headers_in,"Shib-Authentication-Method", am.get());
     }
+    
+    ap_table_unset(r->headers_in,"Shib-Application-ID");
+    ap_table_set(r->headers_in,"Shib-Application-ID",application_id);
 
-    // Export the attributes. Only supports a single statement.
-    Iterator<SAMLAttribute*> j = assertions.size()==1 ? RM::getAttributes(*(assertions[0])) : EMPTY(SAMLAttribute*);
-    while (j.hasNext())
-    {
-        SAMLAttribute* attr=j.next();
-
-        // Are we supposed to export it?
-        const char* hname=NULL;
-        AAP wrapper(attr->getName(),attr->getNamespace());
-        if (!wrapper.fail())
-            hname=wrapper->getHeader();
-        if (!hname)
-        {
-            auto_ptr<char> tname(XMLString::transcode(attr->getName()));
-        	map<string,string>::const_iterator iname=g_mapAttribNameToHeader.find(tname.get());
-        	if (iname!=g_mapAttribNameToHeader.end())
-	        	hname=iname->second.c_str();
-        }
-        if (hname)
-        {
-            Iterator<string> vals=attr->getSingleByteValues();
-            if (!strcmp(hname,"REMOTE_USER") && vals.hasNext())
-                r->connection->user=ap_pstrdup(r->connection->pool,vals.next().c_str());
-            else
-            {
-                char* header = ap_pstrdup(r->pool, "");
-                for (int it = 0; vals.hasNext(); it++) {
-                    string value = vals.next();
-                    for (string::size_type pos = value.find_first_of(";", string::size_type(0)); pos != string::npos; pos = value.find_first_of(";", pos)) {
-                    	value.insert(pos, "\\");
-                    	pos += 2;
+    // Export the attributes.
+    Iterator<SAMLAssertion*> a_iter(assertions);
+    while (a_iter.hasNext()) {
+        SAMLAssertion* assert=a_iter.next();
+        Iterator<SAMLStatement*> statements=assert->getStatements();
+        while (statements.hasNext()) {
+            SAMLAttributeStatement* astate=dynamic_cast<SAMLAttributeStatement*>(statements.next());
+            if (!astate)
+                continue;
+            Iterator<SAMLAttribute*> attrs=astate->getAttributes();
+            while (attrs.hasNext()) {
+                SAMLAttribute* attr=attrs.next();
+        
+                // Are we supposed to export it?
+                AAP wrapper(provs,attr->getName(),attr->getNamespace());
+                if (wrapper.fail())
+                    continue;
+                
+                Iterator<string> vals=attr->getSingleByteValues();
+                if (!strcmp(wrapper->getHeader(),"REMOTE_USER") && vals.hasNext())
+                    r->connection->user=ap_pstrdup(r->connection->pool,vals.next().c_str());
+                else {
+                    char* header = ap_pstrdup(r->pool, "");
+                    for (int it = 0; vals.hasNext(); it++) {
+                        string value = vals.next();
+                        for (string::size_type pos = value.find_first_of(";", string::size_type(0)); pos != string::npos; pos = value.find_first_of(";", pos)) {
+                        	value.insert(pos, "\\");
+                        	pos += 2;
+                        }
+                        header=ap_pstrcat(r->pool, header, (it ? ";" : ""), value.c_str(), NULL);
                     }
-                    if (it == 0) {
-                        header=ap_pstrcat(r->pool, value.c_str(), NULL);
-                    }
-                    else {
-                        header=ap_pstrcat(r->pool, header, ";", value.c_str(), NULL);
-                    }
-                }
-                ap_table_setn(r->headers_in, hname, header);
-    	    }
+                    ap_table_setn(r->headers_in, wrapper->getHeader(), header);
+        	    }
+            }
         }
     }
 
@@ -508,7 +461,7 @@ extern "C" int shibrm_check_auth(request_rec* r)
                     }
                     catch (XMLException& ex)
                     {
-                        auto_ptr<char> tmp(XMLString::transcode(ex.getMessage()));
+                        auto_ptr_char tmp(ex.getMessage());
                         ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
                                         "shibrm_check_auth caught exception while parsing regular expression (%s): %s",w,tmp.get());
                     }
@@ -544,112 +497,94 @@ extern "C" int shibrm_check_auth(request_rec* r)
         }
         else
         {
-            const char* hname=NULL;
-            AAP wrapper(w);
-            if (!wrapper.fail())
-                hname=wrapper->getHeader();
-            if (!hname)
-            {
-                map<string,string>::const_iterator fallback=g_mapAttribRuleToHeader.find(w);
-                if (fallback!=g_mapAttribRuleToHeader.end())
-                    hname=fallback->second.c_str();
-            }
-            
-            if (!hname) {
+            AAP wrapper(provs,w);
+            if (wrapper.fail()) {
                 ap_log_rerror(APLOG_MARK,APLOG_WARNING|APLOG_NOERRNO,r,
                                 "shibrm_check_auth() didn't recognize require rule: %s\n",w);
+                continue;
             }
-            else
-            {
-                bool regexp=false;
-                const char* vals=ap_table_get(r->headers_in,hname);
-                while (*t && vals)
-                {
-                    w=ap_getword_conf(r->pool,&t);
-                    if (*w=='~')
-                    {
-                        regexp=true;
-                        continue;
-                    }
 
-                    try
-                    {
-                        auto_ptr<RegularExpression> re;
-                        if (regexp)
-                        {
-                            delete re.release();
-                            auto_ptr<XMLCh> trans(fromUTF8(w));
-                            auto_ptr<RegularExpression> temp(new RegularExpression(trans.get()));
-                            re=temp;
-                        }
-                        
-                        string vals_str(vals);
-                        int j = 0;
-                        for (int i = 0;  i < vals_str.length();  i++)
-                        {
-                            if (vals_str.at(i) == ';') 
-                            {
-                                if (i == 0) {
-                                    ap_log_rerror(APLOG_MARK,APLOG_WARNING|APLOG_NOERRNO,r,
-                                                    "shibrm_check_auth() invalid header encoding %s: starts with semicolon", vals);
-                                    return SERVER_ERROR;
-                                }
-        
-                                if (vals_str.at(i-1) == '\\') {
-                                    vals_str.erase(i-1, 1);
-                                    i--;
-                                    continue;
-                                }
-        
-                                string val = vals_str.substr(j, i-j);
-                                j = i+1;
-                                if (regexp) {
-                                    auto_ptr<XMLCh> trans(fromUTF8(val.c_str()));
-                                    if (re->matches(trans.get())) {
-                                        ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
-                                                        "shibrm_check_auth() expecting %s, got %s: authorization granted", w, val.c_str());
-                                        return OK;
-                                    }
-                                }
-                                else if (val==w) {
+            bool regexp=false;
+            const char* vals=ap_table_get(r->headers_in,wrapper->getHeader());
+            while (*t && vals) {
+                w=ap_getword_conf(r->pool,&t);
+                if (*w=='~') {
+                    regexp=true;
+                    continue;
+                }
+
+                try {
+                    auto_ptr<RegularExpression> re;
+                    if (regexp) {
+                        delete re.release();
+                        auto_ptr<XMLCh> trans(fromUTF8(w));
+                        auto_ptr<RegularExpression> temp(new RegularExpression(trans.get()));
+                        re=temp;
+                    }
+                    
+                    string vals_str(vals);
+                    int j = 0;
+                    for (int i = 0;  i < vals_str.length();  i++) {
+                        if (vals_str.at(i) == ';') {
+                            if (i == 0) {
+                                ap_log_rerror(APLOG_MARK,APLOG_WARNING|APLOG_NOERRNO,r,
+                                                "shibrm_check_auth() invalid header encoding %s: starts with semicolon", vals);
+                                return SERVER_ERROR;
+                            }
+    
+                            if (vals_str.at(i-1) == '\\') {
+                                vals_str.erase(i-1, 1);
+                                i--;
+                                continue;
+                            }
+    
+                            string val = vals_str.substr(j, i-j);
+                            j = i+1;
+                            if (regexp) {
+                                auto_ptr<XMLCh> trans(fromUTF8(val.c_str()));
+                                if (re->matches(trans.get())) {
                                     ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
                                                     "shibrm_check_auth() expecting %s, got %s: authorization granted", w, val.c_str());
                                     return OK;
                                 }
-                                else {
-                                    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
-                                                    "shibrm_check_auth() expecting %s, got %s: authorization not granted", w, val.c_str());
-                                }
                             }
-                        }
-        
-                        string val = vals_str.substr(j, vals_str.length()-j);
-                        if (regexp) {
-                            auto_ptr<XMLCh> trans(fromUTF8(val.c_str()));
-                            if (re->matches(trans.get())) {
+                            else if (val==w) {
                                 ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
                                                 "shibrm_check_auth() expecting %s, got %s: authorization granted", w, val.c_str());
                                 return OK;
                             }
+                            else {
+                                ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
+                                                "shibrm_check_auth() expecting %s, got %s: authorization not granted", w, val.c_str());
+                            }
                         }
-                        else if (val==w) {
+                    }
+    
+                    string val = vals_str.substr(j, vals_str.length()-j);
+                    if (regexp) {
+                        auto_ptr<XMLCh> trans(fromUTF8(val.c_str()));
+                        if (re->matches(trans.get())) {
                             ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
                                             "shibrm_check_auth() expecting %s, got %s: authorization granted", w, val.c_str());
                             return OK;
                         }
-                        else {
-                            ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
-                                            "shibrm_check_auth() expecting %s, got %s: authorization not granted", w, val.c_str());
-                        }
                     }
-                    catch (XMLException& ex)
-                    {
-                        auto_ptr<char> tmp(XMLString::transcode(ex.getMessage()));
-                        ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
-                                        "shibrm_check_auth caught exception while parsing regular expression (%s): %s",w,tmp.get());
+                    else if (val==w) {
+                        ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
+                                        "shibrm_check_auth() expecting %s, got %s: authorization granted", w, val.c_str());
+                        return OK;
+                    }
+                    else {
+                        ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
+                                        "shibrm_check_auth() expecting %s, got %s: authorization not granted", w, val.c_str());
                     }
                 }
-    	    }
+                catch (XMLException& ex) {
+                    auto_ptr<char> tmp(XMLString::transcode(ex.getMessage()));
+                    ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
+                                    "shibrm_check_auth caught exception while parsing regular expression (%s): %s",w,tmp.get());
+                }
+            }
     	}
     }
 

@@ -61,12 +61,18 @@ using namespace shibboleth;
 using namespace saml;
 using namespace std;
 
-ShibPOSTProfile* ShibPOSTProfileFactory::getInstance(const Iterator<const XMLCh*>& policies, const XMLCh* receiver, int ttlSeconds)
+ShibPOSTProfile* ShibPOSTProfileFactory::getInstance(
+    const Iterator<IMetadata*>& metadatas, const Iterator<ITrust*>& trusts,
+    const Iterator<const XMLCh*>& policies, const XMLCh* receiver, int ttlSeconds
+    )
 {
-    return new ClubShibPOSTProfile(policies,receiver,ttlSeconds);
+    return new ClubShibPOSTProfile(metadatas,trusts,policies,receiver,ttlSeconds);
 }
 
-ShibPOSTProfile* ShibPOSTProfileFactory::getInstance(const Iterator<const XMLCh*>& policies, const XMLCh* issuer)
+ShibPOSTProfile* ShibPOSTProfileFactory::getInstance(
+    const Iterator<IMetadata*>& metadatas, const Iterator<ICredentials*>& creds,
+    const Iterator<const XMLCh*>& policies, const XMLCh* issuer
+    )
 {
-    return new ClubShibPOSTProfile(policies,issuer);
+    return new ClubShibPOSTProfile(metadatas,creds,policies,issuer);
 }

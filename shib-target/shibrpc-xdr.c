@@ -80,7 +80,7 @@ xdr_shibrpc_session_is_valid_args_1 (XDR *xdrs, shibrpc_session_is_valid_args_1 
 
 	 if (!xdr_ShibRpcHttpCookie_1 (xdrs, &objp->cookie))
 		 return FALSE;
-	 if (!xdr_string (xdrs, &objp->url, ~0))
+	 if (!xdr_string (xdrs, &objp->application_id, ~0))
 		 return FALSE;
 	 if (!xdr_bool (xdrs, &objp->checkIPAddress))
 		 return FALSE;
@@ -106,6 +106,8 @@ xdr_shibrpc_new_session_args_1 (XDR *xdrs, shibrpc_new_session_args_1 *objp)
 {
 	register int32_t *buf;
 
+	 if (!xdr_string (xdrs, &objp->application_id, ~0))
+		 return FALSE;
 	 if (!xdr_string (xdrs, &objp->shire_location, ~0))
 		 return FALSE;
 	 if (!xdr_string (xdrs, &objp->saml_post, ~0))
@@ -138,7 +140,7 @@ xdr_shibrpc_get_assertions_args_1 (XDR *xdrs, shibrpc_get_assertions_args_1 *obj
 		 return FALSE;
 	 if (!xdr_bool (xdrs, &objp->checkIPAddress))
 		 return FALSE;
-	 if (!xdr_string (xdrs, &objp->url, ~0))
+	 if (!xdr_string (xdrs, &objp->application_id, ~0))
 		 return FALSE;
 	return TRUE;
 }

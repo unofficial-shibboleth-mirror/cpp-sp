@@ -160,6 +160,10 @@ SHIBTARGET_EXPORTS void shib_sock_close (ShibSocket s, ShibSockName name);
 #define SHIBTARGET_TAG_SAMLCOMPAT   "SAMLCompat"
 
 #define SHIBTARGET_TAG_METADATA "metadata"
+#define SHIBTARGET_TAG_TRUST    "trust"
+#define SHIBTARGET_TAG_CREDS    "credentials"
+#define SHIBTARGET_TAG_AAP      "aap"
+#define SHIBTARGET_TAG_APPMAPPER "applicationMap"
 
 #define SHIBTARGET_TAG_DEFAULTLIFE  "defaultLife"
 
@@ -182,23 +186,6 @@ SHIBTARGET_EXPORTS ShibSockName shib_target_sockacl(unsigned int index);
 
 
 namespace shibtarget {
-  class ResourcePriv;
-  class SHIBTARGET_EXPORTS Resource
-  {
-  public:
-    Resource(const char* resource_url);
-    Resource(std::string resource_url);
-    ~Resource();
-
-    const char* getResource() const;
-    const char* getURL() const;
-    bool equals(Resource*) const;
-    saml::Iterator<saml::SAMLAttribute*> getDesignators() const;
-
-  private:
-    ResourcePriv *m_priv;
-  };
-
   class RPCHandleInternal;
   class SHIBTARGET_EXPORTS RPCHandle
   {
@@ -360,16 +347,11 @@ namespace shibtarget {
   class SHIBTARGET_EXPORTS SHIRE
   {
   public:
-    SHIRE(RPCHandle *rpc, SHIREConfig config, std::string shire_url);
+    SHIRE(RPCHandle *rpc, SHIREConfig config, const char* shire_url);
     ~SHIRE();
 
-    RPCError* sessionIsValid(const char* cookie, const char* ip, const char* url);
-    RPCError* sessionCreate(const char* post, const char* ip,
-			     std::string &cookie);
-
-    //ShibTargetResponse* is_valid(ShibINI& ini, const char* serverName,
-    //			 const char *cookie, const char *target_url);
-    //ShibTargetResponse* create();
+    RPCError* sessionIsValid(const char* cookie, const char* ip, const char* application_id);
+    RPCError* sessionCreate(const char* post, const char* ip, const char* application_id, std::string &cookie);
 
   private:
     SHIREPriv *m_priv;
@@ -388,12 +370,10 @@ namespace shibtarget {
     RM(RPCHandle *rpc, RMConfig config);
     ~RM();
 
-    RPCError* getAssertions(const char* cookie, const char* ip,
-			    const char* url,
+    RPCError* getAssertions(const char* cookie, const char* ip, const char* application_id,
 			    std::vector<saml::SAMLAssertion*> &assertions,
 			    saml::SAMLAuthenticationStatement **statement = NULL);
     static void serialize(saml::SAMLAssertion &assertion, std::string &result);
-    static saml::Iterator<saml::SAMLAttribute*> getAttributes(saml::SAMLAssertion &assertion);
   private:
     RMPriv *m_priv;
   };
@@ -493,6 +473,35 @@ namespace shibtarget {
     void init(std::string& file, bool case_sensitive);
   };
 
+    // Abstract API to map URLs to application names
+    struct SHIBTARGET_EXPORTS IApplicationMapper : public virtual shibboleth::ILockable
+    {
+        virtual const char* getApplicationFromURL(const char* url) const=0;
+        virtual const XMLCh* getXMLChApplicationFromURL(const char* url) const=0;
+        virtual const char* getApplicationFromParsedURL(
+            const char* scheme, const char* hostname, unsigned int port, const char* path=NULL
+            ) const=0;
+        virtual const XMLCh* getXMLChApplicationFromParsedURL(
+            const char* scheme, const char* hostname, unsigned int port, const char* path=NULL
+            ) const=0;
+        virtual ~IApplicationMapper() {}
+    };
+
+    // A helper class to wrap the lock/unlock sequence.
+    class SHIBTARGET_EXPORTS ApplicationMapper
+    {
+    public:
+        ApplicationMapper();
+        ~ApplicationMapper() {if (m_mapper) m_mapper->unlock();}
+        const IApplicationMapper* operator->() const {return m_mapper;}
+        operator const IApplicationMapper*() const {return m_mapper;}
+        
+    private:
+        ApplicationMapper(const ApplicationMapper&);
+        void operator=(const ApplicationMapper&);
+        IApplicationMapper* m_mapper;
+    };
+    
   class SHIBTARGET_EXPORTS ShibTargetConfig
   {
   public:
@@ -501,9 +510,13 @@ namespace shibtarget {
     static ShibTargetConfig& getConfig();
     virtual void init() = 0;
     virtual void shutdown() = 0;
+    virtual shibtarget::ShibINI& getINI() const = 0;
+    virtual IApplicationMapper* getApplicationMapper() const = 0;
+    virtual saml::Iterator<shibboleth::IMetadata*> getMetadataProviders() const = 0;
+    virtual saml::Iterator<shibboleth::ITrust*> getTrustProviders() const = 0;
+    virtual saml::Iterator<shibboleth::ICredentials*> getCredentialProviders() const = 0;
+    virtual saml::Iterator<shibboleth::IAAP*> getAAPProviders() const = 0;
     virtual ~ShibTargetConfig() {}
-    virtual ShibINI& getINI() = 0;
-    virtual saml::Iterator<const XMLCh*> getPolicies() = 0;
   };
 
 } // namespace

@@ -84,6 +84,84 @@ using namespace saml;
 using namespace shibboleth;
 using namespace shibtarget;
 
+namespace shibtarget {
+
+    // An implementation of the URL->application mapping API using an XML file
+    class XMLApplicationMapper : public IApplicationMapper, public ReloadableXMLFile
+    {
+    public:
+        XMLApplicationMapper(const char* pathname) : ReloadableXMLFile(pathname) {}
+        ~XMLApplicationMapper() {}
+
+        const char* getApplicationFromURL(const char* url) const;
+        const XMLCh* getXMLChApplicationFromURL(const char* url) const;
+        const char* getApplicationFromParsedURL(
+            const char* scheme, const char* hostname, unsigned int port, const char* path=NULL
+            ) const;
+        const XMLCh* getXMLChApplicationFromParsedURL(
+            const char* scheme, const char* hostname, unsigned int port, const char* path=NULL
+            ) const;
+
+    protected:
+        virtual ReloadableXMLFileImpl* newImplementation(const char* pathname) const;
+    };
+
+    class STConfig : public ShibTargetConfig
+    {
+    public:
+        STConfig(const char* app_name, const char* inifile);
+        ~STConfig();
+        void ref();
+        void init();
+        void shutdown();
+        ShibINI& getINI() const { return *ini; }
+        IApplicationMapper* getApplicationMapper() const { return m_applicationMapper; }
+        saml::Iterator<IMetadata*> getMetadataProviders() const { return metadatas; }
+        saml::Iterator<ITrust*> getTrustProviders() const { return trusts; }
+        saml::Iterator<ICredentials*> getCredentialProviders() const { return creds; }
+        saml::Iterator<IAAP*> getAAPProviders() const { return aaps; }
+        saml::Iterator<const XMLCh*> getPolicies() const { return saml::Iterator<const XMLCh*>(policies); }
+     
+    private:
+        saml::SAMLConfig& samlConf;
+        shibboleth::ShibConfig& shibConf;
+        ShibINI* ini;
+        std::string m_app_name;
+        int refcount;
+        std::vector<const XMLCh*> policies;
+        std::string m_SocketName;
+#ifdef WANT_TCP_SHAR
+        std::vector<std::string> m_SocketACL;
+#endif
+        IApplicationMapper* m_applicationMapper;
+        std::vector<IMetadata*> metadatas;
+        std::vector<ITrust*> trusts;
+        std::vector<ICredentials*> creds;
+        std::vector<IAAP*> aaps;
+      
+        friend ShibSockName ::shib_target_sockname();
+        friend ShibSockName ::shib_target_sockacl(unsigned int);
+    };
+
+    class XML
+    {
+    public:
+        // URI constants
+        static const XMLCh APPMAP_NS[];
+        static const XMLCh APPMAP_SCHEMA_ID[];
+
+        struct Literals
+        {
+            static const XMLCh ApplicationID[];
+            static const XMLCh ApplicationMap[];
+            static const XMLCh Host[];
+            static const XMLCh Path[];
+            static const XMLCh Port[];
+            static const XMLCh Scheme[];
+        };
+    };
+}
+
 #endif
 
 #endif

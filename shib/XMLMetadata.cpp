@@ -71,7 +71,7 @@ using namespace std;
 
 namespace shibboleth {
 
-    class XMLMetadataImpl
+    class XMLMetadataImpl : public ReloadableXMLFileImpl
     {
     public:
         XMLMetadataImpl(const char* pathname);
@@ -81,43 +81,44 @@ namespace shibboleth {
         {
         public:
             ContactInfo(ContactType type, const XMLCh* name, const XMLCh* email)
-                : m_type(type), m_name(XMLString::transcode(name)), m_email(XMLString::transcode(email)) {}
+                : m_type(type), m_name(name), m_email(email) {}
         
             ContactType getType() const { return m_type; }
-            const char* getName() const { return m_name.get(); }            
+            const char* getName() const { return m_name.get(); }
             const char* getEmail() const { return m_email.get(); }
         
         private:
             ContactType m_type;
-            std::auto_ptr<char> m_name, m_email;
+            auto_ptr_char m_name, m_email;
         };
         
         class Authority : public IAuthority
         {
         public:
-            Authority(const XMLCh* name, const XMLCh* url) : m_name(name), m_url(XMLString::transcode(url)) {}
+            Authority(const XMLCh* name, const XMLCh* url) : m_name(name), m_url(url) {}
         
             const XMLCh* getName() const { return m_name; }
             const char* getURL() const { return m_url.get(); }
         
         private:
             const XMLCh* m_name;
-            auto_ptr<char> m_url;
+            auto_ptr_char m_url;
         };
     
         class OriginSite : public IOriginSite
         {
         public:
-            OriginSite(const XMLCh* name, const XMLCh* errorURL)
-                : m_name(name), m_errorURL(XMLString::transcode(errorURL)) {}
+            OriginSite(const XMLCh* name, const XMLCh* errorURL) : m_name(name), m_errorURL(errorURL) {}
             ~OriginSite();
         
             const XMLCh* getName() const {return m_name;}
             Iterator<const XMLCh*> getGroups() const {return m_groups;}
             Iterator<const IContactInfo*> getContacts() const {return m_contacts;}
             const char* getErrorURL() const {return m_errorURL.get();}
-            bool validate(Iterator<XSECCryptoX509*> certs) const {Trust t; return t.validate(this,certs);}
-            bool validate(Iterator<const XMLCh*> certs) const {Trust t; return t.validate(this,certs);}
+            bool validate(const saml::Iterator<ITrust*>& trusts, const Iterator<XSECCryptoX509*>& certs) const
+                {Trust t(trusts); return t.validate(this,certs);}
+            bool validate(const saml::Iterator<ITrust*>& trusts, const Iterator<const XMLCh*>& certs) const
+                {Trust t(trusts); return t.validate(this,certs);}
             Iterator<const IAuthority*> getHandleServices() const {return m_handleServices;}
             Iterator<const IAuthority*> getAttributeAuthorities() const {return m_attributes;}
             Iterator<std::pair<const XMLCh*,bool> > getSecurityDomains() const {return m_domains;}
@@ -125,7 +126,7 @@ namespace shibboleth {
         private:
             friend class XMLMetadataImpl;
             const XMLCh* m_name;
-            auto_ptr<char> m_errorURL;
+            auto_ptr_char m_errorURL;
             vector<const IContactInfo*> m_contacts;
             vector<const IAuthority*> m_handleServices;
             vector<const IAuthority*> m_attributes;
@@ -139,30 +140,39 @@ namespace shibboleth {
         typedef map<string,OriginSite*> sitemap_t;
     #endif
         sitemap_t m_sites;
-        DOMDocument* m_doc;
     };
 
-    class XMLMetadata : public IMetadata
+    class XMLMetadata : public IMetadata, public ReloadableXMLFile
     {
     public:
-        XMLMetadata(const char* pathname);
-        ~XMLMetadata() { delete m_lock; delete m_impl; }
+        XMLMetadata(const char* pathname) : ReloadableXMLFile(pathname) {}
+        ~XMLMetadata() {}
 
-        void lock();
-        void unlock() { m_lock->unlock(); }
         const ISite* lookup(const XMLCh* site) const;
-
-    private:
-        std::string m_source;
-        time_t m_filestamp;
-        RWLock* m_lock;
-        XMLMetadataImpl* m_impl;
+        
+    protected:
+        virtual ReloadableXMLFileImpl* newImplementation(const char* pathname) const;
     };
 }
 
 extern "C" IMetadata* XMLMetadataFactory(const char* source)
 {
-    return new XMLMetadata(source);
+    XMLMetadata* m=new XMLMetadata(source);
+    try
+    {
+        m->getImplementation();
+    }
+    catch (...)
+    {
+        delete m;
+        throw;
+    }
+    return m;    
+}
+
+ReloadableXMLFileImpl* XMLMetadata::newImplementation(const char* pathname) const
+{
+    return new XMLMetadataImpl(pathname);
 }
 
 XMLMetadataImpl::OriginSite::~OriginSite()
@@ -175,21 +185,13 @@ XMLMetadataImpl::OriginSite::~OriginSite()
         delete const_cast<IAuthority*>(*k);
 }
 
-XMLMetadataImpl::XMLMetadataImpl(const char* pathname) : m_doc(NULL)
+XMLMetadataImpl::XMLMetadataImpl(const char* pathname) : ReloadableXMLFileImpl(pathname)
 {
     NDC ndc("XMLMetadataImpl");
     Category& log=Category::getInstance(SHIB_LOGCAT".XMLMetadataImpl");
 
-    saml::XML::Parser p;
     try
     {
-        static XMLCh base[]={chLatin_f, chLatin_i, chLatin_l, chLatin_e, chColon, chForwardSlash, chForwardSlash, chForwardSlash, chNull};
-        URLInputSource src(base,pathname);
-        Wrapper4InputSource dsrc(&src,false);
-        m_doc=p.parse(dsrc);
-
-        log.infoStream() << "Loaded and parsed site file (" << pathname << ")" << CategoryStream::ENDLINE;
-
         DOMElement* e = m_doc->getDocumentElement();
         if (XMLString::compareString(XML::SHIB_NS,e->getNamespaceURI()) ||
             XMLString::compareString(XML::Literals::SiteGroup,e->getLocalName()))
@@ -288,7 +290,7 @@ XMLMetadataImpl::XMLMetadataImpl(const char* pathname) : m_doc(NULL)
     }
     catch (SAMLException& e)
     {
-        log.errorStream() << "XML error while parsing site configuration: " << e.what() << CategoryStream::ENDLINE;
+        log.errorStream() << "Error while parsing site configuration: " << e.what() << CategoryStream::ENDLINE;
         for (sitemap_t::iterator i=m_sites.begin(); i!=m_sites.end(); i++)
             delete i->second;
         if (m_doc)
@@ -310,81 +312,16 @@ XMLMetadataImpl::~XMLMetadataImpl()
 {
     for (sitemap_t::iterator i=m_sites.begin(); i!=m_sites.end(); i++)
         delete i->second;
-    if (m_doc)
-        m_doc->release();
-}
-
-XMLMetadata::XMLMetadata(const char* pathname) : m_filestamp(0), m_source(pathname), m_impl(NULL)
-{
-#ifdef WIN32
-    struct _stat stat_buf;
-    if (_stat(pathname, &stat_buf) == 0)
-#else
-    struct stat stat_buf;
-    if (stat(pathname, &stat_buf) == 0)
-#endif
-        m_filestamp=stat_buf.st_mtime;
-    m_impl=new XMLMetadataImpl(pathname);
-    m_lock=RWLock::create();
-}
-
-void XMLMetadata::lock()
-{
-    m_lock->rdlock();
-
-    // Check if we need to refresh.
-#ifdef WIN32
-    struct _stat stat_buf;
-    if (_stat(m_source.c_str(), &stat_buf) == 0)
-#else
-    struct stat stat_buf;
-    if (stat(m_source.c_str(), &stat_buf) == 0)
-#endif
-    {
-        if (m_filestamp>0 && m_filestamp<stat_buf.st_mtime)
-        {
-            // Elevate lock and recheck.
-            m_lock->unlock();
-            m_lock->wrlock();
-            if (m_filestamp>0 && m_filestamp<stat_buf.st_mtime)
-            {
-                try
-                {
-                    XMLMetadataImpl* new_mapper=new XMLMetadataImpl(m_source.c_str());
-                    delete m_impl;
-                    m_impl=new_mapper;
-                    m_filestamp=stat_buf.st_mtime;
-                    m_lock->unlock();
-                }
-                catch(SAMLException& e)
-                {
-                    m_lock->unlock();
-                    saml::NDC ndc("lock");
-                    Category::getInstance(SHIB_LOGCAT".XMLMetadata").error("failed to reload metadata, sticking with what we have: %s", e.what());
-                }
-                catch(...)
-                {
-                    m_lock->unlock();
-                    saml::NDC ndc("lock");
-                    Category::getInstance(SHIB_LOGCAT".XMLMetadata").error("caught an unknown exception, sticking with what we have");
-                }
-            }
-            else
-            {
-                m_lock->unlock();
-            }
-            m_lock->rdlock();
-        }
-    }
 }
 
 const ISite* XMLMetadata::lookup(const XMLCh* site) const
 {
+    XMLMetadataImpl* impl=dynamic_cast<XMLMetadataImpl*>(getImplementation());
 #ifdef HAVE_GOOD_STL
-    XMLMetadataImpl::sitemap_t::const_iterator i=m_impl->m_sites.find(site);
+    XMLMetadataImpl::sitemap_t::const_iterator i=impl->m_sites.find(site);
 #else
     auto_ptr<char> temp(XMLString::transcode(site));
-    XMLMetadataImpl::sitemap_t::const_iterator i=m_impl->m_sites.find(temp.get());
+    XMLMetadataImpl::sitemap_t::const_iterator i=impl->m_sites.find(temp.get());
 #endif
-    return (i==m_impl->m_sites.end()) ? NULL : i->second;
+    return (i==impl->m_sites.end()) ? NULL : i->second;
 }

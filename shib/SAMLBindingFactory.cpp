@@ -61,10 +61,15 @@
 using namespace shibboleth;
 using namespace saml;
 
-SAMLBinding* SAMLBindingFactory::getInstance(const XMLCh* subject, const ISite* relyingParty, const XMLCh* protocol)
+SAMLBinding* SAMLBindingFactory::getInstance(
+    const saml::Iterator<IMetadata*>& metadatas,
+    const saml::Iterator<ITrust*>& trusts,
+    const saml::Iterator<ICredentials*>& creds,
+    const XMLCh* subject, const ISite* relyingParty, const XMLCh* protocol
+    )
 {
     if (!protocol || XMLString::compareString(protocol,SAMLBinding::SAML_SOAP_HTTPS))
         throw UnsupportedProtocolException("SAMLBindingFactory::getInstance() unable to find binding implementation for specified protocol");
 
-    return new ShibSOAPBinding(subject, relyingParty);
+    return new ShibSOAPBinding(metadatas, trusts, creds, subject, relyingParty);
 }

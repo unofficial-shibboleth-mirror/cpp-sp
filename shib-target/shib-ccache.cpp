@@ -81,8 +81,8 @@ public:
   InternalCCacheEntry(SAMLAuthenticationStatement *s, const char *client_addr);
   ~InternalCCacheEntry();
 
-  virtual Iterator<SAMLAssertion*> getAssertions(Resource& resource);
-  virtual void preFetch(Resource& resource, int prefetch_window);
+  virtual Iterator<SAMLAssertion*> getAssertions(const char* resource);
+  virtual void preFetch(const char* resource, int prefetch_window);
   virtual bool isSessionValid(time_t lifetime, time_t timeout);
   virtual const char* getClientAddress() { return m_clientAddress.c_str(); }
   virtual const char* getSerializedStatement() { return m_statement.c_str(); }
@@ -94,10 +94,8 @@ public:
   void rdlock() { cacheitem_lock->rdlock(); }
   void wrlock() { cacheitem_lock->wrlock(); }
 
-  static vector<SAMLAssertion*> g_emptyVector;
-
 private:
-  ResourceEntry* populate(Resource& resource, int slop);
+  ResourceEntry* populate(const char* resource, int slop);
   ResourceEntry* find(const char* resource);
   void insert(const char* resource, ResourceEntry* entry);
   void remove(const char* resource);
@@ -131,13 +129,13 @@ private:
   class ResourceLock
   {
   public:
-    ResourceLock(InternalCCacheEntry* entry, string resource);
+    ResourceLock(InternalCCacheEntry* entry, const char* resource);
     ~ResourceLock();
 
   private:
-    Mutex*			find(string& resource);
+    Mutex*			find(const char* resource);
     InternalCCacheEntry*	entry;
-    string			resource;
+    string			m_resource;
   };
 
   friend class ResourceLock;
@@ -150,8 +148,7 @@ public:
   virtual ~InternalCCache();
 
   virtual CCacheEntry* find(const char* key);
-  virtual void insert(const char* key, SAMLAuthenticationStatement *s,
-		      const char *client_addr);
+  virtual void insert(const char* key, SAMLAuthenticationStatement *s, const char *client_addr);
   virtual void remove(const char* key);
 
   InternalCCacheEntry* findi(const char* key);
@@ -203,9 +200,6 @@ CCache* CCache::getInstance(const char* type)
   return (CCache*) new InternalCCache();
 }
 
-// static members
-vector<SAMLAssertion*> InternalCCacheEntry::g_emptyVector;
-
 
 /******************************************************************************/
 /* InternalCCache:  A Credential Cache                                        */
@@ -213,8 +207,7 @@ vector<SAMLAssertion*> InternalCCacheEntry::g_emptyVector;
 
 InternalCCache::InternalCCache()
 {
-  string ctx="shibtarget.InternalCCache";
-  log = &(log4cpp::Category::getInstance(ctx));
+  log = &(log4cpp::Category::getInstance("shibtarget.InternalCCache"));
   lock = RWLock::create();
 
   shutdown_wait = CondWait::create();
@@ -263,8 +256,7 @@ CCacheEntry* InternalCCache::find(const char* key)
   return dynamic_cast<CCacheEntry*>(entry);
 }
 
-void InternalCCache::insert(const char* key, SAMLAuthenticationStatement *s,
-			    const char *client_addr)
+void InternalCCache::insert(const char* key, SAMLAuthenticationStatement *s, const char *client_addr)
 {
   log->debug("caching new entry for \"%s\"", key);
 
@@ -409,8 +401,7 @@ void* InternalCCache::cleanup_fcn(void* cache_p)
 InternalCCacheEntry::InternalCCacheEntry(SAMLAuthenticationStatement *s, const char *client_addr)
   : m_hasbinding(false)
 {
-  string ctx = "shibtarget::InternalCCacheEntry";
-  log = &(log4cpp::Category::getInstance(ctx));
+  log = &(log4cpp::Category::getInstance("shibtarget::InternalCCacheEntry"));
   pop_locks_lock = Mutex::create();
   access_lock = Mutex::create();
   resource_lock = RWLock::create();
@@ -426,8 +417,8 @@ InternalCCacheEntry::InternalCCacheEntry(SAMLAuthenticationStatement *s, const c
   const XMLCh* name = m_subject->getName();
   const XMLCh* qual = m_subject->getNameQualifier();
 
-  auto_ptr<char> h(XMLString::transcode(name));
-  auto_ptr<char> d(XMLString::transcode(qual));
+  auto_ptr_char h(name);
+  auto_ptr_char d(qual);
 
   m_handle = h.get();
   m_originSite = d.get();
@@ -448,8 +439,7 @@ InternalCCacheEntry::InternalCCacheEntry(SAMLAuthenticationStatement *s, const c
   m_statement = os.str();
 
   log->info("New Session Created...");
-  log->debug("Handle: \"%s\", Site: \"%s\", Address: %s", h.get(), d.get(),
-	     client_addr);
+  log->debug("Handle: \"%s\", Site: \"%s\", Address: %s", h.get(), d.get(), client_addr);
 }
 
 InternalCCacheEntry::~InternalCCacheEntry()
@@ -491,32 +481,31 @@ bool InternalCCacheEntry::isSessionValid(time_t lifetime, time_t timeout)
   return true;
 }
 
-Iterator<SAMLAssertion*> InternalCCacheEntry::getAssertions(Resource& resource)
+Iterator<SAMLAssertion*> InternalCCacheEntry::getAssertions(const char* resource)
 {
   saml::NDC ndc("getAssertions");
   ResourceEntry* entry = populate(resource, 0);
   if (entry)
     return entry->getAssertions();
-  return Iterator<SAMLAssertion*>(InternalCCacheEntry::g_emptyVector);
+  return EMPTY(SAMLAssertion*);
 }
 
-void InternalCCacheEntry::preFetch(Resource& resource, int prefetch_window)
+void InternalCCacheEntry::preFetch(const char* resource, int prefetch_window)
 {
   saml::NDC ndc("preFetch");
-  ResourceEntry* entry = populate(resource, prefetch_window);
+  populate(resource, prefetch_window);
 }
 
-ResourceEntry* InternalCCacheEntry::populate(Resource& resource, int slop)
+ResourceEntry* InternalCCacheEntry::populate(const char* resource, int slop)
 {
   saml::NDC ndc("populate");
-  log->debug("populating entry for %s (%s)",
-	     resource.getResource(), resource.getURL());
+  log->debug("populating entry for %s", resource);
 
   // Lock the resource within this entry...
-  InternalCCacheEntry::ResourceLock lock(this, resource.getResource());
+  InternalCCacheEntry::ResourceLock lock(this, resource);
 
   // Can we use what we have?
-  ResourceEntry *entry = find(resource.getResource());
+  ResourceEntry *entry = find(resource);
   if (entry) {
     log->debug("found resource");
     if (entry->isValid(slop))
@@ -524,7 +513,7 @@ ResourceEntry* InternalCCacheEntry::populate(Resource& resource, int slop)
 
     // entry is invalid (expired) -- go fetch a new one.
     log->debug("removing resource cache; assertion is invalid");
-    remove (resource.getResource());
+    remove(resource);
     delete entry;
   }
 
@@ -536,25 +525,25 @@ ResourceEntry* InternalCCacheEntry::populate(Resource& resource, int slop)
   }
 
   log->info("trying to request attributes for %s@%s -> %s",
-	    m_handle.c_str(), m_originSite.c_str(), resource.getURL());
+	    m_handle.c_str(), m_originSite.c_str(), resource);
 
   try {
     entry = new ResourceEntry(resource, *m_subject, m_cache, p_auth->getBindings());
   } catch (ShibTargetException&) {
     return NULL;
   }
-  insert (resource.getResource(), entry);
+  insert(resource, entry);
 
   log->info("fetched and stored SAML response");
   return entry;
 }
 
-ResourceEntry* InternalCCacheEntry::find(const char* resource_url)
+ResourceEntry* InternalCCacheEntry::find(const char* resource)
 {
   ReadLock rwlock(resource_lock);
 
-  log->debug("find: %s", resource_url);
-  map<string,ResourceEntry*>::const_iterator i=m_resources.find(resource_url);
+  log->debug("find: %s", resource);
+  map<string,ResourceEntry*>::const_iterator i=m_resources.find(resource);
   if (i==m_resources.end()) {
     log->debug("no match found");
     return NULL;
@@ -589,9 +578,8 @@ void InternalCCacheEntry::remove(const char* resource)
 // will obtain and hold the proper lock until it goes out of scope and
 // deconstructs.
 
-InternalCCacheEntry::ResourceLock::ResourceLock(InternalCCacheEntry* entry,
-						string resource) :
-  entry(entry), resource(resource)
+InternalCCacheEntry::ResourceLock::ResourceLock(InternalCCacheEntry* entry, const char* resource) :
+  entry(entry), m_resource(resource)
 {
   Mutex *mutex = find(resource);
   mutex->lock();
@@ -599,11 +587,11 @@ InternalCCacheEntry::ResourceLock::ResourceLock(InternalCCacheEntry* entry,
 
 InternalCCacheEntry::ResourceLock::~ResourceLock()
 {
-  Mutex *mutex = find(resource);
+  Mutex *mutex = find(m_resource.c_str());
   mutex->unlock();
 }
 
-Mutex* InternalCCacheEntry::ResourceLock::find(string& resource)
+Mutex* InternalCCacheEntry::ResourceLock::find(const char* resource)
 {
   Lock(entry->pop_locks_lock);
   

@@ -71,7 +71,6 @@
 #endif
 
 #include "shib.h"
-#include "shib-threads.h"
 
 #include <openssl/x509.h>
 
@@ -82,11 +81,17 @@ namespace shibboleth
     class ClubShibPOSTProfile : public ShibPOSTProfile
     {
     public:
-        ClubShibPOSTProfile(const saml::Iterator<const XMLCh*>& policies, const XMLCh* receiver, int ttlSeconds);
-        ClubShibPOSTProfile(const saml::Iterator<const XMLCh*>& policies, const XMLCh* issuer);
+        ClubShibPOSTProfile(
+            const saml::Iterator<IMetadata*>& metadatas, const saml::Iterator<ITrust*>& trusts,
+            const saml::Iterator<const XMLCh*>& policies, const XMLCh* receiver, int ttlSeconds
+            );
+        ClubShibPOSTProfile(
+            const saml::Iterator<IMetadata*>& metadatas, const saml::Iterator<ICredentials*>& creds,
+            const saml::Iterator<const XMLCh*>& policies, const XMLCh* issuer
+            );
         virtual ~ClubShibPOSTProfile();
 
-        virtual saml::SAMLResponse* prepare(
+        saml::SAMLResponse* prepare(
             const XMLCh* recipient,
             const XMLCh* name,
             const XMLCh* nameQualifier,
@@ -101,7 +106,7 @@ namespace shibboleth
             );
 
     protected:
-        virtual void verifySignature(
+        void verifySignature(
             const saml::SAMLSignedObject& obj,
             const IOriginSite* originSite,
             const XMLCh* signerName,
@@ -111,7 +116,13 @@ namespace shibboleth
     class ShibSOAPBinding : public saml::SAMLSOAPBinding
     {
     public:
-        ShibSOAPBinding(const XMLCh* subject, const ISite* relyingParty) : m_subject(subject), m_relyingParty(relyingParty) {}
+        ShibSOAPBinding(
+            const saml::Iterator<IMetadata*>& metadatas,
+            const saml::Iterator<ITrust*>& trusts,
+            const saml::Iterator<ICredentials*>& creds,
+            const XMLCh* subject,
+            const ISite* relyingParty
+            ) : m_metadatas(metadatas), m_creds(creds), m_trusts(trusts), m_subject(subject), m_relyingParty(relyingParty) {}
         virtual ~ShibSOAPBinding() {}
 
         virtual saml::SAMLResponse* send(
@@ -124,6 +135,9 @@ namespace shibboleth
         friend bool ssl_ctx_callback(void* ssl_ctx, void* userptr);
         const XMLCh* m_subject;
         const ISite* m_relyingParty;
+        const saml::Iterator<IMetadata*>& m_metadatas;
+        const saml::Iterator<ITrust*>& m_trusts;
+        const saml::Iterator<ICredentials*>& m_creds;
     };
 
     class ShibInternalConfig : public ShibConfig
@@ -132,24 +146,20 @@ namespace shibboleth
         ShibInternalConfig() {}
 
         bool init();
-        void term();
+        void term() {}
 
         void regFactory(const char* type, MetadataFactory* factory);
         void regFactory(const char* type, TrustFactory* factory);
         void regFactory(const char* type, CredentialsFactory* factory);
         void regFactory(const char* type, CredResolverFactory* factory);
         void regFactory(const char* type, AAPFactory* factory);
-        void regFactory(const char* type, saml::SAMLAttributeFactory* factory);
         void unregFactory(const char* type);
         
-        bool addMetadata(const char* type, const char* source);
-
-        saml::Iterator<IMetadata*> getMetadataProviders() const {return m_providers;}
-        saml::Iterator<ITrust*> getTrustProviders() const {return m_trust_providers;}
-        saml::Iterator<ICredentials*> getCredentialProviders() const {return m_cred_providers;}
-        CredResolverFactory* getCredResolverFactory(const char* type) const;
-        saml::Iterator<IAAP*> getAAPProviders() const {return m_aap_providers;}
-        saml::SAMLAttributeFactory* getAttributeFactory(const char* type) const;
+        IMetadata* newMetadata(const char* type, const char* source) const;
+        ITrust* newTrust(const char* type, const char* source) const;
+        ICredentials* newCredentials(const char* type, const char* source) const;
+        IAAP* newAAP(const char* type, const char* source) const;
+        ICredResolver* newCredResolver(const char* type, const DOMElement* source) const;
 
     private:
         friend class OriginMetadata;
@@ -162,17 +172,11 @@ namespace shibboleth
         typedef std::map<std::string, CredentialsFactory*> CredentialsFactoryMap;
         typedef std::map<std::string, CredResolverFactory*> CredResolverFactoryMap;
         typedef std::map<std::string, AAPFactory*> AAPFactoryMap;
-        typedef std::map<std::string, saml::SAMLAttributeFactory*> AttributeFactoryMap;
         MetadataFactoryMap m_metadataFactoryMap;
         TrustFactoryMap m_trustFactoryMap;
         CredentialsFactoryMap m_credFactoryMap;
         CredResolverFactoryMap m_credResolverFactoryMap;
         AAPFactoryMap m_aapFactoryMap;
-        AttributeFactoryMap m_attrFactoryMap;
-        std::vector<IMetadata*> m_providers;
-        std::vector<ITrust*> m_trust_providers;
-        std::vector<ICredentials*> m_cred_providers;
-        std::vector<IAAP*> m_aap_providers;
     };
 
     // OpenSSL Utilities

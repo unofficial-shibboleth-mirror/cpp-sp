@@ -65,11 +65,16 @@ using namespace saml;
 using namespace log4cpp;
 using namespace std;
 
+void ScopedAttribute::valueToDOM(unsigned int index, DOMElement* e) const
+{
+    SAMLAttribute::valueToDOM(index,e);
+    e->setAttributeNS(NULL,SHIB_L(Scope),m_scopes[index]);
+}
 
 ScopedAttribute::ScopedAttribute(const XMLCh* name, const XMLCh* ns, long lifetime,
                                  const saml::Iterator<const XMLCh*>& scopes,
                                  const saml::Iterator<const XMLCh*>& values)
-    : SimpleAttribute(name,ns,lifetime,values)
+    : SAMLAttribute(name,ns,NULL,lifetime,values)
 {
     if (scopes.size()!=values.size())
         throw MalformedException(SAMLException::RESPONDER,"ScopedAttribute() requires the number of scopes to equal the number of values");
@@ -78,7 +83,23 @@ ScopedAttribute::ScopedAttribute(const XMLCh* name, const XMLCh* ns, long lifeti
         m_scopes.push_back(XMLString::replicate(scopes.next()));
 }
 
-ScopedAttribute::ScopedAttribute(DOMElement* e) : SimpleAttribute(e) {}
+ScopedAttribute::ScopedAttribute(DOMElement* e) : SAMLAttribute(e)
+{
+    // Default scope comes from subject.
+    DOMNodeList* nlist=
+        static_cast<DOMElement*>(e->getParentNode())->getElementsByTagNameNS(saml::XML::SAML_NS,L(NameIdentifier));
+    if (!nlist || nlist->getLength() != 1)
+        throw MalformedException(SAMLException::RESPONDER,"ScopedAttribute() can't find saml:NameIdentifier in enclosing statement");
+    m_originSite=static_cast<DOMElement*>(nlist->item(0))->getAttributeNS(NULL,L(NameQualifier));
+
+    e=saml::XML::getFirstChildElement(e,saml::XML::SAML_NS,L(AttributeValue));
+    while (e)
+    {
+        DOMAttr* scope=e->getAttributeNodeNS(NULL,SHIB_L(Scope));
+        m_scopes.push_back(scope ? scope->getNodeValue() : &chNull);
+        e=saml::XML::getNextSiblingElement(e,saml::XML::SAML_NS,L(AttributeValue));
+    }
+}
 
 ScopedAttribute::~ScopedAttribute()
 {
@@ -97,17 +118,6 @@ ScopedAttribute::~ScopedAttribute()
         XMLCh* p = const_cast<XMLCh*>(*i);
         XMLString::release(&p);
     }
-}
-
-bool ScopedAttribute::addValue(DOMElement* e)
-{
-    if (SAMLAttribute::addValue(e))
-    {
-        DOMAttr* scope=e->getAttributeNodeNS(NULL,SHIB_L(Scope));
-        m_scopes.push_back(scope ? scope->getNodeValue() : &chNull);
-        return true;
-    }
-    return false;
 }
 
 Iterator<const XMLCh*> ScopedAttribute::getValues() const
@@ -146,27 +156,28 @@ Iterator<string> ScopedAttribute::getSingleByteValues() const
     return Iterator<string>(m_sbValues);
 }
 
+void ScopedAttribute::setValues(const Iterator<const XMLCh*>& values)
+{
+    throw SAMLException("unsupported operation");
+}
+
+void ScopedAttribute::addValue(const XMLCh* value)
+{
+    throw SAMLException("unsupported operation");
+}
+
+void ScopedAttribute::removeValue(unsigned int index)
+{
+    SAMLAttribute::removeValue(index);
+    
+    if (m_bOwnStrings) {
+        XMLCh* p=const_cast<XMLCh*>(m_scopes[index]);
+        XMLString::release(&p);
+    }
+    m_scopes.erase(m_scopes.begin()+index);
+}
+
 SAMLObject* ScopedAttribute::clone() const
 {
     return new ScopedAttribute(m_name,m_namespace,m_lifetime,m_scopes,m_values);
 }
-
-DOMNode* ScopedAttribute::toDOM(DOMDocument* doc,bool xmlns) const
-{
-    SimpleAttribute::toDOM(doc,xmlns);
-
-    int i=0;
-    DOMNode* n=m_root->getFirstChild();
-    while (n)
-    {
-        if (n->getNodeType()==DOMNode::ELEMENT_NODE)
-        {
-            static_cast<DOMElement*>(n)->setAttributeNS(NULL,SHIB_L(Scope),m_scopes[i]);
-            i++;
-        }
-        n=n->getNextSibling();
-    }
-
-    return m_root;
-}
-

@@ -84,8 +84,7 @@ public:
 
 ResourceEntryPriv::ResourceEntryPriv() : m_response(NULL), defaultLife(-1)
 {
-  string ctx = "shibtarget::ResourceEntry";
-  log = &(log4cpp::Category::getInstance(ctx));
+  log = &(log4cpp::Category::getInstance("shibtarget::ResourceEntry"));
   createTime = time(NULL);
 
   // Compute and cache the default life for this Resource Entry
@@ -105,36 +104,68 @@ ResourceEntryPriv::~ResourceEntryPriv()
     delete m_response;
 }
 
-ResourceEntry::ResourceEntry(const Resource &resource,
+ResourceEntry::ResourceEntry(const char* resource,
 			     const SAMLSubject& p_subject,
 			     CCache *m_cache,
 			     const Iterator<SAMLAuthorityBinding*> AAbindings)
 {
   saml::NDC ndc("ResourceEntry()");
 
+  string tag;
+  ShibTargetConfig& conf=ShibTargetConfig::getConfig();
+  ShibINI& ini = conf.getINI();
+  if (!ini.get_tag(resource, "providerID", true, &tag))
+    throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,string("unable to determine ProviderID for request, not set?"));
+  auto_ptr_XMLCh providerID(tag.c_str());
+
+  vector<SAMLAttributeDesignator*> designators;
   auto_ptr<ResourceEntryPriv> priv(new ResourceEntryPriv());
 
-  auto_ptr<XMLCh> resourceURL(XMLString::transcode(resource.getURL()));
+  // Look up attributes to request based on resource ID
+  if (ini.get_tag (resource, SHIBTARGET_TAG_REQATTRS, true, &tag)) {
+    // Now parse the request attributes tag...
+    priv->log->debug("Request Attributes: \"%s\"", tag.c_str());
 
-  // Clone the subject...
-  // 1) I know the static_cast is safe from clone()
-  // 2) the AttributeQuery will destroy this new subject.
-  auto_ptr<SAMLSubject> subject(static_cast<SAMLSubject*>(p_subject.clone()));
+    auto_ptr<char> tag_str(strdup(tag.c_str()));
+    char *tags = tag_str.get(), *tagptr = NULL, *the_tag;
+#ifdef HAVE_STRTOK_R
+    while ((the_tag = strtok_r(tags, " \t\r\n", &tagptr)) != NULL && *the_tag) {
+#else
+    while ((the_tag = strtok(tags, " \t\r\n")) != NULL && *the_tag) {
+#endif
+      // Make sure we don't loop ad-infinitum
+      tags = NULL;
+
+      priv->log->debug ("Parsed attribute string: \"%s\"", the_tag);
+      priv->log->debug ("tagptr = %p", tagptr);
+      
+      // transcode the attribute string from the tag
+      auto_ptr_XMLCh temp(the_tag);
+
+      // Now create the SAML Attribute from this name
+      designators.push_back(new SAMLAttributeDesignator(temp.get(),shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI));
+    }
+  }
+  else
+    priv->log->debug ("No request-attributes found, requesting any/all");
 
   // Build a SAML Request....
-  SAMLAttributeQuery* q=new SAMLAttributeQuery(subject.get(),resourceURL.get(),
-					       resource.getDesignators().clone());
-  subject.release();
+  SAMLAttributeQuery* q=new SAMLAttributeQuery(
+    static_cast<SAMLSubject*>(p_subject.clone()),providerID.get(),designators
+    );
   auto_ptr<SAMLRequest> req(new SAMLRequest(EMPTY(QName),q));
 
   // Try this request against all the bindings in the AuthenticationStatement
   // (i.e. send it to each AA in the list of bindings)
   SAMLResponse* response = NULL;
-  OriginMetadata site(p_subject.getNameQualifier());
+  OriginMetadata site(conf.getMetadataProviders(),p_subject.getNameQualifier());
   if (site.fail())
       throw MetadataException("unable to locate origin site's metadata during attribute query");
-  auto_ptr<XMLCh> caller(XMLString::transcode(resource.getResource()));
-  auto_ptr<SAMLBinding> pBinding(SAMLBindingFactory::getInstance(caller.get(),site));
+  auto_ptr<SAMLBinding> pBinding(
+    SAMLBindingFactory::getInstance(
+        conf.getMetadataProviders(),conf.getTrustProviders(),conf.getCredentialProviders(),providerID.get(),site
+        )
+    );
 
   while (!response && AAbindings.hasNext()) {
     SAMLAuthorityBinding* binding = AAbindings.next();
@@ -147,7 +178,20 @@ ResourceEntry::ResourceEntry(const Resource &resource,
   // Make sure we got a response
   if (!response) {
     priv->log->info ("No Response");
-    throw new ShibTargetException();
+    throw ShibTargetException();
+  }
+
+  // Run it through the AAP. Note that we could end up with an empty response!
+  Iterator<SAMLAssertion*> a=response->getAssertions();
+  for (unsigned long i=0; i < a.size();) {
+      try {
+          AAP::apply(conf.getAAPProviders(),site,*(a[i]));
+          i++;
+      }
+      catch (SAMLException&) {
+          priv->log->info("no statements remain, removing assertion");
+          response->removeAssertion(i);
+      }
   }
 
   priv->m_response = response;
@@ -182,7 +226,7 @@ bool ResourceEntry::isValid(int slop)
 #endif
   char timebuf[32];
   strftime(timebuf,32,"%Y-%m-%dT%H:%M:%SZ",ptime);
-  auto_ptr<XMLCh> timeptr(XMLString::transcode(timebuf));
+  auto_ptr_XMLCh timeptr(timebuf);
   XMLDateTime curDateTime(timeptr.get());
   curDateTime.parseDateTime();
 
@@ -197,12 +241,12 @@ bool ResourceEntry::isValid(int slop)
     const XMLDateTime* thistime = assertion->getNotOnOrAfter();
 
     // If there is no time, then just continue and ignore this assertion.
-    if (! thistime)
+    if (!thistime)
       continue;
 
     count++;
-    auto_ptr<char> nowptr(XMLString::transcode(curDateTime.toString()));
-    auto_ptr<char> assnptr(XMLString::transcode(thistime->toString()));
+    auto_ptr_char nowptr(curDateTime.getRawData());
+    auto_ptr_char assnptr(thistime->getRawData());
 
     m_priv->log->debug ("comparing now (%s) to %s", nowptr.get(), assnptr.get());
     int result=XMLDateTime::compareOrder(&curDateTime, thistime);

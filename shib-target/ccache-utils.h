@@ -71,8 +71,8 @@ namespace shibtarget {
   class SHIBTARGET_EXPORTS CCacheEntry
   {
   public:
-    virtual saml::Iterator<saml::SAMLAssertion*> getAssertions(Resource& resource) = 0;
-    virtual void preFetch(Resource& resource, int prefetch_window) = 0;
+    virtual saml::Iterator<saml::SAMLAssertion*> getAssertions(const char* appId) = 0;
+    virtual void preFetch(const char* appId, int prefetch_window) = 0;
 
     virtual bool isSessionValid(time_t lifetime, time_t timeout) = 0;
     virtual const char* getClientAddress() = 0;
@@ -132,8 +132,7 @@ namespace shibtarget {
   class ResourceEntry
   {
   public:
-    ResourceEntry(const Resource&, const saml::SAMLSubject&, CCache *,
-		  const saml::Iterator<saml::SAMLAuthorityBinding*>);
+    ResourceEntry(const char*, const saml::SAMLSubject&, CCache*, const saml::Iterator<saml::SAMLAuthorityBinding*>);
     ~ResourceEntry();
 
     // Is this ResourceEntry going to be valid for the next <int> seconds?

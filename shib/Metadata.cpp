@@ -56,17 +56,18 @@
 */
 
 #include "internal.h"
+#include <log4cpp/Category.hh>
 
 using namespace shibboleth;
 using namespace saml;
 using namespace std;
 
-OriginMetadata::OriginMetadata(const XMLCh* site) : m_mapper(NULL), m_site(NULL)
+OriginMetadata::OriginMetadata(const Iterator<IMetadata*>& metadatas, const XMLCh* site) : m_mapper(NULL), m_site(NULL)
 {
-    Iterator<IMetadata*> it=ShibConfig::getConfig().getMetadataProviders();
-    while (it.hasNext())
+    metadatas.reset();
+    while (metadatas.hasNext())
     {
-        IMetadata* i=it.next();
+        IMetadata* i=metadatas.next();
         i->lock();
         if (m_site=dynamic_cast<const IOriginSite*>(i->lookup(site)))
         {
@@ -91,10 +92,10 @@ Iterator<XSECCryptoX509*> Trust::getCertificates(const XMLCh* subject)
         m_mapper=NULL;
     }
     
-    Iterator<ITrust*> it=ShibConfig::getConfig().getTrustProviders();
-    while (it.hasNext())
+    m_trusts.reset();
+    while (m_trusts.hasNext())
     {
-        ITrust* i=it.next();
+        ITrust* i=m_trusts.next();
         i->lock();
         Iterator<XSECCryptoX509*> iter=i->getCertificates(subject);
         if (iter.size())
@@ -110,10 +111,10 @@ Iterator<XSECCryptoX509*> Trust::getCertificates(const XMLCh* subject)
 bool Trust::validate(const ISite* site, Iterator<XSECCryptoX509*> certs) const
 {
     bool ret=false;
-    Iterator<ITrust*> it=ShibConfig::getConfig().getTrustProviders();
-    while (!ret && it.hasNext())
+    m_trusts.reset();
+    while (!ret && m_trusts.hasNext())
     {
-        ITrust* i=it.next();
+        ITrust* i=m_trusts.next();
         i->lock();
         ret=i->validate(site,certs);
         i->unlock();
@@ -124,10 +125,10 @@ bool Trust::validate(const ISite* site, Iterator<XSECCryptoX509*> certs) const
 bool Trust::validate(const ISite* site, Iterator<const XMLCh*> certs) const
 {
     bool ret=false;
-    Iterator<ITrust*> it=ShibConfig::getConfig().getTrustProviders();
-    while (!ret && it.hasNext())
+    m_trusts.reset();
+    while (!ret && m_trusts.hasNext())
     {
-        ITrust* i=it.next();
+        ITrust* i=m_trusts.next();
         i->lock();
         ret=i->validate(site,certs);
         i->unlock();
@@ -138,10 +139,10 @@ bool Trust::validate(const ISite* site, Iterator<const XMLCh*> certs) const
 bool Trust::attach(const ISite* site, SSL_CTX* ctx) const
 {
     bool ret=false;
-    Iterator<ITrust*> it=ShibConfig::getConfig().getTrustProviders();
-    while (!ret && it.hasNext())
+    m_trusts.reset();
+    while (!ret && m_trusts.hasNext())
     {
-        ITrust* i=it.next();
+        ITrust* i=m_trusts.next();
         i->lock();
         ret=i->attach(site,ctx);
         i->unlock();
@@ -155,13 +156,13 @@ Trust::~Trust()
         m_mapper->unlock();
 }
 
-bool Credentials::attach(const XMLCh* subject, const ISite* relyingParty, SSL_CTX* ctx)
+bool Credentials::attach(const saml::Iterator<ICredentials*>& creds, const XMLCh* subject, const ISite* relyingParty, SSL_CTX* ctx)
 {
     bool ret=false;
-    Iterator<ICredentials*> it=ShibConfig::getConfig().getCredentialProviders();
-    while (!ret && it.hasNext())
+    creds.reset();
+    while (!ret && creds.hasNext())
     {
-        ICredentials* i=it.next();
+        ICredentials* i=creds.next();
         i->lock();
         ret=i->attach(subject,relyingParty,ctx);
         i->unlock();
@@ -170,12 +171,12 @@ bool Credentials::attach(const XMLCh* subject, const ISite* relyingParty, SSL_CT
     return ret;
 }
 
-AAP::AAP(const XMLCh* attrName, const XMLCh* attrNamespace) : m_mapper(NULL), m_rule(NULL)
+AAP::AAP(const saml::Iterator<IAAP*>& aaps, const XMLCh* attrName, const XMLCh* attrNamespace) : m_mapper(NULL), m_rule(NULL)
 {
-    Iterator<IAAP*> it=ShibConfig::getConfig().getAAPProviders();
-    while (it.hasNext())
+    aaps.reset();
+    while (aaps.hasNext())
     {
-        IAAP* i=it.next();
+        IAAP* i=aaps.next();
         i->lock();
         if (m_rule=i->lookup(attrName,attrNamespace))
         {
@@ -186,12 +187,12 @@ AAP::AAP(const XMLCh* attrName, const XMLCh* attrNamespace) : m_mapper(NULL), m_
     }
 }
 
-AAP::AAP(const char* alias) : m_mapper(NULL), m_rule(NULL)
+AAP::AAP(const saml::Iterator<IAAP*>& aaps, const char* alias) : m_mapper(NULL), m_rule(NULL)
 {
-    Iterator<IAAP*> it=ShibConfig::getConfig().getAAPProviders();
-    while (it.hasNext())
+    aaps.reset();
+    while (aaps.hasNext())
     {
-        IAAP* i=it.next();
+        IAAP* i=aaps.next();
         i->lock();
         if (m_rule=i->lookup(alias))
         {
@@ -206,4 +207,57 @@ AAP::~AAP()
 {
     if (m_mapper)
         m_mapper->unlock();
+}
+
+void AAP::apply(const saml::Iterator<IAAP*>& aaps, const IOriginSite* originSite, saml::SAMLAssertion& assertion)
+{
+    saml::NDC("apply");
+    log4cpp::Category& log=log4cpp::Category::getInstance(SHIB_LOGCAT".AAP");
+    
+    // Check each statement.
+    Iterator<SAMLStatement*> statements=assertion.getStatements();
+    for (unsigned int scount=0; scount < statements.size();) {
+        SAMLAttributeStatement* s=dynamic_cast<SAMLAttributeStatement*>(statements[scount]);
+        if (!s)
+            continue;
+        
+        // Check each attribute.
+        Iterator<SAMLAttribute*> attrs=s->getAttributes();
+        for (unsigned int acount=0; acount < attrs.size();) {
+            SAMLAttribute* a=attrs[acount];
+
+            AAP rule(aaps,a->getName(),a->getNamespace());
+            if (rule.fail()) {
+                if (log.isWarnEnabled()) {
+                    auto_ptr_char temp(a->getName());
+                    log.warn("no rule found for attribute (%s), filtering it out",temp.get());
+                }
+                s->removeAttribute(acount);
+                continue;
+            }
+            
+            try {
+                rule->apply(originSite,*a);
+                acount++;
+            }
+            catch (SAMLException&) {
+                // The attribute is now defunct.
+                log.info("no values remain, removing attribute");
+                s->removeAttribute(acount);
+            }
+        }
+
+        try {
+            s->checkValidity();
+            scount++;
+        }
+        catch (SAMLException&) {
+            // The statement is now defunct.
+            log.info("no attributes remain, removing statement");
+            assertion.removeStatement(scount);
+        }
+    }
+    
+    // Now see if we trashed it irrevocably.
+    assertion.checkValidity();
 }

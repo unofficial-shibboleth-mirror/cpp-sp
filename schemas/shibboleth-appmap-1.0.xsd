@@ -13,7 +13,7 @@
     			<element ref="appmap:Path" minOccurs="0" maxOccurs="unbounded"/>
     		</sequence>
     		<attribute name="Name" type="string" use="required"/>
-    		<attribute name="ApplicationID" type="anyURI" use="optional"/>
+    		<attribute name="ApplicationID" type="string" use="optional"/>
             <anyAttribute namespace="##any" processContents="lax"/>
         </complexType>
     </element>
@@ -36,7 +36,7 @@
     		<attribute name="Scheme" type="appmap:SchemeType" use="optional" default="http"/>
     		<attribute name="Name" type="string" use="required"/>
     		<attribute name="Port" type="unsignedInt" use="optional"/>
-    		<attribute name="ApplicationID" type="anyURI" use="optional"/>
+    		<attribute name="ApplicationID" type="string" use="optional"/>
             <anyAttribute namespace="##any" processContents="lax"/>
     	</complexType>
     </element>
@@ -46,7 +46,6 @@
             <sequence>
                 <element ref="appmap:Host" minOccurs="0" maxOccurs="unbounded"/>
             </sequence>
-    		<attribute name="ApplicationID" type="anyURI" use="required"/>
             <anyAttribute namespace="##any" processContents="lax"/>
         </complexType>
     </element>

@@ -61,9 +61,9 @@ public:
   ShibMySQLCCacheEntry(const char *, CCacheEntry*, ShibMySQLCCache*);
   ~ShibMySQLCCacheEntry() {}
 
-  virtual Iterator<SAMLAssertion*> getAssertions(Resource& resource)
+  virtual Iterator<SAMLAssertion*> getAssertions(const char* resource)
   	{ return m_cacheEntry->getAssertions(resource); }
-  virtual void preFetch(Resource& resource, int prefetch_window)
+  virtual void preFetch(const char* resource, int prefetch_window)
   	{ m_cacheEntry->preFetch(resource, prefetch_window); }
   virtual bool isSessionValid(time_t lifetime, time_t timeout);
   virtual const char* getClientAddress()
