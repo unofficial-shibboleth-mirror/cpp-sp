@@ -121,21 +121,28 @@ X509_STORE* XMLTrustImpl::KeyAuthority::getX509Store()
     
     X509_STORE_set_verify_cb_func(m_store,verify_callback);
 
+    Category& log=Category::getInstance(SHIB_LOGCAT".XMLTrustImpl");
+
     for (vector<XSECCryptoX509*>::const_iterator i=m_certs.begin(); i!=m_certs.end(); i++)
     {
         X509* x509=B64_to_X509((*i)->getDEREncodingSB().rawCharBuffer());
         if (!x509)
         {
-            X509_STORE_free(m_store);
-            return m_store=NULL;
+	    //X509_STORE_free(m_store);
+            //return m_store=NULL;
+	    log.warn("failed to parse X509 buffer: %s",
+		     (*i)->getDEREncodingSB().rawCharBuffer());
+	    continue;
         }
 
         if (!X509_STORE_add_cert(m_store,x509))
         {
             log_openssl();
+	    log.warn("failed to add cert: %s", x509->name);
             X509_free(x509);
-            X509_STORE_free(m_store);
-            return m_store=NULL;
+            //X509_STORE_free(m_store);
+            //return m_store=NULL;
+	    continue;
         }
     }
 
