@@ -581,9 +581,10 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
         markupProcessor.insert("logoLocation", has_tag ? tag : "");
         markupProcessor.insert("requestURL", target_url);
     
-        GetServerVariable(pfc,"REMOTE_ADDR",buf,16);
+        dynabuf abuf(16);
+        GetServerVariable(pfc,"REMOTE_ADDR",abuf,16);
         try {
-            status = shire.sessionIsValid(session_id, buf, target_url.c_str());
+            status = shire.sessionIsValid(session_id, abuf, target_url.c_str());
         }
         catch (ShibTargetException &e) {
             markupProcessor.insert("errorType", "SHIRE Processing Error");
