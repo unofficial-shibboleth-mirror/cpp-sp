@@ -72,7 +72,7 @@
 #include <errno.h>
 
 #if defined(WANT_TCP_SHAR)
-static void setup_tcp_sockaddr(struct sockaddr_in *addr, ShibSockName name)
+static void setup_tcp_sockaddr(struct sockaddr_in *addr, const char* name)
 {
     // Split on host:port boundary. Default to port only.
     char* dup=strdup(name);
@@ -120,7 +120,7 @@ int shib_sock_create(ShibSocket *sock)
     return 0;
 }
 
-int shib_sock_bind(ShibSocket s, ShibSockName name)
+int shib_sock_bind(ShibSocket s, const char* name)
 {
   struct sockaddr_in addr;
   int res;
@@ -132,14 +132,14 @@ int shib_sock_bind(ShibSocket s, ShibSockName name)
   return map_winsock_result(listen(s,3));
 }
 
-int shib_sock_connect(ShibSocket s, ShibSockName name)
+int shib_sock_connect(ShibSocket s, const char* name)
 {
   struct sockaddr_in addr;
   setup_tcp_sockaddr(&addr,name);
   return map_winsock_result(connect(s,(struct sockaddr *)&addr,sizeof(addr)));
 }
 
-void shib_sock_close(ShibSocket s, ShibSockName name)
+void shib_sock_close(ShibSocket s, const char* name)
 {
   int rc=map_winsock_result(closesocket(s));
 }
@@ -147,7 +147,7 @@ void shib_sock_close(ShibSocket s, ShibSockName name)
 int shib_sock_accept(ShibSocket listener, ShibSocket* s)
 {
   unsigned int index=0;
-  ShibSockName acl,client;
+  const char *acl,*client;
   struct sockaddr_in addr;
   size_t size=sizeof(addr);
 
@@ -156,12 +156,12 @@ int shib_sock_accept(ShibSocket listener, ShibSocket* s)
   if(*s==INVALID_SOCKET)
     return get_winsock_errno();
   client=inet_ntoa(addr.sin_addr);
-  while ((acl=shib_target_sockacl(index++))!=(ShibSockName)0)
+  while (acl=shib_target_sockacl(index++))
   {
     if (!strcmp(acl,client))
         return 0;
   }
-  shib_sock_close(*s,(ShibSockName)0);
+  shib_sock_close(*s,NULL);
   *s=-1;
   fprintf(stderr,"shib_sock_accept(): rejected client at %s\n",client);
   return EACCES;
@@ -195,7 +195,7 @@ int shib_sock_create(ShibSocket *sock)
  *
  * NOTE: This will close the socket on failure 
  */
-int shib_sock_bind(ShibSocket s, ShibSockName name)
+int shib_sock_bind(ShibSocket s, const char* name)
 {
 #ifdef WANT_TCP_SHAR
   struct sockaddr_in addr;
@@ -233,7 +233,7 @@ int shib_sock_bind(ShibSocket s, ShibSockName name)
 }
 
 /* Connect the socket to the local host and "port name" */
-int shib_sock_connect(ShibSocket s, ShibSockName name)
+int shib_sock_connect(ShibSocket s, const char* name)
 {
 #ifdef WANT_TCP_SHAR
   struct sockaddr_in addr;
@@ -256,7 +256,7 @@ int shib_sock_connect(ShibSocket s, ShibSockName name)
 }
 
 /* close the socket (and remove the file) */
-void shib_sock_close(ShibSocket s, ShibSockName name)
+void shib_sock_close(ShibSocket s, const char* name)
 {
 #ifndef WANT_TCP_SHAR
   if (name) {
@@ -271,7 +271,7 @@ int shib_sock_accept(ShibSocket listener, ShibSocket* s)
 {
 #ifdef WANT_TCP_SHAR
   unsigned int index=0;
-  ShibSockName acl,client;
+  const char *acl,*client;
   struct sockaddr_in addr;
   size_t size=sizeof(addr);
 
@@ -280,12 +280,12 @@ int shib_sock_accept(ShibSocket listener, ShibSocket* s)
   if (*s < 0)
     return errno;
   client=inet_ntoa(addr.sin_addr);
-  while ((acl=shib_target_sockacl(index++))!=(ShibSockName)0)
+  while (acl=shib_target_sockacl(index++))
   {
     if (!strcmp(acl,client))
         return 0;
   }
-  shib_sock_close(*s,(ShibSockName)0);
+  shib_sock_close(*s,NULL);
   *s=-1;
   fprintf(stderr,"shib_sock_accept(): rejected client at %s\n",client);
   return EACCES;

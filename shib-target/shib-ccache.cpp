@@ -74,6 +74,12 @@
 #include <dmalloc.h>
 #endif
 
+using namespace std;
+using namespace log4cpp;
+using namespace saml;
+using namespace shibboleth;
+using namespace shibtarget;
+
 class InternalCCache;
 class InternalCCacheEntry : public CCacheEntry
 {

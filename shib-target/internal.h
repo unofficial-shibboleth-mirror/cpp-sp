@@ -76,21 +76,13 @@
 
 #include "ccache-utils.h"
 
-#include <log4cpp/Category.hh>
-
-using namespace std;
-using namespace log4cpp;
-using namespace saml;
-using namespace shibboleth;
-using namespace shibtarget;
-
 namespace shibtarget {
 
     // An implementation of the URL->application mapping API using an XML file
-    class XMLApplicationMapper : public IApplicationMapper, public ReloadableXMLFile
+    class XMLApplicationMapper : public IApplicationMapper, public shibboleth::ReloadableXMLFile
     {
     public:
-        XMLApplicationMapper(const char* pathname) : ReloadableXMLFile(pathname) {}
+        XMLApplicationMapper(const char* pathname) : shibboleth::ReloadableXMLFile(pathname) {}
         ~XMLApplicationMapper() {}
 
         const char* getApplicationFromURL(const char* url) const;
@@ -103,7 +95,7 @@ namespace shibtarget {
             ) const;
 
     protected:
-        virtual ReloadableXMLFileImpl* newImplementation(const char* pathname) const;
+        virtual shibboleth::ReloadableXMLFileImpl* newImplementation(const char* pathname) const;
     };
 
     class STConfig : public ShibTargetConfig
@@ -116,10 +108,10 @@ namespace shibtarget {
         void shutdown();
         ShibINI& getINI() const { return *ini; }
         IApplicationMapper* getApplicationMapper() const { return m_applicationMapper; }
-        saml::Iterator<IMetadata*> getMetadataProviders() const { return metadatas; }
-        saml::Iterator<ITrust*> getTrustProviders() const { return trusts; }
-        saml::Iterator<ICredentials*> getCredentialProviders() const { return creds; }
-        saml::Iterator<IAAP*> getAAPProviders() const { return aaps; }
+        saml::Iterator<shibboleth::IMetadata*> getMetadataProviders() const { return metadatas; }
+        saml::Iterator<shibboleth::ITrust*> getTrustProviders() const { return trusts; }
+        saml::Iterator<shibboleth::ICredentials*> getCredentialProviders() const { return creds; }
+        saml::Iterator<shibboleth::IAAP*> getAAPProviders() const { return aaps; }
         saml::Iterator<const XMLCh*> getPolicies() const { return saml::Iterator<const XMLCh*>(policies); }
      
     private:
@@ -134,13 +126,13 @@ namespace shibtarget {
         std::vector<std::string> m_SocketACL;
 #endif
         IApplicationMapper* m_applicationMapper;
-        std::vector<IMetadata*> metadatas;
-        std::vector<ITrust*> trusts;
-        std::vector<ICredentials*> creds;
-        std::vector<IAAP*> aaps;
+        std::vector<shibboleth::IMetadata*> metadatas;
+        std::vector<shibboleth::ITrust*> trusts;
+        std::vector<shibboleth::ICredentials*> creds;
+        std::vector<shibboleth::IAAP*> aaps;
       
-        friend ShibSockName ::shib_target_sockname();
-        friend ShibSockName ::shib_target_sockacl(unsigned int);
+        friend const char* ::shib_target_sockname();
+        friend const char* ::shib_target_sockacl(unsigned int);
     };
 
     class XML

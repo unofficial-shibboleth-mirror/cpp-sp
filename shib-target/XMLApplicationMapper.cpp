@@ -63,6 +63,12 @@
 #include <log4cpp/Category.hh>
 #include <xercesc/framework/URLInputSource.hpp>
 
+using namespace std;
+using namespace log4cpp;
+using namespace saml;
+using namespace shibboleth;
+using namespace shibtarget;
+
 namespace shibtarget {
 
     class XMLApplicationMapperImpl : public ReloadableXMLFileImpl

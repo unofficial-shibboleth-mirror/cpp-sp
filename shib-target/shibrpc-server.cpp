@@ -67,6 +67,14 @@
 #include <dmalloc.h>
 #endif
 
+#include <log4cpp/Category.hh>
+
+using namespace std;
+using namespace log4cpp;
+using namespace saml;
+using namespace shibboleth;
+using namespace shibtarget;
+
 static string get_threadid (const char* proc)
 {
   static u_long counter = 0;

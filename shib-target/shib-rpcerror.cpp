@@ -64,6 +64,13 @@
 #include <stdexcept>
 #include <sstream>
 #include <typeinfo>
+#include <log4cpp/Category.hh>
+
+using namespace std;
+using namespace log4cpp;
+using namespace saml;
+using namespace shibboleth;
+using namespace shibtarget;
 
 namespace {
   int initializing = 0;

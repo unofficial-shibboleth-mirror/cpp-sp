@@ -66,6 +66,12 @@
 #define SHIBTARGET_INIFILE "/opt/shibboleth/etc/shibboleth/shibboleth.ini"
 #endif
 
+using namespace std;
+using namespace log4cpp;
+using namespace saml;
+using namespace shibboleth;
+using namespace shibtarget;
+
 namespace {
   STConfig * g_Config = NULL;
   Mutex * g_lock = NULL;
@@ -380,18 +386,18 @@ void STConfig::shutdown()
   }
 }
 
-extern "C" ShibSockName shib_target_sockname(void)
+extern "C" const char* shib_target_sockname(void)
 {
-    return (g_Config ? g_Config->m_SocketName.c_str() : (ShibSockName)0);
+    return g_Config ? g_Config->m_SocketName.c_str() : NULL;
 }
 
-extern "C" ShibSockName shib_target_sockacl(unsigned int index)
+extern "C" const char* shib_target_sockacl(unsigned int index)
 {
 #ifdef WANT_TCP_SHAR
     if (g_Config && index<g_Config->m_SocketACL.size())
         return g_Config->m_SocketACL[index].c_str();
 #endif
-    return (ShibSockName)0;
+    return NULL;
 }
 
 ApplicationMapper::ApplicationMapper() : m_mapper(ShibTargetConfig::getConfig().getApplicationMapper())

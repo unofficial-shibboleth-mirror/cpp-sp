@@ -57,6 +57,11 @@
 
 #include "internal.h"
 
+#include <log4cpp/Category.hh>
+
+using namespace std;
+using namespace shibtarget;
+
 /* shib-target.cpp */
 
 namespace {

@@ -82,13 +82,11 @@ extern "C" {
 
 #include <winsock.h>
 typedef SOCKET ShibSocket;
-typedef const char* ShibSockName;
 #define SHIB_SHAR_SOCKET "127.0.0.1:12345"  /* TCP host:port */
 
 #else  /* UNIX */
 
 typedef int ShibSocket;
-typedef const char* ShibSockName;
 #define SHIB_SHAR_SOCKET "/tmp/shar-socket" /* Unix domain socket */
 
 #endif
@@ -119,14 +117,14 @@ SHIBTARGET_EXPORTS int shib_sock_create (ShibSocket *sock);
  *
  * SIDE EFFECT: On error, the socket is closed!
  */
-SHIBTARGET_EXPORTS int shib_sock_bind (ShibSocket s, ShibSockName name);
+SHIBTARGET_EXPORTS int shib_sock_bind (ShibSocket s, const char* name);
 
 /*
  * connect the socket s to the "port" name on the local host.
  *
  * Returns 0 on success; non-zero on error.
  */
-SHIBTARGET_EXPORTS int shib_sock_connect (ShibSocket s, ShibSockName name);
+SHIBTARGET_EXPORTS int shib_sock_connect (ShibSocket s, const char* name);
 
 /*
  * accept a connection.  Returns 0 on success, non-zero on failure.
@@ -136,7 +134,7 @@ SHIBTARGET_EXPORTS int shib_sock_accept (ShibSocket listener, ShibSocket* s);
 /*
  * close the socket
  */
-SHIBTARGET_EXPORTS void shib_sock_close (ShibSocket s, ShibSockName name);
+SHIBTARGET_EXPORTS void shib_sock_close (ShibSocket s, const char* name);
 
 /* shib-target.cpp */
 
@@ -178,8 +176,8 @@ SHIBTARGET_EXPORTS int shib_target_initialize (const char* application, const ch
 SHIBTARGET_EXPORTS void shib_target_finalize (void);
 
 /* access socket specifics from C code */
-SHIBTARGET_EXPORTS ShibSockName shib_target_sockname(void);
-SHIBTARGET_EXPORTS ShibSockName shib_target_sockacl(unsigned int index);
+SHIBTARGET_EXPORTS const char* shib_target_sockname(void);
+SHIBTARGET_EXPORTS const char* shib_target_sockacl(unsigned int index);
 
 #ifdef __cplusplus
 }
@@ -190,7 +188,7 @@ namespace shibtarget {
   class SHIBTARGET_EXPORTS RPCHandle
   {
   public:
-    RPCHandle(ShibSockName shar, u_long program, u_long version);
+    RPCHandle(const char* shar, u_long program, u_long version);
     ~RPCHandle();
 
     CLIENT *	connect(void);	/* locks the HANDLE and returns the CLIENT */
@@ -200,7 +198,7 @@ namespace shibtarget {
     // A simple function to get a handle
     // Note that it does not check that an existing handle matches the request.
     static RPCHandle* get_handle(shibboleth::ThreadKey* key,
-				 ShibSockName shar, u_long program,
+				 const char* shar, u_long program,
 				 u_long version);
 
   private:

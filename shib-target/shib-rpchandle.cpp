@@ -63,6 +63,13 @@
 #include <shib/shib-threads.h>
 
 #include <stdexcept>
+#include <log4cpp/Category.hh>
+
+using namespace std;
+using namespace log4cpp;
+using namespace saml;
+using namespace shibboleth;
+using namespace shibtarget;
 
 class shibtarget::RPCHandleInternal
 {
@@ -73,7 +80,7 @@ public:
   CLIENT *	m_clnt;
   ShibSocket	m_sock;
 
-  ShibSockName m_shar;
+  const char* m_shar;
   u_long	m_program;
   u_long	m_version;
 
@@ -92,7 +99,7 @@ RPCHandleInternal::RPCHandleInternal()
 //*************************************************************************
 // RPCHandle Implementation
 
-RPCHandle::RPCHandle(ShibSockName shar, u_long program, u_long version)
+RPCHandle::RPCHandle(const char* shar, u_long program, u_long version)
 {
   m_priv = new RPCHandleInternal();
 
@@ -212,7 +219,7 @@ void RPCHandle::disconnect(void)
 }
 
 RPCHandle* RPCHandle::get_handle(ThreadKey* key,
-				 ShibSockName shar, u_long program,
+				 const char* shar, u_long program,
 				 u_long version)
 {
   RPCHandle* retval = (RPCHandle*)key->getData();

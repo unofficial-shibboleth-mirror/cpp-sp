@@ -58,6 +58,7 @@
 #include "internal.h"
 
 #include <shib/shib-threads.h>
+#include <log4cpp/Category.hh>
 
 #include <sstream>
 #include <iostream>
@@ -66,6 +67,11 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+
+using namespace std;
+using namespace saml;
+using namespace shibboleth;
+using namespace shibtarget;
 
 class HeaderIterator : public shibtarget::ShibINI::Iterator {
 public:

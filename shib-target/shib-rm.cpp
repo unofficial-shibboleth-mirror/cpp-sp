@@ -67,6 +67,12 @@
 #include <sstream>
 #include <stdexcept>
 
+using namespace std;
+using namespace log4cpp;
+using namespace saml;
+using namespace shibboleth;
+using namespace shibtarget;
+
 class shibtarget::RMPriv
 {
 public:
