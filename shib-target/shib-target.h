@@ -224,10 +224,13 @@ namespace shibtarget {
   {
   public:
     explicit ShibTargetException() : m_origin(NULL), m_code(SHIBRPC_OK) {}
-    explicit ShibTargetException(ShibRpcStatus code, const char* msg, const XMLCh* origin = NULL) : m_code(code)
-    { if (msg) m_msg=msg; m_origin = XMLString::replicate(origin); }
-    explicit ShibTargetException(ShibRpcStatus code, const std::string& msg, const XMLCh* origin = NULL) : m_msg(msg)
-	{ m_code=code; m_origin = XMLString::replicate(origin); }
+    explicit ShibTargetException(ShibRpcStatus code, const char* msg, const XMLCh* origin = NULL)
+        : m_code(code), m_origin(XMLString::replicate(origin)) { if (msg) m_msg=msg; }
+    explicit ShibTargetException(ShibRpcStatus code, const std::string& msg, const XMLCh* origin = NULL)
+        : m_code(code), m_msg(msg), m_origin(XMLString::replicate(origin)) {}
+    ShibTargetException(const ShibTargetException& src)
+        : m_code(src.m_code), m_msg(src.m_msg), m_origin(XMLString::replicate(src.m_origin)) {}
+    
     virtual ~ShibTargetException() throw () { if (m_origin) XMLString::release(&m_origin); }
     virtual const char* what() const throw () { return (m_msg.c_str()); }
     virtual ShibRpcStatus which() const throw () { return (m_code); }
