@@ -150,7 +150,7 @@ color: #00FF00
 </center>
 <p>Shibboleth Target Deployment Guide<br>
 Shibboleth Version 1.0.1<br />
-July 15, 2003<br />
+July 25, 2003<br />
 </p>
 <h3>This version of the deploy guide is for Shibboleth v1.0.1. For documentation 
 related to prior versions of Shibboleth, please consult the appropriate branch 
@@ -193,7 +193,7 @@ configuration, but some older commands have been deprecated or replaced.</p>
     <li>Support for a runtime-derived per-requester persistent identifier 
     attribute to support anonymous personalization by targets has been added via 
     an attribute plugin. <span class="feature">[1.0.1]</span></li>
-    <li>Specialized sites without privacy needs can configure identity-based 
+    <li>Specialized deployments without privacy needs can configure identity-based 
     handles interoperable with other SAML deployments. <span class="feature">
     [1.0.1]</span></li>
 </ol>
@@ -206,35 +206,30 @@ configuration, but some older commands have been deprecated or replaced.</p>
     This would allow a site to run an apache server farm, with multiple SHARs, 
     supporting the same set of sessions.</li>
     <li>Federation supplied files (sites.xml and trust.xml) are now refreshed in 
-    a much more robust manner. </li>
-    </li>
+    a much more robust manner.</li>
     <li>The SHAR can be configured to request specific attributes from the 
-    Origin. </li>
+    Origin.</li>
     <li>The SHAR can use TCP sockets when responding to the Apache module, for 
     specialized deployment behind firewalls. <span class="feature">[1.0.1]</span>
     </li>
     <li>Attribute acceptance policies have been greatly enhanced, and are now 
     used to configure all aspects of attribute handling by the target, except 
     for requesting specific attributes by sitename. Adding attributes now takes 
-    place in one configuration step. <span class="feature">[1.0.1]</span> </li>
+    place in one configuration step. <span class="feature">[1.0.1]</span></li>
     <li>Support for Apache 1.3 on Windows NT/2000/XP/2003 has been added.
-    <span class="feature">[1.0.1]</span> </li>
+    <span class="feature">[1.0.1]</span></li>
     <li>Microsoft IIS web server support has been added via an ISAPI filter and 
-    extension. <span class="feature">[1.0.1]</span> </li>
+    extension. <span class="feature">[1.0.1]</span></li>
 </ol>
 <h5>Miscellaneous</h5>
 <ol>
     <li>Origin sites can configure a value to describe the type of 
     authentication mechanism used at the origin site(e.g. password, Kerberos, 
-    PKI, etc.). This value is made available on the target side as Shib-Authentication-Method.
-    <br>
-    </li>
+    PKI, etc.). This value is made available on the target side as Shib-Authentication-Method.</li>
     <li>Various improvements to error handling. Origin sites are now able to 
-    supply an &quot;error URL&quot; and contact information to a federation. When a target 
-    encounters an error, it can include this information in the error page. <br>
-    </li>
-    <li>Local time string values are now used in log files. <br>
-    </li>
+    supply an error URL and contact information to a federation. When a target 
+    encounters an error, it can include this information in the error page.</li>
+    <li>Local time string values are now used in log files.</li>
     <li>Internationalization support has been extended.</li>
 </ol>
 <p>Before starting, please sign up for all applicable
