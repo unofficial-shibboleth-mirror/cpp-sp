@@ -50,7 +50,7 @@ static char sccsid[] = "@(#)get_myaddress.c 1.4 87/08/11 Copyr 1984 Sun Micro";
 
 #ifdef WIN32
 #include <rpc/rpc.h>
-#include <rpc/pmap_pro.h>
+#include <rpc/pmap_prot.h>
 #include <stdio.h>
 
 #define MAX_NAME_LEN	255
@@ -63,6 +63,10 @@ static char sccsid[] = "@(#)get_myaddress.c 1.4 87/08/11 Copyr 1984 Sun Micro";
 #include <sys/ioctl.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+
+#ifndef SIOCGIFCONF
+#include <sys/sockio.h>
+#endif
 
 /* 
  * don't use gethostbyname, which would invoke yellow pages

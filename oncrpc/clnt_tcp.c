@@ -65,7 +65,7 @@ static char sccsid[] = "@(#)clnt_tcp.c 1.37 87/10/05 Copyr 1984 Sun Micro";
 #include <rpc/rpc.h>
 #ifdef WIN32
 #include <errno.h>
-#include <rpc/pmap_cln.h>
+#include <rpc/pmap_clnt.h>
 #else
 #include <sys/socket.h>
 #include <netdb.h>
@@ -504,7 +504,7 @@ readtcp(ct, buf, len)
 	}
 	return (len);
 #else
-		switch (select(_rpc_dtablesize(), &readfds, (int*)NULL, (int*)NULL,
+		switch (select(_rpc_dtablesize(), &readfds, NULL, NULL,
 			       &(ct->ct_wait))) {
 		case 0:
 			ct->ct_error.re_status = RPC_TIMEDOUT;

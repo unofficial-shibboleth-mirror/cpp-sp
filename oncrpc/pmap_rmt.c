@@ -51,8 +51,8 @@ static char sccsid[] = "@(#)pmap_rmt.c 1.21 87/08/27 Copyr 1984 Sun Micro";
 
 #include <rpc/rpc.h>
 #ifdef WIN32
-#include <rpc/pmap_pro.h>
-#include <rpc/pmap_cln.h>
+#include <rpc/pmap_prot.h>
+#include <rpc/pmap_clnt.h>
 #include <rpc/pmap_rmt.h>
 #include <stdio.h>
 #include <errno.h>
@@ -68,6 +68,10 @@ static char sccsid[] = "@(#)pmap_rmt.c 1.21 87/08/27 Copyr 1984 Sun Micro";
 #include <sys/ioctl.h>
 #include <arpa/inet.h>
 #define MAX_BROADCAST_SIZE 1400
+
+#ifndef SIOCGIFCONF
+#include <sys/sockio.h>
+#endif
 
 extern int errno;
 #endif
@@ -220,7 +224,7 @@ getbroadcastnets(addrs, sock, buf)
 #ifdef SIOCGIFBRDADDR   /* 4.3BSD */
 			if (ioctl(sock, SIOCGIFBRDADDR, (char *)&ifreq) < 0) {
 				addrs[i++] = inet_makeaddr(inet_netof
-			    (sin->sin_addr.s_addr), INADDR_ANY);
+			    (sin->sin_addr), INADDR_ANY);
 			} else {
 				addrs[i++] = ((struct sockaddr_in*)
 				  &ifreq.ifr_addr)->sin_addr;
@@ -356,11 +360,11 @@ clnt_broadcast(prog, vers, proc, xargs, argsp, xresults, resultsp, eachresult)
                 msg.acpted_rply.ar_results.proc = xdr_rmtcallres;
 		readfds = mask;
 #ifdef WIN32
-		switch (select(0 /* unused in winsock */, &readfds, (int *)NULL,
+		switch (select(0 /* unused in winsock */, &readfds, (int *)NULL, (int*)NULL,
 #else
-		switch (select(_rpc_dtablesize(), &readfds, (int *)NULL, 
+	        switch (select(_rpc_dtablesize(), &readfds, NULL, NULL,
 #endif
-			       (int *)NULL, &t)) {
+			       &t)) {
 		case 0:  /* timed out */
 			stat = RPC_TIMEDOUT;
 			continue;

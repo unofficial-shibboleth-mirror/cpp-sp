@@ -68,6 +68,10 @@ static bool_t		svcudp_getargs();
 static bool_t		svcudp_freeargs();
 static void		svcudp_destroy();
 
+static			cache_get();
+static			cache_set();
+
+
 static struct xp_ops svcudp_op = {
 	svcudp_recv,
 	svcudp_stat,
@@ -323,15 +327,12 @@ svcudp_destroy(xprt)
 #define CACHE_PERROR(msg)	\
 	nt_rpc_report(msg)
 #else
-#define CACHE_PERROR(msg)	\
-	(void) fprintf(stderr,"%s\n", msg)
+#define CACHE_PERROR(msg)	(void) fprintf(stderr,"%s\n", msg)
 #endif
 
-#define ALLOC(type, size)	\
-	(type *) mem_alloc((unsigned) (sizeof(type) * (size)))
+#define ALLOC(type, size)	(type *) mem_alloc((unsigned)(sizeof(type)*(size)))
 
-#define BZERO(addr, type, size)	 \
-	bzero((char *) addr, sizeof(type) * (int) (size))
+#define BZERO(addr, type, size)	bzero((char *) addr, sizeof(type) * (int) (size))
 
 /*
  * An entry in the cache
@@ -358,7 +359,6 @@ struct cache_node {
 };
 
 
-
 /*
  * The entire cache
  */
@@ -377,9 +377,7 @@ struct udp_cache {
 /*
  * the hashing function
  */
-#define CACHE_LOC(transp, xid)	\
- (xid % (SPARSENESS*((struct udp_cache *) su_data(transp)->su_cache)->uc_size))
-
+#define CACHE_LOC(transp, xid)	(xid % (SPARSENESS*((struct udp_cache *) su_data(transp)->su_cache)->uc_size))
 
 /*
  * Enable use of the cache.
@@ -524,4 +522,3 @@ cache_get(xprt, msg, replyp, replylenp)
 	uc->uc_addr = xprt->xp_raddr;
 	return(0);
 }
-

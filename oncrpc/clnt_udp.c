@@ -52,13 +52,17 @@ static char sccsid[] = "@(#)clnt_udp.c 1.39 87/08/11 Copyr 1984 Sun Micro";
 #include <rpc/rpc.h>
 #ifdef WIN32
 #include <errno.h>
-#include <rpc/pmap_cln.h>
+#include <rpc/pmap_clnt.h>
 #else
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <netdb.h>
 #include <errno.h>
 #include <rpc/pmap_clnt.h>
+
+#ifndef FIONBIO
+#include <sys/filio.h>
+#endif
 
 extern int errno;
 #endif
@@ -331,11 +335,11 @@ send_again:
 	for (;;) {
 		readfds = mask;
 #ifdef WIN32
-		switch (select(0 /* unused in winsock */, &readfds, (int *)NULL,
+		switch (select(0 /* unused in winsock */, &readfds, (int *)NULL, (int *)NULL,
 #else
-		switch (select(_rpc_dtablesize(), &readfds, (int *)NULL, 
+	         switch (select(_rpc_dtablesize(), &readfds, NULL, NULL,
 #endif
-			       (int *)NULL, &(cu->cu_wait))) {
+			       &(cu->cu_wait))) {
 
 		case 0:
 			time_waited.tv_sec += cu->cu_wait.tv_sec;

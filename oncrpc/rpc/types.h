@@ -70,6 +70,8 @@ extern char *malloc();
 #endif
 #ifndef WIN32
 #include <sys/time.h>
+#include <netinet/in.h>
+#include <netdb.h>
 #endif
 
 #ifndef INADDR_LOOPBACK
@@ -79,9 +81,11 @@ extern char *malloc();
 #define        MAXHOSTNAMELEN  64
 #endif
 
+#ifdef WIN32
 typedef char *caddr_t;
 typedef unsigned int u_int;
 typedef unsigned long u_long;
 typedef unsigned short u_short;
+#endif
 
 #endif /* ndef __TYPES_RPC_HEADER__ */

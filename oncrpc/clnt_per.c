@@ -59,7 +59,9 @@ static char sccsid[] = "@(#)clnt_perror.c 1.15 87/10/07 Copyr 1984 Sun Micro";
 
 #ifndef WIN32
 extern char *sys_errlist[];
+#ifdef NEED_SPRINTF
 extern char *sprintf();
+#endif
 #endif
 static char *auth_errmsg();
 

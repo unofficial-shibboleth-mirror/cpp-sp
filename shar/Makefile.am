@@ -2,6 +2,10 @@
 
 AUTOMAKE_OPTIONS = foreign
 
+if USE_OUR_ONCRPC
+AM_CFLAGS = -I${top_srcdir}/oncrpc
+endif
+
 bin_PROGRAMS = shar test-client
 
 test_client_SOURCES = test-client.c

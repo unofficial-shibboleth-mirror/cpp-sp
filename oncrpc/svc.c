@@ -54,7 +54,7 @@ static char sccsid[] = "@(#)svc.c 1.41 87/10/13 Copyr 1984 Sun Micro";
 
 #ifdef WIN32
 #include <rpc/rpc.h>
-#include <rpc/pmap_cln.h>
+#include <rpc/pmap_clnt.h>
 #include <stdio.h>
 #else
 #include <sys/errno.h>
@@ -546,5 +546,6 @@ svc_getreqset(readfds)
 				break;
 			}
 		} while (stat == XPRT_MOREREQS);
+	    }
 	}
 }

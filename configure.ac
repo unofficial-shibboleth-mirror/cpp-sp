@@ -36,14 +36,6 @@ AC_SEARCH_LIBS(xdr_uint64_t,nsl,,
 	 CXXFLAGS="$CXXFLAGS -DNEED_XDR_LONGLONG"])
 LIBS="$old_LIBS"
 
-ACX_RPCTEST([rpctest="yes"],[rpctest="no"])
-if test $rpctest = "no"; then
-    AC_CHECK_HEADERS([stropts.h])
-    CFLAGS="-DNEED_RPC_TLI $CFLAGS"
-    CXXFLAGS="-DNEED_RPC_TLI $CXXFLAGS"
-    ACX_RPCTEST(,AC_MSG_ERROR([neither style of ONC RPC worked]))
-fi
-
 # checks for pthreads
 ACX_PTHREAD([enable_threads="pthread"],[enable_threads="no"])
 if test $enable_threads != "pthread"; then
@@ -159,7 +151,15 @@ AC_TRY_LINK(
 # output the underlying makefiles
 WANT_SUBDIRS="shib schemas configs eduPerson shib-target shar test"
 AC_CONFIG_FILES([Makefile shib/Makefile schemas/Makefile eduPerson/Makefile \
-		 configs/Makefile shib-target/Makefile shar/Makefile test/Makefile])
+		 configs/Makefile oncrpc/Makefile oncrpc/rpc/Makefile \
+		 shib-target/Makefile shar/Makefile test/Makefile])
+
+# now test the rpc library, to see if we need to build our own
+ACX_RPCTEST([rpctest="yes"],[rpctest="no"])
+if test $rpctest = "no"; then
+    WANT_SUBDIRS="oncrpc $WANT_SUBDIRS"
+    AM_CONDITIONAL(USE_OUR_ONCRPC,test "$rpctest" = "no")
+fi
 
 # Much of this is taken from mod_dav.
 # The basic idea is to use configure options to control whether/which types

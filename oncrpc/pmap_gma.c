@@ -53,8 +53,8 @@ static char sccsid[] = "@(#)pmap_getmaps.c 1.10 87/08/11 Copyr 1984 Sun Micro";
 #include <rpc/rpc.h>
 #ifdef WIN32
 #include <stdlib.h>
-#include <rpc/pmap_pro.h>
-#include <rpc/pmap_cln.h>
+#include <rpc/pmap_prot.h>
+#include <rpc/pmap_clnt.h>
 #else
 #include <rpc/pmap_prot.h>
 #include <rpc/pmap_clnt.h>
