@@ -51,13 +51,13 @@
         
         <Implementation>
             <ISAPI normalizeRequest="true">
-                <Site id="1" host="www.foo.com"/>    <!-- Maps IIS IID values to the vhost name. -->
+                <Site id="1" host="localhost"/>    <!-- Maps IIS IID values to the vhost name. -->
             </ISAPI>
             <Apache apacheConfig="false"/>  <!-- whether httpd.conf or the RequestMap controls session behavior. -->
         </Implementation>
     </SHIRE>
 
-    <Applications xmlns:saml="urn:oasis:names:tc:SAML:1.0:assertion" providerId="https://wayf.internet2.edu/InQueue/ServiceProvider">
+    <Applications xmlns:saml="urn:oasis:names:tc:SAML:1.0:assertion" providerId="https://localhost/shibboleth/target">
 
         <!--
         Controls session lifetimes, address checks, cookie handling, WAYF, and the SHIRE location.
@@ -68,13 +68,13 @@
         -->
         <Sessions lifetime="7200" timeout="3600" checkAddress="true"
             shireURL="/Shibboleth.shire" shireSSL="false" cookieName="shib-default-app" cookieProps="; path=/"
-            wayfURL="https://wayf.internet2.edu/InQueue/WAYF"/>
+            wayfURL="https://localhost/shibboleth/WAYF"/>
 
         <!-- You should customize the pages! You can add attributes with values that can be plugged in. -->
         <Errors shire="@-PKGSYSCONFDIR-@/shireError.html"
             rm="@-PKGSYSCONFDIR-@/rmError.html"
             access="@-PKGSYSCONFDIR-@/accessError.html"
-            supportContact="admin@change.this"
+            supportContact="root@localhost"
             logoLocation="/logo.gif"/>
             
         <Policy signRequest="false" signedResponse="false" signedAssertions="false">
@@ -108,24 +108,19 @@
             <!--
             <RevocationProvider type="edu.internet2.middleware.shibboleth.common.provider.XMLRevocation"
                 uri="@-PKGSYSCONFDIR-@/trust.xml"/>
-              -->
+            -->
                         
             <!--
             <FederationProvider type="edu.internet2.middleware.shibboleth.common.provider.XMLMetadata">
-                <SiteGroup Name="urn:mace:inqueue" xmlns="urn:mace:shibboleth:1.0">
-                    <OriginSite Name="urn:mace:inqueue:example.edu" ErrorURL="http://wayf.internet2.edu/InQueue/error.html">
-                        <Alias>Example State University</Alias>
-                        <Contact Type="technical" Name="Alfred E. Neuman" Email="(no email)"/>
-                        <HandleService Location="https://wayf.internet2.edu/InQueue/HS" Name="wayf.internet2.edu"/>
-                        <Domain>example.edu</Domain>
-                    </OriginSite>
-                    <OriginSite Name="urn:mace:inqueue:shibdev.edu">
-                        <Alias>Shibboleth Development Origin</Alias>
-                        <Contact Type="technical" Name="Scott Cantor" Email="cantor.2@osu.edu"/>
-                        <HandleService Location="https://shib2.internet2.edu/shibboleth/HS" Name="shib2.internet2.edu"/>
-                        <Domain>shibdev.edu</Domain>
-                    </OriginSite>
-                </SiteGroup>
+				<SiteGroup Name="https://localhost/shibboleth" xmlns="urn:mace:shibboleth:1.0">
+					<OriginSite Name="https://localhost/shibboleth/origin">
+						<Alias>Localhost Test Deployment</Alias>
+						<Contact Type="technical" Name="Your Name Here" Email="root@localhost"/>
+						<HandleService Location="https://localhost/shibboleth/HS" Name="CN=localhost,O=Shibboleth Project,C=US"/>
+						<AttributeAuthority Location="https://localhost/shibboleth/AA" Name="CN=localhost,O=Shibboleth Project,C=US"/>
+						<Domain>localhost</Domain>
+					</OriginSite>
+				</SiteGroup>
             </FederationProvider>
             -->
             
@@ -136,7 +131,7 @@
         <CredentialUse TLS="defcreds" Signing="defcreds">
             <!-- RelyingParty elements customize credentials for specific origins or federations -->
             <!--
-            <RelyingParty Name="urn:mace:inqueue" TLS="specialcreds" Signing="specialcreds"/>
+            <RelyingParty Name="urn:mace:inqueue" TLS="inqueuecreds" Signing="inqueuecreds"/>
             -->
         </CredentialUse>
         
@@ -167,12 +162,12 @@
             </FileResolver>
             
             <!--
-            <FileResolver Id="specialcreds">
+            <FileResolver Id="inqueuecreds">
                 <Key format="PEM">
-                    <Path>@-PKGSYSCONFDIR-@/supersecret.key</Path>
+                    <Path>@-PKGSYSCONFDIR-@/inqueue.key</Path>
                 </Key>
                 <Certificate format="PEM">
-                    <Path>@-PKGSYSCONFDIR-@/supersecret.crt</Path>
+                    <Path>@-PKGSYSCONFDIR-@/inqueue.crt</Path>
                 </Certificate>
             </FileResolver>
             -->
