@@ -6,6 +6,30 @@
  * $Id$
  */
 
+// SAML Runtime
+#include <saml/saml.h>
+#include <shib/shib.h>
+#include <shib/shib-threads.h>
+#include <shib-target/shib-target.h>
+#include <xercesc/util/regx/RegularExpression.hpp>
+
+#undef _XPG4_2
+
+// Apache specific header files
+#include <httpd.h>
+#include <http_config.h>
+#include <http_protocol.h>
+#include <http_main.h>
+#define CORE_PRIVATE
+#include <http_core.h>
+#include <http_log.h>
+
+#ifndef SHIB_APACHE_13
+#include <http_request.h>
+#include <apr_strings.h>
+#include <apr_pools.h>
+#endif
+
 #include <fstream>
 #include <sstream>
 

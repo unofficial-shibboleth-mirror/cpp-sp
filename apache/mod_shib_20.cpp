@@ -6,25 +6,6 @@
  *
  */
 
-// SAML Runtime
-#include <saml/saml.h>
-#include <shib/shib.h>
-#include <shib/shib-threads.h>
-#include <shib-target/shib-target.h>
-#include <xercesc/util/regx/RegularExpression.hpp>
-
-// Apache specific header files
-#include <httpd.h>
-#include <http_config.h>
-#include <http_protocol.h>
-#include <http_main.h>
-#include <http_request.h>
-#include <apr_strings.h>
-#define CORE_PRIVATE
-#include <http_core.h>
-#include <http_log.h>
-#include <apr_pools.h>
-
 #define SHIB_APACHE_20 1
 
 #define MODULE_VAR_EXPORT AP_MODULE_DECLARE_DATA
