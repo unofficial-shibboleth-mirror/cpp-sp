@@ -80,14 +80,8 @@ using namespace shibtarget;
 // globals
 namespace {
     HINSTANCE g_hinstDLL;
-    ThreadKey* rpc_handle_key = NULL;
     ShibTargetConfig* g_Config = NULL;
     vector<string> g_Sites;
-}
-
-void destroy_handle(void* data)
-{
-    delete (RPCHandle*)data;
 }
 
 BOOL LogEvent(
@@ -138,9 +132,6 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
         ShibTargetConfig::preinit();
         g_Config = &(ShibTargetConfig::init(SHIBTARGET_SHIRE, getenv("SHIBCONFIG")));
         ShibINI& ini = g_Config->getINI();
-
-        // Create the RPC Handle TLS key.
-        rpc_handle_key=ThreadKey::create(destroy_handle);
 
         Category& log=Category::getInstance("isapi_shib.GetFilterVersion");
 
@@ -200,7 +191,6 @@ extern "C" BOOL WINAPI TerminateExtension(DWORD)
 
 extern "C" BOOL WINAPI TerminateFilter(DWORD)
 {
-    delete rpc_handle_key;
     if (g_Config)
         g_Config->shutdown();
     g_Config = NULL;
@@ -497,14 +487,7 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
         if (!ini.get_tag(application_id, "accessError", true, &shireError))
             return WriteClientError(pfc,"The accessError configuration setting is missing, check configuration.");
         
-        // Get an RPC handle and build the SHIRE object.
-        RPCHandle* rpc_handle = (RPCHandle*)rpc_handle_key->getData();
-        if (!rpc_handle)
-        {
-            rpc_handle = new RPCHandle(shib_target_sockname(), SHIBRPC_PROG, SHIBRPC_VERS_1);
-            rpc_handle_key->setData(rpc_handle);
-        }
-        SHIRE shire(rpc_handle, config, shire_url.c_str());
+        SHIRE shire(config, shire_url.c_str());
 
         // Check for authentication cookie.
         const char* session_id=NULL;
@@ -583,7 +566,7 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
         // Move to RM phase.
         RMConfig rm_config;
         rm_config.checkIPAddress = config.checkIPAddress;
-        RM rm(rpc_handle,rm_config);
+        RM rm(rm_config);
 
         // Get the attributes.
         vector<SAMLAssertion*> assertions;
@@ -859,14 +842,7 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
         markupProcessor.insert("logoLocation", has_tag ? tag : "");
         markupProcessor.insert("requestURL", target_url.c_str());
   
-        // Get an RPC handle and build the SHIRE object.
-        RPCHandle* rpc_handle = (RPCHandle*)rpc_handle_key->getData();
-        if (!rpc_handle)
-        {
-            rpc_handle = new RPCHandle(shib_target_sockname(), SHIBRPC_PROG, SHIBRPC_VERS_1);
-            rpc_handle_key->setData(rpc_handle);
-        }
-        SHIRE shire(rpc_handle, config, shire_url.c_str());
+        SHIRE shire(config, shire_url.c_str());
 
         // Process SHIRE POST
         if (ini.get_tag(application_id, "shireSSLOnly", true, &tag) && ShibINI::boolean(tag))

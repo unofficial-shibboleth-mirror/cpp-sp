@@ -34,7 +34,6 @@ using namespace shibboleth;
 using namespace shibtarget;
 
 namespace {
-    ThreadKey* rpc_handle_key = NULL;
     ShibTargetConfig* g_Config = NULL;
 }
 
@@ -90,14 +89,6 @@ static command_rec shibrm_cmds[] = {
   {NULL}
 };
 
-namespace {
-    void destroy_handle(void* data)
-    {
-        delete (RPCHandle*)data;
-    }
-}
-
-
 /* 
  * shibrm_child_init()
  *  Things to do when the child process is initialized.
@@ -124,9 +115,6 @@ extern "C" void shibrm_child_init(server_rec* s, pool* p)
   
     saml::NDC ndc("shibrm_child_init");
 
-    // Create the RPC Handle TLS key.
-    rpc_handle_key=ThreadKey::create(destroy_handle);
-
     ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,s,"shibrm_child_init() done");
 }
 
@@ -137,7 +125,6 @@ extern "C" void shibrm_child_init(server_rec* s, pool* p)
  */
 extern "C" void shibrm_child_exit(server_rec* s, pool* p)
 {
-    delete rpc_handle_key;
     g_Config->shutdown();
     g_Config = NULL;
     ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,s,"shibrm_child_exit() done");
@@ -271,14 +258,7 @@ extern "C" int shibrm_check_auth(request_rec* r)
     has_tag = ini.get_tag (application_id, "checkIPAddress", true, &tag);
     dc->config.checkIPAddress = (has_tag ? ShibINI::boolean (tag) : false);
 
-    // Get an RPC handle and build the RM object.
-    RPCHandle* rpc_handle = (RPCHandle*)rpc_handle_key->getData();
-    if (!rpc_handle)
-    {
-        rpc_handle = new RPCHandle(shib_target_sockname(), SHIBRPC_PROG, SHIBRPC_VERS_1);
-        rpc_handle_key->setData(rpc_handle);
-    }
-    RM rm(rpc_handle, dc->config);
+    RM rm(dc->config);
 
     vector<SAMLAssertion*> assertions;
     SAMLAuthenticationStatement* sso_statement=NULL;
