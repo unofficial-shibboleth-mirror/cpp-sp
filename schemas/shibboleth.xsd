@@ -155,6 +155,15 @@
                             <attribute name="Location" type="anyURI" use="required"/>
                         </complexType>
                     </element>
+                    <element name="AttributeAuthority" minOccurs="0" maxOccurs="unbounded">
+                        <complexType>
+                            <sequence>
+                                <element ref="ds:KeyInfo" minOccurs="0"/>
+                            </sequence>
+                            <attribute name="Name" type="string" use="required"/>
+                            <attribute name="Location" type="anyURI" use="required"/>
+                        </complexType>
+                    </element>
                     <element name="Domain" type="shib:regexp_string" minOccurs="0" maxOccurs="unbounded"/>
                 </sequence>
             </extension>
@@ -169,6 +178,7 @@
                 <element ref="shib:DestinationSite"/>
                 <element ref="shib:SiteGroup"/>
             </choice>
+            <element name="TrustList" type="ds:KeyInfoType" minOccurs="0"/>
         </sequence>
         <attribute name="Name" type="string" use="required"/>
     </complexType>    
@@ -186,6 +196,7 @@
                     <element ref="shib:DestinationSite"/>
                     <element ref="shib:SiteGroup"/>
                 </choice>
+                <element name="TrustList" type="ds:KeyInfoType" minOccurs="0"/>
                 <element ref="ds:Signature" minOccurs="0"/>
             </sequence>
         </complexType>
