@@ -1,0 +1,6 @@
+log4j.rootCategory=DEBUG, syslog
+
+log4j.appender.syslog=org.apache.log4j.SyslogAppender
+log4j.appender.syslog.syslogName=shib
+log4j.appender.syslog.syslogHost=localhost
+log4j.appender.syslog.layout=org.apache.log4j.BasicLayout

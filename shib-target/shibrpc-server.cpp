@@ -1,0 +1,349 @@
+/*
+ * shibrpc-server.cpp -- SHIBRPC Server implementation.  Originally created
+ *                       as shibrpc-server-stubs.c; make sure that the function
+ *                       prototypes here match those in shibrpc.x.
+ *
+ * Created by:	Derek Atkins <derek@ihtfp.com>
+ *
+ * $Id$
+ */
+
+#include "shibrpc.h"
+#include "shib-target.h"
+
+#include <log4cpp/Category.hh>
+#include <strstream>
+
+using namespace std;
+using namespace saml;
+using namespace shibboleth;
+using namespace shibtarget;
+
+
+static std::string get_threadid (const char* proc)
+{
+  static u_long counter = 0;
+  ostringstream buf;
+  buf << proc << counter++;
+  return buf.str();
+}
+
+static log4cpp::Category& get_category (void)
+{
+  string ctx = "shibtarget.rpc-server";
+  return log4cpp::Category::getInstance(ctx);
+}
+
+extern "C" bool_t
+shibrpc_ping_1_svc(int *argp, int *result, struct svc_req *rqstp)
+{
+  *result = (*argp)+1;
+  return TRUE;
+}
+
+extern "C" bool_t
+shibrpc_session_is_valid_1_svc(shibrpc_session_is_valid_args_1 *argp,
+			       shibrpc_session_is_valid_ret_1 *result,
+			       struct svc_req *rqstp)
+{
+  log4cpp::Category& log = get_category();
+  saml::NDC(get_threadid("session_is_valid"));
+
+  if (!argp || !result) {
+    log.error ("RPC Argument Error");
+    return FALSE;
+  }
+
+  memset (result, 0, sizeof (*result));
+  
+  log.debug ("checking: %s@%s", argp->cookie.cookie, argp->cookie.client_addr);
+
+  // See if the cookie exists...
+  CCacheEntry *entry = g_shibTargetCCache->find(argp->cookie.cookie);
+
+  // If not, leave now..
+  if (!entry) {
+    log.debug ("Not found");
+    result->status = SHIBRPC_NO_SESSION;
+    result->error_msg = strdup("No session exists for this cookie");
+    return TRUE;
+  }
+
+  // Verify the address is the same
+  if (argp->checkIPAddress &&
+      strcmp (argp->cookie.client_addr, entry->getClientAddress())) {
+    log.debug ("IP Address mismatch");
+    result->status = SHIBRPC_IPADDR_MISMATCH;
+    result->error_msg = 
+      strdup ("Your IP address does not match the address in the original authentication.");
+    g_shibTargetCCache->remove (argp->cookie.cookie);
+    return TRUE;
+  }
+
+  // and that the session is still valid...
+  if (!entry->isSessionValid(argp->lifetime, argp->timeout)) {
+    log.debug ("Session expired");
+    result->status = SHIBRPC_SESSION_EXPIRED;
+    result->error_msg = strdup ("Your session has expired.  Re-authenticate.");
+    g_shibTargetCCache->remove (argp->cookie.cookie);
+    return TRUE;
+  }
+
+  // ok, we've succeeded..
+  result->status = SHIBRPC_OK;
+  result->error_msg = strdup("");
+  log.debug ("session ok");
+  return TRUE;
+}
+
+extern "C" bool_t
+shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
+			  shibrpc_new_session_ret_1 *result, struct svc_req *rqstp)
+{
+  log4cpp::Category& log = get_category();
+  saml::NDC(get_threadid("new_session"));
+
+  if (!argp || !result) {
+    log.error ("Invalid RPC Arguments");
+    return FALSE;
+  }
+
+  // Initialize the result structure
+  memset (result, 0, sizeof(*result));
+  result->cookie = strdup ("");
+
+  log.debug ("creating session for %s", argp->client_addr);
+  log.debug ("shire location: %s", argp->shire_location);
+
+  XMLByte* post=reinterpret_cast<XMLByte*>(argp->saml_post);
+  auto_ptr<XMLCh> location(XMLString::transcode(argp->shire_location));
+
+  // Pull in the Policies
+  static const XMLCh* clubShib[] = {shibboleth::Constants::POLICY_CLUBSHIB};
+  ArrayIterator<const XMLCh*> policies(clubShib);
+
+  // And grab the Profile
+  // XXX: Create a "Global" POSTProfile instance per location...
+  log.debug ("create the POST profile (%d policies)", policies.size());
+  ShibPOSTProfile *profile =
+    ShibPOSTProfileFactory::getInstance(policies,
+					ShibConfig::getConfig().origin_mapper,
+					location.get(),
+					300);
+
+  SAMLResponse* r = NULL;
+  SAMLAuthenticationStatement* auth_st = NULL;
+
+  try
+  {
+    try
+    {
+      // Make sure we've got a profile
+      if (!profile)
+	throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,
+				  "Failed to obtain the profile");
+
+      // Try and accept the response...
+      log.debug ("Trying to accept the post");
+      r = profile->accept(post);
+
+      // Make sure we got a response
+      if (!r)
+	throw ShibTargetException(SHIBRPC_RESPONSE_MISSING,
+				  "Failed to accept the response.");
+
+      // Find the SSO Assertion
+      log.debug ("Get the SSOAssertion");
+      SAMLAssertion* ssoAssertion = profile->getSSOAssertion(*r);
+
+      // verify that we obtained an assertion
+      if (!ssoAssertion)
+	throw ShibTargetException(SHIBRPC_ASSERTION_MISSING,
+				  "Cannot find SSO Assertion");
+
+      // Check against the replay cache
+      log.debug ("check replay cache");
+      if (profile->checkReplayCache(*ssoAssertion) == false)
+	throw ShibTargetException(SHIBRPC_ASSERTION_REPLAYED,
+				  "Duplicate assertion found.");
+
+      // Get the authentication statement we need.
+      log.debug ("get SSOStatement");
+      auth_st = profile->getSSOStatement(*ssoAssertion);
+
+      // Verify we obtained an authentication statement
+      if (!auth_st)
+	throw ShibTargetException(SHIBRPC_AUTHSTATEMENT_MISSING,
+				  "Processing was successful but no authentication statement was found.");
+  
+      // Maybe verify the origin address....
+      if (argp->checkIPAddress) {
+	log.debug ("check IP Address");
+
+	// Verify the client address exists
+	const XMLCh* ip = auth_st->getSubjectIP();
+	if (!ip)
+	  throw ShibTargetException(SHIBRPC_IPADDR_MISSING,
+				    "The IP Address provided by your origin site was missing.");
+	
+	log.debug ("verify client address");
+	// Verify the client address matches authentication
+	auto_ptr<char> this_ip(XMLString::transcode(ip));
+	if (strcmp (argp->client_addr, this_ip.get()))
+	  throw ShibTargetException(SHIBRPC_IPADDR_MISMATCH,
+				    "The IP address provided by your origin site did not match your current address.  To correct this problem you may need to bypass a local proxy server.");
+      }
+    }
+    catch (SAMLException &e)
+    {
+      log.error ("received SAML exception");
+      ostrstream os;
+      os << e;
+      throw ShibTargetException (SHIBRPC_SAML_EXCEPTION, os.str());
+    }
+    catch (XMLException &e)
+    {
+      log.error ("received XML exception");
+      auto_ptr<char> msg(XMLString::transcode(e.getMessage()));
+      throw ShibTargetException (SHIBRPC_XML_EXCEPTION, msg.get());
+    }
+    catch (SAXException &e)
+    {
+      log.error ("received SAX exception");
+      auto_ptr<char> msg(XMLString::transcode(e.getMessage()));
+      throw ShibTargetException (SHIBRPC_SAX_EXCEPTION, msg.get());
+    }
+  }
+  catch (ShibTargetException &e)
+  {
+    log.info ("FAILED: %s", e.what());
+    if (r) delete r;
+    result->status = e.which();
+    result->error_msg = strdup(e.what());
+    return TRUE;
+  }
+#if 0
+  catch (...)
+  {
+    log.error ("Unknown error");
+    if (r) delete r;
+    result->status = SHIBRPC_UNKNOWN_ERROR;
+    result->error_msg = strdup("An unknown exception occurred");
+    return TRUE;
+  }
+#endif
+
+  // It passes all our tests -- create a new session.
+  log.info ("Creating new session");
+
+  SAMLAuthenticationStatement* as=static_cast<SAMLAuthenticationStatement*>(auth_st->clone());
+  CCacheEntry* session = CCacheEntry::getInstance (as, argp->client_addr);
+
+  // Create a new cookie
+  SAMLIdentifier id;
+  auto_ptr<char> c(XMLString::transcode(id));
+  char *cookie = c.get();
+
+  // Cache this session with the cookie
+  g_shibTargetCCache->insert(cookie, session);
+
+  // Delete the response...
+  delete r;
+
+  // And let the user know.
+  free (result->cookie);
+  result->cookie = strdup(cookie);
+  result->status = SHIBRPC_OK;
+  result->error_msg = strdup("");
+
+  log.debug ("new session id: %s", cookie);
+  return TRUE;
+}
+
+extern "C" bool_t
+shibrpc_get_attrs_1_svc(shibrpc_get_attrs_args_1 *argp,
+			shibrpc_get_attrs_ret_1 *result, struct svc_req *rqstp)
+{
+  log4cpp::Category& log = get_category();
+  saml::NDC(get_threadid("get_attrs"));
+
+  if (!argp || !result) {
+    log.error ("Invalid RPC arguments");
+    return FALSE;
+  }
+
+  memset (result, 0, sizeof (*result));
+  result->assertion = strdup("");
+
+  log.debug ("get attrs for client at %s", argp->cookie.client_addr);
+  log.debug ("cookie: %s", argp->cookie.cookie);
+  log.debug ("resource: %s", argp->url);
+
+  // Find this session
+  CCacheEntry* entry = g_shibTargetCCache->find(argp->cookie.cookie);
+
+  // If it does not exist, leave now..
+  if (!entry) {
+    log.error ("No Session");
+    result->status = SHIBRPC_NO_SESSION;
+    result->error_msg = strdup("getattrs Internal error: no session");
+    return TRUE;
+  }
+
+  // Validate the client address (again?)
+  if (argp->checkIPAddress &&
+      strcmp (argp->cookie.client_addr, entry->getClientAddress())) {
+    log.error ("IP Mismatch");
+    result->status = SHIBRPC_IPADDR_MISMATCH;
+    result->error_msg =
+      strdup("Your IP address does not match the address in the original authentication.");
+    return TRUE;
+  }
+
+  // grab the attributes for this entry/url
+  Iterator<SAMLAttribute*> iter=entry->getAttributes(argp->url);
+  u_int size = iter.size();
+  result->attr_reps.attr_reps_len = size;
+
+  // if we have attributes...
+  if (size) {
+
+    // Build the response section
+    ShibRpcAttrRep_1* av = (ShibRpcAttrRep_1*) malloc (size * 
+						       sizeof (ShibRpcAttrRep_1));
+    result->attr_reps.attr_reps_val = av;
+
+    // and then serialize them all...
+    u_int i = 0;
+    while (iter.hasNext()) {
+      SAMLAttribute* attr = iter.next();
+      ostrstream os;
+      os << *attr;
+      av[i++].rep = strdup(os.str());
+    }
+  }
+
+  // grab the serialized assertion
+  char* assn = strdup(entry->getSerializedAssertion(argp->url));
+  free (result->assertion);
+  result->assertion = assn;	// freed by RPC
+
+  // and let it fly
+  result->status = SHIBRPC_OK;
+  result->error_msg = strdup("");
+
+  log.debug ("returning");
+  return TRUE;
+}
+
+extern "C" int
+shibrpc_prog_1_freeresult (SVCXPRT *transp, xdrproc_t xdr_result, caddr_t result)
+{
+	xdr_free (xdr_result, result);
+
+	/*
+	 * Insert additional freeing code here, if needed
+	 */
+
+	return 1;
+}

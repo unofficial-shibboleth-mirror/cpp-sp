@@ -1,11 +1,18 @@
 OUTDIR		= lib
 BINDIR		= bin
-CC		= g++3
+INCDIR		= include
+CP		= cp -p
+CC		= gcc3
+CXX		= g++3
+XERCES          = ../../xerces-c-src1_7_0
+LOG4CPP		= ../../..
 CFLAGS		= -g -fpic -Iinclude -I../../opensaml/c/include \
-                  -I/usr/local/include
+                  -I/usr/local/include -I$(XERCES)/include -I$(LOG4CPP)/include
 CCFLAGS		= $(CFLAGS)
+CXXFLAGS	= $(CFLAGS)
 LDFLAGS		= -L/usr/local/lib -L$(OUTDIR) -L../../opensaml/c/lib \
-                  -luuid -lcurl -lxerces-c1_7_0 -lsaml
+                  -L$(XERCES)/lib -luuid -lcurl -lxerces-c1_7_0 -lsaml \
+		  -L$(LOG4CPP)/lib -llog4cpp
 SHIB_OBJS 	= \
         shib/ClubShibPOSTProfile.o \
         shib/Constants.o \
@@ -21,32 +28,86 @@ EDUPERSON_OBJS = \
 	eduPerson/AffiliationAttribute.o \
 	eduPerson/PrimaryAffiliationAttribute.o \
 	eduPerson/EntitlementAttribute.o \
-	eduPerson/ScopedAttribute.o
+	eduPerson/ScopedAttribute.o \
+	eduPerson/eduPerson.o
 
+SHIBTARGET_OBJS = \
+	shib-target/shibrpc-xdr.o \
+	shib-target/shibrpc-clnt.o \
+	shib-target/shibrpc-svc.o \
+	shib-target/shibrpc-server.o \
+        shib-target/shib-sock.o \
+	shib-target/shib-rpcutil.o \
+	shib-target/shib-ccache.o \
+	shib-target/shib-resource.o \
+	shib-target/shib-target.o \
+	shib-target/shib-rpchandle.o \
+	shib-target/shib-rpcerror.o \
+	shib-target/shib-shire.o \
+	shib-target/shib-rm.o \
+	shib-target/shib-ini.o \
+	shib-target/shib-mlp.o
 
-all:	dirs $(OUTDIR)/libshib.so $(OUTDIR)/libeduPerson.so bin/ $(BINDIR)/shibtest
+INC_TARGETS = $(INCDIR)/shibrpc.h
+
+LIB_TARGETS = $(OUTDIR)/libshib.so $(OUTDIR)/libeduPerson.so \
+	$(OUTDIR)/libshib-target.so
+
+BIN_TARGETS = $(BINDIR)/shibtest $(BINDIR)/shar
+
+TEST_TARGETS = $(BINDIR)/testini $(BINDIR)/testmlp $(BINDIR)/testinit \
+	$(BINDIR)/testlog
+
+all:	dirs $(INC_TARGETS) $(LIB_TARGETS) $(BIN_TARGETS)
 	chmod 755 $(OUTDIR)/*
 	@echo
 	@echo "finished building shib libraries"
 	@echo
+
+test:	all $(TEST_TARGETS)
 
 dirs:
 	if test ! -d $(OUTDIR); then mkdir $(OUTDIR); fi
 	if test ! -d $(BINDIR); then mkdir $(BINDIR); fi
 
 $(OUTDIR)/libshib.so:	$(SHIB_OBJS)
-	$(CC) $(CCFLAGS) $(SHIB_OBJS) -o $@ -shared $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) $(SHIB_OBJS) -o $@ -shared $(LDFLAGS)
 
 $(OUTDIR)/libeduPerson.so:	$(EDUPERSON_OBJS)
-	$(CC) $(CCFLAGS) $(EDUPERSON_OBJS) -o $@ -shared $(LDFLAGS) -lshib
+	$(CXX) $(CXXFLAGS) $(EDUPERSON_OBJS) -o $@ -shared $(LDFLAGS) -lshib
 
-$(BINDIR)/shibtest: shibtest/shibtest.cpp
-	$(CC) $(CCFLAGS) shibtest/shibtest.cpp -o $@ $(LDFLAGS) -lshib -leduPerson
+$(OUTDIR)/libshib-target.so:	$(SHIBTARGET_OBJS)
+	$(CXX) $(CXXFLAGS) $(SHIBTARGET_OBJS) -o $@ -shared $(LDFLAGS) -lshib
 
-.SUFFIXES:	.cpp
+$(BINDIR)/shibtest: shibtest/shibtest.o
+	$(CXX) shibtest/shibtest.o -o $@ $(LDFLAGS) -lshib -leduPerson
+
+$(BINDIR)/shar: shar/shar.o
+	$(CXX) $^ -o $@ $(LDFLAGS) -lshib-target -lshib
+
+$(BINDIR)/testini: shib-target/testini.o
+	$(CXX) $^ -o $@ $(LDFLAGS) -lshib-target -lshib
+
+$(BINDIR)/testmlp: shib-target/testmlp.o
+	$(CXX) $^ -o $@ $(LDFLAGS) -lshib-target -lshib
+
+$(BINDIR)/testinit: shib-target/testinit.o
+	$(CXX) $^ -o $@ $(LDFLAGS) -lshib-target
+
+$(BINDIR)/testlog: shib-target/testlog.o
+	$(CXX) $^ -o $@ $(LDFLAGS)
+
+$(INCDIR)/shibrpc.h:	shib-target/shibrpc.h
+	$(CP) $^ $@
+
+.SUFFIXES:	.cpp .c
+
+.c.o:
+	$(CC) $(CFLAGS) -c $< -o $*.o
 
 .cpp.o:
-	$(CC) $(CCFLAGS) -c $< -o $*.o
+	$(CXX) $(CXXFLAGS) -c $< -o $*.o
 
 clean:
-	rm -f shib/*.o eduPerson/*.o shibtest/*.o $(OUTDIR)/* $(BINDIR)/*
+	rm -f shib/*.o eduPerson/*.o shib-target/*.o shibtest/*.o shar/*.o \
+	$(OUTDIR)/* $(BINDIR)/*
