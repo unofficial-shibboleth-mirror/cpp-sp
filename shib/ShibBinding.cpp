@@ -140,7 +140,7 @@ SAMLResponse* ShibBinding::send(
                 while (conds.hasNext()) {
                     SAMLAudienceRestrictionCondition* cond=dynamic_cast<SAMLAudienceRestrictionCondition*>(conds.next());
                     if (!cond || !cond->eval(audiences)) {
-                        log.warn("assertion condition is false, removing it");
+                        log.warn("assertion condition invalid, removing it");
                         r->removeAssertion(i);
                         i--;
                         break;
@@ -154,12 +154,7 @@ SAMLResponse* ShibBinding::send(
                     i--;
                 }
             }
-            
-            // Any left?
-            if (r->getAssertions().size())
-                return r.release();
-            else
-                log.warn("all assertions removed from response, dumping it");
+            return r.release();
         }
         catch (SAMLException& e) {
             log.error("caught SAML exception during SAML attribute query: %s", e.what());
@@ -202,7 +197,7 @@ SAMLResponse* ShibBinding::send(
                 while (conds.hasNext()) {
                     SAMLAudienceRestrictionCondition* cond=dynamic_cast<SAMLAudienceRestrictionCondition*>(conds.next());
                     if (!cond || !cond->eval(audiences)) {
-                        log.warn("assertion condition is false, removing it");
+                        log.warn("assertion condition invalid, removing it");
                         r->removeAssertion(i);
                     }
                 }
@@ -213,12 +208,7 @@ SAMLResponse* ShibBinding::send(
                     r->removeAssertion(i);
                 }
             }
-
-            // Any left?
-            if (r->getAssertions().size())
-                return r.release();
-            else
-                log.warn("all assertions removed from response, dumping it");
+            return r.release();
         }
         catch (SAMLException& e) {
             log.error("caught SAML exception during SAML attribute query: %s", e.what());
