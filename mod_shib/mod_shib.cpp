@@ -20,6 +20,8 @@
 #include <shib.h>
 #include <eduPerson.h>
 
+#include <xercesc/util/Base64.hpp>
+
 #include <strstream>
 #include <stdexcept>
 
@@ -36,7 +38,7 @@ public:
 
     SAMLAuthorityBinding* getBinding() { return m_binding; }
     Iterator<SAMLAttribute*> getAttributes(const char* resource_url);
-    const char* getSerializedAssertion(const char* resource_url);
+    const XMLByte* getSerializedAssertion(const char* resource_url);
     bool isSessionValid(time_t lifetime, time_t timeout);
     const XMLCh* getHandle() { return m_handle.c_str(); }
     const XMLCh* getOriginSite() { return m_originSite.c_str(); }
@@ -53,7 +55,7 @@ private:
     SAMLAssertion* m_assertion;
     time_t m_sessionCreated;
     time_t m_lastAccess;
-    string m_serialized;
+    XMLByte* m_serialized;
 
     static saml::QName g_authorityKind;
     static saml::QName g_respondWith;
@@ -122,7 +124,7 @@ void CCache::remove(const char* key)
 }
 
 CCacheEntry::CCacheEntry(request_rec* r, const char* sessionFile)
-  : m_binding(NULL), m_assertion(NULL), m_response(NULL), m_lastAccess(0), m_sessionCreated(0)
+  : m_binding(NULL), m_assertion(NULL), m_response(NULL), m_lastAccess(0), m_sessionCreated(0), m_serialized(NULL)
 {
     configfile_t* f;
     char line[MAX_STRING_LEN];
@@ -179,11 +181,16 @@ CCacheEntry::~CCacheEntry()
 {
     delete m_binding;
     delete m_response;
+    delete[] m_serialized;
 }
 
 bool CCacheEntry::isSessionValid(time_t lifetime, time_t timeout)
 {
     time_t now=time(NULL);
+    if (lifetime==0)
+        lifetime=3600;
+    if (timeout==0)
+        timeout==1800;
     if (now > m_sessionCreated+lifetime)
         return false;
     if (now-m_lastAccess >= timeout)
@@ -208,17 +215,17 @@ Iterator<SAMLAttribute*> CCacheEntry::getAttributes(const char* resource_url)
     return Iterator<SAMLAttribute*>(g_emptyVector);
 }
 
-const char* CCacheEntry::getSerializedAssertion(const char* resource_url)
+const XMLByte* CCacheEntry::getSerializedAssertion(const char* resource_url)
 {
     populate(resource_url);
-    if (!m_serialized.empty())
-        return m_serialized.c_str();
+    if (m_serialized)
+        return m_serialized;
     if (!m_assertion)
         return NULL;
     ostrstream os;
     os << *m_assertion;
-    m_serialized=os.str();
-    return m_serialized.c_str();
+    unsigned int outlen;
+    return m_serialized=Base64::encode(reinterpret_cast<XMLByte*>(os.str()),os.pcount(),&outlen);
 }
 
 void CCacheEntry::populate(const char* resource_url)
@@ -243,9 +250,10 @@ void CCacheEntry::populate(const char* resource_url)
 	    return;
 
 	delete m_response;
+	delete[] m_serialized;
 	m_assertion=NULL;
         m_response=NULL;
-	m_serialized.clear();
+	m_serialized=NULL;
     }
 
     if (!m_binding)
@@ -361,6 +369,7 @@ struct shib_dir_config
     int bBasicHijack;		// activate for AuthType Basic?
     int bCheckAddress;		// validate IP address?
     int bSSLOnly;		// only over SSL?
+    int bExportAssertion;       // export SAML assertion to the environment?
     time_t secLifetime;		// maximum token lifetime
     time_t secTimeout;		// maximum time between uses
 };
@@ -369,11 +378,36 @@ struct shib_dir_config
 extern "C" void* create_shib_dir_config (pool* p, char* d)
 {
     shib_dir_config* dc=(shib_dir_config*)ap_pcalloc(p,sizeof(shib_dir_config));
-    dc->secLifetime = 3600;
-    dc->secTimeout = 1800;
-    dc->bCheckAddress = TRUE;
-    dc->bBasicHijack = FALSE;
+    dc->secLifetime = 0;
+    dc->secTimeout = 0;
+    dc->bCheckAddress = -1;
+    dc->bBasicHijack = -1;
+    dc->bSSLOnly = -1;
+    dc->bExportAssertion = -1;
     dc->szAuthGrpFile = NULL;
+    return dc;
+}
+
+// overrides server configuration in directories
+extern "C" void* merge_shib_dir_config (pool* p, void* base, void* sub)
+{
+    shib_dir_config* dc=(shib_dir_config*)ap_pcalloc(p,sizeof(shib_dir_config));
+    shib_dir_config* parent=(shib_dir_config*)base;
+    shib_dir_config* child=(shib_dir_config*)sub;
+
+    if (child->szAuthGrpFile)
+        dc->szAuthGrpFile=ap_pstrdup(p,child->szAuthGrpFile);
+    else if (parent->szAuthGrpFile)
+        dc->szAuthGrpFile=ap_pstrdup(p,parent->szAuthGrpFile);
+    else
+        dc->szAuthGrpFile=NULL;
+
+    dc->bSSLOnly=((child->bSSLOnly==-1) ? parent->bSSLOnly : child->bSSLOnly);
+    dc->bBasicHijack=((child->bBasicHijack==-1) ? parent->bBasicHijack : child->bBasicHijack);
+    dc->bCheckAddress=((child->bCheckAddress==-1) ? parent->bCheckAddress : child->bCheckAddress);
+    dc->bExportAssertion=((child->bExportAssertion==-1) ? parent->bExportAssertion : child->bExportAssertion);
+    dc->secLifetime=((child->secLifetime==0) ? parent->secLifetime : child->secLifetime);
+    dc->secTimeout=((child->secTimeout==0) ? parent->secTimeout : child->secTimeout);
     return dc;
 }
 
@@ -458,6 +492,9 @@ command_rec shib_cmds[] = {
   {"ShibCheckAddress", (config_fn_t)ap_set_flag_slot,
    (void *) XtOffsetOf (shib_dir_config, bCheckAddress),
    OR_AUTHCFG, FLAG, "Verify IP address of requester matches token?"},
+  {"ShibExportAssertion", (config_fn_t)ap_set_flag_slot,
+   (void *) XtOffsetOf (shib_dir_config, bExportAssertion),
+   OR_AUTHCFG, FLAG, "Export SAML assertion to Shibboleth-defined header?"},
   {"ShibAuthLifetime", (config_fn_t)set_lifetime, NULL,
    OR_AUTHCFG, TAKE1, "Lifetime of session in seconds."},
   {"ShibAuthTimeout", (config_fn_t)set_timeout, NULL,
@@ -585,6 +622,31 @@ char* url_encode(request_rec* r, const char* s)
     return ret;
 }
 
+int shib_shar_error(request_rec* r, SAMLException& e)
+{
+    r->content_type = ap_psprintf(r->pool, "text/html");
+    ap_send_http_header(r);
+    ap_rprintf(r, "<html>\n");
+    ap_rprintf(r, "<head>\n");
+    ap_rprintf(r, "<title>Shibboleth Attribute Exchange Failed</title>\n");
+    ap_rprintf(r, "<H3>Shibboleth Attribute Exchange Failed</H3>\n");
+    ap_rprintf(r, "While attempting to securely contact your origin site to obtain information about you, an error occurred:<BR>");
+    ap_rprintf(r, "<BLOCKQUOTE>%s</BLOCKQUOTE>", e.what());
+
+    bool origin=true;
+    Iterator<saml::QName> i=e.getCodes();
+    if (i.hasNext() && XMLString::compareString(L(Responder),i.next().getLocalName()))
+        origin=false;
+
+    ap_rprintf(r, "<P>The error appears to be located at %s.<BR>", origin ? "your origin site" : "the resource provider's site");
+    ap_rprintf(r, "<P>Try restarting your browser and accessing the site again to make sure the problem isn't temporary. Please contact the administrator of that site if this problem recurs. If possible, provide him/her with the error message shown above.");
+    ap_rprintf(r, "</head>\n");
+    ap_rprintf(r, "</html>\n");
+    ap_rflush(r);
+
+    return DONE;
+}
+
 extern "C" int shib_check_user(request_rec* r)
 {
     ap_log_rerror(APLOG_MARK,APLOG_DEBUG,r,"shib_check_user executing");
@@ -692,7 +754,10 @@ extern "C" int shib_check_user(request_rec* r)
 	    return SERVER_ERROR;
         }
 
-	ap_table_unset(r->headers_in,"Shib-Attributes"); // per arch-doc, until we populate it
+	ap_table_unset(r->headers_in,"Shib-Attributes");
+	if (dc->bExportAssertion)
+	    ap_table_setn(r->headers_in,"Shib-Attributes",
+			  reinterpret_cast<const char*>(entry->getSerializedAssertion(targeturl)));
 	Iterator<SAMLAttribute*> i=entry->getAttributes(targeturl);
 	
 	while (i.hasNext())
@@ -721,9 +786,6 @@ extern "C" int shib_check_user(request_rec* r)
     catch (SAMLException& e)
     {
         ap_log_rerror(APLOG_MARK,APLOG_ERR,r,"shib_check_user() SAML exception: %s",e.what());
-	// Strictly speaking, an error here or below just means no attributes are available.
-	// That's a matter for the RM to deal with, not us. The one exception is an invalid
-	// handle status from the AA, which is a signal to destroy the session.
 	Iterator<saml::QName> i=e.getCodes();
 	int c=0;
 	while (i.hasNext())
@@ -747,13 +809,14 @@ extern "C" int shib_check_user(request_rec* r)
 	    }
 	    break;
 	}
-	return OK;
+	return shib_shar_error(r,e);
     }
     catch (XMLException& e)
     {
         auto_ptr<char> msg(XMLString::transcode(e.getMessage()));
         ap_log_rerror(APLOG_MARK,APLOG_ERR,r,"shib_check_user() Xerxes XML exception: %s",msg.get());
-	return OK;
+	SAMLException ex(SAMLException::RESPONDER,msg.get());
+	return shib_shar_error(r,ex);
     }
     catch (...)
     {
@@ -927,7 +990,7 @@ module MODULE_VAR_EXPORT shib_module = {
     STANDARD_MODULE_STUFF,
     NULL,			/* initializer */
     create_shib_dir_config,	/* dir config creater */
-    NULL,			/* dir merger --- default is to override */
+    merge_shib_dir_config,	/* dir merger --- default is to override */
     create_shib_server_config,	/* server config */
     merge_shib_server_config,	/* merge server config */
     shib_cmds,			/* command table */
