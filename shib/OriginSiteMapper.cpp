@@ -47,15 +47,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/* XMLOriginSiteMapper.h - a mapper implementation that uses an XML-based registry
+/* OriginSiteMapper.h - a mapper implementation that uses an XML-based registry
 
    Scott Cantor
    9/27/02
 
    $History:$
 */
-
-#define SHIB_INSTANTIATE
 
 #include "internal.h"
 

@@ -59,6 +59,8 @@
 #include <time.h>
 #include <signal.h>
 
+#define SHIB_INSTANTIATE
+
 #include "internal.h"
 #include <log4cpp/Category.hh>
 
