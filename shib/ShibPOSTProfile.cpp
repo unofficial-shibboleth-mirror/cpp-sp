@@ -64,7 +64,7 @@ using namespace saml;
 using namespace std;
 
 ShibPOSTProfile::ShibPOSTProfile(const Iterator<const XMLCh*>& policies, const XMLCh* receiver, int ttlSeconds)
-    : m_ttlSeconds(ttlSeconds), m_algorithm(SAMLSignedObject::RSA_SHA1), m_issuer(NULL)
+    : m_ttlSeconds(ttlSeconds), m_algorithm(SIGNATURE_RSA), m_issuer(NULL)
 {
     if (!receiver || !*receiver || ttlSeconds <= 0)
         throw SAMLException(SAMLException::REQUESTER, "ShibPOSTProfile() found a null or invalid argument");
@@ -76,7 +76,7 @@ ShibPOSTProfile::ShibPOSTProfile(const Iterator<const XMLCh*>& policies, const X
 }
 
 ShibPOSTProfile::ShibPOSTProfile(const Iterator<const XMLCh*>& policies, const XMLCh* issuer)
-    : m_ttlSeconds(0), m_algorithm(SAMLSignedObject::RSA_SHA1), m_receiver(NULL)
+    : m_ttlSeconds(0), m_algorithm(SIGNATURE_RSA), m_receiver(NULL)
 {
     if (!issuer || !*issuer)
         throw SAMLException(SAMLException::REQUESTER, "ShibPOSTProfile() found a null or invalid argument");
@@ -136,26 +136,30 @@ SAMLResponse* ShibPOSTProfile::accept(const XMLByte* buf)
     if (!bFound)
         throw TrustException(SAMLException::RESPONDER, "ShibPOSTProfile::accept() detected an untrusted HS for the origin site");
 
-    const X509Certificate* hsCert=mapper.getHandleServiceCert(handleService);
+    XSECCryptoX509* hsCert=mapper.getHandleServiceCert(handleService);
 
     // Signature verification now takes place. We check the assertion and the response.
     // Assertion signing is optional, response signing is mandatory.
     if (assertion->isSigned())
-        verifySignature(*assertion, handleService, hsCert);
-    verifySignature(*r, handleService, hsCert);
+        verifySignature(*assertion, handleService, hsCert ? hsCert->clonePublicKey() : NULL);
+    verifySignature(*r, handleService, hsCert ? hsCert->clonePublicKey() : NULL);
 
     return r.release();
 }
 
-SAMLResponse* ShibPOSTProfile::prepare(const XMLCh* recipient,
-                                       const XMLCh* name,
-                                       const XMLCh* nameQualifier,
-                                       const XMLCh* subjectIP,
-                                       const XMLCh* authMethod,
-                                       time_t authInstant,
-                                       const Iterator<SAMLAuthorityBinding*>& bindings,
-                                       const saml::Key& responseKey, const saml::X509Certificate* responseCert,
-                                       const saml::Key* assertionKey, const saml::X509Certificate* assertionCert)
+SAMLResponse* ShibPOSTProfile::prepare(
+    const XMLCh* recipient,
+    const XMLCh* name,
+    const XMLCh* nameQualifier,
+    const XMLCh* subjectIP,
+    const XMLCh* authMethod,
+    time_t authInstant,
+    const saml::Iterator<saml::SAMLAuthorityBinding*>& bindings,
+    XSECCryptoKey* responseKey,
+    const Iterator<XSECCryptoX509*>& responseCerts,
+    XSECCryptoKey* assertionKey,
+    const Iterator<XSECCryptoX509*>& assertionCerts
+    )
 {
 #ifdef WIN32
     struct tm* ptime=gmtime(&authInstant);
@@ -171,15 +175,9 @@ SAMLResponse* ShibPOSTProfile::prepare(const XMLCh* recipient,
     SAMLResponse* r = SAMLPOSTProfile::prepare(recipient,m_issuer,Iterator<const XMLCh*>(m_policies),name,
                                                nameQualifier,Constants::SHIB_NAMEID_FORMAT_URI,subjectIP,authMethod,authDateTime,bindings);
     if (assertionKey)
-    {
-        const X509Certificate* acerts[]={ assertionCert };
-        (r->getAssertions().next())->sign(m_algorithm,*assertionKey,
-            assertionCert ? ArrayIterator<const X509Certificate*>(acerts) : Iterator<const X509Certificate*>());
-    }
+        (r->getAssertions().next())->sign(m_algorithm,assertionKey,assertionCerts);
 
-    const X509Certificate* rcerts[]={ responseCert };
-    r->sign(m_algorithm,responseKey,
-        assertionCert ? ArrayIterator<const X509Certificate*>(rcerts) : Iterator<const X509Certificate*>(),true);
+    r->sign(m_algorithm,responseKey,responseCerts);
 
     return r;
 }
@@ -190,12 +188,7 @@ bool ShibPOSTProfile::checkReplayCache(const SAMLAssertion& a)
     return SAMLPOSTProfile::checkReplayCache(a);
 }
 
-void ShibPOSTProfile::verifySignature(const SAMLSignedObject& obj, const XMLCh* signerName, const X509Certificate* knownKey)
+void ShibPOSTProfile::verifySignature(const SAMLSignedObject& obj, const XMLCh* signerName, XSECCryptoKey* knownKey)
 {
-    const SAMLObject* pobj=&obj;
-    const SAMLResponse* ptr=dynaptr(SAMLResponse,pobj);
-    if (knownKey)
-        obj.verify(*knownKey,ptr ? true : false);
-    else
-        obj.verify(ptr ? true : false);
+    obj.verify(knownKey);
 }

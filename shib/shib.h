@@ -106,10 +106,13 @@ namespace shibboleth
 
     struct SHIB_EXPORTS IOriginSiteMapper
     {
-        virtual saml::Iterator<saml::xstring> getHandleServiceNames(const XMLCh* originSite)=0;
-        virtual const saml::X509Certificate* getHandleServiceCert(const XMLCh* handleService)=0;
-        virtual saml::Iterator<std::pair<saml::xstring,bool> > getSecurityDomains(const XMLCh* originSite)=0;
-        virtual const char* getTrustedRoots()=0;
+        virtual const char* getContactName(const XMLCh* originSite) const=0;
+        virtual const char* getContactEmail(const XMLCh* originSite) const=0;
+        virtual const char* getErrorURL(const XMLCh* originSite) const=0;
+        virtual saml::Iterator<saml::xstring> getHandleServiceNames(const XMLCh* originSite) const=0;
+        virtual XSECCryptoX509* getHandleServiceCert(const XMLCh* handleService) const=0;
+        virtual saml::Iterator<std::pair<saml::xstring,bool> > getSecurityDomains(const XMLCh* originSite) const=0;
+        virtual time_t getTimestamp() const=0;
     };
 
     class SHIB_EXPORTS OriginSiteMapper : public IOriginSiteMapper
@@ -117,10 +120,13 @@ namespace shibboleth
     public:
         OriginSiteMapper();
         ~OriginSiteMapper();
-        virtual saml::Iterator<saml::xstring> getHandleServiceNames(const XMLCh* originSite);
-        virtual const saml::X509Certificate* getHandleServiceCert(const XMLCh* handleService);
-        virtual saml::Iterator<std::pair<saml::xstring,bool> > getSecurityDomains(const XMLCh* originSite);
-        virtual const char* getTrustedRoots();
+        virtual const char* getContactName(const XMLCh* originSite) const;
+        virtual const char* getContactEmail(const XMLCh* originSite) const;
+        virtual const char* getErrorURL(const XMLCh* originSite) const;
+        virtual saml::Iterator<saml::xstring> getHandleServiceNames(const XMLCh* originSite) const;
+        virtual XSECCryptoX509* getHandleServiceCert(const XMLCh* handleService) const;
+        virtual saml::Iterator<std::pair<saml::xstring,bool> > getSecurityDomains(const XMLCh* originSite) const;
+        virtual time_t getTimestamp() const;
 
     private:
         OriginSiteMapper(const OriginSiteMapper&);
@@ -178,21 +184,25 @@ namespace shibboleth
         virtual saml::SAMLAssertion* getSSOAssertion(const saml::SAMLResponse& r);
         virtual saml::SAMLAuthenticationStatement* getSSOStatement(const saml::SAMLAssertion& a);
         virtual saml::SAMLResponse* accept(const XMLByte* buf);
-        virtual saml::SAMLResponse* prepare(const XMLCh* recipient,
-                                            const XMLCh* name,
-                                            const XMLCh* nameQualifier,
-                                            const XMLCh* subjectIP,
-                                            const XMLCh* authMethod,
-                                            time_t authInstant,
-                                            const saml::Iterator<saml::SAMLAuthorityBinding*>& bindings,
-                                            const saml::Key& responseKey, const saml::X509Certificate* responseCert=NULL,
-                                            const saml::Key* assertionKey=NULL, const saml::X509Certificate* assertionCert=NULL);
+        virtual saml::SAMLResponse* prepare(
+            const XMLCh* recipient,
+            const XMLCh* name,
+            const XMLCh* nameQualifier,
+            const XMLCh* subjectIP,
+            const XMLCh* authMethod,
+            time_t authInstant,
+            const saml::Iterator<saml::SAMLAuthorityBinding*>& bindings,
+            XSECCryptoKey* responseKey,
+            const saml::Iterator<XSECCryptoX509*>& responseCerts=saml::Iterator<XSECCryptoX509*>(),
+            XSECCryptoKey* assertionKey=NULL,
+            const saml::Iterator<XSECCryptoX509*>& assertionCerts=saml::Iterator<XSECCryptoX509*>()
+            );
         virtual bool checkReplayCache(const saml::SAMLAssertion& a);
 
     protected:
-        virtual void verifySignature(const saml::SAMLSignedObject& obj, const XMLCh* signerName, const saml::X509Certificate* knownKey);
+        virtual void verifySignature(const saml::SAMLSignedObject& obj, const XMLCh* signerName, XSECCryptoKey* knownKey);
 
-        saml::SAMLSignedObject::sigs_t m_algorithm;
+        signatureMethod m_algorithm;
         std::vector<const XMLCh*> m_policies;
         XMLCh* m_issuer;
         XMLCh* m_receiver;
@@ -210,18 +220,22 @@ namespace shibboleth
         ClubShibPOSTProfile(const saml::Iterator<const XMLCh*>& policies, const XMLCh* issuer);
         virtual ~ClubShibPOSTProfile();
 
-        virtual saml::SAMLResponse* prepare(const XMLCh* recipient,
-                                            const XMLCh* name,
-                                            const XMLCh* nameQualifier,
-                                            const XMLCh* subjectIP,
-                                            const XMLCh* authMethod,
-                                            time_t authInstant,
-                                            const saml::Iterator<saml::SAMLAuthorityBinding*>& bindings,
-                                            const saml::Key& responseKey, const saml::X509Certificate* responseCert=NULL,
-                                            const saml::Key* assertionKey=NULL, const saml::X509Certificate* assertionCert=NULL);
+        virtual saml::SAMLResponse* prepare(
+            const XMLCh* recipient,
+            const XMLCh* name,
+            const XMLCh* nameQualifier,
+            const XMLCh* subjectIP,
+            const XMLCh* authMethod,
+            time_t authInstant,
+            const saml::Iterator<saml::SAMLAuthorityBinding*>& bindings,
+            XSECCryptoKey* responseKey,
+            const saml::Iterator<XSECCryptoX509*>& responseCerts=saml::Iterator<XSECCryptoX509*>(),
+            XSECCryptoKey* assertionKey=NULL,
+            const saml::Iterator<XSECCryptoX509*>& assertionCerts=saml::Iterator<XSECCryptoX509*>()
+            );
 
     protected:
-        virtual void verifySignature(const saml::SAMLSignedObject& obj, const XMLCh* signerName, const saml::X509Certificate* knownKey);
+        virtual void verifySignature(const saml::SAMLSignedObject& obj, const XMLCh* signerName, XSECCryptoKey* knownKey);
     };
 
     class SHIB_EXPORTS ShibPOSTProfileFactory
@@ -234,7 +248,7 @@ namespace shibboleth
     class SHIB_EXPORTS ShibConfig
     {
     public:
-        ShibConfig() : mapperCert(NULL), mapperRefreshInterval(0) {}
+        ShibConfig() {}
         virtual ~ShibConfig();
 
         // global per-process setup and shutdown of Shibboleth runtime
@@ -248,10 +262,8 @@ namespace shibboleth
         virtual void releaseMapper(IOriginSiteMapper* mapper)=0;
 
     /* start of external configuration */
-        std::string aapURL;
-        std::string mapperURL;
-        saml::X509Certificate* mapperCert;
-        time_t mapperRefreshInterval;
+        std::string aapFile;
+        std::string mapperFile;
     /* end of external configuration */
     };
 
@@ -275,7 +287,10 @@ namespace shibboleth
             // Shibboleth vocabulary
             static const XMLCh AttributeValueType[];
 
+            static const XMLCh ContactEmail[];
+            static const XMLCh ContactName[];
             static const XMLCh Domain[];
+            static const XMLCh ErrorURL[];
             static const XMLCh HandleService[];
             static const XMLCh InvalidHandle[];
             static const XMLCh Name[];

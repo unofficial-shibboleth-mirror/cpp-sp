@@ -82,8 +82,17 @@ const XMLCh XML::Literals::AttributeValueType[] =
   chLatin_V, chLatin_a, chLatin_l, chLatin_u, chLatin_e, chLatin_T, chLatin_y, chLatin_p, chLatin_e, chNull
 };
 
+const XMLCh XML::Literals::ContactEmail[]=
+{ chLatin_C, chLatin_o, chLatin_n, chLatin_t, chLatin_a, chLatin_c, chLatin_t, chLatin_E, chLatin_m, chLatin_a, chLatin_i, chLatin_l, chNull };
+
+const XMLCh XML::Literals::ContactName[]=
+{ chLatin_C, chLatin_o, chLatin_n, chLatin_t, chLatin_a, chLatin_c, chLatin_t, chLatin_N, chLatin_a, chLatin_m, chLatin_e, chNull };
+
 const XMLCh XML::Literals::Domain[]=
 { chLatin_D, chLatin_o, chLatin_m, chLatin_a, chLatin_i, chLatin_n, chNull };
+
+const XMLCh XML::Literals::ErrorURL[]=
+{ chLatin_E, chLatin_r, chLatin_r, chLatin_o, chLatin_r, chLatin_U, chLatin_R, chLatin_L, chNull };
 
 const XMLCh XML::Literals::HandleService[]=
 { chLatin_H, chLatin_a, chLatin_n, chLatin_d, chLatin_l, chLatin_e,

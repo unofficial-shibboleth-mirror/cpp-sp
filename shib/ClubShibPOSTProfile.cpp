@@ -89,28 +89,32 @@ ClubShibPOSTProfile::~ClubShibPOSTProfile()
 {
 }
 
-SAMLResponse* ClubShibPOSTProfile::prepare(const XMLCh* recipient,
-                                           const XMLCh* name,
-                                           const XMLCh* nameQualifier,
-                                           const XMLCh* subjectIP,
-                                           const XMLCh* authMethod,
-                                           time_t authInstant,
-                                           const Iterator<SAMLAuthorityBinding*>& bindings,
-                                           const saml::Key& responseKey, const saml::X509Certificate* responseCert,
-                                           const saml::Key* assertionKey, const saml::X509Certificate* assertionCert)
+SAMLResponse* ClubShibPOSTProfile::prepare(
+    const XMLCh* recipient,
+    const XMLCh* name,
+    const XMLCh* nameQualifier,
+    const XMLCh* subjectIP,
+    const XMLCh* authMethod,
+    time_t authInstant,
+    const saml::Iterator<saml::SAMLAuthorityBinding*>& bindings,
+    XSECCryptoKey* responseKey,
+    const Iterator<XSECCryptoX509*>& responseCerts,
+    XSECCryptoKey* assertionKey,
+    const Iterator<XSECCryptoX509*>& assertionCerts
+    )
 {
-    if (responseKey.getType()!=Key::RSA_PRIV)
+    if (responseKey->getKeyType()!=XSECCryptoKey::KEY_RSA_PRIVATE || responseKey->getKeyType()!=XSECCryptoKey::KEY_RSA_PAIR)
         throw TrustException(SAMLException::RESPONDER, "ClubShibPOSTProfile::prepare() requires the response key be an RSA private key");
-    if (assertionKey && assertionKey->getType()!=Key::RSA_PRIV)
+    if (assertionKey && assertionKey->getKeyType()!=XSECCryptoKey::KEY_RSA_PRIVATE || assertionKey->getKeyType()!=XSECCryptoKey::KEY_RSA_PAIR)
         throw TrustException(SAMLException::RESPONDER, "ClubShibPOSTProfile::prepare() requires the assertion key be an RSA private key");
 
     return ShibPOSTProfile::prepare(recipient,name,nameQualifier,subjectIP,authMethod,authInstant,bindings,
-                                    responseKey,responseCert,assertionKey,assertionCert);
+                                    responseKey,responseCerts,assertionKey,assertionCerts);
 }
 
-void ClubShibPOSTProfile::verifySignature(const SAMLSignedObject& obj, const XMLCh* signerName, const X509Certificate* knownKey)
+void ClubShibPOSTProfile::verifySignature(const SAMLSignedObject& obj, const XMLCh* signerName, XSECCryptoKey* knownKey)
 {
     ShibPOSTProfile::verifySignature(obj,signerName,knownKey);
-    if (obj.getSignatureAlgorithm()!=SAMLSignedObject::RSA_SHA1)
-        throw TrustException("ClubShibPOSTProfile::verifySignature() requires the RSA-SHA1 signature algorithm");
+    if (obj.getSignatureAlgorithm()!=SIGNATURE_RSA)
+        throw TrustException("ClubShibPOSTProfile::verifySignature() requires the RSA signature algorithm");
 }

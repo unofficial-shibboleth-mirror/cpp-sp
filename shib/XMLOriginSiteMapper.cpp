@@ -56,10 +56,12 @@
 */
 
 #include "internal.h"
-#include <log4cpp/Category.hh>
 
-#include <xmlsec/xmltree.h>
-#include <xmlsec/xmldsig.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
+#include <log4cpp/Category.hh>
+#include <xsec/enc/openssl/OpenSSLCryptoX509.hpp>
 
 using namespace shibboleth;
 using namespace saml;
@@ -69,28 +71,30 @@ using namespace std;
 #include <xercesc/framework/URLInputSource.hpp>
 
 
-XMLOriginSiteMapper::XMLOriginSiteMapper(const char* registryURI, const char* calist, const X509Certificate* verifyKey)
+XMLOriginSiteMapper::XMLOriginSiteMapper(const char* pathname) : m_filestamp(0)
 {
     NDC ndc("XMLOriginSiteMapper");
     Category& log=Category::getInstance(SHIB_LOGCAT".XMLOriginSiteMapper");
 
-    // Register extension schema.
-    saml::XML::registerSchema(XML::SHIB_NS,XML::SHIB_SCHEMA_ID);
-
-    if (calist)
-        m_calist=calist;
+#ifdef WIN32
+    struct _stat stat_buf;
+    if (_stat(ShibConfig::getConfig().mapperFile.c_str(), &stat_buf) == 0)
+#else
+    struct stat stat_buf;
+    if (stat(ShibConfig::getConfig().mapperFile.c_str(), &stat_buf) == 0)
+#endif
+        m_filestamp=stat_buf.st_mtime;
 
     saml::XML::Parser p;
     DOMDocument* doc=NULL;
 	try
     {
         static XMLCh base[]={chLatin_f, chLatin_i, chLatin_l, chLatin_e, chColon, chForwardSlash, chForwardSlash, chForwardSlash, chNull};
-        URLInputSource src(base,registryURI);
+        URLInputSource src(base,pathname);
         Wrapper4InputSource dsrc(&src,false);
 		doc=p.parse(dsrc);
 
-        log.infoStream() << "Loaded and parsed site file (" << registryURI << ")"
-            << CategoryStream::ENDLINE;
+        log.infoStream() << "Loaded and parsed site file (" << pathname << ")" << CategoryStream::ENDLINE;
 
 		DOMElement* e = doc->getDocumentElement();
         if (XMLString::compareString(XML::SHIB_NS,e->getNamespaceURI()) ||
@@ -104,12 +108,17 @@ XMLOriginSiteMapper::XMLOriginSiteMapper(const char* registryURI, const char* ca
         DOMNodeList* nlist = e->getElementsByTagNameNS(XML::SHIB_NS,XML::Literals::OriginSite);
 		for (int i=0; nlist && i<nlist->getLength(); i++)
         {
-            auto_ptr<XMLCh> os_name(XMLString::replicate(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,XML::Literals::Name)));
+            DOMElement* os_e=static_cast<DOMElement*>(nlist->item(i));
+            auto_ptr<XMLCh> os_name(XMLString::replicate(os_e->getAttributeNS(NULL,XML::Literals::Name)));
             XMLString::trim(os_name.get());
 			if (!os_name.get() || !*os_name)
 				continue;
 
-			OriginSite* os_obj = new OriginSite();
+			OriginSite* os_obj = new OriginSite(
+                os_e->getAttributeNS(NULL,XML::Literals::ContactName),
+                os_e->getAttributeNS(NULL,XML::Literals::ContactEmail),
+                os_e->getAttributeNS(NULL,XML::Literals::ErrorURL)
+                );
 			m_sites[os_name.get()]=os_obj;
 
 			DOMNode* os_child = nlist->item(i)->getFirstChild();
@@ -153,10 +162,9 @@ XMLOriginSiteMapper::XMLOriginSiteMapper(const char* registryURI, const char* ca
                                 if (x509 && !XMLString::compareString(saml::XML::XMLSIG_NS,x509->getNamespaceURI()) &&
                                     !XMLString::compareString(saml::XML::Literals::X509Certificate,x509->getNamespaceURI()))
                                 {
-                                    const XMLCh* blob=x509->getFirstChild()->getNodeValue();
-                                    X509Certificate* cert=new X509Certificate(X509Certificate::DER_B64,
-                                                                              reinterpret_cast<const XMLByte*>(blob),
-                                                                              XMLString::stringLen(reinterpret_cast<const char*>(blob)));
+                                    auto_ptr<char> blob(XMLString::transcode(x509->getFirstChild()->getNodeValue()));
+                                    XSECCryptoX509* cert=new OpenSSLCryptoX509();
+                                    cert->loadX509Base64Bin(blob.get(),strlen(blob.get()));
                                     m_hsCerts[hs_name.get()]=cert;
                                 }
                             }
@@ -180,20 +188,10 @@ XMLOriginSiteMapper::XMLOriginSiteMapper(const char* registryURI, const char* ca
 				os_child = os_child->getNextSibling();
 			}
 		}
-
-		if (verifyKey)
-        {
-			log.info("initialized with a key: attempting to verify document signature");
-			validateSignature(verifyKey, e);
-			log.info("verified document signature");
-		}
-        else
-			log.info("initialized without key: skipping signature verification");
     }
     catch (SAMLException& e)
     {
-		log.errorStream() << "XML error while parsing site configuration: " << e.what()
-            << CategoryStream::ENDLINE;
+		log.errorStream() << "XML error while parsing site configuration: " << e.what() << CategoryStream::ENDLINE;
         if (doc)
             doc->release();
 		throw;
@@ -211,11 +209,35 @@ XMLOriginSiteMapper::~XMLOriginSiteMapper()
 {
     for (map<xstring,OriginSite*>::iterator i=m_sites.begin(); i!=m_sites.end(); i++)
         delete i->second;
-    for (map<xstring,X509Certificate*>::iterator j=m_hsCerts.begin(); j!=m_hsCerts.end(); j++)
+    for (map<xstring,XSECCryptoX509*>::iterator j=m_hsCerts.begin(); j!=m_hsCerts.end(); j++)
         delete j->second;
 }
 
-Iterator<xstring> XMLOriginSiteMapper::getHandleServiceNames(const XMLCh* originSite)
+const char* XMLOriginSiteMapper::getContactName(const XMLCh* originSite) const
+{
+    map<xstring,OriginSite*>::const_iterator i=m_sites.find(originSite);
+    if (i==m_sites.end())
+        return NULL;
+    return i->second->m_contactName.get();
+}
+
+const char* XMLOriginSiteMapper::getContactEmail(const XMLCh* originSite) const
+{
+    map<xstring,OriginSite*>::const_iterator i=m_sites.find(originSite);
+    if (i==m_sites.end())
+        return NULL;
+    return i->second->m_contactEmail.get();
+}
+
+const char* XMLOriginSiteMapper::getErrorURL(const XMLCh* originSite) const
+{
+    map<xstring,OriginSite*>::const_iterator i=m_sites.find(originSite);
+    if (i==m_sites.end())
+        return NULL;
+    return i->second->m_errorURL.get();
+}
+
+Iterator<xstring> XMLOriginSiteMapper::getHandleServiceNames(const XMLCh* originSite) const
 {
     map<xstring,OriginSite*>::const_iterator i=m_sites.find(originSite);
     if (i==m_sites.end())
@@ -223,13 +245,13 @@ Iterator<xstring> XMLOriginSiteMapper::getHandleServiceNames(const XMLCh* origin
     return Iterator<xstring>(i->second->m_handleServices);
 }
 
-const X509Certificate* XMLOriginSiteMapper::getHandleServiceCert(const XMLCh* handleService)
+XSECCryptoX509* XMLOriginSiteMapper::getHandleServiceCert(const XMLCh* handleService) const
 {
-    map<xstring,X509Certificate*>::const_iterator i=m_hsCerts.find(handleService);
+    map<xstring,XSECCryptoX509*>::const_iterator i=m_hsCerts.find(handleService);
     return (i!=m_hsCerts.end()) ? i->second : NULL;
 }
 
-Iterator<pair<xstring,bool> > XMLOriginSiteMapper::getSecurityDomains(const XMLCh* originSite)
+Iterator<pair<xstring,bool> > XMLOriginSiteMapper::getSecurityDomains(const XMLCh* originSite) const
 {
     map<xstring,OriginSite*>::const_iterator i=m_sites.find(originSite);
     if (i==m_sites.end())
@@ -237,11 +259,7 @@ Iterator<pair<xstring,bool> > XMLOriginSiteMapper::getSecurityDomains(const XMLC
     return Iterator<pair<xstring,bool> >(i->second->m_domains);
 }
 
-const char* XMLOriginSiteMapper::getTrustedRoots()
-{
-    return m_calist.c_str();
-}
-
+/*
 void XMLOriginSiteMapper::validateSignature(const X509Certificate* verifyKey, DOMElement* e)
 {
     if (verifyKey->getFormat()!=X509Certificate::PEM)
@@ -411,3 +429,4 @@ void XMLOriginSiteMapper::validateSignature(const X509Certificate* verifyKey, DO
     if (!msg.empty())
         throw TrustException(msg);
 }
+*/
