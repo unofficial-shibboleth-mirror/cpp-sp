@@ -192,7 +192,7 @@ int i = 0;
 #error must use patched version 2.6.1 provided by Shibboleth project (http://wayf.internet2.edu/shibboleth/)
 #endif])],
         [AC_MSG_RESULT(OK)],
-        [AC_MSG_FAILURE([Shibboleth requires patched Xerces version 2.6.1 (http://wayf.internet2.edu/shibboleth/)])])
+        [AC_MSG_ERROR([Shibboleth requires patched Xerces version 2.6.1 (http://wayf.internet2.edu/shibboleth/)])])
 AC_TRY_LINK(
         [#include <xercesc/util/PlatformUtils.hpp>],
         [xercesc::XMLPlatformUtils::Initialize()],
@@ -241,7 +241,7 @@ WANT_SUBDIRS="doc shib schemas configs shib-target shar siterefresh test xmlprov
 AC_CONFIG_FILES([Makefile doc/Makefile shib/Makefile schemas/Makefile \
 		 configs/Makefile oncrpc/Makefile oncrpc/rpc/Makefile \
 		 shib-target/Makefile shar/Makefile siterefresh/Makefile \
-		 test/Makefile xmlproviders/Makefile])
+		 test/Makefile xmlproviders/Makefile selinux/Makefile])
 
 
 # now deal with the rpc library, to see if we need to build our own
