@@ -296,10 +296,10 @@ int main(int argc, char *argv[])
     if (!conf.init(schemadir,config))
         return -2;
 
-    IListener* listener=conf.getINI()->getListener();
+    const IListener* listener=conf.getINI()->getListener();
     
     // Create the SHAR listener socket
-    if (!listener->create(&sock))
+    if (!listener->create(sock))
         return -3;
 
     // Bind to the proper port
@@ -310,7 +310,7 @@ int main(int argc, char *argv[])
     SHARUtils::init();
 
     // Run the listener
-    shar_svc_run(sock, ArrayIterator<ShibRPCProtocols>);
+    shar_svc_run(sock, ArrayIterator<ShibRPCProtocols>(protos,1));
 
     /* Finalize the SHAR, close all clients */
     SHARUtils::fini();
