@@ -9,6 +9,7 @@ pkgsysconf_DATA = \
                 shire.logger \
                 shar.logger \
                 apache.config \
+                ca-bundle.crt \
                 accessError.html \
                 rmError.html \
                 wayfError.html
