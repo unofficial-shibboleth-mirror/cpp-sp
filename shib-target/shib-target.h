@@ -9,6 +9,11 @@
 #ifndef SHIB_TARGET_H
 #define SHIB_TARGET_H
 
+#ifdef __cplusplus
+# include <saml/saml.h>
+# include <shib/shib.h>
+#endif
+
 #include <shib-target/shibrpc.h>
 
 #ifdef __cplusplus
@@ -93,10 +98,7 @@ void shib_sock_close (ShibSocket s, ShibSockName name);
 #define SHIBTARGET_TAG_CALIST	"calist"
 
 #define SHIBTARGET_TAG_AAP      "aap-uri"
-
 #define SHIBTARGET_TAG_SITES	"sitesFile"
-#define SHIBTARGET_TAG_SITESCERT "sitesCertFile"
-#define SHIBTARGET_TAG_SITESREFRESH "sitesRefresh"
 
 #define SHIBTARGET_TAG_CACHETYPE	"cacheType"
 #define SHIBTARGET_TAG_CACHECLEAN	"cacheClean"
@@ -112,10 +114,6 @@ ShibSockName shib_target_sockname(void);
 #ifdef __cplusplus
 }
 
-
-// SAML Runtime
-#include <saml/saml.h>
-#include <shib/shib.h>
 
 namespace shibtarget {
   class ResourcePriv;
