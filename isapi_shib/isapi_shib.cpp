@@ -377,7 +377,7 @@ DWORD WriteClientError(PHTTP_FILTER_CONTEXT pfc, const IApplication* app, const 
         if (p.first) {
             ifstream infile(p.second);
             if (!infile.fail()) {
-                const char* res = mlp.run(infile);
+                const char* res = mlp.run(infile,props);
                 if (res) {
                     static const char* ctype="Content-Type: text/html\r\n";
                     pfc->AddResponseHeaders(pfc,const_cast<char*>(ctype),0);
@@ -476,7 +476,7 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
 
         // Make sure this session is still valid.
         RPCError* status = NULL;
-        ShibMLP markupProcessor(application);
+        ShibMLP markupProcessor;
         markupProcessor.insert("requestURL", targeturl);
     
         dynabuf abuf(16);
@@ -750,7 +750,7 @@ DWORD WriteClientError(LPEXTENSION_CONTROL_BLOCK lpECB, const IApplication* app,
         if (p.first) {
             ifstream infile(p.second);
             if (!infile.fail()) {
-                const char* res = mlp.run(infile);
+                const char* res = mlp.run(infile,props);
                 if (res) {
                     static const char* ctype="Content-Type: text/html\r\n";
                     lpECB->ServerSupportFunction(lpECB->ConnID,HSE_REQ_SEND_RESPONSE_HEADER,"200 OK",0,(LPDWORD)ctype);
@@ -880,7 +880,7 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
         // Process the post.
         string cookie;
         RPCError* status=NULL;
-        ShibMLP markupProcessor(application);
+        ShibMLP markupProcessor;
         markupProcessor.insert("requestURL", targeturl.c_str());
         try {
             status = shire.sessionCreate(elements.first,buf,cookie);
@@ -935,7 +935,7 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
     }
     catch (ShibTargetException &e) {
         if (application) {
-            ShibMLP markupProcessor(application);
+            ShibMLP markupProcessor;
             markupProcessor.insert("requestURL", targeturl.c_str());
             markupProcessor.insert("errorType", "Session Creation Service Error");
             markupProcessor.insert("errorText", e.what());
@@ -946,7 +946,7 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
 #ifndef _DEBUG
     catch (...) {
         if (application) {
-            ShibMLP markupProcessor(application);
+            ShibMLP markupProcessor;
             markupProcessor.insert("requestURL", targeturl.c_str());
             markupProcessor.insert("errorType", "Session Creation Service Error");
             markupProcessor.insert("errorText", "Unexpected Exception");

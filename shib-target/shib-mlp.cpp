@@ -91,26 +91,13 @@ static void trimspace (string& s)
   s = s.substr(start, end - start + 1);
 }
 
-ShibMLP::ShibMLP (const IApplication* app)
+ShibMLP::ShibMLP()
 {
   m_priv = new ShibMLPPriv ();
 
   // Create a timestamp
   time_t now = time(NULL);
   insert("now", ctime(&now));
-  
-  // Insert any available information.
-  if (app) {
-      const IPropertySet* props=app->getPropertySet("Errors");
-      if (props) {
-        pair<bool,const char*> p=props->getString("supportContact");
-        if (p.first)
-            insert("supportContact",p.second);
-        p=props->getString("logoLocation");
-        if (p.first)
-            insert("logoLocation",p.second);
-      }
-  }
 }
 
 ShibMLP::~ShibMLP ()
@@ -118,7 +105,7 @@ ShibMLP::~ShibMLP ()
   delete m_priv;
 }
 
-const char* ShibMLP::run (const string& is)
+const char* ShibMLP::run(const string& is, const IPropertySet* props)
 {
   const char* line = is.c_str();
   const char* lastpos = line;
@@ -156,15 +143,22 @@ const char* ShibMLP::run (const string& is)
       m_priv->log->debug("found key: \"%s\"", key.c_str());
 
       map<string,string>::const_iterator i=m_map.find(key);
-      if (i == m_map.end()) {
-        static string s1 = "<!-- Unknown SHIBMLP key: ";
-        static string s2 = "/>";
-        m_generated += s1 + key + s2;
-        m_priv->log->debug("key unknown");
-      }
-      else {
+      if (i != m_map.end()) {
         m_generated += i->second;
         m_priv->log->debug("key maps to \"%s\"", i->second.c_str());
+      }
+      else {
+        pair<bool,const char*> p=props ? props->getString(key.c_str()) : pair<bool,const char*>(false,NULL);
+        if (p.first) {
+            m_generated += p.second;
+            m_priv->log->debug("property maps to \"%s\"", p.second);
+        }
+        else {
+            static string s1 = "<!-- Unknown SHIBMLP key: ";
+            static string s2 = "/>";
+            m_generated += s1 + key + s2;
+            m_priv->log->debug("key unknown");
+        }
       }
 
       lastpos = thispos + 2;	// strlen("/>")
@@ -175,7 +169,7 @@ const char* ShibMLP::run (const string& is)
   return m_generated.c_str();
 }
 
-const char* ShibMLP::run (istream& is)
+const char* ShibMLP::run(istream& is, const IPropertySet* props)
 {
   static string eol = "\r\n";
   string str, line;
@@ -185,7 +179,7 @@ const char* ShibMLP::run (istream& is)
   while (getline(is, line))
     str += line + eol;
 
-  return run(str);
+  return run(str,props);
 }
 
 void ShibMLP::insert (RPCError& e)

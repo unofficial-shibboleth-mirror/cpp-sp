@@ -310,7 +310,7 @@ namespace shibtarget {
     class ShibMLPPriv;
     class SHIBTARGET_EXPORTS ShibMLP {
     public:
-        ShibMLP(const IApplication* app=NULL);
+        ShibMLP();
         ~ShibMLP();
 
         void insert (const std::string& key, const std::string& value);
@@ -330,11 +330,11 @@ namespace shibtarget {
 
         void clear () { m_map.clear(); }
 
-        const char* run (std::istream& s);
-        const char* run (const std::string& input);
-        const char* run (const char* input) {
+        const char* run (std::istream& s, const IPropertySet* props=NULL);
+        const char* run (const std::string& input, const IPropertySet* props=NULL);
+        const char* run (const char* input, const IPropertySet* props=NULL) {
             std::string i = input;
-            return run(i);
+            return run(i,props);
         }
 
     private:

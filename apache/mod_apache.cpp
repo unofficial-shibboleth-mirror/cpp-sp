@@ -115,7 +115,7 @@ static int shib_error_page(request_rec* r, const IApplication* app, const char* 
         if (p.first) {
             ifstream infile(p.second);
             if (!infile.fail()) {
-                const char* res = mlp.run(infile);
+                const char* res = mlp.run(infile,props);
                 if (res) {
                     r->content_type = ap_psprintf(r->pool, "text/html");
                     ap_send_http_header(r);
@@ -234,7 +234,7 @@ extern "C" int shib_check_user(request_rec* r)
 
     // Make sure this session is still valid.
     RPCError* status = NULL;
-    ShibMLP markupProcessor(application);
+    ShibMLP markupProcessor;
     markupProcessor.insert("requestURL", targeturl);
 
     try {
@@ -513,7 +513,7 @@ int shib_handler(request_rec* r, const IApplication* application, const IPropert
         return SERVER_ERROR;
     }
 
-    ShibMLP markupProcessor(application);
+    ShibMLP markupProcessor;
     markupProcessor.insert("requestURL", targeturl);
 
     // Process SHIRE request
@@ -917,7 +917,7 @@ extern "C" int shib_auth_checker(request_rec* r)
         return HTTP_FORBIDDEN;
     }
 
-    ShibMLP markupProcessor(application);
+    ShibMLP markupProcessor;
     markupProcessor.insert("requestURL", ap_construct_url(r->pool,r->unparsed_uri,r));
     return shib_error_page(r, application, "access", markupProcessor);
 }
