@@ -94,6 +94,9 @@ const XMLCh XML::Literals::Name[]=
 const XMLCh XML::Literals::OriginSite[]=
 { chLatin_O, chLatin_r, chLatin_i, chLatin_g, chLatin_i, chLatin_n, chLatin_S, chLatin_i, chLatin_t, chLatin_e, chNull };
 
+const XMLCh XML::Literals::regexp[]=
+{ chLatin_r, chLatin_e, chLatin_g, chLatin_e, chLatin_x, chLatin_p, chNull };
+
 const XMLCh XML::Literals::Sites[]=
 { chLatin_S, chLatin_i, chLatin_t, chLatin_e, chLatin_s, chNull };
 

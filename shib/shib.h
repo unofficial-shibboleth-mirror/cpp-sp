@@ -89,11 +89,16 @@ namespace shibboleth
     DECLARE_SHIB_EXCEPTION(UnsupportedProtocolException,SAMLException);
     DECLARE_SHIB_EXCEPTION(OriginSiteMapperException,SAMLException);
 
+#ifdef SHIB_INSTANTIATE
+    template class SHIB_EXPORTS saml::Iterator<std::pair<saml::xstring,bool> >;
+    template class SHIB_EXPORTS saml::ArrayIterator<std::pair<saml::xstring,bool> >;
+#endif
+
     struct SHIB_EXPORTS IOriginSiteMapper
     {
         virtual saml::Iterator<saml::xstring> getHandleServiceNames(const XMLCh* originSite)=0;
         virtual const saml::Key* getHandleServiceKey(const XMLCh* handleService)=0;
-        virtual saml::Iterator<saml::xstring> getSecurityDomains(const XMLCh* originSite)=0;
+        virtual saml::Iterator<std::pair<saml::xstring,bool> > getSecurityDomains(const XMLCh* originSite)=0;
         virtual const char* getTrustedRoots()=0;
     };
 
@@ -105,7 +110,7 @@ namespace shibboleth
 
         virtual saml::Iterator<saml::xstring> getHandleServiceNames(const XMLCh* originSite);
         virtual const saml::Key* getHandleServiceKey(const XMLCh* handleService);
-        virtual saml::Iterator<saml::xstring> getSecurityDomains(const XMLCh* originSite);
+        virtual saml::Iterator<std::pair<saml::xstring,bool> > getSecurityDomains(const XMLCh* originSite);
         virtual const char* getTrustedRoots();
 
     private:
@@ -114,7 +119,7 @@ namespace shibboleth
         struct OriginSite
         {
             std::vector<saml::xstring> m_handleServices;
-            std::vector<saml::xstring> m_domains;
+            std::vector<std::pair<saml::xstring,bool> > m_domains;
         };
 
         std::string m_calist;
@@ -221,6 +226,7 @@ namespace shibboleth
             static const XMLCh InvalidHandle[];
             static const XMLCh Name[];
             static const XMLCh OriginSite[];
+            static const XMLCh regexp[];
             static const XMLCh Sites[];
 
             // XML vocabulary

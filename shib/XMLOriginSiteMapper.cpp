@@ -55,6 +55,8 @@
    $History:$
 */
 
+#define SHIB_INSTANTIATE
+
 #include "internal.h"
 #include <log4cpp/Category.hh>
 
@@ -149,7 +151,13 @@ XMLOriginSiteMapper::XMLOriginSiteMapper(const char* registryURI, const char* ca
                     auto_ptr<XMLCh> dom(XMLString::replicate(os_child->getFirstChild()->getNodeValue()));
                     XMLString::trim(dom.get());
 					if (dom.get() && *dom)
-						os_obj->m_domains.push_back(dom.get());
+                    {
+                        static const XMLCh one[]={ chDigit_1, chNull };
+                        static const XMLCh tru[]={ chLatin_t, chLatin_r, chLatin_u, chLatin_e, chNull };
+                        const XMLCh* regexp=static_cast<DOMElement*>(os_child)->getAttributeNS(NULL,XML::Literals::regexp);
+                        bool flag=(!XMLString::compareString(regexp,one) || !XMLString::compareString(regexp,tru));
+						os_obj->m_domains.push_back(pair<xstring,bool>(dom.get(),flag));
+                    }
 				}
 				os_child = os_child->getNextSibling();
 			}
@@ -203,12 +211,12 @@ const Key* XMLOriginSiteMapper::getHandleServiceKey(const XMLCh* handleService)
     return (i!=m_hsKeys.end()) ? i->second : NULL;
 }
 
-Iterator<xstring> XMLOriginSiteMapper::getSecurityDomains(const XMLCh* originSite)
+Iterator<pair<xstring,bool> > XMLOriginSiteMapper::getSecurityDomains(const XMLCh* originSite)
 {
     map<xstring,OriginSite*>::const_iterator i=m_sites.find(originSite);
     if (i==m_sites.end())
-        return Iterator<xstring>();
-    return Iterator<xstring>(i->second->m_domains);
+        return Iterator<pair<xstring,bool> >();
+    return Iterator<pair<xstring,bool> >(i->second->m_domains);
 }
 
 const char* XMLOriginSiteMapper::getTrustedRoots()
