@@ -1,7 +1,7 @@
 AC_PREREQ([2.50])
-AC_INIT([shibboleth], [1.1], [mace-shib-users@internet2.edu], [shibboleth])
+AC_INIT([shibboleth], [1.2], [shibboleth-users@internet2.edu], [shibboleth])
 AM_CONFIG_HEADER(config.h)
-AM_INIT_AUTOMAKE(shibboleth, 1.1)
+AM_INIT_AUTOMAKE(shibboleth, 1.2)
 
 sinclude(acx_pthread.m4)
 sinclude(acx_rpctest.m4)
@@ -72,14 +72,7 @@ AC_ARG_WITH(dmalloc,
 		         AC_MSG_ERROR([unable to find dmallocxx library]))
 	    ])
 
-AC_ARG_WITH(xerces, 
-            AC_HELP_STRING([--with-xerces=PATH], [where xerces-c is installed]),
-            [if test x_$with_xerces != x_/usr; then
-                LDFLAGS="-L${with_xerces}/lib $LDFLAGS"
-                CPPFLAGS="-I${with_xerces}/include $CPPFLAGS"
-            fi])
-
-
+# OpenSSL settings
 AC_PATH_PROG(PKG_CONFIG, pkg-config)
 if test "x$PKG_CONFIG" = x || test "x$PKG_CONFIG" = "xno" ; then
     AC_ARG_WITH(openssl, 
@@ -100,39 +93,6 @@ AC_MSG_CHECKING(for OpenSSL cflags)
 AC_MSG_RESULT($SSLFLAGS)
 CPPFLAGS="$SSLFLAGS $CPPFLAGS"
 
-AC_ARG_WITH(log4cpp, 
-            AC_HELP_STRING([--with-log4cpp=PATH], [where log4cpp is installed]),
-            [if test x_$with_log4cpp != x_/usr; then
-                LDFLAGS="-L${with_log4cpp}/lib $LDFLAGS"
-                CPPFLAGS="-I${with_log4cpp}/include $CPPFLAGS"
-            fi])
-
-AC_ARG_WITH(xmlsec,
-            AC_HELP_STRING([--with-xmlsec=PATH], [where xmlsec is installed]),
-            [if test x_$with_xmlsec != x_/usr; then
-                LDFLAGS="-L${with_xmlsec}/lib $LDFLAGS"
-                CPPFLAGS="-I${with_xmlsec}/include $CPPFLAGS"
-            fi])
-
-AC_ARG_WITH(saml,
-            AC_HELP_STRING([--with-saml=PATH], [where saml is installed]),
-            [if test x_$with_saml != x_/usr; then
-                LDFLAGS="-L${with_saml}/lib $LDFLAGS"
-                CPPFLAGS="-I${with_saml}/include $CPPFLAGS"
-            fi])
-
-AC_CHECK_HEADER([xercesc/dom/DOM.hpp],,
-                AC_MSG_ERROR([unable to find xerces header files]))
-saved_LIBS="$LIBS"
-LIBS="-lxerces-c $LIBS"
-AC_TRY_LINK(
-	[#include <xercesc/util/PlatformUtils.hpp>],
-        [xercesc::XMLPlatformUtils::Initialize()],
-	[AC_DEFINE(HAVE_LIBXERCESC,1,[Define if Xerces-C library was found])],
-	[AC_MSG_ERROR([unable to link with Xerces])
-		LIBS="$saved_LIBS"
-	])
-
 AC_CHECK_HEADER([openssl/ssl.h],,
                 AC_MSG_ERROR([unable to find openssl header files]))
 AC_MSG_CHECKING(for ERR_load_CRYPTO_string)
@@ -144,55 +104,80 @@ AC_TRY_LINK_FUNC([SSL_library_init],,
              AC_MSG_ERROR([unable to link with openssl libraries]))
 AC_MSG_RESULT(yes)
 
-#AC_CHECK_LIB([crypto], [ERR_load_CRYPTO_strings],,
-#             AC_MSG_ERROR([unable to link with openssl libraries]))
-#AC_CHECK_LIB([ssl], [SSL_library_init],, 
-#             AC_MSG_ERROR([unable to link with openssl libraries]))
-
-AC_CHECK_HEADER([xsec/utils/XSECPlatformUtils.hpp],,
-                AC_MSG_ERROR([unable to find xsec header files]))
-saved_LIBS="$LIBS"
-LIBS="-lxml-security-c $LIBS"
-AC_TRY_LINK(
-        [#include <xsec/utils/XSECPlatformUtils.hpp>],
-        [XSECPlatformUtils::Initialise()],
-        [AC_DEFINE(HAVE_LIBXSEC,1,[Define if XML-Sec library was found])],
-        [AC_MSG_ERROR([unable to link with XML-Sec])
-                LIBS="$saved_LIBS"
-        ])
-
-AC_CHECK_HEADER([log4cpp/Category.hh],,
-                AC_MSG_ERROR([unable to find log4cpp header files]))
-
-AC_CHECK_HEADER([saml/saml.h],,
-                AC_MSG_ERROR([unable to find saml header files]))
-
-saved_LIBS="$LIBS"
-LIBS="-llog4cpp $LIBS"
+# log4cpp settings
+LOG4CPP_CONFIG="log4cpp-config"
+AC_ARG_WITH(log4cpp,
+            AC_HELP_STRING([--with-log4cpp=PATH], [where log4cpp is installed]),
+            [LOG4CPP_CONFIG="${with_log4cpp}/bin/log4cpp-config"])
+if test -f ${LOG4CPP_CONFIG}; then
+    LDFLAGS="`${LOG4CPP_CONFIG} --libs` $LDFLAGS"
+    CPPFLAGS="`${LOG4CPP_CONFIG} --cflags` $CPPFLAGS"
+else
+    AC_MSG_WARN([log4cpp-config not found, guessing at log4cpp build settings])
+    LIBS="-llog4cpp $LIBS"
+fi
+AC_CHECK_HEADER([log4cpp/Category.hh],,AC_MSG_ERROR([unable to find log4cpp header files]))
 AC_TRY_LINK(
 	[#include <log4cpp/Category.hh>],
 	[log4cpp::Category::getInstance("foo")],
 	[AC_DEFINE(HAVE_LIBLOG4CPP,1,[Define if log4cpp library was found])],
-	[AC_MSG_ERROR([unable to link with log4cpp])
-		LIBS="$saved_LIBS"
-	])
+	[AC_MSG_ERROR([unable to link with log4cpp])])
 
-saved_LIBS="$LIBS"
+# Xerces settings
+AC_ARG_WITH(xerces, 
+            AC_HELP_STRING([--with-xerces=PATH], [where xerces-c is installed]),
+            [if test x_$with_xerces != x_/usr; then
+                LDFLAGS="-L${with_xerces}/lib $LDFLAGS"
+                CPPFLAGS="-I${with_xerces}/include $CPPFLAGS"
+            fi])
+LIBS="-lxerces-c $LIBS"
+AC_CHECK_HEADER([xercesc/dom/DOM.hpp],,
+                AC_MSG_ERROR([unable to find xerces header files]))
+AC_TRY_LINK(
+	[#include <xercesc/util/PlatformUtils.hpp>],
+        [xercesc::XMLPlatformUtils::Initialize()],
+	[AC_DEFINE(HAVE_LIBXERCESC,1,[Define if Xerces-C library was found])],
+	[AC_MSG_ERROR([unable to link with Xerces])])
+
+# XML-Security settings
+AC_ARG_WITH(xmlsec,
+            AC_HELP_STRING([--with-xmlsec=PATH], [where xmlsec is installed]),
+            [if test x_$with_xmlsec != x_/usr; then
+                LDFLAGS="-L${with_xmlsec}/lib $LDFLAGS"
+                CPPFLAGS="-I${with_xmlsec}/include $CPPFLAGS"
+            fi])
+LIBS="-lxml-security-c $LIBS"
+AC_CHECK_HEADER([xsec/utils/XSECPlatformUtils.hpp],,AC_MSG_ERROR([unable to find xsec header files]))
+AC_TRY_LINK(
+        [#include <xsec/utils/XSECPlatformUtils.hpp>],
+        [XSECPlatformUtils::Initialise()],
+        [AC_DEFINE(HAVE_LIBXSEC,1,[Define if XML-Sec library was found])],
+        [AC_MSG_ERROR([unable to link with XML-Sec])])
+
+# OpenSAML settings
+AC_ARG_WITH(saml,
+            AC_HELP_STRING([--with-saml=PATH], [where saml is installed]),
+            [if test x_$with_saml != x_/usr; then
+                LDFLAGS="-L${with_saml}/lib $LDFLAGS"
+                CPPFLAGS="-I${with_saml}/include $CPPFLAGS"
+            fi])
+AC_CHECK_HEADER([saml/saml.h],,
+                AC_MSG_ERROR([unable to find saml header files]))
 LIBS="-lsaml $LIBS"
 AC_TRY_LINK(
         [#include <saml/saml.h>],
         [saml::SAMLConfig::getConfig()],
         [AC_DEFINE(HAVE_SAML,1,[Define if saml library was found])],
-        [AC_MSG_ERROR([unable to link with saml])
-                LIBS="$saved_LIBS"
-        ])
+        [AC_MSG_ERROR([unable to link with saml])])
+
 
 # output the underlying makefiles
-WANT_SUBDIRS="doc shib schemas configs shib-target shar siterefresh test"
+WANT_SUBDIRS="doc shib schemas configs shib-target shar siterefresh test xmlproviders"
 AC_CONFIG_FILES([Makefile doc/Makefile shib/Makefile schemas/Makefile \
 		 configs/Makefile oncrpc/Makefile oncrpc/rpc/Makefile \
 		 shib-target/Makefile shar/Makefile siterefresh/Makefile \
-		 test/Makefile])
+		 test/Makefile xmlproviders/Makefile])
+
 
 # now deal with the rpc library, to see if we need to build our own
 if test $rpctest = "no"; then
@@ -201,10 +186,6 @@ if test $rpctest = "no"; then
 fi
 AM_CONDITIONAL(USE_OUR_ONCRPC,test "$rpctest" = "no")
 
-# Much of this is taken from mod_dav.
-# The basic idea is to use configure options to control whether/which types
-# of web server modules get built. We assume there may eventually be multiple
-# types (Apache 1/2, iPlanet, others).
 
 # Apache 1.3 (mod_shire/mod_shibrm)
 #   --with-apache-13 (static build, no idea how to do this yet, so not supported)

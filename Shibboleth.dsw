@@ -3,6 +3,18 @@ Microsoft Developer Studio Workspace File, Format Version 6.00
 
 ###############################################################################
 
+Project: "apache2"=".\APACHE-2.0\apache2.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
 Project: "isapi_shib"=.\isapi_shib\isapi_shib.dsp - Package Owner=<4>
 
 Package=<5>
@@ -199,6 +211,21 @@ Package=<4>
     End Project Dependency
     Begin Project Dependency
     Project_Dep_Name oncrpc
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "xmlproviders"=.\xmlproviders\xmlproviders.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name shib
     End Project Dependency
 }}}
 
