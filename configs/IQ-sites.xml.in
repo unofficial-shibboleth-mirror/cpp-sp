@@ -1,7 +1,7 @@
 <EntitiesDescriptor
     xmlns="urn:oasis:names:tc:SAML:2.0:metadata"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="urn:oasis:names:tc:SAML:2.0:metadata @-PKGXMLDIR-@/sstc-saml-schema-metadata-2.0.xsd"
+    xsi:schemaLocation="urn:oasis:names:tc:SAML:2.0:metadata @-PKGXMLDIR-@/sstc-saml-schema-metadata-2.0.xsd urn:mace:shibboleth:1.0:metadata @-PKGXMLDIR-@/shibboleth-metadata-1.0.xsd"
     Name="urn:mace:inqueue"
     validUntil="2010-01-01T00:00:00">
 
@@ -9,12 +9,14 @@
 	This is a starter set of metadata for the example system used within the
 	InQueue test federation. The InQueue deployment guide describes how to use
 	metadatatool or siterefresh to pick up the most current signed files.
+	Ordinarily a single EntityDescriptor would contain IdP/AA or SP information,
+	but not both.
 	-->
 
 	<EntityDescriptor entityID="urn:mace:inqueue:example.edu">
 		<IDPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:1.1:protocol">
 			<Extensions>
-		        <shib:Domain xmlns:shib="urn:mace:shibboleth:1.0">example.edu</shib:Domain>
+		        <shib:Domain xmlns:shib="urn:mace:shibboleth:1.0:metadata">example.edu</shib:Domain>
 			</Extensions>
 			<KeyDescriptor use="signing">
 			    <ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
@@ -27,7 +29,7 @@
 		</IDPSSODescriptor>
 		<AttributeAuthorityDescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:1.1:protocol">
 			<Extensions>
-		        <shib:Domain xmlns:shib="urn:mace:shibboleth:1.0">example.edu</shib:Domain>
+		        <shib:Domain xmlns:shib="urn:mace:shibboleth:1.0:metadata">example.edu</shib:Domain>
 			</Extensions>
 			<AttributeService Binding="urn:oasis:names:tc:SAML:1.0:bindings:SOAP-binding"
 			    Location="https://wayf.internet2.edu/shibboleth-1.2/AA"/>
