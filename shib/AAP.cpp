@@ -553,15 +553,12 @@ bool XMLAAPImpl::AttributeRule::accept(const XMLCh* originSite, const DOMElement
         return scopeCheck(originSite,e);
     }
 
-    // Don't currently support non-simple content models...
+    // Don't fully support complex content models...
     DOMNode* n=e->getFirstChild();
-    if (!n || n->getNodeType()!=DOMNode::TEXT_NODE)
-    {
-        log.warn("implementation does not support complex attribute values");
-        return false;
-    }
+    bool bSimple=(n && n->getNodeType()==DOMNode::TEXT_NODE);
 
-    for (vector<pair<value_type,const XMLCh*> >::const_iterator i=m_anySiteRule.valueRules.begin(); i!=m_anySiteRule.valueRules.end(); i++)
+    vector<pair<value_type,const XMLCh*> >::const_iterator i;
+    for (i=m_anySiteRule.valueRules.begin(); bSimple && i!=m_anySiteRule.valueRules.end(); i++)
     {
         if ((i->first==literal && !XMLString::compareString(i->second,n->getNodeValue())) ||
             (i->first==regexp && match(i->second,n->getNodeValue())))
@@ -591,15 +588,15 @@ bool XMLAAPImpl::AttributeRule::accept(const XMLCh* originSite, const DOMElement
         return scopeCheck(originSite,e);
     }
 
-    for (vector<pair<value_type,const XMLCh*> >::const_iterator j=srule->second.valueRules.begin(); j!=srule->second.valueRules.end(); j++)
+    for (i=srule->second.valueRules.begin(); bSimple && i!=srule->second.valueRules.end(); i++)
     {
-        if ((j->first==literal && !XMLString::compareString(j->second,n->getNodeValue())) ||
-            (j->first==regexp && match(j->second,n->getNodeValue())))
+        if ((i->first==literal && !XMLString::compareString(i->second,n->getNodeValue())) ||
+            (i->first==regexp && match(i->second,n->getNodeValue())))
         {
             log.debug("matching site, value match");
             return scopeCheck(originSite,e);
         }
-        else if (j->first==xpath)
+        else if (i->first==xpath)
             log.warn("implementation does not support XPath value rules");
     }
 
@@ -607,7 +604,8 @@ bool XMLAAPImpl::AttributeRule::accept(const XMLCh* originSite, const DOMElement
     {
         auto_ptr<char> temp(XMLString::transcode(m_name));
         auto_ptr<char> temp2(XMLString::transcode(n->getNodeValue()));
-        log.warn("attribute %s value {%s} could not be validated by AAP, rejecting it",temp.get(),temp2.get());
+        log.warn("%sattribute %s value {%s} could not be validated by AAP, rejecting it",
+                 (bSimple ? "" : "complex "),temp.get(),temp2.get());
     }
     return false;
 }
