@@ -53,12 +53,10 @@
  */
 
 #define clnttcp_create	onc_clnttcp_create
-#define clnt_destroy	onc_clnt_destroy
 #define clnt_spcreateerror	onc_clnt_spcreateerror
 
 #define svcfd_create	onc_svcfd_create
 #define svc_register	onc_svc_register
-#define svc_destroy	onc_svc_destroy
 #define svc_getreqset	onc_svc_getreqset
 
 
