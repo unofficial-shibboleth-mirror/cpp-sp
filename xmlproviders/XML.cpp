@@ -115,8 +115,8 @@ const XMLCh XML::SAML2ASSERT_NS[] = // urn:oasis:names:tc:SAML:2.0:assertion
   chLatin_a, chLatin_s, chLatin_s, chLatin_e, chLatin_r, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chNull
 };
 
-const XMLCh XML::SAML2ASSERT_SCHEMA_ID[] = // sstc-saml-schema-assertion-2.0.xsd
-{ chLatin_s, chLatin_s, chLatin_t, chLatin_c, chDash, chLatin_s, chLatin_a, chLatin_m, chLatin_l, chDash,
+const XMLCh XML::SAML2ASSERT_SCHEMA_ID[] = // saml-schema-assertion-2.0.xsd
+{ chLatin_s, chLatin_a, chLatin_m, chLatin_l, chDash,
   chLatin_s, chLatin_c, chLatin_h, chLatin_e, chLatin_m, chLatin_a, chDash,
   chLatin_a, chLatin_s, chLatin_s, chLatin_e, chLatin_r, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chDash,
   chDigit_2, chPeriod, chDigit_0, chPeriod, chLatin_x, chLatin_s, chLatin_d, chNull
@@ -129,8 +129,8 @@ const XMLCh XML::SAML2META_NS[] = // urn:oasis:names:tc:SAML:2.0:metadata
   chLatin_m, chLatin_e, chLatin_t, chLatin_a, chLatin_d, chLatin_a, chLatin_t, chLatin_a, chNull
 };
 
-const XMLCh XML::SAML2META_SCHEMA_ID[] = // sstc-saml-schema-metadata-2.0.xsd
-{ chLatin_s, chLatin_s, chLatin_t, chLatin_c, chDash, chLatin_s, chLatin_a, chLatin_m, chLatin_l, chDash,
+const XMLCh XML::SAML2META_SCHEMA_ID[] = // saml-schema-metadata-2.0.xsd
+{ chLatin_s, chLatin_a, chLatin_m, chLatin_l, chDash,
   chLatin_s, chLatin_c, chLatin_h, chLatin_e, chLatin_m, chLatin_a, chDash,
   chLatin_m, chLatin_e, chLatin_t, chLatin_a, chLatin_d, chLatin_a, chLatin_t, chLatin_a, chDash,
   chDigit_2, chPeriod, chDigit_0, chPeriod, chLatin_x, chLatin_s, chLatin_d, chNull
