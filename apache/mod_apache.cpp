@@ -154,7 +154,13 @@ extern "C" const char* shib_set_server_string_slot(cmd_parms* parms, void*, cons
     return NULL;
 }
 
-extern "C" const char* shib_ap_set_file_slot(cmd_parms* parms, void* arg1, const char* arg2)
+extern "C" const char* shib_ap_set_file_slot(cmd_parms* parms,
+#ifdef SHIB_APACHE_13
+					     char* arg1, char* arg2
+#else
+					     void* arg1, const char* arg2
+#endif
+					     )
 {
   ap_set_file_slot(parms, arg1, arg2);
   return DECLINE_CMD;
