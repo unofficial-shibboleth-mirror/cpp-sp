@@ -123,7 +123,7 @@ AC_CHECK_LIB([xml2], [xmlInitParser],echo "foo" > /dev/null,
 AC_CHECK_HEADER([xmlsec/xmlsec.h],,
                 AC_MSG_ERROR([unable to find xmlsec header files]))
 AC_CHECK_LIB([xmlsec], [xmlSecInit],echo "foo" > /dev/null,
-             AC_MSG_ERROR([unable to link with xmlsec]))
+             AC_MSG_ERROR([unable to link with xmlsec]), [-lxml2])
 
 AC_CHECK_HEADER([log4cpp/Category.hh],,
                 AC_MSG_ERROR([unable to find log4cpp header files]))
