@@ -163,7 +163,7 @@ int main(int argc,char* argv[])
         {
             SAMLAssertion* a=i.next();
             cout << "Issuer: "; xmlout(cout,a->getIssuer()); cout << endl;
-            const XMLDateTime* exp=a->getNotOnOrAfter();
+            const SAMLDateTime* exp=a->getNotOnOrAfter();
             cout << "Expires: ";
             if (exp)
               xmlout(cout,exp->getRawData());
