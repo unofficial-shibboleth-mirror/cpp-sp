@@ -459,6 +459,9 @@ extern "C" int shib_check_user(request_rec* r)
 
 extern "C" int shib_post_handler(request_rec* r)
 {
+  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),
+		"shib_post_handler(%d): ENTER", (int)getpid());
+
 #ifndef SHIB_APACHE_13
     // With 2.x, this handler always runs, though last.
     // We check if shib_check_user ran, because it will detect a SHIRE request
@@ -939,9 +942,30 @@ extern "C" apr_status_t shib_exit(void* data)
 {
     server_rec* s = NULL;
 #endif
+
+    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_exit(%d) dealing with g_Config..", (int)getpid());
+
     g_Config->shutdown();
     g_Config = NULL;
-    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_exit() done");
+
+    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_exit() done\n");
+#ifndef SHIB_APACHE_13
+    return OK;
+#endif
+}
+
+
+#ifdef SHIB_APACHE_13
+extern "C" void shib_child_exit(server_rec* s, SH_AP_POOL* p)
+#else
+extern "C" apr_status_t shib_child_exit(void* data)
+#endif
+{
+  server_rec* s = NULL;
+
+  ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_child_exit(%d)",
+	       (int)getpid());
+
 #ifndef SHIB_APACHE_13
     return OK;
 #endif
@@ -961,7 +985,7 @@ extern "C" int shib_post_config(apr_pool_t* pconf, apr_pool_t* plog,
 {
     // Initialize runtime components.
 
-    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() starting");
+    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init(%d) starting", (int)getpid());
 
     if (g_Config) {
         ap_log_error(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() already initialized!");
@@ -992,7 +1016,7 @@ extern "C" int shib_post_config(apr_pool_t* pconf, apr_pool_t* plog,
     }
 
     // Set the cleanup handler
-    apr_pool_cleanup_register(pconf, NULL, shib_exit, NULL);
+    apr_pool_cleanup_register(pconf, NULL, &shib_exit, &shib_child_exit);
 
     ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() done");
 
