@@ -55,6 +55,18 @@ static  char sccsid[] = "@(#)getrpcent.c 1.9 87/08/11  Copyr 1984 Sun Micro";
 #include <sys/socket.h>
 #endif
 
+// eventually we might be able to support autoconf via cygwin...
+#if defined (_MSC_VER) || defined(__BORLANDC__)
+# include "config_win32.h"
+#else
+# include "config.h"
+#endif
+
+#ifndef HAVE_STRUCT_RPCENT
+/* routines for parsing /etc/rpc */
+#include <rpc/netdb.h>		/* structures and routines to parse /etc/rpc */
+#endif
+
 /*
  * Internet version.
  */

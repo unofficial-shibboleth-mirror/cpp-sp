@@ -54,14 +54,14 @@
 
 #define clnttcp_create	onc_clnttcp_create
 #define clnt_spcreateerror	onc_clnt_spcreateerror
-
-#define svcfd_create	onc_svcfd_create
 #define svc_register	onc_svc_register
 #define svc_getreqset	onc_svc_getreqset
+#define svcfd_create    onc_svcfd_create
 
 #ifndef FD_SETSIZE
 # define FD_SETSIZE 1024
 #endif
+
 
 #ifdef WIN32
 
@@ -120,12 +120,24 @@ extern int xdr_opaque_auth(DOTS);
 #include <rpc/svc.h>		/* service manager and multiplexer */
 #include <rpc/svc_auth.h>	/* service side authenticator */
 
-/*
- * COMMENT OUT THE NEXT INCLUDE IF RUNNING ON SUN OS OR ON A VERSION
- * OF UNIX BASED ON NFSSRC.  These systems will already have the structures
- * defined by <rpc/netdb.h> included in <netdb.h>.
- */
-/* routines for parsing /etc/rpc */
-#include <rpc/netdb.h>		/* structures and routines to parse /etc/rpc */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/* Oct 2004: Additions by Scott Cantor to support POSIX and Win32 threads. */
+#ifdef WIN32
+extern DWORD __thr_key;
+extern CRITICAL_SECTION __thr_mutex;
+#else
+extern pthread_mutex_t __thr_mutex;
+#endif
+
+extern struct opaque_auth* _thr_null_auth(void);
+extern struct rpc_createerr_t* _thr_rpc_createerr(void);
+extern fd_set* _thr_svc_fdset(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* ndef __RPC_HEADER__ */

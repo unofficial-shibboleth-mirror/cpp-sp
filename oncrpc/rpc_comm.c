@@ -39,23 +39,112 @@
  * Mountain View, California  94043
  */
 #include <rpc/rpc.h>
+#include <stdio.h>
 /*
  * This file should only contain common data (global data) that is exported
  * by public interfaces 
  */
-#if defined(WIN32) && defined(__BORLANDC__)
-__declspec(dllexport)
+
+/* modified by Scott Cantor to make global data per-thread */
+
+#ifndef WIN32
+#include <pthread.h>
+pthread_once_t __thr_onc_control = PTHREAD_ONCE_INIT;   /* insures single execution */
+pthread_key_t __thr_key;                                /* pthread key */
+void _thr_onc_init();                                   /* creates pthread key */
+void _thr_onc_term(void*);                              /* key destructor function */
 #endif
-struct opaque_auth _null_auth;
-#ifdef FD_SETSIZE
-#if defined(WIN32) && defined(__BORLANDC__)
-__declspec(dllexport)
-#endif
-fd_set onc_svc_fdset;
+
+/* these are only used in an out of memory situation... */
+static fd_set __g_svc_fdset;
+static struct opaque_auth __g_null_auth;
+static struct rpc_createerr_t __g_rpc_createerr_t;
+
+/* per-thread global variables encapsulated in one block, makes TLS mgmt easier */
+struct __thr_rpc_vars {
+    fd_set _svc_fdset;
+    struct opaque_auth __null_auth;
+    struct rpc_createerr_t _rpc_createerr_t;
+};
+
+#ifdef WIN32
+
+DWORD __thr_key;
+
+struct __thr_rpc_vars* _get_thr_rpc_vars()
+{
+    struct __thr_rpc_vars* ptr = TlsGetValue(__thr_key);
+
+    if (!ptr && (ptr=malloc(sizeof(struct __thr_rpc_vars)))) {
+        memset(ptr,0,sizeof(struct __thr_rpc_vars));
+        TlsSetValue(__thr_key, ptr);
+    }
+    else if (!ptr) {
+        nt_rpc_report("out of memory");
+    }
+    return ptr;
+}
+
 #else
-int svc_fds;
-#endif /* def FD_SETSIZE */
-#if defined(WIN32) && defined(__BORLANDC__)
-__declspec(dllexport)
+
+struct __thr_rpc_vars* _get_thr_rpc_vars()
+{
+    struct __thr_rpc_vars* ptr = NULL;
+
+    pthread_once(&__thr_onc_control, _thr_onc_init);
+    ptr = pthread_getspecific(__thr_key);
+    if (!ptr && (ptr=malloc(sizeof(struct __thr_rpc_vars)))) {
+        memset(ptr,0,sizeof(struct __thr_rpc_vars));
+        pthread_setspecific(__thr_key, ptr);
+    }
+    else if (!ptr) {
+        fprintf(stderr,"_get_thr_rpc_vars: out of memory");
+    }
+    return ptr;
+}
+
+void _thr_onc_init()
+{
+    pthread_key_create(&__thr_key, _thr_onc_term);
+}
+
+void _thr_onc_term(void* ptr)
+{
+    if (ptr)
+        free(ptr);
+}
+
 #endif
-struct rpc_createerr rpc_createerr;
+
+#if defined(WIN32) && defined(__BORLANDC__)
+#define ONC_EXPORT __declspec(dllexport)
+#else
+#define ONC_EXPORT
+#endif
+
+ONC_EXPORT struct opaque_auth* _thr_null_auth(void)
+{
+    struct __thr_rpc_vars* ptr = _get_thr_rpc_vars();
+    return ptr ? &(ptr->__null_auth) : &__g_null_auth;
+}
+
+ONC_EXPORT struct rpc_createerr_t* _thr_rpc_createerr(void)
+{
+    struct __thr_rpc_vars* ptr = _get_thr_rpc_vars();
+    return ptr ? &(ptr->_rpc_createerr_t) : &__g_rpc_createerr_t;
+}
+
+#ifdef FD_SETSIZE
+
+ONC_EXPORT fd_set* _thr_svc_fdset(void)
+{
+    struct __thr_rpc_vars* ptr = _get_thr_rpc_vars();
+    return ptr ? &(ptr->_svc_fdset) : &__g_svc_fdset;
+}
+
+#else
+
+int svc_fds;
+
+#endif /* def FD_SETSIZE */
+

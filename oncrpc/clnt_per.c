@@ -58,8 +58,18 @@ static char sccsid[] = "@(#)clnt_perror.c 1.15 87/10/07 Copyr 1984 Sun Micro";
 #include <rpc/auth.h>
 #include <rpc/clnt.h>
 
+// eventually we might be able to support autoconf via cygwin...
+#if defined (_MSC_VER) || defined(__BORLANDC__)
+# include "config_win32.h"
+#else
+# include "config.h"
+#endif
+
 #ifndef WIN32
+#if !HAVE_DECL_SYS_ERRLIST
 extern char *sys_errlist[];
+extern int sys_nerr;
+#endif
 #ifdef NEED_SPRINTF
 extern char *sprintf();
 #endif
@@ -263,10 +273,6 @@ char *
 clnt_spcreateerror(s)
 	char *s;
 {
-	extern int sys_nerr;
-#ifndef WIN32
-	extern char *sys_errlist[];
-#endif
 	char *str = _buf();
 
 	if (str == 0)
