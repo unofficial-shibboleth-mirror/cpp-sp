@@ -136,6 +136,7 @@ extern "C" EDUPERSON_EXPORTS int saml_extension_init(void* context)
                     &SimpleFactory);
             }
         }
+	delete i;
 
         if (g_ShibINI->exists(SHIBTARGET_GENERAL,"aap-uri"))
         {
@@ -184,5 +185,6 @@ extern "C" EDUPERSON_EXPORTS void saml_extension_term()
                     temp.get(),shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
             }
         }
+	delete i;
     }
 }
