@@ -387,7 +387,7 @@ extern "C" int shire_check_user(request_rec* r)
 
     if (is_shire_location (r, targeturl)) {
       ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
-		    "shire_check_user: REQUEST FOR SHIRE!");
+		    "shire_check_user: REQUEST FOR SHIRE!  Maybe you did not configure the SHIRE Handler?");
       return SERVER_ERROR;
 
     } else {
