@@ -8,23 +8,23 @@
 	listed in the file or they will be filtered.
 	-->
 	
-	<AttributeRule Name="urn:mace:eduPerson:1:0:eduPersonEntitlement">
+	<AttributeRule Name="urn:mace:eduPerson:1.0:eduPersonEntitlement">
 
 		<!--
 		Optional site rule that applies to any site
 		<AnySite>
-			<Value>urn:mace:InCommon:sampleEntitlement</Value> ==== a literal test
+			<Value>urn:mace:example.edu:exampleEntitlement</Value> ==== a literal test
 			<Value Type="regexp">^.+$</Value> ==== any value
 		</AnySite>
 		-->
 		
 		<!-- Specific rules for an origin site, these are just development/sample sites. -->
 		<SiteRule Name="example.edu">
-			<Value>urn:mace:InCommon:sampleEntitlement</Value>
+			<Value>urn:mace:example.edu:exampleEntitlement</Value>
 			<Value Type="regexp">^urn:mace:.+$</Value>
 		</SiteRule>
 		<SiteRule Name="shibdev.edu">
-			<Value>urn:mace:InCommon:sampleEntitlement</Value>
+			<Value>urn:mace:example.edu:exampleEntitlement</Value>
 			<Value Type="regexp">^urn:mace:.+$</Value>
 		</SiteRule>
 	</AttributeRule>
