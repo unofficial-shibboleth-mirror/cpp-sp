@@ -93,7 +93,7 @@ namespace {
         
         struct KeyAuthority
         {
-            KeyAuthority() : m_depth(0) {}
+            KeyAuthority() : m_depth(1) {}
             ~KeyAuthority();
             X509_STORE* getX509Store();
             
@@ -404,7 +404,7 @@ bool XMLTrust::attach(const Iterator<IRevocation*>& revocations, const IProvider
 
     // Now check each name.
     XMLTrustImpl::KeyAuthority* kauth=NULL;
-    for (vector<const XMLCh*>::const_iterator name=names.begin(); name!=names.end(); name++) {
+    for (vector<const XMLCh*>::const_iterator name=names.begin(); !kauth && name!=names.end(); name++) {
 #ifdef HAVE_GOOD_STL
         XMLTrustImpl::AuthMap::const_iterator c=impl->m_authMap.find(*name);
         if (c!=impl->m_authMap.end()) {
@@ -416,8 +416,8 @@ bool XMLTrust::attach(const Iterator<IRevocation*>& revocations, const IProvider
         }
 #else
         // Without a decent STL, we trade-off the transcoding by doing a linear search.
-        for (vector<XMLTrustImpl::KeyAuthority*>::const_iterator keyauths=impl->m_keyauths.begin(); keyauths!=impl->m_keyauths.end(); keyauths++) {
-            for (vector<const XMLCh*>::const_iterator subs=keyauths->m_subjects.begin(); subs!=keyauths->m_subjects.end(); subs++) {
+        for (vector<XMLTrustImpl::KeyAuthority*>::const_iterator keyauths=impl->m_keyauths.begin(); !kauth && keyauths!=impl->m_keyauths.end(); keyauths++) {
+            for (vector<const XMLCh*>::const_iterator subs=keyauths->m_subjects.begin(); !kauth && subs!=keyauths->m_subjects.end(); subs++) {
                 if (!XMLString::compareString(*name,*subs)) {
                     kauth=*keyauths;
                     if (log.isDebugEnabled()) {
@@ -457,6 +457,7 @@ bool XMLTrust::attach(const Iterator<IRevocation*>& revocations, const IProvider
         }
         
         // Apply store to this context.
+        SSL_CTX_set_verify(reinterpret_cast<SSL_CTX*>(ctx),SSL_VERIFY_PEER,NULL);//cert_verify_callback);
         SSL_CTX_set_cert_store(reinterpret_cast<SSL_CTX*>(ctx),store);
         SSL_CTX_set_verify_depth(reinterpret_cast<SSL_CTX*>(ctx),kauth->m_depth);
         
@@ -587,7 +588,7 @@ bool XMLTrust::validate(
     // No keys inline in metadata. Now we try and find a key inline in trust.
     log.debug("checking for keys in trust file");
     DSIGKeyInfoList* KIL=NULL;
-    for (vector<const XMLCh*>::const_iterator name=names.begin(); name!=names.end(); name++) {
+    for (vector<const XMLCh*>::const_iterator name=names.begin(); !KIL && name!=names.end(); name++) {
 #ifdef HAVE_GOOD_STL
         XMLTrustImpl::BindMap::const_iterator c=impl->m_bindMap.find(*name);
         if (c!=impl->m_bindMap.end()) {
@@ -599,8 +600,8 @@ bool XMLTrust::validate(
         }
 #else
         // Without a decent STL, we trade-off the transcoding by doing a linear search.
-        for (vector<XMLTrustImpl::DSIGKeyInfoList*>::const_iterator keybinds=impl->m_keybinds.begin(); keybinds!=impl->m_keybinds.end(); keybinds++) {
-            for (size_t s=0; s<(*keybinds)->getSize(); s++) {
+        for (vector<XMLTrustImpl::DSIGKeyInfoList*>::const_iterator keybinds=impl->m_keybinds.begin(); !KIL && keybinds!=impl->m_keybinds.end(); keybinds++) {
+            for (size_t s=0; !KIL && s<(*keybinds)->getSize(); s++) {
                 if (!XMLString::compareString(*name,(*keybinds)->item(s)->getKeyName())) {
                     KIL=*keybinds;
                     if (log.isDebugEnabled()) {
@@ -782,7 +783,7 @@ bool XMLTrust::validate(
 
     // Now we hunt the list for a KeyAuthority that matches one of the names.
     XMLTrustImpl::KeyAuthority* kauth=NULL;
-    for (vector<const XMLCh*>::const_iterator name2=names.begin(); name2!=names.end(); name2++) {
+    for (vector<const XMLCh*>::const_iterator name2=names.begin(); !kauth && name2!=names.end(); name2++) {
 #ifdef HAVE_GOOD_STL
         XMLTrustImpl::AuthMap::const_iterator c=impl->m_authMap.find(*name2);
         if (c!=impl->m_authMap.end()) {
@@ -794,8 +795,8 @@ bool XMLTrust::validate(
         }
 #else
         // Without a decent STL, we trade-off the transcoding by doing a linear search.
-        for (vector<XMLTrustImpl::KeyAuthority*>::const_iterator keyauths=impl->m_keyauths.begin(); keyauths!=impl->m_keyauths.end(); keyauths++) {
-            for (vector<const XMLCh*>::const_iterator subs=keyauths->m_subjects.begin(); subs!=keyauths->m_subjects.end(); subs++) {
+        for (vector<XMLTrustImpl::KeyAuthority*>::const_iterator keyauths=impl->m_keyauths.begin(); !kauth && keyauths!=impl->m_keyauths.end(); keyauths++) {
+            for (vector<const XMLCh*>::const_iterator subs=keyauths->m_subjects.begin(); !kauth && subs!=keyauths->m_subjects.end(); subs++) {
                 if (!XMLString::compareString(*name2,*subs)) {
                     kauth=*keyauths;
                     if (log.isDebugEnabled()) {
