@@ -204,11 +204,17 @@
 	            <sequence>
 	                <element name="HandleService" type="shib:AuthorityType" maxOccurs="unbounded"/>
 	                <element name="AttributeAuthority" type="shib:AuthorityType" minOccurs="0" maxOccurs="unbounded"/>
-	                <element name="Domain" type="shib:regexp_string" minOccurs="0" maxOccurs="unbounded"/>
+	                <element ref="shib:Domain" minOccurs="0" maxOccurs="unbounded"/>
 	            </sequence>
 	        </extension>
         </complexContent>
     </complexType>
+	
+	<element name="Domain" type="shib:regexp_string">
+		<annotation>
+			<documentation xml:lang="en">A metadata extension used to regulate allowable attribute scopes.</documentation>
+		</annotation>
+	</element>
 
     <complexType name="DestinationSiteType">
         <annotation>
@@ -221,7 +227,6 @@
 	            <sequence>
 	            	<element name="AssertionConsumerServiceURL" maxOccurs="unbounded">
 	            		<complexType>
-	            			<sequence/>
 	            			<attribute name="Location" type="string" use="required"/>
            					<attribute name="Id" type="string" use="optional"/>
         					<anyAttribute namespace="##any" processContents="lax"/>
@@ -229,7 +234,6 @@
 	            	</element>
 	                <element name="AttributeRequester" maxOccurs="unbounded">
 	            		<complexType>
-	            			<sequence/>
 	            			<attribute name="Name" type="string" use="required"/>
         					<anyAttribute namespace="##any" processContents="lax"/>
 	            		</complexType>
