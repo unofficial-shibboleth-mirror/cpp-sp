@@ -1,5 +1,5 @@
 /*
- *  mod_shib.c
+ *  mod_shib.cpp
  *      Apache module to implement SHIRE and SHAR functionality.
  */
 
@@ -11,7 +11,6 @@
 #include "util_script.h"
 #define CORE_PRIVATE
 #include "http_core.h"
-#include "util_script.h"
 #include "http_log.h"
 
 #include <unistd.h>
@@ -28,11 +27,6 @@ using namespace std;
 using namespace saml;
 using namespace shibboleth;
 using namespace eduPerson;
-
-//#include <xercesc/framework/LocalFileInputSource.hpp>
-
-// Supress Apache's compatibility warnings
-// #undef strtoul
 
 class CCacheEntry
 {
@@ -55,7 +49,6 @@ private:
     SAMLAuthorityBinding* m_binding;
     SAMLResponse* m_response;
     SAMLAssertion* m_assertion;
-    time_t m_attrExpire;
     time_t m_sessionCreated;
     time_t m_lastAccess;
     string m_serialized;
@@ -127,7 +120,7 @@ void CCache::remove(const char* key)
 }
 
 CCacheEntry::CCacheEntry(request_rec* r, const char* sessionFile)
-  : m_binding(NULL), m_assertion(NULL), m_response(NULL), m_attrExpire(0), m_lastAccess(0)
+  : m_binding(NULL), m_assertion(NULL), m_response(NULL), m_lastAccess(0), m_sessionCreated(0)
 {
     configfile_t* f;
     char line[MAX_STRING_LEN];
@@ -161,8 +154,10 @@ CCacheEntry::CCacheEntry(request_rec* r, const char* sessionFile)
 	}
 	else if (!strcmp("PBinding0",w))
 	    binding.reset(XMLString::transcode(ap_getword(r->pool,&token,'=')));
-	else if (!strcmp ("LBinding0",w))
+	else if (!strcmp("LBinding0",w))
 	    location.reset(XMLString::transcode(ap_getword(r->pool,&token,'=')));
+        else if (!strcmp("Time",w))
+	    m_sessionCreated=atoi(ap_getword(r->pool,&token,'='));
 	else if (!strcmp ("EOF",w))
 	    break;
     }
@@ -171,7 +166,9 @@ CCacheEntry::CCacheEntry(request_rec* r, const char* sessionFile)
     if (binding.get()!=NULL || location.get()!=NULL)
         m_binding=new SAMLAuthorityBinding(g_authorityKind,binding.get(),location.get());
 
-    m_sessionCreated=m_lastAccess=time(NULL);
+    m_lastAccess=time(NULL);
+    if (!m_sessionCreated)
+        m_sessionCreated=m_lastAccess;
 }
 
 CCacheEntry::~CCacheEntry()
@@ -223,15 +220,27 @@ const char* CCacheEntry::getSerializedAssertion(const char* resource_url)
 void CCacheEntry::populate(const char* resource_url)
 {
     // Can we use what we have?
-    if (m_assertion)
+    if (m_assertion && m_assertion->getNotOnOrAfter())
     {
-        if (!m_attrExpire || time(NULL)<=m_attrExpire)
+        // This is awful, but the XMLDateTime class is truly horrible.
+        time_t now=time(NULL);
+#ifdef WIN32
+        struct tm* ptime=gmtime(&now);
+#else
+	struct tm res;
+	struct tm* ptime=gmtime_r(&now,&res);
+#endif
+	char timebuf[32];
+	strftime(timebuf,32,"%Y-%m-%dT%H:%M:%SZ",ptime);
+	auto_ptr<XMLCh> timeptr(XMLString::transcode(timebuf));
+	XMLDateTime curDateTime(timeptr.get());
+	int result=XMLDateTime::compareOrder(&curDateTime,m_assertion->getNotOnOrAfter());
+	if (XMLDateTime::LESS_THAN)
 	    return;
 
 	delete m_response;
 	m_assertion=NULL;
         m_response=NULL;
-	m_attrExpire=0;
 	m_serialized.clear();
     }
 
@@ -265,6 +274,19 @@ void CCacheEntry::populate(const char* resource_url)
 // per-process configuration
 extern "C" module MODULE_VAR_EXPORT shib_module;
 char *g_szSchemaPath = "/usr/local/shib/schemas/";
+
+map<string,string> g_mapAttribNameToHeader;
+map<string,string> g_mapAttribRuleToHeader;
+map<xstring,string> g_mapAttribNames;
+
+const char* ap_set_attribute_mapping(cmd_parms* parms, void*,
+				     const char* attrName, const char* headerName, const char* ruleName)
+{
+    g_mapAttribNameToHeader[attrName]=headerName;
+    if (ruleName)
+	g_mapAttribRuleToHeader[ruleName]=headerName;
+    return NULL;
+}
 
 // per-server configuration structure
 struct shib_server_config
@@ -389,6 +411,8 @@ typedef const char* (*config_fn_t)(void);
 command_rec shib_cmds[] = {
   {"ShibSchemaPath", (config_fn_t)ap_set_global_string_slot, &g_szSchemaPath,
    RSRC_CONF, TAKE1, "Path to XML schema files."},
+  {"ShibMapAttribute", (config_fn_t)ap_set_attribute_mapping, NULL,
+   RSRC_CONF, TAKE23, "Define request header name and 'require' alias for an attribute."},
 
   {"ShibCookieName", (config_fn_t)ap_set_server_string_slot,
    (void *) XtOffsetOf (shib_server_config, szCookieName),
@@ -459,28 +483,12 @@ DummyMapper::~DummyMapper()
         delete i->second;
 }
 
-extern "C" SAMLAttribute* scopedFactory(IDOM_Element* e)
-{
-    return new ScopedAttribute(e);
-}
-
-extern "C" SAMLAttribute* unscopedFactory(IDOM_Element* e)
-{
-    return new SAMLAttribute(e);
-}
-
-XMLCh* eduPersonPrincipalName=NULL;
-XMLCh* eduPersonAffiliation=NULL;
-XMLCh* eduPersonEntitlement=NULL;
-
 /* 
  * shib_child_init()
  *  Things to do when the child process is initialized.
  */
 static void shib_child_init(server_rec* s, pool* p)
 {
-    std::fprintf(stderr,"shib_child_init() started\n");
-
     // Initialize runtime components.
 
     static SAMLConfig SAMLconf;
@@ -501,15 +509,13 @@ static void shib_child_init(server_rec* s, pool* p)
         exit(1);
     }
 
-    saml::XML::registerSchema(EDUPERSON_NS,EDUPERSON_SCHEMA_ID);
-
-    eduPersonPrincipalName=XMLString::transcode("urn:mace:eduPerson:1.0:eduPersonPrincipalName");
-    eduPersonAffiliation=XMLString::transcode("urn:mace:eduPerson:1.0:eduPersonAffiliation");
-    eduPersonEntitlement=XMLString::transcode("urn:mace:eduPerson:1.0:eduPersonEntitlement");
-
-    SAMLAttribute::regFactory(eduPersonPrincipalName,Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,&scopedFactory);
-    SAMLAttribute::regFactory(eduPersonAffiliation,Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,&scopedFactory);
-    SAMLAttribute::regFactory(eduPersonEntitlement,Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,&unscopedFactory);
+    // Transcode the attribute names we know about for quick handling map access.
+    for (map<string,string>::const_iterator i=g_mapAttribNameToHeader.begin();
+	 i!=g_mapAttribNameToHeader.end(); i++)
+    {
+        auto_ptr<XMLCh> temp(XMLString::transcode(i->first.c_str()));
+	g_mapAttribNames[temp.get()]=i->first;
+    }
 
     CCache::g_Cache=new CCache();
 
@@ -523,8 +529,6 @@ static void shib_child_init(server_rec* s, pool* p)
  */
 static void shib_child_exit(server_rec* s, pool* p)
 {
-    std::fprintf(stderr,"shib_child_exit() started\n");
-
     delete CCache::g_Cache;
     ShibConfig::term();
     SAMLConfig::term();
@@ -635,39 +639,34 @@ extern "C" int shib_check_user(request_rec* r)
 	    return REDIRECT;	    
 	}
 
-	ap_table_unset(r->headers_in,"Shib-Attributes");
+	ap_table_unset(r->headers_in,"Shib-Attributes"); // per arch-doc, until we populate it
 	Iterator<SAMLAttribute*> i=entry->getAttributes(targeturl);
 	
-	// For now, we hardcode the extraction of attribute information.
 	while (i.hasNext())
 	{
 	    SAMLAttribute* attr=i.next();
-	    Iterator<xstring> vals=attr->getValues();
-	    if (!XMLString::compareString(eduPersonPrincipalName,attr->getName()) &&
-		vals.hasNext())
+
+	    // Are we supposed to export it?
+	    map<xstring,string>::const_iterator iname=g_mapAttribNames.find(attr->getName());
+	    if (iname!=g_mapAttribNames.end())
 	    {
-	        auto_ptr<char> eppn(XMLString::transcode(vals.next().c_str()));
-		r->connection->user = ap_pstrdup(r->connection->pool,eppn.get());
-	    }
-	    else if (!XMLString::compareString(eduPersonAffiliation,attr->getName()))
-	    {
-	        char* header=ap_pstrdup(r->pool," ");
-		while (vals.hasNext())
+		string hname=g_mapAttribNameToHeader[iname->second];
+		Iterator<xstring> vals=attr->getValues();
+		if (hname=="REMOTE_USER" && vals.hasNext())
 		{
-		    auto_ptr<char> affil(XMLString::transcode(vals.next().c_str()));
-		    header=ap_pstrcat(r->pool,header,affil.get()," ",NULL);
+		    auto_ptr<char> username(XMLString::transcode(vals.next().c_str()));
+		    r->connection->user=ap_pstrdup(r->connection->pool,username.get());
 		}
-		ap_table_setn(r->headers_in,"Shib-EP-Affiliation",header);
-	    }
-	    else if (!XMLString::compareString(eduPersonEntitlement,attr->getName()))
-	    {
-	        char* header=ap_pstrdup(r->pool," ");
-		while (vals.hasNext())
+		else
 		{
-		    auto_ptr<char> ent(XMLString::transcode(vals.next().c_str()));
-		    header=ap_pstrcat(r->pool,header,ent.get()," ",NULL);
+		    char* header=ap_pstrdup(r->pool," ");
+		    while (vals.hasNext())
+		    {
+			auto_ptr<char> wide(XMLString::transcode(vals.next().c_str()));
+			header=ap_pstrcat(r->pool,header,wide.get()," ",NULL);
+		    }
+		    ap_table_setn(r->headers_in,hname.c_str(),header);
 		}
-		ap_table_setn(r->headers_in,"Shib-EP-Entitlement",header);
 	    }
 	}
 	return OK;
@@ -696,17 +695,17 @@ extern "C" table* groups_for_user(request_rec* r, const char* user, char* grpfil
 {
     configfile_t* f;
     table* grps=ap_make_table(r->pool,15);
-    pool* sp;
     char l[MAX_STRING_LEN];
     const char *group_name, *ll, *w;
 
     if (!(f=ap_pcfg_openfile(r->pool,grpfile)))
     {
-        ap_log_rerror(APLOG_MARK,APLOG_DEBUG,r,"groups_for_user() could not open group file: %s\n", grpfile);
+        ap_log_rerror(APLOG_MARK,APLOG_DEBUG,r,"groups_for_user() could not open group file: %s\n",
+		      grpfile);
 	return NULL;
     }
 
-    sp=ap_make_sub_pool(r->pool);
+    pool* sp=ap_make_sub_pool(r->pool);
 
     while (!(ap_cfg_getline(l,MAX_STRING_LEN,f)))
     {
@@ -752,18 +751,10 @@ extern "C" int shib_check_auth(request_rec* r)
         return DECLINED;
 
     int m=r->method_number;
-    int method_restricted=0;
-    register int x;
+    bool method_restricted=false;
     const char *t, *w;
-    table* grpstatus;
     
-    const char* user=r->connection->user;
-    const char* affiliations=ap_table_get(r->headers_in,"Shib-EP-Affiliation");
-    const char* entitlements=ap_table_get(r->headers_in,"Shib-EP-Entitlement");
-
-    ap_log_rerror(APLOG_MARK,APLOG_DEBUG,r,"shib_check_auth() REMOTE_USER=%s\n",user);
-    ap_log_rerror(APLOG_MARK,APLOG_DEBUG,r,"shib_check_auth() SHIB_EP_AFFILIATION=%s\n",affiliations);
-    ap_log_rerror(APLOG_MARK,APLOG_DEBUG,r,"shib_check_auth() SHIB_EP_ENTITLEMENT=%s\n",entitlements);
+    ap_table_get(r->headers_in,"Shib-EP-Affiliation");
 
     const array_header* reqs_arr=ap_requires(r);
     if (!reqs_arr)
@@ -771,54 +762,41 @@ extern "C" int shib_check_auth(request_rec* r)
 
     require_line* reqs=(require_line*)reqs_arr->elts;
 
-    if (dc->szAuthGrpFile)
-    {
-        ap_log_rerror(APLOG_MARK,APLOG_DEBUG,r,"shib_check_auth() using groups file: %s\n",dc->szAuthGrpFile);
-	grpstatus=groups_for_user(r,user,dc->szAuthGrpFile);
-    }
-    else
-        grpstatus = NULL;
-
-    for (x=0; x<reqs_arr->nelts; x++)
+    for (int x=0; x<reqs_arr->nelts; x++)
     {
         if (!(reqs[x].method_mask & (1 << m)))
 	    continue;
-	method_restricted = 1;
+	method_restricted=true;
 
 	t = reqs[x].requirement;
 	w = ap_getword_white(r->pool, &t);
 
-	if (strcmp(w,"valid-user")==0)
+	if (!strcmp(w,"valid-user"))
+	{
+	    ap_log_rerror(APLOG_MARK,APLOG_DEBUG,r,"shib_check_auth() accepting valid-user");
 	    return OK;
-	else if (!strcmp(w,"urn:mace:eduPerson:1.0:eduPersonAffiliation"))
-	{
-	    while (*t)
-	    {
-	        char* temp=ap_pstrcat(r->pool," ",ap_getword_conf(r->pool,&t)," ");
-		if (strstr(affiliations,temp))
-	            return OK;
-	    }
 	}
-	else if (!strcmp(w,"urn:mace:eduPerson:1.0:eduPersonEntitlement"))
-	{
-	    while (*t)
-	    {
-	        char* temp=ap_pstrcat(r->pool," ",ap_getword_conf(r->pool,&t)," ");
-		if (strstr(entitlements,temp))
-	            return OK;
-	    }
-	}
-	else if (!strcmp(w,"user"))
+	else if (!strcmp(w,"user") && r->connection->user)
 	{
 	    while (*t)
 	    {
 	        w=ap_getword_conf(r->pool,&t);
-		if (!strcmp(user,w))
+		if (!strcmp(r->connection->user,w))
+		{
+		    ap_log_rerror(APLOG_MARK,APLOG_DEBUG,r,"shib_check_auth() accepting user: %s",w);
 		    return OK;
+		}
 	    }
 	}
 	else if (!strcmp(w,"group"))
 	{
+	    table* grpstatus=NULL;
+	    if (dc->szAuthGrpFile && r->connection->user)
+	    {
+		ap_log_rerror(APLOG_MARK,APLOG_DEBUG,r,"shib_check_auth() using groups file: %s\n",
+			      dc->szAuthGrpFile);
+		grpstatus=groups_for_user(r,r->connection->user,dc->szAuthGrpFile);
+	    }
 	    if (!grpstatus)
 	        return DECLINED;
 
@@ -826,7 +804,32 @@ extern "C" int shib_check_auth(request_rec* r)
 	    {
 	        w=ap_getword_conf(r->pool,&t);
 		if (ap_table_get(grpstatus,w))
+		{
+		    ap_log_rerror(APLOG_MARK,APLOG_DEBUG,r,"shib_check_auth() accepting group: %s",w);
 		    return OK;
+		}
+	    }
+	}
+	else
+	{
+	    map<string,string>::const_iterator i=g_mapAttribRuleToHeader.find(w);
+	    if (i==g_mapAttribRuleToHeader.end())
+		ap_log_rerror(APLOG_MARK,APLOG_WARNING,r,"shib_check_auth() didn't recognize require rule: %s\n",w);
+	    else
+	    {		
+		const char* vals=ap_table_get(r->headers_in,i->second.c_str());
+		while (*t && vals)
+		{
+		    string ruleval(" ");
+		    ruleval+=ap_getword_conf(r->pool,&t);
+		    ruleval+=" ";
+		    if (strstr(vals,ruleval.c_str()))
+		    {
+		        ap_log_rerror(APLOG_MARK,APLOG_DEBUG,r,"shib_check_auth() accepting rule %s, value%s",
+				      w,ruleval.c_str());
+			return OK;
+		    }
+		}
 	    }
 	}
     }
