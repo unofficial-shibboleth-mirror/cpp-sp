@@ -275,7 +275,7 @@ namespace shibtarget {
         const char* getLazyAuthnRequest(const char* query_string);
         
         // Process a POST profile submission, and return (SAMLResponse,TARGET) pair.
-        std::pair<const char*,const char*> getFormSubmission(const char* post);
+        std::pair<const char*,const char*> getFormSubmission(const char* post, unsigned int len);
         
         RPCError* sessionCreate(const char* response, const char* ip, std::string &cookie);
         RPCError* sessionIsValid(const char* session_id, const char* ip);

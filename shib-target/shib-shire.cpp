@@ -90,7 +90,7 @@ static char *makeword(char *line, char stop)
     return word;
 }
 
-static char *fmakeword(char stop, int *cl, const char** ppch)
+static char *fmakeword(char stop, unsigned int *cl, const char** ppch)
 {
     int wsize;
     char *word;
@@ -180,7 +180,7 @@ namespace shibtarget {
     class CgiParse
     {
     public:
-        CgiParse(const char* data);
+        CgiParse(const char* data, unsigned int len);
         ~CgiParse();
         const char* get_value(const char* name) const;
     
@@ -189,10 +189,10 @@ namespace shibtarget {
     };
 }
 
-CgiParse::CgiParse(const char* data)
+CgiParse::CgiParse(const char* data, unsigned int len)
 {
     const char* pch = data;
-    int cl = strlen(data);
+    unsigned int cl = len;
         
     while (cl && pch) {
         char *name;
@@ -323,16 +323,16 @@ const char* SHIRE::getAuthnRequest(const char* resource)
 
 const char* SHIRE::getLazyAuthnRequest(const char* query_string)
 {
-    CgiParse parser(query_string);
+    CgiParse parser(query_string,strlen(query_string));
     const char* target=parser.get_value("target");
     if (!target || !*target)
         return NULL;
     return getAuthnRequest(target);
 }
 
-pair<const char*,const char*> SHIRE::getFormSubmission(const char* post)
+pair<const char*,const char*> SHIRE::getFormSubmission(const char* post, unsigned int len)
 {
-    m_parser = new CgiParse(post);
+    m_parser = new CgiParse(post,len);
     return pair<const char*,const char*>(m_parser->get_value("SAMLResponse"),m_parser->get_value("TARGET"));
 }
 
