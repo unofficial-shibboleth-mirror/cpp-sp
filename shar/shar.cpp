@@ -304,7 +304,7 @@ int main(int argc, char *argv[])
 {
     IListener::ShibSocket sock;
     ShibRPCProtocols protos[] = {
-        { SHIBRPC_PROG, SHIBRPC_VERS_1, shibrpc_prog_1 }
+        { SHIBRPC_PROG, SHIBRPC_VERS_2, shibrpc_prog_2 }
     };
 
     if (setup_signals() != 0)
