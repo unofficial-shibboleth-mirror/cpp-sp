@@ -57,7 +57,7 @@
  * $Id$
  */
 
-#ifndef WIN32
+#if HAVE_UNISTD_H
 # include <unistd.h>
 #endif
 
@@ -141,6 +141,8 @@ private:
     InternalCCacheEntry*	entry;
     string			resource;
   };
+
+  friend class ResourceLock;
 };
 
 class InternalCCache : public CCache
@@ -393,10 +395,10 @@ void InternalCCache::cleanup()
 
     // Pass 2: walk through the list of stale entries and remove them from
     // the database
-    for (vector<string>::iterator i = stale_keys.begin();
-	 i != stale_keys.end(); i++)
+    for (vector<string>::iterator j = stale_keys.begin();
+	 j != stale_keys.end(); j++)
     {
-      remove (i->c_str());
+      remove (j->c_str());
     }
 
   }
@@ -474,9 +476,9 @@ InternalCCacheEntry::~InternalCCacheEntry()
        i!=m_resources.end(); i++)
     delete i->second;
 
-  for (map<string,Mutex*>::iterator i=populate_locks.begin();
-       i!=populate_locks.end(); i++)
-    delete i->second;
+  for (map<string,Mutex*>::iterator j=populate_locks.begin();
+       j!=populate_locks.end(); j++)
+    delete j->second;
 
   delete pop_locks_lock;
   delete cacheitem_lock;
