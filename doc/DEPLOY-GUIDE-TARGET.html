@@ -302,6 +302,7 @@ tarball</a> for your operating system.</p>
         Acceptance Policies</font></a></li>
         <li><a href="#4.f."><font color="black">Using Attributes in Applications</font></a></li>
         <li><a href="#4.g."><font color="black"><span class="fixed">siterefresh</span></font></a></li>
+        <li><a href="#4.h."><font color="black">MySQL Session Cache</font></a></li>
     </ol>
     </li>
     <li>
@@ -407,15 +408,16 @@ requesting attributes.</p>
 </blockquote>
 <h4><a name="1.d."></a>1.d. Federations</h4>
 <blockquote>
-    <p>A federation provides part of the underlying trust required for function 
-    of the Shibboleth architecture. A federation in the context of Shibboleth is 
-    a group of organizations(universities, corporations, content providers, 
-    etc.) who agree to exchange attributes using the SAML/Shibboleth protocols 
-    and abide by a common set of policies and practices. In so doing, they must 
-    implicitly or explicitly agree to a common set of guidelines. Joining a 
-    federation is not explicitly necessary for operation of Shibboleth, but it 
-    dramatically expands the number of targets and origins that can interact 
-    without defining bilateral agreements between all these parties.</p>
+    <p>A federation is one way to provide part of the underlying trust required 
+    for function of the Shibboleth architecture. A federation in the context of 
+    Shibboleth is a group of organizations(universities, corporations, content 
+    providers, etc.) who agree to exchange attributes using the SAML/Shibboleth 
+    protocols and abide by a common set of policies and practices. In so doing, 
+    they must implicitly or explicitly agree to a common set of guidelines. 
+    Joining a federation is not explicitly necessary for operation of 
+    Shibboleth, but it dramatically expands the number of targets and origins 
+    that can interact without defining bilateral agreements between all these 
+    parties.</p>
     <p>A federation can be created in a variety of formats and trust models, but 
     to support Shibboleth, it must provide a certain set of services to 
     federation members. It needs to supply a registry to process applications to 
@@ -1248,8 +1250,8 @@ most minor &quot;letter&quot; updates should be usable.</p>
         that must elapse between user accesses before that user&#39;s session is 
         destroyed, including the associated handle and all cached attributes. 
         Defaults to <span class="fixed">28800</span> seconds, or 8 hours. This 
-        should be longer than the associated server&#39;s settings for session 
-        lifetime and timeout.</dd>
+        should generally be longer than the associated server&#39;s settings for 
+        session lifetime and timeout.</dd>
         <dd class="attributeopt"><span class="fixed">logger = &lt;pathname&gt;</span></dd>
         <dd class="valueopt">Specifies the location of the <span class="fixed">
         log4cpp</span> configuration file for Shibboleth events produced by the 
@@ -1328,6 +1330,18 @@ most minor &quot;letter&quot; updates should be usable.</p>
         <span class="fixed">aap-uri</span> and <span class="fixed">attributes</span> 
         settings, as well as the Apache <span class="fixed">ShibMapAttribute</span> 
         command.</b></dd>
+    </dl>
+    <p>The <span class="fixed">[extensions:saml]</span> section specifies a set 
+    of extension libraries to load that add additional functionality to the 
+    system. Examples include session cache implementations, such as the MySQL 
+    cache, or advanced metadata providers.</p>
+    <p><span class="fixed">[extensions:saml]</span>:</p>
+    <dl>
+        <dd class="attribute"><span class="fixed">&lt;name&gt; = &lt;library pathname&gt;</span>
+        </dd>
+        <dd class="value">The name of the extension is simply a unique key and 
+        is not important. The path to the library to load must be absolute and 
+        complete.</dd>
     </dl>
     <p>The <span class="fixed">[policies]</span> section contains the policy URI 
     values that control acceptance of assertions from origin sites. This may 
@@ -1811,6 +1825,44 @@ most minor &quot;letter&quot; updates should be usable.</p>
     compares it with the old contents before overwriting the original, the 
     command could be run very often without impacting target operations, 
     providing a high degree of currency in case sites become compromised.</p>
+</blockquote>
+<h4><a name="4.h."></a>4.h. MySQL Session Cache</h4>
+<blockquote>
+    <p>Shibboleth includes a useful plugin that extends the default memory cache 
+    for storing session data in the SHAR with a backing cache using an embedded 
+    MySQL database. In most distributions, it is enabled by default. The plugin 
+    can be found in the <span class="fixed">/opt/shibboleth/libexec</span> 
+    folder, and is loaded as an extension library using the <span class="fixed">
+    [extensions:saml]</span> section of <span class="fixed">shibboleth.ini</span>. 
+    The following configuration options are available:</p>
+    <dl>
+        <dd class="attributeopt"><span class="fixed">mysql-cache-timeout = 
+        &lt;seconds&gt;&nbsp;&nbsp;&nbsp; (in [shar] section)</span></dd>
+        <dd class="valueopt">Specifies the duration in <span class="fixed">
+        seconds</span> that must elapse between user accesses before that user&#39;s 
+        session is purged from the persistent cache. Defaults to
+        <span class="fixed">28800</span> seconds, or 8 hours. This should 
+        generally be longer than the associated server&#39;s settings for session 
+        lifetime and timeout, and the memory cache&#39;s timeout.</dd>
+        <dd class="attributeopt"><span class="fixed">&lt;MySQL Arguments&gt;&nbsp;&nbsp;&nbsp; 
+        (one per line in [mysql] section)</span></dd>
+        <dd class="valueopt">To pass arguments to the MySQL engine, create 
+        argument lines in the <span class="fixed">[mysql]</span> section in the 
+        form:
+        <blockquote class="fixed">
+            <p>arg1=&lt;argument&gt;<br>
+            arg2=&lt;argument&gt;<br>
+            etc... </p>
+        </blockquote>
+        <p>Important arguments you&#39;ll find by default include: </p>
+        <blockquote class="fixed">
+            <p>arg1 = --language=/opt/shibboleth/share/english<br>
+            arg2 = --datadir=/opt/shibboleth/data</p>
+        </blockquote>
+        <p>which set the message file path and the location of the cache&#39;s 
+        database files respectively. Make sure the data directory exists before 
+        starting the SHAR if you change this path.</dd>
+    </dl>
 </blockquote>
 <p><br>
 </p>
