@@ -92,7 +92,7 @@ AC_TRY_LINK_FUNC([SSL_library_init],,
 AC_MSG_RESULT(yes)
 
 # log4cpp settings
-LOG4CPP_CONFIG="log4cpp-config"
+AC_PATH_PROG(LOG4CPP_CONFIG,log4cpp-config)
 AC_ARG_WITH(log4cpp,
             AC_HELP_STRING([--with-log4cpp=PATH], [where log4cpp is installed]),
             [LOG4CPP_CONFIG="${with_log4cpp}/bin/log4cpp-config"])
