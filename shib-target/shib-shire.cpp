@@ -426,8 +426,7 @@ RPCError* SHIRE::sessionIsValid(const char* session_id, const char* ip) const
           return new RPCError(-1, "RPC Failure");
     }
     else {
-      // SUCCESS.  Return to the pool.
-      rpc.pool();
+      // SUCCESS
       retry = -1;
     }
   } while (retry>=0);
@@ -441,6 +440,7 @@ RPCError* SHIRE::sessionIsValid(const char* session_id, const char* ip) const
     retval = new RPCError();
 
   clnt_freeres (clnt, (xdrproc_t)xdr_shibrpc_session_is_valid_ret_1, (caddr_t)&ret);
+  rpc.pool();
 
   log.debug("returning");
   return retval;
@@ -498,7 +498,6 @@ RPCError* SHIRE::sessionCreate(const char* response, const char* ip, string& coo
     }
     else {
       // SUCCESS.  Pool and continue
-      rpc.pool();
       retry = -1;
     }
   } while (retry>=0);
@@ -515,6 +514,7 @@ RPCError* SHIRE::sessionCreate(const char* response, const char* ip, string& coo
   }
 
   clnt_freeres(clnt, (xdrproc_t)xdr_shibrpc_new_session_ret_1, (caddr_t)&ret);
+  rpc.pool();
 
   log.debug("returning");
   return retval;

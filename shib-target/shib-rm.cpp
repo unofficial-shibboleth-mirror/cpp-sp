@@ -131,7 +131,6 @@ RPCError* RM::getAssertions(
     }
     else {
       // SUCCESS.  Release back into pool
-      rpc.pool();
       retry = -1;
     }
   } while (retry>=0);
@@ -186,6 +185,7 @@ RPCError* RM::getAssertions(
   }
 
   clnt_freeres(clnt, (xdrproc_t)xdr_shibrpc_get_assertions_ret_1, (caddr_t)&ret);
+  rpc.pool();
 
   log.debug ("returning..");
   return retval;
