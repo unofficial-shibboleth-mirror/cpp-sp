@@ -4,3 +4,5 @@
 /Makefile.in
 /siterefresh
 /*.plg
+/Debug
+/Release
