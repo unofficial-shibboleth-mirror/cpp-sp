@@ -167,9 +167,8 @@ file9=..\doc\mysql-4.0.12.diff
 file10=..\doc\NEWS.txt
 file11=..\doc\OPENSSL.LICENSE
 file12=..\doc\README.txt
-file13=..\doc\UPGRADE-GUIDE.html
-file14=..\doc\main.css
-file15=..\doc\logo.jpg
+file13=..\doc\main.css
+file14=..\doc\logo.jpg
 
 [bin\debug]
 file0=\openssl-0.9.7d\out32dll.dbg\openssl.exe
