@@ -111,8 +111,8 @@ public:
 
         Iterator<const IContactInfo*> getContacts() const;
         const char* getErrorURL() const;
-        void validate(XSECCryptoX509* cert) const;
-        void validate(const XMLCh* cert) const;
+        void validate(XSECCryptoX509* cert) const {}
+        void validate(const XMLCh* cert) const {}
         Iterator<const IAuthority*> getHandleServices() const { return m_handleServices; }
         Iterator<const IAuthority*> getAttributeAuthorities() const { return m_attributes; }
         Iterator<std::pair<const XMLCh*,bool> > getSecurityDomains() const { return m_domains; }
