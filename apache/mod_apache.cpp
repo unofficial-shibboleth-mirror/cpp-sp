@@ -957,11 +957,12 @@ extern "C" apr_status_t shib_exit(void* data)
 
 #ifdef SHIB_APACHE_13
 extern "C" void shib_child_exit(server_rec* s, SH_AP_POOL* p)
+{
 #else
 extern "C" apr_status_t shib_child_exit(void* data)
-#endif
 {
   server_rec* s = NULL;
+#endif
 
   ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_child_exit(%d)",
 	       (int)getpid());
@@ -1003,7 +1004,8 @@ extern "C" int shib_post_config(apr_pool_t* pconf, apr_pool_t* plog,
             ShibTargetConfig::Metadata |
             ShibTargetConfig::AAP |
             ShibTargetConfig::RequestMapper |
-            ShibTargetConfig::SHIREExtensions
+            ShibTargetConfig::SHIREExtensions |
+            ShibTargetConfig::Logging
             );
         if (!g_Config->init(g_szSchemaDir,g_szSHIBConfig)) {
             ap_log_error(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() failed to initialize SHIB Target");
