@@ -58,9 +58,9 @@ using namespace shibboleth;
 class DummyMapper : public IOriginSiteMapper
 {
 public:
-    DummyMapper() {}
+    DummyMapper();
     ~DummyMapper();
-    virtual Iterator<xstring> getHandleServiceNames(const XMLCh* originSite) { return Iterator<xstring>(); }
+    virtual Iterator<xstring> getHandleServiceNames(const XMLCh* originSite) { return Iterator<xstring>(m_hsnames); }
     virtual Key* getHandleServiceKey(const XMLCh* handleService) { return NULL; }
     virtual Iterator<xstring> getSecurityDomains(const XMLCh* originSite);
     virtual Iterator<X509Certificate*> getTrustedRoots() { return Iterator<X509Certificate*>(); }
@@ -68,7 +68,14 @@ public:
 private:
     typedef map<xstring,vector<xstring>*> domains_t;
     domains_t m_domains;
+    vector<xstring> m_hsnames;
 };
+
+DummyMapper::DummyMapper()
+{
+    auto_ptr<XMLCh> buf(XMLString::transcode("shibprod0.internet2.edu"));
+    m_hsnames.push_back(buf.get());
+}
 
 Iterator<xstring> DummyMapper::getSecurityDomains(const XMLCh* originSite)
 {
@@ -95,7 +102,7 @@ SAMLResponse* HS()
     Key k(Key::RSA,Key::PEM,"");
     const XMLCh* policies[]={Constants::POLICY_CLUBSHIB};
 
-    auto_ptr<XMLCh> hsname(XMLString::transcode("shibhs.osu.edu"));
+    auto_ptr<XMLCh> hsname(XMLString::transcode("shibprod0.internet2.edu"));
     auto_ptr<XMLCh> recip(XMLString::transcode("https://shire.target.com"));
     auto_ptr<XMLCh> handle(XMLString::transcode("foo"));
     auto_ptr<XMLCh> domain(XMLString::transcode("example.edu"));
@@ -115,7 +122,6 @@ SAMLResponse* HS()
 
 int main(int argc,char* argv[])
 {
-    DummyMapper mapper;
     SAMLConfig& conf1=SAMLConfig::getConfig();
     ShibConfig& conf2=ShibConfig::getConfig();
     char* path="";
@@ -130,6 +136,7 @@ int main(int argc,char* argv[])
     if (!conf1.init())
         cerr << "unable to initialize SAML runtime" << endl;
 
+    DummyMapper mapper;
     conf2.origin_mapper=&mapper;
     if (!conf2.init())
         cerr << "unable to initialize Shibboleth runtime" << endl;
@@ -148,6 +155,17 @@ int main(int argc,char* argv[])
 
         SAMLResponse* r2=p->accept(buf.get());
         cout << "Consumed Response: " << endl << *r2 << endl;
+
+        SAMLAssertion* a=p->getSSOAssertion(*r2);
+        if (!a)
+            throw SAMLException("can't find SSO assertion");
+
+        SAMLAuthenticationStatement* s=p->getSSOStatement(*a);
+        if (!s)
+            throw SAMLException("can't find SSO statement");
+        if (!p->checkReplayCache(*a))
+            throw SAMLException("detected replay attack");
+
         delete r2;
     }
     catch(SAMLException& e)
