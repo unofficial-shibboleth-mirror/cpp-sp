@@ -67,6 +67,7 @@
 #include <log4cpp/Category.hh>
 #include <xercesc/framework/URLInputSource.hpp>
 #include <xercesc/util/regx/RegularExpression.hpp>
+#include <xsec/enc/XSECCryptoException.hpp>
 #include <xsec/enc/XSECKeyInfoResolverDefault.hpp>
 
 using namespace shibboleth;
@@ -248,7 +249,7 @@ void XMLTrustImpl::init()
                 if (x)
                     ka->m_certs.push_back(x);
                 else
-                    log.warn("unable to create certificate from inline X509Certificate data");
+                    log.error("unable to create certificate from inline X509Certificate data");
             }
 
             // Now look for externally referenced objects.
@@ -269,7 +270,7 @@ void XMLTrustImpl::init()
                         else
                             log_openssl();
                     }
-                    log.warn("unable to create certificate from externally referenced file");
+                    log.error("unable to create certificate from externally referenced file");
                 }
                 else if (!XMLString::compareString(cert->getAttributeNS(NULL,SHIB_L(Type)),::XML::SHIB_RETMETHOD_PEMX509)) {
                     // PEM format
@@ -284,7 +285,7 @@ void XMLTrustImpl::init()
                         }
                     }
                     if (!count)
-                        log.warn("unable to create certificate from externally referenced file");
+                        log.error("unable to create certificate from externally referenced file");
                 }
             }
 
@@ -333,8 +334,13 @@ void XMLTrustImpl::init()
             DOMElement* child=saml::XML::getFirstChildElement(kidom);
             int count2=1;
             while (child) {
-                if (!KIL->addXMLKeyInfo(child))
-                    log.warn("skipped unsupported ds:KeyInfo child element (%d)",count2);
+                try {
+                    if (!KIL->addXMLKeyInfo(child))
+                        log.warn("skipped unsupported ds:KeyInfo child element (%d)",count2);
+                }
+                catch (XSECCryptoException& xe) {
+                    log.error("unable to resolve ds:KeyInfo child element (%d) to usable key: %s",count2,xe.getMsg());
+                }
                 child=saml::XML::getNextSiblingElement(child);
                 count2++;
             }
