@@ -253,7 +253,7 @@ Iterator<SAMLAttribute*> CCacheEntry::getAttributes(const char* resource_url)
         Iterator<SAMLStatement*> i=m_assertion->getStatements();
         if (i.hasNext())
 	{
-	    SAMLAttributeStatement* s=dynamic_cast<SAMLAttributeStatement*>(i.next());
+	    SAMLAttributeStatement* s=static_cast<SAMLAttributeStatement*>(i.next());
 	    if (s)
 	        return s->getAttributes();
 	}
