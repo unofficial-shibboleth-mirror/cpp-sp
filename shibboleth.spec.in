@@ -64,12 +64,14 @@ rebuilding your policy, so you must have the policy-source installed.
 %build
 %configure --enable-apache-20
 make
+make -C selinux
 
 %install
 [ "$RPM_BUILD_ROOT" != "/" ] && rm -rf $RPM_BUILD_ROOT
 rm -rf _docs
 
 make install DESTDIR=$RPM_BUILD_ROOT
+make -C selinux install DESTDIR=$RPM_BUILD_ROOT
 mv $RPM_BUILD_ROOT/usr/doc/shibboleth _docs
 
 find $RPM_BUILD_ROOT/%{_libexecdir} -type f -or -type l | grep \.so |
