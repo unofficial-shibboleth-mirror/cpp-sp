@@ -280,7 +280,7 @@ private:
     bool log_error() const;
 
     string m_address;
-    bool m_bound;
+    mutable bool m_bound;
     Category& m_log;
 };
 
