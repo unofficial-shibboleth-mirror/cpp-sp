@@ -239,9 +239,12 @@ struct xdr_discrim {
 /*
  * These are the "generic" xdr routines.
  */
+extern bool_t	xdr_free(DOTS);
 extern bool_t	xdr_void(DOTS);
 extern bool_t	xdr_int(DOTS);
 extern bool_t	xdr_u_int(DOTS);
+extern bool_t	xdr_int64_t(DOTS);
+extern bool_t	xdr_uint64_t(DOTS);
 extern bool_t	xdr_long(DOTS);
 extern bool_t	xdr_u_long(DOTS);
 extern bool_t	xdr_short(DOTS);

@@ -140,6 +140,80 @@ xdr_u_int(xdrs, up)
 }
 
 /*
+ * XDR 64-bit integers
+ */
+bool_t
+xdr_int64_t(xdrs, ip)
+	XDR *xdrs;
+	int64_t *ip;
+{
+  if (sizeof (int64_t) <= sizeof (long)) {
+    return (xdr_long(xdrs, (long *)ip));
+  } else {
+    /* Assumes sizeof(long) == 4 */
+    int32_t t1;
+    uint32_t t2;
+    
+    switch (xdrs->x_op) {
+    case XDR_ENCODE:
+      t1 = (int32_t) ((*ip) >> 32);
+      t2 = (int32_t) (*ip);
+      return (XDR_PUTLONG(xdrs, &t1) && XDR_PUTLONG(xdrs, &t2));
+      
+    case XDR_DECODE:
+      if (!XDR_GETLONG(xdrs, &t1) || !XDR_GETLONG(xdrs, &t2))
+	return FALSE;
+      *ip = ((int64_t) t1) << 32;
+      *ip |= t2;
+      return TRUE;
+
+    case XDR_FREE:
+      return TRUE;
+
+    default:
+      return FALSE;
+    }
+  }
+}
+
+/*
+ * XDR unsigned 64-bit integers
+ */
+bool_t
+xdr_uint64_t(xdrs, up)
+	XDR *xdrs;
+	uint64_t *up;
+{
+  if (sizeof (int64_t) <= sizeof (long)) {
+    return (xdr_long(xdrs, (long *)up));
+  } else {
+    /* Assumes sizeof(long) == 4 */
+    uint32_t t1;
+    uint32_t t2;
+    
+    switch (xdrs->x_op) {
+    case XDR_ENCODE:
+      t1 = (uint32_t) ((*up) >> 32);
+      t2 = (uint32_t) (*up);
+      return (XDR_PUTLONG(xdrs, &t1) && XDR_PUTLONG(xdrs, &t2));
+      
+    case XDR_DECODE:
+      if (!XDR_GETLONG(xdrs, &t1) || !XDR_GETLONG(xdrs, &t2))
+	return FALSE;
+      *up = ((uint64_t) t1) << 32;
+      *up |= t2;
+      return TRUE;
+
+    case XDR_FREE:
+      return TRUE;
+
+    default:
+      return FALSE;
+    }
+  }
+}
+
+/*
  * XDR long integers
  * same as xdr_u_long - open coded to save a proc call!
  */
