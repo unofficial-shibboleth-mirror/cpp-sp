@@ -92,8 +92,8 @@ namespace {
     class XMLTrustImpl : public ReloadableXMLFileImpl
     {
     public:
-        XMLTrustImpl(const char* pathname) : ReloadableXMLFileImpl(pathname) { init(); }
-        XMLTrustImpl(const DOMElement* e) : ReloadableXMLFileImpl(e) { init(); }
+        XMLTrustImpl(const char* pathname) : ReloadableXMLFileImpl(pathname), m_wildcard(NULL) { init(); }
+        XMLTrustImpl(const DOMElement* e) : ReloadableXMLFileImpl(e), m_wildcard(NULL) { init(); }
         void init();
         ~XMLTrustImpl();
         
