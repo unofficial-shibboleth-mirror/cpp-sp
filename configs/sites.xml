@@ -1,4 +1,11 @@
 <SiteGroup Name="urn:mace:inqueue" xmlns="urn:mace:shibboleth:1.0">
+
+	<!--
+	This is a starter set of example and development origins used within the
+	InQueue test federation. The InQueue deployment guide describes how to use
+	metadatatool and siterefresh to pick up the most current signed files.
+	-->
+
 	<OriginSite Name="urn:mace:inqueue:example.edu" ErrorURL="http://wayf.internet2.edu/InQueue/error.html">
 		<Alias>Example State University</Alias>
 		<Contact Type="technical" Name="InQueue Support" Email="inqueue-support@internet2.edu"/>
