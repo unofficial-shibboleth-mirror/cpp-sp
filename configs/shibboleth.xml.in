@@ -127,36 +127,46 @@
 
         <!-- AAP can be inline or in a separate file -->
         <AAPProvider type="edu.internet2.middleware.shibboleth.target.provider.XMLAAP" uri="@-PKGSYSCONFDIR-@/AAP.xml"/>
-        <!--
-        <AAPProvider type="edu.internet2.middleware.shibboleth.target.provider.XMLAAP"
-            <AttributeAcceptancePolicy xmlns="urn:mace:shibboleth:aap:1.0">
-                <AttributeRule Name="urn:mace:dir:attribute-def:eduPersonPrincipalName" Header="REMOTE_USER" Alias="user">
-                    <AnySite>
-                        <AnyValue/>
-                    </AnySite>
-                </AttributeRule>
-            </AttributeAcceptancePolicy>
-        </AAPProvider>
-        -->
         
         <!-- Metadata consists of site/operational metadata, trust, revocation providers. Can be external or inline. -->
+
+        <!-- Dummy metadata for private testing, delete when deploying. -->
+		<FederationProvider type="edu.internet2.middleware.shibboleth.common.provider.XMLMetadata">
+			<EntityDescriptor entityID="https://example.org/shibboleth" xmlns="urn:oasis:names:tc:SAML:2.0:metadata">
+				<IDPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:1.1:protocol urn:mace:shibboleth:1.0">
+					<Extensions>
+				        <shib:Domain xmlns:shib="urn:mace:shibboleth:1.0:metadata">example.org</shib:Domain>
+					</Extensions>
+					<KeyDescriptor use="signing">
+					    <ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+					        <ds:KeyName>idp.example.org</ds:KeyName>
+					    </ds:KeyInfo>
+					</KeyDescriptor>
+					<NameIDFormat>urn:mace:shibboleth:1.0:nameIdentifier</NameIDFormat>
+					<SingleSignOnService Binding="urn:mace:shibboleth:1.0:profiles:AuthnRequest"
+					    Location="https://idp.example.org/shibboleth/HS"/>
+				</IDPSSODescriptor>
+				<AttributeAuthorityDescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:1.1:protocol">
+					<Extensions>
+				        <shib:Domain xmlns:shib="urn:mace:shibboleth:1.0:metadata">example.org</shib:Domain>
+					</Extensions>
+					<KeyDescriptor>
+					    <ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+					        <ds:KeyName>idp.example.org</ds:KeyName>
+					    </ds:KeyInfo>
+					</KeyDescriptor>
+					<AttributeService Binding="urn:oasis:names:tc:SAML:1.0:bindings:SOAP-binding"
+					    Location="https://idp.example.org/shibboleth/AA"/>
+					<NameIDFormat>urn:mace:shibboleth:1.0:nameIdentifier</NameIDFormat>
+				</AttributeAuthorityDescriptor>
+			</EntityDescriptor>
+		</FederationProvider>
+
+		<!-- InQueue pilot federation, delete for production deployments. -->
         <FederationProvider type="edu.internet2.middleware.shibboleth.common.provider.XMLMetadata"
             uri="@-PKGSYSCONFDIR-@/IQ-sites.xml"/>
-        <FederationProvider type="edu.internet2.middleware.shibboleth.common.provider.XMLMetadata">
-			<SiteGroup Name="https://example.org/shibboleth" xmlns="urn:mace:shibboleth:1.0">
-				<OriginSite Name="https://example.org/shibboleth/origin">
-					<Alias>Localhost Test Deployment</Alias>
-					<Contact Type="technical" Name="Your Name Here" Email="root@localhost"/>
-					<HandleService Location="https://localhost/shibboleth/HS" Name="localhost"/>
-					<AttributeAuthority Location="https://localhost/shibboleth/AA" Name="localhost"/>
-					<Domain>localhost</Domain>
-				</OriginSite>
-			</SiteGroup>
-        </FederationProvider>
-        
         <TrustProvider type="edu.internet2.middleware.shibboleth.common.provider.XMLTrust"
             uri="@-PKGSYSCONFDIR-@/IQ-trust.xml"/>
-
 		<!--
 		Revocation using X.509 CRLs is an optional feature in some trust metadata or you may
 		supply your own revocation information locally.
