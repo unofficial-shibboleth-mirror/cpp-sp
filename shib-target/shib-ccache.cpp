@@ -336,7 +336,7 @@ void InternalCCache::cleanup()
   if (ini.get_tag (SHIBTARGET_SHAR, SHIBTARGET_TAG_CACHECLEAN, true, &tag))
     rerun_timer = atoi(tag.c_str());
   if (ini.get_tag (SHIBTARGET_SHAR, SHIBTARGET_TAG_CACHETIMEOUT, true, &tag))
-    timeout_life = atoi(tag.c_str());
+    timeout_life = atoi(tag.c_str()) * 60;
 
   if (rerun_timer <= 0)
     rerun_timer = 300;		// rerun every 5 minutes
@@ -377,8 +377,9 @@ void InternalCCache::cleanup()
 	 i != m_hashtable.end(); i++)
     {
       // If the last access was BEFORE the stale timeout...
-      if (i->second->lastAccess() < stale)
-	stale_keys.push_back(i->first);
+      time_t last=i->second->lastAccess();
+      if (last < stale)
+        stale_keys.push_back(i->first);
     }
     lock->unlock();
 
