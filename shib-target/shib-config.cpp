@@ -151,6 +151,11 @@ STConfig::STConfig(const char* app_name, const char* inifile)
   } else
     log.debug ("SAML Initialized");
 
+  // Register the schema (need this before we try to build the mapper)
+  // XXX: HACK ALERT!!!
+  saml::XML::registerSchema(shibboleth::XML::SHIB_NS,
+			    shibboleth::XML::SHIB_SCHEMA_ID);
+
   // Init Shib
   if (! ini->get_tag (app, SHIBTARGET_TAG_SITES, true, &tag)) {
     log.crit("No Sites File found in configuration");
