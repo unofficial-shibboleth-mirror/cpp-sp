@@ -766,7 +766,7 @@ bool XMLTrust::validate(
                             STACK_OF(CONF_VALUE)* val=meth->i2v(meth,meth->d2i(NULL,&data,ext->value->length),NULL);
                             for (int j=0; j<sk_CONF_VALUE_num(val); j++) {
                                 CONF_VALUE* nval=sk_CONF_VALUE_value(val,j);
-                                if (!strcmp(nval->name,"DNS") || !strcmp(n_val->name,"URI")) {
+                                if (!strcmp(nval->name,"DNS") || !strcmp(nval->name,"URI")) {
                                     for (vector<string>::const_iterator n=keynames.begin(); n!=keynames.end(); n++) {
     #ifdef HAVE_STRCASECMP
                                         if (!strcasecmp(nval->value,n->c_str())) {
