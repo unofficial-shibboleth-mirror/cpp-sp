@@ -35,7 +35,7 @@ libshib_target_la_SOURCES = \
 
 # this is different from the project version
 # http://sources.redhat.com/autobook/autobook/autobook_91.html
-libshib_target_la_LDFLAGS = -version-info 3:1:0
+libshib_target_la_LDFLAGS = -version-info 4:0:0
 
 
 
