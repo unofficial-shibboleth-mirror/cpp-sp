@@ -271,10 +271,9 @@ InternalCCache::~InternalCCache()
 
 string InternalCCache::generateKey() const
 {
-    SAMLIdentifier id,id2;
+    SAMLIdentifier id;
     auto_ptr_char c(id);
-    auto_ptr_char c2(id2);
-    return string(c.get()) + c2.get();
+    return c.get();
 }
 
 // assumes a lock is held..
