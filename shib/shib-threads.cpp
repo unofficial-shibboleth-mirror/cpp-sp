@@ -11,6 +11,9 @@
 
 #ifdef HAVE_PTHREAD
 #include <pthread.h>
+#ifndef HAVE_PTHREAD_RWLOCK_INIT
+#include <synch.h>
+#endif
 #else
 #error "You need to create the proper thread implementation"
 #endif
@@ -73,6 +76,7 @@ public:
 
 class RWLockImpl : public RWLock {
 public:
+#ifdef HAVE_PTHREAD_RWLOCK_INIT
   RWLockImpl();
   ~RWLockImpl() { pthread_rwlock_destroy (&lock); }
 
@@ -81,6 +85,16 @@ public:
   int unlock() { return pthread_rwlock_unlock (&lock); }
 
   pthread_rwlock_t lock;
+#else
+  RWLockImpl();
+  ~RWLockImpl() { rwlock_destroy (&lock); }
+
+  int rdlock() { return rw_rdlock (&lock); }
+  int wrlock() { return rw_wrlock (&lock); }
+  int unlock() { return rw_unlock (&lock); }
+
+  rwlock_t lock;
+#endif
 };
 
 class ThreadKeyImpl : public ThreadKey {
@@ -118,7 +132,11 @@ CondWaitImpl::CondWaitImpl()
 
 RWLockImpl::RWLockImpl()
 {
-  if (pthread_rwlock_init (&lock, NULL) != 0)
+#ifdef HAVE_PTHREAD_RWLOCK_INIT
+  if (pthread_rwlock_init(&lock, NULL) != 0)
+#else
+  if (rwlock_init (&lock, USYNC_THREAD, NULL) != 0)
+#endif
     throw runtime_error("pthread_rwlock_init failed");
 }
 
