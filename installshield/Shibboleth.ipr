@@ -5,13 +5,14 @@ LanguageSupport0=0009
 OSSupport=0000000000010000
 
 [Data]
-CurrentMedia=shibboleth 1.1
+CurrentMedia=shibboleth
 set_mifserial=
 ProductName=Shibboleth
 CurrentComponentDef=Default.cdf
 set_dlldebug=No
-AppExe=C:\opt1\shibboleth\bin\shar.exe
+AppExe=shar.exe
 DevEnvironment=Microsoft Visual C++
+FreshBits=FALSE
 set_mif=No
 set_testmode=No
 Instructions=Instructions.txt
@@ -20,11 +21,12 @@ SummaryText=
 Department=
 Type=Internet Application
 Author=
-HomeURL=
+HomeURL=http://shibboleth.internet2.edu
 InstallRoot=C:\cvs\shibboleth\c\installshield
+UpdateURL=http://
 set_level=Level 3
 InstallationGUID=844649c4-3072-41f2-a4bf-4774f9b6e675
-Version=1.0.1
+Version=1.1
 set_miffile=Status.mif
 set_args=
 set_maxerr=50
@@ -34,19 +36,22 @@ set_dllcmdline=
 set_warnaserr=No
 Copyright=
 set_preproc=
-Category=
+Category=Accounting
 CurrentPlatform=
 set_compileb4build=Yes
 set_crc=Yes
 set_maxwarn=50
 Description=Description.txt
-CompanyName=Internet 2
+CompanyName=University Corporation for Advanced Internet Development, Inc.
 CurrentLanguage=English
 
 [MediaInfo]
-mediadata0=shibboleth 1.1/Media\shibboleth 1.1
+mediadata0=shibboleth/Media\shibboleth
 
 [General]
+PassData=
+ReadOnly=N
 Type=INSTALLMAIN
 Version=1.20.000
+PassOn=N
 
