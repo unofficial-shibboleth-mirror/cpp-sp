@@ -14,9 +14,7 @@
     	<!-- only one listener can be defined. -->
         <UnixListener address="/tmp/shar-socket"/>
 
-        <!--
-        <TCPListener address="127.0.0.1" port="12345" acl="127.0.0.1"/>
-        -->
+        <!-- <TCPListener address="127.0.0.1" port="12345" acl="127.0.0.1"/> -->
         
         <!--
         See deploy guide for details, but:
@@ -53,7 +51,6 @@
         <RequestMapProvider type="edu.internet2.middleware.shibboleth.target.provider.XMLRequestMap">
             <RequestMap applicationId="default">
                 <!--
-                If using IIS or apacheConfig is false:
                 This requires a session for documents in /secure on the containing host on 80 and 443.
                 Note that the name in the <Host> elements MUST match Apache's ServerName directive
                 or the IIS host mapping in the <ISAPI> element below.
@@ -75,7 +72,7 @@
     </SHIRE>
 
     <Applications xmlns:saml="urn:oasis:names:tc:SAML:1.0:assertion"
-    	id="default" providerId="https://localhost/shibboleth/target">
+    	id="default" providerId="https://example.org/shibboleth/target">
 
         <!--
         Controls session lifetimes, address checks, cookie handling, WAYF, and the SHIRE location.
