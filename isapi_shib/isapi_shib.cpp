@@ -510,11 +510,11 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
 	ShibTargetIsapiF stf(pfc, pn, map_i->second);
 
 	// "false" because we don't override the Shib settings
-	pair<bool,void*> res = ste.doCheckAuthN(false);
+	pair<bool,void*> res = ste.doCheckAuthN();
 	if (res.first) return (DWORD)res.second;
 
 	// "false" because we don't override the Shib settings
-	res = ste.doExportAssertions(false);
+	res = ste.doExportAssertions();
 	if (res.first) return (DWORD)res.second;
 
 	res = ste.doCheckAuthZ();

@@ -402,7 +402,7 @@ extern "C" int shib_check_user(request_rec* r)
     ShibTargetApache sta(r);
 
     // Check user authentication, the set the post handler bypass
-    pair<bool,void*> res = sta.doCheckAuthN((sta.m_dc->bRequireSession == 1));
+    pair<bool,void*> res = sta.doCheckAuthN((sta.m_dc->bRequireSession == 1), true);
     apr_pool_userdata_setn((const void*)42,g_UserDataKey,NULL,r->pool);
     if (res.first) return (int)res.second;
 

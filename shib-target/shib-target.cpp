@@ -186,7 +186,7 @@ void ShibTarget::init(ShibTargetConfig *config,
 // The web server modules implement a subclass and then call into 
 // these methods once they instantiate their request object.
 pair<bool,void*>
-ShibTarget::doCheckAuthN(bool requireSessionFlag)
+ShibTarget::doCheckAuthN(bool requireSessionFlag, bool handlePost)
 {
   saml::NDC ndc("ShibTarget::doCheckAuthN");
 
@@ -203,8 +203,12 @@ ShibTarget::doCheckAuthN(bool requireSessionFlag)
     if (! shireURL)
       throw ShibTargetException(SHIBRPC_OK, "Cannot map target URL to Shire URL.  Check configuration");
 
-    if (strstr(targetURL,shireURL))
-      return doHandlePOST();
+    if (strstr(targetURL,shireURL)) {
+      if (handlePost)
+	return doHandlePOST();
+      else
+	return pair<bool,void*>(true, returnOK());
+    }
 
     string auth_type = getAuthType();
     if (strcasecmp(auth_type.c_str(),"shibboleth"))

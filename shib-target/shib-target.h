@@ -496,10 +496,19 @@ namespace shibtarget {
     //   is not valid, and the caller should continue processing (the API Call
     //   finished successfully).
     //
-    std::pair<bool,void*> doCheckAuthN(bool requireSession);
+    //   The arguments are all overrides..  The requireSession and
+    //   exportAssertion values passed in here are only used if the
+    //   settings resource is negative.
+    //
+    //   The handlePost argument declares whether doCheckAuthN() should
+    //   automatically call doHandlePOST() when it encounters a request for
+    //   the ShireURL;  if false it will call returnOK() instead.
+    //
+    std::pair<bool,void*> doCheckAuthN(bool requireSession = false,
+				       bool handlePost = false);
     std::pair<bool,void*> doHandlePOST(void);
     std::pair<bool,void*> doCheckAuthZ(void);
-    std::pair<bool,void*> doExportAssertions(bool exportAssertion);
+    std::pair<bool,void*> doExportAssertions(bool exportAssertion = false);
 
     //**************************************************************************
     // These APIs are for backwards-compatibility.  Hopefully they can
