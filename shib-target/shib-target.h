@@ -225,7 +225,8 @@ namespace shibtarget {
 
     RPCError* getAssertions(const char* cookie, const char* ip,
 			    const char* url,
-			    std::vector<saml::SAMLAssertion*> &assertions);
+			    std::vector<saml::SAMLAssertion*> &assertions,
+			    saml::SAMLAuthenticationStatement **statement = NULL);
     static void serialize(saml::SAMLAssertion &assertion, std::string &result);
     static saml::Iterator<saml::SAMLAttribute*> getAttributes(saml::SAMLAssertion &assertion);
   private:

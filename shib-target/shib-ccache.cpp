@@ -90,6 +90,7 @@ public:
   virtual void preFetch(Resource& resource, int prefetch_window);
   virtual bool isSessionValid(time_t lifetime, time_t timeout);
   virtual const char* getClientAddress() { return m_clientAddress.c_str(); }
+  virtual const char* getSerializedStatement() { return m_statement.c_str(); }
   virtual void release() { cacheitem_lock->unlock(); }
 
   void setCache(InternalCCache *cache) { m_cache = cache; }
@@ -105,6 +106,7 @@ private:
   void insert(const char* resource, ResourceEntry* entry);
   void remove(const char* resource);
 
+  string m_statement;
   string m_originSite;
   string m_handle;
   string m_clientAddress;
@@ -462,6 +464,11 @@ InternalCCacheEntry::InternalCCacheEntry(SAMLAuthenticationStatement *s, const c
 
   // Save for later.
   p_auth = s;
+
+  // Save the serialized version of the auth statement
+  ostringstream os;
+  os << *s;
+  m_statement = os.str();
 
   log->info("New Session Created...");
   log->debug("Handle: \"%s\", Site: \"%s\", Address: %s", h.get(), d.get(),

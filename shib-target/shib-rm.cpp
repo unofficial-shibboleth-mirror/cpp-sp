@@ -57,7 +57,8 @@ RM::~RM()
 
 RPCError* RM::getAssertions(const char* cookie, const char* ip,
 			    const char* url,
-			    vector<SAMLAssertion*> &assertions)
+			    vector<SAMLAssertion*> &assertions,
+			    SAMLAuthenticationStatement **statement)
 {
   saml::NDC ndc("getAssertions");
   m_priv->log->info ("get assertions...");
@@ -151,6 +152,27 @@ RPCError* RM::getAssertions(const char* cookie, const char* ip,
         }
         if (ok)
 	        assertions.push_back(as);
+      }
+
+      // return the Authentication Statement
+      if (statement) {
+	istringstream authstream(ret.auth_statement.xml_string);
+	SAMLAuthenticationStatement *auth = NULL;
+	try {
+	  m_priv->log->debugStream() <<
+	    "Trying to decode authentication statement: " <<
+	    ret.auth_statement.xml_string << log4cpp::CategoryStream::ENDLINE;
+	  auth = new SAMLAuthenticationStatement(authstream);
+	} catch (SAMLException &e) {
+	  m_priv->log->error ("SAML Exception: %s", e.what());
+	  throw;
+	} catch (XMLException &e) {
+	  m_priv->log->error ("XML Exception: %s", e.getMessage());
+	  throw;
+	}
+
+	// Save off the statement
+	*statement = auth;
       }
     }
 

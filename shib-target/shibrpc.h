@@ -84,6 +84,7 @@ typedef struct shibrpc_get_assertions_args_1 shibrpc_get_assertions_args_1;
 struct shibrpc_get_assertions_ret_1 {
 	ShibRpcStatus status;
 	char *error_msg;
+	ShibRpcXML auth_statement;
 	struct {
 		u_int assertions_len;
 		ShibRpcXML *assertions_val;

@@ -126,6 +126,8 @@ xdr_shibrpc_get_assertions_ret_1 (XDR *xdrs, shibrpc_get_assertions_ret_1 *objp)
 		 return FALSE;
 	 if (!xdr_string (xdrs, &objp->error_msg, ~0))
 		 return FALSE;
+	 if (!xdr_ShibRpcXML (xdrs, &objp->auth_statement))
+		 return FALSE;
 	 if (!xdr_array (xdrs, (char **)&objp->assertions.assertions_val, (u_int *) &objp->assertions.assertions_len, ~0,
 		sizeof (ShibRpcXML), (xdrproc_t) xdr_ShibRpcXML))
 		 return FALSE;

@@ -87,6 +87,7 @@ struct shibrpc_get_assertions_args_1 {
 struct shibrpc_get_assertions_ret_1 {
   ShibRpcStatus		status;
   string		error_msg<>;
+  ShibRpcXML		auth_statement;
   ShibRpcXML		assertions<>;
 };
 

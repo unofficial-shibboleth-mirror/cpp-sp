@@ -19,6 +19,7 @@ namespace shibtarget {
 
     virtual bool isSessionValid(time_t lifetime, time_t timeout) = 0;
     virtual const char* getClientAddress() = 0;
+    virtual const char* getSerializedStatement() = 0;
     virtual void release() = 0;
   };
     

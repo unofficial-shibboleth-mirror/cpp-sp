@@ -355,6 +355,9 @@ shibrpc_get_assertions_1_svc(shibrpc_get_assertions_args_1 *argp,
     return TRUE;
   }
 
+  // Now grab the serialized authentication statement
+  result->auth_statement.xml_string = strdup(entry->getSerializedStatement());
+
   entry->release();
 
   // and let it fly
