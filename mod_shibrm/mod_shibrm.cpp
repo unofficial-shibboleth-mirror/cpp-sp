@@ -504,8 +504,11 @@ extern "C" int shibrm_check_auth(request_rec* r)
                 {
                     try
                     {
-                        RegularExpression re(w);
-                        if (re.matches(r->connection->user)) {
+                        // To do regex matching, we have to convert from UTF-8.
+                        auto_ptr<XMLCh> trans(fromUTF8(w));
+                        RegularExpression re(trans.get());
+                        auto_ptr<XMLCh> trans2(fromUTF8(r->connection->user));
+                        if (re.matches(trans2.get())) {
                             ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,"shibrm_check_auth() accepting user: %s",w);
                             return OK;
                         }
@@ -572,7 +575,8 @@ extern "C" int shibrm_check_auth(request_rec* r)
                         if (regexp)
                         {
                             delete re.release();
-                            auto_ptr<RegularExpression> temp(new RegularExpression(w));
+                            auto_ptr<XMLCh> trans(fromUTF8(w));
+                            auto_ptr<RegularExpression> temp(new RegularExpression(trans.get()));
                             re=temp;
                         }
                         
@@ -596,8 +600,15 @@ extern "C" int shibrm_check_auth(request_rec* r)
         
                                 string val = vals_str.substr(j, i-j);
                                 j = i+1;
-                                
-                                if ((regexp && re->matches(val.c_str())) || (!regexp && val==w)) {
+                                if (regexp) {
+                                    auto_ptr<XMLCh> trans(fromUTF8(val.c_str()));
+                                    if (re->matches(trans.get())) {
+                                        ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
+                                                        "shibrm_check_auth() expecting %s, got %s: authorization granted", w, val.c_str());
+                                        return OK;
+                                    }
+                                }
+                                else if (val==w) {
                                     ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
                                                     "shibrm_check_auth() expecting %s, got %s: authorization granted", w, val.c_str());
                                     return OK;
@@ -610,7 +621,15 @@ extern "C" int shibrm_check_auth(request_rec* r)
                         }
         
                         string val = vals_str.substr(j, vals_str.length()-j);
-                        if ((regexp && re->matches(val.c_str())) || (!regexp && val==w)) {
+                        if (regexp) {
+                            auto_ptr<XMLCh> trans(fromUTF8(val.c_str()));
+                            if (re->matches(trans.get())) {
+                                ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
+                                                "shibrm_check_auth() expecting %s, got %s: authorization granted", w, val.c_str());
+                                return OK;
+                            }
+                        }
+                        else if (val==w) {
                             ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
                                             "shibrm_check_auth() expecting %s, got %s: authorization granted", w, val.c_str());
                             return OK;
