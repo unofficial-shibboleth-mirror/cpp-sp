@@ -442,6 +442,8 @@ bool XMLCredentials::attach(const XMLCh* subject, const ISite* relyingParty, SSL
                     log_openssl();
                     throw MetadataException("XMLCredentials::attach() found mismatch between the private key and certificate used");
                 }
+
+                return true;
             }
             catch (SAMLException& e)
             {
