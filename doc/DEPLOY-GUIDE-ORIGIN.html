@@ -735,7 +735,7 @@ and <span class="fixedwidth">JSP specification 1.2</span>.</b></p>
             to the <span class="fixedwidth">&lt;Ajp13Connector&gt;</span> 
             configuration element to ensure that the user&#39;s identity is passed 
             from Apache to the servlet environment.</li>
-            <li>The AJP13Connector for tomcat is not compatible with the new JMX support.  To remove some warnings that will  appear in the tomcat log every time tomcat is restarted, comment out all of the JMX stuff (anything that says "mbeans").</li>
+            <li>The AJP13Connector for tomcat is not compatible with the new JMX support.  To remove some warnings that will  appear in the tomcat log every time tomcat is restarted, comment out all of the JMX stuff (anything that says "mbeans") from server.xml.</li>
         </ol>
         </li>
         <li>It is <b>strongly</b> recommended that the AA be SSL-protected to 
@@ -1772,12 +1772,12 @@ Java keystores <font color="#5555EE">(optional)</font></h4>
         &lt;/JNDIDirectoryDataConnector&gt; </span></p>
     </blockquote>
     <p>If the ldap server must be accessed over SSL, and JDK 1.4.1 is being used, two changes must be made to the <span class="fixedwidth">JNDIDirectoryDataConnector</span> element:</p>
-	<p>1. On the java.naming.provider.url Property, add :!lt;port number!gt; after the hostname in the ldap url (the default port for ldap over SSL is 636),</p>
+	<p>1. On the java.naming.provider.url Property, add &lt;port number&gt; after the hostname in the ldap url (the default port for ldap over SSL is 636),</p>
 	<p>2. Add this Property element:</p>
     <blockquote>
 	<p><span class="fixedwidth">&lt;Property name="java.naming.security.protocol" value="ssl" &quot;&gt;</p>
 	</blockquote>
-	<p>If the ldap server must be accessed over SSL, and JDK 1.4.2 is being used, then change ldap: to ldaps: in the value of the <span class="fixedwidth">java.naming.provider.url</span> Property.</p>
+	<p>If the ldap server must be accessed over SSL, and JDK 1.4.2 is being used, then change ldap:// to ldaps:// in the value of the <span class="fixedwidth">java.naming.provider.url</span> Property.</p>
 	<p>NOTE: This assumes that the ldap server's cert is rooted with a CA that is in the JVM's default keystore (ie: a commercial CA).  If not, the CA cert must be added.</p>
     <p><span class="fixedwidth">SimpleAttributeDefinition</span>:</p>
     <dl>
