@@ -91,14 +91,6 @@ LINK32=link.exe
 # Name "isapi_shib - Win32 Debug"
 # Begin Source File
 
-SOURCE=.\cgiparse.c
-# End Source File
-# Begin Source File
-
-SOURCE=.\cgiparse.h
-# End Source File
-# Begin Source File
-
 SOURCE=.\directive_class.h
 # End Source File
 # Begin Source File
