@@ -6,8 +6,8 @@
 #   the used tools
 CC=CC
 SAMLRT=../../../opensaml/c
-APXS=/usr/sbin/apxs
-APACHECTL=/usr/sbin/apachectl
+APXS=/usr/local/apache/bin/apxs
+APACHECTL=/usr/local/apache/bin/apachectl
 SHIB_CFLAGS=-DSOLARIS -mt -fast -Kpic -I$(SAMLRT)/include -I/usr/local/include -I../include
 SHIB_LDFLAGS=-L$(SAMLRT)/lib -L../lib
 SHIB_LIBS=-lCrun -lCstd -lsaml -lshib -leduPerson -lxerces-c1_7_0
