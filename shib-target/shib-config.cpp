@@ -109,6 +109,16 @@ STConfig::STConfig(const char* app_name, const char* inifile)
   }
 }
 
+extern "C" SAMLAttribute* ScopedFactory(DOMElement* e)
+{
+    return new ScopedAttribute(e);
+}
+
+extern "C" SAMLAttribute* SimpleFactory(DOMElement* e)
+{
+    return new SimpleAttribute(e);
+}
+
 void STConfig::init()
 {
   string app = m_app_name;
