@@ -277,9 +277,12 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
   IConfig* conf=ShibTargetConfig::getConfig().getINI();
   Locker locker(conf);
   const IApplication* app=conf->getApplication(argp->application_id);
-  if (!app)
-      // Something's horribly wrong. Bail.
-      throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"Unable to locate application for session, deleted?");
+  if (!app) {
+      // Something's horribly wrong. Flush the session.
+      log.error ("couldn't find application for session");
+      set_rpc_status(&result->status, SHIBRPC_INTERNAL_ERROR, "Unable to locate application for session, deleted?");
+      return TRUE;
+  }
 
   pair<bool,bool> checkReplay=pair<bool,bool>(false,false);
   const IPropertySet* props=app->getPropertySet("Sessions");
