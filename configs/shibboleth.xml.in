@@ -61,7 +61,6 @@
             <ISAPI normalizeRequest="true">
                 <Site id="1" host="localhost"/>    <!-- Maps IIS IID values to the vhost name. -->
             </ISAPI>
-            <Apache apacheConfig="true"/>  <!-- whether httpd.conf or the RequestMap controls session behavior. -->
         </Implementation>
     </SHIRE>
 

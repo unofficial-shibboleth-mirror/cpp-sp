@@ -202,15 +202,6 @@
 			<anyAttribute namespace="##any" processContents="lax"/>
 		</complexType>
 	</element>
-	<element name="Apache">
-		<complexType>
-            <complexContent>
-                <extension base="anyType">
-					<attribute name="apacheConfig" type="boolean" use="optional"/>
-                </extension>
-            </complexContent>
-		</complexType>
-	</element>
 	<element name="NSAPI" type="anyType"/>
 	<element name="Java" type="anyType"/>
 
