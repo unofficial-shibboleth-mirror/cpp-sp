@@ -694,7 +694,7 @@ bool XMLTrust::validate(
             keynames.push_back(kn.get());
         }
         
-        bool match=false;
+        const char* match=NULL;   // This will be set to the first matching key name.
         char buf[256];
         X509_NAME* subject=X509_get_subject_name(x);
         if (subject) {
@@ -727,8 +727,8 @@ bool XMLTrust::validate(
 #else
                 if (!stricmp(n->c_str(),subjectstr.c_str()) || !stricmp(n->c_str(),subjectstr2.c_str())) {
 #endif
-                    log.info("matched full subject DN to a key name");
-                    match=true;
+                    log.info("matched full subject DN to a key name (%s)", n->c_str());
+                    match=n->c_str();
                     break;
                 }
             }
@@ -752,8 +752,8 @@ bool XMLTrust::validate(
 #else
                                 if (!strnicmp(altptr,n->c_str(),altlen)) {
 #endif
-                                    log.info("matched DNS/URI subjectAltName to a key name");
-                                    match=true;
+                                    log.info("matched DNS/URI subjectAltName to a key name (%s)", n->c_str());
+                                    match=n->c_str();
                                     break;
                                 }
                             }
@@ -772,8 +772,8 @@ bool XMLTrust::validate(
 #else
                             if (!stricmp(buf,n->c_str())) {
 #endif
-                                log.info("matched subject CN to a key name");
-                                match=true;
+                                log.info("matched subject CN to a key name (%s)", n->c_str());
+                                match=n->c_str();
                                 break;
                             }
                         }
@@ -797,16 +797,20 @@ bool XMLTrust::validate(
         // We're ready for the final stage.
         log.debug("final step, certificate path validation...");
     
-        // Push any provider groups on the name match list.
+        // Build a new list of key authority matching names, the actual key name, providerId, and any groups.
+        auto_ptr<XMLCh> kn2(fromUTF8(match));
+        vector<const XMLCh*> authnames;
+        authnames.push_back(kn2.get());
         if (provider) {
+            authnames.push_back(provider->getId());
             Iterator<const XMLCh*> groups=provider->getGroups();
             while (groups.hasNext())
-                names.push_back(groups.next());
+                authnames.push_back(groups.next());
         }
     
-        // Now we hunt the list for a KeyAuthority that matches one of the names.
+        // Now we hunt the list for a KeyAuthority that matches one of the authority matching names.
         XMLTrustImpl::KeyAuthority* kauth=NULL;
-        for (vector<const XMLCh*>::const_iterator name2=names.begin(); !kauth && name2!=names.end(); name2++) {
+        for (vector<const XMLCh*>::const_iterator name2=authnames.begin(); !kauth && name2!=authnames.end(); name2++) {
 #ifdef HAVE_GOOD_STL
             XMLTrustImpl::AuthMap::const_iterator c=impl->m_authMap.find(*name2);
             if (c!=impl->m_authMap.end()) {
