@@ -270,10 +270,10 @@
         <Credentials xmlns="urn:mace:shibboleth:credentials:1.0">
             <FileResolver Id="defcreds">
                 <Key format="PEM">
-                    <Path>@-PKGSYSCONFDIR-@/shar.key</Path>
+                    <Path>@-PKGSYSCONFDIR-@/example.key</Path>
                 </Key>
                 <Certificate format="PEM">
-                    <Path>@-PKGSYSCONFDIR-@/shar.crt</Path>
+                    <Path>@-PKGSYSCONFDIR-@/example.crt</Path>
                 </Certificate>
             </FileResolver>
             
