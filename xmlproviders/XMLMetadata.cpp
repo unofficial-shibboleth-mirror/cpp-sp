@@ -130,7 +130,6 @@ namespace {
             Iterator<const IKeyDescriptor*> getKeyDescriptors() const {return m_keys;}
             const IOrganization* getOrganization() const {return NULL;}
             Iterator<const IContactPerson*> getContacts() const {return m_provider->getContacts();}
-            Iterator<const IEndpoint*> getDefaultEndpoints() const {return EMPTY(const IEndpoint*);}
             const char* getErrorURL() const {return m_provider->getErrorURL();}
             const DOMElement* getElement() const {return m_root;}
         
@@ -168,6 +167,7 @@ namespace {
             ~SSORole() {}
             Iterator<const IEndpoint*> getSingleLogoutServices() const {return EMPTY(const IEndpoint*);}
             Iterator<const IEndpoint*> getManageNameIdentifierServices() const {return EMPTY(const IEndpoint*);}
+            Iterator<const IEndpoint*> getNameIdentifierMappingServices() const {return EMPTY(const IEndpoint*);}
         };
         
         class IDPRole : public SSORole, public virtual IIDPProviderRole
@@ -189,6 +189,7 @@ namespace {
             AARole(const Provider* provider, const DOMElement* e) : Role(provider,e) {m_protocolEnum.push_back(saml::XML::SAMLP_NS);}
             ~AARole() {}
             Iterator<const IEndpoint*> getAttributeServices() const {return m_pepv;}
+            Iterator<const SAMLAttributeDesignator*> getAttributeDesignators() const {return EMPTY(const SAMLAttributeDesignator*);}
         
         private:
             vector<Endpoint> m_epv;

@@ -175,7 +175,6 @@ namespace shibboleth
         virtual saml::Iterator<const IKeyDescriptor*> getKeyDescriptors() const=0;
         virtual const IOrganization* getOrganization() const=0;
         virtual saml::Iterator<const IContactPerson*> getContacts() const=0;
-        virtual saml::Iterator<const IEndpoint*> getDefaultEndpoints() const=0;
         virtual const char* getErrorURL() const=0;
         virtual const DOMElement* getElement() const=0;
         virtual ~IProviderRole() {}
@@ -185,6 +184,7 @@ namespace shibboleth
     {
         virtual saml::Iterator<const IEndpoint*> getSingleLogoutServices() const=0;
         virtual saml::Iterator<const IEndpoint*> getManageNameIdentifierServices() const=0;
+        virtual saml::Iterator<const IEndpoint*> getNameIdentifierMappingServices() const=0;
         virtual ~ISSOProviderRole() {}
     };
     
@@ -197,8 +197,8 @@ namespace shibboleth
     struct SHIB_EXPORTS ISPProviderRole : public virtual ISSOProviderRole
     {
         virtual bool getAuthnRequestsSigned() const=0;
-        virtual const IEndpoint* getDefaultAssertionConsumerServiceURL() const=0;
-        virtual const IEndpoint* getAssertionConsumerServiceURL(const XMLCh* id) const=0;
+        virtual const IEndpoint* getDefaultAssertionConsumerService() const=0;
+        virtual const IEndpoint* getAssertionConsumerServices(const XMLCh* id) const=0;
         virtual ~ISPProviderRole() {}
     };
 
@@ -211,6 +211,7 @@ namespace shibboleth
     struct SHIB_EXPORTS IAttributeAuthorityRole : public virtual IProviderRole
     {
         virtual saml::Iterator<const IEndpoint*> getAttributeServices() const=0;
+        virtual saml::Iterator<const saml::SAMLAttributeDesignator*> getAttributeDesignators() const=0;
         virtual ~IAttributeAuthorityRole() {}
     };
 
@@ -218,7 +219,7 @@ namespace shibboleth
     {
         virtual const XMLCh* getName(const XMLCh* lang) const=0;
         virtual const XMLCh* getDescription(const XMLCh* lang) const=0;
-        virtual saml::Iterator<std::pair<const saml::SAMLAttributeDesignator*,bool> > getWantedAttributes() const=0;
+        virtual saml::Iterator<std::pair<const saml::SAMLAttributeDesignator*,bool> > getRequestedAttributes() const=0;
         virtual const DOMElement* getElement() const=0;
         virtual ~IAttributeRequestingService() {}
     };
