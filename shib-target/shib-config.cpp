@@ -7,6 +7,7 @@
  */
 
 #include "shib-target.h"
+#include "ccache-utils.h"
 #include <shib/shib-threads.h>
 
 #include <log4cpp/PropertyConfigurator.hh>

@@ -62,6 +62,7 @@
 #endif
 
 #include "shib-target.h"
+#include "ccache-utils.h"
 #include <shib/shib-threads.h>
 
 #include <log4cpp/Category.hh>
@@ -77,23 +78,6 @@ using namespace std;
 using namespace saml;
 using namespace shibboleth;
 using namespace shibtarget;
-
-class ResourceEntry
-{
-public:
-  ResourceEntry(SAMLResponse* response);
-  ~ResourceEntry();
-
-  bool isValid(int slop);
-  Iterator<SAMLAssertion*> getAssertions();
-
-  static vector<SAMLAssertion*> g_emptyVector;
-
-private:
-  SAMLResponse* m_response;
-
-  log4cpp::Category* log;
-};
 
 class InternalCCache;
 class InternalCCacheEntry : public CCacheEntry
@@ -113,6 +97,8 @@ public:
   void rdlock() { cacheitem_lock->rdlock(); }
   void wrlock() { cacheitem_lock->wrlock(); }
 
+  static vector<SAMLAssertion*> g_emptyVector;
+
 private:
   ResourceEntry* populate(Resource& resource, int slop);
   ResourceEntry* find(const char* resource);
@@ -131,9 +117,6 @@ private:
   InternalCCache *m_cache;
 
   map<string,ResourceEntry*> m_resources;
-
-  static saml::QName g_authorityKind;
-  static saml::QName g_respondWith;
 
   log4cpp::Category* log;
 
@@ -198,9 +181,7 @@ CCache* CCache::getInstance(const char* type)
 }
 
 // static members
-saml::QName InternalCCacheEntry::g_authorityKind(saml::XML::SAMLP_NS,L(AttributeQuery));
-saml::QName InternalCCacheEntry::g_respondWith(saml::XML::SAML_NS,L(AttributeStatement));
-vector<SAMLAssertion*> ResourceEntry::g_emptyVector;
+vector<SAMLAssertion*> InternalCCacheEntry::g_emptyVector;
 
 
 /******************************************************************************/
@@ -505,7 +486,7 @@ Iterator<SAMLAssertion*> InternalCCacheEntry::getAssertions(Resource& resource)
   ResourceEntry* entry = populate(resource, 0);
   if (entry)
     return entry->getAssertions();
-  return Iterator<SAMLAssertion*>(ResourceEntry::g_emptyVector);
+  return Iterator<SAMLAssertion*>(InternalCCacheEntry::g_emptyVector);
 }
 
 void InternalCCacheEntry::preFetch(Resource& resource, int prefetch_window)
@@ -546,43 +527,11 @@ ResourceEntry* InternalCCacheEntry::populate(Resource& resource, int slop)
   log->info("trying to request attributes for %s@%s -> %s",
 	    m_handle.c_str(), m_originSite.c_str(), resource.getURL());
 
-  auto_ptr<XMLCh> resourceURL(XMLString::transcode(resource.getURL()));
-  Iterator<saml::QName> respond_withs = ArrayIterator<saml::QName>(&g_respondWith);
-
-  // Clone the subject...
-  // 1) I know the static_cast is safe from clone()
-  // 2) the AttributeQuery will destroy this new subject.
-  SAMLSubject* subject=static_cast<SAMLSubject*>(m_subject->clone());
-
-  // Build a SAML Request....
-  SAMLAttributeQuery* q=new SAMLAttributeQuery(subject,resourceURL.get(),
-					       resource.getDesignators());
-  SAMLRequest* req=new SAMLRequest(respond_withs,q);
-
-  // Try this request against all the bindings in the AuthenticationStatement
-  // (i.e. send it to each AA in the list of bindings)
-  Iterator<SAMLAuthorityBinding*> bindings = p_auth->getBindings();
-  SAMLResponse* response = NULL;
-
-  while (!response && bindings.hasNext()) {
-    SAMLAuthorityBinding* binding = bindings.next();
-
-    log->debug("Trying binding...");
-    SAMLBinding* pBinding=m_cache->getBinding(binding->getBinding());
-    log->debug("Sending request");
-    response=pBinding->send(*binding,*req);
-  }
-
-  // ok, we can delete the request now.
-  delete req;
-
-  // Make sure we got a response
-  if (!response) {
-    log->info ("No Response");
+  try {
+    entry = new ResourceEntry(resource, *m_subject, m_cache, p_auth->getBindings());
+  } catch (ShibTargetException &e) {
     return NULL;
   }
-
-  entry = new ResourceEntry(response);
   insert (resource.getResource(), entry);
 
   log->info("fetched and stored SAML response");
@@ -654,79 +603,4 @@ Mutex* InternalCCacheEntry::ResourceLock::find(string& resource)
     return mutex;
   }
   return i->second;
-}
-
-/******************************************************************************/
-/* ResourceEntry:  A Credential Cache Entry for a particular Resource URL     */
-/******************************************************************************/
-
-ResourceEntry::ResourceEntry(SAMLResponse* response)
-{
-  string ctx = "shibtarget::ResourceEntry";
-  log = &(log4cpp::Category::getInstance(ctx));
-
-  log->info("caching resource entry");
-
-  m_response = response;
-}
-
-ResourceEntry::~ResourceEntry()
-{
-  delete m_response;
-}
-
-Iterator<SAMLAssertion*> ResourceEntry::getAssertions()
-{
-  saml::NDC ndc("getAssertions");
-  return m_response->getAssertions();
-}
-
-bool ResourceEntry::isValid(int slop)
-{
-  saml::NDC ndc("isValid");
-
-  log->info("checking validity");
-
-  // This is awful, but the XMLDateTime class is truly horrible.
-  time_t now=time(NULL)+slop;
-#ifdef WIN32
-  struct tm* ptime=gmtime(&now);
-#else
-  struct tm res;
-  struct tm* ptime=gmtime_r(&now,&res);
-#endif
-  char timebuf[32];
-  strftime(timebuf,32,"%Y-%m-%dT%H:%M:%SZ",ptime);
-  auto_ptr<XMLCh> timeptr(XMLString::transcode(timebuf));
-  XMLDateTime curDateTime(timeptr.get());
-  curDateTime.parseDateTime();
-
-  Iterator<SAMLAssertion*> iter = getAssertions();
-
-  while (iter.hasNext()) {
-    SAMLAssertion* assertion = iter.next();
-
-    log->debug ("testing assertion...");
-
-    const XMLDateTime* thistime = assertion->getNotOnOrAfter();
-
-    if (! thistime) {
-      log->debug ("getNotOnOrAfter failed.");
-      return false;
-    }
-
-    auto_ptr<char> nowptr(XMLString::transcode(curDateTime.toString()));
-    auto_ptr<char> assnptr(XMLString::transcode(thistime->toString()));
-
-    log->debug ("comparing now (%s) to %s", nowptr.get(), assnptr.get());
-    int result=XMLDateTime::compareOrder(&curDateTime, thistime);
-
-    if (result != XMLDateTime::LESS_THAN) {
-      log->debug("nope, not still valid");
-      return false;
-    }
-  } // while
-
-  log->debug("yep, all still valid");
-  return true;
 }

@@ -10,6 +10,7 @@
 
 #include "shibrpc.h"
 #include "shib-target.h"
+#include "ccache-utils.h"
 
 #include <log4cpp/Category.hh>
 #include <sstream>

@@ -135,58 +135,6 @@ namespace shibtarget {
     ResourcePriv *m_priv;
   };
 
-
-  class CCacheEntry
-  {
-  public:
-    virtual saml::Iterator<saml::SAMLAssertion*> getAssertions(Resource& resource) = 0;
-    virtual void preFetch(Resource& resource, int prefetch_window) = 0;
-
-    virtual bool isSessionValid(time_t lifetime, time_t timeout) = 0;
-    virtual const char* getClientAddress() = 0;
-    virtual void release() = 0;
-  };
-    
-  class CCache
-  {
-  public:
-    virtual ~CCache() = 0;
-
-    virtual saml::SAMLBinding* getBinding(const XMLCh* bindingProt) = 0;
-
-    // insert() the Auth Statement into the CCache.
-    //
-    // Make sure you do not hold any open CCacheEntry objects before
-    // you call this method.
-    //
-    virtual void insert(const char* key, saml::SAMLAuthenticationStatement *s,
-			const char *client_addr) = 0;
-
-    // find() a CCacheEntry in the CCache for the given key.
-    //
-    // This returns a LOCKED cache entry.  You should release() it
-    // when you are done using it.
-    //
-    // Note that you MUST NOT call any other CCache methods while you
-    // are holding this CCacheEntry!
-    //
-    virtual CCacheEntry* find(const char* key) = 0;
-
-    // remove() a key from the CCache
-    //
-    // NOTE: If you previously executed a find(), make sure you
-    // "release()" the CCacheEntry before you try to remove it!
-    //
-    virtual void remove(const char* key) = 0;
-    
-    // create a CCache instance of the provided type.  A NULL type
-    // implies that it should create the default cache type.
-    //
-    static CCache* getInstance(const char* type);
-  };    
-
-  extern CCache* g_shibTargetCCache;
-
   class RPCHandleInternal;
   class RPCHandle
   {
