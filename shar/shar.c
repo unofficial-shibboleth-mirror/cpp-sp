@@ -158,6 +158,7 @@ static void shar_svc_run(ShibSocket listener, const ShibRPCProtocols protos[], i
       new_connection(listener, protos, numproto);
     }
   }
+  printf ("shar_svc_run ended\n");
 }
 
 #ifdef WIN32
@@ -201,7 +202,7 @@ int real_main(const char* arg, int preinit)
       shib_sock_close(sock, shib_target_sockname());
 
       shib_target_finalize();
-      printf("shar_svc_run returned.\n");
+      fprintf(stderr, "shar_svc_run returned.\n");
   }
   return 0;
 }
@@ -330,11 +331,13 @@ int main(int argc, char *argv[])
 
   /* Finalize the SHAR, close all clients */
   shar_utils_fini();
+  fprintf(stderr, "shar utils finalized\n");
 
   shib_sock_close(sock, shib_target_sockname());
+  fprintf(stderr, "shib socket closed\n");
 
   shib_target_finalize();
-  fprintf(stderr, "shar_svc_run returned.\n");
+  fprintf(stderr, "shar finished.  bye bye.\n");
   return 0;
 }
 
