@@ -74,7 +74,9 @@ namespace shibtarget {
     class XMLApplicationMapperImpl : public ReloadableXMLFileImpl
     {
     public:
-        XMLApplicationMapperImpl(const char* pathname);
+        XMLApplicationMapperImpl(const char* pathname) : ReloadableXMLFileImpl(pathname) { init(); }
+        XMLApplicationMapperImpl(const DOMElement* e) : ReloadableXMLFileImpl(e) { init(); }
+        void init();
         ~XMLApplicationMapperImpl();
     
         struct Override
@@ -105,29 +107,33 @@ ReloadableXMLFileImpl* XMLApplicationMapper::newImplementation(const char* pathn
     return new XMLApplicationMapperImpl(pathname);
 }
 
+ReloadableXMLFileImpl* XMLApplicationMapper::newImplementation(const DOMElement* e) const
+{
+    return new XMLApplicationMapperImpl(e);
+}
+
 XMLApplicationMapperImpl::Override::~Override()
 {
     for (map<string,Override*>::iterator i=m_map.begin(); i!=m_map.end(); i++)
         delete i->second;
 }
 
-XMLApplicationMapperImpl::XMLApplicationMapperImpl(const char* pathname) : ReloadableXMLFileImpl(pathname)
+void XMLApplicationMapperImpl::init()
 {
     NDC ndc("XMLApplicationMapperImpl");
     log=&Category::getInstance("shibtarget.XMLApplicationMapper");
 
     try
     {
-        DOMElement* e = m_doc->getDocumentElement();
-        if (XMLString::compareString(shibtarget::XML::APPMAP_NS,e->getNamespaceURI()) ||
-            XMLString::compareString(shibtarget::XML::Literals::ApplicationMap,e->getLocalName()))
+        if (XMLString::compareString(shibtarget::XML::APPMAP_NS,m_root->getNamespaceURI()) ||
+            XMLString::compareString(shibtarget::XML::Literals::ApplicationMap,m_root->getLocalName()))
         {
             log->error("Construction requires a valid app mapping file: (appmap:ApplicationMap as root element)");
             throw MetadataException("Construction requires a valid app mapping file: (appmap:ApplicationMap as root element)");
         }
         
         // Loop over the Host elements.
-        DOMNodeList* nlist = e->getElementsByTagNameNS(shibtarget::XML::APPMAP_NS,shibtarget::XML::Literals::Host);
+        DOMNodeList* nlist = m_root->getElementsByTagNameNS(shibtarget::XML::APPMAP_NS,shibtarget::XML::Literals::Host);
         for (int i=0; nlist && i<nlist->getLength(); i++)
         {
             DOMElement* host=static_cast<DOMElement*>(nlist->item(i));

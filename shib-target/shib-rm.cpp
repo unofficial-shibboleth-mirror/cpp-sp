@@ -62,7 +62,6 @@
 #endif
 
 #include <xercesc/util/Base64.hpp>
-#include <log4cpp/Category.hh>
 
 #include <sstream>
 #include <stdexcept>
@@ -76,28 +75,26 @@ using namespace shibtarget;
 class shibtarget::RMPriv
 {
 public:
-  RMPriv(RPCHandle *rpc, RMConfig cfg);
+  RMPriv(RMConfig cfg);
   ~RMPriv();
 
-  RPCHandle *m_rpc;
   RMConfig m_config;
   log4cpp::Category* log;
 };
 
-RMPriv::RMPriv(RPCHandle *rpc, RMConfig cfg)
+RMPriv::RMPriv(RMConfig cfg)
 {
   string ctx = "shibtarget.RM";
   log = &(log4cpp::Category::getInstance(ctx));
-  m_rpc = rpc;
   m_config = cfg;
 }
 
 RMPriv::~RMPriv() {}
 
-RM::RM(RPCHandle *rpc, RMConfig cfg)
+RM::RM(RMConfig cfg)
 {
-  m_priv = new RMPriv(rpc, cfg);
-  m_priv->log->info("Created new RM module");
+  m_priv = new RMPriv(cfg);
+  m_priv->log->debug("Created new RM module");
 }
 
 RM::~RM()
@@ -106,11 +103,10 @@ RM::~RM()
 }
 
 RPCError* RM::getAssertions(const char* cookie, const char* ip, const char* resource,
-			    vector<SAMLAssertion*> &assertions,
-			    SAMLAuthenticationStatement **statement)
+			    vector<SAMLAssertion*> &assertions, SAMLAuthenticationStatement **statement)
 {
   saml::NDC ndc("getAssertions");
-  m_priv->log->info ("get assertions...");
+  m_priv->log->info("get assertions...");
 
   if (!cookie || *cookie == '\0') {
     m_priv->log->error ("no cookie");
@@ -122,8 +118,8 @@ RPCError* RM::getAssertions(const char* cookie, const char* ip, const char* reso
     return new RPCError(-1, "No IP Address");
   }
 
-  m_priv->log->info ("request from %s for \"%s\"", ip, resource);
-  m_priv->log->debug ("session cookie: %s", cookie);
+  m_priv->log->info("request from %s for \"%s\"", ip, resource);
+  m_priv->log->debug("session cookie: %s", cookie);
 
   shibrpc_get_assertions_args_1 arg;
   arg.cookie.cookie = (char*)cookie;
@@ -137,28 +133,28 @@ RPCError* RM::getAssertions(const char* cookie, const char* ip, const char* reso
   // Loop on the RPC in case we lost contact the first time through
   int retry = 1;
   CLIENT *clnt;
+  RPC rpc;
   do {
-    clnt = m_priv->m_rpc->connect();
-    if (shibrpc_get_assertions_1 (&arg, &ret, clnt) != RPC_SUCCESS) {
+    clnt = rpc->connect();
+    if (shibrpc_get_assertions_1(&arg, &ret, clnt) != RPC_SUCCESS) {
       // FAILED.  Release, disconnect, and try again.
-      m_priv->log->debug ("RPC Failure: %p (%p): %s", m_priv, clnt,
-			  clnt_spcreateerror (""));
-      m_priv->m_rpc->release();
-      m_priv->m_rpc->disconnect();
+      m_priv->log->debug("RPC Failure: %p (%p): %s", m_priv, clnt, clnt_spcreateerror (""));
+      rpc->disconnect();
       if (retry)
-	retry--;
+        retry--;
       else {
-	m_priv->log->error ("RPC Failure: %p, %p", m_priv, clnt);
-	return new RPCError(-1, "RPC Failure");
+        m_priv->log->error("RPC Failure: %p, %p", m_priv, clnt);
+        return new RPCError(-1, "RPC Failure");
       }
-    } else {
-      // SUCCESS.  Release the lock.
-      m_priv->m_rpc->release();
+    }
+    else {
+      // SUCCESS.  Release back into pool
+      rpc.pool();
       retry = -1;
     }
-  } while (retry >= 0);
+  } while (retry>=0);
 
-  m_priv->log->debug ("RPC completed with status %d (%p)", ret.status.status, m_priv);
+  m_priv->log->debug("RPC completed with status %d (%p)", ret.status.status, m_priv);
 
   RPCError* retval = NULL;
   if (ret.status.status)
@@ -166,61 +162,60 @@ RPCError* RM::getAssertions(const char* cookie, const char* ip, const char* reso
   else {
     try {
       try {
-	for (u_int i = 0; i < ret.assertions.assertions_len; i++) {
-	  istringstream attrstream(ret.assertions.assertions_val[i].xml_string);
-	  SAMLAssertion *as = NULL;
-	  //	m_priv->log->debug("Trying to decode assertion %d: %s", i,
-	  //			   ret.assertions.assertions_val[i].xml_string);
-	  m_priv->log->debugStream() << "Trying to decode assertion " << i
-		     << ": " << ret.assertions.assertions_val[i].xml_string <<
-	    		log4cpp::CategoryStream::ENDLINE;
-	  as = new SAMLAssertion(attrstream);
+        for (u_int i = 0; i < ret.assertions.assertions_len; i++) {
+          istringstream attrstream(ret.assertions.assertions_val[i].xml_string);
+          SAMLAssertion *as = NULL;
+          m_priv->log->debugStream() << "Trying to decode assertion " << i
+        	     << ": " << ret.assertions.assertions_val[i].xml_string << log4cpp::CategoryStream::ENDLINE;
+          as = new SAMLAssertion(attrstream);
 
-	  if (as)
-	  {
-	    // XXX: Should move this audience check up to the RPC server side, and cache each assertion one
-	    // by one instead of the whole response.
-	    bool ok=true;
-	    Iterator<SAMLCondition*> conds=as->getConditions();
-	    while (conds.hasNext())
-	    {
-	      SAMLAudienceRestrictionCondition* cond=dynamic_cast<SAMLAudienceRestrictionCondition*>(conds.next());
-          if (!cond->eval(dynamic_cast<STConfig&>(ShibTargetConfig::getConfig()).getPolicies()))
-	      {
-		m_priv->log->warn("Assertion failed AudienceRestrictionCondition check, skipping it...");
-		ok=false;
-	      }
-	    }
-	    if (ok)
-	      assertions.push_back(as);
-	  }
-	}
+          if (as)
+          {
+            // XXX: Should move this audience check up to the RPC server side, and cache each assertion one
+            // by one instead of the whole response.
+            bool ok=true;
+            Iterator<SAMLCondition*> conds=as->getConditions();
+            while (conds.hasNext())
+            {
+              SAMLAudienceRestrictionCondition* cond=dynamic_cast<SAMLAudienceRestrictionCondition*>(conds.next());
+              if (!cond->eval(dynamic_cast<STConfig&>(ShibTargetConfig::getConfig()).getPolicies()))
+              {
+                m_priv->log->warn("Assertion failed AudienceRestrictionCondition check, skipping it...");
+                ok=false;
+              }
+            }
+            if (ok)
+              assertions.push_back(as);
+          }
+        }
 
-	// return the Authentication Statement
-	if (statement) {
-	  istringstream authstream(ret.auth_statement.xml_string);
-	  SAMLAuthenticationStatement *auth = NULL;
-	  
-	  m_priv->log->debugStream() <<
-	    "Trying to decode authentication statement: " <<
-	    ret.auth_statement.xml_string << log4cpp::CategoryStream::ENDLINE;
-	  auth = new SAMLAuthenticationStatement(authstream);
-
-	  // Save off the statement
-	  *statement = auth;
-	}
-
-      } catch (SAMLException& e) {
-	m_priv->log->error ("SAML Exception: %s", e.what());
-	ostringstream os;
-	os << e;
-	throw ShibTargetException(SHIBRPC_SAML_EXCEPTION, os.str());
-      } catch (XMLException& e) {
-	m_priv->log->error ("XML Exception: %s", e.getMessage());
-	auto_ptr<char> msg(XMLString::transcode(e.getMessage()));
-	throw ShibTargetException (SHIBRPC_XML_EXCEPTION, msg.get());
+        // return the Authentication Statement
+        if (statement) {
+          istringstream authstream(ret.auth_statement.xml_string);
+          SAMLAuthenticationStatement *auth = NULL;
+          
+          m_priv->log->debugStream() <<
+            "Trying to decode authentication statement: " <<
+            ret.auth_statement.xml_string << log4cpp::CategoryStream::ENDLINE;
+            auth = new SAMLAuthenticationStatement(authstream);
+        
+            // Save off the statement
+            *statement = auth;
+        }
       }
-    } catch (ShibTargetException &e) {
+      catch (SAMLException& e) {
+      	m_priv->log->error ("SAML Exception: %s", e.what());
+      	ostringstream os;
+       	os << e;
+       	throw ShibTargetException(SHIBRPC_SAML_EXCEPTION, os.str());
+      }
+      catch (XMLException& e) {
+       	m_priv->log->error ("XML Exception: %s", e.getMessage());
+       	auto_ptr<char> msg(XMLString::transcode(e.getMessage()));
+       	throw ShibTargetException (SHIBRPC_XML_EXCEPTION, msg.get());
+      }
+    }
+    catch (ShibTargetException &e) {
       retval = new RPCError(e);
     }
 
@@ -228,7 +223,7 @@ RPCError* RM::getAssertions(const char* cookie, const char* ip, const char* reso
       retval = new RPCError();
   }
 
-  clnt_freeres (clnt, (xdrproc_t)xdr_shibrpc_get_assertions_ret_1, (caddr_t)&ret);
+  clnt_freeres(clnt, (xdrproc_t)xdr_shibrpc_get_assertions_ret_1, (caddr_t)&ret);
 
   m_priv->log->debug ("returning..");
   return retval;

@@ -76,13 +76,62 @@
 
 #include "ccache-utils.h"
 
+#include <log4cpp/Category.hh>
+
 namespace shibtarget {
+
+    // Wraps the actual RPC connection
+    class RPCHandle
+    {
+    public:
+        RPCHandle(const char* shar, u_long program, u_long version);
+        ~RPCHandle();
+
+        CLIENT* connect(void);  // connects and returns the CLIENT handle
+        void disconnect();      // disconnects, should not return disconnected handles to pool!
+
+    private:
+        log4cpp::Category* log;
+        const char* m_shar;
+        u_long m_program;
+        u_long m_version;
+        CLIENT*  m_clnt;
+        ShibSocket m_sock;
+    };
+  
+    // Manages the pool of connections
+    class RPCHandlePool
+    {
+    public:
+        RPCHandlePool() :  m_lock(shibboleth::Mutex::create()) {}
+        ~RPCHandlePool();
+        RPCHandle* get();
+        void put(RPCHandle*);
+  
+    private:
+        std::auto_ptr<shibboleth::Mutex> m_lock;
+        std::stack<RPCHandle*> m_pool;
+    };
+  
+    // Cleans up after use
+    class RPC
+    {
+    public:
+        RPC();
+        ~RPC() {delete m_handle;}
+        RPCHandle* operator->() {return m_handle;}
+        void pool() {m_pool.put(m_handle); m_handle=NULL;}
+    
+    private:
+        RPCHandlePool& m_pool;
+        RPCHandle* m_handle;
+    };
 
     // An implementation of the URL->application mapping API using an XML file
     class XMLApplicationMapper : public IApplicationMapper, public shibboleth::ReloadableXMLFile
     {
     public:
-        XMLApplicationMapper(const char* pathname) : shibboleth::ReloadableXMLFile(pathname) {}
+        XMLApplicationMapper(const DOMElement* e) : shibboleth::ReloadableXMLFile(e) {}
         ~XMLApplicationMapper() {}
 
         const char* getApplicationFromURL(const char* url) const;
@@ -96,6 +145,7 @@ namespace shibtarget {
 
     protected:
         virtual shibboleth::ReloadableXMLFileImpl* newImplementation(const char* pathname) const;
+        virtual shibboleth::ReloadableXMLFileImpl* newImplementation(const DOMElement* e) const;
     };
 
     class STConfig : public ShibTargetConfig
@@ -113,6 +163,7 @@ namespace shibtarget {
         saml::Iterator<shibboleth::ICredentials*> getCredentialProviders() const { return creds; }
         saml::Iterator<shibboleth::IAAP*> getAAPProviders() const { return aaps; }
         saml::Iterator<const XMLCh*> getPolicies() const { return saml::Iterator<const XMLCh*>(policies); }
+        RPCHandlePool& getRPCHandlePool() { return m_rpcpool; }
      
     private:
         saml::SAMLConfig& samlConf;
@@ -130,6 +181,8 @@ namespace shibtarget {
         std::vector<shibboleth::ITrust*> trusts;
         std::vector<shibboleth::ICredentials*> creds;
         std::vector<shibboleth::IAAP*> aaps;
+        
+        RPCHandlePool m_rpcpool;
       
         friend const char* ::shib_target_sockname();
         friend const char* ::shib_target_sockacl(unsigned int);

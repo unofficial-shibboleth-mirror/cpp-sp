@@ -220,6 +220,10 @@ void STConfig::init()
     delete iter;
   }
 
+    DOMImplementation* impl=DOMImplementationRegistry::getDOMImplementation(NULL);
+    DOMDocument* dummydoc=impl->createDocument();
+    DOMElement* dummy = dummydoc->createElementNS(NULL,XML::Literals::ApplicationMap);
+
     // Load the specified metadata, trust, creds, and aap sources.
     const string* prov;
     ShibINI::Iterator* iter=ini->tag_iterator(SHIBTARGET_TAG_METADATA);
@@ -227,7 +231,9 @@ void STConfig::init()
         string source=ini->get(SHIBTARGET_TAG_METADATA,*prov);
         log.info("building metadata provider: type=%s, source=%s",prov->c_str(),source.c_str());
         try {
-            metadatas.push_back(shibConf.newMetadata(prov->c_str(),source.c_str()));
+            auto_ptr_XMLCh src(source.c_str());
+            dummy->setAttributeNS(NULL,shibboleth::XML::Literals::url,src.get());
+            metadatas.push_back(shibConf.newMetadata(prov->c_str(),dummy));
         }
         catch (exception& e) {
             log.crit("error building metadata provider: type=%s, source=%s (%s)",prov->c_str(),source.c_str(),e.what());
@@ -242,7 +248,9 @@ void STConfig::init()
         string source=ini->get(SHIBTARGET_TAG_AAP,*prov);
         log.info("building AAP provider: type=%s, source=%s",prov->c_str(),source.c_str());
         try {
-            aaps.push_back(shibConf.newAAP(prov->c_str(),source.c_str()));
+            auto_ptr_XMLCh src(source.c_str());
+            dummy->setAttributeNS(NULL,shibboleth::XML::Literals::url,src.get());
+            aaps.push_back(shibConf.newAAP(prov->c_str(),dummy));
         }
         catch (exception& e) {
             log.crit("error building AAP provider: type=%s, source=%s (%s)",prov->c_str(),source.c_str(),e.what());
@@ -258,7 +266,9 @@ void STConfig::init()
             string source=ini->get(SHIBTARGET_TAG_TRUST,*prov);
             log.info("building trust provider: type=%s, source=%s",prov->c_str(),source.c_str());
             try {
-                trusts.push_back(shibConf.newTrust(prov->c_str(),source.c_str()));
+                auto_ptr_XMLCh src(source.c_str());
+                dummy->setAttributeNS(NULL,shibboleth::XML::Literals::url,src.get());
+                trusts.push_back(shibConf.newTrust(prov->c_str(),dummy));
             }
             catch (exception& e) {
                 log.crit("error building trust provider: type=%s, source=%s (%s)",prov->c_str(),source.c_str(),e.what());
@@ -272,7 +282,9 @@ void STConfig::init()
             string source=ini->get(SHIBTARGET_TAG_CREDS,*prov);
             log.info("building creds provider: type=%s, source=%s",prov->c_str(),source.c_str());
             try {
-                creds.push_back(shibConf.newCredentials(prov->c_str(),source.c_str()));
+                auto_ptr_XMLCh src(source.c_str());
+                dummy->setAttributeNS(NULL,shibboleth::XML::Literals::url,src.get());
+                creds.push_back(shibConf.newCredentials(prov->c_str(),dummy));
             }
             catch (exception& e) {
                 log.crit("error building creds provider: type=%s, source=%s (%s)",prov->c_str(),source.c_str(),e.what());
@@ -296,7 +308,9 @@ void STConfig::init()
   if (app == SHIBTARGET_SHIRE && ini->get_tag(app, SHIBTARGET_TAG_APPMAPPER, false, &tag)) {
     saml::XML::registerSchema(shibtarget::XML::APPMAP_NS,shibtarget::XML::APPMAP_SCHEMA_ID);
     try {
-        m_applicationMapper=new XMLApplicationMapper(tag.c_str());
+        auto_ptr_XMLCh src(tag.c_str());
+        dummy->setAttributeNS(NULL,shibboleth::XML::Literals::url,src.get());
+        m_applicationMapper=new XMLApplicationMapper(dummy);
         dynamic_cast<XMLApplicationMapper*>(m_applicationMapper)->getImplementation();
     }
     catch (exception& e) {
@@ -307,6 +321,8 @@ void STConfig::init()
     }
   }
   
+    dummydoc->release();
+
   // Initialize the SHAR Cache
   if (app == SHIBTARGET_SHAR) {
     const char * cache_type = NULL;

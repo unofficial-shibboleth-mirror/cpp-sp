@@ -73,32 +73,26 @@ using namespace shibtarget;
 class shibtarget::SHIREPriv
 {
 public:
-  SHIREPriv(RPCHandle *rpc, SHIREConfig cfg, const char* shire_url);
-  ~SHIREPriv();
+  SHIREPriv(SHIREConfig cfg, const char* shire_url);
+  ~SHIREPriv() {}
 
-  RPCHandle *	m_rpc;
   SHIREConfig	m_config;
   string	    m_shire_url;
 
   log4cpp::Category* log;
 };
 
-SHIREPriv::SHIREPriv(RPCHandle *rpc, SHIREConfig cfg, const char* shire_url)
+SHIREPriv::SHIREPriv(SHIREConfig cfg, const char* shire_url)
 {
-  string ctx = "shibtarget.SHIRE";
-  log = &(log4cpp::Category::getInstance(ctx));
-  m_rpc = rpc;
+  log = &(log4cpp::Category::getInstance("shibtarget.SHIRE"));
   m_config = cfg;
   m_shire_url = shire_url;
 }
 
-SHIREPriv::~SHIREPriv() {}
-
-
-SHIRE::SHIRE(RPCHandle *rpc, SHIREConfig cfg, const char* shire_url)
+SHIRE::SHIRE(SHIREConfig cfg, const char* shire_url)
 {
-  m_priv = new SHIREPriv(rpc, cfg, shire_url);
-  m_priv->log->info ("New SHIRE handle created: %p", m_priv);
+  m_priv = new SHIREPriv(cfg, shire_url);
+  m_priv->log->debug("New SHIRE handle created: %p", m_priv);
 }
 
 SHIRE::~SHIRE()
@@ -142,28 +136,28 @@ RPCError* SHIRE::sessionIsValid(const char* cookie, const char* ip, const char* 
   // Loop on the RPC in case we lost contact the first time through
   int retry = 1;
   CLIENT *clnt;
+  RPC rpc;
   do {
-    clnt = m_priv->m_rpc->connect();
-    if (shibrpc_session_is_valid_1 (&arg, &ret, clnt) != RPC_SUCCESS) {
+    clnt = rpc->connect();
+    if (shibrpc_session_is_valid_1(&arg, &ret, clnt) != RPC_SUCCESS) {
       // FAILED.  Release, disconnect, and try again...
-      m_priv->log->debug ("RPC Failure: %p (%p): %s", m_priv, clnt,
-			  clnt_spcreateerror (""));
-      m_priv->m_rpc->release();
-      m_priv->m_rpc->disconnect();
+      m_priv->log->debug("RPC Failure: %p (%p): %s", m_priv, clnt, clnt_spcreateerror(""));
+      rpc->disconnect();
       if (retry)
-	retry--;
+	       retry--;
       else {
-	m_priv->log->error ("RPC Failure: %p (%p)", m_priv, clnt);
-	return new RPCError(-1, "RPC Failure");
+        m_priv->log->error("RPC Failure: %p (%p)", m_priv, clnt);
+        return new RPCError(-1, "RPC Failure");
       }
-    } else {
-      // SUCCESS.  Release the lock.
-      m_priv->m_rpc->release();
+    }
+    else {
+      // SUCCESS.  Return to the pool.
+      rpc.pool();
       retry = -1;
     }
-  } while (retry >= 0);
+  } while (retry>=0);
 
-  m_priv->log->debug ("RPC completed with status %d, %p", ret.status.status, m_priv);
+  m_priv->log->debug("RPC completed with status %d, %p", ret.status.status, m_priv);
 
   RPCError* retval;
   if (ret.status.status)
@@ -173,7 +167,7 @@ RPCError* SHIRE::sessionIsValid(const char* cookie, const char* ip, const char* 
 
   clnt_freeres (clnt, (xdrproc_t)xdr_shibrpc_session_is_valid_ret_1, (caddr_t)&ret);
 
-  m_priv->log->debug ("returning");
+  m_priv->log->debug("returning");
   return retval;
 }
 
@@ -209,28 +203,28 @@ RPCError* SHIRE::sessionCreate(const char* post, const char* ip, const char* app
   // Loop on the RPC in case we lost contact the first time through
   int retry = 1;
   CLIENT* clnt;
+  RPC rpc;
   do {
-    clnt = m_priv->m_rpc->connect();
+    clnt = rpc->connect();
     if (shibrpc_new_session_1 (&arg, &ret, clnt) != RPC_SUCCESS) {
       // FAILED.  Release, disconnect, and retry
-      m_priv->log->debug ("RPC Failure: %p (%p): %s", m_priv, clnt,
-			  clnt_spcreateerror (""));
-      m_priv->m_rpc->release();
-      m_priv->m_rpc->disconnect();
+      m_priv->log->debug("RPC Failure: %p (%p): %s", m_priv, clnt, clnt_spcreateerror (""));
+      rpc->disconnect();
       if (retry)
-	retry--;
+	    retry--;
       else {
-	m_priv->log->error ("RPC Failure: %p (%p)", m_priv, clnt);
-	return new RPCError(-1, "RPC Failure");
+        m_priv->log->error("RPC Failure: %p (%p)", m_priv, clnt);
+        return new RPCError(-1, "RPC Failure");
       }
-    } else {
-      // SUCCESS.  Release and continue
-      m_priv->m_rpc->release();
+    }
+    else {
+      // SUCCESS.  Pool and continue
+      rpc.pool();
       retry = -1;
     }
-  } while (retry >= 0);
+  } while (retry>=0);
 
-  m_priv->log->debug ("RPC completed with status %d (%p)", ret.status.status, m_priv);
+  m_priv->log->debug("RPC completed with status %d (%p)", ret.status.status, m_priv);
 
   RPCError* retval;
   if (ret.status.status)
@@ -241,7 +235,7 @@ RPCError* SHIRE::sessionCreate(const char* post, const char* ip, const char* app
     retval = new RPCError();
   }
 
-  clnt_freeres (clnt, (xdrproc_t)xdr_shibrpc_new_session_ret_1, (caddr_t)&ret);
+  clnt_freeres(clnt, (xdrproc_t)xdr_shibrpc_new_session_ret_1, (caddr_t)&ret);
 
   m_priv->log->debug ("returning");
   return retval;

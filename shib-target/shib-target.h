@@ -184,27 +184,7 @@ SHIBTARGET_EXPORTS const char* shib_target_sockacl(unsigned int index);
 
 
 namespace shibtarget {
-  class RPCHandleInternal;
-  class SHIBTARGET_EXPORTS RPCHandle
-  {
-  public:
-    RPCHandle(const char* shar, u_long program, u_long version);
-    ~RPCHandle();
-
-    CLIENT *	connect(void);	/* locks the HANDLE and returns the CLIENT */
-    void	release(void);	/* unlocks the HANDLE */
-    void	disconnect(void); /* disconnects */
-
-    // A simple function to get a handle
-    // Note that it does not check that an existing handle matches the request.
-    static RPCHandle* get_handle(shibboleth::ThreadKey* key,
-				 const char* shar, u_long program,
-				 u_long version);
-
-  private:
-    RPCHandleInternal *m_priv;
-  };
-
+  
   class SHIBTARGET_EXPORTS ShibTargetException : public std::exception
   {
   public:
@@ -345,7 +325,7 @@ namespace shibtarget {
   class SHIBTARGET_EXPORTS SHIRE
   {
   public:
-    SHIRE(RPCHandle *rpc, SHIREConfig config, const char* shire_url);
+    SHIRE(SHIREConfig config, const char* shire_url);
     ~SHIRE();
 
     RPCError* sessionIsValid(const char* cookie, const char* ip, const char* application_id);
@@ -365,7 +345,7 @@ namespace shibtarget {
   class SHIBTARGET_EXPORTS RM
   {
   public:
-    RM(RPCHandle *rpc, RMConfig config);
+    RM(RMConfig config);
     ~RM();
 
     RPCError* getAssertions(const char* cookie, const char* ip, const char* application_id,
