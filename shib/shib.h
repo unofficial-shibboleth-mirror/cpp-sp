@@ -187,6 +187,7 @@ namespace shibboleth
         virtual const IEntityDescriptor* getEntityDescriptor() const=0;
         virtual saml::Iterator<const XMLCh*> getProtocolSupportEnumeration() const=0;
         virtual bool hasSupport(const XMLCh* protocol) const=0;
+        virtual bool isValid() const=0;
         virtual const char* getErrorURL() const=0;
         virtual saml::Iterator<const IKeyDescriptor*> getKeyDescriptors() const=0;
         virtual const IOrganization* getOrganization() const=0;
@@ -264,6 +265,7 @@ namespace shibboleth
     {
         virtual const IEntityDescriptor* getEntityDescriptor() const=0;
         virtual const XMLCh* getOwnerID() const=0;
+        virtual bool isValid() const=0;
         virtual saml::Iterator<const XMLCh*> getMembers() const=0;
         virtual bool isMember(const XMLCh* id) const=0;
         virtual saml::Iterator<const IKeyDescriptor*> getKeyDescriptors() const=0;
@@ -275,6 +277,7 @@ namespace shibboleth
     struct SHIB_EXPORTS IEntityDescriptor
     {
         virtual const XMLCh* getId() const=0;
+        virtual bool isValid() const=0;
         virtual saml::Iterator<const IRoleDescriptor*> getRoleDescriptors() const=0;
         virtual const IIDPSSODescriptor* getIDPSSODescriptor(const XMLCh* protocol) const=0;
         virtual const ISPSSODescriptor* getSPSSODescriptor(const XMLCh* protocol) const=0;
@@ -293,6 +296,7 @@ namespace shibboleth
     struct SHIB_EXPORTS IEntitiesDescriptor
     {
         virtual const XMLCh* getName() const=0;
+        virtual bool isValid() const=0;
         virtual const IEntitiesDescriptor* getEntitiesDescriptor() const=0;
         virtual saml::Iterator<const IEntitiesDescriptor*> getEntitiesDescriptors() const=0;
         virtual saml::Iterator<const IEntityDescriptor*> getEntityDescriptors() const=0;
