@@ -443,15 +443,15 @@ ShibTarget::doCheckAuthZ(void)
     bool method_restricted=false;
     string remote_user = getRemoteUser();
 
-    #define CHECK_OK { \
+    #define CHECK_OK do { \
       if (ht->requireAll) { \
-	delete ht; \
-	if (grpstatus) delete grpstatus; \
-	return pair<bool,void*>(false, NULL); \
+        delete ht; \
+        if (grpstatus) delete grpstatus; \
+        return pair<bool,void*>(false, NULL); \
       } \
       auth_OK[x] = true; \
       continue; \
-    }
+    } while (0)
 
     for (int x = 0; x < ht->elements.size(); x++) {
       auth_OK[x] = false;
@@ -525,8 +525,7 @@ ShibTarget::doCheckAuthZ(void)
         Iterator<IAAP*> provs = m_priv->m_app->getAAPProviders();
         AAP wrapper(provs, w);
         if (wrapper.fail()) {
-          log(LogLevelWarn, string("doCheckAuthZ didn't recognize require rule: ")
-        			   + w);
+          log(LogLevelWarn, string("doCheckAuthZ didn't recognize require rule: ") + w);
           continue;
         }
 
@@ -553,7 +552,7 @@ ShibTarget::doCheckAuthZ(void)
             for (int i = 0;  i < vals_str.length();  i++) {
               if (vals_str.at(i) == ';') {
                 if (i == 0) {
-                  log(LogLevelError, string("doCheckAuthZ invalid header encoding")+
+                  log(LogLevelError, string("doCheckAuthZ invalid header encoding") +
                     vals + ": starts with a semicolon");
                   goto out;
                 }
@@ -597,7 +596,7 @@ ShibTarget::doCheckAuthZ(void)
               }
             }
             else if ((wrapper->getCaseSensitive() && val==w) ||
-                 (!wrapper->getCaseSensitive() && !strcasecmp(val.c_str(),w))) {
+                    (!wrapper->getCaseSensitive() && !strcasecmp(val.c_str(),w))) {
               log(LogLevelDebug, string("doCheckAuthZ expecting ") + w +
               ", got " + val + ": authorization granted");
               CHECK_OK;
@@ -610,7 +609,7 @@ ShibTarget::doCheckAuthZ(void)
           catch (XMLException& ex) {
             auto_ptr_char tmp(ex.getMessage());
             log(LogLevelError, string("doCheckAuthZ caught exception while parsing regular expression (")
-        + w + "): " + tmp.get());
+                + w + "): " + tmp.get());
           }
         }
       }
@@ -691,23 +690,14 @@ ShibTarget::doExportAssertions(bool exportAssertion)
     // Clear out the list of mapped attributes
     while (provs.hasNext()) {
       IAAP* aap=provs.next();
-      aap->lock();
-      try {
-        Iterator<const IAttributeRule*> rules=aap->getAttributeRules();
-        while (rules.hasNext()) {
+      Locker locker(aap);
+      Iterator<const IAttributeRule*> rules=aap->getAttributeRules();
+      while (rules.hasNext()) {
           const char* header=rules.next()->getHeader();
           if (header)
             clearHeader(header);
-        }
       }
-      catch(...) {
-        aap->unlock();
-        log(LogLevelError, "caught unexpected error while clearing headers");
-        throw;
-      }
-      aap->unlock();
     }
-    provs.reset();
     
     // Maybe export the first assertion.
     clearHeader("Shib-Attributes");
@@ -728,25 +718,30 @@ ShibTarget::doExportAssertions(bool exportAssertion)
 
     // Export the SAML AuthnMethod and the origin site name, and possibly the NameIdentifier.
     clearHeader("Shib-Origin-Site");
+    clearHeader("Shib-Identity-Provider");
     clearHeader("Shib-Authentication-Method");
     clearHeader("Shib-NameIdentifier-Format");
     auto_ptr_char os(m_priv->m_sso_statement->getSubject()->getNameIdentifier()->getNameQualifier());
     auto_ptr_char am(m_priv->m_sso_statement->getAuthMethod());
     setHeader("Shib-Origin-Site", os.get());
+    setHeader("Shib-Identity-Provider", os.get());
     setHeader("Shib-Authentication-Method", am.get());
     
     // Export NameID?
-    AAP wrapper(provs,
-		m_priv->m_sso_statement->getSubject()->getNameIdentifier()->getFormat(),
-		Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
-    if (!wrapper.fail() && wrapper->getHeader()) {
-      auto_ptr_char form(m_priv->m_sso_statement->getSubject()->getNameIdentifier()->getFormat());
-      auto_ptr_char nameid(m_priv->m_sso_statement->getSubject()->getNameIdentifier()->getName());
-      setHeader("Shib-NameIdentifier-Format", form.get());
-      if (!strcmp(wrapper->getHeader(),"REMOTE_USER"))
-        setRemoteUser(nameid.get());
-      else
-        setHeader(wrapper->getHeader(), nameid.get());
+    provs.reset();
+    while (provs.hasNext()) {
+        IAAP* aap=provs.next();
+        Locker locker(aap);
+        const IAttributeRule* rule=aap->lookup(m_priv->m_sso_statement->getSubject()->getNameIdentifier()->getFormat());
+        if (rule && rule->getHeader()) {
+          auto_ptr_char form(m_priv->m_sso_statement->getSubject()->getNameIdentifier()->getFormat());
+          auto_ptr_char nameid(m_priv->m_sso_statement->getSubject()->getNameIdentifier()->getName());
+          setHeader("Shib-NameIdentifier-Format", form.get());
+          if (!strcmp(rule->getHeader(),"REMOTE_USER"))
+            setRemoteUser(nameid.get());
+          else
+            setHeader(rule->getHeader(), nameid.get());
+        }
     }
     
     clearHeader("Shib-Application-ID");
@@ -758,41 +753,47 @@ ShibTarget::doExportAssertions(bool exportAssertion)
       SAMLAssertion* assert=a_iter.next();
       Iterator<SAMLStatement*> statements=assert->getStatements();
       while (statements.hasNext()) {
-	SAMLAttributeStatement* astate=dynamic_cast<SAMLAttributeStatement*>(statements.next());
-	if (!astate)
-	  continue;
-	Iterator<SAMLAttribute*> attrs=astate->getAttributes();
-	while (attrs.hasNext()) {
-	  SAMLAttribute* attr=attrs.next();
+        SAMLAttributeStatement* astate=dynamic_cast<SAMLAttributeStatement*>(statements.next());
+        if (!astate)
+            continue;
+        Iterator<SAMLAttribute*> attrs=astate->getAttributes();
+        while (attrs.hasNext()) {
+          SAMLAttribute* attr=attrs.next();
         
-	  // Are we supposed to export it?
-	  AAP wrapper(provs,attr->getName(),attr->getNamespace());
-	  if (wrapper.fail() || !wrapper->getHeader())
-	    continue;
+          // Are we supposed to export it?
+          provs.reset();
+          while (provs.hasNext()) {
+            IAAP* aap=provs.next();
+            Locker locker(aap);
+            const IAttributeRule* rule=aap->lookup(attr->getName(),attr->getNamespace());
+            if (!rule || !rule->getHeader()) {
+                continue;
+            }
                 
-	  Iterator<string> vals=attr->getSingleByteValues();
-	  if (!strcmp(wrapper->getHeader(),"REMOTE_USER") && vals.hasNext())
-	    setRemoteUser(vals.next());
-	  else {
-	    int it=0;
-	    string header = getHeader(wrapper->getHeader());
-	    if (! header.empty())
-	      it++;
-	    for (; vals.hasNext(); it++) {
-	      string value = vals.next();
-	      for (string::size_type pos = value.find_first_of(";", string::size_type(0));
-		   pos != string::npos;
-		   pos = value.find_first_of(";", pos)) {
-		value.insert(pos, "\\");
-		pos += 2;
-	      }
-	      if (it)
-		header += ";";
-	      header += value;
-	    }
-	    setHeader(wrapper->getHeader(), header);
-	  }
-	}
+            Iterator<string> vals=attr->getSingleByteValues();
+            if (!strcmp(rule->getHeader(),"REMOTE_USER") && vals.hasNext())
+                setRemoteUser(vals.next());
+            else {
+                int it=0;
+                string header = getHeader(rule->getHeader());
+                if (!header.empty())
+                  it++;
+                for (; vals.hasNext(); it++) {
+                  string value = vals.next();
+                  for (string::size_type pos = value.find_first_of(";", string::size_type(0));
+            	   pos != string::npos;
+            	   pos = value.find_first_of(";", pos)) {
+            	value.insert(pos, "\\");
+            	pos += 2;
+                  }
+                  if (it)
+            	header += ";";
+                  header += value;
+                }
+                setHeader(rule->getHeader(), header);
+            }
+          }
+        }
       }
     }
 
