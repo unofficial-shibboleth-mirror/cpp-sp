@@ -302,8 +302,8 @@ shibrpc_get_assertions_1_svc(shibrpc_get_assertions_args_1 *argp,
     if (size) {
 
       // Build the response section
-      ShibRpcAssertion_1* av =
-	(ShibRpcAssertion_1*) malloc (size * sizeof (ShibRpcAssertion_1));
+      ShibRpcXML* av =
+	(ShibRpcXML*) malloc (size * sizeof (ShibRpcXML));
       result->assertions.assertions_val = av;
 
       // and then serialize them all...
@@ -312,7 +312,7 @@ shibrpc_get_assertions_1_svc(shibrpc_get_assertions_args_1 *argp,
 	SAMLAssertion* as = iter.next();
 	ostringstream os;
 	os << *as;
-	av[i++].assertion = strdup(os.str().c_str());
+	av[i++].xml_string = strdup(os.str().c_str());
       }
     }
   } catch (SAMLException& e) {

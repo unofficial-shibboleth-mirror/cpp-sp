@@ -39,10 +39,10 @@ struct ShibRpcHttpCookie_1 {
 };
 typedef struct ShibRpcHttpCookie_1 ShibRpcHttpCookie_1;
 
-struct ShibRpcAssertion_1 {
-	char *assertion;
+struct ShibRpcXML {
+	char *xml_string;
 };
-typedef struct ShibRpcAssertion_1 ShibRpcAssertion_1;
+typedef struct ShibRpcXML ShibRpcXML;
 
 struct shibrpc_session_is_valid_args_1 {
 	ShibRpcHttpCookie_1 cookie;
@@ -85,7 +85,7 @@ struct shibrpc_get_assertions_ret_1 {
 	char *error_msg;
 	struct {
 		u_int assertions_len;
-		ShibRpcAssertion_1 *assertions_val;
+		ShibRpcXML *assertions_val;
 	} assertions;
 };
 typedef struct shibrpc_get_assertions_ret_1 shibrpc_get_assertions_ret_1;
@@ -129,7 +129,7 @@ extern int shibrpc_prog_1_freeresult ();
 #if defined(__STDC__) || defined(__cplusplus)
 extern  bool_t xdr_ShibRpcStatus (XDR *, ShibRpcStatus*);
 extern  bool_t xdr_ShibRpcHttpCookie_1 (XDR *, ShibRpcHttpCookie_1*);
-extern  bool_t xdr_ShibRpcAssertion_1 (XDR *, ShibRpcAssertion_1*);
+extern  bool_t xdr_ShibRpcXML (XDR *, ShibRpcXML*);
 extern  bool_t xdr_shibrpc_session_is_valid_args_1 (XDR *, shibrpc_session_is_valid_args_1*);
 extern  bool_t xdr_shibrpc_session_is_valid_ret_1 (XDR *, shibrpc_session_is_valid_ret_1*);
 extern  bool_t xdr_shibrpc_new_session_args_1 (XDR *, shibrpc_new_session_args_1*);
@@ -140,7 +140,7 @@ extern  bool_t xdr_shibrpc_get_assertions_ret_1 (XDR *, shibrpc_get_assertions_r
 #else /* K&R C */
 extern bool_t xdr_ShibRpcStatus ();
 extern bool_t xdr_ShibRpcHttpCookie_1 ();
-extern bool_t xdr_ShibRpcAssertion_1 ();
+extern bool_t xdr_ShibRpcXML ();
 extern bool_t xdr_shibrpc_session_is_valid_args_1 ();
 extern bool_t xdr_shibrpc_session_is_valid_ret_1 ();
 extern bool_t xdr_shibrpc_new_session_args_1 ();

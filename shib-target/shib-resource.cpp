@@ -18,6 +18,7 @@
 
 using namespace std;
 using namespace shibtarget;
+using namespace saml;
 
 class shibtarget::ResourcePriv
 {
@@ -28,6 +29,7 @@ public:
   string m_url;
   string m_resource;
   log4cpp::Category* log;
+  vector<SAMLAttribute*> designators;
 };
 
 ResourcePriv::ResourcePriv(const char *str)
@@ -65,17 +67,22 @@ Resource::~Resource()
   delete m_priv;
 }
 
-const char* Resource::getResource()
+const char* Resource::getResource() const
 {
   return m_priv->m_resource.c_str();
 }
 
-const char* Resource::getURL()
+const char* Resource::getURL() const
 {
   return m_priv->m_url.c_str();
 }
 
-bool Resource::equals(Resource* r2)
+bool Resource::equals(Resource* r2) const
 {
   return (!strcmp (m_priv->m_url.c_str(), r2->m_priv->m_url.c_str()));
+}
+
+Iterator<SAMLAttribute*> Resource::getDesignators() const
+{
+  return Iterator<SAMLAttribute*>(m_priv->designators);
 }

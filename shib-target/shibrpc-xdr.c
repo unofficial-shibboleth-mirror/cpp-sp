@@ -34,11 +34,11 @@ xdr_ShibRpcHttpCookie_1 (XDR *xdrs, ShibRpcHttpCookie_1 *objp)
 }
 
 bool_t
-xdr_ShibRpcAssertion_1 (XDR *xdrs, ShibRpcAssertion_1 *objp)
+xdr_ShibRpcXML (XDR *xdrs, ShibRpcXML *objp)
 {
 	register int32_t *buf;
 
-	 if (!xdr_string (xdrs, &objp->assertion, ~0))
+	 if (!xdr_string (xdrs, &objp->xml_string, ~0))
 		 return FALSE;
 	return TRUE;
 }
@@ -125,7 +125,7 @@ xdr_shibrpc_get_assertions_ret_1 (XDR *xdrs, shibrpc_get_assertions_ret_1 *objp)
 	 if (!xdr_string (xdrs, &objp->error_msg, ~0))
 		 return FALSE;
 	 if (!xdr_array (xdrs, (char **)&objp->assertions.assertions_val, (u_int *) &objp->assertions.assertions_len, ~0,
-		sizeof (ShibRpcAssertion_1), (xdrproc_t) xdr_ShibRpcAssertion_1))
+		sizeof (ShibRpcXML), (xdrproc_t) xdr_ShibRpcXML))
 		 return FALSE;
 	return TRUE;
 }

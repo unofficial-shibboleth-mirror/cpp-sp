@@ -45,8 +45,8 @@ struct ShibRpcHttpCookie_1 {
   string	client_addr<>;
 };
 
-struct ShibRpcAssertion_1 {
-  string	assertion<>;
+struct ShibRpcXML {
+  string	xml_string<>;
 };
 
 /* function argument and response structures */
@@ -86,7 +86,7 @@ struct shibrpc_get_assertions_args_1 {
 struct shibrpc_get_assertions_ret_1 {
   ShibRpcStatus		status;
   string		error_msg<>;
-  ShibRpcAssertion_1	assertions<>;
+  ShibRpcXML		assertions<>;
 };
 
 /* Define the Shib Target RPC interface */

@@ -115,9 +115,10 @@ namespace shibtarget {
     Resource(std::string resource_url);
     ~Resource();
 
-    const char* getResource();
-    const char* getURL();
-    bool equals(Resource*);
+    const char* getResource() const;
+    const char* getURL() const;
+    bool equals(Resource*) const;
+    saml::Iterator<saml::SAMLAttribute*> getDesignators() const;
 
   private:
     ResourcePriv *m_priv;

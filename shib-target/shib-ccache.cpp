@@ -470,7 +470,8 @@ ResourceEntry* InternalCCacheEntry::populate(Resource& resource)
   SAMLSubject* subject=static_cast<SAMLSubject*>(m_subject->clone());
 
   // Build a SAML Request....
-  SAMLAttributeQuery* q=new SAMLAttributeQuery(subject,resourceURL.get());
+  SAMLAttributeQuery* q=new SAMLAttributeQuery(subject,resourceURL.get(),
+					       resource.getDesignators());
   SAMLRequest* req=new SAMLRequest(respond_withs,q);
 
   // Try this request against all the bindings in the AuthenticationStatement
