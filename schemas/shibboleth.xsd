@@ -72,6 +72,7 @@
 	                <complexType>
 	                    <simpleContent>
 	                        <extension base="string">
+								<attribute name="Accept" type="boolean" use="optional" default="true"/>
 	                            <attribute name="Type" type="shib:AttributeRuleValueType" use="optional" default="literal"/>
 	                            <anyAttribute namespace="##other" processContents="lax"/>
 	                        </extension>

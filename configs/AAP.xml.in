@@ -18,16 +18,16 @@
 	
 	<!-- First some useful eduPerson attributes that many sites might use. -->
 	
-	<AttributeRule Name="urn:mace:dir:attribute-def:eduPersonScopedAffiliation" Scoped="true" Header="Shib-EP-Affiliation" Alias="affiliation">
+	<AttributeRule Name="urn:mace:dir:attribute-def:eduPersonScopedAffiliation" Scoped="true" CaseSensitive="false" Header="Shib-EP-Affiliation" Alias="affiliation">
 		<!-- Filtering rule to limit values to eduPerson-defined enumeration. -->
         <AnySite>
-            <Value Type="regexp">^[Mm][Ee][Mm][Bb][Ee][Rr]$</Value>
-            <Value Type="regexp">^[Ff][Aa][Cc][Uu][Ll][Tt][Yy]$</Value>
-            <Value Type="regexp">^[Ss][Tt][Uu][Dd][Ee][Nn][Tt]$</Value>
-            <Value Type="regexp">^[Ss][Tt][Aa][Ff][Ff]$</Value>
-            <Value Type="regexp">^[Aa][Ll][Uu][Mm]$</Value>
-            <Value Type="regexp">^[Aa][Ff][Ff][Ii][Ll][Ii][Aa][Tt][Ee]$</Value>
-            <Value Type="regexp">^[Ee][Mm][Pp][Ll][Oo][Yy][Ee][Ee]$</Value>
+            <Value>MEMBER</Value>
+            <Value>FACULTY</Value>
+            <Value>STUDENT</Value>
+            <Value>STAFF</Value>
+            <Value>ALUM</Value>
+            <Value>AFFILIATE</Value>
+            <Value>EMPLOYEE</Value>
         </AnySite>
         
         <!-- Example of Scope rule to override site metadata. -->
@@ -42,15 +42,15 @@
 	sends the unscoped version. It has little use because it lacks the context needed to
 	work in a multi-domain scenario and is a subset of the scoped version anyway.
 	 -->
-	<AttributeRule Name="urn:mace:dir:attribute-def:eduPersonAffiliation" Header="Shib-EP-UnscopedAffiliation" Alias="unscoped-affiliation">
+	<AttributeRule Name="urn:mace:dir:attribute-def:eduPersonAffiliation" CaseSensitive="false" Header="Shib-EP-UnscopedAffiliation" Alias="unscoped-affiliation">
         <AnySite>
-            <Value Type="regexp">^[Mm][Ee][Mm][Bb][Ee][Rr]$</Value>
-            <Value Type="regexp">^[Ff][Aa][Cc][Uu][Ll][Tt][Yy]$</Value>
-            <Value Type="regexp">^[Ss][Tt][Uu][Dd][Ee][Nn][Tt]$</Value>
-            <Value Type="regexp">^[Ss][Tt][Aa][Ff][Ff]$</Value>
-            <Value Type="regexp">^[Aa][Ll][Uu][Mm]$</Value>
-            <Value Type="regexp">^[Aa][Ff][Ff][Ii][Ll][Ii][Aa][Tt][Ee]$</Value>
-            <Value Type="regexp">^[Ee][Mm][Pp][Ll][Oo][Yy][Ee][Ee]$</Value>
+            <Value>MEMBER</Value>
+            <Value>FACULTY</Value>
+            <Value>STUDENT</Value>
+            <Value>STAFF</Value>
+            <Value>ALUM</Value>
+            <Value>AFFILIATE</Value>
+            <Value>EMPLOYEE</Value>
         </AnySite>
 	</AttributeRule>
 	
@@ -96,15 +96,15 @@
         </AnySite>
 	</AttributeRule>
 
-	<AttributeRule Name="urn:mace:dir:attribute-def:eduPersonPrimaryAffiliation" Header="Shib-EP-PrimaryAffiliation">
+	<AttributeRule Name="urn:mace:dir:attribute-def:eduPersonPrimaryAffiliation" CaseSensitive="false" Header="Shib-EP-PrimaryAffiliation">
         <AnySite>
-            <Value Type="regexp">^[Mm][Ee][Mm][Bb][Ee][Rr]$</Value>
-            <Value Type="regexp">^[Ff][Aa][Cc][Uu][Ll][Tt][Yy]$</Value>
-            <Value Type="regexp">^[Ss][Tt][Uu][Dd][Ee][Nn][Tt]$</Value>
-            <Value Type="regexp">^[Ss][Tt][Aa][Ff][Ff]$</Value>
-            <Value Type="regexp">^[Aa][Ll][Uu][Mm]$</Value>
-            <Value Type="regexp">^[Aa][Ff][Ff][Ii][Ll][Ii][Aa][Tt][Ee]$</Value>
-            <Value Type="regexp">^[Ee][Mm][Pp][Ll][Oo][Yy][Ee][Ee]$</Value>
+            <Value>MEMBER</Value>
+            <Value>FACULTY</Value>
+            <Value>STUDENT</Value>
+            <Value>STAFF</Value>
+            <Value>ALUM</Value>
+            <Value>AFFILIATE</Value>
+            <Value>EMPLOYEE</Value>
         </AnySite>
 	</AttributeRule>
 	
