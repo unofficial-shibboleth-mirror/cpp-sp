@@ -189,7 +189,7 @@ SAMLResponse* ShibPOSTProfile::prepare(
     const char* credResolverId,
     const XMLCh* recipient,
     const XMLCh* authMethod,
-    time_t authInstant,
+    const SAMLDateTime& authInstant,
     const XMLCh* name,
     const XMLCh* format,
     const XMLCh* nameQualifier,
@@ -197,18 +197,6 @@ SAMLResponse* ShibPOSTProfile::prepare(
     const saml::Iterator<const XMLCh*>& audiences,
     const saml::Iterator<saml::SAMLAuthorityBinding*>& bindings)
 {
-#ifdef WIN32
-    struct tm* ptime=gmtime(&authInstant);
-#else
-    struct tm res;
-    struct tm* ptime=gmtime_r(&authInstant,&res);
-#endif
-    char timebuf[32];
-    strftime(timebuf,32,"%Y-%m-%dT%H:%M:%SZ",ptime);
-    auto_ptr_XMLCh timeptr(timebuf);
-    XMLDateTime authDateTime(timeptr.get());
-    authDateTime.parseDateTime();
-
     SAMLResponse* r = SAMLPOSTProfile::prepare(
         recipient,
         role->getEntityDescriptor()->getId(),
@@ -218,7 +206,7 @@ SAMLResponse* ShibPOSTProfile::prepare(
         format,
         subjectIP,
         authMethod,
-        authDateTime,
+        authInstant,
         bindings
         );
 

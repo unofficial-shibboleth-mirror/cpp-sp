@@ -547,20 +547,6 @@ bool InternalCCacheEntry::responseValid(int slop)
 
   log->debug("checking AA response validity");
 
-  // This is awful, but the XMLDateTime class is truly horrible.
-  time_t now=time(NULL)+slop;
-#ifdef WIN32
-  struct tm* ptime=gmtime(&now);
-#else
-  struct tm res;
-  struct tm* ptime=gmtime_r(&now,&res);
-#endif
-  char timebuf[32];
-  strftime(timebuf,32,"%Y-%m-%dT%H:%M:%SZ",ptime);
-  auto_ptr_XMLCh timeptr(timebuf);
-  XMLDateTime curDateTime(timeptr.get());
-  curDateTime.parseDateTime();
-
   int count = 0;
   Iterator<SAMLAssertion*> iter = m_response->getAssertions();
   while (iter.hasNext()) {
@@ -568,20 +554,15 @@ bool InternalCCacheEntry::responseValid(int slop)
 
     log->debug("testing assertion...");
 
-    const XMLDateTime* thistime = assertion->getNotOnOrAfter();
+    const SAMLDateTime* thistime = assertion->getNotOnOrAfter();
 
     // If there is no time, then just continue and ignore this assertion.
     if (!thistime)
       continue;
 
     count++;
-    auto_ptr_char nowptr(curDateTime.getRawData());
-    auto_ptr_char assnptr(thistime->getRawData());
 
-    log->debug("comparing now (%s) to %s", nowptr.get(), assnptr.get());
-    int result=XMLDateTime::compareOrder(&curDateTime, thistime);
-
-    if (result != XMLDateTime::LESS_THAN) {
+    if (time(NULL)+slop >= thistime->getEpoch()) {
       log->debug("nope, not still valid");
       return false;
     }
@@ -590,7 +571,7 @@ bool InternalCCacheEntry::responseValid(int slop)
   // If we didn't find any assertions with times, then see if we're
   // older than the default response lifetime.
   if (!count) {
-      if ((now - m_responseCreated) > m_cache->m_defaultLifetime) {
+      if ((time(NULL)+slop - m_responseCreated) > m_cache->m_defaultLifetime) {
         log->debug("response is beyond default life, so it's invalid");
         return false;
       }

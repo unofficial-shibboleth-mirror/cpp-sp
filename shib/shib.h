@@ -531,7 +531,7 @@ namespace shibboleth
             const char* credResolverId,
             const XMLCh* recipient,
             const XMLCh* authMethod,
-            time_t authInstant,
+            const saml::SAMLDateTime& authInstant,
             const XMLCh* name,
             const XMLCh* format=Constants::SHIB_NAMEID_FORMAT_URI,
             const XMLCh* nameQualifier=NULL,
