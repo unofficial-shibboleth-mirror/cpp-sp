@@ -17,6 +17,7 @@ using namespace saml;
 using namespace shibboleth;
 using namespace shibtarget;
 using namespace std;
+using namespace log4cpp;
 
 #ifndef SHIBTARGET_INIFILE
 #define SHIBTARGET_INIFILE "/opt/shibboleth/etc/shibboleth/shibboleth.ini"
@@ -129,17 +130,17 @@ void STConfig::init()
   if (ini->get_tag (app, SHIBTARGET_TAG_LOGGER, true, &tag)) {
     cerr << "Trying to load logger configuration: " << tag << "\n";
     try {
-      log4cpp::PropertyConfigurator::configure(tag);
-    } catch (log4cpp::ConfigureFailure& e) {
+      PropertyConfigurator::configure(tag);
+    } catch (ConfigureFailure& e) {
       cerr << "Error reading configuration: " << e.what() << "\n";
     }
   } else {
-    log4cpp::Category& category = log4cpp::Category::getRoot();
+    Category& category = Category::getRoot();
     category.setPriority(log4cpp::Priority::DEBUG);
     cerr << "No logger configuration found\n";
   }
 
-  log4cpp::Category& log = log4cpp::Category::getInstance("shibtarget.STConfig");
+  Category& log = Category::getInstance("shibtarget.STConfig");
 
   saml::NDC ndc("STConfig::init");
 
@@ -168,32 +169,14 @@ void STConfig::init()
 
   // Init Shib
   if (ini->get_tag(app, SHIBTARGET_TAG_AAP, true, &tag))
-      shibConf.aapURL=tag;
+      shibConf.aapFile=tag;
 
   if (! ini->get_tag (app, SHIBTARGET_TAG_SITES, true, &tag)) {
     log.fatal("No Sites File found in configuration");
     throw runtime_error ("No Sites File found in configuration");
   }
-
-  shibConf.mapperURL=tag;
-  try {
-    if (ini->get_tag (app, SHIBTARGET_TAG_SITESCERT, true, &tag)) {
-      shibConf.mapperCert = new X509Certificate (X509Certificate::PEM, tag.c_str());
-    }
-  } catch (...) {
-    log.crit ("Can not read the x509 certificate.");
-    throw;
-  }
+  shibConf.mapperFile=tag;
   
-  try {
-    if (ini->get_tag (app, SHIBTARGET_TAG_SITESREFRESH, true, &tag)) {
-      shibConf.mapperRefreshInterval = atoi(tag.c_str());
-    }
-  } catch (...) {
-    log.crit ("Can not read the mapper refresh interval.");
-    throw;
-  }  
-
   try { 
     if (!shibConf.init()) {
       log.fatal ("Failed to initialize Shib library");
