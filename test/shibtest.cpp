@@ -104,11 +104,11 @@ int main(int argc,char* argv[])
     try
     {
         auto_ptr<XMLCh> url(XMLString::transcode(url_param));
-        SAMLAuthorityBinding binfo(saml::QName(saml::XML::SAMLP_NS,L(AttributeQuery)),SAMLBinding::SAML_SOAP_HTTPS,url.get());
         auto_ptr<XMLCh> domain(XMLString::transcode(q_param));
         auto_ptr<XMLCh> handle(XMLString::transcode(h_param));
         auto_ptr<XMLCh> format(XMLString::transcode(f_param));
         auto_ptr<XMLCh> resource(XMLString::transcode(r_param));
+        SAMLAuthorityBinding binfo(saml::QName(saml::XML::SAMLP_NS,L(AttributeQuery)),SAMLBinding::SAML_SOAP_HTTPS,url.get());
         SAMLRequest* req=new SAMLRequest(
             EMPTY(saml::QName),
             new SAMLAttributeQuery(
@@ -116,10 +116,11 @@ int main(int argc,char* argv[])
                 resource.get()
                 )
             );
-
-        OriginMetadata site(domain.get());
-        SAMLBinding* pBinding=SAMLBindingFactory::getInstance(resource.get(),site);
+        
+        OriginMetadata site(EMPTY(IMetadata*),domain.get());
+        SAMLBinding* pBinding=SAMLBindingFactory::getInstance(EMPTY(IMetadata*),EMPTY(ITrust*),EMPTY(ICredentials*),resource.get(),site);
         SAMLResponse* resp=pBinding->send(binfo,*req);
+        delete req;
         delete pBinding;
 
         Iterator<SAMLAssertion*> i=resp->getAssertions();
@@ -130,7 +131,7 @@ int main(int argc,char* argv[])
             const XMLDateTime* exp=a->getNotOnOrAfter();
             cout << "Expires: ";
             if (exp)
-              xmlout(cout,exp->toString());
+              xmlout(cout,exp->getRawData());
             else
                 cout << "None";
             cout << endl;
@@ -173,10 +174,10 @@ int main(int argc,char* argv[])
     {
         cerr << "caught an XML exception: "; xmlout(cerr,e.getMessage()); cerr << endl;
     }
-/*    catch(...)
+    catch(...)
     {
         cerr << "caught an unknown exception" << endl;
-    }*/
+    }
 
     conf2.term();
     conf1.term();

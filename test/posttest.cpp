@@ -71,7 +71,7 @@ SAMLResponse* HS(const char* key)
     auto_ptr<XMLCh> domain(XMLString::transcode("urn:mace:incommon:pilot:example.edu"));
     auto_ptr<XMLCh> method(XMLString::transcode("urn:mace:shibboleth:authmethod"));
 
-    ShibPOSTProfile* p=ShibPOSTProfileFactory::getInstance(Iterator<const XMLCh*>(),hsname.get());
+    ShibPOSTProfile* p=ShibPOSTProfileFactory::getInstance(EMPTY(IMetadata*),EMPTY(ICredentials*),EMPTY(const XMLCh*),hsname.get());
     return p->prepare(
             recip.get(),
             handle.get(),
@@ -99,21 +99,18 @@ int main(int argc,char* argv[])
     }
 
     conf1.schema_dir=path;
-    conf1.binding_defaults.ssl_calist="/opt/shibboleth/etc/shibboleth/ca-bundle.crt";
     if (!conf1.init())
         cerr << "unable to initialize SAML runtime" << endl;
 
     if (!conf2.init())
         cerr << "unable to initialize Shibboleth runtime" << endl;
 
-    conf2.addMetadata("edu.internet2.middleware.shibboleth.metadata.XML","http://wayf.internet2.edu/incommon/sites.xml");
-
     try
     {
 //        SAMLResponse* r=HS();
 //        cout << "Generated Response: " << endl << *r << endl;
         auto_ptr<XMLCh> recip(XMLString::transcode("https://shib2.internet2.edu/shib/SHIRE"));
-        ShibPOSTProfile* p=ShibPOSTProfileFactory::getInstance(EMPTY(const XMLCh*),recip.get(),300);
+        ShibPOSTProfile* p=ShibPOSTProfileFactory::getInstance(EMPTY(IMetadata*),EMPTY(ITrust*),EMPTY(const XMLCh*),recip.get(),300);
 
 //        auto_ptr<XMLByte> buf(r->toBase64(NULL));
 //        delete r;
