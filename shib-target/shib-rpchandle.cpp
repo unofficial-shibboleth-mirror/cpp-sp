@@ -90,7 +90,7 @@ void RPCHandle::disconnect()
         IConfig* conf=ShibTargetConfig::getConfig().getINI();
         Locker locker(conf);
         conf->getListener()->close(m_sock);
-        m_sock=(IListener::ShibSocket)NULL;
+        m_sock=(IListener::ShibSocket)0;
     }
 }
 
