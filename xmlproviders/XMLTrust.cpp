@@ -79,7 +79,7 @@ namespace {
     int logging_callback(int ok, X509_STORE_CTX* store)
     {
         if (!ok)
-            Category::getInstance("OpenSSL").error(X509_verify_cert_error_string(store->error));
+            Category::getInstance("OpenSSL").error("verify_callback error: %s", X509_verify_cert_error_string(store->error));
         return ok;
     }
     
