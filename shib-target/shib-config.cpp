@@ -85,6 +85,12 @@ private:
   string m_app_name;
   int refcount;
   vector<const XMLCh*> policies;
+  string m_SocketName;
+#ifdef WANT_TCP_SHAR
+  vector<string> m_SocketACL;
+#endif
+  friend ShibSockName shib_target_sockname();
+  friend ShibSockName shib_target_sockacl(unsigned int);
 };
 
 namespace {
@@ -128,14 +134,6 @@ ShibTargetConfig& ShibTargetConfig::getConfig()
     if (!g_Config)
         throw SAMLException("ShibTargetConfig::getConfig() called with NULL configuration");
     return *g_Config;
-}
-
-ShibTargetConfig::~ShibTargetConfig()
-{
-#ifdef WIN32
-#else
-    if (m_SocketName) free(m_SocketName);
-#endif
 }
 
 /****************************************************************************/
@@ -279,17 +277,30 @@ void STConfig::init()
     g_shibTargetCCache = CCache::getInstance(cache_type);
   }
 
-  string sockname=ini->get(SHIBTARGET_GENERAL, "sharsocket");
-#ifdef WIN32
-  if (sockname.length()>0)
-    m_SocketName=atoi(sockname.c_str());
-  else
+  // Process socket settings.
+  m_SocketName=ini->get(SHIBTARGET_GENERAL, "sharsocket");
+  if (m_SocketName.empty())
     m_SocketName=SHIB_SHAR_SOCKET;
-#else
-  if (sockname.length()>0)
-    m_SocketName=strdup(sockname.c_str());
+
+#ifdef WANT_TCP_SHAR
+  string sockacl=ini->get(SHIBTARGET_SHAR, "sharacl");
+  if (sockacl.length()>0)
+  {
+    int j = 0;
+    for (int i = 0;  i < sockacl.length();  i++)
+    {
+        if (sockacl.at(i)==' ')
+        {
+            string addr=sockacl.substr(j, i-j);
+            j = i+1;
+            m_SocketACL.push_back(addr);
+        }
+    }
+    string addr=sockacl.substr(j, sockacl.length()-j);
+    m_SocketACL.push_back(addr);
+  }
   else
-    m_SocketName=strdup(SHIB_SHAR_SOCKET);
+    m_SocketACL.push_back("127.0.0.1");
 #endif
 
   ref();
@@ -300,7 +311,7 @@ STConfig::~STConfig()
 {
   for (vector<const XMLCh*>::iterator i=policies.begin(); i!=policies.end(); i++)
     delete const_cast<XMLCh*>(*i);
-    
+  
   if (ini) delete ini;
   
   if (g_shibTargetCCache)
@@ -322,4 +333,18 @@ void STConfig::shutdown()
     delete g_Config;
     g_Config = NULL;
   }
+}
+
+extern "C" ShibSockName shib_target_sockname(void)
+{
+    return (g_Config ? g_Config->m_SocketName.c_str() : (ShibSockName)0);
+}
+
+extern "C" ShibSockName shib_target_sockacl(unsigned int index)
+{
+#ifdef WANT_TCP_SHAR
+    if (g_Config && index<g_Config->m_SocketACL.size())
+        return g_Config->m_SocketACL[index].c_str();
+#endif
+    return (ShibSockName)0;
 }

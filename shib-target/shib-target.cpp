@@ -98,8 +98,3 @@ extern "C" void shib_target_finalize (void)
   g_Config->shutdown();
   g_Config = NULL;
 }
-
-extern "C" ShibSockName shib_target_sockname(void)
-{
-    return (g_Config ? g_Config->m_SocketName : (ShibSockName)0);
-}

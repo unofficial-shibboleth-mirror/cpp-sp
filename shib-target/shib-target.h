@@ -81,14 +81,14 @@ extern "C" {
 
 #include <winsock.h>
 typedef SOCKET ShibSocket;
-typedef u_short ShibSockName;
-#define SHIB_SHAR_SOCKET 12345  /* shar portnumber */
+typedef const char* ShibSockName;
+#define SHIB_SHAR_SOCKET "127.0.0.1:12345"  /* TCP host:port */
 
 #else  /* UNIX */
 
 typedef int ShibSocket;
-typedef char * ShibSockName;
-#define SHIB_SHAR_SOCKET "/tmp/shar-socket"
+typedef const char* ShibSockName;
+#define SHIB_SHAR_SOCKET "/tmp/shar-socket" /* Unix domain socket */
 
 #endif
 
@@ -171,7 +171,10 @@ SHIBTARGET_EXPORTS void shib_sock_close (ShibSocket s, ShibSockName name);
 /* initialize and finalize the target library (return 0 on success, 1 on failure) */
 SHIBTARGET_EXPORTS int shib_target_initialize (const char* application, const char* ini_file);
 SHIBTARGET_EXPORTS void shib_target_finalize (void);
+
+/* access socket specifics from C code */
 SHIBTARGET_EXPORTS ShibSockName shib_target_sockname(void);
+SHIBTARGET_EXPORTS ShibSockName shib_target_sockacl(unsigned int index);
 
 #ifdef __cplusplus
 }
@@ -441,11 +444,9 @@ namespace shibtarget {
     static ShibTargetConfig& getConfig();
     virtual void init() = 0;
     virtual void shutdown() = 0;
-    virtual ~ShibTargetConfig();
+    virtual ~ShibTargetConfig() {}
     virtual ShibINI& getINI() = 0;
     virtual saml::Iterator<const XMLCh*> getPolicies() = 0;
-    
-    ShibSockName m_SocketName;
   };
 
 } // namespace
