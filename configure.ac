@@ -96,7 +96,7 @@ AC_PATH_PROG(LOG4CPP_CONFIG,log4cpp-config)
 AC_ARG_WITH(log4cpp,
             AC_HELP_STRING([--with-log4cpp=PATH], [where log4cpp is installed]),
             [LOG4CPP_CONFIG="${with_log4cpp}/bin/log4cpp-config"])
-if test -f ${LOG4CPP_CONFIG}; then
+if test -f "${LOG4CPP_CONFIG}"; then
     LDFLAGS="`${LOG4CPP_CONFIG} --libs` $LDFLAGS"
     CPPFLAGS="`${LOG4CPP_CONFIG} --cflags` $CPPFLAGS"
 else
