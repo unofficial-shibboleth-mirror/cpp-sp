@@ -632,8 +632,6 @@ short XMLApplication::acceptNode(const DOMNode* node) const
         return FILTER_REJECT;
     else if (saml::XML::isElementNamed(static_cast<const DOMElement*>(node),saml::XML::SAML_NS,L(Audience)))
         return FILTER_REJECT;
-    if (XMLString::compareString(node->getNamespaceURI(),ShibTargetConfig::SHIBTARGET_NS))
-        return FILTER_ACCEPT;
     const XMLCh* name=node->getLocalName();
     if (!XMLString::compareString(name,SHIBT_L(Application)) ||
         !XMLString::compareString(name,SHIBT_L(AssertionConsumerService)) ||
