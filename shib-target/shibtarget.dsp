@@ -95,6 +95,10 @@ SOURCE=.\internal.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\resource.h
+# End Source File
+# Begin Source File
+
 SOURCE=".\shib-ccache.cpp"
 # End Source File
 # Begin Source File
@@ -132,6 +136,10 @@ SOURCE=".\shib-sock.cpp"
 # Begin Source File
 
 SOURCE=".\shib-target.h"
+# End Source File
+# Begin Source File
+
+SOURCE=".\shib-target.rc"
 # End Source File
 # Begin Source File
 

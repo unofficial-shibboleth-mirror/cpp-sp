@@ -347,44 +347,100 @@ void XMLRequestMapperImpl::init()
             char* dup=strdup(name.second);
             for (char* pch=dup; *pch; pch++)
                 *pch=tolower(*pch);
+            auto_ptr<char> dupwrap(dup);
 
-            string url(scheme.first ? scheme.second : "http");
-            url=url + "://" + dup;
-            free(dup);
-            if (!port.first) {
-                // First store a port-less version.
-                if (m_map.count(url)) {
-                    log->warn("Skipping duplicate Host element (%s)",url.c_str());
-                    delete o;
-                    continue;
-                }
-                m_map[url]=o;
-                
-                // Now append the default port.
+            if (!scheme.first && port.first) {
+                // No scheme, but a port, so assume http.
+                scheme = pair<bool,const char*>(true,"http");
+            }
+            else if (scheme.first && !port.first) {
+                // Scheme, no port, so default it.
                 // XXX Use getservbyname instead?
-                if (!scheme.first || !strcmp(scheme.second,"http"))
-                    url=url + ":80";
+                port.first = true;
+                if (!strcmp(scheme.second,"http"))
+                    port.second = "80";
                 else if (!strcmp(scheme.second,"https"))
-                    url=url + ":443";
+                    port.second = "443";
                 else if (!strcmp(scheme.second,"ftp"))
-                    url=url + ":21";
+                    port.second = "21";
                 else if (!strcmp(scheme.second,"ldap"))
-                    url=url + ":389";
+                    port.second = "389";
                 else if (!strcmp(scheme.second,"ldaps"))
-                    url=url + ":636";
+                    port.second = "636";
+            }
+
+            if (scheme.first) {
+                string url(scheme.second);
+                url=url + "://" + dup;
                 
-                m_extras[url]=o;
+                // Is this the default port?
+                if ((!strcmp(scheme.second,"http") && !strcmp(port.second,"80")) ||
+                    (!strcmp(scheme.second,"https") && !strcmp(port.second,"443")) ||
+                    (!strcmp(scheme.second,"ftp") && !strcmp(port.second,"21")) ||
+                    (!strcmp(scheme.second,"ldap") && !strcmp(port.second,"389")) ||
+                    (!strcmp(scheme.second,"ldaps") && !strcmp(port.second,"636"))) {
+                    // First store a port-less version.
+                    if (m_map.count(url) || m_extras.count(url)) {
+                        log->warn("Skipping duplicate Host element (%s)",url.c_str());
+                        delete o;
+                        continue;
+                    }
+                    m_map[url]=o;
+                    log->debug("Added <Host> mapping for %s",url.c_str());
+                    
+                    // Now append the port. We use the extras vector, to avoid double freeing the object later.
+                    url=url + ':' + port.second;
+                    m_extras[url]=o;
+                    log->debug("Added <Host> mapping for %s",url.c_str());
+                }
+                else {
+                    url=url + ':' + port.second;
+                    if (m_map.count(url) || m_extras.count(url)) {
+                        log->warn("Skipping duplicate Host element (%s)",url.c_str());
+                        delete o;
+                        continue;
+                    }
+                    m_map[url]=o;
+                    log->debug("Added <Host> mapping for %s",url.c_str());
+                }
             }
             else {
-                url=url + ':' + port.second;
-                if (m_map.count(url)) {
+                // No scheme or port, so we enter dual hosts on http:80 and https:443
+                string url("http://");
+                url = url + dup;
+                if (m_map.count(url) || m_extras.count(url)) {
                     log->warn("Skipping duplicate Host element (%s)",url.c_str());
                     delete o;
                     continue;
                 }
                 m_map[url]=o;
+                log->debug("Added <Host> mapping for %s",url.c_str());
+                
+                url = url + ":80";
+                if (m_map.count(url) || m_extras.count(url)) {
+                    log->warn("Skipping duplicate Host element (%s)",url.c_str());
+                    continue;
+                }
+                m_extras[url]=o;
+                log->debug("Added <Host> mapping for %s",url.c_str());
+                
+                url = "https://";
+                url = url + dup;
+                if (m_map.count(url) || m_extras.count(url)) {
+                    log->warn("Skipping duplicate Host element (%s)",url.c_str());
+                    continue;
+                }
+                m_extras[url]=o;
+                log->debug("Added <Host> mapping for %s",url.c_str());
+                
+                url = url + ":443";
+                if (m_map.count(url) || m_extras.count(url)) {
+                    log->warn("Skipping duplicate Host element (%s)",url.c_str());
+                    continue;
+                }
+                m_extras[url]=o;
+                log->debug("Added <Host> mapping for %s",url.c_str());
             }
-            log->debug("Added <Host> mapping for %s",url.c_str());
         }
     }
     catch (SAMLException& e) {
@@ -418,7 +474,7 @@ const Override* XMLRequestMapperImpl::findOverride(const char* vhost, const char
 const char* split_url(const char* url, string& vhost)
 {
     const char* path=NULL;
-    const char* slash=strchr(url,'/');
+    char* slash=strchr(url,'/');
     if (slash)
     {
         slash=strchr(slash,'/');
