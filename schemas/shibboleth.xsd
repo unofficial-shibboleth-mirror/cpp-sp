@@ -203,24 +203,39 @@
             <element ref="ds:Signature" minOccurs="0"/>
         </sequence>
         <attribute name="Name" type="string" use="required"/>
+        <attribute name="lastChanged" type="datetime" use="optional"/>
+        <attribute name="validUntil" type="datetime" use="optional"/>
+        <attribute name="cacheDuration" type="duration" use="optional"/>
+        <anyAttribute/>
     </complexType>    
 
     <element name="OriginSite" type="shib:OriginSiteType"/>
     <element name="DestinationSite" type="shib:SiteType"/>
     <element name="SiteGroup" type="shib:SiteGroupType"/>
 
+
+	<!-- Trust Metadata -->
+
 	<complexType name="KeyAuthorityType">
 		<annotation>
-			<documentation xml:lang="en">Binds a set of keying material to one or more named system entities.</documentation>
+			<documentation xml:lang="en">
+			Binds a set of keying material to one or more named system entities.
+			</documentation>
 		</annotation>
 		<sequence>
 			<element ref="ds:KeyInfo"/>
-			<element name="Subject" type="shib:regexp_string" maxOccurs="unbounded"/>
+			<element name="Subject" type="shib:regexp_string" minOccurs="0" maxOccurs="unbounded"/>
 		</sequence>
+		<attribute name="VerifyDepth" type="unsignedByte" use="optional"/>
+		<attribute name="Type" use="optional" default="authority">
+			<restriction base="string">
+				<enumeration value="authority"/>
+				<enumeration value="entity"/>
+			</restriction>
+		</attribute>
 	</complexType>
-	
 	<element name="KeyAuthority" type="shib:KeyAuthorityType"/>
-	
+
 	<element name="Trust">
 		<annotation>
 			<documentation xml:lang="en">An optionally signed collection of KeyAuthority data.</documentation>
@@ -231,6 +246,51 @@
 				<element ref="ds:Signature" minOccurs="0"/>
 			</sequence>
 		</complexType>
+        <attribute name="lastChanged" type="datetime" use="optional"/>
+        <attribute name="validUntil" type="datetime" use="optional"/>
+        <attribute name="cacheDuration" type="duration" use="optional"/>
+        <anyAttribute/>
+	</element>
+
+	<complexType name="JavaKeyInfoType">
+		<annotation>
+			<documentation xml:lang="en">Describes a credential in a Java keystore.</documentation>
+		</annotation>
+		<sequence/>
+		<attribute name="KeyStore" type="string" use="required"/>
+		<attribute name="KeyStoreType" type="string" use="optional" default="JKS"/>
+		<attribute name="KeyStorePassword" type="string" use="required"/>
+		<attribute name="Alias" type="string" use="required"/>
+		<attribute name="AliasPassword" type="string" use="optional"/>
+	</complexType>
+	<element name="JavaKeyValue" type="shib:JavaKeyInfoType"/>
+	<element name="JavaX509Data" type="shib:JavaKeyInfoType"/>
+	
+	<complexType name="KeyUseType">
+		<annotation>
+			<documentation xml:lang="en">
+			Binds a set of credentials to one or more named system entities with additional controls over
+			which relying parties are capable of accepting them.
+			</documentation>
+		</annotation>
+		<extension base="shib:KeyAuthorityType">
+			<sequence>
+				<element name="RelyingParty" type="shib:regexp_string" minOccurs="0" maxOccurs="unbounded"/>
+			</sequence>
+		</extension>
+	</complexType>	
+	<element name="KeyUse" type="shib:KeyUseType"/>
+	
+	<element name="Credentials">
+		<annotation>
+			<documentation xml:lang="en">A set of KeyUse data that provides local credentials.</documentation>
+		</annotation>
+		<complexType>
+			<sequence>
+				<element ref="shib:KeyUse" maxOccurs="unbounded"/>
+			</sequence>
+		</complexType>
+        <anyAttribute/>
 	</element>
 	
 </schema>
