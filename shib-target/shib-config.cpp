@@ -141,7 +141,7 @@ ShibTargetConfig& ShibTargetConfig::getConfig()
 
 STConfig::STConfig(const char* app_name, const char* inifile)
   :  samlConf(SAMLConfig::getConfig()), shibConf(ShibConfig::getConfig()),
-     m_app_name(app_name)
+     m_app_name(app_name), refcount(0)
 {
   try {
     ini = new ShibINI((inifile ? inifile : SHIBTARGET_INIFILE));
