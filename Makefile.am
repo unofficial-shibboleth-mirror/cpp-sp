@@ -17,6 +17,9 @@ dist-hook:
 	rm -rf `find $(distdir)/doc -name Makefile`
 	rm -rf `find $(distdir)/isapi_shib -name CVS`
 
+install-exec-hook:
+	rm -f $(DESTDIR)$(libdir)/*.la
+
 WANT_SUBDIRS = @WANT_SUBDIRS@
 
 SUBDIRS = $(WANT_SUBDIRS)
