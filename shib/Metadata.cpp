@@ -61,7 +61,7 @@ using namespace shibboleth;
 using namespace saml;
 using namespace std;
 
-const IEntityDescriptor* Metadata::lookup(const XMLCh* id)
+const IEntityDescriptor* Metadata::lookup(const XMLCh* id, bool strict)
 {
     if (m_mapper) {
         m_mapper->unlock();
@@ -72,7 +72,7 @@ const IEntityDescriptor* Metadata::lookup(const XMLCh* id)
     while (m_metadatas.hasNext()) {
         IMetadata* i=m_metadatas.next();
         i->lock();
-        if (ret=i->lookup(id)) {
+        if (ret=i->lookup(id,strict)) {
             m_mapper=i;
             return ret;
         }
@@ -81,7 +81,7 @@ const IEntityDescriptor* Metadata::lookup(const XMLCh* id)
     return NULL;
 }
 
-const IEntityDescriptor* Metadata::lookup(const char* id)
+const IEntityDescriptor* Metadata::lookup(const char* id, bool strict)
 {
     if (m_mapper) {
         m_mapper->unlock();
@@ -92,7 +92,7 @@ const IEntityDescriptor* Metadata::lookup(const char* id)
     while (m_metadatas.hasNext()) {
         IMetadata* i=m_metadatas.next();
         i->lock();
-        if (ret=i->lookup(id)) {
+        if (ret=i->lookup(id,strict)) {
             m_mapper=i;
             return ret;
         }

@@ -469,8 +469,8 @@ namespace {
         }
         ~XMLMetadata() {}
 
-        const IEntityDescriptor* lookup(const char* providerId) const;
-        const IEntityDescriptor* lookup(const XMLCh* providerId) const;
+        const IEntityDescriptor* lookup(const char* providerId, bool strict=true) const;
+        const IEntityDescriptor* lookup(const XMLCh* providerId, bool strict=true) const;
         const IEntityDescriptor* lookup(const saml::SAMLArtifact* artifact) const;
         
     protected:
@@ -1223,11 +1223,11 @@ XMLMetadataImpl::~XMLMetadataImpl()
     delete m_rootProvider;
 }
 
-const IEntityDescriptor* XMLMetadata::lookup(const char* providerId) const
+const IEntityDescriptor* XMLMetadata::lookup(const char* providerId, bool strict) const
 {
-    if (m_exclusions && m_set.find(providerId)!=m_set.end())
+    if (strict && m_exclusions && m_set.find(providerId)!=m_set.end())
         return NULL;
-    else if (!m_exclusions && m_set.find(providerId)==m_set.end())
+    else if (strict && !m_exclusions && m_set.find(providerId)==m_set.end())
         return NULL;
         
     XMLMetadataImpl* impl=dynamic_cast<XMLMetadataImpl*>(getImplementation());
@@ -1238,13 +1238,17 @@ const IEntityDescriptor* XMLMetadata::lookup(const char* providerId) const
     for (XMLMetadataImpl::sitemap_t::const_iterator i=range.first; i!=range.second; i++)
         if (now < i->second->getValidUntil())
             return i->second;
+    
+    if (!strict && range.first!=range.second)
+        return range.first->second;
+        
     return NULL;
 }
 
-const IEntityDescriptor* XMLMetadata::lookup(const XMLCh* providerId) const
+const IEntityDescriptor* XMLMetadata::lookup(const XMLCh* providerId, bool strict) const
 {
     auto_ptr_char temp(providerId);
-    return lookup(temp.get());
+    return lookup(temp.get(),strict);
 }
 
 const IEntityDescriptor* XMLMetadata::lookup(const SAMLArtifact* artifact) const
