@@ -202,7 +202,9 @@ int real_main(const char* arg, int preinit)
       shar_utils_fini();
 
       shib_sock_close(sock, shib_target_sockname());
-      fprintf(stderr, "shar_svc_run returned.\n");
+
+      shib_target_finalize();
+      printf("shar_svc_run returned.\n");
   }
   return 0;
 }
@@ -333,6 +335,8 @@ int main(int argc, char *argv[])
   shar_utils_fini();
 
   shib_sock_close(sock, shib_target_sockname());
+
+  shib_target_finalize();
   fprintf(stderr, "shar_svc_run returned.\n");
   return 0;
 }
