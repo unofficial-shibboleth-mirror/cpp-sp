@@ -6,6 +6,10 @@
  * $Id$
  */
 
+#ifdef WIN32
+# define SHIBTARGET_EXPORTS __declspec(dllexport)
+#endif
+
 #include "shib-target.h"
 #include "ccache-utils.h"
 #include <shib/shib-threads.h>

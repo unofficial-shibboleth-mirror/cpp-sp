@@ -6,12 +6,12 @@
  * $Id$
  */
 
-#ifdef WIN32
+#ifndef HAVE_UNISTD_H
 # include <winsock.h>
 #else
 # include <sys/socket.h>
-#include <sys/un.h>
-#include <unistd.h>
+# include <sys/un.h>
+# include <unistd.h>
 #endif
 
 #include <sys/types.h>
@@ -19,6 +19,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
+
+#ifdef WIN32
+# define SHIBTARGET_EXPORTS __declspec(dllexport)
+#endif
 
 #include "shib-target.h"
 

@@ -6,8 +6,12 @@
  * $Id$
  */
 
-#ifndef WIN32
+#ifdef HAVE_UNISTD_H
 # include <unistd.h>
+#endif
+
+#ifdef WIN32
+# define SHIBTARGET_EXPORTS __declspec(dllexport)
 #endif
 
 #include "shib-target.h"

@@ -14,6 +14,14 @@
 # include <shib/shib.h>
 #endif
 
+#ifdef WIN32
+# ifndef SHIBTARGET_EXPORTS
+#  define SHIBTARGET_EXPORTS __declspec(dllimport)
+# endif
+#else
+# define SHIBTARGET_EXPORTS
+#endif
+
 #include <shib-target/shibrpc.h>
 
 #ifdef __cplusplus
@@ -44,7 +52,7 @@ typedef char * ShibSockName;
  * call clnt_pcreateerror ("<string>") to output an error message from
  * the RPC library.
  */
-CLIENT * shibrpc_client_create (ShibSocket sock, u_long program, u_long version);
+SHIBTARGET_EXPORTS CLIENT * shibrpc_client_create (ShibSocket sock, u_long program, u_long version);
 
 /* shib-sock.c */
 
@@ -52,7 +60,7 @@ CLIENT * shibrpc_client_create (ShibSocket sock, u_long program, u_long version)
  *
  * Returns 0 on success, non-zero on error 
  */
-int shib_sock_create (ShibSocket *sock);
+SHIBTARGET_EXPORTS int shib_sock_create (ShibSocket *sock);
 
 /*
  * bind the socket s to the "port" name.
@@ -61,24 +69,24 @@ int shib_sock_create (ShibSocket *sock);
  *
  * SIDE EFFECT: On error, the socket is closed!
  */
-int shib_sock_bind (ShibSocket s, ShibSockName name);
+SHIBTARGET_EXPORTS int shib_sock_bind (ShibSocket s, ShibSockName name);
 
 /*
  * connect the socket s to the "port" name on the local host.
  *
  * Returns 0 on success; non-zero on error.
  */
-int shib_sock_connect (ShibSocket s, ShibSockName name);
+SHIBTARGET_EXPORTS int shib_sock_connect (ShibSocket s, ShibSockName name);
 
 /*
  * accept a connection.  Returns 0 on success, non-zero on failure.
  */
-int shib_sock_accept (ShibSocket listener, ShibSocket* s);
+SHIBTARGET_EXPORTS int shib_sock_accept (ShibSocket listener, ShibSocket* s);
 
 /*
  * close the socket
  */
-void shib_sock_close (ShibSocket s, ShibSockName name);
+SHIBTARGET_EXPORTS void shib_sock_close (ShibSocket s, ShibSockName name);
 
 /* shib-target.cpp */
 
@@ -112,9 +120,9 @@ void shib_sock_close (ShibSocket s, ShibSockName name);
 #define SHIBTARGET_TAG_REQATTRS     "requestAttributes"
 
 /* initialize and finalize the target library (return 0 on success, 1 on failure) */
-int shib_target_initialize (const char* application, const char* ini_file);
-void shib_target_finalize (void);
-ShibSockName shib_target_sockname(void);
+SHIBTARGET_EXPORTS int shib_target_initialize (const char* application, const char* ini_file);
+SHIBTARGET_EXPORTS void shib_target_finalize (void);
+SHIBTARGET_EXPORTS ShibSockName shib_target_sockname(void);
 
 #ifdef __cplusplus
 }
@@ -122,7 +130,7 @@ ShibSockName shib_target_sockname(void);
 
 namespace shibtarget {
   class ResourcePriv;
-  class Resource
+  class SHIBTARGET_EXPORTS Resource
   {
   public:
     Resource(const char* resource_url);
@@ -139,7 +147,7 @@ namespace shibtarget {
   };
 
   class RPCHandleInternal;
-  class RPCHandle
+  class SHIBTARGET_EXPORTS RPCHandle
   {
   public:
     RPCHandle(ShibSockName shar, u_long program, u_long version);
@@ -153,7 +161,7 @@ namespace shibtarget {
     RPCHandleInternal *m_priv;
   };
 
-  class ShibTargetException : public std::exception
+  class SHIBTARGET_EXPORTS ShibTargetException : public std::exception
   {
   public:
     explicit ShibTargetException() { m_code = SHIBRPC_OK; }
@@ -175,7 +183,7 @@ namespace shibtarget {
   };
 
   class RPCErrorPriv;
-  class RPCError
+  class SHIBTARGET_EXPORTS RPCError
   {
   public:
     RPCError() { init(0, "", NULL); }
@@ -201,7 +209,7 @@ namespace shibtarget {
     RPCErrorPriv* m_priv;
   };
 
-  class SHIREConfig
+  class SHIBTARGET_EXPORTS SHIREConfig
   {
   public:
     bool	checkIPAddress;
@@ -210,7 +218,7 @@ namespace shibtarget {
   };
 
   class SHIREPriv;
-  class SHIRE
+  class SHIBTARGET_EXPORTS SHIRE
   {
   public:
     SHIRE(RPCHandle *rpc, SHIREConfig config, std::string shire_url);
@@ -223,14 +231,14 @@ namespace shibtarget {
     SHIREPriv *m_priv;
   };
 
-  class RMConfig
+  class SHIBTARGET_EXPORTS RMConfig
   {
   public:
     bool	checkIPAddress;
   };
 
   class RMPriv;
-  class RM
+  class SHIBTARGET_EXPORTS RM
   {
   public:
     RM(RPCHandle *rpc, RMConfig config);
@@ -247,7 +255,7 @@ namespace shibtarget {
   };
 
   class ShibINIPriv;
-  class ShibINI {
+  class SHIBTARGET_EXPORTS ShibINI {
   public:
     ShibINI (std::string& file, bool case_sensitive = true) { init(file,case_sensitive); }
     ShibINI (const char *file, bool case_sensitive = true) {
@@ -324,7 +332,7 @@ namespace shibtarget {
     // while you hold the iterator.  You should copy the de-reference
     // of the pointer to your own copy if you want to keep the string.
 
-    class Iterator {
+    class SHIBTARGET_EXPORTS Iterator {
     public:
       virtual ~Iterator() = 0;
       virtual const std::string* begin() = 0;
@@ -342,7 +350,7 @@ namespace shibtarget {
   };
 
   class ShibMLPPriv;
-  class ShibMLP {
+  class SHIBTARGET_EXPORTS ShibMLP {
   public:
     ShibMLP();
     ~ShibMLP();
@@ -376,7 +384,7 @@ namespace shibtarget {
     std::map<std::string,std::string> m_map;
   };
 
-  class ShibTargetConfig
+  class SHIBTARGET_EXPORTS ShibTargetConfig
   {
   public:
     static void preinit();
