@@ -6,13 +6,21 @@
  * $Id$
  */
 
-#include <unistd.h>
+// eventually we might be able to support autoconf via cygwin...
+#if defined (_MSC_VER) || defined(__BORLANDC__)
+# include "config_win32.h"
+#else
+# include "config.h"
+#endif
+
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
+
 #include <stdio.h>
 #include <sys/select.h>
 #include <errno.h>
 #include <signal.h>
-
-#include "config.h"
 
 #include "shar-utils.h"
 #include <shib/shib-threads.h>
