@@ -60,7 +60,7 @@
 # define SHIB_EXPORTS __declspec(dllexport)
 #endif
 
-#include <shib.h>
+#include "shib.h"
 
 const XMLCh shibboleth::Constants::POLICY_CLUBSHIB[] = // http://middleware.internet2.edu/shibboleth/clubs/clubshib/2002/05/
 { chLatin_h, chLatin_t, chLatin_t, chLatin_p, chColon, chForwardSlash, chForwardSlash,

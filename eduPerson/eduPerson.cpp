@@ -57,8 +57,8 @@
 # define EDUPERSON_EXPORTS __declspec(dllexport)
 #endif
 
-#include <shib.h>
-#include <eduPerson.h>
+#include "../shib/shib.h"
+#include "eduPerson.h"
 
 using namespace std;
 using namespace saml;

@@ -60,7 +60,7 @@
 # define EDUPERSON_EXPORTS __declspec(dllexport)
 #endif
 
-#include <eduPerson.h>
+#include "eduPerson.h"
 
 const XMLCh eduPerson::XML::EDUPERSON_NS[] = // urn:mace:eduPerson:1.0
 { chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,

@@ -59,7 +59,7 @@
 # define SHIB_EXPORTS __declspec(dllexport)
 #endif
 
-#include <shib.h>
+#include "shib.h"
 using namespace shibboleth;
 using namespace saml;
 using namespace std;
