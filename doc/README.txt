@@ -1,5 +1,5 @@
-4/27/04
-Version 1.2
+11/15/04
+Version 1.2.1
 
 Welcome to Internet2's Shibboleth
 
@@ -45,4 +45,3 @@ Source code for these libraries is available on request.
 
 This project includes software developed by the National Research Council 
 of Canada.
-

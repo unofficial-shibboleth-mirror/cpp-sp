@@ -1,5 +1,5 @@
-4/15/04
-Version 1.2
+11/15/04
+Version 1.2.1
 
 Binary distributions of the Shibboleth code are available.
 Information on obtaining and installing binaries can be found at
@@ -30,6 +30,10 @@ or apparent module conflicts, make sure you've built Apache and any
 modules with threading support and ideally as much dynamically as
 possible.
 
+Apache 1.x does not directly support threads, but you can set the
+CFLAGS variable before running configure to include the proper gcc
+thread flag (usually -pthread or -pthreads, depends on your platform).
+
 --- MySQL (optional)
 
 The distribution now includes a session cache plugin using embedded MySQL.
@@ -40,7 +44,7 @@ to configure. You can force exclude the plugin with the --disable-mysql option.
 Many default installs of MySQL will not include the embedded library, so don't
 be surprised if it's not there. Also, just as with PHP and certain other packages
 that include C++, you'll need to build it with the same compiler used to build
-Shibboleth unless g++ 3.2 or higher was used.
+Shibboleth.
 
 The MySQL 4.0.x build is currently not clean on either platform. There are errors
 in several Makefile.in files that have to corrected to get the build to work.
@@ -71,7 +75,7 @@ Building the Shibboleth target libraries, shar, test programs, and Apache
 modules is more or less like building OpenSAML. You can get the code from
 CVS and run the bootstrap script if you want, or just use a source tarball.
 
-On Solaris, if you're rebuilding into a prefixed location that already
+On Solaris/OS X, if you're rebuilding into a prefixed location that already
 contains a copy of the software and headers, you'll want to remove
 some of the headers to prevent extra build work when you run the make
 install command. Just do:
@@ -109,5 +113,4 @@ $ /opt/shibboleth/bin/shibtest -h test-handle \
 The example shown uses a built-in test principal, and uses the InQueue
 example origin, which is known to the target after initial installation.
 You should get some reasonably structured output back that lists some simple
-attributes. amongst the logging. An error here is a pretty good sign there's
-trouble.
+attributes. An error here is a pretty good sign there's trouble.
