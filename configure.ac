@@ -310,36 +310,6 @@ fi
 fi
 
 if test "$WANT_APACHE_13" = "yes"; then
-    AC_ARG_WITH(apreq,
-                AC_HELP_STRING([--with-apreq=PATH], [where libapreq is installed]),
-                [if test x_$with_apreq != x_/usr; then
-                    LDFLAGS="-L${with_apreq}/lib $LDFLAGS"
-                    CPPFLAGS="-I${with_apreq}/include $CPPFLAGS"
-                fi])
-
-    saved_CPPFLAGS="$CPPFLAGS"
-    CPPFLAGS="-I$APXS_INCLUDE $APXS_CFLAGS $CPPFLAGS"
-    AC_TRY_COMPILE([#include <libapreq/apache_request.h>],
-                   [int i=0],
-                   test_apreq="yes",test_apreq="no")
-    if test "$test_apreq" = "no"; then
-        CPPFLAGS="$CPPFLAGS -U_XOPEN_SOURCE"
-        APXS_CFLAGS="$APXS_CFLAGS -U_XOPEN_SOURCE"
-        AC_CHECK_HEADER([libapreq/apache_request.h],,
-            AC_MSG_ERROR([unable to find a usable libapreq header]))
-    fi
-
-dnl    saved_LIBS="$LIBS"
-dnl    LIBS="-lapreq $LIBS"
-dnl    AC_TRY_LINK(
-dnl        [#include <libapreq/apache_request.h>],
-dnl        [ApacheRequest_expires],
-dnl        [AC_DEFINE(HAVE_APREQ,1,[Define if apreq library was found])],
-dnl        [AC_MSG_ERROR([unable to link with apreq])
-dnl        ])
-dnl    LIBS="$saved_LIBS"
-    CPPFLAGS="$saved_CPPFLAGS"
-
     AC_ARG_ENABLE([apxs-install],
 	AC_HELP_STRING([--enable-apxs-install],
 			[use apxs to install the apache modules]),
@@ -498,41 +468,10 @@ fi
 fi
 
 if test "$WANT_APACHE_20" = "yes"; then
-    AC_ARG_WITH(apreq2,
-                AC_HELP_STRING([--with-apreq2=PATH], [where http-apreq-2 is installed]),
-                [if test x_$with_apreq2 != x_/usr; then
-                    LDFLAGS="-L${with_apreq2}/lib $LDFLAGS"
-                    CPPFLAGS="-I${with_apreq2}/include $CPPFLAGS"
-                fi])
-
-    saved_CPPFLAGS="$CPPFLAGS"
-    CPPFLAGS="-I$APXS2_INCLUDE $APXS2_CFLAGS $CPPFLAGS"
-    AC_TRY_COMPILE([#include <apreq.h>],
-                   [int i=0],
-                   test_apreq2="yes",test_apreq2="no")
-    if test "$test_apreq2" = "no"; then
-        CPPFLAGS="$CPPFLAGS -U_XOPEN_SOURCE"
-        APXS2_CFLAGS="$APXS2_CFLAGS -U_XOPEN_SOURCE"
-        AC_CHECK_HEADER([apreq.h],,
-            AC_MSG_ERROR([unable to find a usable libapreq2 header]))
-    fi
-
-dnl    saved_LIBS="$LIBS"
-dnl    LIBS="-lapreq $LIBS"
-dnl    AC_TRY_LINK(
-dnl        [#include <apreq.h>],
-dnl        [apreq_param],
-dnl        [AC_DEFINE(HAVE_APREQ2,1,[Define if apreq2 library was found])],
-dnl        [AC_MSG_ERROR([unable to link with apreq2])
-dnl        ])
-dnl    LIBS="$saved_LIBS"
-    CPPFLAGS="$saved_CPPFLAGS"
-
     AC_ARG_ENABLE([apxs2-install],
 	AC_HELP_STRING([--enable-apxs2-install],
 			[use apxs to install the apache-2 modules]),
 	APXS2_INSTALL="yes", )
-
 
     AC_SUBST(APXS2_CFLAGS)
     AC_SUBST(APXS2_INCLUDE)
