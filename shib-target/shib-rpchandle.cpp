@@ -75,13 +75,11 @@ CLIENT * RPCHandle::connect(void)
   if (m_priv->m_clnt)
     return m_priv->m_clnt;
 
-  m_priv->log->info ("trying to connect to SHAR at %s.",
 #ifdef WIN32
-#error "Not defined yet"
+  m_priv->log->info ("trying to connect to SHAR at %u.",m_priv->m_shar);
 #else
-		     m_priv->m_shar
+  m_priv->log->info ("trying to connect to SHAR at %s.",m_priv->m_shar);
 #endif
-		     );
 
   ShibSocket sock;
 
@@ -103,12 +101,20 @@ CLIENT * RPCHandle::connect(void)
 			(i > 0 ? "retrying" : ""));
 
     if (i)
+#ifdef WIN32
+      Sleep(2000*(num_tries-i));
+#else
       sleep (2*(num_tries-i));
+#endif
   }
 
   if (!connected) {
     m_priv->log->crit ("SHAR Unavailable..  Failing.");
+#ifdef WIN32
+    closesocket(sock);
+#else
     close (sock);
+#endif
     throw new ShibTargetException (SHIBRPC_UNKNOWN_ERROR, "Cannot connect to SHAR");
   }
 
@@ -116,7 +122,11 @@ CLIENT * RPCHandle::connect(void)
   if (!clnt) {
     const char * rpcerror = clnt_spcreateerror ("RPCHandle::connect");
     m_priv->log->error ("RPC failed: %s", rpcerror);
+#ifdef WIN32
+    closesocket(sock);
+#else
     close (sock);
+#endif
     throw new ShibTargetException (SHIBRPC_UNKNOWN_ERROR, rpcerror);
   }
 
@@ -132,7 +142,11 @@ void RPCHandle::disconnect(void)
   m_priv->log->info ("disconnect");
   if (m_priv->m_clnt) {
     clnt_destroy (m_priv->m_clnt);
+#ifdef WIN32
+    closesocket(m_priv->m_sock);
+#else
     close (m_priv->m_sock);
+#endif
     m_priv->m_clnt = NULL;
   }
 }

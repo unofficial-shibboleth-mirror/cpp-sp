@@ -18,7 +18,7 @@ extern "C" {
 #ifdef WIN32
 
 #include <winsock.h>
-typedef SOCKET* ShibSocket;
+typedef SOCKET ShibSocket;
 typedef u_short ShibSockName;
 #define SHIB_SHAR_SOCKET 12345	/* shar portnumber */
 
