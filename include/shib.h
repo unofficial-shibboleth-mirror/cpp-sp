@@ -61,6 +61,8 @@
 
 #include <saml.h>
 
+#define SHIB_LOGCAT "Shibboleth"
+
 #ifdef WIN32
 # ifndef SHIB_EXPORTS
 #  define SHIB_EXPORTS __declspec(dllimport)
@@ -71,19 +73,23 @@
 
 namespace shibboleth
 {
-    class SHIB_EXPORTS UnsupportedProtocolException : public saml::SAMLException
-    {
-    public:
-        UnsupportedProtocolException(const char* msg) : saml::SAMLException(msg) {}
-        UnsupportedProtocolException(const std::string& msg) : saml::SAMLException(msg) {}
-        UnsupportedProtocolException(const saml::Iterator<saml::QName>& codes, const char* msg) : saml::SAMLException(codes,msg) {}
-        UnsupportedProtocolException(const saml::Iterator<saml::QName>& codes, const std::string& msg) : saml::SAMLException(codes, msg) {}
-        UnsupportedProtocolException(const saml::QName& code, const char* msg) : saml::SAMLException(code,msg) {}
-        UnsupportedProtocolException(const saml::QName& code, const std::string& msg) : saml::SAMLException(code, msg) {}
-        UnsupportedProtocolException(DOMElement* e) : saml::SAMLException(e) {}
-        UnsupportedProtocolException(std::istream& in) : saml::SAMLException(in) {}
-        virtual ~UnsupportedProtocolException() throw () {}
-    };
+    #define DECLARE_SHIB_EXCEPTION(name,base) \
+        class SHIB_EXPORTS name : public saml::base \
+        { \
+        public: \
+            name(const char* msg) : saml::base(msg) {} \
+            name(const std::string& msg) : saml::base(msg) {} \
+            name(const saml::Iterator<saml::QName>& codes, const char* msg) : saml::base(codes,msg) {} \
+            name(const saml::Iterator<saml::QName>& codes, const std::string& msg) : saml::base(codes, msg) {} \
+            name(const saml::QName& code, const char* msg) : saml::base(code,msg) {} \
+            name(const saml::QName& code, const std::string& msg) : saml::base(code, msg) {} \
+            name(DOMElement* e) : saml::base(e) {} \
+            name(std::istream& in) : saml::base(in) {} \
+            virtual ~name() throw () {} \
+        }
+
+    DECLARE_SHIB_EXCEPTION(UnsupportedProtocolException,SAMLException);
+    DECLARE_SHIB_EXCEPTION(OriginSiteMapperException,SAMLException);
 
     struct SHIB_EXPORTS IOriginSiteMapper
     {
@@ -91,6 +97,31 @@ namespace shibboleth
         virtual saml::Key* getHandleServiceKey(const XMLCh* handleService)=0;
         virtual saml::Iterator<saml::xstring> getSecurityDomains(const XMLCh* originSite)=0;
         virtual saml::Iterator<saml::X509Certificate*> getTrustedRoots()=0;
+    };
+
+    class SHIB_EXPORTS XMLOriginSiteMapper : public IOriginSiteMapper
+    {
+    public:
+        XMLOriginSiteMapper(const char* registryURI,
+                            const saml::Iterator<saml::X509Certificate*>& roots,
+                            saml::Key* verifyKey=NULL);
+        ~XMLOriginSiteMapper();
+
+        virtual saml::Iterator<saml::xstring> getHandleServiceNames(const XMLCh* originSite);
+        virtual saml::Key* getHandleServiceKey(const XMLCh* handleService);
+        virtual saml::Iterator<saml::xstring> getSecurityDomains(const XMLCh* originSite);
+        virtual saml::Iterator<saml::X509Certificate*> getTrustedRoots();
+
+    private:
+        struct OriginSite
+        {
+            std::vector<saml::xstring> m_handleServices;
+            std::vector<saml::xstring> m_domains;
+        };
+
+        std::vector<saml::X509Certificate*> m_roots;
+        std::map<saml::xstring,OriginSite*> m_sites;
+        std::map<saml::xstring,saml::Key*> m_hsKeys;
     };
 
     class SHIB_EXPORTS ShibPOSTProfile
@@ -191,9 +222,14 @@ namespace shibboleth
         struct SHIB_EXPORTS Literals
         {
             // Shibboleth vocabulary
+            static const XMLCh Domain[];
+            static const XMLCh HandleService[];
+            static const XMLCh InvalidHandle[];
+            static const XMLCh Name[];
+            static const XMLCh OriginSite[];
+            static const XMLCh Sites[];
 
             // XML vocabulary
-            static const XMLCh InvalidHandle[];
             static const XMLCh xmlns_shib[];
         };
     };
