@@ -3,11 +3,13 @@
     xsi:schemaLocation="urn:mace:shibboleth:target:config:1.0 @-PKGXMLDIR-@/shibboleth-targetconfig-1.0.xsd"
 	logger="@-PKGSYSCONFDIR-@/shibboleth.logger" clockSkew="180">
 
+	<!-- These extensions are "universal", loaded by all Shibboleth-aware processes. -->
     <Extensions>
         <Library path="@-LIBEXECDIR-@/xmlproviders.so" fatal="true"/>
     </Extensions>
 
-    <Global logger="@-PKGSYSCONFDIR-@/shar.logger">
+	<!-- The Global section pertains to shared Shibboleth processes like the shibd daemon. -->
+    <Global logger="@-PKGSYSCONFDIR-@/shibd.logger">
 		
 		<!--
         <Extensions>
@@ -51,7 +53,8 @@
         -->
     </Global>
     
-    <Local logger="@-PKGSYSCONFDIR-@/shire.logger" localRelayState="true">
+	<!-- The Local section pertains to resource-serving processes (often process pools) like web servers. -->
+    <Local logger="@-PKGSYSCONFDIR-@/httpd.logger" localRelayState="true">
         <!--
         To customize behavior, map hostnames and path components to applicationId and other settings.
         Can be either a pointer to an external file or an inline configuration.
@@ -64,7 +67,7 @@
                 Apache's ServerName and Port directives or the IIS Site name in the <ISAPI> element
                 below.
                 -->
-                <Host name="localhost">
+                <Host name="sp.example.org">
                     <Path name="secure" requireSession="true" exportAssertion="true">
                     	<!-- Example shows a subfolder on the SSL port assigned to a separate <Application> -->
 	                    <Path name="admin" applicationId="foo-admin"/>
@@ -76,42 +79,79 @@
         <Implementation>
             <ISAPI normalizeRequest="true">
             	<!--
-            	Maps IIS Instance ID values to the host scheme/name/port. The name is required so that
-            	the proper <Host> in the request map above is found without having to cover every
-            	possible DNS/IP combination the user might enter. The port and scheme can
-            	usually be omitted, so the HTTP request's port and scheme will be used.
+            	Maps IIS Instance ID values to the host scheme/name/port/sslport. The name is
+            	required so that the proper <Host> in the request map above is found without
+            	having to cover every possible DNS/IP combination the user might enter.
+            	The port and scheme can	usually be omitted, so the HTTP request's port and
+            	scheme will be used.
             	
             	<Alias> elements can specify alternate permissible client-specified server names.
             	If a client request uses such a name, normalized redirects will use it, but the
             	request map processing is still based on the default name attribute for the
             	site. This reduces duplicate data entry in the request map for every legal
-            	hostname a site might permit. In the example below, only localhost needs a
-            	<Host> element in the map, but localhost.localdomain could be used by a client
-            	and those requests will map to localhost for configuration settings.
+            	hostname a site might permit. In the example below, only sp.example.org needs a
+            	<Host> element in the map, but spalso.example.org could be used by a client
+            	and those requests will map to sp.example.org for configuration settings.
             	-->
-                <Site id="1" name="localhost">
-                	<Alias>localhost.localdomain</Alias>
+                <Site id="1" name="sp.example.org">
+                	<Alias>spalso.example.org</Alias>
                 </Site>
             </ISAPI>
         </Implementation>
     </Local>
 
-    <Applications xmlns:saml="urn:oasis:names:tc:SAML:1.0:assertion"
-    	id="default" providerId="https://sp.example.org/shibboleth"
-    	homeURL="https://sp.example.org/index.html">
+	<!--
+	The Applications section is where most of Shibboleth's SAML bits are defined.
+	Resource requests are mapped in the Local section into an applicationId that
+	points into to this section.
+	-->
+    <Applications id="default" providerId="https://sp.example.org/shibboleth"
+    	homeURL="https://sp.example.org/index.html"
+    	xmlns:saml="urn:oasis:names:tc:SAML:1.0:assertion"
+    	xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata">
 
         <!--
-        Controls session lifetimes, address checks, cookie handling, WAYF, and the SHIRE location.
-        You MUST supply a unique shireURL value (and a wayfURL that can be the same) for each of your
-        applications. The value can be a relative path, a URL with no hostname (https:///path) or a
-        full URL. The system will compute the value that applies based on the resource. Using
-        shireSSL="true" will force the protocol to be https. You should also add a cookieProps
-        setting of "; secure" in that case. The default wayfURL is the InQueue federation's service.
-        Change to https://localhost/shibboleth/HS for internal testing against your own origin.
+        Controls session lifetimes, address checks, cookie handling, and the protocol handlers.
+        You MUST supply an effectively unique handlerURL value for each of your applications.
+        The value can be a relative path, a URL with no hostname (https:///path) or a full URL.
+		The system can compute a relative value based on the virtual host. Using handlerSSL="true"
+		will force the protocol to be https. You should also add a cookieProps setting of "; secure"
+		in that case.
         -->
         <Sessions lifetime="7200" timeout="3600" checkAddress="true"
-        	wayfURL="https://wayf.internet2.edu/InQueue/WAYF"
-            shireURL="/Shibboleth.shire" shireSSL="false"/>
+            handlerURL="/Shibboleth.sso" handlerSSL="false" idpHistory="true" idpHistoryDays="7">
+            
+            <!--
+            SessionInitiators handle session requests and relay them to a WAYF or directly
+            to an IdP, if possible. Automatic session setup will use the default or first
+            element (or requestSessionWith can specify a specific id to use). Lazy sessions
+            can be started with any initiator. The only Binding supported is the
+            "urn:mace:shibboleth:sp:1.3:SessionInit" lazy session profile.
+            -->
+            <SessionInitiator isDefault="true" id="IQ" Location="/WAYF/InQueue"
+            	Binding="urn:mace:shibboleth:sp:1.3:SessionInit"
+            	wayfURL="https://wayf.internet2.edu/InQueue/WAYF"
+            	wayfBinding="urn:mace:shibboleth:1.0:profiles:AuthnRequest"/>
+			
+            <!--
+            md:AssertionConsumerService elements replace the old shireURL function with an
+            explicit handler for particular profiles, such as SAML 1.1 POST or Artifact.
+            The isDefault and index attributes are used when sessions are initiated
+            to determine how to communicate where the IdP should return the response.
+            -->
+			<md:AssertionConsumerService Location="/SAML/POST" isDefault="true" index="1"
+				Binding="urn:oasis:names:tc:SAML:1.0:profiles:browser-post"/>
+			<md:AssertionConsumerService Location="/SAML/Artifact" index="2"
+				Binding="urn:oasis:names:tc:SAML:1.0:profiles:artifact-01"/>
+            
+            <!--
+            md:SingleLogoutService elements are mostly a placeholder for 2.0, but a simple
+            cookie-clearing option with a ResponseLocation or a return URL parameter is
+            supported via the "urn:mace:shibboleth:sp:1.3:Logout" Binding value.
+            -->
+			<md:SingleLogoutService Location="/Logout" Binding="urn:mace:shibboleth:sp:1.3:Logout"/>
+            
+        </Sessions>
 
         <!--
         You should customize these pages! You can add attributes with values that can be plugged
@@ -120,6 +160,7 @@
         using your web server.
         -->
         <Errors session="@-PKGSYSCONFDIR-@/sessionError.html"
+        	metadata="@-PKGSYSCONFDIR-@/metadataError.html"
             rm="@-PKGSYSCONFDIR-@/rmError.html"
             access="@-PKGSYSCONFDIR-@/accessError.html"
             supportContact="root@localhost"
@@ -197,15 +238,16 @@
         <saml:Audience>urn:mace:inqueue</saml:Audience>
         
         <!--
-        You can customize behavior of specific applications here. You must supply a complete <Sessions>
-        element to inidicate a distinct shireURL and wayfURL for this application, along with any other
-        non-default settings you require. None will be inherited. The wayfURL can be the same as the
-        default above, but the shireURL MUST be different and MUST map to this application in the
-        RequestMap. The default elements inside the outer <Applications> element generally have to be
-        overridden in an all or nothing fashion. That is, if you supply an <Errors> override, you MUST
-        include all attributes you want to apply, as they will not be inherited. Similarly, if you
-        specify an element such as <FederationProvider>, it is not additive with the defaults, but
-        replaces them.
+        You can customize behavior of specific applications here. The default elements inside the
+        outer <Applications> element generally have to be overridden in an all or nothing fashion.
+        That is, if you supply a <Sessions> or <Errors> override, you MUST include all attributes
+        you want to apply, as they will not be inherited. Similarly, if you specify an element such as
+        <FederationProvider>, it is not additive with the defaults, but replaces them.
+        
+        Note that each application must have at least one assertion consumer service <Handler> that
+        maps uniquely to it and no other application in the <RequestMap>. Otherwise no sessions
+        will reach the application. If each application lives on its own vhost, then a single handler
+        at "/Shibboleth.sso/SAML" is sufficient, since the hostname will distinguish the application.
         
         The example below shows a special application that requires use of SSL when establishing
         sessions, restricts the session cookie to SSL and a specific folder, and inherits most other

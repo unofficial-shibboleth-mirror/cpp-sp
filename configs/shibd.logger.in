@@ -1,5 +1,5 @@
 # set overall behavior
-log4j.rootCategory=INFO, shar_log
+log4j.rootCategory=INFO, shibd_log
 
 # these are fairly verbose for DEBUG, so generally leave at INFO
 log4j.category.SAML.XML=INFO
@@ -12,13 +12,13 @@ log4j.additivity.Shibboleth-TRANSACTION=false
 
 # define the appenders
 
-log4j.appender.shar_log=org.apache.log4j.RollingFileAppender
-log4j.appender.shar_log.fileName=@-PKGLOGDIR-@/shar.log
-log4j.appender.shar_log.maxFileSize=1000000
-log4j.appender.shar_log.maxBackupIndex=10
-#log4j.appender.shar_log.layout=org.apache.log4j.BasicLayout
-log4j.appender.shar_log.layout=org.apache.log4j.PatternLayout
-log4j.appender.shar_log.layout.ConversionPattern=%d{%Y-%m-%d %H:%M:%S} %p %c %x: %m%n
+log4j.appender.shibd_log=org.apache.log4j.RollingFileAppender
+log4j.appender.shibd_log.fileName=@-PKGLOGDIR-@/shibd.log
+log4j.appender.shibd_log.maxFileSize=1000000
+log4j.appender.shibd_log.maxBackupIndex=10
+#log4j.appender.shibd_log.layout=org.apache.log4j.BasicLayout
+log4j.appender.shibd_log.layout=org.apache.log4j.PatternLayout
+log4j.appender.shibd_log.layout.ConversionPattern=%d{%Y-%m-%d %H:%M:%S} %p %c %x: %m%n
 
 log4j.appender.tran_log=org.apache.log4j.RollingFileAppender
 log4j.appender.tran_log.fileName=@-PKGLOGDIR-@/transaction.log

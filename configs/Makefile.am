@@ -18,8 +18,8 @@ pkgsysconf_DATA = \
 # the config files will not overwrite existing versions.
 BUILTCONFIGFILES = \
 	shibboleth.xml \
-	shire.logger \
-	shar.logger \
+	httpd.logger \
+	shibd.logger \
 	AAP.xml \
 	IQ-sites.xml \
 	IQ-trust.xml
@@ -32,8 +32,8 @@ CONFIGFILES = \
 	rmError.html \
 	sessionError.html \
 	metadataError.html \
-	shar.key \
-	shar.crt
+	example.key \
+	example.crt
 
 #
 # Some of these need building
@@ -57,10 +57,10 @@ apache.config: ${srcdir}/apache.config.in Makefile ${top_builddir}/config.status
 apache2.config: ${srcdir}/apache2.config.in Makefile ${top_builddir}/config.status
 	$(MAKE) do-build-file FILE=$@
 
-shar.logger: ${srcdir}/shar.logger.in Makefile ${top_builddir}/config.status
+shibd.logger: ${srcdir}/shibd.logger.in Makefile ${top_builddir}/config.status
 	$(MAKE) do-build-file FILE=$@
 
-shire.logger: ${srcdir}/shire.logger.in Makefile ${top_builddir}/config.status
+httpd.logger: ${srcdir}/httpd.logger.in Makefile ${top_builddir}/config.status
 	$(MAKE) do-build-file FILE=$@
 
 shibboleth.xml: ${srcdir}/shibboleth.xml.in Makefile ${top_builddir}/config.status
@@ -98,8 +98,8 @@ install-data-local:	all-data-local
 CLEANFILES = \
 	apache.config \
 	apache2.config \
-	shar.logger \
-	shire.logger \
+	shibd.logger \
+	httpd.logger \
 	shibboleth.xml \
 	AAP.xml \
 	IQ-sites.xml \
@@ -107,8 +107,8 @@ CLEANFILES = \
 
 EXTRA_DIST = .cvsignore \
 	shibboleth.xml.in \
-	shire.logger.in \
-	shar.logger.in \
+	httpd.logger.in \
+	shibd.logger.in \
 	apache.config.in \
 	apache2.config.in \
 	shibboleth.logger \
@@ -120,5 +120,5 @@ EXTRA_DIST = .cvsignore \
 	IQ-sites.xml.in \
 	IQ-trust.xml.in \
 	inqueue.pem \
-	shar.key \
-	shar.crt
+	example.key \
+	example.crt

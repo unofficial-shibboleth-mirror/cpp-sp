@@ -21,8 +21,8 @@ ShibConfig @-PKGSYSCONFDIR-@/shibboleth.xml
 # A handler needs to be established for the SHIRE URL
 # This applies the handler to any documents with a "shire" extension
 #
-<Files *.shire>
-SetHandler shib-shire-post
+<Files *.sso>
+SetHandler shib-handler
 </Files>
 #
 # Another way of addressing this is to apply Shibboleth
