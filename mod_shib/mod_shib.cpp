@@ -670,6 +670,18 @@ char* url_encode(request_rec* r, const char* s)
     return ret;
 }
 
+char* get_shire_location(request_rec* r, const char* target)
+{
+    shib_server_config* sc=
+        (shib_server_config*)ap_get_module_config(r->server->module_config,&shib_module);
+    if (*(sc->szSHIRELocation)!='/')
+        return url_encode(r,sc->szSHIRELocation);
+    char* colon=strchr(target,':');
+    char* slash=strchr(colon+3,'/');
+    return url_encode(r,ap_pstrcat(r->pool,ap_pstrndup(r->pool,target,slash-target),
+				   sc->szSHIRELocation,NULL));
+}
+
 int shib_shar_error(request_rec* r, SAMLException& e)
 {
     r->content_type = ap_psprintf(r->pool, "text/html");
@@ -707,7 +719,7 @@ extern "C" int shib_check_user(request_rec* r)
     char* targeturl=ap_construct_url(r->pool,r->unparsed_uri,r);
  
     // If the user is accessing the SHIRE acceptance point, pass on.
-    if (!strcmp(targeturl,sc->szSHIRELocation))
+    if (strstr(targeturl,sc->szSHIRELocation))
         return OK;
 
     // Regular access to arbitrary resource...check AuthType
@@ -741,7 +753,7 @@ extern "C" int shib_check_user(request_rec* r)
     {
         // Redirect to WAYF.
         char* wayf=ap_pstrcat(r->pool,sc->szWAYFLocation,
-			      "?shire=",url_encode(r,sc->szSHIRELocation),
+			      "?shire=",get_shire_location(r,targeturl),
 			      "&target=",url_encode(r,targeturl),NULL);
 	ap_table_setn(r->headers_out,"Location",wayf);
 	return REDIRECT;
@@ -771,7 +783,7 @@ extern "C" int shib_check_user(request_rec* r)
 	    catch (runtime_error e)
 	    {
 		char* wayf=ap_pstrcat(r->pool,sc->szWAYFLocation,
-				      "?shire=",url_encode(r,sc->szSHIRELocation),
+				      "?shire=",get_shire_location(r,targeturl),
 				      "&target=",url_encode(r,targeturl),NULL);
 		ap_table_setn(r->headers_out,"Location",wayf);
 		return REDIRECT;
@@ -787,7 +799,7 @@ extern "C" int shib_check_user(request_rec* r)
 	    CCache::g_Cache->remove(session_id);
 	    delete entry;
 	    char* wayf=ap_pstrcat(r->pool,sc->szWAYFLocation,
-				  "?shire=",url_encode(r,sc->szSHIRELocation),
+				  "?shire=",get_shire_location(r,targeturl),
 				  "&target=",url_encode(r,targeturl),NULL);
 	    ap_table_setn(r->headers_out,"Location",wayf);
 	    return REDIRECT;
@@ -850,7 +862,7 @@ extern "C" int shib_check_user(request_rec* r)
 		CCache::g_Cache->remove(session_id);
 		delete entry;
 		char* wayf=ap_pstrcat(r->pool,sc->szWAYFLocation,
-				      "?shire=",url_encode(r,sc->szSHIRELocation),
+				      "?shire=",get_shire_location(r,targeturl),
 				      "&target=",url_encode(r,targeturl),NULL);
 		ap_table_setn(r->headers_out,"Location",wayf);
 		return REDIRECT;
@@ -925,7 +937,7 @@ extern "C" int shib_check_auth(request_rec* r)
     ap_log_rerror(APLOG_MARK,APLOG_DEBUG,r,"shib_check_auth() executing");
 
     char* targeturl=ap_construct_url(r->pool,r->unparsed_uri,r);
-    if (!strcmp(targeturl,sc->szSHIRELocation))
+    if (strstr(targeturl,sc->szSHIRELocation))
         return OK;
 
     // Regular access to arbitrary resource...check AuthType
