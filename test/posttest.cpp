@@ -96,8 +96,6 @@ int main(int argc,char* argv[])
     if (!conf1.init())
         cerr << "unable to initialize SAML runtime" << endl;
 
-    saml::XML::registerSchema(shibboleth::XML::SHIB_NS,shibboleth::XML::SHIB_SCHEMA_ID);
-
     //XMLOriginSiteMapper mapper("/Tomcat4.0/webapps/shibboleth/sites.xml",Iterator<X509Certificate*>());
     XMLOriginSiteMapper mapper("http://wayf.internet2.edu/shibboleth/sites.xml",Iterator<X509Certificate*>());
     conf2.origin_mapper=&mapper;
