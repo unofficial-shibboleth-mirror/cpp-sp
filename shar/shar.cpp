@@ -193,12 +193,16 @@ int real_main(int preinit)
         const IListener* listener=conf.getINI()->getListener();
         
         // Create the SHAR listener socket
-        if (!listener->create(sock))
+        if (!listener->create(sock)) {
+            conf.shutdown();
             return -3;
+        }
 
         // Bind to the proper port
-        if (!listener->bind(sock))
+        if (!listener->bind(sock)) {
+            conf.shutdown();
             return -4;
+        }
 
         // Initialize the SHAR Utilitites
         SHARUtils::init();
@@ -215,7 +219,7 @@ int real_main(int preinit)
         }
 
         conf.shutdown();
-        fprintf(stdout, "shar shutdown complete\n");
+        fprintf(stdout, "shibd shutdown complete\n");
     }
     return 0;
 }
@@ -345,12 +349,16 @@ int main(int argc, char *argv[])
         const IListener* listener=conf.getINI()->getListener();
         
         // Create the SHAR listener socket
-        if (!listener->create(sock))
+        if (!listener->create(sock)) {
+            conf.shutdown();
             return -3;
+        }
     
         // Bind to the proper port
-        if (!listener->bind(sock, unlink_socket==1))
+        if (!listener->bind(sock, unlink_socket==1)) {
+            conf.shutdown();
             return -4;
+        }
     
         // Initialize the SHAR Utilitites
         SHARUtils::init();
@@ -365,9 +373,9 @@ int main(int argc, char *argv[])
         listener->close(sock);
         fprintf(stderr, "shib socket closed\n");
     }
-    
+
     conf.shutdown();
-    fprintf(stderr, "shar shutdown complete\n");
+    fprintf(stderr, "shibd shutdown complete\n");
     return 0;
 }
 
