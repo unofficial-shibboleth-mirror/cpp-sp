@@ -190,7 +190,7 @@ bool CCacheEntry::isSessionValid(time_t lifetime, time_t timeout)
     if (lifetime==0)
         lifetime=3600;
     if (timeout==0)
-        timeout==1800;
+        timeout=1800;
     if (now > m_sessionCreated+lifetime)
         return false;
     if (now-m_lastAccess >= timeout)
