@@ -1,72 +1,23 @@
-<Credentials xmlns="urn:mace:shibboleth:1.0" xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+<Credentials xmlns="urn:mace:shibboleth:credentials:1.0" xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
     
     <!--
-    
-   	Keys and certificates are resolved using Credential Resolvers. Three types are
-   	currently defined, file-based keys and certs, <ds:KeyInfo> inline certs, and
-   	for Java implementations, keystore=based keys and certs.
+   	Keys and certificates are resolved using Credential Resolvers. Two types are
+   	currently defined, file-based keys and certs and for Java implementations,
+   	keystore-based keys and certs.
    	
    	All resolvers must contain a unique XML Id attribute.
    	
-   	A file example:
-   	
-   	<FileCredResolver Id="foo" Format="PEM">
-   		<Path>/path/to/file</Path>
-   		<Password>optionalpassword</Password>
-   	</FileCredResolver>
-    
-    File resolvers currently support DER and PEM formats. PEM files can contain
-    keys and certs and cert chains in a single file. DER files can only hold
-    single objects.
-    
-    A KeyInfo example follows. Only <ds:X509Data> for inline certificates is supported.
-    
-    <ds:KeyInfo Id="foo">
-    	<ds:X509Data>
-    		<ds:X509Certificate>lfsjlfjfgjlgfljgflj....
-djlgdjlgdjlgdjlgdjl.....
-</ds:X509Certificate>
-    	</ds:X509Data>
-    </ds:KeyInfo>
-
-   	A certificate chain can also be embedded using one <ds:X509Data> element with
-   	embedded <ds:X509Certificate> elements. The chain should be ordered with the end-cert last.
-    
-    <KeyUse> elements map key and cert resolvers to <Subject> and <RelyingParty> data.
-    Omitting either acts as a wildcard (any subject / any relying party). The KeyRef and
-    CertificateRef attributes connect the element to the resolvers defined above it.
-    
-    <Subject> elements refer to the application identifier that is requesting attributes.
-    Currently this is of the form http(s)://<hostname>, and matches the root URL of the
-    vhost that is being accessed by the browser. In future versions, this will be a more
-    generic URI identifier.
-    
-    <RelyingParty> elements refer to the origin site identifier of the SAML authority that
-    is being contacted over TLS/SSL.
-    
-    Both elements can contain a regexp="true" attribute to indicate a pattern match instead
-    of literal matching.
-    
-	Here is an example that binds to any requesting application	for a specific set of origin sites:
-	
-	<KeyUse KeyRef="foo" CertificateRef="bar">
-        <RelyingParty regexp="true">^urn:mace:inqueue:.+$</RelyingParty>
-    </KeyUse>
-
-	The default element below is a catch-all that maps the specified credentials to
-	every SSL request. It should be modified as needed or the necessary files can
-	be placed in the locations specified.
-
+    File resolvers currently support DER, PEM, and PKCS12 formats. PEM files can contain
+    keys and certs and cert chains in a single file.
     -->
     
-    <FileCredResolver Id="key1">
-    	<Path>@-PKGSYSCONFDIR-@/shar.key</Path>
-    </FileCredResolver>
+   	<FileResolver Id="default">
+   		<Key format="PEM" password="secret">
+	    	<Path>@-PKGSYSCONFDIR-@/shar.key</Path>
+	   	</Key>
+	   	<Certificate format="PEM">
+	    	<Path>@-PKGSYSCONFDIR-@/shar.crt</Path>
+	   	</Certificate>
+   	</FileResolver>
     
-    <FileCredResolver Id="cert1">
-    	<Path>@-PKGSYSCONFDIR-@/shar.crt</Path>
-    </FileCredResolver>
-
-    <KeyUse KeyRef="key1" CertificateRef="cert1"/>
-
 </Credentials>
