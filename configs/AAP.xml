@@ -27,6 +27,12 @@
             <Value Type="regexp">^[A|a][F|f][F|f][I|i][L|l][I|i][A|a][T|t][E|e]$</Value>
             <Value Type="regexp">^[E|e][M|m][P|p][L|l][O|o][Y|y][E|e][E|e]$</Value>
         </AnySite>
+        
+        <!-- Example of Scope rule to override site metadata. -->
+        <SiteRule Name="urn:mace:inqueue:shibdev.edu">
+        	<Scope Accept="false">shibdev.edu</Scope>
+        	<Scope Type="regexp">^.+\.shibdev\.edu$</Scope>
+        </SiteRule>
 	</AttributeRule>
 
     <AttributeRule Name="urn:mace:dir:attribute-def:eduPersonPrincipalName" Header="REMOTE_USER" Alias="user">
