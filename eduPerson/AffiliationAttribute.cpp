@@ -88,12 +88,12 @@ void AffiliationAttribute::addValues(DOMElement* e)
     for (int i=0; nlist && i<nlist->getLength(); i++)
     {
         auto_ptr<saml::QName> type(saml::QName::getQNameAttribute(static_cast<DOMElement*>(nlist->item(0)),saml::XML::XSI_NS,L(type)));
-	if (!type.get() || XMLString::compareString(type->getNamespaceURI(),eduPerson::XML::EDUPERSON_NS) ||
-	    XMLString::compareString(type->getLocalName(),eduPerson::Constants::EDUPERSON_AFFILIATION_TYPE))
-	    throw InvalidAssertionException(SAMLException::RESPONDER,"AffiliationAttribute() found an invalid attribute value type");
-	if (!m_type)
-	    m_type=type.release();
-	addValue(static_cast<DOMElement*>(nlist->item(i)));
+        if (!type.get() || XMLString::compareString(type->getNamespaceURI(),eduPerson::XML::EDUPERSON_NS) ||
+            XMLString::compareString(type->getLocalName(),eduPerson::Constants::EDUPERSON_AFFILIATION_TYPE))
+            throw MalformedException(SAMLException::RESPONDER,"AffiliationAttribute() found an invalid attribute value type");
+        if (!m_type)
+            m_type=type.release();
+        addValue(static_cast<DOMElement*>(nlist->item(i)));
     }
 }
 

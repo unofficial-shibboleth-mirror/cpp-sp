@@ -87,12 +87,12 @@ void EntitlementAttribute::addValues(DOMElement* e)
     for (int i=0; nlist && i<nlist->getLength(); i++)
     {
         auto_ptr<saml::QName> type(saml::QName::getQNameAttribute(static_cast<DOMElement*>(nlist->item(0)),saml::XML::XSI_NS,L(type)));
-	if (!type.get() || XMLString::compareString(type->getNamespaceURI(),saml::XML::XSD_NS) ||
-	    XMLString::compareString(type->getLocalName(),anyURI))
-	    throw InvalidAssertionException(SAMLException::RESPONDER,"EntitlementAttribute() found an invalid attribute value type");
-	if (!m_type)
-	    m_type=type.release();
-	addValue(static_cast<DOMElement*>(nlist->item(i)));
+        if (!type.get() || XMLString::compareString(type->getNamespaceURI(),saml::XML::XSD_NS) ||
+            XMLString::compareString(type->getLocalName(),anyURI))
+            throw MalformedException(SAMLException::RESPONDER,"EntitlementAttribute() found an invalid attribute value type");
+        if (!m_type)
+            m_type=type.release();
+        addValue(static_cast<DOMElement*>(nlist->item(i)));
     }
 }
 

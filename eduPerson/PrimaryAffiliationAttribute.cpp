@@ -86,8 +86,8 @@ void PrimaryAffiliationAttribute::addValues(DOMElement* e)
 
     m_type=saml::QName::getQNameAttribute(static_cast<DOMElement*>(nlist->item(0)),saml::XML::XSI_NS,L(type));
     if (!m_type || XMLString::compareString(m_type->getNamespaceURI(),eduPerson::XML::EDUPERSON_NS) ||
-	XMLString::compareString(m_type->getLocalName(),eduPerson::Constants::EDUPERSON_AFFILIATION_TYPE))
-        throw InvalidAssertionException(SAMLException::RESPONDER,"PrimaryAffiliationAttribute() found an invalid attribute value type");
+        XMLString::compareString(m_type->getLocalName(),eduPerson::Constants::EDUPERSON_AFFILIATION_TYPE))
+        throw MalformedException(SAMLException::RESPONDER,"PrimaryAffiliationAttribute() found an invalid attribute value type");
     addValue(static_cast<DOMElement*>(nlist->item(0)));
 }
 

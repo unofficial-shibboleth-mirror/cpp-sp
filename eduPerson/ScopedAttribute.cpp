@@ -77,7 +77,7 @@ ScopedAttribute::ScopedAttribute(const XMLCh* name, const XMLCh* ns, const XMLCh
     : SAMLAttribute(name,ns,type,lifetime,values)
 {
     if (scopes.size()!=values.size())
-        throw SAMLException(SAMLException::RESPONDER,"ScopedAttribute() requires the number of scopes to equal the number of values");
+        throw MalformedException(SAMLException::RESPONDER,"ScopedAttribute() requires the number of scopes to equal the number of values");
 
     if (defaultScope)
         m_defaultScope=defaultScope;
@@ -92,7 +92,7 @@ ScopedAttribute::ScopedAttribute(DOMElement* e) : SAMLAttribute(e)
     DOMNodeList* nlist=
         static_cast<DOMElement*>(e->getParentNode())->getElementsByTagNameNS(saml::XML::SAML_NS,L(NameIdentifier));
     if (!nlist || nlist->getLength() != 1)
-        throw InvalidAssertionException(SAMLException::RESPONDER,"ScopedAttribute() can't find saml:NameIdentifier in enclosing statement");
+        throw MalformedException(SAMLException::RESPONDER,"ScopedAttribute() can't find saml:NameIdentifier in enclosing statement");
     m_defaultScope=static_cast<DOMElement*>(nlist->item(0))->getAttributeNS(NULL,L(NameQualifier));
 }
 
