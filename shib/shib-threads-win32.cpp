@@ -329,19 +329,19 @@ public:
   }
 };
 
-static __declspec( thread ) void *thread_data;
 typedef void (*destroy_hook_type)(void*);
 
 class ThreadKeyImpl : public ThreadKey {
 private:
   destroy_hook_type destroy_hook;
+  DWORD key;
 
 public:
-  ThreadKeyImpl(void (*destroy_fcn)(void*)):destroy_hook(destroy_fcn){};
-  virtual ~ThreadKeyImpl() { destroy_hook(thread_data); }
+  ThreadKeyImpl(void (*destroy_fcn)(void*)) : destroy_hook(destroy_fcn) { key=TlsAlloc(); };
+  virtual ~ThreadKeyImpl() { destroy_hook(TlsGetValue(key)); TlsFree(key); }
 
-  int setData(void* data) { thread_data=data; return 0;}
-  void* getData() { return thread_data; }
+  int setData(void* data) { TlsSetValue(key,data); return 0;}
+  void* getData() { return TlsGetValue(key); }
   };
 
 //
