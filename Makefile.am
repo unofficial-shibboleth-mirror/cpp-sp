@@ -4,5 +4,8 @@ AUTOMAKE_OPTIONS = foreign
 
 ACLOCAL_AMFLAGS = -I .
 
+EXTRA_DIST = ../INSTALL.txt ../LICENSE.txt ../NEWS.txt ../README.txt \
+        INSTALL.txt LICENSE.txt NEWS.txt README.txt
+
 SUBDIRS = @WANT_SUBDIRS@
 
