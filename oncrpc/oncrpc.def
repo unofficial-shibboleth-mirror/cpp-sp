@@ -11,11 +11,11 @@ clnt_broadcast
 clnt_pcreateerror
 clnt_perrno
 clnt_perror
-clnt_spcreateerror
+onc_clnt_spcreateerror
 clnt_sperrno
 clnt_sperror
 clntraw_create
-clnttcp_create
+onc_clnttcp_create
 clntudp_bufcreate
 clntudp_create
 get_myaddress
@@ -28,8 +28,8 @@ pmap_unset
 rpc_nt_exit
 rpc_nt_init
 svc_getreq
-svc_getreqset
-svc_register
+onc_svc_getreqset
+onc_svc_register
 svc_run
 svc_sendreply
 svc_unregister
