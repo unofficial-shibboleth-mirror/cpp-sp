@@ -5,13 +5,8 @@ AUTOMAKE_OPTIONS = foreign
 logdir=${localstatedir}/log/shibboleth
 pkgsysconfdir = $(sysconfdir)/@PACKAGE@
 pkgsysconf_DATA = \
-	shar.key \
-	shar.crt \
 	apache.config \
 	apache2.config \
-	AAP.xml \
-	IQ-sites.xml \
-	IQ-trust.xml \
 	inqueue.pem
 
 # The config files are installed "special".  Unlike the entries in
@@ -25,7 +20,12 @@ CONFIGFILES = \
 	shar.logger \
 	accessError.html \
 	rmError.html \
-	shireError.html
+	shireError.html \
+	AAP.xml \
+	IQ-sites.xml \
+	IQ-trust.xml \
+	shar.key \
+	shar.crt
 
 #
 # Some of these need building
