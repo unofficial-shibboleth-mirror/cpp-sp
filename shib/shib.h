@@ -281,6 +281,7 @@ namespace shibboleth
        
     struct SHIB_EXPORTS IMetadata : public virtual saml::ILockable, public virtual saml::IPlugIn
     {
+        virtual const IEntityDescriptor* lookup(const char* id) const=0;
         virtual const IEntityDescriptor* lookup(const XMLCh* id) const=0;
         virtual const IEntityDescriptor* lookup(const saml::SAMLArtifact* artifact) const=0;
         virtual ~IMetadata() {}
@@ -386,7 +387,8 @@ namespace shibboleth
         Metadata(const saml::Iterator<IMetadata*>& metadatas) : m_metadatas(metadatas), m_mapper(NULL) {}
         ~Metadata();
 
-        const IEntityDescriptor* lookup(const XMLCh* providerId);
+        const IEntityDescriptor* lookup(const char* id);
+        const IEntityDescriptor* lookup(const XMLCh* id);
         const IEntityDescriptor* lookup(const saml::SAMLArtifact* artifact);
 
     private:

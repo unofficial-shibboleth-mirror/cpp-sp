@@ -425,6 +425,7 @@ namespace {
         XMLMetadata(const DOMElement* e) : ReloadableXMLFile(e) {}
         ~XMLMetadata() {}
 
+        const IEntityDescriptor* lookup(const char* providerId) const;
         const IEntityDescriptor* lookup(const XMLCh* providerId) const;
         const IEntityDescriptor* lookup(const saml::SAMLArtifact* artifact) const;
         
@@ -1108,18 +1109,23 @@ XMLMetadataImpl::~XMLMetadataImpl()
     delete m_rootProvider;
 }
 
-const IEntityDescriptor* XMLMetadata::lookup(const XMLCh* providerId) const
+const IEntityDescriptor* XMLMetadata::lookup(const char* providerId) const
 {
     XMLMetadataImpl* impl=dynamic_cast<XMLMetadataImpl*>(getImplementation());
-    auto_ptr_char temp(providerId);
     pair<XMLMetadataImpl::sitemap_t::const_iterator,XMLMetadataImpl::sitemap_t::const_iterator> range=
-        impl->m_sites.equal_range(temp.get());
+        impl->m_sites.equal_range(providerId);
 
     time_t now=time(NULL);
     for (XMLMetadataImpl::sitemap_t::const_iterator i=range.first; i!=range.second; i++)
         if (now < i->second->getValidUntil())
             return i->second;
     return NULL;
+}
+
+const IEntityDescriptor* XMLMetadata::lookup(const XMLCh* providerId) const
+{
+    auto_ptr_char temp(providerId);
+    return lookup(temp.get());
 }
 
 const IEntityDescriptor* XMLMetadata::lookup(const SAMLArtifact* artifact) const
