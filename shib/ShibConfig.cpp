@@ -70,16 +70,6 @@ using namespace shibboleth;
 SAML_EXCEPTION_FACTORY(UnsupportedProtocolException);
 SAML_EXCEPTION_FACTORY(OriginSiteMapperException);
 
-extern "C" SAMLAttribute* ScopedFactory(DOMElement* e)
-{
-    return new ScopedAttribute(e);
-}
-
-extern "C" SAMLAttribute* SimpleFactory(DOMElement* e)
-{
-    return new SimpleAttribute(e);
-}
-
 namespace {
     ShibInternalConfig g_config;
 }
