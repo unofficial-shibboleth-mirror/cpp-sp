@@ -76,24 +76,14 @@ using namespace saml;
 using namespace shibboleth;
 using namespace log4cpp;
 
-void verifySignature(DOMDocument* doc, DOMElement* sigNode, const char* cert)
+void verifySignature(DOMDocument* doc, DOMElement* sigNode, const char* cert=NULL)
 {
     Category& log=Category::getInstance("siterefresh");
-
-    // Load the certificate, stripping the first and last lines.
-    string certbuf,line;
-    auto_ptr<OpenSSLCryptoX509> x509(new OpenSSLCryptoX509());
-    ifstream infile(cert);
-    while (!getline(infile,line).fail())
-        if (line.find("CERTIFICATE")==string::npos)
-            certbuf+=line + '\n';
-    x509->loadX509Base64Bin(certbuf.data(),certbuf.length());
 
     // Load the signature.
     XSECProvider prov;
     DSIGSignature* sig=NULL;
-    try
-    {
+    try {
         sig=prov.newSignatureFromDOM(doc,sigNode);
         sig->load();
 
@@ -101,22 +91,17 @@ void verifySignature(DOMDocument* doc, DOMElement* sigNode, const char* cert)
 
         // Verify the signature coverage.
         DSIGReferenceList* refs=sig->getReferenceList();
-        if (sig->getSignatureMethod()==SIGNATURE_RSA && refs && refs->getSize()==1)
-        {
+        if (sig->getSignatureMethod()==SIGNATURE_RSA && refs && refs->getSize()==1) {
             DSIGReference* ref=refs->item(0);
-            if (ref)
-            {
+            if (ref) {
                 const XMLCh* URI=ref->getURI();
-                if (URI==NULL || *URI==0)
-                {
+                if (URI==NULL || *URI==0) {
                     DSIGTransformList* tlist=ref->getTransforms();
-                    for (int i=0; tlist && i<tlist->getSize(); i++)
-                    {
+                    for (int i=0; tlist && i<tlist->getSize(); i++) {
                         if (tlist->item(i)->getTransformType()==TRANSFORM_ENVELOPED_SIGNATURE)
                             valid=true;
                         else if (tlist->item(i)->getTransformType()!=TRANSFORM_EXC_C14N &&
-                                 tlist->item(i)->getTransformType()!=TRANSFORM_C14N)
-                        {
+                                 tlist->item(i)->getTransformType()!=TRANSFORM_C14N) {
                             valid=false;
                             break;
                         }
@@ -125,23 +110,35 @@ void verifySignature(DOMDocument* doc, DOMElement* sigNode, const char* cert)
             }
         }
     
-        if (!valid)
-        {
+        if (!valid) {
             log.error("detected an invalid signature profile");
             throw InvalidCryptoException("detected an invalid signature profile");
         }
 
-        sig->setSigningKey(x509->clonePublicKey());
-        if (!sig->verify())
-        {
+        if (cert) {
+            // Load the certificate, stripping the first and last lines.
+            string certbuf,line;
+            auto_ptr<OpenSSLCryptoX509> x509(new OpenSSLCryptoX509());
+            ifstream infile(cert);
+            while (!getline(infile,line).fail())
+                if (line.find("CERTIFICATE")==string::npos)
+                    certbuf+=line + '\n';
+            x509->loadX509Base64Bin(certbuf.data(),certbuf.length());
+            sig->setSigningKey(x509->clonePublicKey());
+        }
+        else {
+            XSECKeyInfoResolverDefault resolver;
+            sig->setKeyInfoResolver(resolver.clone());
+        }
+        
+        if (!sig->verify()) {
             log.error("detected an invalid signature value");
             throw InvalidCryptoException("detected an invalid signature value");
         }
 
         prov.releaseSignature(sig);
     }
-    catch(...)
-    {
+    catch(...) {
         if (sig)
             prov.releaseSignature(sig);
         throw;
@@ -152,6 +149,7 @@ int main(int argc,char* argv[])
 {
     int ret=0;
     SAMLConfig& conf=SAMLConfig::getConfig();
+    bool verify=true;
     char* url_param=NULL;
     char* cert_param=NULL;
     char* out_param=NULL;
@@ -164,6 +162,8 @@ int main(int argc,char* argv[])
             path=argv[++i];
         else if (!strcmp(argv[i],"--url") && i+1<argc)
             url_param=argv[++i];
+        else if (!strcmp(argv[i],"--noverify"))
+            verify=false;
         else if (!strcmp(argv[i],"--cert") && i+1<argc)
             cert_param=argv[++i];
         else if (!strcmp(argv[i],"--out") && i+1<argc)
@@ -174,9 +174,13 @@ int main(int argc,char* argv[])
             name_param=argv[++i];
     }
 
-    if (!url_param || !out_param) {
-        cout << "usage: " << argv[0] << endl << "\t--url <URL of metadata>\n\t--out <pathname to copy data to>" << endl <<
-            "\t[--cert <PEM Certificate>]\n\t[--schema <schema path>]\n\t[--rootns <root element XML namespace>]" << endl <<
+    if (!url_param || !out_param || (verify && !cert_param)) {
+        cout << "usage: " << argv[0] << endl <<
+            "\t--url <URL of metadata>" << endl <<
+            "\t--out <pathname to copy data to>" << endl <<
+            "\t--noverify OR --cert <PEM Certificate>" << endl <<
+            "\t[--schema <schema path>]" << endl <<
+            "\t[--rootns <root element XML namespace>]" << endl <<
             "\t[--rootname <root element name>]" << endl;
         exit(0);
     }
@@ -231,8 +235,8 @@ int main(int argc,char* argv[])
             throw MalformedException("Root element does not match SiteGroup or Trust");
 
         // If we're verifying, grab the embedded signature.
-        if (cert_param) {
-            DOMElement* n=saml::XML::getLastChildElement(doc->getDocumentElement(),saml::XML::XMLSIG_NS,L(Signature));
+        DOMElement* n=saml::XML::getLastChildElement(doc->getDocumentElement(),saml::XML::XMLSIG_NS,L(Signature));
+        if (verify) {
             if (n)
                 verifySignature(doc,n,cert_param);
             else {
@@ -240,6 +244,13 @@ int main(int argc,char* argv[])
 			    log.error("unable to locate a signature to verify in document");
 			    throw InvalidCryptoException("Verification implies that the document must be signed");
             }
+        }
+        else if (n) {
+            log.warn("verification of signer disabled, make sure you trust the source of this file!");
+            verifySignature(doc,n);
+        }
+        else {
+            log.warn("verification disabled, and file is unsigned!");
         }
 
         // Output the data to the specified file.
