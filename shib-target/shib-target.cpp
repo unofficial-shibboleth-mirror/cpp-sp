@@ -346,7 +346,7 @@ ShibTarget::doHandleProfile(void)
             if (m_priv->m_content_type.empty() || strcasecmp(m_priv->m_content_type.c_str(),"application/x-www-form-urlencoded")) {
                 throw FatalProfileException(
                     "Blocked invalid POST content-type ($1) to session creation service.",
-                    params(1,m_priv->m_content_type)
+                    params(1,m_priv->m_content_type.c_str())
                     );
             }
             // Read the POST Data
