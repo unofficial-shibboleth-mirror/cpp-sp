@@ -127,15 +127,10 @@ int main(int argc,char* argv[])
         SAMLResponse* r2=p->accept((const XMLByte*)buf.c_str());
         cout << "Consumed Response: " << endl << *r2 << endl;
 
-        SAMLAssertion* a=p->getSSOAssertion(*r2);
-        if (!a)
-            throw SAMLException("can't find SSO assertion");
-
-        SAMLAuthenticationStatement* s=p->getSSOStatement(*a);
-        if (!s)
-            throw SAMLException("can't find SSO statement");
-        if (!p->checkReplayCache(*a))
-            throw SAMLException("detected replay attack");
+        SAMLAssertion& a=p->getSSOAssertion(*r2);
+        SAMLAuthenticationStatement& s=p->getSSOStatement(a);
+        if (!p->checkReplayCache(a))
+            throw ReplayedAssertionException("detected replay attack");
 
         delete r2;
     }
