@@ -330,8 +330,8 @@ namespace shibtarget {
       log(level, s);
     }
 
-    // Get/Set a cookie for this connection
-    virtual std::string getCookies(void)=0;    
+    // Get/Set a cookie for this request
+    virtual std::string getCookies() const=0;
     virtual void setCookie(const std::string &name, const std::string &value)=0;
     void setCookie(const char *name, const char *value) {
       std::string ns = name;
