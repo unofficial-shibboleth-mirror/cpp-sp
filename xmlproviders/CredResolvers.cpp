@@ -311,7 +311,7 @@ void FileResolver::attach(void* ctx) const
     // Attach certs.
     for (vector<X509*>::const_iterator i=m_certs.begin(); i!=m_certs.end(); i++) {
         if (i==m_certs.begin()) {
-            if (SSL_CTX_use_certificate(ssl_ctx, *i)!=1) {
+            if (SSL_CTX_use_certificate(ssl_ctx, *i) != 1) {
                 log_openssl();
                 throw CredentialException("FileResolver::attach() unable to set EE certificate in context");
             }
@@ -319,7 +319,7 @@ void FileResolver::attach(void* ctx) const
         else {
             // When we add certs, they don't get ref counted, so we need to duplicate them.
             X509* dup = X509_dup(*i);
-            if (SSL_CTX_add_extra_chain_cert(ssl_ctx, dup) != 0) {
+            if (SSL_CTX_add_extra_chain_cert(ssl_ctx, dup) != 1) {
                 X509_free(dup);
                 log_openssl();
                 throw CredentialException("FileResolver::attach() unable to add CA certificate to context");
