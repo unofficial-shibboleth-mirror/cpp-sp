@@ -1656,9 +1656,9 @@ pair<bool,void*> ShibTargetPriv::doLogout(ShibTarget* st, const IPropertySet* ha
     const char* ret=parser.get_value("return");
     if (!ret)
         ret=handler->getString("ResponseLocation").second;
-    else if (!ret)
+    if (!ret)
         ret=m_app->getString("homeURL").second;
-    else if (!ret)
+    if (!ret)
         ret="/";
     return make_pair(true, st->sendRedirect(ret));
 }
