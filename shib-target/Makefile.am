@@ -24,8 +24,8 @@ libshib_target_la_SOURCES = \
 	shib-rm.cpp \
 	shib-rpcerror.cpp \
 	shib-rpchandle.cpp \
-	shib-shire.cpp \
 	shib-sock.cpp \
+	shib-target.cpp \
 	shibrpc-clnt.c \
 	shibrpc-server.cpp \
 	shibrpc-svc.c \
