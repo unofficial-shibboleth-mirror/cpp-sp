@@ -35,7 +35,7 @@ ScopedAttribute::ScopedAttribute(IDOM_Element* e) : SAMLAttribute(e)
     IDOM_NodeList* nlist=
         static_cast<IDOM_Element*>(e->getParentNode())->getElementsByTagNameNS(saml::XML::SAML_NS,L(NameIdentifier));
     if (!nlist || nlist->getLength() != 1)
-        throw InvalidAssertionException(SAMLException.RESPONDER,"ScopedAttribute() can't find saml:NameIdentifier in enclosing statement");
+        throw InvalidAssertionException(SAMLException::RESPONDER,"ScopedAttribute() can't find saml:NameIdentifier in enclosing statement");
     m_defaultScope=static_cast<IDOM_Element*>(nlist->item(0))->getAttributeNS(NULL,L(NameQualifier));
 }
 
