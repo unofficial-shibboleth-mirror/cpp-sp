@@ -1,284 +1,333 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"><html><head>
-		<meta name="generator" content="HTML Tidy for Mac OS X (vers 1st January 2002), see www.w3.org">
-		<title>InQueue Federation Interim Configuration and Policy Guidelines</title>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+	<head>
+		<title>InQueue Federation Policy and Configuration Guidelines</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<style type="text/css">
 
-    
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <style type="text/css">
+			html
+			{	
+				background-color: #FFFFFF;
+				color: #000000;
+				margin: .5em;
+			}
+			a:visited
+			{
+				color: #999999;
+			}
+			a:link
+			{
+				color: #990000;
+			}
+			a:active
+			{
+				color: #440000;
+			}
+			dl
+			{
+				background-color: #DDDDDD;
+				background-image: none;
+				margin: 5px;
+				padding: 0px;
+				border-style: solid;
+				border-bottom-width: 2px;
+				border-top-width: 2px;
+				border-left-width: 2px;
+				border-right-width: 2px;
+			}
+			dt
+			{
+				background-color: #DDDDDD;
+				background-image: none;
+				margin: 1px;
+				padding: 1px;
+			}
+			dd
+			{
+				background-color: #DDDDDD;
+				background-image: none;
+				margin: 0px;
+				padding: 1px;
+			}
+			.attribute
+			{
+				font-size: 115%;
+				font-color: #000000;
+				text-align: left;
+				background-color: #DDDDDD;
+				border: 1px black inset;
+				background-image: none;
+				margin: 0px;
+				padding: 2px;
+			}
+			.value
+			{
+				font-color: #000000;
+				text-align: left;
+				background-color: #EEEEEE;
+				background-image: none;
+				padding-top: 0em;
+				padding-bottom: 0.5em;
+				padding-right: 1em;
+				padding-left: 5em;
+				border-style: solid;
+				border-bottom-width: none;
+				border-top-width: none;
+				border-left-width: 1px;
+				border-right-width: 1px;
+			}
+			.attributeopt
+			{
+				font-size: 115%;
+				font-color: #000000;
+				text-align: left;
+				background-color: #BCBCEE;
+				border: 1px black inset;
+				background-image: none;
+				margin: 0px;
+				padding: 2px;
+			}
+			.valueopt
+			{
+				font-color: #000000;
+				text-align: left;
+				background-color: #DDDDFF;
+				background-image: none;
+				padding-top: 0em;
+				padding-bottom: 0.5em;
+				padding-right: 1em;
+				padding-left: 5em;
+				border-style: solid;
+				border-bottom-width: none;
+				border-top-width: none;
+				border-left-width: 1px;
+				border-right-width: 1px;
+			}
+			.attributelong
+			{
+				font-size: 85%;
+				font-color: #000000;
+				text-align: left;
+				background-color: #DDDDDD;
+				border: 1px black inset;
+				background-image: none;
+				margin: 0px;
+				padding: 2px;
+			}
+			.attributeoptlong
+			{
+				font-size: 85%;
+				font-color: #000000;
+				text-align: left;
+				background-color: #BCBCEE;
+				border: 1px black inset;
+				background-image: none;
+				margin: 0px;
+				padding: 2px;
+			}
+			.demo
+			{
+				background-color: #EEEEEE;
+				padding: 3px;
+			}
+			.fixedwidth
+			{
+				font-family: monospace;
+				font-size: 90%;
+				font-color: #121212;
+			}
 
-html
-{	
-background-color: #FFFFFF;
-color: #000000;
-margin: .5em;
-}
-a:visited
-{
-color: #999999;
-}
-a:link
-{
-color: #990000;
-}
-a:active
-{
-color: #440000;
-}
-dl
-{
-background-color: #DDDDDD;
-background-image: none;
-margin: 5px;
-padding: 0px;
-border-style: solid;
-border-bottom-width: 2px;
-border-top-width: 2px;
-border-left-width: 2px;
-border-right-width: 2px;
-}
-dt
-{
-background-color: #DDDDDD;
-background-image: none;
-margin: 1px;
-padding: 1px;
-}
-dd
-{
-background-color: #DDDDDD;
-background-image: none;
-margin: 0px;
-padding: 1px;
-}
-.attribute
-{
-font-size: 115%;
-font-color: #000000;
-text-align: left;
-background-color: #DDDDDD;
-border: 1px black inset;
-background-image: none;
-margin: 0px;
-padding: 2px;
-}
-.value
-{
-font-color: #000000;
-text-align: left;
-background-color: #EEEEEE;
-background-image: none;
-padding-top: 0em;
-padding-bottom: 0.5em;
-padding-right: 1em;
-padding-left: 5em;
-border-style: solid;
-border-bottom-width: none;
-border-top-width: none;
-border-left-width: 1px;
-border-right-width: 1px;
-}
-.attributeopt
-{
-font-size: 115%;
-font-color: #000000;
-text-align: left;
-background-color: #BCBCEE;
-border: 1px black inset;
-background-image: none;
-margin: 0px;
-padding: 2px;
-}
-.valueopt
-{
-font-color: #000000;
-text-align: left;
-background-color: #DDDDFF;
-background-image: none;
-padding-top: 0em;
-padding-bottom: 0.5em;
-padding-right: 1em;
-padding-left: 5em;
-border-style: solid;
-border-bottom-width: none;
-border-top-width: none;
-border-left-width: 1px;
-border-right-width: 1px;
-}
-.attributelong
-{
-font-size: 85%;
-font-color: #000000;
-text-align: left;
-background-color: #DDDDDD;
-border: 1px black inset;
-background-image: none;
-margin: 0px;
-padding: 2px;
-}
-.attributeoptlong
-{
-font-size: 85%;
-font-color: #000000;
-text-align: left;
-background-color: #BCBCEE;
-border: 1px black inset;
-background-image: none;
-margin: 0px;
-padding: 2px;
-}
-.demo
-{
-background-color: #EEEEEE;
-padding: 3px;
-}
-.fixedwidth
-{
-font-family: monospace;
-font-size: 90%;
-font-color: #121212;
-}
+		</style></head><body link="red" vlink="red" alink="black" bgcolor="white">
+		InQueue Federation Policy and Configuration Guidelines<br>
+		draft-internet2-inqueue-guidelines-02.html<br>
+		Nate Klingenstein<br>
+		RL 'Bob' Morgan<br />
+		2003-06-17<br>
 
-  </style></head>
+		<h3>InQueue Federation Policy and Configuration Guidelines</h3>
 
+		<h4>1.  Introduction to InQueue</h4>
+		<blockquote><p>
+			The InQueue Federation, operated by Internet2, is designed for
+			organizations that are becoming familiar with the Shibboleth software
+			package and the federated trust model.  InQueue provides the basic
+			services needed for a federation using Shibboleth:</p>
 
-  <body link="red" vlink="red" alink="black" bgcolor="white">
-    InQueue Configuration and Policy Guidelines<br>
-    draft-internet2-inqueue-guidelines-01.html<br>
-    Nate Klingenstein<br>
-    17 June, 2003<br>
-    Comments should be directed to <a href="mailto:ndk@internet2.edu">ndk@internet2.edu</a>.<br>
+			<ul>
+				<li>maintenance and distribution of participating site description and
+				security files;</li>
+				<li>a central WAYF ("where are you from") web site;</li>
+				<li>specification of operational procedures and policies, including
+				user data (attribute) definitions; and</li>
+				<li>example target and origin sites with which to test
+				interoperability.</li>
+			</ul>
 
-<h3>InQueue Federation Interim Configuration and Policy Guidelines</h3>
+			<p>Participating in InQueue permits an organization to learn about the
+			Shibboleth software via the experience of multi-party federated access,
+			while integrating its services into the organization's procedures and
+			policies.</p>
 
-<h5>These are interim guidelines intended to allow InQueue to operate as
-a federation before full production requirements are known.</h5>
+			<p>The InQueue federation is specifically <b>not</b> intended to support
+			production-level end-user access to protected resources.  Organizations
+			operating target sites are strongly discouraged from making sensitive or
+			valuable resources available via the Federation.</p>
+		</blockquote>
 
-<h4>1.  Introduction to InQueue</h4>
-  <blockquote><p>InQueue is a simple federation designed to support
-  interoperability between origin and target sites as organizations
-  become familiarized with Shibboleth and the federated trust model.  It
-  will provide basic federated services including maintenance of a WAYF
-  and trust and metadata files.  It will give a best effort to ensuring
-  that all sites admitted are representative of their organizations.  It
-  will define a basic set of attributes to aid
-  interoperability.</p></blockquote>
+		<h4>2.  InQueue Policies</h4>
 
-  <blockquote><p>InQueue is not intended to be a production federation,
-  and organizations will be expected to progress from InQueue to an
-  appropriate federation.  Using InQueue for production services is not
-  advised due to the lack of a formal application and membership
-  process, and the lowered level of assurance that a site is indeed
-  representative of a community this brings.  Additionally, InQueue
-  recognizes many CA's, some of which do not maintain a CP/CPS or
-  rigorous issuance standards.</p></blockquote>
+		<h4>2.1  Participation</h4>
 
-<h4>2.  Joining InQueue</h4>
-  <blockquote><p>Sites may join InQueue as an origin, as a target, or
-  submit both sets of information to join as both a target and an
-  origin.  Origins must assert before joining that all attributes sent
-  to targets in the federation to the best of their knowledge accurately
-  represent information about the authenticated individual accessing the
-  target resource.  Targets must agree to dispose of all received
-  attributes properly by not mis-using them, aggregating them, or
-  sharing them with other organizations.</p></blockquote>
+		<blockquote><p>An organization may join InQueue as an origin, as a
+			target, or both.
+			Participants are expected to be authorized representatives of
+			their organization.  Internet2 reserves the right to make final
+			decisions about participation in the Federation.</p>
 
-  <blockquote><p>InQueue will distribute a set of trusted CA roots from
-  whom certificates for architectural components are acceptible for
-  InQueue membership. Additionally, sites with certificates not rooted
-  in one of these trusted roots may have these certificates added to the
-  appropriate trust file.  Targets must have a certificate signed by an
-  acceptible CA.  The list of certificate authorities recognized by
-  InQueue is:</p></blockquote>
-    <ul type="circle">
-    <li><a href="http://www.verisign.com/">Verisign/RSA Secure Server CA</a></li>
-    <li><a href="http://www.europki.org/ca/root/">EuroPKI CA</a></li>
-    <li><a href="http://bossie.doit.wisc.edu/cert/i2server">University of Wisconsin Bossie Test CA</a> *</li>
-  </ul>
-  <blockquote>
-    <h5>* The certificates issued by this CA will expire
-    fairly quickly and should only be used for testing.</h5>
-  </blockquote>
+			<p>Participation in the Federation is limited to the period during which
+			an organization is learning about Shibboleth and federated operations.  Upon
+			completion of this period, the organization is expected to join a
+			Federation (or some other management solution) that meets its long-term
+			operational needs.
+			</p></blockquote>
 
-  <blockquote><p>To join InQueue, origins must <a href="mailto:shib-support@internet2.edu?subject=Shib%20Origin%20Site%%0D%20%2020Application"> submit a basic application to
-  shib-support@internet2.edu</a> containing the following
-  information:</p></blockquote>
+			<h4>2.2  Data management</h4>
 
-  <ul type="circle">
-    <li>Domain Name of the origin site (e.g., Ohio State's is
-    "osu.edu").</li>
-    <li>Complete URL to access the HS.</li>
-    <li>The CN (usually the hostname) of the HS's certificate's subject.
-     This should also be the value of <span class="fixedwidth">edu.internet2.middleware.shibboleth.hs.
-    HandleServlet.issuer</span> in <span class="fixedwidth">origin.properties</span>.</li>
-    <li>Any shorthand aliases the WAYF should support for the origin
-    site (e.g., Ohio State, OSU, Buckeyes)</li>
-    <li>Contact names and addresses for technical and administrative
-    issues.</li>
-    <li>The URL of an error page that users selecting this origin from
-    the WAYF may be referred to by targets if Shibboleth
-    malfunctions. (optional)</li>
-	<li>If HS' certificate is not signed by one of the root CA's recognized 
-	by InQueue, then it must be submitted in Base64-encoded DER format.</li>
-  </ul>
+			<blockquote><p>
+				By participating, origins agree that all attributes sent
+				to targets in the Federation to the best of their knowledge accurately
+				represent information about the authenticated individual accessing the
+				target resource.</p>
 
-  <blockquote><p>To join InQueue, targets must <a href="mailto:shib-support@internet2.edu?subject=Shib%20Target%20Site%%0D%20%2020Application"> submit a basic application to
-  shib-support@internet2.edu</a> containing the following
-  information:</p></blockquote>
+				<p>Targets agree to dispose of all received
+				attributes properly by not mis-using them, aggregating them, or
+				sharing them with other organizations.</p></blockquote>
 
-  <ul type="circle">
-    <li>The name of the organization</li>
-    <li>Contact names and addresses for both administrative and
-    technical purposes</li>
-  </ul>
+			<h4>2.3  Security management</h4>
 
-<h4>3.  Configuration for Using InQueue</h4>
+			<blockquote><p>InQueue distributes a set of root certificates for
+				issuers from which server certificates may be obtained to identify
+				InQueue server components.
+				Additionally, sites with certificates not rooted
+				in one of these trusted roots may have these certificates added to the
+				appropriate trust file.  Targets must have a certificate signed by an
+				acceptible CA.  The list of certificate authorities used by
+				InQueue is:</p>
+				<ul type="circle">
+					<li><a href="http://www.verisign.com/">Verisign/RSA Secure Server CA</a></li>
+					<li><a href="http://bossie.doit.wisc.edu/cert/i2server">Internet2
+						HEPKI Test CA</a></li>
+					<li><a href="http://www.cren.net/crenca/">CREN CA</a></li>
+				</ul>
+			</blockquote>
 
-  <blockquote><p>Once your site is accepted into and added to InQueue,
-  the following configuration parameters must be entered to ensure
-  interoperability and compliance with federation guidelines.  Consult
-  the Shibboleth Deploy Guides for further information on these fields
-  and on <span class="fixedwidth">origin.properties</span> and <span class="fixedwidth">shibboleth.ini</span>.</p></blockquote>
+			<h4>2.4  Attributes</h4>
+			<blockquote><p>The InQueue 
+				Federation specifies a set of attribute definitions to support basic
+				attribute-based authorization.
+				If a Federation member sends or receives an Attribute Assertion 
+				containing the InQueue policy uri and referencing one of the listed
+				attributes, 
+				the syntax and semantics of the associated attribute value should
+				conform 
+				to the definitions specified in the <a href="http://www.educause.edu/eduperson/">EduPerson specification 2002/10</a>
+				</p>
 
-  <blockquote><p>Origins:</p>
+				<ul type="circle">
+					<li>eduPersonPrincipalName</li>
+					<li>eduPersonEntitlement</li>
+					<li>eduPersonAffiliation (expressed in a slightly different form via
+					a new attribute called eduPersonScopedAffiliation)</li>
+				</ul>
+			</blockquote>
 
-  <dl><dd class="attributelong"><span class="fixedwidth">edu.internet2.middleware.shibboleth.hs.HandleServlet.siteName</span>
-    </dd><dd class="value"><p>Must be populated with a URI that will
-    be assigned by InQueue when you are accepted into the
-    federation.</p></dd><dd class="attribute"><span class="fixedwidth">edu.internet2.middleware.shibboleth.audiences</span>
-    </dd><dd class="value"><p>This field must contain InQueue's <span class="fixedwidth">urn:mace:inqueue</span> URI, and may contain other federation URIs as well.</p></dd></dl>
-  </blockquote>
+			<h4>3.  Joining InQueue</h4>
 
-  <blockquote><p>Targets:</p>
+			<blockquote><p>To join InQueue, origins <a href="mailto:shib-support@internet2.edu?subject=Shib%20Origin%20Site%%0D%20%2020Application"> submit a request to
+					shib-support@internet2.edu</a> containing the following
+				information:</p></blockquote>
 
-  <dl><dd class="attribute"><span class="fixedwidth">wayfURL</span>
-    </dd><dd class="value"><p>This field must be set to InQueue's simple WAYF at <span class="fixedwidth">https://wayf.internet2.edu/InQueue/WAYF</span>.</p></dd><dd class="attribute"><span class="fixedwidth">[policies]</span>
-    </dd><dd class="value"><p>This section must contain <span class="fixedwidth">InQueue = urn:mace:inqueue</span>, and may
-    contain other federation name/value pairs as well.</p></dd><dd class="attribute"><span class="fixedwidth">siterefresh</span>
-    </dd><dd class="value"><p>The URL for the <span class="fixedwidth">metadata.xml</span> file for InQueue is <span class="fixedwidth">http://wayf.internet2.edu/InQueue/sites.xml</span>.
-    The URL for the <span class="fixedwidth">trust.xml</span>
-    file for InQueue is <span class="fixedwidth">http://wayf.internet2.edu/InQueue/trust.xml</span>.
-    The signing certificate used for these files may be found at
-    <span class="fixedwidth">http://wayf.internet2.edu/InQueue/internet2.pem
-    </span> and has the fingerprint <span class="fixedwidth">b4 42 6c 1e
-    8b 7d 8e b3 68 03 00 e4 c4 57 dd 74 89 f8 9a 80</span>.</p></dd></dl>
-  </blockquote>
-  
-  <h4>4.  Attributes</h4>
-  <blockquote><p>In order to facilitate basic interoperability, the InQueue 
-	  Federation is promulgating a set of Attribute definitions for use by its 
-	  members. If a Federation member sends or receives an Attribute Assertion 
-	  containing the InQueue policy uri and referencing one of the listed attributes, 
-	  then the syntax and semantics of the associated attribute value MUST conform 
-	  to the definitions specified in the <a href="http://www.educause.edu/eduperson/">EduPerson specification 2002/10</a>
-	  </p></blockquote>
+			<blockquote>
+				<ul type="circle">
+					<li>Domain Name of the origin site (e.g., Ohio State's is
+					"osu.edu").</li>
+					<li>Complete URL to access the Shibboleth Handle Service at the site.</li>
+					<li>The CN (usually the hostname) of the HS's certificate's subject.
+					This should also be the value of <span class="fixedwidth">edu.internet2.middleware.shibboleth.hs.
+						HandleServlet.issuer</span> in <span class="fixedwidth">origin.properties</span>.</li>
+					<li>Any shorthand aliases the WAYF should support for the origin
+					site (e.g., Ohio State, OSU, Buckeyes)</li>
+					<li>Contact names and addresses for technical and administrative
+					issues.</li>
+					<li>The URL of an error page that users selecting this origin from
+					the WAYF may be referred to by targets if Shibboleth
+					malfunctions. (optional)</li>
+					<li>If the HS's certificate is not issueed by one of the root CAs
+					used
+					by InQueue, then it must be submitted in Base64-encoded DER (aka
+					"PEM") format.</li>
+			</ul></blockquote>
 
-	  <ul type="circle">
-		  <li>urn:mace:dir:attribute-def:eduPersonAffiliation</li>
-		  <li>urn:mace:dir:attribute-def:eduPersonPrincipalName</li>
-	  </ul>
+			<blockquote><p>To join InQueue, targets must <a href="mailto:shib-support@internet2.edu?subject=Shib%20Target%20Site%%0D%20%2020Application"> submit a basic application to
+					shib-support@internet2.edu</a> containing the following
+				information:</p></blockquote>
 
-	  <h4>5.  Sample Target</h4>
-	  <blockquote><p>A <a href="https://wayf.internet2.edu/shibboleth/sample.jsp">sample shibboleth target</a>
-		  is available for testing newly installed origin sites.</p></blockquote>
-  
-</body></html>
+			<blockquote>
+				<ul type="circle">
+					<li>The name of the organization</li>
+					<li>Contact names and addresses for both administrative and
+					technical purposes</li>
+				</ul>
+			</blockquote>
+
+			<h4>4.  Configuration for Using InQueue</h4>
+
+			<blockquote><p>Once your site is accepted into and added to InQueue,
+				the following configuration parameters must be entered to ensure
+				interoperability and compliance with federation guidelines.  Consult
+				the Shibboleth Deploy Guides for further information on these fields
+				and on <span class="fixedwidth">origin.properties</span> and <span class="fixedwidth">shibboleth.ini</span>.</p></blockquote>
+
+			<blockquote><h5>4.a. Origins:</h5>
+
+				<dl><dd class="attribute"><span class="fixedwidth">edu.internet2.middleware.shibboleth.hs.HandleServlet.siteName</span>
+					</dd><dd class="value"><p>Must be populated with a URI that will
+					be assigned by InQueue when you are accepted into the
+					federation.</p></dd><dd class="attribute"><span class="fixedwidth">edu.internet2.middleware.shibboleth.audiences</span>
+					</dd><dd class="value"><p>This field must contain InQueue's <span class="fixedwidth">urn:mace:inqueue</span> URI, and may contain other federation URIs as well.</p></dd></dl>
+				</blockquote>
+
+				<blockquote><h5>4.b. Targets:</h5>
+
+					<dl><dd class="attribute"><span class="fixedwidth">wayfURL</span>
+						</dd><dd class="value"><p>This field must be set to InQueue's simple WAYF at <span class="fixedwidth">https://wayf.internet2.edu/InQueue/WAYF</span>.</p></dd><dd class="attribute"><span class="fixedwidth">[policies]</span>
+						</dd><dd class="value"><p>This section must contain <span class="fixedwidth">InQueue = urn:mace:inqueue</span>, and may
+						contain other federation name/value pairs as well.</p></dd>
+					</dl>
+				</blockquote>
+
+				<blockquote><h5>4.b.i. Refreshing Federation Metadata:</h5>
+					<p>Once your target site is accepted into the InQueue federation, it is necessary that you periodically
+					update the target's federation metadata.  This metadata includes information used to identify and authenticate
+					InQueue sites.</p>
+					
+					<p>InQueue's metadata is digitally signed, so the first step is to obtain the InQueue signing certificate.  
+					It can be downloaded from <span class="fixedwidth">http://wayf.internet2.edu/InQueue/internet2.pem
+					</span> and has a fingerprint of:</p>
+					<p><span class="fixedwidth">b4 42 6c 1e 8b 7d 8e b3 68 03 00 e4 c4 57 dd 74 89 f8 9a 80</span>.</p>
+
+					<p>The following commands can be used to obtain the federation's metadata:</p>
+					<p><span class="fixedwidth"> $ cd /opt/shibboleth/etc/shibboleth</span></p>
+					<p><span class="fixedwidth">$ ../../bin/siterefresh --url http://wayf.internet2.edu/InQueue/sites.xml
+						--out sites.xml --cert internet2.pem</span></p>
+						<p><span class="fixedwidth">$ ../../bin/siterefresh --url http://wayf.internet2.edu/InQueue/trust.xml 
+							--out trust.xml --cert internet2.pem</span></p>
+				</blockquote>
+
+				<h4>5.  Testing</h4>
+				<blockquote><p>A <a href="https://wayf.internet2.edu/shibboleth/sample.jsp">sample shibboleth target</a>
+					is available for testing newly installed origin sites.  New targets can make use of a sample origin, 
+					which is listed as "Example State University" on the InQueue WAYF ( Username: demo / Password: demo ).</p></blockquote>
+
+		</body></html>
+
