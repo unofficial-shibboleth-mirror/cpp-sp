@@ -61,19 +61,13 @@ public:
   ShibMySQLCCacheEntry(const char *, CCacheEntry*, ShibMySQLCCache*);
   ~ShibMySQLCCacheEntry() {}
 
-  virtual Iterator<SAMLAssertion*> getAssertions(const char* resource)
-  	{ return m_cacheEntry->getAssertions(resource); }
-  virtual void preFetch(const char* resource, int prefetch_window)
-  	{ m_cacheEntry->preFetch(resource, prefetch_window); }
+  virtual Iterator<SAMLAssertion*> getAssertions() { return m_cacheEntry->getAssertions(); }
+  virtual void preFetch(int prefetch_window) { m_cacheEntry->preFetch(prefetch_window); }
   virtual bool isSessionValid(time_t lifetime, time_t timeout);
-  virtual const char* getClientAddress()
-  	{ return m_cacheEntry->getClientAddress(); }
-  virtual const char* getSerializedStatement()
-  	{ return m_cacheEntry->getSerializedStatement(); }
-  virtual const SAMLAuthenticationStatement* getStatement()
-	{ return m_cacheEntry->getStatement(); }
-  virtual void release()
-  	{ m_cacheEntry->release(); delete this; }
+  virtual const char* getClientAddress() { return m_cacheEntry->getClientAddress(); }
+  virtual const char* getSerializedStatement() { return m_cacheEntry->getSerializedStatement(); }
+  virtual const SAMLAuthenticationStatement* getStatement() { return m_cacheEntry->getStatement(); }
+  virtual void release() { m_cacheEntry->release(); delete this; }
 
 private:
   bool touch();
@@ -90,8 +84,12 @@ public:
   virtual ~ShibMySQLCCache();
 
   virtual CCacheEntry* find(const char* key);
-  virtual void insert(const char* key, SAMLAuthenticationStatement *s,
-		      const char *client_addr);
+  virtual void insert(
+        const char* key,
+        const char* application_id,
+        saml::SAMLAuthenticationStatement *s,
+        const char *client_addr,
+        saml::SAMLResponse* r=NULL);
   virtual void remove(const char* key);
   virtual void thread_init();
 
@@ -214,12 +212,11 @@ CCacheEntry* ShibMySQLCCache::find(const char* key)
     log->debug("Looking in database...");
 
     // nothing cached; see if this exists in the database
-    ostringstream q;
-    q << "SELECT addr,statement FROM state WHERE cookie='" << key << "' LIMIT 1";
+    string q = string("SELECT application_id,addr,statement FROM state WHERE cookie='") + key + "' LIMIT 1";
 
     MYSQL_RES* rows;
     MYSQL* mysql = getMYSQL();
-    if (mysql_query(mysql, q.str().c_str()))
+    if (mysql_query(mysql, q.c_str()))
       log->error("Error searching for %s: %s", key, mysql_error(mysql));
 
     rows = mysql_store_result(mysql);
@@ -238,7 +235,7 @@ CCacheEntry* ShibMySQLCCache::find(const char* key)
     log->debug("Match found.  Parsing...");
     // Pull apart the row and process the results
     MYSQL_ROW row = mysql_fetch_row(rows);
-    istringstream str(row[1]);
+    istringstream str(row[2]);
     SAMLAuthenticationStatement *s = NULL;
 
     // Try to parse the AuthStatement
@@ -251,7 +248,7 @@ CCacheEntry* ShibMySQLCCache::find(const char* key)
 
     // Insert it into the memory cache
     if (s)
-      m_cache->insert(key, s, row[0]);
+      m_cache->insert(key, row[0], s, row[1]);
 
     // Free the results, and then re-run the 'find' query
     mysql_free_result(rows);
@@ -263,25 +260,27 @@ CCacheEntry* ShibMySQLCCache::find(const char* key)
   return new ShibMySQLCCacheEntry(key, res, this);
 }
 
-void ShibMySQLCCache::insert(const char* key, SAMLAuthenticationStatement *s,
-			    const char *client_addr)
+void ShibMySQLCCache::insert(
+    const char* key,
+    const char* application_id,
+    saml::SAMLAuthenticationStatement *s,
+    const char *client_addr,
+    saml::SAMLResponse* r)
 {
   saml::NDC ndc("mysql::insert");
   ostringstream os;
   os << *s;
 
-  ostringstream q;
-  q << "INSERT INTO state VALUES('" << key << "', NOW(), '" << client_addr
-    << "', '" << os.str() << "')";
+  string q = string("INSERT INTO state VALUES('") + key + "','" + application_id + "',NOW(),'" + client_addr + "','" + os.str() + "')";
 
-  log->debug("Query: %s", q.str().c_str());
+  log->debug("Query: %s", q.c_str());
 
   // Add it to the memory cache
-  m_cache->insert(key, s, client_addr);
+  m_cache->insert(key, application_id, s, client_addr, r);
 
   // then add it to the database
   MYSQL* mysql = getMYSQL();
-  if (mysql_query(mysql, q.str().c_str()))
+  if (mysql_query(mysql, q.c_str()))
     log->error("Error inserting %s: %s", key, mysql_error(mysql));
 }
 
@@ -293,10 +292,9 @@ void ShibMySQLCCache::remove(const char* key)
   m_cache->remove(key);
 
   // Remove from the database
-  ostringstream q;
-  q << "DELETE FROM state WHERE cookie='" << key << "'";
+  string q = string("DELETE FROM state WHERE cookie='") + key + "'";
   MYSQL* mysql = getMYSQL();
-  if (mysql_query(mysql, q.str().c_str()))
+  if (mysql_query(mysql, q.c_str()))
     log->info("Error deleting entry %s: %s", key, mysql_error(mysql));
 }
 
@@ -431,7 +429,7 @@ void ShibMySQLCCache::createDatabase(MYSQL* mysql, int major, int minor)
     log->error ("Error creating version: %s", mysql_error(mysql));
 
   if (mysql_query(mysql,
-		  "CREATE TABLE state (cookie VARCHAR(64) PRIMARY KEY, "
+		  "CREATE TABLE state (cookie VARCHAR(64) PRIMARY KEY, application_id VARCHAR(1024),"
 		  "atime DATETIME, addr VARCHAR(128), statement TEXT)"))
     log->error ("Error creating state: %s", mysql_error(mysql));
 
@@ -518,8 +516,7 @@ void ShibMySQLCCache::mysqlInit(void)
  * database if the session is still valid.
  */
 
-ShibMySQLCCacheEntry::ShibMySQLCCacheEntry(const char* key, CCacheEntry *entry,
-					 ShibMySQLCCache* cache)
+ShibMySQLCCacheEntry::ShibMySQLCCacheEntry(const char* key, CCacheEntry *entry, ShibMySQLCCache* cache)
 {
   m_cacheEntry = entry;
   m_key = key;
@@ -536,11 +533,10 @@ bool ShibMySQLCCacheEntry::isSessionValid(time_t lifetime, time_t timeout)
 
 bool ShibMySQLCCacheEntry::touch()
 {
-  ostringstream q;
-  q << "UPDATE state SET atime=NOW() WHERE cookie='" << m_key << "'";
+  string q=string("UPDATE state SET atime=NOW() WHERE cookie='") + m_key + "'";
 
   MYSQL* mysql = m_cache->getMYSQL();
-  if (mysql_query(mysql, q.str().c_str())) {
+  if (mysql_query(mysql, q.c_str())) {
     m_cache->log->info("Error updating timestamp on %s: %s",
 			m_key.c_str(), mysql_error(mysql));
     return false;

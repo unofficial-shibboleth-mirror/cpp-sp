@@ -163,8 +163,6 @@ SHIBTARGET_EXPORTS void shib_sock_close (ShibSocket s, const char* name);
 #define SHIBTARGET_TAG_AAP      "aap"
 #define SHIBTARGET_TAG_APPMAPPER "applicationMap"
 
-#define SHIBTARGET_TAG_DEFAULTLIFE  "defaultLife"
-
 #define SHIBTARGET_TAG_CACHETYPE    "cacheType"
 #define SHIBTARGET_TAG_CACHECLEAN   "cacheClean"
 #define SHIBTARGET_TAG_CACHETIMEOUT "cacheTimeout"

@@ -115,10 +115,6 @@ SOURCE=".\shib-mlp.cpp"
 # End Source File
 # Begin Source File
 
-SOURCE=".\shib-resourceentry.cpp"
-# End Source File
-# Begin Source File
-
 SOURCE=".\shib-rm.cpp"
 # End Source File
 # Begin Source File

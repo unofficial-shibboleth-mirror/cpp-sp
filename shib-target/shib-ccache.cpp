@@ -84,67 +84,46 @@ class InternalCCache;
 class InternalCCacheEntry : public CCacheEntry
 {
 public:
-  InternalCCacheEntry(SAMLAuthenticationStatement *s, const char *client_addr);
+  InternalCCacheEntry(const char* application_id, SAMLAuthenticationStatement* s, const char *client_addr, SAMLResponse* r=NULL);
   ~InternalCCacheEntry();
 
-  virtual Iterator<SAMLAssertion*> getAssertions(const char* resource);
-  virtual void preFetch(const char* resource, int prefetch_window);
   virtual bool isSessionValid(time_t lifetime, time_t timeout);
   virtual const char* getClientAddress() { return m_clientAddress.c_str(); }
   virtual const char* getSerializedStatement() { return m_statement.c_str(); }
   virtual const SAMLAuthenticationStatement* getStatement() { return p_auth; }
-  virtual void release() { cacheitem_lock->unlock(); }
+
+  virtual Iterator<SAMLAssertion*> getAssertions();
+  virtual void preFetch(int prefetch_window);
+
+  virtual void release() { m_lock->unlock(); }
 
   void setCache(InternalCCache *cache) { m_cache = cache; }
-  time_t lastAccess() { Lock lock(access_lock); return m_lastAccess; }
-  void rdlock() { cacheitem_lock->rdlock(); }
-  void wrlock() { cacheitem_lock->wrlock(); }
+  void lock() { m_lock->lock(); }
+  time_t lastAccess() { return m_lastAccess; }
 
 private:
-  ResourceEntry* populate(const char* resource, int slop);
-  ResourceEntry* find(const char* resource);
-  void insert(const char* resource, ResourceEntry* entry);
-  void remove(const char* resource);
-
+  bool responseValid(int slop);
+  void populate(int slop);
+  SAMLResponse* getNewResponse();
+              
+  string m_application_id;
   string m_statement;
   string m_originSite;
   string m_handle;
   string m_clientAddress;
   time_t m_sessionCreated;
+  time_t m_responseCreated;
   time_t m_lastAccess;
-  bool m_hasbinding;
+  time_t m_lastRetry;
 
   const SAMLSubject* m_subject;
   SAMLAuthenticationStatement* p_auth;
+  SAMLResponse* m_response;
   InternalCCache *m_cache;
 
-  map<string,ResourceEntry*> m_resources;
-
   log4cpp::Category* log;
-
-  // This is used to keep track of in-process "populate()" calls,
-  // to make sure that we don't try to populate the same resource
-  // in multiple threads.
-  map<string,Mutex*>	populate_locks;
-  Mutex*	pop_locks_lock;
-
-  Mutex*	access_lock;
-  RWLock*	resource_lock;
-  RWLock*	cacheitem_lock;
-
-  class ResourceLock
-  {
-  public:
-    ResourceLock(InternalCCacheEntry* entry, const char* resource);
-    ~ResourceLock();
-
-  private:
-    Mutex*			find(const char* resource);
-    InternalCCacheEntry*	entry;
-    string			m_resource;
-  };
-
-  friend class ResourceLock;
+  
+  Mutex* m_lock;
 };
 
 class InternalCCache : public CCache
@@ -154,7 +133,7 @@ public:
   virtual ~InternalCCache();
 
   virtual CCacheEntry* find(const char* key);
-  virtual void insert(const char* key, SAMLAuthenticationStatement *s, const char *client_addr);
+  virtual void insert(const char* key, const char* application_id, SAMLAuthenticationStatement* s, const char *client_addr, SAMLResponse* r=NULL);
   virtual void remove(const char* key);
 
   InternalCCacheEntry* findi(const char* key);
@@ -171,6 +150,11 @@ private:
   bool		shutdown;
   CondWait*	shutdown_wait;
   Thread*	cleanup_thread;
+  
+  // cached config settings
+  int defaultLifetime,retryInterval;
+  bool strictValidity,propagateErrors;
+  friend class InternalCCacheEntry;
 };
 
 namespace {
@@ -182,8 +166,7 @@ CCache::~CCache() { }
 
 void CCache::registerFactory(const char* name, CCache::CCacheFactory factory)
 {
-  string ctx = "shibtarget.CCache";
-  log4cpp::Category& log = log4cpp::Category::getInstance(ctx);
+  log4cpp::Category& log = log4cpp::Category::getInstance("shibtarget.CCache");
   saml::NDC ndc("registerFactory");
 
   log.info ("Registered factory %p for CCache %s", factory, name);
@@ -192,8 +175,7 @@ void CCache::registerFactory(const char* name, CCache::CCacheFactory factory)
 
 CCache* CCache::getInstance(const char* type)
 {
-  string ctx = "shibtarget.CCache";
-  log4cpp::Category& log = log4cpp::Category::getInstance(ctx);
+  log4cpp::Category& log = log4cpp::Category::getInstance("shibtarget.CCache");
   saml::NDC ndc("getInstance");
 
   map<string,CCache::CCacheFactory>::const_iterator i=g_ccacheFactoryDB.find(type);
@@ -211,10 +193,21 @@ CCache* CCache::getInstance(const char* type)
 /* InternalCCache:  A Credential Cache                                        */
 /******************************************************************************/
 
-InternalCCache::InternalCCache()
+InternalCCache::InternalCCache() : defaultLifetime(1800), retryInterval(300), strictValidity(true), propagateErrors(false)
 {
   log = &(log4cpp::Category::getInstance("shibtarget.InternalCCache"));
   lock = RWLock::create();
+
+  string tag;
+  ShibINI& ini = ShibTargetConfig::getConfig().getINI();
+  if (ini.get_tag(SHIBTARGET_SHAR, "defaultLifetime", false, &tag))
+    defaultLifetime=atoi(tag.c_str());
+  if (ini.get_tag(SHIBTARGET_SHAR, "retryInterval", false, &tag))
+    retryInterval=atoi(tag.c_str());
+  if (ini.get_tag(SHIBTARGET_SHAR, "strictValidity", false, &tag))
+    strictValidity=ShibINI::boolean(tag);
+  if (ini.get_tag(SHIBTARGET_SHAR, "propagateErrors", false, &tag))
+    propagateErrors=ShibINI::boolean(tag);
 
   shutdown_wait = CondWait::create();
   shutdown = false;
@@ -257,16 +250,16 @@ CCacheEntry* InternalCCache::find(const char* key)
   InternalCCacheEntry* entry = findi(key);
   if (!entry) return NULL;
 
-  // Lock the database for the caller -- they have to release the item.
-  entry->rdlock();
-  return dynamic_cast<CCacheEntry*>(entry);
+  // Lock the "database record" for the caller -- they have to release the item.
+  entry->lock();
+  return entry;
 }
 
-void InternalCCache::insert(const char* key, SAMLAuthenticationStatement *s, const char *client_addr)
+void InternalCCache::insert(const char* key, const char* application_id, SAMLAuthenticationStatement* s, const char* client_addr, SAMLResponse* r)
 {
-  log->debug("caching new entry for \"%s\"", key);
+  log->debug("caching new entry for application %s: \"%s\"", application_id, key);
 
-  InternalCCacheEntry* entry = new InternalCCacheEntry (s, client_addr);
+  InternalCCacheEntry* entry = new InternalCCacheEntry(application_id, s, client_addr, r);
   entry->setCache(this);
 
   lock->wrlock();
@@ -279,36 +272,27 @@ void InternalCCache::remove(const char* key)
 {
   log->debug("removing cache entry \"key\"", key);
 
-  // grab the entry from the database.  We'll have a readlock on it.
-  CCacheEntry* entry = findi(key);
-
-  if (!entry)
-    return;
-
-  // grab the cache write lock
+  // lock the cache for writing, which means we know nobody is sitting in find()
   lock->wrlock();
 
-  // verify we've still got the same entry.
-  if (entry != findi(key)) {
-    // Nope -- must've already been removed.
+  // grab the entry from the database.
+  CCacheEntry* entry = findi(key);
+
+  if (!entry) {
     lock->unlock();
     return;
   }
 
-  // ok, remove the entry.
+  // ok, remove the entry and lock it
   m_hashtable.erase(key);
+  dynamic_cast<InternalCCacheEntry*>(entry)->lock();
   lock->unlock();
 
-  // now grab the write lock on the cacheitem.
-  // This will make sure all other threads have released this item.
-  InternalCCacheEntry* ientry = dynamic_cast<InternalCCacheEntry*>(entry);
-  ientry->wrlock();
-
-  // we can release immediately because we know we're not in the database!
-  ientry->release();
+  // we can release the entry lock because we know we're not in the cache anymore
+  entry->release();
 
   // Now delete the entry
-  delete ientry;
+  delete entry;
 }
 
 void InternalCCache::cleanup()
@@ -316,8 +300,7 @@ void InternalCCache::cleanup()
   Mutex* mutex = Mutex::create();
   saml::NDC ndc("InternalCCache::cleanup()");
 
-  ShibTargetConfig& config = ShibTargetConfig::getConfig();
-  ShibINI& ini = config.getINI();
+  ShibINI& ini = ShibTargetConfig::getConfig().getINI();
 
   int rerun_timer = 0;
   int timeout_life = 0;
@@ -363,7 +346,9 @@ void InternalCCache::cleanup()
 	 i != m_hashtable.end(); i++)
     {
       // If the last access was BEFORE the stale timeout...
+      i->second->lock();
       time_t last=i->second->lastAccess();
+      i->second->release();
       if (last < stale)
         stale_keys.push_back(i->first);
     }
@@ -404,34 +389,26 @@ void* InternalCCache::cleanup_fcn(void* cache_p)
 /* InternalCCacheEntry:  A Credential Cache Entry                             */
 /******************************************************************************/
 
-InternalCCacheEntry::InternalCCacheEntry(SAMLAuthenticationStatement *s, const char *client_addr)
-  : m_hasbinding(false)
+InternalCCacheEntry::InternalCCacheEntry(const char* application_id, SAMLAuthenticationStatement *s, const char* client_addr, SAMLResponse* r)
+  : m_response(r), m_responseCreated(r ? time(NULL) : 0), m_lastRetry(0)
 {
   log = &(log4cpp::Category::getInstance("shibtarget::InternalCCacheEntry"));
-  pop_locks_lock = Mutex::create();
-  access_lock = Mutex::create();
-  resource_lock = RWLock::create();
-  cacheitem_lock = RWLock::create();
 
   if (s == NULL) {
     log->error("NULL auth statement");
     throw runtime_error("InternalCCacheEntry() was passed an empty SAML Statement");
   }
 
+  if (application_id)
+    m_application_id=application_id;
+
   m_subject = s->getSubject();
 
-  const XMLCh* name = m_subject->getName();
-  const XMLCh* qual = m_subject->getNameQualifier();
-
-  auto_ptr_char h(name);
-  auto_ptr_char d(qual);
+  auto_ptr_char h(m_subject->getName());
+  auto_ptr_char d(m_subject->getNameQualifier());
 
   m_handle = h.get();
   m_originSite = d.get();
-
-  Iterator<SAMLAuthorityBinding*> bindings = s->getBindings();
-  if (bindings.hasNext())
-    m_hasbinding = true;
 
   m_clientAddress = client_addr;
   m_sessionCreated = m_lastAccess = time(NULL);
@@ -444,6 +421,27 @@ InternalCCacheEntry::InternalCCacheEntry(SAMLAuthenticationStatement *s, const c
   os << *s;
   m_statement = os.str();
 
+  if (r) {
+    // Run pushed data through the AAP. Note that we could end up with an empty response!
+    ShibTargetConfig& conf=ShibTargetConfig::getConfig();
+    OriginMetadata site(conf.getMetadataProviders(),m_subject->getNameQualifier());
+    if (site.fail())
+        throw MetadataException("unable to locate origin site's metadata during attribute acceptance processing");
+    Iterator<SAMLAssertion*> assertions=r->getAssertions();
+    for (unsigned long i=0; i < assertions.size();) {
+        try {
+            AAP::apply(conf.getAAPProviders(),site,*(assertions[i]));
+            i++;
+        }
+        catch (SAMLException&) {
+            log->info("no statements remain, removing assertion");
+            r->removeAssertion(i);
+        }
+    }
+  }
+
+  m_lock = Mutex::create();
+
   log->info("New Session Created...");
   log->debug("Handle: \"%s\", Site: \"%s\", Address: %s", h.get(), d.get(), client_addr);
 }
@@ -451,19 +449,9 @@ InternalCCacheEntry::InternalCCacheEntry(SAMLAuthenticationStatement *s, const c
 InternalCCacheEntry::~InternalCCacheEntry()
 {
   log->debug("deleting entry for %s@%s", m_handle.c_str(), m_originSite.c_str());
+  delete m_response;
   delete p_auth;
-  for (map<string,ResourceEntry*>::iterator i=m_resources.begin();
-       i!=m_resources.end(); i++)
-    delete i->second;
-
-  for (map<string,Mutex*>::iterator j=populate_locks.begin();
-       j!=populate_locks.end(); j++)
-    delete j->second;
-
-  delete pop_locks_lock;
-  delete cacheitem_lock;
-  delete resource_lock;
-  delete access_lock;
+  delete m_lock;
 }
 
 bool InternalCCacheEntry::isSessionValid(time_t lifetime, time_t timeout)
@@ -477,8 +465,6 @@ bool InternalCCacheEntry::isSessionValid(time_t lifetime, time_t timeout)
     return false;
   }
 
-  // Lock the access-time from here until we return
-  Lock lock(access_lock);
   if (timeout > 0 && now-m_lastAccess >= timeout) {
     log->debug("session timed out");
     return false;
@@ -487,125 +473,220 @@ bool InternalCCacheEntry::isSessionValid(time_t lifetime, time_t timeout)
   return true;
 }
 
-Iterator<SAMLAssertion*> InternalCCacheEntry::getAssertions(const char* resource)
+Iterator<SAMLAssertion*> InternalCCacheEntry::getAssertions()
 {
   saml::NDC ndc("getAssertions");
-  ResourceEntry* entry = populate(resource, 0);
-  if (entry)
-    return entry->getAssertions();
+  populate(0);
+  
+  if (m_response)
+    return m_response->getAssertions();
   return EMPTY(SAMLAssertion*);
 }
 
-void InternalCCacheEntry::preFetch(const char* resource, int prefetch_window)
+void InternalCCacheEntry::preFetch(int prefetch_window)
 {
   saml::NDC ndc("preFetch");
-  populate(resource, prefetch_window);
+  populate(prefetch_window);
 }
 
-ResourceEntry* InternalCCacheEntry::populate(const char* resource, int slop)
+bool InternalCCacheEntry::responseValid(int slop)
+{
+  saml::NDC ndc("responseValid");
+
+  log->info("checking AA response validity");
+
+  // This is awful, but the XMLDateTime class is truly horrible.
+  time_t now=time(NULL)+slop;
+#ifdef WIN32
+  struct tm* ptime=gmtime(&now);
+#else
+  struct tm res;
+  struct tm* ptime=gmtime_r(&now,&res);
+#endif
+  char timebuf[32];
+  strftime(timebuf,32,"%Y-%m-%dT%H:%M:%SZ",ptime);
+  auto_ptr_XMLCh timeptr(timebuf);
+  XMLDateTime curDateTime(timeptr.get());
+  curDateTime.parseDateTime();
+
+  int count = 0;
+  Iterator<SAMLAssertion*> iter = m_response->getAssertions();
+  while (iter.hasNext()) {
+    SAMLAssertion* assertion = iter.next();
+
+    log->debug ("testing assertion...");
+
+    const XMLDateTime* thistime = assertion->getNotOnOrAfter();
+
+    // If there is no time, then just continue and ignore this assertion.
+    if (!thistime)
+      continue;
+
+    count++;
+    auto_ptr_char nowptr(curDateTime.getRawData());
+    auto_ptr_char assnptr(thistime->getRawData());
+
+    log->debug ("comparing now (%s) to %s", nowptr.get(), assnptr.get());
+    int result=XMLDateTime::compareOrder(&curDateTime, thistime);
+
+    if (result != XMLDateTime::LESS_THAN) {
+      log->debug("nope, not still valid");
+      return false;
+    }
+  }
+
+  // If we didn't find any assertions with times, then see if we're
+  // older than the default response lifetime.
+  if (!count) {
+      if ((now - m_responseCreated) > m_cache->defaultLifetime) {
+        log->debug("response is beyond default life, so it's invalid");
+        return false;
+      }
+  }
+  
+  log->debug("yep, response still valid");
+  return true;
+}
+
+void InternalCCacheEntry::populate(int slop)
 {
   saml::NDC ndc("populate");
-  log->debug("populating entry for %s", resource);
+  log->debug("populating session cache for application %s", m_application_id.c_str());
 
-  // Lock the resource within this entry...
-  InternalCCacheEntry::ResourceLock lock(this, resource);
-
-  // Can we use what we have?
-  ResourceEntry *entry = find(resource);
-  if (entry) {
-    log->debug("found resource");
-    if (entry->isValid(slop))
-      return entry;
-
-    // entry is invalid (expired) -- go fetch a new one.
-    log->debug("removing resource cache; assertion is invalid");
-    remove(resource);
-    delete entry;
+  // Do we have any data cached?
+  if (m_response) {
+      // Can we use what we have?
+      if (responseValid(slop))
+        return;
+      
+      // If we're being strict, dump what we have and reset timestamps.
+      if (m_cache->strictValidity) {
+        log->info("strictly enforcing attribute validity, dumping expired data");
+        delete m_response;
+        m_response=NULL;
+        m_responseCreated=0;
+        m_lastRetry=0; 
+      }
   }
 
-  // Nope, no entry.. Create a new resource entry
-
-  if (!m_hasbinding) {
-    log->error("No binding!");
-    return NULL;
-  }
-
-  log->info("trying to request attributes for %s@%s -> %s",
-	    m_handle.c_str(), m_originSite.c_str(), resource);
+  // Need to try and get a new response.
 
   try {
-    entry = new ResourceEntry(resource, *m_subject, m_cache, p_auth->getBindings());
-  } catch (ShibTargetException&) {
-    return NULL;
+    SAMLResponse* new_response=getNewResponse();
+    if (new_response) {
+        delete m_response;
+        m_response=new_response;
+        m_responseCreated=time(NULL);
+        m_lastRetry=0;
+        log->debug("fetched and stored new response");
+    }
   }
-  insert(resource, entry);
-
-  log->info("fetched and stored SAML response");
-  return entry;
-}
-
-ResourceEntry* InternalCCacheEntry::find(const char* resource)
-{
-  ReadLock rwlock(resource_lock);
-
-  log->debug("find: %s", resource);
-  map<string,ResourceEntry*>::const_iterator i=m_resources.find(resource);
-  if (i==m_resources.end()) {
-    log->debug("no match found");
-    return NULL;
+  catch (...) {
+    if (m_cache->propagateErrors)
+        throw;
+    log->warn("suppressed exception caught while trying to fetch attributes");
   }
-  log->debug("match found");
-  return i->second;
 }
 
-void InternalCCacheEntry::insert(const char* resource, ResourceEntry* entry)
+SAMLResponse* InternalCCacheEntry::getNewResponse()
 {
-  log->debug("inserting %s", resource);
+    // The retryInterval determines how often to poll an AA that might be down.
+    if ((time(NULL) - m_lastRetry) < m_cache->retryInterval)
+        return NULL;
+    if (m_lastRetry)
+        log->debug("retry interval exceeded, so trying again");
+    m_lastRetry=time(NULL);
+    
+    if (p_auth->getBindings().size()==0) {
+        // XXX: need to start using metadata for this...
+        log->error("no AA bindings available");
+        throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"No AA bindings available.",m_subject->getNameQualifier());
+    }
 
-  resource_lock->wrlock();
-  m_resources[resource]=entry;
-  resource_lock->unlock();
-}
+    log->info("trying to request attributes for %s@%s -> %s", m_handle.c_str(), m_originSite.c_str(), m_application_id.c_str());
 
-// caller will delete the entry.. don't worry about that here.
-void InternalCCacheEntry::remove(const char* resource)
-{
-  log->debug("removing %s", resource);
+    string tag;
+    ShibTargetConfig& conf=ShibTargetConfig::getConfig();
+    ShibINI& ini = conf.getINI();
+    if (!ini.get_tag(m_application_id, "providerID", true, &tag))
+        throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,string("unable to determine ProviderID for request, not set?"));
+    auto_ptr_XMLCh providerID(tag.c_str());
 
-  resource_lock->wrlock();
-  m_resources.erase(resource);
-  resource_lock->unlock();
-}
+    vector<SAMLAttributeDesignator*> designators;
 
+    // Look up attributes to request based on resource ID
+    if (ini.get_tag(m_application_id, SHIBTARGET_TAG_REQATTRS, true, &tag)) {
+        // Now parse the request attributes tag...
+        log->debug("Request Attributes: \"%s\"", tag.c_str());
 
-// a lock on a resource.  This is a specific "table of locks" that
-// will provide a mutex on a particular resource within a Cache Entry.
-// Just instantiate a ResourceLock within scope of the function and it
-// will obtain and hold the proper lock until it goes out of scope and
-// deconstructs.
+        auto_ptr<char> tag_str(strdup(tag.c_str()));
+        char *tags = tag_str.get(), *tagptr = NULL, *the_tag;
+#ifdef HAVE_STRTOK_R
+        while ((the_tag = strtok_r(tags, " \t\r\n", &tagptr)) != NULL && *the_tag) {
+#else
+        while ((the_tag = strtok(tags, " \t\r\n")) != NULL && *the_tag) {
+#endif
+            // Make sure we don't loop ad-infinitum
+            tags = NULL;
+      
+            // transcode the attribute string from the tag
+            auto_ptr_XMLCh temp(the_tag);
 
-InternalCCacheEntry::ResourceLock::ResourceLock(InternalCCacheEntry* entry, const char* resource) :
-  entry(entry), m_resource(resource)
-{
-  Mutex *mutex = find(resource);
-  mutex->lock();
-}
+            // Now create the SAML AttributeDesignator from this name
+            designators.push_back(new SAMLAttributeDesignator(temp.get(),shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI));
+        }
+    }
+    else
+        log->debug ("No request-attributes found, requesting any/all");
 
-InternalCCacheEntry::ResourceLock::~ResourceLock()
-{
-  Mutex *mutex = find(m_resource.c_str());
-  mutex->unlock();
-}
+    // Build a SAML Request....
+    SAMLAttributeQuery* q=new SAMLAttributeQuery(
+        static_cast<SAMLSubject*>(m_subject->clone()),providerID.get(),designators
+        );
+    auto_ptr<SAMLRequest> req(new SAMLRequest(EMPTY(QName),q));
+    
+    // Try this request against all the bindings in the AuthenticationStatement
+    // (i.e. send it to each AA in the list of bindings)
+    SAMLResponse* response = NULL;
+    OriginMetadata site(conf.getMetadataProviders(),m_subject->getNameQualifier());
+    if (site.fail())
+        throw MetadataException("unable to locate origin site's metadata during attribute query");
+    auto_ptr<SAMLBinding> pBinding(
+        SAMLBindingFactory::getInstance(
+            conf.getMetadataProviders(),conf.getTrustProviders(),conf.getCredentialProviders(),providerID.get(),site
+            )
+        );
+    
+    Iterator<SAMLAuthorityBinding*> AAbindings=p_auth->getBindings();
+    while (!response && AAbindings.hasNext()) {
+        SAMLAuthorityBinding* binding = AAbindings.next();
+        log->debug("Trying binding to AA...");
+        try {
+            response=pBinding->send(*binding,*req);
+        }
+        catch (SAMLException& e) {
+            log->error("caught SAML exception during query to AA: %s", e.what());
+        }
+    }
 
-Mutex* InternalCCacheEntry::ResourceLock::find(const char* resource)
-{
-  Lock(entry->pop_locks_lock);
-  
-  map<string,Mutex*>::const_iterator i=entry->populate_locks.find(resource);
-  if (i==entry->populate_locks.end()) {
-    Mutex* mutex = Mutex::create();
-    entry->populate_locks[resource] = mutex;
-    return mutex;
-  }
-  return i->second;
+    // See if we got a response.
+    if (!response) {
+        log->error("No response obtained");
+        throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"Unable to obtain attributes from user's origin site.",m_subject->getNameQualifier());
+    }
+
+    // Run it through the AAP. Note that we could end up with an empty response!
+    Iterator<SAMLAssertion*> a=response->getAssertions();
+    for (unsigned long i=0; i < a.size();) {
+        try {
+            AAP::apply(conf.getAAPProviders(),site,*(a[i]));
+            i++;
+        }
+        catch (SAMLException&) {
+            log->info("no statements remain, removing assertion");
+            response->removeAssertion(i);
+        }
+    }
+
+    return response;
 }

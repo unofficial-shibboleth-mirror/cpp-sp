@@ -71,14 +71,18 @@ namespace shibtarget {
   class SHIBTARGET_EXPORTS CCacheEntry
   {
   public:
-    virtual saml::Iterator<saml::SAMLAssertion*> getAssertions(const char* appId) = 0;
-    virtual void preFetch(const char* appId, int prefetch_window) = 0;
-
+    // Authentication session management
     virtual bool isSessionValid(time_t lifetime, time_t timeout) = 0;
     virtual const char* getClientAddress() = 0;
     virtual const char* getSerializedStatement() = 0;
     virtual const saml::SAMLAuthenticationStatement* getStatement() = 0;
+
+    // Attribute management
+    virtual saml::Iterator<saml::SAMLAssertion*> getAssertions() = 0;
+    virtual void preFetch(int prefetch_window) = 0;
+    
     virtual void release() = 0;
+    virtual ~CCacheEntry() {}
   };
     
   class SHIBTARGET_EXPORTS CCache
@@ -91,8 +95,12 @@ namespace shibtarget {
     // Make sure you do not hold any open CCacheEntry objects before
     // you call this method.
     //
-    virtual void insert(const char* key, saml::SAMLAuthenticationStatement *s,
-			const char *client_addr) = 0;
+    virtual void insert(
+        const char* key,
+        const char* application_id,
+        saml::SAMLAuthenticationStatement *s,
+        const char *client_addr,
+        saml::SAMLResponse* r=NULL) = 0;
 
     // find() a CCacheEntry in the CCache for the given key.
     //
@@ -114,8 +122,8 @@ namespace shibtarget {
     // Call this first method when you want to access the cache from a
     // new thread and the second method just before the thread is
     // going to exit.  This is necessary for some sub-classes.
-    virtual void thread_init() { }
-    virtual void thread_end() { }
+    virtual void thread_init() {}
+    virtual void thread_end() {}
 
     // create a CCache instance of the provided type.  A NULL type
     // implies that it should create the default cache type.
@@ -126,21 +134,6 @@ namespace shibtarget {
     typedef CCache*(*CCacheFactory)(void);
     static void registerFactory(const char* name, CCacheFactory factory);
   };    
-
-  /* A low-level memory cache of a SAMLResponse object */
-  class ResourceEntryPriv;
-  class ResourceEntry
-  {
-  public:
-    ResourceEntry(const char*, const saml::SAMLSubject&, CCache*, const saml::Iterator<saml::SAMLAuthorityBinding*>);
-    ~ResourceEntry();
-
-    // Is this ResourceEntry going to be valid for the next <int> seconds?
-    bool isValid(int);
-    saml::Iterator<saml::SAMLAssertion*> getAssertions();
-  private:
-    ResourceEntryPriv *m_priv;
-  };
 
   //*******************************************************************
   // "Global storage"

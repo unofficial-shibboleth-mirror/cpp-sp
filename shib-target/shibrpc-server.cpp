@@ -85,8 +85,7 @@ static string get_threadid (const char* proc)
 
 static Category& get_category (void)
 {
-  string ctx = "shibtarget.rpc-server";
-  return Category::getInstance(ctx);
+  return Category::getInstance("shibtarget.rpc-server");
 }
 
 extern "C" bool_t
@@ -177,8 +176,8 @@ shibrpc_session_is_valid_1_svc(shibrpc_session_is_valid_args_1 *argp,
     // and now try to prefetch the attributes .. this could cause an
     // "error", which is why we call it here.
     try {
-      log.debug ("resource: %s", argp->application_id);
-      entry->preFetch(argp->application_id, 15);	// give a 15-second window for the RM
+      log.debug ("application: %s", argp->application_id);
+      entry->preFetch(15);	// give a 15-second window for the RM
 
     } catch (SAMLException &e) {
       log.debug ("prefetch failed with a SAML Exception: %s", e.what());
@@ -214,7 +213,7 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
 			  shibrpc_new_session_ret_1 *result, struct svc_req *rqstp)
 {
   Category& log = get_category();
-  string ctx = get_threadid("new_session");
+  string ctx=get_threadid("new_session");
   saml::NDC ndc(ctx);
 
   if (!argp || !result) {
@@ -321,16 +320,16 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
   catch (ShibTargetException &e)
   {
     log.info ("FAILED: %s", e.what());
-    if (r) delete r;
+    delete r;
     if (origin) XMLString::release(&origin);
     set_rpc_status_x(&result->status, e.which(), e.what(), e.where());
     return TRUE;
   }
-#if 1
+#ifndef _DEBUG
   catch (...)
   {
     log.error ("Unknown error");
-    if (r) delete r;
+    delete r;
     if (origin) XMLString::release(&origin);
     set_rpc_status(&result->status, SHIBRPC_UNKNOWN_ERROR,
 		   "An unknown exception occurred", "");
@@ -348,11 +347,21 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
   auto_ptr_char c(id);
   const char *cookie = c.get();
 
-  // Cache this session with the cookie
-  g_shibTargetCCache->insert(cookie, as, argp->client_addr);
+  // Cache this session, possibly including response if attributes appear present.
+  bool attributesPushed=false;
+  Iterator<SAMLAssertion*> assertions=r->getAssertions();
+  while (!attributesPushed && assertions.hasNext()) {
+      Iterator<SAMLStatement*> statements=assertions.next()->getStatements();
+      while (!attributesPushed && statements.hasNext()) {
+          if (dynamic_cast<SAMLAttributeStatement*>(statements.next()))
+            attributesPushed=true;
+      }
+  }
+  g_shibTargetCCache->insert(cookie, argp->application_id, as, argp->client_addr, (attributesPushed ? r : NULL));
   
-  // Delete the response...
-  delete r;
+  // Maybe delete the response...
+  if (!attributesPushed)
+    delete r;
 
   // Delete the origin...
   XMLString::release(&origin);
@@ -383,7 +392,7 @@ shibrpc_get_assertions_1_svc(shibrpc_get_assertions_args_1 *argp,
 
   log.debug ("get attrs for client at %s", argp->cookie.client_addr);
   log.debug ("cookie: %s", argp->cookie.cookie);
-  log.debug ("resource: %s", argp->application_id);
+  log.debug ("application: %s", argp->application_id);
 
   // Find this session
   CCacheEntry* entry = g_shibTargetCCache->find(argp->cookie.cookie);
@@ -412,7 +421,7 @@ shibrpc_get_assertions_1_svc(shibrpc_get_assertions_args_1 *argp,
 
   try {
     // grab the attributes for this resource
-    Iterator<SAMLAssertion*> iter = entry->getAssertions(argp->application_id);
+    Iterator<SAMLAssertion*> iter = entry->getAssertions();
     u_int size = iter.size();
     result->assertions.assertions_len = size;
 
