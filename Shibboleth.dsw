@@ -3,21 +3,6 @@ Microsoft Developer Studio Workspace File, Format Version 6.00
 
 ###############################################################################
 
-Project: "eduPerson"=.\eduPerson\eduPerson.dsp - Package Owner=<4>
-
-Package=<5>
-{{{
-}}}
-
-Package=<4>
-{{{
-    Begin Project Dependency
-    Project_Dep_Name shib
-    End Project Dependency
-}}}
-
-###############################################################################
-
 Project: "isapi_shib"=.\isapi_shib\isapi_shib.dsp - Package Owner=<4>
 
 Package=<5>
@@ -70,6 +55,18 @@ Package=<4>
 ###############################################################################
 
 Project: "shib"=.\shib\shib.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "shibtarget"=".\shib-target\shibtarget.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
