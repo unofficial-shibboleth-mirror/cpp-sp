@@ -5,7 +5,7 @@
 	attributeFormDefault="unqualified"
 	version="1.0">
 
-	<element name="Domain">
+	<element name="Scope">
 		<annotation>
 			<documentation>
 			SAML metadata extension used to regulate allowable attribute scopes.
