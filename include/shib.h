@@ -76,23 +76,81 @@ namespace shibboleth
     public:
         explicit UnsupportedProtocolException(const char* msg) : saml::SAMLException(msg) {}
         explicit UnsupportedProtocolException(const std::string& msg) : saml::SAMLException(msg) {}
-        explicit UnsupportedProtocolException(saml::QName codes[], const char* msg) : saml::SAMLException(codes,msg) {}
-        explicit UnsupportedProtocolException(saml::QName codes[], const std::string& msg) : saml::SAMLException(codes, msg) {}
+        explicit UnsupportedProtocolException(saml::Iterator<saml::QName>& codes, const char* msg) : saml::SAMLException(codes,msg) {}
+        explicit UnsupportedProtocolException(saml::Iterator<saml::QName>& codes, const std::string& msg) : saml::SAMLException(codes, msg) {}
+        explicit UnsupportedProtocolException(saml::QName& code, const char* msg) : saml::SAMLException(code,msg) {}
+        explicit UnsupportedProtocolException(saml::QName& code, const std::string& msg) : saml::SAMLException(code, msg) {}
     };
 
-    struct SHIB_EXPORTS Constants
-    {
-        static const XMLCh POLICY_CLUBSHIB[];
-        static const XMLCh SHIB_ATTRIBUTE_NAMESPACE_URI[];
-    };
-
-    
     struct SHIB_EXPORTS IOriginSiteMapper
     {
         virtual saml::Iterator<saml::xstring> getHandleServiceNames(const XMLCh* originSite)=0;
-        virtual void* getHandleServiceKey(const XMLCh* handleService)=0;
+        virtual saml::Key* getHandleServiceKey(const XMLCh* handleService)=0;
         virtual saml::Iterator<saml::xstring> getSecurityDomains(const XMLCh* originSite)=0;
-        virtual saml::Iterator<void*> getTrustedRoots()=0;
+        virtual saml::Iterator<saml::X509Certificate*> getTrustedRoots()=0;
+    };
+
+    class SHIB_EXPORTS ShibPOSTProfile
+    {
+    public:
+        ShibPOSTProfile(saml::Iterator<const XMLCh*>& policies, IOriginSiteMapper* mapper, const XMLCh* receiver, int ttlSeconds);
+        ShibPOSTProfile(saml::Iterator<const XMLCh*>& policies, const XMLCh* issuer);
+        virtual ~ShibPOSTProfile();
+
+        virtual saml::SAMLAssertion* getSSOAssertion(const saml::SAMLResponse& r);
+        virtual saml::SAMLAuthenticationStatement* getSSOStatement(const saml::SAMLAssertion& a);
+        virtual saml::SAMLResponse* accept(const XMLByte* buf);
+        virtual saml::SAMLResponse* prepare(const XMLCh* recipient,
+                                            const XMLCh* name,
+                                            const XMLCh* nameQualifier,
+                                            const XMLCh* subjectIP,
+                                            const XMLCh* authMethod,
+                                            time_t authInstant,
+                                            saml::Iterator<saml::SAMLAuthorityBinding*>& bindings,
+                                            const saml::Key& responseKey, const saml::X509Certificate* responseCert,
+                                            const saml::Key* assertionKey, const saml::X509Certificate* assertionCert);
+        virtual bool checkReplayCache(const saml::SAMLAssertion& a);
+
+    protected:
+        virtual bool verifySignature(const saml::SAMLSignedObject& obj, const XMLCh* signerName,
+                                     saml::Iterator<saml::X509Certificate*>& roots, const saml::Key* knownKey);
+
+        saml::SAMLSignedObject::sigs_t m_algorithm;
+        IOriginSiteMapper* m_mapper;
+        std::vector<const XMLCh*> m_policies;
+        XMLCh* m_issuer;
+        XMLCh* m_receiver;
+        int m_ttlSeconds;
+    };
+
+    class SHIB_EXPORTS ClubShibPOSTProfile : public ShibPOSTProfile
+    {
+    public:
+        ClubShibPOSTProfile(saml::Iterator<const XMLCh*>& policies, IOriginSiteMapper* mapper, const XMLCh* receiver, int ttlSeconds);
+        ClubShibPOSTProfile(saml::Iterator<const XMLCh*>& policies, const XMLCh* issuer);
+        virtual ~ClubShibPOSTProfile();
+
+        virtual saml::SAMLResponse* prepare(const XMLCh* recipient,
+                                            const XMLCh* name,
+                                            const XMLCh* nameQualifier,
+                                            const XMLCh* subjectIP,
+                                            const XMLCh* authMethod,
+                                            time_t authInstant,
+                                            saml::Iterator<saml::SAMLAuthorityBinding*>& bindings,
+                                            const saml::Key& responseKey, const saml::X509Certificate* responseCert,
+                                            const saml::Key* assertionKey, const saml::X509Certificate* assertionCert);
+
+    protected:
+        virtual bool verifySignature(const saml::SAMLSignedObject& obj, const XMLCh* signerName,
+                                     saml::Iterator<saml::X509Certificate*>& roots, const saml::Key* knownKey);
+    };
+
+    class SHIB_EXPORTS ShibPOSTProfileFactory
+    {
+    public:
+        static ShibPOSTProfile* getInstance(saml::Iterator<const XMLCh*>& policies, IOriginSiteMapper* mapper,
+                                            const XMLCh* receiver, int ttlSeconds);
+        static ShibPOSTProfile* getInstance(saml::Iterator<const XMLCh*>& policies, const XMLCh* issuer);
     };
 
     class SHIB_EXPORTS ShibConfig
@@ -113,6 +171,11 @@ namespace shibboleth
         static const ShibConfig* g_config;
     };
 
+    struct SHIB_EXPORTS Constants
+    {
+        static const XMLCh POLICY_CLUBSHIB[];
+        static const XMLCh SHIB_ATTRIBUTE_NAMESPACE_URI[];
+    };
 
     class SHIB_EXPORTS XML
     {
@@ -126,7 +189,7 @@ namespace shibboleth
             // Shibboleth vocabulary
 
             // XML vocabulary
-	    static const XMLCh InvalidHandle[];
+            static const XMLCh InvalidHandle[];
             static const XMLCh xmlns_shib[];
         };
     };

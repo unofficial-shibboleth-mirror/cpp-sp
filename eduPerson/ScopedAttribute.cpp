@@ -68,15 +68,18 @@ using namespace eduPerson;
 using namespace std;
 
 ScopedAttribute::ScopedAttribute(const XMLCh* name, const XMLCh* ns, const XMLCh* defaultScope,
-                                 const saml::QName* type, long lifetime, const XMLCh* scopes[],
-                                 const XMLCh* values[])
+                                 const saml::QName* type, long lifetime,
+                                 saml::Iterator<const XMLCh*>& scopes,saml::Iterator<const XMLCh*>& values)
     : SAMLAttribute(name,ns,type,lifetime,values)
 {
+    if (scopes.size()!=values.size())
+        throw SAMLException(SAMLException::RESPONDER,"ScopedAttribute() requires the number of scopes to equal the number of values");
+
     if (defaultScope)
         m_defaultScope=defaultScope;
 
-    for (unsigned int i=0; scopes && i<(sizeof(scopes)/sizeof(const XMLCh*)); i++)
-        m_values.push_back(scopes[i]);
+    while (scopes.hasNext())
+        m_values.push_back(*scopes.next());
 }
 
 ScopedAttribute::ScopedAttribute(IDOM_Element* e) : SAMLAttribute(e)
@@ -115,7 +118,7 @@ bool ScopedAttribute::accept(IDOM_Element* e) const
         this_scope=m_defaultScope.c_str();
 
     while (domains.hasNext())
-        if (domains.next()==this_scope)
+        if (*domains.next()==this_scope)
             return true;
     return false;
 }

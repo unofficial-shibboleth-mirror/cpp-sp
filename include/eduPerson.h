@@ -75,7 +75,8 @@ namespace eduPerson
     {
     public:
         ScopedAttribute(const XMLCh* name, const XMLCh* ns, const XMLCh* defaultScope, const saml::QName* type=NULL,
-                        long lifetime=0, const XMLCh* scopes[]=NULL, const XMLCh* values[]=NULL);
+                        long lifetime=0, saml::Iterator<const XMLCh*>& scopes=saml::Iterator<const XMLCh*>(),
+                        saml::Iterator<const XMLCh*>& values=saml::Iterator<const XMLCh*>());
         ScopedAttribute(IDOM_Element* e);
         virtual ~ScopedAttribute();
 
@@ -100,44 +101,46 @@ namespace eduPerson
     {
     public:
         EPPNAttribute(const XMLCh* defaultScope, long lifetime=0, const XMLCh* scope=NULL, const XMLCh* value=NULL);
-	EPPNAttribute(IDOM_Element* e);
-	virtual ~EPPNAttribute();
+        EPPNAttribute(IDOM_Element* e);
+        virtual ~EPPNAttribute();
 
-	virtual void addValues(IDOM_Element* e);
-	SAMLObject* clone() const;
+        virtual void addValues(IDOM_Element* e);
+        virtual saml::SAMLObject* clone() const;
     };
 
     class EDUPERSON_EXPORTS AffiliationAttribute : public ScopedAttribute
     {
     public:
-        AffiliationAttribute(const XMLCh* defaultScope, long lifetime=0, const XMLCh* scopes[]=NULL, const XMLCh* values[]=NULL);
-	AffiliationAttribute(IDOM_Element* e);
-	virtual ~AffiliationAttribute();
+        AffiliationAttribute(const XMLCh* defaultScope, long lifetime=0,
+                             saml::Iterator<const XMLCh*>& scopes=saml::Iterator<const XMLCh*>(),
+                             saml::Iterator<const XMLCh*>& values=saml::Iterator<const XMLCh*>());
+        AffiliationAttribute(IDOM_Element* e);
+        virtual ~AffiliationAttribute();
 
-	virtual void addValues(IDOM_Element* e);
-	SAMLObject* clone() const;
+        virtual void addValues(IDOM_Element* e);
+        virtual saml::SAMLObject* clone() const;
     };
 
     class EDUPERSON_EXPORTS PrimaryAffiliationAttribute : public ScopedAttribute
     {
     public:
         PrimaryAffiliationAttribute(const XMLCh* defaultScope, long lifetime=0, const XMLCh* scope=NULL, const XMLCh* value=NULL);
-	PrimaryAffiliationAttribute(IDOM_Element* e);
-	virtual ~PrimaryAffiliationAttribute();
+        PrimaryAffiliationAttribute(IDOM_Element* e);
+        virtual ~PrimaryAffiliationAttribute();
 
-	virtual void addValues(IDOM_Element* e);
-	SAMLObject* clone() const;
+        virtual void addValues(IDOM_Element* e);
+        virtual saml::SAMLObject* clone() const;
     };
 
     class EDUPERSON_EXPORTS EntitlementAttribute : public saml::SAMLAttribute
     {
     public:
-        EntitlementAttribute(long lifetime=0, const XMLCh* values[]=NULL);
-	EntitlementAttribute(IDOM_Element* e);
-	virtual ~EntitlementAttribute();
+        EntitlementAttribute(long lifetime=0, saml::Iterator<const XMLCh*>& values=saml::Iterator<const XMLCh*>());
+        EntitlementAttribute(IDOM_Element* e);
+        virtual ~EntitlementAttribute();
 
-	virtual void addValues(IDOM_Element* e);
-	SAMLObject* clone() const;
+        virtual void addValues(IDOM_Element* e);
+        virtual saml::SAMLObject* clone() const;
     };
 
     struct EDUPERSON_EXPORTS XML

@@ -69,8 +69,8 @@ using namespace std;
 
 PrimaryAffiliationAttribute::PrimaryAffiliationAttribute(const XMLCh* defaultScope, long lifetime, const XMLCh* scope, const XMLCh* value)
     : ScopedAttribute(eduPerson::Constants::EDUPERSON_PRIMARY_AFFILIATION,
-		      shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,
-		      defaultScope,NULL,lifetime,&scope,&value)
+		              shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,defaultScope,NULL,lifetime,
+                      ArrayIterator<const XMLCh*>(&scope),ArrayIterator<const XMLCh*>(&value))
 {
     m_type=new saml::QName(eduPerson::XML::EDUPERSON_NS,eduPerson::Constants::EDUPERSON_AFFILIATION_TYPE);
 }

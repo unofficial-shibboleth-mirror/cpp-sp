@@ -61,14 +61,12 @@ class DummyMapper : public IOriginSiteMapper
 public:
     DummyMapper() {}
     ~DummyMapper();
-    virtual Iterator<xstring> getHandleServiceNames(const XMLCh* originSite) { return Iterator<xstring>(v); }
-    virtual void* getHandleServiceKey(const XMLCh* handleService) { return NULL; }
+    virtual Iterator<xstring> getHandleServiceNames(const XMLCh* originSite) { return Iterator<xstring>(); }
+    virtual Key* getHandleServiceKey(const XMLCh* handleService) { return NULL; }
     virtual Iterator<xstring> getSecurityDomains(const XMLCh* originSite);
-    virtual Iterator<void*> getTrustedRoots() { return Iterator<void*>(v2); }
+    virtual Iterator<X509Certificate*> getTrustedRoots() { return Iterator<X509Certificate*>(); }
 
 private:
-    vector<xstring> v;
-    vector<void *> v2;
     typedef map<xstring,vector<xstring>*> domains_t;
     domains_t m_domains;
 };
@@ -162,13 +160,10 @@ int main(int argc,char* argv[])
         SAMLResponse* resp=pBinding->send(binfo,*req);
         delete pBinding;
 
-        SAMLResponse* r2=dynamic_cast<SAMLResponse*>(resp->clone());
-        delete resp;
-
-        Iterator<SAMLAssertion*> i=r2->getAssertions();
+        Iterator<SAMLAssertion*> i=resp->getAssertions();
         if (i.hasNext())
         {
-            SAMLAssertion* a=i.next();
+            SAMLAssertion* a=*i.next();
             cout << "Issuer: "; xmlout(cout,a->getIssuer()); cout << endl;
             const XMLDateTime* exp=a->getNotOnOrAfter();
             cout << "Expires: ";
@@ -181,7 +176,7 @@ int main(int argc,char* argv[])
             Iterator<SAMLStatement*> j=a->getStatements();
             if (j.hasNext())
             {
-                SAMLAttributeStatement* s=dynamic_cast<SAMLAttributeStatement*>(j.next());
+                SAMLAttributeStatement* s=dynamic_cast<SAMLAttributeStatement*>(*j.next());
                 if (s)
                 {
                     const SAMLSubject* sub=s->getSubject();
@@ -191,7 +186,7 @@ int main(int argc,char* argv[])
                     Iterator<SAMLAttribute*> attrs=s->getAttributes();
                     while (attrs.hasNext())
                     {
-                        SAMLAttribute* attr=attrs.next();
+                        SAMLAttribute* attr=*attrs.next();
                         cout << "Attribute Name: "; xmlout(cout,attr->getName()); cout << endl;
                         cout << "Attribute Type: {";
                         xmlout(cout,attr->getType()->getNamespaceURI());
@@ -203,7 +198,7 @@ int main(int argc,char* argv[])
                         while (vals.hasNext())
                         {
                             cout << "Attribute Value: ";
-                            xmlout(cout,vals.next().c_str());
+                            xmlout(cout,vals.next()->c_str());
                             cout << endl;
                         }
                     }
@@ -211,7 +206,7 @@ int main(int argc,char* argv[])
             }
         }
 
-        delete r2;
+        delete resp;
     }
     catch(SAMLException& e)
     {

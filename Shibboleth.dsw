@@ -7,10 +7,6 @@ Project: "eduPerson"=.\eduPerson\eduPerson.dsp - Package Owner=<4>
 
 Package=<5>
 {{{
-    begin source code control
-    "$/Shibboleth/eduPerson", EYIAAAAA
-    .\eduperson
-    end source code control
 }}}
 
 Package=<4>
@@ -38,10 +34,6 @@ Project: "shibtest"=.\shibtest\shibtest.dsp - Package Owner=<4>
 
 Package=<5>
 {{{
-    begin source code control
-    "$/Shibboleth/shibtest", BYIAAAAA
-    .\shibtest
-    end source code control
 }}}
 
 Package=<4>
