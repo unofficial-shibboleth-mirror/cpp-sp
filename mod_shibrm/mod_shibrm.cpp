@@ -182,7 +182,7 @@ extern "C" void shibrm_child_init(server_rec* s, pool* p)
 	 i!=g_mapAttribNameToHeader.end(); i++)
     {
         auto_ptr<XMLCh> temp(XMLString::transcode(i->first.c_str()));
-	g_mapAttribNames[temp.get()]=i->first;
+        g_mapAttribNames[temp.get()]=i->first;
     }
 
     ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,s,"shibrm_child_init() done");
@@ -427,34 +427,35 @@ extern "C" int shibrm_check_auth(request_rec* r)
     Iterator<SAMLAttribute*> j = RM::getAttributes(*(assertions[0]));
     while (j.hasNext())
     {
-      SAMLAttribute* attr=j.next();
+        SAMLAttribute* attr=j.next();
 
-      // Are we supposed to export it?
-      map<xstring,string>::const_iterator iname=g_mapAttribNames.find(attr->getName());
-      if (iname!=g_mapAttribNames.end())
-      {
-	string hname=g_mapAttribNameToHeader[iname->second];
-	Iterator<string> vals=attr->getSingleByteValues();
-	if (hname=="REMOTE_USER" && vals.hasNext())
-	  r->connection->user=ap_pstrdup(r->connection->pool,vals.next().c_str());
-	else
-	{
-	 char* header = ap_pstrdup(r->pool, "");
-	 for (int it = 0; vals.hasNext(); it++) {
-		string value = vals.next();
-		for (string::size_type pos = value.find_first_of(";", string::size_type(0)); pos != string::npos; pos = value.find_first_of(";", pos)) {
-			value.insert(pos, "\\");
-			pos += 2;
-		}
-		if (it == 0) {
-			header=ap_pstrcat(r->pool, value.c_str(), NULL);
-		} else {
-			header=ap_pstrcat(r->pool, header, ";", value.c_str(), NULL);
-		}
-	 }
-	 ap_table_setn(r->headers_in, hname.c_str(), header);
-	}
-      }
+        // Are we supposed to export it?
+        map<xstring,string>::const_iterator iname=g_mapAttribNames.find(attr->getName());
+        if (iname!=g_mapAttribNames.end())
+        {
+            string hname=g_mapAttribNameToHeader[iname->second];
+            Iterator<string> vals=attr->getSingleByteValues();
+            if (hname=="REMOTE_USER" && vals.hasNext())
+                r->connection->user=ap_pstrdup(r->connection->pool,vals.next().c_str());
+            else
+            {
+                char* header = ap_pstrdup(r->pool, "");
+                for (int it = 0; vals.hasNext(); it++) {
+                    string value = vals.next();
+                    for (string::size_type pos = value.find_first_of(";", string::size_type(0)); pos != string::npos; pos = value.find_first_of(";", pos)) {
+                    	value.insert(pos, "\\");
+                    	pos += 2;
+                    }
+                    if (it == 0) {
+                        header=ap_pstrcat(r->pool, value.c_str(), NULL);
+                    }
+                    else {
+                        header=ap_pstrcat(r->pool, header, ";", value.c_str(), NULL);
+                    }
+                }
+                ap_table_setn(r->headers_in, hname.c_str(), header);
+    	    }
+        }
     }
 
     // clean up memory
@@ -484,8 +485,8 @@ extern "C" int shibrm_check_auth(request_rec* r)
 
     	if (!strcmp(w,"valid-user"))
     	{
-    	    ap_log_rerror(APLOG_MARK,APLOG_WARNING|APLOG_NOERRNO,r,
-			  "shibrm_check_auth() IGNORING valid-user configuration");
+            ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,"shibrm_check_auth() accepting valid-user");
+            return OK;
     	}
     	else if (!strcmp(w,"user") && r->connection->user)
     	{
@@ -528,10 +529,10 @@ extern "C" int shibrm_check_auth(request_rec* r)
     	    table* grpstatus=NULL;
     	    if (dc->szAuthGrpFile && r->connection->user)
     	    {
-    		ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,"shibrm_check_auth() using groups file: %s\n",
-    			      dc->szAuthGrpFile);
-    		grpstatus=groups_for_user(r,r->connection->user,dc->szAuthGrpFile);
-    	    }
+                ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,"shibrm_check_auth() using groups file: %s\n",
+                                dc->szAuthGrpFile);
+                grpstatus=groups_for_user(r,r->connection->user,dc->szAuthGrpFile);
+            }
     	    if (!grpstatus)
     	        return DECLINED;
     
