@@ -83,12 +83,23 @@
 			            </complexContent>
 					</complexType>
 				</element>
+				<element name="AttributeCache" minOccurs="0">
+					<complexType>
+			            <complexContent>
+			                <extension base="anyType">
+								<attribute name="AAConnectTimeout" type="unsignedInt" use="optional"/>
+								<attribute name="AATimeout" type="unsignedInt" use="optional"/>
+								<attribute name="defaultLifetime" type="unsignedInt" use="optional"/>
+								<attribute name="retryInterval" type="unsignedInt" use="optional"/>
+								<attribute name="strictValidity" type="boolean" use="optional"/>
+								<attribute name="propagateErrors" type="boolean" use="optional"/>
+			                </extension>
+			            </complexContent>
+					</complexType>
+				</element>
 				<any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
 			</sequence>
 			<attribute name="logger" type="anyURI" use="optional"/>
-			<attribute name="AATimeout" type="unsignedInt" use="optional"/>
-			<attribute name="AAConnectTimeout" type="unsignedInt" use="optional"/>
-			<attribute name="defaultLifetime" type="unsignedInt" use="optional"/>
 			<anyAttribute namespace="##any" processContents="lax"/>
 		</complexType>
 	</element>
