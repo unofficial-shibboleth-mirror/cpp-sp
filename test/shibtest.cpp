@@ -61,8 +61,8 @@ int main(int argc,char* argv[])
     char* q_param=NULL;
     char* f_param=NULL;
     char* a_param=NULL;
-    char* path="";
-    char* config="";
+    char* path=NULL;
+    char* config=NULL;
 
     for (int i=1; i<argc; i++) {
         if (!strcmp(argv[i],"-c") && i+1<argc)
@@ -85,11 +85,11 @@ int main(int argc,char* argv[])
     }
     
     if (!path)
-        path=getenv("SHIB_SCHEMAS");
+        path=getenv("SHIBSCHEMAS");
     if (!path)
         path=SHIB_SCHEMAS;
     if (!config)
-        config=getenv("SHIB_CONFIG");
+        config=getenv("SHIBCONFIG");
     if (!config)
         config=SHIB_CONFIG;
     if (!a_param)
