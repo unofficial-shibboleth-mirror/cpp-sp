@@ -135,6 +135,15 @@ void SharChild::run()
       svc_getreqset (&readfds);
     }
   }
+
+  if (running) {
+#ifdef WIN32
+      closesocket(sock);
+#else
+      close(sock);
+#endif
+      perror("SharChild::run(): - out of sockets, check FD_SETSIZE");
+  }
 }
 
 //
