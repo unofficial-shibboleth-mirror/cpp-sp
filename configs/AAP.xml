@@ -6,36 +6,39 @@
 	should be visible to an application running at the target should
 	be listed, or they will be filtered out.
 	
+	The Header and Alias attributes map an attribute to an HTTP header
+	and to an htaccess rule name respectively. Without Header, the attribute
+	will only be obtainable from the exported SAML assertion in raw XML.
+	
 	Scoped attributes are also filtered on Scope via the Domain elements
 	in the site metadata.
 	-->
 	
-	<!-- Filtering rule to limit values to eduPerson-defined enumeration. -->
-	<AttributeRule Name="urn:mace:dir:attribute-def:eduPersonScopedAffiliation"
-			Header="Shib-EP-Affiliation" Alias="affiliation">
+	<!-- First some useful eduPerson attributes that many sites might use. -->
+	
+	<AttributeRule Name="urn:mace:dir:attribute-def:eduPersonScopedAffiliation" Header="Shib-EP-Affiliation" Alias="affiliation">
+		<!-- Filtering rule to limit values to eduPerson-defined enumeration. -->
         <AnySite>
-            <Value>member</Value>
-            <Value>faculty</Value>
-            <Value>student</Value>
-            <Value>staff</Value>
-            <Value>alum</Value>
-            <Value>affiliate</Value>
-            <Value>employee</Value>
+            <Value Type="regexp">^[M|m][E|e][M|m][B|b][E|e][R|r]$</Value>
+            <Value Type="regexp">^[F|f][A|a][C|c][U|u][L|l][T|t][Y|y]$</Value>
+            <Value Type="regexp">^[S|s][T|t][U|u][D|d][E|e][N|n][T|t]$</Value>
+            <Value Type="regexp">^[S|s][T|t][A|a][F|f][F|f]$</Value>
+            <Value Type="regexp">^[A|a][L|l][U|u][M|m]$</Value>
+            <Value Type="regexp">^[A|a][F|f][F|f][I|i][L|l][I|i][A|a][T|t][E|e]$</Value>
+            <Value Type="regexp">^[E|e][M|m][P|p][L|l][O|o][Y|y][E|e][E|e]$</Value>
         </AnySite>
 	</AttributeRule>
 
-	<!-- Basic rule to pass through any value. -->
-    <AttributeRule Name="urn:mace:dir:attribute-def:eduPersonPrincipalName"
-			Header="REMOTE_USER" Alias="user">
+    <AttributeRule Name="urn:mace:dir:attribute-def:eduPersonPrincipalName" Header="REMOTE_USER" Alias="user">
+		<!-- Basic rule to pass through any value. -->
         <AnySite>
             <AnyValue/>
         </AnySite>
     </AttributeRule>
 
-	<!-- Entitlements tend to be filtered per-site. -->
-	<AttributeRule Name="urn:mace:dir:attribute-def:eduPersonEntitlement"
-			Header="Shib-EP-Entitlement" Alias="entitlement">
-
+	<AttributeRule Name="urn:mace:dir:attribute-def:eduPersonEntitlement" Header="Shib-EP-Entitlement" Alias="entitlement">
+		<!-- Entitlements tend to be filtered per-site. -->
+		
 		<!--
 		Optional site rule that applies to any site
 		<AnySite>
@@ -43,7 +46,7 @@
 		</AnySite>
 		-->
 		
-		<!-- Specific rules for an origin site, these are just InQueue development/sample sites. -->
+		<!-- Specific rules for an origin site, these are just development/sample sites. -->
 		<SiteRule Name="urn:mace:inqueue:example.edu">
 			<Value Type="regexp">^urn:mace:.+$</Value>
 		</SiteRule>
@@ -51,5 +54,222 @@
 			<Value Type="regexp">^urn:mace:.+$</Value>
 		</SiteRule>
 	</AttributeRule>
+
+	<!-- A persistent id attribute that supports personalized anonymous access. -->
+	<AttributeRule Name="urn:mace:dir:attribute-def:persistentID" Header="Shib-PersistentID" Alias="persistent">
+        <AnySite>
+            <AnyValue/>
+        </AnySite>
+	</AttributeRule>
+	
+	<!-- Some more eduPerson attributes, uncomment these to use them... -->
+	<!--
+	
+	<AttributeRule Name="urn:mace:dir:attribute-def:eduPersonNickname">
+        <AnySite>
+            <AnyValue/>
+        </AnySite>
+	</AttributeRule>
+
+	<AttributeRule Name="urn:mace:dir:attribute-def:eduPersonAffiliation" Header="Shib-EP-UnscopedAffiliation">
+        <AnySite>
+            <Value Type="regexp">^[M|m][E|e][M|m][B|b][E|e][R|r]$</Value>
+            <Value Type="regexp">^[F|f][A|a][C|c][U|u][L|l][T|t][Y|y]$</Value>
+            <Value Type="regexp">^[S|s][T|t][U|u][D|d][E|e][N|n][T|t]$</Value>
+            <Value Type="regexp">^[S|s][T|t][A|a][F|f][F|f]$</Value>
+            <Value Type="regexp">^[A|a][L|l][U|u][M|m]$</Value>
+            <Value Type="regexp">^[A|a][F|f][F|f][I|i][L|l][I|i][A|a][T|t][E|e]$</Value>
+            <Value Type="regexp">^[E|e][M|m][P|p][L|l][O|o][Y|y][E|e][E|e]$</Value>
+        </AnySite>
+	</AttributeRule>
+	
+	
+	<AttributeRule Name="urn:mace:dir:attribute-def:eduPersonPrimaryAffiliation" Header="Shib-EP-PrimaryAffiliation">
+        <AnySite>
+            <Value Type="regexp">^[M|m][E|e][M|m][B|b][E|e][R|r]$</Value>
+            <Value Type="regexp">^[F|f][A|a][C|c][U|u][L|l][T|t][Y|y]$</Value>
+            <Value Type="regexp">^[S|s][T|t][U|u][D|d][E|e][N|n][T|t]$</Value>
+            <Value Type="regexp">^[S|s][T|t][A|a][F|f][F|f]$</Value>
+            <Value Type="regexp">^[A|a][L|l][U|u][M|m]$</Value>
+            <Value Type="regexp">^[A|a][F|f][F|f][I|i][L|l][I|i][A|a][T|t][E|e]$</Value>
+            <Value Type="regexp">^[E|e][M|m][P|p][L|l][O|o][Y|y][E|e][E|e]$</Value>
+        </AnySite>
+	</AttributeRule>
+	
+	<AttributeRule Name="urn:mace:dir:attribute-def:eduPersonPrimaryOrgUnitDN" Header="Shib-EP-PrimaryOrgUnitDN">
+        <AnySite>
+            <AnyValue/>
+        </AnySite>
+	</AttributeRule>
+	
+	<AttributeRule Name="urn:mace:dir:attribute-def:eduPersonOrgUnitDN" Header="Shib-EP-OrgUnitDN">
+        <AnySite>
+            <AnyValue/>
+        </AnySite>
+	</AttributeRule>
+	
+	<AttributeRule Name="urn:mace:dir:attribute-def:eduPersonOrgDN" Header="Shib-EP-OrgDN">
+        <AnySite>
+            <AnyValue/>
+        </AnySite>
+	</AttributeRule>
+
+	-->
+
+
+	<!--Examples of common LDAP-based attributes, uncomment to use these... -->
+	<!--
+	
+	<AttributeRule id="urn:mace:dir:attribute-def:cn">
+		<AnySite>
+            <AnyValue/>
+        </AnySite>
+	</AttributeRule>
+	
+	<AttributeRule id="urn:mace:dir:attribute-def:sn">
+		<AnySite>
+            <AnyValue/>
+        </AnySite>
+	</AttributeRule>
+	
+	<AttributeRule id="urn:mace:dir:attribute-def:telephoneNumber">
+		<AnySite>
+            <AnyValue/>
+        </AnySite>
+	</AttributeRule>
+	
+	<AttributeRule id="urn:mace:dir:attribute-def:title">
+		<AnySite>
+            <AnyValue/>
+        </AnySite>
+	</AttributeRule>
+	
+	<AttributeRule id="urn:mace:dir:attribute-def:initials">
+		<AnySite>
+            <AnyValue/>
+        </AnySite>
+	</AttributeRule>
+	
+	<AttributeRule id="urn:mace:dir:attribute-def:description">
+		<AnySite>
+            <AnyValue/>
+        </AnySite>
+	</AttributeRule>
+	
+	<AttributeRule id="urn:mace:dir:attribute-def:carLicense">
+		<AnySite>
+            <AnyValue/>
+        </AnySite>
+	</AttributeRule>
+	
+	<AttributeRule id="urn:mace:dir:attribute-def:departmentNumber">
+		<AnySite>
+            <AnyValue/>
+        </AnySite>
+	</AttributeRule>
+	
+	<AttributeRule id="urn:mace:dir:attribute-def:displayName">
+		<AnySite>
+            <AnyValue/>
+        </AnySite>
+	</AttributeRule>
+	
+	<AttributeRule id="urn:mace:dir:attribute-def:employeeNumber">
+		<AnySite>
+            <AnyValue/>
+        </AnySite>
+	</AttributeRule>
+	
+	<AttributeRule id="urn:mace:dir:attribute-def:employeeType">
+		<AnySite>
+            <AnyValue/>
+        </AnySite>
+	</AttributeRule>
+	
+	<AttributeRule id="urn:mace:dir:attribute-def:preferredLanguage">
+		<AnySite>
+            <AnyValue/>
+        </AnySite>
+	</AttributeRule>
+	
+	<AttributeRule id="urn:mace:dir:attribute-def:manager">
+		<AnySite>
+            <AnyValue/>
+        </AnySite>
+	</AttributeRule>
+	
+	<AttributeRule id="urn:mace:dir:attribute-def:roomNumber">
+		<AnySite>
+            <AnyValue/>
+        </AnySite>
+	</AttributeRule>
+	
+	<AttributeRule id="urn:mace:dir:attribute-def:seeAlso">
+		<AnySite>
+            <AnyValue/>
+        </AnySite>
+	</AttributeRule>
+	
+	<AttributeRule id="urn:mace:dir:attribute-def:facsimileTelephoneNumber">
+		<AnySite>
+            <AnyValue/>
+        </AnySite>
+	</AttributeRule>
+	
+	<AttributeRule id="urn:mace:dir:attribute-def:street">
+		<AnySite>
+            <AnyValue/>
+        </AnySite>
+	</AttributeRule>
+	
+	<AttributeRule id="urn:mace:dir:attribute-def:postOfficeBox">
+		<AnySite>
+            <AnyValue/>
+        </AnySite>
+	</AttributeRule>
+	
+	<AttributeRule id="urn:mace:dir:attribute-def:postalCode">
+		<AnySite>
+            <AnyValue/>
+        </AnySite>
+	</AttributeRule>
+	
+	<AttributeRule id="urn:mace:dir:attribute-def:st">
+		<AnySite>
+            <AnyValue/>
+        </AnySite>
+	</AttributeRule>
+	
+	<AttributeRule id="urn:mace:dir:attribute-def:givenName">
+		<AnySite>
+            <AnyValue/>
+        </AnySite>
+	</AttributeRule>
+	
+	<AttributeRule id="urn:mace:dir:attribute-def:l">
+		<AnySite>
+            <AnyValue/>
+        </AnySite>
+	</AttributeRule>
+	
+	<AttributeRule id="urn:mace:dir:attribute-def:businessCategory">
+		<AnySite>
+            <AnyValue/>
+        </AnySite>
+	</AttributeRule>
+	
+	<AttributeRule id="urn:mace:dir:attribute-def:ou">
+		<AnySite>
+            <AnyValue/>
+        </AnySite>
+	</AttributeRule>
+	
+	<AttributeRule id="urn:mace:dir:attribute-def:physicalDeliveryOfficeName">
+		<AnySite>
+            <AnyValue/>
+        </AnySite>
+	</AttributeRule>
+	
+	-->
 
 </AttributeAcceptancePolicy>
