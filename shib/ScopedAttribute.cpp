@@ -139,7 +139,8 @@ bool ScopedAttribute::accept(DOMElement* e) const
     if (log.isWarnEnabled())
     {
         auto_ptr<char> tmp(toUTF8(this_scope));
-        log.warn("rejecting value with scope of %s",tmp.get());
+        auto_ptr<char> name(XMLString::transcode(m_name));
+        log.warn("rejecting value for %s with scope of %s",name.get(),tmp.get());
     }
     return false;
 }

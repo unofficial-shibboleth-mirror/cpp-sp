@@ -225,13 +225,17 @@ bool AAP::accept(const XMLCh* name, const XMLCh* originSite, DOMElement* e)
     {
         auto_ptr<char> temp(XMLString::transcode(name));
         auto_ptr<char> temp2(XMLString::transcode(originSite));
-        log.debug("evaluating value for attribute '%s' from site '%s'",temp.get(),temp2.get());
+        log.debug("evaluating value for attribute %s from site %s",temp.get(),temp2.get());
     }
 
     map<xstring,AttributeRule>::const_iterator arule=m_attrMap.find(name);
     if (arule==m_attrMap.end())
     {
-        log.warn("attribute not found in AAP, any value is rejected");
+        if (log.isWarnEnabled())
+        {
+            auto_ptr<char> temp(XMLString::transcode(name));
+            log.warn("attribute %s not found in AAP, any value is rejected",temp.get());
+        }
         return false;
     }
 
@@ -285,7 +289,12 @@ bool AAP::accept(const XMLCh* name, const XMLCh* originSite, DOMElement* e)
     map<xstring,AttributeRule::SiteRule>::const_iterator srule=arule->second.m_siteMap.find(originSite);
     if (srule==arule->second.m_siteMap.end())
     {
-        log.warn("site not found in attribute ruleset, any value is rejected");
+        if (log.isWarnEnabled())
+        {
+            auto_ptr<char> temp(XMLString::transcode(name));
+            auto_ptr<char> temp2(XMLString::transcode(originSite));
+            log.warn("site %s not found in attribute %s ruleset, any value is rejected",temp2.get(),temp.get());
+        }
         return false;
     }
 
@@ -328,6 +337,11 @@ bool AAP::accept(const XMLCh* name, const XMLCh* originSite, DOMElement* e)
             log.warn("implementation does not support XPath value rules");
     }
 
-    log.warn("attribute value could not be validated by AAP, rejecting it");
+    if (log.isWarnEnabled())
+    {
+        auto_ptr<char> temp(XMLString::transcode(name));
+        auto_ptr<char> temp2(XMLString::transcode(n->getNodeValue()));
+        log.warn("attribute %s value {%s} could not be validated by AAP, rejecting it",temp.get(),temp2.get());
+    }
     return false;
 }
