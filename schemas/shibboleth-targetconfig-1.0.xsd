@@ -36,7 +36,7 @@
 				<element ref="conf:SHAR" minOccurs="0"/>
 				<element ref="conf:SHIRE" minOccurs="0"/>
 				<element ref="conf:Applications"/>
-				<element name="CredentialsProvider" type="conf:PluggableType" maxOccurs="unbounded"/>
+				<element name="CredentialsProvider" type="conf:PluggableType" minOccurs="0" maxOccurs="unbounded"/>
 			</sequence>
 			<attribute name="logger" type="anyURI" use="optional"/>
 			<attribute name="clockSkew" type="unsignedInt" use="optional"/>
