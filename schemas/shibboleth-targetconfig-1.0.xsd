@@ -3,6 +3,7 @@
 	xmlns="http://www.w3.org/2001/XMLSchema"
 	xmlns:conf="urn:mace:shibboleth:target:config:1.0"
 	xmlns:saml="urn:oasis:names:tc:SAML:1.0:assertion"
+	xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"
 	elementFormDefault="qualified"
 	attributeFormDefault="unqualified"
 	blockDefault="substitution"
@@ -10,6 +11,7 @@
 
 	<import namespace="http://www.w3.org/2000/09/xmldsig#" schemaLocation="xmldsig-core-schema.xsd"/>
 	<import namespace="urn:oasis:names:tc:SAML:1.0:assertion" schemaLocation="cs-sstc-schema-assertion-1.1.xsd"/>
+	<import namespace="urn:oasis:names:tc:SAML:2.0:metadata" schemaLocation="saml-schema-metadata-2.0.xsd"/>
 
 	<annotation>
 		<documentation>
@@ -269,6 +271,7 @@
 	
 	<attributeGroup name="ContentSettings">
 		<attribute name="requireSession" type="boolean" use="optional"/>
+		<attribute name="requireSessionWith" type="string" use="optional"/>
 		<attribute name="exportAssertion" type="boolean" use="optional"/>
 		<anyAttribute namespace="##other" processContents="lax"/>
 	</attributeGroup>
@@ -373,7 +376,7 @@
 		<complexType>
 			<sequence>
 				<any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
-				<element ref="conf:Sessions"/>
+				<element ref="conf:Sessions" minOccurs="0"/>
 				<element ref="conf:Errors" minOccurs="0"/>
 				<element ref="conf:CredentialUse" minOccurs="0"/>
 				<choice minOccurs="0" maxOccurs="unbounded">
@@ -397,16 +400,42 @@
 			<documentation>Container for specifying app session establishment and policy</documentation>
 		</annotation>
 		<complexType>
-			<attribute name="wayfURL" type="anyURI" use="optional"/>
+			<choice minOccurs="0" maxOccurs="unbounded">
+				<element ref="conf:SessionInitiator"/>
+				<element ref="md:AssertionConsumerService"/>
+				<element ref="md:SingleLogoutService"/>
+			</choice>
+			<!-- deprecated --> <attribute name="wayfURL" type="anyURI" use="optional"/>
 			<!-- deprecated --> <attribute name="shireURL" type="anyURI" use="optional"/>
-			<attribute name="shireSSL" type="boolean" use="optional"/>
+			<!-- deprecated --> <attribute name="shireSSL" type="boolean" use="optional"/>
+			<attribute name="handlerURL" type="anyURI" use="optional"/>
+			<attribute name="handlerSSL" type="boolean" use="optional" default="true"/>
 			<attribute name="cookieName" type="string" use="optional"/>
 			<attribute name="cookieProps" type="string" use="optional"/>
+			<attribute name="idpHistory" type="boolean" use="optional" default="true"/>
+			<attribute name="idpHistoryDays" type="unsignedInt" use="optional"/>
 			<attribute name="lifetime" type="unsignedInt" use="optional"/>
 			<attribute name="timeout" type="unsignedInt" use="optional"/>
 			<attribute name="checkAddress" type="boolean" use="optional"/>
-			<attribute name="oldAuthnRequest" type="boolean" use="optional"/>
-			<anyAttribute namespace="##any" processContents="lax"/>
+			<attribute name="checkReplay" type="boolean" use="optional" default="true"/>
+			<anyAttribute namespace="##other" processContents="lax"/>
+		</complexType>
+	</element>
+	<element name="SessionInitiator">
+		<annotation>
+			<documentation>Used to specify WAYF/Discovery services (external or internal)</documentation>
+		</annotation>
+		<complexType>
+			<sequence>
+				<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+			</sequence>
+			<attribute name="Location" type="anyURI" use="required"/>
+			<attribute name="Binding" type="anyURI" use="required"/>
+			<attribute name="wayfURL" type="anyURI" use="optional"/>
+			<attribute name="wayfBinding" type="anyURI" use="optional"/>
+			<attribute name="checkCDC" type="anyURI" use="optional"/>
+			<attribute name="isDefault" type="boolean" use="optional"/>
+			<attribute name="id" type="string" use="optional"/>
 		</complexType>
 	</element>
 
@@ -415,18 +444,18 @@
 			<documentation>Container for error templates and associated details</documentation>
 		</annotation>
 		<complexType>
-            <complexContent>
-                <restriction base="anyType">
-                	<!-- deprecated --> <attribute name="shire" type="anyURI" use="optional"/>
-					<attribute name="session" type="anyURI" use="optional"/>
-                	<attribute name="rm" type="anyURI" use="required"/>
-                	<attribute name="access" type="anyURI" use="optional"/>
-                	<attribute name="supportContact" type="string" use="optional"/>
-                	<attribute name="logoLocation" type="anyURI" use="optional"/>
-                	<attribute name="styleSheet" type="anyURI" use="optional"/>
-					<anyAttribute namespace="##any" processContents="lax"/>
-                </restriction>
-            </complexContent>
+			<sequence>
+				<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+			</sequence>
+			<!-- deprecated --> <attribute name="shire" type="anyURI" use="optional"/>
+			<attribute name="session" type="anyURI" use="optional"/>
+			<attribute name="metadata" type="anyURI" use="optional"/>
+			<attribute name="rm" type="anyURI" use="required"/>
+			<attribute name="access" type="anyURI" use="optional"/>
+			<attribute name="supportContact" type="string" use="optional"/>
+			<attribute name="logoLocation" type="anyURI" use="optional"/>
+			<attribute name="styleSheet" type="anyURI" use="optional"/>
+			<anyAttribute namespace="##any" processContents="lax"/>
 		</complexType>
 	</element>
 
