@@ -278,7 +278,7 @@ void ShibPOSTProfile::verifySignature(
 
         char data[256];
         X509_NAME* subj;
-        if (subj=X509_get_subject_name(x)) && X509_NAME_get_text_by_NID(subj,NID_commonName,data,256)>0)
+        if ((subj=X509_get_subject_name(x)) && X509_NAME_get_text_by_NID(subj,NID_commonName,data,256)>0)
         {
             data[255]=0;
 #ifdef HAVE_STRCASECMP
