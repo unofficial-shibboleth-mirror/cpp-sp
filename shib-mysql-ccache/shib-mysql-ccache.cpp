@@ -36,7 +36,6 @@
 #endif
 
 #include <shib-target/shib-target.h>
-#include <shib-target/ccache-utils.h>
 #include <shib/shib-threads.h>
 #include <log4cpp/Category.hh>
 
@@ -57,53 +56,69 @@ using namespace shibtarget;
 #define PLUGIN_VER_MAJOR 1
 #define PLUGIN_VER_MINOR 0
 
+static const XMLCh Argument[] =
+{ chLatin_A, chLatin_r, chLatin_g, chLatin_u, chLatin_m, chLatin_e, chLatin_n, chLatin_t, chNull };
+static const XMLCh cleanupInterval[] =
+{ chLatin_c, chLatin_l, chLatin_e, chLatin_a, chLatin_n, chLatin_u, chLatin_p,
+  chLatin_I, chLatin_n, chLatin_t, chLatin_e, chLatin_r, chLatin_v, chLatin_a, chLatin_l, chNull
+};
+static const XMLCh cacheTimeout[] =
+{ chLatin_c, chLatin_a, chLatin_c, chLatin_h, chLatin_e, chLatin_T, chLatin_i, chLatin_m, chLatin_e, chLatin_o, chLatin_u, chLatin_t, chNull };
+static const XMLCh mysqlTimeout[] =
+{ chLatin_m, chLatin_y, chLatin_s, chLatin_q, chLatin_l, chLatin_T, chLatin_i, chLatin_m, chLatin_e, chLatin_o, chLatin_u, chLatin_t, chNull };
+
 class ShibMySQLCCache;
-class ShibMySQLCCacheEntry : public CCacheEntry
+class ShibMySQLCCacheEntry : public ISessionCacheEntry
 {
 public:
-  ShibMySQLCCacheEntry(const char *, CCacheEntry*, ShibMySQLCCache*);
+  ShibMySQLCCacheEntry(const char*, ISessionCacheEntry*, ShibMySQLCCache*);
   ~ShibMySQLCCacheEntry() {}
 
+  virtual void lock() {}
+  virtual void unlock() { m_cacheEntry->unlock(); delete this; }
+  virtual bool isValid(time_t lifetime, time_t timeout) const;
+  virtual const char* getClientAddress() const { return m_cacheEntry->getClientAddress(); }
+  virtual const char* getSerializedStatement() const { return m_cacheEntry->getSerializedStatement(); }
+  virtual const SAMLAuthenticationStatement* getStatement() const { return m_cacheEntry->getStatement(); }
   virtual Iterator<SAMLAssertion*> getAssertions() { return m_cacheEntry->getAssertions(); }
   virtual void preFetch(int prefetch_window) { m_cacheEntry->preFetch(prefetch_window); }
-  virtual bool isSessionValid(time_t lifetime, time_t timeout);
-  virtual const char* getClientAddress() { return m_cacheEntry->getClientAddress(); }
-  virtual const char* getSerializedStatement() { return m_cacheEntry->getSerializedStatement(); }
-  virtual const SAMLAuthenticationStatement* getStatement() { return m_cacheEntry->getStatement(); }
-  virtual void release() { m_cacheEntry->release(); delete this; }
 
 private:
-  bool touch();
+  bool touch() const;
 
   ShibMySQLCCache* m_cache;
-  CCacheEntry *m_cacheEntry;
+  ISessionCacheEntry* m_cacheEntry;
   string m_key;
 };
 
-class ShibMySQLCCache : public CCache
+class ShibMySQLCCache : public ISessionCache
 {
 public:
-  ShibMySQLCCache();
+  ShibMySQLCCache(const DOMElement* e);
   virtual ~ShibMySQLCCache();
 
-  virtual CCacheEntry* find(const char* key);
+  virtual void thread_init();
+  virtual void thread_end() {}
+
+  virtual string generateKey() const {return m_cache->generateKey();}
+  virtual ISessionCacheEntry* find(const char* key);
   virtual void insert(
         const char* key,
-        const char* application_id,
-        saml::SAMLAuthenticationStatement *s,
+        const IApplication* application,
+        SAMLAuthenticationStatement *s,
         const char *client_addr,
-        saml::SAMLResponse* r=NULL);
+        SAMLResponse* r=NULL);
   virtual void remove(const char* key);
-  virtual void thread_init();
 
   void	cleanup();
-  MYSQL* getMYSQL();
+  MYSQL* getMYSQL() const;
 
   log4cpp::Category* log;
 
 private:
-  CCache* m_cache;
+  ISessionCache* m_cache;
   ThreadKey* m_mysql;
+  const DOMElement* m_root; // can only use this during initialization
 
   static void*	cleanup_fcn(void*); // XXX Assumed an ShibMySQLCCache
   CondWait* shutdown_wait;
@@ -128,7 +143,7 @@ extern "C" void shib_mysql_destroy_handle(void* data);
  * through the memory cache provided by shibboleth.
  */
 
-MYSQL* ShibMySQLCCache::getMYSQL()
+MYSQL* ShibMySQLCCache::getMYSQL() const
 {
   void* data = m_mysql->getData();
   return (MYSQL*)data;
@@ -180,20 +195,24 @@ void ShibMySQLCCache::thread_init()
   m_mysql->setData((void*)mysql);
 }
 
-ShibMySQLCCache::ShibMySQLCCache()
+ShibMySQLCCache::ShibMySQLCCache(const DOMElement* e)
 {
   saml::NDC ndc("shibmysql::ShibMySQLCCache");
 
   m_mysql = ThreadKey::create(&shib_mysql_destroy_handle);
-  string ctx = "shibmysql::ShibMySQLCCache";
-  log = &(log4cpp::Category::getInstance(ctx));
+  log = &(log4cpp::Category::getInstance("shibmysql::ShibMySQLCCache"));
 
+  m_root=e;
   initialized = false;
   mysqlInit();
   thread_init();
   initialized = true;
 
-  m_cache = CCache::getInstance("memory");
+  m_cache = dynamic_cast<ISessionCache*>(
+      ShibConfig::getConfig().m_plugMgr.newPlugin(
+        "edu.internet2.middleware.shibboleth.target.provider.MemoryCache", e
+        )
+    );
 
   // Initialize the cleanup thread
   shutdown_wait = CondWait::create();
@@ -214,10 +233,10 @@ ShibMySQLCCache::~ShibMySQLCCache()
   mysql_server_end();
 }
 
-CCacheEntry* ShibMySQLCCache::find(const char* key)
+ISessionCacheEntry* ShibMySQLCCache::find(const char* key)
 {
   saml::NDC ndc("mysql::find");
-  CCacheEntry* res = m_cache->find(key);
+  ISessionCacheEntry* res = m_cache->find(key);
   if (!res) {
 
     log->debug("Looking in database...");
@@ -244,8 +263,17 @@ CCacheEntry* ShibMySQLCCache::find(const char* key)
     }
 
     log->debug("Match found.  Parsing...");
+
     // Pull apart the row and process the results
     MYSQL_ROW row = mysql_fetch_row(rows);
+    IConfig* conf=ShibTargetConfig::getConfig().getINI();
+    Locker locker(conf);
+    const IApplication* application=conf->getApplication(row[0]);
+    if (!application) {
+        mysql_free_result(rows);
+        throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"unable to locate application for session, deleted?");
+    }
+
     istringstream str(row[2]);
     SAMLAuthenticationStatement *s = NULL;
 
@@ -259,7 +287,7 @@ CCacheEntry* ShibMySQLCCache::find(const char* key)
 
     // Insert it into the memory cache
     if (s)
-      m_cache->insert(key, row[0], s, row[1]);
+      m_cache->insert(key, application, s, row[1]);
 
     // Free the results, and then re-run the 'find' query
     mysql_free_result(rows);
@@ -273,7 +301,7 @@ CCacheEntry* ShibMySQLCCache::find(const char* key)
 
 void ShibMySQLCCache::insert(
     const char* key,
-    const char* application_id,
+    const IApplication* application,
     saml::SAMLAuthenticationStatement *s,
     const char *client_addr,
     saml::SAMLResponse* r)
@@ -282,12 +310,12 @@ void ShibMySQLCCache::insert(
   ostringstream os;
   os << *s;
 
-  string q = string("INSERT INTO state VALUES('") + key + "','" + application_id + "',NOW(),'" + client_addr + "','" + os.str() + "')";
+  string q = string("INSERT INTO state VALUES('") + key + "','" + application->getId() + "',NOW(),'" + client_addr + "','" + os.str() + "')";
 
   log->debug("Query: %s", q.c_str());
 
   // Add it to the memory cache
-  m_cache->insert(key, application_id, s, client_addr, r);
+  m_cache->insert(key, application, s, client_addr, r);
 
   // then add it to the database
   MYSQL* mysql = getMYSQL();
@@ -316,22 +344,24 @@ void ShibMySQLCCache::cleanup()
 
   thread_init();
 
-  ShibTargetConfig& config = ShibTargetConfig::getConfig();
-  ShibINI& ini = config.getINI();
-
   int rerun_timer = 0;
   int timeout_life = 0;
 
-  string tag;
-  if (ini.get_tag (SHIBTARGET_SHAR, SHIBTARGET_TAG_CACHECLEAN, true, &tag))
-    rerun_timer = atoi(tag.c_str());
+  // Load our configuration details...
+  const XMLCh* tag=m_root->getAttributeNS(NULL,cleanupInterval);
+  if (tag && *tag)
+    rerun_timer = XMLString::parseInt(tag);
 
   // search for 'mysql-cache-timeout' and then the regular cache timeout
-  if (ini.get_tag (SHIBTARGET_SHAR, "mysql-cache-timeout", true, &tag))
-    timeout_life = atoi(tag.c_str());
-  else if (ini.get_tag (SHIBTARGET_SHAR, SHIBTARGET_TAG_CACHETIMEOUT, true, &tag))
-    timeout_life = atoi(tag.c_str());
-
+  tag=m_root->getAttributeNS(NULL,mysqlTimeout);
+  if (tag && *tag)
+    timeout_life = XMLString::parseInt(tag);
+  else {
+      tag=m_root->getAttributeNS(NULL,cacheTimeout);
+      if (tag && *tag)
+        timeout_life = XMLString::parseInt(tag);
+  }
+  
   if (rerun_timer <= 0)
     rerun_timer = 300;		// rerun every 5 minutes
 
@@ -406,22 +436,22 @@ void ShibMySQLCCache::createDatabase(MYSQL* mysql, int major, int minor)
     ms = mysql_init(NULL);
     if (!ms) {
       log->crit("mysql_init failed");
-      throw new ShibTargetException();
+      throw ShibTargetException();
     }
 
     if (!mysql_real_connect(ms, NULL, NULL, NULL, NULL, 0, NULL, 0)) {
       log->crit("cannot open DB file to create DB: %s", mysql_error(ms));
-      throw new ShibTargetException();
+      throw ShibTargetException();
     }
 
     if (mysql_query(ms, "CREATE DATABASE shar")) {
       log->crit("cannot create shar database: %s", mysql_error(ms));
-      throw new ShibTargetException();
+      throw ShibTargetException();
     }
 
     if (!mysql_real_connect(mysql, NULL, NULL, NULL, "shar", 0, NULL, 0)) {
       log->crit("cannot open SHAR database");
-      throw new ShibTargetException();
+      throw ShibTargetException();
     }
 
     mysql_close(ms);
@@ -510,23 +540,15 @@ void ShibMySQLCCache::mysqlInit(void)
 
   // Setup the argument array
   vector<string> arg_array;
-  string tag;
-
-  tag = SHIBTARGET_SHAR;
-  arg_array.push_back(tag);
+  arg_array.push_back("shar");
 
   // grab any MySQL parameters from the config file
-  ShibTargetConfig& config = ShibTargetConfig::getConfig();
-  ShibINI& ini = config.getINI();
-
-  if (ini.exists("mysql")) {
-    ShibINI::Iterator* iter = ini.tag_iterator("mysql");
-
-    for (const string* str = iter->begin(); str; str = iter->next()) {
-      string arg = ini.get("mysql", *str);
-      arg_array.push_back(arg);
-    }
-    delete iter;
+  const DOMElement* e=saml::XML::getFirstChildElement(m_root,ShibTargetConfig::SHIBTARGET_NS,Argument);
+  while (e) {
+      auto_ptr_char arg(e->getFirstChild()->getNodeValue());
+      if (arg.get())
+          arg_array.push_back(arg.get());
+      e=saml::XML::getNextSiblingElement(e,ShibTargetConfig::SHIBTARGET_NS,Argument);
   }
 
   // Compute the argument array
@@ -548,22 +570,22 @@ void ShibMySQLCCache::mysqlInit(void)
  * database if the session is still valid.
  */
 
-ShibMySQLCCacheEntry::ShibMySQLCCacheEntry(const char* key, CCacheEntry *entry, ShibMySQLCCache* cache)
+ShibMySQLCCacheEntry::ShibMySQLCCacheEntry(const char* key, ISessionCacheEntry* entry, ShibMySQLCCache* cache)
 {
   m_cacheEntry = entry;
   m_key = key;
   m_cache = cache;
 }
 
-bool ShibMySQLCCacheEntry::isSessionValid(time_t lifetime, time_t timeout)
+bool ShibMySQLCCacheEntry::isValid(time_t lifetime, time_t timeout) const
 {
-  bool res = m_cacheEntry->isSessionValid(lifetime, timeout);
+  bool res = m_cacheEntry->isValid(lifetime, timeout);
   if (res == true)
     res = touch();
   return res;
 }
 
-bool ShibMySQLCCacheEntry::touch()
+bool ShibMySQLCCacheEntry::touch() const
 {
   string q=string("UPDATE state SET atime=NOW() WHERE cookie='") + m_key + "'";
 
@@ -580,15 +602,17 @@ bool ShibMySQLCCacheEntry::touch()
  * The registration functions here...
  */
 
-extern "C" CCache* new_mysql_ccache(void)
+IPlugIn* new_mysql_ccache(const DOMElement* e)
 {
-  return new ShibMySQLCCache();
+  return new ShibMySQLCCache(e);
 }
 
-extern "C" int SHIBMYSQL_EXPORTS saml_extension_init(void* context)
+extern "C" int SHIBMYSQL_EXPORTS saml_extension_init(void*)
 {
   // register this ccache type
-  CCache::registerFactory("mysql", &new_mysql_ccache);
+  ShibConfig::getConfig().m_plugMgr.regFactory(
+    "edu.internet2.middleware.shibboleth.target.provider.MySQLSessionCache", &new_mysql_ccache
+    );
   return 0;
 }
 
