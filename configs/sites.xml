@@ -3,12 +3,14 @@
         <Alias>Example State University</Alias>
         <Contact Type="technical" Name="Alfred E. Neuman" Email="(no email)"/>
         <HandleService Location="https://wayf.internet2.edu/InQueue/HS" Name="wayf.internet2.edu"/>
+        <AttributeAuthority Location="https://wayf.internet2.edu/InQueue/AA" Name="wayf.internet2.edu"/>
         <Domain>example.edu</Domain>
     </OriginSite>
     <OriginSite Name="urn:mace:inqueue:shibdev.edu">
         <Alias>Shibboleth Development Origin</Alias>
         <Contact Type="technical" Name="Scott Cantor" Email="cantor.2@osu.edu"/>
         <HandleService Location="https://shib2.internet2.edu/shibboleth/HS" Name="shib2.internet2.edu"/>
+        <AttributeAuthority Location="https://shib2.internet2.edu/shibboleth/AA" Name="shib2.internet2.edu"/>
         <Domain>shibdev.edu</Domain>
     </OriginSite>
 </SiteGroup>
