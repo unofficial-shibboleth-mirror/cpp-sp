@@ -200,14 +200,20 @@ bool AAP::accept(const XMLCh* name, const XMLCh* originSite, DOMElement* e)
     for (AttributeRule::SiteRule::const_iterator i=arule->second.m_anySiteRule.begin(); i!=arule->second.m_anySiteRule.end(); i++)
     {
         if (i->first==AttributeRule::literal && i->second==n->getNodeValue())
+        {
+            log.debug("any site, literal match");
             return true;
+        }
         else if (i->first==AttributeRule::regexp)
         {
             try
             {
                 RegularExpression re(i->second.c_str());
                 if (re.matches(n->getNodeValue()))
+                {
+                    log.debug("any site, regexp match");
                     return true;
+                }
             }
             catch (XMLException& ex)
             {
@@ -230,14 +236,20 @@ bool AAP::accept(const XMLCh* name, const XMLCh* originSite, DOMElement* e)
     for (AttributeRule::SiteRule::const_iterator j=srule->second.begin(); j!=srule->second.end(); j++)
     {
         if (j->first==AttributeRule::literal && j->second==n->getNodeValue())
+        {
+            log.debug("matching site, literal match");
             return true;
+        }
         else if (j->first==AttributeRule::regexp)
         {
             try
             {
                 RegularExpression re(j->second.c_str());
                 if (re.matches(n->getNodeValue()))
+                {
+                    log.debug("matching site, regexp match");
                     return true;
+                }
             }
             catch (XMLException& ex)
             {
