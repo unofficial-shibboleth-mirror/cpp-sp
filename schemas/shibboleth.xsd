@@ -117,7 +117,7 @@
     <element name="AttributeAcceptancePolicy">
         <complexType>
             <sequence>
-                <element name="shib:AnyAttribute" minOccurs="0">
+                <element name="AnyAttribute" minOccurs="0">
                     <complexType>
                     	<sequence/>
                     </complexType>
