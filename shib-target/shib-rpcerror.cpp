@@ -129,7 +129,10 @@ void RPCError::init(int stat, char const* msg)
       log.error ("Caught exception building SAMLException!");
       log.error ("XML: %s", msg);
     }
-    error_msg = (m_except ? m_except->what() : msg);
+    if (dynaptr(ContentTypeException,m_except)!=NULL)
+        error_msg = "We were unable to contact your identity provider and cannot grant access at this time. Please contact your provider's help desk or administrator so that the appropriate steps can be taken. Be sure to describe what you're trying to access and useful context like the current time.";
+    else
+        error_msg = (m_except ? m_except->what() : msg);
   } else {
     error_msg = msg;
     m_except = NULL;
