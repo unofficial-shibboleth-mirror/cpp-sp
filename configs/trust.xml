@@ -12,15 +12,15 @@
  	within <ds:X509Data>. One or more "names" can be associated with the key
  	using <ds:KeyName> or <ds:X509Subject> in <ds:X509Data>. In both cases, use
  	of a full distinguished name in LDAP/RFC2253 format is suggested (reverse
- 	order of RDNs from X.500, separated by commas, no extra spaces). This syntax
+ 	order of RDNs from X.500, separated by a comma and a space). This syntax
  	is mandatory when using <ds:X509Subject>. It is permissible in <ds:KeyName>
  	to just specify the entity's common name (CN) or a DNS subjectAltName, as
  	typically done when evaluating TLS certificates, but we suggest using the
  	complete DN to simplify matching.
  	
- 	(To output the subject of a certificate in this form, use the following
+ 	To output the subject of a certificate in this form, use the following
  	OpenSSL command:
- 		$ openssl x509 -in cert.pem -subject -nameopt RFC2253
+ 		$ openssl x509 -in cert.pem -subject -nameopt RFC2253,sep_comma_plus_space
  	
  	As a general note, any base-64 encoded data in the file must be carefully
  	placed into the containing element without extra whitespace or linefeeds.
@@ -37,7 +37,7 @@
  	-->
 
     <ds:KeyInfo>
-    	<ds:KeyName>CN=localhost,O=Shibboleth Project,C=US</ds:KeyName>
+    	<ds:KeyName>CN=localhost, O=Shibboleth Project, C=US</ds:KeyName>
         <ds:X509Data>
             <ds:X509Certificate>MIICtjCCAh+gAwIBAgIBADANBgkqhkiG9w0BAQQFADA+MQswCQYDVQQGEwJVUzEb
 MBkGA1UEChMSU2hpYmJvbGV0aCBQcm9qZWN0MRIwEAYDVQQDEwlsb2NhbGhvc3Qw
@@ -119,7 +119,7 @@ o/72FFuLImOT2CUdJ/FonPKo2w0NhOTP4Hc=
     -->
 
     <KeyAuthority VerifyDepth="0">
-        <ds:KeyName>CN=localhost,O=Shibboleth Project,C=US</ds:KeyName>
+        <ds:KeyName>CN=localhost, O=Shibboleth Project, C=US</ds:KeyName>
         <ds:KeyInfo>
             <ds:X509Data>
                 <ds:X509Certificate>MIICtjCCAh+gAwIBAgIBADANBgkqhkiG9w0BAQQFADA+MQswCQYDVQQGEwJVUzEb
