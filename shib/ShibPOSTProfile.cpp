@@ -321,6 +321,7 @@ void ShibPOSTProfile::verifySignature(
             throw TrustException("ShibPOSTProfile::verifySignature() cannot match CN or subjectAltName against signer");
 
         // Ask the site to determine the trustworthiness of the certificate.
-        originSite->validate(certs);
+        if (!originSite->validate(certs))
+            throw TrustException("ShibPOSTProfile::verifySignature() cannot validate the provided signing certificate(s)");
     }
 }
