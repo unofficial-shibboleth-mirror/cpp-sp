@@ -1,0 +1,2314 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html>
+  <head>
+    <title>Shibboleth Target Deployment Guide</title>
+    <meta http-equiv="Content-Type" content=
+    "text/html; charset=utf-8">
+    <style type="text/css">
+
+html
+{	
+background-color: #FFFFFF;
+color: #000000;
+margin: .5em;
+}
+a:visited
+{
+color: #999999;
+}
+a:link
+{
+color: #990000;
+}
+a:active
+{
+color: #440000;
+}
+dl
+{
+background-color: #DDDDDD;
+background-image: none;
+margin: 5px;
+padding: 0px;
+border-style: solid;
+border-bottom-width: 2px;
+border-top-width: 2px;
+border-left-width: 2px;
+border-right-width: 2px;
+}
+dt
+{
+background-color: #DDDDDD;
+background-image: none;
+margin: 1px;
+padding: 1px;
+}
+dd
+{
+background-color: #DDDDDD;
+background-image: none;
+margin: 0px;
+padding: 1px;
+}
+.attribute
+{
+font-size: 115%;
+font-color: #000000;
+text-align: left;
+background-color: #DDDDDD;
+border: 1px black inset;
+background-image: none;
+margin: 0px;
+padding: 2px;
+}
+.value
+{
+font-color: #000000;
+text-align: left;
+background-color: #EEEEEE;
+background-image: none;
+padding-top: 0em;
+padding-bottom: 0.5em;
+padding-right: 1em;
+padding-left: 5em;
+border-style: solid;
+border-bottom-width: none;
+border-top-width: none;
+border-left-width: 1px;
+border-right-width: 1px;
+}
+.attributeopt
+{
+font-size: 115%;
+font-color: #000000;
+text-align: left;
+background-color: #BCBCEE;
+border: 1px black inset;
+background-image: none;
+margin: 0px;
+padding: 2px;
+}
+.valueopt
+{
+font-color: #000000;
+text-align: left;
+background-color: #DDDDFF;
+background-image: none;
+padding-top: 0em;
+padding-bottom: 0.5em;
+padding-right: 1em;
+padding-left: 5em;
+border-style: solid;
+border-bottom-width: none;
+border-top-width: none;
+border-left-width: 1px;
+border-right-width: 1px;
+}
+.attributelong
+{
+font-size: 85%;
+font-color: #000000;
+text-align: left;
+background-color: #DDDDDD;
+border: 1px black inset;
+background-image: none;
+margin: 0px;
+padding: 2px;
+}
+.attributeoptlong
+{
+font-size: 85%;
+font-color: #000000;
+text-align: left;
+background-color: #BCBCEE;
+border: 1px black inset;
+background-image: none;
+margin: 0px;
+padding: 2px;
+}
+.demo
+{
+background-color: #EEEEEE;
+padding: 3px;
+}
+.fixedwidth
+{
+font-family: monospace;
+font-size: 90%;
+font-color: #121212;
+}
+
+  </style>
+  </head>
+
+  <body link="red" vlink="red" alink="black" bgcolor="white">
+    <center>
+      <h2>Shibboleth Target Deployment Guide</h2>
+    </center>
+    
+    Shibboleth Target Deployment Guide<br>
+    draft-internet2-mace-shibboleth-shib-target-deploy-33.html<br>
+    Nate Klingenstein<br>
+    9 June, 2003<br>
+    Comments should be directed to <a href=
+    "mailto:ndk@internet2.edu">ndk@internet2.edu</a>.<br>
+
+    <h3>This version of the deploy guide is for Shibboleth v1.0.  For
+    documentation related to prior versions of Shibboleth, please
+    consult the appropriate branch in the Shibboleth CVS.</h3>
+
+    <h3>Federations have been abstracted out from the Shibboleth
+    documentation.  For further information on using Shibboleth in a
+    federation, refer to the federation guide.</h3>
+
+    <p>Shibboleth v1.0 is stable and secure enough to deploy in
+    production scenarios.  While attempts have been made to include all
+    functionality that would represent a break of interoperability with
+    previous versions in v1.0, be aware that future versions of
+    Shibboleth are likely to be developed and may include further
+    implementation of the architectural document, functional
+    enhancements, and user interface improvements.</p>
+
+    <p>Functionality which has been added since the previous
+    version (v0.8) includes:</p>
+
+    <ul>
+      <li>
+        <p>Various improvements to error handling.  Origin sites are now
+        able to supply a URL to a federation for users to be referred to
+        when Shibboleth encounters a problem.  Targets will be able to
+        utilize this URL in error templates.</p>
+      </li>
+
+      <li>
+        <p>The SHAR may now store its session and attribute cache in a
+        back-end database in addition to the previously available
+        in-memory option.  The method by which <span
+        class="fixedwidth">sites.xml</span> is refreshed has been
+        modified to improve robustness.</p>
+      </li>
+
+      <li>
+        <p>Attribute acceptance policies have been greatly enhanced,
+        with filtering of attribute values by sites supported.</p>
+      </li>
+
+      <li>
+        <p>OpenSAML now populates <span
+        class="fixedwidth">AuthType</span> element in the SAML Subject
+        element using a value specified by origin sites using a
+        configuration directive.  This value describes the type of
+        authentication mechanism used at the origin site(e.g. Kerberos,
+        PKI, etc.). This value is made available on the target side as
+        another variable that may be used in authorization
+        decisions.</p>
+      </li>
+
+      <li>
+        <p>Origin sites whose HS certificate is not signed by one of a
+        federation's trusted roots are able to provide that federation
+        with the certificate; this cert can now be stored in the sites
+        metadata, and targets will be able to use this certificate to
+        validate the HS' signature.</p>
+      </li>
+
+      <li>
+        <p>The AA implementation has been improved with a powerful
+        attribute resolver.  This should greatly simplify the process of
+        configuring the AA to support additional general attributes,
+        while Java classes may still be written for more complex
+        evaluations.</p>
+      </li>
+
+      <li>
+        <p>Local time string values are now used in log files.</p>
+      </li>
+
+      <li>
+        <p>Targets may now also be run under Apache on a W2K box.</p>
+      </li>
+    </ul>
+
+    <p>Before starting, please sign up for all applicable <a href=
+    "http://shibboleth.internet2.edu/shib-misc.html#mailinglist">
+    mailing lists</a>. Announcements pertinent to Shibboleth
+    deployments and developments and resources for deployment
+    assistance can be found here.</p>
+
+    <p>Please send any questions, concerns, or eventual confusion
+    to <a href=
+    "mailto:mace-shib-users@internet2.edu">mace-shib-users@internet2.edu</a>.
+    This should include, but not be limited to, questions about the
+    documentation, undocumented problems, installation or
+    operational issues, and anything else that arises. Please
+    ensure that you have the <a href=
+    "http://shibboleth.internet2.edu/release/shib-download.html">appropriate
+    tarball</a> for your operating system.</p>
+    <br>
+    <hr>
+    <br>
+    <br>
+
+
+    <h3><a name="TOC"></a>Shibboleth Target -- Table of
+    Contents</h3>
+    <br>
+
+
+    <ol type="1">
+      <li>
+        <h4><a href="#1."><font color="black">Shibboleth
+        Overview</font></a></h4>
+
+        <ol type="a">
+          <li><a href="#1.a."><font color=
+          "black">Origin</font></a></li>
+
+          <li><a href="#1.b."><font color=
+          "black">Target</font></a></li>
+
+          <li><a href="#1.c."><font color=
+          "black">WAYF</font></a></li>
+
+          <li><a href="#1.d."><font color=
+          "black">Federations</font></a></li>
+        </ol>
+      </li>
+
+      <li>
+        <h4><a href="#2."><font color=
+        "black">Planning</font></a></h4>
+
+        <ol type="a">
+          <li><a href="#2.a."><font color=
+          "black">Requirements</font></a></li>
+
+          <li><a href="#2.b."><font color="black">Join a
+          Federation</font></a></li>
+
+          <li><a href="#2.c."><font color="black">Security
+          Considerations</font></a></li>
+
+          <li><a href="#2.d."><font color="black">Server
+          Certs</font></a></li>
+
+          <li><a href="#2.e."><font color="black">Attribute Release
+          Policies</font></a></li>
+
+          <li><a href="#2.f."><font color="black">Designate
+          Contacts</font></a></li>
+
+          <li><a href="#2.g."><font color="black">Browser
+          Requirements</font></a></li>
+
+          <li><a href="#2.h."><font color=
+          "black">Clocks</font></a></li>
+
+          <li><a href="#2.i."><font color="black">Other
+          Considerations</font></a></li>
+        </ol>
+      </li>
+
+      <li>
+        <h4><a href="#3."><font color=
+        "black">Installation</font></a></h4>
+
+        <ol type="a">
+          <li><a href="#3.a."><font color="black">Software
+          Requirements</font></a></li>
+
+          <li><a href="#3.b."><font color="black">Deploy the
+          Shibboleth Package</font></a></li>
+
+          <li><a href="#3.c."><font color="black">Configure
+          Apache</font></a></li>
+        </ol>
+      </li>
+
+      <li>
+        <h4><a href="#4."><font color="black">Getting
+        Running</font></a></h4>
+
+        <ol type="a">
+          <li><a href="#4.a."><font color="black">Configuring
+          <span class="fixedwidth">shibboleth.ini</span></font></a></li>
+
+          <li><a href="#4.b."><font color="black">Dynamic Error
+          Page Generation</font></a></li>
+
+          <li><a href="#4.c."><font color="black">Key Generation
+          and Certificate Installation</font></a></li>
+
+          <li><a href="#4.d."><font color="black">Protecting
+          Webpages</font></a></li>
+
+          <li><a href="#4.e."><font color="black">Designing
+          AAP's</font></a></li>
+
+          <li><a href="#4.f."><font color="black">Using Attributes
+          in Applications</font></a></li>
+
+          <li><a href="#4.g."><font color="black"><span
+          class="fixedwidth">siterefresh</span></font></a></li>
+        </ol>
+      </li>
+
+      <li>
+        <h4><a href="#5."><font color=
+        "black">Troubleshooting</font></a></h4>
+
+        <ol type="a">
+          <li><a href="#5.a."><font color="black">Basic
+          Testing</font></a></li>
+
+          <li><a href="#5.b."><font color="black">Common
+          Problems</font></a></li>
+        </ol>
+      </li>
+    </ol>
+    <br>
+    <hr>
+    <br>
+     
+
+    <h3><a name="1."></a>1. Shibboleth Overview</h3>
+
+    <p>Shibboleth is a system designed to exchange attributes
+    across realms for the primary purpose of authorization. It
+    provides a secure framework for one organization to transmit
+    attributes about a web-browsing individual across security
+    domains to another institution. In the primary usage case, when
+    a user attempts to access a resource at a remote domain, the
+    user's own home security domain can send certain information
+    about that user to the target site in a trusted exchange. These
+    attributes can then be used by the resource to help determine
+    whether to grant the user access to the resource. The user may
+    have the ability to decide whether to release specific
+    attributes to certain sites by specifying personal Attribute
+    Release Policies (ARP's), effectively preserving privacy while
+    still granting access based on trusted information.</p>
+
+    <p>When a user first tries to access a resource protected by
+    Shibboleth, they are redirected to a service which asks the
+    user to specify the organization from which they want to
+    authenticate. If the user has not yet locally authenticated to
+    a WebISO service, the user will then be redirected to their
+    home institution's authentication system. After the user
+    authenticates, the Shibboleth components at the local
+    institution will generate a temporary reference to the user,
+    known as a handle, for the individual and send this to the
+    target site. The target site can then use the handle to ask for
+    attributes about this individual. Based on these attributes,
+    the target can decide whether or not to grant access to the
+    resource. The user may then be allowed to access the requested
+    materials.</p>
+
+    <p>There are several controls on privacy in Shibboleth, and
+    mechanisms are provided to allow users to determine exactly
+    which information about them is released. A user's actual
+    identity isn't necessary for many access control decisions, so
+    privacy often is needlessly compromised. Instead, the resource
+    often utilizes other attributes such as faculty member or member
+    of a certain class. While these are commonly determined using
+    the identity of the user, Shibboleth provides a way to mutually
+    refer to the same principal without revealing that principal's
+    identity. Because the user is initially known to the target site
+    only by a randomly generated temporary handle, if sufficient,
+    the target site might know no more about the user than that the
+    user is a member of the origin organization. This handle should
+    never be used to decide whether or not to grant access, and is
+    intended only as a temporary reference for requesting
+    attributes.</p>
+
+    <h4><a name="1.a."></a>1.a. Origin</h4>
+
+    <blockquote>
+      <p>There are four primary components to the origin side in
+      Shibboleth: the Attribute Authority (AA), the Handle Service
+      (HS), the directory service, and the local sign-on system
+      (SSO). The AA and HS are provided with Shibboleth, and an
+      open-source WebISO solution Pubcookie is also supplied; the
+      directory is provided by the origin site. Shibboleth is able
+      to interface with a directory exporting an LDAP interface or a
+      SQL database containing user attributes, and is designed such
+      that programming interfaces to other repositories should be
+      readily implemented. Shibboleth relies on standard web server
+      mechanisms to trigger local authentication. A .htaccess file
+      can be easily used to trigger either the local WebISO system
+      or the web server's own Basic Auth mechanism, which will
+      likely utilize an enterprise authentication system, such as
+      Kerberos.</p>
+
+      <p>From the origin site's point of view, the first contact
+      will be the redirection of a user to the handle service,
+      which will then consult the SSO system to determine whether
+      the user has already been authenticated. If not, then the
+      browser user will be asked to authenticate, and then sent
+      back to the target URL with a handle bundled in an attribute
+      assertion. Next, a request from the Shibboleth Attribute
+      Requester (SHAR) will arrive at the AA which will include the
+      previously mentioned handle. The AA then consults the ARP's
+      for the directory entry corresponding to the handle, queries
+      the directory for these attributes, and releases to the SHAR
+      all attributes the SHAR is entitled to know about that
+      user.</p>
+    </blockquote>
+
+    <h4><a name="1.b."></a>1.b. Target</h4>
+
+    <blockquote>
+      <p>There are three primary components to the target side in
+      Shibboleth: the Shibboleth Indexical Reference Establisher
+      (SHIRE), the Shibboleth Attribute Requester (SHAR), and the
+      resource manager (RM). An implementation of each of these is
+      included in the standard Shibboleth distribution. These
+      components are intended to run on the same web server.</p>
+
+      <p>From the target's point of view, a browser will hit the RM
+      with a request for a Shibboleth-protected resource. The RM
+      then allows the SHIRE to step in, which will use the WAYF to
+      acquire the name of a handle service to ask about the user.
+      The handle service (HS) will then reply with a SAML
+      authentication assertion containing a handle, which the SHIRE
+      then hands off to the SHAR. The SHAR uses the handle and the
+      supplied address of the corresponding attribute authority
+      (AA) to request all attributes it is allowed to know about
+      the handle. The SHAR performs some basic validation and
+      analysis based on attribute acceptance policies (AAP's).
+      These attributes are then handed off to the RM, which is
+      responsible for using these attributes to decide whether to
+      grant access.</p>
+    </blockquote>
+
+    <h4><a name="1.c."></a>1.c. Where are you from? (WAYF)</h4>
+
+    <blockquote>
+      <p>The WAYF service can be either outsourced and operated by a
+      federation or deployed as part of the SHIRE. It is responsible for
+      allowing a user to associate themself with an institution of their
+      specification, then redirecting the user to the known address for
+      the handle service of that institution.</p>
+    </blockquote>
+
+    <h4><a name="1.d."></a>1.d. Federations</h4>
+
+    <blockquote>
+      <p>A federation provides part of the underlying trust required for
+      function of the Shibboleth architecture. A federation in the
+      context of Shibboleth is a group of organizations(universities,
+      corporations, content providers, etc.) who agree to exchange
+      attributes using the SAML/Shibboleth protocols and abide by a
+      common set of policies and practices. In so doing, they must
+      implicitly or explicitly agree to a common set of guidelines.
+      Joining a federation is not explicitly necessary for operation of
+      Shibboleth, but it dramatically expands the number of targets and
+      origins that can interact without defining bilateral agreements
+      between all these parties.</p>
+
+      <p>A federation can be created in a variety of formats and trust
+      models, but to support Shibboleth, it must provide a certain set
+      of services to federation members. It needs to supply a registry
+      to process applications to the federation and distribute
+      membership information to the origin and target sites. This must
+      include distribution of the PKI components necessary for trust
+      between origins and targets. There also needs to be a set of
+      agreements and best practices defined by the federation governing
+      the exchange, use, and population of attributes before and after
+      transit, and there should be a way to find information on local
+      authentication and authorization practices for federation
+      members.</p>
+    </blockquote>
+    <br>
+    <br>
+    <br>
+    <hr>
+    <br>
+     
+
+    <h3><a name="2."></a>2. Planning</h3>
+
+    <p>There are several essential elements that must be present in
+    the environment to ensure Shibboleth functions well, both
+    political and technical. Shibboleth currently runs on a
+    specific range of platforms and web server environments. The
+    SHAR and SHIRE are implemented entirely in C/C++. These are the
+    recommendations and requirements for a successful implementation
+    of a Shibboleth target.</p>
+
+    <h4><a name="2.a."></a>2.a. Requirements</h4>
+
+    <blockquote>
+      <p>Shibboleth currently only supports Linux and Solaris. At
+      present, Shibboleth consists of Apache plugins and a separate SHAR
+      process. The plugins use the ONC RPC mechanism to communicate with
+      the SHAR. The target's web servers must be running <a href=
+      "http://http://www.apache.org/dist/httpd/">Apache</a> 1.3.26+, but
+      not Apache 2. More precise technical details are discussed in <a
+      href="#3.a.">3.a</a>.</p>
+    </blockquote>
+
+    <h4><a name="2.b."></a>2.b. Join a Federation</h4>
+
+    <blockquote>
+      <p>While it is not necessary for a target or origin to join a
+      federation, doing so greatly facilitates the implementation of
+      multilateral trust relationships. Each federation will have a
+      different application process.</p>
+
+      <p>For more information on federations, refer to <a href=
+      "#1.d.">1.d</a> or the Shibboleth v1.0 architectural
+      document.</p>
+    </blockquote>
+
+    <h4><a name="2.c."></a>2.c. Security Considerations</h4>
+
+    <blockquote>
+      <p>Shibboleth's protocols and software have been extensively
+      engineered to provide protection against many attacks.
+      However, the most secure protocol can be compromised if it is
+      placed in an insecure environment. To ensure Shibboleth is as
+      secure as possible, there are several recommended security
+      precautions which should be in place at local sites.</p>
+
+      <ol type="i">
+        <li>
+          <p>SSL use is optional for target sites. Federation guidelines
+          should be considered when determining whether to
+          implement SSL, and, in general, SSL should be used for
+          interactions with client machines to provide the
+          necessary authentication and encryption to ensure
+          protection from man-in-the-middle attacks. It is strongly
+          suggested that all password traffic or similarly
+          sensitive data should be SSL-protected. Assessment of the
+          risk tradeoff against possible performance degradation
+          should be performed for all applications.</p>
+        </li>
+
+        <li>
+          <p>Many other attacks can be made on the several
+          redirection steps that Shibboleth takes to complete
+          attribute transfer. The best protection against this is
+          safeguarding the WAYF service and ensuring that rogue
+          targets and origins are not used, generally by
+          development of the trust model underneath Shibboleth.
+          Shibboleth also leverages DNS for security, which is not
+          uncommon, but attacks concerning bad domain information
+          should be considered.</p>
+        </li>
+
+        <li>
+          <p>Information regarding origin users is generally
+          provided by the authoritative enterprise directory, and
+          the acceptance of requests from target applications can
+          be carefully restricted to ensure that all requests the
+          SHAR performs are authorized and all information the
+          origin provides is accurate. Use of plaintext passwords
+          is strongly advised against.</p>
+        </li>
+
+        <li>
+          <p>Server platforms should be properly secured,
+          commensurate with the level that would be expected for a
+          campus' other security services, and cookie stores on
+          client machines should be well protected.</p>
+        </li>
+      </ol>
+    </blockquote>
+
+    <h4><a name="2.d."></a>2.d. Server Certs</h4>
+
+    <blockquote>
+      <p>In the Shibboleth architecture, the SHAR, HS, and AA must
+      all have various client and/or server certificates for use in
+      signing assertions and creating SSL channels. These should be
+      issued by a commonly accepted CA, which may be stipulated by
+      your federation.  After understanding the CA's acceptible to your
+      federations, consult chapter <a href="#4.c.">4.c</a> for
+      information on certificate and key generation.</p>
+    </blockquote>
+
+    <h4><a name="2.e."></a>2.e. Attribute Release Policies</h4>
+
+    <blockquote>
+      <p>The Attribute Authority maintains a set of rules called
+      Attribute Release Policies (ARP's) that define which
+      attributes are released to which targets. When a browser user
+      tries to access a resource, the SHAR asks the origin site AA
+      to release all the attributes it is allowed to know. The SHAR
+      provides its own name and an optional URL on behalf of which
+      the attribute request is made which can further refine the
+      information the SHAR is allowed to know. The AA processes this
+      request using all applicable ARP's, determines which
+      attributes and values it will release, and then obtains the
+      values actually associated with the browser user. The AA sends
+      these attributes and values back to the SHAR.</p>
+
+      <p>Targets should work together with expected origin sites to
+      ensure that the sets of attributes that both sites expect to
+      correspond using are congruent.</p>
+    </blockquote>
+
+    <h4><a name="2.f."></a>2.f. Designate Contacts</h4>
+
+    <blockquote>
+      <p>Since Shibboleth deals both with daily technical and
+      operational issues and also with contractual issues, a set of
+      contacts should be set up to support the user base and to
+      facilitate interactions with other Shibboleth sites and federation
+      members. It is recommended that at least technical and
+      administrative contacts be designated. Names, titles, e-mail
+      addresses, and phone numbers may all be useful information to
+      provide.</p>
+    </blockquote>
+
+    <h4><a name="2.g."></a>2.g. Browser Requirements</h4>
+
+    <blockquote>
+      <p>A primary Shibboleth design consideration was to require
+      very little or no modification to client machines. The only
+      requirement is that a browser is used which supports cookies,
+      redirection and SSL. Browser users will have to perform an
+      additional click to submit the authentication assertion if
+      JavaScript is not functional.</p>
+    </blockquote>
+
+    <h4><a name="2.h."></a>2.h. Clocks</h4>
+
+    <blockquote>
+      <p><a href="http://www.eecis.udel.edu/~ntp/">NTP</a> should
+      be run on all web servers. Shibboleth employs a short handle
+      issuance time to protect against replay attacks. Because of
+      this, any significant degree of clock skew can hinder the
+      ability of users to access sites successfully.</p>
+    </blockquote>
+
+    <h4><a name="2.h."></a>2.i. Other Considerations</h4>
+
+    <blockquote>
+      <p>Especially for higher education, there are a handful of
+      laws enacted which may have important ramifications on the
+      disclosure of personal information and attributes. Since
+      Shibboleth does not necessarily need to transmit identity, it
+      is an ideal solution for many higher education situations.
+      Nevertheless, all parties within the United States of America
+      are strongly advised to consult the <a href=
+      "http://www.ed.gov/offices/OM/fpco/ferpa/">Family Educational
+      Rights and Privacy Act of 1974(FERPA)</a>, and all other
+      relevant state and federal legislation before deploying
+      Shibboleth.</p>
+    </blockquote>
+    <br>
+    <br>
+    <hr>
+    <br>
+     
+
+    <h3><a name="3."></a>3. Installation</h3>
+
+    <h4><a name="3.a."></a>3.a. Software Requirements</h4>
+
+    <p>The Shibboleth project makes binary packages available for
+    Solaris and Linux that are precompiled against recent releases
+    of various required libraries such as OpenSSL. It is highly
+    advisable to build from source when using Shibboleth in a
+    production environment in order to permit patching or updating
+    of packages as security holes and bugs are fixed. Building from
+    source is necessary to give you complete control over your
+    deployment platform. The binary packages represent a snapshot in
+    time only. To build from source, see the <span class="fixedwidth">INSTALL.txt</span>
+    files in the root of the OpenSAML and Shibboleth source
+    distributions.</p>
+
+    <blockquote>
+      <b>Operating System:</b>
+
+      <ul type="circle">
+        <li>
+          RedHat 7.2-7.3:
+
+          <ul type="disc">
+            <li>
+              <a href="http://www.apache.org/dist/httpd/">Apache 1.3.27</a>
+
+              <blockquote>
+                <p>Apache must be compiled with mod_so for DSO
+                module support, and must include SSL
+                support (preferably using <span class="fixedwidth">mod_ssl</span>), and
+                EAPI support (which <span class="fixedwidth">mod_ssl</span> requires and
+                provides). Shibboleth can coexist with
+                <span class="fixedwidth">mod_auth</span>, which may be compiled or loaded
+                into the server for use elsewhere, but Shibboleth
+                does not need or use it.  The most recent Red Hat
+                RPM (1.3.23-14 as of this writing) is sufficient.
+                </p>
+              </blockquote>
+              
+              <blockquote>
+                <p>On Linux, Shibboleth requires that Apache and
+                Apache-SSL be built with <span
+                class="fixedwidth">libpthread</span>, or loading the
+                <span class="fixedwidth">mod_shibrm</span> or <span
+                class="fixedwidth">mod_shire</span> modules will
+                cause Apache to stop.  While RedHat's Apache is
+                compatible, Debian's Apache must be rebuilt with
+                <span class="fixedwidth">libpthread</span>:</p>
+                <blockquote>
+                  <span class="fixedwidth">$ export LDFLAGS=-lpthread'<br>
+                  $ apt-build --rebuild --reinstall install apache-common apache \ apache-ssl</span>
+                </blockquote>
+              </blockquote>
+            </li>
+
+            <li><a href=
+            "http://shibboleth.internet2.edu/release/shib-download.html">
+            Shibboleth v1.0 Target for RedHat</a></li>
+
+            <li><a href= "http://www.openssl.org/source/">openssl-0.9.6,
+            revision <span class="fixedwidth">i</span> or newer</a></li>
+
+            <li>
+              libstdc++3-3.0.4-1.i386.rpm and
+              libgcc-3.0.4-1.i386.rpm
+
+              <blockquote>
+                <p>Shibboleth binaries are currently built with <a href=
+                "http://www.gnu.org/software/gcc/gcc.html">GCC
+                3.04</a>, and require these specific library
+                versions. They are available as RPMs and are
+                available in the RedHat 7.2 updates directory on
+                any <a href=
+                "ftp://rufus.w3.org/linux/redhat/updates/7.2/en/os/i386/">
+                RedHat mirror</a>. They can be installed alongside
+                earlier and later GCC libraries.</p>
+              </blockquote>
+            </li>
+
+            <li><b>Portions of the <span
+            class="fixedwidth">libphp4</span> Apache plugin are written
+            in C++, as is Shibboleth.  There is a known conflict between
+            the PHP extensions <span
+            class="fixedwidth">libpspell.so</span> and <span
+            class="fixedwidth">libsablot.so</span> which will manifest
+            itself as segmentation faults when starting Apache.  If a
+            site wants to use <span class="fixedwidth">libphp4.so</span>
+            and Shibboleth at once, then one of the following may be
+            done:</b>
+              <ol>
+                <li>
+                Remove the options <span class="fixedwidth">--with-pspell</span> and <span class="fixedwidth">--with-xslt-sablot</span> from PHP's configuration.
+                </li>
+                <li>
+                Rebuild these two modules using
+                the same version of GCC that was used to compile Shibboleth.
+                </li>
+              </ol>
+            </li>
+          </ul>
+        </li>
+        <br>
+        <li>
+          Solaris 2.8:
+
+          <ul type="disc">
+            <li><a href=
+            "ftp://ftp.openssl.org/source/openssl-0.9.7a.tar.gz">
+            openssl-0.9.7a</a>
+
+              <blockquote>
+                <p>The shared library version of OpenSSL is required
+                by Shibboleth.  The static libraries may be installed as
+                well if necessary for other applications, but cannot be
+                used within mod_ssl or any other Apache modules.</p>
+              </blockquote>
+            </li>
+
+            <li>
+              <a href="http://www.apache.org/dist/httpd/">Apache 1.3.27</a>
+
+              <blockquote>
+                <p>Apache must be compiled with mod_so for DSO
+                module support, and must include SSL
+                support (preferably using <span class="fixedwidth">mod_ssl</span>) and EAPI
+                support (which <span class="fixedwidth">mod_ssl</span> requires and
+                provides). Shibboleth can coexist with
+                <span class="fixedwidth">mod_auth</span>, which may be compiled or loaded
+                into the server for use elsewhere, but Shibboleth
+                does not need or use it.</p>
+                
+                <p><span class="fixedwidth">mod_ssl</span>'s
+                loadable module, <span class="fixedwidth">libssl.so</span>, must be
+                compiled against <span class="fixedwidth">OpenSSL
+                0.9.7a</span>'s shared libraries.  Other versions or
+                a statically linked build of <span
+                class="fixedwidth">libssl.so</span> will cause
+                failures such as bus errors when used with
+                Shibboleth.</p>
+
+                <p>To check how OpenSSL was built, run the <span
+                class="fixedwidth">ldd</span> command against <span
+                class="fixedwidth">libssl.so</span> in the Apache
+                <span class="fixedwidth">/libexec/</span> folder and
+                check the output for references to <span
+                class="fixedwidth">libssl.so.0.9.7a</span>. If you
+                see an earlier version mentioned, or no mention of
+                it at all, then <span class="fixedwidth">OpenSSL
+                0.9.7a</span> must be rebuilt with shared libraries
+                from source.</p>
+              </blockquote>
+            </li>
+
+            <li><a href=
+            "ftp://ftp.sunfreeware.com/pub/freeware/sparc/8/libgcc-3.2.2-sol8-sparc-local.gz">
+            libgcc v3.2.2+ and libstdc++ v3.2.2+</a></li>
+
+            <li><a href=
+            "http://shibboleth.internet2.edu/release/shib-download.html">
+            Shibboleth v1.0 Target for Solaris</a></li>
+
+            <li><b>Portions of the <span
+            class="fixedwidth">libphp4</span> Apache plugin are written
+            in C++, as is Shibboleth.  There is a known conflict with
+            the PHP extensions <span
+            class="fixedwidth">libpspell.so</span> and <span
+            class="fixedwidth">libsablot.so</span> which will manifest
+            itself as segmentation faults when starting Apache.  If a
+            site wants to use <span class="fixedwidth">libphp4.so</span>
+            and Shibboleth at once, then one of the following may be
+            done:</b>
+              <ol>
+                <li>
+                Remove the options <span class="fixedwidth">--with-pspell</span> and <span class="fixedwidth">--with-xslt-sablot</span> from PHP's configuration.
+                </li>
+                <li>
+                Rebuild these two modules using the same version of GCC
+                that was used to compile Shibboleth.
+                </li>
+              </ol>
+            </li>
+          </ul>
+        </li>
+        <br>
+        <li>
+          RedHat 8:
+           <blockquote>
+            <p>RedHat 8 ships with Apache 2, which is not supported by
+            Shibboleth.  To run Shibboleth under this OS, <a
+            href="http://www.apache.org/dist/httpd/">Apache 1.3.27</a>
+            must be installed.</p>
+          </blockquote>
+              <blockquote>
+                <p>Apache must be compiled with mod_so for DSO
+                module support, and must include SSL
+                support (preferably using <span class="fixedwidth">mod_ssl</span>), and
+                EAPI support (which <span class="fixedwidth">mod_ssl</span> requires and
+                provides). Shibboleth can coexist with
+                <span class="fixedwidth">mod_auth</span>, which may be compiled or loaded
+                into the server for use elsewhere, but Shibboleth
+                does not need or use it.  The most recent Red Hat
+                RPM (1.3.23-14 as of this writing) is sufficient.
+                </p>
+              </blockquote>
+              
+              <blockquote>
+                <p>On Linux, Shibboleth requires that Apache and
+                Apache-SSL be built with <span
+                class="fixedwidth">libpthread</span>, or loading the
+                <span class="fixedwidth">mod_shibrm</span> or <span
+                class="fixedwidth">mod_shire</span> modules will
+                cause Apache to stop.  While RedHat's Apache is
+                compatible, Debian's Apache must be rebuilt with
+                <span class="fixedwidth">libpthread</span>:</p>
+                <blockquote>
+                  <span class="fixedwidth">$ export LDFLAGS=-lpthread'<br>
+                  $ apt-build --rebuild --reinstall install apache-common apache \ apache-ssl</span>
+                </blockquote>
+              </blockquote>
+
+         <ul type=disc>
+
+            <li><a href=
+            "http://shibboleth.internet2.edu/release/shib-download.html">
+            Shibboleth 1.0 Target for RedHat</a></li>
+
+            <li><a href= "http://www.openssl.org/source/">openssl-0.9.6,
+            revision <span class="fixedwidth">i</span> or newer</a></li>
+
+            <li>
+              libstdc++3-3.0.4-1.i386.rpm and
+              libgcc-3.0.4-1.i386.rpm
+
+              <blockquote>
+                <p>Shibboleth binaries are currently built with <a href=
+                "http://www.gnu.org/software/gcc/gcc.html">GCC
+                3.04</a>, and require these specific library
+                versions. They are available as RPMs and are
+                available in the RedHat 7.2 updates directory on
+                any <a href=
+                "ftp://rufus.w3.org/linux/redhat/updates/7.2/en/os/i386/">
+                RedHat mirror</a>. They can be installed alongside
+                earlier and later GCC libraries.</p>
+              </blockquote>
+            </li>
+
+            <li><b>Portions of the <span
+            class="fixedwidth">libphp4</span> Apache plugin are written
+            in C++, as is Shibboleth.  There is a known conflict with
+            the PHP extensions <span
+            class="fixedwidth">libpspell.so</span> and <span
+            class="fixedwidth">libsablot.so</span> which will manifest
+            itself as segmentation faults when starting Apache.  If a
+            site wants to use <span class="fixedwidth">libphp4.so</span>
+            and Shibboleth at once, then one of the following may be
+            done:</b>
+              <ol>
+                <li>
+                Remove the options <span class="fixedwidth">--with-pspell</span> and <span class="fixedwidth">--with-xslt-sablot</span> from PHP's configuration.
+                </li>
+                <li>
+                Rebuild these two modules using
+            the same version of GCC that was used to compile Shibboleth.
+                </li>
+              </ol>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </blockquote>
+
+    <h4><a name="3.b."></a>3.b. Deploy the Shibboleth Package</h4>
+
+    <blockquote>
+      <p>For the sake of clarity, this deployment guide assumes
+      that standard directories are used for all installations.
+      These directories may be changed for local implementations,
+      but must be done so consistently.</p>
+
+      <ol type="1">
+        <li>
+          <p>Ensure that you have obtained the proper <a href=
+          "http://shibboleth.internet2.edu/release/shib-download.html">
+          tarball</a> for your operating system.</p>
+        </li>
+
+        <li>
+          <p>The tarballs expand into <span class="fixedwidth">/opt/shibboleth</span>,
+          and should be expanded as <span class="fixedwidth">root</span> from <span class="fixedwidth">/</span>. 
+          You should see the following directory structure:</p>
+
+          <blockquote>
+            <span class="fixedwidth">$ ls -al<br>
+             drwxr-xr-x 10 root root 4096 Oct 24 03:54 .<br>
+            drwxr-xr-x 3 root root 4096 Oct 24 00:37 ..<br>
+            drwxr-xr-x 2 root root 4096 Oct 24 03:54 bin<br>
+            drwxr-xr-x 2 root root 4096 Oct 24 03:54 doc<br>
+            drwxr-xr-x 4 root root 4096 Oct 24 03:54 etc<br>
+            drwxr-xr-x 13 root root 4096 Oct 24 03:54 include<br>
+            drwxr-xr-x 4 root root 4096 Oct 24 03:55 lib<br>
+            drwxr-xr-x 2 root root 4096 Oct 24 03:55 libexec<br>
+            drwxr-xr-x 4 root root 4096 Oct 24 02:02 share<br>
+            </span>
+          </blockquote>
+        </li>
+      </ol>
+    </blockquote>
+
+    <h4><a name="3.c."></a>3.c. Configure Apache</h4>
+
+    <blockquote>
+      <ol type="1">
+        <li>
+          <p>Shibboleth includes configuration directives in the
+          file <span class="fixedwidth">/opt/shibboleth/etc/shibboleth/apache.config</span>
+          which must be added to the httpd.conf file used locally.
+          It is recommended that these directives simply be added
+          to the end of the existing <span class="fixedwidth">httpd.conf</span> file
+          rather than trying to merge it in-line;
+          <a href="#3.c.2.">step 2</a> describes the necessary
+          modifications to the Apache startup script. The default
+          configuration will often work, but if customization is
+          necessary, these options may be modified:</p>
+
+          <dl>
+            
+              <dd class="attribute">
+                  <span class="fixedwidth">LoadModule &lt;module&gt;
+                  &lt;pathname&gt;</span>
+              </dd>
+
+              <dd class="value">
+                  <p>Specifies the title and location of the
+                  <span class="fixedwidth">shibrm_module</span> resource manager and
+                  <span class="fixedwidth">shire_module</span> SHIRE modules. These are
+                  installed by default at
+                  <span class="fixedwidth">/opt/shibboleth/libexec/mod_shibrm.so</span>
+                  and
+                  <span class="fixedwidth">/opt/shibboleth/libexec/mod_shire.so</span></p>
+              </dd>
+
+              <dd class="attribute">
+                  <span class="fixedwidth">SHIREConfig &lt;pathname&gt;</span>
+              </dd>
+
+              <dd class="value">
+                  <p>Specifies the <span class="fixedwidth">pathname</span> of the SHIRE's
+                  configuration file. Defaults to
+                  <span class="fixedwidth">/opt/shibboleth/etc/shibboleth/shibboleth.ini</span>.</p>
+              </dd>
+
+              <dd class="attribute"><span class="fixedwidth">SHIREURL &lt;url&gt;<br>
+              &lt;Location &lt;url&gt;&gt;<br>
+              &nbsp;&nbsp;SetHandler &lt;method&gt;<br>
+              &lt;/Location&gt;</span></dd>
+
+              <dd class="value">
+                  <p>Specifies the <span class="fixedwidth">URL</span> and the
+                  <span class="fixedwidth">method</span> the target uses to handle
+                  requests for Shibboleth-protected resources.
+                  Currently, <span class="fixedwidth">shib-shire-post</span> is the only
+                  available handler <span class="fixedwidth">method</span>.
+                  <span class="fixedwidth">SHIREURL</span> is used by Shibboleth when
+                  re-directing the user to the WAYF and
+                  <span class="fixedwidth">&lt;Location&gt;</span> by Apache; for this
+                  reason, both <span class="fixedwidth">URL</span> specifications must
+                  match. Note that the configuration file itself
+                  contains &lt;&gt;'s, and <span class="fixedwidth">Location</span> should
+                  not be replaced.</p>
+
+                  <p>The referenced <span class="fixedwidth">URL</span> can be either a
+                  partial path or an absolute URL. The partial path
+                  allows each virtual server to use its own
+                  hostname and port in the SHIRE for session cookie
+                  purposes, while the absolute URL forces HTTP
+                  virtual servers to use HTTPS for the SHIRE. Use
+                  of a full <span class="fixedwidth">https://</span> URL is advised.</p>
+              </dd>
+
+              <dd class="attribute">
+                  <span class="fixedwidth">ShibMapAttribute &lt;attribute-uri&gt;
+                  &lt;HTTP-header&gt; [alias]</span>
+              </dd>
+
+              <dd class="value">
+                  <p>Registers attributes to be recognized and maps
+                  them to an authorization <span class="fixedwidth">alias</span> for use
+                  in <span class="fixedwidth">.htaccess</span> files or Location Blocks
+                  with <span class="fixedwidth">require</span> directives.
+                  <span class="fixedwidth">REMOTE_USER</span> is a special case, suggested
+                  for use with <span class="fixedwidth">eduPersonPrincipalName</span>, and
+                  is automatically checked by a <span class="fixedwidth">require
+                  user</span> rule.</p>
+              </dd>
+          </dl>
+          
+        </li>
+
+        <li>
+          <a name="3.c.2."></a>
+
+          <p>These modifications must be made to the Apache startup
+          script:</p>
+
+          <p>Add the following environment variables:</p>
+
+          <blockquote>
+            <span class="fixedwidth">
+            SHIBCONFIG=/opt/shibboleth/etc/shibboleth/shibboleth.ini;
+            export SHIBCONFIG</span>
+          </blockquote>
+          
+          <p>If the OpenSSL libraries are not in the system's search
+          path, they should be added to <span class="fixedwidth">LD_LIBRARY_PATH</span> as
+          well.</p>
+
+          <p>If the SHIBCONFIG environment variable is not
+          specified, Shibboleth will use
+          <span class="fixedwidth">/opt/shibboleth/etc/shibboleth/shibboleth.ini</span> by
+          default.</p>
+        </li>
+
+        <li>
+          <p>The SHAR must be started before Apache. Among other
+          methods, this can be done either by creating a separate
+          SHAR startup script or by modifying Apache's RC script to
+          start/stop the <span class="fixedwidth">SHAR</span> <b>before</b>
+          <span class="fixedwidth">httpd</span>. It is suggested that Apache's script be
+          modified by adding:</p>
+
+          <blockquote>
+            <span class="fixedwidth">/opt/shibboleth/bin/shar &amp;</span>
+          </blockquote>
+
+          <p>Sample <span class="fixedwidth">init.d</span> scripts may be included with
+          future releases. Ensure that the environment variables
+          referenced in <a href="#3.c.2">3.c.2</a> are in
+          place.</p>
+          
+        </li>
+
+        <li>
+          <p>The options in <span class="fixedwidth">shibboleth.ini</span> must be
+          configured as documented in <a href="#4.a.">4.a</a>.
+          Apache content will then need to be modified for
+          Shibboleth authentication. This is discussed in <a href=
+          "#4.d.">4.d</a>. It is recommended that the target then
+          be tested as detailed in section <a href=
+          "#5.a.">5.a</a>.</p>
+        </li>
+      </ol>
+    </blockquote>
+    <br>
+    <hr>
+    <br>
+     
+
+    <h3><a name="4."></a>4. Getting Running</h3>
+
+    <h4><a name="4.a."></a>4.a. Configuring
+    <span class="fixedwidth">shibboleth.ini</span></h4>
+
+    <blockquote>
+      <p>Most of the configuration for the SHAR, SHIRE, and RM is stored
+      in the file <span class="fixedwidth">shibboleth.ini</span>. This
+      file is split into several pre-defined sections. The first
+      sections, <span class="fixedwidth">general</span>, <span
+      class="fixedwidth">shire</span>, and <span
+      class="fixedwidth">shar</span>, define the operational parameters
+      for the <span class="fixedwidth">SHIRE</span> and <span
+      class="fixedwidth">SHAR</span>. The <span
+      class="fixedwidth">general</span> section holds global tags, used
+      by all pieces. The <span class="fixedwidth">shire</span> and <span
+      class="fixedwidth">shar</span> sections can override the <span
+      class="fixedwidth">general</span> tags with SHIRE- or
+      SHAR-specific configuration. For example, if the SHAR is looking
+      for a tag, it will look first in the <span
+      class="fixedwidth">shar</span> section; if it does not find the
+      tag there, it will proceed to look in the <span
+      class="fixedwidth">general</span> section. The following
+      sections, <span class="fixedwidth">metadata_shire</span>, <span
+      class="fixedwidth">metadata_shar</span>, <span
+      class="fixedwidth">attributes</span>, and <span
+      class="fixedwidth">policies</span>, define the trust framework
+      within the SHIRE and SHAR operate.  Example configuration files
+      are bundled with the Shibboleth distribution.</p>
+
+      <p>There is also information that must be configured in
+      <span class="fixedwidth">/usr/local/apache/conf/httpd.conf</span>; for more
+      information, refer to <a href="#3.c.2.">3.c</a>.</p>
+
+      <p>Information in the logger files referenced by
+      <span class="fixedwidth">shibboleth.ini</span> may require additional configuration.
+      It is recommended that after initial installation is
+      completed, the log level in both files be changed to either
+      <span class="fixedwidth">INFO</span> or <span class="fixedwidth">WARN</span>.</p>
+      
+      <p>Fields that are purple are optional; grey fields are
+      mandatory.</p>
+      
+      <p><span class="fixedwidth">[general]</span>:</p>
+
+      <dl>
+          <dd class="attribute">
+              <span class="fixedwidth">logger = &lt;pathname&gt;</span>
+          </dd>
+
+          <dd class="value">
+              <p>Specifies the location of the <span class="fixedwidth">log4cpp</span>
+              configuration file for most Shibboleth events. This
+              element may also be optionally specified for each of
+              the components individually. Default logging settings
+              should suffice. The <span class="fixedwidth">syslog</span> daemon must
+              accept <span class="fixedwidth">UDP:514</span> messages, and on Linux,
+              <span class="fixedwidth">SYSLOGD_OPTIONS</span> must include <span class="fixedwidth">-r</span> to
+              <span class="fixedwidth">enable logging from remote machines.</span> The
+              logging levels are defined in the logger
+              configuration. The configuration format is similar to
+              that of the <a
+              href="http://jakarta.apache.org/log4j/docs/
+              documentation.html">Log4j</a> package's format.</p>
+          </dd>
+
+          <dd class="attribute">
+              <span class="fixedwidth">schemadir = &lt;pathname&gt;</span>
+          </dd>
+
+          <dd class="value">
+              <p>Specifies the directory in which the XML schema
+              files are located; defaults to
+              <span class="fixedwidth">/opt/shibboleth/etc/shibboleth/</span>. Note that
+              the <span class="fixedwidth">pathname</span> <b>must</b> have a trailing
+              <span class="fixedwidth">/</span>.</p>
+          </dd>
+
+          <dd class="attribute">
+              <span class="fixedwidth">sharsocket = &lt;pathname&gt;</span>
+          </dd>
+
+          <dd class="value">
+              <p>Specifies the location of the socket the SHAR uses to
+              form connections.</p>
+          </dd>
+      </dl>
+
+      <p>The next segment of the <span class="fixedwidth">[general]</span> configuration
+      section defines server-specific tags in sections defined by
+      the server name for use by the SHIRE and RM. For example, if
+      you have a web server at www.example.edu, you can define a
+      section <span class="fixedwidth">[www.example.edu]</span> and override global tags
+      with tags for that server only.</p>
+
+      <p>The following table lists the server-specific tags. It is
+      broken into mandatory tags, and optional tags. Tags in the <span
+      class="fixedwidth">[general]</span> section correspond to all
+      servers; to override specific tags on a per-server basis, use
+      <span class="fixedwidth">[&lt;FQDN&gt;]</span> as the header for a
+      section.</p>
+
+      <span class="fixedwidth">[&lt;general&gt;]</span>: 
+
+      <dl>
+
+          <dd class="attributeopt">
+              <span class="fixedwidth">normalizeRequest = &lt;true/false&gt;</span>
+          </dd>
+
+          <dd class="valueopt">
+              <p>If true, all redirects generated by
+              <span class="fixedwidth">mod_shire</span> will be created using the virtual
+              server name assigned to the server containing this
+              command. If <span class="fixedwidth">false</span>, the browser's supplied
+              URL is used to compute the redirect back.</p>
+          </dd>
+
+          <dd class="attributeopt">
+              <span class="fixedwidth">checkIPAddress = &lt;true/false&gt;</span>
+          </dd>
+
+          <dd class="valueopt">
+              <p>If <span class="fixedwidth">true</span>, Shibboleth will check client
+              addresses for impersonation protection. In most
+              circumstances, this should be enabled to prevent
+              certain attacks concerning stolen cookies. Defaults
+              to <span class="fixedwidth">false</span>.</p>
+          </dd>
+
+          <dd class="attributeopt">
+              <span class="fixedwidth">supportContact = &lt;e-mail&gt;</span>
+          </dd>
+
+          <dd class="valueopt">
+              <p>Specifies the e-mail address used in the
+              generation of error pages.</p>
+          </dd>
+
+          <dd class="attributeopt">
+              <span class="fixedwidth">logoLocation = &lt;pathname&gt;</span>
+          </dd>
+
+          <dd class="valueopt">
+              <p>Specifies the location of the logo used in the
+              generation of error pages. This logo can be in any
+              format that the web browser will understand.</p>
+          </dd>
+
+          <dd class="attribute">
+              <span class="fixedwidth">wayfURL = &lt;url&gt;</span>
+          </dd>
+
+          <dd class="value">
+              <p>Specifies the URL of the WAYF service the user is
+              redirected to. Federations will generally provide this URL
+              or provide information on how to locally host WAYF's with
+              a distributed hosts file. Defaults to <span
+              class="fixedwidth">https://wayf.internet2.edu/InQueue/WAYF</span>.</p>
+          </dd>
+
+          <dd class="attribute">
+              <span class="fixedwidth">cookieName = &lt;string&gt;</span>
+          </dd>
+
+          <dd class="value">
+              <p>Defines the name to be used for session cookies.</p>
+          </dd>
+
+          <dd class="attribute">
+              <span class="fixedwidth">shireSSLOnly = &lt;true/false&gt;</span>
+          </dd>
+
+          <dd class="value">
+              <p>If <span class="fixedwidth">true</span>, the SHIRE will reject HTTP
+              connections that are not SSL-protected. This guards the initial session
+              sign-on from the browser, but does not preclude non-SSL content. Use of
+              SSL is strongly recommended; see section <a href=
+              "#2.c.">2.c</a> for more information.</p>
+          </dd>
+
+          <dd class="attribute">
+              <span class="fixedwidth">shireError = &lt;pathname&gt;</span>
+          </dd>
+
+          <dd class="value">
+              <p>Specifies the location of the template for the
+              error page generated when there is an error
+              re-directing the user to the WAYF or processing a
+              SHIRE POST.</p>
+          </dd>
+
+          <dd class="attribute">
+              <span class="fixedwidth">rmError = &lt;pathname&gt;</span>
+          </dd>
+
+          <dd class="value">
+              <p>Specifies the location of the template for the
+              error page generated if internal errors occur in the
+              RM.</p>
+          </dd>
+
+          <dd class="attribute">
+              <span class="fixedwidth">accessError = &lt;pathname&gt;</span>
+          </dd>
+
+          <dd class="value">
+              <p>Specifies the location of the template for the
+              page displayed to users when access to a protected
+              resource is denied by the RM.</p>
+          </dd>
+      </dl>
+
+      <span class="fixedwidth">[shire]</span>: 
+
+      <dl>
+          <dd class="attribute">
+              <span class="fixedwidth">logger = &lt;pathname&gt;</span>
+          </dd>
+
+          <dd class="value">
+              <p>Specifies the location of a <span class="fixedwidth">log4cpp</span> which
+              overrides the <span class="fixedwidth">[general]</span> log parameters for
+              SHIRE events.  Default logging settings should
+              suffice. The <span class="fixedwidth">syslog</span> daemon must accept
+              <span class="fixedwidth">UDP:514</span> messages, and on Linux,
+              <span class="fixedwidth">SYSLOGD_OPTIONS</span> must include <span class="fixedwidth">-r</span> to
+              <span class="fixedwidth">enable logging from remote machines.</span> The
+              logging levels are defined in the logger
+              configuration. The configuration format is similar to
+              that of the <a
+              href="http://jakarta.apache.org/log4j/docs/
+              documentation.html">Log4j</a> package's format.</p>
+          </dd>
+
+          <dd class="attributeopt">
+              <span class="fixedwidth">aap-uri = &lt;uri&gt;</span>
+          </dd>
+
+          <dd class="valueopt">
+              <p>Specifies the URI of an attribute acceptance policy XML
+              file. Attributes must be listed in the <span
+              class="fixedwidth">aap-uri</span> file if they are to be
+              visible. For more information, refer to section <a
+              href="#4.e.">4.e</a>.</p>
+          </dd>
+
+          <dd class="attributeopt">
+              <span class="fixedwidth">metadata = &lt;tag&gt;</span>
+          </dd>
+
+          <dd class="valueopt">
+              <p>Specifies the tag that defines the section of <span
+              class="fixedwidth">shibboleth.ini</span> the SHIRE should
+              use to acquire its metadata. The SHIRE does not need trust
+              metadata, and so generally it will only need sites data to
+              enforce attribute policies like scope limitations(e.g. MIT
+              not asserting @brown.edu attributes.)</p>
+          </dd>
+      </dl>
+
+      <span class="fixedwidth">[shar]</span>: 
+      <dl>
+      
+          <dd class="attribute">
+              <span class="fixedwidth">logger = &lt;pathname&gt;</span>
+          </dd>
+
+          <dd class="value">
+              <p>Specifies the location of a <span class="fixedwidth">log4cpp</span> which
+              overrides the <span class="fixedwidth">[general]</span> log parameters for
+              SHAR events.  Default logging settings should suffice.
+              The <span class="fixedwidth">syslog</span> daemon must accept
+              <span class="fixedwidth">UDP:514</span> messages, and on Linux,
+              <span class="fixedwidth">SYSLOGD_OPTIONS</span> must include <span class="fixedwidth">-r</span> to
+              <span class="fixedwidth">enable logging from remote machines.</span> The
+              logging levels are defined in the logger
+              configuration. The configuration format is similar to
+              that of the <a
+              href="http://jakarta.apache.org/log4j/docs/
+              documentation.html">Log4j</a> package's format.</p>
+          </dd>
+
+          <dd class="attributeopt">
+              <span class="fixedwidth">metadata = &lt;tag&gt;</span>
+          </dd>
+
+          <dd class="valueopt">
+              <p>Specifies the tag that defines the section of <span
+              class="fixedwidth">shibboleth.ini</span> the SHAR should
+              use to acquire its metadata.</p>
+          </dd>
+
+          <dd class="attributeopt">
+              <span class="fixedwidth">certFile = &lt;pathname&gt;</span>
+          </dd>
+
+          <dd class="valueopt">
+              <p>Specifies the location of the PEM-format
+              certificate used by the SHAR to communicate with
+              AA's.</p>
+          </dd>
+
+          <dd class="attributeopt">
+              <span class="fixedwidth">keyFile = &lt;pathname&gt;</span>
+          </dd>
+
+          <dd class="valueopt">
+              <p>Specifies the location of the PEM-format private
+              key used by the SHAR to communicate with AA's.</p>
+          </dd>
+
+          <dd class="attributeopt">
+              <span class="fixedwidth">keyPass = &lt;password&gt;</span>
+          </dd>
+
+          <dd class="valueopt">
+              <p>Specifies the <span class="fixedwidth">password</span> used to access the
+              <span class="fixedwidth">keyfile</span>.</p>
+          </dd>
+
+          <dd class="attribute">
+              <span class="fixedwidth">calist = &lt;pathname&gt;</span>
+          </dd>
+
+          <dd class="value">
+              <p>Specifies a single file of PEM-format
+              certificates containing the certificates of root CA's
+              the SHAR will consider valid signers of AA
+              certificates.</p>
+          </dd>
+
+          <dd class="attribute">
+              <span class="fixedwidth">AATimeout = &lt;seconds&gt;</span>
+          </dd>
+
+          <dd class="value">
+              <p>Specifies the number of seconds that the SHAR will wait
+              for attributes to be sent from an AA.  Defaults to <span
+              class="fixedwidth">60</span>.</p>
+          </dd>
+
+          <dd class="attribute">
+              <span class="fixedwidth">AAConnectTimeout = &lt;seconds&gt;</span>
+          </dd>
+
+          <dd class="value">
+              <p>Specifies the number of seconds that the SHAR will wait
+              for a connection to be established with a remote AA. 
+              Defaults to <span class="fixedwidth">30</span>.</p>
+          </dd>
+
+          <dd class="attribute">
+              <span class="fixedwidth">cacheType = &lt;method&gt;</span>
+          </dd>
+
+          <dd class="value">
+              <p>Specifies the method used by the SHAR to cache received
+              attributes.  The default is <span
+              class="fixedwidth">memory</span>, which indicates that
+              Shibboleth should store received attributes in memory. 
+              Another option is <span
+              class="fixedwidth">mysql</span>, which will use the MySQL
+              Credential Cache.  The steps to using this are described
+              in the MySQL Credential Cache guide.</p>
+          </dd>
+
+          <dd class="attribute">
+              <span class="fixedwidth">cacheClean = &lt;seconds&gt;</span>
+          </dd>
+
+          <dd class="value">
+              <p>Specifies the duration in seconds between cleanups of
+              the SHAR's cached attributes.  Defaults to <span
+              class="fixedwidth">300</span>, or 5 minutes.</p>
+          </dd>
+
+          <dd class="attribute">
+              <span class="fixedwidth">cacheTimeout = &lt;seconds&gt;</span>
+          </dd>
+
+          <dd class="value">
+              <p>Specifies the duration in <span
+              class="fixedwidth">seconds</span> that must elapse
+              between user accesses before that user's session is
+              destroyed, including the associated handle and all
+              cached attributes.  Defaults to <span
+              class="fixedwidth">28800</span> seconds, or 8 hours.</p>
+          </dd>
+      </dl>
+
+      <p><span class="fixedwidth">[metadata]</span> sections must be
+      created and named in accordance with the value of the <span
+      class="fixedwidth">metadata</span> parameter in the <span
+      class="fixedwidth">[shire]</span> and <span
+      class="fixedwidth">[shar]</span> sections.  Metadata sections may
+      be shared or defined for each component. Two providers are
+      supported by Shibboleth, but additional providers may be
+      specified with name/value pairs consisting of <span
+      class="fixedwidth">&lt;DEFANGED_metadata provider
+      type&gt;=&lt;source&gt;</span>.</p>
+
+      <p><span class="fixedwidth">[&lt;metadata&gt;]</span>:</p>
+
+      <dl>
+          <dd class="attributelong">
+              <span class="fixedwidth">edu.internet2.middleware.shibboleth.metadata.XML = &lt;pathname&gt;</span>
+          </dd>
+
+          <dd class="value">
+              <p>Specifies the location of the file to load site
+              metadata from.  This will often be a <span
+              class="fixedwidth">sites.xml</span> file stored locally,
+              and may be used by both the SHIRE and SHAR.</p>
+              
+              <p>Shibboleth provides a simple utility called <span
+              class="fixedwidth">siterefresh</span> for updating the
+              metadata file as described in section <a
+              href="#4.g.">4.g</a>.</p>
+          </dd>
+
+          <dd class="attributelong">
+              <span class="fixedwidth">edu.internet2.middleware.shibboleth.trust.XML = &lt;pathname&gt;</span>
+          </dd>
+
+          <dd class="value">
+              <p>Specifies the location of the trust database of
+              certificates and/or CA roots used by the SHAR during
+              session initiation.  The SHIRE does not need trust
+              data.</p>
+          </dd>
+      </dl>
+
+      <p>In order for an attribute to be used by Shibboleth, it must be
+      recognized as valid by the SHAR and implemented with any specific
+      rules for how to understand and express its value based on the XML
+      from the AA. Additional string-valued attributes may be added to
+      the SHAR using the <span class="fixedwidth">[attributes]</span>
+      section.</p>
+
+      <p><span class="fixedwidth">[attributes]</span>:</p>
+
+      <dl>
+          <dd class="attribute">
+              <span class="fixedwidth">&lt;attribute_URI&gt;=&lt;type&gt;</span>
+          </dd>
+
+          <dd class="value">
+              <p>Attribute names are URI's that are assigned by the
+              parties standardizing the attribute.  Frequently, a
+              federation or standard object class may define these URI's. 
+              The attribute type may be either <span
+              class="fixedwidth">scoped</span> or <span
+              class="fixedwidth">simple</span>, which defines how
+              the attribute is processed as described in section <a
+              href="#4.e.">4.e</a>.</p>
+          </dd>
+      </dl>
+
+      <p>The <span class="fixedwidth">[policies]</span> section contains the policy URI
+      values that control acceptance of assertions from origin
+      sites.  This may eventually have multiple elements associated
+      it for targets that are members of multiple federations.</p>
+      
+      <p><span class="fixedwidth">[policies]</span>:</p>
+
+      <dl>
+          <dd class="attribute">
+              <span class="fixedwidth">&lt;federation&gt; = &lt;URI&gt;</span>
+          </dd>
+
+          <dd class="value">
+              <p>The name of the <span
+              class="fixedwidth">federation</span> and its
+              associated policy <span class="fixedwidth">URI</span>.
+              These URI's will be provided by federations.</p>
+              
+              <p>This set of URI values is matched against the SAML
+              <span class="fixedwidth">Audience</span> fields of
+              assertions received from HS's and AA's.  One of the
+              URI's specified by the origin in <span
+              class="fixedwidth">edu.internet2.middleware.shibboleth.audiences</span>
+              must match one of these URIs or the
+              assertion will not be accepted by design.</p>
+          </dd>
+      </dl>
+
+      <p>Additional sections for individual servers may be defined with
+      either parameters overriding those found in <span
+      class="fixedwidth">[general]</span>, or the following additional
+      parameters:</p>
+
+      <p><span class="fixedwidth">[&lt;FQDN&gt;]</span>:</p>
+
+      <dl>
+          <dd class="attributeopt">
+              <span class="fixedwidth">requestAttributes = &lt;attr1&gt; &lt;attr2&gt;
+              &lt;attr3&gt;...</span>
+          </dd>
+
+          <dd class="valueopt">
+              <p>Specifies a space-delimited list of attributes named by
+              URI that the SHAR will request of an AA.  If the parameter
+              does not exist or is null, then the SHAR will receive all
+              attributes the AA is willing to release to it.</p>
+          </dd>
+      </dl>
+
+    </blockquote>
+
+    <h4><a name="4.b."></a>4.b. Dynamic Error Page Generation</h4>
+
+    <blockquote>
+      <p>Shibboleth supports the dynamic generation of information
+      in error pages referenced by <span class="fixedwidth">shibboleth.ini</span>. The
+      Shib Target employs a special Markup Language Processor to
+      insert special tags into the generated HTML. The parser will
+      read the error file looking for any tag that looks like:</p>
+
+      <blockquote>
+        <span class="fixedwidth">&lt;shibmlp tag-name /&gt;</span>
+      </blockquote>
+
+      <p>Shibboleth will replace <span class="fixedwidth">tag-name</span> with the
+      appropriate markup tag from the table below:</p>
+
+      <dl>
+          <dd class="attribute"><span class="fixedwidth">supportContact</span></dd>
+
+          <dd class="value">The value of the <span class="fixedwidth">supportContact</span> for this
+          server.</dd>
+
+          <dd class="attribute"><span class="fixedwidth">logoLocation</span></dd>
+
+          <dd class="value">The value of the <span
+          class="fixedwidth">logoLocation</span> for this server.  This
+          is used to fill in the template error page only; if a custom
+          error page is created, then the image may be linked to
+          statically by the page itself.</dd>
+
+          <dd class="attribute"><span class="fixedwidth">requestURL</span></dd>
+
+          <dd class="value">The user's requested URL.</dd>
+
+          <dd class="attribute"><span class="fixedwidth">errorType</span></dd>
+
+          <dd class="value">The type of error.</dd>
+
+          <dd class="attribute"><span class="fixedwidth">errorText</span></dd>
+
+          <dd class="value">The actual error message.</dd>
+
+          <dd class="attribute"><span class="fixedwidth">errorDesc</span></dd>
+
+          <dd class="value">A textual description of the error intended for human
+          consumption.</dd>
+      </dl>
+
+      <p>This configuration is only for Apache servers, and is only
+      used by resources protected by Shibboleth.  See section <a
+      href= "#4.d.">4.d</a>.</p>
+      
+      <p>A sample error template is included in the Shibboleth
+      distribution, and can be triggered by anything that will cause
+      Shibboleth to be unable to make an authorization decision,
+      including a bad sites file, certificate chain, or skewed
+      clock.</p>
+
+    </blockquote>
+
+    <h4><a name="4.c."></a>4.c. Key Generation and Certificate
+    Installation</h4>
+
+    <blockquote>
+      <p>The only target component that must have a private key and
+      certificate is the SHAR. While the target server itself should support
+      SSL in most cases, it is mandatory for the SHAR to
+      authenticate when contacting an AA, and it must therefore be
+      given a key and an SSL client certificate. It is permissible
+      for the SHAR to use the same keypair and certificate used by
+      the target server itself, provided the certificate is signed
+      by a CA accepted by the community of sites.</p>
+      
+      <p>The certificate and key should be placed based on whether
+      they will also be used for Apache's server cert. If they will
+      be used as a server certificate as well, they should probably
+      be in the Apache tree in the usual <span class="fixedwidth">mod_ssl</span> spot, and
+      the SHAR can read them from there. If the SHAR is not running
+      as <span class="fixedwidth">root</span>, permissions might need to be changed to
+      allow this access. If the certificate and key will only be
+      used for the SHAR, they can be put in the same folder with the
+      <span class="fixedwidth">shibboleth.ini</span> file.</p>
+
+      <p>The SHAR is assigned a key and a certificate using
+      shibboleth.ini's <span class="fixedwidth">certfile</span>, <span class="fixedwidth">keyfile</span> and
+      <span class="fixedwidth">keypass</span>, described in <a href="#4.a.">4.a</a>. These
+      files must currently be in PEM format. OpenSSL commands to
+      generate a new keypair and a certificate request are shown
+      here, assuming RSA keys are to be used:</p>
+
+      <blockquote>
+        <span class="fixedwidth">$ openssl genrsa -des3 -out ssl.key 2048 $ openssl req
+        -new -key ssl.key -out ssl.csr</span>
+      </blockquote>
+
+      <p>The signed certificate file returned by the CA should be
+      usable directly, or can be converted to PEM format using the
+      <span class="fixedwidth">openssl x509</span> command.</p>
+
+      <p>The key and certificate files can be placed anywhere,
+      though in or beneath <span class="fixedwidth">/usr/local/apache/conf
+      directory</span> is a good choice. The Apache child processes,
+      often running as <span class="fixedwidth">nobody</span>, must be able to read them
+      while the server is running, which may require permission
+      changes.</p>
+
+      <p>This particularly applies when sharing the key and
+      certificate used by mod_ssl, which are only readable by root
+      by default. The password, if any, must be placed in the conf
+      file, since the module cannot prompt for it as the initial
+      startup of mod_ssl can. The issues surrounding how to
+      securely obtain a key while running as <span class="fixedwidth">nobody</span> will
+      be addressed in a later release. Since the password will be
+      stored in clear text in a frequently examined file, it is
+      suggested to not reuse a password used elsewhere, or to place
+      the <span class="fixedwidth">keypass</span> directive in a separate file that is
+      <span class="fixedwidth">Included</span> in the main configuration file, so that its
+      permissions can be further restricted.</p>
+
+      <p>Finally, the <span class="fixedwidth">calist</span> command provides the SHAR
+      with a set of CA roots to trust when validating AA server
+      certificates. In all cases, the SHAR verifies that the
+      certificate's CN equals the AA's hostname, but the CA root
+      bundle restricts the accepdl signers to those permitted by
+      the SHAR. The parameter can be omitted to skip such signer
+      validation.</p>
+    </blockquote>
+
+    <h4><a name="4.d."></a>4.d. Protecting Webpages</h4>
+
+    <blockquote>
+      <p>Protection of webpages is primarily achieved through
+      "mapping" attributes provided by an AA to a localized
+      vocabulary for authorization rules. Each attribute can be
+      mapped using the <span class="fixedwidth">ShibMapAttribute</span> command to an HTTP
+      header name where it can subsequently be accessed by
+      applications, and optionally to an <span class="fixedwidth">alias</span> that can be
+      used in a <span class="fixedwidth">Require</span> command to search for a matching
+      value. This mapping command must be in <span class="fixedwidth">httpd.conf</span>,
+      while the rest of the commands described here appear in
+      content-specific configuration or <span class="fixedwidth">.htaccess</span>
+      files.</p>
+
+      <p>Any of the typical ways of protecting content may be used
+      (.htaccess, Directory, Location, Files, etc.). There are two
+      ways to trigger Shibboleth authentication: specifying an
+      <span class="fixedwidth">AuthType</span> of <span class="fixedwidth">shibboleth</span> to use Shibboleth
+      directly, or specifying <span class="fixedwidth">ShibBasicHijack On</span> to
+      process existing .htaccess files using Shibboleth instead.
+      Support for authorization consists of mod_auth-style require
+      directives, as well as support for mod_auth group files.</p>
+
+      <p>A complete list of the directives and their values is
+      below:</p>
+
+      <dl>
+          <dd class="attribute">
+              <span class="fixedwidth">AuthType &lt;string&gt;</span>
+          </dd>
+
+          <dd class="value">
+              <p>Use <span class="fixedwidth">shibboleth</span> for direct invocation, or
+              <span class="fixedwidth">Basic</span> plus the <span class="fixedwidth">ShibBasicHijack On</span>
+              option described below.</p>
+          </dd>
+
+          <dd class="attribute">
+              <span class="fixedwidth">ShibSSLOnly&lt;on/off&gt;</span>
+          </dd>
+
+          <dd class="value">
+              <p>Controls whether Shibboleth will reject non-SSL
+              requests from clients. Defaults to <span class="fixedwidth">off</span>.</p>
+          </dd>
+
+          <dd class="attribute">
+              <span class="fixedwidth">ShibBasicHijack &lt;on/off&gt;</span>
+          </dd>
+
+          <dd class="value">
+              <p>Controls whether Shibboleth should or should not
+              ignore requests for <span class="fixedwidth">AuthType Basic</span>. Defaults
+              to <span class="fixedwidth">off</span>.</p>
+          </dd>
+
+          <dd class="attribute">
+              <span class="fixedwidth">ShibAuthTimeout &lt;seconds&gt;</span>
+          </dd>
+
+          <dd class="value">
+              <p>Sets the maximum number of seconds without any
+              user activity that a session will remain alive. After
+              <span class="fixedwidth">seconds</span> seconds without activity, the
+              session is considered dead. Omission or <span class="fixedwidth">0</span>
+              results in an arbitrary session timeout.</p>
+          </dd>
+
+          <dd class="attribute">
+              <span class="fixedwidth">ShibExportAssertion &lt;on/off&gt;</span>
+          </dd>
+
+          <dd class="value">
+              <p>Controls whether the SAML attribute assertion
+              provided by the AA is exported in a base64-encoded
+              HTTP header, <span class="fixedwidth">Shib-Attributes</span>. Defaults to
+              <span class="fixedwidth">off</span>.</p>
+          </dd>
+
+          <dd class="attribute">
+              <span class="fixedwidth">ShibAuthLifetime &lt;seconds&gt;</span>
+          </dd>
+
+          <dd class="value">
+              <p>Sets the maximum lifetime in seconds that a user
+              session can survive. Omission or zero results in
+              arbitrary session lifetime.</p>
+          </dd>
+
+          <dd class="attribute">
+              <span class="fixedwidth">AuthGroupFile &lt;pathname&gt;</span>
+          </dd>
+
+          <dd class="value">
+              <p>Same as mod_auth; collects EPPN's into a named
+              group for access control. Note that mod_auth will not
+              support group files when mod_shibrm is loaded, since
+              they share the same command.</p>
+            
+
+            <blockquote>
+              <p><a href=
+              "http://httpd.apache.org/docs/mod/core.html#require">This
+              is implemented</a> by placing a <span class="fixedwidth">.htaccess</span>
+              file that references an <span class="fixedwidth">AuthGroupFile</span> stored
+              at <span class="fixedwidth">/path</span>:</p>
+
+              <blockquote>
+                <span class="fixedwidth">authgroupfile /path<br>
+                require group workgroup</span>
+              </blockquote>
+
+              <p>Note that an <a href=
+              "http://httpd.apache.org/docs/mod/mod_auth.html#authgroupfile">
+              AuthGroupFile</a> used by Shibboleth would resemble
+              <span class="fixedwidth">workgroup: joe@example.edu, jane@demo.edu,
+              jim@sample.edu</span>.</p>
+            </blockquote>
+          </dd>
+
+          <dd class="attribute">
+              <span class="fixedwidth">Require &lt;string&gt;</span>
+          </dd>
+
+          <dd class="value">
+            <p>Enforce authorization using one of the following methods.
+            <b>Please note that <span
+            class="fixedwidth">valid-user</span> is not a valid access
+            rule because there it is not clear what <span
+            class="fixedwidth">valid-user</span> would signify in the
+            context of Shibboleth</b>.</p>
+
+            <ul type="circle">
+              <li>
+
+              <li>
+                <span class="fixedwidth">valid-user</span>
+
+                <blockquote>
+                  <p>Any Shibboleth user from a trusted origin site
+                  is accepted.</p>
+                </blockquote>
+              </li>
+
+                <span class="fixedwidth">user</span>
+
+                <blockquote>
+                  <p>A space-delimited list of EPPN values,
+                  provided that the
+                  <span class="fixedwidth">urn:mace:eduPerson:1.0:eduPersonPrincipalName</span>
+                  attribute has been mapped to the
+                  <span class="fixedwidth">REMOTE_USER</span> header (as per the earlier
+                  example configuration commands).</p>
+                </blockquote>
+              </li>
+
+              <li>
+                <span class="fixedwidth">group</span>
+
+                <blockquote>
+                  <p>A space-delimited list of group names defined
+                  within <span class="fixedwidth">AuthGroupFile</span> files, again
+                  provided that the mapping to <span class="fixedwidth">REMOTE_USER</span>
+                  exists.</p>
+                </blockquote>
+              </li>
+
+              <li>
+                <span class="fixedwidth">&lt;alias&gt;</span>
+
+                <blockquote>
+                  <p>An arbitrary rule tag that matches an alias
+                  defined in a <span class="fixedwidth">ShibMapAttribute</span> server
+                  command. The rule value is a space- delimited
+                  list of attribute values, whose format depends on
+                  the attribute in question (e.g. an affiliation
+                  rule might look like <span class="fixedwidth">require affiliation
+                  staff@osu.edu faculty@mit.edu</span>).</p>
+                </blockquote>
+              </li>
+            </ul>
+            
+            <p>Additionally, for <span class="fixedwidth">user</span> and
+            <span class="fixedwidth">&lt;alias&gt;</span>-based rules, if a tilde character
+            is placed immediately following <span class="fixedwidth">user</span> or
+            <span class="fixedwidth">&lt;alias&gt;</span>, the expressions that follow are
+            treated as regular expressions.</p>
+            
+            <p>For example, the regular expression AAP <span
+            class="fixedwidth">require affiliation ~
+            ^member@.+\.edu$</span> would evaluate to allowing
+            anyone with an <span
+            class="fixedwidth">eduPersonScopedAffiliation</span> of
+            <span class="fixedwidth">member</span> from a .edu
+            domain.</p>
+
+          </dd>
+        </dl>
+      <br>
+    </blockquote>
+
+    <h4><a name="4.e."></a>4.e. Designing AAP's</h4>
+
+    <blockquote>
+      <p>Shibboleth allows a user and a site to release a varying
+      set of attributes to a destination site, and does not impose
+      restrictions on the kinds of attribute information provided
+      by an AA. Target implementations must also be prepared to
+      examine the attributes they receive and filter them based on
+      policies about what information to permit an origin site to
+      assert about its users.</p>
+
+      <p>Attribute acceptance is the process of filtering attribute
+      values before passing them on to a resource manager, such as
+      the <span class="fixedwidth">mod_shibrm</span> module. Data blocked by AAP filters
+      will not be passed to the CGI environment or used when
+      enforcing <span class="fixedwidth">.htaccess</span> rules.
+      Note that the attribute assertion exported to the
+      <span class="fixedwidth">Shib-Attributes</span> header is pre-filtered.</p>
+
+      <p>The Shibboleth distribution <span class="fixedwidth">scoped</span> and
+      <span class="fixedwidth">simple</span> filtering policies for different kinds of
+      attributes.</p>
+      
+      <p><b>An essential part of the Shibboleth trust fabric is ensuring
+      that sites only assert attributes for domains for which they are
+      considered authoritative by the target.  Typically, this means
+      that Brown University will be trusted to assert attributes only
+      scoped to <span class="fixedwidth">*brown.edu</span>.  Unless
+      there are very specific circumstances requiring this restriction
+      be removed, it is strongly encouraged that it be included in any
+      and all AAP's.</b></p>
+
+      <h4>Scoped:</h4>
+      <blockquote>
+        <p>Scoped attributes are a special kind of attribute whose
+        values are a combination of a <span class="fixedwidth">value</span> and a
+        <span class="fixedwidth">scope</span>, or <span class="fixedwidth">context</span> for the value. An
+        example is <span class="fixedwidth">eduPersonScopedAffiliation</span>, which adds a
+        scope to the defined set of <span class="fixedwidth">eduPersonAffiliation</span>
+        values, such as <span class="fixedwidth">student</span>, <span class="fixedwidth">member</span>, or
+        <span class="fixedwidth">faculty</span>. Scopes are expressed as DNS domains and
+        subdomains.</p>
+
+        <p>Any <span class="fixedwidth">scoped</span> attribute can be
+        scoped only to the origin site's permitted domains. These
+        domains are listed in the sites file that provides trust
+        information to the system. Domains can be explicit or
+        regular expressions, and can be changed by a target to meet
+        its needs if a local version of the file is created. Thus,
+        attribute acceptance processing for <span class="fixedwidth">scoped</span>
+        attributes is based on the sites file.</p>
+      </blockquote>
+
+      <h4>Simple:</h4>
+      <blockquote>
+        <p>Simple attributes are attributes whose value is expressed
+        in XML as a Text node; that is, the value is just a string.
+        Multiple values are permitted.
+        <span class="fixedwidth">eduPersonEntitlement</span>, in which the values are URIs,
+        is one example of a simple attribute.</p>
+        <p>In this release, simple attribute acceptance is
+        controlled with an external policy file written in XML. The
+        schema for the file is described by the
+        <span class="fixedwidth">eduPerson.xsd</span> schema, and an example file is
+        included, <span class="fixedwidth">AAP.xml</span>. If the <span class="fixedwidth">aap-uri</span>
+        parameter in the <span class="fixedwidth">shibboleth.ini</span> file is left out,
+        then no policy is applied, and no filtering is done.
+        Otherwise, the rules encoded in the file are used.</p>
+        <p>The policy is a default-deny algorithm that requires
+        permissible attributes and values be listed explicitly. That
+        is, an empty file permits nothing. Each attribute to be
+        permitted must be listed in the file by name in an
+        <span class="fixedwidth">&lt;AttributeRule&gt;</span>. Each such rule is a
+        collection of <span class="fixedwidth">&lt;SiteRule&gt;</span> elements along with
+        an optional <span class="fixedwidth">&lt;AnySite&gt;</span> default rule. In turn
+        each site rule is a set of <span class="fixedwidth">&lt;Value&gt;</span> rules that
+        specify matches to permit, either literal or regular
+        expressions.</p>
+      </blockquote>
+
+      <p>A syntax summary follows:</p>
+      <blockquote>
+
+        <p><span class="fixedwidth">&lt;AttributeAcceptancePolicy</span></p>
+          <blockquote>The top level element in the
+          file.</blockquote>
+
+        <p><span class="fixedwidth">&lt;AttributeRule Name=&quot;attribute
+        URI&quot;&gt;</span></p>
+          <blockquote>Specifies a rule for an attribute, named with
+          its URI.</blockquote>
+        <p><span class="fixedwidth">&lt;AnySite&gt;</span></p>
+          <blockquote>Specifies a rule that always applies to the
+          attribute, regardless of the asserting AA.</blockquote>
+
+        <p><span class="fixedwidth">&lt;SiteRule
+        Name=&quot;site.domain.name&quot;&gt;</span></p>
+          <blockquote>A rule that applies to the origin site AA
+          corresponding to the domain name.</blockquote>
+
+        <p><span class="fixedwidth">&lt;Value Type=&quot;type&quot;&gt;</span></p>
+          <blockquote>Specifies a value to permit, either directly
+          using <span class="fixedwidth">type</span> <span class="fixedwidth">literal</span>, or using a set of
+          matching expressions as <span class="fixedwidth">type</span> <span class="fixedwidth">regexp</span>.
+          <span class="fixedwidth">literal</span> is the default if <span class="fixedwidth">Type</span> is not
+          specified.</blockquote>
+
+       </blockquote>
+
+       <p>The regular expression syntax is a subset of the usual
+       Perl and Unix syntaxes that is described in the XML Schema
+       specification by the W3C. Most typical expressions should
+       work. Be sure to anchor them using <span class="fixedwidth">^</span> and <span class="fixedwidth">$</span>
+       to avoid unintentional matches midstring.</p>
+
+       <p>Note that the AAP rules described in this section are not
+       part of the Shibboleth architecture and are simply one
+       possible set of approaches implemented in the
+       <span class="fixedwidth">eduPerson</span> attribute plugin. The OpenSAML API permits
+       attribute classes to derive from <span class="fixedwidth">SAMLAttribute</span> and
+       override the accept() method to implement
+       application-specific AAP requirements. The eduPerson source
+       files can be used as an example of how to build highly
+       customized rules.</p>
+    </blockquote>
+
+    <h4><a name="4.f."></a>4.f. Using Attributes in
+    Applications</h4>
+
+    <blockquote>
+      <p>Apart from the simple RM functionality provided, attribute
+      information may be made available directly to applications
+      via the standard practice of creating custom HTTP request
+      headers before passing control to the application.
+      Applications should make no assumption about the presence of
+      specific attributes for their use unless they have intimate
+      knowledge of the attribute release policies in place.</p>
+
+      <p>The <span class="fixedwidth">ShibMapAttribute</span> directive controls this
+      interface, and maps a Shibboleth attribute (identified by an
+      unambiguous URI) to a header name, such as
+      <span class="fixedwidth">Shib-EP-Affiliation</span>. Using that example, any values
+      of the mapped attribute will be placed in that header,
+      delimited by spaces. An application that uses a CGI-like
+      syntax to access the header will find the values in the
+      <span class="fixedwidth">HTTP_SHIB_EP_AFFILIATION</span> variable. Using the
+      command, any attribute can be placed in any header, to drive
+      legacy applications that expect information in a particular
+      header.</p>
+
+      <p>The <span class="fixedwidth">REMOTE_USER</span> variable is a special case that
+      is generally populated automatically by the web server based
+      on an internal piece of data that represents the user's
+      <span class="fixedwidth">username</span>. Unlike many authentication modules,
+      Shibboleth does not guarantee that <span class="fixedwidth">REMOTE_USER</span> will
+      have any value. If it does, it is set solely based on a
+      <span class="fixedwidth">ShibMapAttribute</span> command. For most purposes, the
+      <span class="fixedwidth">urn:mace:eduPerson:1.0:eduPersonPrincipalName</span>
+      attribute should be mapped to <span class="fixedwidth">REMOTE_USER</span>. Even so,
+      EPPN may not be provided by the AA, and <span class="fixedwidth">REMOTE_USER</span>
+      might still be empty.</p>
+
+      <p>Finally, the <span class="fixedwidth">ShibExportAssertion</span> flag instructs
+      the module to place the entire XML message containing the
+      SAML attribute information from the AA into a base64-encoded
+      header called <span class="fixedwidth">Shib-Attributes</span>. This is a raw
+      interface that provides an application with the entire AA
+      response, and is not a filtered view based on any attribute
+      acceptance rules or even based on what attributes are
+      recognized by the target. What was sent is what you see.</p>
+    </blockquote>
+
+    <h4><a name="4.g."></a>4.g. <span
+    class="fixedwidth">siterefresh</span></h4>
+
+    <blockquote>
+      <p>Shibboleth provides a simple tool called <span
+      class="fixedwidth">siterefresh</span> in the <span
+      class="fixedwidth">/opt/shibboleth/bin</span> folder of the
+      distribution to maintain metadata files referenced by <span
+      class="fixedwidth">shibboleth.ini</span>.  It will return 0 on
+      success and a negative number on failure and log errors to <span
+      class="fixedwidth">stderr</span>.  If the data in the new metadata
+      file is bad or the signature is invalid, the existing copy is
+      kept.  The SHAR and SHIRE stat the file each time the data is
+      used, allowing them to detect and utilize updates in real-time
+      operation.</p>
+
+      <p><span class="fixedwidth">siterefresh</span> takes the following
+      command-line parameters:</p>
+
+      <dl>
+        <dd class="attribute">
+          <span class="fixedwidth">--url &lt;URL&gt;</span>
+        </dd>
+
+        <dd class="value">
+          <p>Specifies the <span class="fixedwidth">URL</span> of the
+          remote metadata file to update the local file.</p>
+        </dd>
+
+        <dd class="attribute">
+          <span class="fixedwidth">--out &lt;pathname&gt;</span>
+        </dd>
+
+        <dd class="value">
+          <p>Specifies the local file to write the new metadata to.</p>
+        </dd>
+
+        <dd class="attributeopt">
+          <span class="fixedwidth">--cert &lt;pathname&gt;</span>
+        </dd>
+
+        <dd class="valueopt">
+          <p>Specifies the location of a certificate stored in <span
+          class="fixedwidth">PEM</span> format used to validate the
+          signature of the metadata file.  Since much of Shibboleth's
+          trust flows from this metadata file, this option is highly
+          recommended.</p>
+        </dd>
+
+        <dd class="attributeopt">
+          <span class="fixedwidth">--schema &lt;pathname&gt;</span>
+        </dd>
+
+        <dd class="valueopt">
+          <p>Optionally defines a base path for schemas.  Defaults to
+          <span
+          class="fixedwidth">/opt/shibboleth/etc/shibboleth/</span>.</p>
+        </dd>
+       </dl>
+
+       <p>A complete command issued to <span
+       class="fixedwidth">siterefresh</span> would take the form:</p>
+     
+       <blockquote><span class="fixedwidth">
+         /opt/shibboleth/bin/siterefresh --url
+         http://wayf.internet2.edu/InQueue/sites.xml --out sites.xml
+         --cert internet2.pem
+       </span></blockquote>
+     
+       <p>It is recommended that a similar command be added to a <span
+       class="fixedwidth">crontab</span> to keep the file refreshed.</p>
+    </blockquote>
+
+
+    <br>
+    <hr>
+    <br>
+
+    <h3><a name="5."></a>5. Troubleshooting</h3>
+
+    <p>This section provides basic information about testing
+    Shibboleth targets. This information is not intended to be
+    comprehensive, but instead rudimentary guidelines for basic
+    configuration tests and problems. For more detailed information
+    or answers to specific problems not addressed in this section,
+    please mail <a href=
+    "mailto:mace-shib-users@internet2.edu">mace-shib-users@internet2.edu</a>
+    with a thorough description of errors and configurations
+    used.</p>
+
+    <h4><a name="5.a."></a>5.a. Basic Testing</h4>
+
+    <blockquote>
+      <p>The target may be tested by generating a folder with very
+      basic access controls on it, and accessing it using a web
+      browser. Place a simple webpage such as <span class="fixedwidth">index.html</span>
+      in <span class="fixedwidth">/secure/</span>. Then, add the following lines to
+      <span class="fixedwidth">httpd.conf</span>, which should be removed when testing is
+      over:</p>
+
+      <blockquote>
+        <span class="fixedwidth"># Configure a test directory<br>
+        &lt;Location /secure&gt;<br>
+        &nbsp;&nbsp;AuthType shibboleth<br>
+        &nbsp;&nbsp;require valid-user<br>
+        <br>
+        &nbsp;&nbsp;# Per-directory SHIRE Configuration<br>
+        &nbsp;&nbsp;#ShibBasicHijack On<br>
+        &nbsp;&nbsp;#ShibSSLOnly On<br>
+        &nbsp;&nbsp;#ShibAuthLifetime 60<br>
+        &nbsp;&nbsp;#ShibAuthTimeout 600<br>
+        <br>
+        &nbsp;&nbsp;# RM Configuration<br>
+        &nbsp;&nbsp;#AuthGroupFile /foo<br>
+        &nbsp;&nbsp;#ShibExportAssertion On<br>
+        &lt;/Location&gt;<br>
+        </span>
+      </blockquote>
+
+      <p><b>For information regarding specific error messages that
+      may be generated if the target does not work successfully,
+      please refer to section <a href="#4.b.">4.b</a>, or write <a
+      href=
+      "mailto:mace-shib-users@internet2.edu">mace-shib-users@internet2.edu</a>.</b></p>
+    </blockquote>
+
+    <h4><a name="5.b."></a>5.b. Common Problems</h4>
+
+    <blockquote>
+      <p>A knowledge base is being developed in the <a
+      href="http://www.columbia.edu/~wassa/shib.faq/shibboleth-faq.
+      html">Shibboleth Deployer's FAQ</a>.  Please mail <a href=
+      "mailto:mace-shib-users@internet2.edu">mace-shib-users@
+      internet2.edu</a> with any additional questions or problems
+      encountered that are not answered by this basic guide.</p>
+    </blockquote>
+  </body>
+</html>
