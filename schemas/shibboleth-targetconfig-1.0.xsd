@@ -101,9 +101,9 @@
 				</choice>
 				<choice>
 					<element name="MemorySessionCache">
-						<complexType>
+						<complexType mixed="false">
 							<complexContent>
-								<restriction base="anyType" mixed="false">
+								<restriction base="anyType">
 									<sequence/>
 									<attributeGroup ref="conf:SessionCacheProperties"/>
 									<anyAttribute namespace="##other" processContents="lax"/>
@@ -112,9 +112,9 @@
 						</complexType>
 					</element>
 					<element name="MySQLSessionCache">
-						<complexType>
+						<complexType mixed="false">
 							<complexContent>
-								<restriction base="anyType" mixed="false">
+								<restriction base="anyType">
 									<sequence>
 										<element name="Argument" type="string" minOccurs="0" maxOccurs="unbounded"/>
 									</sequence>
