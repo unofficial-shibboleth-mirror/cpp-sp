@@ -261,6 +261,10 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
   IConfig* conf=ShibTargetConfig::getConfig().getINI();
   Locker locker(conf);
   const IApplication* app=conf->getApplication(argp->application_id);
+  pair<bool,bool> checkReplay=pair<bool,bool>(false,false);
+  const IPropertySet* props=app->getPropertySet("Sessions");
+  if (props)
+      checkReplay=props->getBool("checkReplay");
  
   try
   {
@@ -303,10 +307,14 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
       log.debug ("Get the SSOAssertion");
       const SAMLAssertion* ssoAssertion = profile.getSSOAssertion(*r,app->getAudiences());
 
-      // Check against the replay cache
-      log.debug ("check replay cache");
-      if (!profile.checkReplayCache(*ssoAssertion))
-        throw ShibTargetException(SHIBRPC_ASSERTION_REPLAYED, "Duplicate assertion detected.", role);
+      // Check against the replay cache?
+      if (checkReplay.first && !checkReplay.second)
+        log.warn("replay checking is off, this is a security risk unless you're testing");
+      else {
+        log.debug ("check replay cache");
+        if (!profile.checkReplayCache(*ssoAssertion))
+            throw ShibTargetException(SHIBRPC_ASSERTION_REPLAYED, "Duplicate assertion detected.", role);
+      }
 
       // Get the authentication statement we need.
       log.debug ("get SSOStatement");
