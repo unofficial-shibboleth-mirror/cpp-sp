@@ -165,7 +165,6 @@ QBqLb9DfPG2GkJ1uOK75wPY6XWusCKDJKMVY/N4ec9ew55MnDlFFvl4C+LkiS2YS
 Ysrh7fFJKKp7Pkc1fxsusK+MBXjVZtq0baXsU637qw==
 </ds:X509Certificate>
             </ds:X509Data>
-        <ds:KeyInfo>
             <ds:X509Data>
             	<!-- HEPKI Server Test CA -->
                 <ds:X509Certificate>MIIC6zCCAlSgAwIBAgICAlYwDQYJKoZIhvcNAQEEBQAwgakxCzAJBgNVBAYTAlVT
