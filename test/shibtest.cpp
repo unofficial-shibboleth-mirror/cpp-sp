@@ -49,12 +49,10 @@
 
 
 #include "../shib/shib.h"
-#include "../eduPerson/eduPerson.h"
 
 using namespace std;
 using namespace saml;
 using namespace shibboleth;
-using namespace eduPerson;
 
 int main(int argc,char* argv[])
 {
@@ -95,15 +93,9 @@ int main(int argc,char* argv[])
     if (!conf1.init())
         cerr << "unable to initialize SAML runtime" << endl;
 
-    conf2.mapperURL="http://wayf.internet2.edu/shibboleth/sites.xml";
+    conf2.mapperFile="http://wayf.internet2.edu/shibboleth/sites.xml";
     if (!conf2.init())
         cerr << "unable to initialize Shibboleth runtime" << endl;
-
-#ifdef WIN32
-    conf1.saml_register_extension("eduPerson.dll");
-#else
-    conf1.saml_register_extension("libeduPerson.so");
-#endif
 
     try
     {
