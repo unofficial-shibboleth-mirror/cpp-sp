@@ -17,8 +17,8 @@ Shibboleth Implementation Team
    cantor.2@osu.edu
 
    Walter Hoehn
-   Columbia University
-   wassa@columbia.edu
+   The University of Memphis
+   wassa@memphis.edu
 
  Project Management
 
@@ -48,8 +48,13 @@ Thanks to:
       the initial shibboleth prototype
 
     Brian Pittman (WebAssign), Mark Earnest (PSU), James Shvarts (Columbia), 
-      Ryan Muldoon (Wisconsin), John Hopkins (PSU), and David Walker (UCOP); 
-      for much help with testing
+      Ryan Muldoon (Wisconsin), John Hopkins (PSU), Noah Levitt (Columbia), 
+      and David Walker (UCOP); for much help with testing
       
     Dave Dearman (NRCC), for contributing a SQL Data Connector for the AA 
       resolver
+
+    Noah Levitt (Columbia), for simplifying the logging configuration.
+
+    Joel Murphy (Buffalo), for much help with load testing and generally
+      pushing the software to its limits.
