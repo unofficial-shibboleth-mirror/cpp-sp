@@ -187,6 +187,11 @@ bool TCPListener::bind(ShibSocket& s, bool force) const
 {
     struct sockaddr_in addr;
     setup_tcp_sockaddr(&addr);
+
+    // XXX: Do we care about the return value from setsockopt?
+    int opt = 1;
+    ::setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (const char*)&opt, sizeof(opt));
+
 #ifdef WIN32
     if (SOCKET_ERROR==::bind(s,(struct sockaddr *)&addr,sizeof(addr)) || SOCKET_ERROR==::listen(s,3)) {
         log_error();
