@@ -187,13 +187,9 @@ CCacheEntry::~CCacheEntry()
 bool CCacheEntry::isSessionValid(time_t lifetime, time_t timeout)
 {
     time_t now=time(NULL);
-    if (lifetime==0)
-        lifetime=3600;
-    if (timeout==0)
-        timeout=1800;
-    if (now > m_sessionCreated+lifetime)
+    if (lifetime > 0 && now > m_sessionCreated+lifetime)
         return false;
-    if (now-m_lastAccess >= timeout)
+    if (timeout > 0 && now-m_lastAccess >= timeout)
         return false;
     m_lastAccess=now;
     return true;
@@ -378,8 +374,8 @@ struct shib_dir_config
 extern "C" void* create_shib_dir_config (pool* p, char* d)
 {
     shib_dir_config* dc=(shib_dir_config*)ap_pcalloc(p,sizeof(shib_dir_config));
-    dc->secLifetime = 0;
-    dc->secTimeout = 0;
+    dc->secLifetime = -1;
+    dc->secTimeout = -1;
     dc->bCheckAddress = -1;
     dc->bBasicHijack = -1;
     dc->bSSLOnly = -1;
@@ -406,8 +402,8 @@ extern "C" void* merge_shib_dir_config (pool* p, void* base, void* sub)
     dc->bBasicHijack=((child->bBasicHijack==-1) ? parent->bBasicHijack : child->bBasicHijack);
     dc->bCheckAddress=((child->bCheckAddress==-1) ? parent->bCheckAddress : child->bCheckAddress);
     dc->bExportAssertion=((child->bExportAssertion==-1) ? parent->bExportAssertion : child->bExportAssertion);
-    dc->secLifetime=((child->secLifetime==0) ? parent->secLifetime : child->secLifetime);
-    dc->secTimeout=((child->secTimeout==0) ? parent->secTimeout : child->secTimeout);
+    dc->secLifetime=((child->secLifetime==-1) ? parent->secLifetime : child->secLifetime);
+    dc->secTimeout=((child->secTimeout==-1) ? parent->secTimeout : child->secTimeout);
     return dc;
 }
 
@@ -668,7 +664,7 @@ extern "C" int shib_check_user(request_rec* r)
         return DECLINED;
     if (strcasecmp(auth_type,"shibboleth"))
     {
-        if (!strcasecmp(auth_type,"basic") && dc->bBasicHijack == 1)
+        if (!strcasecmp(auth_type,"basic") && dc->bBasicHijack==1)
 	{
 	    core_dir_config* conf=
 	        (core_dir_config*)ap_get_module_config(r->per_dir_config,
@@ -680,7 +676,7 @@ extern "C" int shib_check_user(request_rec* r)
     }
 
     // SSL check.
-    if (dc->bSSLOnly && strcmp(ap_http_method(r),"https"))
+    if (dc->bSSLOnly==1 && strcmp(ap_http_method(r),"https"))
     {
         ap_log_rerror(APLOG_MARK,APLOG_ERR,r,"shib_check_user() blocked non-SSL access");
         return SERVER_ERROR;
@@ -744,7 +740,7 @@ extern "C" int shib_check_user(request_rec* r)
 	    ap_table_setn(r->headers_out,"Location",wayf);
 	    return REDIRECT;
 	}
-	else if (dc->bCheckAddress && entry->getClientAddress() &&
+	else if (dc->bCheckAddress==1 && entry->getClientAddress() &&
 		 strcmp(entry->getClientAddress(),r->connection->remote_ip))
 	{
 	    ap_log_rerror(APLOG_MARK,APLOG_INFO,r,"shib_check_user() detected bad address, expected %s",
@@ -755,7 +751,7 @@ extern "C" int shib_check_user(request_rec* r)
         }
 
 	ap_table_unset(r->headers_in,"Shib-Attributes");
-	if (dc->bExportAssertion)
+	if (dc->bExportAssertion==1)
 	    ap_table_setn(r->headers_in,"Shib-Attributes",
 			  reinterpret_cast<const char*>(entry->getSerializedAssertion(targeturl)));
 	Iterator<SAMLAttribute*> i=entry->getAttributes(targeturl);
