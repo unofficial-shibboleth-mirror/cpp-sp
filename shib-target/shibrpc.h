@@ -50,23 +50,43 @@ struct ShibRpcError {
 };
 typedef struct ShibRpcError ShibRpcError;
 
-struct ShibRpcXML {
-	char *xml_string;
+enum ShibProfile {
+    PROFILE_UNSPECIFIED = 0,
+	SAML_10_POST = 1,
+	SAML_10_ARTIFACT = 2,
+	SAML_11_POST = 4,
+	SAML_11_ARTIFACT = 8,
+	SAML_20_SSO = 16,
 };
-typedef struct ShibRpcXML ShibRpcXML;
+typedef enum ShibProfile ShibProfile;
 
-struct shibrpc_new_session_args_2 {
+struct shibrpc_statemgr_args_2 {
 	char *application_id;
 	char *packet;
+	char *client_addr;
+};
+typedef struct shibrpc_statemgr_args_2 shibrpc_statemgr_args_2;
+
+struct shibrpc_statemgr_ret_2 {
+	ShibRpcError status;
+	char *cookie;
+};
+typedef struct shibrpc_statemgr_ret_2 shibrpc_statemgr_ret_2;
+
+struct shibrpc_new_session_args_2 {
+	int supported_profiles;
+	char *application_id;
+	char *packet;
+	char *cookie;
 	char *recipient;
 	char *client_addr;
-	bool_t checkIPAddress;
 };
 typedef struct shibrpc_new_session_args_2 shibrpc_new_session_args_2;
 
 struct shibrpc_new_session_ret_2 {
 	ShibRpcError status;
 	char *target;
+	char *packet;
 	char *cookie;
 };
 typedef struct shibrpc_new_session_ret_2 shibrpc_new_session_ret_2;
@@ -75,19 +95,16 @@ struct shibrpc_get_session_args_2 {
 	char *application_id;
 	char *cookie;
 	char *client_addr;
-	bool_t checkIPAddress;
-	long lifetime;
-	long timeout;
 };
 typedef struct shibrpc_get_session_args_2 shibrpc_get_session_args_2;
 
 struct shibrpc_get_session_ret_2 {
 	ShibRpcError status;
-	ShibRpcXML auth_statement;
-	struct {
-		u_int assertions_len;
-		ShibRpcXML *assertions_val;
-	} assertions;
+	ShibProfile profile;
+	char *provider_id;
+	char *auth_statement;
+	char *attr_response_pre;
+	char *attr_response_post;
 };
 typedef struct shibrpc_get_session_ret_2 shibrpc_get_session_ret_2;
 
@@ -104,6 +121,9 @@ extern  bool_t shibrpc_new_session_2_svc(shibrpc_new_session_args_2 *, shibrpc_n
 #define shibrpc_get_session 2
 extern  enum clnt_stat shibrpc_get_session_2(shibrpc_get_session_args_2 *, shibrpc_get_session_ret_2 *, CLIENT *);
 extern  bool_t shibrpc_get_session_2_svc(shibrpc_get_session_args_2 *, shibrpc_get_session_ret_2 *, struct svc_req *);
+#define shibrpc_statemgr 3
+extern  enum clnt_stat shibrpc_statemgr_2(shibrpc_statemgr_args_2 *, shibrpc_statemgr_ret_2 *, CLIENT *);
+extern  bool_t shibrpc_statemgr_2_svc(shibrpc_statemgr_args_2 *, shibrpc_statemgr_ret_2 *, struct svc_req *);
 extern int shibrpc_prog_2_freeresult (SVCXPRT *, xdrproc_t, caddr_t);
 
 #else /* K&R C */
@@ -116,6 +136,9 @@ extern  bool_t shibrpc_new_session_2_svc();
 #define shibrpc_get_session 2
 extern  enum clnt_stat shibrpc_get_session_2();
 extern  bool_t shibrpc_get_session_2_svc();
+#define shibrpc_statemgr 3
+extern  enum clnt_stat shibrpc_statemgr_2();
+extern  bool_t shibrpc_statemgr_2_svc();
 extern int shibrpc_prog_2_freeresult ();
 #endif /* K&R C */
 
@@ -125,7 +148,9 @@ extern int shibrpc_prog_2_freeresult ();
 extern  bool_t xdr_ShibRpcStatus (XDR *, ShibRpcStatus*);
 extern  bool_t xdr_ShibRpcErr (XDR *, ShibRpcErr*);
 extern  bool_t xdr_ShibRpcError (XDR *, ShibRpcError*);
-extern  bool_t xdr_ShibRpcXML (XDR *, ShibRpcXML*);
+extern  bool_t xdr_ShibProfile (XDR *, ShibProfile*);
+extern  bool_t xdr_shibrpc_statemgr_args_2 (XDR *, shibrpc_statemgr_args_2*);
+extern  bool_t xdr_shibrpc_statemgr_ret_2 (XDR *, shibrpc_statemgr_ret_2*);
 extern  bool_t xdr_shibrpc_new_session_args_2 (XDR *, shibrpc_new_session_args_2*);
 extern  bool_t xdr_shibrpc_new_session_ret_2 (XDR *, shibrpc_new_session_ret_2*);
 extern  bool_t xdr_shibrpc_get_session_args_2 (XDR *, shibrpc_get_session_args_2*);
@@ -135,7 +160,9 @@ extern  bool_t xdr_shibrpc_get_session_ret_2 (XDR *, shibrpc_get_session_ret_2*)
 extern bool_t xdr_ShibRpcStatus ();
 extern bool_t xdr_ShibRpcErr ();
 extern bool_t xdr_ShibRpcError ();
-extern bool_t xdr_ShibRpcXML ();
+extern bool_t xdr_ShibProfile ();
+extern bool_t xdr_shibrpc_statemgr_args_2 ();
+extern bool_t xdr_shibrpc_statemgr_ret_2 ();
 extern bool_t xdr_shibrpc_new_session_args_2 ();
 extern bool_t xdr_shibrpc_new_session_ret_2 ();
 extern bool_t xdr_shibrpc_get_session_args_2 ();

@@ -138,10 +138,12 @@ shibrpc_get_session_2_svc(
   }
 
   memset (result, 0, sizeof (*result));
-  result->auth_statement.xml_string = strdup("");
-  
-  log.debug ("checking: %s@%s (checkAddr=%s)",
-	     argp->cookie, argp->client_addr, argp->checkIPAddress ? "true" : "false");
+  result->provider_id = strdup("");
+  result->auth_statement = strdup("");
+  result->attr_response_pre = strdup("");
+  result->attr_response_post = strdup("");
+
+  log.debug ("checking: %s@%s", argp->cookie, argp->client_addr);
 
   // See if the session exists...
   
@@ -156,6 +158,21 @@ shibrpc_get_session_2_svc(
     return TRUE;
   }
 
+  bool checkIPAddress=true;
+  int lifetime=0,timeout=0;
+  const IPropertySet* props=app->getPropertySet("Sessions");
+  if (props) {
+      pair<bool,unsigned int> p=props->getUnsignedInt("lifetime");
+      if (p.first)
+          lifetime = p.second;
+      p=props->getUnsignedInt("timeout");
+      if (p.first)
+          timeout = p.second;
+      pair<bool,bool> pcheck=props->getBool("checkAddress");
+      if (pcheck.first)
+          checkIPAddress = pcheck.second;
+  }
+    
   ISessionCacheEntry* entry = conf->getSessionCache()->find(argp->cookie,app);
 
   // If not, leave now..
@@ -168,63 +185,54 @@ shibrpc_get_session_2_svc(
   // TEST the session...
   try {
     // Verify the address is the same
-    if (argp->checkIPAddress) {
-      log.debug ("Checking address against %s", entry->getClientAddress());
-      if (strcmp (argp->client_addr, entry->getClientAddress())) {
+    if (checkIPAddress) {
+      log.debug("Checking address against %s", entry->getClientAddress());
+      if (strcmp(argp->client_addr, entry->getClientAddress())) {
         log.debug ("IP Address mismatch");
         Metadata m(app->getMetadataProviders());
         throw ShibTargetException(SHIBRPC_IPADDR_MISMATCH,
             "Your IP address does not match the address recorded at the time the session was established.",
-            m.lookup(entry->getAuthnStatement()->getSubject()->getNameIdentifier()->getNameQualifier()));
+            m.lookup(entry->getProviderId()));
       }
     }
 
     // and that the session is still valid...
-    if (!entry->isValid(argp->lifetime, argp->timeout)) {
+    if (!entry->isValid(lifetime,timeout)) {
       log.debug ("Session expired");
       Metadata m(app->getMetadataProviders());
       throw ShibTargetException(SHIBRPC_SESSION_EXPIRED,
         "Your session has expired, and you must re-authenticate.",
-        m.lookup(entry->getAuthnStatement()->getSubject()->getNameIdentifier()->getNameQualifier()));
+        m.lookup(entry->getProviderId()));
     }
 
     try {
-      // Now grab the serialized authentication statement
+      // Set profile and provider
+      result->profile = entry->getProfile();
+      free(result->provider_id);
+      result->provider_id = strdup(entry->getProviderId());
+     
+      // Now grab the serialized authentication statement and responses
       ostringstream os;
       os << *(entry->getAuthnStatement());
-      free(result->auth_statement.xml_string);
-      result->auth_statement.xml_string = strdup(os.str().c_str());
-     
-      // grab the attributes for this session
-      Iterator<SAMLAssertion*> iter = entry->getAssertions();
-      u_int size = iter.size();
-    
-      // if we have assertions...
-      if (size) {
-          // Build the response section
-          ShibRpcXML* av = (ShibRpcXML*) malloc (size * sizeof (ShibRpcXML));
-    
-          // and then serialize them all...
-          u_int i = 0;
-          while (iter.hasNext()) {
-            SAMLAssertion* as = iter.next();
-            ostringstream os2;
-            os2 << *as;
-            av[i++].xml_string = strdup(os2.str().c_str());
-          }
-    
-          // Set the results, once we know we've succeeded.
-          result->assertions.assertions_len = size;
-          result->assertions.assertions_val = av;
-      }
+      free(result->auth_statement);
+      result->auth_statement = strdup(os.str().c_str());
+      
+      os.str("");
+      os << *(entry->getResponse(false));
+      free(result->attr_response_pre);
+      result->attr_response_pre = strdup(os.str().c_str());
+
+      os.str("");
+      os << *(entry->getResponse(true));
+      free(result->attr_response_post);
+      result->attr_response_post = strdup(os.str().c_str());
     }
     catch (SAMLException &e) {
       log.error ("caught SAML exception: %s", e.what());
       ostringstream os;
       os << e;
       Metadata m(app->getMetadataProviders());
-      throw ShibTargetException(SHIBRPC_SAML_EXCEPTION, os.str().c_str(),
-        m.lookup(entry->getAuthnStatement()->getSubject()->getNameIdentifier()->getNameQualifier()));
+      throw ShibTargetException(SHIBRPC_SAML_EXCEPTION, os.str().c_str(), m.lookup(entry->getProviderId()));
     }
   }
   catch (ShibTargetException &e) {
@@ -295,6 +303,7 @@ shibrpc_new_session_2_svc(
   memset (result, 0, sizeof(*result));
   result->cookie = strdup ("");
   result->target = strdup ("");
+  result->packet = strdup ("");
 
   log.debug ("creating session for %s", argp->client_addr);
   log.debug ("recipient: %s", argp->recipient);
@@ -317,10 +326,16 @@ shibrpc_new_session_2_svc(
       return TRUE;
   }
 
-  // TODO: Sub in call to getReplayCache() as the determinant.
-  // For now, we always have a cache and use the flag...
-  pair<bool,bool> checkReplay=pair<bool,bool>(false,false);
+  bool checkIPAddress=true;
   const IPropertySet* props=app->getPropertySet("Sessions");
+  if (props) {
+      pair<bool,bool> pcheck=props->getBool("checkAddress");
+      if (pcheck.first)
+          checkIPAddress = pcheck.second;
+  }
+
+  pair<bool,bool> checkReplay=pair<bool,bool>(false,false);
+  props=app->getPropertySet("Sessions");
   if (props)
       checkReplay=props->getBool("checkReplay");
  
@@ -363,7 +378,7 @@ shibrpc_new_session_2_svc(
             "Unable to locate role-specific metadata for identity provider", provider);
     
       // Maybe verify the origin address....
-      if (argp->checkIPAddress) {
+      if (checkIPAddress) {
         log.debug ("verify client address");
 
         // Verify the client address exists
@@ -462,6 +477,7 @@ shibrpc_new_session_2_svc(
   }
   
   // Insertion into cache might fail.
+  auto_ptr_char oname(origin);
   SAMLAuthenticationStatement* as=NULL;
   try {
       as=static_cast<SAMLAuthenticationStatement*>(bpr.authnStatement->clone());
@@ -470,8 +486,10 @@ shibrpc_new_session_2_svc(
       conf->getSessionCache()->insert(
         cookie.c_str(),
         app,
-        as,
         argp->client_addr,
+        SAML_11_POST,       // TODO: need to vary this
+        oname.get(),
+        as,
         (attributesPushed ? bpr.response : NULL),
         role
         );
@@ -513,7 +531,6 @@ shibrpc_new_session_2_svc(
   
   // Transaction Logging
   STConfig& stc=static_cast<STConfig&>(ShibTargetConfig::getConfig());
-  auto_ptr_char oname(origin);
   auto_ptr_char hname(as->getSubject()->getNameIdentifier()->getName());
   stc.getTransactionLog().infoStream() <<
     "New session (ID: " <<
@@ -534,6 +551,16 @@ shibrpc_new_session_2_svc(
   if (origin) XMLString::release(&origin);
 
   return TRUE;
+}
+
+extern "C" bool_t
+shibrpc_statemgr_2_svc(
+    shibrpc_statemgr_args_2 *argp,
+    shibrpc_statemgr_ret_2 *result,
+    struct svc_req *rqstp
+    )
+{
+    return FALSE;
 }
 
 extern "C" int

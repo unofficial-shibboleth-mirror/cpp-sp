@@ -120,8 +120,11 @@ namespace shibtarget {
     const char *session_id;
     string m_cookies;
 
-    vector<SAMLAssertion*> m_assertions;
+    ShibProfile m_sso_profile;
+    string m_provider_id;
     SAMLAuthenticationStatement* m_sso_statement;
+    SAMLResponse* m_pre_response;
+    SAMLResponse* m_post_response;
     
     // These are the actual request parameters set via the init method.
     string m_url;
@@ -164,7 +167,9 @@ void ShibTarget::init(ShibTargetConfig *config,
 		      string uri, string content_type, string remote_host,
 		      string method)
 {
+#ifdef _DEBUG
   saml::NDC ndc("ShibTarget::init");
+#endif
 
   if (m_priv->m_app)
     throw runtime_error("ShibTarget Already Initialized");
@@ -233,18 +238,26 @@ ShibTarget::doCheckAuthN(bool requireSessionFlag, bool handleProfile)
     }
 
     procState = "Session Processing Error";
-    RPCError *status = sessionGet(session_id, m_priv->m_remote_addr.c_str(), m_priv->m_assertions, &m_priv->m_sso_statement);
+    RPCError* status = sessionGet(
+        session_id,
+        m_priv->m_remote_addr.c_str(),
+        m_priv->m_sso_profile,
+        m_priv->m_provider_id,
+        &m_priv->m_sso_statement,
+        &m_priv->m_pre_response,
+        &m_priv->m_post_response
+        );
 
     if (status->isError()) {
 
       // If no session is required, bail now.
       if (!requireSession.second)
         return pair<bool,void*>(true, returnOK());
-      			   // XXX: Or should this be DECLINED?
-			   // Has to be OK because DECLINED will just cause Apache
-      			   // to fail when it can't locate anything to process the
-      			   // AuthType.  No session plus requireSession false means
-      			   // do not authenticate the user at this time.
+                   // XXX: Or should this be DECLINED?
+                   // Has to be OK because DECLINED will just cause Apache
+                   // to fail when it can't locate anything to process the
+                   // AuthType.  No session plus requireSession false means
+                   // do not authenticate the user at this time.
       else if (status->isRetryable()) {
         // Session is invalid but we can retry the auth -- generate an AuthnRequest
         delete status;
@@ -347,8 +360,16 @@ ShibTarget::doHandleProfile(void)
     }
 	
     // process the submission
-    string cookie,target;
-    RPCError* status = sessionNew(cgistr.c_str(), m_priv->m_remote_addr.c_str(),cookie,target);
+    string cookie,target,statemgr_packet;
+    RPCError* status = sessionNew(
+        SAML_11_POST | SAML_11_ARTIFACT,
+        cgistr.c_str(),
+        NULL,   // XXX: no state token yet
+        m_priv->m_remote_addr.c_str(),
+        cookie,
+        target,
+        statemgr_packet
+        );
 
     if (status->isError()) {
       char buf[25];
@@ -421,7 +442,7 @@ ShibTarget::doCheckAuthZ(void)
     if (m_priv->m_settings.second) {
       Locker acllock(m_priv->m_settings.second);
       if (!m_priv->m_settings.second->authorized(*m_priv->m_sso_statement,
-						 m_priv->m_assertions)) {
+            m_priv->m_post_response ? m_priv->m_post_response->getAssertions() : EMPTY(SAMLAssertion*))) {
         log(LogLevelError, "doCheckAuthZ: access control provider denied access");
         goto out;
       }
@@ -650,7 +671,9 @@ ShibTarget::doCheckAuthZ(void)
 pair<bool,void*>
 ShibTarget::doExportAssertions(bool exportAssertion)
 {
+#ifdef _DEBUG
   saml::NDC ndc("ShibTarget::doExportAssertions");
+#endif
 
   ShibMLP mlp;
   const char *procState = "Attribute Processing Error";
@@ -667,9 +690,17 @@ ShibTarget::doExportAssertions(bool exportAssertion)
     if (!m_priv->m_sso_statement) {
         // No data yet, so we need to get the session. This can only happen
         // if the call to doCheckAuthn doesn't happen in the same object lifetime.
-        RPCError* status = sessionGet(session_id, m_priv->m_remote_addr.c_str(), m_priv->m_assertions, &m_priv->m_sso_statement);
+        RPCError* status = sessionGet(
+            session_id,
+            m_priv->m_remote_addr.c_str(),
+            m_priv->m_sso_profile,
+            m_priv->m_provider_id,
+            &m_priv->m_sso_statement,
+            &m_priv->m_pre_response,
+            &m_priv->m_post_response
+            );
         if (status->isError()) {
-            string er = "getAssertions failed: ";
+            string er = "sessionGet failed: ";
             er += status->getText();
             log(ShibTarget::LogLevelError, er);
             mlp.insert(*status);
@@ -700,15 +731,14 @@ ShibTarget::doExportAssertions(bool exportAssertion)
     if (!exp.first || !exp.second)
       if (exportAssertion)
         exp.second=true;
-    if (exp.second && m_priv->m_assertions.size()) {
+    if (exp.second && m_priv->m_pre_response) {
       ostringstream os;
-      os << *(m_priv->m_assertions[0]);
+      os << *(m_priv->m_pre_response);
       unsigned int outlen;
-      char* assn = (char*)os.str().c_str();
-      XMLByte* serialized = Base64::encode(reinterpret_cast<XMLByte*>(assn), os.str().length(), &outlen);
-      string assertion = (char*)serialized;
-      XMLString::release(&serialized);      
-      setHeader("Shib-Attributes", assertion.c_str());
+      char* resp = (char*)os.str().c_str();
+      XMLByte* serialized = Base64::encode(reinterpret_cast<XMLByte*>(resp), os.str().length(), &outlen);
+      setHeader("Shib-Attributes", reinterpret_cast<char*>(serialized));
+      XMLString::release(&serialized);
     }
 
     // Export the SAML AuthnMethod and the origin site name, and possibly the NameIdentifier.
@@ -716,10 +746,9 @@ ShibTarget::doExportAssertions(bool exportAssertion)
     clearHeader("Shib-Identity-Provider");
     clearHeader("Shib-Authentication-Method");
     clearHeader("Shib-NameIdentifier-Format");
-    auto_ptr_char os(m_priv->m_sso_statement->getSubject()->getNameIdentifier()->getNameQualifier());
+    setHeader("Shib-Origin-Site", m_priv->m_provider_id.c_str());
+    setHeader("Shib-Identity-Provider", m_priv->m_provider_id.c_str());
     auto_ptr_char am(m_priv->m_sso_statement->getAuthMethod());
-    setHeader("Shib-Origin-Site", os.get());
-    setHeader("Shib-Identity-Provider", os.get());
     setHeader("Shib-Authentication-Method", am.get());
     
     // Export NameID?
@@ -743,7 +772,7 @@ ShibTarget::doExportAssertions(bool exportAssertion)
     setHeader("Shib-Application-ID", m_priv->m_app->getId());
 
     // Export the attributes.
-    Iterator<SAMLAssertion*> a_iter(m_priv->m_assertions);
+    Iterator<SAMLAssertion*> a_iter(m_priv->m_post_response ? m_priv->m_post_response->getAssertions() : EMPTY(SAMLAssertion*));
     while (a_iter.hasNext()) {
       SAMLAssertion* assert=a_iter.next();
       Iterator<SAMLStatement*> statements=assert->getStatements();
@@ -967,23 +996,34 @@ ShibTarget::getLazyAuthnRequest(const char* query_string) const
     return getAuthnRequest(target);
 }
         
-RPCError* 
-ShibTarget::sessionNew(const char* packet, const char* ip, string& cookie, string& target)
-  const
+RPCError* ShibTarget::sessionNew(
+    int supported_profiles,
+    const char* packet,
+    const char* statemgr_cookie,
+    const char* ip,
+    string& cookie,
+    string& target,
+    string& statemgr_packet
+    ) const
 {
 #ifdef _DEBUG
-  saml::NDC ndc("sessionCreate");
+  saml::NDC ndc("sessionNew");
 #endif
   Category& log = Category::getInstance("shibtarget.ShibTarget");
 
   if (!packet || !*packet) {
-    log.error ("Empty SAML response content");
-    return new RPCError(SHIBRPC_RESPONSE_MISSING,  "Empty SAML response content");
+    log.error("Empty profile content");
+    return new RPCError(SHIBRPC_RESPONSE_MISSING, "Empty profile content");
   }
 
   if (!ip || !*ip) {
-    log.error ("Invalid IP address");
+    log.error("Invalid IP address");
     return new RPCError(SHIBRPC_IPADDR_MISSING, "Invalid IP address");
+  }
+  
+  if (supported_profiles <= 0) {
+    log.error("No profile support indicated");
+    return new RPCError(SHIBRPC_INTERNAL_ERROR, "No profile support indicated");
   }
   
   shibrpc_new_session_args_2 arg;
@@ -991,19 +1031,17 @@ ShibTarget::sessionNew(const char* packet, const char* ip, string& cookie, strin
   arg.application_id = (char*) m_priv->m_app->getId();
   arg.packet = (char*)packet;
   arg.client_addr = (char*)ip;
-  arg.checkIPAddress = true;
+  arg.supported_profiles = supported_profiles;
+  if (statemgr_cookie)
+    arg.cookie = (char*)statemgr_cookie;
+  else
+    arg.cookie = "";
 
-  log.info ("create session for user at %s for application %s", ip, arg.application_id);
-
-  const IPropertySet* props=m_priv->m_app->getPropertySet("Sessions");
-  if (props) {
-      pair<bool,bool> pcheck=props->getBool("checkAddress");
-      if (pcheck.first)
-          arg.checkIPAddress = pcheck.second;
-  }
+  log.info("create session for user at (%s) for application (%s) with state token (%s)",
+    ip, arg.application_id, statemgr_cookie);
 
   shibrpc_new_session_ret_2 ret;
-  memset (&ret, 0, sizeof(ret));
+  memset(&ret, 0, sizeof(ret));
 
   // Loop on the RPC in case we lost contact the first time through
   int retry = 1;
@@ -1033,10 +1071,12 @@ ShibTarget::sessionNew(const char* packet, const char* ip, string& cookie, strin
   if (ret.status.status)
     retval = new RPCError(&ret.status);
   else {
-    log.debug ("new cookie: %s", ret.cookie);
+    log.debug ("new session cookie: %s", ret.cookie);
     cookie = ret.cookie;
     if (ret.target)
         target = ret.target;
+    if (ret.packet)
+        statemgr_packet = ret.packet;
     retval = new RPCError();
   }
 
@@ -1047,12 +1087,14 @@ ShibTarget::sessionNew(const char* packet, const char* ip, string& cookie, strin
   return retval;
 }
 
-RPCError*
-ShibTarget::sessionGet(
+RPCError* ShibTarget::sessionGet(
     const char* cookie,
     const char* ip,
-    std::vector<saml::SAMLAssertion*>& assertions,
-    saml::SAMLAuthenticationStatement **statement
+    ShibProfile& profile,
+    string& provider_id,
+    SAMLAuthenticationStatement** auth_statement,
+    SAMLResponse** attr_response_pre,
+    SAMLResponse** attr_response_post
     ) const
 {
 #ifdef _DEBUG
@@ -1061,45 +1103,28 @@ ShibTarget::sessionGet(
   Category& log = Category::getInstance("shibtarget.ShibTarget");
 
   if (!cookie || !*cookie) {
-    log.error ("No cookie value was provided");
+    log.error("No cookie value was provided");
     return new RPCError(SHIBRPC_NO_SESSION, "No cookie value was provided");
   }
   else if (strchr(cookie,'=')) {
-    log.error ("The cookie value wasn't extracted successfully, use a more unique cookie name for your installation.");
+    log.error("The cookie value wasn't extracted successfully, use a more unique cookie name for your installation.");
     return new RPCError(SHIBRPC_INTERNAL_ERROR, "The cookie value wasn't extracted successfully, use a more unique cookie name for your installation.");
   }
 
   if (!ip || !*ip) {
-    log.error ("Invalid IP Address");
+    log.error("Invalid IP Address");
     return new RPCError(SHIBRPC_IPADDR_MISSING, "Invalid IP Address");
   }
 
-  log.info ("get session for client address (%s)", ip);
-  log.debug ("session cookie (%s)", cookie);
+  log.info("getting session for client at (%s)", ip);
+  log.debug("session cookie (%s)", cookie);
 
   shibrpc_get_session_args_2 arg;
 
   arg.cookie = (char*)cookie;
   arg.client_addr = (char*)ip;
   arg.application_id = (char*)m_priv->m_app->getId();
-  
-  // Get rest of input from the application Session properties.
-  arg.lifetime = 3600;
-  arg.timeout = 1800;
-  arg.checkIPAddress = true;
-  const IPropertySet* props=m_priv->m_app->getPropertySet("Sessions");
-  if (props) {
-      pair<bool,unsigned int> p=props->getUnsignedInt("lifetime");
-      if (p.first)
-          arg.lifetime = p.second;
-      p=props->getUnsignedInt("timeout");
-      if (p.first)
-          arg.timeout = p.second;
-      pair<bool,bool> pcheck=props->getBool("checkAddress");
-      if (pcheck.first)
-          arg.checkIPAddress = pcheck.second;
-  }
-  
+
   shibrpc_get_session_ret_2 ret;
   memset (&ret, 0, sizeof(ret));
 
@@ -1133,25 +1158,34 @@ ShibTarget::sessionGet(
   else {
     try {
       try {
-        for (u_int i = 0; i < ret.assertions.assertions_len; i++) {
-          istringstream attrstream(ret.assertions.assertions_val[i].xml_string);
-          SAMLAssertion *as = NULL;
-          log.debugStream() << "Trying to decode assertion " << i << ": " <<
-                ret.assertions.assertions_val[i].xml_string << CategoryStream::ENDLINE;
-          assertions.push_back(new SAMLAssertion(attrstream));
+        profile = ret.profile;
+        provider_id = ret.provider_id;
+        
+        // return the Authentication Statement
+        if (auth_statement) {
+          istringstream authstream(ret.auth_statement);
+          
+          log.debugStream() << "Trying to decode authentication statement: "
+                << ret.auth_statement << CategoryStream::ENDLINE;
+          *auth_statement = new SAMLAuthenticationStatement(authstream);
         }
 
-        // return the Authentication Statement
-        if (statement) {
-          istringstream authstream(ret.auth_statement.xml_string);
-          SAMLAuthenticationStatement *auth = NULL;
+        // return the unfiltered Response
+        if (attr_response_pre) {
+          istringstream prestream(ret.attr_response_pre);
           
-          log.debugStream() << "Trying to decode authentication statement: " <<
-                ret.auth_statement.xml_string << CategoryStream::ENDLINE;
-            auth = new SAMLAuthenticationStatement(authstream);
-        
-            // Save off the statement
-            *statement = auth;
+          log.debugStream() << "Trying to decode unfiltered attribute response: "
+                << ret.attr_response_pre << CategoryStream::ENDLINE;
+          *attr_response_pre = new SAMLResponse(prestream);
+        }
+
+        // return the filtered Response
+        if (attr_response_post) {
+          istringstream poststream(ret.attr_response_post);
+          
+          log.debugStream() << "Trying to decode filtered attribute response: "
+                << ret.attr_response_post << CategoryStream::ENDLINE;
+          *attr_response_post = new SAMLResponse(poststream);
         }
       }
       catch (SAMLException& e) {
@@ -1185,17 +1219,19 @@ ShibTarget::sessionGet(
  * Shib Target Private implementation
  */
 
-ShibTargetPriv::ShibTargetPriv()
-    : m_app(NULL), m_mapper(NULL), m_conf(NULL), m_Config(NULL), session_id(NULL), m_sso_statement(NULL) {}
+ShibTargetPriv::ShibTargetPriv() : m_app(NULL), m_mapper(NULL), m_conf(NULL), m_Config(NULL), session_id(NULL),
+    m_sso_profile(PROFILE_UNSPECIFIED), m_sso_statement(NULL), m_pre_response(NULL), m_post_response(NULL) {}
 
 ShibTargetPriv::~ShibTargetPriv()
 {
   delete m_sso_statement;
   m_sso_statement = NULL;
 
-  for (int k = 0; k < m_assertions.size(); k++)
-    delete m_assertions[k];
-  m_assertions.clear();
+  delete m_pre_response;
+  m_pre_response = NULL;
+  
+  delete m_post_response;
+  m_post_response = NULL;
 
   if (m_mapper) {
     m_mapper->unlock();

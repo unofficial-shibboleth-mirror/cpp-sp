@@ -58,11 +58,37 @@ xdr_ShibRpcError (XDR *xdrs, ShibRpcError *objp)
 }
 
 bool_t
-xdr_ShibRpcXML (XDR *xdrs, ShibRpcXML *objp)
+xdr_ShibProfile (XDR *xdrs, ShibProfile *objp)
 {
 	register int32_t *buf;
 
-	 if (!xdr_string (xdrs, &objp->xml_string, ~0))
+	 if (!xdr_enum (xdrs, (enum_t *) objp))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_shibrpc_statemgr_args_2 (XDR *xdrs, shibrpc_statemgr_args_2 *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_string (xdrs, &objp->application_id, ~0))
+		 return FALSE;
+	 if (!xdr_string (xdrs, &objp->packet, ~0))
+		 return FALSE;
+	 if (!xdr_string (xdrs, &objp->client_addr, ~0))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_shibrpc_statemgr_ret_2 (XDR *xdrs, shibrpc_statemgr_ret_2 *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_ShibRpcError (xdrs, &objp->status))
+		 return FALSE;
+	 if (!xdr_string (xdrs, &objp->cookie, ~0))
 		 return FALSE;
 	return TRUE;
 }
@@ -72,15 +98,17 @@ xdr_shibrpc_new_session_args_2 (XDR *xdrs, shibrpc_new_session_args_2 *objp)
 {
 	register int32_t *buf;
 
+	 if (!xdr_int (xdrs, &objp->supported_profiles))
+		 return FALSE;
 	 if (!xdr_string (xdrs, &objp->application_id, ~0))
 		 return FALSE;
 	 if (!xdr_string (xdrs, &objp->packet, ~0))
 		 return FALSE;
+	 if (!xdr_string (xdrs, &objp->cookie, ~0))
+		 return FALSE;
 	 if (!xdr_string (xdrs, &objp->recipient, ~0))
 		 return FALSE;
 	 if (!xdr_string (xdrs, &objp->client_addr, ~0))
-		 return FALSE;
-	 if (!xdr_bool (xdrs, &objp->checkIPAddress))
 		 return FALSE;
 	return TRUE;
 }
@@ -93,6 +121,8 @@ xdr_shibrpc_new_session_ret_2 (XDR *xdrs, shibrpc_new_session_ret_2 *objp)
 	 if (!xdr_ShibRpcError (xdrs, &objp->status))
 		 return FALSE;
 	 if (!xdr_string (xdrs, &objp->target, ~0))
+		 return FALSE;
+	 if (!xdr_string (xdrs, &objp->packet, ~0))
 		 return FALSE;
 	 if (!xdr_string (xdrs, &objp->cookie, ~0))
 		 return FALSE;
@@ -110,12 +140,6 @@ xdr_shibrpc_get_session_args_2 (XDR *xdrs, shibrpc_get_session_args_2 *objp)
 		 return FALSE;
 	 if (!xdr_string (xdrs, &objp->client_addr, ~0))
 		 return FALSE;
-	 if (!xdr_bool (xdrs, &objp->checkIPAddress))
-		 return FALSE;
-	 if (!xdr_long (xdrs, &objp->lifetime))
-		 return FALSE;
-	 if (!xdr_long (xdrs, &objp->timeout))
-		 return FALSE;
 	return TRUE;
 }
 
@@ -126,10 +150,15 @@ xdr_shibrpc_get_session_ret_2 (XDR *xdrs, shibrpc_get_session_ret_2 *objp)
 
 	 if (!xdr_ShibRpcError (xdrs, &objp->status))
 		 return FALSE;
-	 if (!xdr_ShibRpcXML (xdrs, &objp->auth_statement))
+	 if (!xdr_ShibProfile (xdrs, &objp->profile))
 		 return FALSE;
-	 if (!xdr_array (xdrs, (char **)&objp->assertions.assertions_val, (u_int *) &objp->assertions.assertions_len, ~0,
-		sizeof (ShibRpcXML), (xdrproc_t) xdr_ShibRpcXML))
+	 if (!xdr_string (xdrs, &objp->provider_id, ~0))
+		 return FALSE;
+	 if (!xdr_string (xdrs, &objp->auth_statement, ~0))
+		 return FALSE;
+	 if (!xdr_string (xdrs, &objp->attr_response_pre, ~0))
+		 return FALSE;
+	 if (!xdr_string (xdrs, &objp->attr_response_post, ~0))
 		 return FALSE;
 	return TRUE;
 }

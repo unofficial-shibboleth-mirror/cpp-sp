@@ -117,10 +117,12 @@ class InternalCCacheEntry : public ISessionCacheEntry
 {
 public:
   InternalCCacheEntry(
-    const char* id,
+    const char* key,
     const IApplication* application,
+    const char* client_addr,
+    ShibProfile profile,
+    const char* providerId,
     SAMLAuthenticationStatement* s,
-    const char *client_addr,
     SAMLResponse* r=NULL,
     const IRoleDescriptor* source=NULL
     );
@@ -131,8 +133,10 @@ public:
 
   bool isValid(time_t lifetime, time_t timeout) const;
   const char* getClientAddress() const { return m_clientAddress.c_str(); }
-  const SAMLAuthenticationStatement* getAuthnStatement() const { return p_auth; }
-  Iterator<SAMLAssertion*> getAssertions();
+  ShibProfile getProfile() const { return m_profile; }
+  const char* getProviderId() const { return m_provider_id.c_str(); }
+  const SAMLAuthenticationStatement* getAuthnStatement() const { return m_auth_statement; }
+  const SAMLResponse* getResponse(bool filtered=true);
 
   void setCache(InternalCCache *cache) { m_cache = cache; }
   time_t lastAccess() const { return m_lastAccess; }
@@ -142,22 +146,23 @@ public:
 private:
   void populate();                  // wraps process of checking cache, and repopulating if need be
   bool responseValid();             // checks validity of existing response
-  SAMLResponse* getNewResponse();   // wraps an actual query
+  pair<SAMLResponse*,SAMLResponse*> getNewResponse();   // wraps an actual query
   
   void filter(SAMLResponse* r, const IApplication* application, const IRoleDescriptor* source);
   
   string m_id;
   string m_application_id;
-  string m_originSite;
+  string m_provider_id;
   string m_clientAddress;
   time_t m_sessionCreated;
   time_t m_responseCreated;
   mutable time_t m_lastAccess;
   time_t m_lastRetry;
 
-  const SAMLNameIdentifier* m_nameid;
-  SAMLAuthenticationStatement* p_auth;
-  SAMLResponse* m_response;
+  ShibProfile m_profile;
+  SAMLAuthenticationStatement* m_auth_statement;
+  SAMLResponse* m_response_pre;
+  SAMLResponse* m_response_post;
   InternalCCache *m_cache;
 
   log4cpp::Category* log;
@@ -176,7 +181,14 @@ public:
   string generateKey() const;
   ISessionCacheEntry* find(const char* key, const IApplication* application);
   void insert(
-    const char* key, const IApplication* application, SAMLAuthenticationStatement* s, const char *client_addr, SAMLResponse* r=NULL, const IRoleDescriptor* source=NULL
+    const char* key,
+    const IApplication* application,
+    const char* client_addr,
+    ShibProfile profile,
+    const char* providerId,
+    SAMLAuthenticationStatement* s,
+    SAMLResponse* r=NULL,
+    const IRoleDescriptor* source=NULL
     );
   void remove(const char* key);
 
@@ -190,7 +202,7 @@ private:
 
   log4cpp::Category* log;
 
-  static void*	cleanup_fcn(void*); // XXX Assumed an InternalCCache
+  static void*	cleanup_fcn(void*); // Assumes an InternalCCache
   bool		shutdown;
   CondWait*	shutdown_wait;
   Thread*	cleanup_thread;
@@ -282,21 +294,19 @@ string InternalCCache::generateKey() const
 // assumes a lock is held..
 InternalCCacheEntry* InternalCCache::findi(const char* key)
 {
-  log->debug("findI: \"%s\"", key);
-
   map<string,InternalCCacheEntry*>::const_iterator i=m_hashtable.find(key);
   if (i==m_hashtable.end()) {
-    log->debug("No Match found");
+    log->debug("No match found");
     return NULL;
   }
-  log->debug("Match Found.");
+  log->debug("Match found");
 
   return i->second;
 }
 
 ISessionCacheEntry* InternalCCache::find(const char* key, const IApplication* application)
 {
-  log->debug("Find: \"%s\"", key);
+  log->debug("searching memory cache for key (%s)", key);
   ReadLock rwlock(lock);
 
   InternalCCacheEntry* entry = findi(key);
@@ -313,12 +323,19 @@ ISessionCacheEntry* InternalCCache::find(const char* key, const IApplication* ap
 }
 
 void InternalCCache::insert(
-    const char* key, const IApplication* application, SAMLAuthenticationStatement* s, const char* client_addr, SAMLResponse* r, const IRoleDescriptor* source
+    const char* key,
+    const IApplication* application,
+    const char* client_addr,
+    ShibProfile profile,
+    const char* providerId,
+    SAMLAuthenticationStatement* s,
+    SAMLResponse* r,
+    const IRoleDescriptor* source
     )
 {
   log->debug("caching new entry for application %s: \"%s\"", application->getId(), key);
 
-  InternalCCacheEntry* entry = new InternalCCacheEntry(key, application, s, client_addr, r, source);
+  InternalCCacheEntry* entry = new InternalCCacheEntry(key, application, client_addr, profile, providerId, s, r, source);
   entry->setCache(this);
 
   lock->wrlock();
@@ -329,7 +346,7 @@ void InternalCCache::insert(
 // remove the entry from the database and then destroy the cacheentry
 void InternalCCache::remove(const char* key)
 {
-  log->debug("removing cache entry \"key\"", key);
+  log->debug("removing cache entry with key (%s)", key);
 
   // lock the cache for writing, which means we know nobody is sitting in find()
   lock->wrlock();
@@ -451,51 +468,49 @@ void* InternalCCache::cleanup_fcn(void* cache_p)
 /******************************************************************************/
 
 InternalCCacheEntry::InternalCCacheEntry(
-    const char* id,
+    const char* key,
     const IApplication* application,
-    SAMLAuthenticationStatement *s,
     const char* client_addr,
+    ShibProfile profile,
+    const char* providerId,
+    SAMLAuthenticationStatement* s,
     SAMLResponse* r,
     const IRoleDescriptor* source
-    ) : m_response(r), m_responseCreated(r ? time(NULL) : 0), m_lastRetry(0),
-        log(&Category::getInstance("shibtarget::InternalCCacheEntry"))
+    ) : m_application_id(application->getId()), m_profile(profile), m_auth_statement(s), m_response_pre(r), m_response_post(NULL),
+        m_responseCreated(r ? time(NULL) : 0), m_lastRetry(0), log(&Category::getInstance("shibtarget::InternalCCacheEntry"))
 {
-  if (!id || !s) {
-    log->error("NULL session ID or auth statement");
-    throw SAMLException("InternalCCacheEntry() passed an empty session ID or SAML Statement");
+  if (!key || !s || !client_addr || !providerId) {
+    log->error("missing required cache entry details");
+    throw SAMLException("InternalCCacheEntry() missing required cache entry details");
   }
 
-  m_id=id;
-  m_application_id=application->getId();
-
-  m_nameid = s->getSubject()->getNameIdentifier();
-  auto_ptr_char d(m_nameid->getNameQualifier());
-  m_originSite = d.get();
-
+  m_id=key;
   m_clientAddress = client_addr;
+  m_provider_id = providerId;
   m_sessionCreated = m_lastAccess = time(NULL);
 
-  // Save for later.
-  p_auth = s;
-  
   // If pushing attributes, filter the response.
-  if (r)
-    filter(r, application, source);
+  if (r) {
+    log->debug("filtering attribute information");
+    m_response_post=static_cast<SAMLResponse*>(r->clone());
+    filter(m_response_post, application, source);
+  }
 
   m_lock = Mutex::create();
 
-  log->info("new session created (ID: %s)", id);
+  log->info("new session created with session ID (%s)", key);
   if (log->isDebugEnabled()) {
-      auto_ptr_char h(m_nameid->getName());
-      log->debug("Handle: \"%s\", Origin: \"%s\", Address: %s", h.get(), d.get(), client_addr);
+      auto_ptr_char h(s->getSubject()->getNameIdentifier()->getName());
+      log->debug("NameID (%s), IdP (%s), Address (%s)", h.get(), providerId, client_addr);
   }
 }
 
 InternalCCacheEntry::~InternalCCacheEntry()
 {
   log->debug("deleting session (ID: %s)", m_id.c_str());
-  delete m_response;
-  delete p_auth;
+  delete m_response_pre;
+  delete m_response_post;
+  delete m_auth_statement;
   delete m_lock;
 }
 
@@ -522,13 +537,13 @@ bool InternalCCacheEntry::isValid(time_t lifetime, time_t timeout) const
   return true;
 }
 
-Iterator<SAMLAssertion*> InternalCCacheEntry::getAssertions()
+const SAMLResponse* InternalCCacheEntry::getResponse(bool filtered)
 {
 #ifdef _DEBUG
   saml::NDC ndc("getAssertions");
 #endif
   populate();
-  return (m_response) ? m_response->getAssertions() : EMPTY(SAMLAssertion*);
+  return filtered ? m_response_post : m_response_pre;
 }
 
 bool InternalCCacheEntry::responseValid()
@@ -540,7 +555,7 @@ bool InternalCCacheEntry::responseValid()
   time_t now=time(NULL) - SAMLConfig::getConfig().clock_skew_secs;
 
   int count = 0;
-  Iterator<SAMLAssertion*> iter = m_response->getAssertions();
+  Iterator<SAMLAssertion*> iter = m_response_pre->getAssertions();
   while (iter.hasNext()) {
     SAMLAssertion* assertion = iter.next();
 
@@ -581,7 +596,7 @@ void InternalCCacheEntry::populate()
   log->debug("populating attributes for session (ID: %s)", m_id.c_str());
 
   // Do we have any data cached?
-  if (m_response) {
+  if (m_response_pre) {
       // Can we use what we have?
       if (responseValid())
         return;
@@ -589,8 +604,9 @@ void InternalCCacheEntry::populate()
       // If we're being strict, dump what we have and reset timestamps.
       if (m_cache->m_strictValidity) {
         log->info("strictly enforcing attribute validity, dumping expired data");
-        delete m_response;
-        m_response=NULL;
+        delete m_response_pre;
+        delete m_response_post;
+        m_response_pre=m_response_post=NULL;
         m_responseCreated=0;
         m_lastRetry=0; 
       }
@@ -605,14 +621,16 @@ void InternalCCacheEntry::populate()
         ") on (applicationId: " <<
             m_application_id <<
         ") for principal from (IdP: " <<
-            m_originSite <<
+            m_provider_id <<
         ")";
     stc.releaseTransactionLog();
 
-    SAMLResponse* new_response=getNewResponse();
-    if (new_response) {
-        delete m_response;
-        m_response=new_response;
+    pair<SAMLResponse*,SAMLResponse*> new_responses=getNewResponse();
+    if (new_responses.first) {
+        delete m_response_pre;
+        delete m_response_post;
+        m_response_pre=new_responses.first;
+        m_response_post=new_responses.second;
         m_responseCreated=time(NULL);
         m_lastRetry=0;
         log->debug("fetched and stored new response");
@@ -632,7 +650,7 @@ void InternalCCacheEntry::populate()
   }
 }
 
-SAMLResponse* InternalCCacheEntry::getNewResponse()
+pair<SAMLResponse*,SAMLResponse*> InternalCCacheEntry::getNewResponse()
 {
 #ifdef _DEBUG
     saml::NDC ndc("getNewResponse");
@@ -641,7 +659,7 @@ SAMLResponse* InternalCCacheEntry::getNewResponse()
     // The retryInterval determines how often to poll an AA that might be down.
     time_t now=time(NULL);
     if ((now - m_lastRetry) < m_cache->m_retryInterval)
-        return NULL;
+        return pair<SAMLResponse*,SAMLResponse*>(NULL,NULL);
     if (m_lastRetry)
         log->debug("retry interval exceeded, so trying again");
     m_lastRetry=now;
@@ -664,7 +682,7 @@ SAMLResponse* InternalCCacheEntry::getNewResponse()
 
     // Try this request.
     Metadata m(application->getMetadataProviders());
-    const IEntityDescriptor* site=m.lookup(m_nameid->getNameQualifier());
+    const IEntityDescriptor* site=m.lookup(m_provider_id.c_str());
     if (!site) {
         log->error("unable to locate identity provider's metadata during attribute query");
         throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"Unable to locate identity provider's metadata during attribute query.");
@@ -686,7 +704,7 @@ SAMLResponse* InternalCCacheEntry::getNewResponse()
     try {
         // Build a SAML Request....
         SAMLAttributeQuery* q=new SAMLAttributeQuery(
-            new SAMLSubject(static_cast<SAMLNameIdentifier*>(m_nameid->clone())),
+            new SAMLSubject(static_cast<SAMLNameIdentifier*>(m_auth_statement->getSubject()->getNameIdentifier()->clone())),
             providerID.second,
             application->getAttributeDesignators().clone()
             );
@@ -737,14 +755,17 @@ SAMLResponse* InternalCCacheEntry::getNewResponse()
             }
         }
 
-        if (signedResponse.first && signedResponse.second && !response->isSigned()) {
+        if (response && signedResponse.first && signedResponse.second && !response->isSigned()) {
             delete response;
             response=NULL;
             log->error("unsigned response obtained, but we were told it must be signed.");
         }
-        else {
-            // Run it through the filter. Note that we could end up with an empty response.
-            filter(response,application,AA);
+        
+        if (response) {
+            // Run a copy through the filter. Note that we could end up with an empty response.
+            SAMLResponse* copy = static_cast<SAMLResponse*>(response->clone());
+            filter(copy,application,AA);
+            return make_pair(response,copy);
         }
     }
     catch (SAMLException& e) {
@@ -756,12 +777,8 @@ SAMLResponse* InternalCCacheEntry::getNewResponse()
         throw ShibTargetException(SHIBRPC_SAML_EXCEPTION, os.str().c_str(), AA);
     }
     
-    // See if we got a response.
-    if (!response) {
-        log->error("no response obtained");
-        throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"Unable to obtain attributes from user's identity provider.",AA);
-    }
-    return response;
+    log->error("no response obtained");
+    throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"Unable to obtain attributes from user's identity provider.",AA);
 }
 
 void InternalCCacheEntry::filter(SAMLResponse* r, const IApplication* application, const IRoleDescriptor* source)
@@ -771,6 +788,7 @@ void InternalCCacheEntry::filter(SAMLResponse* r, const IApplication* applicatio
     Trust t(application->getTrustProviders());
 
     // Examine each new assertion...
+    r->toDOM();
     Iterator<SAMLAssertion*> assertions=r->getAssertions();
     for (unsigned long i=0; i < assertions.size();) {
         try {

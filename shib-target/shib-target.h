@@ -208,8 +208,10 @@ namespace shibtarget {
     {
         virtual bool isValid(time_t lifetime, time_t timeout) const=0;
         virtual const char* getClientAddress() const=0;
+        virtual ShibProfile getProfile() const=0;
+        virtual const char* getProviderId() const=0;
         virtual const saml::SAMLAuthenticationStatement* getAuthnStatement() const=0;
-        virtual saml::Iterator<saml::SAMLAssertion*> getAssertions()=0;
+        virtual const saml::SAMLResponse* getResponse(bool filtered=true)=0;
         virtual ~ISessionCacheEntry() {}
     };
 
@@ -221,8 +223,10 @@ namespace shibtarget {
         virtual void insert(
             const char* key,
             const IApplication* application,
-            saml::SAMLAuthenticationStatement *s,
             const char* client_addr,
+            ShibProfile profile,
+            const char* providerId,
+            saml::SAMLAuthenticationStatement* s,
             saml::SAMLResponse* r=NULL,
             const shibboleth::IRoleDescriptor* source=NULL
             )=0;
@@ -521,19 +525,31 @@ namespace shibtarget {
 
     // Currently wraps remoted interface.
     // TODO: Move this functionality behind ISessionCache
+    RPCError* stateMgr(
+        const char* packet,
+        const char* ip,
+        std::string& cookie
+        ) const;
+    
     RPCError* sessionNew(
-               const char* packet,
-               const char* ip,
-               std::string& cookie,
-                std::string& target
-             ) const;
+        int supported_profiles,
+        const char* packet,
+        const char* statemgr_cookie,
+        const char* ip,
+        std::string& cookie,
+        std::string& target,
+        std::string& statemgr_packet
+        ) const;
 
     RPCError* sessionGet(
-             const char* cookie,
-               const char* ip,
-               std::vector<saml::SAMLAssertion*>& assertions,
-                saml::SAMLAuthenticationStatement **statement = NULL
-              ) const;
+        const char* cookie,
+        const char* ip,
+        ShibProfile& profile,
+        std::string& provider_id,
+        saml::SAMLAuthenticationStatement** auth_statement=NULL,
+        saml::SAMLResponse** attr_response_pre=NULL,
+        saml::SAMLResponse** attr_response_post=NULL
+        ) const;
 
     // Initialize the request from the parsed URL
     // protocol == http, https, etc
