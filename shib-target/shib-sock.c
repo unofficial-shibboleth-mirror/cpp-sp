@@ -71,9 +71,25 @@
 #include <stdlib.h>
 #include <errno.h>
 
-#ifdef WIN32
+#if defined(WANT_TCP_SHAR)
+static void setup_tcp_sockaddr(struct sockaddr_in *addr, ShibSockName name)
+{
+    // Split on host:port boundary. Default to port only.
+    char* dup=strdup(name);
+    char* port=strchr(dup,':');
+    if (port)
+        *(port++)=0;
+    
+    memset(addr,0,sizeof(struct sockaddr_in));
+    addr->sin_family=AF_INET;
+    addr->sin_port=htons((unsigned short)atoi(port ? port : dup));
+    addr->sin_addr.s_addr=inet_addr(port ? dup : "127.0.0.1");
+    
+    free(dup);
+}
+#endif
 
-typedef struct sockaddr_in SHIBADDR;
+#ifdef WIN32
 
 // called when there was definitly an error
 // return the winsock errno to use as a unix errno
@@ -104,22 +120,12 @@ int shib_sock_create(ShibSocket *sock)
     return 0;
 }
 
-static void setup_sockaddr(SHIBADDR *addr, short aport)
-{
-  const char *LOOPBACK_IP="127.0.0.1";
-  memset(addr,0,sizeof(SHIBADDR));
-  addr->sin_family=AF_INET;
-  addr->sin_port=htons(aport);
-  addr->sin_addr.s_addr=inet_addr(LOOPBACK_IP);
-}
-
 int shib_sock_bind(ShibSocket s, ShibSockName name)
 {
-  SHIBADDR addr;
+  struct sockaddr_in addr;
   int res;
 
-  setup_sockaddr(&addr,name);
-  addr.sin_addr.s_addr=INADDR_ANY;
+  setup_tcp_sockaddr(&addr,name);
   res = map_winsock_result(bind(s,(struct sockaddr *)&addr,sizeof(addr)));
   if (res)
       return res;
@@ -128,8 +134,8 @@ int shib_sock_bind(ShibSocket s, ShibSockName name)
 
 int shib_sock_connect(ShibSocket s, ShibSockName name)
 {
-  SHIBADDR addr;
-  setup_sockaddr(&addr,name);
+  struct sockaddr_in addr;
+  setup_tcp_sockaddr(&addr,name);
   return map_winsock_result(connect(s,(struct sockaddr *)&addr,sizeof(addr)));
 }
 
@@ -140,11 +146,25 @@ void shib_sock_close(ShibSocket s, ShibSockName name)
 
 int shib_sock_accept(ShibSocket listener, ShibSocket* s)
 {
+  unsigned int index=0;
+  ShibSockName acl,client;
+  struct sockaddr_in addr;
+  size_t size=sizeof(addr);
+
   if (!s) return EINVAL;
-  *s=accept(listener,NULL,NULL);
+  *s=accept(listener,(struct sockaddr*)&addr,&size);
   if(*s==INVALID_SOCKET)
     return get_winsock_errno();
-  return 0;
+  client=inet_ntoa(addr.sin_addr);
+  while ((acl=shib_target_sockacl(index++))!=(ShibSockName)0)
+  {
+    if (!strcmp(acl,client))
+        return 0;
+  }
+  shib_sock_close(*s,(ShibSockName)0);
+  *s=-1;
+  fprintf(stderr,"shib_sock_accept(): rejected client at %s\n",client);
+  return EACCES;
 }
 
 #else /* !WIN32 (== UNIX) */
@@ -158,7 +178,11 @@ int shib_sock_create(ShibSocket *sock)
 {
   if (!sock) return EINVAL;
 
+#ifdef WANT_TCP_SHAR
+  *sock = socket (PF_INET, SOCK_STREAM, 0);
+#else
   *sock = socket (PF_UNIX, SOCK_STREAM, 0);
+#endif
   if (*sock < 0) {
     perror ("socket");
     return EINVAL;
@@ -173,18 +197,25 @@ int shib_sock_create(ShibSocket *sock)
  */
 int shib_sock_bind(ShibSocket s, ShibSockName name)
 {
-  struct sockaddr_un sunaddr;
+#ifdef WANT_TCP_SHAR
+  struct sockaddr_in addr;
+  
+  setup_tcp_sockaddr(&addr,name);
+#else
+  struct sockaddr_un addr;
 
-  memset (&sunaddr, 0, sizeof (sunaddr));
-  sunaddr.sun_family = AF_UNIX;
-  strncpy (sunaddr.sun_path, name, UNIX_PATH_MAX);
+  memset (&addr, 0, sizeof (addr));
+  addr.sun_family = AF_UNIX;
+  strncpy (addr.sun_path, name, UNIX_PATH_MAX);
+#endif
 
-  if (bind (s, (struct sockaddr *)&sunaddr, sizeof (sunaddr)) < 0) {
+  if (bind (s, (struct sockaddr *)&addr, sizeof (addr)) < 0) {
     perror ("bind");
     close (s);
     return EINVAL;
   }
 
+#ifndef WANT_TCP_SHAR
   /* Make sure that only the creator can read -- we don't want just
    * anyone connecting, do we?
    */
@@ -194,6 +225,7 @@ int shib_sock_bind(ShibSocket s, ShibSockName name)
     unlink (name);
     return EINVAL;
   }
+#endif
 
   listen (s, 3);
 
@@ -203,13 +235,19 @@ int shib_sock_bind(ShibSocket s, ShibSockName name)
 /* Connect the socket to the local host and "port name" */
 int shib_sock_connect(ShibSocket s, ShibSockName name)
 {
-  struct sockaddr_un sunaddr;
+#ifdef WANT_TCP_SHAR
+  struct sockaddr_in addr;
+  
+  setup_tcp_sockaddr(&addr,name);
+#else
+  struct sockaddr_un addr;
 
-  memset (&sunaddr, 0, sizeof (sunaddr));
-  sunaddr.sun_family = AF_UNIX;
-  strncpy (sunaddr.sun_path, name, UNIX_PATH_MAX);
+  memset (&addr, 0, sizeof (addr));
+  addr.sun_family = AF_UNIX;
+  strncpy (addr.sun_path, name, UNIX_PATH_MAX);
+#endif
 
-  if (connect (s, (struct sockaddr *)&sunaddr, sizeof (sunaddr)) < 0) {
+  if (connect (s, (struct sockaddr *)&addr, sizeof (addr)) < 0) {
     perror ("connect");
     return 1;
   }
@@ -220,22 +258,44 @@ int shib_sock_connect(ShibSocket s, ShibSockName name)
 /* close the socket (and remove the file) */
 void shib_sock_close(ShibSocket s, ShibSockName name)
 {
+#ifndef WANT_TCP_SHAR
   if (name) {
     if (unlink (name))
       perror ("unlink");
   }
+#endif
   close (s);
 }
 
 int shib_sock_accept(ShibSocket listener, ShibSocket* s)
 {
-  if (!s) return EINVAL;
+#ifdef WANT_TCP_SHAR
+  unsigned int index=0;
+  ShibSockName acl,client;
+  struct sockaddr_in addr;
+  size_t size=sizeof(addr);
 
-  *s = accept (listener, NULL, NULL);
+  if (!s) return EINVAL;
+  *s=accept(listener,(struct sockaddr*)&addr,&size);
   if (*s < 0)
     return errno;
-
+  client=inet_ntoa(addr.sin_addr);
+  while ((acl=shib_target_sockacl(index++))!=(ShibSockName)0)
+  {
+    if (!strcmp(acl,client))
+        return 0;
+  }
+  shib_sock_close(*s,(ShibSockName)0);
+  *s=-1;
+  fprintf(stderr,"shib_sock_accept(): rejected client at %s\n",client);
+  return EACCES;
+#else
+  if (!s) return EINVAL;
+  *s=accept(listener,NULL,NULL);
+  if (*s < 0)
+    return errno;
   return 0;
+#endif
 }
 
 
