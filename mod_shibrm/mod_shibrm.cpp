@@ -9,17 +9,17 @@
 // Apache specific header files
 #include "httpd.h"
 #include "http_config.h"
-#include "http_protocol.h"
 #include "http_main.h"
+#include "http_protocol.h"
 #include "util_script.h"
 #define CORE_PRIVATE
 #include "http_core.h"
 #include "http_log.h"
 
 // SAML Runtime
-#include <saml.h>
-#include <shib.h>
-#include <shib-target.h>
+#include <saml/saml.h>
+#include <shib/shib.h>
+#include <shib-target/shib-target.h>
 
 #include <fstream>
 #include <strstream>
