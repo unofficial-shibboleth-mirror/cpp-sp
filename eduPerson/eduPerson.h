@@ -60,7 +60,6 @@
 #define __eduPerson_h__
 
 #include <saml/saml.h>
-#include <boost/regex.hpp>
 
 #ifdef WIN32
 # ifndef EDUPERSON_EXPORTS
@@ -68,10 +67,6 @@
 # endif
 #else
 # define EDUPERSON_EXPORTS
-#endif
-
-#if !defined(WIN32) && defined(EDUPERSON_INSTANTIATE)
-    template class EDUPERSON_EXPORTS boost::reg_expression<XMLCh>;
 #endif
 
 namespace eduPerson

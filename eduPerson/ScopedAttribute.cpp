@@ -64,8 +64,8 @@
 #include "eduPerson.h"
 
 #include <log4cpp/Category.hh>
+#include <xercesc/util/regx/RegularExpression.hpp>
 
-using namespace boost;
 using namespace saml;
 using namespace shibboleth;
 using namespace eduPerson;
@@ -127,8 +127,8 @@ bool ScopedAttribute::accept(DOMElement* e) const
         const pair<xstring,bool>& p=domains.next();
         if (p.second)
         {
-            reg_expression<XMLCh> re(p.first);
-            if (regex_match(this_scope,re))
+            RegularExpression re(p.first.c_str());
+            if (re.matches(this_scope))
                 return true;
         }
         else if (p.first==this_scope)
