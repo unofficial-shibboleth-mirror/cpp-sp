@@ -52,6 +52,37 @@ namespace {
     static const char* g_UserDataKey = "_shib_check_user_";
 }
 
+// per-server module configuration structure
+struct shib_server_config
+{
+    char* szScheme;
+};
+
+// creates the per-server configuration
+extern "C" void* create_shib_server_config(SH_AP_POOL* p, server_rec* s)
+{
+    shib_server_config* sc=(shib_server_config*)ap_pcalloc(p,sizeof(shib_server_config));
+    sc->szScheme = NULL;
+    return sc;
+}
+
+// overrides server configuration in virtual servers
+extern "C" void* merge_shib_server_config (SH_AP_POOL* p, void* base, void* sub)
+{
+    shib_server_config* sc=(shib_server_config*)ap_pcalloc(p,sizeof(shib_server_config));
+    shib_server_config* parent=(shib_server_config*)base;
+    shib_server_config* child=(shib_server_config*)sub;
+
+    if (child->szScheme)
+        sc->szScheme=ap_pstrdup(p,child->szScheme);
+    else if (parent->szScheme)
+        sc->szScheme=ap_pstrdup(p,parent->szScheme);
+    else
+        sc->szScheme=NULL;
+
+    return sc;
+}
+
 // per-dir module configuration structure
 struct shib_dir_config
 {
@@ -105,6 +136,14 @@ extern "C" const char* ap_set_global_string_slot(cmd_parms* parms, void*, const 
     return NULL;
 }
 
+extern "C" const char* shib_set_server_string_slot(cmd_parms* parms, void*, const char* arg)
+{
+    char* base=(char*)ap_get_module_config(parms->server->module_config,&mod_shib);
+    int offset=(int)parms->info;
+    *((char**)(base + offset))=ap_pstrdup(parms->pool,arg);
+    return NULL;
+}
+
 typedef const char* (*config_fn_t)(void);
 
 static int shib_error_page(request_rec* r, const IApplication* app, const char* page, ShibMLP& mlp)
@@ -135,13 +174,20 @@ extern "C" int shib_check_user(request_rec* r)
 {
     ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_check_user: ENTER");
     shib_dir_config* dc=(shib_dir_config*)ap_get_module_config(r->per_dir_config,&mod_shib);
+    shib_server_config* sc=(shib_server_config*)ap_get_module_config(r->server->module_config,&mod_shib);
 
     ostringstream threadid;
     threadid << "[" << getpid() << "] shib_check_user" << '\0';
     saml::NDC ndc(threadid.str().c_str());
 
     // This will always be normalized, because Apache uses ap_get_server_name in this API call.
+    // However, we have a setting to forcibly replace the scheme for esoteric cases.
     const char* targeturl=ap_construct_url(r->pool,r->unparsed_uri,r);
+    if (sc->szScheme) {
+        const char* col=strchr(targeturl,':');
+        if (col)
+            targeturl = ap_pstrcat(r->pool, sc->szScheme, col, NULL);
+    }
 
     // We lock the configuration system for the duration.
     IConfig* conf=g_Config->getINI();
@@ -151,7 +197,7 @@ extern "C" int shib_check_user(request_rec* r)
     IRequestMapper* mapper=conf->getRequestMapper();
     Locker locker2(mapper);
     IRequestMapper::Settings settings=mapper->getSettingsFromParsedURL(
-        ap_http_method(r), ap_get_server_name(r), ap_get_server_port(r), r->unparsed_uri
+        (sc-> szScheme ? sc-> szScheme : ap_http_method(r)), ap_get_server_name(r), ap_get_server_port(r), r->unparsed_uri
         );
     pair<bool,const char*> application_id=settings.first->getString("applicationId");
     const IApplication* application=conf->getApplication(application_id.second);
@@ -457,8 +503,9 @@ extern "C" int shib_check_user(request_rec* r)
 
 extern "C" int shib_post_handler(request_rec* r)
 {
-  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),
 		"shib_post_handler(%d): ENTER", (int)getpid());
+    shib_server_config* sc=(shib_server_config*)ap_get_module_config(r->server->module_config,&mod_shib);
 
 #ifndef SHIB_APACHE_13
     // With 2.x, this handler always runs, though last.
@@ -484,7 +531,7 @@ extern "C" int shib_post_handler(request_rec* r)
     IRequestMapper* mapper=conf->getRequestMapper();
     Locker locker2(mapper);
     IRequestMapper::Settings settings=mapper->getSettingsFromParsedURL(
-        ap_http_method(r), ap_get_server_name(r), ap_get_server_port(r), r->unparsed_uri
+        (sc->szScheme ? sc->szScheme : ap_http_method(r)), ap_get_server_name(r), ap_get_server_port(r), r->unparsed_uri
         );
     pair<bool,const char*> application_id=settings.first->getString("applicationId");
     const IApplication* application=conf->getApplication(application_id.second);
@@ -502,8 +549,15 @@ extern "C" int shib_post_handler(request_rec* r)
 
 int shib_handler(request_rec* r, const IApplication* application, SHIRE& shire)
 {
+    shib_server_config* sc=(shib_server_config*)ap_get_module_config(r->server->module_config,&mod_shib);
+    
     // Prime the pump...
     const char* targeturl = ap_construct_url(r->pool,r->unparsed_uri,r);
+    if (sc->szScheme) {
+        const char* col=strchr(targeturl,':');
+        if (col)
+            targeturl = ap_pstrcat(r->pool, sc->szScheme, col, NULL);
+    }
 
     // Make sure we only process the SHIRE requests.
     if (!strstr(targeturl,shire.getShireURL(targeturl)))
@@ -1037,6 +1091,10 @@ static command_rec shire_cmds[] = {
   {"ShibSchemaDir", (config_fn_t)ap_set_global_string_slot, &g_szSchemaDir,
    RSRC_CONF, TAKE1, "Path to Shibboleth XML schema directory."},
 
+  {"ShibURLScheme", (config_fn_t)shib_set_server_string_slot,
+   (void *) XtOffsetOf (shib_server_config, szScheme),
+   RSRC_CONF, TAKE1, "URL scheme to force into generated URLs for a vhost."},
+   
   {"ShibBasicHijack", (config_fn_t)ap_set_flag_slot,
    (void *) XtOffsetOf (shib_dir_config, bBasicHijack),
    OR_AUTHCFG, FLAG, "Respond to AuthType Basic and convert to shib?"},
@@ -1067,8 +1125,8 @@ module MODULE_VAR_EXPORT mod_shib = {
     NULL,                        /* initializer */
     create_shib_dir_config,	/* dir config creater */
     merge_shib_dir_config,	/* dir merger --- default is to override */
-    NULL,	                /* server config */
-    NULL,	                /* merge server config */
+    create_shib_server_config, /* server config */
+    merge_shib_server_config,   /* merge server config */
     shire_cmds,			/* command table */
     shib_handlers,		/* handlers */
     NULL,			/* filename translation */
@@ -1105,6 +1163,11 @@ static command_rec shib_cmds[] = {
      (config_fn_t)ap_set_global_string_slot, &g_szSchemaDir,
       RSRC_CONF, "Path to Shibboleth XML schema directory."),
 
+  AP_INIT_TAKE1("ShibURLScheme",
+     (config_fn_t)shib_set_server_string_slot,
+     (void *) offsetof (shib_server_config, szScheme),
+      RSRC_CONF, "URL scheme to force into generated URLs for a vhost."),
+
   AP_INIT_FLAG("ShibBasicHijack", (config_fn_t)ap_set_flag_slot,
 	       (void *) offsetof (shib_dir_config, bBasicHijack),
 	       OR_AUTHCFG, "Respond to AuthType Basic and convert to shib?"),
@@ -1126,12 +1189,12 @@ static command_rec shib_cmds[] = {
 
 module AP_MODULE_DECLARE_DATA mod_shib = {
     STANDARD20_MODULE_STUFF,
-    create_shib_dir_config,	/* create dir config */
-    merge_shib_dir_config,	/* merge dir config --- default is to override */
-    NULL,	                /* create server config */
-    NULL,	                /* merge server config */
-    shib_cmds,			/* command table */
-    shib_register_hooks		/* register hooks */
+    create_shib_dir_config,     /* create dir config */
+    merge_shib_dir_config,      /* merge dir config --- default is to override */
+    create_shib_server_config,  /* create server config */
+    merge_shib_server_config,   /* merge server config */
+    shib_cmds,                  /* command table */
+    shib_register_hooks         /* register hooks */
 };
 
 #else
