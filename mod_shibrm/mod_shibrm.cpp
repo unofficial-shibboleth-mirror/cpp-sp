@@ -22,7 +22,7 @@
 #include <shib-target/shib-target.h>
 
 #include <fstream>
-#include <strstream>
+#include <sstream>
 #include <stdexcept>
 
 using namespace std;
@@ -292,9 +292,9 @@ static const char* get_target(request_rec* r, const char* target)
 
 extern "C" int shibrm_check_auth(request_rec* r)
 {
-    ostrstream threadid;
+    ostringstream threadid;
     threadid << "[" << getpid() << "] shibrm" << '\0';
-    saml::NDC ndc(threadid.str());
+    saml::NDC ndc(threadid.str().c_str());
 
     ShibINI& ini = g_szConfig->getINI();
     const char* serverName = get_service_name (r);

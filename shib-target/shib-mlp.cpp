@@ -7,7 +7,7 @@
  */
 
 #include "shib-target.h"
-#include <strstream>
+#include <sstream>
 #include <ctype.h>
 #include <xercesc/util/XercesDefs.hpp>
 

@@ -11,7 +11,7 @@
 #include "shib-target.h"
 
 #include <stdexcept>
-#include <strstream>
+#include <sstream>
 
 #include <log4cpp/Category.hh>
 
@@ -27,7 +27,7 @@ void RPCError::init(int stat, char const* msg)
   log4cpp::Category& log = log4cpp::Category::getInstance(ctx);
 
   if (status == SHIBRPC_SAML_EXCEPTION) {
-    istrstream estr(msg);
+    istringstream estr(msg);
     try { 
       m_except = NULL;
       m_except = new SAMLException(estr);

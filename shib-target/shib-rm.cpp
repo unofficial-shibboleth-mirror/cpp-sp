@@ -13,7 +13,7 @@
 #include <xercesc/util/Base64.hpp>
 #include <log4cpp/Category.hh>
 
-#include <strstream>
+#include <sstream>
 #include <stdexcept>
 
 using namespace std;
@@ -111,7 +111,7 @@ RPCError* RM::getAssertions(const char* cookie, const char* ip,
     retval = new RPCError(ret.status, ret.error_msg);
   else {
     for (u_int i = 0; i < ret.assertions.assertions_len; i++) {
-      istrstream attrstream(ret.assertions.assertions_val[i].assertion);
+      istringstream attrstream(ret.assertions.assertions_val[i].assertion);
       SAMLAssertion *as = NULL;
       try {
 	m_priv->log->debug("Trying to decode assertion %d: %s", i,
@@ -143,11 +143,12 @@ void RM::serialize(SAMLAssertion &assertion, string &result)
 {
   saml::NDC ndc("RM::serialize");
 
-  ostrstream os;
+  ostringstream os;
   os << assertion;
   unsigned int outlen;
-  XMLByte* serialized = Base64::encode(reinterpret_cast<XMLByte*>(os.str()),
-				       os.pcount(), &outlen);
+  char* assn = (char*) os.str().c_str();
+  XMLByte* serialized = Base64::encode(reinterpret_cast<XMLByte*>(assn),
+				       os.str().length(), &outlen);
   result = (char*) serialized;
 }
 

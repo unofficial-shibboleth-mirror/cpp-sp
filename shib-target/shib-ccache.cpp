@@ -63,7 +63,7 @@
 
 #include <log4cpp/Category.hh>
 
-#include <strstream>
+#include <sstream>
 #include <stdexcept>
 
 using namespace std;

@@ -25,7 +25,7 @@
 #include <shib-target/shib-target.h>
 
 #include <fstream>
-#include <strstream>
+#include <sstream>
 #include <stdexcept>
 
 using namespace std;
@@ -329,9 +329,9 @@ static int shire_error_page(request_rec* r, const char* filename, ShibMLP& mlp)
 
 extern "C" int shire_check_user(request_rec* r)
 {
-    ostrstream threadid;
+    ostringstream threadid;
     threadid << "[" << getpid() << "] shire" << '\0';
-    saml::NDC ndc(threadid.str());
+    saml::NDC ndc(threadid.str().c_str());
 
     ShibINI& ini = g_szConfig->getINI();
     ShibMLP markupProcessor;
@@ -484,9 +484,9 @@ extern "C" int shire_check_user(request_rec* r)
 
 extern "C" int shire_post_handler (request_rec* r)
 {
-  ostrstream threadid;
+  ostringstream threadid;
   threadid << "[" << getpid() << "] shire" << '\0';
-  saml::NDC ndc(threadid.str());
+  saml::NDC ndc(threadid.str().c_str());
 
   ShibINI& ini = g_szConfig->getINI();
   ShibMLP markupProcessor;

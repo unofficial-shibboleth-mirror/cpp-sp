@@ -7,7 +7,7 @@
  */
 
 #include "shib-target.h"
-#include <strstream>
+#include <sstream>
 #include <iostream>
 #include <fstream>
 #include <ctype.h>

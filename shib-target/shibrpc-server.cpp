@@ -12,7 +12,7 @@
 #include "shib-target.h"
 
 #include <log4cpp/Category.hh>
-#include <strstream>
+#include <sstream>
 
 using namespace std;
 using namespace saml;
