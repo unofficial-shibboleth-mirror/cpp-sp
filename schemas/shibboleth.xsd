@@ -216,7 +216,13 @@
 	            			</simpleContent>
 	            		</complexType>
 	            	</element>
-	                <element name="AttributeRequester" type="shib:AuthorityType" maxOccurs="unbounded"/>
+	                <element name="AttributeRequester" maxOccurs="unbounded">
+	            		<complexType>
+	            			<sequence/>
+	            			<attribute name="Name" type="string" use="required"/>
+        					<anyAttribute namespace="##any" processContents="lax"/>
+	            		</complexType>
+	                </element>
 	            </sequence>
 	        </extension>
         </complexContent>
