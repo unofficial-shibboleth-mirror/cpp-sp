@@ -389,7 +389,7 @@ public:
     m_req->content_type = ap_psprintf(m_req->pool, content_type.c_str());
     while (headers.hasNext()) {
         const header_t& h=headers.next();
-        ap_table_setn(m_req->headers_out, h.first.c_str(), h.second.c_str());
+        ap_table_set(m_req->headers_out, h.first.c_str(), h.second.c_str());
     }
     ap_send_http_header(m_req);
     ap_rprintf(m_req, msg.c_str());
