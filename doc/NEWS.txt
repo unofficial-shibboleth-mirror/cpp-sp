@@ -6,7 +6,7 @@ to the Shibboleth 1.2.1 release. It addesses problems
 and small functional gaps identified since the release
 of the previous version.
 
-New features in 1.2
+New Features
 -------------------
 Support for the target software on Mac OS X
 
