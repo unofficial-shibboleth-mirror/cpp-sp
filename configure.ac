@@ -47,6 +47,9 @@ else
     CXXFLAGS="$PTHREAD_CFLAGS $CXXFLAGS"
 fi
 
+# Test RPC now -- deal with it later
+ACX_RPCTEST([rpctest="yes"],[rpctest="no"])
+
 AC_ARG_WITH(dmalloc,
             AC_HELP_STRING([--with-dmalloc=PATH], [where dmalloc is installed]),
             [if test x_$with_dmalloc != x_/usr; then
@@ -154,8 +157,7 @@ AC_CONFIG_FILES([Makefile shib/Makefile schemas/Makefile eduPerson/Makefile \
 		 configs/Makefile oncrpc/Makefile oncrpc/rpc/Makefile \
 		 shib-target/Makefile shar/Makefile test/Makefile])
 
-# now test the rpc library, to see if we need to build our own
-ACX_RPCTEST([rpctest="no"],[rpctest="yes"])
+# now deal with the rpc library, to see if we need to build our own
 if test $rpctest = "no"; then
     WANT_SUBDIRS="oncrpc $WANT_SUBDIRS"
 fi
