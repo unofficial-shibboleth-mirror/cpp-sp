@@ -76,7 +76,7 @@ public:
   	{ m_cacheEntry->release(); delete this; }
 
 private:
-  void touch();
+  bool touch();
 
   ShibMySQLCCache* m_cache;
   CCacheEntry *m_cacheEntry;
@@ -297,7 +297,7 @@ void ShibMySQLCCache::remove(const char* key)
   q << "DELETE FROM state WHERE cookie='" << key << "'";
   MYSQL* mysql = getMYSQL();
   if (mysql_query(mysql, q.str().c_str()))
-    log->error("Error deleting entry %s: %s", key, mysql_error(mysql));
+    log->info("Error deleting entry %s: %s", key, mysql_error(mysql));
 }
 
 void ShibMySQLCCache::cleanup()
@@ -530,19 +530,22 @@ bool ShibMySQLCCacheEntry::isSessionValid(time_t lifetime, time_t timeout)
 {
   bool res = m_cacheEntry->isSessionValid(lifetime, timeout);
   if (res == true)
-    touch();
+    res = touch();
   return res;
 }
 
-void ShibMySQLCCacheEntry::touch()
+bool ShibMySQLCCacheEntry::touch()
 {
   ostringstream q;
   q << "UPDATE state SET atime=NOW() WHERE cookie='" << m_key << "'";
 
   MYSQL* mysql = m_cache->getMYSQL();
-  if (mysql_query(mysql, q.str().c_str()))
-    m_cache->log->error("Error updating timestamp on %s: %s",
+  if (mysql_query(mysql, q.str().c_str())) {
+    m_cache->log->info("Error updating timestamp on %s: %s",
 			m_key.c_str(), mysql_error(mysql));
+    return false;
+  }
+  return true;
 }
 
 /*************************************************************************
