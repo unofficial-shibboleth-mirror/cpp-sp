@@ -160,15 +160,14 @@ bool STConfig::init(const char* schemadir, const char* config)
         return false;
     }
 
-#ifndef _DEBUG
     try {
-#endif
         // Register plugin types.
 #ifndef WIN32
         samlConf.getPlugMgr().regFactory(shibtarget::XML::UnixListenerType,&UnixListenerFactory);
 #endif
         samlConf.getPlugMgr().regFactory(shibtarget::XML::TCPListenerType,&TCPListenerFactory);
         samlConf.getPlugMgr().regFactory(shibtarget::XML::MemorySessionCacheType,&MemoryCacheFactory);
+        samlConf.getPlugMgr().regFactory(shibtarget::XML::LegacyRequestMapType,&XMLRequestMapFactory);
         samlConf.getPlugMgr().regFactory(shibtarget::XML::RequestMapType,&XMLRequestMapFactory);
         //shibConf.getPlugMgr().regFactory(shibtarget::XML::htaccessType,&htaccessFactory);
         saml::XML::registerSchema(ShibTargetConfig::SHIBTARGET_NS,shibtarget::XML::SHIBTARGET_SCHEMA_ID);
@@ -191,8 +190,13 @@ bool STConfig::init(const char* schemadir, const char* config)
         m_tranLogLock = Mutex::create();
 
         m_rpcpool = new RPCHandlePool;
-#ifndef _DEBUG
     }
+    catch (SAMLException& ex) {
+        log.fatalStream() << "caught exception while loading/initializing configuration: " << ex.what() << CategoryStream::ENDLINE;
+        shutdown();
+        return false;
+    }
+#ifndef _DEBUG
     catch (...) {
         log.fatal("caught exception while loading/initializing configuration");
         shutdown();

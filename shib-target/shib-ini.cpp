@@ -75,7 +75,7 @@ namespace shibtarget {
     {
     public:
         XMLApplication(const IConfig*, const Iterator<ICredentials*>& creds, const DOMElement* e, const XMLApplication* base=NULL);
-        ~XMLApplication();
+        ~XMLApplication() { cleanup(); }
     
         // IPropertySet
         pair<bool,bool> getBool(const char* name, const char* ns=NULL) const;
@@ -93,8 +93,7 @@ namespace shibtarget {
         Iterator<ITrust*> getTrustProviders() const;
         Iterator<IRevocation*> getRevocationProviders() const;
         Iterator<const XMLCh*> getAudiences() const;
-        const char* getTLSCred(const IEntityDescriptor* provider) const {return getCredentialUse(provider).first.c_str();}
-        const char* getSigningCred(const IEntityDescriptor* provider) const {return getCredentialUse(provider).second.c_str();}
+        const IPropertySet* getCredentialUse(const IEntityDescriptor* provider) const;
         const SAMLBrowserProfile* getBrowserProfile() const {return m_profile;}
         const SAMLBinding* getBinding(const XMLCh* binding) const
             {return XMLString::compareString(SAMLBinding::SOAP,binding) ? NULL : m_binding;}
@@ -104,6 +103,7 @@ namespace shibtarget {
         short acceptNode(const DOMNode* node) const;
     
     private:
+        void cleanup();
         const IConfig* m_ini;   // this is ok because its locking scope includes us
         const XMLApplication* m_base;
         vector<SAMLAttributeDesignator*> m_designators;
@@ -112,16 +112,15 @@ namespace shibtarget {
         vector<ITrust*> m_trusts;
         vector<IRevocation*> m_revocations;
         vector<const XMLCh*> m_audiences;
-        pair<string,string> m_credDefault;
         ShibBrowserProfile* m_profile;
         SAMLBinding* m_binding;
         ShibHTTPHook* m_bindingHook;
+        XMLPropertySet* m_credDefault;
 #ifdef HAVE_GOOD_STL
-        map<xstring,pair<string,string> > m_credMap;
+        map<xstring,XMLPropertySet*> m_credMap;
 #else
-        map<const XMLCh*,pair<string,string> > m_credMap;
+        map<const XMLCh*,XMLPropertySet*> m_credMap;
 #endif
-        const pair<string,string>& getCredentialUse(const IEntityDescriptor* provider) const;
     };
 
     // Top-level configuration implementation
@@ -201,7 +200,12 @@ XMLPropertySet::~XMLPropertySet()
         delete j->second;
 }
 
-void XMLPropertySet::load(const DOMElement* e, Category& log, DOMNodeFilter* filter)
+void XMLPropertySet::load(
+    const DOMElement* e,
+    Category& log,
+    DOMNodeFilter* filter,
+    const std::map<std::string,std::string>* remapper
+    )
 {
 #ifdef _DEBUG
     saml::NDC ndc("load");
@@ -218,13 +222,21 @@ void XMLPropertySet::load(const DOMElement* e, Category& log, DOMNodeFilter* fil
         if (val && *val) {
             auto_ptr_char ns(a->getNamespaceURI());
             auto_ptr_char name(a->getLocalName());
+            const char* realname=name.get();
+            if (remapper) {
+                map<string,string>::const_iterator remap=remapper->find(realname);
+                if (remap!=remapper->end()) {
+                    log.debug("remapping property (%s) to (%s)",realname,remap->second.c_str());
+                    realname=remap->second.c_str();
+                }
+            }
             if (ns.get()) {
-                m_map[string("{") + ns.get() + '}' + name.get()]=pair<char*,const XMLCh*>(val,a->getNodeValue());
-                log.debug("added property {%s}%s (%s)",ns.get(),name.get(),val);
+                m_map[string("{") + ns.get() + '}' + realname]=pair<char*,const XMLCh*>(val,a->getNodeValue());
+                log.debug("added property {%s}%s (%s)",ns.get(),realname,val);
             }
             else {
-                m_map[name.get()]=pair<char*,const XMLCh*>(val,a->getNodeValue());
-                log.debug("added property %s (%s)",name.get(),val);
+                m_map[realname]=pair<char*,const XMLCh*>(val,a->getNodeValue());
+                log.debug("added property %s (%s)",realname,val);
             }
         }
     }
@@ -238,16 +250,24 @@ void XMLPropertySet::load(const DOMElement* e, Category& log, DOMNodeFilter* fil
     while (e) {
         auto_ptr_char ns(e->getNamespaceURI());
         auto_ptr_char name(e->getLocalName());
+        const char* realname=name.get();
+        if (remapper) {
+            map<string,string>::const_iterator remap=remapper->find(realname);
+            if (remap!=remapper->end()) {
+                log.debug("remapping property set (%s) to (%s)",realname,remap->second.c_str());
+                realname=remap->second.c_str();
+            }
+        }
         string key;
         if (ns.get())
-            key=string("{") + ns.get() + '}' + name.get();
+            key=string("{") + ns.get() + '}' + realname;
         else
-            key=name.get();
+            key=realname;
         if (m_nested.find(key)!=m_nested.end())
             log.warn("load() skipping duplicate property set: %s",key.c_str());
         else {
             XMLPropertySet* set=new XMLPropertySet();
-            set->load(e,log,filter);
+            set->load(e,log,filter,remapper);
             m_nested[key]=set;
             log.debug("added nested property set: %s",key.c_str());
         }
@@ -354,7 +374,7 @@ const IPropertySet* XMLPropertySet::getPropertySet(const char* name, const char*
 }
 
 XMLApplication::XMLApplication(const IConfig* ini, const Iterator<ICredentials*>& creds, const DOMElement* e, const XMLApplication* base)
-    : m_ini(ini), m_base(base), m_profile(NULL), m_binding(NULL), m_bindingHook(NULL)
+    : m_ini(ini), m_base(base), m_profile(NULL), m_binding(NULL), m_bindingHook(NULL), m_credDefault(NULL)
 {
 #ifdef _DEBUG
     NDC ndc("XMLApplication");
@@ -363,7 +383,12 @@ XMLApplication::XMLApplication(const IConfig* ini, const Iterator<ICredentials*>
 
     try {
         // First load any property sets.
-        load(e,log,this);
+        map<string,string> root_remap;
+        root_remap["shire"]="session";
+        load(e,log,this,&root_remap);
+        const IPropertySet* propcheck=getPropertySet("Errors");
+        if (propcheck && !propcheck->getString("session").first)
+            throw MalformedException("<Errors> element requires 'session' (or deprecated 'shire') attribute");
 
         ShibTargetConfig& conf=ShibTargetConfig::getConfig();
         SAMLConfig& shibConf=SAMLConfig::getConfig();
@@ -448,15 +473,13 @@ XMLApplication::XMLApplication(const IConfig* ini, const Iterator<ICredentials*>
         // Finally, load credential mappings.
         const DOMElement* cu=saml::XML::getFirstChildElement(e,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(CredentialUse));
         if (cu) {
-            auto_ptr_char TLS(cu->getAttributeNS(NULL,SHIBT_L(TLS)));
-            auto_ptr_char Signing(cu->getAttributeNS(NULL,SHIBT_L(Signing)));
-            m_credDefault.first=TLS.get();
-            m_credDefault.second=Signing.get();
+            m_credDefault=new XMLPropertySet();
+            m_credDefault->load(cu,log,this);
             cu=saml::XML::getFirstChildElement(cu,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(RelyingParty));
             while (cu) {
-                auto_ptr_char TLS2(cu->getAttributeNS(NULL,SHIBT_L(TLS)));
-                auto_ptr_char Signing2(cu->getAttributeNS(NULL,SHIBT_L(Signing)));
-                m_credMap[cu->getAttributeNS(NULL,SHIBT_L(Name))]=pair<string,string>(TLS2.get(),Signing2.get());
+                XMLPropertySet* rp=new XMLPropertySet();
+                rp->load(cu,log,this);
+                m_credMap[cu->getAttributeNS(NULL,SHIBT_L(Name))]=rp;
                 cu=saml::XML::getNextSiblingElement(cu,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(RelyingParty));
             }
         }
@@ -484,23 +507,33 @@ XMLApplication::XMLApplication(const IConfig* ini, const Iterator<ICredentials*>
     }
     catch (SAMLException& e) {
         log.errorStream() << "Error while processing applicaton element: " << e.what() << CategoryStream::ENDLINE;
-        this->~XMLApplication();
+        cleanup();
         throw;
     }
 #ifndef _DEBUG
     catch (...) {
         log.error("Unexpected error while processing application element");
-        this->~XMLApplication();
+        cleanup();
         throw;
     }
 #endif
 }
 
-XMLApplication::~XMLApplication()
+void XMLApplication::cleanup()
 {
     delete m_bindingHook;
     delete m_binding;
     delete m_profile;
+    delete m_credDefault;
+#ifdef HAVE_GOOD_STL
+    map<xstring,XMLPropertySet*>::iterator c=m_credMap.begin();
+#else
+    map<const XMLCh*,XMLPropertySet*>::iterator c=m_credMap.begin();
+#endif
+    while (c!=m_credMap.end()) {
+        delete c->second;
+        c++;
+    }
     Iterator<SAMLAttributeDesignator*> i(m_designators);
     while (i.hasNext())
         delete i.next();
@@ -530,6 +563,7 @@ short XMLApplication::acceptNode(const DOMNode* node) const
     if (!XMLString::compareString(name,SHIBT_L(Application)) ||
         !XMLString::compareString(name,SHIBT_L(AAPProvider)) ||
         !XMLString::compareString(name,SHIBT_L(CredentialUse)) ||
+        !XMLString::compareString(name,SHIBT_L(RelyingParty)) ||
         !XMLString::compareString(name,SHIBT_L(FederationProvider)) ||
         !XMLString::compareString(name,SHIBT_L(RevocationProvider)) ||
         !XMLString::compareString(name,SHIBT_L(TrustProvider)))
@@ -618,13 +652,13 @@ Iterator<const XMLCh*> XMLApplication::getAudiences() const
     return (m_audiences.empty() && m_base) ? m_base->getAudiences() : m_audiences;
 }
 
-const pair<string,string>& XMLApplication::getCredentialUse(const IEntityDescriptor* provider) const
+const IPropertySet* XMLApplication::getCredentialUse(const IEntityDescriptor* provider) const
 {
-    if (m_credDefault.first.empty() && m_base)
+    if (!m_credDefault && m_base)
         return m_base->getCredentialUse(provider);
         
 #ifdef HAVE_GOOD_STL
-    map<xstring,pair<string,string> >::const_iterator i=m_credMap.find(provider->getId());
+    map<xstring,XMLPropertySet*>::const_iterator i=m_credMap.find(provider->getId());
     if (i!=m_credMap.end())
         return i->second;
     const IEntitiesDescriptor* group=provider->getEntitiesDescriptor();
@@ -635,7 +669,7 @@ const pair<string,string>& XMLApplication::getCredentialUse(const IEntityDescrip
         group=group->getEntitiesDescriptor();
     }
 #else
-    map<const XMLCh*,pair<string,string> >::const_iterator i=m_credMap.begin();
+    map<const XMLCh*,XMLPropertySet*>::const_iterator i=m_credMap.begin();
     for (; i!=m_credMap.end(); i++) {
         if (!XMLString::compareString(i->first,provider->getId()))
             return i->second;
@@ -671,9 +705,11 @@ short XMLConfigImpl::acceptNode(const DOMNode* node) const
         !XMLString::compareString(name,SHIBT_L(Implementation)) ||
         !XMLString::compareString(name,SHIBT_L(Listener)) ||
         !XMLString::compareString(name,SHIBT_L(MemorySessionCache)) ||
+        !XMLString::compareString(name,SHIBT_L(MySQLReplayCache)) ||
         !XMLString::compareString(name,SHIBT_L(MySQLSessionCache)) ||
         !XMLString::compareString(name,SHIBT_L(RequestMap)) ||
         !XMLString::compareString(name,SHIBT_L(RequestMapProvider)) ||
+        !XMLString::compareString(name,SHIBT_L(ReplayCache)) ||
         !XMLString::compareString(name,SHIBT_L(SessionCache)) ||
         !XMLString::compareString(name,SHIBT_L(TCPListener)) ||
         !XMLString::compareString(name,SHIBT_L(UnixListener)))
@@ -690,22 +726,27 @@ void XMLConfigImpl::init(bool first)
     Category& log=Category::getInstance("shibtarget.XMLConfig");
 
     try {
-        if (!saml::XML::isElementNamed(ReloadableXMLFileImpl::m_root,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(ShibbolethTargetConfig))) {
-            log.error("Construction requires a valid configuration file: (conf:ShibbolethTargetConfig as root element)");
-            throw MalformedException("Construction requires a valid configuration file: (conf:ShibbolethTargetConfig as root element)");
+        if (!saml::XML::isElementNamed(ReloadableXMLFileImpl::m_root,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(ShibbolethTargetConfig)) &&
+            !saml::XML::isElementNamed(ReloadableXMLFileImpl::m_root,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(SPConfig))) {
+            log.error("Construction requires a valid configuration file: (conf:SPConfig as root element)");
+            throw MalformedException("Construction requires a valid configuration file: (conf:SPConfig as root element)");
         }
 
         SAMLConfig& shibConf=SAMLConfig::getConfig();
         ShibTargetConfig& conf=ShibTargetConfig::getConfig();
         const DOMElement* SHAR=saml::XML::getFirstChildElement(ReloadableXMLFileImpl::m_root,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(SHAR));
+        if (!SHAR)
+            SHAR=saml::XML::getFirstChildElement(ReloadableXMLFileImpl::m_root,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(Global));
         const DOMElement* SHIRE=saml::XML::getFirstChildElement(ReloadableXMLFileImpl::m_root,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(SHIRE));
+        if (!SHIRE)
+            SHIRE=saml::XML::getFirstChildElement(ReloadableXMLFileImpl::m_root,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(Local));
 
         // Initialize log4cpp manually in order to redirect log messages as soon as possible.
         if (conf.isEnabled(ShibTargetConfig::Logging)) {
             const XMLCh* logger=NULL;
-            if (conf.isEnabled(ShibTargetConfig::SHARExtensions))
+            if (conf.isEnabled(ShibTargetConfig::GlobalExtensions))
                 logger=SHAR->getAttributeNS(NULL,SHIBT_L(logger));
-            else if (conf.isEnabled(ShibTargetConfig::SHIREExtensions))
+            else if (conf.isEnabled(ShibTargetConfig::LocalExtensions))
                 logger=SHIRE->getAttributeNS(NULL,SHIBT_L(logger));
             if (!logger || !*logger)
                 logger=ReloadableXMLFileImpl::m_root->getAttributeNS(NULL,SHIBT_L(logger));
@@ -723,7 +764,10 @@ void XMLConfigImpl::init(bool first)
         }
         
         // First load any property sets.
-        load(ReloadableXMLFileImpl::m_root,log,this);
+        map<string,string> root_remap;
+        root_remap["SHAR"]="Global";
+        root_remap["SHIRE"]="Local";
+        load(ReloadableXMLFileImpl::m_root,log,this,&root_remap);
 
         // Much of the processing can only occur on the first instantiation.
         if (first) {
@@ -751,7 +795,7 @@ void XMLConfigImpl::init(bool first)
                 }
             }
             
-            if (conf.isEnabled(ShibTargetConfig::SHARExtensions)) {
+            if (conf.isEnabled(ShibTargetConfig::GlobalExtensions)) {
                 exts=saml::XML::getFirstChildElement(SHAR,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(Extensions));
                 if (exts) {
                     exts=saml::XML::getFirstChildElement(exts,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(Library));
@@ -759,23 +803,23 @@ void XMLConfigImpl::init(bool first)
                         auto_ptr_char path(exts->getAttributeNS(NULL,SHIBT_L(path)));
                         try {
                             SAMLConfig::getConfig().saml_register_extension(path.get(),exts);
-                            log.debug("loaded SHAR extension library %s",path.get());
+                            log.debug("loaded Global extension library %s",path.get());
                         }
                         catch (SAMLException& e) {
                             const XMLCh* fatal=exts->getAttributeNS(NULL,SHIBT_L(fatal));
                             if (fatal && (*fatal==chLatin_t || *fatal==chDigit_1)) {
-                                log.fatal("unable to load mandatory SHAR extension library %s: %s", path.get(), e.what());
+                                log.fatal("unable to load mandatory Global extension library %s: %s", path.get(), e.what());
                                 throw;
                             }
                             else
-                                log.crit("unable to load optional SHAR extension library %s: %s", path.get(), e.what());
+                                log.crit("unable to load optional Global extension library %s: %s", path.get(), e.what());
                         }
                         exts=saml::XML::getNextSiblingElement(exts,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(Library));
                     }
                 }
             }
 
-            if (conf.isEnabled(ShibTargetConfig::SHIREExtensions)) {
+            if (conf.isEnabled(ShibTargetConfig::LocalExtensions)) {
                 exts=saml::XML::getFirstChildElement(SHIRE,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(Extensions));
                 if (exts) {
                     exts=saml::XML::getFirstChildElement(exts,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(Library));
@@ -783,16 +827,16 @@ void XMLConfigImpl::init(bool first)
                         auto_ptr_char path(exts->getAttributeNS(NULL,SHIBT_L(path)));
                         try {
                             SAMLConfig::getConfig().saml_register_extension(path.get(),exts);
-                            log.debug("loaded SHIRE extension library %s",path.get());
+                            log.debug("loaded Local extension library %s",path.get());
                         }
                         catch (SAMLException& e) {
                             const XMLCh* fatal=exts->getAttributeNS(NULL,SHIBT_L(fatal));
                             if (fatal && (*fatal==chLatin_t || *fatal==chDigit_1)) {
-                                log.fatal("unable to load mandatory SHIRE extension library %s: %s", path.get(), e.what());
+                                log.fatal("unable to load mandatory Local extension library %s: %s", path.get(), e.what());
                                 throw;
                             }
                             else
-                                log.crit("unable to load optional SHIRE extension library %s: %s", path.get(), e.what());
+                                log.crit("unable to load optional Local extension library %s: %s", path.get(), e.what());
                         }
                         exts=saml::XML::getNextSiblingElement(exts,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(Library));
                     }
@@ -875,9 +919,25 @@ void XMLConfigImpl::init(bool first)
                     }
                 }
                 
-                // For now, just default the replay cache.
-                // TODO: make it configurable/pluggable
-                m_outer->m_replayCache=IReplayCache::getInstance();
+                // Replay cache.
+                exts=saml::XML::getFirstChildElement(SHAR,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(MySQLReplayCache));
+                if (exts) {
+                    log.info("building Replay Cache of type %s...",shibtarget::XML::MySQLReplayCacheType);
+                    m_outer->m_replayCache=IReplayCache::getInstance(shibtarget::XML::MySQLSessionCacheType,exts);
+                }
+                else {
+                    exts=saml::XML::getFirstChildElement(SHAR,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(ReplayCache));
+                    if (exts) {
+                        auto_ptr_char type(exts->getAttributeNS(NULL,SHIBT_L(type)));
+                        log.info("building Replay Cache of type %s...",type.get());
+                        m_outer->m_replayCache=IReplayCache::getInstance(type.get(),exts);
+                    }
+                    else {
+                        // OpenSAML default provider.
+                        log.info("building default Replay Cache...");
+                        m_outer->m_replayCache=IReplayCache::getInstance();
+                    }
+                }
             }
         }
         
@@ -952,13 +1012,11 @@ void XMLConfigImpl::init(bool first)
     }
     catch (SAMLException& e) {
         log.errorStream() << "Error while loading SP configuration: " << e.what() << CategoryStream::ENDLINE;
-        this->~XMLConfigImpl();
         throw;
     }
 #ifndef _DEBUG
     catch (...) {
         log.error("Unexpected error while loading SP configuration");
-        this->~XMLConfigImpl();
         throw;
     }
 #endif

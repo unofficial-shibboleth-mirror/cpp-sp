@@ -1,4 +1,4 @@
-<ShibbolethTargetConfig	xmlns="urn:mace:shibboleth:target:config:1.0"
+<SPConfig xmlns="urn:mace:shibboleth:target:config:1.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="urn:mace:shibboleth:target:config:1.0 @-PKGXMLDIR-@/shibboleth-targetconfig-1.0.xsd"
 	logger="@-PKGSYSCONFDIR-@/shibboleth.logger" clockSkew="180">
@@ -7,7 +7,7 @@
         <Library path="@-LIBEXECDIR-@/xmlproviders.so" fatal="true"/>
     </Extensions>
 
-    <SHAR logger="@-PKGSYSCONFDIR-@/shar.logger">
+    <Global logger="@-PKGSYSCONFDIR-@/shar.logger">
 		
 		<!--
         <Extensions>
@@ -15,7 +15,7 @@
         </Extensions>
         -->
     
-    	<!-- only one listener can be defined. -->
+    	<!-- Only one listener can be defined. -->
         <UnixListener address="/tmp/shar-socket"/>
 
         <!-- <TCPListener address="127.0.0.1" port="12345" acl="127.0.0.1"/> -->
@@ -29,6 +29,7 @@
         	strictValidity - if we have expired attrs, and can't get new ones, keep using them?
         	propagateErrors - suppress errors while getting attrs or let user see them?
         	retryInterval - if propagateErrors is false and query fails, how long to wait before trying again
+       	Only one session cache can be defined.
         -->
         <MemorySessionCache cleanupInterval="300" cacheTimeout="3600" AATimeout="30" AAConnectTimeout="15"
             defaultLifetime="1800" retryInterval="300" strictValidity="false" propagateErrors="true"/>
@@ -40,24 +41,27 @@
             <Argument>&#x2D;&#x2D;datadir=@-PREFIX-@/data</Argument>
         </MySQLSessionCache>
         -->
-    </SHAR>
+        
+        <!-- Default replay cache is in-memory. -->
+        <!--
+        <MySQLReplayCache>
+            <Argument>&#x2D;&#x2D;language=@-PREFIX-@/share/english</Argument>
+            <Argument>&#x2D;&#x2D;datadir=@-PREFIX-@/data</Argument>
+        </MySQLReplayCache>
+        -->
+    </Global>
     
-    <SHIRE logger="@-PKGSYSCONFDIR-@/shire.logger">
+    <Local logger="@-PKGSYSCONFDIR-@/shire.logger">
         <!--
         To customize behavior, map hostnames and path components to applicationId and other settings.
         Can be either a pointer to an external file or an inline configuration.
         -->
-        <!--
-        <RequestMapProvider type="edu.internet2.middleware.shibboleth.target.provider.XMLRequestMap"
-            uri="@-PKGSYSCONFDIR-@/applications.xml"/>
-        -->
-
-        <RequestMapProvider type="edu.internet2.middleware.shibboleth.target.provider.XMLRequestMap">
+        <RequestMapProvider type="edu.internet2.middleware.shibboleth.sp.provider.XMLRequestMapProvider">
             <RequestMap applicationId="default">
                 <!--
                 This requires a session for documents in /secure on the containing host with http and
                 https on the default ports. Note that the name and port in the <Host> elements MUST match
-                Apache's ServerName and Port directives or the IIS Site mapping in the <ISAPI> element
+                Apache's ServerName and Port directives or the IIS Site name in the <ISAPI> element
                 below.
                 -->
                 <Host name="localhost">
@@ -72,15 +76,25 @@
         <Implementation>
             <ISAPI normalizeRequest="true">
             	<!--
-            	Maps IIS IID values to the host scheme/name/port. The name is required so that
+            	Maps IIS Instance ID values to the host scheme/name/port. The name is required so that
             	the proper <Host> in the request map above is found without having to cover every
             	possible DNS/IP combination the user might enter. The port and scheme can
             	usually be omitted, so the HTTP request's port and scheme will be used.
+            	
+            	<Alias> elements can specify alternate permissible client-specified server names.
+            	If a client request uses such a name, normalized redirects will use it, but the
+            	request map processing is still based on the default name attribute for the
+            	site. This reduces duplicate data entry in the request map for every legal
+            	hostname a site might permit. In the example below, only localhost needs a
+            	<Host> element in the map, but localhost.localdomain could be used by a client
+            	and those requests will map to localhost for configuration settings.
             	-->
-                <Site id="1" name="localhost"/>
+                <Site id="1" name="localhost">
+                	<Alias>localhost.localdomain</Alias>
+                </Site>
             </ISAPI>
         </Implementation>
-    </SHIRE>
+    </Local>
 
     <Applications xmlns:saml="urn:oasis:names:tc:SAML:1.0:assertion"
     	id="default" providerId="https://example.org/shibboleth/target">
@@ -100,9 +114,11 @@
 
         <!--
         You should customize these pages! You can add attributes with values that can be plugged
-        into your templates.
+        into your templates. You can remove the access attribute to cause the module to return a
+        standard 403 Forbidden error code if authorization fails, and then customize that condition
+        using your web server.
         -->
-        <Errors shire="@-PKGSYSCONFDIR-@/shireError.html"
+        <Errors session="@-PKGSYSCONFDIR-@/sessionError.html"
             rm="@-PKGSYSCONFDIR-@/rmError.html"
             access="@-PKGSYSCONFDIR-@/accessError.html"
             supportContact="root@localhost"
@@ -111,7 +127,7 @@
 
 		<!-- Indicates what credentials to use when communicating -->
         <CredentialUse TLS="defcreds" Signing="defcreds">
-            <!-- RelyingParty elements customize credentials for specific origins or federations -->
+            <!-- RelyingParty elements customize credentials for specific IdPs or federations -->
             <!--
             <RelyingParty Name="urn:mace:inqueue" TLS="inqueuecreds" Signing="inqueuecreds"/>
             -->
@@ -126,12 +142,12 @@
         -->
 
         <!-- AAP can be inline or in a separate file -->
-        <AAPProvider type="edu.internet2.middleware.shibboleth.target.provider.XMLAAP" uri="@-PKGSYSCONFDIR-@/AAP.xml"/>
+        <AAPProvider type="edu.internet2.middleware.shibboleth.aap.provider.XMLAAP" uri="@-PKGSYSCONFDIR-@/AAP.xml"/>
         
         <!-- Metadata consists of site/operational metadata, trust, revocation providers. Can be external or inline. -->
 
         <!-- Dummy metadata for private testing, delete when deploying. -->
-		<FederationProvider type="edu.internet2.middleware.shibboleth.common.provider.XMLMetadata">
+		<FederationProvider type="edu.internet2.middleware.shibboleth.metadata.provider.XMLMetadata">
 			<EntityDescriptor entityID="https://example.org/shibboleth" xmlns="urn:oasis:names:tc:SAML:2.0:metadata">
 				<IDPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:1.1:protocol urn:mace:shibboleth:1.0">
 					<Extensions>
@@ -163,9 +179,9 @@
 		</FederationProvider>
 
 		<!-- InQueue pilot federation, delete for production deployments. -->
-        <FederationProvider type="edu.internet2.middleware.shibboleth.common.provider.XMLMetadata"
+        <FederationProvider type="edu.internet2.middleware.shibboleth.metadata.provider.XMLMetadata"
             uri="@-PKGSYSCONFDIR-@/IQ-sites.xml"/>
-        <TrustProvider type="edu.internet2.middleware.shibboleth.common.provider.XMLTrust"
+        <TrustProvider type="edu.internet2.middleware.shibboleth.trust.provider.XMLTrust"
             uri="@-PKGSYSCONFDIR-@/IQ-trust.xml"/>
 		<!--
 		Revocation using X.509 CRLs is an optional feature in some trust metadata or you may
@@ -176,7 +192,7 @@
             uri="@-PKGSYSCONFDIR-@/IQ-trust.xml"/>
         -->
                     
-        <!-- zero or more SAML Audience condition matches -->
+        <!-- zero or more SAML Audience condition matches (mainly Shib 1.1 compatibility) -->
         <saml:Audience>urn:mace:inqueue</saml:Audience>
         
         <!--
@@ -231,5 +247,5 @@
         </Credentials>
     </CredentialsProvider>
 
-</ShibbolethTargetConfig>
+</SPConfig>
 

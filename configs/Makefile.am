@@ -28,7 +28,7 @@ CONFIGFILES = \
 	shibboleth.logger \
 	accessError.html \
 	rmError.html \
-	shireError.html \
+	sessionError.html \
 	shar.key \
 	shar.crt
 
@@ -109,7 +109,7 @@ EXTRA_DIST = .cvsignore \
 	shibboleth.logger \
 	accessError.html \
 	rmError.html \
-	shireError.html \
+	sessionError.html \
 	AAP.xml.in \
 	IQ-sites.xml.in \
 	IQ-trust.xml.in \

@@ -192,13 +192,15 @@ namespace shibtarget {
         virtual saml::Iterator<shibboleth::ITrust*> getTrustProviders() const=0;
         virtual saml::Iterator<shibboleth::IRevocation*> getRevocationProviders() const=0;
         virtual saml::Iterator<const XMLCh*> getAudiences() const=0;
-        virtual const char* getTLSCred(const shibboleth::IEntityDescriptor* provider) const=0;
-        virtual const char* getSigningCred(const shibboleth::IEntityDescriptor* provider) const=0;
+        virtual const IPropertySet* getCredentialUse(const shibboleth::IEntityDescriptor* provider) const=0;
+
         // caller is borrowing object, must use within scope of config lock
         virtual const saml::SAMLBrowserProfile* getBrowserProfile() const=0;
         virtual const saml::SAMLBinding* getBinding(const XMLCh* binding) const=0;
+
         // caller is given ownership of object, must use and delete within scope of config lock
         virtual saml::SAMLBrowserProfile::ArtifactMapper* getArtifactMapper() const=0;
+
         virtual ~IApplication() {}
     };
 
@@ -257,8 +259,8 @@ namespace shibtarget {
             Credentials = 16,
             AAP = 32,
             RequestMapper = 64,
-            SHARExtensions = 128,
-            SHIREExtensions = 256,
+            GlobalExtensions = 128,
+            LocalExtensions = 256,
             Logging = 512
         };
         void setFeatures(long enabled) {m_features = enabled;}
