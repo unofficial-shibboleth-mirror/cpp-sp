@@ -1,5 +1,3 @@
-dnl $Id$ 
-
 AC_PREREQ([2.50])
 AC_INIT([shibboleth], [1.0], [mace-shib-users@internet2.edu], [shibboleth])
 AM_CONFIG_HEADER(config.h)

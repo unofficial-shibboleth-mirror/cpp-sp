@@ -1,5 +1,3 @@
-## $Id$ 
-
 AUTOMAKE_OPTIONS = foreign
 
 pkgdocdir = $(prefix)/doc/@PACKAGE@
@@ -11,4 +9,7 @@ pkgdoc_DATA = \
 	README.txt \
 	OPENSSL.LICENSE \
 	LOG4CPP.LICENSE \
-	CURL.LICENSE
+	CURL.LICENSE \
+	InQueue.html \
+	DEPLOY-GUIDE-ORIGIN.html \
+	DEPLOY-GUIDE-TARGET.html

@@ -1,5 +1,3 @@
-## $Id$
-
 AUTOMAKE_OPTIONS = foreign
 
 ACLOCAL_AMFLAGS = -I .
@@ -22,6 +20,17 @@ EXTRA_DIST = \
 	configs/rmError.html \
 	configs/shire.logger \
 	configs/AAP.xml \
+	doc/CREDITS.txt \
+	doc/INSTALL.txt \
+	doc/LICENSE.txt \
+	doc/NEWS.txt \
+	doc/README.txt \
+	doc/OPENSSL.LICENSE \
+	doc/LOG4CPP.LICENSE \
+	doc/CURL.LICENSE \
+	doc/InQueue.html \
+	doc/DEPLOY-GUIDE-ORIGIN.html \
+	doc/DEPLOY-GUIDE-TARGET.html \
 	libtool.m4 \
 	acx_pthread.m4 \
 	acx_rpctest.m4
