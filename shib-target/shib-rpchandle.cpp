@@ -123,14 +123,10 @@ CLIENT * RPCHandle::connect(void)
     return m_priv->m_clnt;
   }
 
-#ifdef WIN32
-  m_priv->log->info ("trying to connect to SHAR at %u.",m_priv->m_shar);
-#else
   m_priv->log->info ("trying to connect to SHAR at %s.",m_priv->m_shar);
-#endif
 
   ShibSocket sock;
-
+  
   if (shib_sock_create (&sock) != 0) {
     m_priv->log->error ("Cannot create socket");
     throw ShibTargetException (SHIBRPC_UNKNOWN_ERROR, "Cannot create socket");
