@@ -826,8 +826,6 @@ extern "C" int shib_check_auth(request_rec* r)
     bool method_restricted=false;
     const char *t, *w;
     
-    ap_table_get(r->headers_in,"Shib-EP-Affiliation");
-
     const array_header* reqs_arr=ap_requires(r);
     if (!reqs_arr)
         return OK;
