@@ -131,7 +131,8 @@ public:
   int rc=WaitForSingleObject(thread_id,INFINITE);
   switch(rc) {
   case WAIT_OBJECT_0:
-	  map_windows_error_status_to_pthreads(
+      if (thread_return)
+	    map_windows_error_status_to_pthreads(
 		  GetExitCodeThread(thread_id,(unsigned long *)thread_return));
   default:
     return THREAD_ERROR+1;
