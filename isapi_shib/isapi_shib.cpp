@@ -67,6 +67,9 @@
 #include <stdexcept>
 
 #include <httpfilt.h>
+#include <httpext.h>
+
+#include <cgiparse.h>
 
 using namespace std;
 using namespace log4cpp;
@@ -114,6 +117,23 @@ extern "C" __declspec(dllexport) BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD f
 {
     if (fdwReason==DLL_PROCESS_ATTACH)
         g_hinstDLL=hinstDLL;
+    return TRUE;
+}
+
+extern "C" BOOL WINAPI GetExtensionVersion(HSE_VERSION_INFO* pVer)
+{
+    if (!pVer)
+        return FALSE;
+        
+    if (!g_Config)
+    {
+        LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL,
+                "Extension mode startup not possible, is the DLL loaded as a filter?");
+        return FALSE;
+    }
+
+    pVer->dwExtensionVersion=HSE_VERSION;
+    strncpy(pVer->lpszExtensionDesc,"Shibboleth ISAPI Extension",HSE_MAX_EXT_DLL_NAME_LEN-1);
     return TRUE;
 }
 
@@ -194,7 +214,12 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
     return TRUE;
 }
 
-extern "C" BOOL WINAPI TerminateFilter(DWORD dwFlags)
+extern "C" BOOL WINAPI TerminateExtension(DWORD)
+{
+    return TRUE;    // cleanup should happen when filter unloads
+}
+
+extern "C" BOOL WINAPI TerminateFilter(DWORD)
 {
     delete rpc_handle_key;
     if (g_Config)
@@ -262,6 +287,26 @@ void GetServerVariable(PHTTP_FILTER_CONTEXT pfc, LPSTR lpszVariable, dynabuf& s,
     size=s.size();
 
     while (!pfc->GetServerVariable(pfc,lpszVariable,s,&size))
+    {
+        // Grumble. Check the error.
+        DWORD e=GetLastError();
+        if (e==ERROR_INSUFFICIENT_BUFFER)
+            s.reserve(size);
+        else
+            break;
+    }
+    if (bRequired && s.empty())
+        throw ERROR_NO_DATA;
+}
+
+void GetServerVariable(LPEXTENSION_CONTROL_BLOCK lpECB, LPSTR lpszVariable, dynabuf& s, DWORD size=80, bool bRequired=true)
+    throw (bad_alloc, DWORD)
+{
+    s.erase();
+    s.reserve(size);
+    size=s.size();
+
+    while (lpECB->GetServerVariable(lpECB->ConnID,lpszVariable,s,&size))
     {
         // Grumble. Check the error.
         DWORD e=GetLastError();
@@ -350,7 +395,7 @@ string get_target(PHTTP_FILTER_CONTEXT pfc, PHTTP_FILTER_PREPROC_HEADERS pn, set
     return s;
 }
 
-string get_shire_location(PHTTP_FILTER_CONTEXT pfc, settings_t& site, const char* target)
+string get_shire_location(settings_t& site, const char* target)
 {
     string shireURL;
     if (g_Config->getINI().get_tag(site.m_name,"shireURL",true,&shireURL) && !shireURL.empty())
@@ -421,7 +466,7 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
         settings_t& site=g_Sites[site_id-1];
 
         string target_url=get_target(pfc,pn,site);
-        string shire_url=get_shire_location(pfc,site,target_url.c_str());
+        string shire_url=get_shire_location(site,target_url.c_str());
 
         // If the user is accessing the SHIRE acceptance point, pass it on.
         if (target_url.find(shire_url)!=string::npos)
@@ -708,3 +753,223 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
 
     return WriteClientError(pfc,"Server reached unreachable code!");
 }
+
+string get_target(LPEXTENSION_CONTROL_BLOCK lpECB, settings_t& site)
+{
+    string s;
+    dynabuf buf(256);
+    GetServerVariable(lpECB,"HTTPS",buf);
+    bool SSL=(buf=="on");
+    if (SSL)
+        s="https://";
+    else
+        s="http://";
+
+    // We use the "normalizeRequest" tag to decide how to obtain the server's name.
+    string tag;
+    if (g_Config->getINI().get_tag(site.m_name,"normalizeRequest",true,&tag) && ShibINI::boolean(tag))
+    {
+        s+=site.m_name;
+    }
+    else
+    {
+        GetServerVariable(lpECB,"SERVER_NAME",buf);
+        s+=buf;
+    }
+
+    GetServerVariable(lpECB,"SERVER_PORT",buf,10);
+    if (buf!=(SSL ? "443" : "80"))
+        s=s + ':' + static_cast<char*>(buf);
+
+    GetServerVariable(lpECB,"URL",buf,255);
+    s+=buf;
+
+    return s;
+}
+
+DWORD WriteClientError(LPEXTENSION_CONTROL_BLOCK lpECB, const char* msg)
+{
+    LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, msg);
+    lpECB->ServerSupportFunction(lpECB->ConnID,HSE_REQ_SEND_RESPONSE_HEADER,"200 OK",0,0);
+    static const char* xmsg="<HTML><HEAD><TITLE>Shibboleth Error</TITLE></HEAD><BODY><H1>Shibboleth Error</H1>";
+    DWORD resplen=strlen(xmsg);
+    lpECB->WriteClient(lpECB->ConnID,(LPVOID)xmsg,&resplen,HSE_IO_SYNC);
+    resplen=strlen(msg);
+    lpECB->WriteClient(lpECB->ConnID,(LPVOID)msg,&resplen,HSE_IO_SYNC);
+    static const char* xmsg2="</BODY></HTML>";
+    resplen=strlen(xmsg2);
+    lpECB->WriteClient(lpECB->ConnID,(LPVOID)xmsg2,&resplen,HSE_IO_SYNC);
+    return HSE_STATUS_SUCCESS;
+}
+
+DWORD WriteClientError(LPEXTENSION_CONTROL_BLOCK lpECB, const char* filename, ShibMLP& mlp)
+{
+    ifstream infile(filename);
+    if (!infile)
+        return WriteClientError(lpECB,"Unable to open error template, check settings.");   
+
+    string res = mlp.run(infile);
+    lpECB->ServerSupportFunction(lpECB->ConnID,HSE_REQ_SEND_RESPONSE_HEADER,"200 OK",0,0);
+    DWORD resplen=res.length();
+    lpECB->WriteClient(lpECB->ConnID,(LPVOID)res.c_str(),&resplen,0);
+    return HSE_STATUS_SUCCESS;
+}
+
+extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
+{
+    ostringstream threadid;
+    threadid << "[" << getpid() << "] shire" << '\0';
+    saml::NDC ndc(threadid.str().c_str());
+
+    ShibINI& ini = g_Config->getINI();
+    string shireError;
+    ShibMLP markupProcessor;
+
+    try
+    {
+        // Determine web site number. This can't really fail, I don't think.
+        dynabuf buf(128);
+        ULONG site_id=0;
+        GetServerVariable(lpECB,"INSTANCE_ID",buf,10);
+        if ((site_id=strtoul(buf,NULL,10))==0)
+            return WriteClientError(lpECB,"IIS site instance appears to be invalid.");
+
+        // Match site instance to site settings.
+        if (site_id>g_Sites.size() || g_Sites[site_id-1].m_name.length()==0)
+            return WriteClientError(lpECB,"Shibboleth filter not configured for this web site.");
+        settings_t& site=g_Sites[site_id-1];
+
+        if (!ini.get_tag(site.m_name, "shireError", true, &shireError))
+            return WriteClientError(lpECB,"The shireError configuration setting is missing, check configuration.");
+
+        string target_url=get_target(lpECB,site);
+        string shire_url = get_shire_location(site,target_url.c_str());
+
+        // Set SHIRE policies.
+        SHIREConfig config;
+        string tag;
+        config.checkIPAddress = (ini.get_tag(site.m_name,"checkIPAddress",true,&tag) && ShibINI::boolean(tag));
+        config.lifetime=config.timeout=0;
+        tag.erase();
+        if (ini.get_tag(site.m_name, "authLifetime", true, &tag))
+            config.lifetime=strtoul(tag.c_str(),NULL,10);
+        tag.erase();
+        if (ini.get_tag(site.m_name, "authTimeout", true, &tag))
+            config.timeout=strtoul(tag.c_str(),NULL,10);
+
+        // Pull the config data we need to handle the various possible conditions.
+        string shib_cookie;
+        if (!ini.get_tag(site.m_name, "cookieName", true, &shib_cookie))
+            return WriteClientError(lpECB,"The cookieName configuration setting is missing, check configuration.");
+    
+        string wayfLocation;
+        if (!ini.get_tag(site.m_name, "wayfURL", true, &wayfLocation))
+            return WriteClientError(lpECB,"The wayfURL configuration setting is missing, check configuration.");
+    
+        bool has_tag = ini.get_tag(site.m_name, "supportContact", true, &tag);
+        markupProcessor.insert("supportContact", has_tag ? tag : "");
+        has_tag = ini.get_tag(site.m_name, "logoLocation", true, &tag);
+        markupProcessor.insert("logoLocation", has_tag ? tag : "");
+        markupProcessor.insert("requestURL", target_url.c_str());
+  
+        // Get an RPC handle and build the SHIRE object.
+        RPCHandle* rpc_handle = (RPCHandle*)rpc_handle_key->getData();
+        if (!rpc_handle)
+        {
+            rpc_handle = new RPCHandle(shib_target_sockname(), SHIBRPC_PROG, SHIBRPC_VERS_1);
+            rpc_handle_key->setData(rpc_handle);
+        }
+        SHIRE shire(rpc_handle, config, shire_url.c_str());
+
+        // Process SHIRE POST
+        if (ini.get_tag(site.m_name, "shireSSLOnly", true, &tag) && ShibINI::boolean(tag))
+        {
+            // Make sure this is SSL, if it should be.
+            GetServerVariable(lpECB,"HTTPS",buf,10);
+            if (buf!="on")
+                throw ShibTargetException(SHIBRPC_OK,"blocked non-SSL access to SHIRE POST processor");
+        }
+        
+        // Make sure this is a POST
+        if (stricmp(lpECB->lpszMethod,"POST"))
+            throw ShibTargetException(SHIBRPC_OK,"blocked non-POST to SHIRE POST processor");
+
+        // Sure sure this POST is an appropriate content type
+        if (!lpECB->lpszContentType || stricmp(lpECB->lpszContentType,"application/x-www-form-urlencoded"))
+            throw ShibTargetException(SHIBRPC_OK,"blocked bad content-type to SHIRE POST processor");
+    
+        // Make sure the "bytes sent" is a reasonable number and that we have all of it.
+        if (lpECB->cbTotalBytes > 1024*1024) // 1MB?
+            throw ShibTargetException (SHIBRPC_OK,"blocked too-large a post to SHIRE POST processor");
+        else if (lpECB->cbTotalBytes>lpECB->cbAvailable)
+            throw ShibTargetException (SHIBRPC_OK,"blocked incomplete post to SHIRE POST processor");
+
+        // Parse the incoming data.
+        HQUERY params=ParseQuery(lpECB);
+        if (!params)
+            throw ShibTargetException (SHIBRPC_OK,"unable to parse form data");
+
+        // Make sure the TARGET parameter exists
+        const char* target = QueryValue(params,"TARGET");
+        if (!target || *target == '\0')
+            throw ShibTargetException(SHIBRPC_OK,"SHIRE POST failed to find TARGET parameter");
+    
+        // Make sure the SAMLResponse parameter exists
+        const char* post = QueryValue(params,"SAMLResponse");
+        if (!post || *post == '\0')
+            throw ShibTargetException (SHIBRPC_OK,"SHIRE POST failed to find SAMLResponse parameter");
+
+        GetServerVariable(lpECB,"REMOTE_ADDR",buf,16);
+
+        // Process the post.
+        string cookie;
+        RPCError* status = shire.sessionCreate(post,buf,cookie);
+    
+        if (status->isError()) {
+            if (status->isRetryable()) {
+                delete status;
+                string wayf=wayfLocation + "?shire=" + url_encode(shire_url.c_str()) + "&target=" + url_encode(target);
+                DWORD len=wayf.length();
+                if (lpECB->ServerSupportFunction(lpECB->ConnID,HSE_REQ_SEND_URL_REDIRECT_RESP,(LPVOID)wayf.c_str(),&len,0))
+                    return HSE_STATUS_SUCCESS;
+                return HSE_STATUS_ERROR;
+            }
+    
+            // Return this error to the user.
+            markupProcessor.insert(*status);
+            delete status;
+            return WriteClientError(lpECB,shireError.c_str(),markupProcessor);
+        }
+        delete status;
+    
+        // We've got a good session, set the cookie and redirect to target.
+        shib_cookie = "Set-Cookie: " + shib_cookie + '=' + cookie + "; path=/\r\n" 
+            "Location: " + target + "\r\n"
+            "Expires: 01-Jan-1997 12:00:00 GMT\r\n"
+            "Cache-Control: private,no-store,no-cache\r\n"
+            "Connection: close\r\n";
+        HSE_SEND_HEADER_EX_INFO hinfo;
+        hinfo.pszStatus="302 Moved";
+        hinfo.pszHeader=shib_cookie.c_str();
+        hinfo.cchStatus=9;
+        hinfo.cchHeader=shib_cookie.length();
+        hinfo.fKeepConn=FALSE;
+        if (lpECB->ServerSupportFunction(lpECB->ConnID,HSE_REQ_SEND_RESPONSE_HEADER_EX,&hinfo,0,0))
+            return HSE_STATUS_SUCCESS;
+    }
+    catch (ShibTargetException &e) {
+        markupProcessor.insert ("errorType", "SHIRE Processing Error");
+        markupProcessor.insert ("errorText", e.what());
+        markupProcessor.insert ("errorDesc", "An error occurred while processing your request.");
+        return WriteClientError(lpECB,shireError.c_str(),markupProcessor);
+    }
+    catch (...) {
+        markupProcessor.insert ("errorType", "SHIRE Processing Error");
+        markupProcessor.insert ("errorText", "Unexpected Exception");
+        markupProcessor.insert ("errorDesc", "An error occurred while processing your request.");
+        return WriteClientError(lpECB,shireError.c_str(),markupProcessor);
+    }
+    
+    return HSE_STATUS_ERROR;
+}
+
