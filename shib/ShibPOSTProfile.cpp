@@ -98,12 +98,12 @@ ShibPOSTProfile::~ShibPOSTProfile()
         delete[] const_cast<XMLCh*>(*i);
 }
 
-SAMLAssertion* ShibPOSTProfile::getSSOAssertion(const SAMLResponse& r)
+const SAMLAssertion* ShibPOSTProfile::getSSOAssertion(const SAMLResponse& r)
 {
     return SAMLPOSTProfile::getSSOAssertion(r,Iterator<const XMLCh*>(m_policies));
 }
 
-SAMLAuthenticationStatement* ShibPOSTProfile::getSSOStatement(const SAMLAssertion& a)
+const SAMLAuthenticationStatement* ShibPOSTProfile::getSSOStatement(const SAMLAssertion& a)
 {
     return SAMLPOSTProfile::getSSOStatement(a);
 }

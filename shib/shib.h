@@ -210,8 +210,8 @@ namespace shibboleth
         ShibPOSTProfile(const saml::Iterator<const XMLCh*>& policies, const XMLCh* issuer);
         virtual ~ShibPOSTProfile();
 
-        virtual saml::SAMLAssertion* getSSOAssertion(const saml::SAMLResponse& r);
-        virtual saml::SAMLAuthenticationStatement* getSSOStatement(const saml::SAMLAssertion& a);
+        virtual const saml::SAMLAssertion* getSSOAssertion(const saml::SAMLResponse& r);
+        virtual const saml::SAMLAuthenticationStatement* getSSOStatement(const saml::SAMLAssertion& a);
         virtual saml::SAMLResponse* accept(const XMLByte* buf, XMLCh** originSitePtr=NULL);
         virtual saml::SAMLResponse* prepare(
             const XMLCh* recipient,
