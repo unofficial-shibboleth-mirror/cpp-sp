@@ -133,8 +133,10 @@ SAMLResponse* ShibBinding::send(
             auto_ptr<SAMLResponse> r(m_binding->send(*ab, req, conf));
             if (r->isSigned() && !t.validate(m_revocations,m_AA,*r))
                 throw TrustException("ShibBinding::send() unable to verify signed response");
+                
+            unsigned long i;
             Iterator<SAMLAssertion*> _a=r->getAssertions();
-            for (unsigned long i=0; i < _a.size(); i++) {
+            for (i=0; i < _a.size(); i++) {
                 // Check any conditions.
                 Iterator<SAMLCondition*> conds=_a[i]->getConditions();
                 while (conds.hasNext()) {
@@ -146,7 +148,9 @@ SAMLResponse* ShibBinding::send(
                         break;
                     }
                 }
-                
+            }
+            
+            for (i=0; i < _a.size(); i++) {
                 // Check signature.
                 if (_a[i]->isSigned() && !t.validate(m_revocations,m_AA,*(_a[i]))) {
                     log.warn("signed assertion failed to validate, removing it");
@@ -190,8 +194,9 @@ SAMLResponse* ShibBinding::send(
             if (r->isSigned() && !t.validate(m_revocations,m_AA,*r))
                 throw TrustException("ShibBinding::send() unable to verify signed response");
 
+            unsigned long i;
             Iterator<SAMLAssertion*> _a=r->getAssertions();
-            for (unsigned long i=0; i < _a.size(); i++) {
+            for (i=0; i < _a.size(); i++) {
                 // Check any conditions.
                 Iterator<SAMLCondition*> conds=_a[i]->getConditions();
                 while (conds.hasNext()) {
@@ -202,7 +207,9 @@ SAMLResponse* ShibBinding::send(
                         i--;
                     }
                 }
-                
+            }
+            
+            for (i=0; i < _a.size(); i++) {
                 // Check signature.
                 if (_a[i]->isSigned() && !t.validate(m_revocations,m_AA,*(_a[i]))) {
                     log.warn("signed assertion failed to validate, removing it");
