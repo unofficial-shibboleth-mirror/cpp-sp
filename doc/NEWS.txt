@@ -1,64 +1,38 @@
-7/31/03
-Version 1.1
+3/15/04
+Version 1.2
 
 This release represents a fully compatible minor update to the Shibboleth 1.0 release,
 and is considered to be ready for production use.
 
-Features and Changes in 1.0 and 1.1
+Features and Changes in 1.2
 
 Origin
 
-New OpenSAML jarfile (see OpenSAML NEWS file)
+New XML-based configuration format
 
-Rewritten Attribute Resolver system in AA to support easy
-addition of attributes at runtime and simpler development
-of alternate attribute sources using Java.
+Simplified logging configuration
 
-Bug fixes to attribute-specific queries
+Enhancements to Attribute Resolver for client-side failover and revamped JDBC connector
 
-Support for SAML authentication method
+Support for file-based signing credentials
 
-A sample resolver file for using standard LDAP person and 
-inetOrgPerson attributes is included. [1.1]
-
-Support for a runtime-derived per-requester persistent 
-identifier attribute to support anonymous personalization 
-by targets has been added via an attribute plugin. [1.1]
-
-Specialized sites without privacy needs can configure 
-identity-based handles interoperable with other SAML 
-deployments. [1.1]
-
-Security enhancements in the Crypto Handle Repository. [1.1]
+Per-target handling of NameIdentifiers and credential selection
 
 
 Target
 
-Revamped security layer with XML-based trust metadata
+New XML-based configuration format, with full support for mapping of URLs to
+distinct "Shibboleth applications" with unique configuration settings
 
-Support for runtime refreshing of metadata from multiple sources
+Revamped API with XML-based site, trust, revocation, and attribute policy metadata
+implementations in pluggable library
 
-Command-line tool to download and verify metadata files
+Replacement of static SSL trust configuration with XML-based policy
 
 Bug fixes to attribute handling
 
-Support for contact information in error pages
+Support for Apache 2.0 has been added
 
-Fixes to handling of Unicode characters
+Protocol enhancements to support 1.2 origins
 
-Support for alternate session backing stores
-
-The SHAR can use TCP sockets when responding to the Apache 
-module, for specialized deployment behind firewalls. [1.1]
-
-Attribute acceptance policies have been greatly enhanced, and 
-are now used to configure all aspects of attribute handling by 
-the target, except for requesting specific attributes by 
-sitename. Adding attributes now takes place in one configuration 
-step. [1.1]
-
-Support for Apache 1.3 on Windows NT/2000/XP/2003 has been added. 
-[1.1]
-
-Microsoft IIS web server support has been added via an ISAPI 
-filter and extension. [1.1] 
+Numerous other leaks and bugs fixed
