@@ -440,15 +440,29 @@ namespace {
     class XMLMetadata : public IMetadata, public ReloadableXMLFile
     {
     public:
-        XMLMetadata(const DOMElement* e) : ReloadableXMLFile(e) {
+        XMLMetadata(const DOMElement* e) : ReloadableXMLFile(e), m_exclusions(true) {
             static const XMLCh uri[] = { chLatin_u, chLatin_r, chLatin_i, chNull };
             if (e->hasAttributeNS(NULL,uri)) {
-                DOMNodeList* nlist=e->getElementsByTagName(SHIB_L(Exclude));
+                // First check for explicit enablement of entities.
+                DOMNodeList* nlist=e->getElementsByTagName(SHIB_L(Include));
                 for (int i=0; nlist && i<nlist->getLength(); i++) {
                     if (nlist->item(i)->hasChildNodes()) {
                         auto_ptr_char temp(nlist->item(i)->getFirstChild()->getNodeValue());
-                        if (temp.get())
-                            m_excludes.insert(temp.get());
+                        if (temp.get()) {
+                            m_set.insert(temp.get());
+                            m_exclusions=false;
+                        }
+                    }
+                }
+                // If there was no explicit enablement, build a set of exclusions.
+                if (m_exclusions) {
+                    nlist=e->getElementsByTagName(SHIB_L(Exclude));
+                    for (int j=0; nlist && j<nlist->getLength(); j++) {
+                        if (nlist->item(j)->hasChildNodes()) {
+                            auto_ptr_char temp(nlist->item(j)->getFirstChild()->getNodeValue());
+                            if (temp.get())
+                                m_set.insert(temp.get());
+                        }
                     }
                 }
             }
@@ -464,7 +478,8 @@ namespace {
         virtual ReloadableXMLFileImpl* newImplementation(const DOMElement* e, bool first=true) const;
         
     private:
-        set<string> m_excludes;
+        bool m_exclusions;
+        set<string> m_set;
     };
 }
 
@@ -602,6 +617,9 @@ XMLMetadataImpl::EncryptionMethod::EncryptionMethod(const DOMElement* e) : m_roo
 
 XMLMetadataImpl::KeyDescriptor::KeyDescriptor(const DOMElement* e) : m_root(e), m_use(unspecified), m_klist(NULL)
 {
+#ifdef _DEBUG
+    saml::NDC ndc("KeyDescriptor");
+#endif
     if (!XMLString::compareString(e->getAttributeNS(NULL,SHIB_L(use)),SHIB_L(encryption)))
         m_use=encryption;
     else if (!XMLString::compareString(e->getAttributeNS(NULL,SHIB_L(use)),SHIB_L(signing)))
@@ -618,12 +636,12 @@ XMLMetadataImpl::KeyDescriptor::KeyDescriptor(const DOMElement* e) : m_root(e), 
     while (child) {
         try {
             if (!m_klist->addXMLKeyInfo(child)) {
-                Category::getInstance(XMLPROVIDERS_LOGCAT".XMLMetadataImpl.KeyDescriptor").warn(
+                Category::getInstance(XMLPROVIDERS_LOGCAT".Metadata").warn(
                     "skipped unsupported ds:KeyInfo child element");
             }
         }
         catch (XSECCryptoException& xe) {
-            Category::getInstance(XMLPROVIDERS_LOGCAT".XMLMetadataImpl.KeyDescriptor").error(
+            Category::getInstance(XMLPROVIDERS_LOGCAT".Metadata").error(
                 "unable to process ds:KeyInfo child element: %s",xe.getMsg());
         }
         child=saml::XML::getNextSiblingElement(child);
@@ -644,6 +662,9 @@ XMLMetadataImpl::KeyDescriptor::~KeyDescriptor()
 
 XMLMetadataImpl::KeyAuthority::KeyAuthority(const DOMElement* e) : m_depth(1)
 {
+#ifdef _DEBUG
+    saml::NDC ndc("KeyAuthority");
+#endif
     if (e->hasAttributeNS(NULL,SHIB_L(VerifyDepth)))
         m_depth=XMLString::parseInt(e->getAttributeNS(NULL,SHIB_L(VerifyDepth)));
     
@@ -658,12 +679,12 @@ XMLMetadataImpl::KeyAuthority::KeyAuthority(const DOMElement* e) : m_depth(1)
         while (child) {
             try {
                 if (!klist->addXMLKeyInfo(child)) {
-                    Category::getInstance(XMLPROVIDERS_LOGCAT".XMLMetadataImpl.KeyAuthority").warn(
+                    Category::getInstance(XMLPROVIDERS_LOGCAT".Metadata").warn(
                         "skipped unresolvable ds:KeyInfo child element");
                 }
             }
             catch (XSECCryptoException& xe) {
-                Category::getInstance(XMLPROVIDERS_LOGCAT".XMLMetadataImpl.KeyAuthority").error(
+                Category::getInstance(XMLPROVIDERS_LOGCAT".Metadata").error(
                     "unable to process ds:KeyInfo child element: %s",xe.getMsg());
             }
             child=saml::XML::getNextSiblingElement(child);
@@ -672,7 +693,7 @@ XMLMetadataImpl::KeyAuthority::KeyAuthority(const DOMElement* e) : m_depth(1)
         if (klist->getSize()>0)
             m_klists.push_back(klist.release());
         else
-            Category::getInstance(XMLPROVIDERS_LOGCAT".XMLMetadataImpl.KeyAuthority").warn(
+            Category::getInstance(XMLPROVIDERS_LOGCAT".Metadata").warn(
                 "skipping ds:KeyInfo with no resolvable child elements");
         e=saml::XML::getNextSiblingElement(e,saml::XML::XMLSIG_NS,L(KeyInfo));
     }
@@ -1062,7 +1083,7 @@ XMLMetadataImpl::EntityDescriptor::EntityDescriptor(
             }
             else {
                 string sourceid=SAMLArtifact::toHex(SAMLArtifactType0001::generateSourceId(id.get()));
-                Category::getInstance(XMLPROVIDERS_LOGCAT".XMLMetadataImpl").debug(
+                Category::getInstance(XMLPROVIDERS_LOGCAT".Metadata").debug(
                     "generated artifact SourceID (%s) for entity (%s)",sourceid.c_str(),id.get()
                     );
                 wrapper->m_sources.insert(pair<string,const EntityDescriptor*>(sourceid,this));
@@ -1161,9 +1182,9 @@ XMLMetadataImpl::EntitiesDescriptor::~EntitiesDescriptor()
 void XMLMetadataImpl::init()
 {
 #ifdef _DEBUG
-    NDC ndc("XMLMetadataImpl");
+    NDC ndc("init");
 #endif
-    Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".XMLMetadataImpl");
+    Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".Metadata");
 
     try
     {
@@ -1204,7 +1225,9 @@ XMLMetadataImpl::~XMLMetadataImpl()
 
 const IEntityDescriptor* XMLMetadata::lookup(const char* providerId) const
 {
-    if (m_excludes.find(providerId)!=m_excludes.end())
+    if (m_exclusions && m_set.find(providerId)!=m_set.end())
+        return NULL;
+    else if (!m_exclusions && m_set.find(providerId)==m_set.end())
         return NULL;
         
     XMLMetadataImpl* impl=dynamic_cast<XMLMetadataImpl*>(getImplementation());
@@ -1247,7 +1270,9 @@ const IEntityDescriptor* XMLMetadata::lookup(const SAMLArtifact* artifact) const
     // Check exclude list.
     if (range.first!=range.second) {
         auto_ptr_char id(range.first->second->getId());
-        if (m_excludes.find(id.get())!=m_excludes.end())
+        if (m_exclusions && m_set.find(id.get())!=m_set.end())
+            return NULL;
+        else if (!m_exclusions && m_set.find(id.get())==m_set.end())
             return NULL;
 
         for (XMLMetadataImpl::sitemap_t::const_iterator i=range.first; i!=range.second; i++)

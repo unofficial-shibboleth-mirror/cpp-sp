@@ -366,6 +366,9 @@ const XMLCh XML::Literals::url[] = { chLatin_u, chLatin_r, chLatin_l, chNull };
 const XMLCh XML::Literals::Exclude[] =
 { chLatin_E, chLatin_x, chLatin_c, chLatin_l, chLatin_u, chLatin_d, chLatin_e, chNull };
 
+const XMLCh XML::Literals::Include[] =
+{ chLatin_I, chLatin_n, chLatin_c, chLatin_l, chLatin_u, chLatin_d, chLatin_e, chNull };
+
 const XMLCh XML::Literals::AdditionalMetadataLocation[] =
 { chLatin_A, chLatin_d, chLatin_d, chLatin_i, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chLatin_a, chLatin_l,
   chLatin_M, chLatin_e, chLatin_t, chLatin_a, chLatin_d, chLatin_a, chLatin_t, chLatin_a,

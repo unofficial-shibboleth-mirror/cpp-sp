@@ -192,6 +192,7 @@ public:
         static const XMLCh regexp[];
         static const XMLCh xpath[];
 
+        static const XMLCh Include[];
         static const XMLCh Exclude[];
         static const XMLCh url[];
         
