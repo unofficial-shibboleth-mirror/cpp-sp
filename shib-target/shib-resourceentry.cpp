@@ -199,8 +199,8 @@ bool ResourceEntry::isValid(int slop)
     count++;
     auto_ptr<XMLCh> x1(curDateTime.toString());
     auto_ptr<XMLCh> x2(thistime->toString());
-    auto_ptr<char> nowptr(XMLString::transcode(x1));
-    auto_ptr<char> assnptr(XMLString::transcode(x2));
+    auto_ptr<char> nowptr(XMLString::transcode(x1.get()));
+    auto_ptr<char> assnptr(XMLString::transcode(x2.get()));
 
     m_priv->log->debug ("comparing now (%s) to %s", nowptr.get(), assnptr.get());
     int result=XMLDateTime::compareOrder(&curDateTime, thistime);
