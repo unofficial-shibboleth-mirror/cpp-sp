@@ -100,7 +100,7 @@ namespace shibboleth
         virtual ContactType getType() const=0;
         virtual const char* getName() const=0;
         virtual const char* getEmail() const=0;
-        virtual ~IContactInfo()=0;
+        virtual ~IContactInfo() {}
     };
 
 #ifdef SHIB_INSTANTIATE
@@ -122,7 +122,7 @@ namespace shibboleth
         virtual XSECCryptoX509* getHandleServiceCert(const XMLCh* handleService) const=0;
         virtual saml::Iterator<std::pair<saml::xstring,bool> > getSecurityDomains(const XMLCh* originSite) const=0;
         virtual time_t getTimestamp() const=0;
-        virtual ~IOriginSiteMapper()=0;
+        virtual ~IOriginSiteMapper() {};
     };
 
     class SHIB_EXPORTS OriginSiteMapper : public IOriginSiteMapper
