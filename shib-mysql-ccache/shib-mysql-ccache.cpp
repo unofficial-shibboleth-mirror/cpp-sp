@@ -44,6 +44,9 @@
 
 #include <mysql.h>
 
+// wanted to use MySQL codes for this, but can't seem to get back a 145
+#define isCorrupt(s) strstr(s,"(errno: 145)")
+
 #ifdef HAVE_LIBDMALLOCXX
 #include <dmalloc.h>
 #endif
@@ -129,6 +132,7 @@ private:
   void createDatabase(MYSQL*, int major, int minor);
   void upgradeDatabase(MYSQL*);
   void getVersion(MYSQL*, int* major_p, int* minor_p);
+  bool repairTable(MYSQL*&, const char* table);
   void mysqlInit(void);
 };
 
@@ -144,8 +148,7 @@ extern "C" void shib_mysql_destroy_handle(void* data);
 
 MYSQL* ShibMySQLCCache::getMYSQL() const
 {
-  void* data = m_mysql->getData();
-  return (MYSQL*)data;
+  return (MYSQL*)m_mysql->getData();
 }
 
 void ShibMySQLCCache::thread_init()
@@ -157,19 +160,18 @@ void ShibMySQLCCache::thread_init()
   if (!mysql) {
     log->error("mysql_init failed");
     mysql_close(mysql);
-    throw runtime_error("mysql_init()");
+    throw SAMLException("ShibMySQLCCache::thread_init(): mysql_init() failed");
   }
 
   if (!mysql_real_connect(mysql, NULL, NULL, NULL, "shar", 0, NULL, 0)) {
     if (initialized) {
       log->crit("mysql_real_connect failed: %s", mysql_error(mysql));
-      throw runtime_error("mysql_real_connect");
-
+      mysql_close(mysql);
+      throw SAMLException("ShibMySQLCCache::thread_init(): mysql_real_connect() failed");
     } else {
-      log->info("mysql_real_connect failed: %s.  Trying to create",
-		mysql_error(mysql));
+      log->info("mysql_real_connect failed: %s.  Trying to create", mysql_error(mysql));
 
-      // This will throw a runtime error if it fails.
+      // This will throw an exception if it fails.
       createDatabase(mysql, PLUGIN_VER_MAJOR, PLUGIN_VER_MINOR);
     }
   }
@@ -185,13 +187,14 @@ void ShibMySQLCCache::thread_init()
        upgradeDatabase(mysql);
     }
     else {
+        mysql_close(mysql);
         log->crit("Invalid database version: %d.%d", major, minor);
-        throw runtime_error("Invalid Database version");
+        throw SAMLException("ShibMySQLCCache::thread_init(): Invalid database version");
     }
   }
 
   // We're all set.. Save off the handle for this thread.
-  m_mysql->setData((void*)mysql);
+  m_mysql->setData(mysql);
 }
 
 ShibMySQLCCache::ShibMySQLCCache(const DOMElement* e)
@@ -225,6 +228,7 @@ ShibMySQLCCache::~ShibMySQLCCache()
   shutdown_wait->signal();
   cleanup_thread->join(NULL);
 
+  thread_end();
   delete m_cache;
   delete m_mysql;
 
@@ -234,8 +238,8 @@ ShibMySQLCCache::~ShibMySQLCCache()
 
 ISessionCacheEntry* ShibMySQLCCache::find(const char* key, const IApplication* application)
 {
-  saml::NDC ndc("mysql::find");
-  ISessionCacheEntry* res = m_cache->find(key,application);
+  saml::NDC ndc("ShibMySQLCCache::find");
+  ISessionCacheEntry* res = m_cache->find(key, application);
   if (!res) {
 
     log->debug("Looking in database...");
@@ -245,8 +249,14 @@ ISessionCacheEntry* ShibMySQLCCache::find(const char* key, const IApplication* a
 
     MYSQL_RES* rows;
     MYSQL* mysql = getMYSQL();
-    if (mysql_query(mysql, q.c_str()))
-      log->error("Error searching for %s: %s", key, mysql_error(mysql));
+    if (mysql_query(mysql, q.c_str())) {
+      const char* err=mysql_error(mysql);
+      log->error("Error searching for %s: %s", key, err);
+      if (isCorrupt(err) && repairTable(mysql,"state")) {
+        if (mysql_query(mysql, q.c_str()))
+          log->error("Error retrying search for %s: %s", key, mysql_error(mysql));
+      }
+    }
 
     rows = mysql_store_result(mysql);
 
@@ -311,7 +321,7 @@ void ShibMySQLCCache::insert(
     saml::SAMLResponse* r,
     const IRoleDescriptor* source)
 {
-  saml::NDC ndc("mysql::insert");
+  saml::NDC ndc("ShibMySQLCCache::insert");
   ostringstream os;
   os << *s;
 
@@ -319,18 +329,26 @@ void ShibMySQLCCache::insert(
 
   log->debug("Query: %s", q.c_str());
 
-  // Add it to the memory cache
-  m_cache->insert(key, application, s, client_addr, r, source);
-
   // then add it to the database
   MYSQL* mysql = getMYSQL();
-  if (mysql_query(mysql, q.c_str()))
-    log->error("Error inserting %s: %s", key, mysql_error(mysql));
+  if (mysql_query(mysql, q.c_str())) {
+    const char* err=mysql_error(mysql);
+    log->error("Error inserting %s: %s", key, err);
+    if (isCorrupt(err) && repairTable(mysql,"state")) {
+        // Try again...
+        if (mysql_query(mysql, q.c_str()))
+          log->error("Error inserting %s: %s", key, mysql_error(mysql));
+          throw SAMLException("ShibMySQLCCache::insert(): inset failed");
+    }
+  }
+
+  // Add it to the memory cache
+  m_cache->insert(key, application, s, client_addr, r, source);
 }
 
 void ShibMySQLCCache::remove(const char* key)
 {
-  saml::NDC ndc("mysql::remove");
+  saml::NDC ndc("ShibMySQLCCache::remove");
 
   // Remove the cached version
   m_cache->remove(key);
@@ -338,14 +356,21 @@ void ShibMySQLCCache::remove(const char* key)
   // Remove from the database
   string q = string("DELETE FROM state WHERE cookie='") + key + "'";
   MYSQL* mysql = getMYSQL();
-  if (mysql_query(mysql, q.c_str()))
-    log->info("Error deleting entry %s: %s", key, mysql_error(mysql));
+  if (mysql_query(mysql, q.c_str())) {
+    const char* err=mysql_error(mysql);
+    log->error("Error deleting entry %s: %s", key, err);
+    if (isCorrupt(err) && repairTable(mysql,"state")) {
+        // Try again...
+        if (mysql_query(mysql, q.c_str()))
+          log->error("Error deleting entry %s: %s", key, mysql_error(mysql));
+    }
+  }
 }
 
 void ShibMySQLCCache::cleanup()
 {
   Mutex* mutex = Mutex::create();
-  saml::NDC ndc("mysql::cleanup");
+  saml::NDC ndc("ShibMySQLCCache::cleanup");
 
   thread_init();
 
@@ -391,8 +416,14 @@ void ShibMySQLCCache::cleanup()
       "UNIX_TIMESTAMP(NOW()) - UNIX_TIMESTAMP(atime) >= " << timeout_life;
 
     MYSQL_RES *rows;
-    if (mysql_query(mysql, q.str().c_str()))
-      log->error("Error searching for old items: %s", mysql_error(mysql));
+    if (mysql_query(mysql, q.str().c_str())) {
+      const char* err=mysql_error(mysql);
+      log->error("Error searching for old items: %s", err);
+        if (isCorrupt(err) && repairTable(mysql,"state")) {
+          if (mysql_query(mysql, q.str().c_str()))
+            log->error("Error re-searching for old items: %s", mysql_error(mysql));
+        }
+    }
 
     rows = mysql_store_result(mysql);
     if (!rows)
@@ -432,6 +463,23 @@ void* ShibMySQLCCache::cleanup_fcn(void* cache_p)
   return NULL;
 }
 
+bool ShibMySQLCCache::repairTable(MYSQL*& mysql, const char* table)
+{
+  string q = string("REPAIR TABLE ") + table;
+  if (mysql_query(mysql, q.c_str())) {
+    log->error("Error repairing table %s: %s", table, mysql_error(mysql));
+    return false;
+  }
+
+  // seems we have to recycle the connection to get the thread to keep working
+  // other threads seem to be ok, but we should monitor that
+  mysql_close(mysql);
+  m_mysql->setData(NULL);
+  thread_init();
+  mysql=getMYSQL();
+  return true;
+}
+
 void ShibMySQLCCache::createDatabase(MYSQL* mysql, int major, int minor)
 {
   log->info("Creating database.");
@@ -441,48 +489,55 @@ void ShibMySQLCCache::createDatabase(MYSQL* mysql, int major, int minor)
     ms = mysql_init(NULL);
     if (!ms) {
       log->crit("mysql_init failed");
-      throw ShibTargetException();
+      throw SAMLException("ShibMySQLCCache::createDatabase(): mysql_init failed");
     }
 
     if (!mysql_real_connect(ms, NULL, NULL, NULL, NULL, 0, NULL, 0)) {
       log->crit("cannot open DB file to create DB: %s", mysql_error(ms));
-      throw ShibTargetException();
+      throw SAMLException("ShibMySQLCCache::createDatabase(): mysql_real_connect failed");
     }
 
     if (mysql_query(ms, "CREATE DATABASE shar")) {
       log->crit("cannot create shar database: %s", mysql_error(ms));
-      throw ShibTargetException();
+      throw SAMLException("ShibMySQLCCache::createDatabase(): create db cmd failed");
     }
 
     if (!mysql_real_connect(mysql, NULL, NULL, NULL, "shar", 0, NULL, 0)) {
       log->crit("cannot open SHAR database");
-      throw ShibTargetException();
+      throw SAMLException("ShibMySQLCCache::createDatabase(): mysql_real_connect to shar db failed");
     }
 
     mysql_close(ms);
     
-  } catch (ShibTargetException&) {
+  }
+  catch (SAMLException&) {
     if (ms)
       mysql_close(ms);
     mysql_close(mysql);
-    throw runtime_error("mysql_real_connect");
+    throw;
   }
 
   // Now create the tables if they don't exist
-  log->info("Creating database tables.");
+  log->info("Creating database tables");
 
-  if (mysql_query(mysql, "CREATE TABLE version (major INT, minor INT)"))
+  if (mysql_query(mysql, "CREATE TABLE version (major INT, minor INT)")) {
     log->error ("Error creating version: %s", mysql_error(mysql));
+    throw SAMLException("ShibMySQLCCache::createDatabase(): create table cmd failed");
+  }
 
   if (mysql_query(mysql,
 		  "CREATE TABLE state (cookie VARCHAR(64) PRIMARY KEY, application_id VARCHAR(255),"
-		  "atime DATETIME, addr VARCHAR(128), statement TEXT)"))
+		  "atime DATETIME, addr VARCHAR(128), statement TEXT)")) {
     log->error ("Error creating state: %s", mysql_error(mysql));
+    throw SAMLException("ShibMySQLCCache::createDatabase(): create table cmd failed");
+  }
 
   ostringstream q;
   q << "INSERT INTO version VALUES(" << major << "," << minor << ")";
-  if (mysql_query(mysql, q.str().c_str()))
+  if (mysql_query(mysql, q.str().c_str())) {
     log->error ("Error setting version: %s", mysql_error(mysql));
+    throw SAMLException("ShibMySQLCCache::createDatabase(): version insert failed");
+  }
 }
 
 void ShibMySQLCCache::upgradeDatabase(MYSQL* mysql)
@@ -495,14 +550,14 @@ void ShibMySQLCCache::upgradeDatabase(MYSQL* mysql)
         "CREATE TABLE state (cookie VARCHAR(64) PRIMARY KEY, application_id VARCHAR(255),"
        "atime DATETIME, addr VARCHAR(128), statement TEXT)")) {
         log->error ("Error creating state table: %s", mysql_error(mysql));
-        throw runtime_error("error creating table");
+        throw SAMLException("ShibMySQLCCache::upgradeDatabase(): error creating state table");
     }
 
     ostringstream q;
     q << "UPDATE version SET major = " << PLUGIN_VER_MAJOR;
     if (mysql_query(mysql, q.str().c_str())) {
         log->error ("Error updating version: %s", mysql_error(mysql));
-        throw runtime_error("error updating table");
+        throw SAMLException("ShibMySQLCCache::upgradeDatabase(): error updating version");
     }
 }
 
@@ -530,13 +585,13 @@ void ShibMySQLCCache::getVersion(MYSQL* mysql, int* major_p, int* minor_p)
     } else {
       // Wrong number of rows or wrong number of fields...
 
-      log->crit("Houston, we've got a problem with the database..");
+      log->crit("Houston, we've got a problem with the database...");
       mysql_free_result (rows);
-      throw runtime_error("Database version verification failed");
+      throw SAMLException("ShibMySQLCCache::getVersion(): version verification failed");
     }
   }
   log->crit("MySQL Read Failed in version verificatoin");
-  throw runtime_error("MySQL Read Failed");
+  throw SAMLException("ShibMySQLCCache::getVersion(): error reading version");
 }
 
 void ShibMySQLCCache::mysqlInit(void)
