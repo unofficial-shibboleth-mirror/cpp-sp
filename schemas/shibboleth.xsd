@@ -203,8 +203,8 @@
             <element ref="ds:Signature" minOccurs="0"/>
         </sequence>
         <attribute name="Name" type="string" use="required"/>
-        <attribute name="lastChanged" type="datetime" use="optional"/>
-        <attribute name="validUntil" type="datetime" use="optional"/>
+        <attribute name="lastChanged" type="dateTime" use="optional"/>
+        <attribute name="validUntil" type="dateTime" use="optional"/>
         <attribute name="cacheDuration" type="duration" use="optional"/>
         <anyAttribute/>
     </complexType>    
@@ -246,8 +246,8 @@
 				<element ref="ds:Signature" minOccurs="0"/>
 			</sequence>
 		</complexType>
-        <attribute name="lastChanged" type="datetime" use="optional"/>
-        <attribute name="validUntil" type="datetime" use="optional"/>
+        <attribute name="lastChanged" type="dateTime" use="optional"/>
+        <attribute name="validUntil" type="dateTime" use="optional"/>
         <attribute name="cacheDuration" type="duration" use="optional"/>
         <anyAttribute/>
 	</element>
