@@ -85,10 +85,6 @@ using namespace shibtarget;
 
 extern "C" void shibrpc_prog_1(struct svc_req* rqstp, register SVCXPRT* transp);
 
-#ifdef NEED_SVCFD_CREATE_DEFN
-extern SVCXPRT* svcfd_create ();
-#endif
-
 int shar_run = 1;
 const char* config = NULL;
 const char* schemadir = NULL;

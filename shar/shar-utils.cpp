@@ -13,6 +13,10 @@
 # include "config.h"
 #endif
 
+#ifndef FD_SETSIZE
+# define FD_SETSIZE 1024
+#endif
+
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
 # include <sys/select.h>
@@ -29,6 +33,10 @@
 
 #ifdef USE_OUR_ONCRPC
 # define svc_fdset onc_svc_fdset
+#endif
+
+#ifdef NEED_SVCFD_CREATE_DEFN
+extern SVCXPRT* svcfd_create ();
 #endif
 
 using namespace std;
