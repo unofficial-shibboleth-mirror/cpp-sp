@@ -126,14 +126,6 @@ ShibTargetException::ShibTargetException(ShibRpcStatus code, const char* msg, co
     }
 }
 
-namespace {
-  const XMLCh code_InvalidHandle[] = // InvalidHandle
-    { chLatin_I, chLatin_n, chLatin_v, chLatin_a, chLatin_l, chLatin_i, chLatin_d,
-      chLatin_H, chLatin_a, chLatin_n, chLatin_d, chLatin_l, chLatin_e, 
-      chNull
-    };
-}
-
 const char* rpcerror_exception_type(SAMLException* e)
 {
     if (!e) return "Invalid (NULL) exception";
@@ -171,6 +163,8 @@ const char* rpcerror_exception_type(SAMLException* e)
         return "Exception: metadata error";
     if (info==typeid(CredentialException))
         return "Exception: credential access error";
+    if (info==typeid(InvalidHandleException))
+        return "Exception: subject name identifier is invalid";
 
     return "Unknown SAML Exception";
 }
@@ -286,15 +280,6 @@ bool RPCError::isRetryable()
     if (m_priv->except) {
       if (typeid(*m_priv->except)==typeid(RetryableProfileException))
         return true;
-
-      Iterator<saml::QName> codes = m_priv->except->getCodes();
-      while (codes.hasNext()) {
-        saml::QName name = codes.next();
-        if (!XMLString::compareString(name.getNamespaceURI(),shibboleth::Constants::SHIB_NS) &&
-	           !XMLString::compareString(name.getLocalName(), code_InvalidHandle)) {
-            return true;
-        }
-      }
     }
 
     // FALLTHROUGH
