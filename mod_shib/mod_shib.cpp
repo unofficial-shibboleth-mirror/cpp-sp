@@ -412,7 +412,10 @@ extern "C" const char* set_timeout(cmd_parms* parms, shib_dir_config* dc, const 
     return NULL;
 }
 
-extern "C" typedef const char* (*config_fn_t)(void);
+#ifdef SOLARIS
+extern "C"
+#endif
+typedef const char* (*config_fn_t)(void);
 
 // Shibboleth module commands
 
