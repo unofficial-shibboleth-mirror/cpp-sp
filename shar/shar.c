@@ -13,6 +13,8 @@
 #include <errno.h>
 #include <signal.h>
 
+#include "config.h"
+
 #ifdef NEED_RPC_TLI
 #ifdef HAVE_STROPTS_H
 #include <stropts.h>
