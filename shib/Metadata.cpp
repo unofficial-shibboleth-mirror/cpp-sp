@@ -262,6 +262,7 @@ void AAP::apply(const saml::Iterator<IAAP*>& aaps, saml::SAMLAssertion& assertio
                         i->unlock();
                         log.info("no values remain, removing attribute");
                         s->removeAttribute(acount--);
+                        break;
                     }
                 }
             }
