@@ -24,6 +24,7 @@
 #define ap_pstrcat apr_pstrcat
 #define ap_psprintf apr_psprintf
 #define ap_table_get apr_table_get
+#define ap_table_addn apr_table_addn
 #define ap_table_setn apr_table_setn
 #define ap_table_unset apr_table_unset
 #define ap_table_set apr_table_set
