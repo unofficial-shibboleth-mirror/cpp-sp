@@ -288,7 +288,7 @@ void XMLTrust::lock()
                     XMLTrustImpl* new_mapper=new XMLTrustImpl(m_source.c_str());
                     delete m_impl;
                     m_impl=new_mapper;
-                    m_timestamp=stat_buf.st_mtime;
+                    m_filestamp=stat_buf.st_mtime;
                     m_lock->unlock();
                 }
                 catch(SAMLException& e)
