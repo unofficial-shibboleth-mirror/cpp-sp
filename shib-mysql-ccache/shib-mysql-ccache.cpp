@@ -18,7 +18,20 @@
  * the layer 2 cache.
  */
 
-#ifndef WIN32
+// eventually we might be able to support autoconf via cygwin...
+#if defined (_MSC_VER) || defined(__BORLANDC__)
+# include "config_win32.h"
+#else
+# include "config.h"
+#endif
+
+#ifdef WIN32
+# define SHIBMYSQL_EXPORTS __declspec(dllexport)
+#else
+# define SHIBMYSQL_EXPORTS
+#endif
+
+#ifdef HAVE_UNISTD_H
 # include <unistd.h>
 #endif
 
@@ -541,7 +554,7 @@ extern "C" CCache* new_mysql_ccache(void)
   return new ShibMySQLCCache();
 }
 
-extern "C" int saml_extension_init(void* context)
+extern "C" int SHIBMYSQL_EXPORTS saml_extension_init(void* context)
 {
   // register this ccache type
   CCache::registerFactory("mysql", &new_mysql_ccache);
