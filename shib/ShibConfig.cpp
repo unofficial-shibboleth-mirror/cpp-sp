@@ -73,8 +73,8 @@ bool ShibInternalConfig::init()
 {
     saml::NDC ndc("init");
 
-    REGISTER_EXCEPTION_FACTORY(UnsupportedProtocolException);
-    REGISTER_EXCEPTION_FACTORY(OriginSiteMapperException);
+    REGISTER_EXCEPTION_FACTORY("edu.internet2.middleware.shibboleth.common",UnsupportedProtocolException);
+    REGISTER_EXCEPTION_FACTORY("edu.internet2.middleware.shibboleth.common",OriginSiteMapperException);
 
     // Register extension schema.
     saml::XML::registerSchema(XML::SHIB_NS,XML::SHIB_SCHEMA_ID);
