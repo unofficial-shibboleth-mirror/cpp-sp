@@ -482,7 +482,7 @@ namespace shibtarget {
     {
     public:
         SHIRE(const IApplication* app) { m_st = new ShibTarget(app); }
-        ~SHIRE();
+        ~SHIRE() { delete m_st; }
         
         // Get the session cookie name and properties for the application
         std::pair<const char*,const char*> getCookieNameProps() const
