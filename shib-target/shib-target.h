@@ -415,19 +415,11 @@ namespace shibtarget {
       setRemoteUser(s);
     }
 
-    // Not sure if I need these, but I might for something like Apache
-    // in order to "fix" the auth type in the case of basicHijack.  In
-    // particular we need to maintain some state between the different
-    // APIs to know whether or not to proceed with shib processing.
+    // returns the "auth type"..  if this string is not "shibboleth" then
+    // the request will be denied.  Any kind of "override" should be handled
+    // by the subclass before returning this value.  Note that the default
+    // implementation always returns "shibboleth".
     virtual std::string getAuthType(void);
-    virtual void setAuthType(const std::string);
-
-    void setAuthType(const char *type) {
-      std::string s = type;
-      setAuthType(s);
-    }
-
-    virtual std::pair<bool,bool> getRequireSession(IRequestMapper::Settings &settings);
 
     // Note: we still need to define exactly what kind of data in contained
     // in the HTAccessInfo -- perhaps we can stub it out so non-htaccess
@@ -438,6 +430,7 @@ namespace shibtarget {
     // If there are no headers supplied assume the content-type == text/html
     virtual void* sendPage(
 			   const std::string &msg,
+			   const std::string content_type = "text/html",
 			   const std::pair<std::string, std::string> headers[] = NULL,
 			   int code = 200
 			   );
@@ -474,7 +467,7 @@ namespace shibtarget {
     //   is not valid, and the caller should continue processing (the API Call
     //   finished successfully).
     //
-    std::pair<bool,void*> doCheckAuthN(void);
+    std::pair<bool,void*> doCheckAuthN(bool requireSession);
     std::pair<bool,void*> doHandlePOST(void);
     std::pair<bool,void*> doCheckAuthZ(void);
     std::pair<bool,void*> doExportAssertions(bool exportAssertion);
@@ -531,7 +524,7 @@ namespace shibtarget {
     void init(ShibTargetConfig *config,
 	      std::string protocol, std::string hostname, int port,
 	      std::string uri, std::string content_type, std::string remote_host,
-	      std::string method, int total_bytes);
+	      std::string method);
 
   private:
     mutable ShibTargetPriv *m_priv;

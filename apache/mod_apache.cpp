@@ -56,6 +56,10 @@ namespace {
     static const char* g_UserDataKey = "_shib_check_user_";
 }
 
+/********************************************************************************/
+// Basic Apache Configuration code.
+//
+
 // per-server module configuration structure
 struct shib_server_config
 {
@@ -148,32 +152,242 @@ extern "C" const char* shib_set_server_string_slot(cmd_parms* parms, void*, cons
     return NULL;
 }
 
-typedef const char* (*config_fn_t)(void);
+/********************************************************************************/
+// Apache ShibTarget subclass here.
 
-static int shib_error_page(request_rec* r, const IApplication* app, const char* page, ShibMLP& mlp)
+class ShibTargetApache : public ShibTarget
 {
-    const IPropertySet* props=app->getPropertySet("Errors");
-    if (props) {
-        pair<bool,const char*> p=props->getString(page);
-        if (p.first) {
-            ifstream infile(p.second);
-            if (!infile.fail()) {
-                const char* res = mlp.run(infile,props);
-                if (res) {
-                    r->content_type = ap_psprintf(r->pool, "text/html");
-                    ap_send_http_header(r);
-                    ap_rprintf(r, res);
-                    return DONE;
-                }
-            }
-        }
-    }
+public:
+  ShibTargetApache(request_rec* req) {
+    m_sc = (shib_server_config*)
+      ap_get_module_config(req->server->module_config, &mod_shib);
 
-    ap_log_rerror(APLOG_MARK,APLOG_ERR,SH_AP_R(r),
-        "shib_error_page() could not process shire error template for application %s",app->getId());
+    m_dc = (shib_dir_config*)ap_get_module_config(req->per_dir_config, &mod_shib);
+
+    const char* ct = ap_table_get(req->headers_in, "Content-type");
+
+    init(g_Config, string(m_sc->szScheme ? m_sc->szScheme : ap_http_method(req)),
+	 string(ap_get_server_name(req)), (int)ap_get_server_port(req),
+	 string(req->unparsed_uri), string(ct ? ct : ""),
+	 string(req->connection->remote_ip), string(req->method));
+
+    m_req = req;
+  }
+  ~ShibTargetApache() { }
+
+  virtual void log(ShibLogLevel level, const string &msg) {
+    ap_log_rerror(APLOG_MARK,
+		  (level == LogLevelDebug ? APLOG_DEBUG :
+		   (level == LogLevelInfo ? APLOG_INFO :
+		    (level == LogLevelWarn ? APLOG_WARNING :
+		     APLOG_ERR)))|APLOG_NOERRNO, SH_AP_R(m_req),
+		  msg.c_str());
+  }
+  virtual string getCookies(void) {
+    const char *c = ap_table_get(m_req->headers_in, "Cookie");
+    return string(c ? c : "");
+  }
+  virtual void setCookie(const string &name, const string &value) {
+    char* val = ap_psprintf(m_req->pool, "%s=%s", name.c_str(), value.c_str());
+    ap_table_setn(m_req->err_headers_out, "Set-Cookie", val);
+  }
+  virtual string getArgs(void) { return string(m_req->args ? m_req->args : ""); }
+  virtual string getPostData(void) {
+    // Read the posted data
+    if (ap_setup_client_block(m_req, REQUEST_CHUNKED_ERROR))
+      throw ShibTargetException(SHIBRPC_OK, "CGI setup_client_block failed");
+    if (!ap_should_client_block(m_req))
+      throw ShibTargetException(SHIBRPC_OK, "CGI should_client_block failed");
+    if (m_req->remaining > 1024*1024)
+      throw ShibTargetException (SHIBRPC_OK, "CGI length too long...");
+
+    string cgistr;
+    char buff[HUGE_STRING_LEN];
+    ap_hard_timeout("[mod_shib] getPostData", r);
+    memset(buff, 0, sizeof(buff));
+    while (ap_get_client_block(m_req, buff, sizeof(buff)-1) > 0) {
+      ap_reset_timeout(m_req);
+      cgistr += buff;
+      memset(buff, 0, sizeof(buff));
+    }
+    ap_kill_timeout(m_req);
+
+    return cgistr;
+  }
+  virtual void clearHeader(const string &name) {
+    ap_table_unset(m_req->headers_in, name.c_str());
+  }
+  virtual void setHeader(const string &name, const string &value) {
+    ap_table_set(m_req->headers_in, name.c_str(), value.c_str());
+  }
+  virtual string getHeader(const string &name) {
+    const char *hdr = ap_table_get(m_req->headers_in, name.c_str());
+    return string(hdr ? hdr : "");
+  }
+  virtual void setRemoteUser(const string &user) {
+    SH_AP_USER(m_req) = ap_pstrdup(m_req->pool, user.c_str());
+  }
+  // override so we can look at the actual auth type and maybe override it.
+  virtual string getAuthType(void) {
+    const char *auth_type=ap_auth_type(m_req);
+    if (!auth_type)
+        return string("");
+    if (strcasecmp(auth_type, "shibboleth")) {
+      if (!strcasecmp(auth_type, "basic") && m_dc->bBasicHijack == 1) {
+	core_dir_config* conf= (core_dir_config*)
+	  ap_get_module_config(m_req->per_dir_config,
+			       ap_find_linked_module("http_core.c"));
+	auth_type = conf->ap_auth_type = "shibboleth";
+      }
+    }
+    return string(auth_type);
+  }
+  // Override this function because we want to add the Apache Directory override
+  virtual pair<bool,bool> getRequireSession(IRequestMapper::Settings &settings) {
+    pair<bool,bool> requireSession = settings.first->getBool("requireSession");
+    if (!requireSession.first || !requireSession.second)
+      if (m_dc->bRequireSession == 1)
+	requireSession.second=true;
+
+    return requireSession;
+  }
+  virtual void* sendPage(const string &msg, const string content_type,
+			 const pair<string, string> headers[], int code) {
+    m_req->content_type = ap_psprintf(m_req->pool, content_type.c_str());
+    // XXX: push headers and code into the response
+    ap_send_http_header(m_req);
+    ap_rprintf(m_req, msg.c_str());
+    return (void*)DONE;
+  }
+  virtual void* sendRedirect(const string url) {
+    ap_table_set(m_req->headers_out, "Location", url.c_str());
+    return (void*)REDIRECT;
+  }
+  virtual void* returnDecline(void) { return (void*)DECLINED; }
+  virtual void* returnOK(void) { return (void*)OK; }
+
+  request_rec* m_req;
+  shib_dir_config* m_dc;
+  shib_server_config* m_sc;
+};
+
+/********************************************************************************/
+// Apache handlers
+
+extern "C" int shib_check_user(request_rec* r)
+{
+  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),
+		"shib_check_user(%d): ENTER\n", (int)getpid());
+
+  ostringstream threadid;
+  threadid << "[" << getpid() << "] shib_check_user" << '\0';
+  saml::NDC ndc(threadid.str().c_str());
+
+#ifndef _DEBUG
+  try {
+#endif
+    ShibTargetApache sta(r);
+
+    // Check user authentication, the set the post handler bypass
+    pair<bool,void*> res = sta.doCheckAuthN((sta.m_dc->bRequireSession == 1));
+    apr_pool_userdata_setn((const void*)42,g_UserDataKey,NULL,r->pool);
+    if (res.first) return (int)res.second;
+
+    // user auth was okay -- export the assertions now
+    res = sta.doExportAssertions((sta.m_dc->bExportAssertion == 1));
+    if (res.first) return (int)res.second;
+
+    // export happened successfully..  this user is ok.
+    return OK;
+
+#ifndef _DEBUG
+  } catch (...) {
+    ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r),
+		  "shib_check_user threw an uncaught exception!");
     return SERVER_ERROR;
+  }
+#endif
 }
 
+extern "C" int shib_post_handler(request_rec* r)
+{
+  ostringstream threadid;
+  threadid << "[" << getpid() << "] shib_post_handler" << '\0';
+  saml::NDC ndc(threadid.str().c_str());
+
+#ifndef SHIB_APACHE_13
+  // With 2.x, this handler always runs, though last.
+  // We check if shib_check_user ran, because it will detect a SHIRE request
+  // and dispatch it directly.
+  void* data;
+  apr_pool_userdata_get(&data,g_UserDataKey,r->pool);
+  if (data==(const void*)42) {
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_post_handler skipped since check_user ran");
+    return DECLINED;
+  }
+#endif
+
+  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),
+		"shib_post_handler(%d): ENTER", (int)getpid());
+
+#ifndef _DEBUG
+  try {
+#endif
+    ShibTargetApache sta(r);
+
+    pair<bool,void*> res = sta.doHandlePOST();
+    if (res.first) return (int)res.second;
+
+    ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r),
+		  "doHandlePOST() did not do anything.");
+    return SERVER_ERROR;
+
+#ifndef _DEBUG
+  } catch (...) {
+    ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r),
+		  "shib_post_handler threw an uncaught exception!");
+    return SERVER_ERROR;
+  }
+#endif
+}
+
+#if 0
+/*
+ * shib_auth_checker() -- a simple resource manager to
+ * process the .htaccess settings and copy attributes
+ * into the HTTP headers.
+ */
+extern "C" int shib_auth_checker(request_rec* r)
+{
+  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),
+		"shib_check_user(%d): ENTER", (int)getpid());
+
+  ostringstream threadid;
+  threadid << "[" << getpid() << "] shib_auth_checker" << '\0';
+  saml::NDC ndc(threadid.str().c_str());
+
+#ifndef _DEBUG
+  try {
+#endif
+    ShibTargetApache sta(r);
+
+    pair<bool,void*> res = sta.doCheckAuthZ();
+    if (res.first) return (int)res.second;
+
+    // XXX?  Should this default to okay?
+    return OK;
+
+#ifndef _DEBUG
+  } catch (...) {
+    ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r),
+		  "shib_auth_checker threw an uncaught exception!");
+    return SERVER_ERROR;
+  }
+#endif
+}
+#endif
+
+#if 0
 static char* shib_get_targeturl(request_rec* r, const char* scheme=NULL)
 {
     // On 1.3, this is always canonical, but on 2.0, UseCanonicalName comes into play.
@@ -712,6 +926,31 @@ int shib_handler(request_rec* r, const IApplication* application, SHIRE& shire)
     ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,SH_AP_R(r),"shib_handler() server error");
     return SERVER_ERROR;
 }
+#endif /* 0 */
+
+static int shib_error_page(request_rec* r, const IApplication* app, const char* page, ShibMLP& mlp)
+{
+    const IPropertySet* props=app->getPropertySet("Errors");
+    if (props) {
+        pair<bool,const char*> p=props->getString(page);
+        if (p.first) {
+            ifstream infile(p.second);
+            if (!infile.fail()) {
+                const char* res = mlp.run(infile,props);
+                if (res) {
+                    r->content_type = ap_psprintf(r->pool, "text/html");
+                    ap_send_http_header(r);
+                    ap_rprintf(r, res);
+                    return DONE;
+                }
+            }
+        }
+    }
+
+    ap_log_rerror(APLOG_MARK,APLOG_ERR,SH_AP_R(r),
+        "shib_error_page() could not process shire error template for application %s",app->getId());
+    return SERVER_ERROR;
+}
 
 static SH_AP_TABLE* groups_for_user(request_rec* r, const char* user, char* grpfile)
 {
@@ -1083,6 +1322,8 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
 
     ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() done");
 }
+
+typedef const char* (*config_fn_t)(void);
 
 #ifdef SHIB_APACHE_13
 

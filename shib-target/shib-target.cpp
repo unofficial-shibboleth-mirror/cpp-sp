@@ -114,6 +114,7 @@ namespace shibtarget {
     CgiParse* m_parser;
 
     const char *session_id;
+    string m_cookies;
 
     // These are the actual request parameters set via the init method.
     string m_url;
@@ -121,7 +122,6 @@ namespace shibtarget {
     string m_protocol;
     string m_content_type;
     string m_remote_addr;
-    int m_total_bytes;
 
     ShibTargetConfig* m_Config;
 
@@ -155,8 +155,10 @@ ShibTarget::~ShibTarget(void)
 void ShibTarget::init(ShibTargetConfig *config,
 		      string protocol, string hostname, int port,
 		      string uri, string content_type, string remote_host,
-		      string method, int total_bytes)
+		      string method)
 {
+  saml::NDC ndc("ShibTarget::init");
+
   if (m_priv->m_app)
     throw runtime_error("ShibTarget Already Initialized");
   if (!config)
@@ -165,7 +167,6 @@ void ShibTarget::init(ShibTargetConfig *config,
   m_priv->m_protocol = protocol;
   m_priv->m_content_type = content_type;
   m_priv->m_remote_addr = remote_host;
-  m_priv->m_total_bytes = total_bytes;
   m_priv->m_Config = config;
   m_priv->m_method = method;
   m_priv->get_application(protocol, hostname, port, uri);
@@ -176,8 +177,9 @@ void ShibTarget::init(ShibTargetConfig *config,
 // The web server modules implement a subclass and then call into 
 // these methods once they instantiate their request object.
 pair<bool,void*>
-ShibTarget::doCheckAuthN(void)
+ShibTarget::doCheckAuthN(bool requireSessionFlag)
 {
+  saml::NDC ndc("ShibTarget::doCheckAuthN");
 
   const char *targetURL = NULL;
   const char *procState = "Process Initialization Error";
@@ -203,7 +205,11 @@ ShibTarget::doCheckAuthN(void)
 #endif
       return pair<bool,void*>(true,returnDecline());
 
-    pair<bool,bool> requireSession = getRequireSession(m_priv->m_settings);
+    pair<bool,bool> requireSession =
+      m_priv->m_settings.first->getBool("requireSession");
+    if (!requireSession.first || !requireSession.second)
+      if (requireSessionFlag)
+	requireSession.second=true;
 
     const char *session_id = m_priv->getSessionId(this);
     
@@ -217,7 +223,6 @@ ShibTarget::doCheckAuthN(void)
       return pair<bool,void*>(true,sendRedirect(getAuthnRequest(targetURL)));
     }
 
-    m_priv->session_id = session_id;
     procState = "Session Processing Error";
     RPCError *status = sessionIsValid(session_id, m_priv->m_remote_addr.c_str());
 
@@ -258,9 +263,10 @@ ShibTarget::doCheckAuthN(void)
   } catch (ShibTargetException &e) {
     mlp.insert("errorText", e.what());
 
+#ifndef _DEBUG
   } catch (...) {
     mlp.insert("errorText", "Unexpected Exception");
-
+#endif
   }
 
   // If we get here then we've got an error.
@@ -277,6 +283,7 @@ ShibTarget::doCheckAuthN(void)
 pair<bool,void*>
 ShibTarget::doHandlePOST(void)
 {
+  saml::NDC ndc("ShibTarget::doHandlePOST");
 
   const char *targetURL = NULL;
   const char *procState = "Session Creation Service Error";
@@ -290,7 +297,7 @@ ShibTarget::doHandlePOST(void)
     const char *shireURL = getShireURL(targetURL);
 
     if (!shireURL)
-      throw ShibTargetException(SHIBRPC_OK, "doHandlePOST: unable to map request to a proper shireURL setting.  Check Configuratio.");
+      throw ShibTargetException(SHIBRPC_OK, "doHandlePOST: unable to map request to a proper shireURL setting.  Check Configuration.");
 
 
     // Make sure we only process the SHIRE requests.
@@ -406,12 +413,16 @@ ShibTarget::doHandlePOST(void)
 pair<bool,void*>
 ShibTarget::doCheckAuthZ(void)
 {
+  saml::NDC ndc("ShibTarget::doCheckAuthZ");
+
   return pair<bool,void*>(false,NULL);
 }
 
 pair<bool,void*>
 ShibTarget::doExportAssertions(bool exportAssertion)
 {
+  saml::NDC ndc("ShibTarget::doExportAssertions");
+
   vector<SAMLAssertion*> assertions;
   SAMLAuthenticationStatement* sso_statement=NULL;
   RPCError *status = NULL;
@@ -567,8 +578,10 @@ ShibTarget::doExportAssertions(bool exportAssertion)
   } catch (ShibTargetException &e) {
     mlp.insert("errorText", e.what());
 
+#ifndef _DEBUG
   } catch (...) {
     mlp.insert("errorText", "Unexpected Exception");
+#endif
 
   }
 
@@ -1054,7 +1067,6 @@ ShibTarget::serialize(saml::SAMLAssertion &assertion, std::string &result)
 ShibTargetPriv::ShibTargetPriv() : m_parser(NULL), m_app(NULL), m_mapper(NULL),
 				   m_conf(NULL), m_Config(NULL)
 {
-  m_total_bytes = 0;
   session_id = NULL;
 }
 
@@ -1165,14 +1177,17 @@ ShibTargetPriv::sendError(ShibTarget* st, string page, ShibMLP &mlp)
 const char *
 ShibTargetPriv::getSessionId(ShibTarget* st)
 {
-  if (session_id)
+  if (session_id) {
+    //string m = string("getSessionId returning precreated session_id: ") + session_id;
+    //st->log(ShibTarget::LogLevelDebug, m);
     return session_id;
+  }
 
   char *sid;
   pair<const char*, const char *> shib_cookie = st->getCookieNameProps();
-  string cookies = st->getCookies();
-  if (!cookies.empty()) {
-    if (sid = strstr(cookies.c_str(), shib_cookie.first)) {
+  m_cookies = st->getCookies();
+  if (!m_cookies.empty()) {
+    if (sid = strstr(m_cookies.c_str(), shib_cookie.first)) {
       // We found a cookie.  pull it out (our session_id)
       sid += strlen(shib_cookie.first) + 1; // skip over the '='
       char *cookieend = strchr(sid, ';');
@@ -1182,6 +1197,8 @@ ShibTargetPriv::getSessionId(ShibTarget* st)
     }
   }
 
+  //string m = string("getSessionId returning new session_id: ") + session_id;
+  //st->log(ShibTarget::LogLevelDebug, m);
   return session_id;
 }
 
@@ -1350,12 +1367,8 @@ string ShibTarget::getPostData(void)
 {
   throw runtime_error("Invalid Usage");
 }
-void ShibTarget::setAuthType(const std::string)
-{
-  throw runtime_error("Invalid Usage");
-}
 //virtual HTAccessInfo& getAccessInfo(void);
-void* ShibTarget::sendPage(const string &msg, const pair<string,string> headers[], int code)
+void* ShibTarget::sendPage(const string &msg, const string content_type, const pair<string,string> headers[], int code)
 {
   throw runtime_error("Invalid Usage");
 }
@@ -1376,9 +1389,4 @@ void* ShibTarget::returnDecline(void)
 void* ShibTarget::returnOK(void)
 {
   return NULL;
-}
-pair<bool,bool>
-ShibTarget::getRequireSession(IRequestMapper::Settings &settings)
-{
-  return settings.first->getBool("requireSession");
 }
