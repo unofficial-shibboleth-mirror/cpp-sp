@@ -368,6 +368,7 @@
 					<attribute name="lifetime" type="unsignedInt" use="optional"/>
 					<attribute name="timeout" type="unsignedInt" use="optional"/>
 					<attribute name="checkAddress" type="boolean" use="optional"/>
+					<attribute name="oldAuthnRequest" type="boolean" use="optional"/>
                 </extension>
             </complexContent>
 		</complexType>

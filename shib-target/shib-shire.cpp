@@ -313,9 +313,12 @@ const char* SHIRE::getAuthnRequest(const char* resource)
         if (wayf.first) {
             m_authnRequest=m_authnRequest + wayf.second + "?shire=" + url_encode(getShireURL(resource)) +
                 "&target=" + url_encode(resource) + "&time=" + timebuf;
-            wayf=m_app->getString("providerId");
-            if (wayf.first)
-                m_authnRequest=m_authnRequest + "&providerId=" + wayf.second;
+            pair<bool,bool> old=m_app->getBool("oldAuthnRequest");
+            if (!old.first || !old.second) {
+                wayf=m_app->getString("providerId");
+                if (wayf.first)
+                    m_authnRequest=m_authnRequest + "&providerId=" + wayf.second;
+            }
         }
     }
     return m_authnRequest.c_str();
