@@ -395,9 +395,8 @@ IRequestMapper::Settings map_request(
 DWORD WriteClientError(PHTTP_FILTER_CONTEXT pfc, const char* msg)
 {
     LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, msg);
-    static const char* ctype="Content-Type: text/html\r\n";
-    pfc->AddResponseHeaders(pfc,const_cast<char*>(ctype),0);
-    pfc->ServerSupportFunction(pfc,SF_REQ_SEND_RESPONSE_HEADER,"200 OK",0,0);
+    static const char* ctype="Connection: close\r\nContent-Type: text/html\r\n\r\n";
+    pfc->ServerSupportFunction(pfc,SF_REQ_SEND_RESPONSE_HEADER,"200 OK",(DWORD)ctype,0);
     static const char* xmsg="<HTML><HEAD><TITLE>Shibboleth Filter Error</TITLE></HEAD><BODY>"
                             "<H1>Shibboleth Filter Error</H1>";
     DWORD resplen=strlen(xmsg);
@@ -420,9 +419,8 @@ DWORD WriteClientError(PHTTP_FILTER_CONTEXT pfc, const IApplication* app, const 
             if (!infile.fail()) {
                 const char* res = mlp.run(infile,props);
                 if (res) {
-                    static const char* ctype="Content-Type: text/html\r\n";
-                    pfc->AddResponseHeaders(pfc,const_cast<char*>(ctype),0);
-                    pfc->ServerSupportFunction(pfc,SF_REQ_SEND_RESPONSE_HEADER,"200 OK",0,0);
+                    static const char* ctype="Connection: close\r\nContent-Type: text/html\r\n\r\n";
+                    pfc->ServerSupportFunction(pfc,SF_REQ_SEND_RESPONSE_HEADER,"200 OK",(DWORD)ctype,0);
                     DWORD resplen=strlen(res);
                     pfc->WriteClient(pfc,(LPVOID)res,&resplen,0);
                     return SF_STATUS_REQ_FINISHED;
@@ -433,6 +431,30 @@ DWORD WriteClientError(PHTTP_FILTER_CONTEXT pfc, const IApplication* app, const 
 
     LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, "Filter unable to open error template.");
     return WriteClientError(pfc,"Unable to open error template, check settings.");
+}
+
+DWORD WriteRedirectPage(PHTTP_FILTER_CONTEXT pfc, const IApplication* app, const char* file, ShibMLP& mlp, const char* headers=NULL)
+{
+    ifstream infile(file);
+    if (!infile.fail()) {
+        const char* res = mlp.run(infile,app->getPropertySet("Errors"));
+        if (res) {
+            char buf[255];
+            sprintf(buf,"Content-Length: %u\r\nContent-Type: text/html\r\n\r\n",strlen(res));
+            if (headers) {
+                string h(headers);
+                h+=buf;
+                pfc->ServerSupportFunction(pfc,SF_REQ_SEND_RESPONSE_HEADER,"200 OK",(DWORD)h.c_str(),0);
+            }
+            else
+                pfc->ServerSupportFunction(pfc,SF_REQ_SEND_RESPONSE_HEADER,"200 OK",(DWORD)buf,0);
+            DWORD resplen=strlen(res);
+            pfc->WriteClient(pfc,(LPVOID)res,&resplen,0);
+            return SF_STATUS_REQ_FINISHED;
+        }
+    }
+    LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, "Extension unable to open redirect template.");
+    return WriteClientError(pfc,"Unable to open redirect template, check settings.");
 }
 
 extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificationType, LPVOID pvNotification)
@@ -489,6 +511,10 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
         // Now check the policy for this request.
         pair<bool,bool> requireSession=settings.first->getBool("requireSession");
         pair<const char*,const char*> shib_cookie=shire.getCookieNameProps();
+        pair<bool,bool> httpRedirects=application->getPropertySet("Sessions")->getBool("httpRedirects");
+        pair<bool,const char*> redirectPage=application->getPropertySet("Sessions")->getString("redirectPage");
+        if (httpRedirects.first && !httpRedirects.second && !redirectPage.first)
+            return WriteClientError(pfc,"HTML-based redirection requires a redirectPage property.");
 
         // Check for session cookie.
         const char* session_id=NULL;
@@ -507,12 +533,24 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
                 return SF_STATUS_REQ_NEXT_NOTIFICATION;
     
             // No acceptable cookie, and we require a session.  Generate an AuthnRequest.
-            string loc("Location: ");
-            loc+=shire.getAuthnRequest(targeturl.c_str());
-            loc+="\r\n";
-            pfc->AddResponseHeaders(pfc,const_cast<char*>(loc.c_str()),0);
-            pfc->ServerSupportFunction(pfc,SF_REQ_SEND_RESPONSE_HEADER,"302 Please Wait",0,0);
-            return SF_STATUS_REQ_FINISHED;
+            const char* areq = shire.getAuthnRequest(targeturl.c_str());
+            if (!httpRedirects.first || httpRedirects.second) {
+                string hdrs=string("Location: ") + areq + "\r\n"
+                    "Content-Type: text/html\r\n"
+                    "Content-Length: 40\r\n"
+                    "Expires: 01-Jan-1997 12:00:00 GMT\r\n"
+                    "Cache-Control: private,no-store,no-cache\r\n\r\n";
+                pfc->ServerSupportFunction(pfc,SF_REQ_SEND_RESPONSE_HEADER,"302 Please Wait",(DWORD)hdrs.c_str(),0);
+                static const char* redmsg="<HTML><BODY>Redirecting...</BODY></HTML>";
+                DWORD resplen=40;
+                pfc->WriteClient(pfc,(LPVOID)redmsg,&resplen,0);
+                return SF_STATUS_REQ_FINISHED;
+            }
+            else {
+                ShibMLP markupProcessor;
+                markupProcessor.insert("requestURL",areq);
+                return WriteRedirectPage(pfc, application, redirectPage.second, markupProcessor);
+            }
         }
 
         // Make sure this session is still valid.
@@ -547,12 +585,23 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
             else if (status->isRetryable()) {
                 // Oops, session is invalid. Generate AuthnRequest.
                 delete status;
-                string loc("Location: ");
-                loc+=shire.getAuthnRequest(targeturl.c_str());
-                loc+="\r\n";
-                pfc->AddResponseHeaders(pfc,const_cast<char*>(loc.c_str()),0);
-                pfc->ServerSupportFunction(pfc,SF_REQ_SEND_RESPONSE_HEADER,"302 Please Wait",0,0);
-                return SF_STATUS_REQ_FINISHED;
+                const char* areq = shire.getAuthnRequest(targeturl.c_str());
+                if (!httpRedirects.first || httpRedirects.second) {
+                    string hdrs=string("Location: ") + areq + "\r\n"
+                        "Content-Type: text/html\r\n"
+                        "Content-Length: 40\r\n"
+                        "Expires: 01-Jan-1997 12:00:00 GMT\r\n"
+                        "Cache-Control: private,no-store,no-cache\r\n\r\n";
+                    pfc->ServerSupportFunction(pfc,SF_REQ_SEND_RESPONSE_HEADER,"302 Please Wait",(DWORD)hdrs.c_str(),0);
+                    static const char* redmsg="<HTML><BODY>Redirecting...</BODY></HTML>";
+                    DWORD resplen=40;
+                    pfc->WriteClient(pfc,(LPVOID)redmsg,&resplen,0);
+                    return SF_STATUS_REQ_FINISHED;
+                }
+                else {
+                    markupProcessor.insert("requestURL",areq);
+                    return WriteRedirectPage(pfc, application, redirectPage.second, markupProcessor);
+                }
             }
             else {
                 // return the error page to the user
@@ -810,7 +859,7 @@ IRequestMapper::Settings map_request(
 DWORD WriteClientError(LPEXTENSION_CONTROL_BLOCK lpECB, const char* msg)
 {
     LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, msg);
-    static const char* ctype="Content-Type: text/html\r\n";
+    static const char* ctype="Connection: close\r\nContent-Type: text/html\r\n\r\n";
     lpECB->ServerSupportFunction(lpECB->ConnID,HSE_REQ_SEND_RESPONSE_HEADER,"200 OK",0,(LPDWORD)ctype);
     static const char* xmsg="<HTML><HEAD><TITLE>Shibboleth Error</TITLE></HEAD><BODY><H1>Shibboleth Error</H1>";
     DWORD resplen=strlen(xmsg);
@@ -833,7 +882,7 @@ DWORD WriteClientError(LPEXTENSION_CONTROL_BLOCK lpECB, const IApplication* app,
             if (!infile.fail()) {
                 const char* res = mlp.run(infile,props);
                 if (res) {
-                    static const char* ctype="Content-Type: text/html\r\n";
+                    static const char* ctype="Connection: close\r\nContent-Type: text/html\r\n\r\n";
                     lpECB->ServerSupportFunction(lpECB->ConnID,HSE_REQ_SEND_RESPONSE_HEADER,"200 OK",0,(LPDWORD)ctype);
                     DWORD resplen=strlen(res);
                     lpECB->WriteClient(lpECB->ConnID,(LPVOID)res,&resplen,0);
@@ -844,6 +893,30 @@ DWORD WriteClientError(LPEXTENSION_CONTROL_BLOCK lpECB, const IApplication* app,
     }
     LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, "Extension unable to open error template.");
     return WriteClientError(lpECB,"Unable to open error template, check settings.");
+}
+
+DWORD WriteRedirectPage(LPEXTENSION_CONTROL_BLOCK lpECB, const IApplication* app, const char* file, ShibMLP& mlp, const char* headers=NULL)
+{
+    ifstream infile(file);
+    if (!infile.fail()) {
+        const char* res = mlp.run(infile,app->getPropertySet("Errors"));
+        if (res) {
+            char buf[255];
+            sprintf(buf,"Content-Length: %u\r\nContent-Type: text/html\r\n\r\n",strlen(res));
+            if (headers) {
+                string h(headers);
+                h+=buf;
+                lpECB->ServerSupportFunction(lpECB->ConnID,HSE_REQ_SEND_RESPONSE_HEADER,"200 OK",0,(LPDWORD)h.c_str());
+            }
+            else
+                lpECB->ServerSupportFunction(lpECB->ConnID,HSE_REQ_SEND_RESPONSE_HEADER,"200 OK",0,(LPDWORD)buf);
+            DWORD resplen=strlen(res);
+            lpECB->WriteClient(lpECB->ConnID,(LPVOID)res,&resplen,0);
+            return HSE_STATUS_SUCCESS;
+        }
+    }
+    LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, "Extension unable to open redirect template.");
+    return WriteClientError(lpECB,"Unable to open redirect template, check settings.");
 }
 
 extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
@@ -870,7 +943,6 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
         Locker locker(conf);
         
         // Map request to application and content settings.
-        string targeturl;
         IRequestMapper* mapper=conf->getRequestMapper();
         Locker locker2(mapper);
         IRequestMapper::Settings settings=map_request(lpECB,mapper,map_i->second,targeturl);
@@ -901,24 +973,42 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
                 throw ShibTargetException(SHIBRPC_OK,"blocked non-SSL access to SHIRE POST processor");
         }
         
+        pair<bool,bool> httpRedirects=sessionProps->getBool("httpRedirects");
+        pair<bool,const char*> redirectPage=sessionProps->getString("redirectPage");
+        if (httpRedirects.first && !httpRedirects.second && !redirectPage.first)
+            return WriteClientError(lpECB,"HTML-based redirection requires a redirectPage property.");
+        
+        // Check for Mac web browser
+        /*
+        bool bSafari=false;
+        dynabuf agent(64);
+        GetServerVariable(lpECB,"HTTP_USER_AGENT",agent,64);
+        if (strstr(agent,"AppleWebKit/"))
+            bSafari=true;
+        */
+        
         // If this is a GET, we manufacture an AuthnRequest.
         if (!stricmp(lpECB->lpszMethod,"GET")) {
             const char* areq=lpECB->lpszQueryString ? shire.getLazyAuthnRequest(lpECB->lpszQueryString) : NULL;
             if (!areq)
                 throw ShibTargetException(SHIBRPC_OK, "malformed arguments to request a new session");
-            targeturl = string("Location: ") + areq + "\r\n"
-                "Expires: 01-Jan-1997 12:00:00 GMT\r\n"
-                "Cache-Control: private,no-store,no-cache\r\n"
-                "Connection: close\r\n";
-            HSE_SEND_HEADER_EX_INFO hinfo;
-            hinfo.pszStatus="302 Moved";
-            hinfo.pszHeader=targeturl.c_str();
-            hinfo.cchStatus=9;
-            hinfo.cchHeader=targeturl.length();
-            hinfo.fKeepConn=FALSE;
-            if (lpECB->ServerSupportFunction(lpECB->ConnID,HSE_REQ_SEND_RESPONSE_HEADER_EX,&hinfo,0,0))
+            if (!httpRedirects.first || httpRedirects.second) {
+                string hdrs=string("Location: ") + areq + "\r\n"
+                    "Content-Type: text/html\r\n"
+                    "Content-Length: 40\r\n"
+                    "Expires: 01-Jan-1997 12:00:00 GMT\r\n"
+                    "Cache-Control: private,no-store,no-cache\r\n\r\n";
+                lpECB->ServerSupportFunction(lpECB->ConnID,HSE_REQ_SEND_RESPONSE_HEADER,"302 Moved",0,(LPDWORD)hdrs.c_str());
+                static const char* redmsg="<HTML><BODY>Redirecting...</BODY></HTML>";
+                DWORD resplen=40;
+                lpECB->WriteClient(lpECB->ConnID,(LPVOID)redmsg,&resplen,HSE_IO_SYNC);
                 return HSE_STATUS_SUCCESS;
-            return HSE_STATUS_ERROR;
+            }
+            else {
+                ShibMLP markupProcessor;
+                markupProcessor.insert("requestURL",areq);
+                return WriteRedirectPage(lpECB, application, redirectPage.second, markupProcessor);
+            }
         }
         else if (stricmp(lpECB->lpszMethod,"POST"))
             throw ShibTargetException(SHIBRPC_OK,"blocked non-POST to SHIRE POST processor");
@@ -985,10 +1075,22 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
             if (status->isRetryable()) {
                 delete status;
                 const char* loc=shire.getAuthnRequest(elements.second);
-                DWORD len=strlen(loc);
-                if (lpECB->ServerSupportFunction(lpECB->ConnID,HSE_REQ_SEND_URL_REDIRECT_RESP,(LPVOID)loc,&len,0))
+                if (!httpRedirects.first || httpRedirects.second) {
+                    string hdrs=string("Location: ") + loc + "\r\n"
+                        "Content-Type: text/html\r\n"
+                        "Content-Length: 40\r\n"
+                        "Expires: 01-Jan-1997 12:00:00 GMT\r\n"
+                        "Cache-Control: private,no-store,no-cache\r\n\r\n";
+                    lpECB->ServerSupportFunction(lpECB->ConnID,HSE_REQ_SEND_RESPONSE_HEADER,"302 Moved",0,(LPDWORD)hdrs.c_str());
+                    static const char* redmsg="<HTML><BODY>Redirecting...</BODY></HTML>";
+                    DWORD resplen=40;
+                    lpECB->WriteClient(lpECB->ConnID,(LPVOID)redmsg,&resplen,HSE_IO_SYNC);
                     return HSE_STATUS_SUCCESS;
-                return HSE_STATUS_ERROR;
+                }
+                else {
+                    markupProcessor.insert("requestURL",loc);
+                    return WriteRedirectPage(lpECB, application, redirectPage.second, markupProcessor);
+                }
             }
     
             // Return this error to the user.
@@ -1000,18 +1102,20 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
     
         // We've got a good session, set the cookie and redirect to target.
         cookie = string("Set-Cookie: ") + shib_cookie.first + '=' + cookie + shib_cookie.second + "\r\n"
-            "Location: " + elements.second + "\r\n"
             "Expires: 01-Jan-1997 12:00:00 GMT\r\n"
-            "Cache-Control: private,no-store,no-cache\r\n"
-            "Connection: close\r\n";
-        HSE_SEND_HEADER_EX_INFO hinfo;
-        hinfo.pszStatus="302 Moved";
-        hinfo.pszHeader=cookie.c_str();
-        hinfo.cchStatus=9;
-        hinfo.cchHeader=cookie.length();
-        hinfo.fKeepConn=FALSE;
-        if (lpECB->ServerSupportFunction(lpECB->ConnID,HSE_REQ_SEND_RESPONSE_HEADER_EX,&hinfo,0,0))
+            "Cache-Control: private,no-store,no-cache\r\n";
+        if (!httpRedirects.first || httpRedirects.second) {
+            cookie=cookie + "Content-Type: text/html\r\nLocation: " + elements.second + "\r\nContent-Length: 40\r\n\r\n";
+            lpECB->ServerSupportFunction(lpECB->ConnID,HSE_REQ_SEND_RESPONSE_HEADER,"302 Moved",0,(LPDWORD)cookie.c_str());
+            static const char* redmsg="<HTML><BODY>Redirecting...</BODY></HTML>";
+            DWORD resplen=40;
+            lpECB->WriteClient(lpECB->ConnID,(LPVOID)redmsg,&resplen,HSE_IO_SYNC);
             return HSE_STATUS_SUCCESS;
+        }
+        else {
+            markupProcessor.insert("requestURL",elements.second);
+            return WriteRedirectPage(lpECB, application, redirectPage.second, markupProcessor, cookie.c_str());
+        }
     }
     catch (ShibTargetException &e) {
         if (application) {
