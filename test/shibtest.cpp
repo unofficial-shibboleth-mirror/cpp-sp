@@ -55,9 +55,6 @@ using namespace saml;
 using namespace shibboleth;
 using namespace shibtarget;
 
-#define SCHEMAS "/opt/shibboleth/etc/shibboleth"
-#define CONFIG "/opt/shibboleth/etc/shibboleth/shibboleth.xml"
-
 int main(int argc,char* argv[])
 {
     char* h_param=NULL;
@@ -82,19 +79,21 @@ int main(int argc,char* argv[])
             a_param=argv[++i];
     }
 
-    if (!h_param || !q_param || !a_param) {
-        cerr << "usage: shibtest -h <handle> -q <origin_site> -a <application_id> [-f <format URI> -d <schema path> -c <config>]" << endl;
+    if (!h_param || !q_param) {
+        cerr << "usage: shibtest -h <handle> -q <origin_site> [-f <format URI> -a <application_id> -d <schema path> -c <config>]" << endl;
         exit(0);
     }
     
     if (!path)
-        path=getenv("SHIBSCHEMAS");
+        path=getenv("SHIB_SCHEMAS");
     if (!path)
-        path=SCHEMAS;
+        path=SHIB_SCHEMAS;
     if (!config)
-        config=getenv("SHIBCONFIG");
+        config=getenv("SHIB_CONFIG");
     if (!config)
-        config=CONFIG;
+        config=SHIB_CONFIG;
+    if (!a_param)
+        a_param="default";
 
     ShibTargetConfig& conf=ShibTargetConfig::getConfig();
     conf.setFeatures(
@@ -107,13 +106,10 @@ int main(int argc,char* argv[])
     if (!conf.init(path,config))
         return -10;
 
-    try
-    {
-
-        
+    try {
         const IApplication* app=conf.getINI()->getApplication(a_param);
         if (!app)
-            throw SAMLException("<Application> not found in configuration");
+            throw SAMLException("specified <Application> section not found in configuration");
 
         auto_ptr_XMLCh domain(q_param);
         auto_ptr_XMLCh handle(h_param);
@@ -124,7 +120,13 @@ int main(int argc,char* argv[])
             new SAMLRequest(
                 EMPTY(saml::QName),
                 new SAMLAttributeQuery(
-                    new SAMLSubject(new SAMLNameIdentifier(handle.get(),domain.get(),format.get())),
+                    new SAMLSubject(
+                        new SAMLNameIdentifier(
+                            handle.get(),
+                            domain.get(),
+                            format.get() ? format.get() : Constants::SHIB_NAMEID_FORMAT_URI
+                            )
+                        ),
                     resource.get(),
                     app->getAttributeDesignators().clone()
                     )
@@ -134,7 +136,7 @@ int main(int argc,char* argv[])
         Metadata m(app->getMetadataProviders());
         const IProvider* site=m.lookup(domain.get());
         if (!site)
-            throw SAMLException("Unable to locate origin site's metadata.");
+            throw SAMLException("Unable to locate specified origin site's metadata.");
 
         // Try to locate an AA role.
         const IAttributeAuthorityRole* AA=NULL;
@@ -208,7 +210,7 @@ int main(int argc,char* argv[])
     }
     catch(SAMLException& e)
     {
-        cerr << "caught a SAML exception: " << e << endl;
+        cerr << "caught a SAML exception: " << e.what() << endl;
     }
     catch(XMLException& e)
     {
