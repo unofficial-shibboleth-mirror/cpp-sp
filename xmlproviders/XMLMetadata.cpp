@@ -150,7 +150,7 @@ namespace {
             
             KeyUse getUse() const { return m_use; }
             DSIGKeyInfoList* getKeyInfo() const { return &m_klist; }
-            saml::Iterator<const XENCEncryptionMethod*> getEncryptionMethod() const { return m_methods; }
+            saml::Iterator<const XENCEncryptionMethod*> getEncryptionMethods() const { return m_methods; }
             const DOMElement* getElement() const { return m_root; }
         
         private:
@@ -555,17 +555,20 @@ XMLMetadataImpl::EncryptionMethod::EncryptionMethod(const DOMElement* e) : m_roo
 {
     m_alg=e->getAttributeNS(NULL,SHIB_L(Algorithm));
     e=saml::XML::getFirstChildElement(e);
-    if (saml::XML::isElementNamed(e,::XML::XMLENC_NS,SHIB_L(KeySize))) {
-        DOMNode* n=e->getFirstChild();
-        if (n) m_size=XMLString::parseInt(n->getNodeValue());
-    }
-    else if (saml::XML::isElementNamed(e,saml::XML::XMLSIG_NS,SHIB_L(DigestMethod))) {
-        DOMNode* n=e->getFirstChild();
-        if (n) m_digest=n->getNodeValue();
-    }
-    else if (saml::XML::isElementNamed(e,::XML::XMLENC_NS,SHIB_L(OAEParams))) {
-        DOMNode* n=e->getFirstChild();
-        if (n) m_params=n->getNodeValue();
+    while (e) {
+        if (saml::XML::isElementNamed(e,::XML::XMLENC_NS,SHIB_L(KeySize))) {
+            DOMNode* n=e->getFirstChild();
+            if (n) m_size=XMLString::parseInt(n->getNodeValue());
+        }
+        else if (saml::XML::isElementNamed(e,saml::XML::XMLSIG_NS,SHIB_L(DigestMethod))) {
+            DOMNode* n=e->getFirstChild();
+            if (n) m_digest=n->getNodeValue();
+        }
+        else if (saml::XML::isElementNamed(e,::XML::XMLENC_NS,SHIB_L(OAEParams))) {
+            DOMNode* n=e->getFirstChild();
+            if (n) m_params=n->getNodeValue();
+        }
+        e=saml::XML::getNextSiblingElement(e);
     }
 }
 
