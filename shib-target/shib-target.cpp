@@ -1156,6 +1156,10 @@ void ShibTarget::sessionEnd(const char* cookie) const
 
 void* ShibTarget::sendError(const char* page, ShibMLP &mlp)
 {
+    header_t hdrs[] = {
+        header_t("Expires","01-Jan-1997 12:00:00 GMT"), header_t("Cache-Control","private,no-store,no-cache")
+        };
+    
     const IPropertySet* props=m_priv->m_app->getPropertySet("Errors");
     if (props) {
         pair<bool,const char*> p=props->getString(page);
@@ -1164,18 +1168,18 @@ void* ShibTarget::sendError(const char* page, ShibMLP &mlp)
             if (!infile.fail()) {
                 const char* res = mlp.run(infile,props);
                 if (res)
-                    return sendPage(res);
+                    return sendPage(res, 200, "text/html", ArrayIterator<header_t>(hdrs,2));
             }
         }
         else if (!strcmp(page,"access"))
-            return sendPage("Access Denied", 403);
+            return sendPage("Access Denied", 403, "text/html", ArrayIterator<header_t>(hdrs,2));
     }
 
     string errstr = string("sendError could not process error template (") + page + ") for application (";
     errstr += m_priv->m_app->getId();
     errstr += ")";
     log(ShibTarget::LogLevelError, errstr);
-    return sendPage("Internal Server Error. Please contact the site administrator.");
+    return sendPage("Internal Server Error. Please contact the site administrator.", 500, "text/html", ArrayIterator<header_t>(hdrs,2));
 }
 
 /*************************************************************************
