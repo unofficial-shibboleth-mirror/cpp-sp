@@ -8,7 +8,7 @@ CC=g++3
 SAMLRT=../../../opensaml/c
 APXS=/usr/sbin/apxs
 APACHECTL=/usr/sbin/apachectl
-SHIB_CFLAGS=-I$(SAMLRT)/include -I/usr/local/include -I../include
+SHIB_CFLAGS=-g -I$(SAMLRT)/include -I/usr/local/include -I../include
 SHIB_LDFLAGS=-L$(SAMLRT)/lib -L../lib
 SHIB_LIBS=-lsaml -lshib -leduPerson -lxerces-c1_7_0
 
