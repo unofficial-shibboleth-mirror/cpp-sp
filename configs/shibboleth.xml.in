@@ -135,7 +135,7 @@
 			<EntityDescriptor entityID="https://example.org/shibboleth" xmlns="urn:oasis:names:tc:SAML:2.0:metadata">
 				<IDPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:1.1:protocol urn:mace:shibboleth:1.0">
 					<Extensions>
-				        <shib:Domain xmlns:shib="urn:mace:shibboleth:1.0:metadata">example.org</shib:Domain>
+				        <shib:Domain xmlns:shib="urn:mace:shibboleth:metadata:1.0">example.org</shib:Domain>
 					</Extensions>
 					<KeyDescriptor use="signing">
 					    <ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
@@ -148,7 +148,7 @@
 				</IDPSSODescriptor>
 				<AttributeAuthorityDescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:1.1:protocol">
 					<Extensions>
-				        <shib:Domain xmlns:shib="urn:mace:shibboleth:1.0:metadata">example.org</shib:Domain>
+				        <shib:Domain xmlns:shib="urn:mace:shibboleth:metadata:1.0">example.org</shib:Domain>
 					</Extensions>
 					<KeyDescriptor>
 					    <ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">

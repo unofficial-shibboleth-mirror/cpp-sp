@@ -71,11 +71,11 @@ const XMLCh XML::SHIB_SCHEMA_ID[] = // shibboleth.xsd
   chPeriod, chLatin_x, chLatin_s, chLatin_d, chNull
 };
 
-const XMLCh XML::SHIBMETA_NS[] = // urn:mace:shibboleth:1.0:metadata
+const XMLCh XML::SHIBMETA_NS[] = // urn:mace:shibboleth:metadata:1.0
 { chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
   chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
-  chDigit_1, chPeriod, chDigit_0, chColon,
-  chLatin_m, chLatin_e, chLatin_t, chLatin_a, chLatin_d, chLatin_a, chLatin_t, chLatin_a, chNull
+  chLatin_m, chLatin_e, chLatin_t, chLatin_a, chLatin_d, chLatin_a, chLatin_t, chLatin_a, chColon,
+  chDigit_1, chPeriod, chDigit_0, chColon, chNull
 };
 
 const XMLCh XML::SHIBMETA_SCHEMA_ID[] = // shibboleth-metadata-1.0.xsd
