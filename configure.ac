@@ -248,6 +248,22 @@ if test "$WANT_APACHE" = "yes"; then
                     CPPFLAGS="-I${with_apreq}/include $CPPFLAGS"
                 fi])
 
+    saved_CPPFLAGS="$CPPFLAGS"
+    CPPFLAGS="-I$APXS_INCLUDE $APXS_CFLAGS $CPPFLAGS"
+    AC_CHECK_HEADER([libapreq/apache_request.h],,
+                AC_MSG_ERROR([unable to find apreq header files]))
+
+dnl    saved_LIBS="$LIBS"
+dnl    LIBS="-lapreq $LIBS"
+dnl    AC_TRY_LINK(
+dnl        [#include <libapreq/apache_request.h>],
+dnl        [ApacheRequest_expires],
+dnl        [AC_DEFINE(HAVE_APREQ,1,[Define if apreq library was found])],
+dnl        [AC_MSG_ERROR([unable to link with apreq])
+dnl        ])
+dnl    LIBS="$saved_LIBS"
+    CPPFLAGS="$saved_CPPFLAGS"
+
     AC_SUBST(APXS_CFLAGS)
     AC_SUBST(APXS_INCLUDE)
     AC_SUBST(APXS_LIBEXEC)
