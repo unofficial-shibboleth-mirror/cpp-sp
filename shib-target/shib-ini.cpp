@@ -87,6 +87,7 @@ namespace shibtarget {
 
         // IApplication
         const char* getId() const {return getString("id").second;}
+        const char* getHash() const {return m_hash.c_str();}
         Iterator<SAMLAttributeDesignator*> getAttributeDesignators() const;
         Iterator<IAAP*> getAAPProviders() const;
         Iterator<IMetadata*> getMetadataProviders() const;
@@ -106,6 +107,7 @@ namespace shibtarget {
         void cleanup();
         const IConfig* m_ini;   // this is ok because its locking scope includes us
         const XMLApplication* m_base;
+        string m_hash;
         vector<SAMLAttributeDesignator*> m_designators;
         vector<IAAP*> m_aaps;
         vector<IMetadata*> m_metadatas;
@@ -389,6 +391,10 @@ XMLApplication::XMLApplication(const IConfig* ini, const Iterator<ICredentials*>
         const IPropertySet* propcheck=getPropertySet("Errors");
         if (propcheck && !propcheck->getString("session").first)
             throw MalformedException("<Errors> element requires 'session' (or deprecated 'shire') attribute");
+
+        m_hash=getId();
+        m_hash+=getString("providerId").second;
+        m_hash=SAMLArtifact::toHex(SAMLArtifactType0001::generateSourceId(m_hash.c_str()));
 
         ShibTargetConfig& conf=ShibTargetConfig::getConfig();
         SAMLConfig& shibConf=SAMLConfig::getConfig();
