@@ -462,12 +462,13 @@ ShibTarget::doCheckAuthZ(void)
         bool method_restricted=false;
         string remote_user = getRemoteUser();
 
-    #define CHECK_OK do { \
-      if (ht->requireAll) { \
-        return pair<bool,void*>(false, NULL); \
-      } \
-      auth_OK[x] = true; \
-      continue; \
+#define CHECK_OK \
+    do { \
+        if (!ht->requireAll) { \
+            return pair<bool,void*>(false, NULL); \
+        } \
+        auth_OK[x] = true; \
+        continue; \
     } while (0)
 
         for (int x = 0; x < ht->elements.size(); x++) {
