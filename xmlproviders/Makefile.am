@@ -11,15 +11,15 @@ xmlproviders_la_LIBADD = \
 	../shib/libshib.la
 
 xmlproviders_la_SOURCES = \
-                    CredResolvers.cpp \
-                    ScopedAttribute.cpp \
-                    XML.cpp \
-                    XMLAAP.cpp \
-                    XMLCredentials.cpp \
-                    XMLMetadata.cpp \
-                    XMLProviders.cpp \
-                    XMLRevocation.cpp \
-                    XMLTrust.cpp
+	CredResolvers.cpp \
+	ScopedAttribute.cpp \
+	XML.cpp \
+	XMLAAP.cpp \
+	XMLCredentials.cpp \
+	XMLMetadata.cpp \
+	XMLProviders.cpp \
+	XMLRevocation.cpp \
+	XMLTrust.cpp
 
 
 xmlproviders_la_LDFLAGS = -module -avoid-version
