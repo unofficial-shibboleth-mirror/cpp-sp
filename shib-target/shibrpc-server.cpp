@@ -133,7 +133,6 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
   log.debug ("create the POST profile (%d policies)", policies.size());
   ShibPOSTProfile *profile =
     ShibPOSTProfileFactory::getInstance(policies,
-					ShibConfig::getConfig().origin_mapper,
 					location.get(),
 					3600);
 

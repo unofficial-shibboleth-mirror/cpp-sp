@@ -152,7 +152,13 @@ STConfig::STConfig(const char* app_name, const char* inifile)
     log.debug ("SAML Initialized");
 
   // Init Shib
-  shibConf.origin_mapper = new DummyMapper();
+  if (! ini->get_tag (app, SHIBTARGET_TAG_SITES, true, &tag)) {
+    log.crit("No Sites File found in configuration");
+    throw runtime_error ("No Sites File found in configuration");
+  }
+
+  shibConf.origin_mapper = new XMLOriginSiteMapper(tag.c_str(),
+						   Iterator<X509Certificate*>());
   
   if (!shibConf.init()) {
     log.error ("Failed to initialize Shib library");
