@@ -12,7 +12,7 @@
                 <restriction base="ID"/>
         </simpleType>
         <simpleType name="IDReferenceType">
-                <restriction base="IDREF"/>
+                <restriction base="NCName"/>
         </simpleType>
         <simpleType name="DecisionType">
                 <restriction base="string">
