@@ -101,12 +101,23 @@ namespace shibtarget {
     ~ShibTargetPriv();
 
     string url_encode(const char* s);
+    void get_application(string protocol, string hostname, int port, string uri);
 
+    IRequestMapper::Settings m_settings;
     const IApplication *m_app;
     string m_cookieName;
     string m_shireURL;
     string m_authnRequest;
     CgiParse* m_parser;
+
+    // These are the actual request parameters set via the init method.
+    string m_url;
+    string m_method;
+    string m_content_type;
+    string m_remote_addr;
+    int m_total_bytes;
+
+    ShibTargetConfig* m_Config;
   };
 }
 
@@ -117,13 +128,11 @@ namespace shibtarget {
 
 ShibTarget::ShibTarget(void) : m_priv(NULL)
 {
-  m_total_bytes = 0;
   m_priv = new ShibTargetPriv();
 }
 
 ShibTarget::ShibTarget(const IApplication *app) : m_priv(NULL)
 {
-  m_total_bytes = 0;
   m_priv = new ShibTargetPriv();
   m_priv->m_app = app;
 }
@@ -133,6 +142,19 @@ ShibTarget::~ShibTarget(void)
   if (m_priv) delete m_priv;
 }
 
+void ShibTarget::init(ShibTargetConfig *config,
+		      string protocol, string hostname, int port,
+		      string uri, string content_type, string remote_host,
+		      int total_bytes)
+{
+  m_priv->m_method = protocol;
+  m_priv->m_content_type = content_type;
+  m_priv->m_remote_addr = remote_host;
+  m_priv->m_total_bytes = total_bytes;
+  m_priv->m_Config = config;
+  m_priv->get_application(protocol, hostname, port, uri);
+}
+
 
 // These functions implement the server-agnostic shibboleth engine
 // The web server modules implement a subclass and then call into 
@@ -140,7 +162,98 @@ ShibTarget::~ShibTarget(void)
 void*
 ShibTarget::doCheckAuthN(void)
 {
-  return NULL;
+
+  const char *targetURL = NULL;
+  const char *procState = "Process Initialization Error";
+  ShibMLP mlp;
+
+  try {
+    if (! m_priv->m_app)
+      throw ShibTargetException(SHIBRPC_OK, "ShibTarget Uninitialized.  Application did not supply request information.");
+
+    targetURL = m_priv->m_url.c_str();
+    const char *shireURL = getShireURL(targetURL);
+    if (! shireURL)
+      throw ShibTargetException(SHIBRPC_OK, "Cannot map target URL to Shire URL.  Check configuration");
+
+    if (strstr(targetURL,shireURL))
+      return doHandlePOST();
+
+    string auth_type = getAuthType();
+    if (strcasecmp(auth_type.c_str(),"shibboleth"))
+      return returnDecline();
+
+    pair<bool,bool> requireSession = getRequireSession(m_priv->m_settings);
+    pair<const char*, const char *> shib_cookie = getCookieNameProps();
+
+    const char *session_id = NULL;
+    string cookies = getCookies();
+    if (!cookies.empty()) {
+      if (session_id = strstr(cookies.c_str(), shib_cookie.first)) {
+	// We found a cookie.  pull it out (our session_id)
+	session_id += strlen(shib_cookie.first) + 1; // skip over the '='
+	char *cookieend = strchr(session_id, ';');
+	if (cookieend)
+	  *cookieend = '\0';
+      }
+    }
+    
+    if (!session_id || !*session_id) {
+      // No session.  Maybe that's acceptable?
+
+      if (!requireSession.second)
+	return returnOK();
+
+      // No cookie, but we require a session.  Generate an AuthnRequest.
+      return sendRedirect(getAuthnRequest(targetURL));
+    }
+
+    procState = "Session Processing Error";
+    RPCError *status = sessionIsValid(session_id, m_priv->m_remote_addr.c_str());
+
+    if (status->isError()) {
+
+      // If no session is required, bail now.
+      if (!requireSession.second)
+	return returnOK(); // XXX: Or should this be DECLINED?
+			   // Has to be OK because DECLINED will just cause Apache
+      			   // to fail when it can't locate anything to process the
+      			   // AuthType.  No session plus requireSession false means
+      			   // do not authenticate the user at this time.
+      else if (status->isRetryable()) {
+	// Session is invalid but we can retry the auth -- generate an AuthnRequest
+	delete status;
+	return sendRedirect(getAuthnRequest(targetURL));
+
+      } else {
+
+	mlp.insert(*status);
+	delete status;
+	goto out;
+      }
+
+      delete status;
+      
+    }
+
+  } catch (ShibTargetException &e) {
+    mlp.insert("errorText", e.what());
+
+  } catch (...) {
+    mlp.insert("errorText", "Unexpected Exception");
+
+  }
+
+  // If we get here then we've got an error.
+  mlp.insert("errorType", procState);
+  mlp.insert("errorDesc", "An error occurred while processing your request.");
+
+ out:
+  if (targetURL)
+    mlp.insert("requestURL", targetURL);
+
+  string res = "xxx";
+  return sendPage(res);
 }
 
 void*
@@ -619,6 +732,7 @@ ShibTarget::serialize(saml::SAMLAssertion &assertion, std::string &result)
 
 ShibTargetPriv::ShibTargetPriv() : m_parser(NULL), m_app(NULL)
 {
+  m_total_bytes = 0;
 }
 
 ShibTargetPriv::~ShibTargetPriv()
@@ -649,6 +763,43 @@ ShibTargetPriv::url_encode(const char* s)
     }
     return ret;
 }
+
+void
+ShibTargetPriv::get_application(string protocol, string hostname, int port,
+				string uri)
+{
+  if (m_app)
+    return;
+
+  // We lock the configuration system for the duration.
+  IConfig* conf=m_Config->getINI();
+  Locker locker(conf);
+    
+  // Map request to application and content settings.
+  IRequestMapper* mapper=conf->getRequestMapper();
+  Locker locker2(mapper);
+
+  // Obtain the application settings from the parsed URL
+  m_settings = mapper->getSettingsFromParsedURL(protocol.c_str(), hostname.c_str(),
+						port, uri.c_str());
+
+  // Now find the application from the URL settings
+  pair<bool,const char*> application_id=m_settings.first->getString("applicationId");
+  const IApplication* application=conf->getApplication(application_id.second);
+  if (!application) {
+    throw ShibTargetException(SHIBRPC_OK, "unable to map request to application settings.  Check configuration");
+  }
+
+  // Store the application for later use
+  m_app = application;
+
+  // Compute the target URL
+  m_url = protocol + "://" + hostname;
+  if ((protocol == "http" && port != 80) || (protocol == "https" && port != 443))
+    m_url += ":" + port;
+  m_url += uri;
+}
+
 
 /*************************************************************************
  * CGI Parser implementation
@@ -783,7 +934,7 @@ void ShibTarget::log(ShibLogLevel level, string &msg)
 {
   throw runtime_error("Invalid Usage");
 }
-string ShibTarget::getCookie(std::string &name)
+string ShibTarget::getCookies(void)
 {
   throw runtime_error("Invalid Usage");
 }
@@ -792,10 +943,6 @@ void ShibTarget::setCookie(string &name, string &value)
   throw runtime_error("Invalid Usage");
 }
 string ShibTarget::getPostData(void)
-{
-  throw runtime_error("Invalid Usage");
-}
-string ShibTarget::getAuthType(void)
 {
   throw runtime_error("Invalid Usage");
 }
@@ -811,4 +958,23 @@ void* ShibTarget::sendPage(string &msg, pair<string,string> headers[], int code)
 void* ShibTarget::sendRedirect(std::string url)
 {
   throw runtime_error("Invalid Usage");
+}
+
+// Subclasses may not need to override these particular virtual methods.
+string ShibTarget::getAuthType(void)
+{
+  return string("shibboleth");
+}
+void* ShibTarget::returnDecline(void)
+{
+  return NULL;
+}
+void* ShibTarget::returnOK(void)
+{
+  return NULL;
+}
+pair<bool,bool>
+ShibTarget::getRequireSession(IRequestMapper::Settings &settings)
+{
+  return settings.first->getBool("requireSession");
 }

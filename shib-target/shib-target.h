@@ -77,147 +77,11 @@
 
 namespace shibtarget {
   
-  // This usurps the existing SHIRE and RM apis into a single class.
-  class RPCError;
-  class ShibTargetPriv;
-  struct IApplication;
-  class SHIBTARGET_EXPORTS ShibTarget {
-  public:
-    ShibTarget(const IApplication *app);
-    virtual ~ShibTarget(void);
-
-    // These are defined here so the subclass does not need to specifically
-    // depend on log4cpp.  We could use log4cpp::Priority::PriorityLevel
-    // but this is just as easy, IMHO.  It's just a case statement in the
-    // implementation to handle the event level.
-    enum ShibLogLevel {
-      LogLevelDebug,
-      LogLevelInfo,
-      LogLevelWarn,
-      LogLevelError
-    };
-
-    //
-    // Note: subclasses MUST implement ALL of these virtual methods
-    //
-
-    // Send a message to the Webserver log
-    virtual void log(ShibLogLevel level, std::string &msg);
-
-    void log(ShibLogLevel level, const char *msg) {
-      std::string s = msg;
-      log(level, s);
-    }
-
-    // Get/Set a cookie for this connection
-    virtual std::string getCookie(std::string &name);
-    virtual void setCookie(std::string &name, std::string &value);
-
-    std::string getCookie(const char *name) {
-      std::string s = name;
-      getCookie(s);
-    }
-    void setCookie(const char *name, const char *value) {
-      std::string ns = name;
-      std::string vs = value;
-      setCookie(ns, vs);
-    }
-
-    // Get the request's POST data from the server
-    virtual std::string getPostData(void);
-
-    // Not sure if I need these, but I might for something like Apache
-    // in order to "fix" the auth type in the case of basicHijack.  In
-    // particular we need to maintain some state between the different
-    // APIs to know whether or not to proceed with shib processing.
-    virtual std::string getAuthType(void);
-    virtual void setAuthType(std::string);
-
-    void setAuthType(const char *type) {
-      std::string s = type;
-      setAuthType(s);
-    }
-
-    // Note: we still need to define exactly what kind of data in contained
-    // in the HTAccessInfo -- perhaps we can stub it out so non-htaccess
-    // systems have something they can plug in?
-    //virtual HTAccessInfo& getAccessInfo(void);
-
-    // We're done.  Finish up.  Send either a result (error?) page or a redirect.
-    virtual void* sendPage(
-			   std::string &msg,
-			   std::pair<std::string, std::string> headers[] = NULL,
-			   int code = 200
-			   );
-    virtual void* sendRedirect(std::string url);
-
-    //
-    // Note:  Subclasses need not implement anything below this line
-    //
-
-    // These functions implement the server-agnostic shibboleth engine
-    // The web server modules implement a subclass and then call into 
-    // these methods once they instantiate their request object.
-    void* doCheckAuthN(void);
-    void* doHandlePOST(void);
-    void* doCheckAuthZ(void);
-
-    // SHIRE APIs
-
-    // Get the session cookie name and properties for the application
-    std::pair<const char*,const char*> getCookieNameProps() const;
-        
-    // Find the default assertion consumer service for the resource
-    const char* getShireURL(const char* resource) const;
-        
-    // Generate a Shib 1.x AuthnRequest redirect URL for the resource
-    const char* getAuthnRequest(const char* resource) const;
-        
-    // Process a lazy session setup request and turn it into an AuthnRequest
-    const char* getLazyAuthnRequest(const char* query_string) const;
-        
-    // Process a POST profile submission, and return (SAMLResponse,TARGET) pair.
-    std::pair<const char*,const char*>
-      getFormSubmission(const char* post, unsigned int len) const;
-        
-    RPCError* sessionCreate(
-			    const char* response,
-			    const char* ip,
-			    std::string &cookie
-			    ) const;
-    RPCError* sessionIsValid(const char* session_id, const char* ip) const;
-
-    // RM APIS
-
-    RPCError* getAssertions(
-			    const char* cookie,
-			    const char* ip,
-			    std::vector<saml::SAMLAssertion*>& assertions,
-			    saml::SAMLAuthenticationStatement **statement = NULL
-			    ) const;
-    static void serialize(saml::SAMLAssertion &assertion, std::string &result);
-
-
-  protected:
-    ShibTarget(void);
-
-    // These are the actual request parameters that must be set in the subclass
-    // constructor.
-    std::string m_url;
-    std::string m_method;
-    std::string m_content_type;
-    std::string m_remote_addr;
-    int m_total_bytes;
-
-  private:
-    mutable ShibTargetPriv *m_priv;
-  };
-
-
   //******************************************************************************
   // You probably don't care about much below this line
   // unless you are using the lower-layer APIs provided by
-  // the shib target library
+  // the shib target library.  Go to the end of the file to
+  // find the ShibTarget class -- you probably wnat to use that.
   //
 
   class SHIBTARGET_EXPORTS ShibTargetException : public std::exception
@@ -406,47 +270,6 @@ namespace shibtarget {
         unsigned long m_features;
     };
 
-    class CgiParse;
-    class SHIBTARGET_EXPORTS SHIRE
-    {
-    public:
-        SHIRE(const IApplication* app) { m_st = new ShibTarget(app); }
-        ~SHIRE();
-        
-        // Get the session cookie name and properties for the application
-        std::pair<const char*,const char*> getCookieNameProps() const
-	  { return m_st->getCookieNameProps(); }
-        
-        // Find the default assertion consumer service for the resource
-        const char* getShireURL(const char* resource) const
-	  { return m_st->getShireURL(resource); }
-        
-        // Generate a Shib 1.x AuthnRequest redirect URL for the resource
-        const char* getAuthnRequest(const char* resource) const
-	  { return m_st->getAuthnRequest(resource); }
-        
-        // Process a lazy session setup request and turn it into an AuthnRequest
-        const char* getLazyAuthnRequest(const char* query_string) const
-	  { return m_st->getLazyAuthnRequest(query_string); }
-        
-        // Process a POST profile submission, and return (SAMLResponse,TARGET) pair.
-        std::pair<const char*,const char*> getFormSubmission(const char* post, unsigned int len) const
-	  { return m_st->getFormSubmission(post, len); }
-        
-        RPCError* sessionCreate(const char* response, const char* ip, std::string &cookie) const
-	  { return m_st->sessionCreate(response, ip, cookie); }
-        RPCError* sessionIsValid(const char* session_id, const char* ip) const
-	  { return sessionIsValid(session_id, ip); }
-    
-    private:
-	ShibTarget *m_st;
-        //const IApplication* m_app;
-        //mutable std::string m_cookieName;
-        //mutable std::string m_shireURL;
-        //mutable std::string m_authnRequest;
-        //mutable CgiParse* m_parser;
-    };
-
     class SHIBTARGET_EXPORTS RM
     {
     public:
@@ -500,6 +323,201 @@ namespace shibtarget {
         std::map<std::string,std::string> m_map;
         std::string m_generated;
     };
+
+  //******************************************************************************
+  //
+  // This is the interface you're looking for.
+  //
+
+  // This usurps the existing SHIRE and RM apis into a single class.
+  class ShibTargetPriv;
+  class SHIBTARGET_EXPORTS ShibTarget {
+  public:
+    ShibTarget(const IApplication *app);
+    virtual ~ShibTarget(void);
+
+    // These are defined here so the subclass does not need to specifically
+    // depend on log4cpp.  We could use log4cpp::Priority::PriorityLevel
+    // but this is just as easy, IMHO.  It's just a case statement in the
+    // implementation to handle the event level.
+    enum ShibLogLevel {
+      LogLevelDebug,
+      LogLevelInfo,
+      LogLevelWarn,
+      LogLevelError
+    };
+
+    //
+    // Note: subclasses MUST implement ALL of these virtual methods
+    //
+
+    // Send a message to the Webserver log
+    virtual void log(ShibLogLevel level, std::string &msg);
+
+    void log(ShibLogLevel level, const char *msg) {
+      std::string s = msg;
+      log(level, s);
+    }
+
+    // Get/Set a cookie for this connection
+    virtual std::string getCookies(void);
+    virtual void setCookie(std::string &name, std::string &value);
+
+    void setCookie(const char *name, const char *value) {
+      std::string ns = name;
+      std::string vs = value;
+      setCookie(ns, vs);
+    }
+
+    // Get the request's POST data from the server
+    virtual std::string getPostData(void);
+
+    // Not sure if I need these, but I might for something like Apache
+    // in order to "fix" the auth type in the case of basicHijack.  In
+    // particular we need to maintain some state between the different
+    // APIs to know whether or not to proceed with shib processing.
+    virtual std::string getAuthType(void);
+    virtual void setAuthType(std::string);
+
+    void setAuthType(const char *type) {
+      std::string s = type;
+      setAuthType(s);
+    }
+
+    virtual std::pair<bool,bool> getRequireSession(IRequestMapper::Settings &settings);
+
+    // Note: we still need to define exactly what kind of data in contained
+    // in the HTAccessInfo -- perhaps we can stub it out so non-htaccess
+    // systems have something they can plug in?
+    //virtual HTAccessInfo& getAccessInfo(void);
+
+    // We're done.  Finish up.  Send either a result (error?) page or a redirect.
+    virtual void* sendPage(
+			   std::string &msg,
+			   std::pair<std::string, std::string> headers[] = NULL,
+			   int code = 200
+			   );
+    virtual void* sendRedirect(std::string url);
+
+    // These next two APIs are used to obtain the module-specific "OK"
+    // and "Decline" results.  OK means "we believe that this request
+    // should be accepted".  Declined means "we believe that this is
+    // not a shibbolized request so we have no comment".
+
+    virtual void* returnDecline(void);
+    virtual void* returnOK(void);
+
+    //
+    // Note:  Subclasses need not implement anything below this line
+    //
+
+    // These functions implement the server-agnostic shibboleth engine
+    // The web server modules implement a subclass and then call into 
+    // these methods once they instantiate their request object.
+    // 
+    // Return value:
+    //   these APIs will always return the result of sendPage(), sendRedirect(),
+    //   returnDecline(), or returnOK().  Exactly what those values are
+    //   is module- (subclass-) implementation specific.
+    //
+    void* doCheckAuthN(void);
+    void* doHandlePOST(void);
+    void* doCheckAuthZ(void);
+
+    // SHIRE APIs
+
+    // Get the session cookie name and properties for the application
+    std::pair<const char*,const char*> getCookieNameProps() const;
+        
+    // Find the default assertion consumer service for the resource
+    const char* getShireURL(const char* resource) const;
+        
+    // Generate a Shib 1.x AuthnRequest redirect URL for the resource
+    const char* getAuthnRequest(const char* resource) const;
+        
+    // Process a lazy session setup request and turn it into an AuthnRequest
+    const char* getLazyAuthnRequest(const char* query_string) const;
+        
+    // Process a POST profile submission, and return (SAMLResponse,TARGET) pair.
+    std::pair<const char*,const char*>
+      getFormSubmission(const char* post, unsigned int len) const;
+        
+    RPCError* sessionCreate(
+			    const char* response,
+			    const char* ip,
+			    std::string &cookie
+			    ) const;
+    RPCError* sessionIsValid(const char* session_id, const char* ip) const;
+
+    // RM APIS
+
+    RPCError* getAssertions(
+			    const char* cookie,
+			    const char* ip,
+			    std::vector<saml::SAMLAssertion*>& assertions,
+			    saml::SAMLAuthenticationStatement **statement = NULL
+			    ) const;
+    static void serialize(saml::SAMLAssertion &assertion, std::string &result);
+
+
+  protected:
+    ShibTarget(void);
+
+    // Initialize the request from the parsed URL
+    void init(ShibTargetConfig *config,
+	      std::string protocol, std::string hostname, int port,
+	      std::string uri, std::string content_type, std::string remote_host,
+	      int total_bytes);
+
+  private:
+    mutable ShibTargetPriv *m_priv;
+  };
+
+  //******************************************************************************
+  // You probably don't care about much below this line
+  // unless you are using the lower-layer APIs provided by
+  // the shib target library.
+
+    class SHIBTARGET_EXPORTS SHIRE
+    {
+    public:
+        SHIRE(const IApplication* app) { m_st = new ShibTarget(app); }
+        ~SHIRE();
+        
+        // Get the session cookie name and properties for the application
+        std::pair<const char*,const char*> getCookieNameProps() const
+	  { return m_st->getCookieNameProps(); }
+        
+        // Find the default assertion consumer service for the resource
+        const char* getShireURL(const char* resource) const
+	  { return m_st->getShireURL(resource); }
+        
+        // Generate a Shib 1.x AuthnRequest redirect URL for the resource
+        const char* getAuthnRequest(const char* resource) const
+	  { return m_st->getAuthnRequest(resource); }
+        
+        // Process a lazy session setup request and turn it into an AuthnRequest
+        const char* getLazyAuthnRequest(const char* query_string) const
+	  { return m_st->getLazyAuthnRequest(query_string); }
+        
+        // Process a POST profile submission, and return (SAMLResponse,TARGET) pair.
+        std::pair<const char*,const char*> getFormSubmission(const char* post, unsigned int len) const
+	  { return m_st->getFormSubmission(post, len); }
+        
+        RPCError* sessionCreate(const char* response, const char* ip, std::string &cookie) const
+	  { return m_st->sessionCreate(response, ip, cookie); }
+        RPCError* sessionIsValid(const char* session_id, const char* ip) const
+	  { return sessionIsValid(session_id, ip); }
+    
+    private:
+	ShibTarget *m_st;
+        //const IApplication* m_app;
+        //mutable std::string m_cookieName;
+        //mutable std::string m_shireURL;
+        //mutable std::string m_authnRequest;
+        //mutable CgiParse* m_parser;
+    };
+
 }
 
 #endif /* SHIB_TARGET_H */
