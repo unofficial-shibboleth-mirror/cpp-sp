@@ -274,7 +274,7 @@ const char* get_mapper_string(const char* defaultStr, Pmember fcn,
     res = (mapper.*fcn)(originSite);
   }
 
-  if (res)
+  if (res && *res)
     return res;
 
   return defaultStr;
