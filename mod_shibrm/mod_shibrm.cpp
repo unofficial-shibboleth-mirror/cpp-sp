@@ -484,8 +484,8 @@ extern "C" int shibrm_check_auth(request_rec* r)
 
     	if (!strcmp(w,"valid-user"))
     	{
-    	    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,"shibrm_check_auth() accepting valid-user");
-    	    return OK;
+    	    ap_log_rerror(APLOG_MARK,APLOG_WARNING|APLOG_NOERRNO,r,
+			  "shibrm_check_auth() IGNORING valid-user configuration");
     	}
     	else if (!strcmp(w,"user") && r->connection->user)
     	{
