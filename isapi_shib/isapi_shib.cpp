@@ -349,6 +349,121 @@ void GetHeader(PHTTP_FILTER_PREPROC_HEADERS pn, PHTTP_FILTER_CONTEXT pfc,
         throw ERROR_NO_DATA;
 }
 
+/****************************************************************************/
+// ISAPI Filter
+
+class ShibTargetIsapiF : public ShibTarget
+{
+public:
+  ShibTargetIsapiF(PHTTP_FILTER_CONTEXT pfc, PHTTP_FILTER_PREPRC_HEADERS pn,
+		   const site_t& site) {
+
+    // URL path always come from IIS.
+    dynabuf url(256);
+    GetHeader(pn,pfc,"url",url,256,false);
+
+    // Port may come from IIS or from site def.
+    dynabuf port(11);
+    if (site.m_port.empty() || !g_bNormalizeRequest)
+        GetServerVariable(pfc,"SERVER_PORT",port,10);
+    else {
+        strncpy(port,site.m_port.c_str(),10);
+        static_cast<char*>(port)[10]=0;
+    }
+    
+    // Scheme may come from site def or be derived from IIS.
+    const char* scheme=site.m_scheme.c_str();
+    if (!scheme || !*scheme || !g_bNormalizeRequest)
+        scheme=pfc->fIsSecurePort ? "https" : "http";
+
+    // Get the remote address
+    dynabuf remote_addr(16);
+    GetServerVariable(pfc,"REMOTE_ADDR",remote_addr,16);
+
+    // XXX: How do I get the content type and HTTP Method from this context?
+
+    init(g_Config, string(scheme), site.m_name, atoi(port),
+	 string(url), string(""), // XXX: content type
+	 string(remote_addr), string("") // XXX: http method
+	 ); 
+
+    m_pfc = pfc;
+    m_pn = pn;
+  }
+  ~ShibTargetIsapiF() { }
+
+  virtual void log(ShibLogLevel level, const string &msg) {
+    LogEvent(NULL, (level == LogLevelDebug : EVENTLOG_DEBUG_TYPE ?
+		    (level == LogLevelInfo : EVENTLOG_INFORMATION_TYPE ?
+		     (level == LogLevelWarn : EVENTLOG_WARNING_TYPE ?
+		      EVENTLOG_ERROR_TYPE))),
+	     2100, NULL, msg.c_str());
+  }
+  virtual string getCookies(void) {
+    dynabuf buf(128);
+    GetHeader(m_pn, m_pfc, "Cookie:", buf, 128, false);
+  }
+  // XXX: the filter never processes the POST.
+  //virtual void setCookie(const string &name, const string &value) {  }
+  //virtual string getArgs(void) {  }
+  //virtual string getPostData(void) {  }
+  virtual void clearHeader(const string &name) {
+    string hdr = name + ":";
+    m_pn->SetHeader(m_pfc, const_cast<char*>(hdr.c_str()), "");
+  }
+  virtual void setHeader(const string &name, const string &value) {
+    string hdr = name + ":";
+    m_pn->SetHeader(m_pfc, const_cast<char*>(hdr.c_str()),
+		    const_cast<char*>(value.c_str()));
+  }
+  virtual string getHeader(const string &name) {
+    string hdr = name + ":";
+    dynabuf buf(1024);
+    GetHeader(m_pn, m_pfc, hdr.c_str(), buf, 1024, false);
+    return string(buf);
+  }
+  virtual void setRemoteUser(const string &user) {
+    setHeader(string("remote-user"), user);
+  }
+  virtual string getRemoteUser(void) {
+    return getHeader(string("remote-user"));
+  }
+  virtual void* sendPage(const string &msg, const string content_type,
+			 const pair<string, string> headers[], int code) {
+    string hdr = string ("Connection: close\r\nContent-type: ") + content_type + "\r\n";
+    for (int k = 0; k < headers.size(); k++) {
+      hdr += headers[k].first + ": " + headers[k].second + "\r\n";
+    }
+    hdr += "\r\n";
+    // XXX Need to handle "code"
+    m_pfc->ServerSupportFunction(m_pfc, SF_REQ_SEND_RESPONSE_HEADER, "200 OK",
+				 (dword)hdr.c_str(), 0);
+    DWORD resplen = msg.size();
+    m_pfc->WriteClient(m_pfc, (LPVOID)msg.c_str(), &resplen, 0);
+    return (void*)SF_STATUS_REQ_FINISHED;
+  }
+  virtual void* sendRedirect(const string url) {
+    // XXX: Don't support the httpRedirect option, yet.
+    string hdrs=string("Location: ") + url + "\r\n"
+      "Content-Type: text/html\r\n"
+      "Content-Length: 40\r\n"
+      "Expires: 01-Jan-1997 12:00:00 GMT\r\n"
+      "Cache-Control: private,no-store,no-cache\r\n\r\n";
+    m_pfc->ServerSupportFunction(m_pfc, SF_REQ_SEND_RESPONSE_HEADER,
+				 "302 Please Wait", (DWORD)hdrs.c_str(), 0);
+    static const char* redmsg="<HTML><BODY>Redirecting...</BODY></HTML>";
+    DWORD resplen=40;
+    m_pfc->WriteClient(m_pfc, (LPVOID)redmsg, &resplen, 0);
+    return SF_STATUS_REQ_FINISHED;
+  }
+  // XXX: We might not ever hit the 'decline' status in this filter.
+  //virtual void* returnDecline(void) { }
+  virtual void* returnOK(void) { return (void*) SF_STATUS_REQ_NEXT_NOTIFICATION; }
+
+  PHTTP_FILTER_CONTEXT m_pfc;
+  PHTTP_FILTER_PREPRC_HEADERS m_pn
+};
+
 IRequestMapper::Settings map_request(
     PHTTP_FILTER_CONTEXT pfc, PHTTP_FILTER_PREPROC_HEADERS pn, IRequestMapper* mapper, const site_t& site, string& target
     )

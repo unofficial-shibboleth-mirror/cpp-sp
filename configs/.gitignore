@@ -7,3 +7,6 @@
 /shibboleth.ini
 /shibboleth.xml
 /creds.xml
+/AAP.xml
+/IQ-sites.xml
+/IQ-trust.xml
