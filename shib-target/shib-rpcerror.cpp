@@ -265,18 +265,20 @@ int RPCError::getCode() { return m_priv->status; }
 
 const char* RPCError::getOriginErrorURL()
 {
-    const char* res="No URL Available";
+    const char* res=NULL;
+    static const char* msg="No URL Available";
     if (!m_priv->origin.empty())
     {
         OriginSiteMapper mapper;
         res=mapper.getErrorURL(m_priv->origin.c_str());
     }
-    return res;
+    return res ? res : msg;
 }
 
 const char* RPCError::getOriginContactName()
-{ 
-    const char* res="No Name Available";
+{
+    const char* res=NULL;
+    static const char* msg="No Name Available";
     if (!m_priv->origin.empty())
     {
         OriginSiteMapper mapper;
@@ -291,12 +293,13 @@ const char* RPCError::getOriginContactName()
             }
         }
     }
-    return res;
+    return res ? res : msg;
 }
 
 const char* RPCError::getOriginContactEmail()
 {
-    const char* res="No Email Available";
+    const char* res=NULL;
+    static const char* msg="No Email Available";
     if (!m_priv->origin.empty())
     {
         OriginSiteMapper mapper;
@@ -311,5 +314,5 @@ const char* RPCError::getOriginContactEmail()
             }
         }
     }
-    return res;
+    return res ? res : msg;
 }
