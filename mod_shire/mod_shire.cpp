@@ -198,27 +198,6 @@ static char* url_encode(request_rec* r, const char* s)
     return ret;
 }
 
-// return the "normalized" target URL
-static const char* get_target(request_rec* r, const char* target)
-{
-  string tag;
-  if ((g_Config->getINI()).get_tag(ap_get_server_name(r), "normalizeRequest", true, &tag))
-  {
-    if (ShibINI::boolean(tag))
-    {
-        const char* colon=strchr(target,':');
-        const char* slash=strchr(colon+3,'/');
-        const char* second_colon=strchr(colon+3,':');
-        return ap_pstrcat(r->pool,ap_pstrndup(r->pool,target,colon+3-target),
-			  ap_get_server_name(r),
-			  (second_colon && second_colon < slash) ?
-			  second_colon : slash,
-			  NULL);
-    }
-  }
-  return target;
-}
-
 static const char* get_shire_location(request_rec* r, const char* target, bool encode)
 {
   ShibINI& ini = g_Config->getINI();
@@ -285,7 +264,8 @@ extern "C" int shire_check_user(request_rec* r)
     ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,"shire_check_user: ENTER");
     shire_dir_config* dc=(shire_dir_config*)ap_get_module_config(r->per_dir_config,&shire_module);
 
-    const char* targeturl=get_target(r,ap_construct_url(r->pool,r->unparsed_uri,r));
+    // This will always be normalized, because Apache uses ap_get_server_name in this API call.
+    char* targeturl=ap_construct_url(r->pool,r->unparsed_uri,r);
 
     if (is_shire_location (r, targeturl)) {
       ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
@@ -477,7 +457,7 @@ extern "C" int shire_post_handler (request_rec* r)
 
   ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,"shire_post_handler() ENTER");
 
-  const char* targeturl=get_target(r,ap_construct_url(r->pool,r->unparsed_uri,r));
+  const char* targeturl=ap_construct_url(r->pool,r->unparsed_uri,r);
  
   const char * shire_location = get_shire_location(r,targeturl,true);
   if (!shire_location)
