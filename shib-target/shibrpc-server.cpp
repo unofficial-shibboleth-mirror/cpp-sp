@@ -57,7 +57,9 @@ shibrpc_session_is_valid_1_svc(shibrpc_session_is_valid_args_1 *argp,
 
   memset (result, 0, sizeof (*result));
   
-  log.debug ("checking: %s@%s", argp->cookie.cookie, argp->cookie.client_addr);
+  log.debug ("checking: %s@%s (checkAddr=%s)",
+	     argp->cookie.cookie, argp->cookie.client_addr,
+	     argp->checkIPAddress ? "true" : "false");
 
   // See if the cookie exists...
   CCacheEntry *entry = g_shibTargetCCache->find(argp->cookie.cookie);
@@ -71,14 +73,16 @@ shibrpc_session_is_valid_1_svc(shibrpc_session_is_valid_args_1 *argp,
   }
 
   // Verify the address is the same
-  if (argp->checkIPAddress &&
-      strcmp (argp->cookie.client_addr, entry->getClientAddress())) {
-    log.debug ("IP Address mismatch");
-    result->status = SHIBRPC_IPADDR_MISMATCH;
-    result->error_msg = 
-      strdup ("Your IP address does not match the address in the original authentication.");
-    g_shibTargetCCache->remove (argp->cookie.cookie);
-    return TRUE;
+  if (argp->checkIPAddress) {
+    log.debug ("Checking address against %s", entry->getClientAddress());
+    if (strcmp (argp->cookie.client_addr, entry->getClientAddress())) {
+      log.debug ("IP Address mismatch");
+      result->status = SHIBRPC_IPADDR_MISMATCH;
+      result->error_msg = 
+	strdup ("Your IP address does not match the address in the original authentication.");
+      g_shibTargetCCache->remove (argp->cookie.cookie);
+      return TRUE;
+    }
   }
 
   // and that the session is still valid...

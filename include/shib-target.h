@@ -74,9 +74,6 @@ int shib_sock_connect (ShibSocket s, ShibSockName name);
 #define SHIBTARGET_SHIRE	"shire"
 #define SHIBTARGET_RM		"rm"
 
-/* configuration headers */
-#define SHIBTARGET_HTTP		"http"
-
 /* configuration tags */
 #define SHIBTARGET_TAG_LOGGER	"logger"
 #define SHIBTARGET_TAG_SCHEMAS	"schemadir"
@@ -328,6 +325,8 @@ namespace shibtarget {
 
     Iterator* header_iterator();
     Iterator* tag_iterator(const std::string& header);
+
+    static bool boolean(std::string& value);
 
   private:
     ShibINIPriv *m_priv;

@@ -44,19 +44,13 @@ static ShibTargetConfig * g_szConfig = NULL;
 // per-server configuration structure
 struct shire_server_config
 {
-    char* szCookieName;		// name of session token
-    char* szWAYFLocation;	// URL of WAYF service
-    char* szSHIRELocation;	// URL of SHIRE acceptance point
-    int bSSLOnly;		// SSL only for this SHIRE?
-    int bNormalizeRequest;      // normalize requested URL based on server name?
+    char* serverName;		// Name of this server
 };
 
 // creates the per-server configuration
 extern "C" void* create_shire_server_config (pool * p, server_rec * s)
 {
     shire_server_config* sc=(shire_server_config*)ap_pcalloc(p,sizeof(shire_server_config));
-    sc->bSSLOnly = -1;
-    sc->bNormalizeRequest = -1;
     return sc;
 }
 
@@ -67,29 +61,13 @@ extern "C" void* merge_shire_server_config (pool* p, void* base, void* sub)
     shire_server_config* parent=(shire_server_config*)base;
     shire_server_config* child=(shire_server_config*)sub;
 
-    if (child->szCookieName)
-        sc->szCookieName=ap_pstrdup(p,child->szCookieName);
-    else if (parent->szCookieName)
-        sc->szCookieName=ap_pstrdup(p,parent->szCookieName);
+    if (child->serverName)
+        sc->serverName=ap_pstrdup(p,child->serverName);
+    else if (parent->serverName)
+        sc->serverName=ap_pstrdup(p,parent->serverName);
     else
-        sc->szCookieName=NULL;
+        sc->serverName=NULL;
 
-    if (child->szWAYFLocation)
-        sc->szWAYFLocation=ap_pstrdup(p,child->szWAYFLocation);
-    else if (parent->szWAYFLocation)
-        sc->szWAYFLocation=ap_pstrdup(p,parent->szWAYFLocation);
-    else
-        sc->szWAYFLocation=NULL;
-
-    if (child->szSHIRELocation)
-        sc->szSHIRELocation=ap_pstrdup(p,child->szSHIRELocation);
-    else if (parent->szSHIRELocation)
-        sc->szSHIRELocation=ap_pstrdup(p,parent->szSHIRELocation);
-    else
-        sc->szSHIRELocation=NULL;
-
-    sc->bSSLOnly=((child->bSSLOnly==-1) ? parent->bSSLOnly : child->bSSLOnly);
-    sc->bNormalizeRequest=((child->bNormalizeRequest==-1) ? parent->bNormalizeRequest : child->bNormalizeRequest);
     return sc;
 }
 
@@ -98,7 +76,6 @@ struct shire_dir_config
 {
     int bBasicHijack;		// activate for AuthType Basic?
     int bSSLOnly;		// only over SSL?
-    int checkIPAddress;		// placeholder for check
     SHIREConfig config;		// SHIRE Configuration
 };
 
@@ -108,7 +85,6 @@ extern "C" void* create_shire_dir_config (pool* p, char* d)
     shire_dir_config* dc=(shire_dir_config*)ap_pcalloc(p,sizeof(shire_dir_config));
     dc->bBasicHijack = -1;
     dc->bSSLOnly = -1;
-    dc->checkIPAddress = -1;
     dc->config.lifetime = -1;
     dc->config.timeout = -1;
     return dc;
@@ -121,9 +97,8 @@ extern "C" void* merge_shire_dir_config (pool* p, void* base, void* sub)
     shire_dir_config* parent=(shire_dir_config*)base;
     shire_dir_config* child=(shire_dir_config*)sub;
 
-    dc->bSSLOnly=((child->bSSLOnly==-1) ? parent->bSSLOnly : child->bSSLOnly);
     dc->bBasicHijack=((child->bBasicHijack==-1) ? parent->bBasicHijack : child->bBasicHijack);
-    dc->checkIPAddress=((child->checkIPAddress==-1) ? parent->checkIPAddress : child->checkIPAddress);
+    dc->bSSLOnly=((child->bSSLOnly==-1) ? parent->bSSLOnly : child->bSSLOnly);
     dc->config.lifetime=((child->config.lifetime==-1) ? parent->config.lifetime : child->config.lifetime);
     dc->config.timeout=((child->config.timeout==-1) ? parent->config.timeout : child->config.timeout);
     return dc;
@@ -142,12 +117,6 @@ extern "C" const char* ap_set_server_string_slot(cmd_parms* parms, void*, const 
     char* base=(char*)ap_get_module_config(parms->server->module_config,&shire_module);
     int offset=(int)parms->info;
     *((char**)(base + offset))=ap_pstrdup(parms->pool,arg);
-    return NULL;
-}
-
-extern "C" const char* set_normalize(cmd_parms* parms, shire_server_config* sc, const char* arg)
-{
-    sc->bNormalizeRequest=(atoi(arg) || !strcasecmp(arg, "on"));
     return NULL;
 }
 
@@ -175,33 +144,12 @@ static command_rec shire_cmds[] = {
   {"SHIREConfig", (config_fn_t)ap_set_global_string_slot, &g_szSHIREConfig,
    RSRC_CONF, TAKE1, "Path to SHIRE ini file."},
 
-#if 0
-  {"SHIRELocation", (config_fn_t)ap_set_server_string_slot,
-   (void *) XtOffsetOf (shire_server_config, szSHIRELocation),
-   RSRC_CONF, TAKE1, "URL of SHIRE handle acceptance point."},
-  {"SHIRESSLOnly", (config_fn_t)ap_set_flag_slot,
-   (void *) XtOffsetOf (shire_server_config, bSSLOnly),
-   RSRC_CONF, FLAG, "Require SSL when POSTING to the SHIRE?"},
-  {"WAYFLocation", (config_fn_t)ap_set_server_string_slot,
-   (void *) XtOffsetOf (shire_server_config, szWAYFLocation),
-   RSRC_CONF, TAKE1, "URL of WAYF service."},
-  {"ShibCookieName", (config_fn_t)ap_set_server_string_slot,
-   (void *) XtOffsetOf (shire_server_config, szCookieName),
-   RSRC_CONF, TAKE1, "Name of cookie to use as session token."},
-#endif
-
-  {"ShibNormalizeRequest", (config_fn_t)set_normalize, NULL,
-   RSRC_CONF, TAKE1, "Normalize/convert browser requests using server name when redirecting."},
-
   {"ShibBasicHijack", (config_fn_t)ap_set_flag_slot,
    (void *) XtOffsetOf (shire_dir_config, bBasicHijack),
    OR_AUTHCFG, FLAG, "Respond to AuthType Basic and convert to shib?"},
   {"ShibSSLOnly", (config_fn_t)ap_set_flag_slot,
    (void *) XtOffsetOf (shire_dir_config, bSSLOnly),
    OR_AUTHCFG, FLAG, "Require SSL when accessing a secured directory?"},
-  {"ShibCheckAddress", (config_fn_t)ap_set_flag_slot,
-   (void *) XtOffsetOf (shire_dir_config, checkIPAddress),
-   OR_AUTHCFG, FLAG, "Verify IP address of requester matches token?"},
   {"ShibAuthLifetime", (config_fn_t)set_lifetime, NULL,
    OR_AUTHCFG, TAKE1, "Lifetime of session in seconds."},
   {"ShibAuthTimeout", (config_fn_t)set_timeout, NULL,
@@ -209,7 +157,6 @@ static command_rec shire_cmds[] = {
 
   {NULL}
 };
-
 
 
 /* 
@@ -280,25 +227,53 @@ static char* url_encode(request_rec* r, const char* s)
     return ret;
 }
 
+// Return the "name" of this server to look up configuration options
+static const char* get_service_name(request_rec* r)
+{
+  shire_server_config* sc =
+    (shire_server_config*) ap_get_module_config(r->server->module_config,
+						&shire_module);
+
+  if (sc->serverName)
+    return sc->serverName;
+
+  return ap_get_server_name(r);
+}
+
+// return the "normalized" target URL
 static const char* get_target(request_rec* r, const char* target)
 {
-    shire_server_config* sc=
-        (shire_server_config*)ap_get_module_config(r->server->module_config,&shire_module);
-    if (sc->bNormalizeRequest)
+  const char* serverName = get_service_name(r);
+  string tag;
+  if ((g_szConfig->getINI()).get_tag (serverName, "normalizeRequest", true, &tag))
+  {
+    if (ShibINI::boolean (tag))
     {
         const char* colon=strchr(target,':');
         const char* slash=strchr(colon+3,'/');
         const char* second_colon=strchr(colon+3,':');
-        return ap_pstrcat(r->pool,ap_pstrndup(r->pool,target,colon+3-target),ap_get_server_name(r),
-			  (second_colon && second_colon < slash) ? second_colon : slash,NULL);
+        return ap_pstrcat(r->pool,ap_pstrndup(r->pool,target,colon+3-target),
+			  ap_get_server_name(r),
+			  (second_colon && second_colon < slash) ?
+			  second_colon : slash,
+			  NULL);
     }
-    return target;
+  }
+  return target;
 }
 
 static const char* get_shire_location(request_rec* r, const char* target, bool encode)
 {
   ShibINI& ini = g_szConfig->getINI();
-  const string& shire_location = ini.get (SHIBTARGET_HTTP, "shire");
+  const char* serverName = get_service_name(r);
+  string shire_location;
+
+  if (! ini.get_tag (serverName, "shireURL", true, &shire_location)) {
+    ap_log_rerror(APLOG_MARK,APLOG_ERR,r,
+		  "shire_get_location() no shireURL configuration for %s",
+		  serverName);
+    return NULL;
+  }
 
   const char* shire = shire_location.c_str();
 
@@ -322,6 +297,8 @@ static const char* get_shire_location(request_rec* r, const char* target, bool e
 static bool is_shire_location(request_rec* r, const char* target)
 {
   const char* shire = get_shire_location(r, target, false);
+
+  if (!shire) return false;
 
   if (!strstr(target, shire))
     return false;
@@ -357,28 +334,51 @@ extern "C" int shire_check_user(request_rec* r)
     ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
 		  "shire_check_user: ENTER");
 
-    shire_server_config* sc=
-        (shire_server_config*)ap_get_module_config(r->server->module_config,&shire_module);
     shire_dir_config* dc=
         (shire_dir_config*)ap_get_module_config(r->per_dir_config,&shire_module);
 
     const char* targeturl=get_target(r,ap_construct_url(r->pool,r->unparsed_uri,r));
  
     const char * shire_location = get_shire_location(r,targeturl,true);
+    if (!shire_location) return SERVER_ERROR;
     string shire_url = get_shire_location(r,targeturl,false);
-    dc->config.checkIPAddress = (dc->checkIPAddress == 1 ? true : false);
-    SHIRE shire(rpc_handle, dc->config, shire_url);
 
-    const string& shib_cookie = ini.get (SHIBTARGET_HTTP, "cookie");
-    const string& wayfLocation = ini.get (SHIBTARGET_HTTP, "wayfLocation");
-    const string& wayfError = ini.get (SHIBTARGET_HTTP, "wayfError");
-
+    const char* serverName = get_service_name (r);
     string tag;
-    bool has_tag = ini.get_tag (SHIBTARGET_HTTP, "supportContact", true, &tag);
+    bool has_tag = ini.get_tag (serverName, "checkIPAddress", true, &tag);
+    dc->config.checkIPAddress = (has_tag ? ShibINI::boolean (tag) : false);
+
+    string shib_cookie;
+    if (! ini.get_tag (serverName, "cookieName", true, &shib_cookie)) {
+      ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
+		    "shire_check_user: no cookieName configuration for %s",
+		    serverName);
+      return SERVER_ERROR;
+    }
+
+    string wayfLocation;
+    if (! ini.get_tag (serverName, "wayfURL", true, &wayfLocation)) {
+      ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
+		    "shire_check_user: no wayfURL configuration for %s",
+		    serverName);
+      return SERVER_ERROR;
+    }
+
+    string wayfError;
+    if (! ini.get_tag (serverName, "wayfError", true, &wayfError)) {
+      ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
+		    "shire_check_user: no wayfError configuration for %s",
+		    serverName);
+      return SERVER_ERROR;
+    }
+
+    ini.get_tag (serverName, "supportContact", true, &tag);
     markupProcessor.insert ("supportContact", has_tag ? tag : "");
-    has_tag = ini.get_tag (SHIBTARGET_HTTP, "logoLocation", true, &tag);
+    has_tag = ini.get_tag (serverName, "logoLocation", true, &tag);
     markupProcessor.insert ("logoLocation", has_tag ? tag : "");
     markupProcessor.insert ("requestURL", targeturl);
+
+    SHIRE shire(rpc_handle, dc->config, shire_url);
 
     if (is_shire_location (r, targeturl)) {
       // Process SHIRE POST
@@ -389,12 +389,13 @@ extern "C" int shire_check_user(request_rec* r)
 
       try {
 
-	const string& sslonly = ini.get (SHIBTARGET_HTTP, "shireSSLOnly");
-	const char* sslonlyc = sslonly.c_str();
+	string sslonly;
+	if (! ini.get_tag (serverName, "shireSSLOnly", true, &sslonly))
+	  ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
+			"shire_check_user: no shireSSLOnly configuration");
 	
 	// Make sure this is SSL, if it should be
-	if ((*sslonlyc == 't' || *sslonlyc == 'T') &&
-	    strcmp(ap_http_method(r),"https"))
+	if (ShibINI::boolean(sslonly) && strcmp(ap_http_method(r),"https"))
 	  throw ShibTargetException (SHIBRPC_OK,
 				     "blocked non-SSL access to SHIRE POST processor");
 

@@ -54,16 +54,13 @@ extern "C" module MODULE_VAR_EXPORT shibrm_module;
 // per-server configuration structure
 struct shibrm_server_config
 {
-    char* szCookieName;		// name of session token
-    int bNormalizeRequest;      // normalize requested URL based on server name?
+    char* serverName;		// Name of this server
 };
 
 // creates the per-server configuration
 extern "C" void* create_shibrm_server_config (pool * p, server_rec * s)
 {
     shibrm_server_config* sc=(shibrm_server_config*)ap_pcalloc(p,sizeof(shibrm_server_config));
-    sc->szCookieName = NULL;
-    sc->bNormalizeRequest = -1;
     return sc;
 }
 
@@ -74,14 +71,13 @@ extern "C" void* merge_shibrm_server_config (pool* p, void* base, void* sub)
     shibrm_server_config* parent=(shibrm_server_config*)base;
     shibrm_server_config* child=(shibrm_server_config*)sub;
 
-    if (child->szCookieName)
-        sc->szCookieName=ap_pstrdup(p,child->szCookieName);
-    else if (parent->szCookieName)
-        sc->szCookieName=ap_pstrdup(p,parent->szCookieName);
+    if (child->serverName)
+        sc->serverName=ap_pstrdup(p,child->serverName);
+    else if (parent->serverName)
+        sc->serverName=ap_pstrdup(p,parent->serverName);
     else
-        sc->szCookieName=NULL;
+        sc->serverName=NULL;
 
-    sc->bNormalizeRequest=((child->bNormalizeRequest==-1) ? parent->bNormalizeRequest : child->bNormalizeRequest);
     return sc;
 }
 
@@ -90,7 +86,6 @@ struct shibrm_dir_config
 {
     char* szAuthGrpFile;	// Auth GroupFile name
     int bExportAssertion;       // export SAML assertion to the environment?
-    int checkIPAddress;		// placeholder for check
     RMConfig config;		// Resource Manager Configuration
 };
 
@@ -100,7 +95,6 @@ extern "C" void* create_shibrm_dir_config (pool* p, char* d)
     shibrm_dir_config* dc=(shibrm_dir_config*)ap_pcalloc(p,sizeof(shibrm_dir_config));
     dc->szAuthGrpFile = NULL;
     dc->bExportAssertion = -1;
-    dc->checkIPAddress = -1;
     return dc;
 }
 
@@ -119,7 +113,6 @@ extern "C" void* merge_shibrm_dir_config (pool* p, void* base, void* sub)
         dc->szAuthGrpFile=NULL;
 
     dc->bExportAssertion=((child->bExportAssertion==-1) ? parent->bExportAssertion : child->bExportAssertion);
-    dc->checkIPAddress=((child->checkIPAddress==-1) ? parent->checkIPAddress : child->checkIPAddress);
     return dc;
 }
 
@@ -129,12 +122,6 @@ extern "C" const char* ap_set_server_string_slot(cmd_parms* parms, void*, const 
     char* base=(char*)ap_get_module_config(parms->server->module_config,&shibrm_module);
     int offset=(int)parms->info;
     *((char**)(base + offset))=ap_pstrdup(parms->pool,arg);
-    return NULL;
-}
-
-extern "C" const char* set_normalize(cmd_parms* parms, shibrm_server_config* sc, const char* arg)
-{
-    sc->bNormalizeRequest=atoi(arg);
     return NULL;
 }
 
@@ -148,13 +135,6 @@ typedef const char* (*config_fn_t)(void);
 static command_rec shibrm_cmds[] = {
   {"ShibMapAttribute", (config_fn_t)ap_set_attribute_mapping, NULL,
    RSRC_CONF, TAKE23, "Define request header name and 'require' alias for an attribute."},
-#if 0
-  {"ShibCookieName", (config_fn_t)ap_set_server_string_slot,
-   (void *) XtOffsetOf (shibrm_server_config, szCookieName),
-   RSRC_CONF, TAKE1, "Name of cookie to use as session token."},
-  {"ShibNormalizeRequest", (config_fn_t)set_normalize, NULL,
-   RSRC_CONF, TAKE1, "Normalize/convert browser requests using server name when redirecting."},
-#endif
 
   {"AuthGroupFile", (config_fn_t)ap_set_file_slot,
    (void *) XtOffsetOf (shibrm_dir_config, szAuthGrpFile),
@@ -162,12 +142,6 @@ static command_rec shibrm_cmds[] = {
   {"ShibExportAssertion", (config_fn_t)ap_set_flag_slot,
    (void *) XtOffsetOf (shibrm_dir_config, bExportAssertion),
    OR_AUTHCFG, FLAG, "Export SAML assertion to Shibboleth-defined header?"},
-
-#if 0
-  {"ShibCheckAddress", (config_fn_t)ap_set_flag_slot,
-   (void *) XtOffsetOf (shibrm_dir_config, checkIPAddress),
-   OR_AUTHCFG, FLAG, "Verify IP address of requester matches token?"},
-#endif
 
   {NULL}
 };
@@ -281,6 +255,41 @@ static int shibrm_error_page(request_rec* r, const char* filename, ShibMLP& mlp)
   return DONE;
 }
 
+// Return the "name" of this server to look up configuration options
+static const char* get_service_name(request_rec* r)
+{
+  shibrm_server_config* sc =
+    (shibrm_server_config*) ap_get_module_config(r->server->module_config,
+						 &shibrm_module);
+
+  if (sc->serverName)
+    return sc->serverName;
+
+  return ap_get_server_name(r);
+}
+
+// return the "normalized" target URL
+static const char* get_target(request_rec* r, const char* target)
+{
+  const char* serverName = get_service_name(r);
+  string tag;
+  if ((g_szConfig->getINI()).get_tag (serverName, "normalizeRequest", true, &tag))
+  {
+    if (ShibINI::boolean (tag))
+    {
+        const char* colon=strchr(target,':');
+        const char* slash=strchr(colon+3,'/');
+        const char* second_colon=strchr(colon+3,':');
+        return ap_pstrcat(r->pool,ap_pstrndup(r->pool,target,colon+3-target),
+			  ap_get_server_name(r),
+			  (second_colon && second_colon < slash) ?
+			  second_colon : slash,
+			  NULL);
+    }
+  }
+  return target;
+}
+
 extern "C" int shibrm_check_auth(request_rec* r)
 {
     ostrstream threadid;
@@ -288,16 +297,15 @@ extern "C" int shibrm_check_auth(request_rec* r)
     saml::NDC ndc(threadid.str());
 
     ShibINI& ini = g_szConfig->getINI();
+    const char* serverName = get_service_name (r);
 
-    shibrm_server_config* sc=
-        (shibrm_server_config*)ap_get_module_config(r->server->module_config,&shibrm_module);
     shibrm_dir_config* dc=
         (shibrm_dir_config*)ap_get_module_config(r->per_dir_config,&shibrm_module);
 
     ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
 		  "shibrm_check_auth() executing");
 
-    char* targeturl=ap_construct_url(r->pool,r->unparsed_uri,r);
+    const char* targeturl=get_target(r,ap_construct_url(r->pool,r->unparsed_uri,r));
 
     // Regular access to arbitrary resource...check AuthType
     const char* auth_type=ap_auth_type(r);
@@ -306,15 +314,21 @@ extern "C" int shibrm_check_auth(request_rec* r)
 
     // Ok, this is a SHIB target; grab the cookie
 
+    string shib_cookie;
+    if (! ini.get_tag (serverName, "cookieName", true, &shib_cookie)) {
+      ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
+		    "shibrm_check_user: no cookieName configuration for %s",
+		    serverName);
+      return SERVER_ERROR;
+    }
+
     ShibMLP markupProcessor;
     string tag;
-    bool has_tag = ini.get_tag (SHIBTARGET_HTTP, "supportContact", true, &tag);
+    bool has_tag = ini.get_tag (serverName, "supportContact", true, &tag);
     markupProcessor.insert ("supportContact", has_tag ? tag : "");
-    has_tag = ini.get_tag (SHIBTARGET_HTTP, "logoLocation", true, &tag);
+    has_tag = ini.get_tag (serverName, "logoLocation", true, &tag);
     markupProcessor.insert ("logoLocation", has_tag ? tag : "");
     markupProcessor.insert ("requestURL", targeturl);
-
-    const string& shib_cookie = ini.get (SHIBTARGET_HTTP, "cookie");
 
     const char* session_id=NULL;
     const char* cookies=ap_table_get(r->headers_in,"Cookie");
@@ -336,7 +350,8 @@ extern "C" int shibrm_check_auth(request_rec* r)
     session_id=cookiebuf;
 
     // Now grab the attributes...
-    dc->config.checkIPAddress = (dc->checkIPAddress == 1 ? true : false);
+    has_tag = ini.get_tag (serverName, "checkIPAddress", true, &tag);
+    dc->config.checkIPAddress = (has_tag ? ShibINI::boolean (tag) : false);
     RM rm(rpc_handle, dc->config);
 
     vector<SAMLAssertion*> assertions;
@@ -349,14 +364,28 @@ extern "C" int shibrm_check_auth(request_rec* r)
 		    "shibrm_check_auth() getAssertions failed: %s",
 		    status->error_msg.c_str());
 
-      const string& rmError = ini.get (SHIBTARGET_HTTP, "rmError");
+      string rmError;
+      if (! ini.get_tag (serverName, "rmError", true, &rmError)) {
+	ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
+		      "shibrm_check_auth: no rmError configuration for %s",
+		      serverName);
+	delete status;
+	return SERVER_ERROR;	
+      }
       markupProcessor.insert (*status);
       delete status;
       return shibrm_error_page (r, rmError.c_str(), markupProcessor);
     }
     delete status;
 
-    const string& rmError = ini.get (SHIBTARGET_HTTP, "accessError");
+    string rmError;
+    if (! ini.get_tag (serverName, "accessError", true, &rmError)) {
+      ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
+		    "shibrm_check_auth: no accessError configuration for %s",
+		    serverName);
+      delete status;
+      return SERVER_ERROR;	
+    }
 
     // Only allow a single assertion...
     if (assertions.size() != 1) {
