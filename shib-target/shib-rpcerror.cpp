@@ -86,7 +86,7 @@ void RPCError::init(int stat, char const* msg)
     istringstream estr(msg);
     try { 
       m_except = NULL;
-      m_except = new SAMLException(estr);
+      m_except = SAMLException::getInstance(estr);
     } catch (SAMLException& e) {
       log.error ("Caught SAML Exception while building the SAMLException: %s",
 		 e.what());
