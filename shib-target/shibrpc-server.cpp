@@ -192,7 +192,7 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
 					3600);
 
   SAMLResponse* r = NULL;
-  SAMLAuthenticationStatement* auth_st = NULL;
+  const SAMLAuthenticationStatement* auth_st = NULL;
   XMLCh* origin = NULL;
 
   try
@@ -216,7 +216,7 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
 
       // Find the SSO Assertion
       log.debug ("Get the SSOAssertion");
-      SAMLAssertion* ssoAssertion = profile->getSSOAssertion(*r);
+      const SAMLAssertion* ssoAssertion = profile->getSSOAssertion(*r);
 
       // Check against the replay cache
       log.debug ("check replay cache");
@@ -273,7 +273,7 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
     set_rpc_status_x(&result->status, e.which(), e.what(), e.where());
     return TRUE;
   }
-#if 0
+#if 1
   catch (...)
   {
     log.error ("Unknown error");
