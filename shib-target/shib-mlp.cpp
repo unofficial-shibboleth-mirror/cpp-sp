@@ -48,6 +48,11 @@ static void trimspace (string& s)
 ShibMLP::ShibMLP ()
 {
   m_priv = new ShibMLPPriv ();
+
+  // Create a timestamp
+  time_t now = time(NULL);
+  string now_s = ctime(&now);
+  insert ("now", now_s);
 }
 
 ShibMLP::~ShibMLP ()
@@ -133,4 +138,11 @@ void ShibMLP::insert (RPCError& e)
   insert ("originErrorURL", e.getOriginErrorURL());
   insert ("originContactName", e.getOriginContactName());
   insert ("originContactEmail", e.getOriginContactEmail());
+}
+
+void ShibMLP::insert (const std::string& key, const std::string& value)
+{
+  saml::NDC ndc("insert");
+  m_priv->log->debug("inserting %s -> %s", key.c_str(), value.c_str());
+  m_map[key] = value;
 }

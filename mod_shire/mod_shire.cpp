@@ -378,7 +378,7 @@ extern "C" int shire_check_user(request_rec* r)
       return SERVER_ERROR;
     }
 
-    ini.get_tag (serverName, "supportContact", true, &tag);
+    has_tag = ini.get_tag (serverName, "supportContact", true, &tag);
     markupProcessor.insert ("supportContact", has_tag ? tag : "");
     has_tag = ini.get_tag (serverName, "logoLocation", true, &tag);
     markupProcessor.insert ("logoLocation", has_tag ? tag : "");
@@ -558,7 +558,7 @@ extern "C" int shire_post_handler (request_rec* r)
     return SERVER_ERROR;
   }
 
-  ini.get_tag (serverName, "supportContact", true, &tag);
+  has_tag = ini.get_tag (serverName, "supportContact", true, &tag);
   markupProcessor.insert ("supportContact", has_tag ? tag : "");
   has_tag = ini.get_tag (serverName, "logoLocation", true, &tag);
   markupProcessor.insert ("logoLocation", has_tag ? tag : "");

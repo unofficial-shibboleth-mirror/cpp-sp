@@ -348,7 +348,7 @@ namespace shibtarget {
     ShibMLP();
     ~ShibMLP();
 
-    void insert (const std::string& key, const std::string& value) { m_map[key] = value; }
+    void insert (const std::string& key, const std::string& value);
     void insert (const std::string& key, const char* value) {
       std::string v = value;
       insert (key, v);
