@@ -431,7 +431,7 @@ shibrpc_get_assertions_1_svc(shibrpc_get_assertions_args_1 *argp,
     ostringstream os;
     os << e;
     set_rpc_status_x(&result->status, SHIBRPC_SAML_EXCEPTION,
-		     strdup(os.str().c_str()), origin);
+		     os.str().c_str(), origin);
     entry->release();
     return TRUE;
   }
