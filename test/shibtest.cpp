@@ -119,7 +119,6 @@ int main(int argc,char* argv[])
 
         auto_ptr<SAMLRequest> req(
             new SAMLRequest(
-                EMPTY(saml::QName),
                 new SAMLAttributeQuery(
                     new SAMLSubject(
                         new SAMLNameIdentifier(
@@ -153,7 +152,7 @@ int main(int argc,char* argv[])
             const IEndpoint* ep=endpoints.next();
             try {
                 // Get a binding object for this protocol.
-                SAMLBinding* binding = app->getBinding(ep->getBinding());
+                const SAMLBinding* binding = app->getBinding(ep->getBinding());
                 if (!binding) {
                     continue;
                 }
