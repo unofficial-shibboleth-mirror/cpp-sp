@@ -151,6 +151,8 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
         // Create the RPC Handle TLS key.
         rpc_handle_key=ThreadKey::create(destroy_handle);
 
+        Category& log=Category::getInstance("isapi_shib.GetFilterVersion");
+
         // Read site-specific settings for each instance ID we can find.
         unsigned short i=1;
         char iid[8];
@@ -158,9 +160,12 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
         string hostname;
         while (ini.get_tag("isapi",iid,false,&hostname))
         {
+            log.info("configuring for site ID (%d), hostname (%s)",i-1,hostname.empty() ? "null" : hostname.c_str());
+
             // If no section exists for the host, mark it as a "skip" site.
             if (!ini.exists(hostname))
             {
+                log.info("skipping site ID (%d)",i-1);
                 g_Sites.push_back(settings_t());
                 sprintf(iid,"%u",i++);
                 continue;
@@ -189,6 +194,7 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
             
             g_Sites.push_back(settings);
             sprintf(iid,"%u",i++);
+            hostname.erase();
         }
     }
     catch (SAMLException&)
