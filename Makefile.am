@@ -22,17 +22,17 @@ EXTRA_DIST = \
 	configs/rmError.html \
 	configs/shire.logger \
 	configs/AAP.xml \
-	docs/CREDITS.txt \
-	docs/INSTALL.txt \
-	docs/LICENSE.txt \
-	docs/NEWS.txt \
-	docs/README.txt \
-	docs/OPENSSL.LICENSE \
-	docs/LOG4CPP.LICENSE \
-	docs/CURL.LICENSE \
-	docs/InQueue.html \
-	docs/DEPLOY-GUIDE-ORIGIN.html \
-	docs/DEPLOY-GUIDE-TARGET.html \
+	doc/CREDITS.txt \
+	doc/INSTALL.txt \
+	doc/LICENSE.txt \
+	doc/NEWS.txt \
+	doc/README.txt \
+	doc/OPENSSL.LICENSE \
+	doc/LOG4CPP.LICENSE \
+	doc/CURL.LICENSE \
+	doc/InQueue.html \
+	doc/DEPLOY-GUIDE-ORIGIN.html \
+	doc/DEPLOY-GUIDE-TARGET.html \
 	libtool.m4 \
 	acx_pthread.m4 \
 	acx_rpctest.m4
