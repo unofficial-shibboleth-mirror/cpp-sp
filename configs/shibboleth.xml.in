@@ -59,7 +59,7 @@
                 <Host name="localhost" scheme="https">
                     <Path name="secure" requireSession="true" exportAssertion="true">
                     	<!-- Example shows a subfolder on the SSL port assigned to a separate <Application> -->
-	                    <Path name="admin" applicationId="foo-admin">
+	                    <Path name="admin" applicationId="foo-admin"/>
 	                </Path>
                 </Host>
                 <Host name="localhost" scheme="http">
