@@ -224,10 +224,6 @@ font-color: #121212;
       <li>
         <p>Local time string values are now used in log files.</p>
       </li>
-
-      <li>
-        <p>Targets may now also be run under Apache on a W2K box.</p>
-      </li>
     </ul>
 
     <p>Before starting, please sign up for all applicable <a href=
@@ -1136,7 +1132,7 @@ font-color: #121212;
           modified by adding:</p>
 
           <blockquote>
-            <span class="fixedwidth">/opt/shibboleth/bin/shar &amp;</span>
+            <span class="fixedwidth">/opt/shibboleth/bin/shar -f &amp;</span>
           </blockquote>
 
           <p>Sample <span class="fixedwidth">init.d</span> scripts may be included with
@@ -1216,16 +1212,15 @@ font-color: #121212;
               <p>Specifies the location of the <span class="fixedwidth">log4cpp</span>
               configuration file for most Shibboleth events. This
               element may also be optionally specified for each of
-              the components individually. Default logging settings
-              should suffice. The <span class="fixedwidth">syslog</span> daemon must
-              accept <span class="fixedwidth">UDP:514</span> messages, and on Linux,
-              <span class="fixedwidth">SYSLOGD_OPTIONS</span> must include <span class="fixedwidth">-r</span> to
-              <span class="fixedwidth">enable logging from remote machines.</span> The
-              logging levels are defined in the logger
-              configuration. The configuration format is similar to
-              that of the <a
-              href="http://jakarta.apache.org/log4j/docs/
-              documentation.html">Log4j</a> package's format.</p>
+              the components individually. Default logging settings (using local log files)
+              should suffice. If using a remote syslogd instead, the <span class="fixedwidth">syslog</span>
+              daemon must accept <span class="fixedwidth">UDP:514</span> messages, and on Linux,
+              <span class="fixedwidth">SYSLOGD_OPTIONS</span> must include <span class="fixedwidth">-r</span>
+              to <span class="fixedwidth">enable logging from remote machines.</span> The
+              logging level is also defined in the logger configuration.
+              The configuration format and log levels are similar to that of the
+              <a href="http://jakarta.apache.org/log4j/docs/documentation.html">Log4j</a> package's
+              property format.</p>
           </dd>
 
           <dd class="attribute">
@@ -1235,9 +1230,7 @@ font-color: #121212;
           <dd class="value">
               <p>Specifies the directory in which the XML schema
               files are located; defaults to
-              <span class="fixedwidth">/opt/shibboleth/etc/shibboleth/</span>. Note that
-              the <span class="fixedwidth">pathname</span> <b>must</b> have a trailing
-              <span class="fixedwidth">/</span>.</p>
+              <span class="fixedwidth">/opt/shibboleth/etc/shibboleth/</span>.</p>
           </dd>
 
           <dd class="attribute">
@@ -1246,7 +1239,9 @@ font-color: #121212;
 
           <dd class="value">
               <p>Specifies the location of the socket the SHAR uses to
-              form connections.</p>
+              form connections. Note that if you change this, the SHAR and Apache
+              should both be restarted immediately, since new Apache child processes will
+              use the changed value as soon as they start up.</p>
           </dd>
       </dl>
 
@@ -1319,8 +1314,7 @@ font-color: #121212;
               <p>Specifies the URL of the WAYF service the user is
               redirected to. Federations will generally provide this URL
               or provide information on how to locally host WAYF's with
-              a distributed hosts file. Defaults to <span
-              class="fixedwidth">https://wayf.internet2.edu/InQueue/WAYF</span>.</p>
+              a distributed hosts file.</p>
           </dd>
 
           <dd class="attribute">
@@ -1383,18 +1377,18 @@ font-color: #121212;
           </dd>
 
           <dd class="value">
-              <p>Specifies the location of a <span class="fixedwidth">log4cpp</span> which
-              overrides the <span class="fixedwidth">[general]</span> log parameters for
-              SHIRE events.  Default logging settings should
-              suffice. The <span class="fixedwidth">syslog</span> daemon must accept
-              <span class="fixedwidth">UDP:514</span> messages, and on Linux,
-              <span class="fixedwidth">SYSLOGD_OPTIONS</span> must include <span class="fixedwidth">-r</span> to
-              <span class="fixedwidth">enable logging from remote machines.</span> The
-              logging levels are defined in the logger
-              configuration. The configuration format is similar to
-              that of the <a
-              href="http://jakarta.apache.org/log4j/docs/
-              documentation.html">Log4j</a> package's format.</p>
+              <p>Specifies the location of the <span class="fixedwidth">log4cpp</span>
+              configuration file for most Shibboleth events. This
+              element may also be optionally specified for each of
+              the components individually. Default logging settings (using local log files)
+              should suffice. If using a remote syslogd instead, the <span class="fixedwidth">syslog</span>
+              daemon must accept <span class="fixedwidth">UDP:514</span> messages, and on Linux,
+              <span class="fixedwidth">SYSLOGD_OPTIONS</span> must include <span class="fixedwidth">-r</span>
+              to <span class="fixedwidth">enable logging from remote machines.</span> The
+              logging level is also defined in the logger configuration.
+              The configuration format and log levels are similar to that of the
+              <a href="http://jakarta.apache.org/log4j/docs/documentation.html">Log4j</a> package's
+              property format.</p>
           </dd>
 
           <dd class="attributeopt">
@@ -1405,8 +1399,10 @@ font-color: #121212;
               <p>Specifies the URI of an attribute acceptance policy XML
               file. Attributes must be listed in the <span
               class="fixedwidth">aap-uri</span> file if they are to be
-              visible. For more information, refer to section <a
-              href="#4.e.">4.e</a>.</p>
+              visible to the Apache server. Unlisted or rejected attributes are
+              filtered out and hidden from the web server (but also see the
+              <b>ShibExportAssertion</b> Apache command).
+              For more information, refer to section <a href="#4.e.">4.e</a>.</p>
           </dd>
 
           <dd class="attributeopt">
@@ -1431,18 +1427,18 @@ font-color: #121212;
           </dd>
 
           <dd class="value">
-              <p>Specifies the location of a <span class="fixedwidth">log4cpp</span> which
-              overrides the <span class="fixedwidth">[general]</span> log parameters for
-              SHAR events.  Default logging settings should suffice.
-              The <span class="fixedwidth">syslog</span> daemon must accept
-              <span class="fixedwidth">UDP:514</span> messages, and on Linux,
-              <span class="fixedwidth">SYSLOGD_OPTIONS</span> must include <span class="fixedwidth">-r</span> to
-              <span class="fixedwidth">enable logging from remote machines.</span> The
-              logging levels are defined in the logger
-              configuration. The configuration format is similar to
-              that of the <a
-              href="http://jakarta.apache.org/log4j/docs/
-              documentation.html">Log4j</a> package's format.</p>
+              <p>Specifies the location of the <span class="fixedwidth">log4cpp</span>
+              configuration file for most Shibboleth events. This
+              element may also be optionally specified for each of
+              the components individually. Default logging settings (using local log files)
+              should suffice. If using a remote syslogd instead, the <span class="fixedwidth">syslog</span>
+              daemon must accept <span class="fixedwidth">UDP:514</span> messages, and on Linux,
+              <span class="fixedwidth">SYSLOGD_OPTIONS</span> must include <span class="fixedwidth">-r</span>
+              to <span class="fixedwidth">enable logging from remote machines.</span> The
+              logging level is also defined in the logger configuration.
+              The configuration format and log levels are similar to that of the
+              <a href="http://jakarta.apache.org/log4j/docs/documentation.html">Log4j</a> package's
+              property format.</p>
           </dd>
 
           <dd class="attributeopt">
@@ -1452,7 +1448,7 @@ font-color: #121212;
           <dd class="valueopt">
               <p>Specifies the tag that defines the section of <span
               class="fixedwidth">shibboleth.ini</span> the SHAR should
-              use to acquire its metadata.</p>
+              use to acquire its site and trust metadata.</p>
           </dd>
 
           <dd class="attributeopt">
@@ -1460,9 +1456,9 @@ font-color: #121212;
           </dd>
 
           <dd class="valueopt">
-              <p>Specifies the location of the PEM-format
-              certificate used by the SHAR to communicate with
-              AA's.</p>
+              <p>Specifies the location of the PEM-format certificate used by
+              the SHAR to communicate in authenticated fashion with
+              origin site Attribute Authorities.</p>
           </dd>
 
           <dd class="attributeopt">
@@ -1470,8 +1466,9 @@ font-color: #121212;
           </dd>
 
           <dd class="valueopt">
-              <p>Specifies the location of the PEM-format private
-              key used by the SHAR to communicate with AA's.</p>
+              <p>Specifies the location of the PEM-format private key used by
+              the SHAR to communicate in authenticated fashion with
+              origin site Attribute Authorities.</p>
           </dd>
 
           <dd class="attributeopt">
@@ -1480,7 +1477,7 @@ font-color: #121212;
 
           <dd class="valueopt">
               <p>Specifies the <span class="fixedwidth">password</span> used to access the
-              <span class="fixedwidth">keyfile</span>.</p>
+              <span class="fixedwidth">keyFile</span>, if any.</p>
           </dd>
 
           <dd class="attribute">
@@ -1488,10 +1485,9 @@ font-color: #121212;
           </dd>
 
           <dd class="value">
-              <p>Specifies a single file of PEM-format
-              certificates containing the certificates of root CA's
-              the SHAR will consider valid signers of AA
-              certificates.</p>
+              <p>Specifies a single file of PEM-format certificates containing
+              the root CAs the SHAR will consider to be valid signers of AA server
+              certificates. Currently applies globally to all communication with AAs.</p>
           </dd>
 
           <dd class="attribute">
@@ -1500,7 +1496,7 @@ font-color: #121212;
 
           <dd class="value">
               <p>Specifies the number of seconds that the SHAR will wait
-              for attributes to be sent from an AA.  Defaults to <span
+              for attributes to be sent from an AA. Defaults to <span
               class="fixedwidth">60</span>.</p>
           </dd>
 
@@ -1510,7 +1506,7 @@ font-color: #121212;
 
           <dd class="value">
               <p>Specifies the number of seconds that the SHAR will wait
-              for a connection to be established with a remote AA. 
+              for a connection to be established with an AA. 
               Defaults to <span class="fixedwidth">30</span>.</p>
           </dd>
 
@@ -1522,10 +1518,9 @@ font-color: #121212;
               <p>Specifies the method used by the SHAR to cache received
               attributes.  The default is <span
               class="fixedwidth">memory</span>, which indicates that
-              Shibboleth should store received attributes in memory. 
-              Another option is <span
-              class="fixedwidth">mysql</span>, which will use the MySQL
-              Credential Cache.  The steps to using this are described
+              the SHAR should store received attributes in its memory. 
+              Another option is <span class="fixedwidth">mysql</span>,
+              which will use the MySQL Credential Cache. The steps to using this are described
               in the MySQL Credential Cache guide.</p>
           </dd>
 
@@ -1535,7 +1530,7 @@ font-color: #121212;
 
           <dd class="value">
               <p>Specifies the duration in seconds between cleanups of
-              the SHAR's cached attributes.  Defaults to <span
+              the SHAR's cached but expired attributes. Defaults to <span
               class="fixedwidth">300</span>, or 5 minutes.</p>
           </dd>
 
@@ -1561,8 +1556,7 @@ font-color: #121212;
       be shared or defined for each component. Two providers are
       supported by Shibboleth, but additional providers may be
       specified with name/value pairs consisting of <span
-      class="fixedwidth">&lt;DEFANGED_metadata provider
-      type&gt;=&lt;source&gt;</span>.</p>
+      class="fixedwidth">&lt;metadata provider type&gt;=&lt;source&gt;</span>.</p>
 
       <p><span class="fixedwidth">[&lt;metadata&gt;]</span>:</p>
 
@@ -1590,7 +1584,7 @@ font-color: #121212;
           <dd class="value">
               <p>Specifies the location of the trust database of
               certificates and/or CA roots used by the SHAR during
-              session initiation.  The SHIRE does not need trust
+              session initiation. The SHIRE module generally does not need trust
               data.</p>
           </dd>
       </dl>
@@ -1718,17 +1712,36 @@ font-color: #121212;
 
           <dd class="value">A textual description of the error intended for human
           consumption.</dd>
+          
+          <dd class="attribute"><span class="fixedwidth">originContactName</span></dd>
+
+          <dd class="value">The contact name for the origin site provided by that
+          site's metadata.</dd>
+
+          <dd class="attribute"><span class="fixedwidth">originContactEmail</span></dd>
+
+          <dd class="value">The contact email address for the origin site provided by that
+          site's metadata.</dd>
+
+          <dd class="attribute"><span class="fixedwidth">originErrorURL</span></dd>
+
+          <dd class="value">The URL of an error handling page for the origin site
+          provided by that site's metadata.</dd>
       </dl>
 
       <p>This configuration is only for Apache servers, and is only
       used by resources protected by Shibboleth.  See section <a
       href= "#4.d.">4.d</a>.</p>
       
-      <p>A sample error template is included in the Shibboleth
-      distribution, and can be triggered by anything that will cause
-      Shibboleth to be unable to make an authorization decision,
-      including a bad sites file, certificate chain, or skewed
-      clock.</p>
+      <p>Sample error templates for different kinds of errors are
+      included in the Shibboleth distribution, and can be triggered
+      by anything that will cause Shibboleth to be unable to make an
+      authorization decision, including a bad sites file, certificate chain,
+      or skewed clock.</p>
+      
+      <p><b>You should edit these templates, provide or remove style sheets and
+      images, and otherwise customize these templates to suit the user experience
+      you want your users to have when errors occur.</b></p>
 
     </blockquote>
 
@@ -1756,15 +1769,16 @@ font-color: #121212;
       <span class="fixedwidth">shibboleth.ini</span> file.</p>
 
       <p>The SHAR is assigned a key and a certificate using
-      shibboleth.ini's <span class="fixedwidth">certfile</span>, <span class="fixedwidth">keyfile</span> and
-      <span class="fixedwidth">keypass</span>, described in <a href="#4.a.">4.a</a>. These
+      shibboleth.ini's <span class="fixedwidth">certFile</span>,
+      <span class="fixedwidth">keyFile</span> and
+      <span class="fixedwidth">keyPass</span>, described in <a href="#4.a.">4.a</a>. These
       files must currently be in PEM format. OpenSSL commands to
       generate a new keypair and a certificate request are shown
       here, assuming RSA keys are to be used:</p>
 
       <blockquote>
-        <span class="fixedwidth">$ openssl genrsa -des3 -out ssl.key 2048 $ openssl req
-        -new -key ssl.key -out ssl.csr</span>
+        <span class="fixedwidth">$ openssl genrsa -des3 -out ssl.key 2048<br>
+        $ openssl req -new -key ssl.key -out ssl.csr</span>
       </blockquote>
 
       <p>The signed certificate file returned by the CA should be
@@ -1772,8 +1786,8 @@ font-color: #121212;
       <span class="fixedwidth">openssl x509</span> command.</p>
 
       <p>The key and certificate files can be placed anywhere,
-      though in or beneath <span class="fixedwidth">/usr/local/apache/conf
-      directory</span> is a good choice. The Apache child processes,
+      though in or beneath the <span class="fixedwidth">/usr/local/apache/conf</span>
+      directory is a good choice. The Apache child processes,
       often running as <span class="fixedwidth">nobody</span>, must be able to read them
       while the server is running, which may require permission
       changes.</p>
@@ -1783,21 +1797,17 @@ font-color: #121212;
       by default. The password, if any, must be placed in the conf
       file, since the module cannot prompt for it as the initial
       startup of mod_ssl can. The issues surrounding how to
-      securely obtain a key while running as <span class="fixedwidth">nobody</span> will
-      be addressed in a later release. Since the password will be
+      securely obtain a key while running as <span class="fixedwidth">nobody</span>
+      may be addressed in a later release. Since the password will be
       stored in clear text in a frequently examined file, it is
-      suggested to not reuse a password used elsewhere, or to place
-      the <span class="fixedwidth">keypass</span> directive in a separate file that is
-      <span class="fixedwidth">Included</span> in the main configuration file, so that its
-      permissions can be further restricted.</p>
+      suggested to use a password not used elsewhere.</p>
 
       <p>Finally, the <span class="fixedwidth">calist</span> command provides the SHAR
       with a set of CA roots to trust when validating AA server
       certificates. In all cases, the SHAR verifies that the
-      certificate's CN equals the AA's hostname, but the CA root
-      bundle restricts the accepdl signers to those permitted by
-      the SHAR. The parameter can be omitted to skip such signer
-      validation.</p>
+      certificate's Subject CN equals the AA's hostname, but the CA root
+      bundle restricts the accepted signers to those permitted by
+      the SHAR. The parameter can be omitted to skip such validation.</p>
     </blockquote>
 
     <h4><a name="4.d."></a>4.d. Protecting Webpages</h4>
@@ -1858,18 +1868,6 @@ font-color: #121212;
           </dd>
 
           <dd class="attribute">
-              <span class="fixedwidth">ShibAuthTimeout &lt;seconds&gt;</span>
-          </dd>
-
-          <dd class="value">
-              <p>Sets the maximum number of seconds without any
-              user activity that a session will remain alive. After
-              <span class="fixedwidth">seconds</span> seconds without activity, the
-              session is considered dead. Omission or <span class="fixedwidth">0</span>
-              results in an arbitrary session timeout.</p>
-          </dd>
-
-          <dd class="attribute">
               <span class="fixedwidth">ShibExportAssertion &lt;on/off&gt;</span>
           </dd>
 
@@ -1877,7 +1875,9 @@ font-color: #121212;
               <p>Controls whether the SAML attribute assertion
               provided by the AA is exported in a base64-encoded
               HTTP header, <span class="fixedwidth">Shib-Attributes</span>. Defaults to
-              <span class="fixedwidth">off</span>.</p>
+              <span class="fixedwidth">off</span>. While this does require parsing the
+              raw XML, it also permits an application to see attributes that may have
+              been filtered by an AAP, or to forward the SAML assertion to a third party.</p>
           </dd>
 
           <dd class="attribute">
@@ -1888,6 +1888,18 @@ font-color: #121212;
               <p>Sets the maximum lifetime in seconds that a user
               session can survive. Omission or zero results in
               arbitrary session lifetime.</p>
+          </dd>
+
+          <dd class="attribute">
+              <span class="fixedwidth">ShibAuthTimeout &lt;seconds&gt;</span>
+          </dd>
+
+          <dd class="value">
+              <p>Sets the maximum number of seconds without any
+              user activity that a session will remain alive. After
+              <span class="fixedwidth">seconds</span> seconds without activity, the
+              session is considered dead. Omission or <span class="fixedwidth">0</span>
+              results in an arbitrary session timeout.</p>
           </dd>
 
           <dd class="attribute">
@@ -1926,34 +1938,30 @@ font-color: #121212;
           </dd>
 
           <dd class="value">
-            <p>Enforce authorization using one of the following methods.
-            <b>Please note that <span
-            class="fixedwidth">valid-user</span> is not a valid access
-            rule because there it is not clear what <span
-            class="fixedwidth">valid-user</span> would signify in the
-            context of Shibboleth</b>.</p>
+            <p>Enforce authorization using one of the following methods.</p>
 
             <ul type="circle">
-              <li>
 
               <li>
                 <span class="fixedwidth">valid-user</span>
 
                 <blockquote>
-                  <p>Any Shibboleth user from a trusted origin site
-                  is accepted.</p>
+                  <p>Any Shibboleth user from a trusted origin site is accepted,
+                  even if no actual attributes are received. This is a very minimal
+                  kind of policy, but is useful for testing or for deferring real
+                  policy to an application.</p>
                 </blockquote>
               </li>
 
                 <span class="fixedwidth">user</span>
 
                 <blockquote>
-                  <p>A space-delimited list of EPPN values,
-                  provided that the
-                  <span class="fixedwidth">urn:mace:eduPerson:1.0:eduPersonPrincipalName</span>
+                  <p>A space-delimited list of EPPN values, provided that the
+                  <span class="fixedwidth">urn:mace:dir:attribute-def:eduPersonPrincipalName</span>
                   attribute has been mapped to the
                   <span class="fixedwidth">REMOTE_USER</span> header (as per the earlier
-                  example configuration commands).</p>
+                  example configuration commands). Actually, any attribute can be mapped to
+                  REMOTE_USER, even if this doesn't always make sense.</p>
                 </blockquote>
               </li>
 
@@ -1963,7 +1971,7 @@ font-color: #121212;
                 <blockquote>
                   <p>A space-delimited list of group names defined
                   within <span class="fixedwidth">AuthGroupFile</span> files, again
-                  provided that the mapping to <span class="fixedwidth">REMOTE_USER</span>
+                  provided that a mapping to <span class="fixedwidth">REMOTE_USER</span>
                   exists.</p>
                 </blockquote>
               </li>
@@ -1974,7 +1982,7 @@ font-color: #121212;
                 <blockquote>
                   <p>An arbitrary rule tag that matches an alias
                   defined in a <span class="fixedwidth">ShibMapAttribute</span> server
-                  command. The rule value is a space- delimited
+                  command. The rule value is a space-delimited
                   list of attribute values, whose format depends on
                   the attribute in question (e.g. an affiliation
                   rule might look like <span class="fixedwidth">require affiliation
@@ -2019,20 +2027,19 @@ font-color: #121212;
       will not be passed to the CGI environment or used when
       enforcing <span class="fixedwidth">.htaccess</span> rules.
       Note that the attribute assertion exported to the
-      <span class="fixedwidth">Shib-Attributes</span> header is pre-filtered.</p>
+      <span class="fixedwidth">Shib-Attributes</span> header is unfiltered.</p>
 
-      <p>The Shibboleth distribution <span class="fixedwidth">scoped</span> and
+      <p>The Shibboleth distribution supports <span class="fixedwidth">scoped</span> and
       <span class="fixedwidth">simple</span> filtering policies for different kinds of
       attributes.</p>
       
       <p><b>An essential part of the Shibboleth trust fabric is ensuring
       that sites only assert attributes for domains for which they are
-      considered authoritative by the target.  Typically, this means
+      considered authoritative by the target. Typically, this means
       that Brown University will be trusted to assert attributes only
-      scoped to <span class="fixedwidth">*brown.edu</span>.  Unless
+      scoped to <span class="fixedwidth">brown.edu</span>. Unless
       there are very specific circumstances requiring this restriction
-      be removed, it is strongly encouraged that it be included in any
-      and all AAP's.</b></p>
+      be removed, it is strongly encouraged that such policies be in place.</b></p>
 
       <h4>Scoped:</h4>
       <blockquote>
@@ -2052,7 +2059,8 @@ font-color: #121212;
         regular expressions, and can be changed by a target to meet
         its needs if a local version of the file is created. Thus,
         attribute acceptance processing for <span class="fixedwidth">scoped</span>
-        attributes is based on the sites file.</p>
+        attributes is based on the sites file, in addition to the mechanism described
+        below for <span class="fixedwidth">simple</span> attributes.</p>
       </blockquote>
 
       <h4>Simple:</h4>
@@ -2062,10 +2070,10 @@ font-color: #121212;
         Multiple values are permitted.
         <span class="fixedwidth">eduPersonEntitlement</span>, in which the values are URIs,
         is one example of a simple attribute.</p>
-        <p>In this release, simple attribute acceptance is
+        <p>In this release, simple (and scoped) attribute acceptance is
         controlled with an external policy file written in XML. The
         schema for the file is described by the
-        <span class="fixedwidth">eduPerson.xsd</span> schema, and an example file is
+        <span class="fixedwidth">shibboleth.xsd</span> schema, and an example file is
         included, <span class="fixedwidth">AAP.xml</span>. If the <span class="fixedwidth">aap-uri</span>
         parameter in the <span class="fixedwidth">shibboleth.ini</span> file is left out,
         then no policy is applied, and no filtering is done.
@@ -2093,6 +2101,7 @@ font-color: #121212;
         URI&quot;&gt;</span></p>
           <blockquote>Specifies a rule for an attribute, named with
           its URI.</blockquote>
+
         <p><span class="fixedwidth">&lt;AnySite&gt;</span></p>
           <blockquote>Specifies a rule that always applies to the
           attribute, regardless of the asserting AA.</blockquote>
@@ -2101,6 +2110,10 @@ font-color: #121212;
         Name=&quot;site.domain.name&quot;&gt;</span></p>
           <blockquote>A rule that applies to the origin site AA
           corresponding to the domain name.</blockquote>
+
+        <p><span class="fixedwidth">&lt;AnyValue&gt;</span></p>
+          <blockquote>Specifies a rule that always applies to the
+          attribute and site, regardless of the value(s).</blockquote>
 
         <p><span class="fixedwidth">&lt;Value Type=&quot;type&quot;&gt;</span></p>
           <blockquote>Specifies a value to permit, either directly
@@ -2119,13 +2132,7 @@ font-color: #121212;
 
        <p>Note that the AAP rules described in this section are not
        part of the Shibboleth architecture and are simply one
-       possible set of approaches implemented in the
-       <span class="fixedwidth">eduPerson</span> attribute plugin. The OpenSAML API permits
-       attribute classes to derive from <span class="fixedwidth">SAMLAttribute</span> and
-       override the accept() method to implement
-       application-specific AAP requirements. The eduPerson source
-       files can be used as an example of how to build highly
-       customized rules.</p>
+       possible set of approaches provided by this implementation.</p>
     </blockquote>
 
     <h4><a name="4.f."></a>4.f. Using Attributes in
@@ -2158,11 +2165,16 @@ font-color: #121212;
       <span class="fixedwidth">username</span>. Unlike many authentication modules,
       Shibboleth does not guarantee that <span class="fixedwidth">REMOTE_USER</span> will
       have any value. If it does, it is set solely based on a
-      <span class="fixedwidth">ShibMapAttribute</span> command. For most purposes, the
-      <span class="fixedwidth">urn:mace:eduPerson:1.0:eduPersonPrincipalName</span>
+      <span class="fixedwidth">ShibMapAttribute</span> command. For many purposes, the
+      <span class="fixedwidth">urn:mace:dir:attribute-def:eduPersonPrincipalName</span>
       attribute should be mapped to <span class="fixedwidth">REMOTE_USER</span>. Even so,
       EPPN may not be provided by the AA, and <span class="fixedwidth">REMOTE_USER</span>
       might still be empty.</p>
+      
+      <p>The <span class="fixedwidth">Shib-Origin-Site</span> variable will contain the
+      unique name/identifier of the origin site of the user. Some applications may use this
+      to lookup additional policy or application data. It normally takes the form of a URI
+      but could be any string.</p>
 
       <p>Finally, the <span class="fixedwidth">ShibExportAssertion</span> flag instructs
       the module to place the entire XML message containing the
@@ -2238,13 +2250,12 @@ font-color: #121212;
        class="fixedwidth">siterefresh</span> would take the form:</p>
      
        <blockquote><span class="fixedwidth">
-         /opt/shibboleth/bin/siterefresh --url
-         http://wayf.internet2.edu/InQueue/sites.xml --out sites.xml
-         --cert internet2.pem
+         /opt/shibboleth/bin/siterefresh --out sites.xml --cert internet2.pem \<br>
+         	--url http://wayf.internet2.edu/InQueue/sites.xml
        </span></blockquote>
      
-       <p>It is recommended that a similar command be added to a <span
-       class="fixedwidth">crontab</span> to keep the file refreshed.</p>
+       <p>It is recommended that similar commands be added to a <span
+       class="fixedwidth">crontab</span> to keep the sites and trust files refreshed.</p>
     </blockquote>
 
 

@@ -1770,7 +1770,7 @@ font-color: #121212;
 
           &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
           &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;Attribute
-          name=&quot;urn:mace:eduPerson:1.0:eduPersonScopedAffiliation&quot;&gt;<br>
+          name=&quot;urn:mace:dir:attribute-def:eduPersonScopedAffiliation&quot;&gt;<br>
 
           &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
           &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -1878,7 +1878,7 @@ font-color: #121212;
 
         <blockquote>
           <span class="fixedwidth">
-          &lt;Attribute name=&quot;urn:mace:eduPerson:1.0:eduPersonPrincipalName&quot;&gt;<br>
+          &lt;Attribute name=&quot;urn:mace:dir:attribute-def:eduPersonPrincipalName&quot;&gt;<br>
           &nbsp;&nbsp;&lt;AnyValue release=&quot;Permit&quot;&gt;<br>
           &lt;/Attribute&gt;<br>
           </span><br>
@@ -1888,7 +1888,7 @@ font-color: #121212;
          
         <blockquote>
           <span class="fixedwidth">
-          &lt;Attribute name=&quot;urn:mace:eduPerson:1.0:eduPersonScopedAffiliation&quot;&gt;<br>
+          &lt;Attribute name=&quot;urn:mace:dir:attribute-def:eduPersonScopedAffiliation&quot;&gt;<br>
           &nbsp;&nbsp;&lt;Value release=&quot;deny&quot;&gt;member@example.edu&lt;/Value&gt;<br>
           &lt;/Attribute&gt;<br>
           </span><br>
@@ -1903,7 +1903,7 @@ font-color: #121212;
       <!-- ##To be included in future releases.  Not yet implemented.
       
       <p>There is also a special <span class="fixedwidth">AttributeIdentifier</span>
-      element that allows internal references to the an attribute
+      element that allows internal references to an attribute
       within an ARP.  This is useful for quickly applying multiple
       rules to the same target.  It is used as follows:</p>
 
@@ -1918,8 +1918,7 @@ font-color: #121212;
           &nbsp;&nbsp;&nbsp;&nbsp;&lt;/Target&gt;<br>
           
           &nbsp;&nbsp;&nbsp;&nbsp;&lt;Attribute
-          name=&quot;urn:mace:eduPerson:1.0:
-          eduPersonScopedAffiliation&quot;&gt;<br>
+          name=&quot;urn:mace:dir:attribute-def:eduPersonScopedAffiliation&quot;&gt;<br>
 
           &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;Value
           release=&quot;permit&quot;&gt;member@example.edu&lt;/Value
@@ -1931,7 +1930,7 @@ font-color: #121212;
           
           &nbsp;&nbsp;&lt;AttributeReference identifier=&quot;http://www.example.edu/attributes/attribute1&quot;&gt;<br>
 
-          &nbsp;&nbsp;&lt;Attribute name=&quot;urn:mace:eduPerson:1.0:eduPersonAffiliation&quot; identifier=&quot;http://www.example.edu/attributes/attribute1&quot;&gt;<br>
+          &nbsp;&nbsp;&lt;Attribute name=&quot;urn:mace:dir:attribute-def:eduPersonScopedAffiliation&quot; identifier=&quot;http://www.example.edu/attributes/attribute1&quot;&gt;<br>
 
           &nbsp;&nbsp;&nbsp;&nbsp;&lt;Value release=&quot;permit&quot;&gt;student@example.edu&lt;Value&gt;<br>
 
@@ -2298,12 +2297,6 @@ font-color: #121212;
           Shibboleth.  Contained within the <span
           class="fixedwidth">SimpleAttributeDefinition</span>
           element.</p>
-
-          <p>Attributes are named in the format <span
-          class="fixedwidth">&lt;URI&gt;#&lt;attributename&gt;</span>;
-          for example, <span
-          class="fixedwidth">urn:mace:dir:eduperson#
-          eduPersonScopedAffiliation</span>.</p>
         </dd>
 
         <dd class="attributeopt">
@@ -2387,9 +2380,9 @@ font-color: #121212;
       look like:</p>
 
       <blockquote><span class="fixedwidth">
-        &lt;SimpleAttributeDefinition id=&quot;urn:mace:dir:eduperson#eduPersonPrincipalName&quot; smartScope=&quot;shibdev.edu&quot; sourceName=&quot;universityPerson&quot;&gt;<br>
+        &lt;SimpleAttributeDefinition id=&quot;urn:mace:dir:attribute-def:eduPersonPrincipalName&quot; smartScope=&quot;shibdev.edu&quot; sourceName=&quot;universityPerson&quot;&gt;<br>
           &nbsp;&nbsp;&lt;DataConnectorDependency requires=&quot;dataConnector&quot;/&gt;<br>
-          &nbsp;&nbsp;&lt;AttributeDependency requires=&quot;urn:mace:dir:eduperson#eduPersonAffiliation&quot;/&gt;<br>
+          &nbsp;&nbsp;&lt;AttributeDependency requires=&quot;urn:mace:dir:attribute-def:eduPersonScopedAffiliation&quot;/&gt;<br>
 	      &nbsp;&nbsp;&lt;cacheTime=&quot;600&quot;/&gt;&lt;br&gt;<br>
 	      &nbsp;&nbsp;&lt;lifeTime=&quot;3600&quot;/&gt;&lt;br&gt;<br>
 	    &lt;/SimpleAttributeDefinition&gt;
@@ -2402,7 +2395,7 @@ font-color: #121212;
       <blockquote><span class="fixedwidth">
          &lt;AttributeResolver xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; xmlns=&quot;urn:mace:shibboleth:resolver:1.0&quot; xsi:schemaLocation=&quot;urn:mace:shibboleth:resolver:1.0 shibboleth-resolver-1.0.xsd&quot;&gt;<br>
 	     <br>
-	     &nbsp;&nbsp;&lt;SimpleAttributeDefinition id=&quot;urn:mace:dir:eduperson#eduPersonPrincipalName&quot; smartScope=&quot;shibdev.edu&quot;&gt;<br>
+	     &nbsp;&nbsp;&lt;SimpleAttributeDefinition id=&quot;urn:mace:dir:attribute-def:eduPersonPrincipalName&quot; smartScope=&quot;shibdev.edu&quot;&gt;<br>
 		    &nbsp;&nbsp;&nbsp;&nbsp;&lt;DataConnectorDependency requires=&quot;echo&quot;/&gt;<br>
 	      &nbsp;&nbsp;&lt;/SimpleAttributeDefinition&gt;<br>
 	     <br>
@@ -2438,8 +2431,8 @@ font-color: #121212;
     <blockquote>
       <p>Internet2 provides a basic target that can be used to test
       origin setup functionality. After your origin is recognized
-      by InCommon, simply use any browser to access <a href=
-      "https://wayf.internet2.edu/shibboleth/sample.jsp">https://wayf.internet2.edu/shibboleth/sample.jsp</a>.
+      by InQueue, simply use any browser to access <a href=
+      "https://wayf.internet2.edu/InQueue/sample.jsp">https://wayf.internet2.edu/InQueue/sample.jsp</a>.
       Select your origin's name and follow the login process as a
       user would. Note that SSL must be used, and both the HS and
       AA must be fully configured.</p>
@@ -2458,16 +2451,15 @@ font-color: #121212;
     <blockquote>
       <p>Shibboleth's origin components log various operations
       which may prove useful for auditing, testing, and security
-      purposes. This data is sent through <span class="fixedwidth">log4j</span>'s standard
-      mechanism.  The location of
+      purposes. This data is sent through <span class="fixedwidth">log4j</span>'s
+      standard mechanism. The location of
       the log file, the level at which the log is output, the
       formatting of the logs, and many more options may be
       configured by editing
-      <span class="fixedwidth">/WEB-INF/classes/conf/log4j.properties</span>. By default, it is
-      setup to log to the console of the servlet container, with a
+      <span class="fixedwidth">/WEB-INF/classes/conf/log4j.properties</span>. By default,
+      it is setup to log to the console of the servlet container, with a
       level of <span class="fixedwidth">WARN</span>, but there is also a commented out
-      example in the file to give a possible alternate
-      configuration.</p>
+      example in the file to give a possible alternate configuration.</p>
     </blockquote>
 
     <h4><a name="6.c."></a>6.c. Common Problems</h4>
