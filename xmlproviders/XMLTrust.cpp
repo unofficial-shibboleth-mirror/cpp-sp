@@ -183,6 +183,9 @@ X509_STORE* XMLTrustImpl::KeyAuthority::getX509Store()
             log.warn("failed to add cert: %s", (*j)->name);
             continue;
         }
+        else {
+            log.debug("added cert: %s", (*j)->name);
+        }
     }
 
     return store;
