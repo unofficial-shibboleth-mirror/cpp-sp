@@ -161,6 +161,7 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
             ShibTargetConfig::SHIREExtensions
             );
         if (!g_Config->init(schemadir,config)) {
+            g_Config=NULL;
             LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL,
                     "Filter startup failed during initialization, check shire log for help.");
             return FALSE;
@@ -267,8 +268,8 @@ bool dynabuf::operator==(const char* s) const
 void GetServerVariable(PHTTP_FILTER_CONTEXT pfc, LPSTR lpszVariable, dynabuf& s, DWORD size=80, bool bRequired=true)
     throw (bad_alloc, DWORD)
 {
-    s.erase();
     s.reserve(size);
+    s.erase();
     size=s.size();
 
     while (!pfc->GetServerVariable(pfc,lpszVariable,s,&size))
@@ -287,8 +288,8 @@ void GetServerVariable(PHTTP_FILTER_CONTEXT pfc, LPSTR lpszVariable, dynabuf& s,
 void GetServerVariable(LPEXTENSION_CONTROL_BLOCK lpECB, LPSTR lpszVariable, dynabuf& s, DWORD size=80, bool bRequired=true)
     throw (bad_alloc, DWORD)
 {
-    s.erase();
     s.reserve(size);
+    s.erase();
     size=s.size();
 
     while (lpECB->GetServerVariable(lpECB->ConnID,lpszVariable,s,&size))
@@ -308,8 +309,8 @@ void GetHeader(PHTTP_FILTER_PREPROC_HEADERS pn, PHTTP_FILTER_CONTEXT pfc,
                LPSTR lpszName, dynabuf& s, DWORD size=80, bool bRequired=true)
     throw (bad_alloc, DWORD)
 {
-    s.erase();
     s.reserve(size);
+    s.erase();
     size=s.size();
 
     while (!pn->GetHeader(pfc,lpszName,s,&size))
@@ -329,10 +330,8 @@ IRequestMapper::Settings map_request(
     PHTTP_FILTER_CONTEXT pfc, PHTTP_FILTER_PREPROC_HEADERS pn, IRequestMapper* mapper, const char* hostname, string& target
     )
 {
-    dynabuf method(10);
     dynabuf port(10);
     dynabuf url(256);
-    GetServerVariable(pfc,"REQUEST_METHOD",method,10);
     GetServerVariable(pfc,"SERVER_PORT",port,10);
     GetHeader(pn,pfc,"url",url,256,false);
     
@@ -343,14 +342,13 @@ IRequestMapper::Settings map_request(
 
     if (g_bNormalizeRequest) {
         target = string(pfc->fIsSecurePort ? "https://" : "http://") + hostname + target;
-        return mapper->getSettingsFromParsedURL(method,hostname,strtoul(port,NULL,10),url);
     }
     else {
         dynabuf name(64);
         GetServerVariable(pfc,"SERVER_NAME",name,64);
         target = string(pfc->fIsSecurePort ? "https://" : "http://") + static_cast<char*>(name) + target;
-        return mapper->getSettingsFromParsedURL(method,name,strtoul(port,NULL,10),url);
     }
+    return mapper->getSettingsFromParsedURL((pfc->fIsSecurePort ? "https" : "http"),hostname,strtoul(port,NULL,10),url);
 }
 
 DWORD WriteClientError(PHTTP_FILTER_CONTEXT pfc, const char* msg)
@@ -651,10 +649,10 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
                         string header;
                         string hname=string(wrapper->getHeader()) + ':';
                         GetHeader(pn,pfc,const_cast<char*>(hname.c_str()),buf,256,false);
-                        if (buf.empty())
+                        if (!buf.empty()) {
                             header=buf;
-                        else
                             it++;
+                        }
                         for (; vals.hasNext(); it++) {
                             string value = vals.next();
                             for (string::size_type pos = value.find_first_of(";", string::size_type(0));
@@ -690,9 +688,11 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
         else
             return WriteClientError(pfc,"Server detected unexpected IIS error.");
     }
+#ifndef _DEBUG
     catch(...) {
         return WriteClientError(pfc,"Server caught an unknown exception.");
     }
+#endif
 
     return WriteClientError(pfc,"Server reached unreachable code, save my walrus!");
 }
@@ -722,7 +722,7 @@ IRequestMapper::Settings map_request(
         dynabuf name(64);
         GetServerVariable(lpECB,"SERVER_NAME",name,64);
         target = string(SSL ? "https://" : "http://") + static_cast<char*>(name) + target;
-        return mapper->getSettingsFromParsedURL(lpECB->lpszMethod,name,strtoul(port,NULL,10),url);
+        return mapper->getSettingsFromParsedURL((SSL ? "https" : "http"),name,strtoul(port,NULL,10),url);
     }
 }
 
@@ -767,6 +767,7 @@ DWORD WriteClientError(LPEXTENSION_CONTROL_BLOCK lpECB, const IApplication* app,
 
 extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
 {
+    string targeturl;
     const IApplication* application=NULL;
     try
     {
@@ -810,9 +811,6 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
         pair<bool,const char*> shib_cookie_props=sessionProps->getString("cookieProps");
         if (!shib_cookie.first)
             return WriteClientError(lpECB,"No session cookie name defined for this application, check configuration.");
-
-        ShibMLP markupProcessor(application);
-        markupProcessor.insert("requestURL", targeturl.c_str());
 
         // Make sure this is SSL, if it should be
         pair<bool,bool> shireSSL=sessionProps->getBool("shireSSL");
@@ -881,8 +879,27 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
 
         // Process the post.
         string cookie;
-        RPCError* status = shire.sessionCreate(elements.first,buf,cookie);
-    
+        RPCError* status=NULL;
+        ShibMLP markupProcessor(application);
+        markupProcessor.insert("requestURL", targeturl.c_str());
+        try {
+            status = shire.sessionCreate(elements.first,buf,cookie);
+        }
+        catch (ShibTargetException &e) {
+            markupProcessor.insert("errorType", "Session Creation Service Error");
+            markupProcessor.insert("errorText", e.what());
+            markupProcessor.insert("errorDesc", "An error occurred while processing your request.");
+            return WriteClientError(lpECB, application, "shire", markupProcessor);
+        }
+#ifndef _DEBUG
+        catch (...) {
+            markupProcessor.insert("errorType", "Session Creation Service Error");
+            markupProcessor.insert("errorText", "Unexpected Exception");
+            markupProcessor.insert("errorDesc", "An error occurred while processing your request.");
+            return WriteClientError(lpECB, application, "shire", markupProcessor);
+        }
+#endif
+
         if (status->isError()) {
             if (status->isRetryable()) {
                 delete status;
@@ -919,6 +936,7 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
     catch (ShibTargetException &e) {
         if (application) {
             ShibMLP markupProcessor(application);
+            markupProcessor.insert("requestURL", targeturl.c_str());
             markupProcessor.insert("errorType", "Session Creation Service Error");
             markupProcessor.insert("errorText", e.what());
             markupProcessor.insert("errorDesc", "An error occurred while processing your request.");
@@ -929,6 +947,7 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
     catch (...) {
         if (application) {
             ShibMLP markupProcessor(application);
+            markupProcessor.insert("requestURL", targeturl.c_str());
             markupProcessor.insert("errorType", "Session Creation Service Error");
             markupProcessor.insert("errorText", "Unexpected Exception");
             markupProcessor.insert("errorDesc", "An error occurred while processing your request.");
