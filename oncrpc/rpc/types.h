@@ -59,9 +59,6 @@
 #	define NULL 0
 #endif
 
-#ifndef WIN32
-extern char *malloc();
-#endif
 #define mem_alloc	malloc
 #define mem_free(ptr, bsize)	free(ptr)
 
