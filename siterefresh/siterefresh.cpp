@@ -186,7 +186,7 @@ int main(int argc,char* argv[])
     }
 
     Category& log=Category::getInstance("siterefresh");
-    Category::setRootPriority(Priority::ERROR);
+    Category::setRootPriority(Priority::WARN);
     conf.schema_dir=path ? path : SHIB_SCHEMAS;
     if (!conf.init())
         return -10;
