@@ -934,7 +934,7 @@ extern "C" int shib_auth_checker(request_rec* r)
                                     SHIB_AP_CHECK_IS_OK;
                                 }
                             }
-                            else if (val==w) {
+                            else if ((wrapper->getCaseSensitive() && val==w) || (!wrapper->getCaseSensitive() && !strcasecmp(val.c_str(),w))) {
                                 ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),
                                                 "shib_auth_checker() expecting %s, got %s: authorization granted", w, val.c_str());
                                 SHIB_AP_CHECK_IS_OK;
@@ -955,7 +955,7 @@ extern "C" int shib_auth_checker(request_rec* r)
                             SHIB_AP_CHECK_IS_OK;
                         }
                     }
-                    else if (val==w) {
+                    else if ((wrapper->getCaseSensitive() && val==w) || (!wrapper->getCaseSensitive() && !strcasecmp(val.c_str(),w))) {
                         ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),
                                         "shib_auth_checker() expecting %s, got %s: authorization granted", w, val.c_str());
                         SHIB_AP_CHECK_IS_OK;
