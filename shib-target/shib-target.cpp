@@ -339,7 +339,7 @@ ShibTarget::doHandleProfile(void)
     }
     else if (!strcasecmp(m_priv->m_method.c_str(), "POST")) {
         if (m_priv->m_content_type.empty() || strcasecmp(m_priv->m_content_type.c_str(),"application/x-www-form-urlencoded")) {
-            string er = string("blocked bad content-type to SHIRE POST processor: ") + m_priv->m_content_type;
+            string er = string("blocked invalid POST content-type to session creation service: ") + m_priv->m_content_type;
             throw ShibTargetException(SHIBRPC_OK, er.c_str());
         }
         // Read the POST Data
@@ -978,12 +978,12 @@ ShibTarget::sessionNew(const char* packet, const char* ip, string& cookie, strin
 
   if (!packet || !*packet) {
     log.error ("Empty SAML response content");
-    return new RPCError(-1,  "Empty SAML response content");
+    return new RPCError(SHIBRPC_RESPONSE_MISSING,  "Empty SAML response content");
   }
 
   if (!ip || !*ip) {
     log.error ("Invalid IP address");
-    return new RPCError(-1, "Invalid IP address");
+    return new RPCError(SHIBRPC_IPADDR_MISSING, "Invalid IP address");
   }
   
   shibrpc_new_session_args_2 arg;
