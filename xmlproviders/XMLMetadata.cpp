@@ -866,7 +866,7 @@ XMLMetadataImpl::AARole::AARole(const EntityDescriptor* provider, time_t validUn
             // Manufacture an endpoint for the SOAP binding.
             m_query.add(
                 new Endpoint(
-                    SAMLBinding::SAML_SOAP_HTTPS,
+                    SAMLBinding::SOAP,
                     static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIB_L(Location))
                     )
                 );
