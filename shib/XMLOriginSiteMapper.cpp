@@ -108,7 +108,6 @@ XMLOriginSiteMapper::XMLOriginSiteMapper(const char* registryURI,
 				continue;
 
 			OriginSite* os_obj = new OriginSite();
-			os_obj->m_domains.push_back(os_name.get()); // Add default domain based on name
 			m_sites[os_name.get()]=os_obj;
 
 			DOMNode* os_child = nlist->item(i)->getFirstChild();
