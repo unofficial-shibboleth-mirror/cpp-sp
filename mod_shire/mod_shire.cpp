@@ -43,36 +43,6 @@ namespace {
     ShibTargetConfig * g_Config = NULL;
 }
 
-// per-server configuration structure
-struct shire_server_config
-{
-    char* serverName;		// Name of this server
-};
-
-// creates the per-server configuration
-extern "C" void* create_shire_server_config (pool * p, server_rec * s)
-{
-    shire_server_config* sc=(shire_server_config*)ap_pcalloc(p,sizeof(shire_server_config));
-    return sc;
-}
-
-// overrides server configuration in virtual servers
-extern "C" void* merge_shire_server_config (pool* p, void* base, void* sub)
-{
-    shire_server_config* sc=(shire_server_config*)ap_pcalloc(p,sizeof(shire_server_config));
-    shire_server_config* parent=(shire_server_config*)base;
-    shire_server_config* child=(shire_server_config*)sub;
-
-    if (child->serverName)
-        sc->serverName=ap_pstrdup(p,child->serverName);
-    else if (parent->serverName)
-        sc->serverName=ap_pstrdup(p,parent->serverName);
-    else
-        sc->serverName=NULL;
-
-    return sc;
-}
-
 // per-dir module configuration structure
 struct shire_dir_config
 {
@@ -110,15 +80,6 @@ extern "C" void* merge_shire_dir_config (pool* p, void* base, void* sub)
 extern "C" const char* ap_set_global_string_slot(cmd_parms* parms, void*, const char* arg)
 {
     *((char**)(parms->info))=ap_pstrdup(parms->pool,arg);
-    return NULL;
-}
-
-// generic per-server slot handlers
-extern "C" const char* ap_set_server_string_slot(cmd_parms* parms, void*, const char* arg)
-{
-    char* base=(char*)ap_get_module_config(parms->server->module_config,&shire_module);
-    int offset=(int)parms->info;
-    *((char**)(base + offset))=ap_pstrdup(parms->pool,arg);
     return NULL;
 }
 
@@ -231,27 +192,13 @@ static char* url_encode(request_rec* r, const char* s)
     return ret;
 }
 
-// Return the "name" of this server to look up configuration options
-static const char* get_service_name(request_rec* r)
-{
-  shire_server_config* sc =
-    (shire_server_config*) ap_get_module_config(r->server->module_config,
-						&shire_module);
-
-  if (sc->serverName)
-    return sc->serverName;
-
-  return ap_get_server_name(r);
-}
-
 // return the "normalized" target URL
 static const char* get_target(request_rec* r, const char* target)
 {
-  const char* serverName = get_service_name(r);
   string tag;
-  if ((g_Config->getINI()).get_tag (serverName, "normalizeRequest", true, &tag))
+  if ((g_Config->getINI()).get_tag(ap_get_server_name(r), "normalizeRequest", true, &tag))
   {
-    if (ShibINI::boolean (tag))
+    if (ShibINI::boolean(tag))
     {
         const char* colon=strchr(target,':');
         const char* slash=strchr(colon+3,'/');
@@ -269,15 +216,14 @@ static const char* get_target(request_rec* r, const char* target)
 static const char* get_shire_location(request_rec* r, const char* target, bool encode)
 {
   ShibINI& ini = g_Config->getINI();
-  const char* serverName = get_service_name(r);
   string shire_location;
 
   if (g_szSHIREURL)
     shire_location = g_szSHIREURL;
-  else if (! ini.get_tag (serverName, "shireURL", true, &shire_location)) {
+  else if (! ini.get_tag (ap_get_server_name(r), "shireURL", true, &shire_location)) {
     ap_log_rerror(APLOG_MARK,APLOG_ERR,r,
 		  "shire_get_location() no shireURL configuration for %s",
-		  serverName);
+		  ap_get_server_name(r));
     return NULL;
   }
 
@@ -330,70 +276,18 @@ static int shire_error_page(request_rec* r, const char* filename, ShibMLP& mlp)
 
 extern "C" int shire_check_user(request_rec* r)
 {
-    ostringstream threadid;
-    threadid << "[" << getpid() << "] shire" << '\0';
-    saml::NDC ndc(threadid.str().c_str());
-
-    ShibINI& ini = g_Config->getINI();
-    ShibMLP markupProcessor;
-
-    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
-		  "shire_check_user: ENTER");
-
-    shire_dir_config* dc=
-        (shire_dir_config*)ap_get_module_config(r->per_dir_config,&shire_module);
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,"shire_check_user: ENTER");
+    shire_dir_config* dc=(shire_dir_config*)ap_get_module_config(r->per_dir_config,&shire_module);
 
     const char* targeturl=get_target(r,ap_construct_url(r->pool,r->unparsed_uri,r));
- 
-    const char * shire_location = get_shire_location(r,targeturl,true);
-    if (!shire_location) return SERVER_ERROR;
-    string shire_url = get_shire_location(r,targeturl,false);
-
-    const char* serverName = get_service_name (r);
-    string tag;
-    bool has_tag = ini.get_tag (serverName, "checkIPAddress", true, &tag);
-    dc->config.checkIPAddress = (has_tag ? ShibINI::boolean (tag) : false);
-
-    string shib_cookie;
-    if (! ini.get_tag (serverName, "cookieName", true, &shib_cookie)) {
-      ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
-		    "shire_check_user: no cookieName configuration for %s",
-		    serverName);
-      return SERVER_ERROR;
-    }
-
-    string wayfLocation;
-    if (! ini.get_tag (serverName, "wayfURL", true, &wayfLocation)) {
-      ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
-		    "shire_check_user: no wayfURL configuration for %s",
-		    serverName);
-      return SERVER_ERROR;
-    }
-
-    string shireError;
-    if (! ini.get_tag (serverName, "shireError", true, &shireError)) {
-      ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
-		    "shire_check_user: no shireError configuration for %s",
-		    serverName);
-      return SERVER_ERROR;
-    }
-
-    has_tag = ini.get_tag (serverName, "supportContact", true, &tag);
-    markupProcessor.insert ("supportContact", has_tag ? tag : "");
-    has_tag = ini.get_tag (serverName, "logoLocation", true, &tag);
-    markupProcessor.insert ("logoLocation", has_tag ? tag : "");
-    markupProcessor.insert ("requestURL", targeturl);
-
-    SHIRE shire(rpc_handle, dc->config, shire_url);
 
     if (is_shire_location (r, targeturl)) {
       ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
-		    "shire_check_user: REQUEST FOR SHIRE!  Maybe you did not configure the SHIRE Handler?");
+           "shire_check_user: REQUEST FOR SHIRE!  Maybe you did not configure the SHIRE Handler?");
       return SERVER_ERROR;
-
-    } else {
+    }
+    else {
       // Regular access to arbitrary resource...check AuthType
-
       const char *auth_type=ap_auth_type (r);
       if (!auth_type)
         return DECLINED;
@@ -401,112 +295,161 @@ extern "C" int shire_check_user(request_rec* r)
       if (strcasecmp(auth_type,"shibboleth"))
       {
         if (!strcasecmp(auth_type,"basic") && dc->bBasicHijack==1)
-	{
-	  core_dir_config* conf=
-	    (core_dir_config*)ap_get_module_config(r->per_dir_config,
-						   ap_find_linked_module("http_core.c"));
-	  conf->ap_auth_type="shibboleth";
-	}
-	else
-	  return DECLINED;
+        {
+            core_dir_config* conf=
+                (core_dir_config*)ap_get_module_config(r->per_dir_config,
+                    ap_find_linked_module("http_core.c"));
+            conf->ap_auth_type="shibboleth";
+        }
+        else
+            return DECLINED;
       }
 
       // set the connection authtype
-      if (r->connection) r->connection->ap_auth_type = "shibboleth";
-
-      ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
-		    "shire_check_user() Shib check for %s", targeturl);
+      if (r->connection)
+        r->connection->ap_auth_type = "shibboleth";
 
       // SSL check.
       if (dc->bSSLOnly==1 && strcmp(ap_http_method(r),"https"))
       {
         ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
-		      "shire_check_user() blocked non-SSL access");
+           "shire_check_user() blocked non-SSL access");
         return SERVER_ERROR;
       }
+    }
 
-      // We're in charge, so check for cookie.
-      const char* session_id=NULL;
-      const char* cookies=ap_table_get(r->headers_in,"Cookie");
+    ostringstream threadid;
+    threadid << "[" << getpid() << "] shire" << '\0';
+    saml::NDC ndc(threadid.str().c_str());
 
-      if (cookies)
-        ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
-		      "shire_check_user() cookies found: %s",
-		      cookies);		      
+    ShibINI& ini = g_Config->getINI();
 
-      if (!cookies || !(session_id=strstr(cookies,shib_cookie.c_str())))
-      {
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
+                    "shire_check_user() Shib check for %s", targeturl);
+
+
+    const char * shire_location = get_shire_location(r,targeturl,true);
+    if (!shire_location)
+        return SERVER_ERROR;
+    string shire_url = get_shire_location(r,targeturl,false);
+
+    const char* serverName = ap_get_server_name(r);
+    string tag;
+    bool has_tag = ini.get_tag (serverName, "checkIPAddress", true, &tag);
+    dc->config.checkIPAddress = (has_tag ? ShibINI::boolean (tag) : false);
+
+    string shib_cookie;
+    if (! ini.get_tag(serverName, "cookieName", true, &shib_cookie)) {
+      ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
+		    "shire_check_user: no cookieName configuration for %s",
+		    serverName);
+      return SERVER_ERROR;
+    }
+
+    string wayfLocation;
+    if (! ini.get_tag(serverName, "wayfURL", true, &wayfLocation)) {
+      ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
+		    "shire_check_user: no wayfURL configuration for %s",
+		    serverName);
+      return SERVER_ERROR;
+    }
+
+    string shireError;
+    if (! ini.get_tag(serverName, "shireError", true, &shireError)) {
+      ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
+		    "shire_check_user: no shireError configuration for %s",
+		    serverName);
+      return SERVER_ERROR;
+    }
+    
+    SHIRE shire(rpc_handle, dc->config, shire_url);
+
+    // We're in charge, so check for cookie.
+    const char* session_id=NULL;
+    const char* cookies=ap_table_get(r->headers_in,"Cookie");
+
+    if (cookies)
+      ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
+                    "shire_check_user() cookies found: %s",cookies);		      
+
+    if (!cookies || !(session_id=strstr(cookies,shib_cookie.c_str())))
+    {
         // No cookie.  Redirect to WAYF.
         ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
 		      "shire_check_user() no cookie found -- redirecting to WAYF");
         char* wayf=ap_pstrcat(r->pool,wayfLocation.c_str(),
 			      "?shire=",shire_location,
 			      "&target=",url_encode(r,targeturl),NULL);
-	ap_table_setn(r->headers_out,"Location",wayf);
-	return REDIRECT;
-      }
+        ap_table_setn(r->headers_out,"Location",wayf);
+        return REDIRECT;
+    }
 
-      // Yep, we found a cookie -- pull it out (our session_id)
-      session_id+=strlen(shib_cookie.c_str()) + 1;	/* Skip over the '=' */
-      char* cookiebuf = ap_pstrdup(r->pool,session_id);
-      char* cookieend = strchr(cookiebuf,';');
-      if (cookieend)
-	*cookieend = '\0';	/* Ignore anyting after a ; */
-      session_id=cookiebuf;
+    // Yep, we found a cookie -- pull it out (our session_id)
+    session_id+=strlen(shib_cookie.c_str()) + 1;	/* Skip over the '=' */
+    char* cookiebuf = ap_pstrdup(r->pool,session_id);
+    char* cookieend = strchr(cookiebuf,';');
+    if (cookieend)
+        *cookieend = '\0';	/* Ignore anyting after a ; */
+    session_id=cookiebuf;
 
-      // Make sure this session is still valid
-      RPCError* status = NULL;
+    // Make sure this session is still valid
+    RPCError* status = NULL;
+    ShibMLP markupProcessor;
+    has_tag = ini.get_tag(serverName, "supportContact", true, &tag);
+    markupProcessor.insert("supportContact", has_tag ? tag : "");
+    has_tag = ini.get_tag(serverName, "logoLocation", true, &tag);
+    markupProcessor.insert("logoLocation", has_tag ? tag : "");
+    markupProcessor.insert("requestURL", targeturl);
 
-      try {
-	status = shire.sessionIsValid(session_id, r->connection->remote_ip,
-				      targeturl);
+    try {
+        status = shire.sessionIsValid(session_id, r->connection->remote_ip,targeturl);
+    }
+    catch (ShibTargetException &e) {
+        ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,"shire_check_user(): %s", e.what());
+        markupProcessor.insert ("errorType", "SHIRE Processing Error");
+        markupProcessor.insert ("errorText", e.what());
+        markupProcessor.insert ("errorDesc", "An error occurred while processing your request.");
+        return shire_error_page (r, shireError.c_str(), markupProcessor);
+    }
+    catch (...) {
+        ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,"shire_check_user(): caught unexpected error");
+        markupProcessor.insert ("errorType", "SHIRE Processing Error");
+        markupProcessor.insert ("errorText", "Unexpected Exception");
+        markupProcessor.insert ("errorDesc", "An error occurred while processing your request.");
+        return shire_error_page (r, shireError.c_str(), markupProcessor);
+    }
 
-      } catch (ShibTargetException &e) {
-	ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
-		      "shire_check_user(): %s", e.what());
-	
-	markupProcessor.insert ("errorType", "SHIRE Processing Error");
-	markupProcessor.insert ("errorText", e.what());
-	markupProcessor.insert ("errorDesc", "An error occurred while processing your request.");
-	return shire_error_page (r, shireError.c_str(), markupProcessor);
-      }
-
-      // Check the status
-      if (status->isError()) {
-
-	ap_log_rerror(APLOG_MARK,APLOG_INFO|APLOG_NOERRNO,r,
+    // Check the status
+    if (status->isError()) {
+        ap_log_rerror(APLOG_MARK,APLOG_INFO|APLOG_NOERRNO,r,
 		      "shire_check_user() session invalid: %s",
 		      status->getText());
 
-	if (status->isRetryable()) {
-
-	  // Oops, session is invalid.  Redirect to WAYF.
-	  char* wayf=ap_pstrcat(r->pool,wayfLocation.c_str(),
+        if (status->isRetryable()) {
+            // Oops, session is invalid.  Redirect to WAYF.
+            char* wayf=ap_pstrcat(r->pool,wayfLocation.c_str(),
 				"?shire=",shire_location,
 				"&target=",url_encode(r,targeturl),NULL);
-	  ap_table_setn(r->headers_out,"Location",wayf);
+            ap_table_setn(r->headers_out,"Location",wayf);
 
-	  delete status;
-	  return REDIRECT;
-
-	} else {
-
-	  // return the error page to the user
-	  markupProcessor.insert (*status);
-	  delete status;
-	  return shire_error_page (r, shireError.c_str(), markupProcessor);
-
-	}
-      } else {
-	delete status;
+            delete status;
+            return REDIRECT;
+        }
+        else {
+            // return the error page to the user
+            markupProcessor.insert (*status);
+            delete status;
+            return shire_error_page (r, shireError.c_str(), markupProcessor);
+        }
+    }
+    else {
+        delete status;
         ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
 		      "shire_check_user() success");
-	return OK;
-      }
+        return OK;
     }
 
-    ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
-		  "shire_check_user() server error");
+    ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,"shire_check_user() server error");
     return SERVER_ERROR;
 }
 
@@ -519,23 +462,23 @@ extern "C" int shire_post_handler (request_rec* r)
   ShibINI& ini = g_Config->getINI();
   ShibMLP markupProcessor;
 
-  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
-		"shire_post_handler() ENTER");
+  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,"shire_post_handler() ENTER");
 
   const char* targeturl=get_target(r,ap_construct_url(r->pool,r->unparsed_uri,r));
  
   const char * shire_location = get_shire_location(r,targeturl,true);
-  if (!shire_location) return SERVER_ERROR;
+  if (!shire_location)
+      return SERVER_ERROR;
   string shire_url = get_shire_location(r,targeturl,false);
 
-  const char* serverName = get_service_name (r);
+  const char* serverName = ap_get_server_name(r);
   string tag;
-  bool has_tag = ini.get_tag (serverName, "checkIPAddress", true, &tag);
+  bool has_tag = ini.get_tag(serverName, "checkIPAddress", true, &tag);
   SHIREConfig config;
-  config.checkIPAddress = (has_tag ? ShibINI::boolean (tag) : false);
+  config.checkIPAddress = (has_tag ? ShibINI::boolean(tag) : false);
 
   string shib_cookie;
-  if (! ini.get_tag (serverName, "cookieName", true, &shib_cookie)) {
+  if (! ini.get_tag(serverName, "cookieName", true, &shib_cookie)) {
     ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
 		  "shire_check_user: no cookieName configuration for %s",
 		  serverName);
@@ -543,7 +486,7 @@ extern "C" int shire_post_handler (request_rec* r)
   }
 
   string wayfLocation;
-  if (! ini.get_tag (serverName, "wayfURL", true, &wayfLocation)) {
+  if (! ini.get_tag(serverName, "wayfURL", true, &wayfLocation)) {
     ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
 		  "shire_check_user: no wayfURL configuration for %s",
 		  serverName);
@@ -551,18 +494,18 @@ extern "C" int shire_post_handler (request_rec* r)
   }
 
   string shireError;
-  if (! ini.get_tag (serverName, "shireError", true, &shireError)) {
+  if (! ini.get_tag(serverName, "shireError", true, &shireError)) {
     ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
 		  "shire_check_user: no shireError configuration for %s",
 		  serverName);
     return SERVER_ERROR;
   }
 
-  has_tag = ini.get_tag (serverName, "supportContact", true, &tag);
-  markupProcessor.insert ("supportContact", has_tag ? tag : "");
-  has_tag = ini.get_tag (serverName, "logoLocation", true, &tag);
-  markupProcessor.insert ("logoLocation", has_tag ? tag : "");
-  markupProcessor.insert ("requestURL", targeturl);
+  has_tag = ini.get_tag(serverName, "supportContact", true, &tag);
+  markupProcessor.insert("supportContact", has_tag ? tag : "");
+  has_tag = ini.get_tag(serverName, "logoLocation", true, &tag);
+  markupProcessor.insert("logoLocation", has_tag ? tag : "");
+  markupProcessor.insert("requestURL", targeturl);
   
   SHIRE shire(rpc_handle, config, shire_url);
 
@@ -573,7 +516,7 @@ extern "C" int shire_post_handler (request_rec* r)
       
   try {
     string sslonly;
-    if (! ini.get_tag (serverName, "shireSSLOnly", true, &sslonly))
+    if (!ini.get_tag(serverName, "shireSSLOnly", true, &sslonly))
       ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
 		    "shire_post_handler: no shireSSLOnly configuration");
     
@@ -713,8 +656,8 @@ module MODULE_VAR_EXPORT shire_module = {
     mod_shire_init,		/* initializer */
     create_shire_dir_config,	/* dir config creater */
     merge_shire_dir_config,	/* dir merger --- default is to override */
-    create_shire_server_config,	/* server config */
-    merge_shire_server_config,	/* merge server config */
+    NULL,	                /* server config */
+    NULL,	                /* merge server config */
     shire_cmds,			/* command table */
     shire_handlers,		/* handlers */
     NULL,			/* filename translation */
