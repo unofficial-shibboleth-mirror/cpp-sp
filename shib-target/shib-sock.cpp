@@ -231,12 +231,14 @@ bool TCPListener::close(ShibSocket& s) const
 bool TCPListener::accept(ShibSocket& listener, ShibSocket& s) const
 {
     struct sockaddr_in addr;
-    int size=sizeof(addr);
 
-    s=::accept(listener,(struct sockaddr*)&addr,(socklen_t*)&size);
 #ifdef WIN32
+    int size=sizeof(addr);
+    s=::accept(listener,(struct sockaddr*)&addr,&size);
     if(s==INVALID_SOCKET)
 #else
+    socklen_t size=sizeof(addr);
+    s=::accept(listener,(struct sockaddr*)&addr,&size);
     if (s < 0)
 #endif
         return log_error();
