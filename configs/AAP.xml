@@ -40,11 +40,11 @@
 		</AnySite>
 		-->
 		
-		<!-- Specific rules for an origin site, these are just InCommon development/sample sites. -->
-		<SiteRule Name="urn:mace:incommon:pilot:example.edu">
+		<!-- Specific rules for an origin site, these are just InQueue development/sample sites. -->
+		<SiteRule Name="urn:mace:inqueue:example.edu">
 			<Value Type="regexp">^urn:mace:.+$</Value>
 		</SiteRule>
-		<SiteRule Name="urn:mace:incommon:pilot:shibdev.edu">
+		<SiteRule Name="urn:mace:inqueue:shibdev.edu">
 			<Value Type="regexp">^urn:mace:.+$</Value>
 		</SiteRule>
 	</AttributeRule>

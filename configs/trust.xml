@@ -193,7 +193,7 @@ sWyoXwRuy7Lauk+P
 </ds:X509Certificate>
             </ds:X509Data>
         </ds:KeyInfo>
-        <Subject regexp="true">^urn:mace:incommon:pilot:.+$</Subject>
+        <Subject regexp="true">^urn:mace:inqueue:.+$</Subject>
     </KeyAuthority>
 
 </Trust>
