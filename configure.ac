@@ -108,6 +108,13 @@ AC_TRY_LINK(
 		LIBS="$saved_LIBS"
 	])
 
+AC_CHECK_HEADER([openssl/ssl.h],,
+                AC_MSG_ERROR([unable to find openssl header files]))
+AC_CHECK_LIB([crypto], [ERR_load_CRYPTO_strings],,
+             AC_MSG_ERROR([unable to link with openssl libraries]))
+AC_CHECK_LIB([ssl], [SSL_library_init],, 
+             AC_MSG_ERROR([unable to link with openssl libraries]))
+
 AC_CHECK_HEADER([xsec/utils/XSECPlatformUtils.hpp],,
                 AC_MSG_ERROR([unable to find xsec header files]))
 saved_LIBS="$LIBS"
@@ -119,13 +126,6 @@ AC_TRY_LINK(
         [AC_MSG_ERROR([unable to link with XML-Sec])
                 LIBS="$saved_LIBS"
         ])
-
-AC_CHECK_HEADER([openssl/ssl.h],,
-                AC_MSG_ERROR([unable to find openssl header files]))
-AC_CHECK_LIB([crypto], [ERR_load_CRYPTO_strings],,
-             AC_MSG_ERROR([unable to link with openssl libraries]))
-AC_CHECK_LIB([ssl], [SSL_library_init],, 
-             AC_MSG_ERROR([unable to link with openssl libraries]))
 
 AC_CHECK_HEADER([log4cpp/Category.hh],,
                 AC_MSG_ERROR([unable to find log4cpp header files]))
