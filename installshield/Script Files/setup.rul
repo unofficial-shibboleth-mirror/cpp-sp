@@ -36,14 +36,14 @@
 ////////////////////// numeric defines ///////////////////////////
 
     #define WM_SETTINGCHANGE 0x001A
-	#define HWND_BROADCAST 0xffff
+    #define HWND_BROADCAST 0xffff
 
 //////////////////// installation declarations ///////////////////
 
 // ----- DLL function prototypes -----
 
     // your DLL function prototypes
-	prototype Shell32.ShellExecuteA(HWND, LPSTR, LPSTR, LPSTR, LPSTR, INT); //The prototype for ShellExecuteA
+    prototype Shell32.ShellExecuteA(HWND, LPSTR, LPSTR, LPSTR, LPSTR, INT); //The prototype for ShellExecuteA
 
 // ---- script function prototypes -----
 
@@ -70,10 +70,10 @@
 
     // your script function prototypes
     prototype AddShibLibPathToSystemPath();
-	prototype AddShibConfigEnvironmentVar();
+    prototype AddShibConfigEnvironmentVar();
     prototype ReplaceTextInFile(STRING, STRING, STRING);
     prototype ReplaceString(BYREF STRING, STRING, STRING);
-	prototype LaunchURL(STRING);
+    prototype LaunchURL(STRING);
 
     // ----- global variables ------
 
@@ -87,9 +87,9 @@
     STRING      svSetupType;
 
     // your global variables
-	STRING		svSharPort;
-	NUMBER 		nvSharPort;
-	BOOL		bInstallSharAsService;
+    STRING      svSharPort;
+    NUMBER      nvSharPort;
+    BOOL        bInstallSharAsService;
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -104,7 +104,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 program
     Disable( BACKGROUND );
-	
+
     CheckRequirements();
 
     SetupInstall();
@@ -189,21 +189,21 @@ begin
     nResult = AskText("Please enter the TCP port number on which the shar should listen.  (NOTE: This is NOT the web server port and MUST be a valid windows port number that is NOT in use by any other process!)","1600",svSharPort);
     StrToNum(nvSharPort, svSharPort);
     if (nvSharPort > 65534 | nvSharPort < 0) then
-    	MessageBox("The port number must be between 0 and 65534!", WARNING);
-    	goto Dlg_SdAskSharPort;
+        MessageBox("The port number must be between 0 and 65534!", WARNING);
+        goto Dlg_SdAskSharPort;
     endif;
-	if (nResult = BACK) goto Dlg_SdSelectFolder;
+    if (nResult = BACK) goto Dlg_SdSelectFolder;
 
-	Dlg_SdAskInstallSharAsService:
-	SetDialogTitle(DLG_ASK_YESNO, "Shar Service Information");
-	nResult = AskYesNo("Would you like to install the shar as a service?", TRUE);
-	if (nResult = 1) then
-	   	bInstallSharAsService = TRUE;
-	elseif (nResult = 0) then
-	 	bInstallSharAsService = FALSE;
-	endif; 		   	   	
-	if (nResult = BACK) goto Dlg_SdAskSharPort;
-	
+    Dlg_SdAskInstallSharAsService:
+    SetDialogTitle(DLG_ASK_YESNO, "Shar Service Information");
+    nResult = AskYesNo("Would you like to install the shar as a service?", TRUE);
+    if (nResult = 1) then
+        bInstallSharAsService = TRUE;
+    elseif (nResult = 0) then
+        bInstallSharAsService = FALSE;
+    endif;
+    if (nResult = BACK) goto Dlg_SdAskSharPort;
+
     return 0;
 
 end;
@@ -324,13 +324,13 @@ end;
 ///////////////////////////////////////////////////////////////////////////////
 function ProcessAfterDataMove()
     STRING szReferenceFile, szMsg;
-  	STRING svDirectory;
-  	STRING svFileName;
-  	STRING svOldTargetDir;
- 	STRING svSharExe;
-  	STRING svSharInstallParms;
-  	NUMBER nResult;
-  	
+    STRING svDirectory;
+    STRING svFileName;
+    STRING svOldTargetDir;
+    STRING svSharExe;
+    STRING svSharInstallParms;
+    NUMBER nResult;
+
 begin
 
     // TO DO : update self-registered files and other processes that
@@ -347,93 +347,93 @@ begin
     // DeinstallSetReference specifies a file to be checked before
     // uninstallation. If the file is in use, uninstallation will not proceed.
 
-	// Add the Shibboleth Library path to the Windows System path
-	SdShowMsg("Adding the shibboleth library path to the windows system path ...", TRUE);
-	AddShibLibPathToSystemPath();
-	Delay(2);
-	SdShowMsg("",FALSE);
-	
-	// Add environment variables to the Windows System environment
-	SdShowMsg("Adding environment variables to the windows system environment ...", TRUE);
-	AddShibConfigEnvironmentVar();
-	Delay(2);
-	SdShowMsg("",FALSE);	
-	
-	// Modify the Configuration Files to point to the newly installed files
-	SdShowMsg("Modifying configuration files ...", TRUE);
-	ParsePath(svDirectory, TARGETDIR + "\\", DIRECTORY);
-	StrRemoveLastSlash(svDirectory);
-	ReplaceString(svDirectory, "\\", "/");
-	SRCDIR = TARGETDIR + "\\etc\\shibboleth\\";
+    // Add the Shibboleth Library path to the Windows System path
+    SdShowMsg("Adding the shibboleth library path to the windows system path ...", TRUE);
+    AddShibLibPathToSystemPath();
+    Delay(2);
+    SdShowMsg("",FALSE);
 
-	// Rename the Unix-preinstall files
-	svOldTargetDir = TARGETDIR;
-	TARGETDIR = SRCDIR;
-	RenameFile("shibboleth.xml.in", "shibboleth.xml");
-	RenameFile("shar.logger.in", "shar.logger");
-	RenameFile("shire.logger.in", "shire.logger");
-	RenameFile("apache.config.in", "apache.config");
-	RenameFile("apache2.config.in", "apache2.config");
-	TARGETDIR = svOldTargetDir;
-	
-	// Update config files for Windows
-	svFileName = "shibboleth.xml";
-	ReplaceTextInFile(svFileName,
-		"<UnixListener address=\"/tmp/shar-socket\"/>",
-		"<!-- <UnixListener address=\"/tmp/shar-socket\"/> -->"
-		);
-	ReplaceTextInFile(svFileName,
-		"<!-- <TCPListener address=\"127.0.0.1\" port=\"12345\" acl=\"127.0.0.1\"/> -->",
-		"<TCPListener address=\"127.0.0.1\" port=\"" + svSharPort + "\" acl=\"127.0.0.1\"/>"
-		);
-	ReplaceTextInFile(svFileName, "@-PKGSYSCONFDIR-@", svDirectory + "/etc/shibboleth");
-	ReplaceTextInFile(svFileName, "@-LIBEXECDIR-@", svDirectory + "/libexec");
-	ReplaceTextInFile(svFileName, "@-LOGDIR-@", svDirectory + "/var/log/shibboleth");
-	ReplaceTextInFile(svFileName, "@-PREFIX-@", svDirectory);
+    // Add environment variables to the Windows System environment
+    SdShowMsg("Adding environment variables to the windows system environment ...", TRUE);
+    AddShibConfigEnvironmentVar();
+    Delay(2);
+    SdShowMsg("",FALSE);
 
-	svFileName = "shar.logger";
-	ReplaceTextInFile(svFileName, "@-LOGDIR-@", svDirectory + "/var/log/shibboleth");
-	svFileName = "shire.logger";
-	ReplaceTextInFile(svFileName, "@-LOGDIR-@", svDirectory + "/var/log/shibboleth");
+    // Modify the Configuration Files to point to the newly installed files
+    SdShowMsg("Modifying configuration files ...", TRUE);
+    ParsePath(svDirectory, TARGETDIR + "\\", PATH);
+    StrRemoveLastSlash(svDirectory);
+    ReplaceString(svDirectory, "\\", "/");
+    SRCDIR = TARGETDIR + "\\etc\\shibboleth\\";
 
-	svFileName = "apache.config";
-	ReplaceTextInFile(svFileName, "@-PKGSYSCONFDIR-@", svDirectory + "/etc/shibboleth");
-	ReplaceTextInFile(svFileName, "@-LIBEXECDIR-@", svDirectory + "/libexec");
-	ReplaceTextInFile(svFileName, "@-LOGDIR-@", svDirectory + "/var/log/shibboleth");
-	ReplaceTextInFile(svFileName, "@-PREFIX-@", svDirectory);
-	svFileName = "apache2.config";
-	ReplaceTextInFile(svFileName, "@-PKGSYSCONFDIR-@", svDirectory + "/etc/shibboleth");
-	ReplaceTextInFile(svFileName, "@-LIBEXECDIR-@", svDirectory + "/libexec");
-	ReplaceTextInFile(svFileName, "@-LOGDIR-@", svDirectory + "/var/log/shibboleth");
-	ReplaceTextInFile(svFileName, "@-PREFIX-@", svDirectory);
-	Delay(2);
-	SdShowMsg("",FALSE);
+    // Rename the Unix-preinstall files
+    svOldTargetDir = TARGETDIR;
+    TARGETDIR = SRCDIR;
+    RenameFile("shibboleth.xml.in", "shibboleth.xml");
+    RenameFile("shar.logger.in", "shar.logger");
+    RenameFile("shire.logger.in", "shire.logger");
+    RenameFile("apache.config.in", "apache.config");
+    RenameFile("apache2.config.in", "apache2.config");
+    TARGETDIR = svOldTargetDir;
 
-	// Install the shar as a service if so directed
-	if (bInstallSharAsService = TRUE) then
-		SdShowMsg("Installing the shar service...", TRUE);	
-		// Remove any existing Default shar service install
-	 	svSharExe = TARGETDIR + "\\bin\\shar.exe";
-	 	svSharInstallParms = "-remove Default";
-		nResult = LaunchAppAndWait(svSharExe, svSharInstallParms, WAIT);
-		// Now install the new Default			
-	 	svSharExe = TARGETDIR + "\\bin\\shar.exe";
-	 	svSharInstallParms = "-install Default -config " + (TARGETDIR + "\\etc\\shibboleth\\shibboleth.xml -schemadir ") +
-	 		(TARGETDIR + "\\etc\shibboleth");
-		nResult = LaunchAppAndWait(svSharExe, svSharInstallParms, WAIT);	
-		if (nResult < 0) then
-		   	MessageBox("SHAR service installation FAILED!", WARNING);
-		endif;		   	
-		Delay(2);
-		SdShowMsg("",FALSE);		
-	endif;
-	
-	// Delete the DLL's from the bin directory
-	SdShowMsg("Removing Temporary Files...", TRUE);	
-	nResult = DeleteFile("BIN\\*.dll");
-	Delay(2);
-	SdShowMsg("",FALSE);				
-	
+    // Update config files for Windows
+    svFileName = "shibboleth.xml";
+    ReplaceTextInFile(svFileName, "@-PKGSYSCONFDIR-@", svDirectory + "/etc/shibboleth");
+    ReplaceTextInFile(svFileName, "@-LIBEXECDIR-@", svDirectory + "/libexec");
+    ReplaceTextInFile(svFileName, "@-LOGDIR-@", svDirectory + "/var/log/shibboleth");
+    ReplaceTextInFile(svFileName, "@-PREFIX-@", svDirectory);
+    ReplaceTextInFile(svFileName,
+        "   <UnixListener address=\"/tmp/shar-socket\"/>",
+        "<!-- <UnixListener address=\"/tmp/shar-socket\"/> -->"
+        );
+    ReplaceTextInFile(svFileName,
+        "<!-- <TCPListener address=\"127.0.0.1\" port=\"12345\" acl=\"127.0.0.1\"/> -->",
+        "<TCPListener address=\"127.0.0.1\" port=\"" + svSharPort + "\" acl=\"127.0.0.1\"/>"
+        );
+
+    svFileName = "shar.logger";
+    ReplaceTextInFile(svFileName, "@-LOGDIR-@", svDirectory + "/var/log/shibboleth");
+    svFileName = "shire.logger";
+    ReplaceTextInFile(svFileName, "@-LOGDIR-@", svDirectory + "/var/log/shibboleth");
+
+    svFileName = "apache.config";
+    ReplaceTextInFile(svFileName, "@-PKGSYSCONFDIR-@", svDirectory + "/etc/shibboleth");
+    ReplaceTextInFile(svFileName, "@-LIBEXECDIR-@", svDirectory + "/libexec");
+    ReplaceTextInFile(svFileName, "@-LOGDIR-@", svDirectory + "/var/log/shibboleth");
+    ReplaceTextInFile(svFileName, "@-PREFIX-@", svDirectory);
+    svFileName = "apache2.config";
+    ReplaceTextInFile(svFileName, "@-PKGSYSCONFDIR-@", svDirectory + "/etc/shibboleth");
+    ReplaceTextInFile(svFileName, "@-LIBEXECDIR-@", svDirectory + "/libexec");
+    ReplaceTextInFile(svFileName, "@-LOGDIR-@", svDirectory + "/var/log/shibboleth");
+    ReplaceTextInFile(svFileName, "@-PREFIX-@", svDirectory);
+    Delay(2);
+    SdShowMsg("",FALSE);
+
+    // Install the shar as a service if so directed
+    if (bInstallSharAsService = TRUE) then
+        SdShowMsg("Installing the shar service...", TRUE);
+        // Remove any existing Default shar service install
+        svSharExe = TARGETDIR + "\\bin\\shar.exe";
+        svSharInstallParms = "-remove Default";
+        nResult = LaunchAppAndWait(svSharExe, svSharInstallParms, WAIT);
+        // Now install the new Default
+        svSharExe = TARGETDIR + "\\bin\\shar.exe";
+        svSharInstallParms = "-install Default -config " + (TARGETDIR + "\\etc\\shibboleth\\shibboleth.xml -schemadir ") +
+            (TARGETDIR + "\\etc\shibboleth");
+        nResult = LaunchAppAndWait(svSharExe, svSharInstallParms, WAIT);
+        if (nResult < 0) then
+            MessageBox("SHAR service installation FAILED!", WARNING);
+        endif;
+        Delay(2);
+        SdShowMsg("",FALSE);
+    endif;
+
+    // Delete the DLL's from the bin directory
+    SdShowMsg("Removing Temporary Files...", TRUE);
+    nResult = DeleteFile("BIN\\*.dll");
+    Delay(2);
+    SdShowMsg("",FALSE);
+
     szReferenceFile = svDir ^ @PRODUCT_KEY; // TO DO : If your file is in a
                                             // subfolder of svDir add that here
     DeinstallSetReference( szReferenceFile );
@@ -472,10 +472,10 @@ begin
 ///////////////////////////////////////////////////////////////////////////////
 function SetupFolders()
     NUMBER nResult;
-	STRING szName;
-	STRING svPathToLicense;
-	STRING svPathToDeployment;
-	
+    STRING szName;
+    STRING svPathToLicense;
+    STRING svPathToDeployment;
+
 begin
 
 
@@ -485,31 +485,31 @@ begin
     //
     // Note : for 16-bit setups you should add an uninstaller icon pointing to
     //        your log file.  Under 32-bit this is automatically done by Windows.
-	szName = SHELL_OBJECT_FOLDER;
-	svPathToLicense = TARGETDIR + "\\doc\\shibboleth\\license.txt";
-	svPathToDeployment = TARGETDIR + "\\doc\\shibboleth\\DEPLOY-GUIDE-TARGET.html";
-	LongPathToQuote( svPathToLicense, TRUE );
-	LongPathToQuote( svPathToDeployment, TRUE);
+    szName = SHELL_OBJECT_FOLDER;
+    svPathToLicense = TARGETDIR + "\\doc\\shibboleth\\license.txt";
+    svPathToDeployment = TARGETDIR + "\\doc\\shibboleth\\DEPLOY-GUIDE-TARGET.html";
+    LongPathToQuote( svPathToLicense, TRUE );
+    LongPathToQuote( svPathToDeployment, TRUE);
 
-	ProgDefGroupType(COMMON);
-	CreateProgramFolder( szName );		
-	AddFolderIcon( 	FOLDER_PROGRAMS ^ szName ,
-					"Shibboleth License Agreement",
-					svPathToLicense,
-					"",
-					"",
-					0,
-					"",
-					NULL);
-					
-	AddFolderIcon( 	FOLDER_PROGRAMS ^ szName ,
-					"Shibboleth Target Deployment Guide",
-					svPathToDeployment,
-					"",
-					"",
-					0,
-					"",
-					NULL);					
+    ProgDefGroupType(COMMON);
+    CreateProgramFolder( szName );
+    AddFolderIcon(  FOLDER_PROGRAMS ^ szName ,
+                    "Shibboleth License Agreement",
+                    svPathToLicense,
+                    "",
+                    "",
+                    0,
+                    "",
+                    NULL);
+
+    AddFolderIcon(  FOLDER_PROGRAMS ^ szName ,
+                    "Shibboleth Target Deployment Guide",
+                    svPathToDeployment,
+                    "",
+                    "",
+                    0,
+                    "",
+                    NULL);
     nResult = CreateShellObjects( "" );
 
     return nResult;
@@ -525,7 +525,7 @@ begin
 //
 ///////////////////////////////////////////////////////////////////////////////
 function CleanUpInstall()
-	NUMBER nResult;
+    NUMBER nResult;
 
 begin
 
@@ -648,7 +648,7 @@ begin
                 bIsShellExplorer = TRUE;
                 bIsWindowsNT4 = TRUE;
             else
-            	bIsWindowsNT351 = TRUE;
+                bIsWindowsNT351 = TRUE;
             endif;
         endif;
 
@@ -756,11 +756,11 @@ begin
 
     szTitle = "";
     szMsg   = "";
-    svDir 	= "C:\\opt\\shibboleth"; // Default to the opt\shibboleth directory on the C: Drive
+    svDir   = "C:\\opt\\shibboleth"; // Default to the opt\shibboleth directory on the C: Drive
     nResult = SdAskDestPath( szTitle, szMsg, svDir, 0 );
 
-	// Make sure the TARGETDIR does not have a trailing slash
-	StrRemoveLastSlash(svDir);
+    // Make sure the TARGETDIR does not have a trailing slash
+    StrRemoveLastSlash(svDir);
     TARGETDIR = svDir;
 
     return nResult;
@@ -883,12 +883,12 @@ begin
         szOption1 = "Display the Shibboleth Target Deployment Guide?";
         szOption2 = "Restart Computer?";
         nResult = SdFinish( szTitle, szMsg1, szMsg2, szOption1, szOption2, bOpt1, bOpt2 );
-		if (bOpt1 = TRUE) then
-           	LaunchURL(TARGETDIR+"\\doc\\shibboleth\\DEPLOY-GUIDE-TARGET.html");
+        if (bOpt1 = TRUE) then
+            LaunchURL(TARGETDIR+"\\doc\\shibboleth\\DEPLOY-GUIDE-TARGET.html");
         endif;
         if (bOpt2 = TRUE) then
-        	RebootDialog("", "You have elected to restart your computer!  Are you sure you wish to restart now?", SYS_BOOTMACHINE);
-		endif;
+            RebootDialog("", "You have elected to restart your computer!  Are you sure you wish to restart now?", SYS_BOOTMACHINE);
+        endif;
         return 0;
     endif;
 
@@ -910,48 +910,48 @@ end;
 //
 ////////////////////////////////////////////////////////////////////////////////
 function AddShibLibPathToSystemPath()
-	NUMBER nResult;
-	NUMBER nvType;
-	NUMBER nvSize;
-	STRING szKey;
-	STRING svSystemPath;
-	STRING svShibLibPath;
-	STRING szEnv;
-	POINTER pEnv;
-	
+    NUMBER nResult;
+    NUMBER nvType;
+    NUMBER nvSize;
+    STRING szKey;
+    STRING svSystemPath;
+    STRING svShibLibPath;
+    STRING szEnv;
+    POINTER pEnv;
+
 begin
 
-	Disable(LOGGING) ;
+    Disable(LOGGING) ;
 
-   	svShibLibPath = TARGETDIR + "\\lib"; // The string you want to add to the System Path
-	szKey="SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment";
+    svShibLibPath = TARGETDIR + "\\lib"; // The string you want to add to the System Path
+    szKey="SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment";
 
-	RegDBSetDefaultRoot(HKEY_LOCAL_MACHINE);
-	
-	// Get the current System Path string
-	nResult=RegDBGetKeyValueEx(szKey, "Path", nvType, svSystemPath, nvSize);
+    RegDBSetDefaultRoot(HKEY_LOCAL_MACHINE);
 
-	// See if the Shibboleth Path is already there
-	if (svSystemPath % svShibLibPath) then
-	else
-	    svSystemPath = svSystemPath + ";" + svShibLibPath;
-	
-		nResult=RegDBSetKeyValueEx(szKey,"Path",nvType,svSystemPath,-1);
+    // Get the current System Path string
+    nResult=RegDBGetKeyValueEx(szKey, "Path", nvType, svSystemPath, nvSize);
 
-		if (nResult < 0) then
-			MessageBox("Setup was unable to add the Shibboleth Library path to the Windows System Path!",WARNING);		
-		else
-			// Flush the NT registry to all applications.
-		
-			szEnv = "Environment";
-			pEnv = &szEnv ;
-			SendMessage (HWND_BROADCAST, WM_SETTINGCHANGE, 0, pEnv );
-		endif;
-	endif;
+    // See if the Shibboleth Path is already there
+    if (svSystemPath % svShibLibPath) then
+    else
+        svSystemPath = svSystemPath + ";" + svShibLibPath;
 
-	Enable(LOGGING) ;
-	
-	//RebootDialog("","",SYS_BOOTMACHINE);
+        nResult=RegDBSetKeyValueEx(szKey,"Path",nvType,svSystemPath,-1);
+
+        if (nResult < 0) then
+            MessageBox("Setup was unable to add the Shibboleth Library path to the Windows System Path!",WARNING);
+        else
+            // Flush the NT registry to all applications.
+
+            szEnv = "Environment";
+            pEnv = &szEnv ;
+            SendMessage (HWND_BROADCAST, WM_SETTINGCHANGE, 0, pEnv );
+        endif;
+    endif;
+
+    Enable(LOGGING) ;
+
+    //RebootDialog("","",SYS_BOOTMACHINE);
 end;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -963,42 +963,42 @@ end;
 //
 ////////////////////////////////////////////////////////////////////////////////
 function AddShibConfigEnvironmentVar()
-	NUMBER nResult;
-	NUMBER nResult2;
-	NUMBER nvType;
-	NUMBER nvSize;
-	STRING szKey;
-	STRING svShibConfigPath;
-	STRING svShibSchemaPath;
-	STRING szEnv;
-	POINTER pEnv;
-	
+    NUMBER nResult;
+    NUMBER nResult2;
+    NUMBER nvType;
+    NUMBER nvSize;
+    STRING szKey;
+    STRING svShibConfigPath;
+    STRING svShibSchemaPath;
+    STRING szEnv;
+    POINTER pEnv;
+
 begin
 
-	Disable(LOGGING) ;
+    Disable(LOGGING) ;
 
-	szKey="SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment";
-   	svShibConfigPath = TARGETDIR + "\\etc\\shibboleth\\shibboleth.xml";
-   	svShibSchemaPath = TARGETDIR + "\\etc\\shibboleth";
+    szKey="SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment";
+    svShibConfigPath = TARGETDIR + "\\etc\\shibboleth\\shibboleth.xml";
+    svShibSchemaPath = TARGETDIR + "\\etc\\shibboleth";
 
-	RegDBSetDefaultRoot(HKEY_LOCAL_MACHINE);
+    RegDBSetDefaultRoot(HKEY_LOCAL_MACHINE);
 
-	// Set the Shibconfig environment variable
-	nResult=RegDBSetKeyValueEx(szKey,"SHIBCONFIG",REGDB_STRING_EXPAND,svShibConfigPath,-1);
-	nResult2=RegDBSetKeyValueEx(szKey,"SHIBSCHEMAS",REGDB_STRING_EXPAND,svShibSchemaPath,-1);
+    // Set the Shibconfig environment variable
+    nResult=RegDBSetKeyValueEx(szKey,"SHIBCONFIG",REGDB_STRING_EXPAND,svShibConfigPath,-1);
+    nResult2=RegDBSetKeyValueEx(szKey,"SHIBSCHEMAS",REGDB_STRING_EXPAND,svShibSchemaPath,-1);
 
-	if (nResult < 0) then
-		MessageBox("Setup was unable to add the SHIBCONFIG/SHIBSCHEMAS environment variables!",WARNING);
-	else
-		// Flush the NT registry to all applications.	
-		szEnv = "Environment";
-		pEnv = &szEnv ;
-		SendMessage (HWND_BROADCAST, WM_SETTINGCHANGE, 0, pEnv );
-	endif;
+    if (nResult < 0) then
+        MessageBox("Setup was unable to add the SHIBCONFIG/SHIBSCHEMAS environment variables!",WARNING);
+    else
+        // Flush the NT registry to all applications.
+        szEnv = "Environment";
+        pEnv = &szEnv ;
+        SendMessage (HWND_BROADCAST, WM_SETTINGCHANGE, 0, pEnv );
+    endif;
 
-	Enable(LOGGING) ;
-	
-	//RebootDialog("","",SYS_BOOTMACHINE);
+    Enable(LOGGING) ;
+
+    //RebootDialog("","",SYS_BOOTMACHINE);
 end;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1011,19 +1011,17 @@ end;
 //
 ////////////////////////////////////////////////////////////////////////////////
 function ReplaceTextInFile(szFileName, szSearchStr, szReplacementStr)
-	NUMBER nResult, nResult2;
-	NUMBER nvLineNumber;
-	STRING svReturnLine;
-	STRING svResult, svResult2;
-		
+    NUMBER nResult, nResult2;
+    NUMBER nvLineNumber;
+    STRING svReturnLine[512];
 begin
-	nResult = FileGrep (szFileName, szSearchStr, svReturnLine, nvLineNumber, RESTART);
-	while (nResult = 0)
-		ReplaceString(svReturnLine, szSearchStr, szReplacementStr);
-		nResult2 = FileInsertLine(szFileName, svReturnLine, nvLineNumber, REPLACE);
-		NumToStr(svResult2, nResult2);
-		nResult = FileGrep (szFileName, szSearchStr, svReturnLine, nvLineNumber, CONTINUE);
-	endwhile;
+    nResult = FileGrep (szFileName, szSearchStr, svReturnLine, nvLineNumber, RESTART);
+    while (nResult = 0)
+        ReplaceString(svReturnLine, szSearchStr, szReplacementStr);
+        nResult2 = FileInsertLine(szFileName, svReturnLine, nvLineNumber, REPLACE);
+        //NumToStr(svResult2, nResult2);
+        nResult = FileGrep (szFileName, szSearchStr, svReturnLine, nvLineNumber, CONTINUE);
+    endwhile;
 
 end;
 
@@ -1036,24 +1034,24 @@ end;
 //
 ////////////////////////////////////////////////////////////////////////////////
 function ReplaceString(svOriginalString, szStringToFind, szReplacementString)
-	STRING svSubString1, svSubString2;
-	NUMBER nResult;
-	NUMBER nLengthOfStringToFind;
-	NUMBER nLengthOfOriginalString;	
-	NUMBER nLengthOfReplacementString;
-	
+    STRING svSubString1, svSubString2;
+    NUMBER nResult;
+    NUMBER nLengthOfStringToFind;
+    NUMBER nLengthOfOriginalString;
+    NUMBER nLengthOfReplacementString;
+
 begin
- 	nLengthOfStringToFind = StrLength(szStringToFind);				// Length of the String you are looking for
- 	nLengthOfReplacementString = StrLength(szReplacementString);	// Length of the String you want to replace it with
- 	nLengthOfOriginalString = StrLength(svOriginalString);			// Length of the Original String
-    nResult = StrFind(svOriginalString, szStringToFind);			// Position of the String to Find in the Original String
-	while (nResult >= 0)											// While the String is Found
-	    StrSub(svSubString1, svOriginalString, 0, nResult);			// Left portion of the Original String to up to the string you found
-	    StrSub(svSubString2, svOriginalString, nResult+nLengthOfStringToFind, nLengthOfOriginalString-(nResult+nLengthOfStringToFind)); // Right portion of the Original string after the string you found
-	    svOriginalString = svSubString1 + szReplacementString + svSubString2; // The new string complete with the replacement
- 		nLengthOfOriginalString = StrLength(svOriginalString);		// Reset the length of the original string to the length of the new string
-	    nResult = StrFind(svOriginalString, szStringToFind);		// Look for the string again (incase there are multiple instances of it in the string)
-	endwhile;														// End of the loop
+    nLengthOfStringToFind = StrLength(szStringToFind);              // Length of the String you are looking for
+    nLengthOfReplacementString = StrLength(szReplacementString);    // Length of the String you want to replace it with
+    nLengthOfOriginalString = StrLength(svOriginalString);          // Length of the Original String
+    nResult = StrFind(svOriginalString, szStringToFind);            // Position of the String to Find in the Original String
+    while (nResult >= 0)                                            // While the String is Found
+        StrSub(svSubString1, svOriginalString, 0, nResult);         // Left portion of the Original String to up to the string you found
+        StrSub(svSubString2, svOriginalString, nResult+nLengthOfStringToFind, nLengthOfOriginalString-(nResult+nLengthOfStringToFind)); // Right portion of the Original string after the string you found
+        svOriginalString = svSubString1 + szReplacementString + svSubString2; // The new string complete with the replacement
+        nLengthOfOriginalString = StrLength(svOriginalString);      // Reset the length of the original string to the length of the new string
+        nResult = StrFind(svOriginalString, szStringToFind);        // Look for the string again (incase there are multiple instances of it in the string)
+    endwhile;                                                       // End of the loop
 end;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1065,46 +1063,47 @@ end;
 //
 ////////////////////////////////////////////////////////////////////////////////
 function LaunchURL(szURL)
-	NUMBER nHwndFlag, nResult;
-	STRING szOperation, szFile, szPath, szDLL, szParameter;
-	POINTER pszOperation, pszFile, pszPath, pszParameter;
-	HWND hwndInstall;
+    NUMBER nHwndFlag, nResult;
+    STRING szOperation, szFile, szPath, szDLL, szParameter;
+    POINTER pszOperation, pszFile, pszPath, pszParameter;
+    HWND hwndInstall;
 
-begin	
-	nHwndFlag = HWND_INSTALL;
-   	
+begin
+    nHwndFlag = HWND_INSTALL;
+
     // GetWindowHandle retrieves the handle of the installation main window
-   	hwndInstall = GetWindowHandle(nHwndFlag);
-   	
-   	// Load shell32.DLL into memory.
-   	szDLL = DLL_FILE;
-   	nResult = UseDLL (szDLL);
+    hwndInstall = GetWindowHandle(nHwndFlag);
 
-   	if (nResult != 0) then
-		MessageBox ("UseDLL failed.\n\nCouldn't load Shell32.DLL file.", INFORMATION);
-		abort;
-	endif;
-	
-	szOperation = "OPEN";
-	pszOperation = &szOperation;
-	szFile = szURL;
- 	pszFile = &szFile;
-	szPath = "";
-	pszPath = &szPath;
-	szParameter = "";
-	pszParameter = &szParameter;
-	ShellExecuteA( hwndInstall, pszOperation, pszFile, pszParameter, pszPath, 1); //SW_SHOWMAXIMIZED
-	
-	// The following removes Shell32.dll from memory.
-	if (UnUseDLL (szDLL) < 0) then
-		//MessageBox("UnUseDLL failed.\n\nDLL still in memory.", SEVERE);
-	endif;
+    // Load shell32.DLL into memory.
+    szDLL = DLL_FILE;
+    nResult = UseDLL (szDLL);
+
+    if (nResult != 0) then
+        MessageBox ("UseDLL failed.\n\nCouldn't load Shell32.DLL file.", INFORMATION);
+        abort;
+    endif;
+
+    szOperation = "OPEN";
+    pszOperation = &szOperation;
+    szFile = szURL;
+    pszFile = &szFile;
+    szPath = "";
+    pszPath = &szPath;
+    szParameter = "";
+    pszParameter = &szParameter;
+    ShellExecuteA( hwndInstall, pszOperation, pszFile, pszParameter, pszPath, 1); //SW_SHOWMAXIMIZED
+
+    // The following removes Shell32.dll from memory.
+    if (UnUseDLL (szDLL) < 0) then
+        //MessageBox("UnUseDLL failed.\n\nDLL still in memory.", SEVERE);
+    endif;
 
 end;
 
 // --- include script file section ---
 
 #include "sddialog.rul"
+
 
 
 
