@@ -222,14 +222,22 @@ void FileResolver::dump(FILE* f) const
         }
         else if (x)
         {
+#if (OPENSSL_VERSION_NUMBER > 0x009070000L)
             X509_print_ex_fp(f,x,XN_FLAG_SEP_MULTILINE,0);
+#else
+            X509_print_fp(f,x);
+#endif
             X509_free(x);
             if (m_format==PEM)
             {
                 while (x=PEM_read_bio_X509(in,NULL,passwd_callback,const_cast<char*>(m_password.c_str())))
                 {
                     fprintf(f,"\n-------\n");
+#if (OPENSSL_VERSION_NUMBER > 0x009070000L)
                     X509_print_ex_fp(f,x,XN_FLAG_SEP_MULTILINE,0);
+#else
+                    X509_print_fp(f,x);
+#endif
                     X509_free(x);
                 }
             }
@@ -319,7 +327,11 @@ void KeyInfoResolver::dump(FILE* f) const
     {
         if (i!=m_certs.rbegin())
             fprintf(f,"\n-------\n");
+#if (OPENSSL_VERSION_NUMBER > 0x009070000L)
         X509_print_ex_fp(f,*i,XN_FLAG_SEP_MULTILINE,0);
+#else
+        X509_print_fp(f,*i);
+#endif
     }
 }
 
