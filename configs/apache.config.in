@@ -26,6 +26,14 @@ SetHandler shib-shire-post
 </Location>
 
 #
+# Used for example logo and style sheet in error templates.
+#
+<IfModule mod_alias.c>
+  Alias /shibtarget/main.css @-PREFIX-@/doc/shibboleth/main.css
+  Alias /shibtarget/logo.jpg @-PREFIX-@/doc/shibboleth/logo.jpg
+</IfModule>
+
+#
 # Configure the module for content
 #
 # You can now do most of this in shibboleth.xml using the RequestMap
