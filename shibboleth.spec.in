@@ -40,6 +40,24 @@ education community.
 This package contains the headers and other necessary files to build
 applications that use the shibboleth library.
 
+%package selinux-targeted-policy
+Summary: SELinux targeted policy configuration for Shibboleth SP
+Group: System Environment/Base
+Requires: selinux-targeted-policy-source
+
+%description selinux-targeted-policy
+Shibboleth, a project of Internet2/MACE, is developing architectures,
+policy structures, practical technologies, and an open source
+implementation to support inter-institutional sharing of web resources
+subject to access controls. In addition, Shibboleth will develop a
+policy framework that will allow inter-operation within the higher
+education community.
+
+This package contains the SELinux Policy (source) Configuration to
+enable the Shibboleth SP to integrate into Apache HTTPD in Red Hat /
+Fedora's Targeted Policy SELinux implementation.  It requires
+rebuilding your policy, so you must have the policy-source installed.
+
 %prep
 %setup -q
 
@@ -69,12 +87,19 @@ make check
 %postun
 /sbin/ldconfig
 
+%triggerin selinux-targeted-policy -- %{name}
+restorecon %{_sbindir}/shar
+
+%triggerin selinux-targeted-policy -- selinux-targeted-policy-source
+cd %{_sysconfdir}/selinux/src/policy || exit 1
+make -W load
+
 %files -f rpm.filelist
 %defattr(-,root,root,-)
 %doc _docs/CREDITS.txt _docs/InQueue.html _docs/NEWS.txt _docs/logo.jpg
 %doc _docs/DEPLOY-GUIDE-ORIGIN.html _docs/main.css _docs/README.txt
 %doc _docs/DEPLOY-GUIDE-TARGET.html _docs/LICENSE.txt _docs/mysql-4.0.12.diff
-%{_bindir}/shar
+%{_sbindir}/shar
 %{_bindir}/siterefresh
 %{_libdir}/libshib.so.*
 %{_libdir}/libshib-target.so.*
@@ -99,6 +124,11 @@ make check
 %{_includedir}
 %{_libdir}/libshib.so
 %{_libdir}/libshib-target.so
+
+%files selinux-targeted-policy
+%defattr(-,root,root,-)
+%{_sysconfdir}/selinux/targeted/src/policy/file_contexts/program/*.fc
+%{_sysconfdir}/selinux/targeted/src/policy/domain/program/*.te
 
 %changelog
 * Tue Oct 19 2004  Derek Atkins  <derek@ihtfp.com>  - 1.2-1
