@@ -263,19 +263,58 @@
 		</complexType>
 	</element>
 
-	<complexType name="JavaKeyInfoType">
+	<!-- Credential Access -->
+
+	<complexType name="FileCredResolverType">
 		<annotation>
-			<documentation xml:lang="en">Describes a credential in a Java keystore.</documentation>
+			<documentation xml:lang="en">Describes how to access a key or certificate in a file.</documentation>
 		</annotation>
-		<sequence/>
-		<attribute name="KeyStore" type="string" use="required"/>
-		<attribute name="KeyStoreType" type="string" use="optional" default="JKS"/>
-		<attribute name="KeyStorePassword" type="string" use="required"/>
-		<attribute name="Alias" type="string" use="required"/>
-		<attribute name="AliasPassword" type="string" use="optional"/>
+		<sequence>
+			<element name="Path" type="string"/>
+			<element name="Password" type="string" minOccurs="0"/>
+		</sequence>
+		<attribute name="Id" type="ID" use="required"/>
+		<attribute name="Format" use="optional" default="PEM">
+			<simpleType>
+				<restriction base="string">
+					<enumeration value="PEM"/>
+					<enumeration value="DER"/>
+				</restriction>
+			</simpleType>
+		</attribute>
+		<anyAttribute namespace="##any" processContents="lax"/>
 	</complexType>
-	<element name="JavaKeyValue" type="shib:JavaKeyInfoType"/>
-	<element name="JavaX509Data" type="shib:JavaKeyInfoType"/>
+	<element name="FileCredResolver" type="shib:FileCredResolverType"/>
+
+	<complexType name="CustomCredResolverType">
+		<annotation>
+			<documentation xml:lang="en">Describes how to access a credential using an extension class.</documentation>
+		</annotation>
+		<sequence>
+			<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+		</sequence>
+		<attribute name="Id" type="ID" use="required"/>
+		<attribute name="Class" type="string" use="required"/>
+        <anyAttribute namespace="##any" processContents="lax"/>
+	</complexType>
+	<element name="CustomCredResolver" type="shib:CustomCredResolverType"/>
+
+	<element name="KeyStoreResolver">
+		<annotation>
+			<documentation xml:lang="en">Describes credentials in a Java keystore.</documentation>
+		</annotation>
+		<complexType>
+			<sequence>
+				<attribute name="Path" type="string" use="required"/>
+				<attribute name="Alias" type="string" use="required"/>
+				<attribute name="Password" type="string" use="required"/>
+				<attribute name="AliasPassword" type="string" use="optional"/>
+			</sequence>
+			<attribute name="Id" type="ID" use="required"/>
+			<attribute name="Type" type="string" use="optional" default="JKS"/>
+			<anyAttribute namespace="##any" processContents="lax"/>
+		</complexType>
+	</element>
 	
 	<complexType name="KeyUseType">
 		<annotation>
@@ -284,13 +323,13 @@
 			which relying parties are capable of accepting them.
 			</documentation>
 		</annotation>
-		<complexContent>
-			<extension base="shib:KeyAuthorityType">
-				<sequence>
-					<element name="RelyingParty" type="shib:regexp_string" minOccurs="0" maxOccurs="unbounded"/>
-				</sequence>
-			</extension>
-		</complexContent>
+		<sequence>
+			<element name="Subject" type="shib:regexp_string" minOccurs="0" maxOccurs="unbounded"/>
+			<element name="RelyingParty" type="shib:regexp_string" minOccurs="0" maxOccurs="unbounded"/>
+		</sequence>
+		<attribute name="KeyRef" type="IDREF" use="required"/>
+		<attribute name="CertificateRef" type="IDREF" use="optional"/>
+        <anyAttribute namespace="##any" processContents="lax"/>
 	</complexType>	
 	<element name="KeyUse" type="shib:KeyUseType"/>
 	
@@ -300,6 +339,12 @@
 		</annotation>
 		<complexType>
 			<sequence>
+				<choice maxOccurs="unbounded">
+					<element ref="ds:KeyInfo"/>
+					<element ref="shib:FileCredResolver"/>
+					<element ref="shib:KeyStoreResolver"/>
+					<element ref="shib:CustomCredResolver"/>
+				</choice>
 				<element ref="shib:KeyUse" maxOccurs="unbounded"/>
 			</sequence>
 	        <anyAttribute namespace="##any" processContents="lax"/>
