@@ -16,8 +16,6 @@
 #include "http_core.h"
 #include "http_log.h"
 
-#include <unistd.h>
-
 // SAML Runtime
 #include <saml.h>
 #include <shib.h>

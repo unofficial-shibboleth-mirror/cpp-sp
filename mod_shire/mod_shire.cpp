@@ -19,8 +19,6 @@
 // For POST processing from Apache
 #include <libapreq/apache_request.h>
 
-#include <unistd.h>
-
 // SAML Runtime
 #include <saml.h>
 #include <shib.h>
