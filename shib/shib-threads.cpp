@@ -114,36 +114,86 @@ public:
 
 ThreadImpl::ThreadImpl(void* (*start_routine)(void*), void* arg)
 {
-  if (pthread_create (&thread_id, NULL, start_routine, arg) != 0)
-    throw runtime_error("pthread_create failed");
+    int rc=pthread_create(&thread_id, NULL, start_routine, arg);
+    if (rc) {
+#ifdef HAVE_STRERROR_R
+        char buf[256];
+        strerror_r(rc,buf,sizeof(buf));
+        buf[255]=0;
+        Category::getInstance(SHIB_LOGCAT".threads").error("pthread_create error (%d): %s",rc,buf);
+#else
+        Category::getInstance(SHIB_LOGCAT".threads").error("pthread_create error (%d): %s",rc,strerror(rc));
+#endif
+        throw rc;
+    }
 }
 
 MutexImpl::MutexImpl()
 {
-  if (pthread_mutex_init (&mutex, NULL) != 0)
-    throw runtime_error("pthread_mutex_init failed");
+    int rc=pthread_mutex_init(&mutex, NULL);
+    if (rc) {
+#ifdef HAVE_STRERROR_R
+        char buf[256];
+        strerror_r(rc,buf,sizeof(buf));
+        buf[255]=0;
+        Category::getInstance(SHIB_LOGCAT".threads").error("pthread_mutex_init error (%d): %s",rc,buf);
+#else
+        Category::getInstance(SHIB_LOGCAT".threads").error("pthread_mutex_init error (%d): %s",rc,strerror(rc));
+#endif
+        throw rc;
+    }
 }
 
 CondWaitImpl::CondWaitImpl()
 {
-  if (pthread_cond_init (&cond, NULL) != 0)
-    throw runtime_error("pthread_cond_init failed");
+    int rc=pthread_cond_init(&cond, NULL);
+    if (rc) {
+#ifdef HAVE_STRERROR_R
+        char buf[256];
+        strerror_r(rc,buf,sizeof(buf));
+        buf[255]=0;
+        Category::getInstance(SHIB_LOGCAT".threads").error("pthread_cond_init error (%d): %s",rc,buf);
+#else
+        Category::getInstance(SHIB_LOGCAT".threads").error("pthread_cond_init error (%d): %s",rc,strerror(rc));
+#endif
+        throw rc;
+    }
 }
 
 RWLockImpl::RWLockImpl()
 {
 #ifdef HAVE_PTHREAD_RWLOCK_INIT
-  if (pthread_rwlock_init(&lock, NULL) != 0)
+    int rc=pthread_rwlock_init(&lock, NULL);
 #else
-  if (rwlock_init (&lock, USYNC_THREAD, NULL) != 0)
+    int rc=rwlock_init(&lock, USYNC_THREAD, NULL);
 #endif
-    throw runtime_error("pthread_rwlock_init failed");
+    if (rc) {
+#ifdef HAVE_STRERROR_R
+        char buf[256];
+        strerror_r(rc,buf,sizeof(buf));
+        buf[255]=0;
+        Category::getInstance(SHIB_LOGCAT".threads").error("pthread_rwlock_init error (%d): %s",rc,buf);
+#else
+        Category::getInstance(SHIB_LOGCAT".threads").error("pthread_rwlock_init error (%d): %s",rc,strerror(rc));
+#endif
+        throw rc;
+    }
 }
 
 ThreadKeyImpl::ThreadKeyImpl(void (*destroy_fcn)(void*))
 {
-  if (pthread_key_create (&key, destroy_fcn) != 0)
-    throw runtime_error("pthread_key_create failed");
+    int rc=pthread_key_create(&key, destroy_fcn);
+    if (rc) {
+#ifdef HAVE_STRERROR_R
+        char buf[256];
+        strerror_r(rc,buf,sizeof(buf));
+        buf[255]=0;
+        Category::getInstance(SHIB_LOGCAT".threads").error("pthread_key_create error (%d): %s",rc,buf);
+#else
+        Category::getInstance(SHIB_LOGCAT".threads").error("pthread_key_create error (%d): %s",rc,strerror(rc));
+#endif
+        throw rc;
+    }
 }
 
 //
