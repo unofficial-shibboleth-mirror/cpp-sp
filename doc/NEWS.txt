@@ -25,10 +25,6 @@ Bugs in assertion condition handling.
 
 Target RequestMap should ignore query strings.
 
-Origin file descriptor leak.
-
-Rollup of all additional patches issued.
-
 Fixed the library path in Windows resolvertest batch 
 file loader.
 
