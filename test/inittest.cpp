@@ -73,7 +73,7 @@ void init(void)
 			  ShibTargetConfig::Metadata |
 			  ShibTargetConfig::AAP |
 			  ShibTargetConfig::RequestMapper |
-			  ShibTargetConfig::SHIREExtensions
+			  ShibTargetConfig::LocalExtensions
 			  );
 
     if (!g_Config->init(SHIB_SCHEMAS,SHIB_CONFIG)) {
