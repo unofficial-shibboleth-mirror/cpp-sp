@@ -121,7 +121,7 @@ namespace shibboleth
         enum KeyUse { unspecified, encryption, signing };
         virtual KeyUse getUse() const=0;
         virtual DSIGKeyInfoList* getKeyInfo() const=0;
-        virtual saml::Iterator<const XENCEncryptionMethod*> getEncryptionMethod() const=0;
+        virtual saml::Iterator<const XENCEncryptionMethod*> getEncryptionMethods() const=0;
         virtual ~IKeyDescriptor() {}
     };
 
