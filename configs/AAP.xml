@@ -1,45 +1,52 @@
-<?xml version="1.0" encoding="US-ASCII"?>
 <AttributeAcceptancePolicy xmlns="urn:mace:shibboleth:1.0">
 	
 	<!--
 	An AAP is a set of AttributeRule elements, each one
 	referencing a specific attribute by URI. All attributes that
-	are implemented via the SimpleAttribute plugin class must be
+	are implemented via the built-in Simple and Scoped classes must be
 	listed in the file or they will be filtered.
+	
+	Scoped attributes are also filtered on Scope via the Domain elements
+	in the site metadata.
 	-->
 	
+	<!-- Filtering rule to limit values to eduPerson-defined enumeration. -->
+	<AttributeRule Name="urn:mace:eduPerson:1.0:eduPersonScopedAffiliation">
+        <AnySite>
+            <Value>member</Value>
+            <Value>faculty</Value>
+            <Value>student</Value>
+            <Value>staff</Value>
+            <Value>alum</Value>
+            <Value>affiliate</Value>
+            <Value>employee</Value>
+        </AnySite>
+	</AttributeRule>
+
+	<!-- Basic rule to pass through any value. -->
+    <AttributeRule Name="urn:mace:eduPerson:1.0:eduPersonPrincipalName">
+        <AnySite>
+            <AnyValue/>
+        </AnySite>
+    </AttributeRule>
+
+	<!-- Entitlements tend to be filtered per-site. -->
 	<AttributeRule Name="urn:mace:eduPerson:1.0:eduPersonEntitlement">
 
 		<!--
 		Optional site rule that applies to any site
 		<AnySite>
-			<Value>urn:mace:example.edu:exampleEntitlement</Value> <==== a literal test
-			<Value Type="regexp">^.+$</Value> ==== any value
+			<Value>urn:mace:example.edu:exampleEntitlement</Value>
 		</AnySite>
 		-->
 		
 		<!-- Specific rules for an origin site, these are just development/sample sites. -->
-		<SiteRule Name="example.edu">
-			<Value>urn:mace:example.edu:exampleEntitlement</Value>
+		<SiteRule Name="urn:mace:InCommon:pilot:example.edu">
 			<Value Type="regexp">^urn:mace:.+$</Value>
 		</SiteRule>
-		<SiteRule Name="shibdev.edu">
-			<Value>urn:mace:example.edu:exampleEntitlement</Value>
+		<SiteRule Name="urn:mace:InCommon:pilot:shibdev.edu">
 			<Value Type="regexp">^urn:mace:.+$</Value>
 		</SiteRule>
 	</AttributeRule>
-
-	<!-- Basic rules to pass through any values. -->
-	<AttributeRule Name="urn:mace:eduPerson:1.0:eduPersonScopedAffiliation">
-        	<AnySite>
-			<AnyValue/>
-		</AnySite>
-	</AttributeRule>
-
-        <AttributeRule Name="urn:mace:eduPerson:1.0:eduPersonPrincipalName">
-                <AnySite>
-                        <AnyValue/>
-                </AnySite>
-        </AttributeRule>
 
 </AttributeAcceptancePolicy>
