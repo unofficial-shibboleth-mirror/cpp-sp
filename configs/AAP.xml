@@ -3,15 +3,16 @@
 	<!--
 	An AAP is a set of AttributeRule elements, each one
 	referencing a specific attribute by URI. All attributes that
-	are implemented via the built-in Simple and Scoped classes must be
-	listed in the file or they will be filtered out.
+	should be visible to an application running at the target should
+	be listed, or they will be filtered out.
 	
 	Scoped attributes are also filtered on Scope via the Domain elements
 	in the site metadata.
 	-->
 	
 	<!-- Filtering rule to limit values to eduPerson-defined enumeration. -->
-	<AttributeRule Name="urn:mace:dir:attribute-def:eduPersonScopedAffiliation">
+	<AttributeRule Name="urn:mace:dir:attribute-def:eduPersonScopedAffiliation"
+			Header="Shib-EP-Affiliation" Alias="affiliation">
         <AnySite>
             <Value>member</Value>
             <Value>faculty</Value>
@@ -24,14 +25,16 @@
 	</AttributeRule>
 
 	<!-- Basic rule to pass through any value. -->
-    <AttributeRule Name="urn:mace:dir:attribute-def:eduPersonPrincipalName">
+    <AttributeRule Name="urn:mace:dir:attribute-def:eduPersonPrincipalName"
+			Header="REMOTE_USER" Alias="user">
         <AnySite>
             <AnyValue/>
         </AnySite>
     </AttributeRule>
 
 	<!-- Entitlements tend to be filtered per-site. -->
-	<AttributeRule Name="urn:mace:dir:attribute-def:eduPersonEntitlement">
+	<AttributeRule Name="urn:mace:dir:attribute-def:eduPersonEntitlement"
+			Header="Shib-EP-Entitlement" Alias="entitlement">
 
 		<!--
 		Optional site rule that applies to any site
