@@ -260,7 +260,7 @@ public:
     size_t size() const { return buflen; }
     bool empty() const { return length()==0; }
     void reserve(size_t s, bool keep=false);
-    void erase() { if (bufptr) *bufptr=0; }
+    void erase() { if (bufptr) memset(bufptr,0,buflen); }
     operator char*() { return bufptr; }
     bool operator ==(const char* s) const;
     bool operator !=(const char* s) const { return !(*this==s); }
@@ -425,6 +425,8 @@ string get_shire_location(settings_t& site, const char* target)
 DWORD WriteClientError(PHTTP_FILTER_CONTEXT pfc, const char* msg)
 {
     LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, msg);
+    static const char* ctype="Content-Type: text/html\r\n";
+    pfc->AddResponseHeaders(pfc,const_cast<char*>(ctype),0);
     pfc->ServerSupportFunction(pfc,SF_REQ_SEND_RESPONSE_HEADER,"200 OK",0,0);
     static const char* xmsg="<HTML><HEAD><TITLE>Shibboleth Filter Error</TITLE></HEAD><BODY>"
                             "<H1>Shibboleth Filter Error</H1>";
@@ -443,8 +445,10 @@ DWORD WriteClientError(PHTTP_FILTER_CONTEXT pfc, const char* filename, ShibMLP& 
     ifstream infile(filename);
     if (!infile)
         return WriteClientError(pfc,"Unable to open error template, check settings.");   
-
     string res = mlp.run(infile);
+
+    static const char* ctype="Content-Type: text/html\r\n";
+    pfc->AddResponseHeaders(pfc,const_cast<char*>(ctype),0);
     pfc->ServerSupportFunction(pfc,SF_REQ_SEND_RESPONSE_HEADER,"200 OK",0,0);
     DWORD resplen=res.length();
     pfc->WriteClient(pfc,(LPVOID)res.c_str(),&resplen,0);
@@ -551,6 +555,7 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
         // Check for authentication cookie.
         const char* session_id=NULL;
         GetHeader(pn,pfc,"Cookie:",buf,128,false);
+        Category::getInstance("isapi_shib.HttpFilterProc").debug("cookie header is {%s}",(const char*)buf);
         if (buf.empty() || !(session_id=strstr(buf,shib_cookie.c_str())) || *(session_id+shib_cookie.length())!='=')
         {
             // Redirect to WAYF.
@@ -802,7 +807,8 @@ string get_target(LPEXTENSION_CONTROL_BLOCK lpECB, settings_t& site)
 DWORD WriteClientError(LPEXTENSION_CONTROL_BLOCK lpECB, const char* msg)
 {
     LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, msg);
-    lpECB->ServerSupportFunction(lpECB->ConnID,HSE_REQ_SEND_RESPONSE_HEADER,"200 OK",0,0);
+    static const char* ctype="Content-Type: text/html\r\n";
+    lpECB->ServerSupportFunction(lpECB->ConnID,HSE_REQ_SEND_RESPONSE_HEADER,"200 OK",0,(LPDWORD)ctype);
     static const char* xmsg="<HTML><HEAD><TITLE>Shibboleth Error</TITLE></HEAD><BODY><H1>Shibboleth Error</H1>";
     DWORD resplen=strlen(xmsg);
     lpECB->WriteClient(lpECB->ConnID,(LPVOID)xmsg,&resplen,HSE_IO_SYNC);
@@ -821,7 +827,8 @@ DWORD WriteClientError(LPEXTENSION_CONTROL_BLOCK lpECB, const char* filename, Sh
         return WriteClientError(lpECB,"Unable to open error template, check settings.");   
 
     string res = mlp.run(infile);
-    lpECB->ServerSupportFunction(lpECB->ConnID,HSE_REQ_SEND_RESPONSE_HEADER,"200 OK",0,0);
+    static const char* ctype="Content-Type: text/html\r\n";
+    lpECB->ServerSupportFunction(lpECB->ConnID,HSE_REQ_SEND_RESPONSE_HEADER,"200 OK",0,(LPDWORD)ctype);
     DWORD resplen=res.length();
     lpECB->WriteClient(lpECB->ConnID,(LPVOID)res.c_str(),&resplen,0);
     return HSE_STATUS_SUCCESS;
