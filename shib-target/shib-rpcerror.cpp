@@ -257,7 +257,7 @@ bool RPCError::isRetryable()
 	saml::QName name = codes.next();
 
 	if (!XMLString::compareString(name.getNamespaceURI(),
-				      shibboleth::XML::SHIB_NS)) {
+				      shibboleth::Constants::SHIB_NS)) {
 	  if (!XMLString::compareString(name.getLocalName(), code_InvalidHandle)) {
 	    return true;
 	  }
@@ -316,58 +316,50 @@ int RPCError::getCode() { return m_priv->status; }
 
 string RPCError::getOriginErrorURL()
 {
-    string res="No URL Available";
-    if (m_priv->origin)
-    {
-        OriginMetadata mapper(ShibTargetConfig::getConfig().getMetadataProviders(),m_priv->origin);
-        if (!mapper.fail())
-        {
-            const char* temp=mapper->getErrorURL();
+    if (m_priv->origin) {
+        Metadata mapper(ShibTargetConfig::getConfig().getMetadataProviders());
+        const IProvider* provider=mapper.lookup(m_priv->origin);
+        if (provider) {
+            Iterator<const IProviderRole*> roles=provider->getRoles();
+            while (roles.hasNext()) {
+            const char* temp=roles.next()->getErrorURL();
             if (temp)
-                res=temp;
+                return temp;
+            }
         }
     }
-    return res;
+    return "No URL Available";
 }
 
 string RPCError::getOriginContactName()
 { 
-    string res="No Name Available";
-    if (m_priv->origin)
-    {
-        OriginMetadata mapper(ShibTargetConfig::getConfig().getMetadataProviders(),m_priv->origin);
-        Iterator<const IContactInfo*> i=
-            mapper.fail() ? EMPTY(const IContactInfo*) : mapper->getContacts();
-        while (i.hasNext())
-        {
-            const IContactInfo* c=i.next();
-            if (c->getType()==IContactInfo::technical && c->getName())
-            {
-                res=c->getName();
-                break;
-            }
+    if (m_priv->origin) {
+        Metadata mapper(ShibTargetConfig::getConfig().getMetadataProviders());
+        const IProvider* provider=mapper.lookup(m_priv->origin);
+        Iterator<const IContactPerson*> i=provider ? provider->getContacts() : EMPTY(const IContactPerson*);
+        while (i.hasNext()) {
+            const IContactPerson* c=i.next();
+            if ((c->getType()==IContactPerson::technical || c->getType()==IContactPerson::support) && c->getName())
+                return c->getName();
         }
     }
-    return res;
+    return "No Name Available";
 }
 
 string RPCError::getOriginContactEmail()
 {
-    string res="No Email Available";
-    if (m_priv->origin)
-    {
-        OriginMetadata mapper(ShibTargetConfig::getConfig().getMetadataProviders(),m_priv->origin);
-        Iterator<const IContactInfo*> i=
-            mapper.fail() ? EMPTY(const IContactInfo*) : mapper->getContacts();
-        while (i.hasNext())
-        {
-            const IContactInfo* c=i.next();
-            if (c->getType()==IContactInfo::technical && c->getEmail())
-            {
-                res=c->getEmail();
-                break;
+    if (m_priv->origin) {
+        Metadata mapper(ShibTargetConfig::getConfig().getMetadataProviders());
+        const IProvider* provider=mapper.lookup(m_priv->origin);
+        Iterator<const IContactPerson*> i=provider ? provider->getContacts() : EMPTY(const IContactPerson*);
+        while (i.hasNext()) {
+            const IContactPerson* c=i.next();
+            if (c->getType()==IContactPerson::technical || c->getType()==IContactPerson::support) {
+                Iterator<string> emails=c->getEmails();
+                if (emails.hasNext())
+                    return emails.next();
             }
         }
     }
-    return res;
+    return "No Email Available";
 }

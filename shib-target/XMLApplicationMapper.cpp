@@ -139,7 +139,7 @@ void XMLApplicationMapperImpl::init()
             DOMElement* host=static_cast<DOMElement*>(nlist->item(i));
             const XMLCh* scheme=host->getAttributeNS(NULL,shibtarget::XML::Literals::Scheme);
             const XMLCh* port=host->getAttributeNS(NULL,shibtarget::XML::Literals::Port);
-            auto_ptr_XMLCh name(host->getAttributeNS(NULL,shibboleth::XML::Literals::Name));
+            auto_ptr_XMLCh name(host->getAttributeNS(NULL,shibtarget::XML::Literals::Name));
 
             if (!name.get() || !*(name.get()))
             {
@@ -230,7 +230,7 @@ XMLApplicationMapperImpl::Override* XMLApplicationMapperImpl::buildOverride(cons
     for (int i=0; nlist && i<nlist->getLength(); i++)
     {
         DOMElement* path=static_cast<DOMElement*>(nlist->item(i));
-        auto_ptr_XMLCh name(path->getAttributeNS(NULL,shibboleth::XML::Literals::Name));
+        auto_ptr_XMLCh name(path->getAttributeNS(NULL,shibtarget::XML::Literals::Name));
         if (!name.get() || !*(name.get()))
         {
             log.warn("Skipping Path element (%d) with empty Name attribute",i);

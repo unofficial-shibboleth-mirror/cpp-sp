@@ -89,6 +89,8 @@ const XMLCh shibtarget::XML::Literals::ApplicationMap[] =
 
 const XMLCh shibtarget::XML::Literals::Host[]= { chLatin_H, chLatin_o, chLatin_s, chLatin_t, chNull };
 
+const XMLCh shibtarget::XML::Literals::Name[]= { chLatin_N, chLatin_a, chLatin_m, chLatin_e, chNull };
+
 const XMLCh shibtarget::XML::Literals::Path[]= { chLatin_P, chLatin_a, chLatin_t, chLatin_h, chNull };
 
 const XMLCh shibtarget::XML::Literals::Port[]= { chLatin_P, chLatin_o, chLatin_r, chLatin_t, chNull };

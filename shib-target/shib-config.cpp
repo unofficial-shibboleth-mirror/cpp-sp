@@ -225,6 +225,7 @@ void STConfig::init()
     DOMElement* dummy = dummydoc->createElementNS(NULL,XML::Literals::ApplicationMap);
 
     // Load the specified metadata, trust, creds, and aap sources.
+    static const XMLCh url[] = { chLatin_u, chLatin_r, chLatin_l, chNull };
     const string* prov;
     ShibINI::Iterator* iter=ini->tag_iterator(SHIBTARGET_TAG_METADATA);
     for (prov=iter->begin(); prov; prov=iter->next()) {
@@ -232,7 +233,7 @@ void STConfig::init()
         log.info("building metadata provider: type=%s, source=%s",prov->c_str(),source.c_str());
         try {
             auto_ptr_XMLCh src(source.c_str());
-            dummy->setAttributeNS(NULL,shibboleth::XML::Literals::url,src.get());
+            dummy->setAttributeNS(NULL,url,src.get());
             metadatas.push_back(shibConf.newMetadata(prov->c_str(),dummy));
         }
         catch (exception& e) {
@@ -249,7 +250,7 @@ void STConfig::init()
         log.info("building AAP provider: type=%s, source=%s",prov->c_str(),source.c_str());
         try {
             auto_ptr_XMLCh src(source.c_str());
-            dummy->setAttributeNS(NULL,shibboleth::XML::Literals::url,src.get());
+            dummy->setAttributeNS(NULL,url,src.get());
             aaps.push_back(shibConf.newAAP(prov->c_str(),dummy));
         }
         catch (exception& e) {
@@ -267,7 +268,7 @@ void STConfig::init()
             log.info("building trust provider: type=%s, source=%s",prov->c_str(),source.c_str());
             try {
                 auto_ptr_XMLCh src(source.c_str());
-                dummy->setAttributeNS(NULL,shibboleth::XML::Literals::url,src.get());
+                dummy->setAttributeNS(NULL,url,src.get());
                 trusts.push_back(shibConf.newTrust(prov->c_str(),dummy));
             }
             catch (exception& e) {
@@ -283,11 +284,27 @@ void STConfig::init()
             log.info("building creds provider: type=%s, source=%s",prov->c_str(),source.c_str());
             try {
                 auto_ptr_XMLCh src(source.c_str());
-                dummy->setAttributeNS(NULL,shibboleth::XML::Literals::url,src.get());
+                dummy->setAttributeNS(NULL,url,src.get());
                 creds.push_back(shibConf.newCredentials(prov->c_str(),dummy));
             }
             catch (exception& e) {
                 log.crit("error building creds provider: type=%s, source=%s (%s)",prov->c_str(),source.c_str(),e.what());
+                throw;
+            }
+        }
+        delete iter;
+
+        iter=ini->tag_iterator(SHIBTARGET_TAG_REVOCATION);
+        for (prov=iter->begin(); prov; prov=iter->next()) {
+            string source=ini->get(SHIBTARGET_TAG_REVOCATION,*prov);
+            log.info("building revocation provider: type=%s, source=%s",prov->c_str(),source.c_str());
+            try {
+                auto_ptr_XMLCh src(source.c_str());
+                dummy->setAttributeNS(NULL,url,src.get());
+                revocations.push_back(shibConf.newRevocation(prov->c_str(),dummy));
+            }
+            catch (exception& e) {
+                log.crit("error building revocation provider: type=%s, source=%s (%s)",prov->c_str(),source.c_str(),e.what());
                 throw;
             }
         }
@@ -305,24 +322,19 @@ void STConfig::init()
     delete iter;
   }
   
-  log.debug("about to test for AppMapper -- are we SHIRE...");
-  if (app == SHIBTARGET_SHIRE) {
-    log.debug("yep, we're a shire -- try loading the map...");
-    if (ini->get_tag(app, SHIBTARGET_TAG_APPMAPPER, false, &tag)) {
-      log.debug("loading Application Mapper");
-      saml::XML::registerSchema(shibtarget::XML::APPMAP_NS,shibtarget::XML::APPMAP_SCHEMA_ID);
-      try {
+  if (app == SHIBTARGET_SHIRE && ini->get_tag(app, SHIBTARGET_TAG_APPMAPPER, false, &tag)) {
+    saml::XML::registerSchema(shibtarget::XML::APPMAP_NS,shibtarget::XML::APPMAP_SCHEMA_ID);
+    try {
         auto_ptr_XMLCh src(tag.c_str());
-        dummy->setAttributeNS(NULL,shibboleth::XML::Literals::url,src.get());
+        dummy->setAttributeNS(NULL,url,src.get());
         m_applicationMapper=new XMLApplicationMapper(dummy);
         dynamic_cast<XMLApplicationMapper*>(m_applicationMapper)->getImplementation();
-      }
-      catch (exception& e) {
+    }
+    catch (exception& e) {
         log.crit("caught exception while loading URL->Application mapping file (%s)", e.what());
-      }
-      catch (...) {
+    }
+    catch (...) {
         log.crit("caught unknown exception while loading URL->Application mapping file");
-      }
     }
   }
   

@@ -424,8 +424,9 @@ InternalCCacheEntry::InternalCCacheEntry(const char* application_id, SAMLAuthent
   if (r) {
     // Run pushed data through the AAP. Note that we could end up with an empty response!
     ShibTargetConfig& conf=ShibTargetConfig::getConfig();
-    OriginMetadata site(conf.getMetadataProviders(),m_subject->getNameQualifier());
-    if (site.fail())
+    Metadata m(conf.getMetadataProviders());
+    const IProvider* site=m.lookup(m_subject->getNameQualifier());
+    if (!site)
         throw MetadataException("unable to locate origin site's metadata during attribute acceptance processing");
     Iterator<SAMLAssertion*> assertions=r->getAssertions();
     for (unsigned long i=0; i < assertions.size();) {
@@ -645,34 +646,25 @@ SAMLResponse* InternalCCacheEntry::getNewResponse()
         );
     auto_ptr<SAMLRequest> req(new SAMLRequest(EMPTY(QName),q));
     
-    // Try this request against all the bindings in the AuthenticationStatement
-    // (i.e. send it to each AA in the list of bindings)
-    SAMLResponse* response = NULL;
-    OriginMetadata site(conf.getMetadataProviders(),m_subject->getNameQualifier());
-    if (site.fail())
+    // Try this request. The wrapper class handles all of the details.
+    Metadata m(conf.getMetadataProviders());
+    const IProvider* site=m.lookup(m_subject->getNameQualifier());
+    if (!site)
         throw MetadataException("unable to locate origin site's metadata during attribute query");
-    auto_ptr<SAMLBinding> pBinding(
-        SAMLBindingFactory::getInstance(
-            conf.getMetadataProviders(),conf.getTrustProviders(),conf.getCredentialProviders(),providerID.get(),site
-            )
-        );
-    
-    Iterator<SAMLAuthorityBinding*> AAbindings=p_auth->getBindings();
-    while (!response && AAbindings.hasNext()) {
-        SAMLAuthorityBinding* binding = AAbindings.next();
-        log->debug("Trying binding to AA...");
-        try {
-            response=pBinding->send(*binding,*req);
-        }
-        catch (SAMLException& e) {
-            log->error("caught SAML exception during query to AA: %s", e.what());
-        }
-    }
 
+    log->debug("Trying to query an AA...");
+    SAMLResponse* response = NULL;
+    ShibBinding binding(conf.getRevocationProviders(),conf.getTrustProviders(),conf.getCredentialProviders());
+    try {
+        response=binding.send(*req,site,NULL,p_auth->getBindings());
+    }
+    catch (SAMLException& e) {
+        log->error("caught SAML exception during query to AA: %s", e.what());
+    }
     // See if we got a response.
     if (!response) {
         log->error("No response obtained");
-        throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"Unable to obtain attributes from user's origin site.",m_subject->getNameQualifier());
+        throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"Unable to obtain attributes from user's origin site.",site->getId());
     }
 
     // Run it through the AAP. Note that we could end up with an empty response!

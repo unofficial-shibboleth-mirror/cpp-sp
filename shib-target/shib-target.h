@@ -158,6 +158,7 @@ SHIBTARGET_EXPORTS void shib_sock_close (ShibSocket s, const char* name);
 #define SHIBTARGET_TAG_SAMLCOMPAT   "SAMLCompat"
 
 #define SHIBTARGET_TAG_METADATA "metadata"
+#define SHIBTARGET_TAG_REVOCATION "revocation"
 #define SHIBTARGET_TAG_TRUST    "trust"
 #define SHIBTARGET_TAG_CREDS    "credentials"
 #define SHIBTARGET_TAG_AAP      "aap"
@@ -489,6 +490,7 @@ namespace shibtarget {
     virtual shibtarget::ShibINI& getINI() const = 0;
     virtual IApplicationMapper* getApplicationMapper() const = 0;
     virtual saml::Iterator<shibboleth::IMetadata*> getMetadataProviders() const = 0;
+    virtual saml::Iterator<shibboleth::IRevocation*> getRevocationProviders() const = 0;
     virtual saml::Iterator<shibboleth::ITrust*> getTrustProviders() const = 0;
     virtual saml::Iterator<shibboleth::ICredentials*> getCredentialProviders() const = 0;
     virtual saml::Iterator<shibboleth::IAAP*> getAAPProviders() const = 0;

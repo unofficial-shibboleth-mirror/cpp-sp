@@ -179,19 +179,22 @@ shibrpc_session_is_valid_1_svc(shibrpc_session_is_valid_args_1 *argp,
       log.debug ("application: %s", argp->application_id);
       entry->preFetch(15);	// give a 15-second window for the RM
 
-    } catch (SAMLException &e) {
+    }
+    catch (SAMLException &e) {
       log.debug ("prefetch failed with a SAML Exception: %s", e.what());
       ostringstream os;
       os << e;
       throw ShibTargetException(SHIBRPC_SAML_EXCEPTION, os.str(), origin);
 
-    } catch (...) {
+    }
+#ifndef _DEBUG
+    catch (...) {
       log.error ("prefetch caught an unknown exception");
       throw ShibTargetException(SHIBRPC_UNKNOWN_ERROR,
 		"An unknown error occured while pre-fetching attributes.",
 				origin);
     }
-
+#endif
   } catch (ShibTargetException &e) {
     entry->release();
     g_shibTargetCCache->remove (argp->cookie.cookie);
@@ -234,13 +237,12 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
   // Pull in the Policies
   Iterator<const XMLCh*> policies=dynamic_cast<STConfig&>(ShibTargetConfig::getConfig()).getPolicies();
 
-  // And grab the Profile
-  // XXX: Create a "Global" POSTProfile instance per location...
+  // And build the POST profile wrapper.
   log.debug ("create the POST profile (%d policies)", policies.size());
-  ShibPOSTProfile *profile = ShibPOSTProfileFactory::getInstance(
+  ShibPOSTProfile profile(
     ShibTargetConfig::getConfig().getMetadataProviders(),
-    ShibTargetConfig::getConfig().getTrustProviders(),
-    policies,location.get(),3600
+    ShibTargetConfig::getConfig().getRevocationProviders(),
+    ShibTargetConfig::getConfig().getTrustProviders()
     );
 
   SAMLResponse* r = NULL;
@@ -251,35 +253,26 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
   {
     try
     {
-      // Make sure we've got a profile
-      if (!profile)
-	throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,
-				  "Failed to obtain the profile");
-
       // Try and accept the response...
       log.debug ("Trying to accept the post");
-      r = profile->accept(post, &origin);
+      r = profile.accept(post, location.get(),300,policies,&origin);
 
       // Make sure we got a response
       if (!r)
-	throw ShibTargetException(SHIBRPC_RESPONSE_MISSING,
-				  "Failed to accept the response.",
-				  origin);
+        throw ShibTargetException(SHIBRPC_RESPONSE_MISSING, "Failed to accept the response.", origin);
 
       // Find the SSO Assertion
       log.debug ("Get the SSOAssertion");
-      const SAMLAssertion* ssoAssertion = profile->getSSOAssertion(*r);
+      const SAMLAssertion* ssoAssertion = profile.getSSOAssertion(*r,policies);
 
       // Check against the replay cache
       log.debug ("check replay cache");
-      if (profile->checkReplayCache(*ssoAssertion) == false)
-	throw ShibTargetException(SHIBRPC_ASSERTION_REPLAYED,
-				  "Duplicate assertion found.",
-				  origin);
+      if (!profile.checkReplayCache(*ssoAssertion))
+        throw ShibTargetException(SHIBRPC_ASSERTION_REPLAYED, "Duplicate assertion found.", origin);
 
       // Get the authentication statement we need.
       log.debug ("get SSOStatement");
-      auth_st = profile->getSSOStatement(*ssoAssertion);
+      auth_st = profile.getSSOStatement(*ssoAssertion);
 
       // Maybe verify the origin address....
       if (argp->checkIPAddress) {
@@ -297,7 +290,7 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
 	                "The IP address provided by your origin site did not match your current address. "
 	                "To correct this problem, you may need to bypass a local proxy server.",
 				     origin);
-	}
+        }
       }
     }
     catch (SAMLException &e)    // XXX refine this handler to catch and log different profile exceptions

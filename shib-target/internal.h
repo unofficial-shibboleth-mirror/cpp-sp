@@ -159,6 +159,7 @@ namespace shibtarget {
         ShibINI& getINI() const { return *ini; }
         IApplicationMapper* getApplicationMapper() const { return m_applicationMapper; }
         saml::Iterator<shibboleth::IMetadata*> getMetadataProviders() const { return metadatas; }
+        saml::Iterator<shibboleth::IRevocation*> getRevocationProviders() const { return revocations; }
         saml::Iterator<shibboleth::ITrust*> getTrustProviders() const { return trusts; }
         saml::Iterator<shibboleth::ICredentials*> getCredentialProviders() const { return creds; }
         saml::Iterator<shibboleth::IAAP*> getAAPProviders() const { return aaps; }
@@ -178,6 +179,7 @@ namespace shibtarget {
 #endif
         IApplicationMapper* m_applicationMapper;
         std::vector<shibboleth::IMetadata*> metadatas;
+        std::vector<shibboleth::IRevocation*> revocations;
         std::vector<shibboleth::ITrust*> trusts;
         std::vector<shibboleth::ICredentials*> creds;
         std::vector<shibboleth::IAAP*> aaps;
@@ -200,6 +202,7 @@ namespace shibtarget {
             static const XMLCh ApplicationID[];
             static const XMLCh ApplicationMap[];
             static const XMLCh Host[];
+            static const XMLCh Name[];
             static const XMLCh Path[];
             static const XMLCh Port[];
             static const XMLCh Scheme[];
