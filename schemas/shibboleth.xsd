@@ -195,10 +195,12 @@
 	
 	<element name="Trust">
 		<annotation>An optionally signed collection of KeyAuthority data.</annotation>
-		<sequence>
-			<element ref="shib:KeyAuthority" maxOccurs="unbounded"/>
-			<element ref="ds:Signature" minOccurs="0"/>
-		</sequence>
+		<complexType>
+			<sequence>
+				<element ref="shib:KeyAuthority" maxOccurs="unbounded"/>
+				<element ref="ds:Signature" minOccurs="0"/>
+			</sequence>
+		</complexType>
 	</element>
 	
 </schema>
