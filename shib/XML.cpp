@@ -116,8 +116,15 @@ const XMLCh XML::Literals::Name[]=
 const XMLCh XML::Literals::OriginSite[]=
 { chLatin_O, chLatin_r, chLatin_i, chLatin_g, chLatin_i, chLatin_n, chLatin_S, chLatin_i, chLatin_t, chLatin_e, chNull };
 
-const XMLCh XML::Literals::Sites[]=
-{ chLatin_S, chLatin_i, chLatin_t, chLatin_e, chLatin_s, chNull };
+const XMLCh XML::Literals::SiteGroup[]=
+{ chLatin_S, chLatin_i, chLatin_t, chLatin_e, chLatin_G, chLatin_r, chLatin_o, chLatin_u, chLatin_p, chNull };
+
+const XMLCh XML::Literals::KeyAuthority[] =
+{ chLatin_K, chLatin_e, chLatin_y,
+  chLatin_A, chLatin_u, chLatin_t, chLatin_h, chLatin_o, chLatin_r, chLatin_i, chLatin_t, chLatin_y, chNull };
+
+const XMLCh XML::Literals::Trust[] =
+{ chLatin_T, chLatin_r, chLatin_u, chLatin_s, chLatin_t, chNull };
 
 const XMLCh XML::Literals::AnySite[]=
 { chLatin_A, chLatin_n, chLatin_y, chLatin_S, chLatin_i, chLatin_t, chLatin_e, chNull };

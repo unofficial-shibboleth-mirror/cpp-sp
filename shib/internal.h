@@ -87,13 +87,32 @@ namespace shibboleth
         void lock();
         void unlock();
         const ISite* lookup(const XMLCh* site) const;
-        time_t getTimestamp() const { return m_filestamp; }
 
     private:
         std::string m_source;
         time_t m_filestamp;
         RWLock* m_lock;
         XMLMetadataImpl* m_impl;
+    };
+
+    class XMLTrustImpl;
+    class SHIB_EXPORTS XMLTrust : public ITrust
+    {
+    public:
+        XMLTrust(const char* pathname);
+        ~XMLTrust();
+
+        void lock();
+        void unlock();
+        saml::Iterator<XSECCryptoX509*> getCertificates(const XMLCh* subject) const;
+        bool validate(const ISite* site, saml::Iterator<XSECCryptoX509*> certs) const;
+        bool validate(const ISite* site, saml::Iterator<const XMLCh*> certs) const;
+
+    private:
+        std::string m_source;
+        time_t m_filestamp;
+        RWLock* m_lock;
+        XMLTrustImpl* m_impl;
     };
 
     class AAP
@@ -123,12 +142,13 @@ namespace shibboleth
     class ShibInternalConfig : public ShibConfig
     {
     public:
-        ShibInternalConfig() : m_AAP(NULL), m_lock(NULL) {}
+        ShibInternalConfig() : m_AAP(NULL) {}
 
         bool init();
         void term();
 
         void regFactory(const char* type, MetadataFactory* factory);
+        void regFactory(const char* type, TrustFactory* factory);
         void unregFactory(const char* type);
         
         bool addMetadata(const char* type, const char* source);
@@ -137,11 +157,14 @@ namespace shibboleth
         
     private:
         friend class OriginMetadata;
+        friend class Trust;
         
         typedef std::map<std::string, MetadataFactory*> MetadataFactoryMap;
+        typedef std::map<std::string, TrustFactory*> TrustFactoryMap;
         MetadataFactoryMap m_metadataFactoryMap;        
+        TrustFactoryMap m_trustFactoryMap;        
         std::vector<IMetadata*> m_providers;
-        Mutex* m_lock;
+        std::vector<ITrust*> m_trust_providers;
     };
 }
 

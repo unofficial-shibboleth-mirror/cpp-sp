@@ -47,7 +47,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/* Metadata.h - a glue class that interfaces to metadata providers
+/* Metadata.h - glue classes that interface to metadata providers
 
    Scott Cantor
    9/27/02
@@ -64,7 +64,6 @@ using namespace std;
 OriginMetadata::OriginMetadata(const XMLCh* site) : m_mapper(NULL), m_site(NULL)
 {
     ShibInternalConfig& config=dynamic_cast<ShibInternalConfig&>(ShibConfig::getConfig());
-    config.m_lock->lock();
     for (vector<IMetadata*>::iterator i=config.m_providers.begin(); i!=config.m_providers.end(); i++)
     {
         (*i)->lock();
@@ -75,10 +74,64 @@ OriginMetadata::OriginMetadata(const XMLCh* site) : m_mapper(NULL), m_site(NULL)
         }
         (*i)->unlock();
     }
-    config.m_lock->unlock();
 }
 
 OriginMetadata::~OriginMetadata()
+{
+    if (m_mapper)
+        m_mapper->unlock();
+}
+
+Iterator<XSECCryptoX509*> Trust::getCertificates(const XMLCh* subject)
+{
+    if (m_mapper)
+    {
+        m_mapper->unlock();
+        m_mapper=NULL;
+    }
+    
+    ShibInternalConfig& config=dynamic_cast<ShibInternalConfig&>(ShibConfig::getConfig());
+    for (vector<ITrust*>::iterator i=config.m_trust_providers.begin(); i!=config.m_trust_providers.end(); i++)
+    {
+        (*i)->lock();
+        Iterator<XSECCryptoX509*> iter=(*i)->getCertificates(subject);
+        if (iter.size())
+        {
+            m_mapper=*i;
+            return iter;
+        }
+        (*i)->unlock();
+    }
+    return EMPTY(XSECCryptoX509*);
+}
+
+bool Trust::validate(const ISite* site, Iterator<XSECCryptoX509*> certs) const
+{
+    bool ret=false;
+    ShibInternalConfig& config=dynamic_cast<ShibInternalConfig&>(ShibConfig::getConfig());
+    for (vector<ITrust*>::iterator i=config.m_trust_providers.begin(); !ret && i!=config.m_trust_providers.end(); i++)
+    {
+        (*i)->lock();
+        ret=(*i)->validate(site,certs);
+        (*i)->unlock();
+    }
+    return ret;
+}
+
+bool Trust::validate(const ISite* site, Iterator<const XMLCh*> certs) const
+{
+    bool ret=false;
+    ShibInternalConfig& config=dynamic_cast<ShibInternalConfig&>(ShibConfig::getConfig());
+    for (vector<ITrust*>::iterator i=config.m_trust_providers.begin(); !ret && i!=config.m_trust_providers.end(); i++)
+    {
+        (*i)->lock();
+        ret=(*i)->validate(site,certs);
+        (*i)->unlock();
+    }
+    return ret;
+}
+
+Trust::~Trust()
 {
     if (m_mapper)
         m_mapper->unlock();

@@ -200,11 +200,12 @@ int main(int argc,char* argv[])
         // Examine the root element to be sure we know what we have.
 		DOMElement* e=doc->getDocumentElement();
         if (XMLString::compareString(shibboleth::XML::SHIB_NS,e->getNamespaceURI()) ||
-            XMLString::compareString(shibboleth::XML::Literals::Sites,e->getLocalName()))
+            (XMLString::compareString(shibboleth::XML::Literals::SiteGroup,e->getLocalName())) &&
+                XMLString::compareString(shibboleth::XML::Literals::Trust,e->getLocalName()))
         {
             doc->release();
-			log.error("requires a valid site file: (shib:Sites as root element)");
-			throw OriginSiteMapperException("Construction requires a valid site file: (shib:Sites as root element)");
+			log.error("requires a valid site file: (shib:SiteGroup or shib:Trust as root element)");
+			throw OriginSiteMapperException("Construction requires a valid site file: (shib:SiteGroup or shib:Trust as root element)");
 		}
 
         // If we're verifying, grab the embedded signature.

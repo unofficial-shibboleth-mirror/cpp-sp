@@ -60,6 +60,7 @@
 #define __shib_h__
 
 #include <saml/saml.h>
+#include <openssl/x509.h>
 
 #ifdef WIN32
 # ifndef SHIB_EXPORTS
@@ -107,10 +108,12 @@ namespace shibboleth
 
     struct SHIB_EXPORTS ISite
     {
+        virtual const XMLCh* getName() const=0;
+        virtual saml::Iterator<const XMLCh*> getGroups() const=0;
         virtual saml::Iterator<const IContactInfo*> getContacts() const=0;
         virtual const char* getErrorURL() const=0;
-        virtual void validate(XSECCryptoX509* cert) const=0;
-        virtual void validate(const XMLCh* cert) const=0;
+        virtual bool validate(saml::Iterator<XSECCryptoX509*> certs) const=0;
+        virtual bool validate(saml::Iterator<const XMLCh*> certs) const=0;
         virtual ~ISite() {}
     };
     
@@ -135,8 +138,17 @@ namespace shibboleth
         virtual void lock()=0;
         virtual void unlock()=0;
         virtual const ISite* lookup(const XMLCh* site) const=0;
-        virtual time_t getTimestamp() const=0;
         virtual ~IMetadata() {}
+    };
+
+    struct SHIB_EXPORTS ITrust
+    {
+        virtual void lock()=0;
+        virtual void unlock()=0;
+        virtual saml::Iterator<XSECCryptoX509*> getCertificates(const XMLCh* subject) const=0;
+        virtual bool validate(const ISite* site, saml::Iterator<XSECCryptoX509*> certs) const=0;
+        virtual bool validate(const ISite* site, saml::Iterator<const XMLCh*> certs) const=0;
+        virtual ~ITrust() {}
     };
 
 #ifdef SHIB_INSTANTIATE
@@ -220,7 +232,11 @@ namespace shibboleth
         virtual const XMLCh* getOriginSite(const saml::SAMLResponse& r);
 
     protected:
-        virtual void verifySignature(const saml::SAMLSignedObject& obj, const XMLCh* signerName, XSECCryptoKey* knownKey=NULL);
+        virtual void verifySignature(
+            const saml::SAMLSignedObject& obj,
+            const IOriginSite* originSite,
+            const XMLCh* signerName,
+            XSECCryptoKey* knownKey=NULL);
 
         signatureMethod m_algorithm;
         std::vector<const XMLCh*> m_policies;
@@ -255,7 +271,11 @@ namespace shibboleth
             );
 
     protected:
-        virtual void verifySignature(const saml::SAMLSignedObject& obj, const XMLCh* signerName, XSECCryptoKey* knownKey=NULL);
+        virtual void verifySignature(
+            const saml::SAMLSignedObject& obj,
+            const IOriginSite* originSite,
+            const XMLCh* signerName,
+            XSECCryptoKey* knownKey=NULL);
     };
 
     class SHIB_EXPORTS ShibPOSTProfileFactory
@@ -265,7 +285,7 @@ namespace shibboleth
         static ShibPOSTProfile* getInstance(const saml::Iterator<const XMLCh*>& policies, const XMLCh* issuer);
     };
 
-    // Glue class between abstract metadata and concrete providers
+    // Glue classes between abstract metadata and concrete providers
     
     class SHIB_EXPORTS OriginMetadata
     {
@@ -274,6 +294,7 @@ namespace shibboleth
         ~OriginMetadata();
         bool fail() const {return m_mapper==NULL;}
         const IOriginSite* operator->() const {return m_site;}
+        operator const IOriginSite*() const {return m_site;}
         
     private:
         OriginMetadata(const OriginMetadata&);
@@ -282,7 +303,23 @@ namespace shibboleth
         const IOriginSite* m_site;
     };
 
+    class SHIB_EXPORTS Trust
+    {
+    public:
+        Trust() : m_mapper(NULL) {}
+        ~Trust();
+        saml::Iterator<XSECCryptoX509*> getCertificates(const XMLCh* subject);
+        bool validate(const ISite* site, saml::Iterator<XSECCryptoX509*> certs) const;
+        bool validate(const ISite* site, saml::Iterator<const XMLCh*> certs) const;
+        
+    private:
+        Trust(const Trust&);
+        void operator=(const Trust&);
+        ITrust* m_mapper;
+    };
+
     extern "C" { typedef IMetadata* MetadataFactory(const char* source); }
+    extern "C" { typedef ITrust* TrustFactory(const char* source); }
     
     class SHIB_EXPORTS ShibConfig
     {
@@ -299,6 +336,7 @@ namespace shibboleth
 
         // allows pluggable implementations of metadata
         virtual void regFactory(const char* type, MetadataFactory* factory)=0;
+        virtual void regFactory(const char* type, TrustFactory* factory)=0;
         virtual void unregFactory(const char* type)=0;
         
         // builds a specific metadata lookup object
@@ -339,7 +377,10 @@ namespace shibboleth
             static const XMLCh Location[];
             static const XMLCh Name[];
             static const XMLCh OriginSite[];
-            static const XMLCh Sites[];
+            static const XMLCh SiteGroup[];
+            
+            static const XMLCh KeyAuthority[];
+            static const XMLCh Trust[];
 
             static const XMLCh AnySite[];
             static const XMLCh AnyValue[];
@@ -369,6 +410,14 @@ namespace shibboleth
     public:
         static saml::SAMLBinding* getInstance(const XMLCh* protocol=saml::SAMLBinding::SAML_SOAP_HTTPS);
     };
+
+    // OpenSSL Utilities
+
+    // Log errors from OpenSSL error queue.
+    void log_openssl();
+
+    // build an OpenSSL cert out of a base-64 encoded DER buffer (XML style)
+    X509* B64_to_X509(const char* buf);
 }
 
 #endif

@@ -112,9 +112,11 @@ SAMLResponse* ClubShibPOSTProfile::prepare(
                                     responseKey,responseCerts,assertionKey,assertionCerts);
 }
 
-void ClubShibPOSTProfile::verifySignature(const SAMLSignedObject& obj, const XMLCh* signerName, XSECCryptoKey* knownKey)
+void ClubShibPOSTProfile::verifySignature(
+    const SAMLSignedObject& obj, const IOriginSite* originSite, const XMLCh* signerName, XSECCryptoKey* knownKey
+    )
 {
-    ShibPOSTProfile::verifySignature(obj,signerName,knownKey);
+    ShibPOSTProfile::verifySignature(obj,originSite,signerName,knownKey);
     if (obj.getSignatureAlgorithm()!=SIGNATURE_RSA)
         throw TrustException("ClubShibPOSTProfile::verifySignature() requires the RSA signature algorithm");
 }

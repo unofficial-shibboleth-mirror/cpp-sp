@@ -104,24 +104,32 @@ public:
         auto_ptr<char> m_url;
     };
     
-    struct OriginSite : public IOriginSite
+    class OriginSite : public IOriginSite
     {
-        OriginSite(const XMLCh* errorURL) : m_errorURL(XMLString::transcode(errorURL)) {}
+    public:
+        OriginSite(const XMLCh* name, const XMLCh* errorURL)
+            : m_name(name), m_errorURL(XMLString::transcode(errorURL)) {}
         ~OriginSite();
-
+        
+        const XMLCh* getName() const {return m_name;}
+        Iterator<const XMLCh*> getGroups() const {return m_groups;}
         Iterator<const IContactInfo*> getContacts() const {return m_contacts;}
         const char* getErrorURL() const {return m_errorURL.get();}
-        void validate(XSECCryptoX509* cert) const {}
-        void validate(const XMLCh* cert) const {}
+        bool validate(Iterator<XSECCryptoX509*> certs) const {Trust t; return t.validate(this,certs);}
+        bool validate(Iterator<const XMLCh*> certs) const {Trust t; return t.validate(this,certs);}
         Iterator<const IAuthority*> getHandleServices() const {return m_handleServices;}
         Iterator<const IAuthority*> getAttributeAuthorities() const {return m_attributes;}
         Iterator<std::pair<const XMLCh*,bool> > getSecurityDomains() const {return m_domains;}
 
+    private:
+        friend class XMLMetadataImpl;
+        const XMLCh* m_name;
         auto_ptr<char> m_errorURL;
         vector<const IContactInfo*> m_contacts;
         vector<const IAuthority*> m_handleServices;
         vector<const IAuthority*> m_attributes;
         vector<pair<const XMLCh*,bool> > m_domains;
+        vector<const XMLCh*> m_groups;
     };
 
     std::map<saml::xstring,OriginSite*> m_sites;
@@ -155,10 +163,10 @@ XMLMetadataImpl::XMLMetadataImpl(const char* pathname)
 
         DOMElement* e = m_doc->getDocumentElement();
         if (XMLString::compareString(XML::SHIB_NS,e->getNamespaceURI()) ||
-            XMLString::compareString(XML::Literals::Sites,e->getLocalName()))
+            XMLString::compareString(XML::Literals::SiteGroup,e->getLocalName()))
         {
-            log.error("Construction requires a valid site file: (shib:Sites as root element)");
-            throw MetadataException("Construction requires a valid site file: (shib:Sites as root element)");
+            log.error("Construction requires a valid site file: (shib:SiteGroup as root element)");
+            throw MetadataException("Construction requires a valid site file: (shib:SiteGroup as root element)");
         }
 
         // Loop over the OriginSite elements.
@@ -170,8 +178,16 @@ XMLMetadataImpl::XMLMetadataImpl(const char* pathname)
                 continue;
 
             OriginSite* os_obj =
-                new OriginSite(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,XML::Literals::ErrorURL));
+                new OriginSite(os_name,static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,XML::Literals::ErrorURL));
             m_sites[os_name]=os_obj;
+            
+            // Record all the SiteGroups containing this site.
+            DOMNode* group=nlist->item(i)->getParentNode();
+            while (group && group->getNodeType()==DOMNode::ELEMENT_NODE)
+            {
+                os_obj->m_groups.push_back(static_cast<DOMElement*>(group)->getAttributeNS(NULL,XML::Literals::Name));
+                group=group->getParentNode();
+            }
 
             DOMNode* os_child=nlist->item(i)->getFirstChild();
             while (os_child)

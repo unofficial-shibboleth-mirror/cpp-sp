@@ -59,6 +59,8 @@
 
 #include <ctime>
 
+#include <openssl/x509v3.h>
+
 using namespace shibboleth;
 using namespace saml;
 using namespace std;
@@ -182,7 +184,7 @@ SAMLResponse* ShibPOSTProfile::accept(const XMLByte* buf, XMLCh** originSitePtr)
         while (certs.hasNext())
         {
             try {
-                verifySignature(*assertion, handleService, certs.next()->clonePublicKey());
+                verifySignature(*assertion, mapper, handleService, certs.next()->clonePublicKey());
                 bVerified=true;
             }
             catch (InvalidCryptoException&) {
@@ -190,14 +192,14 @@ SAMLResponse* ShibPOSTProfile::accept(const XMLByte* buf, XMLCh** originSitePtr)
             }
         }
         if (!bVerified)
-            verifySignature(*assertion, handleService);
+            verifySignature(*assertion, mapper, handleService);
     }
 
     bVerified=false;
     while (certs.hasNext())
     {
         try {
-            verifySignature(*r, handleService, certs.next()->clonePublicKey());
+            verifySignature(*r, mapper, handleService, certs.next()->clonePublicKey());
             bVerified=true;
         }
         catch (InvalidCryptoException&) {
@@ -205,7 +207,7 @@ SAMLResponse* ShibPOSTProfile::accept(const XMLByte* buf, XMLCh** originSitePtr)
         }
     }
     if (!bVerified)
-        verifySignature(*r, handleService);
+        verifySignature(*r, mapper, handleService);
 
     return r.release();
 }
@@ -251,7 +253,74 @@ bool ShibPOSTProfile::checkReplayCache(const SAMLAssertion& a)
     return SAMLPOSTProfile::checkReplayCache(a);
 }
 
-void ShibPOSTProfile::verifySignature(const SAMLSignedObject& obj, const XMLCh* signerName, XSECCryptoKey* knownKey)
+void ShibPOSTProfile::verifySignature(
+    const SAMLSignedObject& obj, const IOriginSite* originSite, const XMLCh* signerName, XSECCryptoKey* knownKey
+    )
 {
     obj.verify(knownKey);
+    
+    // If not using a known key, perform additional trust checking on the certificate.
+    if (!knownKey)
+    {
+        vector<const XMLCh*> certs;
+        for (unsigned int i=0; i<obj.getX509CertificateCount(); i++)
+            certs.push_back(obj.getX509Certificate(i));
+
+        // Compare the name in the end entity certificate to the signer's name.
+        auto_ptr<char> temp(XMLString::transcode(certs[0]));
+        X509* x=B64_to_X509(temp.get());
+        if (!x)
+            throw TrustException("ShibPOSTProfile::verifySignature() unable to decode X.509 signing certificate");
+
+        bool match=false;
+        auto_ptr<char> sn(XMLString::transcode(signerName));
+        int extcount=X509_get_ext_count(x);
+        for (int c=0; c<extcount; c++)
+        {
+            X509_EXTENSION* ext=X509_get_ext(x,c);
+            const char* extstr=OBJ_nid2sn(OBJ_obj2nid(X509_EXTENSION_get_object(ext)));
+            if (!strcmp(extstr,"subjectAltName"))
+            {
+                X509V3_EXT_METHOD* meth=X509V3_EXT_get(ext);
+                if (!meth)
+                    break;
+                unsigned char* data=ext->value->data;
+                STACK_OF(CONF_VALUE)* val=meth->i2v(meth,meth->d2i(NULL,&data,ext->value->length),NULL);
+                for (int j=0; j<sk_CONF_VALUE_num(val); j++)
+                {
+                    CONF_VALUE* nval=sk_CONF_VALUE_value(val,j);
+                    if (!strcmp(nval->name,"DNS") && !strcmp(nval->value,sn.get()))
+                    {
+                        match=true;
+                        break;
+                    }
+                }
+            }
+            if (match)
+                break;
+        }
+
+        char data[256];
+        X509_NAME* subj;
+        if (!match && (subj=X509_get_subject_name(x)) &&
+            X509_NAME_get_text_by_NID(subj,NID_commonName,data,256)>0)
+        {
+            data[255]=0;
+#ifdef HAVE_STRCASECMP
+            if (!strcasecmp(data,sn.get()))
+                match=true;
+#else
+            if (!stricmp(data,sn.get()))
+                match=true;
+#endif
+        }
+
+        X509_free(x);
+
+        if (!match)
+            throw TrustException("ShibPOSTProfile::verifySignature() cannot match CN or subjectAltName against signer");
+
+        // Ask the site to determine the trustworthiness of the certificate.
+        originSite->validate(certs);
+    }
 }

@@ -21,6 +21,7 @@ libshib_la_SOURCES = \
                     SimpleAttribute.cpp \
                     XML.cpp \
                     XMLMetadata.cpp \
+                    XMLTrust.cpp \
                     shib-threads.cpp
 
 

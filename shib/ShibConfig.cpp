@@ -64,6 +64,7 @@
 
 #include "internal.h"
 #include <log4cpp/Category.hh>
+#include <openssl/err.h>
 
 using namespace saml;
 using namespace shibboleth;
@@ -82,6 +83,11 @@ ShibConfig::~ShibConfig() {}
 extern "C" IMetadata* XMLMetadataFactory(const char* source)
 {
     return new XMLMetadata(source);
+}
+
+extern "C" ITrust* XMLTrustFactory(const char* source)
+{
+    return new XMLTrust(source);
 }
 
 bool ShibInternalConfig::init()
@@ -107,15 +113,8 @@ bool ShibInternalConfig::init()
         }
     }
 
-    m_lock=Mutex::create();
-    if (!m_lock)
-    {
-        Category::getInstance(SHIB_LOGCAT".ShibConfig").fatal("init: failed to create provider lock");
-        delete m_AAP;
-        return false;
-    }
-    
     regFactory("edu.internet2.middleware.shibboleth.metadata.XML",&XMLMetadataFactory);
+    regFactory("edu.internet2.middleware.shibboleth.trust.XML",&XMLTrustFactory);
 
     return true;
 }
@@ -124,7 +123,6 @@ void ShibInternalConfig::term()
 {
     for (vector<IMetadata*>::iterator i=m_providers.begin(); i!=m_providers.end(); i++)
         delete *i;
-    delete m_lock;
     delete m_AAP;
 }
 
@@ -134,10 +132,19 @@ void ShibInternalConfig::regFactory(const char* type, MetadataFactory* factory)
         m_metadataFactoryMap[type]=factory;
 }
 
+void ShibInternalConfig::regFactory(const char* type, TrustFactory* factory)
+{
+    if (type && factory)
+        m_trustFactoryMap[type]=factory;
+}
+
 void ShibInternalConfig::unregFactory(const char* type)
 {
     if (type)
+    {
         m_metadataFactoryMap.erase(type);
+        m_trustFactoryMap.erase(type);
+    }
 }
 
 bool ShibInternalConfig::addMetadata(const char* type, const char* source)
@@ -145,7 +152,6 @@ bool ShibInternalConfig::addMetadata(const char* type, const char* source)
     saml::NDC ndc("addMetadata");
 
     bool ret=false;
-    m_lock->lock();
     try
     {
         MetadataFactoryMap::const_iterator i=m_metadataFactoryMap.find(type);
@@ -155,8 +161,16 @@ bool ShibInternalConfig::addMetadata(const char* type, const char* source)
             ret=true;
         }
         else
-            throw MetadataException("ShibConfig::addMetadata() unable to locate a metadata factory of the requested type");
-        
+        {
+            TrustFactoryMap::const_iterator j=m_trustFactoryMap.find(type);
+            if (j!=m_trustFactoryMap.end())
+            {
+                m_trust_providers.push_back((j->second)(source));
+                ret=true;
+            }
+            else
+                throw MetadataException("ShibConfig::addMetadata() unable to locate a metadata factory of the requested type");
+        }
     }
     catch (SAMLException& e)
     {
@@ -170,11 +184,40 @@ bool ShibInternalConfig::addMetadata(const char* type, const char* source)
             "failed to add %s provider to system using source '%s': unknown exception", type, source
             );
     }
-    m_lock->unlock();
     return ret;
 }
 
 ShibConfig& ShibConfig::getConfig()
 {
     return g_config;
+}
+
+void shibboleth::log_openssl()
+{
+    const char* file;
+    const char* data;
+    int flags,line;
+
+    unsigned long code=ERR_get_error_line_data(&file,&line,&data,&flags);
+    while (code)
+    {
+        Category& log=Category::getInstance("OpenSSL");
+        log.errorStream() << "error code: " << code << " in " << file << ", line " << line << CategoryStream::ENDLINE;
+        if (data && (flags & ERR_TXT_STRING))
+            log.errorStream() << "error data: " << data << CategoryStream::ENDLINE;
+        code=ERR_get_error_line_data(&file,&line,&data,&flags);
+    }
+}
+
+X509* shibboleth::B64_to_X509(const char* buf)
+{
+	BIO* bmem = BIO_new_mem_buf((void*)buf,-1);
+	BIO* b64 = BIO_new(BIO_f_base64());
+	b64 = BIO_push(b64, bmem);
+    X509* x=NULL;
+    d2i_X509_bio(b64,&x);
+    if (!x)
+        log_openssl();
+    BIO_free_all(b64);
+    return x;
 }
