@@ -421,7 +421,7 @@ bool XMLTrust::attach(const Iterator<IRevocation*>& revocations, const IProvider
 #else
         // Without a decent STL, we trade-off the transcoding by doing a linear search.
         for (vector<XMLTrustImpl::KeyAuthority*>::const_iterator keyauths=impl->m_keyauths.begin(); !kauth && keyauths!=impl->m_keyauths.end(); keyauths++) {
-            for (vector<const XMLCh*>::const_iterator subs=keyauths->m_subjects.begin(); !kauth && subs!=keyauths->m_subjects.end(); subs++) {
+            for (vector<const XMLCh*>::const_iterator subs=(*keyauths)->m_subjects.begin(); !kauth && subs!=(*keyauths)->m_subjects.end(); subs++) {
                 if (!XMLString::compareString(*name,*subs)) {
                     kauth=*keyauths;
                     if (log.isDebugEnabled()) {
@@ -604,7 +604,7 @@ bool XMLTrust::validate(
         }
 #else
         // Without a decent STL, we trade-off the transcoding by doing a linear search.
-        for (vector<XMLTrustImpl::DSIGKeyInfoList*>::const_iterator keybinds=impl->m_keybinds.begin(); !KIL && keybinds!=impl->m_keybinds.end(); keybinds++) {
+        for (vector<DSIGKeyInfoList*>::const_iterator keybinds=impl->m_keybinds.begin(); !KIL && keybinds!=impl->m_keybinds.end(); keybinds++) {
             for (size_t s=0; !KIL && s<(*keybinds)->getSize(); s++) {
                 if (!XMLString::compareString(*name,(*keybinds)->item(s)->getKeyName())) {
                     KIL=*keybinds;
@@ -800,7 +800,7 @@ bool XMLTrust::validate(
 #else
         // Without a decent STL, we trade-off the transcoding by doing a linear search.
         for (vector<XMLTrustImpl::KeyAuthority*>::const_iterator keyauths=impl->m_keyauths.begin(); !kauth && keyauths!=impl->m_keyauths.end(); keyauths++) {
-            for (vector<const XMLCh*>::const_iterator subs=keyauths->m_subjects.begin(); !kauth && subs!=keyauths->m_subjects.end(); subs++) {
+            for (vector<const XMLCh*>::const_iterator subs=(*keyauths)->m_subjects.begin(); !kauth && subs!=(*keyauths)->m_subjects.end(); subs++) {
                 if (!XMLString::compareString(*name2,*subs)) {
                     kauth=*keyauths;
                     if (log.isDebugEnabled()) {
