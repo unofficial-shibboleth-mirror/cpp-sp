@@ -39,9 +39,13 @@ logger=@-PKGSYSCONFDIR-@/shar.logger
 # If using a TCP-based SHAR, space delimit the allowed client IPs
 #sharacl = 127.0.0.1
 
-# Controls timeouts for AA queries (in seconds)
+# Controls AA query and caching behavior
 AATimeout=60
 AAConnectTimeout=30
+defaultLifetime=1800
+retryInterval=300
+strictValidity=true
+propagateErrors=false
 
 # The following shar items are session caching parameters
 # The default cache now uses a MySQL embedded database
@@ -57,6 +61,7 @@ mysql-cache-timeout = 14400
 
 # Only needed if the MySQL cache plugin is used.
 [extensions:saml]
+xmlproviders = @-LIBEXECDIR-@/xmlproviders.so
 mysql = @-LIBEXECDIR-@/shib-mysql-ccache.so
 
 # Arguments for the MySQL embedded database
@@ -72,10 +77,13 @@ edu.internet2.middleware.shibboleth.metadata.provider.XML=@-PKGSYSCONFDIR-@/site
 edu.internet2.middleware.shibboleth.target.AAP.provider.XML=@-PKGSYSCONFDIR-@/AAP.xml
 
 [creds]
-edu.internet2.middleware.shibboleth.creds.provider.XML=@-PKGSYSCONFDIR-@/creds.xml
+#edu.internet2.middleware.shibboleth.common.Credentials=@-PKGSYSCONFDIR-@/creds.xml
 
 [trust]
 edu.internet2.middleware.shibboleth.trust.provider.XML=@-PKGSYSCONFDIR-@/trust.xml
+
+[revocation]
+#edu.internet2.middleware.shibboleth.revocation.provider.XML=@-PKGSYSCONFDIR-@/trust.xml
 
 [isapi]
 # When using the ISAPI filter version, map IIS Instance IDs to server hostnames.

@@ -1,46 +1,44 @@
-<Trust xmlns="urn:mace:shibboleth:1.0" xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+<Trust xmlns="urn:mace:shibboleth:trust:1.0" xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
 
     <!--
-    
-    <KeyAuthority> elements map entity or authority certificates in <ds:KeyInfo> to
-    <Subject> data. Omitting <Subject> acts as a wildcard (any subject).
-    
-    <Subject> elements refer to the site/provider identifier that should be matched in
-    order to apply the trust information to a signature or TLS/SSL server identity.
-    It can contain a regexp="true" attribute to indicate a pattern match instead
-    of literal matching.
-    
-    There are two types of <KeyAuthority> elements, with a Type attribute indicating
-    which one is meant. The default, Type="authority", indicates that any <ds:X509Certificate>
-    elements that follow are certificate authorities that can be trusted for validating
-    a signing certificate or TLS certificate, pending other PKIX processing rules,
-    and certificate subject examination.
-    
-    Type="entity" means that the enclosed <ds:X509Certificate> elements can be used
-    directly for verifying signatures, and no additional checking on the certificate
-    is done. This supports special cases in which out of band certificate exchange is needed.
+ 	<Trust> elements map public keys or certificate authorities to named system
+ 	entities, or groups of entities. Directly mapping a key to an entity causes
+ 	the trust metadata to act as a certification authority directly for the
+ 	entity and its key, and is done with a single <ds:KeyInfo> element for each
+ 	key binding. This is as specified in http://www.w3.org/2000/09/xmldsig
+ 	
+ 	To bind a key to an entity directly, the key must be specified within the
+ 	<ds:KeyInfo> as either a <ds:KeyValue> (a bare key) or a <ds:X509Certificate>
+ 	within <ds:X509Data>. One or more "names" can be associated with the key
+ 	using <ds:KeyName> or <ds:X509Subject> in <ds:X509Data>. In both cases, use
+ 	of a full distinguished name in LDAP/RFC2253 format is suggested (reverse
+ 	order of RDNs from X.500, separated by commas, no extra spaces). This syntax
+ 	is mandatory when using <ds:X509Subject>. It is permissible in <ds:KeyName>
+ 	to just specify the entity's common name (CN) or a DNS subjectAltName, as
+ 	typically done when evaluating TLS certificates.
+ 	
+ 	(To output the subject of a certificate in this form, use the following
+ 	OpenSSL command:
+ 		$ openssl x509 -in cert.pem -subject -nameopt RFC2253
+ 	
+ 	As a general note, any base-64 encoded data in the file must be carefully
+ 	placed into the containing element without extra whitespace or linefeeds.
+ 	This usually means the encoded text should start on the same line as the
+ 	opening element, be wrapped at a reasonable line length (72 or so) and
+ 	be ended by a linefeed unless ending exactly on a line length boundary.
 
-	In either case, each certificate is placed in the file encoded in base64, and wrapped in
-	a <ds:X509Certificate> element which is alone inside a <ds:X509Data> element.
-    If multiple certificates are included, they are not a chain, and so must appear in
-    separate <ds:X509Data> elements. The base64-encoded version of the certificate is the
-    same as the PEM format supported by OpenSSL but without the opening and closing
-    BEGIN/END lines.
-    
-    The first example below shows an entity certificate specified for a specific host that
-    is issuing signed assertions on behalf of a site.
-    
-    The second lengthy example shows a set of certificate authorities being applied to
-    a set of matching logical site identifiers. Such sites must sign assertions and present
-    SSL certificates signed by one of the listed authorities, and must insure that the
-    certificates appear otherwise valid and appropriate.
-	
-    -->
+ 	Here is an example that binds a key directly to a host using a certificate.
+ 	Note that trust metadata does not define what this host is or what role it
+ 	performs. This is typically handled by referencing the corresponding name
+ 	in operational metadata. Also note that no validation of a certificate
+ 	specified in this form will be done, the key is merely extracted. To
+ 	revoke or expire the key binding, the entry must be removed.
+ 	--->
 
-    <KeyAuthority Type="entity">
-        <ds:KeyInfo>
-            <ds:X509Data>
-                <ds:X509Certificate>MIICpDCCAg2gAwIBAgICAm8wDQYJKoZIhvcNAQEEBQAwgakxCzAJBgNVBAYTAlVTMRIwEAYDVQQI
+    <ds:KeyInfo>
+    	<ds:KeyName>Email=root@shib2.internet2.edu,CN=shib2.internet2.edu,O=UCAID,L=Ann Arbor,ST=Michigan,C=US</ds:KeyName>
+        <ds:X509Data>
+            <ds:X509Certificate>MIICpDCCAg2gAwIBAgICAm8wDQYJKoZIhvcNAQEEBQAwgakxCzAJBgNVBAYTAlVTMRIwEAYDVQQI
 EwlXaXNjb25zaW4xEDAOBgNVBAcTB01hZGlzb24xIDAeBgNVBAoTF1VuaXZlcnNpdHkgb2YgV2lz
 Y29uc2luMSswKQYDVQQLEyJEaXZpc2lvbiBvZiBJbmZvcm1hdGlvbiBUZWNobm9sb2d5MSUwIwYD
 VQQDExxIRVBLSSBTZXJ2ZXIgQ0EgLS0gMjAwMjA3MDFBMB4XDTAyMDcyNjA1MDg1M1oXDTA2MDkw
@@ -53,12 +51,71 @@ AQH/BAIwADALBgNVHQ8EBAMCBaAwDQYJKoZIhvcNAQEEBQADgYEAhrSMGqkpC0zdL/m37A7g32le
 1kgi9PMJzgviXbG1k4eO+xl6JvSfHMfrcjtcHdH+IWZSEoJsKLhGbSSBcOCX34rm4RqE8h4ahgq7
 cDX2RCaY4D26R2cta7ZvXo7CUgJ7vbybSZ7QbqKs3yZcVXIL5sJXkhbZ3dnZRqiEm2VP9ZY=
 </ds:X509Certificate>
-            </ds:X509Data>
-        </ds:KeyInfo>
-        <Subject>shib2.internet2.edu</Subject>
-    </KeyAuthority>
+        </ds:X509Data>
+    </ds:KeyInfo>
     
-    <KeyAuthority Type="authority">
+    
+    <!---
+    <KeyAuthority> elements map authority certificates and/or revocation lists
+    to names. Omitting any names results in a wildcarded mapping that globally
+    applies the authorities to all transactions that cannot be evaluated with
+    direct key bindings. This is dangerous and should only be used in specialized
+    deployments, in conjunction with other policies via operational metadata
+    about which entities can issue assertions or make requests.
+
+	The <KeyAuthority> construct signals specialized semantics for the
+	<ds:KeyInfo> element(s) contained that cause all embedded certificates or
+	references to them to be interpreted as certificate authorities, rather than
+	alternate keys or chains of certificates for a single entity.
+	
+	The element first contains zero or more <ds:KeyName> elements that specify
+	the names of entities or groups of entities (such as federations) to which
+	the succeeding CA information applies. The name should be specified either
+	as a URI (for entities such as SAML identity and service providers and
+	federations) or an LDAP DN for system-level entities. Shorthand common names
+	can also be used but are best avoided.
+	
+	These names are followed by an arbitrary sequence of <ds:KeyInfo> elements
+	which are interpreted specifically for this context. All the embedded
+	<ds:X509Certificate> elements are extracted as certificate authorities and
+	treated as a flat list. Certificates in external files in DER or OpenSSL/PEM
+	format can be referenced using <ds:RetrievalMethod> elements with the
+	following standard and special Type attributes:
+	
+	Raw/DER format:
+	
+	<ds:RetrievalMethod URI="/path/to/cert.der"
+		Type="http://www.w3.org/2000/09/xmldsig#rawX509Certificate">
+    
+    OpenSSL/PEM format:
+    
+    <ds:RetrievalMethod URI="/path/to/cert.pem"
+		Type="urn:mace:shibboleth:RetrievalMethod:pemX509Certificate">
+
+	The other possible <ds:KeyInfo> content specifies X.509 Certificate Revocation
+	Lists, again either in-band via <ds:X509CRL> or in files via <ds:RetrievalMethod>.
+	Note that the Shibboleth plugin API differentiates trust and CRL access, but
+	they can both be drawn from this shared format.
+
+	Raw/DER format:
+	
+	<ds:RetrievalMethod URI="/path/to/crl.der"
+		Type="http://www.w3.org/2000/09/xmldsig-more#rawX509CRL">
+    
+    OpenSSL/PEM format:
+    
+    <ds:RetrievalMethod URI="/path/to/crl.pem"
+		Type="urn:mace:shibboleth:RetrievalMethod:pemX509CRL">
+    
+    The second lengthy example shows a set of certificate authorities being
+    applied to a set of providers that share a federation URI. Such providers
+    must sign assertions and present TLS certificates signed by one of the
+    listed authorities, and must insure that the certificates are otherwise
+    valid and appropriate.
+    -->
+
+    <KeyAuthority VerifyDepth="5">
+        <ds:KeyName>urn:mace:inqueue</ds:KeyName>
         <ds:KeyInfo>
             <ds:X509Data>
             	<!-- HEPKI Master Test CA -->
@@ -269,7 +326,6 @@ XvHxm5gGL95wKCz8
 </ds:X509Certificate>
             </ds:X509Data>
         </ds:KeyInfo>
-        <Subject regexp="true">^urn:mace:inqueue:.+$</Subject>
     </KeyAuthority>
 
 </Trust>
