@@ -243,7 +243,7 @@ static int shibrm_error_page(request_rec* r, const char* filename, ShibMLP& mlp)
 {
   ifstream infile (filename);
   if (!infile) {
-      ap_log_rerror(APLOG_MARK,APLOG_ERR,r,
+      ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
 		    "shibrm_error_page() cannot open %s", filename);
       return SERVER_ERROR;
   }
@@ -472,7 +472,7 @@ extern "C" int shibrm_check_auth(request_rec* r)
 
 	if (!strcmp(w,"valid-user"))
 	{
-	    ap_log_rerror(APLOG_MARK,APLOG_DEBUG,r,"shibrm_check_auth() accepting valid-user");
+	    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,"shibrm_check_auth() accepting valid-user");
 	    return OK;
 	}
 	else if (!strcmp(w,"user") && r->connection->user)
@@ -482,7 +482,7 @@ extern "C" int shibrm_check_auth(request_rec* r)
 	        w=ap_getword_conf(r->pool,&t);
 		if (!strcmp(r->connection->user,w))
 		{
-		    ap_log_rerror(APLOG_MARK,APLOG_DEBUG,r,"shibrm_check_auth() accepting user: %s",w);
+		    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,"shibrm_check_auth() accepting user: %s",w);
 		    return OK;
 		}
 	    }
@@ -492,7 +492,7 @@ extern "C" int shibrm_check_auth(request_rec* r)
 	    table* grpstatus=NULL;
 	    if (dc->szAuthGrpFile && r->connection->user)
 	    {
-		ap_log_rerror(APLOG_MARK,APLOG_DEBUG,r,"shibrm_check_auth() using groups file: %s\n",
+		ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,"shibrm_check_auth() using groups file: %s\n",
 			      dc->szAuthGrpFile);
 		grpstatus=groups_for_user(r,r->connection->user,dc->szAuthGrpFile);
 	    }
@@ -504,7 +504,7 @@ extern "C" int shibrm_check_auth(request_rec* r)
 	        w=ap_getword_conf(r->pool,&t);
 		if (ap_table_get(grpstatus,w))
 		{
-		    ap_log_rerror(APLOG_MARK,APLOG_DEBUG,r,"shibrm_check_auth() accepting group: %s",w);
+		    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,"shibrm_check_auth() accepting group: %s",w);
 		    return OK;
 		}
 	    }
@@ -513,7 +513,7 @@ extern "C" int shibrm_check_auth(request_rec* r)
 	{
 	    map<string,string>::const_iterator i=g_mapAttribRuleToHeader.find(w);
 	    if (i==g_mapAttribRuleToHeader.end())
-		ap_log_rerror(APLOG_MARK,APLOG_WARNING,r,"shibrm_check_auth() didn't recognize require rule: %s\n",w);
+		ap_log_rerror(APLOG_MARK,APLOG_WARNING|APLOG_NOERRNO,r,"shibrm_check_auth() didn't recognize require rule: %s\n",w);
 	    else
 	    {		
 		const char* vals=ap_table_get(r->headers_in,i->second.c_str());
@@ -529,7 +529,7 @@ extern "C" int shibrm_check_auth(request_rec* r)
 			{
                             if (i == 0)
 			    {
-			        ap_log_rerror(APLOG_MARK,APLOG_WARNING,r,"shibrm_check_auth() invalid header encoding %s: starts with semicolon", vals);
+			        ap_log_rerror(APLOG_MARK,APLOG_WARNING|APLOG_NOERRNO,r,"shibrm_check_auth() invalid header encoding %s: starts with semicolon", vals);
                                 return SERVER_ERROR;
 			    }
 
@@ -545,12 +545,12 @@ extern "C" int shibrm_check_auth(request_rec* r)
 
                             if (val == ruleval)
                             {
-		                ap_log_rerror(APLOG_MARK,APLOG_DEBUG,r,"shibrm_check_auth() expecting %s, got %s: authorization granted", ruleval.c_str(), val.c_str());
+		                ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,"shibrm_check_auth() expecting %s, got %s: authorization granted", ruleval.c_str(), val.c_str());
                                 return OK;
                             }
                             else
 			    {
-		                ap_log_rerror(APLOG_MARK,APLOG_DEBUG,r,"shibrm_check_auth() expecting %s, got %s: authorization not granted", ruleval.c_str(), val.c_str());
+		                ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,"shibrm_check_auth() expecting %s, got %s: authorization not granted", ruleval.c_str(), val.c_str());
 			    }
                         }
 		    }
@@ -558,12 +558,12 @@ extern "C" int shibrm_check_auth(request_rec* r)
 		    string val = vals_str.substr(j, vals_str.length()-j);
                     if (val == ruleval)
                     {
-	                ap_log_rerror(APLOG_MARK,APLOG_DEBUG,r,"shibrm_check_auth() expecting %s, got %s: authorization granted", ruleval.c_str(), val.c_str());
+	                ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,"shibrm_check_auth() expecting %s, got %s: authorization granted", ruleval.c_str(), val.c_str());
                         return OK;
                     }
                     else
 		    {
-	                ap_log_rerror(APLOG_MARK,APLOG_DEBUG,r,"shibrm_check_auth() expecting %s, got %s: authorization not granted", ruleval.c_str(), val.c_str());
+	                ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,"shibrm_check_auth() expecting %s, got %s: authorization not granted", ruleval.c_str(), val.c_str());
 		    }
 		}
 	    }
