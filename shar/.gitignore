@@ -2,7 +2,7 @@
 /.deps
 /Makefile
 /Makefile.in
-/shar
+/shibd
 /test-client
 /*.plg
 /testclient___Win32_Debug
