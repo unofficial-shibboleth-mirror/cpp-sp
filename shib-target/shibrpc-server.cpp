@@ -314,7 +314,7 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
   {
     log.info ("FAILED: %s", e.what());
     if (r) delete r;
-    if (origin) delete origin;
+    if (origin) XMLString::release(&origin);
     set_rpc_status_x(&result->status, e.which(), e.what(), e.where());
     return TRUE;
   }
@@ -323,7 +323,7 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
   {
     log.error ("Unknown error");
     if (r) delete r;
-    if (origin) delete origin;
+    if (origin) XMLString::release(&origin);
     set_rpc_status(&result->status, SHIBRPC_UNKNOWN_ERROR,
 		   "An unknown exception occurred", "");
     return TRUE;
