@@ -43,7 +43,7 @@ using namespace shibboleth;
 using namespace shibtarget;
 
 extern "C" module MODULE_VAR_EXPORT mod_shib;
-int shib_handler(request_rec* r, const IApplication* application, const IPropertySet* sessionProps, SHIRE& shire);
+int shib_handler(request_rec* r, const IApplication* application, SHIRE& shire);
 
 namespace {
     char* g_szSHIBConfig = NULL;
@@ -155,10 +155,9 @@ extern "C" int shib_check_user(request_rec* r)
         );
     pair<bool,const char*> application_id=settings.first->getString("applicationId");
     const IApplication* application=conf->getApplication(application_id.second);
-    const IPropertySet* sessionProps=application ? application->getPropertySet("Sessions") : NULL;
-    if (!application || !sessionProps) {
+    if (!application) {
         ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,SH_AP_R(r),
-           "shib_check_user: unable to map request to application session settings, check configuration");
+           "shib_check_user: unable to map request to application settings, check configuration");
         return SERVER_ERROR;
     }
     
@@ -167,7 +166,7 @@ extern "C" int shib_check_user(request_rec* r)
     
     // Get location of this application's assertion consumer service and see if this is it.
     if (strstr(targeturl,shire.getShireURL(targeturl))) {
-        return shib_handler(r,application,sessionProps,shire);
+        return shib_handler(r,application,shire);
     }
 
     // We can short circuit the handler if we run this...
@@ -196,13 +195,7 @@ extern "C" int shib_check_user(request_rec* r)
 
     ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_check_user: session check for %s",targeturl);
 
-    pair<bool,const char*> shib_cookie=sessionProps->getString("cookieName");
-    if (!shib_cookie.first) {
-        ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,SH_AP_R(r),
-		      "shib_check_user: no cookieName set for %s",
-		      application_id.second);
-        return SERVER_ERROR;
-    }
+    pair<const char*,const char*> shib_cookie=shire.getCookieNameProps();   // always returns *something*
 
     // We're in charge, so check for cookie.
     const char* session_id=NULL;
@@ -210,9 +203,9 @@ extern "C" int shib_check_user(request_rec* r)
 
     if (cookies) {
         ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_check_user: cookies found: %s",cookies);
-        if (session_id=strstr(cookies,shib_cookie.second)) {
+        if (session_id=strstr(cookies,shib_cookie.first)) {
             // Yep, we found a cookie -- pull it out (our session_id)
-            session_id+=strlen(shib_cookie.second) + 1; /* Skip over the '=' */
+            session_id+=strlen(shib_cookie.first) + 1; /* Skip over the '=' */
             char* cookiebuf = ap_pstrdup(r->pool,session_id);
             char* cookieend = strchr(cookiebuf,';');
             if (cookieend)
@@ -494,20 +487,19 @@ extern "C" int shib_post_handler(request_rec* r)
         );
     pair<bool,const char*> application_id=settings.first->getString("applicationId");
     const IApplication* application=conf->getApplication(application_id.second);
-    const IPropertySet* sessionProps=application ? application->getPropertySet("Sessions") : NULL;
-    if (!application || !sessionProps) {
+    if (!application) {
         ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,SH_AP_R(r),
-           "shib_post_handler: unable to map request to application session settings, check configuration");
+           "shib_post_handler: unable to map request to application settings, check configuration");
         return SERVER_ERROR;
     }
     
     // Declare SHIRE object for this request.
     SHIRE shire(application);
     
-    return shib_handler(r, application, sessionProps, shire);
+    return shib_handler(r, application, shire);
 }
 
-int shib_handler(request_rec* r, const IApplication* application, const IPropertySet* sessionProps, SHIRE& shire)
+int shib_handler(request_rec* r, const IApplication* application, SHIRE& shire)
 {
     // Prime the pump...
     const char* targeturl = ap_construct_url(r->pool,r->unparsed_uri,r);
@@ -518,13 +510,14 @@ int shib_handler(request_rec* r, const IApplication* application, const IPropert
 
     ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_handler() running");
 
-    pair<bool,const char*> shib_cookie=sessionProps->getString("cookieName");
-    pair<bool,const char*> shib_cookie_props=sessionProps->getString("cookieProps");
-    if (!shib_cookie.first) {
-        ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,SH_AP_R(r),
-            "shib_handler: no cookieName set for %s", application->getId());
+    const IPropertySet* sessionProps=application->getPropertySet("Sessions");
+    if (!sessionProps) {
+        ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,SH_AP_R(r),
+           "shib_post_handler: unable to map request to application session settings, check configuration");
         return SERVER_ERROR;
     }
+
+    pair<const char*,const char*> shib_cookie=shire.getCookieNameProps();   // always returns something
 
     ShibMLP markupProcessor;
     markupProcessor.insert("requestURL", targeturl);
@@ -616,8 +609,7 @@ int shib_handler(request_rec* r, const IApplication* application, const IPropert
     		  "shib_handler() POST process succeeded.  New session: %s", cookie.c_str());
 
         // We've got a good session, set the cookie...
-        char* val = ap_psprintf(r->pool,"%s=%s%s",shib_cookie.second,cookie.c_str(),
-            shib_cookie_props.first ? shib_cookie_props.second : "; path=/");
+        char* val = ap_psprintf(r->pool,"%s=%s%s",shib_cookie.first,cookie.c_str(),shib_cookie.second);
         ap_table_setn(r->err_headers_out, "Set-Cookie", val);
         ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_handler() setting cookie: %s", val);
 

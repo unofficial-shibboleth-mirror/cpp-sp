@@ -225,7 +225,33 @@ SHIRE::~SHIRE()
     delete m_parser;
 }
 
-const char* SHIRE::getShireURL(const char* resource)
+pair<const char*,const char*> SHIRE::getCookieNameProps() const
+{
+    static const char* defProps="; path=/";
+    static const char* defName="_shibsession_";
+    
+    const IPropertySet* props=m_app->getPropertySet("Sessions");
+    if (props) {
+        pair<bool,const char*> p=props->getString("cookieProps");
+        if (!p.first)
+            p.second=defProps;
+        if (!m_cookieName.empty())
+            return pair<const char*,const char*>(m_cookieName.c_str(),p.second);
+        pair<bool,const char*> p2=props->getString("cookieName");
+        if (p2.first) {
+            m_cookieName=p2.second;
+            return pair<const char*,const char*>(p2.second,p.second);
+        }
+        m_cookieName=defName;
+        m_cookieName+=m_app->getId();
+        return pair<const char*,const char*>(m_cookieName.c_str(),p.second);
+    }
+    m_cookieName=defName;
+    m_cookieName+=m_app->getId();
+    return pair<const char*,const char*>(m_cookieName.c_str(),defProps);
+}
+
+const char* SHIRE::getShireURL(const char* resource) const
 {
     if (!m_shireURL.empty())
         return m_shireURL.c_str();
@@ -299,7 +325,7 @@ const char* SHIRE::getShireURL(const char* resource)
     return m_shireURL.c_str();
 }
 
-const char* SHIRE::getAuthnRequest(const char* resource)
+const char* SHIRE::getAuthnRequest(const char* resource) const
 {
     if (!m_authnRequest.empty())
         return m_authnRequest.c_str();
@@ -324,7 +350,7 @@ const char* SHIRE::getAuthnRequest(const char* resource)
     return m_authnRequest.c_str();
 }
 
-const char* SHIRE::getLazyAuthnRequest(const char* query_string)
+const char* SHIRE::getLazyAuthnRequest(const char* query_string) const
 {
     CgiParse parser(query_string,strlen(query_string));
     const char* target=parser.get_value("target");
@@ -333,13 +359,13 @@ const char* SHIRE::getLazyAuthnRequest(const char* query_string)
     return getAuthnRequest(target);
 }
 
-pair<const char*,const char*> SHIRE::getFormSubmission(const char* post, unsigned int len)
+pair<const char*,const char*> SHIRE::getFormSubmission(const char* post, unsigned int len) const
 {
     m_parser = new CgiParse(post,len);
     return pair<const char*,const char*>(m_parser->get_value("SAMLResponse"),m_parser->get_value("TARGET"));
 }
 
-RPCError* SHIRE::sessionIsValid(const char* session_id, const char* ip)
+RPCError* SHIRE::sessionIsValid(const char* session_id, const char* ip) const
 {
   saml::NDC ndc("sessionIsValid");
   Category& log = Category::getInstance("shibtarget.SHIRE");
@@ -421,7 +447,7 @@ RPCError* SHIRE::sessionIsValid(const char* session_id, const char* ip)
   return retval;
 }
 
-RPCError* SHIRE::sessionCreate(const char* response, const char* ip, string& cookie)
+RPCError* SHIRE::sessionCreate(const char* response, const char* ip, string& cookie) const
 {
   saml::NDC ndc("sessionCreate");
   Category& log = Category::getInstance("shibtarget.SHIRE");

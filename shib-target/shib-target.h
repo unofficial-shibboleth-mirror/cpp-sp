@@ -266,27 +266,31 @@ namespace shibtarget {
     public:
         SHIRE(const IApplication* app) : m_app(app), m_parser(NULL) {}
         ~SHIRE();
-    
+        
+        // Get the session cookie name and properties for the application
+        std::pair<const char*,const char*> getCookieNameProps() const;
+        
         // Find the default assertion consumer service for the resource
-        const char* getShireURL(const char* resource);
+        const char* getShireURL(const char* resource) const;
         
         // Generate a Shib 1.x AuthnRequest redirect URL for the resource
-        const char* getAuthnRequest(const char* resource);
+        const char* getAuthnRequest(const char* resource) const;
         
         // Process a lazy session setup request and turn it into an AuthnRequest
-        const char* getLazyAuthnRequest(const char* query_string);
+        const char* getLazyAuthnRequest(const char* query_string) const;
         
         // Process a POST profile submission, and return (SAMLResponse,TARGET) pair.
-        std::pair<const char*,const char*> getFormSubmission(const char* post, unsigned int len);
+        std::pair<const char*,const char*> getFormSubmission(const char* post, unsigned int len) const;
         
-        RPCError* sessionCreate(const char* response, const char* ip, std::string &cookie);
-        RPCError* sessionIsValid(const char* session_id, const char* ip);
+        RPCError* sessionCreate(const char* response, const char* ip, std::string &cookie) const;
+        RPCError* sessionIsValid(const char* session_id, const char* ip) const;
     
     private:
         const IApplication* m_app;
-        std::string m_shireURL;
-        std::string m_authnRequest;
-        CgiParse* m_parser;
+        mutable std::string m_cookieName;
+        mutable std::string m_shireURL;
+        mutable std::string m_authnRequest;
+        mutable CgiParse* m_parser;
     };
 
     class SHIBTARGET_EXPORTS RM

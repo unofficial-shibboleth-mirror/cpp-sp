@@ -433,9 +433,8 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
         IRequestMapper::Settings settings=map_request(pfc,pn,mapper,site.c_str(),targeturl);
         pair<bool,const char*> application_id=settings.first->getString("applicationId");
         const IApplication* application=conf->getApplication(application_id.second);
-        const IPropertySet* sessionProps=application ? application->getPropertySet("Sessions") : NULL;
-        if (!application || !sessionProps)
-            return WriteClientError(pfc,"Unable to map request to application session settings, check configuration.");
+        if (!application)
+            return WriteClientError(pfc,"Unable to map request to application settings, check configuration.");
         
         // Declare SHIRE object for this request.
         SHIRE shire(application);
@@ -446,16 +445,14 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
 
         // Now check the policy for this request.
         pair<bool,bool> requireSession=settings.first->getBool("requireSession");
-        pair<bool,const char*> shib_cookie=sessionProps->getString("cookieName");
-        if (!shib_cookie.first)
-            return WriteClientError(pfc,"No session cookie name defined for this application, check configuration.");
+        pair<const char*,const char*> shib_cookie=shire.getCookieNameProps();
 
         // Check for session cookie.
         const char* session_id=NULL;
         GetHeader(pn,pfc,"Cookie:",buf,128,false);
         Category::getInstance("isapi_shib.HttpFilterProc").debug("cookie header is {%s}",(const char*)buf);
-        if (!buf.empty() && (session_id=strstr(buf,shib_cookie.second))) {
-            session_id+=strlen(shib_cookie.second) + 1;   /* Skip over the '=' */
+        if (!buf.empty() && (session_id=strstr(buf,shib_cookie.first))) {
+            session_id+=strlen(shib_cookie.first) + 1;   /* Skip over the '=' */
             char* cookieend=strchr(session_id,';');
             if (cookieend)
                 *cookieend = '\0';    /* Ignore anyting after a ; */
@@ -829,10 +826,7 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
         if (!strstr(targeturl.c_str(),shire.getShireURL(targeturl.c_str())))
             return WriteClientError(lpECB,"The request's application and associated shireURL setting are inconsistent.");;
 
-        pair<bool,const char*> shib_cookie=sessionProps->getString("cookieName");
-        pair<bool,const char*> shib_cookie_props=sessionProps->getString("cookieProps");
-        if (!shib_cookie.first)
-            return WriteClientError(lpECB,"No session cookie name defined for this application, check configuration.");
+        pair<const char*,const char*> shib_cookie=shire.getCookieNameProps();
 
         // Make sure this is SSL, if it should be
         pair<bool,bool> shireSSL=sessionProps->getBool("shireSSL");
@@ -940,8 +934,7 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
         delete status;
     
         // We've got a good session, set the cookie and redirect to target.
-        cookie = string("Set-Cookie: ") + shib_cookie.second + '=' + cookie +
-            (shib_cookie_props.first ? shib_cookie_props.second : "; path=/") + "\r\n" 
+        cookie = string("Set-Cookie: ") + shib_cookie.first + '=' + cookie + shib_cookie.second + "\r\n"
             "Location: " + elements.second + "\r\n"
             "Expires: 01-Jan-1997 12:00:00 GMT\r\n"
             "Cache-Control: private,no-store,no-cache\r\n"
