@@ -1,0 +1,23 @@
+7/15/03
+Version 1.0.1, shib Library version "4", shibtarget Library Version "3"
+
+This release works with SAML library version "3".
+
+Please read the README.txt and INSTALL.txt files in the same directory
+with this file before continuing. More general information is available
+there. This file documents the particulars of building from source on
+Windows NT/2000/XP.
+
+Visual C++ 6.0 on Windows is currently supported. The Shibboleth.dsw workspace
+file is located in the root of the distribution. It assumes that OpenSAML has
+been built and is available, by default, alongside the location where this
+archive is unpacked:
+
+	/opensaml/
+	/shibboleth/
+
+You can choose which, if any, web server modules to build, in case you don't
+need or want one or more of them.
+
+For more information about Windows builds, please read the OpenSAML
+INSTALL-WIN32.txt file.

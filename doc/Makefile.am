@@ -4,6 +4,7 @@ pkgdocdir = $(prefix)/doc/@PACKAGE@
 pkgdoc_DATA = \
 	CREDITS.txt \
 	INSTALL.txt \
+	INSTALL-WIN32.txt \
 	LICENSE.txt \
 	NEWS.txt \
 	README.txt \
