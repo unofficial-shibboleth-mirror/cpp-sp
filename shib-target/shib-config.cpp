@@ -162,20 +162,6 @@ void STConfig::init()
   if (ini->get_tag (app, SHIBTARGET_TAG_SCHEMAS, true, &tag))
     samlConf.schema_dir = tag;
 
-  // Init SAML Binding Configuration
-  if (ini->get_tag (app, SHIBTARGET_TAG_AATIMEOUT, true, &tag))
-    samlConf.binding_defaults.timeout = atoi(tag.c_str());
-  if (ini->get_tag (app, SHIBTARGET_TAG_AACONNECTTO, true, &tag))
-    samlConf.binding_defaults.conn_timeout = atoi(tag.c_str());
-  if (ini->get_tag (app, SHIBTARGET_TAG_CERTFILE, true, &tag))
-      log.error("using OBSOLETE certfile setting, please migrate to the XML-based credential format (see the latest target deploy guide)");
-  if (ini->get_tag (app, SHIBTARGET_TAG_KEYFILE, true, &tag))
-      log.error("using OBSOLETE keyfile setting, please migrate to the XML-based credential format (see the latest target deploy guide)");
-  if (ini->get_tag (app, SHIBTARGET_TAG_KEYPASS, true, &tag))
-      log.error("using OBSOLETE keypass setting, please migrate to the XML-based credential format (see the latest target deploy guide)");
-  if (ini->get_tag (app, SHIBTARGET_TAG_CALIST, true, &tag))
-      log.error("using OBSOLETE calist setting, please use the XML-based trust format (see the latest target deploy guide)");
-
   try {
     if (!samlConf.init()) {
       log.fatal ("Failed to initialize SAML Library");

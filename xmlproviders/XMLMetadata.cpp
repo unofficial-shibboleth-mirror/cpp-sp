@@ -129,8 +129,7 @@ namespace {
             Iterator<const IKeyDescriptor*> getKeyDescriptors() const {return m_keys;}
             const IOrganization* getOrganization() const {return NULL;}
             Iterator<const IContactPerson*> getContacts() const {return m_provider->getContacts();}
-            const XMLCh* getSOAPEndpoint() const {return NULL;}
-            const XMLCh* getURLEndpoint() const {return NULL;}
+            Iterator<const IEndpoint*> getDefaultEndpoints() const {return EMPTY(const IEndpoint*);}
             const char* getErrorURL() const {return m_provider->getErrorURL();}
             const DOMElement* getElement() const {return m_root;}
         
@@ -153,6 +152,8 @@ namespace {
             const XMLCh* getBinding() const { return m_binding; }
             const XMLCh* getVersion() const { return NULL; }
             const XMLCh* getLocation() const { return m_location; }
+            const XMLCh* getResponseLocation() const { return NULL; }
+            const DOMElement* getElement() const { return NULL; }
         
         private:
             const XMLCh* m_binding;
@@ -165,11 +166,8 @@ namespace {
             SSORole(const Provider* provider, const DOMElement* e) : Role(provider,e) {}
             ~SSORole() {}
             Iterator<const IEndpoint*> getSingleLogoutServices() const {return EMPTY(const IEndpoint*);}
-            const XMLCh* getSingleLogoutServiceReturnURL() const {return NULL;}
             Iterator<const IEndpoint*> getFederationTerminationServices() const {return EMPTY(const IEndpoint*);}
-            const XMLCh* getFederationTerminationServiceReturnURL() const {return NULL;}
             Iterator<const IEndpoint*> getRegisterNameIdentifierServices() const {return EMPTY(const IEndpoint*);}
-            const XMLCh* getRegisterNameIdentifierServiceReturnURL() const {return NULL;}
         };
         
         class IDPRole : public SSORole, public virtual IIDPProviderRole

@@ -72,8 +72,10 @@ bool shibboleth::ssl_ctx_callback(void* ssl_ctx, void* userptr)
         const ICredResolver* cr=c.lookup(b->m_credResolverId);
         if (cr)
             cr->attach(ssl_ctx);
-        else
-            Category::getInstance(SHIB_LOGCAT".ShibBinding").warn("unable to access credentials resolver, request will be anonymous");
+        else {
+            Category::getInstance(SHIB_LOGCAT".ShibBinding").error("unable to attach credentials to request");
+            return false;
+        }
         
         Trust t(b->m_trusts);
         if (!t.attach(b->m_revocations, b->m_AA, ssl_ctx)) {

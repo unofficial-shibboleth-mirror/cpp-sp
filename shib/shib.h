@@ -132,6 +132,16 @@ namespace shibboleth
         virtual ~IKeyDescriptor() {}
     };
 
+    struct SHIB_EXPORTS IEndpoint
+    {
+        virtual const XMLCh* getBinding() const=0;
+        virtual const XMLCh* getVersion() const=0;
+        virtual const XMLCh* getLocation() const=0;
+        virtual const XMLCh* getResponseLocation() const=0;
+        virtual const DOMElement* getElement() const=0;
+        virtual ~IEndpoint() {}
+    };
+
     struct SHIB_EXPORTS IProvider;
     struct SHIB_EXPORTS IProviderRole
     {
@@ -140,29 +150,17 @@ namespace shibboleth
         virtual saml::Iterator<const IKeyDescriptor*> getKeyDescriptors() const=0;
         virtual const IOrganization* getOrganization() const=0;
         virtual saml::Iterator<const IContactPerson*> getContacts() const=0;
-        virtual const XMLCh* getSOAPEndpoint() const=0;
-        virtual const XMLCh* getURLEndpoint() const=0;
+        virtual saml::Iterator<const IEndpoint*> getDefaultEndpoints() const=0;
         virtual const char* getErrorURL() const=0;
         virtual const DOMElement* getElement() const=0;
         virtual ~IProviderRole() {}
     };
-    
-    struct SHIB_EXPORTS IEndpoint
-    {
-        virtual const XMLCh* getBinding() const=0;
-        virtual const XMLCh* getVersion() const=0;
-        virtual const XMLCh* getLocation() const=0;
-        virtual ~IEndpoint() {}
-    };
-    
+       
     struct SHIB_EXPORTS ISSOProviderRole : public virtual IProviderRole
     {
         virtual saml::Iterator<const IEndpoint*> getSingleLogoutServices() const=0;
-        virtual const XMLCh* getSingleLogoutServiceReturnURL() const=0;
         virtual saml::Iterator<const IEndpoint*> getFederationTerminationServices() const=0;
-        virtual const XMLCh* getFederationTerminationServiceReturnURL() const=0;
         virtual saml::Iterator<const IEndpoint*> getRegisterNameIdentifierServices() const=0;
-        virtual const XMLCh* getRegisterNameIdentifierServiceReturnURL() const=0;
         virtual ~ISSOProviderRole() {}
     };
     

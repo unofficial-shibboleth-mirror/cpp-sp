@@ -152,6 +152,7 @@ private:
   Thread*	cleanup_thread;
   
   // cached config settings
+  int AATimeout,AAConnectTimeout;
   int defaultLifetime,retryInterval;
   bool strictValidity,propagateErrors;
   friend class InternalCCacheEntry;
@@ -193,13 +194,18 @@ CCache* CCache::getInstance(const char* type)
 /* InternalCCache:  A Credential Cache                                        */
 /******************************************************************************/
 
-InternalCCache::InternalCCache() : defaultLifetime(1800), retryInterval(300), strictValidity(true), propagateErrors(false)
+InternalCCache::InternalCCache()
+    : AATimeout(30), AAConnectTimeout(15), defaultLifetime(1800), retryInterval(300), strictValidity(true), propagateErrors(false)
 {
   log = &(log4cpp::Category::getInstance("shibtarget.InternalCCache"));
   lock = RWLock::create();
 
   string tag;
   ShibINI& ini = ShibTargetConfig::getConfig().getINI();
+  if (ini.get_tag(SHIBTARGET_SHAR, SHIBTARGET_TAG_AATIMEOUT, false, &tag))
+    AATimeout = atoi(tag.c_str());
+  if (ini.get_tag(SHIBTARGET_SHAR, SHIBTARGET_TAG_AACONNECTTO, false, &tag))
+    AAConnectTimeout = atoi(tag.c_str());
   if (ini.get_tag(SHIBTARGET_SHAR, "defaultLifetime", false, &tag))
     defaultLifetime=atoi(tag.c_str());
   if (ini.get_tag(SHIBTARGET_SHAR, "retryInterval", false, &tag))
@@ -656,7 +662,10 @@ SAMLResponse* InternalCCacheEntry::getNewResponse()
     SAMLResponse* response = NULL;
     ShibBinding binding(conf.getRevocationProviders(),conf.getTrustProviders(),conf.getCredentialProviders());
     try {
-        response=binding.send(*req,site,NULL,p_auth->getBindings());
+        SAMLConfig::SAMLBindingConfig bindconf;
+        bindconf.timeout=m_cache->AATimeout;
+        bindconf.conn_timeout=m_cache->AAConnectTimeout;
+        response=binding.send(*req,site,NULL,p_auth->getBindings(),bindconf);
     }
     catch (SAMLException& e) {
         log->error("caught SAML exception during query to AA: %s", e.what());
