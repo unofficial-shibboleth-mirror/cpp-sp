@@ -77,48 +77,30 @@
 
 namespace shibboleth
 {
+    class XMLOriginSiteMapperImpl;
     class SHIB_EXPORTS XMLOriginSiteMapper : public IOriginSiteMapper
     {
     public:
-        XMLOriginSiteMapper(const char* pathname);
+        XMLOriginSiteMapper(const char* pathname, bool loadTrust);
         ~XMLOriginSiteMapper();
 
-        virtual saml::Iterator<const IContactInfo*> getContacts(const XMLCh* originSite) const;
-        virtual const char* getErrorURL(const XMLCh* originSite) const;
-        virtual saml::Iterator<saml::xstring> getHandleServiceNames(const XMLCh* originSite) const;
-        virtual XSECCryptoX509* getHandleServiceCert(const XMLCh* handleService) const;
-        virtual saml::Iterator<std::pair<saml::xstring,bool> > getSecurityDomains(const XMLCh* originSite) const;
-        virtual time_t getTimestamp() const { return m_filestamp; }
+        void lock();
+        void unlock();
+
+        bool has(const XMLCh* originSite) const;
+        saml::Iterator<const IContactInfo*> getContacts(const XMLCh* originSite) const;
+        const char* getErrorURL(const XMLCh* originSite) const;
+        saml::Iterator<saml::xstring> getHandleServiceNames(const XMLCh* originSite) const;
+        XSECCryptoX509* getHandleServiceCert(const XMLCh* handleService) const;
+        saml::Iterator<std::pair<saml::xstring,bool> > getSecurityDomains(const XMLCh* originSite) const;
+        time_t getTimestamp() const { return m_filestamp; }
 
     private:
-        struct OriginSite
-        {
-            OriginSite(const XMLCh* errorURL) : m_errorURL(XMLString::transcode(errorURL)) {}
-            ~OriginSite();
-
-            class ContactInfo : public IContactInfo
-            {
-            public:
-                ContactInfo(ContactType type, const XMLCh* name, const XMLCh* email);
-                
-                ContactType getType() const { return m_type; }
-                const char* getName() const { return m_name.get(); }            
-                const char* getEmail() const { return m_email.get(); }
-                
-            private:
-                ContactType m_type;
-                std::auto_ptr<char> m_name, m_email;
-            };
-            
-            std::vector<const IContactInfo*> m_contacts;
-            std::auto_ptr<char> m_errorURL;
-            std::vector<saml::xstring> m_handleServices;
-            std::vector<std::pair<saml::xstring,bool> > m_domains;
-        };
-
-        std::map<saml::xstring,OriginSite*> m_sites;
-        std::map<saml::xstring,XSECCryptoX509*> m_hsCerts;
+        std::string m_source;
+        bool m_trust;
         time_t m_filestamp;
+        RWLock* m_lock;
+        XMLOriginSiteMapperImpl* m_impl;
     };
 
     class AAP
@@ -148,19 +130,27 @@ namespace shibboleth
     class ShibInternalConfig : public ShibConfig
     {
     public:
-        ShibInternalConfig() : m_AAP(NULL), m_mapper(NULL), m_lock(NULL) {}
+        ShibInternalConfig() : m_AAP(NULL), m_lock(NULL) {}
 
-        // global per-process setup and shutdown of runtime
         bool init();
         void term();
 
-        IOriginSiteMapper* getMapper();
-        void releaseMapper(IOriginSiteMapper* mapper);
+        void regFactory(const char* type, OriginSiteMapperFactory* factory);
+        void unregFactory(const char* type);
+        
+        bool addMapper(const char* type, const char* source);
 
         AAP* m_AAP;
+        
     private:
-        IOriginSiteMapper* m_mapper;
-        RWLock* m_lock;
+        friend class OriginSiteMapper;
+        
+        typedef std::map<std::string, OriginSiteMapperFactory*> OriginMapperFactoryMap;
+        OriginMapperFactoryMap m_originFactoryMap;
+        
+        typedef std::map<std::pair<std::string, std::string>, IOriginSiteMapper*> OriginMapperMap;
+        OriginMapperMap m_originMap;
+        Mutex* m_lock;
     };
 }
 

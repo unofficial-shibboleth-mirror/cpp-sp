@@ -83,34 +83,34 @@ void shib_sock_close (ShibSocket s, ShibSockName name);
 /* shib-target.cpp */
 
 /* application names */
-#define SHIBTARGET_GENERAL	"general"
-#define SHIBTARGET_SHAR	    "shar"
-#define SHIBTARGET_SHIRE	"shire"
-#define SHIBTARGET_RM		"rm"
+#define SHIBTARGET_GENERAL  "general"
+#define SHIBTARGET_SHAR     "shar"
+#define SHIBTARGET_SHIRE    "shire"
+#define SHIBTARGET_RM		 "rm"
 #define SHIBTARGET_POLICIES "policies"
 
 /* configuration tags */
-#define SHIBTARGET_TAG_LOGGER	"logger"
-#define SHIBTARGET_TAG_SCHEMAS	"schemadir"
-#define SHIBTARGET_TAG_CERTFILE	"certfile"
-#define SHIBTARGET_TAG_KEYFILE	"keyfile"
-#define SHIBTARGET_TAG_KEYPASS	"keypass"
-#define SHIBTARGET_TAG_CALIST	"calist"
+#define SHIBTARGET_TAG_LOGGER   "logger"
+#define SHIBTARGET_TAG_SCHEMAS	 "schemadir"
+#define SHIBTARGET_TAG_CERTFILE "certfile"
+#define SHIBTARGET_TAG_KEYFILE  "keyfile"
+#define SHIBTARGET_TAG_KEYPASS  "keypass"
+#define SHIBTARGET_TAG_CALIST   "calist"
 
-#define SHIBTARGET_TAG_AATIMEOUT "AATimeout"
-#define SHIBTARGET_TAG_AACONNECTTO "AAConnectTimeout"
-#define SHIBTARGET_TAG_SAMLCOMPAT "SAMLCompat"
+#define SHIBTARGET_TAG_AATIMEOUT    "AATimeout"
+#define SHIBTARGET_TAG_AACONNECTTO  "AAConnectTimeout"
+#define SHIBTARGET_TAG_SAMLCOMPAT   "SAMLCompat"
 
 #define SHIBTARGET_TAG_AAP      "aap-uri"
-#define SHIBTARGET_TAG_SITES	"sitesFile"
+#define SHIBTARGET_TAG_METADATA "metadata"
 
-#define SHIBTARGET_TAG_DEFAULTLIFE	"defaultLife"
+#define SHIBTARGET_TAG_DEFAULTLIFE  "defaultLife"
 
-#define SHIBTARGET_TAG_CACHETYPE	"cacheType"
-#define SHIBTARGET_TAG_CACHECLEAN	"cacheClean"
-#define SHIBTARGET_TAG_CACHETIMEOUT	"cacheTimeout"
+#define SHIBTARGET_TAG_CACHETYPE    "cacheType"
+#define SHIBTARGET_TAG_CACHECLEAN   "cacheClean"
+#define SHIBTARGET_TAG_CACHETIMEOUT "cacheTimeout"
 
-#define SHIBTARGET_TAG_REQATTRS		"requestAttributes"
+#define SHIBTARGET_TAG_REQATTRS     "requestAttributes"
 
 /* initialize and finalize the target library (return 0 on success, 1 on failure) */
 int shib_target_initialize (const char* application, const char* ini_file);
@@ -192,9 +192,9 @@ namespace shibtarget {
     const char* getType();
     const char* getText();
     const char* getDesc();
-    const char* getOriginErrorURL();
-    const char* getOriginContactName();
-    const char* getOriginContactEmail();
+    std::string getOriginErrorURL();
+    std::string getOriginContactName();
+    std::string getOriginContactEmail();
     int getCode();
 
   private:

@@ -179,12 +179,6 @@ void STConfig::init()
   if (ini->get_tag(app, SHIBTARGET_TAG_AAP, true, &tag))
       shibConf.aapFile=tag;
 
-  if (! ini->get_tag (app, SHIBTARGET_TAG_SITES, true, &tag)) {
-    log.fatal("No Sites File found in configuration");
-    throw runtime_error ("No Sites File found in configuration");
-  }
-  shibConf.mapperFile=tag;
-  
   try { 
     if (!shibConf.init()) {
       log.fatal ("Failed to initialize Shib library");
@@ -217,6 +211,26 @@ void STConfig::init()
     delete iter;
   }
 
+  // Load the specified metadata.
+  bool anyAdded=false;
+  if (ini->get_tag(app, SHIBTARGET_TAG_METADATA, true, &tag) && ini->exists(tag))
+  {
+    ShibINI::Iterator* iter=ini->tag_iterator(tag);
+    for (const string* prov=iter->begin(); prov; prov=iter->next())
+    {
+        const string source=ini->get(tag,*prov);
+        log.info("registering metadata provider: type=%s, source=%s",prov->c_str(),source.c_str());
+        if (shibConf.addMapper(prov->c_str(),source.c_str()))
+            anyAdded=true;
+    }
+    delete iter;
+  }
+  if (!anyAdded)
+  {
+    log.fatal("No metadata providers successfully added");
+    throw runtime_error("No metadata providers successfully added");
+  }
+  
   // Register attributes based on built-in classes.
   if (ini->exists("attributes")) {
     log.info("registering attributes");

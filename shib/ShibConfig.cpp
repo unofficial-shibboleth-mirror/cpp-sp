@@ -68,6 +68,7 @@
 using namespace saml;
 using namespace shibboleth;
 using namespace log4cpp;
+using namespace std;
 
 SAML_EXCEPTION_FACTORY(UnsupportedProtocolException);
 SAML_EXCEPTION_FACTORY(OriginSiteMapperException);
@@ -77,6 +78,16 @@ namespace {
 }
 
 ShibConfig::~ShibConfig() {}
+
+extern "C" IOriginSiteMapper* XMLMapperFactory(const char* source)
+{
+    return new XMLOriginSiteMapper(source,false);
+}
+
+extern "C" IOriginSiteMapper* XMLTrustMapperFactory(const char* source)
+{
+    return new XMLOriginSiteMapper(source,true);
+}
 
 bool ShibInternalConfig::init()
 {
@@ -101,91 +112,77 @@ bool ShibInternalConfig::init()
         }
     }
 
-    m_lock=RWLock::create();
+    m_lock=Mutex::create();
     if (!m_lock)
     {
-        Category::getInstance(SHIB_LOGCAT".ShibConfig").fatal("init: failed to create mapper locks");
-        delete m_lock;
+        Category::getInstance(SHIB_LOGCAT".ShibConfig").fatal("init: failed to create mapper lock");
         delete m_AAP;
         return false;
     }
-
-    try
-    {
-        m_mapper=new XMLOriginSiteMapper(mapperFile.c_str());
-    }
-    catch(SAMLException& e)
-    {
-        Category::getInstance(SHIB_LOGCAT".ShibConfig").fatal("init: failed to initialize origin site mapper: %s", e.what());
-        delete m_lock;
-        delete m_AAP;
-        return false;
-    }
+    
+    regFactory("edu.internet2.middleware.shibboleth.metadata.origin.XML",&XMLMapperFactory);
+    regFactory("edu.internet2.middleware.shibboleth.metadata.origin.XMLTrust",&XMLTrustMapperFactory);
 
     return true;
 }
 
 void ShibInternalConfig::term()
 {
-    delete m_mapper;
+    for (OriginMapperMap::iterator i=m_originMap.begin(); i!=m_originMap.end(); i++)
+        delete i->second;
     delete m_lock;
     delete m_AAP;
 }
 
-IOriginSiteMapper* ShibInternalConfig::getMapper()
+void ShibInternalConfig::regFactory(const char* type, OriginSiteMapperFactory* factory)
 {
-    m_lock->rdlock();
-
-    // Check if we need to refresh.
-#ifdef WIN32
-    struct _stat stat_buf;
-    if (_stat(mapperFile.c_str(), &stat_buf) == 0)
-#else
-    struct stat stat_buf;
-    if (stat(mapperFile.c_str(), &stat_buf) == 0)
-#endif
-    {
-        if (m_mapper->getTimestamp()>0 && m_mapper->getTimestamp()<stat_buf.st_mtime)
-        {
-            // Elevate lock and recheck.
-            m_lock->unlock();
-            m_lock->wrlock();
-            if (m_mapper->getTimestamp()>0 && m_mapper->getTimestamp()<stat_buf.st_mtime)
-            {
-                try
-                {
-                    IOriginSiteMapper* new_mapper=new XMLOriginSiteMapper(mapperFile.c_str());
-                    delete m_mapper;
-                    m_mapper=new_mapper;
-                    m_lock->unlock();
-                }
-                catch(SAMLException& e)
-                {
-                    m_lock->unlock();
-                    saml::NDC ndc("getMapper");
-                    Category::getInstance(SHIB_LOGCAT".ShibConfig").error("failed to reload origin site mapper, sticking with what we have: %s", e.what());
-                }
-                catch(...)
-                {
-                    m_lock->unlock();
-                    saml::NDC ndc("getMapper");
-                    Category::getInstance(SHIB_LOGCAT".ShibConfig").error("caught an unknown exception, sticking with what we have");
-                }
-            }
-            else
-            {
-                m_lock->unlock();
-            }
-            m_lock->rdlock();
-        }
-    }
-    
-    return m_mapper;
+    if (type && factory)
+        m_originFactoryMap[type]=factory;
 }
 
-void ShibInternalConfig::releaseMapper(IOriginSiteMapper* mapper)
+void ShibInternalConfig::unregFactory(const char* type)
 {
+    if (type)
+        m_originFactoryMap.erase(type);
+}
+
+bool ShibInternalConfig::addMapper(const char* type, const char* source)
+{
+    saml::NDC ndc("addMapper");
+
+    bool ret=false;
+    m_lock->lock();
+    try
+    {
+        OriginMapperFactoryMap::const_iterator i=m_originFactoryMap.find(type);
+        if (i!=m_originFactoryMap.end())
+        {
+            if (m_originMap.find(pair<string,string>(type,source))==m_originMap.end())
+            {
+                m_originMap[pair<string,string>(type,source)]=(i->second)(source);
+                ret=true;
+            }
+            else
+                throw OriginSiteMapperException("ShibConfig::addMapper() cannot add a duplicate mapper");
+        }
+        else
+            throw OriginSiteMapperException("ShibConfig::addMapper() unable to locate a mapper factory of the requested type");
+        
+    }
+    catch (SAMLException& e)
+    {
+        Category::getInstance(SHIB_LOGCAT".ShibConfig").error(
+            "failed to add %s mapper to system using source '%s': %s", type, source, e.what()
+            );
+    }
+    catch (...)
+    {
+        Category::getInstance(SHIB_LOGCAT".ShibConfig").error(
+            "failed to add %s mapper to system using source '%s': unknown exception", type, source
+            );
+    }
     m_lock->unlock();
+    return ret;
 }
 
 ShibConfig& ShibConfig::getConfig()

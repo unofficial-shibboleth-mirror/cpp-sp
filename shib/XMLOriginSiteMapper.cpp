@@ -61,6 +61,7 @@
 #include <sys/stat.h>
 
 #include <log4cpp/Category.hh>
+#include <xercesc/framework/URLInputSource.hpp>
 #include <xsec/enc/OpenSSL/OpenSSLCryptoX509.hpp>
 
 using namespace shibboleth;
@@ -68,65 +69,88 @@ using namespace saml;
 using namespace log4cpp;
 using namespace std;
 
-#include <xercesc/framework/URLInputSource.hpp>
-
-
-XMLOriginSiteMapper::XMLOriginSiteMapper(const char* pathname) : m_filestamp(0)
+class shibboleth::XMLOriginSiteMapperImpl
 {
-    NDC ndc("XMLOriginSiteMapper");
-    Category& log=Category::getInstance(SHIB_LOGCAT".XMLOriginSiteMapper");
+public:
+    XMLOriginSiteMapperImpl(const char* pathname, bool loadTrust);
+    ~XMLOriginSiteMapperImpl();
+    
+    struct OriginSite
+    {
+        OriginSite(const XMLCh* errorURL) : m_errorURL(XMLString::transcode(errorURL)) {}
+        ~OriginSite();
 
-#ifdef WIN32
-    struct _stat stat_buf;
-    if (_stat(pathname, &stat_buf) == 0)
-#else
-    struct stat stat_buf;
-    if (stat(pathname, &stat_buf) == 0)
-#endif
-        m_filestamp=stat_buf.st_mtime;
+        class ContactInfo : public IContactInfo
+        {
+        public:
+            ContactInfo(ContactType type, const XMLCh* name, const XMLCh* email);
+            
+            ContactType getType() const { return m_type; }
+            const char* getName() const { return m_name.get(); }            
+            const char* getEmail() const { return m_email.get(); }
+            
+        private:
+            ContactType m_type;
+            std::auto_ptr<char> m_name, m_email;
+        };
+        
+        std::vector<const IContactInfo*> m_contacts;
+        std::auto_ptr<char> m_errorURL;
+        std::vector<saml::xstring> m_handleServices;
+        std::vector<std::pair<saml::xstring,bool> > m_domains;
+    };
+
+    std::map<saml::xstring,OriginSite*> m_sites;
+    std::map<saml::xstring,XSECCryptoX509*> m_hsCerts;
+};
+
+XMLOriginSiteMapperImpl::XMLOriginSiteMapperImpl(const char* pathname, bool loadTrust)
+{
+    NDC ndc("XMLOriginSiteMapperImpl");
+    Category& log=Category::getInstance(SHIB_LOGCAT".XMLOriginSiteMapperImpl");
 
     saml::XML::Parser p;
     DOMDocument* doc=NULL;
-	try
+    try
     {
         static XMLCh base[]={chLatin_f, chLatin_i, chLatin_l, chLatin_e, chColon, chForwardSlash, chForwardSlash, chForwardSlash, chNull};
         URLInputSource src(base,pathname);
         Wrapper4InputSource dsrc(&src,false);
-		doc=p.parse(dsrc);
+        doc=p.parse(dsrc);
 
         log.infoStream() << "Loaded and parsed site file (" << pathname << ")" << CategoryStream::ENDLINE;
 
-		DOMElement* e = doc->getDocumentElement();
+        DOMElement* e = doc->getDocumentElement();
         if (XMLString::compareString(XML::SHIB_NS,e->getNamespaceURI()) ||
             XMLString::compareString(XML::Literals::Sites,e->getLocalName()))
         {
-			log.error("Construction requires a valid site file: (shib:Sites as root element)");
-			throw OriginSiteMapperException("Construction requires a valid site file: (shib:Sites as root element)");
-		}
+            log.error("Construction requires a valid site file: (shib:Sites as root element)");
+            throw OriginSiteMapperException("Construction requires a valid site file: (shib:Sites as root element)");
+        }
 
-		// Loop over the OriginSite elements.
+        // Loop over the OriginSite elements.
         DOMNodeList* nlist = e->getElementsByTagNameNS(XML::SHIB_NS,XML::Literals::OriginSite);
-		for (int i=0; nlist && i<nlist->getLength(); i++)
+        for (int i=0; nlist && i<nlist->getLength(); i++)
         {
             DOMElement* os_e=static_cast<DOMElement*>(nlist->item(i));
             auto_ptr<XMLCh> os_name(XMLString::replicate(os_e->getAttributeNS(NULL,XML::Literals::Name)));
             XMLString::trim(os_name.get());
-			if (!os_name.get() || !*os_name)
-				continue;
+            if (!os_name.get() || !*os_name)
+                continue;
 
-			OriginSite* os_obj = new OriginSite(os_e->getAttributeNS(NULL,XML::Literals::ErrorURL));
-			m_sites[os_name.get()]=os_obj;
+            OriginSite* os_obj = new OriginSite(os_e->getAttributeNS(NULL,XML::Literals::ErrorURL));
+            m_sites[os_name.get()]=os_obj;
 
-			DOMNode* os_child = nlist->item(i)->getFirstChild();
-			while (os_child)
+            DOMNode* os_child = nlist->item(i)->getFirstChild();
+            while (os_child)
             {
                 if (os_child->getNodeType()!=DOMNode::ELEMENT_NODE)
                 {
-					os_child = os_child->getNextSibling();
-					continue;
-				}
+                    os_child = os_child->getNextSibling();
+                    continue;
+                }
 
-				// Process the various kinds of OriginSite children that we care about...
+                // Process the various kinds of OriginSite children that we care about...
                 if (!XMLString::compareString(XML::SHIB_NS,os_child->getNamespaceURI()) &&
                     !XMLString::compareString(XML::Literals::Contact,os_child->getLocalName()))
                 {
@@ -148,33 +172,33 @@ XMLOriginSiteMapper::XMLOriginSiteMapper(const char* pathname) : m_filestamp(0)
                     os_obj->m_contacts.push_back(cinfo);
                 }
                 else if (!XMLString::compareString(XML::SHIB_NS,os_child->getNamespaceURI()) &&
-					      !XMLString::compareString(XML::Literals::HandleService,os_child->getLocalName()))
+                       !XMLString::compareString(XML::Literals::HandleService,os_child->getLocalName()))
                 {
                     auto_ptr<XMLCh> hs_name(XMLString::replicate(static_cast<DOMElement*>(os_child)->getAttributeNS(NULL,XML::Literals::Name)));
                     XMLString::trim(hs_name.get());
 
-					if (hs_name.get() && *hs_name)
+                    if (hs_name.get() && *hs_name)
                     {
-						os_obj->m_handleServices.push_back(hs_name.get());
+                        os_obj->m_handleServices.push_back(hs_name.get());
 
                         // Look for ds:KeyInfo.
-						DOMNode* ki=os_child->getFirstChild();
+                        DOMNode* ki=os_child->getFirstChild();
                         while (ki && ki->getNodeType()!=DOMNode::ELEMENT_NODE)
-							ki=ki->getNextSibling();
+                            ki=ki->getNextSibling();
                         if (ki && !XMLString::compareString(saml::XML::XMLSIG_NS,ki->getNamespaceURI()) &&
                             !XMLString::compareString(saml::XML::Literals::KeyInfo,ki->getNamespaceURI()))
                         {
                             // Look for ds:X509Data.
                             DOMNode* xdata=ki->getFirstChild();
                             while (xdata && xdata->getNodeType()!=DOMNode::ELEMENT_NODE)
-							    xdata=xdata->getNextSibling();
+                                xdata=xdata->getNextSibling();
                             if (xdata && !XMLString::compareString(saml::XML::XMLSIG_NS,xdata->getNamespaceURI()) &&
                                 !XMLString::compareString(saml::XML::Literals::X509Data,xdata->getNamespaceURI()))
                             {
                                 // Look for ds:X509Certificate.
                                 DOMNode* x509=xdata->getFirstChild();
                                 while (x509 && x509->getNodeType()!=DOMNode::ELEMENT_NODE)
-							        x509=x509->getNextSibling();
+                                    x509=x509->getNextSibling();
                                 if (x509 && !XMLString::compareString(saml::XML::XMLSIG_NS,x509->getNamespaceURI()) &&
                                     !XMLString::compareString(saml::XML::Literals::X509Certificate,x509->getNamespaceURI()))
                                 {
@@ -184,44 +208,46 @@ XMLOriginSiteMapper::XMLOriginSiteMapper(const char* pathname) : m_filestamp(0)
                                     m_hsCerts[hs_name.get()]=cert;
                                 }
                             }
-						}
-					}
-				}
+                        }
+                    }
+                }
                 else if (!XMLString::compareString(XML::SHIB_NS,os_child->getNamespaceURI()) &&
-					     !XMLString::compareString(XML::Literals::Domain,os_child->getLocalName()))
+                            !XMLString::compareString(XML::Literals::Domain,os_child->getLocalName()))
                 {
                     auto_ptr<XMLCh> dom(XMLString::replicate(os_child->getFirstChild()->getNodeValue()));
                     XMLString::trim(dom.get());
-					if (dom.get() && *dom)
+                    if (dom.get() && *dom)
                     {
                         static const XMLCh one[]={ chDigit_1, chNull };
                         static const XMLCh tru[]={ chLatin_t, chLatin_r, chLatin_u, chLatin_e, chNull };
                         const XMLCh* regexp=static_cast<DOMElement*>(os_child)->getAttributeNS(NULL,XML::Literals::regexp);
                         bool flag=(!XMLString::compareString(regexp,one) || !XMLString::compareString(regexp,tru));
-						os_obj->m_domains.push_back(pair<xstring,bool>(dom.get(),flag));
+                        os_obj->m_domains.push_back(pair<xstring,bool>(dom.get(),flag));
                     }
-				}
-				os_child = os_child->getNextSibling();
-			}
-		}
+                }
+                os_child = os_child->getNextSibling();
+            }
+        }
     }
     catch (SAMLException& e)
     {
-		log.errorStream() << "XML error while parsing site configuration: " << e.what() << CategoryStream::ENDLINE;
+        log.errorStream() << "XML error while parsing site configuration: " << e.what() << CategoryStream::ENDLINE;
         if (doc)
             doc->release();
-		throw;
-	}
+        throw;
+    }
     catch (...)
     {
-		log.error("Unexpected error while parsing site configuration");
+        log.error("Unexpected error while parsing site configuration");
         if (doc)
             doc->release();
-		throw;
+        throw;
     }
+    if (doc)
+        doc->release();
 }
 
-XMLOriginSiteMapper::~XMLOriginSiteMapper()
+XMLOriginSiteMapperImpl::~XMLOriginSiteMapperImpl()
 {
     for (map<xstring,OriginSite*>::iterator i=m_sites.begin(); i!=m_sites.end(); i++)
         delete i->second;
@@ -229,49 +255,129 @@ XMLOriginSiteMapper::~XMLOriginSiteMapper()
         delete j->second;
 }
 
-XMLOriginSiteMapper::OriginSite::ContactInfo::ContactInfo(ContactType type, const XMLCh* name, const XMLCh* email)
+XMLOriginSiteMapper::XMLOriginSiteMapper(const char* pathname, bool loadTrust)
+    : m_filestamp(0), m_source(pathname), m_trust(loadTrust), m_impl(NULL)
+{
+#ifdef WIN32
+    struct _stat stat_buf;
+    if (_stat(pathname, &stat_buf) == 0)
+#else
+    struct stat stat_buf;
+    if (stat(pathname, &stat_buf) == 0)
+#endif
+        m_filestamp=stat_buf.st_mtime;
+    m_impl=new XMLOriginSiteMapperImpl(pathname,loadTrust);
+    m_lock=RWLock::create();
+}
+
+XMLOriginSiteMapperImpl::OriginSite::ContactInfo::ContactInfo(ContactType type, const XMLCh* name, const XMLCh* email)
     : m_type(type), m_name(XMLString::transcode(name)), m_email(XMLString::transcode(email)) {}
 
-XMLOriginSiteMapper::OriginSite::~OriginSite()
+XMLOriginSiteMapperImpl::OriginSite::~OriginSite()
 {
     for (vector<const IContactInfo*>::iterator i=m_contacts.begin(); i!=m_contacts.end(); i++)
         delete const_cast<IContactInfo*>(*i);
 }
 
+XMLOriginSiteMapper::~XMLOriginSiteMapper()
+{
+    delete m_lock;
+    delete m_impl;
+}
+
+void XMLOriginSiteMapper::lock()
+{
+    m_lock->rdlock();
+
+    // Check if we need to refresh.
+#ifdef WIN32
+    struct _stat stat_buf;
+    if (_stat(m_source.c_str(), &stat_buf) == 0)
+#else
+    struct stat stat_buf;
+    if (stat(m_source.c_str(), &stat_buf) == 0)
+#endif
+    {
+        if (m_filestamp>0 && m_filestamp<stat_buf.st_mtime)
+        {
+            // Elevate lock and recheck.
+            m_lock->unlock();
+            m_lock->wrlock();
+            if (m_filestamp>0 && m_filestamp<stat_buf.st_mtime)
+            {
+                try
+                {
+                    XMLOriginSiteMapperImpl* new_mapper=new XMLOriginSiteMapperImpl(m_source.c_str(),m_trust);
+                    delete m_impl;
+                    m_impl=new_mapper;
+                    m_lock->unlock();
+                }
+                catch(SAMLException& e)
+                {
+                    m_lock->unlock();
+                    saml::NDC ndc("lock");
+                    Category::getInstance(SHIB_LOGCAT".XMLOriginSiteMapper").error("failed to reload metadata, sticking with what we have: %s", e.what());
+                }
+                catch(...)
+                {
+                    m_lock->unlock();
+                    saml::NDC ndc("lock");
+                    Category::getInstance(SHIB_LOGCAT".XMLOriginSiteMapper").error("caught an unknown exception, sticking with what we have");
+                }
+            }
+            else
+            {
+                m_lock->unlock();
+            }
+            m_lock->rdlock();
+        }
+    }
+}
+
+void XMLOriginSiteMapper::unlock()
+{
+    m_lock->unlock();
+}
+
+bool XMLOriginSiteMapper::has(const XMLCh* originSite) const
+{
+    return m_impl->m_sites.find(originSite)!=m_impl->m_sites.end();
+}
+
 Iterator<const IContactInfo*> XMLOriginSiteMapper::getContacts(const XMLCh* originSite) const
 {
-    map<xstring,OriginSite*>::const_iterator i=m_sites.find(originSite);
-    if (i==m_sites.end())
+    map<xstring,XMLOriginSiteMapperImpl::OriginSite*>::const_iterator i=m_impl->m_sites.find(originSite);
+    if (i==m_impl->m_sites.end())
         return Iterator<const IContactInfo*>();
     return Iterator<const IContactInfo*>(i->second->m_contacts);
 }
 
 const char* XMLOriginSiteMapper::getErrorURL(const XMLCh* originSite) const
 {
-    map<xstring,OriginSite*>::const_iterator i=m_sites.find(originSite);
-    if (i==m_sites.end())
+    map<xstring,XMLOriginSiteMapperImpl::OriginSite*>::const_iterator i=m_impl->m_sites.find(originSite);
+    if (i==m_impl->m_sites.end())
         return NULL;
     return i->second->m_errorURL.get();
 }
 
 Iterator<xstring> XMLOriginSiteMapper::getHandleServiceNames(const XMLCh* originSite) const
 {
-    map<xstring,OriginSite*>::const_iterator i=m_sites.find(originSite);
-    if (i==m_sites.end())
+    map<xstring,XMLOriginSiteMapperImpl::OriginSite*>::const_iterator i=m_impl->m_sites.find(originSite);
+    if (i==m_impl->m_sites.end())
         return Iterator<xstring>();
     return Iterator<xstring>(i->second->m_handleServices);
 }
 
 XSECCryptoX509* XMLOriginSiteMapper::getHandleServiceCert(const XMLCh* handleService) const
 {
-    map<xstring,XSECCryptoX509*>::const_iterator i=m_hsCerts.find(handleService);
-    return (i!=m_hsCerts.end()) ? i->second : NULL;
+    map<xstring,XSECCryptoX509*>::const_iterator i=m_impl->m_hsCerts.find(handleService);
+    return (i!=m_impl->m_hsCerts.end()) ? i->second : NULL;
 }
 
 Iterator<pair<xstring,bool> > XMLOriginSiteMapper::getSecurityDomains(const XMLCh* originSite) const
 {
-    map<xstring,OriginSite*>::const_iterator i=m_sites.find(originSite);
-    if (i==m_sites.end())
+    map<xstring,XMLOriginSiteMapperImpl::OriginSite*>::const_iterator i=m_impl->m_sites.find(originSite);
+    if (i==m_impl->m_sites.end())
         return Iterator<pair<xstring,bool> >();
     return Iterator<pair<xstring,bool> >(i->second->m_domains);
 }

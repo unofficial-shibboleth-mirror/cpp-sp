@@ -159,8 +159,8 @@ SAMLResponse* ShibPOSTProfile::accept(const XMLByte* buf, XMLCh** originSitePtr)
     const XMLCh* handleService = assertion->getIssuer();
 
     // Is this a trusted HS?
-    OriginSiteMapper mapper;
-    Iterator<xstring> hsNames=mapper.getHandleServiceNames(originSite);
+    OriginSiteMapper mapper(originSite);
+    Iterator<xstring> hsNames=mapper.fail() ? Iterator<xstring>() : mapper->getHandleServiceNames(originSite);
     bool bFound = false;
     while (!bFound && hsNames.hasNext())
         if (!XMLString::compareString(hsNames.next().c_str(),handleService))
@@ -168,7 +168,7 @@ SAMLResponse* ShibPOSTProfile::accept(const XMLByte* buf, XMLCh** originSitePtr)
     if (!bFound)
         throw TrustException(SAMLException::RESPONDER, "ShibPOSTProfile::accept() detected an untrusted HS for the origin site");
 
-    XSECCryptoX509* hsCert=mapper.getHandleServiceCert(handleService);
+    XSECCryptoX509* hsCert=mapper->getHandleServiceCert(handleService);
 
     // Signature verification now takes place. We check the assertion and the response.
     // Assertion signing is optional, response signing is mandatory.

@@ -99,8 +99,9 @@ bool ScopedAttribute::accept(DOMElement* e) const
     if (!SimpleAttribute::accept(e))
         return false;
 
-    OriginSiteMapper mapper;
-    Iterator<pair<xstring,bool> > domains=mapper.getSecurityDomains(m_originSite.c_str());
+    OriginSiteMapper mapper(m_originSite.c_str());
+    Iterator<pair<xstring,bool> > domains=
+        (mapper.fail()) ? Iterator<pair<xstring,bool> >() : mapper->getSecurityDomains(m_originSite.c_str());
     const XMLCh* this_scope=NULL;
     DOMAttr* scope=e->getAttributeNodeNS(NULL,Scope);
     if (scope)

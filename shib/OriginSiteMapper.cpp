@@ -47,7 +47,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/* OriginSiteMapper.h - a mapper implementation that uses an XML-based registry
+/* OriginSiteMapper.h - a wrapper class that insures proper release of mappers
 
    Scott Cantor
    9/27/02
@@ -61,40 +61,25 @@ using namespace shibboleth;
 using namespace saml;
 using namespace std;
 
-OriginSiteMapper::OriginSiteMapper() : m_mapper(ShibConfig::getConfig().getMapper()) {}
+OriginSiteMapper::OriginSiteMapper(const XMLCh* originSite) : m_mapper(NULL)
+{
+    ShibInternalConfig& config=dynamic_cast<ShibInternalConfig&>(ShibConfig::getConfig());
+    config.m_lock->lock();
+    for (ShibInternalConfig::OriginMapperMap::iterator i=config.m_originMap.begin(); i!=config.m_originMap.end(); i++)
+    {
+        i->second->lock();
+        if (i->second->has(originSite))
+        {
+            m_mapper=i->second;
+            break;
+        }
+        i->second->unlock();
+    }
+    config.m_lock->unlock();
+}
 
 OriginSiteMapper::~OriginSiteMapper()
 {
-    ShibConfig::getConfig().releaseMapper(m_mapper);
+    if (m_mapper)
+        m_mapper->unlock();
 }
-
-Iterator<const IContactInfo*> OriginSiteMapper::getContacts(const XMLCh* originSite) const
-{
-    return m_mapper->getContacts(originSite);
-}
-
-const char* OriginSiteMapper::getErrorURL(const XMLCh* originSite) const
-{
-    return m_mapper->getErrorURL(originSite);
-}
-
-Iterator<xstring> OriginSiteMapper::getHandleServiceNames(const XMLCh* originSite) const
-{
-    return m_mapper->getHandleServiceNames(originSite);
-}
-
-XSECCryptoX509* OriginSiteMapper::getHandleServiceCert(const XMLCh* handleService) const
-{
-    return m_mapper->getHandleServiceCert(handleService);
-}
-
-Iterator<pair<xstring,bool> > OriginSiteMapper::getSecurityDomains(const XMLCh* originSite) const
-{
-    return m_mapper->getSecurityDomains(originSite);
-}
-
-time_t OriginSiteMapper::getTimestamp() const
-{
-    return m_mapper->getTimestamp();
-}
-

@@ -263,56 +263,60 @@ const char* RPCError::getDesc()
 
 int RPCError::getCode() { return m_priv->status; }
 
-const char* RPCError::getOriginErrorURL()
+string RPCError::getOriginErrorURL()
 {
-    const char* res=NULL;
-    static const char* msg="No URL Available";
+    string res="No URL Available";
     if (!m_priv->origin.empty())
     {
-        OriginSiteMapper mapper;
-        res=mapper.getErrorURL(m_priv->origin.c_str());
+        OriginSiteMapper mapper(m_priv->origin.c_str());
+        if (!mapper.fail())
+        {
+            const char* temp=mapper->getErrorURL(m_priv->origin.c_str());
+            if (temp)
+                res=temp;
+        }
     }
-    return res ? res : msg;
+    return res;
 }
 
-const char* RPCError::getOriginContactName()
-{
-    const char* res=NULL;
-    static const char* msg="No Name Available";
+string RPCError::getOriginContactName()
+{ 
+    string res="No Name Available";
     if (!m_priv->origin.empty())
     {
-        OriginSiteMapper mapper;
-        Iterator<const IContactInfo*> i=mapper.getContacts(m_priv->origin.c_str());
+        OriginSiteMapper mapper(m_priv->origin.c_str());
+        Iterator<const IContactInfo*> i=
+            mapper.fail() ? Iterator<const IContactInfo*>() : mapper->getContacts(m_priv->origin.c_str());
         while (i.hasNext())
         {
             const IContactInfo* c=i.next();
-            if (c->getType()==IContactInfo::technical)
+            if (c->getType()==IContactInfo::technical && c->getName())
             {
                 res=c->getName();
                 break;
             }
         }
     }
-    return res ? res : msg;
+    return res;
 }
 
-const char* RPCError::getOriginContactEmail()
+string RPCError::getOriginContactEmail()
 {
-    const char* res=NULL;
-    static const char* msg="No Email Available";
+    string res="No Email Available";
     if (!m_priv->origin.empty())
     {
-        OriginSiteMapper mapper;
-        Iterator<const IContactInfo*> i=mapper.getContacts(m_priv->origin.c_str());
+        OriginSiteMapper mapper(m_priv->origin.c_str());
+        Iterator<const IContactInfo*> i=
+            mapper.fail() ? Iterator<const IContactInfo*>() : mapper->getContacts(m_priv->origin.c_str());
         while (i.hasNext())
         {
             const IContactInfo* c=i.next();
-            if (c->getType()==IContactInfo::technical)
+            if (c->getType()==IContactInfo::technical && c->getEmail())
             {
                 res=c->getEmail();
                 break;
             }
         }
     }
-    return res ? res : msg;
+    return res;
 }
