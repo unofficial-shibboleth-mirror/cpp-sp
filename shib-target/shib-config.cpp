@@ -200,7 +200,7 @@ STConfig::STConfig(const char* app_name, const char* inifile)
   }
 
   // Load SAML policies.
-  if (ini->exists(ext)) {
+  if (ini->exists(SHIBTARGET_POLICIES)) {
     log.debug("loading SAML policies");
     ShibINI::Iterator* iter = ini->tag_iterator(SHIBTARGET_POLICIES);
 
