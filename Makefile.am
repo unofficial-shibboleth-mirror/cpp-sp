@@ -5,10 +5,6 @@ AUTOMAKE_OPTIONS = foreign
 ACLOCAL_AMFLAGS = -I .
 
 EXTRA_DIST = \
-	../INSTALL.txt ../LICENSE.txt ../NEWS.txt ../README.txt \
-	../DEPLOY-GUIDE-ORIGIN.html ../DEPLOY-GUIDE-TARGET.html \
-        INSTALL.txt LICENSE.txt NEWS.txt README.txt \
-        DEPLOY-GUIDE-ORIGIN.html DEPLOY-GUIDE-TARGET.html \
         schemas/cs-sstc-schema-assertion-01.xsd \
         schemas/cs-sstc-schema-protocol-01.xsd \
         schemas/soap-envelope.xsd \
@@ -28,4 +24,7 @@ EXTRA_DIST = \
 	configs/shire.logger
 
 SUBDIRS = @WANT_SUBDIRS@
+
+dist-hook:
+	cp ../*.txt ../*.html $(distdir)
 
