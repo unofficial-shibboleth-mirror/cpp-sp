@@ -717,9 +717,11 @@ ShibTarget::doExportAssertions(bool exportAssertion)
             ostringstream os;
             os << *(m_priv->m_pre_response);
             unsigned int outlen;
-            char* resp = (char*)os.str().c_str();
-            XMLByte* serialized = Base64::encode(reinterpret_cast<XMLByte*>(resp), os.str().length(), &outlen);
-            // TODO: strip linefeeds
+            XMLByte* serialized = Base64::encode(reinterpret_cast<XMLByte*>((char*)os.str().c_str()), os.str().length(), &outlen);
+            for (XMLByte* pos=serialized, *pos2=serialized; *pos2; pos2++)
+                if (isgraph(*pos2))
+                    *pos++=*pos2;
+            *pos=0;
             setHeader("Shib-Attributes", reinterpret_cast<char*>(serialized));
             XMLString::release(&serialized);
         }
