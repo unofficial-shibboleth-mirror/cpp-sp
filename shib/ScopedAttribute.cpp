@@ -99,9 +99,9 @@ bool ScopedAttribute::accept(DOMElement* e) const
     if (!SimpleAttribute::accept(e))
         return false;
 
-    OriginSiteMapper mapper(m_originSite.c_str());
-    Iterator<pair<xstring,bool> > domains=
-        (mapper.fail()) ? Iterator<pair<xstring,bool> >() : mapper->getSecurityDomains(m_originSite.c_str());
+    OriginMetadata mapper(m_originSite.c_str());
+    Iterator<pair<const XMLCh*,bool> > domains=
+        (mapper.fail()) ? Iterator<pair<const XMLCh*,bool> >() : mapper->getSecurityDomains();
     const XMLCh* this_scope=NULL;
     DOMAttr* scope=e->getAttributeNodeNS(NULL,Scope);
     if (scope)
@@ -111,12 +111,12 @@ bool ScopedAttribute::accept(DOMElement* e) const
 
     while (domains.hasNext())
     {
-        const pair<xstring,bool>& p=domains.next();
+        const pair<const XMLCh*,bool>& p=domains.next();
         if (p.second)
         {
             try
             {
-                RegularExpression re(p.first.c_str());
+                RegularExpression re(p.first);
                 if (re.matches(this_scope))
                     return true;
             }
@@ -130,7 +130,7 @@ bool ScopedAttribute::accept(DOMElement* e) const
                 return false;
             }
         }
-        else if (p.first==this_scope)
+        else if (!XMLString::compareString(p.first,this_scope))
             return true;
     }
 

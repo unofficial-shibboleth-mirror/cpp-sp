@@ -268,10 +268,10 @@ string RPCError::getOriginErrorURL()
     string res="No URL Available";
     if (!m_priv->origin.empty())
     {
-        OriginSiteMapper mapper(m_priv->origin.c_str());
+        OriginMetadata mapper(m_priv->origin.c_str());
         if (!mapper.fail())
         {
-            const char* temp=mapper->getErrorURL(m_priv->origin.c_str());
+            const char* temp=mapper->getErrorURL();
             if (temp)
                 res=temp;
         }
@@ -284,9 +284,9 @@ string RPCError::getOriginContactName()
     string res="No Name Available";
     if (!m_priv->origin.empty())
     {
-        OriginSiteMapper mapper(m_priv->origin.c_str());
+        OriginMetadata mapper(m_priv->origin.c_str());
         Iterator<const IContactInfo*> i=
-            mapper.fail() ? Iterator<const IContactInfo*>() : mapper->getContacts(m_priv->origin.c_str());
+            mapper.fail() ? EMPTY(const IContactInfo*) : mapper->getContacts();
         while (i.hasNext())
         {
             const IContactInfo* c=i.next();
@@ -305,9 +305,9 @@ string RPCError::getOriginContactEmail()
     string res="No Email Available";
     if (!m_priv->origin.empty())
     {
-        OriginSiteMapper mapper(m_priv->origin.c_str());
+        OriginMetadata mapper(m_priv->origin.c_str());
         Iterator<const IContactInfo*> i=
-            mapper.fail() ? Iterator<const IContactInfo*>() : mapper->getContacts(m_priv->origin.c_str());
+            mapper.fail() ? EMPTY(const IContactInfo*) : mapper->getContacts();
         while (i.hasNext())
         {
             const IContactInfo* c=i.next();

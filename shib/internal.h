@@ -77,30 +77,23 @@
 
 namespace shibboleth
 {
-    class XMLOriginSiteMapperImpl;
-    class SHIB_EXPORTS XMLOriginSiteMapper : public IOriginSiteMapper
+    class XMLMetadataImpl;
+    class SHIB_EXPORTS XMLMetadata : public IMetadata
     {
     public:
-        XMLOriginSiteMapper(const char* pathname, bool loadTrust);
-        ~XMLOriginSiteMapper();
+        XMLMetadata(const char* pathname);
+        ~XMLMetadata();
 
         void lock();
         void unlock();
-
-        bool has(const XMLCh* originSite) const;
-        saml::Iterator<const IContactInfo*> getContacts(const XMLCh* originSite) const;
-        const char* getErrorURL(const XMLCh* originSite) const;
-        saml::Iterator<saml::xstring> getHandleServiceNames(const XMLCh* originSite) const;
-        XSECCryptoX509* getHandleServiceCert(const XMLCh* handleService) const;
-        saml::Iterator<std::pair<saml::xstring,bool> > getSecurityDomains(const XMLCh* originSite) const;
+        const ISite* lookup(const XMLCh* site) const;
         time_t getTimestamp() const { return m_filestamp; }
 
     private:
         std::string m_source;
-        bool m_trust;
         time_t m_filestamp;
         RWLock* m_lock;
-        XMLOriginSiteMapperImpl* m_impl;
+        XMLMetadataImpl* m_impl;
     };
 
     class AAP
@@ -135,21 +128,19 @@ namespace shibboleth
         bool init();
         void term();
 
-        void regFactory(const char* type, OriginSiteMapperFactory* factory);
+        void regFactory(const char* type, MetadataFactory* factory);
         void unregFactory(const char* type);
         
-        bool addMapper(const char* type, const char* source);
+        bool addMetadata(const char* type, const char* source);
 
         AAP* m_AAP;
         
     private:
-        friend class OriginSiteMapper;
+        friend class OriginMetadata;
         
-        typedef std::map<std::string, OriginSiteMapperFactory*> OriginMapperFactoryMap;
-        OriginMapperFactoryMap m_originFactoryMap;
-        
-        typedef std::map<std::pair<std::string, std::string>, IOriginSiteMapper*> OriginMapperMap;
-        OriginMapperMap m_originMap;
+        typedef std::map<std::string, MetadataFactory*> MetadataFactoryMap;
+        MetadataFactoryMap m_metadataFactoryMap;        
+        std::vector<IMetadata*> m_providers;
         Mutex* m_lock;
     };
 }

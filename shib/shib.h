@@ -92,8 +92,10 @@ namespace shibboleth
         }
 
     DECLARE_SHIB_EXCEPTION(UnsupportedProtocolException,SAMLException);
-    DECLARE_SHIB_EXCEPTION(OriginSiteMapperException,SAMLException);
+    DECLARE_SHIB_EXCEPTION(MetadataException,SAMLException);
 
+    // Metadata abstract interfaces
+    
     struct SHIB_EXPORTS IContactInfo
     {
         enum ContactType { technical, administrative, billing, other };
@@ -103,15 +105,51 @@ namespace shibboleth
         virtual ~IContactInfo() {}
     };
 
+    struct SHIB_EXPORTS ISite
+    {
+        virtual saml::Iterator<const IContactInfo*> getContacts() const=0;
+        virtual const char* getErrorURL() const=0;
+        virtual void validate(XSECCryptoX509* cert) const=0;
+        virtual void validate(const XMLCh* cert) const=0;
+        virtual ~ISite() {}
+    };
+    
+    struct SHIB_EXPORTS IAuthority
+    {
+        virtual const XMLCh* getName() const=0;
+        virtual const char* getURL() const=0;
+        virtual saml::Iterator<XSECCryptoX509*> getCertificates() const=0;
+        virtual ~IAuthority() {}
+    };
+
+    struct SHIB_EXPORTS IOriginSite : public ISite
+    {
+        virtual saml::Iterator<const IAuthority*> getHandleServices() const=0;
+        virtual saml::Iterator<const IAuthority*> getAttributeAuthorities() const=0;
+        virtual saml::Iterator<std::pair<const XMLCh*,bool> > getSecurityDomains() const=0;
+        virtual ~IOriginSite() {}
+    };
+
+    struct SHIB_EXPORTS IMetadata
+    {
+        virtual void lock()=0;
+        virtual void unlock()=0;
+        virtual const ISite* lookup(const XMLCh* site) const=0;
+        virtual time_t getTimestamp() const=0;
+        virtual ~IMetadata() {}
+    };
+
 #ifdef SHIB_INSTANTIATE
 # ifdef NO_RTTI
     const unsigned short RTTI_UnsupportedProtocolException=     RTTI_EXTENSION_BASE;
-    const unsigned short RTTI_OriginSiteMapperException=        RTTI_EXTENSION_BASE+1;
+    const unsigned short RTTI_MetadataException=                RTTI_EXTENSION_BASE+1;
 # endif
     template class SHIB_EXPORTS saml::Iterator<std::pair<saml::xstring,bool> >;
     template class SHIB_EXPORTS saml::ArrayIterator<std::pair<saml::xstring,bool> >;
     template class SHIB_EXPORTS saml::Iterator<const IContactInfo*>;
     template class SHIB_EXPORTS saml::ArrayIterator<const IContactInfo*>;
+    template class SHIB_EXPORTS saml::Iterator<const IAuthority*>;
+    template class SHIB_EXPORTS saml::ArrayIterator<const IAuthority*>;
 #endif
 
     class SHIB_EXPORTS SimpleAttribute : public saml::SAMLAttribute
@@ -182,7 +220,7 @@ namespace shibboleth
         virtual const XMLCh* getOriginSite(const saml::SAMLResponse& r);
 
     protected:
-        virtual void verifySignature(const saml::SAMLSignedObject& obj, const XMLCh* signerName, XSECCryptoKey* knownKey);
+        virtual void verifySignature(const saml::SAMLSignedObject& obj, const XMLCh* signerName, XSECCryptoKey* knownKey=NULL);
 
         signatureMethod m_algorithm;
         std::vector<const XMLCh*> m_policies;
@@ -217,7 +255,7 @@ namespace shibboleth
             );
 
     protected:
-        virtual void verifySignature(const saml::SAMLSignedObject& obj, const XMLCh* signerName, XSECCryptoKey* knownKey);
+        virtual void verifySignature(const saml::SAMLSignedObject& obj, const XMLCh* signerName, XSECCryptoKey* knownKey=NULL);
     };
 
     class SHIB_EXPORTS ShibPOSTProfileFactory
@@ -227,38 +265,24 @@ namespace shibboleth
         static ShibPOSTProfile* getInstance(const saml::Iterator<const XMLCh*>& policies, const XMLCh* issuer);
     };
 
-    // Metadata abstract interface
-    struct SHIB_EXPORTS IOriginSiteMapper
-    {
-        virtual void lock()=0;
-        virtual void unlock()=0;
-        
-        virtual bool has(const XMLCh* originSite) const=0;
-        virtual saml::Iterator<const IContactInfo*> getContacts(const XMLCh* originSite) const=0;
-        virtual const char* getErrorURL(const XMLCh* originSite) const=0;
-        virtual saml::Iterator<saml::xstring> getHandleServiceNames(const XMLCh* originSite) const=0;
-        virtual XSECCryptoX509* getHandleServiceCert(const XMLCh* handleService) const=0;
-        virtual saml::Iterator<std::pair<saml::xstring,bool> > getSecurityDomains(const XMLCh* originSite) const=0;
-        virtual time_t getTimestamp() const=0;
-        virtual ~IOriginSiteMapper() {};
-    };
-
-    // Helper class to hide synchronization details
-    class SHIB_EXPORTS OriginSiteMapper
+    // Glue class between abstract metadata and concrete providers
+    
+    class SHIB_EXPORTS OriginMetadata
     {
     public:
-        OriginSiteMapper(const XMLCh* originSite);
-        ~OriginSiteMapper();
+        OriginMetadata(const XMLCh* site);
+        ~OriginMetadata();
         bool fail() const {return m_mapper==NULL;}
-        const IOriginSiteMapper* operator->() const {return m_mapper;}
-
+        const IOriginSite* operator->() const {return m_site;}
+        
     private:
-        OriginSiteMapper(const OriginSiteMapper&);
-        void operator=(const OriginSiteMapper&);
-        IOriginSiteMapper* m_mapper;
+        OriginMetadata(const OriginMetadata&);
+        void operator=(const OriginMetadata&);
+        IMetadata* m_mapper;
+        const IOriginSite* m_site;
     };
 
-    extern "C" { typedef IOriginSiteMapper* OriginSiteMapperFactory(const char* source); }
+    extern "C" { typedef IMetadata* MetadataFactory(const char* source); }
     
     class SHIB_EXPORTS ShibConfig
     {
@@ -273,12 +297,12 @@ namespace shibboleth
         // enables runtime and clients to access configuration
         static ShibConfig& getConfig();
 
-        // allows pluggable implementations of metadata mappers
-        virtual void regFactory(const char* type, OriginSiteMapperFactory* factory)=0;
+        // allows pluggable implementations of metadata
+        virtual void regFactory(const char* type, MetadataFactory* factory)=0;
         virtual void unregFactory(const char* type)=0;
         
         // builds a specific metadata lookup object
-        virtual bool addMapper(const char* type, const char* source)=0;
+        virtual bool addMetadata(const char* type, const char* source)=0;
         
     /* start of external configuration */
         std::string aapFile;
@@ -305,12 +329,14 @@ namespace shibboleth
             // Shibboleth vocabulary
             static const XMLCh AttributeValueType[];
 
+            static const XMLCh AttributeAuthority[];
             static const XMLCh Contact[];
             static const XMLCh Domain[];
             static const XMLCh Email[];
             static const XMLCh ErrorURL[];
             static const XMLCh HandleService[];
             static const XMLCh InvalidHandle[];
+            static const XMLCh Location[];
             static const XMLCh Name[];
             static const XMLCh OriginSite[];
             static const XMLCh Sites[];

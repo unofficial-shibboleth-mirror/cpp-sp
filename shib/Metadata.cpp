@@ -47,7 +47,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/* OriginSiteMapper.h - a wrapper class that insures proper release of mappers
+/* Metadata.h - a glue class that interfaces to metadata providers
 
    Scott Cantor
    9/27/02
@@ -61,24 +61,24 @@ using namespace shibboleth;
 using namespace saml;
 using namespace std;
 
-OriginSiteMapper::OriginSiteMapper(const XMLCh* originSite) : m_mapper(NULL)
+OriginMetadata::OriginMetadata(const XMLCh* site) : m_mapper(NULL), m_site(NULL)
 {
     ShibInternalConfig& config=dynamic_cast<ShibInternalConfig&>(ShibConfig::getConfig());
     config.m_lock->lock();
-    for (ShibInternalConfig::OriginMapperMap::iterator i=config.m_originMap.begin(); i!=config.m_originMap.end(); i++)
+    for (vector<IMetadata*>::iterator i=config.m_providers.begin(); i!=config.m_providers.end(); i++)
     {
-        i->second->lock();
-        if (i->second->has(originSite))
+        (*i)->lock();
+        if (m_site=dynamic_cast<const IOriginSite*>((*i)->lookup(site)))
         {
-            m_mapper=i->second;
+            m_mapper=*i;
             break;
         }
-        i->second->unlock();
+        (*i)->unlock();
     }
     config.m_lock->unlock();
 }
 
-OriginSiteMapper::~OriginSiteMapper()
+OriginMetadata::~OriginMetadata()
 {
     if (m_mapper)
         m_mapper->unlock();

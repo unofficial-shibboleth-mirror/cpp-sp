@@ -82,6 +82,11 @@ const XMLCh XML::Literals::AttributeValueType[] =
   chLatin_V, chLatin_a, chLatin_l, chLatin_u, chLatin_e, chLatin_T, chLatin_y, chLatin_p, chLatin_e, chNull
 };
 
+const XMLCh XML::Literals::AttributeAuthority[] =
+{ chLatin_A, chLatin_t, chLatin_t, chLatin_r, chLatin_i, chLatin_b, chLatin_u, chLatin_t, chLatin_e,
+  chLatin_A, chLatin_u, chLatin_t, chLatin_h, chLatin_o, chLatin_r, chLatin_i, chLatin_t, chLatin_y, chNull
+};
+
 const XMLCh XML::Literals::Contact[]=
 { chLatin_C, chLatin_o, chLatin_n, chLatin_t, chLatin_a, chLatin_c, chLatin_t, chNull };
 
@@ -101,6 +106,9 @@ const XMLCh XML::Literals::HandleService[]=
 const XMLCh XML::Literals::InvalidHandle[]=
 { chLatin_I, chLatin_n, chLatin_v, chLatin_a, chLatin_l, chLatin_i, chLatin_d,
   chLatin_H, chLatin_a, chLatin_n, chLatin_d, chLatin_l, chLatin_e, chNull };
+
+const XMLCh XML::Literals::Location[]=
+{ chLatin_L, chLatin_o, chLatin_c, chLatin_a, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chNull };
 
 const XMLCh XML::Literals::Name[]=
 { chLatin_N, chLatin_a, chLatin_m, chLatin_e, chNull };

@@ -108,7 +108,7 @@ int main(int argc,char* argv[])
     if (!conf2.init())
         cerr << "unable to initialize Shibboleth runtime" << endl;
 
-    conf2.addMapper("edu.internet2.middleware.shibboleth.metadata.origin.XML","http://wayf.internet2.edu/shibboleth/sites.xml");
+    conf2.addMetadata("edu.internet2.middleware.shibboleth.metadata.XML","http://wayf.internet2.edu/shibboleth/sites.xml");
 
     try
     {

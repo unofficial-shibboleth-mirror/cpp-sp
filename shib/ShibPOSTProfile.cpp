@@ -159,22 +159,53 @@ SAMLResponse* ShibPOSTProfile::accept(const XMLByte* buf, XMLCh** originSitePtr)
     const XMLCh* handleService = assertion->getIssuer();
 
     // Is this a trusted HS?
-    OriginSiteMapper mapper(originSite);
-    Iterator<xstring> hsNames=mapper.fail() ? Iterator<xstring>() : mapper->getHandleServiceNames(originSite);
+    const IAuthority* hs=NULL;
+    OriginMetadata mapper(originSite);
+    Iterator<const IAuthority*> hsi=mapper.fail() ? Iterator<const IAuthority*>() : mapper->getHandleServices();
     bool bFound = false;
-    while (!bFound && hsNames.hasNext())
-        if (!XMLString::compareString(hsNames.next().c_str(),handleService))
+    while (!bFound && hsi.hasNext())
+    {
+        hs=hsi.next();
+        if (!XMLString::compareString(hs->getName(),handleService))
             bFound = true;
+    }
     if (!bFound)
         throw TrustException(SAMLException::RESPONDER, "ShibPOSTProfile::accept() detected an untrusted HS for the origin site");
 
-    XSECCryptoX509* hsCert=mapper->getHandleServiceCert(handleService);
+    Iterator<XSECCryptoX509*> certs=hs->getCertificates();
 
     // Signature verification now takes place. We check the assertion and the response.
     // Assertion signing is optional, response signing is mandatory.
+    bool bVerified=false;
     if (assertion->isSigned())
-        verifySignature(*assertion, handleService, hsCert ? hsCert->clonePublicKey() : NULL);
-    verifySignature(*r, handleService, hsCert ? hsCert->clonePublicKey() : NULL);
+    {
+        while (certs.hasNext())
+        {
+            try {
+                verifySignature(*assertion, handleService, certs.next()->clonePublicKey());
+                bVerified=true;
+            }
+            catch (InvalidCryptoException&) {
+                // continue trying others
+            }
+        }
+        if (!bVerified)
+            verifySignature(*assertion, handleService);
+    }
+
+    bVerified=false;
+    while (certs.hasNext())
+    {
+        try {
+            verifySignature(*r, handleService, certs.next()->clonePublicKey());
+            bVerified=true;
+        }
+        catch (InvalidCryptoException&) {
+            // continue trying others
+        }
+    }
+    if (!bVerified)
+        verifySignature(*r, handleService);
 
     return r.release();
 }

@@ -71,7 +71,7 @@ using namespace log4cpp;
 using namespace std;
 
 SAML_EXCEPTION_FACTORY(UnsupportedProtocolException);
-SAML_EXCEPTION_FACTORY(OriginSiteMapperException);
+SAML_EXCEPTION_FACTORY(MetadataException);
 
 namespace {
     ShibInternalConfig g_config;
@@ -79,9 +79,9 @@ namespace {
 
 ShibConfig::~ShibConfig() {}
 
-extern "C" IOriginSiteMapper* XMLSiteMapperFactory(const char* source)
+extern "C" IMetadata* XMLMetadataFactory(const char* source)
 {
-    return new XMLOriginSiteMapper(source,false);
+    return new XMLMetadata(source);
 }
 
 bool ShibInternalConfig::init()
@@ -89,7 +89,7 @@ bool ShibInternalConfig::init()
     saml::NDC ndc("init");
 
     REGISTER_EXCEPTION_FACTORY(edu.internet2.middleware.shibboleth.common,UnsupportedProtocolException);
-    REGISTER_EXCEPTION_FACTORY(edu.internet2.middleware.shibboleth.common,OriginSiteMapperException);
+    REGISTER_EXCEPTION_FACTORY(edu.internet2.middleware.shibboleth.common,MetadataException);
 
     // Register extension schema.
     saml::XML::registerSchema(XML::SHIB_NS,XML::SHIB_SCHEMA_ID);
@@ -110,69 +110,64 @@ bool ShibInternalConfig::init()
     m_lock=Mutex::create();
     if (!m_lock)
     {
-        Category::getInstance(SHIB_LOGCAT".ShibConfig").fatal("init: failed to create mapper lock");
+        Category::getInstance(SHIB_LOGCAT".ShibConfig").fatal("init: failed to create provider lock");
         delete m_AAP;
         return false;
     }
     
-    regFactory("edu.internet2.middleware.shibboleth.metadata.origin.XML",&XMLSiteMapperFactory);
+    regFactory("edu.internet2.middleware.shibboleth.metadata.XML",&XMLMetadataFactory);
 
     return true;
 }
 
 void ShibInternalConfig::term()
 {
-    for (OriginMapperMap::iterator i=m_originMap.begin(); i!=m_originMap.end(); i++)
-        delete i->second;
+    for (vector<IMetadata*>::iterator i=m_providers.begin(); i!=m_providers.end(); i++)
+        delete *i;
     delete m_lock;
     delete m_AAP;
 }
 
-void ShibInternalConfig::regFactory(const char* type, OriginSiteMapperFactory* factory)
+void ShibInternalConfig::regFactory(const char* type, MetadataFactory* factory)
 {
     if (type && factory)
-        m_originFactoryMap[type]=factory;
+        m_metadataFactoryMap[type]=factory;
 }
 
 void ShibInternalConfig::unregFactory(const char* type)
 {
     if (type)
-        m_originFactoryMap.erase(type);
+        m_metadataFactoryMap.erase(type);
 }
 
-bool ShibInternalConfig::addMapper(const char* type, const char* source)
+bool ShibInternalConfig::addMetadata(const char* type, const char* source)
 {
-    saml::NDC ndc("addMapper");
+    saml::NDC ndc("addMetadata");
 
     bool ret=false;
     m_lock->lock();
     try
     {
-        OriginMapperFactoryMap::const_iterator i=m_originFactoryMap.find(type);
-        if (i!=m_originFactoryMap.end())
+        MetadataFactoryMap::const_iterator i=m_metadataFactoryMap.find(type);
+        if (i!=m_metadataFactoryMap.end())
         {
-            if (m_originMap.find(pair<string,string>(type,source))==m_originMap.end())
-            {
-                m_originMap[pair<string,string>(type,source)]=(i->second)(source);
-                ret=true;
-            }
-            else
-                throw OriginSiteMapperException("ShibConfig::addMapper() cannot add a duplicate mapper");
+            m_providers.push_back((i->second)(source));
+            ret=true;
         }
         else
-            throw OriginSiteMapperException("ShibConfig::addMapper() unable to locate a mapper factory of the requested type");
+            throw MetadataException("ShibConfig::addMetadata() unable to locate a metadata factory of the requested type");
         
     }
     catch (SAMLException& e)
     {
         Category::getInstance(SHIB_LOGCAT".ShibConfig").error(
-            "failed to add %s mapper to system using source '%s': %s", type, source, e.what()
+            "failed to add %s provider to system using source '%s': %s", type, source, e.what()
             );
     }
     catch (...)
     {
         Category::getInstance(SHIB_LOGCAT".ShibConfig").error(
-            "failed to add %s mapper to system using source '%s': unknown exception", type, source
+            "failed to add %s provider to system using source '%s': unknown exception", type, source
             );
     }
     m_lock->unlock();

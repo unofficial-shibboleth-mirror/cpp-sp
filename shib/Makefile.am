@@ -12,7 +12,7 @@ libshib_la_SOURCES = \
 					AAP.cpp \
                     ClubShibPOSTProfile.cpp \
                     Constants.cpp \
-                    OriginSiteMapper.cpp \
+                    Metadata.cpp \
                     SAMLBindingFactory.cpp \
                     ShibConfig.cpp \
                     ShibPOSTProfile.cpp \
@@ -20,11 +20,10 @@ libshib_la_SOURCES = \
                     ScopedAttribute.cpp \
                     SimpleAttribute.cpp \
                     XML.cpp \
-                    XMLOriginSiteMapper.cpp \
+                    XMLMetadata.cpp \
                     shib-threads.cpp
 
 
 # this is different from the project version
 # http://sources.redhat.com/autobook/autobook/autobook_91.html
 libshib_la_LDFLAGS = -version-info 3:0:0
-

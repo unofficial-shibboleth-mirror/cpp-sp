@@ -220,7 +220,7 @@ void STConfig::init()
     {
         const string source=ini->get(tag,*prov);
         log.info("registering metadata provider: type=%s, source=%s",prov->c_str(),source.c_str());
-        if (shibConf.addMapper(prov->c_str(),source.c_str()))
+        if (shibConf.addMetadata(prov->c_str(),source.c_str()))
             anyAdded=true;
     }
     delete iter;
