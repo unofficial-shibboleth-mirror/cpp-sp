@@ -53,7 +53,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386
-# ADD LINK32 log4cpp.lib xerces-c_2.lib saml_4.lib ApacheCore.lib /nologo /dll /machine:I386 /out:"Release/mod_shib_13.so" /libpath:"../../../opensaml/c/saml/Release" /libpath:"\Apache\libexec"
+# ADD LINK32 log4cpp.lib xerces-c_2.lib ApacheCore.lib saml_5.lib /nologo /dll /machine:I386 /out:"Release/mod_shib_13.so" /libpath:"../../../opensaml/c/saml/Release" /libpath:"\Apache\libexec"
 
 !ELSEIF  "$(CFG)" == "mod_shib13 - Win32 Debug"
 
@@ -79,7 +79,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 log4cppD.lib xerces-c_2D.lib saml_4D.lib ApacheCore.lib /nologo /dll /debug /machine:I386 /out:"Debug/mod_shib_13.so" /pdbtype:sept /libpath:"../../../opensaml/c/saml/Debug" /libpath:"\Apache\libexec"
+# ADD LINK32 log4cppD.lib xerces-c_2D.lib ApacheCore.lib saml_5D.lib /nologo /dll /debug /machine:I386 /out:"Debug/mod_shib_13.so" /pdbtype:sept /libpath:"../../../opensaml/c/saml/Debug" /libpath:"\Apache\libexec"
 
 !ENDIF 
 
