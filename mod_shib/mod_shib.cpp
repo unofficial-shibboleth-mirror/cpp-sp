@@ -617,28 +617,30 @@ extern "C" void shib_child_init(server_rec* s, pool* p)
 
     if (!SAMLConfig::init(&SAMLconf))
     {
-        std::fprintf(stderr,"shib_child_init() failed to initialize OpenSAML\n");
+        ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,s,
+                     "shib_child_init() failed to initialize OpenSAML");
         exit(1);
     }
 
     Shibconf.origin_mapper=&mapper;
     if (!ShibConfig::init(&Shibconf))
     {
-        std::fprintf(stderr,"shib_child_init() failed to initialize Shibboleth runtime\n");
+        ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,s,
+                     "shib_child_init() failed to initialize Shibboleth runtime");
         exit(1);
     }
 
     // Transcode the attribute names we know about for quick handling map access.
     for (map<string,string>::const_iterator i=g_mapAttribNameToHeader.begin();
-	 i!=g_mapAttribNameToHeader.end(); i++)
+         i!=g_mapAttribNameToHeader.end(); i++)
     {
         auto_ptr<XMLCh> temp(XMLString::transcode(i->first.c_str()));
-	g_mapAttribNames[temp.get()]=i->first;
+        g_mapAttribNames[temp.get()]=i->first;
     }
 
     CCache::g_Cache=new CCache();
 
-    std::fprintf(stderr,"shib_child_init() done\n");
+    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,s,"shib_child_init() done");
 }
 
 
@@ -652,7 +654,7 @@ extern "C" void shib_child_exit(server_rec* s, pool* p)
     ShibConfig::term();
     SAMLConfig::term();
 
-    std::fprintf(stderr,"shib_child_exit() done\n");
+    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,s,"shib_child_exit() done");
 }
 
 inline char hexchar(unsigned short s)
@@ -735,7 +737,7 @@ int shib_shar_error(request_rec* r, SAMLException& e)
 
 extern "C" int shib_check_user(request_rec* r)
 {
-    ap_log_rerror(APLOG_MARK,APLOG_DEBUG,r,"shib_check_user executing");
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,"shib_check_user executing");
 
     shib_server_config* sc=
         (shib_server_config*)ap_get_module_config(r->server->module_config,&shib_module);
@@ -746,7 +748,10 @@ extern "C" int shib_check_user(request_rec* r)
  
     // If the user is accessing the SHIRE acceptance point, pass on.
     if (strstr(targeturl,sc->szSHIRELocation))
+    {
+        ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,"shib_check_user ignoring SHIRE request");
         return OK;
+    }
 
     // Regular access to arbitrary resource...check AuthType
     const char *auth_type=ap_auth_type (r);
@@ -755,20 +760,21 @@ extern "C" int shib_check_user(request_rec* r)
     if (strcasecmp(auth_type,"shibboleth"))
     {
         if (!strcasecmp(auth_type,"basic") && dc->bBasicHijack==1)
-	{
-	    core_dir_config* conf=
-	        (core_dir_config*)ap_get_module_config(r->per_dir_config,
-						       ap_find_linked_module("http_core.c"));
-	    conf->ap_auth_type="shibboleth";
-	}
-	else
-	    return DECLINED;
+        {
+            core_dir_config* conf=
+                (core_dir_config*)ap_get_module_config(r->per_dir_config,
+                    ap_find_linked_module("http_core.c"));
+            conf->ap_auth_type="shibboleth";
+        }
+        else
+            return DECLINED;
     }
 
     // SSL check.
     if (dc->bSSLOnly==1 && strcmp(ap_http_method(r),"https"))
     {
-        ap_log_rerror(APLOG_MARK,APLOG_ERR,r,"shib_check_user() blocked non-SSL access");
+        ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
+                      "shib_check_user() blocked non-SSL access");
         return SERVER_ERROR;
     }
 
@@ -781,15 +787,15 @@ extern "C" int shib_check_user(request_rec* r)
         char* wayf=ap_pstrcat(r->pool,sc->szWAYFLocation,
 			      "?shire=",get_shire_location(r,targeturl),
 			      "&target=",url_encode(r,targeturl),NULL);
-	ap_table_setn(r->headers_out,"Location",wayf);
-	return REDIRECT;
+        ap_table_setn(r->headers_out,"Location",wayf);
+        return REDIRECT;
     }
 
     session_id+=strlen(sc->szCookieName) + 1;	/* Skip over the '=' */
     char* cookiebuf = ap_pstrdup(r->pool,session_id);
     char* cookieend = strchr(cookiebuf,';');
     if (cookieend)
-	*cookieend = '\0';	/* Ignore anyting after a ; */
+        *cookieend = '\0';	/* Ignore anyting after a ; */
     session_id=cookiebuf;
 	
     // The caching logic is the heart of the "SHAR".
@@ -797,58 +803,59 @@ extern "C" int shib_check_user(request_rec* r)
     try
     {
         entry=CCache::g_Cache->find(session_id);
-	if (!entry)
-	{
-	  // Construct the path to the session file
+        if (!entry)
+        {
+            // Construct the path to the session file
             char* sessionFile=ap_pstrcat(r->pool,sc->szSHIRESessionPath,"/",session_id,NULL);
-	    try
-	    {
-		entry=new CCacheEntry(r,sessionFile);
-		CCache::g_Cache->insert(session_id,entry);
-	    }
-	    catch (runtime_error e)
-	    {
-		char* wayf=ap_pstrcat(r->pool,sc->szWAYFLocation,
+            try
+            {
+                entry=new CCacheEntry(r,sessionFile);
+                CCache::g_Cache->insert(session_id,entry);
+            }
+            catch (runtime_error e)
+            {
+                char* wayf=ap_pstrcat(r->pool,sc->szWAYFLocation,
 				      "?shire=",get_shire_location(r,targeturl),
 				      "&target=",url_encode(r,targeturl),NULL);
-		ap_table_setn(r->headers_out,"Location",wayf);
-		return REDIRECT;
-	    }
-	    auto_ptr<char> h(XMLString::transcode(entry->getHandle()));
-	    auto_ptr<char> d(XMLString::transcode(entry->getOriginSite()));
-	    ap_log_rerror(APLOG_MARK,APLOG_INFO,r,
-			  "shib_check_user() started session for %s@%s",h.get(),d.get());
-	}
-	else if (!entry->isSessionValid(dc->secLifetime,dc->secTimeout))
-	{
-	    ap_log_rerror(APLOG_MARK,APLOG_INFO,r,"shib_check_user() expired session");
-	    CCache::g_Cache->remove(session_id);
-	    delete entry;
-	    char* wayf=ap_pstrcat(r->pool,sc->szWAYFLocation,
+                ap_table_setn(r->headers_out,"Location",wayf);
+                return REDIRECT;
+            }
+            auto_ptr<char> h(XMLString::transcode(entry->getHandle()));
+            auto_ptr<char> d(XMLString::transcode(entry->getOriginSite()));
+            ap_log_rerror(APLOG_MARK,APLOG_INFO|APLOG_NOERRNO,r,
+                          "shib_check_user() started session for %s@%s",h.get(),d.get());
+        }
+        else if (!entry->isSessionValid(dc->secLifetime,dc->secTimeout))
+        {
+            ap_log_rerror(APLOG_MARK,APLOG_INFO,r,"shib_check_user() expired session");
+            CCache::g_Cache->remove(session_id);
+            delete entry;
+            char* wayf=ap_pstrcat(r->pool,sc->szWAYFLocation,
 				  "?shire=",get_shire_location(r,targeturl),
 				  "&target=",url_encode(r,targeturl),NULL);
-	    ap_table_setn(r->headers_out,"Location",wayf);
-	    return REDIRECT;
-	}
-	else if (dc->bCheckAddress==1 && entry->getClientAddress() &&
-		 strcmp(entry->getClientAddress(),r->connection->remote_ip))
-	{
-	    ap_log_rerror(APLOG_MARK,APLOG_INFO,r,"shib_check_user() detected bad address, expected %s",
-			  entry->getClientAddress());
-	    CCache::g_Cache->remove(session_id);
-	    delete entry;
-	    return SERVER_ERROR;
+            ap_table_setn(r->headers_out,"Location",wayf);
+            return REDIRECT;
+        }
+        else if (dc->bCheckAddress==1 && entry->getClientAddress() &&
+                 strcmp(entry->getClientAddress(),r->connection->remote_ip))
+        {
+            ap_log_rerror(APLOG_MARK,APLOG_INFO|APLOG_NOERRNO,r,
+                          "shib_check_user() detected bad address, expected %s",
+                          entry->getClientAddress());
+            CCache::g_Cache->remove(session_id);
+            delete entry;
+            return SERVER_ERROR;
         }
 
-	ap_table_unset(r->headers_in,"Shib-Attributes");
-	if (dc->bExportAssertion==1)
-	    ap_table_setn(r->headers_in,"Shib-Attributes",
-			  reinterpret_cast<const char*>(entry->getSerializedAssertion(targeturl)));
-	Iterator<SAMLAttribute*> i=entry->getAttributes(targeturl);
+        ap_table_unset(r->headers_in,"Shib-Attributes");
+        if (dc->bExportAssertion==1)
+            ap_table_setn(r->headers_in,"Shib-Attributes",
+                          reinterpret_cast<const char*>(entry->getSerializedAssertion(targeturl)));
+        Iterator<SAMLAttribute*> i=entry->getAttributes(targeturl);
 	
-	while (i.hasNext())
-	{
-	    SAMLAttribute* attr=i.next();
+        while (i.hasNext())
+        {
+            SAMLAttribute* attr=i.next();
 
 	    // Are we supposed to export it?
 	    map<xstring,string>::const_iterator iname=g_mapAttribNames.find(attr->getName());
@@ -864,14 +871,15 @@ extern "C" int shib_check_user(request_rec* r)
 		    while (vals.hasNext())
 			header=ap_pstrcat(r->pool,header,vals.next().c_str()," ",NULL);
 		    ap_table_setn(r->headers_in,hname.c_str(),header);
-		}
-	    }
-	}
+                }
+            }
+        }
 	return OK;
     }
     catch (SAMLException& e)
     {
-        ap_log_rerror(APLOG_MARK,APLOG_ERR,r,"shib_check_user() SAML exception: %s",e.what());
+        ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
+                      "shib_check_user() SAML exception: %s",e.what());
 	Iterator<saml::QName> i=e.getCodes();
 	int c=0;
 	while (i.hasNext())
@@ -884,7 +892,8 @@ extern "C" int shib_check_user(request_rec* r)
 	    else if (c==2 && !XMLString::compareString(q.getNamespaceURI(),shibboleth::XML::SHIB_NS) &&
 		     !XMLString::compareString(q.getLocalName(),shibboleth::XML::Literals::InvalidHandle))
 	    {
-	        ap_log_rerror(APLOG_MARK,APLOG_INFO,r,"shib_check_user() told by AA to discard handle");
+	        ap_log_rerror(APLOG_MARK,APLOG_INFO|APLOG_NOERRNO,r,
+                          "shib_check_user() told by AA to discard handle");
 		CCache::g_Cache->remove(session_id);
 		delete entry;
 		char* wayf=ap_pstrcat(r->pool,sc->szWAYFLocation,
@@ -900,13 +909,15 @@ extern "C" int shib_check_user(request_rec* r)
     catch (XMLException& e)
     {
         auto_ptr<char> msg(XMLString::transcode(e.getMessage()));
-        ap_log_rerror(APLOG_MARK,APLOG_ERR,r,"shib_check_user() Xerxes XML exception: %s",msg.get());
+        ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
+                      "shib_check_user() Xerxes XML exception: %s",msg.get());
 	SAMLException ex(SAMLException::RESPONDER,msg.get());
 	return shib_shar_error(r,ex);
     }
     catch (...)
     {
-        ap_log_rerror(APLOG_MARK,APLOG_ERR,r,"shib_check_user() unknown exception");
+        ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
+                      "shib_check_user() unknown exception");
     }
 
     return SERVER_ERROR;
@@ -921,9 +932,9 @@ table* groups_for_user(request_rec* r, const char* user, char* grpfile)
 
     if (!(f=ap_pcfg_openfile(r->pool,grpfile)))
     {
-        ap_log_rerror(APLOG_MARK,APLOG_DEBUG,r,"groups_for_user() could not open group file: %s\n",
-		      grpfile);
-	return NULL;
+        ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
+                      "groups_for_user() could not open group file: %s\n",grpfile);
+        return NULL;
     }
 
     pool* sp=ap_make_sub_pool(r->pool);
@@ -932,10 +943,10 @@ table* groups_for_user(request_rec* r, const char* user, char* grpfile)
     {
         if ((*l=='#') || (!*l))
 	    continue;
-	ll = l;
-	ap_clear_pool(sp);
+        ll = l;
+        ap_clear_pool(sp);
 
-	group_name=ap_getword(sp,&ll,':');
+        group_name=ap_getword(sp,&ll,':');
 
 	while (*ll)
 	{
@@ -960,7 +971,7 @@ extern "C" int shib_check_auth(request_rec* r)
     shib_dir_config* dc=
         (shib_dir_config*)ap_get_module_config(r->per_dir_config,&shib_module);
 
-    ap_log_rerror(APLOG_MARK,APLOG_DEBUG,r,"shib_check_auth() executing");
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,"shib_check_auth() executing");
 
     char* targeturl=ap_construct_url(r->pool,r->unparsed_uri,r);
     if (strstr(targeturl,sc->szSHIRELocation))
@@ -992,7 +1003,8 @@ extern "C" int shib_check_auth(request_rec* r)
 
 	if (!strcmp(w,"valid-user"))
 	{
-	    ap_log_rerror(APLOG_MARK,APLOG_DEBUG,r,"shib_check_auth() accepting valid-user");
+	    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
+                      "shib_check_auth() accepting valid-user");
 	    return OK;
 	}
 	else if (!strcmp(w,"user") && r->connection->user)
@@ -1002,7 +1014,8 @@ extern "C" int shib_check_auth(request_rec* r)
 	        w=ap_getword_conf(r->pool,&t);
 		if (!strcmp(r->connection->user,w))
 		{
-		    ap_log_rerror(APLOG_MARK,APLOG_DEBUG,r,"shib_check_auth() accepting user: %s",w);
+		    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
+                          "shib_check_auth() accepting user: %s",w);
 		    return OK;
 		}
 	    }
@@ -1012,8 +1025,9 @@ extern "C" int shib_check_auth(request_rec* r)
 	    table* grpstatus=NULL;
 	    if (dc->szAuthGrpFile && r->connection->user)
 	    {
-		ap_log_rerror(APLOG_MARK,APLOG_DEBUG,r,"shib_check_auth() using groups file: %s\n",
-			      dc->szAuthGrpFile);
+		ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
+                      "shib_check_auth() using groups file: %s\n",
+			          dc->szAuthGrpFile);
 		grpstatus=groups_for_user(r,r->connection->user,dc->szAuthGrpFile);
 	    }
 	    if (!grpstatus)
@@ -1024,7 +1038,8 @@ extern "C" int shib_check_auth(request_rec* r)
 	        w=ap_getword_conf(r->pool,&t);
 		if (ap_table_get(grpstatus,w))
 		{
-		    ap_log_rerror(APLOG_MARK,APLOG_DEBUG,r,"shib_check_auth() accepting group: %s",w);
+		    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
+                          "shib_check_auth() accepting group: %s",w);
 		    return OK;
 		}
 	    }
@@ -1033,7 +1048,8 @@ extern "C" int shib_check_auth(request_rec* r)
 	{
 	    map<string,string>::const_iterator i=g_mapAttribRuleToHeader.find(w);
 	    if (i==g_mapAttribRuleToHeader.end())
-		ap_log_rerror(APLOG_MARK,APLOG_WARNING,r,"shib_check_auth() didn't recognize require rule: %s\n",w);
+		ap_log_rerror(APLOG_MARK,APLOG_WARNING|APLOG_NOERRNO,r,
+                      "shib_check_auth() didn't recognize require rule: %s\n",w);
 	    else
 	    {		
 		const char* vals=ap_table_get(r->headers_in,i->second.c_str());
@@ -1044,8 +1060,9 @@ extern "C" int shib_check_auth(request_rec* r)
 		    ruleval+=" ";
 		    if (strstr(vals,ruleval.c_str()))
 		    {
-		        ap_log_rerror(APLOG_MARK,APLOG_DEBUG,r,"shib_check_auth() accepting rule %s, value%s",
-				      w,ruleval.c_str());
+		        ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
+                              "shib_check_auth() accepting rule %s, value%s",
+				              w,ruleval.c_str());
 			return OK;
 		    }
 		}
