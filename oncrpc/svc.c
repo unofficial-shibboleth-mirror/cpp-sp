@@ -121,9 +121,9 @@ xprt_register(xprt)
 	}
 
 
-	if (svc_fdset.fd_count < FD_SETSIZE) {
+	if (onc_svc_fdset.fd_count < FD_SETSIZE) {
 		xports[sock] = xprt;
-		FD_SET(sock, &svc_fdset);
+		FD_SET(sock, &onc_svc_fdset);
 	} else {
 		char str[256];
 		
@@ -133,7 +133,7 @@ xprt_register(xprt)
 #else
 	if (sock < FD_SETSIZE) {
 		xports[sock] = xprt;
-		FD_SET(sock, &svc_fdset);
+		FD_SET(sock, &onc_svc_fdset);
 	}
 #endif
 #else
@@ -158,11 +158,11 @@ xprt_unregister(xprt)
 #ifdef WIN32
 	if ((xports[sock] == xprt)) {
 		xports[sock] = (SVCXPRT *)0;
-		FD_CLR((unsigned)sock, &svc_fdset);
+		FD_CLR((unsigned)sock, &onc_svc_fdset);
 #else
 	if ((sock < FD_SETSIZE) && (xports[sock] == xprt)) {
 		xports[sock] = (SVCXPRT *)0;
-		FD_CLR(sock, &svc_fdset);
+		FD_CLR(sock, &onc_svc_fdset);
 #endif
 	}
 #else

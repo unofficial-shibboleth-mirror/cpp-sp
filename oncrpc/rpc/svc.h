@@ -255,18 +255,18 @@ extern void	svcerr_systemerr(DOTS);
 #ifdef FD_SETSIZE
 #ifdef WIN32
 #ifdef ONCRPCDLL
-extern fd_set svc_fdset;
+extern fd_set onc_svc_fdset;
 #else
 #ifdef __BORLANDC__
-extern __import fd_set svc_fdset;
+extern __import fd_set onc_svc_fdset;
 #else
-_declspec(dllimport) fd_set svc_fdset;
+_declspec(dllimport) fd_set onc_svc_fdset;
 #endif
 #endif
 #else
-extern fd_set svc_fdset;
+extern fd_set onc_svc_fdset;
 #endif
-#define svc_fds svc_fdset.fds_bits[0]	/* compatibility */
+#define svc_fds onc_svc_fdset.fds_bits[0]	/* compatibility */
 #else
 extern int svc_fds;
 #endif /* def FD_SETSIZE */

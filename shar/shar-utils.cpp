@@ -112,7 +112,7 @@ void SharChild::run()
   fd_set readfds;
   struct timeval tv = { 0, 0 };
 
-  while(running && FD_ISSET(sock, &svc_fdset)) {
+  while(running && FD_ISSET(sock, &onc_svc_fdset)) {
     FD_ZERO(&readfds);
     FD_SET(sock, &readfds);
     tv.tv_sec = 1;

@@ -65,7 +65,6 @@ int xabort();
 extern bool_t abort();
 extern errno;
 #endif
-
 /*
  * Ops vector for TCP/IP based rpc service handle
  */

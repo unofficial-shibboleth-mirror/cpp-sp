@@ -51,7 +51,7 @@ struct opaque_auth _null_auth;
 #if defined(WIN32) && defined(__BORLANDC__)
 __declspec(dllexport)
 #endif
-fd_set svc_fdset;
+fd_set onc_svc_fdset;
 #else
 int svc_fds;
 #endif /* def FD_SETSIZE */
