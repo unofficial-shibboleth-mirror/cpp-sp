@@ -149,21 +149,21 @@ color: #00FF00
 <h2>Shibboleth Target Deployment Guide</h2>
 </center>
 <p>Shibboleth Target Deployment Guide<br>
-Shibboleth Version 1.0.1<br />
+Shibboleth Version 1.1<br />
 July 25, 2003<br />
 </p>
-<h3>This version of the deploy guide is for Shibboleth v1.0.1. For documentation 
+<h3>This version of the deploy guide is for Shibboleth v1.1. For documentation 
 related to prior versions of Shibboleth, please consult the appropriate branch 
 in the Shibboleth CVS.</h3>
 <h3>Federations have been abstracted out from the Shibboleth documentation. For 
 further information on using Shibboleth in a federation, refer to the federation 
 guide.</h3>
-<p>Shibboleth v1.0.1 is stable and secure enough to deploy in production 
+<p>Shibboleth v1.1 is stable and secure enough to deploy in production 
 scenarios. It is backward compatible with 1.0 in all respects, including 
 configuration, but some older commands have been deprecated or replaced.</p>
-<p>Features and changes specific to 1.0.1 are marked with <span class="feature">
-[1.0.1]</span></p>
-<h4>Major New Features in 1.0 and 1.0.1</h4>
+<p>Features and changes specific to 1.1 are marked with <span class="feature">
+[1.1]</span></p>
+<h4>Major New Features in 1.0 and 1.1</h4>
 <p>This new release contains several improvements and enhancements, including:
 </p>
 <h5>Federation Support</h5>
@@ -190,12 +190,14 @@ configuration, but some older commands have been deprecated or replaced.</p>
     repositories, and computing the SAML attribute using business rules). This 
     should greatly simplify the process of configuring the AA to support 
     additional general attributes.</li>
+    <li>An attribute connector for JDBC data sources is now available.
+    <span class="feature">[1.1]</span></li>
     <li>Support for a runtime-derived per-requester persistent identifier 
     attribute to support anonymous personalization by targets has been added via 
-    an attribute plugin. <span class="feature">[1.0.1]</span></li>
+    an attribute plugin. <span class="feature">[1.1]</span></li>
     <li>Specialized deployments without privacy needs can configure identity-based 
     handles interoperable with other SAML deployments. <span class="feature">
-    [1.0.1]</span></li>
+    [1.1]</span></li>
 </ol>
 <h5>Target</h5>
 <ol>
@@ -210,16 +212,16 @@ configuration, but some older commands have been deprecated or replaced.</p>
     <li>The SHAR can be configured to request specific attributes from the 
     Origin.</li>
     <li>The SHAR can use TCP sockets when responding to the Apache module, for 
-    specialized deployment behind firewalls. <span class="feature">[1.0.1]</span>
+    specialized deployment behind firewalls. <span class="feature">[1.1]</span>
     </li>
     <li>Attribute acceptance policies have been greatly enhanced, and are now 
     used to configure all aspects of attribute handling by the target, except 
     for requesting specific attributes by sitename. Adding attributes now takes 
-    place in one configuration step. <span class="feature">[1.0.1]</span></li>
+    place in one configuration step. <span class="feature">[1.1]</span></li>
     <li>Support for Apache 1.3 on Windows NT/2000/XP/2003 has been added.
-    <span class="feature">[1.0.1]</span></li>
+    <span class="feature">[1.1]</span></li>
     <li>Microsoft IIS web server support has been added via an ISAPI filter and 
-    extension. <span class="feature">[1.0.1]</span></li>
+    extension. <span class="feature">[1.1]</span></li>
 </ol>
 <h5>Miscellaneous</h5>
 <ol>
@@ -604,7 +606,7 @@ most minor &quot;letter&quot; updates should be usable.</p>
             </li>
             <li>
             <a href="http://shibboleth.internet2.edu/release/shib-download.html">
-            Shibboleth v1.0.1 Target for RedHat</a></li>
+            Shibboleth v1.1 Target for RedHat</a></li>
             <li><a href="http://www.openssl.org/source/">openssl-0.9.6, revision
             <span class="fixed">i</span> or newer</a></li>
             <li>libstdc++3-3.0.4-1.i386.rpm and libgcc-3.0.4-1.i386.rpm<blockquote>
@@ -682,7 +684,7 @@ most minor &quot;letter&quot; updates should be usable.</p>
             </li>
             <li>
             <a href="http://shibboleth.internet2.edu/release/shib-download.html">
-            Shibboleth v1.0.1 Target for Solaris</a></li>
+            Shibboleth v1.1 Target for Solaris</a></li>
             <li><b>Portions of the <span class="fixed">libphp4</span> Apache 
             plugin are written in C++, as is Shibboleth. There is a known 
             conflict with the PHP extensions <span class="fixed">libpspell.so</span> 
@@ -733,7 +735,7 @@ most minor &quot;letter&quot; updates should be usable.</p>
         <ul type="disc">
             <li>
             <a href="http://shibboleth.internet2.edu/release/shib-download.html">
-            Shibboleth 1.0.1 Target for RedHat</a></li>
+            Shibboleth 1.1 Target for RedHat</a></li>
             <li><a href="http://www.openssl.org/source/">openssl-0.9.6, revision
             <span class="fixed">i</span> or newer</a></li>
             <li>libstdc++3-3.0.4-1.i386.rpm and libgcc-3.0.4-1.i386.rpm
@@ -786,7 +788,7 @@ most minor &quot;letter&quot; updates should be usable.</p>
             drwxr-xr-x 2 root root 4096 Oct 24 03:54 bin<br>
             drwxr-xr-x 2 root root 4096 Oct 24 03:54 doc<br>
             drwxr-xr-x 4 root root 4096 Oct 24 03:54 etc<br>
-            drwxr-xr-x 13 root root 4096 Oct 24 03:54 include<br>
+            drwxr-xr-x 9 root root 4096 Oct 24 03:54 include<br>
             drwxr-xr-x 4 root root 4096 Oct 24 03:55 lib<br>
             drwxr-xr-x 2 root root 4096 Oct 24 03:55 libexec<br>
             drwxr-xr-x 4 root root 4096 Oct 24 02:02 share</span></p>
@@ -1321,7 +1323,7 @@ most minor &quot;letter&quot; updates should be usable.</p>
         applications, how to filter their values based on the source, and how to 
         make them available to applications and the RM. See <a href="#4.e.">
         section 4.e.</a> for detailed information on this file.<p><b>This 
-        provider has been added as of version 1.0.1, and supersedes the old
+        provider has been added as of version 1.1, and supersedes the old
         <span class="fixed">aap-uri</span> and <span class="fixed">attributes</span> 
         settings, as well as the Apache <span class="fixed">ShibMapAttribute</span> 
         command.</b></dd>
@@ -1614,8 +1616,8 @@ most minor &quot;letter&quot; updates should be usable.</p>
     filtering policies for different kinds of attributes, and is potentially 
     extensible to more complex attributes in the future. An attribute is 
     considered Scoped if the XML representation of its values contains a &quot;Scope&quot; 
-    attribute. As of 1.0.1, this is detected at runtime and requires no 
-    configuration work.</p>
+    attribute. As of 1.1, this is detected at runtime and requires no 
+    configuration in advance.</p>
     <p><b>An essential part of the Shibboleth trust fabric is ensuring that 
     sites only assert attributes for domains for which they are considered 
     authoritative by the target. Typically, this means that Brown University 
@@ -1638,10 +1640,17 @@ most minor &quot;letter&quot; updates should be usable.</p>
         the origin site&#39;s permitted domains. These domains are listed in the 
         site metadata that provides policy information to the system. Domains 
         can be explicit or regular expressions, and can be changed by a target 
-        to meet its needs. Thus, attribute acceptance processing for
-        <span class="fixed">scoped</span> attributes is based on site metadata, 
+        to meet its needs. Targets can also override the rules specified for the
+        site in their own AAPs, choosing to accept additional scopes or deny scopes
+        that would ordinarily be accepted based on metadata provided by  a federation.
+        Thus, attribute acceptance processing for <span class="fixed">scoped</span>
+        attributes is based on site metadata and target-specified overrides
         in addition to the mechanism described below for <span class="fixed">
         simple</span> attributes.</p>
+        <p>Scope rules specified in an AAP are additive with any domains permitted
+        by site metadata, and the rules are applied by first looking for an applicable
+        denial rule, and then looking at site metadata and any applicable site rules
+        for an accept rule.</p>
     </blockquote>
     <h4>Simple:</h4>
     <blockquote>
@@ -1713,6 +1722,15 @@ most minor &quot;letter&quot; updates should be usable.</p>
         <blockquote>
             <p>A rule that applies to the origin site AA corresponding to the 
             hostname.</p>
+        </blockquote>
+        <p><span class="fixed">&lt;Scope Accept=&quot;true|false&quot;&gt; Type=&quot;type&quot;&gt;</span></p>
+        <blockquote>
+            <p>Specifies a value to accept or deny, either directly using
+            <span class="fixed">type</span> <span class="fixed">literal</span>, 
+            or using a set of matching expressions as <span class="fixed">type</span>
+            <span class="fixed">regexp</span>. <span class="fixed">literal</span> 
+            is the default if <span class="fixed">Type</span> is not specified.
+            Accept defaults to &quot;true&quot;&gt;.</p>
         </blockquote>
         <p><span class="fixed">&lt;AnyValue&gt;</span></p>
         <blockquote>
