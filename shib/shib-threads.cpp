@@ -9,6 +9,8 @@
 #include "internal.h"
 #include "shib-threads.h"
 
+#include <log4cpp/Category.hh>
+
 #ifdef HAVE_PTHREAD
 #include <pthread.h>
 #ifndef HAVE_PTHREAD_RWLOCK_INIT
@@ -22,7 +24,7 @@
 
 using namespace std;
 using namespace shibboleth;
-
+using namespace log4cpp;
 
 // pthread implementation of the Shib Target Threads API
 
