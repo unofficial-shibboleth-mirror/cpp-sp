@@ -25,8 +25,9 @@
         <MySQLSessionCache cleanupInterval="300" cacheTimeout="3600" AATimeout="30" AAConnectTimeout="15"
                defaultLifetime="1800" retryInterval="300" strictValidity="true" propagateErrors="false"
                mysqlTimeout="14400">
-            <Argument>--language=@-PREFIX-@/share/english</Argument>
-            <Argument>--datadir=@-PREFIX-@/data</Argument>
+			<!-- The character references below are just dashes, but now you can comment out the element. -->
+            <Argument>&#x2D;&#x2D;language=@-PREFIX-@/share/english</Argument>
+            <Argument>&#x2D;&#x2D;datadir=@-PREFIX-@/data</Argument>
         </MySQLSessionCache>
     </SHAR>
     
