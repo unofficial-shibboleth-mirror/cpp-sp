@@ -49,17 +49,22 @@
 
 
 #include "../shib/shib.h"
-#include <ctime>
 #include <sstream>
+
+#include <openssl/bio.h>
+#include <openssl/err.h>
+#include <openssl/rsa.h>
+#include <openssl/evp.h>
+#include <openssl/pem.h>
 
 using namespace std;
 using namespace saml;
 using namespace shibboleth;
 
-SAMLResponse* HS()
+SAMLResponse* HS(const char* key)
 {
     XMLDateTime now();
-    Key k(Key::RSA_PRIV,Key::PEM,"C:/shib/etc/internet2.pem");
+//    Key k(Key::RSA_PRIV,Key::PEM,"C:/shib/etc/internet2.pem");
     const XMLCh* policies[]={Constants::POLICY_INCOMMON};
 
     auto_ptr<XMLCh> hsname(XMLString::transcode("wayf.internet2.edu"));
@@ -77,7 +82,7 @@ SAMLResponse* HS()
             method.get(),
             time(NULL),
             Iterator<SAMLAuthorityBinding*>(),
-            k);
+            NULL);
 }
 
 int main(int argc,char* argv[])
@@ -85,11 +90,14 @@ int main(int argc,char* argv[])
     SAMLConfig& conf1=SAMLConfig::getConfig();
     ShibConfig& conf2=ShibConfig::getConfig();
     char* path="";
+    char* key="";
 
     for (int i=1; i<argc; i++)
     {
         if (!strcmp(argv[i],"-d") && i+1<argc)
             path=argv[++i];
+        else if (!strcmp(argv[i],"-k") && i+1<argc)
+            key=argv[++i];
     }
 
     conf1.schema_dir=path;
@@ -97,8 +105,7 @@ int main(int argc,char* argv[])
     if (!conf1.init())
         cerr << "unable to initialize SAML runtime" << endl;
 
-    conf2.mapperURL="/var/tomcat/webapps/shibboleth/sites.xml";
-    conf2.mapperCert=new X509Certificate(X509Certificate::PEM,"/opt/shibboleth/etc/shibboleth/internet2.pem");
+    conf2.mapperFile="http://wayf.internet2.edu/shibboleth/sites.xml";
     if (!conf2.init())
         cerr << "unable to initialize Shibboleth runtime" << endl;
 
@@ -106,9 +113,9 @@ int main(int argc,char* argv[])
     {
 //        SAMLResponse* r=HS();
 //        cout << "Generated Response: " << endl << *r << endl;
-
-        const XMLCh* policies[]={Constants::POLICY_INCOMMON};
-        auto_ptr<XMLCh> recip(XMLString::transcode("https://shire.target.com"));
+        auto_ptr<XMLCh> pol(XMLString::transcode("urn:mace:InCommon:pilot:2003"));
+        const XMLCh* policies[]={pol.get()};
+        auto_ptr<XMLCh> recip(XMLString::transcode("https://shib2.internet2.edu/shib/SHIRE"));
         ShibPOSTProfile* p=ShibPOSTProfileFactory::getInstance(ArrayIterator<const XMLCh*>(policies),recip.get(),300);
 
 //        auto_ptr<XMLByte> buf(r->toBase64(NULL));
@@ -135,9 +142,6 @@ int main(int argc,char* argv[])
     }
     catch(SAMLException& e)
     {
-//        stringstream str;
-//        str << e;
-//        SAMLException e2(str);
         cerr << "caught a SAML exception: " << e << endl;
     }
     catch(XMLException& e)
