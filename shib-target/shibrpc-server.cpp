@@ -98,6 +98,9 @@ shibrpc_session_is_valid_1_svc(shibrpc_session_is_valid_args_1 *argp,
   // TEST the session...
   try {
 
+    // Grab the origin
+    const XMLCh* origin = entry->getStatement()->getSubject()->getNameQualifier();
+
     // Verify the address is the same
     if (argp->checkIPAddress) {
       log.debug ("Checking address against %s", entry->getClientAddress());
@@ -105,7 +108,8 @@ shibrpc_session_is_valid_1_svc(shibrpc_session_is_valid_args_1 *argp,
 	log.debug ("IP Address mismatch");
 
 	throw ShibTargetException(SHIBRPC_IPADDR_MISMATCH,
-  "Your IP address does not match the address in the original authentication.");
+  "Your IP address does not match the address in the original authentication.",
+				  origin);
       }
     }
 
@@ -113,7 +117,8 @@ shibrpc_session_is_valid_1_svc(shibrpc_session_is_valid_args_1 *argp,
     if (!entry->isSessionValid(argp->lifetime, argp->timeout)) {
       log.debug ("Session expired");
       throw ShibTargetException(SHIBRPC_SESSION_EXPIRED,
-				"Your session has expired.  Re-authenticate.");
+				"Your session has expired.  Re-authenticate.",
+				origin);
     }
 
     // and now try to prefetch the attributes .. this could cause an
@@ -127,12 +132,13 @@ shibrpc_session_is_valid_1_svc(shibrpc_session_is_valid_args_1 *argp,
       log.debug ("prefetch failed with a SAML Exception: %s", e.what());
       ostringstream os;
       os << e;
-      throw ShibTargetException(SHIBRPC_SAML_EXCEPTION, os.str());
+      throw ShibTargetException(SHIBRPC_SAML_EXCEPTION, os.str(), origin);
 
     } catch (...) {
       log.error ("prefetch caught an unknown exception");
       throw ShibTargetException(SHIBRPC_UNKNOWN_ERROR,
-		"An unknown error occured while pre-fetching attributes.");
+		"An unknown error occured while pre-fetching attributes.",
+				origin);
     }
 
   } catch (ShibTargetException &e) {
@@ -337,12 +343,16 @@ shibrpc_get_assertions_1_svc(shibrpc_get_assertions_args_1 *argp,
     return TRUE;
   }
 
+  // Grab the origin
+  const XMLCh* origin = entry->getStatement()->getSubject()->getNameQualifier();
+
   // Validate the client address (again?)
   if (argp->checkIPAddress &&
       strcmp (argp->cookie.client_addr, entry->getClientAddress())) {
     log.error ("IP Mismatch");
-    set_rpc_status(&result->status, SHIBRPC_IPADDR_MISMATCH,
-		   "Your IP address does not match the address in the original authentication.", "");
+    set_rpc_status_x(&result->status, SHIBRPC_IPADDR_MISMATCH,
+   "Your IP address does not match the address in the original authentication.",
+		     origin);
     entry->release();
     return TRUE;
   }
@@ -375,8 +385,8 @@ shibrpc_get_assertions_1_svc(shibrpc_get_assertions_args_1 *argp,
     log.error ("received SAML exception: %s", e.what());
     ostringstream os;
     os << e;
-    set_rpc_status(&result->status, SHIBRPC_SAML_EXCEPTION,
-		   strdup(os.str().c_str()), "");
+    set_rpc_status_x(&result->status, SHIBRPC_SAML_EXCEPTION,
+		     strdup(os.str().c_str()), origin);
     entry->release();
     return TRUE;
   }
