@@ -111,6 +111,9 @@
             </element>
         </sequence>
         <attribute name="Name" type="string" use="required"/>
+        <attribute name="ContactName" type="string" use="optional"/>
+        <attribute name="ContactEmail" type="string" use="optional"/>
+        <attribute name="ErrorURL" type="anyURI" use="optional"/>
     </complexType>
 
     <complexType name="regexp_string">
