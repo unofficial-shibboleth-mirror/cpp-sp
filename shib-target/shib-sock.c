@@ -116,8 +116,14 @@ static void setup_sockaddr(SHIBADDR *addr, short aport)
 int shib_sock_bind(ShibSocket s, ShibSockName name)
 {
   SHIBADDR addr;
+  int res;
+
   setup_sockaddr(&addr,name);
-  return map_winsock_result(bind(s,(struct sockaddr *)&addr,sizeof(addr)));
+  addr.sin_addr.s_addr=INADDR_ANY;
+  res = map_winsock_result(bind(s,(struct sockaddr *)&addr,sizeof(addr)));
+  if (res)
+      return res;
+  return map_winsock_result(listen(s,3));
 }
 
 int shib_sock_connect(ShibSocket s, ShibSockName name)
