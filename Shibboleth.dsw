@@ -3,24 +3,6 @@ Microsoft Developer Studio Workspace File, Format Version 6.00
 
 ###############################################################################
 
-Project: "apache2"=".\APACHE-2.0\apache2.dsp" - Package Owner=<4>
-
-Package=<5>
-{{{
-}}}
-
-Package=<4>
-{{{
-    Begin Project Dependency
-    Project_Dep_Name shibtarget
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name shib
-    End Project Dependency
-}}}
-
-###############################################################################
-
 Project: "isapi_shib"=.\isapi_shib\isapi_shib.dsp - Package Owner=<4>
 
 Package=<5>
@@ -51,7 +33,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "mod_shire"=.\mod_shire\mod_shire.dsp - Package Owner=<4>
+Project: "mod_shib13"=.\apache\mod_shib13.dsp - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -64,6 +46,24 @@ Package=<4>
     End Project Dependency
     Begin Project Dependency
     Project_Dep_Name shib
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "mod_shib20"=.\apache\mod_shib20.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name shib
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name shibtarget
     End Project Dependency
 }}}
 
@@ -238,10 +238,6 @@ Global:
 
 Package=<5>
 {{{
-    begin source code control
-    "$/NSAPI", WNAAAAAA
-    ..\..\..\documents and settings\cantor.2.saidin\my documents\visual studio projects\nsapi
-    end source code control
 }}}
 
 Package=<3>
