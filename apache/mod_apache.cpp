@@ -987,31 +987,23 @@ extern "C" int shib_auth_checker(request_rec* r)
     return shib_error_page(r, application, "access", markupProcessor);
 }
 
+#ifndef SHIB_APACHE_13
 /*
  * shib_exit()
- *  Cleanup the (per-process) pool info.
+ *  Empty cleanup hook, Apache 2.x doesn't check NULL very well...
  */
-#ifdef SHIB_APACHE_13
-extern "C" void shib_exit(server_rec* s, SH_AP_POOL* p)
-{
-#else
 extern "C" apr_status_t shib_exit(void* data)
 {
-    server_rec* s = NULL;
-#endif
-
-    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_exit(%d) dealing with g_Config..", (int)getpid());
-
-    g_Config->shutdown();
-    g_Config = NULL;
-
-    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_exit() done\n");
-#ifndef SHIB_APACHE_13
+    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,NULL,"shib_exit() done\n");
     return OK;
-#endif
 }
+#endif
 
 
+/*
+ * shib_child_exit()
+ *  Cleanup the (per-process) pool info.
+ */
 #ifdef SHIB_APACHE_13
 extern "C" void shib_child_exit(server_rec* s, SH_AP_POOL* p)
 {
@@ -1021,8 +1013,10 @@ extern "C" apr_status_t shib_child_exit(void* data)
   server_rec* s = NULL;
 #endif
 
-  ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_child_exit(%d)",
-	       (int)getpid());
+    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_child_exit(%d) dealing with g_Config..", (int)getpid());
+    g_Config->shutdown();
+    g_Config = NULL;
+    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_child_exit() done\n");
 
 #ifndef SHIB_APACHE_13
     return OK;
@@ -1037,8 +1031,7 @@ extern "C" apr_status_t shib_child_exit(void* data)
 #ifdef SHIB_APACHE_13
 extern "C" void shib_child_init(server_rec* s, SH_AP_POOL* p)
 #else
-extern "C" int shib_post_config(apr_pool_t* pconf, apr_pool_t* plog,
-				apr_pool_t* ptemp, server_rec* s)
+extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
 #endif
 {
     // Initialize runtime components.
@@ -1047,11 +1040,7 @@ extern "C" int shib_post_config(apr_pool_t* pconf, apr_pool_t* plog,
 
     if (g_Config) {
         ap_log_error(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() already initialized!");
-#ifdef SHIB_APACHE_13
         exit(1);
-#else
-	return OK;
-#endif
     }
 
     try {
@@ -1075,13 +1064,9 @@ extern "C" int shib_post_config(apr_pool_t* pconf, apr_pool_t* plog,
     }
 
     // Set the cleanup handler
-    apr_pool_cleanup_register(pconf, NULL, &shib_exit, &shib_child_exit);
+    apr_pool_cleanup_register(p, NULL, &shib_exit, &shib_child_exit);
 
     ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() done");
-
-#ifndef SHIB_APACHE_13
-    return OK;
-#endif
 }
 
 #ifdef SHIB_APACHE_13
@@ -1143,7 +1128,7 @@ module MODULE_VAR_EXPORT mod_shib = {
     NULL,			/* logger */
     NULL,			/* header parser */
     shib_child_init,		/* child_init */
-    shib_exit,			/* child_exit */
+    shib_child_exit,		/* child_exit */
     NULL			/* post read-request */
 };
 
@@ -1151,7 +1136,7 @@ module MODULE_VAR_EXPORT mod_shib = {
 
 extern "C" void shib_register_hooks (apr_pool_t *p)
 {
-  ap_hook_post_config(shib_post_config, NULL, NULL, APR_HOOK_MIDDLE);
+  ap_hook_child_init(shib_child_init, NULL, NULL, APR_HOOK_MIDDLE);
   ap_hook_check_user_id(shib_check_user, NULL, NULL, APR_HOOK_MIDDLE);
   ap_hook_auth_checker(shib_auth_checker, NULL, NULL, APR_HOOK_FIRST);
   ap_hook_handler(shib_post_handler, NULL, NULL, APR_HOOK_LAST);
