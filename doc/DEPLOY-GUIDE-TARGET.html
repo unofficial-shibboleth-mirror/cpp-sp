@@ -1026,7 +1026,7 @@ most minor &quot;letter&quot; updates should be usable.</p>
         &lt;!-- IIS only:
         <a class="fixedlink" href="#confImplementation">&lt;Implementation&gt;</a>
             <a class="fixedlink" href="#confISAPI">&lt;ISAPI normalizeRequest=&quot;true&quot;&gt;</a>
-                <a class="fixedlink" href="#confSite">&lt;Site id=&quot;1&quot; scheme=&quot;https&quot; host=&quot;localhost&quot; port=&quot;443&quot;/&gt;</a>
+                <a class="fixedlink" href="#confSite">&lt;Site id=&quot;1&quot; scheme=&quot;https&quot; name=&quot;localhost&quot; port=&quot;443&quot;/&gt;</a>
             <a class="fixedlink" href="#confISAPI">&lt;/ISAPI&gt;</a>
         <a class="fixedlink" href="#confImplementation">&lt;/Implementation&gt;</a>
         --&gt;
@@ -1664,10 +1664,10 @@ cookieProps=&quot;<i>URL</i>&quot;&gt;</span></a></dd>
         which provides fine-grained control over aspects of target behavior at a host, path, or document level.</p>
         </dd>
 
-        <dd class="attribute"><a name="confSite"><span class="fixed">&lt;Site <span class="mandatory">id=&quot;<i>INSTANCE_ID</i>&quot; host=&quot;<i>fqdn</i>&quot;</span> scheme=&quot;<i>http/https</i>&quot; port=&quot;<i>integer</i>&quot;&gt;</span></a></dd>
+        <dd class="attribute"><a name="confSite"><span class="fixed">&lt;Site <span class="mandatory">id=&quot;<i>INSTANCE_ID</i>&quot; name=&quot;<i>fqdn</i>&quot;</span> scheme=&quot;<i>http/https</i>&quot; port=&quot;<i>integer</i>&quot;&gt;</span></a></dd>
         <dd class="value">
         <p>This element is placed in the <a href="#confISAPI"><span class="fixed">ISAPI</span></a> element to specify a
-        mapping from individual instance ID's to the corresponding host, port, and scheme.</p>
+        mapping from individual instance ID's to the corresponding hostname, port, and scheme.</p>
         </dd>
 
         <dd class="attribute"><a name="confTCPListener"><span class="fixed">&lt;TCPListener <span class="mandatory">address=&quot;<i>pathname</i>&quot;  port=&quot;<i>integer</i>&quot;</span> acl=&quot;<i>ip</i>&quot;&gt;</span></a></dd>
