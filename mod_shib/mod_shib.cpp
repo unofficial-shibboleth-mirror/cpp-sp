@@ -63,11 +63,7 @@
 #include "http_core.h"
 #include "http_log.h"
 
-#ifdef WIN32
-# undef strtoul
-#else
-# include <unistd.h>
-#endif
+#include <unistd.h>
 
 // SAML Runtime
 #include <saml.h>
@@ -211,9 +207,9 @@ CCacheEntry::CCacheEntry(request_rec* r, const char* sessionFile)
 	    m_handle=handle.get();
 	}
 	else if (!strcmp("PBinding0",w))
-	    binding=auto_ptr<XMLCh>(XMLString::transcode(ap_getword(r->pool,&token,'=')));
+	    binding.reset(XMLString::transcode(ap_getword(r->pool,&token,'=')));
 	else if (!strcmp("LBinding0",w))
-	    location=auto_ptr<XMLCh>(XMLString::transcode(ap_getword(r->pool,&token,'=')));
+	    location.reset(XMLString::transcode(ap_getword(r->pool,&token,'=')));
         else if (!strcmp("Time",w))
 	    m_sessionCreated=atoi(ap_getword(r->pool,&token,'='));
 	else if (!strcmp("ClientAddress",w))
@@ -311,12 +307,12 @@ void CCacheEntry::populate(const char* resource_url)
 
     auto_ptr<XMLCh> resource(XMLString::transcode(resource_url));    
     static const XMLCh* policies[] = { shibboleth::Constants::POLICY_CLUBSHIB };
-    // static const saml::QName* respondWiths[] = { &g_respondWith };
+    static const saml::QName* respondWiths[] = { &g_respondWith };
 
     // Build a SAML Request and send it to the AA.
     SAMLSubject* subject=new SAMLSubject(m_handle.c_str(),m_originSite.c_str());
     SAMLAttributeQuery* q=new SAMLAttributeQuery(subject,resource.get());
-    SAMLRequest* req=new SAMLRequest(q,ArrayIterator<saml::QName>(&g_respondWith));
+    SAMLRequest* req=new SAMLRequest(q,respondWiths);
     SAMLBinding* pBinding=CCache::g_Cache->getBinding(m_binding->getBinding());
     m_response=pBinding->send(*m_binding,*req);
     delete req;
@@ -328,7 +324,8 @@ void CCacheEntry::populate(const char* resource_url)
 
     auto_ptr<char> h(XMLString::transcode(m_handle.c_str()));
     auto_ptr<char> d(XMLString::transcode(m_originSite.c_str()));
-    fprintf(stderr,"CCacheEntry::populate() fetched and stored SAML response for %s@%s\n",h.get(),d.get());
+    std::fprintf(stderr,"CCacheEntry::populate() fetched and stored SAML response for %s@%s\n",
+		 h.get(),d.get());
 }
 
 
@@ -567,12 +564,14 @@ class DummyMapper : public IOriginSiteMapper
 public:
     DummyMapper() {}
     ~DummyMapper();
-    virtual Iterator<xstring> getHandleServiceNames(const XMLCh* originSite) { return Iterator<xstring>(); }
-    virtual Key* getHandleServiceKey(const XMLCh* handleService) { return NULL; }
+    virtual Iterator<xstring> getHandleServiceNames(const XMLCh* originSite) { return Iterator<xstring>(v); }
+    virtual void* getHandleServiceKey(const XMLCh* handleService) { return NULL; }
     virtual Iterator<xstring> getSecurityDomains(const XMLCh* originSite);
-    virtual Iterator<X509Certificate*> getTrustedRoots() { return Iterator<X509Certificate*>(); }
+    virtual Iterator<void*> getTrustedRoots() { return Iterator<void*>(v2); }
 
 private:
+    vector<xstring> v;
+    vector<void *> v2;
     typedef map<xstring,vector<xstring>*> domains_t;
     domains_t m_domains;
 };
@@ -717,7 +716,7 @@ int shib_shar_error(request_rec* r, SAMLException& e)
     ap_rprintf(r, "<html>\n");
     ap_rprintf(r, "<head>\n");
     ap_rprintf(r, "<title>Shibboleth Attribute Exchange Failed</title>\n");
-    ap_rprintf(r, "</HEAD><BODY><H3>Shibboleth Attribute Exchange Failed</H3>\n");
+    ap_rprintf(r, "<H3>Shibboleth Attribute Exchange Failed</H3>\n");
     ap_rprintf(r, "While attempting to securely contact your origin site to obtain information about you, an error occurred:<BR>");
     ap_rprintf(r, "<BLOCKQUOTE>%s</BLOCKQUOTE>", e.what());
 
@@ -728,8 +727,8 @@ int shib_shar_error(request_rec* r, SAMLException& e)
 
     ap_rprintf(r, "<P>The error appears to be located at %s.<BR>", origin ? "your origin site" : "the resource provider's site");
     ap_rprintf(r, "<P>Try restarting your browser and accessing the site again to make sure the problem isn't temporary. Please contact the administrator of that site if this problem recurs. If possible, provide him/her with the error message shown above.");
-    ap_rprintf(r, "</BODY>\n");
-    ap_rprintf(r, "</HTML>\n");
+    ap_rprintf(r, "</head>\n");
+    ap_rprintf(r, "</html>\n");
     ap_rflush(r);
 
     return DONE;
@@ -839,7 +838,7 @@ extern "C" int shib_check_user(request_rec* r)
         }
 
         if (dc->bCheckAddress==1 && entry->getClientAddress() &&
-                 strcmp(entry->getClientAddress(),r->connection->remote_ip))
+            strcmp(entry->getClientAddress(),r->connection->remote_ip))
         {
             ap_log_rerror(APLOG_MARK,APLOG_INFO|APLOG_NOERRNO,r,
                           "shib_check_user() detected bad address, expected %s",
@@ -854,7 +853,7 @@ extern "C" int shib_check_user(request_rec* r)
         for (map<string,string>::const_iterator h_iter=g_mapAttribNameToHeader.begin(); h_iter!=g_mapAttribNameToHeader.end(); h_iter++)
             if (h_iter->second!="REMOTE_USER")
                 ap_table_unset(r->headers_in,h_iter->second.c_str());
-
+        
         if (dc->bExportAssertion==1)
             ap_table_setn(r->headers_in,"Shib-Attributes",
                           reinterpret_cast<const char*>(entry->getSerializedAssertion(targeturl)));
@@ -864,62 +863,62 @@ extern "C" int shib_check_user(request_rec* r)
         {
             SAMLAttribute* attr=i.next();
 
-            // Are we supposed to export it?
-            map<xstring,string>::const_iterator iname=g_mapAttribNames.find(attr->getName());
-            if (iname!=g_mapAttribNames.end())
-            {
-                string hname=g_mapAttribNameToHeader[iname->second];
-                Iterator<string> vals=attr->getSingleByteValues();
-                if (hname=="REMOTE_USER" && vals.hasNext())
-	                r->connection->user=ap_pstrdup(r->connection->pool,vals.next().c_str());
-                else
-                {
-                    char* header=ap_pstrdup(r->pool," ");
-                    while (vals.hasNext())
-                    header=ap_pstrcat(r->pool,header,vals.next().c_str()," ",NULL);
-                    ap_table_setn(r->headers_in,hname.c_str(),header);
+	    // Are we supposed to export it?
+	    map<xstring,string>::const_iterator iname=g_mapAttribNames.find(attr->getName());
+	    if (iname!=g_mapAttribNames.end())
+	    {
+		string hname=g_mapAttribNameToHeader[iname->second];
+		Iterator<string> vals=attr->getSingleByteValues();
+		if (hname=="REMOTE_USER" && vals.hasNext())
+		    r->connection->user=ap_pstrdup(r->connection->pool,vals.next().c_str());
+		else
+		{
+		    char* header=ap_pstrdup(r->pool," ");
+		    while (vals.hasNext())
+			header=ap_pstrcat(r->pool,header,vals.next().c_str()," ",NULL);
+		    ap_table_setn(r->headers_in,hname.c_str(),header);
                 }
             }
         }
-        return OK;
+	return OK;
     }
     catch (SAMLException& e)
     {
         ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
                       "shib_check_user() SAML exception: %s",e.what());
-        Iterator<saml::QName> i=e.getCodes();
-        int c=0;
-        while (i.hasNext())
-        {
-	        c++;
-	        saml::QName q=i.next();
-	        if (c==1 && !XMLString::compareString(q.getNamespaceURI(),saml::XML::SAMLP_NS) &&
-                !XMLString::compareString(q.getLocalName(),L(Requester)))
-                continue;
-            else if (c==2 && !XMLString::compareString(q.getNamespaceURI(),shibboleth::XML::SHIB_NS) &&
-                     !XMLString::compareString(q.getLocalName(),shibboleth::XML::Literals::InvalidHandle))
-            {
-	            ap_log_rerror(APLOG_MARK,APLOG_INFO|APLOG_NOERRNO,r,
-                              "shib_check_user() told by AA to discard handle");
-                CCache::g_Cache->remove(session_id);
-                delete entry;
-                char* wayf=ap_pstrcat(r->pool,sc->szWAYFLocation,
-			                  "?shire=",get_shire_location(r,targeturl),
-			                  "&target=",url_encode(r,targeturl),NULL);
-                ap_table_setn(r->headers_out,"Location",wayf);
-                return REDIRECT;
-            }
-            break;
-        }
-	    return shib_shar_error(r,e);
+	Iterator<saml::QName> i=e.getCodes();
+	int c=0;
+	while (i.hasNext())
+	{
+	    c++;
+	    saml::QName q=i.next();
+	    if (c==1 && !XMLString::compareString(q.getNamespaceURI(),saml::XML::SAMLP_NS) &&
+		!XMLString::compareString(q.getLocalName(),L(Requester)))
+	      continue;
+	    else if (c==2 && !XMLString::compareString(q.getNamespaceURI(),shibboleth::XML::SHIB_NS) &&
+		     !XMLString::compareString(q.getLocalName(),shibboleth::XML::Literals::InvalidHandle))
+	    {
+	        ap_log_rerror(APLOG_MARK,APLOG_INFO|APLOG_NOERRNO,r,
+                          "shib_check_user() told by AA to discard handle");
+		CCache::g_Cache->remove(session_id);
+		delete entry;
+		char* wayf=ap_pstrcat(r->pool,sc->szWAYFLocation,
+				      "?shire=",get_shire_location(r,targeturl),
+				      "&target=",url_encode(r,targeturl),NULL);
+		ap_table_setn(r->headers_out,"Location",wayf);
+		return REDIRECT;
+	    }
+	    break;
+	}
+	return shib_shar_error(r,e);
     }
     catch (XMLException& e)
     {
         auto_ptr<char> msg(XMLString::transcode(e.getMessage()));
         ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
                       "shib_check_user() Xerxes XML exception: %s",msg.get());
-        SAMLException ex(SAMLException::RESPONDER,msg.get());
-        return shib_shar_error(r,ex);
+	SAMLException ex(SAMLException::RESPONDER,msg.get());
+	return shib_shar_error(r,ex);
     }
     catch (...)
     {
