@@ -80,9 +80,9 @@ namespace {
 
 bool ShibConfig::init()
 {
-    REGISTER_EXCEPTION_FACTORY(edu.internet2.middleware.shibboleth.common,MetadataException);
-    REGISTER_EXCEPTION_FACTORY(edu.internet2.middleware.shibboleth.common,CredentialException);
-    REGISTER_EXCEPTION_FACTORY(edu.internet2.middleware.shibboleth.common,InvalidHandleException);
+    REGISTER_EXCEPTION_FACTORY(MetadataException);
+    REGISTER_EXCEPTION_FACTORY(CredentialException);
+    REGISTER_EXCEPTION_FACTORY(InvalidHandleException);
     return true;
 }
 
