@@ -1,0 +1,37 @@
+6/1/03
+Version 1.0
+
+This is the fourth major public release of code for the Shibboleth project,
+and the first to be considered ready for production use.
+
+Features and Changes
+
+Origin
+
+New OpenSAML jarfile (see OpenSAML NEWS file)
+
+Rewritten Attribute Resolver system in AA to support easy
+addition of attributes at runtime, and simpler development
+of alternate attribute sources using Java.
+
+Bug fixes to attribute-specific queries
+
+Support for SAML authentication method
+
+
+Target
+
+Revamped security layer with XML-based trust metadata
+
+Support for runtime refreshing of metadata from multiple sources
+
+Command-line tool to download and verify metadata files
+
+Bug fixes to attribute handling
+
+Support for contact information in error pages
+
+Fixes to handling of Unicode characters
+
+Support for alternate session backing stores
+(MySQL version shipped separately due to licensing)

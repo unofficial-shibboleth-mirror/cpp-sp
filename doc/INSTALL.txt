@@ -1,0 +1,72 @@
+6/1/03
+Version 1.0
+
+Binary distributions of the Shibboleth code are available.
+Information on obtaining and installing binaries can be found at
+http://shibboleth.internet2.edu/ and in the deploy guide in this
+directory.
+
+This document provides details for those wishing to build from source.
+
+C++ / TARGET
+
+Your first step is going to be the OpenSAML INSTALL.txt file. Please read it
+thoroughly to understand the issues. All the requirements in that file
+apply, mainly because you need to build OpenSAML, and almost all the
+dependencies are the same. Once you reach the end of that build process and
+have some confidence it worked, you can come back and continue here.
+
+You'll next need to get an Apache in place. If you're building from source,
+you don't have to use the "real" Apache code, or use mod_ssl. You will
+however need to provide the necessary build flags during configure, or
+ideally, let our configure script use your Apache's apxs script to extract
+the necessary information.
+
+Once Apache is in place, you'll also need to build the libapreq library.
+Adjust the include path as needed.
+
+http://www.apache.org/dist/httpd/libapreq/libapreq-1.1.tar.gz
+
+$ tar xvzf libapreq-1.1.tar.gz
+$ cd libapreq-1.1
+$ ./configure --prefix=/opt/shibboleth --enable-static=no \
+    --with-apache-includes=/usr/local/apache/include
+$ make
+$ make install
+
+
+Building the Shibboleth target libraries, shar, test programs, and Apache
+modules is more or less like building OpenSAML. You can get the code from
+CVS and run the bootstrap script if you want (remember to get new versions
+of autoconf/autoheader if you're running old pre-1.5 autoconf stuff):
+
+$ cvs -d:pserver:anoncvs@cvs.internet2.edu:/home/cvs/shibboleth login
+$ cvs -d:pserver:anoncvs@cvs.internet2.edu:/home/cvs/shibboleth co -r Rel_1_0 shibboleth
+$ cd shibboleth/c
+$ ./bootstrap
+
+With the source distribution or the results of your bootstrap:
+
+$ ./configure --prefix=/opt/shibboleth --with-xmlsec=/opt/shibboleth --with-apxs -C
+$ make
+$ make install
+
+This will build the Apache modules by extracting build settings from apxs.
+The configure script will look in normal spots for the script
+(/usr/bin/apxs, /usr/local/apache/bin/apxs) but you can point it if you need
+to.
+
+If you want to build the modules but not use apxs, you can use the
+--without-apxs option, and provide flags using the APXS_PREFIX, APXS_CFLAGS,
+APXS_INCLUDE, APXS_LIBEXEC, and APXS_SYSCONFDIR variables (see the apxs docs
+for some guidance on what these should be).
+
+To test your installation, you can try this:
+
+$ set LD_LIBRARY_PATH=/opt/shibboleth/lib; export LD_LIBRARY_PATH
+$ cd /opt/shibboleth
+$ bin/shibtest -d etc/shibboleth/ -h foo -q urn:mace:inqueue:example.edu \
+    -r http://www.foo.edu/ -a http://wayf.internet2.edu/InQueue/AA
+
+You should get some reasonably structured output back that lists some simple
+attributes. An error here is a pretty good sign there's trouble.
