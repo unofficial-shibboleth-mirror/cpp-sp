@@ -80,12 +80,24 @@ AC_ARG_WITH(xerces,
             fi])
 
 
-AC_ARG_WITH(openssl, 
+AC_PATH_PROG(PKG_CONFIG, pkg-config)
+if test "x$PKG_CONFIG" = x || test "x$PKG_CONFIG" = "xno" ; then
+    AC_ARG_WITH(openssl, 
             AC_HELP_STRING([--with-openssl=PATH], [where openssl is installed]),
             [if test x_$with_openssl != x_/usr; then
-                LDFLAGS="-L${with_openssl}/lib $LDFLAGS"
-                CPPFLAGS="-I${with_openssl}/include $CPPFLAGS"
+	    SSLLIBS="-L${with_openssl}/lib"
+	    SSLFLAGS="-I${with_openssl}/include"
             fi])
+else
+    SSLLIBS="`$PKG_CONFIG --libs openssl`"
+    SSLFLAGS="`$PKG_CONFIG --cflags openssl`"
+fi
+AC_MSG_CHECKING(for OpenSSL libraries)
+AC_MSG_RESULT($SSLLIBS)
+LDFLAGS="$SSLLIBS $LDFLAGS"
+AC_MSG_CHECKING(for OpenSSL cflags)
+AC_MSG_RESULT($SSLFLAGS)
+CPPFLAGS="$SSLFLAGS $CPPFLAGS"
 
 AC_ARG_WITH(log4cpp, 
             AC_HELP_STRING([--with-log4cpp=PATH], [where log4cpp is installed]),
@@ -122,10 +134,19 @@ AC_TRY_LINK(
 
 AC_CHECK_HEADER([openssl/ssl.h],,
                 AC_MSG_ERROR([unable to find openssl header files]))
-AC_CHECK_LIB([crypto], [ERR_load_CRYPTO_strings],,
+AC_MSG_CHECKING(for ERR_load_CRYPTO_string)
+AC_TRY_LINK_FUNC([ERR_load_CRYPTO_strings],,
              AC_MSG_ERROR([unable to link with openssl libraries]))
-AC_CHECK_LIB([ssl], [SSL_library_init],, 
+AC_MSG_RESULT(yes)
+AC_MSG_CHECKING(for SSL_library_init)
+AC_TRY_LINK_FUNC([SSL_library_init],, 
              AC_MSG_ERROR([unable to link with openssl libraries]))
+AC_MSG_RESULT(yes)
+
+#AC_CHECK_LIB([crypto], [ERR_load_CRYPTO_strings],,
+#             AC_MSG_ERROR([unable to link with openssl libraries]))
+#AC_CHECK_LIB([ssl], [SSL_library_init],, 
+#             AC_MSG_ERROR([unable to link with openssl libraries]))
 
 AC_CHECK_HEADER([xsec/utils/XSECPlatformUtils.hpp],,
                 AC_MSG_ERROR([unable to find xsec header files]))
