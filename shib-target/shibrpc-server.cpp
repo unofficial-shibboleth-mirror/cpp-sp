@@ -264,6 +264,7 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
 
   log.debug ("creating session for %s", argp->client_addr);
   log.debug ("shire location: %s", argp->shire_location);
+  log.debug ("application: %s", argp->application_id);
 
   XMLByte* post=reinterpret_cast<XMLByte*>(argp->saml_post);
   auto_ptr_XMLCh location(argp->shire_location);
@@ -276,6 +277,10 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
   IConfig* conf=ShibTargetConfig::getConfig().getINI();
   Locker locker(conf);
   const IApplication* app=conf->getApplication(argp->application_id);
+  if (!app)
+      // Something's horribly wrong. Bail.
+      throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"Unable to locate application for session, deleted?");
+
   pair<bool,bool> checkReplay=pair<bool,bool>(false,false);
   const IPropertySet* props=app->getPropertySet("Sessions");
   if (props)
