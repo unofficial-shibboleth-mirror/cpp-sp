@@ -98,11 +98,7 @@ int shar_create_svc(ShibSocket sock, const ShibRPCProtocols protos[], int numpro
   SVCXPRT *svc;
 
   /* Wrap an RPC Service around the new connection socket */
-#ifdef WIN32
-  svc = svctcp_create(sock, 0, 0);
-#else
   svc = svcfd_create (sock, 0, 0);
-#endif
   if (!svc) {
     fprintf (stderr, "Cannot create RPC Listener\n");
     return -1;
