@@ -104,6 +104,9 @@
 /* Define to 1 if your <sys/time.h> declares `struct tm'. */
 /* #undef TM_IN_SYS_TIME */
 
+/* Define if using embedded version of ONC RPC. */
+#define USE_OUR_ONCRPC 1
+
 /* Version number of package */
 #define VERSION "1.0.1"
 
