@@ -684,9 +684,16 @@ extern "C" int shire_post_handler (request_rec* r)
     markupProcessor.insert ("errorDesc", "An error occurred while processing your request.");
     return shire_error_page (r, shireError.c_str(), markupProcessor);
   }
+  catch (...) {
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,"shire_post_handler(): unexpected exception");
+  
+    markupProcessor.insert ("errorType", "SHIRE Processing Error");
+    markupProcessor.insert ("errorText", "Unexpected Exception");
+    markupProcessor.insert ("errorDesc", "An error occurred while processing your request.");
+    return shire_error_page (r, shireError.c_str(), markupProcessor);
+  }
 
-  ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
-		"shire_post_handler() server error");
+  ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,"shire_post_handler() server error");
   return SERVER_ERROR;
 }
 
