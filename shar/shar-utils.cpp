@@ -35,7 +35,7 @@
 # define svc_fdset onc_svc_fdset
 #endif
 
-extern SVCXPRT* svcfd_create(int, u_int, u_int);
+extern "C" SVCXPRT* svcfd_create(int, u_int, u_int);
 
 using namespace std;
 using namespace saml;
