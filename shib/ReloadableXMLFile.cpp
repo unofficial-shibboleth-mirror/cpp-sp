@@ -71,7 +71,9 @@ ReloadableXMLFileImpl::ReloadableXMLFileImpl(const DOMElement* e) : m_doc(NULL),
 
 ReloadableXMLFileImpl::ReloadableXMLFileImpl(const char* pathname) : m_doc(NULL), m_root(NULL)
 {
+#ifdef _DEBUG
     NDC ndc("ReloadableXMLFileImpl");
+#endif
     Category& log=Category::getInstance(SHIB_LOGCAT".ReloadableXMLFileImpl");
 
     saml::XML::Parser p;
@@ -94,7 +96,7 @@ ReloadableXMLFileImpl::ReloadableXMLFileImpl(const char* pathname) : m_doc(NULL)
             m_doc->release();
             m_doc=NULL;
         }
-        throw runtime_error(msg.get());
+        throw MalformedException(msg.get());
     }
     catch (SAMLException& e)
     {
@@ -105,6 +107,7 @@ ReloadableXMLFileImpl::ReloadableXMLFileImpl(const char* pathname) : m_doc(NULL)
         }
         throw;
     }
+#ifndef _DEBUG
     catch (...)
     {
         log.errorStream() << "Unexpected error while parsing configuration file (" << pathname << ")" << CategoryStream::ENDLINE;
@@ -114,6 +117,7 @@ ReloadableXMLFileImpl::ReloadableXMLFileImpl(const char* pathname) : m_doc(NULL)
         }
         throw;
     }
+#endif
 }
 
 ReloadableXMLFileImpl::~ReloadableXMLFileImpl()
@@ -170,22 +174,21 @@ void ReloadableXMLFile::lock()
             {
                 try
                 {
+                    // Update the timestamp regardless. No point in repeatedly trying.
+                    m_filestamp=stat_buf.st_mtime;
                     ReloadableXMLFileImpl* new_config=newImplementation(m_source.c_str(),false);
                     delete m_impl;
                     m_impl=new_config;
-                    m_filestamp=stat_buf.st_mtime;
                     m_lock->unlock();
                 }
                 catch(SAMLException& e)
                 {
                     m_lock->unlock();
-                    saml::NDC ndc("lock");
                     Category::getInstance(SHIB_LOGCAT".ReloadableXMLFile").error("failed to reload config file, sticking with what we have: %s", e.what());
                 }
                 catch(...)
                 {
                     m_lock->unlock();
-                    saml::NDC ndc("lock");
                     Category::getInstance(SHIB_LOGCAT".ReloadableXMLFile").error("caught an unknown exception, sticking with what we have");
                 }
             }
