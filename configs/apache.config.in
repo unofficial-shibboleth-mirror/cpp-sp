@@ -19,11 +19,11 @@ ShibConfig @-PKGSYSCONFDIR-@/shibboleth.xml
 
 #
 # A handler needs to be established for the SHIRE URL
-# This matches up to the shireURL setting in shibboleth.xml
+# This applies the handler to any documents with a "shire" extension
 #
-<Location /Shibboleth.shire>
+<Files *.shire>
 SetHandler shib-shire-post
-</Location>
+</Files>
 
 #
 # Used for example logo and style sheet in error templates.
