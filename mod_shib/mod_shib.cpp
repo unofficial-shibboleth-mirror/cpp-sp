@@ -378,7 +378,6 @@ extern "C" void* merge_shib_server_config (pool* p, void* base, void* sub)
     shib_server_config* sc=(shib_server_config*)ap_pcalloc(p,sizeof(shib_server_config));
     shib_server_config* parent=(shib_server_config*)base;
     shib_server_config* child=(shib_server_config*)sub;
-
     if (child->szCookieName)
         sc->szCookieName=ap_pstrdup(p,child->szCookieName);
     else if (parent->szCookieName)
@@ -474,7 +473,7 @@ extern "C" const char* ap_set_global_flag_slot(cmd_parms* parms, void*, int arg)
 }
 
 // generic per-server slot handlers
-extern "C" const char* ap_set_server_string_slot(cmd_parms* parms, void*, const char* arg)
+extern "C" const char* shib_set_server_string_slot(cmd_parms* parms, void*, const char* arg)
 {
     char* base=(char*)ap_get_module_config(parms->server->module_config,&shib_module);
     int offset=(int)parms->info;
@@ -522,16 +521,16 @@ command_rec shib_cmds[] = {
   {"ShibMapAttribute", (config_fn_t)ap_set_attribute_mapping, NULL,
    RSRC_CONF, TAKE23, "Define request header name and 'require' alias for an attribute."},
 
-  {"ShibCookieName", (config_fn_t)ap_set_server_string_slot,
+  {"ShibCookieName", (config_fn_t)shib_set_server_string_slot,
    (void *) XtOffsetOf (shib_server_config, szCookieName),
    RSRC_CONF, TAKE1, "Name of cookie to use as session token."},
-  {"SHIRELocation", (config_fn_t)ap_set_server_string_slot,
+  {"SHIRELocation", (config_fn_t)shib_set_server_string_slot,
    (void *) XtOffsetOf (shib_server_config, szSHIRELocation),
    RSRC_CONF, TAKE1, "URL of SHIRE handle acceptance point."},
-  {"SHIRESessionPath", (config_fn_t)ap_set_server_string_slot,
+  {"SHIRESessionPath", (config_fn_t)shib_set_server_string_slot,
    (void *) XtOffsetOf (shib_server_config, szSHIRESessionPath),
    RSRC_CONF, TAKE1, "Path to SHIRE session cache files."},
-  {"WAYFLocation", (config_fn_t)ap_set_server_string_slot,
+  {"WAYFLocation", (config_fn_t)shib_set_server_string_slot,
    (void *) XtOffsetOf (shib_server_config, szWAYFLocation),
    RSRC_CONF, TAKE1, "URL of WAYF service."},
   {"ShibNormalizeRequest", (config_fn_t)set_normalize, NULL,
