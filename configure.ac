@@ -102,7 +102,7 @@ saved_LIBS="$LIBS"
 LIBS="-lxerces-c $LIBS"
 AC_TRY_LINK(
 	[#include <xercesc/util/PlatformUtils.hpp>],
-        [XMLPlatformUtils::Initialize()],
+        [xercesc::XMLPlatformUtils::Initialize()],
 	[AC_DEFINE(HAVE_LIBXERCESC,1,[Define if Xerces-C library was found])],
 	[AC_MSG_ERROR([unable to link with Xerces])
 		LIBS="$saved_LIBS"
