@@ -708,20 +708,22 @@ XMLMetadataImpl::SSORole::SSORole(const EntityDescriptor* provider, time_t valid
 XMLMetadataImpl::ScopedRole::ScopedRole(const DOMElement* e)
 {
     // Check the root element namespace. If SAML2, assume it's the std schema.
-    if (!XMLString::compareString(e->getNamespaceURI(),::XML::SAML2META_NS))
+    DOMNodeList* nlist=NULL;
+    if (!XMLString::compareString(e->getNamespaceURI(),::XML::SAML2META_NS)) {
         e=saml::XML::getFirstChildElement(e,::XML::SAML2META_NS,SHIB_L(Extensions));
-
-    if (e) {
-        e=saml::XML::getFirstChildElement(e,::XML::SHIB_NS,SHIB_L(Domain));
-        while (e) {
-            const XMLCh* dom=(e->getFirstChild()) ? e->getFirstChild()->getNodeValue() : NULL;
-            if (dom && *dom) {
-                const XMLCh* regexp=e->getAttributeNS(NULL,SHIB_L(regexp));
-                m_scopes.push_back(
-                    pair<const XMLCh*,bool>(dom,(regexp && (*regexp==chLatin_t || *regexp==chDigit_1)))
-                    );
-            }
-            e=saml::XML::getNextSiblingElement(e,::XML::SHIB_NS,SHIB_L(Domain));
+        nlist=e->getElementsByTagNameNS(::XML::SHIBMETA_NS,SHIB_L(Domain));
+    }
+    else {
+        nlist=e->getElementsByTagNameNS(::XML::SHIB_NS,SHIB_L(Domain));
+    }
+    
+    for (int i=0; nlist && i < nlist->getLength(); i++) {
+        const XMLCh* dom=(nlist->item(i)->hasChildNodes()) ? nlist->item(i)->getFirstChild()->getNodeValue() : NULL;
+        if (dom && *dom) {
+            const XMLCh* regexp=static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIB_L(regexp));
+            m_scopes.push_back(
+                pair<const XMLCh*,bool>(dom,(regexp && (*regexp==chLatin_t || *regexp==chDigit_1)))
+                );
         }
     }
 }

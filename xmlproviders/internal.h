@@ -107,6 +107,8 @@ public:
         // URI constants
     static const XMLCh SHIB_NS[];
     static const XMLCh SHIB_SCHEMA_ID[];
+    static const XMLCh SHIBMETA_NS[];
+    static const XMLCh SHIBMETA_SCHEMA_ID[];
     static const XMLCh CREDS_NS[];
     static const XMLCh CREDS_SCHEMA_ID[];
     static const XMLCh TRUST_NS[];

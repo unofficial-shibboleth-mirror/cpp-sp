@@ -60,6 +60,30 @@
 
 // Namespace and schema string literals
 
+const XMLCh XML::SHIB_NS[] = // urn:mace:shibboleth:1.0
+{ chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
+  chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
+  chDigit_1, chPeriod, chDigit_0, chNull
+};
+
+const XMLCh XML::SHIB_SCHEMA_ID[] = // shibboleth.xsd
+{ chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, 
+  chPeriod, chLatin_x, chLatin_s, chLatin_d, chNull
+};
+
+const XMLCh XML::SHIBMETA_NS[] = // urn:mace:shibboleth:1.0:metadata
+{ chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
+  chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
+  chDigit_1, chPeriod, chDigit_0, chColon,
+  chLatin_m, chLatin_e, chLatin_t, chLatin_a, chLatin_d, chLatin_a, chLatin_t, chLatin_a, chNull
+};
+
+const XMLCh XML::SHIBMETA_SCHEMA_ID[] = // shibboleth-metadata-1.0.xsd
+{ chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chDash,
+  chLatin_m, chLatin_e, chLatin_t, chLatin_a, chLatin_d, chLatin_a, chLatin_t, chLatin_a, chDash,
+  chDigit_1, chPeriod, chDigit_0, chPeriod, chLatin_x, chLatin_s, chLatin_d, chNull
+};
+
 const XMLCh XML::CREDS_NS[] = // urn:mace:shibboleth:credentials:1.0
 { chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
   chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
@@ -82,17 +106,6 @@ const XMLCh XML::TRUST_SCHEMA_ID[] = // shibboleth-trust-1.0.xsd
 { chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chDash,
   chLatin_t, chLatin_r, chLatin_u, chLatin_s, chLatin_t, chDash, chDigit_1, chPeriod, chDigit_0, chPeriod,
   chLatin_x, chLatin_s, chLatin_d, chNull
-};
-
-const XMLCh XML::SHIB_NS[] = // urn:mace:shibboleth:1.0
-{ chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
-  chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
-  chDigit_1, chPeriod, chDigit_0, chNull
-};
-
-const XMLCh XML::SHIB_SCHEMA_ID[] = // shibboleth.xsd
-{ chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, 
-  chPeriod, chLatin_x, chLatin_s, chLatin_d, chNull
 };
 
 const XMLCh XML::SAML2ASSERT_NS[] = // urn:oasis:names:tc:SAML:2.0:assertion

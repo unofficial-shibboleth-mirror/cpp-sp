@@ -136,6 +136,7 @@ extern "C" int XML_EXPORTS saml_extension_init(void*)
 {
     // Register extension schemas.
     saml::XML::registerSchema(::XML::SHIB_NS,::XML::SHIB_SCHEMA_ID);
+    saml::XML::registerSchema(::XML::SHIBMETA_NS,::XML::SHIBMETA_SCHEMA_ID);
     saml::XML::registerSchema(::XML::TRUST_NS,::XML::TRUST_SCHEMA_ID);
     saml::XML::registerSchema(::XML::CREDS_NS,::XML::CREDS_SCHEMA_ID);
     saml::XML::registerSchema(::XML::SAML2META_NS,::XML::SAML2META_SCHEMA_ID);
