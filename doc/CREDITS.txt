@@ -40,6 +40,8 @@ Thanks to:
     University Corporation For Advanced Internet Development
 
     The National Science Foundation
+    
+    National Research Council of Canada
 
     Barbara Jenson (CMU), Parviz Dousti (CMU), Tom Dopirak (CMU), 
       and Sridhar Muppidi (IBM/Tivoli); for helping to develop 
@@ -48,3 +50,6 @@ Thanks to:
     Brian Pittman (WebAssign), Mark Earnest (PSU), James Shvarts (Columbia), 
       Ryan Muldoon (Wisconsin), John Hopkins (PSU), and David Walker (UCOP); 
       for much help with testing
+      
+    Dave Dearman (NRCC), for contributing a SQL Data Connector for the AA 
+      resolver
