@@ -15,6 +15,8 @@ WSADATA WSAData;
 
 static int init = 0;
 
+CRITICAL_SECTION __thr_mutex;
+
 int rpc_nt_init(void)
 {
     if (init++)
@@ -47,10 +49,12 @@ BOOL WINAPI DllMain(
     switch (fdwReason) {
         case DLL_PROCESS_ATTACH:
             __thr_key = TlsAlloc();
+            InitializeCriticalSection(&__thr_mutex);
             break;
 
         case DLL_PROCESS_DETACH:
             TlsFree(__thr_key);
+            DeleteCriticalSection(&__thr_mutex);
             break;
 
         case DLL_THREAD_DETACH: {

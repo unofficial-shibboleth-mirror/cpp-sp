@@ -60,6 +60,9 @@ static char sccsid[] = "@(#)svc.c 1.41 87/10/13 Copyr 1984 Sun Micro";
 #include <sys/errno.h>
 #include <rpc/rpc.h>
 #include <rpc/pmap_clnt.h>
+#include <pthread.h>
+
+static pthread_mutex_t __thr_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 extern int errno;
 #endif
@@ -103,6 +106,11 @@ xprt_register(xprt)
 	SVCXPRT *xprt;
 {
 	register int sock = xprt->xp_sock;
+#ifdef WIN32
+    EnterCriticalSection(&__thr_mutex);
+#else
+    pthread_mutex_lock(&__thr_mutex);
+#endif
 
 #ifdef FD_SETSIZE
 	if (xports == NULL) {
@@ -142,6 +150,12 @@ xprt_register(xprt)
 		svc_fds |= (1 << sock);
 	}
 #endif /* def FD_SETSIZE */
+
+#ifdef WIN32
+    LeaveCriticalSection(&__thr_mutex);
+#else
+    pthread_mutex_unlock(&__thr_mutex);
+#endif
 }
 
 /*
@@ -152,6 +166,11 @@ xprt_unregister(xprt)
 	SVCXPRT *xprt;
 { 
 	register int sock = xprt->xp_sock;
+#ifdef WIN32
+    EnterCriticalSection(&__thr_mutex);
+#else
+    pthread_mutex_lock(&__thr_mutex);
+#endif
 
 #ifdef FD_SETSIZE
 #ifdef WIN32
@@ -170,6 +189,12 @@ xprt_unregister(xprt)
 		svc_fds &= ~(1 << sock);
 	}
 #endif /* def FD_SETSIZE */
+
+#ifdef WIN32
+    LeaveCriticalSection(&__thr_mutex);
+#else
+    pthread_mutex_unlock(&__thr_mutex);
+#endif
 }
 
 
@@ -478,20 +503,26 @@ svc_getreqset(readfds)
 	for ( i=0; i<readfds->fd_count; i++ ) {
 		sock = readfds->fd_array[i];
 		/* sock has input waiting */
-		xprt = xports[sock];
+        EnterCriticalSection(&__thr_mutex);
+        xprt = xports[sock];
+        LeaveCriticalSection(&__thr_mutex);
 #else
 	setsize = FD_SETSIZE;	
 	maskp = (u_long *)readfds->fds_bits;
 	for (sock = 0; sock < setsize; sock += NFDBITS) {
 	    for (mask = *maskp++; bit = ffs(mask); mask ^= (1 << (bit - 1))) {
 		/* sock has input waiting */
-		xprt = xports[sock + bit - 1];
+        pthread_mutex_lock(&__thr_mutex);
+        xprt = xports[sock + bit - 1];
+        pthread_mutex_unlock(&__thr_mutex);
 #endif
 #else
 	for (sock = 0; readfds_local != 0; sock++, readfds_local >>= 1) {
 	    if ((readfds_local & 1) != 0) {
 		/* sock has input waiting */
-		xprt = xports[sock];
+        pthread_mutex_lock(&__thr_mutex);
+        xprt = xports[sock];
+        pthread_mutex_unlock(&__thr_mutex);
 #endif /* def FD_SETSIZE */
 		/* now receive msgs from xprtprt (support batch calls) */
 		do {

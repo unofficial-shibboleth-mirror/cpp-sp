@@ -134,7 +134,10 @@ extern "C" {
 
 /* Oct 2004: Additions by Scott Cantor to support POSIX and Win32 threads. */
 #ifdef WIN32
-extern DWORD __thr_key; /* Win32 TLS key */
+extern DWORD __thr_key;
+extern CRITICAL_SECTION __thr_mutex;
+#else
+extern pthread_mutex_t __thr_mutex;
 #endif
 
 extern struct opaque_auth* _thr_null_auth(void);
