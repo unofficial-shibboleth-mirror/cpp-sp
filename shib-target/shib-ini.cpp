@@ -376,7 +376,7 @@ const string* TagIterator::next ()
 bool ShibINI::boolean(string& value)
 {
   const char* v = value.c_str();
-  if (!strncasecmp (v, "on", 2) || !strncasecmp (v, "true", 4))
+  if (!strncasecmp (v, "on", 2) || !strncasecmp (v, "true", 4) || !strncmp(v, "1", 1))
     return true;
   return false;
 }
