@@ -118,62 +118,64 @@ RPCError* RM::getAssertions(const char* cookie, const char* ip,
   if (ret.status.status)
     retval = new RPCError(&ret.status);
   else {
-    for (u_int i = 0; i < ret.assertions.assertions_len; i++) {
-      istringstream attrstream(ret.assertions.assertions_val[i].xml_string);
-      SAMLAssertion *as = NULL;
+    try {
       try {
-//	m_priv->log->debug("Trying to decode assertion %d: %s", i,
-//			   ret.assertions.assertions_val[i].xml_string);
-        m_priv->log->debugStream() << "Trying to decode assertion " << i
-            << ": " << ret.assertions.assertions_val[i].xml_string << log4cpp::CategoryStream::ENDLINE;
-	as = new SAMLAssertion(attrstream);
-      } catch (SAMLException& e) {
-	m_priv->log->error ("SAML Exception: %s", e.what());
-	throw;
-      } catch (XMLException& e) {
-	m_priv->log->error ("XML Exception: %s", e.getMessage());
-	throw;
-      }
+	for (u_int i = 0; i < ret.assertions.assertions_len; i++) {
+	  istringstream attrstream(ret.assertions.assertions_val[i].xml_string);
+	  SAMLAssertion *as = NULL;
+	  //	m_priv->log->debug("Trying to decode assertion %d: %s", i,
+	  //			   ret.assertions.assertions_val[i].xml_string);
+	  m_priv->log->debugStream() << "Trying to decode assertion " << i
+		     << ": " << ret.assertions.assertions_val[i].xml_string <<
+	    		log4cpp::CategoryStream::ENDLINE;
+	  as = new SAMLAssertion(attrstream);
 
-      if (as)
-      {
-        // XXX: Should move this audience check up to the RPC server side, and cache each assertion one
-        // by one instead of the whole response.
-        bool ok=true;
-        Iterator<SAMLCondition*> conds=as->getConditions();
-        while (conds.hasNext())
-        {
-            SAMLAudienceRestrictionCondition* cond=dynaptr(SAMLAudienceRestrictionCondition,conds.next());
-            if (!cond->eval(ShibTargetConfig::getConfig().getPolicies()))
-            {
-                m_priv->log->warn("Assertion failed AudienceRestrictionCondition check, skipping it...");
-                ok=false;
-            }
-        }
-        if (ok)
-	        assertions.push_back(as);
-      }
+	  if (as)
+	  {
+	    // XXX: Should move this audience check up to the RPC server side, and cache each assertion one
+	    // by one instead of the whole response.
+	    bool ok=true;
+	    Iterator<SAMLCondition*> conds=as->getConditions();
+	    while (conds.hasNext())
+	    {
+	      SAMLAudienceRestrictionCondition* cond=dynaptr(SAMLAudienceRestrictionCondition,conds.next());
+	      if (!cond->eval(ShibTargetConfig::getConfig().getPolicies()))
+	      {
+		m_priv->log->warn("Assertion failed AudienceRestrictionCondition check, skipping it...");
+		ok=false;
+	      }
+	    }
+	    if (ok)
+	      assertions.push_back(as);
+	  }
+	}
 
-      // return the Authentication Statement
-      if (statement) {
-	istringstream authstream(ret.auth_statement.xml_string);
-	SAMLAuthenticationStatement *auth = NULL;
-	try {
+	// return the Authentication Statement
+	if (statement) {
+	  istringstream authstream(ret.auth_statement.xml_string);
+	  SAMLAuthenticationStatement *auth = NULL;
+	  
 	  m_priv->log->debugStream() <<
 	    "Trying to decode authentication statement: " <<
 	    ret.auth_statement.xml_string << log4cpp::CategoryStream::ENDLINE;
 	  auth = new SAMLAuthenticationStatement(authstream);
-	} catch (SAMLException &e) {
-	  m_priv->log->error ("SAML Exception: %s", e.what());
-	  throw;
-	} catch (XMLException &e) {
-	  m_priv->log->error ("XML Exception: %s", e.getMessage());
-	  throw;
+
+	  // Save off the statement
+	  *statement = auth;
 	}
 
-	// Save off the statement
-	*statement = auth;
+      } catch (SAMLException& e) {
+	m_priv->log->error ("SAML Exception: %s", e.what());
+	ostringstream os;
+	os << e;
+	throw ShibTargetException(SHIBRPC_SAML_EXCEPTION, os.str());
+      } catch (XMLException& e) {
+	m_priv->log->error ("XML Exception: %s", e.getMessage());
+	auto_ptr<char> msg(XMLString::transcode(e.getMessage()));
+	throw ShibTargetException (SHIBRPC_XML_EXCEPTION, msg.get());
       }
+    } catch (ShibTargetException &e) {
+      retval = new RPCError(e);
     }
 
     if (!retval)
