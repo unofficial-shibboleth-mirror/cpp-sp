@@ -1,6 +1,6 @@
 [general]
-logger=/opt/shibboleth/etc/shibboleth/shibboleth.logger
-schemadir=/opt/shibboleth/etc/shibboleth
+logger=@-PKGSYSCONFDIR-@/shibboleth.logger
+schemadir=@-PKGSYSCONFDIR-@
 sharsocket=/tmp/shar-socket
 
 # SERVER CONFIGURATION
@@ -22,19 +22,19 @@ logoLocation=/logo.gif
 wayfURL = https://wayf.internet2.edu/InQueue/WAYF
 cookieName = shib-cookie
 shireSSLOnly = false
-shireError=/opt/shibboleth/etc/shibboleth/shireError.html
-rmError=/opt/shibboleth/etc/shibboleth/rmError.html
-accessError=/opt/shibboleth/etc/shibboleth/accessError.html
+shireError=@-PKGSYSCONFDIR-@/shireError.html
+rmError=@-PKGSYSCONFDIR-@/rmError.html
+accessError=@-PKGSYSCONFDIR-@/accessError.html
 
 # Mandatory for IIS, set for Apache with SHIREURL command
 shireURL = /Shibboleth.shire
 
 [shire]
-logger=/opt/shibboleth/etc/shibboleth/shire.logger
+logger=@-PKGSYSCONFDIR-@/shire.logger
 metadata=metadata_shire
 
 [shar]
-logger=/opt/shibboleth/etc/shibboleth/shar.logger
+logger=@-PKGSYSCONFDIR-@/shar.logger
 # If using a TCP-based SHAR, space delimit the allowed client IPs
 #sharacl = 127.0.0.1
 metadata=metadata_shar
@@ -57,23 +57,23 @@ mysql-cache-timeout = 14400
 
 # Only needed if the MySQL cache plugin is used.
 [extensions:saml]
-mysql = /opt/shibboleth/libexec/shib-mysql-ccache.so
+mysql = @-LIBEXECDIR-@/shib-mysql-ccache.so
 
 # Arguments for the MySQL embedded database
 # Make sure the datadir exists.
 [mysql]
-arg1 = --language=/opt/shibboleth/share/english
-arg2 = --datadir=/opt/shibboleth/data
+arg1 = --language=@-PREFIX-@/share/english
+arg2 = --datadir=@-PREFIX-@/data
 
 [metadata_shire]
-edu.internet2.middleware.shibboleth.metadata.provider.XML=/opt/shibboleth/etc/shibboleth/sites.xml
-edu.internet2.middleware.shibboleth.target.AAP.provider.XML=/opt/shibboleth/etc/shibboleth/AAP.xml
+edu.internet2.middleware.shibboleth.metadata.provider.XML=@-PKGSYSCONFDIR-@/sites.xml
+edu.internet2.middleware.shibboleth.target.AAP.provider.XML=@-PKGSYSCONFDIR-@/AAP.xml
 
 [metadata_shar]
-edu.internet2.middleware.shibboleth.metadata.provider.XML=/opt/shibboleth/etc/shibboleth/sites.xml
-edu.internet2.middleware.shibboleth.trust.provider.XML=/opt/shibboleth/etc/shibboleth/trust.xml
-edu.internet2.middleware.shibboleth.creds.provider.XML=/opt/shibboleth/etc/shibboleth/creds.xml
-edu.internet2.middleware.shibboleth.target.AAP.provider.XML=/opt/shibboleth/etc/shibboleth/AAP.xml
+edu.internet2.middleware.shibboleth.metadata.provider.XML=@-PKGSYSCONFDIR-@/sites.xml
+edu.internet2.middleware.shibboleth.trust.provider.XML=@-PKGSYSCONFDIR-@/trust.xml
+edu.internet2.middleware.shibboleth.creds.provider.XML=@-PKGSYSCONFDIR-@/creds.xml
+edu.internet2.middleware.shibboleth.target.AAP.provider.XML=@-PKGSYSCONFDIR-@/AAP.xml
 
 [isapi]
 # When using the ISAPI filter version, map IIS Instance IDs to server names.

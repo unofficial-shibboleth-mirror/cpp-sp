@@ -14,8 +14,8 @@
 # If you see log messages about missing apreq symbols then you
 # have messed this up.
 #
-LoadModule apreq_module /opt/shibboleth/libexec/mod_apreq.so
-LoadModule mod_shib /opt/shibboleth/libexec/mod_shib.so
+LoadModule apreq_module @-LIBEXECDIR-@/mod_apreq.so
+LoadModule mod_shib @-LIBEXECDIR-@/mod_shib.so
 
 #
 # Global SHIRE Configuration
@@ -23,7 +23,7 @@ LoadModule mod_shib /opt/shibboleth/libexec/mod_shib.so
 # configuration.  Look at this file for most of your configuration
 # parameters.
 #
-SHIBConfig /opt/shibboleth/etc/shibboleth/shibboleth.ini
+SHIBConfig @-PKGSYSCONFDIR-@/shibboleth.ini
 
 #
 # Configure a test directory

@@ -14,8 +14,8 @@
 # If you see log messages about "NOOP" configurations, then you
 # have messed this up.
 #
-LoadModule shibrm_module /opt/shibboleth/libexec/mod_shibrm.so
-LoadModule shire_module /opt/shibboleth/libexec/mod_shire.so
+LoadModule shibrm_module @-LIBEXECDIR-@/mod_shibrm.so
+LoadModule shire_module @-LIBEXECDIR-@/mod_shire.so
 
 #
 # Global SHIRE Configuration
@@ -23,7 +23,7 @@ LoadModule shire_module /opt/shibboleth/libexec/mod_shire.so
 # configuration.  Look at this file for most of your configuration
 # parameters.
 #
-SHIREConfig /opt/shibboleth/etc/shibboleth/shibboleth.ini
+SHIREConfig @-PKGSYSCONFDIR-@/shibboleth.ini
 
 #
 # The SHIRE POST processor URL

@@ -60,11 +60,11 @@ djlgdjlgdjlgdjlgdjl.....
     -->
     
     <FileCredResolver Id="key1">
-    	<Path>/opt/shibboleth/etc/shibboleth/shar.key</Path>
+    	<Path>@-PKGSYSCONFDIR-@/shar.key</Path>
     </FileCredResolver>
     
     <FileCredResolver Id="cert1">
-    	<Path>/opt/shibboleth/etc/shibboleth/shar.crt</Path>
+    	<Path>@-PKGSYSCONFDIR-@/shar.crt</Path>
     </FileCredResolver>
 
     <KeyUse KeyRef="key1" CertificateRef="cert1"/>

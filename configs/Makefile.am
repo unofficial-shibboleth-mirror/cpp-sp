@@ -2,6 +2,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
+logdir=${pkgsysconfdir}
 pkgsysconfdir = $(sysconfdir)/@PACKAGE@
 pkgsysconf_DATA = \
 	shibboleth.ini \
@@ -24,7 +25,10 @@ pkgsysconf_DATA = \
 do-build-file:
 	rm -f ${FILE}.tmp
 	sed < ${FILE}.in > ${FILE}.tmp \
-	    -e 's:@PREFIX@:${prefix}:'
+	    -e 's:@-PREFIX-@:${prefix}:' \
+	    -e 's:@-LIBEXECDIR-@:${libexecdir}:' \
+	    -e 's:@-PKGSYSCONFDIR-@:${pkgsysconfdir}:' \
+	    -e 's:@-LOGDIR-@:${logdir}:'
 	cmp -s ${FILE} ${FILE}.tmp || mv ${FILE}.tmp ${FILE}
 
 apache.config: ${srcdir}/apache.config.in Makefile ${top_builddir}/config.status

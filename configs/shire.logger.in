@@ -1,7 +1,7 @@
 log4j.rootCategory=WARN, syslog
 
 log4j.appender.syslog=org.apache.log4j.RollingFileAppender
-log4j.appender.syslog.fileName=/opt/shibboleth/etc/shibboleth/shire.log
+log4j.appender.syslog.fileName=@-LOGDIR-@/shire.log
 log4j.appender.syslog.maxFileSize=1000000
 log4j.appender.syslog.maxBackupIndex=10
 log4j.appender.syslog.layout=org.apache.log4j.PatternLayout
