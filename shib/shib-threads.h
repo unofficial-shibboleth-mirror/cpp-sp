@@ -9,6 +9,14 @@
 #ifndef SHIB_THREADS_H
 #define SHIB_THREADS_H
 
+#ifdef WIN32
+# ifndef SHIB_EXPORTS
+#  define SHIB_EXPORTS __declspec(dllimport)
+# endif
+#else
+# define SHIB_EXPORTS
+#endif
+
 #ifdef __cplusplus
 
 #include <time.h>
@@ -20,7 +28,7 @@ namespace shibboleth {
   // core thread objects
   //
 
-  class Thread {
+  class SHIB_EXPORTS Thread {
   public:
     static Thread* create(void* (*start_routine)(void*), void* arg);
     static void exit(void* return_val);
@@ -34,7 +42,7 @@ namespace shibboleth {
     virtual ~Thread(){};
   };
 
-  class Mutex {
+  class SHIB_EXPORTS Mutex {
   public:
     static Mutex* create();
 
@@ -43,7 +51,7 @@ namespace shibboleth {
     virtual ~Mutex(){};
   };
 
-  class CondWait {
+  class SHIB_EXPORTS CondWait {
   public:
     static CondWait* create();
 
@@ -54,7 +62,7 @@ namespace shibboleth {
     virtual ~CondWait(){};
   };
 
-  class RWLock {
+  class SHIB_EXPORTS RWLock {
   public:
     static RWLock* create();
 
@@ -64,7 +72,7 @@ namespace shibboleth {
     virtual ~RWLock(){};
   };
 
-  class ThreadKey {
+  class SHIB_EXPORTS ThreadKey {
   public:
     static ThreadKey* create(void (*destroy_fcn)(void*));
 
@@ -77,7 +85,7 @@ namespace shibboleth {
   // Helper classes.
   //
 
-  class Lock {
+  class SHIB_EXPORTS Lock {
   public:
     Lock(Mutex* mtx) : mutex(mtx) { mutex->lock(); }
     ~Lock() { mutex->unlock(); }
@@ -88,7 +96,7 @@ namespace shibboleth {
     Mutex* mutex;
   };
 
-  class ReadLock {
+  class SHIB_EXPORTS ReadLock {
   public:
     ReadLock(RWLock* lock) : rwlock(lock) { rwlock->rdlock(); }
     ~ReadLock() { rwlock->unlock(); }
