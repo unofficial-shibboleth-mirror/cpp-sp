@@ -358,7 +358,7 @@ const IPropertySet* XMLPropertySet::getPropertySet(const char* name, const char*
 }
 
 XMLApplication::XMLApplication(const IConfig* ini, const Iterator<ICredentials*>& creds, const DOMElement* e, const XMLApplication* base)
-    : m_ini(ini), m_base(base), m_profile(NULL)
+    : m_ini(ini), m_base(base), m_profile(NULL), m_binding(NULL), m_bindingHook(NULL)
 {
     NDC ndc("XMLApplication");
     Category& log=Category::getInstance("shibtarget.XMLApplication");
