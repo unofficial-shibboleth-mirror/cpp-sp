@@ -108,7 +108,7 @@ namespace shibboleth
                                             const XMLCh* nameQualifier,
                                             const XMLCh* subjectIP,
                                             const XMLCh* authMethod,
-                                            std::time_t authInstant,
+                                            time_t authInstant,
                                             const saml::Iterator<saml::SAMLAuthorityBinding*>& bindings,
                                             const saml::Key& responseKey, const saml::X509Certificate* responseCert=NULL,
                                             const saml::Key* assertionKey=NULL, const saml::X509Certificate* assertionCert=NULL);
@@ -142,7 +142,7 @@ namespace shibboleth
                                             const XMLCh* nameQualifier,
                                             const XMLCh* subjectIP,
                                             const XMLCh* authMethod,
-                                            std::time_t authInstant,
+                                            time_t authInstant,
                                             const saml::Iterator<saml::SAMLAuthorityBinding*>& bindings,
                                             const saml::Key& responseKey, const saml::X509Certificate* responseCert=NULL,
                                             const saml::Key* assertionKey=NULL, const saml::X509Certificate* assertionCert=NULL);
