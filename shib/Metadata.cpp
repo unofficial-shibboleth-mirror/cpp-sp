@@ -239,8 +239,10 @@ void AAP::apply(const saml::Iterator<IAAP*>& aaps, saml::SAMLAssertion& assertio
     Iterator<SAMLStatement*> statements=assertion.getStatements();
     for (unsigned int scount=0; scount < statements.size();) {
         SAMLAttributeStatement* s=dynamic_cast<SAMLAttributeStatement*>(statements[scount]);
-        if (!s)
+        if (!s) {
+            scount++;
             continue;
+        }
         
         // Check each attribute, applying any matching rules.
         Iterator<SAMLAttribute*> attrs=s->getAttributes();
