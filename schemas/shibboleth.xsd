@@ -43,7 +43,12 @@
     </simpleType>
     
     <complexType name="SiteRuleType">
-        <sequence>
+        <choice>
+        	<element name="AnyValue">
+        		<complexType>
+        			<sequence/>
+        		</complexType>
+        	</element>
             <element name="Value" maxOccurs="unbounded">
                 <complexType>
                     <simpleContent>
@@ -53,7 +58,7 @@
                     </simpleContent>
                 </complexType>
             </element>
-        </sequence>
+        </choice>
     </complexType>
 
     <element name="AnySite" type="shib:SiteRuleType"/>
