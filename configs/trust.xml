@@ -33,7 +33,7 @@
  	in operational metadata. Also note that no validation of a certificate
  	specified in this form will be done, the key is merely extracted. To
  	revoke or expire the key binding, the entry must be removed.
- 	--->
+ 	-->
 
     <ds:KeyInfo>
     	<ds:KeyName>Email=root@shib2.internet2.edu,CN=shib2.internet2.edu,O=UCAID,L=Ann Arbor,ST=Michigan,C=US</ds:KeyName>
