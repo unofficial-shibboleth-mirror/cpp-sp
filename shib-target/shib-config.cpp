@@ -144,9 +144,17 @@ void STConfig::init()
 
   saml::NDC ndc("STConfig::init");
 
-  // Init SAML
+  // Init SAML Configuration
+  if (ini->get_tag (app, SHIBTARGET_TAG_SAMLCOMPAT, true, &tag))
+    samlConf.compatibility_mode = ShibINI::boolean(tag);
   if (ini->get_tag (app, SHIBTARGET_TAG_SCHEMAS, true, &tag))
     samlConf.schema_dir = tag;
+
+  // Init SAML Binding Configuration
+  if (ini->get_tag (app, SHIBTARGET_TAG_AATIMEOUT, true, &tag))
+    samlConf.binding_defaults.timeout = atoi(tag.c_str());
+  if (ini->get_tag (app, SHIBTARGET_TAG_AACONNECTTO, true, &tag))
+    samlConf.binding_defaults.conn_timeout = atoi(tag.c_str());
   if (ini->get_tag (app, SHIBTARGET_TAG_CERTFILE, true, &tag))
     samlConf.binding_defaults.ssl_certfile = tag;
   if (ini->get_tag (app, SHIBTARGET_TAG_KEYFILE, true, &tag))
