@@ -78,46 +78,6 @@
 
 namespace shibboleth
 {
-        /*
-    class ShibInternalConfig : public ShibConfig
-    {
-    public:
-        ShibInternalConfig() {}
-
-        bool init();
-        void term() {}
-
-        void regFactory(const char* type, MetadataFactory* factory);
-        void regFactory(const char* type, RevocationFactory* factory);
-        void regFactory(const char* type, TrustFactory* factory);
-        void regFactory(const char* type, CredentialsFactory* factory);
-        void regFactory(const char* type, AAPFactory* factory);
-        void regFactory(const char* type, CredResolverFactory* factory);
-        void unregFactory(const char* type);
-        
-        IMetadata* newMetadata(const char* type, const DOMElement* source) const;
-        IRevocation* newRevocation(const char* type, const DOMElement* source) const;
-        ITrust* newTrust(const char* type, const DOMElement* source) const;
-        ICredentials* newCredentials(const char* type, const DOMElement* source) const;
-        IAAP* newAAP(const char* type, const DOMElement* source) const;
-        ICredResolver* newCredResolver(const char* type, const DOMElement* source) const;
-
-    private:
-        typedef std::map<std::string, MetadataFactory*> MetadataFactoryMap;
-        typedef std::map<std::string, RevocationFactory*> RevocationFactoryMap;
-        typedef std::map<std::string, TrustFactory*> TrustFactoryMap;
-        typedef std::map<std::string, CredentialsFactory*> CredentialsFactoryMap;
-        typedef std::map<std::string, AAPFactory*> AAPFactoryMap;
-        typedef std::map<std::string, CredResolverFactory*> CredResolverFactoryMap;
-        MetadataFactoryMap m_metadataFactoryMap;
-        RevocationFactoryMap m_revocationFactoryMap;
-        TrustFactoryMap m_trustFactoryMap;
-        CredentialsFactoryMap m_credFactoryMap;
-        AAPFactoryMap m_aapFactoryMap;
-        CredResolverFactoryMap m_credResolverFactoryMap;
-    };
-        */
-
     // OpenSSL Utilities
     
     // Custom metadata-driven SSL context callback

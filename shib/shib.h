@@ -89,6 +89,7 @@ namespace shibboleth
 
     DECLARE_SHIB_EXCEPTION(MetadataException,SAMLException);
     DECLARE_SHIB_EXCEPTION(CredentialException,SAMLException);
+    DECLARE_SHIB_EXCEPTION(InvalidHandleException,RetryableProfileException);
 
     // Manages pluggable implementations of interfaces
     // Would prefer this to be a template, but the Windows STL isn't DLL-safe.
@@ -327,6 +328,7 @@ namespace shibboleth
         static const XMLCh SHIB_ATTRIBUTE_NAMESPACE_URI[];
         static const XMLCh SHIB_NAMEID_FORMAT_URI[];
         static const XMLCh SHIB_NS[];
+        static const XMLCh InvalidHandle[];
     };
 
     // Glue classes between abstract metadata and concrete providers

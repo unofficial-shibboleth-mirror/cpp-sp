@@ -163,6 +163,16 @@ SAMLResponse* ShibBinding::send(
         }
         catch (SAMLException& e) {
             log.error("caught SAML exception during SAML attribute query: %s", e.what());
+            // Check for shib:InvalidHandle error and propagate it out.
+            Iterator<saml::QName> codes=e.getCodes();
+            if (codes.size()>1) {
+                const saml::QName& code=codes[1];
+                if (!XMLString::compareString(code.getNamespaceURI(),shibboleth::Constants::SHIB_NS) &&
+                    !XMLString::compareString(code.getLocalName(), shibboleth::Constants::InvalidHandle)) {
+                    codes.reset();
+                    throw InvalidHandleException(codes,e.what());
+                }
+            }
         }
     }
     
@@ -212,6 +222,16 @@ SAMLResponse* ShibBinding::send(
         }
         catch (SAMLException& e) {
             log.error("caught SAML exception during SAML attribute query: %s", e.what());
+            // Check for shib:InvalidHandle error and propagate it out.
+            Iterator<saml::QName> codes=e.getCodes();
+            if (codes.size()>1) {
+                const saml::QName& code=codes[1];
+                if (!XMLString::compareString(code.getNamespaceURI(),shibboleth::Constants::SHIB_NS) &&
+                    !XMLString::compareString(code.getLocalName(), shibboleth::Constants::InvalidHandle)) {
+                    codes.reset();
+                    throw InvalidHandleException(codes,e.what());
+                }
+            }
         }
     }
     

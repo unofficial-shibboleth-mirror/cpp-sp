@@ -72,6 +72,7 @@ using namespace std;
 
 SAML_EXCEPTION_FACTORY(MetadataException);
 SAML_EXCEPTION_FACTORY(CredentialException);
+SAML_EXCEPTION_FACTORY(InvalidHandleException);
 
 namespace {
     ShibConfig g_config;
@@ -81,6 +82,7 @@ bool ShibConfig::init()
 {
     REGISTER_EXCEPTION_FACTORY(edu.internet2.middleware.shibboleth.common,MetadataException);
     REGISTER_EXCEPTION_FACTORY(edu.internet2.middleware.shibboleth.common,CredentialException);
+    REGISTER_EXCEPTION_FACTORY(edu.internet2.middleware.shibboleth.common,InvalidHandleException);
     return true;
 }
 
