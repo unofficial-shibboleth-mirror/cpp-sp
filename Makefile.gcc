@@ -7,10 +7,13 @@ CCFLAGS		= $(CFLAGS)
 LDFLAGS		= -L/usr/local/lib -L$(OUTDIR) -L../../opensaml/c/lib \
                   -luuid -lcurl -lxerces-c1_7_0 -lsaml
 SHIB_OBJS 	= \
-	shib/Constants.o \
-	shib/SAMLBindingFactory.o \
-	shib/ShibConfig.o \
-	shib/XML.o
+        shib/ClubShibPOSTProfile.o \
+        shib/Constants.o \
+        shib/SAMLBindingFactory.o \
+        shib/ShibConfig.o \
+        shib/ShibPOSTProfile.o \
+        shib/ShibPOSTProfileFactory.o \
+        shib/XML.o
 
 EDUPERSON_OBJS = \
 	eduPerson/Constants.o \
@@ -46,4 +49,4 @@ $(BINDIR)/shibtest: shibtest/shibtest.cpp
 	$(CC) $(CCFLAGS) -c $< -o $*.o
 
 clean:
-	rm -f shib/*.o eduPerson.*.o shibtest/*.o $(OUTDIR)/* $(BINDIR)/*
+	rm -f shib/*.o eduPerson/*.o shibtest/*.o $(OUTDIR)/* $(BINDIR)/*
