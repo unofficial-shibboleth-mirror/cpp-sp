@@ -9,11 +9,11 @@ pkgsysconf_DATA = \
 	shire.logger \
 	shar.logger \
 	apache.config \
-	ca-bundle.crt \
 	accessError.html \
 	rmError.html \
 	shireError.html \
 	AAP.xml \
 	sites.xml \
-	trust.xml
+	trust.xml \
+	creds.xml
 	
