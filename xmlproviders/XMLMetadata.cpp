@@ -742,7 +742,7 @@ XMLMetadataImpl::IDPRole::IDPRole(const EntityDescriptor* provider, time_t valid
         // Check for SourceID extension.
         DOMElement* ext=saml::XML::getFirstChildElement(e,::XML::SAML2META_NS,SHIB_L(Extensions));
         if (ext) {
-            ext=saml::XML::getFirstChildElement(e,saml::XML::SAML_ARTIFACT_SOURCEID,SHIB_L(SourceID));
+            ext=saml::XML::getFirstChildElement(ext,saml::XML::SAML_ARTIFACT_SOURCEID,SHIB_L(SourceID));
             if (ext && ext->hasChildNodes())
                 m_sourceId=ext->getFirstChild()->getNodeValue();
         }
