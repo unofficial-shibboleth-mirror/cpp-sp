@@ -42,6 +42,18 @@ shibrpc_get_session_2_svc(shibrpc_get_session_args_2 *argp, shibrpc_get_session_
 	return retval;
 }
 
+bool_t
+shibrpc_end_session_2_svc(shibrpc_end_session_args_2 *argp, shibrpc_end_session_ret_2 *result, struct svc_req *rqstp)
+{
+	bool_t retval;
+
+	/*
+	 * insert server code here
+	 */
+
+	return retval;
+}
+
 int
 shibrpc_prog_2_freeresult (SVCXPRT *transp, xdrproc_t xdr_result, caddr_t result)
 {

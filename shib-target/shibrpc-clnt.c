@@ -35,3 +35,12 @@ shibrpc_get_session_2(shibrpc_get_session_args_2 *argp, shibrpc_get_session_ret_
 		(xdrproc_t) xdr_shibrpc_get_session_ret_2, (caddr_t) clnt_res,
 		TIMEOUT));
 }
+
+enum clnt_stat 
+shibrpc_end_session_2(shibrpc_end_session_args_2 *argp, shibrpc_end_session_ret_2 *clnt_res, CLIENT *clnt)
+{
+	return (clnt_call(clnt, shibrpc_end_session,
+		(xdrproc_t) xdr_shibrpc_end_session_args_2, (caddr_t) argp,
+		(xdrproc_t) xdr_shibrpc_end_session_ret_2, (caddr_t) clnt_res,
+		TIMEOUT));
+}

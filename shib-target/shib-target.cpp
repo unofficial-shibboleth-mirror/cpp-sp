@@ -1072,6 +1072,88 @@ void ShibTarget::sessionGet(
     }
 }
 
+void ShibTarget::sessionEnd(const char* cookie) const
+{
+#ifdef _DEBUG
+    saml::NDC ndc("sessionEnd");
+#endif
+    Category& log = Category::getInstance("shibtarget.ShibTarget");
+
+    if (!cookie || !*cookie) {
+        log.error("no session key provided");
+        throw InvalidSessionException("No session key was provided.");
+    }
+    else if (strchr(cookie,'=')) {
+        log.error("cookie value not extracted successfully, probably overlapping cookies across domains");
+        throw InvalidSessionException("The session key wasn't extracted successfully from the browser cookie.");
+    }
+
+    log.debug("ending session with cookie (%s)", cookie);
+
+    shibrpc_end_session_args_2 arg;
+    arg.cookie = (char*)cookie;
+
+    shibrpc_end_session_ret_2 ret;
+    memset (&ret, 0, sizeof(ret));
+
+    // Loop on the RPC in case we lost contact the first time through
+    int retry = 1;
+    CLIENT *clnt;
+    RPC rpc;
+    do {
+        clnt = rpc->connect();
+        clnt_stat status = shibrpc_end_session_2(&arg, &ret, clnt);
+        if (status != RPC_SUCCESS) {
+            // FAILED.  Release, disconnect, and try again...
+            log.error("RPC Failure: %p (%p) (%d) %s", this, clnt, status, clnt_spcreateerror("shibrpc_end_session_2"));
+            rpc->disconnect();
+            if (retry)
+                retry--;
+            else
+                throw ListenerException("Failure ending session through listener.");
+        }
+        else {
+            // SUCCESS
+            retry = -1;
+        }
+    } while (retry>=0);
+
+    if (ret.status && *ret.status)
+        log.debug("RPC completed with exception: %s", ret.status);
+    else
+        log.debug("RPC completed successfully");
+
+    SAMLException* except=NULL;
+    if (ret.status && *ret.status) {
+        // Reconstitute exception object.
+        try { 
+            istringstream estr(ret.status);
+            except=SAMLException::getInstance(estr);
+        }
+        catch (SAMLException& e) {
+            log.error("caught SAML Exception while building the SAMLException: %s", e.what());
+            log.error("XML was: %s", ret.status);
+            clnt_freeres(clnt, (xdrproc_t)xdr_shibrpc_end_session_ret_2, (caddr_t)&ret);
+            rpc.pool();
+            throw FatalProfileException("An unrecoverable error occurred while accessing your session.");
+        }
+        catch (...) {
+            log.error("caught unknown exception building SAMLException");
+            log.error("XML was: %s", ret.status);
+            clnt_freeres(clnt, (xdrproc_t)xdr_shibrpc_end_session_ret_2, (caddr_t)&ret);
+            rpc.pool();
+            throw;
+        }
+    }
+
+    clnt_freeres (clnt, (xdrproc_t)xdr_shibrpc_end_session_ret_2, (caddr_t)&ret);
+    rpc.pool();
+    if (except) {
+        auto_ptr<SAMLException> wrapper(except);
+        wrapper->raise();
+    }
+}
+
 void* ShibTarget::sendError(const char* page, ShibMLP &mlp)
 {
     const IPropertySet* props=m_priv->m_app->getPropertySet("Errors");
@@ -1536,12 +1618,49 @@ pair<bool,void*> ShibTargetPriv::doAssertionConsumer(ShibTarget* st, const IProp
     }
 
     // Now redirect to the target.
-    return pair<bool,void*>(true, st->sendRedirect(target));
+    return make_pair(true, st->sendRedirect(target));
 }
 
 pair<bool,void*> ShibTargetPriv::doLogout(ShibTarget* st, const IPropertySet* handler) const
 {
-    throw UnsupportedProfileException("Logout not yet supported.");
+    pair<bool,const XMLCh*> binding=handler->getXMLString("Binding");
+    if (!binding.first || XMLString::compareString(binding.second,Constants::SHIB_LOGOUT_PROFILE_URI)) {
+        if (!binding.first)
+            throw UnsupportedProfileException("Missing Logout binding.");
+        throw UnsupportedProfileException("Unsupported Logout binding ($1).", params(1,handler->getString("Binding").second));
+    }
+
+    // Recover the session key.
+    pair<string,const char*> shib_cookie = getCookieNameProps("_shibsession_");
+    const char* session_id = getCookie(st,shib_cookie.first);
+    
+    // Logout is best effort.
+    if (session_id && *session_id) {
+        try {
+            st->sessionEnd(session_id);
+        }
+        catch (SAMLException& e) {
+            st->log(ShibTarget::LogLevelError, string("logout processing failed with exception: ") + e.what());
+        }
+#ifndef _DEBUG
+        catch (...) {
+            st->log(ShibTarget::LogLevelError, "logout processing failed with unknown exception");
+        }
+#endif
+        st->setCookie(shib_cookie.first,"");
+    }
+    
+    string query=st->getArgs();
+    CgiParse parser(query.c_str(),query.length());
+
+    const char* ret=parser.get_value("return");
+    if (!ret)
+        ret=handler->getString("ResponseLocation").second;
+    else if (!ret)
+        ret=m_app->getString("homeURL").second;
+    else if (!ret)
+        ret="/";
+    return make_pair(true, st->sendRedirect(ret));
 }
 
 /*************************************************************************

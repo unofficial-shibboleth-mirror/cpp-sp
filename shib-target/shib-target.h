@@ -487,6 +487,8 @@ namespace shibtarget {
         saml::SAMLResponse** attr_response_post=NULL
         ) const;
 
+    void sessionEnd(const char* cookie) const;
+
   protected:
     ShibTarget();
 

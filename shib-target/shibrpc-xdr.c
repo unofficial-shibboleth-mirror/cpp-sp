@@ -88,3 +88,23 @@ xdr_shibrpc_get_session_ret_2 (XDR *xdrs, shibrpc_get_session_ret_2 *objp)
 		 return FALSE;
 	return TRUE;
 }
+
+bool_t
+xdr_shibrpc_end_session_args_2 (XDR *xdrs, shibrpc_end_session_args_2 *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_string (xdrs, &objp->cookie, ~0))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_shibrpc_end_session_ret_2 (XDR *xdrs, shibrpc_end_session_ret_2 *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_string (xdrs, &objp->status, ~0))
+		 return FALSE;
+	return TRUE;
+}

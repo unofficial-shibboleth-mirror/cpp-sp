@@ -27,11 +27,13 @@ shibrpc_prog_2(struct svc_req *rqstp, register SVCXPRT *transp)
 		int shibrpc_ping_2_arg;
 		shibrpc_new_session_args_2 shibrpc_new_session_2_arg;
 		shibrpc_get_session_args_2 shibrpc_get_session_2_arg;
+		shibrpc_end_session_args_2 shibrpc_end_session_2_arg;
 	} argument;
 	union {
 		int shibrpc_ping_2_res;
 		shibrpc_new_session_ret_2 shibrpc_new_session_2_res;
 		shibrpc_get_session_ret_2 shibrpc_get_session_2_res;
+		shibrpc_end_session_ret_2 shibrpc_end_session_2_res;
 	} result;
 	bool_t retval;
 	xdrproc_t _xdr_argument, _xdr_result;
@@ -54,6 +56,12 @@ shibrpc_prog_2(struct svc_req *rqstp, register SVCXPRT *transp)
 		_xdr_argument = (xdrproc_t) xdr_shibrpc_get_session_args_2;
 		_xdr_result = (xdrproc_t) xdr_shibrpc_get_session_ret_2;
 		local = (bool_t (*) (char *, void *,  struct svc_req *))shibrpc_get_session_2_svc;
+		break;
+
+	case shibrpc_end_session:
+		_xdr_argument = (xdrproc_t) xdr_shibrpc_end_session_args_2;
+		_xdr_result = (xdrproc_t) xdr_shibrpc_end_session_ret_2;
+		local = (bool_t (*) (char *, void *,  struct svc_req *))shibrpc_end_session_2_svc;
 		break;
 
 	default:

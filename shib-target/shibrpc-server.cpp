@@ -515,6 +515,39 @@ shibrpc_new_session_2_svc(
     return TRUE;
 }
 
+extern "C" bool_t
+shibrpc_end_session_2_svc(
+    shibrpc_end_session_args_2 *argp,
+    shibrpc_end_session_ret_2 *result,
+    struct svc_req *rqstp
+    )
+{
+    Category& log = get_category();
+    string ctx = get_threadid("end_session");
+    saml::NDC ndc(ctx);
+
+    if (!argp || !result) {
+        log.error("RPC Argument Error");
+        return FALSE;
+    }
+
+    memset (result, 0, sizeof (*result));
+
+    log.debug ("checking: %s", argp->cookie);
+
+    IConfig* conf=ShibTargetConfig::getConfig().getINI();
+    Locker locker(conf);
+    conf->getSessionCache()->remove(argp->cookie);
+  
+    // Transaction Logging
+    STConfig& stc=static_cast<STConfig&>(ShibTargetConfig::getConfig());
+    stc.getTransactionLog().infoStream() << "Destroyed session (ID: " << argp->cookie << ")";
+    stc.releaseTransactionLog();
+
+    result->status=strdup("");
+    return TRUE;
+}
+
 extern "C" int
 shibrpc_prog_2_freeresult (SVCXPRT *transp, xdrproc_t xdr_result, caddr_t result)
 {

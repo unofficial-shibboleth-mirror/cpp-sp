@@ -9,7 +9,7 @@
 #include <rpc/rpc.h>
 
 #ifdef HAVE_PTHREAD
-#include <pthread.h>
+# include <pthread.h>
 #endif
 
 #ifdef __cplusplus
@@ -61,6 +61,16 @@ struct shibrpc_get_session_ret_2 {
 };
 typedef struct shibrpc_get_session_ret_2 shibrpc_get_session_ret_2;
 
+struct shibrpc_end_session_args_2 {
+	char *cookie;
+};
+typedef struct shibrpc_end_session_args_2 shibrpc_end_session_args_2;
+
+struct shibrpc_end_session_ret_2 {
+	char *status;
+};
+typedef struct shibrpc_end_session_ret_2 shibrpc_end_session_ret_2;
+
 #define SHIBRPC_PROG 123456
 #define SHIBRPC_VERS_2 2
 
@@ -74,6 +84,9 @@ extern  bool_t shibrpc_new_session_2_svc(shibrpc_new_session_args_2 *, shibrpc_n
 #define shibrpc_get_session 2
 extern  enum clnt_stat shibrpc_get_session_2(shibrpc_get_session_args_2 *, shibrpc_get_session_ret_2 *, CLIENT *);
 extern  bool_t shibrpc_get_session_2_svc(shibrpc_get_session_args_2 *, shibrpc_get_session_ret_2 *, struct svc_req *);
+#define shibrpc_end_session 3
+extern  enum clnt_stat shibrpc_end_session_2(shibrpc_end_session_args_2 *, shibrpc_end_session_ret_2 *, CLIENT *);
+extern  bool_t shibrpc_end_session_2_svc(shibrpc_end_session_args_2 *, shibrpc_end_session_ret_2 *, struct svc_req *);
 extern int shibrpc_prog_2_freeresult (SVCXPRT *, xdrproc_t, caddr_t);
 
 #else /* K&R C */
@@ -86,6 +99,9 @@ extern  bool_t shibrpc_new_session_2_svc();
 #define shibrpc_get_session 2
 extern  enum clnt_stat shibrpc_get_session_2();
 extern  bool_t shibrpc_get_session_2_svc();
+#define shibrpc_end_session 3
+extern  enum clnt_stat shibrpc_end_session_2();
+extern  bool_t shibrpc_end_session_2_svc();
 extern int shibrpc_prog_2_freeresult ();
 #endif /* K&R C */
 
@@ -97,6 +113,8 @@ extern  bool_t xdr_shibrpc_new_session_args_2 (XDR *, shibrpc_new_session_args_2
 extern  bool_t xdr_shibrpc_new_session_ret_2 (XDR *, shibrpc_new_session_ret_2*);
 extern  bool_t xdr_shibrpc_get_session_args_2 (XDR *, shibrpc_get_session_args_2*);
 extern  bool_t xdr_shibrpc_get_session_ret_2 (XDR *, shibrpc_get_session_ret_2*);
+extern  bool_t xdr_shibrpc_end_session_args_2 (XDR *, shibrpc_end_session_args_2*);
+extern  bool_t xdr_shibrpc_end_session_ret_2 (XDR *, shibrpc_end_session_ret_2*);
 
 #else /* K&R C */
 extern bool_t xdr_ShibProfile ();
@@ -104,6 +122,8 @@ extern bool_t xdr_shibrpc_new_session_args_2 ();
 extern bool_t xdr_shibrpc_new_session_ret_2 ();
 extern bool_t xdr_shibrpc_get_session_args_2 ();
 extern bool_t xdr_shibrpc_get_session_ret_2 ();
+extern bool_t xdr_shibrpc_end_session_args_2 ();
+extern bool_t xdr_shibrpc_end_session_ret_2 ();
 
 #endif /* K&R C */
 
