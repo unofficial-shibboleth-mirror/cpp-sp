@@ -66,5 +66,5 @@ shib-paths.h: ${srcdir}/shib-paths.h.in Makefile ${top_builddir}/config.status
 install-exec-hook:
 	for la in $(lib_LTLIBRARIES) ; do rm -f $(DESTDIR)$(libdir)/$$la ; done
 
-EXTRA_DIST = shibtarget.dsp shib-paths.h.in
+EXTRA_DIST = shibtarget.dsp shib-paths.h.in resource.h shib-target.rc
 BUILT_SOURCES = shib-paths.h
