@@ -59,7 +59,7 @@ using namespace shibboleth;
 SAMLResponse* HS()
 {
     XMLDateTime now();
-    Key k(Key::RSA,Key::PEM,"");
+    Key k(Key::RSA_PRIV,Key::PEM,"C:/shib/etc/internet2.pem");
     const XMLCh* policies[]={Constants::POLICY_CLUBSHIB};
 
     auto_ptr<XMLCh> hsname(XMLString::transcode("wayf.internet2.edu"));
@@ -96,25 +96,36 @@ int main(int argc,char* argv[])
     if (!conf1.init())
         cerr << "unable to initialize SAML runtime" << endl;
 
-    //XMLOriginSiteMapper mapper("/Tomcat4.0/webapps/shibboleth/sites.xml",Iterator<X509Certificate*>());
-    XMLOriginSiteMapper mapper("http://wayf.internet2.edu/shibboleth/sites.xml",Iterator<X509Certificate*>());
+    X509Certificate cert(X509Certificate::PEM,"C:/shib/etc/internet2.pem");
+    XMLOriginSiteMapper mapper("/Tomcat4.0/webapps/shibboleth/sites.xml","C:/shib/etc/ca-bundle.crt",&cert);
+    //XMLOriginSiteMapper mapper("http://wayf.internet2.edu/shibboleth/sites.xml","/shib/etc/ca-bundle.crt",&cert);
     conf2.origin_mapper=&mapper;
     if (!conf2.init())
         cerr << "unable to initialize Shibboleth runtime" << endl;
 
     try
     {
-        SAMLResponse* r=HS();
-        cout << "Generated Response: " << endl << *r << endl;
+//        SAMLResponse* r=HS();
+//        cout << "Generated Response: " << endl << *r << endl;
 
         const XMLCh* policies[]={Constants::POLICY_CLUBSHIB};
         auto_ptr<XMLCh> recip(XMLString::transcode("https://shire.target.com"));
         ShibPOSTProfile* p=ShibPOSTProfileFactory::getInstance(ArrayIterator<const XMLCh*>(policies),recip.get(),300);
 
-        auto_ptr<XMLByte> buf(r->toBase64(NULL));
-        delete r;
+        //auto_ptr<XMLByte> buf(r->toBase64(NULL));
+        //delete r;
 
-        SAMLResponse* r2=p->accept(buf.get());
+        char ch;
+        string buf;
+        cin >> ch;
+        while (!cin.fail())
+        {
+            buf+=ch;
+            cin >> ch;
+        }
+
+        _asm int 3;
+        SAMLResponse* r2=p->accept((const XMLByte*)buf.c_str());
         cout << "Consumed Response: " << endl << *r2 << endl;
 
         SAMLAssertion* a=p->getSSOAssertion(*r2);
