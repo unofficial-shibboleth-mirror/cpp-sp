@@ -7,9 +7,6 @@ log4j.category.shibtarget.XMLApplication=INFO
 log4j.appender.syslog=org.apache.log4j.SyslogAppender
 log4j.appender.syslog.syslogName=shib
 log4j.appender.syslog.syslogHost=localhost
-# DO NOT USE the PatternLayout option on platforms without threadsafe timezone
-# calls in libc. And nothing seems to have that, so...
-# If you enable it and get crashes under load, turn it off!
-log4j.appender.syslog.layout=org.apache.log4j.BasicLayout
-#log4j.appender.syslog.layout=org.apache.log4j.PatternLayout
-#log4j.appender.syslog.layout.ConversionPattern=%d{%Y-%m-%d %H:%M:%S} %p %c %x: %m%n
+#log4j.appender.syslog.layout=org.apache.log4j.BasicLayout
+log4j.appender.syslog.layout=org.apache.log4j.PatternLayout
+log4j.appender.syslog.layout.ConversionPattern=%d{%Y-%m-%d %H:%M:%S} %p %c %x: %m%n
