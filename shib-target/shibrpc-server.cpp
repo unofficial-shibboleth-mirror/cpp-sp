@@ -129,7 +129,7 @@ shibrpc_get_session_2_svc(
     )
 {
   Category& log = get_category();
-  string ctx = get_threadid("session_is_valid");
+  string ctx = get_threadid("get_session");
   saml::NDC ndc(ctx);
 
   if (!argp || !result) {
@@ -306,7 +306,6 @@ shibrpc_new_session_2_svc(
   memset (result, 0, sizeof(*result));
   result->cookie = strdup ("");
   result->target = strdup ("");
-  result->packet = strdup ("");
 
   log.debug ("creating session for %s", argp->client_addr);
   log.debug ("recipient: %s", argp->recipient);
@@ -554,16 +553,6 @@ shibrpc_new_session_2_svc(
   if (origin) XMLString::release(&origin);
 
   return TRUE;
-}
-
-extern "C" bool_t
-shibrpc_statemgr_2_svc(
-    shibrpc_statemgr_args_2 *argp,
-    shibrpc_statemgr_ret_2 *result,
-    struct svc_req *rqstp
-    )
-{
-    return FALSE;
 }
 
 extern "C" int

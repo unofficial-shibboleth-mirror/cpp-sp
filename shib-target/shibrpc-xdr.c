@@ -68,32 +68,6 @@ xdr_ShibProfile (XDR *xdrs, ShibProfile *objp)
 }
 
 bool_t
-xdr_shibrpc_statemgr_args_2 (XDR *xdrs, shibrpc_statemgr_args_2 *objp)
-{
-	register int32_t *buf;
-
-	 if (!xdr_string (xdrs, &objp->application_id, ~0))
-		 return FALSE;
-	 if (!xdr_string (xdrs, &objp->packet, ~0))
-		 return FALSE;
-	 if (!xdr_string (xdrs, &objp->client_addr, ~0))
-		 return FALSE;
-	return TRUE;
-}
-
-bool_t
-xdr_shibrpc_statemgr_ret_2 (XDR *xdrs, shibrpc_statemgr_ret_2 *objp)
-{
-	register int32_t *buf;
-
-	 if (!xdr_ShibRpcError (xdrs, &objp->status))
-		 return FALSE;
-	 if (!xdr_string (xdrs, &objp->cookie, ~0))
-		 return FALSE;
-	return TRUE;
-}
-
-bool_t
 xdr_shibrpc_new_session_args_2 (XDR *xdrs, shibrpc_new_session_args_2 *objp)
 {
 	register int32_t *buf;
@@ -103,8 +77,6 @@ xdr_shibrpc_new_session_args_2 (XDR *xdrs, shibrpc_new_session_args_2 *objp)
 	 if (!xdr_string (xdrs, &objp->application_id, ~0))
 		 return FALSE;
 	 if (!xdr_string (xdrs, &objp->packet, ~0))
-		 return FALSE;
-	 if (!xdr_string (xdrs, &objp->cookie, ~0))
 		 return FALSE;
 	 if (!xdr_string (xdrs, &objp->recipient, ~0))
 		 return FALSE;
@@ -121,8 +93,6 @@ xdr_shibrpc_new_session_ret_2 (XDR *xdrs, shibrpc_new_session_ret_2 *objp)
 	 if (!xdr_ShibRpcError (xdrs, &objp->status))
 		 return FALSE;
 	 if (!xdr_string (xdrs, &objp->target, ~0))
-		 return FALSE;
-	 if (!xdr_string (xdrs, &objp->packet, ~0))
 		 return FALSE;
 	 if (!xdr_string (xdrs, &objp->cookie, ~0))
 		 return FALSE;

@@ -163,7 +163,7 @@ int real_main(int preinit)
         // initialize the shib-target library
         conf.setFeatures(
             ShibTargetConfig::Listener |
-            ShibTargetConfig::SessionCache |
+            ShibTargetConfig::Caching |
             ShibTargetConfig::Metadata |
             ShibTargetConfig::Trust |
             ShibTargetConfig::Credentials |
@@ -326,7 +326,7 @@ int main(int argc, char *argv[])
     ShibTargetConfig& conf=ShibTargetConfig::getConfig();
     conf.setFeatures(
         ShibTargetConfig::Listener |
-        ShibTargetConfig::SessionCache |
+        ShibTargetConfig::Caching |
         ShibTargetConfig::Metadata |
         ShibTargetConfig::Trust |
         ShibTargetConfig::Credentials |

@@ -102,7 +102,7 @@ int main(int argc,char* argv[])
         ShibTargetConfig::Credentials |
         ShibTargetConfig::AAP |
         ShibTargetConfig::GlobalExtensions |
-        ShibTargetConfig::SessionCache
+        ShibTargetConfig::Caching
         );
     if (!conf.init(path,config))
         return -10;

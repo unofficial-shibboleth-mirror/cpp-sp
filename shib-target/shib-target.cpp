@@ -90,12 +90,12 @@ namespace shibtarget {
     ~CgiParse();
     const char* get_value(const char* name) const;
     
+    static char x2c(char *what);
+    static void url_decode(char *url);
   private:
     char * fmakeword(char stop, unsigned int *cl, const char** ppch);
     char * makeword(char *line, char stop);
     void plustospace(char *str);
-    char x2c(char *what);
-    void url_decode(char *url);
 
     map<string,char*> kvp_map;
   };
@@ -111,11 +111,12 @@ namespace shibtarget {
     void* sendError(ShibTarget* st, string page, ShibMLP &mlp);
     const char *getSessionId(ShibTarget* st);
 
+  private:
+    friend class ShibTarget;
     IRequestMapper::Settings m_settings;
     const IApplication *m_app;
     string m_cookieName;
     string m_shireURL;
-    string m_authnRequest;
 
     const char *session_id;
     string m_cookies;
@@ -135,7 +136,6 @@ namespace shibtarget {
 
     ShibTargetConfig* m_Config;
 
-  private:
     IConfig* m_conf;
     IRequestMapper* m_mapper;
   };
@@ -225,9 +225,8 @@ ShibTarget::doCheckAuthN(bool requireSessionFlag, bool handleProfile)
       if (requireSessionFlag)
 	requireSession.second=true;
 
-    const char *session_id = m_priv->getSessionId(this);
-    
-    if (!session_id || !*session_id) {
+    const char* session_id = m_priv->getSessionId(this);
+    if (!session_id || !*session_id || !strncmp(session_id,"RelayState:",11)) {
       // No session.  Maybe that's acceptable?
 
       if (!requireSession.second)
@@ -238,15 +237,17 @@ ShibTarget::doCheckAuthN(bool requireSessionFlag, bool handleProfile)
     }
 
     procState = "Session Processing Error";
-    RPCError* status = sessionGet(
-        session_id,
-        m_priv->m_remote_addr.c_str(),
-        m_priv->m_sso_profile,
-        m_priv->m_provider_id,
-        &m_priv->m_sso_statement,
-        &m_priv->m_pre_response,
-        &m_priv->m_post_response
-        );
+    auto_ptr<RPCError> status(
+        sessionGet(
+            session_id,
+            m_priv->m_remote_addr.c_str(),
+            m_priv->m_sso_profile,
+            m_priv->m_provider_id,
+            &m_priv->m_sso_statement,
+            &m_priv->m_pre_response,
+            &m_priv->m_post_response
+            )
+         );
 
     if (status->isError()) {
 
@@ -260,7 +261,6 @@ ShibTarget::doCheckAuthN(bool requireSessionFlag, bool handleProfile)
                    // do not authenticate the user at this time.
       else if (status->isRetryable()) {
         // Session is invalid but we can retry the auth -- generate an AuthnRequest
-        delete status;
         return pair<bool,void*>(true,sendRedirect(getAuthnRequest(targetURL)));
 
       } else {
@@ -268,11 +268,8 @@ ShibTarget::doCheckAuthN(bool requireSessionFlag, bool handleProfile)
         er += status->getText();
         log(LogLevelError, er);
         mlp.insert(*status);
-        delete status;
         goto out;
       }
-
-      delete status;
     }
 
     // We're done.  Everything is okay.  Nothing to report.  Nothing to do..
@@ -280,14 +277,15 @@ ShibTarget::doCheckAuthN(bool requireSessionFlag, bool handleProfile)
     log(LogLevelInfo, "doCheckAuthN Succeeded\n");
     return pair<bool,void*>(false,NULL);
 
-  } catch (ShibTargetException &e) {
-    mlp.insert("errorText", e.what());
-
-#ifndef _DEBUG
-  } catch (...) {
-    mlp.insert("errorText", "Unexpected Exception");
-#endif
   }
+  catch (ShibTargetException &e) {
+    mlp.insert("errorText", e.what());
+  }
+#ifndef _DEBUG
+  catch (...) {
+    mlp.insert("errorText", "Unexpected Exception");
+  }
+#endif
 
   // If we get here then we've got an error.
   mlp.insert("errorType", procState);
@@ -346,8 +344,10 @@ ShibTarget::doHandleProfile(void)
     string cgistr;
     if (!strcasecmp(m_priv->m_method.c_str(), "GET")) {
       cgistr = getArgs();
-      const char* areq=cgistr.empty() ? NULL : getLazyAuthnRequest(cgistr.c_str());
-      if (areq)
+      string areq;
+      if (!cgistr.empty())
+          areq=getLazyAuthnRequest(cgistr.c_str());
+      if (!areq.empty())
         return pair<bool,void*>(true, sendRedirect(areq));
     }
     else if (!strcasecmp(m_priv->m_method.c_str(), "POST")) {
@@ -360,15 +360,15 @@ ShibTarget::doHandleProfile(void)
     }
 	
     // process the submission
-    string cookie,target,statemgr_packet;
-    RPCError* status = sessionNew(
-        SAML_11_POST | SAML_11_ARTIFACT,
-        cgistr.c_str(),
-        NULL,   // XXX: no state token yet
-        m_priv->m_remote_addr.c_str(),
-        cookie,
-        target,
-        statemgr_packet
+    string cookie,target;
+    auto_ptr<RPCError> status(
+        sessionNew(
+            SAML_11_POST | SAML_11_ARTIFACT,
+            cgistr.c_str(),
+            m_priv->m_remote_addr.c_str(),
+            cookie,
+            target
+            )
         );
 
     if (status->isError()) {
@@ -378,18 +378,33 @@ ShibTarget::doHandleProfile(void)
       log(LogLevelError, er);
 
       if (status->isRetryable()) {
-        delete status;
         return pair<bool,void*>(true, sendRedirect(getAuthnRequest(target.c_str())));
       }
 
       // return this error to the user.
       mlp.insert(*status);
-      delete status;
       goto out;
     }
-    delete status;
 
     log(LogLevelDebug, string("doHandleProfile() profile processing succeeded, new session(") + cookie + ")");
+
+    if (target=="default") {
+        pair<bool,const char*> homeURL=m_priv->m_app->getString("homeURL");
+        target=homeURL.first ? homeURL.second : "/";
+    }
+    else if (target=="42") {
+        // Pull the target value from the "session" cookie.
+        const char* session_id = m_priv->getSessionId(this);
+        if (!session_id || !*session_id || strncmp(session_id,"RelayState:",11)) {
+            // No apparent relay state value to use, so fall back on the default.
+            pair<bool,const char*> homeURL=m_priv->m_app->getString("homeURL");
+            target=homeURL.first ? homeURL.second : "/";
+        }
+        else {
+            CgiParse::url_decode((char*)session_id+11);
+            target=(session_id+11);
+        }
+    }
 
     // We've got a good session, set the cookie...
     cookie += shib_cookie.second;
@@ -398,14 +413,15 @@ ShibTarget::doHandleProfile(void)
     // ... and redirect to the target
     return pair<bool,void*>(true, sendRedirect(target));
 
-  } catch (ShibTargetException &e) {
-    mlp.insert("errorText", e.what());
-
-#ifndef _DEBUG
-  } catch (...) {
-    mlp.insert("errorText", "Unexpected Exception");
-#endif
   }
+  catch (ShibTargetException &e) {
+    mlp.insert("errorText", e.what());
+  }
+#ifndef _DEBUG
+  catch (...) {
+    mlp.insert("errorText", "Unexpected Exception");
+  }
+#endif
 
   // If we get here then we've got an error.
   mlp.insert("errorType", procState);
@@ -645,14 +661,15 @@ ShibTarget::doCheckAuthZ(void)
 
     // If we get here there's an access error, so just fall through
 
-  } catch (ShibTargetException &e) {
-    mlp.insert("errorText", e.what());
-
-#ifndef _DEBUG
-  } catch (...) {
-    mlp.insert("errorText", "Unexpected Exception");
-#endif
   }
+  catch (ShibTargetException &e) {
+    mlp.insert("errorText", e.what());
+  }
+#ifndef _DEBUG
+  catch (...) {
+    mlp.insert("errorText", "Unexpected Exception");
+  }
+#endif
 
   // If we get here then we've got an error.
   mlp.insert("errorType", procState);
@@ -822,16 +839,15 @@ ShibTarget::doExportAssertions(bool exportAssertion)
     }
 
     return pair<bool,void*>(false,NULL);
-
-  } catch (ShibTargetException &e) {
-    mlp.insert("errorText", e.what());
-
-#ifndef _DEBUG
-  } catch (...) {
-    mlp.insert("errorText", "Unexpected Exception");
-#endif
-
   }
+  catch (ShibTargetException &e) {
+    mlp.insert("errorText", e.what());
+  }
+#ifndef _DEBUG
+  catch (...) {
+    mlp.insert("errorText", "Unexpected Exception");
+  }
+#endif
 
   // If we get here then we've got an error.
   mlp.insert("errorType", procState);
@@ -852,18 +868,15 @@ std::pair<const char*,const char*>
 ShibTarget::getCookieNameProps() const
 {
     static const char* defProps="; path=/";
-    static const char* defName="_shibsession_";
+    static const char* defName="_shib";
     
-    // XXX: What to do if m_app isn't set?
-
-    const IPropertySet* props=m_priv->m_app->getPropertySet("Sessions");
+    const IPropertySet* props=m_priv->m_app ? m_priv->m_app->getPropertySet("Sessions") : NULL;
     if (props) {
         pair<bool,const char*> p=props->getString("cookieProps");
         if (!p.first)
             p.second=defProps;
         if (!m_priv->m_cookieName.empty())
-            return pair<const char*,const char*>(m_priv->m_cookieName.c_str(),
-						 p.second);
+            return pair<const char*,const char*>(m_priv->m_cookieName.c_str(), p.second);
         pair<bool,const char*> p2=props->getString("cookieName");
         if (p2.first) {
             m_priv->m_cookieName=p2.second;
@@ -871,10 +884,24 @@ ShibTarget::getCookieNameProps() const
         }
         m_priv->m_cookieName=defName;
         m_priv->m_cookieName+=m_priv->m_app->getId();
+        m_priv->m_cookieName+=m_priv->m_app->getString("providerId").second;
+        m_priv->m_cookieName=SAMLArtifact::toHex(
+            SAMLArtifactType0001::generateSourceId(m_priv->m_cookieName.c_str())
+            );
         return pair<const char*,const char*>(m_priv->m_cookieName.c_str(),p.second);
     }
-    m_priv->m_cookieName=defName;
-    m_priv->m_cookieName+=m_priv->m_app->getId();
+    
+    // Shouldn't happen, but just in case..
+    if (m_priv->m_cookieName.empty()) {
+        m_priv->m_cookieName=defName;
+        if (m_priv->m_app) {
+            m_priv->m_cookieName+=m_priv->m_app->getId();
+            m_priv->m_cookieName+=m_priv->m_app->getString("providerId").second;
+            m_priv->m_cookieName=SAMLArtifact::toHex(
+                SAMLArtifactType0001::generateSourceId(m_priv->m_cookieName.c_str())
+                );
+        }
+    }
     return pair<const char*,const char*>(m_priv->m_cookieName.c_str(),defProps);
 }
         
@@ -956,54 +983,63 @@ ShibTarget::getShireURL(const char* resource) const
     return m_priv->m_shireURL.c_str();
 }
         
-// Generate a Shib 1.x AuthnRequest redirect URL for the resource
-const char*
-ShibTarget::getAuthnRequest(const char* resource) const
+// Generate a Shib 1.x AuthnRequest redirect URL for the resource,
+// using whatever relay state mechanism is specified for the app.
+string ShibTarget::getAuthnRequest(const char* resource)
 {
-    if (!m_priv->m_authnRequest.empty())
-        return m_priv->m_authnRequest.c_str();
-        
     // XXX: what to do if m_app is NULL?
 
+    string req;
     char timebuf[16];
     sprintf(timebuf,"%u",time(NULL));
     
-    const IPropertySet* props=m_priv->m_app->getPropertySet("Sessions");
+    const IPropertySet* props=m_priv->m_app ? m_priv->m_app->getPropertySet("Sessions") : NULL;
     if (props) {
         pair<bool,const char*> wayf=props->getString("wayfURL");
         if (wayf.first) {
-            m_priv->m_authnRequest=m_priv->m_authnRequest + wayf.second + "?shire=" + m_priv->url_encode(getShireURL(resource)) +
-                "&target=" + m_priv->url_encode(resource) + "&time=" + timebuf;
+            req=req + wayf.second + "?shire=" + m_priv->url_encode(getShireURL(resource)) + "&time=" + timebuf;
+            
+            // How should the target value be preserved?
+            pair<bool,bool> localRelayState=m_priv->m_conf->getPropertySet("Local")->getBool("localRelayState");
+            if (!localRelayState.first || !localRelayState.second) {
+                // The old way, just send it along.
+                req = req + "&target=" + m_priv->url_encode(resource);
+            }
+            else {
+                // Here we store the state in a cookie and send a fixed
+                // value to the IdP so we can recognize it on the way back.
+                pair<const char*,const char*> shib_cookie=getCookieNameProps();
+                setCookie(shib_cookie.first,string("RelayState:") + m_priv->url_encode(resource) + shib_cookie.second);
+                req += "&target=42";
+            }
+            
             pair<bool,bool> old=m_priv->m_app->getBool("oldAuthnRequest");
             if (!old.first || !old.second) {
                 wayf=m_priv->m_app->getString("providerId");
                 if (wayf.first)
-                    m_priv->m_authnRequest=m_priv->m_authnRequest + "&providerId=" + m_priv->url_encode(wayf.second);
+                    req=req + "&providerId=" + m_priv->url_encode(wayf.second);
             }
         }
     }
-    return m_priv->m_authnRequest.c_str();
+    return req;
 }
         
 // Process a lazy session setup request and turn it into an AuthnRequest
-const char*
-ShibTarget::getLazyAuthnRequest(const char* query_string) const
+string ShibTarget::getLazyAuthnRequest(const char* query_string)
 {
     CgiParse parser(query_string,strlen(query_string));
     const char* target=parser.get_value("target");
     if (!target || !*target)
-        return NULL;
+        return "";
     return getAuthnRequest(target);
 }
-        
+
 RPCError* ShibTarget::sessionNew(
     int supported_profiles,
     const char* packet,
-    const char* statemgr_cookie,
     const char* ip,
     string& cookie,
-    string& target,
-    string& statemgr_packet
+    string& target
     ) const
 {
 #ifdef _DEBUG
@@ -1032,13 +1068,8 @@ RPCError* ShibTarget::sessionNew(
   arg.packet = (char*)packet;
   arg.client_addr = (char*)ip;
   arg.supported_profiles = supported_profiles;
-  if (statemgr_cookie)
-    arg.cookie = (char*)statemgr_cookie;
-  else
-    arg.cookie = "";
 
-  log.info("create session for user at (%s) for application (%s) with state token (%s)",
-    ip, arg.application_id, statemgr_cookie);
+  log.info("create session for user at (%s) for application (%s)", ip, arg.application_id);
 
   shibrpc_new_session_ret_2 ret;
   memset(&ret, 0, sizeof(ret));
@@ -1075,15 +1106,12 @@ RPCError* ShibTarget::sessionNew(
     cookie = ret.cookie;
     if (ret.target)
         target = ret.target;
-    if (ret.packet)
-        statemgr_packet = ret.packet;
     retval = new RPCError();
   }
 
   clnt_freeres(clnt, (xdrproc_t)xdr_shibrpc_new_session_ret_2, (caddr_t)&ret);
   rpc.pool();
 
-  log.debug("returning");
   return retval;
 }
 
@@ -1211,7 +1239,6 @@ RPCError* ShibTarget::sessionGet(
   clnt_freeres (clnt, (xdrproc_t)xdr_shibrpc_get_session_ret_2, (caddr_t)&ret);
   rpc.pool();
 
-  log.debug("returning");
   return retval;
 }
 
@@ -1344,7 +1371,7 @@ ShibTargetPriv::getSessionId(ShibTarget* st)
   }
 
   char *sid;
-  pair<const char*, const char *> shib_cookie = st->getCookieNameProps();
+  pair<const char*,const char*> shib_cookie = st->getCookieNameProps();
   m_cookies = st->getCookies();
   if (!m_cookies.empty()) {
     if (sid = strstr(m_cookies.c_str(), shib_cookie.first)) {
@@ -1352,7 +1379,7 @@ ShibTargetPriv::getSessionId(ShibTarget* st)
       sid += strlen(shib_cookie.first) + 1; // skip over the '='
       char *cookieend = strchr(sid, ';');
       if (cookieend)
-	*cookieend = '\0';
+        *cookieend = '\0';
       session_id = sid;
     }
   }

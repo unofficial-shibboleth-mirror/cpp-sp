@@ -484,7 +484,7 @@ XMLApplication::XMLApplication(const IConfig* ini, const Iterator<ICredentials*>
             }
         }
         
-        if (conf.isEnabled(ShibTargetConfig::SessionCache)) {
+        if (conf.isEnabled(ShibTargetConfig::Caching)) {
             // Really finally, build local browser profile and binding objects.
             m_profile=new ShibBrowserProfile(
                 getMetadataProviders(),
@@ -882,7 +882,7 @@ void XMLConfigImpl::init(bool first)
                 }
             }
 
-            if (conf.isEnabled(ShibTargetConfig::SessionCache)) {
+            if (conf.isEnabled(ShibTargetConfig::Caching)) {
                 IPlugIn* plugin=NULL;
                 exts=saml::XML::getFirstChildElement(SHAR,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(MemorySessionCache));
                 if (exts) {

@@ -268,7 +268,7 @@ namespace shibtarget {
 
         enum components_t {
             Listener = 1,
-            SessionCache = 2,
+            Caching = 2,
             Metadata = 4,
             Trust = 8,
             Credentials = 16,
@@ -526,30 +526,22 @@ namespace shibtarget {
     const char* getShireURL(const char* resource) const;
         
     // Generate a Shib 1.x AuthnRequest redirect URL for the resource
-    const char* getAuthnRequest(const char* resource) const;
+    std::string getAuthnRequest(const char* resource);
         
     // Process a lazy session setup request and turn it into an AuthnRequest
-    const char* getLazyAuthnRequest(const char* query_string) const;
+    std::string getLazyAuthnRequest(const char* query_string);
         
   protected:
     ShibTarget();
 
     // Currently wraps remoted interface.
     // TODO: Move this functionality behind ISessionCache
-    RPCError* stateMgr(
-        const char* packet,
-        const char* ip,
-        std::string& cookie
-        ) const;
-    
     RPCError* sessionNew(
         int supported_profiles,
         const char* packet,
-        const char* statemgr_cookie,
         const char* ip,
         std::string& cookie,
-        std::string& target,
-        std::string& statemgr_packet
+        std::string& target
         ) const;
 
     RPCError* sessionGet(

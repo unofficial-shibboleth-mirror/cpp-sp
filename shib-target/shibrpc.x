@@ -65,22 +65,10 @@ enum ShibProfile {
 
 /* function argument and response structures */
 
-struct shibrpc_statemgr_args_2 {
-  string	application_id<>;
-  string	packet<>;				/* opaque state to manage */
-  string	client_addr<>;
-};
-
-struct shibrpc_statemgr_ret_2 {
-  ShibRpcError	status;
-  string	cookie<>;				/* state token returned to caller */
-};
-
 struct shibrpc_new_session_args_2 {
   int		supported_profiles;		/* bitmask of supported profiles */
   string	application_id<>;
   string	packet<>;				/* profile input packet from client */
-  string	cookie<>;				/* statemgr token, if any */
   string	recipient<>;			/* endpoint that received packet */
   string	client_addr<>;
 };
@@ -88,7 +76,6 @@ struct shibrpc_new_session_args_2 {
 struct shibrpc_new_session_ret_2 {
   ShibRpcError	status;
   string	target<>;				/* profile-specific state token from client */
-  string	packet<>;				/* state token recovered by statemgr, if any */
   string	cookie<>;				/* session key manufactured for client */
 };
 
@@ -122,9 +109,6 @@ program SHIBRPC_PROG {
 
     /* Validate and access data associated with existing session */
     shibrpc_get_session_ret_2 shibrpc_get_session (shibrpc_get_session_args_2) = 2;
-
-	/* Post managed state information for later retrieval during session creation */
-	shibrpc_statemgr_ret_2 shibrpc_statemgr (shibrpc_statemgr_args_2) = 3;
 
   } = 2;
 } = 123456;			/* Arbitrary RPC Program Number */
