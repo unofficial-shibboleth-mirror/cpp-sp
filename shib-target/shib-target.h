@@ -124,40 +124,26 @@ namespace shibtarget {
   };
 
 
-  class CCache;
   class CCacheEntry
   {
   public:
-    virtual ~CCacheEntry();
-
     virtual saml::Iterator<saml::SAMLAssertion*> getAssertions(Resource& resource) = 0;
     virtual bool isSessionValid(time_t lifetime, time_t timeout) = 0;
     virtual const char* getClientAddress() = 0;
-
-    static CCacheEntry* getInstance(saml::SAMLAuthenticationStatement *s,
-				    const char *client_addr);
-
-    friend class CCache;
-  protected:
-    // this should only be called by CCache::insert()
-    virtual void setCache(CCache* cache) = 0;
   };
     
   class CCache
   {
   public:
-    virtual ~CCache();
+    virtual ~CCache() = 0;
 
     virtual saml::SAMLBinding* getBinding(const XMLCh* bindingProt) = 0;
     virtual CCacheEntry* find(const char* key) = 0;
-    virtual void insert(const char* key, CCacheEntry* entry) = 0;
+    virtual void insert(const char* key, saml::SAMLAuthenticationStatement *s,
+			const char *client_addr) = 0;
     virtual void remove(const char* key) = 0;
     
-    static CCache* getInstance();
-
-  protected:
-    // special function to call over to CCacheEntry::setCache()
-    void setCache(CCacheEntry* entry);
+    static CCache* getInstance(const char* type);
   };    
 
   extern CCache* g_shibTargetCCache;

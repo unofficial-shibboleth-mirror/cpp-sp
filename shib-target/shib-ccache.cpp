@@ -99,13 +99,13 @@ class InternalCCacheEntry : public CCacheEntry
 {
 public:
   InternalCCacheEntry(SAMLAuthenticationStatement *s, const char *client_addr);
-  virtual ~InternalCCacheEntry();
+  ~InternalCCacheEntry();
 
   virtual Iterator<SAMLAssertion*> getAssertions(Resource& resource);
   virtual bool isSessionValid(time_t lifetime, time_t timeout);
   virtual const char* getClientAddress() { return m_clientAddress.c_str(); }
 
-  virtual void setCache(CCache *cache);
+  void setCache(InternalCCache *cache) { m_cache = cache; }
 
 private:
   ResourceEntry* populate(Resource& resource);
@@ -122,7 +122,7 @@ private:
 
   const SAMLSubject* m_subject;
   SAMLAuthenticationStatement* p_auth;
-  CCache *m_cache;
+  InternalCCache *m_cache;
 
   map<string,ResourceEntry*> m_resources;
 
@@ -140,34 +140,21 @@ public:
 
   virtual SAMLBinding* getBinding(const XMLCh* bindingProt);
   virtual CCacheEntry* find(const char* key);
-  virtual void insert(const char* key, CCacheEntry* entry);
+  virtual void insert(const char* key, SAMLAuthenticationStatement *s,
+		      const char *client_addr);
   virtual void remove(const char* key);
 
 private:
   SAMLBinding* m_SAMLBinding;
-  map<string,CCacheEntry*> m_hashtable;
+  map<string,InternalCCacheEntry*> m_hashtable;
 
   log4cpp::Category* log;
 };
 
 // Global Constructors & Destructors
-CCache::~CCache() {}
-CCacheEntry::~CCacheEntry() {}
-
-CCache* CCache::getInstance()
+CCache* CCache::getInstance(const char* type)
 {
   return (CCache*) new InternalCCache();
-}
-
-CCacheEntry* CCacheEntry::getInstance(saml::SAMLAuthenticationStatement *s,
-				      const char *client_addr)
-{
-  return (CCacheEntry*) new InternalCCacheEntry(s, client_addr);
-}
-
-void CCache::setCache(CCacheEntry* entry)
-{
-  entry->setCache(this);
 }
 
 // static members
@@ -190,7 +177,7 @@ InternalCCache::InternalCCache()
 InternalCCache::~InternalCCache()
 {
   delete m_SAMLBinding;
-  for (map<string,CCacheEntry*>::iterator i=m_hashtable.begin(); i!=m_hashtable.end(); i++)
+  for (map<string,InternalCCacheEntry*>::iterator i=m_hashtable.begin(); i!=m_hashtable.end(); i++)
     delete i->second;
 }
 
@@ -207,20 +194,24 @@ SAMLBinding* InternalCCache::getBinding(const XMLCh* bindingProt)
 CCacheEntry* InternalCCache::find(const char* key)
 {
   log->debug("Find: \"%s\"", key);
-  map<string,CCacheEntry*>::const_iterator i=m_hashtable.find(key);
+  map<string,InternalCCacheEntry*>::const_iterator i=m_hashtable.find(key);
   if (i==m_hashtable.end()) {
     log->debug("No Match found");
     return NULL;
   }
   log->debug("Match Found.");
-  return i->second;
+  return dynamic_cast<CCacheEntry*>(i->second);
 }
 
-void InternalCCache::insert(const char* key, CCacheEntry* entry)
+void InternalCCache::insert(const char* key, SAMLAuthenticationStatement *s,
+			    const char *client_addr)
 {
   log->debug("caching new entry for \"%s\"", key);
+
+  InternalCCacheEntry* entry = new InternalCCacheEntry (s, client_addr);
+  entry->setCache(this);
+
   m_hashtable[key]=entry;
-  setCache(entry);
 }
 
 void InternalCCache::remove(const char* key)
@@ -295,11 +286,6 @@ bool InternalCCacheEntry::isSessionValid(time_t lifetime, time_t timeout)
   }
   m_lastAccess=now;
   return true;
-}
-
-void InternalCCacheEntry::setCache(CCache *cache)
-{
-  m_cache = cache;
 }
 
 Iterator<SAMLAssertion*> InternalCCacheEntry::getAssertions(Resource& resource)

@@ -143,7 +143,7 @@ STConfig::STConfig(const char* app_name, const char* inifile)
 
   // Initialize the SHAR Cache
   if (!strcmp (app_name, SHIBTARGET_SHAR))
-    g_shibTargetCCache = CCache::getInstance();  
+    g_shibTargetCCache = CCache::getInstance(NULL);
 
   // Load any extensions
   string ext = "extensions";

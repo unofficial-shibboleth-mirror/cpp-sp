@@ -229,7 +229,6 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
   log.info ("Creating new session");
 
   SAMLAuthenticationStatement* as=static_cast<SAMLAuthenticationStatement*>(auth_st->clone());
-  CCacheEntry* session = CCacheEntry::getInstance (as, argp->client_addr);
 
   // Create a new cookie
   SAMLIdentifier id;
@@ -237,7 +236,7 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
   char *cookie = c.get();
 
   // Cache this session with the cookie
-  g_shibTargetCCache->insert(cookie, session);
+  g_shibTargetCCache->insert(cookie, as, argp->client_addr);
 
   // Delete the response...
   delete r;
