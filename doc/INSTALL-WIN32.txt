@@ -1,4 +1,4 @@
-7/15/03
+7/25/03
 Version 1.0.1, shib Library version "4", shibtarget Library Version "3"
 
 This release works with SAML library version "3".
@@ -18,6 +18,11 @@ archive is unpacked:
 
 You can choose which, if any, web server modules to build, in case you don't
 need or want one or more of them.
+
+To build the MySQL cache plugin, a fairly customized build of MySQL is required,
+which we haven't fully documented. At a minimum, you must build from source using
+the MySQL Visual C++ workspace, the projects must all be modified to use the
+DLL C/C++ runtime, and the USE_TLS macro must be defined for the projects.
 
 For more information about Windows builds, please read the OpenSAML
 INSTALL-WIN32.txt file.
