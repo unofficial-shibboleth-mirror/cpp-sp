@@ -92,6 +92,8 @@ void shib_sock_close (ShibSocket s, ShibSockName name);
 #define SHIBTARGET_TAG_KEYPASS	"keypass"
 #define SHIBTARGET_TAG_CALIST	"calist"
 
+#define SHIBTARGET_TAG_AAP      "aap-uri"
+
 #define SHIBTARGET_TAG_SITES	"sitesFile"
 #define SHIBTARGET_TAG_SITESCERT "sitesCertFile"
 #define SHIBTARGET_TAG_SITESREFRESH "sitesRefresh"

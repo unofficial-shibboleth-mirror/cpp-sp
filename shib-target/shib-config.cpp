@@ -156,6 +156,9 @@ void STConfig::init()
   }
 
   // Init Shib
+  if (ini->get_tag(app, SHIBTARGET_TAG_AAP, true, &tag))
+      shibConf.aapURL=tag;
+
   if (! ini->get_tag (app, SHIBTARGET_TAG_SITES, true, &tag)) {
     log.fatal("No Sites File found in configuration");
     throw runtime_error ("No Sites File found in configuration");
@@ -221,6 +224,26 @@ void STConfig::init()
     delete iter;
   }
 
+  // Register attributes based on built-in classes.
+  if (ini->exists("attributes")) {
+    ShibINI::Iterator* iter=ini->tag_iterator("attributes");
+    for (const string* attrname=iter->begin(); attrname; attrname=iter->next())
+    {
+        const string factory=ini->get("attributes",*attrname);
+        if (factory=="scoped")
+        {
+            auto_ptr<XMLCh> temp(XMLString::transcode(attrname->c_str()));
+            SAMLAttribute::regFactory(temp.get(),shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,&ScopedFactory);
+        }
+        else if (factory=="simple")
+        {
+            auto_ptr<XMLCh> temp(XMLString::transcode(attrname->c_str()));
+            SAMLAttribute::regFactory(temp.get(),shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,&SimpleFactory);
+        }
+    }
+	delete iter;
+  }
+
   // Load SAML policies.
   if (ini->exists(SHIBTARGET_POLICIES)) {
     log.debug("loading SAML policies");
@@ -254,6 +277,26 @@ STConfig::~STConfig()
   for (vector<const XMLCh*>::iterator i=policies.begin(); i!=policies.end(); i++)
     delete const_cast<XMLCh*>(*i);
     
+  // Unregister attributes based on built-in classes.
+  if (ini && ini->exists("attributes")) {
+    ShibINI::Iterator* iter=ini->tag_iterator("attributes");
+    for (const string* attrname=iter->begin(); attrname; attrname=iter->next())
+    {
+        const string factory=ini->get("attributes",*attrname);
+        if (factory=="scoped")
+        {
+            auto_ptr<XMLCh> temp(XMLString::transcode(attrname->c_str()));
+            SAMLAttribute::unregFactory(temp.get(),shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
+        }
+        else if (factory=="simple")
+        {
+            auto_ptr<XMLCh> temp(XMLString::transcode(attrname->c_str()));
+            SAMLAttribute::unregFactory(temp.get(),shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
+        }
+    }
+	delete iter;
+  }
+
   if (ini) delete ini;
   
   if (g_shibTargetCCache)
