@@ -676,8 +676,8 @@ char* get_shire_location(request_rec* r, const char* target)
         (shib_server_config*)ap_get_module_config(r->server->module_config,&shib_module);
     if (*(sc->szSHIRELocation)!='/')
         return url_encode(r,sc->szSHIRELocation);
-    char* colon=strchr(target,':');
-    char* slash=strchr(colon+3,'/');
+    const char* colon=strchr(target,':');
+    const char* slash=strchr(colon+3,'/');
     return url_encode(r,ap_pstrcat(r->pool,ap_pstrndup(r->pool,target,slash-target),
 				   sc->szSHIRELocation,NULL));
 }
