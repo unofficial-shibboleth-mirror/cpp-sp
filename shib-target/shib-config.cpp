@@ -205,7 +205,7 @@ STConfig::STConfig(const char* app_name, const char* inifile)
     ShibINI::Iterator* iter = ini->tag_iterator(SHIBTARGET_POLICIES);
 
     for (const string* str = iter->begin(); str; str = iter->next()) {
-        policies.push_back(XMLString::transcode(ini->get(ext, *str).c_str()));
+        policies.push_back(XMLString::transcode(ini->get(SHIBTARGET_POLICIES, *str).c_str()));
     }
     delete iter;
   }
