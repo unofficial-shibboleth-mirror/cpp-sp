@@ -306,6 +306,11 @@ extern SVCXPRT *svcudp_bufcreate(DOTS);
  */
 extern SVCXPRT *svctcp_create(DOTS);
 
+/*
+ * Unix FD-style rpc
+ */
+extern SVCXPRT *svcfd_create(DOTS);
+
 #ifdef __cplusplus
 };
 #endif

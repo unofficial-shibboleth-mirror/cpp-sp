@@ -42,6 +42,7 @@ svcerr_systemerr
 svcerr_weakauth
 svcraw_create
 svctcp_create
+onc_svcfd_create
 svcudp_bufcreate
 svcudp_create
 xdr_array
