@@ -186,10 +186,13 @@ bool STConfig::init(const char* schemadir, const char* config)
         m_tranLog=new FixedContextCategory(SHIBTRAN_LOGCAT);
         m_tranLog->info("opened transaction log");
         m_tranLogLock = Mutex::create();
+
+        m_rpcpool = new RPCHandlePool;
     }
     catch (...) {
         log.fatal("caught exception while loading/initializing configuration");
         delete m_ini;
+        delete m_rpcpool;
         shibConf.term();
         samlConf.term();
         return false;
@@ -205,6 +208,8 @@ void STConfig::shutdown()
     saml::NDC ndc("shutdown");
     Category& log = Category::getInstance("shibtarget.STConfig");
     log.info("shutting down the library");
+    delete m_rpcpool;
+    m_rpcpool = NULL;
     delete m_tranLogLock;
     m_tranLogLock = NULL;
     //delete m_tranLog; // This is crashing for some reason, but we're shutting down anyway.
