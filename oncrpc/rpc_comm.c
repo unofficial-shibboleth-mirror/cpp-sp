@@ -39,6 +39,7 @@
  * Mountain View, California  94043
  */
 #include <rpc/rpc.h>
+#include <stdio.h>
 /*
  * This file should only contain common data (global data) that is exported
  * by public interfaces 
@@ -92,7 +93,7 @@ struct __thr_rpc_vars* _get_thr_rpc_vars()
 
     pthread_once(&__thr_onc_control, _thr_onc_init);
     ptr = pthread_getspecific(__thr_key);
-    if (!ptr && ptr=malloc(sizeof(struct __thr_rpc_vars))) {
+    if (!ptr && (ptr=malloc(sizeof(struct __thr_rpc_vars)))) {
         memset(ptr,0,sizeof(struct __thr_rpc_vars));
         pthread_setspecific(__thr_key, ptr);
     }
@@ -107,9 +108,8 @@ void _thr_onc_init()
     pthread_key_create(&__thr_key, _thr_onc_term);
 }
 
-void _thr_onc_term(void*)
+void _thr_onc_term(void* ptr)
 {
-    void* ptr = pthread_getspecific(__thr_key);
     if (ptr)
         free(ptr);
 }
