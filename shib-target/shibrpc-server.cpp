@@ -395,18 +395,29 @@ shibrpc_new_session_2_svc(
     }
     catch (ReplayedAssertionException& e) {
       // Specific case where we have an error code.
+      if (!role) {
+          // Try and map to metadata for support purposes.
+          const IEntityDescriptor* provider=m.lookup(origin);
+          if (provider) {
+              const IIDPSSODescriptor* IDP=provider->getIDPSSODescriptor(saml::XML::SAML11_PROTOCOL_ENUM);
+              role=IDP;
+          }
+      }
       throw ShibTargetException(SHIBRPC_ASSERTION_REPLAYED, e.what(), role);
     }
     catch (SAMLException& e) {
       log.error ("caught SAML exception: %s", e.what());
       ostringstream os;
       os << e;
+      if (!role) {
+          // Try and map to metadata for support purposes.
+          const IEntityDescriptor* provider=m.lookup(origin);
+          if (provider) {
+              const IIDPSSODescriptor* IDP=provider->getIDPSSODescriptor(saml::XML::SAML11_PROTOCOL_ENUM);
+              role=IDP;
+          }
+      }
       throw ShibTargetException (SHIBRPC_SAML_EXCEPTION, os.str().c_str(), role);
-    }
-    catch (XMLException& e) {
-      log.error ("caught XML exception");
-      auto_ptr_char msg(e.getMessage());
-      throw ShibTargetException (SHIBRPC_XML_EXCEPTION, msg.get(), role);
     }
   }
   catch (ShibTargetException& e) {
@@ -429,15 +440,10 @@ shibrpc_new_session_2_svc(
   // It passes all our tests -- create a new session.
   log.info ("Creating new session");
 
-  // Clone the statement so we can store it.
-  // TODO: we need to extract the Issuer and propagate that around as the origin site along
-  // with the statement and attribute assertions.
-  SAMLAuthenticationStatement* as=static_cast<SAMLAuthenticationStatement*>(bpr.authnStatement->clone());
-
   // Create a new session key.
   string cookie = conf->getSessionCache()->generateKey();
 
-  // Cache this session, possibly including response if attributes appear present.
+  // Are attributes present?
   bool attributesPushed=false;
   Iterator<SAMLAssertion*> assertions=bpr.response->getAssertions();
   while (!attributesPushed && assertions.hasNext()) {
@@ -447,8 +453,44 @@ shibrpc_new_session_2_svc(
             attributesPushed=true;
       }
   }
-  conf->getSessionCache()->insert(cookie.c_str(), app, as, argp->client_addr, (attributesPushed ? bpr.response : NULL), role);
   
+  // Insertion into cache might fail.
+  SAMLAuthenticationStatement* as=NULL;
+  try {
+      as=static_cast<SAMLAuthenticationStatement*>(bpr.authnStatement->clone());
+      // TODO: we need to extract the Issuer and propagate that around as the origin site along
+      // with the statement and attribute assertions.
+      conf->getSessionCache()->insert(
+        cookie.c_str(),
+        app,
+        as,
+        argp->client_addr,
+        (attributesPushed ? bpr.response : NULL),
+        role
+        );
+  }
+  catch (SAMLException& e) {
+      log.error ("caught SAML exception during cache insertion: %s", e.what());
+      delete as;
+      ostringstream os;
+      os << e;
+      bpr.clear();
+      if (origin) XMLString::release(&origin);
+      ShibTargetException ex(SHIBRPC_SAML_EXCEPTION, os.str().c_str(), role);
+      set_rpc_status(&result->status, ex);
+      return TRUE;
+  }
+#ifndef _DEBUG
+  catch (...) {
+      log.error ("caught unknown exception during cache insertion");
+      delete as;
+      bpr.clear();
+      if (origin) XMLString::release(&origin);
+      set_rpc_status(&result->status, SHIBRPC_UNKNOWN_ERROR, "An unknown exception occurred");
+      return TRUE;
+  }
+#endif
+    
   // And let the user know.
   if (result->cookie) free(result->cookie);
   if (result->target) free(result->target);
