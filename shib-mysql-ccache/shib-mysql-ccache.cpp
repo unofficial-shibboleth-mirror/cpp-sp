@@ -164,7 +164,7 @@ void ShibMySQLCCache::thread_init()
   getVersion (mysql, &major, &minor);
 
   // Make sure we've got the right version
-  if (major != PLUGIN_VER_MAJOR && minor != PLUGIN_VER_MINOR) {
+  if (major != PLUGIN_VER_MAJOR || minor != PLUGIN_VER_MINOR) {
    
     // If we're capable, try upgrading on the fly...
     if (major == 0 && minor == 0) {
@@ -440,7 +440,7 @@ void ShibMySQLCCache::createDatabase(MYSQL* mysql, int major, int minor)
     log->error ("Error creating version: %s", mysql_error(mysql));
 
   if (mysql_query(mysql,
-		  "CREATE TABLE state (cookie VARCHAR(64) PRIMARY KEY, application_id VARCHAR(1024),"
+		  "CREATE TABLE state (cookie VARCHAR(64) PRIMARY KEY, application_id VARCHAR(255),"
 		  "atime DATETIME, addr VARCHAR(128), statement TEXT)"))
     log->error ("Error creating state: %s", mysql_error(mysql));
 
@@ -454,11 +454,10 @@ void ShibMySQLCCache::upgradeDatabase(MYSQL* mysql)
 {
     if (mysql_query(mysql, "DROP TABLE state")) {
         log->error("Error dropping old session state table: %s", mysql_error(mysql));
-        throw runtime_error("error dropping table");
     }
 
     if (mysql_query(mysql,
-        "CREATE TABLE state (cookie VARCHAR(64) PRIMARY KEY, application_id VARCHAR(1024),"
+        "CREATE TABLE state (cookie VARCHAR(64) PRIMARY KEY, application_id VARCHAR(255),"
        "atime DATETIME, addr VARCHAR(128), statement TEXT)")) {
         log->error ("Error creating state table: %s", mysql_error(mysql));
         throw runtime_error("error creating table");
