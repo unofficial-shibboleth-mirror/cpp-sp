@@ -215,7 +215,7 @@ public:
       throw ShibTargetException(SHIBRPC_OK, "EEP");
   }
   ~HTGroupTableApache() {}
-  bool lookup(const char *entry) { return (ap_table_get(groups, entry)); }
+  bool lookup(const char *entry) { return (ap_table_get(groups, entry)!=NULL); }
   SH_AP_TABLE* groups;
 };
 
@@ -267,7 +267,7 @@ public:
 
     string cgistr;
     char buff[HUGE_STRING_LEN];
-    ap_hard_timeout("[mod_shib] getPostData", r);
+    ap_hard_timeout("[mod_shib] getPostData", m_req);
     memset(buff, 0, sizeof(buff));
     while (ap_get_client_block(m_req, buff, sizeof(buff)-1) > 0) {
       ap_reset_timeout(m_req);
