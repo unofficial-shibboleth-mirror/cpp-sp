@@ -86,12 +86,12 @@ void shib_sock_close (ShibSocket s, ShibSockName name);
 #define SHIBTARGET_GENERAL  "general"
 #define SHIBTARGET_SHAR     "shar"
 #define SHIBTARGET_SHIRE    "shire"
-#define SHIBTARGET_RM		 "rm"
+#define SHIBTARGET_RM       "rm"
 #define SHIBTARGET_POLICIES "policies"
 
 /* configuration tags */
 #define SHIBTARGET_TAG_LOGGER   "logger"
-#define SHIBTARGET_TAG_SCHEMAS	 "schemadir"
+#define SHIBTARGET_TAG_SCHEMAS  "schemadir"
 #define SHIBTARGET_TAG_CERTFILE "certfile"
 #define SHIBTARGET_TAG_KEYFILE  "keyfile"
 #define SHIBTARGET_TAG_KEYPASS  "keypass"
@@ -101,7 +101,6 @@ void shib_sock_close (ShibSocket s, ShibSockName name);
 #define SHIBTARGET_TAG_AACONNECTTO  "AAConnectTimeout"
 #define SHIBTARGET_TAG_SAMLCOMPAT   "SAMLCompat"
 
-#define SHIBTARGET_TAG_AAP      "aap-uri"
 #define SHIBTARGET_TAG_METADATA "metadata"
 
 #define SHIBTARGET_TAG_DEFAULTLIFE  "defaultLife"

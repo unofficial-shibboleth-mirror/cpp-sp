@@ -166,9 +166,6 @@ void STConfig::init()
   }
 
   // Init Shib
-  if (ini->get_tag(app, SHIBTARGET_TAG_AAP, true, &tag))
-      shibConf.aapFile=tag;
-
   try { 
     if (!shibConf.init()) {
       log.fatal ("Failed to initialize Shib library");
