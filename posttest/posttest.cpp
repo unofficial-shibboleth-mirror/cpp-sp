@@ -154,6 +154,10 @@ int main(int argc,char* argv[])
     {
         cerr << "caught a SAML exception: " << e << endl;
     }
+    catch(SAXException& e)
+    {
+        cerr << "caught a SAX exception: "; xmlout(cerr,e.getMessage()); cerr << endl;
+    }
     catch(XMLException& e)
     {
         cerr << "caught an XML exception: "; xmlout(cerr,e.getMessage()); cerr << endl;
