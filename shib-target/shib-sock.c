@@ -66,13 +66,13 @@ shib_sock_create (ShibSocket *sock)
 int
 shib_sock_bind (ShibSocket s, ShibSockName name)
 {
-  struct sockaddr_un sun;
+  struct sockaddr_un sunaddr;
 
-  memset (&sun, 0, sizeof (sun));
-  sun.sun_family = AF_UNIX;
-  strncpy (sun.sun_path, name, UNIX_PATH_MAX);
+  memset (&sunaddr, 0, sizeof (sunaddr));
+  sunaddr.sun_family = AF_UNIX;
+  strncpy (sunaddr.sun_path, name, UNIX_PATH_MAX);
 
-  if (bind (s, (struct sockaddr *)&sun, sizeof (sun)) < 0) {
+  if (bind (s, (struct sockaddr *)&sunaddr, sizeof (sunaddr)) < 0) {
     perror ("bind");
     close (s);
     return EINVAL;
@@ -95,13 +95,13 @@ shib_sock_bind (ShibSocket s, ShibSockName name)
 int
 shib_sock_connect (ShibSocket s, ShibSockName name)
 {
-  struct sockaddr_un sun;
+  struct sockaddr_un sunaddr;
 
-  memset (&sun, 0, sizeof (sun));
-  sun.sun_family = AF_UNIX;
-  strncpy (sun.sun_path, name, UNIX_PATH_MAX);
+  memset (&sunaddr, 0, sizeof (sunaddr));
+  sunaddr.sun_family = AF_UNIX;
+  strncpy (sunaddr.sun_path, name, UNIX_PATH_MAX);
 
-  if (connect (s, (struct sockaddr *)&sun, sizeof (sun)) < 0) {
+  if (connect (s, (struct sockaddr *)&sunaddr, sizeof (sunaddr)) < 0) {
     perror ("connect");
     return 1;
   }
