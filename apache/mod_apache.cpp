@@ -265,13 +265,13 @@ public:
 		     APLOG_ERR)))|APLOG_NOERRNO, SH_AP_R(m_req),
 		  msg.c_str());
   }
-  virtual string getCookies(void) {
+  virtual string getCookies(void) const {
     const char *c = ap_table_get(m_req->headers_in, "Cookie");
     return string(c ? c : "");
   }
   virtual void setCookie(const string &name, const string &value) {
     char* val = ap_psprintf(m_req->pool, "%s=%s", name.c_str(), value.c_str());
-    ap_table_setn(m_req->err_headers_out, "Set-Cookie", val);
+    ap_table_addn(m_req->err_headers_out, "Set-Cookie", val);
   }
   virtual string getArgs(void) { return string(m_req->args ? m_req->args : ""); }
   virtual string getPostData(void) {
