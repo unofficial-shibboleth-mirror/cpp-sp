@@ -6,6 +6,11 @@
  * $Id$
  */
 
+// SAML Runtime
+#include <saml/saml.h>
+#include <shib/shib.h>
+#include <shib-target/shib-target.h>
+
 // Apache specific header files
 #include "httpd.h"
 #include "http_config.h"
@@ -15,11 +20,6 @@
 #define CORE_PRIVATE
 #include "http_core.h"
 #include "http_log.h"
-
-// SAML Runtime
-#include <saml/saml.h>
-#include <shib/shib.h>
-#include <shib-target/shib-target.h>
 
 #include <fstream>
 #include <sstream>
