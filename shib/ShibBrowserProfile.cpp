@@ -126,9 +126,11 @@ SAMLBrowserProfile::BrowserProfileResponse ShibBrowserProfile::receive(
 
     // No metadata at all.
     if (!provider) {
+        if (pIssuer)
+            *pIssuer=XMLString::replicate(bpr.assertion->getIssuer());
         auto_ptr_char issuer(bpr.assertion->getIssuer());
         auto_ptr_char nq(bpr.authnStatement->getSubject()->getNameIdentifier()->getNameQualifier());
-        log.error("assertion issuer not found in metadata (Issuer='%s', NameQualifier='%s'",
+        log.error("assertion issuer not found in metadata (Issuer='%s', NameQualifier='%s')",
             issuer.get(), (nq.get() ? nq.get() : "null"));
         bpr.clear();
         throw MetadataException("ShibBrowserProfile::receive() metadata lookup failed, unable to process assertion");
