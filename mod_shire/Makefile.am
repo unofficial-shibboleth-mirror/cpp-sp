@@ -2,7 +2,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-noinst_LTLIBRARIES = mod_shire.la
+lib_LTLIBRARIES = mod_shire.la
 
 mod_shire_la_SOURCES = mod_shire.cpp
 
