@@ -157,9 +157,9 @@ AC_TRY_LINK(
         ])
 
 # output the underlying makefiles
-WANT_SUBDIRS="shib schemas eduPerson shib-target shar test"
+WANT_SUBDIRS="shib schemas configs eduPerson shib-target shar test"
 AC_CONFIG_FILES([Makefile shib/Makefile schemas/Makefile eduPerson/Makefile \
-		            shib-target/Makefile shar/Makefile test/Makefile])
+		 configs/Makefile shib-target/Makefile shar/Makefile test/Makefile])
 
 # Much of this is taken from mod_dav.
 # The basic idea is to use configure options to control whether/which types
