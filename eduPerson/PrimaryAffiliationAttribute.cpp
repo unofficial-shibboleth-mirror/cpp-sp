@@ -75,20 +75,20 @@ PrimaryAffiliationAttribute::PrimaryAffiliationAttribute(const XMLCh* defaultSco
     m_type=new saml::QName(eduPerson::XML::EDUPERSON_NS,eduPerson::Constants::EDUPERSON_AFFILIATION_TYPE);
 }
 
-PrimaryAffiliationAttribute::PrimaryAffiliationAttribute(IDOM_Element* e) : ScopedAttribute(e) {}
+PrimaryAffiliationAttribute::PrimaryAffiliationAttribute(DOMElement* e) : ScopedAttribute(e) {}
 
-void PrimaryAffiliationAttribute::addValues(IDOM_Element* e)
+void PrimaryAffiliationAttribute::addValues(DOMElement* e)
 {
     // Our only special job is to check the type and verify at most one value.
-    IDOM_NodeList* nlist=e->getElementsByTagNameNS(saml::XML::SAML_NS,L(AttributeValue));
+    DOMNodeList* nlist=e->getElementsByTagNameNS(saml::XML::SAML_NS,L(AttributeValue));
     if (nlist && nlist->getLength()>1)
       throw InvalidAssertionException(SAMLException::RESPONDER,"PrimaryAffiliationAttribute::addValues() detected multiple attribute values");
 
-    m_type=saml::QName::getQNameAttribute(static_cast<IDOM_Element*>(nlist->item(0)),saml::XML::XSI_NS,L(type));
+    m_type=saml::QName::getQNameAttribute(static_cast<DOMElement*>(nlist->item(0)),saml::XML::XSI_NS,L(type));
     if (!m_type || XMLString::compareString(m_type->getNamespaceURI(),eduPerson::XML::EDUPERSON_NS) ||
 	XMLString::compareString(m_type->getLocalName(),eduPerson::Constants::EDUPERSON_AFFILIATION_TYPE))
         throw InvalidAssertionException(SAMLException::RESPONDER,"PrimaryAffiliationAttribute() found an invalid attribute value type");
-    addValue(static_cast<IDOM_Element*>(nlist->item(0)));
+    addValue(static_cast<DOMElement*>(nlist->item(0)));
 }
 
 PrimaryAffiliationAttribute::~PrimaryAffiliationAttribute() {}

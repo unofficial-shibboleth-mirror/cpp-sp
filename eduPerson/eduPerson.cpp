@@ -74,22 +74,22 @@ extern "C" __declspec(dllexport) BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD f
 
 #endif
 
-extern "C" SAMLAttribute* EPPNFactory(IDOM_Element* e)
+extern "C" SAMLAttribute* EPPNFactory(DOMElement* e)
 {
     return new EPPNAttribute(e);
 }
 
-extern "C" SAMLAttribute* AffiliationFactory(IDOM_Element* e)
+extern "C" SAMLAttribute* AffiliationFactory(DOMElement* e)
 {
     return new AffiliationAttribute(e);
 }
 
-extern "C" SAMLAttribute* PrimaryAffiliationFactory(IDOM_Element* e)
+extern "C" SAMLAttribute* PrimaryAffiliationFactory(DOMElement* e)
 {
     return new PrimaryAffiliationAttribute(e);
 }
 
-extern "C" SAMLAttribute* EntitlementFactory(IDOM_Element* e)
+extern "C" SAMLAttribute* EntitlementFactory(DOMElement* e)
 {
     return new EntitlementAttribute(e);
 }

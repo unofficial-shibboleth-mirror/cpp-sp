@@ -83,36 +83,36 @@ ScopedAttribute::ScopedAttribute(const XMLCh* name, const XMLCh* ns, const XMLCh
         m_values.push_back(scopes.next());
 }
 
-ScopedAttribute::ScopedAttribute(IDOM_Element* e) : SAMLAttribute(e)
+ScopedAttribute::ScopedAttribute(DOMElement* e) : SAMLAttribute(e)
 {
     // Default scope comes from subject.
-    IDOM_NodeList* nlist=
-        static_cast<IDOM_Element*>(e->getParentNode())->getElementsByTagNameNS(saml::XML::SAML_NS,L(NameIdentifier));
+    DOMNodeList* nlist=
+        static_cast<DOMElement*>(e->getParentNode())->getElementsByTagNameNS(saml::XML::SAML_NS,L(NameIdentifier));
     if (!nlist || nlist->getLength() != 1)
         throw InvalidAssertionException(SAMLException::RESPONDER,"ScopedAttribute() can't find saml:NameIdentifier in enclosing statement");
-    m_defaultScope=static_cast<IDOM_Element*>(nlist->item(0))->getAttributeNS(NULL,L(NameQualifier));
+    m_defaultScope=static_cast<DOMElement*>(nlist->item(0))->getAttributeNS(NULL,L(NameQualifier));
 }
 
 ScopedAttribute::~ScopedAttribute() {}
 
-bool ScopedAttribute::addValue(IDOM_Element* e)
+bool ScopedAttribute::addValue(DOMElement* e)
 {
     static XMLCh empty[] = {chNull};
     if (accept(e) && SAMLAttribute::addValue(e))
     {
-        IDOM_Attr* scope=e->getAttributeNodeNS(NULL,Scope);
+        DOMAttr* scope=e->getAttributeNodeNS(NULL,Scope);
         m_scopes.push_back(scope ? scope->getNodeValue() : empty);
         return true;
     }
     return false;
 }
 
-bool ScopedAttribute::accept(IDOM_Element* e) const
+bool ScopedAttribute::accept(DOMElement* e) const
 {
     IOriginSiteMapper* mapper=ShibConfig::getConfig().origin_mapper;
     Iterator<xstring> domains=mapper->getSecurityDomains(m_defaultScope.c_str());
     const XMLCh* this_scope=NULL;
-    IDOM_Attr* scope=e->getAttributeNodeNS(NULL,Scope);
+    DOMAttr* scope=e->getAttributeNodeNS(NULL,Scope);
     if (scope)
         this_scope=scope->getNodeValue();
     if (!this_scope || !*this_scope)
@@ -157,29 +157,18 @@ SAMLObject* ScopedAttribute::clone() const
     return dest;
 }
 
-IDOM_Node* ScopedAttribute::toDOM(IDOM_Document* doc) const
+DOMNode* ScopedAttribute::toDOM(DOMDocument* doc,bool xmlns) const
 {
-    // Already built?
-    if (m_root)
-        return m_root;
-
-    // If no document provided, build a new one for our use.
-    if (!doc)
-    {
-        IDOM_DOMImplementation* impl=IDOM_DOMImplementation::getImplementation();
-        doc=m_document=impl->createDocument();
-    }
-
-    SAMLAttribute::toDOM(doc);
+    SAMLAttribute::toDOM(doc,xmlns);
 
     int i=0;
-    IDOM_Node* n=m_root->getFirstChild();
+    DOMNode* n=m_root->getFirstChild();
     while (n)
     {
-        if (n->getNodeType()==IDOM_Node::ELEMENT_NODE)
+        if (n->getNodeType()==DOMNode::ELEMENT_NODE)
         {
             if (!m_scopes[i].empty() && m_scopes[i]!=m_defaultScope)
-                static_cast<IDOM_Element*>(n)->setAttributeNS(NULL,Scope,m_scopes[i].c_str());
+                static_cast<DOMElement*>(n)->setAttributeNS(NULL,Scope,m_scopes[i].c_str());
             i++;
         }
         n=n->getNextSibling();

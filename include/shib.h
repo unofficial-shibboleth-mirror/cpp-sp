@@ -80,7 +80,7 @@ namespace shibboleth
         UnsupportedProtocolException(const saml::Iterator<saml::QName>& codes, const std::string& msg) : saml::SAMLException(codes, msg) {}
         UnsupportedProtocolException(const saml::QName& code, const char* msg) : saml::SAMLException(code,msg) {}
         UnsupportedProtocolException(const saml::QName& code, const std::string& msg) : saml::SAMLException(code, msg) {}
-        UnsupportedProtocolException(IDOM_Element* e) : saml::SAMLException(e) {}
+        UnsupportedProtocolException(DOMElement* e) : saml::SAMLException(e) {}
         UnsupportedProtocolException(std::istream& in) : saml::SAMLException(in) {}
         virtual ~UnsupportedProtocolException() throw () {}
     };
