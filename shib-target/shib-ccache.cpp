@@ -342,7 +342,7 @@ void InternalCCache::cleanup()
   if (ini.get_tag (SHIBTARGET_SHAR, SHIBTARGET_TAG_CACHECLEAN, true, &tag))
     rerun_timer = atoi(tag.c_str());
   if (ini.get_tag (SHIBTARGET_SHAR, SHIBTARGET_TAG_CACHETIMEOUT, true, &tag))
-    timeout_life = atoi(tag.c_str()) * 60;
+    timeout_life = atoi(tag.c_str());
 
   if (rerun_timer <= 0)
     rerun_timer = 300;		// rerun every 5 minutes
