@@ -126,8 +126,8 @@
 					<OriginSite Name="https://example.org/shibboleth/origin">
 						<Alias>Localhost Test Deployment</Alias>
 						<Contact Type="technical" Name="Your Name Here" Email="root@localhost"/>
-						<HandleService Location="https://localhost/shibboleth/HS" Name="CN=localhost,O=Shibboleth Project,C=US"/>
-						<AttributeAuthority Location="https://localhost/shibboleth/AA" Name="CN=localhost,O=Shibboleth Project,C=US"/>
+						<HandleService Location="https://localhost/shibboleth/HS" Name="CN=localhost, O=Shibboleth Project, C=US"/>
+						<AttributeAuthority Location="https://localhost/shibboleth/AA" Name="CN=localhost, O=Shibboleth Project, C=US"/>
 						<Domain>localhost</Domain>
 					</OriginSite>
 				</SiteGroup>

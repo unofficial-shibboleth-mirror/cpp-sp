@@ -700,12 +700,11 @@ bool XMLTrust::validate(
         if (subject) {
             // The best way is a direct match to the subject DN. We should encourage this.
             // Seems that the way to do the compare is to write the X509_NAME into a BIO.
-            // Believe this will give us RFC 2253 / LDAP syntax...
             BIO* b = BIO_new(BIO_s_mem());
             if (b) {
                 BIO_set_mem_eof_return(b, 0);
-                // The DN_REV flag gives us LDAP order instead of X.500
-                int len=X509_NAME_print_ex(b,subject,0,XN_FLAG_SEP_COMMA_PLUS|XN_FLAG_DN_REV);
+                // The flags give us LDAP order instead of X.500, with a comma/space separator.
+                int len=X509_NAME_print_ex(b,subject,0,XN_FLAG_RFC2253|XN_FLAG_SEP_CPLUS_SPC);
                 if (len) {
                     BIO_flush(b);
                     string subjectstr;
