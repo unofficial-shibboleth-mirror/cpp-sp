@@ -16,5 +16,17 @@
 .DS_store
 # Simulated Subversion default ignores end here
 # The contents of the svn:ignore property on the branch root.
-/bin
-/lib
+/aclocal.m4
+/config.h.in
+/config.h
+/*.cache
+/install-sh
+/mkinstalldirs
+/missing
+/config.*
+/stamp*
+/Makefile.in
+/Makefile
+/depcomp
+/configure
+/libtool

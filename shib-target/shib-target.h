@@ -93,8 +93,8 @@ void shib_target_finalize (void);
 
 
 // SAML Runtime
-#include <saml.h>
-#include <shib.h>
+#include <saml/saml.h>
+#include <shib/shib.h>
 
 namespace shibtarget {
   class ResourcePriv;

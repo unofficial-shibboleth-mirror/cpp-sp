@@ -4,7 +4,8 @@ AUTOMAKE_OPTIONS = foreign
 
 lib_LTLIBRARIES = libshib.la
 
-pkginclude_HEADERS = shib.h
+libshibdir = $(includedir)/shib
+libshib_HEADERS = shib.h
 
 libshib_la_SOURCES = \
                     ClubShibPOSTProfile.cpp \
