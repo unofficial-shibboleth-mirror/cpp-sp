@@ -79,6 +79,10 @@
 #define SHIBT_L_QNAME(p,s) shibtarget::XML::Literals::p##_##s
 #define SHIBTRAN_LOGCAT "Shibboleth-TRANSACTION"
 
+// Controls default logging level of console tools and other situations
+// where full shibboleth.xml-based logging isn't used.
+#define SHIB_LOGGING "WARN"
+
 namespace shibtarget {
 
     // Wraps the actual RPC connection
