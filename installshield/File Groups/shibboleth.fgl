@@ -131,7 +131,7 @@ file27=..\schemas\shibboleth-trust-1.0.xsd
 
 [include\shib]
 file0=..\shib\shib.h
-file1=..\shib\shib-threads-win32.h
+file1=..\shib\shib-threads.h
 
 [TopDir]
 SubDir0=bin
