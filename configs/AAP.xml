@@ -29,4 +29,17 @@
 		</SiteRule>
 	</AttributeRule>
 
+	<!-- Basic rules to pass through any values. -->
+	<AttributeRule Name="urn:mace:eduPerson:1.0:eduPersonScopedAffiliation">
+        	<AnySite>
+			<AnyValue/>
+		</AnySite>
+	</AttributeRule>
+
+        <AttributeRule Name="urn:mace:eduPerson:1.0:eduPersonPrincipalName">
+                <AnySite>
+                        <AnyValue/>
+                </AnySite>
+        </AttributeRule>
+
 </AttributeAcceptancePolicy>
