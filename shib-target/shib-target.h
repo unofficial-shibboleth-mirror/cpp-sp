@@ -320,7 +320,7 @@ namespace shibtarget {
       NONE = 0,
       DEBUG,
       INFO,
-      ERROR,
+      ERR,
       CRIT
     };
 
