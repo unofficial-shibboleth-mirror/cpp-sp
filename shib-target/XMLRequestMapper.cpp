@@ -132,15 +132,9 @@ namespace shibtarget {
 
 IPlugIn* XMLRequestMapFactory(const DOMElement* e)
 {
-    XMLRequestMapper* m=new XMLRequestMapper(e);
-    try {
-        m->getImplementation();
-    }
-    catch (...) {
-        delete m;
-        throw;
-    }
-    return m;
+    auto_ptr<XMLRequestMapper> m(new XMLRequestMapper(e));
+    m->getImplementation();
+    return m.release();
 }
 
 short Override::acceptNode(const DOMNode* node) const
