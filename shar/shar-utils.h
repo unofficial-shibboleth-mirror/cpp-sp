@@ -82,7 +82,6 @@ private:
     shibtarget::IListener::ShibSocket sock;
     std::vector<ShibRPCProtocols> v_protos;
     shibboleth::Thread* child;
-    shibboleth::Mutex* lock;
 };
 
 struct SHARUtils

@@ -42,7 +42,7 @@ using namespace shibtarget;
 using namespace log4cpp;
 
 namespace {
-  map<Thread*,int> children;
+  map<IListener::ShibSocket,Thread*> children;
   Mutex* 	child_lock = NULL;
   CondWait*	child_wait = NULL;
   bool		running;
@@ -67,43 +67,37 @@ void* shar_client_thread (void* arg)
   return NULL;
 }
 
-SharChild::SharChild(IListener::ShibSocket& s, const Iterator<ShibRPCProtocols>& protos) : sock(s), lock(NULL), child(NULL)
+SharChild::SharChild(IListener::ShibSocket& s, const Iterator<ShibRPCProtocols>& protos) : sock(s), child(NULL)
 {
   protos.reset();
   while (protos.hasNext())
     v_protos.push_back(protos.next());
   
-  // Create the lock and then lock this child
-  lock = Mutex::create();
-  Lock tl(lock);
-
   // Create the child thread
   child = Thread::create(shar_client_thread, (void*)this);
   child->detach();
-
-  // Lock the children map and add this child
-  Lock cl(child_lock);
-  children[child] = 1;
 }
 
 SharChild::~SharChild()
 {
-  // Lock this object
-  lock->lock();
-
-  // Then lock the children map, remove this thread, signal waiters, and return
+  // Then lock the children map, remove this socket/thread, signal waiters, and return
   child_lock->lock();
-  children.erase(child);
+  children.erase(sock);
   child_lock->unlock();
   child_wait->signal();
   
-  lock->unlock();
-  delete lock;
   delete child;
 }
 
 void SharChild::run()
 {
+    // Before starting up, make sure we fully "own" this socket.
+    child_lock->lock();
+    while (children.find(sock)!=children.end())
+        child_wait->wait(child_lock);
+    children[sock] = child;
+    child_lock->unlock();
+    
   if (!svc_create())
    return;
 
@@ -199,4 +193,3 @@ void SHARUtils::fini()
   delete child_lock;
   child_lock = NULL;
 }
-
