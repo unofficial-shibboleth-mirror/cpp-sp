@@ -282,6 +282,8 @@ if test "$WANT_NSAPI" != "no"; then
   fi
 fi
 
+AC_SUBST(NSAPI_INCLUDE)
+
 # always output the Makefile, even if you don't use it
 AC_CONFIG_FILES([nsapi_shib/Makefile])
 AM_CONDITIONAL(BUILD_NSAPI,test ! "$WANT_NSAPI" = "no")
