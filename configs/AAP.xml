@@ -13,8 +13,8 @@
 		<!--
 		Optional site rule that applies to any site
 		<AnySite>
-			<Value>urn:mace:InCommon:sampleEntitlement</Value> <-- a literal test
-			<Value Type="regexp">^.+$</Value>	<-- any value
+			<Value>urn:mace:InCommon:sampleEntitlement</Value> ==== a literal test
+			<Value Type="regexp">^.+$</Value> ==== any value
 		</AnySite>
 		-->
 		
