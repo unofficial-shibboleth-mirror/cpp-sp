@@ -74,12 +74,15 @@ namespace shibboleth
     class SHIB_EXPORTS UnsupportedProtocolException : public saml::SAMLException
     {
     public:
-        explicit UnsupportedProtocolException(const char* msg) : saml::SAMLException(msg) {}
-        explicit UnsupportedProtocolException(const std::string& msg) : saml::SAMLException(msg) {}
-        explicit UnsupportedProtocolException(const saml::Iterator<saml::QName>& codes, const char* msg) : saml::SAMLException(codes,msg) {}
-        explicit UnsupportedProtocolException(const saml::Iterator<saml::QName>& codes, const std::string& msg) : saml::SAMLException(codes, msg) {}
-        explicit UnsupportedProtocolException(const saml::QName& code, const char* msg) : saml::SAMLException(code,msg) {}
-        explicit UnsupportedProtocolException(const saml::QName& code, const std::string& msg) : saml::SAMLException(code, msg) {}
+        UnsupportedProtocolException(const char* msg) : saml::SAMLException(msg) {}
+        UnsupportedProtocolException(const std::string& msg) : saml::SAMLException(msg) {}
+        UnsupportedProtocolException(const saml::Iterator<saml::QName>& codes, const char* msg) : saml::SAMLException(codes,msg) {}
+        UnsupportedProtocolException(const saml::Iterator<saml::QName>& codes, const std::string& msg) : saml::SAMLException(codes, msg) {}
+        UnsupportedProtocolException(const saml::QName& code, const char* msg) : saml::SAMLException(code,msg) {}
+        UnsupportedProtocolException(const saml::QName& code, const std::string& msg) : saml::SAMLException(code, msg) {}
+        UnsupportedProtocolException(IDOM_Element* e) : saml::SAMLException(e) {}
+        UnsupportedProtocolException(std::istream& in) : saml::SAMLException(in) {}
+        virtual ~UnsupportedProtocolException() throw () {}
     };
 
     struct SHIB_EXPORTS IOriginSiteMapper
@@ -121,6 +124,10 @@ namespace shibboleth
         XMLCh* m_issuer;
         XMLCh* m_receiver;
         int m_ttlSeconds;
+
+    private:
+        ShibPOSTProfile(const ShibPOSTProfile&) {}
+        ShibPOSTProfile& operator=(const ShibPOSTProfile&) {return *this;}
     };
 
     class SHIB_EXPORTS ClubShibPOSTProfile : public ShibPOSTProfile
