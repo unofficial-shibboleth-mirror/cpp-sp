@@ -60,7 +60,7 @@ SAMLResponse* HS()
 {
     XMLDateTime now();
     Key k(Key::RSA_PRIV,Key::PEM,"C:/shib/etc/internet2.pem");
-    const XMLCh* policies[]={Constants::POLICY_CLUBSHIB};
+    const XMLCh* policies[]={Constants::POLICY_INCOMMON};
 
     auto_ptr<XMLCh> hsname(XMLString::transcode("wayf.internet2.edu"));
     auto_ptr<XMLCh> recip(XMLString::transcode("https://shire.target.com"));
@@ -108,7 +108,7 @@ int main(int argc,char* argv[])
 //        SAMLResponse* r=HS();
 //        cout << "Generated Response: " << endl << *r << endl;
 
-        const XMLCh* policies[]={Constants::POLICY_CLUBSHIB};
+        const XMLCh* policies[]={Constants::POLICY_INCOMMON};
         auto_ptr<XMLCh> recip(XMLString::transcode("https://shire.target.com"));
         ShibPOSTProfile* p=ShibPOSTProfileFactory::getInstance(ArrayIterator<const XMLCh*>(policies),recip.get(),300);
 
