@@ -3,7 +3,7 @@ AUTOMAKE_OPTIONS = foreign
 ACLOCAL_AMFLAGS = -I .
 
 EXTRA_DIST = \
-	schemas doc isapi_shib \
+	schemas doc isapi_shib isapi_shib_gui \
 	Shibboleth.dsw libtool.m4 acx_pthread.m4 acx_rpctest.m4 depcomp config_win32.h \
     posttest/posttest.dsp \
     shibtest/shibtest.dsp
