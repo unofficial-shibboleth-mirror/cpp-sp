@@ -155,13 +155,15 @@
 
     <complexType name="OriginSiteType">
         <annotation>Origin sites add at least one handle service (with a name and optional KeyInfo), plus optional domains trusted for attribute scoping.</annotation>
-        <extension base="shib:SiteType">
-            <sequence>
-                <element name="HandleService" type="shib:AuthorityType" maxOccurs="unbounded"/>
-                <element name="AttributeAuthority" type="shib:AuthorityType" minOccurs="0" maxOccurs="unbounded"/>
-                <element name="Domain" type="shib:regexp_string" minOccurs="0" maxOccurs="unbounded"/>
-            </sequence>
-        </extension>
+        <complexContent>
+	        <extension base="shib:SiteType">
+	            <sequence>
+	                <element name="HandleService" type="shib:AuthorityType" maxOccurs="unbounded"/>
+	                <element name="AttributeAuthority" type="shib:AuthorityType" minOccurs="0" maxOccurs="unbounded"/>
+	                <element name="Domain" type="shib:regexp_string" minOccurs="0" maxOccurs="unbounded"/>
+	            </sequence>
+	        </extension>
+        </complexContent>
     </complexType>
 
     <complexType name="SiteGroupType">
@@ -184,7 +186,7 @@
 	<complexType name="KeyAuthorityType">
 		<annotation>Binds a set of keying material to one or more named system entities.</annotation>
 		<sequence>
-			<element ref="ds:KeyInfo">
+			<element ref="ds:KeyInfo"/>
 			<element name="Subject" type="shib:regexp_string" maxOccurs="unbounded"/>
 		</sequence>
 	</complexType>
