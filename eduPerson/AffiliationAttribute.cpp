@@ -68,7 +68,8 @@ using namespace eduPerson;
 using namespace std;
 
 AffiliationAttribute::AffiliationAttribute(const XMLCh* defaultScope, long lifetime,
-                                           Iterator<const XMLCh*>& scopes,Iterator<const XMLCh*>& values)
+                                           const Iterator<const XMLCh*>& scopes,
+                                           const Iterator<const XMLCh*>& values)
     : ScopedAttribute(eduPerson::Constants::EDUPERSON_AFFILIATION,
 		      shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,
 		      defaultScope,NULL,lifetime,scopes,values)

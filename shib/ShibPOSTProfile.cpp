@@ -64,7 +64,7 @@ using namespace shibboleth;
 using namespace saml;
 using namespace std;
 
-ShibPOSTProfile::ShibPOSTProfile(Iterator<const XMLCh*>& policies, IOriginSiteMapper* mapper, const XMLCh* receiver, int ttlSeconds)
+ShibPOSTProfile::ShibPOSTProfile(const Iterator<const XMLCh*>& policies, IOriginSiteMapper* mapper, const XMLCh* receiver, int ttlSeconds)
     : m_mapper(mapper), m_ttlSeconds(ttlSeconds), m_algorithm(SAMLSignedObject::RSA_SHA1), m_issuer(NULL)
 {
     if (!mapper || !receiver || !*receiver || ttlSeconds <= 0)
@@ -76,7 +76,7 @@ ShibPOSTProfile::ShibPOSTProfile(Iterator<const XMLCh*>& policies, IOriginSiteMa
         m_policies.push_back(XMLString::replicate(*policies.next()));
 }
 
-ShibPOSTProfile::ShibPOSTProfile(Iterator<const XMLCh*>& policies, const XMLCh* issuer)
+ShibPOSTProfile::ShibPOSTProfile(const Iterator<const XMLCh*>& policies, const XMLCh* issuer)
     : m_mapper(NULL), m_ttlSeconds(0), m_algorithm(SAMLSignedObject::RSA_SHA1), m_receiver(NULL)
 {
     if (!issuer || !*issuer)
@@ -161,7 +161,7 @@ SAMLResponse* ShibPOSTProfile::prepare(const XMLCh* recipient,
                                        const XMLCh* subjectIP,
                                        const XMLCh* authMethod,
                                        time_t authInstant,
-                                       Iterator<SAMLAuthorityBinding*>& bindings,
+                                       const Iterator<SAMLAuthorityBinding*>& bindings,
                                        const saml::Key& responseKey, const saml::X509Certificate* responseCert,
                                        const saml::Key* assertionKey, const saml::X509Certificate* assertionCert)
 {
@@ -193,7 +193,7 @@ bool ShibPOSTProfile::checkReplayCache(const SAMLAssertion& a)
 }
 
 bool ShibPOSTProfile::verifySignature(const SAMLSignedObject& obj, const XMLCh* signerName,
-                                      saml::Iterator<saml::X509Certificate*>& roots,
+                                      const saml::Iterator<saml::X509Certificate*>& roots,
                                       const saml::Key* knownKey)
 {
     return knownKey ? obj.verify(*knownKey) : obj.verify();

@@ -64,7 +64,7 @@ using namespace shibboleth;
 using namespace saml;
 using namespace std;
 
-ShibPOSTProfile* ShibPOSTProfileFactory::getInstance(Iterator<const XMLCh*>& policies, IOriginSiteMapper* mapper,
+ShibPOSTProfile* ShibPOSTProfileFactory::getInstance(const Iterator<const XMLCh*>& policies, IOriginSiteMapper* mapper,
                                                      const XMLCh* receiver, int ttlSeconds)
 {
     if (policies.size()!=1 || XMLString::compareString(Constants::POLICY_CLUBSHIB,*policies.next()))
@@ -73,7 +73,7 @@ ShibPOSTProfile* ShibPOSTProfileFactory::getInstance(Iterator<const XMLCh*>& pol
     return new ClubShibPOSTProfile(policies,mapper,receiver,ttlSeconds);
 }
 
-ShibPOSTProfile* ShibPOSTProfileFactory::getInstance(Iterator<const XMLCh*>& policies, const XMLCh* issuer)
+ShibPOSTProfile* ShibPOSTProfileFactory::getInstance(const Iterator<const XMLCh*>& policies, const XMLCh* issuer)
 {
     if (policies.size()!=1 || XMLString::compareString(Constants::POLICY_CLUBSHIB,*policies.next()))
         return NULL;

@@ -69,7 +69,7 @@ using namespace std;
 
 static XMLCh anyURI[]={ chLatin_a, chLatin_n, chLatin_y, chLatin_U, chLatin_R, chLatin_I, chNull };
 
-EntitlementAttribute::EntitlementAttribute(long lifetime, Iterator<const XMLCh*>& values)
+EntitlementAttribute::EntitlementAttribute(long lifetime, const Iterator<const XMLCh*>& values)
     : SAMLAttribute(eduPerson::Constants::EDUPERSON_ENTITLEMENT,
 		            shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,NULL,lifetime,values)
 {

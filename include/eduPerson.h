@@ -75,8 +75,8 @@ namespace eduPerson
     {
     public:
         ScopedAttribute(const XMLCh* name, const XMLCh* ns, const XMLCh* defaultScope, const saml::QName* type=NULL,
-                        long lifetime=0, saml::Iterator<const XMLCh*>& scopes=saml::Iterator<const XMLCh*>(),
-                        saml::Iterator<const XMLCh*>& values=saml::Iterator<const XMLCh*>());
+                        long lifetime=0, const saml::Iterator<const XMLCh*>& scopes=saml::Iterator<const XMLCh*>(),
+                        const saml::Iterator<const XMLCh*>& values=saml::Iterator<const XMLCh*>());
         ScopedAttribute(IDOM_Element* e);
         virtual ~ScopedAttribute();
 
@@ -112,8 +112,8 @@ namespace eduPerson
     {
     public:
         AffiliationAttribute(const XMLCh* defaultScope, long lifetime=0,
-                             saml::Iterator<const XMLCh*>& scopes=saml::Iterator<const XMLCh*>(),
-                             saml::Iterator<const XMLCh*>& values=saml::Iterator<const XMLCh*>());
+                             const saml::Iterator<const XMLCh*>& scopes=saml::Iterator<const XMLCh*>(),
+                             const saml::Iterator<const XMLCh*>& values=saml::Iterator<const XMLCh*>());
         AffiliationAttribute(IDOM_Element* e);
         virtual ~AffiliationAttribute();
 
@@ -135,7 +135,7 @@ namespace eduPerson
     class EDUPERSON_EXPORTS EntitlementAttribute : public saml::SAMLAttribute
     {
     public:
-        EntitlementAttribute(long lifetime=0, saml::Iterator<const XMLCh*>& values=saml::Iterator<const XMLCh*>());
+        EntitlementAttribute(long lifetime=0, const saml::Iterator<const XMLCh*>& values=saml::Iterator<const XMLCh*>());
         EntitlementAttribute(IDOM_Element* e);
         virtual ~EntitlementAttribute();
 

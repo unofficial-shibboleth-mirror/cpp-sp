@@ -69,7 +69,8 @@ using namespace std;
 
 ScopedAttribute::ScopedAttribute(const XMLCh* name, const XMLCh* ns, const XMLCh* defaultScope,
                                  const saml::QName* type, long lifetime,
-                                 saml::Iterator<const XMLCh*>& scopes,saml::Iterator<const XMLCh*>& values)
+                                 const saml::Iterator<const XMLCh*>& scopes,
+                                 const saml::Iterator<const XMLCh*>& values)
     : SAMLAttribute(name,ns,type,lifetime,values)
 {
     if (scopes.size()!=values.size())

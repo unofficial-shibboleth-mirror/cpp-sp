@@ -64,7 +64,7 @@ using namespace shibboleth;
 using namespace saml;
 using namespace std;
 
-ClubShibPOSTProfile::ClubShibPOSTProfile(Iterator<const XMLCh*>& policies, IOriginSiteMapper* mapper,
+ClubShibPOSTProfile::ClubShibPOSTProfile(const Iterator<const XMLCh*>& policies, IOriginSiteMapper* mapper,
                                          const XMLCh* receiver, int ttlSeconds)
     : ShibPOSTProfile(policies,mapper,receiver,ttlSeconds)
 {
@@ -76,7 +76,7 @@ ClubShibPOSTProfile::ClubShibPOSTProfile(Iterator<const XMLCh*>& policies, IOrig
         throw SAMLException(SAMLException::REQUESTER, "ClubShibPOSTProfile() policy array must include Club Shib");
 }
 
-ClubShibPOSTProfile::ClubShibPOSTProfile(Iterator<const XMLCh*>& policies, const XMLCh* issuer)
+ClubShibPOSTProfile::ClubShibPOSTProfile(const Iterator<const XMLCh*>& policies, const XMLCh* issuer)
     : ShibPOSTProfile(policies,issuer)
 {
     bool found=false;
@@ -97,7 +97,7 @@ SAMLResponse* ClubShibPOSTProfile::prepare(const XMLCh* recipient,
                                            const XMLCh* subjectIP,
                                            const XMLCh* authMethod,
                                            time_t authInstant,
-                                           Iterator<SAMLAuthorityBinding*>& bindings,
+                                           const Iterator<SAMLAuthorityBinding*>& bindings,
                                            const saml::Key& responseKey, const saml::X509Certificate* responseCert,
                                            const saml::Key* assertionKey, const saml::X509Certificate* assertionCert)
 {
@@ -111,7 +111,7 @@ SAMLResponse* ClubShibPOSTProfile::prepare(const XMLCh* recipient,
 }
 
 bool ClubShibPOSTProfile::verifySignature(const SAMLSignedObject& obj, const XMLCh* signerName,
-                                          saml::Iterator<saml::X509Certificate*>& roots,
+                                          const saml::Iterator<saml::X509Certificate*>& roots,
                                           const saml::Key* knownKey)
 {
     if (!ShibPOSTProfile::verifySignature(obj,signerName,roots,knownKey))
