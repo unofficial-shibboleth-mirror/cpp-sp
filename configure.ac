@@ -78,6 +78,8 @@ static SVCXPRT* xprt = NULL;]],
         	[[svc_destroy(xprt);]]),
         AC_DEFINE(HAVE_WORKING_SVC_DESTROY,1,[Define if RPC SVC macros work on this platform]),)
 	AC_LANG_POP(C++)
+else
+	AC_DEFINE(HAVE_WORKING_SVC_DESTROY,1,[Define if RPC SVC macros work on this platform])
 fi
 
 AC_ARG_WITH(dmalloc,
