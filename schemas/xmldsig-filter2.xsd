@@ -1,36 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE schema
-    [
-      <!ATTLIST schema
-        xmlns:xf CDATA #FIXED 'http://www.w3.org/2002/06/xmldsig-filter2'>
-      <!ENTITY xf 'http://www.w3.org/2002/06/xmldsig-filter2'>
-      <!ENTITY % p ''>
-      <!ENTITY % s ''>
-     ]>
-
-   <schema xmlns="http://www.w3.org/2001/XMLSchema"
-           xmlns:xf="http://www.w3.org/2002/06/xmldsig-filter2"
-           targetNamespace="http://www.w3.org/2002/06/xmldsig-filter2"
-           version="0.1" elementFormDefault="qualified">
-
-   <element name="XPath"
-            type="xf:XPathType"/>
-
-<complexType name="XPathType">
-    <simpleContent>
-      <extension base="string">
-        <attribute name="Filter">
-           <simpleType>
-             <restriction base="NOTATION">
-               <enumeration value="intersect"/>
-               <enumeration value="subtract"/>
-               <enumeration value="union"/>
-             </restriction>
-           </simpleType>
-        </attribute>
-      </extension>
-    </simpleContent>
-  </complexType>
-
-
-   </schema>
+<!DOCTYPE schema [
+    <!ATTLIST schema
+    xmlns:xf CDATA #FIXED "http://www.w3.org/2002/06/xmldsig-filter2"
+>
+    <!ENTITY xf 'http://www.w3.org/2002/06/xmldsig-filter2'>
+    <!ENTITY % p ''>
+    <!ENTITY % s ''>
+]>
+<schema targetNamespace="http://www.w3.org/2002/06/xmldsig-filter2" xmlns="http://www.w3.org/2001/XMLSchema" xmlns:xf="http://www.w3.org/2002/06/xmldsig-filter2" elementFormDefault="qualified" version="0.1">
+    <notation name="intersect" public="intersect"/>
+    <notation name="subtract" public="subtract"/>
+    <notation name="union" public="union"/>
+    <element name="XPath" type="xf:XPathType"/>
+    <complexType name="XPathType">
+        <simpleContent>
+            <extension base="string">
+                <attribute name="Filter">
+                    <simpleType>
+                        <restriction base="NOTATION">
+                            <enumeration value="intersect"/>
+                            <enumeration value="subtract"/>
+                            <enumeration value="union"/>
+                        </restriction>
+                    </simpleType>
+                </attribute>
+            </extension>
+        </simpleContent>
+    </complexType>
+</schema>
