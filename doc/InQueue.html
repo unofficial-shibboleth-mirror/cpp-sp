@@ -187,7 +187,11 @@
 			completion of this period, the organization is expected to join a
 			Federation (or some other management solution) that meets its long-term
 			operational needs.
-			</p></blockquote>
+			</p>
+			<p>By joining InQueue, an organization agrees that the Federation can list their name on the Federation web site as a member of the Federation.</p>
+			
+			<p>In joining InQueue, an organization will make a good faith effort to maintain a web page describing their use of Shibboleth. This page will be linked from the Federation member list.</p>
+			</blockquote>
 
 			<h4>2.2  Data management</h4>
 
@@ -222,14 +226,14 @@
 			<h4>2.4  Attributes</h4>
 			<blockquote><p>The InQueue 
 				Federation specifies a set of attribute definitions to support basic
-				attribute-based authorization.
-				If a Federation member sends or receives an Attribute Assertion 
+				attribute-based authorization.</p>
+				<ol>
+				<li>If a Federation member sends or receives an Attribute Assertion 
 				containing the InQueue policy uri and referencing one of the listed
 				attributes, 
 				the syntax and semantics of the associated attribute value should
 				conform 
 				to the definitions specified in the <a href="http://www.educause.edu/eduperson/">EduPerson specification 2002/10</a>
-				</p>
 
 				<ul type="circle">
 					<li>eduPersonPrincipalName</li>
@@ -237,6 +241,53 @@
 					<li>eduPersonAffiliation (expressed in a slightly different form via
 					a new attribute called eduPersonScopedAffiliation)</li>
 				</ul>
+				<li>If a Federation member sends or receives an Attribute Assertion 
+				containing the InQueue policy uri and referencing one of the listed
+				attributes, 
+				the syntax and semantics of the associated attribute value should
+				conform 
+				to the definitions specified in the relevant <a href="http://www/ietf.org">IETF</a> RFCs.
+
+				<ul type="circle">
+					<li>cn
+					<li>sn
+					<li>telephoneNumber
+					<li>title
+					<li>initials
+					<li>description
+					<li>carLicense
+					<li>departmentNumber
+					<li>displayName
+					<li>employeeNumber
+					<li>employeeType
+					<li>preferredLanguage
+					<li>manager
+					<li>roomNumber
+					<li>seeAlso
+					<li>facsimileTelephoneNumber
+					<li>street
+					<li>postOfficeBox
+					<li>postalCode
+					<li>st
+					<li>givenName
+					<li>l
+					<li>businessCategory
+					<li>ou
+					<li>physicalDeliveryOfficeName
+				</ul>
+				<li>If a Federation member sends or receives an eduPersonEntitlement Attribute Assertion 
+				containing the InQueue policy uri and containing one of the listed
+				values, 
+				the syntax and semantics of the associated attribute value should
+				conform 
+				to these definitions
+
+				<ul type="circle">
+					<li>urn:mace:incommon:entitlement:common:1
+					<p>The person possesses an eduPersonAffiliation value of faculty, staff,  or student, or qualifies as a "library walk-in".
+					
+				</ul>				
+				</ol>
 			</blockquote>
 
 			<h4>3.  Joining InQueue</h4>
@@ -264,6 +315,7 @@
 					used
 					by InQueue, then it must be submitted in Base64-encoded DER (aka
 					"PEM") format.</li>
+					<li>(optional) Briefly describe the organization's planned uses of Shibboleth.
 			</ul></blockquote>
 
 			<blockquote><p>To join InQueue, targets must <a href="mailto:shib-support@internet2.edu?subject=Shib%20Target%20Site%%0D%20%2020Application"> submit a basic application to
