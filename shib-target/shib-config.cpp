@@ -57,6 +57,8 @@
 
 #include "internal.h"
 
+#include <log4cpp/OstreamAppender.hh>
+
 using namespace std;
 using namespace log4cpp;
 using namespace saml;
@@ -92,6 +94,32 @@ ShibTargetConfig& ShibTargetConfig::getConfig()
 
 bool STConfig::init(const char* schemadir, const char* config)
 {
+    // With new build of log4cpp, we need to establish a "default"
+    // logging appender to stderr up front.
+    const char* loglevel=getenv("SHIB_LOGGING");
+    if (!loglevel)
+        loglevel = SHIB_LOGGING;    
+    Category& root = Category::getRoot();
+    if (!strcmp(loglevel,"DEBUG"))
+        root.setPriority(Priority::DEBUG);
+    else if (!strcmp(loglevel,"INFO"))
+        root.setPriority(Priority::INFO);
+    else if (!strcmp(loglevel,"NOTICE"))
+        root.setPriority(Priority::NOTICE);
+    else if (!strcmp(loglevel,"WARN"))
+        root.setPriority(Priority::WARN);
+    else if (!strcmp(loglevel,"ERROR"))
+        root.setPriority(Priority::ERROR);
+    else if (!strcmp(loglevel,"CRIT"))
+        root.setPriority(Priority::CRIT);
+    else if (!strcmp(loglevel,"ALERT"))
+        root.setPriority(Priority::ALERT);
+    else if (!strcmp(loglevel,"EMERG"))
+        root.setPriority(Priority::EMERG);
+    else if (!strcmp(loglevel,"FATAL"))
+        root.setPriority(Priority::FATAL);
+    root.setAppender(new OstreamAppender("default",&cerr));
+ 
     saml::NDC ndc("init");
     Category& log = Category::getInstance("shibtarget.STConfig");
 
