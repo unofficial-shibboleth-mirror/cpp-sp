@@ -336,6 +336,139 @@ AC_CONFIG_FILES([mod_shire/Makefile mod_shibrm/Makefile])
 
 AM_CONDITIONAL(DO_APXS_INSTALL,test -n "$APXS_INSTALL")
 
+#
+# Implement the checks of the MySQL Credential Cache
+#
+# 1) Assume the user wants MySQL; if it's not found then just continue without
+# 2) If the user specifically requested Mysql, look for it and ERROR if not found
+# 3) If the user specifically requested no-mysql, don't build it.
+#
+
+AC_CONFIG_FILES([shib-mysql-ccache/Makefile])
+
+# determine whether we should enable the mysql ccache
+enable_mysql=default
+AC_ARG_ENABLE([mysql],
+	AC_HELP_STRING([--disable-mysql], [disable the MySQL Credential Cache]))
+if test "x$enable_mysql" = "x" ; then
+   enable_mysql=yes
+fi
+
+# Are we trying to build MySQL?
+AC_MSG_CHECKING(whether to build the MySQL ccache)
+if test "$enable_mysql" = "yes" -o "$enable_mysql" = "default" ; then
+   build_mysql=yes
+   AC_MSG_RESULT(yes)
+else
+   build_mysql=no
+   AC_MSG_RESULT(no)
+fi
+
+# If we're trying to build MySQL, try to find the mysql_config program,
+# verify we've got mysql >= 4, and make sure we can build with mysqld
+if test "$build_mysql" = "yes" ; then
+   mysql_dir=""
+   AC_ARG_WITH(mysql,
+	AC_HELP_STRING([--with-mysql=PATH], [directory where mysql is installed]),
+	    [if test "$with_mysql" = no ; then
+               AC_MSG_ERROR([Try running --disable-mysql instead.])
+             elif test "$with_mysql" != yes ; then
+               mysql_dir="$with_mysql/bin"
+             fi ])
+
+   # Try to find the mysql_config program
+   AC_PATH_PROG(MYSQL_CONFIG, mysql_config, no, $mysql_dir $PATH )
+
+   if test "$MYSQL_CONFIG" = no ; then
+      if test "$enable_mysql" = yes ; then
+        AC_MSG_ERROR(Cannot find mysql_config)
+      else
+        AC_MSG_WARN(MySQL not found.  skipping.)
+      fi
+   fi
+fi
+
+# if we found mysql_config then build_mysql is 'yes'
+if test "$MYSQL_CONFIG" != no ; then
+   AC_MSG_CHECKING(for mysql version >= 4)
+   mysql_version=`$MYSQL_CONFIG --version`
+   mysql_major_version=`echo $mysql_version | awk -F. '{print $1}'`
+   mysql_version_ok=yes
+   if test $mysql_major_version -lt 4 ; then
+     mysql_version_ok=no
+     if test "$enable_mysql" = yes ; then
+       AC_MSG_ERROR(You need MySQL version >= 4, found $mysql_version)
+     fi
+     AC_MSG_RESULT(no.. skipping MySQL)
+   else
+     AC_MSG_RESULT(yes)
+   fi
+fi
+
+# if mysql_version_ok is 'yes', then we've made it this far.. ;)
+if test "$mysql_version_ok" = "yes" ; then
+   AC_MSG_CHECKING(for embedded-MySQL libraries)
+   MYSQL_LIBS=`$MYSQL_CONFIG --libmysqld-libs`
+   if test $? != 0 ; then
+      found_mysql=no
+      if test "$enable_mysql" = yes ; then
+        AC_MSG_ERROR(Could not find the MySQL Embedded-server libraries.)
+      else
+        AC_MSG_RESULT(no.. skipping MySQL)
+      fi
+   else
+      found_mysql=yes
+      AC_MSG_RESULT(yes)
+   fi
+fi
+
+# if found_mysql=yes then test that we can actually build mysql
+if test "$found_mysql" = yes ; then
+   MYSQL_CFLAGS=`$MYSQL_CONFIG --cflags`
+   MYSQL_CFLAGS=`eval echo $MYSQL_CFLAGS`
+   MYSQL_LIBS=`eval echo $MYSQL_LIBS`
+
+   save_CPPFLAGS="$CPPFLAGS"
+   CPPFLAGS="$CPPFLAGS $MYSQL_CFLAGS"
+
+   AC_CHECK_HEADER([mysql.h], [have_mysql_h=yes], [have_mysql_h=no])
+   if test "$have_mysql_h" = no -a "$enable_mysql" = yes ; then
+     AC_MSG_ERROR(unable to find MySQL header files)
+   fi
+
+   if test "$have_mysql_h" = yes ; then
+      save_LIBS="$LIBS"
+      LIBS="$LIBS $MYSQL_LIBS"
+      AC_MSG_CHECKING(if we can link againt mysql)
+      AC_TRY_LINK(
+        [#include <mysql.h>],
+        [mysql_server_init(0, NULL, NULL)],
+	[have_mysql_libs=yes],
+	[have_mysql_libs=no])
+      LIBS="$save_LIBS"
+
+      if test "$have_mysql_libs" = no ; then
+         if "$enable_mysql" = yes ; then
+            AC_MSG_ERROR([unable to link with MySQL Embedded Server Library])
+	 else
+	    AC_MSG_RESULT(no.  skipping MySQL)
+	 fi
+      fi
+   fi
+
+   CPPFLAGS="$save_CPPFLAGS"
+fi
+
+# if have_mysql_libs=yes then go ahead with building MySQL
+if test "$have_mysql_libs" = yes ; then
+   # this AC_MSG_RESULT is from above!
+   AC_MSG_RESULT(yes)
+   WANT_SUBDIRS="$WANT_SUBDIRS shib-mysql-ccache"
+   AC_SUBST(MYSQL_CFLAGS)
+   AC_SUBST(MYSQL_LIBS)
+fi
+
+
 AC_SUBST(WANT_SUBDIRS)
 
 if test -n "$APXS_CC" && test "$APXS_CC" != "$CC" ; then

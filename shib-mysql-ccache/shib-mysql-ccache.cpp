@@ -368,7 +368,9 @@ void* ShibMySQLCCache::cleanup_fcn(void* cache_p)
   ShibMySQLCCache* cache = (ShibMySQLCCache*)cache_p;
 
   // First, let's block all signals
-  Thread::mask_all_signals();
+  sigset_t sigmask;
+  sigfillset(&sigmask);
+  Thread::mask_signals(SIG_BLOCK, &sigmask, NULL);
 
   // Now run the cleanup process.
   cache->cleanup();
