@@ -60,7 +60,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include <xercesc/framework/URLInputSource.hpp>
+#include <xercesc/framework/LocalFileInputSource.hpp>
 
 using namespace shibboleth;
 using namespace saml;
@@ -77,13 +77,24 @@ ReloadableXMLFileImpl::ReloadableXMLFileImpl(const char* pathname) : m_doc(NULL)
     saml::XML::Parser p;
     try
     {
-        static XMLCh base[]={chLatin_f, chLatin_i, chLatin_l, chLatin_e, chColon, chForwardSlash, chForwardSlash, chForwardSlash, chNull};
-        URLInputSource src(base,pathname);
+        //static XMLCh base[]={chLatin_f, chLatin_i, chLatin_l, chLatin_e, chColon, chForwardSlash, chForwardSlash, chForwardSlash, chNull};
+        auto_ptr_XMLCh widenit(pathname);
+        LocalFileInputSource src(widenit.get());
         Wrapper4InputSource dsrc(&src,false);
         m_doc=p.parse(dsrc);
         m_root=m_doc->getDocumentElement();
 
         log.infoStream() << "Loaded and parsed XML file (" << pathname << ")" << CategoryStream::ENDLINE;
+    }
+    catch (XMLException& e)
+    {
+        auto_ptr_char msg(e.getMessage());
+        log.errorStream() << "Xerces error while opening configuration file: " << msg.get() << CategoryStream::ENDLINE;
+        if (m_doc) {
+            m_doc->release();
+            m_doc=NULL;
+        }
+        throw runtime_error(msg.get());
     }
     catch (SAMLException& e)
     {
@@ -115,8 +126,8 @@ ReloadableXMLFileImpl::~ReloadableXMLFileImpl()
 
 ReloadableXMLFile::ReloadableXMLFile(const DOMElement* e) : m_root(e), m_impl(NULL), m_filestamp(0), m_lock(NULL)
 {
-    static const XMLCh url[] = { chLatin_u, chLatin_r, chLatin_i, chNull };
-    const XMLCh* pathname=e->getAttributeNS(NULL,url);
+    static const XMLCh uri[] = { chLatin_u, chLatin_r, chLatin_i, chNull };
+    const XMLCh* pathname=e->getAttributeNS(NULL,uri);
     if (pathname && *pathname)
     {
         auto_ptr_char temp(pathname);
