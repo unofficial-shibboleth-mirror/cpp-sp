@@ -92,7 +92,7 @@ extern "C" void openssl_locking_callback(int mode,int n,const char *file,int lin
 #ifndef WIN32
 extern "C" unsigned long openssl_thread_id(void)
 {
-    return reinterpret_cast<unsigned long>(pthread_self());
+    return static_cast<unsigned long>(pthread_self());
 }
 #endif
 
