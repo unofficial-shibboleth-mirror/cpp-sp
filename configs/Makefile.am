@@ -17,8 +17,8 @@ pkgsysconf_DATA = \
 	rmError.html \
 	shireError.html \
 	AAP.xml \
-	sites.xml \
-	trust.xml \
+	IQ-sites.xml \
+	IQ-trust.xml \
 	inqueue.pem
 
 #
@@ -71,8 +71,8 @@ EXTRA_DIST = .cvsignore \
 	rmError.html \
 	shireError.html \
 	AAP.xml \
-	sites.xml \
-	trust.xml \
+	IQ-sites.xml \
+	IQ-trust.xml \
 	inqueue.pem \
 	shar.key \
 	shar.crt

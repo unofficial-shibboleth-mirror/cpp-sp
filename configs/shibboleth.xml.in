@@ -121,7 +121,7 @@
             
             <!-- Metadata consists of site/operational metadata, trust, revocation providers. Can be external or inline. -->
             <FederationProvider type="edu.internet2.middleware.shibboleth.common.provider.XMLMetadata"
-                uri="@-PKGSYSCONFDIR-@/sites.xml"/>
+                uri="@-PKGSYSCONFDIR-@/IQ-sites.xml"/>
             <FederationProvider type="edu.internet2.middleware.shibboleth.common.provider.XMLMetadata">
 				<SiteGroup Name="https://example.org/shibboleth" xmlns="urn:mace:shibboleth:1.0">
 					<OriginSite Name="https://example.org/shibboleth/origin">
@@ -135,10 +135,10 @@
             </FederationProvider>
             
             <TrustProvider type="edu.internet2.middleware.shibboleth.common.provider.XMLTrust"
-                uri="@-PKGSYSCONFDIR-@/trust.xml"/>
+                uri="@-PKGSYSCONFDIR-@/IQ-trust.xml"/>
             <!--
             <RevocationProvider type="edu.internet2.middleware.shibboleth.common.provider.XMLRevocation"
-                uri="@-PKGSYSCONFDIR-@/trust.xml"/>
+                uri="@-PKGSYSCONFDIR-@/IQ-trust.xml"/>
             -->
                         
             <!-- zero or more SAML Audience condition matches -->
