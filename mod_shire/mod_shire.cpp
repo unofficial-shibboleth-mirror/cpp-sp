@@ -16,9 +16,6 @@
 #include "http_core.h"
 #include "http_log.h"
 
-// For POST processing from Apache
-#include <libapreq/apache_request.h>
-
 // SAML Runtime
 #include <saml/saml.h>
 #include <shib/shib.h>
@@ -27,6 +24,10 @@
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
+
+// For POST processing from Apache
+#undef _XOPEN_SOURCE		// bombs on solaris
+#include <libapreq/apache_request.h>
 
 using namespace std;
 using namespace saml;
