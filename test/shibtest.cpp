@@ -62,7 +62,7 @@ public:
     DummyMapper() {}
     ~DummyMapper();
     virtual Iterator<xstring> getHandleServiceNames(const XMLCh* originSite) { return Iterator<xstring>(); }
-    virtual Key* getHandleServiceKey(const XMLCh* handleService) { return NULL; }
+    virtual const Key* getHandleServiceKey(const XMLCh* handleService) { return NULL; }
     virtual Iterator<pair<xstring,bool> > getSecurityDomains(const XMLCh* originSite);
     virtual const char* getTrustedRoots() { return NULL; }
 
@@ -142,7 +142,7 @@ int main(int argc,char* argv[])
         auto_ptr<XMLCh> domain(XMLString::transcode(q_param));
         auto_ptr<XMLCh> handle(XMLString::transcode(h_param));
         auto_ptr<XMLCh> resource(XMLString::transcode(r_param));
-        SAMLRequest* req=new SAMLRequest(new SAMLAttributeQuery (new SAMLSubject(handle.get(),domain.get()),resource.get()));
+        SAMLRequest* req=new SAMLRequest(Iterator<saml::QName>(),new SAMLAttributeQuery (new SAMLSubject(handle.get(),domain.get()),resource.get()));
 
         const XMLCh* policies[]={shibboleth::Constants::POLICY_CLUBSHIB};
         
