@@ -171,7 +171,11 @@ bool STConfig::init(const char* schemadir, const char* config)
 
 void STConfig::shutdown()
 {
+    saml::NDC ndc("shutdown");
+    Category& log = Category::getInstance("shibtarget.STConfig");
+    log.info("shutting down the library");
     delete m_ini;
     ShibConfig::getConfig().term();
     SAMLConfig::getConfig().term();
+    log.info("library shutdown complete");
 }
