@@ -86,7 +86,7 @@ ResourceEntry::ResourceEntry(const Resource &resource,
 
   // Build a SAML Request....
   SAMLAttributeQuery* q=new SAMLAttributeQuery(subject,resourceURL.get(),
-					       resource.getDesignators());
+					       resource.getDesignators().clone());
   SAMLRequest* req=new SAMLRequest(respond_withs,q);
 
   // Try this request against all the bindings in the AuthenticationStatement
