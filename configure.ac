@@ -152,7 +152,7 @@ AC_TRY_LINK(
         ])
 
 # output the underlying makefiles
-WANT_SUBDIRS="shib schemas configs eduPerson shib-target shar test"
+WANT_SUBDIRS="shib schemas configs shib-target eduPerson shar test"
 AC_CONFIG_FILES([Makefile shib/Makefile schemas/Makefile eduPerson/Makefile \
 		 configs/Makefile oncrpc/Makefile oncrpc/rpc/Makefile \
 		 shib-target/Makefile shar/Makefile test/Makefile])

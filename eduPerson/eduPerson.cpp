@@ -58,11 +58,13 @@
 #endif
 
 #include "../shib/shib.h"
+#include "../shib-target/shib-target.h"
 #include "eduPerson.h"
 
 using namespace std;
 using namespace saml;
 using namespace shibboleth;
+using namespace shibtarget;
 using namespace eduPerson;
 
 #ifdef WIN32
@@ -94,34 +96,93 @@ extern "C" SAMLAttribute* EntitlementFactory(DOMElement* e)
     return new EntitlementAttribute(e);
 }
 
+extern "C" SAMLAttribute* ScopedFactory(DOMElement* e)
+{
+    return new ScopedAttribute(e);
+}
+
+extern "C" SAMLAttribute* SimpleFactory(DOMElement* e)
+{
+    return new SAMLAttribute(e);
+}
+
+namespace {
+    ShibINI* ini=NULL;
+}
+
 extern "C" EDUPERSON_EXPORTS int saml_extension_init(void* context)
 {
+    ini=reinterpret_cast<shibtarget::ShibINI*>(context);
+    if (ini)
+    {
+        ShibINI::Iterator* i=ini->tag_iterator("attributes");
+        for (const string* attrname=i->begin(); attrname; attrname=i->next())
+        {
+            const string& factory=ini->get("attributes",*attrname);
+            if (factory=="scoped")
+            {
+                auto_ptr<XMLCh> temp(XMLString::transcode(attrname->c_str()));
+                SAMLAttribute::regFactory(
+                    temp.get(),shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,
+                    &ScopedFactory);
+            }
+            else if (factory=="simple")
+            {
+                auto_ptr<XMLCh> temp(XMLString::transcode(attrname->c_str()));
+                SAMLAttribute::regFactory(
+                    temp.get(),shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,
+                    &SimpleFactory);
+            }
+        }
+    }
+
     // Register extension schema and attribute factories.
     saml::XML::registerSchema(eduPerson::XML::EDUPERSON_NS,eduPerson::XML::EDUPERSON_SCHEMA_ID);
 
     SAMLAttribute::regFactory(eduPerson::Constants::EDUPERSON_PRINCIPAL_NAME,
-			                  shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,
-			                  &EPPNFactory);
+                              shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,
+                              &EPPNFactory);
     SAMLAttribute::regFactory(eduPerson::Constants::EDUPERSON_AFFILIATION,
-			                  shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,
-			                  &AffiliationFactory);
+                              shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,
+                              &AffiliationFactory);
     SAMLAttribute::regFactory(eduPerson::Constants::EDUPERSON_PRIMARY_AFFILIATION,
-			                  shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,
-			                  &PrimaryAffiliationFactory);
+                              shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,
+                              &PrimaryAffiliationFactory);
     SAMLAttribute::regFactory(eduPerson::Constants::EDUPERSON_ENTITLEMENT,
-			                  shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,
-			                  &EntitlementFactory);
+                              shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,
+                              &EntitlementFactory);
     return 0;
 }
 
 extern "C" EDUPERSON_EXPORTS void saml_extension_term()
 {
     SAMLAttribute::unregFactory(eduPerson::Constants::EDUPERSON_PRINCIPAL_NAME,
-			                    shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
+                                shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
     SAMLAttribute::unregFactory(eduPerson::Constants::EDUPERSON_AFFILIATION,
-			                    shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
+                                shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
     SAMLAttribute::unregFactory(eduPerson::Constants::EDUPERSON_PRIMARY_AFFILIATION,
-			                    shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
+                                shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
     SAMLAttribute::unregFactory(eduPerson::Constants::EDUPERSON_ENTITLEMENT,
-			                    shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
+                                shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
+
+    if (ini)
+    {
+        ShibINI::Iterator* i=ini->tag_iterator("attributes");
+        for (const string* attrname=i->begin(); attrname; attrname=i->next())
+        {
+            const string& factory=ini->get("attributes",*attrname);
+            if (factory=="scoped")
+            {
+                auto_ptr<XMLCh> temp(XMLString::transcode(attrname->c_str()));
+                SAMLAttribute::unregFactory(
+                    temp.get(),shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
+            }
+            else if (factory=="simple")
+            {
+                auto_ptr<XMLCh> temp(XMLString::transcode(attrname->c_str()));
+                SAMLAttribute::unregFactory(
+                    temp.get(),shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
+            }
+        }
+    }
 }

@@ -7,6 +7,8 @@ lib_LTLIBRARIES = libeduPerson.la
 libeduPersondir = $(includedir)/eduPerson
 libeduPerson_HEADERS = eduPerson.h
 
+libeduPerson_la_LIBADD = $(top_builddir)/shib/libshib.la $(top_builddir)/shib-target/libshib-target.la
+
 libeduPerson_la_SOURCES = \
                     eduPerson.cpp \
                     Constants.cpp \
