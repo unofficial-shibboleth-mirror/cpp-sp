@@ -57,10 +57,14 @@ public:
 
   int wait(Mutex* mutex) { return wait (dynamic_cast<MutexImpl*>(mutex)); }
   int wait(MutexImpl* mutex) { return pthread_cond_wait (&cond, &(mutex->mutex)); }
-  int timedwait(Mutex* mutex, struct timespec *abstime)
-  	{ return timedwait (dynamic_cast<MutexImpl*>(mutex), abstime); }
-  int timedwait(MutexImpl* mutex, struct timespec *abstime) 
-  	{ return pthread_cond_timedwait (&cond, &(mutex->mutex), abstime); }
+  int timedwait(Mutex* mutex, int delay_seconds)
+  	{ return timedwait (dynamic_cast<MutexImpl*>(mutex), delay_seconds); }
+  int timedwait(MutexImpl* mutex, int delay_seconds) {
+    struct timespec ts;
+    memset (&ts, 0, sizeof(ts));
+    ts.tv_sec = time(NULL) + delay_seconds;
+    return pthread_cond_timedwait (&cond, &(mutex->mutex), &ts);
+  }
   int signal() { return pthread_cond_signal (&cond); }
   int broadcast() { return pthread_cond_broadcast (&cond); }
 

@@ -45,7 +45,7 @@ namespace shibboleth {
     static CondWait* create();
 
     virtual int wait(Mutex*) = 0;
-    virtual int timedwait(Mutex*, struct timespec *abstime) = 0;
+    virtual int timedwait(Mutex*,int delay_seconds) = 0;
     virtual int signal() = 0;
     virtual int broadcast() = 0;
   };

@@ -361,11 +361,7 @@ void InternalCCache::cleanup()
 	     rerun_timer, timeout_life);
 
   while (shutdown == false) {
-    struct timespec ts;
-    memset (&ts, 0, sizeof(ts));
-    ts.tv_sec = time(NULL) + rerun_timer;
-
-    shutdown_wait->timedwait(mutex, &ts);
+    shutdown_wait->timedwait(mutex,rerun_timer);
 
     if (shutdown == true)
       break;
