@@ -1,4 +1,4 @@
-3/15/04
+4/15/04
 Version 1.2
 
 Binary distributions of the Shibboleth code are available.
@@ -70,6 +70,14 @@ are needed to get a correct build of the library to link against.
 Building the Shibboleth target libraries, shar, test programs, and Apache
 modules is more or less like building OpenSAML. You can get the code from
 CVS and run the bootstrap script if you want, or just use a source tarball.
+
+On Solaris, if you're rebuilding into a prefixed location that already
+contains a copy of the software and headers, you'll want to remove
+some of the headers to prevent extra build work when you run the make
+install command. Just do:
+
+$ rm -rf /opt/shibboleth/include/rpc
+
 With the source distribution or the results of your bootstrap:
 
 $ ./configure --prefix=/opt/shibboleth --with-log4cpp=/opt/shibboleth \
@@ -87,11 +95,19 @@ If you want to build the modules but not use apxs, you can use the
 APXS_INCLUDE, APXS_LIBEXEC, and APXS_SYSCONFDIR variables (see the apxs docs
 for some guidance on what these should be).
 
-To test your installation, you can try this:
+To test your installation, you can try the shibtest utility, which actually
+loads your configuration and attempts to obtain attributes from a Shibboleth
+Attribute Authority of your choosing. You indicate to it the "handle" of the
+principal to query, and the identifier (providerId) of the origin site,
+and it will use your configuration files to locate the proper AA.
 
 $ set LD_LIBRARY_PATH=/opt/shibboleth/lib; export LD_LIBRARY_PATH
-$ cd /opt/shibboleth
-$ bin/shibtest -d etc/shibboleth/ -h foo -q urn:mace:inqueue:example.edu -r http://www.foo.edu/
+$ /opt/shibboleth/bin/shibtest -h test-handle \
+	-f urn:mace:shibboleth:test:nameIdentifier \
+	-q urn:mace:inqueue:example.edu
 
+The example shown uses a built-in test principal, and uses the InQueue
+example origin, which is known to the target after initial installation.
 You should get some reasonably structured output back that lists some simple
-attributes. An error here is a pretty good sign there's trouble.
+attributes. amongst the logging. An error here is a pretty good sign there's
+trouble.
