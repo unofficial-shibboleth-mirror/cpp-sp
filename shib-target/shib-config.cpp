@@ -57,8 +57,6 @@
 
 #include "internal.h"
 
-#include <log4cpp/Category.hh>
-
 using namespace std;
 using namespace log4cpp;
 using namespace saml;
@@ -156,9 +154,14 @@ bool STConfig::init(const char* schemadir, const char* config)
         
         pair<bool,unsigned int> skew=m_ini->getUnsignedInt("clockSkew");
         samlConf.clock_skew_secs=skew.first ? skew.second : 180;
+        
+        m_tranLog=new FixedContextCategory(SHIBTRAN_LOGCAT);
+        m_tranLog->info("opened transaction log");
+        m_tranLogLock = Mutex::create();
     }
     catch (...) {
         log.fatal("caught exception while loading/initializing configuration");
+        delete m_ini;
         shibConf.term();
         samlConf.term();
         return false;
@@ -174,6 +177,8 @@ void STConfig::shutdown()
     saml::NDC ndc("shutdown");
     Category& log = Category::getInstance("shibtarget.STConfig");
     log.info("shutting down the library");
+    delete m_tranLogLock;
+    //delete m_tranLog; // This is crashing for some reason, but we're shutting down anyway.
     delete m_ini;
     ShibConfig::getConfig().term();
     SAMLConfig::getConfig().term();

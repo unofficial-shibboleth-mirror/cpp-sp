@@ -218,6 +218,17 @@ shibrpc_session_is_valid_1_svc(shibrpc_session_is_valid_args_1 *argp,
     entry->unlock();
     conf->getSessionCache()->remove(argp->cookie.cookie);
     set_rpc_status(&result->status, e);
+    // Transaction Logging
+    STConfig& stc=static_cast<STConfig&>(ShibTargetConfig::getConfig());
+    stc.getTransactionLog().infoStream() <<
+        "Destroyed invalid session (ID: " <<
+            argp->cookie.cookie <<
+        ") with (applicationId: " <<
+            argp->application_id <<
+        "), request was from (ClientAddress: " <<
+            argp->cookie.client_addr <<
+        ")";
+    stc.releaseTransactionLog();
     return TRUE;
   }
 
@@ -394,15 +405,35 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
   if (!attributesPushed)
     delete r;
 
-  // Delete the origin...
-  if (origin) XMLString::release(&origin);
-
   // And let the user know.
   if (result->cookie) free(result->cookie);
   result->cookie = strdup(cookie.c_str());
   set_rpc_status(&result->status, SHIBRPC_OK);
 
   log.debug("new session id: %s", cookie.c_str());
+  
+  // Transaction Logging
+  STConfig& stc=static_cast<STConfig&>(ShibTargetConfig::getConfig());
+  auto_ptr_char oname(origin);
+  auto_ptr_char hname(as->getSubject()->getNameIdentifier()->getName());
+  stc.getTransactionLog().infoStream() <<
+    "New session (ID: " <<
+        result->cookie <<
+    ") with (applicationId: " <<
+        argp->application_id <<
+    ") for principal from (IdP: " <<
+        oname.get() <<
+    ") at (ClientAddress: " <<
+        argp->client_addr <<
+    ") with (NameIdentifier: " <<
+        hname.get() <<
+    ")";
+
+  stc.releaseTransactionLog();
+
+  // Delete the origin...
+  if (origin) XMLString::release(&origin);
+
   return TRUE;
 }
 

@@ -73,9 +73,11 @@
 #include "shib-target.h"
 
 #include <log4cpp/Category.hh>
+#include <log4cpp/FixedContextCategory.hh>
 
 #define SHIBT_L(s) shibtarget::XML::Literals::s
 #define SHIBT_L_QNAME(p,s) shibtarget::XML::Literals::p##_##s
+#define SHIBTRAN_LOGCAT "Shibboleth-TRANSACTION"
 
 namespace shibtarget {
 
@@ -158,15 +160,19 @@ namespace shibtarget {
     class STConfig : public ShibTargetConfig
     {
     public:
-        STConfig() {}
+        STConfig() : m_tranLog(NULL), m_tranLogLock(NULL) {}
         ~STConfig() {}
         
         bool init(const char* schemadir, const char* config);
         void shutdown();
         
         RPCHandlePool& getRPCHandlePool() {return m_rpcpool;}
+        log4cpp::Category& getTransactionLog() { m_tranLogLock->lock(); return *m_tranLog; }
+        void releaseTransactionLog() { m_tranLogLock->unlock();}
     private:
         RPCHandlePool m_rpcpool;
+        log4cpp::FixedContextCategory* m_tranLog;
+        shibboleth::Mutex* m_tranLogLock;
         static IConfig* ShibTargetConfigFactory(const DOMElement* e);
     };
 
