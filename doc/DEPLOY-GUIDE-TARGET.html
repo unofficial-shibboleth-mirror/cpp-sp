@@ -135,7 +135,7 @@ color: #00FF00
 </center>
 <p>Shibboleth Target Deployment Guide<br>
 Shibboleth Version 1.2<br />
-April 30, 2004<br />
+May 10, 2004<br />
 <h3>This version of the deploy guide is for Shibboleth v1.2. For documentation 
 related to prior versions of Shibboleth, please consult the appropriate branch 
 in the Shibboleth CVS.</h3>
@@ -219,6 +219,7 @@ that arises.</p>
         <li><a href="#4.f."><font color="black">Using Attributes in Applications</font></a></li>
         <li><a href="#4.g."><font color="black"><span class="fixed">siterefresh</span></font></a></li>
         <li><a href="#4.h."><font color="black">MySQL Session Cache</font></a></li>
+        <li><a href="#4.i."><font color="black">Using Lazy Sessions</font></a></li>
     </ol>
     </li>
     <li>
@@ -616,7 +617,7 @@ most minor &quot;letter&quot; updates should be usable.</p>
             and <span class="fixed">libsablot.so</span> which will manifest 
             itself as segmentation faults when starting Apache. If a site wants 
             to use <span class="fixed">libphp4.so</span> and Shibboleth at the same time, 
-            then one of the following may be done:</b>
+            then one of the following may be done:</b></p>
             <ol>
                 <li>Remove the options <span class="fixed">--with-pspell</span> 
                 and <span class="fixed">--with-xslt-sablot</span> from PHP&#39;s 
@@ -624,7 +625,7 @@ most minor &quot;letter&quot; updates should be usable.</p>
                 <li>Rebuild these two modules using the same version of GCC that 
                 was used to compile Shibboleth.</li>
             </ol>
-            </p>
+        </blockquote>
         </li>
         <li><a href="http://www.apache.org/dist/httpd/">Apache 2.0.x</a>
         <blockquote>
@@ -649,13 +650,13 @@ most minor &quot;letter&quot; updates should be usable.</p>
             configuration using the <i>threads</i> and <i>shared</i> options.</p>
         </blockquote>
         </li>
-        <p>Most other required libraries are either easy to update or not found
-        on typical systems. See the <span class="fixed">INSTALL.txt</span> files
-        in the OpenSAML and Shibboleth source distributions for specific requirements
-        of a given release. The important requirements are for pthreads support and
-        shared libraries on Unix platforms. Without both, building will be hard and
-        stability unlikely.</p>
-    </ul>
+        </ul>
+    <p>Most other required libraries are either easy to update or not found on
+    typical systems. See the <span class="fixed">INSTALL.txt</span> files in the
+    OpenSAML and Shibboleth source distributions for specific requirements of a
+    given release. The important requirements are for pthreads support and
+    shared libraries on Unix platforms. Without both, building will be hard and
+    stability unlikely.</p>
     <p><b>Operating System Specific Notes:</b></p>
     <ul type="circle">
         <li>Windows NT/2000/XP/2003
@@ -893,7 +894,7 @@ most minor &quot;letter&quot; updates should be usable.</p>
             versions of IIS, checking the &quot;Script Engine&quot; box is suggested,
             as it will permit the extension to handle requests in directories with only
             script permissions assigned.</li>
-            <li type="a"><font color=#444499>(IIS 6 Only)</font>  A new Web
+            <li type="a"><font color="#444499">(IIS 6 Only)</font>  A new Web
             Service Extension must be defined for Shibboleth; without this, the
             mapping from <span class="fixed">*.shire</span> to <span
             class="fixed">isapi_shib.dll</span> won't occur and a file error
@@ -1139,7 +1140,7 @@ most minor &quot;letter&quot; updates should be usable.</p>
     <p>All elements are optional unless otherwise specified.  All attributes of an element are optional unless
     designated <span class="mandatory">mandatory</span> by a purple background.</p>
     <dl>
-        <dd class="attribute"><a name="confAAPProvider"><span class="fixed">&lt;AAPProvider <span class="mandatory">type=&quot;edu.internet2.middleware.shibboleth.target.provider.XMLAAP&quot;</span> uri=&quot;<i>pathname</i>&quot;/&gt;</span></dd>
+        <dd class="attribute"><a name="confAAPProvider"><span class="fixed">&lt;AAPProvider <span class="mandatory">type=&quot;edu.internet2.middleware.shibboleth.target.provider.XMLAAP&quot;</span> uri=&quot;<i>pathname</i>&quot;/&gt;</span></a></dd>
         <dd class="value">
         <p>This element is used to specify individual attribute acceptance policies that will apply to an application
         and may appear zero or more times within the <a href="#confApplications"><span class="fixed">Applications</span></a>
@@ -1149,7 +1150,7 @@ most minor &quot;letter&quot; updates should be usable.</p>
         element can be replaced within individual <a href="#confApplication"><span class="fixed">Application</span></a> elements.</p>
         </dd>
 
-        <dd class="attribute"><a name="confApplication"><span class="fixed">&lt;Application <span class="mandatory">id=&quot;<i>identifier</i>&quot;</span> providerId=&quot;<i>identifier</i>&quot; signRequest=&quot;<i>true/false</i>&quot; signedResponse=&quot;<i>true/false</i>&quot; signedAssertions=&quot;<i>true/false</i>&quot;&gt;</span></dd>
+        <dd class="attribute"><a name="confApplication"><span class="fixed">&lt;Application <span class="mandatory">id=&quot;<i>identifier</i>&quot;</span> providerId=&quot;<i>identifier</i>&quot; signRequest=&quot;<i>true/false</i>&quot; signedResponse=&quot;<i>true/false</i>&quot; signedAssertions=&quot;<i>true/false</i>&quot;&gt;</span></a></dd>
         <dd class="value">
         <p>Individual applications that require different attributes, session settings, metadata, etc. can be differentiated
         from the default configuration as specified in the <a href="#confApplications"><span class="fixed">Applications</span></a>
@@ -1164,7 +1165,7 @@ most minor &quot;letter&quot; updates should be usable.</p>
                 that will be used when communicating with origin sites to request authentication or attributes.
                 This value is referenced by origins when creating rules for the release of attributes to targets and will
                 often be provided to federations to facilitate origin configuration. If none is specified, the default
-                <a href="#confApplications><span class="fixed">Applications</span></a> element's
+                <a href="#confApplications"><span class="fixed">Applications</span></a> element's
                 <span class="fixed">providerId</span> applies.</li>
             <li><span class="fixed">signRequest</span>: If <span class="fixed">true</span>, the target will sign attribute
             requests that it sends to origins on behalf of this application. This is usually unnecessary, as the
@@ -1177,7 +1178,7 @@ most minor &quot;letter&quot; updates should be usable.</p>
             </ul>
         </dd>
 
-        <dd class="attribute"><a name="confApplications"><span class="fixed">&lt;Applications <span class="mandatory">id=&quot;<i>default</i>&quot; providerId=&quot;<i>identifier</i>&quot;</span> signRequest=&quot;<i>true/false</i>&quot; signedResponse=&quot;<i>true/false</i>&quot; signedAssertions=&quot;<i>true/false</i>&quot;&gt;</span></dd>
+        <dd class="attribute"><a name="confApplications"><span class="fixed">&lt;Applications <span class="mandatory">id=&quot;<i>default</i>&quot; providerId=&quot;<i>identifier</i>&quot;</span> signRequest=&quot;<i>true/false</i>&quot; signedResponse=&quot;<i>true/false</i>&quot; signedAssertions=&quot;<i>true/false</i>&quot;&gt;</span></a></dd>
         <dd class="value">
         <p>The <span class="fixed">Applications</span> element must appear once and contains default settings for requests
         handled by the target. It must contain at least one each of the <a href="#confSessions"><span class="fixed">Sessions</span></a>,
@@ -1215,14 +1216,14 @@ most minor &quot;letter&quot; updates should be usable.</p>
         <span class="fixed">shireURL</span> so that new sessions can be unambiguously mapped to a particular application.</p>
         </dd>
 
-        <dd class="attribute"><a name="confArgument"><span class="fixed">&lt;Argument&gt;<i>value</i>&lt;/Argument&gt;</span></dd>
+        <dd class="attribute"><a name="confArgument"><span class="fixed">&lt;Argument&gt;<i>value</i>&lt;/Argument&gt;</span></a></dd>
         <dd class="value">
         <p>The <span class="fixed">Argument</span> element is used in the
         <a href="#confMySQLSessionCache"><span class="fixed">MySQLSessionCache</span></a> element to specify one or more
         arguments to pass to the MySQL database engine.</p>
         </dd>
 
-        <dd class="attribute"><a name="confAttributeDesignator"><span class="fixed">&lt;saml:AttributeDesignator <span class="mandatory">AttributeName=&quot;<i>name</i>&quot; AttributeNamespace=&quot;<i>namespace</i>&quot;</span>&gt;</span></dd>
+        <dd class="attribute"><a name="confAttributeDesignator"><span class="fixed">&lt;saml:AttributeDesignator <span class="mandatory">AttributeName=&quot;<i>name</i>&quot; AttributeNamespace=&quot;<i>namespace</i>&quot;</span>&gt;</span></a></dd>
         <dd class="value">
         <p>The <span class="fixed">AttributeDesignator</span> element is used in the
         <a href="#confApplications"><span class="fixed">Applications</span></a> and
@@ -1239,7 +1240,7 @@ most minor &quot;letter&quot; updates should be usable.</p>
         it isn't possible to &quot;remove&quot; them and revert to none within a particular application.</p>
         </dd>
 
-        <dd class="attribute"><a name="confAudience"><span class="fixed">&lt;saml:Audience&gt;<i>value</i>&lt;/saml:Audience&gt;</span></dd>
+        <dd class="attribute"><a name="confAudience"><span class="fixed">&lt;saml:Audience&gt;<i>value</i>&lt;/saml:Audience&gt;</span></a></dd>
         <dd class="value">
         <p>The <span class="fixed">Audience</span> element is used in the
         <a href="#confApplications"><span class="fixed">Applications</span></a> and
@@ -1252,7 +1253,7 @@ most minor &quot;letter&quot; updates should be usable.</p>
         desired must be specified. In most cases, this element can be omitted.</p>
         </dd>
 
-        <dd class="attribute"><a name="confCAPath"><span class="fixed">&lt;CAPath&gt;<i>pathname</i>&lt;/CAPath&gt;</span></dd>
+        <dd class="attribute"><a name="confCAPath"><span class="fixed">&lt;CAPath&gt;<i>pathname</i>&lt;/CAPath&gt;</span></a></dd>
         <dd class="value">
         <p>Paired with a <a href="#confCredPath"><span class="fixed">Path</span></a> element within a
         <a href="#confFileResolver"><span class="fixed">FileResolver</span></a> element, it allows for the specification
@@ -1261,7 +1262,7 @@ most minor &quot;letter&quot; updates should be usable.</p>
         chain already.</p>
         </dd>
 
-        <dd class="attribute"><a name="confCertificate"><span class="fixed">&lt;Certificate format=&quot;<i>type</i>&quot;&gt;</span></dd>
+        <dd class="attribute"><a name="confCertificate"><span class="fixed">&lt;Certificate format=&quot;<i>type</i>&quot;&gt;</span></a></dd>
         <dd class="value">
         <p>This specifies the certificate corresponding to this set of credentials. The certificate itself must be specified
         by a <a href="#confCredPath"><span class="fixed">Path</span></a> element contained by this element. If the certificate
@@ -1272,7 +1273,7 @@ most minor &quot;letter&quot; updates should be usable.</p>
         paired with the corresponding private key using the <a href="#confKey"><span class="fixed">Key</span></a> element.</p>
         </dd>
 
-        <dd class="attribute"><a name="confCredentials"><span class="fixed">&lt;Credentials xmlns=&quot;urn:mace:shibboleth:credentials:1.0&quot;&gt;</span></dd>
+        <dd class="attribute"><a name="confCredentials"><span class="fixed">&lt;Credentials xmlns=&quot;urn:mace:shibboleth:credentials:1.0&quot;&gt;</span></a></dd>
         <dd class="value">
         <p>This element is the container for credentials used by the XML-based credentials provider with type
         &quot;edu.internet2.middleware.shibboleth.common.Credentials&quot;. These credentials are used by the target to
@@ -1280,7 +1281,7 @@ most minor &quot;letter&quot; updates should be usable.</p>
         one or more <a href="#confFileResolver"><span class="fixed">FileResolver</span></a> elements.</p>
         </dd>
 
-        <dd class="attribute"><a name="confCredentialsProvider"><span class="fixed">&lt;CredentialsProvider <span class="mandatory">type=&quot;edu.internet2.middleware.shibboleth.common.Credentials&quot;</span>&gt;</span></dd>
+        <dd class="attribute"><a name="confCredentialsProvider"><span class="fixed">&lt;CredentialsProvider <span class="mandatory">type=&quot;edu.internet2.middleware.shibboleth.common.Credentials&quot;</span>&gt;</span></a></dd>
         <dd class="value">
         <p>This element is the container for providers of credentials used by the target and is placed inside the
         <a href="#confShibbolethTargetConfig"><span class="fixed">ShibbolethTargetConfig</span></a> element. The supplied
@@ -1289,7 +1290,7 @@ most minor &quot;letter&quot; updates should be usable.</p>
         to be used by the target. Other provider types might require different content.</p>
         </dd>
 
-        <dd class="attribute"><a name="confCredentialUse"><span class="fixed">&lt;CredentialUse <span class="mandatory">TLS=&quot;<i>string</i>&quot; Signing=&quot;<i>string</i>&quot;</span>&gt;</span></dd>
+        <dd class="attribute"><a name="confCredentialUse"><span class="fixed">&lt;CredentialUse <span class="mandatory">TLS=&quot;<i>string</i>&quot; Signing=&quot;<i>string</i>&quot;</span>&gt;</span></a></dd>
         <dd class="value">
         <p>Used in the <a href="#confApplications"><span class="fixed">Applications</span></a> or
         <a href="#confApplication"><span class="fixed">Application</span></a> elements to specify the credentials used by
@@ -1300,7 +1301,7 @@ most minor &quot;letter&quot; updates should be usable.</p>
         to use for specific origins or federations.</p>
         </dd>
 
-        <dd class="attribute"><a name="confErrors"><span class="fixed">&lt;Errors <span class="mandatory">shire=&quot;<i>pathname</i>&quot; rm=&quot;<i>pathname</i>&quot; access=&quot;<i>pathname</i>&quot;</span> supportContact=&quot;<i>e-mail</i>&quot; logoLocation=&quot;<i>URL</i>&quot;/&gt;</span></dd>
+        <dd class="attribute"><a name="confErrors"><span class="fixed">&lt;Errors <span class="mandatory">shire=&quot;<i>pathname</i>&quot; rm=&quot;<i>pathname</i>&quot; access=&quot;<i>pathname</i>&quot;</span> supportContact=&quot;<i>e-mail</i>&quot; logoLocation=&quot;<i>URL</i>&quot;/&gt;</span></a></dd>
         <dd class="value">
         <p>Shibboleth is capable of displaying customized error pages based on templates and information provided by
         additional attributes in this element. These should all be customized to fit the requirements of the target application.
@@ -1324,7 +1325,7 @@ most minor &quot;letter&quot; updates should be usable.</p>
         will insert the value of that attribute.</p>
         </dd>
 
-        <dd class="attribute"><a name="confExtensions"><span class="fixed">&lt;Extensions&gt;</span></dd>
+        <dd class="attribute"><a name="confExtensions"><span class="fixed">&lt;Extensions&gt;</span></a></dd>
         <dd class="value">
         Extension libraries for one of the Shibboleth components or the entire target can be specified using this element
         depending on where it's present. It may be contained by any of the
@@ -1333,7 +1334,7 @@ most minor &quot;letter&quot; updates should be usable.</p>
         It must contain one or more <a href="#confLibrary"><span class="fixed">Library</span></a> elements.
         </dd>
 
-        <dd class="attribute"><a name="confFederationProvider"><span class="fixed">&lt;FederationProvider <span class="mandatory">type=&quot;edu.internet2.middleware.shibboleth.common.provider.XMLMetadata&quot;</span> uri=&quot;<i>pathname</i>&quot;&gt;</span></dd>
+        <dd class="attribute"><a name="confFederationProvider"><span class="fixed">&lt;FederationProvider <span class="mandatory">type=&quot;edu.internet2.middleware.shibboleth.common.provider.XMLMetadata&quot;</span> uri=&quot;<i>pathname</i>&quot;&gt;</span></a></dd>
         <dd class="value">
         <p>This element, when specified within an <a href="#confApplications"><span class="fixed">Applications</span></a>
         or <a href="#confApplication"><span class="fixed">Application</span></a> element, points to operational metadata either
@@ -1343,7 +1344,7 @@ most minor &quot;letter&quot; updates should be usable.</p>
         element can be replaced within individual <a href="#confApplication"><span class="fixed">Application</span></a> elements.</p>
         </dd>
 
-        <dd class="attribute"><a name="confFileResolver"><span class="fixed">&lt;FileResolver <span class="mandatory">Id=&quot;<i>string</i>&quot;</span>&gt;</span></dd>
+        <dd class="attribute"><a name="confFileResolver"><span class="fixed">&lt;FileResolver <span class="mandatory">Id=&quot;<i>string</i>&quot;</span>&gt;</span></a></dd>
         <dd class="value">
         <p>This element defines files used to store a private key, certificate, and certificate authorities and associates
         the set with an identifier. Placed inside the <a href="#confCredentials"><span class="fixed">Credentials</span></a>
@@ -1355,7 +1356,7 @@ most minor &quot;letter&quot; updates should be usable.</p>
         <a href="#confCertificate"><span class="fixed">Certificate</span></a> element.</p>
         </dd>
 
-        <dd class="attribute"><a name="confHost"><span class="fixed">&lt;Host scheme=&quot;<i>protocol</i>&quot; <span class="mandatory">name=&quot;<i>fqdn</i>&quot;</span> port=&quot;<i>integer</i>&quot; applicationId=&quot;<i>id</i>&quot; requireSession=&quot;<i>true/false</i>&quot; exportAssertion=&quot;<i>true/false</i>&quot;&gt;</span></dd>
+        <dd class="attribute"><a name="confHost"><span class="fixed">&lt;Host scheme=&quot;<i>protocol</i>&quot; <span class="mandatory">name=&quot;<i>fqdn</i>&quot;</span> port=&quot;<i>integer</i>&quot; applicationId=&quot;<i>id</i>&quot; requireSession=&quot;<i>true/false</i>&quot; exportAssertion=&quot;<i>true/false</i>&quot;&gt;</span></a></dd>
         <dd class="value">
         <p>Individual (real or virtual) hosts that this target protects are enumerated by <span class="fixed">Host</span> elements
         inside the <a href="#confRequestMap"><span class="fixed">RequestMap</span></a> element. If a request is processed by
@@ -1387,7 +1388,7 @@ most minor &quot;letter&quot; updates should be usable.</p>
             </ul>
         </dd>
 
-        <dd class="attribute"><a name="confImplementation"><span class="fixed">&lt;Implementation&gt;</span></dd>
+        <dd class="attribute"><a name="confImplementation"><span class="fixed">&lt;Implementation&gt;</span></a></dd>
         <dd class="value">
         <p>A container element placed inside the <a href="#confSHIRE"><span class="fixed">SHIRE</span></a> element,
         the contents of this element will vary depending on the web server or environment that this Shibboleth deployment serves.
@@ -1395,7 +1396,7 @@ most minor &quot;letter&quot; updates should be usable.</p>
         <a href="#confISAPI"><span class="fixed">ISAPI</span></a> element.</p>
         </dd>
 
-        <dd class="attribute"><a name="confISAPI"><span class="fixed">&lt;ISAPI normalizeRequest=&quot;<i>true/false</i>&quot;&gt;</span></dd>
+        <dd class="attribute"><a name="confISAPI"><span class="fixed">&lt;ISAPI normalizeRequest=&quot;<i>true/false</i>&quot;&gt;</span></a></dd>
         <dd class="value">
         <p>The configuration information for Shibboleth targets deployed on Microsoft IIS is stored inside this container element.
         This element must contain one or more <a href="#confSite"><span class="fixed">Site</span></a> elements, each of which
@@ -1406,7 +1407,7 @@ most minor &quot;letter&quot; updates should be usable.</p>
         <a href="#confImplementation"><span class="fixed">Implementation</span></a> element.</p>
         </dd>
 
-        <dd class="attribute"><a name="confKey"><span class="fixed">&lt;Key format=&quot;<i>type</i>&quot;&gt;</span></dd>
+        <dd class="attribute"><a name="confKey"><span class="fixed">&lt;Key format=&quot;<i>type</i>&quot;&gt;</span></a></dd>
         <dd class="value">
         <p>Specifies a file containing a private key to be used within a set of credentials. Valid formats are
         <span class="fixed">PEM</span> (the default), <span class="fixed">DER</span>, and <span class="fixed">PKCS12</span>.
@@ -1415,7 +1416,7 @@ most minor &quot;letter&quot; updates should be usable.</p>
         <a href="#confCredPath"><span class="fixed">Path</span></a> element.</p>
         </dd>
 
-        <dd class="attribute"><a name="confLibrary"><span class="fixed">&lt;Library <span class="mandatory">path=&quot;<i>pathname</i>&quot;</span> fatal=&quot;<i>true/false</i>&quot;/&gt;</span></dd>
+        <dd class="attribute"><a name="confLibrary"><span class="fixed">&lt;Library <span class="mandatory">path=&quot;<i>pathname</i>&quot;</span> fatal=&quot;<i>true/false</i>&quot;/&gt;</span></a></dd>
         <dd class="value">
         <p>This element defines an extension library for one of Shibboleth's components and is placed within an
         <a href="#confExtensions"><span class="fixed">Extensions</span></a> element.</p>
@@ -1426,7 +1427,7 @@ most minor &quot;letter&quot; updates should be usable.</p>
             </ul>
         </dd>
 
-        <dd class="attribute"><a name="confListener"><span class="fixed">&lt;Listener <span class="mandatory">type=&quot;<i>string</i>&quot;</span>&gt;</span></dd>
+        <dd class="attribute"><a name="confListener"><span class="fixed">&lt;Listener <span class="mandatory">type=&quot;<i>string</i>&quot;</span>&gt;</span></a></dd>
         <dd class="value">
         <p>Specifies a pluggable implementation of a mechanism for communication between the web server and SHAR,
         specified in the <span class="fixed">type</span> attribute. This element is placed within the
@@ -1435,7 +1436,7 @@ most minor &quot;letter&quot; updates should be usable.</p>
         <a href="#confUnixListener"><span class="fixed">UnixListener</span></a> elements.</p>
         </dd>
 
-        <dd class="attribute"><a name="confMemorySessionCache"><span class="fixed">&lt;MemorySessionCache AAConnectTimeout=&quot;<i>seconds</i>&quot; AATimeout=&quot;<i>seconds</i>&quot; cacheTimeout=&quot;<i>seconds</i>&quot; cleanupInterval=&quot;<i>seconds</i>&quot; defaultLifetime=&quot;<i>seconds</i>&quot; propagateErrors=&quot;<i>true/false</i>&quot; retryInterval=&quot;<i>seconds</i>&quot; strictValidity=&quot;<i>true/false</i>&quot;/&gt;</span></dd>
+        <dd class="attribute"><a name="confMemorySessionCache"><span class="fixed">&lt;MemorySessionCache AAConnectTimeout=&quot;<i>seconds</i>&quot; AATimeout=&quot;<i>seconds</i>&quot; cacheTimeout=&quot;<i>seconds</i>&quot; cleanupInterval=&quot;<i>seconds</i>&quot; defaultLifetime=&quot;<i>seconds</i>&quot; propagateErrors=&quot;<i>true/false</i>&quot; retryInterval=&quot;<i>seconds</i>&quot; strictValidity=&quot;<i>true/false</i>&quot;/&gt;</span></a></dd>
         <dd class="value">
         <p>Shibboleth will cache sessions and received attributes in memory if this element is found in the
         <a href="#confSHAR"><span class="fixed">SHAR</span></a> element. This element is mutually exclusive with the
@@ -1464,7 +1465,7 @@ most minor &quot;letter&quot; updates should be usable.</p>
             </ul>
         </dd>
 
-        <dd class="attribute"><a name="confMySQLSessionCache"><span class="fixed">&lt;MySQLSessionCache mysqlTimeout=&quot;<i>seconds</i>&quot;/&gt;</span></dd>
+        <dd class="attribute"><a name="confMySQLSessionCache"><span class="fixed">&lt;MySQLSessionCache mysqlTimeout=&quot;<i>seconds</i>&quot;/&gt;</span></a></dd>
         <dd class="value">
         <p>Shibboleth will back the memory cache of sessions using an embedded MySQL database if this element is found
         in the <a href="#confSHAR"><span class="fixed">SHAR</span></a> element. Arguments may be passed directly to
@@ -1478,7 +1479,7 @@ most minor &quot;letter&quot; updates should be usable.</p>
             </ul>
         </dd>
 
-        <dd class="attribute">(RequestMap) <a name="confPath"><span class="fixed">&lt;Path <span class="mandatory">name=&quot;<i>pathname</i>&quot;</span> applicationId=&quot;<i>id</i>&quot; requireSession=&quot;<i>true/false</i>&quot; exportAssertion=&quot;<i>true/false</i>&quot;&gt;</span></dd>
+        <dd class="attribute">(RequestMap) <a name="confPath"><span class="fixed">&lt;Path <span class="mandatory">name=&quot;<i>pathname</i>&quot;</span> applicationId=&quot;<i>id</i>&quot; requireSession=&quot;<i>true/false</i>&quot; exportAssertion=&quot;<i>true/false</i>&quot;&gt;</span></a></dd>
         <dd class="value">
         <p>This element allows for different application identifiers and session handling to be defined iteratively for
         subdirectories or documents within a host. Requests are processed on a best-match basis, with the innermost
@@ -1501,21 +1502,21 @@ most minor &quot;letter&quot; updates should be usable.</p>
             </ul>
         </dd>
 
-        <dd class="attribute">(Credential) <a name="confCredPath"><span class="fixed">&lt;Path&gt;<i>pathname</i>&lt;/Path&gt;</span></dd>
+        <dd class="attribute">(Credential) <a name="confCredPath"><span class="fixed">&lt;Path&gt;<i>pathname</i>&lt;/Path&gt;</span></a></dd>
         <dd class="value">
         <p>Placed inside the <a href="#confKey"><span class="fixed">Key</span></a> and
         <a href="#confCertificate"><span class="fixed">Certificate</span></a> elements to specify the pathname of the file
         containing the credential.</p>
         </dd>
 
-        <dd class="attribute"><a name="confRelyingParty"><span class="fixed">&lt;RelyingParty <span class="mandatory">name=&quot;<i>string</i>&quot; TLS=&quot;<i>string</i>&quot; Signing=&quot;<i>string</i>&quot;</span></span>&gt;</dd>
+        <dd class="attribute"><a name="confRelyingParty"><span class="fixed">&lt;RelyingParty <span class="mandatory">name=&quot;<i>string</i>&quot; TLS=&quot;<i>string</i>&quot; Signing=&quot;<i>string</i>&quot;</span>&gt;</span></a></dd>
         <dd class="value"><p>One or more <span class="fixed">RelyingParty</span> elements may be contained by a <a href="#confCredentialUse"><span class="fixed">CredentialUse</span></a> element to enumerate relying parties for which a distinct set of credentials should be used. The <span class="fixed">TLS</span> and <span class="fixed">Signing</span> attribute values reference the identifiers of credential resolvers defined in <a href="#confCredentialsProvider"><span class="fixed">CredentialsProvider</span></a> elements.</p>
 <ul>
 <li class="mandatory"><span class="fixed">name</span>: Identifies the origin site or group of sites to which the credentials specified in the element apply.  This is used to match the providerId sent within attribute assertions from origin sites against a set of "groups" based on metadata.</li>
 </ul>
 </dd>
 
-        <dd class="attribute"><a name="confRequestMap"><span class="fixed">&lt;RequestMap <span class="mandatory">applicationId=&quot;<i>default</i>&quot;</span> requireSession=&quot;<i>true/false</i>&quot; exportAssertion=&quot;<i>true/false</i>&quot;&gt;</span></dd>
+        <dd class="attribute"><a name="confRequestMap"><span class="fixed">&lt;RequestMap <span class="mandatory">applicationId=&quot;<i>default</i>&quot;</span> requireSession=&quot;<i>true/false</i>&quot; exportAssertion=&quot;<i>true/false</i>&quot;&gt;</span></a></dd>
         <dd class="value">
         <p>The <span class="fixed">RequestMap</span> element is a container holding
         <a href="#confHost"><span class="fixed">Host</span></a> and <a href="#confPath"><span class="fixed">Path</span></a>
@@ -1539,7 +1540,7 @@ most minor &quot;letter&quot; updates should be usable.</p>
             </ul>
         </dd>
 
-        <dd class="attribute"><a name="confRequestMapProvider"><span class="fixed">&lt;RequestMapProvider <span class="mandatory">type=&quot;edu.internet2.middleware.shibboleth.target.provider.XMLRequestMap&quot;</span> uri=&quot;<i>pathname</i>&quot;&gt;</span></dd>
+        <dd class="attribute"><a name="confRequestMapProvider"><span class="fixed">&lt;RequestMapProvider <span class="mandatory">type=&quot;edu.internet2.middleware.shibboleth.target.provider.XMLRequestMap&quot;</span> uri=&quot;<i>pathname</i>&quot;&gt;</span></a></dd>
         <dd class="value">
         <p>This element specifies a request mapper that defines how Shibboleth will handle sessions and other behavior
         for a given request. For the built-in type &quot;edu.internet2.middleware.shibboleth.target.provider.XMLRequestMap&quot;,
@@ -1547,7 +1548,7 @@ most minor &quot;letter&quot; updates should be usable.</p>
         the <span class="fixed">uri</span> attribute must contain the local pathname of an XML file containing one.</p>
         </dd>
 
-        <dd class="attribute"><a name="confRevocationProvider"><span class="fixed">&lt;RevocationProvider <span class="mandatory">type=&quot;edu.internet2.middleware.shibboleth.common.provider.XMLRevocation&quot;</span> uri=&quot;<i>pathname</i>&quot;&gt;</span></dd>
+        <dd class="attribute"><a name="confRevocationProvider"><span class="fixed">&lt;RevocationProvider <span class="mandatory">type=&quot;edu.internet2.middleware.shibboleth.common.provider.XMLRevocation&quot;</span> uri=&quot;<i>pathname</i>&quot;&gt;</span></a></dd>
         <dd class="value">
         <p>This element, when specified within an <a href="#confApplications"><span class="fixed">Applications</span></a>
         or <a href="#confApplication"><span class="fixed">Application</span></a> element, points to revocation information either
@@ -1557,7 +1558,7 @@ most minor &quot;letter&quot; updates should be usable.</p>
         element can be replaced within individual <a href="#confApplication"><span class="fixed">Application</span></a> elements.</p>
         </dd>
         
-        <dd class="attribute"><a name="confSessionCache"><span class="fixed">&lt;SessionCache <span class="mandatory">type=&quot;<i>string</i>&quot;</span>&gt;</span></dd>
+        <dd class="attribute"><a name="confSessionCache"><span class="fixed">&lt;SessionCache <span class="mandatory">type=&quot;<i>string</i>&quot;</span>&gt;</span></a></dd>
         <dd class="value">
         <p>Specifies a pluggable session cache implementation of the specified <span class="fixed">type</span>. This element
         is placed within the <a href="#confSHAR"><span class="fixed">SHAR</span></a> element and is mutually exclusive with
@@ -1575,7 +1576,7 @@ lifetime=&quot;<i>seconds</i>&quot;
 timeout=&quot;<i>seconds</i>&quot;
 checkAddress=&quot;<i>true/false</i>&quot;
 cookieName=&quot;<i>URL</i>&quot;
-cookieProps=&quot;<i>URL</i>&quot;&gt;</span></dd>
+cookieProps=&quot;<i>URL</i>&quot;&gt;</span></a></dd>
         <dd class="value">
         <p>Configuration parameters that affect the way Shibboleth handles sessions for an individual application are bundled
         in this element, which must be included in each <a href="#confApplication"><span class="fixed">Application</span></a>
@@ -1621,7 +1622,7 @@ cookieProps=&quot;<i>URL</i>&quot;&gt;</span></dd>
             </ul>
         </dd>
 
-        <dd class="attribute"><a name="confSHAR"><span class="fixed">&lt;SHAR logger=&quot;<i>pathname</i>&quot;&gt;</span></dd>
+        <dd class="attribute"><a name="confSHAR"><span class="fixed">&lt;SHAR logger=&quot;<i>pathname</i>&quot;&gt;</span></a></dd>
         <dd class="value">
         <p>This is the container element for configuration information pertaining to the SHAR, the target component responsible
         for most attribute and session processing. Its single attribute, <span class="fixed">logger</span>, points to a
@@ -1636,7 +1637,7 @@ cookieProps=&quot;<i>URL</i>&quot;&gt;</span></dd>
         information into a MySQL database.</p>
         </dd>
 
-        <dd class="attribute"><a name="confShibbolethTargetConfig"><span class="fixed">&lt;ShibbolethTargetConfig clockSkew=&quot;integer&quot;&gt;</span></dd>
+        <dd class="attribute"><a name="confShibbolethTargetConfig"><span class="fixed">&lt;ShibbolethTargetConfig clockSkew=&quot;integer&quot;&gt;</span></a></dd>
         <dd class="value">
         <p>This is the root element for target configuration and must be present once and only once. It must always contain a
         <a href="#confSHAR"><span class="fixed">SHAR</span></a> element, a
@@ -1650,7 +1651,7 @@ cookieProps=&quot;<i>URL</i>&quot;&gt;</span></dd>
             </ul>
         </dd>
 
-        <dd class="attribute"><a name="confSHIRE"><span class="fixed">&lt;SHIRE logger=&quot;<i>pathname</i>&quot;&gt;</span></dd>
+        <dd class="attribute"><a name="confSHIRE"><span class="fixed">&lt;SHIRE logger=&quot;<i>pathname</i>&quot;&gt;</span></a></dd>
         <dd class="value">
         <p>This is the container element for configuration information pertaining to the SHIRE, the part of the target that
         integrates into the web server environment. Its single attribute, <span class="fixed">logger</span>, points to a
@@ -1663,13 +1664,13 @@ cookieProps=&quot;<i>URL</i>&quot;&gt;</span></dd>
         which provides fine-grained control over aspects of target behavior at a host, path, or document level.</p>
         </dd>
 
-        <dd class="attribute"><a name="confSite"><span class="fixed">&lt;Site <span class="mandatory">id=&quot;<i>INSTANCE_ID</i>&quot; host=&quot;<i>fqdn</i>&quot;</span> scheme=&quot;<i>http/https</i>&quot; port=&quot;<i>integer</i>&quot;&gt;</span></dd>
+        <dd class="attribute"><a name="confSite"><span class="fixed">&lt;Site <span class="mandatory">id=&quot;<i>INSTANCE_ID</i>&quot; host=&quot;<i>fqdn</i>&quot;</span> scheme=&quot;<i>http/https</i>&quot; port=&quot;<i>integer</i>&quot;&gt;</span></a></dd>
         <dd class="value">
         <p>This element is placed in the <a href="#confISAPI"><span class="fixed">ISAPI</span></a> element to specify a
         mapping from individual instance ID's to the corresponding host, port, and scheme.</p>
         </dd>
 
-        <dd class="attribute"><a name="confTCPListener"><span class="fixed">&lt;TCPListener <span class="mandatory">address=&quot;<i>pathname</i>&quot;  port=&quot;<i>integer</i>&quot;</span> acl=&quot;<i>ip</i>&quot;&gt;</span></dd>
+        <dd class="attribute"><a name="confTCPListener"><span class="fixed">&lt;TCPListener <span class="mandatory">address=&quot;<i>pathname</i>&quot;  port=&quot;<i>integer</i>&quot;</span> acl=&quot;<i>ip</i>&quot;&gt;</span></a></dd>
         <dd class="value">
         <p>This element is placed within the <a href="#confSHAR"><span class="fixed">SHAR</span></a> element and is mutually
         exclusive with the <a href="#confUnixListener"><span class="fixed">UnixListener</span></a> and
@@ -1683,7 +1684,7 @@ cookieProps=&quot;<i>URL</i>&quot;&gt;</span></dd>
             </ul>
         </dd>
 
-        <dd class="attribute"><a name="confTrustProvider"><span class="fixed">&lt;TrustProvider <span class="mandatory">type=&quot;edu.internet2.middleware.shibboleth.common.provider.XMLTrust&quot;</span> uri=&quot;<i>pathname</i>&quot;&gt;</span></dd>
+        <dd class="attribute"><a name="confTrustProvider"><span class="fixed">&lt;TrustProvider <span class="mandatory">type=&quot;edu.internet2.middleware.shibboleth.common.provider.XMLTrust&quot;</span> uri=&quot;<i>pathname</i>&quot;&gt;</span></a></dd>
         <dd class="value">
         <p>This element, when specified within an <a href="#confApplications"><span class="fixed">Applications</span></a>
         or <a href="#confApplication"><span class="fixed">Application</span></a> element, points to trust metadata either
@@ -1693,7 +1694,7 @@ cookieProps=&quot;<i>URL</i>&quot;&gt;</span></dd>
         element can be replaced within individual <a href="#confApplication"><span class="fixed">Application</span></a> elements.</p>
         </dd>
 
-        <dd class="attribute"><a name="confUnixListener"><span class="fixed">&lt;UnixListener address=&quot;<i>pathname</i>&quot;&gt;</span></dd>
+        <dd class="attribute"><a name="confUnixListener"><span class="fixed">&lt;UnixListener address=&quot;<i>pathname</i>&quot;&gt;</span></a></dd>
         <dd class="value">
         <p>Use this element to specify a UNIX domain socket located at the <span class="fixed">pathname</span> specified in
         the <span class="fixed">address</span> attribute at which the SHAR should listen for requests. This element must be
@@ -1859,9 +1860,9 @@ cookieProps=&quot;<i>URL</i>&quot;&gt;</span></dd>
     are used.</p>
     <p>To require a session, either the Apache command, <span class="fixed">ShibRequireSession On</span>,
     or the <span class="fixed">requireSession</span> boolean XML attribute on the
-    <a href="#confRequestMap><span class="fixed">RequestMap</span></a>,
-    <a href="#confHost><span class="fixed">Host</span></a>, or
-    <a href="#confPath><span class="fixed">Path</span></a> elements in
+    <a href="#confRequestMap"><span class="fixed">RequestMap</span></a>,
+    <a href="#confHost"><span class="fixed">Host</span></a>, or
+    <a href="#confPath"><span class="fixed">Path</span></a> elements in
     <span class="fixed">shibboleth.xml</span> can be used. Both approaches are equivalent, and
     using either one to require a session will supersede a false or absent setting of the other type.</p>
     <p>As an example, the following commands will require Shibboleth authentication for a resource:</p>
@@ -1928,8 +1929,7 @@ cookieProps=&quot;<i>URL</i>&quot;&gt;</span></dd>
                 deferring real policy to an application.</p>
             </blockquote>
             </li>
-            <p><span class="fixed">user</span></p>
-            <blockquote>
+            <li><span class="fixed">user</span><blockquote>
                 <p>A space-delimited list of values, such as from the
                 <span class="fixed">urn:mace:dir:attribute-def:eduPersonPrincipalName</span> 
                 attribute. Actually, any attribute can be mapped to REMOTE_USER, 
@@ -2299,11 +2299,45 @@ cookieProps=&quot;<i>URL</i>&quot;&gt;</span></dd>
         </blockquote>
         <p>which set the message file path and the location of the cache's 
         database files respectively. Make sure the data directory exists before 
-        starting the SHAR if you change this path.
-    </dl>
+        starting the SHAR if you change this path.</p>
 </blockquote>
-<p><br>
-</p>
+<h4><a name="4.i."></a>4.i. Using Lazy Sessions</h4>
+<blockquote>
+    <p><b>For a background on sessions in Shibboleth, and a description of what
+    a lazy session is and why it would be useful, consult <a href="#1.g">section
+    1.g</a>.</b></p>
+    <p>This section describes how an application can trigger the establishment
+    of a Shibboleth session and optionally receive attributes once its internal
+    logic decides this is necessary.  It assumes the application is protected
+    using lazy sessions because the <span class="fixed">RequireSession</span>
+    attribute of the <a href="#confPath"><span class="fixed">Path</span></a> or
+    <a href="#confPath"><span class="fixed">Host</span></a> element protecting
+    it is set to <span class="fixed">false</span>.  This application must be
+    aware of two pieces of information:</p>
+    <ul>
+      <li>The URL that should be accessed after the session is established;
+      frequently, this will be the application's own URL; and</li>
+      <li>The URL of the SHIRE associated with the <a
+      href="#confApplication"><span class="fixed">Application</span></a>
+      containing the URL to be accessed(contained within the corresponding <a
+      href="#confSessions"><span class="fixed">Sessions</span></a>
+      element).</li>
+    </ul>
+    <p>These two pieces of information must be combined by the application to an
+    appropriately formed URL to trigger session initiation as follows.  To
+    request a session, the application returns an HTTP redirect that sends the
+    browser to the SHIRE URL with a parameter, <span
+    class="fixed">target</span>, containing the URL of the resource to return to
+    with a session.  This will often be the URL that's triggering the redirect. 
+    The SHIRE will generate the redirect to the WAYF and the rest proceeds as a
+    standard Shibboleth flow.  This combined URL takes the form: <span class="fixed">https://<i>shireURL</i>?target=<i>applicationURL</i></span>.</p>
+    <p>For example, if an application located at <span
+    class="fixed">https://foo.com/portal</span> presents a page with an option
+    to login, it could respond to the login button by redirecting the browser to
+    <span
+    class="fixed">https://foo.com/Shibboleth.shire?target=https%3A%2F%2Ffoo.com%2Fportal</span>.</p>
+
+</blockquote>
 <hr>
 <h3><a name="5."></a>5. Troubleshooting</h3>
 <p>This section provides basic information about testing Shibboleth targets. 
