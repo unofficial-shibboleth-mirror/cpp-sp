@@ -648,9 +648,9 @@ SAMLResponse* InternalCCacheEntry::getNewResponse()
     
     log->info("trying to get new attributes for session (ID=%s)", m_id.c_str());
 
+    // Caller must be holding the config lock.
     // Lookup application for session to get providerId and attributes to request.
     IConfig* conf=ShibTargetConfig::getConfig().getINI();
-    Locker locker(conf);
     const IApplication* application=conf->getApplication(m_application_id.c_str());
     if (!application) {
         log->crit("unable to locate application for session, deleted?");
@@ -662,10 +662,6 @@ SAMLResponse* InternalCCacheEntry::getNewResponse()
         throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"Unable to determine ProviderID for application, not set?");
     }
 
-    // Get protocol signing policy.
-    pair<bool,bool> signRequest=application->getBool("signRequest");
-    pair<bool,bool> signedResponse=application->getBool("signedResponse");
-    
     // Try this request.
     Metadata m(application->getMetadataProviders());
     const IEntityDescriptor* site=m.lookup(m_nameid->getNameQualifier());
@@ -681,6 +677,11 @@ SAMLResponse* InternalCCacheEntry::getNewResponse()
         throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"Unable to locate metadata for identity provider's Attribute Authority.",site);
     }
 
+    // Get protocol signing policy.
+    const IPropertySet* credUse=application->getCredentialUse(site);
+    pair<bool,bool> signRequest=credUse ? credUse->getBool("signRequest") : make_pair(false,false);
+    pair<bool,bool> signedResponse=credUse ? credUse->getBool("signedResponse") : make_pair(false,false);
+    
     SAMLResponse* response = NULL;
     try {
         // Build a SAML Request....
@@ -694,7 +695,7 @@ SAMLResponse* InternalCCacheEntry::getNewResponse()
         // Sign it? Highly doubtful we'll ever use this, but just for fun...
         if (signRequest.first && signRequest.second) {
             Credentials creds(conf->getCredentialsProviders());
-            const ICredResolver* signingCred=creds.lookup(application->getSigningCred(site));
+            const ICredResolver* signingCred=creds.lookup(credUse->getString("Signing").second);
             req->sign(SIGNATURE_RSA,signingCred->getKey(),signingCred->getCertificates());
         }
             
@@ -702,7 +703,7 @@ SAMLResponse* InternalCCacheEntry::getNewResponse()
 
 
         // Call context object
-        ShibHTTPHook::ShibHTTPHookCallContext ctx(application->getTLSCred(site),AA);
+        ShibHTTPHook::ShibHTTPHookCallContext ctx(credUse ? credUse->getString("TLS").second : NULL,AA);
         Trust t(application->getTrustProviders());
         
         // First try any bindings provided by caller. This is for compatibility with
@@ -799,8 +800,9 @@ SAMLResponse* InternalCCacheEntry::getNewResponse()
 
 void InternalCCacheEntry::filter(SAMLResponse* r, const IApplication* application, const IRoleDescriptor* source)
 {
+    const IPropertySet* credUse=application->getCredentialUse(source->getEntityDescriptor());
+    pair<bool,bool> signedAssertions=credUse ? credUse->getBool("signedAssertions") : make_pair(false,false);
     Trust t(application->getTrustProviders());
-    pair<bool,bool> signedAssertions=application->getBool("signedAssertions");
 
     // Examine each new assertion...
     Iterator<SAMLAssertion*> assertions=r->getAssertions();
