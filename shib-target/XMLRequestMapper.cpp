@@ -474,7 +474,7 @@ const Override* XMLRequestMapperImpl::findOverride(const char* vhost, const char
 const char* split_url(const char* url, string& vhost)
 {
     const char* path=NULL;
-    char* slash=strchr(url,'/');
+    const char* slash=strchr(url,'/');
     if (slash)
     {
         slash=strchr(slash,'/');
