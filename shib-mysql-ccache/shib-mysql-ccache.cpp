@@ -54,6 +54,9 @@ using namespace saml;
 using namespace shibboleth;
 using namespace shibtarget;
 
+#define PLUGIN_VER_MAJOR 1
+#define PLUGIN_VER_MINOR 0
+
 class ShibMySQLCCache;
 class ShibMySQLCCacheEntry : public CCacheEntry
 {
@@ -110,6 +113,7 @@ private:
   bool initialized;
 
   void createDatabase(MYSQL*, int major, int minor);
+  void upgradeDatabase(MYSQL*);
   void getVersion(MYSQL*, int* major_p, int* minor_p);
   void mysqlInit(void);
 };
@@ -152,7 +156,7 @@ void ShibMySQLCCache::thread_init()
 		mysql_error(mysql));
 
       // This will throw a runtime error if it fails.
-      createDatabase(mysql, 0, 0);
+      createDatabase(mysql, PLUGIN_VER_MAJOR, PLUGIN_VER_MINOR);
     }
   }
 
@@ -160,9 +164,16 @@ void ShibMySQLCCache::thread_init()
   getVersion (mysql, &major, &minor);
 
   // Make sure we've got the right version
-  if (major != 0 && minor != 0) {
-    log->crit("Invalid database version: %d.%d", major, minor);
-    throw runtime_error("Invalid Database version");
+  if (major != PLUGIN_VER_MAJOR && minor != PLUGIN_VER_MINOR) {
+   
+    // If we're capable, try upgrading on the fly...
+    if (major == 0 && minor == 0) {
+       upgradeDatabase(mysql);
+    }
+    else {
+        log->crit("Invalid database version: %d.%d", major, minor);
+        throw runtime_error("Invalid Database version");
+    }
   }
 
   // We're all set.. Save off the handle for this thread.
@@ -437,6 +448,28 @@ void ShibMySQLCCache::createDatabase(MYSQL* mysql, int major, int minor)
   q << "INSERT INTO version VALUES(" << major << "," << minor << ")";
   if (mysql_query(mysql, q.str().c_str()))
     log->error ("Error setting version: %s", mysql_error(mysql));
+}
+
+void ShibMySQLCCache::upgradeDatabase(MYSQL* mysql)
+{
+    if (mysql_query(mysql, "DROP TABLE state")) {
+        log->error("Error dropping old session state table: %s", mysql_error(mysql));
+        throw runtime_error("error dropping table");
+    }
+
+    if (mysql_query(mysql,
+        "CREATE TABLE state (cookie VARCHAR(64) PRIMARY KEY, application_id VARCHAR(1024),"
+       "atime DATETIME, addr VARCHAR(128), statement TEXT)")) {
+        log->error ("Error creating state table: %s", mysql_error(mysql));
+        throw runtime_error("error creating table");
+    }
+
+    ostringstream q;
+    q << "UPDATE version SET major = " << PLUGIN_VER_MAJOR;
+    if (mysql_query(mysql, q.str().c_str())) {
+        log->error ("Error updating version: %s", mysql_error(mysql));
+        throw runtime_error("error updating table");
+    }
 }
 
 void ShibMySQLCCache::getVersion(MYSQL* mysql, int* major_p, int* minor_p)
