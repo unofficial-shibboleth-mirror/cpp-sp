@@ -6,10 +6,12 @@
     </Extensions>
 
     <SHAR logger="@-PKGSYSCONFDIR-@/shar.logger">
-
+		
+		<!--
         <Extensions>
             <Library path="@-LIBEXECDIR-@/shib-mysql-ccache.so" fatal="false"/>
         </Extensions>
+        -->
     
     	<!-- only one listener can be defined. -->
         <UnixListener address="/tmp/shar-socket"/>
@@ -26,16 +28,16 @@
         	propagateErrors - suppress errors while getting attrs or let user see them?
         	retryInterval - if propagateErrors is false and query fails, how long to wait before trying again
         -->
-        <!--
         <MemorySessionCache cleanupInterval="300" cacheTimeout="3600" AATimeout="30" AAConnectTimeout="15"
             defaultLifetime="1800" retryInterval="300" strictValidity="false" propagateErrors="true"/>
-        -->
+        <!--
         <MySQLSessionCache cleanupInterval="300" cacheTimeout="3600" AATimeout="30" AAConnectTimeout="15"
                defaultLifetime="1800" retryInterval="300" strictValidity="false" propagateErrors="true"
                mysqlTimeout="14400">
             <Argument>&#x2D;&#x2D;language=@-PREFIX-@/share/english</Argument>
             <Argument>&#x2D;&#x2D;datadir=@-PREFIX-@/data</Argument>
         </MySQLSessionCache>
+        -->
     </SHAR>
     
     <SHIRE logger="@-PKGSYSCONFDIR-@/shire.logger">
