@@ -114,8 +114,10 @@ RPCError* RM::getAssertions(const char* cookie, const char* ip,
       istringstream attrstream(ret.assertions.assertions_val[i].assertion);
       SAMLAssertion *as = NULL;
       try {
-	m_priv->log->debug("Trying to decode assertion %d: %s", i,
-			   ret.assertions.assertions_val[i].assertion);
+//	m_priv->log->debug("Trying to decode assertion %d: %s", i,
+//			   ret.assertions.assertions_val[i].assertion);
+        m_priv->log->debugStream() << "Trying to decode assertion " << i
+            << ": " << ret.assertions.assertions_val[i].assertion << log4cpp::CategoryStream::ENDLINE;
 	as = new SAMLAssertion(attrstream);
       } catch (SAMLException& e) {
 	m_priv->log->error ("SAML Exception: %s", e.what());
