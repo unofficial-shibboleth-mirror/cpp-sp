@@ -91,6 +91,7 @@ public:
   virtual bool isSessionValid(time_t lifetime, time_t timeout);
   virtual const char* getClientAddress() { return m_clientAddress.c_str(); }
   virtual const char* getSerializedStatement() { return m_statement.c_str(); }
+  virtual const SAMLAuthenticationStatement* getStatement() { return p_auth; }
   virtual void release() { cacheitem_lock->unlock(); }
 
   void setCache(InternalCCache *cache) { m_cache = cache; }
