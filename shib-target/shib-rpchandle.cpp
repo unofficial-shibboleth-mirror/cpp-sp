@@ -133,7 +133,7 @@ CLIENT * RPCHandle::connect(void)
 
   if (shib_sock_create (&sock) != 0) {
     m_priv->log->error ("Cannot create socket");
-    throw new ShibTargetException (SHIBRPC_UNKNOWN_ERROR, "Cannot create socket");
+    throw ShibTargetException (SHIBRPC_UNKNOWN_ERROR, "Cannot create socket");
   }
 
   bool connected = false;
@@ -164,7 +164,7 @@ CLIENT * RPCHandle::connect(void)
     close (sock);
 #endif
     m_priv->mutex->unlock();
-    throw new ShibTargetException (SHIBRPC_UNKNOWN_ERROR, "Cannot connect to SHAR");
+    throw ShibTargetException (SHIBRPC_UNKNOWN_ERROR, "Cannot connect to SHAR");
   }
 
   CLIENT *clnt = shibrpc_client_create (sock, m_priv->m_program, m_priv->m_version);
@@ -177,7 +177,7 @@ CLIENT * RPCHandle::connect(void)
     close (sock);
 #endif
     m_priv->mutex->unlock();
-    throw new ShibTargetException (SHIBRPC_UNKNOWN_ERROR, rpcerror);
+    throw ShibTargetException (SHIBRPC_UNKNOWN_ERROR, rpcerror);
   }
 
   // Set the RPC timeout to a fairly high value...
