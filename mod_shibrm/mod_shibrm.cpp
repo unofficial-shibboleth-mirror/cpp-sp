@@ -21,6 +21,8 @@
 #include <shib/shib.h>
 #include <shib-target/shib-target.h>
 
+#include <xercesc/util/regx/RegularExpression.hpp>
+
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
@@ -464,110 +466,154 @@ extern "C" int shibrm_check_auth(request_rec* r)
     for (int x=0; x<reqs_arr->nelts; x++)
     {
         if (!(reqs[x].method_mask & (1 << m)))
-	    continue;
-	method_restricted=true;
+            continue;
+        method_restricted=true;
 
-	t = reqs[x].requirement;
-	w = ap_getword_white(r->pool, &t);
+        t = reqs[x].requirement;
+        w = ap_getword_white(r->pool, &t);
 
-	if (!strcmp(w,"valid-user"))
-	{
-	    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,"shibrm_check_auth() accepting valid-user");
-	    return OK;
-	}
-	else if (!strcmp(w,"user") && r->connection->user)
-	{
-	    while (*t)
-	    {
-	        w=ap_getword_conf(r->pool,&t);
-		if (!strcmp(r->connection->user,w))
-		{
-		    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,"shibrm_check_auth() accepting user: %s",w);
-		    return OK;
-		}
-	    }
-	}
-	else if (!strcmp(w,"group"))
-	{
-	    table* grpstatus=NULL;
-	    if (dc->szAuthGrpFile && r->connection->user)
-	    {
-		ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,"shibrm_check_auth() using groups file: %s\n",
-			      dc->szAuthGrpFile);
-		grpstatus=groups_for_user(r,r->connection->user,dc->szAuthGrpFile);
-	    }
-	    if (!grpstatus)
-	        return DECLINED;
-
-	    while (*t)
-	    {
-	        w=ap_getword_conf(r->pool,&t);
-		if (ap_table_get(grpstatus,w))
-		{
-		    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,"shibrm_check_auth() accepting group: %s",w);
-		    return OK;
-		}
-	    }
-	}
-	else
-	{
-	    map<string,string>::const_iterator i=g_mapAttribRuleToHeader.find(w);
-	    if (i==g_mapAttribRuleToHeader.end())
-		ap_log_rerror(APLOG_MARK,APLOG_WARNING|APLOG_NOERRNO,r,"shibrm_check_auth() didn't recognize require rule: %s\n",w);
-	    else
-	    {		
-		const char* vals=ap_table_get(r->headers_in,i->second.c_str());
-		while (*t && vals)
-		{
-		    string ruleval(ap_getword_conf(r->pool,&t));
-
-                    string vals_str(vals);
-                    int j = 0;
-                    for (int i = 0;  i < vals_str.length();  i++)
-		    {
-			if (vals_str.at(i) == ';') 
-			{
-                            if (i == 0)
-			    {
-			        ap_log_rerror(APLOG_MARK,APLOG_WARNING|APLOG_NOERRNO,r,"shibrm_check_auth() invalid header encoding %s: starts with semicolon", vals);
-                                return SERVER_ERROR;
-			    }
-
-                            if (vals_str.at(i-1) == '\\')
-                            {
-                                vals_str.erase(i-1, 1);
-                                i--;
-                                continue;
-                            }
-
-                            string val = vals_str.substr(j, i-j);
-                            j = i+1;
-
-                            if (val == ruleval)
-                            {
-		                ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,"shibrm_check_auth() expecting %s, got %s: authorization granted", ruleval.c_str(), val.c_str());
-                                return OK;
-                            }
-                            else
-			    {
-		                ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,"shibrm_check_auth() expecting %s, got %s: authorization not granted", ruleval.c_str(), val.c_str());
-			    }
-                        }
-		    }
-
-		    string val = vals_str.substr(j, vals_str.length()-j);
-                    if (val == ruleval)
+    	if (!strcmp(w,"valid-user"))
+    	{
+    	    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,"shibrm_check_auth() accepting valid-user");
+    	    return OK;
+    	}
+    	else if (!strcmp(w,"user") && r->connection->user)
+    	{
+            bool regexp=false;
+    	    while (*t)
+    	    {
+    	        w=ap_getword_conf(r->pool,&t);
+                if (*w=='~')
+                {
+                    regexp=true;
+                    continue;
+                }
+                
+                if (regexp)
+                {
+                    try
                     {
-	                ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,"shibrm_check_auth() expecting %s, got %s: authorization granted", ruleval.c_str(), val.c_str());
-                        return OK;
+                        RegularExpression re(w);
+                        if (re.matches(r->connection->user)) {
+                            ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,"shibrm_check_auth() accepting user: %s",w);
+                            return OK;
+                        }
                     }
-                    else
-		    {
-	                ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,"shibrm_check_auth() expecting %s, got %s: authorization not granted", ruleval.c_str(), val.c_str());
-		    }
-		}
-	    }
-	}
+                    catch (XMLException& ex)
+                    {
+                        auto_ptr<char> tmp(XMLString::transcode(ex.getMessage()));
+                        ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
+                                        "shibrm_check_auth caught exception while parsing regular expression (%s): %s",w,tmp.get());
+                    }
+                }
+                if (!strcmp(r->connection->user,w))
+                {
+                    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,"shibrm_check_auth() accepting user: %s",w);
+                    return OK;
+                }
+    	    }
+    	}
+    	else if (!strcmp(w,"group"))
+    	{
+    	    table* grpstatus=NULL;
+    	    if (dc->szAuthGrpFile && r->connection->user)
+    	    {
+    		ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,"shibrm_check_auth() using groups file: %s\n",
+    			      dc->szAuthGrpFile);
+    		grpstatus=groups_for_user(r,r->connection->user,dc->szAuthGrpFile);
+    	    }
+    	    if (!grpstatus)
+    	        return DECLINED;
+    
+    	    while (*t)
+    	    {
+    	        w=ap_getword_conf(r->pool,&t);
+                if (ap_table_get(grpstatus,w))
+                {
+                    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,"shibrm_check_auth() accepting group: %s",w);
+                    return OK;
+                }
+            }
+        }
+        else
+        {
+            map<string,string>::const_iterator i=g_mapAttribRuleToHeader.find(w);
+            if (i==g_mapAttribRuleToHeader.end()) {
+                ap_log_rerror(APLOG_MARK,APLOG_WARNING|APLOG_NOERRNO,r,
+                                "shibrm_check_auth() didn't recognize require rule: %s\n",w);
+            }
+            else
+            {
+                auto_ptr<RegularExpression> re;
+                bool regexp=false;
+                const char* vals=ap_table_get(r->headers_in,i->second.c_str());
+                while (*t && vals)
+                {
+                    w=ap_getword_conf(r->pool,&t);
+                    if (*w=='~')
+                    {
+                        regexp=true;
+                        continue;
+                    }
+
+                    try
+                    {
+                        if (regexp)
+                            re.reset(new RegularExpression(w));
+                        
+                        string vals_str(vals);
+                        int j = 0;
+                        for (int i = 0;  i < vals_str.length();  i++)
+                        {
+                            if (vals_str.at(i) == ';') 
+                            {
+                                if (i == 0) {
+                                    ap_log_rerror(APLOG_MARK,APLOG_WARNING|APLOG_NOERRNO,r,
+                                                    "shibrm_check_auth() invalid header encoding %s: starts with semicolon", vals);
+                                    return SERVER_ERROR;
+                                }
+        
+                                if (vals_str.at(i-1) == '\\') {
+                                    vals_str.erase(i-1, 1);
+                                    i--;
+                                    continue;
+                                }
+        
+                                string val = vals_str.substr(j, i-j);
+                                j = i+1;
+        
+                                if ((regexp && re->matches(val.c_str())) || val==w) {
+                                    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
+                                                    "shibrm_check_auth() expecting %s, got %s: authorization granted", w, val.c_str());
+                                    return OK;
+                                }
+                                else {
+                                    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
+                                                    "shibrm_check_auth() expecting %s, got %s: authorization not granted", w, val.c_str());
+                                }
+                            }
+                        }
+        
+                        string val = vals_str.substr(j, vals_str.length()-j);
+                        if ((regexp && re->matches(val.c_str())) || val==w) {
+                            ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
+                                            "shibrm_check_auth() expecting %s, got %s: authorization granted", w, val.c_str());
+                            return OK;
+                        }
+                        else {
+                            ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
+                                            "shibrm_check_auth() expecting %s, got %s: authorization not granted", w, val.c_str());
+                        }
+                    }
+                    catch (XMLException& ex)
+                    {
+                        auto_ptr<char> tmp(XMLString::transcode(ex.getMessage()));
+                        ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
+                                        "shibrm_check_auth caught exception while parsing regular expression (%s): %s",w,tmp.get());
+                    }
+                }
+    	    }
+    	}
     }
 
     if (!method_restricted)
