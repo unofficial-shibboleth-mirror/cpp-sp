@@ -147,7 +147,7 @@ int main(int argc,char* argv[])
         Trust t(app->getTrustProviders());
 
         SAMLResponse* response=NULL;
-        Iterator<const IEndpoint*> endpoints=AA->getAttributeServices()->getEndpoints();
+        Iterator<const IEndpoint*> endpoints=AA->getAttributeServiceManager()->getEndpoints();
         while (!response && endpoints.hasNext()) {
             const IEndpoint* ep=endpoints.next();
             try {

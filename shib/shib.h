@@ -221,7 +221,7 @@ namespace shibboleth
 
     struct SHIB_EXPORTS IAttributeAuthorityDescriptor : public virtual IRoleDescriptor
     {
-        virtual const IEndpointManager* getAttributeServices() const=0;
+        virtual const IEndpointManager* getAttributeServiceManager() const=0;
         virtual const IEndpointManager* getAssertionIDRequestServiceManager() const=0;
         virtual saml::Iterator<const XMLCh*> getNameIDFormats() const=0;
         virtual saml::Iterator<const XMLCh*> getAttributeProfiles() const=0;

@@ -739,7 +739,7 @@ SAMLResponse* InternalCCacheEntry::getNewResponse()
         }
 
         // Now try metadata.
-        Iterator<const IEndpoint*> endpoints=AA->getAttributeServices()->getEndpoints();
+        Iterator<const IEndpoint*> endpoints=AA->getAttributeServiceManager()->getEndpoints();
         while (!response && endpoints.hasNext()) {
             const IEndpoint* ep=endpoints.next();
             try {

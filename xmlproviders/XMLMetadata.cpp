@@ -326,7 +326,7 @@ namespace {
         public:
             AARole(const EntityDescriptor* provider, time_t validUntil, const DOMElement* e);
             ~AARole();
-            const IEndpointManager* getAttributeServices() const {return &m_query;}
+            const IEndpointManager* getAttributeServiceManager() const {return &m_query;}
             const IEndpointManager* getAssertionIDRequestServiceManager() const {return &m_idreq;}
             saml::Iterator<const XMLCh*> getNameIDFormats() const {return m_formats;}
             saml::Iterator<const XMLCh*> getAttributeProfiles() const {return m_attrprofs;}
