@@ -203,7 +203,7 @@ AM_CONDITIONAL(USE_OUR_ONCRPC,test "$rpctest" = "no")
 
 
 # Apache 1.3 (mod_shib_13)
-#   --with-apache-13 (static build, no idea how to do this yet, so not supported)
+#   --enable-apache-13
 #   --with-apxs      (DSO build, the normal way, uses apxs to derive build flags)
 #   --without-apxs   (DSO build, you tell us how to build using the environment)
 
@@ -345,8 +345,9 @@ AM_CONDITIONAL(HAVE_APXS,test -n "$APXS")
 
 
 # Apache 2.0 (mod_shib_20)
-#   --with-apache-20   (static build, no idea how to do this yet, so not supported)
+#   --enable-apache-20
 #   --with-apxs2       (DSO build, the normal way, uses apxs to derive build flags)
+#	--with-apr         (DSO build, APR development package installed separately)
 #   --without-apxs2    (DSO build, you tell us how to build using the environment)
 
 AC_ARG_ENABLE(apache-20,
@@ -371,7 +372,7 @@ AC_ARG_WITH(apxs2,
                           pathname to the Apache apxs tool; defaults to "apxs".],
 [
     if test "$withval" = "yes"; then
-      for i in /usr/sbin /usr/local/apache/bin ; do
+      for i in /usr/sbin /usr/local/apache2/bin /usr/local/apache/bin ; do
         if test -f "$i/apxs"; then
           APXS2="$i/apxs"
         fi
@@ -454,9 +455,18 @@ if test "$APXS2" = "no"; then
 
 elif test -n "$APXS2"; then
 
+	# APR settings
+	AC_PATH_PROG(APR_CONFIG,apr-config)
+	AC_ARG_WITH(apr,
+	            AC_HELP_STRING([--with-apr=PATH], [where APR is installed]),
+	            [APR_CONFIG="${with_apr}/bin/apr-config"])
+	if test -f "${APR_CONFIG}"; then
+	    APR_CFLAGS="`${APR_CONFIG} --cflags` `${APR_CONFIG} --cppflags` `${APR_CONFIG} --includes`"
+	fi
+
     # extract settings we need from APXS2 -q
     APXS2_CC="`$APXS2 -q CC`"
-    APXS2_CFLAGS="`$APXS2 -q CFLAGS` `$APXS2 -q CFLAGS_SHLIB`"
+    APXS2_CFLAGS="`$APXS2 -q CFLAGS` `$APXS2 -q CFLAGS_SHLIB` $APR_CFLAGS"
     APXS2_INCLUDE="`$APXS2 -q INCLUDEDIR`"
     APXS2_LIBEXEC="`$APXS2 -q LIBEXECDIR`"
     APXS2_SYSCONFDIR="`$APXS2 -q SYSCONFDIR`"
