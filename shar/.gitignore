@@ -9,3 +9,5 @@
 /testclient___Win32_Release
 /Debug
 /Release
+/*.dep
+/*.mak
