@@ -541,7 +541,7 @@ bool InternalCCacheEntry::responseValid(int slop)
 {
   saml::NDC ndc("responseValid");
 
-  log->info("checking AA response validity");
+  log->debug("checking AA response validity");
 
   // This is awful, but the XMLDateTime class is truly horrible.
   time_t now=time(NULL)+slop;
@@ -562,7 +562,7 @@ bool InternalCCacheEntry::responseValid(int slop)
   while (iter.hasNext()) {
     SAMLAssertion* assertion = iter.next();
 
-    log->debug ("testing assertion...");
+    log->debug("testing assertion...");
 
     const XMLDateTime* thistime = assertion->getNotOnOrAfter();
 
@@ -574,7 +574,7 @@ bool InternalCCacheEntry::responseValid(int slop)
     auto_ptr_char nowptr(curDateTime.getRawData());
     auto_ptr_char assnptr(thistime->getRawData());
 
-    log->debug ("comparing now (%s) to %s", nowptr.get(), assnptr.get());
+    log->debug("comparing now (%s) to %s", nowptr.get(), assnptr.get());
     int result=XMLDateTime::compareOrder(&curDateTime, thistime);
 
     if (result != XMLDateTime::LESS_THAN) {
