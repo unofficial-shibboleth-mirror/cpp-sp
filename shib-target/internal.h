@@ -164,17 +164,17 @@ namespace shibtarget {
     class STConfig : public ShibTargetConfig
     {
     public:
-        STConfig() : m_tranLog(NULL), m_tranLogLock(NULL) {}
+        STConfig() : m_tranLog(NULL), m_tranLogLock(NULL), m_rpcpool(NULL) {}
         ~STConfig() {}
         
         bool init(const char* schemadir, const char* config);
         void shutdown();
         
-        RPCHandlePool& getRPCHandlePool() {return m_rpcpool;}
+        RPCHandlePool& getRPCHandlePool() {return *m_rpcpool;}
         log4cpp::Category& getTransactionLog() { m_tranLogLock->lock(); return *m_tranLog; }
         void releaseTransactionLog() { m_tranLogLock->unlock();}
     private:
-        RPCHandlePool m_rpcpool;
+        RPCHandlePool* m_rpcpool;
         log4cpp::FixedContextCategory* m_tranLog;
         shibboleth::Mutex* m_tranLogLock;
         static IConfig* ShibTargetConfigFactory(const DOMElement* e);
