@@ -207,7 +207,7 @@ namespace shibboleth
     protected:
         virtual bool accept(DOMElement* e) const;
 
-        saml::xstring m_originSite;
+        const XMLCh* m_originSite;
     };
 
     class SHIB_EXPORTS ScopedAttribute : public SimpleAttribute
@@ -225,10 +225,7 @@ namespace shibboleth
         virtual saml::Iterator<saml::xstring> getValues() const;
         virtual saml::Iterator<std::string> getSingleByteValues() const;
 
-        static const XMLCh Scope[];
-
     protected:
-        virtual bool accept(DOMElement* e) const;
         virtual bool addValue(DOMElement* e);
 
         std::vector<saml::xstring> m_scopes;
@@ -433,6 +430,7 @@ namespace shibboleth
             static const XMLCh KeyAuthority[];
             static const XMLCh Trust[];
 
+            static const XMLCh Accept[];
             static const XMLCh Alias[];
             static const XMLCh AnySite[];
             static const XMLCh AnyValue[];

@@ -99,6 +99,7 @@ public:
         const char* getHeader() const { return m_header.get(); }
         bool accept(const XMLCh* originSite, const DOMElement* e) const;
 
+        enum value_type { literal, regexp, xpath };
     private:    
         const XMLCh* m_name;
         const XMLCh* m_namespace;
@@ -106,12 +107,16 @@ public:
         auto_ptr<char> m_alias;
         auto_ptr<char> m_header;
         
-        enum value_type { literal, regexp, xpath };
+        value_type toValueType(const DOMElement* e);
+        bool scopeCheck(const XMLCh* originSite, const DOMElement* e) const;
+        
         struct SiteRule
         {
             SiteRule() : anyValue(false) {}
             bool anyValue;
             vector<pair<value_type,const XMLCh*> > valueRules;
+            vector<pair<value_type,const XMLCh*> > scopeDenials;
+            vector<pair<value_type,const XMLCh*> > scopeAccepts;
         };
 
         SiteRule m_anySiteRule;
@@ -210,6 +215,8 @@ XMLAAPImpl::AttributeRule::AttributeRule(const DOMElement* e) :
     m_header(e->hasAttributeNS(NULL,SHIB_L(Header)) ? XMLString::transcode(e->getAttributeNS(NULL,SHIB_L(Header))) : NULL)
     
 {
+    static const XMLCh wTrue[] = {chLatin_t, chLatin_r, chLatin_u, chLatin_e};
+
     m_name=e->getAttributeNS(NULL,SHIB_L(Name));
     m_namespace=e->getAttributeNS(NULL,SHIB_L(Namespace));
     if (!m_namespace || !*m_namespace)
@@ -226,36 +233,38 @@ XMLAAPImpl::AttributeRule::AttributeRule(const DOMElement* e) :
     if (anysite && !XMLString::compareString(XML::SHIB_NS,static_cast<DOMElement*>(anysite)->getNamespaceURI()) &&
         !XMLString::compareString(SHIB_L(AnySite),static_cast<DOMElement*>(anysite)->getLocalName()))
     {
-        // Check for an AnyValue rule.
-        DOMNode* anyval = anysite->getFirstChild();
-        while (anyval && anyval->getNodeType()!=DOMNode::ELEMENT_NODE)
+        // Process Scope elements.
+        DOMNodeList* vlist = static_cast<DOMElement*>(anysite)->getElementsByTagNameNS(XML::SHIB_NS,SHIB_L(Scope));
+        for (int i=0; vlist && i<vlist->getLength(); i++)
         {
-            anyval = anyval->getNextSibling();
-            continue;
+            DOMElement* se=static_cast<DOMElement*>(vlist->item(i));
+            DOMNode* valnode=se->getFirstChild();
+            if (valnode && valnode->getNodeType()==DOMNode::TEXT_NODE)
+            {
+                const XMLCh* accept=se->getAttributeNS(NULL,SHIB_L(Accept));
+                if (!accept || *accept==chDigit_1 || !XMLString::compareString(accept,wTrue))
+                    m_anySiteRule.scopeAccepts.push_back(pair<value_type,const XMLCh*>(toValueType(se),valnode->getNodeValue()));
+                else
+                    m_anySiteRule.scopeDenials.push_back(pair<value_type,const XMLCh*>(toValueType(se),valnode->getNodeValue()));
+            }
         }
 
-        if (anyval && !XMLString::compareString(XML::SHIB_NS,static_cast<DOMElement*>(anyval)->getNamespaceURI()) &&
-            !XMLString::compareString(SHIB_L(AnyValue),static_cast<DOMElement*>(anyval)->getLocalName()))
+        // Check for an AnyValue rule.
+        vlist = static_cast<DOMElement*>(anysite)->getElementsByTagNameNS(XML::SHIB_NS,SHIB_L(AnyValue));
+        if (vlist && vlist->getLength())
         {
             m_anySiteRule.anyValue=true;
         }
         else
         {
             // Process each Value element.
-            DOMNodeList* vlist = static_cast<DOMElement*>(anysite)->getElementsByTagNameNS(XML::SHIB_NS,XML::Literals::Value);
+            vlist = static_cast<DOMElement*>(anysite)->getElementsByTagNameNS(XML::SHIB_NS,XML::Literals::Value);
             for (int j=0; vlist && j<vlist->getLength(); j++)
             {
                 DOMElement* ve=static_cast<DOMElement*>(vlist->item(j));
                 DOMNode* valnode=ve->getFirstChild();
                 if (valnode && valnode->getNodeType()==DOMNode::TEXT_NODE)
-                {
-                    if (!XMLString::compareString(SHIB_L(literal),ve->getAttributeNS(NULL,SHIB_L(Type))))
-                        m_anySiteRule.valueRules.push_back(pair<value_type,const XMLCh*>(literal,valnode->getNodeValue()));
-                    else if (!XMLString::compareString(SHIB_L(regexp),ve->getAttributeNS(NULL,SHIB_L(Type))))
-                        m_anySiteRule.valueRules.push_back(pair<value_type,const XMLCh*>(regexp,valnode->getNodeValue()));
-                    else if (!XMLString::compareString(SHIB_L(xpath),ve->getAttributeNS(NULL,SHIB_L(Type))))
-                        m_anySiteRule.valueRules.push_back(pair<value_type,const XMLCh*>(xpath,valnode->getNodeValue()));
-                }
+                    m_anySiteRule.valueRules.push_back(pair<value_type,const XMLCh*>(toValueType(ve),valnode->getNodeValue()));
             }
         }
     }
@@ -267,39 +276,52 @@ XMLAAPImpl::AttributeRule::AttributeRule(const DOMElement* e) :
         m_siteMap[static_cast<DOMElement*>(slist->item(k))->getAttributeNS(NULL,SHIB_L(Name))]=SiteRule();
         SiteRule& srule=m_siteMap[static_cast<DOMElement*>(slist->item(k))->getAttributeNS(NULL,SHIB_L(Name))];
 
-        // Check for an AnyValue rule.
-        DOMNode* anyval = slist->item(k)->getFirstChild();
-        while (anyval && anyval->getNodeType()!=DOMNode::ELEMENT_NODE)
+        // Process Scope elements.
+        DOMNodeList* vlist = static_cast<DOMElement*>(slist->item(k))->getElementsByTagNameNS(XML::SHIB_NS,SHIB_L(Scope));
+        for (int i=0; vlist && i<vlist->getLength(); i++)
         {
-            anyval = anyval->getNextSibling();
-            continue;
+            DOMElement* se=static_cast<DOMElement*>(vlist->item(i));
+            DOMNode* valnode=se->getFirstChild();
+            if (valnode && valnode->getNodeType()==DOMNode::TEXT_NODE)
+            {
+                const XMLCh* accept=se->getAttributeNS(NULL,SHIB_L(Accept));
+                if (!accept || *accept==chDigit_1 || !XMLString::compareString(accept,wTrue))
+                    srule.scopeAccepts.push_back(pair<value_type,const XMLCh*>(toValueType(se),valnode->getNodeValue()));
+                else
+                    srule.scopeDenials.push_back(pair<value_type,const XMLCh*>(toValueType(se),valnode->getNodeValue()));
+            }
         }
 
-        if (anyval && !XMLString::compareString(XML::SHIB_NS,static_cast<DOMElement*>(anyval)->getNamespaceURI()) &&
-            !XMLString::compareString(SHIB_L(AnyValue),static_cast<DOMElement*>(anyval)->getLocalName()))
+        // Check for an AnyValue rule.
+        vlist = static_cast<DOMElement*>(slist->item(k))->getElementsByTagNameNS(XML::SHIB_NS,SHIB_L(AnyValue));
+        if (vlist && vlist->getLength())
         {
             srule.anyValue=true;
         }
         else
         {
             // Process each Value element.
-            DOMNodeList* vlist = static_cast<DOMElement*>(slist->item(k))->getElementsByTagNameNS(XML::SHIB_NS,SHIB_L(Value));
+            vlist = static_cast<DOMElement*>(slist->item(k))->getElementsByTagNameNS(XML::SHIB_NS,SHIB_L(Value));
             for (int j=0; vlist && j<vlist->getLength(); j++)
             {
                 DOMElement* ve=static_cast<DOMElement*>(vlist->item(j));
                 DOMNode* valnode=ve->getFirstChild();
                 if (valnode && valnode->getNodeType()==DOMNode::TEXT_NODE)
-                {
-                    if (!XMLString::compareString(SHIB_L(literal),ve->getAttributeNS(NULL,SHIB_L(Type))))
-                        srule.valueRules.push_back(pair<value_type,const XMLCh*>(literal,valnode->getNodeValue()));
-                    else if (!XMLString::compareString(SHIB_L(regexp),ve->getAttributeNS(NULL,SHIB_L(Type))))
-                        srule.valueRules.push_back(pair<value_type,const XMLCh*>(regexp,valnode->getNodeValue()));
-                    else if (!XMLString::compareString(SHIB_L(xpath),ve->getAttributeNS(NULL,SHIB_L(Type))))
-                        srule.valueRules.push_back(pair<value_type,const XMLCh*>(xpath,valnode->getNodeValue()));
-                }
+                    srule.valueRules.push_back(pair<value_type,const XMLCh*>(toValueType(ve),valnode->getNodeValue()));
             }
         }
     }
+}
+
+XMLAAPImpl::AttributeRule::value_type XMLAAPImpl::AttributeRule::toValueType(const DOMElement* e)
+{
+    if (!XMLString::compareString(SHIB_L(literal),e->getAttributeNS(NULL,SHIB_L(Type))))
+        return literal;
+    else if (!XMLString::compareString(SHIB_L(regexp),e->getAttributeNS(NULL,SHIB_L(Type))))
+        return regexp;
+    else if (!XMLString::compareString(SHIB_L(xpath),e->getAttributeNS(NULL,SHIB_L(Type))))
+        return xpath;
+    throw MalformedException("Found an invalid value or scope rule type.");
 }
 
 XMLAAP::XMLAAP(const char* pathname) : m_filestamp(0), m_source(pathname), m_impl(NULL)
@@ -402,16 +424,147 @@ Iterator<const IAttributeRule*> XMLAAP::getAttributeRules() const
     return m_impl->m_attrs;
 }
 
+namespace {
+    bool match(const XMLCh* exp, const XMLCh* test)
+    {
+        try
+        {
+            RegularExpression re(exp);
+            if (re.matches(test))
+                return true;
+        }
+        catch (XMLException& ex)
+        {
+            auto_ptr<char> tmp(XMLString::transcode(ex.getMessage()));
+            Category::getInstance(SHIB_LOGCAT".XMLAAPImpl").errorStream()
+                << "caught exception while parsing regular expression: " << tmp.get() << CategoryStream::ENDLINE;
+        }
+        return false;
+    }
+}
+
+bool XMLAAPImpl::AttributeRule::scopeCheck(const XMLCh* originSite, const DOMElement* e) const
+{
+    // Are we scoped?
+    const XMLCh* scope=e->getAttributeNS(NULL,SHIB_L(Scope));
+    if (!scope || !*scope)
+        return true;
+
+    NDC ndc("scopeCheck");
+    Category& log=Category::getInstance(SHIB_LOGCAT".XMLAAPImpl");
+
+    vector<pair<value_type,const XMLCh*> >::const_iterator i;
+
+    // Denials take precedence, always.
+    
+    // Any site denials...
+    for (i=m_anySiteRule.scopeDenials.begin(); i!=m_anySiteRule.scopeDenials.end(); i++)
+    {
+        if ((i->first==literal && !XMLString::compareString(i->second,scope)) ||
+            (i->first==regexp && match(i->second,scope)))
+        {
+            if (log.isWarnEnabled())
+            {
+                auto_ptr<char> temp(XMLString::transcode(m_name));
+                auto_ptr<char> temp2(XMLString::transcode(scope));
+                log.warn("attribute %s scope {%s} denied by any-site AAP, rejecting it",temp.get(),temp2.get());
+            }
+            return false;
+        }
+        else if (i->first==xpath)
+            log.warn("scope checking does not permit XPath rules");
+    }
+
+    map<xstring,SiteRule>::const_iterator srule=m_siteMap.find(originSite);
+    if (srule!=m_siteMap.end())
+    {
+        // Site-specific denials...
+        for (i=srule->second.scopeDenials.begin(); i!=srule->second.scopeDenials.end(); i++)
+        {
+            if ((i->first==literal && !XMLString::compareString(i->second,scope)) ||
+                (i->first==regexp && match(i->second,scope)))
+            {
+                if (log.isWarnEnabled())
+                {
+                    auto_ptr<char> temp(XMLString::transcode(m_name));
+                    auto_ptr<char> temp2(XMLString::transcode(scope));
+                    log.warn("attribute %s scope {%s} denied by site AAP, rejecting it",temp.get(),temp2.get());
+                }
+                return false;
+            }
+            else if (i->first==xpath)
+                log.warn("scope checking does not permit XPath rules");
+        }
+    }
+
+    // Any site accepts...
+    for (i=m_anySiteRule.scopeAccepts.begin(); i!=m_anySiteRule.scopeAccepts.end(); i++)
+    {
+        if ((i->first==literal && !XMLString::compareString(i->second,scope)) ||
+            (i->first==regexp && match(i->second,scope)))
+        {
+            log.debug("any site, scope match");
+            return true;
+        }
+        else if (i->first==xpath)
+            log.warn("scope checking does not permit XPath rules");
+    }
+
+    if (srule!=m_siteMap.end())
+    {
+        // Site-specific accepts...
+        for (i=srule->second.scopeAccepts.begin(); i!=srule->second.scopeAccepts.end(); i++)
+        {
+            if ((i->first==literal && !XMLString::compareString(i->second,scope)) ||
+                (i->first==regexp && match(i->second,scope)))
+            {
+                log.debug("matching site, scope match");
+                return true;
+            }
+            else if (i->first==xpath)
+                log.warn("scope checking does not permit XPath rules");
+        }
+    }
+    
+    // If we still can't decide, defer to site metadata.
+    OriginMetadata mapper(originSite);
+    Iterator<pair<const XMLCh*,bool> > domains=
+        (mapper.fail()) ? Iterator<pair<const XMLCh*,bool> >() : mapper->getSecurityDomains();
+    while (domains.hasNext())
+    {
+        const pair<const XMLCh*,bool>& p=domains.next();
+        if ((p.second && match(p.first,scope)) || !XMLString::compareString(p.first,scope))
+        {
+            log.debug("scope match via site metadata");
+            return true;
+        }
+    }
+
+    if (log.isWarnEnabled())
+    {
+        auto_ptr<char> temp(XMLString::transcode(m_name));
+        auto_ptr<char> temp2(XMLString::transcode(scope));
+        log.warn("attribute %s scope {%s} not accepted",temp.get(),temp2.get());
+    }
+    return false;
+}
+
 bool XMLAAPImpl::AttributeRule::accept(const XMLCh* originSite, const DOMElement* e) const
 {
     NDC ndc("accept");
-    log4cpp::Category& log=log4cpp::Category::getInstance(SHIB_LOGCAT".XMLAAPImpl");
+    Category& log=Category::getInstance(SHIB_LOGCAT".XMLAAPImpl");
     
     if (log.isDebugEnabled())
     {
         auto_ptr<char> temp(XMLString::transcode(m_name));
         auto_ptr<char> temp2(XMLString::transcode(originSite));
         log.debug("evaluating value for attribute %s from site %s",temp.get(),temp2.get());
+    }
+    
+    if (m_anySiteRule.anyValue)
+    {
+        log.debug("any site, any value, match");
+        return scopeCheck(originSite,e);
     }
 
     // Don't currently support non-simple content models...
@@ -422,41 +575,15 @@ bool XMLAAPImpl::AttributeRule::accept(const XMLCh* originSite, const DOMElement
         return false;
     }
 
-    if (m_anySiteRule.anyValue)
-    {
-        log.debug("any site, any value, match");
-        return true;
-    }
-
     for (vector<pair<value_type,const XMLCh*> >::const_iterator i=m_anySiteRule.valueRules.begin(); i!=m_anySiteRule.valueRules.end(); i++)
     {
-        if (i->first==literal)
+        if ((i->first==literal && !XMLString::compareString(i->second,n->getNodeValue())) ||
+            (i->first==regexp && match(i->second,n->getNodeValue())))
         {
-            if (!XMLString::compareString(i->second,n->getNodeValue()))
-            {
-                log.debug("any site, literal match");
-                return true;
-            }
+            log.debug("any site, value match");
+            return scopeCheck(originSite,e);
         }
-        else if (i->first==regexp)
-        {
-            try
-            {
-                RegularExpression re(i->second);
-                if (re.matches(n->getNodeValue()))
-                {
-                    log.debug("any site, regexp match");
-                    return true;
-                }
-            }
-            catch (XMLException& ex)
-            {
-                auto_ptr<char> tmp(XMLString::transcode(ex.getMessage()));
-                log.errorStream() << "caught exception while parsing regular expression: " << tmp.get()
-                    << log4cpp::CategoryStream::ENDLINE;
-            }
-        }
-        else
+        else if (i->first==xpath)
             log.warn("implementation does not support XPath value rules");
     }
 
@@ -475,38 +602,18 @@ bool XMLAAPImpl::AttributeRule::accept(const XMLCh* originSite, const DOMElement
     if (srule->second.anyValue)
     {
         log.debug("matching site, any value, match");
-        return true;
+        return scopeCheck(originSite,e);
     }
 
     for (vector<pair<value_type,const XMLCh*> >::const_iterator j=srule->second.valueRules.begin(); j!=srule->second.valueRules.end(); j++)
     {
-        if (j->first==literal)
+        if ((j->first==literal && !XMLString::compareString(j->second,n->getNodeValue())) ||
+            (j->first==regexp && match(j->second,n->getNodeValue())))
         {
-            if (!XMLString::compareString(j->second,n->getNodeValue()))
-            {
-                log.debug("matching site, literal match");
-                return true;
-            }
+            log.debug("matching site, value match");
+            return scopeCheck(originSite,e);
         }
-        else if (j->first==regexp)
-        {
-            try
-            {
-                RegularExpression re(j->second);
-                if (re.matches(n->getNodeValue()))
-                {
-                    log.debug("matching site, regexp match");
-                    return true;
-                }
-            }
-            catch (XMLException& ex)
-            {
-                auto_ptr<char> tmp(XMLString::transcode(ex.getMessage()));
-                log.errorStream() << "caught exception while parsing regular expression: " << tmp.get()
-                    << log4cpp::CategoryStream::ENDLINE;
-            }
-        }
-        else
+        else if (j->first==xpath)
             log.warn("implementation does not support XPath value rules");
     }
 

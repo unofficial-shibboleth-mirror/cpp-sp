@@ -61,7 +61,7 @@
 using namespace shibboleth;
 
 SimpleAttribute::SimpleAttribute(const XMLCh* name, const XMLCh* ns, long lifetime, const saml::Iterator<const XMLCh*>& values)
-    : SAMLAttribute(name,ns,&Constants::SHIB_ATTRIBUTE_VALUE_TYPE,lifetime,values) {}
+    : SAMLAttribute(name,ns,&Constants::SHIB_ATTRIBUTE_VALUE_TYPE,lifetime,values), m_originSite(NULL) {}
 
 SimpleAttribute::SimpleAttribute(DOMElement* e) : SAMLAttribute(e)
 {
@@ -78,7 +78,6 @@ SimpleAttribute::~SimpleAttribute() {}
 saml::SAMLObject* SimpleAttribute::clone() const
 {
     SimpleAttribute* dest=new SimpleAttribute(m_name,m_namespace,m_lifetime);
-    dest->m_originSite=m_originSite;
     dest->m_values.assign(m_values.begin(),m_values.end());
     return dest;
 }
@@ -86,5 +85,5 @@ saml::SAMLObject* SimpleAttribute::clone() const
 bool SimpleAttribute::accept(DOMElement* e) const
 {
     AAP aap(m_name,m_namespace);
-    return aap.fail() ? false : aap->accept(m_originSite.c_str(),e);
+    return aap.fail() ? false : aap->accept(m_originSite,e);
 }

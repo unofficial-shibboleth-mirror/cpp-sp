@@ -128,6 +128,9 @@ const XMLCh XML::Literals::KeyAuthority[] =
 const XMLCh XML::Literals::Trust[] =
 { chLatin_T, chLatin_r, chLatin_u, chLatin_s, chLatin_t, chNull };
 
+const XMLCh XML::Literals::Accept[]=
+{ chLatin_A, chLatin_c, chLatin_c, chLatin_e, chLatin_p, chLatin_t, chNull };
+
 const XMLCh XML::Literals::Alias[]=
 { chLatin_A, chLatin_l, chLatin_i, chLatin_a, chLatin_s, chNull };
 

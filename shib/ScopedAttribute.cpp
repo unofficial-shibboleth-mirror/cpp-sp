@@ -94,57 +94,6 @@ bool ScopedAttribute::addValue(DOMElement* e)
     return false;
 }
 
-bool ScopedAttribute::accept(DOMElement* e) const
-{
-    if (!SimpleAttribute::accept(e))
-        return false;
-
-    OriginMetadata mapper(m_originSite.c_str());
-    Iterator<pair<const XMLCh*,bool> > domains=
-        (mapper.fail()) ? Iterator<pair<const XMLCh*,bool> >() : mapper->getSecurityDomains();
-    const XMLCh* this_scope=NULL;
-    DOMAttr* scope=e->getAttributeNodeNS(NULL,SHIB_L(Scope));
-    if (scope)
-        this_scope=scope->getNodeValue();
-    if (!this_scope || !*this_scope)
-        this_scope=m_originSite.c_str();
-
-    while (domains.hasNext())
-    {
-        const pair<const XMLCh*,bool>& p=domains.next();
-        if (p.second)
-        {
-            try
-            {
-                RegularExpression re(p.first);
-                if (re.matches(this_scope))
-                    return true;
-            }
-            catch (XMLException& ex)
-            {
-                auto_ptr<char> tmp(XMLString::transcode(ex.getMessage()));
-                NDC ndc("accept");
-                Category& log=Category::getInstance(SHIB_LOGCAT".ScopedAttribute");
-                log.errorStream() << "caught exception while parsing regular expression: " << tmp.get()
-                    << CategoryStream::ENDLINE;
-                return false;
-            }
-        }
-        else if (!XMLString::compareString(p.first,this_scope))
-            return true;
-    }
-
-    NDC ndc("accept");
-    Category& log=Category::getInstance(SHIB_LOGCAT".ScopedAttribute");
-    if (log.isWarnEnabled())
-    {
-        auto_ptr<char> tmp(toUTF8(this_scope));
-        auto_ptr<char> name(XMLString::transcode(m_name));
-        log.warn("rejecting value for %s with scope of %s",name.get(),tmp.get());
-    }
-    return false;
-}
-
 Iterator<xstring> ScopedAttribute::getValues() const
 {
     if (m_scopedValues.empty())
@@ -189,8 +138,7 @@ DOMNode* ScopedAttribute::toDOM(DOMDocument* doc,bool xmlns) const
     {
         if (n->getNodeType()==DOMNode::ELEMENT_NODE)
         {
-            static_cast<DOMElement*>(n)->setAttributeNS(NULL,SHIB_L(Scope),
-                (!m_scopes[i].empty() ? m_scopes[i].c_str() : m_originSite.c_str()));
+            static_cast<DOMElement*>(n)->setAttributeNS(NULL,SHIB_L(Scope),m_scopes[i].c_str());
             i++;
         }
         n=n->getNextSibling();
