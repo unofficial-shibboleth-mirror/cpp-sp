@@ -109,7 +109,7 @@ bool ScopedAttribute::addValue(IDOM_Element* e)
 
 bool ScopedAttribute::accept(IDOM_Element* e) const
 {
-    IOriginSiteMapper* mapper=ShibConfig::getConfig()->origin_mapper;
+    IOriginSiteMapper* mapper=ShibConfig::getConfig().origin_mapper;
     Iterator<xstring> domains=mapper->getSecurityDomains(m_defaultScope.c_str());
     const XMLCh* this_scope=NULL;
     IDOM_Attr* scope=e->getAttributeNodeNS(NULL,Scope);

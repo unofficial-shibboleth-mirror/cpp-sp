@@ -164,18 +164,15 @@ namespace shibboleth
     {
     public:
         // global per-process setup and shutdown of Shibboleth runtime
-        static bool init(ShibConfig* pconfig);
-        static void term();
+        virtual bool init();
+        virtual void term();
 
         // enables runtime and clients to access configuration
-        static const ShibConfig* getConfig();
+        static ShibConfig& getConfig();
 
     /* start of external configuration */
         IOriginSiteMapper* origin_mapper;
     /* end of external configuration */
-
-    private:
-        static const ShibConfig* g_config;
     };
 
     struct SHIB_EXPORTS Constants
