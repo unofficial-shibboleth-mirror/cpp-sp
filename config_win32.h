@@ -86,13 +86,13 @@
 #define PACKAGE_NAME "shibboleth"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "shibboleth 1.0.1"
+#define PACKAGE_STRING "shibboleth 1.1"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "shibboleth"
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "1.0.1"
+#define PACKAGE_VERSION "1.1"
 
 /* Define to the necessary symbol if this constant uses a non-standard name on
    your system. */
@@ -108,7 +108,7 @@
 #define USE_OUR_ONCRPC 1
 
 /* Version number of package */
-#define VERSION "1.0.1"
+#define VERSION "1.1"
 
 /* Define to empty if `const' does not conform to ANSI C. */
 /* #undef const */
