@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="US-ASCII"?>
-<schema targetNamespace="urn:mace:shibboleth:1.0" xmlns="http://www.w3.org/2001/XMLSchema" xmlns:ds="http://www.w3.org/2000/09/xmldsig#" xmlns:xml="http://www.w3.org/XML/1998/namespace" xmlns:shib="urn:mace:shibboleth:1.0" elementFormDefault="qualified" attributeFormDefault="unqualified">
+<schema targetNamespace="urn:mace:shibboleth:1.0" xmlns="http://www.w3.org/2001/XMLSchema" xmlns:ds="http://www.w3.org/2000/09/xmldsig#" xmlns:xml="http://www.w3.org/XML/1998/namespace" xmlns:shib="urn:mace:shibboleth:1.0" elementFormDefault="qualified" attributeFormDefault="unqualified" version="1.0">
     <import namespace="http://www.w3.org/2000/09/xmldsig#" schemaLocation="http://www.w3.org/TR/xmldsig-core/xmldsig-core-schema.xsd"/>
     <import namespace="http://www.w3.org/XML/1998/namespace" schemaLocation="http://www.w3.org/2001/xml.xsd"/>
     
@@ -138,7 +138,7 @@
 	</complexType>
 
     <complexType name="regexp_string">
-        <annotation> A string element with an optional attribute signaling regexp content. </annotation>
+        <annotation>A string element with an optional attribute signaling regexp content.</annotation>
         <simpleContent>
             <extension base="string">
                 <attribute name="regexp" type="boolean" use="optional" default="false"/>
@@ -146,44 +146,33 @@
         </simpleContent>
     </complexType>    
 
+	<complexType name="AuthorityType">
+		<annotation>Metadata about a SAML authority.</annotation>
+        <sequence/>
+        <attribute name="Name" type="string" use="required"/>
+        <attribute name="Location" type="anyURI" use="required"/>
+	</complexType>
+
     <complexType name="OriginSiteType">
         <annotation>Origin sites add at least one handle service (with a name and optional KeyInfo), plus optional domains trusted for attribute scoping.</annotation>
-        <complexContent>
-            <extension base="shib:SiteType">
-                <sequence>
-                    <element name="HandleService" maxOccurs="unbounded">
-                        <complexType>
-                            <sequence>
-                                <element ref="ds:KeyInfo" minOccurs="0"/>
-                            </sequence>
-                            <attribute name="Name" type="string" use="required"/>
-                            <attribute name="Location" type="anyURI" use="required"/>
-                        </complexType>
-                    </element>
-                    <element name="AttributeAuthority" minOccurs="0" maxOccurs="unbounded">
-                        <complexType>
-                            <sequence>
-                                <element ref="ds:KeyInfo" minOccurs="0"/>
-                            </sequence>
-                            <attribute name="Name" type="string" use="required"/>
-                            <attribute name="Location" type="anyURI" use="required"/>
-                        </complexType>
-                    </element>
-                    <element name="Domain" type="shib:regexp_string" minOccurs="0" maxOccurs="unbounded"/>
-                </sequence>
-            </extension>
-        </complexContent>
+        <extension base="shib:SiteType">
+            <sequence>
+                <element name="HandleService" type="shib:AuthorityType" maxOccurs="unbounded"/>
+                <element name="AttributeAuthority" type="shib:AuthorityType" minOccurs="0" maxOccurs="unbounded"/>
+                <element name="Domain" type="shib:regexp_string" minOccurs="0" maxOccurs="unbounded"/>
+            </sequence>
+        </extension>
     </complexType>
 
     <complexType name="SiteGroupType">
-        <annotation>Used to logically group sites together.</annotation>
+        <annotation>Used to logically group sites together, optionally signed.</annotation>
         <sequence>
             <choice maxOccurs="unbounded">
                 <element ref="shib:OriginSite"/>
                 <element ref="shib:DestinationSite"/>
                 <element ref="shib:SiteGroup"/>
             </choice>
-            <element name="TrustList" type="ds:KeyInfoType" minOccurs="0"/>
+            <element ref="ds:Signature" minOccurs="0"/>
         </sequence>
         <attribute name="Name" type="string" use="required"/>
     </complexType>    
@@ -192,18 +181,22 @@
     <element name="DestinationSite" type="shib:SiteType"/>
     <element name="SiteGroup" type="shib:SiteGroupType"/>
 
-    <element name="Sites">
-        <annotation>The registry of sites plus an optional enveloped signature.</annotation>
-        <complexType>
-            <sequence>
-                <choice maxOccurs="unbounded">
-                    <element ref="shib:OriginSite"/>
-                    <element ref="shib:DestinationSite"/>
-                    <element ref="shib:SiteGroup"/>
-                </choice>
-                <element name="TrustList" type="ds:KeyInfoType" minOccurs="0"/>
-                <element ref="ds:Signature" minOccurs="0"/>
-            </sequence>
-        </complexType>
-    </element>
+	<complexType name="KeyAuthorityType">
+		<annotation>Binds a set of keying material to one or more named system entities.</annotation>
+		<sequence>
+			<element ref="ds:KeyInfo">
+			<element name="Subject" type="shib:regexp_string" maxOccurs="unbounded"/>
+		</sequence>
+	</complexType>
+	
+	<element name="KeyAuthority" type="shib:KeyAuthorityType"/>
+	
+	<element name="Trust">
+		<annotation>An optionally signed collection of KeyAuthority data.</annotation>
+		<sequence>
+			<element ref="shib:KeyAuthority" maxOccurs="unbounded"/>
+			<element ref="ds:Signature" minOccurs="0"/>
+		</sequence>
+	</element>
+	
 </schema>
