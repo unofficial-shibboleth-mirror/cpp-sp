@@ -81,11 +81,13 @@ using namespace shibtarget;
 namespace {
     static const XMLCh name[] = { chLatin_n, chLatin_a, chLatin_m, chLatin_e, chNull };
     static const XMLCh port[] = { chLatin_p, chLatin_o, chLatin_r, chLatin_t, chNull };
+    static const XMLCh sslport[] = { chLatin_s, chLatin_s, chLatin_l, chLatin_p, chLatin_o, chLatin_r, chLatin_t, chNull };
     static const XMLCh scheme[] = { chLatin_s, chLatin_c, chLatin_h, chLatin_e, chLatin_m, chLatin_e, chNull };
     static const XMLCh id[] = { chLatin_i, chLatin_d, chNull };
     static const XMLCh Implementation[] =
     { chLatin_I, chLatin_m, chLatin_p, chLatin_l, chLatin_e, chLatin_m, chLatin_e, chLatin_n, chLatin_t, chLatin_a, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chNull };
     static const XMLCh ISAPI[] = { chLatin_I, chLatin_S, chLatin_A, chLatin_P, chLatin_I, chNull };
+    static const XMLCh Alias[] = { chLatin_A, chLatin_l, chLatin_i, chLatin_a, chLatin_s, chNull };
     static const XMLCh normalizeRequest[] =
     { chLatin_n, chLatin_o, chLatin_r, chLatin_m, chLatin_a, chLatin_l, chLatin_i, chLatin_z, chLatin_e,
       chLatin_R, chLatin_e, chLatin_q, chLatin_u, chLatin_e, chLatin_s, chLatin_t, chNull
@@ -98,11 +100,21 @@ namespace {
             auto_ptr_char n(e->getAttributeNS(NULL,name));
             auto_ptr_char s(e->getAttributeNS(NULL,scheme));
             auto_ptr_char p(e->getAttributeNS(NULL,port));
+            auto_ptr_char p2(e->getAttributeNS(NULL,sslport));
             if (n.get()) m_name=n.get();
             if (s.get()) m_scheme=s.get();
             if (p.get()) m_port=p.get();
+            if (p2.get()) m_sslport=p2.get();
+            DOMNodeList* nlist=e->getElementsByTagNameNS(ShibTargetConfig::SHIBTARGET_NS,Alias);
+            for (int i=0; nlist && i<nlist->getLength(); i++) {
+                if (nlist->item(i)->hasChildNodes()) {
+                    auto_ptr_char alias(nlist->item(i)->getFirstChild()->getNodeValue());
+                    m_aliases.insert(alias.get());
+                }
+            }
         }
-        string m_scheme,m_name,m_port;
+        string m_scheme,m_port,m_sslport,m_name;
+        set<string> m_aliases;
     };
     
     HINSTANCE g_hinstDLL;
@@ -356,8 +368,7 @@ void GetHeader(PHTTP_FILTER_PREPROC_HEADERS pn, PHTTP_FILTER_CONTEXT pfc,
 class ShibTargetIsapiF : public ShibTarget
 {
 public:
-  ShibTargetIsapiF(PHTTP_FILTER_CONTEXT pfc, PHTTP_FILTER_PREPROC_HEADERS pn,
-		   const site_t& site) {
+  ShibTargetIsapiF(PHTTP_FILTER_CONTEXT pfc, PHTTP_FILTER_PREPROC_HEADERS pn, const site_t& site) {
 
     // URL path always come from IIS.
     dynabuf url(256);
@@ -365,8 +376,12 @@ public:
 
     // Port may come from IIS or from site def.
     dynabuf port(11);
-    if (site.m_port.empty() || !g_bNormalizeRequest)
+    if (!g_bNormalizeRequest || (pfc->fIsSecurePort && site.m_sslport.empty()) || (!pfc->fIsSecurePort && site.m_port.empty()))
         GetServerVariable(pfc,"SERVER_PORT",port,10);
+    else if (pfc->fIsSecurePort) {
+        strncpy(port,site.m_sslport.c_str(),10);
+        static_cast<char*>(port)[10]=0;
+    }
     else {
         strncpy(port,site.m_port.c_str(),10);
         static_cast<char*>(port)[10]=0;
@@ -377,18 +392,20 @@ public:
     if (!scheme || !*scheme || !g_bNormalizeRequest)
         scheme=pfc->fIsSecurePort ? "https" : "http";
 
-    // Get the remote address
-    dynabuf remote_addr(16);
+    // Get the rest of the server variables.
+    dynabuf remote_addr(16),method(5),content_type(32),hostname(32);
+    GetServerVariable(pfc,"SERVER_NAME",hostname,32);
     GetServerVariable(pfc,"REMOTE_ADDR",remote_addr,16);
+    // The last two appear to be unavailable to this filter hook, but we don't need them.
+    GetServerVariable(pfc,"REQUEST_METHOD",method,5,false);
+    GetServerVariable(pfc,"CONTENT_TYPE",content_type,32,false);
 
-    // XXX: How do I get the content type and HTTP Method from this context?
+    // Make sure SERVER_NAME is "authorized" for use on this site. If not, set to canonical name.
+    const char* host=hostname;
+    if (site.m_name!=host && site.m_aliases.find(host)==site.m_aliases.end())
+        host=site.m_name.c_str();
 
-    // TODO: Need to allow for use of SERVER_NAME
-
-    init(g_Config, string(scheme), site.m_name, atoi(port),
-	 string(url), string(""), // XXX: content type
-	 string(remote_addr), string("") // XXX: http method
-	 ); 
+    init(g_Config, scheme, host, atoi(port), url, content_type, remote_addr, method); 
 
     m_pfc = pfc;
     m_pn = pn;
@@ -444,7 +461,7 @@ public:
   }
   virtual void* sendRedirect(const string url) {
     // XXX: Don't support the httpRedirect option, yet.
-    string hdrs=string("Location: ") + url + "\r\n"
+    string hdrs=m_cookie + string("Location: ") + url + "\r\n"
       "Content-Type: text/html\r\n"
       "Content-Length: 40\r\n"
       "Expires: 01-Jan-1997 12:00:00 GMT\r\n"
@@ -461,12 +478,16 @@ public:
   virtual void* returnOK(void) { return (void*) SF_STATUS_REQ_NEXT_NOTIFICATION; }
 
   // The filter never processes the POST, so stub these methods.
-  virtual void setCookie(const string &name, const string &value) { throw runtime_error("setCookie not implemented"); }
+  virtual void setCookie(const string &name, const string &value) {
+    // Set the cookie for later.  Use it during the redirect.
+    m_cookie += "Set-Cookie: " + name + "=" + value + "\r\n";
+  }
   virtual string getArgs(void) { throw runtime_error("getArgs not implemented"); }
   virtual string getPostData(void) { throw runtime_error("getPostData not implemented"); }
   
   PHTTP_FILTER_CONTEXT m_pfc;
   PHTTP_FILTER_PREPROC_HEADERS m_pn;
+  string m_cookie;
 };
 
 DWORD WriteClientError(PHTTP_FILTER_CONTEXT pfc, const char* msg)
@@ -512,25 +533,25 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
         threadid << "[" << getpid() << "] isapi_shib" << '\0';
         saml::NDC ndc(threadid.str().c_str());
 
-	ShibTargetIsapiF stf(pfc, pn, map_i->second);
+        ShibTargetIsapiF stf(pfc, pn, map_i->second);
 
-	// "false" because we don't override the Shib settings
-	pair<bool,void*> res = stf.doCheckAuthN();
-	if (res.first) return (DWORD)res.second;
+        // "false" because we don't override the Shib settings
+        pair<bool,void*> res = stf.doCheckAuthN();
+        if (res.first) return (DWORD)res.second;
 
-	// "false" because we don't override the Shib settings
-	res = stf.doExportAssertions();
-	if (res.first) return (DWORD)res.second;
+        // "false" because we don't override the Shib settings
+        res = stf.doExportAssertions();
+        if (res.first) return (DWORD)res.second;
 
-	res = stf.doCheckAuthZ();
-	if (res.first) return (DWORD)res.second;
+        res = stf.doCheckAuthZ();
+        if (res.first) return (DWORD)res.second;
 
         return SF_STATUS_REQ_NEXT_NOTIFICATION;
     }
     catch(bad_alloc) {
         return WriteClientError(pfc,"Out of Memory");
     }
-    catch(DWORD e) {
+    catch(long e) {
         if (e==ERROR_NO_DATA)
             return WriteClientError(pfc,"A required variable or header was empty.");
         else
@@ -1025,8 +1046,12 @@ public:
 
     // Port may come from IIS or from site def.
     dynabuf port(11);
-    if (site.m_port.empty() || !g_bNormalizeRequest)
+    if (!g_bNormalizeRequest || (SSL && site.m_sslport.empty()) || (!SSL && site.m_port.empty()))
         GetServerVariable(lpECB,"SERVER_PORT",port,10);
+    else if (SSL) {
+        strncpy(port,site.m_sslport.c_str(),10);
+        static_cast<char*>(port)[10]=0;
+    }
     else {
         strncpy(port,site.m_port.c_str(),10);
         static_cast<char*>(port)[10]=0;
@@ -1038,14 +1063,17 @@ public:
         scheme = SSL ? "https" : "http";
     }
 
-    // Get the remote address
-    dynabuf remote_addr(16);
+    // Get the other server variables.
+    dynabuf remote_addr(16),hostname(32);
     GetServerVariable(lpECB, "REMOTE_ADDR", remote_addr, 16);
+    GetServerVariable(lpECB, "SERVER_NAME", hostname, 32);
 
-    init(g_Config, string(scheme), site.m_name, atoi(port),
-	 string(url), string(lpECB->lpszContentType ? lpECB->lpszContentType : ""),
-	 string(remote_addr), string(lpECB->lpszMethod)
-	 ); 
+    // Make sure SERVER_NAME is "authorized" for use on this site. If not, set to canonical name.
+    const char* host=hostname;
+    if (site.m_name!=host && site.m_aliases.find(host)==site.m_aliases.end())
+        host=site.m_name.c_str();
+
+    init(g_Config, scheme, host, atoi(port), url, lpECB->lpszContentType, remote_addr, lpECB->lpszMethod);
 
     m_lpECB = lpECB;
   }
@@ -1121,8 +1149,13 @@ public:
   }
   virtual void* returnOK(void) { return (void*) HSE_STATUS_SUCCESS; }
 
+  virtual string getCookies(void) {
+    dynabuf buf(128);
+    GetServerVariable(m_lpECB, "HTTP_COOKIE", buf, 128, false);
+    return buf.empty() ? "" : buf;
+  }
+
   // Not used in the extension.
-  virtual string getCookies(void) { throw runtime_error("getCookies not implemented"); }
   virtual void clearHeader(const string &name) { throw runtime_error("clearHeader not implemented"); }
   virtual void setHeader(const string &name, const string &value) { throw runtime_error("setHeader not implemented"); }
   virtual string getHeader(const string &name) { throw runtime_error("getHeader not implemented"); }
@@ -1137,8 +1170,7 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
 {
     string targeturl;
     const IApplication* application=NULL;
-    try
-    {
+    try {
         ostringstream threadid;
         threadid << "[" << getpid() << "] shire_handler" << '\0';
         saml::NDC ndc(threadid.str().c_str());
@@ -1159,10 +1191,20 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
         return WriteClientError(lpECB, "Shibboleth Extension failed to process request");
 
     }
-    catch (...) {
-      return WriteClientError(lpECB,
-			      "Shibboleth Extension caught an unknown error.");
+    catch(bad_alloc) {
+        return WriteClientError(lpECB,"Out of Memory");
     }
+    catch(long e) {
+        if (e==ERROR_NO_DATA)
+            return WriteClientError(lpECB,"A required variable or header was empty.");
+        else
+            return WriteClientError(lpECB,"Server detected unexpected IIS error.");
+    }
+#ifndef _DEBUG
+    catch(...) {
+        return WriteClientError(lpECB,"Server caught an unknown exception.");
+    }
+#endif
 
     // If we get here we've got an error.
     return HSE_STATUS_ERROR;
