@@ -16,7 +16,7 @@
 	
 	<!-- First some useful eduPerson attributes that many sites might use. -->
 	
-	<AttributeRule Name="urn:mace:dir:attribute-def:eduPersonScopedAffiliation" Header="Shib-EP-Affiliation" Alias="affiliation">
+	<AttributeRule Name="urn:mace:dir:attribute-def:eduPersonScopedAffiliation" Scoped="true" Header="Shib-EP-Affiliation" Alias="affiliation">
 		<!-- Filtering rule to limit values to eduPerson-defined enumeration. -->
         <AnySite>
             <Value Type="regexp">^[M|m][E|e][M|m][B|b][E|e][R|r]$</Value>
@@ -47,7 +47,7 @@
         </AnySite>
 	</AttributeRule>
 	
-    <AttributeRule Name="urn:mace:dir:attribute-def:eduPersonPrincipalName" Header="REMOTE_USER" Alias="user">
+    <AttributeRule Name="urn:mace:dir:attribute-def:eduPersonPrincipalName" Scoped="true" Header="REMOTE_USER" Alias="user">
 		<!-- Basic rule to pass through any value. -->
         <AnySite>
             <Value Type="regexp">^[^@]+$</Value>

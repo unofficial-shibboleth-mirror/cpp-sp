@@ -88,6 +88,7 @@ namespace {
             const char* getFactory() const { return m_factory.get(); }
             const char* getAlias() const { return m_alias.get(); }
             const char* getHeader() const { return m_header.get(); }
+            const bool getScoped() const { return m_scoped; }
             void apply(const IProvider* originSite, SAMLAttribute& attribute) const;
     
             enum value_type { literal, regexp, xpath };
@@ -97,6 +98,7 @@ namespace {
             auto_ptr_char m_factory;
             auto_ptr_char m_alias;
             auto_ptr_char m_header;
+            bool m_scoped;
             
             value_type toValueType(const DOMElement* e);
             bool scopeCheck(const IProvider* originSite, const DOMElement* e) const;
@@ -244,7 +246,8 @@ XMLAAPImpl::~XMLAAPImpl()
 XMLAAPImpl::AttributeRule::AttributeRule(const DOMElement* e) :
     m_factory(e->hasAttributeNS(NULL,SHIB_L(Factory)) ? e->getAttributeNS(NULL,SHIB_L(Factory)) : NULL),
     m_alias(e->hasAttributeNS(NULL,SHIB_L(Alias)) ? e->getAttributeNS(NULL,SHIB_L(Alias)) : NULL),
-    m_header(e->hasAttributeNS(NULL,SHIB_L(Header)) ? e->getAttributeNS(NULL,SHIB_L(Header)) : NULL)
+    m_header(e->hasAttributeNS(NULL,SHIB_L(Header)) ? e->getAttributeNS(NULL,SHIB_L(Header)) : NULL),
+    m_scoped(false)
     
 {
     static const XMLCh wTrue[] = {chLatin_t, chLatin_r, chLatin_u, chLatin_e, chNull};
@@ -253,6 +256,9 @@ XMLAAPImpl::AttributeRule::AttributeRule(const DOMElement* e) :
     m_namespace=e->getAttributeNS(NULL,SHIB_L(Namespace));
     if (!m_namespace || !*m_namespace)
         m_namespace=Constants::SHIB_ATTRIBUTE_NAMESPACE_URI;
+    
+    const XMLCh* scoped=e->getAttributeNS(NULL,SHIB_L(Scoped));
+    m_scoped=(scoped && (*scoped==chDigit_1 || !XMLString::compareString(scoped,wTrue)));
     
     // Check for an AnySite rule.
     DOMNode* anysite = e->getFirstChild();
@@ -417,13 +423,19 @@ namespace {
 
 bool XMLAAPImpl::AttributeRule::scopeCheck(const IProvider* originSite, const DOMElement* e) const
 {
-    // Are we scoped?
-    const XMLCh* scope=e->getAttributeNS(NULL,SHIB_L(Scope));
-    if (!scope || !*scope)
-        return true;
-
     NDC ndc("scopeCheck");
     Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".XMLAAPImpl");
+
+    // Are we scoped?
+    const XMLCh* scope=e->getAttributeNS(NULL,SHIB_L(Scope));
+    if (!scope || !*scope) {
+        // Are we allowed to be unscoped?
+        if (m_scoped && log.isWarnEnabled()) {
+                auto_ptr_char temp(m_name);
+                log.warn("attribute %s is scoped, no scope supplied, rejecting it",temp.get());
+        }
+        return !m_scoped;
+    }
 
     vector<pair<value_type,const XMLCh*> >::const_iterator i;
 
