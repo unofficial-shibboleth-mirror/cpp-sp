@@ -4,6 +4,8 @@ AUTOMAKE_OPTIONS = foreign
 
 bin_PROGRAMS = siterefresh
 
+AM_CXXFLAGS = -DDEFAULT_SCHEMA_DIR=\"$(sysconfdir)/@PACKAGE@/\"
+
 siterefresh_SOURCES = siterefresh.cpp
 
 siterefresh_LDADD = \

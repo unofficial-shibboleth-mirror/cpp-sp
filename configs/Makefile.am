@@ -30,6 +30,7 @@ do-build-file:
 	    -e 's:@-PKGSYSCONFDIR-@:${pkgsysconfdir}:' \
 	    -e 's:@-LOGDIR-@:${logdir}:'
 	cmp -s ${FILE} ${FILE}.tmp || mv ${FILE}.tmp ${FILE}
+	rm -f ${FILE}.tmp
 
 apache.config: ${srcdir}/apache.config.in Makefile ${top_builddir}/config.status
 	$(MAKE) do-build-file FILE=$@

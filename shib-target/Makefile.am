@@ -7,8 +7,11 @@ lib_LTLIBRARIES = libshib-target.la
 if USE_OUR_ONCRPC
 libshib_target_la_LIBADD = ${top_builddir}/oncrpc/liboncrpc.la
 AM_CFLAGS = -I${top_srcdir}/oncrpc
-AM_CXXFLAGS = -I${top_srcdir}/oncrpc
+MY_AM_CXXFLAGS = -I${top_srcdir}/oncrpc
 endif
+
+INIFLAGS = -DSHIBTARGET_INIFILE=\"$(sysconfdir)/@PACKAGE@/shibboleth.ini\"
+AM_CXXFLAGS = $(MY_AM_CXXFLAGS) $(INIFLAGS)
 
 libshib_targetdir = $(includedir)/shib-target
 libshib_target_HEADERS = shib-target.h shibrpc.h ccache-utils.h
