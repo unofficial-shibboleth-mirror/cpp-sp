@@ -169,14 +169,14 @@ void* ShibInternalConfig::refresh_fn(void* config_p)
   sigfillset(&sigmask);
   Thread::mask_signals(SIG_BLOCK, &sigmask, NULL);
 
-  // Now run the cleanup process.
+  // Now run the refresh process.
   config->refresh();
 }
 
 void ShibInternalConfig::refresh()
 {
     Mutex* mutex = Mutex::create();
-    saml::NDC ndc("cleanup");
+    saml::NDC ndc("refresh");
     log4cpp::Category& log=log4cpp::Category::getInstance(SHIB_LOGCAT".ShibConfig");
 
     mutex->lock();
