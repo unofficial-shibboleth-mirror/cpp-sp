@@ -71,7 +71,7 @@ using namespace saml;
 using namespace shibboleth;
 using namespace shibtarget;
 
-RPCHandle::RPCHandle() : m_clnt(NULL), m_sock((IListener::ShibSocket)NULL), log(&(log4cpp::Category::getInstance("shibtarget.RPCHandle")))
+RPCHandle::RPCHandle() : m_clnt(NULL), m_sock((IListener::ShibSocket)0), log(&(log4cpp::Category::getInstance("shibtarget.RPCHandle")))
 {
     log->debug("New RPCHandle created: %p", this);
 }
