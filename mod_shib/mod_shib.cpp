@@ -357,6 +357,7 @@ struct shib_server_config
     char* szWAYFLocation;	// URL of WAYF service
     char* szSHIRELocation;	// URL of SHIRE acceptance point
     char* szSHIRESessionPath;	// path to storage for sessions
+    int bNormalizeRequest;      // normalize requested URL based on server name?
 };
 
 // creates the per-server configuration
@@ -367,6 +368,7 @@ extern "C" void* create_shib_server_config (pool * p, server_rec * s)
     sc->szWAYFLocation = NULL;
     sc->szSHIRELocation = NULL;
     sc->szSHIRESessionPath = NULL;
+    sc->bNormalizeRequest = -1;
     return sc;
 }
 
@@ -405,6 +407,7 @@ extern "C" void* merge_shib_server_config (pool* p, void* base, void* sub)
     else
         sc->szSHIRESessionPath=NULL;
 
+    sc->bNormalizeRequest=((child->bNormalizeRequest==-1) ? parent->bNormalizeRequest : child->bNormalizeRequest);
     return sc;
 }
 
@@ -470,12 +473,18 @@ extern "C" const char* ap_set_global_flag_slot(cmd_parms* parms, void*, int arg)
     return NULL;
 }
 
-// generic per-server slot handler
+// generic per-server slot handlers
 extern "C" const char* ap_set_server_string_slot(cmd_parms* parms, void*, const char* arg)
 {
     char* base=(char*)ap_get_module_config(parms->server->module_config,&shib_module);
     int offset=(int)parms->info;
-    *((char**)(base + offset))=ap_pstrdup (parms->pool,arg);
+    *((char**)(base + offset))=ap_pstrdup(parms->pool,arg);
+    return NULL;
+}
+
+extern "C" const char* set_normalize(cmd_parms* parms, shib_server_config* sc, const char* arg)
+{
+    sc->bNormalizeRequest=atoi(arg);
     return NULL;
 }
 
@@ -525,6 +534,8 @@ command_rec shib_cmds[] = {
   {"WAYFLocation", (config_fn_t)ap_set_server_string_slot,
    (void *) XtOffsetOf (shib_server_config, szWAYFLocation),
    RSRC_CONF, TAKE1, "URL of WAYF service."},
+  {"ShibNormalizeRequest", (config_fn_t)set_normalize, NULL,
+   RSRC_CONF, TAKE1, "Normalize/convert browser requests using server name when redirecting."},
 
   {"AuthGroupFile", (config_fn_t)ap_set_file_slot,
    (void *) XtOffsetOf (shib_dir_config, szAuthGrpFile),
@@ -670,7 +681,22 @@ char* url_encode(request_rec* r, const char* s)
     return ret;
 }
 
-char* get_shire_location(request_rec* r, const char* target)
+const char* get_target(request_rec* r, const char* target)
+{
+    shib_server_config* sc=
+        (shib_server_config*)ap_get_module_config(r->server->module_config,&shib_module);
+    if (sc->bNormalizeRequest)
+    {
+        const char* colon=strchr(target,':');
+        const char* slash=strchr(colon+3,'/');
+        const char* second_colon=strchr(colon+3,':');
+        return ap_pstrcat(r->pool,ap_pstrndup(r->pool,target,colon+3-target),ap_get_server_name(r),
+			  (second_colon && second_colon < slash) ? second_colon : slash,NULL);
+    }
+    return target;
+}
+
+const char* get_shire_location(request_rec* r, const char* target)
 {
     shib_server_config* sc=
         (shib_server_config*)ap_get_module_config(r->server->module_config,&shib_module);
@@ -716,7 +742,7 @@ extern "C" int shib_check_user(request_rec* r)
     shib_dir_config* dc=
         (shib_dir_config*)ap_get_module_config(r->per_dir_config,&shib_module);
 
-    char* targeturl=ap_construct_url(r->pool,r->unparsed_uri,r);
+    const char* targeturl=get_target(r,ap_construct_url(r->pool,r->unparsed_uri,r));
  
     // If the user is accessing the SHIRE acceptance point, pass on.
     if (strstr(targeturl,sc->szSHIRELocation))
