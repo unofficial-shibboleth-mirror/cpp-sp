@@ -26,7 +26,7 @@ pkgsysconf_DATA = \
 #
 do-build-file:
 	rm -f ${FILE}.tmp
-	sed < ${FILE}.in > ${FILE}.tmp \
+	sed < ${srcdir}/${FILE}.in > ${FILE}.tmp \
 	    -e 's:@-PREFIX-@:${prefix}:' \
 	    -e 's:@-LIBEXECDIR-@:${libexecdir}:' \
 	    -e 's:@-PKGSYSCONFDIR-@:${pkgsysconfdir}:' \
