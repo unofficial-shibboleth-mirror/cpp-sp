@@ -181,6 +181,13 @@ bool AAP::accept(const XMLCh* name, const XMLCh* originSite, DOMElement* e)
 {
     NDC ndc("accept");
     log4cpp::Category& log=log4cpp::Category::getInstance("eduPerson.AAP");
+    
+    if (log.isDebugEnabled())
+    {
+        auto_ptr<char> temp(XMLString::transcode(name));
+        auto_ptr<char> temp2(XMLString::transcode(originSite));
+        log.debug("evaluating value for attribute '%s' from site '%s'",temp.get(),temp2.get());
+    }
 
     map<xstring,AttributeRule>::const_iterator arule=m_attrMap.find(name);
     if (arule==m_attrMap.end())
