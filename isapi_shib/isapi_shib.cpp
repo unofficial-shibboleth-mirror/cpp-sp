@@ -315,7 +315,7 @@ void GetServerVariable(LPEXTENSION_CONTROL_BLOCK lpECB, LPSTR lpszVariable, dyna
     s.erase();
     size=s.size();
 
-    while (lpECB->GetServerVariable(lpECB->ConnID,lpszVariable,s,&size))
+    while (!lpECB->GetServerVariable(lpECB->ConnID,lpszVariable,s,&size))
     {
         // Grumble. Check the error.
         DWORD e=GetLastError();
