@@ -265,8 +265,7 @@ public:
     char* content_length=NULL;
     if (request_header("content-length", &content_length, m_sn, m_rq)
 	!=REQ_PROCEED || atoi(content_length) > 1024*1024) // 1MB?
-      throw ShibTargetException(SHIBRPC_OK,
-			"blocked too-large a post to Shibboleth session processor");
+      throw FatalProfileException("Blocked too-large a submittion to profile endpoint.");
     else {
       char ch=IO_EOF+1;
       int cl=atoi(content_length);
@@ -281,7 +280,7 @@ public:
 	cl--;
       }
       if (cl)
-	throw ShibTargetException(SHIBRPC_OK,"error reading POST data from browser");
+	throw FatalProfileException("error reading POST data from browser");
       return cgistr;
     }
   }
