@@ -63,7 +63,15 @@ static char sccsid[] = "@(#)xdr_float.c 1.12 87/08/11 Copyr 1984 Sun Micro";
  * This routine works on Suns (Sky / 68000's) and Vaxen.
  */
 
-#ifdef vax
+#if defined(__m68k__) || defined(__sparc__) || defined(__i386__) || \
+    defined(__mips__) || defined(__ns32k__) || defined(__alpha__) || \
+    defined(__arm__) || defined(__ppc__) || defined(__ia64__) || \
+    defined(__arm26__) || defined(__sparc64__) || defined(__amd64__) || \
+    defined(WIN32)
+#define IEEEFP
+#endif
+
+#if defined(__vax__)
 
 /* What IEEE single precision floating point looks like on a Vax */
 struct	ieee_single {
@@ -100,19 +108,7 @@ xdr_float(xdrs, fp)
 	register float *fp;
 {
 
-#ifdef WIN32
-#ifdef _PPC_
-/*Motorola PowerPC is same endian for NT as Intel so...*/
-#define _X86_
-#endif
-
-#ifdef _ALPHA_
-/*also DEC ALPHA is same endian for NT as Intel so...*/
-#define _X86_
-#endif
-#endif
-
-#if !defined(mc68000) && !defined(sparc) && !defined(mips) && !defined(mmax) && !defined(_X86_)
+#ifndef IEEEFP
 	struct ieee_single is;
 	struct vax_single vs, *vsp;
 	struct sgl_limits *lim;
@@ -121,8 +117,8 @@ xdr_float(xdrs, fp)
 	switch (xdrs->x_op) {
 
 	case XDR_ENCODE:
-#if defined(mc68000) || defined(sparc) || defined(mips) || defined(mmax) || defined(_X86_)
-		return (XDR_PUTLONG(xdrs, (long *)fp));
+#ifdef IEEEFP
+     return (XDR_PUTLONG(xdrs, (int32_t *)fp));
 #else
 		vs = *((struct vax_single *)fp);
 		for (i = 0, lim = sgl_limits;
@@ -143,8 +139,8 @@ xdr_float(xdrs, fp)
 #endif
 
 	case XDR_DECODE:
-#if defined(mc68000) || defined(sparc) || defined(mips) || defined(mmax) || defined(_X86_)
-		return (XDR_GETLONG(xdrs, (long *)fp));
+#ifdef IEEEFP
+     return (XDR_GETLONG(xdrs, (int32_t *)fp));
 #else
 		vsp = (struct vax_single *)fp;
 		if (!XDR_GETLONG(xdrs, (long *)&is))
@@ -176,7 +172,7 @@ xdr_float(xdrs, fp)
  * This routine works on Suns (Sky / 68000's) and Vaxen.
  */
 
-#ifdef vax
+#if defined(__vax__)
 /* What IEEE double precision floating point looks like on a Vax */
 struct	ieee_double {
 	unsigned int	mantissa1 : 20;
@@ -217,19 +213,33 @@ xdr_double(xdrs, dp)
 	register XDR *xdrs;
 	double *dp;
 {
-	register long *lp;
-#if !defined(mc68000) && !defined(sparc) && !defined(mips) && !defined(mmax) && !defined(_X86_)
-	struct	ieee_double id;
-	struct	vax_double vd;
-	register struct dbl_limits *lim;
-	int i;
+#ifdef IEEEFP
+    int32_t *i32p;
+    bool_t rv;
+#else
+    int32_t *lp;
+    struct  ieee_double id;
+    struct  vax_double vd;
+    struct dbl_limits *lim;
+    int i;
 #endif
-
 	switch (xdrs->x_op) {
 
 	case XDR_ENCODE:
-#if defined(mc68000) || defined(sparc) || defined(mips) || defined(mmax) || defined(_X86_)
-		lp = (long *)dp;
+#ifdef IEEEFP
+        i32p = (int32_t *)(void *)dp;
+#if BYTE_ORDER == BIG_ENDIAN
+        rv = XDR_PUTLONG(xdrs, i32p);
+        if (!rv)
+            return (rv);
+        rv = XDR_PUTLONG(xdrs, i32p+1);
+#else
+        rv = XDR_PUTLONG(xdrs, i32p+1);
+        if (!rv)
+            return (rv);
+        rv = XDR_PUTLONG(xdrs, i32p);
+#endif
+        return (rv);
 #else
 		vd = *((struct vax_double *)dp);
 		for (i = 0, lim = dbl_limits;
@@ -252,20 +262,23 @@ xdr_double(xdrs, dp)
 	shipit:
 		id.sign = vd.sign;
 		lp = (long *)&id;
-#endif
-#if defined(_X86_)
-		return (XDR_PUTLONG(xdrs, lp+1) && XDR_PUTLONG(xdrs, lp));
-#else
-		return (XDR_PUTLONG(xdrs, lp++) && XDR_PUTLONG(xdrs, lp));
+        return (XDR_PUTINT32(xdrs, lp++) && XDR_PUTINT32(xdrs, lp));
 #endif
 	case XDR_DECODE:
-#if defined(mc68000) || defined(sparc) || defined(mips) || defined(mmax) || defined(_X86_)
-		lp = (long *)dp;
-#if defined(_X86_)
-		return (XDR_GETLONG(xdrs, lp+1) && XDR_GETLONG(xdrs, lp));
+#ifdef IEEEFP
+        i32p = (int32_t *)(void *)dp;
+#if BYTE_ORDER == BIG_ENDIAN
+        rv = XDR_GETLONG(xdrs, i32p);
+        if (!rv)
+            return (rv);
+        rv = XDR_GETLONG(xdrs, i32p+1);
 #else
-		return (XDR_GETLONG(xdrs, lp++) && XDR_GETLONG(xdrs, lp));
+        rv = XDR_GETLONG(xdrs, i32p+1);
+        if (!rv)
+            return (rv);
+        rv = XDR_GETLONG(xdrs, i32p);
 #endif
+        return (rv);
 #else
 		lp = (long *)&id;
 		if (!XDR_GETLONG(xdrs, lp++) || !XDR_GETLONG(xdrs, lp))
