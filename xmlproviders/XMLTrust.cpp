@@ -76,13 +76,19 @@ using namespace std;
 
 namespace {
 
-    int verify_callback(int ok, X509_STORE_CTX* store)
+    int logging_callback(int ok, X509_STORE_CTX* store)
     {
         if (!ok)
             Category::getInstance("OpenSSL").error(X509_verify_cert_error_string(store->error));
         return ok;
     }
     
+    int verify_callback(X509_STORE_CTX* ctx, void* arg)
+    {
+        Category::getInstance("OpenSSL").debug("invoking default X509 verify callback");
+        return X509_verify_cert(ctx);
+    }
+
     class XMLTrustImpl : public ReloadableXMLFileImpl
     {
     public:
@@ -171,8 +177,6 @@ X509_STORE* XMLTrustImpl::KeyAuthority::getX509Store()
         return NULL;
     }
     
-    X509_STORE_set_verify_cb_func(store,verify_callback);
-
     for (vector<X509*>::iterator j=m_certs.begin(); j!=m_certs.end(); j++) {
         if (!X509_STORE_add_cert(store,X509_dup(*j))) {
             log_openssl();
@@ -441,10 +445,10 @@ bool XMLTrust::attach(const Iterator<IRevocation*>& revocations, const IProvider
         }
     }
 
-    // If we have a match, use the associated keyauth.
+    // If we have a match, use the associated keyauth unless we already did...
     X509_STORE* store=kauth->getX509Store();
     if (store) {
-      
+  
         // Add any relevant CRLs.
         log.debug("obtaining CRLs for this provider/role");
         Revocation rev(revocations);
@@ -455,12 +459,12 @@ bool XMLTrust::attach(const Iterator<IRevocation*>& revocations, const IProvider
                 log.warn("failed to add CRL");
             }
         }
-        
+    
         // Apply store to this context.
-        SSL_CTX_set_verify(reinterpret_cast<SSL_CTX*>(ctx),SSL_VERIFY_PEER,NULL);//cert_verify_callback);
+        SSL_CTX_set_verify(reinterpret_cast<SSL_CTX*>(ctx),SSL_VERIFY_PEER,logging_callback);
+        SSL_CTX_set_cert_verify_callback(reinterpret_cast<SSL_CTX*>(ctx),verify_callback,NULL);
         SSL_CTX_set_cert_store(reinterpret_cast<SSL_CTX*>(ctx),store);
         SSL_CTX_set_verify_depth(reinterpret_cast<SSL_CTX*>(ctx),kauth->m_depth);
-        
     }
     return true;
 }

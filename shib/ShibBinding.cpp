@@ -66,30 +66,33 @@ using namespace saml;
 bool shibboleth::ssl_ctx_callback(void* ssl_ctx, void* userptr)
 {
     NDC("ssl_ctx_callback");
-    ShibBinding* b = reinterpret_cast<ShibBinding*>(userptr);
+    Category& log=Category::getInstance(SHIB_LOGCAT".ShibBinding");
+    
     try {
+        log.debug("OpenSAML invoked the SSL context callback");
+        ShibBinding* b = reinterpret_cast<ShibBinding*>(userptr);
         Credentials c(b->m_creds);
         const ICredResolver* cr=c.lookup(b->m_credResolverId);
         if (cr)
             cr->attach(ssl_ctx);
         else {
-            Category::getInstance(SHIB_LOGCAT".ShibBinding").error("unable to attach credentials to request");
+            log.error("unable to attach credentials to request");
             return false;
         }
         
         Trust t(b->m_trusts);
         if (!t.attach(b->m_revocations, b->m_AA, ssl_ctx)) {
-            Category::getInstance(SHIB_LOGCAT".ShibBinding").error("no appropriate key authorities to attach, blocking unverifiable request");
+            log.error("no appropriate key authorities to attach, blocking unverifiable request");
             return false;
         }
     }
     catch (SAMLException& e) {
-        Category::getInstance(SHIB_LOGCAT".ShibBinding").error(string("caught a SAML exception while attaching credentials to request: ") + e.what());
+        log.error(string("caught a SAML exception while attaching credentials to request: ") + e.what());
         return false;
     }
 #ifndef _DEBUG
     catch (...) {
-        Category::getInstance(SHIB_LOGCAT".ShibBinding").error("caught an unknown exception while attaching credentials to request");
+        log.error("caught an unknown exception while attaching credentials to request");
         return false;
     }
 #endif
