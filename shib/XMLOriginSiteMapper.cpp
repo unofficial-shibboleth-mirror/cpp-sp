@@ -79,7 +79,8 @@ XMLOriginSiteMapper::XMLOriginSiteMapper(const char* registryURI,
     DOMDocument* doc=NULL;
 	try
     {
-        URLInputSource src(NULL,registryURI);
+        static XMLCh base[]={chLatin_f, chLatin_i, chLatin_l, chLatin_e, chColon, chForwardSlash, chForwardSlash, chForwardSlash, chNull};
+        URLInputSource src(base,registryURI);
         Wrapper4InputSource dsrc(&src,false);
 		doc=p.parse(dsrc);
 
