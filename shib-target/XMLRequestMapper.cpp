@@ -281,7 +281,7 @@ const IPropertySet* Override::getPropertySet(const char* name, const char* ns) c
 const Override* Override::locate(const char* path) const
 {
     char* dup=strdup(path);
-    char* sep=strchr(path,'?');
+    char* sep=strchr(dup,'?');
     if (sep)
         *sep=0;
     for (char* pch=dup; *pch; pch++)
@@ -418,7 +418,7 @@ const Override* XMLRequestMapperImpl::findOverride(const char* vhost, const char
 const char* split_url(const char* url, string& vhost)
 {
     const char* path=NULL;
-    char* slash=strchr(url,'/');
+    const char* slash=strchr(url,'/');
     if (slash)
     {
         slash=strchr(slash,'/');
