@@ -205,7 +205,7 @@ int main(int argc,char* argv[])
         {
             doc->release();
 			log.error("requires a valid site file: (shib:SiteGroup or shib:Trust as root element)");
-			throw OriginSiteMapperException("Construction requires a valid site file: (shib:SiteGroup or shib:Trust as root element)");
+			throw MetadataException("Construction requires a valid site file: (shib:SiteGroup or shib:Trust as root element)");
 		}
 
         // If we're verifying, grab the embedded signature.
@@ -223,7 +223,7 @@ int main(int argc,char* argv[])
             {
                 doc->release();
 			    log.error("unable to locate a signature to verify in document");
-			    throw OriginSiteMapperException("Verification implies that the document must be signed");
+			    throw MetadataException("Verification implies that the document must be signed");
             }
         }
 
@@ -233,7 +233,7 @@ int main(int argc,char* argv[])
         
         doc->release();
     }
-    catch (OriginSiteMapperException&)
+    catch (MetadataException&)
     {
         ret=-1;
     }
