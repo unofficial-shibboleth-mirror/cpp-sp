@@ -63,6 +63,8 @@
 #define SHIB_INSTANTIATE
 
 #include "internal.h"
+#include "shib-threads.h"
+
 #include <openssl/err.h>
 
 using namespace saml;
@@ -76,17 +78,47 @@ SAML_EXCEPTION_FACTORY(InvalidHandleException);
 
 namespace {
     ShibConfig g_config;
+    vector<Mutex*> g_openssl_locks;
 }
+
+extern "C" void openssl_locking_callback(int mode,int n,const char *file,int line)
+{
+    if (mode & CRYPTO_LOCK)
+        g_openssl_locks[n]->lock();
+    else
+        g_openssl_locks[n]->unlock();
+}
+
+#ifndef WIN32
+extern "C" unsigned long openssl_thread_id(void)
+{
+    return reinterpret_cast<unsigned long>(pthread_self());
+}
+#endif
 
 bool ShibConfig::init()
 {
     REGISTER_EXCEPTION_FACTORY(MetadataException);
     REGISTER_EXCEPTION_FACTORY(CredentialException);
     REGISTER_EXCEPTION_FACTORY(InvalidHandleException);
+
+    // Set up OpenSSL locking.
+	for (int i=0; i<CRYPTO_num_locks(); i++)
+        g_openssl_locks.push_back(Mutex::create());
+	CRYPTO_set_locking_callback(openssl_locking_callback);
+#ifndef WIN32
+    CRYPTO_set_id_callback(openssl_thread_id);
+#endif
+
     return true;
 }
 
-void ShibConfig::term() {}
+void ShibConfig::term()
+{
+    CRYPTO_set_locking_callback(NULL);
+    for (vector<Mutex*>::iterator i=g_openssl_locks.begin(); i!=g_openssl_locks.end(); i++)
+        delete (*i);
+}
 
 void PlugManager::regFactory(const char* type, Factory* factory)
 {
