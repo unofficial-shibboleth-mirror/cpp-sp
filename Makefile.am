@@ -21,7 +21,8 @@ EXTRA_DIST = \
 	configs/ca-bundle.crt \
 	configs/shibboleth.logger \
 	configs/rmError.html \
-	configs/shire.logger
+	configs/shire.logger \
+	libtool.m4 acx_pthread.m4 acx_rpctest.m4
 
 SUBDIRS = @WANT_SUBDIRS@
 
