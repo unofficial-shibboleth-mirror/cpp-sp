@@ -201,7 +201,7 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
     }
     catch (SAMLException &e)
     {
-      log.error ("received SAML exception");
+      log.error ("received SAML exception: %s" e.what());
       ostringstream os;
       os << e;
       throw ShibTargetException (SHIBRPC_SAML_EXCEPTION, os.str());
@@ -324,7 +324,7 @@ shibrpc_get_assertions_1_svc(shibrpc_get_assertions_args_1 *argp,
       }
     }
   } catch (SAMLException& e) {
-    log.error ("received SAML exception");
+    log.error ("received SAML exception: %s", e.what());
     ostringstream os;
     os << e;
     result->status = SHIBRPC_SAML_EXCEPTION;
