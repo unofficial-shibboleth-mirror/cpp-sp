@@ -979,6 +979,9 @@ XMLMetadataImpl::EntityDescriptor::EntityDescriptor(
             }
             else {
                 string sourceid=SAMLArtifact::toHex(SAMLArtifactType0001::generateSourceId(id.get()));
+                Category::getInstance(XMLPROVIDERS_LOGCAT".XMLMetadataImpl").debug(
+                    "generated artifact SourceID (%s) for entity (%s)",sourceid.c_str(),id.get()
+                    );
                 wrapper->m_sources.insert(pair<string,const EntityDescriptor*>(sourceid,this));
             }
             Iterator<const IEndpoint*> locs=idp->getArtifactResolutionServiceManager()->getEndpoints();
@@ -1128,7 +1131,7 @@ const IEntityDescriptor* XMLMetadata::lookup(const SAMLArtifact* artifact) const
     // Depends on type of artifact.
     const SAMLArtifactType0001* type1=dynamic_cast<const SAMLArtifactType0001*>(artifact);
     if (type1) {
-        range=impl->m_sources.equal_range(type1->getSourceID());
+        range=impl->m_sources.equal_range(SAMLArtifact::toHex(type1->getSourceID()));
     }
     else {
         const SAMLArtifactType0002* type2=dynamic_cast<const SAMLArtifactType0002*>(artifact);
