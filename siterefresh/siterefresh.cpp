@@ -61,6 +61,7 @@
 #include <log4cpp/Category.hh>
 #include <log4cpp/OstreamAppender.hh>
 #include <xercesc/framework/URLInputSource.hpp>
+#include <xercesc/framework/StdInInputSource.hpp>
 #include <xsec/enc/XSECCryptoProvider.hpp>
 #include <xsec/enc/XSECKeyInfoResolverDefault.hpp>
 #include <xsec/enc/XSECCryptoException.hpp>
@@ -175,7 +176,7 @@ int main(int argc,char* argv[])
             name_param=argv[++i];
     }
 
-    if (!url_param || !out_param || (verify && !cert_param)) {
+    if (!out_param || (verify && !cert_param)) {
         cout << "usage: " << argv[0] << endl <<
             "\t--url <URL of metadata>" << endl <<
             "\t--out <pathname to copy data to>" << endl <<
@@ -221,10 +222,18 @@ int main(int argc,char* argv[])
         // Parse the specified document.
         saml::XML::Parser p;
         static XMLCh base[]={chLatin_f, chLatin_i, chLatin_l, chLatin_e, chColon, chForwardSlash, chForwardSlash, chForwardSlash, chNull};
-        URLInputSource src(base,url_param);
-        Wrapper4InputSource dsrc(&src,false);
-        DOMDocument* doc=p.parse(dsrc);
-
+        DOMDocument* doc=NULL;
+        if (url_param && *url_param) {
+            URLInputSource src(base,url_param);
+            Wrapper4InputSource dsrc(&src,false);
+            doc=p.parse(dsrc);
+        }
+        else {
+            StdInInputSource src;
+            Wrapper4InputSource dsrc(&src,false);
+            doc=p.parse(dsrc);
+        }
+    
         // Check root element.
         if (ns_param && name_param) {
             auto_ptr_XMLCh ns(ns_param);
