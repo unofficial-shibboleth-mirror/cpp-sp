@@ -158,11 +158,21 @@ void XMLRevocationImpl::init()
         DOMNodeList* nlist=m_root->getElementsByTagNameNS(::XML::TRUST_NS,SHIB_L(KeyAuthority));
         for (int i=0; nlist && i<nlist->getLength(); i++) {
             auto_ptr<KeyAuthority> ka(new KeyAuthority());
-                        
+
+            const DOMElement* k_child=
+                saml::XML::getLastChildElement(static_cast<DOMElement*>(nlist->item(i)),saml::XML::XMLSIG_NS,L(KeyInfo));
+            if (!k_child) {
+                log.error("ignoring KeyAuthority element with no ds:KeyInfo");
+                continue;
+            }
+            const DOMElement* badkeyname=saml::XML::getFirstChildElement(k_child,saml::XML::XMLSIG_NS,SHIB_L(KeyName));
+            if (badkeyname) {
+                log.error("ignoring KeyAuthority element with embedded ds:KeyName, these must appear only outside of ds:KeyInfo");
+                continue;
+            }
+
             // Very rudimentary, grab up all the in-band X509CRL elements, and flatten into one list.
-            DOMNodeList* crllist=static_cast<DOMElement*>(nlist->item(i))->getElementsByTagNameNS(
-                saml::XML::XMLSIG_NS,SHIB_L(X509CRL)
-                );
+            DOMNodeList* crllist=k_child->getElementsByTagNameNS(saml::XML::XMLSIG_NS,SHIB_L(X509CRL));
             for (int j=0; crllist && j<crllist->getLength(); j++) {
                 auto_ptr_char blob(crllist->item(j)->getFirstChild()->getNodeValue());
                 X509_CRL* x=B64_to_CRL(blob.get());
@@ -173,9 +183,7 @@ void XMLRevocationImpl::init()
             }
             
             // Now look for externally referenced objects.
-            crllist=static_cast<DOMElement*>(nlist->item(i))->getElementsByTagNameNS(
-                saml::XML::XMLSIG_NS,SHIB_L(RetrievalMethod)
-                );
+            crllist=k_child->getElementsByTagNameNS(saml::XML::XMLSIG_NS,SHIB_L(RetrievalMethod));
             for (int k=0; crllist && k<crllist->getLength(); k++) {
                 DOMElement* crl=static_cast<DOMElement*>(crllist->item(k));
                 if (!XMLString::compareString(crl->getAttributeNS(NULL,SHIB_L(Type)),::XML::XMLSIG_RETMETHOD_RAWX509CRL)) {
@@ -217,7 +225,9 @@ void XMLRevocationImpl::init()
             
             // Now map the ds:KeyName values to the list of certs.
             bool wildcard=true;
-            DOMElement* sub=saml::XML::getFirstChildElement(static_cast<DOMElement*>(nlist->item(i)),saml::XML::XMLSIG_NS,SHIB_L(KeyName));
+            DOMElement* sub=saml::XML::getFirstChildElement(
+                static_cast<DOMElement*>(nlist->item(i)),saml::XML::XMLSIG_NS,SHIB_L(KeyName)
+                );
             while (sub) {
                 const XMLCh* name=sub->getFirstChild()->getNodeValue();
                 if (name && *name) {
