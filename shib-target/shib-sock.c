@@ -109,4 +109,11 @@ shib_sock_connect (ShibSocket s, ShibSockName name)
   return 0;
 }
 
+/* close the socket (and remove the file) */
+void
+shib_sock_close (ShibSocket s)
+{
+  close (s);
+}
+
 #endif /* WIN32 */

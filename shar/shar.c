@@ -18,8 +18,10 @@ int
 main (int argc, char *argv[])
 {
   ShibSocket sock;
-  SVCXPRT *transp;
   char* config = getenv("SHIBCONFIG");
+  ShibRPCProtocols protos[] = {
+    { SHIBRPC_PROG, SHIBRPC_VERS_1, shibrpc_prog_1 }
+  };
 
   /* initialize the shib-target library */
   if (shib_target_initialize(SHIBTARGET_SHAR, config))
@@ -33,21 +35,9 @@ main (int argc, char *argv[])
   if (shib_sock_bind (sock, SHIB_SHAR_SOCKET) != 0)
     return -3;
 
-  /* Wrap an RPC Service around the listener socket */
-  transp = svctcp_create (sock, 0, 0);
-  if (!transp) {
-    fprintf (stderr, "Cannot create RPC Listener\n");
-    return -4;
-  }
+  shibrpc_svc_run(sock, protos, 1);
 
-  /* Register the SHIBRPC RPC Program */
-  if (!svc_register (transp, SHIBRPC_PROG, SHIBRPC_VERS_1, shibrpc_prog_1, 0)) {
-    fprintf (stderr, "Cannot register RPC Program\n");
-    return -5;
-  }
-
-  /* Run RPC */
-  svc_run ();			/* Never Returns */
+  shib_sock_close(sock);
   fprintf (stderr, "svc_run returned.\n");
   return 0;
 
