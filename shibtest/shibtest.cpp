@@ -90,12 +90,6 @@ DummyMapper::~DummyMapper()
         delete i->second;
 }
 
-
-extern "C" SAMLAttribute* scopedFactory(IDOM_Element* e)
-{
-    return new ScopedAttribute(e);
-}
-
 int main(int argc,char* argv[])
 {
     DummyMapper mapper;
@@ -136,14 +130,11 @@ int main(int argc,char* argv[])
     if (!ShibConfig::init(&conf2))
         cerr << "unable to initialize Shibboleth runtime" << endl;
 
-    saml::XML::registerSchema(eduPerson::XML::EDUPERSON_NS,eduPerson::XML::EDUPERSON_SCHEMA_ID);
-
-    SAMLAttribute::regFactory(eduPerson::Constants::EDUPERSON_PRINCIPAL_NAME,
-                              shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,
-                              &scopedFactory);
-    SAMLAttribute::regFactory(eduPerson::Constants::EDUPERSON_AFFILIATION,
-                              shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,
-                              &scopedFactory);
+#ifdef WIN32
+    SAMLConfig::getConfig()->saml_register_extension("eduPerson.dll");
+#else
+    SAMLConfig::getConfig()->saml_register_extension("libeduPerson.so");
+#endif
 
     try
     {
@@ -210,7 +201,7 @@ int main(int argc,char* argv[])
     }
     catch(SAMLException& e)
     {
-        cerr << "caught a SAML exception: " << e.what() << endl;
+        cerr << "caught a SAML exception: " << e << endl;
     }
     catch(XMLException& e)
     {
