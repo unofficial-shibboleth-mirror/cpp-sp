@@ -160,7 +160,9 @@ namespace shibtarget {
 
     struct SHIBTARGET_EXPORTS IAccessControl : public virtual shibboleth::ILockable, public virtual shibboleth::IPlugIn
     {
-        virtual bool authorized(const saml::Iterator<saml::SAMLAssertion*>& creds) const=0;
+        virtual bool authorized(
+            const saml::SAMLAuthenticationStatement& authn, const saml::Iterator<saml::SAMLAssertion*>& attrs
+            ) const=0;
         virtual ~IAccessControl() {}
     };
 

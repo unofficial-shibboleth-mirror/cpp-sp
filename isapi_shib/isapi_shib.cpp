@@ -552,7 +552,7 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
         // Do we have an access control plugin?
         if (settings.second) {
             Locker acllock(settings.second);
-            if (!settings.second->authorized(assertions)) {
+            if (!settings.second->authorized(*sso_statement,assertions)) {
                 for (int k = 0; k < assertions.size(); k++)
                     delete assertions[k];
                 delete sso_statement;
@@ -609,29 +609,27 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
         pn->SetHeader(pfc,"Shib-NameIdentifier-Format:","");
 
         // Export the SAML AuthnMethod and the origin site name.
-        if (sso_statement) {
-            auto_ptr_char os(sso_statement->getSubject()->getNameIdentifier()->getNameQualifier());
-            auto_ptr_char am(sso_statement->getAuthMethod());
-            pn->SetHeader(pfc,"Shib-Origin-Site:", const_cast<char*>(os.get()));
-            pn->SetHeader(pfc,"Shib-Authentication-Method:", const_cast<char*>(am.get()));
+        auto_ptr_char os(sso_statement->getSubject()->getNameIdentifier()->getNameQualifier());
+        auto_ptr_char am(sso_statement->getAuthMethod());
+        pn->SetHeader(pfc,"Shib-Origin-Site:", const_cast<char*>(os.get()));
+        pn->SetHeader(pfc,"Shib-Authentication-Method:", const_cast<char*>(am.get()));
 
-            // Export NameID?
-            AAP wrapper(provs,sso_statement->getSubject()->getNameIdentifier()->getFormat(),Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
-            if (!wrapper.fail() && wrapper->getHeader()) {
-                auto_ptr_char form(sso_statement->getSubject()->getNameIdentifier()->getFormat());
-                auto_ptr_char nameid(sso_statement->getSubject()->getNameIdentifier()->getName());
-                pn->SetHeader(pfc,"Shib-NameIdentifier-Format:",const_cast<char*>(form.get()));
-                if (!strcmp(wrapper->getHeader(),"REMOTE_USER")) {
-                    char* principal=const_cast<char*>(nameid.get());
-                    pn->SetHeader(pfc,"remote-user:",principal);
-                    pfc->pFilterContext=pfc->AllocMem(pfc,strlen(principal)+1,0);
-                    if (pfc->pFilterContext)
-                        strcpy(static_cast<char*>(pfc->pFilterContext),principal);
-                }
-                else {
-                    string hname=string(wrapper->getHeader()) + ':';
-                    pn->SetHeader(pfc,const_cast<char*>(wrapper->getHeader()),const_cast<char*>(nameid.get()));
-                }
+        // Export NameID?
+        AAP wrapper(provs,sso_statement->getSubject()->getNameIdentifier()->getFormat(),Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
+        if (!wrapper.fail() && wrapper->getHeader()) {
+            auto_ptr_char form(sso_statement->getSubject()->getNameIdentifier()->getFormat());
+            auto_ptr_char nameid(sso_statement->getSubject()->getNameIdentifier()->getName());
+            pn->SetHeader(pfc,"Shib-NameIdentifier-Format:",const_cast<char*>(form.get()));
+            if (!strcmp(wrapper->getHeader(),"REMOTE_USER")) {
+                char* principal=const_cast<char*>(nameid.get());
+                pn->SetHeader(pfc,"remote-user:",principal);
+                pfc->pFilterContext=pfc->AllocMem(pfc,strlen(principal)+1,0);
+                if (pfc->pFilterContext)
+                    strcpy(static_cast<char*>(pfc->pFilterContext),principal);
+            }
+            else {
+                string hname=string(wrapper->getHeader()) + ':';
+                pn->SetHeader(pfc,const_cast<char*>(wrapper->getHeader()),const_cast<char*>(nameid.get()));
             }
         }
 
