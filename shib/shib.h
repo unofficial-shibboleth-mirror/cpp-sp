@@ -218,6 +218,7 @@ namespace shibboleth
     {
         static const XMLCh POLICY_INCOMMON[];
         static const XMLCh SHIB_ATTRIBUTE_NAMESPACE_URI[];
+        static const XMLCh SHIB_NAMEID_FORMAT_URI[];
     };
 
     class SHIB_EXPORTS XML

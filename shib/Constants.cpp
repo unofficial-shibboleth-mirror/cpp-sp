@@ -72,3 +72,12 @@ const XMLCh shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI[] = // urn:mace:
   chLatin_a, chLatin_t, chLatin_t, chLatin_r, chLatin_i, chLatin_b, chLatin_u, chLatin_t, chLatin_e, chLatin_N, chLatin_a, chLatin_m, chLatin_e, chLatin_s, chLatin_p, chLatin_a, chLatin_c, chLatin_e, chColon,
   chLatin_u, chLatin_r, chLatin_i, chNull
 };
+
+const XMLCh shibboleth::Constants::SHIB_NAMEID_FORMAT_URI[] = // urn:mace:shibboleth:1.0:nameIdentifier
+{
+  chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
+  chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
+  chDigit_1, chPeriod, chDigit_0, chColon,
+  chLatin_n, chLatin_a, chLatin_m, chLatin_e, chLatin_I, chLatin_d, chLatin_e, chLatin_n, chLatin_t, chLatin_i, chLatin_f, chLatin_i, chLatin_e, chLatin_r, chNull
+};
+
