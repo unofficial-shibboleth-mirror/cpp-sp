@@ -111,7 +111,11 @@ public:
     static const XMLCh CREDS_SCHEMA_ID[];
     static const XMLCh TRUST_NS[];
     static const XMLCh TRUST_SCHEMA_ID[];
-    
+    static const XMLCh SAML2ASSERT_NS[];
+    static const XMLCh SAML2ASSERT_SCHEMA_ID[];
+    static const XMLCh SAML2META_NS[];
+    static const XMLCh SAML2META_SCHEMA_ID[];
+        
     // ds:KeyInfo RetrievalMethods
     static const XMLCh XMLSIG_RETMETHOD_RAWX509[];  // http://www.w3.org/2000/09/xmldsig#rawX509Certificate
     static const XMLCh XMLSIG_RETMETHOD_RAWX509CRL[]; // http://www.w3.org/2000/09/xmldsig-more#rawX509CRL
@@ -120,6 +124,7 @@ public:
 
     struct Literals
     {
+        // old metadata constants
         static const XMLCh AttributeAuthority[];
         static const XMLCh Contact[];
         static const XMLCh Domain[];
@@ -149,6 +154,7 @@ public:
         static const XMLCh password[];
         static const XMLCh Path[];
         
+        // trust constants
         static const XMLCh Exponent[];
         static const XMLCh KeyAuthority[];
         static const XMLCh KeyName[];
@@ -160,6 +166,7 @@ public:
         static const XMLCh VerifyDepth[];
         static const XMLCh X509CRL[];
 
+        // SAML attribute constants
         static const XMLCh Scope[];
 
         static const XMLCh Accept[];
@@ -183,6 +190,65 @@ public:
         static const XMLCh xpath[];
 
         static const XMLCh url[];
+        
+        // new metadata constants
+        static const XMLCh AdditionalMetadataLocation[];
+        static const XMLCh AffiliateMember[];
+        static const XMLCh AffiliationDescriptor[];
+        static const XMLCh affiliationOwnerID[];
+        static const XMLCh ArtifactResolutionService[];
+        static const XMLCh AssertionConsumerService[];
+        static const XMLCh AssertionIDRequestService[];
+        static const XMLCh AttributeAuthorityDescriptor[];
+        static const XMLCh AttributeConsumingService[];
+        static const XMLCh AttributeProfile[];
+        static const XMLCh AttributeService[];
+        static const XMLCh AuthnAuthorityDescriptor[];
+        static const XMLCh AuthnQueryService[];
+        static const XMLCh AuthnRequestsSigned[];
+        static const XMLCh AuthzService[];
+        static const XMLCh cacheDuration[];
+        static const XMLCh Company[];
+        static const XMLCh ContactPerson[];
+        static const XMLCh contactType[];
+        static const XMLCh EmailAddress[];
+        static const XMLCh encryption[];
+        static const XMLCh EncryptionMethod[];
+        static const XMLCh EntitiesDescriptor[];
+        static const XMLCh EntityDescriptor[];
+        static const XMLCh entityID[];
+        static const XMLCh errorURL[];
+        static const XMLCh Extensions[];
+        static const XMLCh GivenName[];
+        static const XMLCh IDPSSODescriptor[];
+        static const XMLCh index[];
+        static const XMLCh isDefault[];
+        static const XMLCh isRequired[];
+        static const XMLCh KeyDescriptor[];
+        static const XMLCh ManageNameIDService[];
+        static const XMLCh NameIDFormat[];
+        static const XMLCh NameIDMappingService[];
+        static const XMLCh Organization[];
+        static const XMLCh OrganizationName[];
+        static const XMLCh OrganizationDisplayName[];
+        static const XMLCh OrganizationURL[];
+        static const XMLCh PDPDescriptor[];
+        static const XMLCh protocolSupportEnumeration[];
+        static const XMLCh RequestedAttribute[];
+        static const XMLCh ResponseLocation[];
+        static const XMLCh RoleDescriptor[];
+        static const XMLCh ServiceDescription[];
+        static const XMLCh ServiceName[];
+        static const XMLCh signing[];
+        static const XMLCh SingleLogoutService[];
+        static const XMLCh SingleSignOnService[];
+        static const XMLCh SPSSODescriptor[];
+        static const XMLCh SurName[];
+        static const XMLCh TelephoneNumber[];
+        static const XMLCh use[];
+        static const XMLCh validUntil[];
+        static const XMLCh WantAuthnRequestsSigned[];
+        static const XMLCh WantAssertionsSigned[];
     };
 };
 
