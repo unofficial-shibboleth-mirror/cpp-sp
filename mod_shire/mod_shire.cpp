@@ -407,6 +407,9 @@ extern "C" int shire_check_user(request_rec* r)
 	  return DECLINED;
       }
 
+      // set the connection authtype
+      if (r->connection) r->connection->ap_auth_type = "shibboleth";
+
       ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
 		    "shire_check_user() Shib check for %s", targeturl);
 
