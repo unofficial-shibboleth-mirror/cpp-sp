@@ -277,10 +277,8 @@ bool RPCError::isRetryable()
     return true;
 
   case SHIBRPC_SAML_EXCEPTION:
-    if (m_priv->except) {
-      if (typeid(*m_priv->except)==typeid(RetryableProfileException))
+    if (m_priv->except && dynamic_cast<RetryableProfileException*>(m_priv->except))
         return true;
-    }
 
     // FALLTHROUGH
     default:
