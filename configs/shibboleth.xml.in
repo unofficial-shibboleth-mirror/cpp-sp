@@ -58,22 +58,24 @@
                 Apache's ServerName and Port directives or the IIS Site mapping in the <ISAPI> element
                 below.
                 -->
-                <Host name="localhost" scheme="https">
+                <Host name="localhost">
                     <Path name="secure" requireSession="true" exportAssertion="true">
                     	<!-- Example shows a subfolder on the SSL port assigned to a separate <Application> -->
 	                    <Path name="admin" applicationId="foo-admin"/>
 	                </Path>
-                </Host>
-                <Host name="localhost" scheme="http">
-                    <Path name="secure" requireSession="true" exportAssertion="true"/>
                 </Host>
             </RequestMap>
         </RequestMapProvider>
         
         <Implementation>
             <ISAPI normalizeRequest="true">
-            	<!-- Maps IIS IID values to the host scheme/name/port. -->
-                <Site id="1" scheme="http" name="localhost" port="80"/>
+            	<!--
+            	Maps IIS IID values to the host scheme/name/port. The name is required so that
+            	the proper <Host> in the request map above is found without having to cover every
+            	possible DNS/IP combination the user might enter. The port and scheme can
+            	usually be omitted, so the HTTP request's port and scheme will be used.
+            	-->
+                <Site id="1" name="localhost"/>
             </ISAPI>
         </Implementation>
     </SHIRE>
