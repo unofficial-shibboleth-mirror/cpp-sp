@@ -198,6 +198,7 @@
 				</element>
 				<any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
 			</sequence>
+			<attribute name="normalizeRequest" type="boolean" use="optional"/>
 			<anyAttribute namespace="##any" processContents="lax"/>
 		</complexType>
 	</element>
@@ -375,7 +376,6 @@
 					<attribute name="cookieProps" type="string" use="optional"/>
 					<attribute name="lifetime" type="unsignedInt" use="optional"/>
 					<attribute name="timeout" type="unsignedInt" use="optional"/>
-					<attribute name="normalizeRequest" type="boolean" use="optional"/>
 					<attribute name="checkAddress" type="boolean" use="optional"/>
 			        <anyAttribute namespace="##any" processContents="lax"/>
                 </extension>
