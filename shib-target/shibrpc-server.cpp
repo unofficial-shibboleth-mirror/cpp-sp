@@ -24,7 +24,7 @@ static std::string get_threadid (const char* proc)
 {
   static u_long counter = 0;
   ostringstream buf;
-  buf << proc << counter++;
+  buf << "[" << counter++ << "] " << proc;
   return buf.str();
 }
 
@@ -47,7 +47,8 @@ shibrpc_session_is_valid_1_svc(shibrpc_session_is_valid_args_1 *argp,
 			       struct svc_req *rqstp)
 {
   log4cpp::Category& log = get_category();
-  saml::NDC(get_threadid("session_is_valid"));
+  string ctx = get_threadid("session_is_valid");
+  saml::NDC ndc(ctx);
 
   if (!argp || !result) {
     log.error ("RPC Argument Error");
@@ -101,7 +102,8 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
 			  shibrpc_new_session_ret_1 *result, struct svc_req *rqstp)
 {
   log4cpp::Category& log = get_category();
-  saml::NDC(get_threadid("new_session"));
+  string ctx = get_threadid("new_session");
+  saml::NDC ndc(ctx);
 
   if (!argp || !result) {
     log.error ("Invalid RPC Arguments");
@@ -129,7 +131,7 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
     ShibPOSTProfileFactory::getInstance(policies,
 					ShibConfig::getConfig().origin_mapper,
 					location.get(),
-					300);
+					3600);
 
   SAMLResponse* r = NULL;
   SAMLAuthenticationStatement* auth_st = NULL;
@@ -265,7 +267,8 @@ shibrpc_get_attrs_1_svc(shibrpc_get_attrs_args_1 *argp,
 			shibrpc_get_attrs_ret_1 *result, struct svc_req *rqstp)
 {
   log4cpp::Category& log = get_category();
-  saml::NDC(get_threadid("get_attrs"));
+  string ctx = get_threadid("get_attrs");
+  saml::NDC ndc(ctx);
 
   if (!argp || !result) {
     log.error ("Invalid RPC arguments");

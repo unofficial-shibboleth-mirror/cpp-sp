@@ -58,7 +58,7 @@ RPCError RM::getAttributes(const char* cookie, const char* ip,
 			   vector<SAMLAttribute*> &attr_replies,
 			   string &assertion)
 {
-  saml::NDC("getAttributes");
+  saml::NDC ndc("getAttributes");
   m_priv->log->info ("get attributes...");
 
   if (!cookie || *cookie == '\0') {

@@ -13,6 +13,8 @@
 #include <stdexcept>
 #include <strstream>
 
+#include <log4cpp/Category.hh>
+
 using namespace std;
 using namespace shibtarget;
 using namespace saml;
@@ -21,10 +23,31 @@ using namespace saml;
 void RPCError::init(int stat, char const* msg)
 {
   status = stat;
+  string ctx = "shibtarget.RPCError";
+  log4cpp::Category& log = log4cpp::Category::getInstance(ctx);
 
   if (status == SHIBRPC_SAML_EXCEPTION) {
     istrstream estr(msg);
-    m_except = new SAMLException(estr);
+    try { 
+      m_except = NULL;
+      m_except = new SAMLException(estr);
+    } catch (SAMLException& e) {
+      log.error ("Caught SAML Exception while building the SAMLException: %s",
+		 e.what());
+      log.error ("XML: %s", msg);
+    } catch (SAXException& e) {
+      ostrstream os;
+      xmlout(os, e.getMessage());
+      log.error ("Caught SAX Exception building SAMLException: %s", os.str());
+      log.error ("XML: %s", msg);
+    } catch (XMLException& e) {
+      log.error ("Caught XML Exception building SAMLException: %s",
+		 e.getMessage());
+      log.error ("XML: %s", msg);
+    } catch (...) {
+      log.error ("Caught exception building SAMLException!");
+      log.error ("XML: %s", msg);
+    }
     error_msg = "";
   } else {
     error_msg = msg;

@@ -50,19 +50,24 @@ static bool get_tag (ShibINI& ini, string& header, const char* tag,
 class DummyMapper : public IOriginSiteMapper
 {
 public:
-    DummyMapper() {}
+    DummyMapper();
     ~DummyMapper();
-    virtual Iterator<xstring> getHandleServiceNames(const XMLCh* originSite) { return Iterator<xstring>(v); }
+    virtual Iterator<xstring> getHandleServiceNames(const XMLCh* originSite) { return Iterator<xstring>(m_hsnames); }
     virtual Key* getHandleServiceKey(const XMLCh* handleService) { return NULL; }
     virtual Iterator<xstring> getSecurityDomains(const XMLCh* originSite);
-    virtual Iterator<X509Certificate*> getTrustedRoots() { return Iterator<X509Certificate*>(v2); }
+    virtual Iterator<X509Certificate*> getTrustedRoots() { return Iterator<X509Certificate*>(); }
 
 private:
-    vector<xstring> v;
-    vector<X509Certificate*> v2;
     typedef map<xstring,vector<xstring>*> domains_t;
     domains_t m_domains;
+    vector<xstring> m_hsnames;
 };
+
+DummyMapper::DummyMapper()
+{
+    auto_ptr<XMLCh> buf(XMLString::transcode("shibprod0.internet2.edu"));
+    m_hsnames.push_back(buf.get());
+}
 
 Iterator<xstring> DummyMapper::getSecurityDomains(const XMLCh* originSite)
 {
@@ -151,7 +156,7 @@ extern "C" int shib_target_initialize (const char* app_name, const char* inifile
   // Load any extensions
   string ext = "extensions";
   if (ini.exists(ext)) {
-    saml::NDC("load extensions");
+    saml::NDC ndc("load extensions");
     ShibINI::Iterator* iter = ini.tag_iterator(ext);
 
     for (const string* str = iter->begin(); str; str = iter->next()) {

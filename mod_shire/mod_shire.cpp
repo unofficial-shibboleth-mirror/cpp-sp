@@ -316,7 +316,8 @@ static bool is_shire_location(const char* target, const char* shire)
 
 extern "C" int shire_check_user(request_rec* r)
 {
-    ap_log_rerror(APLOG_MARK,APLOG_INFO,r,"shire_check_user: ENTER");
+    ap_log_rerror(APLOG_MARK,APLOG_INFO|APLOG_NOERRNO,r,
+		  "shire_check_user: ENTER");
 
     shire_server_config* sc=
         (shire_server_config*)ap_get_module_config(r->server->module_config,&shire_module);
@@ -333,21 +334,21 @@ extern "C" int shire_check_user(request_rec* r)
     if (is_shire_location (targeturl, sc->szSHIRELocation)) {
       // Process SHIRE POST
 
-      ap_log_rerror(APLOG_MARK,APLOG_INFO,r,
+      ap_log_rerror(APLOG_MARK,APLOG_INFO|APLOG_NOERRNO,r,
 		    "shire_check_user() Beginning SHIRE POST processing");
       
 
       // Make sure this is SSL, if it should be
       if (sc->bSSLOnly==1 && strcmp(ap_http_method(r),"https"))
       {
-        ap_log_rerror(APLOG_MARK,APLOG_ERR,r,
+        ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
 	      "shire_check_user() blocked non-SSL access to SHIRE POST processor");
         return SERVER_ERROR;
       }
 
       // Make sure this is a POST
       if (strcasecmp (r->method, "POST")) {
-        ap_log_rerror(APLOG_MARK,APLOG_ERR,r,
+        ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
 	      "shire_check_user() blocked non-POST to SHIRE POST processor");
 	return SERVER_ERROR;
       }
@@ -355,7 +356,7 @@ extern "C" int shire_check_user(request_rec* r)
       // Sure sure this POST is an appropriate content type
       const char *ct = ap_table_get (r->headers_in, "Content-type");
       if (strcasecmp (ct, "application/x-www-form-urlencoded")) {
-        ap_log_rerror(APLOG_MARK,APLOG_ERR,r,
+        ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
 	      "shire_check_user() blocked bad content-type to SHIRE POST processor");
 
 	return SERVER_ERROR;
@@ -363,7 +364,7 @@ extern "C" int shire_check_user(request_rec* r)
 
       // Make sure the "bytes sent" is a reasonable number
       if (r->bytes_sent > 1024*1024) { // 1MB?
-        ap_log_rerror(APLOG_MARK,APLOG_ERR,r,
+        ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
 	      "shire_check_user() blocked too-large a post to SHIRE POST processor");
 	
 	return SERVER_ERROR;
@@ -373,7 +374,7 @@ extern "C" int shire_check_user(request_rec* r)
       ApacheRequest *ap_req = ApacheRequest_new(r);
       int err = ApacheRequest_parse(ap_req);
       if (err != OK) {
-        ap_log_rerror(APLOG_MARK,APLOG_ERR,r,
+        ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
 	      "shire_check_user() ApacheRequest_parse() failed with %d.", err);
 
 	return SERVER_ERROR;
@@ -383,7 +384,7 @@ extern "C" int shire_check_user(request_rec* r)
       const char *target = ApacheRequest_param(ap_req, "TARGET");
       if (!target || *target == '\0') {
 	// invalid post
-        ap_log_rerror(APLOG_MARK,APLOG_ERR,r,
+        ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
 		      "shire_check_user() SHIRE POST failed to find TARGET");
 
 	return SERVER_ERROR;
@@ -393,32 +394,32 @@ extern "C" int shire_check_user(request_rec* r)
       const char *post = ApacheRequest_param(ap_req, "SAMLResponse");
       if (!post || *post == '\0') {
 	// invalid post
-        ap_log_rerror(APLOG_MARK,APLOG_ERR,r,
+        ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
 		      "shire_check_user() SHIRE POST failed to find SAMLResponse");
 
 	return SERVER_ERROR;
       }
 
-      ap_log_rerror(APLOG_MARK,APLOG_DEBUG,r,
+      ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
 	    "shire_check_user() Processing POST for target: %s", target);
 
       post = 
 	"PFJlc3BvbnNlIHhtbG5zPSJ1cm46b2FzaXM6bmFtZXM6dGM6U0FNTDoxLjA6cHJvdG9jb2wi"
 	"IHhtbG5zOnNhbWxwPSJ1cm46b2FzaXM6bmFtZXM6dGM6U0FNTDoxLjA6cHJvdG9jb2wiIElz"
-	"c3VlSW5zdGFudD0iMjAwMi0wOS0xMlQyMjo0Mjo1MFoiIE1ham9yVmVyc2lvbj0iMSIgTWlu"
+	"c3VlSW5zdGFudD0iMjAwMi0wOS0xN1QwNDowMDowMFoiIE1ham9yVmVyc2lvbj0iMSIgTWlu"
 	"b3JWZXJzaW9uPSIwIiBSZWNpcGllbnQ9Imh0dHA6Ly9sb2NhbGhvc3Qvc2hpYmJvbGV0aC9T"
 	"SElSRSIgUmVzcG9uc2VJRD0iYmI3ZjZmYjQtMmU0YS00YzY1LTgzY2QtYjIyMjQ0OWQwYmY4"
 	"Ij48U3RhdHVzPjxTdGF0dXNDb2RlIFZhbHVlPSJzYW1scDpTdWNjZXNzIj48L1N0YXR1c0Nv"
 	"ZGU+PC9TdGF0dXM+PEFzc2VydGlvbiB4bWxucz0idXJuOm9hc2lzOm5hbWVzOnRjOlNBTUw6"
 	"MS4wOmFzc2VydGlvbiIgQXNzZXJ0aW9uSUQ9IjZhYzUxYTg2LTJhNTgtNDM2My1hZjlkLTQy"
-	"YjQzYTRhMGNiZSIgSXNzdWVJbnN0YW50PSIyMDAyLTA5LTEyVDIyOjQyOjUwWiIgSXNzdWVy"
+	"YjQzYTRhMGNiZSIgSXNzdWVJbnN0YW50PSIyMDAyLTA5LTE3VDA0OjAwOjAwWiIgSXNzdWVy"
 	"PSJzaGlicHJvZDAuaW50ZXJuZXQyLmVkdSIgTWFqb3JWZXJzaW9uPSIxIiBNaW5vclZlcnNp"
-	"b249IjAiPjxDb25kaXRpb25zIE5vdEJlZm9yZT0iMjAwMi0wOS0xMlQyMjo0Mjo1MFoiIE5v"
-	"dE9uT3JBZnRlcj0iMjAwMi0wOS0xMlQyMjo0Nzo1MFoiPjxBdWRpZW5jZVJlc3RyaWN0aW9u"
+	"b249IjAiPjxDb25kaXRpb25zIE5vdEJlZm9yZT0iMjAwMi0wOS0xN1QwMjo1MDowMFoiIE5v"
+	"dE9uT3JBZnRlcj0iMjAwMi0wOS0xN1QwNDowMDowMFoiPjxBdWRpZW5jZVJlc3RyaWN0aW9u"
 	"Q29uZGl0aW9uPjxBdWRpZW5jZT5odHRwOi8vbWlkZGxld2FyZS5pbnRlcm5ldDIuZWR1L3No"
 	"aWJib2xldGgvY2x1YnMvY2x1YnNoaWIvMjAwMi8wNS88L0F1ZGllbmNlPjwvQXVkaWVuY2VS"
 	"ZXN0cmljdGlvbkNvbmRpdGlvbj48L0NvbmRpdGlvbnM+PEF1dGhlbnRpY2F0aW9uU3RhdGVt"
-	"ZW50IEF1dGhlbnRpY2F0aW9uSW5zdGFudD0iMjAwMi0wOS0xMlQyMjo0Mjo1MFoiIEF1dGhl"
+	"ZW50IEF1dGhlbnRpY2F0aW9uSW5zdGFudD0iMjAwMi0wOS0xN1QwNDowMDowMFoiIEF1dGhl"
 	"bnRpY2F0aW9uTWV0aG9kPSJCYXNpYyI+PFN1YmplY3Q+PE5hbWVJZGVudGlmaWVyIE5hbWVR"
 	"dWFsaWZpZXI9ImV4YW1wbGUuZWR1Ij40YzBmYjg2Yi01NjQwLTQ1ZTUtOTM3Ny1mNTJkNjhh"
 	"ZDNiNjQ8L05hbWVJZGVudGlmaWVyPjxTdWJqZWN0Q29uZmlybWF0aW9uPjxDb25maXJtYXRp"
@@ -436,7 +437,7 @@ extern "C" int shire_check_user(request_rec* r)
       RPCError status = shire.sessionCreate(post, r->connection->remote_ip, cookie);
 
       if (status.isError()) {
-	ap_log_rerror(APLOG_MARK,APLOG_ERR,r,
+	ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
 		      "shire_check_user() POST processes failed (%d): %s",
 		      status.status, status.error_msg.c_str());
 
@@ -444,8 +445,9 @@ extern "C" int shire_check_user(request_rec* r)
 	return SERVER_ERROR;
       }
 
-      ap_log_rerror(APLOG_MARK,APLOG_DEBUG,r,
-		    "shire_check_user() POST process succeeded.");
+      ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
+		    "shire_check_user() POST process succeeded.  New cookie: %s",
+		    cookie.c_str());
 
       // We've got a good session, set the cookie...
       char * domain = NULL;
@@ -455,11 +457,19 @@ extern "C" int shire_check_user(request_rec* r)
 				      (domain ? "; domain=" : ""),
 				      (domain ? domain : ""));
 
-      ap_table_setn(r->headers_out, "Set-Cookie", new_cookie);
+      ap_table_setn(r->err_headers_out, "Set-Cookie", new_cookie);
+      ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
+		    "shire_check_user() Set cookie: %s", new_cookie);
+		    
+
+      const char* stored_cookie = ap_table_get(r->err_headers_out, "Set-Cookie");
+      ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
+		    "shire_check_user() Stored cookie: %s", stored_cookie);
+      
 
       // ... and redirect to the target
       char* redir=ap_pstrcat(r->pool,url_encode(r,target),NULL);
-      ap_table_setn(r->headers_out, "Location", redir);
+      ap_table_setn(r->headers_out, "Location", target);
       return REDIRECT;
 
     } else {
@@ -482,22 +492,31 @@ extern "C" int shire_check_user(request_rec* r)
 	  return DECLINED;
       }
 
-      ap_log_rerror(APLOG_MARK,APLOG_DEBUG,r,
+      ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
 		    "shire_check_user() Shib check for %s", targeturl);
 
       // SSL check.
       if (dc->bSSLOnly==1 && strcmp(ap_http_method(r),"https"))
       {
-        ap_log_rerror(APLOG_MARK,APLOG_ERR,r,"shire_check_user() blocked non-SSL access");
+        ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
+		      "shire_check_user() blocked non-SSL access");
         return SERVER_ERROR;
       }
 
       // We're in charge, so check for cookie.
       const char* session_id=NULL;
       const char* cookies=ap_table_get(r->headers_in,"Cookie");
+
+      if (cookies)
+        ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
+		      "shire_check_user() cookies found: %s",
+		      cookies);		      
+
       if (!cookies || !(session_id=strstr(cookies,sc->szCookieName)))
       {
         // No cookie.  Redirect to WAYF.
+        ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
+		      "shire_check_user() no cookie found -- redirecting to WAYF");
         char* wayf=ap_pstrcat(r->pool,sc->szWAYFLocation,
 			      "?shire=",shire_location,
 			      "&target=",url_encode(r,targeturl),NULL);
@@ -519,7 +538,7 @@ extern "C" int shire_check_user(request_rec* r)
       // Check the status
       if (status.isError()) {
 
-	ap_log_rerror(APLOG_MARK,APLOG_INFO,r,
+	ap_log_rerror(APLOG_MARK,APLOG_INFO|APLOG_NOERRNO,r,
 		      "shire_check_user() session invalid: %s",
 		      status.error_msg.c_str());
 
@@ -530,17 +549,16 @@ extern "C" int shire_check_user(request_rec* r)
 	ap_table_setn(r->headers_out,"Location",wayf);
 	return REDIRECT;
 
-      } else
+      } else {
+        ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
+		      "shire_check_user() success");
 	return OK;
+      }
     }
 
+    ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
+		  "shire_check_user() server error");
     return SERVER_ERROR;
-}
-
-extern "C" int shire_test_debug(request_rec* r)
-{
-  ap_log_rerror(APLOG_MARK,APLOG_ERR,r,"shire_check_user() called");
-  return DECLINED;
 }
 
 extern "C"{
@@ -555,7 +573,6 @@ module MODULE_VAR_EXPORT shire_module = {
     NULL,			/* handlers */
     NULL,			/* filename translation */
     shire_check_user,		/* check_user_id */
-    //shire_test_debug,		/* check_user_id */
     NULL,			/* check auth */
     NULL,			/* check access */
     NULL,			/* type_checker */

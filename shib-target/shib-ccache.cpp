@@ -280,7 +280,7 @@ InternalCCacheEntry::~InternalCCacheEntry()
 
 bool InternalCCacheEntry::isSessionValid(time_t lifetime, time_t timeout)
 {
-  saml::NDC("isSessionValid");
+  saml::NDC ndc("isSessionValid");
   log->debug("test session %s@%s, (lifetime=%ld, timeout=%ld)",
 	     m_handle.c_str(), m_originSite.c_str(), lifetime, timeout);
   time_t now=time(NULL);
@@ -303,7 +303,7 @@ void InternalCCacheEntry::setCache(CCache *cache)
 
 Iterator<SAMLAttribute*> InternalCCacheEntry::getAttributes(const char* resource_url)
 {
-  saml::NDC("getAttributes");
+  saml::NDC ndc("getAttributes");
   ResourceEntry* entry = populate(resource_url);
   if (entry)
     return entry->getAttributes();
@@ -312,7 +312,7 @@ Iterator<SAMLAttribute*> InternalCCacheEntry::getAttributes(const char* resource
 
 const char* InternalCCacheEntry::getSerializedAssertion(const char* resource_url)
 {
-  saml::NDC("getSerializedAssertion");
+  saml::NDC ndc("getSerializedAssertion");
   ResourceEntry* entry = populate(resource_url);
   if (entry)
     return entry->getSerializedAssertion();
@@ -321,7 +321,7 @@ const char* InternalCCacheEntry::getSerializedAssertion(const char* resource_url
 
 ResourceEntry* InternalCCacheEntry::populate(const char* resource_url)
 {
-  saml::NDC("populate");
+  saml::NDC ndc("populate");
   log->debug("populating entry for %s", resource_url);
 
   // Can we use what we have?
@@ -442,7 +442,7 @@ ResourceEntry::~ResourceEntry()
 
 Iterator<SAMLAttribute*> ResourceEntry::getAttributes()
 {
-  saml::NDC("getAttributes");
+  saml::NDC ndc("getAttributes");
   if (m_assertion)
     {
       Iterator<SAMLStatement*> i=m_assertion->getStatements();
@@ -458,7 +458,7 @@ Iterator<SAMLAttribute*> ResourceEntry::getAttributes()
 
 const char* ResourceEntry::getSerializedAssertion()
 {
-  saml::NDC("getSerializedAssertion");
+  saml::NDC ndc("getSerializedAssertion");
   if (m_serialized)
     return m_serialized;
   if (!m_assertion)
@@ -472,7 +472,7 @@ const char* ResourceEntry::getSerializedAssertion()
 
 bool ResourceEntry::isAssertionValid()
 {
-  saml::NDC("isAssertionValid");
+  saml::NDC ndc("isAssertionValid");
 
   log->info("checking validity");
   if (m_assertion && m_assertion->getNotOnOrAfter())

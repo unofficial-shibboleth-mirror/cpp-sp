@@ -58,7 +58,7 @@ SHIRE::~SHIRE()
 
 RPCError SHIRE::sessionIsValid(const char* cookie, const char* ip)
 {
-  saml::NDC("sessionIsValid");
+  saml::NDC ndc("sessionIsValid");
 
   if (!cookie || *cookie == '\0') {
     m_priv->log->error ("No cookie");
@@ -117,7 +117,7 @@ RPCError SHIRE::sessionIsValid(const char* cookie, const char* ip)
 
 RPCError SHIRE::sessionCreate(const char* post, const char* ip, string& cookie)
 {
-  saml::NDC("sessionCreate");
+  saml::NDC ndc("sessionCreate");
 
   if (!post || *post == '\0') {
     m_priv->log->error ("No POST");

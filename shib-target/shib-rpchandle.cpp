@@ -68,7 +68,7 @@ RPCHandle::~RPCHandle()
 
 CLIENT * RPCHandle::connect(void)
 {
-  saml::NDC("connect");
+  saml::NDC ndc("connect");
 
   if (m_priv->m_clnt)
     return m_priv->m_clnt;
