@@ -3,14 +3,11 @@
  *
  * Created by:	Derek Atkins <derek@ihtfp.com>
  *
- * $Id$
+ * $Id: shib-threads.cpp,v 1.5 2003/01/30 15:18:36 warlord Exp $
  */
 
+#include "internal.h"
 #include "shib-threads.h"
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #ifdef HAVE_PTHREAD
 #include <pthread.h>
@@ -21,7 +18,7 @@
 #include <stdexcept>
 
 using namespace std;
-using namespace shibtarget;
+using namespace shibboleth;
 
 
 // pthread implementation of the Shib Target Threads API

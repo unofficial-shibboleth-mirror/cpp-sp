@@ -3,7 +3,7 @@
  *
  * Created by:	Derek Atkins <derek@ihtfp.com>
  *
- * $Id$
+ * $Id: shib-threads.h,v 1.6 2003/01/30 15:18:36 warlord Exp $
  */
 
 #ifndef SHIB_THREADS_H
@@ -14,7 +14,7 @@
 #include <time.h>
 #include <signal.h>
 
-namespace shibtarget {
+namespace shibboleth {
 
   //
   // core thread objects
@@ -72,7 +72,7 @@ namespace shibtarget {
 
   class Lock {
   public:
-    Lock(Mutex* mtx) { mutex = mtx; mutex->lock(); }
+    Lock(Mutex* mtx) : mutex(mtx) { mutex->lock(); }
     ~Lock() { mutex->unlock(); }
 
   private:
@@ -83,7 +83,7 @@ namespace shibtarget {
 
   class ReadLock {
   public:
-    ReadLock(RWLock* lock) { rwlock = lock; rwlock->rdlock(); }
+    ReadLock(RWLock* lock) : rwlock(lock) { rwlock->rdlock(); }
     ~ReadLock() { rwlock->unlock(); }
 
   private:
