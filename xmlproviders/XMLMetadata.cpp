@@ -472,6 +472,7 @@ namespace {
         const IEntityDescriptor* lookup(const char* providerId, bool strict=true) const;
         const IEntityDescriptor* lookup(const XMLCh* providerId, bool strict=true) const;
         const IEntityDescriptor* lookup(const saml::SAMLArtifact* artifact) const;
+        pair<const IEntitiesDescriptor*,const IEntityDescriptor*> getRoot() const;
         
     protected:
         virtual ReloadableXMLFileImpl* newImplementation(const char* pathname, bool first=true) const;
@@ -1286,3 +1287,10 @@ const IEntityDescriptor* XMLMetadata::lookup(const SAMLArtifact* artifact) const
     
     return NULL;
 }
+
+pair<const IEntitiesDescriptor*,const IEntityDescriptor*> XMLMetadata::getRoot() const
+{
+    XMLMetadataImpl* impl=dynamic_cast<XMLMetadataImpl*>(getImplementation());
+    return make_pair(impl->m_rootGroup,impl->m_rootProvider);
+}
+

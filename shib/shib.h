@@ -291,6 +291,7 @@ namespace shibboleth
         virtual const IEntityDescriptor* lookup(const char* id, bool strict=true) const=0;
         virtual const IEntityDescriptor* lookup(const XMLCh* id, bool strict=true) const=0;
         virtual const IEntityDescriptor* lookup(const saml::SAMLArtifact* artifact) const=0;
+        virtual std::pair<const IEntitiesDescriptor*,const IEntityDescriptor*> getRoot() const=0;
         virtual ~IMetadata() {}
     };
 
