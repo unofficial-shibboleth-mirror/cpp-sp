@@ -24,7 +24,9 @@ namespace shibboleth
     class SHIB_EXPORTS UnsupportedProtocolException : public saml::SAMLException
     {
     public:
+        explicit UnsupportedProtocolException(const char* msg) : saml::SAMLException(msg) {}
         explicit UnsupportedProtocolException(const std::string& msg) : saml::SAMLException(msg) {}
+        explicit UnsupportedProtocolException(saml::QName codes[], const char* msg) : saml::SAMLException(codes,msg) {}
         explicit UnsupportedProtocolException(saml::QName codes[], const std::string& msg) : saml::SAMLException(codes, msg) {}
     };
 
