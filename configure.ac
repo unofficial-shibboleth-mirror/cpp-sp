@@ -486,6 +486,16 @@ AC_CONFIG_FILES([apache-2.0/Makefile])
 AM_CONDITIONAL(HAVE_APXS2,test -n "$APXS2")
 AM_CONDITIONAL(DO_APXS2_INSTALL,test -n "$APXS2_INSTALL")
 
+# always output the Makefile, even if you don't use it
+AC_CONFIG_FILES([apache/Makefile])
+AM_CONDITIONAL(BUILD_AP13,test "$WANT_APACHE_13" = "yes")
+AM_CONDITIONAL(BUILD_AP20,test "$WANT_APACHE_20" = "yes")
+
+# add the apache module to the list of wanted subdirs..
+if test "$WANT_APACHE_13" = "yes" || test "$WANT_APACHE_20" = "yes" ; then
+    WANT_SUBDIRS="$WANT_SUBDIRS apache"
+fi
+
 
 #
 # Implement the checks of the MySQL Credential Cache
