@@ -130,6 +130,8 @@ void STConfig::init()
 
   log4cpp::Category& log = log4cpp::Category::getInstance("shibtarget.STConfig");
 
+  saml::NDC ndc("STConfig::init");
+
   // Init SAML
   if (ini->get_tag (app, SHIBTARGET_TAG_SCHEMAS, true, &tag))
     samlConf.schema_dir = tag;
@@ -201,7 +203,7 @@ void STConfig::init()
   // Load any SAML extensions
   string ext = "extensions:saml";
   if (ini->exists(ext)) {
-    saml::NDC ndc("load extensions");
+    saml::NDC ndc("load_extensions");
     ShibINI::Iterator* iter = ini->tag_iterator(ext);
 
     for (const string* str = iter->begin(); str; str = iter->next()) {
