@@ -199,7 +199,7 @@ bool RPCError::isRetryable()
       const type_info& info = typeid(*m_priv->except);
 
       TEST_TYPE(type_RetryableProfileException);
-      TEST_TYPE(type_ExpiredAssertionException);
+      //TEST_TYPE(type_ExpiredAssertionException);
 
       Iterator<saml::QName> codes = m_priv->except->getCodes();
       while (codes.hasNext()) {
