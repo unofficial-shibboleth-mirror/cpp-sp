@@ -12,6 +12,7 @@
 #ifdef __cplusplus
 
 #include <time.h>
+#include <signal.h>
 
 namespace shibtarget {
 
@@ -23,6 +24,7 @@ namespace shibtarget {
   public:
     static Thread* create(void* (*start_routine)(void*), void* arg);
     static void exit(void* return_val);
+    static int mask_signals(int how, const sigset_t *newmask, sigset_t *oldmask);
 
     virtual int detach() = 0;
     virtual int join(void** thread_return) = 0;

@@ -141,6 +141,11 @@ void Thread::exit(void* return_val)
   pthread_exit (return_val);
 }
     
+int Thread::mask_signals(int how, const sigset_t *newmask, sigset_t *oldmask)
+{
+  return pthread_sigmask(how,newmask,oldmask);
+}
+
 Mutex * Mutex::create()
 {
   return new MutexImpl();
