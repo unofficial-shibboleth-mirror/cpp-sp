@@ -138,7 +138,7 @@ extern "C" void shibrm_child_init(server_rec* s, pool* p)
 
     // Create the RPC Handle..  Note: this should be per _thread_
     // if there is some way to do that reasonably..
-    rpc_handle = new RPCHandle(g_Config->m_SocketName, SHIBRPC_PROG, SHIBRPC_VERS_1);
+    rpc_handle = new RPCHandle(shib_target_sockname(), SHIBRPC_PROG, SHIBRPC_VERS_1);
 
 	// Transcode the attribute names we know about for quick handling map access.
     for (map<string,string>::const_iterator i=g_mapAttribNameToHeader.begin();

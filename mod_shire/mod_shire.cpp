@@ -148,7 +148,7 @@ extern "C" void shire_child_init(server_rec* s, pool* p)
 
     // Create the RPC Handle..  Note: this should be per _thread_
     // if there is some way to do that reasonably..
-    rpc_handle = new RPCHandle(g_Config->m_SocketName, SHIBRPC_PROG, SHIBRPC_VERS_1);
+    rpc_handle = new RPCHandle(shib_target_sockname(), SHIBRPC_PROG, SHIBRPC_VERS_1);
 
     ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,s,"shire_child_init() done");
 }
