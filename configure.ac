@@ -75,6 +75,13 @@ AC_ARG_WITH(log4cpp,
                 CPPFLAGS="-I${with_log4cpp}/include $CPPFLAGS"
             fi])
 
+AC_ARG_WITH(xmlsec,
+            AC_HELP_STRING([--with-xmlsec=PATH], [where xmlsec is installed]),
+            [if test -f "${with_xmlsec}/bin/xmlsec-config"; then
+                LDFLAGS="`${with_xmlsec}/bin/xmlsec-config --libs` $LDFLAGS"
+                CPPFLAGS="`${with_xmlsec}/bin/xmlsec-config --cflags` $CPPFLAGS"
+            fi])
+
 AC_ARG_WITH(saml,
             AC_HELP_STRING([--with-saml=PATH], [where saml is installed]),
             [if test x_$with_saml != x_/usr; then
@@ -100,6 +107,16 @@ AC_CHECK_LIB([crypto], [ERR_load_CRYPTO_strings],,
              AC_MSG_ERROR([unable to link with openssl libraries]))
 AC_CHECK_LIB([ssl], [SSL_library_init],, 
              AC_MSG_ERROR([unable to link with openssl libraries]))
+
+AC_CHECK_HEADER([libxml/parser.h],,
+                AC_MSG_ERROR([unable to find libxml2 header files]))
+AC_CHECK_LIB([xml2], [xmlInitParser],,
+             AC_MSG_ERROR([unable to link with libxml2]))
+
+AC_CHECK_HEADER([xmlsec/xmlsec.h],,
+                AC_MSG_ERROR([unable to find xmlsec header files]))
+AC_CHECK_LIB([xmlsec], [xmlSecInit],,
+             AC_MSG_ERROR([unable to link with xmlsec]))
 
 AC_CHECK_HEADER([log4cpp/Category.hh],,
                 AC_MSG_ERROR([unable to find log4cpp header files]))
