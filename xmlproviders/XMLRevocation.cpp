@@ -290,15 +290,14 @@ Iterator<void*> XMLRevocation::getRevocationLists(const IProvider* provider, con
 
     // Now check each name.
     for (vector<const XMLCh*>::const_iterator name=names.begin(); name!=names.end(); name++) {
-        const XMLRevocationImpl::KeyAuthority* kauth=NULL;
 #ifdef HAVE_GOOD_STL
         XMLRevocationImpl::AuthMap::const_iterator c=impl->m_map.find(*name);
         if (c!=impl->m_map.end()) {
-            kauth=c->second;
             if (log.isDebugEnabled()) {
                 auto_ptr_char temp(*name);
                 log.debug("revocation list match on %s",temp.get());
             }
+            return c->second->m_crls;
         }
 #else
         // Without a decent STL, we trade-off the transcoding by doing a linear search.
@@ -310,16 +309,18 @@ Iterator<void*> XMLRevocation::getRevocationLists(const IProvider* provider, con
                         auto_ptr_char temp(*name);
                         log.debug("revocation list match on %s",temp.get());
                     }
+                    return (*keyauths)->m_crls;
                 }
             }
         }
 #endif
-        if (kauth)
-            return kauth->m_crls;
-        else if (impl->m_wildcard)
-            return impl->m_wildcard->m_crls;
     }
     
+    if (impl->m_wildcard) {
+        log.debug("no matching revocation list, using wildcard list");
+        return impl->m_wildcard->m_crls;
+    }
+
     log.debug("no matching revocation list");
     return EMPTY(void*);
 }
