@@ -51,7 +51,7 @@ public:
   virtual Iterator<SAMLAssertion*> getAssertions(Resource& resource)
   	{ return m_cacheEntry->getAssertions(resource); }
   virtual void preFetch(Resource& resource, int prefetch_window)
-  	{ return m_cacheEntry->preFetch(resource, prefetch_window); }
+  	{ m_cacheEntry->preFetch(resource, prefetch_window); }
   virtual bool isSessionValid(time_t lifetime, time_t timeout);
   virtual const char* getClientAddress()
   	{ return m_cacheEntry->getClientAddress(); }
@@ -404,7 +404,7 @@ void ShibMySQLCCache::createDatabase(MYSQL* mysql, int major, int minor)
 
     mysql_close(ms);
     
-  } catch (ShibTargetException &e) {
+  } catch (ShibTargetException&) {
     if (ms)
       mysql_close(ms);
     mysql_close(mysql);
@@ -488,12 +488,14 @@ void ShibMySQLCCache::mysqlInit(void)
 
   // Compute the argument array
   int arg_count = arg_array.size();
-  const char* args[arg_count];
+  const char** args=new const char*[arg_count];
   for (int i = 0; i < arg_count; i++)
     args[i] = arg_array[i].c_str();
 
   // Initialize MySQL with the arguments
   mysql_server_init(arg_count, (char **)args, NULL);
+
+  delete[] args;
 }  
 
 /*************************************************************************
