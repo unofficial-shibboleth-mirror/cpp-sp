@@ -13,6 +13,8 @@
 #include <shib-target/shib-target.h>
 #include <xercesc/util/regx/RegularExpression.hpp>
 
+#undef _XPG4_2
+
 // Apache specific header files
 #include <httpd.h>
 #include <http_config.h>
