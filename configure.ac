@@ -174,7 +174,7 @@ fi
 AM_CONDITIONAL(USE_OUR_ONCRPC,test "$rpctest" = "no")
 
 
-# Apache 1.3 (mod_shire)
+# Apache 1.3 (mod_shib_13)
 #   --with-apache-13 (static build, no idea how to do this yet, so not supported)
 #   --with-apxs      (DSO build, the normal way, uses apxs to derive build flags)
 #   --without-apxs   (DSO build, you tell us how to build using the environment)
@@ -320,17 +320,12 @@ if test "$WANT_APACHE_13" = "yes"; then
     AC_SUBST(APXS_INCLUDE)
     AC_SUBST(APXS_LIBEXEC)
     AC_SUBST(APXS_SYSCONFDIR)
-
-    # output the Apache 1.3 makefiles
-    WANT_SUBDIRS="$WANT_SUBDIRS mod_shire"
 fi
-# always output the Makefile, even if we don't use it
-AC_CONFIG_FILES([mod_shire/Makefile])
 AM_CONDITIONAL(HAVE_APXS,test -n "$APXS")
 AM_CONDITIONAL(DO_APXS_INSTALL,test -n "$APXS_INSTALL")
 
 
-# Apache 2.0 (mod_shib in apache-2.0)
+# Apache 2.0 (mod_shib_20)
 #   --with-apache-20   (static build, no idea how to do this yet, so not supported)
 #   --with-apxs2       (DSO build, the normal way, uses apxs to derive build flags)
 #   --without-apxs2    (DSO build, you tell us how to build using the environment)
@@ -477,12 +472,7 @@ if test "$WANT_APACHE_20" = "yes"; then
     AC_SUBST(APXS2_INCLUDE)
     AC_SUBST(APXS2_LIBEXEC)
     AC_SUBST(APXS2_SYSCONFDIR)
-
-    # output the Apache 2.0 makefiles
-    WANT_SUBDIRS="$WANT_SUBDIRS apache-2.0"
 fi
-# always output the Makefile, even if we don't use it
-AC_CONFIG_FILES([apache-2.0/Makefile])
 AM_CONDITIONAL(HAVE_APXS2,test -n "$APXS2")
 AM_CONDITIONAL(DO_APXS2_INSTALL,test -n "$APXS2_INSTALL")
 
