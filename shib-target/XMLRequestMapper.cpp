@@ -281,7 +281,7 @@ const IPropertySet* Override::getPropertySet(const char* name, const char* ns) c
 const Override* Override::locate(const char* path) const
 {
     char* dup=strdup(path);
-    char* sep=strchr(path,'?');
+    char* sep=strchr(dup,'?');
     if (sep)
         *sep=0;
     for (char* pch=dup; *pch; pch++)
