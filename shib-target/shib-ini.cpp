@@ -42,7 +42,7 @@ public:
   const string* next();
 private:
   ShibINIPriv* ini;
-  const string& header;
+  string header;
   map<string,string>::const_iterator iter;
   bool valid;
 };
