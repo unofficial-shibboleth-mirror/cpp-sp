@@ -17,7 +17,7 @@ libshib_la_SOURCES = \
                     ShibPOSTProfileFactory.cpp \
                     XML.cpp \
                     XMLOriginSiteMapper.cpp \
-                    shib-threads.cpp \
+                    shib-threads.cpp
 
 
 # this is different from the project version
