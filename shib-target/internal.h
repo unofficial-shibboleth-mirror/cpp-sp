@@ -152,8 +152,12 @@ namespace shibtarget {
         const IPropertySet* getPropertySet(const char* name, const char* ns="urn:mace:shibboleth:target:config:1.0") const;
         const DOMElement* getElement() const {return m_root;}
     
-    protected:
-        void load(const DOMElement* e, log4cpp::Category& log, DOMNodeFilter* filter);
+        void load(
+            const DOMElement* e,    // root element of property set
+            log4cpp::Category& log, // log object for tracing
+            DOMNodeFilter* filter,  // control what subelements to include
+            const std::map<std::string,std::string>* remapper=NULL   // on the fly property renaming for legacy support
+            );
 
     private:
         const DOMElement* m_root;
@@ -204,6 +208,9 @@ namespace shibtarget {
         static const char htaccessType[];
         static const char MemorySessionCacheType[];
         static const char MySQLSessionCacheType[];
+        static const char MemoryReplayCacheType[];
+        static const char MySQLReplayCacheType[];
+        static const char LegacyRequestMapType[];
         static const char RequestMapType[];
         static const char TCPListenerType[];
         static const char UnixListenerType[];
@@ -221,13 +228,16 @@ namespace shibtarget {
             static const XMLCh Extensions[];
             static const XMLCh fatal[];
             static const XMLCh FederationProvider[];
+            static const XMLCh Global[];
             static const XMLCh Host[];
             static const XMLCh htaccess[];
             static const XMLCh Implementation[];
             static const XMLCh Library[];
             static const XMLCh Listener[];
+            static const XMLCh Local[];
             static const XMLCh logger[];
             static const XMLCh MemorySessionCache[];
+            static const XMLCh MySQLReplayCache[];
             static const XMLCh MySQLSessionCache[];
             static const XMLCh name[];
             static const XMLCh Name[];
@@ -236,6 +246,7 @@ namespace shibtarget {
             static const XMLCh Path[];
             static const XMLCh path[];
             static const XMLCh RelyingParty[];
+            static const XMLCh ReplayCache[];
             static const XMLCh RequestMap[];
             static const XMLCh RequestMapProvider[];
             static const XMLCh require[];
@@ -246,6 +257,7 @@ namespace shibtarget {
             static const XMLCh ShibbolethTargetConfig[];
             static const XMLCh SHIRE[];
             static const XMLCh Signing[];
+            static const XMLCh SPConfig[];
             static const XMLCh TCPListener[];
             static const XMLCh TLS[];
             static const XMLCh TrustProvider[];
