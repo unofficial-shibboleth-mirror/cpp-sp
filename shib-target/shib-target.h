@@ -9,7 +9,7 @@
 #ifndef SHIB_COMMON_H
 #define SHIB_COMMON_H
 
-#include "shibrpc.h"
+#include <shib-target/shibrpc.h>
 
 #ifdef __cplusplus
 extern "C" {

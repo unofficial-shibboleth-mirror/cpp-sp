@@ -115,5 +115,5 @@ AC_TRY_LINK(
 
 # output makefiles
 AC_OUTPUT(Makefile shib/Makefile schemas/Makefile eduPerson/Makefile \
-		   shib-target/Makefile test/Makefile)
+		   shib-target/Makefile test/Makefile shar/Makefile )
 

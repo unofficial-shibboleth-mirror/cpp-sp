@@ -4,7 +4,7 @@ AUTOMAKE_OPTIONS = foreign
 
 lib_LTLIBRARIES = libshib-target.la
 
-libshib_targetdir = $(includedir)/shib
+libshib_targetdir = $(includedir)/shib-target
 libshib_target_HEADERS = shib-target.h shibrpc.h
 
 libshib_target_la_SOURCES = \

@@ -10,7 +10,7 @@
 #include <unistd.h>
 #include <stdio.h>
 
-#include "shib-target.h"
+#include <shib-target/shib-target.h>
 
 extern void shibrpc_prog_1(struct svc_req *, SVCXPRT *);
 

@@ -2,4 +2,4 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-SUBDIRS = schemas shib eduPerson shib-target test
+SUBDIRS = schemas shib eduPerson shib-target shar test
