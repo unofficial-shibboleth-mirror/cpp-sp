@@ -559,7 +559,7 @@ ResourceEntry* InternalCCacheEntry::populate(Resource& resource, int slop)
 
   try {
     entry = new ResourceEntry(resource, *m_subject, m_cache, p_auth->getBindings());
-  } catch (ShibTargetException &e) {
+  } catch (ShibTargetException&) {
     return NULL;
   }
   insert (resource.getResource(), entry);
