@@ -430,8 +430,6 @@ ShibTarget::doCheckAuthZ(void)
     ShibMLP mlp;
     const char *procState = "Authorization Processing Error";
     const char *targetURL = NULL;
-    HTAccessInfo *ht = NULL;
-    HTGroupTable* grpstatus = NULL;
 
     try {
         if (!m_priv->m_app)
@@ -454,10 +452,10 @@ ShibTarget::doCheckAuthZ(void)
         }
 
         // Perform HTAccess Checks
-        ht = getAccessInfo();
+        auto_ptr<HTAccessInfo> ht(getAccessInfo());
 
         // No Info means OK.  Just return
-        if (!ht)
+        if (!ht.get())
             return pair<bool,void*>(false, NULL);
 
         vector<bool> auth_OK(ht->elements.size(), false);
@@ -466,8 +464,6 @@ ShibTarget::doCheckAuthZ(void)
 
     #define CHECK_OK do { \
       if (ht->requireAll) { \
-        delete ht; \
-        if (grpstatus) delete grpstatus; \
         return pair<bool,void*>(false, NULL); \
       } \
       auth_OK[x] = true; \
@@ -525,9 +521,8 @@ ShibTarget::doCheckAuthZ(void)
                 }
             }
             else if (!strcmp(w,"group")) {
-                grpstatus = getGroupTable(remote_user);
-                if (!grpstatus) {
-                    delete ht;
+                auto_ptr<HTGroupTable> grpstatus(getGroupTable(remote_user));
+                if (!grpstatus.get()) {
                     return pair<bool,void*>(true, returnDecline());
                 }
     
@@ -538,8 +533,6 @@ ShibTarget::doCheckAuthZ(void)
                         CHECK_OK;
                     }
                 }
-                delete grpstatus;
-                grpstatus = NULL;
             }
             else {
                 Iterator<IAAP*> provs = m_priv->m_app->getAAPProviders();
@@ -642,8 +635,6 @@ ShibTarget::doCheckAuthZ(void)
             auth_all_OK &= auth_OK[i];
         }
 
-        delete ht;
-        if (grpstatus) delete grpstatus;
         if (auth_all_OK || !method_restricted)
             return pair<bool,void*>(false, NULL);
 
@@ -663,8 +654,6 @@ ShibTarget::doCheckAuthZ(void)
 
     if (targetURL)
         mlp.insert("requestURL", targetURL);
-
-    delete ht;
 
     return pair<bool,void*>(true,m_priv->sendError(this, "access", mlp));
 }
