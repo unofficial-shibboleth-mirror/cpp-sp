@@ -265,29 +265,35 @@ int RPCError::getCode() { return m_priv->status; }
 
 typedef const char* (OriginSiteMapper::* Pmember)(const XMLCh*) const;
 const char* get_mapper_string(const char* defaultStr, Pmember fcn,
-			      XMLCh* originSite)
+			      const XMLCh* originSite)
 {
+  const char* res = NULL;
+
   if (originSite) {
     OriginSiteMapper mapper;
-    return (mapper.*fcn)(originSite);
-  } else
-    return defaultStr;
+    res = (mapper.*fcn)(originSite);
+  }
+
+  if (res)
+    return res;
+
+  return defaultStr;
 }
 
 const char* RPCError::getOriginErrorURL()
 {
   return get_mapper_string("No URL Available", &OriginSiteMapper::getErrorURL,
-			   NULL);
+			   m_priv->origin.c_str());
 }
 
 const char* RPCError::getOriginContactName()
 { 
   return get_mapper_string("No Name Available", &OriginSiteMapper::getContactName,
-			   NULL);
+			   m_priv->origin.c_str());
 }
 
 const char* RPCError::getOriginContactEmail()
 {
   return get_mapper_string("No Email Available", &OriginSiteMapper::getContactEmail,
-			   NULL);
+			   m_priv->origin.c_str());
 }
