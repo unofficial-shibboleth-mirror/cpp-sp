@@ -160,7 +160,7 @@ extern "C" void shibrm_child_init(server_rec* s, pool* p)
     try {
       // Assume that we've been initialized from the SHIRE module!
       g_szConfig = &(ShibTargetConfig::init(SHIBTARGET_RM, "NOOP"));
-    } catch (runtime_error& e) {
+    } catch (...) {
       ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,s,
 		   "shibrm_child_init() failed to initialize SHIB Target");
       exit (1);

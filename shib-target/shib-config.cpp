@@ -81,7 +81,13 @@ ShibTargetConfig& ShibTargetConfig::init(const char* app_name, const char* inifi
 STConfig::STConfig(const char* app_name, const char* inifile)
   :  samlConf(SAMLConfig::getConfig()), shibConf(ShibConfig::getConfig())
 {
-  ini = new ShibINI((inifile ? inifile : SHIBTARGET_INIFILE));
+  try {
+    ini = new ShibINI((inifile ? inifile : SHIBTARGET_INIFILE));
+  } catch (...) {
+    cerr << "Unable to load the INI file: " << 
+      (inifile ? inifile : SHIBTARGET_INIFILE) << endl;
+    throw;
+  }
 
   string app = app_name;
   string tag;
@@ -114,11 +120,16 @@ STConfig::STConfig(const char* app_name, const char* inifile)
   if (ini->get_tag (app, SHIBTARGET_TAG_CALIST, true, &tag))
     samlConf.ssl_calist = tag;
 
-  if (!samlConf.init()) {
-    log.fatal ("Failed to initialize SAML Library");
-    throw runtime_error ("Failed to initialize SAML Library");
-  } else
-    log.debug ("SAML Initialized");
+  try {
+    if (!samlConf.init()) {
+      log.fatal ("Failed to initialize SAML Library");
+      throw runtime_error ("Failed to initialize SAML Library");
+    } else
+      log.debug ("SAML Initialized");
+  } catch (...) {
+    log.crit ("Died initializing SAML Library");
+    throw;    
+  }
 
   // Init Shib
   if (! ini->get_tag (app, SHIBTARGET_TAG_SITES, true, &tag)) {
@@ -129,8 +140,13 @@ STConfig::STConfig(const char* app_name, const char* inifile)
   string sitesFile = tag;
   X509Certificate* verifyKey = NULL;
 
-  if (ini->get_tag (app, SHIBTARGET_TAG_SITESCERT, true, &tag)) {
-    verifyKey = new X509Certificate (X509Certificate::PEM, tag.c_str());
+  try {
+    if (ini->get_tag (app, SHIBTARGET_TAG_SITESCERT, true, &tag)) {
+      verifyKey = new X509Certificate (X509Certificate::PEM, tag.c_str());
+    }
+  } catch (...) {
+    log.crit ("Can not read the x509 certificate.");
+    throw;
   }
 
   try
@@ -148,11 +164,16 @@ STConfig::STConfig(const char* app_name, const char* inifile)
   if (verifyKey)
     delete verifyKey;
   
-  if (!shibConf.init()) {
-    log.fatal ("Failed to initialize Shib library");
-    throw runtime_error ("Failed to initialize Shib Library");
-  } else
-    log.debug ("Shib Initialized");
+  try { 
+    if (!shibConf.init()) {
+      log.fatal ("Failed to initialize Shib library");
+      throw runtime_error ("Failed to initialize Shib Library");
+    } else
+      log.debug ("Shib Initialized");
+  } catch (...) {
+    log.crit ("Failed initializing Shib library.");
+    throw;
+  }
 
   // Initialize the SHAR Cache
   if (!strcmp (app_name, SHIBTARGET_SHAR))

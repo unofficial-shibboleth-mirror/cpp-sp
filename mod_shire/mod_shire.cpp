@@ -175,7 +175,7 @@ extern "C" void shire_child_init(server_rec* s, pool* p)
 
     try {
       g_szConfig = &(ShibTargetConfig::init(SHIBTARGET_SHIRE, g_szSHIREConfig));
-    } catch (runtime_error& e) {
+    } catch (...) {
       ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,s,
 		   "shire_child_init() failed to initialize SHIB Target");
       exit (1);
