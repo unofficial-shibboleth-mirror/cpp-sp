@@ -96,6 +96,9 @@ bool ScopedAttribute::addValue(DOMElement* e)
 
 bool ScopedAttribute::accept(DOMElement* e) const
 {
+    if (!SimpleAttribute::accept(e))
+        return false;
+
     OriginSiteMapper mapper;
     Iterator<pair<xstring,bool> > domains=mapper.getSecurityDomains(m_originSite.c_str());
     const XMLCh* this_scope=NULL;
@@ -134,7 +137,7 @@ bool ScopedAttribute::accept(DOMElement* e) const
     Category& log=Category::getInstance(SHIB_LOGCAT".ScopedAttribute");
     if (log.isWarnEnabled())
     {
-        auto_ptr<char> tmp(XMLString::transcode(this_scope));
+        auto_ptr<char> tmp(toUTF8(this_scope));
         log.warn("rejecting value with scope of %s",tmp.get());
     }
     return false;
@@ -158,7 +161,7 @@ Iterator<string> ScopedAttribute::getSingleByteValues() const
     {
         for (vector<xstring>::const_iterator i=m_scopedValues.begin(); i!=m_scopedValues.end(); i++)
         {
-            auto_ptr<char> temp(XMLString::transcode(i->c_str()));
+            auto_ptr<char> temp(toUTF8(i->c_str()));
             if (temp.get())
                 m_sbValues.push_back(temp.get());
         }
