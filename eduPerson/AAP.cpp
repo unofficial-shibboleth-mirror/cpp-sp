@@ -129,7 +129,7 @@ AAP::AAP(const char* uri)
             }
 
             // Loop over the SiteRule elements.
-            DOMNodeList* slist = nlist->item(i)->getElementsByTagNameNS(XML::EDUPERSON_NS,XML::Literals::SiteRule);
+            DOMNodeList* slist = static_cast<DOMElement*>(nlist->item(i))->getElementsByTagNameNS(XML::EDUPERSON_NS,XML::Literals::SiteRule);
 		    for (int k=0; slist && k<slist->getLength(); k++)
             {
                 arule.m_siteMap[static_cast<DOMElement*>(slist->item(k))->getAttributeNS(NULL,XML::Literals::Name)]=AttributeRule::SiteRule();
