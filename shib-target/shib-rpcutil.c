@@ -12,7 +12,12 @@
 # include <sys/socket.h>
 #endif
 
-#include "config.h"
+// eventually we might be able to support autoconf via cygwin...
+#if defined (_MSC_VER) || defined(__BORLANDC__)
+# include "config_win32.h"
+#else
+# include "config.h"
+#endif
 
 #include "shib-target.h"
 

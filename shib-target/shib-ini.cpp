@@ -6,6 +6,13 @@
  * $Id$
  */
 
+// eventually we might be able to support autoconf via cygwin...
+#if defined (_MSC_VER) || defined(__BORLANDC__)
+# include "config_win32.h"
+#else
+# include "config.h"
+#endif
+
 #include "shib-target.h"
 #include <sstream>
 #include <iostream>
@@ -376,7 +383,12 @@ const string* TagIterator::next ()
 bool ShibINI::boolean(string& value)
 {
   const char* v = value.c_str();
+#ifdef HAVE_STRCASECMP
   if (!strncasecmp (v, "on", 2) || !strncasecmp (v, "true", 4) || !strncmp(v, "1", 1))
     return true;
+#else
+  if (!strnicmp (v, "on", 2) || !strnicmp (v, "true", 4) || !strncmp(v, "1", 1))
+    return true;
+#endif
   return false;
 }
