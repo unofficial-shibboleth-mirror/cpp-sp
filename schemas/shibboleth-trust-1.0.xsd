@@ -29,14 +29,13 @@
 				<choice maxOccurs="unbounded">
 					<element ref="ds:KeyInfo"/>
 					<element ref="trust:KeyAuthority"/>
-					<any namespace="##other" processContents="lax"/>
 				</choice>
 				<element ref="ds:Signature" minOccurs="0"/>
 			</sequence>
 	        <attribute name="lastChanged" type="dateTime" use="optional"/>
 	        <attribute name="validUntil" type="dateTime" use="optional"/>
 	        <attribute name="cacheDuration" type="duration" use="optional"/>
-	        <anyAttribute namespace="##any" processContents="lax"/>
+	        <anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>
 
@@ -55,7 +54,7 @@
 			<element ref="ds:KeyInfo"/>
 		</sequence>
 		<attribute name="VerifyDepth" type="unsignedByte" use="optional"/>
-		<anyAttribute namespace="##any" processContents="lax"/>
+		<anyAttribute namespace="##other" processContents="lax"/>
 	</complexType>
 	
 </schema>
