@@ -1,7 +1,7 @@
 #include <unistd.h>
 #include <stdio.h>
 
-#include "shib-target.h"
+#include <shib-target/shib-target.h>
 
 int
 main (int argc, char *argv[])
