@@ -265,6 +265,26 @@ namespace shibboleth
         virtual saml::Iterator<std::pair<const XMLCh*,bool> > getScopes() const=0;
         virtual ~IScopedRoleDescriptor() {}
     };
+    
+    // Shib extension interfaces to key authority data
+    struct SHIB_EXPORTS IKeyAuthority
+    {
+        virtual int getVerifyDepth() const=0;
+        virtual saml::Iterator<DSIGKeyInfoList*> getKeyInfos() const=0;
+        virtual ~IKeyAuthority() {}
+    };
+    
+    struct SHIB_EXPORTS IExtendedEntityDescriptor : public virtual IEntityDescriptor
+    {
+        virtual saml::Iterator<const IKeyAuthority*> getKeyAuthorities() const=0;
+        virtual ~IExtendedEntityDescriptor() {}
+    };
+
+    struct SHIB_EXPORTS IExtendedEntitiesDescriptor : public virtual IEntitiesDescriptor
+    {
+        virtual saml::Iterator<const IKeyAuthority*> getKeyAuthorities() const=0;
+        virtual ~IExtendedEntitiesDescriptor() {}
+    };
        
     struct SHIB_EXPORTS IMetadata : public virtual saml::ILockable, public virtual saml::IPlugIn
     {
@@ -345,6 +365,8 @@ namespace shibboleth
     template class SHIB_EXPORTS saml::Iterator<const IEntitiesDescriptor*>;
     template class SHIB_EXPORTS saml::Iterator<const IEndpoint*>;
     template class SHIB_EXPORTS saml::Iterator<const IAttributeRule*>;
+    template class SHIB_EXPORTS saml::Iterator<const IKeyAuthority*>;
+    template class SHIB_EXPORTS saml::Iterator<DSIGKeyInfoList*>;
     template class SHIB_EXPORTS saml::Iterator<IMetadata*>;
     template class SHIB_EXPORTS saml::ArrayIterator<IMetadata*>;
     template class SHIB_EXPORTS saml::Iterator<ITrust*>;
