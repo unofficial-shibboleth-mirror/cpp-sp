@@ -360,12 +360,10 @@ extern "C" int shib_check_user(request_rec* r)
     }
     
     // Get an RPC handle and build the SHIRE object.
-    RPCHandle* rpc_handle = (RPCHandle*)rpc_handle_key->getData();
-    if (!rpc_handle)
-    {
-        rpc_handle = new RPCHandle(shib_target_sockname(), SHIBRPC_PROG, SHIBRPC_VERS_1);
-        rpc_handle_key->setData(rpc_handle);
-    }
+    RPCHandle* rpc_handle =
+      RPCHandle::get_handle(rpc_handle_key, shib_target_sockname(),
+			    SHIBRPC_PROG, SHIBRPC_VERS_1);
+
     SHIRE shire(rpc_handle, dc->config, shire_url);
 
     // We're in charge, so check for cookie.
@@ -520,13 +518,10 @@ extern "C" int shib_shire_handler (request_rec* r)
   markupProcessor.insert("requestURL", targeturl);
   
     // Get an RPC handle and build the SHIRE object.
-    RPCHandle* rpc_handle = (RPCHandle*)rpc_handle_key->getData();
-    if (!rpc_handle)
-    {
-        rpc_handle = new RPCHandle(shib_target_sockname(), SHIBRPC_PROG, SHIBRPC_VERS_1);
-        rpc_handle_key->setData(rpc_handle);
-    }
-    SHIRE shire(rpc_handle, config, shire_url);
+  RPCHandle* rpc_handle =
+    RPCHandle::get_handle(rpc_handle_key, shib_target_sockname(),
+			  SHIBRPC_PROG, SHIBRPC_VERS_1);
+  SHIRE shire(rpc_handle, config, shire_url);
 
   // Process SHIRE POST
 
@@ -730,12 +725,9 @@ extern "C" int shib_auth_checker(request_rec *r)
     dc->rm_config.checkIPAddress = (has_tag ? ShibINI::boolean (tag) : false);
 
     // Get an RPC handle and build the RM object.
-    RPCHandle* rpc_handle = (RPCHandle*)rpc_handle_key->getData();
-    if (!rpc_handle)
-    {
-        rpc_handle = new RPCHandle(shib_target_sockname(), SHIBRPC_PROG, SHIBRPC_VERS_1);
-        rpc_handle_key->setData(rpc_handle);
-    }
+    RPCHandle* rpc_handle =
+      RPCHandle::get_handle(rpc_handle_key, shib_target_sockname(),
+			    SHIBRPC_PROG, SHIBRPC_VERS_1);
     RM rm(rpc_handle, dc->rm_config);
 
     vector<SAMLAssertion*> assertions;

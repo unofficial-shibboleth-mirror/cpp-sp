@@ -61,6 +61,7 @@
 #ifdef __cplusplus
 # include <saml/saml.h>
 # include <shib/shib.h>
+# include <shib/shib-threads.h>
 #endif
 
 #ifdef WIN32
@@ -209,6 +210,12 @@ namespace shibtarget {
     void	release(void);	/* unlocks the HANDLE */
     void	disconnect(void); /* disconnects */
 
+    // A simple function to get a handle
+    // Note that it does not check that an existing handle matches the request.
+    static RPCHandle* get_handle(shibboleth::ThreadKey* key,
+				 ShibSockName shar, u_long program,
+				 u_long version);
+
   private:
     RPCHandleInternal *m_priv;
   };
@@ -259,6 +266,44 @@ namespace shibtarget {
     RPCErrorPriv* m_priv;
   };
 
+  // The ShibTargetError is used by the high-level SHIRE and RM methods
+  // to notify the handlers of high-level errors.
+
+  class ShibMLPPriv;
+  class SHIBTARGET_EXPORTS ShibMLP {
+  public:
+    ShibMLP();
+    ~ShibMLP();
+
+    void insert (const std::string& key, const std::string& value);
+    void insert (const std::string& key, const char* value) {
+      std::string v = value;
+      insert (key, v);
+    }
+    void insert (const char* key, const std::string& value) {
+      std::string k = key;
+      insert (k, value);
+    }
+    void insert (const char* key, const char* value) {
+      std::string k = key, v = value;
+      insert(k,v);
+    }
+    void insert (RPCError& e);
+
+    void clear () { m_map.clear(); }
+
+    std::string run (std::istream& s) const;
+    std::string run (const std::string& input) const;
+    std::string run (const char* input) const {
+      std::string i = input;
+      return run(i);
+    }
+
+  private:
+    ShibMLPPriv *m_priv;
+    std::map<std::string,std::string> m_map;
+  };
+
   class SHIBTARGET_EXPORTS SHIREConfig
   {
   public:
@@ -268,6 +313,7 @@ namespace shibtarget {
   };
 
   class SHIREPriv;
+  class SHIBTARGET_EXPORTS ShibINI;
   class SHIBTARGET_EXPORTS SHIRE
   {
   public:
@@ -277,6 +323,11 @@ namespace shibtarget {
     RPCError* sessionIsValid(const char* cookie, const char* ip, const char* url);
     RPCError* sessionCreate(const char* post, const char* ip,
 			     std::string &cookie);
+
+    //ShibTargetResponse* is_valid(ShibINI& ini, const char* serverName,
+    //			 const char *cookie, const char *target_url);
+    //ShibTargetResponse* create();
+
   private:
     SHIREPriv *m_priv;
   };
@@ -397,41 +448,6 @@ namespace shibtarget {
   private:
     ShibINIPriv *m_priv;
     void init(std::string& file, bool case_sensitive);
-  };
-
-  class ShibMLPPriv;
-  class SHIBTARGET_EXPORTS ShibMLP {
-  public:
-    ShibMLP();
-    ~ShibMLP();
-
-    void insert (const std::string& key, const std::string& value);
-    void insert (const std::string& key, const char* value) {
-      std::string v = value;
-      insert (key, v);
-    }
-    void insert (const char* key, const std::string& value) {
-      std::string k = key;
-      insert (k, value);
-    }
-    void insert (const char* key, const char* value) {
-      std::string k = key, v = value;
-      insert(k,v);
-    }
-    void insert (RPCError& e);
-
-    void clear () { m_map.clear(); }
-
-    std::string run (std::istream& s) const;
-    std::string run (const std::string& input) const;
-    std::string run (const char* input) const {
-      std::string i = input;
-      return run(i);
-    }
-
-  private:
-    ShibMLPPriv *m_priv;
-    std::map<std::string,std::string> m_map;
   };
 
   class SHIBTARGET_EXPORTS ShibTargetConfig

@@ -210,3 +210,17 @@ void RPCHandle::disconnect(void)
     m_priv->m_clnt = NULL;
   }
 }
+
+RPCHandle* RPCHandle::get_handle(ThreadKey* key,
+				 ShibSockName shar, u_long program,
+				 u_long version)
+{
+  RPCHandle* retval = (RPCHandle*)key->getData();
+  if (!retval)
+  {
+    retval = new RPCHandle(shar, program, version);
+    key->setData(retval);
+  }
+
+  return retval;
+}

@@ -93,8 +93,8 @@ void set_rpc_status(ShibRpcError *error, ShibRpcStatus status,
 {
   error->status = status;
   if (status) {
-    error->ShibRpcError_u.e.error = strdup(msg);
-    error->ShibRpcError_u.e.origin = strdup(origin);
+    error->ShibRpcError_u.e.error = strdup(msg ? msg : "");
+    error->ShibRpcError_u.e.origin = strdup(origin ? origin : "");
   }
 }
 
