@@ -18,42 +18,6 @@ Package=<4>
 
 ###############################################################################
 
-Project: "mod_eduPerson"=.\mod_eduPerson\mod_eduPerson.dsp - Package Owner=<4>
-
-Package=<5>
-{{{
-}}}
-
-Package=<4>
-{{{
-    Begin Project Dependency
-    Project_Dep_Name eduPerson
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name shib
-    End Project Dependency
-}}}
-
-###############################################################################
-
-Project: "mod_shib"=.\mod_shib\mod_shib.dsp - Package Owner=<4>
-
-Package=<5>
-{{{
-}}}
-
-Package=<4>
-{{{
-    Begin Project Dependency
-    Project_Dep_Name eduPerson
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name shib
-    End Project Dependency
-}}}
-
-###############################################################################
-
 Project: "mod_shibrm"=.\mod_shibrm\mod_shibrm.dsp - Package Owner=<4>
 
 Package=<5>
