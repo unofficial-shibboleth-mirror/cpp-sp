@@ -38,11 +38,13 @@
         	uri="@-PKGSYSCONFDIR-@/applications.xml"/>
         -->
 
-        <RequestMap>
-            <Host name="example.com" scheme="https">
-                <Path name="admin" applicationId="foo-admin" requireSession="true" exportAssertion="true"/>
-            </Host>
-        </RequestMap>
+		<RequestMapProvider type="edu.internet2.middleware.shibboleth.target.provider.XMLRequestMap">
+	        <RequestMap>
+	            <Host name="example.com" scheme="https">
+	                <Path name="admin" applicationId="foo-admin" requireSession="true" exportAssertion="true"/>
+	            </Host>
+	        </RequestMap>
+	    </RequestMapProvider>
         
         <Implementation>
             <ISAPI>

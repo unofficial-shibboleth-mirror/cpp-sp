@@ -835,33 +835,25 @@ void XMLConfigImpl::init(bool first)
         
         // Back to the fully dynamic stuff...next up is the Request Mapper.
         if (conf.isEnabled(ShibTargetConfig::RequestMapper)) {
-            IPlugIn* plugin=NULL;
-            const DOMElement* child=saml::XML::getFirstChildElement(SHIRE,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(RequestMap));
+            const DOMElement* child=saml::XML::getFirstChildElement(SHIRE,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(RequestMapProvider));
             if (child) {
-                log.info("building Request Mapper of type %s...",shibtarget::XML::RequestMapType);
-                plugin=shibConf.m_plugMgr.newPlugin(shibtarget::XML::RequestMapType,child);
+                auto_ptr_char type(child->getAttributeNS(NULL,SHIBT_L(type)));
+                log.info("building Request Mapper of type %s...",type.get());
+                IPlugIn* plugin=shibConf.m_plugMgr.newPlugin(type.get(),child);
+                if (plugin) {
+                    IRequestMapper* reqmap=dynamic_cast<IRequestMapper*>(plugin);
+                    if (reqmap)
+                        m_requestMapper=reqmap;
+                    else {
+                        delete plugin;
+                        log.fatal("plugin was not a Request Mapper object");
+                        throw UnsupportedExtensionException("plugin was not a Request Mapper object");
+                    }
+                }
             }
             else {
-                child=saml::XML::getFirstChildElement(SHIRE,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(RequestMapProvider));
-                if (child) {
-                    auto_ptr_char type(child->getAttributeNS(NULL,SHIBT_L(type)));
-                    log.info("building Request Mapper of type %s...",type.get());
-                    plugin=shibConf.m_plugMgr.newPlugin(type.get(),child);
-                }
-                else {
-                    log.fatal("can't build Request Mapper object, missing conf:RequestMapProvider element?");
-                    throw MalformedException("can't build Request Mapper object, missing conf:RequestMapProvider element?");
-                }
-            }
-            if (plugin) {
-                IRequestMapper* reqmap=dynamic_cast<IRequestMapper*>(plugin);
-                if (reqmap)
-                    m_requestMapper=reqmap;
-                else {
-                    delete plugin;
-                    log.fatal("plugin was not a Request Mapper object");
-                    throw UnsupportedExtensionException("plugin was not a Request Mapper object");
-                }
+                log.fatal("can't build Request Mapper object, missing conf:RequestMapProvider element?");
+                throw MalformedException("can't build Request Mapper object, missing conf:RequestMapProvider element?");
             }
         }
         
