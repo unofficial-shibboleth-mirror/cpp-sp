@@ -7,7 +7,7 @@
 #
 # Load the Shibboleth module.
 #
-LoadModule shire_module @-LIBEXECDIR-@/mod_shire.so
+LoadModule shire_module @-LIBEXECDIR-@/mod_shib13.so
 
 #
 # Global Configuration
@@ -30,12 +30,12 @@ SetHandler shib-shire-post
 #
 # You can now do most of this in shibboleth.xml using the RequestMap
 # but you MUST enable AuthType shibboleth for the module to process
-# any requests, and there MUST be a require command as well.
-# You can even turn on require valid-user at the root, and then override
-# as needed. This will not actually force a user session unless
-# you tell it to require one. See the documentation for details.
+# any requests, and there MUST be a require command as well. To
+# enable Shibboleth but not specify any session/access requirement
+# use "require Shibboleth".
 #
 <Location /secure>
   AuthType shibboleth
+  ShibRequireSession On
   require valid-user
 </Location>

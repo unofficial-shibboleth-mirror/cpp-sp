@@ -1,16 +1,31 @@
-<SiteGroup Name="https://localhost/shibboleth" xmlns="urn:mace:shibboleth:1.0">
-	<OriginSite Name="https://localhost/shibboleth/origin">
-		<Alias>Localhost Test Deployment</Alias>
-		<Contact Type="technical" Name="Your Name Here" Email="root@localhost"/>
-		<HandleService Location="https://localhost/shibboleth/HS" Name="CN=localhost,O=Shibboleth Project,C=US"/>
-		<AttributeAuthority Location="https://localhost/shibboleth/AA" Name="CN=localhost,O=Shibboleth Project,C=US"/>
-		<Domain>localhost</Domain>
+<SiteGroup Name="urn:mace:inqueue" xmlns="urn:mace:shibboleth:1.0">
+	<OriginSite Name="urn:mace:inqueue:example.edu" ErrorURL="http://wayf.internet2.edu/InQueue/error.html">
+		<Alias>Example State University</Alias>
+		<Contact Type="technical" Name="InQueue Support" Email="inqueue-support@internet2.edu"/>
+		<HandleService Location="https://wayf.internet2.edu/InQueue/HS" Name="wayf.internet2.edu"/>
+		<AttributeAuthority Location="https://wayf.internet2.edu/InQueue/AA" Name="wayf.internet2.edu"/>
+		<Domain>example.edu</Domain>
 	</OriginSite>
 
-	<DestinationSite Name="https://localhost/shibboleth/target">
-		<Alias>Localhost Test Deployment</Alias>
-		<Contact Type="technical" Name="Your Name Here" Email="root@localhost"/>
-		<AssertionConsumerServiceURL Location="https://localhost/Shibboleth.shire"/>
-		<AttributeRequester Name="CN=localhost,O=Shibboleth Project,C=US"/>
+	<OriginSite Name="urn:mace:inqueue:shibdev.edu">
+		<Alias>Shibboleth Development Origin</Alias>
+		<Contact Type="technical" Name="Scott Cantor" Email="cantor.2@osu.edu"/>
+		<HandleService Location="https://shib2.internet2.edu/shibboleth/HS" Name="shib2.internet2.edu"/>
+		<AttributeAuthority Location="https://shib2.internet2.edu/shibboleth/AA" Name="shib2.internet2.edu"/>
+		<Domain>shibdev.edu</Domain>
+	</OriginSite>
+	
+	<DestinationSite Name="urn:mace:inqueue:example.edu">
+		<Alias>Example State University</Alias>
+		<Contact Type="technical" Name="InQueue Support" Email="inqueue-support@internet2.edu"/>
+		<AssertionConsumerServiceURL Location="https://wayf.internet2.edu/SHIRE"/>
+		<AttributeRequester Name="CN=wayf.internet2.edu,OU=TSG,O=University Corporation for Advanced Internet Development,L=Ann Arbor,ST=Michigan,C=US"/>
+	</DestinationSite>
+
+	<DestinationSite Name="urn:mace:inqueue:shibdev.edu">
+		<Alias>Shibboleth Development Target</Alias>
+		<Contact Type="technical" Name="Scott Cantor" Email="cantor.2@osu.edu"/>
+		<AssertionConsumerServiceURL Location="https://shib2.internet2.edu/Shibboleth.shire"/>
+		<AttributeRequester Name="Email=root@shib2.internet2.edu,CN=shib2.internet2.edu,O=UCAID,L=Ann Arbor,ST=Michigan,C=US"/>
 	</DestinationSite>
 </SiteGroup>

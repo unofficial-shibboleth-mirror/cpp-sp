@@ -41,9 +41,17 @@
         -->
 
         <RequestMapProvider type="edu.internet2.middleware.shibboleth.target.provider.XMLRequestMap">
-            <RequestMap>
-                <Host name="example.com" scheme="https">
-                    <!-- This requires a session for documents in /secure on the containing host. -->
+            <RequestMap applicationId="default">
+                <!--
+                If using IIS or apacheConfig is false:
+                This requires a session for documents in /secure on the containing host on 80 and 443.
+                Note that the name in the <Host> elements MUST match Apache's ServerName directive
+                or the IIS host mapping in the <ISAPI> element below.
+                -->
+                <Host name="localhost" scheme="https">
+                    <Path name="secure" requireSession="true" exportAssertion="true"/>
+                </Host>
+                <Host name="localhost" scheme="http">
                     <Path name="secure" requireSession="true" exportAssertion="true"/>
                 </Host>
             </RequestMap>
@@ -53,11 +61,12 @@
             <ISAPI normalizeRequest="true">
                 <Site id="1" host="localhost"/>    <!-- Maps IIS IID values to the vhost name. -->
             </ISAPI>
-            <Apache apacheConfig="false"/>  <!-- whether httpd.conf or the RequestMap controls session behavior. -->
+            <Apache apacheConfig="true"/>  <!-- whether httpd.conf or the RequestMap controls session behavior. -->
         </Implementation>
     </SHIRE>
 
-    <Applications xmlns:saml="urn:oasis:names:tc:SAML:1.0:assertion" providerId="https://localhost/shibboleth/target">
+    <Applications xmlns:saml="urn:oasis:names:tc:SAML:1.0:assertion"
+    	applicationId="default" providerId="https://localhost/shibboleth/target">
 
         <!--
         Controls session lifetimes, address checks, cookie handling, WAYF, and the SHIRE location.
@@ -65,10 +74,12 @@
         relative path, a URL with no hostname (https:///path) or a full URL. The system will compute
         the value that applies based on the resource. Using shireSSL="true" will force the protocol
         to be https. You should also add "; secure" to the cookieProps in that case.
+        The default wayfURL is the InQueue federation's service. Change to https://localhost/shibboleth/HS
+        for internal testing against your own origin.
         -->
         <Sessions lifetime="7200" timeout="3600" checkAddress="true"
             shireURL="/Shibboleth.shire" shireSSL="false" cookieName="shib-default-app" cookieProps="; path=/"
-            wayfURL="https://localhost/shibboleth/WAYF"/>
+            wayfURL="https://wayf.internet2.edu/InQueue/WAYF"/>
 
         <!-- You should customize the pages! You can add attributes with values that can be plugged in. -->
         <Errors shire="@-PKGSYSCONFDIR-@/shireError.html"
@@ -103,14 +114,6 @@
             <!-- Metadata consists of site/operational metadata, trust, revocation providers. Can be external or inline. -->
             <FederationProvider type="edu.internet2.middleware.shibboleth.common.provider.XMLMetadata"
                 uri="@-PKGSYSCONFDIR-@/sites.xml"/>
-            <TrustProvider type="edu.internet2.middleware.shibboleth.common.provider.XMLTrust"
-                uri="@-PKGSYSCONFDIR-@/trust.xml"/>
-            <!--
-            <RevocationProvider type="edu.internet2.middleware.shibboleth.common.provider.XMLRevocation"
-                uri="@-PKGSYSCONFDIR-@/trust.xml"/>
-            -->
-                        
-            <!--
             <FederationProvider type="edu.internet2.middleware.shibboleth.common.provider.XMLMetadata">
 				<SiteGroup Name="https://localhost/shibboleth" xmlns="urn:mace:shibboleth:1.0">
 					<OriginSite Name="https://localhost/shibboleth/origin">
@@ -122,17 +125,21 @@
 					</OriginSite>
 				</SiteGroup>
             </FederationProvider>
-            -->
             
+            <TrustProvider type="edu.internet2.middleware.shibboleth.common.provider.XMLTrust"
+                uri="@-PKGSYSCONFDIR-@/trust.xml"/>
+            <!--
+            <RevocationProvider type="edu.internet2.middleware.shibboleth.common.provider.XMLRevocation"
+                uri="@-PKGSYSCONFDIR-@/trust.xml"/>
+            -->
+                        
             <!-- zero or more SAML Audience condition matches -->
             <saml:Audience>urn:mace:inqueue</saml:Audience>
         </Policy>
         
         <CredentialUse TLS="defcreds" Signing="defcreds">
             <!-- RelyingParty elements customize credentials for specific origins or federations -->
-            <!--
             <RelyingParty Name="urn:mace:inqueue" TLS="inqueuecreds" Signing="inqueuecreds"/>
-            -->
         </CredentialUse>
         
 
