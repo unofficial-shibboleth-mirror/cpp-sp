@@ -408,7 +408,7 @@ extern "C" int shibrm_check_auth(request_rec* r)
     if (dc->bExportAssertion==1) {
       string assertion;
       RM::serialize(*(assertions[0]), assertion);
-      ap_table_setn(r->headers_in,"Shib-Attributes", assertion.c_str());
+      ap_table_set(r->headers_in,"Shib-Attributes", assertion.c_str());
     }
 
     // Export the attributes -- XXX: Assumes one statement!
