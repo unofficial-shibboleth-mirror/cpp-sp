@@ -72,6 +72,10 @@
 #include <xercesc/util/Base64.hpp>
 #include <xercesc/util/regx/RegularExpression.hpp>
 
+#ifndef HAVE_STRCASECMP
+# define strcasecmp stricmp
+#endif
+
 using namespace std;
 using namespace saml;
 using namespace shibboleth;
@@ -203,11 +207,7 @@ ShibTarget::doCheckAuthN(bool requireSessionFlag)
       return doHandlePOST();
 
     string auth_type = getAuthType();
-#ifdef HAVE_STRCASECMP
     if (strcasecmp(auth_type.c_str(),"shibboleth"))
-#else
-    if (stricmp(auth_type.c_str(),"shibboleth"))
-#endif
       return pair<bool,void*>(true,returnDecline());
 
     pair<bool,bool> requireSession =
