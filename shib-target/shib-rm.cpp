@@ -249,8 +249,6 @@ void RM::serialize(SAMLAssertion &assertion, string &result)
 
 Iterator<SAMLAttribute*> RM::getAttributes(SAMLAssertion &assertion)
 {
-  static vector<SAMLAttribute*> emptyVector;
-
   // XXX: Only deal with a single statement!!!!
   Iterator<SAMLStatement*> i = assertion.getStatements();
   if (i.hasNext()) {
@@ -261,5 +259,5 @@ Iterator<SAMLAttribute*> RM::getAttributes(SAMLAssertion &assertion)
       return s->getAttributes();
   }
   
-  return Iterator<SAMLAttribute*>(emptyVector);
+  return EMPTY(SAMLAttribute*);
 }
