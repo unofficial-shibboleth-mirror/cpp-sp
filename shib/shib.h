@@ -150,7 +150,7 @@ namespace shibboleth
     
     struct SHIB_EXPORTS IKeyDescriptor
     {
-        enum KeyUse { encryption, signing };
+        enum KeyUse { unspecified, encryption, signing };
         virtual KeyUse getUse() const=0;
         virtual DSIGKeyInfoList* getKeyInfo() const=0;
         virtual saml::Iterator<const XENCEncryptionMethod*> getEncryptionMethod() const=0;
@@ -400,6 +400,7 @@ namespace shibboleth
     {
         static const XMLCh SHIB_ATTRIBUTE_NAMESPACE_URI[];
         static const XMLCh SHIB_NAMEID_FORMAT_URI[];
+        static const XMLCh SHIB_AUTHNREQUEST_PROFILE_URI[];
         static const XMLCh SHIB_NS[];
         static const XMLCh InvalidHandle[];
     };

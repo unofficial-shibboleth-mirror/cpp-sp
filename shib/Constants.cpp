@@ -85,6 +85,16 @@ const XMLCh Constants::SHIB_NAMEID_FORMAT_URI[] = // urn:mace:shibboleth:1.0:nam
     chLatin_I, chLatin_d, chLatin_e, chLatin_n, chLatin_t, chLatin_i, chLatin_f, chLatin_i, chLatin_e, chLatin_r, chNull
 };
 
+const XMLCh Constants::SHIB_AUTHNREQUEST_PROFILE_URI[] = //
+{
+  chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
+  chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
+  chDigit_1, chPeriod, chDigit_0, chColon,
+  chLatin_p, chLatin_r, chLatin_o, chLatin_f, chLatin_i, chLatin_l, chLatin_e, chLatin_s, chColon,
+  chLatin_A, chLatin_u, chLatin_t, chLatin_h, chLatin_n,
+  chLatin_R, chLatin_e, chLatin_q, chLatin_u, chLatin_e, chLatin_s, chLatin_t, chNull
+};
+
 const XMLCh Constants::InvalidHandle[] =
 { chLatin_I, chLatin_n, chLatin_v, chLatin_a, chLatin_l, chLatin_i, chLatin_d,
   chLatin_H, chLatin_a, chLatin_n, chLatin_d, chLatin_l, chLatin_e, chNull
