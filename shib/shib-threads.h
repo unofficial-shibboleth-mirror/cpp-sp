@@ -30,6 +30,7 @@ namespace shibboleth {
     virtual int detach() = 0;
     virtual int join(void** thread_return) = 0;
     virtual int kill(int signo) = 0;
+    virtual ~Thread(){};
   };
 
   class Mutex {
@@ -38,6 +39,7 @@ namespace shibboleth {
 
     virtual int lock() = 0;
     virtual int unlock() = 0;
+    virtual ~Mutex(){};
   };
 
   class CondWait {
@@ -48,6 +50,7 @@ namespace shibboleth {
     virtual int timedwait(Mutex*,int delay_seconds) = 0;
     virtual int signal() = 0;
     virtual int broadcast() = 0;
+    virtual ~CondWait(){};
   };
 
   class RWLock {
@@ -57,14 +60,16 @@ namespace shibboleth {
     virtual int rdlock() = 0;
     virtual int wrlock() = 0;
     virtual int unlock() = 0;
+    virtual ~RWLock(){};
   };
 
   class ThreadKey {
   public:
-    static ThreadKey* create (void (*destroy_fcn)(void*));
+    static ThreadKey* create(void (*destroy_fcn)(void*));
 
     virtual int setData(void* data) = 0;
     virtual void* getData() = 0;
+    virtual ~ThreadKey(){};
   };
 
   //

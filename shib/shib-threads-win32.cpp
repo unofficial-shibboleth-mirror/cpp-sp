@@ -6,7 +6,12 @@
  * $Id$
  */
 
+#ifdef STANDALONE_SHIBTHREADS_TESTING
+#include <windows.h>
+#else
 #include "internal.h"
+#endif
+
 #include "shib-threads.h"
 
 #ifndef WIN32
@@ -19,8 +24,10 @@ using namespace std;
 using namespace shibboleth;
 
 // base error code for a routine to return onf failure
-#define THREAD_ERROR (1)
-#define THREAD_ERROR_TIMEOUT (2)
+#define THREAD_ERROR_TIMEOUT 	(1)
+#define THREAD_ERROR_WAKE_OTHER (2)
+#define THREAD_ERROR_
+#define THREAD_ERROR 		(3)
 
 static void note_last_error(int rc) {
     // set a breakpoint here to see windows error codes for failing
@@ -99,7 +106,7 @@ public:
      0, // flags, default is ignore stacksize and dont create suspeneded which
         // is what we want
      0);
-  if(thread_id!=0) {
+  if(thread_id==0) {
       int rc=map_windows_error_status_to_pthreads(0);
 	  throw("thread create failed");
   }
@@ -152,21 +159,15 @@ public:
     if((mhandle!=0)&&(!CloseHandle(mhandle))) 
       throw("CloseHandle for CondWaitImpl failed");
   }
-  int lock2_timed(HANDLE lock_me_too,int timeout) {
-#define NUM_HANDLES (2)
-   HANDLE hs[NUM_HANDLES];
-   hs[0]=mhandle;
-   hs[1]=lock_me_too;
-   int rc=WaitForMultipleObjects(NUM_HANDLES,hs,true,timeout);
-   if((rc>=WAIT_OBJECT_0)&&
-      (rc<=(WAIT_OBJECT_0+NUM_HANDLES-1)))
-     return 0;
-   if(rc==WAIT_TIMEOUT)
-      return THREAD_ERROR_TIMEOUT;
-    return map_windows_error_status_to_pthreads(rc);
-  }
   int lock() {
-   return map_windows_error_status_to_pthreads(WaitForSingleObject(mhandle,0));
+   int rc=WaitForSingleObject(mhandle,INFINITE);
+   switch(rc) {
+     case WAIT_ABANDONED:
+     case WAIT_OBJECT_0:
+       return 0;
+     default:
+       return map_windows_error_status_to_pthreads(0);
+   }
   }
   int unlock() {
     return map_windows_error_status_to_pthreads(ReleaseMutex(mhandle));
@@ -174,22 +175,23 @@ public:
 };
 
 class CondWaitImpl : public CondWait {
-private:
-  HANDLE cond;
+  private:
+    HANDLE cond;
 
-public:
-  CondWaitImpl():cond(CreateEvent(0,false,false,0)){
-    if(cond==0)
-      throw("CreateEvent for CondWaitImpl failed");
-  };
-  int timedwait(Mutex* mutex, int delay_seconds)
-		  { return timedwait (dynamic_cast<MutexImpl*>(mutex), delay_seconds); }
+  public:
+    CondWaitImpl():cond(CreateEvent(0,false,false,0)){
+      if(cond==0)
+	throw("CreateEvent for CondWaitImpl failed");
+    };
+
   ~CondWaitImpl() {
     if((cond!=0)&&(!CloseHandle(cond))) 
       throw("CloseHandle for CondWaitImpl failed");
-   }
+  }
 
-  int wait(Mutex* mutex) { return wait (dynamic_cast<MutexImpl*>(mutex)); }
+  int wait(Mutex* mutex) {
+    return timedwait(mutex,INFINITE);
+  }
 
   int signal() {
     if(!SetEvent(cond))
@@ -201,25 +203,29 @@ public:
   }
 
   // wait for myself to signal and this mutex or the timeout
-  int lock2(MutexImpl *mutex,int delay_ms) {
+  int timedwait(Mutex* mutex, int delay_seconds) {
     int rc=mutex->unlock();
     if(rc!=0)
       return rc;
-    rc=mutex->lock2_timed(cond,delay_ms);
+
+    int delay_ms=delay_seconds;
+    if(delay_seconds!=INFINITE)
+      delay_ms*=1000;
+    rc=WaitForSingleObject(cond,delay_ms);
+    {
+      int rc2=mutex->lock();
+      if(rc2!=0)
+        return rc2;
+    }
     switch(rc) {
-    case 0:
+    case WAIT_ABANDONED:
+    case WAIT_OBJECT_0:
+    case WAIT_TIMEOUT:
       return 0;
-    case THREAD_ERROR_TIMEOUT:
-      // timeout return with the mutex locked
-      return mutex->lock();	    
     default:
-      return rc;
+      return map_windows_error_status_to_pthreads(0);
     }
     return 0;
-  }
-
-  int timedwait(MutexImpl* mutex, int delay_seconds) {
-    return lock2(mutex,delay_seconds);
   }
 };
 
@@ -332,7 +338,7 @@ private:
 
 public:
   ThreadKeyImpl(void (*destroy_fcn)(void*)):destroy_hook(destroy_fcn){};
-  ~ThreadKeyImpl() { destroy_hook(thread_data); }
+  virtual ~ThreadKeyImpl() { destroy_hook(thread_data); }
 
   int setData(void* data) { thread_data=data; return 0;}
   void* getData() { return thread_data; }
