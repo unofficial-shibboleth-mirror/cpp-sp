@@ -223,48 +223,56 @@ void AAP::apply(const saml::Iterator<IAAP*>& aaps, saml::SAMLAssertion& assertio
     
     // First check for no providers or AnyAttribute.
     if (aaps.size()==0) {
-        log.debug("no filters specified, accepting entire assertion");
+        log.info("no filters specified, accepting entire assertion");
         return;
     }
     aaps.reset();
     while (aaps.hasNext()) {
         if (aaps.next()->anyAttribute()) {
-            log.debug("any attribute enabled, accepting entire assertion");
+            log.info("any attribute enabled, accepting entire assertion");
             return;
         }
     }
     
     // Check each statement.
+    const IAttributeRule* rule=NULL;
     Iterator<SAMLStatement*> statements=assertion.getStatements();
     for (unsigned int scount=0; scount < statements.size();) {
         SAMLAttributeStatement* s=dynamic_cast<SAMLAttributeStatement*>(statements[scount]);
         if (!s)
             continue;
         
-        // Check each attribute.
+        // Check each attribute, applying any matching rules.
         Iterator<SAMLAttribute*> attrs=s->getAttributes();
-        for (unsigned int acount=0; acount < attrs.size();) {
+        for (long acount=0; acount < attrs.size();) {
             SAMLAttribute* a=attrs[acount];
-
-            AAP rule(aaps,a->getName(),a->getNamespace());
-            if (rule.fail()) {
+            bool ruleFound=false;
+            aaps.reset();
+            while (aaps.hasNext()) {
+                IAAP* i=aaps.next();
+                i->lock();
+                if (rule=i->lookup(a->getName(),a->getNamespace())) {
+                    ruleFound=true;
+                    try {
+                        rule->apply(*a,role);
+                        i->unlock();
+                    }
+                    catch (SAMLException&) {
+                        // The attribute is now defunct.
+                        i->unlock();
+                        log.info("no values remain, removing attribute");
+                        s->removeAttribute(acount--);
+                    }
+                }
+            }
+            if (!ruleFound) {
                 if (log.isWarnEnabled()) {
                     auto_ptr_char temp(a->getName());
                     log.warn("no rule found for attribute (%s), filtering it out",temp.get());
                 }
-                s->removeAttribute(acount);
-                continue;
+                s->removeAttribute(acount--);
             }
-            
-            try {
-                rule->apply(*a,role);
-                acount++;
-            }
-            catch (SAMLException&) {
-                // The attribute is now defunct.
-                log.info("no values remain, removing attribute");
-                s->removeAttribute(acount);
-            }
+            acount++;
         }
 
         try {
