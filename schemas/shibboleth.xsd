@@ -81,7 +81,11 @@
             <element ref="shib:AnySite" minOccurs="0"/>
             <element ref="shib:SiteRule" minOccurs="0" maxOccurs="unbounded"/>
         </sequence>
-        <attribute name="Name" type="anyURI"/>
+        <attribute name="Name" type="string" use="required"/>
+        <attribute name="Namespace" type="string" use="optional"/>
+        <attribute name="Factory" type="string" use="optional"/>
+        <attribute name="Alias" type="string" use="optional"/>
+		<attribute name="Header" type="string" use="optional"/>
     </complexType>
 
     <element name="AttributeRule" type="shib:AttributeRuleType">
@@ -97,10 +101,6 @@
                 <element ref="shib:AttributeRule" minOccurs="0" maxOccurs="unbounded"/>
             </sequence>
         </complexType>
-        <key name="AttributeNameKey">
-            <selector xpath="./shib:AttributeRule"/>
-            <field xpath="@Name"/>
-        </key>
     </element>
 
 
