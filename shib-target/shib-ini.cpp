@@ -271,7 +271,7 @@ const std::string ShibINI::get (const string& header, const string& tag)
     to_lowercase (t);
   }
 
-  if (!exists(h)) return empty;
+  if (!m_priv->exists(h)) return empty;
 
   map<string,string>::const_iterator i = m_priv->table[h].find(t);
   if (i == m_priv->table[h].end())
@@ -321,10 +321,11 @@ bool ShibINI::get_tag (string& header, string& tag, bool try_general, string* re
 {
   if (!result) return false;
 
-  ReadLock rwlock(m_priv->rwlock);
+  m_priv->rwlock->rdlock();
   refresh();
+  m_priv->rwlock->unlock();
 
-  if (exists (header, tag)) {
+  if (m_priv->exists (header, tag)) {
     *result = get (header, tag);
     return true;
   }

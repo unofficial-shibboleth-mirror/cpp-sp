@@ -573,10 +573,15 @@ extern "C" int shibrm_check_auth(request_rec* r)
     return shibrm_error_page (r, rmError.c_str(), markupProcessor);
 }
 
+extern "C" void mod_shibrm_init (server_rec*r, pool* p)
+{
+  ShibTargetConfig::preinit();
+}
+
 extern "C"{
 module MODULE_VAR_EXPORT shibrm_module = {
     STANDARD_MODULE_STUFF,
-    NULL,			/* initializer */
+    mod_shibrm_init,		/* initializer */
     create_shibrm_dir_config,	/* dir config creater */
     merge_shibrm_dir_config,	/* dir merger --- default is to override */
     create_shibrm_server_config,	/* server config */

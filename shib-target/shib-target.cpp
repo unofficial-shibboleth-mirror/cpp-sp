@@ -17,7 +17,9 @@ using namespace std;
 
 /* shib-target.cpp */
 
-static ShibTargetConfig* g_Config = NULL;
+namespace {
+  ShibTargetConfig* g_Config = NULL;
+};
 
 /* initialize and finalize the target library: return 0 on success, 1 on failure */
 extern "C" int shib_target_initialize (const char* app_name, const char* inifile)
@@ -32,6 +34,9 @@ extern "C" int shib_target_initialize (const char* app_name, const char* inifile
     log.error("shib_target_initialize: Already initialized");
     return 1;
   }
+
+  // pre-init the configuration..
+  ShibTargetConfig::preinit();
 
   try {
     g_Config = &(ShibTargetConfig::init(app_name, inifile));

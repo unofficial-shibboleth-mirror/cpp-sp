@@ -676,9 +676,14 @@ handler_rec shire_handlers[] = {
   { NULL }
 };
 
+extern "C" void mod_shire_init (server_rec*r, pool* p)
+{
+  ShibTargetConfig::preinit();
+}
+
 module MODULE_VAR_EXPORT shire_module = {
     STANDARD_MODULE_STUFF,
-    NULL,			/* initializer */
+    mod_shire_init,		/* initializer */
     create_shire_dir_config,	/* dir config creater */
     merge_shire_dir_config,	/* dir merger --- default is to override */
     create_shire_server_config,	/* server config */

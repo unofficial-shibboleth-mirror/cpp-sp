@@ -7,6 +7,7 @@
  */
 
 #include "shib-target.h"
+#include "shib-threads.h"
 
 #include <log4cpp/PropertyConfigurator.hh>
 #include <log4cpp/Category.hh>
@@ -38,6 +39,7 @@ private:
 
 namespace {
   STConfig * g_Config = NULL;
+  Mutex * g_lock = NULL;
 }
 
 CCache* shibtarget::g_shibTargetCCache = NULL;
@@ -46,10 +48,21 @@ CCache* shibtarget::g_shibTargetCCache = NULL;
 // External Interface
 
 
+void ShibTargetConfig::preinit()
+{
+  if (g_lock) return;
+  g_lock = Mutex::create();
+}
+
 ShibTargetConfig& ShibTargetConfig::init(const char* app_name, const char* inifile)
 {
+  if (!g_lock)
+    throw runtime_error ("ShibTargetConfig not pre-initialized");
+
   if (!app_name)
     throw runtime_error ("No Application name");
+
+  Lock lock(g_lock);
 
   if (g_Config) {
     g_Config->ref();
