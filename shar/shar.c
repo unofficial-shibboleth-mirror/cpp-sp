@@ -64,15 +64,8 @@
 #endif
 
 #ifdef HAVE_UNISTD_H
-# include <unistd.h>
+#include <unistd.h>
 #include <sys/select.h>
-#endif
-
-#ifdef WIN32
-int getdtablesize()
-{
-    return 0;
-}
 #endif
 
 #include <stdio.h>
@@ -81,13 +74,21 @@ int getdtablesize()
 
 #include "shar-utils.h"
 
+#ifdef WIN32
+int getdtablesize()
+{
+    return 0;
+}
+#endif
+
 void shibrpc_prog_1(struct svc_req *rqstp, register SVCXPRT *transp);
 
 #ifdef NEED_SVCFD_CREATE_DEFN
 extern SVCXPRT* svcfd_create ();
 #endif
 
-static int shar_run = 1;
+int shar_run = 1;
+static const char* config = NULL;
 #if 0
 static int foreground = 0;
 #endif
@@ -163,10 +164,46 @@ static void shar_svc_run(ShibSocket listener, const ShibRPCProtocols protos[], i
 
 #ifdef WIN32
 
-static BOOL term_handler(DWORD dwCtrlType)
+int real_main(const char* arg, int preinit)
 {
-  shar_run = 0;
-  return TRUE;
+  static ShibSocket sock;
+  ShibRPCProtocols protos[] = {
+    { SHIBRPC_PROG, SHIBRPC_VERS_1, shibrpc_prog_1 }
+  };
+
+  if (preinit)
+  {
+      config=arg;
+      if (!config)
+        config=getenv("SHIBCONFIG");
+
+      /* initialize the shib-target library */
+      if (shib_target_initialize(SHIBTARGET_SHAR, config))
+        return -2;
+
+      /* Create the SHAR listener socket */
+      if (shib_sock_create(&sock) != 0)
+        return -3;
+
+      /* Bind to the proper port */
+      if (shib_sock_bind(sock, shib_target_sockname()) != 0)
+        return -4;
+
+      /* Initialize the SHAR Utilitites */
+      shar_utils_init();
+  }
+  else
+  {
+      /* Run the listener */
+      shar_svc_run(sock, protos, 1);
+
+      /* Finalize the SHAR, close all clients */
+      shar_utils_fini();
+
+      shib_sock_close(sock, shib_target_sockname());
+      fprintf(stderr, "shar_svc_run returned.\n");
+  }
+  return 0;
 }
 
 #else
@@ -176,13 +213,8 @@ static void term_handler(int arg)
   shar_run = 0;
 }
 
-#endif
-
 static int setup_signals(void)
 {
-#ifdef WIN32
-  SetConsoleCtrlHandler((PHANDLER_ROUTINE)term_handler,TRUE);
-#else
   struct sigaction sa;
 
   memset(&sa, 0, sizeof (sa));
@@ -214,14 +246,14 @@ static int setup_signals(void)
     perror ("sigaction SIGTERM");
     return -1;
   }
-#endif
   return 0;
 }
 
 static void usage(char* whoami)
 {
   fprintf (stderr, "usage: %s [-f]\n", whoami);
-  fprintf (stderr, "  -f\tforce removal of listener socket\n");
+  fprintf (stderr, "  -c\tconfig file to use.\n");
+  fprintf (stderr, "  -f\tforce removal of listener socket.\n");
 #if 0
   fprintf (stderr, "  -F\trun in the foreground.\n");
 #endif
@@ -231,11 +263,13 @@ static void usage(char* whoami)
 
 static int parse_args(int argc, char* argv[])
 {
-#ifndef WIN32
   int opt;
 
-  while ((opt = getopt(argc, argv, "fFh")) > 0) {
+  while ((opt = getopt(argc, argv, "cfFh")) > 0) {
     switch (opt) {
+    case 'c':
+      config=optarg;
+      break;
     case 'f':
       if (*(shib_target_sockname())=='/')
         unlink(shib_target_sockname());
@@ -249,14 +283,12 @@ static int parse_args(int argc, char* argv[])
       return -1;
     }
   }
-#endif
   return 0;
 }
 
-int main (int argc, char *argv[])
+int main(int argc, char *argv[])
 {
   ShibSocket sock;
-  char* config = getenv("SHIBCONFIG");
   ShibRPCProtocols protos[] = {
     { SHIBRPC_PROG, SHIBRPC_VERS_1, shibrpc_prog_1 }
   };
@@ -266,6 +298,9 @@ int main (int argc, char *argv[])
 
   if (parse_args(argc, argv) != 0)
     usage(argv[0]);
+
+  if (!config)
+    config=getenv("SHIBCONFIG");
 
   /* initialize the shib-target library */
   if (shib_target_initialize(SHIBTARGET_SHAR, config))
@@ -280,11 +315,9 @@ int main (int argc, char *argv[])
     return -4;
 
 #if 0
-#ifndef WIN32
   /* (maybe) Put myself into the background. */
   if (!foreground)
     daemon(0, 1);		/* chdir to /, but do not redirect stdout/stderr */
-#endif
 #endif
 
   /* Initialize the SHAR Utilitites */
@@ -300,3 +333,5 @@ int main (int argc, char *argv[])
   fprintf(stderr, "shar_svc_run returned.\n");
   return 0;
 }
+
+#endif
