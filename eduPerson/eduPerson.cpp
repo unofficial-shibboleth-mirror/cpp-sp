@@ -57,6 +57,8 @@
 # define EDUPERSON_EXPORTS __declspec(dllexport)
 #endif
 
+#define EDUPERSON_INSTANTIATE
+
 #include "../shib/shib.h"
 #include "../shib-target/shib-target.h"
 #include "eduPerson.h"

@@ -65,6 +65,7 @@
 
 #include <log4cpp/Category.hh>
 
+using namespace boost;
 using namespace saml;
 using namespace shibboleth;
 using namespace eduPerson;
@@ -113,7 +114,7 @@ bool ScopedAttribute::addValue(DOMElement* e)
 bool ScopedAttribute::accept(DOMElement* e) const
 {
     IOriginSiteMapper* mapper=ShibConfig::getConfig().origin_mapper;
-    Iterator<xstring> domains=mapper->getSecurityDomains(m_defaultScope.c_str());
+    Iterator<pair<xstring,bool> > domains=mapper->getSecurityDomains(m_defaultScope.c_str());
     const XMLCh* this_scope=NULL;
     DOMAttr* scope=e->getAttributeNodeNS(NULL,Scope);
     if (scope)
@@ -122,8 +123,17 @@ bool ScopedAttribute::accept(DOMElement* e) const
         this_scope=m_defaultScope.c_str();
 
     while (domains.hasNext())
-        if (domains.next()==this_scope)
+    {
+        const pair<xstring,bool>& p=domains.next();
+        if (p.second)
+        {
+            reg_expression<XMLCh> re(p.first);
+            if (regex_match(this_scope,re))
+                return true;
+        }
+        else if (p.first==this_scope)
             return true;
+    }
 
     NDC ndc("accept");
     log4cpp::Category& log=log4cpp::Category::getInstance("eduPerson.ScopedAttribute");
