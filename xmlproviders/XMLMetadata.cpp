@@ -556,10 +556,12 @@ XMLMetadataImpl::EncryptionMethod::EncryptionMethod(const DOMElement* e) : m_roo
     }
 }
 
-XMLMetadataImpl::KeyDescriptor::KeyDescriptor(const DOMElement* e) : m_root(e), m_use(signing), m_klist(NULL)
+XMLMetadataImpl::KeyDescriptor::KeyDescriptor(const DOMElement* e) : m_root(e), m_use(unspecified), m_klist(NULL)
 {
     if (!XMLString::compareString(e->getAttributeNS(NULL,SHIB_L(use)),SHIB_L(encryption)))
         m_use=encryption;
+    else if (!XMLString::compareString(e->getAttributeNS(NULL,SHIB_L(use)),SHIB_L(signing)))
+        m_use=signing;
     
     // Process ds:KeyInfo
     e=saml::XML::getFirstChildElement(e);
@@ -753,13 +755,13 @@ XMLMetadataImpl::IDPRole::IDPRole(const EntityDescriptor* provider, const DOMEle
         }
     }
     else {
-        m_attrprofs.push_back(shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
+        m_attrprofs.push_back(Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
         int i;
         DOMNodeList* nlist=e->getElementsByTagNameNS(::XML::SHIB_NS,SHIB_L(HandleService));
         for (i=0; nlist && i<nlist->getLength(); i++) {
             // Manufacture an endpoint for the "Shib" binding.
             m_sso.add(
-                new Endpoint(::XML::SHIB_NS,static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIB_L(Location)))
+                new Endpoint(Constants::SHIB_AUTHNREQUEST_PROFILE_URI,static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIB_L(Location)))
                 );
 
             // We're going to "mock up" a KeyDescriptor that contains the specified Name as a ds:KeyName.
@@ -773,6 +775,7 @@ XMLMetadataImpl::IDPRole::IDPRole(const EntityDescriptor* provider, const DOMEle
                 );
             ki->appendChild(kn);
             kd->appendChild(ki);
+            kd->setAttributeNS(NULL,SHIB_L(use),SHIB_L(signing));
             m_keys.push_back(new KeyDescriptor(kd));
         }
     }
@@ -833,8 +836,8 @@ XMLMetadataImpl::AARole::AARole(const EntityDescriptor* provider, const DOMEleme
     else {
         // For old style, we just do SAML 1.1 compatibility with Shib handles.
         m_protocolEnum.push_back(saml::XML::SAML11_PROTOCOL_ENUM);
-        m_formats.push_back(shibboleth::Constants::SHIB_NAMEID_FORMAT_URI);
-        m_attrprofs.push_back(shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
+        m_formats.push_back(Constants::SHIB_NAMEID_FORMAT_URI);
+        m_attrprofs.push_back(Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
         int i;
         DOMNodeList* nlist=e->getElementsByTagNameNS(::XML::SHIB_NS,SHIB_L(AttributeAuthority));
         for (i=0; nlist && i<nlist->getLength(); i++) {

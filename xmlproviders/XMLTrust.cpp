@@ -415,7 +415,7 @@ bool XMLTrust::attach(const Iterator<IRevocation*>& revocations, const IRoleDesc
         Iterator<const IKeyDescriptor*> kdlist=role->getKeyDescriptors();
         while (kdlist.hasNext()) {
             const IKeyDescriptor* kd=kdlist.next();
-            if (kd->getUse()!=IKeyDescriptor::signing)
+            if (kd->getUse()==IKeyDescriptor::encryption)
                 continue;
             DSIGKeyInfoList* kilist=kd->getKeyInfo();
             for (size_t s=0; kilist && s<kilist->getSize(); s++) {
