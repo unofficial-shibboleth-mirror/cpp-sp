@@ -91,15 +91,15 @@ LINK32=link.exe
 # Name "isapi_shib - Win32 Debug"
 # Begin Source File
 
-SOURCE=.\directive_class.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\directives.h
-# End Source File
-# Begin Source File
-
 SOURCE=.\isapi_shib.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\isapi_shib.rc
+# End Source File
+# Begin Source File
+
+SOURCE=.\resource.h
 # End Source File
 # End Target
 # End Project

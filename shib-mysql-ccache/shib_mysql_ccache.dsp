@@ -89,7 +89,15 @@ LINK32=link.exe
 # Name "shib_mysql_ccache - Win32 Debug"
 # Begin Source File
 
+SOURCE=.\resource.h
+# End Source File
+# Begin Source File
+
 SOURCE=".\shib-mysql-ccache.cpp"
+# End Source File
+# Begin Source File
+
+SOURCE=.\shib_mysql_ccache.rc
 # End Source File
 # End Target
 # End Project

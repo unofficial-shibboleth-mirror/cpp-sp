@@ -84,6 +84,10 @@ LINK32=link.exe
 # Name "shar - Win32 Debug"
 # Begin Source File
 
+SOURCE=.\resource.h
+# End Source File
+# Begin Source File
+
 SOURCE=".\shar-utils.cpp"
 # End Source File
 # Begin Source File
@@ -93,6 +97,10 @@ SOURCE=".\shar-utils.h"
 # Begin Source File
 
 SOURCE=.\shar.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\shar.rc
 # End Source File
 # Begin Source File
 
