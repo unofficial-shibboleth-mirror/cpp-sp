@@ -91,8 +91,8 @@ void verifySignature(DOMDocument* doc, DOMElement* sigNode, const char* cert)
     auto_ptr<OpenSSLCryptoX509> x509(new OpenSSLCryptoX509());
     ifstream infile(cert);
     while (!getline(infile,line).fail())
-        if (line.find("CERTIFICATE")<0)
-            certbuf+=line;
+        if (line.find("CERTIFICATE")==string::npos)
+            certbuf+=line + '\n';
     x509->loadX509Base64Bin(certbuf.data(),certbuf.length());
 
     // Load the signature.
