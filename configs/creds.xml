@@ -2,8 +2,39 @@
     
     <!--
     
-    <KeyUse> elements map TLS keys and certificates in <ds:KeyInfo> to <Subject> and
-    <RelyingParty> data. Omitting either acts as a wildcard (any subject / any relying party).
+   	Keys and certificates are resolved using Credential Resolvers. Three types are
+   	currently defined, file-based keys and certs, <ds:KeyInfo> inline certs, and
+   	for Java implementations, keystore=based keys and certs.
+   	
+   	All resolvers must contain a unique XML Id attribute.
+   	
+   	A file example:
+   	
+   	<FileCredResolver Id="foo" Format="PEM">
+   		<Path>/path/to/file</Path>
+   		<Password>optionalpassword</Password>
+   	</FileCredResolver>
+    
+    File resolvers currently support DER and PEM formats. PEM files can contain
+    keys and certs and cert chains in a single file. DER files can only hold
+    single objects.
+    
+    A KeyInfo example follows. Only <ds:X509Data> for inline certificates is supported.
+    
+    <ds:KeyInfo Id="foo">
+    	<ds:X509Data>
+    		<ds:X509Certificate>lfsjlfjfgjlgfljgflj....
+djlgdjlgdjlgdjlgdjl.....
+</ds:X509Certificate>
+    	</ds:X509Data>
+    </ds:KeyInfo>
+
+   	A certificate chain can also be embedded using one <ds:X509Data> element with
+   	embedded <ds:X509Certificate> elements. The chain should be ordered with the end-cert last.
+    
+    <KeyUse> elements map key and cert resolvers to <Subject> and <RelyingParty> data.
+    Omitting either acts as a wildcard (any subject / any relying party). The KeyRef and
+    CertificateRef attributes connect the element to the resolvers defined above it.
     
     <Subject> elements refer to the application identifier that is requesting attributes.
     Currently this is of the form http(s)://<hostname>, and matches the root URL of the
@@ -16,27 +47,9 @@
     Both elements can contain a regexp="true" attribute to indicate a pattern match instead
     of literal matching.
     
-    In the <ds:KeyInfo> element, the usual approach is to reference other files that contain
-    the information using the <ds:RetrievalMethod> element. The following method types are
-    supported:
-    
-    	http://www.w3.org/2000/09/xmldsig#rawX509Certificate	DER/ASN.1 binary X.509 cert
-    	urn:mace:shibboleth:1.0:xmldsig:pemX509Certificate		PEM format X.509 cert or cert chain
-    	urn:mace:shibboleth:1.0:xmldsig:pemRSAPrivateKey		PEM format RSA private key w/o a password
-   	
-   	A certificate chain can also be embedded directly using the <ds:X509Data> element with
-   	embedded <ds:X509Certificate> elements. The chain should be ordered with the end-cert last.
-
-	Here is an example that uses a PEM-based key/cert pair with any requesting application
-	for a specific set of origin sites:
+	Here is an example that binds to any requesting application	for a specific set of origin sites:
 	
-	<KeyUse>
-        <ds:KeyInfo>
-        	<ds:RetrievalMethod	Type="urn:mace:shibboleth:1.0:xmldsig:pemX509Certificate"
-        			URI="/opt/shibboleth/etc/shibboleth/shar.crt"/>
-        	<ds:RetrievalMethod Type="urn:mace:shibboleth:1.0:xmldsig:pemRSAPrivateKey"
-        			URI="/opt/shibboleth/etc/shibboleth/shar.key"/>
-        </ds:KeyInfo>
+	<KeyUse KeyRef="foo" CertificateRef="bar">
         <RelyingParty regexp="true">^urn:mace:inqueue:.+$</RelyingParty>
     </KeyUse>
 
@@ -46,13 +59,14 @@
 
     -->
     
-    <KeyUse>
-        <ds:KeyInfo>
-        	<ds:RetrievalMethod	Type="urn:mace:shibboleth:1.0:xmldsig:pemX509Certificate"
-        			URI="/opt/shibboleth/etc/shibboleth/shar.crt"/>
-        	<ds:RetrievalMethod Type="urn:mace:shibboleth:1.0:xmldsig:pemRSAPrivateKey"
-        			URI="/opt/shibboleth/etc/shibboleth/shar.key"/>
-        </ds:KeyInfo>
-    </KeyUse>
+    <FileCredResolver Id="key1">
+    	<Path>/opt/shibboleth/etc/shibboleth/shar.key</Path>
+    </FileCredResolver>
+    
+    <FileCredResolver Id="cert1">
+    	<Path>/opt/shibboleth/etc/shibboleth/shar.crt</Path>
+    </FileCredResolver>
+
+    <KeyUse KeyRef="key1" CertificateRef="cert1"/>
 
 </Credentials>
