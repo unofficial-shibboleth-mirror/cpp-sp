@@ -4,13 +4,14 @@
 	xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
 	xmlns:xml="http://www.w3.org/XML/1998/namespace"
 	xmlns:shib="urn:mace:shibboleth:1.0"
+	xmlns:saml="urn:oasis:names:tc:SAML:1.0:assertion"
 	elementFormDefault="qualified"
 	attributeFormDefault="unqualified"
 	version="1.2">
 
     <import namespace="http://www.w3.org/2000/09/xmldsig#" schemaLocation="xmldsig-core-schema.xsd"/>
     <import namespace="http://www.w3.org/XML/1998/namespace" schemaLocation="xml.xsd"/>
-    
+    <import namespace="urn:oasis:names:tc:SAML:1.0:assertion" schemaLocation="cs-sstc-schema-assertion-1.1.xsd"/>
     
     <!-- Status-Related Information -->
     
@@ -21,16 +22,24 @@
             Used with samlp:Requester, signals AA did not recognize handle as valid
     -->
 
-    <!-- Relaxes SAML AttributeValue type definition -->
+    <!--
+    Relaxes SAML AttributeValue type definition. Xerces-C has a bug that prevents
+    anyAttribute content appearing on anyType. As a hack, we define the SAML schema
+    such that AttributeValue now derives from an extended type, and we then extend
+    that type here. 1.1 origins will specify this xsi:type. 1.2 origins will leave
+    it out, and the SAML schema hack will allow it to validate.
+    In 1.1 targets, this type was defined differently.
+    -->
 
 	<complexType name="AttributeValueType" mixed="true">
 		<annotation>
-			<documentation xml:lang="en">By convention, all Shibboleth attribute values carry this unconstrained xsi:type.</documentation>
+			<documentation xml:lang="en">
+			By convention, all Shibboleth 1.1 origin attribute values carry this unconstrained xsi:type.
+			</documentation>
 		</annotation>
-		<sequence>
-			<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
-		</sequence>
-		<anyAttribute namespace="##any" processContents="lax"/>
+		<complexContent>
+			<extension base="saml:AttributeValueType"/>
+		</complexContent>
 	</complexType>
     
     <!-- Attribute Acceptance Policies -->
