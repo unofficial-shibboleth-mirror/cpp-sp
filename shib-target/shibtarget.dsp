@@ -91,6 +91,10 @@ LINK32=link.exe
 # Name "shibtarget - Win32 Debug"
 # Begin Source File
 
+SOURCE=.\ArtifactMapper.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\internal.h
 # End Source File
 # Begin Source File
