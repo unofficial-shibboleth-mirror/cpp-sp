@@ -152,3 +152,17 @@ extern "C" int XML_EXPORTS saml_extension_init(void*)
 
     return 0;
 }
+
+extern "C" void XML_EXPORTS saml_extension_term()
+{
+    // Unregister metadata factories
+    ShibConfig& conf=ShibConfig::getConfig();
+    conf.m_plugMgr.unregFactory("edu.internet2.middleware.shibboleth.common.provider.XMLMetadata");
+    conf.m_plugMgr.unregFactory("edu.internet2.middleware.shibboleth.common.provider.XMLRevocation");
+    conf.m_plugMgr.unregFactory("edu.internet2.middleware.shibboleth.common.provider.XMLTrust");
+    conf.m_plugMgr.unregFactory("edu.internet2.middleware.shibboleth.common.Credentials");
+    conf.m_plugMgr.unregFactory("edu.internet2.middleware.shibboleth.common.Credentials.FileCredentialResolver");
+    conf.m_plugMgr.unregFactory("edu.internet2.middleware.shibboleth.target.provider.XMLAAP");
+
+    SAMLAttribute::setFactory(NULL);
+}

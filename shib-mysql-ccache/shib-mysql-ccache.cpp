@@ -607,13 +607,18 @@ IPlugIn* new_mysql_ccache(const DOMElement* e)
   return new ShibMySQLCCache(e);
 }
 
+#define PLUGINTYPE "edu.internet2.middleware.shibboleth.target.provider.MySQLSessionCache"
+
 extern "C" int SHIBMYSQL_EXPORTS saml_extension_init(void*)
 {
   // register this ccache type
-  ShibConfig::getConfig().m_plugMgr.regFactory(
-    "edu.internet2.middleware.shibboleth.target.provider.MySQLSessionCache", &new_mysql_ccache
-    );
+  ShibConfig::getConfig().m_plugMgr.regFactory(PLUGINTYPE, &new_mysql_ccache);
   return 0;
+}
+
+extern "C" void SHIBMYSQL_EXPORTS saml_extension_term()
+{
+  ShibConfig::getConfig().m_plugMgr.unregFactory(PLUGINTYPE);
 }
 
 /*************************************************************************
