@@ -30,5 +30,9 @@ const XMLCh XML::SHIB_SCHEMA_ID[] = // shibboleth.xsd
 
 // Shibboleth vocabulary literals
 
+const XMLCh XML::Literals::InvalidHandle[]=
+{ chLatin_I, chLatin_n, chLatin_v, chLatin_a, chLatin_l, chLatin_i, chLatin_d,
+  chLatin_H, chLatin_a, chLatin_n, chLatin_d, chLatin_l, chLatin_e, chNull };
+
 const XMLCh XML::Literals::xmlns_shib[]=
 { chLatin_x, chLatin_m, chLatin_l, chLatin_n, chLatin_s, chColon, chLatin_s, chLatin_h, chLatin_i, chLatin_b, chNull };
