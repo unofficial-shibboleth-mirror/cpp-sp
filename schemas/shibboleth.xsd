@@ -209,11 +209,10 @@
 	            <sequence>
 	            	<element name="AssertionConsumerServiceURL" maxOccurs="unbounded">
 	            		<complexType>
-	            			<simpleContent>
-	            				<extension base="anyURI">
-	            					<attribute name="Id" type="string" use="optional"/>
-	            				</extension>
-	            			</simpleContent>
+	            			<sequence/>
+	            			<attribute name="Location" type="string" use="required"/>
+           					<attribute name="Id" type="string" use="optional"/>
+        					<anyAttribute namespace="##any" processContents="lax"/>
 	            		</complexType>
 	            	</element>
 	                <element name="AttributeRequester" maxOccurs="unbounded">
