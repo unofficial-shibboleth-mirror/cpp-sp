@@ -121,8 +121,13 @@ LIBS="-lxerces-c $LIBS"
 AC_CHECK_HEADER([xercesc/dom/DOM.hpp],,
                 AC_MSG_ERROR([unable to find xerces header files]))
 AC_TRY_LINK(
-	[#include <xercesc/util/PlatformUtils.hpp>],
-        [xercesc::XMLPlatformUtils::Initialize()],
+	[#include <xercesc/util/PlatformUtils.hpp>
+#include <xercesc/util/XercesVersion.hpp>],
+        [#if _XERCES_VERSION >= 20300
+xercesc::XMLPlatformUtils::Initialize();
+#else
+#error Need Xerces-C version 2.3 or higher
+#endif],
 	[AC_DEFINE(HAVE_LIBXERCESC,1,[Define if Xerces-C library was found])],
 	[AC_MSG_ERROR([unable to link with Xerces])])
 
