@@ -245,13 +245,13 @@ void STConfig::init()
         {
             auto_ptr<XMLCh> temp(XMLString::transcode(attrname->c_str()));
             SAMLAttribute::regFactory(temp.get(),shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,&ScopedFactory);
-            log.info("registered scoped attribute (%s)",attrname.c_str());
+            log.info("registered scoped attribute (%s)",attrname->c_str());
         }
         else if (factory=="simple")
         {
             auto_ptr<XMLCh> temp(XMLString::transcode(attrname->c_str()));
             SAMLAttribute::regFactory(temp.get(),shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,&SimpleFactory);
-            log.info("registered simple attribute (%s)",attrname.c_str());
+            log.info("registered simple attribute (%s)",attrname->c_str());
         }
     }
 	delete iter;
