@@ -140,6 +140,7 @@ extern "C" int XML_EXPORTS saml_extension_init(void*)
     saml::XML::registerSchema(::XML::CREDS_NS,::XML::CREDS_SCHEMA_ID);
     saml::XML::registerSchema(::XML::SAML2META_NS,::XML::SAML2META_SCHEMA_ID);
     saml::XML::registerSchema(::XML::SAML2ASSERT_NS,::XML::SAML2ASSERT_SCHEMA_ID);
+    saml::XML::registerSchema(::XML::XMLENC_NS,::XML::XMLENC_SCHEMA_ID);
 
     // Register metadata factories
     ShibConfig& conf=ShibConfig::getConfig();
