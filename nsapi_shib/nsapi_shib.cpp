@@ -68,6 +68,12 @@
 #include <sstream>
 #include <stdexcept>
 
+#ifdef WIN32
+# define XP_WIN32
+#else
+# define XP_UNIX
+#endif
+
 #define MCC_HTTPD
 #define NET_SSL
 
@@ -141,12 +147,12 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, Session* sn, Request* rq
 
     try
     {
-        LPCSTR schemadir=pblock_findval("shib-schemas",pb);
+        const char* schemadir=pblock_findval("shib-schemas",pb);
         if (!schemadir)
             schemadir=getenv("SHIBSCHEMAS");
         if (!schemadir)
             schemadir=SHIB_SCHEMAS;
-        LPCSTR config=pblock_findval("shib-config",pb);
+        const char* config=pblock_findval("shib-config",pb);
         if (!config)
             config=getenv("SHIBCONFIG");
         if (!config)
@@ -183,11 +189,11 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, Session* sn, Request* rq
 IRequestMapper::Settings map_request(pblock* pb, Session* sn, Request* rq, IRequestMapper* mapper, string& target)
 {
     // Get everything but hostname...
-    LPCSTR uri=pblock_findval("uri",rq->reqpb);
-    LPCSTR qstr=pblock_findval("query",rq->reqpb);
+    const char* uri=pblock_findval("uri",rq->reqpb);
+    const char* qstr=pblock_findval("query",rq->reqpb);
     int port=server_portnum;
-    LPCSTR scheme=security_active ? "https" : "http";
-    LPCSTR host=NULL;
+    const char* scheme=security_active ? "https" : "http";
+    const char* host=NULL;
 
     string url;
     if (uri)
@@ -310,7 +316,7 @@ extern "C" NSAPI_PUBLIC int nsapi_shib(pblock* pb, Session* sn, Request* rq)
         pair<bool,bool> requireSession=settings.first->getBool("requireSession");
         if (!requireSession.first || !requireSession.second) {
             const char* param=pblock_findval("require-session",pb);
-            if (param && (!strcmp(param,"1") || !util_strcasecmp(param,"true")))
+            if (param && (!strcmp(param,"1") || !strcasecmp(param,"true")))
                 requireSession.second=true;
         }
         pair<const char*,const char*> shib_cookie=shire.getCookieNameProps();
@@ -494,7 +500,7 @@ extern "C" NSAPI_PUBLIC int nsapi_shib(pblock* pb, Session* sn, Request* rq)
         pair<bool,bool> exp=settings.first->getBool("exportAssertion");
         if (!exp.first || !exp.second) {
             const char* param=pblock_findval("export-assertion",pb);
-            if (param && (!strcmp(param,"1") || !util_strcasecmp(param,"true")))
+            if (param && (!strcmp(param,"1") || !strcasecmp(param,"true")))
                 exp.second=true;
         }
         if (exp.second && assertions.size()) {
@@ -658,7 +664,7 @@ extern "C" NSAPI_PUBLIC int shib_handler(pblock* pb, Session* sn, Request* rq)
             return WriteClientError(sn,rq,FUNC,"HTML-based redirection requires a redirectPage property.");
                 
         // If this is a GET, we manufacture an AuthnRequest.
-        if (!util_strcasecmp(pblock_findval("method",rq->reqpb),"GET")) {
+        if (!strcasecmp(pblock_findval("method",rq->reqpb),"GET")) {
             const char* areq=pblock_findval("query",rq->reqpb) ? shire.getLazyAuthnRequest(pblock_findval("query",rq->reqpb)) : NULL;
             if (!areq)
                 throw ShibTargetException(SHIBRPC_OK, "malformed arguments to request a new session");
@@ -679,13 +685,13 @@ extern "C" NSAPI_PUBLIC int shib_handler(pblock* pb, Session* sn, Request* rq)
                 return WriteRedirectPage(sn, rq, application, redirectPage.second, markupProcessor);
             }
         }
-        else if (util_strcasecmp(pblock_findval("method",rq->reqpb),"POST"))
+        else if (strcasecmp(pblock_findval("method",rq->reqpb),"POST"))
             throw ShibTargetException(SHIBRPC_OK,"blocked non-POST to Shibboleth session processor");
 
         // Make sure this POST is an appropriate content type
         char* content_type=NULL;
         if (request_header("content-type",&content_type,sn,rq)!=REQ_PROCEED ||
-                !content_type || util_strcasecmp(content_type,"application/x-www-form-urlencoded"))
+                !content_type || strcasecmp(content_type,"application/x-www-form-urlencoded"))
             throw ShibTargetException(SHIBRPC_OK,"blocked bad content-type to Shibboleth session processor");
     
         // Read the data.
