@@ -96,12 +96,12 @@ ShibPOSTProfile::~ShibPOSTProfile()
         delete[] const_cast<XMLCh*>(*i);
 }
 
-SAMLAssertion* ShibPOSTProfile::getSSOAssertion(const SAMLResponse& r)
+SAMLAssertion& ShibPOSTProfile::getSSOAssertion(const SAMLResponse& r)
 {
     return SAMLPOSTProfile::getSSOAssertion(r,Iterator<const XMLCh*>(m_policies));
 }
 
-SAMLAuthenticationStatement* ShibPOSTProfile::getSSOStatement(const SAMLAssertion& a)
+SAMLAuthenticationStatement& ShibPOSTProfile::getSSOStatement(const SAMLAssertion& a)
 {
     return SAMLPOSTProfile::getSSOStatement(a);
 }
@@ -111,26 +111,20 @@ SAMLResponse* ShibPOSTProfile::accept(const XMLByte* buf)
     // The built-in SAML functionality will do most of the basic non-crypto checks.
     // Note that if the response only contains a status error, it gets tossed out
     // as an exception.
-    SAMLResponse* r = SAMLPOSTProfile::accept(buf, m_receiver, m_ttlSeconds);
+    auto_ptr<SAMLResponse> r(SAMLPOSTProfile::accept(buf, m_receiver, m_ttlSeconds));
 
     // Now we do some more non-crypto (ie. cheap) work to match up the origin site
-    // with its associated data. If we can't even find a SSO statement in the response
-    // we just return the response to the caller, who will presumably notice this.
-    const SAMLAssertion* assertion = getSSOAssertion(*r);
-    if (!assertion)
-        return r;
-
-    const SAMLAuthenticationStatement* sso = getSSOStatement(*assertion);
-    if (!sso)
-        return r;
+    // with its associated data.
+    const SAMLAssertion& assertion = getSSOAssertion(*r);
+    const SAMLAuthenticationStatement& sso = getSSOStatement(assertion);
 
     // Examine the subject information.
-    const SAMLSubject* subject = sso->getSubject();
+    const SAMLSubject* subject = sso.getSubject();
     if (!subject->getNameQualifier())
-        throw SAMLException(SAMLException::RESPONDER, "ShibPOSTProfile::accept() requires subject name qualifier");
+        throw InvalidAssertionException(SAMLException::RESPONDER, "ShibPOSTProfile::accept() requires subject name qualifier");
 
     const XMLCh* originSite = subject->getNameQualifier();
-    const XMLCh* handleService = assertion->getIssuer();
+    const XMLCh* handleService = assertion.getIssuer();
 
     // Is this a trusted HS?
     Iterator<xstring> hsNames=ShibConfig::getConfig().origin_mapper->getHandleServiceNames(originSite);
@@ -139,17 +133,17 @@ SAMLResponse* ShibPOSTProfile::accept(const XMLByte* buf)
         if (!XMLString::compareString(hsNames.next().c_str(),handleService))
             bFound = true;
     if (!bFound)
-        throw SAMLException(SAMLException::RESPONDER, "ShibPOSTProfile::accept() detected an untrusted HS for the origin site");
+        throw TrustException(SAMLException::RESPONDER, "ShibPOSTProfile::accept() detected an untrusted HS for the origin site");
 
     const Key* hsKey=ShibConfig::getConfig().origin_mapper->getHandleServiceKey(handleService);
 
     // Signature verification now takes place. We check the assertion and the response.
     // Assertion signing is optional, response signing is mandatory.
-    if (assertion->isSigned())
-        verifySignature(*assertion, handleService, hsKey);
+    if (assertion.isSigned())
+        verifySignature(assertion, handleService, hsKey);
     verifySignature(*r, handleService, hsKey);
 
-    return r;
+    return r.release();
 }
 
 SAMLResponse* ShibPOSTProfile::prepare(const XMLCh* recipient,
