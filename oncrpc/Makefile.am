@@ -61,3 +61,6 @@ EXTRA_DIST = \
   nt.c \
   portmap.c \
   resource.h
+
+install-exec-hook:
+	for la in $(lib_LTLIBRARIES) ; do rm -f $(DESTDIR)$(libdir)/$$la ; done

@@ -16,5 +16,8 @@ shib_mysql_ccache_la_SOURCES = \
 
 shib_mysql_ccache_la_LDFLAGS = -module -avoid-version
 
+install-exec-hook:
+	for la in $(plugin_LTLIBRARIES) ; do rm -f $(DESTDIR)$(plugindir)/$$la ; done
+
 EXTRA_DIST = shib_mysql_ccache.dsp
 
