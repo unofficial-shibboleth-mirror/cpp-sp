@@ -124,7 +124,6 @@ int main(int argc,char* argv[])
             cin >> ch;
         }
 
-        _asm int 3;
         SAMLResponse* r2=p->accept((const XMLByte*)buf.c_str());
         cout << "Consumed Response: " << endl << *r2 << endl;
 
