@@ -29,12 +29,15 @@ public:
   void shutdown();
   ShibINI& getINI() { return *ini; }
 
+  Iterator<xstring> getPolicies() { return Iterator<xstring>(policies); }
+
   void ref();
 private:
   SAMLConfig& samlConf;
   ShibConfig& shibConf;
   ShibINI* ini;
   int refcount;
+  vector<xstring> policies;
 };
 
 namespace {
@@ -73,6 +76,12 @@ ShibTargetConfig& ShibTargetConfig::init(const char* app_name, const char* inifi
   return *g_Config;
 }
 
+static ShibTargetConfig& ShibTargetConfig::getConfig()
+{
+    if (!g_Config)
+        throw SAMLException("ShibTargetConfig::getConfig() called with NULL configuration");
+    return *g_Config;
+}
 
 
 /****************************************************************************/
@@ -179,7 +188,7 @@ STConfig::STConfig(const char* app_name, const char* inifile)
   if (!strcmp (app_name, SHIBTARGET_SHAR))
     g_shibTargetCCache = CCache::getInstance(NULL);
 
-  // Load any saml extensions
+  // Load any SAML extensions
   string ext = "extensions:saml";
   if (ini->exists(ext)) {
     saml::NDC ndc("load extensions");
@@ -196,6 +205,18 @@ STConfig::STConfig(const char* app_name, const char* inifile)
       {
         log.crit("%s: %s", str->c_str(), e.what());
       }
+    }
+    delete iter;
+  }
+
+  // Load SAML policies.
+  if (ini->exists(ext)) {
+    log.debug("loading SAML policies");
+    ShibINI::Iterator* iter = ini->tag_iterator(SHIBTARGET_POLICIES);
+
+    for (const string* str = iter->begin(); str; str = iter->next()) {
+        auto_ptr<XMLCh> temp(XMLString::transcode(ini->get(ext, *str)));
+        policies.push_back(temp.get());
     }
     delete iter;
   }

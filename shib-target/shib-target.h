@@ -1,13 +1,13 @@
 /*
- * shib-common.h -- top-level header file for the SHIB Common Target Library
+ * shib-target.h -- top-level header file for the SHIB Common Target Library
  *
  * Created by:	Derek Atkins <derek@ihtfp.com>
  *
  * $Id$
  */
 
-#ifndef SHIB_COMMON_H
-#define SHIB_COMMON_H
+#ifndef SHIB_TARGET_H
+#define SHIB_TARGET_H
 
 #include <shib-target/shibrpc.h>
 
@@ -82,6 +82,7 @@ void shib_sock_close (ShibSocket s, ShibSockName name);
 #define SHIBTARGET_SHAR		"shar"
 #define SHIBTARGET_SHIRE	"shire"
 #define SHIBTARGET_RM		"rm"
+#define SHIBTARGET_POLICIES "policies"
 
 /* configuration tags */
 #define SHIBTARGET_TAG_LOGGER	"logger"
@@ -408,11 +409,13 @@ namespace shibtarget {
   public:
     static void preinit();
     static ShibTargetConfig& init(const char* app_name, const char* inifile);
+    static ShibTargetConfig& getConfig();
     virtual void shutdown() = 0;
     virtual ShibINI& getINI() = 0;
+    Iterator<saml::xstring> getPolicies() = 0;
   };
 
 } // namespace
 #endif
 
-#endif /* SHIB_COMMON_H */
+#endif /* SHIB_TARGET_H */
