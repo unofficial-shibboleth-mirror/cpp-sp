@@ -5,10 +5,12 @@ AUTOMAKE_OPTIONS = foreign
 logdir=${pkgsysconfdir}
 pkgsysconfdir = $(sysconfdir)/@PACKAGE@
 pkgsysconf_DATA = \
-	shibboleth.ini \
+	shibboleth.xml \
 	shibboleth.logger \
 	shire.logger \
 	shar.logger \
+	shar.key \
+	shar.crt \
 	apache.config \
 	apache2.config \
 	accessError.html \
@@ -17,7 +19,7 @@ pkgsysconf_DATA = \
 	AAP.xml \
 	sites.xml \
 	trust.xml \
-	creds.xml
+	inqueue.pem
 
 #
 # Some of these need building
@@ -44,10 +46,7 @@ shar.logger: ${srcdir}/shar.logger.in Makefile ${top_builddir}/config.status
 shire.logger: ${srcdir}/shire.logger.in Makefile ${top_builddir}/config.status
 	$(MAKE) do-build-file FILE=$@
 
-shibboleth.ini: ${srcdir}/shibboleth.ini.in Makefile ${top_builddir}/config.status
-	$(MAKE) do-build-file FILE=$@
-
-creds.xml: ${srcdir}/creds.xml.in Makefile ${top_builddir}/config.status
+shibboleth.xml: ${srcdir}/shibboleth.xml.in Makefile ${top_builddir}/config.status
 	$(MAKE) do-build-file FILE=$@
 
 CLEANFILES = \
@@ -55,11 +54,10 @@ CLEANFILES = \
 	apache2.config \
 	shar.logger \
 	shire.logger \
-	shibboleth.ini \
-	creds.xml
+	shibboleth.xml
 
 EXTRA_DIST = .cvsignore \
-	shibboleth.ini.in \
+	shibboleth.xml.in \
 	shire.logger.in \
 	shar.logger.in \
 	apache.config.in \
@@ -71,4 +69,6 @@ EXTRA_DIST = .cvsignore \
 	AAP.xml \
 	sites.xml \
 	trust.xml \
-	creds.xml.in
+	inqueue.pem \
+	shar.key \
+	shar.crt

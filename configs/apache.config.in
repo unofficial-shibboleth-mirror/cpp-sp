@@ -5,62 +5,29 @@
 ######
 
 #
-# Load the Resource Manager and SHIRE modules.
-# Note that ORDER MATTERS!  Apache runs the modules in the
-# _reverse_ order that modules were loaded.  The RM module
-# depends on the Shire module, so you need this load-order
-# to make sure they are run properly.
+# Load the Shibboleth module.
 #
-# If you see log messages about "NOOP" configurations, then you
-# have messed this up.
-#
-LoadModule shibrm_module @-LIBEXECDIR-@/mod_shibrm.so
 LoadModule shire_module @-LIBEXECDIR-@/mod_shire.so
 
 #
-# Global SHIRE Configuration
-# This is the INI file that contains all the global, non-apache-specific
-# configuration.  Look at this file for most of your configuration
-# parameters.
+# Global Configuration
+# This is the XML file that contains all the global, non-apache-specific
+# configuration.  Look at this file for most of your configuration parameters.
 #
-SHIREConfig @-PKGSYSCONFDIR-@/shibboleth.ini
+ShibSchemaDir @-PKGSYSCONFDIR-@
+ShibConfig @-PKGSYSCONFDIR-@/shibboleth.xml
 
 #
-# The SHIRE POST processor URL
-# Most of the time, this should be a path only, so that the schema,
-# host, and port will determined dynamically in each virtual host.  If
-# for some reason the dynamically derived URL is not appropriate, a
-# complete URL can be used, and may be set per-vhost explicitly:
-# SHIREURL https://<server-name>/SHIRE
+# Configure the module for content
 #
-# The SHIREURL and subsequent "Location" handler must match.
+# You can now do most of this in shibboleth.xml using the RequestMap
+# but you MUST enable AuthType shibboleth for the module to process
+# any requests, and there MUST be a require command as well.
+# You can turn on require valid-user at the root, and then override
+# as needed. This will not actually force a user session unless
+# you require one. See the deploy guide for details.
 #
-SHIREURL /SHIRE
-<Location /SHIRE>
-  SetHandler shib-shire-post
-</Location>
-
-#
-# Configure a test directory
-#
-# You need _at least_ a "require" option for Shib to take effect for this
-# directory.  You can either set the AuthType to "shibboleth", or you can
-# turn on ShibBasicHijack. For Shib, valid-user is a somewhat vague concept
-# and only means that a trusted origin site has authenticated the user, but
-# doesn't mean that any attributes were received.
-#
-<Location /secure>
+<Location />
   AuthType shibboleth
-  require affiliation ~ ^member@.+$
-  # require valid-user
-
-  # Per-directory SHIRE Configuration
-  #ShibBasicHijack On
-  #ShibSSLOnly On
-  #ShibAuthLifetime 14400
-  #ShibAuthTimeout 3600
-
-  # RM Configuration
-  #AuthGroupFile /foo
-  #ShibExportAssertion On
+  require valid-user
 </Location>

@@ -5,48 +5,29 @@
 ######
 
 #
-# Load the Apache Request module and then the SHIBBOLETH module
-# Note that ORDER MATTERS!  Apache runs the modules in the
-# _reverse_ order that modules were loaded.  The Shib module
-# depends on the Apreq module, so you need this load-order
-# to make sure they are run properly.
+# Load the SHIBBOLETH module
 #
-# If you see log messages about missing apreq symbols then you
-# have messed this up.
-#
-LoadModule apreq_module @-LIBEXECDIR-@/mod_apreq.so
 LoadModule mod_shib @-LIBEXECDIR-@/mod_shib.so
 
 #
-# Global SHIRE Configuration
-# This is the INI file that contains all the global, non-apache-specific
-# configuration.  Look at this file for most of your configuration
-# parameters.
+# Global Configuration
+# This is the XML file that contains all the global, non-apache-specific
+# configuration.  Look at this file for most of your configuration parameters.
 #
-SHIBConfig @-PKGSYSCONFDIR-@/shibboleth.ini
+ShibSchemaDir @-PKGSYSCONFDIR-@
+ShibConfig @-PKGSYSCONFDIR-@/shibboleth.xml
 
 #
-# Configure a test directory
+# Configure the module for content
 #
-# You need _at least_ a "require" option for Shib to take effect for this
-# directory.  You can either set the AuthType to "shibboleth", or you can
-# turn on ShibBasicHijack. For Shib, valid-user is a somewhat vague concept
-# and only means that a trusted origin site has authenticated the user, but
-# doesn't mean that any attributes were received.
+# You can now do most of this in shibboleth.xml using the RequestMap
+# but you MUST enable AuthType shibboleth for the module to process
+# any requests, and there MUST be a require command as well.
+# You can turn on require valid-user at the root, and then override
+# as needed. This will not actually force a user session unless
+# you require one. See the deploy guide for details.
 #
-<Location /secure>
+<Location />
   AuthType shibboleth
-  require affiliation ~ ^member@.+$
-  # require valid-user
-
-  # Per-directory SHIRE Configuration
-  #ShibBasicHijack On
-  #ShibSSLOnly On
-  #ShibAuthLifetime 14400
-  #ShibAuthTimeout 3600
-
-  # RM Configuration
-  #DisableRM On
-  #AuthGroupFile /foo
-  #ShibExportAssertion On
+  require valid-user
 </Location>

@@ -1,0 +1,178 @@
+<ShibbolethTargetConfig	xmlns="urn:mace:shibboleth:target:config:1.0"
+		logger="@-PKGSYSCONFDIR-@/shibboleth.logger">
+
+    <Extensions>
+    	<Library path="/opt/shibboleth/libexec/xmlproviders.so" fatal="true"/>
+    </Extensions>
+
+    <SHAR logger="@-PKGSYSCONFDIR-@/shar.logger">
+
+	    <Extensions>
+	    	<Library path="/opt/shibboleth/libexec/shib-mysql-ccache.so" fatal="false"/>
+	    </Extensions>
+	
+        <UnixListener address="/tmp/shar-socket"/>
+
+        <!--
+        <TCPListener address="127.0.0.1" port="12345" acl="127.0.0.1"/>
+        -->
+        
+        <!--
+        <MemorySessionCache cleanupInterval="300" cacheTimeout="3600" AATimeout="30" AAConnectTimeout="15"
+        	defaultLifetime="1800" retryInterval="300" strictValidity="true" propagateErrors="false"/>
+        -->
+        
+        <MySQLSessionCache cleanupInterval="300" cacheTimeout="3600" AATimeout="30" AAConnectTimeout="15"
+           	defaultLifetime="1800" retryInterval="300" strictValidity="true" propagateErrors="false"
+           	mysqlTimeout="14400">
+            <Argument>--language=/opt/shibboleth/share/english</Argument>
+            <Argument>--datadir=/opt/shibboleth/data</Argument>
+        </MySQLSessionCache>
+    </SHAR>
+    
+    <SHIRE logger="@-PKGSYSCONFDIR-@/shire.logger">
+        <!-- To customize behavior, map hostnames and path components to application names. -->
+        <!-- Can be either a pointer to an external file or an inline configuration. -->
+        <!--
+        <RequestMapProvider type="edu.internet2.middleware.shibboleth.target.provider.XMLRequestMap"
+        	uri="@-PKGSYSCONFDIR-@/applications.xml"/>
+        -->
+
+        <RequestMap>
+            <Host name="example.com" scheme="https">
+                <Path name="admin" applicationId="foo-admin" requireSession="true" exportAssertion="true"/>
+            </Host>
+        </RequestMap>
+        
+        <Implementation>
+            <ISAPI>
+                <Site InstanceID="1" Host="foo.com"/>
+            </ISAPI>
+            <Apache apacheConfig="false"/>
+        </Implementation>
+    </SHIRE>
+
+    <Applications xmlns:saml="urn:oasis:names:tc:SAML:1.0:assertion" providerId="https://wayf.internet2.edu/InQueue/ServiceProvider">
+
+		<!--
+		Controls session lifetimes, address checks, cookie handling, WAYF, and the SHIRE location.
+		You MUST supply a unique shireURL value for each of your applications. The value can be a
+		relative path, a URL with no hostname (https:///path) or a full URL. The system will compute
+		the value that applies based on the resource. Using shireSSL="true" will force the protocol
+		to be https. You should also add "; secure" to the cookieProps in that case.
+		-->
+        <Sessions lifetime="7200" timeout="3600" normalizeRequest="true" checkAddress="true"
+            shireURL="/Shibboleth.shire" shireSSL="false" cookieName="shib-default-app" cookieProps="; path=/"
+            wayfURL="https://wayf.internet2.edu/InQueue/WAYF"/>
+
+		<!-- You should customize the pages! You can add attributes with values that can be plugged in. -->
+        <Errors shire="@-PKGSYSCONFDIR-@/shireError.html"
+        	rm="@-PKGSYSCONFDIR-@/rmError.html"
+            access="@-PKGSYSCONFDIR-@/accessError.html"
+            supportContact="admin@change.this"
+            logoLocation="/logo.gif"/>
+            
+        <Policy signRequest="false" signedResponse="false" signedAssertions="false">
+        	<!-- use designators to request specific attributes or none to ask for all -->
+            <!--
+            <saml:AttributeDesignator AttributeName="urn:mace:dir:attribute-def:eduPersonScopedAffiliation"
+                AttributeNamespace="urn:mace:shibboleth:1.0:attributeNamespace:uri"/>
+            <saml:AttributeDesignator AttributeName="urn:mace:dir:attribute-def:eduPersonTargetedID"
+                AttributeNamespace="urn:mace:shibboleth:1.0:attributeNamespace:uri"/>
+            -->
+
+            <!-- AAP can be inline or in a separate file -->
+            <AAPProvider type="edu.internet2.middleware.shibboleth.target.provider.XMLAAP" uri="@-PKGSYSCONFDIR-@/AAP.xml"/>
+            <!--
+            <AAPProvider type="edu.internet2.middleware.shibboleth.target.provider.XMLAAP"
+                <AttributeAcceptancePolicy xmlns="urn:mace:shibboleth:aap:1.0">
+                    <AttributeRule Name="urn:mace:dir:attribute-def:eduPersonPrincipalName" Header="REMOTE_USER" Alias="user">
+                        <AnySite>
+                            <AnyValue/>
+                        </AnySite>
+                    </AttributeRule>
+                </AttributeAcceptancePolicy>
+            </AAPProvider>
+            -->
+            
+            <!-- Metadata consists of site/operational metadata, trust, revocation providers. Can be external or inline. -->
+            <FederationProvider type="edu.internet2.middleware.shibboleth.common.provider.XMLMetadata"
+            	uri="@-PKGSYSCONFDIR-@/sites.xml"/>
+            <TrustProvider type="edu.internet2.middleware.shibboleth.common.provider.XMLTrust"
+            	uri="@-PKGSYSCONFDIR-@/trust.xml"/>
+			<!--
+            <RevocationProvider type="edu.internet2.middleware.shibboleth.common.provider.XMLRevocation"
+            	uri="@-PKGSYSCONFDIR-@/trust.xml"/>
+          	-->
+                        
+            <!--
+            <FederationProvider type="edu.internet2.middleware.shibboleth.common.provider.XMLMetadata">
+                <SiteGroup Name="urn:mace:inqueue" xmlns="urn:mace:shibboleth:1.0">
+                    <OriginSite Name="urn:mace:inqueue:example.edu" ErrorURL="http://wayf.internet2.edu/InQueue/error.html">
+                        <Alias>Example State University</Alias>
+                        <Contact Type="technical" Name="Alfred E. Neuman" Email="(no email)"/>
+                        <HandleService Location="https://wayf.internet2.edu/InQueue/HS" Name="wayf.internet2.edu"/>
+                        <Domain>example.edu</Domain>
+                    </OriginSite>
+                    <OriginSite Name="urn:mace:inqueue:shibdev.edu">
+                        <Alias>Shibboleth Development Origin</Alias>
+                        <Contact Type="technical" Name="Scott Cantor" Email="cantor.2@osu.edu"/>
+                        <HandleService Location="https://shib2.internet2.edu/shibboleth/HS" Name="shib2.internet2.edu"/>
+                        <Domain>shibdev.edu</Domain>
+                    </OriginSite>
+                </SiteGroup>
+            </FederationProvider>
+            -->
+			
+			<!-- zero or more SAML Audience condition matches -->
+            <saml:Audience>urn:mace:inqueue</saml:Audience>
+        </Policy>
+        
+        <CredentialUse TLS="defcreds" Signing="defcreds">
+        	<!-- RelyingParty elements customize credentials for specific origins or federations -->
+        	<!--
+            <RelyingParty Name="urn:mace:inqueue" TLS="specialcreds" Signing="specialcreds"/>
+            -->
+        </CredentialUse>
+        
+
+        <!-- customize behavior of specific applications -->
+        <!-- 
+        <Application id="foo-admin">
+            <Sessions shireURL="https://foo.com/admin/Shibboleth.shire</shireURL" cookieName="shib-foo-admin"/>
+            <Policy>
+                <saml:AttributeDesignator AttributeName="urn:mace:dir:attribute-def:eduPersonPrincipalName"
+                    AttributeNamespace="urn:mace:shibboleth:1.0:attributeNamespace:uri"/> 
+            </Policy>
+        </Application>
+        -->
+
+    </Applications>
+    
+    <!-- Define all your private keys and certificates here. -->
+    <CredentialsProvider type="edu.internet2.middleware.shibboleth.common.Credentials">
+    	<Credentials xmlns="urn:mace:shibboleth:credentials:1.0">
+		    <FileResolver Id="defcreds">
+	            <Key format="PEM">
+	                <Path>@-PKGSYSCONFDIR-@/shar.key</Path>
+	            </Key>
+	            <Certificate format="PEM">
+	                <Path>@-PKGSYSCONFDIR-@/shar.crt</Path>
+	            </Certificate>
+	        </FileResolver>
+	        
+	        <!--
+		    <FileResolver Id="specialcreds">
+	            <Key format="PEM">
+	                <Path>@-PKGSYSCONFDIR-@/supersecret.key</Path>
+	            </Key>
+	            <Certificate format="PEM">
+	                <Path>@-PKGSYSCONFDIR-@/supersecret.crt</Path>
+	            </Certificate>
+	        </FileResolver>
+	        -->
+	    </Credentials>
+	</CredentialsProvider>
+
+</ShibbolethTargetConfig>
+
