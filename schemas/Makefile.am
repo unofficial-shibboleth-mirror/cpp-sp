@@ -12,6 +12,7 @@ pkgsysconf_DATA = \
                 soap-envelope.xsd \
                 xmldsig-core-schema.xsd \
                 xmldsig-filter2.xsd \
+       			xenc-schema.xsd \
                 xml.xsd \
                 shibboleth.xsd \
                 shibboleth-trust-1.0.xsd \
