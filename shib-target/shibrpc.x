@@ -15,15 +15,6 @@
 %
 #endif
 
-#ifdef RPC_HDR
-%
-%/* Define NEED_XDR_LONGLONG in the cases where uint64_t is not defined */
-%#ifdef NEED_XDR_LONGLONG
-%#define xdr_uint64_t xdr_ulonglong_t
-%#endif
-%
-#endif
-
 enum ShibRpcStatus {
   SHIBRPC_OK = 0,
   SHIBRPC_UNKNOWN_ERROR = 1,
@@ -63,8 +54,8 @@ struct ShibRpcAssertion_1 {
 struct shibrpc_session_is_valid_args_1 {
   ShibRpcHttpCookie_1	cookie;
   bool			checkIPAddress;
-  uint64_t		lifetime;
-  uint64_t		timeout;
+  long			lifetime;
+  long			timeout;
 };
 
 struct shibrpc_session_is_valid_ret_1 {
