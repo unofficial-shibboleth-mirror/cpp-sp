@@ -202,7 +202,7 @@ Override::Override(const DOMElement* e, Category& log, const Override* base) : m
                 log.warn("skipping Path element (%d) with empty name attribute",i);
                 continue;
             }
-            else if (*n==chSlash && !n[1]) {
+            else if (*n==chForwardSlash && !n[1]) {
                 log.warn("skipping Path element (%d) with a lone slash in the name attribute",i);
                 continue;
             }
