@@ -175,6 +175,7 @@ AC_CONFIG_FILES([Makefile doc/Makefile shib/Makefile schemas/Makefile \
 # now deal with the rpc library, to see if we need to build our own
 if test $rpctest = "no"; then
     WANT_SUBDIRS="oncrpc $WANT_SUBDIRS"
+	AC_DEFINE(USE_OUR_ONCRPC,1,[Define if using embedded version of ONC RPC.])
 fi
 AM_CONDITIONAL(USE_OUR_ONCRPC,test "$rpctest" = "no")
 
