@@ -190,8 +190,8 @@
 					<complexType>
 						<complexContent>
 							<extension base="anyType">
-								<attribute name="InstanceID" type="unsignedInt" use="required"/>
-								<attribute name="Host" type="string" use="required"/>
+								<attribute name="id" type="unsignedInt" use="required"/>
+								<attribute name="host" type="string" use="required"/>
 							</extension>
 						</complexContent>
 					</complexType>
