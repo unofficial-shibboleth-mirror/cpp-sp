@@ -21,6 +21,10 @@ typedef struct {
   void (*dispatch)();
 } ShibRPCProtocols;
 
+#ifdef NEED_SVCFD_CREATE_DEFN
+extern SVCXPRT* svcfd_create ();
+#endif
+
 extern void shibrpc_prog_1(struct svc_req *, SVCXPRT *);
 static int shar_run = 1;
 
@@ -130,6 +134,32 @@ static int setup_signals (void)
   return 0;
 }
 
+static void usage(char* whoami)
+{
+  fprintf (stderr, "usage: %s [-f]\n", whoami);
+  fprintf (stderr, "  -f\tforce removal of listener socket\n");
+  exit (1);
+}
+
+static int parse_args(int argc, char* argv[])
+{
+  int opt;
+
+  while ((opt = getopt(argc, argv, "fh")) > 0) {
+    switch (opt) {
+    case 'f':
+#ifndef WIN32
+      /* XXX: I know that this is a string on Unix */
+      unlink (SHIB_SHAR_SOCKET);
+#endif
+      break;
+    default:
+      return -1;
+    }
+  }
+  return 0;
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -138,6 +168,9 @@ main (int argc, char *argv[])
   ShibRPCProtocols protos[] = {
     { SHIBRPC_PROG, SHIBRPC_VERS_1, shibrpc_prog_1 }
   };
+
+  if (parse_args (argc, argv) != 0)
+    usage(argv[0]);
 
   if (setup_signals() != 0)
     return -1;
