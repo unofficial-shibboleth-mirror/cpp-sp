@@ -182,7 +182,7 @@ int main(int argc,char* argv[])
             "\t[--schema <schema path>]" << endl <<
             "\t[--rootns <root element XML namespace>]" << endl <<
             "\t[--rootname <root element name>]" << endl;
-        exit(0);
+        return -100;
     }
 
     Category& log=Category::getInstance("siterefresh");
