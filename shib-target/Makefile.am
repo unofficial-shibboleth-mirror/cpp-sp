@@ -23,7 +23,6 @@ libshib_target_la_SOURCES = \
 	shib-config.cpp \
 	shib-ini.cpp \
 	shib-mlp.cpp \
-	shib-rpcerror.cpp \
 	shib-rpchandle.cpp \
 	shib-sock.cpp \
 	shib-target.cpp \
