@@ -152,11 +152,15 @@ AC_CHECK_HEADER([saml/saml.h],,
                 AC_MSG_ERROR([unable to find saml header files]))
 LIBS="-lsaml $LIBS"
 AC_TRY_LINK(
-        [#include <saml/saml.h>],
-        [saml::SAMLConfig::getConfig()],
+	[#include <saml/saml.h>
+#include <saml/version.h>],
+	[#if _OPENSAML_VERSION >= 10000
+saml::SAMLConfig::getConfig();
+#else
+#error Need OpenSAML version 1.0 or higher
+#endif],
         [AC_DEFINE(HAVE_SAML,1,[Define if saml library was found])],
-        [AC_MSG_ERROR([unable to link with saml])])
-
+        [AC_MSG_ERROR([unable to link with saml, or version too old])])
 
 # output the underlying makefiles
 WANT_SUBDIRS="doc shib schemas configs shib-target shar siterefresh test xmlproviders"
