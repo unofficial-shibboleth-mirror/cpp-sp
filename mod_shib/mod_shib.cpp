@@ -74,12 +74,14 @@
 #include <shib.h>
 #include <eduPerson.h>
 
+#include <log4cpp/Category.hh>
 #include <xercesc/util/Base64.hpp>
 
-#include <strstream>
+#include <sstream>
 #include <stdexcept>
 
 using namespace std;
+using namespace log4cpp;
 using namespace saml;
 using namespace shibboleth;
 using namespace eduPerson;
@@ -272,10 +274,11 @@ const XMLByte* CCacheEntry::getSerializedAssertion(const char* resource_url)
         return m_serialized;
     if (!m_assertion)
         return NULL;
-    ostrstream os;
+    ostringstream os;
     os << *m_assertion;
     unsigned int outlen;
-    return m_serialized=Base64::encode(reinterpret_cast<XMLByte*>(os.str()),os.pcount(),&outlen);
+    string os_string=os.str();
+    return m_serialized=Base64::encode(reinterpret_cast<const XMLByte*>(os_string.c_str()),os_string.length(),&outlen);
 }
 
 void CCacheEntry::populate(const char* resource_url)
@@ -328,7 +331,7 @@ void CCacheEntry::populate(const char* resource_url)
 
     auto_ptr<char> h(XMLString::transcode(m_handle.c_str()));
     auto_ptr<char> d(XMLString::transcode(m_originSite.c_str()));
-    fprintf(stderr,"CCacheEntry::populate() fetched and stored SAML response for %s@%s\n",h.get(),d.get());
+    Category::getInstance("mod_shib.CCacheEntry").info("populate: fetched and stored SAML response for %s@%s\n",h.get(),d.get());
 }
 
 
@@ -339,17 +342,25 @@ char* g_szSSLCertFile="";
 char* g_szSSLKeyFile="";
 char* g_szSSLKeyPass="";
 char* g_szSSLCAList="";
+char* g_szLogConfig="";
+vector<string> g_vectExtensions;
 
 map<string,string> g_mapAttribNameToHeader;
 map<string,string> g_mapAttribRuleToHeader;
 map<xstring,string> g_mapAttribNames;
 
+extern "C" const char* ap_set_extension(cmd_parms* parms, void*, const char* extension)
+{
+    g_vectExtensions.push_back(extension);
+    return NULL;
+}
+
 extern "C" const char* ap_set_attribute_mapping(cmd_parms* parms, void*,
-				     const char* attrName, const char* headerName, const char* ruleName)
+                                                const char* attrName, const char* headerName, const char* ruleName)
 {
     g_mapAttribNameToHeader[attrName]=headerName;
     if (ruleName)
-	g_mapAttribRuleToHeader[ruleName]=headerName;
+        g_mapAttribRuleToHeader[ruleName]=headerName;
     return NULL;
 }
 
@@ -521,6 +532,10 @@ command_rec shib_cmds[] = {
    RSRC_CONF, TAKE1, "File containing passphrase for SHAR's private key."},
   {"ShibSSLCAList", (config_fn_t)ap_set_global_string_slot, &g_szSSLCAList,
    RSRC_CONF, TAKE1, "File containing list of CAs to trust when validating AA credentials."},
+  {"ShibLogConfig", (config_fn_t)ap_set_global_string_slot, &g_szLogConfig,
+   RSRC_CONF, TAKE1, "Log4cpp property configuration file."},
+  {"ShibLoadModule", (config_fn_t)ap_set_extension, NULL,
+   RSRC_CONF, TAKE1, "Specify a SAML extension module to load."},
   {"ShibMapAttribute", (config_fn_t)ap_set_attribute_mapping, NULL,
    RSRC_CONF, TAKE23, "Define request header name and 'require' alias for an attribute."},
 
@@ -604,8 +619,8 @@ extern "C" void shib_child_init(server_rec* s, pool* p)
 {
     // Initialize runtime components.
 
-    static SAMLConfig SAMLconf;
-    static ShibConfig Shibconf;
+    SAMLConfig& SAMLconf=SAMLConfig::getConfig();
+    ShibConfig& Shibconf=ShibConfig::getConfig();
     static DummyMapper mapper;
 
     SAMLconf.schema_dir=g_szSchemaPath;
@@ -613,9 +628,9 @@ extern "C" void shib_child_init(server_rec* s, pool* p)
     SAMLconf.ssl_keyfile=g_szSSLKeyFile;
     SAMLconf.ssl_keypass=g_szSSLKeyPass;
     SAMLconf.ssl_calist=g_szSSLCAList;
-    SAMLconf.bVerbose=(s->loglevel==APLOG_DEBUG);
+    SAMLconf.log_config=g_szLogConfig;
 
-    if (!SAMLConfig::init(&SAMLconf))
+    if (!SAMLconf.init())
     {
         ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,s,
                      "shib_child_init() failed to initialize OpenSAML");
@@ -623,7 +638,7 @@ extern "C" void shib_child_init(server_rec* s, pool* p)
     }
 
     Shibconf.origin_mapper=&mapper;
-    if (!ShibConfig::init(&Shibconf))
+    if (!Shibconf.init())
     {
         ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,s,
                      "shib_child_init() failed to initialize Shibboleth runtime");
@@ -636,6 +651,18 @@ extern "C" void shib_child_init(server_rec* s, pool* p)
     {
         auto_ptr<XMLCh> temp(XMLString::transcode(i->first.c_str()));
         g_mapAttribNames[temp.get()]=i->first;
+    }
+
+    for (vector<string>::const_iterator j=g_vectExtensions.begin(); j!=g_vectExtensions.end(); j++)
+    {
+        try
+        {
+            SAMLconf.saml_register_extension(j->c_str());
+        }
+        catch (SAMLException& e)
+        {
+            ap_log_error(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,s,e.what());
+        }
     }
 
     CCache::g_Cache=new CCache();
@@ -651,8 +678,8 @@ extern "C" void shib_child_init(server_rec* s, pool* p)
 extern "C" void shib_child_exit(server_rec* s, pool* p)
 {
     delete CCache::g_Cache;
-    ShibConfig::term();
-    SAMLConfig::term();
+    ShibConfig::getConfig().term();
+    SAMLConfig::getConfig().term();
 
     ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,s,"shib_child_exit() done");
 }
