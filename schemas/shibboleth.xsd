@@ -32,7 +32,16 @@
         </sequence>
         <attribute name="Name" type="string" use="required"/>
     </complexType>
-    
+
+    <complexType name="regexp_string">
+        <annotation> A string element with an optional attribute signaling regexp content. </annotation>
+        <simpleContent>
+            <extension base="string">
+                <attribute name="regexp" type="boolean" use="optional" default="false"/>
+            </extension>
+        </simpleContent>
+    </complexType>    
+
     <complexType name="OriginSiteType">
         <annotation>Origin sites add at least one handle service (with a name and optional KeyInfo), plus optional domains trusted for attribute scoping.</annotation>
         <complexContent>
@@ -47,7 +56,7 @@
                             <attribute name="Location" type="anyURI" use="required"/>
                         </complexType>
                     </element>
-                    <element name="Domain" type="string" minOccurs="0" maxOccurs="unbounded"/>
+                    <element name="Domain" type="shib:regexp_string" minOccurs="0" maxOccurs="unbounded"/>
                 </sequence>
             </extension>
         </complexContent>
