@@ -19,4 +19,21 @@
 			</simpleContent>
 		</complexType>
 	</element>
+
+	<element name="KeyAuthority">
+		<complexType>
+			<annotation>
+				<documentation>
+				Binds keying authorities to the system entity/entities to which the enclosing
+				metadata element applies.
+				</documentation>
+			</annotation>
+			<sequence>
+				<element ref="ds:KeyInfo" maxOccurs="unbounded"/>
+			</sequence>
+			<attribute name="VerifyDepth" type="unsignedByte" use="optional" default="1"/>
+			<anyAttribute namespace="##other" processContents="lax"/>
+		</complexType>
+	</element>
+
 </schema>
