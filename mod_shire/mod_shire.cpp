@@ -315,7 +315,7 @@ extern "C" int shire_check_user(request_rec* r)
     if (!session_id || !*session_id) {
         // If no session required, bail now.
         if (!requireSession.second)
-            return DECLINED;
+            return OK;
 
         // No acceptable cookie, and we require a session.  Generate an AuthnRequest.
         ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,"shire_check_user: no cookie found -- redirecting to WAYF");
@@ -757,18 +757,9 @@ extern "C" int shire_check_auth(request_rec* r)
     Locker locker(conf);
     
     const char* application_id=ap_table_get(r->headers_in,"Shib-Application-ID");
-    if (!application_id) {
-        ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
-           "shire_check_auth: Shib-Application-ID header not found in request");
-        return FORBIDDEN;
-    }
-
-    const IApplication* application=conf->getApplication(application_id);
-    if (!application) {
-        ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
-           "shire_check_auth: unable to map request to application settings, check configuration");
-        return SERVER_ERROR;
-    }
+    const IApplication* application=NULL;
+    if (application_id)
+        application = conf->getApplication(application_id);
 
     // mod_auth clone
 
@@ -857,7 +848,7 @@ extern "C" int shire_check_auth(request_rec* r)
             }
         }
         else {
-            Iterator<IAAP*> provs=application->getAAPProviders();
+            Iterator<IAAP*> provs=application ? application->getAAPProviders() : EMPTY(IAAP*);
             AAP wrapper(provs,w);
             if (wrapper.fail()) {
                 ap_log_rerror(APLOG_MARK,APLOG_WARNING|APLOG_NOERRNO,r,
@@ -959,6 +950,17 @@ extern "C" int shire_check_auth(request_rec* r)
 
     if (!method_restricted)
         return OK;
+
+    if (!application_id) {
+        ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
+           "shire_check_auth: Shib-Application-ID header not found in request");
+        return HTTP_FORBIDDEN;
+    }
+    else if (!application) {
+        ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
+           "shire_check_auth: unable to map request to application settings, check configuration");
+        return HTTP_FORBIDDEN;
+    }
 
     ShibMLP markupProcessor(application);
     markupProcessor.insert("requestURL", ap_construct_url(r->pool,r->unparsed_uri,r));
