@@ -191,7 +191,7 @@ SAMLResponse* ShibBinding::send(
                 throw TrustException("ShibBinding::send() unable to verify signed response");
 
             Iterator<SAMLAssertion*> _a=r->getAssertions();
-            for (unsigned long i=0; i < _a.size();) {
+            for (unsigned long i=0; i < _a.size(); i++) {
                 // Check any conditions.
                 Iterator<SAMLCondition*> conds=_a[i]->getConditions();
                 while (conds.hasNext()) {
@@ -199,6 +199,7 @@ SAMLResponse* ShibBinding::send(
                     if (!cond || !cond->eval(audiences)) {
                         log.warn("assertion condition invalid, removing it");
                         r->removeAssertion(i);
+                        i--;
                     }
                 }
                 
@@ -206,6 +207,7 @@ SAMLResponse* ShibBinding::send(
                 if (_a[i]->isSigned() && !t.validate(m_revocations,m_AA,*(_a[i]))) {
                     log.warn("signed assertion failed to validate, removing it");
                     r->removeAssertion(i);
+                    i--;
                 }
             }
             return r.release();
