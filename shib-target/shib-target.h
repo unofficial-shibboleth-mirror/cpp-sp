@@ -186,6 +186,7 @@ namespace shibtarget {
     struct SHIBTARGET_EXPORTS IApplication : public virtual IPropertySet
     {
         virtual const char* getId() const=0;
+        virtual const char* getHash() const=0;
         virtual saml::Iterator<saml::SAMLAttributeDesignator*> getAttributeDesignators() const=0;
         virtual saml::Iterator<shibboleth::IAAP*> getAAPProviders() const=0;
         virtual saml::Iterator<shibboleth::IMetadata*> getMetadataProviders() const=0;
@@ -391,9 +392,8 @@ namespace shibtarget {
     }
 
     // Get/Set a cookie for this connection
-    virtual std::string getCookies(void)=0;
+    virtual std::string getCookies(void)=0;    
     virtual void setCookie(const std::string &name, const std::string &value)=0;
-
     void setCookie(const char *name, const char *value) {
       std::string ns = name;
       std::string vs = value;
@@ -520,8 +520,8 @@ namespace shibtarget {
     // SHIRE APIs
 
     // Get the session cookie name and properties for the application
-    std::pair<const char*,const char*> getCookieNameProps() const;
-        
+    std::pair<std::string,const char*> getCookieNameProps(const char* prefix) const;
+
     // Find the default assertion consumer service for the resource
     const char* getShireURL(const char* resource) const;
         

@@ -109,17 +109,18 @@ namespace shibtarget {
     string url_encode(const char* s);
     void get_application(const string& protocol, const string& hostname, int port, const string& uri);
     void* sendError(ShibTarget* st, string page, ShibMLP &mlp);
-    const char *getSessionId(ShibTarget* st);
+    const char* getSessionId(ShibTarget* st);
+    const char* getRelayState(ShibTarget* st);
 
   private:
     friend class ShibTarget;
     IRequestMapper::Settings m_settings;
     const IApplication *m_app;
-    string m_cookieName;
     string m_shireURL;
 
-    const char *session_id;
     string m_cookies;
+    const char* session_id;
+    const char* relay_state;
 
     ShibProfile m_sso_profile;
     string m_provider_id;
@@ -226,7 +227,7 @@ ShibTarget::doCheckAuthN(bool requireSessionFlag, bool handleProfile)
 	requireSession.second=true;
 
     const char* session_id = m_priv->getSessionId(this);
-    if (!session_id || !*session_id || !strncmp(session_id,"RelayState:",11)) {
+    if (!session_id || !*session_id) {
       // No session.  Maybe that's acceptable?
 
       if (!requireSession.second)
@@ -328,9 +329,6 @@ ShibTarget::doHandleProfile(void)
     if (!sessionProps)
       throw ShibTargetException(SHIBRPC_OK, "doHandleProfile() unable to map request to application session settings.  Check configuration");
 
-    // this always returns something
-    pair<const char*,const char*> shib_cookie=getCookieNameProps();
-
     // Process SHIRE request
       
     pair<bool,bool> shireSSL=sessionProps->getBool("shireSSL");
@@ -393,20 +391,21 @@ ShibTarget::doHandleProfile(void)
         target=homeURL.first ? homeURL.second : "/";
     }
     else if (target=="42") {
-        // Pull the target value from the "session" cookie.
-        const char* session_id = m_priv->getSessionId(this);
-        if (!session_id || !*session_id || strncmp(session_id,"RelayState:",11)) {
+        // Pull the target value from the "relay state" cookie.
+        const char* relay_state = m_priv->getRelayState(this);
+        if (!relay_state || !*relay_state) {
             // No apparent relay state value to use, so fall back on the default.
             pair<bool,const char*> homeURL=m_priv->m_app->getString("homeURL");
             target=homeURL.first ? homeURL.second : "/";
         }
         else {
-            CgiParse::url_decode((char*)session_id+11);
-            target=(session_id+11);
+            CgiParse::url_decode((char*)relay_state);
+            target=relay_state;
         }
     }
 
     // We've got a good session, set the cookie...
+    pair<string,const char*> shib_cookie=getCookieNameProps("_shibsession_");
     cookie += shib_cookie.second;
     setCookie(shib_cookie.first, cookie);
 
@@ -864,45 +863,23 @@ ShibTarget::doExportAssertions(bool exportAssertion)
 // SHIRE APIs
 
 // Get the session cookie name and properties for the application
-std::pair<const char*,const char*>
-ShibTarget::getCookieNameProps() const
+pair<string,const char*> ShibTarget::getCookieNameProps(const char* prefix) const
 {
     static const char* defProps="; path=/";
-    static const char* defName="_shib";
     
     const IPropertySet* props=m_priv->m_app ? m_priv->m_app->getPropertySet("Sessions") : NULL;
     if (props) {
         pair<bool,const char*> p=props->getString("cookieProps");
         if (!p.first)
             p.second=defProps;
-        if (!m_priv->m_cookieName.empty())
-            return pair<const char*,const char*>(m_priv->m_cookieName.c_str(), p.second);
         pair<bool,const char*> p2=props->getString("cookieName");
-        if (p2.first) {
-            m_priv->m_cookieName=p2.second;
-            return pair<const char*,const char*>(p2.second,p.second);
-        }
-        m_priv->m_cookieName=defName;
-        m_priv->m_cookieName+=m_priv->m_app->getId();
-        m_priv->m_cookieName+=m_priv->m_app->getString("providerId").second;
-        m_priv->m_cookieName=SAMLArtifact::toHex(
-            SAMLArtifactType0001::generateSourceId(m_priv->m_cookieName.c_str())
-            );
-        return pair<const char*,const char*>(m_priv->m_cookieName.c_str(),p.second);
+        if (p2.first)
+            return make_pair(string(prefix) + p2.second,p.second);
+        return make_pair(string(prefix) + m_priv->m_app->getHash(),p.second);
     }
     
     // Shouldn't happen, but just in case..
-    if (m_priv->m_cookieName.empty()) {
-        m_priv->m_cookieName=defName;
-        if (m_priv->m_app) {
-            m_priv->m_cookieName+=m_priv->m_app->getId();
-            m_priv->m_cookieName+=m_priv->m_app->getString("providerId").second;
-            m_priv->m_cookieName=SAMLArtifact::toHex(
-                SAMLArtifactType0001::generateSourceId(m_priv->m_cookieName.c_str())
-                );
-        }
-    }
-    return pair<const char*,const char*>(m_priv->m_cookieName.c_str(),defProps);
+    return make_pair(prefix,defProps);
 }
         
 // Find the default assertion consumer service for the resource
@@ -1008,8 +985,8 @@ string ShibTarget::getAuthnRequest(const char* resource)
             else {
                 // Here we store the state in a cookie and send a fixed
                 // value to the IdP so we can recognize it on the way back.
-                pair<const char*,const char*> shib_cookie=getCookieNameProps();
-                setCookie(shib_cookie.first,string("RelayState:") + m_priv->url_encode(resource) + shib_cookie.second);
+                pair<string,const char*> shib_cookie=getCookieNameProps("_shibstate_");
+                setCookie(shib_cookie.first,m_priv->url_encode(resource) + shib_cookie.second);
                 req += "&target=42";
             }
             
@@ -1246,7 +1223,7 @@ RPCError* ShibTarget::sessionGet(
  * Shib Target Private implementation
  */
 
-ShibTargetPriv::ShibTargetPriv() : m_app(NULL), m_mapper(NULL), m_conf(NULL), m_Config(NULL), session_id(NULL),
+ShibTargetPriv::ShibTargetPriv() : m_app(NULL), m_mapper(NULL), m_conf(NULL), m_Config(NULL), session_id(NULL), relay_state(NULL),
     m_sso_profile(PROFILE_UNSPECIFIED), m_sso_statement(NULL), m_pre_response(NULL), m_post_response(NULL) {}
 
 ShibTargetPriv::~ShibTargetPriv()
@@ -1361,8 +1338,7 @@ ShibTargetPriv::sendError(ShibTarget* st, string page, ShibMLP &mlp)
   return st->sendPage("Internal Server Error.  Please contact the server administrator.");
 }
 
-const char *
-ShibTargetPriv::getSessionId(ShibTarget* st)
+const char* ShibTargetPriv::getSessionId(ShibTarget* st)
 {
   if (session_id) {
     //string m = string("getSessionId returning precreated session_id: ") + session_id;
@@ -1371,12 +1347,13 @@ ShibTargetPriv::getSessionId(ShibTarget* st)
   }
 
   char *sid;
-  pair<const char*,const char*> shib_cookie = st->getCookieNameProps();
-  m_cookies = st->getCookies();
+  pair<string,const char*> shib_cookie = st->getCookieNameProps("_shibsession_");
+  if (m_cookies.empty())
+      m_cookies = st->getCookies();
   if (!m_cookies.empty()) {
-    if (sid = strstr(m_cookies.c_str(), shib_cookie.first)) {
+    if (sid = strstr(m_cookies.c_str(), shib_cookie.first.c_str())) {
       // We found a cookie.  pull it out (our session_id)
-      sid += strlen(shib_cookie.first) + 1; // skip over the '='
+      sid += shib_cookie.first.length() + 1; // skip over the '='
       char *cookieend = strchr(sid, ';');
       if (cookieend)
         *cookieend = '\0';
@@ -1387,6 +1364,29 @@ ShibTargetPriv::getSessionId(ShibTarget* st)
   //string m = string("getSessionId returning new session_id: ") + session_id;
   //st->log(ShibTarget::LogLevelDebug, m);
   return session_id;
+}
+
+const char* ShibTargetPriv::getRelayState(ShibTarget* st)
+{
+  if (relay_state)
+    return relay_state;
+
+  char *sid;
+  pair<string,const char*> shib_cookie = st->getCookieNameProps("_shibstate_");
+  if (m_cookies.empty())
+      m_cookies = st->getCookies();
+  if (!m_cookies.empty()) {
+    if (sid = strstr(m_cookies.c_str(), shib_cookie.first.c_str())) {
+      // We found a cookie.  pull it out
+      sid += shib_cookie.first.length() + 1; // skip over the '='
+      char *cookieend = strchr(sid, ';');
+      if (cookieend)
+        *cookieend = '\0';
+      relay_state = sid;
+    }
+  }
+
+  return relay_state;
 }
 
 /*************************************************************************
