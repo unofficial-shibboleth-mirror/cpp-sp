@@ -40,6 +40,7 @@ public:
     bool isSessionValid(time_t lifetime, time_t timeout);
     const XMLCh* getHandle() { return m_handle.c_str(); }
     const XMLCh* getOriginSite() { return m_originSite.c_str(); }
+    const char* getClientAddress() { return m_clientAddress.c_str(); }
 
 private:
     void populate(const char* resource_url);
@@ -47,6 +48,7 @@ private:
     xstring m_originSite;
     xstring m_handle;
     SAMLAuthorityBinding* m_binding;
+    string m_clientAddress;
     SAMLResponse* m_response;
     SAMLAssertion* m_assertion;
     time_t m_sessionCreated;
@@ -158,7 +160,9 @@ CCacheEntry::CCacheEntry(request_rec* r, const char* sessionFile)
 	    location.reset(XMLString::transcode(ap_getword(r->pool,&token,'=')));
         else if (!strcmp("Time",w))
 	    m_sessionCreated=atoi(ap_getword(r->pool,&token,'='));
-	else if (!strcmp ("EOF",w))
+	else if (!strcmp("ClientAddress",w))
+	    m_clientAddress=ap_getword(r->pool,&token,'=');
+	else if (!strcmp("EOF",w))
 	    break;
     }
     ap_cfg_closefile(f);
@@ -248,7 +252,7 @@ void CCacheEntry::populate(const char* resource_url)
         return;
 
     auto_ptr<XMLCh> resource(XMLString::transcode(resource_url));    
-    static const XMLCh* policies[] = { Constants::POLICY_CLUBSHIB };
+    static const XMLCh* policies[] = { shibboleth::Constants::POLICY_CLUBSHIB };
     static const saml::QName* respondWiths[] = { &g_respondWith };
 
     // Build a SAML Request and send it to the AA.
@@ -273,7 +277,11 @@ void CCacheEntry::populate(const char* resource_url)
 
 // per-process configuration
 extern "C" module MODULE_VAR_EXPORT shib_module;
-char *g_szSchemaPath = "/usr/local/shib/schemas/";
+char* g_szSchemaPath = "/usr/local/shib/schemas/";
+char* g_szSSLCertFile="";
+char* g_szSSLKeyFile="";
+char* g_szSSLKeyPass="";
+char* g_szSSLCAList="";
 
 map<string,string> g_mapAttribNameToHeader;
 map<string,string> g_mapAttribRuleToHeader;
@@ -411,6 +419,14 @@ typedef const char* (*config_fn_t)(void);
 command_rec shib_cmds[] = {
   {"ShibSchemaPath", (config_fn_t)ap_set_global_string_slot, &g_szSchemaPath,
    RSRC_CONF, TAKE1, "Path to XML schema files."},
+  {"ShibSSLCertFile", (config_fn_t)ap_set_global_string_slot, &g_szSSLCertFile,
+   RSRC_CONF, TAKE1, "File containing SHAR's client certificate for contacting AA."},
+  {"ShibSSLKeyFile", (config_fn_t)ap_set_global_string_slot, &g_szSSLKeyFile,
+   RSRC_CONF, TAKE1, "File containing SHAR's private key for contacting AA."},
+  {"ShibSSLKeyPass", (config_fn_t)ap_set_global_string_slot, &g_szSSLKeyPass,
+   RSRC_CONF, TAKE1, "File containing passphrase for SHAR's private key."},
+  {"ShibSSLCAList", (config_fn_t)ap_set_global_string_slot, &g_szSSLCAList,
+   RSRC_CONF, TAKE1, "File containing list of CAs to trust when validating AA credentials."},
   {"ShibMapAttribute", (config_fn_t)ap_set_attribute_mapping, NULL,
    RSRC_CONF, TAKE23, "Define request header name and 'require' alias for an attribute."},
 
@@ -438,7 +454,7 @@ command_rec shib_cmds[] = {
    OR_AUTHCFG, FLAG, "Respond to AuthType Basic and convert to shib?"},
   {"ShibCheckAddress", (config_fn_t)ap_set_flag_slot,
    (void *) XtOffsetOf (shib_dir_config, bCheckAddress),
-   OR_AUTHCFG, FLAG, "Verify IP address of requestor matches token?"},
+   OR_AUTHCFG, FLAG, "Verify IP address of requester matches token?"},
   {"ShibAuthLifetime", (config_fn_t)set_lifetime, NULL,
    OR_AUTHCFG, TAKE1, "Lifetime of session in seconds."},
   {"ShibAuthTimeout", (config_fn_t)set_timeout, NULL,
@@ -496,6 +512,10 @@ static void shib_child_init(server_rec* s, pool* p)
     static DummyMapper mapper;
 
     SAMLconf.schema_dir=g_szSchemaPath;
+    SAMLconf.ssl_certfile=g_szSSLCertFile;
+    SAMLconf.ssl_keyfile=g_szSSLKeyFile;
+    SAMLconf.ssl_keypass=g_szSSLKeyPass;
+    SAMLconf.ssl_calist=g_szSSLCAList;
     if (!SAMLConfig::init(&SAMLconf))
     {
         std::fprintf(stderr,"shib_child_init() failed to initialize OpenSAML\n");
@@ -594,15 +614,23 @@ extern "C" int shib_check_user(request_rec* r)
 	    return DECLINED;
     }
 
+    // SSL check.
+    if (dc->bSSLOnly && strcmp(ap_http_method(r),"https"))
+    {
+        ap_log_rerror(APLOG_MARK,APLOG_ERR,r,"shib_check_user() blocked non-SSL access");
+        return SERVER_ERROR;
+    }
+
     // We're in charge, so check for cookie.
     const char* session_id=NULL;
     const char* cookies=ap_table_get(r->headers_in,"Cookie");
     if (!cookies || !(session_id=strstr(cookies,sc->szCookieName)))
     {
         // Redirect to WAYF.
-        char* wayf=ap_pstrcat (r->pool,sc->szWAYFLocation,"?shire=",url_encode(r,sc->szSHIRELocation),
-			       "&target=",url_encode(r,targeturl),NULL);
-	ap_table_setn (r->headers_out,"Location",wayf);
+        char* wayf=ap_pstrcat(r->pool,sc->szWAYFLocation,
+			      "?shire=",url_encode(r,sc->szSHIRELocation),
+			      "&target=",url_encode(r,targeturl),NULL);
+	ap_table_setn(r->headers_out,"Location",wayf);
 	return REDIRECT;
     }
 
@@ -612,17 +640,29 @@ extern "C" int shib_check_user(request_rec* r)
     if (cookieend)
 	*cookieend = '\0';	/* Ignore anyting after a ; */
     session_id=cookiebuf;
-
+	
     // The caching logic is the heart of the "SHAR".
+    CCacheEntry* entry=NULL;
     try
     {
-        CCacheEntry* entry=CCache::g_Cache->find(session_id);
+        entry=CCache::g_Cache->find(session_id);
 	if (!entry)
 	{
-            // Construct the path to the session file
+	  // Construct the path to the session file
             char* sessionFile=ap_pstrcat(r->pool,sc->szSHIRESessionPath,"/",session_id,NULL);
-	    entry=new CCacheEntry(r,sessionFile);
-	    CCache::g_Cache->insert(session_id,entry);
+	    try
+	    {
+		entry=new CCacheEntry(r,sessionFile);
+		CCache::g_Cache->insert(session_id,entry);
+	    }
+	    catch (runtime_error e)
+	    {
+		char* wayf=ap_pstrcat(r->pool,sc->szWAYFLocation,
+				      "?shire=",url_encode(r,sc->szSHIRELocation),
+				      "&target=",url_encode(r,targeturl),NULL);
+		ap_table_setn(r->headers_out,"Location",wayf);
+		return REDIRECT;
+	    }
 	    auto_ptr<char> h(XMLString::transcode(entry->getHandle()));
 	    auto_ptr<char> d(XMLString::transcode(entry->getOriginSite()));
 	    ap_log_rerror(APLOG_MARK,APLOG_INFO,r,
@@ -630,14 +670,24 @@ extern "C" int shib_check_user(request_rec* r)
 	}
 	else if (!entry->isSessionValid(dc->secLifetime,dc->secTimeout))
 	{
+	    ap_log_rerror(APLOG_MARK,APLOG_INFO,r,"shib_check_user() expired session");
 	    CCache::g_Cache->remove(session_id);
 	    delete entry;
-	    char* wayf=ap_pstrcat (r->pool,sc->szWAYFLocation,
-				   "?shire=",url_encode(r,sc->szSHIRELocation),
-				   "&target=",url_encode(r,targeturl),NULL);
-	    ap_table_setn (r->headers_out,"Location",wayf);
-	    return REDIRECT;	    
+	    char* wayf=ap_pstrcat(r->pool,sc->szWAYFLocation,
+				  "?shire=",url_encode(r,sc->szSHIRELocation),
+				  "&target=",url_encode(r,targeturl),NULL);
+	    ap_table_setn(r->headers_out,"Location",wayf);
+	    return REDIRECT;
 	}
+	else if (dc->bCheckAddress && entry->getClientAddress() &&
+		 strcmp(entry->getClientAddress(),r->connection->remote_ip))
+	{
+	    ap_log_rerror(APLOG_MARK,APLOG_INFO,r,"shib_check_user() detected bad address, expected %s",
+			  entry->getClientAddress());
+	    CCache::g_Cache->remove(session_id);
+	    delete entry;
+	    return SERVER_ERROR;
+        }
 
 	ap_table_unset(r->headers_in,"Shib-Attributes"); // per arch-doc, until we populate it
 	Iterator<SAMLAttribute*> i=entry->getAttributes(targeturl);
@@ -651,41 +701,60 @@ extern "C" int shib_check_user(request_rec* r)
 	    if (iname!=g_mapAttribNames.end())
 	    {
 		string hname=g_mapAttribNameToHeader[iname->second];
-		Iterator<xstring> vals=attr->getValues();
+		Iterator<string> vals=attr->getSingleByteValues();
 		if (hname=="REMOTE_USER" && vals.hasNext())
-		{
-		    auto_ptr<char> username(XMLString::transcode(vals.next().c_str()));
-		    r->connection->user=ap_pstrdup(r->connection->pool,username.get());
-		}
+		    r->connection->user=ap_pstrdup(r->connection->pool,vals.next().c_str());
 		else
 		{
 		    char* header=ap_pstrdup(r->pool," ");
 		    while (vals.hasNext())
-		    {
-			auto_ptr<char> wide(XMLString::transcode(vals.next().c_str()));
-			header=ap_pstrcat(r->pool,header,wide.get()," ",NULL);
-		    }
+			header=ap_pstrcat(r->pool,header,vals.next().c_str()," ",NULL);
 		    ap_table_setn(r->headers_in,hname.c_str(),header);
 		}
 	    }
 	}
 	return OK;
     }
-    catch (SAMLException & e)
+    catch (SAMLException& e)
     {
-        ap_log_rerror(APLOG_MARK,APLOG_ERR,r,
-		      "shib_check_user() SAML exception: %s",e.what());
+        ap_log_rerror(APLOG_MARK,APLOG_ERR,r,"shib_check_user() SAML exception: %s",e.what());
+	// Strictly speaking, an error here or below just means no attributes are available.
+	// That's a matter for the RM to deal with, not us. The one exception is an invalid
+	// handle status from the AA, which is a signal to destroy the session.
+	Iterator<saml::QName> i=e.getCodes();
+	int c=0;
+	while (i.hasNext())
+	{
+	    c++;
+	    saml::QName q=i.next();
+	    if (c==1 && !XMLString::compareString(q.getNamespaceURI(),saml::XML::SAMLP_NS) &&
+		!XMLString::compareString(q.getLocalName(),L(Requester)))
+	      continue;
+	    else if (c==2 && !XMLString::compareString(q.getNamespaceURI(),shibboleth::XML::SHIB_NS) &&
+		     !XMLString::compareString(q.getLocalName(),shibboleth::XML::Literals::InvalidHandle))
+	    {
+	        ap_log_rerror(APLOG_MARK,APLOG_INFO,r,"shib_check_user() told by AA to discard handle");
+		CCache::g_Cache->remove(session_id);
+		delete entry;
+		char* wayf=ap_pstrcat(r->pool,sc->szWAYFLocation,
+				      "?shire=",url_encode(r,sc->szSHIRELocation),
+				      "&target=",url_encode(r,targeturl),NULL);
+		ap_table_setn(r->headers_out,"Location",wayf);
+		return REDIRECT;
+	    }
+	    break;
+	}
+	return OK;
     }
-    catch (XMLException & e)
+    catch (XMLException& e)
     {
         auto_ptr<char> msg(XMLString::transcode(e.getMessage()));
-        ap_log_rerror(APLOG_MARK,APLOG_ERR,r,
-		      "shib_check_user() Xerxes XML exception: %s",msg.get());
+        ap_log_rerror(APLOG_MARK,APLOG_ERR,r,"shib_check_user() Xerxes XML exception: %s",msg.get());
+	return OK;
     }
     catch (...)
     {
-        ap_log_rerror(APLOG_MARK,APLOG_ERR,r,
-		      "shib_check_user() unknown exception: %s");
+        ap_log_rerror(APLOG_MARK,APLOG_ERR,r,"shib_check_user() unknown exception");
     }
 
     return SERVER_ERROR;

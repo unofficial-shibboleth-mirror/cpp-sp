@@ -24,19 +24,25 @@ using namespace eduPerson;
 // per-process configuration
 extern "C" module MODULE_VAR_EXPORT eduPerson_module;
 
-extern "C" SAMLAttribute* scopedFactory(IDOM_Element* e)
+extern "C" SAMLAttribute* EPPNFactory(IDOM_Element* e)
 {
-    return new ScopedAttribute(e);
+    return new EPPNAttribute(e);
 }
 
-extern "C" SAMLAttribute* unscopedFactory(IDOM_Element* e)
+extern "C" SAMLAttribute* AffiliationFactory(IDOM_Element* e)
 {
-    return new SAMLAttribute(e);
+    return new AffiliationAttribute(e);
 }
 
-XMLCh* eduPersonPrincipalName=NULL;
-XMLCh* eduPersonAffiliation=NULL;
-XMLCh* eduPersonEntitlement=NULL;
+extern "C" SAMLAttribute* PrimaryAffiliationFactory(IDOM_Element* e)
+{
+    return new PrimaryAffiliationAttribute(e);
+}
+
+extern "C" SAMLAttribute* EntitlementFactory(IDOM_Element* e)
+{
+    return new EntitlementAttribute(e);
+}
 
 /* 
  * eduPerson_child_init()
@@ -45,15 +51,20 @@ XMLCh* eduPersonEntitlement=NULL;
 extern "C" void eduPerson_child_init(server_rec* s, pool* p)
 {
     // Register extension schema and attribute factories.
-    saml::XML::registerSchema(EDUPERSON_NS,EDUPERSON_SCHEMA_ID);
+    saml::XML::registerSchema(eduPerson::XML::EDUPERSON_NS,eduPerson::XML::EDUPERSON_SCHEMA_ID);
 
-    eduPersonPrincipalName=XMLString::transcode("urn:mace:eduPerson:1.0:eduPersonPrincipalName");
-    eduPersonAffiliation=XMLString::transcode("urn:mace:eduPerson:1.0:eduPersonAffiliation");
-    eduPersonEntitlement=XMLString::transcode("urn:mace:eduPerson:1.0:eduPersonEntitlement");
-
-    SAMLAttribute::regFactory(eduPersonPrincipalName,Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,&scopedFactory);
-    SAMLAttribute::regFactory(eduPersonAffiliation,Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,&scopedFactory);
-    SAMLAttribute::regFactory(eduPersonEntitlement,Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,&unscopedFactory);
+    SAMLAttribute::regFactory(eduPerson::Constants::EDUPERSON_PRINCIPAL_NAME,
+			      shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,
+			      &EPPNFactory);
+    SAMLAttribute::regFactory(eduPerson::Constants::EDUPERSON_AFFILIATION,
+			      shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,
+			      &AffiliationFactory);
+    SAMLAttribute::regFactory(eduPerson::Constants::EDUPERSON_PRIMARY_AFFILIATION,
+			      shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,
+			      &PrimaryAffiliationFactory);
+    SAMLAttribute::regFactory(eduPerson::Constants::EDUPERSON_ENTITLEMENT,
+			      shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI,
+			      &EntitlementFactory);
 
     std::fprintf(stderr,"eduPerson_child_init() done\n");
 }
@@ -65,9 +76,14 @@ extern "C" void eduPerson_child_init(server_rec* s, pool* p)
  */
 extern "C" void eduPerson_child_exit(server_rec* s, pool* p)
 {
-    SAMLAttribute::unregFactory(eduPersonPrincipalName,Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
-    SAMLAttribute::unregFactory(eduPersonAffiliation,Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
-    SAMLAttribute::unregFactory(eduPersonEntitlement,Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
+    SAMLAttribute::unregFactory(eduPerson::Constants::EDUPERSON_PRINCIPAL_NAME,
+				shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
+    SAMLAttribute::unregFactory(eduPerson::Constants::EDUPERSON_AFFILIATION,
+				shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
+    SAMLAttribute::unregFactory(eduPerson::Constants::EDUPERSON_PRIMARY_AFFILIATION,
+				shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
+    SAMLAttribute::unregFactory(eduPerson::Constants::EDUPERSON_ENTITLEMENT,
+				shibboleth::Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
 
     std::fprintf(stderr,"eduPerson_child_exit() done\n");
 }
