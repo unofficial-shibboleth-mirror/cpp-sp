@@ -68,30 +68,41 @@
 #include <sys/select.h>
 #endif
 
+#ifdef WIN32
+int getdtablesize()
+{
+    return 0;
+}
+#endif
+
 #include <stdio.h>
 #include <errno.h>
 #include <signal.h>
 
 #include "shar-utils.h"
 
+void shibrpc_prog_1(struct svc_req *rqstp, register SVCXPRT *transp);
+
 #ifdef NEED_SVCFD_CREATE_DEFN
 extern SVCXPRT* svcfd_create ();
 #endif
 
-extern void shibrpc_prog_1(struct svc_req *, SVCXPRT *);
 static int shar_run = 1;
 #if 0
 static int foreground = 0;
 #endif
 
-int
-shar_create_svc(ShibSocket sock, const ShibRPCProtocols protos[], int numprotos)
+int shar_create_svc(ShibSocket sock, const ShibRPCProtocols protos[], int numprotos)
 {
   int i;
   SVCXPRT *svc;
 
   /* Wrap an RPC Service around the new connection socket */
+#ifdef WIN32
+  svc = svctcp_create(sock, 0, 0);
+#else
   svc = svcfd_create (sock, 0, 0);
+#endif
   if (!svc) {
     fprintf (stderr, "Cannot create RPC Listener\n");
     return -1;
@@ -114,23 +125,21 @@ shar_create_svc(ShibSocket sock, const ShibRPCProtocols protos[], int numprotos)
   return 0;
 }
 
-static int
-new_connection (ShibSocket listener, const ShibRPCProtocols protos[], int numproto)
+static int new_connection(ShibSocket listener, const ShibRPCProtocols protos[], int numproto)
 {
   ShibSocket sock;
 
   /* Accept the connection */
-  if (shib_sock_accept (listener, &sock)) {
-    fprintf (stderr, "ACCEPT failed\n");
+  if (shib_sock_accept(listener, &sock)) {
+    fprintf(stderr, "ACCEPT failed\n");
     return -1;
   }
 
-  shar_new_connection (sock, protos, numproto);
+  shar_new_connection(sock, protos, numproto);
   return 0;
 }
 
-static void
-shar_svc_run (ShibSocket listener, const ShibRPCProtocols protos[], int numproto)
+static void shar_svc_run(ShibSocket listener, const ShibRPCProtocols protos[], int numproto)
 {
   fd_set readfds;
   struct timeval tv = { 0, 0 };
@@ -144,26 +153,39 @@ shar_svc_run (ShibSocket listener, const ShibRPCProtocols protos[], int numproto
 
     case -1:
       if (errno == EINTR) continue;
-      perror ("shar_svc_run: - select failed");
+      perror("shar_svc_run: - select failed");
       return;
 
     case 0:
       continue;
 
     default:
-      new_connection (listener, protos, numproto);
+      new_connection(listener, protos, numproto);
     }
   }
 }
 
-static void term_handler (int arg)
+#ifdef WIN32
+
+static BOOL term_handler(DWORD dwCtrlType)
+{
+  shar_run = 0;
+  return TRUE;
+}
+
+#else
+
+static void term_handler(int arg)
 {
   shar_run = 0;
 }
 
-static int setup_signals (void)
+#endif
+
+static int setup_signals(void)
 {
 #ifdef WIN32
+  SetConsoleCtrlHandler((PHANDLER_ROUTINE)term_handler,TRUE);
 #else
   struct sigaction sa;
 
@@ -213,15 +235,14 @@ static void usage(char* whoami)
 
 static int parse_args(int argc, char* argv[])
 {
+#ifndef WIN32
   int opt;
 
   while ((opt = getopt(argc, argv, "fFh")) > 0) {
     switch (opt) {
     case 'f':
-#ifndef WIN32
       /* XXX: I know that this is a string on Unix */
       unlink (shib_target_sockname());
-#endif
       break;
 #if 0
     case 'F':
@@ -232,11 +253,11 @@ static int parse_args(int argc, char* argv[])
       return -1;
     }
   }
+#endif
   return 0;
 }
 
-int
-main (int argc, char *argv[])
+int main (int argc, char *argv[])
 {
   ShibSocket sock;
   char* config = getenv("SHIBCONFIG");
@@ -247,7 +268,7 @@ main (int argc, char *argv[])
   if (setup_signals() != 0)
     return -1;
 
-  if (parse_args (argc, argv) != 0)
+  if (parse_args(argc, argv) != 0)
     usage(argv[0]);
 
   /* initialize the shib-target library */
@@ -255,11 +276,11 @@ main (int argc, char *argv[])
     return -2;
 
   /* Create the SHAR listener socket */
-  if (shib_sock_create (&sock) != 0)
+  if (shib_sock_create(&sock) != 0)
     return -3;
 
   /* Bind to the proper port */
-  if (shib_sock_bind (sock, shib_target_sockname()) != 0)
+  if (shib_sock_bind(sock, shib_target_sockname()) != 0)
     return -4;
 
 #if 0
@@ -280,6 +301,6 @@ main (int argc, char *argv[])
   shar_utils_fini();
 
   shib_sock_close(sock, shib_target_sockname());
-  fprintf (stderr, "shar_svc_run returned.\n");
+  fprintf(stderr, "shar_svc_run returned.\n");
   return 0;
 }
