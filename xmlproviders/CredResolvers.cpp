@@ -57,6 +57,9 @@
 
 #include "internal.h"
 
+#include <sys/types.h>
+#include <sys/stat.h>
+
 #include <openssl/pkcs12.h>
 #include <log4cpp/Category.hh>
 #include <xsec/enc/OpenSSL/OpenSSLCryptoX509.hpp>
