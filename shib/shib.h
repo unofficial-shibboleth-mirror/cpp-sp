@@ -157,6 +157,15 @@ namespace shibboleth
         virtual ~ICredentials() {}
     };
     
+    struct SHIB_EXPORTS ICredResolver
+    {
+        virtual void resolveKey(SSL_CTX* ctx) const=0;
+        virtual void resolveCert(SSL_CTX* ctx) const=0;
+        virtual void dump(FILE* f) const=0;
+        virtual void dump() const { dump(stdout); }
+        virtual ~ICredResolver() {}
+    };
+
     struct SHIB_EXPORTS IAttributeRule
     {
         virtual const XMLCh* getName() const=0;
@@ -341,10 +350,13 @@ namespace shibboleth
         const IAttributeRule* m_rule;
     };
 
-    extern "C" { typedef IMetadata* MetadataFactory(const char* source); }
-    extern "C" { typedef ITrust* TrustFactory(const char* source); }
-    extern "C" { typedef ICredentials* CredentialsFactory(const char* source); }
-    extern "C" { typedef IAAP* AAPFactory(const char* source); }
+    extern "C" {
+        typedef IMetadata* MetadataFactory(const char* source);
+        typedef ITrust* TrustFactory(const char* source);
+        typedef ICredentials* CredentialsFactory(const char* source);
+        typedef ICredResolver* CredResolverFactory(const DOMElement* e);
+        typedef IAAP* AAPFactory(const char* source);
+    }
     
     class SHIB_EXPORTS ShibConfig
     {
@@ -363,6 +375,7 @@ namespace shibboleth
         virtual void regFactory(const char* type, MetadataFactory* factory)=0;
         virtual void regFactory(const char* type, TrustFactory* factory)=0;
         virtual void regFactory(const char* type, CredentialsFactory* factory)=0;
+        virtual void regFactory(const char* type, CredResolverFactory* factory)=0;
         virtual void regFactory(const char* type, AAPFactory* factory)=0;
         virtual void regFactory(const char* type, saml::SAMLAttributeFactory* factory)=0;
         virtual void unregFactory(const char* type)=0;
@@ -373,6 +386,7 @@ namespace shibboleth
         virtual saml::Iterator<IMetadata*> getMetadataProviders() const=0;
         virtual saml::Iterator<ITrust*> getTrustProviders() const=0;
         virtual saml::Iterator<ICredentials*> getCredentialProviders() const=0;
+        virtual CredResolverFactory* getCredResolverFactory(const char* type) const=0;
         virtual saml::Iterator<IAAP*> getAAPProviders() const=0;
         virtual saml::SAMLAttributeFactory* getAttributeFactory(const char* type) const=0;
     };
@@ -383,9 +397,6 @@ namespace shibboleth
         static const XMLCh SHIB_NAMEID_FORMAT_URI[];
         
         static const XMLCh XMLSIG_RETMETHOD_RAWX509[];  // DER X.509 defined by xmlsig
-        static const XMLCh SHIB_RETMETHOD_PEMX509[];    // PEM cert chain
-        static const XMLCh SHIB_RETMETHOD_DERRSA[];     // PKCS1/DER RSA private key
-        static const XMLCh SHIB_RETMETHOD_PEMRSA[];     // PEM RSA private key
         
         static saml::QName SHIB_ATTRIBUTE_VALUE_TYPE; 
     };
@@ -416,11 +427,19 @@ namespace shibboleth
             static const XMLCh OriginSite[];
             static const XMLCh SiteGroup[];
             
+            static const XMLCh CertificateRef[];
+            static const XMLCh Class[];
             static const XMLCh Credentials[];
+            static const XMLCh CustomCredResolver[];
             static const XMLCh Exponent[];
+            static const XMLCh FileCredResolver[];
+            static const XMLCh Id[];
             static const XMLCh KeyAuthority[];
+            static const XMLCh KeyRef[];
             static const XMLCh KeyUse[];
             static const XMLCh Modulus[];
+            static const XMLCh Password[];
+            static const XMLCh Path[];
             static const XMLCh RelyingParty[];
             static const XMLCh RetrievalMethod[];
             static const XMLCh RSAKeyValue[];

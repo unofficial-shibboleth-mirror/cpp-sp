@@ -79,82 +79,6 @@
 
 namespace shibboleth
 {
-    class XMLMetadataImpl;
-    class XMLMetadata : public IMetadata
-    {
-    public:
-        XMLMetadata(const char* pathname);
-        ~XMLMetadata();
-
-        void lock();
-        void unlock();
-        const ISite* lookup(const XMLCh* site) const;
-
-    private:
-        std::string m_source;
-        time_t m_filestamp;
-        RWLock* m_lock;
-        XMLMetadataImpl* m_impl;
-    };
-
-    class XMLTrustImpl;
-    class XMLTrust : public ITrust
-    {
-    public:
-        XMLTrust(const char* pathname);
-        ~XMLTrust();
-
-        void lock();
-        void unlock();
-        saml::Iterator<XSECCryptoX509*> getCertificates(const XMLCh* subject) const;
-        bool validate(const ISite* site, saml::Iterator<XSECCryptoX509*> certs) const;
-        bool validate(const ISite* site, saml::Iterator<const XMLCh*> certs) const;
-        bool attach(const ISite* site, SSL_CTX* ctx) const;
-
-    private:
-        std::string m_source;
-        time_t m_filestamp;
-        RWLock* m_lock;
-        XMLTrustImpl* m_impl;
-    };
-
-    class XMLCredentialsImpl;
-    class XMLCredentials : public ICredentials
-    {
-    public:
-        XMLCredentials(const char* pathname);
-        ~XMLCredentials();
-        bool attach(const XMLCh* subject, const ISite* relyingParty, SSL_CTX* ctx) const;
-
-    private:
-        void lock();
-        void unlock();
-        std::string m_source;
-        time_t m_filestamp;
-        RWLock* m_lock;
-        XMLCredentialsImpl* m_impl;
-    };
-
-    class XMLAAPImpl;
-    class XMLAAP : public IAAP
-    {
-    public:
-        XMLAAP(const char* pathname);
-        ~XMLAAP();
-        
-        void lock();
-        void unlock();
-        const IAttributeRule* lookup(const XMLCh* attrName, const XMLCh* attrNamespace=NULL) const;
-        const IAttributeRule* lookup(const char* alias) const;
-        saml::Iterator<const IAttributeRule*> getAttributeRules() const;
-
-    private:
-        std::string m_source;
-        time_t m_filestamp;
-        RWLock* m_lock;
-        XMLAAPImpl* m_impl;
-    };
-    
     class ClubShibPOSTProfile : public ShibPOSTProfile
     {
     public:
@@ -213,6 +137,7 @@ namespace shibboleth
         void regFactory(const char* type, MetadataFactory* factory);
         void regFactory(const char* type, TrustFactory* factory);
         void regFactory(const char* type, CredentialsFactory* factory);
+        void regFactory(const char* type, CredResolverFactory* factory);
         void regFactory(const char* type, AAPFactory* factory);
         void regFactory(const char* type, saml::SAMLAttributeFactory* factory);
         void unregFactory(const char* type);
@@ -222,6 +147,7 @@ namespace shibboleth
         saml::Iterator<IMetadata*> getMetadataProviders() const {return m_providers;}
         saml::Iterator<ITrust*> getTrustProviders() const {return m_trust_providers;}
         saml::Iterator<ICredentials*> getCredentialProviders() const {return m_cred_providers;}
+        CredResolverFactory* getCredResolverFactory(const char* type) const;
         saml::Iterator<IAAP*> getAAPProviders() const {return m_aap_providers;}
         saml::SAMLAttributeFactory* getAttributeFactory(const char* type) const;
 
@@ -234,11 +160,13 @@ namespace shibboleth
         typedef std::map<std::string, MetadataFactory*> MetadataFactoryMap;
         typedef std::map<std::string, TrustFactory*> TrustFactoryMap;
         typedef std::map<std::string, CredentialsFactory*> CredentialsFactoryMap;
+        typedef std::map<std::string, CredResolverFactory*> CredResolverFactoryMap;
         typedef std::map<std::string, AAPFactory*> AAPFactoryMap;
         typedef std::map<std::string, saml::SAMLAttributeFactory*> AttributeFactoryMap;
         MetadataFactoryMap m_metadataFactoryMap;
         TrustFactoryMap m_trustFactoryMap;
         CredentialsFactoryMap m_credFactoryMap;
+        CredResolverFactoryMap m_credResolverFactoryMap;
         AAPFactoryMap m_aapFactoryMap;
         AttributeFactoryMap m_attrFactoryMap;
         std::vector<IMetadata*> m_providers;

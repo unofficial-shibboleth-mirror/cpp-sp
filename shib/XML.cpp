@@ -121,21 +121,47 @@ const XMLCh XML::Literals::OriginSite[]=
 const XMLCh XML::Literals::SiteGroup[]=
 { chLatin_S, chLatin_i, chLatin_t, chLatin_e, chLatin_G, chLatin_r, chLatin_o, chLatin_u, chLatin_p, chNull };
 
+const XMLCh XML::Literals::CertificateRef[]=
+{ chLatin_C, chLatin_e, chLatin_r, chLatin_t, chLatin_i, chLatin_f, chLatin_i, chLatin_c, chLatin_a, chLatin_t, chLatin_e,
+  chLatin_R, chLatin_e, chLatin_f, chNull };
+
+const XMLCh XML::Literals::Class[] =
+{ chLatin_C, chLatin_l, chLatin_a, chLatin_s, chLatin_s, chNull };
+
 const XMLCh XML::Literals::Credentials[] =
 { chLatin_C, chLatin_r, chLatin_e, chLatin_d, chLatin_e, chLatin_n, chLatin_t, chLatin_i, chLatin_a, chLatin_l, chLatin_s, chNull };
+
+const XMLCh XML::Literals::CustomCredResolver[]=
+{ chLatin_C, chLatin_u, chLatin_s, chLatin_t, chLatin_o, chLatin_m, chLatin_C, chLatin_r, chLatin_e, chLatin_d,
+  chLatin_R, chLatin_e, chLatin_s, chLatin_o, chLatin_l, chLatin_v, chLatin_e, chLatin_r, chNull };
 
 const XMLCh XML::Literals::Exponent[] =
 { chLatin_E, chLatin_x, chLatin_p, chLatin_o, chLatin_n, chLatin_e, chLatin_n, chLatin_t, chNull };
 
+const XMLCh XML::Literals::FileCredResolver[]=
+{ chLatin_F, chLatin_i, chLatin_l, chLatin_e, chLatin_C, chLatin_r, chLatin_e, chLatin_d,
+  chLatin_R, chLatin_e, chLatin_s, chLatin_o, chLatin_l, chLatin_v, chLatin_e, chLatin_r, chNull };
+
+const XMLCh XML::Literals::Id[] = { chLatin_I, chLatin_d, chNull };
+
 const XMLCh XML::Literals::KeyAuthority[] =
 { chLatin_K, chLatin_e, chLatin_y,
   chLatin_A, chLatin_u, chLatin_t, chLatin_h, chLatin_o, chLatin_r, chLatin_i, chLatin_t, chLatin_y, chNull };
+
+const XMLCh XML::Literals::KeyRef[] =
+{ chLatin_K, chLatin_e, chLatin_y, chLatin_R, chLatin_e, chLatin_f, chNull };
 
 const XMLCh XML::Literals::KeyUse[] =
 { chLatin_K, chLatin_e, chLatin_y, chLatin_U, chLatin_s, chLatin_e, chNull };
 
 const XMLCh XML::Literals::Modulus[] =
 { chLatin_M, chLatin_o, chLatin_d, chLatin_u, chLatin_l, chLatin_u, chLatin_s, chNull };
+
+const XMLCh XML::Literals::Password[] =
+{ chLatin_P, chLatin_a, chLatin_s, chLatin_s, chLatin_w, chLatin_o, chLatin_r, chLatin_d, chNull };
+
+const XMLCh XML::Literals::Path[] =
+{ chLatin_P, chLatin_a, chLatin_t, chLatin_h, chNull };
 
 const XMLCh XML::Literals::RelyingParty[] =
 { chLatin_R, chLatin_e, chLatin_l, chLatin_y, chLatin_i, chLatin_n, chLatin_g,

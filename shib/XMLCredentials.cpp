@@ -47,7 +47,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/* XMLTrust.h - a trust implementation that uses an XML file
+/* XMLCredentials.cpp - a credentials implementation that uses an XML file
 
    Scott Cantor
    9/27/02
@@ -70,110 +70,72 @@ using namespace saml;
 using namespace log4cpp;
 using namespace std;
 
-class shibboleth::XMLCredentialsImpl
-{
-public:
-    XMLCredentialsImpl(const char* pathname);
-    ~XMLCredentialsImpl();
+namespace shibboleth {
     
-    struct KeyUse
+    class XMLCredentialsImpl
     {
-        KeyUse() {}
-        ~KeyUse();
+    public:
+        XMLCredentialsImpl(const char* pathname);
+        ~XMLCredentialsImpl();
+        
+        typedef map<string,ICredResolver*> resolvermap_t;
+        resolvermap_t m_resolverMap;
 
-        bool attach(SSL_CTX* ctx);
+        struct KeyUse
+        {
+            KeyUse(resolvermap_t& resolverMap, const XMLCh* keyref, const XMLCh* certref=NULL);
+            
+            ICredResolver* m_key;
+            ICredResolver* m_cert;
+            vector<pair<const XMLCh*,bool> > m_relying;
+        };
         
-        enum format_t { X509DATA, DER, PEM };
+        vector<KeyUse*> m_keyuses;
+        typedef multimap<pair<const XMLCh*,bool>,KeyUse*> BindingMap;
+        BindingMap m_bindings;
         
-        format_t m_certtype, m_keytype;
-        vector<X509*> m_certs;
-        string m_certfile, m_keyfile;
-        vector<pair<const XMLCh*,bool> > m_relying;
+        DOMDocument* m_doc;
     };
-    
-    vector<KeyUse*> m_keyuses;
-    typedef multimap<pair<const XMLCh*,bool>,KeyUse*> BindingMap;
-    BindingMap m_bindings;
-    
-    DOMDocument* m_doc;
-};
 
-XMLCredentialsImpl::KeyUse::~KeyUse()
-{
-    for (vector<X509*>::iterator i=m_certs.begin(); i!=m_certs.end(); i++)
-        X509_free(*i);
+    class XMLCredentials : public ICredentials
+    {
+    public:
+        XMLCredentials(const char* pathname);
+        ~XMLCredentials() { delete m_lock; delete m_impl; }
+        bool attach(const XMLCh* subject, const ISite* relyingParty, SSL_CTX* ctx) const;
+
+    private:
+        void lock();
+        void unlock() { m_lock->unlock(); }
+        std::string m_source;
+        time_t m_filestamp;
+        RWLock* m_lock;
+        XMLCredentialsImpl* m_impl;
+    };
+
 }
 
-bool XMLCredentialsImpl::KeyUse::attach(SSL_CTX* ctx)
+extern "C" ICredentials* XMLCredentialsFactory(const char* source)
 {
-    switch (m_certtype)
-    {
-        case PEM:
-            if (SSL_CTX_use_certificate_chain_file(ctx, m_certfile.c_str()) != 1)
-            {
-                log_openssl();
-                throw TrustException("XMLCredentials::KeyUse::attach() unable to set PEM certificate chain");
-            }
-            break;
-            
-        case DER:
-            if (SSL_CTX_use_certificate_file(ctx, m_certfile.c_str(), SSL_FILETYPE_ASN1) != 1)
-            {
-                log_openssl();
-                throw TrustException("XMLCredentials::KeyUse::attach() unable to set DER certificate");
-            }
-            break;
-            
-        case X509DATA:
-            for (vector<X509*>::reverse_iterator i=m_certs.rbegin(); i!=m_certs.rend(); i++)
-            {
-                if (i==m_certs.rbegin())
-                {
-                    if (SSL_CTX_use_certificate(ctx, *i) != 1)
-                    {
-                        log_openssl();
-                        throw TrustException("XMLCredentials::KeyUse::attach() unable to set certificate from X509Data");
-                    }
-                }
-                else
-                {
-                    // When we add extra certs, they don't get ref counted, so we need to duplicate them.
-                    X509* dup = X509_dup(*i);
-                    if (SSL_CTX_add_extra_chain_cert(ctx, dup) != 0)
-                    {
-                        X509_free(dup);
-                        log_openssl();
-                        throw TrustException("XMLCredentials::KeyUse::attach() unable to add CA certificate from X509Data");
-                    }
-                }
-            }
-    }
+    return new XMLCredentials(source);
+}
+
+XMLCredentialsImpl::KeyUse::KeyUse(resolvermap_t& resolverMap, const XMLCh* keyref, const XMLCh* certref) : m_key(NULL), m_cert(NULL)
+{
+    auto_ptr<char> temp(XMLString::transcode(keyref));
+    resolvermap_t::iterator i=resolverMap.find(temp.get());
+    if (i==resolverMap.end())
+        throw MetadataException(string("XMLCredentialsImpl::KeyUse::KeyUse() unable to find valid key reference (") + temp.get() + ")");
+    m_key=i->second;
     
-    switch (m_keytype)
+    if (certref && *certref)
     {
-        case PEM:
-            if (SSL_CTX_use_PrivateKey_file(ctx, m_keyfile.c_str(), SSL_FILETYPE_PEM) != 1)
-            {
-                log_openssl();
-                throw TrustException("XMLCredentials::KeyUse::attach() unable to set PEM private key");
-            }
-            break;
-            
-        case DER:
-            if (SSL_CTX_use_PrivateKey_file(ctx, m_keyfile.c_str(), SSL_FILETYPE_ASN1) != 1)
-            {
-                log_openssl();
-                throw TrustException("XMLCredentials::KeyUse::attach() unable to set PEM private key");
-            }
+        auto_ptr<char> temp2(XMLString::transcode(certref));
+        i=resolverMap.find(temp2.get());
+        if (i==resolverMap.end())
+            throw MetadataException(string("XMLCredentialsImpl::KeyUse::KeyUse() unable to find valid certificate reference (") + temp2.get() + ")");
+        m_cert=i->second;
     }
-    
-    if (!SSL_CTX_check_private_key(ctx))
-    {
-        log_openssl();
-        throw TrustException("XMLCredentials::KeyUse::attach found mismatch between the private key and certificate");
-    }
-    
-    return true;
 }
 
 XMLCredentialsImpl::XMLCredentialsImpl(const char* pathname) : m_doc(NULL)
@@ -199,120 +161,51 @@ XMLCredentialsImpl::XMLCredentialsImpl(const char* pathname) : m_doc(NULL)
             throw MetadataException("Construction requires a valid creds file: (shib:Credentials as root element)");
         }
 
-        // Loop over the KeyUse elements.
-        DOMNodeList* nlist=e->getElementsByTagNameNS(XML::SHIB_NS,SHIB_L(KeyUse));
-        for (int i=0; nlist && i<nlist->getLength(); i++)
+        // Process everything up to the first shib:KeyUse as a resolver.
+        DOMElement* child=saml::XML::getFirstChildElement(e);
+        while (!saml::XML::isElementNamed(child,XML::SHIB_NS,SHIB_L(KeyUse)))
         {
-            auto_ptr<KeyUse> ku(new KeyUse());
+            CredResolverFactory* factory=NULL;
+            auto_ptr<char> id(XMLString::transcode(child->getAttributeNS(NULL,SHIB_L(Id))));
+            
+            if (saml::XML::isElementNamed(child,XML::SHIB_NS,SHIB_L(FileCredResolver)))
+                factory=ShibConfig::getConfig().getCredResolverFactory("edu.internet2.middleware.shibboleth.creds.provider.FileCredResolver");
+            else if (saml::XML::isElementNamed(child,saml::XML::XMLSIG_NS,L(KeyInfo)))
+                factory=ShibConfig::getConfig().getCredResolverFactory("edu.internet2.middleware.shibboleth.creds.provider.KeyInfoResolver");
+            else if (saml::XML::isElementNamed(child,XML::SHIB_NS,SHIB_L(CustomCredResolver)))
+            {
+                auto_ptr<char> c(XMLString::transcode(child->getAttributeNS(NULL,SHIB_L(Class))));
+                factory=ShibConfig::getConfig().getCredResolverFactory(c.get());
+            }
+            
+            if (factory)
+            {
+                try
+                {
+                    ICredResolver* cr=(*factory)(child);
+                    m_resolverMap[id.get()]=cr;
+                }
+                catch (SAMLException& e)
+                {
+                    log.error("failed to instantiate credential resolver (%s): %s", id.get(), e.what());
+                }
+            }
+            
+            child=saml::XML::getNextSiblingElement(child);
+        }
 
-            bool key=false,cert=false;
-            
-            // Grab all the RetrievalMethods for external material.
-            DOMNodeList* extlist=static_cast<DOMElement*>(nlist->item(i))->getElementsByTagNameNS(
-                saml::XML::XMLSIG_NS,SHIB_L(RetrievalMethod)
+        // Now loop over the KeyUse elements.
+        while (child && saml::XML::isElementNamed(child,XML::SHIB_NS,SHIB_L(KeyUse)))
+        {
+            KeyUse* ku = new KeyUse(
+                m_resolverMap,
+                child->getAttributeNS(NULL,SHIB_L(KeyRef)),
+                child->getAttributeNS(NULL,SHIB_L(CertificateRef))
                 );
-            for (int j=0; (!key || !cert) && extlist && j<extlist->getLength(); j++)
-            {
-                DOMElement* method=static_cast<DOMElement*>(extlist->item(j));
-                const XMLCh* rmtype=method->getAttributeNS(NULL,SHIB_L(Type));
-                auto_ptr<char> uri(XMLString::transcode(method->getAttributeNS(NULL,SHIB_L(URI))));
-                
-                // Is the URI locally accessible as a relative URL?
-#ifdef WIN32
-                struct _stat stat_buf;
-                if (_stat(uri.get(), &stat_buf) != 0)
-#else
-                struct stat stat_buf;
-                if (stat(uri.get(), &stat_buf) != 0)
-#endif
-                {
-                    log.warn("Credential referenced by ds:RetrievalMethod can't be opened");
-                    continue;
-                }
-                
-                if (!XMLString::compareString(rmtype,shibboleth::Constants::XMLSIG_RETMETHOD_RAWX509))
-                {
-                    if (cert)
-                        log.warn("Found another certificate credential (DER), replacing the original with it");
-                    ku->m_certfile=uri.get();
-                    ku->m_certtype=KeyUse::DER;
-                    cert=true;
-                }
-                else if (!XMLString::compareString(rmtype,shibboleth::Constants::SHIB_RETMETHOD_PEMX509))
-                {
-                    if (cert)
-                        log.warn("Found another certificate credential (PEM), replacing the original with it");
-                    ku->m_certfile=uri.get();
-                    ku->m_certtype=KeyUse::PEM;
-                    cert=true;
-                }
-                else if (!XMLString::compareString(rmtype,shibboleth::Constants::SHIB_RETMETHOD_PEMRSA))
-                {
-                    if (key)
-                        log.warn("Found another private key credential (PEM/RSA), replacing the original with it");
-                    ku->m_keyfile=uri.get();
-                    ku->m_keytype=KeyUse::PEM;
-                    key=true;
-                }
-                else if (!XMLString::compareString(rmtype,shibboleth::Constants::SHIB_RETMETHOD_DERRSA))
-                {
-                    if (key)
-                        log.warn("Found another private key credential (DER/RSA), replacing the original with it");
-                    ku->m_keyfile=uri.get();
-                    ku->m_keytype=KeyUse::DER;
-                    key=true;
-                }
-            }
-            
-            if (!cert)
-            {
-                // Is there an X509Data?
-                DOMNodeList* x509data=static_cast<DOMElement*>(nlist->item(i))->getElementsByTagNameNS(
-                    saml::XML::XMLSIG_NS,L(X509Data)
-                    );
-                if (x509data && x509data->getLength())
-                {
-                    if (x509data->getLength()>1)
-                        log.warn("Found multiple certificate chains, using the first");
-            
-                    // Grab up any X509Certificate elements, and flatten into one list.
-                    DOMNodeList* certlist=static_cast<DOMElement*>(x509data->item(0))->getElementsByTagNameNS(
-                        saml::XML::XMLSIG_NS,L(X509Certificate)
-                        );
-                    for (int k=0; certlist && k<certlist->getLength(); k++)
-                    {
-                        auto_ptr<char> blob(XMLString::transcode(certlist->item(k)->getFirstChild()->getNodeValue()));
-                        X509* x=B64_to_X509(blob.get());
-                        if (x)
-                            ku->m_certs.push_back(x);
-                        else
-                            log.warn("Unable to parse ds:X509Certificate element, can't include in chain");
-                    }
-                    
-                    if (ku->m_certs.size()>0)
-                    {
-                        ku->m_certtype=KeyUse::X509DATA;
-                        cert=true;
-                    }
-                    else
-                        log.warn("Found no inline certificates in the ds:X509Data element, ignoring it");
-                }
-            }
-            
-            if (!cert)
-            {
-                log.error("Found no acceptable certificate in shib:KeyUse element, ignoring it");
-                continue;
-            }
-            
-            if (!key)
-            {
-                log.error("Found no acceptable private/secret key in shib:KeyUse element, ignoring it");
-                continue;
-            }
-            
+            m_keyuses.push_back(ku);
+
             // Pull in the relying parties.
-            DOMNodeList* parties=static_cast<DOMElement*>(nlist->item(i))->getElementsByTagNameNS(XML::SHIB_NS,SHIB_L(RelyingParty));
+            DOMNodeList* parties=child->getElementsByTagNameNS(XML::SHIB_NS,SHIB_L(RelyingParty));
             int m=0;
             while (parties && m<parties->getLength())
             {
@@ -333,7 +226,7 @@ XMLCredentialsImpl::XMLCredentialsImpl(const char* pathname) : m_doc(NULL)
                 ku->m_relying.push_back(pair<const XMLCh*,bool>(NULL,false));
             
             // Now map the subjects to the credentials.
-            DOMNodeList* subs=static_cast<DOMElement*>(nlist->item(i))->getElementsByTagNameNS(XML::SHIB_NS,L(Subject));
+            DOMNodeList* subs=child->getElementsByTagNameNS(XML::SHIB_NS,L(Subject));
             int l=0;
             while (subs && l<subs->getLength())
             {
@@ -345,15 +238,15 @@ XMLCredentialsImpl::XMLCredentialsImpl(const char* pathname) : m_doc(NULL)
                     const XMLCh* regexp=
                         static_cast<DOMElement*>(subs->item(l))->getAttributeNS(NULL,SHIB_L(regexp));
                     bool flag=(!XMLString::compareString(regexp,one) || !XMLString::compareString(regexp,tru));
-                    m_bindings.insert(BindingMap::value_type(pair<const XMLCh*,bool>(name,flag),ku.get()));
+                    m_bindings.insert(BindingMap::value_type(pair<const XMLCh*,bool>(name,flag),ku));
                 }
                 l++;
             }
             // If no Subjects, this is a catch-all binding.
             if (l==0)
-                m_bindings.insert(BindingMap::value_type(pair<const XMLCh*,bool>(NULL,false),ku.get()));
+                m_bindings.insert(BindingMap::value_type(pair<const XMLCh*,bool>(NULL,false),ku));
 
-            m_keyuses.push_back(ku.release());
+            child=saml::XML::getNextSiblingElement(child);
         }
     }
     catch (SAMLException& e)
@@ -361,6 +254,8 @@ XMLCredentialsImpl::XMLCredentialsImpl(const char* pathname) : m_doc(NULL)
         log.errorStream() << "XML error while parsing creds configuration: " << e.what() << CategoryStream::ENDLINE;
         for (vector<KeyUse*>::iterator i=m_keyuses.begin(); i!=m_keyuses.end(); i++)
             delete (*i);
+        for (resolvermap_t::iterator j=m_resolverMap.begin(); j!=m_resolverMap.end(); j++)
+            delete j->second;
         if (m_doc)
             m_doc->release();
         throw;
@@ -370,6 +265,8 @@ XMLCredentialsImpl::XMLCredentialsImpl(const char* pathname) : m_doc(NULL)
         log.error("Unexpected error while parsing creds configuration");
         for (vector<KeyUse*>::iterator i=m_keyuses.begin(); i!=m_keyuses.end(); i++)
             delete (*i);
+        for (resolvermap_t::iterator j=m_resolverMap.begin(); j!=m_resolverMap.end(); j++)
+            delete j->second;
         if (m_doc)
             m_doc->release();
         throw;
@@ -380,6 +277,8 @@ XMLCredentialsImpl::~XMLCredentialsImpl()
 {
     for (vector<KeyUse*>::iterator i=m_keyuses.begin(); i!=m_keyuses.end(); i++)
         delete (*i);
+    for (resolvermap_t::iterator j=m_resolverMap.begin(); j!=m_resolverMap.end(); j++)
+        delete j->second;
     if (m_doc)
         m_doc->release();
 }
@@ -396,12 +295,6 @@ XMLCredentials::XMLCredentials(const char* pathname) : m_filestamp(0), m_source(
         m_filestamp=stat_buf.st_mtime;
     m_impl=new XMLCredentialsImpl(pathname);
     m_lock=RWLock::create();
-}
-
-XMLCredentials::~XMLCredentials()
-{
-    delete m_lock;
-    delete m_impl;
 }
 
 void XMLCredentials::lock()
@@ -452,11 +345,6 @@ void XMLCredentials::lock()
             m_lock->rdlock();
         }
     }
-}
-
-void XMLCredentials::unlock()
-{
-    m_lock->unlock();
 }
 
 
@@ -543,8 +431,28 @@ bool XMLCredentials::attach(const XMLCh* subject, const ISite* relyingParty, SSL
         
         if (match)
         {
-            // We have the credentials to use...
-            return i->second->attach(ctx);
+            try
+            {
+                i->second->m_key->resolveKey(ctx);
+                if (i->second->m_cert)
+                    i->second->m_cert->resolveCert(ctx);
+
+                if (!SSL_CTX_check_private_key(ctx))
+                {
+                    log_openssl();
+                    throw MetadataException("XMLCredentials::attach() found mismatch between the private key and certificate used");
+                }
+            }
+            catch (SAMLException& e)
+            {
+                Category& log=Category::getInstance(SHIB_LOGCAT".XMLCredentials");
+                log.error("caught a SAML exception while attaching credentials: %s", e.what());
+            }
+            catch (...)
+            {
+                Category& log=Category::getInstance(SHIB_LOGCAT".XMLCredentials");
+                log.error("caught an unknown exception while attaching credentials");
+            }
         }
     }
 

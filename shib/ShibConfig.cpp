@@ -80,25 +80,13 @@ namespace {
 
 ShibConfig::~ShibConfig() {}
 
-extern "C" IMetadata* XMLMetadataFactory(const char* source)
-{
-    return new XMLMetadata(source);
-}
-
-extern "C" ITrust* XMLTrustFactory(const char* source)
-{
-    return new XMLTrust(source);
-}
-
-extern "C" ICredentials* XMLCredentialsFactory(const char* source)
-{
-    return new XMLCredentials(source);
-}
-
-extern "C" IAAP* XMLAAPFactory(const char* source)
-{
-    return new XMLAAP(source);
-}
+// Metadata Factories
+extern "C" IMetadata* XMLMetadataFactory(const char* source);
+extern "C" ITrust* XMLTrustFactory(const char* source);
+extern "C" ICredentials* XMLCredentialsFactory(const char* source);
+extern "C" ICredResolver* FileCredResolverFactory(const DOMElement* e);
+extern "C" ICredResolver* KeyInfoResolverFactory(const DOMElement* e);
+extern "C" IAAP* XMLAAPFactory(const char* source);
 
 extern "C" SAMLAttribute* ShibAttributeFactory(DOMElement* e)
 {
@@ -121,10 +109,16 @@ bool ShibInternalConfig::init()
     // Register extension schema.
     saml::XML::registerSchema(XML::SHIB_NS,XML::SHIB_SCHEMA_ID);
 
+    // Register metadata factories (some duplicates for backward-compatibility)
     regFactory("edu.internet2.middleware.shibboleth.metadata.XML",&XMLMetadataFactory);
+    regFactory("edu.internet2.middleware.shibboleth.metadata.provider.XML",&XMLMetadataFactory);
     regFactory("edu.internet2.middleware.shibboleth.trust.XML",&XMLTrustFactory);
-    regFactory("edu.internet2.middleware.shibboleth.creds.XML",&XMLCredentialsFactory);
+    regFactory("edu.internet2.middleware.shibboleth.trust.provider.XML",&XMLTrustFactory);
+    regFactory("edu.internet2.middleware.shibboleth.creds.provider.XML",&XMLCredentialsFactory);
+    regFactory("edu.internet2.middleware.shibboleth.creds.provider.FileCredResolver",&FileCredResolverFactory);
+    regFactory("edu.internet2.middleware.shibboleth.creds.provider.KeyInfoResolver",&KeyInfoResolverFactory);
     regFactory("edu.internet2.middleware.shibboleth.target.AAP.XML",&XMLAAPFactory);
+    regFactory("edu.internet2.middleware.shibboleth.target.AAP.provider.XML",&XMLAAPFactory);
     regFactory("edu.internet2.middleware.shibboleth.target.AttributeFactory",&ShibAttributeFactory);
 
     return true;
@@ -163,6 +157,12 @@ void ShibInternalConfig::regFactory(const char* type, CredentialsFactory* factor
     }
 }
 
+void ShibInternalConfig::regFactory(const char* type, CredResolverFactory* factory)
+{
+    if (type && factory)
+        m_credResolverFactoryMap[type]=factory;
+}
+
 void ShibInternalConfig::regFactory(const char* type, AAPFactory* factory)
 {
     if (type && factory)
@@ -182,6 +182,7 @@ void ShibInternalConfig::unregFactory(const char* type)
         m_metadataFactoryMap.erase(type);
         m_trustFactoryMap.erase(type);
         m_credFactoryMap.erase(type);
+        m_credResolverFactoryMap.erase(type);
         m_aapFactoryMap.erase(type);
     }
 }
@@ -192,8 +193,20 @@ SAMLAttributeFactory* ShibInternalConfig::getAttributeFactory(const char* type) 
         m_attrFactoryMap.find((type && *type) ? type : "edu.internet2.middleware.shibboleth.target.AttributeFactory");
     if (i==m_attrFactoryMap.end())
     {
-        saml::NDC ndc("getAttributeFactory");
+        NDC ndc("getAttributeFactory");
         Category::getInstance(SHIB_LOGCAT".ShibInternalConfig").error("unknown attribute factory: %s",type);
+        return NULL;
+    }
+    return i->second;
+}
+
+CredResolverFactory* ShibInternalConfig::getCredResolverFactory(const char* type) const
+{
+    CredResolverFactoryMap::const_iterator i=m_credResolverFactoryMap.find(type);
+    if (i==m_credResolverFactoryMap.end())
+    {
+        NDC ndc("getCredResolverFactory");
+        Category::getInstance(SHIB_LOGCAT".ShibInternalConfig").error("unknown cred resolver factory: %s",type);
         return NULL;
     }
     return i->second;

@@ -12,6 +12,7 @@ libshib_la_SOURCES = \
                     AAP.cpp \
                     ClubShibPOSTProfile.cpp \
                     Constants.cpp \
+                    CredResolvers.cpp \
                     Metadata.cpp \
                     SAMLBindingFactory.cpp \
                     ShibConfig.cpp \

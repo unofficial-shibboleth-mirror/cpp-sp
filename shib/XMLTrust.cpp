@@ -47,7 +47,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/* XMLTrust.h - a trust implementation that uses an XML file
+/* XMLTrust.cpp - a trust implementation that uses an XML file
 
    Scott Cantor
    9/27/02
@@ -80,31 +80,60 @@ int verify_callback(int ok, X509_STORE_CTX* store)
     return ok;
 }
 
-class shibboleth::XMLTrustImpl
-{
-public:
-    XMLTrustImpl(const char* pathname);
-    ~XMLTrustImpl();
-    
-    struct KeyAuthority
-    {
-        KeyAuthority() : m_store(NULL), m_depth(0), m_type(authority) {}
-        ~KeyAuthority();
-        X509_STORE* getX509Store(bool cached=true);
+namespace shibboleth {
 
-        vector<XSECCryptoX509*> m_certs;
-        vector<X509*> m_nativecerts;
-        X509_STORE* m_store;
-        unsigned short m_depth;
-        enum {authority, entity} m_type;
+    class XMLTrustImpl
+    {
+    public:
+        XMLTrustImpl(const char* pathname);
+        ~XMLTrustImpl();
+        
+        struct KeyAuthority
+        {
+            KeyAuthority() : m_store(NULL), m_depth(0), m_type(authority) {}
+            ~KeyAuthority();
+            X509_STORE* getX509Store(bool cached=true);
+    
+            vector<XSECCryptoX509*> m_certs;
+            vector<X509*> m_nativecerts;
+            X509_STORE* m_store;
+            unsigned short m_depth;
+            enum {authority, entity} m_type;
+        };
+        
+        vector<KeyAuthority*> m_keyauths;
+        typedef map<pair<const XMLCh*,bool>,KeyAuthority*> BindingMap;
+        BindingMap m_bindings;
+        
+        DOMDocument* m_doc;
     };
-    
-    vector<KeyAuthority*> m_keyauths;
-    typedef map<pair<const XMLCh*,bool>,KeyAuthority*> BindingMap;
-    BindingMap m_bindings;
-    
-    DOMDocument* m_doc;
-};
+
+    class XMLTrust : public ITrust
+    {
+    public:
+        XMLTrust(const char* pathname);
+        ~XMLTrust() { delete m_lock; delete m_impl; }
+
+        void lock();
+        void unlock() { m_lock->unlock(); }
+        saml::Iterator<XSECCryptoX509*> getCertificates(const XMLCh* subject) const;
+        bool validate(const ISite* site, saml::Iterator<XSECCryptoX509*> certs) const;
+        bool validate(const ISite* site, saml::Iterator<const XMLCh*> certs) const;
+        bool attach(const ISite* site, SSL_CTX* ctx) const;
+
+    private:
+        std::string m_source;
+        time_t m_filestamp;
+        RWLock* m_lock;
+        XMLTrustImpl* m_impl;
+    };
+
+}
+
+extern "C" ITrust* XMLTrustFactory(const char* source)
+{
+    return new XMLTrust(source);
+}
 
 X509_STORE* XMLTrustImpl::KeyAuthority::getX509Store(bool cached)
 {
@@ -279,12 +308,6 @@ XMLTrust::XMLTrust(const char* pathname) : m_filestamp(0), m_source(pathname), m
     m_lock=RWLock::create();
 }
 
-XMLTrust::~XMLTrust()
-{
-    delete m_lock;
-    delete m_impl;
-}
-
 void XMLTrust::lock()
 {
     m_lock->rdlock();
@@ -319,12 +342,12 @@ void XMLTrust::lock()
                     saml::NDC ndc("lock");
                     Category::getInstance(SHIB_LOGCAT".XMLTrust").error("failed to reload trust metadata, sticking with what we have: %s", e.what());
                 }
-/*                catch(...)
+                catch(...)
                 {
                     m_lock->unlock();
                     saml::NDC ndc("lock");
                     Category::getInstance(SHIB_LOGCAT".XMLTrust").error("caught an unknown exception, sticking with what we have");
-                } */
+                }
             }
             else
             {
@@ -333,11 +356,6 @@ void XMLTrust::lock()
             m_lock->rdlock();
         }
     }
-}
-
-void XMLTrust::unlock()
-{
-    m_lock->unlock();
 }
 
 Iterator<XSECCryptoX509*> XMLTrust::getCertificates(const XMLCh* subject) const

@@ -47,7 +47,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/* XMLMetadata.h - a metadata implementation that uses an XML-based registry
+/* XMLMetadata.cpp - a metadata implementation that uses an XML-based registry
 
    Scott Cantor
    9/27/02
@@ -69,76 +69,101 @@ using namespace saml;
 using namespace log4cpp;
 using namespace std;
 
-class shibboleth::XMLMetadataImpl
+namespace shibboleth {
+
+    class XMLMetadataImpl
+    {
+    public:
+        XMLMetadataImpl(const char* pathname);
+        ~XMLMetadataImpl();
+    
+        class ContactInfo : public IContactInfo
+        {
+        public:
+            ContactInfo(ContactType type, const XMLCh* name, const XMLCh* email)
+                : m_type(type), m_name(XMLString::transcode(name)), m_email(XMLString::transcode(email)) {}
+        
+            ContactType getType() const { return m_type; }
+            const char* getName() const { return m_name.get(); }            
+            const char* getEmail() const { return m_email.get(); }
+        
+        private:
+            ContactType m_type;
+            std::auto_ptr<char> m_name, m_email;
+        };
+        
+        class Authority : public IAuthority
+        {
+        public:
+            Authority(const XMLCh* name, const XMLCh* url) : m_name(name), m_url(XMLString::transcode(url)) {}
+        
+            const XMLCh* getName() const { return m_name; }
+            const char* getURL() const { return m_url.get(); }
+        
+        private:
+            const XMLCh* m_name;
+            auto_ptr<char> m_url;
+        };
+    
+        class OriginSite : public IOriginSite
+        {
+        public:
+            OriginSite(const XMLCh* name, const XMLCh* errorURL)
+                : m_name(name), m_errorURL(XMLString::transcode(errorURL)) {}
+            ~OriginSite();
+        
+            const XMLCh* getName() const {return m_name;}
+            Iterator<const XMLCh*> getGroups() const {return m_groups;}
+            Iterator<const IContactInfo*> getContacts() const {return m_contacts;}
+            const char* getErrorURL() const {return m_errorURL.get();}
+            bool validate(Iterator<XSECCryptoX509*> certs) const {Trust t; return t.validate(this,certs);}
+            bool validate(Iterator<const XMLCh*> certs) const {Trust t; return t.validate(this,certs);}
+            Iterator<const IAuthority*> getHandleServices() const {return m_handleServices;}
+            Iterator<const IAuthority*> getAttributeAuthorities() const {return m_attributes;}
+            Iterator<std::pair<const XMLCh*,bool> > getSecurityDomains() const {return m_domains;}
+
+        private:
+            friend class XMLMetadataImpl;
+            const XMLCh* m_name;
+            auto_ptr<char> m_errorURL;
+            vector<const IContactInfo*> m_contacts;
+            vector<const IAuthority*> m_handleServices;
+            vector<const IAuthority*> m_attributes;
+            vector<pair<const XMLCh*,bool> > m_domains;
+            vector<const XMLCh*> m_groups;
+        };
+
+    #ifdef HAVE_GOOD_STL
+        typedef map<xstring,OriginSite*> sitemap_t;
+    #else
+        typedef map<string,OriginSite*> sitemap_t;
+    #endif
+        sitemap_t m_sites;
+        DOMDocument* m_doc;
+    };
+
+    class XMLMetadata : public IMetadata
+    {
+    public:
+        XMLMetadata(const char* pathname);
+        ~XMLMetadata() { delete m_lock; delete m_impl; }
+
+        void lock();
+        void unlock() { m_lock->unlock(); }
+        const ISite* lookup(const XMLCh* site) const;
+
+    private:
+        std::string m_source;
+        time_t m_filestamp;
+        RWLock* m_lock;
+        XMLMetadataImpl* m_impl;
+    };
+}
+
+extern "C" IMetadata* XMLMetadataFactory(const char* source)
 {
-public:
-    XMLMetadataImpl(const char* pathname);
-    ~XMLMetadataImpl();
-    
-    class ContactInfo : public IContactInfo
-    {
-    public:
-        ContactInfo(ContactType type, const XMLCh* name, const XMLCh* email)
-            : m_type(type), m_name(XMLString::transcode(name)), m_email(XMLString::transcode(email)) {}
-        
-        ContactType getType() const { return m_type; }
-        const char* getName() const { return m_name.get(); }            
-        const char* getEmail() const { return m_email.get(); }
-        
-    private:
-        ContactType m_type;
-        std::auto_ptr<char> m_name, m_email;
-    };
-        
-    class Authority : public IAuthority
-    {
-    public:
-        Authority(const XMLCh* name, const XMLCh* url) : m_name(name), m_url(XMLString::transcode(url)) {}
-        
-        const XMLCh* getName() const { return m_name; }
-        const char* getURL() const { return m_url.get(); }
-        
-    private:
-        const XMLCh* m_name;
-        auto_ptr<char> m_url;
-    };
-    
-    class OriginSite : public IOriginSite
-    {
-    public:
-        OriginSite(const XMLCh* name, const XMLCh* errorURL)
-            : m_name(name), m_errorURL(XMLString::transcode(errorURL)) {}
-        ~OriginSite();
-        
-        const XMLCh* getName() const {return m_name;}
-        Iterator<const XMLCh*> getGroups() const {return m_groups;}
-        Iterator<const IContactInfo*> getContacts() const {return m_contacts;}
-        const char* getErrorURL() const {return m_errorURL.get();}
-        bool validate(Iterator<XSECCryptoX509*> certs) const {Trust t; return t.validate(this,certs);}
-        bool validate(Iterator<const XMLCh*> certs) const {Trust t; return t.validate(this,certs);}
-        Iterator<const IAuthority*> getHandleServices() const {return m_handleServices;}
-        Iterator<const IAuthority*> getAttributeAuthorities() const {return m_attributes;}
-        Iterator<std::pair<const XMLCh*,bool> > getSecurityDomains() const {return m_domains;}
-
-    private:
-        friend class XMLMetadataImpl;
-        const XMLCh* m_name;
-        auto_ptr<char> m_errorURL;
-        vector<const IContactInfo*> m_contacts;
-        vector<const IAuthority*> m_handleServices;
-        vector<const IAuthority*> m_attributes;
-        vector<pair<const XMLCh*,bool> > m_domains;
-        vector<const XMLCh*> m_groups;
-    };
-
-#ifdef HAVE_GOOD_STL
-    typedef map<xstring,OriginSite*> sitemap_t;
-#else
-    typedef map<string,OriginSite*> sitemap_t;
-#endif
-    sitemap_t m_sites;
-    DOMDocument* m_doc;
-};
+    return new XMLMetadata(source);
+}
 
 XMLMetadataImpl::OriginSite::~OriginSite()
 {
@@ -303,12 +328,6 @@ XMLMetadata::XMLMetadata(const char* pathname) : m_filestamp(0), m_source(pathna
     m_lock=RWLock::create();
 }
 
-XMLMetadata::~XMLMetadata()
-{
-    delete m_lock;
-    delete m_impl;
-}
-
 void XMLMetadata::lock()
 {
     m_lock->rdlock();
@@ -357,11 +376,6 @@ void XMLMetadata::lock()
             m_lock->rdlock();
         }
     }
-}
-
-void XMLMetadata::unlock()
-{
-    m_lock->unlock();
 }
 
 const ISite* XMLMetadata::lookup(const XMLCh* site) const

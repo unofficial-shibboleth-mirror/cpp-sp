@@ -68,66 +68,94 @@ using namespace std;
 #include <xercesc/framework/URLInputSource.hpp>
 #include <xercesc/util/regx/RegularExpression.hpp>
 
-class shibboleth::XMLAAPImpl
-{
-public:
-    XMLAAPImpl(const char* pathname);
-    ~XMLAAPImpl();
-    
-    void regAttributes() const;
+namespace shibboleth {
 
-    class AttributeRule : public IAttributeRule
+    class XMLAAPImpl
     {
     public:
-        AttributeRule(const DOMElement* e);
-        ~AttributeRule() {}
+        XMLAAPImpl(const char* pathname);
+        ~XMLAAPImpl();
         
-        const XMLCh* getName() const { return m_name; }
-        const XMLCh* getNamespace() const { return m_namespace; }
-        const char* getFactory() const { return m_factory.get(); }
-        const char* getAlias() const { return m_alias.get(); }
-        const char* getHeader() const { return m_header.get(); }
-        bool accept(const XMLCh* originSite, const DOMElement* e) const;
-
-        enum value_type { literal, regexp, xpath };
-    private:    
-        const XMLCh* m_name;
-        const XMLCh* m_namespace;
-        auto_ptr<char> m_factory;
-        auto_ptr<char> m_alias;
-        auto_ptr<char> m_header;
-        
-        value_type toValueType(const DOMElement* e);
-        bool scopeCheck(const XMLCh* originSite, const DOMElement* e) const;
-        
-        struct SiteRule
+        void regAttributes() const;
+    
+        class AttributeRule : public IAttributeRule
         {
-            SiteRule() : anyValue(false) {}
-            bool anyValue;
-            vector<pair<value_type,const XMLCh*> > valueRules;
-            vector<pair<value_type,const XMLCh*> > scopeDenials;
-            vector<pair<value_type,const XMLCh*> > scopeAccepts;
+        public:
+            AttributeRule(const DOMElement* e);
+            ~AttributeRule() {}
+            
+            const XMLCh* getName() const { return m_name; }
+            const XMLCh* getNamespace() const { return m_namespace; }
+            const char* getFactory() const { return m_factory.get(); }
+            const char* getAlias() const { return m_alias.get(); }
+            const char* getHeader() const { return m_header.get(); }
+            bool accept(const XMLCh* originSite, const DOMElement* e) const;
+    
+            enum value_type { literal, regexp, xpath };
+        private:    
+            const XMLCh* m_name;
+            const XMLCh* m_namespace;
+            auto_ptr<char> m_factory;
+            auto_ptr<char> m_alias;
+            auto_ptr<char> m_header;
+            
+            value_type toValueType(const DOMElement* e);
+            bool scopeCheck(const XMLCh* originSite, const DOMElement* e) const;
+            
+            struct SiteRule
+            {
+                SiteRule() : anyValue(false) {}
+                bool anyValue;
+                vector<pair<value_type,const XMLCh*> > valueRules;
+                vector<pair<value_type,const XMLCh*> > scopeDenials;
+                vector<pair<value_type,const XMLCh*> > scopeAccepts;
+            };
+    
+            SiteRule m_anySiteRule;
+    #ifdef HAVE_GOOD_STL
+            typedef map<xstring,SiteRule> sitemap_t;
+    #else
+            typedef map<string,SiteRule> sitemap_t;
+    #endif
+            sitemap_t m_siteMap;
         };
-
-        SiteRule m_anySiteRule;
-#ifdef HAVE_GOOD_STL
-        typedef map<xstring,SiteRule> sitemap_t;
-#else
-        typedef map<string,SiteRule> sitemap_t;
-#endif
-        sitemap_t m_siteMap;
+    
+        vector<const IAttributeRule*> m_attrs;
+        map<string,const IAttributeRule*> m_aliasMap;
+    #ifdef HAVE_GOOD_STL
+        typedef map<xstring,AttributeRule*> attrmap_t;
+    #else
+        typedef map<string,AttributeRule*> attrmap_t;
+    #endif
+        attrmap_t m_attrMap;
+        DOMDocument* m_doc;
     };
 
-    vector<const IAttributeRule*> m_attrs;
-    map<string,const IAttributeRule*> m_aliasMap;
-#ifdef HAVE_GOOD_STL
-    typedef map<xstring,AttributeRule*> attrmap_t;
-#else
-    typedef map<string,AttributeRule*> attrmap_t;
-#endif
-    attrmap_t m_attrMap;
-    DOMDocument* m_doc;
-};
+    class XMLAAP : public IAAP
+    {
+    public:
+        XMLAAP(const char* pathname);
+        ~XMLAAP() { delete m_lock; delete m_impl; }
+        
+        void lock();
+        void unlock() { m_lock->unlock(); }
+        const IAttributeRule* lookup(const XMLCh* attrName, const XMLCh* attrNamespace=NULL) const;
+        const IAttributeRule* lookup(const char* alias) const;
+        saml::Iterator<const IAttributeRule*> getAttributeRules() const;
+
+    private:
+        std::string m_source;
+        time_t m_filestamp;
+        RWLock* m_lock;
+        XMLAAPImpl* m_impl;
+    };
+
+}
+
+extern "C" IAAP* XMLAAPFactory(const char* source)
+{
+    return new XMLAAP(source);
+}
 
 XMLAAPImpl::XMLAAPImpl(const char* pathname) : m_doc(NULL)
 {
@@ -359,12 +387,6 @@ XMLAAP::XMLAAP(const char* pathname) : m_filestamp(0), m_source(pathname), m_imp
     m_lock=RWLock::create();
 }
 
-XMLAAP::~XMLAAP()
-{
-    delete m_lock;
-    delete m_impl;
-}
-
 void XMLAAP::lock()
 {
     m_lock->rdlock();
@@ -416,11 +438,6 @@ void XMLAAP::lock()
             m_lock->rdlock();
         }
     }
-}
-
-void XMLAAP::unlock()
-{
-    m_lock->unlock();
 }
 
 const IAttributeRule* XMLAAP::lookup(const XMLCh* attrName, const XMLCh* attrNamespace) const
