@@ -175,6 +175,12 @@ XMLOriginSiteMapper::XMLOriginSiteMapper(const char* registryURI,
     }
 }
 
+XMLOriginSiteMapper::~XMLOriginSiteMapper()
+{
+    for (map<xstring,OriginSite*>::iterator i=m_sites.begin(); i!=m_sites.end(); i++)
+        delete i->second;
+}
+
 /* TBD...
 private void validateSignature(Key verifyKey, Element e) throws OriginSiteMapperException {
 
