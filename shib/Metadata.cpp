@@ -56,130 +56,125 @@
 */
 
 #include "internal.h"
-#include <log4cpp/Category.hh>
 
 using namespace shibboleth;
 using namespace saml;
 using namespace std;
 
-OriginMetadata::OriginMetadata(const Iterator<IMetadata*>& metadatas, const XMLCh* site) : m_mapper(NULL), m_site(NULL)
+const IProvider* Metadata::lookup(const XMLCh* providerId)
 {
-    metadatas.reset();
-    while (metadatas.hasNext())
-    {
-        IMetadata* i=metadatas.next();
-        i->lock();
-        if (m_site=dynamic_cast<const IOriginSite*>(i->lookup(site)))
-        {
-            m_mapper=i;
-            break;
-        }
-        i->unlock();
-    }
-}
-
-OriginMetadata::~OriginMetadata()
-{
-    if (m_mapper)
-        m_mapper->unlock();
-}
-
-Iterator<XSECCryptoX509*> Trust::getCertificates(const XMLCh* subject)
-{
-    if (m_mapper)
-    {
+    if (m_mapper) {
         m_mapper->unlock();
         m_mapper=NULL;
     }
-    
-    m_trusts.reset();
-    while (m_trusts.hasNext())
-    {
-        ITrust* i=m_trusts.next();
+    const IProvider* ret=NULL;
+    m_metadatas.reset();
+    while (m_metadatas.hasNext()) {
+        IMetadata* i=m_metadatas.next();
         i->lock();
-        Iterator<XSECCryptoX509*> iter=i->getCertificates(subject);
-        if (iter.size())
-        {
+        if (ret=i->lookup(providerId)) {
             m_mapper=i;
-            return iter;
+            return ret;
         }
         i->unlock();
     }
-    return EMPTY(XSECCryptoX509*);
+    return NULL;
 }
 
-bool Trust::validate(const ISite* site, Iterator<XSECCryptoX509*> certs) const
-{
-    bool ret=false;
-    m_trusts.reset();
-    while (!ret && m_trusts.hasNext())
-    {
-        ITrust* i=m_trusts.next();
-        i->lock();
-        ret=i->validate(site,certs);
-        i->unlock();
-    }
-    return ret;
-}
-
-bool Trust::validate(const ISite* site, Iterator<const XMLCh*> certs) const
-{
-    bool ret=false;
-    m_trusts.reset();
-    while (!ret && m_trusts.hasNext())
-    {
-        ITrust* i=m_trusts.next();
-        i->lock();
-        ret=i->validate(site,certs);
-        i->unlock();
-    }
-    return ret;
-}
-
-bool Trust::attach(const ISite* site, SSL_CTX* ctx) const
-{
-    bool ret=false;
-    m_trusts.reset();
-    while (!ret && m_trusts.hasNext())
-    {
-        ITrust* i=m_trusts.next();
-        i->lock();
-        ret=i->attach(site,ctx);
-        i->unlock();
-    }
-    return ret;
-}
-
-Trust::~Trust()
+Metadata::~Metadata()
 {
     if (m_mapper)
         m_mapper->unlock();
 }
 
-bool Credentials::attach(const saml::Iterator<ICredentials*>& creds, const XMLCh* subject, const ISite* relyingParty, SSL_CTX* ctx)
+Iterator<void*> Revocation::getRevocationLists(const IProvider* provider, const IProviderRole* role)
+{
+    if (m_mapper) {
+        m_mapper->unlock();
+        m_mapper=NULL;
+    }
+    m_revocations.reset();
+    while (m_revocations.hasNext()) {
+        IRevocation* i=m_revocations.next();
+        i->lock();
+        Iterator<void*> ret=i->getRevocationLists(provider,role);
+        if (ret.size()) {
+            m_mapper=i;
+            return ret;
+        }
+        i->unlock();
+    }
+    return EMPTY(void*);
+}
+
+Revocation::~Revocation()
+{
+    if (m_mapper)
+        m_mapper->unlock();
+}
+
+bool Trust::validate(
+    const Iterator<IRevocation*>& revocations,
+    const IProviderRole* role, const SAMLSignedObject& token,
+    const Iterator<IMetadata*>& metadatas) const
 {
     bool ret=false;
-    creds.reset();
-    while (!ret && creds.hasNext())
-    {
-        ICredentials* i=creds.next();
+    m_trusts.reset();
+    while (!ret && m_trusts.hasNext()) {
+        ITrust* i=m_trusts.next();
         i->lock();
-        ret=i->attach(subject,relyingParty,ctx);
+        ret=i->validate(revocations,role,token,metadatas);
         i->unlock();
-        
     }
     return ret;
+}
+
+bool Trust::attach(const Iterator<IRevocation*>& revocations, const IProviderRole* role, void* ctx) const
+{
+    bool ret=false;
+    m_trusts.reset();
+    while (!ret && m_trusts.hasNext()) {
+        ITrust* i=m_trusts.next();
+        i->lock();
+        ret=i->attach(revocations,role,ctx);
+        i->unlock();
+    }
+    return ret;
+}
+
+const ICredResolver* Credentials::lookup(const char* id)
+{
+    if (m_mapper) {
+        m_mapper->unlock();
+        m_mapper=NULL;
+    }
+    const ICredResolver* ret=NULL;
+    m_creds.reset();
+    while (m_creds.hasNext()) {
+        ICredentials* i=m_creds.next();
+        i->lock();
+        if (ret=i->lookup(id)) {
+            m_mapper=i;
+            return ret;
+        }
+        i->unlock();
+    }
+    return NULL;
+}
+
+Credentials::~Credentials()
+{
+    if (m_mapper)
+        m_mapper->unlock();
 }
 
 AAP::AAP(const saml::Iterator<IAAP*>& aaps, const XMLCh* attrName, const XMLCh* attrNamespace) : m_mapper(NULL), m_rule(NULL)
 {
     aaps.reset();
-    while (aaps.hasNext())
-    {
+    while (aaps.hasNext()) {
         IAAP* i=aaps.next();
         i->lock();
-        if (m_rule=i->lookup(attrName,attrNamespace))
-        {
+        if (m_rule=i->lookup(attrName,attrNamespace)) {
             m_mapper=i;
             break;
         }
@@ -190,12 +185,10 @@ AAP::AAP(const saml::Iterator<IAAP*>& aaps, const XMLCh* attrName, const XMLCh* 
 AAP::AAP(const saml::Iterator<IAAP*>& aaps, const char* alias) : m_mapper(NULL), m_rule(NULL)
 {
     aaps.reset();
-    while (aaps.hasNext())
-    {
+    while (aaps.hasNext()) {
         IAAP* i=aaps.next();
         i->lock();
-        if (m_rule=i->lookup(alias))
-        {
+        if (m_rule=i->lookup(alias)) {
             m_mapper=i;
             break;
         }
@@ -209,7 +202,7 @@ AAP::~AAP()
         m_mapper->unlock();
 }
 
-void AAP::apply(const saml::Iterator<IAAP*>& aaps, const IOriginSite* originSite, saml::SAMLAssertion& assertion)
+void AAP::apply(const saml::Iterator<IAAP*>& aaps, const IProvider* originSite, saml::SAMLAssertion& assertion)
 {
     saml::NDC("apply");
     log4cpp::Category& log=log4cpp::Category::getInstance(SHIB_LOGCAT".AAP");

@@ -9,22 +9,12 @@ libshib_HEADERS = shib.h shib-threads.h
 noinst_HEADERS = internal.h
 
 libshib_la_SOURCES = \
-                    AAP.cpp \
-                    ClubShibPOSTProfile.cpp \
                     Constants.cpp \
-                    CredResolvers.cpp \
                     Metadata.cpp \
                     ReloadableXMLFile.cpp \
-                    SAMLBindingFactory.cpp \
                     ShibConfig.cpp \
                     ShibPOSTProfile.cpp \
-                    ShibPOSTProfileFactory.cpp \
-                    ShibSOAPBinding.cpp \
-                    ScopedAttribute.cpp \
-                    XML.cpp \
-                    XMLMetadata.cpp \
-                    XMLTrust.cpp \
-                    XMLCredentials.cpp \
+                    ShibBinding.cpp \
                     shib-threads.cpp
 
 

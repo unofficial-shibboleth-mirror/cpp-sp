@@ -60,7 +60,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include <log4cpp/Category.hh>
 #include <xercesc/framework/URLInputSource.hpp>
 
 using namespace shibboleth;
@@ -89,28 +88,35 @@ ReloadableXMLFileImpl::ReloadableXMLFileImpl(const char* pathname) : m_doc(NULL)
     catch (SAMLException& e)
     {
         log.errorStream() << "XML error while parsing configuration file: " << e.what() << CategoryStream::ENDLINE;
-        if (m_doc)
+        if (m_doc) {
             m_doc->release();
+            m_doc=NULL;
+        }
         throw;
     }
     catch (...)
     {
         log.error("Unexpected error while parsing configuration file");
-        if (m_doc)
+        if (m_doc) {
             m_doc->release();
+            m_doc=NULL;
+        }
         throw;
     }
 }
 
 ReloadableXMLFileImpl::~ReloadableXMLFileImpl()
 {
-    if (m_doc)
+    if (m_doc) {
         m_doc->release();
+        m_doc=NULL;
+    }
 }
 
 ReloadableXMLFile::ReloadableXMLFile(const DOMElement* e) : m_root(e), m_impl(NULL), m_filestamp(0), m_lock(NULL)
 {
-    const XMLCh* pathname=e->getAttributeNS(NULL,shibboleth::XML::Literals::url);
+    static const XMLCh url[] = { chLatin_u, chLatin_r, chLatin_l, chNull };
+    const XMLCh* pathname=e->getAttributeNS(NULL,url);
     if (pathname && *pathname)
     {
         auto_ptr_char temp(pathname);

@@ -89,23 +89,11 @@ LINK32=link.exe
 # Name "shib - Win32 Debug"
 # Begin Source File
 
-SOURCE=.\AAP.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\ClubShibPOSTProfile.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=..\config_win32.h
 # End Source File
 # Begin Source File
 
 SOURCE=.\Constants.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\CredResolvers.cpp
 # End Source File
 # Begin Source File
 
@@ -121,14 +109,6 @@ SOURCE=.\ReloadableXMLFile.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\SAMLBindingFactory.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\ScopedAttribute.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=".\shib-threads-win32.cpp"
 # End Source File
 # Begin Source File
@@ -141,35 +121,15 @@ SOURCE=.\shib.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\ShibBinding.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\ShibConfig.cpp
 # End Source File
 # Begin Source File
 
 SOURCE=.\ShibPOSTProfile.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\ShibPOSTProfileFactory.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\ShibSOAPBinding.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\XML.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\XMLCredentials.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\XMLMetadata.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\XMLTrust.cpp
 # End Source File
 # End Target
 # End Project

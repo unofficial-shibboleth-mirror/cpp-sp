@@ -63,7 +63,6 @@
 #define SHIB_INSTANTIATE
 
 #include "internal.h"
-#include <log4cpp/Category.hh>
 #include <openssl/err.h>
 
 using namespace saml;
@@ -73,6 +72,7 @@ using namespace std;
 
 SAML_EXCEPTION_FACTORY(UnsupportedProtocolException);
 SAML_EXCEPTION_FACTORY(MetadataException);
+SAML_EXCEPTION_FACTORY(CredentialException);
 
 namespace {
     ShibInternalConfig g_config;
@@ -80,45 +80,13 @@ namespace {
 
 ShibConfig::~ShibConfig() {}
 
-// Metadata Factories
-extern "C" IMetadata* XMLMetadataFactory(const DOMElement* source);
-extern "C" ITrust* XMLTrustFactory(const DOMElement* source);
-extern "C" ICredentials* XMLCredentialsFactory(const DOMElement* source);
-extern "C" ICredResolver* FileCredResolverFactory(const DOMElement* e);
-extern "C" ICredResolver* KeyInfoResolverFactory(const DOMElement* e);
-extern "C" IAAP* XMLAAPFactory(const DOMElement* source);
-extern "C" IAAP* XMLAAPDOMFactory(const DOMElement* source);
-
-extern "C" SAMLAttribute* ShibAttributeFactory(DOMElement* e)
-{
-    DOMNode* n=e->getFirstChild();
-    while (n && n->getNodeType()!=DOMNode::ELEMENT_NODE)
-        n=n->getNextSibling();
-    if (n && static_cast<DOMElement*>(n)->hasAttributeNS(NULL,SHIB_L(Scope)))
-        return new ScopedAttribute(e);
-    return new SAMLAttribute(e);
-}
-
-
 bool ShibInternalConfig::init()
 {
     saml::NDC ndc("init");
 
     REGISTER_EXCEPTION_FACTORY(edu.internet2.middleware.shibboleth.common,UnsupportedProtocolException);
     REGISTER_EXCEPTION_FACTORY(edu.internet2.middleware.shibboleth.common,MetadataException);
-
-    // Register extension schema.
-    saml::XML::registerSchema(XML::SHIB_NS,XML::SHIB_SCHEMA_ID);
-
-    SAMLAttribute::setFactory(&ShibAttributeFactory);
-
-    // Register metadata factories
-    regFactory("edu.internet2.middleware.shibboleth.metadata.provider.XML",&XMLMetadataFactory);
-    regFactory("edu.internet2.middleware.shibboleth.trust.provider.XML",&XMLTrustFactory);
-    regFactory("edu.internet2.middleware.shibboleth.creds.provider.XML",&XMLCredentialsFactory);
-    regFactory("edu.internet2.middleware.shibboleth.creds.provider.FileCredResolver",&FileCredResolverFactory);
-    regFactory("edu.internet2.middleware.shibboleth.creds.provider.KeyInfoResolver",&KeyInfoResolverFactory);
-    regFactory("edu.internet2.middleware.shibboleth.target.AAP.provider.XML",&XMLAAPFactory);
+    REGISTER_EXCEPTION_FACTORY(edu.internet2.middleware.shibboleth.common,CredentialException);
 
     return true;
 }
@@ -127,6 +95,12 @@ void ShibInternalConfig::regFactory(const char* type, MetadataFactory* factory)
 {
     if (type && factory)
         m_metadataFactoryMap[type]=factory;
+}
+
+void ShibInternalConfig::regFactory(const char* type, RevocationFactory* factory)
+{
+    if (type && factory)
+        m_revocationFactoryMap[type]=factory;
 }
 
 void ShibInternalConfig::regFactory(const char* type, TrustFactory* factory)
@@ -140,7 +114,8 @@ void ShibInternalConfig::regFactory(const char* type, CredentialsFactory* factor
     if (type && factory)
     {
         m_credFactoryMap[type]=factory;
-        SAMLConfig::getConfig().binding_defaults.ssl_ctx_callback=ssl_ctx_callback;
+        SAMLConfig::getConfig().binding_defaults.ssl_ctx_callback=
+            reinterpret_cast<SAMLConfig::SAMLBindingConfig::ssl_ctx_callback_fn>(ssl_ctx_callback);
     }
 }
 
@@ -158,13 +133,13 @@ void ShibInternalConfig::regFactory(const char* type, AAPFactory* factory)
 
 void ShibInternalConfig::unregFactory(const char* type)
 {
-    if (type)
-    {
+    if (type) {
         m_metadataFactoryMap.erase(type);
+        m_revocationFactoryMap.erase(type);
         m_trustFactoryMap.erase(type);
         m_credFactoryMap.erase(type);
-        m_credResolverFactoryMap.erase(type);
         m_aapFactoryMap.erase(type);
+        m_credResolverFactoryMap.erase(type);
     }
 }
 
@@ -175,6 +150,18 @@ IMetadata* ShibInternalConfig::newMetadata(const char* type, const DOMElement* s
     {
         NDC ndc("newMetadata");
         Category::getInstance(SHIB_LOGCAT".ShibInternalConfig").error("unknown metadata type: %s",type);
+        return NULL;
+    }
+    return i->second(source);
+}
+
+IRevocation* ShibInternalConfig::newRevocation(const char* type, const DOMElement* source) const
+{
+    RevocationFactoryMap::const_iterator i=m_revocationFactoryMap.find(type);
+    if (i==m_revocationFactoryMap.end())
+    {
+        NDC ndc("newRevocation");
+        Category::getInstance(SHIB_LOGCAT".ShibInternalConfig").error("unknown revocation type: %s",type);
         return NULL;
     }
     return i->second(source);
@@ -248,17 +235,4 @@ void shibboleth::log_openssl()
             log.errorStream() << "error data: " << data << CategoryStream::ENDLINE;
         code=ERR_get_error_line_data(&file,&line,&data,&flags);
     }
-}
-
-X509* shibboleth::B64_to_X509(const char* buf)
-{
-	BIO* bmem = BIO_new_mem_buf((void*)buf,-1);
-	BIO* b64 = BIO_new(BIO_f_base64());
-	b64 = BIO_push(b64, bmem);
-    X509* x=NULL;
-    d2i_X509_bio(b64,&x);
-    if (!x)
-        log_openssl();
-    BIO_free_all(b64);
-    return x;
 }

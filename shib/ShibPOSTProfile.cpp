@@ -63,36 +63,19 @@
 
 using namespace shibboleth;
 using namespace saml;
+using namespace log4cpp;
 using namespace std;
 
-static Iterator<ITrust*> emptyTrusts;
-static Iterator<ICredentials*> emptyCreds;
-
 ShibPOSTProfile::ShibPOSTProfile(
-    const Iterator<IMetadata*>& metadatas, const Iterator<ITrust*>& trusts,
-    const Iterator<const XMLCh*>& policies, const XMLCh* receiver, int ttlSeconds
-    )
-    : m_ttlSeconds(ttlSeconds), m_algorithm(SIGNATURE_RSA), m_issuer(NULL), m_receiver(receiver),
-        m_metadatas(metadatas), m_trusts(trusts), m_policies(policies), m_creds(emptyCreds)
-{
-    if (!receiver || !*receiver || ttlSeconds <= 0)
-        throw SAMLException(SAMLException::REQUESTER, "ShibPOSTProfile() found a null or invalid argument");
-}
+    const Iterator<IMetadata*>& metadatas,
+    const Iterator<IRevocation*>& revocations,
+    const Iterator<ITrust*>& trusts,
+    const Iterator<ICredentials*>& creds
+    ) : m_metadatas(metadatas), m_revocations(revocations), m_trusts(trusts), m_creds(creds) {}
 
-ShibPOSTProfile::ShibPOSTProfile(
-    const saml::Iterator<IMetadata*>& metadatas, const saml::Iterator<ICredentials*>& creds,
-    const Iterator<const XMLCh*>& policies, const XMLCh* issuer
-    )
-    : m_ttlSeconds(0), m_algorithm(SIGNATURE_RSA), m_receiver(NULL), m_issuer(issuer),
-        m_policies(policies), m_metadatas(metadatas), m_creds(creds), m_trusts(emptyTrusts)
+const SAMLAssertion* ShibPOSTProfile::getSSOAssertion(const SAMLResponse& r, const Iterator<const XMLCh*>& audiences)
 {
-    if (!issuer || !*issuer)
-        throw SAMLException(SAMLException::REQUESTER, "ShibPOSTProfile() found a null or invalid argument");
-}
-
-const SAMLAssertion* ShibPOSTProfile::getSSOAssertion(const SAMLResponse& r)
-{
-    return SAMLPOSTProfile::getSSOAssertion(r,m_policies);
+    return SAMLPOSTProfile::getSSOAssertion(r,audiences);
 }
 
 const SAMLAuthenticationStatement* ShibPOSTProfile::getSSOStatement(const SAMLAssertion& a)
@@ -100,14 +83,12 @@ const SAMLAuthenticationStatement* ShibPOSTProfile::getSSOStatement(const SAMLAs
     return SAMLPOSTProfile::getSSOStatement(a);
 }
 
-const XMLCh* ShibPOSTProfile::getOriginSite(const saml::SAMLResponse& r)
+const XMLCh* ShibPOSTProfile::getProviderId(const saml::SAMLResponse& r)
 {
     Iterator<SAMLAssertion*> ia=r.getAssertions();
-    while (ia.hasNext())
-    {
+    while (ia.hasNext()) {
         Iterator<SAMLStatement*> is=ia.next()->getStatements();
-        while (is.hasNext())
-        {
+        while (is.hasNext()) {
             SAMLStatement* s=is.next();
             SAMLAuthenticationStatement* as=dynamic_cast<SAMLAuthenticationStatement*>(s);
             if (as)
@@ -117,139 +98,120 @@ const XMLCh* ShibPOSTProfile::getOriginSite(const saml::SAMLResponse& r)
     return NULL;
 }
 
-SAMLResponse* ShibPOSTProfile::accept(const XMLByte* buf, XMLCh** originSitePtr)
+SAMLResponse* ShibPOSTProfile::accept(
+    const XMLByte* buf,
+    const XMLCh* recipient,
+    int ttlSeconds,
+    const saml::Iterator<const XMLCh*>& audiences,
+    XMLCh** pproviderId)
 {
+    saml::NDC("accept");
+    Category& log=Category::getInstance(SHIB_LOGCAT".ShibPOSTProfile");
+ 
     // The built-in SAML functionality will do most of the basic non-crypto checks.
     // Note that if the response only contains a status error, it gets tossed out
     // as an exception.
-    SAMLResponse* r=SAMLPOSTProfile::accept(buf, m_receiver, m_ttlSeconds, false);
+    auto_ptr<SAMLResponse> r(SAMLPOSTProfile::accept(buf, recipient, ttlSeconds, false));
 
     // Now we do some more non-crypto (ie. cheap) work to match up the origin site
     // with its associated data.
     const SAMLAssertion* assertion = NULL;
     const SAMLAuthenticationStatement* sso = NULL;
 
-    try
-    {
-        assertion = getSSOAssertion(*r);
+    try {
+        assertion = getSSOAssertion(*(r.get()),audiences);
         sso = getSSOStatement(*assertion);
     }
-    catch (...)
-    {
+    catch (...) {
         // We want to try our best to locate an origin site name so we can fill it in.
-        if (originSitePtr)
-            *originSitePtr=XMLString::replicate(getOriginSite(*r));
-        delete r;
+        if (pproviderId)
+            *pproviderId=XMLString::replicate(getProviderId(*(r.get())));
         throw;
     }
     
     // Finish SAML processing.
-    try
-    {
-        SAMLPOSTProfile::process(*r, m_receiver, m_ttlSeconds);
-    
-        // Examine the subject information.
-        const SAMLSubject* subject = sso->getSubject();
-        if (!subject->getNameQualifier())
-            throw InvalidAssertionException(SAMLException::RESPONDER, "ShibPOSTProfile::accept() requires subject name qualifier");
-    
-        const XMLCh* originSite = subject->getNameQualifier();
-        if (originSitePtr)
-            *originSitePtr=XMLString::replicate(originSite);
-        const XMLCh* handleService = assertion->getIssuer();
-    
-        // Is this a trusted HS?
-        const IAuthority* hs=NULL;
-        OriginMetadata mapper(m_metadatas,originSite);
-        Iterator<const IAuthority*> hsi=mapper.fail() ? Iterator<const IAuthority*>() : mapper->getHandleServices();
-        bool bFound = false;
-        while (!bFound && hsi.hasNext())
-        {
-            hs=hsi.next();
-            if (!XMLString::compareString(hs->getName(),handleService))
-                bFound = true;
-        }
-        if (!bFound)
-            throw TrustException(SAMLException::RESPONDER, "ShibPOSTProfile::accept() detected an untrusted HS for the origin site");
-    
-        Trust t(m_trusts);
-        Iterator<XSECCryptoX509*> certs=t.getCertificates(hs->getName());
-        Iterator<XSECCryptoX509*> certs2=t.getCertificates(originSite);
-    
-        // Signature verification now takes place. We check the assertion and the response.
-        // Assertion signing is optional, response signing is mandatory.
-        bool bVerified=false;
-        if (assertion->isSigned())
-        {
-            while (!bVerified && certs.hasNext())
-            {
-                try {
-                    verifySignature(*assertion, mapper, handleService, certs.next()->clonePublicKey());
-                    bVerified=true;
-                }
-                catch (InvalidCryptoException&) {
-                    // continue trying others
-                }
-            }
-            while (!bVerified && certs2.hasNext())
-            {
-                try {
-                    verifySignature(*assertion, mapper, handleService, certs2.next()->clonePublicKey());
-                    bVerified=true;
-                }
-                catch (InvalidCryptoException&) {
-                    // continue trying others
-                }
-            }
-            if (!bVerified)
-                verifySignature(*assertion, mapper, handleService);
-        }
-    
-        bVerified=false;
-        while (!bVerified && certs.hasNext())
-        {
-            try {
-                verifySignature(*r, mapper, handleService, certs.next()->clonePublicKey());
-                bVerified=true;
-            }
-            catch (InvalidCryptoException&) {
-                // continue trying others
-            }
-        }
-        while (!bVerified && certs2.hasNext())
-        {
-            try {
-                verifySignature(*r, mapper, handleService, certs2.next()->clonePublicKey());
-                bVerified=true;
-            }
-            catch (InvalidCryptoException&) {
-                // continue trying others
-            }
-        }
-        if (!bVerified)
-            verifySignature(*r, mapper, handleService);
+    SAMLPOSTProfile::process(*(r.get()), recipient, ttlSeconds);
+
+    // Try and locate metadata for the IdP. With this new version, we try Issuer first.
+    log.debug("searching metadata for assertion issuer...");
+    Metadata m(m_metadatas);
+    const IProvider* provider=m.lookup(assertion->getIssuer());
+    if (provider) {
+        if (pproviderId)
+            *pproviderId=XMLString::replicate(assertion->getIssuer());
+        log.debug("matched assertion issuer against metadata");
     }
-    catch (...)
-    {
-        delete r;
-        throw;
+    else {
+        // Might be a down-level origin.
+        provider=m.lookup(sso->getSubject()->getNameQualifier());
+        if (provider) {
+            if (pproviderId)
+                *pproviderId=XMLString::replicate(sso->getSubject()->getNameQualifier());
+            log.debug("matched subject name qualifier against metadata");
+        }
     }
-    return r;
+
+    // No metadata at all.        
+    if (!provider) {
+        auto_ptr_char issuer(assertion->getIssuer());
+        auto_ptr_char nq(sso->getSubject()->getNameQualifier());
+        log.error("assertion issuer not found in metadata (Issuer='%s', NameQualifier='%s'",
+            issuer.get(), (nq.get() ? nq.get() : "null"));
+        throw MetadataException("ShibPOSTProfile::accept() metadata lookup failed, unable to process assertion");
+    }
+
+    // Is this provider an IdP?
+    Iterator<const IProviderRole*> roles=provider->getRoles();
+    while (roles.hasNext()) {
+        const IProviderRole* role=roles.next();
+        if (dynamic_cast<const IIDPProviderRole*>(role)) {
+            const IProviderRole* IDP=dynamic_cast<const IProviderRole*>(role);
+            // Check for SAML 1.x protocol support.
+            Iterator<const XMLCh*> protocols=IDP->getProtocolSupportEnumeration();
+            while (protocols.hasNext()) {
+                if (!XMLString::compareString(protocols.next(),Constants::SHIB_NS)) {
+                    log.debug("passing response to trust layer");
+                    
+                    // Use this role to evaluate the signature.
+                    Trust t(m_trusts);
+                    if (!t.validate(m_revocations,role,*r))
+                        throw TrustException("ShibPOSTProfile::accept() unable to verify signed response");
+                    
+                    // Assertion(s) signed?
+                    Iterator<SAMLAssertion*> itera=r->getAssertions();
+                    while (itera.hasNext()) {
+                        SAMLAssertion* _a=itera.next();
+                        if (_a->isSigned()) {
+                            log.debug("passing signed assertion to trust layer"); 
+                            if (!t.validate(m_revocations,role,*_a))
+                                throw TrustException("ShibPOSTProfile::accept() unable to verify signed assertion");
+                        }
+                    }
+                    return r.release();
+                }
+            }
+        }
+    }
+
+    auto_ptr_char issuer(assertion->getIssuer());
+    auto_ptr_char nq(sso->getSubject()->getNameQualifier());
+    log.error("metadata for assertion issuer indicates no SAML 1.x identity provider role (Issuer='%s', NameQualifier='%s'",
+        issuer.get(), (nq.get() ? nq.get() : "null"));
+    throw MetadataException("ShibPOSTProfile::accept() metadata lookup failed, issuer not registered as SAML identity provider");
 }
 
 SAMLResponse* ShibPOSTProfile::prepare(
+    const IIDPProviderRole* role,
+    const char* credResolverId,
     const XMLCh* recipient,
-    const XMLCh* name,
-    const XMLCh* nameQualifier,
-    const XMLCh* subjectIP,
     const XMLCh* authMethod,
     time_t authInstant,
-    const saml::Iterator<saml::SAMLAuthorityBinding*>& bindings,
-    XSECCryptoKey* responseKey,
-    const Iterator<XSECCryptoX509*>& responseCerts,
-    XSECCryptoKey* assertionKey,
-    const Iterator<XSECCryptoX509*>& assertionCerts
-    )
+    const XMLCh* name,
+    const XMLCh* format,
+    const XMLCh* nameQualifier,
+    const XMLCh* subjectIP,
+    const saml::Iterator<const XMLCh*>& audiences,
+    const saml::Iterator<saml::SAMLAuthorityBinding*>& bindings)
 {
 #ifdef WIN32
     struct tm* ptime=gmtime(&authInstant);
@@ -259,16 +221,36 @@ SAMLResponse* ShibPOSTProfile::prepare(
 #endif
     char timebuf[32];
     strftime(timebuf,32,"%Y-%m-%dT%H:%M:%SZ",ptime);
-    auto_ptr<XMLCh> timeptr(XMLString::transcode(timebuf));
+    auto_ptr_XMLCh timeptr(timebuf);
     XMLDateTime authDateTime(timeptr.get());
+    authDateTime.parseDateTime();
 
-    SAMLResponse* r = SAMLPOSTProfile::prepare(recipient,m_issuer,Iterator<const XMLCh*>(m_policies),name,
-                                               nameQualifier,Constants::SHIB_NAMEID_FORMAT_URI,subjectIP,authMethod,authDateTime,bindings);
-    if (assertionKey)
-        (r->getAssertions().next())->sign(m_algorithm,assertionKey,assertionCerts);
+    SAMLResponse* r = SAMLPOSTProfile::prepare(
+        recipient,
+        role->getProvider()->getId(),
+        audiences,
+        name,
+        nameQualifier,
+        format,
+        subjectIP,
+        authMethod,
+        authDateTime,
+        bindings
+        );
 
-    r->sign(m_algorithm,responseKey,responseCerts);
-
+    Credentials c(m_creds);
+    const ICredResolver* cr=c.lookup(credResolverId);
+    if (!cr) {
+        delete r;
+        throw CredentialException("ShibPOSTProfile::prepare() unable to access credential resolver");
+    }
+    XSECCryptoKey* key=cr->getKey();
+    if (!key) {
+        delete r;
+        throw CredentialException("ShibPOSTProfile::prepare() unable to resolve signing key");
+    }
+    
+    r->sign(SIGNATURE_RSA,key,cr->getCertificates());
     return r;
 }
 
@@ -276,80 +258,4 @@ bool ShibPOSTProfile::checkReplayCache(const SAMLAssertion& a)
 {
     // Default implementation uses the basic replay cache implementation.
     return SAMLPOSTProfile::checkReplayCache(a);
-}
-
-void ShibPOSTProfile::verifySignature(
-    const SAMLSignedObject& obj, const IOriginSite* originSite, const XMLCh* signerName, XSECCryptoKey* knownKey
-    )
-{
-    obj.verify(knownKey);
-    
-    // If not using a known key, perform additional trust checking on the certificate.
-    if (!knownKey)
-    {
-        vector<const XMLCh*> certs;
-        for (unsigned int i=0; i<obj.getX509CertificateCount(); i++)
-            certs.push_back(obj.getX509Certificate(i));
-
-        // Compare the name in the end entity certificate to the signer's name.
-        auto_ptr_char temp(certs[0]);
-        X509* x=B64_to_X509(temp.get());
-        if (!x)
-            throw TrustException("ShibPOSTProfile::verifySignature() unable to decode X.509 signing certificate");
-
-        bool match=false;
-        auto_ptr_char sn(signerName);
-
-        char data[256];
-        X509_NAME* subj;
-        if ((subj=X509_get_subject_name(x)) && X509_NAME_get_text_by_NID(subj,NID_commonName,data,256)>0)
-        {
-            data[255]=0;
-#ifdef HAVE_STRCASECMP
-            if (!strcasecmp(data,sn.get()))
-                match=true;
-#else
-            if (!stricmp(data,sn.get()))
-                match=true;
-#endif
-        }
-
-        if (!match)
-        {
-            int extcount=X509_get_ext_count(x);
-            for (int c=0; c<extcount; c++)
-            {
-                X509_EXTENSION* ext=X509_get_ext(x,c);
-                const char* extstr=OBJ_nid2sn(OBJ_obj2nid(X509_EXTENSION_get_object(ext)));
-                if (!strcmp(extstr,"subjectAltName"))
-                {
-                    X509V3_EXT_METHOD* meth=X509V3_EXT_get(ext);
-                    if (!meth || !meth->d2i || !meth->i2v || !ext->value->data)
-                        break;
-                    unsigned char* data=ext->value->data;
-                    STACK_OF(CONF_VALUE)* val=meth->i2v(meth,meth->d2i(NULL,&data,ext->value->length),NULL);
-                    for (int j=0; j<sk_CONF_VALUE_num(val); j++)
-                    {
-                        CONF_VALUE* nval=sk_CONF_VALUE_value(val,j);
-                        if (!strcmp(nval->name,"DNS") && !strcmp(nval->value,sn.get()))
-                        {
-                            match=true;
-                            break;
-                        }
-                    }
-                }
-                if (match)
-                    break;
-            }
-        }
-
-        X509_free(x);
-
-        if (!match)
-            throw TrustException("ShibPOSTProfile::verifySignature() cannot match CN or subjectAltName against signer");
-
-        // Ask the site to determine the trustworthiness of the certificate.
-        if (!originSite->validate(m_trusts,certs))
-            throw TrustException("ShibPOSTProfile::verifySignature() cannot validate the provided signing certificate(s)");
-    }
 }
