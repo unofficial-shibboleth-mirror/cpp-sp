@@ -13,4 +13,7 @@ pkgsysconf_DATA = \
 	accessError.html \
 	rmError.html \
 	shireError.html \
-	AAP.xml
+	AAP.xml \
+	sites.xml \
+	trust.xml
+	
