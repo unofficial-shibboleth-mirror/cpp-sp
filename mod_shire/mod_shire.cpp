@@ -388,8 +388,12 @@ extern "C" int shire_check_user(request_rec* r)
 
       try {
 
+	const string& sslonly = ini.get (SHIBTARGET_HTTP, "shireSSLOnly");
+	const char* sslonlyc = sslonly.c_str();
+	
 	// Make sure this is SSL, if it should be
-	if (sc->bSSLOnly==1 && strcmp(ap_http_method(r),"https"))
+	if ((*sslonlyc == 't' || *sslonlyc == 'T') &&
+	    strcmp(ap_http_method(r),"https"))
 	  throw ShibTargetException (SHIBRPC_OK,
 				     "blocked non-SSL access to SHIRE POST processor");
 
