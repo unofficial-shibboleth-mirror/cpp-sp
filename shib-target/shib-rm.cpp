@@ -161,7 +161,8 @@ Iterator<SAMLAttribute*> RM::getAttributes(SAMLAssertion &assertion)
   // XXX: Only deal with a single statement!!!!
   Iterator<SAMLStatement*> i = assertion.getStatements();
   if (i.hasNext()) {
-    SAMLAttributeStatement* s = static_cast<SAMLAttributeStatement*>(i.next());
+    SAMLAttributeStatement* s =
+       static_cast<SAMLAttributeStatement*>(const_cast<SAMLStatement*>(i.next()));
 
     if (s)
       return s->getAttributes();
