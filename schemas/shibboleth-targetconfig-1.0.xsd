@@ -188,7 +188,9 @@
 						<complexContent>
 							<extension base="anyType">
 								<attribute name="id" type="unsignedInt" use="required"/>
-								<attribute name="host" type="string" use="required"/>
+								<attribute name="name" type="string" use="required"/>
+                        		<attribute name="port" type="unsignedInt" use="optional"/>
+								<attribute name="scheme" type="string" use="optional"/>
 							</extension>
 						</complexContent>
 					</complexType>

@@ -40,7 +40,7 @@
     
     <SHIRE logger="@-PKGSYSCONFDIR-@/shire.logger">
         <!--
-        To customize behavior, map hostnames and path components to application names.
+        To customize behavior, map hostnames and path components to applicationId and other settings.
         Can be either a pointer to an external file or an inline configuration.
         -->
         <!--
@@ -51,9 +51,10 @@
         <RequestMapProvider type="edu.internet2.middleware.shibboleth.target.provider.XMLRequestMap">
             <RequestMap applicationId="default">
                 <!--
-                This requires a session for documents in /secure on the containing host on 80 and 443.
-                Note that the name in the <Host> elements MUST match Apache's ServerName directive
-                or the IIS host mapping in the <ISAPI> element below.
+                This requires a session for documents in /secure on the containing host with http and
+                https on the default ports. Note that the name and port in the <Host> elements MUST match
+                Apache's ServerName and Port directives or the IIS Site mapping in the <ISAPI> element
+                below.
                 -->
                 <Host name="localhost" scheme="https">
                     <Path name="secure" requireSession="true" exportAssertion="true"/>
@@ -66,7 +67,8 @@
         
         <Implementation>
             <ISAPI normalizeRequest="true">
-                <Site id="1" host="localhost"/>    <!-- Maps IIS IID values to the vhost name. -->
+            	<!-- Maps IIS IID values to the host scheme/name/port. -->
+                <Site id="1" scheme="http" name="localhost" port="80"/>
             </ISAPI>
         </Implementation>
     </SHIRE>

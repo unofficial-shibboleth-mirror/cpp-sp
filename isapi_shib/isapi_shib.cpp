@@ -79,9 +79,35 @@ using namespace shibtarget;
 
 // globals
 namespace {
+    static const XMLCh name[] = { chLatin_h, chLatin_o, chLatin_s, chLatin_t, chNull };
+    static const XMLCh port[] = { chLatin_p, chLatin_o, chLatin_r, chLatin_t, chNull };
+    static const XMLCh scheme[] = { chLatin_s, chLatin_c, chLatin_h, chLatin_e, chLatin_m, chLatin_e, chNull };
+    static const XMLCh id[] = { chLatin_i, chLatin_d, chNull };
+    static const XMLCh Implementation[] =
+    { chLatin_I, chLatin_m, chLatin_p, chLatin_l, chLatin_e, chLatin_m, chLatin_e, chLatin_n, chLatin_t, chLatin_a, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chNull };
+    static const XMLCh ISAPI[] = { chLatin_I, chLatin_S, chLatin_A, chLatin_P, chLatin_I, chNull };
+    static const XMLCh normalizeRequest[] =
+    { chLatin_n, chLatin_o, chLatin_r, chLatin_m, chLatin_a, chLatin_l, chLatin_i, chLatin_z, chLatin_e,
+      chLatin_R, chLatin_e, chLatin_q, chLatin_u, chLatin_e, chLatin_s, chLatin_t, chNull
+    };
+    static const XMLCh Site[] = { chLatin_S, chLatin_i, chLatin_t, chLatin_e, chNull };
+
+    struct site_t {
+        site_t(const DOMElement* e)
+        {
+            auto_ptr_char n(e->getAttributeNS(NULL,name));
+            auto_ptr_char s(e->getAttributeNS(NULL,scheme));
+            auto_ptr_char p(e->getAttributeNS(NULL,port));
+            if (n.get()) m_name=n.get();
+            if (s.get()) m_scheme=s.get();
+            if (p.get()) m_port=p.get();
+        }
+        string m_scheme,m_name,m_port;
+    };
+    
     HINSTANCE g_hinstDLL;
     ShibTargetConfig* g_Config = NULL;
-    map<string,string> g_Sites;
+    map<string,site_t> g_Sites;
     bool g_bNormalizeRequest = true;
 }
 
@@ -128,17 +154,6 @@ extern "C" BOOL WINAPI TerminateExtension(DWORD)
     return TRUE;    // cleanup should happen when filter unloads
 }
 
-static const XMLCh host[] = { chLatin_h, chLatin_o, chLatin_s, chLatin_t, chNull };
-static const XMLCh id[] = { chLatin_i, chLatin_d, chNull };
-static const XMLCh Implementation[] =
-{ chLatin_I, chLatin_m, chLatin_p, chLatin_l, chLatin_e, chLatin_m, chLatin_e, chLatin_n, chLatin_t, chLatin_a, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chNull };
-static const XMLCh ISAPI[] = { chLatin_I, chLatin_S, chLatin_A, chLatin_P, chLatin_I, chNull };
-static const XMLCh normalizeRequest[] =
-{ chLatin_n, chLatin_o, chLatin_r, chLatin_m, chLatin_a, chLatin_l, chLatin_i, chLatin_z, chLatin_e,
-  chLatin_R, chLatin_e, chLatin_q, chLatin_u, chLatin_e, chLatin_s, chLatin_t, chNull
-};
-static const XMLCh Site[] = { chLatin_S, chLatin_i, chLatin_t, chLatin_e, chNull };
-
 extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
 {
     if (!pVer)
@@ -182,9 +197,8 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
                 impl=saml::XML::getFirstChildElement(impl,ShibTargetConfig::SHIBTARGET_NS,Site);
                 while (impl) {
                     auto_ptr_char id(impl->getAttributeNS(NULL,id));
-                    auto_ptr_char host(impl->getAttributeNS(NULL,host));
-                    if (id.get() && host.get())
-                        g_Sites[id.get()]=host.get();
+                    if (id.get())
+                        g_Sites.insert(pair<string,site_t>(id.get(),site_t(impl)));
                     impl=saml::XML::getNextSiblingElement(impl,ShibTargetConfig::SHIBTARGET_NS,Site);
                 }
             }
@@ -328,28 +342,44 @@ void GetHeader(PHTTP_FILTER_PREPROC_HEADERS pn, PHTTP_FILTER_CONTEXT pfc,
 }
 
 IRequestMapper::Settings map_request(
-    PHTTP_FILTER_CONTEXT pfc, PHTTP_FILTER_PREPROC_HEADERS pn, IRequestMapper* mapper, const char* hostname, string& target
+    PHTTP_FILTER_CONTEXT pfc, PHTTP_FILTER_PREPROC_HEADERS pn, IRequestMapper* mapper, const site_t& site, string& target
     )
 {
-    dynabuf port(10);
+    // URL path always come from IIS.
     dynabuf url(256);
-    GetServerVariable(pfc,"SERVER_PORT",port,10);
     GetHeader(pn,pfc,"url",url,256,false);
+
+    // Port may come from IIS or from site def.
+    dynabuf port(11);
+    if (site.m_port.empty() || !g_bNormalizeRequest)
+        GetServerVariable(pfc,"SERVER_PORT",port,10);
+    else {
+        strncpy(port,site.m_port.c_str(),10);
+        static_cast<char*>(port)[10]=0;
+    }
     
+    // Scheme may come from site def or be derived from IIS.
+    const char* scheme=site.m_scheme.c_str();
+    if (!scheme || !*scheme || !g_bNormalizeRequest)
+        scheme=pfc->fIsSecurePort ? "https" : "http";
+    
+    // Start with path.
     if (!url.empty())
         target=static_cast<char*>(url);
-    if (port!=(pfc->fIsSecurePort ? "443" : "80"))
+    
+    // If port is non-default, prepend it.
+    if ((!strcmp(scheme,"http") && port!="80") || (!strcmp(scheme,"https") && port!="443"))
         target = ':' + static_cast<char*>(port) + target;
 
     if (g_bNormalizeRequest) {
-        target = string(pfc->fIsSecurePort ? "https://" : "http://") + hostname + target;
+        target = string(scheme) + "://" + site.m_name + target;
     }
     else {
         dynabuf name(64);
         GetServerVariable(pfc,"SERVER_NAME",name,64);
-        target = string(pfc->fIsSecurePort ? "https://" : "http://") + static_cast<char*>(name) + target;
+        target = string(scheme) + "://" + static_cast<char*>(name) + target;
     }
-    return mapper->getSettingsFromParsedURL((pfc->fIsSecurePort ? "https" : "http"),hostname,strtoul(port,NULL,10),url);
+    return mapper->getSettingsFromParsedURL(scheme,site.m_name.c_str(),strtoul(port,NULL,10),url);
 }
 
 DWORD WriteClientError(PHTTP_FILTER_CONTEXT pfc, const char* msg)
@@ -413,12 +443,10 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
         GetServerVariable(pfc,"INSTANCE_ID",buf,10);
 
         // Match site instance to host name, skip if no match.
-        map<string,string>::const_iterator map_i=g_Sites.find(static_cast<char*>(buf));
+        map<string,site_t>::const_iterator map_i=g_Sites.find(static_cast<char*>(buf));
         if (map_i==g_Sites.end())
             return SF_STATUS_REQ_NEXT_NOTIFICATION;
             
-        const string& site=map_i->second;
-
         ostringstream threadid;
         threadid << "[" << getpid() << "] isapi_shib" << '\0';
         saml::NDC ndc(threadid.str().c_str());
@@ -431,7 +459,7 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
         string targeturl;
         IRequestMapper* mapper=conf->getRequestMapper();
         Locker locker2(mapper);
-        IRequestMapper::Settings settings=map_request(pfc,pn,mapper,site.c_str(),targeturl);
+        IRequestMapper::Settings settings=map_request(pfc,pn,mapper,map_i->second,targeturl);
         pair<bool,const char*> application_id=settings.first->getString("applicationId");
         const IApplication* application=conf->getApplication(application_id.second);
         if (!application)
@@ -716,32 +744,48 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
 }
 
 IRequestMapper::Settings map_request(
-    LPEXTENSION_CONTROL_BLOCK lpECB, IRequestMapper* mapper, const char* hostname, string& target
+    LPEXTENSION_CONTROL_BLOCK lpECB, IRequestMapper* mapper, const site_t& site, string& target
     )
 {
     dynabuf ssl(5);
-    dynabuf port(10);
-    dynabuf url(256);
     GetServerVariable(lpECB,"HTTPS",ssl,5);
-    GetServerVariable(lpECB,"SERVER_PORT",port,10);
-    GetServerVariable(lpECB,"URL",url,255);
     bool SSL=(ssl=="on");
+
+    // URL path always come from IIS.
+    dynabuf url(256);
+    GetServerVariable(lpECB,"URL",url,255);
+
+    // Port may come from IIS or from site def.
+    dynabuf port(11);
+    if (site.m_port.empty() || !g_bNormalizeRequest)
+        GetServerVariable(lpECB,"SERVER_PORT",port,10);
+    else {
+        strncpy(port,site.m_port.c_str(),10);
+        static_cast<char*>(port)[10]=0;
+    }
+
+    // Scheme may come from site def or be derived from IIS.
+    const char* scheme=site.m_scheme.c_str();
+    if (!scheme || !*scheme || !g_bNormalizeRequest)
+        scheme=lpECB->lpszMethod;
     
+    // Start with path.
     if (!url.empty())
         target=static_cast<char*>(url);
-    if (port!=(SSL ? "443" : "80"))
+    
+    // If port is non-default, prepend it.
+    if ((!strcmp(scheme,"http") && port!="80") || (!strcmp(scheme,"https") && port!="443"))
         target = ':' + static_cast<char*>(port) + target;
 
     if (g_bNormalizeRequest) {
-        target = string(SSL ? "https://" : "http://") + hostname + target;
-        return mapper->getSettingsFromParsedURL(lpECB->lpszMethod,hostname,strtoul(port,NULL,10),url);
+        target = string(scheme) + "://" + site.m_name + target;
     }
     else {
         dynabuf name(64);
         GetServerVariable(lpECB,"SERVER_NAME",name,64);
-        target = string(SSL ? "https://" : "http://") + static_cast<char*>(name) + target;
-        return mapper->getSettingsFromParsedURL((SSL ? "https" : "http"),name,strtoul(port,NULL,10),url);
+        target = string(scheme) + "://" + static_cast<char*>(name) + target;
     }
+    return mapper->getSettingsFromParsedURL(scheme,site.m_name.c_str(),strtoul(port,NULL,10),url);
 }
 
 DWORD WriteClientError(LPEXTENSION_CONTROL_BLOCK lpECB, const char* msg)
@@ -798,12 +842,10 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
         GetServerVariable(lpECB,"INSTANCE_ID",buf,10);
 
         // Match site instance to host name, skip if no match.
-        map<string,string>::const_iterator map_i=g_Sites.find(static_cast<char*>(buf));
+        map<string,site_t>::const_iterator map_i=g_Sites.find(static_cast<char*>(buf));
         if (map_i==g_Sites.end())
             return WriteClientError(lpECB,"Shibboleth filter not configured for this web site.");
             
-        const string& site=map_i->second;
-
         // We lock the configuration system for the duration.
         IConfig* conf=g_Config->getINI();
         Locker locker(conf);
@@ -812,7 +854,7 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
         string targeturl;
         IRequestMapper* mapper=conf->getRequestMapper();
         Locker locker2(mapper);
-        IRequestMapper::Settings settings=map_request(lpECB,mapper,site.c_str(),targeturl);
+        IRequestMapper::Settings settings=map_request(lpECB,mapper,map_i->second,targeturl);
         pair<bool,const char*> application_id=settings.first->getString("applicationId");
         application=conf->getApplication(application_id.second);
         const IPropertySet* sessionProps=application ? application->getPropertySet("Sessions") : NULL;
