@@ -100,7 +100,7 @@ namespace shibboleth
     class SHIB_EXPORTS XMLOriginSiteMapper : public IOriginSiteMapper
     {
     public:
-        XMLOriginSiteMapper(const char* registryURI, const char* calist, const saml::X509Certificate* verifyKey=NULL);
+        XMLOriginSiteMapper(const char* registryURI, const char* calist=NULL, const saml::X509Certificate* verifyKey=NULL);
         ~XMLOriginSiteMapper();
 
         virtual saml::Iterator<saml::xstring> getHandleServiceNames(const XMLCh* originSite);

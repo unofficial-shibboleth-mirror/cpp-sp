@@ -74,7 +74,7 @@ bool ShibInternalConfig::init()
     saml::XML::registerSchema(XML::SHIB_NS,XML::SHIB_SCHEMA_ID);
 
     m_manager=xmlSecSimpleKeysMngrCreate();
-    if (origin_mapper && origin_mapper->getTrustedRoots() &&
+    if (origin_mapper && origin_mapper->getTrustedRoots() && *(origin_mapper->getTrustedRoots()) &&
         xmlSecSimpleKeysMngrLoadPemCert(m_manager,origin_mapper->getTrustedRoots(),true) < 0)
     {
         log4cpp::Category::getInstance(SHIB_LOGCAT".ShibConfig").fatal("init: failed to load CAs into simple key manager");
