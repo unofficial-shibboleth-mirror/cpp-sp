@@ -76,6 +76,7 @@ namespace shibboleth
             // Shibboleth vocabulary
 
             // XML vocabulary
+	    static const XMLCh InvalidHandle[];
             static const XMLCh xmlns_shib[];
         };
     };

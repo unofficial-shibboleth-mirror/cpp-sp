@@ -46,15 +46,65 @@ namespace eduPerson
         mutable std::vector<saml::xstring> m_scopedValues;
     };
 
-    static const XMLCh EDUPERSON_NS[] = // urn:mace:eduPerson:1.0
-    { chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
-      chLatin_e, chLatin_d, chLatin_u, chLatin_P, chLatin_e, chLatin_r, chLatin_s, chLatin_o, chLatin_n, chColon,
-      chDigit_1, chPeriod, chDigit_0, chNull
+    class EDUPERSON_EXPORTS EPPNAttribute : public ScopedAttribute
+    {
+    public:
+        EPPNAttribute(const XMLCh* defaultScope, long lifetime=0, const XMLCh* scope=NULL, const XMLCh* value=NULL);
+	EPPNAttribute(IDOM_Element* e);
+	virtual ~EPPNAttribute();
+
+	virtual void addValues(IDOM_Element* e);
+	SAMLObject* clone() const;
     };
 
-    static const XMLCh EDUPERSON_SCHEMA_ID[] = // eduPerson.xsd
-    { chLatin_e, chLatin_d, chLatin_u, chLatin_P, chLatin_e, chLatin_r, chLatin_s, chLatin_o, chLatin_n, chPeriod,
-      chLatin_x, chLatin_s, chLatin_d, chNull
+    class EDUPERSON_EXPORTS AffiliationAttribute : public ScopedAttribute
+    {
+    public:
+        AffiliationAttribute(const XMLCh* defaultScope, long lifetime=0, const XMLCh* scopes[]=NULL, const XMLCh* values[]=NULL);
+	AffiliationAttribute(IDOM_Element* e);
+	virtual ~AffiliationAttribute();
+
+	virtual void addValues(IDOM_Element* e);
+	SAMLObject* clone() const;
+    };
+
+    class EDUPERSON_EXPORTS PrimaryAffiliationAttribute : public ScopedAttribute
+    {
+    public:
+        PrimaryAffiliationAttribute(const XMLCh* defaultScope, long lifetime=0, const XMLCh* scope=NULL, const XMLCh* value=NULL);
+	PrimaryAffiliationAttribute(IDOM_Element* e);
+	virtual ~PrimaryAffiliationAttribute();
+
+	virtual void addValues(IDOM_Element* e);
+	SAMLObject* clone() const;
+    };
+
+    class EDUPERSON_EXPORTS EntitlementAttribute : public saml::SAMLAttribute
+    {
+    public:
+        EntitlementAttribute(long lifetime=0, const XMLCh* values[]=NULL);
+	EntitlementAttribute(IDOM_Element* e);
+	virtual ~EntitlementAttribute();
+
+	virtual void addValues(IDOM_Element* e);
+	SAMLObject* clone() const;
+    };
+
+    struct EDUPERSON_EXPORTS XML
+    {
+        static const XMLCh EDUPERSON_NS[];
+        static const XMLCh EDUPERSON_SCHEMA_ID[];
+    };
+
+    struct EDUPERSON_EXPORTS Constants
+    {
+        static const XMLCh EDUPERSON_PRINCIPAL_NAME[];
+        static const XMLCh EDUPERSON_AFFILIATION[];
+        static const XMLCh EDUPERSON_PRIMARY_AFFILIATION[];
+        static const XMLCh EDUPERSON_ENTITLEMENT[];
+
+        static const XMLCh EDUPERSON_PRINCIPAL_NAME_TYPE[];
+        static const XMLCh EDUPERSON_AFFILIATION_TYPE[];
     };
 }
 
