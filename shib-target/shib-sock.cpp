@@ -59,6 +59,7 @@
 # include <sys/socket.h>
 # include <sys/un.h>
 # include <unistd.h>
+# include <arpa/inet.h>
 #else
 # include <winsock.h>
 #endif
@@ -232,7 +233,7 @@ bool TCPListener::accept(ShibSocket& listener, ShibSocket& s) const
     struct sockaddr_in addr;
     int size=sizeof(addr);
 
-    s=::accept(listener,(struct sockaddr*)&addr,&size);
+    s=::accept(listener,(struct sockaddr*)&addr,(socklen_t*)&size);
 #ifdef WIN32
     if(s==INVALID_SOCKET)
 #else
@@ -316,8 +317,8 @@ bool UnixListener::log_error() const
 
 bool UnixListener::create(ShibSocket& sock) const
 {
-    *sock = socket(PF_UNIX, SOCK_STREAM, 0);
-    if (*sock < 0)
+    sock = socket(PF_UNIX, SOCK_STREAM, 0);
+    if (sock < 0)
         return log_error();
     return true;
 }
