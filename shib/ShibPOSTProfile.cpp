@@ -149,6 +149,9 @@ SAMLResponse* ShibPOSTProfile::accept(const XMLByte* buf, XMLCh** originSitePtr)
             *originSitePtr=XMLString::replicate(getOriginSite(*r));
         throw;
     }
+    
+    // Finish SAML processing.
+    SAMLPOSTProfile::process(*r, m_receiver, m_ttlSeconds);
 
     // Examine the subject information.
     const SAMLSubject* subject = sso->getSubject();
