@@ -105,9 +105,12 @@ public:
   virtual Iterator<SAMLAssertion*> getAssertions(Resource& resource);
   virtual bool isSessionValid(time_t lifetime, time_t timeout);
   virtual const char* getClientAddress() { return m_clientAddress.c_str(); }
+  virtual void release() { cacheitem_lock->unlock(); }
 
   void setCache(InternalCCache *cache) { m_cache = cache; }
   time_t lastAccess() { Lock lock(access_lock); return m_lastAccess; }
+  void rdlock() { cacheitem_lock->rdlock(); }
+  void wrlock() { cacheitem_lock->wrlock(); }
 
 private:
   ResourceEntry* populate(Resource& resource);
@@ -141,6 +144,7 @@ private:
 
   Mutex*	access_lock;
   RWLock*	resource_lock;
+  RWLock*	cacheitem_lock;
 
   class ResourceLock
   {
@@ -167,13 +171,16 @@ public:
 		      const char *client_addr);
   virtual void remove(const char* key);
 
+  InternalCCacheEntry* findi(const char* key);
   void	cleanup();
+
 private:
+  RWLock *lock;
+
   SAMLBinding* m_SAMLBinding;
   map<string,InternalCCacheEntry*> m_hashtable;
 
   log4cpp::Category* log;
-  RWLock *lock;
 
   static void*	cleanup_fcn(void*); // XXX Assumed an InternalCCache
   bool		shutdown;
@@ -235,10 +242,10 @@ SAMLBinding* InternalCCache::getBinding(const XMLCh* bindingProt)
   return NULL;
 }
 
-CCacheEntry* InternalCCache::find(const char* key)
+// assumed a lock is held..
+InternalCCacheEntry* InternalCCache::findi(const char* key)
 {
-  log->debug("Find: \"%s\"", key);
-  ReadLock rwlock(lock);
+  log->debug("FindI: \"%s\"", key);
 
   map<string,InternalCCacheEntry*>::const_iterator i=m_hashtable.find(key);
   if (i==m_hashtable.end()) {
@@ -246,7 +253,21 @@ CCacheEntry* InternalCCache::find(const char* key)
     return NULL;
   }
   log->debug("Match Found.");
-  return dynamic_cast<CCacheEntry*>(i->second);
+
+  return i->second;
+}
+
+CCacheEntry* InternalCCache::find(const char* key)
+{
+  log->debug("Find: \"%s\"", key);
+  ReadLock rwlock(lock);
+
+  InternalCCacheEntry* entry = findi(key);
+  if (!entry) return NULL;
+
+  // Lock the database for the caller -- they have to release the item.
+  entry->rdlock();
+  return dynamic_cast<CCacheEntry*>(entry);
 }
 
 void InternalCCache::insert(const char* key, SAMLAuthenticationStatement *s,
@@ -262,15 +283,41 @@ void InternalCCache::insert(const char* key, SAMLAuthenticationStatement *s,
   lock->unlock();
 }
 
+// remove the entry from the database and then destroy the cacheentry
 void InternalCCache::remove(const char* key)
 {
   log->debug("removing cache entry \"key\"", key);
 
-  // XXX: FIXME? do we need to delete the CacheEntry?
+  // grab the entry from the database.  We'll have a readlock on it.
+  CCacheEntry* entry = findi(key);
 
+  if (!entry)
+    return;
+
+  // grab the cache write lock
   lock->wrlock();
+
+  // verify we've still got the same entry.
+  if (entry != findi(key)) {
+    // Nope -- must've already been removed.
+    lock->unlock();
+    return;
+  }
+
+  // ok, remove the entry.
   m_hashtable.erase(key);
   lock->unlock();
+
+  // now grab the write lock on the cacheitem.
+  // This will make sure all other threads have released this item.
+  InternalCCacheEntry* ientry = dynamic_cast<InternalCCacheEntry*>(entry);
+  ientry->wrlock();
+
+  // we can release immediately because we know we're not in the database!
+  ientry->release();
+
+  // Now delete the entry
+  delete ientry;
 }
 
 void InternalCCache::cleanup()
@@ -357,6 +404,7 @@ InternalCCacheEntry::InternalCCacheEntry(SAMLAuthenticationStatement *s, const c
   pop_locks_lock = Mutex::create();
   access_lock = Mutex::create();
   resource_lock = RWLock::create();
+  cacheitem_lock = RWLock::create();
 
   if (s == NULL) {
     log->error("NULL auth statement");
@@ -402,6 +450,7 @@ InternalCCacheEntry::~InternalCCacheEntry()
     delete i->second;
 
   delete pop_locks_lock;
+  delete cacheitem_lock;
   delete resource_lock;
   delete access_lock;
 }
@@ -534,6 +583,7 @@ void InternalCCacheEntry::insert(const char* resource, ResourceEntry* entry)
   resource_lock->unlock();
 }
 
+// caller will delete the entry.. don't worry about that here.
 void InternalCCacheEntry::remove(const char* resource)
 {
   log->debug("removing %s", resource);

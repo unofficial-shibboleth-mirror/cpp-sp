@@ -83,6 +83,7 @@ shibrpc_session_is_valid_1_svc(shibrpc_session_is_valid_args_1 *argp,
       result->status = SHIBRPC_IPADDR_MISMATCH;
       result->error_msg = 
 	strdup ("Your IP address does not match the address in the original authentication.");
+      entry->release();
       g_shibTargetCCache->remove (argp->cookie.cookie);
       return TRUE;
     }
@@ -93,9 +94,12 @@ shibrpc_session_is_valid_1_svc(shibrpc_session_is_valid_args_1 *argp,
     log.debug ("Session expired");
     result->status = SHIBRPC_SESSION_EXPIRED;
     result->error_msg = strdup ("Your session has expired.  Re-authenticate.");
+    entry->release();
     g_shibTargetCCache->remove (argp->cookie.cookie);
     return TRUE;
   }
+
+  entry->release();
 
   // ok, we've succeeded..
   result->status = SHIBRPC_OK;
@@ -288,6 +292,7 @@ shibrpc_get_assertions_1_svc(shibrpc_get_assertions_args_1 *argp,
     result->status = SHIBRPC_IPADDR_MISMATCH;
     result->error_msg =
       strdup("Your IP address does not match the address in the original authentication.");
+    entry->release();
     return TRUE;
   }
 
@@ -321,8 +326,11 @@ shibrpc_get_assertions_1_svc(shibrpc_get_assertions_args_1 *argp,
     os << e;
     result->status = SHIBRPC_SAML_EXCEPTION;
     result->error_msg = strdup(os.str().c_str());
+    entry->release();
     return TRUE;
   }
+
+  entry->release();
 
   // and let it fly
   result->status = SHIBRPC_OK;
