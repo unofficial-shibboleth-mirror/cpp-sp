@@ -464,6 +464,7 @@ shibrpc_get_assertions_1_svc(shibrpc_get_assertions_args_1 *argp,
   }
 
   memset (result, 0, sizeof (*result));
+  result->auth_statement.xml_string = strdup("");
 
   log.debug ("get attrs for client at %s", argp->cookie.client_addr);
   log.debug ("cookie: %s", argp->cookie.cookie);
@@ -507,14 +508,12 @@ shibrpc_get_assertions_1_svc(shibrpc_get_assertions_args_1 *argp,
       // grab the attributes for this resource
       Iterator<SAMLAssertion*> iter = entry->getAssertions();
       u_int size = iter.size();
-      result->assertions.assertions_len = size;
 
       // if we have assertions...
       if (size) {
 
         // Build the response section
-        ShibRpcXML* av = (ShibRpcXML*) malloc (size * sizeof (ShibRpcXML));
-        result->assertions.assertions_val = av;
+	ShibRpcXML* av = (ShibRpcXML*) malloc (size * sizeof (ShibRpcXML));
 
         // and then serialize them all...
         u_int i = 0;
@@ -524,6 +523,10 @@ shibrpc_get_assertions_1_svc(shibrpc_get_assertions_args_1 *argp,
           os << *as;
           av[i++].xml_string = strdup(os.str().c_str());
         }
+
+	// Set the results, once we know we've succeeded.
+	result->assertions.assertions_len = size;
+	result->assertions.assertions_val = av;
       }
     }
     catch (SAMLException &e) {
@@ -550,8 +553,9 @@ shibrpc_get_assertions_1_svc(shibrpc_get_assertions_args_1 *argp,
 
 
   // Now grab the serialized authentication statement
+  free(result->auth_statement.xml_string);
   result->auth_statement.xml_string = strdup(entry->getSerializedStatement());
-
+ 
   entry->unlock();
 
   // and let it fly
