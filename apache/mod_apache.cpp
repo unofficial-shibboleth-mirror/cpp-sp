@@ -153,7 +153,71 @@ extern "C" const char* shib_set_server_string_slot(cmd_parms* parms, void*, cons
 }
 
 /********************************************************************************/
-// Apache ShibTarget subclass here.
+// Some other useful helper function(s)
+
+static SH_AP_TABLE* groups_for_user(request_rec* r, const char* user, char* grpfile)
+{
+    SH_AP_CONFIGFILE* f;
+    SH_AP_TABLE* grps=ap_make_table(r->pool,15);
+    char l[MAX_STRING_LEN];
+    const char *group_name, *ll, *w;
+
+#ifdef SHIB_APACHE_13
+    if (!(f=ap_pcfg_openfile(r->pool,grpfile))) {
+#else
+    if (ap_pcfg_openfile(&f,r->pool,grpfile) != APR_SUCCESS) {
+#endif
+        ap_log_rerror(APLOG_MARK,APLOG_DEBUG,SH_AP_R(r),"groups_for_user() could not open group file: %s\n",grpfile);
+        return NULL;
+    }
+
+    SH_AP_POOL* sp;
+#ifdef SHIB_APACHE_13
+    sp=ap_make_sub_pool(r->pool);
+#else
+    if (apr_pool_create(&sp,r->pool) != APR_SUCCESS) {
+        ap_log_rerror(APLOG_MARK,APLOG_ERR,0,r,
+            "groups_for_user() could not create a subpool");
+        return NULL;
+    }
+#endif
+
+    while (!(ap_cfg_getline(l,MAX_STRING_LEN,f))) {
+        if ((*l=='#') || (!*l))
+            continue;
+        ll = l;
+        ap_clear_pool(sp);
+
+        group_name=ap_getword(sp,&ll,':');
+
+        while (*ll) {
+            w=ap_getword_conf(sp,&ll);
+            if (!strcmp(w,user)) {
+                ap_table_setn(grps,ap_pstrdup(r->pool,group_name),"in");
+                break;
+            }
+        }
+    }
+    ap_cfg_closefile(f);
+    ap_destroy_pool(sp);
+    return grps;
+}
+
+/********************************************************************************/
+// Apache ShibTarget subclass(es) here.
+
+class HTGroupTableApache : public HTGroupTable
+{
+public:
+  HTGroupTableApache(request_rec* r, const char *user, char *grpfile) {
+    groups = groups_for_user(r, user, grpfile);
+    if (!groups)
+      throw ShibTargetException(SHIBRPC_OK, "EEP");
+  }
+  ~HTGroupTableApache() {}
+  bool lookup(const char *entry) { return (ap_table_get(groups, entry)); }
+  SH_AP_TABLE* groups;
+};
 
 class ShibTargetApache : public ShibTarget
 {
@@ -227,6 +291,9 @@ public:
   virtual void setRemoteUser(const string &user) {
     SH_AP_USER(m_req) = ap_pstrdup(m_req->pool, user.c_str());
   }
+  virtual string getRemoteUser(void) {
+    return string(SH_AP_USER(m_req) ? SH_AP_USER(m_req) : "");
+  }
   // override so we can look at the actual auth type and maybe override it.
   virtual string getAuthType(void) {
     const char *auth_type=ap_auth_type(m_req);
@@ -251,6 +318,52 @@ public:
 
     return requireSession;
   }
+
+  virtual HTAccessInfo* getAccessInfo(void) { 
+    int m = m_req->method_number;
+    const array_header* reqs_arr = ap_requires(m_req);
+    if (!reqs_arr)
+      return NULL;
+
+    require_line* reqs = (require_line*) reqs_arr->elts;
+
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req),
+		  "REQUIRE nelts: %d", reqs_arr->nelts);
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req),
+		  "REQUIRE all: %d", m_dc->bRequireAll);
+
+    HTAccessInfo* ht = new HTAccessInfo();
+    ht->requireAll = (m_dc->bRequireAll >= 0);
+    ht->elements.reserve(reqs_arr->nelts);
+    for (int x = 0; x < reqs_arr->nelts; x++) {
+      HTAccessInfo::RequireLine* rline = new HTAccessInfo::RequireLine();
+      rline->use_line = (reqs[x].method_mask & (1 << m));
+      rline->tokens.reserve(6);	// No reason to reserve specifically 6 tokens
+      const char* t = reqs[x].requirement;
+      const char* w = ap_getword_white(m_req->pool, &t);
+      rline->tokens.push_back(w);
+      while (*t) {
+	w = ap_getword_conf(m_req->pool, &t);
+	rline->tokens.push_back(w);
+      }
+      ht->elements.push_back(rline);
+    }
+    return ht;
+  }
+  virtual HTGroupTable* getGroupTable(string &user) {
+    if (m_dc->szAuthGrpFile && !user.empty()) {
+      ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req),
+		    "getGroupTable() using groups file: %s\n",
+		    m_dc->szAuthGrpFile);
+      try {
+	HTGroupTableApache *gt = new HTGroupTableApache(m_req, user.c_str(),
+							m_dc->szAuthGrpFile);
+	return gt;
+      } catch (...) { }
+    }
+    return NULL;
+  }
+
   virtual void* sendPage(const string &msg, const string content_type,
 			 const pair<string, string> headers[], int code) {
     m_req->content_type = ap_psprintf(m_req->pool, content_type.c_str());
@@ -351,7 +464,6 @@ extern "C" int shib_post_handler(request_rec* r)
 #endif
 }
 
-#if 0
 /*
  * shib_auth_checker() -- a simple resource manager to
  * process the .htaccess settings and copy attributes
@@ -374,7 +486,7 @@ extern "C" int shib_auth_checker(request_rec* r)
     pair<bool,void*> res = sta.doCheckAuthZ();
     if (res.first) return (int)res.second;
 
-    // XXX?  Should this default to okay?
+    // We're all okay.
     return OK;
 
 #ifndef _DEBUG
@@ -385,7 +497,6 @@ extern "C" int shib_auth_checker(request_rec* r)
   }
 #endif
 }
-#endif
 
 #if 0
 static char* shib_get_targeturl(request_rec* r, const char* scheme=NULL)
@@ -926,7 +1037,6 @@ int shib_handler(request_rec* r, const IApplication* application, SHIRE& shire)
     ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,SH_AP_R(r),"shib_handler() server error");
     return SERVER_ERROR;
 }
-#endif /* 0 */
 
 static int shib_error_page(request_rec* r, const IApplication* app, const char* page, ShibMLP& mlp)
 {
@@ -950,54 +1060,6 @@ static int shib_error_page(request_rec* r, const IApplication* app, const char* 
     ap_log_rerror(APLOG_MARK,APLOG_ERR,SH_AP_R(r),
         "shib_error_page() could not process shire error template for application %s",app->getId());
     return SERVER_ERROR;
-}
-
-static SH_AP_TABLE* groups_for_user(request_rec* r, const char* user, char* grpfile)
-{
-    SH_AP_CONFIGFILE* f;
-    SH_AP_TABLE* grps=ap_make_table(r->pool,15);
-    char l[MAX_STRING_LEN];
-    const char *group_name, *ll, *w;
-
-#ifdef SHIB_APACHE_13
-    if (!(f=ap_pcfg_openfile(r->pool,grpfile))) {
-#else
-    if (ap_pcfg_openfile(&f,r->pool,grpfile) != APR_SUCCESS) {
-#endif
-        ap_log_rerror(APLOG_MARK,APLOG_DEBUG,SH_AP_R(r),"groups_for_user() could not open group file: %s\n",grpfile);
-        return NULL;
-    }
-
-    SH_AP_POOL* sp;
-#ifdef SHIB_APACHE_13
-    sp=ap_make_sub_pool(r->pool);
-#else
-    if (apr_pool_create(&sp,r->pool) != APR_SUCCESS) {
-        ap_log_rerror(APLOG_MARK,APLOG_ERR,0,r,
-            "groups_for_user() could not create a subpool");
-        return NULL;
-    }
-#endif
-
-    while (!(ap_cfg_getline(l,MAX_STRING_LEN,f))) {
-        if ((*l=='#') || (!*l))
-            continue;
-        ll = l;
-        ap_clear_pool(sp);
-
-        group_name=ap_getword(sp,&ll,':');
-
-        while (*ll) {
-            w=ap_getword_conf(sp,&ll);
-            if (!strcmp(w,user)) {
-                ap_table_setn(grps,ap_pstrdup(r->pool,group_name),"in");
-                break;
-            }
-        }
-    }
-    ap_cfg_closefile(f);
-    ap_destroy_pool(sp);
-    return grps;
 }
 
 /*
@@ -1240,6 +1302,7 @@ extern "C" int shib_auth_checker(request_rec* r)
     markupProcessor.insert("requestURL", ap_construct_url(r->pool,r->unparsed_uri,r));
     return shib_error_page(r, application, "access", markupProcessor);
 }
+#endif /* 0 */
 
 #ifndef SHIB_APACHE_13
 /*

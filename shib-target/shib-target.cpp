@@ -70,6 +70,7 @@
 #include <log4cpp/Category.hh>
 #include <log4cpp/PropertyConfigurator.hh>
 #include <xercesc/util/Base64.hpp>
+#include <xercesc/util/regx/RegularExpression.hpp>
 
 using namespace std;
 using namespace saml;
@@ -422,6 +423,8 @@ ShibTarget::doCheckAuthZ(void)
   ShibMLP mlp;
   const char *procState = "Authorization Processing Error";
   const char *targetURL = NULL;
+  HTAccessInfo *ht = NULL;
+  HTGroupTable* grpstatus = NULL;
 
   try {
     if (! m_priv->m_app)
@@ -430,8 +433,9 @@ ShibTarget::doCheckAuthZ(void)
     targetURL = m_priv->m_url.c_str();
     const char *session_id = m_priv->getSessionId(this);
 
-    if (m_priv->get_assertions(this, session_id, mlp))
-      goto out;
+    // XXX: need to make sure that export assertions was already called.
+    //if (m_priv->get_assertions(this, session_id, mlp))
+    //goto out;
 
     // Do we have an access control plugin?
     if (m_priv->m_settings.second) {
@@ -443,8 +447,204 @@ ShibTarget::doCheckAuthZ(void)
       }
     }
 
-    // I guess it's all okay, so just let it go.
-    return pair<bool,void*>(false, NULL);
+    // Perform HTAccess Checks
+    ht = getAccessInfo();
+
+    // No Info means OK.  Just return
+    if (!ht)
+      return pair<bool,void*>(false, NULL);
+
+    vector<bool> auth_OK(ht->elements.size(), false);
+    bool method_restricted=false;
+    string remote_user = getRemoteUser();
+
+    #define CHECK_OK { \
+      if (ht->requireAll) { \
+	delete ht; \
+	if (grpstatus) delete grpstatus; \
+	return pair<bool,void*>(false, NULL); \
+      } \
+      auth_OK[x] = true; \
+      continue; \
+    }
+
+    for (int x = 0; x < ht->elements.size(); x++) {
+      auth_OK[x] = false;
+      HTAccessInfo::RequireLine *line = ht->elements[x];
+      if (! line->use_line)
+	continue;
+      method_restricted = true;
+
+      const char *w = line->tokens[0].c_str();
+
+      if (!strcasecmp(w,"Shibboleth")) {
+	// This is a dummy rule needed because Apache conflates authn and authz.
+	// Without some require rule, AuthType is ignored and no check_user hooks run.
+	CHECK_OK;
+      }
+      else if (!strcmp(w,"valid-user")) {
+	log(LogLevelDebug, "doCheckAuthZ accepting valid-user");
+	sleep(60);
+	CHECK_OK;
+      }
+      else if (!strcmp(w,"user") && !remote_user.empty()) {
+	bool regexp=false;
+	for (int i = 1; i < line->tokens.size(); i++) {
+	  w = line->tokens[i].c_str();
+	  if (*w == '~') {
+	    regexp = true;
+	    continue;
+	  }
+                
+	  if (regexp) {
+	    try {
+	      // To do regex matching, we have to convert from UTF-8.
+	      auto_ptr<XMLCh> trans(fromUTF8(w));
+	      RegularExpression re(trans.get());
+	      auto_ptr<XMLCh> trans2(fromUTF8(remote_user.c_str()));
+	      if (re.matches(trans2.get())) {
+		log(LogLevelDebug, string("doCheckAuthZ accepting user: ") + w);
+		CHECK_OK;
+	      }
+	    }
+	    catch (XMLException& ex) {
+	      auto_ptr_char tmp(ex.getMessage());
+	      log(LogLevelError, string("doCheckAuthZ caught exception while parsing regular expression (")
+		  + w + "): " + tmp.get());
+	    }
+	  }
+	  else if (!strcmp(remote_user.c_str(), w)) {
+	    log(LogLevelDebug, string("doCheckAuthZ accepting user: ") + w);
+	    CHECK_OK;
+	  }
+	}
+      }
+      else if (!strcmp(w,"group")) {
+	grpstatus = getGroupTable(remote_user);
+
+	if (!grpstatus) {
+	  delete ht;
+	  return pair<bool,void*>(true, returnDecline());
+	}
+    
+	for (int i = 1; i < line->tokens.size(); i++) {
+	  w = line->tokens[i].c_str();
+	  if (grpstatus->lookup(w)) {
+	    log(LogLevelDebug, string("doCheckAuthZ accepting group: ") + w);
+	    CHECK_OK;
+	  }
+	}
+	delete grpstatus;
+	grpstatus = NULL;
+      }
+      else {
+	Iterator<IAAP*> provs = m_priv->m_app->getAAPProviders();
+	AAP wrapper(provs, w);
+	if (wrapper.fail()) {
+	  log(LogLevelWarn, string("doCheckAuthZ didn't recognize require rule: ")
+				   + w);
+	  continue;
+	}
+
+	bool regexp = false;
+	string vals = getHeader(wrapper->getHeader());
+	for (int i = 1; i < line->tokens.size() && !vals.empty(); i++) {
+	  w = line->tokens[i].c_str();
+	  if (*w == '~') {
+	    regexp = true;
+	    continue;
+	  }
+
+	  try {
+	    auto_ptr<RegularExpression> re;
+	    if (regexp) {
+	      delete re.release();
+	      auto_ptr<XMLCh> trans(fromUTF8(w));
+	      auto_ptr<RegularExpression> temp(new RegularExpression(trans.get()));
+	      re=temp;
+	    }
+                    
+	    string vals_str(vals);
+	    int j = 0;
+	    for (int i = 0;  i < vals_str.length();  i++) {
+	      if (vals_str.at(i) == ';') {
+		if (i == 0) {
+		  log(LogLevelError, string("doCheckAuthZ invalid header encoding")+
+		      vals + ": starts with a semicolon");
+		  goto out;
+		}
+
+		if (vals_str.at(i-1) == '\\') {
+		  vals_str.erase(i-1, 1);
+		  i--;
+		  continue;
+		}
+
+		string val = vals_str.substr(j, i-j);
+		j = i+1;
+		if (regexp) {
+		  auto_ptr<XMLCh> trans(fromUTF8(val.c_str()));
+		  if (re->matches(trans.get())) {
+		    log(LogLevelDebug, string("doCheckAuthZ expecting ") + w +
+			", got " + val + ": authorization granted");
+		    CHECK_OK;
+		  }
+		}
+		else if ((wrapper->getCaseSensitive() && val==w) ||
+			 (!wrapper->getCaseSensitive() && !strcasecmp(val.c_str(),w))) {
+		  log(LogLevelDebug, string("doCheckAuthZ expecting ") + w +
+		      ", got " + val + ": authorization granted.");
+		  CHECK_OK;
+		}
+		else {
+		  log(LogLevelDebug, string("doCheckAuthZ expecting ") + w +
+		      ", got " + val + ": authoritzation not granted.");
+		}
+	      }
+	    }
+    
+	    string val = vals_str.substr(j, vals_str.length()-j);
+	    if (regexp) {
+	      auto_ptr<XMLCh> trans(fromUTF8(val.c_str()));
+	      if (re->matches(trans.get())) {
+		log(LogLevelDebug, string("doCheckAuthZ expecting ") + w +
+		    ", got " + val + ": authorization granted.");
+		CHECK_OK;
+	      }
+	    }
+	    else if ((wrapper->getCaseSensitive() && val==w) ||
+		     (!wrapper->getCaseSensitive() && !strcasecmp(val.c_str(),w))) {
+	      log(LogLevelDebug, string("doCheckAuthZ expecting ") + w +
+		  ", got " + val + ": authorization granted");
+	      CHECK_OK;
+	    }
+	    else {
+	      log(LogLevelDebug, string("doCheckAuthZ expecting ") + w +
+		  ", got " + val + ": authorization not granted");
+	    }
+	  }
+	  catch (XMLException& ex) {
+	    auto_ptr_char tmp(ex.getMessage());
+	    log(LogLevelError, string("doCheckAuthZ caught exception while parsing regular expression (")
+		+ w + "): " + tmp.get());
+	  }
+	}
+      }
+    } // for x
+
+
+    // check if all require directives are true
+    bool auth_all_OK = true;
+    for (int i = 0; i < ht->elements.size(); i++) {
+        auth_all_OK &= auth_OK[i];
+    }
+
+    delete ht;
+    if (grpstatus) delete grpstatus;
+    if (auth_all_OK || !method_restricted)
+      return pair<bool,void*>(false, NULL);
+
+    // If we get here there's an access error, so just fall through
 
   } catch (ShibTargetException &e) {
     mlp.insert("errorText", e.what());
@@ -462,6 +662,9 @@ ShibTarget::doCheckAuthZ(void)
  out:
   if (targetURL)
     mlp.insert("requestURL", targetURL);
+
+  if (ht)
+    delete ht;
 
   return pair<bool,void*>(true,m_priv->sendError(this, "access", mlp));
 }
@@ -485,19 +688,6 @@ ShibTarget::doExportAssertions(bool exportAssertion)
 
     if (m_priv->get_assertions(this, session_id, mlp))
       goto out;
-
-    // XXX: This portions should get moved into doCheckAuthZ()
-
-    // Do we have an access control plugin?
-    if (m_priv->m_settings.second) {
-      Locker acllock(m_priv->m_settings.second);
-      if (!m_priv->m_settings.second->authorized(*m_priv->m_sso_statement,
-						 m_priv->m_assertions)) {
-	log(LogLevelError, "doExportAssertions: access control provider denied access");
-	page = "access";
-	goto out;
-      }
-    }
 
     // Get the AAP providers, which contain the attribute policy info.
     Iterator<IAAP*> provs=m_priv->m_app->getAAPProviders();
@@ -1420,6 +1610,10 @@ void ShibTarget::setRemoteUser(const string &name)
 {
   throw runtime_error("Invalid Usage");
 }
+string ShibTarget::getRemoteUser(void)
+{
+  throw runtime_error("Invalid Usage");
+}
 string ShibTarget::getArgs(void)
 {
   throw runtime_error("Invalid Usage");
@@ -1448,6 +1642,14 @@ void* ShibTarget::returnDecline(void)
   return NULL;
 }
 void* ShibTarget::returnOK(void)
+{
+  return NULL;
+}
+HTAccessInfo* ShibTarget::getAccessInfo(void)
+{
+  return NULL;
+}
+HTGroupTable* ShibTarget::getGroupTable(string &user)
 {
   return NULL;
 }

@@ -330,6 +330,33 @@ namespace shibtarget {
   // This is the interface you're looking for.
   //
 
+  class HTAccessInfo {
+  public:
+    class RequireLine {
+    public:
+      bool use_line;
+      std::vector<std::string> tokens;
+    };
+
+    HTAccessInfo() {}
+    ~HTAccessInfo() {
+      for (int k = 0; k < elements.size(); k++)
+	delete elements[k];
+      elements.resize(0);
+    }
+
+    std::vector<RequireLine*> elements;
+    bool requireAll;
+  };
+
+  class HTGroupTable {
+  public:
+    virtual ~HTGroupTable() {}
+    virtual bool lookup(const char *entry) = 0;
+  protected:
+    HTGroupTable() {}
+  };
+
   // This usurps the existing SHIRE and RM apis into a single class.
   class ShibTargetPriv;
   class SHIBTARGET_EXPORTS ShibTarget {
@@ -388,6 +415,7 @@ namespace shibtarget {
     virtual void setHeader(const std::string &name, const std::string &value);
     virtual std::string getHeader(const std::string &name);
     virtual void setRemoteUser(const std::string &user);
+    virtual std::string getRemoteUser(void);
 
     void clearHeader(const char *n) {
       std::string s = n;
@@ -424,7 +452,8 @@ namespace shibtarget {
     // Note: we still need to define exactly what kind of data in contained
     // in the HTAccessInfo -- perhaps we can stub it out so non-htaccess
     // systems have something they can plug in?
-    //virtual HTAccessInfo& getAccessInfo(void);
+    virtual HTAccessInfo* getAccessInfo(void);
+    virtual HTGroupTable* getGroupTable(std::string &user);
 
     // We're done.  Finish up.  Send either a result (error?) page or a redirect.
     // If there are no headers supplied assume the content-type == text/html
