@@ -332,6 +332,9 @@ that arises. Please ensure that you have the
         </ol>
         </li>
         <li><a href="#5.e."><font color="black">Local Error Page</font></a></li>
+        
+        <li><a href="5.f."><font color="black">5.f. Using a New Attribute</font></a></li>
+        
     </ol>
     </li>
     <li>
@@ -732,13 +735,15 @@ and <span class="fixedwidth">JSP specification 1.2</span>.</b></p>
             to the <span class="fixedwidth">&lt;Ajp13Connector&gt;</span> 
             configuration element to ensure that the user&#39;s identity is passed 
             from Apache to the servlet environment.</li>
+            <li>The AJP13Connector for tomcat is not compatible with the new JMX support.  To remove some warnings that will  appear in the tomcat log every time tomcat is restarted, comment out all of the JMX stuff (anything that says "mbeans").</li>
         </ol>
         </li>
         <li>It is <b>strongly</b> recommended that the AA be SSL-protected to 
         protect attributes in transit. To do so, add an appropriate location 
         block to <span class="fixedwidth">httpd.conf</span>:<blockquote>
             <p><span class="fixedwidth">&lt;Location /shibboleth/AA&gt; 
-            SSLVerifyClient optional SSLOptions +StdEnvVars +ExportCertData 
+            <br>&nbsp;SSLVerifyClient optional 
+            <br>&nbsp;SSLOptions +StdEnvVars +ExportCertData 
             &lt;/Location&gt; </span></p>
         </blockquote>
         </li>
@@ -780,8 +785,7 @@ and <span class="fixedwidth">JSP specification 1.2</span>.</b></p>
         <li><span class="fixedwidth">
         edu.internet2.middleware.shibboleth.hs.HandleServlet.siteName = &lt;URI&gt;</span>
         <blockquote>
-            <p>The value of this must entered as assigned by the federation used 
-            for testing or initial operation.</p>
+            <p>Enter the value assigned to the site by the federation.</p>
         </blockquote>
         </li>
         <li><span class="fixedwidth">
@@ -1753,7 +1757,7 @@ Java keystores <font color="#5555EE">(optional)</font></h4>
         <dd class="valueopt">An element of the element <span class="fixedwidth">
         JNDIDirectoryDataConnector</span>. Specifies an optional duration in
         <span class="fixedwidth">seconds</span> for which the attribute resolver 
-        may cache information retrieved from this connector.</dd>
+        may cache information retrieved from this connector. The default is zero seconds (no caching)</dd>
     </dl>
     <p>A representation of a properly constructed <span class="fixedwidth">
     JNDIDirectoryDataConnector</span> element would look like:</p>
@@ -1767,6 +1771,14 @@ Java keystores <font color="#5555EE">(optional)</font></h4>
         &nbsp;&nbsp;&lt;cacheTime=&quot;2400&quot;/&gt;<br>
         &lt;/JNDIDirectoryDataConnector&gt; </span></p>
     </blockquote>
+    <p>If the ldap server must be accessed over SSL, and JDK 1.4.1 is being used, two changes must be made to the <span class="fixedwidth">JNDIDirectoryDataConnector</span> element:</p>
+	<p>1. On the java.naming.provider.url Property, add :!lt;port number!gt; after the hostname in the ldap url (the default port for ldap over SSL is 636),</p>
+	<p>2. Add this Property element:</p>
+    <blockquote>
+	<p><span class="fixedwidth">&lt;Property name="java.naming.security.protocol" value="ssl" &quot;&gt;</p>
+	</blockquote>
+	<p>If the ldap server must be accessed over SSL, and JDK 1.4.2 is being used, then change ldap: to ldaps: in the value of the <span class="fixedwidth">java.naming.provider.url</span> Property.</p>
+	<p>NOTE: This assumes that the ldap server's cert is rooted with a CA that is in the JVM's default keystore (ie: a commercial CA).  If not, the CA cert must be added.</p>
     <p><span class="fixedwidth">SimpleAttributeDefinition</span>:</p>
     <dl>
         <dd class="attribute"><span class="fixedwidth">id = &lt;string&gt;</span> </dd>
@@ -1859,7 +1871,7 @@ Java keystores <font color="#5555EE">(optional)</font></h4>
     requesting SHAR. It outputs the resulting SAML &lt;Attribute /&gt; elements. This 
     allows administrators to view the results of tweaking the resolver 
     configuration without having to continually reload the origin web 
-    application. Initially, the following two steps must be performed:</p>
+    application. <span class="fixedwidth">resolvertest</span> is also useful for testing when the AA  is first configured to use an attribute repository (ldap or sql). Initially, the following two steps must be performed:</p>
     <ol>
         <li>Set the shell variable <span class="fixedwidth">SHIB_HOME</span> to 
         the directory path where the Shibboleth tarball was exploded (typically
@@ -1892,6 +1904,16 @@ Java keystores <font color="#5555EE">(optional)</font></h4>
     information should be recorded before beginning the problem resolution 
     process.</p>
 </blockquote>
+<p><br>
+<br>
+</p>
+<h4><a name="5.f."></a>5.f. Using a New Attribute</h4>
+<p>In order for an attribute to be sent to a target, two steps are required:</p>
+<p>1. The attribute has to be defined in resolver.xml. See section <a href="#5.d.">5.d</a>.</p>
+<p>2. The effective ARP for that target has to release this attribute value. See section <a href="#5.b.">5.b.</a>.</p>
+<p>Note: resolvertest is a useful tool for verifying the correctness of the definitions.</p>
+<p>Note: the AAP at the target must also define this attribute. See the Shibboleth Target Deploy Guide.</p>
+
 <p><br>
 <br>
 </p>
