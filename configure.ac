@@ -6,6 +6,19 @@ AM_INIT_AUTOMAKE(shibboleth, 1.2)
 sinclude(acx_pthread.m4)
 sinclude(acx_rpctest.m4)
 
+AC_ARG_ENABLE(debug,
+        AC_HELP_STRING(--enable-debug,
+                [Compile a version of the library with symbols (Default = no)]),
+        enable_debug=$enableval, enable_debug=no)
+
+if test "$enable_debug" = "yes" ; then
+        CFLAGS="$CFLAGS -g -D_DEBUG"
+        CXXFLAGS="$CXXFLAGS -g -D_DEBUG"
+else
+        CFLAGS="$CFLAGS -O2 -DNDEBUG"
+        CXXFLAGS="$CXXFLAGS -O2 -DNDEBUG"
+fi
+
 AC_PROG_CC([gcc3 gcc cc])
 AC_PROG_CXX([g++3 g++ c++ CC])
 AC_DISABLE_STATIC
