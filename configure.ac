@@ -157,7 +157,8 @@ AC_TRY_LINK(
 WANT_SUBDIRS="shib schemas configs shib-target shar test"
 AC_CONFIG_FILES([Makefile shib/Makefile schemas/Makefile \
 		 configs/Makefile oncrpc/Makefile oncrpc/rpc/Makefile \
-		 shib-target/Makefile shar/Makefile test/Makefile])
+		 shib-target/Makefile shar/Makefile siterefresh/Makefile \
+		 test/Makefile])
 
 # now deal with the rpc library, to see if we need to build our own
 if test $rpctest = "no"; then
