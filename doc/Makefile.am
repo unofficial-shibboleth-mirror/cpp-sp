@@ -14,7 +14,6 @@ pkgdoc_DATA = \
 	InQueue.html \
 	DEPLOY-GUIDE-ORIGIN.html \
 	DEPLOY-GUIDE-TARGET.html \
-	UPGRADE-GUIDE.html \
 	mysql-4.0.12.diff \
 	main.css \
 	logo.jpg

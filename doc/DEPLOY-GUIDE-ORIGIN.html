@@ -25,6 +25,27 @@ a:active
 {
 color: #440000;
 }
+a.fixedlink:visited
+{
+font-family: monospace;
+font-size: 90%;
+color: #121212;
+text-decoration: none;
+}
+a.fixedlink:link
+{
+font-family: monospace;
+font-size: 90%;
+color: #121212;
+text-decoration: none;
+}
+a.fixedlink:active
+{
+font-family: monospace;
+font-size: 90%;
+color: #121212;
+text-decoration: none;
+}
 dl
 {
 border-width:2px; background-color: #DDDDDD;
@@ -32,7 +53,6 @@ background-image: url('none');
 margin: 5px;
 padding: 0px;
 border-style: solid;
-
 }
 dt
 {
@@ -74,31 +94,10 @@ border-top-width: none;
 border-left-width: 1px;
 border-right-width: 1px; border-left-style:solid; border-right-style:solid; border-top-style:solid; border-bottom-style:solid
 }
-.attributeopt
-{
-font-size: 115%;
-font-color: #000000;
-text-align: left;
-background-color: #BCBCEE;
-border: 1px inset black;
-background-image: url('none');
-margin: 0px;
-padding: 2px
-}
-.valueopt
+.mandatory
 {
 font-color: #000000;
-text-align: left;
-background-color: #DDDDFF;
-background-image: url('none');
-padding-top: 0em;
-padding-bottom: 0.5em;
-padding-right: 1em;
-padding-left: 5em;
-border-bottom-width: none;
-border-top-width: none;
-border-left-width: 1px;
-border-right-width: 1px; border-left-style:solid; border-right-style:solid; border-top-style:solid; border-bottom-style:solid
+background-color: #FFCCFF;
 }
 .attributelong
 {
@@ -111,23 +110,12 @@ background-image: url('none');
 margin: 0px;
 padding: 2px
 }
-.attributeoptlong
-{
-font-size: 85%;
-font-color: #000000;
-text-align: left;
-background-color: #BCBCEE;
-border: 1px inset black;
-background-image: url('none');
-margin: 0px;
-padding: 2px
-}
 .demo
 {
 background-color: #EEEEEE;
 padding: 3px;
 }
-.fixedwidth
+.fixed
 {
 font-family: monospace;
 font-size: 90%;
@@ -146,100 +134,28 @@ color: #00FF00
 <h2>Shibboleth Origin Deployment Guide</h2>
 </center>
 <p>Shibboleth Origin Deployment Guide<br>
-Shibboleth Version 1.1<br>
-December 3, 2003<br>
-</p>
-<h3>This version of the deploy guide is for Shibboleth v1.1. For documentation 
+Shibboleth Version 1.2<br>
+April 14, 2004<br>
+<h3>This version of the deploy guide is for Shibboleth v1.2. For documentation 
 related to prior versions of Shibboleth, please consult the appropriate branch 
 in the Shibboleth CVS.</h3>
-<h3>Federations have been abstracted out from the Shibboleth documentation. For 
-further information on using Shibboleth in a federation, refer to the federation 
-guide.</h3>
-<p>Shibboleth v1.1 is stable and secure enough to deploy in production 
-scenarios. It is backward compatible with 1.0 in all respects, including 
-configuration, but some older commands have been deprecated or replaced.</p>
-<p>Features and changes specific to 1.1 are marked with <span class="feature">
-[1.1]</span></p>
-<h4>Major New Features in 1.0 and 1.1</h4>
-<p>This new release contains several improvements and enhancements, including:
-</p>
-<h5>Federation Support</h5>
-<ol>
-    <li>Federation and trust support has been substantially extended. Federation 
-    structures are now defined. The set of metadata collected and managed by 
-    each Federation is more fully defined. The configuration values assigned by 
-    a Federation are now identified. </li>
-    <li>There is some support for targets to be members of multiple federations; 
-    this support will continue to evolve. When a browser user arrives, a target 
-    will determine which federation their origin belongs to, and then use the 
-    trust fabric associated with that Federation.</li>
-    <li>Better support for flexible and bilateral trust agreements. A key 
-    specific to an origin site can be used to vallidate its signature.</li>
-    <li>This version contains a significantly more mature security 
-    implementation, and should meet the security requirements of typical sites.</li>
-</ol>
-<h5>Origin</h5>
-<ol>
-    <li>The Attribute Authority has a powerful new attribute resolver. Simple 
-    scenarios (using a string attribute stored in ldap) can be accomplished by 
-    merely editing a configuration file. Java classes may still be written for 
-    more complex evaluations (eg retrieving information from multiple disparate 
-    repositories, and computing the SAML attribute using business rules). This 
-    should greatly simplify the process of configuring the AA to support 
-    additional general attributes.</li>
-    <li>A sample resolver file for using standard LDAP person and inetOrgPerson 
-    attributes is included. <span class="feature">[1.1]</span></li>
-    <li>Support for a runtime-derived per-requester persistent identifier 
-    attribute to support anonymous personalization by targets has been added via 
-    an attribute plugin. <span class="feature">[1.1]</span></li>
-    <li>Specialized sites without privacy needs can configure identity-based 
-    handles interoperable with other SAML deployments. <span class="feature">
-    [1.1]</span></li>
-</ol>
-<h5>Target</h5>
-<ol>
-    <li>Significantly more flexibility in configuring targets is provided to 
-    ensure robustness. Failover and redundant configurations are now supported.</li>
-    <li>The SHAR may now optionally store its session and attribute cache in a 
-    back-end database in addition to the previously available in-memory option.
-    <span class="feature">[1.1]</span> </li>
-    <li>Federation supplied files (sites.xml and trust.xml) are now refreshed in 
-    a much more robust manner. </li>
-    <li>The SHAR can be configured to request specific attributes from the 
-    Origin. </li>
-    <li>The SHAR can use TCP sockets when responding to the Apache module, for 
-    specialized deployment behind firewalls. <span class="feature">[1.1]</span>
-    </li>
-    <li>Attribute acceptance policies have been greatly enhanced, and are now 
-    used to configure all aspects of attribute handling by the target, except 
-    for requesting specific attributes by sitename. Adding attributes now takes 
-    place in one configuration step. <span class="feature">[1.1]</span> </li>
-    <li>Support for Apache 1.3 on Windows NT/2000/XP/2003 has been added.
-    <span class="feature">[1.1]</span> </li>
-    <li>Microsoft IIS web server support has been added via an ISAPI filter and 
-    extension. <span class="feature">[1.1]</span> </li>
-</ol>
-<h5>Miscellaneous</h5>
-<ol>
-    <li>Origin sites can configure a value to describe the type of 
-    authentication mechanism used at the origin site (e.g. password, Kerberos, 
-    PKI, etc.). This value is made available on the target side as Shib-Authentication-Method.
-    <br>
-    </li>
-    <li>Various improvements to error handling. Origin sites are now able to 
-    supply an &quot;error URL&quot; and contact information to a federation. When a target 
-    encounters an error, it can include this information in the error page. <br>
-    </li>
-    <li>Local time string values are now used in log files. <br>
-    </li>
-    <li>Internationalization support has been extended.</li>
-</ol>
+<h3>The default configuration of Shibboleth is <b>not</b> secure and should not
+be used for protection of production content.  The example private key bundled
+with the distribution is publically available, widely circulated, and
+well-known; also, the default federation and trust metadata is for testing
+purposes only.  For information about securing a Shibboleth deployment, please
+refer to the production guide.  Shibboleth should only be used to protect
+sensitive content when deployed carefully in conjunction with proper trust
+settings and policies.</h3>
+
+<p>Insert features here.</p>
+
 <p>Before starting, please sign up for all applicable
 <a href="http://shibboleth.internet2.edu/shib-misc.html#mailinglist">mailing 
 lists</a>. Announcements pertinent to Shibboleth deployments and developments 
 and resources for deployment assistance can be found here.</p>
 <p>Please send any questions, concerns, or eventual confusion to
-<a href="mailto:mace-shib-users@internet2.edu">mace-shib-users@internet2.edu</a>. 
+<a href="mailto:shibboleth-users@internet2.edu">shibboleth-users@internet2.edu</a>. 
 This should include, but not be limited to, questions about the documentation, 
 undocumented problems, installation or operational issues, and anything else 
 that arises. Please ensure that you have the
@@ -262,6 +178,9 @@ that arises. Please ensure that you have the
         <li><a href="#1.b."><font color="black">Target</font></a></li>
         <li><a href="#1.c."><font color="black">WAYF</font></a></li>
         <li><a href="#1.d."><font color="black">Federations</font></a></li>
+        <li><a href="#1.e."><font color="black">Relying Parties</font></a></li>
+        <li><a href="#1.f."><font color="black">Applications</font></a></li>
+        <li><a href="#1.g."><font color="black">Sessions</font></a></li>
     </ol>
     </li>
     <li>
@@ -305,13 +224,14 @@ that arises. Please ensure that you have the
         </li>
         <li><a href="#4.d."><font color="black">Establishing default ARP&#39;s for 
         the origin community</font></a></li>
+        <li><a href="#4.e."><font color="black"><span class="fixed">metadatatool</span></font></a></li>
     </ol>
     </li>
     <li>
     <h4><a href="#5."><font color="black">Advanced Configuration</font></a></h4>
     <ol type="a">
-        <li><a href="#5.a."><font color="black"><span class="fixedwidth">
-        origin.properties</span></font></a></li>
+        <li><a href="#5.a."><font color="black"><span class="fixed">
+        origin.xml</span></font></a></li>
         <li><a href="#5.b."><font color="black">ARP Overview</font></a>
         <ol type="i">
             <li><a href="#5.b.i."><font color="black">ARP Processing</font></a></li>
@@ -323,7 +243,7 @@ that arises. Please ensure that you have the
         (optional)</font></a></li>
         <li><a href="#5.d."><font color="black">The Attribute Resolver</font></a>
         <ol type="i">
-            <li><a href="#5.d.i."><font color="black"><span class="fixedwidth">
+            <li><a href="#5.d.i."><font color="black"><span class="fixed">
             resolvertest</span></font></a></li>
         </ol>
         </li>
@@ -457,13 +377,88 @@ requesting attributes.</p>
     information on local authentication and authorization practices for 
     federation members.</p>
 </blockquote>
-<p><br>
-<br>
-<br>
-</p>
+<h4><a name="1.e."></a>1.e. Relying Parties</h4>
+<blockquote>
+    <p>Some aspects of both origin and target configuration can vary and be
+    expressed in terms of the &quot;relying party&quot;. To an origin, a target
+    is a relying party, while targets consider origins to be relying
+    parties (it's a matter of perspective). Certificates, policies, and
+    other aspects of an interaction are specified on the basis of the relying
+    party, and may or may not vary between relying parties depending on the
+    deployment's needs.</p>
+    <p>Each origin and target is assigned a URI, a unique identifier to enable
+    control over configuration down to the level of an individual partner (a single
+    relying party). By convention, this is termed a &quot;providerId&quot;. More
+    frequently, an entire federation will be viewed by an origin or target as a
+    single relying party to simplify management. An individual origin or target
+    with which this deployment exchanges information may sometimes be part of
+    multiple relying parties if there are multiple trust agreements
+    under which these transactions are performed. Care should be taken to avoid
+    conflicting or inconsistent configuration in such cases.</p>
+</blockquote>
+<h4><a name="1.f."></a>1.f. Applications</h4>
+<blockquote>
+    <p>Shibboleth &quot;applications&quot; are the primary unit of target
+    configuration. Applications as viewed by the target implementation
+    are not necessarily defined by the same metrics as in other contexts.  An
+    individual application represents a set of web resources that operates
+    using the same attribute handling and trust configuration and shares a common
+    <a href="#1.g.">session</a> with the browser user. As a user navigates between
+    resources on a server that cross an application boundary, a new session is
+    established, though user interaction may not be required. As a consequence of
+    the relationship between applications and sessions (which are tracked with
+    a cookie), an application usually does not span more than one virtual host.
+    Apart from cookie-based constraints, web resources can be aggregated into
+    applications in arbitrary ways.</p>
+    <p>A single target deployment may support a large number of applications,
+    but it need not register or publish information about each one with the
+    origins it accepts information from. Instead it can communicate using a
+    more limited set of distinct &quot;providerId&quot; values (often just a
+    single one). This allows targets with a complex internal configuration
+    to be treated as a single entity by origins for the purposes of attribute
+    release.</p>
+</blockquote>
+<h4><a name="1.g."></a>1.g. Sessions</h4>
+<blockquote>
+    <p>Much of the target implementation is concerned with establishing, and
+    subsequently maintaining, sessions with the browser user on behalf of the
+    <a href="#1.f.">applications</a> at the target. A session consists of a
+    cookie passed between the browser and web server, associated with a
+    security context. The context contains the user's authentication information,
+    and generally a set of attributes that make up the user's identity. Each
+    application maintains distinct sessions with the browser by means of separate
+    cookies. It is important to note that all such sessions are independent and
+    distinct: any session can exist with or without any other session, and the
+    expiration of any one session does not imply the expiration of any other
+    session.  Shibboleth also does not support any logout functionality beyond the
+    termination of individual application sessions by deletion of respective
+    cookies; also, there is no way for the target to cause origin-side sessions,
+    such as a user's SSO login, to expire.</p>
+    <p>A browser user accessing a Shibboleth-protected resource may have two
+    outcomes: standard session establishment, and lazy session
+    establishment.  The standard session establishment mechanism in which
+    Shibboleth protects the resource in all circumstances results in the
+    establishment of a cookie-based browser session and a set of attributes
+    cached for that application. Shibboleth 1.2 also supports so-called lazy
+    session establishment, in which the resource may be accessed without prior
+    authentication.  This means the application must be intelligent enough to
+    determine whether authentication is necessary, and then construct the proper URL
+    to initiate a browser redirect to request authentication; if the
+    application determines none is necessary or uses other authorization
+    mechanisms, then the request for authentication may not need to be triggered.
+    This complex functionality is mostly useful to protect a single URL with
+    different access mechanisms, or to require authenticated access only in
+    instances where the application deems it necessary.</p>
+    <p>Independently of this, a web-based application protected by Shibboleth
+    may have a need to establish its own session with the user.  This session
+    may persist well beyond the Shibboleth session, and logouts from this
+    session, if supported, will not terminate a Shibboleth session initiated to
+    access the resource.  Application administrators should carefully evaluate
+    the expiration of all sessions to limit vulnerability to attacks or user
+    negligence. Logging out of the entire desktop session is usually the
+    only (relatively) foolproof logout mechanism on the web.</p>
+</blockquote>
 <hr>
-<p><br>
-</p>
 <h3><a name="2."></a>2. Planning</h3>
 <p>There are several essential elements that must be present in the environment 
 to ensure Shibboleth functions well, both political and technical. Shibboleth is 
@@ -480,8 +475,8 @@ requirements for a successful implementation of a Shibboleth origin.</p>
     WebISO service is not explicitly necessary for Shibboleth; however, it is 
     highly recommended. Implementation details of this are discussed in
     <a href="#4.c.">section 4.c</a>.</li>
-    <li>Shibboleth is known to work on Linux and Solaris, but should function on 
-    any platform that has a Tomcat implementation.</li>
+    <li>Shibboleth is known to work on Windows, Linux, and Solaris, but should
+    function on any platform that has a Tomcat implementation.</li>
     <li>It is recommended that a web server must be deployed that can host Java 
     servlets and Tomcat, although not explicitly necessary, as Tomcat can still 
     host an origin without it.</li>
@@ -493,18 +488,13 @@ requirements for a successful implementation of a Shibboleth origin.</p>
     relationships. Each federation will have a different application process. 
     When an origin is accepted into a federation, its information is added to 
     the sites file used by the WAYF and target sites.</p>
-    <p><b>It may be necessary to join multiple federations depending on the 
-    sites with whom you wish to exchange attributes and the terms under which 
-    these interactions will take place. An origin site exists within the context 
-    of a single federation, while a single target may accept assertions issued 
-    by multiple federations if they are all recognized by the SHAR. If an 
-    organization wishes to be a member of multiple federations, it must run a 
-    separate origin site for each federation, including a separate AA and HS.</b></p>
-    <p>Attribute release and acceptance policies, the use and caching of 
-    attributes, and definition of commonly traded attributes are examples of 
-    specifications a federation may make. For more information on federations, 
-    please refer to the Deployer&#39;s Guide to Federations and the Shibboleth v1.0 
-    architectural document.</p>
+    <p>Attribute release and acceptance policies, the use and caching of
+    attributes, and definition of commonly traded attributes are examples of
+    specifications a federation may make.  <b>The default configuration that
+    ships with Shibboleth is intended for use in testing against a <span
+    class="fixed">localhost</span> target.  In order to interoperate with other
+    relying parties, such as a federation, consult the steps provided by the
+    guidelines of that relying party.</b></p>
 </blockquote>
 <h4><a name="2.c."></a>2.c. Security Considerations</h4>
 <blockquote>
@@ -632,21 +622,21 @@ requirements for a successful implementation of a Shibboleth origin.</p>
 <h4><a name="3.a."></a>3.a. Software Requirements</h4>
 <p><b>The following requirements are primarily recommendations based on the most 
 common ways to run Shibboleth. However, the origin should be able to run under 
-any servlet container supporting <span class="fixedwidth">Servlet API v2.3</span> 
-and <span class="fixedwidth">JSP specification 1.2</span>.</b></p>
+any servlet container supporting <span class="fixed">Servlet API v2.3</span> 
+and <span class="fixed">JSP specification 1.2</span>.</b></p>
 <blockquote>
     <ul type="circle">
         <li><a href="http://http://www.apache.org/dist/httpd/">Apache 1.3.26+ 
         (&lt;2.0)</a></li>
         <li><a href="http://jakarta.apache.org/tomcat/">Tomcat 4.1.18-24 LE Java 
-        server</a></li>
+        server and above</a></li>
         <li><a href="http://java.sun.com/j2se/">Sun J2SE JDK v1.4.1_01 and above</a>
         <blockquote>
             <p>Other versions of the JRE are not supported and are known to 
             cause errors when working with certificates.</p>
         </blockquote>
         </li>
-        <li>mod_jk
+        <li>mod_jk or mod_jk2
         <blockquote>
             <p>You may need to build mod_jk against Apache, which will generally 
             require GCC or a platform-specific C compiler.</p>
@@ -675,11 +665,11 @@ and <span class="fixedwidth">JSP specification 1.2</span>.</b></p>
     <ol type="1">
         <li>Ensure you have already obtained the proper
         <a href="http://shibboleth.internet2.edu/release/shib-download.html">.tarball</a>.</li>
-        <li>The archive will expand into a <span class="fixedwidth">
-        shibboleth-origin-1.1/</span> directory(<span class="fixedwidth">/opt/</span> 
+        <li>The archive will expand into a <span class="fixed">
+        shibboleth-origin-1.2/</span> directory(<span class="fixed">/opt/</span> 
         recommended).</li>
         <li>Run the following command to move the Java files into Tomcat&#39;s tree:<blockquote>
-            <p><span class="fixedwidth">cp /opt/shibboleth-origin-1.1/dist/shibboleth.war 
+            <p><span class="fixed">cp /opt/shibboleth-origin-1.2/dist/shibboleth.war 
             /usr/local/tomcat/webapps/</span> </p>
         </blockquote>
         </li>
@@ -687,8 +677,8 @@ and <span class="fixedwidth">JSP specification 1.2</span>.</b></p>
         be located in a special &quot;endorsed&quot; folder to override obsolete classes 
         that Sun includes with their JVM. To deal with this problem use the 
         following command, adjusting paths as needed:<blockquote>
-            <p><span class="fixedwidth">$ cp 
-            /opt/shibboleth-origin-1.1/endorsed/*.jar /usr/local/tomcat/common/endorsed</span>
+            <p><span class="fixed">$ cp 
+            /opt/shibboleth-origin-1.2/endorsed/*.jar /usr/local/tomcat/common/endorsed</span>
             </p>
         </blockquote>
         <p>Different versions of Tomcat or other Java servers may have other 
@@ -697,14 +687,14 @@ and <span class="fixedwidth">JSP specification 1.2</span>.</b></p>
         endorse classes, if necessary.</li>
         <li>Restart Tomcat, which will automatically detect that there has been 
         a new .war file added. This file will by default be expanded into
-        <span class="fixedwidth">/usr/local/tomcat/webapps/shibboleth</span>.</li>
+        <span class="fixed">/usr/local/tomcat/webapps/shibboleth</span>.</li>
         <li>Apache must be told to map the URL&#39;s for the Shibboleth HS and AA to 
         Tomcat. Two popular ways of doing this are to include the following text 
-        directly in <span class="fixedwidth">httpd.conf</span>, or to place
-        <span class="fixedwidth">Include conf/mod_jk.conf</span> in
-        <span class="fixedwidth">httpd.conf</span>, and place the following 
-        lines in <span class="fixedwidth">/etc/httpd/conf/mod_jk.conf</span>:<blockquote>
-            <p><span class="fixedwidth">--------- begin ---------<br>
+        directly in <span class="fixed">httpd.conf</span>, or to place
+        <span class="fixed">Include conf/mod_jk.conf</span> in
+        <span class="fixed">httpd.conf</span>, and place the following 
+        lines in <span class="fixed">/etc/httpd/conf/mod_jk.conf</span>:<blockquote>
+            <p><span class="fixed">--------- begin ---------<br>
             &lt;IfModule !mod_jk.c&gt;<br>
             &nbsp;LoadModule jk_module libexec/mod_jk.so<br>
             &lt;/IfModule&gt;<br>
@@ -719,16 +709,16 @@ and <span class="fixedwidth">JSP specification 1.2</span>.</b></p>
             --------- end ---------</span> </p>
         </blockquote>
         </li>
-        <li>Tomcat&#39;s <span class="fixedwidth">/conf/server.xml</span> ships by 
+        <li>Tomcat&#39;s <span class="fixed">/conf/server.xml</span> ships by 
         default with the Coyote/JK2 connector enabled, which fails with 
-        Shibboleth due to the lack of support for <span class="fixedwidth">
+        Shibboleth due to the lack of support for <span class="fixed">
         REMOTE_USER</span>. This connector must be commented out. Then, 
         uncomment and modify the traditional AJP 1.3 connector as follows:<ol type="A">
-            <li>Add <span class="fixedwidth">address=&quot;127.0.0.1&quot;</span> inside 
-            the <span class="fixedwidth">&lt;Ajp13Connector&gt;</span> configuration 
+            <li>Add <span class="fixed">address=&quot;127.0.0.1&quot;</span> inside 
+            the <span class="fixed">&lt;Ajp13Connector&gt;</span> configuration 
             element to prevent off-host access.</li>
-            <li>Add <span class="fixedwidth">tomcatAuthentication=&quot;false&quot;</span> 
-            to the <span class="fixedwidth">&lt;Ajp13Connector&gt;</span> 
+            <li>Add <span class="fixed">tomcatAuthentication=&quot;false&quot;</span> 
+            to the <span class="fixed">&lt;Ajp13Connector&gt;</span> 
             configuration element to ensure that the user&#39;s identity is passed 
             from Apache to the servlet environment.</li>
             <li>The AJP13Connector for tomcat is not compatible with the new JMX support.  To remove some warnings that will  appear in the tomcat log every time tomcat is restarted, comment out all of the JMX stuff (anything that says "mbeans") from server.xml.</li>
@@ -736,8 +726,8 @@ and <span class="fixedwidth">JSP specification 1.2</span>.</b></p>
         </li>
         <li>It is <b>strongly</b> recommended that the AA be SSL-protected to 
         protect attributes in transit. To do so, add an appropriate location 
-        block to <span class="fixedwidth">httpd.conf</span>:<blockquote>
-            <p><span class="fixedwidth">&lt;Location /shibboleth/AA&gt; 
+        block to <span class="fixed">httpd.conf</span>:<blockquote>
+            <p><span class="fixed">&lt;Location /shibboleth/AA&gt; 
             <br>&nbsp;SSLVerifyClient optional 
             <br>&nbsp;SSLOptions +StdEnvVars +ExportCertData 
 			<br>&lt;/Location&gt; </span></p>
@@ -753,85 +743,145 @@ and <span class="fixedwidth">JSP specification 1.2</span>.</b></p>
 <h3><a name="4."></a>4. Getting Running</h3>
 <h4><a name="4.a."></a>4.a. Basic Configuration</h4>
 <blockquote>
-    <p><b>This section of the deploy guide specifies only the essential changes 
-    that need to be made to the configuration defaults for the origin to 
-    function successfully in a federated environment. More complex configuration 
-    will likely be required for many applications and federations; for a full 
-    description of every field in <span class="fixedwidth">origin.properties</span>, 
-    please refer to <a href="#5.a.">section 5.a</a>.</b></p>
-    <p>The main configuration file for Shibboleth&#39;s origin side is located in
-    <span class="fixedwidth">/webapps/shibboleth/WEB-INF/classes/conf/origin.properties.</span>. 
-    This file contains configuration information for the origin side in several 
-    sections. The configuration must be consistent with values elsewhere in the 
-    deployment, such as the <a href="#4.c.">HS&#39; certificate</a> and with 
-    directory access bindings, etc., or access errors may occur.</p>
-    <p>All pathnames are relative, and have an effective root path of
-    <span class="fixedwidth">$TOMCAT_HOME/webapps/shibboleth/WEB-INF/classes/</span>. 
-    To specify files outside of the webapp, specify a full URI, such as
-    <span class="fixedwidth">file:///usr/local/shibboleth/</span>.</p>
+    <p>This section of the deploy guide describes only the default <span
+    class="fixed">origin.xml</span> file and enumerates the essential
+    changes that need to be made to the configuration defaults for the origin to
+    function successfully in a federated environment. More complex configuration
+    will likely be required for many applications and federations; for a fully
+    defined example <span class="fixed">origin.xml</span> and definition of
+    every element and attribute that may be used, please refer to <a
+    href="#5.a.">section 5.a</a>.</p>
+    <p><b>The default configuration that ships with Shibboleth is intended for
+    use in testing against a <span class="fixed">localhost</span> target.  In
+    order to interoperate with other relying parties, such as a federation,
+    consult the steps provided by the guidelines of that relying party.</b></p>
+    <p>The main configuration file for Shibboleth&#39;s origin side is located
+    in <span
+    class="fixed">/webapps/shibboleth/WEB-INF/classes/conf/origin.xml</span>.
+    The configuration must be consistent with values elsewhere in the
+    deployment, such as the <a href="#4.c.">HS&#39; certificate</a> and with
+    directory access bindings, etc., or access errors may occur.  All pathnames
+    are relative, and have an effective root path of <span
+    class="fixed">$TOMCAT_HOME/webapps/shibboleth/WEB-INF/classes/</span>. To
+    specify files outside of the webapp, specify a full URI, such as <span
+    class="fixed">file:///usr/local/shibboleth/</span>.</p>
+    <p>The following is a hyperlinked version of the basic configuration file,
+    followed by a list of elements and attributes that must be modified.  Click
+    on any attribute or element for more information on its population and
+    definition.</p>
+
+<blockquote><span class="fixed">
+&lt;?xml version=&quot;1.0&quot;encoding=&quot;UTF-8&quot;?&gt;<br>
+<br>
+<a href="#confShibbolethOriginConfig" class="fixedlink">&lt;ShibbolethOriginConfig <br>
+&nbsp;&nbsp;&nbsp;xmlns=&quot;urn:mace:shibboleth:origin:1.0&quot;<br>
+&nbsp;&nbsp;&nbsp;xmlns:cred=&quot;urn:mace:shibboleth:credentials:1.0&quot;<br>
+&nbsp;&nbsp;&nbsp;xmlns:name=&quot;urn:mace:shibboleth:namemapper:1.0&quot;<br>
+&nbsp;&nbsp;&nbsp;xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;<br>
+&nbsp;&nbsp;&nbsp;xsi:schemaLocation=&quot;urn:mace:shibboleth:origin:1.0 origin.xsd&quot;<br>
+&nbsp;&nbsp;&nbsp;AAUrl=&quot;http://therock.cc.columbia.edu:6666/shibboleth/AA&quot;<br>
+&nbsp;&nbsp;&nbsp;defaultRelyingParty=&quot;urn:mace:inqueue&quot;<br>
+&nbsp;&nbsp;&nbsp;providerId=&quot;urn:mace:inqueue:shibdev.edu&quot;&gt;</a><br>
+<br>
+<a href="#confRelyingParty" class="fixedlink">&nbsp;&nbsp;&nbsp;&lt;RelyingParty name=&quot;urn:mace:inqueue&quot; signingCredential=&quot;foo&quot;&gt;<br></a>
+<a href="#confHSNameFormat" class="fixedlink">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;HSNameFormat nameMapping=&quot;crypto&quot;/&gt;</a><br>
+<a href="#confRelyingParty" class="fixedlink">&nbsp;&nbsp;&nbsp;&lt;/RelyingParty&gt;</a><br>
+<br>
+<a href="#confReleasePolicyEngine" class="fixedlink">&nbsp;&nbsp;&nbsp;&lt;ReleasePolicyEngine&gt;<br></a>
+<a href="#confArpRepository" class="fixedlink">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;ArpRepository implementation=&quot;edu.internet2.middleware.shibboleth.aa.arp.provider.FileSystemArpRepository&quot;&gt;</a><br>
+<a href="#confPath" class="fixedlink">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;Path&gt;/conf/arps/&lt;/Path&gt;</a><br>
+<a href="#confArpRepository" class="fixedlink">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/ArpRepository&gt;</a><br>
+<a href="#confReleasePolicyEngine" class="fixedlink">&nbsp;&nbsp;&nbsp;&lt;/ReleasePolicyEngine&gt;</a><br>
+<br>
+&nbsp;&nbsp;&nbsp;&lt;!--<br>
+<a href="#confLogging" class="fixedlink">&nbsp;&nbsp;&nbsp;&lt;Logging&gt;</a><br>
+<a href="#confLog4JConfig" class="fixedlink">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;Log4JConfig location=&quot;file:///tmp/log4j.properties&quot;/&gt;</a><br>
+<a href="#confLogging" class="fixedlink">&nbsp;&nbsp;&nbsp;&lt;/Logging&gt;</a><br>
+<a href="#confLogging" class="fixedlink">&nbsp;&nbsp;&nbsp;&lt;Logging&gt;</a><br>
+<a href="#confErrorLog" class="fixedlink">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;ErrorLog level=&quot;DEBUG&quot; location=&quot;file:///tmp/shib-error.log&quot;/&gt;</a><br>
+<a href="#confTransactionLog" class="fixedlink">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;TransactionLog location=&quot;file:///tmp/shib-access.log&quot;/&gt;</a><br>
+<a href="#confLogging" class="fixedlink">&nbsp;&nbsp;&nbsp;&lt;/Logging&gt;</a><br>
+&nbsp;&nbsp;&nbsp;--&gt;<br>
+<br>
+<a href="#confNameMapping" class="fixedlink">&nbsp;&nbsp;&nbsp;&lt;NameMapping <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;xmlns=&quot;urn:mace:shibboleth:namemapper:1.0&quot;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id=&quot;crypto&quot;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;format=&quot;urn:mace:shibboleth:1.0:nameIdentifier&quot;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;type=&quot;SharedMemoryShibHandle&quot;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;handleTTL=&quot;1800&quot;/&gt;</a><br>
+<br>
+<a href="#confCredentials" class="fixedlink">&nbsp;&nbsp;&nbsp;&lt;Credentials xmlns=&quot;urn:mace:shibboleth:credentials:1.0&quot;&gt;</a><br>
+<a href="#confFileResolver" class="fixedlink">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;FileResolver Id=&quot;foo&quot;&gt;</a><br>
+<a href="#confKey" class="fixedlink">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;Key format=&quot;DER&quot;&gt;</a><br>
+<a href="#confPath" class="fixedlink">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;Path&gt;/conf/shib2.key&lt;/Path&gt;</a><br>
+<a href="#confKey" class="fixedlink">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/Key&gt;</a><br>
+<a href="#confCertificate" class="fixedlink">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;Certificate format=&quot;PEM&quot;&gt;</a><br>
+<a href="#confPath" class="fixedlink">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;Path&gt;/conf/shib2.crt&lt;/Path&gt;</a><br>
+<a href="#confCertificate" class="fixedlink">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/Certificate&gt;</a><br>
+<a href="#confFileResolver" class="fixedlink">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/FileResolver&gt;</a><br>
+<a href="#confCredentials" class="fixedlink">&nbsp;&nbsp;&nbsp;&lt;/Credentials&gt;</a><br>
+<a href="#confFederationProvider" class="fixedlink">&nbsp;&nbsp;&nbsp;&nbsp;&lt;FederationProvider type=&quot;edu.internet2.middleware.shibboleth.metadata.provider.XMLMetadataLoadWrapper&quot; uri=&quot;/conf/sites.xml&quot;/&gt;</a><br>
+<br>
+<a href="#confShibbolethOriginConfig" class="fixedlink">&lt;/ShibbolethOriginConfig&gt;</a>
+</span></blockquote>
+
+<p>The following changes must be made to the default configuration before the
+origin will interoperate in a federation.</p>
     <ol type="1">
-        <li><span class="fixedwidth">
-        edu.internet2.middleware.shibboleth.hs.HandleServlet.issuer = &lt;domain 
-        name&gt;</span>
-        <blockquote>
-            <p>This will be, in most cases, the DNS name of the machine on which 
-            the HS runs. It must match the CN of the certificate used below.</p>
-        </blockquote>
+        <li> 
+        <p>Attributes within the <a href="#confShibbolethOriginConfig"><span
+        class="fixed">ShibbolethOriginConfig</span></a> element:</p>
+            <ol type="a">
+            <li><a href="#confShibbolethOriginConfig"><span class="fixed">AAUrl=<i>URL</i></span></a>
+            <blockquote>
+                <p>This will be the URL assigned the AA servlet in step
+                <a href="#3.b.">3.b</a>. Note that this <b>must</b> be an
+                <span class="fixed">https://</span> URL in order for the AA to 
+                authenticate the requesting SHAR.</p>
+            </blockquote>
+            </li>
+            <li><a href="#confShibbolethOriginConfig"><span class="fixed">providerID=<i>URI</i></span></a>
+            <blockquote>
+                <p>This will be the URI assigned to this origin by the
+                federation.</p>
+            </blockquote>
+            </li>
+            <li><a href="#confShibbolethOriginConfig"><span class="fixed">defaultRelyingParty=<i>URI</i></span></a>
+            <blockquote>
+                <p>This is the URI of the primary federation that the origin
+                operates within.</p>
+            </blockquote>
+            </li>
+            </ol>
         </li>
-        <li><span class="fixedwidth">
-        edu.internet2.middleware.shibboleth.hs.HandleServlet.siteName = &lt;URI&gt;</span>
-        <blockquote>
-            <p>Enter the value assigned to the site by the federation.</p>
-        </blockquote>
+        <li> 
+        <p>Although not explicitly necessary, it's highly recommended for
+        initial installation and testing that logging be activated at the <span
+        class="fixed">DEBUG</span> level by uncommenting the second <a
+        href="#confLogging"><span class="fixed">Logging</span></a> element and
+        ensuring that the pathnames for <a href="#confTransactionLog"><span
+        class="fixed">TransactionLog</span></a> and <a
+        href="#confErrorLog"><span class="fixed">ErrorLog</span></a> are
+        appropriate.  However, in production, this will slow the operation of
+        the origin considerably.</p>
         </li>
-        <li><span class="fixedwidth">
-        edu.internet2.middleware.shibboleth.hs.HandleServlet.AAUrl = &lt;url&gt;</span>
-        <blockquote>
-            <p>This will be the URL assigned the AA servlet in step
-            <a href="#3.b.">3.b</a>. Note that this <b>must</b> be an
-            <span class="fixedwidth">https://</span> URL in order for the AA to 
-            know which SHAR is requesting attributes.</p>
-        </blockquote>
-        </li>
-        <li>&nbsp;<ul type="circle">
-            <li><span class="fixedwidth">
-            edu.internet2.middleware.shibboleth.hs.HandleServlet.keyStorePath = 
-            &lt;pathname&gt;</span></li>
-            <li><span class="fixedwidth">
-            edu.internet2.middleware.shibboleth.hs.HandleServlet.keyStorePassword 
-            = &lt;password&gt;</span></li>
-            <li><span class="fixedwidth">
-            edu.internet2.middleware.shibboleth.hs.HandleServlet.keyStoreKeyAlias 
-            = &lt;alias&gt;</span></li>
-            <li><span class="fixedwidth">
-            edu.internet2.middleware.shibboleth.hs.HandleServlet.keyStoreKeyPassword 
-            = &lt;password&gt;</span></li>
-            <li><span class="fixedwidth">
-            edu.internet2.middleware.shibboleth.hs.HandleServlet.certAlias = 
-            &lt;alias&gt;</span></li>
-        </ul>
-        <blockquote>
-            <p>Respectively, the location and password of the Java keystore 
-            containing the x.509 certificate and matching private key to be used 
-            by the HS, the alias and password of the private key, and the 
-            optional certificate alias, if it differs from the key&#39;s alias.</p>
-        </blockquote>
-        </li>
-        <li><span class="fixedwidth">
-        edu.internet2.middleware.shibboleth.aa.AAServlet.authorityName = &lt;domain 
-        name&gt;</span>
-        <blockquote>
-            <p>Specifies the name of the AA, which is typically the domain name 
-            of the server running it.</p>
-        </blockquote>
-        </li>
-        <li><span class="fixedwidth">
-        edu.internet2.middleware.shibboleth.audiences = &lt;URI&gt;</span>
-        <blockquote>
-            <p>This section must contain the URI of the federation under which 
-            the origin will operate or test initially. This will be provided by 
-            the federation.</p>
-        </blockquote>
+        <li>
+        <p>The default configuration file informs Shibboleth to load its key and
+        certificate from flat files.  The <a href="#confKey"><span
+        class="fixed">Key</span></a> element specifies a key in <span
+        class="fixed">DER</span> format located at <span
+        class="fixed">/conf/shib2.key</span>, while the <a
+        href="#confCertificate"><span class="fixed">Certificate</span></a>
+        element specifies the corresponding certificate in <span
+        class="fixed">PEM</span> format located at <span
+        class="fixed">/conf/shib2.crt</span>.  If any of these values is
+        inconsistent with your deployment, change it accordingly.  Note that
+        keys are supported in a variety of formats: DER, PEM, encrypted PEM,
+        PKCS8, and encrypted PKCS8.  If a keystore must be used instead, consult
+        <a href="#5.a.">section 5.a</a> for appropriate structure and details on
+        population.</p>
+        <p>To create proper keys and certificates for production use, please
+        refer to <a href="#4.b.">section 4.b</a>.</p>
         </li>
     </ol>
 </blockquote>
@@ -847,7 +897,7 @@ configuration</h4>
     5.d.</a></p>
     <p>In order to make the Shibboleth software operational, however, minor 
     edits must be made to the example version of the resolver.xml file. The file 
-    can be found at <span class="fixedwidth">/webapps/shibboleth/WEB-INF/classes/conf/resolver.xml.</span> 
+    can be found at <span class="fixed">/webapps/shibboleth/WEB-INF/classes/conf/resolver.xml.</span> 
     Two changes are necessary:</p>
     <p>1. The value of the smartScope attribute should be changed to the Domain 
     Name value submitted to the Federation. It appears on two 
@@ -860,76 +910,61 @@ configuration</h4>
 </p>
 <h4><a name="4.b."></a>4.b. Key Generation and Certificate Installation</h4>
 <blockquote>
-    <p>The SAML messages generated by the HS must be digitally signed. Each HS 
-    must be issued a private and public keypair, which is stored in a Java 
-    keystore. The current implementation of Shibboleth requires the use of an 
-    ordinary file-based keystore. The keytool program is included with the Java 
-    development and runtime kits. Access parameters to the keystore will need to 
-    be consistent with those specified in <span class="fixedwidth">
-    origin.properties</span>.</p>
-    <p>A sample keystore is included in the distribution and can be found in
-    <span class="fixedwidth">/usr/local/tomcat/webapps/shibboleth/WEB-INF/classes/conf/keystore 
-    .jks</span> with a password of <span class="fixedwidth">shibhs</span>. It is 
-    intended to serve as an example and not as a production keystore.</p>
-    <p>The following commands will generate a new RSA keypair and store it in 
-    the <span class="fixedwidth">keystore.jks</span> file, with a keyentry alias 
-    of <span class="fixedwidth">hs</span> and new passwords of your choosing:</p>
-    <blockquote>
-        <p><span class="fixedwidth">$ cd /usr/local/tomcat/webapps/shibboleth/WEB-INF/classes/conf<br>
-        $ keytool -storepasswd -keystore keystore.jks -new &lt;newpassword&gt;<br>
-        $ keytool -genkey -keystore keystore.jks -alias hs -keyalg rsa -keysize 
-        2048<br>
-        </span></p>
-    </blockquote>
-    <p>You will be prompted for passwords during key generation as needed, to 
-    access the keystore and assign the key itself its own password. You will 
-    also be prompted for the distinguished name components to associate with the 
-    key. This DN will be placed in a self-signed certificate and will be the 
-    name that is associated with your HS by Shibboleth. In particular, the first 
-    component you enter for Name will be the <span class="fixedwidth">Common 
-    Name</span>(when keytool asks for first and last name, common name is 
-    intended), which in most cases should be the hostname of the HS system. Note 
-    that a specific federation of sites may dictate what type of key algorithm, 
-    key size, or validity period is appropriate.</p>
-    <p>Once you have a keypair generated, the self-signed certificate must be 
-    replaced with a certificate signed by a CA acceptable to the federation you 
-    will be joining. Shibboleth is generally able to climb trust chains to reach 
-    an intermediate CA&#39;s root CA. Note that the intermediate CA&#39;s signing 
-    certificate must still be signed by a root CA recognized by the federation.</p>
-    <p>To generate a certificate signing request for a CA, use the following 
-    command:</p>
-    <blockquote>
-        <p><span class="fixedwidth">$ keytool -certreq -keystore keystore.jks 
-        -alias hs -file &lt;csr-file&gt;<br>
-        </span></p>
-    </blockquote>
-    <p>The contents of <span class="fixedwidth">&lt;csr-file&gt;</span> can then be 
-    sent to a CA for signing. You will receive a signed certificate in return in 
-    a file. To install the new certificate into your keystore, use the following 
-    command:</p>
-    <blockquote>
-        <p><span class="fixedwidth">$ keytool -import -keystore keystore.jks 
-        -alias hs -file &lt;cert-file&gt;</span> </p>
-    </blockquote>
-    <p>Note that if the signing CA&#39;s certificate is not already installed in 
-    your keystore as a trusted signer, you may need to download the CA&#39;s root 
-    certificate and import it into the keystore file under a different alias, 
-    using a command similar to the above.</p>
-    <p>For information on sharing certificate/key pairs between Apache and Java 
-    keystores see section <a href="#5.c.">5.c.</a>.</p>
+    <p>The SAML messages generated by the HS must be digitally signed, which
+    requires the HS be issued a private key and corresponding certificate.  In
+    most instances, the web server will be configured to use SSL, which will
+    also require a cert/key pair.  In many cases, these certs/keys can be shared
+    between Apache/IIS and the HS; for information on sharing certificate/key
+    pairs between Apache and Java keystores see section <a
+    href="#5.c.">5.c.</a>.  Sharing credentials is simplest when using flat-file
+    unencrypted PEM-format certs/keys as expected by Apache.</p>
+
+    <p>The 1.2 origin accommodates keys and certificates in a very wide variety
+    of formats and storage mechanisms.  Java keystores may be specified in a <a
+    href="#confKeyStoreResolver"><span class="fixed">KeyStoreResolver</span></a>
+    element or flat-file keys and certificates may be specified using a <a
+    href="#confFileResolver"><span class="fixed">FileResolver</span></a> in <a
+    href="#5.a."><span class="fixed">origin.xml</span></a>.  The information in
+    that file must be consistent with the values that are established in this
+    process.</p>
+
+    <p>The following text suggests a way to generate a key and certificate in
+    flat-file PEM format, which will be simplest for most deployments.  Once the
+    key pair is generated, the public key must be sent to a certificate
+    authority recognized by relying parties with which this origin will interact
+    to be signed into a certificate. OpenSSL must be installed to perform this
+    process.</p>
+
+    <p>The certificate and key file location should be based on whether they
+    will also be used for Apache.  If they will be used as a server certificate
+    as well, they should probably be in the Apache tree in the usual <span
+    class="fixed">mod_ssl</span>-defined locations inside the Apache
+    configuration folder.  If the certificate and key will only be used by
+    Shibboleth, they can be put in the same folder with the <span
+    class="fixed">origin.xml</span> file and protected appropriately.</p>
+
+    <p>OpenSSL commands to generate a new keypair and a certificate request are
+    shown here, assuming 2048 bit RSA keys are to be used:</p>
+
+    <blockquote><span class="fixed"> $ openssl genrsa -des3 -out ssl.key
+    2048<br> $ openssl req -new -key ssl.key -out ssl.csr </span></blockquote>
+
+    <p>The signed certificate file returned by the CA should be usable directly,
+    or can be converted to PEM format using the <span class="fixed">openssl
+    x509</span> command.</p>
 </blockquote>
 <h4><a name="4.c."></a>4.c. Linking the Authentication System to the HS</h4>
 <blockquote>
     <p>The interaction between the HS and the local authentication system is 
     implemented by supplying the HS with the identity of the browser user. Most 
     often, this will mean protecting the HS servlet with some form of local 
-    authentication that populates <span class="fixedwidth">REMOTE_USER</span>. 
-    Location blocks can be added to <span class="fixedwidth">httpd.conf</span>, 
+    authentication that populates <span class="fixed">REMOTE_USER</span>. 
+    Location blocks can be added to <span class="fixed">httpd.conf</span>, 
     associating the appropriate authentication mechanism with the URL of the HS 
     servlet. The following example demonstrates association of a very basic 
     authentication method with the HS:</p>
     <blockquote>
-        <p><span class="fixedwidth">&lt;Location /shibboleth/HS&gt;<br>
+        <p><span class="fixed">&lt;Location /shibboleth/HS&gt;<br>
         AuthType Basic<br>
         AuthName &quot;Internet2 Handle Service&quot;<br>
         AuthUserFile /usr/local/apache/conf/user.db<br>
@@ -950,10 +985,10 @@ configuration</h4>
         of a filter that relies on the web server to do all processing to ensure 
         that the certificate is both valid and appropriate for the application. 
         An example deployment descriptor is included with the Shibboleth 
-        distribution at <span class="fixedwidth">$SHIB_HOME/webAppConfig/origin-client-cert.xml</span>. 
-        To enable the filter, add the following to the deployment descriptor (<span class="fixedwidth">web.xml</span>):</p>
+        distribution at <span class="fixed">$SHIB_HOME/webAppConfig/origin-client-cert.xml</span>. 
+        To enable the filter, add the following to the deployment descriptor (<span class="fixed">web.xml</span>):</p>
         <blockquote>
-            <p><span class="fixedwidth">&nbsp;&nbsp;&lt;filter&gt;<br>
+            <p><span class="fixed">&nbsp;&nbsp;&lt;filter&gt;<br>
             &nbsp;&nbsp;&nbsp;&nbsp;&lt;filter-name&gt;<br>
             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Client Cert AuthN Filter<br>
             &nbsp;&nbsp;&nbsp;&nbsp;&lt;/filter-name&gt;<br>
@@ -974,15 +1009,15 @@ configuration</h4>
             </span></p>
         </blockquote>
         <p>By default, the filter pulls the principal name out of the
-        <span class="fixedwidth">CN</span> of the cert&#39;s
-        <span class="fixedwidth">Subject</span> by using regular expression 
+        <span class="fixed">CN</span> of the cert&#39;s
+        <span class="fixed">Subject</span> by using regular expression 
         grouping. This may be done using patterns such as:</p>
         <blockquote>
-            <p><span class="fixedwidth">regex: &#39;.*CN=([^,/]+).*&#39; match group: 1</span>
+            <p><span class="fixed">regex: &#39;.*CN=([^,/]+).*&#39; match group: 1</span>
             </p>
         </blockquote>
         <p>The servlet filter will accept two initialization parameters,
-        <span class="fixedwidth">regex</span> and <span class="fixedwidth">
+        <span class="fixed">regex</span> and <span class="fixed">
         matchGroup</span> that can be used to extract the principal name 
         differently.</p>
     </blockquote>
@@ -1015,264 +1050,581 @@ configuration</h4>
     information regarding how ARP&#39;s are processed or syntactically formed, 
     please refer to section <a href="#5.b.i.">5.b.i</a>.</p>
 </blockquote>
+<h4><a name="4.e."></a>4.e. <span class="fixed">metadatatool</span></h4>
+<blockquote>
+    <p>The Shibboleth origin leverages metadata distributed by relying parties and federations to validate the identity of requesters and the resource providers on whose behalf the request is being made.  This metadata is cached locally in the form of <span class="fixed">sites.xml</span> files.  Shibboleth includes a simple utility called <span class="fixed">metadatatool</span> which can be used to refresh a <span class="fixed">sites.xml</span> file.  These files are then pointed to by <a href="#confFederationProvider"><span class="fixed">FederationProvider</span></a> elements in <a href="#5.a."><span class="fixed">shibboleth.xml</span></a>.</p>
+<p>The following command is appropriate for most deployments and is run from the $SHIB_HOME directory.  This should be frequently run by adding it to a <span class="fixed">crontab</span> to ensure that the data is fresh.</p>
+
+<blockquote><span class="fixed">bin/metadatatool -i https://wayf.internet2.edu/InQueue/sites.xml -k conf/internet2.jks -p shib123 -a sitesigner -o /your_path_here/sites.xml</span></blockquote>
+
+<p>This is a list of all the command-line parameters that may be specified:</p>
+
+<blockquote><span class="fixed">when signing:&nbsp;&nbsp;&nbsp;&nbsp;-i &lt;uri&gt; -s -k &lt;keystore&gt; -a &lt;alias&gt; -p &lt;pass&gt; [-o
+&lt;outfile&gt;]<br>
+when updating:&nbsp;&nbsp;-i &lt;uri&gt; [-k &lt;keystore&gt; -a &lt;alias&gt; OR -N ] [-o &lt;outfile&gt;]<br>
+
+<table border="0" cellpadding="0" cellspacing="0">
+<tr><td width="150">-i,--in</td><td>input file or url</td></tr>
+<tr><td width="150">-k,--keystore</td><td>pathname of Java keystore file</td></tr>
+<tr><td width="150">-a,--alias</td><td>alias of signing or verification key</td></tr>
+<tr><td width="150">-p,--password</td><td>keystore/key password</td></tr>
+<tr><td width="150">-o,--outfile</td><td>write signed copy to this file instead of stdout</td></tr>
+<tr><td width="150">-s,--sign</td><td>sign the input file and write out a signed version</td></tr>
+<tr><td width="150">-N,--noverify</td><td>allows update of file without signature check</td></tr>
+<tr><td width="150">-h,--help</td><td>print a list of configuration options</td></tr>
+<tr><td width="150">-x,--ns</td><td>XML namespace of root element</td></tr>
+<tr><td width="150">-n,--name</td><td>name of root element</td></tr>
+</table>
+</span></blockquote>
+    <p>Shibboleth 1.2 still utilizes <span class="fixed">mod_ssl</span> for verification of certificates presented by SHAR's when processing attribute requests.  This requires an updated <span class="fixed">ca-bundle.crt</span> to ensure that all appropriate certificate authorities used by relying parties are recognized.</p>
+</blockquote>
 <p><br>
 </p>
 <hr>
 <p><br>
 </p>
 <h3><a name="5."></a>5. Advanced Configuration</h3>
-<h4><a name="5.a."></a><span class="fixedwidth">origin.properties</span></h4>
+<h4><a name="5.a."></a>5.a. <span class="fixed">origin.xml</span></h4>
 <blockquote>
-    <p>The main configuration file for Shibboleth&#39;s origin side is located in
-    <span class="fixedwidth">/webapps/shibboleth/WEB-INF/classes/conf/origin.properties.</span>. 
-    This file contains configuration information for the origin side in several 
-    sections. The configuration must be consistent with values elsewhere in the 
-    deployment, such as the <a href="#4.c.">HS&#39; certificate</a> and with 
-    directory access bindings, etc., or access errors may occur.</p>
-    <p>All pathnames are relative, and have an effective root path of
-    <span class="fixedwidth">$TOMCAT_HOME/webapps/shibboleth/WEB-INF/classes/</span>. 
-    To specify files outside of the webapp, specify a full URI, such as
-    <span class="fixedwidth">file:///usr/local/shibboleth/</span>.</p>
-    <p>Fields that are purple are optional; grey fields are mandatory.</p>
-    <p>These are the variables that may be specified for each component of
-    <span class="fixedwidth">origin.properties</span>:</p>
-    <p><br>
-    </p>
-    <p>General Configuration:</p>
+    <p>Shibboleth 1.2 origins are configured using the <span
+    class="fixed">origin.xml</span> file located in <span
+    class="fixed">/webapps/shibboleth/WEB-INF/classes/conf/origin.xml</span>. 
+    The XML consists of a set of individual elements that describe how the
+    origin should operate, which may each have their own attributes or appear
+    within other elements.  This structure is represented through
+    cross-references in the definitions and the examples presented in <a
+    href="#4.a.">section 4.a</a>, below, and through the <a
+    href="http://marsalis.internet2.edu/cgi-bin/viewcvs.cgi/shibboleth/java/data/">examples
+    in CVS</a>.  The following is an example <span
+    class="fixed">origin.xml</span> file which contains all possible
+    configuration parameters and values. The configuration must be consistent
+    with values elsewhere in the deployment or access errors may occur.  For a
+    more basic example, consult <a href="#4.a.">section 4.a</a>.  This is useful
+    to demonstrate the structure that other types of configurations have.  Few
+    deployments will need configuration files this complex.</p>
+
+<blockquote><span class="fixed">
+&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;<br>
+<br>
+<a href="#confShibbolethOriginConfig" class="fixedlink">&lt;ShibbolethOriginConfig<br>
+&nbsp;&nbsp;&nbsp;&nbsp;xmlns=&quot;urn:mace:shibboleth:origin:1.0&quot;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;xmlns:cred=&quot;urn:mace:shibboleth:credentials:1.0&quot;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;xmlns:name=&quot;urn:mace:shibboleth:namemapper:1.0&quot;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;xsi:schemaLocation=&quot;urn:mace:shibboleth:origin:1.0 origin.xsd&quot;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;AAUrl=&quot;http://therock.cc.columbia.edu:6666/shibboleth/AA&quot;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;defaultRelyingParty=&quot;urn:mace:inqueue&quot;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;providerId=&quot;urn:mace:inqueue:shibdev.edu&quot;&gt;</a><br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&lt;!-- Default relying party --&gt;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#confRelyingParty" class="fixedlink">&lt;RelyingParty name=&quot;urn:mace:inqueue&quot; signingCredential=&quot;foo&quot;&gt;</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#confHSNameFormat" class="fixedlink">&lt;HSNameFormat nameMapping=&quot;crypto&quot;/&gt;</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#confRelyingParty" class="fixedlink">&lt;/RelyingParty&gt;</a><br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&lt;!-- This site is in InQueue, but we want to send explicit errors to them --&gt;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#confRelyingParty" class="fixedlink">&lt;RelyingParty name=&quot;urn:mace:inqueue:example.edu&quot; signingCredential=&quot;foo&quot; passThruErrors=&quot;true&quot;&gt;</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#confHSNameFormat" class="fixedlink">&lt;HSNameFormat nameMapping=&quot;crypto&quot;/&gt;</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#confRelyingParty" class="fixedlink">&lt;/RelyingParty&gt;</a><br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&lt;!-- This references domain local service providers --&gt;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#confRelyingParty" class="fixedlink">&lt;RelyingParty name=&quot;urn-x:localFed&quot; signingCredential=&quot;bar&quot; passThruErrors=&quot;true&quot; providerId=&quot;urn-x:localSite&quot;&gt;</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#confHSNameFormat" class="fixedlink">&lt;HSNameFormat nameMapping=&quot;clear&quot;/&gt;</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#confRelyingParty" class="fixedlink">&lt;/RelyingParty&gt;</a><br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#confReleasePolicyEngine" class="fixedlink">&lt;ReleasePolicyEngine&gt;</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#confArpRepository" class="fixedlink">&lt;ArpRepository implementation=&quot;edu.internet2.middleware.shibboleth.aa.arp.provider.FileSystemArpRepository&quot;&gt;</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#confPath" class="fixedlink">&lt;Path&gt;/conf/arps/&lt;/Path&gt;</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#confArpRepository" class="fixedlink">&lt;/ArpRepository&gt;</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#confReleasePolicyEngine" class="fixedlink">&lt;/ReleasePolicyEngine&gt;</a><br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#confLogging" class="fixedlink">&lt;Logging&gt;</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#confErrorLog" class="fixedlink">&lt;ErrorLog level=&quot;DEBUG&quot; location=&quot;file:///var/log/shib-error.log&quot; /&gt;</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#confTransactionLog" class="fixedlink">&lt;TransactionLog location=&quot;file:///var//log/shib-access.log&quot; /&gt;</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#confLogging" class="fixedlink">&lt;/Logging&gt;</a><br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#confNameMapping" class="fixedlink">&lt;NameMapping<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;xmlns=&quot;urn:mace:shibboleth:namemapper:1.0&quot;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id=&quot;crypto&quot;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;format=&quot;urn:mace:shibboleth:1.0:nameIdentifier&quot;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;type=&quot;SharedMemoryShibHandle&quot;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;handleTTL=&quot;1800&quot;/&gt;</a><br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#confNameMapping" class="fixedlink">&lt;NameMapping<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;xmlns=&quot;urn:mace:shibboleth:namemapper:1.0&quot;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id=&quot;clear&quot;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;format=&quot;urn-x:test:NameIdFormat1&quot;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;type=&quot;Principal&quot;/&gt;</a><br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#confCredentials" class="fixedlink">&lt;Credentials xmlns=&quot;urn:mace:shibboleth:credentials:1.0&quot;&gt;</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#confFileResolver" class="fixedlink">&lt;FileResolver Id=&quot;foo&quot;&gt;</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#confKey" class="fixedlink">&lt;Key format=&quot;DER&quot;&gt;</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#confPath" class="fixedlink">&lt;Path&gt;/conf/shib2.key&lt;/Path&gt;</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#confKey" class="fixedlink">&lt;/Key&gt;</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#confCertificate" class="fixedlink">&lt;Certificate format=&quot;PEM&quot;&gt;</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#confPath" class="fixedlink">&lt;Path&gt;/conf/shib2.crt&lt;/Path&gt;</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#confCertificate" class="fixedlink">&lt;/Certificate&gt;</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#confFileResolver" class="fixedlink">&lt;/FileResolver&gt;</a><br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#confKeyStoreResolver" class="fixedlink">&lt;KeyStoreResolver Id=&quot;bar&quot; storeType=&quot;JKS&quot;&gt;</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#confPath" class="fixedlink">&lt;Path&gt;/conf/keystore.jks&lt;/Path&gt;</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#confKeyAlias" class="fixedlink">&lt;KeyAlias&gt;shibhs&lt;/KeyAlias&gt;</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#confCertAlias" class="fixedlink">&lt;CertAlias&gt;shibhs&lt;/CertAlias&gt;</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#confStorePassword" class="fixedlink">&lt;StorePassword&gt;shibhs&lt;/StorePassword&gt;</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#confKeyPassword" class="fixedlink">&lt;KeyPassword&gt;shibhs&lt;/KeyPassword&gt;</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#confKeyStoreResolver" class="fixedlink">&lt;/KeyStoreResolver&gt;</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#confCredentials" class="fixedlink">&lt;/Credentials&gt;</a><br>
+<br>
+&nbsp;&nbsp;<a href="#confFederationProvider" class="fixedlink">&lt;FederationProvider type=&quot;edu.internet2.middleware.shibboleth.metadata.provider.XMLMetadataLoadWrapper&quot;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;uri=&quot;/conf/sites.xml&quot;/&gt;</a><br>
+&nbsp;&nbsp;<a href="#confFederationProvider" class="fixedlink">&lt;FederationProvider type=&quot;edu.internet2.middleware.shibboleth.metadata.provider.XMLMetadataLoadWrapper&quot;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;uri=&quot;/conf/local-sites.xml&quot;/&gt;</a><br>
+<br>
+<a href="#confShibbolethOriginConfig" class="fixedlink">&lt;/ShibbolethOriginConfig&gt;</a>
+</span></blockquote>
+
+    <p>The following is a complete, alphabetical list of all configuration
+    elements and their valid attributes and population.  Each element also has a
+    description of the elements it may contain and the elements that may contain
+    it.</p>
+
+    <p>All pathnames are relative, and have an effective root path of <span
+    class="fixed">$TOMCAT_HOME/webapps/shibboleth/WEB-INF/classes/</span>. To
+    specify files outside of the webapp, specify a full URI, such as <span
+    class="fixed">file:///usr/local/shibboleth/</span>.</p>
+    <p>All elements are optional unless otherwise specified.  All attributes of
+    an element are optional unless designated <span
+    class="mandatory">mandatory</span> by a purple background.</p>
+
     <dl>
-        <dd class="attributelong"><span class="fixedwidth">
-        edu.internet2.middleware.shibboleth.hs.HandleServlet.issuer = &lt;domain 
-        name&gt;</span> </dd>
-        <dd class="value">Specifies the DNS name the HS should use for itself in 
-        issuing assertions.</dd>
-        <dd class="attributelong"><span class="fixedwidth">
-        edu.internet2.middleware.shibboleth.hs.HandleServlet.siteName = &lt;URI&gt;</span>
+        <dd class="attribute"><a name="confArpRepository"><span class="fixed">&lt;ArpRepository implementation =&quot;edu.internet2.middleware.shibboleth.aa.arp.provider.FileSystemArpRepository&quot;&gt;</span></a></dd>
+        <dd class="value"><p>This element specifies an individual implementation
+        of a release policy engine, with the given value specifying Shibboleth's
+        file-based ARP repository implementation, which is currently the only
+        available.  This must contain a <a href="#confPath"><span
+        class="fixed">Path</span></a> element pointing to the directory
+        containing ARP's to be used by this engine.  For more information
+        regarding ARP's, consult section <a href="#4.d.">4.d</a> for basic
+        information and <a href="#5.b.">5.b</a> for advanced configuration and
+        syntax.</p><p>Note that the set of principals that an ARP applies to is
+        not expressed by the ARP itself, but rather the implementation of the
+        ARP repository. For example, if the ARP repository were implemented in
+        LDAP, the ARP&#39;s that apply to a user would be attributes of that
+        user&#39;s personal LDAP entry, and the site ARP would be an attribute
+        of an entry representing the site. While not performed by the built-in
+        ARP repository, a repository implementation might also implement group
+        ARP&#39;s; for example, in an LDAP directory, the user entry might have
+        some group membership attributes that refer to group entries, and those
+        group entries would have ARP attributes, and all those ARP&#39;s would
+        be applicable.</p></dd>
+
+        <dd class="attribute"><a name="confCAPath"><span class="fixed">&lt;CAPath&gt;<i>pathname</i>&lt;/CAPath&gt;</span></a></dd>
+        <dd class="value">Paired with a <a href="#confPath"><span
+        class="fixed">Path</span></a> element and contained by a <a
+        href="#confFileResolver"><span class="fixed">FileResolver</span></a>
+        element, this element allows for the specification of additional
+        certificates in the chain up to the trust anchor.  As many <span
+        class="fixed">CAPath</span> elements as necessary to complete the chain
+        may be specified.  The expectations of the target and the federation may
+        determine the necessity for the use of this field.</dd>
+
+        <dd class="attribute"><a name="confCertAlias"><span class="fixed">&lt;CertAlias&gt;<i>string</i>&lt;/CertAlias&gt;</span></a></dd>
+        <dd class="value">Specifies the alias for the certificate corresponding
+        to the private key used by the HS.  If no alias is specified, defaults
+        to the private key's alias.  Contained by the <a
+        href="#confKeyStoreResolver"><span
+        class="fixed">KeyStoreResolver</span></a> element.</dd>
+
+        <dd class="attribute"><a name="confCertificate"><span class="fixed">&lt;Certificate format=&quot;<i>type</i>&quot;&gt;</span></a></dd>
+        <dd class="value">This specifies the certificate corresponding to this
+        set of credentials.  The certificate itself must be referred to using a
+        <a href="#confPath"><span class="fixed">Path</span></a> element
+        contained by this element.  If this certificate isn't self-signed or
+        signed by a root familiar to the target, the files of certificates in
+        the path to the root may be specified using one or more <a
+        href="#confPath"><span class="fixed">CAPath</span></a> elements.  Valid
+        encodings are <span class="fixed">PEM</span> and <span
+        class="fixed">DER</span>.  It resides within the <a
+        href="#confFileResolver"><span class="fixed">FileResolver</span></a> element
+        and must be paired with the corresponding private key using the <a
+        href="#confKey"><span class="fixed">Key</span></a> element.</dd>
+
+        <dd class="attribute"><a name="confCredentials"><span class="fixed">&lt;Credentials xmlns=&quot;urn:mace:shibboleth:credentials:1.0&quot;&gt;</span></a></dd>
+        <dd class="value">This element is the container for credentials used by
+        the credential mechanism specified by the <a
+        href="#confShibbolethOriginConfig"><span
+        class="fixed">ShibbolethOriginConfig</span></a> element.  It must
+        contain one <a href="#confFileResolver"><span
+        class="fixed">FileResolver</span></a> element for flat key and
+        certificate files or one <a href="#confKeyStoreResolver"><span
+        class="fixed">KeyStoreResolver</span></a> element for compound
+        keystores.</dd>
+
+        <dd class="attribute"><a name="confErrorLog"><span class="fixed">&lt;ErrorLog level=&quot;<i>level</i>&quot; location=&quot;<i>URL</i>&quot;&gt;</span></a></dd>
+        <dd class="value">Paired with a <a href="#confTransactionLog"><span
+        class="fixed">TransactionLog</span></a> element, this will log any
+        errors encountered by the origin above a certain logging threshold to a
+        flat file at the referenced <span class="fixed">URL</span>.  Valid
+        levels in order of decreasing sensitivity are <span
+        class="fixed">DEBUG</span>, <span class="fixed">INFO</span>, <span
+        class="fixed">WARN</span>, <span class="fixed">ERROR</span>, and <span
+        class="fixed">FATAL</span>.  If no logging is desired, specify <span
+        class="fixed">OFF</span>; defaults to <span class="fixed">WARN</span>. 
+        Must be contained by a <a href="#confLogging"><span
+        class="fixed">Logging</span></a> element.</dd>
+
+        <dd class="attribute"><a name="confFederationProvider"><span class="fixed">&lt;FederationProvider <span class="mandatory">type=&quot;edu.internet2.middleware.shibboleth.metadata.provider.XMLMetadataLoadWrapper&quot;</span> uri=&quot;<i>pathname</i>&quot;/&gt;</span></a></dd>
+        <dd class="value">Individual sets of targets in the form of an
+        XML file that this origin will trust to make
+        requests may be specified by adding <span
+        class="fixed">FederationProvider</span> elements to the main <a
+        href="#confShibbolethOriginConfig"><span
+        class="fixed">ShibbolethOriginConfig</span></a> element for each.  The
+        <span class="fixed">uri</span> attribute points to an
+        XML file, generally signed and distributed by federations.
+        This file should be regularly refreshed using
+        <a href="#4.e."><span class="fixedwidth">metadatatool</span></a>.</dd>
+
+        <dd class="attribute"><a name="confFileResolver"><span class="fixed">&lt;FileResolver Id=&quot;<i>string</i>&quot;&gt;</span></a></dd>
+        <dd class="value">This element defines a pair of files used to store a
+        private key and certificate associated with a given identifier and is
+        contained by the <a href="#confCredentials"><span
+        class="fixed">Credentials</span></a> element.  <a
+        href="#confRelyingParty"><span class="fixed">RelyingParty</span></a>
+        elements will refer to these identifiers allowing multiple resolver
+        elements to be used to specify different credential storage for
+        different federations or target sites.  It must contain one <a
+        href="#confKey"><span class="fixed">Key</span></a> element and should
+        contain one <a href="#confCertificate"><span
+        class="fixed">Certificate</span></a> element.</dd>
+
+        <dd class="attribute"><a name="confHSNameFormat"><span class="fixed">&lt;HSNameFormat <span class="mandatory">nameMapping=&quot;<i>id</i>&quot;</span>/&gt;</span></a></dd>
+        <dd class="value">Individual <a href="#confRelyingParty"><span
+        class="fixed">RelyingParty</span></a> elements may contain this element
+        to specify the <a href="#confNameMapping"><span
+        class="fixed">NameMapping</span></a> element referenced by <span
+        class="fixed">id</span> to be used in generating subject names for this
+        relying party.  If this element is not present, default Shibboleth
+        handles will be used.</dd>
+
+        <dd class="attribute"><a name="confKey"><span class="fixed">&lt;Key format=&quot;<i>type</i>&quot;&gt;</span></a></dd>
+        <dd class="value">This specifies the file containing a private key to be
+        used by a set of credentials.  Valid encodings are <span
+        class="fixed">PEM</span> and <span class="fixed">DER</span>.  Keys are
+        supported in a variety of formats: DER, PEM, encrypted PEM, PKCS8, and
+        encrypted PKCS8.  It resides within the <a
+        href="#confFileResolver"><span class="fixed">FileResolver</span></a>
+        element, should be paired with a <a href="#confCertificate"><span
+        class="fixed">Certificate</span></a> element, and contain a <a
+        href="#confPath"><span class="fixed">Path</span></a> element.</dd>
+
+        <dd class="attribute"><a name="confKeyAlias"><span class="fixed">&lt;KeyAlias&gt;<i>string</i>&lt;/KeyAlias&gt;</span></a></dd>
+        <dd class="value">Specifies the alias used for accessing the private
+        key.  Contained by the <a href="#confKeyStoreResolver"><span
+        class="fixed">KeyStoreResolver</span></a> element.</dd>
+
+        <dd class="attribute"><a name="confKeyPassword"><span class="fixed">&lt;KeyPassword&gt;<i>string</i>&lt;/KeyPassword&gt;</span></a></dd>
+        <dd class="value">Specifies the password used to retrieve the private
+        key.  Contained by the <a href="#confKeyStoreResolver"><span
+        class="fixed">KeyStoreResolver</span></a> element.</dd>
+
+        <dd class="attribute"><a name="confKeyStoreKeyAlias"><span class="fixed">&lt;KeyStoreKeyAlias&gt;<i>string</i>&lt;/KeyStoreKeyAlias&gt;</span></a></dd>
+        <dd class="value">Specifies the alias used for accessing the private
+        key.  Contained by the <a href="#confNameMapping"><span
+        class="fixed">NameMapping</span></a> element when a <span
+        class="fixed">CryptoHandleGenerator</span> type is specified.</dd>
+
+        <dd class="attribute"><a name="confKeyStoreKeyPassword"><span class="fixed">&lt;KeyStoreKeyPassword&gt;<i>string</i>&lt;/KeyStoreKeyPassword&gt;</span></a></dd>
+        <dd class="value">Specifies the password used to retrieve the private
+        key.  Contained by the <a href="#confNameMapping"><span
+        class="fixed">NameMapping</span></a> element when a <span
+        class="fixed">CryptoHandleGenerator</span> type is specified.</dd>
+
+        <dd class="attribute"><a name="confKeyStorePassword"><span class="fixed">&lt;KeyStorePassword&gt;<i>string</i>&lt;/KeyStorePassword&gt;</span></a></dd>
+        <dd class="value">Specifies the password to access the keystore
+        containing the private key to be used for symmetric encryption. 
+        Contained by the <a href="#confNameMapping"><span
+        class="fixed">NameMapping</span></a> element when a <span
+        class="fixed">CryptoHandleGenerator</span> type is specified.</dd>
+
+        <dd class="attribute"><a name="confKeyStorePath"><span class="fixed">&lt;KeyStorePath&gt;<i>string</i>&lt;/KeyStorePath&gt;</span></a></dd>
+        <dd class="value">Specifies the location of the keystore containing the
+        private key to be used for symmetric encryption to pass handles between
+        the HS and AA.  Contained by the <a href="#confNameMapping"><span
+        class="fixed">NameMapping</span></a> element when a <span
+        class="fixed">CryptoHandleGenerator</span> type is specified.</dd>
+
+        <dd class="attribute"><a name="confKeyStoreResolver"><span class="fixed">&lt;KeyStoreResolver Id=&quot;<i>string</i>&quot; storeType=&quot;<i>type</i>&quot;&gt;</span></a></dd>
+        <dd class="value">This element is contained by the <a
+        href="#confCredentials"><span class="fixed">Credentials</span></a>
+        element and to specify a keystore that contains both the certificate and
+        private key for a given set of credentials.  Typically, this will be a
+        Java keystore, with a corresponding type of <span
+        class="fixed">JKS</span>.  <a href="#confRelyingParty"><span
+        class="fixed">RelyingParty</span></a> elements will refer to the <span
+        class="fixed">Id</span> allowing multiple resolver elements to be used
+        to specify different credential storage for different federations or
+        target sites.  It must contain one <a href="#confPath"><span
+        class="fixed">Path</span></a> element, one <a href="#confKeyAlias"><span
+        class="fixed">KeyAlias</span></a> element, and one <a
+        href="#confStorePassword"><span class="fixed">StorePassword</span></a>
+        element; it may optionally contain a <a href="#confKeyPassword"><span
+        class="fixed">KeyPassword</span></a> element or a <a
+        href="#confCertAlias"><span class="fixed">CertAlias</span></a>
+        element.</dd>
+
+        <dd class="attribute"><a name="confLog4JConfig"><span class="fixed">&lt;Log4JConfig location=&quot;<i>pathname</i>&quot;/&gt;</span></a></dd>
+        <dd class="value">This element informs Shibboleth to utilize Log4J as a
+        logging system and points to the relevant configuration file using the
+        <span class="fixed">location</span> attribute.  A basic configuration is
+        included with the distribution at <span
+        class="fixed">/WEB-INF/classes/conf/log4j.properties</span>.  This is
+        set up to log to the console of the servlet container with a level of
+        WARN, but there is also a commented-out example in the file to give a
+        possible alternate configuration.  This element must be contained by a
+        <a href="#confLogging"><span class="fixed">Logging</span></a> element
+        and may not be paired with a <a href="#confTransactionLog"><span
+        class="fixed">TransactionLog</span></a> or <a href="#confErrorLog"><span
+        class="fixed">ErrorLog</span></a> element.</dd>
+
+        <dd class="attribute"><a name="confLogging"><span class="fixed">&lt;Logging&gt;</span></a></dd>
+        <dd class="value">This container element identifies a logging method for
+        both the HS and AA to use and may not occur more than once.  Three
+        different logging methods may be specified depending on what is placed
+        inside this element.  If nothing is specified, then all logs go to the
+        container console.  If <a href="#confErrorLog"><span
+        class="fixed">ErrorLog</span></a> and <a
+        href="#confTransactionLog"><span class="fixed">TransactionLog</span></a>
+        elements are present, more traditional logging flatfiles will be
+        generated at the locations specified.  A <a
+        href="#confLog4JConfig"><span class="fixed">Log4JConfig</span></a>
+        element instructs the origin to use Log4J logging.</dd>
+
+        <dd class="attribute"><a name="confNameMapping"><span class="fixed">&lt;NameMapping xmlns=&quot;urn:mace:shibboleth:namemapper:1.0&quot;<br>
+format=&quot;<i>URN</i>&quot;<br>
+handleTTL=&quot;<i>seconds</i>&quot;<br>
+id=&quot;<i>string</i>&quot;<br>
+type=&quot;<i>type</i>&quot;/&gt;</span></a></dd>
+        <dd class="value">This element defines a name mapping system to create
+        SAML assertion subject names for users; in standard Shibboleth, this
+        will be the creation of a handle to be given to the SHAR and shared with
+        the AA.
+<ul>
+<li><span class="fixed">format</span> should be populated with the URN <span
+class="fixed">urn:mace:shibboleth:1.0:nameIdentifier</span> if traditional
+Shibboleth handles are used.</li>
+<li><span class="fixed">handleTTL</span> specifies in seconds how long a given
+handle will be considered valid; an expired handle will require the user to
+obtain a new handle and possibly re-authenticate.  This field is only valid if
+Shibboleth handles are being used, e.g. <span class="fixed">format</span> is
+<span class="fixed">urn:mace:shibboleth:1.0:nameIdentifier</span>.  Consult your
+federation guidelines for guidance on the population of this field.</li>
+<li><span class="fixed">id</span> is used by <a href="#confHSNameFormat"><span
+class="fixed">HSNameFormat</span></a> elements to refer to this element and must
+be unique.</li>
+<li><span class="fixed">type</span> dictates how handles are passed to the AA. 
+The valid types are:<ul type="circle">
+<li><span class="fixed">CryptoHandleGenerator</span>: Shibboleth handles will be
+passed using symmetric encryption.  If this is specified, keystore information
+must be specified using one <a href="#confKeyStorePath"><span
+class="fixed">KeyStorePath</span></a> element, one <a
+href="#confKeyStoreKeyAlias"><span class="fixed">KeyStoreKeyAlias</span></a>
+element, one <a href="#confKeyStorePassword"><span
+class="fixed">KeyStorePassword</span></a> element, and optionally a <a
+href="#confKeyStoreKeyPassword"><span
+class="fixed">KeyStoreKeyPassword</span></a> element.</li>
+<li><span class="fixed">Principal</span>: Shibboleth will use the primary unique
+identifier for the individual and not generate a handle.</li>
+<li><span class="fixed">SharedMemoryShibHandle</span>: Shibboleth will use a
+shared in-memory repository.</li>
+</ul></li>
+</ul></dd>
+
+        <dd class="attribute"><a name="confPath"><span class="fixed">&lt;Path&gt;<i>pathname</i>&lt;/Path&gt;</span></a></dd>
+        <dd class="value">This mandatory element specifies the path to a file or
+        directory utilized by other elements of the configuration.  It may be
+        contained by various elements to point to different types of files
+        required by the origin.</dd>
+
+        <dd class="attribute"><a name="confReleasePolicyEngine"><span class="fixed">&lt;ReleasePolicyEngine&gt;</span></a></dd>
+        <dd class="value">The <span class="fixed">ReleasePolicyEngine</span>
+        element is used to specify a class of release policy processing.  This
+        should contain one <a href="#confArpRepository"><span
+        class="fixed">ArpRepository</span></a> element.</dd>
+
+        <dd class="attribute"><a name="confRelyingParty"><span class="fixed">&lt;RelyingParty <span class="mandatory">name=&quot;<i>URI</i>&quot;</span><br>
+AAsigningCredential=&quot;<i>string</i>&quot;<br>
+AAUrl=&quot;<i>URL</i>&quot;<br>
+defaultAuthMethod=&quot;<i>URN</i>&quot;<br>
+passThruErrors=&quot;<i>true/false</i>&quot;<br>
+providerId=&quot;<i>string</i>&quot;<br>
+signAttrAssertions=&quot;<i>true/false</i>&quot;<br>
+signAttrResponses=&quot;<i>true/false</i>&quot;<br>
+signAuthAssertions=&quot;<i>true/false</i>&quot;<br>
+signAuthResponses=&quot;<i>true/false</i>&quot;<br>
+signingCredential=&quot;<i>string</i>&quot;&gt;</span></a></dd>
+        <dd class="value"><p>The <span class="fixed">RelyingParty</span> element
+        is used to specify one or more relying parties that this origin must
+        recognize.  This includes any federations the origin is a member of, any
+        targets that have established bilateral agreements with the origin, or
+        any other trust structure that origin must be aware of.  In addition to
+        its attributes, this element may contain a <a
+        href="#confHSNameMapping"><span class="fixed">HSNameMapping</span></a>
+        element to specify a naming mechanism for assertions sent to this
+        relying party.  The HS and AA both perform validation against federation
+        metadata to ensure that targets cannot construct requests that cause
+        another target's relying party information to be used.</p>
+        <p>The proper <span class="fixed">RelyingParty</span> element to handle
+        a given attribute request is selected by the following algorithm.  If at
+        any point a match is found, processing is complete; only one relying
+        party will be used for any given request.</p>
+        <ol type="1">
+          <li>If the requesting provider is unauthenticated -- due to a lack of
+          SSL client authentication because the AA is not protected by an <span
+          class="fixed">https://</span> URL -- the default relying party is
+          always used.</li>
+          <li>If the requesting provider is Shibboleth 1.1 or less, the default
+          relying party is used.</li>
+          <li>If a <span class="fixed">RelyingParty</span> element's <span
+          class="fixed">providerId</span> attribute matches the name sent by the
+          target, then that element is used.</li>
+          <li>A metadata lookup is performed using the <span
+          class="fixed">sites.xml</span> files supplied by <a
+          href="#confFederationProvider"><span
+          class="fixed">FederationProvider</span></a> elements to determine
+          whether the target is a member of a common federation.  If there is a
+          <span class="fixed">RelyingParty</span> element that has the same
+          providerId as the URI of the the federation, it is used.  If not, the
+          default relying party handles the request.</li>
+        </ol>
+        <ul>
+          <li class="mandatory"><span class="fixed">name</span>: Each <span
+          class="fixed">RelyingParty</span> element is differentiated by a URI
+          specified in the <span class="fixed">name</span> attribute.  A target
+          will send a value for this attribute with the attribute request; if
+          the URI sent matches the <span class="fixed">name</span>, this element
+          will be used in the transaction.  If there is no direct match, the
+          origin uses metadata to try to find a federation that the service
+          provider is a member of.</li>
+          <li><span class="fixed">AAsigningCredential</span>: This attribute
+          must equal the identifier of one of the <a
+          href="#confFileResolver"><span class="fixed">FileResolver</span></a>
+          Id's.  A separate set of credentials may be specified for the AA's
+          signing of assertions/SSL session identification using this attribute,
+          as opposed to the HS' signing of assertions.  If this is not specified
+          for this <span class="fixed">RelyingParty</span> element, but a <span
+          class="fixed">signingCredential</span> attribute is, that set of
+          credentials will be used instead.  Ensure that the appropriate signing
+          key is selected for each; an incorrect signing key will lead to trust
+          failures.</li>
+          <li><span class="fixed">AAUrl</span>: Different AA's may be specified
+          for different relying parties using this attribute.  It over-rides, is
+          populated, and operates in the same manner as the <span
+          class="fixed">AAUrl</span> attribute of the <a
+          href="#confShibbolethOriginConfig"><span
+          class="fixed">ShibbolethOriginConfig</span></a> element.</li>
+          <li><span class="fixed">defaultAuthMethod</span>: The value of this
+          attribute represents the mechanism by which the user's authentication
+          was performed.  It is used to populate <span
+          class="fixed">authenticationMethod</span> in SAML assertions passed to
+          this relying party if no other authentication method is passed to the
+          HS.  For a brief list of authentication methods, consult the same
+          attribute as part of the <a href="#confShibbolethOriginConfig"><span
+          class="fixed">ShibbolethOriginConfig</span></a> element.</li>
+          <li><span class="fixed">passThruErrors</span>: This boolean attribute
+          determines whether the origin will relay errors in flows to this
+          target for use in displaying these errors to the browser in the case
+          of an unsuccessful transaction.</li>
+          <li><span class="fixed">providerId</span>: If the origin must assert
+          under a different name to this relying party, specify a <span
+          class="fixed">providerId</span> attribute which will over-ride the one
+          specified in <a href="#confShibbolethOriginConfig"><span
+          class="fixed">ShibbolethOriginConfig</span></a>.</li>
+          <li><span class="fixed">signAttrAssertions</span>: If this boolean
+          attribute has a value of <span class="fixed">true</span>, the
+          attribute assertion within the SAML response will be signed.  This is
+          mostly useful for using the attribute assertion in contexts outside of
+          the response and defaults to <span class="fixed">false</span>.</li>
+          <li><span class="fixed">signAttrResponses</span>: If this boolean
+          attribute has a value of <span class="fixed">true</span>, the
+          attribute response itself will be signed in addition to the security
+          and authentication provided by the SSL session.  SAML responses
+          contain one or more assertions.  Defaults to <span
+          class="fixed">false</span>; if true, an <span
+          class="fixed">https://</span> AAUrl may be redundant.</li>
+          <li><span class="fixed">signAuthAssertions</span>: If this boolean
+          attribute has a value of <span class="fixed">true</span>, the
+          authentication assertion within the SAML response will be signed. 
+          This is mostly useful for using the authentication assertion in
+          contexts outside of the response and defaults to <span
+          class="fixed">false</span>.</li>
+          <li><span class="fixed">signAuthResponses</span>: If this boolean
+          attribute has a value of <span class="fixed">false</span>, the
+          authentication response will not be signed.  SAML responses contain
+          one or more assertions.  Defaults to <span
+          class="fixed">true</span>.</li>
+          <li><span class="fixed">signingCredential</span>: This attribute must
+          equal the identifier of one of the <a href="#confFileResolver"><span
+          class="fixed">FileResolver</span></a> Id's.  This allows the origin to
+          use different signing keys and certificates for exchanges with
+          different federations or targets.  Ensure that the appropriate signing
+          key is selected for each; an incorrect signing key will lead to trust
+          failures.</li>
+        </ul>
         </dd>
-        <dd class="value">Specifies the the <span class="fixedwidth">URI</span> 
-        to use as the name of the origin site as a whole. This field is 
-        primarily meant to be populated in the context of the federation in 
-        which the origin site resides, is intended to be globally unique, and 
-        will typically be assigned by the federation.</dd>
-        <dd class="attributelong"><span class="fixedwidth">
-        edu.internet2.middleware.shibboleth.hs.HandleServlet.AAUrl = &lt;url&gt;</span>
-        </dd>
-        <dd class="value">Specifies the <span class="fixedwidth">URL</span> at 
-        which the HS&#39; corresponding AA may be contacted. Note that this <b>must</b> 
-        be an <span class="fixedwidth">https://</span> URL in order for the AA 
-        to know which SHAR is requesting attributes.</dd>
-        <dd class="attributeoptlong"><span class="fixedwidth">
-        edu.internet2.middleware.shibboleth.hs.HandleServlet.username = &lt;var&gt;</span>
-        </dd>
-        <dd class="valueopt">Specifies the HTTP request header that should be 
-        used to acquire the user&#39;s principal name from the authentication 
-        service. Defaults to <span class="fixedwidth">REMOTE_USER</span>.</dd>
-        <dd class="attributeoptlong"><span class="fixedwidth">
-        edu.internet2.middleware.shibboleth.hs.HandleServlet.authMethod = &lt;uri&gt;</span>
-        </dd>
-        <dd class="valueopt">Specifes the URI used to populate
-        <span class="fixedwidth">AuthenticationMethod</span> in the SAML 
-        attribute assertion. This corresponds to the method used to authenticate 
-        users by the authentication service used by the HS. Some common 
+
+        <dd class="attribute"><a name="confShibbolethOriginConfig"><span class="fixed">&lt;ShibbolethOriginConfig<br>
+xmlns=&quot;urn:mace:shibboleth:origin:1.0&quot;<br>
+xmlns:cred=&quot;urn:mace:shibboleth:credentials:1.0&quot;<br>
+xmlns:name=&quot;urn:mace:shibboleth:namemapper:1.0&quot;<br>
+<span class="mandatory">defaultRelyingParty=&quot;<i>URI</i>&quot;<br>
+providerID=&quot;<i>URI</i>&quot;</span><br>
+AAUrl=&quot;<i>URL</i>&quot;<br>
+authHeaderName=&quot;<i>string</i>&quot;<br>
+defaultAuthMethod=&quot;<i>URN</i>&quot;<br>
+maxHSThreads=&quot;<i>integer</i>&quot;<br>
+passThruErrors=&quot;<i>true/false</i>&quot;<br>
+resolverConfig=&quot;<i>pathname</i>&quot;&gt;</span></a></dd>
+        <dd class="value"><p>This is the primary element that defines an <span class="fixed">origin.xml</span> file and is the container for every other element and must appear once and only once.  For most deployments, all the <span class="fixed">xmlns</span> attributes, which specify the handlers for different aspects of origin operation, should remain unchanged.  The mandatory attributes must be changed before operating the origin.</p>
+<ul>
+<li class="mandatory"><span class="fixed">defaultRelyingParty</span>: This specifies the relying party to use for a request when no <a href="#confRelyingParty"><span class="fixed">RelyingParty</span></a> element's <span class="fixed">name</span> attribute matches the policy URI of an incoming request.  Typically, this will be populated with the URI of a federation.</li>
+<li class="mandatory"><span class="fixed">providerID</span>: The origin uses this unique name to identify assertions it issues.  This will usually be assigned by a federation.</li>
+<li><span class="fixed">AAUrl</span> specifies the URL where the AA for this HS resides, which must be consistent with how it is defined in Tomcat.  Note that this <b>must</b> be an <span class="fixed">https://</span> URL in order for the AA to know which SHAR is requesting attributes for ARP purposes.</li>
+<li><span class="fixed">authHeaderName</span>: If authentication methods are passed to the HS using an HTTP header variable other than the default, <span class="fixed">SAMLAuthenticationMethod</span>, the name of the variable may be specified here.</li>
+<li><span class="fixed">defaultAuthMethod</span>: This specifies the authentication method that will be assumed if none is passed through and there is no overriding <span class="fixed">defaultAuthMethod</span> specified for this target using a <a href="#confRelyingParty"><span class="fixed">RelyingParty</span></a> element.  If neither this element nor the matching <a href="#confRelyingParty"><span class="fixed">RelyingParty</span></a> element contains this attribute, a value of <span class="fixed">urn:oasis:names:tc:SAML:1.0:am:unspecified</span> will be used for <span class="fixed">authenticationMethod</span>.  Some common 
         authentication methods and corresponding URI&#39;s are listed below; for a 
         complete list, please consult section 7.1 of the SAML 1.1 core 
-        specifications or your federation&#39;s guidelines.<table border="2" cellpadding="0" cellspacing="0">
+        specifications or your federation&#39;s guidelines.
+        <table border="2" cellpadding="0" cellspacing="0">
             <tr>
-                <td><span class="fixedwidth">
+                <td><span class="fixed">
                 urn:oasis:names:tc:SAML:1.0:am:password</span></td>
                 <td>The authentication was performed using a password.</td>
             </tr>
             <tr>
-                <td><span class="fixedwidth">urn:ietf:rfc:1510</span></td>
+                <td><span class="fixed">urn:ietf:rfc:1510</span></td>
                 <td>The authentication was performed using Kerberos.</td>
             </tr>
             <tr>
-                <td><span class="fixedwidth">
+                <td><span class="fixed">
                 urn:oasis:names:tc:SAML:1.0:am:X509-PKI</span></td>
                 <td>The authentication was performed using a certificate and key 
                 issued to the end user. More specific forms of PKI 
                 authentication such as SPKI and XKMS are also assigned URN&#39;s in 
                 the SAML specs.</td>
             </tr>
-        </table>
-        </dd>
-    </dl>
-    <p><br>
-    </p>
-    <p>Assertion Signing:</p>
-    <dl>
-        <dd class="attributelong"><span class="fixedwidth">
-        edu.internet2.middleware.shibboleth.hs.HandleServlet.keyStorePath = 
-        &lt;pathname&gt;</span> </dd>
-        <dd class="value">Specifies the location of the Java keystore containing 
-        the x.509 certificate and matching private key to be used by the HS.</dd>
-        <dd class="attributelong"><span class="fixedwidth">
-        edu.internet2.middleware.shibboleth.hs.HandleServlet.keyStorePassword = 
-        &lt;password&gt;</span> </dd>
-        <dd class="value">Specifies the password to the referenced keystore.</dd>
-        <dd class="attributelong"><span class="fixedwidth">
-        edu.internet2.middleware.shibboleth.hs.HandleServlet.keyStoreKeyAlias = 
-        &lt;alias&gt;</span> </dd>
-        <dd class="value">Specifies the alias used for accessing the private 
-        key.</dd>
-        <dd class="attributelong"><span class="fixedwidth">
-        edu.internet2.middleware.shibboleth.hs.HandleServlet.keyStoreKeyPassword 
-        = &lt;password&gt;</span> </dd>
-        <dd class="value">Specifies the password used to retrieve the private 
-        key.</dd>
-        <dd class="attributeoptlong"><span class="fixedwidth">
-        edu.internet2.middleware.shibboleth.hs.HandleServlet.certAlias = &lt;alias&gt;</span>
-        </dd>
-        <dd class="valueopt">Specifies the alias for the certificate 
-        corresponding to the private key used by the HS. Defaults to the private 
-        key&#39;s alias.</dd>
-    </dl>
-    <p><br>
-    </p>
-    <p>General AA Configuration:</p>
-    <dl>
-        <dd class="attributelong"><span class="fixedwidth">
-        edu.internet2.middleware.shibboleth.aa.AAServlet.authorityName = &lt;domain 
-        name&gt;</span> </dd>
-        <dd class="value">Specifies the name of the AA, which is typically the 
-        domain name of the server running it.</dd>
-        <dd class="attributelong"><span class="fixedwidth">
-        edu.internet2.middleware.shibboleth.aa.AAServlet.passThruErrors = 
-        &lt;true/false&gt;</span> </dd>
-        <dd class="value">Specifies whether the AA should pass on internal 
-        errors to the SHAR for debugging purposes. Defaults to
-        <span class="fixedwidth">false</span>.</dd>
-    </dl>
-    <p>AA Attribute Resolution:</p>
-    <dl>
-        <dd class="attributelong"><span class="fixedwidth">
-        edu.internet2.middleware.shibboleth.aa.attrresolv.AttributeResolver.ResolverConfig 
-        = &lt;pathname&gt;</span> </dd>
-        <dd class="value">Specifies the location of the configuration file for 
-        the resolver the AA uses to build attributes. Defaults to
-        <span class="fixedwidth">/conf/resolver.xml</span>. For information on 
-        how to configure and use the attribute resolver, consult section
-        <a href="4.e.">4.e</a>.</dd>
-    </dl>
-    <p>ARP Configuration:</p>
-    <dl>
-        <dd class="attributelong"><span class="fixedwidth">
-        edu.internet2.middleware.shibboleth.aa.arp.ArpRepository.implementation 
-        = &lt;string&gt;</span> </dd>
-        <dd class="value">References the type of ARP repository implemented. 
-        Shibboleth provides a built-in ARP repository specified by
-        <span class="fixedwidth">edu.internet2.middleware.shibboleth.aa.arp. 
-        provider.FileSystemArpRepository</span>.<p>Note that the set of 
-        principals that an ARP applies to is not expressed by the ARP itself, 
-        but rather the implementation of the ARP repository. For example, if the 
-        ARP repository were implemented in LDAP, the ARP&#39;s that apply to a user 
-        would be attributes of that user&#39;s personal LDAP entry, and the site ARP 
-        would be an attribute of an entry representing the site. While not 
-        performed by the built-in ARP repository, a repository implementation 
-        might also implement group ARP&#39;s; for example, in an LDAP directory, the 
-        user entry might have some group membership attributes that refer to 
-        group entries, and those group entries would have ARP attributes, and 
-        all those ARP&#39;s would be applicable.</dd>
-        <dd class="attributelong"><span class="fixedwidth">
-        edu.internet2.middleware.shibboleth.aa.arp.provider.FileSystemArpRepository.Path 
-        = &lt;pathname&gt;</span> </dd>
-        <dd class="value">Specifies the relative or absolute path to the folder 
-        containing the ARP files.</dd>
-        <dd class="attributeoptlong"><span class="fixedwidth">
-        edu.internet2.middleware.shibboleth.aa.arp.provider.FileSystemArpRepository.ArpTTL 
-        = &lt;seconds&gt;</span> </dd>
-        <dd class="valueopt">Specifies the duration in <span class="fixedwidth">
-        seconds</span> that ARP&#39;s may be cached by the AA. Defaults to
-        <span class="fixedwidth">0</span>, or no caching.</dd>
-    </dl>
-    <p>Handle Repository Configuration:</p>
-    <dl>
-        <dd class="attributeoptlong"><span class="fixedwidth">
-        edu.internet2.middleware.shibboleth.hs.HandleRepository.implementation = 
-        &lt;string&gt;</span> </dd>
-        <dd class="valueopt">Specifies the method by which the HS and AA share 
-        handles. These are by default passed by memory(which can be specified 
-        explicitly using <span class="fixedwidth">
-        edu.internet2.middleware.shibboleth.hs.provider. MemoryHandleRepository</span>), 
-        and may also be passed using symmetric encryption with
-        <span class="fixedwidth">
-        edu.internet2.middleware.shibboleth.hs.provider.CryptoHandleRepository</span>.</dd>
-    </dl>
-    <p>edu.internet2.middleware.shibboleth.hs.provider. MemoryHandleRepository
-    <font color="#5555EE">(specify if <span class="fixedwidth">
-    edu.internet2.middleware.shibboleth.hs.HandleRepository. implementation</span> 
-    is <span class="fixedwidth">MemoryHandleRepository</span>)</font></p>
-    <blockquote>
-        <dl>
-            <dd class="attributeoptlong"><span class="fixedwidth">
-            edu.internet2.middleware.shibboleth.hs.BaseHandleRepository.handleTTL 
-            = &lt;seconds&gt;</span> </dd>
-            <dd class="valueopt">Specifies the time in <span class="fixedwidth">
-            seconds</span> for which issued handles are valid. Defaults to
-            <span class="fixedwidth">1800</span>, or 30 minutes. The time should 
-            be long enough to allow for clock skew and short enough to protect 
-            against various attacks. Consult your federation guidelines for 
-            further advice.</dd>
-        </dl>
-    </blockquote>
-    <p>edu.internet2.middleware.shibboleth.hs.provider.CryptoHandleRepository
-    <font color="#5555EE">(specify if <span class="fixedwidth">
-    edu.internet2.middleware.shibboleth.hs.HandleRepository. implementation</span> 
-    is <span class="fixedwidth">CryptoHandleRepository</span>)</font></p>
-    <p>In order to use the crypto repository implementation, you must have a
-    <span class="fixedwidth">DESede</span> secret key in a keystore of type
-    <span class="fixedwidth">JCEKS</span>. The origin distribution includes a 
-    program that will automatically generate such a key. In order to invoke it, 
-    run <span class="fixedwidth">./ant genSecret</span>, which will create a 
-    keystore in <span class="fixedwidth">$SHIB_HOME/src/conf/handle.jks</span> 
-    that includes the key, with an alias of <span class="fixedwidth">handleKey</span> 
-    and a password of <span class="fixedwidth">shibhs</span>. If
-    <span class="fixedwidth">./ant dist</span> is run subsequently, this 
-    keystore will be included in the webapp archive that is created.</p>
-    <blockquote>
-        <dl>
-            <dd class="attributelong"><span class="fixedwidth">
-            edu.internet2.middleware.shibboleth.hs.provider.CryptoHandleRepository.keyStorePath 
-            = &lt;pathname&gt;</span> </dd>
-            <dd class="value">Specifies the path to the keystore containing the 
-            key used to encrypt passed principal identifiers.</dd>
-            <dd class="attributelong"><span class="fixedwidth">
-            edu.internet2.middleware.shibboleth.hs.provider.CryptoHandleRepository.keyStorePassword 
-            = &lt;password&gt;</span> </dd>
-            <dd class="value">Specifies the password for the keystore.</dd>
-            <dd class="attributelong"><span class="fixedwidth">
-            edu.internet2.middleware.shibboleth.hs.provider.CryptoHandleRepository.keyStoreKeyAlias 
-            = &lt;password&gt;</span> </dd>
-            <dd class="value">Specifies the alias for the appropriate encryption 
-            key within the keystore.</dd>
-            <dd class="attributelong"><span class="fixedwidth">
-            edu.internet2.middleware.shibboleth.hs.provider.CryptoHandleRepository.keyStoreKeyPassword 
-            = &lt;password&gt;</span> </dd>
-            <dd class="valueopt">Specifies the password used to retrieve the 
-            key.</dd>
-            <dd class="attributeoptlong"><span class="fixedwidth">
-            edu.internet2.middleware.shibboleth.hs.CryptoHandleRepository.handleTTL 
-            = &lt;seconds&gt;</span> </dd>
-            <dd class="valueopt">Specifies the time in <span class="fixedwidth">
-            seconds</span> for which issued handles are valid. Defaults to
-            <span class="fixedwidth">1800</span>, or 30 minutes. The time should 
-            be long enough to allow for clock skew and short enough to protect 
-            against various attacks. Consult your federation guidelines for 
-            further advice.</dd>
-        </dl>
-    </blockquote>
-    <p>Federation Configuration:</p>
-    <dl>
-        <dd class="attributelong"><span class="fixedwidth">
-        edu.internet2.middleware.shibboleth.audiences = &lt;URI&#39;s&gt;</span> </dd>
-        <dd class="value">Specifies a list of <span class="fixedwidth">URI</span>&#39;s 
-        that will be used for the <span class="fixedwidth">Audience</span> field 
-        of the SAML attribute assertion. All URI&#39;s listed will be sent with any 
-        assertion issued by the AA. These URI&#39;s are defined and provided by and 
-        correspond to federations.<p>Note that the values of the URI&#39;s here <b>
-        must</b> match one of the policy URI&#39;s accepted by the receiving target 
-        in the <span class="fixedwidth">[policies]</span> section of
-        <span class="fixedwidth">shibboleth.ini</span> or interoperation will 
-        fail by design. </dd>
+        </table></li>
+<li><span class="fixed">maxHSThreads</span>: This attribute places a limit on the number of threads the handle service will spawn and may be useful for limiting the load of signing and other operations and improving performance.</li>
+<li><span class="fixed">passThruErrors</span>: This boolean attribute determines whether the origin will relay errors in flows to the target for use in displaying these errors to the browser in the case of an unsuccessful transaction.</li>
+<li><span class="fixed">resolverConfig</span> specifies the location of the configuration file for the resolver the AA uses to build attributes and if unspecified defaults to <span class="fixed">/conf/resolver.xml</span>. For information on how to configure and use the attribute resolver, consult section <a href="4.e.">4.e</a>.</li>
+</ul>
+</dd>
+
+        <dd class="attribute"><a name="confStorePassword"><span class="fixed">&lt;StorePassword&gt;<i>string</i>&lt;/StorePassword&gt;</span></a></dd>
+        <dd class="value">Specifies the password for the keystore.  Contained by the <a href="#confKeyStoreResolver"><span class="fixed">KeyStoreResolver</span></a> element.</dd>
+
+        <dd class="attribute"><a name="confTransactionLog"><span class="fixed">&lt;TransactionLog location=&quot;<i>URL</i>&quot;&gt;</span></a></dd>
+        <dd class="value">Paired with an <a href="#confErrorLog"><span class="fixed">ErrorLog</span></a> element, this will log all transactions that the origin is involved in.  The information in this file is sensitive and may be useful for auditing and security purposes.  Must be contained by a <a href="#confLogging"><span class="fixed">Logging</span></a> element.</dd>
+
     </dl>
 </blockquote>
 <p><br>
@@ -1288,23 +1640,25 @@ configuration</h4>
     the AA retrieves information; a user ARP applies only to the individual user 
     for whom it is defined. The set of principals to whom the ARP applies is 
     defined by the name of the ARP file: the site ARP is stored in
-    <span class="fixedwidth">arp.site.xml</span> and user ARP&#39;s are stored as
-    <span class="fixedwidth">arp.user.$PRINCIPALNAME.xml</span>. Up to two ARP&#39;s 
+    <span class="fixed">arp.site.xml</span> and user ARP&#39;s are stored as
+    <span class="fixed">arp.user.$PRINCIPALNAME.xml</span>. Up to two ARP&#39;s 
     will apply to a principal: the site ARP, and the user ARP for that 
     principal.</p>
-    <p>Each ARP acts as a container that holds a set of ARP rules that are 
-    applicable to the principals that ARP is effective for. Each ARP rule 
-    specifies a single release policy within the ARP container pertaining to a 
-    specific set of targets. This set of targets may be specified as a specific 
-    SHAR, a SHAR tree, or a regular expression, and becomes the ARP rule&#39;s 
-    target definition. Each ARP rule may contain specifications regarding the 
-    release of any number of attribute values to requests matching that ARP rule 
-    for that user. ARP rules may be flagged as default, implying that they are 
-    always applied to any user matched by the ARP container. Note that ARP&#39;s may 
-    also be used to restrict specific attribute/value pairs in addition to 
-    restricting or releasing individual attributes.</p>
+    <p>Each ARP acts as a container that holds a set of ARP rules that are
+    applicable to the principals that ARP is effective for. Each ARP rule
+    specifies a single release policy within the ARP container pertaining to a
+    particular target application.  For 1.2 targets, this is a single URI
+    matching a <span class="fixed">providerId</span>.  Prior to 1.2, URI's for
+    targets were not registered; this means that the SHAR name must be used in
+    release policies for 1.1 targets accessed by users from this origin.  Each
+    ARP rule may contain specifications regarding the release of any number of
+    attribute values to requests matching that ARP rule for that user. ARP rules
+    may be flagged as default, implying that they are always applied to any user
+    matched by the ARP container. Note that ARP&#39;s may also be used to
+    restrict specific attribute/value pairs in addition to restricting or
+    releasing individual attributes.</p>
     <p>When a query is received, the AA generates an effective ARP, which is the 
-    fully evaluated set of ARP rules regarding that SHAR based on all ARP 
+    fully evaluated set of ARP rules regarding that relying party based on all ARP 
     containers applicable to the principal. This effective ARP is then applied 
     to attribute values retrieved from the directory and the appropriate 
     assertion is constructed. Default rules are always included in construction 
@@ -1313,14 +1667,13 @@ configuration</h4>
 <h4><a name="5.b.i."></a>5.b.i. ARP Processing</h4>
 <blockquote>
     <blockquote>
-        <p>When a request arrives from a particular SHAR, the applicable set of 
+        <p>When a request arrives from a particular relying party, the applicable set of 
         ARP rules are parsed into an effective ARP. This parsing is done as 
         follows:</p>
         <ol type="1">
             <li>Identify all ARP&#39;s that should be applied to a particular 
             principal. This is done by isolating the files in the folder 
-            specified by <span class="fixedwidth">
-            edu.internet2.middleware.shibboleth.aa.arp.provider.FileSystemArpRepository.Path</span> 
+            specified by the <a href="#confArpRepository"><span class="fixed">ArpRepository</span></a> element 
             that have the name either arp.site.xml or 
             arp.user.$PRINCIPALNAME.xml.</li>
             <li>Find all ARP rules relevant to the query:
@@ -1331,12 +1684,12 @@ configuration</h4>
                 <li>For each non-default rule in each identified ARP, the 
                 matching functions specified in the rule&#39;s target definition are 
                 performed. A separate matching function is performed for the 
-                requesting SHAR and the resource on behalf of which the SHAR is 
+                requesting SHAR and the providerId on behalf of which the SHAR is 
                 making the request.</li>
-                <li>Each matching function evaluates to <span class="fixedwidth">
+                <li>Each matching function evaluates to <span class="fixed">
                 TRUE</span> if the match is successful or
-                <span class="fixedwidth">FALSE</span> if it is unsuccessful. If 
-                both functions evaluate to <span class="fixedwidth">TRUE</span>, 
+                <span class="fixed">FALSE</span> if it is unsuccessful. If 
+                both functions evaluate to <span class="fixed">TRUE</span>, 
                 the rule is included in the Effective ARP.</li>
             </ol>
             </li>
@@ -1344,17 +1697,17 @@ configuration</h4>
             <ol type="i">
                 <li>For each attribute, compile a temporary list of associated 
                 rules that includes all values with a release qualifier of
-                <span class="fixedwidth">permit</span>.</li>
+                <span class="fixed">permit</span>.</li>
                 <li>Subtract from this list all attribute values with rules 
-                specifying a release qualifier of <span class="fixedwidth">deny</span>. 
+                specifying a release qualifier of <span class="fixed">deny</span>. 
                 The resulting list represents the allowable release values for 
                 the attribute and is used as a mask for the values which are 
                 returned from the Attribute Resolver.</li>
                 <li>If a statement specifies that all values should be 
-                permitted, then specific <span class="fixedwidth">deny</span> 
+                permitted, then specific <span class="fixed">deny</span> 
                 qualifiers for specific values should still be enforced. If a 
                 statement specifies that all values should be denied, then
-                <span class="fixedwidth">permit</span> qualifiers for specific 
+                <span class="fixed">permit</span> qualifiers for specific 
                 values will be ignored.</li>
             </ol>
             </li>
@@ -1367,23 +1720,23 @@ configuration</h4>
 <blockquote>
     <blockquote>
         <p>Each ARP is described by an XML file based on a standard
-        <span class="fixedwidth">.xsd</span> schema. It consists of a standard
-        <span class="fixedwidth">AttributeReleasePolicy</span> element 
-        referencing the appropriate <span class="fixedwidth">xsi:schemaLocation</span> 
-        and a self-explanatory <span class="fixedwidth">Description</span> 
-        element followed by any number of <span class="fixedwidth">Rule</span> 
-        elements. Each <span class="fixedwidth">Rule</span> element must consist 
-        of a <span class="fixedwidth">Target</span> element and one or more
-        <span class="fixedwidth">Attribute</span> elements. The
-        <span class="fixedwidth">Target</span> element specifies the rules by 
-        which the target definition is formed. The <span class="fixedwidth">
+        <span class="fixed">.xsd</span> schema. It consists of a standard
+        <span class="fixed">AttributeReleasePolicy</span> element 
+        referencing the appropriate <span class="fixed">xsi:schemaLocation</span> 
+        and a self-explanatory <span class="fixed">Description</span> 
+        element followed by any number of <span class="fixed">Rule</span> 
+        elements. Each <span class="fixed">Rule</span> element must consist 
+        of a <span class="fixed">Target</span> element and one or more
+        <span class="fixed">Attribute</span> elements. The
+        <span class="fixed">Target</span> element specifies the rules by 
+        which the target definition is formed. The <span class="fixed">
         Attribute</span> elements specifies the name and values of the 
         attributes that may be released.</p>
         <p>The simplest possible ARP is as follows, which releases
-        <span class="fixedwidth">eduPersonScopedAffiliation</span> to any target 
+        <span class="fixed">eduPersonScopedAffiliation</span> to any target 
         for the users the ARP applies to:</p>
         <blockquote>
-            <p><span class="fixedwidth">&lt;?xml version=&quot;1.0&quot;?&gt;<br>
+            <p><span class="fixed">&lt;?xml version=&quot;1.0&quot;?&gt;<br>
             &lt;AttributeReleasePolicy xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; 
             xmlns=&quot;urn:mace:shibboleth:arp:1.0&quot; xsi:schemaLocation=&quot;urn:mace:shibboleth:arp:1.0 
             shibboleth-arp-1.0.xsd&quot;&gt;<br>
@@ -1408,61 +1761,69 @@ configuration</h4>
         </blockquote>
     </blockquote>
     <p>All ARP&#39;s must take the same basic form. A detailed description of how 
-    each element of the <span class="fixedwidth">Rule</span> element may be 
+    each element of the <span class="fixed">Rule</span> element may be 
     sub-populated follows:</p>
-    <p>The <span class="fixedwidth">Target</span> element:</p>
+    <p>The <span class="fixed">Target</span> element:</p>
     <blockquote>
-        <p><span class="fixedwidth">Target</span> may contain either the
-        <span class="fixedwidth">AnyTarget</span> element, which will cause the
-        <span class="fixedwidth">Target</span> to always return
-        <span class="fixedwidth">TRUE</span>, or both the
-        <span class="fixedwidth">Requester</span> element, which provides for 
-        matches to be performed against the SHAR name and the
-        <span class="fixedwidth">Resource</span> element, which provides for 
+        <p><span class="fixed">Target</span> may contain either the
+        <span class="fixed">AnyTarget</span> element, which will cause the
+        <span class="fixed">Target</span> to always return
+        <span class="fixed">TRUE</span>, or both the
+        <span class="fixed">Requester</span> element, which provides for 
+        matches to be performed against the SHAR name for 1.1 targets or the <span class="fixed">providerId</span> for 1.2 targets, and the
+        <span class="fixed">Resource</span> element, which provides for 
         matches to be performed against the requested URL.</p>
+        <p>When going against 1.1 targets, the <span
+        class="fixed">Resource</span> element will refer to individual URL trees
+        protected by a given SHAR.  However, due to the nature of application
+        identifiers, the <span class="fixed">Resource</span> element has no
+        meaning when releasing to 1.2 targets.  These will always function as
+        though <span class="fixed">&lt;AnyResource/&gt;</span> is specified,
+        making the entire <span class="fixed">Resource</span> element necessary
+        only if this origin will be applying this ARP to 1.1 targets.</p>
         <p>There are three matches that may be performed by the AA in evaluating 
-        ARP&#39;s by using the <span class="fixedwidth">matchFunction</span> 
-        component of the <span class="fixedwidth">Requester</span> and
-        <span class="fixedwidth">Resource</span> elements. The following match 
+        ARP&#39;s by using the <span class="fixed">matchFunction</span> 
+        component of the <span class="fixed">Requester</span> and
+        <span class="fixed">Resource</span> elements. The following match 
         patterns may be specified directly following the
-        <span class="fixedwidth">Requester</span> or <span class="fixedwidth">
-        Resource</span> elements, such as <span class="fixedwidth">&lt;Requester 
+        <span class="fixed">Requester</span> or <span class="fixed">
+        Resource</span> elements, such as <span class="fixed">&lt;Requester 
         matchFunction=&quot;urn:mace:shibboleth:arp:matchFunction:regexMatch&quot;&gt;</span>:</p>
         <ul type="disc">
-            <li><span class="fixedwidth">
+            <li><span class="fixed">
             urn:mace:shibboleth:arp:matchFunction:exactShar </span>
             <blockquote>
-                <p>May be used with the <span class="fixedwidth">Requester</span> 
+                <p>May be used with the <span class="fixed">Requester</span> 
                 element.</p>
-                <p>Evaluates to <span class="fixedwidth">TRUE</span> when the 
-                string content of the <span class="fixedwidth">Requester</span> 
-                element matches exactly the name of the requesting SHAR. 
-                Otherwise evaluates to <span class="fixedwidth">FALSE</span>. 
+                <p>Evaluates to <span class="fixed">TRUE</span> when the 
+                string content of the <span class="fixed">Requester</span> 
+                element matches exactly the providerId of the requesting application of 1.2 targets or the SHAR name of 1.1 targets. 
+                Otherwise evaluates to <span class="fixed">FALSE</span>. 
                 Serves as the default value associated with
-                <span class="fixedwidth">Requester</span> if none is specified.</p>
+                <span class="fixed">Requester</span> if none is specified.</p>
             </blockquote>
             </li>
-            <li><span class="fixedwidth">
+            <li><span class="fixed">
             urn:mace:shibboleth:arp:matchFunction:resourceTree </span>
             <blockquote>
-                <p>May be used with the <span class="fixedwidth">Resource</span> 
-                element.</p>
-                <p>Evaluates to <span class="fixedwidth">TRUE</span> when the 
+                <p>May be used with the <span class="fixed">Resource</span> 
+                element. However, this has no meaning when releasing to 1.2 targets.</p>
+                <p>Evaluates to <span class="fixed">TRUE</span> when the 
                 location of the resource either matches exactly or begins with 
-                the string content of the <span class="fixedwidth">Resource</span> 
-                element. Otherwise evaluates to <span class="fixedwidth">FALSE</span>.</p>
+                the string content of the <span class="fixed">Resource</span> 
+                element. Otherwise evaluates to <span class="fixed">FALSE</span>.</p>
             </blockquote>
             </li>
-            <li><span class="fixedwidth">
+            <li><span class="fixed">
             urn:mace:shibboleth:arp:matchFunction:regexMatch </span>
             <blockquote>
-                <p>May be used with both the <span class="fixedwidth">Requester</span> 
-                and <span class="fixedwidth">Resource</span> elements.</p>
-                <p>Evaluates to <span class="fixedwidth">TRUE</span> when the 
-                name of the requesting SHAR or the requested URL tree is a valid 
+                <p>May be used with both the <span class="fixed">Requester</span> 
+                and <span class="fixed">Resource</span> elements.</p>
+                <p>Evaluates to <span class="fixed">TRUE</span> when the providerId of a request for 1.2 targets or the
+                name of the requesting SHAR for or the requested URL tree for 1.1 targets is a valid 
                 match of the regular expression represented as the content of 
                 the containing element. Otherwise evaluates to
-                <span class="fixedwidth">FALSE</span>. Regular expressions are 
+                <span class="fixed">FALSE</span>. Regular expressions are 
                 evaluated in accordance with the the
                 <a href="http://java.sun.com/j2se/1.4.2/docs/api/java/util/regex/package-summary.html">
                 Java 1.4 Pattern API</a>.</p>
@@ -1470,109 +1831,72 @@ configuration</h4>
             </li>
         </ul>
     </blockquote>
-    <p>The <span class="fixedwidth">Attribute</span> element:</p>
+    <p>The <span class="fixed">Attribute</span> element:</p>
     <blockquote>
-        <p>The <span class="fixedwidth">Attribute</span> element must always 
+        <p>The <span class="fixed">Attribute</span> element must always 
         specify the URN of the attribute whose release parameters it specifies. 
-        Additionally, it must contain either the <span class="fixedwidth">
-        AnyValue</span> element or one or more <span class="fixedwidth">Value</span> 
+        Additionally, it must contain either the <span class="fixed">
+        AnyValue</span> element or one or more <span class="fixed">Value</span> 
         elements. These elements, in turn, must specify either
-        <span class="fixedwidth">release</span> = <span class="fixedwidth">
-        permit</span> or <span class="fixedwidth">deny</span>. The
-        <span class="fixedwidth">Value</span> element must then contain one 
+        <span class="fixed">release</span> = <span class="fixed">
+        permit</span> or <span class="fixed">deny</span>. The
+        <span class="fixed">Value</span> element must then contain one 
         value for which the rule applies. Examples:</p>
         <blockquote>
-            <p><span class="fixedwidth">&lt;Attribute name=&quot;urn:mace:dir:attribute-def:eduPersonPrincipalName&quot;&gt;<br>
+            <p><span class="fixed">&lt;Attribute name=&quot;urn:mace:dir:attribute-def:eduPersonPrincipalName&quot;&gt;<br>
             &nbsp;&nbsp;&lt;AnyValue release=&quot;Permit&quot;&gt;<br>
             &lt;/Attribute&gt;<br>
             </span><br>
             </p>
-            <p>Permits the release of <span class="fixedwidth">
+            <p>Permits the release of <span class="fixed">
             eduPersonPrincipalName</span> with any value.</p>
         </blockquote>
         <blockquote>
-            <p><span class="fixedwidth">&lt;Attribute name=&quot;urn:mace:dir:attribute-def:eduPersonScopedAffiliation&quot;&gt;<br>
+            <p><span class="fixed">&lt;Attribute name=&quot;urn:mace:dir:attribute-def:eduPersonScopedAffiliation&quot;&gt;<br>
             &nbsp;&nbsp;&lt;Value release=&quot;deny&quot;&gt;member@example.edu&lt;/Value&gt;<br>
             &lt;/Attribute&gt;<br>
             </span><br>
             </p>
-            <p>Denies the release of <span class="fixedwidth">
-            eduPersonScopedAffiliation</span> value <span class="fixedwidth">
+            <p>Denies the release of <span class="fixed">
+            eduPersonScopedAffiliation</span> value <span class="fixed">
             member@example.edu</span>. Other values of the attribute may still 
-            be released if so specified by a <span class="fixedwidth">permit</span> 
+            be released if so specified by a <span class="fixed">permit</span> 
             ARP.</p>
         </blockquote>
     </blockquote>
-    <!-- ##To be included in future releases.  Not yet implemented.
-      
-      <p>There is also a special <span class="fixedwidth">AttributeIdentifier</span>
-      element that allows internal references to an attribute
-      within an ARP.  This is useful for quickly applying multiple
-      rules to the same target.  It is used as follows:</p>
-
-        <blockquote>
-          <span class="fixedwidth">
-          &nbsp;&nbsp;&lt;Rule&gt;<br>
-          
-          &nbsp;&nbsp;&nbsp;&nbsp;&lt;Target&gt;<br>
-          
-          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;AnyTarget/&gt;<br>
-          
-          &nbsp;&nbsp;&nbsp;&nbsp;&lt;/Target&gt;<br>
-          
-          &nbsp;&nbsp;&nbsp;&nbsp;&lt;Attribute
-          name=&quot;urn:mace:dir:attribute-def:eduPersonScopedAffiliation&quot;&gt;<br>
-
-          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;Value
-          release=&quot;permit&quot;&gt;member@example.edu&lt;/Value
-          &gt;<br>
-
-          &nbsp;&nbsp;&nbsp;&nbsp;&lt;/Attribute&gt;<br>
-          
-          &nbsp;&nbsp;&lt;/Rule&gt;<br>
-          
-          &nbsp;&nbsp;&lt;AttributeReference identifier=&quot;http://www.example.edu/attributes/attribute1&quot;&gt;<br>
-
-          &nbsp;&nbsp;&lt;Attribute name=&quot;urn:mace:dir:attribute-def:eduPersonScopedAffiliation&quot; identifier=&quot;http://www.example.edu/attributes/attribute1&quot;&gt;<br>
-
-          &nbsp;&nbsp;&nbsp;&nbsp;&lt;Value release=&quot;permit&quot;&gt;student@example.edu&lt;Value&gt;<br>
-
-          &nbsp;&nbsp;&lt;/Attribute&gt;<br>
-          </span>
-      -->
 </blockquote>
 <h4><a name="5.c."></a>5.c. Sharing certificate/key pairs between Apache and 
 Java keystores <font color="#5555EE">(optional)</font></h4>
 <blockquote>
     <blockquote>
-        <p>The JDK includes the command line program <span class="fixedwidth">
+        <p>The JDK includes the command line program <span class="fixed">
         keytool</span> for managing Java keystores. This utility cannot import 
         or export private key information, making it difficult to use the same 
         private key and certificate for Apache and Java-based applications. The 
-        Shibboleth distribution includes <span class="fixedwidth">extkeytool</span>, 
-        a program that can be used in conjunction with <span class="fixedwidth">
+        Shibboleth distribution includes <span class="fixed">extkeytool</span>, 
+        a program that can be used in conjunction with <span class="fixed">
         keytool</span> to perform these tasks. Select the appropriate 
         step-by-step procedure for your situation from the following guides.</p>
-        <p>Before running <span class="fixedwidth">extkeytool</span>, the 
+        <p>Before running <span class="fixed">extkeytool</span>, the 
         variable SHIB_HOME must be set to the path to the directory where the 
-        Shibboleth tarball was exploded(typically /opt/shibboleth-origin-1.1/).</p>
+        Shibboleth tarball was exploded(typically /opt/shibboleth-origin-1.2/).</p>
         <p><b>If you have a pre-exiting RSA key/certificate combination in a 
         keystore and you would like to use it with Apache:</b></p>
         <ol type="1">
             <li>Determine the alias of the keystore keyEntry containing the key 
             you would like to use in your Apache setup. Assuming that your 
-            keystore is named <span class="fixedwidth">yourstore</span>, the 
+            keystore is named <span class="fixed">yourstore</span>, the 
             following command should present a list of the entries in the 
             keystore.<blockquote>
-                <p><span class="fixedwidth">$ keytool -list -v -keystore 
+                <p><span class="fixed">$ keytool -list -v -keystore 
                 yourstore</span></p>
             </blockquote>
             </li>
             <li>Assuming that you identified the appropriate alias as
-            <span class="fixedwidth">youralias</span> and the password for the 
-            keystore is <span class="fixedwidth">yourpass</span>, enter the 
+            <span class="fixed">youralias</span> and the password for the 
+            keystore is <span class="fixed">yourpass</span>, enter the 
             following command to export the key in Base64-encoded pkcs8 format.<blockquote>
-                <p><span class="fixedwidth">$ extkeytool -exportkey -keystore 
+                <p><span class="fixed">$ extkeytool -exportkey -keystore 
                 yourstore -alias youralias -storepass yourpass -rfc -file 
                 yourkey.pkcs8</span></p>
             </blockquote>
@@ -1582,28 +1906,28 @@ Java keystores <font color="#5555EE">(optional)</font></h4>
             unencrypted or encrypted:<ol type="A">
                 <li>To use the unencrypted format, enter the following command 
                 for the conversion:<blockquote>
-                    <p><span class="fixedwidth">$ openssl pkcs8 -in 
+                    <p><span class="fixed">$ openssl pkcs8 -in 
                     yourkey.pkcs8 -nocrypt|openssl rsa -out yourkey.key</span></p>
                 </blockquote>
                 </li>
                 <li>To use the encrypted format, enter the following command for 
                 the conversion:<blockquote>
-                    <p><span class="fixedwidth">$ openssl pkcs8 -in 
+                    <p><span class="fixed">$ openssl pkcs8 -in 
                     yourkey.pkcs8 -nocrypt|openssl rsa -des3 -out yourkey.enckey</span></p>
                 </blockquote>
                 </li>
             </ol>
             </li>
             <li>The following command will export the corresponding certificate.<blockquote>
-                <p><span class="fixedwidth">$ keytool -export -keystore 
+                <p><span class="fixed">$ keytool -export -keystore 
                 yourstore -alias youralias -rfc -file yourcert</span></p>
             </blockquote>
             </li>
-            <li>Set the <span class="fixedwidth">mod_ssl</span>
-            <span class="fixedwidth">SSLCertificateKeyFile</span> and
-            <span class="fixedwidth">SSLCertificateFile</span> directives to 
+            <li>Set the <span class="fixed">mod_ssl</span>
+            <span class="fixed">SSLCertificateKeyFile</span> and
+            <span class="fixed">SSLCertificateFile</span> directives to 
             point to the two files you have just created. Take care to remove 
-            any temporary files you created (i.e. <span class="fixedwidth">
+            any temporary files you created (i.e. <span class="fixed">
             yourkey.pkcs8</span>) and set appropriate file permissions, 
             especially if you chose to store the key in an unencrypted format.</li>
         </ol>
@@ -1612,9 +1936,9 @@ Java keystores <font color="#5555EE">(optional)</font></h4>
         <ol type="1">
             <li>Convert the private key to unencrypted DER-encoded pkcs8 format. 
             Assuming your PEM-encoded key is stored in a file named
-            <span class="fixedwidth">yourkey.enckey</span>, enter the following 
+            <span class="fixed">yourkey.enckey</span>, enter the following 
             command.<blockquote>
-                <p><span class="fixedwidth">$ openssl pkcs8 -in yourkey.enckey 
+                <p><span class="fixed">$ openssl pkcs8 -in yourkey.enckey 
                 -topk8 -nocrypt -outform DER -out yourkey.der.pkcs8</span></p>
             </blockquote>
             </li>
@@ -1622,23 +1946,23 @@ Java keystores <font color="#5555EE">(optional)</font></h4>
             series of PEM-encoded X509 certificates representing a complete 
             trust chain, from the root CA certificate to the certificate that 
             matches your private key. If your certificate is stored in a file 
-            named <span class="fixedwidth">mycert</span> and the CA signer 
-            certificate is stored in a file named <span class="fixedwidth">
+            named <span class="fixed">mycert</span> and the CA signer 
+            certificate is stored in a file named <span class="fixed">
             ca.cert</span>, you might enter the following command to create the 
             bundle.<blockquote>
-                <p><span class="fixedwidth">$ cat mycert ca.cert &gt; cert.bundle</span></p>
+                <p><span class="fixed">$ cat mycert ca.cert &gt; cert.bundle</span></p>
             </blockquote>
-            <p><b>Note: <span class="fixedwidth">mod_ssl</span>-enabled Apache 
+            <p><b>Note: <span class="fixed">mod_ssl</span>-enabled Apache 
             installations include a number of commonly recognized CA 
-            certificates in the <span class="fixedwidth">ca-bundle.crt</span> 
-            file under the <span class="fixedwidth">$ServerRoot/conf/ssl.crt/</span> 
+            certificates in the <span class="fixed">ca-bundle.crt</span> 
+            file under the <span class="fixed">$ServerRoot/conf/ssl.crt/</span> 
             directory.</b> </li>
             <li>Import the key and certificate into the keystore. Assuming you 
-            have already created a keystore named <span class="fixedwidth">
-            yourstore</span> with a password of of <span class="fixedwidth">
+            have already created a keystore named <span class="fixed">
+            yourstore</span> with a password of of <span class="fixed">
             yourpass</span>, enter the following command to store the data under 
-            the alias <span class="fixedwidth">youralias</span>.<blockquote>
-                <p><span class="fixedwidth">$ ./extkeytool -importkey -keystore 
+            the alias <span class="fixed">youralias</span>.<blockquote>
+                <p><span class="fixed">$ ./extkeytool -importkey -keystore 
                 yourstore -alias youralias -storepass yourpass -keyfile 
                 yourkey.der.pkcs8 -certfile cert.bundle -provider 
                 org.bouncycastle.jce.provider.BouncyCastleProvider</span></p>
@@ -1646,34 +1970,34 @@ Java keystores <font color="#5555EE">(optional)</font></h4>
             </li>
             <li>You can verify that the import was successful by listing entry. 
             Use the command below.<blockquote>
-                <p><span class="fixedwidth">$ keytool -list -v -keystore 
+                <p><span class="fixed">$ keytool -list -v -keystore 
                 yourstore -alias youralias</span></p>
             </blockquote>
             </li>
-            <li>Remember to delete <span class="fixedwidth">yourkey.der.pkcs8</span>, 
+            <li>Remember to delete <span class="fixed">yourkey.der.pkcs8</span>, 
             as it contains your unencrypted private key.</li>
         </ol>
         <p><b>If you are starting from scratch and do not yet have a 
         certificate/key pair:</b></p>
         <ol type="1">
             <li>Generate an RSA private key. Use the command below, substituting
-            <span class="fixedwidth">yourkey</span> with an appropriate name to 
+            <span class="fixed">yourkey</span> with an appropriate name to 
             use to refer to the key.<blockquote>
-                <p><span class="fixedwidth">$ openssl genrsa -des3 -out 
+                <p><span class="fixed">$ openssl genrsa -des3 -out 
                 yourkey.enckey 1024</span></p>
             </blockquote>
             </li>
             <li>The following command generates a Certificate Signing Request, 
             which should be communicated to a Certificate Authority.<blockquote>
-                <p><span class="fixedwidth">$ openssl req -new -key 
+                <p><span class="fixed">$ openssl req -new -key 
                 yourkey.enckey</span></p>
             </blockquote>
             </li>
             <li>The Certificate Authority should respond with a PEM-encoded X509 
-            certificate. Set the <span class="fixedwidth">mod_ssl</span>
-            <span class="fixedwidth">SSLCertificateKeyFile</span> directive to 
+            certificate. Set the <span class="fixed">mod_ssl</span>
+            <span class="fixed">SSLCertificateKeyFile</span> directive to 
             point to the key file you just created and the
-            <span class="fixedwidth">SSLCertificateFile</span> directive to 
+            <span class="fixed">SSLCertificateFile</span> directive to 
             point to file containing the certificate issued by the Certificate 
             Authority. Previous sections explaion how to share the 
             key/certificate pair with a Java keystore.</li>
@@ -1687,10 +2011,10 @@ Java keystores <font color="#5555EE">(optional)</font></h4>
     <p>Shibboleth provides a powerful attribute resolver that allows origins to 
     quickly configure the retrieval of simple attributes from standard types of 
     attribute stores. The resolver is configured using an xml file wich should 
-    be pointed to with the <span class="fixedwidth">
+    be pointed to with the <span class="fixed">
     edu.internet2.middleware.shibboleth.aa. 
     attrresolv.AttributeResolver.ResolverConfig</span> propety in
-    <span class="fixedwidth">origin.properties</span> as described in section
+    <span class="fixed">origin.xml</span> as described in section
     <a href="#4.a.">4.a</a>. For more complex attributes or those that require 
     processing before release, customized Java classes will need to be written. 
     For more information, consult the programmer&#39;s guide.</p>
@@ -1701,64 +2025,64 @@ Java keystores <font color="#5555EE">(optional)</font></h4>
     can be as simple as taking an unmodified string value from a data connector 
     and tagging it with a name or can include arbitrarily complex business 
     rules.</p>
-    <p>The <span class="fixedwidth">resolver.xml</span> file that is pointed to 
-    by <span class="fixedwidth">origin.properties</span> consists of zero or 
+    <p>The <span class="fixed">resolver.xml</span> file that is pointed to 
+    by <span class="fixed">origin.xml</span> consists of zero or 
     more attribute definitions followed by zero or more data connectors. Each 
     attribute definition consists of an identifier corresponding to the URN of 
     the attribute, and optional references to data connectors on which it 
     depends. Each data connector consists of a string identifier which is used 
     by attribute definitions that refer to it, and one or more elements specific 
     to the configuration of that data connector.</p>
-    <p>Shibboleth comes with two attribute definitions provided in version 1.1: 
-    the <span class="fixedwidth">SimpleAttributeDefinition</span>, which acts as 
+    <p>Shibboleth comes with two attribute definitions provided in version 1.2: 
+    the <span class="fixed">SimpleAttributeDefinition</span>, which acts as 
     a basic proxy for attributes supplied by data connectors with some name 
-    conversion and attribute scoping added, and a <span class="fixedwidth">
+    conversion and attribute scoping added, and a <span class="fixed">
     CustomAttributeDefinition</span>, which can be used to configure 
-    user-created attribute definition plugins. Similarly, Shibboleth 1.1 comes 
-    with two data connectors: the <span class="fixedwidth">
+    user-created attribute definition plugins. Similarly, Shibboleth 1.2 comes 
+    with two data connectors: the <span class="fixed">
     JNDIDirectoryDataConnector</span>, which pulls data from any source for 
     which there is a JNDI Directory Context implementation, including LDAP, NDS, 
-    etc., and the <span class="fixedwidth">CustomDataConnector</span>, which is 
+    etc., and the <span class="fixed">CustomDataConnector</span>, which is 
     used to configure user-created data connector plugins.</p>
     <p>A detailed explanation of each configuration option for the provided 
     connectors follows:</p>
-    <p><span class="fixedwidth">JNDIDirectoryDataConnector</span>:</p>
+    <p><span class="fixed">JNDIDirectoryDataConnector</span>:</p>
     <dl>
-        <dd class="attribute"><span class="fixedwidth">id = &lt;string&gt;</span> </dd>
+        <dd class="attribute"><span class="fixed">id = &lt;string&gt;</span> </dd>
         <dd class="value">Specifies a unique, textual name for the connector 
         used by attribute definitions to refer to and use it to build 
-        attributes. Contained within the <span class="fixedwidth">
+        attributes. Contained within the <span class="fixed">
         JNDIDirectoryDataConnector</span> element.</dd>
-        <dd class="attribute"><span class="fixedwidth">&lt;Property name=&quot;&lt;name&gt;&quot; 
+        <dd class="attribute"><span class="fixed">&lt;Property name=&quot;&lt;name&gt;&quot; 
         value=&quot;&lt;value&gt;&quot;/&gt;</span> </dd>
-        <dd class="value">An element of the element <span class="fixedwidth">
+        <dd class="value">An element of the element <span class="fixed">
         JNDIDirectoryDataConnector</span>. Specifies a set of name/value pairs 
         that are used to configure the JNDI Directory Context. This list of 
         name/value pairs is defined by the context itself, but is specified 
-        within <span class="fixedwidth">resolver.xml</span>. Refer to the
+        within <span class="fixed">resolver.xml</span>. Refer to the
         <a href="http://http://marsalis.internet2.edu/cgi-bin/viewcvs.cgi%20%20%20%20%20%20%20%20%20%20/shibboleth/java/src/conf/resolver.ldap.xml">
         Shibboleth CVS</a> for an example of names and values used to connect to 
         an LDAP directory.</dd>
-        <dd class="attributeopt"><span class="fixedwidth">&lt;Search&gt;</span> </dd>
-        <dd class="valueopt">An element of the element <span class="fixedwidth">
+        <dd class="attributeopt"><span class="fixed">&lt;Search&gt;</span> </dd>
+        <dd class="valueopt">An element of the element <span class="fixed">
         JNDIDirectoryDataConnector</span>. This element defines the DN filter 
         used to perform the LDAP search. The search string must return no more 
         than one result.</dd>
-        <dd class="attributeopt"><span class="fixedwidth">&lt;Controls&gt;</span> </dd>
-        <dd class="valueopt">An element of the element <span class="fixedwidth">
+        <dd class="attributeopt"><span class="fixed">&lt;Controls&gt;</span> </dd>
+        <dd class="valueopt">An element of the element <span class="fixed">
         Search</span>. This element grants some fine-grained control over the 
         LDAP API calls.</dd>
-        <dd class="attributeopt"><span class="fixedwidth">&lt;cacheTime 
+        <dd class="attributeopt"><span class="fixed">&lt;cacheTime 
         &quot;&lt;seconds&gt;&quot;/&gt;</span> </dd>
-        <dd class="valueopt">An element of the element <span class="fixedwidth">
+        <dd class="valueopt">An element of the element <span class="fixed">
         JNDIDirectoryDataConnector</span>. Specifies an optional duration in
-        <span class="fixedwidth">seconds</span> for which the attribute resolver 
+        <span class="fixed">seconds</span> for which the attribute resolver 
         may cache information retrieved from this connector. The default is zero seconds (no caching)</dd>
     </dl>
-    <p>A representation of a properly constructed <span class="fixedwidth">
+    <p>A representation of a properly constructed <span class="fixed">
     JNDIDirectoryDataConnector</span> element would look like:</p>
     <blockquote>
-        <p><span class="fixedwidth">&lt;JNDIDirectoryDataConnector id=&quot;directory&quot;&gt;<br>
+        <p><span class="fixed">&lt;JNDIDirectoryDataConnector id=&quot;directory&quot;&gt;<br>
         &nbsp;&nbsp;&lt;Search filter=&quot;cn=%PRINCIPAL%&quot;&gt;<br>
         &nbsp;&nbsp;&nbsp;&nbsp;&lt;Controls searchScope=&quot;SUBTREE_SCOPE&quot; returningObjects=&quot;false&quot; /&gt;<br>
         &nbsp;&nbsp;&lt;/Search&gt;<br>
@@ -1767,75 +2091,75 @@ Java keystores <font color="#5555EE">(optional)</font></h4>
         &nbsp;&nbsp;&lt;cacheTime=&quot;2400&quot;/&gt;<br>
         &lt;/JNDIDirectoryDataConnector&gt; </span></p>
     </blockquote>
-    <p>If the ldap server must be accessed over SSL, and JDK 1.4.1 is being used, two changes must be made to the <span class="fixedwidth">JNDIDirectoryDataConnector</span> element:</p>
+    <p>If the ldap server must be accessed over SSL, and JDK 1.4.1 is being used, two changes must be made to the <span class="fixed">JNDIDirectoryDataConnector</span> element:</p>
 	<p>1. On the java.naming.provider.url Property, add &lt;port number&gt; after the hostname in the ldap url (the default port for ldap over SSL is 636),</p>
 	<p>2. Add this Property element:</p>
     <blockquote>
-		<p><span class="fixedwidth">&lt;Property name="java.naming.security.protocol" value="ssl" &quot;&gt;</span></p>
+		<p><span class="fixed">&lt;Property name="java.naming.security.protocol" value="ssl" &quot;&gt;</span></p>
 	</blockquote>
-	<p>If the ldap server must be accessed over SSL, and JDK 1.4.2 is being used, then change ldap:// to ldaps:// in the value of the <span class="fixedwidth">java.naming.provider.url</span> Property.</p>
+	<p>If the ldap server must be accessed over SSL, and JDK 1.4.2 is being used, then change ldap:// to ldaps:// in the value of the <span class="fixed">java.naming.provider.url</span> Property.</p>
 	<p>NOTE: This assumes that the ldap server's cert is rooted with a CA that is in the JVM's default keystore (ie: a commercial CA).  If not, the CA cert must be added.</p>
-    <p><span class="fixedwidth">SimpleAttributeDefinition</span>:</p>
+    <p><span class="fixed">SimpleAttributeDefinition</span>:</p>
     <dl>
-        <dd class="attribute"><span class="fixedwidth">id = &lt;string&gt;</span> </dd>
+        <dd class="attribute"><span class="fixed">id = &lt;string&gt;</span> </dd>
         <dd class="value">Specifies a unique, textual name for the attribute 
         which is used as the attribute&#39;s name when it is sent over the wire by 
-        Shibboleth. Contained within the <span class="fixedwidth">
+        Shibboleth. Contained within the <span class="fixed">
         SimpleAttributeDefinition</span> element.</dd>
-        <dd class="attributeopt"><span class="fixedwidth">&lt;AttributeDependency / 
+        <dd class="attributeopt"><span class="fixed">&lt;AttributeDependency / 
         DataConnectorDependency requires=&quot;&lt;id&gt;&quot;/&gt;</span> </dd>
-        <dd class="valueopt">An element of the element <span class="fixedwidth">
+        <dd class="valueopt">An element of the element <span class="fixed">
         SimpleAttributeDefinition</span>, which may contain 0 or more of either
-        <span class="fixedwidth">AttributeDependency</span> or
-        <span class="fixedwidth">DataConnectorDependency</span>. These specify 
+        <span class="fixed">AttributeDependency</span> or
+        <span class="fixed">DataConnectorDependency</span>. These specify 
         attributes and data connectors that can be utilized by this attribute 
         definition. Each of these elements must contain a
-        <span class="fixedwidth">requires</span> statement which this attribute 
+        <span class="fixed">requires</span> statement which this attribute 
         definition can then use to build its value.</dd>
-        <dd class="attributeopt"><span class="fixedwidth">smartScope = 
+        <dd class="attributeopt"><span class="fixed">smartScope = 
         &quot;&lt;domain&gt;&quot;</span> </dd>
         <dd class="valueopt">Specifes a domain scope to be attached to the 
         attribute. If the value of the attribute as retrieved from the data 
-        connector includes a pre-existing scope (<span class="fixedwidth">bob@foo.edu</span>), 
+        connector includes a pre-existing scope (<span class="fixed">bob@foo.edu</span>), 
         that scope is used instead. Contained within the
-        <span class="fixedwidth">SimpleAttributeDefinition</span> element.</dd>
-        <dd class="attributeopt"><span class="fixedwidth">&lt;lifeTime 
+        <span class="fixed">SimpleAttributeDefinition</span> element.</dd>
+        <dd class="attributeopt"><span class="fixed">&lt;lifeTime 
         &quot;&lt;seconds&gt;&quot;/&gt;</span> </dd>
         <dd class="valueopt">Specifies in the attribute assertion 
         how long the attribute should be cached and retained by the target upon 
         receipt. Federations and trust agreements may have some bearing on the 
         population and use of this field. Contained within the
-        <span class="fixedwidth">SimpleAttributeDefinition</span> element.</dd>
-        <dd class="attributeopt"><span class="fixedwidth">sourceName = 
+        <span class="fixed">SimpleAttributeDefinition</span> element.</dd>
+        <dd class="attributeopt"><span class="fixed">sourceName = 
         &quot;&lt;string&gt;&quot;</span> </dd>
         <dd class="valueopt">Specifies a different source attribute name to be 
         used in calls to the data connector, while the name on the wire will be 
-        the specified <span class="fixedwidth">id</span>. This would be useful 
+        the specified <span class="fixed">id</span>. This would be useful 
         to send a local UniversityID attribute as eduPersonPrincipalName. If not 
-        supplied, the connector tokenizes the <span class="fixedwidth">id</span> 
-        field and uses the section following the <span class="fixedwidth">#</span> 
-        to query data connectors. Contained within the <span class="fixedwidth">
+        supplied, the connector tokenizes the <span class="fixed">id</span> 
+        field and uses the section following the <span class="fixed">#</span> 
+        to query data connectors. Contained within the <span class="fixed">
         SimpleAttributeDefinition</span> element.</dd>
-        <dd class="attributeopt"><span class="fixedwidth">&lt;cacheTime 
+        <dd class="attributeopt"><span class="fixed">&lt;cacheTime 
         &quot;&lt;seconds&gt;&quot;/&gt;</span> </dd>
         <dd class="valueopt">Specifies an optional duration in
-        <span class="fixedwidth">seconds</span> for which the attribute resolver 
+        <span class="fixed">seconds</span> for which the attribute resolver 
         may cache this attribute for use in additional assertions.  Contained within
-        the <span class="fixedwidth">SimpleAttributeDefinition</span> element.</dd>
+        the <span class="fixed">SimpleAttributeDefinition</span> element.</dd>
     </dl>
-    <p>A representation of a properly constructed <span class="fixedwidth">
+    <p>A representation of a properly constructed <span class="fixed">
     SimpleAttributeDefinition</span> element would look like:</p>
     <blockquote>
-        <p><span class="fixedwidth">&lt;SimpleAttributeDefinition id=&quot;urn:mace:dir:attribute-def:eduPersonPrincipalName&quot;<br> 
+        <p><span class="fixed">&lt;SimpleAttributeDefinition id=&quot;urn:mace:dir:attribute-def:eduPersonPrincipalName&quot;<br> 
         smartScope=&quot;shibdev.edu&quot; cacheTime=&quot;600&quot; lifeTime=&quot;3600&quot;  sourceName=&quot;universityPerson&quot;&gt;<br>
         &nbsp;&nbsp;&lt;DataConnectorDependency requires=&quot;dataConnector&quot;/&gt;<br>
         &nbsp;&nbsp;&lt;AttributeDependency requires=&quot;urn:mace:dir:attribute-def:eduPersonScopedAffiliation&quot;/&gt;<br>
         &lt;/SimpleAttributeDefinition&gt; </span></p>
     </blockquote>
-    <p>A properly formed <span class="fixedwidth">resolver.xml</span> file to 
+    <p>A properly formed <span class="fixed">resolver.xml</span> file to 
     automatically generate a simple response for EPPN may take the form:</p>
     <blockquote>
-        <p><span class="fixedwidth">&lt;AttributeResolver xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; 
+        <p><span class="fixed">&lt;AttributeResolver xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; 
         xmlns=&quot;urn:mace:shibboleth:resolver:1.0&quot; xsi:schemaLocation=&quot;urn:mace:shibboleth:resolver:1.0 
         shibboleth-resolver-1.0.xsd&quot;&gt;<br>
         <br>
@@ -1849,34 +2173,34 @@ Java keystores <font color="#5555EE">(optional)</font></h4>
         /&gt;<br>
         &lt;/AttributeResolver&gt; </span></p>
     </blockquote>
-    <p>There are additional examples of <span class="fixedwidth">resolver.xml</span> 
+    <p>There are additional examples of <span class="fixed">resolver.xml</span> 
     files provided in the
     <a href="http://marsalis.internet2.edu/cgi-bin/viewcvs.cgi/shibboleth/java/src/conf/">
     Shibboleth CVS</a>.</p>
 </blockquote>
 <p><br>
 </p>
-<h4><a name="5.d.i."></a>5.d.i <span class="fixedwidth">resolvertest</span></h4>
+<h4><a name="5.d.i."></a>5.d.i <span class="fixed">resolvertest</span></h4>
 <blockquote>
     <p>Shibboleth comes bundled with the command line utility
-    <span class="fixedwidth">resolvertest</span> for testing Attribute Resolver 
-    configurations. This program takes as input <span class="fixedwidth">
+    <span class="fixed">resolvertest</span> for testing Attribute Resolver 
+    configurations. This program takes as input <span class="fixed">
     resolver.xml</span>, the name of a user, and optionally the name of a 
     requesting SHAR. It outputs the resulting SAML &lt;Attribute /&gt; elements. This 
     allows administrators to view the results of tweaking the resolver 
     configuration without having to continually reload the origin web 
-    application. <span class="fixedwidth">resolvertest</span> is also useful for testing when the AA  is first configured to use an attribute repository (ldap or sql). Initially, the following two steps must be performed:</p>
+    application. <span class="fixed">resolvertest</span> is also useful for testing when the AA  is first configured to use an attribute repository (ldap or sql). Initially, the following two steps must be performed:</p>
     <ol>
-        <li>Set the shell variable <span class="fixedwidth">SHIB_HOME</span> to 
+        <li>Set the shell variable <span class="fixed">SHIB_HOME</span> to 
         the directory path where the Shibboleth tarball was exploded (typically
-        <span class="fixedwidth">/opt/shibboleth-origin-1.1/</span>).</li>
+        <span class="fixed">/opt/shibboleth-origin-1.2/</span>).</li>
         <li>Move to $SHIB_HOME/bin</li>
     </ol>
-    <p><span class="fixedwidth">resolvertest</span> may then be used by 
+    <p><span class="fixed">resolvertest</span> may then be used by 
     executing the shell script, passing the name of a user and a URL to the 
     Attribute Resolver configuration file as parameters. For example:</p>
     <blockquote>
-        <p><span class="fixedwidth">$ ./resolvertest --user=wassa 
+        <p><span class="fixed">$ ./resolvertest --user=wassa 
         --file=file:///$SHIB_HOME/src/conf/resolver.xml</span></p>
     </blockquote>
     <h5>NOTE: This program does not filter the resulting attributes through the 
@@ -1920,7 +2244,7 @@ handling for Shibboleth origins. This information is not intended to be
 comprehensive, but instead rudimentary guidelines for basic configuration tests 
 and problems. For more detailed information or answers to specific problems not 
 addressed in this section, please mail
-<a href="mailto:mace-shib-users@internet2.edu">mace-shib-users@internet2.edu</a> 
+<a href="mailto:shibboleth-users@internet2.edu">shibboleth-users@internet2.edu</a> 
 with a thorough description of errors and configurations used.</p>
 <h4><a name="6.a."></a>6.a. Basic Testing</h4>
 <blockquote>
@@ -1941,21 +2265,21 @@ with a thorough description of errors and configurations used.</p>
 <blockquote>
     <p>Shibboleth&#39;s origin components log various operations which may prove 
     useful for auditing, testing, and security purposes. This data is sent 
-    through <span class="fixedwidth">log4j</span>&#39;s standard mechanism. The 
+    through <span class="fixed">log4j</span>&#39;s standard mechanism. The 
     location of the log file, the level at which the log is output, the 
     formatting of the logs, and many more options may be configured by editing
-    <span class="fixedwidth">/WEB-INF/classes/conf/log4j.properties</span>. By 
+    <span class="fixed">/WEB-INF/classes/conf/log4j.properties</span>. By 
     default, it is setup to log to the console of the servlet container, with a 
-    level of <span class="fixedwidth">WARN</span>, but there is also a commented 
+    level of <span class="fixed">WARN</span>, but there is also a commented 
     out example in the file to give a possible alternate configuration.</p>
 </blockquote>
 <h4><a name="6.c."></a>6.c. Common Problems</h4>
 <blockquote>
     <p>A knowledge base is being developed in the
-    <a href="http://www.columbia.edu/~wassa/shib.faq/shibboleth-faq.html">
+    <a href="https://umdrive.memphis.edu/wassa/public/shib.faq/shibboleth-faq.html">
     Shibboleth Deployer&#39;s FAQ</a>. Please mail
-    <a href="mailto:mace-shib-users@internet2.edu">mace-shib-users@ 
-    internet2.edu</a> with any additional questions or problems encountered that 
+    <a href="mailto:shibboleth-users@internet2.edu">shibboleth-users@nternet2.edu</a>
+    with any additional questions or problems encountered that 
     are not answered by this basic guide.</p>
 </blockquote>
 
