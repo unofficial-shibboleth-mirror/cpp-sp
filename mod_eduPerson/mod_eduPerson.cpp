@@ -61,6 +61,10 @@
 #include "http_core.h"
 #include "http_log.h"
 
+#ifdef WIN32
+# undef strtoul
+#endif
+
 // SAML Runtime
 #include <saml.h>
 #include <shib.h>
