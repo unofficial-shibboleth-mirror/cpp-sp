@@ -1,0 +1,104 @@
+Name:		shibboleth
+Summary:	Open source system to enable inter-institutional resource sharing
+Version:	@-VERSION-@
+Release:	1
+#Copyright:	University Corporation for Advanced Internet Development, Inc.
+Group:		System Environment/Libraries
+License:	Apache style
+URL:		http://shibboleth.internet2.edu/
+Source0:	http://wayf.internet2.edu/shibboleth/%{name}-%{version}.tar.gz
+Source1:	http://wayf.internet2.edu/shibboleth/%{name}-%{version}.tar.gz.asc
+BuildRoot:	%{_tmppath}/%{name}-%{version}-root
+
+BuildRequires:	openssl-devel, curl-devel >= 7.10.6, xerces-c-devel >= 2.6.1
+BuildRequires:	xml-security-c-devel >= 1.1.0, log4cpp-devel >= 0.3.5
+BuildRequires:	zlib-devel, opensaml-devel, httpd-devel
+
+%description
+Shibboleth, a project of Internet2/MACE, is developing architectures,
+policy structures, practical technologies, and an open source
+implementation to support inter-institutional sharing of web resources
+subject to access controls. In addition, Shibboleth will develop a
+policy framework that will allow inter-operation within the higher
+education community.
+
+This package contains the shibboleth runtime library and apache module.
+
+%package devel
+Summary: Shibboleth development Headers
+Group: Development/Libraries
+Requires: %{name} = %{version}
+
+%description devel
+Shibboleth, a project of Internet2/MACE, is developing architectures,
+policy structures, practical technologies, and an open source
+implementation to support inter-institutional sharing of web resources
+subject to access controls. In addition, Shibboleth will develop a
+policy framework that will allow inter-operation within the higher
+education community.
+
+This package contains the headers and other necessary files to build
+applications that use the shibboleth library.
+
+%prep
+%setup -q
+
+%build
+%configure --enable-apache-20
+make
+
+%install
+[ "$RPM_BUILD_ROOT" != "/" ] && rm -rf $RPM_BUILD_ROOT
+rm -rf _docs
+
+make install DESTDIR=$RPM_BUILD_ROOT
+mv $RPM_BUILD_ROOT/usr/doc/shibboleth _docs
+
+find $RPM_BUILD_ROOT/%{_libexecdir} -type f -or -type l | grep \.so |
+  sed -e "s|$RPM_BUILD_ROOT||" | sort > rpm.filelist
+
+%check || :
+make check
+
+%clean
+[ "$RPM_BUILD_ROOT" != "/" ] && rm -rf $RPM_BUILD_ROOT
+
+%post
+/sbin/ldconfig
+
+%postun
+/sbin/ldconfig
+
+%files -f rpm.filelist
+%defattr(-,root,root,-)
+%doc _docs/CREDITS.txt _docs/InQueue.html _docs/NEWS.txt _docs/logo.jpg
+%doc _docs/DEPLOY-GUIDE-ORIGIN.html _docs/main.css _docs/README.txt
+%doc _docs/DEPLOY-GUIDE-TARGET.html _docs/LICENSE.txt _docs/mysql-4.0.12.diff
+%{_bindir}/shar
+%{_bindir}/siterefresh
+%{_libdir}/libshib.so.*
+%{_libdir}/libshib-target.so.*
+%dir %{_sysconfdir}/shibboleth
+%{_sysconfdir}/shibboleth/*.xsd
+%config %{_sysconfdir}/shibboleth/*.xml
+%config %{_sysconfdir}/shibboleth/*.html
+%config %{_sysconfdir}/shibboleth/*.logger
+%config %{_sysconfdir}/shibboleth/inqueue.pem
+%config %{_sysconfdir}/shibboleth/shar.crt
+%config %{_sysconfdir}/shibboleth/shar.key
+%{_sysconfdir}/shibboleth/apache*.config
+
+%exclude %{_bindir}/shibtest
+%exclude %{_bindir}/posttest
+%exclude %{_bindir}/test-client
+%exclude %{_libexecdir}/*.la
+
+%files devel
+%defattr(-,root,root,-)
+%{_includedir}
+%{_libdir}/libshib.so
+%{_libdir}/libshib-target.so
+
+%changelog
+* Tue Oct 19 2004  Derek Atkins  <derek@ihtfp.com>  - 1.2-1
+- Create SPEC file based on various versions in existence.
