@@ -386,7 +386,7 @@
                 	<attribute name="access" type="anyURI" use="required"/>
                 	<attribute name="supportContact" type="string" use="required"/>
                 	<attribute name="logoLocation" type="anyURI" use="required"/>
-                	<anyAttribute namespace="##other" processContents="lax"/>
+                	<anyAttribute namespace="##any" processContents="lax"/>
                 </extension>
             </complexContent>
 		</complexType>
