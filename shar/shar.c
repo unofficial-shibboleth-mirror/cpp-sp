@@ -15,13 +15,7 @@
 
 #include "config.h"
 
-#include <shib-target/shib-target.h>
-
-typedef struct {
-  u_long prog;
-  u_long vers;
-  void (*dispatch)();
-} ShibRPCProtocols;
+#include "shar-utils.h"
 
 #ifdef NEED_SVCFD_CREATE_DEFN
 extern SVCXPRT* svcfd_create ();
@@ -30,11 +24,35 @@ extern SVCXPRT* svcfd_create ();
 extern void shibrpc_prog_1(struct svc_req *, SVCXPRT *);
 static int shar_run = 1;
 
-static int
-new_connection (ShibSocket listener, const ShibRPCProtocols protos[], int numproto)
+int
+shar_create_svc(ShibSocket sock, const ShibRPCProtocols protos[], int numprotos)
 {
   int i;
   SVCXPRT *svc;
+
+  /* Wrap an RPC Service around the new connection socket */
+  svc = svcfd_create (sock, 0, 0);
+  if (!svc) {
+    fprintf (stderr, "Cannot create RPC Listener\n");
+    return -1;
+  }
+
+  /* Register the SHIBRPC RPC Program */
+  for (i = 0; i < numprotos; i++) {
+    if (!svc_register (svc, protos[i].prog, protos[i].vers,
+		       protos[i].dispatch, 0)) {
+      svc_destroy(svc);
+      close (sock);
+      fprintf (stderr, "Cannot register RPC Program\n");
+      return -2;
+    }
+  }
+  return 0;
+}
+
+static int
+new_connection (ShibSocket listener, const ShibRPCProtocols protos[], int numproto)
+{
   ShibSocket sock;
 
   /* Accept the connection */
@@ -43,33 +61,18 @@ new_connection (ShibSocket listener, const ShibRPCProtocols protos[], int numpro
     return -1;
   }
 
-  /* Wrap an RPC Service around the new connection socket */
-  svc = svcfd_create (sock, 0, 0);
-  if (!svc) {
-    fprintf (stderr, "Cannot create RPC Listener\n");
-    return -2;
-  }
-
-  /* Register the SHIBRPC RPC Program */
-  for (i = 0; i < numproto; i++) {
-    if (!svc_register (svc, protos[i].prog, protos[i].vers,
-		       protos[i].dispatch, 0)) {
-      svc_destroy(svc);
-      close (sock);
-      fprintf (stderr, "Cannot register RPC Program\n");
-      return -3;
-    }
-  }
+  shar_new_connection (sock, protos, numproto);
   return 0;
 }
 
 static void
 shar_svc_run (ShibSocket listener, const ShibRPCProtocols protos[], int numproto)
 {
-  while (shar_run) {
-    fd_set readfds = svc_fdset;
-    struct timeval tv = { 0, 0 };
+  fd_set readfds;
+  struct timeval tv = { 0, 0 };
 
+  while (shar_run) {
+    FD_ZERO(&readfds);
     FD_SET(listener, &readfds);
     tv.tv_sec = 5;
 
@@ -84,12 +87,7 @@ shar_svc_run (ShibSocket listener, const ShibRPCProtocols protos[], int numproto
       continue;
 
     default:
-      if (FD_ISSET (listener, &readfds)) {
-	new_connection (listener, protos, numproto);
-	FD_CLR (listener, &readfds);
-      }
-
-      svc_getreqset (&readfds);
+      new_connection (listener, protos, numproto);
     }
   }
 }
@@ -189,7 +187,14 @@ main (int argc, char *argv[])
   if (shib_sock_bind (sock, SHIB_SHAR_SOCKET) != 0)
     return -4;
 
+  /* Initialize the SHAR Utilitites */
+  shar_utils_init();
+
+  /* Run the listener */
   shar_svc_run(sock, protos, 1);
+
+  /* Finalize the SHAR, close all clients */
+  shar_utils_fini();
 
   shib_sock_close(sock, SHIB_SHAR_SOCKET);
   fprintf (stderr, "shar_svc_run returned.\n");

@@ -11,7 +11,8 @@ endif
 
 test_client_SOURCES = test-client.c
 
-shar_SOURCES = shar.c
+shar_SOURCES = shar.c shar-utils.cpp
+noinst_HEADERS = shar-utils.h
 
 test_client_LDADD = \
   $(top_builddir)/shib-target/libshib-target.la \
