@@ -1,0 +1,60 @@
+Microsoft Developer Studio Workspace File, Format Version 6.00
+# WARNING: DO NOT EDIT OR DELETE THIS WORKSPACE FILE!
+
+###############################################################################
+
+Project: "eduPerson"=.\eduPerson\eduPerson.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+    begin source code control
+    "$/Shibboleth/eduPerson", EYIAAAAA
+    .\eduperson
+    end source code control
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name shib
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "shib"=.\shib\shib.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "shibtest"=.\shibtest\shibtest.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Global:
+
+Package=<5>
+{{{
+}}}
+
+Package=<3>
+{{{
+}}}
+
+###############################################################################
+
