@@ -36,6 +36,15 @@ shib_sock_connect (ShibSocket s, ShibSockName name)
 {
 }
 
+void
+shib_sock_close (ShibSocket s, ShibSockName name)
+{
+}
+
+int shib_sock_accept (ShibSocket listener, ShibSocket* s)
+{
+}
+
 /* XXX */
 
 #else /* !WIN32 (== UNIX) */
@@ -113,8 +122,12 @@ shib_sock_connect (ShibSocket s, ShibSockName name)
 
 /* close the socket (and remove the file) */
 void
-shib_sock_close (ShibSocket s)
+shib_sock_close (ShibSocket s, ShibSockName name)
 {
+  if (name) {
+    if (unlink (name))
+      perror ("unlink");
+  }
   close (s);
 }
 

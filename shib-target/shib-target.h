@@ -72,7 +72,7 @@ int shib_sock_accept (ShibSocket listener, ShibSocket* s);
 /*
  * close the socket
  */
-void shib_sock_close (ShibSocket s);
+void shib_sock_close (ShibSocket s, ShibSockName name);
 
 /* shib-target.cpp */
 

@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <sys/select.h>
 #include <errno.h>
+#include <signal.h>
 
 #include <shib-target/shib-target.h>
 
@@ -48,7 +49,7 @@ new_connection (ShibSocket listener, const ShibRPCProtocols protos[], int numpro
     if (!svc_register (svc, protos[i].prog, protos[i].vers,
 		       protos[i].dispatch, 0)) {
       svc_destroy(svc);
-      shib_sock_close (sock);
+      close (sock);
       fprintf (stderr, "Cannot register RPC Program\n");
       return -3;
     }
@@ -87,6 +88,48 @@ shar_svc_run (ShibSocket listener, const ShibRPCProtocols protos[], int numproto
   }
 }
 
+static void term_handler (int arg)
+{
+  shar_run = 0;
+}
+
+static int setup_signals (void)
+{
+  struct sigaction sa;
+
+  memset(&sa, 0, sizeof (sa));
+  sa.sa_handler = SIG_IGN;
+  sa.sa_flags = SA_RESTART;
+
+  if (sigaction(SIGPIPE, &sa, NULL) < 0) {
+    perror ("sigaction SIGPIPE");
+    return -1;
+  }
+
+  memset(&sa, 0, sizeof (sa));
+  sa.sa_handler = term_handler;
+  sa.sa_flags = SA_RESTART;
+
+  if (sigaction(SIGHUP, &sa, NULL) < 0) {
+    perror ("sigaction SIGHUP");
+    return -1;
+  }
+  if (sigaction(SIGINT, &sa, NULL) < 0) {
+    perror ("sigaction SIGINT");
+    return -1;
+  }
+  if (sigaction(SIGQUIT, &sa, NULL) < 0) {
+    perror ("sigaction SIGQUIT");
+    return -1;
+  }
+  if (sigaction(SIGTERM, &sa, NULL) < 0) {
+    perror ("sigaction SIGTERM");
+    return -1;
+  }
+
+  return 0;
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -96,23 +139,24 @@ main (int argc, char *argv[])
     { SHIBRPC_PROG, SHIBRPC_VERS_1, shibrpc_prog_1 }
   };
 
+  if (setup_signals() != 0)
+    return -1;
+
   /* initialize the shib-target library */
   if (shib_target_initialize(SHIBTARGET_SHAR, config))
-    return -1;
+    return -2;
 
   /* Create the SHAR listener socket */
   if (shib_sock_create (&sock) != 0)
-    return -2;
+    return -3;
 
   /* Bind to the proper port */
   if (shib_sock_bind (sock, SHIB_SHAR_SOCKET) != 0)
-    return -3;
+    return -4;
 
   shar_svc_run(sock, protos, 1);
 
-  shib_sock_close(sock);
+  shib_sock_close(sock, SHIB_SHAR_SOCKET);
   fprintf (stderr, "shar_svc_run returned.\n");
   return 0;
-
-  /* XXX: the user may have to remove the SHAR Socket */
 }
