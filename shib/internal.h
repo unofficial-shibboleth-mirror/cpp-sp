@@ -1,5 +1,5 @@
 /*
- * The OpenSAML License, Version 1.
+ * The Shibboleth License, Version 1.
  * Copyright (c) 2002
  * University Corporation for Advanced Internet Development, Inc.
  * All rights reserved
@@ -20,15 +20,15 @@
  * may appear in the software itself, if and wherever such third-party
  * acknowledgments normally appear.
  *
- * Neither the name of OpenSAML nor the names of its contributors, nor
+ * Neither the name of Shibboleth nor the names of its contributors, nor
  * Internet2, nor the University Corporation for Advanced Internet Development,
  * Inc., nor UCAID may be used to endorse or promote products derived from this
  * software without specific prior written permission. For written permission,
- * please contact opensaml@opensaml.org
+ * please contact shibboleth@shibboleth.org
  *
- * Products derived from this software may not be called OpenSAML, Internet2,
+ * Products derived from this software may not be called Shibboleth, Internet2,
  * UCAID, or the University Corporation for Advanced Internet Development, nor
- * may OpenSAML appear in their name, without prior written permission of the
+ * may Shibboleth appear in their name, without prior written permission of the
  * University Corporation for Advanced Internet Development.
  *
  *
