@@ -105,71 +105,175 @@ ShibMLP::~ShibMLP ()
   delete m_priv;
 }
 
-const char* ShibMLP::run(const string& is, const IPropertySet* props)
+const char* ShibMLP::run(const string& is, const IPropertySet* props, std::string* output)
 {
+  if (!output)
+    output=&m_generated;
   const char* line = is.c_str();
   const char* lastpos = line;
   const char* thispos;
 
-  m_generated.erase();
   m_priv->log->info("Processing string");
 
   //
   // Search for SHIBMLP tags.  These are of the form:
-  //	<shibmlp key />
+  //	<shibmlp key/>
+  //    <shibmlpif key> stuff </shibmlpif>
+  //    <shibmlpifnot key> stuff </shibmlpifnot>
   // Note that there MUST be white-space after "<shibmlp" but
   // there does not need to be white space between the key and
   // the close-tag.
   //
-  while ((thispos = strstr(lastpos, "<")) != NULL) {
+  while ((thispos = strchr(lastpos, '<')) != NULL) {
     // save the string up to this token
-    m_generated += is.substr(lastpos-line, thispos-lastpos);
+    *output += is.substr(lastpos-line, thispos-lastpos);
 
-    // Make sure this token matches our token.
-    if (strnicmp (thispos, "<shibmlp ", 9)) {
-      m_generated += "<";
-      lastpos = thispos + 1;
-      continue;
+    // Make sure this token matches our tokens.
+#ifdef HAVE_STRCASECMP
+    if (!strncasecmp(thispos, "<shibmlp ", 9))
+#else
+    if (!strnicmp(thispos, "<shibmlp ", 9))
+#endif
+    {
+        // Save this position off.
+        lastpos = thispos + 9;  // strlen("<shibmlp ")
+    
+        // search for the end-tag
+        if ((thispos = strstr(lastpos, "/>")) != NULL) {
+            string key = is.substr(lastpos-line, thispos-lastpos);
+            trimspace(key);
+    
+            map<string,string>::const_iterator i=m_map.find(key);
+            if (i != m_map.end()) {
+                *output += i->second;
+            }
+            else {
+                pair<bool,const char*> p=props ? props->getString(key.c_str()) : pair<bool,const char*>(false,NULL);
+                if (p.first) {
+                    *output += p.second;
+                }
+                else {
+                    static const char* s1 = "<!-- Unknown SHIBMLP key: ";
+                    static const char* s2 = "/>";
+                    *output += s1;
+                    *output += key + s2;
+                }
+            }
+            lastpos = thispos + 2; // strlen("/>")
+        }
     }
+#ifdef HAVE_STRCASECMP
+    else if (!strncasecmp(thispos, "<shibmlpif ", 11))
+#else
+    else if (!strnicmp(thispos, "<shibmlpif ", 11))
+#endif
+    {
+        // Save this position off.
+        lastpos = thispos + 11;  // strlen("<shibmlpif ")
 
-    // Save this position off.
-    lastpos = thispos + 9;	// strlen("<shibmlp ")
-
-    // search for the end-tag
-    if ((thispos = strstr(lastpos, "/>")) != NULL) {
-      string key = is.substr(lastpos-line, thispos-lastpos);
-      trimspace(key);
-
-      m_priv->log->debug("found key: \"%s\"", key.c_str());
-
-      map<string,string>::const_iterator i=m_map.find(key);
-      if (i != m_map.end()) {
-        m_generated += i->second;
-        m_priv->log->debug("key maps to \"%s\"", i->second.c_str());
-      }
-      else {
-        pair<bool,const char*> p=props ? props->getString(key.c_str()) : pair<bool,const char*>(false,NULL);
-        if (p.first) {
-            m_generated += p.second;
-            m_priv->log->debug("property maps to \"%s\"", p.second);
+        // search for the end of this tag
+        if ((thispos = strchr(lastpos, '>')) != NULL) {
+            string key = is.substr(lastpos-line, thispos-lastpos);
+            trimspace(key);
+            bool eval=false;
+            map<string,string>::const_iterator i=m_map.find(key);
+            if (i != m_map.end() && !i->second.empty()) {
+                eval=true;
+            }
+            else {
+                pair<bool,const char*> p=props ? props->getString(key.c_str()) : pair<bool,const char*>(false,NULL);
+                if (p.first) {
+                    eval=true;
+                }
+            }
+            lastpos = thispos + 1; // strlen(">")
+            
+            // Search for the closing tag.
+            const char* frontpos=lastpos;
+            while ((thispos = strstr(lastpos, "</")) != NULL) {
+#ifdef HAVE_STRCASECMP
+                if (!strncasecmp(thispos, "</shibmlpif>", 12))
+#else
+                if (!strnicmp(thispos, "</shibmlpif>", 12))
+#endif
+                {
+                    // We found our terminator. Process the string in between.
+                    string segment;
+                    run(is.substr(frontpos-line, thispos-frontpos),props,&segment);
+                    if (eval)
+                        *output += segment;
+                    lastpos = thispos + 12; // strlen("</shibmlpif>")
+                    break;
+                }
+                else {
+                    // Skip it.
+                    lastpos = thispos + 2;
+                }
+            }
         }
-        else {
-            static string s1 = "<!-- Unknown SHIBMLP key: ";
-            static string s2 = "/>";
-            m_generated += s1 + key + s2;
-            m_priv->log->debug("key unknown");
-        }
-      }
+    }
+#ifdef HAVE_STRCASECMP
+    else if (!strncasecmp(thispos, "<shibmlpifnot ", 14))
+#else
+    else if (!strnicmp(thispos, "<shibmlpifnot ", 14))
+#endif
+    {
+        // Save this position off.
+        lastpos = thispos + 14;  // strlen("<shibmlpifnot ")
 
-      lastpos = thispos + 2;	// strlen("/>")
+        // search for the end of this tag
+        if ((thispos = strchr(lastpos, '>')) != NULL) {
+            string key = is.substr(lastpos-line, thispos-lastpos);
+            trimspace(key);
+            bool eval=false;
+            map<string,string>::const_iterator i=m_map.find(key);
+            if (i != m_map.end() && !i->second.empty()) {
+                eval=true;
+            }
+            else {
+                pair<bool,const char*> p=props ? props->getString(key.c_str()) : pair<bool,const char*>(false,NULL);
+                if (p.first) {
+                    eval=true;
+                }
+            }
+            lastpos = thispos + 1; // strlen(">")
+            
+            // Search for the closing tag.
+            const char* frontpos=lastpos;
+            while ((thispos = strstr(lastpos, "</")) != NULL) {
+#ifdef HAVE_STRCASECMP
+                if (!strncasecmp(thispos, "</shibmlpifnot>", 15))
+#else
+                if (!strnicmp(thispos, "</shibmlpifnot>", 15))
+#endif
+                {
+                    // We found our terminator. Process the string in between.
+                    string segment;
+                    run(is.substr(frontpos-line, thispos-frontpos),props,&segment);
+                    if (!eval)
+                        *output += segment;
+                    lastpos = thispos + 15; // strlen("</shibmlpifnot>")
+                    break;
+                }
+                else {
+                    // Skip it.
+                    lastpos = thispos + 2;
+                }
+            }
+        }
+    }
+    else {
+      // Skip it.
+      *output += "<";
+      lastpos = thispos + 1;
     }
   }
-  m_generated += is.substr(lastpos-line);
+  *output += is.substr(lastpos-line);
 
-  return m_generated.c_str();
+  return output->c_str();
 }
 
-const char* ShibMLP::run(istream& is, const IPropertySet* props)
+const char* ShibMLP::run(istream& is, const IPropertySet* props, std::string* output)
 {
   static string eol = "\r\n";
   string str, line;
@@ -179,7 +283,7 @@ const char* ShibMLP::run(istream& is, const IPropertySet* props)
   while (getline(is, line))
     str += line + eol;
 
-  return run(str,props);
+  return run(str,props,output);
 }
 
 void ShibMLP::insert (RPCError& e)

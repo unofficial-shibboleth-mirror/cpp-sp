@@ -337,11 +337,11 @@ namespace shibtarget {
 
         void clear () { m_map.clear(); }
 
-        const char* run (std::istream& s, const IPropertySet* props=NULL);
-        const char* run (const std::string& input, const IPropertySet* props=NULL);
-        const char* run (const char* input, const IPropertySet* props=NULL) {
+        const char* run (std::istream& s, const IPropertySet* props=NULL, std::string* output=NULL);
+        const char* run (const std::string& input, const IPropertySet* props=NULL, std::string* output=NULL);
+        const char* run (const char* input, const IPropertySet* props=NULL, std::string* output=NULL) {
             std::string i = input;
-            return run(i,props);
+            return run(i,props,output);
         }
 
     private:
