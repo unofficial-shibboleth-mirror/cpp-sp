@@ -246,12 +246,29 @@ void STConfig::init()
     ShibINI::Iterator* iter=ini->tag_iterator(tag);
     for (const string* prov=iter->begin(); prov; prov=iter->next())
     {
-        const string source=ini->get(tag,*prov);
-        log.info("registering metadata provider: type=%s, source=%s",prov->c_str(),source.c_str());
-        if (!shibConf.addMetadata(prov->c_str(),source.c_str()))
+        string sources=ini->get(tag,*prov);
+        int j = 0;
+        for (int i = 0; i < sources.length(); i++)
         {
-            log.crit("error adding metadata provider: type=%s, source=%s",prov->c_str(),source.c_str());
-            if (!strcmp(app.c_str(), SHIBTARGET_SHAR))
+            if (sources.at(i) == ';')
+            {
+                string val = sources.substr(j, i-j);
+                j = i+1;
+                log.info("registering metadata provider: type=%s, source=%s",prov->c_str(),val.c_str());
+                if (!shibConf.addMetadata(prov->c_str(),val.c_str()))
+                {
+                    log.crit("error adding metadata provider: type=%s, source=%s",prov->c_str(),val.c_str());
+                    if (app == SHIBTARGET_SHAR)
+                        throw runtime_error("error adding metadata provider");
+                }
+            }
+        }
+        string val = sources.substr(j, sources.length()-j);
+        log.info("registering metadata provider: type=%s, source=%s",prov->c_str(),val.c_str());
+        if (!shibConf.addMetadata(prov->c_str(),val.c_str()))
+        {
+            log.crit("error adding metadata provider: type=%s, source=%s",prov->c_str(),val.c_str());
+            if (app == SHIBTARGET_SHAR)
                 throw runtime_error("error adding metadata provider");
         }
     }
