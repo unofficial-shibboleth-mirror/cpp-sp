@@ -4,7 +4,7 @@ AUTOMAKE_OPTIONS = foreign
 
 lib_LTLIBRARIES = libeduPerson.la
 
-libeduPersondir = $(includedir)/shib
+libeduPersondir = $(includedir)/eduPerson
 libeduPerson_HEADERS = eduPerson.h
 
 libeduPerson_la_SOURCES = \
