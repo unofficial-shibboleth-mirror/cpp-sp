@@ -1,6 +1,43 @@
 <Trust xmlns="urn:mace:shibboleth:1.0" xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
 
-    <KeyAuthority>
+    <!--
+    
+    <KeyAuthority> elements map entity or authority certificates in <ds:KeyInfo> to
+    <Subject> data. Omitting <Subject> acts as a wildcard (any subject).
+    
+    <Subject> elements refer to the site/provider identifier that should be matched in
+    order to apply the trust information to a signature or TLS/SSL server identity.
+    It can contain a regexp="true" attribute to indicate a pattern match instead
+    of literal matching.
+    
+    There are two types of <KeyAuthority> elements, with a Type attribute indicating
+    which one is meant. The default, Type="authority", indicates that any <ds:X509Certificate>
+    elements that follow are certificate authorities that can be trusted for validating
+    a signing certificate or TLS certificate, pending other PKIX processing rules,
+    and certificate subject examination.
+    
+    Type="entity" means that the enclosed <ds:X509Certificate> elements can be used
+    directly for verifying signatures, and no additional checking on the certificate
+    is done. This supports special cases in which out of band certificate exchange is needed.
+
+	In either case, each certificate is placed in the file encoded in base64, and wrapped in
+	a <ds:X509Certificate> element which is alone inside a <ds:X509Data> element.
+    If multiple certificates are included, they are not a chain, and so must appear in
+    separate <ds:X509Data> elements. The base64-encoded version of the certificate is the
+    same as the PEM format supported by OpenSSL but without the opening and closing
+    BEGIN/END lines.
+    
+    The first example below shows an entity certificate specified for a specific host that
+    is issuing signed assertions on behalf of a site.
+    
+    The second lengthy example shows a set of certificate authorities being applied to
+    a set of matching logical site identifiers. Such sites must sign assertions and present
+    SSL certificates signed by one of the listed authorities, and must insure that the
+    certificates appear otherwise valid and appropriate.
+	
+    -->
+
+    <KeyAuthority Type="entity">
         <ds:KeyInfo>
             <ds:X509Data>
                 <ds:X509Certificate>MIICpDCCAg2gAwIBAgICAm8wDQYJKoZIhvcNAQEEBQAwgakxCzAJBgNVBAYTAlVTMRIwEAYDVQQI
@@ -21,7 +58,7 @@ cDX2RCaY4D26R2cta7ZvXo7CUgJ7vbybSZ7QbqKs3yZcVXIL5sJXkhbZ3dnZRqiEm2VP9ZY=
         <Subject>shib2.internet2.edu</Subject>
     </KeyAuthority>
     
-    <KeyAuthority>
+    <KeyAuthority Type="authority">
         <ds:KeyInfo>
             <ds:X509Data>
             	<!-- HEPKI Master Test CA -->
