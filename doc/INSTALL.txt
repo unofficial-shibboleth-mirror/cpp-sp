@@ -1,5 +1,5 @@
-7/31/03
-Version 1.1
+3/15/04
+Version 1.2
 
 Binary distributions of the Shibboleth code are available.
 Information on obtaining and installing binaries can be found at
@@ -27,10 +27,10 @@ the necessary information.
 Once Apache is in place, you'll also need to build the libapreq library.
 Adjust the include path as needed.
 
-http://www.apache.org/dist/httpd/libapreq/libapreq-1.1.tar.gz
+http://www.apache.org/dist/httpd/libapreq/libapreq-1.3.tar.gz
 
-$ tar xvzf libapreq-1.1.tar.gz
-$ cd libapreq-1.1
+$ tar xvzf libapreq-1.3.tar.gz
+$ cd libapreq-1.3
 $ ./configure --prefix=/opt/shibboleth --enable-static=no \
     --with-apache-includes=/usr/local/apache/include
 $ make
@@ -95,8 +95,7 @@ To test your installation, you can try this:
 
 $ set LD_LIBRARY_PATH=/opt/shibboleth/lib; export LD_LIBRARY_PATH
 $ cd /opt/shibboleth
-$ bin/shibtest -d etc/shibboleth/ -h foo -q urn:mace:inqueue:example.edu \
-    -r http://www.foo.edu/ -a http://wayf.internet2.edu/InQueue/AA
+$ bin/shibtest -d etc/shibboleth/ -h foo -q urn:mace:inqueue:example.edu -r http://www.foo.edu/
 
 You should get some reasonably structured output back that lists some simple
 attributes. An error here is a pretty good sign there's trouble.
