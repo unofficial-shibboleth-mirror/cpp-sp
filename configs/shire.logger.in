@@ -18,3 +18,5 @@ log4j.rootCategory=INFO, shire_log
 log4j.category.SAML.XML=INFO
 log4j.category.shibtarget.XMLApplication=INFO
 
+# shut off transaction log from this end
+log4j.category.Shibboleth-TRANSACTION=WARN
