@@ -6,6 +6,10 @@
  * $Id$
  */
 
+#ifdef SOLARIS2
+#undef _XOPEN_SOURCE    // causes gethostname conflict in unistd.h
+#endif
+
 // SAML Runtime
 #include <saml/saml.h>
 #include <shib/shib.h>
