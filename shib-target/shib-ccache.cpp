@@ -460,11 +460,11 @@ InternalCCacheEntry::InternalCCacheEntry(SAMLAuthenticationStatement *s, const c
   m_sessionCreated = m_lastAccess = time(NULL);
 
   // Save for later.
-  p_auth = s;
-
+  p_auth = static_cast<SAMLAuthenticationStatement*>(s->clone());
+  
   // Save the serialized version of the auth statement
   ostringstream os;
-  os << *s;
+  os << *s << '\0';
   m_statement = os.str();
 
   log->info("New Session Created...");
