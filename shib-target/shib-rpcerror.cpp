@@ -14,6 +14,7 @@
 
 #include <stdexcept>
 #include <sstream>
+#include <typeinfo>
 
 #include <log4cpp/Category.hh>
 
@@ -21,12 +22,65 @@ using namespace std;
 using namespace shibtarget;
 using namespace saml;
 
+namespace {
+  int initializing = 0;
+  int initialized = 0;
+  const type_info* type_MalformedException = NULL;
+  const type_info* type_UnsupportedExtensionException = NULL;
+  const type_info* type_InvalidCryptoException = NULL;
+  const type_info* type_TrustException = NULL;
+  const type_info* type_BindingException = NULL;
+  const type_info* type_SOAPException = NULL;
+}
+
+void rpcerror_init (void)
+{
+  if (initialized)
+    return;
+
+  if (initializing++) {
+    while (!initialized);
+    return;
+  }
+
+  type_MalformedException = &typeid(MalformedException);
+  type_UnsupportedExtensionException = &typeid(UnsupportedExtensionException);
+  type_InvalidCryptoException = &typeid(InvalidCryptoException);
+  type_TrustException = &typeid(TrustException);
+  type_BindingException = &typeid(BindingException);
+  type_SOAPException = &typeid(SOAPException);
+
+  initialized = 1;
+}
+
+#define TEST_TYPE(type,str) { if (type && *type == info) return str; }
+
+const char* rpcerror_exception_type(SAMLException* e)
+{
+  if (!e)
+    return "Invalid (NULL) exception";
+
+  const type_info& info = typeid(*e);
+
+  TEST_TYPE(type_MalformedException, "Exception: XML object is malformed");
+  TEST_TYPE(type_UnsupportedExtensionException,
+	    "Exception: an unsupported extention was accessed");
+  TEST_TYPE(type_InvalidCryptoException, "Exception: cryptographic check failed");
+  TEST_TYPE(type_TrustException, "Exception: trust failed");
+  TEST_TYPE(type_BindingException,
+	    "Exception: an error occurred in binding to the AA");
+  TEST_TYPE(type_SOAPException, "Exception: SOAP error");
+
+  return "Unknown SAML Exception";
+}
 
 void RPCError::init(int stat, char const* msg)
 {
   status = stat;
   string ctx = "shibtarget.RPCError";
   log4cpp::Category& log = log4cpp::Category::getInstance(ctx);
+
+  rpcerror_init();
 
   if (status == SHIBRPC_SAML_EXCEPTION) {
     istringstream estr(msg);
@@ -66,7 +120,7 @@ const char* RPCError::toString()
   case SHIBRPC_IPADDR_MISMATCH:	return "IP Address Mismatch";
   case SHIBRPC_NO_SESSION:	return "No Session";
   case SHIBRPC_XML_EXCEPTION:	return "Xerces XML Exception";
-  case SHIBRPC_SAML_EXCEPTION:	return "Unknown OpenSAML Exception";
+  case SHIBRPC_SAML_EXCEPTION:	return rpcerror_exception_type(m_except);
   case SHIBRPC_INTERNAL_ERROR:	return "Internal Error";
   case SHIBRPC_SAX_EXCEPTION:	return "Xerces SAX Exception";
   case SHIBRPC_SESSION_EXPIRED:	return "Session Expired";

@@ -459,6 +459,7 @@ extern "C" int shire_check_user(request_rec* r)
 	
 	markupProcessor.insert ("errorType", "SHIRE Processing Error");
 	markupProcessor.insert ("errorText", e.what());
+	markupProcessor.insert ("errorDesc", "An error occurred while processing your request.");
 	return shire_error_page (r, shireError.c_str(), markupProcessor);
       }
 
@@ -662,6 +663,7 @@ extern "C" int shire_post_handler (request_rec* r)
 	
     markupProcessor.insert ("errorType", "SHIRE Processing Error");
     markupProcessor.insert ("errorText", e.what());
+    markupProcessor.insert ("errorDesc", "An error occurred while processing your request.");
     return shire_error_page (r, shireError.c_str(), markupProcessor);
   }
 
