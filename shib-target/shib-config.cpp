@@ -97,6 +97,11 @@ bool STConfig::init(const char* schemadir, const char* config)
     saml::NDC ndc("init");
     Category& log = Category::getInstance("shibtarget.STConfig");
 
+    if (!schemadir || !config) {
+        log.fatal("schema directory or config file not supplied");
+        return false;
+    }
+
     // This will cause some extra console logging, but for now,
     // initialize the underlying libraries.
     SAMLConfig& samlConf=SAMLConfig::getConfig();
@@ -138,7 +143,7 @@ bool STConfig::init(const char* schemadir, const char* config)
         //shibConf.m_plugMgr.regFactory(shibtarget::XML::htaccessType,&htaccessFactory);
         saml::XML::registerSchema(ShibTargetConfig::SHIBTARGET_NS,shibtarget::XML::SHIBTARGET_SCHEMA_ID);
         
-        log.info("loading configuration file...");
+        log.info("loading configuration file: %s", config);
         static const XMLCh uri[] = { chLatin_u, chLatin_r, chLatin_i, chNull };
         DOMImplementation* impl=DOMImplementationRegistry::getDOMImplementation(NULL);
         DOMDocument* dummydoc=impl->createDocument();
@@ -154,7 +159,7 @@ bool STConfig::init(const char* schemadir, const char* config)
         samlConf.term();
         return false;
     }
-    
+  
     log.info("finished initializing");
 
     return true;
