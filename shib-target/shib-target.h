@@ -363,6 +363,7 @@ namespace shibtarget {
 
     class Iterator {
     public:
+      virtual ~Iterator() = 0;
       virtual const std::string* begin() = 0;
       virtual const std::string* next() = 0;
     };

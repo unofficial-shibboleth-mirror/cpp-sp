@@ -406,16 +406,20 @@ ShibINI::Iterator* ShibINI::tag_iterator(const std::string& header)
 
 HeaderIterator::HeaderIterator (ShibINIPriv* inip)
 {
+  saml::NDC ndc("HeaderIterator");
   ini = inip;
   valid = false;
   ini->rwlock->rdlock();
   ini->iterators++;
+  ini->log->debug("iterators: %d", ini->iterators);
 }
 
 HeaderIterator::~HeaderIterator ()
 {
+  saml::NDC ndc("~HeaderIterator");
   ini->iterators--;
   ini->rwlock->unlock();
+  ini->log->debug("iterators: %d", ini->iterators);
 }
 
 const string* HeaderIterator::begin ()
@@ -444,16 +448,20 @@ const string* HeaderIterator::next ()
 TagIterator::TagIterator (ShibINIPriv* inip, const string& headerp)
   : header(headerp)
 {
+  saml::NDC ndc("TagIterator");
   ini = inip;
   valid = false;
   ini->rwlock->rdlock();
   ini->iterators++;
+  ini->log->debug("iterators: %d", ini->iterators);
 }
 
 TagIterator::~TagIterator ()
 {
+  saml::NDC ndc("~TagIterator");
   ini->iterators--;
   ini->rwlock->unlock();
+  ini->log->debug("iterators: %d", ini->iterators);
 }
 
 const string* TagIterator::begin ()
@@ -491,3 +499,5 @@ bool ShibINI::boolean(string& value)
 #endif
   return false;
 }
+
+ShibINI::Iterator::~Iterator() {}
