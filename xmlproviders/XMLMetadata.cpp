@@ -94,7 +94,7 @@ namespace {
         private:
             const DOMElement* m_root;
             ContactType m_type;
-            auto_ptr_char m_name;
+            auto_ptr<char> m_name;
             vector<string> m_emails;
         };
 
@@ -288,7 +288,8 @@ bool XMLMetadataImpl::Role::hasSupport(const XMLCh* version) const
     return false;
 }
 
-XMLMetadataImpl::ContactPerson::ContactPerson(const DOMElement* e) : m_root(e), m_name(e->getAttributeNS(NULL,SHIB_L(Name)))
+XMLMetadataImpl::ContactPerson::ContactPerson(const DOMElement* e)
+    : m_root(e), m_name(toUTF8(e->getAttributeNS(NULL,SHIB_L(Name))))
 {
     ContactPerson::ContactType type;
     if (!XMLString::compareString(e->getAttributeNS(NULL,SHIB_L(Type)),SHIB_L(technical)))
@@ -302,9 +303,11 @@ XMLMetadataImpl::ContactPerson::ContactPerson(const DOMElement* e) : m_root(e), 
     else if (!XMLString::compareString(e->getAttributeNS(NULL,SHIB_L(Type)),SHIB_L(other)))
         type=IContactPerson::other;
     
-    auto_ptr_char temp(e->getAttributeNS(NULL,SHIB_L(Email)));
-    if (temp.get())
-        m_emails.push_back(temp.get());
+    if (e->hasAttributeNS(NULL,SHIB_L(Email))) {
+        auto_ptr<char> temp(toUTF8(e->getAttributeNS(NULL,SHIB_L(Email))));
+        if (temp.get())
+            m_emails.push_back(temp.get());
+    }
 }
 
 XMLMetadataImpl::Provider::Provider(const DOMElement* e) : m_root(e), m_IDP(NULL), m_AA(NULL),
