@@ -164,11 +164,6 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
       log.debug ("Get the SSOAssertion");
       SAMLAssertion* ssoAssertion = profile->getSSOAssertion(*r);
 
-      // verify that we obtained an assertion
-      if (!ssoAssertion)
-	throw ShibTargetException(SHIBRPC_ASSERTION_MISSING,
-				  "Cannot find SSO Assertion");
-
       // Check against the replay cache
       log.debug ("check replay cache");
       if (profile->checkReplayCache(*ssoAssertion) == false)
@@ -179,11 +174,6 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
       log.debug ("get SSOStatement");
       auth_st = profile->getSSOStatement(*ssoAssertion);
 
-      // Verify we obtained an authentication statement
-      if (!auth_st)
-	throw ShibTargetException(SHIBRPC_AUTHSTATEMENT_MISSING,
-				  "Processing was successful but no authentication statement was found.");
-  
       // Maybe verify the origin address....
       if (argp->checkIPAddress) {
 	log.debug ("check IP Address");
@@ -202,7 +192,7 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
 				    "The IP address provided by your origin site did not match your current address.  To correct this problem you may need to bypass a local proxy server.");
       }
     }
-    catch (SAMLException &e)
+    catch (SAMLException &e)    // XXX refine this handler to catch and log different profile exceptions
     {
       log.error ("received SAML exception: %s", e.what());
       ostringstream os;
