@@ -195,9 +195,9 @@ configuration, but some older commands have been deprecated or replaced.</p>
     <li>Support for a runtime-derived per-requester persistent identifier 
     attribute to support anonymous personalization by targets has been added via 
     an attribute plugin. <span class="feature">[1.1]</span></li>
-    <li>Specialized deployments without privacy needs can configure identity-based 
-    handles interoperable with other SAML deployments. <span class="feature">
-    [1.1]</span></li>
+    <li>Specialized deployments without privacy needs can configure 
+    identity-based handles interoperable with other SAML deployments.
+    <span class="feature">[1.1]</span></li>
 </ol>
 <h5>Target</h5>
 <ol>
@@ -579,6 +579,42 @@ most minor &quot;letter&quot; updates should be usable.</p>
 <blockquote>
     <p><b>Operating System:</b> </p>
     <ul type="circle">
+        <li>Windows NT/2000/XP/2003<ul type="disc">
+            <li><a href="http://www.apache.org/dist/httpd/">Apache 1.3.27</a> or 
+            IIS 4.0+<blockquote>
+                <p>Apache must be compiled with mod_so for DSO module support, 
+                and must include SSL support (preferably using
+                <span class="fixed">mod_ssl</span>), and EAPI support (which
+                <span class="fixed">mod_ssl</span> requires and provides). 
+                Shibboleth can coexist with <span class="fixed">mod_auth</span>, 
+                which may be compiled or loaded into the server for use 
+                elsewhere, but Shibboleth does not need or use it.</p>
+                <p>Any Apache modules used, and Apache itself, must be compiled 
+                with the Microsoft DLL-based runtime, selected by compiling with 
+                the /MD switch.</p>
+            </blockquote>
+            </li>
+            <li>
+            <a href="http://shibboleth.internet2.edu/release/shib-download.html">
+            Shibboleth v1.1 Target for Windows</a><blockquote>
+                <p>Available in both self-installer and ZIP format, the 
+                installer will prompt for an install path, change default 
+                configuration files as appropriate for Windows, and set various 
+                environment variables for you. A default SHAR service can also 
+                be installed for you, or you can install it manually using the 
+                instructions in this guide.</p>
+                <p>Note that debug/symbol versions of the libraries and software 
+                are included, and may be used by appending &quot;debug&quot; to the 
+                Shibboleth library path and using the corresponding modules and 
+                binaries. If you do so, be aware that Apache and other modules 
+                must also be compiled with Microsoft&#39;s debug runtime (via the /MDd 
+                compiler option). In most cases, you can safely ignore or even 
+                delete the debug versions.</p>
+            </blockquote>
+            </li>
+        </ul>
+        </li>
+        <p>&nbsp;</li>
         <li>RedHat 7.2-7.3:<ul type="disc">
             <li><a href="http://www.apache.org/dist/httpd/">Apache 1.3.27</a><blockquote>
                 <p>Apache must be compiled with mod_so for DSO module support, 
@@ -777,7 +813,7 @@ most minor &quot;letter&quot; updates should be usable.</p>
     <ol type="1">
         <li>Ensure that you have obtained the proper
         <a href="http://shibboleth.internet2.edu/release/shib-download.html">
-        tarball</a> for your operating system.</li>
+        tarball</a> or installer for your operating system.</li>
         <li>On Unix, the tarballs expand into <span class="fixed">
         /opt/shibboleth</span>, and should be expanded as <span class="fixed">
         root</span> from <span class="fixed">/</span>. If you use a different 
@@ -786,6 +822,7 @@ most minor &quot;letter&quot; updates should be usable.</p>
         notwithstanding):<blockquote>
             <p><span class="fixed">$ ls -l<br>
             drwxr-xr-x 2 root root 4096 Oct 24 03:54 bin<br>
+            drwxr-xr-x 2 root root 4096 Oct 24 03:54 data<br>
             drwxr-xr-x 2 root root 4096 Oct 24 03:54 doc<br>
             drwxr-xr-x 4 root root 4096 Oct 24 03:54 etc<br>
             drwxr-xr-x 9 root root 4096 Oct 24 03:54 include<br>
@@ -793,12 +830,15 @@ most minor &quot;letter&quot; updates should be usable.</p>
             drwxr-xr-x 2 root root 4096 Oct 24 03:55 libexec<br>
             drwxr-xr-x 4 root root 4096 Oct 24 02:02 share</span></p>
         </blockquote>
-        <p>On Windows, until a real installer is available, the zip file should 
-        be unpacked beneath the root of the system drive, where it will create 
-        an <span class="fixed">\opt\shibboleth</span> tree that resembles the 
-        Unix layout above. This will allow the standard configuration options to 
+        <p>On Windows, if the installer is not used, the zip file should be 
+        unpacked beneath the root of the system drive, where it will create an
+        <span class="fixed">\opt\shibboleth</span> tree that resembles the Unix 
+        layout above. This will allow the standard configuration options to 
         work. <b>The <span class="fixed">C:\opt\shibboleth\lib</span> directory 
-        MUST be added to the system path to enable proper operation.</b> </li>
+        MUST be added to the system path to enable proper operation.</b> If you 
+        use a different location, changes to various configuration files must be 
+        made by hand. The installer can do this for you, and is recommended in 
+        such cases.</li>
     </ol>
 </blockquote>
 <h4><a name="3.c."></a>3.c. Configure Apache 1.3.x</h4>
@@ -854,7 +894,7 @@ most minor &quot;letter&quot; updates should be usable.</p>
         </dl>
         </li>
         <li><a name="3.c.2."></a>These modifications must be made to the Apache 
-        startup script:<p>Add the following environment variable:</p>
+        startup script on Unix:<p>Add the following environment variable:</p>
         <blockquote>
             <p><span class="fixed">SHIBCONFIG=/opt/shibboleth/etc/shibboleth/shibboleth.ini<br>
             export SHIBCONFIG</span></p>
@@ -867,7 +907,9 @@ most minor &quot;letter&quot; updates should be usable.</p>
         LD_LIBRARY_PATH</span> as well.</p>
         <p>If the SHIBCONFIG environment variable is not specified, Shibboleth 
         will use <span class="fixed">/opt/shibboleth/etc/shibboleth/shibboleth.ini</span> 
-        by default.</li>
+        by default.</p>
+        <p>On Windows, the installer will set the path and SHIBCONFIG variable 
+        for you in the system path, enabling Apache or IIS to be used.</li>
         <li>The SHAR must be started along with Apache. Among other methods on 
         Unix, this can be done either by creating a separate SHAR startup script 
         or by modifying Apache&#39;s RC script to start/stop the <span class="fixed">
@@ -877,7 +919,8 @@ most minor &quot;letter&quot; updates should be usable.</p>
         </blockquote>
         <p>Sample <span class="fixed">init.d</span> scripts may be included with 
         future releases. Ensure that the environment variable referenced in
-        <a href="#3.c.2">3.c.2</a> are in place.</li>
+        <a href="#3.c.2">3.c.2</a> are in place.</p>
+        <p>On Windows, the SHAR is a service and is managed separately.</li>
         <li>By default, the Shibboleth modules are configured to log information 
         on behalf of Apache to the file <span class="fixed">
         /opt/shibboleth/etc/shibboleth/shire.log</span>, though this can be 
@@ -1419,8 +1462,11 @@ most minor &quot;letter&quot; updates should be usable.</p>
     for users, it is mandatory for the SHAR to authenticate when contacting an 
     AA, and it must therefore be given a key and an SSL client certificate. It 
     is permissible for the SHAR to use the same keypair and certificate used by 
-    the target server itself, provided the certificate is signed by a CA 
-    accepted by the community of sites.</p>
+    the target web server itself, provided the certificate is signed by a CA 
+    accepted by the origin sites that will be queried for attributes.</p>
+    <p>On Unix, we require that OpenSSL be installed to use Shibboleth. On 
+    Windows, OpenSSL libraries and the command line tool are included in the 
+    package and can be used directly, if not otherwise available.</p>
     <p>The certificate and key file location should be based on whether they 
     will also be used for Apache. If they will be used as a server certificate 
     as well, they should probably be in the Apache tree in the usual
@@ -1434,7 +1480,8 @@ most minor &quot;letter&quot; updates should be usable.</p>
     Shibboleth can share, and therefore the components must generally use 
     separate copies of the key and certificate if they are to be shared. Most 
     other servers can export and/or import keys to and from PEM format or other 
-    formats that OpenSSL can convert.</p>
+    formats that OpenSSL can convert. Refer to your server&#39;s documentation or 
+    ask for assistance from others who use it.</p>
     <p>The SHAR is assigned a key and a certificate using shibboleth.ini&#39;s
     <span class="fixed">certFile</span>, <span class="fixed">keyFile</span> and
     <span class="fixed">keyPass</span> settings, described in <a href="#4.a.">
@@ -1640,17 +1687,17 @@ most minor &quot;letter&quot; updates should be usable.</p>
         the origin site&#39;s permitted domains. These domains are listed in the 
         site metadata that provides policy information to the system. Domains 
         can be explicit or regular expressions, and can be changed by a target 
-        to meet its needs. Targets can also override the rules specified for the
-        site in their own AAPs, choosing to accept additional scopes or deny scopes
-        that would ordinarily be accepted based on metadata provided by  a federation.
-        Thus, attribute acceptance processing for <span class="fixed">scoped</span>
-        attributes is based on site metadata and target-specified overrides
-        in addition to the mechanism described below for <span class="fixed">
-        simple</span> attributes.</p>
-        <p>Scope rules specified in an AAP are additive with any domains permitted
-        by site metadata, and the rules are applied by first looking for an applicable
-        denial rule, and then looking at site metadata and any applicable site rules
-        for an accept rule.</p>
+        to meet its needs. Targets can also override the rules specified for the 
+        site in their own AAPs, choosing to accept additional scopes or deny 
+        scopes that would ordinarily be accepted based on metadata provided by a 
+        federation. Thus, attribute acceptance processing for
+        <span class="fixed">scoped</span> attributes is based on site metadata 
+        and target-specified overrides in addition to the mechanism described 
+        below for <span class="fixed">simple</span> attributes.</p>
+        <p>Scope rules specified in an AAP are additive with any domains 
+        permitted by site metadata, and the rules are applied by first looking 
+        for an applicable denial rule, and then looking at site metadata and any 
+        applicable site rules for an accept rule.</p>
     </blockquote>
     <h4>Simple:</h4>
     <blockquote>
@@ -1729,7 +1776,7 @@ most minor &quot;letter&quot; updates should be usable.</p>
             <span class="fixed">type</span> <span class="fixed">literal</span>, 
             or using a set of matching expressions as <span class="fixed">type</span>
             <span class="fixed">regexp</span>. <span class="fixed">literal</span> 
-            is the default if <span class="fixed">Type</span> is not specified.
+            is the default if <span class="fixed">Type</span> is not specified. 
             Accept defaults to &quot;true&quot;&gt;.</p>
         </blockquote>
         <p><span class="fixed">&lt;AnyValue&gt;</span></p>
@@ -1923,9 +1970,9 @@ configurations used.</p>
     <p>A knowledge base is being developed in the
     <a href="http://www.columbia.edu/~wassa/shib.faq/shibboleth-faq.html">
     Shibboleth Deployer&#39;s FAQ</a>. Please mail
-    <a href="mailto:mace-shib-users@internet2.edu">mace-shib-users@internet2.edu</a>
-    with any additional questions or problems encountered that 
-    are not answered by this basic guide.</p>
+    <a href="mailto:mace-shib-users@internet2.edu">mace-shib-users@internet2.edu</a> 
+    with any additional questions or problems encountered that are not answered 
+    by this basic guide.</p>
 </blockquote>
 
 </body>
