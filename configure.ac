@@ -183,16 +183,22 @@ AC_ARG_WITH(xerces,
 LIBS="-lxerces-c $LIBS"
 AC_CHECK_HEADER([xercesc/dom/DOM.hpp],,
                 AC_MSG_ERROR([unable to find xerces header files]))
-AC_TRY_LINK(
-	[#include <xercesc/util/PlatformUtils.hpp>
-#include <xercesc/util/XercesVersion.hpp>],
-        [#if _XERCES_VERSION >= 20300
-xercesc::XMLPlatformUtils::Initialize();
+AC_MSG_CHECKING([Xerces version])
+AC_PREPROC_IFELSE(
+        [AC_LANG_PROGRAM([#include <xercesc/util/XercesVersion.hpp>],
+[#if  _XERCES_VERSION != 20600 && _XERCES_VERSION >= 20300
+int i = 0;
 #else
-#error Need Xerces-C version 2.3+ only
-#endif],
-	[AC_DEFINE(HAVE_LIBXERCESC,1,[Define if Xerces-C library was found])],
-	[AC_MSG_ERROR([unable to link with Xerces])])
+#error cannot use version = 2.6.0 or < 2.3.0
+#endif])],
+        [AC_MSG_RESULT(OK)],
+        [AC_MSG_FAILURE([Shibboleth requires a Xerces version > 2.3.0, but cannot use 2.6.0 -- a 2.6.1 patched release is available from us])])
+AC_TRY_LINK(
+        [#include <xercesc/util/PlatformUtils.hpp>],
+        [xercesc::XMLPlatformUtils::Initialize()],
+        [AC_DEFINE(HAVE_LIBXERCESC,1,[Define if Xerces-C library was found])],
+        [AC_MSG_ERROR([unable to link with Xerces])])
+
 
 # XML-Security settings
 AC_ARG_WITH(xmlsec,
