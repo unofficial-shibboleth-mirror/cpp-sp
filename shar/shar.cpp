@@ -326,7 +326,7 @@ int main(int argc, char *argv[])
         return -2;
     }
 
-    if (shar_check_only)
+    if (shar_checkonly)
         fprintf(stderr, "overall configuration is loadable, check log for non-fatal problems\n");
     else {
         const IListener* listener=conf.getINI()->getListener();
