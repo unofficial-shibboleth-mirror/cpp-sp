@@ -296,9 +296,10 @@ void XMLTrustImpl::init()
             
             // If no Subjects, this is a catch-all binding.
             if (wildcard) {
-                if (!m_wildcard)
+                if (!m_wildcard) {
                     log.warn("found a wildcard KeyAuthority element, make sure this is what you intend");
-                    m_wildcard=ka;
+                    m_wildcard=ka;a
+                }
                 else
                     log.warn("found multiple wildcard KeyAuthority elements, ignoring all but the first");
             }
