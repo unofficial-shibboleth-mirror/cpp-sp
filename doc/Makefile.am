@@ -13,4 +13,6 @@ pkgdoc_DATA = \
 	CURL.LICENSE \
 	InQueue.html \
 	DEPLOY-GUIDE-ORIGIN.html \
-	DEPLOY-GUIDE-TARGET.html
+	DEPLOY-GUIDE-TARGET.html \
+	UPGRADE-GUIDE.html \
+	mysql-4.0.12.diff
