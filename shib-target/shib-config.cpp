@@ -162,6 +162,15 @@ STConfig::STConfig(const char* app_name, const char* inifile)
     log.crit ("Can not read the x509 certificate.");
     throw;
   }
+  
+  try {
+    if (ini->get_tag (app, SHIBTARGET_TAG_SITESREFRESH, true, &tag)) {
+      shibConf.mapperRefreshInterval = atoi(tag.c_str());
+    }
+  } catch (...) {
+    log.crit ("Can not read the mapper refresh interval.");
+    throw;
+  }  
 
   try { 
     if (!shibConf.init()) {
