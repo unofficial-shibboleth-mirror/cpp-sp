@@ -413,10 +413,8 @@ void* InternalCCache::cleanup_fcn(void* cache_p)
 {
   InternalCCache* cache = (InternalCCache*)cache_p;
 
-  // First, let's block all signals
-  sigset_t sigmask;
-  sigfillset(&sigmask);
-  Thread::mask_signals(SIG_BLOCK, &sigmask, NULL);
+  // First, let's block all signals 
+  Thread::mask_all_signals();
 
   // Now run the cleanup process.
   cache->cleanup();
