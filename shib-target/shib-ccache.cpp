@@ -619,6 +619,11 @@ void InternalCCacheEntry::populate(int slop)
         log->debug("fetched and stored new response");
     }
   }
+  catch (SAMLException& e) {
+    if (typeid(e)==typeid(InvalidHandleException) || m_cache->m_propagateErrors)
+        throw;
+    log->warn("suppressed SAML exception caught while trying to fetch attributes");
+  }
   catch (...) {
     if (m_cache->m_propagateErrors)
         throw;
@@ -710,6 +715,11 @@ SAMLResponse* InternalCCacheEntry::getNewResponse()
     }
     catch (SAMLException& e) {
         log->error("caught SAML exception during query to AA: %s", e.what());
+        if (typeid(e)==typeid(InvalidHandleException))
+            throw;
+        ostringstream os;
+        os << e;
+        throw ShibTargetException(SHIBRPC_SAML_EXCEPTION, os.str().c_str(), AA);
     }
     // See if we got a response.
     if (!response) {
