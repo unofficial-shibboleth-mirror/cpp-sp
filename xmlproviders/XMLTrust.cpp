@@ -753,7 +753,7 @@ bool XMLTrust::validate(
                     log.warn("no common name in certificate subject");
                 
                 if (!match) {
-                    log.debug("unable to match CN, trying DNS subjectAltName");
+                    log.debug("unable to match CN, trying DNS subjectAltName");     // I seriously doubt this works.
                     int extcount=X509_get_ext_count(x);
                     for (int c=0; c<extcount; c++) {
                         X509_EXTENSION* ext=X509_get_ext(x,c);
@@ -766,7 +766,7 @@ bool XMLTrust::validate(
                             STACK_OF(CONF_VALUE)* val=meth->i2v(meth,meth->d2i(NULL,&data,ext->value->length),NULL);
                             for (int j=0; j<sk_CONF_VALUE_num(val); j++) {
                                 CONF_VALUE* nval=sk_CONF_VALUE_value(val,j);
-                                if (!strcmp(nval->name,"DNS")) {
+                                if (!strcmp(nval->name,"DNS") || !strcmp(n_val->name,"URI")) {
                                     for (vector<string>::const_iterator n=keynames.begin(); n!=keynames.end(); n++) {
     #ifdef HAVE_STRCASECMP
                                         if (!strcasecmp(nval->value,n->c_str())) {
