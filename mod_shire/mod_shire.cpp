@@ -353,7 +353,7 @@ extern "C" int shire_check_user(request_rec* r)
     ShibINI& ini = g_szConfig->getINI();
     ShibMLP markupProcessor;
 
-    ap_log_rerror(APLOG_MARK,APLOG_INFO|APLOG_NOERRNO,r,
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
 		  "shire_check_user: ENTER");
 
     shire_server_config* sc=
@@ -382,7 +382,7 @@ extern "C" int shire_check_user(request_rec* r)
     if (is_shire_location (r, targeturl)) {
       // Process SHIRE POST
 
-      ap_log_rerror(APLOG_MARK,APLOG_INFO|APLOG_NOERRNO,r,
+      ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
 		    "shire_check_user() Beginning SHIRE POST processing");
       
 
