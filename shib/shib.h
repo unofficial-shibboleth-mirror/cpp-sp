@@ -298,6 +298,7 @@ namespace shibboleth
     
     struct SHIB_EXPORTS IAAP : public virtual ILockable, public virtual IPlugIn
     {
+        virtual bool anyAttribute() const=0;
         virtual const IAttributeRule* lookup(const XMLCh* attrName, const XMLCh* attrNamespace=NULL) const=0;
         virtual const IAttributeRule* lookup(const char* alias) const=0;
         virtual saml::Iterator<const IAttributeRule*> getAttributeRules() const=0;

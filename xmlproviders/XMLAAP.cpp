@@ -72,8 +72,8 @@ namespace {
     class XMLAAPImpl : public ReloadableXMLFileImpl
     {
     public:
-        XMLAAPImpl(const char* pathname) : ReloadableXMLFileImpl(pathname) { init(); }
-        XMLAAPImpl(const DOMElement* e) : ReloadableXMLFileImpl(e) { init(); }
+        XMLAAPImpl(const char* pathname) : ReloadableXMLFileImpl(pathname), anyAttribute(false) { init(); }
+        XMLAAPImpl(const DOMElement* e) : ReloadableXMLFileImpl(e), anyAttribute(false) { init(); }
         void init();
         ~XMLAAPImpl();
         
@@ -120,6 +120,7 @@ namespace {
             sitemap_t m_siteMap;
         };
     
+        bool anyAttribute;
         vector<const IAttributeRule*> m_attrs;
         map<string,const IAttributeRule*> m_aliasMap;
     #ifdef HAVE_GOOD_STL
@@ -136,6 +137,7 @@ namespace {
         XMLAAP(const DOMElement* e) : ReloadableXMLFile(e) {}
         ~XMLAAP() {}
         
+        bool anyAttribute() const {return static_cast<XMLAAPImpl*>(getImplementation())->anyAttribute;}
         const IAttributeRule* lookup(const XMLCh* attrName, const XMLCh* attrNamespace=NULL) const;
         const IAttributeRule* lookup(const char* alias) const;
         Iterator<const IAttributeRule*> getAttributeRules() const;
@@ -184,6 +186,11 @@ void XMLAAPImpl::init()
             log.error("Construction requires a valid AAP file: (shib:AttributeAcceptancePolicy as root element)");
             throw MalformedException("Construction requires a valid AAP file: (shib:AttributeAcceptancePolicy as root element)");
         }
+
+        // Check for AnyAttribute element.
+        DOMElement* anyAttr = saml::XML::getFirstChildElement(m_root,::XML::SHIB_NS,SHIB_L(AnyAttribute));
+        if (anyAttr)
+            anyAttribute = true;
 
         // Loop over the AttributeRule elements.
         DOMNodeList* nlist = m_root->getElementsByTagNameNS(::XML::SHIB_NS,SHIB_L(AttributeRule));

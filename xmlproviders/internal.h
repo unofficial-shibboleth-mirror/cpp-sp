@@ -164,6 +164,7 @@ public:
 
         static const XMLCh Accept[];
         static const XMLCh Alias[];
+        static const XMLCh AnyAttribute[];
         static const XMLCh AnySite[];
         static const XMLCh AnyValue[];
         static const XMLCh AttributeAcceptancePolicy[];

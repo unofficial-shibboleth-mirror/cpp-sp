@@ -56,7 +56,7 @@
                         <extension base="string">
                         	<attribute name="Accept" type="boolean" use="optional" default="true"/>
                             <attribute name="Type" type="shib:AttributeRuleValueType" use="optional" default="literal"/>
-                            <anyAttribute namespace="##any" processContents="lax"/>
+                            <anyAttribute namespace="##other" processContents="lax"/>
                         </extension>
                     </simpleContent>
     			</complexType>
@@ -65,7 +65,7 @@
 	        	<element name="AnyValue">
 	        		<complexType>
 	        			<sequence/>
-	        			<anyAttribute namespace="##any" processContents="lax"/>
+	        			<anyAttribute namespace="##other" processContents="lax"/>
 	        		</complexType>
 	        	</element>
 	            <element name="Value" maxOccurs="unbounded">
@@ -73,7 +73,7 @@
 	                    <simpleContent>
 	                        <extension base="string">
 	                            <attribute name="Type" type="shib:AttributeRuleValueType" use="optional" default="literal"/>
-	                            <anyAttribute namespace="##any" processContents="lax"/>
+	                            <anyAttribute namespace="##other" processContents="lax"/>
 	                        </extension>
 	                    </simpleContent>
 	                </complexType>
@@ -88,7 +88,7 @@
             <complexContent>
                 <extension base="shib:SiteRuleType">
                     <attribute name="Name" type="string" use="required"/>
-                    <anyAttribute namespace="##any" processContents="lax"/>
+                    <anyAttribute namespace="##other" processContents="lax"/>
                 </extension>
             </complexContent>
         </complexType>
@@ -104,7 +104,7 @@
         <attribute name="Factory" type="string" use="optional"/>
         <attribute name="Alias" type="string" use="optional"/>
 		<attribute name="Header" type="string" use="optional"/>
-		<anyAttribute namespace="##any" processContents="lax"/>
+		<anyAttribute namespace="##other" processContents="lax"/>
     </complexType>
 
     <element name="AttributeRule" type="shib:AttributeRuleType">
@@ -117,9 +117,14 @@
     <element name="AttributeAcceptancePolicy">
         <complexType>
             <sequence>
+                <element name="shib:AnyAttribute" minOccurs="0">
+                    <complexType>
+                    	<sequence/>
+                    </complexType>
+                </element>
                 <element ref="shib:AttributeRule" minOccurs="0" maxOccurs="unbounded"/>
             </sequence>
-            <anyAttribute namespace="##any" processContents="lax"/>
+            <anyAttribute namespace="##other" processContents="lax"/>
         </complexType>
     </element>
 

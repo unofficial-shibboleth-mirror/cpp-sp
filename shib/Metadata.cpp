@@ -201,6 +201,19 @@ void AAP::apply(const saml::Iterator<IAAP*>& aaps, const IProvider* originSite, 
     saml::NDC("apply");
     log4cpp::Category& log=log4cpp::Category::getInstance(SHIB_LOGCAT".AAP");
     
+    // First check for no providers or AnyAttribute.
+    if (aaps.size()==0) {
+        log.debug("no filters specified, accepting entire assertion");
+        return;
+    }
+    aaps.reset();
+    while (aaps.hasNext()) {
+        if (aaps.next()->anyAttribute()) {
+            log.debug("any attribute enabled, accepting entire assertion");
+            return;
+        }
+    }
+    
     // Check each statement.
     Iterator<SAMLStatement*> statements=assertion.getStatements();
     for (unsigned int scount=0; scount < statements.size();) {
