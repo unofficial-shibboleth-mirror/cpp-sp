@@ -6,16 +6,17 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 	<link rel="stylesheet" type="text/css" href="<shibmlp styleSheet/>" />
-	<title>Access System Failure</title>
+	<title>Session Creation Failure</title>
 </head>
 
 <body>
 <div class="head">
 <img src="<shibmlp logoLocation/>" alt="Logo" />
-<h1>Inter-institutional Access System Failure</h1>
+<h1>Session Creation Failure</h1>
 </div>
 
-<p>The inter-institutional access system experienced a technical failure at <shibmlp now /></p>
+<p>The inter-institutional access system was unable to successfully build a
+login session for you at <shibmlp now /></p>
 
 <shibmlpif originContactName>
 <h3><u>Identity Provider Support Information</u></h3>
@@ -26,11 +27,11 @@
 <div>URL: <a href="<shibmlp originErrorURL/>"><shibmlp originErrorURL/></a></div>
 </shibmlpif>
 
-<p>To report this error, please contact the site administrator at
+<p>To report this problem, please contact the site administrator at
 <a href="mailto:<shibmlp supportContact/>"><shibmlp supportContact/></a>.
 </p>
 
-<p>Please include the following error message in any email:</p>
+<p>Please include the following message in any email:</p>
 <p class="error">Session creation failure at (<shibmlp requestURL/>)</p>
 <p><shibmlp errorType/>: <shibmlp errorText/></p>
 
