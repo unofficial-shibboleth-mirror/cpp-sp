@@ -41,7 +41,8 @@
 				<element name="CredentialsProvider" type="conf:PluggableType" maxOccurs="unbounded"/>
 			</sequence>
 			<attribute name="logger" type="anyURI" use="optional"/>
-			<anyAttribute namespace="##any" processContents="lax"/>
+			<attribute name="clockSkew" type="unsignedInt" use="optional"/>
+			<anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>
 
@@ -119,7 +120,7 @@
 									</sequence>
 									<attributeGroup ref="conf:SessionCacheProperties"/>
 									<attribute name="mysqlTimeout" type="unsignedInt" use="optional" default="14400"/>
-									<anyAttribute namespace="##any" processContents="lax"/>
+									<anyAttribute namespace="##other" processContents="lax"/>
 								</restriction>
 							</complexContent>
 						</complexType>
@@ -137,7 +138,7 @@
 				<any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
 			</sequence>
 			<attribute name="logger" type="anyURI" use="optional"/>
-			<anyAttribute namespace="##any" processContents="lax"/>
+			<anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>
 
@@ -178,7 +179,7 @@
 				<any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
 			</sequence>
 			<attribute name="logger" type="anyURI" use="optional"/>
-			<anyAttribute namespace="##any" processContents="lax"/>
+			<anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>
 	
@@ -198,7 +199,7 @@
 				<any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
 			</sequence>
 			<attribute name="normalizeRequest" type="boolean" use="optional"/>
-			<anyAttribute namespace="##any" processContents="lax"/>
+			<anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>
 	<element name="NSAPI" type="anyType"/>
@@ -246,7 +247,7 @@
 	<attributeGroup name="ContentSettings">
 		<attribute name="requireSession" type="boolean" use="optional"/>
 		<attribute name="exportAssertion" type="boolean" use="optional"/>
-		<anyAttribute namespace="##any" processContents="lax"/>
+		<anyAttribute namespace="##other" processContents="lax"/>
 	</attributeGroup>
 	<element name="AccessControlProvider" type="conf:PluggableType"/>
 
@@ -328,7 +329,7 @@
 			</sequence>
 			<attribute name="id" type="string" fixed="default"/>
 			<attribute name="providerId" type="anyURI" use="required"/>
-	        <anyAttribute namespace="##any" processContents="lax"/>
+	        <anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>
 	
@@ -348,7 +349,7 @@
 			</sequence>
 			<attribute name="id" type="string" use="required"/>
 			<attribute name="providerId" type="anyURI" use="optional"/>
-	        <anyAttribute namespace="##any" processContents="lax"/>
+	        <anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>
 
@@ -367,7 +368,7 @@
 					<attribute name="lifetime" type="unsignedInt" use="optional"/>
 					<attribute name="timeout" type="unsignedInt" use="optional"/>
 					<attribute name="checkAddress" type="boolean" use="optional"/>
-			        <anyAttribute namespace="##any" processContents="lax"/>
+			        <anyAttribute namespace="##other" processContents="lax"/>
                 </extension>
             </complexContent>
 		</complexType>
@@ -385,7 +386,7 @@
                 	<attribute name="access" type="anyURI" use="required"/>
                 	<attribute name="supportContact" type="string" use="required"/>
                 	<attribute name="logoLocation" type="anyURI" use="required"/>
-                	<anyAttribute namespace="##any" processContents="lax"/>
+                	<anyAttribute namespace="##other" processContents="lax"/>
                 </extension>
             </complexContent>
 		</complexType>
@@ -410,7 +411,7 @@
 			<attribute name="signRequest" type="boolean" use="optional" default="false"/>
 			<attribute name="signedResponse" type="boolean" use="optional" default="false"/>
 			<attribute name="signedAssertions" type="boolean" use="optional" default="false"/>
-	        <anyAttribute namespace="##any" processContents="lax"/>
+	        <anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>
 	
@@ -435,7 +436,7 @@
 			</sequence>
 			<attribute name="TLS" type="string" use="required"/>
 			<attribute name="Signing" type="string" use="required"/>
-	        <anyAttribute namespace="##any" processContents="lax"/>
+	        <anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>
 </schema>
