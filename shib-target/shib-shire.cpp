@@ -112,11 +112,11 @@ RPCError* SHIRE::sessionIsValid(const char* cookie, const char* ip, const char* 
     }
   } while (retry >= 0);
 
-  m_priv->log->debug ("RPC completed with status %d", ret.status);
+  m_priv->log->debug ("RPC completed with status %d", ret.status.status);
 
   RPCError* retval;
-  if (ret.status)
-    retval = new RPCError(ret.status, ret.error_msg);
+  if (ret.status.status)
+    retval = new RPCError(&ret.status);
   else
     retval = new RPCError();
 
@@ -173,11 +173,11 @@ RPCError* SHIRE::sessionCreate(const char* post, const char* ip, string& cookie)
     }
   } while (retry >= 0);
 
-  m_priv->log->debug ("RPC completed with status %d", ret.status);
+  m_priv->log->debug ("RPC completed with status %d", ret.status.status);
 
   RPCError* retval;
-  if (ret.status)
-    retval = new RPCError(ret.status, ret.error_msg);
+  if (ret.status.status)
+    retval = new RPCError(&ret.status);
   else {
     m_priv->log->debug ("new cookie: %s", ret.cookie);
     cookie = ret.cookie;

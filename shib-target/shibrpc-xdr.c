@@ -22,6 +22,36 @@ xdr_ShibRpcStatus (XDR *xdrs, ShibRpcStatus *objp)
 }
 
 bool_t
+xdr_ShibRpcErr (XDR *xdrs, ShibRpcErr *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_string (xdrs, &objp->error, ~0))
+		 return FALSE;
+	 if (!xdr_string (xdrs, &objp->origin, ~0))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_ShibRpcError (XDR *xdrs, ShibRpcError *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_ShibRpcStatus (xdrs, &objp->status))
+		 return FALSE;
+	switch (objp->status) {
+	case SHIBRPC_OK:
+		break;
+	default:
+		 if (!xdr_ShibRpcErr (xdrs, &objp->ShibRpcError_u.e))
+			 return FALSE;
+		break;
+	}
+	return TRUE;
+}
+
+bool_t
 xdr_ShibRpcHttpCookie_1 (XDR *xdrs, ShibRpcHttpCookie_1 *objp)
 {
 	register int32_t *buf;
@@ -66,9 +96,7 @@ xdr_shibrpc_session_is_valid_ret_1 (XDR *xdrs, shibrpc_session_is_valid_ret_1 *o
 {
 	register int32_t *buf;
 
-	 if (!xdr_ShibRpcStatus (xdrs, &objp->status))
-		 return FALSE;
-	 if (!xdr_string (xdrs, &objp->error_msg, ~0))
+	 if (!xdr_ShibRpcError (xdrs, &objp->status))
 		 return FALSE;
 	return TRUE;
 }
@@ -94,9 +122,7 @@ xdr_shibrpc_new_session_ret_1 (XDR *xdrs, shibrpc_new_session_ret_1 *objp)
 {
 	register int32_t *buf;
 
-	 if (!xdr_ShibRpcStatus (xdrs, &objp->status))
-		 return FALSE;
-	 if (!xdr_string (xdrs, &objp->error_msg, ~0))
+	 if (!xdr_ShibRpcError (xdrs, &objp->status))
 		 return FALSE;
 	 if (!xdr_string (xdrs, &objp->cookie, ~0))
 		 return FALSE;
@@ -122,9 +148,7 @@ xdr_shibrpc_get_assertions_ret_1 (XDR *xdrs, shibrpc_get_assertions_ret_1 *objp)
 {
 	register int32_t *buf;
 
-	 if (!xdr_ShibRpcStatus (xdrs, &objp->status))
-		 return FALSE;
-	 if (!xdr_string (xdrs, &objp->error_msg, ~0))
+	 if (!xdr_ShibRpcError (xdrs, &objp->status))
 		 return FALSE;
 	 if (!xdr_ShibRpcXML (xdrs, &objp->auth_statement))
 		 return FALSE;

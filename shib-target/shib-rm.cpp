@@ -112,11 +112,11 @@ RPCError* RM::getAssertions(const char* cookie, const char* ip,
     }
   } while (retry >= 0);
 
-  m_priv->log->debug ("RPC completed with status %d", ret.status);
+  m_priv->log->debug ("RPC completed with status %d", ret.status.status);
 
   RPCError* retval = NULL;
-  if (ret.status)
-    retval = new RPCError(ret.status, ret.error_msg);
+  if (ret.status.status)
+    retval = new RPCError(&ret.status);
   else {
     for (u_int i = 0; i < ret.assertions.assertions_len; i++) {
       istringstream attrstream(ret.assertions.assertions_val[i].xml_string);

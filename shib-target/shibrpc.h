@@ -18,20 +18,32 @@ extern "C" {
 enum ShibRpcStatus {
 	SHIBRPC_OK = 0,
 	SHIBRPC_UNKNOWN_ERROR = 1,
-	SHIBRPC_IPADDR_MISMATCH = 2,
-	SHIBRPC_NO_SESSION = 3,
-	SHIBRPC_XML_EXCEPTION = 4,
+	SHIBRPC_INTERNAL_ERROR = 2,
+	SHIBRPC_XML_EXCEPTION = 3,
+	SHIBRPC_SAX_EXCEPTION = 4,
 	SHIBRPC_SAML_EXCEPTION = 5,
-	SHIBRPC_INTERNAL_ERROR = 6,
-	SHIBRPC_SAX_EXCEPTION = 7,
-	SHIBRPC_SESSION_EXPIRED = 10,
-	SHIBRPC_AUTHSTATEMENT_MISSING = 20,
-	SHIBRPC_IPADDR_MISSING = 21,
-	SHIBRPC_RESPONSE_MISSING = 22,
-	SHIBRPC_ASSERTION_MISSING = 23,
-	SHIBRPC_ASSERTION_REPLAYED = 24
+	SHIBRPC_NO_SESSION = 10,
+	SHIBRPC_SESSION_EXPIRED = 11,
+	SHIBRPC_IPADDR_MISMATCH = 12,
+	SHIBRPC_IPADDR_MISSING = 20,
+	SHIBRPC_RESPONSE_MISSING = 21,
+	SHIBRPC_ASSERTION_REPLAYED = 22,
 };
 typedef enum ShibRpcStatus ShibRpcStatus;
+
+struct ShibRpcErr {
+	char *error;
+	char *origin;
+};
+typedef struct ShibRpcErr ShibRpcErr;
+
+struct ShibRpcError {
+	ShibRpcStatus status;
+	union {
+		ShibRpcErr e;
+	} ShibRpcError_u;
+};
+typedef struct ShibRpcError ShibRpcError;
 
 struct ShibRpcHttpCookie_1 {
 	char *cookie;
@@ -54,8 +66,7 @@ struct shibrpc_session_is_valid_args_1 {
 typedef struct shibrpc_session_is_valid_args_1 shibrpc_session_is_valid_args_1;
 
 struct shibrpc_session_is_valid_ret_1 {
-	ShibRpcStatus status;
-	char *error_msg;
+	ShibRpcError status;
 };
 typedef struct shibrpc_session_is_valid_ret_1 shibrpc_session_is_valid_ret_1;
 
@@ -68,8 +79,7 @@ struct shibrpc_new_session_args_1 {
 typedef struct shibrpc_new_session_args_1 shibrpc_new_session_args_1;
 
 struct shibrpc_new_session_ret_1 {
-	ShibRpcStatus status;
-	char *error_msg;
+	ShibRpcError status;
 	char *cookie;
 };
 typedef struct shibrpc_new_session_ret_1 shibrpc_new_session_ret_1;
@@ -82,8 +92,7 @@ struct shibrpc_get_assertions_args_1 {
 typedef struct shibrpc_get_assertions_args_1 shibrpc_get_assertions_args_1;
 
 struct shibrpc_get_assertions_ret_1 {
-	ShibRpcStatus status;
-	char *error_msg;
+	ShibRpcError status;
 	ShibRpcXML auth_statement;
 	struct {
 		u_int assertions_len;
@@ -130,6 +139,8 @@ extern int shibrpc_prog_1_freeresult ();
 
 #if defined(__STDC__) || defined(__cplusplus)
 extern  bool_t xdr_ShibRpcStatus (XDR *, ShibRpcStatus*);
+extern  bool_t xdr_ShibRpcErr (XDR *, ShibRpcErr*);
+extern  bool_t xdr_ShibRpcError (XDR *, ShibRpcError*);
 extern  bool_t xdr_ShibRpcHttpCookie_1 (XDR *, ShibRpcHttpCookie_1*);
 extern  bool_t xdr_ShibRpcXML (XDR *, ShibRpcXML*);
 extern  bool_t xdr_shibrpc_session_is_valid_args_1 (XDR *, shibrpc_session_is_valid_args_1*);
@@ -141,6 +152,8 @@ extern  bool_t xdr_shibrpc_get_assertions_ret_1 (XDR *, shibrpc_get_assertions_r
 
 #else /* K&R C */
 extern bool_t xdr_ShibRpcStatus ();
+extern bool_t xdr_ShibRpcErr ();
+extern bool_t xdr_ShibRpcError ();
 extern bool_t xdr_ShibRpcHttpCookie_1 ();
 extern bool_t xdr_ShibRpcXML ();
 extern bool_t xdr_shibrpc_session_is_valid_args_1 ();

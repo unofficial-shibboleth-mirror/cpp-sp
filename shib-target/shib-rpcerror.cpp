@@ -107,21 +107,24 @@ const char* rpcerror_exception_type(SAMLException* e)
 
 class shibtarget::RPCErrorPriv {
 public:
-  RPCErrorPriv(int stat, const char* msg);
+  RPCErrorPriv(int stat, const char* msg, const XMLCh* originSite);
   ~RPCErrorPriv();
 
   int		status;
   string	error_msg;
+  xstring	origin;
   SAMLException* except;
 };
 
-RPCErrorPriv::RPCErrorPriv(int stat, const char* msg)
+RPCErrorPriv::RPCErrorPriv(int stat, const char* msg, const XMLCh* originSite)
 {
   status = stat;
   string ctx = "shibtarget.RPCErrorPriv";
   log4cpp::Category& log = log4cpp::Category::getInstance(ctx);
 
   rpcerror_init();
+
+  if (originSite) origin = originSite;
 
   if (status == SHIBRPC_SAML_EXCEPTION) {
     istringstream estr(msg);
@@ -161,9 +164,19 @@ RPCErrorPriv::~RPCErrorPriv()
     delete except;
 }
 
-void RPCError::init(int stat, char const* msg)
+RPCError::RPCError(ShibRpcError* error)
 {
-  m_priv = new RPCErrorPriv(stat,msg);
+  if (!error || !error->status)
+    init(0, "", NULL);
+  else {
+    auto_ptr<XMLCh> origin(XMLString::transcode(error->ShibRpcError_u.e.origin));
+    init(error->status, error->ShibRpcError_u.e.error, origin.get());
+  }
+}
+
+void RPCError::init(int stat, char const* msg, const XMLCh* origin)
+{
+  m_priv = new RPCErrorPriv(stat,msg,origin);
 }
 
 RPCError::~RPCError()
@@ -213,17 +226,17 @@ const char* RPCError::getType()
   switch (m_priv->status) {
   case SHIBRPC_OK:		return "No Error";
   case SHIBRPC_UNKNOWN_ERROR:	return "Unknown error";
-  case SHIBRPC_IPADDR_MISMATCH:	return "IP Address Mismatch";
-  case SHIBRPC_NO_SESSION:	return "No Session";
-  case SHIBRPC_XML_EXCEPTION:	return "Xerces XML Exception";
-  case SHIBRPC_SAML_EXCEPTION:	return rpcerror_exception_type(m_priv->except);
   case SHIBRPC_INTERNAL_ERROR:	return "Internal Error";
+  case SHIBRPC_XML_EXCEPTION:	return "Xerces XML Exception";
   case SHIBRPC_SAX_EXCEPTION:	return "Xerces SAX Exception";
+  case SHIBRPC_SAML_EXCEPTION:	return rpcerror_exception_type(m_priv->except);
+
+  case SHIBRPC_NO_SESSION:	return "No Session";
   case SHIBRPC_SESSION_EXPIRED:	return "Session Expired";
-  case SHIBRPC_AUTHSTATEMENT_MISSING:	return "Authentication Statement Missing";
+  case SHIBRPC_IPADDR_MISMATCH:	return "IP Address Mismatch";
+
   case SHIBRPC_IPADDR_MISSING:	return "IP Address Missing";
   case SHIBRPC_RESPONSE_MISSING:	return "SAML Response Missing";
-  case SHIBRPC_ASSERTION_MISSING:	return "SAML Assertion Missing";
   case SHIBRPC_ASSERTION_REPLAYED:	return "SAML Assertion Replayed";
   default:			return "Unknown Shibboleth RPC error";
   }

@@ -153,25 +153,32 @@ namespace shibtarget {
   class ShibTargetException : public std::exception
   {
   public:
-    explicit ShibTargetException() { m_code = SHIBRPC_OK; m_msg=""; }
-    explicit ShibTargetException(ShibRpcStatus code, const char* msg) { m_code = code; if (msg) m_msg=msg; }
-    explicit ShibTargetException(ShibRpcStatus code, const std::string& msg) : m_msg(msg) { m_code=code; }
+    explicit ShibTargetException() { m_code = SHIBRPC_OK; }
+    explicit ShibTargetException(ShibRpcStatus code, const char* msg,
+				 const XMLCh* origin = NULL)
+	{ m_code = code; if (msg) m_msg=msg; if (origin) m_origin = origin; }
+    explicit ShibTargetException(ShibRpcStatus code, const std::string& msg,
+				 const XMLCh* origin = NULL) : m_msg(msg)
+	{ m_code=code; if(origin) m_origin = origin; }
     virtual ~ShibTargetException() throw () {}
     virtual const char* what() const throw () { return (m_msg.c_str()); }
     virtual ShibRpcStatus which() const throw () { return (m_code); }
+    virtual const XMLCh* where() const throw () { return m_origin.c_str(); }
 
   private:
     ShibRpcStatus	m_code;
     std::string		m_msg;
+    saml::xstring	m_origin;
   };
 
   class RPCErrorPriv;
   class RPCError
   {
   public:
-    RPCError() { init(0,""); }
-    RPCError(int s, char const* st) { init(s,st); }
-    RPCError(ShibTargetException &exp) { init(exp.which(), exp.what()); }
+    RPCError() { init(0, "", NULL); }
+    RPCError(ShibRpcError* error);
+    RPCError(int s, char const* st, const XMLCh* orig = NULL) { init (s,st,orig); }
+    RPCError(ShibTargetException &exp) { init(exp.which(), exp.what(), exp.where()); }
     ~RPCError();
 
     bool	isError();
@@ -187,7 +194,7 @@ namespace shibtarget {
     int getCode();
 
   private:
-    void init(int code, char const* msg);
+    void init(int stat, char const* msg, const XMLCh* origin);
     RPCErrorPriv* m_priv;
   };
 

@@ -45,6 +45,25 @@ shibrpc_ping_1_svc(int *argp, int *result, struct svc_req *rqstp)
   return TRUE;
 }
 
+void set_rpc_status(ShibRpcError *error, ShibRpcStatus status,
+		    const char* msg, const char* origin)
+{
+  error->status = status;
+  if (status) {
+    error->ShibRpcError_u.e.error = strdup(msg);
+    error->ShibRpcError_u.e.origin = strdup(origin);
+  }
+}
+
+void set_rpc_status_x(ShibRpcError *error, ShibRpcStatus status,
+		      const char* msg, const XMLCh* origin)
+{
+  if (!status)
+    return set_rpc_status(error, status, NULL, NULL);
+  auto_ptr<char> orig(XMLString::transcode(origin));
+  return set_rpc_status(error, status, msg, orig.get());
+}
+
 extern "C" bool_t
 shibrpc_session_is_valid_1_svc(shibrpc_session_is_valid_args_1 *argp,
 			       shibrpc_session_is_valid_ret_1 *result,
@@ -71,8 +90,8 @@ shibrpc_session_is_valid_1_svc(shibrpc_session_is_valid_args_1 *argp,
   // If not, leave now..
   if (!entry) {
     log.debug ("Not found");
-    result->status = SHIBRPC_NO_SESSION;
-    result->error_msg = strdup("No session exists for this cookie");
+    set_rpc_status(&result->status, SHIBRPC_NO_SESSION,
+		   "No session exists for this cookie", "");
     return TRUE;
   }
 
@@ -119,8 +138,7 @@ shibrpc_session_is_valid_1_svc(shibrpc_session_is_valid_args_1 *argp,
   } catch (ShibTargetException &e) {
     entry->release();
     g_shibTargetCCache->remove (argp->cookie.cookie);
-    result->status = e.which();
-    result->error_msg = strdup(e.what());
+    set_rpc_status_x(&result->status, e.which(), e.what(), e.where());
     return TRUE;
   }
 
@@ -128,8 +146,7 @@ shibrpc_session_is_valid_1_svc(shibrpc_session_is_valid_args_1 *argp,
   entry->release();
 
   // ok, we've succeeded..
-  result->status = SHIBRPC_OK;
-  result->error_msg = strdup("");
+  set_rpc_status(&result->status, SHIBRPC_OK, NULL, NULL);
   log.debug ("session ok");
   return TRUE;
 }
@@ -239,8 +256,7 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
   {
     log.info ("FAILED: %s", e.what());
     if (r) delete r;
-    result->status = e.which();
-    result->error_msg = strdup(e.what());
+    set_rpc_status_x(&result->status, e.which(), e.what(), e.where());
     return TRUE;
   }
 #if 0
@@ -248,8 +264,8 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
   {
     log.error ("Unknown error");
     if (r) delete r;
-    result->status = SHIBRPC_UNKNOWN_ERROR;
-    result->error_msg = strdup("An unknown exception occurred");
+    set_rpc_status(&result->status, SHIBRPC_UNKNOWN_ERROR,
+		   "An unknown exception occurred", "");
     return TRUE;
   }
 #endif
@@ -273,8 +289,7 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
   // And let the user know.
   free (result->cookie);
   result->cookie = strdup(cookie);
-  result->status = SHIBRPC_OK;
-  result->error_msg = strdup("");
+  set_rpc_status(&result->status, SHIBRPC_OK, NULL, NULL);
 
   log.debug ("new session id: %s", cookie);
   return TRUE;
@@ -305,8 +320,8 @@ shibrpc_get_assertions_1_svc(shibrpc_get_assertions_args_1 *argp,
   // If it does not exist, leave now..
   if (!entry) {
     log.error ("No Session");
-    result->status = SHIBRPC_NO_SESSION;
-    result->error_msg = strdup("getattrs Internal error: no session");
+    set_rpc_status(&result->status, SHIBRPC_NO_SESSION,
+		   "getattrs Internal error: no session", "");
     return TRUE;
   }
 
@@ -314,9 +329,8 @@ shibrpc_get_assertions_1_svc(shibrpc_get_assertions_args_1 *argp,
   if (argp->checkIPAddress &&
       strcmp (argp->cookie.client_addr, entry->getClientAddress())) {
     log.error ("IP Mismatch");
-    result->status = SHIBRPC_IPADDR_MISMATCH;
-    result->error_msg =
-      strdup("Your IP address does not match the address in the original authentication.");
+    set_rpc_status(&result->status, SHIBRPC_IPADDR_MISMATCH,
+		   "Your IP address does not match the address in the original authentication.", "");
     entry->release();
     return TRUE;
   }
@@ -349,8 +363,8 @@ shibrpc_get_assertions_1_svc(shibrpc_get_assertions_args_1 *argp,
     log.error ("received SAML exception: %s", e.what());
     ostringstream os;
     os << e;
-    result->status = SHIBRPC_SAML_EXCEPTION;
-    result->error_msg = strdup(os.str().c_str());
+    set_rpc_status(&result->status, SHIBRPC_SAML_EXCEPTION,
+		   strdup(os.str().c_str()), "");
     entry->release();
     return TRUE;
   }
@@ -361,8 +375,7 @@ shibrpc_get_assertions_1_svc(shibrpc_get_assertions_args_1 *argp,
   entry->release();
 
   // and let it fly
-  result->status = SHIBRPC_OK;
-  result->error_msg = strdup("");
+  set_rpc_status(&result->status, SHIBRPC_OK, NULL, NULL);
 
   log.debug ("returning");
   return TRUE;

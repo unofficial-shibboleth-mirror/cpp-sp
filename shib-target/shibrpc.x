@@ -18,24 +18,36 @@
 enum ShibRpcStatus {
   SHIBRPC_OK = 0,
   SHIBRPC_UNKNOWN_ERROR = 1,
-  SHIBRPC_IPADDR_MISMATCH = 2,
-  SHIBRPC_NO_SESSION = 3,
-  SHIBRPC_XML_EXCEPTION = 4,
+  SHIBRPC_INTERNAL_ERROR = 2,
+  SHIBRPC_XML_EXCEPTION = 3,
+  SHIBRPC_SAX_EXCEPTION = 4,
   SHIBRPC_SAML_EXCEPTION = 5,
-  SHIBRPC_INTERNAL_ERROR = 6,
-  SHIBRPC_SAX_EXCEPTION = 7,
 
   /* session_is_valid errors */
-  SHIBRPC_SESSION_EXPIRED = 10,
+  SHIBRPC_NO_SESSION = 10,
+  SHIBRPC_SESSION_EXPIRED = 11,
+  SHIBRPC_IPADDR_MISMATCH = 12,
 
   /* new_session errors */
-  SHIBRPC_AUTHSTATEMENT_MISSING = 20,
-  SHIBRPC_IPADDR_MISSING = 21,
-  SHIBRPC_RESPONSE_MISSING = 22,
-  SHIBRPC_ASSERTION_MISSING = 23,
-  SHIBRPC_ASSERTION_REPLAYED = 24
+  SHIBRPC_IPADDR_MISSING = 20,
+  SHIBRPC_RESPONSE_MISSING = 21,
+  SHIBRPC_ASSERTION_REPLAYED = 22
 
   /* get_attrs errors */
+};
+
+/* Hold an error and origin */
+struct ShibRpcErr {
+  string	error<>;
+  string	origin<>;
+};
+
+/* A type for RPC Errors */
+union ShibRpcError switch(ShibRpcStatus status) {
+ case SHIBRPC_OK:
+   void;
+ default:
+   ShibRpcErr	e;
 };
 
 /* A type to pass a Cookie, which contains the HTTP cookie string
@@ -60,8 +72,7 @@ struct shibrpc_session_is_valid_args_1 {
 };
 
 struct shibrpc_session_is_valid_ret_1 {
-  ShibRpcStatus	status;
-  string	error_msg<>;
+  ShibRpcError	status;
 };
 
 struct shibrpc_new_session_args_1 {
@@ -72,8 +83,7 @@ struct shibrpc_new_session_args_1 {
 };
 
 struct shibrpc_new_session_ret_1 {
-  ShibRpcStatus	status;
-  string	error_msg<>;
+  ShibRpcError	status;
   string	cookie<>;
 };
 
@@ -85,8 +95,7 @@ struct shibrpc_get_assertions_args_1 {
 };
 
 struct shibrpc_get_assertions_ret_1 {
-  ShibRpcStatus		status;
-  string		error_msg<>;
+  ShibRpcError		status;
   ShibRpcXML		auth_statement;
   ShibRpcXML		assertions<>;
 };
