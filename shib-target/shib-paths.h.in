@@ -62,7 +62,7 @@
 /*
  * SHIB_SCHEMAS defines the default location where the schemas will be installed.
  */
-#define SHIB_SCHEMAS "@-PKGSYSCONFDIR-@"
+#define SHIB_SCHEMAS "@-PKGXMLDIR-@"
 
 /*
  * SHIB_CONFIG defines the default location of the Shib Target Configuration File.

@@ -3,6 +3,7 @@
 AUTOMAKE_OPTIONS = foreign
 
 pkgsysconfdir = $(sysconfdir)/@PACKAGE@
+pkgxmldir = $(datadir)/xml/@PACKAGE@
 
 lib_LTLIBRARIES = libshib-target.la
 
@@ -59,7 +60,8 @@ do_rpcgen:
 shib-paths.h: ${srcdir}/shib-paths.h.in Makefile ${top_builddir}/config.status
 	rm -f $@.tmp
 	sed < ${srcdir}/$@.in > $@.tmp \
-	    -e 's:@-PKGSYSCONFDIR-@:${pkgsysconfdir}:'
+	    -e 's:@-PKGSYSCONFDIR-@:${pkgsysconfdir}:' \
+	    -e 's:@-PKGXMLDIR-@:${pkgxmldir}:'
 	cmp -s $@ $@.tmp || mv $@.tmp $@
 	rm -f $@.tmp
 
