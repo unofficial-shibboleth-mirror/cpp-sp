@@ -67,7 +67,7 @@ static char sccsid[] = "@(#)xdr_float.c 1.12 87/08/11 Copyr 1984 Sun Micro";
     defined(__mips__) || defined(__ns32k__) || defined(__alpha__) || \
     defined(__arm__) || defined(__ppc__) || defined(__ia64__) || \
     defined(__arm26__) || defined(__sparc64__) || defined(__amd64__) || \
-    defined(WIN32)
+    defined(__sparc) || defined(WIN32)
 #define IEEEFP
 #endif
 
