@@ -85,20 +85,11 @@ const SAMLAuthenticationStatement* ShibPOSTProfile::getSSOStatement(const SAMLAs
 
 const XMLCh* ShibPOSTProfile::getProviderId(const saml::SAMLResponse& r)
 {
-    // Favor an AuthnStatement Subject NameQualifier, but use Issuer if need be.
-    const XMLCh* ret=NULL;
+    // Switch to Issuer by itself, stop using NameQualifier.
     Iterator<SAMLAssertion*> ia=r.getAssertions();
-    while (ia.hasNext()) {
-        SAMLAssertion* a=ia.next();
-        ret=a->getIssuer();
-        Iterator<SAMLStatement*> is=a->getStatements();
-        while (is.hasNext()) {
-            SAMLAuthenticationStatement* as=dynamic_cast<SAMLAuthenticationStatement*>(is.next());
-            if (as && as->getSubject()->getNameIdentifier()->getNameQualifier())
-                return as->getSubject()->getNameIdentifier()->getNameQualifier();
-        }
-    }
-    return ret;
+    if (ia.hasNext())
+        return (ia.next())->getIssuer();
+    return NULL;
 }
 
 SAMLResponse* ShibPOSTProfile::accept(
@@ -138,7 +129,7 @@ SAMLResponse* ShibPOSTProfile::accept(
     // Try and locate metadata for the IdP. With this new version, we try Issuer first.
     log.debug("searching metadata for assertion issuer...");
     Metadata m(m_metadatas);
-    const IProvider* provider=m.lookup(assertion->getIssuer());
+    const IEntityDescriptor* provider=m.lookup(assertion->getIssuer());
     if (provider) {
         if (pproviderId)
             *pproviderId=XMLString::replicate(assertion->getIssuer());
@@ -164,43 +155,37 @@ SAMLResponse* ShibPOSTProfile::accept(
     }
 
     // Is this provider an IdP?
-    Iterator<const IProviderRole*> roles=provider->getRoles();
-    while (roles.hasNext()) {
-        const IProviderRole* role=roles.next();
-        if (dynamic_cast<const IIDPProviderRole*>(role)) {
-            // Check for Shibboleth 1.x protocol support.
-            if (role->hasSupport(Constants::SHIB_NS)) {
-                log.debug("passing response to trust layer");
-                
-                // Use this role to evaluate the signature.
-                Trust t(m_trusts);
-                if (!t.validate(m_revocations,role,*r))
-                    throw TrustException("ShibPOSTProfile::accept() unable to verify signed response");
-                
-                // Assertion(s) signed?
-                Iterator<SAMLAssertion*> itera=r->getAssertions();
-                while (itera.hasNext()) {
-                    SAMLAssertion* _a=itera.next();
-                    if (_a->isSigned()) {
-                        log.debug("passing signed assertion to trust layer"); 
-                        if (!t.validate(m_revocations,role,*_a))
-                            throw TrustException("ShibPOSTProfile::accept() unable to verify signed assertion");
-                    }
-                }
-                return r.release();
+    const IIDPSSODescriptor* role=provider->getIDPSSODescriptor(saml::XML::SAML11_PROTOCOL_ENUM);
+    if (role) {
+        log.debug("passing response to trust layer");
+        
+        // Use this role to evaluate the signature.
+        Trust t(m_trusts);
+        if (!t.validate(m_revocations,role,*r))
+            throw TrustException("ShibPOSTProfile::accept() unable to verify signed response");
+        
+        // Assertion(s) signed?
+        Iterator<SAMLAssertion*> itera=r->getAssertions();
+        while (itera.hasNext()) {
+            SAMLAssertion* _a=itera.next();
+            if (_a->isSigned()) {
+                log.debug("passing signed assertion to trust layer"); 
+                if (!t.validate(m_revocations,role,*_a))
+                    throw TrustException("ShibPOSTProfile::accept() unable to verify signed assertion");
             }
         }
+        return r.release();
     }
 
     auto_ptr_char issuer(assertion->getIssuer());
     auto_ptr_char nq(sso->getSubject()->getNameIdentifier()->getNameQualifier());
     log.error("metadata for assertion issuer indicates no SAML 1.x identity provider role (Issuer='%s', NameQualifier='%s'",
         issuer.get(), (nq.get() ? nq.get() : "null"));
-    throw MetadataException("ShibPOSTProfile::accept() metadata lookup failed, issuer not registered as SAML identity provider");
+    throw MetadataException("ShibPOSTProfile::accept() metadata lookup failed, issuer not registered as SAML 1.x identity provider");
 }
 
 SAMLResponse* ShibPOSTProfile::prepare(
-    const IIDPProviderRole* role,
+    const IIDPSSODescriptor* role,
     const char* credResolverId,
     const XMLCh* recipient,
     const XMLCh* authMethod,
@@ -226,7 +211,7 @@ SAMLResponse* ShibPOSTProfile::prepare(
 
     SAMLResponse* r = SAMLPOSTProfile::prepare(
         recipient,
-        role->getProvider()->getId(),
+        role->getEntityDescriptor()->getId(),
         audiences,
         name,
         nameQualifier,

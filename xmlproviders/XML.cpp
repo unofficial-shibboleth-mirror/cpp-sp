@@ -452,6 +452,11 @@ const XMLCh XML::Literals::ContactPerson[] =
 const XMLCh XML::Literals::contactType[] =
 { chLatin_c, chLatin_o, chLatin_n, chLatin_t, chLatin_a, chLatin_c, chLatin_t, chLatin_T, chLatin_y, chLatin_p, chLatin_e, chNull };
 
+const XMLCh XML::Literals::DigestMethod[] =
+{ chLatin_D, chLatin_i, chLatin_g, chLatin_e, chLatin_s, chLatin_t,
+  chLatin_M, chLatin_e, chLatin_t, chLatin_h, chLatin_o, chLatin_d, chNull
+};
+
 const XMLCh XML::Literals::EmailAddress[] =
 { chLatin_E, chLatin_m, chLatin_a, chLatin_i, chLatin_l,
   chLatin_A, chLatin_d, chLatin_d, chLatin_r, chLatin_e, chLatin_s, chLatin_s, chNull
@@ -514,6 +519,12 @@ const XMLCh XML::Literals::ManageNameIDService[] =
   chLatin_N, chLatin_a, chLatin_m, chLatin_e, chLatin_I, chLatin_D,
   chLatin_S, chLatin_e, chLatin_r, chLatin_v, chLatin_i, chLatin_c, chLatin_e, chNull
 };
+
+const XMLCh XML::Literals::_namespace[]=
+{ chLatin_n, chLatin_a, chLatin_m, chLatin_e, chLatin_s, chLatin_p, chLatin_a, chLatin_c, chLatin_e, chNull };
+
+const XMLCh XML::Literals::NameFormat[] =
+{ chLatin_N, chLatin_a, chLatin_m, chLatin_e, chLatin_F, chLatin_o, chLatin_r, chLatin_m, chLatin_a, chLatin_t, chNull };
 
 const XMLCh XML::Literals::NameIDFormat[] =
 { chLatin_N, chLatin_a, chLatin_m, chLatin_e, chLatin_I, chLatin_D,

@@ -90,7 +90,7 @@ namespace {
             const char* getHeader() const { return m_header.get(); }
             bool getCaseSensitive() const { return m_caseSensitive; }
             bool getScoped() const { return m_scoped; }
-            void apply(const IProvider* originSite, SAMLAttribute& attribute) const;
+            void apply(SAMLAttribute& attribute, const IRoleDescriptor* role=NULL) const;
     
             enum value_type { literal, regexp, xpath };
         private:    
@@ -103,8 +103,8 @@ namespace {
             bool m_scoped;
             
             value_type toValueType(const DOMElement* e);
-            bool scopeCheck(const IProvider* originSite, const DOMElement* e) const;
-            bool accept(const IProvider* originSite, const DOMElement* e) const;
+            bool scopeCheck(const DOMElement* e, const IScopedRoleDescriptor* role=NULL) const;
+            bool accept(const DOMElement* e, const IScopedRoleDescriptor* role=NULL) const;
             
             struct SiteRule
             {
@@ -424,7 +424,7 @@ namespace {
     }
 }
 
-bool XMLAAPImpl::AttributeRule::scopeCheck(const IProvider* originSite, const DOMElement* e) const
+bool XMLAAPImpl::AttributeRule::scopeCheck(const DOMElement* e, const IScopedRoleDescriptor* role) const
 {
     NDC ndc("scopeCheck");
     Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".XMLAAPImpl");
@@ -462,34 +462,37 @@ bool XMLAAPImpl::AttributeRule::scopeCheck(const IProvider* originSite, const DO
             log.warn("scope checking does not permit XPath rules");
     }
 
+    sitemap_t::const_iterator srule=m_siteMap.end();
+    if (role) {
 #ifdef HAVE_GOOD_STL
-    const XMLCh* os=originSite->getId();
+        const XMLCh* os=role->getEntityDescriptor()->getId();
 #else
-    auto_ptr_char pos(originSite->getId());
-    const char* os=pos.get();
+        auto_ptr_char pos(role->getEntityDescriptor()->getId());
+        const char* os=pos.get();
 #endif
-    sitemap_t::const_iterator srule=m_siteMap.find(os);
-    if (srule!=m_siteMap.end())
-    {
-        // Site-specific denials...
-        for (i=srule->second.scopeDenials.begin(); i!=srule->second.scopeDenials.end(); i++)
+        srule=m_siteMap.find(os);
+        if (srule!=m_siteMap.end())
         {
-            if ((i->first==literal && !XMLString::compareString(i->second,scope)) ||
-                (i->first==regexp && match(i->second,scope)))
+            // Site-specific denials...
+            for (i=srule->second.scopeDenials.begin(); i!=srule->second.scopeDenials.end(); i++)
             {
-                if (log.isWarnEnabled())
+                if ((i->first==literal && !XMLString::compareString(i->second,scope)) ||
+                    (i->first==regexp && match(i->second,scope)))
                 {
-                    auto_ptr_char temp(m_name);
-                    auto_ptr_char temp2(scope);
-                    log.warn("attribute %s scope {%s} denied by site AAP, rejecting it",temp.get(),temp2.get());
+                    if (log.isWarnEnabled())
+                    {
+                        auto_ptr_char temp(m_name);
+                        auto_ptr_char temp2(scope);
+                        log.warn("attribute %s scope {%s} denied by site AAP, rejecting it",temp.get(),temp2.get());
+                    }
+                    return false;
                 }
-                return false;
+                else if (i->first==xpath)
+                    log.warn("scope checking does not permit XPath rules");
             }
-            else if (i->first==xpath)
-                log.warn("scope checking does not permit XPath rules");
         }
     }
-
+    
     // Any site accepts...
     for (i=m_anySiteRule.scopeAccepts.begin(); i!=m_anySiteRule.scopeAccepts.end(); i++)
     {
@@ -519,18 +522,20 @@ bool XMLAAPImpl::AttributeRule::scopeCheck(const IProvider* originSite, const DO
         }
     }
     
-    // If we still can't decide, defer to site metadata.
-    Iterator<pair<const XMLCh*,bool> > domains=originSite->getSecurityDomains();
-    while (domains.hasNext())
-    {
-        const pair<const XMLCh*,bool>& p=domains.next();
-        if ((p.second && match(p.first,scope)) || !XMLString::compareString(p.first,scope))
+    // If we still can't decide, defer to metadata.
+    if (role) {
+        Iterator<pair<const XMLCh*,bool> > domains=role->getScopes();
+        while (domains.hasNext())
         {
-            log.debug("scope match via site metadata");
-            return true;
+            const pair<const XMLCh*,bool>& p=domains.next();
+            if ((p.second && match(p.first,scope)) || !XMLString::compareString(p.first,scope))
+            {
+                log.debug("scope match via site metadata");
+                return true;
+            }
         }
     }
-
+    
     if (log.isWarnEnabled())
     {
         auto_ptr_char temp(m_name);
@@ -540,7 +545,7 @@ bool XMLAAPImpl::AttributeRule::scopeCheck(const IProvider* originSite, const DO
     return false;
 }
 
-bool XMLAAPImpl::AttributeRule::accept(const IProvider* originSite, const DOMElement* e) const
+bool XMLAAPImpl::AttributeRule::accept(const DOMElement* e, const IScopedRoleDescriptor* role) const
 {
     NDC ndc("accept");
     Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".XMLAAPImpl");
@@ -548,14 +553,14 @@ bool XMLAAPImpl::AttributeRule::accept(const IProvider* originSite, const DOMEle
     if (log.isDebugEnabled())
     {
         auto_ptr_char temp(m_name);
-        auto_ptr_char temp2(originSite->getId());
-        log.debug("evaluating value for attribute %s from site %s",temp.get(),temp2.get());
+        auto_ptr_char temp2(role ? role->getEntityDescriptor()->getId() : NULL);
+        log.debug("evaluating value for attribute %s from site %s",temp.get(),temp2.get() ? temp2.get() : "<unspecified>");
     }
     
     if (m_anySiteRule.anyValue)
     {
         log.debug("any site, any value, match");
-        return scopeCheck(originSite,e);
+        return scopeCheck(e,role);
     }
 
     // Don't fully support complex content models...
@@ -569,59 +574,61 @@ bool XMLAAPImpl::AttributeRule::accept(const IProvider* originSite, const DOMEle
             (i->first==regexp && match(i->second,n->getNodeValue())))
         {
             log.debug("any site, value match");
-            return scopeCheck(originSite,e);
+            return scopeCheck(e,role);
         }
         else if (i->first==xpath)
             log.warn("implementation does not support XPath value rules");
     }
 
+    if (role) {
 #ifdef HAVE_GOOD_STL
-    const XMLCh* os=originSite->getId();
+        const XMLCh* os=role->getEntityDescriptor()->getId();
 #else
-    auto_ptr_char pos(originSite->getId());
-    const char* os=pos.get();
+        auto_ptr_char pos(role->getEntityDescriptor()->getId());
+        const char* os=pos.get();
 #endif
-    sitemap_t::const_iterator srule=m_siteMap.find(os);
-    if (srule==m_siteMap.end())
-    {
-        if (log.isWarnEnabled())
+        sitemap_t::const_iterator srule=m_siteMap.find(os);
+        if (srule==m_siteMap.end())
         {
-            auto_ptr_char temp(m_name);
-            auto_ptr_char temp2(originSite->getId());
-            log.warn("site %s not found in attribute %s ruleset, any value is rejected",temp2.get(),temp.get());
+            if (log.isWarnEnabled())
+            {
+                auto_ptr_char temp(m_name);
+                auto_ptr_char temp2(role->getEntityDescriptor()->getId());
+                log.warn("site %s not found in attribute %s ruleset, any value is rejected",temp2.get(),temp.get());
+            }
+            return false;
         }
-        return false;
-    }
-
-    if (srule->second.anyValue)
-    {
-        log.debug("matching site, any value, match");
-        return scopeCheck(originSite,e);
-    }
-
-    for (i=srule->second.valueRules.begin(); bSimple && i!=srule->second.valueRules.end(); i++) {
-        switch (i->first) {
-            case literal:
-                if ((m_caseSensitive && !XMLString::compareString(i->second,n->getNodeValue())) ||
-                    (!m_caseSensitive && !XMLString::compareIString(i->second,n->getNodeValue()))) {
-                    log.debug("matching site, value match");
-                    return scopeCheck(originSite,e);
-                }
-                break;
-            
-            case regexp:
-                if (match(i->second,n->getNodeValue())) {
-                    log.debug("matching site, value match");
-                    return scopeCheck(originSite,e);
-                }
-                break;
-            
-            case xpath:
-                log.warn("implementation does not support XPath value rules");
-                break;
+    
+        if (srule->second.anyValue)
+        {
+            log.debug("matching site, any value, match");
+            return scopeCheck(e,role);
+        }
+    
+        for (i=srule->second.valueRules.begin(); bSimple && i!=srule->second.valueRules.end(); i++) {
+            switch (i->first) {
+                case literal:
+                    if ((m_caseSensitive && !XMLString::compareString(i->second,n->getNodeValue())) ||
+                        (!m_caseSensitive && !XMLString::compareIString(i->second,n->getNodeValue()))) {
+                        log.debug("matching site, value match");
+                        return scopeCheck(e,role);
+                    }
+                    break;
+                
+                case regexp:
+                    if (match(i->second,n->getNodeValue())) {
+                        log.debug("matching site, value match");
+                        return scopeCheck(e,role);
+                    }
+                    break;
+                
+                case xpath:
+                    log.warn("implementation does not support XPath value rules");
+                    break;
+            }
         }
     }
-
+    
     if (log.isWarnEnabled())
     {
         auto_ptr_char temp(m_name);
@@ -632,12 +639,12 @@ bool XMLAAPImpl::AttributeRule::accept(const IProvider* originSite, const DOMEle
     return false;
 }
 
-void XMLAAPImpl::AttributeRule::apply(const IProvider* originSite, SAMLAttribute& attribute) const
+void XMLAAPImpl::AttributeRule::apply(SAMLAttribute& attribute, const IRoleDescriptor* role) const
 {
     // Check each value.
     Iterator<const DOMElement*> vals=attribute.getValueElements();
     for (unsigned int i=0; i < vals.size();) {
-        if (!accept(originSite,vals[i]))
+        if (!accept(vals[i],role ? dynamic_cast<const IScopedRoleDescriptor*>(role) : NULL))
             attribute.removeValue(i);
         else
             i++;

@@ -104,7 +104,7 @@ namespace {
         XMLRevocation(const DOMElement* e) : ReloadableXMLFile(e) {}
         ~XMLRevocation() {}
 
-        Iterator<void*> getRevocationLists(const IProvider* provider, const IProviderRole* role=NULL) const;
+        Iterator<void*> getRevocationLists(const IEntityDescriptor* provider, const IRoleDescriptor* role=NULL) const;
 
     protected:
         virtual ReloadableXMLFileImpl* newImplementation(const char* pathname, bool first=true) const;
@@ -271,7 +271,7 @@ XMLRevocationImpl::~XMLRevocationImpl()
         delete (*i);
 }
 
-Iterator<void*> XMLRevocation::getRevocationLists(const IProvider* provider, const IProviderRole* role) const
+Iterator<void*> XMLRevocation::getRevocationLists(const IEntityDescriptor* provider, const IRoleDescriptor* role) const
 {
     saml::NDC ndc("getRevocationLists");
     Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".XMLRevocation");
@@ -294,9 +294,11 @@ Iterator<void*> XMLRevocation::getRevocationLists(const IProvider* provider, con
         }
     }
     names.push_back(provider->getId());
-    Iterator<const XMLCh*> groups=provider->getGroups();
-    while (groups.hasNext())
-        names.push_back(groups.next());
+    const IEntitiesDescriptor* group=provider->getEntitiesDescriptor();
+    while (group) {
+        names.push_back(group->getName());
+        group=group->getEntitiesDescriptor();
+    }
 
     // Now check each name.
     for (vector<const XMLCh*>::const_iterator name=names.begin(); name!=names.end(); name++) {

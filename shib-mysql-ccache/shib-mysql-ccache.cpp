@@ -107,7 +107,8 @@ public:
         const IApplication* application,
         SAMLAuthenticationStatement *s,
         const char *client_addr,
-        SAMLResponse* r=NULL);
+        SAMLResponse* r=NULL,
+        const IRoleDescriptor* source=NULL);
   virtual void remove(const char* key);
 
   void	cleanup();
@@ -309,7 +310,8 @@ void ShibMySQLCCache::insert(
     const IApplication* application,
     saml::SAMLAuthenticationStatement *s,
     const char *client_addr,
-    saml::SAMLResponse* r)
+    saml::SAMLResponse* r,
+    const IRoleDescriptor* source)
 {
   saml::NDC ndc("mysql::insert");
   ostringstream os;
@@ -320,7 +322,7 @@ void ShibMySQLCCache::insert(
   log->debug("Query: %s", q.c_str());
 
   // Add it to the memory cache
-  m_cache->insert(key, application, s, client_addr, r);
+  m_cache->insert(key, application, s, client_addr, r, source);
 
   // then add it to the database
   MYSQL* mysql = getMYSQL();

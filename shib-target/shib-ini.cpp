@@ -93,8 +93,8 @@ namespace shibtarget {
         Iterator<ITrust*> getTrustProviders() const;
         Iterator<IRevocation*> getRevocationProviders() const;
         Iterator<const XMLCh*> getAudiences() const;
-        const char* getTLSCred(const IProvider* provider) const {return getCredentialUse(provider).first.c_str();}
-        const char* getSigningCred(const IProvider* provider) const {return getCredentialUse(provider).second.c_str();}
+        const char* getTLSCred(const IEntityDescriptor* provider) const {return getCredentialUse(provider).first.c_str();}
+        const char* getSigningCred(const IEntityDescriptor* provider) const {return getCredentialUse(provider).second.c_str();}
         
         // Provides filter to exclude special config elements.
         short acceptNode(const DOMNode* node) const;
@@ -113,7 +113,7 @@ namespace shibtarget {
 #else
         map<const XMLCh*,pair<string,string> > m_credMap;
 #endif
-        const pair<string,string>& getCredentialUse(const IProvider* provider) const;
+        const pair<string,string>& getCredentialUse(const IEntityDescriptor* provider) const;
     };
 
     // Top-level configuration implementation
@@ -577,7 +577,7 @@ Iterator<const XMLCh*> XMLApplication::getAudiences() const
     return (m_audiences.empty() && m_base) ? m_base->getAudiences() : m_audiences;
 }
 
-const pair<string,string>& XMLApplication::getCredentialUse(const IProvider* provider) const
+const pair<string,string>& XMLApplication::getCredentialUse(const IEntityDescriptor* provider) const
 {
     if (m_credDefault.first.empty() && m_base)
         return m_base->getCredentialUse(provider);
@@ -586,21 +586,23 @@ const pair<string,string>& XMLApplication::getCredentialUse(const IProvider* pro
     map<xstring,pair<string,string> >::const_iterator i=m_credMap.find(provider->getId());
     if (i!=m_credMap.end())
         return i->second;
-    Iterator<const XMLCh*> groups=provider->getGroups();
-    while (groups.hasNext()) {
-        i=m_credMap.find(groups.next());
+    const IEntitiesDescriptor* group=provider->getEntitiesDescriptor();
+    while (group) {
+        i=m_credMap.find(group->getName());
         if (i!=m_credMap.end())
             return i->second;
+        group=group->getEntitiesDescriptor();
     }
 #else
     map<const XMLCh*,pair<string,string> >::const_iterator i=m_credMap.begin();
     for (; i!=m_credMap.end(); i++) {
         if (!XMLString::compareString(i->first,provider->getId()))
             return i->second;
-        Iterator<const XMLCh*> groups=provider->getGroups();
-        while (groups.hasNext()) {
-            if (!XMLString::compareString(i->first,groups.next()))
+        const IEntitiesDescriptor* group=provider->getEntitiesDescriptor();
+        while (group) {
+            if (!XMLString::compareString(i->first,group->getName()))
                 return i->second;
+            group=group->getEntitiesDescriptor();
         }
     }
 #endif

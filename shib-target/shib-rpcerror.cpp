@@ -72,13 +72,13 @@ using namespace saml;
 using namespace shibboleth;
 using namespace shibtarget;
 
-ShibTargetException::ShibTargetException(ShibRpcStatus code, const char* msg, const IProvider* provider) : m_code(code)
+ShibTargetException::ShibTargetException(ShibRpcStatus code, const char* msg, const IEntityDescriptor* provider) : m_code(code)
 {
     if (msg) m_msg=msg;
     if (provider) {
         auto_ptr_char id(provider->getId());
         m_providerId=id.get();
-        Iterator<const IProviderRole*> roles=provider->getRoles();
+        Iterator<const IRoleDescriptor*> roles=provider->getRoleDescriptors();
         while (roles.hasNext()) {
             const char* temp=roles.next()->getErrorURL();
             if (temp) {
@@ -87,12 +87,19 @@ ShibTargetException::ShibTargetException(ShibRpcStatus code, const char* msg, co
             }
         }
 
-        Iterator<const IContactPerson*> i=provider->getContacts();
+        Iterator<const IContactPerson*> i=provider->getContactPersons();
         while (i.hasNext()) {
             const IContactPerson* c=i.next();
             if ((c->getType()==IContactPerson::technical || c->getType()==IContactPerson::support)) {
-                m_contact=c->getName();
-                Iterator<string> emails=c->getEmails();
+                const char* fname=c->getGivenName();
+                const char* lname=c->getSurName();
+                if (fname && lname)
+                    m_contact=string(fname) + ' ' + lname;
+                else if (fname)
+                    m_contact=fname;
+                else if (lname)
+                    m_contact=lname;
+                Iterator<string> emails=c->getEmailAddresses();
                 if (emails.hasNext())
                     m_email=emails.next();
                 return;
@@ -101,23 +108,30 @@ ShibTargetException::ShibTargetException(ShibRpcStatus code, const char* msg, co
     }
 }
 
-ShibTargetException::ShibTargetException(ShibRpcStatus code, const char* msg, const IProviderRole* role) : m_code(code)
+ShibTargetException::ShibTargetException(ShibRpcStatus code, const char* msg, const IRoleDescriptor* role) : m_code(code)
 {
     if (msg) m_msg=msg;
     if (role) {
-        auto_ptr_char id(role->getProvider()->getId());
+        auto_ptr_char id(role->getEntityDescriptor()->getId());
         m_providerId=id.get();
 
         const char* temp=role->getErrorURL();
         if (temp)
             m_errorURL=temp;
 
-        Iterator<const IContactPerson*> i=role->getContacts();
+        Iterator<const IContactPerson*> i=role->getContactPersons();
         while (i.hasNext()) {
             const IContactPerson* c=i.next();
             if ((c->getType()==IContactPerson::technical || c->getType()==IContactPerson::support)) {
-                m_contact=c->getName();
-                Iterator<string> emails=c->getEmails();
+                const char* fname=c->getGivenName();
+                const char* lname=c->getSurName();
+                if (fname && lname)
+                    m_contact=string(fname) + ' ' + lname;
+                else if (fname)
+                    m_contact=fname;
+                else if (lname)
+                    m_contact=lname;
+                Iterator<string> emails=c->getEmailAddresses();
                 if (emails.hasNext())
                     m_email=emails.next();
                 return;

@@ -180,7 +180,11 @@ ShibTarget::doCheckAuthN(void)
       return doHandlePOST();
 
     string auth_type = getAuthType();
+#ifdef HAVE_STRCASECMP
     if (strcasecmp(auth_type.c_str(),"shibboleth"))
+#else
+    if (stricmp(auth_type.c_str(),"shibboleth"))
+#endif
       return returnDecline();
 
     pair<bool,bool> requireSession = getRequireSession(m_priv->m_settings);

@@ -61,18 +61,18 @@ using namespace shibboleth;
 using namespace saml;
 using namespace std;
 
-const IProvider* Metadata::lookup(const XMLCh* providerId)
+const IEntityDescriptor* Metadata::lookup(const XMLCh* id)
 {
     if (m_mapper) {
         m_mapper->unlock();
         m_mapper=NULL;
     }
-    const IProvider* ret=NULL;
+    const IEntityDescriptor* ret=NULL;
     m_metadatas.reset();
     while (m_metadatas.hasNext()) {
         IMetadata* i=m_metadatas.next();
         i->lock();
-        if (ret=i->lookup(providerId)) {
+        if (ret=i->lookup(id)) {
             m_mapper=i;
             return ret;
         }
@@ -87,7 +87,7 @@ Metadata::~Metadata()
         m_mapper->unlock();
 }
 
-Iterator<void*> Revocation::getRevocationLists(const IProvider* provider, const IProviderRole* role)
+Iterator<void*> Revocation::getRevocationLists(const IEntityDescriptor* provider, const IRoleDescriptor* role)
 {
     if (m_mapper) {
         m_mapper->unlock();
@@ -115,7 +115,7 @@ Revocation::~Revocation()
 
 bool Trust::validate(
     const Iterator<IRevocation*>& revocations,
-    const IProviderRole* role, const SAMLSignedObject& token,
+    const IRoleDescriptor* role, const SAMLSignedObject& token,
     const Iterator<IMetadata*>& metadatas) const
 {
     m_trusts.reset();
@@ -126,7 +126,7 @@ bool Trust::validate(
     return false;
 }
 
-bool Trust::attach(const Iterator<IRevocation*>& revocations, const IProviderRole* role, void* ctx) const
+bool Trust::attach(const Iterator<IRevocation*>& revocations, const IRoleDescriptor* role, void* ctx) const
 {
     m_trusts.reset();
     while (m_trusts.hasNext()) {
@@ -196,7 +196,7 @@ AAP::~AAP()
         m_mapper->unlock();
 }
 
-void AAP::apply(const saml::Iterator<IAAP*>& aaps, const IProvider* originSite, saml::SAMLAssertion& assertion)
+void AAP::apply(const saml::Iterator<IAAP*>& aaps, saml::SAMLAssertion& assertion, const IRoleDescriptor* role)
 {
     saml::NDC("apply");
     log4cpp::Category& log=log4cpp::Category::getInstance(SHIB_LOGCAT".AAP");
@@ -237,7 +237,7 @@ void AAP::apply(const saml::Iterator<IAAP*>& aaps, const IProvider* originSite, 
             }
             
             try {
-                rule->apply(originSite,*a);
+                rule->apply(*a,role);
                 acount++;
             }
             catch (SAMLException&) {

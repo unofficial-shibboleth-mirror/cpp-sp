@@ -178,7 +178,7 @@ shibrpc_session_is_valid_1_svc(shibrpc_session_is_valid_args_1 *argp,
   // TEST the session...
   try {
     Metadata m(app->getMetadataProviders());
-    const IProvider* origin=m.lookup(entry->getStatement()->getSubject()->getNameIdentifier()->getNameQualifier());
+    const IEntityDescriptor* origin=m.lookup(entry->getStatement()->getSubject()->getNameIdentifier()->getNameQualifier());
 
     // Verify the address is the same
     if (argp->checkIPAddress) {
@@ -290,6 +290,8 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
   if (props)
       checkReplay=props->getBool("checkReplay");
  
+  const IRoleDescriptor* role=NULL;
+  Metadata m(app->getMetadataProviders());
   try
   {
     if (!app)
@@ -300,7 +302,6 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
     log.debug("create the POST profile");
     ShibPOSTProfile profile(app->getMetadataProviders(),app->getRevocationProviders(),app->getTrustProviders());
     
-    const IProviderRole* role=NULL;
     try
     {
       // Try and accept the response...
@@ -308,15 +309,10 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
       r = profile.accept(post,location.get(),300,app->getAudiences(),&origin);
 
       // Try and map to metadata for support purposes.
-      Metadata m(app->getMetadataProviders());
-      const IProvider* provider=m.lookup(origin);
+      const IEntityDescriptor* provider=m.lookup(origin);
       if (provider) {
-        Iterator<const IProviderRole*> roles=provider->getRoles();
-        while (!role && roles.hasNext()) {
-            const IProviderRole* _r=roles.next();
-            if (dynamic_cast<const IIDPProviderRole*>(_r) && _r->hasSupport(Constants::SHIB_NS))
-                role=_r;
-        }
+          const IIDPSSODescriptor* IDP=provider->getIDPSSODescriptor(saml::XML::SAML11_PROTOCOL_ENUM);
+          role=IDP;
       }
       // This can't really happen, since the profile must have found a role.
       if (!role)
@@ -413,7 +409,7 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
             attributesPushed=true;
       }
   }
-  conf->getSessionCache()->insert(cookie.c_str(), app, as, argp->client_addr, (attributesPushed ? r : NULL));
+  conf->getSessionCache()->insert(cookie.c_str(), app, as, argp->client_addr, (attributesPushed ? r : NULL), role);
   
   // Maybe delete the response...
   if (!attributesPushed)
@@ -495,7 +491,7 @@ shibrpc_get_assertions_1_svc(shibrpc_get_assertions_args_1 *argp,
   }
 
   Metadata m(app->getMetadataProviders());
-  const IProvider* origin=m.lookup(entry->getStatement()->getSubject()->getNameIdentifier()->getNameQualifier());
+  const IEntityDescriptor* origin=m.lookup(entry->getStatement()->getSubject()->getNameIdentifier()->getNameQualifier());
 
   try {
     try {

@@ -127,11 +127,11 @@ SOURCE=".\shib-rpchandle.cpp"
 # End Source File
 # Begin Source File
 
-SOURCE=".\shib-shire.cpp"
+SOURCE=".\shib-sock.cpp"
 # End Source File
 # Begin Source File
 
-SOURCE=".\shib-sock.cpp"
+SOURCE=".\shib-target.cpp"
 # End Source File
 # Begin Source File
 

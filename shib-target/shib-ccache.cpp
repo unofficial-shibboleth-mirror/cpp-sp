@@ -121,7 +121,8 @@ public:
     const IApplication* application,
     SAMLAuthenticationStatement* s,
     const char *client_addr,
-    SAMLResponse* r=NULL
+    SAMLResponse* r=NULL,
+    const IRoleDescriptor* source=NULL
     );
   ~InternalCCacheEntry();
 
@@ -177,7 +178,7 @@ public:
   string generateKey() const;
   ISessionCacheEntry* find(const char* key, const IApplication* application);
   void insert(
-    const char* key, const IApplication* application, SAMLAuthenticationStatement* s, const char *client_addr, SAMLResponse* r=NULL
+    const char* key, const IApplication* application, SAMLAuthenticationStatement* s, const char *client_addr, SAMLResponse* r=NULL, const IRoleDescriptor* source=NULL
     );
   void remove(const char* key);
 
@@ -312,12 +313,12 @@ ISessionCacheEntry* InternalCCache::find(const char* key, const IApplication* ap
 }
 
 void InternalCCache::insert(
-    const char* key, const IApplication* application, SAMLAuthenticationStatement* s, const char* client_addr, SAMLResponse* r
+    const char* key, const IApplication* application, SAMLAuthenticationStatement* s, const char* client_addr, SAMLResponse* r, const IRoleDescriptor* source
     )
 {
   log->debug("caching new entry for application %s: \"%s\"", application->getId(), key);
 
-  InternalCCacheEntry* entry = new InternalCCacheEntry(key, application, s, client_addr, r);
+  InternalCCacheEntry* entry = new InternalCCacheEntry(key, application, s, client_addr, r, source);
   entry->setCache(this);
 
   lock->wrlock();
@@ -450,7 +451,7 @@ void* InternalCCache::cleanup_fcn(void* cache_p)
 /******************************************************************************/
 
 InternalCCacheEntry::InternalCCacheEntry(
-    const char* id, const IApplication* application, SAMLAuthenticationStatement *s, const char* client_addr, SAMLResponse* r
+    const char* id, const IApplication* application, SAMLAuthenticationStatement *s, const char* client_addr, SAMLResponse* r, const IRoleDescriptor* source
     ) : m_response(r), m_responseCreated(r ? time(NULL) : 0), m_lastRetry(0),
         log(&Category::getInstance("shibtarget::InternalCCacheEntry"))
 {
@@ -479,14 +480,10 @@ InternalCCacheEntry::InternalCCacheEntry(
 
   if (r) {
     // Run pushed data through the AAP. Note that we could end up with an empty response!
-    Metadata m(application->getMetadataProviders());
-    const IProvider* site=m.lookup(m_nameid->getNameQualifier());
-    if (!site)
-        throw MetadataException("unable to locate origin site's metadata during attribute acceptance processing");
     Iterator<SAMLAssertion*> assertions=r->getAssertions();
     for (unsigned long i=0; i < assertions.size();) {
         try {
-            AAP::apply(application->getAAPProviders(),site,*(assertions[i]));
+            AAP::apply(application->getAAPProviders(),*(assertions[i]),source);
             i++;
         }
         catch (SAMLException&) {
@@ -697,26 +694,17 @@ SAMLResponse* InternalCCacheEntry::getNewResponse()
     
     // Try this request. The binding wrapper class handles most of the details.
     Metadata m(application->getMetadataProviders());
-    const IProvider* site=m.lookup(m_nameid->getNameQualifier());
+    const IEntityDescriptor* site=m.lookup(m_nameid->getNameQualifier());
     if (!site) {
-        log->error("unable to locate origin site's metadata during attribute query");
-        throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"Unable to locate origin site's metadata during attribute query.");
+        log->error("unable to locate identity provider's metadata during attribute query");
+        throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"Unable to locate identity provider's metadata during attribute query.");
     }
 
     // Try to locate an AA role.
-    const IAttributeAuthorityRole* AA=NULL;
-    Iterator<const IProviderRole*> roles=site->getRoles();
-    while (!AA && roles.hasNext()) {
-        const IProviderRole* role=roles.next();
-        if (dynamic_cast<const IAttributeAuthorityRole*>(role)) {
-            // Check for SAML 1.x protocol support.
-            if (role->hasSupport(saml::XML::SAMLP_NS))
-                AA=dynamic_cast<const IAttributeAuthorityRole*>(role);
-        }
-    }
+    const IAttributeAuthorityDescriptor* AA=site->getAttributeAuthorityDescriptor(saml::XML::SAML11_PROTOCOL_ENUM);
     if (!AA) {
-        log->error("unable to locate metadata for origin site's Attribute Authority");
-        throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"Unable to locate metadata for origin site's Attribute Authority.",site);
+        log->error("unable to locate metadata for identity provider's Attribute Authority");
+        throw ShibTargetException(SHIBRPC_INTERNAL_ERROR,"Unable to locate metadata for identity provider's Attribute Authority.",site);
     }
 
 
@@ -774,7 +762,7 @@ SAMLResponse* InternalCCacheEntry::getNewResponse()
                 response->removeAssertion(i);
                 continue;
             }
-            AAP::apply(application->getAAPProviders(),site,*(a[i]));
+            AAP::apply(application->getAAPProviders(),*(a[i]),AA);
             i++;
         }
         catch (SAMLException&) {

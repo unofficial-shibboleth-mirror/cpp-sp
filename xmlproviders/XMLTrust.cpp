@@ -130,10 +130,10 @@ namespace {
 
     bool validate(
         const saml::Iterator<IRevocation*>& revocations,
-        const IProviderRole* role, const saml::SAMLSignedObject& token,
+        const IRoleDescriptor* role, const saml::SAMLSignedObject& token,
         const saml::Iterator<IMetadata*>& metadatas=EMPTY(IMetadata*)
         );
-    bool attach(const Iterator<IRevocation*>& revocations, const IProviderRole* role, void* ctx);
+    bool attach(const Iterator<IRevocation*>& revocations, const IRoleDescriptor* role, void* ctx);
 
     protected:
         virtual ReloadableXMLFileImpl* newImplementation(const char* pathname, bool first=true) const;
@@ -402,7 +402,7 @@ XMLTrustImpl::~XMLTrustImpl()
         delete (*j);
 }
 
-bool XMLTrust::attach(const Iterator<IRevocation*>& revocations, const IProviderRole* role, void* ctx)
+bool XMLTrust::attach(const Iterator<IRevocation*>& revocations, const IRoleDescriptor* role, void* ctx)
 {
     lock();
     try {
@@ -424,10 +424,12 @@ bool XMLTrust::attach(const Iterator<IRevocation*>& revocations, const IProvider
                     names.push_back(n);
             }
         }
-        names.push_back(role->getProvider()->getId());
-        Iterator<const XMLCh*> groups=role->getProvider()->getGroups();
-        while (groups.hasNext())
-            names.push_back(groups.next());
+        names.push_back(role->getEntityDescriptor()->getId());
+        const IEntitiesDescriptor* group=role->getEntityDescriptor()->getEntitiesDescriptor();
+        while (group) {
+            names.push_back(group->getName());
+            group=group->getEntitiesDescriptor();
+        }
     
         // Now check each name.
         XMLTrustImpl::KeyAuthority* kauth=NULL;
@@ -476,7 +478,7 @@ bool XMLTrust::attach(const Iterator<IRevocation*>& revocations, const IProvider
             // Add any relevant CRLs.
             log.debug("obtaining CRLs for this provider/role");
             Revocation rev(revocations);
-            Iterator<void*> crls=rev.getRevocationLists(role->getProvider(),role);
+            Iterator<void*> crls=rev.getRevocationLists(role->getEntityDescriptor(),role);
             while (crls.hasNext()) {
                 if (!X509_STORE_add_crl(store,X509_CRL_dup(reinterpret_cast<X509_CRL*>(crls.next())))) {
                     log_openssl();
@@ -505,7 +507,7 @@ bool XMLTrust::attach(const Iterator<IRevocation*>& revocations, const IProvider
 
 bool XMLTrust::validate(
     const saml::Iterator<IRevocation*>& revocations,
-    const IProviderRole* role, const saml::SAMLSignedObject& token,
+    const IRoleDescriptor* role, const saml::SAMLSignedObject& token,
     const saml::Iterator<IMetadata*>& metadatas
     )
 {
@@ -521,7 +523,7 @@ bool XMLTrust::validate(
         Metadata metadata(metadatas);   // With luck we won't need this.
     
         // Did the caller tell us about the signer?
-        const IProvider* provider=(role ? role->getProvider() : NULL);
+        const IEntityDescriptor* provider=(role ? role->getEntityDescriptor() : NULL);
         if (!provider) {
             log.debug("no role descriptor passed in, trying to map token to provider");
             
@@ -822,9 +824,11 @@ bool XMLTrust::validate(
         authnames.push_back(kn2.get());
         if (provider) {
             authnames.push_back(provider->getId());
-            Iterator<const XMLCh*> groups=provider->getGroups();
-            while (groups.hasNext())
-                authnames.push_back(groups.next());
+            const IEntitiesDescriptor* group=provider->getEntitiesDescriptor();
+            while (group) {
+                authnames.push_back(group->getName());
+                group=group->getEntitiesDescriptor();
+            }
         }
     
         // Now we hunt the list for a KeyAuthority that matches one of the authority matching names.

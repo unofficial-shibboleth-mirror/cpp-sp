@@ -134,21 +134,12 @@ int main(int argc,char* argv[])
             );
 
         Metadata m(app->getMetadataProviders());
-        const IProvider* site=m.lookup(domain.get());
+        const IEntityDescriptor* site=m.lookup(domain.get());
         if (!site)
             throw SAMLException("Unable to locate specified origin site's metadata.");
 
         // Try to locate an AA role.
-        const IAttributeAuthorityRole* AA=NULL;
-        Iterator<const IProviderRole*> roles=site->getRoles();
-        while (!AA && roles.hasNext()) {
-            const IProviderRole* role=roles.next();
-            if (dynamic_cast<const IAttributeAuthorityRole*>(role)) {
-                // Check for SAML 1.x protocol support.
-                if (role->hasSupport(saml::XML::SAMLP_NS))
-                    AA=dynamic_cast<const IAttributeAuthorityRole*>(role);
-            }
-        }
+        const IAttributeAuthorityDescriptor* AA=site->getAttributeAuthorityDescriptor(saml::XML::SAML11_PROTOCOL_ENUM);
         if (!AA)
             throw SAMLException("Unable to locate metadata for origin site's Attribute Authority.");
 
@@ -159,7 +150,7 @@ int main(int argc,char* argv[])
         Iterator<SAMLAssertion*> a=response->getAssertions();
         for (unsigned long c=0; c < a.size();) {
             try {
-                AAP::apply(app->getAAPProviders(),site,*(a[c]));
+                AAP::apply(app->getAAPProviders(),*(a[c]),AA);
                 c++;
             }
             catch (SAMLException&) {

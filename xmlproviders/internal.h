@@ -214,6 +214,7 @@ public:
         static const XMLCh Company[];
         static const XMLCh ContactPerson[];
         static const XMLCh contactType[];
+        static const XMLCh DigestMethod[];
         static const XMLCh EmailAddress[];
         static const XMLCh encryption[];
         static const XMLCh EncryptionMethod[];
@@ -230,9 +231,11 @@ public:
         static const XMLCh KeyDescriptor[];
         static const XMLCh KeySize[];
         static const XMLCh ManageNameIDService[];
+        static const XMLCh _namespace[];
+        static const XMLCh NameFormat[];
         static const XMLCh NameIDFormat[];
         static const XMLCh NameIDMappingService[];
-        static const XMLCh OAEPparams[];
+        static const XMLCh OAEParams[];
         static const XMLCh Organization[];
         static const XMLCh OrganizationName[];
         static const XMLCh OrganizationDisplayName[];

@@ -88,8 +88,8 @@ namespace shibtarget {
   {
   public:
     explicit ShibTargetException() : m_code(SHIBRPC_OK) {}
-    explicit ShibTargetException(ShibRpcStatus code, const char* msg, const shibboleth::IProvider* provider);
-    explicit ShibTargetException(ShibRpcStatus code, const char* msg, const shibboleth::IProviderRole* role=NULL);
+    explicit ShibTargetException(ShibRpcStatus code, const char* msg, const shibboleth::IEntityDescriptor* provider);
+    explicit ShibTargetException(ShibRpcStatus code, const char* msg, const shibboleth::IRoleDescriptor* role=NULL);
     
     virtual ~ShibTargetException() throw () {}
     virtual ShibRpcStatus which() const throw () { return m_code; }
@@ -192,8 +192,8 @@ namespace shibtarget {
         virtual saml::Iterator<shibboleth::ITrust*> getTrustProviders() const=0;
         virtual saml::Iterator<shibboleth::IRevocation*> getRevocationProviders() const=0;
         virtual saml::Iterator<const XMLCh*> getAudiences() const=0;
-        virtual const char* getTLSCred(const shibboleth::IProvider* provider) const=0;
-        virtual const char* getSigningCred(const shibboleth::IProvider* provider) const=0;
+        virtual const char* getTLSCred(const shibboleth::IEntityDescriptor* provider) const=0;
+        virtual const char* getSigningCred(const shibboleth::IEntityDescriptor* provider) const=0;
         virtual ~IApplication() {}
     };
 
@@ -218,7 +218,8 @@ namespace shibtarget {
             const IApplication* application,
             saml::SAMLAuthenticationStatement *s,
             const char* client_addr,
-            saml::SAMLResponse* r=NULL
+            saml::SAMLResponse* r=NULL,
+            const shibboleth::IRoleDescriptor* source=NULL
             )=0;
         virtual ISessionCacheEntry* find(const char* key, const IApplication* application)=0;
         virtual void remove(const char* key)=0;
@@ -507,7 +508,7 @@ namespace shibtarget {
         RPCError* sessionCreate(const char* response, const char* ip, std::string &cookie) const
 	  { return m_st->sessionCreate(response, ip, cookie); }
         RPCError* sessionIsValid(const char* session_id, const char* ip) const
-	  { return sessionIsValid(session_id, ip); }
+	  { return m_st->sessionIsValid(session_id, ip); }
     
     private:
 	ShibTarget *m_st;

@@ -101,7 +101,7 @@ bool shibboleth::ssl_ctx_callback(void* ssl_ctx, void* userptr)
 
 SAMLResponse* ShibBinding::send(
     SAMLRequest& req,
-    const IAttributeAuthorityRole* AA,
+    const IRoleDescriptor* AA,
     const char* credResolverId,
     const Iterator<const XMLCh*>& audiences,
     const Iterator<SAMLAuthorityBinding*>& bindings,
@@ -176,13 +176,10 @@ SAMLResponse* ShibBinding::send(
     }
     
     // Now try metadata.
-    Iterator<const IEndpoint*> endpoints=m_AA->getAttributeServices();
+    Iterator<const IEndpoint*> endpoints=
+        dynamic_cast<const IAttributeAuthorityDescriptor*>(m_AA)->getAttributeServices()->getEndpoints();
     while (endpoints.hasNext()) {
         const IEndpoint* ep=endpoints.next();
-        const XMLCh* ver=ep->getVersion();
-        // Skip anything versioned at other than 1.
-        if (ver && *ver && XMLString::compareString(ver,VER))
-            continue;
         try {
             if (XMLString::compareString(prevBinding,ep->getBinding())) {
                 delete m_binding;
