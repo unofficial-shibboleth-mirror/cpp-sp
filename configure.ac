@@ -238,6 +238,8 @@ else
     WANT_APACHE="no"
 fi
 
+AM_CONDITIONAL(HAVE_APXS,test -n "$APXS")
+
 if test "$WANT_APACHE" = "yes"; then
     AC_ARG_WITH(apreq,
                 AC_HELP_STRING([--with-apreq=PATH], [where libapreq is installed]),

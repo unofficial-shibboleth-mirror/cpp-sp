@@ -12,5 +12,8 @@ mod_shibrm_la_LIBADD = $(top_builddir)/shib/libshib.la $(top_builddir)/shib-targ
 
 mod_shibrm_la_LDFLAGS = -module -avoid-version -lapreq
 
+if HAVE_APXS
 install-exec-local:
 	$(APXS) -i -A -n shibrm .libs/mod_shibrm.so
+endif HAVE_APXS
+
