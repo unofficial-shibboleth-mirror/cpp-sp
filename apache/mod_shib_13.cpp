@@ -8,6 +8,13 @@
 
 #undef _XPG4_2
 
+// SAML Runtime
+#include <saml/saml.h>
+#include <shib/shib.h>
+#include <shib/shib-threads.h>
+#include <shib-target/shib-target.h>
+#include <xercesc/util/regx/RegularExpression.hpp>
+
 // Apache specific header files
 #include <httpd.h>
 #include <http_config.h>

@@ -6,13 +6,6 @@
  * $Id$
  */
 
-// SAML Runtime
-#include <saml/saml.h>
-#include <shib/shib.h>
-#include <shib/shib-threads.h>
-#include <shib-target/shib-target.h>
-#include <xercesc/util/regx/RegularExpression.hpp>
-
 #include <fstream>
 #include <sstream>
 
