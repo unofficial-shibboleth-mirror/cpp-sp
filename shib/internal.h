@@ -78,6 +78,7 @@
 
 namespace shibboleth
 {
+        /*
     class ShibInternalConfig : public ShibConfig
     {
     public:
@@ -115,6 +116,7 @@ namespace shibboleth
         AAPFactoryMap m_aapFactoryMap;
         CredResolverFactoryMap m_credResolverFactoryMap;
     };
+        */
 
     // OpenSSL Utilities
     

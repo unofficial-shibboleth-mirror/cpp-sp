@@ -101,37 +101,24 @@ bool shibboleth::ssl_ctx_callback(void* ssl_ctx, void* userptr)
 
 SAMLResponse* ShibBinding::send(
     SAMLRequest& req,
-    const IProvider* provider,
+    const IAttributeAuthorityRole* AA,
     const char* credResolverId,
+    const Iterator<const XMLCh*>& audiences,
     const Iterator<SAMLAuthorityBinding*>& bindings,
     SAMLConfig::SAMLBindingConfig& conf
     )
 {
     NDC ndc("send");
+    Category& log=Category::getInstance(SHIB_LOGCAT".ShibBinding");
+    
     static const XMLCh VER[] = {chDigit_1, chNull};
     static const saml::QName qname(saml::XML::SAMLP_NS,L(AttributeQuery));
     
     conf.ssl_ctx_callback=reinterpret_cast<SAMLConfig::SAMLBindingConfig::ssl_ctx_callback_fn>(ssl_ctx_callback);
     conf.ssl_ctx_data=this;
-    m_AA=NULL;
+    m_AA=AA;
     m_credResolverId=credResolverId;
     
-    // Try to locate an AA role.
-    Iterator<const IProviderRole*> roles=provider->getRoles();
-    while (!m_AA && roles.hasNext()) {
-        const IProviderRole* role=roles.next();
-        if (dynamic_cast<const IAttributeAuthorityRole*>(role)) {
-            // Check for SAML 1.x protocol support.
-            Iterator<const XMLCh*> protocols=role->getProtocolSupportEnumeration();
-            while (!m_AA && protocols.hasNext()) {
-                if (!XMLString::compareString(protocols.next(),saml::XML::SAMLP_NS))
-                    m_AA=dynamic_cast<const IAttributeAuthorityRole*>(role);
-            }
-        }
-    }
-    if (!m_AA)
-        throw MetadataException("ShibBinding::send() unable to locate metadata for provider's Attribute Authority");
-
     // First try any bindings provided by caller.
     const XMLCh* prevBinding=NULL;
     Trust t(m_trusts);
@@ -146,16 +133,36 @@ SAMLResponse* ShibBinding::send(
             auto_ptr<SAMLResponse> r(m_binding->send(*ab, req, conf));
             if (r->isSigned() && !t.validate(m_revocations,m_AA,*r))
                 throw TrustException("ShibBinding::send() unable to verify signed response");
-            Iterator<SAMLAssertion*> iter_a=r->getAssertions();
-            while (iter_a.hasNext()) {
-                SAMLAssertion* _a=iter_a.next();
-                if (_a->isSigned() && !t.validate(m_revocations,m_AA,*_a))
-                    throw TrustException("ShibBinding::send() unable to verify signed assertion");
+            Iterator<SAMLAssertion*> _a=r->getAssertions();
+            for (unsigned long i=0; i < _a.size(); i++) {
+                // Check any conditions.
+                Iterator<SAMLCondition*> conds=_a[i]->getConditions();
+                while (conds.hasNext()) {
+                    SAMLAudienceRestrictionCondition* cond=dynamic_cast<SAMLAudienceRestrictionCondition*>(conds.next());
+                    if (!cond || !cond->eval(audiences)) {
+                        log.warn("assertion condition is false, removing it");
+                        r->removeAssertion(i);
+                        i--;
+                        break;
+                    }
+                }
+                
+                // Check signature.
+                if (_a[i]->isSigned() && !t.validate(m_revocations,m_AA,*(_a[i]))) {
+                    log.warn("signed assertion failed to validate, removing it");
+                    r->removeAssertion(i);
+                    i--;
+                }
             }
-            return r.release();
+            
+            // Any left?
+            if (r->getAssertions().size())
+                return r.release();
+            else
+                log.warn("all assertions removed from response, dumping it");
         }
         catch (SAMLException& e) {
-            Category::getInstance(SHIB_LOGCAT".ShibBinding").error("caught SAML exception during SAML attribute query: %s", e.what());
+            log.error("caught SAML exception during SAML attribute query: %s", e.what());
         }
     }
     
@@ -177,16 +184,34 @@ SAMLResponse* ShibBinding::send(
             auto_ptr<SAMLResponse> r(m_binding->send(ab, req, conf));
             if (r->isSigned() && !t.validate(m_revocations,m_AA,*r))
                 throw TrustException("ShibBinding::send() unable to verify signed response");
-            Iterator<SAMLAssertion*> iter_a=r->getAssertions();
-            while (iter_a.hasNext()) {
-                SAMLAssertion* _a=iter_a.next();
-                if (_a->isSigned() && !t.validate(m_revocations,m_AA,*_a))
-                    throw TrustException("ShibBinding::send() unable to verify signed assertion");
+
+            Iterator<SAMLAssertion*> _a=r->getAssertions();
+            for (unsigned long i=0; i < _a.size();) {
+                // Check any conditions.
+                Iterator<SAMLCondition*> conds=_a[i]->getConditions();
+                while (conds.hasNext()) {
+                    SAMLAudienceRestrictionCondition* cond=dynamic_cast<SAMLAudienceRestrictionCondition*>(conds.next());
+                    if (!cond || !cond->eval(audiences)) {
+                        log.warn("assertion condition is false, removing it");
+                        r->removeAssertion(i);
+                    }
+                }
+                
+                // Check signature.
+                if (_a[i]->isSigned() && !t.validate(m_revocations,m_AA,*(_a[i]))) {
+                    log.warn("signed assertion failed to validate, removing it");
+                    r->removeAssertion(i);
+                }
             }
-            return r.release();
+
+            // Any left?
+            if (r->getAssertions().size())
+                return r.release();
+            else
+                log.warn("all assertions removed from response, dumping it");
         }
         catch (SAMLException& e) {
-            Category::getInstance(SHIB_LOGCAT".ShibBinding").error("caught SAML exception during SAML attribute query: %s", e.what());
+            log.error("caught SAML exception during SAML attribute query: %s", e.what());
         }
     }
     

@@ -67,7 +67,7 @@ using namespace saml;
 using namespace log4cpp;
 using namespace std;
 
-ReloadableXMLFileImpl::ReloadableXMLFileImpl(const DOMElement* e) : m_doc(NULL), m_root(saml::XML::getFirstChildElement(e)) {}
+ReloadableXMLFileImpl::ReloadableXMLFileImpl(const DOMElement* e) : m_doc(NULL), m_root(e) {}
 
 ReloadableXMLFileImpl::ReloadableXMLFileImpl(const char* pathname) : m_doc(NULL), m_root(NULL)
 {
@@ -115,7 +115,7 @@ ReloadableXMLFileImpl::~ReloadableXMLFileImpl()
 
 ReloadableXMLFile::ReloadableXMLFile(const DOMElement* e) : m_root(e), m_impl(NULL), m_filestamp(0), m_lock(NULL)
 {
-    static const XMLCh url[] = { chLatin_u, chLatin_r, chLatin_l, chNull };
+    static const XMLCh url[] = { chLatin_u, chLatin_r, chLatin_i, chNull };
     const XMLCh* pathname=e->getAttributeNS(NULL,url);
     if (pathname && *pathname)
     {
@@ -159,7 +159,7 @@ void ReloadableXMLFile::lock()
             {
                 try
                 {
-                    ReloadableXMLFileImpl* new_config=newImplementation(m_source.c_str());
+                    ReloadableXMLFileImpl* new_config=newImplementation(m_source.c_str(),false);
                     delete m_impl;
                     m_impl=new_config;
                     m_filestamp=stat_buf.st_mtime;
@@ -191,7 +191,7 @@ ReloadableXMLFileImpl* ReloadableXMLFile::getImplementation() const
 {
     if (!m_impl) {
         if (m_source.empty())
-            m_impl=newImplementation(m_root);
+            m_impl=newImplementation(saml::XML::getFirstChildElement(m_root));
         else
             m_impl=newImplementation(m_source.c_str());
     }

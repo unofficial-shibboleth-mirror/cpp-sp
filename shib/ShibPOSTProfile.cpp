@@ -85,17 +85,20 @@ const SAMLAuthenticationStatement* ShibPOSTProfile::getSSOStatement(const SAMLAs
 
 const XMLCh* ShibPOSTProfile::getProviderId(const saml::SAMLResponse& r)
 {
+    // Favor an AuthnStatement Subject NameQualifier, but use Issuer if need be.
+    const XMLCh* ret=NULL;
     Iterator<SAMLAssertion*> ia=r.getAssertions();
     while (ia.hasNext()) {
-        Iterator<SAMLStatement*> is=ia.next()->getStatements();
+        SAMLAssertion* a=ia.next();
+        ret=a->getIssuer();
+        Iterator<SAMLStatement*> is=a->getStatements();
         while (is.hasNext()) {
-            SAMLStatement* s=is.next();
-            SAMLAuthenticationStatement* as=dynamic_cast<SAMLAuthenticationStatement*>(s);
-            if (as)
+            SAMLAuthenticationStatement* as=dynamic_cast<SAMLAuthenticationStatement*>(is.next());
+            if (as && as->getSubject()->getNameQualifier())
                 return as->getSubject()->getNameQualifier();
         }
     }
-    return NULL;
+    return ret;
 }
 
 SAMLResponse* ShibPOSTProfile::accept(
@@ -165,30 +168,26 @@ SAMLResponse* ShibPOSTProfile::accept(
     while (roles.hasNext()) {
         const IProviderRole* role=roles.next();
         if (dynamic_cast<const IIDPProviderRole*>(role)) {
-            const IProviderRole* IDP=dynamic_cast<const IProviderRole*>(role);
-            // Check for SAML 1.x protocol support.
-            Iterator<const XMLCh*> protocols=IDP->getProtocolSupportEnumeration();
-            while (protocols.hasNext()) {
-                if (!XMLString::compareString(protocols.next(),Constants::SHIB_NS)) {
-                    log.debug("passing response to trust layer");
-                    
-                    // Use this role to evaluate the signature.
-                    Trust t(m_trusts);
-                    if (!t.validate(m_revocations,role,*r))
-                        throw TrustException("ShibPOSTProfile::accept() unable to verify signed response");
-                    
-                    // Assertion(s) signed?
-                    Iterator<SAMLAssertion*> itera=r->getAssertions();
-                    while (itera.hasNext()) {
-                        SAMLAssertion* _a=itera.next();
-                        if (_a->isSigned()) {
-                            log.debug("passing signed assertion to trust layer"); 
-                            if (!t.validate(m_revocations,role,*_a))
-                                throw TrustException("ShibPOSTProfile::accept() unable to verify signed assertion");
-                        }
+            // Check for Shibboleth 1.x protocol support.
+            if (role->hasSupport(Constants::SHIB_NS)) {
+                log.debug("passing response to trust layer");
+                
+                // Use this role to evaluate the signature.
+                Trust t(m_trusts);
+                if (!t.validate(m_revocations,role,*r))
+                    throw TrustException("ShibPOSTProfile::accept() unable to verify signed response");
+                
+                // Assertion(s) signed?
+                Iterator<SAMLAssertion*> itera=r->getAssertions();
+                while (itera.hasNext()) {
+                    SAMLAssertion* _a=itera.next();
+                    if (_a->isSigned()) {
+                        log.debug("passing signed assertion to trust layer"); 
+                        if (!t.validate(m_revocations,role,*_a))
+                            throw TrustException("ShibPOSTProfile::accept() unable to verify signed assertion");
                     }
-                    return r.release();
                 }
+                return r.release();
             }
         }
     }

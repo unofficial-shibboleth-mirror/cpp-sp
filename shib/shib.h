@@ -87,9 +87,32 @@ namespace shibboleth
             virtual ~name() throw () {} \
         }
 
-    DECLARE_SHIB_EXCEPTION(UnsupportedProtocolException,SAMLException);
     DECLARE_SHIB_EXCEPTION(MetadataException,SAMLException);
     DECLARE_SHIB_EXCEPTION(CredentialException,SAMLException);
+
+    // Manages pluggable implementations of interfaces
+    // Would prefer this to be a template, but the Windows STL isn't DLL-safe.
+
+    struct SHIB_EXPORTS IPlugIn
+    {
+        virtual ~IPlugIn() {}
+    };
+
+    class SHIB_EXPORTS PlugManager
+    {
+    public:
+        PlugManager() {}
+        ~PlugManager() {}
+
+        typedef IPlugIn* Factory(const DOMElement* source);
+        void regFactory(const char* type, Factory* factory);
+        void unregFactory(const char* type);
+        IPlugIn* newPlugin(const char* type, const DOMElement* source);
+
+    private:
+        typedef std::map<std::string, Factory*> FactoryMap;
+        FactoryMap m_map;
+    };
 
     // Metadata abstract interfaces, inching toward SAML 2.0...
     
@@ -147,6 +170,7 @@ namespace shibboleth
     {
         virtual const IProvider* getProvider() const=0;
         virtual saml::Iterator<const XMLCh*> getProtocolSupportEnumeration() const=0;
+        virtual bool hasSupport(const XMLCh* version) const=0;
         virtual saml::Iterator<const IKeyDescriptor*> getKeyDescriptors() const=0;
         virtual const IOrganization* getOrganization() const=0;
         virtual saml::Iterator<const IContactPerson*> getContacts() const=0;
@@ -219,13 +243,13 @@ namespace shibboleth
         virtual ~IProvider() {}
     };
     
-    struct SHIB_EXPORTS IMetadata : public virtual ILockable
+    struct SHIB_EXPORTS IMetadata : public virtual ILockable, public virtual IPlugIn
     {
         virtual const IProvider* lookup(const XMLCh* providerId) const=0;
         virtual ~IMetadata() {}
     };
 
-    struct SHIB_EXPORTS IRevocation : public virtual ILockable
+    struct SHIB_EXPORTS IRevocation : public virtual ILockable, public virtual IPlugIn
     {
         virtual saml::Iterator<void*> getRevocationLists(const IProvider* provider, const IProviderRole* role=NULL) const=0;
         virtual ~IRevocation() {}
@@ -234,18 +258,18 @@ namespace shibboleth
     // Trust interface hides *all* details of signature and SSL validation.
     // Pluggable providers can fully override the Shibboleth trust model here.
     
-    struct SHIB_EXPORTS ITrust : public virtual ILockable
+    struct SHIB_EXPORTS ITrust : public virtual IPlugIn
     {
         virtual bool validate(
             const saml::Iterator<IRevocation*>& revocations,
             const IProviderRole* role, const saml::SAMLSignedObject& token,
             const saml::Iterator<IMetadata*>& metadatas=EMPTY(IMetadata*)
-            ) const=0;
-        virtual bool attach(const saml::Iterator<IRevocation*>& revocations, const IProviderRole* role, void* ctx) const=0;
+            )=0;
+        virtual bool attach(const saml::Iterator<IRevocation*>& revocations, const IProviderRole* role, void* ctx)=0;
         virtual ~ITrust() {}
     };
     
-    struct SHIB_EXPORTS ICredResolver
+    struct SHIB_EXPORTS ICredResolver : public virtual IPlugIn
     {
         virtual void attach(void* ctx) const=0;
         virtual XSECCryptoKey* getKey() const=0;
@@ -255,7 +279,7 @@ namespace shibboleth
         virtual ~ICredResolver() {}
     };
 
-    struct SHIB_EXPORTS ICredentials : public virtual ILockable
+    struct SHIB_EXPORTS ICredentials : public virtual ILockable, public virtual IPlugIn
     {
         virtual const ICredResolver* lookup(const char* id) const=0;
         virtual ~ICredentials() {}
@@ -272,7 +296,7 @@ namespace shibboleth
         virtual ~IAttributeRule() {}
     };
     
-    struct SHIB_EXPORTS IAAP : public virtual ILockable
+    struct SHIB_EXPORTS IAAP : public virtual ILockable, public virtual IPlugIn
     {
         virtual const IAttributeRule* lookup(const XMLCh* attrName, const XMLCh* attrNamespace=NULL) const=0;
         virtual const IAttributeRule* lookup(const char* alias) const=0;
@@ -306,6 +330,18 @@ namespace shibboleth
     };
 
     // Glue classes between abstract metadata and concrete providers
+    
+    class SHIB_EXPORTS Locker
+    {
+    public:
+        Locker(ILockable* lockee) : m_lockee(lockee) {m_lockee->lock();}
+        ~Locker() {if (m_lockee) m_lockee->unlock();}
+        
+    private:
+        Locker(const Locker&);
+        void operator=(const Locker&);
+        ILockable* m_lockee;
+    };
     
     class SHIB_EXPORTS Metadata
     {
@@ -450,8 +486,9 @@ namespace shibboleth
 
         saml::SAMLResponse* send(
             saml::SAMLRequest& req,
-            const IProvider* provider,
+            const IAttributeAuthorityRole* AA,
             const char* credResolverId=NULL,
+            const saml::Iterator<const XMLCh*>& audiences=EMPTY(const XMLCh*),
             const saml::Iterator<saml::SAMLAuthorityBinding*>& bindings=EMPTY(saml::SAMLAuthorityBinding*),
             saml::SAMLConfig::SAMLBindingConfig& conf=saml::SAMLConfig::getConfig().binding_defaults
             );
@@ -466,44 +503,21 @@ namespace shibboleth
         saml::SAMLBinding* m_binding;
     };
 
-    extern "C" {
-        typedef IMetadata* MetadataFactory(const DOMElement* source);
-        typedef IRevocation* RevocationFactory(const DOMElement* source);
-        typedef ITrust* TrustFactory(const DOMElement* source);
-        typedef ICredentials* CredentialsFactory(const DOMElement* source);
-        typedef IAAP* AAPFactory(const DOMElement* source);
-        typedef ICredResolver* CredResolverFactory(const DOMElement* source);
-    }
-    
     class SHIB_EXPORTS ShibConfig
     {
     public:
         ShibConfig() {}
-        virtual ~ShibConfig();
+        virtual ~ShibConfig() {}
 
         // global per-process setup and shutdown of Shibboleth runtime
-        virtual bool init()=0;
-        virtual void term()=0;
+        virtual bool init();
+        virtual void term();
 
         // enables runtime and clients to access configuration
         static ShibConfig& getConfig();
 
         // allows pluggable implementations of metadata and configuration data
-        virtual void regFactory(const char* type, MetadataFactory* factory)=0;
-        virtual void regFactory(const char* type, RevocationFactory* factory)=0;
-        virtual void regFactory(const char* type, TrustFactory* factory)=0;
-        virtual void regFactory(const char* type, CredentialsFactory* factory)=0;
-        virtual void regFactory(const char* type, AAPFactory* factory)=0;
-        virtual void regFactory(const char* type, CredResolverFactory* factory)=0;
-        virtual void unregFactory(const char* type)=0;
-        
-        // build a specific metadata lookup object
-        virtual IMetadata* newMetadata(const char* type, const DOMElement* source) const=0;
-        virtual IRevocation* newRevocation(const char* type, const DOMElement* source) const=0;
-        virtual ITrust* newTrust(const char* type, const DOMElement* source) const=0;
-        virtual ICredentials* newCredentials(const char* type, const DOMElement* source) const=0;
-        virtual IAAP* newAAP(const char* type, const DOMElement* source) const=0;
-        virtual ICredResolver* newCredResolver(const char* type, const DOMElement* source) const=0;
+        PlugManager m_plugMgr;
     };
 
     /* Helper classes for implementing reloadable XML-based config files
@@ -536,15 +550,15 @@ namespace shibboleth
         ReloadableXMLFileImpl* getImplementation() const;
 
     protected:
-        virtual ReloadableXMLFileImpl* newImplementation(const char* pathname) const=0;
-        virtual ReloadableXMLFileImpl* newImplementation(const DOMElement* e) const=0;
+        virtual ReloadableXMLFileImpl* newImplementation(const char* pathname, bool first=true) const=0;
+        virtual ReloadableXMLFileImpl* newImplementation(const DOMElement* e, bool first=true) const=0;
+        mutable ReloadableXMLFileImpl* m_impl;
         
     private:
         const DOMElement* m_root;
         std::string m_source;
         time_t m_filestamp;
         RWLock* m_lock;
-        mutable ReloadableXMLFileImpl* m_impl;
     };
 }
 

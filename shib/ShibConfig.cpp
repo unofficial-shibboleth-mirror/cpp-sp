@@ -70,149 +70,40 @@ using namespace shibboleth;
 using namespace log4cpp;
 using namespace std;
 
-SAML_EXCEPTION_FACTORY(UnsupportedProtocolException);
 SAML_EXCEPTION_FACTORY(MetadataException);
 SAML_EXCEPTION_FACTORY(CredentialException);
 
 namespace {
-    ShibInternalConfig g_config;
+    ShibConfig g_config;
 }
 
-ShibConfig::~ShibConfig() {}
-
-bool ShibInternalConfig::init()
+bool ShibConfig::init()
 {
-    saml::NDC ndc("init");
-
-    REGISTER_EXCEPTION_FACTORY(edu.internet2.middleware.shibboleth.common,UnsupportedProtocolException);
     REGISTER_EXCEPTION_FACTORY(edu.internet2.middleware.shibboleth.common,MetadataException);
     REGISTER_EXCEPTION_FACTORY(edu.internet2.middleware.shibboleth.common,CredentialException);
-
     return true;
 }
 
-void ShibInternalConfig::regFactory(const char* type, MetadataFactory* factory)
+void ShibConfig::term() {}
+
+void PlugManager::regFactory(const char* type, Factory* factory)
 {
     if (type && factory)
-        m_metadataFactoryMap[type]=factory;
+        m_map[type]=factory;
 }
 
-void ShibInternalConfig::regFactory(const char* type, RevocationFactory* factory)
+IPlugIn* PlugManager::newPlugin(const char* type, const DOMElement* source)
 {
-    if (type && factory)
-        m_revocationFactoryMap[type]=factory;
-}
-
-void ShibInternalConfig::regFactory(const char* type, TrustFactory* factory)
-{
-    if (type && factory)
-        m_trustFactoryMap[type]=factory;
-}
-
-void ShibInternalConfig::regFactory(const char* type, CredentialsFactory* factory)
-{
-    if (type && factory)
-    {
-        m_credFactoryMap[type]=factory;
-        SAMLConfig::getConfig().binding_defaults.ssl_ctx_callback=
-            reinterpret_cast<SAMLConfig::SAMLBindingConfig::ssl_ctx_callback_fn>(ssl_ctx_callback);
-    }
-}
-
-void ShibInternalConfig::regFactory(const char* type, CredResolverFactory* factory)
-{
-    if (type && factory)
-        m_credResolverFactoryMap[type]=factory;
-}
-
-void ShibInternalConfig::regFactory(const char* type, AAPFactory* factory)
-{
-    if (type && factory)
-        m_aapFactoryMap[type]=factory;
-}
-
-void ShibInternalConfig::unregFactory(const char* type)
-{
-    if (type) {
-        m_metadataFactoryMap.erase(type);
-        m_revocationFactoryMap.erase(type);
-        m_trustFactoryMap.erase(type);
-        m_credFactoryMap.erase(type);
-        m_aapFactoryMap.erase(type);
-        m_credResolverFactoryMap.erase(type);
-    }
-}
-
-IMetadata* ShibInternalConfig::newMetadata(const char* type, const DOMElement* source) const
-{
-    MetadataFactoryMap::const_iterator i=m_metadataFactoryMap.find(type);
-    if (i==m_metadataFactoryMap.end())
-    {
-        NDC ndc("newMetadata");
-        Category::getInstance(SHIB_LOGCAT".ShibInternalConfig").error("unknown metadata type: %s",type);
-        return NULL;
-    }
+    FactoryMap::const_iterator i=m_map.find(type);
+    if (i==m_map.end())
+        throw saml::UnsupportedExtensionException(std::string("unable to build plugin of type '") + type + "'");
     return i->second(source);
 }
 
-IRevocation* ShibInternalConfig::newRevocation(const char* type, const DOMElement* source) const
+void PlugManager::unregFactory(const char* type)
 {
-    RevocationFactoryMap::const_iterator i=m_revocationFactoryMap.find(type);
-    if (i==m_revocationFactoryMap.end())
-    {
-        NDC ndc("newRevocation");
-        Category::getInstance(SHIB_LOGCAT".ShibInternalConfig").error("unknown revocation type: %s",type);
-        return NULL;
-    }
-    return i->second(source);
-}
-
-ITrust* ShibInternalConfig::newTrust(const char* type, const DOMElement* source) const
-{
-    TrustFactoryMap::const_iterator i=m_trustFactoryMap.find(type);
-    if (i==m_trustFactoryMap.end())
-    {
-        NDC ndc("newTrust");
-        Category::getInstance(SHIB_LOGCAT".ShibInternalConfig").error("unknown trust type: %s",type);
-        return NULL;
-    }
-    return i->second(source);
-}
-
-ICredentials* ShibInternalConfig::newCredentials(const char* type, const DOMElement* source) const
-{
-    CredentialsFactoryMap::const_iterator i=m_credFactoryMap.find(type);
-    if (i==m_credFactoryMap.end())
-    {
-        NDC ndc("newCredentials");
-        Category::getInstance(SHIB_LOGCAT".ShibInternalConfig").error("unknown credentials type: %s",type);
-        return NULL;
-    }
-    return i->second(source);
-}
-
-IAAP* ShibInternalConfig::newAAP(const char* type, const DOMElement* source) const
-{
-    AAPFactoryMap::const_iterator i=m_aapFactoryMap.find(type);
-    if (i==m_aapFactoryMap.end())
-    {
-        NDC ndc("newAAP");
-        Category::getInstance(SHIB_LOGCAT".ShibInternalConfig").error("unknown AAP type: %s",type);
-        return NULL;
-    }
-    return i->second(source);
-}
-
-ICredResolver* ShibInternalConfig::newCredResolver(const char* type, const DOMElement* source) const
-{
-    CredResolverFactoryMap::const_iterator i=m_credResolverFactoryMap.find(type);
-    if (i==m_credResolverFactoryMap.end())
-    {
-        NDC ndc("newCredResolver");
-        Category::getInstance(SHIB_LOGCAT".ShibInternalConfig").error("unknown cred resolver type: %s",type);
-        return NULL;
-    }
-    return i->second(source);
+    if (type)
+        m_map.erase(type);
 }
 
 ShibConfig& ShibConfig::getConfig()

@@ -118,28 +118,22 @@ bool Trust::validate(
     const IProviderRole* role, const SAMLSignedObject& token,
     const Iterator<IMetadata*>& metadatas) const
 {
-    bool ret=false;
     m_trusts.reset();
-    while (!ret && m_trusts.hasNext()) {
-        ITrust* i=m_trusts.next();
-        i->lock();
-        ret=i->validate(revocations,role,token,metadatas);
-        i->unlock();
+    while (m_trusts.hasNext()) {
+        if (m_trusts.next()->validate(revocations,role,token,metadatas))
+            return true;
     }
-    return ret;
+    return false;
 }
 
 bool Trust::attach(const Iterator<IRevocation*>& revocations, const IProviderRole* role, void* ctx) const
 {
-    bool ret=false;
     m_trusts.reset();
-    while (!ret && m_trusts.hasNext()) {
-        ITrust* i=m_trusts.next();
-        i->lock();
-        ret=i->attach(revocations,role,ctx);
-        i->unlock();
+    while (m_trusts.hasNext()) {
+        if (m_trusts.next()->attach(revocations,role,ctx))
+            return true;
     }
-    return ret;
+    return false;
 }
 
 const ICredResolver* Credentials::lookup(const char* id)
