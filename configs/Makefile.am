@@ -17,3 +17,5 @@ pkgsysconf_DATA = \
 	sites.xml \
 	trust.xml \
 	creds.xml
+
+EXTRA_DIST = ${pkgsysconf_DATA}
