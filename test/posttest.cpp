@@ -127,9 +127,9 @@ int main(int argc,char* argv[])
         SAMLResponse* r2=p->accept((const XMLByte*)buf.c_str());
         cout << "Consumed Response: " << endl << *r2 << endl;
 
-        SAMLAssertion& a=p->getSSOAssertion(*r2);
-        SAMLAuthenticationStatement& s=p->getSSOStatement(a);
-        if (!p->checkReplayCache(a))
+        const SAMLAssertion* a=p->getSSOAssertion(*r2);
+        const SAMLAuthenticationStatement* s=p->getSSOStatement(*a);
+        if (!p->checkReplayCache(*a))
             throw ReplayedAssertionException("detected replay attack");
 
         delete r2;
