@@ -57,7 +57,10 @@
                 below.
                 -->
                 <Host name="localhost" scheme="https">
-                    <Path name="secure" requireSession="true" exportAssertion="true"/>
+                    <Path name="secure" requireSession="true" exportAssertion="true">
+                    	<!-- Example shows a subfolder on the SSL port assigned to a separate <Application> -->
+	                    <Path name="admin" applicationId="foo-admin">
+	                </Path>
                 </Host>
                 <Host name="localhost" scheme="http">
                     <Path name="secure" requireSession="true" exportAssertion="true"/>
@@ -78,12 +81,12 @@
 
         <!--
         Controls session lifetimes, address checks, cookie handling, WAYF, and the SHIRE location.
-        You MUST supply a unique shireURL value for each of your applications. The value can be a
-        relative path, a URL with no hostname (https:///path) or a full URL. The system will compute
-        the value that applies based on the resource. Using shireSSL="true" will force the protocol
-        to be https. You should also add "; secure" to the cookieProps in that case.
-        The default wayfURL is the InQueue federation's service. Change to https://localhost/shibboleth/HS
-        for internal testing against your own origin.
+        You MUST supply a unique shireURL value (and a wayfURL that can be the same) for each of your
+        applications. The value can be a relative path, a URL with no hostname (https:///path) or a
+        full URL. The system will compute the value that applies based on the resource. Using
+        shireSSL="true" will force the protocol to be https. You should also add a cookieProps
+        setting of "; secure" in that case. The default wayfURL is the InQueue federation's service.
+        Change to https://localhost/shibboleth/HS for internal testing against your own origin.
         -->
         <Sessions lifetime="7200" timeout="3600" checkAddress="true" checkReplay="true"
             shireURL="/Shibboleth.shire" shireSSL="false" wayfURL="https://wayf.internet2.edu/InQueue/WAYF"/>
@@ -136,6 +139,11 @@
             
             <TrustProvider type="edu.internet2.middleware.shibboleth.common.provider.XMLTrust"
                 uri="@-PKGSYSCONFDIR-@/IQ-trust.xml"/>
+
+			<!--
+			Revocation using X.509 CRLs is an optional feature in some trust metadata or you may
+			supply your own revocation information locally.
+			-->
             <!--
             <RevocationProvider type="edu.internet2.middleware.shibboleth.common.provider.XMLRevocation"
                 uri="@-PKGSYSCONFDIR-@/IQ-trust.xml"/>
@@ -153,11 +161,23 @@
         </CredentialUse>
         
 
-        <!-- customize behavior of specific applications -->
+        <!--
+        You can customize behavior of specific applications here. You must supply a complete <Sessions>
+        element to inidicate a distinct shireURL and wayfURL for this application, along with any other
+        non-default settings you require. None will be inherited. The wayfURL can be the same as the
+        default above, but the shireURL MUST be different and MUST map to this application in the
+        RequestMap. The default elements inside the outer <Applications> element generally have to be
+        overridden in an all or nothing fashion. That is, if you supply an <Errors> override, you MUST
+        include all attributes you want to apply, as they will not be inherited. Similarly, if you
+        specify elements within <Policy> such as <FederationProvider>, they are not additive with the
+        defaults, but replace them.
+        -->
         <!-- 
         <Application id="foo-admin">
-            <Sessions shireURL="https:///admin/Shibboleth.shire"/>
+	        <Sessions lifetime="7200" timeout="3600" checkAddress="true"
+	            shireURL="/secure/admin/Shibboleth.shire" shireSSL="true" wayfURL="https://wayf.internet2.edu/InQueue/WAYF"/>
             <Policy>
+            	<!-- All behavior is either inherited or defaulted, except that we will request only EPPN. -->
                 <saml:AttributeDesignator AttributeName="urn:mace:dir:attribute-def:eduPersonPrincipalName"
                     AttributeNamespace="urn:mace:shibboleth:1.0:attributeNamespace:uri"/> 
             </Policy>
@@ -166,7 +186,7 @@
 
     </Applications>
     
-    <!-- Define all your private keys and certificates here. -->
+    <!-- Define all the private keys and certificates here that you reference from <CredentialUse>. -->
     <CredentialsProvider type="edu.internet2.middleware.shibboleth.common.Credentials">
         <Credentials xmlns="urn:mace:shibboleth:credentials:1.0">
             <FileResolver Id="defcreds">
