@@ -61,7 +61,7 @@
 #include <sys/stat.h>
 
 #include <log4cpp/Category.hh>
-#include <xsec/enc/openssl/OpenSSLCryptoX509.hpp>
+#include <xsec/enc/OpenSSL/OpenSSLCryptoX509.hpp>
 
 using namespace shibboleth;
 using namespace saml;
