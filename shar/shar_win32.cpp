@@ -59,8 +59,8 @@
 #include "shar-utils.h"
 
 extern int shar_run;                    // signals shutdown to Unix side
-extern const char* schemadir;
-extern const char* config;
+extern const char* shar_schemadir;
+extern const char* shar_config;
 
 // internal variables
 SERVICE_STATUS          ssStatus;       // current status of the service
@@ -128,12 +128,12 @@ int main(int argc, char *argv[])
         else if (_stricmp( "config", argv[i]+1) == 0)
         {
             if (argc > ++i)
-                config = argv[i++];
+                shar_config = argv[i++];
         }
         else if (_stricmp( "schemadir", argv[i]+1) == 0)
         {
             if (argc > ++i)
-                schemadir = argv[i++];
+                shar_schemadir = argv[i++];
         }
         else
         {
@@ -375,12 +375,12 @@ void CmdInstallService(LPCSTR name)
     
     sprintf(dispName,"Shibboleth Attribute Requester (%s)",name);
     sprintf(realName,"SHAR_%s",name);
-    if (config && schemadir)
-        sprintf(cmd,"%s -config %s -schemadir %s",szPath,config,schemadir);
-    else if (config)
-        sprintf(cmd,"%s -config %s",szPath,config);
-    else if (schemadir)
-        sprintf(cmd,"%s -schemadir %s",szPath,schemadir);
+    if (shar_config && shar_schemadir)
+        sprintf(cmd,"%s -config %s -schemadir %s",szPath,shar_config,shar_schemadir);
+    else if (shar_config)
+        sprintf(cmd,"%s -config %s",szPath,shar_config);
+    else if (shar_schemadir)
+        sprintf(cmd,"%s -schemadir %s",szPath,shar_schemadir);
     else
         sprintf(cmd,"%s",szPath);
 

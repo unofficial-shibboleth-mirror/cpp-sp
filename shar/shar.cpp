@@ -88,8 +88,8 @@ using namespace log4cpp;
 extern "C" void shibrpc_prog_1(struct svc_req* rqstp, register SVCXPRT* transp);
 
 int shar_run = 1;
-const char* config = NULL;
-const char* schemadir = NULL;
+const char* shar_config = NULL;
+const char* shar_schemadir = NULL;
 static int unlink_socket = 0;
 
 static bool new_connection(IListener::ShibSocket& listener, const Iterator<ShibRPCProtocols>& protos)
@@ -156,15 +156,15 @@ int real_main(int preinit)
             ShibTargetConfig::AAP |
             ShibTargetConfig::SHARExtensions
             );
-        if (!config)
-            config=getenv("SHIBCONFIG");
-        if (!schemadir)
-            schemadir=getenv("SHIBSCHEMAS");
-	if (!schemadir)
-	    schemadir=SHIB_SCHEMAS;
-	if (!config)
-	    config=SHIB_CONFIG;
-        if (!conf.init(schemadir,config))
+        if (!shar_config)
+            shar_config=getenv("SHIBCONFIG");
+        if (!shar_schemadir)
+            shar_schemadir=getenv("SHIBSCHEMAS");
+        if (!shar_schemadir)
+            shar_schemadir=SHIB_SCHEMAS;
+        if (!shar_config)
+            shar_config=SHIB_CONFIG;
+        if (!conf.init(shar_schemadir,shar_config))
             return -2;
 
         const IListener* listener=conf.getINI()->getListener();
@@ -254,10 +254,10 @@ static int parse_args(int argc, char* argv[])
     while ((opt = getopt(argc, argv, "cdfFh")) > 0) {
         switch (opt) {
             case 'c':
-                config=optarg;
+                shar_config=optarg;
                 break;
             case 'd':
-                schemadir=optarg;
+                shar_schemadir=optarg;
                 break;
             case 'f':
                 unlink_socket = 1;
@@ -282,14 +282,14 @@ int main(int argc, char *argv[])
     if (parse_args(argc, argv) != 0)
         usage(argv[0]);
 
-    if (!schemadir)
-        schemadir=getenv("SHIBSCHEMAS");
-    if (!config)
-        config=getenv("SHIBCONFIG");
-    if (!schemadir)
-        schemadir=SHIB_SCHEMAS;
-    if (!config)
-        config=SHIB_CONFIG;
+    if (!shar_config)
+        shar_config=getenv("SHIBCONFIG");
+    if (!shar_schemadir)
+        shar_schemadir=getenv("SHIBSCHEMAS");
+    if (!shar_schemadir)
+        shar_schemadir=SHIB_SCHEMAS;
+    if (!shar_config)
+        shar_config=SHIB_CONFIG;
 
     // initialize the shib-target library
     ShibTargetConfig& conf=ShibTargetConfig::getConfig();
@@ -302,7 +302,7 @@ int main(int argc, char *argv[])
         ShibTargetConfig::AAP |
         ShibTargetConfig::SHARExtensions
         );
-    if (!conf.init(schemadir,config))
+    if (!conf.init(shar_schemadir,shar_config))
         return -2;
 
     const IListener* listener=conf.getINI()->getListener();
