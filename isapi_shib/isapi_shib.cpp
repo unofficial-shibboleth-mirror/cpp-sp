@@ -164,8 +164,10 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
         return TRUE;
     }
 
+#ifndef _DEBUG
     try
     {
+#endif
         LPCSTR schemadir=getenv("SHIBSCHEMAS");
         if (!schemadir)
             schemadir=SHIB_SCHEMAS;
@@ -178,7 +180,7 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
             ShibTargetConfig::Metadata |
             ShibTargetConfig::AAP |
             ShibTargetConfig::RequestMapper |
-            ShibTargetConfig::SHIREExtensions |
+            ShibTargetConfig::LocalExtensions |
             ShibTargetConfig::Logging
             );
         if (!g_Config->init(schemadir,config)) {
@@ -208,15 +210,14 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
                 }
             }
         }
+#ifndef _DEBUG
     }
     catch (...)
     {
         LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, "Filter startup failed with an exception.");
-#ifdef _DEBUG
-        throw;
-#endif
         return FALSE;
     }
+#endif
 
     pVer->dwFilterVersion=HTTP_FILTER_REVISION;
     strncpy(pVer->lpszFilterDesc,"Shibboleth ISAPI Filter",SF_MAX_FILTER_DESC_LEN);
@@ -381,6 +382,8 @@ public:
     GetServerVariable(pfc,"REMOTE_ADDR",remote_addr,16);
 
     // XXX: How do I get the content type and HTTP Method from this context?
+
+    // TODO: Need to allow for use of SERVER_NAME
 
     init(g_Config, string(scheme), site.m_name, atoi(port),
 	 string(url), string(""), // XXX: content type

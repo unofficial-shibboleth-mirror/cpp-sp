@@ -101,7 +101,7 @@ int main(int argc,char* argv[])
         ShibTargetConfig::Trust |
         ShibTargetConfig::Credentials |
         ShibTargetConfig::AAP |
-        ShibTargetConfig::SHARExtensions |
+        ShibTargetConfig::GlobalExtensions |
         ShibTargetConfig::SessionCache
         );
     if (!conf.init(path,config))
@@ -143,7 +143,7 @@ int main(int argc,char* argv[])
         if (!AA)
             throw SAMLException("Unable to locate metadata for origin site's Attribute Authority.");
 
-        ShibHTTPHook::ShibHTTPHookCallContext ctx(app->getTLSCred(site),AA);
+        ShibHTTPHook::ShibHTTPHookCallContext ctx(app->getCredentialUse(site)->getString("TLS").second,AA);
         Trust t(app->getTrustProviders());
 
         SAMLResponse* response=NULL;

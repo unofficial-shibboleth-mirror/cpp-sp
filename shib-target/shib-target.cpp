@@ -284,7 +284,7 @@ ShibTarget::doCheckAuthN(bool requireSessionFlag, bool handleProfile)
   if (targetURL)
     mlp.insert("requestURL", targetURL);
 
-  return pair<bool,void*>(true,m_priv->sendError(this, "shire", mlp));
+  return pair<bool,void*>(true,m_priv->sendError(this, "session", mlp));
 }
 
 pair<bool,void*>
@@ -399,7 +399,7 @@ ShibTarget::doHandleProfile(void)
   if (targetURL)
     mlp.insert("requestURL", targetURL);
 
-  return pair<bool,void*>(true,m_priv->sendError(this, "shire", mlp));
+  return pair<bool,void*>(true,m_priv->sendError(this, "session", mlp));
 }
 
 pair<bool,void*>

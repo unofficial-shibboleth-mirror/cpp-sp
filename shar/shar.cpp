@@ -168,8 +168,8 @@ int real_main(int preinit)
             ShibTargetConfig::Trust |
             ShibTargetConfig::Credentials |
             ShibTargetConfig::AAP |
-            ShibTargetConfig::SHARExtensions |
-            (shar_checkonly ? (ShibTargetConfig::SHIREExtensions | ShibTargetConfig::RequestMapper) : ShibTargetConfig::Logging)
+            ShibTargetConfig::GlobalExtensions |
+            (shar_checkonly ? (ShibTargetConfig::LocalExtensions | ShibTargetConfig::RequestMapper) : ShibTargetConfig::Logging)
             );
         if (!shar_config)
             shar_config=getenv("SHIBCONFIG");
@@ -180,13 +180,13 @@ int real_main(int preinit)
         if (!shar_config)
             shar_config=SHIB_CONFIG;
         if (!conf.init(shar_schemadir,shar_config)) {
-            fprintf(stderr, "configuration is invalid, check log for specific problems\n");
+            fprintf(stderr, "configuration is invalid, see console for specific problems\n");
             return -2;
         }
 
         // If just a test run, bail.
         if (shar_checkonly) {
-            fprintf(stdout, "overall configuration is loadable, check log for non-fatal problems\n");
+            fprintf(stdout, "overall configuration is loadable, check console for non-fatal problems\n");
             return 0;
         }
 
@@ -331,16 +331,16 @@ int main(int argc, char *argv[])
         ShibTargetConfig::Trust |
         ShibTargetConfig::Credentials |
         ShibTargetConfig::AAP |
-        ShibTargetConfig::SHARExtensions |
-        (shar_checkonly ? (ShibTargetConfig::SHIREExtensions | ShibTargetConfig::RequestMapper) : ShibTargetConfig::Logging)
+        ShibTargetConfig::GlobalExtensions |
+        (shar_checkonly ? (ShibTargetConfig::LocalExtensions | ShibTargetConfig::RequestMapper) : ShibTargetConfig::Logging)
         );
     if (!conf.init(shar_schemadir,shar_config)) {
-        fprintf(stderr, "configuration is invalid, check log for specific problems\n");
+        fprintf(stderr, "configuration is invalid, check console for specific problems\n");
         return -2;
     }
 
     if (shar_checkonly)
-        fprintf(stderr, "overall configuration is loadable, check log for non-fatal problems\n");
+        fprintf(stderr, "overall configuration is loadable, check console for non-fatal problems\n");
     else {
         const IListener* listener=conf.getINI()->getListener();
         

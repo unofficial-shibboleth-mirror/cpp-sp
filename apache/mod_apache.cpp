@@ -1388,7 +1388,7 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
             ShibTargetConfig::Metadata |
             ShibTargetConfig::AAP |
             ShibTargetConfig::RequestMapper |
-            ShibTargetConfig::SHIREExtensions |
+            ShibTargetConfig::LocalExtensions |
             ShibTargetConfig::Logging
             );
         if (!g_Config->init(g_szSchemaDir,g_szSHIBConfig)) {
