@@ -63,7 +63,11 @@
 #include "http_core.h"
 #include "http_log.h"
 
-#include <unistd.h>
+#ifdef WIN32
+# undef strtoul
+#else
+# include <unistd.h>
+#endif
 
 // SAML Runtime
 #include <saml.h>
@@ -207,9 +211,9 @@ CCacheEntry::CCacheEntry(request_rec* r, const char* sessionFile)
 	    m_handle=handle.get();
 	}
 	else if (!strcmp("PBinding0",w))
-	    binding.reset(XMLString::transcode(ap_getword(r->pool,&token,'=')));
+	    binding=auto_ptr<XMLCh>(XMLString::transcode(ap_getword(r->pool,&token,'=')));
 	else if (!strcmp("LBinding0",w))
-	    location.reset(XMLString::transcode(ap_getword(r->pool,&token,'=')));
+	    location=auto_ptr<XMLCh>(XMLString::transcode(ap_getword(r->pool,&token,'=')));
         else if (!strcmp("Time",w))
 	    m_sessionCreated=atoi(ap_getword(r->pool,&token,'='));
 	else if (!strcmp("ClientAddress",w))
@@ -324,8 +328,7 @@ void CCacheEntry::populate(const char* resource_url)
 
     auto_ptr<char> h(XMLString::transcode(m_handle.c_str()));
     auto_ptr<char> d(XMLString::transcode(m_originSite.c_str()));
-    std::fprintf(stderr,"CCacheEntry::populate() fetched and stored SAML response for %s@%s\n",
-		 h.get(),d.get());
+    fprintf(stderr,"CCacheEntry::populate() fetched and stored SAML response for %s@%s\n",h.get(),d.get());
 }
 
 
