@@ -166,10 +166,10 @@ public:
     return map_windows_error_status_to_pthreads(rc);
   }
   int lock() {
-   map_windows_error_status_to_pthreads(WaitForSingleObject(mhandle,0));
+   return map_windows_error_status_to_pthreads(WaitForSingleObject(mhandle,0));
   }
   int unlock() {
-    map_windows_error_status_to_pthreads(ReleaseMutex(mhandle));
+    return map_windows_error_status_to_pthreads(ReleaseMutex(mhandle));
   }
 };
 
@@ -334,7 +334,40 @@ public:
   ThreadKeyImpl(void (*destroy_fcn)(void*)):destroy_hook(destroy_fcn){};
   ~ThreadKeyImpl() { destroy_hook(thread_data); }
 
-  int setData(void* data) { thread_data=data; }
+  int setData(void* data) { thread_data=data; return 0;}
   void* getData() { return thread_data; }
   };
 
+//
+// public "static" creation functions
+//
+
+Thread* Thread::create(void* (*start_routine)(void*), void* arg)
+{
+  return new ThreadImpl(start_routine, arg);
+}
+
+void Thread::exit(void* return_val)
+{
+  ExitThread((DWORD)return_val);
+}
+
+Mutex * Mutex::create()
+{
+  return new MutexImpl();
+}
+
+CondWait * CondWait::create()
+{
+  return new CondWaitImpl();
+}
+
+RWLock * RWLock::create()
+{
+  return new RWLockImpl();
+}
+
+ThreadKey* ThreadKey::create (void (*destroy_fcn)(void*))
+{
+  return new ThreadKeyImpl(destroy_fcn);
+}
