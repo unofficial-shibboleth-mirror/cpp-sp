@@ -73,42 +73,11 @@
 
 namespace shibboleth
 {
-    #define DECLARE_SHIB_EXCEPTION(name,base) \
-        class SHIB_EXPORTS name : public saml::base \
-        { \
-        public: \
-            name(const char* msg, const saml::params& p=saml::params(), const saml::Iterator<saml::QName>& codes=EMPTY(saml::QName), DOMElement* detail=NULL) \
-                : saml::base(msg,p,codes,detail) {RTTI(name);} \
-            name(const char* msg, const saml::namedparams& p, const saml::Iterator<saml::QName>& codes=EMPTY(saml::QName), DOMElement* detail=NULL) \
-                : saml::base(msg,p,codes,detail) {RTTI(name);} \
-            name(const std::string& msg, const saml::params& p=saml::params(), const saml::Iterator<saml::QName>& codes=EMPTY(saml::QName), DOMElement* detail=NULL) \
-                : saml::base(msg,p,codes,detail) {RTTI(name);} \
-            name(const std::string& msg, const saml::namedparams& p, const saml::Iterator<saml::QName>& codes=EMPTY(saml::QName), DOMElement* detail=NULL) \
-                : saml::base(msg,p,codes,detail) {RTTI(name);} \
-            name(const saml::QName& code, const char* msg, const saml::params& p=saml::params(), DOMElement* detail=NULL) \
-                : saml::base(code,msg,p,detail) {RTTI(name);} \
-            name(const saml::QName& code, const char* msg, const saml::namedparams& p, DOMElement* detail=NULL) \
-                : saml::base(code,msg,p,detail) {RTTI(name);} \
-            name(const saml::QName& code, const std::string& msg, const saml::params& p=saml::params(), DOMElement* detail=NULL) \
-                : saml::base(code,msg,p,detail) {RTTI(name);} \
-            name(const saml::QName& code, const std::string& msg, const saml::namedparams& p, DOMElement* detail=NULL) \
-                : saml::base(code,msg,p,detail) {RTTI(name);} \
-            name(HRESULT code, const char* msg, const saml::params& p=saml::params(), DOMElement* detail=NULL) \
-                : saml::base(code,msg,p,detail) {RTTI(name);} \
-            name(HRESULT code, const char* msg, const saml::namedparams& p, DOMElement* detail=NULL) \
-                : saml::base(code,msg,p,detail) {RTTI(name);} \
-            name(HRESULT code, const std::string& msg, const saml::params& p=saml::params(), DOMElement* detail=NULL) \
-                : saml::base(code,msg,p,detail) {RTTI(name);} \
-            name(HRESULT code, const std::string& msg, const saml::namedparams& p, DOMElement* detail=NULL) \
-                : saml::base(code,msg,p,detail) {RTTI(name);} \
-            name(DOMElement* e) : saml::base(e) {RTTI(name);} \
-            name(std::istream& in) : saml::base(in) {RTTI(name);} \
-            virtual ~name() throw () {} \
-        }
-
-    DECLARE_SHIB_EXCEPTION(MetadataException,SAMLException);
-    DECLARE_SHIB_EXCEPTION(CredentialException,SAMLException);
-    DECLARE_SHIB_EXCEPTION(InvalidHandleException,RetryableProfileException);
+    DECLARE_SAML_EXCEPTION(SHIB_EXPORTS,ResourceAccessException,SAMLException);
+    DECLARE_SAML_EXCEPTION(SHIB_EXPORTS,MetadataException,SAMLException);
+    DECLARE_SAML_EXCEPTION(SHIB_EXPORTS,CredentialException,SAMLException);
+    DECLARE_SAML_EXCEPTION(SHIB_EXPORTS,InvalidHandleException,RetryableProfileException);
+    DECLARE_SAML_EXCEPTION(SHIB_EXPORTS,InvalidSessionException,RetryableProfileException);
 
     // Metadata abstract interfaces, based on SAML 2.0
     
@@ -498,7 +467,6 @@ namespace shibboleth
 
         virtual void setVersion(int major, int minor);
         virtual saml::SAMLBrowserProfile::BrowserProfileResponse receive(
-            XMLCh** pIssuer,
             const char* packet,
             const XMLCh* recipient,
             int supportedProfiles,
@@ -603,6 +571,17 @@ namespace shibboleth
         time_t m_filestamp;
         RWLock* m_lock;
     };
+
+    /* These helpers attach metadata-derived information as exception properties and then
+     * rethrow the object. The following properties are attached, when possible:
+     * 
+     *  providerId          The unique ID of the entity
+     *  errorURL            The error support URL of the entity or role
+     *  contactName         A formatted support or technical contact name
+     *  contactEmail        A contact email address
+     */
+    SHIB_EXPORTS void annotateException(saml::SAMLException& e, const IEntityDescriptor* entity, bool rethrow=true);
+    SHIB_EXPORTS void annotateException(saml::SAMLException& e, const IRoleDescriptor* role, bool rethrow=true);
 }
 
 #endif

@@ -72,9 +72,12 @@ using namespace shibboleth;
 using namespace log4cpp;
 using namespace std;
 
+
+SAML_EXCEPTION_FACTORY(ResourceAccessException);
 SAML_EXCEPTION_FACTORY(MetadataException);
 SAML_EXCEPTION_FACTORY(CredentialException);
 SAML_EXCEPTION_FACTORY(InvalidHandleException);
+SAML_EXCEPTION_FACTORY(InvalidSessionException);
 
 namespace {
     ShibConfig g_config;
@@ -98,9 +101,11 @@ extern "C" unsigned long openssl_thread_id(void)
 
 bool ShibConfig::init()
 {
+    REGISTER_EXCEPTION_FACTORY(ResourceAccessException);
     REGISTER_EXCEPTION_FACTORY(MetadataException);
     REGISTER_EXCEPTION_FACTORY(CredentialException);
     REGISTER_EXCEPTION_FACTORY(InvalidHandleException);
+    REGISTER_EXCEPTION_FACTORY(InvalidSessionException);
 
     // Set up OpenSSL locking.
 	for (int i=0; i<CRYPTO_num_locks(); i++)
@@ -141,4 +146,82 @@ void shibboleth::log_openssl()
             log.errorStream() << "error data: " << data << CategoryStream::ENDLINE;
         code=ERR_get_error_line_data(&file,&line,&data,&flags);
     }
+}
+
+void shibboleth::annotateException(SAMLException& e, const IEntityDescriptor* entity, bool rethrow)
+{
+    if (entity) {
+        auto_ptr_char id(entity->getId());
+        e.addProperty("providerId",id.get());
+        Iterator<const IRoleDescriptor*> roles=entity->getRoleDescriptors();
+        while (roles.hasNext()) {
+            const IRoleDescriptor* role=roles.next();
+            if (role->isValid()) {
+                const char* temp=role->getErrorURL();
+                if (temp) {
+                    e.addProperty("errorURL",temp);
+                    break;
+                }
+            }
+        }
+
+        Iterator<const IContactPerson*> i=entity->getContactPersons();
+        while (i.hasNext()) {
+            const IContactPerson* c=i.next();
+            if ((c->getType()==IContactPerson::technical || c->getType()==IContactPerson::support)) {
+                const char* fname=c->getGivenName();
+                const char* lname=c->getSurName();
+                if (fname && lname) {
+                    string contact=string(fname) + ' ' + lname;
+                    e.addProperty("contactName",contact.c_str());
+                }
+                else if (fname)
+                    e.addProperty("contactName",fname);
+                else if (lname)
+                    e.addProperty("contactName",lname);
+                Iterator<string> emails=c->getEmailAddresses();
+                if (emails.hasNext())
+                    e.addProperty("contactEmail",emails.next().c_str());
+                break;
+            }
+        }
+    }
+    
+    if (rethrow)
+        throw e;
+}
+
+void shibboleth::annotateException(saml::SAMLException& e, const IRoleDescriptor* role, bool rethrow)
+{
+    if (role) {
+        auto_ptr_char id(role->getEntityDescriptor()->getId());
+        e.addProperty("providerId",id.get());
+        const char* temp=role->getErrorURL();
+        if (role->getErrorURL())
+            e.addProperty("errorURL",role->getErrorURL());
+
+        Iterator<const IContactPerson*> i=role->getContactPersons();
+        while (i.hasNext()) {
+            const IContactPerson* c=i.next();
+            if ((c->getType()==IContactPerson::technical || c->getType()==IContactPerson::support)) {
+                const char* fname=c->getGivenName();
+                const char* lname=c->getSurName();
+                if (fname && lname) {
+                    string contact=string(fname) + ' ' + lname;
+                    e.addProperty("contactName",contact.c_str());
+                }
+                else if (fname)
+                    e.addProperty("contactName",fname);
+                else if (lname)
+                    e.addProperty("contactName",lname);
+                Iterator<string> emails=c->getEmailAddresses();
+                if (emails.hasNext())
+                    e.addProperty("contactEmail",emails.next().c_str());
+                break;
+            }
+        }
+    }
+    
+    if (rethrow)
+        throw e;
 }
