@@ -77,12 +77,22 @@ namespace shibboleth
         class SHIB_EXPORTS name : public saml::base \
         { \
         public: \
-            name(const char* msg) : saml::base(msg) {RTTI(name);} \
-            name(const std::string& msg) : saml::base(msg) {RTTI(name);} \
-            name(const saml::Iterator<saml::QName>& codes, const char* msg) : saml::base(codes,msg) {RTTI(name);} \
-            name(const saml::Iterator<saml::QName>& codes, const std::string& msg) : saml::base(codes, msg) {RTTI(name);} \
-            name(const saml::QName& code, const char* msg) : saml::base(code,msg) {RTTI(name);} \
-            name(const saml::QName& code, const std::string& msg) : saml::base(code, msg) {RTTI(name);} \
+            name(const char* msg, const saml::params& p=saml::params(), const saml::Iterator<saml::QName>& codes=EMPTY(saml::QName), DOMElement* detail=NULL) \
+                : saml::base(msg,p,codes,detail) {RTTI(name);} \
+            name(const char* msg, const saml::namedparams& p, const saml::Iterator<saml::QName>& codes=EMPTY(saml::QName), DOMElement* detail=NULL) \
+                : saml::base(msg,p,codes,detail) {RTTI(name);} \
+            name(const std::string& msg, const saml::params& p=saml::params(), const saml::Iterator<saml::QName>& codes=EMPTY(saml::QName), DOMElement* detail=NULL) \
+                : saml::base(msg,p,codes,detail) {RTTI(name);} \
+            name(const std::string& msg, const saml::namedparams& p, const saml::Iterator<saml::QName>& codes=EMPTY(saml::QName), DOMElement* detail=NULL) \
+                : saml::base(msg,p,codes,detail) {RTTI(name);} \
+            name(const saml::QName& code, const char* msg, const saml::params& p=saml::params(), DOMElement* detail=NULL) \
+                : saml::base(code,msg,p,detail) {RTTI(name);} \
+            name(const saml::QName& code, const char* msg, const saml::namedparams& p, DOMElement* detail=NULL) \
+                : saml::base(code,msg,p,detail) {RTTI(name);} \
+            name(const saml::QName& code, const std::string& msg, const saml::params& p=saml::params(), DOMElement* detail=NULL) \
+                : saml::base(code,msg,p,detail) {RTTI(name);} \
+            name(const saml::QName& code, const std::string& msg, const saml::namedparams& p, DOMElement* detail=NULL) \
+                : saml::base(code,msg,p,detail) {RTTI(name);} \
             name(DOMElement* e) : saml::base(e) {RTTI(name);} \
             name(std::istream& in) : saml::base(in) {RTTI(name);} \
             virtual ~name() throw () {} \
