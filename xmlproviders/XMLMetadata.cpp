@@ -422,7 +422,19 @@ namespace {
     class XMLMetadata : public IMetadata, public ReloadableXMLFile
     {
     public:
-        XMLMetadata(const DOMElement* e) : ReloadableXMLFile(e) {}
+        XMLMetadata(const DOMElement* e) : ReloadableXMLFile(e) {
+            static const XMLCh uri[] = { chLatin_u, chLatin_r, chLatin_i, chNull };
+            if (e->hasAttributeNS(NULL,uri)) {
+                DOMNodeList* nlist=e->getElementsByTagName(SHIB_L(Exclude));
+                for (int i=0; nlist && i<nlist->getLength(); i++) {
+                    if (nlist->item(i)->hasChildNodes()) {
+                        auto_ptr_char temp(nlist->item(i)->getFirstChild()->getNodeValue());
+                        if (temp.get())
+                            m_excludes.insert(temp.get());
+                    }
+                }
+            }
+        }
         ~XMLMetadata() {}
 
         const IEntityDescriptor* lookup(const char* providerId) const;
@@ -432,6 +444,9 @@ namespace {
     protected:
         virtual ReloadableXMLFileImpl* newImplementation(const char* pathname, bool first=true) const;
         virtual ReloadableXMLFileImpl* newImplementation(const DOMElement* e, bool first=true) const;
+        
+    private:
+        set<string> m_excludes;
     };
 }
 
@@ -1111,6 +1126,9 @@ XMLMetadataImpl::~XMLMetadataImpl()
 
 const IEntityDescriptor* XMLMetadata::lookup(const char* providerId) const
 {
+    if (m_excludes.find(providerId)!=m_excludes.end())
+        return NULL;
+        
     XMLMetadataImpl* impl=dynamic_cast<XMLMetadataImpl*>(getImplementation());
     pair<XMLMetadataImpl::sitemap_t::const_iterator,XMLMetadataImpl::sitemap_t::const_iterator> range=
         impl->m_sites.equal_range(providerId);
@@ -1147,8 +1165,17 @@ const IEntityDescriptor* XMLMetadata::lookup(const SAMLArtifact* artifact) const
         else
             return NULL;
     }
-    for (XMLMetadataImpl::sitemap_t::const_iterator i=range.first; i!=range.second; i++)
-        if (now < i->second->getValidUntil())
-            return i->second;
+
+    // Check exclude list.
+    if (range.first!=range.second) {
+        auto_ptr_char id(range.first->second->getId());
+        if (m_excludes.find(id.get())!=m_excludes.end())
+            return NULL;
+
+        for (XMLMetadataImpl::sitemap_t::const_iterator i=range.first; i!=range.second; i++)
+            if (now < i->second->getValidUntil())
+                return i->second;
+    }
+    
     return NULL;
 }
