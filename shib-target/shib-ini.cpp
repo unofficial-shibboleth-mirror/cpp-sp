@@ -95,8 +95,8 @@ namespace shibtarget {
         Iterator<const XMLCh*> getAudiences() const;
         const char* getTLSCred(const IEntityDescriptor* provider) const {return getCredentialUse(provider).first.c_str();}
         const char* getSigningCred(const IEntityDescriptor* provider) const {return getCredentialUse(provider).second.c_str();}
-        SAMLBrowserProfile* getBrowserProfile() const {return m_profile;}
-        SAMLBinding* getBinding(const XMLCh* binding) const
+        const SAMLBrowserProfile* getBrowserProfile() const {return m_profile;}
+        const SAMLBinding* getBinding(const XMLCh* binding) const
             {return XMLString::compareString(SAMLBinding::SOAP,binding) ? NULL : m_binding;}
         
         // Provides filter to exclude special config elements.

@@ -712,7 +712,7 @@ SAMLResponse* InternalCCacheEntry::getNewResponse()
             SAMLAuthorityBinding* ab=bindings.next();
             try {
                 // Get a binding object for this protocol.
-                SAMLBinding* binding = application->getBinding(ab->getBinding());
+                const SAMLBinding* binding = application->getBinding(ab->getBinding());
                 if (!binding) {
                     auto_ptr_char prot(ab->getBinding());
                     log->warn("skipping binding on unsupported protocol (%s)", prot.get());
@@ -744,7 +744,7 @@ SAMLResponse* InternalCCacheEntry::getNewResponse()
             const IEndpoint* ep=endpoints.next();
             try {
                 // Get a binding object for this protocol.
-                SAMLBinding* binding = application->getBinding(ep->getBinding());
+                const SAMLBinding* binding = application->getBinding(ep->getBinding());
                 if (!binding) {
                     auto_ptr_char prot(ep->getBinding());
                     log->warn("skipping binding on unsupported protocol (%s)", prot.get());

@@ -484,7 +484,7 @@ namespace shibboleth
             int supportedProfiles,
             saml::IReplayCache* replayCache=NULL,
             saml::SAMLBrowserProfile::ArtifactMapper* callback=NULL
-            );
+            ) const;
 
     private:
         saml::SAMLBrowserProfile* m_profile;

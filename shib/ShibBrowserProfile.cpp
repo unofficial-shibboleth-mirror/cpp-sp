@@ -92,7 +92,7 @@ SAMLBrowserProfile::BrowserProfileResponse ShibBrowserProfile::receive(
     int supportedProfiles,
     IReplayCache* replayCache,
     SAMLBrowserProfile::ArtifactMapper* callback
-    )
+    ) const
 {
 #ifdef _DEBUG
     saml::NDC("recieve");
