@@ -91,7 +91,7 @@ SAMLBrowserProfile::BrowserProfileResponse ShibBrowserProfile::receive(
     const XMLCh* recipient,
     int supportedProfiles,
     IReplayCache* replayCache,
-    SAMLBinding* callback
+    SAMLBrowserProfile::ArtifactMapper* callback
     )
 {
 #ifdef _DEBUG
