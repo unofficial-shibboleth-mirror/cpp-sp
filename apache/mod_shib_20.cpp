@@ -33,6 +33,7 @@
 
 #define ap_send_http_header(r)
 #define ap_hard_timeout(str,r)
+#define ap_reset_timeout(r)
 #define ap_kill_timeout(r)
 
 #include "mod_apache.cpp"
