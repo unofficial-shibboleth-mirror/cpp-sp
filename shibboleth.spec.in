@@ -99,7 +99,7 @@ cp -p %{_sysconfdir}/shibboleth/apache2.config \
     rm -f %{_sysconfdir}/httpd/conf.d/shibboleth.conf
 
 %triggerin selinux-targeted-policy -- %{name}
-restorecon %{_sbindir}/shar
+restorecon %{_sbindir}/shibd
 
 %triggerin selinux-targeted-policy -- selinux-targeted-policy-source
 cd %{_sysconfdir}/selinux/src/policy || exit 1
@@ -110,7 +110,7 @@ make -W load
 %doc _docs/CREDITS.txt _docs/InQueue.html _docs/NEWS.txt _docs/logo.jpg
 %doc _docs/DEPLOY-GUIDE-ORIGIN.html _docs/main.css _docs/README.txt
 %doc _docs/DEPLOY-GUIDE-TARGET.html _docs/LICENSE.txt _docs/mysql-4.0.12.diff
-%{_sbindir}/shar
+%{_sbindir}/shibd
 %{_bindir}/siterefresh
 %{_libdir}/libshib.so.*
 %{_libdir}/libshib-target.so.*

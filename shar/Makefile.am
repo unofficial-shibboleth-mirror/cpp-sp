@@ -3,7 +3,7 @@
 AUTOMAKE_OPTIONS = foreign
 
 bin_PROGRAMS = test-client
-sbin_PROGRAMS = shar
+sbin_PROGRAMS = shibd
 
 if USE_OUR_ONCRPC
 AM_CFLAGS = -I${top_srcdir}/oncrpc
@@ -13,14 +13,14 @@ endif
 
 test_client_SOURCES = test-client.cpp
 
-shar_SOURCES = shar.cpp shar-utils.cpp
+shibd_SOURCES = shar.cpp shar-utils.cpp
 noinst_HEADERS = shar-utils.h
 
 test_client_LDADD = \
   $(top_builddir)/shib-target/libshib-target.la \
   $(top_builddir)/shib/libshib.la
 
-shar_LDADD = \
+shibd_LDADD = \
   $(top_builddir)/shib-target/libshib-target.la \
   $(top_builddir)/shib/libshib.la \
   $(ONCRPC_LIBS)
