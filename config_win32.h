@@ -2,10 +2,10 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
 /* Define to 1 if you have the <dlfcn.h> header file. */
-#define HAVE_DLFCN_H 1
+/* #undef HAVE_DLFCN_H */
 
 /* Define to 1 if you have the `gmtime_r' function. */
-#define HAVE_GMTIME_R 1
+/* #undef HAVE_GMTIME_R */
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #define HAVE_INTTYPES_H 1
@@ -32,7 +32,7 @@
 #define HAVE_NAMESPACES 1
 
 /* Define if you have POSIX threads libraries and header files. */
-#define HAVE_PTHREAD 1
+/* #undef HAVE_PTHREAD */
 
 /* Define if saml library was found */
 #define HAVE_SAML 1
@@ -44,7 +44,7 @@
 #define HAVE_STDLIB_H 1
 
 /* Define to 1 if you have the `strcasecmp' function. */
-#define HAVE_STRCASECMP 1
+/* #undef HAVE_STRCASECMP */
 
 /* Define to 1 if you have the `strchr' function. */
 #define HAVE_STRCHR 1
@@ -71,7 +71,7 @@
 #define HAVE_SYS_TYPES_H 1
 
 /* Define to 1 if you have the <unistd.h> header file. */
-#define HAVE_UNISTD_H 1
+/* #undef HAVE_UNISTD_H */
 
 /* Name of package */
 #define PACKAGE "shibboleth"
@@ -83,13 +83,13 @@
 #define PACKAGE_NAME "shibboleth"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "shibboleth 0.7"
+#define PACKAGE_STRING "shibboleth 1.0"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "shibboleth"
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "0.7"
+#define PACKAGE_VERSION "1.0"
 
 /* Define to the necessary symbol if this constant uses a non-standard name on
    your system. */
@@ -102,7 +102,7 @@
 /* #undef TM_IN_SYS_TIME */
 
 /* Version number of package */
-#define VERSION "0.7"
+#define VERSION "1.0"
 
 /* Define to empty if `const' does not conform to ANSI C. */
 /* #undef const */
