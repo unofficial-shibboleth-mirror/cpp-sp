@@ -481,9 +481,12 @@ shibrpc_get_assertions_1_svc(shibrpc_get_assertions_args_1 *argp,
   // Try and locate support metadata for errors we throw.
   log.debug ("application: %s", argp->application_id);
   const IApplication* app=conf->getApplication(argp->application_id);
-  if (!app)
+  if (!app) {
       // Something's horribly wrong. Flush the session.
-      throw ShibTargetException(SHIBRPC_NO_SESSION,"Unable to locate application for session, deleted?");
+      log.error ("couldn't find application for session");
+      set_rpc_status(&result->status, SHIBRPC_NO_SESSION, "Unable to locate application for session, deleted?");
+      return TRUE;
+  }
 
   Metadata m(app->getMetadataProviders());
   const IProvider* origin=m.lookup(entry->getStatement()->getSubject()->getNameIdentifier()->getNameQualifier());
