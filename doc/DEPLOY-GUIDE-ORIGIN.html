@@ -173,58 +173,89 @@ font-color: #121212;
     implementation of the architectural document, functional
     enhancements, and user interface improvements.</p>
 
-    <p>Functionality which has been added since the previous
-    version (v0.8) includes:</p>
+	<h4>Major New Features - 1.0</h4>
+	This new release contains many improvements and enhancements, including: 
+	
+	<h5>Federation Support</h5> 
+	<ol>
+		<li>
+		Federation and trust support has been substantially extended. Federation 
+		structures are now defined. The set of metadata collected and managed 
+		by each Federation is more fully defined. The configuration values 
+		assigned by a Federation are now identified. <br>
+		</li>
+		<li>
+		There is some support for targets to be members of multiple federations; 
+		this support will continue to evolve. When a browser user arrives, 
+		a target will determine which federation their origin belongs to, 
+		and then use the trust fabric associated with that Federation. <br>
+		</li>
+		<li>
+		Better support for flexible and bilateral trust agreements. A key 
+		specific to an origin site can be used to vallidate its signature. 
+		<br>
+		</li>
 
-    <ul>
-      <li>
-        <p>Various improvements to error handling.  Origin sites are now
-        able to supply a URL to a federation for users to be referred to
-        when Shibboleth encounters a problem.  Targets will be able to
-        utilize this URL in error templates.</p>
-      </li>
+		<li>
+		This version contains a significantly more mature security implementation, 
+		and should meet the security requirements of typical sites. <p></p>
+		</li>
+	</ol>
 
-      <li>
-        <p>The SHAR may now store its session and attribute cache in a
-        back-end database in addition to the previously available
-        in-memory option.  The method by which <span
-        class="fixedwidth">sites.xml</span> is refreshed has been
-        modified to improve robustness.</p>
-      </li>
+	<h5>Origin</h5> 
+	<ol>
 
-      <li>
-        <p>Attribute acceptance policies have been greatly enhanced,
-        with filtering of attribute values by sites supported.</p>
-      </li>
+		<li> The Attribute Authority has a powerful new attribute resolver. 
+		Simple scenarios (using a string attribute stored in ldap) can be 
+		accomplished by merely editing a configuration file. Java classes 
+		may still be written for more complex evaluations (eg retrieving information 
+		from multiple disparate repositories, and computing the SAML attribute 
+		using business rules). This should greatly simplify the process of 
+		configuring the AA to support additional general attributes.<br>
+		</li>
+	</ol>
 
-      <li>
-        <p>OpenSAML now populates <span
-        class="fixedwidth">AuthType</span> element in the SAML Subject
-        element using a value specified by origin sites using a
-        configuration directive.  This value describes the type of
-        authentication mechanism used at the origin site(e.g. Kerberos,
-        PKI, etc.). This value is made available on the target side as
-        another variable that may be used in authorization
-        decisions.</p>
-      </li>
+	<h5>Target</h5> 
+	<ol>
+		<li> Significantly more flexibility in configuring targets to ensure 
+		robustness. Failover and redundant configurations are now supported. 
+		<br>
+		<ol>
+			<li>The SHAR may now optionally store its session and attribute 
+			cache in a back-end database in addition to the previously available 
+			in-memory option. This would allow a site to run an apache server 
+			farm, with multiple SHARs, supporting the same set of sessions. 
+			</li>
+			<li>Federation supplied files (sites.xml and trust.xml) are now 
+			refreshed in a much more robust manner. <br>
+			</li>
 
-      <li>
-        <p>Origin sites whose HS certificate is not signed by one of a
-        federation's trusted roots are able to provide that federation
-        with the certificate; this cert can now be stored in the sites
-        metadata, and targets will be able to use this certificate to
-        validate the HS' signature.</p>
-      </li>
+		</ol>
+		</li>
+		<li>Attribute acceptance policies have been greatly enhanced, and now 
+		supports filtering of attribute values by sites. <br>
+		</li>
+		<li>The SHAR can be configured to request specific attributes from the 
+		Origin. <br>
+		</li>
+	</ol>
+	<h5>Miscellaneous</h5> 
+	<ol>
+		<li>Origin sites can configure a value to describe the type of authentication 
+		mechanism used at the origin site(e.g. password, Kerberos, PKI, etc.). 
+		This value is made available on the target side as Shib-Authentication-Method. 
+		<br>
+		</li>
+		<li>Various improvements to error handling. Origin sites are now able 
+		to supply an &quot;error URL&quot; and contact information to a federation. 
+		When a target encounters an error, it can include this information 
+		in the error page. <br>
 
-      <li>
-        <p>The AA implementation has been improved with a powerful
-        attribute resolver.  This should greatly simplify the process of
-        configuring the AA to support additional general attributes,
-        while Java classes may still be written for more complex
-        evaluations.</p>
-      </li>
-
-    </ul>
+		</li>
+		<li>Local time string values are now used in log files. <br>
+		</li>
+		<li>Internationalization support has been extended.</li>
+	</ol>
 
     <p>Before starting, please sign up for all applicable <a href=
     "http://shibboleth.internet2.edu/shib-misc.html#mailinglist">
@@ -372,6 +403,7 @@ font-color: #121212;
               certificate/key pairs between Apache and Java
               keystores</font> <font color="#5555EE">(optional)</font></a></li>
           <li><a href="#5.c."><font color="black">The Attribute Resolver</font></a></li>
+          <li><a href="#5.d."><font color="black">Local Error Page</font></a></li>
         </ol>
       </li>
 
@@ -2406,6 +2438,20 @@ font-color: #121212;
       
       <p>There are additional examples of <span class="fixedwidth">resolver.xml</span> files provided in the <a href="http://marsalis.internet2.edu/cgi-bin/viewcvs.cgi/shibboleth/java/src/conf/">Shibboleth CVS</a>.</p>
 
+    </blockquote>
+    <br>
+    <h4><a name="5.d."></a>5.d. Local Error Page</h4>
+    <blockquote>
+		<p>Origin sites are encouraged to provide federations with the 
+		URL of a local Shibboleth error page. If a browser user from the 
+		origin site encounters a problem at a shibbolized target, the target 
+		is likely to display an error page that includes a link back to this 
+		origin provided page.</p>
+
+		<p>The page should provide information on how to obtain local support 
+		for using Shibbolized resources. It might also include suggestions on 
+		what information should be recorded before beginning the problem 
+		resolution process.</p> 
     </blockquote>
 
     <br>
