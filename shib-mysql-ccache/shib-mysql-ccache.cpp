@@ -210,7 +210,7 @@ ShibMySQLCCache::ShibMySQLCCache(const DOMElement* e)
 
   m_cache = dynamic_cast<ISessionCache*>(
       ShibConfig::getConfig().m_plugMgr.newPlugin(
-        "edu.internet2.middleware.shibboleth.target.provider.MemoryCache", e
+        "edu.internet2.middleware.shibboleth.target.provider.MemorySessionCache", e
         )
     );
 
