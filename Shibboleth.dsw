@@ -39,6 +39,18 @@ Package=<4>
 
 ###############################################################################
 
+Project: "isapi_shib_gui"=.\isapi_shib_gui\isapi_shib_gui.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
 Project: "mod_shire"=.\mod_shire\mod_shire.dsp - Package Owner=<4>
 
 Package=<5>
@@ -226,10 +238,6 @@ Global:
 
 Package=<5>
 {{{
-    begin source code control
-    "$/NSAPI", WNAAAAAA
-    ..\..\..\documents and settings\cantor.2.saidin\my documents\visual studio projects\nsapi
-    end source code control
 }}}
 
 Package=<3>
