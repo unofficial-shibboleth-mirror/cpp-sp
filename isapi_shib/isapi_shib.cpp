@@ -212,6 +212,9 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
     catch (...)
     {
         LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, "Filter startup failed with an exception.");
+#ifdef _DEBUG
+        throw;
+#endif
         return FALSE;
     }
 
