@@ -343,7 +343,7 @@ const char* SHIRE::getAuthnRequest(const char* resource) const
             if (!old.first || !old.second) {
                 wayf=m_app->getString("providerId");
                 if (wayf.first)
-                    m_authnRequest=m_authnRequest + "&providerId=" + wayf.second;
+                    m_authnRequest=m_authnRequest + "&providerId=" + url_encode(wayf.second);
             }
         }
     }
