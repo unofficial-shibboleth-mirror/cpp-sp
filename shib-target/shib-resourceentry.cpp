@@ -32,6 +32,9 @@ public:
   SAMLResponse* m_response;
   log4cpp::Category* log;
 
+  time_t createTime;
+  int defaultLife;
+
   static saml::QName g_respondWith;
 };
 
@@ -41,10 +44,21 @@ saml::QName ResourceEntryPriv::g_respondWith(saml::XML::SAML_NS,L(AttributeState
 /* ResourceEntry:  A Credential Cache Entry for a particular Resource URL     */
 /******************************************************************************/
 
-ResourceEntryPriv::ResourceEntryPriv() : m_response(NULL)
+ResourceEntryPriv::ResourceEntryPriv() : m_response(NULL), defaultLife(-1)
 {
   string ctx = "shibtarget::ResourceEntry";
   log = &(log4cpp::Category::getInstance(ctx));
+  createTime = time(NULL);
+
+  // Compute and cache the default life for this Resource Entry
+  ShibTargetConfig& config = ShibTargetConfig::getConfig();
+  ShibINI& ini = config.getINI();
+  string tag;
+  if (ini.get_tag (SHIBTARGET_SHAR, SHIBTARGET_TAG_DEFAULTLIFE, true, &tag))
+    defaultLife = atoi(tag.c_str());
+
+  if (defaultLife < 0)
+    defaultLife = 1800;		// default is 30 minutes
 }
 
 ResourceEntryPriv::~ResourceEntryPriv()
@@ -133,6 +147,7 @@ bool ResourceEntry::isValid(int slop)
   curDateTime.parseDateTime();
 
   Iterator<SAMLAssertion*> iter = getAssertions();
+  int count = 0;
 
   while (iter.hasNext()) {
     SAMLAssertion* assertion = iter.next();
@@ -141,11 +156,11 @@ bool ResourceEntry::isValid(int slop)
 
     const XMLDateTime* thistime = assertion->getNotOnOrAfter();
 
-    if (! thistime) {
-      m_priv->log->debug ("getNotOnOrAfter failed.");
-      return false;
-    }
+    // If there is no time, then just continue and ignore this assertion.
+    if (! thistime)
+      continue;
 
+    count++;
     auto_ptr<char> nowptr(XMLString::transcode(curDateTime.toString()));
     auto_ptr<char> assnptr(XMLString::transcode(thistime->toString()));
 
@@ -157,6 +172,13 @@ bool ResourceEntry::isValid(int slop)
       return false;
     }
   } // while
+
+  // If we didn't find any assertions with times, then see if we're
+  // older than the defaultLife.
+  if (!count && (now - m_priv->createTime) > m_priv->defaultLife) {
+    m_priv->log->debug("assertion is beyond default life");
+    return false;
+  }
 
   m_priv->log->debug("yep, all still valid");
   return true;
