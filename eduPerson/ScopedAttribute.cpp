@@ -102,8 +102,8 @@ bool ScopedAttribute::addValue(DOMElement* e)
 
 bool ScopedAttribute::accept(DOMElement* e) const
 {
-    IOriginSiteMapper* mapper=ShibConfig::getConfig().origin_mapper;
-    Iterator<pair<xstring,bool> > domains=mapper->getSecurityDomains(m_defaultScope.c_str());
+    OriginSiteMapper mapper;
+    Iterator<pair<xstring,bool> > domains=mapper.getSecurityDomains(m_defaultScope.c_str());
     const XMLCh* this_scope=NULL;
     DOMAttr* scope=e->getAttributeNodeNS(NULL,Scope);
     if (scope)

@@ -73,6 +73,7 @@
 #include <xmlsec/keysmngr.h>
 
 #include "shib.h"
+#include "shib-threads.h"
 
 #define SHIB_LOGCAT "Shibboleth"
 
@@ -81,15 +82,51 @@ namespace shibboleth
     class ShibInternalConfig : public ShibConfig
     {
     public:
-        ShibInternalConfig() : m_manager(NULL) {}
+        ShibInternalConfig() : m_mapper(NULL), m_manager(NULL), m_lock(NULL), m_shutdown_wait(NULL), m_refresh_thread(NULL), m_shutdown(false) {}
 
         // global per-process setup and shutdown of runtime
         bool init();
         void term();
 
+        IOriginSiteMapper* getMapper();
+        void releaseMapper(IOriginSiteMapper* mapper);
+        void refresh();
+
     private:
+        IOriginSiteMapper* m_mapper;
         xmlSecKeysMngrPtr m_manager;
+        RWLock* m_lock;
+        static void* refresh_fn(void*);
+        bool m_shutdown;
+        CondWait* m_shutdown_wait;
+        Thread*	m_refresh_thread;
     };
+
+    class SHIB_EXPORTS XMLOriginSiteMapper : public IOriginSiteMapper
+    {
+    public:
+        XMLOriginSiteMapper(const char* registryURI, const char* calist=NULL, const saml::X509Certificate* verifyKey=NULL);
+        ~XMLOriginSiteMapper();
+
+        virtual saml::Iterator<saml::xstring> getHandleServiceNames(const XMLCh* originSite);
+        virtual const saml::X509Certificate* getHandleServiceCert(const XMLCh* handleService);
+        virtual saml::Iterator<std::pair<saml::xstring,bool> > getSecurityDomains(const XMLCh* originSite);
+        virtual const char* getTrustedRoots();
+
+    private:
+        void validateSignature(const saml::X509Certificate* verifyKey, DOMElement* e);
+
+        struct OriginSite
+        {
+            std::vector<saml::xstring> m_handleServices;
+            std::vector<std::pair<saml::xstring,bool> > m_domains;
+        };
+
+        std::string m_calist;
+        std::map<saml::xstring,OriginSite*> m_sites;
+        std::map<saml::xstring,saml::X509Certificate*> m_hsCerts;
+    };
+
 }
 
 #endif

@@ -127,7 +127,8 @@ SAMLResponse* ShibPOSTProfile::accept(const XMLByte* buf)
     const XMLCh* handleService = assertion->getIssuer();
 
     // Is this a trusted HS?
-    Iterator<xstring> hsNames=ShibConfig::getConfig().origin_mapper->getHandleServiceNames(originSite);
+    OriginSiteMapper mapper;
+    Iterator<xstring> hsNames=mapper.getHandleServiceNames(originSite);
     bool bFound = false;
     while (!bFound && hsNames.hasNext())
         if (!XMLString::compareString(hsNames.next().c_str(),handleService))
@@ -135,13 +136,13 @@ SAMLResponse* ShibPOSTProfile::accept(const XMLByte* buf)
     if (!bFound)
         throw TrustException(SAMLException::RESPONDER, "ShibPOSTProfile::accept() detected an untrusted HS for the origin site");
 
-    const Key* hsKey=ShibConfig::getConfig().origin_mapper->getHandleServiceKey(handleService);
+    const X509Certificate* hsCert=mapper.getHandleServiceCert(handleService);
 
     // Signature verification now takes place. We check the assertion and the response.
     // Assertion signing is optional, response signing is mandatory.
     if (assertion->isSigned())
-        verifySignature(*assertion, handleService, hsKey);
-    verifySignature(*r, handleService, hsKey);
+        verifySignature(*assertion, handleService, hsCert);
+    verifySignature(*r, handleService, hsCert);
 
     return r.release();
 }
@@ -189,7 +190,7 @@ bool ShibPOSTProfile::checkReplayCache(const SAMLAssertion& a)
     return SAMLPOSTProfile::checkReplayCache(a);
 }
 
-void ShibPOSTProfile::verifySignature(const SAMLSignedObject& obj, const XMLCh* signerName, const saml::Key* knownKey)
+void ShibPOSTProfile::verifySignature(const SAMLSignedObject& obj, const XMLCh* signerName, const X509Certificate* knownKey)
 {
     const SAMLObject* pobj=&obj;
     const SAMLResponse* ptr=dynaptr(SAMLResponse,pobj);

@@ -59,6 +59,7 @@
 #ifndef __shib_h__
 #define __shib_h__
 
+#include <ctime>
 #include <saml/saml.h>
 
 #ifdef WIN32
@@ -106,34 +107,25 @@ namespace shibboleth
     struct SHIB_EXPORTS IOriginSiteMapper
     {
         virtual saml::Iterator<saml::xstring> getHandleServiceNames(const XMLCh* originSite)=0;
-        virtual const saml::Key* getHandleServiceKey(const XMLCh* handleService)=0;
+        virtual const saml::X509Certificate* getHandleServiceCert(const XMLCh* handleService)=0;
         virtual saml::Iterator<std::pair<saml::xstring,bool> > getSecurityDomains(const XMLCh* originSite)=0;
         virtual const char* getTrustedRoots()=0;
     };
 
-    class SHIB_EXPORTS XMLOriginSiteMapper : public IOriginSiteMapper
+    class SHIB_EXPORTS OriginSiteMapper : public IOriginSiteMapper
     {
     public:
-        XMLOriginSiteMapper(const char* registryURI, const char* calist=NULL, const saml::X509Certificate* verifyKey=NULL);
-        ~XMLOriginSiteMapper();
-
+        OriginSiteMapper();
+        ~OriginSiteMapper();
         virtual saml::Iterator<saml::xstring> getHandleServiceNames(const XMLCh* originSite);
-        virtual const saml::Key* getHandleServiceKey(const XMLCh* handleService);
+        virtual const saml::X509Certificate* getHandleServiceCert(const XMLCh* handleService);
         virtual saml::Iterator<std::pair<saml::xstring,bool> > getSecurityDomains(const XMLCh* originSite);
         virtual const char* getTrustedRoots();
 
     private:
-        void validateSignature(const saml::X509Certificate* verifyKey, DOMElement* e);
-
-        struct OriginSite
-        {
-            std::vector<saml::xstring> m_handleServices;
-            std::vector<std::pair<saml::xstring,bool> > m_domains;
-        };
-
-        std::string m_calist;
-        std::map<saml::xstring,OriginSite*> m_sites;
-        std::map<saml::xstring,saml::Key*> m_hsKeys;
+        OriginSiteMapper(const OriginSiteMapper&);
+        void operator=(const OriginSiteMapper&);
+        IOriginSiteMapper* m_mapper;
     };
 
     class SHIB_EXPORTS ShibPOSTProfile
@@ -158,7 +150,7 @@ namespace shibboleth
         virtual bool checkReplayCache(const saml::SAMLAssertion& a);
 
     protected:
-        virtual void verifySignature(const saml::SAMLSignedObject& obj, const XMLCh* signerName, const saml::Key* knownKey);
+        virtual void verifySignature(const saml::SAMLSignedObject& obj, const XMLCh* signerName, const saml::X509Certificate* knownKey);
 
         saml::SAMLSignedObject::sigs_t m_algorithm;
         std::vector<const XMLCh*> m_policies;
@@ -189,7 +181,7 @@ namespace shibboleth
                                             const saml::Key* assertionKey=NULL, const saml::X509Certificate* assertionCert=NULL);
 
     protected:
-        virtual void verifySignature(const saml::SAMLSignedObject& obj, const XMLCh* signerName, const saml::Key* knownKey);
+        virtual void verifySignature(const saml::SAMLSignedObject& obj, const XMLCh* signerName, const saml::X509Certificate* knownKey);
     };
 
     class SHIB_EXPORTS ShibPOSTProfileFactory
@@ -202,6 +194,9 @@ namespace shibboleth
     class SHIB_EXPORTS ShibConfig
     {
     public:
+        ShibConfig() : mapperCert(NULL), mapperRefreshInterval(0) {}
+        virtual ~ShibConfig();
+
         // global per-process setup and shutdown of Shibboleth runtime
         virtual bool init()=0;
         virtual void term()=0;
@@ -209,8 +204,13 @@ namespace shibboleth
         // enables runtime and clients to access configuration
         static ShibConfig& getConfig();
 
+        virtual IOriginSiteMapper* getMapper()=0;
+        virtual void releaseMapper(IOriginSiteMapper* mapper)=0;
+
     /* start of external configuration */
-        IOriginSiteMapper* origin_mapper;
+        std::string mapperURL;
+        saml::X509Certificate* mapperCert;
+        time_t mapperRefreshInterval;
     /* end of external configuration */
     };
 

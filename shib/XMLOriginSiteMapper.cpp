@@ -134,15 +134,35 @@ XMLOriginSiteMapper::XMLOriginSiteMapper(const char* registryURI, const char* ca
                     {
 						os_obj->m_handleServices.push_back(hs_name.get());
 
-						/* Ignore KeyInfo for now...
-						DOM*Node ki = os_child->getFirstChild();
+                        // Look for ds:KeyInfo.
+						DOMNode* ki=os_child->getFirstChild();
                         while (ki && ki->getNodeType()!=DOMNode::ELEMENT_NODE)
-							ki = ki->getNextSibling();
+							ki=ki->getNextSibling();
                         if (ki && !XMLString::compareString(saml::XML::XMLSIG_NS,ki->getNamespaceURI()) &&
                             !XMLString::compareString(saml::XML::Literals::KeyInfo,ki->getNamespaceURI()))
                         {
+                            // Look for ds:X509Data.
+                            DOMNode* xdata=ki->getFirstChild();
+                            while (xdata && xdata->getNodeType()!=DOMNode::ELEMENT_NODE)
+							    xdata=xdata->getNextSibling();
+                            if (xdata && !XMLString::compareString(saml::XML::XMLSIG_NS,xdata->getNamespaceURI()) &&
+                                !XMLString::compareString(saml::XML::Literals::X509Data,xdata->getNamespaceURI()))
+                            {
+                                // Look for ds:X509Certificate.
+                                DOMNode* x509=xdata->getFirstChild();
+                                while (x509 && x509->getNodeType()!=DOMNode::ELEMENT_NODE)
+							        x509=x509->getNextSibling();
+                                if (x509 && !XMLString::compareString(saml::XML::XMLSIG_NS,x509->getNamespaceURI()) &&
+                                    !XMLString::compareString(saml::XML::Literals::X509Certificate,x509->getNamespaceURI()))
+                                {
+                                    const XMLCh* blob=x509->getFirstChild()->getNodeValue();
+                                    X509Certificate* cert=new X509Certificate(X509Certificate::DER_B64,
+                                                                              reinterpret_cast<const XMLByte*>(blob),
+                                                                              XMLString::stringLen(reinterpret_cast<const char*>(blob)));
+                                    m_hsCerts[hs_name.get()]=cert;
+                                }
+                            }
 						}
-                        */
 					}
 				}
                 else if (!XMLString::compareString(XML::SHIB_NS,os_child->getNamespaceURI()) &&
@@ -193,7 +213,7 @@ XMLOriginSiteMapper::~XMLOriginSiteMapper()
 {
     for (map<xstring,OriginSite*>::iterator i=m_sites.begin(); i!=m_sites.end(); i++)
         delete i->second;
-    for (map<xstring,Key*>::iterator j=m_hsKeys.begin(); j!=m_hsKeys.end(); j++)
+    for (map<xstring,X509Certificate*>::iterator j=m_hsCerts.begin(); j!=m_hsCerts.end(); j++)
         delete j->second;
 }
 
@@ -205,10 +225,10 @@ Iterator<xstring> XMLOriginSiteMapper::getHandleServiceNames(const XMLCh* origin
     return Iterator<xstring>(i->second->m_handleServices);
 }
 
-const Key* XMLOriginSiteMapper::getHandleServiceKey(const XMLCh* handleService)
+const X509Certificate* XMLOriginSiteMapper::getHandleServiceCert(const XMLCh* handleService)
 {
-    map<xstring,Key*>::const_iterator i=m_hsKeys.find(handleService);
-    return (i!=m_hsKeys.end()) ? i->second : NULL;
+    map<xstring,X509Certificate*>::const_iterator i=m_hsCerts.find(handleService);
+    return (i!=m_hsCerts.end()) ? i->second : NULL;
 }
 
 Iterator<pair<xstring,bool> > XMLOriginSiteMapper::getSecurityDomains(const XMLCh* originSite)
@@ -351,6 +371,37 @@ void XMLOriginSiteMapper::validateSignature(const X509Certificate* verifyKey, DO
             msg="XMLOriginSiteMapper::validateSignature() found a ds:Reference with a non-empty URL";
         else
         {
+            xmlNodePtr transforms=ref->self->children;
+            while (transforms && (transforms->type!=XML_ELEMENT_NODE ||
+                   !xmlSecCheckNodeName(transforms,reinterpret_cast<const xmlChar*>("Transforms"),xmlSecDSigNs)))
+                transforms=transforms->next;
+            if (!transforms)
+                msg="XMLOriginSiteMapper::validateSignature() unable to locate the ds:Transforms element";
+            else
+            {
+                transforms=transforms->children;
+                while (transforms && (transforms->type!=XML_ELEMENT_NODE ||
+                       !xmlSecCheckNodeName(transforms,reinterpret_cast<const xmlChar*>("Transform"),xmlSecDSigNs)))
+                    transforms=transforms->next;
+                if (!transforms)
+                    msg="XMLOriginSiteMapper::validateSignature() unable to locate a ds:Transform element";
+                else
+                {
+                    xmlChar* alg=xmlGetProp(transforms,reinterpret_cast<const xmlChar*>("Algorithm"));
+                    if (xmlStrcmp(alg,reinterpret_cast<const xmlChar*>("http://www.w3.org/2000/09/xmldsig#enveloped-signature")))
+                        msg="XMLOriginSiteMapper::validateSignature() found a non-enveloped ds:Transform";
+                    if (alg)
+                        xmlFree(alg);
+                    if (msg.empty())
+                    {
+                        transforms=transforms->next;
+                        while (transforms && transforms->type==XML_TEXT_NODE)
+                            transforms=transforms->next;
+                        if (transforms)
+                            msg="XMLOriginSiteMapper::validateSignature() found an extra ds:Transform element";
+                    }
+                }
+            }
         }
     }
     

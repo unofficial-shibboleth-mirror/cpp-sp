@@ -47,13 +47,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/* ClubShibPOSTProfile.cpp - Club-Shib wrapper around SAML POST profile
+/* XMLOriginSiteMapper.h - a mapper implementation that uses an XML-based registry
 
    Scott Cantor
-   8/15/02
+   9/27/02
 
    $History:$
 */
+
+#define SHIB_INSTANTIATE
 
 #include "internal.h"
 
@@ -61,56 +63,29 @@ using namespace shibboleth;
 using namespace saml;
 using namespace std;
 
-ClubShibPOSTProfile::ClubShibPOSTProfile(const Iterator<const XMLCh*>& policies, const XMLCh* receiver, int ttlSeconds)
-    : ShibPOSTProfile(policies,receiver,ttlSeconds)
+OriginSiteMapper::OriginSiteMapper() : m_mapper(ShibConfig::getConfig().getMapper()) {}
+
+OriginSiteMapper::~OriginSiteMapper()
 {
-    return;
-    bool found=false;
-    for (vector<const XMLCh*>::iterator i=m_policies.begin(); !found && i!=m_policies.end(); i++)
-        if (!XMLString::compareString(Constants::POLICY_INCOMMON,*i))
-            found=true;
-    if (!found)
-        throw SAMLException(SAMLException::REQUESTER, "ClubShibPOSTProfile() policy array must include InCommon");
+    ShibConfig::getConfig().releaseMapper(m_mapper);
 }
 
-ClubShibPOSTProfile::ClubShibPOSTProfile(const Iterator<const XMLCh*>& policies, const XMLCh* issuer)
-    : ShibPOSTProfile(policies,issuer)
+Iterator<xstring> OriginSiteMapper::getHandleServiceNames(const XMLCh* originSite)
 {
-    return;
-    bool found=false;
-    for (vector<const XMLCh*>::iterator i=m_policies.begin(); !found && i!=m_policies.end(); i++)
-        if (!XMLString::compareString(Constants::POLICY_INCOMMON,*i))
-            found=true;
-    if (!found)
-        throw SAMLException(SAMLException::REQUESTER, "ClubShibPOSTProfile() policy array must include InCommon");
+    return m_mapper->getHandleServiceNames(originSite);
 }
 
-ClubShibPOSTProfile::~ClubShibPOSTProfile()
+const X509Certificate* OriginSiteMapper::getHandleServiceCert(const XMLCh* handleService)
 {
+    return m_mapper->getHandleServiceCert(handleService);
 }
 
-SAMLResponse* ClubShibPOSTProfile::prepare(const XMLCh* recipient,
-                                           const XMLCh* name,
-                                           const XMLCh* nameQualifier,
-                                           const XMLCh* subjectIP,
-                                           const XMLCh* authMethod,
-                                           time_t authInstant,
-                                           const Iterator<SAMLAuthorityBinding*>& bindings,
-                                           const saml::Key& responseKey, const saml::X509Certificate* responseCert,
-                                           const saml::Key* assertionKey, const saml::X509Certificate* assertionCert)
+Iterator<pair<xstring,bool> > OriginSiteMapper::getSecurityDomains(const XMLCh* originSite)
 {
-    if (responseKey.getType()!=Key::RSA_PRIV)
-        throw TrustException(SAMLException::RESPONDER, "ClubShibPOSTProfile::prepare() requires the response key be an RSA private key");
-    if (assertionKey && assertionKey->getType()!=Key::RSA_PRIV)
-        throw TrustException(SAMLException::RESPONDER, "ClubShibPOSTProfile::prepare() requires the assertion key be an RSA private key");
-
-    return ShibPOSTProfile::prepare(recipient,name,nameQualifier,subjectIP,authMethod,authInstant,bindings,
-                                    responseKey,responseCert,assertionKey,assertionCert);
+    return m_mapper->getSecurityDomains(originSite);
 }
 
-void ClubShibPOSTProfile::verifySignature(const SAMLSignedObject& obj, const XMLCh* signerName, const X509Certificate* knownKey)
+const char* OriginSiteMapper::getTrustedRoots()
 {
-    ShibPOSTProfile::verifySignature(obj,signerName,knownKey);
-    if (obj.getSignatureAlgorithm()!=SAMLSignedObject::RSA_SHA1)
-        throw TrustException("ClubShibPOSTProfile::verifySignature() requires the RSA-SHA1 signature algorithm");
+    return m_mapper->getTrustedRoots();
 }

@@ -11,6 +11,7 @@ noinst_HEADERS = internal.h
 libshib_la_SOURCES = \
                     ClubShibPOSTProfile.cpp \
                     Constants.cpp \
+                    OriginSiteMapper.cpp \
                     SAMLBindingFactory.cpp \
                     ShibConfig.cpp \
                     ShibPOSTProfile.cpp \

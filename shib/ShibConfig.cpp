@@ -56,6 +56,9 @@
    $History:$
 */
 
+#include <time.h>
+#include <signal.h>
+
 #include "internal.h"
 #include <log4cpp/Category.hh>
 
@@ -69,6 +72,8 @@ namespace {
     ShibInternalConfig g_config;
 }
 
+ShibConfig::~ShibConfig() {}
+
 bool ShibInternalConfig::init()
 {
     saml::NDC ndc("init");
@@ -79,27 +84,137 @@ bool ShibInternalConfig::init()
     // Register extension schema.
     saml::XML::registerSchema(XML::SHIB_NS,XML::SHIB_SCHEMA_ID);
 
+    m_lock=RWLock::create();
+    m_shutdown_wait = CondWait::create();
+    if (!m_lock || !m_shutdown_wait)
+    {
+        log4cpp::Category::getInstance(SHIB_LOGCAT".ShibConfig").fatal("init: failed to create mapper locks");
+        delete m_lock;
+        delete m_shutdown_wait;
+        return false;
+    }
+
+    try
+    {
+        m_mapper=new XMLOriginSiteMapper(mapperURL.c_str(),SAMLConfig::getConfig().ssl_calist.c_str(),mapperCert);
+    }
+    catch(SAMLException& e)
+    {
+        log4cpp::Category::getInstance(SHIB_LOGCAT".ShibConfig").fatal("init: failed to initialize origin site mapper: %s", e.what());
+        delete m_lock;
+        delete m_shutdown_wait;
+        return false;
+    }
+
     m_manager=xmlSecSimpleKeysMngrCreate();
-    if (origin_mapper && origin_mapper->getTrustedRoots() && *(origin_mapper->getTrustedRoots()) &&
-        xmlSecSimpleKeysMngrLoadPemCert(m_manager,origin_mapper->getTrustedRoots(),true) < 0)
+    const char* roots=m_mapper->getTrustedRoots();
+    if (roots && *roots && xmlSecSimpleKeysMngrLoadPemCert(m_manager,roots,true) < 0)
     {
         log4cpp::Category::getInstance(SHIB_LOGCAT".ShibConfig").fatal("init: failed to load CAs into simple key manager");
         xmlSecSimpleKeysMngrDestroy(m_manager);
-        m_manager=NULL;
+        delete m_mapper;
+        delete m_lock;
+        delete m_shutdown_wait;
         return false;
     }
     SAMLConfig::getConfig().xmlsig_ptr=m_manager;
+    if (mapperRefreshInterval)
+        m_refresh_thread = Thread::create(&refresh_fn, (void*)this);
 
     return true;
 }
 
 void ShibInternalConfig::term()
 {
+    // Shut down the refresh thread and let it know...
+    if (m_refresh_thread)
+    {
+        m_shutdown = true;
+        m_shutdown_wait->signal();
+        m_refresh_thread->join(NULL);
+    }
+
+    delete m_mapper;
     if (m_manager)
         xmlSecSimpleKeysMngrDestroy(m_manager);
+    delete mapperCert;
+    delete m_lock;
+    delete m_shutdown_wait;
+}
+
+IOriginSiteMapper* ShibInternalConfig::getMapper()
+{
+    m_lock->rdlock();
+    return m_mapper;
+}
+
+void ShibInternalConfig::releaseMapper(IOriginSiteMapper* mapper)
+{
+    m_lock->unlock();
 }
 
 ShibConfig& ShibConfig::getConfig()
 {
     return g_config;
+}
+
+void* ShibInternalConfig::refresh_fn(void* config_p)
+{
+  ShibInternalConfig* config = reinterpret_cast<ShibInternalConfig*>(config_p);
+
+  // First, let's block all signals
+  sigset_t sigmask;
+  sigfillset(&sigmask);
+  Thread::mask_signals(SIG_BLOCK, &sigmask, NULL);
+
+  // Now run the cleanup process.
+  config->refresh();
+}
+
+void ShibInternalConfig::refresh()
+{
+    Mutex* mutex = Mutex::create();
+    saml::NDC ndc("cleanup");
+    log4cpp::Category& log=log4cpp::Category::getInstance(SHIB_LOGCAT".ShibConfig");
+
+    mutex->lock();
+
+    log.debug("XMLMapper refresh thread started...");
+
+    while (!m_shutdown)
+    {
+        struct timespec ts;
+        memset (&ts, 0, sizeof(ts));
+        ts.tv_sec = time(NULL) + mapperRefreshInterval;
+
+        m_shutdown_wait->timedwait(mutex, &ts);
+
+        if (m_shutdown)
+            break;
+
+        log.info("Refresh thread running...");
+
+        // To refresh the mapper, we basically build a new one in the background and if it works,
+        // we grab the write lock and replace the official pointer with the new one.
+        try
+        {
+            IOriginSiteMapper* new_mapper=new XMLOriginSiteMapper(mapperURL.c_str(),SAMLConfig::getConfig().ssl_calist.c_str(),mapperCert);
+            m_lock->wrlock();
+            delete m_mapper;
+            m_mapper=new_mapper;
+            m_lock->unlock();
+        }
+        catch(SAMLException& e)
+        {
+            log.error("failed to build a refreshed origin site mapper, sticking with what we have: %s", e.what());
+        }
+        catch(...)
+        {
+            log.error("caught an unknown exception, sticking with what we have");
+        }
+    }
+
+    mutex->unlock();
+    delete mutex;
+    Thread::exit(NULL);
 }

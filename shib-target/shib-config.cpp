@@ -153,33 +153,16 @@ STConfig::STConfig(const char* app_name, const char* inifile)
     throw runtime_error ("No Sites File found in configuration");
   }
 
-  string sitesFile = tag;
-  X509Certificate* verifyKey = NULL;
-
+  shibConf.mapperURL=tag;
   try {
     if (ini->get_tag (app, SHIBTARGET_TAG_SITESCERT, true, &tag)) {
-      verifyKey = new X509Certificate (X509Certificate::PEM, tag.c_str());
+      shibConf.mapperCert = new X509Certificate (X509Certificate::PEM, tag.c_str());
     }
   } catch (...) {
     log.crit ("Can not read the x509 certificate.");
     throw;
   }
 
-  try
-  {
-    shibConf.origin_mapper = new XMLOriginSiteMapper(sitesFile.c_str(),
-						   samlConf.ssl_calist.c_str(),
-						   verifyKey);
-  }
-  catch (SAMLException& ex)
-  {
-      log.fatal("Failed to initialize OriginSiteMapper");
-      throw runtime_error(string("Failed to initialize OriginSiteMapper: ") + ex.what());
-  }
-
-  if (verifyKey)
-    delete verifyKey;
-  
   try { 
     if (!shibConf.init()) {
       log.fatal ("Failed to initialize Shib library");
@@ -254,7 +237,6 @@ STConfig::~STConfig()
   if (g_shibTargetCCache)
     delete g_shibTargetCCache;
 
-  delete shibConf.origin_mapper;
   shibConf.term();
   samlConf.term();
 }

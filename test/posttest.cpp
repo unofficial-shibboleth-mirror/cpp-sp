@@ -93,13 +93,13 @@ int main(int argc,char* argv[])
     }
 
     conf1.schema_dir=path;
+    conf1.ssl_calist="C:/shib/etc/ca-bundle.crt";
     if (!conf1.init())
         cerr << "unable to initialize SAML runtime" << endl;
 
-    X509Certificate cert(X509Certificate::PEM,"C:/shib/etc/internet2.pem");
-    XMLOriginSiteMapper mapper("/Tomcat4.0/webapps/shibboleth/sites.xml","C:/shib/etc/ca-bundle.crt",&cert);
+    conf2.mapperURL="/Tomcat4.0/webapps/shibboleth/sites.xml";
+    conf2.mapperCert=new X509Certificate(X509Certificate::PEM,"C:/shib/etc/internet2.pem");
     //XMLOriginSiteMapper mapper("http://wayf.internet2.edu/shibboleth/sites.xml","/shib/etc/ca-bundle.crt",&cert);
-    conf2.origin_mapper=&mapper;
     if (!conf2.init())
         cerr << "unable to initialize Shibboleth runtime" << endl;
 
