@@ -307,12 +307,12 @@ void CCacheEntry::populate(const char* resource_url)
 
     auto_ptr<XMLCh> resource(XMLString::transcode(resource_url));    
     static const XMLCh* policies[] = { shibboleth::Constants::POLICY_CLUBSHIB };
-    static const saml::QName* respondWiths[] = { &g_respondWith };
+    // static const saml::QName* respondWiths[] = { &g_respondWith };
 
     // Build a SAML Request and send it to the AA.
     SAMLSubject* subject=new SAMLSubject(m_handle.c_str(),m_originSite.c_str());
     SAMLAttributeQuery* q=new SAMLAttributeQuery(subject,resource.get());
-    SAMLRequest* req=new SAMLRequest(q,respondWiths);
+    SAMLRequest* req=new SAMLRequest(q,ArrayIterator<saml::QName>(&g_respondWith));
     SAMLBinding* pBinding=CCache::g_Cache->getBinding(m_binding->getBinding());
     m_response=pBinding->send(*m_binding,*req);
     delete req;
@@ -564,14 +564,12 @@ class DummyMapper : public IOriginSiteMapper
 public:
     DummyMapper() {}
     ~DummyMapper();
-    virtual Iterator<xstring> getHandleServiceNames(const XMLCh* originSite) { return Iterator<xstring>(v); }
-    virtual void* getHandleServiceKey(const XMLCh* handleService) { return NULL; }
+    virtual Iterator<xstring> getHandleServiceNames(const XMLCh* originSite) { return Iterator<xstring>(); }
+    virtual Key* getHandleServiceKey(const XMLCh* handleService) { return NULL; }
     virtual Iterator<xstring> getSecurityDomains(const XMLCh* originSite);
-    virtual Iterator<void*> getTrustedRoots() { return Iterator<void*>(v2); }
+    virtual Iterator<X509Certificate*> getTrustedRoots() { return Iterator<X509Certificate*>(); }
 
 private:
-    vector<xstring> v;
-    vector<void *> v2;
     typedef map<xstring,vector<xstring>*> domains_t;
     domains_t m_domains;
 };
