@@ -187,6 +187,7 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
 
   SAMLResponse* r = NULL;
   SAMLAuthenticationStatement* auth_st = NULL;
+  XMLCh* origin = NULL;
 
   try
   {
@@ -199,12 +200,13 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
 
       // Try and accept the response...
       log.debug ("Trying to accept the post");
-      r = profile->accept(post);
+      r = profile->accept(post, &origin);
 
       // Make sure we got a response
       if (!r)
 	throw ShibTargetException(SHIBRPC_RESPONSE_MISSING,
-				  "Failed to accept the response.");
+				  "Failed to accept the response.",
+				  origin);
 
       // Find the SSO Assertion
       log.debug ("Get the SSOAssertion");
@@ -214,7 +216,8 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
       log.debug ("check replay cache");
       if (profile->checkReplayCache(*ssoAssertion) == false)
 	throw ShibTargetException(SHIBRPC_ASSERTION_REPLAYED,
-				  "Duplicate assertion found.");
+				  "Duplicate assertion found.",
+				  origin);
 
       // Get the authentication statement we need.
       log.debug ("get SSOStatement");
@@ -228,14 +231,18 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
 	const XMLCh* ip = auth_st->getSubjectIP();
 	if (!ip)
 	  throw ShibTargetException(SHIBRPC_IPADDR_MISSING,
-				    "The IP Address provided by your origin site was missing.");
+		    "The IP Address provided by your origin site was missing.",
+				    origin);
 	
 	log.debug ("verify client address");
 	// Verify the client address matches authentication
 	auto_ptr<char> this_ip(XMLString::transcode(ip));
 	if (strcmp (argp->client_addr, this_ip.get()))
 	  throw ShibTargetException(SHIBRPC_IPADDR_MISMATCH,
-				    "The IP address provided by your origin site did not match your current address.  To correct this problem you may need to bypass a local proxy server.");
+	    "The IP address provided by your origin site did not match "
+	    "your current address.  "
+	    "To correct this problem you may need to bypass a local proxy server.",
+				    origin);
       }
     }
     catch (SAMLException &e)    // XXX refine this handler to catch and log different profile exceptions
@@ -243,19 +250,20 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
       log.error ("received SAML exception: %s", e.what());
       ostringstream os;
       os << e;
-      throw ShibTargetException (SHIBRPC_SAML_EXCEPTION, os.str());
+      throw ShibTargetException (SHIBRPC_SAML_EXCEPTION, os.str(), origin);
     }
     catch (XMLException &e)
     {
       log.error ("received XML exception");
       auto_ptr<char> msg(XMLString::transcode(e.getMessage()));
-      throw ShibTargetException (SHIBRPC_XML_EXCEPTION, msg.get());
+      throw ShibTargetException (SHIBRPC_XML_EXCEPTION, msg.get(), origin);
     }
   }
   catch (ShibTargetException &e)
   {
     log.info ("FAILED: %s", e.what());
     if (r) delete r;
+    if (origin) delete origin;
     set_rpc_status_x(&result->status, e.which(), e.what(), e.where());
     return TRUE;
   }
@@ -264,6 +272,7 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
   {
     log.error ("Unknown error");
     if (r) delete r;
+    if (origin) delete origin;
     set_rpc_status(&result->status, SHIBRPC_UNKNOWN_ERROR,
 		   "An unknown exception occurred", "");
     return TRUE;
@@ -285,6 +294,9 @@ shibrpc_new_session_1_svc(shibrpc_new_session_args_1 *argp,
 
   // Delete the response...
   delete r;
+
+  // Delete the origin...
+  delete origin;
 
   // And let the user know.
   free (result->cookie);
