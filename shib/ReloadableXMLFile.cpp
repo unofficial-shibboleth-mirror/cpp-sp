@@ -68,7 +68,9 @@ using namespace saml;
 using namespace log4cpp;
 using namespace std;
 
-ReloadableXMLFileImpl::ReloadableXMLFileImpl(const char* pathname) : m_doc(NULL)
+ReloadableXMLFileImpl::ReloadableXMLFileImpl(const DOMElement* e) : m_doc(NULL), m_root(saml::XML::getFirstChildElement(e)) {}
+
+ReloadableXMLFileImpl::ReloadableXMLFileImpl(const char* pathname) : m_doc(NULL), m_root(NULL)
 {
     NDC ndc("ReloadableXMLFileImpl");
     Category& log=Category::getInstance(SHIB_LOGCAT".ReloadableXMLFileImpl");
@@ -80,6 +82,7 @@ ReloadableXMLFileImpl::ReloadableXMLFileImpl(const char* pathname) : m_doc(NULL)
         URLInputSource src(base,pathname);
         Wrapper4InputSource dsrc(&src,false);
         m_doc=p.parse(dsrc);
+        m_root=m_doc->getDocumentElement();
 
         log.infoStream() << "Loaded and parsed XML file (" << pathname << ")" << CategoryStream::ENDLINE;
     }
@@ -105,21 +108,31 @@ ReloadableXMLFileImpl::~ReloadableXMLFileImpl()
         m_doc->release();
 }
 
-ReloadableXMLFile::ReloadableXMLFile(const char* pathname) : m_filestamp(0), m_source(pathname), m_impl(NULL), m_lock(NULL)
+ReloadableXMLFile::ReloadableXMLFile(const DOMElement* e) : m_root(e), m_impl(NULL), m_filestamp(0), m_lock(NULL)
 {
+    const XMLCh* pathname=e->getAttributeNS(NULL,shibboleth::XML::Literals::url);
+    if (pathname && *pathname)
+    {
+        auto_ptr_char temp(pathname);
+        m_source=temp.get();
+
 #ifdef WIN32
-    struct _stat stat_buf;
-    if (_stat(pathname, &stat_buf) == 0)
+        struct _stat stat_buf;
+        if (_stat(m_source.c_str(), &stat_buf) == 0)
 #else
-    struct stat stat_buf;
-    if (stat(pathname, &stat_buf) == 0)
+        struct stat stat_buf;
+        if (stat(m_source.c_str(), &stat_buf) == 0)
 #endif
-        m_filestamp=stat_buf.st_mtime;
-    m_lock=RWLock::create();
+            m_filestamp=stat_buf.st_mtime;
+        m_lock=RWLock::create();
+    }
 }
 
 void ReloadableXMLFile::lock()
 {
+    if (!m_lock)
+        return;
+        
     m_lock->rdlock();
 
     // Check if we need to refresh.
@@ -170,7 +183,11 @@ void ReloadableXMLFile::lock()
 
 ReloadableXMLFileImpl* ReloadableXMLFile::getImplementation() const
 {
-    if (!m_impl)
-        m_impl=newImplementation(m_source.c_str());
+    if (!m_impl) {
+        if (m_source.empty())
+            m_impl=newImplementation(m_root);
+        else
+            m_impl=newImplementation(m_source.c_str());
+    }
     return m_impl;
 }

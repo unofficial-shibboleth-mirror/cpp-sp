@@ -81,12 +81,13 @@ namespace {
 ShibConfig::~ShibConfig() {}
 
 // Metadata Factories
-extern "C" IMetadata* XMLMetadataFactory(const char* source);
-extern "C" ITrust* XMLTrustFactory(const char* source);
-extern "C" ICredentials* XMLCredentialsFactory(const char* source);
+extern "C" IMetadata* XMLMetadataFactory(const DOMElement* source);
+extern "C" ITrust* XMLTrustFactory(const DOMElement* source);
+extern "C" ICredentials* XMLCredentialsFactory(const DOMElement* source);
 extern "C" ICredResolver* FileCredResolverFactory(const DOMElement* e);
 extern "C" ICredResolver* KeyInfoResolverFactory(const DOMElement* e);
-extern "C" IAAP* XMLAAPFactory(const char* source);
+extern "C" IAAP* XMLAAPFactory(const DOMElement* source);
+extern "C" IAAP* XMLAAPDOMFactory(const DOMElement* source);
 
 extern "C" SAMLAttribute* ShibAttributeFactory(DOMElement* e)
 {
@@ -111,15 +112,12 @@ bool ShibInternalConfig::init()
 
     SAMLAttribute::setFactory(&ShibAttributeFactory);
 
-    // Register metadata factories (some duplicates for backward-compatibility)
-    regFactory("edu.internet2.middleware.shibboleth.metadata.XML",&XMLMetadataFactory);
+    // Register metadata factories
     regFactory("edu.internet2.middleware.shibboleth.metadata.provider.XML",&XMLMetadataFactory);
-    regFactory("edu.internet2.middleware.shibboleth.trust.XML",&XMLTrustFactory);
     regFactory("edu.internet2.middleware.shibboleth.trust.provider.XML",&XMLTrustFactory);
     regFactory("edu.internet2.middleware.shibboleth.creds.provider.XML",&XMLCredentialsFactory);
     regFactory("edu.internet2.middleware.shibboleth.creds.provider.FileCredResolver",&FileCredResolverFactory);
     regFactory("edu.internet2.middleware.shibboleth.creds.provider.KeyInfoResolver",&KeyInfoResolverFactory);
-    regFactory("edu.internet2.middleware.shibboleth.target.AAP.XML",&XMLAAPFactory);
     regFactory("edu.internet2.middleware.shibboleth.target.AAP.provider.XML",&XMLAAPFactory);
 
     return true;
@@ -170,7 +168,7 @@ void ShibInternalConfig::unregFactory(const char* type)
     }
 }
 
-IMetadata* ShibInternalConfig::newMetadata(const char* type, const char* source) const
+IMetadata* ShibInternalConfig::newMetadata(const char* type, const DOMElement* source) const
 {
     MetadataFactoryMap::const_iterator i=m_metadataFactoryMap.find(type);
     if (i==m_metadataFactoryMap.end())
@@ -182,7 +180,7 @@ IMetadata* ShibInternalConfig::newMetadata(const char* type, const char* source)
     return i->second(source);
 }
 
-ITrust* ShibInternalConfig::newTrust(const char* type, const char* source) const
+ITrust* ShibInternalConfig::newTrust(const char* type, const DOMElement* source) const
 {
     TrustFactoryMap::const_iterator i=m_trustFactoryMap.find(type);
     if (i==m_trustFactoryMap.end())
@@ -194,7 +192,7 @@ ITrust* ShibInternalConfig::newTrust(const char* type, const char* source) const
     return i->second(source);
 }
 
-ICredentials* ShibInternalConfig::newCredentials(const char* type, const char* source) const
+ICredentials* ShibInternalConfig::newCredentials(const char* type, const DOMElement* source) const
 {
     CredentialsFactoryMap::const_iterator i=m_credFactoryMap.find(type);
     if (i==m_credFactoryMap.end())
@@ -206,7 +204,7 @@ ICredentials* ShibInternalConfig::newCredentials(const char* type, const char* s
     return i->second(source);
 }
 
-IAAP* ShibInternalConfig::newAAP(const char* type, const char* source) const
+IAAP* ShibInternalConfig::newAAP(const char* type, const DOMElement* source) const
 {
     AAPFactoryMap::const_iterator i=m_aapFactoryMap.find(type);
     if (i==m_aapFactoryMap.end())

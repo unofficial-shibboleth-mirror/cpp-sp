@@ -85,7 +85,9 @@ namespace shibboleth {
     class XMLTrustImpl : public ReloadableXMLFileImpl
     {
     public:
-        XMLTrustImpl(const char* pathname);
+        XMLTrustImpl(const char* pathname) : ReloadableXMLFileImpl(pathname) { init(); }
+        XMLTrustImpl(const DOMElement* e) : ReloadableXMLFileImpl(e) { init(); }
+        void init();
         ~XMLTrustImpl();
         
         struct KeyAuthority
@@ -109,7 +111,7 @@ namespace shibboleth {
     class XMLTrust : public ITrust, public ReloadableXMLFile
     {
     public:
-        XMLTrust(const char* pathname) : ReloadableXMLFile(pathname) {}
+        XMLTrust(const DOMElement* e) : ReloadableXMLFile(e) {}
         ~XMLTrust() {}
 
         saml::Iterator<XSECCryptoX509*> getCertificates(const XMLCh* subject) const;
@@ -119,13 +121,14 @@ namespace shibboleth {
 
     protected:
         virtual ReloadableXMLFileImpl* newImplementation(const char* pathname) const;
+        virtual ReloadableXMLFileImpl* newImplementation(const DOMElement* e) const;
     };
 
 }
 
-extern "C" ITrust* XMLTrustFactory(const char* source)
+extern "C" ITrust* XMLTrustFactory(const DOMElement* e)
 {
-    XMLTrust* t=new XMLTrust(source);
+    XMLTrust* t=new XMLTrust(e);
     try
     {
         t->getImplementation();
@@ -142,6 +145,11 @@ extern "C" ITrust* XMLTrustFactory(const char* source)
 ReloadableXMLFileImpl* XMLTrust::newImplementation(const char* pathname) const
 {
     return new XMLTrustImpl(pathname);
+}
+
+ReloadableXMLFileImpl* XMLTrust::newImplementation(const DOMElement* e) const
+{
+    return new XMLTrustImpl(e);
 }
 
 X509_STORE* XMLTrustImpl::KeyAuthority::getX509Store(bool cached)
@@ -203,23 +211,22 @@ XMLTrustImpl::KeyAuthority::~KeyAuthority()
         delete (*j);
 }
 
-XMLTrustImpl::XMLTrustImpl(const char* pathname) : ReloadableXMLFileImpl(pathname)
+void XMLTrustImpl::init()
 {
     NDC ndc("XMLTrustImpl");
     Category& log=Category::getInstance(SHIB_LOGCAT".XMLTrustImpl");
 
     try
     {
-        DOMElement* e = m_doc->getDocumentElement();
-        if (XMLString::compareString(XML::SHIB_NS,e->getNamespaceURI()) ||
-            XMLString::compareString(SHIB_L(Trust),e->getLocalName()))
+        if (XMLString::compareString(XML::SHIB_NS,m_root->getNamespaceURI()) ||
+            XMLString::compareString(SHIB_L(Trust),m_root->getLocalName()))
         {
             log.error("Construction requires a valid trust file: (shib:Trust as root element)");
             throw MetadataException("Construction requires a valid trust file: (shib:Trust as root element)");
         }
 
         // Loop over the KeyAuthority elements.
-        DOMNodeList* nlist=e->getElementsByTagNameNS(XML::SHIB_NS,SHIB_L(KeyAuthority));
+        DOMNodeList* nlist=m_root->getElementsByTagNameNS(XML::SHIB_NS,SHIB_L(KeyAuthority));
         for (int i=0; nlist && i<nlist->getLength(); i++)
         {
             KeyAuthority* ka=new KeyAuthority();

@@ -75,7 +75,9 @@ namespace shibboleth {
     class XMLCredentialsImpl : public ReloadableXMLFileImpl
     {
     public:
-        XMLCredentialsImpl(const char* pathname);
+        XMLCredentialsImpl(const char* pathname) : ReloadableXMLFileImpl(pathname) { init(); }
+        XMLCredentialsImpl(const DOMElement* e) : ReloadableXMLFileImpl(e) { init(); }
+        void init();
         ~XMLCredentialsImpl();
         
         typedef map<string,ICredResolver*> resolvermap_t;
@@ -98,20 +100,21 @@ namespace shibboleth {
     class XMLCredentials : public ICredentials, public ReloadableXMLFile
     {
     public:
-        XMLCredentials(const char* pathname) : ReloadableXMLFile(pathname) {}
+        XMLCredentials(const DOMElement* e) : ReloadableXMLFile(e) {}
         ~XMLCredentials() {}
         
         bool attach(const XMLCh* subject, const ISite* relyingParty, SSL_CTX* ctx) const;
 
     protected:
         virtual ReloadableXMLFileImpl* newImplementation(const char* pathname) const;
+        virtual ReloadableXMLFileImpl* newImplementation(const DOMElement* e) const;
     };
 
 }
 
-extern "C" ICredentials* XMLCredentialsFactory(const char* source)
+extern "C" ICredentials* XMLCredentialsFactory(const DOMElement* e)
 {
-    XMLCredentials* creds=new XMLCredentials(source);
+    XMLCredentials* creds=new XMLCredentials(e);
     try
     {
         creds->getImplementation();
@@ -127,6 +130,11 @@ extern "C" ICredentials* XMLCredentialsFactory(const char* source)
 ReloadableXMLFileImpl* XMLCredentials::newImplementation(const char* pathname) const
 {
     return new XMLCredentialsImpl(pathname);
+}
+
+ReloadableXMLFileImpl* XMLCredentials::newImplementation(const DOMElement* e) const
+{
+    return new XMLCredentialsImpl(e);
 }
 
 XMLCredentialsImpl::KeyUse::KeyUse(resolvermap_t& resolverMap, const XMLCh* keyref, const XMLCh* certref) : m_key(NULL), m_cert(NULL)
@@ -147,23 +155,22 @@ XMLCredentialsImpl::KeyUse::KeyUse(resolvermap_t& resolverMap, const XMLCh* keyr
     }
 }
 
-XMLCredentialsImpl::XMLCredentialsImpl(const char* pathname) : ReloadableXMLFileImpl(pathname)
+void XMLCredentialsImpl::init()
 {
     NDC ndc("XMLCredentialsImpl");
     Category& log=Category::getInstance(SHIB_LOGCAT".XMLCredentialsImpl");
 
     try
     {
-        DOMElement* e = m_doc->getDocumentElement();
-        if (XMLString::compareString(XML::SHIB_NS,e->getNamespaceURI()) ||
-            XMLString::compareString(SHIB_L(Credentials),e->getLocalName()))
+        if (XMLString::compareString(XML::SHIB_NS,m_root->getNamespaceURI()) ||
+            XMLString::compareString(SHIB_L(Credentials),m_root->getLocalName()))
         {
             log.error("Construction requires a valid creds file: (shib:Credentials as root element)");
             throw MetadataException("Construction requires a valid creds file: (shib:Credentials as root element)");
         }
 
         // Process everything up to the first shib:KeyUse as a resolver.
-        DOMElement* child=saml::XML::getFirstChildElement(e);
+        DOMElement* child=saml::XML::getFirstChildElement(m_root);
         while (!saml::XML::isElementNamed(child,XML::SHIB_NS,SHIB_L(KeyUse)))
         {
             string cr_type;

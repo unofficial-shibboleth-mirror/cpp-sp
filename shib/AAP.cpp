@@ -73,7 +73,9 @@ namespace shibboleth {
     class XMLAAPImpl : public ReloadableXMLFileImpl
     {
     public:
-        XMLAAPImpl(const char* pathname);
+        XMLAAPImpl(const char* pathname) : ReloadableXMLFileImpl(pathname) { init(); }
+        XMLAAPImpl(const DOMElement* e) : ReloadableXMLFileImpl(e) { init(); }
+        void init();
         ~XMLAAPImpl();
         
         class AttributeRule : public IAttributeRule
@@ -132,7 +134,7 @@ namespace shibboleth {
     class XMLAAP : public IAAP, public ReloadableXMLFile
     {
     public:
-        XMLAAP(const char* pathname) : ReloadableXMLFile(pathname) {}
+        XMLAAP(const DOMElement* e) : ReloadableXMLFile(e) {}
         ~XMLAAP() {}
         
         const IAttributeRule* lookup(const XMLCh* attrName, const XMLCh* attrNamespace=NULL) const;
@@ -141,13 +143,14 @@ namespace shibboleth {
 
     protected:
         virtual ReloadableXMLFileImpl* newImplementation(const char* pathname) const;
+        virtual ReloadableXMLFileImpl* newImplementation(const DOMElement* e) const;
     };
 
 }
 
-extern "C" IAAP* XMLAAPFactory(const char* source)
+extern "C" IAAP* XMLAAPFactory(const DOMElement* e)
 {
-    XMLAAP* aap=new XMLAAP(source);
+    XMLAAP* aap=new XMLAAP(e);
     try
     {
         aap->getImplementation();
@@ -157,7 +160,12 @@ extern "C" IAAP* XMLAAPFactory(const char* source)
         delete aap;
         throw;
     }
-    return aap;    
+    return aap;
+}
+
+ReloadableXMLFileImpl* XMLAAP::newImplementation(const DOMElement* e) const
+{
+    return new XMLAAPImpl(e);
 }
 
 ReloadableXMLFileImpl* XMLAAP::newImplementation(const char* pathname) const
@@ -165,23 +173,22 @@ ReloadableXMLFileImpl* XMLAAP::newImplementation(const char* pathname) const
     return new XMLAAPImpl(pathname);
 }
 
-XMLAAPImpl::XMLAAPImpl(const char* pathname) : ReloadableXMLFileImpl(pathname)
+void XMLAAPImpl::init()
 {
     NDC ndc("XMLAAPImpl");
     Category& log=Category::getInstance(SHIB_LOGCAT".XMLAAPImpl");
 
     try
     {
-        DOMElement* e = m_doc->getDocumentElement();
-        if (XMLString::compareString(XML::SHIB_NS,e->getNamespaceURI()) ||
-            XMLString::compareString(SHIB_L(AttributeAcceptancePolicy),e->getLocalName()))
+        if (XMLString::compareString(XML::SHIB_NS,m_root->getNamespaceURI()) ||
+            XMLString::compareString(SHIB_L(AttributeAcceptancePolicy),m_root->getLocalName()))
         {
             log.error("Construction requires a valid AAP file: (shib:AttributeAcceptancePolicy as root element)");
             throw MalformedException("Construction requires a valid AAP file: (shib:AttributeAcceptancePolicy as root element)");
         }
 
         // Loop over the AttributeRule elements.
-        DOMNodeList* nlist = e->getElementsByTagNameNS(XML::SHIB_NS,SHIB_L(AttributeRule));
+        DOMNodeList* nlist = m_root->getElementsByTagNameNS(XML::SHIB_NS,SHIB_L(AttributeRule));
         for (int i=0; nlist && i<nlist->getLength(); i++)
         {
             AttributeRule* rule=new AttributeRule(static_cast<DOMElement*>(nlist->item(i)));

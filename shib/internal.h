@@ -155,10 +155,10 @@ namespace shibboleth
         void regFactory(const char* type, AAPFactory* factory);
         void unregFactory(const char* type);
         
-        IMetadata* newMetadata(const char* type, const char* source) const;
-        ITrust* newTrust(const char* type, const char* source) const;
-        ICredentials* newCredentials(const char* type, const char* source) const;
-        IAAP* newAAP(const char* type, const char* source) const;
+        IMetadata* newMetadata(const char* type, const DOMElement* source) const;
+        ITrust* newTrust(const char* type, const DOMElement* source) const;
+        ICredentials* newCredentials(const char* type, const DOMElement* source) const;
+        IAAP* newAAP(const char* type, const DOMElement* source) const;
         ICredResolver* newCredResolver(const char* type, const DOMElement* source) const;
 
     private:

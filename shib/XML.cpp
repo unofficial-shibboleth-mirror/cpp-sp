@@ -247,3 +247,5 @@ const XMLCh XML::Literals::other[] =
 
 const XMLCh XML::Literals::xmlns_shib[]=
 { chLatin_x, chLatin_m, chLatin_l, chLatin_n, chLatin_s, chColon, chLatin_s, chLatin_h, chLatin_i, chLatin_b, chNull };
+
+const XMLCh XML::Literals::url[] = { chLatin_u, chLatin_r, chLatin_l, chNull };

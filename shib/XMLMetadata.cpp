@@ -74,7 +74,9 @@ namespace shibboleth {
     class XMLMetadataImpl : public ReloadableXMLFileImpl
     {
     public:
-        XMLMetadataImpl(const char* pathname);
+        XMLMetadataImpl(const char* pathname) : ReloadableXMLFileImpl(pathname) { init(); }
+        XMLMetadataImpl(const DOMElement* e) : ReloadableXMLFileImpl(e) { init(); }
+        void init();
         ~XMLMetadataImpl();
     
         class ContactInfo : public IContactInfo
@@ -145,19 +147,20 @@ namespace shibboleth {
     class XMLMetadata : public IMetadata, public ReloadableXMLFile
     {
     public:
-        XMLMetadata(const char* pathname) : ReloadableXMLFile(pathname) {}
+        XMLMetadata(const DOMElement* e) : ReloadableXMLFile(e) {}
         ~XMLMetadata() {}
 
         const ISite* lookup(const XMLCh* site) const;
         
     protected:
         virtual ReloadableXMLFileImpl* newImplementation(const char* pathname) const;
+        virtual ReloadableXMLFileImpl* newImplementation(const DOMElement* e) const;
     };
 }
 
-extern "C" IMetadata* XMLMetadataFactory(const char* source)
+extern "C" IMetadata* XMLMetadataFactory(const DOMElement* e)
 {
-    XMLMetadata* m=new XMLMetadata(source);
+    XMLMetadata* m=new XMLMetadata(e);
     try
     {
         m->getImplementation();
@@ -168,6 +171,11 @@ extern "C" IMetadata* XMLMetadataFactory(const char* source)
         throw;
     }
     return m;    
+}
+
+ReloadableXMLFileImpl* XMLMetadata::newImplementation(const DOMElement* e) const
+{
+    return new XMLMetadataImpl(e);
 }
 
 ReloadableXMLFileImpl* XMLMetadata::newImplementation(const char* pathname) const
@@ -185,23 +193,22 @@ XMLMetadataImpl::OriginSite::~OriginSite()
         delete const_cast<IAuthority*>(*k);
 }
 
-XMLMetadataImpl::XMLMetadataImpl(const char* pathname) : ReloadableXMLFileImpl(pathname)
+void XMLMetadataImpl::init()
 {
     NDC ndc("XMLMetadataImpl");
     Category& log=Category::getInstance(SHIB_LOGCAT".XMLMetadataImpl");
 
     try
     {
-        DOMElement* e = m_doc->getDocumentElement();
-        if (XMLString::compareString(XML::SHIB_NS,e->getNamespaceURI()) ||
-            XMLString::compareString(XML::Literals::SiteGroup,e->getLocalName()))
+        if (XMLString::compareString(XML::SHIB_NS,m_root->getNamespaceURI()) ||
+            XMLString::compareString(XML::Literals::SiteGroup,m_root->getLocalName()))
         {
             log.error("Construction requires a valid site file: (shib:SiteGroup as root element)");
             throw MetadataException("Construction requires a valid site file: (shib:SiteGroup as root element)");
         }
 
         // Loop over the OriginSite elements.
-        DOMNodeList* nlist = e->getElementsByTagNameNS(XML::SHIB_NS,XML::Literals::OriginSite);
+        DOMNodeList* nlist = m_root->getElementsByTagNameNS(XML::SHIB_NS,XML::Literals::OriginSite);
         for (int i=0; nlist && i<nlist->getLength(); i++)
         {
             const XMLCh* os_name=static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,XML::Literals::Name);

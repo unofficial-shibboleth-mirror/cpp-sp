@@ -357,11 +357,11 @@ namespace shibboleth
     };
 
     extern "C" {
-        typedef IMetadata* MetadataFactory(const char* source);
-        typedef ITrust* TrustFactory(const char* source);
-        typedef ICredentials* CredentialsFactory(const char* source);
+        typedef IMetadata* MetadataFactory(const DOMElement* source);
+        typedef ITrust* TrustFactory(const DOMElement* source);
+        typedef ICredentials* CredentialsFactory(const DOMElement* source);
         typedef ICredResolver* CredResolverFactory(const DOMElement* source);
-        typedef IAAP* AAPFactory(const char* source);
+        typedef IAAP* AAPFactory(const DOMElement* source);
     }
     
     class SHIB_EXPORTS ShibConfig
@@ -386,10 +386,10 @@ namespace shibboleth
         virtual void unregFactory(const char* type)=0;
         
         // build a specific metadata lookup object
-        virtual IMetadata* newMetadata(const char* type, const char* source) const=0;
-        virtual ITrust* newTrust(const char* type, const char* source) const=0;
-        virtual ICredentials* newCredentials(const char* type, const char* source) const=0;
-        virtual IAAP* newAAP(const char* type, const char* source) const=0;
+        virtual IMetadata* newMetadata(const char* type, const DOMElement* source) const=0;
+        virtual ITrust* newTrust(const char* type, const DOMElement* source) const=0;
+        virtual ICredentials* newCredentials(const char* type, const DOMElement* source) const=0;
+        virtual IAAP* newAAP(const char* type, const DOMElement* source) const=0;
         virtual ICredResolver* newCredResolver(const char* type, const DOMElement* source) const=0;
     };
 
@@ -470,6 +470,8 @@ namespace shibboleth
             static const XMLCh administrative[];
             static const XMLCh billing[];
             static const XMLCh other[];
+            
+            static const XMLCh url[];
 
             // XML vocabulary
             static const XMLCh xmlns_shib[];
@@ -498,27 +500,31 @@ namespace shibboleth
     {
     public:
         ReloadableXMLFileImpl(const char* pathname);
+        ReloadableXMLFileImpl(const DOMElement* pathname);
         virtual ~ReloadableXMLFileImpl();
         
     protected:
         DOMDocument* m_doc;
+        const DOMElement* m_root;
     };
 
     class SHIB_EXPORTS ReloadableXMLFile : protected virtual ILockable
     {
     public:
-        ReloadableXMLFile(const char* pathname);
+        ReloadableXMLFile(const DOMElement* e);
         ~ReloadableXMLFile() { delete m_lock; delete m_impl; }
 
         virtual void lock();
-        virtual void unlock() { m_lock->unlock(); }
+        virtual void unlock() { if (m_lock) m_lock->unlock(); }
 
         ReloadableXMLFileImpl* getImplementation() const;
 
     protected:
         virtual ReloadableXMLFileImpl* newImplementation(const char* pathname) const=0;
+        virtual ReloadableXMLFileImpl* newImplementation(const DOMElement* e) const=0;
         
     private:
+        const DOMElement* m_root;
         std::string m_source;
         time_t m_filestamp;
         RWLock* m_lock;
