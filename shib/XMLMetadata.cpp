@@ -109,13 +109,13 @@ public:
         OriginSite(const XMLCh* errorURL) : m_errorURL(XMLString::transcode(errorURL)) {}
         ~OriginSite();
 
-        Iterator<const IContactInfo*> getContacts() const;
-        const char* getErrorURL() const;
+        Iterator<const IContactInfo*> getContacts() const {return m_contacts;}
+        const char* getErrorURL() const {return m_errorURL.get();}
         void validate(XSECCryptoX509* cert) const {}
         void validate(const XMLCh* cert) const {}
-        Iterator<const IAuthority*> getHandleServices() const { return m_handleServices; }
-        Iterator<const IAuthority*> getAttributeAuthorities() const { return m_attributes; }
-        Iterator<std::pair<const XMLCh*,bool> > getSecurityDomains() const { return m_domains; }
+        Iterator<const IAuthority*> getHandleServices() const {return m_handleServices;}
+        Iterator<const IAuthority*> getAttributeAuthorities() const {return m_attributes;}
+        Iterator<std::pair<const XMLCh*,bool> > getSecurityDomains() const {return m_domains;}
 
         auto_ptr<char> m_errorURL;
         vector<const IContactInfo*> m_contacts;
