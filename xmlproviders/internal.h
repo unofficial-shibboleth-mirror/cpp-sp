@@ -169,6 +169,7 @@ public:
         static const XMLCh AnyValue[];
         static const XMLCh AttributeAcceptancePolicy[];
         static const XMLCh AttributeRule[];
+        static const XMLCh CaseSensitive[];
         static const XMLCh Factory[];
         static const XMLCh Header[];
         static const XMLCh Namespace[];

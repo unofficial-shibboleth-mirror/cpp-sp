@@ -293,6 +293,7 @@ namespace shibboleth
         virtual const char* getFactory() const=0;
         virtual const char* getAlias() const=0;
         virtual const char* getHeader() const=0;
+        virtual bool getCaseSensitive() const=0;
         virtual void apply(const IProvider* originSite, saml::SAMLAttribute& attribute) const=0;
         virtual ~IAttributeRule() {}
     };

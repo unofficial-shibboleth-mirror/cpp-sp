@@ -259,6 +259,11 @@ const XMLCh XML::Literals::AttributeRule[] =
   chLatin_R, chLatin_u, chLatin_l, chLatin_e, chNull
 };
 
+const XMLCh XML::Literals::CaseSensitive[] =
+{ chLatin_C, chLatin_a, chLatin_s, chLatin_e,
+  chLatin_S, chLatin_e, chLatin_n, chLatin_s, chLatin_i, chLatin_t, chLatin_i, chLatin_v, chLatin_e, chNull
+};
+
 const XMLCh XML::Literals::Factory[]=
 { chLatin_F, chLatin_a, chLatin_c, chLatin_t, chLatin_o, chLatin_r, chLatin_y, chNull };
 

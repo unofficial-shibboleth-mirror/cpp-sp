@@ -88,6 +88,7 @@ namespace {
             const char* getFactory() const { return m_factory.get(); }
             const char* getAlias() const { return m_alias.get(); }
             const char* getHeader() const { return m_header.get(); }
+            bool getCaseSensitive() const { return m_caseSensitive; }
             void apply(const IProvider* originSite, SAMLAttribute& attribute) const;
     
             enum value_type { literal, regexp, xpath };
@@ -97,6 +98,7 @@ namespace {
             auto_ptr_char m_factory;
             auto_ptr_char m_alias;
             auto_ptr_char m_header;
+            bool m_caseSensitive;
             
             value_type toValueType(const DOMElement* e);
             bool scopeCheck(const IProvider* originSite, const DOMElement* e) const;
@@ -247,12 +249,13 @@ XMLAAPImpl::AttributeRule::AttributeRule(const DOMElement* e) :
     m_header(e->hasAttributeNS(NULL,SHIB_L(Header)) ? e->getAttributeNS(NULL,SHIB_L(Header)) : NULL)
     
 {
-    static const XMLCh wTrue[] = {chLatin_t, chLatin_r, chLatin_u, chLatin_e, chNull};
-
     m_name=e->getAttributeNS(NULL,SHIB_L(Name));
     m_namespace=e->getAttributeNS(NULL,SHIB_L(Namespace));
     if (!m_namespace || !*m_namespace)
         m_namespace=Constants::SHIB_ATTRIBUTE_NAMESPACE_URI;
+    
+    const XMLCh* caseSensitive=e->getAttributeNS(NULL,SHIB_L(CaseSensitive));
+    m_caseSensitive=(!caseSensitive || !*caseSensitive || *caseSensitive==chDigit_1 || *caseSensitive==chLatin_t);
     
     // Check for an AnySite rule.
     DOMNode* anysite = e->getFirstChild();
@@ -273,7 +276,7 @@ XMLAAPImpl::AttributeRule::AttributeRule(const DOMElement* e) :
             if (valnode && valnode->getNodeType()==DOMNode::TEXT_NODE)
             {
                 const XMLCh* accept=se->getAttributeNS(NULL,SHIB_L(Accept));
-                if (!accept || !*accept || *accept==chDigit_1 || !XMLString::compareString(accept,wTrue))
+                if (!accept || !*accept || *accept==chDigit_1 || *accept==chLatin_t)
                     m_anySiteRule.scopeAccepts.push_back(pair<value_type,const XMLCh*>(toValueType(se),valnode->getNodeValue()));
                 else
                     m_anySiteRule.scopeDenials.push_back(pair<value_type,const XMLCh*>(toValueType(se),valnode->getNodeValue()));
@@ -323,7 +326,7 @@ XMLAAPImpl::AttributeRule::AttributeRule(const DOMElement* e) :
             if (valnode && valnode->getNodeType()==DOMNode::TEXT_NODE)
             {
                 const XMLCh* accept=se->getAttributeNS(NULL,SHIB_L(Accept));
-                if (!accept || *accept==chDigit_1 || !XMLString::compareString(accept,wTrue))
+                if (!accept || !*accept || *accept==chDigit_1 || *accept==chLatin_t)
                     srule.scopeAccepts.push_back(pair<value_type,const XMLCh*>(toValueType(se),valnode->getNodeValue()));
                 else
                     srule.scopeDenials.push_back(pair<value_type,const XMLCh*>(toValueType(se),valnode->getNodeValue()));
@@ -584,16 +587,27 @@ bool XMLAAPImpl::AttributeRule::accept(const IProvider* originSite, const DOMEle
         return scopeCheck(originSite,e);
     }
 
-    for (i=srule->second.valueRules.begin(); bSimple && i!=srule->second.valueRules.end(); i++)
-    {
-        if ((i->first==literal && !XMLString::compareString(i->second,n->getNodeValue())) ||
-            (i->first==regexp && match(i->second,n->getNodeValue())))
-        {
-            log.debug("matching site, value match");
-            return scopeCheck(originSite,e);
+    for (i=srule->second.valueRules.begin(); bSimple && i!=srule->second.valueRules.end(); i++) {
+        switch (i->first) {
+            case literal:
+                if ((m_caseSensitive && !XMLString::compareString(i->second,n->getNodeValue())) ||
+                    (!m_caseSensitive && !XMLString::compareIString(i->second,n->getNodeValue()))) {
+                    log.debug("matching site, value match");
+                    return scopeCheck(originSite,e);
+                }
+                break;
+            
+            case regexp:
+                if (match(i->second,n->getNodeValue())) {
+                    log.debug("matching site, value match");
+                    return scopeCheck(originSite,e);
+                }
+                break;
+            
+            case xpath:
+                log.warn("implementation does not support XPath value rules");
+                break;
         }
-        else if (i->first==xpath)
-            log.warn("implementation does not support XPath value rules");
     }
 
     if (log.isWarnEnabled())
