@@ -369,55 +369,47 @@ begin
 	// Rename the Unix-preinstall files
 	svOldTargetDir = TARGETDIR;
 	TARGETDIR = SRCDIR;
-	RenameFile("shibboleth.ini.in", "shibboleth.ini");
+	RenameFile("shibboleth.xml.in", "shibboleth.xml");
 	RenameFile("shar.logger.in", "shar.logger");
 	RenameFile("shire.logger.in", "shire.logger");
 	RenameFile("apache.config.in", "apache.config");
 	RenameFile("apache2.config.in", "apache2.config");
-	RenameFile("creds.xml.in", "creds.xml");
 	TARGETDIR = svOldTargetDir;
 	
 	// Update config files for Windows
-	svFileName = "shibboleth.ini";
-	ReplaceTextInFile(svFileName, "sharsocket=/tmp/shar-socket", "sharsocket=127.0.0.1:" + svSharPort);	
-	ReplaceTextInFile(svFileName, "shib-mysql-ccache.so", "shib-mysql-ccache.dll");
+	svFileName = "shibboleth.xml";
+	ReplaceTextInFile(svFileName,
+		"<UnixListener address=\"/tmp/shar-socket\"/>",
+		"<!-- <UnixListener address=\"/tmp/shar-socket\"/> -->"
+		);
+	ReplaceTextInFile(svFileName,
+		"<!-- <TCPListener address=\"127.0.0.1\" port=\"12345\" acl=\"127.0.0.1\"/> -->",
+		"<TCPListener address=\"127.0.0.1\" port=\"" + svSharPort + "\" acl=\"127.0.0.1\"/>"
+		);
 	ReplaceTextInFile(svFileName, "@-PKGSYSCONFDIR-@", svDirectory + "/etc/shibboleth");
 	ReplaceTextInFile(svFileName, "@-LIBEXECDIR-@", svDirectory + "/libexec");
-	ReplaceTextInFile(svFileName, "@-LOGDIR-@", svDirectory + "/etc/shibboleth");
+	ReplaceTextInFile(svFileName, "@-LOGDIR-@", svDirectory + "/var/log/shibboleth");
 	ReplaceTextInFile(svFileName, "@-PREFIX-@", svDirectory);
+
 	svFileName = "shar.logger";
-	ReplaceTextInFile(svFileName, "@-PKGSYSCONFDIR-@", svDirectory + "/etc/shibboleth");
-	ReplaceTextInFile(svFileName, "@-LIBEXECDIR-@", svDirectory + "/libexec");
-	ReplaceTextInFile(svFileName, "@-LOGDIR-@", svDirectory + "/etc/shibboleth");
-	ReplaceTextInFile(svFileName, "@-PREFIX-@", svDirectory);
+	ReplaceTextInFile(svFileName, "@-LOGDIR-@", svDirectory + "/var/log/shibboleth");
+	svFileName = "shire.logger";
+	ReplaceTextInFile(svFileName, "@-LOGDIR-@", svDirectory + "/var/log/shibboleth");
+
 	svFileName = "apache.config";
-	ReplaceTextInFile(svFileName, "mod_shibrm.so", "mod_shibrm.dll");
-	ReplaceTextInFile(svFileName, "mod_shire.so", "mod_shire.dll");
 	ReplaceTextInFile(svFileName, "@-PKGSYSCONFDIR-@", svDirectory + "/etc/shibboleth");
 	ReplaceTextInFile(svFileName, "@-LIBEXECDIR-@", svDirectory + "/libexec");
-	ReplaceTextInFile(svFileName, "@-LOGDIR-@", svDirectory + "/etc/shibboleth");
+	ReplaceTextInFile(svFileName, "@-LOGDIR-@", svDirectory + "/var/log/shibboleth");
 	ReplaceTextInFile(svFileName, "@-PREFIX-@", svDirectory);
 	svFileName = "apache2.config";
-	ReplaceTextInFile(svFileName, "mod_apreq.so", "mod_apreq.dll");
-	ReplaceTextInFile(svFileName, "mod_shib.so", "mod_shib.dll");
 	ReplaceTextInFile(svFileName, "@-PKGSYSCONFDIR-@", svDirectory + "/etc/shibboleth");
 	ReplaceTextInFile(svFileName, "@-LIBEXECDIR-@", svDirectory + "/libexec");
-	ReplaceTextInFile(svFileName, "@-LOGDIR-@", svDirectory + "/etc/shibboleth");
-	ReplaceTextInFile(svFileName, "@-PREFIX-@", svDirectory);
-	svFileName = "shire.logger";
-	ReplaceTextInFile(svFileName, "@-PKGSYSCONFDIR-@", svDirectory + "/etc/shibboleth");
-	ReplaceTextInFile(svFileName, "@-LIBEXECDIR-@", svDirectory + "/libexec");
-	ReplaceTextInFile(svFileName, "@-LOGDIR-@", svDirectory + "/etc/shibboleth");
-	ReplaceTextInFile(svFileName, "@-PREFIX-@", svDirectory);
-	svFileName = "creds.xml";
-	ReplaceTextInFile(svFileName, "@-PKGSYSCONFDIR-@", svDirectory + "/etc/shibboleth");
-	ReplaceTextInFile(svFileName, "@-LIBEXECDIR-@", svDirectory + "/libexec");
-	ReplaceTextInFile(svFileName, "@-LOGDIR-@", svDirectory + "/etc/shibboleth");
+	ReplaceTextInFile(svFileName, "@-LOGDIR-@", svDirectory + "/var/log/shibboleth");
 	ReplaceTextInFile(svFileName, "@-PREFIX-@", svDirectory);
 	Delay(2);
-	SdShowMsg("",FALSE);	
+	SdShowMsg("",FALSE);
 
-	// Install the shar as a service if so directed	
+	// Install the shar as a service if so directed
 	if (bInstallSharAsService = TRUE) then
 		SdShowMsg("Installing the shar service...", TRUE);	
 		// Remove any existing Default shar service install
@@ -426,10 +418,11 @@ begin
 		nResult = LaunchAppAndWait(svSharExe, svSharInstallParms, WAIT);
 		// Now install the new Default			
 	 	svSharExe = TARGETDIR + "\\bin\\shar.exe";
-	 	svSharInstallParms = "-install Default -config " + (TARGETDIR + "\\etc\\shibboleth\\shibboleth.ini");
+	 	svSharInstallParms = "-install Default -config " + (TARGETDIR + "\\etc\\shibboleth\\shibboleth.xml -schemadir ") +
+	 		(TARGETDIR + "\\etc\shibboleth");
 		nResult = LaunchAppAndWait(svSharExe, svSharInstallParms, WAIT);	
 		if (nResult < 0) then
-		   	MessageBox("Shar service installation FAILED!", WARNING);
+		   	MessageBox("SHAR service installation FAILED!", WARNING);
 		endif;		   	
 		Delay(2);
 		SdShowMsg("",FALSE);		
@@ -971,10 +964,12 @@ end;
 ////////////////////////////////////////////////////////////////////////////////
 function AddShibConfigEnvironmentVar()
 	NUMBER nResult;
+	NUMBER nResult2;
 	NUMBER nvType;
 	NUMBER nvSize;
 	STRING szKey;
 	STRING svShibConfigPath;
+	STRING svShibSchemaPath;
 	STRING szEnv;
 	POINTER pEnv;
 	
@@ -982,16 +977,18 @@ begin
 
 	Disable(LOGGING) ;
 
-   	svShibConfigPath = TARGETDIR + "\\etc\\shibboleth\\shibboleth.ini"; // The string you want to store in Shibconfig environment variable
 	szKey="SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment";
+   	svShibConfigPath = TARGETDIR + "\\etc\\shibboleth\\shibboleth.xml";
+   	svShibSchemaPath = TARGETDIR + "\\etc\\shibboleth";
 
 	RegDBSetDefaultRoot(HKEY_LOCAL_MACHINE);
 
 	// Set the Shibconfig environment variable
-	nResult=RegDBSetKeyValueEx(szKey,"ShibConfig",REGDB_STRING_EXPAND,svShibConfigPath,-1);
+	nResult=RegDBSetKeyValueEx(szKey,"SHIBCONFIG",REGDB_STRING_EXPAND,svShibConfigPath,-1);
+	nResult2=RegDBSetKeyValueEx(szKey,"SHIBSCHEMAS",REGDB_STRING_EXPAND,svShibSchemaPath,-1);
 
 	if (nResult < 0) then
-		MessageBox("Setup was unable to add the Shibconfig environment variable!",WARNING);		
+		MessageBox("Setup was unable to add the SHIBCONFIG/SHIBSCHEMAS environment variables!",WARNING);
 	else
 		// Flush the NT registry to all applications.	
 		szEnv = "Environment";

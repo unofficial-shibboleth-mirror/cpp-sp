@@ -1,8 +1,9 @@
 [libexec]
 file0=..\isapi_shib\Release\isapi_shib.dll
-file1=..\mod_shibrm\Release\mod_shibrm.dll
-file2=..\mod_shire\Release\mod_shire.dll
-file3=..\shib-mysql-ccache\Release\shib-mysql-ccache.dll
+file1=..\apache\Release\mod_shib_13.so
+file2=..\apache\mod_shib20___Win32_Release\mod_shib_20.so
+file3=..\shib-mysql-ccache\Release\shib-mysql-ccache.so
+file4=..\xmlproviders\Release\xmlproviders.so
 SubDir0=libexec\debug
 
 [include\rpc]
@@ -27,44 +28,42 @@ file0=\mysql-4.0.13\share\english\errmsg.sys
 file1=\mysql-4.0.13\share\english\errmsg.txt
 
 [lib\debug]
-file15=..\..\..\opensaml\c\saml\Debug\saml_4D.dll
-file16=..\shib-target\Debug\shibtarget_4D.lib
-file0=\libapreq-1.3\c\Debug\libapreq.lib
-file17=..\shib-target\Debug\shibtarget_4D.dll
-file1=\libapreq-1.3\c\Debug\libapreq.dll
-file18=..\shib\Debug\shib_5D.lib
-file2=\curl-7.10.8\lib\libcurld.lib
-file19=..\shib\Debug\shib_5D.dll
-file3=\curl-7.10.8\lib\libcurld.dll
-file4=\openssl-0.9.7c\out32dll.dbg\ssleay32.lib
-file5=\openssl-0.9.7c\out32dll.dbg\libeay32.lib
-file6=\openssl-0.9.7c\out32dll.dbg\ssleay32.dll
-file7=\openssl-0.9.7c\out32dll.dbg\libeay32.dll
+file2=\curl-7.11.1\lib\libcurld.lib
+file3=\curl-7.11.1\lib\libcurld.dll
+file4=\openssl-0.9.7d\out32dll.dbg\ssleay32.lib
+file5=\openssl-0.9.7d\out32dll.dbg\libeay32.lib
+file6=\openssl-0.9.7d\out32dll.dbg\ssleay32.dll
+file7=\openssl-0.9.7d\out32dll.dbg\libeay32.dll
 file8=\mysql-4.0.13\lib_debug\libmysqld.dll
 file9=\log4cpp-0.3.4b\msvc6\log4cppDLL\Debug\log4cppD.lib
-file20=\xerces-c2_4_0-win32\bin\xerces-c_2_4_0D.dll
-file21=\xerces-c2_4_0-win32\lib\xerces-c_2D.lib
+file20=\xerces-c2_5_0-win32\bin\xerces-c_2_5_0D.dll
+file21=\xerces-c2_5_0-win32\lib\xerces-c_2D.lib
 file10=\log4cpp-0.3.4b\msvc6\log4cppDLL\Debug\log4cppD.dll
-file22=\xml-security-c-1.0.0\Build\Win32\VC6\Debug\xsec_1D.lib
+file22=\xml-security-c-1.1.0\Build\Win32\VC6\Debug\xsec_1D.lib
 file11=\log4cpp-0.3.4b\msvc6\log4cppDLL\Debug\NTEventLogAppender.dll
-file23=\xml-security-c-1.0.0\Build\Win32\VC6\Debug\xsec_1_0_0D.dll
+file23=\xml-security-c-1.1.0\Build\Win32\VC6\Debug\xsec_1_1_0D.dll
 file12=..\oncrpc\Debug\oncrpc.lib
 file13=..\oncrpc\Debug\oncrpc.dll
 file14=..\..\..\opensaml\c\saml\Debug\saml_4D.lib
+file15=..\..\..\opensaml\c\saml\Debug\saml_4D.dll
+file16=..\shib-target\Debug\shibtarget_4D.lib
+file17=..\shib-target\Debug\shibtarget_4D.dll
+file18=..\shib\Debug\shib_5D.lib
+file19=..\shib\Debug\shib_5D.dll
 
 [bin]
+file0=\openssl-0.9.7d\out32dll\openssl.exe
 file15=..\posttest\Release\posttest.exe
 file16=..\oncrpc\Release\oncrpc.dll
-file0=\libapreq-1.3\c\Release\libapreq.dll
 file17=\log4cpp-0.3.4b\msvc6\log4cppDLL\Release\NTEventLogAppender.dll
-file1=\xml-security-c-1.0.0\Build\Win32\VC6\Release\xsec_1_0_0.dll
+file1=\xml-security-c-1.1.0\Build\Win32\VC6\Release\xsec_1_1_0.dll
 file18=\mysql-4.0.13\lib_release\libmysqld.dll
-file2=\xerces-c2_4_0-win32\bin\xerces-c_2_4_0.dll
-file3=\openssl-0.9.7c\out32dll\ssleay32.dll
-file4=\curl-7.10.8\lib\libcurl.dll
-file5=\openssl-0.9.7c\out32dll\libeay32.dll
+file2=\xerces-c2_5_0-win32\bin\xerces-c_2_5_0.dll
+file3=\openssl-0.9.7d\out32dll\ssleay32.dll
+file4=\curl-7.11.1\lib\libcurl.dll
+file5=\openssl-0.9.7d\out32dll\libeay32.dll
 file6=\log4cpp-0.3.4b\msvc6\log4cppDLL\Release\log4cpp.dll
-file7=\openssl-0.9.7c\out32dll\openssl.exe
+file7=\openssl-0.9.7d\out32dll\openssl.exe
 SubDir0=bin\debug
 file8=..\siterefresh\Release\siterefresh.exe
 file9=..\..\..\opensaml\c\test\Release\signtest.exe
@@ -93,13 +92,15 @@ file4=..\..\..\opensaml\c\doc\LOG4CPP.LICENSE
 file5=..\..\..\opensaml\c\doc\NEWS.txt
 file6=..\..\..\opensaml\c\doc\OPENSSL.LICENSE
 file7=..\..\..\opensaml\c\doc\README.txt
+file8=..\..\..\opensaml\c\doc\INSTALL-WIN32.txt
 
 [include\saml]
 file0=..\..\..\opensaml\c\saml\saml.h
 file1=..\..\..\opensaml\c\saml\config_pub_win32.h
+file2=..\..\..\opensaml\c\saml\version.h
 
 [etc\shibboleth]
-file15=..\configs\shibboleth.ini.in
+file15=..\configs\shibboleth.xml.in
 file16=..\configs\shibboleth.logger
 file0=..\schemas\xmldsig-filter2.xsd
 file17=..\configs\shire.logger.in
@@ -115,17 +116,22 @@ file7=..\schemas\xmldsig-core-schema.xsd
 file8=..\schemas\cs-sstc-schema-assertion-01.xsd
 file9=..\configs\trust.xml
 file20=..\configs\AAP.xml
-file21=..\configs\internet2.pem
+file21=..\configs\inqueue.pem
 file10=..\configs\accessError.html
 file11=..\configs\apache.config.in
-file12=..\configs\creds.xml.in
+file12=..\schemas\credentials.xsd
 file13=..\configs\rmError.html
 file14=..\configs\shar.logger.in
-file22=\openssl-0.9.7c\apps\openssl.cnf
+file22=\openssl-0.9.7d\apps\openssl.cnf
 file23=..\configs\apache2.config.in
+file24=..\configs\shar.crt
+file25=..\configs\shar.key
+file26=..\schemas\shibboleth-targetconfig-1.0.xsd
+file27=..\schemas\shibboleth-trust-1.0.xsd
 
 [include\shib]
 file0=..\shib\shib.h
+file1=..\shib\shib-threads-win32.h
 
 [TopDir]
 SubDir0=bin
@@ -136,9 +142,16 @@ SubDir4=include
 SubDir5=lib
 SubDir6=libexec
 SubDir7=share
+SubDir8=var
 
 [share]
 SubDir0=share\english
+
+[var]
+SubDir0=var\log
+
+[var\log]
+SubDir0=var\log\shibboleth
 
 [doc\shibboleth]
 file0=..\doc\CREDITS.txt
@@ -155,9 +168,11 @@ file10=..\doc\NEWS.txt
 file11=..\doc\OPENSSL.LICENSE
 file12=..\doc\README.txt
 file13=..\doc\UPGRADE-GUIDE.html
+file14=..\doc\main.css
+file15=..\doc\logo.jpg
 
 [bin\debug]
-file0=\openssl-0.9.7c\out32dll.dbg\openssl.exe
+file0=\openssl-0.9.7d\out32dll.dbg\openssl.exe
 file1=..\posttest\Debug\posttest.exe
 file2=..\shar\Debug\shar.exe
 file3=..\shibtest\Debug\shibtest.exe
@@ -168,13 +183,14 @@ file5=..\siterefresh\Debug\siterefresh.exe
 
 [General]
 Type=FILELIST
-Version=1.10.000
+Version=1.20.000
 
 [libexec\debug]
-file0=..\isapi_shib\Debug\isapi_shib.dll
-file1=..\mod_shibrm\Debug\mod_shibrm.dll
-file2=..\mod_shire\Debug\mod_shire.dll
-file3=..\shib-mysql-ccache\Debug\shib-mysql-ccache.dll
+file0=..\isapi_shib\Release\isapi_shib.dll
+file1=..\apache\Debug\mod_shib_13.so
+file2=..\apache\mod_shib20___Win32_Debug\mod_shib_20.so
+file3=..\shib-mysql-ccache\Debug\shib-mysql-ccache.so
+file4=..\xmlproviders\Debug\xmlproviders.so
 
 [etc\opensaml]
 file0=..\..\..\opensaml\c\schemas\xmldsig-filter2.xsd
@@ -189,26 +205,24 @@ file7=..\..\..\opensaml\c\schemas\cs-sstc-schema-assertion-01.xsd
 [lib]
 file15=..\shib-target\Release\shibtarget_4.dll
 file16=..\shib\Release\shib_5.lib
-file0=\libapreq-1.3\c\Release\libapreq.dll
 file17=..\shib\Release\shib_5.dll
-file1=\libapreq-1.3\c\Release\libapreq.lib
-file18=\openssl-0.9.7c\out32dll\ssleay32.lib
-file2=\curl-7.10.8\lib\libcurl.lib
-file19=\openssl-0.9.7c\out32dll\ssleay32.dll
-file3=\curl-7.10.8\lib\libcurl.dll
-file4=\openssl-0.9.7c\out32dll\libeay32.lib
-file5=\openssl-0.9.7c\out32dll\libeay32.dll
+file18=\openssl-0.9.7d\out32dll\ssleay32.lib
+file2=\curl-7.11.1\lib\libcurl.lib
+file19=\openssl-0.9.7d\out32dll\ssleay32.dll
+file3=\curl-7.11.1\lib\libcurl.dll
+file4=\openssl-0.9.7d\out32dll\libeay32.lib
+file5=\openssl-0.9.7d\out32dll\libeay32.dll
 file6=\mysql-4.0.13\lib_release\libmysqld.dll
 file7=\log4cpp-0.3.4b\msvc6\log4cppDLL\Release\log4cpp.lib
 SubDir0=lib\debug
 file8=\log4cpp-0.3.4b\msvc6\log4cppDLL\Release\log4cpp.dll
 file9=\log4cpp-0.3.4b\msvc6\log4cppDLL\Release\NTEventLogAppender.dll
-file20=\xerces-c2_4_0-win32\lib\xerces-c_2.lib
-file21=\xerces-c2_4_0-win32\bin\xerces-c_2_4_0.dll
+file20=\xerces-c2_5_0-win32\lib\xerces-c_2.lib
+file21=\xerces-c2_5_0-win32\bin\xerces-c_2_5_0.dll
 file10=..\oncrpc\Release\oncrpc.lib
 file11=..\oncrpc\Release\oncrpc.dll
-file22=\xml-security-c-1.0.0\Build\Win32\VC6\Release\xsec_1.lib
-file23=\xml-security-c-1.0.0\Build\Win32\VC6\Release\xsec_1_0_0.dll
+file22=\xml-security-c-1.1.0\Build\Win32\VC6\Release\xsec_1.lib
+file23=\xml-security-c-1.1.0\Build\Win32\VC6\Release\xsec_1_1_0.dll
 file12=..\..\..\opensaml\c\saml\Release\saml_4.dll
 file13=..\..\..\opensaml\c\saml\Release\saml_4.lib
 file14=..\shib-target\Release\shibtarget_4.lib
@@ -216,7 +230,6 @@ file14=..\shib-target\Release\shibtarget_4.lib
 [include\shib-target]
 file0=..\shib-target\shib-target.h
 file1=..\shib-target\shibrpc.h
-file2=..\shib-target\ccache-utils.h
 
 [etc]
 SubDir0=etc\opensaml
