@@ -94,10 +94,6 @@ static void trimspace (string& s)
 ShibMLP::ShibMLP()
 {
   m_priv = new ShibMLPPriv ();
-
-  // Create a timestamp
-  time_t now = time(NULL);
-  insert("now", ctime(&now));
 }
 
 ShibMLP::~ShibMLP ()
@@ -107,6 +103,10 @@ ShibMLP::~ShibMLP ()
 
 const char* ShibMLP::run(const string& is, const IPropertySet* props, std::string* output)
 {
+  // Create a timestamp
+  time_t now = time(NULL);
+  insert("now", ctime(&now));
+
   if (!output)
     output=&m_generated;
   const char* line = is.c_str();
