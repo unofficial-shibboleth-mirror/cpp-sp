@@ -36,6 +36,7 @@ using namespace shibtarget;
 extern "C" module MODULE_VAR_EXPORT shire_module;
 
 namespace {
+    char* g_szSHIREURL = NULL;
     char* g_szSHIREConfig = NULL;
     RPCHandle *rpc_handle = NULL;
     ShibTargetConfig * g_szConfig = NULL;
@@ -143,6 +144,8 @@ typedef const char* (*config_fn_t)(void);
 static command_rec shire_cmds[] = {
   {"SHIREConfig", (config_fn_t)ap_set_global_string_slot, &g_szSHIREConfig,
    RSRC_CONF, TAKE1, "Path to SHIRE ini file."},
+  {"SHIREURL", (config_fn_t)ap_set_global_string_slot, &g_szSHIREURL,
+   RSRC_CONF, TAKE1, "SHIRE POST processor URL."},
 
   {"ShibBasicHijack", (config_fn_t)ap_set_flag_slot,
    (void *) XtOffsetOf (shire_dir_config, bBasicHijack),
@@ -268,7 +271,9 @@ static const char* get_shire_location(request_rec* r, const char* target, bool e
   const char* serverName = get_service_name(r);
   string shire_location;
 
-  if (! ini.get_tag (serverName, "shireURL", true, &shire_location)) {
+  if (g_szSHIREURL)
+    shire_location = g_szSHIREURL;
+  else if (! ini.get_tag (serverName, "shireURL", true, &shire_location)) {
     ap_log_rerror(APLOG_MARK,APLOG_ERR,r,
 		  "shire_get_location() no shireURL configuration for %s",
 		  serverName);
@@ -381,188 +386,9 @@ extern "C" int shire_check_user(request_rec* r)
     SHIRE shire(rpc_handle, dc->config, shire_url);
 
     if (is_shire_location (r, targeturl)) {
-      // Process SHIRE POST
-
-      ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
-		    "shire_check_user() Beginning SHIRE POST processing");
-      
-
-      try {
-
-	string sslonly;
-	if (! ini.get_tag (serverName, "shireSSLOnly", true, &sslonly))
-	  ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
-			"shire_check_user: no shireSSLOnly configuration");
-	
-	// Make sure this is SSL, if it should be
-	if (ShibINI::boolean(sslonly) && strcmp(ap_http_method(r),"https"))
-	  throw ShibTargetException (SHIBRPC_OK,
-				     "blocked non-SSL access to SHIRE POST processor");
-
-	// Make sure this is a POST
-	if (strcasecmp (r->method, "POST"))
-	  throw ShibTargetException (SHIBRPC_OK,
-				     "blocked non-POST to SHIRE POST processor");
-
-	// Sure sure this POST is an appropriate content type
-	const char *ct = ap_table_get (r->headers_in, "Content-type");
-	if (!ct || strcasecmp (ct, "application/x-www-form-urlencoded"))
-	  throw ShibTargetException (SHIBRPC_OK,
-				     ap_psprintf(r->pool,
-				     "blocked bad content-type to SHIRE POST processor: %s",
-						 (ct ? ct : "")));
-	
-	// Make sure the "bytes sent" is a reasonable number
-	if (r->bytes_sent > 1024*1024) // 1MB?
-	  throw ShibTargetException (SHIBRPC_OK,
-				     "blocked too-large a post to SHIRE POST processor");
-
-	// Read the posted data
-	ApacheRequest *ap_req = ApacheRequest_new(r);
-	int err = ApacheRequest_parse(ap_req);
-	if (err != OK)
-	  throw ShibTargetException (SHIBRPC_OK,
-				     ap_psprintf(r->pool,
-				     "ApacheRequest_parse() failed with %d.", err));
-
-
-	// Make sure the target parameter exists
-	const char *target = ApacheRequest_param(ap_req, "TARGET");
-	if (!target || *target == '\0')
-	  // invalid post
-	  throw ShibTargetException (SHIBRPC_OK,
-				     "SHIRE POST failed to find TARGET");
-
-	// Make sure the SAML Response parameter exists
-	const char *post = ApacheRequest_param(ap_req, "SAMLResponse");
-	if (!post || *post == '\0')
-	  // invalid post
-	  throw ShibTargetException (SHIBRPC_OK,
-				     "SHIRE POST failed to find SAMLResponse");
-
-	ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
-	      "shire_check_user() Processing POST for target: %s", target);
-
-#if 0 // 2002-09-19
-	post = 
-	  "PFJlc3BvbnNlIHhtbG5zPSJ1cm46b2FzaXM6bmFtZXM6dGM6U0FNTDoxLjA6cHJvdG9jb2wi"
-	  "IHhtbG5zOnNhbWxwPSJ1cm46b2FzaXM6bmFtZXM6dGM6U0FNTDoxLjA6cHJvdG9jb2wiIElz"
-	  "c3VlSW5zdGFudD0iMjAwMi0wOS0xOVQwNTozMDowMFoiIE1ham9yVmVyc2lvbj0iMSIgTWlu"
-	  "b3JWZXJzaW9uPSIwIiBSZWNpcGllbnQ9Imh0dHA6Ly9sb2NhbGhvc3Qvc2hpYmJvbGV0aC9T"
-	  "SElSRSIgUmVzcG9uc2VJRD0iYmI3ZjZmYjQtMmU0YS00YzY1LTgzY2QtYjIyMjQ0OWQwYmY4"
-	  "Ij48U3RhdHVzPjxTdGF0dXNDb2RlIFZhbHVlPSJzYW1scDpTdWNjZXNzIj48L1N0YXR1c0Nv"
-	  "ZGU+PC9TdGF0dXM+PEFzc2VydGlvbiB4bWxucz0idXJuOm9hc2lzOm5hbWVzOnRjOlNBTUw6"
-	  "MS4wOmFzc2VydGlvbiIgQXNzZXJ0aW9uSUQ9IjZhYzUxYTg2LTJhNTgtNDM2My1hZjlkLTQy"
-	  "YjQzYTRhMGNiZSIgSXNzdWVJbnN0YW50PSIyMDAyLTA5LTE5VDA1OjMwOjAwWiIgSXNzdWVy"
-	  "PSJzaGlicHJvZDAuaW50ZXJuZXQyLmVkdSIgTWFqb3JWZXJzaW9uPSIxIiBNaW5vclZlcnNp"
-	  "b249IjAiPjxDb25kaXRpb25zIE5vdEJlZm9yZT0iMjAwMi0wOS0xN1QwMjo1MDowMFoiIE5v"
-	  "dE9uT3JBZnRlcj0iMjAxMC0wOS0xOVQwNjozMDowMFoiPjxBdWRpZW5jZVJlc3RyaWN0aW9u"
-	  "Q29uZGl0aW9uPjxBdWRpZW5jZT5odHRwOi8vbWlkZGxld2FyZS5pbnRlcm5ldDIuZWR1L3No"
-	  "aWJib2xldGgvY2x1YnMvY2x1YnNoaWIvMjAwMi8wNS88L0F1ZGllbmNlPjwvQXVkaWVuY2VS"
-	  "ZXN0cmljdGlvbkNvbmRpdGlvbj48L0NvbmRpdGlvbnM+PEF1dGhlbnRpY2F0aW9uU3RhdGVt"
-	  "ZW50IEF1dGhlbnRpY2F0aW9uSW5zdGFudD0iMjAwMi0wOS0xOVQwNTozMDowMFoiIEF1dGhl"
-	  "bnRpY2F0aW9uTWV0aG9kPSJCYXNpYyI+PFN1YmplY3Q+PE5hbWVJZGVudGlmaWVyIE5hbWVR"
-	  "dWFsaWZpZXI9ImV4YW1wbGUuZWR1Ij40YzBmYjg2Yi01NjQwLTQ1ZTUtOTM3Ny1mNTJkNjhh"
-	  "ZDNiNjQ8L05hbWVJZGVudGlmaWVyPjxTdWJqZWN0Q29uZmlybWF0aW9uPjxDb25maXJtYXRp"
-	  "b25NZXRob2Q+dXJuOm9hc2lzOm5hbWVzOnRjOlNBTUw6MS4wOmNtOkJlYXJlcjwvQ29uZmly"
-	  "bWF0aW9uTWV0aG9kPjwvU3ViamVjdENvbmZpcm1hdGlvbj48L1N1YmplY3Q+PFN1YmplY3RM"
-	  "b2NhbGl0eSBJUEFkZHJlc3M9IjE4LjEwMS4xLjEyIj48L1N1YmplY3RMb2NhbGl0eT48QXV0"
-	  "aG9yaXR5QmluZGluZyBBdXRob3JpdHlLaW5kPSJzYW1scDpBdHRyaWJ1dGVRdWVyeSIgQmlu"
-	  "ZGluZz0idXJuOm9hc2lzOm5hbWVzOnRjOlNBTUw6MS4wOmJpbmRpbmdzOlNPQVAtYmluZGlu"
-	  "ZyIgTG9jYXRpb249Imh0dHBzOi8vc2hpYnByb2QwLmludGVybmV0Mi5lZHUvc2hpYmJvbGV0"
-	  "aC9BQSI+PC9BdXRob3JpdHlCaW5kaW5nPjwvQXV0aGVudGljYXRpb25TdGF0ZW1lbnQ+PC9B"
-	  "c3NlcnRpb24+PC9SZXNwb25zZT4K";
-#endif
-#if 0 // 2002-09-20
-	post = 
-	  "PFJlc3BvbnNlIHhtbG5zPSJ1cm46b2FzaXM6bmFtZXM6dGM6U0FNTDoxLjA6cHJvdG9jb2wi"
-	  "IHhtbG5zOnNhbWxwPSJ1cm46b2FzaXM6bmFtZXM6dGM6U0FNTDoxLjA6cHJvdG9jb2wiIElz"
-	  "c3VlSW5zdGFudD0iMjAwMi0wOS0yMFQyMzowMDowMFoiIE1ham9yVmVyc2lvbj0iMSIgTWlu"
-	  "b3JWZXJzaW9uPSIwIiBSZWNpcGllbnQ9Imh0dHA6Ly9sb2NhbGhvc3Qvc2hpYmJvbGV0aC9T"
-	  "SElSRSIgUmVzcG9uc2VJRD0iYmI3ZjZmYjQtMmU0YS00YzY1LTgzY2QtYjIyMjQ0OWQwYmY4"
-	  "Ij48U3RhdHVzPjxTdGF0dXNDb2RlIFZhbHVlPSJzYW1scDpTdWNjZXNzIj48L1N0YXR1c0Nv"
-	  "ZGU+PC9TdGF0dXM+PEFzc2VydGlvbiB4bWxucz0idXJuOm9hc2lzOm5hbWVzOnRjOlNBTUw6"
-	  "MS4wOmFzc2VydGlvbiIgQXNzZXJ0aW9uSUQ9IjZhYzUxYTg2LTJhNTgtNDM2My1hZjlkLTQy"
-	  "YjQzYTRhMGNiZSIgSXNzdWVJbnN0YW50PSIyMDAyLTA5LTIwVDIzOjAwOjAwWiIgSXNzdWVy"
-	  "PSJzaGlicHJvZDAuaW50ZXJuZXQyLmVkdSIgTWFqb3JWZXJzaW9uPSIxIiBNaW5vclZlcnNp"
-	  "b249IjAiPjxDb25kaXRpb25zIE5vdEJlZm9yZT0iMjAwMi0wOS0xN1QwMjo1MDowMFoiIE5v"
-	  "dE9uT3JBZnRlcj0iMjAxMC0wOS0xOVQwNjozMDowMFoiPjxBdWRpZW5jZVJlc3RyaWN0aW9u"
-	  "Q29uZGl0aW9uPjxBdWRpZW5jZT5odHRwOi8vbWlkZGxld2FyZS5pbnRlcm5ldDIuZWR1L3No"
-	  "aWJib2xldGgvY2x1YnMvY2x1YnNoaWIvMjAwMi8wNS88L0F1ZGllbmNlPjwvQXVkaWVuY2VS"
-	  "ZXN0cmljdGlvbkNvbmRpdGlvbj48L0NvbmRpdGlvbnM+PEF1dGhlbnRpY2F0aW9uU3RhdGVt"
-	  "ZW50IEF1dGhlbnRpY2F0aW9uSW5zdGFudD0iMjAwMi0wOS0yMFQyMzowMDowMFoiIEF1dGhl"
-	  "bnRpY2F0aW9uTWV0aG9kPSJCYXNpYyI+PFN1YmplY3Q+PE5hbWVJZGVudGlmaWVyIE5hbWVR"
-	  "dWFsaWZpZXI9ImV4YW1wbGUuZWR1Ij40YzBmYjg2Yi01NjQwLTQ1ZTUtOTM3Ny1mNTJkNjhh"
-	  "ZDNiNjQ8L05hbWVJZGVudGlmaWVyPjxTdWJqZWN0Q29uZmlybWF0aW9uPjxDb25maXJtYXRp"
-	  "b25NZXRob2Q+dXJuOm9hc2lzOm5hbWVzOnRjOlNBTUw6MS4wOmNtOkJlYXJlcjwvQ29uZmly"
-	  "bWF0aW9uTWV0aG9kPjwvU3ViamVjdENvbmZpcm1hdGlvbj48L1N1YmplY3Q+PFN1YmplY3RM"
-	  "b2NhbGl0eSBJUEFkZHJlc3M9IjE4LjEwMS4xLjEyIj48L1N1YmplY3RMb2NhbGl0eT48QXV0"
-	  "aG9yaXR5QmluZGluZyBBdXRob3JpdHlLaW5kPSJzYW1scDpBdHRyaWJ1dGVRdWVyeSIgQmlu"
-	  "ZGluZz0idXJuOm9hc2lzOm5hbWVzOnRjOlNBTUw6MS4wOmJpbmRpbmdzOlNPQVAtYmluZGlu"
-	  "ZyIgTG9jYXRpb249Imh0dHBzOi8vc2hpYnByb2QwLmludGVybmV0Mi5lZHUvc2hpYmJvbGV0"
-	  "aC9BQSI+PC9BdXRob3JpdHlCaW5kaW5nPjwvQXV0aGVudGljYXRpb25TdGF0ZW1lbnQ+PC9B"
-	  "c3NlcnRpb24+PC9SZXNwb25zZT4K";
-#endif
-	
-	// process the post
-	string cookie;
-	RPCError* status = shire.sessionCreate(post, r->connection->remote_ip, cookie);
-
-	if (status->isError()) {
-	  ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
-			"shire_check_user() POST process failed (%d): %s",
-			status->status, status->error_msg.c_str());
-
-	  if (status->isRetryable()) {
-	    ap_log_rerror(APLOG_MARK,APLOG_INFO|APLOG_NOERRNO,r,
-			  "shire_check_user() Retrying POST by redirecting to WAYF");
-
-	    char* wayf=ap_pstrcat(r->pool,wayfLocation.c_str(),
-				  "?shire=",shire_location,
-				  "&target=",url_encode(r,target),NULL);
-	    ap_table_setn(r->headers_out,"Location",wayf);
-	    delete status;
-	    return REDIRECT;
-	  }
-
-	  // return this error to the user.
-	  markupProcessor.insert (*status);
-	  delete status;
-	  return shire_error_page (r, wayfError.c_str(), markupProcessor);
-	}
-	delete status;
-
-	ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
-		      "shire_check_user() POST process succeeded.  New cookie: %s",
-		      cookie.c_str());
-
-	// We've got a good session, set the cookie...
-	char * domain = NULL;
-	char * new_cookie = ap_psprintf(r->pool, "%s=%s; path=/%s%s",
-					shib_cookie.c_str(),
-					cookie.c_str(),
-					(domain ? "; domain=" : ""),
-					(domain ? domain : ""));
-
-	ap_table_setn(r->err_headers_out, "Set-Cookie", new_cookie);
-	ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
-		      "shire_check_user() Set cookie: %s", new_cookie);
-		    
-	// ... and redirect to the target
-	char* redir=ap_pstrcat(r->pool,url_encode(r,target),NULL);
-	ap_table_setn(r->headers_out, "Location", target);
-	return REDIRECT;
-
-      } catch (ShibTargetException &e) {
-	ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
-		      "shire_check_user(): %s", e.what());
-	
-	markupProcessor.insert ("errorType", "SHIRE Processing Error");
-	markupProcessor.insert ("errorText", e.what());
-	return shire_error_page (r, wayfError.c_str(), markupProcessor);
-      }
-
-      /**************************************************************************/
+      ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
+		    "shire_check_user: REQUEST FOR SHIRE!");
+      return SERVER_ERROR;
 
     } else {
       // Regular access to arbitrary resource...check AuthType
@@ -656,7 +482,191 @@ extern "C" int shire_check_user(request_rec* r)
     return SERVER_ERROR;
 }
 
+extern "C" int shire_post_handler (request_rec* r)
+{
+  ostrstream threadid;
+  threadid << "[" << getpid() << "] shire" << '\0';
+  saml::NDC ndc(threadid.str());
+
+  ShibINI& ini = g_szConfig->getINI();
+  ShibMLP markupProcessor;
+
+  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
+		"shire_post_handler() ENTER");
+
+  const char* targeturl=get_target(r,ap_construct_url(r->pool,r->unparsed_uri,r));
+ 
+  const char * shire_location = get_shire_location(r,targeturl,true);
+  if (!shire_location) return SERVER_ERROR;
+  string shire_url = get_shire_location(r,targeturl,false);
+
+  const char* serverName = get_service_name (r);
+  string tag;
+  bool has_tag = ini.get_tag (serverName, "checkIPAddress", true, &tag);
+  SHIREConfig config;
+  config.checkIPAddress = (has_tag ? ShibINI::boolean (tag) : false);
+
+  string shib_cookie;
+  if (! ini.get_tag (serverName, "cookieName", true, &shib_cookie)) {
+    ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
+		  "shire_check_user: no cookieName configuration for %s",
+		  serverName);
+    return SERVER_ERROR;
+  }
+
+  string wayfLocation;
+  if (! ini.get_tag (serverName, "wayfURL", true, &wayfLocation)) {
+    ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
+		  "shire_check_user: no wayfURL configuration for %s",
+		  serverName);
+    return SERVER_ERROR;
+  }
+
+  string wayfError;
+  if (! ini.get_tag (serverName, "wayfError", true, &wayfError)) {
+    ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
+		  "shire_check_user: no wayfError configuration for %s",
+		  serverName);
+    return SERVER_ERROR;
+  }
+
+  ini.get_tag (serverName, "supportContact", true, &tag);
+  markupProcessor.insert ("supportContact", has_tag ? tag : "");
+  has_tag = ini.get_tag (serverName, "logoLocation", true, &tag);
+  markupProcessor.insert ("logoLocation", has_tag ? tag : "");
+  markupProcessor.insert ("requestURL", targeturl);
+  
+  SHIRE shire(rpc_handle, config, shire_url);
+
+  // Process SHIRE POST
+
+  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
+		"shire_post_handler() Beginning SHIRE POST processing");
+      
+  try {
+    string sslonly;
+    if (! ini.get_tag (serverName, "shireSSLOnly", true, &sslonly))
+      ap_log_rerror(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,r,
+		    "shire_post_handler: no shireSSLOnly configuration");
+    
+    // Make sure this is SSL, if it should be
+    if (ShibINI::boolean(sslonly) && strcmp(ap_http_method(r),"https"))
+      throw ShibTargetException (SHIBRPC_OK,
+				 "blocked non-SSL access to SHIRE POST processor");
+
+    // Make sure this is a POST
+    if (strcasecmp (r->method, "POST"))
+      throw ShibTargetException (SHIBRPC_OK,
+				 "blocked non-POST to SHIRE POST processor");
+
+    // Sure sure this POST is an appropriate content type
+    const char *ct = ap_table_get (r->headers_in, "Content-type");
+    if (!ct || strcasecmp (ct, "application/x-www-form-urlencoded"))
+      throw ShibTargetException (SHIBRPC_OK,
+				 ap_psprintf(r->pool,
+			     "blocked bad content-type to SHIRE POST processor: %s",
+					     (ct ? ct : "")));
+	
+    // Make sure the "bytes sent" is a reasonable number
+    if (r->bytes_sent > 1024*1024) // 1MB?
+      throw ShibTargetException (SHIBRPC_OK,
+				 "blocked too-large a post to SHIRE POST processor");
+
+    // Read the posted data
+    ApacheRequest *ap_req = ApacheRequest_new(r);
+    int err = ApacheRequest_parse(ap_req);
+    if (err != OK)
+      throw ShibTargetException (SHIBRPC_OK,
+				 ap_psprintf(r->pool,
+			     "ApacheRequest_parse() failed with %d.", err));
+
+    
+    // Make sure the target parameter exists
+    const char *target = ApacheRequest_param(ap_req, "TARGET");
+    if (!target || *target == '\0')
+      // invalid post
+      throw ShibTargetException (SHIBRPC_OK,
+				 "SHIRE POST failed to find TARGET");
+
+    // Make sure the SAML Response parameter exists
+    const char *post = ApacheRequest_param(ap_req, "SAMLResponse");
+    if (!post || *post == '\0')
+      // invalid post
+      throw ShibTargetException (SHIBRPC_OK,
+				 "SHIRE POST failed to find SAMLResponse");
+
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
+		  "shire_post_handler() Processing POST for target: %s", target);
+
+    // process the post
+    string cookie;
+    RPCError* status = shire.sessionCreate(post, r->connection->remote_ip, cookie);
+
+    if (status->isError()) {
+      ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
+		    "shire_post_handler() POST process failed (%d): %s",
+		    status->status, status->error_msg.c_str());
+
+      if (status->isRetryable()) {
+	ap_log_rerror(APLOG_MARK,APLOG_INFO|APLOG_NOERRNO,r,
+		      "shire_post_handler() Retrying POST by redirecting to WAYF");
+	
+	char* wayf=ap_pstrcat(r->pool,wayfLocation.c_str(),
+			      "?shire=",shire_location,
+			      "&target=",url_encode(r,target),NULL);
+	ap_table_setn(r->headers_out,"Location",wayf);
+	delete status;
+	return REDIRECT;
+      }
+
+      // return this error to the user.
+      markupProcessor.insert (*status);
+      delete status;
+      return shire_error_page (r, wayfError.c_str(), markupProcessor);
+    }
+    delete status;
+
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
+		  "shire_post_handler() POST process succeeded.  New cookie: %s",
+		  cookie.c_str());
+
+    // We've got a good session, set the cookie...
+    char * domain = NULL;
+    char * new_cookie = ap_psprintf(r->pool, "%s=%s; path=/%s%s",
+				    shib_cookie.c_str(),
+				    cookie.c_str(),
+				    (domain ? "; domain=" : ""),
+				    (domain ? domain : ""));
+    
+    ap_table_setn(r->err_headers_out, "Set-Cookie", new_cookie);
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
+		  "shire_post_handler() Set cookie: %s", new_cookie);
+		    
+    // ... and redirect to the target
+    char* redir=ap_pstrcat(r->pool,url_encode(r,target),NULL);
+    ap_table_setn(r->headers_out, "Location", target);
+    return REDIRECT;
+
+  } catch (ShibTargetException &e) {
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,r,
+		  "shire_post_handler(): %s", e.what());
+	
+    markupProcessor.insert ("errorType", "SHIRE Processing Error");
+    markupProcessor.insert ("errorText", e.what());
+    return shire_error_page (r, wayfError.c_str(), markupProcessor);
+  }
+
+  ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,r,
+		"shire_post_handler() server error");
+  return SERVER_ERROR;
+}
+
 extern "C"{
+handler_rec shire_handlers[] = {
+  { "shib-shire-post", shire_post_handler },
+  { NULL }
+};
+
 module MODULE_VAR_EXPORT shire_module = {
     STANDARD_MODULE_STUFF,
     NULL,			/* initializer */
@@ -665,7 +675,7 @@ module MODULE_VAR_EXPORT shire_module = {
     create_shire_server_config,	/* server config */
     merge_shire_server_config,	/* merge server config */
     shire_cmds,			/* command table */
-    NULL,			/* handlers */
+    shire_handlers,		/* handlers */
     NULL,			/* filename translation */
     shire_check_user,		/* check_user_id */
     NULL,			/* check auth */
