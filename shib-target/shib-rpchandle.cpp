@@ -85,7 +85,7 @@ CLIENT * RPCHandle::connect(void)
 
   if (shib_sock_create (&sock) != 0) {
     m_priv->log->error ("Cannot create socket");
-    throw new ShibTargetException (-1, "Cannot create socket");
+    throw new ShibTargetException (SHIBRPC_UNKNOWN_ERROR, "Cannot create socket");
   }
 
   bool connected = false;
@@ -93,7 +93,7 @@ CLIENT * RPCHandle::connect(void)
 
   for (int i = num_tries-1; i >= 0; i--) {
     if (shib_sock_connect (sock, m_priv->m_shar) == 0) {
-      connected = tru;
+      connected = true;
       break;
     }
 
@@ -107,7 +107,7 @@ CLIENT * RPCHandle::connect(void)
   if (!connected) {
     m_priv->log->crit ("SHAR Unavailable..  Failing.");
     close (sock);
-    throw new ShibTargetException (-1, "Cannot connect to SHAR");
+    throw new ShibTargetException (SHIBRPC_UNKNOWN_ERROR, "Cannot connect to SHAR");
   }
 
   CLIENT *clnt = shibrpc_client_create (sock, m_priv->m_program, m_priv->m_version);
@@ -115,7 +115,7 @@ CLIENT * RPCHandle::connect(void)
     const char * rpcerror = clnt_spcreateerror ("RPCHandle::connect");
     m_priv->log->error ("RPC failed: %s", rpcerror);
     close (sock);
-    throw new ShibTargetException (-1, rpcerror);
+    throw new ShibTargetException (SHIBRPC_UNKNOWN_ERROR, rpcerror);
   }
 
   m_priv->m_clnt = clnt;
