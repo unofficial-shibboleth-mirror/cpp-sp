@@ -196,6 +196,11 @@ const XMLCh XML::Literals::MemorySessionCache[] =
   chLatin_C, chLatin_a, chLatin_c, chLatin_h, chLatin_e, chNull
 };
 
+const XMLCh XML::Literals::MetadataProvider[] =
+{ chLatin_M, chLatin_e, chLatin_t, chLatin_a, chLatin_d, chLatin_a, chLatin_t, chLatin_a,
+  chLatin_P, chLatin_r, chLatin_o, chLatin_v, chLatin_i, chLatin_d, chLatin_e, chLatin_r, chNull
+};
+
 const XMLCh XML::Literals::MySQLReplayCache[] =
 { chLatin_M, chLatin_y, chLatin_S, chLatin_Q, chLatin_L,
   chLatin_R, chLatin_e, chLatin_p, chLatin_l, chLatin_a, chLatin_y,
@@ -227,11 +232,6 @@ const XMLCh XML::Literals::RequestMap[] =
 
 const XMLCh XML::Literals::RequestMapProvider[] =
 { chLatin_R, chLatin_e, chLatin_q, chLatin_u, chLatin_e, chLatin_s, chLatin_t, chLatin_M, chLatin_a, chLatin_p,
-  chLatin_P, chLatin_r, chLatin_o, chLatin_v, chLatin_i, chLatin_d, chLatin_e, chLatin_r, chNull
-};
-
-const XMLCh XML::Literals::RevocationProvider[] =
-{ chLatin_R, chLatin_e, chLatin_v, chLatin_o, chLatin_c, chLatin_a, chLatin_t, chLatin_i, chLatin_o, chLatin_n,
   chLatin_P, chLatin_r, chLatin_o, chLatin_v, chLatin_i, chLatin_d, chLatin_e, chLatin_r, chNull
 };
 

@@ -264,6 +264,7 @@ namespace shibtarget {
             static const XMLCh Local[];
             static const XMLCh logger[];
             static const XMLCh MemorySessionCache[];
+            static const XMLCh MetadataProvider[];
             static const XMLCh MySQLReplayCache[];
             static const XMLCh MySQLSessionCache[];
             static const XMLCh name[];
@@ -277,7 +278,6 @@ namespace shibtarget {
             static const XMLCh RequestMap[];
             static const XMLCh RequestMapProvider[];
             static const XMLCh require[];
-            static const XMLCh RevocationProvider[];
             static const XMLCh Rule[];
             static const XMLCh SessionCache[];
             static const XMLCh SessionInitiator[];
