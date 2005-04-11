@@ -92,7 +92,6 @@ namespace shibtarget {
         Iterator<IAAP*> getAAPProviders() const;
         Iterator<IMetadata*> getMetadataProviders() const;
         Iterator<ITrust*> getTrustProviders() const;
-        Iterator<IRevocation*> getRevocationProviders() const;
         Iterator<const XMLCh*> getAudiences() const;
         const IPropertySet* getCredentialUse(const IEntityDescriptor* provider) const;
         const SAMLBrowserProfile* getBrowserProfile() const {return m_profile;}
@@ -117,7 +116,6 @@ namespace shibtarget {
         vector<IAAP*> m_aaps;
         vector<IMetadata*> m_metadatas;
         vector<ITrust*> m_trusts;
-        vector<IRevocation*> m_revocations;
         vector<const XMLCh*> m_audiences;
         ShibBrowserProfile* m_profile;
         SAMLBinding* m_binding;
@@ -493,18 +491,32 @@ XMLApplication::XMLApplication(
         }
 
         if (conf.isEnabled(ShibTargetConfig::Metadata)) {
-            nlist=e->getElementsByTagNameNS(ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(FederationProvider));
+            nlist=e->getElementsByTagNameNS(ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(MetadataProvider));
             for (i=0; nlist && i<nlist->getLength(); i++) {
                 auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
-                log.info("building federation/metadata provider of type %s...",type.get());
+                log.info("building metadata provider of type %s...",type.get());
                 IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
                 IMetadata* md=dynamic_cast<IMetadata*>(plugin);
                 if (md)
                     m_metadatas.push_back(md);
                 else {
                     delete plugin;
-                    log.fatal("plugin was not a federation/metadata provider");
-                    throw UnsupportedExtensionException("plugin was not a federation/metadata provider");
+                    log.fatal("plugin was not a metadata provider");
+                    throw UnsupportedExtensionException("plugin was not a metadata provider");
+                }
+            }
+            nlist=e->getElementsByTagNameNS(ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(FederationProvider));
+            for (i=0; nlist && i<nlist->getLength(); i++) {
+                auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
+                log.info("building metadata provider of type %s...",type.get());
+                IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
+                IMetadata* md=dynamic_cast<IMetadata*>(plugin);
+                if (md)
+                    m_metadatas.push_back(md);
+                else {
+                    delete plugin;
+                    log.fatal("plugin was not a metadata provider");
+                    throw UnsupportedExtensionException("plugin was not a metadata provider");
                 }
             }
         }
@@ -522,20 +534,6 @@ XMLApplication::XMLApplication(
                     delete plugin;
                     log.fatal("plugin was not a trust provider");
                     throw UnsupportedExtensionException("plugin was not a trust provider");
-                }
-            }
-            nlist=e->getElementsByTagNameNS(ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(RevocationProvider));
-            for (i=0; nlist && i<nlist->getLength(); i++) {
-                auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
-                log.info("building revocation provider of type %s...",type.get());
-                IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
-                IRevocation* rev=dynamic_cast<IRevocation*>(plugin);
-                if (rev)
-                    m_revocations.push_back(rev);
-                else {
-                    delete plugin;
-                    log.fatal("plugin was not a revocation provider");
-                    throw UnsupportedExtensionException("plugin was not a revocation provider");
                 }
             }
         }
@@ -558,11 +556,9 @@ XMLApplication::XMLApplication(
             // Really finally, build local browser profile and binding objects.
             m_profile=new ShibBrowserProfile(
                 getMetadataProviders(),
-                getRevocationProviders(),
                 getTrustProviders()
                 );
             m_bindingHook=new ShibHTTPHook(
-                getRevocationProviders(),
                 getTrustProviders(),
                 creds
                 );
@@ -621,9 +617,6 @@ void XMLApplication::cleanup()
     Iterator<ITrust*> l(m_trusts);
     while (l.hasNext())
         delete l.next();
-    Iterator<IRevocation*> m(m_revocations);
-    while (m.hasNext())
-        delete m.next();
 }
 
 short XMLApplication::acceptNode(const DOMNode* node) const
@@ -641,7 +634,6 @@ short XMLApplication::acceptNode(const DOMNode* node) const
         !XMLString::compareString(name,SHIBT_L(CredentialUse)) ||
         !XMLString::compareString(name,SHIBT_L(RelyingParty)) ||
         !XMLString::compareString(name,SHIBT_L(FederationProvider)) ||
-        !XMLString::compareString(name,SHIBT_L(RevocationProvider)) ||
         !XMLString::compareString(name,SHIBT_L(TrustProvider)))
         return FILTER_REJECT;
 
@@ -716,11 +708,6 @@ Iterator<IMetadata*> XMLApplication::getMetadataProviders() const
 Iterator<ITrust*> XMLApplication::getTrustProviders() const
 {
     return (m_trusts.empty() && m_base) ? m_base->getTrustProviders() : m_trusts;
-}
-
-Iterator<IRevocation*> XMLApplication::getRevocationProviders() const
-{
-    return (m_revocations.empty() && m_base) ? m_base->getRevocationProviders() : m_revocations;
 }
 
 Iterator<const XMLCh*> XMLApplication::getAudiences() const
