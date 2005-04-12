@@ -647,7 +647,7 @@ bool XMLTrust::validate(const saml::SAMLSignedObject& token, const IRoleDescript
             // Any inline KeyInfo should ostensibly resolve to a key we can try.
             Iterator<KeyInfoResolver*> resolvers(m_resolvers);
             while (resolvers.hasNext()) {
-                XSECCryptoKey* key=((XSECKeyInfoResolver*)resolvers.next())->resolveKey(KIL);
+                XSECCryptoKey* key=((XSECKeyInfoResolver*)*resolvers.next())->resolveKey(KIL);
                 if (key) {
                     log.debug("resolved key, trying it...");
                     try {
