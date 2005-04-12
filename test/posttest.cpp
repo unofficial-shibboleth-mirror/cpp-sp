@@ -101,7 +101,7 @@ int main(int argc,char* argv[])
         Metadata m(sites);
 
         auto_ptr<XMLCh> recip(XMLString::transcode("https://shib2.internet2.edu/shib/SHIRE"));
-        ShibBrowserProfile p (sites,EMPTY(IRevocation*),EMPTY(ITrust*));
+        ShibBrowserProfile p (sites,EMPTY(ITrust*));
 
         char ch;
         string buf;
