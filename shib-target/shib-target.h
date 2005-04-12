@@ -137,7 +137,6 @@ namespace shibtarget {
         virtual saml::Iterator<shibboleth::IAAP*> getAAPProviders() const=0;
         virtual saml::Iterator<shibboleth::IMetadata*> getMetadataProviders() const=0;
         virtual saml::Iterator<shibboleth::ITrust*> getTrustProviders() const=0;
-        virtual saml::Iterator<shibboleth::IRevocation*> getRevocationProviders() const=0;
         virtual saml::Iterator<const XMLCh*> getAudiences() const=0;
         virtual const IPropertySet* getCredentialUse(const shibboleth::IEntityDescriptor* provider) const=0;
 

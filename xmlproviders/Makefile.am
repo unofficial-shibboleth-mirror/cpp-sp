@@ -18,7 +18,6 @@ xmlproviders_la_SOURCES = \
 	XMLCredentials.cpp \
 	XMLMetadata.cpp \
 	XMLProviders.cpp \
-	XMLRevocation.cpp \
 	XMLTrust.cpp
 
 

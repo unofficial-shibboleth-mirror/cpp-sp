@@ -127,50 +127,21 @@ Metadata::~Metadata()
         m_mapper->unlock();
 }
 
-Iterator<void*> Revocation::getRevocationLists(const IEntityDescriptor* provider, const IRoleDescriptor* role)
-{
-    if (m_mapper) {
-        m_mapper->unlock();
-        m_mapper=NULL;
-    }
-    m_revocations.reset();
-    while (m_revocations.hasNext()) {
-        IRevocation* i=m_revocations.next();
-        i->lock();
-        Iterator<void*> ret=i->getRevocationLists(provider,role);
-        if (ret.size()) {
-            m_mapper=i;
-            return ret;
-        }
-        i->unlock();
-    }
-    return EMPTY(void*);
-}
-
-Revocation::~Revocation()
-{
-    if (m_mapper)
-        m_mapper->unlock();
-}
-
-bool Trust::validate(
-    const Iterator<IRevocation*>& revocations,
-    const IRoleDescriptor* role, const SAMLSignedObject& token,
-    const Iterator<IMetadata*>& metadatas) const
+bool Trust::validate(const SAMLSignedObject& token, const IRoleDescriptor* role) const
 {
     m_trusts.reset();
     while (m_trusts.hasNext()) {
-        if (m_trusts.next()->validate(revocations,role,token,metadatas))
+        if (m_trusts.next()->validate(token,role))
             return true;
     }
     return false;
 }
 
-bool Trust::attach(const Iterator<IRevocation*>& revocations, const IRoleDescriptor* role, void* ctx) const
+bool Trust::validate(void* certEE, const Iterator<void*>& certChain, const IRoleDescriptor* role, bool checkName) const
 {
     m_trusts.reset();
     while (m_trusts.hasNext()) {
-        if (m_trusts.next()->attach(revocations,role,ctx))
+        if (m_trusts.next()->validate(certEE,certChain,role,checkName))
             return true;
     }
     return false;

@@ -201,7 +201,7 @@ bool STConfig::init(const char* schemadir, const char* config)
         m_rpcpool = new RPCHandlePool;
     }
     catch (SAMLException& ex) {
-        log.fatalStream() << "caught exception while loading/initializing configuration: " << ex.what() << CategoryStream::ENDLINE;
+        log.fatal("caught exception while loading/initializing configuration: %s",ex.what());
         shutdown();
         return false;
     }

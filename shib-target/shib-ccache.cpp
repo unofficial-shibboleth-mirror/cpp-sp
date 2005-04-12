@@ -757,7 +757,7 @@ pair<SAMLResponse*,SAMLResponse*> InternalCCacheEntry::getNewResponse()
                     continue;
                 }
                 auto_ptr<SAMLResponse> r(binding->send(ep->getLocation(), *(req.get()), &ctx));
-                if (r->isSigned() && !t.validate(application->getRevocationProviders(),AA,*r))
+                if (r->isSigned() && !t.validate(*r,AA))
                     throw TrustException("CCacheEntry::getNewResponse() unable to verify signed response");
                 response = r.release();
             }
@@ -830,7 +830,7 @@ SAMLResponse* InternalCCacheEntry::filter(SAMLResponse* r, const IApplication* a
             continue;
         
         // Check token signature.
-        if (assertions[i]->isSigned() && !t.validate(application->getRevocationProviders(),source,*(assertions[i]))) {
+        if (assertions[i]->isSigned() && !t.validate(*(assertions[i]),source)) {
             log->warn("signed assertion failed to validate, removing it");
             r->removeAssertion(i);
             continue;

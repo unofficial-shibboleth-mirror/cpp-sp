@@ -76,15 +76,19 @@
 
 #define SHIB_LOGCAT "Shibboleth"
 
-namespace shibboleth
-{
-    // OpenSSL Utilities
+namespace shibboleth {
+    class BasicTrust : public ITrust
+    {
+    public:
+        BasicTrust(const DOMElement* e);
+        ~BasicTrust();
+
+        bool validate(void* certEE, const saml::Iterator<void*>& certChain, const IRoleDescriptor* role, bool checkName=true);
+        bool validate(const saml::SAMLSignedObject& token, const IRoleDescriptor* role);
     
-    // Custom metadata-driven SSL context callback
-    bool ssl_ctx_callback(void* ssl_ctx, void* userptr);
-    
-    // Log errors from OpenSSL error queue
-    void log_openssl();
+    protected:
+        std::vector<saml::KeyInfoResolver*> m_resolvers;
+    };
 }
 
 #endif

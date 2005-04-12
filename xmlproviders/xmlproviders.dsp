@@ -129,10 +129,6 @@ SOURCE=.\xmlproviders.rc
 # End Source File
 # Begin Source File
 
-SOURCE=.\XMLRevocation.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\XMLTrust.cpp
 # End Source File
 # End Target

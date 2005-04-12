@@ -123,8 +123,6 @@ public:
     // ds:KeyInfo RetrievalMethods
     static const XMLCh XMLSIG_RETMETHOD_RAWX509[];  // http://www.w3.org/2000/09/xmldsig#rawX509Certificate
     static const XMLCh XMLSIG_RETMETHOD_RAWX509CRL[]; // http://www.w3.org/2000/09/xmldsig-more#rawX509CRL
-    static const XMLCh SHIB_RETMETHOD_PEMX509[];    // urn:mace:shibboleth:RetrievalMethod:pemX509Certificate
-    static const XMLCh SHIB_RETMETHOD_PEMX509CRL[]; // urn:mace:shibboleth:RetrievalMethod:pemX509CRL
 
     struct Literals
     {

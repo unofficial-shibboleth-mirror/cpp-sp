@@ -157,7 +157,7 @@ int main(int argc,char* argv[])
                     continue;
                 }
                 auto_ptr<SAMLResponse> r(binding->send(ep->getLocation(), *(req.get()), &ctx));
-                if (r->isSigned() && !t.validate(app->getRevocationProviders(),AA,*r))
+                if (r->isSigned() && !t.validate(*r,AA))
                     throw TrustException("unable to verify signed response");
                 response = r.release();
             }
@@ -238,10 +238,6 @@ int main(int argc,char* argv[])
     catch(XMLException& e)
     {
         cerr << "caught an XML exception: "; xmlout(cerr,e.getMessage()); cerr << endl;
-    }
-    catch(...)
-    {
-        cerr << "caught an unknown exception" << endl;
     }
 
     conf.shutdown();

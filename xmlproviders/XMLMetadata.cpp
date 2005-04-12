@@ -415,6 +415,8 @@ namespace {
             Iterator<const IKeyAuthority*> getKeyAuthorities() const {return m_keyauths;}
             const DOMElement* getElement() const {return m_root;}
         
+            // Used internally
+            time_t getValidUntil() const {return m_validUntil;}
         private:
             const DOMElement* m_root;
             const IEntitiesDescriptor* m_parent;
@@ -431,8 +433,10 @@ namespace {
         ~XMLMetadataImpl();
 
         typedef multimap<string,const EntityDescriptor*> sitemap_t;
+        typedef multimap<string,const EntitiesDescriptor*> groupmap_t;
         sitemap_t m_sites;
         sitemap_t m_sources;
+        groupmap_t m_groups;
         EntityDescriptor* m_rootProvider;
         EntitiesDescriptor* m_rootGroup;
     };
@@ -472,6 +476,8 @@ namespace {
         const IEntityDescriptor* lookup(const char* providerId, bool strict=true) const;
         const IEntityDescriptor* lookup(const XMLCh* providerId, bool strict=true) const;
         const IEntityDescriptor* lookup(const saml::SAMLArtifact* artifact) const;
+        const IEntitiesDescriptor* lookupGroup(const char* name, bool strict=true) const;
+        const IEntitiesDescriptor* lookupGroup(const XMLCh* name, bool strict=true) const;
         pair<const IEntitiesDescriptor*,const IEntityDescriptor*> getRoot() const;
         
     protected:
@@ -633,19 +639,14 @@ XMLMetadataImpl::KeyDescriptor::KeyDescriptor(const DOMElement* e) : m_root(e), 
 
     // We let XMLSec hack through anything it can. This should evolve over time, or we can
     // plug in our own KeyResolver later...
-    DOMElement* child=saml::XML::getFirstChildElement(e);
-    while (child) {
-        try {
-            if (!m_klist->addXMLKeyInfo(child)) {
-                Category::getInstance(XMLPROVIDERS_LOGCAT".Metadata").warn(
-                    "skipped unsupported ds:KeyInfo child element");
-            }
-        }
-        catch (XSECCryptoException& xe) {
-            Category::getInstance(XMLPROVIDERS_LOGCAT".Metadata").error(
-                "unable to process ds:KeyInfo child element: %s",xe.getMsg());
-        }
-        child=saml::XML::getNextSiblingElement(child);
+    try {
+        if (!m_klist->loadListFromXML(const_cast<DOMElement*>(e)))
+            Category::getInstance(XMLPROVIDERS_LOGCAT".Metadata").warn(
+                "skipping ds:KeyInfo element containing unsupported children"
+                );
+    }
+    catch (XSECCryptoException& xe) {
+        Category::getInstance(XMLPROVIDERS_LOGCAT".Metadata").error("unable to process ds:KeyInfo element: %s",xe.getMsg());
     }
     
     // Check for encryption methods.
@@ -1017,7 +1018,7 @@ XMLMetadataImpl::EntityDescriptor::EntityDescriptor(
         DOMElement* child=saml::XML::getFirstChildElement(e);
         while (child) {
             // Process the various kinds of children that we care about...
-            if (saml::XML::isElementNamed(e,::XML::SAML2META_NS,SHIB_L(Extensions))) {
+            if (saml::XML::isElementNamed(child,::XML::SAML2META_NS,SHIB_L(Extensions))) {
                 DOMElement* ext = saml::XML::getFirstChildElement(child,::XML::SHIBMETA_NS,SHIB_L(KeyAuthority));
                 while (ext) {
                     m_keyauths.push_back(new KeyAuthority(ext));
@@ -1168,6 +1169,9 @@ XMLMetadataImpl::EntitiesDescriptor::EntitiesDescriptor(
             e=saml::XML::getNextSiblingElement(e);
         }
     }
+
+    auto_ptr_char n(m_name);
+    wrapper->m_groups.insert(pair<string,const EntitiesDescriptor*>(n.get(),this));
 }
 
 XMLMetadataImpl::EntitiesDescriptor::~EntitiesDescriptor()
@@ -1286,6 +1290,34 @@ const IEntityDescriptor* XMLMetadata::lookup(const SAMLArtifact* artifact) const
     }
     
     return NULL;
+}
+
+const IEntitiesDescriptor* XMLMetadata::lookupGroup(const char* name, bool strict) const
+{
+    if (strict && m_exclusions && m_set.find(name)!=m_set.end())
+        return NULL;
+    else if (strict && !m_exclusions && m_set.find(name)==m_set.end())
+        return NULL;
+        
+    XMLMetadataImpl* impl=dynamic_cast<XMLMetadataImpl*>(getImplementation());
+    pair<XMLMetadataImpl::groupmap_t::const_iterator,XMLMetadataImpl::groupmap_t::const_iterator> range=
+        impl->m_groups.equal_range(name);
+
+    time_t now=time(NULL);
+    for (XMLMetadataImpl::groupmap_t::const_iterator i=range.first; i!=range.second; i++)
+        if (now < i->second->getValidUntil())
+            return i->second;
+    
+    if (!strict && range.first!=range.second)
+        return range.first->second;
+        
+    return NULL;
+}
+
+const IEntitiesDescriptor* XMLMetadata::lookupGroup(const XMLCh* name, bool strict) const
+{
+    auto_ptr_char temp(name);
+    return lookupGroup(temp.get(),strict);
 }
 
 pair<const IEntitiesDescriptor*,const IEntityDescriptor*> XMLMetadata::getRoot() const

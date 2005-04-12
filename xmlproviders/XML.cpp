@@ -166,23 +166,6 @@ const XMLCh XML::XMLSIG_RETMETHOD_RAWX509CRL[] = // // http://www.w3.org/2000/09
   chLatin_r, chLatin_a, chLatin_w, chLatin_X, chDigit_5, chDigit_0, chDigit_9, chLatin_C, chLatin_R, chLatin_L, chNull
 };
 
-const XMLCh XML::SHIB_RETMETHOD_PEMX509[] = // urn:mace:shibboleth:RetrievalMethod:pemX509Certificate
-{ chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
-  chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
-  chLatin_R, chLatin_e, chLatin_t, chLatin_r, chLatin_i, chLatin_e, chLatin_v, chLatin_a, chLatin_l,
-  chLatin_M, chLatin_e, chLatin_t, chLatin_h, chLatin_o, chLatin_d, chColon,
-  chLatin_p, chLatin_e, chLatin_m, chLatin_X, chDigit_5, chDigit_0, chDigit_9,
-    chLatin_C, chLatin_e, chLatin_r, chLatin_t, chLatin_i, chLatin_f, chLatin_i, chLatin_c, chLatin_a, chLatin_t, chLatin_e, chNull
-};
-
-const XMLCh XML::SHIB_RETMETHOD_PEMX509CRL[] = // urn:mace:shibboleth:RetrievalMethod:pemX509CRL
-{ chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
-  chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
-  chLatin_R, chLatin_e, chLatin_t, chLatin_r, chLatin_i, chLatin_e, chLatin_v, chLatin_a, chLatin_l,
-  chLatin_M, chLatin_e, chLatin_t, chLatin_h, chLatin_o, chLatin_d, chColon,
-  chLatin_p, chLatin_e, chLatin_m, chLatin_X, chDigit_5, chDigit_0, chDigit_9, chLatin_C, chLatin_R, chLatin_L, chNull
-};
-
 // Shibboleth vocabulary literals
 
 const XMLCh XML::Literals::AttributeAuthority[] =

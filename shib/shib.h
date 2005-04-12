@@ -291,14 +291,10 @@ namespace shibboleth
         virtual const IEntityDescriptor* lookup(const char* id, bool strict=true) const=0;
         virtual const IEntityDescriptor* lookup(const XMLCh* id, bool strict=true) const=0;
         virtual const IEntityDescriptor* lookup(const saml::SAMLArtifact* artifact) const=0;
+        virtual const IEntitiesDescriptor* lookupGroup(const char* name, bool strict=true) const=0;
+        virtual const IEntitiesDescriptor* lookupGroup(const XMLCh* name, bool strict=true) const=0;
         virtual std::pair<const IEntitiesDescriptor*,const IEntityDescriptor*> getRoot() const=0;
         virtual ~IMetadata() {}
-    };
-
-    struct SHIB_EXPORTS IRevocation : public virtual saml::ILockable, public virtual saml::IPlugIn
-    {
-        virtual saml::Iterator<void*> getRevocationLists(const IEntityDescriptor* provider, const IRoleDescriptor* role=NULL) const=0;
-        virtual ~IRevocation() {}
     };
 
     // Trust interface hides *all* details of signature and SSL validation.
@@ -306,12 +302,20 @@ namespace shibboleth
     
     struct SHIB_EXPORTS ITrust : public virtual saml::IPlugIn
     {
+        // Performs certificate validation processing of an untrusted certificates
+        // using a library-specific representation, in this case an OpenSSL X509*
         virtual bool validate(
-            const saml::Iterator<IRevocation*>& revocations,
-            const IRoleDescriptor* role, const saml::SAMLSignedObject& token,
-            const saml::Iterator<IMetadata*>& metadatas=EMPTY(IMetadata*)
+            void* certEE,
+            const saml::Iterator<void*>& certChain,
+            const IRoleDescriptor* role,
+            bool checkName=true
             )=0;
-        virtual bool attach(const saml::Iterator<IRevocation*>& revocations, const IRoleDescriptor* role, void* ctx)=0;
+
+        // Validates signed SAML messages and assertions sent by an entity acting in a specific role.
+        // It may use the previous function if the token cannot be validated directly and certificates
+        // are included in the signature.
+        virtual bool validate(const saml::SAMLSignedObject& token, const IRoleDescriptor* role)=0;
+        
         virtual ~ITrust() {}
     };
 
@@ -372,8 +376,6 @@ namespace shibboleth
     template class SHIB_EXPORTS saml::ArrayIterator<IMetadata*>;
     template class SHIB_EXPORTS saml::Iterator<ITrust*>;
     template class SHIB_EXPORTS saml::ArrayIterator<ITrust*>;
-    template class SHIB_EXPORTS saml::Iterator<IRevocation*>;
-    template class SHIB_EXPORTS saml::ArrayIterator<IRevocation*>;
     template class SHIB_EXPORTS saml::Iterator<ICredentials*>;
     template class SHIB_EXPORTS saml::ArrayIterator<ICredentials*>;
     template class SHIB_EXPORTS saml::Iterator<IAAP*>;
@@ -411,21 +413,6 @@ namespace shibboleth
         const saml::Iterator<IMetadata*>& m_metadatas;
     };
 
-    class SHIB_EXPORTS Revocation
-    {
-    public:
-        Revocation(const saml::Iterator<IRevocation*>& revocations) : m_revocations(revocations), m_mapper(NULL) {}
-        ~Revocation();
-
-        saml::Iterator<void*> getRevocationLists(const IEntityDescriptor* provider, const IRoleDescriptor* role=NULL);
-
-    private:
-        Revocation(const Revocation&);
-        void operator=(const Revocation&);
-        IRevocation* m_mapper;
-        const saml::Iterator<IRevocation*>& m_revocations;
-    };
-
     class SHIB_EXPORTS Trust
     {
     public:
@@ -433,11 +420,12 @@ namespace shibboleth
         ~Trust() {}
 
         bool validate(
-            const saml::Iterator<IRevocation*>& revocations,
-            const IRoleDescriptor* role, const saml::SAMLSignedObject& token,
-            const saml::Iterator<IMetadata*>& metadatas=EMPTY(IMetadata*)
+            void* certEE,
+            const saml::Iterator<void*>& certChain,
+            const IRoleDescriptor* role,
+            bool checkName=true
             ) const;
-        bool attach(const saml::Iterator<IRevocation*>& revocations, const IRoleDescriptor* role, void* ctx) const;
+        bool validate(const saml::SAMLSignedObject& token, const IRoleDescriptor* role) const;
         
     private:
         Trust(const Trust&);
@@ -486,7 +474,6 @@ namespace shibboleth
     public:
         ShibBrowserProfile(
             const saml::Iterator<IMetadata*>& metadatas=EMPTY(IMetadata*),
-            const saml::Iterator<IRevocation*>& revocations=EMPTY(IRevocation*),
             const saml::Iterator<ITrust*>& trusts=EMPTY(ITrust*)
             );
         virtual ~ShibBrowserProfile();
@@ -503,7 +490,6 @@ namespace shibboleth
     private:
         saml::SAMLBrowserProfile* m_profile;
         saml::Iterator<IMetadata*> m_metadatas;
-        saml::Iterator<IRevocation*> m_revocations;
         saml::Iterator<ITrust*> m_trusts;
     };
 
@@ -514,11 +500,8 @@ namespace shibboleth
     class SHIB_EXPORTS ShibHTTPHook : virtual public saml::SAMLSOAPHTTPBinding::HTTPHook
     {
     public:
-        ShibHTTPHook(
-            const saml::Iterator<IRevocation*>& revocations,
-            const saml::Iterator<ITrust*>& trusts,
-            const saml::Iterator<ICredentials*>& creds
-            ) : m_revocations(revocations), m_trusts(trusts), m_creds(creds) {}
+        ShibHTTPHook(const saml::Iterator<ITrust*>& trusts, const saml::Iterator<ICredentials*>& creds)
+            : m_trusts(trusts), m_creds(creds) {}
         virtual ~ShibHTTPHook() {}
         
         // Only hook we need here is for outgoing connection to server.
@@ -529,16 +512,20 @@ namespace shibboleth
         public:
             ShibHTTPHookCallContext(const char* credResolverId, const IRoleDescriptor* role)
                 : m_credResolverId(credResolverId), m_role(role), m_hook(NULL) {}
+            const ShibHTTPHook* getHook() {return m_hook;}
+            const char* getCredResolverId() {return m_credResolverId;}
+            const IRoleDescriptor* getRoleDescriptor() {return m_role;}
+            
         private:
             const char* m_credResolverId;
             const IRoleDescriptor* m_role;
             ShibHTTPHook* m_hook;
             friend class ShibHTTPHook;
-            friend bool ssl_ctx_callback(void* ssl_ctx, void* userptr);
         };
+        
+        const saml::Iterator<ITrust*>& getTrustProviders() const {return m_trusts;}
+        const saml::Iterator<ICredentials*>& getCredentialProviders() const {return m_creds;}
     private:
-        friend bool ssl_ctx_callback(void* ssl_ctx, void* userptr);
-        saml::Iterator<IRevocation*> m_revocations;
         saml::Iterator<ITrust*> m_trusts;
         saml::Iterator<ICredentials*> m_creds;
     };

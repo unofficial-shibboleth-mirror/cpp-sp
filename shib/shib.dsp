@@ -89,6 +89,10 @@ LINK32=link.exe
 # Name "shib - Win32 Debug"
 # Begin Source File
 
+SOURCE=.\BasicTrust.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\config_win32.h
 # End Source File
 # Begin Source File
@@ -130,6 +134,10 @@ SOURCE=.\shib.h
 # Begin Source File
 
 SOURCE=.\shib.rc
+# End Source File
+# Begin Source File
+
+SOURCE=.\ShibbolethTrust.cpp
 # End Source File
 # Begin Source File
 

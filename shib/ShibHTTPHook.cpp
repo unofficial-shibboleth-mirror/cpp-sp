@@ -57,24 +57,65 @@
 */
 
 #include "internal.h"
+#include <openssl/ssl.h>
+#include <openssl/x509_vfy.h>
 
 using namespace std;
 using namespace log4cpp;
 using namespace shibboleth;
 using namespace saml;
 
-bool shibboleth::ssl_ctx_callback(void* ssl_ctx, void* userptr)
+extern "C" {
+    /*
+     * Our verifier callback is a front-end for invoking each trust plugin until
+     * success, or we run out of plugins.
+     */
+    int verify_callback(X509_STORE_CTX* x509_ctx, void* arg)
+    {
+        Category::getInstance("OpenSSL").debug("invoking default X509 verify callback");
+#if (OPENSSL_VERSION_NUMBER >= 0x00907000L)
+        ShibHTTPHook::ShibHTTPHookCallContext* ctx = reinterpret_cast<ShibHTTPHook::ShibHTTPHookCallContext*>(arg);
+#else
+        // Yes, this sucks. I'd use TLS, but there's no really obvious spot to put the thread key
+        // and global variables suck too.
+        ShibHTTPHook::ShibHTTPHookCallContext* ctx =
+            reinterpret_cast<ShibHTTPHook::ShibHTTPHookCallContext*>(x509_ctx->depth);
+#endif
+
+        // Instead of using the supplied verifier, we let the plugins do whatever they want to do
+        // with the untrusted certificates we find in the object. We can save a bit of memory by
+        // just building a vector that points at them inside the supplied structure.
+        vector<void*> chain;
+        for (int i=0; i<sk_X509_num(x509_ctx->untrusted); i++)
+            chain.push_back(sk_X509_value(x509_ctx->untrusted,i));
+        
+        Trust t(ctx->getHook()->getTrustProviders());
+        if (!t.validate(x509_ctx->cert,chain,ctx->getRoleDescriptor(),false)) { // bypass name check (handled for us)
+            x509_ctx->error=X509_V_ERR_APPLICATION_VERIFICATION;     // generic error, check log for plugin specifics
+            return 0;
+        }
+        
+        // Signal success. Hopefully it doesn't matter what's actually in the structure now.
+        return 1;
+    }
+}
+
+/*
+ * OpenSAML callback is invoked during SSL context setup, before the handshake.
+ * We use it to attach credentials and our own certificate verifier callback above.
+ */
+bool ssl_ctx_callback(void* ssl_ctx, void* userptr)
 {
 #ifdef _DEBUG
-    NDC("ssl_ctx_callback");
+    saml::NDC("ssl_ctx_callback");
 #endif
     Category& log=Category::getInstance(SHIB_LOGCAT".ShibHTTPHook");
     
     try {
         log.debug("OpenSAML invoked SSL context callback");
         ShibHTTPHook::ShibHTTPHookCallContext* ctx = reinterpret_cast<ShibHTTPHook::ShibHTTPHookCallContext*>(userptr);
-        Credentials c(ctx->m_hook->m_creds);
-        const ICredResolver* cr=c.lookup(ctx->m_credResolverId);
+        Credentials c(ctx->getHook()->getCredentialProviders());
+        const ICredResolver* cr=c.lookup(ctx->getCredResolverId());
         if (cr)
             cr->attach(ssl_ctx);
         else {
@@ -82,11 +123,17 @@ bool shibboleth::ssl_ctx_callback(void* ssl_ctx, void* userptr)
             return false;
         }
         
-        Trust t(ctx->m_hook->m_trusts);
-        if (!t.attach(ctx->m_hook->m_revocations, ctx->m_role, ssl_ctx)) {
-            log.error("no appropriate key authorities to attach, blocking unverifiable request");
-            return false;
-        }
+        SSL_CTX_set_verify(reinterpret_cast<SSL_CTX*>(ssl_ctx),SSL_VERIFY_PEER,NULL);
+#if (OPENSSL_VERSION_NUMBER >= 0x00907000L)
+        // With 0.9.7, we can pass a callback argument directly.
+        SSL_CTX_set_cert_verify_callback(reinterpret_cast<SSL_CTX*>(ssl_ctx),verify_callback,userptr);
+#else
+        // With 0.9.6, there's no argument, so we're going to use a really embarrassing hack and
+        // stuff the argument in the depth property where it will get copied to the context object
+        // that's handed to the callback.
+        SSL_CTX_set_cert_verify_callback(reinterpret_cast<SSL_CTX*>(ssl_ctx),reinterpret_cast<int (*)()>(verify_callback),NULL);
+        SSL_CTX_set_verify_depth(reinterpret_cast<SSL_CTX*>(ssl_ctx),reinterpret_cast<int>(userptr));
+#endif
     }
     catch (SAMLException& e) {
         log.error(string("caught a SAML exception while attaching credentials to request: ") + e.what());
@@ -116,4 +163,5 @@ bool ShibHTTPHook::outgoing(HTTPClient* conn, void* globalCtx, void* callCtx)
         return false;
     
     return conn->setRequestHeader("Shibboleth", PACKAGE_VERSION);
+    return conn->setRequestHeader("Xerces-C", XERCES_FULLVERSIONDOT);
 }

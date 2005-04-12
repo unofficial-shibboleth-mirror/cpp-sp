@@ -79,6 +79,9 @@ SAML_EXCEPTION_FACTORY(CredentialException);
 SAML_EXCEPTION_FACTORY(InvalidHandleException);
 SAML_EXCEPTION_FACTORY(InvalidSessionException);
 
+PlugManager::Factory BasicTrustFactory;
+PlugManager::Factory ShibbolethTrustFactory;
+
 namespace {
     ShibConfig g_config;
     vector<Mutex*> g_openssl_locks;
@@ -107,6 +110,11 @@ bool ShibConfig::init()
     REGISTER_EXCEPTION_FACTORY(InvalidHandleException);
     REGISTER_EXCEPTION_FACTORY(InvalidSessionException);
 
+    // Register plugin factories (some are legacy aliases)
+    SAMLConfig& conf=SAMLConfig::getConfig();
+    conf.getPlugMgr().regFactory("edu.internet2.middleware.shibboleth.common.provider.BasicTrust",&BasicTrustFactory);
+    conf.getPlugMgr().regFactory("edu.internet2.middleware.shibboleth.common.provider.ShibbolethTrust",&ShibbolethTrustFactory);
+
     // Set up OpenSSL locking.
 	for (int i=0; i<CRYPTO_num_locks(); i++)
         g_openssl_locks.push_back(Mutex::create());
@@ -124,28 +132,16 @@ void ShibConfig::term()
     for (vector<Mutex*>::iterator i=g_openssl_locks.begin(); i!=g_openssl_locks.end(); i++)
         delete (*i);
     g_openssl_locks.clear();
+
+    // Unregister plugin factories
+    SAMLConfig& conf=SAMLConfig::getConfig();
+    conf.getPlugMgr().unregFactory("edu.internet2.middleware.shibboleth.common.provider.BasicTrust");
+    conf.getPlugMgr().unregFactory("edu.internet2.middleware.shibboleth.common.provider.ShibbolethTrust");
 }
 
 ShibConfig& ShibConfig::getConfig()
 {
     return g_config;
-}
-
-void shibboleth::log_openssl()
-{
-    const char* file;
-    const char* data;
-    int flags,line;
-
-    unsigned long code=ERR_get_error_line_data(&file,&line,&data,&flags);
-    while (code)
-    {
-        Category& log=Category::getInstance("OpenSSL");
-        log.errorStream() << "error code: " << code << " in " << file << ", line " << line << CategoryStream::ENDLINE;
-        if (data && (flags & ERR_TXT_STRING))
-            log.errorStream() << "error data: " << data << CategoryStream::ENDLINE;
-        code=ERR_get_error_line_data(&file,&line,&data,&flags);
-    }
 }
 
 void shibboleth::annotateException(SAMLException& e, const IEntityDescriptor* entity, bool rethrow)

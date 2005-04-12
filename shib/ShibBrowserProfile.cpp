@@ -66,11 +66,8 @@ using namespace saml;
 using namespace log4cpp;
 using namespace std;
 
-ShibBrowserProfile::ShibBrowserProfile(
-    const Iterator<IMetadata*>& metadatas,
-    const Iterator<IRevocation*>& revocations,
-    const Iterator<ITrust*>& trusts
-    ) : m_metadatas(metadatas), m_revocations(revocations), m_trusts(trusts)
+ShibBrowserProfile::ShibBrowserProfile(const Iterator<IMetadata*>& metadatas, const Iterator<ITrust*>& trusts)
+    : m_metadatas(metadatas), m_trusts(trusts)
 {
     m_profile=SAMLBrowserProfile::getInstance();
 }
@@ -158,7 +155,7 @@ SAMLBrowserProfile::BrowserProfileResponse ShibBrowserProfile::receive(
         Trust t(m_trusts);
         if (bpr.response->isSigned()) {        
             log.debug("passing signed response to trust layer");
-            if (!t.validate(m_revocations,role,*bpr.response)) {
+            if (!t.validate(*bpr.response,role)) {
                 bpr.clear();
                 TrustException ex("unable to verify signed profile response");
                 annotateException(ex,role); // throws it
@@ -167,7 +164,7 @@ SAMLBrowserProfile::BrowserProfileResponse ShibBrowserProfile::receive(
         // SSO assertion signed?
         if (bpr.assertion->isSigned()) {
             log.debug("passing signed authentication assertion to trust layer"); 
-            if (!t.validate(m_revocations,role,*bpr.assertion)) {
+            if (!t.validate(*bpr.assertion,role)) {
                 bpr.clear();
                 TrustException ex("unable to verify signed authentication assertion");
                 annotateException(ex,role); // throws it

@@ -73,7 +73,6 @@ using namespace log4cpp;
 // Metadata Factories
 
 PlugManager::Factory XMLMetadataFactory;
-PlugManager::Factory XMLRevocationFactory;
 PlugManager::Factory XMLTrustFactory;
 PlugManager::Factory XMLCredentialsFactory;
 PlugManager::Factory XMLAAPFactory;
@@ -147,7 +146,6 @@ extern "C" int XML_EXPORTS saml_extension_init(void*)
     SAMLConfig& conf=SAMLConfig::getConfig();
     conf.getPlugMgr().regFactory("edu.internet2.middleware.shibboleth.metadata.provider.XMLMetadata",&XMLMetadataFactory);
     conf.getPlugMgr().regFactory("edu.internet2.middleware.shibboleth.common.provider.XMLMetadata",&XMLMetadataFactory);
-    conf.getPlugMgr().regFactory("edu.internet2.middleware.shibboleth.common.provider.XMLRevocation",&XMLRevocationFactory);
     conf.getPlugMgr().regFactory("edu.internet2.middleware.shibboleth.trust.provider.XMLTrust",&XMLTrustFactory);
     conf.getPlugMgr().regFactory("edu.internet2.middleware.shibboleth.common.provider.XMLTrust",&XMLTrustFactory);
     conf.getPlugMgr().regFactory("edu.internet2.middleware.shibboleth.common.Credentials",&XMLCredentialsFactory);
@@ -166,7 +164,6 @@ extern "C" void XML_EXPORTS saml_extension_term()
     SAMLConfig& conf=SAMLConfig::getConfig();
     conf.getPlugMgr().unregFactory("edu.internet2.middleware.shibboleth.metadata.provider.XMLMetadata");
     conf.getPlugMgr().unregFactory("edu.internet2.middleware.shibboleth.common.provider.XMLMetadata");
-    conf.getPlugMgr().unregFactory("edu.internet2.middleware.shibboleth.common.provider.XMLRevocation");
     conf.getPlugMgr().unregFactory("edu.internet2.middleware.shibboleth.trust.provider.XMLTrust");
     conf.getPlugMgr().unregFactory("edu.internet2.middleware.shibboleth.common.provider.XMLTrust");
     conf.getPlugMgr().unregFactory("edu.internet2.middleware.shibboleth.common.Credentials");

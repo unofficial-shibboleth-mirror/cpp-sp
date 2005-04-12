@@ -76,20 +76,6 @@ using namespace log4cpp;
 using namespace std;
 
 namespace {
-
-    int logging_callback(int ok, X509_STORE_CTX* store)
-    {
-        if (!ok)
-            Category::getInstance("OpenSSL").error("verify_callback error: %s", X509_verify_cert_error_string(store->error));
-        return ok;
-    }
-    
-    int verify_callback(X509_STORE_CTX* ctx, void* arg)
-    {
-        Category::getInstance("OpenSSL").debug("invoking default X509 verify callback");
-        return X509_verify_cert(ctx);
-    }
-
     class XMLTrustImpl : public ReloadableXMLFileImpl
     {
     public:
@@ -108,6 +94,7 @@ namespace {
             vector<const XMLCh*> m_subjects;
 #endif
             vector<X509*> m_certs;
+            vector<X509_CRL*> m_crls;
             unsigned short m_depth;
         };
         
@@ -125,21 +112,19 @@ namespace {
     class XMLTrust : public ITrust, public ReloadableXMLFile
     {
     public:
-        XMLTrust(const DOMElement* e) : ReloadableXMLFile(e) {}
-        ~XMLTrust() {}
+        XMLTrust(const DOMElement* e);
+        ~XMLTrust();
 
-    bool validate(
-        const saml::Iterator<IRevocation*>& revocations,
-        const IRoleDescriptor* role, const saml::SAMLSignedObject& token,
-        const saml::Iterator<IMetadata*>& metadatas=EMPTY(IMetadata*)
-        );
-    bool attach(const Iterator<IRevocation*>& revocations, const IRoleDescriptor* role, void* ctx);
+    bool validate(void* certEE, const Iterator<void*>& certChain, const IRoleDescriptor* role, bool checkName=true);
+    bool validate(const saml::SAMLSignedObject& token, const IRoleDescriptor* role);
 
     protected:
         virtual ReloadableXMLFileImpl* newImplementation(const char* pathname, bool first=true) const;
         virtual ReloadableXMLFileImpl* newImplementation(const DOMElement* e, bool first=true) const;
-    };
 
+        vector<KeyInfoResolver*> m_resolvers;
+        ITrust* m_delegate;
+    };
 }
 
 IPlugIn* XMLTrustFactory(const DOMElement* e)
@@ -162,8 +147,10 @@ ReloadableXMLFileImpl* XMLTrust::newImplementation(const DOMElement* e, bool fir
 
 X509_STORE* XMLTrustImpl::KeyAuthority::getX509Store()
 {
+#ifdef _DEBUG
     NDC ndc("getX509Store");
-    Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".XMLTrust");
+#endif
+    Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".Trust");
 
     // Load the cert vector into a store.
     X509_STORE* store=X509_STORE_new();
@@ -171,11 +158,20 @@ X509_STORE* XMLTrustImpl::KeyAuthority::getX509Store()
         log_openssl();
         return NULL;
     }
+    X509_STORE_set_flags(store,X509_V_FLAG_CRL_CHECK_ALL);
     
     for (vector<X509*>::iterator j=m_certs.begin(); j!=m_certs.end(); j++) {
-        if (!X509_STORE_add_cert(store,X509_dup(*j))) {
+        if (!X509_STORE_add_cert(store,*j)) {
             log_openssl();
             log.warn("failed to add cert: %s", (*j)->name);
+            continue;
+        }
+    }
+
+    for (vector<X509_CRL*>::iterator k=m_crls.begin(); k!=m_crls.end(); k++) {
+        if (!X509_STORE_add_crl(store,*k)) {
+            log_openssl();
+            log.warn("failed to add CRL");
             continue;
         }
     }
@@ -187,6 +183,8 @@ XMLTrustImpl::KeyAuthority::~KeyAuthority()
 {
     for (vector<X509*>::iterator i=m_certs.begin(); i!=m_certs.end(); i++)
         X509_free(*i);
+    for (vector<X509_CRL*>::iterator j=m_crls.begin(); j!=m_crls.end(); j++)
+        X509_CRL_free(*j);
 }
 
 class KeyInfoNodeFilter : public DOMNodeFilter
@@ -268,21 +266,17 @@ void XMLTrustImpl::init()
                     }
                     log.error("unable to create certificate from externally referenced file");
                 }
-                else if (!XMLString::compareString(cert->getAttributeNS(NULL,SHIB_L(Type)),::XML::SHIB_RETMETHOD_PEMX509)) {
-                    // PEM format
-                    int count=0;
-                    auto_ptr_char fname(cert->getAttributeNS(NULL,SHIB_L(URI)));
-                    FILE* f=fopen(fname.get(),"r");
-                    if (f) {
-                        X509* x=NULL;
-                        while (x=PEM_read_X509(f,NULL,NULL,NULL)) {
-                            ka->m_certs.push_back(x);
-                            count++;
-                        }
-                    }
-                    if (!count)
-                        log.error("unable to create certificate from externally referenced file");
-                }
+            }
+
+            // Very rudimentary, grab up all the in-band X509CRL elements, and flatten into one list.
+            certlist=k_child->getElementsByTagNameNS(saml::XML::XMLSIG_NS,SHIB_L(X509CRL));
+            for (int r=0; certlist && r<certlist->getLength(); r++) {
+                auto_ptr_char blob(certlist->item(r)->getFirstChild()->getNodeValue());
+                X509_CRL* x=B64_to_CRL(blob.get());
+                if (x)
+                    ka->m_crls.push_back(x);
+                else
+                    log.warn("unable to create CRL from inline X509CRL data");
             }
 
             KeyAuthority* ka2=ka.release();
@@ -327,18 +321,12 @@ void XMLTrustImpl::init()
             DSIGKeyInfoList* KIL = new DSIGKeyInfoList(NULL);
             // We let XMLSec hack through anything it can. This should evolve over time, or we can
             // plug in our own KeyResolver later...
-            DOMElement* child=saml::XML::getFirstChildElement(kidom);
-            int count2=1;
-            while (child) {
-                try {
-                    if (!KIL->addXMLKeyInfo(child))
-                        log.warn("skipped unsupported ds:KeyInfo child element (%d)",count2);
-                }
-                catch (XSECCryptoException& xe) {
-                    log.error("unable to resolve ds:KeyInfo child element (%d) to usable key: %s",count2,xe.getMsg());
-                }
-                child=saml::XML::getNextSiblingElement(child);
-                count2++;
+            try {
+                if (!KIL->loadListFromXML(kidom))
+                    log.error("skipping ds:KeyInfo element (%d) containing unsupported children",count);
+            }
+            catch (XSECCryptoException& xe) {
+                log.error("unable to process ds:KeyInfo element (%d): %s",count,xe.getMsg());
             }
             
             // Dry run...can we resolve to a key?
@@ -394,12 +382,84 @@ XMLTrustImpl::~XMLTrustImpl()
         delete (*j);
 }
 
-bool XMLTrust::attach(const Iterator<IRevocation*>& revocations, const IRoleDescriptor* role, void* ctx)
+XMLTrust::XMLTrust(const DOMElement* e) : ReloadableXMLFile(e), m_delegate(NULL)
 {
+    static const XMLCh resolver[] =
+    { chLatin_K, chLatin_e, chLatin_y, chLatin_I, chLatin_n, chLatin_f, chLatin_o,
+      chLatin_R, chLatin_e, chLatin_s, chLatin_o, chLatin_l, chLatin_v, chLatin_e, chLatin_r, chNull
+    };
+
+    static const XMLCh _type[] =
+    { chLatin_t, chLatin_y, chLatin_p, chLatin_e, chNull };
+
+    Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".Trust");
+
+    // Find any KeyResolver plugins.
+    DOMElement* child=saml::XML::getFirstChildElement(e);
+    while (child) {
+        if (!XMLString::compareString(resolver,child->getLocalName()) && child->hasAttributeNS(NULL,_type)) {
+            try {
+                auto_ptr_char temp(child->getAttributeNS(NULL,_type));
+                m_resolvers.push_back(KeyInfoResolver::getInstance(temp.get(),child));
+            }
+            catch (SAMLException& ex) {
+                log.error("caught SAML exception building KeyInfoResolver plugin: %s",ex.what());
+            }
+#ifndef _DEBUG
+            catch (...) {
+                log.error("caught unknown exception building KeyInfoResolver plugin");
+            }
+#endif
+        }
+        child=saml::XML::getNextSiblingElement(child);
+    }
+    m_resolvers.push_back(KeyInfoResolver::getInstance(e));
+
+    try {
+        IPlugIn* plugin=SAMLConfig::getConfig().getPlugMgr().newPlugin(
+            "edu.internet2.middleware.shibboleth.common.provider.ShibbolethTrust",e
+            );
+        m_delegate=dynamic_cast<ITrust*>(plugin);
+        if (!m_delegate) {
+            delete plugin;
+            log.error("plugin was not a trust provider");
+            throw UnsupportedExtensionException("Legacy trust provider requires Shibboleth trust provider in order to function.");
+        }
+    }
+    catch (SAMLException& ex) {
+        log.error("caught SAML exception building embedded trust provider: %s", ex.what());
+        throw;
+    }
+}
+
+XMLTrust::~XMLTrust()
+{
+    delete m_delegate;
+    for (vector<KeyInfoResolver*>::iterator i=m_resolvers.begin(); i!=m_resolvers.end(); i++)
+        delete *i;
+}
+
+extern "C" int error_callback(int ok, X509_STORE_CTX* ctx)
+{
+    if (!ok)
+        Category::getInstance("OpenSSL").error("path validation failure: %s", X509_verify_cert_error_string(ctx->error));
+    return ok;
+}
+
+bool XMLTrust::validate(void* certEE, const Iterator<void*>& certChain, const IRoleDescriptor* role, bool checkName)
+{
+    // The delegated trust plugin handles path validation with metadata extensions.
+    // We only take over if the legacy format has to kick in.
+    if (m_delegate->validate(certEE,certChain,role,checkName))
+        return true;
+
+#ifdef _DEBUG
+    saml::NDC ndc("validate");
+#endif
+    Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".Trust");
+    
     lock();
     try {
-        saml::NDC ndc("attach");
-        Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".Trust");
         XMLTrustImpl* impl=dynamic_cast<XMLTrustImpl*>(getImplementation());
     
         // Build a list of the names to match. We include any named KeyDescriptors, and the provider ID and its groups.
@@ -426,7 +486,7 @@ bool XMLTrust::attach(const Iterator<IRevocation*>& revocations, const IRoleDesc
         // Now check each name.
         XMLTrustImpl::KeyAuthority* kauth=NULL;
         for (vector<const XMLCh*>::const_iterator name=names.begin(); !kauth && name!=names.end(); name++) {
-    #ifdef HAVE_GOOD_STL
+#ifdef HAVE_GOOD_STL
             XMLTrustImpl::AuthMap::const_iterator c=impl->m_authMap.find(*name);
             if (c!=impl->m_authMap.end()) {
                 kauth=c->second;
@@ -435,7 +495,7 @@ bool XMLTrust::attach(const Iterator<IRevocation*>& revocations, const IRoleDesc
                     log.info("KeyAuthority match on %s",temp.get());
                 }
             }
-    #else
+#else
             // Without a decent STL, we trade-off the transcoding by doing a linear search.
             for (vector<XMLTrustImpl::KeyAuthority*>::const_iterator keyauths=impl->m_keyauths.begin(); !kauth && keyauths!=impl->m_keyauths.end(); keyauths++) {
                 for (vector<const XMLCh*>::const_iterator subs=(*keyauths)->m_subjects.begin(); !kauth && subs!=(*keyauths)->m_subjects.end(); subs++) {
@@ -448,7 +508,7 @@ bool XMLTrust::attach(const Iterator<IRevocation*>& revocations, const IRoleDesc
                     }
                 }
             }
-    #endif
+#endif
         }
     
         if (!kauth) {
@@ -463,30 +523,46 @@ bool XMLTrust::attach(const Iterator<IRevocation*>& revocations, const IRoleDesc
             }
         }
     
-        // If we have a match, use the associated keyauth unless we already did...
+        log.debug("performing certificate path validation...");
+
+        // If we have a match, use the associated keyauth.
         X509_STORE* store=kauth->getX509Store();
         if (store) {
-      
-            // Add any relevant CRLs.
-            log.debug("obtaining CRLs for this provider/role");
-            Revocation rev(revocations);
-            Iterator<void*> crls=rev.getRevocationLists(role->getEntityDescriptor(),role);
-            while (crls.hasNext()) {
-                if (!X509_STORE_add_crl(store,X509_CRL_dup(reinterpret_cast<X509_CRL*>(crls.next())))) {
-                    log_openssl();
-                    log.warn("failed to add CRL");
-                }
-            }
-        
-            // Apply store to this context.
-            SSL_CTX_set_verify(reinterpret_cast<SSL_CTX*>(ctx),SSL_VERIFY_PEER,logging_callback);
+            STACK_OF(X509)* untrusted=sk_X509_new(NULL);
+            certChain.reset();
+            while (certChain.hasNext())
+                sk_X509_push(untrusted,(X509*)certChain.next());
+
+            // This contains the state of the validate operation.
+            X509_STORE_CTX ctx;
+
+            // AFAICT, EE and untrusted are passed in but not owned by the ctx.
 #if (OPENSSL_VERSION_NUMBER >= 0x00907000L)
-            SSL_CTX_set_cert_verify_callback(reinterpret_cast<SSL_CTX*>(ctx),verify_callback,NULL);
+            if (X509_STORE_CTX_init(&ctx,store,(X509*)certEE,untrusted)!=1) {
+                log_openssl();
+                log.error("unable to initialize X509_STORE_CTX");
+                X509_STORE_free(store);
+                sk_X509_free(untrusted);
+                unlock();
+                return false;
+            }
 #else
-            SSL_CTX_set_cert_verify_callback(reinterpret_cast<SSL_CTX*>(ctx),reinterpret_cast<int (*)()>(verify_callback),NULL);
+            X509_STORE_CTX_init(&ctx,store,certEE,untrusted);
 #endif
-            SSL_CTX_set_cert_store(reinterpret_cast<SSL_CTX*>(ctx),store);
-            SSL_CTX_set_verify_depth(reinterpret_cast<SSL_CTX*>(ctx),kauth->m_depth);
+            X509_STORE_CTX_set_depth(&ctx,kauth->m_depth+1);    // correct yet another OpenSSL/PXIX bug
+            X509_STORE_CTX_set_verify_cb(&ctx,error_callback);
+            
+            int ret=X509_verify_cert(&ctx);
+            
+            // Clean up...
+            X509_STORE_CTX_cleanup(&ctx);
+            X509_STORE_free(store);
+
+            if (ret==1) {
+                log.info("successfully validated certificate chain");
+                unlock();
+                return true;
+            }
         }
     }
     catch (...) {
@@ -494,137 +570,55 @@ bool XMLTrust::attach(const Iterator<IRevocation*>& revocations, const IRoleDesc
         throw;
     }
     unlock();
-    return true;
+    return false;
 }
 
-bool XMLTrust::validate(
-    const saml::Iterator<IRevocation*>& revocations,
-    const IRoleDescriptor* role, const saml::SAMLSignedObject& token,
-    const saml::Iterator<IMetadata*>& metadatas
-    )
+bool XMLTrust::validate(const saml::SAMLSignedObject& token, const IRoleDescriptor* role)
 {
+    // The delegated trust plugin handles metadata keys and use of metadata extensions.
+    // If it fails to find an inline key in metadata, then it will branch off to the
+    // extended version and verify the token using the certificates inside it. At that
+    // point, control will pass to the other virtual function above and we can handle
+    // legacy KeyAuthority rules that way.
+    if (m_delegate->validate(token,role))
+        return true;
+
+#ifdef _DEBUG
+    saml::NDC ndc("validate");
+#endif
+    Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".Trust");
+
     lock();
     try {
-        saml::NDC ndc("validate");
-        Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".Trust");
         XMLTrustImpl* impl=dynamic_cast<XMLTrustImpl*>(getImplementation());
-    
-        // This is where we're going to hide all the juicy SAML trust bits. If we botch it
-        // we can just plug in a new version, hopefully.
-    
-        Metadata metadata(metadatas);   // With luck we won't need this.
-    
-        // Did the caller tell us about the signer?
-        const IEntityDescriptor* provider=(role ? role->getEntityDescriptor() : NULL);
-        if (!provider) {
-            log.debug("no role descriptor passed in, trying to map token to provider");
-            
-            // The first step is to identify the provider responsible for signing the token.
-            // We can't narrow it down to role, because we don't know why the token is being validated.
-            
-            // If it's an assertion, this isn't terribly hard, but we need to hack in support for both
-            // Issuer and NameQualifier as a provider ID. Issuer will be the main one going forward.
-            // 1.0/1.1 origins will be sending a hostname as Issuer, but this won't hit the metadata lookup
-            // and we'll fall back to NameQualifier. Non-Shib SAML origins generally would be based on Issuer.
-            
-            // Responses allow us to try and locate a provider by checking the assertion(s) inside.
-            // Technically somebody could enclose somebody else's assertions, but if the use case is
-            // that advanced, we're probably into SAML 2.0 and we'll have Issuer up top.
-            
-            // Requests...umm, pretty much out of luck. We'll apply our own hack if there's an
-            // attribute query, and use Resource.
-            
-            if (typeid(token)==typeid(SAMLResponse)) {
-                Iterator<SAMLAssertion*> assertions=dynamic_cast<const SAMLResponse&>(token).getAssertions();
-                while (!provider && assertions.hasNext()) {
-                    SAMLAssertion* assertion=assertions.next();
-                    provider=metadata.lookup(assertion->getIssuer());
-                    if (!provider) {
-                        Iterator<SAMLStatement*> statements=assertion->getStatements();
-                        while (!provider && statements.hasNext()) {
-                            SAMLSubjectStatement* statement=dynamic_cast<SAMLSubjectStatement*>(statements.next());
-                            if (statement && statement->getSubject()->getNameIdentifier()->getNameQualifier())
-                                provider=metadata.lookup(statement->getSubject()->getNameIdentifier()->getNameQualifier());
-                        }
-                    }
-                }
-            }
-            else if (typeid(token)==typeid(SAMLAssertion)) {
-                provider=metadata.lookup(dynamic_cast<const SAMLAssertion&>(token).getIssuer());
-                if (!provider) {
-                    Iterator<SAMLStatement*> statements=dynamic_cast<const SAMLAssertion&>(token).getStatements();
-                    while (!provider && statements.hasNext()) {
-                        SAMLSubjectStatement* statement=dynamic_cast<SAMLSubjectStatement*>(statements.next());
-                        if (statement && statement->getSubject()->getNameIdentifier()->getNameQualifier())
-                            provider=metadata.lookup(statement->getSubject()->getNameIdentifier()->getNameQualifier());
-                    }
-                }
-            }
-            else if (typeid(token)==typeid(SAMLRequest)) {
-                const SAMLQuery* q=dynamic_cast<const SAMLRequest&>(token).getQuery();
-                if (q && dynamic_cast<const SAMLAttributeQuery*>(q))
-                    provider=metadata.lookup(dynamic_cast<const SAMLAttributeQuery*>(q)->getResource());
-            }
-            
-            // If we still don't have a provider, there's no likely basis for trust,
-            // but a wildcard KeyAuthority might apply.
-            if (log.isInfoEnabled() && provider) {
-                auto_ptr_char temp(provider->getId());
-                log.info("mapped signed token to provider: %s", temp.get());
-            }
-            else if (!provider)
-                log.warn("unable to map signed token to provider, only wildcarded trust will apply");
-        }
-        
+
+        // If we actually make it this far, the only case we're handling directly
+        // is an inline key in the old trust file format. Build a list of key names
+        // which will be used to find matching rules.
         vector<const XMLCh*> names;
-        XSECKeyInfoResolverDefault keyResolver;
         
-        // First, try to resolve a KeyDescriptor from the role into an actual key.
-        // That's the simplest case. Failing that, remember any key names we run across.
-        
-        if (role) {
-            log.debug("checking for key descriptors that resolve directly");
-            Iterator<const IKeyDescriptor*> kd_i=role->getKeyDescriptors();
-            while (kd_i.hasNext()) {
-                const IKeyDescriptor* kd=kd_i.next();
-                if (kd->getUse()!=IKeyDescriptor::signing)
-                    continue;
-                DSIGKeyInfoList* KIL=kd->getKeyInfo();
-                if (!KIL)
-                    continue;
-                XSECCryptoKey* key=keyResolver.resolveKey(KIL);
-                if (key) {
-                    log.debug("found an inline key descriptor, trying it...");
-                    try {
-                        token.verify(key);
-                        unlock();
-                        log.info("token verified with inline key descriptor, nothing more to verify");
-                        return true;
-                    }
-                    catch (SAMLException& e) {
-                        log.warn("inline key descriptor failed: %s", e.what());
-                    }
-                }
-                else {
-                    for (size_t s=0; s<KIL->getSize(); s++) {
-                        const XMLCh* n=KIL->item(s)->getKeyName();
-                        if (n)
-                            names.push_back(n);
-                    }
-                }
+        // Build a list of acceptable names. Transcode the possible key "names" to UTF-8.
+        // For some simple cases, this should handle UTF-8 encoded DNs in certificates.
+        Iterator<const IKeyDescriptor*> kd_i=role->getKeyDescriptors();
+        while (kd_i.hasNext()) {
+            const IKeyDescriptor* kd=kd_i.next();
+            if (kd->getUse()!=IKeyDescriptor::signing)
+                continue;
+            DSIGKeyInfoList* KIL=kd->getKeyInfo();
+            if (!KIL)
+                continue;
+            for (size_t s=0; s<KIL->getSize(); s++) {
+                const XMLCh* n=KIL->item(s)->getKeyName();
+                if (n)
+                    names.push_back(n);
             }
         }
-        
-        // Push the provider ID on the key name list. We don't push provider groups in, since
-        // matching groups to a key makes no sense.
-        if (provider)
-            names.push_back(provider->getId());
-        
-        // No keys inline in metadata. Now we try and find a key inline in trust.
+        names.push_back(role->getEntityDescriptor()->getId());
+
         log.debug("checking for keys in trust file");
         DSIGKeyInfoList* KIL=NULL;
         for (vector<const XMLCh*>::const_iterator name=names.begin(); !KIL && name!=names.end(); name++) {
-    #ifdef HAVE_GOOD_STL
+#ifdef HAVE_GOOD_STL
             XMLTrustImpl::BindMap::const_iterator c=impl->m_bindMap.find(*name);
             if (c!=impl->m_bindMap.end()) {
                 KIL=c->second;
@@ -633,7 +627,7 @@ bool XMLTrust::validate(
                     log.info("KeyInfo match on %s",temp.get());
                 }
             }
-    #else
+#else
             // Without a decent STL, we trade-off the transcoding by doing a linear search.
             for (vector<DSIGKeyInfoList*>::const_iterator keybinds=impl->m_keybinds.begin(); !KIL && keybinds!=impl->m_keybinds.end(); keybinds++) {
                 for (size_t s=0; !KIL && s<(*keybinds)->getSize(); s++) {
@@ -646,303 +640,37 @@ bool XMLTrust::validate(
                     }
                 }
             }
-    #endif
+#endif
         }
         
         if (KIL) {
-            // Any inline KeyInfo should ostensible resolve to a key we can try.
-            XSECCryptoKey* key=keyResolver.resolveKey(KIL);
-            if (key) {
-                log.debug("resolved key, trying it...");
-                try {
-                    token.verify(key);
-                    unlock();
-                    log.info("token verified with KeyInfo, nothing more to verify");
-                    return true;
-                }
-                catch (SAMLException& e) {
-                    log.warn("inline key failed: %s", e.what());
-                }
-            }
-            else
-                log.warn("KeyInfo in trust provider did not resolve to a key");
-        }
-        
-        // Direct key verification hasn't worked. Now we have to switch over to KeyAuthority-based
-        // validation. The actual verification key has to be inside the token.
-        log.debug("verifying signature using key inside token...");
-        try {
-            token.verify();
-            log.info("verified with key inside token, entering validation stage");
-        }
-        catch (SAMLException& e) {
-            unlock();
-            log.warn("verification using key inside token failed: %s", e.what());
-            return false;
-        }
-        
-        // Before we do the cryptogprahy, check that the EE certificate "name" matches
-        // one of the acceptable key "names" for the signer. Without this, we have a gaping
-        // hole in the validation.
-        log.debug("matching token's certificate subject against valid key names...");
-        vector<const XMLCh*> certs;
-        for (unsigned int i=0; i<token.getX509CertificateCount(); i++)
-            certs.push_back(token.getX509Certificate(i));
-    
-        // Decode the EE cert.
-        auto_ptr_char EE(certs[0]);
-        X509* x=B64_to_X509(EE.get());
-        if (!x) {
-            unlock();
-            log.error("unable to decode X.509 EE certificate");
-            return false;
-        }
-        
-        // Transcode the possible key "names" to UTF-8. For some simple cases, this should
-        // handle UTF-8 encoded DNs in certificates.
-        vector<string> keynames;
-        Iterator<const XMLCh*> iname(names);
-        while (iname.hasNext()) {
-            auto_ptr<char> kn(toUTF8(iname.next()));
-            keynames.push_back(kn.get());
-        }
-        
-        const char* match=NULL;   // This will be set to the first matching key name.
-        char buf[256];
-        X509_NAME* subject=X509_get_subject_name(x);
-        if (subject) {
-            // One way is a direct match to the subject DN.
-            // Seems that the way to do the compare is to write the X509_NAME into a BIO.
-            BIO* b = BIO_new(BIO_s_mem());
-            BIO* b2 = BIO_new(BIO_s_mem());
-            BIO_set_mem_eof_return(b, 0);
-            BIO_set_mem_eof_return(b2, 0);
-            // The flags give us LDAP order instead of X.500, with a comma separator.
-            int len=X509_NAME_print_ex(b,subject,0,XN_FLAG_RFC2253);
-            string subjectstr,subjectstr2;
-            BIO_flush(b);
-            while ((len = BIO_read(b, buf, 255)) > 0) {
-                buf[len] = '\0';
-                subjectstr+=buf;
-            }
-            log.infoStream() << "certificate subject: " << subjectstr << CategoryStream::ENDLINE;
-            // The flags give us LDAP order instead of X.500, with a comma plus space separator.
-            len=X509_NAME_print_ex(b2,subject,0,XN_FLAG_RFC2253 + XN_FLAG_SEP_CPLUS_SPC - XN_FLAG_SEP_COMMA_PLUS);
-            BIO_flush(b2);
-            while ((len = BIO_read(b2, buf, 255)) > 0) {
-                buf[len] = '\0';
-                subjectstr2+=buf;
-            }
-            
-            // Check each keyname.
-            for (vector<string>::const_iterator n=keynames.begin(); n!=keynames.end(); n++) {
-#ifdef HAVE_STRCASECMP
-                if (!strcasecmp(n->c_str(),subjectstr.c_str()) || !strcasecmp(n->c_str(),subjectstr2.c_str())) {
-#else
-                if (!stricmp(n->c_str(),subjectstr.c_str()) || !stricmp(n->c_str(),subjectstr2.c_str())) {
-#endif
-                    log.info("matched full subject DN to a key name (%s)", n->c_str());
-                    match=n->c_str();
-                    break;
-                }
-            }
-            BIO_free(b);
-            BIO_free(b2);
-
-            if (!match) {
-                log.debug("unable to match DN, trying TLS subjectAltName match");
-                STACK_OF(GENERAL_NAME)* altnames=(STACK_OF(GENERAL_NAME)*)X509_get_ext_d2i(x, NID_subject_alt_name, NULL, NULL);
-                if (altnames) {
-                    int numalts = sk_GENERAL_NAME_num(altnames);
-                    for (int an=0; !match && an<numalts; an++) {
-                        const GENERAL_NAME* check = sk_GENERAL_NAME_value(altnames, an);
-                        if (check->type==GEN_DNS || check->type==GEN_URI) {
-                            const char* altptr = (char*)ASN1_STRING_data(check->d.ia5);
-                            const int altlen = ASN1_STRING_length(check->d.ia5);
-                            
-                            for (vector<string>::const_iterator n=keynames.begin(); n!=keynames.end(); n++) {
-#ifdef HAVE_STRCASECMP
-                                if (!strncasecmp(altptr,n->c_str(),altlen)) {
-#else
-                                if (!strnicmp(altptr,n->c_str(),altlen)) {
-#endif
-                                    log.info("matched DNS/URI subjectAltName to a key name (%s)", n->c_str());
-                                    match=n->c_str();
-                                    break;
-                                }
-                            }
-                        }
+            // Any inline KeyInfo should ostensibly resolve to a key we can try.
+            Iterator<KeyInfoResolver*> resolvers(m_resolvers);
+            while (resolvers.hasNext()) {
+                XSECCryptoKey* key=((XSECKeyInfoResolver*)resolvers.next())->resolveKey(KIL);
+                if (key) {
+                    log.debug("resolved key, trying it...");
+                    try {
+                        token.verify(key);
+                        unlock();
+                        log.info("token verified with KeyInfo, nothing more to verify");
+                        return true;
                     }
-                    GENERAL_NAMES_free(altnames);
-                }
-                
-                if (!match) {
-                    log.debug("unable to match subjectAltName, trying TLS CN match");
-                    memset(buf,0,sizeof(buf));
-                    if (X509_NAME_get_text_by_NID(subject,NID_commonName,buf,255)>0) {
-                        for (vector<string>::const_iterator n=keynames.begin(); n!=keynames.end(); n++) {
-#ifdef HAVE_STRCASECMP
-                            if (!strcasecmp(buf,n->c_str())) {
-#else
-                            if (!stricmp(buf,n->c_str())) {
-#endif
-                                log.info("matched subject CN to a key name (%s)", n->c_str());
-                                match=n->c_str();
-                                break;
-                            }
-                        }
-                    }
-                    else
-                        log.warn("no common name in certificate subject");
-                }
-            }
-        }
-        else
-            log.error("certificate has no subject?!");
-    
-        X509_free(x);
-    
-        if (!match) {
-            unlock();
-            log.error("cannot match certificate subject against provider's key names");
-            return false;
-        }
-    
-        // We're ready for the final stage.
-        log.debug("final step, certificate path validation...");
-    
-        // Build a new list of key authority matching names, the actual key name, providerId, and any groups.
-        auto_ptr<XMLCh> kn2(fromUTF8(match));
-        vector<const XMLCh*> authnames;
-        authnames.push_back(kn2.get());
-        if (provider) {
-            authnames.push_back(provider->getId());
-            const IEntitiesDescriptor* group=provider->getEntitiesDescriptor();
-            while (group) {
-                authnames.push_back(group->getName());
-                group=group->getEntitiesDescriptor();
-            }
-        }
-    
-        // Now we hunt the list for a KeyAuthority that matches one of the authority matching names.
-        XMLTrustImpl::KeyAuthority* kauth=NULL;
-        for (vector<const XMLCh*>::const_iterator name2=authnames.begin(); !kauth && name2!=authnames.end(); name2++) {
-#ifdef HAVE_GOOD_STL
-            XMLTrustImpl::AuthMap::const_iterator c=impl->m_authMap.find(*name2);
-            if (c!=impl->m_authMap.end()) {
-                kauth=c->second;
-                if (log.isInfoEnabled()) {
-                    auto_ptr_char temp(*name2);
-                    log.info("KeyAuthority match on %s",temp.get());
-                }
-            }
-#else
-            // Without a decent STL, we trade-off the transcoding by doing a linear search.
-            for (vector<XMLTrustImpl::KeyAuthority*>::const_iterator keyauths=impl->m_keyauths.begin(); !kauth && keyauths!=impl->m_keyauths.end(); keyauths++) {
-                for (vector<const XMLCh*>::const_iterator subs=(*keyauths)->m_subjects.begin(); !kauth && subs!=(*keyauths)->m_subjects.end(); subs++) {
-                    if (!XMLString::compareString(*name2,*subs)) {
-                        kauth=*keyauths;
-                        if (log.isInfoEnabled()) {
-                            auto_ptr_char temp(*name2);
-                            log.info("KeyAuthority match on %s",temp.get());
-                        }
+                    catch (SAMLException& e) {
+                        unlock();
+                        log.warn("verification with inline key failed: %s", e.what());
+                        return false;
                     }
                 }
             }
-#endif
+            log.warn("KeyInfo in trust provider did not resolve to a key");
         }
-    
-        if (!kauth) {
-            if (impl->m_wildcard) {
-               log.warn("applying wildcard KeyAuthority, use with caution!");
-                kauth=impl->m_wildcard;
-            }
-            else {
-                unlock();
-                log.warn("no KeyAuthority found to validate the token, leaving untrusted");
-                return false;
-            }
-        }
-    
-        log.debug("building untrusted certificate chain from signature");
-        STACK_OF(X509)* chain=sk_X509_new_null();
-        Iterator<const XMLCh*> icerts(certs);
-        while (icerts.hasNext()) {
-            auto_ptr_char xbuf(icerts.next());
-            X509* x=B64_to_X509(xbuf.get());
-            if (!x) {
-                unlock();
-                log.error("unable to parse certificate in signature");
-                sk_X509_pop_free(chain,X509_free);
-                return false;
-            }
-            sk_X509_push(chain,x);
-        }
-    
-        X509_STORE* store=kauth->getX509Store();
-        if (!store) {
-            unlock();
-            log.error("unable to load X509_STORE from KeyAuthority object");
-            sk_X509_pop_free(chain,X509_free);
-            return false;
-        }
-        
-        X509_STORE_CTX* ctx=X509_STORE_CTX_new();
-        if (!ctx) {
-            log_openssl();
-            unlock();
-            log.error("unable to create X509_STORE_CTX");
-            X509_STORE_free(store);
-            sk_X509_pop_free(chain,X509_free);
-            return false;
-        }
-    
-#if (OPENSSL_VERSION_NUMBER >= 0x00907000L)
-        if (X509_STORE_CTX_init(ctx,store,sk_X509_value(chain,0),chain)!=1) {
-            log_openssl();
-            unlock();
-            log.error("unable to initialize X509_STORE_CTX");
-            X509_STORE_CTX_free(ctx);
-            X509_STORE_free(store);
-            sk_X509_pop_free(chain,X509_free);
-            return false;
-        }
-#else
-        X509_STORE_CTX_init(ctx,store,sk_X509_value(chain,0),chain);
-#endif
-        if (kauth->m_depth)
-            X509_STORE_CTX_set_depth(ctx,kauth->m_depth);
-    
-        // Add any relevant CRLs.
-        log.debug("obtaining CRLs for this provider/role");
-        Revocation rev(revocations);
-        Iterator<void*> crls=rev.getRevocationLists(provider,role);
-        while (crls.hasNext()) {
-            if (!X509_STORE_add_crl(store,X509_CRL_dup(reinterpret_cast<X509_CRL*>(crls.next())))) {
-                log_openssl();
-                log.warn("failed to add CRL");
-            }
-        }
-        
-        // Install error callback.
-        X509_STORE_CTX_set_verify_cb(ctx,logging_callback);
-    
-        int result=X509_verify_cert(ctx);
-        sk_X509_pop_free(chain,X509_free);
-        X509_STORE_CTX_free(ctx);
-        X509_STORE_free(store);
-        unlock();
-        
-        if (result==1) {
-            log.info("successfully validated certificate chain, token signature trusted");
-            return true;
-        }
-        
-        log.error("failed to validate certificate chain, token signature untrusted");
-        return false;
     }
     catch (...) {
         unlock();
         throw;
     }       
+
+    unlock();
+    return false;
 }

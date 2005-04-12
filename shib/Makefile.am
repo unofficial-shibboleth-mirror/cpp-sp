@@ -9,9 +9,11 @@ libshib_HEADERS = shib.h shib-threads.h hresult.h
 noinst_HEADERS = internal.h
 
 libshib_la_SOURCES = \
+					BasicTrust.cpp \
                     Constants.cpp \
                     Metadata.cpp \
                     ReloadableXMLFile.cpp \
+                    ShibbolethTrust.cpp \
                     ShibConfig.cpp \
                     ShibBrowserProfile.cpp \
                     ShibHTTPHook.cpp \
