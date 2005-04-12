@@ -186,10 +186,10 @@
         <!-- AAP can be inline or in a separate file -->
         <AAPProvider type="edu.internet2.middleware.shibboleth.aap.provider.XMLAAP" uri="@-PKGSYSCONFDIR-@/AAP.xml"/>
         
-        <!-- Metadata consists of site/operational metadata, trust, revocation providers. Can be external or inline. -->
+        <!-- Operational config consists of metadata and trust providers. Can be external or inline. -->
 
         <!-- Dummy metadata for private testing, delete when deploying. -->
-		<FederationProvider type="edu.internet2.middleware.shibboleth.metadata.provider.XMLMetadata">
+		<MetadataProvider type="edu.internet2.middleware.shibboleth.metadata.provider.XMLMetadata">
 			<EntityDescriptor entityID="https://example.org/shibboleth" xmlns="urn:oasis:names:tc:SAML:2.0:metadata">
 				<IDPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:1.1:protocol urn:mace:shibboleth:1.0">
 					<Extensions>
@@ -218,21 +218,14 @@
 					<NameIDFormat>urn:mace:shibboleth:1.0:nameIdentifier</NameIDFormat>
 				</AttributeAuthorityDescriptor>
 			</EntityDescriptor>
-		</FederationProvider>
+		</MetadataProvider>
 
 		<!-- InQueue pilot federation, delete for production deployments. -->
-        <FederationProvider type="edu.internet2.middleware.shibboleth.metadata.provider.XMLMetadata"
+        <MetadataProvider type="edu.internet2.middleware.shibboleth.metadata.provider.XMLMetadata"
             uri="@-PKGSYSCONFDIR-@/IQ-sites.xml"/>
-        <TrustProvider type="edu.internet2.middleware.shibboleth.trust.provider.XMLTrust"
-            uri="@-PKGSYSCONFDIR-@/IQ-trust.xml"/>
-		<!--
-		Revocation using X.509 CRLs is an optional feature in some trust metadata or you may
-		supply your own revocation information locally.
-		-->
-        <!--
-        <RevocationProvider type="edu.internet2.middleware.shibboleth.common.provider.XMLRevocation"
-            uri="@-PKGSYSCONFDIR-@/IQ-trust.xml"/>
-        -->
+		
+		<!-- The standard trust provider supports SAMLv2 metadata with path validation extensions. -->
+        <TrustProvider type="edu.internet2.middleware.shibboleth.common.provider.ShibbolethTrust"/>
                     
         <!-- zero or more SAML Audience condition matches (mainly Shib 1.1 compatibility) -->
         <saml:Audience>urn:mace:inqueue</saml:Audience>
@@ -242,7 +235,7 @@
         outer <Applications> element generally have to be overridden in an all or nothing fashion.
         That is, if you supply a <Sessions> or <Errors> override, you MUST include all attributes
         you want to apply, as they will not be inherited. Similarly, if you specify an element such as
-        <FederationProvider>, it is not additive with the defaults, but replaces them.
+        <MetadataProvider>, it is not additive with the defaults, but replaces them.
         
         Note that each application must have at least one assertion consumer service <Handler> that
         maps uniquely to it and no other application in the <RequestMap>. Otherwise no sessions
