@@ -1085,9 +1085,6 @@ XMLMetadataImpl::EntityDescriptor::EntityDescriptor(
             }
             else {
                 string sourceid=SAMLArtifact::toHex(SAMLArtifactType0001::generateSourceId(id.get()));
-                Category::getInstance(XMLPROVIDERS_LOGCAT".Metadata").debug(
-                    "generated artifact SourceID (%s) for entity (%s)",sourceid.c_str(),id.get()
-                    );
                 wrapper->m_sources.insert(pair<string,const EntityDescriptor*>(sourceid,this));
             }
             Iterator<const IEndpoint*> locs=idp->getArtifactResolutionServiceManager()->getEndpoints();

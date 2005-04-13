@@ -549,10 +549,22 @@ bool XMLTrust::validate(void* certEE, const Iterator<void*>& certChain, const IR
 #else
             X509_STORE_CTX_init(&ctx,store,certEE,untrusted);
 #endif
-            X509_STORE_CTX_set_depth(&ctx,kauth->m_depth+1);    // correct yet another OpenSSL/PXIX bug
+            X509_STORE_CTX_set_depth(&ctx,100);    // handle depth below
             X509_STORE_CTX_set_verify_cb(&ctx,error_callback);
             
             int ret=X509_verify_cert(&ctx);
+            if (ret==1) {
+                // Now see if the depth was acceptable by counting the number of intermediates.
+                int depth=sk_X509_num(ctx.chain)-2;
+                if (kauth->m_depth < depth) {
+                    log.error(
+                        "certificate chain was too long (%d intermediates, only %d allowed)",
+                        (depth==-1) ? 0 : depth,
+                        kauth->m_depth
+                        );
+                    ret=0;
+                }
+            }
             
             // Clean up...
             X509_STORE_CTX_cleanup(&ctx);

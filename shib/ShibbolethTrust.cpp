@@ -253,10 +253,22 @@ bool ShibbolethTrust::validate(X509* EE, STACK_OF(X509)* untrusted, const IKeyAu
 
     // Seems to be most efficient to just pass in the CA stack.
     X509_STORE_CTX_trusted_stack(&ctx,CAstack);
-    X509_STORE_CTX_set_depth(&ctx,rule->getVerifyDepth()+1);    // correct yet another OpenSSL/PXIX bug
+    X509_STORE_CTX_set_depth(&ctx,100);    // we check the depth down below
     X509_STORE_CTX_set_verify_cb(&ctx,error_callback);
     
     int ret=X509_verify_cert(&ctx);
+    if (ret==1) {
+        // Now see if the depth was acceptable by counting the number of intermediates.
+        int depth=sk_X509_num(ctx.chain)-2;
+        if (rule->getVerifyDepth() < depth) {
+            log.error(
+                "certificate chain was too long (%d intermediates, only %d allowed)",
+                (depth==-1) ? 0 : depth,
+                rule->getVerifyDepth()
+                );
+            ret=0;
+        }
+    }
     
     // Clean up...
     X509_STORE_CTX_cleanup(&ctx);
