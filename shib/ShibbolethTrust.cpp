@@ -202,7 +202,7 @@ bool ShibbolethTrust::validate(X509* EE, STACK_OF(X509)* untrusted, const IKeyAu
     }
     X509_STORE_set_flags(store,X509_V_FLAG_CRL_CHECK_ALL);
 
-    STACK_OF(X509)* CAstack = sk_X509_new(NULL);
+    STACK_OF(X509)* CAstack = sk_X509_new_null();
     
     // This contains the state of the validate operation.
     X509_STORE_CTX ctx;
@@ -414,7 +414,7 @@ bool ShibbolethTrust::validate(void* certEE, const Iterator<void*>& certChain, c
     
     log.debug("performing certificate path validation...");
 
-    STACK_OF(X509)* untrusted=sk_X509_new(NULL);
+    STACK_OF(X509)* untrusted=sk_X509_new_null();
     certChain.reset();
     while (certChain.hasNext())
         sk_X509_push(untrusted,(X509*)certChain.next());

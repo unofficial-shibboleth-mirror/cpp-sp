@@ -528,7 +528,7 @@ bool XMLTrust::validate(void* certEE, const Iterator<void*>& certChain, const IR
         // If we have a match, use the associated keyauth.
         X509_STORE* store=kauth->getX509Store();
         if (store) {
-            STACK_OF(X509)* untrusted=sk_X509_new(NULL);
+            STACK_OF(X509)* untrusted=sk_X509_new_null();
             certChain.reset();
             while (certChain.hasNext())
                 sk_X509_push(untrusted,(X509*)certChain.next());
