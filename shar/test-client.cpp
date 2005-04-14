@@ -18,7 +18,7 @@ int main (int argc, char *argv[])
 
   ShibTargetConfig& conf=ShibTargetConfig::getConfig();
   conf.setFeatures(ShibTargetConfig::Listener);
-  if (!conf.init(schemadir,config))
+  if (!conf.init(schemadir) || conf.load(config))
       return -10;
 
   IListener::ShibSocket sock;

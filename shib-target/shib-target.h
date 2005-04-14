@@ -110,10 +110,14 @@ namespace shibtarget {
         virtual ~IListener() {}
     };
 
+    class SHIBTARGET_EXPORTS ShibTarget;
     struct SHIBTARGET_EXPORTS IAccessControl : public virtual saml::ILockable, public virtual saml::IPlugIn
     {
         virtual bool authorized(
-            const saml::SAMLAuthenticationStatement& authn, const saml::Iterator<saml::SAMLAssertion*>& attrs
+            const char* providerId,
+            const saml::SAMLAuthenticationStatement* authn,
+            const saml::SAMLResponse* attrs,
+            ShibTarget* st
             ) const=0;
         virtual ~IAccessControl() {}
     };
@@ -121,9 +125,9 @@ namespace shibtarget {
     struct SHIBTARGET_EXPORTS IRequestMapper : public virtual saml::ILockable, public virtual saml::IPlugIn
     {
         typedef std::pair<const IPropertySet*,IAccessControl*> Settings;
-        virtual Settings getSettingsFromURL(const char* url) const=0;
+        virtual Settings getSettingsFromURL(const char* url, ShibTarget* st) const=0;
         virtual Settings getSettingsFromParsedURL(
-            const char* scheme, const char* hostname, unsigned int port, const char* path=NULL
+            const char* scheme, const char* hostname, unsigned int port, const char* path, ShibTarget* st
             ) const=0;
         virtual ~IRequestMapper() {}
     };
@@ -219,8 +223,9 @@ namespace shibtarget {
     public:
         ShibTargetConfig() : m_ini(NULL), m_features(0) {}
         virtual ~ShibTargetConfig() {}
-
-        virtual bool init(const char* schemadir, const char* config) = 0;
+        
+        virtual bool init(const char* schemadir) = 0;
+        virtual bool load(const char* config) = 0;
         virtual void shutdown() = 0;
 
         enum components_t {
@@ -249,57 +254,19 @@ namespace shibtarget {
         unsigned long m_features;
     };
 
-    class ShibMLPPriv;
-    class SHIBTARGET_EXPORTS ShibMLP {
-    public:
-        ShibMLP();
-        ~ShibMLP();
-
-        void insert (const std::string& key, const std::string& value);
-        void insert (const std::string& key, const char* value) {
-          std::string v = value;
-          insert (key, v);
-        }
-        void insert (const char* key, const std::string& value) {
-          std::string k = key;
-          insert (k, value);
-        }
-        void insert (const char* key, const char* value) {
-          std::string k = key, v = value;
-          insert(k,v);
-        }
-        void insert (saml::SAMLException& e);
-
-        void clear () { m_map.clear(); }
-
-        const char* run (std::istream& s, const IPropertySet* props=NULL, std::string* output=NULL);
-        const char* run (const std::string& input, const IPropertySet* props=NULL, std::string* output=NULL);
-        const char* run (const char* input, const IPropertySet* props=NULL, std::string* output=NULL) {
-            std::string i = input;
-            return run(i,props,output);
-        }
-
-    private:
-        ShibMLPPriv *m_priv;
-        std::map<std::string,std::string> m_map;
-        std::string m_generated;
-    };
-
   class HTAccessInfo {
   public:
-    class RequireLine {
-    public:
-      bool use_line;
-      std::vector<std::string> tokens;
-    };
-
     HTAccessInfo() {}
     ~HTAccessInfo() {
       for (int k = 0; k < elements.size(); k++)
-	delete elements[k];
+        delete elements[k];
       elements.resize(0);
     }
 
+    struct RequireLine {
+      bool use_line;
+      std::vector<std::string> tokens;
+    };
     std::vector<RequireLine*> elements;
     bool requireAll;
   };
@@ -312,7 +279,6 @@ namespace shibtarget {
     HTGroupTable() {}
   };
 
-  // This usurps the existing SHIRE and RM apis into a single class.
   class ShibTargetPriv;
   class SHIBTARGET_EXPORTS ShibTarget {
   public:
@@ -333,7 +299,7 @@ namespace shibtarget {
     //
     // Note: subclasses MUST implement ALL of these virtual methods
     //
-
+    
     // Send a message to the Webserver log
     virtual void log(ShibLogLevel level, const std::string &msg)=0;
 
@@ -423,7 +389,6 @@ namespace shibtarget {
       return sendPage(m);
     }
     virtual void* sendRedirect(const std::string& url)=0;
-    virtual void* sendError(const char* page, ShibMLP &mlp);
     
     // These next two APIs are used to obtain the module-specific "OK"
     // and "Decline" results.  OK means "we believe that this request
@@ -488,6 +453,16 @@ namespace shibtarget {
 
     void sessionEnd(const char* cookie) const;
 
+    // Basic request access in case any plugins need the info
+    const char* getRequestMethod() const {return m_method.c_str();}
+    const char* getProtocol() const {return m_protocol.c_str();}
+    const char* getHostname() const {return m_hostname.c_str();}
+    int getPort() const {return m_port;}
+    const char* getRequestURI() const {return m_uri.c_str();}
+    const char* getContentType() const {return m_content_type.c_str();}
+    const char* getRemoteAddr() const {return m_remote_addr.c_str();}
+    const char* getRequestURL() const {return m_url.c_str();}
+
   protected:
     ShibTarget();
 
@@ -500,18 +475,21 @@ namespace shibtarget {
     // uri == resource path
     // method == GET, POST, etc.
     void init(
-        ShibTargetConfig *config,
         const char* protocol,
         const char* hostname,
         int port,
         const char* uri,
         const char* content_type,
-        const char* remote_host,
+        const char* remote_addr,
         const char* method
         );
 
+    std::string m_url, m_method, m_protocol, m_hostname, m_uri, m_content_type, m_remote_addr;
+    int m_port;
+
   private:
-    mutable ShibTargetPriv *m_priv;
+    mutable ShibTargetPriv* m_priv;
+    friend class ShibTargetPriv;
   };
 }
 

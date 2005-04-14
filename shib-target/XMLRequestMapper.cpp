@@ -119,9 +119,9 @@ namespace shibtarget {
         XMLRequestMapper(const DOMElement* e) : ReloadableXMLFile(e) {}
         ~XMLRequestMapper() {}
 
-        virtual Settings getSettingsFromURL(const char* url) const;
+        virtual Settings getSettingsFromURL(const char* url, ShibTarget* st) const;
         virtual Settings getSettingsFromParsedURL(
-            const char* scheme, const char* hostname, unsigned int port, const char* path=NULL
+            const char* scheme, const char* hostname, unsigned int port, const char* path, ShibTarget* st
             ) const;
 
     protected:
@@ -312,8 +312,10 @@ const Override* Override::locate(const char* path) const
 
 void XMLRequestMapperImpl::init()
 {
+#ifdef _DEBUG
     NDC ndc("init");
-    log=&Category::getInstance("shibtarget.XMLRequestMapper");
+#endif
+    log=&Category::getInstance("shibtarget.RequestMapper");
 
     try {
         if (!saml::XML::isElementNamed(ReloadableXMLFileImpl::m_root,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(RequestMap))) {
@@ -498,7 +500,7 @@ ReloadableXMLFileImpl* XMLRequestMapper::newImplementation(const DOMElement* e, 
     return new XMLRequestMapperImpl(e);
 }
 
-IRequestMapper::Settings XMLRequestMapper::getSettingsFromURL(const char* url) const
+IRequestMapper::Settings XMLRequestMapper::getSettingsFromURL(const char* url, ShibTarget* st) const
 {
     string vhost;
     const char* path=split_url(url,vhost);
@@ -516,7 +518,7 @@ IRequestMapper::Settings XMLRequestMapper::getSettingsFromURL(const char* url) c
 }
 
 IRequestMapper::Settings XMLRequestMapper::getSettingsFromParsedURL(
-    const char* scheme, const char* hostname, unsigned int port, const char* path
+    const char* scheme, const char* hostname, unsigned int port, const char* path, ShibTarget* st
     ) const
 {
     char buf[21];

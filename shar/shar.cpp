@@ -179,7 +179,7 @@ int real_main(int preinit)
             shar_schemadir=SHIB_SCHEMAS;
         if (!shar_config)
             shar_config=SHIB_CONFIG;
-        if (!conf.init(shar_schemadir,shar_config)) {
+        if (!conf.init(shar_schemadir) || !conf.load(shar_config)) {
             fprintf(stderr, "configuration is invalid, see console for specific problems\n");
             return -2;
         }
@@ -338,7 +338,7 @@ int main(int argc, char *argv[])
         ShibTargetConfig::GlobalExtensions |
         (shar_checkonly ? (ShibTargetConfig::LocalExtensions | ShibTargetConfig::RequestMapper) : ShibTargetConfig::Logging)
         );
-    if (!conf.init(shar_schemadir,shar_config)) {
+    if (!conf.init(shar_schemadir) || !conf.load(shar_config)) {
         fprintf(stderr, "configuration is invalid, check console for specific problems\n");
         return -2;
     }

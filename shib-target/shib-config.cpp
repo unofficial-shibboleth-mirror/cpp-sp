@@ -95,7 +95,7 @@ ShibTargetConfig& ShibTargetConfig::getConfig()
     return g_Config;
 }
 
-bool STConfig::init(const char* schemadir, const char* config)
+bool STConfig::init(const char* schemadir)
 {
     // With new build of log4cpp, we need to establish a "default"
     // logging appender to stderr up front.
@@ -126,10 +126,10 @@ bool STConfig::init(const char* schemadir, const char* config)
 #ifdef _DEBUG
     saml::NDC ndc("init");
 #endif
-    Category& log = Category::getInstance("shibtarget.STConfig");
+    Category& log = Category::getInstance("shibtarget.Config");
 
-    if (!schemadir || !config) {
-        log.fatal("schema directory or config file not supplied");
+    if (!schemadir) {
+        log.fatal("XML schema directory not supplied");
         return false;
     }
 
@@ -163,24 +163,41 @@ bool STConfig::init(const char* schemadir, const char* config)
         return false;
     }
 
-    try {
-        // Register plugin types.
-        REGISTER_EXCEPTION_FACTORY(ListenerException);
-        REGISTER_EXCEPTION_FACTORY(ConfigurationException);
+    // Register built-in plugin types.
+    REGISTER_EXCEPTION_FACTORY(ListenerException);
+    REGISTER_EXCEPTION_FACTORY(ConfigurationException);
 #ifndef WIN32
-        samlConf.getPlugMgr().regFactory(shibtarget::XML::UnixListenerType,&UnixListenerFactory);
+    samlConf.getPlugMgr().regFactory(shibtarget::XML::UnixListenerType,&UnixListenerFactory);
 #endif
-        samlConf.getPlugMgr().regFactory(shibtarget::XML::TCPListenerType,&TCPListenerFactory);
-        samlConf.getPlugMgr().regFactory(shibtarget::XML::MemorySessionCacheType,&MemoryCacheFactory);
-        samlConf.getPlugMgr().regFactory(shibtarget::XML::LegacyRequestMapType,&XMLRequestMapFactory);
-        samlConf.getPlugMgr().regFactory(shibtarget::XML::RequestMapType,&XMLRequestMapFactory);
-        //shibConf.getPlugMgr().regFactory(shibtarget::XML::htaccessType,&htaccessFactory);
-        
-        saml::XML::registerSchema(ShibTargetConfig::SHIBTARGET_NS,shibtarget::XML::SHIBTARGET_SCHEMA_ID);
-        saml::XML::registerSchema(shibtarget::XML::SAML2META_NS,shibtarget::XML::SAML2META_SCHEMA_ID);
-        saml::XML::registerSchema(shibtarget::XML::SAML2ASSERT_NS,shibtarget::XML::SAML2ASSERT_SCHEMA_ID);
-        saml::XML::registerSchema(shibtarget::XML::XMLENC_NS,shibtarget::XML::XMLENC_SCHEMA_ID);
-        
+    samlConf.getPlugMgr().regFactory(shibtarget::XML::TCPListenerType,&TCPListenerFactory);
+    samlConf.getPlugMgr().regFactory(shibtarget::XML::MemorySessionCacheType,&MemoryCacheFactory);
+    samlConf.getPlugMgr().regFactory(shibtarget::XML::LegacyRequestMapType,&XMLRequestMapFactory);
+    samlConf.getPlugMgr().regFactory(shibtarget::XML::RequestMapType,&XMLRequestMapFactory);
+    //shibConf.getPlugMgr().regFactory(shibtarget::XML::htaccessType,&htaccessFactory);
+    
+    saml::XML::registerSchema(ShibTargetConfig::SHIBTARGET_NS,shibtarget::XML::SHIBTARGET_SCHEMA_ID);
+    saml::XML::registerSchema(shibtarget::XML::SAML2META_NS,shibtarget::XML::SAML2META_SCHEMA_ID);
+    saml::XML::registerSchema(shibtarget::XML::SAML2ASSERT_NS,shibtarget::XML::SAML2ASSERT_SCHEMA_ID);
+    saml::XML::registerSchema(shibtarget::XML::XMLENC_NS,shibtarget::XML::XMLENC_SCHEMA_ID);
+    
+    log.info("finished initializing");
+    return true;
+}
+
+bool STConfig::load(const char* config)
+{
+#ifdef _DEBUG
+    saml::NDC ndc("load");
+#endif
+    Category& log = Category::getInstance("shibtarget.Config");
+
+    if (!config) {
+        log.fatal("path to configuration file not supplied");
+        shutdown();
+        return false;
+    }
+
+    try {
         log.info("loading configuration file: %s", config);
         static const XMLCh uri[] = { chLatin_u, chLatin_r, chLatin_i, chNull };
         DOMImplementation* impl=DOMImplementationRegistry::getDOMImplementation(NULL);
@@ -192,7 +209,7 @@ bool STConfig::init(const char* schemadir, const char* config)
         dummydoc->release();
         
         pair<bool,unsigned int> skew=m_ini->getUnsignedInt("clockSkew");
-        samlConf.clock_skew_secs=skew.first ? skew.second : 180;
+        SAMLConfig::getConfig().clock_skew_secs=skew.first ? skew.second : 180;
         
         m_tranLog=new FixedContextCategory(SHIBTRAN_LOGCAT);
         m_tranLog->info("opened transaction log");
@@ -212,9 +229,8 @@ bool STConfig::init(const char* schemadir, const char* config)
         return false;
     }
 #endif
-  
-    log.info("finished initializing");
 
+    log.info("finished loading configuration");
     return true;
 }
 
@@ -223,7 +239,7 @@ void STConfig::shutdown()
 #ifdef _DEBUG
     saml::NDC ndc("shutdown");
 #endif
-    Category& log = Category::getInstance("shibtarget.STConfig");
+    Category& log = Category::getInstance("shibtarget.Config");
     log.info("shutting down the library");
     delete m_rpcpool;
     m_rpcpool = NULL;

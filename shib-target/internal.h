@@ -198,6 +198,43 @@ namespace shibtarget {
         shibboleth::Metadata m_metadata;    // scopes lock around use of role descriptor by hook context
         shibboleth::ShibHTTPHook::ShibHTTPHookCallContext* m_ctx;
     };
+
+    // Error template class
+    class ShibMLPPriv;
+    class ShibMLP {
+    public:
+        ShibMLP();
+        ~ShibMLP();
+
+        void insert (const std::string& key, const std::string& value);
+        void insert (const std::string& key, const char* value) {
+          std::string v = value;
+          insert (key, v);
+        }
+        void insert (const char* key, const std::string& value) {
+          std::string k = key;
+          insert (k, value);
+        }
+        void insert (const char* key, const char* value) {
+          std::string k = key, v = value;
+          insert(k,v);
+        }
+        void insert (saml::SAMLException& e);
+
+        void clear () { m_map.clear(); }
+
+        const char* run (std::istream& s, const IPropertySet* props=NULL, std::string* output=NULL);
+        const char* run (const std::string& input, const IPropertySet* props=NULL, std::string* output=NULL);
+        const char* run (const char* input, const IPropertySet* props=NULL, std::string* output=NULL) {
+            std::string i = input;
+            return run(i,props,output);
+        }
+
+    private:
+        ShibMLPPriv *m_priv;
+        std::map<std::string,std::string> m_map;
+        std::string m_generated;
+    };
     
     class STConfig : public ShibTargetConfig
     {
@@ -205,7 +242,8 @@ namespace shibtarget {
         STConfig() : m_tranLog(NULL), m_tranLogLock(NULL), m_rpcpool(NULL) {}
         ~STConfig() {}
         
-        bool init(const char* schemadir, const char* config);
+        bool init(const char* schemadir);
+        bool load(const char* config);
         void shutdown();
         
         RPCHandlePool& getRPCHandlePool() {return *m_rpcpool;}

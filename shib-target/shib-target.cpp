@@ -108,10 +108,11 @@ namespace shibtarget {
     ~ShibTargetPriv();
 
     // Helper functions
-    void get_application(const string& protocol, const string& hostname, int port, const string& uri);
+    void get_application(ShibTarget* st, const string& protocol, const string& hostname, int port, const string& uri);
     const char* getCookie(ShibTarget* st, const string& name) const;
     pair<string,const char*> getCookieNameProps(const char* prefix) const;
     const char* getHandlerURL(const char* resource) const;
+    void* sendError(ShibTarget* st, const char* page, ShibMLP &mlp);
     
     // Handlers do the real Shibboleth work
     pair<bool,void*> doSessionInitiator(ShibTarget* st, const IPropertySet* handler, bool isHandler=true) const;
@@ -140,13 +141,6 @@ namespace shibtarget {
     SAMLResponse* m_pre_response;
     SAMLResponse* m_post_response;
     
-    // These are the actual request parameters set via the init method.
-    string m_url;
-    string m_method;
-    string m_protocol;
-    string m_content_type;
-    string m_remote_addr;
-
     ShibTargetConfig* m_Config;
 
     IConfig* m_conf;
@@ -176,13 +170,12 @@ ShibTarget::~ShibTarget(void)
 }
 
 void ShibTarget::init(
-    ShibTargetConfig *config,
     const char* protocol,
     const char* hostname,
     int port,
     const char* uri,
     const char* content_type,
-    const char* remote_host,
+    const char* remote_addr,
     const char* method
     )
 {
@@ -192,15 +185,16 @@ void ShibTarget::init(
 
   if (m_priv->m_app)
     throw SAMLException("Request initialization occurred twice!");
-  if (!config)
-    throw SAMLException("SP configuration not supplied.");
 
-  if (protocol) m_priv->m_protocol = protocol;
-  if (content_type) m_priv->m_content_type = content_type;
-  if (remote_host) m_priv->m_remote_addr = remote_host;
-  if (method) m_priv->m_method = method;
-  m_priv->m_Config = config;
-  m_priv->get_application(protocol, hostname, port, uri);
+  if (method) m_method = method;
+  if (protocol) m_protocol = protocol;
+  if (hostname) m_hostname = hostname;
+  if (uri) m_uri = uri;
+  if (content_type) m_content_type = content_type;
+  if (remote_addr) m_remote_addr = remote_addr;
+  m_port = port;
+  m_priv->m_Config = &ShibTargetConfig::getConfig();
+  m_priv->get_application(this, protocol, hostname, port, uri);
 }
 
 
@@ -214,8 +208,8 @@ pair<bool,void*> ShibTarget::doCheckAuthN(bool requireSessionFlag, bool handler)
     saml::NDC ndc("doCheckAuthN");
 #endif
 
-    const char *procState = "Request Processing Error";
-    const char *targetURL = m_priv->m_url.c_str();
+    const char* procState = "Request Processing Error";
+    const char* targetURL = m_url.c_str();
     ShibMLP mlp;
 
     try {
@@ -264,7 +258,7 @@ pair<bool,void*> ShibTarget::doCheckAuthN(bool requireSessionFlag, bool handler)
             // Localized exception throw if the session isn't valid.
             sessionGet(
                 session_id,
-                m_priv->m_remote_addr.c_str(),
+                m_remote_addr.c_str(),
                 m_priv->m_sso_profile,
                 m_priv->m_provider_id,
                 &m_priv->m_sso_statement,
@@ -317,9 +311,9 @@ pair<bool,void*> ShibTarget::doCheckAuthN(bool requireSessionFlag, bool handler)
     // If we get here then we've got an error.
     mlp.insert("errorType", procState);
     if (targetURL)
-        mlp.insert("requestURL", m_priv->m_url.substr(0,m_priv->m_url.find('?')));
+        mlp.insert("requestURL", m_url.substr(0,m_url.find('?')));
 
-    return pair<bool,void*>(true,sendError("session", mlp));
+    return pair<bool,void*>(true,m_priv->sendError(this,"session", mlp));
 }
 
 pair<bool,void*> ShibTarget::doHandler(void)
@@ -328,8 +322,8 @@ pair<bool,void*> ShibTarget::doHandler(void)
     saml::NDC ndc("doHandler");
 #endif
 
-    const char *procState = "Shibboleth Handler Error";
-    const char* targetURL = m_priv->m_url.c_str();
+    const char* procState = "Shibboleth Handler Error";
+    const char* targetURL = m_url.c_str();
     ShibMLP mlp;
 
     try {
@@ -352,7 +346,7 @@ pair<bool,void*> ShibTarget::doHandler(void)
         pair<bool,bool> handlerSSL=sessionProps->getBool("handlerSSL");
       
         // Make sure this is SSL, if it should be
-        if ((!handlerSSL.first || handlerSSL.second) && m_priv->m_protocol != "https")
+        if ((!handlerSSL.first || handlerSSL.second) && m_protocol != "https")
             throw FatalProfileException("Blocked non-SSL access to Shibboleth handler.");
 
         // We dispatch based on our path info. We know the request URL begins with or equals the handler URL,
@@ -381,7 +375,7 @@ pair<bool,void*> ShibTarget::doHandler(void)
         // This is a legacy direct execution of the handler (the old shireURL).
         // If this is a GET, we see if it's a lazy session request, otherwise
         // assume it's a SAML 1.x POST profile response and process it.
-        if (!strcasecmp(m_priv->m_method.c_str(), "GET")) {
+        if (!strcasecmp(m_method.c_str(), "GET")) {
             procState = "Session Initiator Error";
             return m_priv->doSessionInitiator(this, sessionProps);
         }
@@ -399,7 +393,7 @@ pair<bool,void*> ShibTarget::doHandler(void)
                 mlp.insert("errorType", procState);
                 if (targetURL)
                     mlp.insert("requestURL", targetURL);
-                return pair<bool,void*>(true,sendError("metadata", mlp));
+                return make_pair(true,m_priv->sendError(this,"metadata", mlp));
             }
         }
     }
@@ -416,9 +410,9 @@ pair<bool,void*> ShibTarget::doHandler(void)
     mlp.insert("errorType", procState);
 
     if (targetURL)
-        mlp.insert("requestURL", m_priv->m_url.substr(0,m_priv->m_url.find('?')));
+        mlp.insert("requestURL", m_url.substr(0,m_url.find('?')));
 
-    return pair<bool,void*>(true,sendError("session", mlp));
+    return make_pair(true,m_priv->sendError(this,"session", mlp));
 }
 
 pair<bool,void*> ShibTarget::doCheckAuthZ(void)
@@ -428,8 +422,8 @@ pair<bool,void*> ShibTarget::doCheckAuthZ(void)
 #endif
 
     ShibMLP mlp;
-    const char *procState = "Authorization Processing Error";
-    const char *targetURL = m_priv->m_url.c_str();
+    const char* procState = "Authorization Processing Error";
+    const char* targetURL = m_url.c_str();
 
     try {
         if (!m_priv->m_app)
@@ -438,12 +432,11 @@ pair<bool,void*> ShibTarget::doCheckAuthZ(void)
         // Do we have an access control plugin?
         if (m_priv->m_settings.second) {
             Locker acllock(m_priv->m_settings.second);
-            if (!m_priv->m_settings.second->authorized(*m_priv->m_sso_statement,
-                m_priv->m_post_response ? m_priv->m_post_response->getAssertions() : EMPTY(SAMLAssertion*))) {
+            if (!m_priv->m_settings.second->authorized(m_priv->m_provider_id.c_str(), m_priv->m_sso_statement, m_priv->m_post_response, this)) {
                 log(LogLevelWarn, "doCheckAuthZ() access control provider denied access");
                 if (targetURL)
                     mlp.insert("requestURL", targetURL);
-                return pair<bool,void*>(true,sendError("access", mlp));
+                return make_pair(true,m_priv->sendError(this, "access", mlp));
             }
         }
 
@@ -650,9 +643,9 @@ pair<bool,void*> ShibTarget::doCheckAuthZ(void)
     mlp.insert("errorType", procState);
 
     if (targetURL)
-        mlp.insert("requestURL", m_priv->m_url.substr(0,m_priv->m_url.find('?')));
+        mlp.insert("requestURL", m_url.substr(0,m_url.find('?')));
 
-    return pair<bool,void*>(true,sendError("access", mlp));
+    return make_pair(true,m_priv->sendError(this, "access", mlp));
 }
 
 pair<bool,void*> ShibTarget::doExportAssertions(bool exportAssertion)
@@ -662,8 +655,8 @@ pair<bool,void*> ShibTarget::doExportAssertions(bool exportAssertion)
 #endif
 
     ShibMLP mlp;
-    const char *procState = "Attribute Processing Error";
-    const char *targetURL = m_priv->m_url.c_str();
+    const char* procState = "Attribute Processing Error";
+    const char* targetURL = m_url.c_str();
 
     try {
         if (!m_priv->m_app)
@@ -677,7 +670,7 @@ pair<bool,void*> ShibTarget::doExportAssertions(bool exportAssertion)
             // if the call to doCheckAuthn doesn't happen in the same object lifetime.
             sessionGet(
                 session_id,
-                m_priv->m_remote_addr.c_str(),
+                m_remote_addr.c_str(),
                 m_priv->m_sso_profile,
                 m_priv->m_provider_id,
                 &m_priv->m_sso_statement,
@@ -815,9 +808,9 @@ pair<bool,void*> ShibTarget::doExportAssertions(bool exportAssertion)
     mlp.insert("errorType", procState);
 
     if (targetURL)
-        mlp.insert("requestURL", m_priv->m_url.substr(0,m_priv->m_url.find('?')));
+        mlp.insert("requestURL", m_url.substr(0,m_url.find('?')));
 
-    return pair<bool,void*>(true,sendError("rm", mlp));
+    return make_pair(true,m_priv->sendError(this, "rm", mlp));
 }
 
 
@@ -1154,34 +1147,6 @@ void ShibTarget::sessionEnd(const char* cookie) const
     }
 }
 
-void* ShibTarget::sendError(const char* page, ShibMLP &mlp)
-{
-    header_t hdrs[] = {
-        header_t("Expires","01-Jan-1997 12:00:00 GMT"), header_t("Cache-Control","private,no-store,no-cache")
-        };
-    
-    const IPropertySet* props=m_priv->m_app->getPropertySet("Errors");
-    if (props) {
-        pair<bool,const char*> p=props->getString(page);
-        if (p.first) {
-            ifstream infile(p.second);
-            if (!infile.fail()) {
-                const char* res = mlp.run(infile,props);
-                if (res)
-                    return sendPage(res, 200, "text/html", ArrayIterator<header_t>(hdrs,2));
-            }
-        }
-        else if (!strcmp(page,"access"))
-            return sendPage("Access Denied", 403, "text/html", ArrayIterator<header_t>(hdrs,2));
-    }
-
-    string errstr = string("sendError could not process error template (") + page + ") for application (";
-    errstr += m_priv->m_app->getId();
-    errstr += ")";
-    log(ShibTarget::LogLevelError, errstr);
-    return sendPage("Internal Server Error. Please contact the site administrator.", 500, "text/html", ArrayIterator<header_t>(hdrs,2));
-}
-
 /*************************************************************************
  * Shib Target Private implementation
  */
@@ -1212,7 +1177,7 @@ ShibTargetPriv::~ShibTargetPriv()
   m_Config = NULL;
 }
 
-void ShibTargetPriv::get_application(const string& protocol, const string& hostname, int port, const string& uri)
+void ShibTargetPriv::get_application(ShibTarget* st, const string& protocol, const string& hostname, int port, const string& uri)
 {
   if (m_app)
     return;
@@ -1229,9 +1194,7 @@ void ShibTargetPriv::get_application(const string& protocol, const string& hostn
   m_mapper->lock();
 
   // Obtain the application settings from the parsed URL
-  m_settings = m_mapper->getSettingsFromParsedURL(protocol.c_str(),
-						  hostname.c_str(),
-						  port, uri.c_str());
+  m_settings = m_mapper->getSettingsFromParsedURL(protocol.c_str(),hostname.c_str(),port,uri.c_str(),st);
 
   // Now find the application from the URL settings
   pair<bool,const char*> application_id=m_settings.first->getString("applicationId");
@@ -1248,10 +1211,41 @@ void ShibTargetPriv::get_application(const string& protocol, const string& hostn
   m_app = application;
 
   // Compute the target URL
-  m_url = protocol + "://" + hostname;
+  st->m_url = protocol + "://" + hostname;
   if ((protocol == "http" && port != 80) || (protocol == "https" && port != 443))
-    m_url += ":" + port;
-  m_url += uri;
+    st->m_url += ":" + port;
+  st->m_url += uri;
+}
+
+void* ShibTargetPriv::sendError(ShibTarget* st, const char* page, ShibMLP &mlp)
+{
+    ShibTarget::header_t hdrs[] = {
+        ShibTarget::header_t("Expires","01-Jan-1997 12:00:00 GMT"),
+        ShibTarget::header_t("Cache-Control","private,no-store,no-cache")
+        };
+    
+    const IPropertySet* props=m_app->getPropertySet("Errors");
+    if (props) {
+        pair<bool,const char*> p=props->getString(page);
+        if (p.first) {
+            ifstream infile(p.second);
+            if (!infile.fail()) {
+                const char* res = mlp.run(infile,props);
+                if (res)
+                    return st->sendPage(res, 200, "text/html", ArrayIterator<ShibTarget::header_t>(hdrs,2));
+            }
+        }
+        else if (!strcmp(page,"access"))
+            return st->sendPage("Access Denied", 403, "text/html", ArrayIterator<ShibTarget::header_t>(hdrs,2));
+    }
+
+    string errstr = string("sendError could not process error template (") + page + ") for application (";
+    errstr += m_app->getId();
+    errstr += ")";
+    st->log(ShibTarget::LogLevelError, errstr);
+    return st->sendPage(
+        "Internal Server Error. Please contact the site administrator.", 500, "text/html", ArrayIterator<ShibTarget::header_t>(hdrs,2)
+        );
 }
 
 const char* ShibTargetPriv::getCookie(ShibTarget* st, const string& name) const
@@ -1453,7 +1447,7 @@ pair<bool,void*> ShibTargetPriv::doSessionInitiator(ShibTarget* st, const IPrope
     else {
         // We're running as a "virtual handler" from within the filter.
         // The target resource is the current one and everything else is defaulted.
-        resource=m_url.c_str();
+        resource=st->m_url.c_str();
     }
     
     if (!ACS) ACS=m_app->getDefaultAssertionConsumerService();
@@ -1532,22 +1526,22 @@ pair<bool,void*> ShibTargetPriv::doAssertionConsumer(ShibTarget* st, const IProp
     // Right now, this only handles SAML 1.1.
     pair<bool,const XMLCh*> binding=handler->getXMLString("Binding");
     if (!binding.first || !XMLString::compareString(binding.second,SAMLBrowserProfile::BROWSER_POST)) {
-        if (strcasecmp(m_method.c_str(), "POST"))
+        if (strcasecmp(st->m_method.c_str(), "POST"))
             throw FatalProfileException(
-                "SAML 1.1 Browser/POST handler does not support HTTP method ($1).", params(1,m_method.c_str())
+                "SAML 1.1 Browser/POST handler does not support HTTP method ($1).", params(1,st->m_method.c_str())
                 );
         
-        if (m_content_type.empty() || strcasecmp(m_content_type.c_str(),"application/x-www-form-urlencoded"))
+        if (st->m_content_type.empty() || strcasecmp(st->m_content_type.c_str(),"application/x-www-form-urlencoded"))
             throw FatalProfileException(
-                "Blocked invalid content-type ($1) submitted to SAML 1.1 Browser/POST handler.", params(1,m_content_type.c_str())
+                "Blocked invalid content-type ($1) submitted to SAML 1.1 Browser/POST handler.", params(1,st->m_content_type.c_str())
                 );
         input=st->getPostData();
         profile|=SAML11_POST;
     }
     else if (!XMLString::compareString(binding.second,SAMLBrowserProfile::BROWSER_ARTIFACT)) {
-        if (strcasecmp(m_method.c_str(), "GET"))
+        if (strcasecmp(st->m_method.c_str(), "GET"))
             throw FatalProfileException(
-                "SAML 1.1 Browser/Artifact handler does not support HTTP method ($1).", params(1,m_method.c_str())
+                "SAML 1.1 Browser/Artifact handler does not support HTTP method ($1).", params(1,st->m_method.c_str())
                 );
         input=st->getArgs();
         profile|=SAML11_ARTIFACT;
@@ -1561,7 +1555,7 @@ pair<bool,void*> ShibTargetPriv::doAssertionConsumer(ShibTarget* st, const IProp
         profile,
         loc.first ? m_handlerURL + loc.second : m_handlerURL,
         input.c_str(),
-        m_remote_addr.c_str(),
+        st->m_remote_addr.c_str(),
         target,
         cookie,
         providerId

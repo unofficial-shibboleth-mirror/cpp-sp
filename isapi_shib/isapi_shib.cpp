@@ -195,7 +195,7 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
             ShibTargetConfig::LocalExtensions |
             ShibTargetConfig::Logging
             );
-        if (!g_Config->init(schemadir,config)) {
+        if (!g_Config->init(schemadir) || !g_Config->load(config)) {
             g_Config=NULL;
             LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL,
                     "Filter startup failed during initialization, check shire log for help.");
@@ -410,7 +410,7 @@ public:
     if (site.m_name!=host && site.m_aliases.find(host)==site.m_aliases.end())
         host=site.m_name.c_str();
 
-    init(g_Config, scheme, host, atoi(port), url, content_type, remote_addr, method); 
+    init(scheme, host, atoi(port), url, content_type, remote_addr, method); 
 
     m_pfc = pfc;
     m_pn = pn;
@@ -1126,7 +1126,7 @@ public:
         fullurl+='?';
         fullurl+=lpECB->lpszQueryString;
     }
-    init(g_Config, scheme, host, atoi(port), fullurl.c_str(), lpECB->lpszContentType, remote_addr, lpECB->lpszMethod);
+    init(scheme, host, atoi(port), fullurl.c_str(), lpECB->lpszContentType, remote_addr, lpECB->lpszMethod);
 
     m_lpECB = lpECB;
   }

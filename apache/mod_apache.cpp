@@ -243,7 +243,6 @@ public:
     m_dc = (shib_dir_config*)ap_get_module_config(req->per_dir_config, &mod_shib);
 
     init(
-        g_Config,
         m_sc->szScheme ? m_sc->szScheme : ap_http_method(req),
 	    ap_get_server_name(req),
         (int)ap_get_server_port(req),
@@ -1389,7 +1388,7 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
             ShibTargetConfig::LocalExtensions |
             ShibTargetConfig::Logging
             );
-        if (!g_Config->init(g_szSchemaDir,g_szSHIBConfig)) {
+        if (!g_Config->init(g_szSchemaDir) || !g_Config->load(g_szSHIBConfig)) {
             ap_log_error(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() failed to initialize SHIB Target");
             exit(1);
         }

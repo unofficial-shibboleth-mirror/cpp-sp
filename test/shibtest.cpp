@@ -104,7 +104,7 @@ int main(int argc,char* argv[])
         ShibTargetConfig::GlobalExtensions |
         ShibTargetConfig::Caching
         );
-    if (!conf.init(path,config))
+    if (!conf.init(path) || !conf.load(config))
         return -10;
 
     try {
