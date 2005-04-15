@@ -59,7 +59,7 @@
         To customize behavior, map hostnames and path components to applicationId and other settings.
         Can be either a pointer to an external file or an inline configuration.
         -->
-        <RequestMapProvider type="edu.internet2.middleware.shibboleth.sp.provider.XMLRequestMapProvider">
+        <RequestMapProvider type="edu.internet2.middleware.shibboleth.target.provider.XMLRequestMap">
             <RequestMap applicationId="default">
                 <!--
                 This requires a session for documents in /secure on the containing host with http and
@@ -68,7 +68,7 @@
                 below.
                 -->
                 <Host name="sp.example.org">
-                    <Path name="secure" requireSession="true" exportAssertion="true">
+                    <Path name="secure" authType="shibboleth" requireSession="true" exportAssertion="true">
                     	<!-- Example shows a subfolder on the SSL port assigned to a separate <Application> -->
 	                    <Path name="admin" applicationId="foo-admin"/>
 	                </Path>
