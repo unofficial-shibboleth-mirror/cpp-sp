@@ -206,7 +206,7 @@
 	<element name="NSAPI" type="anyType"/>
 	<element name="Java" type="anyType"/>
 
-	<element name="htaccess" type="conf:UniOperatorType">
+	<element name="AccessControl" type="conf:UniOperatorType">
 		<annotation>
 			<documentation>
 			A simple example access policy language extension that supersedes Apache .htaccess
@@ -246,12 +246,14 @@
 	</simpleType>
 	
 	<attributeGroup name="ContentSettings">
+		<attribute name="authType" type="string" use="optional"/>
 		<attribute name="requireSession" type="boolean" use="optional"/>
 		<attribute name="requireSessionWith" type="string" use="optional"/>
 		<attribute name="exportAssertion" type="boolean" use="optional"/>
 		<anyAttribute namespace="##other" processContents="lax"/>
 	</attributeGroup>
 	<element name="AccessControlProvider" type="conf:PluggableType"/>
+	<element name="htaccess" type="conf:PluggableType"/>
 
     <element name="RequestMap">
 		<annotation>
@@ -263,6 +265,7 @@
             <sequence>
             	<choice minOccurs="0">
             		<element ref="conf:htaccess"/>
+					<element ref="conf:AccessControl"/>
 	            	<element ref="conf:AccessControlProvider"/>
 	            </choice>
                 <element ref="conf:Host" minOccurs="0" maxOccurs="unbounded"/>
@@ -277,6 +280,7 @@
     		<sequence>
             	<choice minOccurs="0">
             		<element ref="conf:htaccess"/>
+					<element ref="conf:AccessControl"/>
 	            	<element ref="conf:AccessControlProvider"/>
 	            </choice>
     			<element ref="conf:Path" minOccurs="0" maxOccurs="unbounded"/>
@@ -304,6 +308,7 @@
     		<sequence>
             	<choice minOccurs="0">
             		<element ref="conf:htaccess"/>
+					<element ref="conf:AccessControl"/>
 	            	<element ref="conf:AccessControlProvider"/>
 	            </choice>
     			<element ref="conf:Path" minOccurs="0" maxOccurs="unbounded"/>
