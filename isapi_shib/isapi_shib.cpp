@@ -105,7 +105,7 @@ namespace {
             if (s.get()) m_scheme=s.get();
             if (p.get()) m_port=p.get();
             if (p2.get()) m_sslport=p2.get();
-            DOMNodeList* nlist=e->getElementsByTagNameNS(ShibTargetConfig::SHIBTARGET_NS,Alias);
+            DOMNodeList* nlist=e->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,Alias);
             for (int i=0; nlist && i<nlist->getLength(); i++) {
                 if (nlist->item(i)->hasChildNodes()) {
                     auto_ptr_char alias(nlist->item(i)->getFirstChild()->getNodeValue());
@@ -208,17 +208,17 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
         const IPropertySet* props=conf->getPropertySet("Local");
         if (props) {
             const DOMElement* impl=saml::XML::getFirstChildElement(
-                props->getElement(),ShibTargetConfig::SHIBTARGET_NS,Implementation
+                props->getElement(),shibtarget::XML::SHIBTARGET_NS,Implementation
                 );
-            if (impl && (impl=saml::XML::getFirstChildElement(impl,ShibTargetConfig::SHIBTARGET_NS,ISAPI))) {
+            if (impl && (impl=saml::XML::getFirstChildElement(impl,shibtarget::XML::SHIBTARGET_NS,ISAPI))) {
                 const XMLCh* flag=impl->getAttributeNS(NULL,normalizeRequest);
                 g_bNormalizeRequest=(!flag || !*flag || *flag==chDigit_1 || *flag==chLatin_t);
-                impl=saml::XML::getFirstChildElement(impl,ShibTargetConfig::SHIBTARGET_NS,Site);
+                impl=saml::XML::getFirstChildElement(impl,shibtarget::XML::SHIBTARGET_NS,Site);
                 while (impl) {
                     auto_ptr_char id(impl->getAttributeNS(NULL,id));
                     if (id.get())
                         g_Sites.insert(pair<string,site_t>(id.get(),site_t(impl)));
-                    impl=saml::XML::getNextSiblingElement(impl,ShibTargetConfig::SHIBTARGET_NS,Site);
+                    impl=saml::XML::getNextSiblingElement(impl,shibtarget::XML::SHIBTARGET_NS,Site);
                 }
             }
         }

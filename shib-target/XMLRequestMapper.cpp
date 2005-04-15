@@ -119,10 +119,7 @@ namespace shibtarget {
         XMLRequestMapper(const DOMElement* e) : ReloadableXMLFile(e) {}
         ~XMLRequestMapper() {}
 
-        virtual Settings getSettingsFromURL(const char* url, ShibTarget* st) const;
-        virtual Settings getSettingsFromParsedURL(
-            const char* scheme, const char* hostname, unsigned int port, const char* path, ShibTarget* st
-            ) const;
+        virtual Settings getSettings(ShibTarget* st) const;
 
     protected:
         virtual ReloadableXMLFileImpl* newImplementation(const char* pathname, bool first=true) const;
@@ -139,7 +136,7 @@ IPlugIn* XMLRequestMapFactory(const DOMElement* e)
 
 short Override::acceptNode(const DOMNode* node) const
 {
-    if (XMLString::compareString(node->getNamespaceURI(),ShibTargetConfig::SHIBTARGET_NS))
+    if (XMLString::compareString(node->getNamespaceURI(),shibtarget::XML::SHIBTARGET_NS))
         return FILTER_ACCEPT;
     const XMLCh* name=node->getLocalName();
     if (XMLString::compareString(name,SHIBT_L(AccessControlProvider)) ||
@@ -153,17 +150,24 @@ short Override::acceptNode(const DOMNode* node) const
 void Override::loadACL(const DOMElement* e, Category& log)
 {
     IPlugIn* plugin=NULL;
-    const DOMElement* acl=saml::XML::getFirstChildElement(e,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(htaccess));
+    const DOMElement* acl=saml::XML::getFirstChildElement(e,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(htaccess));
     if (acl) {
-        log.info("building htaccess provider...");
-        plugin=SAMLConfig::getConfig().getPlugMgr().newPlugin(shibtarget::XML::htaccessType,acl);
+        log.info("building Apache htaccess provider...");
+        plugin=SAMLConfig::getConfig().getPlugMgr().newPlugin(shibtarget::XML::htAccessControlType,acl);
     }
     else {
-        acl=saml::XML::getFirstChildElement(e,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(AccessControlProvider));
+        acl=saml::XML::getFirstChildElement(e,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(AccessControl));
         if (acl) {
-            auto_ptr_char type(acl->getAttributeNS(NULL,SHIBT_L(type)));
-            log.info("building Access Control provider of type %s...",type.get());
-            plugin=SAMLConfig::getConfig().getPlugMgr().newPlugin(type.get(),acl);
+            log.info("building XML-based Access Control provider...");
+            plugin=SAMLConfig::getConfig().getPlugMgr().newPlugin(shibtarget::XML::XMLAccessControlType,acl);
+        }
+        else {
+            acl=saml::XML::getFirstChildElement(e,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(AccessControlProvider));
+            if (acl) {
+                auto_ptr_char type(acl->getAttributeNS(NULL,SHIBT_L(type)));
+                log.info("building Access Control provider of type %s...",type.get());
+                plugin=SAMLConfig::getConfig().getPlugMgr().newPlugin(type.get(),acl);
+            }
         }
     }
     if (plugin) {
@@ -188,7 +192,7 @@ Override::Override(const DOMElement* e, Category& log, const Override* base) : m
         loadACL(e,log);
     
         // Handle nested Paths.
-        DOMNodeList* nlist=e->getElementsByTagNameNS(ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(Path));
+        DOMNodeList* nlist=e->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Path));
         for (int i=0; nlist && i<nlist->getLength(); i++) {
             DOMElement* path=static_cast<DOMElement*>(nlist->item(i));
             const XMLCh* n=path->getAttributeNS(NULL,SHIBT_L(name));
@@ -318,7 +322,7 @@ void XMLRequestMapperImpl::init()
     log=&Category::getInstance("shibtarget.RequestMapper");
 
     try {
-        if (!saml::XML::isElementNamed(ReloadableXMLFileImpl::m_root,ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(RequestMap))) {
+        if (!saml::XML::isElementNamed(ReloadableXMLFileImpl::m_root,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(RequestMap))) {
             log->error("Construction requires a valid request mapping file: (conf:RequestMap as root element)");
             throw MalformedException("Construction requires a valid request mapping file: (conf:RequestMap as root element)");
         }
@@ -330,7 +334,7 @@ void XMLRequestMapperImpl::init()
         loadACL(ReloadableXMLFileImpl::m_root,*log);
     
         // Loop over the Host elements.
-        DOMNodeList* nlist = ReloadableXMLFileImpl::m_root->getElementsByTagNameNS(ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(Host));
+        DOMNodeList* nlist = ReloadableXMLFileImpl::m_root->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Host));
         for (int i=0; nlist && i<nlist->getLength(); i++) {
             DOMElement* host=static_cast<DOMElement*>(nlist->item(i));
             const XMLCh* n=host->getAttributeNS(NULL,SHIBT_L(name));
@@ -471,25 +475,6 @@ const Override* XMLRequestMapperImpl::findOverride(const char* vhost, const char
     return o ? o->locate(path) : this;
 }
 
-const char* split_url(const char* url, string& vhost)
-{
-    const char* path=NULL;
-    const char* slash=strchr(url,'/');
-    if (slash)
-    {
-        slash=strchr(slash,'/');
-        if (slash)
-        {
-            path=strchr(slash,'/');
-            if (path)
-                vhost.append(url,path-url);
-            else
-                vhost=url;
-        }
-    }
-    return path;
-}
-
 ReloadableXMLFileImpl* XMLRequestMapper::newImplementation(const char* pathname, bool first) const
 {
     return new XMLRequestMapperImpl(pathname);
@@ -500,45 +485,20 @@ ReloadableXMLFileImpl* XMLRequestMapper::newImplementation(const DOMElement* e, 
     return new XMLRequestMapperImpl(e);
 }
 
-IRequestMapper::Settings XMLRequestMapper::getSettingsFromURL(const char* url, ShibTarget* st) const
+IRequestMapper::Settings XMLRequestMapper::getSettings(ShibTarget* st) const
 {
-    string vhost;
-    const char* path=split_url(url,vhost);
+    ostringstream vhost;
+    vhost << st->getProtocol() << "://" << st->getHostname() << ':' << st->getPort();
 
     XMLRequestMapperImpl* impl=static_cast<XMLRequestMapperImpl*>(getImplementation());
-    const Override* o=impl->findOverride(vhost.c_str(), path);
+    const Override* o=impl->findOverride(vhost.str().c_str(), st->getRequestURI());
 
     if (impl->log->isDebugEnabled()) {
-        saml::NDC ndc("getApplicationFromURL");
-        pair<bool,const char*> ret=o->getString("applicationId");
-        impl->log->debug("mapped %s to %s", url, ret.second);
-    }
-
-    return Settings(o,o->m_acl);
-}
-
-IRequestMapper::Settings XMLRequestMapper::getSettingsFromParsedURL(
-    const char* scheme, const char* hostname, unsigned int port, const char* path, ShibTarget* st
-    ) const
-{
-    char buf[21];
-    string vhost(scheme);
-    vhost=vhost + "://" + hostname + ':';
-#ifdef WIN32
-    _snprintf(buf,20,"%u",port);
-#else
-    snprintf(buf,20,"%u",port);
+#ifdef _DEBUG
+        saml::NDC ndc("getSettings");
 #endif
-    vhost+=buf;
-
-    XMLRequestMapperImpl* impl=static_cast<XMLRequestMapperImpl*>(getImplementation());
-    const Override* o=impl->findOverride(vhost.c_str(), path);
-
-    if (impl->log->isDebugEnabled())
-    {
-        saml::NDC ndc("getApplicationFromParsedURL");
         pair<bool,const char*> ret=o->getString("applicationId");
-        impl->log->debug("mapped %s%s to %s", vhost.c_str(), path ? path : "", ret.second);
+        impl->log->debug("mapped %s%s to %s", vhost.str().c_str(), st->getRequestURI() ? st->getRequestURI() : "", ret.second);
     }
 
     return Settings(o,o->m_acl);

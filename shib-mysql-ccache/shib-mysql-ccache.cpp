@@ -710,12 +710,12 @@ void mysqlInit(const DOMElement* e, Category& log)
   arg_array.push_back("shibboleth");
 
   // grab any MySQL parameters from the config file
-  e=saml::XML::getFirstChildElement(e,ShibTargetConfig::SHIBTARGET_NS,Argument);
+  e=saml::XML::getFirstChildElement(e,shibtarget::XML::SHIBTARGET_NS,Argument);
   while (e) {
       auto_ptr_char arg(e->getFirstChild()->getNodeValue());
       if (arg.get())
           arg_array.push_back(arg.get());
-      e=saml::XML::getNextSiblingElement(e,ShibTargetConfig::SHIBTARGET_NS,Argument);
+      e=saml::XML::getNextSiblingElement(e,shibtarget::XML::SHIBTARGET_NS,Argument);
   }
 
   // Compute the argument array

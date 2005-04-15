@@ -69,14 +69,6 @@ namespace {
     STConfig g_Config;
 }
 
-const XMLCh ShibTargetConfig::SHIBTARGET_NS[] = // urn:mace:shibboleth:target:config:1.0
-{ chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
-  chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
-  chLatin_t, chLatin_a, chLatin_r, chLatin_g, chLatin_e, chLatin_t, chColon,
-  chLatin_c, chLatin_o, chLatin_n, chLatin_f, chLatin_i, chLatin_g, chColon,
-  chDigit_1, chPeriod, chDigit_0, chNull
-};
-
 // Factories for built-in plugins we can manufacture. Actual definitions
 // will be with the actual object implementation.
 #ifndef WIN32
@@ -172,10 +164,9 @@ bool STConfig::init(const char* schemadir)
     samlConf.getPlugMgr().regFactory(shibtarget::XML::TCPListenerType,&TCPListenerFactory);
     samlConf.getPlugMgr().regFactory(shibtarget::XML::MemorySessionCacheType,&MemoryCacheFactory);
     samlConf.getPlugMgr().regFactory(shibtarget::XML::LegacyRequestMapType,&XMLRequestMapFactory);
-    samlConf.getPlugMgr().regFactory(shibtarget::XML::RequestMapType,&XMLRequestMapFactory);
-    //shibConf.getPlugMgr().regFactory(shibtarget::XML::htaccessType,&htaccessFactory);
+    samlConf.getPlugMgr().regFactory(shibtarget::XML::XMLRequestMapType,&XMLRequestMapFactory);
     
-    saml::XML::registerSchema(ShibTargetConfig::SHIBTARGET_NS,shibtarget::XML::SHIBTARGET_SCHEMA_ID);
+    saml::XML::registerSchema(shibtarget::XML::SHIBTARGET_NS,shibtarget::XML::SHIBTARGET_SCHEMA_ID);
     saml::XML::registerSchema(shibtarget::XML::SAML2META_NS,shibtarget::XML::SAML2META_SCHEMA_ID);
     saml::XML::registerSchema(shibtarget::XML::SAML2ASSERT_NS,shibtarget::XML::SAML2ASSERT_SCHEMA_ID);
     saml::XML::registerSchema(shibtarget::XML::XMLENC_NS,shibtarget::XML::XMLENC_SCHEMA_ID);

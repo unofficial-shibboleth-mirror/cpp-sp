@@ -60,14 +60,28 @@
 
 using namespace shibtarget;
 
-const char XML::htaccessType[] =            "edu.internet2.middleware.shibboleth.sp.provider.htaccess";
 const char XML::MemorySessionCacheType[] =  "edu.internet2.middleware.shibboleth.sp.provider.MemorySessionCacheProvider";
 const char XML::MySQLSessionCacheType[] =   "edu.internet2.middleware.shibboleth.sp.provider.MySQLSessionCacheProvider";
+
 const char XML::MySQLReplayCacheType[] =    "edu.internet2.middleware.shibboleth.sp.provider.MySQLReplayCacheProvider";
+
+const char XML::XMLRequestMapType[] =       "edu.internet2.middleware.shibboleth.sp.provider.XMLRequestMapProvider";
+const char XML::ApacheRequestMapType[] =    "edu.internet2.middleware.shibboleth.sp.apache.provider.ApacheRequestMapProvider";
 const char XML::LegacyRequestMapType[] =    "edu.internet2.middleware.shibboleth.target.provider.XMLRequestMap";
-const char XML::RequestMapType[] =          "edu.internet2.middleware.shibboleth.sp.provider.XMLRequestMapProvider";
+
+const char XML::htAccessControlType[] =     "edu.internet2.middleware.shibboleth.sp.apache.provider.htAccessControl";
+const char XML::XMLAccessControlType[] =    "edu.internet2.middleware.shibboleth.sp.provider.XMLAccessControl";
+
 const char XML::TCPListenerType[] =         "edu.internet2.middleware.shibboleth.sp.provider.TCPListener";
 const char XML::UnixListenerType[] =        "edu.internet2.middleware.shibboleth.sp.provider.UnixListener";
+
+const XMLCh XML::SHIBTARGET_NS[] = // urn:mace:shibboleth:target:config:1.0
+{ chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
+  chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
+  chLatin_t, chLatin_a, chLatin_r, chLatin_g, chLatin_e, chLatin_t, chColon,
+  chLatin_c, chLatin_o, chLatin_n, chLatin_f, chLatin_i, chLatin_g, chColon,
+  chDigit_1, chPeriod, chDigit_0, chNull
+};
 
 const XMLCh XML::SHIBTARGET_SCHEMA_ID[] = // shibboleth-targetconfig-1.0.xsd
 { chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chDash,
@@ -122,6 +136,11 @@ const XMLCh XML::Literals::AccessControlProvider[] =
 { chLatin_A, chLatin_c, chLatin_c, chLatin_e, chLatin_s, chLatin_s,
   chLatin_C, chLatin_o, chLatin_n, chLatin_t, chLatin_r, chLatin_o, chLatin_l,
   chLatin_P, chLatin_r, chLatin_o, chLatin_v, chLatin_i, chLatin_d, chLatin_e, chLatin_r, chNull
+};
+
+const XMLCh XML::Literals::AccessControl[] =
+{ chLatin_A, chLatin_c, chLatin_c, chLatin_e, chLatin_s, chLatin_s,
+  chLatin_C, chLatin_o, chLatin_n, chLatin_t, chLatin_r, chLatin_o, chLatin_l, chNull
 };
 
 const XMLCh XML::Literals::applicationId[] =

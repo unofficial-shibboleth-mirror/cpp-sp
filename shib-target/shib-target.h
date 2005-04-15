@@ -114,10 +114,10 @@ namespace shibtarget {
     struct SHIBTARGET_EXPORTS IAccessControl : public virtual saml::ILockable, public virtual saml::IPlugIn
     {
         virtual bool authorized(
+            ShibTarget* st,
             const char* providerId,
             const saml::SAMLAuthenticationStatement* authn,
-            const saml::SAMLResponse* attrs,
-            ShibTarget* st
+            const saml::SAMLResponse* attrs
             ) const=0;
         virtual ~IAccessControl() {}
     };
@@ -125,10 +125,7 @@ namespace shibtarget {
     struct SHIBTARGET_EXPORTS IRequestMapper : public virtual saml::ILockable, public virtual saml::IPlugIn
     {
         typedef std::pair<const IPropertySet*,IAccessControl*> Settings;
-        virtual Settings getSettingsFromURL(const char* url, ShibTarget* st) const=0;
-        virtual Settings getSettingsFromParsedURL(
-            const char* scheme, const char* hostname, unsigned int port, const char* path, ShibTarget* st
-            ) const=0;
+        virtual Settings getSettings(ShibTarget* st) const=0;
         virtual ~IRequestMapper() {}
     };
     
@@ -244,7 +241,6 @@ namespace shibtarget {
         bool isEnabled(components_t feature) {return (m_features & feature)>0;}
         virtual IConfig* getINI() const {return m_ini;}
 
-        static const XMLCh SHIBTARGET_NS[];
         static ShibTargetConfig& getConfig();
 
     protected:
@@ -253,31 +249,6 @@ namespace shibtarget {
     private:
         unsigned long m_features;
     };
-
-  class HTAccessInfo {
-  public:
-    HTAccessInfo() {}
-    ~HTAccessInfo() {
-      for (int k = 0; k < elements.size(); k++)
-        delete elements[k];
-      elements.resize(0);
-    }
-
-    struct RequireLine {
-      bool use_line;
-      std::vector<std::string> tokens;
-    };
-    std::vector<RequireLine*> elements;
-    bool requireAll;
-  };
-
-  class HTGroupTable {
-  public:
-    virtual ~HTGroupTable() {}
-    virtual bool lookup(const char *entry) = 0;
-  protected:
-    HTGroupTable() {}
-  };
 
   class ShibTargetPriv;
   class SHIBTARGET_EXPORTS ShibTarget {
@@ -369,12 +340,6 @@ namespace shibtarget {
     // implementation always returns "shibboleth".
     virtual std::string getAuthType(void);
 
-    // Note: we still need to define exactly what kind of data in contained
-    // in the HTAccessInfo -- perhaps we can stub it out so non-htaccess
-    // systems have something they can plug in?
-    virtual HTAccessInfo* getAccessInfo(void);
-    virtual HTGroupTable* getGroupTable(std::string &user);
-
     // We're done.  Finish up.  Send specific result content or a redirect.
     // If there are no headers supplied assume the content-type is text/html
     typedef std::pair<std::string, std::string> header_t;
@@ -416,18 +381,14 @@ namespace shibtarget {
     //   is not valid, and the caller should continue processing (the API Call
     //   finished successfully).
     //
-    //   The arguments are all overrides..  The requireSession and
-    //   exportAssertion values passed in here are only used if the
-    //   settings resource is negative.
-    //
     //   The handleProfile argument declares whether doCheckAuthN() should
     //   automatically call doHandlePOST() when it encounters a request for
     //   the ShireURL;  if false it will call returnOK() instead.
     //
-    std::pair<bool,void*> doCheckAuthN(bool requireSession = false, bool handler = false);
+    std::pair<bool,void*> doCheckAuthN(bool handler = false);
     std::pair<bool,void*> doHandler();
     std::pair<bool,void*> doCheckAuthZ();
-    std::pair<bool,void*> doExportAssertions(bool exportAssertion = false);
+    std::pair<bool,void*> doExportAssertions();
 
     // Currently wraps remoted interface.
     // TODO: Move this functionality behind IListener
@@ -454,6 +415,7 @@ namespace shibtarget {
     void sessionEnd(const char* cookie) const;
 
     // Basic request access in case any plugins need the info
+    virtual const IApplication* getApplication() const;
     const char* getRequestMethod() const {return m_method.c_str();}
     const char* getProtocol() const {return m_protocol.c_str();}
     const char* getHostname() const {return m_hostname.c_str();}
@@ -491,6 +453,95 @@ namespace shibtarget {
     mutable ShibTargetPriv* m_priv;
     friend class ShibTargetPriv;
   };
+
+    struct SHIBTARGET_EXPORTS XML
+    {
+        static const XMLCh SHIBTARGET_NS[];
+        static const XMLCh SHIBTARGET_SCHEMA_ID[];
+        static const XMLCh SAML2ASSERT_NS[];
+        static const XMLCh SAML2ASSERT_SCHEMA_ID[];
+        static const XMLCh SAML2META_NS[];
+        static const XMLCh SAML2META_SCHEMA_ID[];
+        static const XMLCh XMLENC_NS[];
+        static const XMLCh XMLENC_SCHEMA_ID[];
+    
+        // Session cache implementations
+        static const char MemorySessionCacheType[];
+        static const char MySQLSessionCacheType[];
+        
+        // Replay cache implementations
+        static const char MySQLReplayCacheType[];
+        
+        // Request mapping/settings implementations
+        static const char XMLRequestMapType[];      // portable XML-based map
+        static const char ApacheRequestMapType[];   // Apache command override of XML-based map
+        static const char LegacyRequestMapType[];   // older designation of XML map, hijacked by Apache
+        
+        // Access control implementations
+        static const char htAccessControlType[];    // Apache-specific .htaccess authz module
+        static const char XMLAccessControlType[];   // Proprietary but portable XML authz syntax
+
+        // Out of process listener implementations
+        static const char TCPListenerType[];        // ONC RPC via TCP socket
+        static const char UnixListenerType[];       // ONC RPC via domain socker
+        static const char NullListenerType[];       // "faked" in-process marshalling
+    
+        struct SHIBTARGET_EXPORTS Literals
+        {
+            static const XMLCh AAPProvider[];
+            static const XMLCh AccessControl[];
+            static const XMLCh AccessControlProvider[];
+            static const XMLCh AND[];
+            static const XMLCh applicationId[];
+            static const XMLCh Application[];
+            static const XMLCh Applications[];
+            static const XMLCh AssertionConsumerService[];
+            static const XMLCh CredentialsProvider[];
+            static const XMLCh CredentialUse[];
+            static const XMLCh Extensions[];
+            static const XMLCh fatal[];
+            static const XMLCh FederationProvider[];
+            static const XMLCh Global[];
+            static const XMLCh Host[];
+            static const XMLCh htaccess[];
+            static const XMLCh Implementation[];
+            static const XMLCh index[];
+            static const XMLCh isDefault[];
+            static const XMLCh Library[];
+            static const XMLCh Listener[];
+            static const XMLCh Local[];
+            static const XMLCh logger[];
+            static const XMLCh MemorySessionCache[];
+            static const XMLCh MetadataProvider[];
+            static const XMLCh MySQLReplayCache[];
+            static const XMLCh MySQLSessionCache[];
+            static const XMLCh name[];
+            static const XMLCh Name[];
+            static const XMLCh NOT[];
+            static const XMLCh OR[];
+            static const XMLCh Path[];
+            static const XMLCh path[];
+            static const XMLCh RelyingParty[];
+            static const XMLCh ReplayCache[];
+            static const XMLCh RequestMap[];
+            static const XMLCh RequestMapProvider[];
+            static const XMLCh require[];
+            static const XMLCh Rule[];
+            static const XMLCh SessionCache[];
+            static const XMLCh SessionInitiator[];
+            static const XMLCh SHAR[];
+            static const XMLCh ShibbolethTargetConfig[];
+            static const XMLCh SHIRE[];
+            static const XMLCh Signing[];
+            static const XMLCh SingleLogoutService[];
+            static const XMLCh SPConfig[];
+            static const XMLCh TCPListener[];
+            static const XMLCh TLS[];
+            static const XMLCh TrustProvider[];
+            static const XMLCh type[];
+            static const XMLCh UnixListener[];
+        };
+    };
 }
 
 #endif /* SHIB_TARGET_H */

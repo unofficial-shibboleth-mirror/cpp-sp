@@ -202,7 +202,7 @@ void ShibTarget::init(
 // The web server modules implement a subclass and then call into 
 // these methods once they instantiate their request object.
 
-pair<bool,void*> ShibTarget::doCheckAuthN(bool requireSessionFlag, bool handler)
+pair<bool,void*> ShibTarget::doCheckAuthN(bool handler)
 {
 #ifdef _DEBUG
     saml::NDC ndc("doCheckAuthN");
@@ -234,17 +234,12 @@ pair<bool,void*> ShibTarget::doCheckAuthN(bool requireSessionFlag, bool handler)
             return pair<bool,void*>(true,returnDecline());
 
         pair<bool,bool> requireSession = m_priv->m_settings.first->getBool("requireSession");
-        if (!requireSession.first || !requireSession.second) {
-            // Web server might override.
-            if (requireSessionFlag)
-                requireSession.second=true;
-        }
 
         pair<string,const char*> shib_cookie = m_priv->getCookieNameProps("_shibsession_");
         const char* session_id = m_priv->getCookie(this,shib_cookie.first);
         if (!session_id || !*session_id) {
             // No session.  Maybe that's acceptable?
-            if (!requireSession.second)
+            if (!requireSession.first || !requireSession.second)
                 return pair<bool,void*>(true,returnOK());
 
             // No cookie, but we require a session. Initiate a new session using the default method.
@@ -270,7 +265,7 @@ pair<bool,void*> ShibTarget::doCheckAuthN(bool requireSessionFlag, bool handler)
             log(LogLevelError, string("session processing failed: ") + e.what());
 
             // If no session is required, bail now.
-            if (!requireSession.second)
+            if (!requireSession.first || !requireSession.second)
                 // Has to be OK because DECLINED will just cause Apache
                 // to fail when it can't locate anything to process the
                 // AuthType.  No session plus requireSession false means
@@ -357,7 +352,7 @@ pair<bool,void*> ShibTarget::doHandler(void)
                 procState = "Session Creation Error";
                 return m_priv->doAssertionConsumer(this,handler);
             }
-            else if (saml::XML::isElementNamed(handler->getElement(),ShibTargetConfig::SHIBTARGET_NS,SHIBT_L(SessionInitiator))) {
+            else if (saml::XML::isElementNamed(handler->getElement(),shibtarget::XML::SHIBTARGET_NS,SHIBT_L(SessionInitiator))) {
                 procState = "Session Initiator Error";
                 return m_priv->doSessionInitiator(this,handler);
             }
@@ -429,206 +424,27 @@ pair<bool,void*> ShibTarget::doCheckAuthZ(void)
         if (!m_priv->m_app)
             throw ConfigurationException("System uninitialized, application did not supply request information.");
 
+        string auth_type = getAuthType();
+        if (strcasecmp(auth_type.c_str(),"shibboleth"))
+            return make_pair(true,returnDecline());
+
         // Do we have an access control plugin?
         if (m_priv->m_settings.second) {
             Locker acllock(m_priv->m_settings.second);
-            if (!m_priv->m_settings.second->authorized(m_priv->m_provider_id.c_str(), m_priv->m_sso_statement, m_priv->m_post_response, this)) {
-                log(LogLevelWarn, "doCheckAuthZ() access control provider denied access");
+            if (m_priv->m_settings.second->authorized(this,m_priv->m_provider_id.c_str(), m_priv->m_sso_statement, m_priv->m_post_response)) {
+                // Let the caller decide how to proceed.
+                log(LogLevelDebug, "doCheckAuthZ: access control provider granted access");
+                return pair<bool,void*>(false,NULL);
+            }
+            else {
+                log(LogLevelWarn, "doCheckAuthZ: access control provider denied access");
                 if (targetURL)
                     mlp.insert("requestURL", targetURL);
                 return make_pair(true,m_priv->sendError(this, "access", mlp));
             }
         }
-
-        // Perform HTAccess Checks
-        auto_ptr<HTAccessInfo> ht(getAccessInfo());
-
-        // No Info means OK.  Just return
-        if (!ht.get())
-            return pair<bool,void*>(false, NULL);
-
-        vector<bool> auth_OK(ht->elements.size(), false);
-        bool method_restricted=false;
-        string remote_user = getRemoteUser();
-
-#define CHECK_OK \
-    do { \
-        if (!ht->requireAll) { \
-            return pair<bool,void*>(false, NULL); \
-        } \
-        auth_OK[x] = true; \
-        continue; \
-    } while (0)
-
-        for (int x = 0; x < ht->elements.size(); x++) {
-            auth_OK[x] = false;
-            HTAccessInfo::RequireLine *line = ht->elements[x];
-            if (! line->use_line)
-                continue;
-            method_restricted = true;
-
-            const char *w = line->tokens[0].c_str();
-
-            if (!strcasecmp(w,"Shibboleth")) {
-                // This is a dummy rule needed because Apache conflates authn and authz.
-                // Without some require rule, AuthType is ignored and no check_user hooks run.
-                CHECK_OK;
-            }
-            else if (!strcmp(w,"valid-user")) {
-                log(LogLevelDebug, "doCheckAuthZ accepting valid-user");
-                CHECK_OK;
-            }
-            else if (!strcmp(w,"user") && !remote_user.empty()) {
-                bool regexp=false;
-                for (int i = 1; i < line->tokens.size(); i++) {
-                    w = line->tokens[i].c_str();
-                    if (*w == '~') {
-                        regexp = true;
-                        continue;
-                    }
-                
-                    if (regexp) {
-                        try {
-                            // To do regex matching, we have to convert from UTF-8.
-                            auto_ptr<XMLCh> trans(fromUTF8(w));
-                            RegularExpression re(trans.get());
-                            auto_ptr<XMLCh> trans2(fromUTF8(remote_user.c_str()));
-                            if (re.matches(trans2.get())) {
-                                log(LogLevelDebug, string("doCheckAuthZ accepting user: ") + w);
-                                CHECK_OK;
-                            }
-                        }
-                        catch (XMLException& ex) {
-                            auto_ptr_char tmp(ex.getMessage());
-                            log(LogLevelError, string("doCheckAuthZ caught exception while parsing regular expression (")
-                    	       + w + "): " + tmp.get());
-                        }
-                    }
-                    else if (!strcmp(remote_user.c_str(), w)) {
-                        log(LogLevelDebug, string("doCheckAuthZ accepting user: ") + w);
-                        CHECK_OK;
-                    }
-                }
-            }
-            else if (!strcmp(w,"group")) {
-                auto_ptr<HTGroupTable> grpstatus(getGroupTable(remote_user));
-                if (!grpstatus.get()) {
-                    return pair<bool,void*>(true, returnDecline());
-                }
-    
-                for (int i = 1; i < line->tokens.size(); i++) {
-                    w = line->tokens[i].c_str();
-                    if (grpstatus->lookup(w)) {
-                        log(LogLevelDebug, string("doCheckAuthZ accepting group: ") + w);
-                        CHECK_OK;
-                    }
-                }
-            }
-            else {
-                Iterator<IAAP*> provs = m_priv->m_app->getAAPProviders();
-                AAP wrapper(provs, w);
-                if (wrapper.fail()) {
-                    log(LogLevelWarn, string("doCheckAuthZ didn't recognize require rule: ") + w);
-                    continue;
-                }
-
-                bool regexp = false;
-                string vals = getHeader(wrapper->getHeader());
-                for (int i = 1; i < line->tokens.size() && !vals.empty(); i++) {
-                    w = line->tokens[i].c_str();
-                    if (*w == '~') {
-                        regexp = true;
-                        continue;
-                    }
-
-                    try {
-                        auto_ptr<RegularExpression> re;
-                        if (regexp) {
-                            delete re.release();
-                            auto_ptr<XMLCh> trans(fromUTF8(w));
-                            auto_ptr<RegularExpression> temp(new RegularExpression(trans.get()));
-                            re=temp;
-                        }
-                    
-                        string vals_str(vals);
-                        int j = 0;
-                        for (int i = 0;  i < vals_str.length();  i++) {
-                            if (vals_str.at(i) == ';') {
-                                if (i == 0) {
-                                    log(LogLevelError, string("doCheckAuthZ invalid header encoding") +
-                                        vals + ": starts with a semicolon");
-                                    throw SAMLException("Invalid information supplied to authorization module.");
-                                }
-
-                                if (vals_str.at(i-1) == '\\') {
-                                    vals_str.erase(i-1, 1);
-                                    i--;
-                                    continue;
-                                }
-
-                                string val = vals_str.substr(j, i-j);
-                                j = i+1;
-                                if (regexp) {
-                                    auto_ptr<XMLCh> trans(fromUTF8(val.c_str()));
-                                    if (re->matches(trans.get())) {
-                                        log(LogLevelDebug, string("doCheckAuthZ expecting ") + w +
-                                    	   ", got " + val + ": authorization granted");
-                                        CHECK_OK;
-                                    }
-                                }
-                                else if ((wrapper->getCaseSensitive() && val==w) ||
-                                        (!wrapper->getCaseSensitive() && !strcasecmp(val.c_str(),w))) {
-                                    log(LogLevelDebug, string("doCheckAuthZ expecting ") + w +
-                                        ", got " + val + ": authorization granted.");
-                                    CHECK_OK;
-                                }
-                                else {
-                                    log(LogLevelDebug, string("doCheckAuthZ expecting ") + w +
-                                        ", got " + val + ": authoritzation not granted.");
-                                }
-                            }
-                        }
-    
-                        string val = vals_str.substr(j, vals_str.length()-j);
-                        if (regexp) {
-                            auto_ptr<XMLCh> trans(fromUTF8(val.c_str()));
-                            if (re->matches(trans.get())) {
-                                log(LogLevelDebug, string("doCheckAuthZ expecting ") + w +
-                                    ", got " + val + ": authorization granted.");
-                                CHECK_OK;
-                            }
-                        }
-                        else if ((wrapper->getCaseSensitive() && val==w) ||
-                                (!wrapper->getCaseSensitive() && !strcasecmp(val.c_str(),w))) {
-                            log(LogLevelDebug, string("doCheckAuthZ expecting ") + w +
-                                ", got " + val + ": authorization granted");
-                            CHECK_OK;
-                        }
-                        else {
-                            log(LogLevelDebug, string("doCheckAuthZ expecting ") + w +
-                                ", got " + val + ": authorization not granted");
-                        }
-                    }
-                    catch (XMLException& ex) {
-                        auto_ptr_char tmp(ex.getMessage());
-                            log(LogLevelError, string("doCheckAuthZ caught exception while parsing regular expression (")
-                                + w + "): " + tmp.get());
-                    }
-                }
-            }
-        } // for x
-
-
-        // check if all require directives are true
-        bool auth_all_OK = true;
-        for (int i = 0; i < ht->elements.size(); i++) {
-            auth_all_OK &= auth_OK[i];
-        }
-
-        if (auth_all_OK || !method_restricted)
-            return pair<bool,void*>(false, NULL);
-
-        // If we get here there's an access error, so just fall through
+        else
+            return make_pair(true,returnDecline());
     }
     catch (SAMLException& e) {
         mlp.insert(e);
@@ -648,7 +464,7 @@ pair<bool,void*> ShibTarget::doCheckAuthZ(void)
     return make_pair(true,m_priv->sendError(this, "access", mlp));
 }
 
-pair<bool,void*> ShibTarget::doExportAssertions(bool exportAssertion)
+pair<bool,void*> ShibTarget::doExportAssertions()
 {
 #ifdef _DEBUG
     saml::NDC ndc("doExportAssertions");
@@ -697,10 +513,7 @@ pair<bool,void*> ShibTarget::doExportAssertions(bool exportAssertion)
         // Maybe export the first assertion.
         clearHeader("Shib-Attributes");
         pair<bool,bool> exp=m_priv->m_settings.first->getBool("exportAssertion");
-        if (!exp.first || !exp.second)
-            if (exportAssertion)
-                exp.second=true;
-        if (exp.second && m_priv->m_pre_response) {
+        if (exp.first && exp.second && m_priv->m_pre_response) {
             ostringstream os;
             os << *(m_priv->m_pre_response);
             unsigned int outlen;
@@ -1194,23 +1007,20 @@ void ShibTargetPriv::get_application(ShibTarget* st, const string& protocol, con
   m_mapper->lock();
 
   // Obtain the application settings from the parsed URL
-  m_settings = m_mapper->getSettingsFromParsedURL(protocol.c_str(),hostname.c_str(),port,uri.c_str(),st);
+  m_settings = m_mapper->getSettings(st);
 
   // Now find the application from the URL settings
   pair<bool,const char*> application_id=m_settings.first->getString("applicationId");
-  const IApplication* application=m_conf->getApplication(application_id.second);
-  if (!application) {
+  m_app=m_conf->getApplication(application_id.second);
+  if (!m_app) {
     m_mapper->unlock();
     m_mapper = NULL;
     m_conf->unlock();
     m_conf = NULL;
-    throw SAMLException("Unable to map request to application settings, check configuration.");
+    throw ConfigurationException("Unable to map request to application settings, check configuration.");
   }
 
-  // Store the application for later use
-  m_app = application;
-
-  // Compute the target URL
+  // Compute the full target URL
   st->m_url = protocol + "://" + hostname;
   if ((protocol == "http" && port != 80) || (protocol == "https" && port != 443))
     st->m_url += ":" + port;
@@ -1808,25 +1618,21 @@ string CgiParse::url_encode(const char* s)
     return ret;
 }
 // Subclasses may not need to override these particular virtual methods.
+const IApplication* ShibTarget::getApplication() const
+{
+    return m_priv->m_app;
+}
 string ShibTarget::getAuthType(void)
 {
-  return string("shibboleth");
+    return string("shibboleth");
 }
 void* ShibTarget::returnDecline(void)
 {
-  return NULL;
+    return NULL;
 }
 void* ShibTarget::returnOK(void)
 {
-  return NULL;
-}
-HTAccessInfo* ShibTarget::getAccessInfo(void)
-{
-  return NULL;
-}
-HTGroupTable* ShibTarget::getGroupTable(string &user)
-{
-  return NULL;
+    return NULL;
 }
 
 // CDC implementation
