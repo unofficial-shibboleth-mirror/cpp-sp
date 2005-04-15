@@ -55,7 +55,7 @@
    $Id$
 */
 
-#include "../shib-target/shib-target.h"
+#include <shib-target/shib-target.h>
 
 #include <fstream>
 #include <log4cpp/Category.hh>
@@ -93,46 +93,6 @@ static const XMLCh TRUST_SCHEMA_ID[] = // shibboleth-trust-1.0.xsd
 static const XMLCh SHIB_SCHEMA_ID[] = // shibboleth.xsd
 { chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chPeriod,
   chLatin_x, chLatin_s, chLatin_d, chNull
-};
-
-static const XMLCh SAML2ASSERT_NS[] = // urn:oasis:names:tc:SAML:2.0:assertion
-{ chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_o, chLatin_a, chLatin_s, chLatin_i, chLatin_s, chColon,
-  chLatin_n, chLatin_a, chLatin_m, chLatin_e, chLatin_s, chColon, chLatin_t, chLatin_c, chColon,
-  chLatin_S, chLatin_A, chLatin_M, chLatin_L, chColon, chDigit_2, chPeriod, chDigit_0, chColon,
-  chLatin_a, chLatin_s, chLatin_s, chLatin_e, chLatin_r, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chNull
-};
-
-static const XMLCh SAML2ASSERT_SCHEMA_ID[] = // sstc-saml-schema-assertion-2.0.xsd
-{ chLatin_s, chLatin_s, chLatin_t, chLatin_c, chDash, chLatin_s, chLatin_a, chLatin_m, chLatin_l, chDash,
-  chLatin_s, chLatin_c, chLatin_h, chLatin_e, chLatin_m, chLatin_a, chDash,
-  chLatin_a, chLatin_s, chLatin_s, chLatin_e, chLatin_r, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chDash,
-  chDigit_2, chPeriod, chDigit_0, chPeriod, chLatin_x, chLatin_s, chLatin_d, chNull
-};
-
-static const XMLCh SAML2META_NS[] = // urn:oasis:names:tc:SAML:2.0:metadata
-{ chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_o, chLatin_a, chLatin_s, chLatin_i, chLatin_s, chColon,
-  chLatin_n, chLatin_a, chLatin_m, chLatin_e, chLatin_s, chColon, chLatin_t, chLatin_c, chColon,
-  chLatin_S, chLatin_A, chLatin_M, chLatin_L, chColon, chDigit_2, chPeriod, chDigit_0, chColon,
-  chLatin_m, chLatin_e, chLatin_t, chLatin_a, chLatin_d, chLatin_a, chLatin_t, chLatin_a, chNull
-};
-
-static const XMLCh SAML2META_SCHEMA_ID[] = // sstc-saml-schema-metadata-2.0.xsd
-{ chLatin_s, chLatin_s, chLatin_t, chLatin_c, chDash, chLatin_s, chLatin_a, chLatin_m, chLatin_l, chDash,
-  chLatin_s, chLatin_c, chLatin_h, chLatin_e, chLatin_m, chLatin_a, chDash,
-  chLatin_m, chLatin_e, chLatin_t, chLatin_a, chLatin_d, chLatin_a, chLatin_t, chLatin_a, chDash,
-  chDigit_2, chPeriod, chDigit_0, chPeriod, chLatin_x, chLatin_s, chLatin_d, chNull
-};
-
-static const XMLCh XMLENC_NS[] = // http://www.w3.org/2001/04/xmlenc#
-{ chLatin_h, chLatin_t, chLatin_t, chLatin_p, chColon, chForwardSlash, chForwardSlash,
-  chLatin_w, chLatin_w, chLatin_w, chPeriod, chLatin_w, chDigit_3, chPeriod, chLatin_o, chLatin_r, chLatin_g, chForwardSlash,
-  chDigit_2, chDigit_0, chDigit_0, chDigit_1, chForwardSlash, chDigit_0, chDigit_4, chForwardSlash,
-  chLatin_x, chLatin_m, chLatin_l, chLatin_e, chLatin_n, chLatin_c, chPound, chNull
-};
-
-static const XMLCh XMLENC_SCHEMA_ID[] = // xenc-schema.xsd
-{ chLatin_x, chLatin_e, chLatin_n, chLatin_c, chDash,
-  chLatin_s, chLatin_c, chLatin_h, chLatin_e, chLatin_m, chLatin_a, chPeriod, chLatin_x, chLatin_s, chLatin_d, chNull
 };
 
 void verifySignature(DOMDocument* doc, DOMNode* sigNode, const char* cert=NULL)
@@ -177,13 +137,19 @@ void verifySignature(DOMDocument* doc, DOMNode* sigNode, const char* cert=NULL)
         }
 
         if (cert) {
-            // Load the certificate, stripping the first and last lines.
+            // Load the certificate, stripping the header and trailer.
             string certbuf,line;
             auto_ptr<OpenSSLCryptoX509> x509(new OpenSSLCryptoX509());
+            bool sawheader=false;
             ifstream infile(cert);
-            while (!getline(infile,line).fail())
-                if (line.find("CERTIFICATE")==string::npos)
-                    certbuf+=line + '\n';
+            while (!getline(infile,line).fail()) {
+                if (line.find("CERTIFICATE-----")==string::npos) {
+                    if (sawheader)
+                        certbuf+=line + '\n';
+                }
+                else
+                    sawheader=true;
+            }
             x509->loadX509Base64Bin(certbuf.data(),certbuf.length());
             sig->setSigningKey(x509->clonePublicKey());
         }
@@ -262,9 +228,9 @@ int main(int argc,char* argv[])
 
     saml::XML::registerSchema(Constants::SHIB_NS,SHIB_SCHEMA_ID);
     saml::XML::registerSchema(TRUST_NS,TRUST_SCHEMA_ID);
-    saml::XML::registerSchema(SAML2META_NS,SAML2META_SCHEMA_ID);
-    saml::XML::registerSchema(SAML2ASSERT_NS,SAML2ASSERT_SCHEMA_ID);
-    saml::XML::registerSchema(XMLENC_NS,XMLENC_SCHEMA_ID);
+    saml::XML::registerSchema(shibtarget::XML::SAML2META_NS,shibtarget::XML::SAML2META_SCHEMA_ID);
+    saml::XML::registerSchema(shibtarget::XML::SAML2ASSERT_NS,shibtarget::XML::SAML2ASSERT_SCHEMA_ID);
+    saml::XML::registerSchema(shibtarget::XML::XMLENC_NS,shibtarget::XML::XMLENC_SCHEMA_ID);
 
     try {
         // Parse the specified document.
@@ -290,7 +256,7 @@ int main(int argc,char* argv[])
                 throw MalformedException(string("Root element does not match specified QName of {") + ns_param + "}:" + name_param);
         }
         else if (!saml::XML::isElementNamed(doc->getDocumentElement(),Constants::SHIB_NS,SiteGroup) &&
-                 !saml::XML::isElementNamed(doc->getDocumentElement(),SAML2META_NS,EntitiesDescriptor) &&
+                 !saml::XML::isElementNamed(doc->getDocumentElement(),shibtarget::XML::SAML2META_NS,EntitiesDescriptor) &&
                  !saml::XML::isElementNamed(doc->getDocumentElement(),TRUST_NS,Trust))
             throw MalformedException("Root element does not signify a known metadata or trust format");
 
