@@ -334,12 +334,6 @@ namespace shibtarget {
       setRemoteUser(s);
     }
 
-    // returns the "auth type"..  if this string is not "shibboleth" then
-    // the request will be denied.  Any kind of "override" should be handled
-    // by the subclass before returning this value.  Note that the default
-    // implementation always returns "shibboleth".
-    virtual std::string getAuthType(void);
-
     // We're done.  Finish up.  Send specific result content or a redirect.
     // If there are no headers supplied assume the content-type is text/html
     typedef std::pair<std::string, std::string> header_t;

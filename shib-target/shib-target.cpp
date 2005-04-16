@@ -229,11 +229,21 @@ pair<bool,void*> ShibTarget::doCheckAuthN(bool handler)
                 return pair<bool,void*>(true, returnOK());
         }
 
-        string auth_type = getAuthType();
-        if (strcasecmp(auth_type.c_str(),"shibboleth"))
-            return pair<bool,void*>(true,returnDecline());
-
+        // Three settings dictate how to proceed.
+        pair<bool,const char*> authType = m_priv->m_settings.first->getString("authType");
         pair<bool,bool> requireSession = m_priv->m_settings.first->getBool("requireSession");
+        pair<bool,const char*> requireSessionWith = m_priv->m_settings.first->getString("requireSessionWith");
+
+        // If no session is required AND the AuthType (an Apache-derived concept) isn't shibboleth,
+        // then we ignore this request and consider it unprotected. Apache might lie to us if
+        // ShibBasicHijack is on, but that's up to it.
+        if ((!requireSession.first || !requireSession.second) && !requireSessionWith.first &&
+#ifdef HAVE_STRCASECMP
+                (!authType.first || strcasecmp(authType.second,"shibboleth")))
+#else
+                (!authType.first || stricmp(authType.second,"shibboleth")))
+#endif
+            return pair<bool,void*>(true,returnDecline());
 
         pair<string,const char*> shib_cookie = m_priv->getCookieNameProps("_shibsession_");
         const char* session_id = m_priv->getCookie(this,shib_cookie.first);
@@ -424,9 +434,21 @@ pair<bool,void*> ShibTarget::doCheckAuthZ(void)
         if (!m_priv->m_app)
             throw ConfigurationException("System uninitialized, application did not supply request information.");
 
-        string auth_type = getAuthType();
-        if (strcasecmp(auth_type.c_str(),"shibboleth"))
-            return make_pair(true,returnDecline());
+        // Three settings dictate how to proceed.
+        pair<bool,const char*> authType = m_priv->m_settings.first->getString("authType");
+        pair<bool,bool> requireSession = m_priv->m_settings.first->getBool("requireSession");
+        pair<bool,const char*> requireSessionWith = m_priv->m_settings.first->getString("requireSessionWith");
+
+        // If no session is required AND the AuthType (an Apache-derived concept) isn't shibboleth,
+        // then we ignore this request and consider it unprotected. Apache might lie to us if
+        // ShibBasicHijack is on, but that's up to it.
+        if ((!requireSession.first || !requireSession.second) && !requireSessionWith.first &&
+#ifdef HAVE_STRCASECMP
+                (!authType.first || strcasecmp(authType.second,"shibboleth")))
+#else
+                (!authType.first || stricmp(authType.second,"shibboleth")))
+#endif
+            return pair<bool,void*>(true,returnDecline());
 
         // Do we have an access control plugin?
         if (m_priv->m_settings.second) {
@@ -1618,13 +1640,18 @@ string CgiParse::url_encode(const char* s)
     return ret;
 }
 // Subclasses may not need to override these particular virtual methods.
+void ShibTarget::log(ShibLogLevel level, const string& msg)
+{
+    Category::getInstance("shibtarget.ShibTarget").log(
+        (level == LogLevelDebug ? Priority::DEBUG :
+        (level == LogLevelInfo ? Priority::INFO :
+        (level == LogLevelWarn ? Priority::WARN : Priority::ERROR))),
+        msg
+    );
+}
 const IApplication* ShibTarget::getApplication() const
 {
     return m_priv->m_app;
-}
-string ShibTarget::getAuthType(void)
-{
-    return string("shibboleth");
 }
 void* ShibTarget::returnDecline(void)
 {
