@@ -31,8 +31,8 @@ ShibConfig @-PKGSYSCONFDIR-@/shibboleth.xml
 # You can now do most of this in shibboleth.xml using the RequestMap
 # but you MUST enable AuthType shibboleth for the module to process
 # any requests, and there MUST be a require command as well. To
-# enable Shibboleth but not specify any session/access requirement
-# use "require Shibboleth".
+# enable Shibboleth but not specify any session/access requirements
+# use "require shibboleth".
 #
 <Location /secure>
   AuthType shibboleth

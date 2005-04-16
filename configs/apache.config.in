@@ -18,8 +18,9 @@ ShibSchemaDir @-PKGXMLDIR-@
 ShibConfig @-PKGSYSCONFDIR-@/shibboleth.xml
 
 #
-# A handler needs to be established for the SHIRE URL
-# This applies the handler to any documents with a "shire" extension
+# An Apache handler needs to be established for the "handler" location.
+# This applies the handler to any requests for a resource with a ".sso"
+# extension.
 #
 <Files *.sso>
 SetHandler shib-handler
@@ -46,8 +47,8 @@ SetHandler shib-handler
 # You can now do most of this in shibboleth.xml using the RequestMap
 # but you MUST enable AuthType shibboleth for the module to process
 # any requests, and there MUST be a require command as well. To
-# enable Shibboleth but not specify any session/access requirement
-# use "require Shibboleth".
+# enable Shibboleth but not specify any session/access requirements
+# use "require shibboleth".
 #
 <Location /secure>
   AuthType shibboleth
