@@ -61,8 +61,6 @@
 #include <shib/shib-threads.h>
 #include <shib-target/shib-target.h>
 
-#include <log4cpp/Category.hh>
-
 #include <ctime>
 #include <fstream>
 #include <sstream>
@@ -72,7 +70,6 @@
 #include <httpext.h>
 
 using namespace std;
-using namespace log4cpp;
 using namespace saml;
 using namespace shibboleth;
 using namespace shibtarget;
@@ -370,11 +367,8 @@ class ShibTargetIsapiF : public ShibTarget
   PHTTP_FILTER_CONTEXT m_pfc;
   PHTTP_FILTER_PREPROC_HEADERS m_pn;
   string m_cookie;
-  Category* m_log;
 public:
-  ShibTargetIsapiF(PHTTP_FILTER_CONTEXT pfc, PHTTP_FILTER_PREPROC_HEADERS pn, const site_t& site)
-    : m_log(&Category::getInstance("isapi_shib"))
-  {
+  ShibTargetIsapiF(PHTTP_FILTER_CONTEXT pfc, PHTTP_FILTER_PREPROC_HEADERS pn, const site_t& site) {
 
     // URL path always come from IIS.
     dynabuf url(256);
@@ -418,14 +412,9 @@ public:
   ~ShibTargetIsapiF() { }
 
   virtual void log(ShibLogLevel level, const string &msg) {
-      if (level == LogLevelError)
-          LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, msg.c_str());
-      m_log->log(
-        (level == LogLevelDebug ? Priority::DEBUG :
-            (level == LogLevelInfo ? Priority::INFO :
-            (level == LogLevelWarn ? Priority::WARN : Priority::ERROR))),
-        msg
-        );
+    ShibTarget::log(level,msg);
+    if (level == LogLevelError)
+        LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, msg.c_str());
   }
   virtual string getCookies() const {
     dynabuf buf(128);
@@ -1048,12 +1037,9 @@ class ShibTargetIsapiE : public ShibTarget
 {
   LPEXTENSION_CONTROL_BLOCK m_lpECB;
   string m_cookie;
-  Category* m_log;
   
 public:
-  ShibTargetIsapiE(LPEXTENSION_CONTROL_BLOCK lpECB, const site_t& site)
-    : m_log(&Category::getInstance("isapi_shib_filter"))
-  {
+  ShibTargetIsapiE(LPEXTENSION_CONTROL_BLOCK lpECB, const site_t& site) {
     dynabuf ssl(5);
     GetServerVariable(lpECB,"HTTPS",ssl,5);
     bool SSL=(ssl=="on" || ssl=="ON");
@@ -1133,14 +1119,9 @@ public:
   ~ShibTargetIsapiE() { }
 
   virtual void log(ShibLogLevel level, const string &msg) {
+      ShibTarget::log(level,msg);
       if (level == LogLevelError)
           LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, msg.c_str());
-      m_log->log(
-        (level == LogLevelDebug ? Priority::DEBUG :
-            (level == LogLevelInfo ? Priority::INFO :
-            (level == LogLevelWarn ? Priority::WARN : Priority::ERROR))),
-        msg
-        );
   }
   virtual string getCookies() const {
     dynabuf buf(128);
