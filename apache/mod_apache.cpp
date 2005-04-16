@@ -47,9 +47,6 @@ using namespace shibboleth;
 using namespace shibtarget;
 
 extern "C" module MODULE_VAR_EXPORT mod_shib;
-#if 0
-int shib_handler(request_rec* r, const IApplication* application, SHIRE& shire);
-#endif
 
 namespace {
     char* g_szSHIBConfig = NULL;
@@ -101,6 +98,9 @@ struct shib_dir_config
     int bRequireAll;        // all require directives must match, otherwise OR logic
 
     // Content Configuration
+    char* szApplicationId;  // Shib applicationId value
+    char* szRequireWith;    // require a session using a specific initiator?
+    int bOff;               // flat-out disable all Shib processing
     int bBasicHijack;       // activate for AuthType Basic?
     int bRequireSession;    // require a session?
     int bExportAssertion;   // export SAML assertion to the environment?
@@ -110,11 +110,14 @@ struct shib_dir_config
 extern "C" void* create_shib_dir_config (SH_AP_POOL* p, char* d)
 {
     shib_dir_config* dc=(shib_dir_config*)ap_pcalloc(p,sizeof(shib_dir_config));
+    dc->bOff = -1;
     dc->bBasicHijack = -1;
     dc->bRequireSession = -1;
     dc->bExportAssertion = -1;
     dc->bRequireAll = -1;
     dc->szAuthGrpFile = NULL;
+    dc->szApplicationId = NULL;
+    dc->szRequireWith = NULL;
     return dc;
 }
 
@@ -132,6 +135,21 @@ extern "C" void* merge_shib_dir_config (SH_AP_POOL* p, void* base, void* sub)
     else
         dc->szAuthGrpFile=NULL;
 
+    if (child->szApplicationId)
+        dc->szApplicationId=ap_pstrdup(p,child->szApplicationId);
+    else if (parent->szApplicationId)
+        dc->szApplicationId=ap_pstrdup(p,parent->szApplicationId);
+    else
+        dc->szApplicationId=NULL;
+
+    if (child->szRequireWith)
+        dc->szRequireWith=ap_pstrdup(p,child->szRequireWith);
+    else if (parent->szRequireWith)
+        dc->szRequireWith=ap_pstrdup(p,parent->szRequireWith);
+    else
+        dc->szRequireWith=NULL;
+
+    dc->bOff=((child->bOff==-1) ? parent->bOff : child->bOff);
     dc->bBasicHijack=((child->bBasicHijack==-1) ? parent->bBasicHijack : child->bBasicHijack);
     dc->bRequireSession=((child->bRequireSession==-1) ? parent->bRequireSession : child->bRequireSession);
     dc->bExportAssertion=((child->bExportAssertion==-1) ? parent->bExportAssertion : child->bExportAssertion);
@@ -173,9 +191,7 @@ class ShibTargetApache : public ShibTarget
 {
 public:
   ShibTargetApache(request_rec* req) {
-    m_sc = (shib_server_config*)
-      ap_get_module_config(req->server->module_config, &mod_shib);
-
+    m_sc = (shib_server_config*)ap_get_module_config(req->server->module_config, &mod_shib);
     m_dc = (shib_dir_config*)ap_get_module_config(req->per_dir_config, &mod_shib);
 
     init(
@@ -193,12 +209,16 @@ public:
   ~ShibTargetApache() { }
 
   virtual void log(ShibLogLevel level, const string &msg) {
+    ShibTarget::log(level,msg);
+#ifdef SHIB_APACHE_13
     ap_log_rerror(APLOG_MARK,
-		  (level == LogLevelDebug ? APLOG_DEBUG :
-		   (level == LogLevelInfo ? APLOG_INFO :
-		    (level == LogLevelWarn ? APLOG_WARNING :
-		     APLOG_ERR)))|APLOG_NOERRNO, SH_AP_R(m_req),
-		  msg.c_str());
+        (level == LogLevelDebug ? APLOG_DEBUG :
+            (level == LogLevelInfo ? APLOG_INFO :
+            (level == LogLevelWarn ? APLOG_WARNING : APLOG_ERR)))|APLOG_NOERRNO, SH_AP_R(m_req), msg.c_str());
+#else
+    if (level == LogLevelError)
+        ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(m_req), msg.c_str());
+#endif
   }
   virtual string getCookies(void) const {
     const char *c = ap_table_get(m_req->headers_in, "Cookie");
@@ -246,21 +266,6 @@ public:
   virtual string getRemoteUser(void) {
     return string(SH_AP_USER(m_req) ? SH_AP_USER(m_req) : "");
   }
-  // override so we can look at the actual auth type and maybe override it.
-  virtual string getAuthType(void) {
-    const char *auth_type=ap_auth_type(m_req);
-    if (!auth_type)
-        return string("");
-    if (strcasecmp(auth_type, "shibboleth")) {
-      if (!strcasecmp(auth_type, "basic") && m_dc->bBasicHijack == 1) {
-        core_dir_config* conf= (core_dir_config*)ap_get_module_config(m_req->per_dir_config,
-			       ap_find_linked_module("http_core.c"));
-        auth_type = conf->ap_auth_type = "shibboleth";
-      }
-    }
-    return string(auth_type);
-  }
-
   virtual void* sendPage(
     const string& msg,
     int code=200,
@@ -293,6 +298,10 @@ public:
 
 extern "C" int shib_check_user(request_rec* r)
 {
+  // Short-circuit entirely?
+  if (((shib_dir_config*)ap_get_module_config(r->per_dir_config, &mod_shib))->bOff==1)
+    return DECLINED;
+    
   ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_check_user(%d): ENTER\n", (int)getpid());
 
   ostringstream threadid;
@@ -326,6 +335,10 @@ extern "C" int shib_check_user(request_rec* r)
 
 extern "C" int shib_handler(request_rec* r)
 {
+  // Short-circuit entirely?
+  if (((shib_dir_config*)ap_get_module_config(r->per_dir_config, &mod_shib))->bOff==1)
+    return DECLINED;
+
   ostringstream threadid;
   threadid << "[" << getpid() << "] shib_handler" << '\0';
   saml::NDC ndc(threadid.str().c_str());
@@ -342,7 +355,7 @@ extern "C" int shib_handler(request_rec* r)
   }
 #endif
 
-  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_handler(%d): ENTER", (int)getpid());
+  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_handler(%d): ENTER: %s", (int)getpid(), r->handler);
 
 #ifndef _DEBUG
   try {
@@ -369,6 +382,10 @@ extern "C" int shib_handler(request_rec* r)
  */
 extern "C" int shib_auth_checker(request_rec* r)
 {
+  // Short-circuit entirely?
+  if (((shib_dir_config*)ap_get_module_config(r->per_dir_config, &mod_shib))->bOff==1)
+    return DECLINED;
+
   ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_auth_checker(%d): ENTER", (int)getpid());
 
   ostringstream threadid;
@@ -418,16 +435,10 @@ IPlugIn* htAccessFactory(const DOMElement* e)
 class ApacheRequestMapper : public virtual IRequestMapper, public virtual IPropertySet
 {
 public:
-    struct ApacheRequestMapperSettings {
-        ApacheRequestMapperSettings(ShibTargetApache* sta, const IPropertySet* p) : m_sta(sta), m_props(p) {}
-        ShibTargetApache* m_sta;
-        const IPropertySet* m_props;
-    };
-
     ApacheRequestMapper(const DOMElement* e);
-    ~ApacheRequestMapper() { delete m_mapper; delete m_htaccess; delete m_key; }
+    ~ApacheRequestMapper() { delete m_mapper; delete m_htaccess; delete m_staKey; delete m_propsKey; }
     void lock() { m_mapper->lock(); }
-    void unlock() { delete (ApacheRequestMapperSettings*)(m_key->getData()); m_key->setData(NULL); m_mapper->unlock(); }
+    void unlock() { m_staKey->setData(NULL); m_propsKey->setData(NULL); m_mapper->unlock(); }
     Settings getSettings(ShibTarget* st) const;
     
     pair<bool,bool> getBool(const char* name, const char* ns=NULL) const;
@@ -440,7 +451,8 @@ public:
 
 private:
     IRequestMapper* m_mapper;
-    ThreadKey* m_key;
+    ThreadKey* m_staKey;
+    ThreadKey* m_propsKey;
     IAccessControl* m_htaccess;
 };
 
@@ -449,77 +461,92 @@ IPlugIn* ApacheRequestMapFactory(const DOMElement* e)
     return new ApacheRequestMapper(e);
 }
 
-ApacheRequestMapper::ApacheRequestMapper(const DOMElement* e) : m_mapper(NULL), m_htaccess(NULL), m_key(NULL)
+ApacheRequestMapper::ApacheRequestMapper(const DOMElement* e) : m_mapper(NULL), m_htaccess(NULL), m_staKey(NULL), m_propsKey(NULL)
 {
-    IPlugIn* p=SAMLConfig::getConfig().getPlugMgr().newPlugin(
-        "edu.internet2.middleware.shibboleth.sp.provider.XMLRequestMapProvider", e
-        );
+    IPlugIn* p=SAMLConfig::getConfig().getPlugMgr().newPlugin(shibtarget::XML::XMLRequestMapType,e);
     m_mapper=dynamic_cast<IRequestMapper*>(p);
     if (!m_mapper) {
         delete p;
         throw UnsupportedExtensionException("Embedded request mapper plugin was not of correct type.");
     }
     m_htaccess=new htAccessControl();
-    m_key=ThreadKey::create(NULL);
+    m_staKey=ThreadKey::create(NULL);
+    m_propsKey=ThreadKey::create(NULL);
 }
 
 IRequestMapper::Settings ApacheRequestMapper::getSettings(ShibTarget* st) const
 {
     Settings s=m_mapper->getSettings(st);
-    m_key->setData(new ApacheRequestMapperSettings(dynamic_cast<ShibTargetApache*>(st),s.first));
+    m_staKey->setData(dynamic_cast<ShibTargetApache*>(st));
+    m_propsKey->setData((void*)s.first);
     return pair<const IPropertySet*,IAccessControl*>(this,s.second ? s.second : m_htaccess);
 }
 
 pair<bool,bool> ApacheRequestMapper::getBool(const char* name, const char* ns) const
 {
-    ApacheRequestMapperSettings* arms=(ApacheRequestMapperSettings*)m_key->getData();
-    if (arms) {
-        if (!ns) {
-            // Override Apache-settable boolean properties.
-            if (name && !strcmp(name,"requireSession") && arms->m_sta->m_dc->bRequireSession==1)
-                return make_pair(true,true);
-            else if (name && !strcmp(name,"exportAssertion") && arms->m_sta->m_dc->bExportAssertion==1)
-                return make_pair(true,true);
-        }
-        return arms->m_props->getBool(name,ns);
+    ShibTargetApache* sta=reinterpret_cast<ShibTargetApache*>(m_staKey->getData());
+    const IPropertySet* s=reinterpret_cast<const IPropertySet*>(m_propsKey->getData());
+    if (sta && !ns) {
+        // Override Apache-settable boolean properties.
+        if (name && !strcmp(name,"requireSession") && sta->m_dc->bRequireSession==1)
+            return make_pair(true,true);
+        else if (name && !strcmp(name,"exportAssertion") && sta->m_dc->bExportAssertion==1)
+            return make_pair(true,true);
     }
-    return make_pair(false,false);
+    return s ? s->getBool(name,ns) : make_pair(false,false);
 }
 
 pair<bool,const char*> ApacheRequestMapper::getString(const char* name, const char* ns) const
 {
-    ApacheRequestMapperSettings* arms=(ApacheRequestMapperSettings*)m_key->getData();
-    return arms ? arms->m_props->getString(name,ns) : pair<bool,const char*>(false,NULL);
+    ShibTargetApache* sta=reinterpret_cast<ShibTargetApache*>(m_staKey->getData());
+    const IPropertySet* s=reinterpret_cast<const IPropertySet*>(m_propsKey->getData());
+    if (sta && !ns) {
+        // Override Apache-settable string properties.
+        if (name && !strcmp(name,"authType")) {
+            const char *auth_type=ap_auth_type(sta->m_req);
+            if (auth_type) {
+                // Check for Basic Hijack
+                if (!strcasecmp(auth_type, "basic") && sta->m_dc->bBasicHijack == 1)
+                    auth_type = "shibboleth";
+                return make_pair(true,auth_type);
+            }
+        }
+        else if (name && !strcmp(name,"applicationId") && sta->m_dc->szApplicationId)
+            return make_pair(true,sta->m_dc->szApplicationId);
+        else if (name && !strcmp(name,"requireSessionWith") && sta->m_dc->szRequireWith)
+            return make_pair(true,sta->m_dc->szRequireWith);
+    }
+    return s ? s->getString(name,ns) : pair<bool,const char*>(false,NULL);
 }
 
 pair<bool,const XMLCh*> ApacheRequestMapper::getXMLString(const char* name, const char* ns) const
 {
-    ApacheRequestMapperSettings* arms=(ApacheRequestMapperSettings*)m_key->getData();
-    return arms ? arms->m_props->getXMLString(name,ns) : pair<bool,const XMLCh*>(false,NULL);
+    const IPropertySet* s=reinterpret_cast<const IPropertySet*>(m_propsKey->getData());
+    return s ? s->getXMLString(name,ns) : pair<bool,const XMLCh*>(false,NULL);
 }
 
 pair<bool,unsigned int> ApacheRequestMapper::getUnsignedInt(const char* name, const char* ns) const
 {
-    ApacheRequestMapperSettings* arms=(ApacheRequestMapperSettings*)m_key->getData();
-    return arms ? arms->m_props->getUnsignedInt(name,ns) : make_pair(false,0);
+    const IPropertySet* s=reinterpret_cast<const IPropertySet*>(m_propsKey->getData());
+    return s ? s->getUnsignedInt(name,ns) : make_pair(false,0);
 }
 
 pair<bool,int> ApacheRequestMapper::getInt(const char* name, const char* ns) const
 {
-    ApacheRequestMapperSettings* arms=(ApacheRequestMapperSettings*)m_key->getData();
-    return arms ? arms->m_props->getInt(name,ns) : make_pair(false,0);
+    const IPropertySet* s=reinterpret_cast<const IPropertySet*>(m_propsKey->getData());
+    return s ? s->getInt(name,ns) : make_pair(false,0);
 }
 
 const IPropertySet* ApacheRequestMapper::getPropertySet(const char* name, const char* ns) const
 {
-    ApacheRequestMapperSettings* arms=(ApacheRequestMapperSettings*)m_key->getData();
-    return arms ? arms->m_props->getPropertySet(name,ns) : NULL;
+    const IPropertySet* s=reinterpret_cast<const IPropertySet*>(m_propsKey->getData());
+    return s ? s->getPropertySet(name,ns) : NULL;
 }
 
 const DOMElement* ApacheRequestMapper::getElement() const
 {
-    ApacheRequestMapperSettings* arms=(ApacheRequestMapperSettings*)m_key->getData();
-    return arms ? arms->m_props->getElement() : NULL;
+    const IPropertySet* s=reinterpret_cast<const IPropertySet*>(m_propsKey->getData());
+    return s ? s->getElement() : NULL;
 }
 
 static SH_AP_TABLE* groups_for_user(request_rec* r, const char* user, char* grpfile)
@@ -891,15 +918,24 @@ static command_rec shire_cmds[] = {
    (void *) XtOffsetOf (shib_server_config, szScheme),
    RSRC_CONF, TAKE1, "URL scheme to force into generated URLs for a vhost."},
    
+  {"ShibDisable", (config_fn_t)ap_set_flag_slot,
+   (void *) XtOffsetOf (shib_dir_config, bOff),
+   OR_AUTHCFG, FLAG, "Disable all Shib module activity here to save processing effort"},
+  {"ShibApplicationId", (config_fn_t)ap_set_string_slot,
+   (void *) XtOffsetOf (shib_dir_config, szApplicationId),
+   OR_AUTHCFG, FLAG, "Set Shibboleth applicationId property for content"},
   {"ShibBasicHijack", (config_fn_t)ap_set_flag_slot,
    (void *) XtOffsetOf (shib_dir_config, bBasicHijack),
    OR_AUTHCFG, FLAG, "Respond to AuthType Basic and convert to shib?"},
   {"ShibRequireSession", (config_fn_t)ap_set_flag_slot,
    (void *) XtOffsetOf (shib_dir_config, bRequireSession),
    OR_AUTHCFG, FLAG, "Initiates a new session if one does not exist."},
+  {"ShibRequireSessionWith", (config_fn_t)ap_set_string_slot,
+   (void *) XtOffsetOf (shib_dir_config, szRequireWith),
+   OR_AUTHCFG, FLAG, "Initiates a new session if one does not exist using a specific SessionInitiator"},
   {"ShibExportAssertion", (config_fn_t)ap_set_flag_slot,
    (void *) XtOffsetOf (shib_dir_config, bExportAssertion),
-   OR_AUTHCFG, FLAG, "Export SAML assertion to Shibboleth-defined header?"},
+   OR_AUTHCFG, FLAG, "Export SAML attribute assertion(s) to Shib-Attributes header?"},
   {"AuthGroupFile", (config_fn_t)shib_ap_set_file_slot,
    (void *) XtOffsetOf (shib_dir_config, szAuthGrpFile),
    OR_AUTHCFG, TAKE1, "text file containing group names and member user IDs"},
@@ -964,18 +1000,27 @@ static command_rec shib_cmds[] = {
      (void *) offsetof (shib_server_config, szScheme),
       RSRC_CONF, "URL scheme to force into generated URLs for a vhost."),
 
+  AP_INIT_FLAG("ShibDisable", (config_fn_t)ap_set_flag_slot,
+         (void *) offsetof (shib_dir_config, bOff),
+        OR_AUTHCFG, "Disable all Shib module activity here to save processing effort"),
+  AP_INIT_FLAG("ShibApplicationId", (config_fn_t)ap_set_string_slot,
+         (void *) offsetof (shib_dir_config, szApplicationId),
+        OR_AUTHCFG, "Set Shibboleth applicationId property for content"),
   AP_INIT_FLAG("ShibBasicHijack", (config_fn_t)ap_set_flag_slot,
 	       (void *) offsetof (shib_dir_config, bBasicHijack),
 	       OR_AUTHCFG, "Respond to AuthType Basic and convert to shib?"),
   AP_INIT_FLAG("ShibRequireSession", (config_fn_t)ap_set_flag_slot,
          (void *) offsetof (shib_dir_config, bRequireSession),
         OR_AUTHCFG, "Initiates a new session if one does not exist."),
+  AP_INIT_FLAG("ShibRequireSessionWith", (config_fn_t)ap_set_string_slot,
+         (void *) offsetof (shib_dir_config, szRequireWith),
+        OR_AUTHCFG, "Initiates a new session if one does not exist using a specific SessionInitiator"),
   AP_INIT_FLAG("ShibExportAssertion", (config_fn_t)ap_set_flag_slot,
          (void *) offsetof (shib_dir_config, bExportAssertion),
-        OR_AUTHCFG, "Export SAML assertion to Shibboleth-defined header?"),
+        OR_AUTHCFG, "Export SAML attribute assertion(s) to Shib-Attributes header?"),
   AP_INIT_TAKE1("AuthGroupFile", (config_fn_t)shib_ap_set_file_slot,
 		(void *) offsetof (shib_dir_config, szAuthGrpFile),
-		OR_AUTHCFG, "text file containing group names and member user IDs"),
+		OR_AUTHCFG, "Text file containing group names and member user IDs"),
   AP_INIT_FLAG("ShibRequireAll", (config_fn_t)ap_set_flag_slot,
 	       (void *) offsetof (shib_dir_config, bRequireAll),
 	       OR_AUTHCFG, "All require directives must match!"),
