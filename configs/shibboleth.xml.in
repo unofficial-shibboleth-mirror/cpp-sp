@@ -57,7 +57,25 @@
     <Local logger="@-PKGSYSCONFDIR-@/httpd.logger" localRelayState="true">
         <!--
         To customize behavior, map hostnames and path components to applicationId and other settings.
-        Can be either a pointer to an external file or an inline configuration.
+        The following provider types are available with the delivered code:
+        	type="edu.internet2.middleware.shibboleth.sp.apache.provider.ApacheRequestMapProvider"
+        		- Apache-specific plugin that allows Apache commands (like ShibRequireSession) to
+        			override or supplement the XML syntax, and supplies an htaccess authz plugin
+        			for all content if not overridden here.
+
+        	type="edu.internet2.middleware.shibboleth.target.provider.XMLRequestMap"
+        		- legacy plugin, alias for "edu.internet2.middleware.shibboleth.sp.provider.XMLRequestMapProvider"
+        			except on Apache, where the module will override this type with the provider above,
+        			to ensure behavior identical to 1.2 when older configuration files are supplied
+        
+        	type="edu.internet2.middleware.shibboleth.sp.provider.XMLRequestMapProvider"
+        		- portable plugin that does not support the older Apache-specific commands and works
+        			the same on all web platforms, this plugin does NOT support htaccess files
+        			for authz unless you also place an <htaccess/> element somewhere in the map
+
+			By default, the "legacy" plugin (the middle one above) is left in place, since that
+			matches 1.2 behavior on both Apache and IIS. Changing to one of the other two is
+			suggested, depending on whether you're using Apache or not.
         -->
         <RequestMapProvider type="edu.internet2.middleware.shibboleth.target.provider.XMLRequestMap">
             <RequestMap applicationId="default">
