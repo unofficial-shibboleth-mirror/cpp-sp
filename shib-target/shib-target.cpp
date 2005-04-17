@@ -249,12 +249,16 @@ pair<bool,void*> ShibTarget::doCheckAuthN(bool handler)
         const char* session_id = m_priv->getCookie(this,shib_cookie.first);
         if (!session_id || !*session_id) {
             // No session.  Maybe that's acceptable?
-            if (!requireSession.first || !requireSession.second)
+            if ((!requireSession.first || !requireSession.second) && !requireSessionWith.first)
                 return pair<bool,void*>(true,returnOK());
 
-            // No cookie, but we require a session. Initiate a new session using the default method.
+            // No cookie, but we require a session. Initiate a new session using the indicated method.
             procState = "Session Initiator Error";
-            const IPropertySet* initiator=m_priv->m_app->getDefaultSessionInitiator();
+            const IPropertySet* initiator=NULL;
+            if (requireSessionWith.first)
+                initiator=m_priv->m_app->getSessionInitiatorById(requireSessionWith.second);
+            if (!initiator)
+                initiator=m_priv->m_app->getDefaultSessionInitiator();
             return m_priv->doSessionInitiator(this, initiator ? initiator : m_priv->m_app->getPropertySet("Sessions"), false);
         }
 
@@ -275,7 +279,7 @@ pair<bool,void*> ShibTarget::doCheckAuthN(bool handler)
             log(LogLevelError, string("session processing failed: ") + e.what());
 
             // If no session is required, bail now.
-            if (!requireSession.first || !requireSession.second)
+            if ((!requireSession.first || !requireSession.second) && !requireSessionWith.first)
                 // Has to be OK because DECLINED will just cause Apache
                 // to fail when it can't locate anything to process the
                 // AuthType.  No session plus requireSession false means
@@ -293,7 +297,11 @@ pair<bool,void*> ShibTarget::doCheckAuthN(bool handler)
             if (retryable) {
                 // Session is invalid but we can retry -- initiate a new session.
                 procState = "Session Initiator Error";
-                const IPropertySet* initiator=m_priv->m_app->getDefaultSessionInitiator();
+                const IPropertySet* initiator=NULL;
+                if (requireSessionWith.first)
+                    initiator=m_priv->m_app->getSessionInitiatorById(requireSessionWith.second);
+                if (!initiator)
+                    initiator=m_priv->m_app->getDefaultSessionInitiator();
                 return m_priv->doSessionInitiator(this, initiator ? initiator : m_priv->m_app->getPropertySet("Sessions"), false);
             }
             throw;    // send it to the outer handler
