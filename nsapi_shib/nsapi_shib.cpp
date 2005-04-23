@@ -92,23 +92,6 @@ using namespace shibtarget;
 #define NET_WRITE(str) \
     if (IO_ERROR==net_write(sn->csd,str,strlen(str))) return REQ_EXIT
 
-#if 0
-/**************************************************************************/
-/* This isn't used anywhere -- why have it? */
-#define NET_WRITE1(buf,fmstr,param) \
-    do { sprintf(buf,fmstr,param); NET_WRITE(buf); } while(0)
-
-#define NET_WRITE2(buf,fmstr,param1,param2) \
-    do { sprintf(buf,fmstr,param1,param2); NET_WRITE(buf); } while(0)
-
-#define NET_WRITE3(buf,fmstr,param1,param2,param3) \
-    do { sprintf(buf,fmstr,param1,param2,param3); NET_WRITE(buf); } while(0)
-
-#define NET_WRITE4(buf,fmstr,param1,param2,param3,param4) \
-    do { sprintf(buf,fmstr,param1,param2,param3,param4); NET_WRITE(buf); } while(0)
-/**************************************************************************/
-#endif
-
 namespace {
     ShibTargetConfig* g_Config=NULL;
     string g_ServerName;
@@ -150,8 +133,9 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, Session* sn, Request* rq
 
     log_error(LOG_INFORM,"nsapi_shib_init",sn,rq,"nsapi_shib loaded for host (%s)",g_ServerName.c_str());
 
-    try
-    {
+#ifndef _DEBUG
+    try {
+#endif
         const char* schemadir=pblock_findval("shib-schemas",pb);
         if (!schemadir)
             schemadir=getenv("SHIBSCHEMAS");
@@ -168,26 +152,24 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, Session* sn, Request* rq
             ShibTargetConfig::Metadata |
             ShibTargetConfig::AAP |
             ShibTargetConfig::RequestMapper |
-            ShibTargetConfig::SHIREExtensions |
+            ShibTargetConfig::LocalExtensions |
             ShibTargetConfig::Logging
             );
-        if (!g_Config->init(schemadir,config)) {
+        if (!g_Config->init(schemadir) || !g_Config->load(config)) {
             g_Config=NULL;
             pblock_nvinsert("error","unable to initialize Shibboleth libraries",pb);
             return REQ_ABORTED;
         }
 
         daemon_atrestart(nsapi_shib_exit,NULL);
+#ifndef _DEBUG
     }
-    catch (...)
-    {
-#ifdef _DEBUG
-        throw;
-#endif
+    catch (...) {
         g_Config=NULL;
         pblock_nvinsert("error","caught exception, unable to initialize Shibboleth libraries",pb);
         return REQ_ABORTED;
     }
+#endif
     return REQ_PROCEED;
 }
 
@@ -196,6 +178,9 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, Session* sn, Request* rq
 
 class ShibTargetNSAPI : public ShibTarget
 {
+  pblock* m_pb;
+  Session* m_sn;
+  Request* m_rq;
 public:
   ShibTargetNSAPI(pblock* pb, Session* sn, Request* rq) {
     // Get everything but hostname...
@@ -229,25 +214,20 @@ public:
     const char *remote_ip = pblock_findval("ip", sn->client);
     const char *method = pblock_findval("method", rq->reqpb);
 
-    init(
-	 g_Config, scheme, host, port, url.c_str(), content_type,
-	 remote_ip, method
-	 );
+    init(scheme, host, port, url.c_str(), content_type, remote_ip, method);
 
     m_pb = pb;
     m_sn = sn;
     m_rq = rq;
   }
-  ~ShibTargetNSAPI() { }
+  ~ShibTargetNSAPI() {}
 
   virtual void log(ShibLogLevel level, const string &msg) {
-    log_error((level == LogLevelDebug ? LOG_INFORM :
-		   (level == LogLevelInfo ? LOG_INFORM :
-		    (level == LogLevelWarn ? LOG_FAILURE :
-		     LOG_FAILURE))),
-	      "NSAPI_SHIB", m_sn, m_rq, msg.c_str());
+    ShibTarget::log(level,msg);
+    if (level==LogLevelError)
+        log_error(LOG_FAILURE, "nsapi_shib", m_sn, m_rq, const_cast<char*>(msg.c_str()));
   }
-  virtual string getCookies(void) {
+  virtual string getCookies(void) const {
     char *cookies = NULL;
     if (request_header("cookie", &cookies, m_sn, m_rq) == REQ_ABORTED)
       throw("error accessing cookie header");
@@ -263,24 +243,24 @@ public:
   }
   virtual string getPostData(void) {
     char* content_length=NULL;
-    if (request_header("content-length", &content_length, m_sn, m_rq)
-	!=REQ_PROCEED || atoi(content_length) > 1024*1024) // 1MB?
+    if (request_header("content-length", &content_length, m_sn, m_rq)!=REQ_PROCEED ||
+         atoi(content_length) > 1024*1024) // 1MB?
       throw FatalProfileException("Blocked too-large a submittion to profile endpoint.");
     else {
       char ch=IO_EOF+1;
       int cl=atoi(content_length);
       string cgistr;
       while (cl && ch != IO_EOF) {
-	ch=netbuf_getc(m_sn->inbuf);
+        ch=netbuf_getc(m_sn->inbuf);
       
 	// Check for error.
 	if(ch==IO_ERROR)
 	  break;
-	cgistr += ch;
-	cl--;
+        cgistr += ch;
+        cl--;
       }
       if (cl)
-	throw FatalProfileException("error reading POST data from browser");
+        throw FatalProfileException("error reading POST data from browser");
       return cgistr;
     }
   }
@@ -293,8 +273,8 @@ public:
     pblock_nvinsert(name.c_str(), value.c_str() ,m_rq->srvhdrs);
   }
   virtual string getHeader(const string &name) {
-    const char *hdr = NULL;
-    if (request_header(name.c_str(), &hdr, m_sn, m_rq) != REQ_PROCEED)
+    char *hdr = NULL;
+    if (request_header(const_cast<char*>(name.c_str()), &hdr, m_sn, m_rq) != REQ_PROCEED)
       hdr = NULL;		// XXX: throw an exception here?
     return string(hdr ? hdr : "");
   }
@@ -306,6 +286,7 @@ public:
     return getHeader("remote-user");
   }
   // Override this function because we want to add the NSAPI Directory override
+  /*
   virtual pair<bool,bool> getRequireSession(IRequestMapper::Settings &settings) {
     pair<bool,bool> requireSession=settings.first->getBool("requireSession");
     if (!requireSession.first || !requireSession.second) {
@@ -315,40 +296,39 @@ public:
     }
     return requireSession;
   }
+  */
 
   virtual void* sendPage(
     const string& msg,
-    const string& content_type,
-    const saml::Iterator<header_t>& headers=EMPTY(header_t),
-    int code=200
+    int code=200,
+    const string& content_type="text/html",
+    const saml::Iterator<header_t>& headers=EMPTY(header_t)
     ) {
     pblock_nvinsert("Content-Type", content_type.c_str(), m_rq->srvhdrs);
-    // XXX: Do we need content-length: or connection: close headers?
+    pblock_nninsert("Content-Length", msg.length(), m_rq->srvhdrs);
+    pblock_nvinsert("Connection","close",m_rq->srvhdrs);
     while (headers.hasNext()) {
         const header_t& h=headers.next();
-	pblock_nvinsert(h.first.c_str(), h.second.c_str(), m_rq->srvhdrs);
+        pblock_nvinsert(h.first.c_str(), h.second.c_str(), m_rq->srvhdrs);
     }
-    protocol_status(m_sn, m_rq, PROTOCOL_OK, NULL);
-    NET_WRITE(const_cast<char*>(msg.c_str()));
-    return (VOID*)REQ_EXIT;
+    protocol_status(m_sn, m_rq, code, NULL);
+    net_write(m_sn->csd,const_cast<char*>(msg.c_str()),msg.length());
+    return (void*)REQ_EXIT;
   }
   virtual void* sendRedirect(const string& url) {
     pblock_nvinsert("Content-Type", "text/html", m_rq->srvhdrs);
-    pblock_nvinsert("Content-Length", "40", m_rq->srvhdrs);
+    pblock_nninsert("Content-Length", 40, m_rq->srvhdrs);
     pblock_nvinsert("Expires", "01-Jan-1997 12:00:00 GMT", m_rq->srvhdrs);
     pblock_nvinsert("Cache-Control", "private,no-store,no-cache", m_rq->srvhdrs);
     pblock_nvinsert("Location", url.c_str(), m_rq->srvhdrs);
     protocol_status(m_sn, m_rq, PROTOCOL_REDIRECT, "302 Please wait");
     protocol_start_response(m_sn, m_rq);
-    NET_WRITE("<HTML><BODY>Redirecting...</BODY></HTML>");
+    char* msg="<HTML><BODY>Redirecting...</BODY></HTML>";
+    net_write(m_sn->csd,msg,strlen(msg));
     return (void*)REQ_EXIT;
   }
-  virtual void* returnDecline(void) { return (void*)REQ_PROCEED; } // XXX?
+  virtual void* returnDecline(void) { return (void*)REQ_NOACTION; }
   virtual void* returnOK(void) { return (void*)REQ_PROCEED; }
-
-  pblock* m_pb;
-  Session* m_sn;
-  Request* m_rq;
 };
 
 /********************************************************************************/
@@ -378,22 +358,25 @@ extern "C" NSAPI_PUBLIC int nsapi_shib(pblock* pb, Session* sn, Request* rq)
     if (res.first) return (int)res.second;
 
     // user authN was okay -- export the assertions now
+    /*
     const char* param=pblock_findval("export-assertion", pb);
     bool doExportAssn = false;
     if (param && (!strcmp(param,"1") || !strcasecmp(param,"true")))
       doExportAssn = true;
-    res = stn.doExportAssertions(doExportAssn);
+    */
+    res = stn.doExportAssertions();
     if (res.first) return (int)res.second;
 
     // Check the Authorization
-    res = stf.doCheckAuthZ();
+    res = stn.doCheckAuthZ();
     if (res.first) return (int)res.second;
 
     // this user is ok.
     return REQ_PROCEED;
 
 #ifndef _DEBUG
-  } catch (...) {
+  }
+  catch (...) {
     return WriteClientError(sn, rq, FUNC, "threw an uncaught exception.");
   }
 #endif
@@ -413,13 +396,14 @@ extern "C" NSAPI_PUBLIC int shib_handler(pblock* pb, Session* sn, Request* rq)
 #endif
     ShibTargetNSAPI stn(pb, sn, rq);
 
-    pair<bool,void*> res = stn.doHandleProfile();
+    pair<bool,void*> res = stn.doHandler();
     if (res.first) return (int)res.second;
 
-    return WriteClientError(sn, rq, FUNC, "doHandleProfile() did not do anything.")
+    return WriteClientError(sn, rq, FUNC, "doHandler() did not do anything.");
 
 #ifndef _DEBUG
-  } catch (...) {
+  }
+  catch (...) {
     return WriteClientError(sn, rq, FUNC, "threw an uncaught exception.");
   }
 #endif
