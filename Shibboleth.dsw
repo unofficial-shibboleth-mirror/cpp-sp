@@ -69,6 +69,24 @@ Package=<4>
 
 ###############################################################################
 
+Project: "nsapi_shib"=.\nsapi_shib\nsapi_shib.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name shib
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name shibtarget
+    End Project Dependency
+}}}
+
+###############################################################################
+
 Project: "oncrpc"=.\oncrpc\oncrpc.dsp - Package Owner=<4>
 
 Package=<5>
@@ -193,6 +211,9 @@ Package=<4>
 {{{
     Begin Project Dependency
     Project_Dep_Name shib
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name shibtarget
     End Project Dependency
 }}}
 
