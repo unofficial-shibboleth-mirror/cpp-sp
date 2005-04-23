@@ -447,7 +447,7 @@ bool XMLAAPImpl::AttributeRule::scopeCheck(
         // Are we allowed to be unscoped?
         if (m_scoped && log.isWarnEnabled()) {
                 auto_ptr_char temp(m_name);
-                log.warn("attribute %s is scoped, no scope supplied, rejecting it",temp.get());
+                log.warn("attribute (%s) is scoped, no scope supplied, rejecting it",temp.get());
         }
         return !m_scoped;
     }
@@ -463,7 +463,7 @@ bool XMLAAPImpl::AttributeRule::scopeCheck(
                 if (log.isWarnEnabled()) {
                     auto_ptr_char temp(m_name);
                     auto_ptr_char temp2(scope);
-                    log.warn("attribute %s scope {%s} denied by site rule, rejecting it",temp.get(),temp2.get());
+                    log.warn("attribute (%s) scope (%s) denied by site rule, rejecting it",temp.get(),temp2.get());
                 }
                 return false;
             }
@@ -498,7 +498,7 @@ bool XMLAAPImpl::AttributeRule::scopeCheck(
     if (log.isWarnEnabled()) {
         auto_ptr_char temp(m_name);
         auto_ptr_char temp2(scope);
-        log.warn("attribute %s scope {%s} not accepted",temp.get(),temp2.get());
+        log.warn("attribute (%s) scope (%s) not accepted",temp.get(),temp2.get());
     }
     return false;
 }
@@ -513,7 +513,7 @@ bool XMLAAPImpl::AttributeRule::accept(const DOMElement* e, const IScopedRoleDes
     if (log.isDebugEnabled()) {
         auto_ptr_char temp(m_name);
         auto_ptr_char temp2(role ? role->getEntityDescriptor()->getId() : NULL);
-        log.debug("evaluating value for attribute %s from site %s",temp.get(),temp2.get() ? temp2.get() : "<unspecified>");
+        log.debug("evaluating value for attribute (%s) from site (%s)",temp.get(),temp2.get() ? temp2.get() : "<unspecified>");
     }
     
     // This is a complete revamp. The "any" cases become a degenerate case, the "least-specific" matching rule.
@@ -572,7 +572,7 @@ bool XMLAAPImpl::AttributeRule::accept(const DOMElement* e, const IScopedRoleDes
                         (!m_caseSensitive && !XMLString::compareIString(i->second,n->getNodeValue()))) {
                         if (log.isWarnEnabled()) {
                             auto_ptr_char temp(m_name);
-                            log.warn("attribute %s value explicitly denied by site rule, rejecting it",temp.get());
+                            log.warn("attribute (%s) value explicitly denied by site rule, rejecting it",temp.get());
                         }
                         return false;
                     }
@@ -582,7 +582,7 @@ bool XMLAAPImpl::AttributeRule::accept(const DOMElement* e, const IScopedRoleDes
                     if (match(i->second,n->getNodeValue())) {
                         if (log.isWarnEnabled()) {
                             auto_ptr_char temp(m_name);
-                            log.warn("attribute %s value explicitly denied by site rule, rejecting it",temp.get());
+                            log.warn("attribute (%s) value explicitly denied by site rule, rejecting it",temp.get());
                         }
                         return false;
                     }
@@ -622,7 +622,7 @@ bool XMLAAPImpl::AttributeRule::accept(const DOMElement* e, const IScopedRoleDes
     if (log.isWarnEnabled()) {
         auto_ptr_char temp(m_name);
         auto_ptr_char temp2(n->getNodeValue());
-        log.warn("%sattribute (%s) value {%s} could not be validated by policy, rejecting it",
+        log.warn("%sattribute (%s) value (%s) could not be validated by policy, rejecting it",
                  (bSimple ? "" : "complex "),temp.get(),temp2.get());
     }
     return false;
@@ -631,12 +631,13 @@ bool XMLAAPImpl::AttributeRule::accept(const DOMElement* e, const IScopedRoleDes
 void XMLAAPImpl::AttributeRule::apply(SAMLAttribute& attribute, const IRoleDescriptor* role) const
 {
     // Check each value.
-    Iterator<const DOMElement*> vals=attribute.getValueElements();
-    for (unsigned int i=0; i < vals.size();) {
-        if (!accept(vals[i],role ? dynamic_cast<const IScopedRoleDescriptor*>(role) : NULL))
-            attribute.removeValue(i);
+    DOMNodeList* vals=attribute.getValueElements();
+    int i2=0;
+    for (int i=0; vals && i < vals->getLength(); i++) {
+        if (!accept(static_cast<DOMElement*>(vals->item(i)),role ? dynamic_cast<const IScopedRoleDescriptor*>(role) : NULL))
+            attribute.removeValue(i2);
         else
-            i++;
+            i2++;
     }
     
     // Now see if we trashed it irrevocably.
