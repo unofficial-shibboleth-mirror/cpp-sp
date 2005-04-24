@@ -66,7 +66,7 @@ const char XML::MySQLSessionCacheType[] =   "edu.internet2.middleware.shibboleth
 const char XML::MySQLReplayCacheType[] =    "edu.internet2.middleware.shibboleth.sp.provider.MySQLReplayCacheProvider";
 
 const char XML::XMLRequestMapType[] =       "edu.internet2.middleware.shibboleth.sp.provider.XMLRequestMapProvider";
-const char XML::ApacheRequestMapType[] =    "edu.internet2.middleware.shibboleth.sp.apache.provider.ApacheRequestMapProvider";
+const char XML::NativeRequestMapType[] =    "edu.internet2.middleware.shibboleth.sp.provider.NativeRequestMapProvider";
 const char XML::LegacyRequestMapType[] =    "edu.internet2.middleware.shibboleth.target.provider.XMLRequestMap";
 
 const char XML::htAccessControlType[] =     "edu.internet2.middleware.shibboleth.sp.apache.provider.htAccessControl";

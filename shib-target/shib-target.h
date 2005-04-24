@@ -468,8 +468,8 @@ namespace shibtarget {
         
         // Request mapping/settings implementations
         static const char XMLRequestMapType[];      // portable XML-based map
-        static const char ApacheRequestMapType[];   // Apache command override of XML-based map
-        static const char LegacyRequestMapType[];   // older designation of XML map, hijacked by Apache
+        static const char NativeRequestMapType[];   // Native web server command override of XML-based map
+        static const char LegacyRequestMapType[];   // older designation of XML map, hijacked by web server
         
         // Access control implementations
         static const char htAccessControlType[];    // Apache-specific .htaccess authz module

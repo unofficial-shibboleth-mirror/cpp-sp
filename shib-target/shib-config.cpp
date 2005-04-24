@@ -165,6 +165,7 @@ bool STConfig::init(const char* schemadir)
     samlConf.getPlugMgr().regFactory(shibtarget::XML::MemorySessionCacheType,&MemoryCacheFactory);
     samlConf.getPlugMgr().regFactory(shibtarget::XML::LegacyRequestMapType,&XMLRequestMapFactory);
     samlConf.getPlugMgr().regFactory(shibtarget::XML::XMLRequestMapType,&XMLRequestMapFactory);
+    samlConf.getPlugMgr().regFactory(shibtarget::XML::NativeRequestMapType,&XMLRequestMapFactory);
     
     saml::XML::registerSchema(shibtarget::XML::SHIBTARGET_NS,shibtarget::XML::SHIBTARGET_SCHEMA_ID);
     saml::XML::registerSchema(shibtarget::XML::SAML2META_NS,shibtarget::XML::SAML2META_SCHEMA_ID);

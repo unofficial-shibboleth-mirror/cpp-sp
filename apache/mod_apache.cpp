@@ -879,9 +879,8 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
             exit(1);
         }
         SAMLConfig::getConfig().getPlugMgr().regFactory(shibtarget::XML::htAccessControlType,&htAccessFactory);
-        SAMLConfig::getConfig().getPlugMgr().regFactory(shibtarget::XML::ApacheRequestMapType,&ApacheRequestMapFactory);
-        
-        // We hijack the legacy type so that 1.2 config files will load this plugin instead of the basic plugin.
+        SAMLConfig::getConfig().getPlugMgr().regFactory(shibtarget::XML::NativeRequestMapType,&ApacheRequestMapFactory);
+        // We hijack the legacy type so that 1.2 config files will load this plugin
         SAMLConfig::getConfig().getPlugMgr().regFactory(shibtarget::XML::LegacyRequestMapType,&ApacheRequestMapFactory);
         
         if (!g_Config->load(g_szSHIBConfig)) {
