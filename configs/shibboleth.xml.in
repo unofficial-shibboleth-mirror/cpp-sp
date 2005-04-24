@@ -54,7 +54,7 @@
     </Global>
     
 	<!-- The Local section pertains to resource-serving processes (often process pools) like web servers. -->
-    <Local logger="@-PKGSYSCONFDIR-@/httpd.logger" localRelayState="true">
+    <Local logger="@-PKGSYSCONFDIR-@/native.logger" localRelayState="true">
         <!--
         To customize behavior, map hostnames and path components to applicationId and other settings.
         The following provider types are available with the delivered code:
@@ -106,7 +106,7 @@
             	and those requests will map to sp.example.org for configuration settings.
             	-->
                 <Site id="1" name="sp.example.org">
-                	<Alias>spalso.example.org</Alias>
+                	<Alias>spalias.example.org</Alias>
                 </Site>
             </ISAPI>
         </Implementation>

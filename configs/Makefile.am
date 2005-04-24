@@ -18,7 +18,7 @@ pkgsysconf_DATA = \
 # the config files will not overwrite existing versions.
 BUILTCONFIGFILES = \
 	shibboleth.xml \
-	httpd.logger \
+	native.logger \
 	shibd.logger \
 	AAP.xml \
 	IQ-sites.xml \
@@ -60,7 +60,7 @@ apache2.config: ${srcdir}/apache2.config.in Makefile ${top_builddir}/config.stat
 shibd.logger: ${srcdir}/shibd.logger.in Makefile ${top_builddir}/config.status
 	$(MAKE) do-build-file FILE=$@
 
-httpd.logger: ${srcdir}/httpd.logger.in Makefile ${top_builddir}/config.status
+native.logger: ${srcdir}/native.logger.in Makefile ${top_builddir}/config.status
 	$(MAKE) do-build-file FILE=$@
 
 shibboleth.xml: ${srcdir}/shibboleth.xml.in Makefile ${top_builddir}/config.status
@@ -101,7 +101,7 @@ CLEANFILES = \
 	apache.config \
 	apache2.config \
 	shibd.logger \
-	httpd.logger \
+	native.logger \
 	shibboleth.xml \
 	AAP.xml \
 	IQ-sites.xml \
@@ -109,7 +109,7 @@ CLEANFILES = \
 
 EXTRA_DIST = .cvsignore \
 	shibboleth.xml.in \
-	httpd.logger.in \
+	native.logger.in \
 	shibd.logger.in \
 	apache.config.in \
 	apache2.config.in \
