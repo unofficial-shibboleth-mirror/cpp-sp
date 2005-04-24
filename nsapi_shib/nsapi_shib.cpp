@@ -61,8 +61,6 @@
 #include <shib/shib-threads.h>
 #include <shib-target/shib-target.h>
 
-#include <log4cpp/Category.hh>
-
 #include <ctime>
 #include <fstream>
 #include <sstream>
@@ -83,7 +81,6 @@ extern "C"
 }
 
 using namespace std;
-using namespace log4cpp;
 using namespace saml;
 using namespace shibboleth;
 using namespace shibtarget;
@@ -97,6 +94,8 @@ namespace {
     string g_ServerName;
     string g_ServerScheme;
 }
+
+PlugManager::Factory SunRequestMapFactory;
 
 extern "C" NSAPI_PUBLIC void nsapi_shib_exit(void*)
 {
@@ -155,9 +154,19 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, Session* sn, Request* rq
             ShibTargetConfig::LocalExtensions |
             ShibTargetConfig::Logging
             );
-        if (!g_Config->init(schemadir) || !g_Config->load(config)) {
+        if (!g_Config->init(schemadir)) {
             g_Config=NULL;
             pblock_nvinsert("error","unable to initialize Shibboleth libraries",pb);
+            return REQ_ABORTED;
+        }
+
+        SAMLConfig::getConfig().getPlugMgr().regFactory(shibtarget::XML::NativeRequestMapType,&SunRequestMapFactory);
+        // We hijack the legacy type so that 1.2 config files will load this plugin
+        SAMLConfig::getConfig().getPlugMgr().regFactory(shibtarget::XML::LegacyRequestMapType,&SunRequestMapFactory);
+
+        if (!g_Config->load(config)) {
+            g_Config=NULL;
+            pblock_nvinsert("error","unable to initialize load Shibboleth configuration",pb);
             return REQ_ABORTED;
         }
 
@@ -178,9 +187,6 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, Session* sn, Request* rq
 
 class ShibTargetNSAPI : public ShibTarget
 {
-  pblock* m_pb;
-  Session* m_sn;
-  Request* m_rq;
 public:
   ShibTargetNSAPI(pblock* pb, Session* sn, Request* rq) {
     // Get everything but hostname...
@@ -207,9 +213,8 @@ public:
     // In other cases, we're going to rely on the initialization process...
     host=g_ServerName.c_str();
 
-    char *content_type = NULL;
-    if (request_header("content-type", &content_type, sn, rq) != REQ_PROCEED)
-      throw("Bad Content Type");
+    char* content_type = "";
+    request_header("content-type", &content_type, sn, rq);
       
     const char *remote_ip = pblock_findval("ip", sn->client);
     const char *method = pblock_findval("method", rq->reqpb);
@@ -245,7 +250,7 @@ public:
     char* content_length=NULL;
     if (request_header("content-length", &content_length, m_sn, m_rq)!=REQ_PROCEED ||
          atoi(content_length) > 1024*1024) // 1MB?
-      throw FatalProfileException("Blocked too-large a submittion to profile endpoint.");
+      throw FatalProfileException("Blocked too-large a submission to profile endpoint.");
     else {
       char ch=IO_EOF+1;
       int cl=atoi(content_length);
@@ -253,29 +258,27 @@ public:
       while (cl && ch != IO_EOF) {
         ch=netbuf_getc(m_sn->inbuf);
       
-	// Check for error.
-	if(ch==IO_ERROR)
-	  break;
+        // Check for error.
+        if(ch==IO_ERROR)
+          break;
         cgistr += ch;
         cl--;
       }
       if (cl)
-        throw FatalProfileException("error reading POST data from browser");
+        throw FatalProfileException("Error reading profile submission from browser.");
       return cgistr;
     }
   }
   virtual void clearHeader(const string &name) {
-    // srvhdrs or headers?
     param_free(pblock_remove(name.c_str(), m_rq->headers));
   }
   virtual void setHeader(const string &name, const string &value) {
-    // srvhdrs or headers?
-    pblock_nvinsert(name.c_str(), value.c_str() ,m_rq->srvhdrs);
+    pblock_nvinsert(name.c_str(), value.c_str() ,m_rq->headers);
   }
   virtual string getHeader(const string &name) {
     char *hdr = NULL;
     if (request_header(const_cast<char*>(name.c_str()), &hdr, m_sn, m_rq) != REQ_PROCEED)
-      hdr = NULL;		// XXX: throw an exception here?
+      hdr = NULL;
     return string(hdr ? hdr : "");
   }
   virtual void setRemoteUser(const string &user) {
@@ -329,6 +332,10 @@ public:
   }
   virtual void* returnDecline(void) { return (void*)REQ_NOACTION; }
   virtual void* returnOK(void) { return (void*)REQ_PROCEED; }
+
+  pblock* m_pb;
+  Session* m_sn;
+  Request* m_rq;
 };
 
 /********************************************************************************/
@@ -399,19 +406,127 @@ extern "C" NSAPI_PUBLIC int shib_handler(pblock* pb, Session* sn, Request* rq)
     pair<bool,void*> res = stn.doHandler();
     if (res.first) return (int)res.second;
 
-    return WriteClientError(sn, rq, FUNC, "doHandler() did not do anything.");
+    return WriteClientError(sn, rq, FUNC, "Shibboleth handler did not do anything.");
 
 #ifndef _DEBUG
   }
   catch (...) {
-    return WriteClientError(sn, rq, FUNC, "threw an uncaught exception.");
+    return WriteClientError(sn, rq, FUNC, "Filter threw an unknown exception.");
   }
 #endif
 }
 
 
-#if 0
+class SunRequestMapper : public virtual IRequestMapper, public virtual IPropertySet
+{
+public:
+    SunRequestMapper(const DOMElement* e);
+    ~SunRequestMapper() { delete m_mapper; delete m_stKey; delete m_propsKey; }
+    void lock() { m_mapper->lock(); }
+    void unlock() { m_stKey->setData(NULL); m_propsKey->setData(NULL); m_mapper->unlock(); }
+    Settings getSettings(ShibTarget* st) const;
+    
+    pair<bool,bool> getBool(const char* name, const char* ns=NULL) const;
+    pair<bool,const char*> getString(const char* name, const char* ns=NULL) const;
+    pair<bool,const XMLCh*> getXMLString(const char* name, const char* ns=NULL) const;
+    pair<bool,unsigned int> getUnsignedInt(const char* name, const char* ns=NULL) const;
+    pair<bool,int> getInt(const char* name, const char* ns=NULL) const;
+    const IPropertySet* getPropertySet(const char* name, const char* ns="urn:mace:shibboleth:target:config:1.0") const;
+    const DOMElement* getElement() const;
 
+private:
+    IRequestMapper* m_mapper;
+    ThreadKey* m_stKey;
+    ThreadKey* m_propsKey;
+};
+
+IPlugIn* SunRequestMapFactory(const DOMElement* e)
+{
+    return new SunRequestMapper(e);
+}
+
+SunRequestMapper::SunRequestMapper(const DOMElement* e) : m_mapper(NULL), m_stKey(NULL), m_propsKey(NULL)
+{
+    IPlugIn* p=SAMLConfig::getConfig().getPlugMgr().newPlugin(shibtarget::XML::XMLRequestMapType,e);
+    m_mapper=dynamic_cast<IRequestMapper*>(p);
+    if (!m_mapper) {
+        delete p;
+        throw UnsupportedExtensionException("Embedded request mapper plugin was not of correct type.");
+    }
+    m_stKey=ThreadKey::create(NULL);
+    m_propsKey=ThreadKey::create(NULL);
+}
+
+IRequestMapper::Settings SunRequestMapper::getSettings(ShibTarget* st) const
+{
+    Settings s=m_mapper->getSettings(st);
+    m_stKey->setData(dynamic_cast<ShibTargetNSAPI*>(st));
+    m_propsKey->setData((void*)s.first);
+    return pair<const IPropertySet*,IAccessControl*>(this,s.second);
+}
+
+pair<bool,bool> SunRequestMapper::getBool(const char* name, const char* ns) const
+{
+    ShibTargetNSAPI* stn=reinterpret_cast<ShibTargetNSAPI*>(m_stKey->getData());
+    const IPropertySet* s=reinterpret_cast<const IPropertySet*>(m_propsKey->getData());
+    if (stn && !ns && name) {
+        // Override boolean properties.
+        const char* param=pblock_findval(name,stn->m_pb);
+        if (param && (!strcmp(param,"1") || !util_strcasecmp(param,"true")))
+            return make_pair(true,true);
+    }
+    return s ? s->getBool(name,ns) : make_pair(false,false);
+}
+
+pair<bool,const char*> SunRequestMapper::getString(const char* name, const char* ns) const
+{
+    ShibTargetNSAPI* stn=reinterpret_cast<ShibTargetNSAPI*>(m_stKey->getData());
+    const IPropertySet* s=reinterpret_cast<const IPropertySet*>(m_propsKey->getData());
+    if (stn && !ns && name) {
+        // Override string properties.
+        if (!strcmp(name,"authType"))
+            return pair<bool,const char*>(true,"shibboleth");
+        else {
+            const char* param=pblock_findval(name,stn->m_pb);
+            if (param)
+                return make_pair(true,param);
+        }
+    }
+    return s ? s->getString(name,ns) : pair<bool,const char*>(false,NULL);
+}
+
+pair<bool,const XMLCh*> SunRequestMapper::getXMLString(const char* name, const char* ns) const
+{
+    const IPropertySet* s=reinterpret_cast<const IPropertySet*>(m_propsKey->getData());
+    return s ? s->getXMLString(name,ns) : pair<bool,const XMLCh*>(false,NULL);
+}
+
+pair<bool,unsigned int> SunRequestMapper::getUnsignedInt(const char* name, const char* ns) const
+{
+    const IPropertySet* s=reinterpret_cast<const IPropertySet*>(m_propsKey->getData());
+    return s ? s->getUnsignedInt(name,ns) : make_pair(false,0);
+}
+
+pair<bool,int> SunRequestMapper::getInt(const char* name, const char* ns) const
+{
+    const IPropertySet* s=reinterpret_cast<const IPropertySet*>(m_propsKey->getData());
+    return s ? s->getInt(name,ns) : make_pair(false,0);
+}
+
+const IPropertySet* SunRequestMapper::getPropertySet(const char* name, const char* ns) const
+{
+    const IPropertySet* s=reinterpret_cast<const IPropertySet*>(m_propsKey->getData());
+    return s ? s->getPropertySet(name,ns) : NULL;
+}
+
+const DOMElement* SunRequestMapper::getElement() const
+{
+    const IPropertySet* s=reinterpret_cast<const IPropertySet*>(m_propsKey->getData());
+    return s ? s->getElement() : NULL;
+}
+
+
+#if 0
 
 IRequestMapper::Settings map_request(pblock* pb, Session* sn, Request* rq, IRequestMapper* mapper, string& target)
 {
