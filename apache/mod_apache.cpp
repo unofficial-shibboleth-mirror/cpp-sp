@@ -528,13 +528,13 @@ pair<bool,const XMLCh*> ApacheRequestMapper::getXMLString(const char* name, cons
 pair<bool,unsigned int> ApacheRequestMapper::getUnsignedInt(const char* name, const char* ns) const
 {
     const IPropertySet* s=reinterpret_cast<const IPropertySet*>(m_propsKey->getData());
-    return s ? s->getUnsignedInt(name,ns) : make_pair(false,0);
+    return s ? s->getUnsignedInt(name,ns) : pair<bool,unsigned int>(false,0);
 }
 
 pair<bool,int> ApacheRequestMapper::getInt(const char* name, const char* ns) const
 {
     const IPropertySet* s=reinterpret_cast<const IPropertySet*>(m_propsKey->getData());
-    return s ? s->getInt(name,ns) : make_pair(false,0);
+    return s ? s->getInt(name,ns) : pair<bool,int>(false,0);
 }
 
 const IPropertySet* ApacheRequestMapper::getPropertySet(const char* name, const char* ns) const
