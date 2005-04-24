@@ -169,8 +169,6 @@
 				<complexType>
 					<choice maxOccurs="unbounded">
 						<element ref="conf:ISAPI"/>
-						<element ref="conf:NSAPI"/>
-						<element ref="conf:Java"/>
 						<any namespace="##other" processContents="lax"/>
 					</choice>
 				</complexType>
@@ -460,13 +458,13 @@
 		<complexType>
 			<sequence>
 				<element name="RelyingParty" minOccurs="0" maxOccurs="unbounded">
-					<complexType mixed="false">
-						<complexContent>
-							<restriction base="anyType">
-								<attribute name="Name" type="string" use="required"/>
-								<attributeGroup ref="conf:CredentialUseGroup"/>
-							</restriction>
-						</complexContent>
+					<complexType>
+						<sequence>
+							<any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+						</sequence>
+						<attribute name="Name" type="string" use="required"/>
+						<attributeGroup ref="conf:CredentialUseGroup"/>
+						<anyAttribute namespace="##other" processContents="lax"/>
 					</complexType>
 				</element>
 				<any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
