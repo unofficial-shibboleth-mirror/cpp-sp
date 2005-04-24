@@ -12,7 +12,7 @@ BuildRoot:	%{_tmppath}/%{name}-%{version}-root
 
 BuildRequires:	openssl-devel, curl-devel >= 7.10.6, xerces-c-devel >= 2.6.1
 BuildRequires:	xml-security-c-devel >= 1.1.0, log4cpp-devel >= 0.3.5
-BuildRequires:	zlib-devel, opensaml-devel, httpd-devel
+BuildRequires:	zlib-devel, opensaml-devel >= 1.1.0, httpd-devel
 
 %description
 Shibboleth, a project of Internet2/MACE, is developing architectures,
@@ -88,17 +88,17 @@ make check
 
 # Plug the shibboleth SP into Apache2 on a Red Hat system.
 [ -d %{_sysconfdir}/httpd/conf.d ] || exit 0
-[ -f %{_sysconfdir}/httpd/conf.d/shibboleth.conf ] && exit 0
+[ -f %{_sysconfdir}/httpd/conf.d/shib.conf ] && exit 0
 cp -p %{_sysconfdir}/shibboleth/apache2.config \
-    %{_sysconfdir}/httpd/conf.d/shibboleth.conf
+    %{_sysconfdir}/httpd/conf.d/shib.conf
 
 %postun
 /sbin/ldconfig
 
 # delete the shibboleth apache configuration if we're being removed
 [ "$0" = 0 ] || exit 0
-[ -f %{_sysconfdir}/httpd/conf.d/shibboleth.conf ] && \
-    rm -f %{_sysconfdir}/httpd/conf.d/shibboleth.conf
+[ -f %{_sysconfdir}/httpd/conf.d/shib.conf ] && \
+    rm -f %{_sysconfdir}/httpd/conf.d/shib.conf
 
 %triggerin selinux-targeted-policy -- %{name}
 restorecon %{_sbindir}/shibd
@@ -113,21 +113,22 @@ make -W load
 %doc _docs/DEPLOY-GUIDE-ORIGIN.html _docs/main.css _docs/README.txt
 %doc _docs/DEPLOY-GUIDE-TARGET.html _docs/LICENSE.txt _docs/mysql-4.0.12.diff
 %{_sbindir}/shibd
-%{_bindir}/siterefresh
+%{_sbindir}/siterefresh
+%{_bindir}/shibtest
 %{_libdir}/libshib.so.*
 %{_libdir}/libshib-target.so.*
+%dir %{_datadir}/xml/shibboleth
+%{_datadir}/xml/shibboleth/*.xsd
 %dir %{_sysconfdir}/shibboleth
-%{_sysconfdir}/shibboleth/*.xsd
 %config %{_sysconfdir}/shibboleth/*.xml
 %config %{_sysconfdir}/shibboleth/*.html
 %config %{_sysconfdir}/shibboleth/*.logger
 %config %{_sysconfdir}/shibboleth/inqueue.pem
-%config %{_sysconfdir}/shibboleth/shar.crt
-%config %{_sysconfdir}/shibboleth/shar.key
+%config %{_sysconfdir}/shibboleth/example.crt
+%config %{_sysconfdir}/shibboleth/example.key
 %{_sysconfdir}/shibboleth/*.dist
 %{_sysconfdir}/shibboleth/apache*.config
 
-%exclude %{_bindir}/shibtest
 %exclude %{_bindir}/posttest
 %exclude %{_bindir}/test-client
 %exclude %{_libexecdir}/*.la
@@ -144,7 +145,11 @@ make -W load
 %{_sysconfdir}/selinux/targeted/src/policy/domain/program/*.te
 
 %changelog
-* Fri Apr  1 2005  Derek Atkins  <derek@ihtfp.com>  - 1.3-0
+* Sun Apr 24 2005  Scott Cantor  <cantor.2@osu.edu>  - 1.3-1
+- Updated test programs and location of schemas.
+- move siterefresh to to sbindir
+
+* Fri Apr  1 2005  Derek Atkins  <derek@ihtfp.com>  - 1.3-1
 - Add selinux-targeted-policy package
 - move shar to sbindir
 
