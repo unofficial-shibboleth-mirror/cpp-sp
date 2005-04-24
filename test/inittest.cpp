@@ -76,7 +76,7 @@ void init(void)
 			  ShibTargetConfig::LocalExtensions
 			  );
 
-    if (!g_Config->init(SHIB_SCHEMAS,SHIB_CONFIG)) {
+    if (!g_Config->init(SHIB_SCHEMAS) || !g_Config->load(SHIB_CONFIG)) {
       cerr << "init() failed to initialize SHIB Target" << endl;
       exit(1);
     }
