@@ -113,7 +113,7 @@ const char* ShibMLP::run(const string& is, const IPropertySet* props, std::strin
   const char* lastpos = line;
   const char* thispos;
 
-  m_priv->log->info("Processing string");
+  m_priv->log->debug("Processing string");
 
   //
   // Search for SHIBMLP tags.  These are of the form:
@@ -278,7 +278,7 @@ const char* ShibMLP::run(istream& is, const IPropertySet* props, std::string* ou
   static string eol = "\r\n";
   string str, line;
 
-  m_priv->log->info("processing stream");
+  m_priv->log->debug("processing stream");
 
   while (getline(is, line))
     str += line + eol;
