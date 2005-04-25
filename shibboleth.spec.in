@@ -130,7 +130,6 @@ make load
 %config %{_sysconfdir}/shibboleth/example.key
 %{_sysconfdir}/shibboleth/*.dist
 %{_sysconfdir}/shibboleth/apache*.config
-%dir %{_logdir}/shibboleth
 
 %exclude %{_bindir}/posttest
 %exclude %{_bindir}/test-client
