@@ -106,7 +106,8 @@ restorecon %{_sbindir}/shibd
 
 %triggerin selinux-policy-targeted -- selinux-policy-targeted-sources
 cd %{_sysconfdir}/selinux/targeted/src/policy || exit 1
-make -W load
+make -W install
+make load
 
 %files -f rpm.filelist
 %defattr(-,root,root,-)
