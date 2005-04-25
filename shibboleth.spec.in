@@ -104,7 +104,7 @@ cp -p %{_sysconfdir}/shibboleth/apache2.config \
 %triggerin selinux-policy-targeted -- %{name}
 restorecon %{_sbindir}/shibd
 
-%triggerin selinux-policy-targeted -- selinux-policy-targeted-source
+%triggerin selinux-policy-targeted -- selinux-policy-targeted-sources
 cd %{_sysconfdir}/selinux/targeted/src/policy || exit 1
 make -W load
 
@@ -129,6 +129,7 @@ make -W load
 %config %{_sysconfdir}/shibboleth/example.key
 %{_sysconfdir}/shibboleth/*.dist
 %{_sysconfdir}/shibboleth/apache*.config
+%dir %{_logdir}/shibboleth
 
 %exclude %{_bindir}/posttest
 %exclude %{_bindir}/test-client
