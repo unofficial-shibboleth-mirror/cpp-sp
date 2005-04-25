@@ -7,7 +7,7 @@ BUILDFILES = shibshar.fc
 CLEANFILES = $(BUILDFILES)
 
 sepolicy = targeted
-selinuxdir = $(sysconfdir)/selinux/targeted/src/policy 
+selinuxdir = $(sysconfdir)/selinux/targeted/src/policy
 fcfiledir = $(selinuxdir)/file_contexts/program
 fcfile_DATA = shibshar.fc
 
