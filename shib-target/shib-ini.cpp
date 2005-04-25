@@ -634,6 +634,7 @@ short XMLApplication::acceptNode(const DOMNode* node) const
         !XMLString::compareString(name,SHIBT_L(CredentialUse)) ||
         !XMLString::compareString(name,SHIBT_L(RelyingParty)) ||
         !XMLString::compareString(name,SHIBT_L(FederationProvider)) ||
+        !XMLString::compareString(name,SHIBT_L(MetadataProvider)) ||
         !XMLString::compareString(name,SHIBT_L(TrustProvider)))
         return FILTER_REJECT;
 
