@@ -40,12 +40,12 @@ education community.
 This package contains the headers and other necessary files to build
 applications that use the shibboleth library.
 
-%package selinux-targeted-policy
-Summary: SELinux targeted policy configuration for Shibboleth SP
+%package selinux-policy-targeted
+Summary: SELinux policy targeted configuration for Shibboleth SP
 Group: System Environment/Base
-Requires: selinux-targeted-policy-source
+Requires: selinux-policy-targeted-sources
 
-%description selinux-targeted-policy
+%description selinux-policy-targeted
 Shibboleth, a project of Internet2/MACE, is developing architectures,
 policy structures, practical technologies, and an open source
 implementation to support inter-institutional sharing of web resources
@@ -55,8 +55,9 @@ education community.
 
 This package contains the SELinux Policy (source) Configuration to
 enable the Shibboleth SP to integrate into Apache HTTPD in Red Hat /
-Fedora's Targeted Policy SELinux implementation.  It requires
-rebuilding your policy, so you must have the policy-source installed.
+Fedora's Policy Targeted SELinux implementation.  It requires
+rebuilding your policy, so you must have the policy-targeted-source
+installed.
 
 %prep
 %setup -q
@@ -100,11 +101,11 @@ cp -p %{_sysconfdir}/shibboleth/apache2.config \
 [ -f %{_sysconfdir}/httpd/conf.d/shib.conf ] && \
     rm -f %{_sysconfdir}/httpd/conf.d/shib.conf
 
-%triggerin selinux-targeted-policy -- %{name}
+%triggerin selinux-policy-targeted -- %{name}
 restorecon %{_sbindir}/shibd
 
-%triggerin selinux-targeted-policy -- selinux-targeted-policy-source
-cd %{_sysconfdir}/selinux/src/policy || exit 1
+%triggerin selinux-policy-targeted -- selinux-policy-targeted-source
+cd %{_sysconfdir}/selinux/targeted/src/policy || exit 1
 make -W load
 
 %files -f rpm.filelist
@@ -139,10 +140,10 @@ make -W load
 %{_libdir}/libshib.so
 %{_libdir}/libshib-target.so
 
-%files selinux-targeted-policy
+%files selinux-policy-targeted
 %defattr(-,root,root,-)
 %{_sysconfdir}/selinux/targeted/src/policy/file_contexts/program/*.fc
-%{_sysconfdir}/selinux/targeted/src/policy/domain/program/*.te
+%{_sysconfdir}/selinux/targeted/src/policy/domains/program/*.te
 
 %changelog
 * Sun Apr 24 2005  Scott Cantor  <cantor.2@osu.edu>  - 1.3-1
