@@ -855,6 +855,37 @@ SAMLResponse* InternalCCacheEntry::filter(SAMLResponse* r, const IApplication* a
             copy->removeAssertion(j);
         }
     }
+
+    // Audit the results.    
+    STConfig& stc=static_cast<STConfig&>(ShibTargetConfig::getConfig());
+    Category& tran=stc.getTransactionLog();
+    if (tran.isInfoEnabled()) {
+        tran.infoStream() <<
+            "Caching the following attributes after AAP applied for session (ID: " <<
+                m_id <<
+            ") on (applicationId: " <<
+                m_application_id <<
+            ") for principal from (IdP: " <<
+                m_provider_id <<
+            ") {";
+
+        Iterator<SAMLAssertion*> loggies=copy->getAssertions();
+        while (loggies.hasNext()) {
+            SAMLAssertion* logit=loggies.next();
+            Iterator<SAMLStatement*> states=logit->getStatements();
+            while (states.hasNext()) {
+                SAMLAttributeStatement* state=dynamic_cast<SAMLAttributeStatement*>(states.next());
+                Iterator<SAMLAttribute*> attrs=state ? state->getAttributes() : EMPTY(SAMLAttribute*);
+                while (attrs.hasNext()) {
+                    SAMLAttribute* attr=attrs.next();
+                    auto_ptr_char attrname(attr->getName());
+                    tran.infoStream() << "\t" << attrname.get() << " (" << attr->getValues().size() << " values)";
+                }
+            }
+        }
+        tran.info("}");
+    }
+    stc.releaseTransactionLog();
     
     return copy.release();
 }
