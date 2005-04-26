@@ -108,6 +108,7 @@ restorecon %{_sbindir}/shibd
 cd %{_sysconfdir}/selinux/targeted/src/policy || exit 1
 make -W install
 make load
+restorecon %{_sbindir}/shibd
 
 %files -f rpm.filelist
 %defattr(-,root,root,-)
