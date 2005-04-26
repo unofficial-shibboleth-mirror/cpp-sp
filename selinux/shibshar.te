@@ -20,7 +20,7 @@ allow shibshar_t var_log_t:file rw_file_perms;
 allow shibshar_t var_log_t:file { create };
 
 allow shibshar_t shibshar_t:unix_stream_socket create_stream_socket_perms;
-allow shibshar_t shibshar_t:netlink_route_socket { create bind };
+allow shibshar_t shibshar_t:netlink_route_socket { create bind getattr};
 allow shibshar_t usr_t:dir r_dir_perms;
 allow shibshar_t usr_t:file rx_file_perms;
  
