@@ -120,6 +120,7 @@ restorecon %{_sbindir}/shibd
 %{_bindir}/shibtest
 %{_libdir}/libshib.so.*
 %{_libdir}/libshib-target.so.*
+%dir /var/log/shibboleth
 %dir %{_datadir}/xml/shibboleth
 %{_datadir}/xml/shibboleth/*.xsd
 %dir %{_sysconfdir}/shibboleth
