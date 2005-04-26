@@ -118,7 +118,7 @@ namespace {
         ~ShibbolethTrust();
 
         bool validate(void* certEE, const Iterator<void*>& certChain, const IRoleDescriptor* role, bool checkName=true);
-        bool validate(const saml::SAMLSignedObject& token, const IRoleDescriptor* role);
+        bool validate(const saml::SAMLSignedObject& token, const IRoleDescriptor* role, ITrust* certValidator=NULL);
         
     private:
         bool validate(X509* EE, STACK_OF(X509)* untrusted, const IKeyAuthority* rule);
@@ -503,7 +503,7 @@ bool ShibbolethTrust::validate(void* certEE, const Iterator<void*>& certChain, c
     return false;
 }
 
-bool ShibbolethTrust::validate(const saml::SAMLSignedObject& token, const IRoleDescriptor* role)
+bool ShibbolethTrust::validate(const saml::SAMLSignedObject& token, const IRoleDescriptor* role, ITrust* certValidator)
 {
     if (BasicTrust::validate(token,role))
         return true;
@@ -554,7 +554,7 @@ bool ShibbolethTrust::validate(const saml::SAMLSignedObject& token, const IRoleD
     
     bool ret=false;
     if (certEE)
-        ret=validate(certEE,chain,role);
+        ret=(certValidator) ? certValidator->validate(certEE,chain,role) : this->validate(certEE,chain,role);
     else
         log.debug("failed to verify signature with embedded certificates");
     

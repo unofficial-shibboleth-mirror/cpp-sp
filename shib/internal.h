@@ -84,7 +84,7 @@ namespace shibboleth {
         ~BasicTrust();
 
         bool validate(void* certEE, const saml::Iterator<void*>& certChain, const IRoleDescriptor* role, bool checkName=true);
-        bool validate(const saml::SAMLSignedObject& token, const IRoleDescriptor* role);
+        bool validate(const saml::SAMLSignedObject& token, const IRoleDescriptor* role, ITrust* certValidator=NULL);
     
     protected:
         std::vector<saml::KeyInfoResolver*> m_resolvers;

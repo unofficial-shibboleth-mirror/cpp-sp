@@ -156,7 +156,7 @@ bool BasicTrust::validate(void* certEE, const Iterator<void*>& certChain, const 
     return false;
 }
 
-bool BasicTrust::validate(const saml::SAMLSignedObject& token, const IRoleDescriptor* role)
+bool BasicTrust::validate(const saml::SAMLSignedObject& token, const IRoleDescriptor* role, ITrust* certValidator)
 {
 #ifdef _DEBUG
     saml::NDC ndc("validate");

@@ -312,9 +312,13 @@ namespace shibboleth
             )=0;
 
         // Validates signed SAML messages and assertions sent by an entity acting in a specific role.
-        // It may use the previous function if the token cannot be validated directly and certificates
-        // are included in the signature.
-        virtual bool validate(const saml::SAMLSignedObject& token, const IRoleDescriptor* role)=0;
+        // If certificate validation is required, the trust provider used can be overridden using
+        // the last parameter, or left null and the provider will rely on itself.
+        virtual bool validate(
+            const saml::SAMLSignedObject& token,
+            const IRoleDescriptor* role,
+            ITrust* certValidator=NULL
+            )=0;
         
         virtual ~ITrust() {}
     };

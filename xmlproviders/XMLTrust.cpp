@@ -116,7 +116,7 @@ namespace {
         ~XMLTrust();
 
     bool validate(void* certEE, const Iterator<void*>& certChain, const IRoleDescriptor* role, bool checkName=true);
-    bool validate(const saml::SAMLSignedObject& token, const IRoleDescriptor* role);
+    bool validate(const saml::SAMLSignedObject& token, const IRoleDescriptor* role, ITrust* certValidator=NULL);
 
     protected:
         virtual ReloadableXMLFileImpl* newImplementation(const char* pathname, bool first=true) const;
@@ -585,14 +585,14 @@ bool XMLTrust::validate(void* certEE, const Iterator<void*>& certChain, const IR
     return false;
 }
 
-bool XMLTrust::validate(const saml::SAMLSignedObject& token, const IRoleDescriptor* role)
+bool XMLTrust::validate(const saml::SAMLSignedObject& token, const IRoleDescriptor* role, ITrust* certValidator)
 {
     // The delegated trust plugin handles metadata keys and use of metadata extensions.
     // If it fails to find an inline key in metadata, then it will branch off to the
     // extended version and verify the token using the certificates inside it. At that
     // point, control will pass to the other virtual function above and we can handle
     // legacy KeyAuthority rules that way.
-    if (m_delegate->validate(token,role))
+    if (m_delegate->validate(token,role,certValidator ? certValidator : this))
         return true;
 
 #ifdef _DEBUG
