@@ -535,15 +535,17 @@ bool XMLAAPImpl::AttributeRule::accept(const DOMElement* e, const IScopedRoleDes
         // Secondary matches are on groups.
         const IEntitiesDescriptor* group=role->getEntityDescriptor()->getEntitiesDescriptor();
         while (group) {
+            if (group->getName()) {
 #ifdef HAVE_GOOD_STL
-            os=group->getName();
+                os=group->getName();
 #else
-            auto_ptr_char gname(group->getName());
-            const char* os=gname.get();
+                auto_ptr_char gname(group->getName());
+                const char* os=gname.get();
 #endif
-            srule=m_siteMap.find(os);
-            if (srule!=m_siteMap.end())
-                ruleStack.push_back(&srule->second);
+                srule=m_siteMap.find(os);
+                if (srule!=m_siteMap.end())
+                    ruleStack.push_back(&srule->second);
+            }
             group = group->getEntitiesDescriptor();
         }
     }

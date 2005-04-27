@@ -479,7 +479,8 @@ bool XMLTrust::validate(void* certEE, const Iterator<void*>& certChain, const IR
         names.push_back(role->getEntityDescriptor()->getId());
         const IEntitiesDescriptor* group=role->getEntityDescriptor()->getEntitiesDescriptor();
         while (group) {
-            names.push_back(group->getName());
+            if (group->getName())
+                names.push_back(group->getName());
             group=group->getEntitiesDescriptor();
         }
     

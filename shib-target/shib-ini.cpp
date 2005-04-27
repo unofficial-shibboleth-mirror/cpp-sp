@@ -727,9 +727,11 @@ const IPropertySet* XMLApplication::getCredentialUse(const IEntityDescriptor* pr
         return i->second;
     const IEntitiesDescriptor* group=provider->getEntitiesDescriptor();
     while (group) {
-        i=m_credMap.find(group->getName());
-        if (i!=m_credMap.end())
-            return i->second;
+        if (group->getName()) {
+            i=m_credMap.find(group->getName());
+            if (i!=m_credMap.end())
+                return i->second;
+        }
         group=group->getEntitiesDescriptor();
     }
 #else
