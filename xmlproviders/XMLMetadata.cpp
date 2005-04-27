@@ -1167,8 +1167,12 @@ XMLMetadataImpl::EntitiesDescriptor::EntitiesDescriptor(
         }
     }
 
-    auto_ptr_char n(m_name);
-    wrapper->m_groups.insert(pair<string,const EntitiesDescriptor*>(n.get(),this));
+    if (!saml::XML::isEmpty(m_name)) {
+        auto_ptr_char n(m_name);
+        wrapper->m_groups.insert(pair<string,const EntitiesDescriptor*>(n.get(),this));
+    }
+    else
+        m_name=NULL;
 }
 
 XMLMetadataImpl::EntitiesDescriptor::~EntitiesDescriptor()
