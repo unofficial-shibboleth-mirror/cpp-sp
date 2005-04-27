@@ -162,11 +162,12 @@ bool TCPListener::log_error() const
 #endif
 #ifdef HAVE_STRERROR_R
     char buf[256];
+    memset(buf,0,sizeof(buf));
     strerror_r(rc,buf,sizeof(buf));
-    buf[255]=0;
-    m_log->error("socket call resulted in error (%d): %s",rc,buf);
+    m_log->error("socket call resulted in error (%d): %s",rc,isprint(*buf) ? buf : "no message");
 #else
-    m_log->error("socket call resulted in error (%d): %s",rc,strerror(rc));
+    const char* buf=strerror(rc);
+    m_log->error("socket call resulted in error (%d): %s",rc,isprint(*buf) ? buf : "no message");
 #endif
     return false;
 }
@@ -310,11 +311,12 @@ bool UnixListener::log_error() const
     int rc=errno;
 #ifdef HAVE_STRERROR_R
     char buf[256];
+    memset(buf,0,sizeof(buf));
     strerror_r(rc,buf,sizeof(buf));
-    buf[255]=0;
-    m_log.error("socket call resulted in error (%d): %s",rc,buf);
+    m_log->error("socket call resulted in error (%d): %s",rc,isprint(*buf) ? buf : "no message");
 #else
-    m_log.error("socket call resulted in error (%d): %s",rc,strerror(rc));
+    const char* buf=strerror(rc);
+    m_log->error("socket call resulted in error (%d): %s",rc,isprint(*buf) ? buf : "no message");
 #endif
     return false;
 }
