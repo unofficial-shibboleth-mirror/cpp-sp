@@ -68,7 +68,7 @@
         			the same on all web platforms, this plugin does NOT support htaccess files
         			for authz unless you also place an <htaccess/> element somewhere in the map
 
-			By default, the "native" plugin (the first one above) is used, since it matches 1.2
+			By default, the "native" plugin (the first one above) is used, since it matches older
 			behavior on both Apache and IIS.
         -->
         <RequestMapProvider type="edu.internet2.middleware.shibboleth.sp.provider.NativeRequestMapProvider">
@@ -102,7 +102,7 @@
             	request map processing is still based on the default name attribute for the
             	site. This reduces duplicate data entry in the request map for every legal
             	hostname a site might permit. In the example below, only sp.example.org needs a
-            	<Host> element in the map, but spalso.example.org could be used by a client
+            	<Host> element in the map, but spalias.example.org could be used by a client
             	and those requests will map to sp.example.org for configuration settings.
             	-->
                 <Site id="1" name="sp.example.org">
@@ -128,9 +128,11 @@
         The value can be a relative path, a URL with no hostname (https:///path) or a full URL.
 		The system can compute a relative value based on the virtual host. Using handlerSSL="true"
 		will force the protocol to be https. You should also add a cookieProps setting of "; secure"
-		in that case.
+		in that case. Note that while we default checkAddress to "false", this has a negative
+		impact on the security of the SP. Stealing cookies/sessions is much easier with this
+		disabled.
         -->
-        <Sessions lifetime="7200" timeout="3600" checkAddress="true"
+        <Sessions lifetime="7200" timeout="3600" checkAddress="false"
             handlerURL="/Shibboleth.sso" handlerSSL="false" idpHistory="true" idpHistoryDays="7">
             
             <!--
@@ -149,7 +151,7 @@
             md:AssertionConsumerService elements replace the old shireURL function with an
             explicit handler for particular profiles, such as SAML 1.1 POST or Artifact.
             The isDefault and index attributes are used when sessions are initiated
-            to determine how to communicate where the IdP should return the response.
+            to determine how to tell the IdP where and how to return the response.
             -->
 			<md:AssertionConsumerService Location="/SAML/POST" isDefault="true" index="1"
 				Binding="urn:oasis:names:tc:SAML:1.0:profiles:browser-post"/>
@@ -181,7 +183,7 @@
 
 		<!-- Indicates what credentials to use when communicating -->
         <CredentialUse TLS="defcreds" Signing="defcreds">
-            <!-- RelyingParty elements customize credentials for specific IdPs or federations -->
+            <!-- RelyingParty elements can customize credentials for specific IdPs/sets. -->
             <!--
             <RelyingParty Name="urn:mace:inqueue" TLS="inqueuecreds" Signing="inqueuecreds"/>
             -->
@@ -200,37 +202,9 @@
         
         <!-- Operational config consists of metadata and trust providers. Can be external or inline. -->
 
-        <!-- Dummy metadata for private testing, delete when deploying. -->
-		<MetadataProvider type="edu.internet2.middleware.shibboleth.metadata.provider.XMLMetadata">
-			<EntityDescriptor entityID="https://example.org/shibboleth" xmlns="urn:oasis:names:tc:SAML:2.0:metadata">
-				<IDPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:1.1:protocol urn:mace:shibboleth:1.0">
-					<Extensions>
-				        <shib:Scope xmlns:shib="urn:mace:shibboleth:metadata:1.0">example.org</shib:Scope>
-					</Extensions>
-					<KeyDescriptor use="signing">
-					    <ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
-					        <ds:KeyName>idp.example.org</ds:KeyName>
-					    </ds:KeyInfo>
-					</KeyDescriptor>
-					<NameIDFormat>urn:mace:shibboleth:1.0:nameIdentifier</NameIDFormat>
-					<SingleSignOnService Binding="urn:mace:shibboleth:1.0:profiles:AuthnRequest"
-					    Location="https://idp.example.org/shibboleth/HS"/>
-				</IDPSSODescriptor>
-				<AttributeAuthorityDescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:1.1:protocol">
-					<Extensions>
-				        <shib:Scope xmlns:shib="urn:mace:shibboleth:metadata:1.0">example.org</shib:Scope>
-					</Extensions>
-					<KeyDescriptor>
-					    <ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
-					        <ds:KeyName>idp.example.org</ds:KeyName>
-					    </ds:KeyInfo>
-					</KeyDescriptor>
-					<AttributeService Binding="urn:oasis:names:tc:SAML:1.0:bindings:SOAP-binding"
-					    Location="https://idp.example.org/shibboleth/AA"/>
-					<NameIDFormat>urn:mace:shibboleth:1.0:nameIdentifier</NameIDFormat>
-				</AttributeAuthorityDescriptor>
-			</EntityDescriptor>
-		</MetadataProvider>
+        <!-- Dummy metadata for private testing, delete for production deployments. -->
+		<MetadataProvider type="edu.internet2.middleware.shibboleth.metadata.provider.XMLMetadata"
+			uri="@-PKGSYSCONFDIR-@/example-sites.xml"/>
 
 		<!-- InQueue pilot federation, delete for production deployments. -->
         <MetadataProvider type="edu.internet2.middleware.shibboleth.metadata.provider.XMLMetadata"
@@ -239,7 +213,11 @@
 		<!-- The standard trust provider supports SAMLv2 metadata with path validation extensions. -->
         <TrustProvider type="edu.internet2.middleware.shibboleth.common.provider.ShibbolethTrust"/>
                     
-        <!-- zero or more SAML Audience condition matches (mainly Shib 1.1 compatibility) -->
+        <!--
+        Zero or more SAML Audience condition matches (mainly for Shib 1.1 compatibility).
+        If you get "policy mismatch errors, you probably need to supply metadata about
+		your SP to the IdP. Adding an element here is only a partial fix.
+        -->
         <saml:Audience>urn:mace:inqueue</saml:Audience>
         
         <!--
@@ -249,22 +227,24 @@
         you want to apply, as they will not be inherited. Similarly, if you specify an element such as
         <MetadataProvider>, it is not additive with the defaults, but replaces them.
         
-        Note that each application must have at least one assertion consumer service <Handler> that
-        maps uniquely to it and no other application in the <RequestMap>. Otherwise no sessions
-        will reach the application. If each application lives on its own vhost, then a single handler
-        at "/Shibboleth.sso/SAML" is sufficient, since the hostname will distinguish the application.
+        Note that each application must have a handlerURL that maps uniquely to it and no other
+        application in the <RequestMap>. Otherwise no sessions will reach the application.
+        If each application lives on its own vhost, then a single handler at "/Shibboleth.sso"
+        is sufficient, since the hostname will distinguish the application.
         
         The example below shows a special application that requires use of SSL when establishing
         sessions, restricts the session cookie to SSL and a specific folder, and inherits most other
         behavior except that it requests only EPPN from the origin instead of asking for all attributes.
+        Note that it will inherit all of the handler endpoints defined for the default application
+        but will append them to the handlerURL defined here.
         -->
         <!-- 
         <Application id="foo-admin">
 	        <Sessions lifetime="7200" timeout="3600" checkAddress="true"
-	            shireURL="/secure/admin/Shibboleth.shire" shireSSL="true" cookieProps="; path=/secure/admin; secure"
-	            wayfURL="https://wayf.internet2.edu/InQueue/WAYF"/>
+	            handlerURL="/secure/admin/Shibboleth.sso" handlerSSL="true"
+	            cookieProps="; path=/secure/admin; secure"/>
             <saml:AttributeDesignator AttributeName="urn:mace:dir:attribute-def:eduPersonPrincipalName"
-                AttributeNamespace="urn:mace:shibboleth:1.0:attributeNamespace:uri"/> 
+                AttributeNamespace="urn:mace:shibboleth:1.0:attributeNamespace:uri"/>
         </Application>
         -->
 
@@ -282,6 +262,11 @@
                 </Certificate>
             </FileResolver>
             
+            <!--
+            Mostly you can define a single keypair above, but you can define and name a second
+            keypair to be used only in specific cases and then specify when to use it inside a
+            <CredentialUse> element.
+            -->
             <!--
             <FileResolver Id="inqueuecreds">
                 <Key format="PEM" password="handsoff">

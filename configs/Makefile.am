@@ -22,7 +22,7 @@ BUILTCONFIGFILES = \
 	shibd.logger \
 	AAP.xml \
 	IQ-sites.xml \
-	IQ-trust.xml
+	example-sites.xml
 
 # While BUILTCONFIGFILES are processed, these are not; so we should pull
 # them from SRCDIR.
@@ -72,7 +72,7 @@ AAP.xml: ${srcdir}/AAP.xml.in Makefile ${top_builddir}/config.status
 IQ-sites.xml: ${srcdir}/IQ-sites.xml.in Makefile ${top_builddir}/config.status
 	$(MAKE) do-build-file FILE=$@
 
-IQ-trust.xml: ${srcdir}/IQ-trust.xml.in Makefile ${top_builddir}/config.status
+example-sites.xml: ${srcdir}/example-sites.xml.in Makefile ${top_builddir}/config.status
 	$(MAKE) do-build-file FILE=$@
 
 all-data-local: $(BUILTCONFIGFILES)
@@ -105,7 +105,7 @@ CLEANFILES = \
 	shibboleth.xml \
 	AAP.xml \
 	IQ-sites.xml \
-	IQ-trust.xml
+	example-sites.xml
 
 EXTRA_DIST = .cvsignore \
 	shibboleth.xml.in \
@@ -120,7 +120,7 @@ EXTRA_DIST = .cvsignore \
 	metadataError.html \
 	AAP.xml.in \
 	IQ-sites.xml.in \
-	IQ-trust.xml.in \
+	example-sites.xml.in \
 	inqueue.pem \
 	example.key \
 	example.crt
