@@ -347,7 +347,6 @@ namespace shibboleth
     {
         virtual const XMLCh* getName() const=0;
         virtual const XMLCh* getNamespace() const=0;
-        virtual const char* getFactory() const=0;
         virtual const char* getAlias() const=0;
         virtual const char* getHeader() const=0;
         virtual bool getCaseSensitive() const=0;

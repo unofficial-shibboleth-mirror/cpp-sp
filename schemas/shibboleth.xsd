@@ -102,7 +102,6 @@
         </sequence>
         <attribute name="Name" type="string" use="required"/>
         <attribute name="Namespace" type="string" use="optional"/>
-        <attribute name="Factory" type="string" use="optional"/>
         <attribute name="Alias" type="string" use="optional"/>
 		<attribute name="Header" type="string" use="optional"/>
 		<attribute name="Scoped" type="boolean" use="optional" default="false"/>

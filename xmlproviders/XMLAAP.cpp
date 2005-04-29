@@ -85,7 +85,6 @@ namespace {
             
             const XMLCh* getName() const { return m_name; }
             const XMLCh* getNamespace() const { return m_namespace; }
-            const char* getFactory() const { return m_factory.get(); }
             const char* getAlias() const { return m_alias.get(); }
             const char* getHeader() const { return m_header.get(); }
             bool getCaseSensitive() const { return m_caseSensitive; }
@@ -96,7 +95,6 @@ namespace {
         private:    
             const XMLCh* m_name;
             const XMLCh* m_namespace;
-            auto_ptr_char m_factory;
             auto_ptr_char m_alias;
             auto_ptr_char m_header;
             bool m_caseSensitive;
@@ -246,7 +244,6 @@ XMLAAPImpl::~XMLAAPImpl()
 }
 
 XMLAAPImpl::AttributeRule::AttributeRule(const DOMElement* e) :
-    m_factory(e->hasAttributeNS(NULL,SHIB_L(Factory)) ? e->getAttributeNS(NULL,SHIB_L(Factory)) : NULL),
     m_alias(e->hasAttributeNS(NULL,SHIB_L(Alias)) ? e->getAttributeNS(NULL,SHIB_L(Alias)) : NULL),
     m_header(e->hasAttributeNS(NULL,SHIB_L(Header)) ? e->getAttributeNS(NULL,SHIB_L(Header)) : NULL),
     m_scoped(false)
