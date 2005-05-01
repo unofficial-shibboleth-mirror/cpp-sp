@@ -121,6 +121,10 @@ SOURCE=.\resource.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\ScopedAttribute.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=".\shib-threads-win32.cpp"
 # End Source File
 # Begin Source File

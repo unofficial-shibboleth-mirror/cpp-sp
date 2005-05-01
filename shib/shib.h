@@ -362,6 +362,12 @@ namespace shibboleth
         virtual saml::Iterator<const IAttributeRule*> getAttributeRules() const=0;
         virtual ~IAAP() {}
     };
+    
+    struct SHIB_EXPORTS IAttributeFactory : public virtual saml::IPlugIn
+    {
+        virtual saml::SAMLAttribute* build(DOMElement* e) const=0;
+        virtual ~IAttributeFactory() {}
+    };
 
 #ifdef SHIB_INSTANTIATE
     template class SHIB_EXPORTS saml::Iterator<const IContactPerson*>;
@@ -542,6 +548,11 @@ namespace shibboleth
         // global per-process setup and shutdown of Shibboleth runtime
         virtual bool init();
         virtual void term();
+
+        // manages specific attribute name to factory mappings
+        void regAttributeMapping(const XMLCh* name, const IAttributeFactory* factory);
+        void unregAttributeMapping(const XMLCh* name);
+        void clearAttributeMappings();
 
         // enables runtime and clients to access configuration
         static ShibConfig& getConfig();

@@ -89,6 +89,39 @@ namespace shibboleth {
     protected:
         std::vector<saml::KeyInfoResolver*> m_resolvers;
     };
+
+    class ScopedAttribute : public saml::SAMLAttribute
+    {
+    public:
+        ScopedAttribute(
+            const XMLCh* name=NULL,
+            const XMLCh* ns=NULL,
+            const saml::QName* type=NULL,
+            long lifetime=0,
+            const saml::Iterator<const XMLCh*>& scopes=EMPTY(const XMLCh*),
+            const saml::Iterator<const XMLCh*>& values=EMPTY(const XMLCh*)
+            );
+        ScopedAttribute(DOMElement* e);
+        ScopedAttribute(std::istream& in);
+        ~ScopedAttribute();
+    
+        saml::SAMLObject* clone() const;
+        
+        saml::Iterator<const XMLCh*> getValues() const;
+        saml::Iterator<std::string> getSingleByteValues() const;
+        void setValues(const saml::Iterator<const XMLCh*>& values=EMPTY(const XMLCh*));
+        void addValue(const XMLCh* value);
+        void removeValue(unsigned int index);
+        
+        static const XMLCh Scope[];
+    protected:
+        void valueToDOM(unsigned int index, DOMElement* e) const;
+        void valueFromDOM(DOMElement* e);
+        void ownStrings();
+        
+        std::vector<const XMLCh*> m_scopes;
+        mutable std::vector<const XMLCh*> m_scopedValues;
+    };
 }
 
 #endif

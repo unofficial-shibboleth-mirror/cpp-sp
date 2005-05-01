@@ -17,7 +17,8 @@ libshib_la_SOURCES = \
                     ShibConfig.cpp \
                     ShibBrowserProfile.cpp \
                     ShibHTTPHook.cpp \
-                    shib-threads.cpp
+                    shib-threads.cpp \
+                    ScopedAttribute.cpp
 
 
 # this is different from the project version
