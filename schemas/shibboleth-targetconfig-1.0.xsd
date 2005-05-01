@@ -46,6 +46,7 @@
 			</choice>
 			<element ref="conf:Applications"/>
 			<element name="CredentialsProvider" type="conf:PluggableType" minOccurs="0" maxOccurs="unbounded"/>
+			<element ref="conf:AttributeFactory" minOccurs="0" maxOccurs="unbounded"/>
 		</sequence>
 		<attribute name="logger" type="anyURI" use="optional"/>
 		<attribute name="clockSkew" type="unsignedInt" use="optional"/>
@@ -385,6 +386,8 @@
 				<element ref="conf:SessionInitiator"/>
 				<element ref="md:AssertionConsumerService"/>
 				<element ref="md:SingleLogoutService"/>
+				<element ref="conf:DiagnosticService"/>
+				<element name="ExtensionService" type="conf:PluggableType"/>
 			</choice>
 			<!-- deprecated --> <attribute name="wayfURL" type="anyURI" use="optional"/>
 			<!-- deprecated --> <attribute name="shireURL" type="anyURI" use="optional"/>
@@ -417,6 +420,26 @@
 			<attribute name="checkCDC" type="anyURI" use="optional"/>
 			<attribute name="isDefault" type="boolean" use="optional"/>
 			<attribute name="id" type="string" use="optional"/>
+		</complexType>
+	</element>
+	<element name="DiagnosticService">
+		<annotation>
+			<documentation>Used to specify internal diagnostic capabilities</documentation>
+		</annotation>
+		<complexType>
+			<sequence>
+				<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+			</sequence>
+			<attribute name="Location" type="anyURI" use="required"/>
+			<attribute name="Binding" type="anyURI" use="required"/>
+			<attribute name="echo" type="boolean" use="optional"/>
+			<attribute name="log" type="boolean" use="optional"/>
+			<attribute name="config" type="boolean" use="optional"/>
+			<attribute name="acl" use="optional">
+				<simpleType>
+					<list itemType="string"/>
+				</simpleType>
+			</attribute>
 		</complexType>
 	</element>
 
@@ -470,5 +493,20 @@
 	        <anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>
+	
+	<element name="AttributeFactory">
+		<annotation>
+			<documentation>Specifies a plugin that implements a specialized SAML attribute</documentation>
+		</annotation>
+		<complexType>
+			<sequence>
+				<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+			</sequence>
+			<attribute name="type" type="string" use="required"/>
+			<attribute name="AttributeName" type="string" use="required"/>
+	        <anyAttribute namespace="##other" processContents="lax"/>
+		</complexType>
+	</element>
+	
 </schema>
 
