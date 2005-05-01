@@ -76,31 +76,6 @@ void log_openssl();
 X509_CRL* B64_to_CRL(const char* buf);
 X509* B64_to_X509(const char* buf);
    
-class ScopedAttribute : public saml::SAMLAttribute
-{
-public:
-    ScopedAttribute(const XMLCh* name, const XMLCh* ns, const saml::QName* type=NULL, long lifetime=0,
-                    const saml::Iterator<const XMLCh*>& scopes=EMPTY(const XMLCh*),
-                    const saml::Iterator<const XMLCh*>& values=EMPTY(const XMLCh*));
-    ScopedAttribute(DOMElement* e);
-    virtual ~ScopedAttribute();
-
-    virtual saml::SAMLObject* clone() const;
-    
-    virtual saml::Iterator<const XMLCh*> getValues() const;
-    virtual saml::Iterator<std::string> getSingleByteValues() const;
-    virtual void setValues(const saml::Iterator<const XMLCh*>& values=EMPTY(const XMLCh*));
-    virtual void addValue(const XMLCh* value);
-    virtual void removeValue(unsigned int index);
-    
-protected:
-    virtual void valueToDOM(unsigned int index, DOMElement* e) const;
-    
-    const XMLCh* m_originSite;
-    std::vector<const XMLCh*> m_scopes;
-    mutable std::vector<const XMLCh*> m_scopedValues;
-};
-    
 class XML
 {
 public:

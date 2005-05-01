@@ -101,7 +101,7 @@ SOURCE=.\resource.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\ScopedAttribute.cpp
+SOURCE=.\TargetedID.cpp
 # End Source File
 # Begin Source File
 

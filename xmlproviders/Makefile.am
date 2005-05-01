@@ -12,7 +12,7 @@ xmlproviders_la_LIBADD = \
 
 xmlproviders_la_SOURCES = \
 	CredResolvers.cpp \
-	ScopedAttribute.cpp \
+	TargetedID.cpp \
 	XML.cpp \
 	XMLAAP.cpp \
 	XMLCredentials.cpp \
