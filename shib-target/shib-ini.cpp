@@ -147,6 +147,7 @@ namespace shibtarget {
         IRequestMapper* m_requestMapper;
         map<string,IApplication*> m_appmap;
         vector<ICredentials*> m_creds;
+        vector<IAttributeFactory*> m_attrFactories;
         
         // Provides filter to exclude special config elements.
         short acceptNode(const DOMNode* node) const;
@@ -629,6 +630,7 @@ short XMLApplication::acceptNode(const DOMNode* node) const
     if (!XMLString::compareString(name,SHIBT_L(Application)) ||
         !XMLString::compareString(name,SHIBT_L(AssertionConsumerService)) ||
         !XMLString::compareString(name,SHIBT_L(SingleLogoutService)) ||
+        !XMLString::compareString(name,SHIBT_L(DiagnosticService)) ||
         !XMLString::compareString(name,SHIBT_L(SessionInitiator)) ||
         !XMLString::compareString(name,SHIBT_L(AAPProvider)) ||
         !XMLString::compareString(name,SHIBT_L(CredentialUse)) ||
@@ -799,6 +801,7 @@ short XMLConfigImpl::acceptNode(const DOMNode* node) const
         return FILTER_ACCEPT;
     const XMLCh* name=node->getLocalName();
     if (!XMLString::compareString(name,SHIBT_L(Applications)) ||
+        !XMLString::compareString(name,SHIBT_L(AttributeFactory)) ||
         !XMLString::compareString(name,SHIBT_L(CredentialsProvider)) ||
         !XMLString::compareString(name,SHIBT_L(Extensions)) ||
         !XMLString::compareString(name,SHIBT_L(Implementation)) ||
@@ -1085,6 +1088,29 @@ void XMLConfigImpl::init(bool first)
             }
         }
 
+        // Now we load any attribute factories
+        nlist=ReloadableXMLFileImpl::m_root->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(AttributeFactory));
+        for (int i=0; nlist && i<nlist->getLength(); i++) {
+            auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
+            log.info("building Attribute factory of type %s...",type.get());
+            IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
+            if (plugin) {
+                IAttributeFactory* fact=dynamic_cast<IAttributeFactory*>(plugin);
+                if (fact) {
+                    m_attrFactories.push_back(fact);
+                    ShibConfig::getConfig().regAttributeMapping(
+                        static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,L(AttributeName)),
+                        fact
+                        );
+                }
+                else {
+                    delete plugin;
+                    log.fatal("plugin was not an Attribute factory");
+                    throw UnsupportedExtensionException("plugin was not an Attribute factory");
+                }
+            }
+        }
+
         // Load the default application. This actually has a fixed ID of "default". ;-)
         const DOMElement* app=saml::XML::getFirstChildElement(
             ReloadableXMLFileImpl::m_root,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Applications)
@@ -1098,8 +1124,8 @@ void XMLConfigImpl::init(bool first)
         
         // Load any overrides.
         nlist=app->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Application));
-        for (int i=0; nlist && i<nlist->getLength(); i++) {
-            XMLApplication* iapp=new XMLApplication(m_outer,m_creds,static_cast<DOMElement*>(nlist->item(i)),defapp);
+        for (int j=0; nlist && i<nlist->getLength(); j++) {
+            XMLApplication* iapp=new XMLApplication(m_outer,m_creds,static_cast<DOMElement*>(nlist->item(j)),defapp);
             if (m_appmap.find(iapp->getId())!=m_appmap.end()) {
                 log.fatal("found conf:Application element with duplicate Id attribute");
                 throw ConfigurationException("found conf:Application element with duplicate Id attribute");
@@ -1126,4 +1152,7 @@ XMLConfigImpl::~XMLConfigImpl()
         delete i->second;
     for (vector<ICredentials*>::iterator j=m_creds.begin(); j!=m_creds.end(); j++)
         delete (*j);
+    ShibConfig::getConfig().clearAttributeMappings();
+    for (vector<IAttributeFactory*>::iterator k=m_attrFactories.begin(); k!=m_attrFactories.end(); k++)
+        delete (*k);
 }

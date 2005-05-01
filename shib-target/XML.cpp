@@ -143,6 +143,9 @@ const XMLCh XML::Literals::AccessControl[] =
   chLatin_C, chLatin_o, chLatin_n, chLatin_t, chLatin_r, chLatin_o, chLatin_l, chNull
 };
 
+const XMLCh XML::Literals::acl[] =
+{ chLatin_a, chLatin_c, chLatin_l, chNull };
+
 const XMLCh XML::Literals::applicationId[] =
 { chLatin_a, chLatin_p, chLatin_p, chLatin_l, chLatin_i, chLatin_c, chLatin_a, chLatin_t, chLatin_i, chLatin_o, chLatin_n,
   chLatin_I, chLatin_d, chNull
@@ -160,6 +163,14 @@ const XMLCh XML::Literals::AssertionConsumerService[] =
   chLatin_S, chLatin_e, chLatin_r, chLatin_v, chLatin_i, chLatin_c, chLatin_e, chNull
 };
 
+const XMLCh XML::Literals::AttributeFactory[] =
+{ chLatin_A, chLatin_t, chLatin_t, chLatin_r, chLatin_i, chLatin_b, chLatin_u, chLatin_t, chLatin_e,
+  chLatin_F, chLatin_a, chLatin_c, chLatin_t, chLatin_o, chLatin_r, chLatin_y, chNull
+};
+
+const XMLCh XML::Literals::config[] =
+{ chLatin_c, chLatin_o, chLatin_n, chLatin_f, chLatin_i, chLatin_g, chNull };
+
 const XMLCh XML::Literals::CredentialsProvider[] =
 { chLatin_C, chLatin_r, chLatin_e, chLatin_d, chLatin_e, chLatin_n, chLatin_t, chLatin_i, chLatin_a, chLatin_l, chLatin_s,
   chLatin_P, chLatin_r, chLatin_o, chLatin_v, chLatin_i, chLatin_d, chLatin_e, chLatin_r, chNull
@@ -169,6 +180,14 @@ const XMLCh XML::Literals::CredentialUse[] =
 { chLatin_C, chLatin_r, chLatin_e, chLatin_d, chLatin_e, chLatin_n, chLatin_t, chLatin_i, chLatin_a, chLatin_l,
   chLatin_U, chLatin_s, chLatin_e, chNull
 };
+
+const XMLCh XML::Literals::DiagnosticService[] =
+{ chLatin_D, chLatin_i, chLatin_a, chLatin_g, chLatin_n, chLatin_o, chLatin_s, chLatin_t, chLatin_i, chLatin_c,
+  chLatin_S, chLatin_e, chLatin_r, chLatin_v, chLatin_i, chLatin_c, chLatin_e, chNull
+};
+
+const XMLCh XML::Literals::echo[] =
+{ chLatin_e, chLatin_c, chLatin_h, chLatin_o, chNull };
 
 const XMLCh XML::Literals::Extensions[] =
 { chLatin_E, chLatin_x, chLatin_t, chLatin_e, chLatin_n, chLatin_s, chLatin_i, chLatin_o, chLatin_n, chLatin_s, chNull };
@@ -205,6 +224,9 @@ const XMLCh XML::Literals::Listener[] =
 
 const XMLCh XML::Literals::Local[] =
 { chLatin_L, chLatin_o, chLatin_c, chLatin_a, chLatin_l, chNull };
+
+const XMLCh XML::Literals::log[] =
+{ chLatin_l, chLatin_o, chLatin_g, chNull };
 
 const XMLCh XML::Literals::logger[] =
 { chLatin_l, chLatin_o, chLatin_g, chLatin_g, chLatin_e, chLatin_r, chNull };

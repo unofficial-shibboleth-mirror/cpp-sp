@@ -164,6 +164,14 @@
             supported via the "urn:mace:shibboleth:sp:1.3:Logout" Binding value.
             -->
 			<md:SingleLogoutService Location="/Logout" Binding="urn:mace:shibboleth:sp:1.3:Logout"/>
+
+			<!--
+			Some internal debugging support (invoke with a query string "cmd" parameter).
+			By default, access to log or config information is blocked, but a user can
+			echo their own session data.
+			-->
+			<DiagnosticService Location="/Diag" Binding="urn:mace:shibboleth:sp:1.3:Diagnostics"
+				echo="true" log="false" config="false"/>
             
         </Sessions>
 
@@ -279,6 +287,10 @@
             -->
         </Credentials>
     </CredentialsProvider>
+
+	<!-- Specialized attribute handling for cases with complex syntax. -->
+	<AttributeFactory AttributeName="urn:oid:1.3.6.1.4.1.5923.1.1.1.10"
+		type="edu.internet2.middleware.shibboleth.common.provider.TargetedIDFactory"/>
 
 </SPConfig>
 

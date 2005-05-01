@@ -78,7 +78,6 @@ using namespace log4cpp;
 
 static const XMLCh address[] = { chLatin_a, chLatin_d, chLatin_d, chLatin_r, chLatin_e, chLatin_s, chLatin_s, chNull };
 static const XMLCh port[] = { chLatin_p, chLatin_o, chLatin_r, chLatin_t, chNull };
-static const XMLCh acl[] = { chLatin_a, chLatin_c, chLatin_l, chNull };
 
 class TCPListener : public IListener
 {
@@ -125,7 +124,7 @@ TCPListener::TCPListener(const DOMElement* e) : m_address("127.0.0.1"), m_port(1
             m_port=12345;
     }
     
-    tag=e->getAttributeNS(NULL,acl);
+    tag=e->getAttributeNS(NULL,SHIBT_L(acl));
     if (tag && *tag) {
         auto_ptr_char temp(tag);
         string sockacl=temp.get();

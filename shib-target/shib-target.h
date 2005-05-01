@@ -485,13 +485,18 @@ namespace shibtarget {
             static const XMLCh AAPProvider[];
             static const XMLCh AccessControl[];
             static const XMLCh AccessControlProvider[];
+            static const XMLCh acl[];
             static const XMLCh AND[];
             static const XMLCh applicationId[];
             static const XMLCh Application[];
             static const XMLCh Applications[];
             static const XMLCh AssertionConsumerService[];
+            static const XMLCh AttributeFactory[];
+            static const XMLCh config[];
             static const XMLCh CredentialsProvider[];
             static const XMLCh CredentialUse[];
+            static const XMLCh DiagnosticService[];
+            static const XMLCh echo[];
             static const XMLCh Extensions[];
             static const XMLCh fatal[];
             static const XMLCh FederationProvider[];
@@ -504,6 +509,7 @@ namespace shibtarget {
             static const XMLCh Library[];
             static const XMLCh Listener[];
             static const XMLCh Local[];
+            static const XMLCh log[];
             static const XMLCh logger[];
             static const XMLCh MemorySessionCache[];
             static const XMLCh MetadataProvider[];
