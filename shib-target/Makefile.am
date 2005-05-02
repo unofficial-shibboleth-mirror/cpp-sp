@@ -19,6 +19,7 @@ noinst_HEADERS = internal.h
 
 libshib_target_la_SOURCES = \
 	ArtifactMapper.cpp \
+	MemoryListener.cpp \
 	RPCListener.cpp \
 	shib-ccache.cpp \
 	shib-config.cpp \
@@ -27,7 +28,6 @@ libshib_target_la_SOURCES = \
 	shib-sock.cpp \
 	shib-target.cpp \
 	shibrpc-clnt.c \
-	shibrpc-svc.c \
 	shibrpc-xdr.c \
 	XML.cpp \
 	XMLRequestMapper.cpp
