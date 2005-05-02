@@ -180,7 +180,7 @@ ShibbolethTrust::~ShibbolethTrust()
         delete *i;
 }
 
-extern "C" int error_callback(int ok, X509_STORE_CTX* ctx)
+int error_callback(int ok, X509_STORE_CTX* ctx)
 {
     if (!ok)
         Category::getInstance("OpenSSL").error("path validation failure: %s", X509_verify_cert_error_string(ctx->error));
