@@ -13,7 +13,7 @@ endif
 
 test_client_SOURCES = test-client.cpp
 
-shibd_SOURCES = shar.cpp shar-utils.cpp
+shibd_SOURCES = shar.cpp shar-utils.cpp shibrpc-server.cpp
 noinst_HEADERS = shar-utils.h
 
 test_client_LDADD = \

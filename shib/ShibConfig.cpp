@@ -217,18 +217,18 @@ ShibConfig& ShibConfig::getConfig()
     return g_config;
 }
 
-void shibboleth::annotateException(SAMLException& e, const IEntityDescriptor* entity, bool rethrow)
+void shibboleth::annotateException(SAMLException* e, const IEntityDescriptor* entity, bool rethrow)
 {
     if (entity) {
         auto_ptr_char id(entity->getId());
-        e.addProperty("providerId",id.get());
+        e->addProperty("providerId",id.get());
         Iterator<const IRoleDescriptor*> roles=entity->getRoleDescriptors();
         while (roles.hasNext()) {
             const IRoleDescriptor* role=roles.next();
             if (role->isValid()) {
                 const char* temp=role->getErrorURL();
                 if (temp) {
-                    e.addProperty("errorURL",temp);
+                    e->addProperty("errorURL",temp);
                     break;
                 }
             }
@@ -242,32 +242,32 @@ void shibboleth::annotateException(SAMLException& e, const IEntityDescriptor* en
                 const char* lname=c->getSurName();
                 if (fname && lname) {
                     string contact=string(fname) + ' ' + lname;
-                    e.addProperty("contactName",contact.c_str());
+                    e->addProperty("contactName",contact.c_str());
                 }
                 else if (fname)
-                    e.addProperty("contactName",fname);
+                    e->addProperty("contactName",fname);
                 else if (lname)
-                    e.addProperty("contactName",lname);
+                    e->addProperty("contactName",lname);
                 Iterator<string> emails=c->getEmailAddresses();
                 if (emails.hasNext())
-                    e.addProperty("contactEmail",emails.next().c_str());
+                    e->addProperty("contactEmail",emails.next().c_str());
                 break;
             }
         }
     }
     
     if (rethrow)
-        throw e;
+        e->raise();
 }
 
-void shibboleth::annotateException(saml::SAMLException& e, const IRoleDescriptor* role, bool rethrow)
+void shibboleth::annotateException(saml::SAMLException* e, const IRoleDescriptor* role, bool rethrow)
 {
     if (role) {
         auto_ptr_char id(role->getEntityDescriptor()->getId());
-        e.addProperty("providerId",id.get());
+        e->addProperty("providerId",id.get());
         const char* temp=role->getErrorURL();
         if (role->getErrorURL())
-            e.addProperty("errorURL",role->getErrorURL());
+            e->addProperty("errorURL",role->getErrorURL());
 
         Iterator<const IContactPerson*> i=role->getContactPersons();
         while (i.hasNext()) {
@@ -277,20 +277,20 @@ void shibboleth::annotateException(saml::SAMLException& e, const IRoleDescriptor
                 const char* lname=c->getSurName();
                 if (fname && lname) {
                     string contact=string(fname) + ' ' + lname;
-                    e.addProperty("contactName",contact.c_str());
+                    e->addProperty("contactName",contact.c_str());
                 }
                 else if (fname)
-                    e.addProperty("contactName",fname);
+                    e->addProperty("contactName",fname);
                 else if (lname)
-                    e.addProperty("contactName",lname);
+                    e->addProperty("contactName",lname);
                 Iterator<string> emails=c->getEmailAddresses();
                 if (emails.hasNext())
-                    e.addProperty("contactEmail",emails.next().c_str());
+                    e->addProperty("contactEmail",emails.next().c_str());
                 break;
             }
         }
     }
     
     if (rethrow)
-        throw e;
+        e->raise();
 }

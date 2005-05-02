@@ -106,5 +106,17 @@ SOURCE=.\shar.rc
 
 SOURCE=.\shar_win32.cpp
 # End Source File
+# Begin Source File
+
+SOURCE=".\shibrpc-server.cpp"
+# End Source File
+# Begin Source File
+
+SOURCE="..\shib-target\shibrpc-svc.c"
+# End Source File
+# Begin Source File
+
+SOURCE="..\shib-target\shibrpc-xdr.c"
+# End Source File
 # End Target
 # End Project

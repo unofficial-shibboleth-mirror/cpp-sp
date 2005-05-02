@@ -607,8 +607,8 @@ namespace shibboleth
      *  contactName         A formatted support or technical contact name
      *  contactEmail        A contact email address
      */
-    SHIB_EXPORTS void annotateException(saml::SAMLException& e, const IEntityDescriptor* entity, bool rethrow=true);
-    SHIB_EXPORTS void annotateException(saml::SAMLException& e, const IRoleDescriptor* role, bool rethrow=true);
+    SHIB_EXPORTS void annotateException(saml::SAMLException* e, const IEntityDescriptor* entity, bool rethrow=true);
+    SHIB_EXPORTS void annotateException(saml::SAMLException* e, const IRoleDescriptor* role, bool rethrow=true);
 }
 
 #endif

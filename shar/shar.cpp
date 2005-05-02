@@ -87,6 +87,9 @@ using namespace log4cpp;
 
 extern "C" void shibrpc_prog_2(struct svc_req* rqstp, register SVCXPRT* transp);
 
+// Declare a "MemoryListener" that our server methods will forward their work to.
+IListener* g_MemoryListener = NULL;
+
 int shar_run = 1;
 const char* shar_config = NULL;
 const char* shar_schemadir = NULL;
@@ -107,7 +110,7 @@ static bool new_connection(IListener::ShibSocket& listener, const Iterator<ShibR
     }
     catch (...) {
         saml::NDC ndc("new_connection");
-        Category& log=Category::getInstance("SHAR");
+        Category& log=Category::getInstance("shibd");
         log.crit("error starting new child thread to service request");
         return false;
     }
@@ -116,8 +119,10 @@ static bool new_connection(IListener::ShibSocket& listener, const Iterator<ShibR
 
 static void shar_svc_run(IListener::ShibSocket& listener, const Iterator<ShibRPCProtocols>& protos)
 {
+#ifdef _DEBUG
     saml::NDC ndc("shar_svc_run");
-    Category& log=Category::getInstance("SHAR");
+#endif
+    Category& log=Category::getInstance("shibd");
 
     while (shar_run) {
         fd_set readfds;
@@ -189,19 +194,31 @@ int real_main(int preinit)
             fprintf(stdout, "overall configuration is loadable, check console for non-fatal problems\n");
             return 0;
         }
+        
+        // Build an internal "listener" to handle the work.
+        IPlugIn* plugin=SAMLConfig::getConfig().getPlugMgr().newPlugin(shibtarget::XML::MemoryListenerType,NULL);
+        g_MemoryListener=dynamic_cast<IListener*>(plugin);
+        if (!g_MemoryListener) {
+            delete plugin;
+            fprintf(stderr, "MemoryListener plugin failed to load");
+            conf.shutdown();
+            return -3;
+        }
 
         const IListener* listener=conf.getINI()->getListener();
         
         // Create the SHAR listener socket
         if (!listener->create(sock)) {
+            delete g_MemoryListener;
             conf.shutdown();
-            return -3;
+            return -4;
         }
 
         // Bind to the proper port
         if (!listener->bind(sock)) {
+            delete g_MemoryListener;
             conf.shutdown();
-            return -4;
+            return -5;
         }
 
         // Initialize the SHAR Utilitites
@@ -218,6 +235,7 @@ int real_main(int preinit)
             conf.getINI()->getListener()->close(sock);
         }
 
+        delete g_MemoryListener;
         conf.shutdown();
         fprintf(stdout, "shibd shutdown complete\n");
     }
@@ -346,18 +364,31 @@ int main(int argc, char *argv[])
     if (shar_checkonly)
         fprintf(stderr, "overall configuration is loadable, check console for non-fatal problems\n");
     else {
+
+        // Build an internal "listener" to handle the work.
+        IPlugIn* plugin=SAMLConfig::getConfig().newPlugin(shibtarget::XML::MemoryListenerType,NULL);
+        g_MemoryListener=dynamic_cast<IListener*>(plugin);
+        if (!g_MemoryListener) {
+            delete plugin;
+            fprintf(stderr, "MemoryListener plugin failed to load");
+            conf.shutdown();
+            return -3;
+        }
+
         const IListener* listener=conf.getINI()->getListener();
         
         // Create the SHAR listener socket
         if (!listener->create(sock)) {
+            delete g_MemoryListener;
             conf.shutdown();
-            return -3;
+            return -4;
         }
     
         // Bind to the proper port
         if (!listener->bind(sock, unlink_socket==1)) {
+            delete g_MemoryListener;
             conf.shutdown();
-            return -4;
+            return -5;
         }
     
         // Initialize the SHAR Utilitites

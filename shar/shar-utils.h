@@ -58,6 +58,8 @@
 #ifndef SHAR_UTILS_H
 #define SHAR_UTILS_H
 
+#include <saml/saml.h>
+#include <shib-target/shibrpc.h>
 #include <shib-target/shib-target.h>
 
 extern "C" {

@@ -109,8 +109,8 @@ SAMLBrowserProfile::BrowserProfileResponse ShibBrowserProfile::receive(
             const IEntityDescriptor* provider=m.lookup(e.getProperty("issuer"),false);
             if (provider) {
                 const IIDPSSODescriptor* role=provider->getIDPSSODescriptor(saml::XML::SAML11_PROTOCOL_ENUM);
-                if (role) annotateException(e,role); // throws it
-                annotateException(e,provider);  // throws it
+                if (role) annotateException(&e,role); // throws it
+                annotateException(&e,provider);  // throws it
             }
         }
         throw;
@@ -141,7 +141,7 @@ SAMLBrowserProfile::BrowserProfileResponse ShibBrowserProfile::receive(
         if (provider) {
             bpr.clear();
             MetadataException ex("metadata lookup failed, unable to process assertion");
-            annotateException(ex,provider);  // throws it
+            annotateException(&ex,provider);  // throws it
         }
         bpr.clear();
         throw MetadataException("metadata lookup failed, unable to process assertion",namedparams(1,"issuer",issuer.get()));
@@ -158,7 +158,7 @@ SAMLBrowserProfile::BrowserProfileResponse ShibBrowserProfile::receive(
             if (!t.validate(*bpr.response,role)) {
                 bpr.clear();
                 TrustException ex("unable to verify signed profile response");
-                annotateException(ex,role); // throws it
+                annotateException(&ex,role); // throws it
             }
         }    
         // SSO assertion signed?
@@ -167,7 +167,7 @@ SAMLBrowserProfile::BrowserProfileResponse ShibBrowserProfile::receive(
             if (!t.validate(*bpr.assertion,role)) {
                 bpr.clear();
                 TrustException ex("unable to verify signed authentication assertion");
-                annotateException(ex,role); // throws it
+                annotateException(&ex,role); // throws it
             }
         }
         return bpr;
@@ -179,6 +179,6 @@ SAMLBrowserProfile::BrowserProfileResponse ShibBrowserProfile::receive(
         issuer.get(), (nq.get() ? nq.get() : "none"));
     bpr.clear();
     MetadataException ex("metadata lookup failed, issuer not registered as SAML 1.x identity provider");
-    annotateException(ex,provider,false);
+    annotateException(&ex,provider,false);
     throw ex;
 }
