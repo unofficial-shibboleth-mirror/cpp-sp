@@ -57,8 +57,6 @@
 
 #include "internal.h"
 
-#include <log4cpp/Category.hh>
-
 using namespace std;
 using namespace log4cpp;
 using namespace saml;
@@ -174,6 +172,6 @@ SAMLBrowserProfile::ArtifactMapper::ArtifactMapperResponse STArtifactMapper::map
     
     log.error("unable to locate acceptable binding endpoint to resolve artifact");
     MetadataException ex("Unable to locate acceptable binding endpoint to resolve artifact.");
-    annotateException(ex,entity,false);
+    annotateException(&ex,entity,false);
     throw ex;
 }

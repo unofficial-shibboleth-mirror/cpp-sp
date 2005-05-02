@@ -53,6 +53,8 @@
  * Created by:	Derek Atkins <derek@ihtfp.com>, revised by Scott Cantor
  */
 
+#include <saml/saml.h>  // need this to "prime" the xmlsec-constrained windows.h declaration
+#include <shib-target/shibrpc.h>
 #include "internal.h"
 
 #ifdef HAVE_UNISTD_H
@@ -60,8 +62,6 @@
 # include <sys/un.h>
 # include <unistd.h>
 # include <arpa/inet.h>
-#else
-# include <winsock.h>
 #endif
 
 #include <sys/types.h>
@@ -79,7 +79,7 @@ using namespace log4cpp;
 static const XMLCh address[] = { chLatin_a, chLatin_d, chLatin_d, chLatin_r, chLatin_e, chLatin_s, chLatin_s, chNull };
 static const XMLCh port[] = { chLatin_p, chLatin_o, chLatin_r, chLatin_t, chNull };
 
-class TCPListener : public IListener
+class TCPListener : virtual public RPCListener
 {
 public:
     TCPListener(const DOMElement* e);
@@ -90,7 +90,7 @@ public:
     bool connect(ShibSocket& s) const;
     bool close(ShibSocket& s) const;
     bool accept(ShibSocket& listener, ShibSocket& s) const;
-    CLIENT* getClientHandle(ShibSocket& s, u_long program, u_long version) const;
+    void* getClientHandle(ShibSocket& s, u_long program, u_long version) const;
     
 private:
     void setup_tcp_sockaddr(struct sockaddr_in* addr) const;
@@ -99,7 +99,6 @@ private:
     string m_address;
     unsigned short m_port;
     vector<string> m_acl;
-    Category* m_log;
 };
 
 IPlugIn* TCPListenerFactory(const DOMElement* e)
@@ -107,8 +106,7 @@ IPlugIn* TCPListenerFactory(const DOMElement* e)
     return new TCPListener(e);
 }
 
-TCPListener::TCPListener(const DOMElement* e) : m_address("127.0.0.1"), m_port(12345),
-    m_log(&Category::getInstance("shibtarget.TCPListener"))
+TCPListener::TCPListener(const DOMElement* e) : RPCListener(e), m_address("127.0.0.1"), m_port(12345)
 {
     // We're stateless, but we need to load the configuration.
     const XMLCh* tag=e->getAttributeNS(NULL,address);
@@ -163,10 +161,10 @@ bool TCPListener::log_error() const
     char buf[256];
     memset(buf,0,sizeof(buf));
     strerror_r(rc,buf,sizeof(buf));
-    m_log->error("socket call resulted in error (%d): %s",rc,isprint(*buf) ? buf : "no message");
+    log->error("socket call resulted in error (%d): %s",rc,isprint(*buf) ? buf : "no message");
 #else
     const char* buf=strerror(rc);
-    m_log->error("socket call resulted in error (%d): %s",rc,isprint(*buf) ? buf : "no message");
+    log->error("socket call resulted in error (%d): %s",rc,isprint(*buf) ? buf : "no message");
 #endif
     return false;
 }
@@ -254,11 +252,11 @@ bool TCPListener::accept(ShibSocket& listener, ShibSocket& s) const
     }
     close(s);
     s=-1;
-    m_log->error("accept() rejected client at %s\n",client);
+    log->error("accept() rejected client at %s\n",client);
     return false;
 }
 
-CLIENT* TCPListener::getClientHandle(ShibSocket& s, u_long program, u_long version) const
+void* TCPListener::getClientHandle(ShibSocket& s, u_long program, u_long version) const
 {
     struct sockaddr_in sin;
     memset (&sin, 0, sizeof (sin));
@@ -268,7 +266,7 @@ CLIENT* TCPListener::getClientHandle(ShibSocket& s, u_long program, u_long versi
 
 #ifndef WIN32
 
-class UnixListener : public IListener
+class UnixListener : virtual public RPCListener
 {
 public:
     UnixListener(const DOMElement* e);
@@ -279,14 +277,13 @@ public:
     bool connect(ShibSocket& s) const;
     bool close(ShibSocket& s) const;
     bool accept(ShibSocket& listener, ShibSocket& s) const;
-    CLIENT* getClientHandle(ShibSocket& s, u_long program, u_long version) const;
+    void* getClientHandle(ShibSocket& s, u_long program, u_long version) const;
     
 private:
     bool log_error() const;
 
     string m_address;
     mutable bool m_bound;
-    Category& m_log;
 };
 
 IPlugIn* UnixListenerFactory(const DOMElement* e)
@@ -294,8 +291,7 @@ IPlugIn* UnixListenerFactory(const DOMElement* e)
     return new UnixListener(e);
 }
 
-UnixListener::UnixListener(const DOMElement* e) : m_address("/tmp/shar-socket"), m_bound(false),
-    m_log(Category::getInstance("shibtarget.UnixListener"))
+UnixListener::UnixListener(const DOMElement* e) : m_address("/var/run/shar-socket"), m_bound(false)
 {
     // We're stateless, but we need to load the configuration.
     const XMLCh* tag=e->getAttributeNS(NULL,address);
@@ -312,10 +308,10 @@ bool UnixListener::log_error() const
     char buf[256];
     memset(buf,0,sizeof(buf));
     strerror_r(rc,buf,sizeof(buf));
-    m_log->error("socket call resulted in error (%d): %s",rc,isprint(*buf) ? buf : "no message");
+    log->error("socket call resulted in error (%d): %s",rc,isprint(*buf) ? buf : "no message");
 #else
     const char* buf=strerror(rc);
-    m_log->error("socket call resulted in error (%d): %s",rc,isprint(*buf) ? buf : "no message");
+    log->error("socket call resulted in error (%d): %s",rc,isprint(*buf) ? buf : "no message");
 #endif
     return false;
 }
@@ -388,7 +384,7 @@ bool UnixListener::accept(ShibSocket& listener, ShibSocket& s) const
     return true;
 }
 
-CLIENT* UnixListener::getClientHandle(ShibSocket& s, u_long program, u_long version) const
+void* UnixListener::getClientHandle(ShibSocket& s, u_long program, u_long version) const
 {
     struct sockaddr_in sin;
     memset (&sin, 0, sizeof (sin));

@@ -17,16 +17,6 @@ extern "C" {
 #endif
 
 
-enum ShibProfile {
-	PROFILE_UNSPECIFIED = 0,
-	SAML10_POST = 1,
-	SAML10_ARTIFACT = 2,
-	SAML11_POST = 4,
-	SAML11_ARTIFACT = 8,
-	SAML20_SSO = 16,
-};
-typedef enum ShibProfile ShibProfile;
-
 struct shibrpc_new_session_args_2 {
 	int supported_profiles;
 	char *application_id;
@@ -53,7 +43,7 @@ typedef struct shibrpc_get_session_args_2 shibrpc_get_session_args_2;
 
 struct shibrpc_get_session_ret_2 {
 	char *status;
-	ShibProfile profile;
+	int profile;
 	char *provider_id;
 	char *auth_statement;
 	char *attr_response_pre;
@@ -108,7 +98,6 @@ extern int shibrpc_prog_2_freeresult ();
 /* the xdr functions */
 
 #if defined(__STDC__) || defined(__cplusplus)
-extern  bool_t xdr_ShibProfile (XDR *, ShibProfile*);
 extern  bool_t xdr_shibrpc_new_session_args_2 (XDR *, shibrpc_new_session_args_2*);
 extern  bool_t xdr_shibrpc_new_session_ret_2 (XDR *, shibrpc_new_session_ret_2*);
 extern  bool_t xdr_shibrpc_get_session_args_2 (XDR *, shibrpc_get_session_args_2*);
@@ -117,7 +106,6 @@ extern  bool_t xdr_shibrpc_end_session_args_2 (XDR *, shibrpc_end_session_args_2
 extern  bool_t xdr_shibrpc_end_session_ret_2 (XDR *, shibrpc_end_session_ret_2*);
 
 #else /* K&R C */
-extern bool_t xdr_ShibProfile ();
 extern bool_t xdr_shibrpc_new_session_args_2 ();
 extern bool_t xdr_shibrpc_new_session_ret_2 ();
 extern bool_t xdr_shibrpc_get_session_args_2 ();

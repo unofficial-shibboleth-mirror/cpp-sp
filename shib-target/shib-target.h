@@ -68,17 +68,26 @@
 # endif
 # define SHIB_SCHEMAS "/opt/shibboleth/share/xml/shibboleth"
 # define SHIB_CONFIG "/opt/shibboleth/etc/shibboleth/shibboleth.xml"
+# include <winsock.h>
 #else
 # include <shib-target/shib-paths.h>
 # define SHIBTARGET_EXPORTS
 #endif
 
-#include <shib-target/shibrpc.h>
 
 namespace shibtarget {
   
     DECLARE_SAML_EXCEPTION(SHIBTARGET_EXPORTS,ListenerException,SAMLException);
     DECLARE_SAML_EXCEPTION(SHIBTARGET_EXPORTS,ConfigurationException,SAMLException);
+
+    enum ShibProfile {
+      PROFILE_UNSPECIFIED = 0,
+      SAML10_POST = 1,
+      SAML10_ARTIFACT = 2,
+      SAML11_POST = 4,
+      SAML11_ARTIFACT = 8,
+      SAML20_SSO = 16
+    };
 
     // Abstract APIs for access to configuration information
     
@@ -94,41 +103,6 @@ namespace shibtarget {
         virtual ~IPropertySet() {}
     };
 
-    struct SHIBTARGET_EXPORTS IListener : public virtual saml::IPlugIn
-    {
-#ifdef WIN32
-        typedef SOCKET ShibSocket;
-#else
-        typedef int ShibSocket;
-#endif
-        virtual bool create(ShibSocket& s) const=0;
-        virtual bool bind(ShibSocket& s, bool force=false) const=0;
-        virtual bool connect(ShibSocket& s) const=0;
-        virtual bool close(ShibSocket& s) const=0;
-        virtual bool accept(ShibSocket& listener, ShibSocket& s) const=0;
-        virtual CLIENT* getClientHandle(ShibSocket& s, u_long program, u_long version) const=0;
-        virtual ~IListener() {}
-    };
-
-    class SHIBTARGET_EXPORTS ShibTarget;
-    struct SHIBTARGET_EXPORTS IAccessControl : public virtual saml::ILockable, public virtual saml::IPlugIn
-    {
-        virtual bool authorized(
-            ShibTarget* st,
-            const char* providerId,
-            const saml::SAMLAuthenticationStatement* authn,
-            const saml::SAMLResponse* attrs
-            ) const=0;
-        virtual ~IAccessControl() {}
-    };
-
-    struct SHIBTARGET_EXPORTS IRequestMapper : public virtual saml::ILockable, public virtual saml::IPlugIn
-    {
-        typedef std::pair<const IPropertySet*,IAccessControl*> Settings;
-        virtual Settings getSettings(ShibTarget* st) const=0;
-        virtual ~IRequestMapper() {}
-    };
-    
     struct SHIBTARGET_EXPORTS IApplication : public virtual IPropertySet
     {
         virtual const char* getId() const=0;
@@ -204,6 +178,67 @@ namespace shibtarget {
         virtual ~ISessionCache() {}
     };
 
+    struct SHIBTARGET_EXPORTS IListener : public virtual saml::IPlugIn
+    {
+        // The socket APIs should really be somewhere else, but compatibility
+        // with older configuration files dictates that the Listener handles
+        // both client and server socket handling. We can fix this for 2.0...?
+#ifdef WIN32
+        typedef SOCKET ShibSocket;
+#else
+        typedef int ShibSocket;
+#endif
+        virtual bool create(ShibSocket& s) const=0;
+        virtual bool bind(ShibSocket& s, bool force=false) const=0;
+        virtual bool connect(ShibSocket& s) const=0;
+        virtual bool close(ShibSocket& s) const=0;
+        virtual bool accept(ShibSocket& listener, ShibSocket& s) const=0;
+
+        // The "real" Listener API abstracts the primitive operations that make up
+        // the meat of the SP's job. Right now, that's session create/read/delete.
+        virtual void sessionNew(
+            const IApplication* application,
+            int supported_profiles,
+            const char* recipient,
+            const char* packet,
+            const char* ip,
+            std::string& target,
+            std::string& cookie,
+            std::string& provider_id
+            ) const=0;
+    
+        virtual void sessionGet(
+            const IApplication* application,
+            const char* cookie,
+            const char* ip,
+            ISessionCacheEntry** pentry
+            ) const=0;
+    
+        virtual void sessionEnd(
+            const IApplication* application,
+            const char* cookie
+            ) const=0;
+            
+        virtual void ping(int& i) const=0;
+        
+        virtual ~IListener() {}
+    };
+
+    class SHIBTARGET_EXPORTS ShibTarget;
+
+    struct SHIBTARGET_EXPORTS IAccessControl : public virtual saml::ILockable, public virtual saml::IPlugIn
+    {
+        virtual bool authorized(ShibTarget* st, ISessionCacheEntry* entry) const=0;
+        virtual ~IAccessControl() {}
+    };
+
+    struct SHIBTARGET_EXPORTS IRequestMapper : public virtual saml::ILockable, public virtual saml::IPlugIn
+    {
+        typedef std::pair<const IPropertySet*,IAccessControl*> Settings;
+        virtual Settings getSettings(ShibTarget* st) const=0;
+        virtual ~IRequestMapper() {}
+    };
+    
     struct SHIBTARGET_EXPORTS IConfig : public virtual saml::ILockable, public virtual IPropertySet, public virtual saml::IPlugIn
     {
         virtual const IListener* getListener() const=0;
@@ -384,30 +419,6 @@ namespace shibtarget {
     std::pair<bool,void*> doCheckAuthZ();
     std::pair<bool,void*> doExportAssertions();
 
-    // Currently wraps remoted interface.
-    // TODO: Move this functionality behind IListener
-    void sessionNew(
-        int supported_profiles,
-        const std::string& recipient,
-        const char* packet,
-        const char* ip,
-        std::string& target,
-        std::string& cookie,
-        std::string& provider_id
-        ) const;
-
-    void sessionGet(
-        const char* cookie,
-        const char* ip,
-        ShibProfile& profile,
-        std::string& provider_id,
-        saml::SAMLAuthenticationStatement** auth_statement=NULL,
-        saml::SAMLResponse** attr_response_pre=NULL,
-        saml::SAMLResponse** attr_response_post=NULL
-        ) const;
-
-    void sessionEnd(const char* cookie) const;
-
     // Basic request access in case any plugins need the info
     virtual const IApplication* getApplication() const;
     const char* getRequestMethod() const {return m_method.c_str();}
@@ -475,10 +486,10 @@ namespace shibtarget {
         static const char htAccessControlType[];    // Apache-specific .htaccess authz module
         static const char XMLAccessControlType[];   // Proprietary but portable XML authz syntax
 
-        // Out of process listener implementations
+        // Listener implementations
         static const char TCPListenerType[];        // ONC RPC via TCP socket
         static const char UnixListenerType[];       // ONC RPC via domain socker
-        static const char NullListenerType[];       // "faked" in-process marshalling
+        static const char MemoryListenerType[];     // "faked" in-process marshalling
     
         struct SHIBTARGET_EXPORTS Literals
         {

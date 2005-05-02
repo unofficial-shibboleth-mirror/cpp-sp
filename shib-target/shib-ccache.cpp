@@ -713,7 +713,7 @@ pair<SAMLResponse*,SAMLResponse*> InternalCCacheEntry::getNewResponse()
     if (!AA) {
         log->error("unable to locate metadata for identity provider's Attribute Authority");
         MetadataException ex("Unable to locate metadata for identity provider's Attribute Authority.");
-        annotateException(ex,site);
+        annotateException(&ex,site);
     }
 
     // Get protocol signing policy.
@@ -789,12 +789,12 @@ pair<SAMLResponse*,SAMLResponse*> InternalCCacheEntry::getNewResponse()
     }
     catch (SAMLException& e) {
         log->error("caught SAML exception during query to AA: %s", e.what());
-        annotateException(e,AA);
+        annotateException(&e,AA);
     }
     
     log->error("no response obtained");
     SAMLException ex("Unable to obtain attributes from user's identity provider.");
-    annotateException(ex,AA,false);
+    annotateException(&ex,AA,false);
     throw ex;
 }
 

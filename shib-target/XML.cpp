@@ -74,6 +74,7 @@ const char XML::XMLAccessControlType[] =    "edu.internet2.middleware.shibboleth
 
 const char XML::TCPListenerType[] =         "edu.internet2.middleware.shibboleth.sp.provider.TCPListener";
 const char XML::UnixListenerType[] =        "edu.internet2.middleware.shibboleth.sp.provider.UnixListener";
+const char XML::MemoryListenerType[] =      "edu.internet2.middleware.shibboleth.sp.provider.MemoryListener";
 
 const XMLCh XML::SHIBTARGET_NS[] = // urn:mace:shibboleth:target:config:1.0
 { chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,

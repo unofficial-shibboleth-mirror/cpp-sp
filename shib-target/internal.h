@@ -78,6 +78,7 @@
 
 #define SHIBT_L(s) shibtarget::XML::Literals::s
 #define SHIBT_L_QNAME(p,s) shibtarget::XML::Literals::p##_##s
+#define SHIBT_LOGCAT "shibtarget"
 #define SHIBTRAN_LOGCAT "Shibboleth-TRANSACTION"
 
 // Controls default logging level of console tools and other situations
@@ -86,50 +87,48 @@
 
 namespace shibtarget {
 
-    // Wraps the actual RPC connection
-    class RPCHandle
+    class RPCHandlePool;
+    class RPCListener : public virtual IListener
     {
     public:
-        RPCHandle();
-        ~RPCHandle();
+        RPCListener(const DOMElement* e);
+        ~RPCListener();
 
-        CLIENT* connect(void);  // connects and returns the CLIENT handle
-        void disconnect();      // disconnects, should not return disconnected handles to pool!
+        void sessionNew(
+            const IApplication* application,
+            int supported_profiles,
+            const char* recipient,
+            const char* packet,
+            const char* ip,
+            std::string& target,
+            std::string& cookie,
+            std::string& provider_id
+            ) const;
+    
+        void sessionGet(
+            const IApplication* application,
+            const char* cookie,
+            const char* ip,
+            ISessionCacheEntry** pentry
+            ) const;
+    
+        void sessionEnd(
+            const IApplication* application,
+            const char* cookie
+        ) const;
+        
+        void ping(int& i) const;
 
-    private:
+        // Implemented by socket-specific subclasses. Return type must be ONC CLIENT*
+        virtual void* getClientHandle(ShibSocket& s, u_long program, u_long version) const=0;
+
+    protected:
         log4cpp::Category* log;
-        CLIENT* m_clnt;
-        IListener::ShibSocket m_sock;
-    };
-  
-    // Manages the pool of connections
-    class RPCHandlePool
-    {
-    public:
-        RPCHandlePool() :  m_lock(shibboleth::Mutex::create()) {}
-        ~RPCHandlePool();
-        RPCHandle* get();
-        void put(RPCHandle*);
-  
-    private:
-        std::auto_ptr<shibboleth::Mutex> m_lock;
-        std::stack<RPCHandle*> m_pool;
-    };
-  
-    // Cleans up after use
-    class RPC
-    {
-    public:
-        RPC();
-        ~RPC() {delete m_handle;}
-        RPCHandle* operator->() {return m_handle;}
-        void pool() {if (m_handle) m_pool.put(m_handle); m_handle=NULL;}
     
     private:
-        RPCHandlePool& m_pool;
-        RPCHandle* m_handle;
+        mutable RPCHandlePool* m_rpcpool;
     };
-    
+
     // Helper class for SAML 2.0 Common Domain Cookie operations
     class CommonDomainCookie
     {
@@ -239,18 +238,16 @@ namespace shibtarget {
     class STConfig : public ShibTargetConfig
     {
     public:
-        STConfig() : m_tranLog(NULL), m_tranLogLock(NULL), m_rpcpool(NULL) {}
+        STConfig() : m_tranLog(NULL), m_tranLogLock(NULL) {}
         ~STConfig() {}
         
         bool init(const char* schemadir);
         bool load(const char* config);
         void shutdown();
         
-        RPCHandlePool& getRPCHandlePool() {return *m_rpcpool;}
         log4cpp::Category& getTransactionLog() { m_tranLogLock->lock(); return *m_tranLog; }
         void releaseTransactionLog() { m_tranLogLock->unlock();}
     private:
-        RPCHandlePool* m_rpcpool;
         log4cpp::FixedContextCategory* m_tranLog;
         shibboleth::Mutex* m_tranLogLock;
         static IConfig* ShibTargetConfigFactory(const DOMElement* e);

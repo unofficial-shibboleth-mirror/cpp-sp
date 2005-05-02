@@ -75,6 +75,7 @@ namespace {
 PlugManager::Factory UnixListenerFactory;
 #endif
 PlugManager::Factory TCPListenerFactory;
+PlugManager::Factory MemoryListenerFactory;
 PlugManager::Factory MemoryCacheFactory;
 PlugManager::Factory XMLRequestMapFactory;
 //PlugManager::Factory htaccessFactory;
@@ -162,6 +163,7 @@ bool STConfig::init(const char* schemadir)
     samlConf.getPlugMgr().regFactory(shibtarget::XML::UnixListenerType,&UnixListenerFactory);
 #endif
     samlConf.getPlugMgr().regFactory(shibtarget::XML::TCPListenerType,&TCPListenerFactory);
+    samlConf.getPlugMgr().regFactory(shibtarget::XML::MemoryListenerType,&MemoryListenerFactory);
     samlConf.getPlugMgr().regFactory(shibtarget::XML::MemorySessionCacheType,&MemoryCacheFactory);
     samlConf.getPlugMgr().regFactory(shibtarget::XML::LegacyRequestMapType,&XMLRequestMapFactory);
     samlConf.getPlugMgr().regFactory(shibtarget::XML::XMLRequestMapType,&XMLRequestMapFactory);
@@ -206,8 +208,6 @@ bool STConfig::load(const char* config)
         m_tranLog=new FixedContextCategory(SHIBTRAN_LOGCAT);
         m_tranLog->info("opened transaction log");
         m_tranLogLock = Mutex::create();
-
-        m_rpcpool = new RPCHandlePool;
     }
     catch (SAMLException& ex) {
         log.fatal("caught exception while loading/initializing configuration: %s",ex.what());
@@ -233,8 +233,6 @@ void STConfig::shutdown()
 #endif
     Category& log = Category::getInstance("shibtarget.Config");
     log.info("shutting down the library");
-    delete m_rpcpool;
-    m_rpcpool = NULL;
     delete m_tranLogLock;
     m_tranLogLock = NULL;
     //delete m_tranLog; // This is crashing for some reason, but we're shutting down anyway.

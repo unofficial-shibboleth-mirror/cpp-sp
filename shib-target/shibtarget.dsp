@@ -53,7 +53,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386
-# ADD LINK32 log4cpp.lib xerces-c_2.lib wsock32.lib saml_5.lib /nologo /dll /machine:I386 /out:"Release/shibtarget_5.dll" /libpath:"..\..\..\opensaml\c\saml\Release" /export:shibrpc_prog_2 /export:shibrpc_ping_2
+# ADD LINK32 log4cpp.lib xerces-c_2.lib wsock32.lib saml_5.lib /nologo /dll /machine:I386 /out:"Release/shibtarget_5.dll" /libpath:"..\..\..\opensaml\c\saml\Release"
 # SUBTRACT LINK32 /pdb:none
 
 !ELSEIF  "$(CFG)" == "shibtarget - Win32 Debug"
@@ -80,7 +80,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 log4cppD.lib xerces-c_2D.lib wsock32.lib saml_5D.lib /nologo /dll /debug /machine:I386 /out:"Debug/shibtarget_5D.dll" /pdbtype:sept /libpath:"..\..\..\opensaml\c\saml\Debug" /export:shibrpc_prog_2 /export:shibrpc_ping_2
+# ADD LINK32 log4cppD.lib xerces-c_2D.lib wsock32.lib saml_5D.lib /nologo /dll /debug /machine:I386 /out:"Debug/shibtarget_5D.dll" /pdbtype:sept /libpath:"..\..\..\opensaml\c\saml\Debug"
 # SUBTRACT LINK32 /pdb:none
 
 !ENDIF 
@@ -103,7 +103,15 @@ SOURCE=.\internal.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\MemoryListener.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\resource.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\RPCListener.cpp
 # End Source File
 # Begin Source File
 
@@ -120,10 +128,6 @@ SOURCE=".\shib-ini.cpp"
 # Begin Source File
 
 SOURCE=".\shib-mlp.cpp"
-# End Source File
-# Begin Source File
-
-SOURCE=".\shib-rpchandle.cpp"
 # End Source File
 # Begin Source File
 
@@ -144,14 +148,6 @@ SOURCE=".\shib-target.rc"
 # Begin Source File
 
 SOURCE=".\shibrpc-clnt.c"
-# End Source File
-# Begin Source File
-
-SOURCE=".\shibrpc-server.cpp"
-# End Source File
-# Begin Source File
-
-SOURCE=".\shibrpc-svc.c"
 # End Source File
 # Begin Source File
 

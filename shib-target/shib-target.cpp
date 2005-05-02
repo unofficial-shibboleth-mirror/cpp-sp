@@ -135,12 +135,15 @@ namespace shibtarget {
     mutable string m_handlerURL;
     mutable map<string,string> m_cookieMap;
 
+    ISessionCacheEntry* m_cacheEntry;
+    /*
     ShibProfile m_sso_profile;
     string m_provider_id;
     SAMLAuthenticationStatement* m_sso_statement;
     SAMLResponse* m_pre_response;
     SAMLResponse* m_post_response;
-    
+    */
+
     ShibTargetConfig* m_Config;
 
     IConfig* m_conf;
@@ -265,14 +268,11 @@ pair<bool,void*> ShibTarget::doCheckAuthN(bool handler)
         procState = "Session Processing Error";
         try {
             // Localized exception throw if the session isn't valid.
-            sessionGet(
+            m_priv->m_conf->getListener()->sessionGet(
+                m_priv->m_app,
                 session_id,
                 m_remote_addr.c_str(),
-                m_priv->m_sso_profile,
-                m_priv->m_provider_id,
-                &m_priv->m_sso_statement,
-                &m_priv->m_pre_response,
-                &m_priv->m_post_response
+                &m_priv->m_cacheEntry
                 );
         }
         catch (SAMLException& e) {
@@ -461,7 +461,7 @@ pair<bool,void*> ShibTarget::doCheckAuthZ(void)
         // Do we have an access control plugin?
         if (m_priv->m_settings.second) {
             Locker acllock(m_priv->m_settings.second);
-            if (m_priv->m_settings.second->authorized(this,m_priv->m_provider_id.c_str(), m_priv->m_sso_statement, m_priv->m_post_response)) {
+            if (m_priv->m_settings.second->authorized(this,m_priv->m_cacheEntry)) {
                 // Let the caller decide how to proceed.
                 log(LogLevelDebug, "doCheckAuthZ: access control provider granted access");
                 return pair<bool,void*>(false,NULL);
@@ -511,17 +511,14 @@ pair<bool,void*> ShibTarget::doExportAssertions()
         pair<string,const char*> shib_cookie=m_priv->getCookieNameProps("_shibsession_");
         const char *session_id = m_priv->getCookie(this,shib_cookie.first);
 
-        if (!m_priv->m_sso_statement) {
+        if (!m_priv->m_cacheEntry) {
             // No data yet, so we need to get the session. This can only happen
             // if the call to doCheckAuthn doesn't happen in the same object lifetime.
-            sessionGet(
+            m_priv->m_conf->getListener()->sessionGet(
+                m_priv->m_app,
                 session_id,
                 m_remote_addr.c_str(),
-                m_priv->m_sso_profile,
-                m_priv->m_provider_id,
-                &m_priv->m_sso_statement,
-                &m_priv->m_pre_response,
-                &m_priv->m_post_response
+                &m_priv->m_cacheEntry
                 );
         }
 
@@ -540,12 +537,14 @@ pair<bool,void*> ShibTarget::doExportAssertions()
             }
         }
         
-        // Maybe export the first assertion.
+        ISessionCacheEntry::CachedResponse cr=m_priv->m_cacheEntry->getResponse();
+
+        // Maybe export the response.
         clearHeader("Shib-Attributes");
         pair<bool,bool> exp=m_priv->m_settings.first->getBool("exportAssertion");
-        if (exp.first && exp.second && m_priv->m_pre_response) {
+        if (exp.first && exp.second && cr.unfiltered) {
             ostringstream os;
-            os << *(m_priv->m_pre_response);
+            os << *cr.unfiltered;
             unsigned int outlen;
             XMLByte* serialized = Base64::encode(reinterpret_cast<XMLByte*>((char*)os.str().c_str()), os.str().length(), &outlen);
             XMLByte *pos, *pos2;
@@ -562,9 +561,9 @@ pair<bool,void*> ShibTarget::doExportAssertions()
         clearHeader("Shib-Identity-Provider");
         clearHeader("Shib-Authentication-Method");
         clearHeader("Shib-NameIdentifier-Format");
-        setHeader("Shib-Origin-Site", m_priv->m_provider_id.c_str());
-        setHeader("Shib-Identity-Provider", m_priv->m_provider_id.c_str());
-        auto_ptr_char am(m_priv->m_sso_statement->getAuthMethod());
+        setHeader("Shib-Origin-Site", m_priv->m_cacheEntry->getProviderId());
+        setHeader("Shib-Identity-Provider", m_priv->m_cacheEntry->getProviderId());
+        auto_ptr_char am(m_priv->m_cacheEntry->getAuthnStatement()->getAuthMethod());
         setHeader("Shib-Authentication-Method", am.get());
         
         // Export NameID?
@@ -572,10 +571,12 @@ pair<bool,void*> ShibTarget::doExportAssertions()
         while (provs.hasNext()) {
             IAAP* aap=provs.next();
             Locker locker(aap);
-            const IAttributeRule* rule=aap->lookup(m_priv->m_sso_statement->getSubject()->getNameIdentifier()->getFormat());
+            const IAttributeRule* rule=aap->lookup(
+                m_priv->m_cacheEntry->getAuthnStatement()->getSubject()->getNameIdentifier()->getFormat()
+                );
             if (rule && rule->getHeader()) {
-                auto_ptr_char form(m_priv->m_sso_statement->getSubject()->getNameIdentifier()->getFormat());
-                auto_ptr_char nameid(m_priv->m_sso_statement->getSubject()->getNameIdentifier()->getName());
+                auto_ptr_char form(m_priv->m_cacheEntry->getAuthnStatement()->getSubject()->getNameIdentifier()->getFormat());
+                auto_ptr_char nameid(m_priv->m_cacheEntry->getAuthnStatement()->getSubject()->getNameIdentifier()->getName());
                 setHeader("Shib-NameIdentifier-Format", form.get());
                 if (!strcmp(rule->getHeader(),"REMOTE_USER"))
                     setRemoteUser(nameid.get());
@@ -588,7 +589,7 @@ pair<bool,void*> ShibTarget::doExportAssertions()
         setHeader("Shib-Application-ID", m_priv->m_app->getId());
     
         // Export the attributes.
-        Iterator<SAMLAssertion*> a_iter(m_priv->m_post_response ? m_priv->m_post_response->getAssertions() : EMPTY(SAMLAssertion*));
+        Iterator<SAMLAssertion*> a_iter(cr.filtered ? cr.filtered->getAssertions() : EMPTY(SAMLAssertion*));
         while (a_iter.hasNext()) {
             SAMLAssertion* assert=a_iter.next();
             Iterator<SAMLStatement*> statements=assert->getStatements();
@@ -656,368 +657,31 @@ pair<bool,void*> ShibTarget::doExportAssertions()
     return make_pair(true,m_priv->sendError(this, "rm", mlp));
 }
 
-
-void ShibTarget::sessionNew(
-    int supported_profiles,
-    const string& recipient,
-    const char* packet,
-    const char* ip,
-    string& target,
-    string& cookie,
-    string& provider_id
-    ) const
-{
-#ifdef _DEBUG
-    saml::NDC ndc("sessionNew");
-#endif
-    Category& log = Category::getInstance("shibtarget.ShibTarget");
-
-    if (!packet || !*packet) {
-        log.error("missing profile response");
-        throw FatalProfileException("Profile response missing.");
-    }
-
-    if (!ip || !*ip) {
-        log.error("missing client address");
-        throw FatalProfileException("Invalid client address.");
-    }
-  
-    if (supported_profiles <= 0) {
-        log.error("no profile support indicated");
-        throw FatalProfileException("No profile support indicated.");
-    }
-  
-    shibrpc_new_session_args_2 arg;
-    arg.recipient = (char*)recipient.c_str();
-    arg.application_id = (char*)m_priv->m_app->getId();
-    arg.packet = (char*)packet;
-    arg.client_addr = (char*)ip;
-    arg.supported_profiles = supported_profiles;
-
-    log.info("create session for user at (%s) for application (%s)", ip, arg.application_id);
-
-    shibrpc_new_session_ret_2 ret;
-    memset(&ret, 0, sizeof(ret));
-
-    // Loop on the RPC in case we lost contact the first time through
-    int retry = 1;
-    CLIENT* clnt;
-    RPC rpc;
-    do {
-        clnt = rpc->connect();
-        clnt_stat status = shibrpc_new_session_2 (&arg, &ret, clnt);
-        if (status != RPC_SUCCESS) {
-            // FAILED.  Release, disconnect, and retry
-            log.error("RPC Failure: %p (%p) (%d): %s", this, clnt, status, clnt_spcreateerror("shibrpc_new_session_2"));
-            rpc->disconnect();
-            if (retry)
-                retry--;
-            else
-                throw ListenerException("Failure passing session setup information to listener.");
-        }
-        else {
-            // SUCCESS.  Pool and continue
-            retry = -1;
-        }
-    } while (retry>=0);
-
-    if (ret.status && *ret.status)
-        log.debug("RPC completed with exception: %s", ret.status);
-    else
-        log.debug("RPC completed successfully");
-
-    SAMLException* except=NULL;
-    if (ret.status && *ret.status) {
-        // Reconstitute exception object.
-        try { 
-            istringstream estr(ret.status);
-            except=SAMLException::getInstance(estr);
-        }
-        catch (SAMLException& e) {
-            log.error("caught SAML Exception while building the SAMLException: %s", e.what());
-            log.error("XML was: %s", ret.status);
-            clnt_freeres(clnt, (xdrproc_t)xdr_shibrpc_new_session_ret_2, (caddr_t)&ret);
-            rpc.pool();
-            throw FatalProfileException("An unrecoverable error occurred while creating your session.");
-        }
-#ifndef _DEBUG
-        catch (...) {
-            log.error("caught unknown exception building SAMLException");
-            log.error("XML was: %s", ret.status);
-            clnt_freeres(clnt, (xdrproc_t)xdr_shibrpc_new_session_ret_2, (caddr_t)&ret);
-            rpc.pool();
-            throw;
-        }
-#endif
-    }
-    else {
-        log.debug("new session from IdP (%s) with key (%s)", ret.provider_id, ret.cookie);
-        cookie = ret.cookie;
-        provider_id = ret.provider_id;
-        if (ret.target)
-            target = ret.target;
-    }
-
-    clnt_freeres(clnt, (xdrproc_t)xdr_shibrpc_new_session_ret_2, (caddr_t)&ret);
-    rpc.pool();
-    if (except) {
-        auto_ptr<SAMLException> wrapper(except);
-        wrapper->raise();
-    }
-}
-
-void ShibTarget::sessionGet(
-    const char* cookie,
-    const char* ip,
-    ShibProfile& profile,
-    string& provider_id,
-    SAMLAuthenticationStatement** auth_statement,
-    SAMLResponse** attr_response_pre,
-    SAMLResponse** attr_response_post
-    ) const
-{
-#ifdef _DEBUG
-    saml::NDC ndc("sessionGet");
-#endif
-    Category& log = Category::getInstance("shibtarget.ShibTarget");
-
-    if (!cookie || !*cookie) {
-        log.error("no session key provided");
-        throw InvalidSessionException("No session key was provided.");
-    }
-    else if (strchr(cookie,'=')) {
-        log.error("cookie value not extracted successfully, probably overlapping cookies across domains");
-        throw InvalidSessionException("The session key wasn't extracted successfully from the browser cookie.");
-    }
-
-    if (!ip || !*ip) {
-        log.error("invalid client Address");
-        throw FatalProfileException("Invalid client address.");
-    }
-
-    log.info("getting session for client at (%s)", ip);
-    log.debug("session cookie (%s)", cookie);
-
-    shibrpc_get_session_args_2 arg;
-    arg.cookie = (char*)cookie;
-    arg.client_addr = (char*)ip;
-    arg.application_id = (char*)m_priv->m_app->getId();
-
-    shibrpc_get_session_ret_2 ret;
-    memset (&ret, 0, sizeof(ret));
-
-    // Loop on the RPC in case we lost contact the first time through
-    int retry = 1;
-    CLIENT *clnt;
-    RPC rpc;
-    do {
-        clnt = rpc->connect();
-        clnt_stat status = shibrpc_get_session_2(&arg, &ret, clnt);
-        if (status != RPC_SUCCESS) {
-            // FAILED.  Release, disconnect, and try again...
-            log.error("RPC Failure: %p (%p) (%d) %s", this, clnt, status, clnt_spcreateerror("shibrpc_get_session_2"));
-            rpc->disconnect();
-            if (retry)
-                retry--;
-            else
-                throw ListenerException("Failure requesting session information from listener.");
-        }
-        else {
-            // SUCCESS
-            retry = -1;
-        }
-    } while (retry>=0);
-
-    if (ret.status && *ret.status)
-        log.debug("RPC completed with exception: %s", ret.status);
-    else
-        log.debug("RPC completed successfully");
-
-    SAMLException* except=NULL;
-    if (ret.status && *ret.status) {
-        // Reconstitute exception object.
-        try { 
-            istringstream estr(ret.status);
-            except=SAMLException::getInstance(estr);
-        }
-        catch (SAMLException& e) {
-            log.error("caught SAML Exception while building the SAMLException: %s", e.what());
-            log.error("XML was: %s", ret.status);
-            clnt_freeres(clnt, (xdrproc_t)xdr_shibrpc_get_session_ret_2, (caddr_t)&ret);
-            rpc.pool();
-            throw FatalProfileException("An unrecoverable error occurred while accessing your session.");
-        }
-        catch (...) {
-            log.error("caught unknown exception building SAMLException");
-            log.error("XML was: %s", ret.status);
-            clnt_freeres(clnt, (xdrproc_t)xdr_shibrpc_get_session_ret_2, (caddr_t)&ret);
-            rpc.pool();
-            throw;
-        }
-    }
-    else {
-        try {
-            profile = ret.profile;
-            provider_id = ret.provider_id;
-        
-            // return the Authentication Statement
-            if (auth_statement) {
-                istringstream authstream(ret.auth_statement);
-                log.debugStream() << "trying to decode authentication statement: "
-                    << ret.auth_statement << CategoryStream::ENDLINE;
-                *auth_statement = new SAMLAuthenticationStatement(authstream);
-            }
-    
-            // return the unfiltered Response
-            if (attr_response_pre) {
-                istringstream prestream(ret.attr_response_pre);
-                log.debugStream() << "trying to decode unfiltered attribute response: "
-                    << ret.attr_response_pre << CategoryStream::ENDLINE;
-                *attr_response_pre = new SAMLResponse(prestream);
-            }
-    
-            // return the filtered Response
-            if (attr_response_post) {
-                istringstream poststream(ret.attr_response_post);
-                log.debugStream() << "trying to decode filtered attribute response: "
-                    << ret.attr_response_post << CategoryStream::ENDLINE;
-                *attr_response_post = new SAMLResponse(poststream);
-            }
-        }
-        catch (SAMLException& e) {
-            log.error("caught SAML exception while reconstituting session objects: %s", e.what());
-            clnt_freeres (clnt, (xdrproc_t)xdr_shibrpc_get_session_ret_2, (caddr_t)&ret);
-            rpc.pool();
-            throw;
-        }
-#ifndef _DEBUG
-        catch (...) {
-            log.error("caught unknown exception while reconstituting session objects");
-            clnt_freeres (clnt, (xdrproc_t)xdr_shibrpc_get_session_ret_2, (caddr_t)&ret);
-            rpc.pool();
-            throw;
-        }
-#endif
-    }
-
-    clnt_freeres (clnt, (xdrproc_t)xdr_shibrpc_get_session_ret_2, (caddr_t)&ret);
-    rpc.pool();
-    if (except) {
-        auto_ptr<SAMLException> wrapper(except);
-        wrapper->raise();
-    }
-}
-
-void ShibTarget::sessionEnd(const char* cookie) const
-{
-#ifdef _DEBUG
-    saml::NDC ndc("sessionEnd");
-#endif
-    Category& log = Category::getInstance("shibtarget.ShibTarget");
-
-    if (!cookie || !*cookie) {
-        log.error("no session key provided");
-        throw InvalidSessionException("No session key was provided.");
-    }
-    else if (strchr(cookie,'=')) {
-        log.error("cookie value not extracted successfully, probably overlapping cookies across domains");
-        throw InvalidSessionException("The session key wasn't extracted successfully from the browser cookie.");
-    }
-
-    log.debug("ending session with cookie (%s)", cookie);
-
-    shibrpc_end_session_args_2 arg;
-    arg.cookie = (char*)cookie;
-
-    shibrpc_end_session_ret_2 ret;
-    memset (&ret, 0, sizeof(ret));
-
-    // Loop on the RPC in case we lost contact the first time through
-    int retry = 1;
-    CLIENT *clnt;
-    RPC rpc;
-    do {
-        clnt = rpc->connect();
-        clnt_stat status = shibrpc_end_session_2(&arg, &ret, clnt);
-        if (status != RPC_SUCCESS) {
-            // FAILED.  Release, disconnect, and try again...
-            log.error("RPC Failure: %p (%p) (%d) %s", this, clnt, status, clnt_spcreateerror("shibrpc_end_session_2"));
-            rpc->disconnect();
-            if (retry)
-                retry--;
-            else
-                throw ListenerException("Failure ending session through listener.");
-        }
-        else {
-            // SUCCESS
-            retry = -1;
-        }
-    } while (retry>=0);
-
-    if (ret.status && *ret.status)
-        log.debug("RPC completed with exception: %s", ret.status);
-    else
-        log.debug("RPC completed successfully");
-
-    SAMLException* except=NULL;
-    if (ret.status && *ret.status) {
-        // Reconstitute exception object.
-        try { 
-            istringstream estr(ret.status);
-            except=SAMLException::getInstance(estr);
-        }
-        catch (SAMLException& e) {
-            log.error("caught SAML Exception while building the SAMLException: %s", e.what());
-            log.error("XML was: %s", ret.status);
-            clnt_freeres(clnt, (xdrproc_t)xdr_shibrpc_end_session_ret_2, (caddr_t)&ret);
-            rpc.pool();
-            throw FatalProfileException("An unrecoverable error occurred while accessing your session.");
-        }
-        catch (...) {
-            log.error("caught unknown exception building SAMLException");
-            log.error("XML was: %s", ret.status);
-            clnt_freeres(clnt, (xdrproc_t)xdr_shibrpc_end_session_ret_2, (caddr_t)&ret);
-            rpc.pool();
-            throw;
-        }
-    }
-
-    clnt_freeres (clnt, (xdrproc_t)xdr_shibrpc_end_session_ret_2, (caddr_t)&ret);
-    rpc.pool();
-    if (except) {
-        auto_ptr<SAMLException> wrapper(except);
-        wrapper->raise();
-    }
-}
-
 /*************************************************************************
  * Shib Target Private implementation
  */
 
-ShibTargetPriv::ShibTargetPriv() : m_app(NULL), m_mapper(NULL), m_conf(NULL), m_Config(NULL),
-    m_sso_profile(PROFILE_UNSPECIFIED), m_sso_statement(NULL), m_pre_response(NULL), m_post_response(NULL) {}
+ShibTargetPriv::ShibTargetPriv() : m_app(NULL), m_mapper(NULL), m_conf(NULL), m_Config(NULL), m_cacheEntry(NULL) {}
 
 ShibTargetPriv::~ShibTargetPriv()
 {
-  delete m_sso_statement;
-  m_sso_statement = NULL;
+    if (m_cacheEntry) {
+        m_cacheEntry->unlock();
+        m_cacheEntry = NULL;
+    }
 
-  delete m_pre_response;
-  m_pre_response = NULL;
-  
-  delete m_post_response;
-  m_post_response = NULL;
+    if (m_mapper) {
+        m_mapper->unlock();
+        m_mapper = NULL;
+    }
+    
+    if (m_conf) {
+        m_conf->unlock();
+        m_conf = NULL;
+    }
 
-  if (m_mapper) {
-    m_mapper->unlock();
-    m_mapper = NULL;
-  }
-  if (m_conf) {
-    m_conf->unlock();
-    m_conf = NULL;
-  }
-  m_app = NULL;
-  m_Config = NULL;
+    m_app = NULL;
+    m_Config = NULL;
 }
 
 void ShibTargetPriv::get_application(ShibTarget* st, const string& protocol, const string& hostname, int port, const string& uri)
@@ -1391,9 +1055,11 @@ pair<bool,void*> ShibTargetPriv::doAssertionConsumer(ShibTarget* st, const IProp
         throw FatalProfileException("SAML 1.1 Browser Profile handler received no data from browser.");
             
     pair<bool,const char*> loc=handler->getString("Location");
-    st->sessionNew(
+    string recipient=loc.first ? m_handlerURL + loc.second : m_handlerURL;
+    m_conf->getListener()->sessionNew(
+        m_app,
         profile,
-        loc.first ? m_handlerURL + loc.second : m_handlerURL,
+        recipient.c_str(),
         input.c_str(),
         st->m_remote_addr.c_str(),
         target,
@@ -1475,7 +1141,7 @@ pair<bool,void*> ShibTargetPriv::doLogout(ShibTarget* st, const IPropertySet* ha
     // Logout is best effort.
     if (session_id && *session_id) {
         try {
-            st->sessionEnd(session_id);
+            m_conf->getListener()->sessionEnd(m_app,session_id);
         }
         catch (SAMLException& e) {
             st->log(ShibTarget::LogLevelError, string("logout processing failed with exception: ") + e.what());

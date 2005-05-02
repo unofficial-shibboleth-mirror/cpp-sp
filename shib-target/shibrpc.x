@@ -15,16 +15,6 @@
 %
 #endif
 
-/* enumerate profiles/bindings to support */
-enum ShibProfile {
-  PROFILE_UNSPECIFIED = 0,
-  SAML10_POST = 1,
-  SAML10_ARTIFACT = 2,
-  SAML11_POST = 4,
-  SAML11_ARTIFACT = 8,
-  SAML20_SSO = 16
-};
-
 /* function argument and response structures */
 
 struct shibrpc_new_session_args_2 {
@@ -50,7 +40,7 @@ struct shibrpc_get_session_args_2 {
 
 struct shibrpc_get_session_ret_2 {
   string		status<>;				/* empty string or a SAMLException */
-  ShibProfile	profile;				/* profile used in creating session */
+  int			profile;				/* profile used in creating session */
   string		provider_id<>;			/* authenticating IdP */
   string		auth_statement<>;		/* SAML authn statement */
   string		attr_response_pre<>;	/* SAML attr assertions as received */
