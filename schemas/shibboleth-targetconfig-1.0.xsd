@@ -97,6 +97,7 @@
 						</attribute>
 					</complexType>
 				</element>
+				<element name="MemoryListener" type="conf:PluggableType"/>
 				<element name="Listener" type="conf:PluggableType"/>
 			</choice>
 			<choice>
