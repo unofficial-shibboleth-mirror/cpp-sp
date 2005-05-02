@@ -366,7 +366,7 @@ int main(int argc, char *argv[])
     else {
 
         // Build an internal "listener" to handle the work.
-        IPlugIn* plugin=SAMLConfig::getConfig().newPlugin(shibtarget::XML::MemoryListenerType,NULL);
+        IPlugIn* plugin=SAMLConfig::getConfig().getPlugMgr().newPlugin(shibtarget::XML::MemoryListenerType,NULL);
         g_MemoryListener=dynamic_cast<IListener*>(plugin);
         if (!g_MemoryListener) {
             delete plugin;
