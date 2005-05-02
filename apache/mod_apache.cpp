@@ -421,9 +421,7 @@ public:
     void unlock() {}
     bool authorized(
         ShibTarget* st,
-        const char* providerId,
-        const saml::SAMLAuthenticationStatement* authn,
-        const saml::SAMLResponse* attrs
+        ISessionCacheEntry* entry
     ) const;
 };
 
@@ -599,9 +597,7 @@ static SH_AP_TABLE* groups_for_user(request_rec* r, const char* user, char* grpf
 
 bool htAccessControl::authorized(
     ShibTarget* st,
-    const char* providerId,
-    const saml::SAMLAuthenticationStatement* authn,
-    const saml::SAMLResponse* attrs
+    ISessionCacheEntry* entry
 ) const
 {
     // Make sure the object is our type.
