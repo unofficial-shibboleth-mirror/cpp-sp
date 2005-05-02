@@ -1124,7 +1124,7 @@ void XMLConfigImpl::init(bool first)
         
         // Load any overrides.
         nlist=app->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Application));
-        for (int j=0; nlist && i<nlist->getLength(); j++) {
+        for (int j=0; nlist && j<nlist->getLength(); j++) {
             XMLApplication* iapp=new XMLApplication(m_outer,m_creds,static_cast<DOMElement*>(nlist->item(j)),defapp);
             if (m_appmap.find(iapp->getId())!=m_appmap.end()) {
                 log.fatal("found conf:Application element with duplicate Id attribute");
