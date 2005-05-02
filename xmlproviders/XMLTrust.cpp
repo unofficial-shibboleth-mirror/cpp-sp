@@ -439,7 +439,7 @@ XMLTrust::~XMLTrust()
         delete *i;
 }
 
-int error_callback(int ok, X509_STORE_CTX* ctx)
+static int error_callback(int ok, X509_STORE_CTX* ctx)
 {
     if (!ok)
         Category::getInstance("OpenSSL").error("path validation failure: %s", X509_verify_cert_error_string(ctx->error));
