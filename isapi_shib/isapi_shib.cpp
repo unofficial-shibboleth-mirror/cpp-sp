@@ -65,6 +65,7 @@
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
+#include <process.h>
 
 #include <httpfilt.h>
 #include <httpext.h>
@@ -192,10 +193,16 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
             ShibTargetConfig::LocalExtensions |
             ShibTargetConfig::Logging
             );
-        if (!g_Config->init(schemadir) || !g_Config->load(config)) {
+        if (!g_Config->init(schemadir)) {
             g_Config=NULL;
             LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL,
-                    "Filter startup failed during initialization, check shire log for help.");
+                    "Filter startup failed during library initialization, check native log for help.");
+            return FALSE;
+        }
+        else if (!g_Config->load(config)) {
+            g_Config=NULL;
+            LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL,
+                    "Filter startup failed to load configuration, check native log for help.");
             return FALSE;
         }
         
