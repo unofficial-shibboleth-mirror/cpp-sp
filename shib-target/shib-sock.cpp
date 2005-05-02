@@ -291,7 +291,7 @@ IPlugIn* UnixListenerFactory(const DOMElement* e)
     return new UnixListener(e);
 }
 
-UnixListener::UnixListener(const DOMElement* e) : m_address("/var/run/shar-socket"), m_bound(false)
+UnixListener::UnixListener(const DOMElement* e) : RPCListener(e), m_address("/var/run/shar-socket"), m_bound(false)
 {
     // We're stateless, but we need to load the configuration.
     const XMLCh* tag=e->getAttributeNS(NULL,address);
