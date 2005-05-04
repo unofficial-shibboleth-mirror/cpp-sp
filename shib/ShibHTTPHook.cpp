@@ -65,46 +65,44 @@ using namespace log4cpp;
 using namespace shibboleth;
 using namespace saml;
 
-extern "C" {
-    /*
-     * Our verifier callback is a front-end for invoking each trust plugin until
-     * success, or we run out of plugins.
-     */
-    int verify_callback(X509_STORE_CTX* x509_ctx, void* arg)
-    {
-        Category::getInstance("OpenSSL").debug("invoking default X509 verify callback");
+/*
+ * Our verifier callback is a front-end for invoking each trust plugin until
+ * success, or we run out of plugins.
+ */
+static int verify_callback(X509_STORE_CTX* x509_ctx, void* arg)
+{
+    Category::getInstance("OpenSSL").debug("invoking default X509 verify callback");
 #if (OPENSSL_VERSION_NUMBER >= 0x00907000L)
-        ShibHTTPHook::ShibHTTPHookCallContext* ctx = reinterpret_cast<ShibHTTPHook::ShibHTTPHookCallContext*>(arg);
+    ShibHTTPHook::ShibHTTPHookCallContext* ctx = reinterpret_cast<ShibHTTPHook::ShibHTTPHookCallContext*>(arg);
 #else
-        // Yes, this sucks. I'd use TLS, but there's no really obvious spot to put the thread key
-        // and global variables suck too.
-        ShibHTTPHook::ShibHTTPHookCallContext* ctx =
-            reinterpret_cast<ShibHTTPHook::ShibHTTPHookCallContext*>(x509_ctx->depth);
+    // Yes, this sucks. I'd use TLS, but there's no really obvious spot to put the thread key
+    // and global variables suck too.
+    ShibHTTPHook::ShibHTTPHookCallContext* ctx =
+        reinterpret_cast<ShibHTTPHook::ShibHTTPHookCallContext*>(x509_ctx->depth);
 #endif
 
-        // Instead of using the supplied verifier, we let the plugins do whatever they want to do
-        // with the untrusted certificates we find in the object. We can save a bit of memory by
-        // just building a vector that points at them inside the supplied structure.
-        vector<void*> chain;
-        for (int i=0; i<sk_X509_num(x509_ctx->untrusted); i++)
-            chain.push_back(sk_X509_value(x509_ctx->untrusted,i));
-        
-        Trust t(ctx->getHook()->getTrustProviders());
-        if (!t.validate(x509_ctx->cert,chain,ctx->getRoleDescriptor(),false)) { // bypass name check (handled for us)
-            x509_ctx->error=X509_V_ERR_APPLICATION_VERIFICATION;     // generic error, check log for plugin specifics
-            return 0;
-        }
-        
-        // Signal success. Hopefully it doesn't matter what's actually in the structure now.
-        return 1;
+    // Instead of using the supplied verifier, we let the plugins do whatever they want to do
+    // with the untrusted certificates we find in the object. We can save a bit of memory by
+    // just building a vector that points at them inside the supplied structure.
+    vector<void*> chain;
+    for (int i=0; i<sk_X509_num(x509_ctx->untrusted); i++)
+        chain.push_back(sk_X509_value(x509_ctx->untrusted,i));
+    
+    Trust t(ctx->getHook()->getTrustProviders());
+    if (!t.validate(x509_ctx->cert,chain,ctx->getRoleDescriptor(),false)) { // bypass name check (handled for us)
+        x509_ctx->error=X509_V_ERR_APPLICATION_VERIFICATION;     // generic error, check log for plugin specifics
+        return 0;
     }
+    
+    // Signal success. Hopefully it doesn't matter what's actually in the structure now.
+    return 1;
 }
 
 /*
  * OpenSAML callback is invoked during SSL context setup, before the handshake.
  * We use it to attach credentials and our own certificate verifier callback above.
  */
-bool ssl_ctx_callback(void* ssl_ctx, void* userptr)
+static bool ssl_ctx_callback(void* ssl_ctx, void* userptr)
 {
 #ifdef _DEBUG
     saml::NDC("ssl_ctx_callback");
@@ -114,13 +112,15 @@ bool ssl_ctx_callback(void* ssl_ctx, void* userptr)
     try {
         log.debug("OpenSAML invoked SSL context callback");
         ShibHTTPHook::ShibHTTPHookCallContext* ctx = reinterpret_cast<ShibHTTPHook::ShibHTTPHookCallContext*>(userptr);
-        Credentials c(ctx->getHook()->getCredentialProviders());
-        const ICredResolver* cr=c.lookup(ctx->getCredResolverId());
-        if (cr)
-            cr->attach(ssl_ctx);
-        else {
-            log.error("unable to attach credentials to request");
-            return false;
+        if (ctx->getCredResolverId()) {
+            Credentials c(ctx->getHook()->getCredentialProviders());
+            const ICredResolver* cr=c.lookup(ctx->getCredResolverId());
+            if (cr)
+                cr->attach(ssl_ctx);
+            else {
+                log.error("unable to attach credentials to request");
+                return false;
+            }
         }
         
         SSL_CTX_set_verify(reinterpret_cast<SSL_CTX*>(ssl_ctx),SSL_VERIFY_PEER,NULL);

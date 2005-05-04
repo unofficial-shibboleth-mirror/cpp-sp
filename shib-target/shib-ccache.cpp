@@ -720,6 +720,7 @@ pair<SAMLResponse*,SAMLResponse*> InternalCCacheEntry::getNewResponse()
     const IPropertySet* credUse=application->getCredentialUse(site);
     pair<bool,bool> signRequest=credUse ? credUse->getBool("signRequest") : make_pair(false,false);
     pair<bool,bool> signedResponse=credUse ? credUse->getBool("signedResponse") : make_pair(false,false);
+    pair<bool,const char*> signingCred=credUse ? credUse->getString("Signing") : pair<bool,const char*>(false,NULL);
     
     SAMLResponse* response = NULL;
     try {
@@ -732,10 +733,13 @@ pair<SAMLResponse*,SAMLResponse*> InternalCCacheEntry::getNewResponse()
         auto_ptr<SAMLRequest> req(new SAMLRequest(q));
         
         // Sign it? Highly doubtful we'll ever use this, but just for fun...
-        if (signRequest.first && signRequest.second) {
+        if (signRequest.first && signRequest.second && signingCred.first) {
             Credentials creds(conf->getCredentialsProviders());
-            const ICredResolver* signingCred=creds.lookup(credUse->getString("Signing").second);
-            req->sign(SIGNATURE_RSA,signingCred->getKey(),signingCred->getCertificates());
+            const ICredResolver* cr=creds.lookup(signingCred.second);
+            if (cr)
+                req->sign(SIGNATURE_RSA,cr->getKey(),cr->getCertificates());
+            else
+                log->error("unable to sign attribute query, specified credential (%) was not found",signingCred.second);
         }
             
         log->debug("trying to query an AA...");
