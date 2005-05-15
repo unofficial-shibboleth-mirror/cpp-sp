@@ -115,14 +115,13 @@ void verifySignature(DOMDocument* doc, DOMNode* sigNode, const char* cert=NULL)
             DSIGReference* ref=refs->item(0);
             if (ref) {
                 const XMLCh* URI=ref->getURI();
-                if (!URI || !*URI ||
-                        !XMLString::compareString(URI,static_cast<DOMElement*>(sigNode->getParentNode())->getAttributeNS(NULL,ID))) {
+                if (!URI || !*URI || (*URI==chPound &&
+                        !XMLString::compareString(&URI[1],static_cast<DOMElement*>(sigNode->getParentNode())->getAttributeNS(NULL,ID)))) {
                     DSIGTransformList* tlist=ref->getTransforms();
                     for (int i=0; tlist && i<tlist->getSize(); i++) {
                         if (tlist->item(i)->getTransformType()==TRANSFORM_ENVELOPED_SIGNATURE)
                             valid=true;
-                        else if (tlist->item(i)->getTransformType()!=TRANSFORM_EXC_C14N &&
-                                 tlist->item(i)->getTransformType()!=TRANSFORM_C14N) {
+                        else if (tlist->item(i)->getTransformType()!=TRANSFORM_EXC_C14N) {
                             valid=false;
                             break;
                         }
@@ -154,6 +153,7 @@ void verifySignature(DOMDocument* doc, DOMNode* sigNode, const char* cert=NULL)
             sig->setSigningKey(x509->clonePublicKey());
         }
         else {
+            log.warn("verifying with key inside signature, this is a sanity check but provides no security");
             XSECKeyInfoResolverDefault resolver;
             sig->setKeyInfoResolver(resolver.clone());
         }
@@ -201,11 +201,11 @@ int main(int argc,char* argv[])
             name_param=argv[++i];
     }
 
-    if (!out_param || (verify && !cert_param)) {
+    if (verify && !cert_param) {
         cout << "usage: " << argv[0] << endl <<
             "\t--url <URL of metadata>" << endl <<
-            "\t--out <pathname to copy data to>" << endl <<
             "\t--noverify OR --cert <PEM Certificate>" << endl <<
+            "\t[--out <pathname to copy data to>]" << endl <<
             "\t[--schema <schema path>]" << endl <<
             "\t[--rootns <root element XML namespace>]" << endl <<
             "\t[--rootname <root element name>]" << endl;
@@ -217,6 +217,9 @@ int main(int argc,char* argv[])
     { chLatin_S, chLatin_i, chLatin_t, chLatin_e, chLatin_G, chLatin_r, chLatin_o, chLatin_u, chLatin_p, chNull };
     static const XMLCh EntitiesDescriptor[] =
     { chLatin_E, chLatin_n, chLatin_t, chLatin_i, chLatin_t, chLatin_i, chLatin_e, chLatin_s,
+      chLatin_D, chLatin_e, chLatin_s, chLatin_c, chLatin_r, chLatin_i, chLatin_p, chLatin_t, chLatin_o, chLatin_r, chNull };
+    static const XMLCh EntityDescriptor[] =
+    { chLatin_E, chLatin_n, chLatin_t, chLatin_i, chLatin_t, chLatin_y,
       chLatin_D, chLatin_e, chLatin_s, chLatin_c, chLatin_r, chLatin_i, chLatin_p, chLatin_t, chLatin_o, chLatin_r, chNull };
 
     Category::setRootPriority(Priority::WARN);
@@ -257,35 +260,42 @@ int main(int argc,char* argv[])
         }
         else if (!saml::XML::isElementNamed(doc->getDocumentElement(),Constants::SHIB_NS,SiteGroup) &&
                  !saml::XML::isElementNamed(doc->getDocumentElement(),shibtarget::XML::SAML2META_NS,EntitiesDescriptor) &&
+                 !saml::XML::isElementNamed(doc->getDocumentElement(),shibtarget::XML::SAML2META_NS,EntityDescriptor) &&
                  !saml::XML::isElementNamed(doc->getDocumentElement(),TRUST_NS,Trust))
             throw MalformedException("Root element does not signify a known metadata or trust format");
 
-        // If we're verifying, grab any embedded signatures.
-        DOMNodeList* siglist=doc->getElementsByTagNameNS(saml::XML::XMLSIG_NS,L(Signature));
+        // Verify the "root" signature.
+        DOMElement* rootSig=saml::XML::getFirstChildElement(doc->getDocumentElement(),saml::XML::XMLSIG_NS,L(Signature));
         if (verify) {
-            if (siglist && siglist->getLength()) {
-                for (int i=0; i<siglist->getLength(); i++)
-                    verifySignature(doc,siglist->item(i),cert_param);
+            if (rootSig) {
+                verifySignature(doc,rootSig,cert_param);
             }
             else {
                 doc->release();
-			    log.error("unable to locate a signature to verify in document");
-			    throw InvalidCryptoException("Verification implies that the document must be signed");
+                log.error("unable to locate root signature to verify in document");
+                throw InvalidCryptoException("Verification implies that the document must be signed");
             }
         }
-        else if (siglist && siglist->getLength()) {
+        else if (rootSig) {
             log.warn("verification of signer disabled, make sure you trust the source of this file!");
-            for (int i=0; i<siglist->getLength(); i++)
-                verifySignature(doc,siglist->item(i));
+            verifySignature(doc,rootSig,cert_param);
         }
         else {
             log.warn("verification disabled, and file is unsigned!");
         }
 
-        // Output the data to the specified file.
-        ofstream outfile(out_param);
-        outfile << *(doc->getDocumentElement());
+        // Verify all signatures.
+        DOMNodeList* siglist=doc->getElementsByTagNameNS(saml::XML::XMLSIG_NS,L(Signature));
+        for (int i=0; siglist && i<siglist->getLength(); i++)
+            verifySignature(doc,siglist->item(i),cert_param);
 
+        if (out_param) {
+            // Output the data to the specified file.
+            ofstream outfile(out_param);
+            outfile << *(doc->getDocumentElement());
+        }
+        else
+            cout << *(doc->getDocumentElement());
         doc->release();
     }
     catch (InvalidCryptoException&) {
