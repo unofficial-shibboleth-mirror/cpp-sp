@@ -72,7 +72,7 @@ using namespace log4cpp;
 using namespace std;
 
 // OpenSSL password callback...
-int passwd_callback(char* buf, int len, int verify, void* passwd)
+static int passwd_callback(char* buf, int len, int verify, void* passwd)
 {
     if(!verify)
     {
@@ -110,7 +110,7 @@ IPlugIn* FileCredResolverFactory(const DOMElement* e)
     return new FileResolver(e);
 }
 
-FileResolver::FileResolver(const DOMElement* e)
+FileResolver::FileResolver(const DOMElement* e) : m_keyformat(PEM)
 {
 #ifdef _DEBUG
     saml::NDC ndc("FileResolver");
@@ -119,49 +119,65 @@ FileResolver::FileResolver(const DOMElement* e)
     static const XMLCh cDER[] = { chLatin_D, chLatin_E, chLatin_R, chNull };
     
     // Move to Key
-    e=saml::XML::getFirstChildElement(e);
-    const XMLCh* format=e->getAttributeNS(NULL,SHIB_L(format));
-    if (!format || !*format || !XMLString::compareString(format,cPEM))
-        m_keyformat=PEM;
-    else if (!XMLString::compareString(format,cDER))
-        m_keyformat=DER;
-    else
-        m_keyformat=_PKCS12;
+    const DOMElement* root=e;
+    e=saml::XML::getFirstChildElement(root,::XML::CREDS_NS,SHIB_L(Key));
+    if (e) {
+        const XMLCh* format=e->getAttributeNS(NULL,SHIB_L(format));
+        if (!format || !*format || !XMLString::compareString(format,cPEM))
+            m_keyformat=PEM;
+        else if (!XMLString::compareString(format,cDER))
+            m_keyformat=DER;
+        else
+            m_keyformat=_PKCS12;
+            
+        const XMLCh* password=e->getAttributeNS(NULL,SHIB_L(password));
+        if (password) {
+            auto_ptr_char kp(password);
+            m_keypass=kp.get();
+        }
         
-    const XMLCh* password=e->getAttributeNS(NULL,SHIB_L(password));
-    if (password) {
-        auto_ptr_char kp(password);
-        m_keypass=kp.get();
-    }
-    
-    const XMLCh* s=saml::XML::getFirstChildElement(e,::XML::CREDS_NS,SHIB_L(Path))->getFirstChild()->getNodeValue();
-    auto_ptr_char kpath(s);
-    
+        e=saml::XML::getFirstChildElement(e,::XML::CREDS_NS,SHIB_L(Path));
+        if (e && e->hasChildNodes()) {
+            const XMLCh* s=e->getFirstChild()->getNodeValue();
+            auto_ptr_char kpath(s);
 #ifdef WIN32
-    struct _stat stat_buf;
-    if (_stat(kpath.get(), &stat_buf) != 0)
+            struct _stat stat_buf;
+            if (_stat(kpath.get(), &stat_buf) != 0)
 #else
-    struct stat stat_buf;
-    if (stat(kpath.get(), &stat_buf) != 0)
+            struct stat stat_buf;
+            if (stat(kpath.get(), &stat_buf) != 0)
 #endif
-    {
-        Category::getInstance(XMLPROVIDERS_LOGCAT".CredResolvers").error("key file '%s' can't be opened", kpath.get());
-        throw CredentialException("FileResolver() can't access key file");
+            {
+                Category::getInstance(XMLPROVIDERS_LOGCAT".CredResolvers").error("key file '%s' can't be opened", kpath.get());
+                throw CredentialException("FileResolver can't access key file");
+            }
+            m_keypath=kpath.get();
+        }
+        else {
+            Category::getInstance(XMLPROVIDERS_LOGCAT".CredResolvers").error("Path element missing inside Key element");
+            throw CredentialException("FileResolver can't access key file");
+        }
     }
-    m_keypath=kpath.get();
-    
+        
     // Check for Certificate
-    e=saml::XML::getNextSiblingElement(e);
-    password=e->getAttributeNS(NULL,SHIB_L(password));
-    auto_ptr_char certpass(password);
-    s=saml::XML::getFirstChildElement(e,::XML::CREDS_NS,SHIB_L(Path))->getFirstChild()->getNodeValue();
-    auto_ptr_char certpath(s);
+    e=saml::XML::getFirstChildElement(root,::XML::CREDS_NS,SHIB_L(Certificate));
+    if (!e)
+        return;
+    auto_ptr_char certpass(e->getAttributeNS(NULL,SHIB_L(password)));
+    
+    DOMElement* ep=saml::XML::getFirstChildElement(e,::XML::CREDS_NS,SHIB_L(Path));
+    if (!ep || !ep->hasChildNodes()) {
+        Category::getInstance(XMLPROVIDERS_LOGCAT".CredResolvers").error("Path element missing inside Certificate element");
+        throw CredentialException("FileResolver can't access certificate file");
+    }
+    
+    auto_ptr_char certpath(ep->getFirstChild()->getNodeValue());
+    const XMLCh* format=e->getAttributeNS(NULL,SHIB_L(format));
 
     try {
         X509* x=NULL;
         BIO* in=BIO_new(BIO_s_file_internal());
         if (in && BIO_read_filename(in,certpath.get())>0) {
-            format=e->getAttributeNS(NULL,SHIB_L(format));
             if (!format || !*format || !XMLString::compareString(format,cPEM)) {
                 while (x=PEM_read_bio_X509(in,NULL,passwd_callback,const_cast<char*>(certpass.get()))) {
                     m_certs.push_back(x);
@@ -174,7 +190,7 @@ FileResolver::FileResolver(const DOMElement* e)
                 else {
                     log_openssl();
                     BIO_free(in);
-                    throw CredentialException("FileResolver() unable to load DER certificate from file");
+                    throw CredentialException("FileResolver unable to load DER certificate from file");
                 }
             }
             else {
@@ -190,7 +206,7 @@ FileResolver::FileResolver(const DOMElement* e)
                 else {
                     log_openssl();
                     BIO_free(in);
-                    throw CredentialException("FileResolver() unable to load PKCS12 certificate from file");
+                    throw CredentialException("FileResolver unable to load PKCS12 certificate from file");
                 }
             }
         }
@@ -200,18 +216,23 @@ FileResolver::FileResolver(const DOMElement* e)
                 BIO_free(in);
                 in=NULL;
             }
-            throw CredentialException("FileResolver() unable to load PEM certificate(s) from file");
+            throw CredentialException("FileResolver unable to load PEM certificate(s) from file");
         }
         if (in) {
             BIO_free(in);
             in=NULL;
         }
 
+        if (m_certs.empty()) {
+            throw CredentialException("FileResolver unable to load any certificate(s)");
+        }
+
         // Load any extra CA files.
         DOMNodeList* nlist=e->getElementsByTagNameNS(::XML::CREDS_NS,SHIB_L(CAPath));
         for (int i=0; nlist && i<nlist->getLength(); i++) {
-            s=static_cast<DOMElement*>(nlist->item(i))->getFirstChild()->getNodeValue();
-            auto_ptr_char capath(s);
+            if (!nlist->item(i)->hasChildNodes())
+                continue;
+            auto_ptr_char capath(static_cast<DOMElement*>(nlist->item(i))->getFirstChild()->getNodeValue());
             x=NULL;
             in=BIO_new(BIO_s_file_internal());
             if (in && BIO_read_filename(in,capath.get())>0) {
@@ -227,7 +248,7 @@ FileResolver::FileResolver(const DOMElement* e)
                     else {
                         log_openssl();
                         BIO_free(in);
-                        throw CredentialException("FileResolver() unable to load DER CA certificate from file");
+                        throw CredentialException("FileResolver unable to load DER CA certificate from file");
                     }
                 }
                 else {
@@ -243,7 +264,7 @@ FileResolver::FileResolver(const DOMElement* e)
                     else {
                         log_openssl();
                         BIO_free(in);
-                        throw CredentialException("FileResolver() unable to load PKCS12 CA certificate from file");
+                        throw CredentialException("FileResolver unable to load PKCS12 CA certificate from file");
                     }
                 }
                 BIO_free(in);
@@ -253,7 +274,7 @@ FileResolver::FileResolver(const DOMElement* e)
                     BIO_free(in);
                 log_openssl();
                 Category::getInstance(XMLPROVIDERS_LOGCAT".CredResolvers").error("CA file '%s' can't be opened", capath.get());
-                throw CredentialException("FileResolver() can't open CA file");
+                throw CredentialException("FileResolver can't open CA file");
             }
         }
     }
@@ -345,6 +366,10 @@ void FileResolver::attach(void* ctx) const
 
 XSECCryptoKey* FileResolver::getKey() const
 {
+#ifdef _DEBUG
+    saml::NDC ndc("getKey");
+#endif
+
     // Get a EVP_PKEY.
     EVP_PKEY* pkey=NULL;
     BIO* in=BIO_new(BIO_s_file_internal());
@@ -385,7 +410,6 @@ XSECCryptoKey* FileResolver::getKey() const
                 break;
             
             default:
-                saml::NDC ndc("FileResolver");
                 Category::getInstance(XMLPROVIDERS_LOGCAT".CredResolvers").error("unsupported private key type");
         }
         EVP_PKEY_free(pkey);
@@ -393,9 +417,8 @@ XSECCryptoKey* FileResolver::getKey() const
             return ret;
     }
 
-    saml::NDC ndc("FileResolver");
     log_openssl();
-    Category::getInstance(XMLPROVIDERS_LOGCAT".CredResolvers").error("FileResolver::getKey() unable to load private key from file");
+    Category::getInstance(XMLPROVIDERS_LOGCAT".CredResolvers").error("FileResolver unable to load private key from file");
     return NULL;
 }
 
