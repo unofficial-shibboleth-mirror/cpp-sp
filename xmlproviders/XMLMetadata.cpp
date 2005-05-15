@@ -62,9 +62,14 @@
 
 #include <log4cpp/Category.hh>
 #include <xercesc/util/XMLChar.hpp>
+#include <xsec/dsig/DSIGTransformC14n.hpp>
+#include <xsec/dsig/DSIGReference.hpp>
+#include <xsec/dsig/DSIGTransformList.hpp>
 #include <xsec/enc/XSECCryptoException.hpp>
 #include <xsec/enc/XSECKeyInfoResolverDefault.hpp>
 #include <xsec/enc/OpenSSL/OpenSSLCryptoX509.hpp>
+#include <xsec/framework/XSECException.hpp>
+#include <xsec/framework/XSECProvider.hpp>
 
 using namespace shibboleth;
 using namespace saml;
@@ -73,6 +78,7 @@ using namespace std;
 
 namespace {
 
+    class XMLMetadata;
     class XMLMetadataImpl : public ReloadableXMLFileImpl
     {
     public:
@@ -427,8 +433,10 @@ namespace {
             time_t m_validUntil;
         };
 
-        XMLMetadataImpl(const char* pathname) : ReloadableXMLFileImpl(pathname), m_rootProvider(NULL), m_rootGroup(NULL) { init(); }
-        XMLMetadataImpl(const DOMElement* e) : ReloadableXMLFileImpl(e), m_rootProvider(NULL), m_rootGroup(NULL) { init(); }
+        XMLMetadataImpl(const char* pathname, const XMLMetadata* wrapper)
+            : ReloadableXMLFileImpl(pathname), m_outer(wrapper), m_rootProvider(NULL), m_rootGroup(NULL) { init(); }
+        XMLMetadataImpl(const DOMElement* e, const XMLMetadata* wrapper)
+            : ReloadableXMLFileImpl(e), m_outer(wrapper), m_rootProvider(NULL), m_rootGroup(NULL) { init(); }
         void init();
         ~XMLMetadataImpl();
 
@@ -439,39 +447,14 @@ namespace {
         groupmap_t m_groups;
         EntityDescriptor* m_rootProvider;
         EntitiesDescriptor* m_rootGroup;
+        const XMLMetadata* m_outer;
     };
 
     class XMLMetadata : public IMetadata, public ReloadableXMLFile
     {
     public:
-        XMLMetadata(const DOMElement* e) : ReloadableXMLFile(e), m_exclusions(true) {
-            static const XMLCh uri[] = { chLatin_u, chLatin_r, chLatin_i, chNull };
-            if (e->hasAttributeNS(NULL,uri)) {
-                // First check for explicit enablement of entities.
-                DOMNodeList* nlist=e->getElementsByTagName(SHIB_L(Include));
-                for (int i=0; nlist && i<nlist->getLength(); i++) {
-                    if (nlist->item(i)->hasChildNodes()) {
-                        auto_ptr_char temp(nlist->item(i)->getFirstChild()->getNodeValue());
-                        if (temp.get()) {
-                            m_set.insert(temp.get());
-                            m_exclusions=false;
-                        }
-                    }
-                }
-                // If there was no explicit enablement, build a set of exclusions.
-                if (m_exclusions) {
-                    nlist=e->getElementsByTagName(SHIB_L(Exclude));
-                    for (int j=0; nlist && j<nlist->getLength(); j++) {
-                        if (nlist->item(j)->hasChildNodes()) {
-                            auto_ptr_char temp(nlist->item(j)->getFirstChild()->getNodeValue());
-                            if (temp.get())
-                                m_set.insert(temp.get());
-                        }
-                    }
-                }
-            }
-        }
-        ~XMLMetadata() {}
+        XMLMetadata(const DOMElement* e);
+        ~XMLMetadata() {delete m_credResolver;}
 
         const IEntityDescriptor* lookup(const char* providerId, bool strict=true) const;
         const IEntityDescriptor* lookup(const XMLCh* providerId, bool strict=true) const;
@@ -480,13 +463,16 @@ namespace {
         const IEntitiesDescriptor* lookupGroup(const XMLCh* name, bool strict=true) const;
         pair<const IEntitiesDescriptor*,const IEntityDescriptor*> getRoot() const;
         
+        bool verifySignature(DOMDocument* doc, const DOMElement* parent, bool failUnsigned) const;
+        
     protected:
         virtual ReloadableXMLFileImpl* newImplementation(const char* pathname, bool first=true) const;
         virtual ReloadableXMLFileImpl* newImplementation(const DOMElement* e, bool first=true) const;
         
     private:
-        bool m_exclusions;
+        bool m_exclusions,m_verify;
         set<string> m_set;
+        ICredResolver* m_credResolver;
     };
 }
 
@@ -499,12 +485,12 @@ IPlugIn* XMLMetadataFactory(const DOMElement* e)
 
 ReloadableXMLFileImpl* XMLMetadata::newImplementation(const DOMElement* e, bool first) const
 {
-    return new XMLMetadataImpl(e);
+    return new XMLMetadataImpl(e,this);
 }
 
 ReloadableXMLFileImpl* XMLMetadata::newImplementation(const char* pathname, bool first) const
 {
-    return new XMLMetadataImpl(pathname);
+    return new XMLMetadataImpl(pathname,this);
 }
 
 XMLMetadataImpl::ContactPerson::ContactPerson(const DOMElement* e) : m_root(e)
@@ -1039,10 +1025,12 @@ XMLMetadataImpl::EntityDescriptor::EntityDescriptor(
                         );
             }
             else if (saml::XML::isElementNamed(child,::XML::SAML2META_NS,SHIB_L(IDPSSODescriptor))) {
-                m_roles.push_back(new IDPRole(this,m_validUntil,child));
+                if (wrapper->m_outer->verifySignature(child->getOwnerDocument(),child,false))
+                    m_roles.push_back(new IDPRole(this,m_validUntil,child));
             }
             else if (saml::XML::isElementNamed(child,::XML::SAML2META_NS,SHIB_L(AttributeAuthorityDescriptor))) {
-                m_roles.push_back(new AARole(this,m_validUntil,child));
+                if (wrapper->m_outer->verifySignature(child->getOwnerDocument(),child,false))
+                    m_roles.push_back(new AARole(this,m_validUntil,child));
             }
             child = saml::XML::getNextSiblingElement(child);
         }
@@ -1149,18 +1137,24 @@ XMLMetadataImpl::EntitiesDescriptor::EntitiesDescriptor(
                     ext = saml::XML::getNextSiblingElement(ext,::XML::SHIBMETA_NS,SHIB_L(KeyAuthority));
                 }
             }
-            else if (saml::XML::isElementNamed(e,::XML::SAML2META_NS,SHIB_L(EntitiesDescriptor)))
-                m_groups.push_back(new EntitiesDescriptor(e,wrapper,m_validUntil,this));
-            else if (saml::XML::isElementNamed(e,::XML::SAML2META_NS,SHIB_L(EntityDescriptor)))
-                m_providers.push_back(new EntityDescriptor(e,wrapper,m_validUntil,this));
+            else if (saml::XML::isElementNamed(e,::XML::SAML2META_NS,SHIB_L(EntitiesDescriptor))) {
+                if (wrapper->m_outer->verifySignature(e->getOwnerDocument(),e,false))
+                    m_groups.push_back(new EntitiesDescriptor(e,wrapper,m_validUntil,this));
+            }
+            else if (saml::XML::isElementNamed(e,::XML::SAML2META_NS,SHIB_L(EntityDescriptor))) {
+                if (wrapper->m_outer->verifySignature(e->getOwnerDocument(),e,false))
+                    m_providers.push_back(new EntityDescriptor(e,wrapper,m_validUntil,this));
+            }
             e=saml::XML::getNextSiblingElement(e);
         }
     }
     else {
         e=saml::XML::getFirstChildElement(e);
         while (e) {
-            if (saml::XML::isElementNamed(e,::XML::SHIB_NS,SHIB_L(SiteGroup)))
-                m_groups.push_back(new EntitiesDescriptor(e,wrapper,m_validUntil,this));
+            if (saml::XML::isElementNamed(e,::XML::SHIB_NS,SHIB_L(SiteGroup))) {
+                if (wrapper->m_outer->verifySignature(e->getOwnerDocument(),e,false))
+                    m_groups.push_back(new EntitiesDescriptor(e,wrapper,m_validUntil,this));
+            }
             else if (saml::XML::isElementNamed(e,::XML::SHIB_NS,SHIB_L(OriginSite)))
                 m_providers.push_back(new EntityDescriptor(e,wrapper,m_validUntil,this));
             e=saml::XML::getNextSiblingElement(e);
@@ -1194,14 +1188,22 @@ void XMLMetadataImpl::init()
 
     try
     {
-        if (saml::XML::isElementNamed(m_root,::XML::SAML2META_NS,SHIB_L(EntitiesDescriptor)))
-            m_rootGroup=new EntitiesDescriptor(m_root,this);
-        else if (saml::XML::isElementNamed(m_root,::XML::SAML2META_NS,SHIB_L(EntityDescriptor)))
-            m_rootProvider=new EntityDescriptor(m_root,this);
-        else if (saml::XML::isElementNamed(m_root,::XML::SHIB_NS,SHIB_L(SiteGroup)))
-            m_rootGroup=new EntitiesDescriptor(m_root,this);
-        else if (saml::XML::isElementNamed(m_root,::XML::SHIB_NS,SHIB_L(OriginSite)))
-            m_rootProvider=new EntityDescriptor(m_root,this);
+        if (saml::XML::isElementNamed(m_root,::XML::SAML2META_NS,SHIB_L(EntitiesDescriptor))) {
+            if (m_outer->verifySignature(m_root->getOwnerDocument(),m_root,true))
+                m_rootGroup=new EntitiesDescriptor(m_root,this);
+        }
+        else if (saml::XML::isElementNamed(m_root,::XML::SAML2META_NS,SHIB_L(EntityDescriptor))) {
+            if (m_outer->verifySignature(m_root->getOwnerDocument(),m_root,true))
+                m_rootProvider=new EntityDescriptor(m_root,this);
+        }
+        else if (saml::XML::isElementNamed(m_root,::XML::SHIB_NS,SHIB_L(SiteGroup))) {
+            if (m_outer->verifySignature(m_root->getOwnerDocument(),m_root,true))
+                m_rootGroup=new EntitiesDescriptor(m_root,this);
+        }
+        else if (saml::XML::isElementNamed(m_root,::XML::SHIB_NS,SHIB_L(OriginSite))) {
+            if (m_outer->verifySignature(m_root->getOwnerDocument(),m_root,true))
+                m_rootProvider=new EntityDescriptor(m_root,this);
+        }
         else {
             log.error("Construction requires a valid SAML metadata file");
             throw MetadataException("Construction requires a valid SAML metadata file");
@@ -1221,12 +1223,184 @@ void XMLMetadataImpl::init()
         throw;
     }
 #endif
+
+    if (!m_rootGroup && !m_rootProvider) {
+        log.error("Metadata file contained no valid information");
+        throw MetadataException("Metadata file contained no valid information");
+    }
 }
 
 XMLMetadataImpl::~XMLMetadataImpl()
 {
     delete m_rootGroup;
     delete m_rootProvider;
+}
+
+XMLMetadata::XMLMetadata(const DOMElement* e) : ReloadableXMLFile(e), m_exclusions(true), m_verify(false), m_credResolver(NULL)
+{
+    static const XMLCh uri[] = { chLatin_u, chLatin_r, chLatin_i, chNull };
+    if (e->hasAttributeNS(NULL,uri)) {
+        // First check for explicit enablement of entities.
+        DOMNodeList* nlist=e->getElementsByTagName(SHIB_L(Include));
+        for (int i=0; nlist && i<nlist->getLength(); i++) {
+            if (nlist->item(i)->hasChildNodes()) {
+                auto_ptr_char temp(nlist->item(i)->getFirstChild()->getNodeValue());
+                if (temp.get()) {
+                    m_set.insert(temp.get());
+                    m_exclusions=false;
+                }
+            }
+        }
+        // If there was no explicit enablement, build a set of exclusions.
+        if (m_exclusions) {
+            nlist=e->getElementsByTagName(SHIB_L(Exclude));
+            for (int j=0; nlist && j<nlist->getLength(); j++) {
+                if (nlist->item(j)->hasChildNodes()) {
+                    auto_ptr_char temp(nlist->item(j)->getFirstChild()->getNodeValue());
+                    if (temp.get())
+                        m_set.insert(temp.get());
+                }
+            }
+        }
+    }
+    
+    const XMLCh* v=e->getAttributeNS(NULL,SHIB_L(verify));
+    m_verify=(v && (*v==chLatin_t || *v==chDigit_1));
+
+    string cr_type;
+    DOMElement* r=saml::XML::getFirstChildElement(e,::XML::CREDS_NS,SHIB_L(FileResolver));
+    if (r)
+        cr_type="edu.internet2.middleware.shibboleth.common.Credentials.FileCredentialResolver";            
+    else {
+        r=saml::XML::getFirstChildElement(e,::XML::CREDS_NS,SHIB_L(CustomResolver));
+        if (r) {
+            auto_ptr_char c(r->getAttributeNS(NULL,SHIB_L(Class)));
+            cr_type=c.get();
+        }
+    }
+    
+    if (!cr_type.empty()) {
+        try {
+            IPlugIn* plugin=SAMLConfig::getConfig().getPlugMgr().newPlugin(cr_type.c_str(),r);
+            ICredResolver* cr=dynamic_cast<ICredResolver*>(plugin);
+            if (cr)
+                m_credResolver=cr;
+            else {
+                Category::getInstance(XMLPROVIDERS_LOGCAT".Metadata").error("plugin was not a credential resolver");
+                delete plugin;
+                throw UnsupportedExtensionException("plugin was not a credential resolver");
+            }
+        }
+        catch (SAMLException& e) {
+            Category::getInstance(XMLPROVIDERS_LOGCAT".Metadata").error("failed to instantiate credential resolver: %s", e.what());
+            throw;
+        }
+    }
+    
+    if (m_verify && !m_credResolver) {
+        delete m_credResolver;
+        throw MalformedException("Metadata provider told to verify signatures, but a verification key is not available.");
+    }
+}
+
+bool XMLMetadata::verifySignature(DOMDocument* doc, const DOMElement* parent, bool failUnsigned) const
+{
+    if (!m_verify)
+        return true;
+
+#ifdef _DEBUG
+    saml::NDC ndc("verifySignature");
+#endif
+    Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".Metadata");
+    
+    DOMElement* sigNode=saml::XML::getFirstChildElement(parent,saml::XML::XMLSIG_NS,L(Signature));
+    if (!sigNode) {
+        if (failUnsigned) {
+            log.error("rejecting unsigned element");
+            return false;
+        }
+        return true;
+    }
+    
+    XSECCryptoX509* cert=NULL;
+    Iterator<XSECCryptoX509*> certs=m_credResolver->getCertificates();
+    if (certs.hasNext())
+        cert=certs.next();
+    else {
+        log.error("unable to find any certificates to use in verifying signature");
+        return false;
+    }
+
+    static const XMLCh ID[]={chLatin_I, chLatin_D, chNull};
+    static const XMLCh null[]={chDoubleQuote, chDoubleQuote, chNull};
+
+    // Load the signature.
+    XSECProvider prov;
+    DSIGSignature* sig=NULL;
+    try {
+        sig=prov.newSignatureFromDOM(doc,sigNode);
+        sig->load();
+
+        bool valid=false;
+        const XMLCh* URI=NULL;
+
+        // Verify the signature coverage.
+        DSIGReferenceList* refs=sig->getReferenceList();
+        if (sig->getSignatureMethod()==SIGNATURE_RSA && refs && refs->getSize()==1) {
+            DSIGReference* ref=refs->item(0);
+            if (ref) {
+                URI=ref->getURI();
+                if (!URI || !*URI || (*URI==chPound &&
+                        !XMLString::compareString(&URI[1],static_cast<DOMElement*>(sigNode->getParentNode())->getAttributeNS(NULL,ID)))) {
+                    DSIGTransformList* tlist=ref->getTransforms();
+                    for (int i=0; tlist && i<tlist->getSize(); i++) {
+                        if (tlist->item(i)->getTransformType()==TRANSFORM_ENVELOPED_SIGNATURE)
+                            valid=true;
+                        else if (tlist->item(i)->getTransformType()!=TRANSFORM_EXC_C14N &&
+                                 tlist->item(i)->getTransformType()!=TRANSFORM_C14N) {
+                            valid=false;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    
+        if (!valid) {
+            auto_ptr_char temp((URI && *URI) ? URI : null);
+            log.error("detected an invalid signature profile (Reference URI was %s)",temp.get());
+            return false;
+        }
+        
+        sig->setSigningKey(cert->clonePublicKey());
+        if (!sig->verify()) {
+            auto_ptr_char temp((URI && *URI) ? URI : null);
+            log.error("detected an invalid signature value (Reference URI was %s)",temp.get());
+            return false;
+        }
+        
+        prov.releaseSignature(sig);
+    }
+    catch(XSECException& e) {
+        auto_ptr_char msg(e.getMsg());
+        log.errorStream() << "caught XMLSec exception while verifying metadata signature: " << msg.get() << CategoryStream::ENDLINE;
+        if (sig)
+            prov.releaseSignature(sig);
+        return false;
+    }
+    catch(XSECCryptoException& e) {
+        log.errorStream() << "caught XMLSecCrypto exception while verifying metadata signature: " << e.getMsg() << CategoryStream::ENDLINE;
+        if (sig)
+            prov.releaseSignature(sig);
+        return false;
+    }
+    catch(...) {
+        if (sig)
+            prov.releaseSignature(sig);
+        log.error("caught unknown exception while verifying metadata signature");
+        throw;
+    }
+    return true;
 }
 
 const IEntityDescriptor* XMLMetadata::lookup(const char* providerId, bool strict) const

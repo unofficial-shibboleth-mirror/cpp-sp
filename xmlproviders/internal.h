@@ -121,9 +121,11 @@ public:
 
         // credentials constants
         static const XMLCh CAPath[];
+        static const XMLCh Certificate[];
         static const XMLCh Class[];
         static const XMLCh Credentials[];
         static const XMLCh CustomResolver[];
+        static const XMLCh Key[];
         static const XMLCh FileResolver[];
         static const XMLCh format[];
         static const XMLCh Id[];
@@ -167,6 +169,7 @@ public:
         static const XMLCh Include[];
         static const XMLCh Exclude[];
         static const XMLCh url[];
+        static const XMLCh verify[];
         
         // new metadata constants
         static const XMLCh AdditionalMetadataLocation[];

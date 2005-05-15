@@ -205,6 +205,9 @@ const XMLCh XML::Literals::SiteGroup[]=
 const XMLCh XML::Literals::CAPath[] =
 { chLatin_C, chLatin_A, chLatin_P, chLatin_a, chLatin_t, chLatin_h, chNull };
 
+const XMLCh XML::Literals::Certificate[] =
+{ chLatin_C, chLatin_e, chLatin_r, chLatin_t, chLatin_i, chLatin_f, chLatin_i, chLatin_c, chLatin_a, chLatin_t, chLatin_e, chNull };
+
 const XMLCh XML::Literals::Class[] =
 { chLatin_c, chLatin_l, chLatin_a, chLatin_s, chLatin_s, chNull };
 
@@ -226,6 +229,9 @@ const XMLCh XML::Literals::format[] =
 { chLatin_f, chLatin_o, chLatin_r, chLatin_m, chLatin_a, chLatin_t, chNull };
 
 const XMLCh XML::Literals::Id[] = { chLatin_I, chLatin_d, chNull };
+
+const XMLCh XML::Literals::Key[] =
+{ chLatin_K, chLatin_e, chLatin_y, chNull };
 
 const XMLCh XML::Literals::KeyAuthority[] =
 { chLatin_K, chLatin_e, chLatin_y,
@@ -341,13 +347,16 @@ const XMLCh XML::Literals::support[] =
 const XMLCh XML::Literals::technical[] =
 { chLatin_t, chLatin_e, chLatin_c, chLatin_h, chLatin_n, chLatin_i, chLatin_c, chLatin_a, chLatin_l, chNull };
 
-const XMLCh XML::Literals::url[] = { chLatin_u, chLatin_r, chLatin_l, chNull };
-
 const XMLCh XML::Literals::Exclude[] =
 { chLatin_E, chLatin_x, chLatin_c, chLatin_l, chLatin_u, chLatin_d, chLatin_e, chNull };
 
 const XMLCh XML::Literals::Include[] =
 { chLatin_I, chLatin_n, chLatin_c, chLatin_l, chLatin_u, chLatin_d, chLatin_e, chNull };
+
+const XMLCh XML::Literals::url[] = { chLatin_u, chLatin_r, chLatin_l, chNull };
+
+const XMLCh XML::Literals::verify[] =
+{ chLatin_v, chLatin_e, chLatin_r, chLatin_i, chLatin_f, chLatin_y, chNull };
 
 const XMLCh XML::Literals::AdditionalMetadataLocation[] =
 { chLatin_A, chLatin_d, chLatin_d, chLatin_i, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chLatin_a, chLatin_l,
