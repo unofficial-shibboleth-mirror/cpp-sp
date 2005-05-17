@@ -117,11 +117,11 @@ static bool ssl_ctx_callback(void* ssl_ctx, void* userptr)
             const ICredResolver* cr=c.lookup(ctx->getCredResolverId());
             if (cr)
                 cr->attach(ssl_ctx);
-            else {
-                log.error("unable to attach credentials to request");
-                return false;
-            }
+            else
+                log.error("unable to attach credentials to request, leaving anonymous");
         }
+        else
+            log.warn("no TLS credential supplied, leaving anonymous");
         
         SSL_CTX_set_verify(reinterpret_cast<SSL_CTX*>(ssl_ctx),SSL_VERIFY_PEER,NULL);
 #if (OPENSSL_VERSION_NUMBER >= 0x00907000L)
