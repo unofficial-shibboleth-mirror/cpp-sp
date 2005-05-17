@@ -421,6 +421,7 @@
 			<attribute name="checkCDC" type="anyURI" use="optional"/>
 			<attribute name="isDefault" type="boolean" use="optional"/>
 			<attribute name="id" type="string" use="optional"/>
+			<anyAttribute namespace="##any" processContents="lax"/>
 		</complexType>
 	</element>
 	<element name="DiagnosticService">
@@ -441,6 +442,7 @@
 					<list itemType="string"/>
 				</simpleType>
 			</attribute>
+			<anyAttribute namespace="##any" processContents="lax"/>
 		</complexType>
 	</element>
 
@@ -465,8 +467,8 @@
 	</element>
 
 	<attributeGroup name="CredentialUseGroup">
-		<attribute name="TLS" type="string" use="required"/>
-		<attribute name="Signing" type="string" use="required"/>
+		<attribute name="TLS" type="string" use="optional"/>
+		<attribute name="Signing" type="string" use="optional"/>
 		<attribute name="signRequest" type="boolean" use="optional" default="false"/>
 		<attribute name="signedResponse" type="boolean" use="optional" default="false"/>
 		<attribute name="signedAssertions" type="boolean" use="optional" default="false"/>
