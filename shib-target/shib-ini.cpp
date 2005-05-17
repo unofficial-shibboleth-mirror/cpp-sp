@@ -479,14 +479,18 @@ XMLApplication::XMLApplication(
             for (i=0; nlist && i<nlist->getLength(); i++) {
                 auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
                 log.info("building AAP provider of type %s...",type.get());
-                IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
-                IAAP* aap=dynamic_cast<IAAP*>(plugin);
-                if (aap)
-                    m_aaps.push_back(aap);
-                else {
-                    delete plugin;
-                    log.fatal("plugin was not an AAP provider");
-                    throw UnsupportedExtensionException("plugin was not an AAP provider");
+                try {
+                    IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
+                    IAAP* aap=dynamic_cast<IAAP*>(plugin);
+                    if (aap)
+                        m_aaps.push_back(aap);
+                    else {
+                        delete plugin;
+                        log.crit("plugin was not an AAP provider");
+                    }
+                }
+                catch (SAMLException& ex) {
+                    log.crit("error building AAP provider: %s",ex.what());
                 }
             }
         }
@@ -496,28 +500,36 @@ XMLApplication::XMLApplication(
             for (i=0; nlist && i<nlist->getLength(); i++) {
                 auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
                 log.info("building metadata provider of type %s...",type.get());
-                IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
-                IMetadata* md=dynamic_cast<IMetadata*>(plugin);
-                if (md)
-                    m_metadatas.push_back(md);
-                else {
-                    delete plugin;
-                    log.fatal("plugin was not a metadata provider");
-                    throw UnsupportedExtensionException("plugin was not a metadata provider");
+                try {
+                    IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
+                    IMetadata* md=dynamic_cast<IMetadata*>(plugin);
+                    if (md)
+                        m_metadatas.push_back(md);
+                    else {
+                        delete plugin;
+                        log.crit("plugin was not a metadata provider");
+                    }
+                }
+                catch (SAMLException& ex) {
+                    log.crit("error building metadata provider: %s",ex.what());
                 }
             }
             nlist=e->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(FederationProvider));
             for (i=0; nlist && i<nlist->getLength(); i++) {
                 auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
                 log.info("building metadata provider of type %s...",type.get());
-                IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
-                IMetadata* md=dynamic_cast<IMetadata*>(plugin);
-                if (md)
-                    m_metadatas.push_back(md);
-                else {
-                    delete plugin;
-                    log.fatal("plugin was not a metadata provider");
-                    throw UnsupportedExtensionException("plugin was not a metadata provider");
+                try {
+                    IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
+                    IMetadata* md=dynamic_cast<IMetadata*>(plugin);
+                    if (md)
+                        m_metadatas.push_back(md);
+                    else {
+                        delete plugin;
+                        log.crit("plugin was not a metadata provider");
+                    }
+                }
+                catch (SAMLException& ex) {
+                    log.crit("error building metadata provider: %s",ex.what());
                 }
             }
         }
@@ -527,14 +539,18 @@ XMLApplication::XMLApplication(
             for (i=0; nlist && i<nlist->getLength(); i++) {
                 auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
                 log.info("building trust provider of type %s...",type.get());
-                IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
-                ITrust* trust=dynamic_cast<ITrust*>(plugin);
-                if (trust)
-                    m_trusts.push_back(trust);
-                else {
-                    delete plugin;
-                    log.fatal("plugin was not a trust provider");
-                    throw UnsupportedExtensionException("plugin was not a trust provider");
+                try {
+                    IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
+                    ITrust* trust=dynamic_cast<ITrust*>(plugin);
+                    if (trust)
+                        m_trusts.push_back(trust);
+                    else {
+                        delete plugin;
+                        log.crit("plugin was not a trust provider");
+                    }
+                }
+                catch (SAMLException& ex) {
+                    log.crit("error building trust provider: %s",ex.what());
                 }
             }
         }
@@ -1073,17 +1089,21 @@ void XMLConfigImpl::init(bool first)
             nlist=ReloadableXMLFileImpl::m_root->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(CredentialsProvider));
             for (int i=0; nlist && i<nlist->getLength(); i++) {
                 auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
-                log.info("building Credentials provider of type %s...",type.get());
-                IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
-                if (plugin) {
-                    ICredentials* creds=dynamic_cast<ICredentials*>(plugin);
-                    if (creds)
-                        m_creds.push_back(creds);
-                    else {
-                        delete plugin;
-                        log.fatal("plugin was not a Credentials provider");
-                        throw UnsupportedExtensionException("plugin was not a Credentials provider");
+                log.info("building credentials provider of type %s...",type.get());
+                try {
+                    IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
+                    if (plugin) {
+                        ICredentials* creds=dynamic_cast<ICredentials*>(plugin);
+                        if (creds)
+                            m_creds.push_back(creds);
+                        else {
+                            delete plugin;
+                            log.crit("plugin was not a credentials provider");
+                        }
                     }
+                }
+                catch (SAMLException& ex) {
+                    log.crit("error building credentials provider: %s",ex.what());
                 }
             }
         }
@@ -1093,21 +1113,25 @@ void XMLConfigImpl::init(bool first)
         for (int i=0; nlist && i<nlist->getLength(); i++) {
             auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
             log.info("building Attribute factory of type %s...",type.get());
-            IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
-            if (plugin) {
-                IAttributeFactory* fact=dynamic_cast<IAttributeFactory*>(plugin);
-                if (fact) {
-                    m_attrFactories.push_back(fact);
-                    ShibConfig::getConfig().regAttributeMapping(
-                        static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,L(AttributeName)),
-                        fact
-                        );
+            try {
+                IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
+                if (plugin) {
+                    IAttributeFactory* fact=dynamic_cast<IAttributeFactory*>(plugin);
+                    if (fact) {
+                        m_attrFactories.push_back(fact);
+                        ShibConfig::getConfig().regAttributeMapping(
+                            static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,L(AttributeName)),
+                            fact
+                            );
+                    }
+                    else {
+                        delete plugin;
+                        log.crit("plugin was not an Attribute factory");
+                    }
                 }
-                else {
-                    delete plugin;
-                    log.fatal("plugin was not an Attribute factory");
-                    throw UnsupportedExtensionException("plugin was not an Attribute factory");
-                }
+            }
+            catch (SAMLException& ex) {
+                log.crit("error building Attribute factory: %s",ex.what());
             }
         }
 
