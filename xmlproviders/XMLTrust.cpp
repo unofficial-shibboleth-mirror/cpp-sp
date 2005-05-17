@@ -457,7 +457,132 @@ bool XMLTrust::validate(void* certEE, const Iterator<void*>& certChain, const IR
     saml::NDC ndc("validate");
 #endif
     Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".Trust");
-    
+
+    if (checkName) {
+        // Before we do the cryptogprahy, check that the EE certificate "name" matches
+        // one of the acceptable key "names" for the signer.
+        vector<string> keynames;
+        
+        // Build a list of acceptable names. Transcode the possible key "names" to UTF-8.
+        // For some simple cases, this should handle UTF-8 encoded DNs in certificates.
+        Iterator<const IKeyDescriptor*> kd_i=role->getKeyDescriptors();
+        while (kd_i.hasNext()) {
+            const IKeyDescriptor* kd=kd_i.next();
+            if (kd->getUse()!=IKeyDescriptor::signing)
+                continue;
+            DSIGKeyInfoList* KIL=kd->getKeyInfo();
+            if (!KIL)
+                continue;
+            for (size_t s=0; s<KIL->getSize(); s++) {
+                const XMLCh* n=KIL->item(s)->getKeyName();
+                if (n) {
+                    auto_ptr<char> kn(toUTF8(n));
+                    keynames.push_back(kn.get());
+                }
+            }
+        }
+        auto_ptr<char> kn(toUTF8(role->getEntityDescriptor()->getId()));
+        keynames.push_back(kn.get());
+        
+        char buf[256];
+        X509* x=(X509*)certEE;
+        X509_NAME* subject=X509_get_subject_name(x);
+        if (subject) {
+            // One way is a direct match to the subject DN.
+            // Seems that the way to do the compare is to write the X509_NAME into a BIO.
+            BIO* b = BIO_new(BIO_s_mem());
+            BIO* b2 = BIO_new(BIO_s_mem());
+            BIO_set_mem_eof_return(b, 0);
+            BIO_set_mem_eof_return(b2, 0);
+            // The flags give us LDAP order instead of X.500, with a comma separator.
+            int len=X509_NAME_print_ex(b,subject,0,XN_FLAG_RFC2253);
+            string subjectstr,subjectstr2;
+            BIO_flush(b);
+            while ((len = BIO_read(b, buf, 255)) > 0) {
+                buf[len] = '\0';
+                subjectstr+=buf;
+            }
+            log.infoStream() << "certificate subject: " << subjectstr << CategoryStream::ENDLINE;
+            // The flags give us LDAP order instead of X.500, with a comma plus space separator.
+            len=X509_NAME_print_ex(b2,subject,0,XN_FLAG_RFC2253 + XN_FLAG_SEP_CPLUS_SPC - XN_FLAG_SEP_COMMA_PLUS);
+            BIO_flush(b2);
+            while ((len = BIO_read(b2, buf, 255)) > 0) {
+                buf[len] = '\0';
+                subjectstr2+=buf;
+            }
+            
+            // Check each keyname.
+            for (vector<string>::const_iterator n=keynames.begin(); n!=keynames.end(); n++) {
+#ifdef HAVE_STRCASECMP
+                if (!strcasecmp(n->c_str(),subjectstr.c_str()) || !strcasecmp(n->c_str(),subjectstr2.c_str())) {
+#else
+                if (!stricmp(n->c_str(),subjectstr.c_str()) || !stricmp(n->c_str(),subjectstr2.c_str())) {
+#endif
+                    log.info("matched full subject DN to a key name (%s)", n->c_str());
+                    checkName=false;
+                    break;
+                }
+            }
+            BIO_free(b);
+            BIO_free(b2);
+
+            if (checkName) {
+                log.debug("unable to match DN, trying TLS subjectAltName match");
+                STACK_OF(GENERAL_NAME)* altnames=(STACK_OF(GENERAL_NAME)*)X509_get_ext_d2i(x, NID_subject_alt_name, NULL, NULL);
+                if (altnames) {
+                    int numalts = sk_GENERAL_NAME_num(altnames);
+                    for (int an=0; !checkName && an<numalts; an++) {
+                        const GENERAL_NAME* check = sk_GENERAL_NAME_value(altnames, an);
+                        if (check->type==GEN_DNS || check->type==GEN_URI) {
+                            const char* altptr = (char*)ASN1_STRING_data(check->d.ia5);
+                            const int altlen = ASN1_STRING_length(check->d.ia5);
+                            
+                            for (vector<string>::const_iterator n=keynames.begin(); n!=keynames.end(); n++) {
+#ifdef HAVE_STRCASECMP
+                                if (!strncasecmp(altptr,n->c_str(),altlen)) {
+#else
+                                if (!strnicmp(altptr,n->c_str(),altlen)) {
+#endif
+                                    log.info("matched DNS/URI subjectAltName to a key name (%s)", n->c_str());
+                                    checkName=false;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    GENERAL_NAMES_free(altnames);
+                }
+                
+                if (checkName) {
+                    log.debug("unable to match subjectAltName, trying TLS CN match");
+                    memset(buf,0,sizeof(buf));
+                    if (X509_NAME_get_text_by_NID(subject,NID_commonName,buf,255)>0) {
+                        for (vector<string>::const_iterator n=keynames.begin(); n!=keynames.end(); n++) {
+#ifdef HAVE_STRCASECMP
+                            if (!strcasecmp(buf,n->c_str())) {
+#else
+                            if (!stricmp(buf,n->c_str())) {
+#endif
+                                log.info("matched subject CN to a key name (%s)", n->c_str());
+                                checkName=false;
+                                break;
+                            }
+                        }
+                    }
+                    else
+                        log.warn("no common name in certificate subject");
+                }
+            }
+        }
+        else
+            log.error("certificate has no subject?!");
+    }
+
+    if (checkName) {
+        log.error("cannot match certificate subject against acceptable key names based on KeyDescriptors");
+        return false;
+    }
+
     lock();
     try {
         XMLTrustImpl* impl=dynamic_cast<XMLTrustImpl*>(getImplementation());
