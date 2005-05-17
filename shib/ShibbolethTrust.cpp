@@ -539,13 +539,15 @@ bool ShibbolethTrust::validate(const saml::SAMLSignedObject& token, const IRoleD
     // Find and save off a pointer to the certificate that unlocks the object.
     // Most of the time, this will be the first one anyway.
     Iterator<XSECCryptoX509*> iter(certs);
-    while (!certEE && iter.hasNext()) {
+    while (iter.hasNext()) {
         try {
             XSECCryptoX509* c=iter.next();
             chain.push_back(static_cast<OpenSSLCryptoX509*>(c)->getOpenSSLX509());
-            token.verify(*c);
-            log.info("signature verified with key inside signature, attempting certificate validation...");
-            certEE=static_cast<OpenSSLCryptoX509*>(c)->getOpenSSLX509();
+            if (!certEE) {
+                token.verify(*c);
+                log.info("signature verified with key inside signature, attempting certificate validation...");
+                certEE=static_cast<OpenSSLCryptoX509*>(c)->getOpenSSLX509();
+            }
         }
         catch (...) {
             // trap failures
