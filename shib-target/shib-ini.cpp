@@ -102,7 +102,7 @@ namespace shibtarget {
         const IPropertySet* getSessionInitiatorById(const char* id) const;
         const IPropertySet* getDefaultAssertionConsumerService() const;
         const IPropertySet* getAssertionConsumerServiceByIndex(unsigned short index) const;
-        const IPropertySet* getHandler(const char* path) const;
+        const IPropertySet* getHandlerConfig(const char* path) const;
         
         // Provides filter to exclude special config elements.
         short acceptNode(const DOMNode* node) const;
@@ -794,7 +794,7 @@ const IPropertySet* XMLApplication::getAssertionConsumerServiceByIndex(unsigned 
     return m_base ? m_base->getAssertionConsumerServiceByIndex(index) : NULL;
 }
 
-const IPropertySet* XMLApplication::getHandler(const char* path) const
+const IPropertySet* XMLApplication::getHandlerConfig(const char* path) const
 {
     string wrap(path);
     map<string,XMLPropertySet*>::const_iterator i=m_handlerMap.find(wrap.substr(0,wrap.find('?')));

@@ -78,6 +78,10 @@ PlugManager::Factory TCPListenerFactory;
 PlugManager::Factory MemoryListenerFactory;
 PlugManager::Factory MemoryCacheFactory;
 PlugManager::Factory XMLRequestMapFactory;
+PlugManager::Factory ShibSessionInitiatorFactory;
+PlugManager::Factory SAML1POSTFactory;
+PlugManager::Factory SAML1ArtifactFactory;
+PlugManager::Factory ShibLogoutFactory;
 //PlugManager::Factory htaccessFactory;
 
 SAML_EXCEPTION_FACTORY(ListenerException);
@@ -168,6 +172,15 @@ bool STConfig::init(const char* schemadir)
     samlConf.getPlugMgr().regFactory(shibtarget::XML::LegacyRequestMapType,&XMLRequestMapFactory);
     samlConf.getPlugMgr().regFactory(shibtarget::XML::XMLRequestMapType,&XMLRequestMapFactory);
     samlConf.getPlugMgr().regFactory(shibtarget::XML::NativeRequestMapType,&XMLRequestMapFactory);
+    
+    auto_ptr_char temp1(Constants::SHIB_SESSIONINIT_PROFILE_URI);
+    samlConf.getPlugMgr().regFactory(temp1.get(),&ShibSessionInitiatorFactory);
+    auto_ptr_char temp2(SAMLBrowserProfile::BROWSER_POST);
+    samlConf.getPlugMgr().regFactory(temp2.get(),&SAML1POSTFactory);
+    auto_ptr_char temp3(SAMLBrowserProfile::BROWSER_ARTIFACT);
+    samlConf.getPlugMgr().regFactory(temp3.get(),&SAML1ArtifactFactory);
+    auto_ptr_char temp4(Constants::SHIB_LOGOUT_PROFILE_URI);
+    samlConf.getPlugMgr().regFactory(temp4.get(),&ShibLogoutFactory);
     
     saml::XML::registerSchema(shibtarget::XML::SHIBTARGET_NS,shibtarget::XML::SHIBTARGET_SCHEMA_ID);
     saml::XML::registerSchema(shibtarget::XML::SAML2META_NS,shibtarget::XML::SAML2META_SCHEMA_ID);

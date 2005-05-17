@@ -130,8 +130,8 @@ namespace shibtarget {
         virtual const IPropertySet* getDefaultAssertionConsumerService() const=0;
         virtual const IPropertySet* getAssertionConsumerServiceByIndex(unsigned short index) const=0;
         
-        // Used by dispatcher to locate a handler for a Shibboleth request
-        virtual const IPropertySet* getHandler(const char* path) const=0;
+        // Used by dispatcher to locate the handler configuration for a Shibboleth request
+        virtual const IPropertySet* getHandlerConfig(const char* path) const=0;
 
         virtual ~IApplication() {}
     };
@@ -239,6 +239,12 @@ namespace shibtarget {
         virtual ~IRequestMapper() {}
     };
     
+    struct SHIBTARGET_EXPORTS IHandler : public virtual saml::IPlugIn
+    {
+        virtual std::pair<bool,void*> run(ShibTarget* st, const IPropertySet* config, bool isHandler=true)=0;
+        virtual ~IHandler() {}
+    };
+    
     struct SHIBTARGET_EXPORTS IConfig : public virtual saml::ILockable, public virtual IPropertySet, public virtual saml::IPlugIn
     {
         virtual const IListener* getListener() const=0;
@@ -317,6 +323,7 @@ namespace shibtarget {
     // Get/Set a cookie for this request
     virtual std::string getCookies() const=0;
     virtual void setCookie(const std::string &name, const std::string &value)=0;
+    virtual const char* getCookie(const std::string& name) const;
     void setCookie(const char *name, const char *value) {
       std::string ns = name;
       std::string vs = value;
@@ -420,6 +427,7 @@ namespace shibtarget {
     std::pair<bool,void*> doExportAssertions();
 
     // Basic request access in case any plugins need the info
+    virtual const IConfig* getConfig() const;
     virtual const IApplication* getApplication() const;
     const char* getRequestMethod() const {return m_method.c_str();}
     const char* getProtocol() const {return m_protocol.c_str();}
@@ -429,6 +437,14 @@ namespace shibtarget {
     const char* getContentType() const {return m_content_type.c_str();}
     const char* getRemoteAddr() const {return m_remote_addr.c_str();}
     const char* getRequestURL() const {return m_url.c_str();}
+    
+    // Advanced methods useful to profile handlers implemented outside core
+    
+    // Get per-application session and state cookie name and properties
+    virtual std::pair<std::string,const char*> getCookieNameProps(const char* prefix) const;
+    
+    // Determine the effective handler URL based on the resource URL
+    virtual std::string getHandlerURL(const char* resource) const;
 
   protected:
     ShibTarget();

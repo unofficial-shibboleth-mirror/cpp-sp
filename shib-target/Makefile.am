@@ -23,6 +23,7 @@ libshib_target_la_SOURCES = \
 	RPCListener.cpp \
 	shib-ccache.cpp \
 	shib-config.cpp \
+	shib-handlers.cpp \
 	shib-ini.cpp \
 	shib-mlp.cpp \
 	shib-sock.cpp \
