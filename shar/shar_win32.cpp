@@ -154,7 +154,7 @@ int main(int argc, char *argv[])
         SetConsoleCtrlHandler(&BreakHandler,TRUE);
         if (real_main(1)!=0)
         {
-            LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, "SHAR startup failed, check shar log for help.");
+            LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, "shibd startup failed, check shibd.log for further details");
             return -1;
         }
         return real_main(0);
@@ -186,7 +186,7 @@ int main(int argc, char *argv[])
 
     SERVICE_TABLE_ENTRY dispatchTable[] =
     {
-        { "SHAR", (LPSERVICE_MAIN_FUNCTION)service_main },
+        { "SHIBD", (LPSERVICE_MAIN_FUNCTION)service_main },
         { NULL, NULL }
     };
 
@@ -206,11 +206,11 @@ VOID ServiceStart (DWORD dwArgc, LPSTR *lpszArgv)
 
     if (real_main(1)!=0)
     {
-        LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, "SHAR startup failed, check shar log for help.");
+        LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, "shibd startup failed, check shibd.log for further details");
         return;
     }
 
-    LogEvent(NULL, EVENTLOG_INFORMATION_TYPE, 7700, NULL, "SHAR started successfully.");
+    LogEvent(NULL, EVENTLOG_INFORMATION_TYPE, 7700, NULL, "shibd started successfully.");
 
     if (!ReportStatusToSCMgr(SERVICE_RUNNING, NO_ERROR, 0))
         return;
@@ -227,7 +227,7 @@ VOID ServiceStart (DWORD dwArgc, LPSTR *lpszArgv)
 VOID ServiceStop()
 {
     if (!bConsole)
-        LogEvent(NULL, EVENTLOG_INFORMATION_TYPE, 7701, NULL, "SHAR stopping...");
+        LogEvent(NULL, EVENTLOG_INFORMATION_TYPE, 7701, NULL, "shibd stopping...");
     shar_run=0;
 }
 
@@ -381,8 +381,8 @@ void CmdInstallService(LPCSTR name)
         return;
     }
     
-    sprintf(dispName,"Shibboleth Attribute Requester (%s)",name);
-    sprintf(realName,"SHAR_%s",name);
+    sprintf(dispName,"Shibboleth %s Daemon (%s)",PACKAGE_VERSION,name);
+    sprintf(realName,"shibd_%s",name);
     if (shar_config && shar_schemadir)
         sprintf(cmd,"%s -config %s -schemadir %s",szPath,shar_config,shar_schemadir);
     else if (shar_config)
@@ -438,7 +438,7 @@ void CmdRemoveService(LPCSTR name)
     SC_HANDLE   schSCManager;
     char        realName[512];
 
-    sprintf(realName,"SHAR_%s",name);
+    sprintf(realName,"shibd_%s",name);
 
     schSCManager = OpenSCManager(
                         NULL,                   // machine (NULL == local)
@@ -454,7 +454,7 @@ void CmdRemoveService(LPCSTR name)
             // try to stop the service
             if ( ControlService( schService, SERVICE_CONTROL_STOP, &ssStatus ) )
             {
-                printf("Stopping SHAR (%s).", name);
+                printf("Stopping shibd (%s).", name);
                 Sleep( 1000 );
 
                 while( QueryServiceStatus( schService, &ssStatus ) )
@@ -545,7 +545,7 @@ BOOL LogEvent(
 {
     LPCSTR  messages[] = {message, NULL};
     
-    HANDLE hElog = RegisterEventSource(lpUNCServerName, "Shibboleth Attribute Requester");
+    HANDLE hElog = RegisterEventSource(lpUNCServerName, "Shibboleth Daemon");
     BOOL res = ReportEvent(hElog, wType, 0, dwEventID, lpUserSid, 1, 0, messages, NULL);
     return (DeregisterEventSource(hElog) && res);
 }
