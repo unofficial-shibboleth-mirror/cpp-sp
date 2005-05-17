@@ -297,8 +297,13 @@ void ShibMLP::insert(SAMLException& e)
         insert("originErrorURL", e.getProperty("errorURL"));
     if (e.getProperty("contactName"))
         insert("originContactName", e.getProperty("contactName"));
-    if (e.getProperty("contactEmail"))
-        insert("originContactEmail", e.getProperty("contactEmail"));
+    const char* email=e.getProperty("contactEmail");
+    if (email) {
+        if (!strncmp(email,"mailto:",7) && strlen(email)>7)
+            insert("originContactEmail", email+7);
+        else
+            insert("originContactEmail", email);
+    }
 }
 
 void ShibMLP::insert (const std::string& key, const std::string& value)
