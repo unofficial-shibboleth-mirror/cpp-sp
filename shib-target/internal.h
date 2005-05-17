@@ -134,15 +134,13 @@ namespace shibtarget {
     {
     public:
         CommonDomainCookie(const char* cookie);
-        ~CommonDomainCookie();
-        saml::Iterator<const char*> get() {return m_list;}
+        ~CommonDomainCookie() {}
+        saml::Iterator<std::string> get() {return m_list;}
         const char* set(const char* providerId);
         static const char CDCName[];
     private:
-        XMLByte* m_decoded;
         std::string m_encoded;
-        std::vector<const char*> m_list;
-        std::vector<std::string> m_additions;
+        std::vector<std::string> m_list;
     };
 
     // Generic class, which handles the IPropertySet configuration interface.

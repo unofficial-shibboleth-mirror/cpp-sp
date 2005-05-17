@@ -1340,71 +1340,72 @@ void* ShibTarget::returnOK(void)
 
 const char CommonDomainCookie::CDCName[] = "_saml_idp";
 
-CommonDomainCookie::CommonDomainCookie(const char* cookie) : m_decoded(NULL)
+CommonDomainCookie::CommonDomainCookie(const char* cookie)
 {
     if (!cookie)
         return;
-        
+
+    Category& log=Category::getInstance(SHIBT_LOGCAT".CommonDomainCookie");
+
     // Copy it so we can URL-decode it.
     char* b64=strdup(cookie);
     CgiParse::url_decode(b64);
-    
-    // Now Base64 decode it into the decoded delimited list.
-    unsigned int len;
-    m_decoded=Base64::decode(reinterpret_cast<XMLByte*>(b64),&len);
-    free(b64);
-    if (!m_decoded) {
-        Category::getInstance("CommonDomainCookie").warn("cookie does not appear to be base64-encoded");
-        return;
-    }
-    
-    // Chop it up and save off pointers.
-    char* ptr=reinterpret_cast<char*>(m_decoded);
-    while (*ptr) {
-        while (isspace(*ptr)) ptr++;
-        m_list.push_back(ptr);
-        while (*ptr && !isspace(*ptr)) ptr++;
-        if (*ptr)
-            *ptr++='\0';
-    }
-}
 
-CommonDomainCookie::~CommonDomainCookie()
-{
-    if (m_decoded)
-        XMLString::release(&m_decoded);
+    // Chop it up and save off elements.
+    vector<string> templist;
+    char* ptr=b64;
+    while (*ptr) {
+        while (*ptr && isspace(*ptr)) ptr++;
+        char* end=ptr;
+        while (*end && !isspace(*end)) end++;
+        templist.push_back(string(ptr,end-ptr));
+        ptr=end;
+    }
+    free(b64);
+
+    // Now Base64 decode the list.
+    for (vector<string>::iterator i=templist.begin(); i!=templist.end(); i++) {
+        unsigned int len;
+        XMLByte* decoded=Base64::decode(reinterpret_cast<const XMLByte*>(i->c_str()),&len);
+        if (decoded && *decoded) {
+            m_list.push_back(reinterpret_cast<char*>(decoded));
+            XMLString::release(&decoded);
+        }
+        else
+            log.warn("cookie element does not appear to be base64-encoded");
+    }
 }
 
 const char* CommonDomainCookie::set(const char* providerId)
 {
     // First scan the list for this IdP.
-    for (vector<const char*>::iterator i=m_list.begin(); i!=m_list.end(); i++) {
-        if (!strcmp(providerId,*i)) {
+    for (vector<string>::iterator i=m_list.begin(); i!=m_list.end(); i++) {
+        if (*i == providerId) {
             m_list.erase(i);
             break;
         }
     }
     
-    // Append it to the end, after storing locally.
-    m_additions.push_back(providerId);
-    m_list.push_back(m_additions.back().c_str());
+    // Append it to the end.
+    m_list.push_back(providerId);
     
     // Now rebuild the delimited list.
     string delimited;
-    for (vector<const char*>::const_iterator j=m_list.begin(); j!=m_list.end(); j++) {
+    for (vector<string>::const_iterator j=m_list.begin(); j!=m_list.end(); j++) {
         if (!delimited.empty()) delimited += ' ';
-        delimited += *j;
+        
+        unsigned int len;
+        XMLByte* b64=Base64::encode(reinterpret_cast<const XMLByte*>(j->c_str()),j->length(),&len);
+        XMLByte *pos, *pos2;
+        for (pos=b64, pos2=b64; *pos2; pos2++)
+            if (isgraph(*pos2))
+                *pos++=*pos2;
+        *pos=0;
+        
+        delimited += reinterpret_cast<char*>(b64);
+        XMLString::release(&b64);
     }
     
-    // Base64 and URL encode it.
-    unsigned int len;
-    XMLByte* b64=Base64::encode(reinterpret_cast<const XMLByte*>(delimited.c_str()),delimited.length(),&len);
-    XMLByte *pos, *pos2;
-    for (pos=b64, pos2=b64; *pos2; pos2++)
-        if (isgraph(*pos2))
-            *pos++=*pos2;
-    *pos=0;
-    m_encoded=CgiParse::url_encode(reinterpret_cast<char*>(b64));
-    XMLString::release(&b64);
+    m_encoded=CgiParse::url_encode(delimited.c_str());
     return m_encoded.c_str();
 }
