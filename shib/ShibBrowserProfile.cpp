@@ -77,17 +77,13 @@ ShibBrowserProfile::~ShibBrowserProfile()
     delete m_profile;
 }
 
-void ShibBrowserProfile::setVersion(int major, int minor)
-{
-    m_profile->setVersion(major,minor);
-}
-
 SAMLBrowserProfile::BrowserProfileResponse ShibBrowserProfile::receive(
     const char* packet,
     const XMLCh* recipient,
     int supportedProfiles,
     IReplayCache* replayCache,
-    SAMLBrowserProfile::ArtifactMapper* callback
+    SAMLBrowserProfile::ArtifactMapper* callback,
+    int minorVersion
     ) const
 {
 #ifdef _DEBUG
@@ -100,7 +96,7 @@ SAMLBrowserProfile::BrowserProfileResponse ShibBrowserProfile::receive(
     // as an exception.
     SAMLBrowserProfile::BrowserProfileResponse bpr;
     try {
-        bpr=m_profile->receive(packet, recipient, supportedProfiles, replayCache, callback);
+        bpr=m_profile->receive(packet, recipient, supportedProfiles, replayCache, callback, minorVersion);
     }
     catch (SAMLException& e) {
         // Try our best to attach additional information.
@@ -108,7 +104,9 @@ SAMLBrowserProfile::BrowserProfileResponse ShibBrowserProfile::receive(
             Metadata m(m_metadatas);
             const IEntityDescriptor* provider=m.lookup(e.getProperty("issuer"),false);
             if (provider) {
-                const IIDPSSODescriptor* role=provider->getIDPSSODescriptor(saml::XML::SAML11_PROTOCOL_ENUM);
+                const IIDPSSODescriptor* role=provider->getIDPSSODescriptor(
+                    minorVersion==1 ? saml::XML::SAML11_PROTOCOL_ENUM : saml::XML::SAML10_PROTOCOL_ENUM
+                    );
                 if (role) annotateException(&e,role); // throws it
                 annotateException(&e,provider);  // throws it
             }
@@ -148,7 +146,9 @@ SAMLBrowserProfile::BrowserProfileResponse ShibBrowserProfile::receive(
     }
 
     // Is this provider an IdP?
-    const IIDPSSODescriptor* role=provider->getIDPSSODescriptor(saml::XML::SAML11_PROTOCOL_ENUM);
+    const IIDPSSODescriptor* role=provider->getIDPSSODescriptor(
+        minorVersion==1 ? saml::XML::SAML11_PROTOCOL_ENUM : saml::XML::SAML10_PROTOCOL_ENUM
+        );
     if (role) {
         // Use this role to evaluate the signature(s). If the response is unsigned, we know
         // it was an artifact profile run.
@@ -175,8 +175,8 @@ SAMLBrowserProfile::BrowserProfileResponse ShibBrowserProfile::receive(
 
     auto_ptr_char issuer(bpr.assertion->getIssuer());
     auto_ptr_char nq(bpr.authnStatement->getSubject()->getNameIdentifier()->getNameQualifier());
-    log.error("metadata for assertion issuer indicates no SAML 1.x identity provider role (Issuer='%s', NameQualifier='%s'",
-        issuer.get(), (nq.get() ? nq.get() : "none"));
+    log.error("metadata for assertion issuer indicates no SAML 1.%d identity provider role (Issuer='%s', NameQualifier='%s'",
+        minorVersion, issuer.get(), (nq.get() ? nq.get() : "none"));
     bpr.clear();
     MetadataException ex("metadata lookup failed, issuer not registered as SAML 1.x identity provider");
     annotateException(&ex,provider,false);

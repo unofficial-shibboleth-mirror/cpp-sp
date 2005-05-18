@@ -709,11 +709,16 @@ pair<SAMLResponse*,SAMLResponse*> InternalCCacheEntry::getNewResponse()
     }
 
     // Try to locate an AA role.
+    int minorVersion=1;
     const IAttributeAuthorityDescriptor* AA=site->getAttributeAuthorityDescriptor(saml::XML::SAML11_PROTOCOL_ENUM);
     if (!AA) {
-        log->error("unable to locate metadata for identity provider's Attribute Authority");
-        MetadataException ex("Unable to locate metadata for identity provider's Attribute Authority.");
-        annotateException(&ex,site);
+        AA=site->getAttributeAuthorityDescriptor(saml::XML::SAML10_PROTOCOL_ENUM);
+        if (!AA) {
+            log->error("unable to locate metadata for identity provider's Attribute Authority");
+            MetadataException ex("Unable to locate metadata for identity provider's Attribute Authority.");
+            annotateException(&ex,site);
+        }
+        minorVersion=0;
     }
 
     // Get protocol signing policy.
@@ -731,6 +736,7 @@ pair<SAMLResponse*,SAMLResponse*> InternalCCacheEntry::getNewResponse()
             application->getAttributeDesignators().clone()
             );
         auto_ptr<SAMLRequest> req(new SAMLRequest(q));
+        req->setMinorVersion(minorVersion);
         
         // Sign it? Highly doubtful we'll ever use this, but just for fun...
         if (signRequest.first && signRequest.second && signingCred.first) {

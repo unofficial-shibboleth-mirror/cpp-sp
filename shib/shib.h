@@ -487,13 +487,13 @@ namespace shibboleth
             );
         virtual ~ShibBrowserProfile();
 
-        virtual void setVersion(int major, int minor);
         virtual saml::SAMLBrowserProfile::BrowserProfileResponse receive(
             const char* packet,
             const XMLCh* recipient,
             int supportedProfiles,
             saml::IReplayCache* replayCache=NULL,
-            saml::SAMLBrowserProfile::ArtifactMapper* callback=NULL
+            saml::SAMLBrowserProfile::ArtifactMapper* callback=NULL,
+            int minorVersion=1
             ) const;
 
     private:

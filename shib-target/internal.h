@@ -129,20 +129,6 @@ namespace shibtarget {
         mutable RPCHandlePool* m_rpcpool;
     };
 
-    // Helper class for SAML 2.0 Common Domain Cookie operations
-    class CommonDomainCookie
-    {
-    public:
-        CommonDomainCookie(const char* cookie);
-        ~CommonDomainCookie() {}
-        saml::Iterator<std::string> get() {return m_list;}
-        const char* set(const char* providerId);
-        static const char CDCName[];
-    private:
-        std::string m_encoded;
-        std::vector<std::string> m_list;
-    };
-
     // Generic class, which handles the IPropertySet configuration interface.
     // Most of the basic configuration details are exposed via this interface.
     // This implementation extracts the XML tree structure and caches it in a map
@@ -187,7 +173,8 @@ namespace shibtarget {
             : m_app(application), m_localcopy(application->getMetadataProviders()), m_metadata(m_localcopy), m_ctx(NULL) {}
         virtual ~STArtifactMapper() {delete m_ctx;}
     
-        saml::SAMLBrowserProfile::ArtifactMapper::ArtifactMapperResponse map(const saml::SAMLArtifact* artifact);
+        saml::SAMLBrowserProfile::ArtifactMapper::ArtifactMapperResponse
+            map(const saml::SAMLArtifact* artifact, int minorVersion);
     
     private:
         const IApplication* m_app;

@@ -123,6 +123,10 @@ SOURCE=".\shib-config.cpp"
 # End Source File
 # Begin Source File
 
+SOURCE=".\shib-handlers.cpp"
+# End Source File
+# Begin Source File
+
 SOURCE=".\shib-ini.cpp"
 # End Source File
 # Begin Source File

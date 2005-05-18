@@ -63,7 +63,7 @@ using namespace saml;
 using namespace shibboleth;
 using namespace shibtarget;
 
-SAMLBrowserProfile::ArtifactMapper::ArtifactMapperResponse STArtifactMapper::map(const SAMLArtifact* artifact)
+SAMLBrowserProfile::ArtifactMapper::ArtifactMapperResponse STArtifactMapper::map(const SAMLArtifact* artifact, int minorVersion)
 {
     Category& log=Category::getInstance("shibtarget.ArtifactMapper");
     
@@ -87,25 +87,10 @@ SAMLBrowserProfile::ArtifactMapper::ArtifactMapperResponse STArtifactMapper::map
     // Depends on type of artifact.
     const SAMLArtifactType0001* type1=dynamic_cast<const SAMLArtifactType0001*>(artifact);
     if (type1) {
-        // With type 01, any endpoint will do. Try SAML 1.1 first.
-        const IIDPSSODescriptor* idp=entity->getIDPSSODescriptor(saml::XML::SAML11_PROTOCOL_ENUM);
-        if (idp) {
-            const IEndpointManager* mgr=idp->getArtifactResolutionServiceManager();
-            Iterator<const IEndpoint*> eps=mgr ? mgr->getEndpoints() : EMPTY(const IEndpoint*);
-            while (eps.hasNext()) {
-                const IEndpoint* ep=eps.next();
-                amr.binding = m_app->getBinding(ep->getBinding());
-                if (amr.binding) {
-                    auto_ptr_char loc(ep->getLocation());
-                    amr.endpoint = loc.get();
-                    amr.callCtx = new ShibHTTPHook::ShibHTTPHookCallContext(credUse ? credUse->getString("TLS").second : NULL,idp);
-                    return amr;
-                }
-            }
-        }
-        
-        // No compatible 1.1 binding, try 1.0...
-        idp=entity->getIDPSSODescriptor(saml::XML::SAML10_PROTOCOL_ENUM);
+        // With type 01, any endpoint will do.
+        const IIDPSSODescriptor* idp=entity->getIDPSSODescriptor(
+            minorVersion==1 ? saml::XML::SAML11_PROTOCOL_ENUM : saml::XML::SAML10_PROTOCOL_ENUM
+            );
         if (idp) {
             const IEndpointManager* mgr=idp->getArtifactResolutionServiceManager();
             Iterator<const IEndpoint*> eps=mgr ? mgr->getEndpoints() : EMPTY(const IEndpoint*);
@@ -124,27 +109,10 @@ SAMLBrowserProfile::ArtifactMapper::ArtifactMapperResponse STArtifactMapper::map
     else {
         const SAMLArtifactType0002* type2=dynamic_cast<const SAMLArtifactType0002*>(artifact);
         if (type2) {
-            // With type 02, we have to find the matching location. Try SAML 1.1 first.
-            const IIDPSSODescriptor* idp=entity->getIDPSSODescriptor(saml::XML::SAML11_PROTOCOL_ENUM);
-            if (idp) {
-                const IEndpointManager* mgr=idp->getArtifactResolutionServiceManager();
-                Iterator<const IEndpoint*> eps=mgr ? mgr->getEndpoints() : EMPTY(const IEndpoint*);
-                while (eps.hasNext()) {
-                    const IEndpoint* ep=eps.next();
-                    auto_ptr_char loc(ep->getLocation());
-                    if (!strcmp(loc.get(),type2->getSourceLocation())) {
-                        amr.binding = m_app->getBinding(ep->getBinding());
-                        if (amr.binding) {
-                            amr.endpoint = loc.get();
-                            amr.callCtx = new ShibHTTPHook::ShibHTTPHookCallContext(credUse ? credUse->getString("TLS").second : NULL,idp);
-                            return amr;
-                        }
-                    }
-                }
-            }
-
-            // No match for 1.1, try 1.0...
-            idp=entity->getIDPSSODescriptor(saml::XML::SAML10_PROTOCOL_ENUM);
+            // With type 02, we have to find the matching location.
+            const IIDPSSODescriptor* idp=entity->getIDPSSODescriptor(
+                minorVersion==1 ? saml::XML::SAML11_PROTOCOL_ENUM : saml::XML::SAML10_PROTOCOL_ENUM
+                );
             if (idp) {
                 const IEndpointManager* mgr=idp->getArtifactResolutionServiceManager();
                 Iterator<const IEndpoint*> eps=mgr ? mgr->getEndpoints() : EMPTY(const IEndpoint*);
