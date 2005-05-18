@@ -299,33 +299,37 @@ pair<bool,void*> SAML1Consumer::run(ShibTarget* st, const IPropertySet* handler,
     int profile=0;
     string input,cookie,target,providerId;
     const IApplication* app=st->getApplication();
+    
+    // Supports either version...
+    pair<bool,unsigned int> version=handler->getUnsignedInt("MinorVersion");
+    if (!version.first)
+        version.second=1;
 
-    // Right now, this only handles SAML 1.1.
     pair<bool,const XMLCh*> binding=handler->getXMLString("Binding");
     if (!binding.first || !XMLString::compareString(binding.second,SAMLBrowserProfile::BROWSER_POST)) {
         if (strcasecmp(st->getRequestMethod(), "POST"))
             throw FatalProfileException(
-                "SAML 1.1 Browser/POST handler does not support HTTP method ($1).", params(1,st->getRequestMethod())
+                "SAML 1.x Browser/POST handler does not support HTTP method ($1).", params(1,st->getRequestMethod())
                 );
         
         if (!st->getContentType() || strcasecmp(st->getContentType(),"application/x-www-form-urlencoded"))
             throw FatalProfileException(
-                "Blocked invalid content-type ($1) submitted to SAML 1.1 Browser/POST handler.", params(1,st->getContentType())
+                "Blocked invalid content-type ($1) submitted to SAML 1.x Browser/POST handler.", params(1,st->getContentType())
                 );
         input=st->getPostData();
-        profile|=SAML11_POST;
+        profile|=(version.second==1 ? SAML11_POST : SAML10_POST);
     }
     else if (!XMLString::compareString(binding.second,SAMLBrowserProfile::BROWSER_ARTIFACT)) {
         if (strcasecmp(st->getRequestMethod(), "GET"))
             throw FatalProfileException(
-                "SAML 1.1 Browser/Artifact handler does not support HTTP method ($1).", params(1,st->getRequestMethod())
+                "SAML 1.x Browser/Artifact handler does not support HTTP method ($1).", params(1,st->getRequestMethod())
                 );
         input=st->getArgs();
-        profile|=SAML11_ARTIFACT;
+        profile|=(version.second==1 ? SAML11_ARTIFACT : SAML10_ARTIFACT);
     }
     
     if (input.empty())
-        throw FatalProfileException("SAML 1.1 Browser Profile handler received no data from browser.");
+        throw FatalProfileException("SAML 1.x Browser Profile handler received no data from browser.");
     
     string hURL=st->getHandlerURL(st->getRequestURL());
     pair<bool,const char*> loc=handler->getString("Location");
