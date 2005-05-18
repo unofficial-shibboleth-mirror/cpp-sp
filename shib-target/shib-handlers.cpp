@@ -301,7 +301,7 @@ pair<bool,void*> SAML1Consumer::run(ShibTarget* st, const IPropertySet* handler,
     const IApplication* app=st->getApplication();
     
     // Supports either version...
-    pair<bool,unsigned int> version=handler->getUnsignedInt("MinorVersion");
+    pair<bool,unsigned int> version=handler->getUnsignedInt("MinorVersion","urn:oasis:names:tc:SAML:1.0:protocol");
     if (!version.first)
         version.second=1;
 
