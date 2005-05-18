@@ -337,9 +337,16 @@ ISessionCacheEntry* ShibMySQLCCache::find(const char* key, const IApplication* a
 
     SAMLAuthenticationStatement* s=NULL;
     SAMLResponse* r=NULL;
-    const IRoleDescriptor* role=provider->getIDPSSODescriptor(saml::XML::SAML11_PROTOCOL_ENUM);
+    ShibProfile profile=static_cast<ShibProfile>(atoi(row[4]));
+    const IRoleDescriptor* role=NULL;
+    if (profile==SAML11_POST || profile==SAML11_ARTIFACT)
+        role=provider->getIDPSSODescriptor(saml::XML::SAML11_PROTOCOL_ENUM);
+    else if (profile==SAML10_POST || profile==SAML10_ARTIFACT)
+        role=provider->getIDPSSODescriptor(saml::XML::SAML10_PROTOCOL_ENUM);
     if (!role) {
-        log->crit("no SAML 1.1 IdP role found for identity provider (%s) responsible for the session.", row[5]);
+        log->crit(
+            "no matching IdP role for profile (%s) found for identity provider (%s) responsible for the session.", row[4], row[5]
+            );
         mysql_free_result(rows);
         return NULL;
     }
@@ -375,7 +382,7 @@ ISessionCacheEntry* ShibMySQLCCache::find(const char* key, const IApplication* a
         key,
         application,
         row[3],
-        static_cast<ShibProfile>(atoi(row[4])),
+        profile,
         row[5],
         s,
         r,
