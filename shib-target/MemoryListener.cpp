@@ -152,22 +152,25 @@ void MemoryListener::sessionNew(
     const IRoleDescriptor* role=NULL;
     Metadata m(app->getMetadataProviders());
     SAMLBrowserProfile::BrowserProfileResponse bpr;
+    int allowed = 0;
+    if (supported_profiles & SAML11_POST || supported_profiles & SAML10_POST)
+        allowed |= SAMLBrowserProfile::Post;
+    if (supported_profiles & SAML11_ARTIFACT || supported_profiles & SAML10_ARTIFACT)
+        allowed |= SAMLBrowserProfile::Artifact;
+    int minorVersion=(supported_profiles & SAML11_ARTIFACT || supported_profiles & SAML11_POST) ? 1 : 0;
+    
     try {
         auto_ptr<SAMLBrowserProfile::ArtifactMapper> artifactMapper(app->getArtifactMapper());
       
         // Try and run the profile.
         log->debug("executing browser profile...");
-        int allowed = 0;
-        if (supported_profiles & SAML11_POST)
-            allowed |= SAMLBrowserProfile::Post;
-        if (supported_profiles & SAML11_ARTIFACT)
-            allowed |= SAMLBrowserProfile::Artifact;
         bpr=app->getBrowserProfile()->receive(
             packet,
             wrecipient.get(),
             allowed,
             (!checkReplay.first || checkReplay.second) ? conf->getReplayCache() : NULL,
-            artifactMapper.get()
+            artifactMapper.get(),
+            minorVersion
             );
 
         // Blow it away to clear any locks that might be held.
@@ -180,7 +183,9 @@ void MemoryListener::sessionNew(
                 bpr.authnStatement->getSubject()->getNameIdentifier()->getNameQualifier())
             provider=m.lookup(bpr.authnStatement->getSubject()->getNameIdentifier()->getNameQualifier());
         if (provider) {
-            const IIDPSSODescriptor* IDP=provider->getIDPSSODescriptor(saml::XML::SAML11_PROTOCOL_ENUM);
+            const IIDPSSODescriptor* IDP=provider->getIDPSSODescriptor(
+                minorVersion==1 ? saml::XML::SAML11_PROTOCOL_ENUM : saml::XML::SAML10_PROTOCOL_ENUM
+                );
             role=IDP;
         }
         
@@ -275,7 +280,8 @@ void MemoryListener::sessionNew(
             cookie.c_str(),
             app,
             ip,
-            (bpr.profile==SAMLBrowserProfile::Post) ? SAML11_POST : SAML11_ARTIFACT,
+            (bpr.profile==SAMLBrowserProfile::Post) ?
+                (minorVersion==1 ? SAML11_POST : SAML10_POST) : (minorVersion==1 ? SAML11_ARTIFACT : SAML10_ARTIFACT),
             oname.get(),
             as.get(),
             (attributesPushed ? bpr.response : NULL),
