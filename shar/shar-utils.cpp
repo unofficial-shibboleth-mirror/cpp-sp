@@ -67,11 +67,13 @@ void* shar_client_thread (void* arg)
   Thread::mask_all_signals();
 
   ShibTargetConfig::getConfig().getINI()->getSessionCache()->thread_init();
+  ShibTargetConfig::getConfig().getINI()->getReplayCache()->thread_init();
 
   // the run the child until they exit.
   child->run();
 
   ShibTargetConfig::getConfig().getINI()->getSessionCache()->thread_end();
+  ShibTargetConfig::getConfig().getINI()->getReplayCache()->thread_end();
 
   // now we can clean up and exit the thread.
   delete child;
