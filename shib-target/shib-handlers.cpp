@@ -203,10 +203,10 @@ pair<bool,void*> SessionInitiator::run(ShibTarget* st, const IPropertySet* handl
             const IEntityDescriptor* entity=m.lookup(option);
             if (!entity)
                 throw MetadataException("Session initiator unable to locate metadata for provider ($1).", params(1,option));
-            const IIDPSSODescriptor* role=entity->getIDPSSODescriptor(saml::XML::SAML11_PROTOCOL_ENUM);
+            const IIDPSSODescriptor* role=entity->getIDPSSODescriptor(Constants::SHIB_NS);
             if (!role)
                 throw MetadataException(
-                    "Session initiator unable to locate SAML identity provider role for provider ($1).", params(1,option)
+                    "Session initiator unable to locate a Shibboleth-aware identity provider role for provider ($1).", params(1,option)
                     );
             const IEndpointManager* SSO=role->getSingleSignOnServiceManager();
             const IEndpoint* ep=SSO->getEndpointByBinding(Constants::SHIB_AUTHNREQUEST_PROFILE_URI);
