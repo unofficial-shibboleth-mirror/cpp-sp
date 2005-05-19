@@ -1041,7 +1041,7 @@ void XMLConfigImpl::init(bool first)
                 exts=saml::XML::getFirstChildElement(SHAR,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(MySQLReplayCache));
                 if (exts) {
                     log.info("building Replay Cache of type %s...",shibtarget::XML::MySQLReplayCacheType);
-                    m_outer->m_replayCache=IReplayCache::getInstance(shibtarget::XML::MySQLSessionCacheType,exts);
+                    m_outer->m_replayCache=IReplayCache::getInstance(shibtarget::XML::MySQLReplayCacheType,exts);
                 }
                 else {
                     exts=saml::XML::getFirstChildElement(SHAR,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(ReplayCache));
