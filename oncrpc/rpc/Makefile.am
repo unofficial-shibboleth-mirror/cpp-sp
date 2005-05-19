@@ -1,8 +1,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-oncrpcdir = $(includedir)/rpc
-oncrpc_DATA = \
+oncrpc_noinst_DATA = \
   auth.h \
   clnt.h \
   pmap_prot.h \
@@ -19,4 +18,4 @@ oncrpc_DATA = \
   svc_auth.h
 
 EXTRA_DIST = \
-  ${oncrpc_DATA}
+  ${oncrpc_noinst_DATA}
