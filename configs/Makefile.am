@@ -32,8 +32,8 @@ CONFIGFILES = \
 	rmError.html \
 	sessionError.html \
 	metadataError.html \
-	example.key \
-	example.crt
+	sp-example.key \
+	sp-example.crt
 
 #
 # Some of these need building
@@ -122,5 +122,5 @@ EXTRA_DIST = .cvsignore \
 	IQ-sites.xml.in \
 	example-sites.xml.in \
 	inqueue.pem \
-	example.key \
-	example.crt
+	sp-example.key \
+	sp-example.crt
