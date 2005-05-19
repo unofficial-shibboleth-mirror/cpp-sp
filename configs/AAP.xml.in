@@ -81,7 +81,16 @@
 	</AttributeRule>
 
 	<!-- A persistent id attribute that supports personalized anonymous access. -->
-	<AttributeRule Name="urn:mace:dir:attribute-def:eduPersonTargetedID" Header="Shib-TargetedID" Alias="targeted_id">
+	
+	<!-- First, the deprecated version: -->
+	<AttributeRule Name="urn:mace:dir:attribute-def:eduPersonTargetedID" Scoped="true" Header="Shib-TargetedID" Alias="targeted_id">
+        <AnySite>
+            <AnyValue/>
+        </AnySite>
+	</AttributeRule>
+
+	<!-- Second, the new version: -->
+	<AttributeRule Name="urn:oid:1.3.6.1.4.1.5923.1.1.1.10" Header="Shib-TargetedID" Alias="targeted_id">
         <AnySite>
             <AnyValue/>
         </AnySite>
