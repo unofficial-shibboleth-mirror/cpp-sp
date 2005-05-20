@@ -224,7 +224,7 @@
         <!--
         Zero or more SAML Audience condition matches (mainly for Shib 1.1 compatibility).
         If you get "policy mismatch errors, you probably need to supply metadata about
-		your SP to the IdP. Adding an element here is only a partial fix.
+		your SP to the IdP if it's running 1.2. Adding an element here is only a partial fix.
         -->
         <saml:Audience>urn:mace:inqueue</saml:Audience>
         
@@ -263,10 +263,10 @@
         <Credentials xmlns="urn:mace:shibboleth:credentials:1.0">
             <FileResolver Id="defcreds">
                 <Key format="PEM">
-                    <Path>@-PKGSYSCONFDIR-@/example.key</Path>
+                    <Path>@-PKGSYSCONFDIR-@/sp-example.key</Path>
                 </Key>
                 <Certificate format="PEM">
-                    <Path>@-PKGSYSCONFDIR-@/example.crt</Path>
+                    <Path>@-PKGSYSCONFDIR-@/sp-example.crt</Path>
                 </Certificate>
             </FileResolver>
             
