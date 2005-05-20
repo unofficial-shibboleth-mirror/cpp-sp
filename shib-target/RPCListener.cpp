@@ -264,6 +264,8 @@ void RPCListener::sessionNew(
 EntryWrapper::EntryWrapper(shibrpc_get_session_ret_2& ret, Category& log)
 {
     profile = static_cast<ShibProfile>(ret.profile);
+    int minor = (profile==SAML10_POST || profile==SAML10_ARTIFACT) ? 0 : 1;
+
     provider_id = ret.provider_id;
 
     istringstream authstream(ret.auth_statement);
@@ -274,12 +276,12 @@ EntryWrapper::EntryWrapper(shibrpc_get_session_ret_2& ret, Category& log)
     istringstream prestream(ret.attr_response_pre);
     log.debugStream() << "trying to decode unfiltered attribute response: "
         << ret.attr_response_pre << CategoryStream::ENDLINE;
-    auto_ptr<SAMLResponse> pre(new SAMLResponse(prestream));
+    auto_ptr<SAMLResponse> pre(new SAMLResponse(prestream,minor));
 
     istringstream poststream(ret.attr_response_post);
     log.debugStream() << "trying to decode filtered attribute response: "
         << ret.attr_response_post << CategoryStream::ENDLINE;
-    auto_ptr<SAMLResponse> post(new SAMLResponse(poststream));
+    auto_ptr<SAMLResponse> post(new SAMLResponse(poststream,minor));
 
     statement=s.release();
     pre_response = pre.release();
