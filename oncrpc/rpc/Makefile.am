@@ -1,7 +1,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-oncrpc_noinst_DATA = \
+noinst_HEADERS = \
   auth.h \
   clnt.h \
   pmap_prot.h \
@@ -17,5 +17,3 @@ oncrpc_noinst_DATA = \
   rpc.h \
   svc_auth.h
 
-EXTRA_DIST = \
-  ${oncrpc_noinst_DATA}
