@@ -8,8 +8,8 @@ file5=..\nsapi_shib\Release\nsapi_shib.dll
 SubDir0=libexec\debug
 
 [share\english]
-file0=\mysql-4.0.13\share\english\errmsg.sys
-file1=\mysql-4.0.13\share\english\errmsg.txt
+file0=\mysql-4.1.10a\share\english\errmsg.sys
+file1=\mysql-4.1.10a\share\english\errmsg.txt
 
 [lib\debug]
 file0=\xml-security-c-1.1.0\Build\Win32\VC6\Debug\xsec_1_1_0D.dll
@@ -53,7 +53,7 @@ file12=..\shib-target\Release\shibtarget_5.dll
 file13=..\..\..\opensaml\c\saml\Release\saml_5.dll
 
 [bin]
-file0=\curl-7.13.1\src\release\curl.exe
+file0=\curl-7.13.1\src\curl.exe
 file1=\openssl-0.9.7e\out32dll\openssl.exe
 SubDir0=bin\debug
 file2=..\..\..\opensaml\c\test\Release\signtest.exe
@@ -188,7 +188,6 @@ file1=..\siterefresh\Debug\siterefresh.exe
 file0=\openssl-0.9.7e\out32dll.dbg\openssl.exe
 file1=..\shibtest\Debug\shibtest.exe
 file2=..\..\..\opensaml\c\test\Debug\signtest.exe
-file3=\curl-7.13.1\src\debug\curl.exe
 
 [data]
 
