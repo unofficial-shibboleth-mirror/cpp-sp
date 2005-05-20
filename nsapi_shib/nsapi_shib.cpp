@@ -65,6 +65,7 @@
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
+#include <process.h>
 
 #ifdef WIN32
 # define XP_WIN32
