@@ -202,16 +202,8 @@ Iterator<string> TargetedID::getSingleByteValues() const
             auto_ptr_char b(m_spNameQualifiers[i]);
             auto_ptr_char c(m_values[i]);
             if (a.get() && *(a.get()) && b.get() && *(b.get()) && c.get() && *(c.get())) {
-                string cat(a.get()); cat+="!!"; cat+=b.get(); cat+="!!"; cat+=c.get();
-                unsigned int outlen;
-                XMLByte* encoded = Base64::encode(reinterpret_cast<XMLByte*>((char*)cat.c_str()), cat.length(), &outlen);
-                XMLByte *pos, *pos2;
-                for (pos=encoded, pos2=encoded; *pos2; pos2++)
-                    if (isgraph(*pos2))
-                        *pos++=*pos2;
-                *pos=0;
-                m_sbValues.push_back(reinterpret_cast<char*>(encoded));
-                XMLString::release(&encoded);
+                string cat(a.get()); cat+="!"; cat+=b.get(); cat+="!"; cat+=c.get();
+                m_sbValues.push_back(cat);
             }
             else
                 m_sbValues.push_back("");
