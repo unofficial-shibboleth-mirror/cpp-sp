@@ -11,7 +11,6 @@ pkgxml_DATA = \
                 cs-sstc-schema-protocol-1.1.xsd \
                 soap-envelope.xsd \
                 xmldsig-core-schema.xsd \
-                xmldsig-filter2.xsd \
        			xenc-schema.xsd \
                 xml.xsd \
                 shibboleth.xsd \
