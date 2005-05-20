@@ -7,6 +7,7 @@ pkgdoc_DATA = \
 	INSTALL-WIN32.txt \
 	LICENSE.txt \
 	NEWS.txt \
+	NOTICE.txt \
 	README.txt \
 	OPENSSL.LICENSE \
 	LOG4CPP.LICENSE \
