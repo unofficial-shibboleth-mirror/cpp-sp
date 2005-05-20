@@ -15,6 +15,10 @@ Shibboleth Implementation Team
    Scott Cantor
    The Ohio State University
    cantor.2@osu.edu
+   
+   Howard Gilbert
+   Yale University
+   Howard.Gilbert@yale.edu
 
    Walter Hoehn
    The University of Memphis
@@ -37,7 +41,7 @@ Shibboleth Implementation Team
 
 Thanks to: 
 
-    University Corporation For Advanced Internet Development
+    Internet2
 
     The National Science Foundation
     
@@ -54,7 +58,19 @@ Thanks to:
     Dave Dearman (NRCC), for contributing a SQL Data Connector for the AA 
       resolver
 
-    Noah Levitt (Columbia), for simplifying the logging configuration.
+    Noah Levitt (Columbia), for simplifying the  logging configuration.
 
     Joel Murphy (Buffalo), for much help with load testing and generally
       pushing the software to its limits.
+
+    Derek Morr (PSU) for improving the Crypto Handle Repository.
+    
+    Vishal Goenka (SunGard SCT) for contributing some useful resolver plugins
+
+    Chad La Joie (Georgetown) for lots of helpful patches leading up to the 
+      1.3 release
+      
+    Will Norris (Memphis) for creating the ant IdP install tasks
+
+	Ian Young for donating XSLT scripts for converting metadata across
+	  Shibboleth versions
