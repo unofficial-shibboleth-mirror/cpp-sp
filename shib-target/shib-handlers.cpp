@@ -61,9 +61,7 @@
 #endif
 
 #include <shib/shib-threads.h>
-#include <log4cpp/Category.hh>
 #include <xercesc/util/Base64.hpp>
-#include <xercesc/util/regx/RegularExpression.hpp>
 
 #ifndef HAVE_STRCASECMP
 # define strcasecmp stricmp
