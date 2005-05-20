@@ -185,8 +185,8 @@ begin
 
     Dlg_SdAskSharPort:
     svSharPort = "1600";
-    SetDialogTitle(DLG_ASK_TEXT, "Shar Port Information");
-    nResult = AskText("Please enter the TCP port number on which the shar should listen.  (NOTE: This is NOT the web server port and MUST be a valid windows port number that is NOT in use by any other process!)","1600",svSharPort);
+    SetDialogTitle(DLG_ASK_TEXT, "Shibd Port Information");
+    nResult = AskText("Please enter the TCP port number on which the shibd daemon should listen.  (NOTE: This is NOT the web server port and MUST be a valid windows port number that is NOT in use by any other process!)","1600",svSharPort);
     StrToNum(nvSharPort, svSharPort);
     if (nvSharPort > 65534 | nvSharPort < 0) then
         MessageBox("The port number must be between 0 and 65534!", WARNING);
@@ -195,8 +195,8 @@ begin
     if (nResult = BACK) goto Dlg_SdSelectFolder;
 
     Dlg_SdAskInstallSharAsService:
-    SetDialogTitle(DLG_ASK_YESNO, "Shar Service Information");
-    nResult = AskYesNo("Would you like to install the shar as a service?", TRUE);
+    SetDialogTitle(DLG_ASK_YESNO, "Shibd Service Information");
+    nResult = AskYesNo("Would you like to install the shibd daemon as a service?", TRUE);
     if (nResult = 1) then
         bInstallSharAsService = TRUE;
     elseif (nResult = 0) then
@@ -369,60 +369,73 @@ begin
     // Rename the Unix-preinstall files
     svOldTargetDir = TARGETDIR;
     TARGETDIR = SRCDIR;
+    RenameFile("AAP.xml.in", "AAP.xml");
+    RenameFile("example-sites.xml.in", "example-sites.xml");
+    RenameFile("IQ-sites.xml.in", "IQ-sites.xml");
     RenameFile("shibboleth.xml.in", "shibboleth.xml");
-    RenameFile("shar.logger.in", "shar.logger");
-    RenameFile("shire.logger.in", "shire.logger");
+    RenameFile("shibd.logger.in", "shibd.logger");
+    RenameFile("native.logger.in", "native.logger");
     RenameFile("apache.config.in", "apache.config");
     RenameFile("apache2.config.in", "apache2.config");
     TARGETDIR = svOldTargetDir;
 
     // Update config files for Windows
+    svFileName = "AAP.xml";
+    ReplaceTextInFile(svFileName, "@-PKGXMLDIR-@", svDirectory + "/share/xml/shibboleth");
+
+    svFileName = "example-sites.xml";
+    ReplaceTextInFile(svFileName, "@-PKGXMLDIR-@", svDirectory + "/share/xml/shibboleth");
+
+    svFileName = "IQ-sites.xml";
+    ReplaceTextInFile(svFileName, "@-PKGXMLDIR-@", svDirectory + "/share/xml/shibboleth");
+
     svFileName = "shibboleth.xml";
+    ReplaceTextInFile(svFileName, "@-PKGXMLDIR-@", svDirectory + "/share/xml/shibboleth");
     ReplaceTextInFile(svFileName, "@-PKGSYSCONFDIR-@", svDirectory + "/etc/shibboleth");
     ReplaceTextInFile(svFileName, "@-LIBEXECDIR-@", svDirectory + "/libexec");
     ReplaceTextInFile(svFileName, "@-LOGDIR-@", svDirectory + "/var/log/shibboleth");
     ReplaceTextInFile(svFileName, "@-PREFIX-@", svDirectory);
     ReplaceTextInFile(svFileName,
-        "   <UnixListener address=\"/tmp/shar-socket\"/>",
-        "<!-- <UnixListener address=\"/tmp/shar-socket\"/> -->"
+        "   <UnixListener address=\"@-VARRUNDIR-@/shib-shar.sock\"/>",
+        "<!-- <UnixListener address=\"@-VARRUNDIR-@/shib-shar.sock\"/> -->"
         );
     ReplaceTextInFile(svFileName,
         "<!-- <TCPListener address=\"127.0.0.1\" port=\"12345\" acl=\"127.0.0.1\"/> -->",
         "<TCPListener address=\"127.0.0.1\" port=\"" + svSharPort + "\" acl=\"127.0.0.1\"/>"
         );
 
-    svFileName = "shar.logger";
-    ReplaceTextInFile(svFileName, "@-LOGDIR-@", svDirectory + "/var/log/shibboleth");
-    svFileName = "shire.logger";
-    ReplaceTextInFile(svFileName, "@-LOGDIR-@", svDirectory + "/var/log/shibboleth");
+    svFileName = "shibd.logger";
+    ReplaceTextInFile(svFileName, "@-PKGLOGDIR-@", svDirectory + "/var/log/shibboleth");
+    svFileName = "native.logger";
+    ReplaceTextInFile(svFileName, "@-SHIRELOGDIR-@", svDirectory + "/var/log/shibboleth");
 
     svFileName = "apache.config";
+    ReplaceTextInFile(svFileName, "@-PKGXMLDIR-@", svDirectory + "/share/xml/shibboleth");
     ReplaceTextInFile(svFileName, "@-PKGSYSCONFDIR-@", svDirectory + "/etc/shibboleth");
     ReplaceTextInFile(svFileName, "@-LIBEXECDIR-@", svDirectory + "/libexec");
-    ReplaceTextInFile(svFileName, "@-LOGDIR-@", svDirectory + "/var/log/shibboleth");
     ReplaceTextInFile(svFileName, "@-PREFIX-@", svDirectory);
     svFileName = "apache2.config";
+    ReplaceTextInFile(svFileName, "@-PKGXMLDIR-@", svDirectory + "/share/xml/shibboleth");
     ReplaceTextInFile(svFileName, "@-PKGSYSCONFDIR-@", svDirectory + "/etc/shibboleth");
     ReplaceTextInFile(svFileName, "@-LIBEXECDIR-@", svDirectory + "/libexec");
-    ReplaceTextInFile(svFileName, "@-LOGDIR-@", svDirectory + "/var/log/shibboleth");
     ReplaceTextInFile(svFileName, "@-PREFIX-@", svDirectory);
     Delay(2);
     SdShowMsg("",FALSE);
 
     // Install the shar as a service if so directed
     if (bInstallSharAsService = TRUE) then
-        SdShowMsg("Installing the shar service...", TRUE);
+        SdShowMsg("Installing the shibd service...", TRUE);
         // Remove any existing Default shar service install
-        svSharExe = TARGETDIR + "\\bin\\shar.exe";
+        svSharExe = TARGETDIR + "\\sbin\\shibd.exe";
         svSharInstallParms = "-remove Default";
         nResult = LaunchAppAndWait(svSharExe, svSharInstallParms, WAIT);
         // Now install the new Default
-        svSharExe = TARGETDIR + "\\bin\\shar.exe";
+        svSharExe = TARGETDIR + "\\bin\\shibd.exe";
         svSharInstallParms = "-install Default -config " + (TARGETDIR + "\\etc\\shibboleth\\shibboleth.xml -schemadir ") +
-            (TARGETDIR + "\\etc\\shibboleth");
+            (TARGETDIR + "\\share\\xml\\shibboleth");
         nResult = LaunchAppAndWait(svSharExe, svSharInstallParms, WAIT);
         if (nResult < 0) then
-            MessageBox("SHAR service installation FAILED!", WARNING);
+            MessageBox("shibd service installation FAILED!", WARNING);
         endif;
         Delay(2);
         SdShowMsg("",FALSE);
@@ -430,7 +443,7 @@ begin
 
     // Delete the DLL's from the bin directory
     SdShowMsg("Removing Temporary Files...", TRUE);
-    nResult = DeleteFile("BIN\\*.dll");
+    nResult = DeleteFile("sbin\\*.dll");
     Delay(2);
     SdShowMsg("",FALSE);
 
@@ -979,7 +992,7 @@ begin
 
     szKey="SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment";
     svShibConfigPath = TARGETDIR + "\\etc\\shibboleth\\shibboleth.xml";
-    svShibSchemaPath = TARGETDIR + "\\etc\\shibboleth";
+    svShibSchemaPath = TARGETDIR + "\\share\\xml\\shibboleth";
 
     RegDBSetDefaultRoot(HKEY_LOCAL_MACHINE);
 
