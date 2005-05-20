@@ -13,8 +13,6 @@ pkgdoc_DATA = \
 	LOG4CPP.LICENSE \
 	CURL.LICENSE \
 	InQueue.html \
-	DEPLOY-GUIDE-ORIGIN.html \
-	DEPLOY-GUIDE-TARGET.html \
 	mysql-4.0.12.diff \
 	main.css \
 	logo.jpg
