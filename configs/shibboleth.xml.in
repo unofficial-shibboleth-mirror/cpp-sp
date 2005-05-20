@@ -34,10 +34,10 @@
        	Only one session cache can be defined.
         -->
         <MemorySessionCache cleanupInterval="300" cacheTimeout="3600" AATimeout="30" AAConnectTimeout="15"
-            defaultLifetime="1800" retryInterval="300" strictValidity="false" propagateErrors="true"/>
+            defaultLifetime="1800" retryInterval="300" strictValidity="false" propagateErrors="false"/>
         <!--
         <MySQLSessionCache cleanupInterval="300" cacheTimeout="3600" AATimeout="30" AAConnectTimeout="15"
-               defaultLifetime="1800" retryInterval="300" strictValidity="false" propagateErrors="true"
+               defaultLifetime="1800" retryInterval="300" strictValidity="false" propagateErrors="false"
                mysqlTimeout="14400" storeAttributes="false">
             <Argument>&#x2D;&#x2D;language=@-PREFIX-@/share/english</Argument>
             <Argument>&#x2D;&#x2D;datadir=@-PREFIX-@/data</Argument>
