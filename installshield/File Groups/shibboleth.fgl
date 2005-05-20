@@ -75,9 +75,10 @@ file2=..\..\..\opensaml\c\doc\INSTALL.txt
 file3=..\..\..\opensaml\c\doc\LICENSE.txt
 file4=..\..\..\opensaml\c\doc\LOG4CPP.LICENSE
 file5=..\..\..\opensaml\c\doc\NEWS.txt
-file6=..\..\..\opensaml\c\doc\OPENSSL.LICENSE
-file7=..\..\..\opensaml\c\doc\README.txt
-file8=..\..\..\opensaml\c\doc\INSTALL-WIN32.txt
+file6=..\..\..\opensaml\c\doc\NOTICE.txt
+file7=..\..\..\opensaml\c\doc\OPENSSL.LICENSE
+file8=..\..\..\opensaml\c\doc\README.txt
+file9=..\..\..\opensaml\c\doc\INSTALL-WIN32.txt
 
 [include\saml]
 file0=..\..\..\opensaml\c\saml\saml.h
@@ -173,10 +174,11 @@ file7=..\doc\LICENSE.txt
 file8=..\doc\LOG4CPP.LICENSE
 file9=..\doc\mysql-4.0.12.diff
 file10=..\doc\NEWS.txt
-file11=..\doc\OPENSSL.LICENSE
-file12=..\doc\README.txt
-file13=..\doc\main.css
-file14=..\doc\logo.jpg
+file11=..\doc\NOTICE.txt
+file12=..\doc\OPENSSL.LICENSE
+file13=..\doc\README.txt
+file14=..\doc\main.css
+file15=..\doc\logo.jpg
 
 [sbin\debug]
 file0=..\shar\Debug\shibd.exe
