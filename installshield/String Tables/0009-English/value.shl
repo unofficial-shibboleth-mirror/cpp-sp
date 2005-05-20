@@ -1,21 +1,21 @@
 [Data]
-TITLE_MAIN=Shibboleth 1.2
+TITLE_MAIN=Shibboleth 1.3
+COMPANY_NAME=Internet2
 ERROR_COMPONENT=Component:
-COMPANY_NAME=University Corporation for Advanced Internet Development, Inc.
-COMPANY_NAME16=University Corporation for Advanced Internet Development
-ERROR_FILEGROUP=File Group:
+COMPANY_NAME16=Internet2
+PRODUCT_VERSION=1.3
 ERROR_MOVEDATA=An error occurred during the move data process: %d
-PRODUCT_VERSION=1.2
-UNINST_KEY=Shibboleth 1.2
+ERROR_FILEGROUP=File Group:
+UNINST_KEY=Shibboleth 1.3
 TITLE_CAPTIONBAR=Shibboleth Setup
 PRODUCT_NAME16=Shibboleth
-FOLDER_NAME=Shibboleth
-ERROR_FILE=File:
 ERROR_VGARESOLUTION=This program requires VGA or better resolution.
+ERROR_FILE=File:
+FOLDER_NAME=Shibboleth
+UNINST_DISPLAY_NAME=Shibboleth 1.3
 PRODUCT_KEY=shar.exe
-UNINST_DISPLAY_NAME=Shibboleth 1.2
-ERROR_UNINSTSETUP=unInstaller setup failed to initialize.  You may not be able to uninstall this product.
 PRODUCT_NAME=Shibboleth
+ERROR_UNINSTSETUP=unInstaller setup failed to initialize.  You may not be able to uninstall this product.
 
 [General]
 Language=0009
