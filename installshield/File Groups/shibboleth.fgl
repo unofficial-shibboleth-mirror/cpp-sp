@@ -8,8 +8,8 @@ file5=..\nsapi_shib\Release\nsapi_shib.dll
 SubDir0=libexec\debug
 
 [share\english]
-file0=\mysql-4.1.10a\share\english\errmsg.sys
-file1=\mysql-4.1.10a\share\english\errmsg.txt
+file0=\mysql-4.1.12\share\english\errmsg.sys
+file1=\mysql-4.1.12\share\english\errmsg.txt
 
 [lib\debug]
 file0=\xml-security-c-1.1.0\Build\Win32\VC6\Debug\xsec_1_1_0D.dll
