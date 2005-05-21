@@ -3,9 +3,9 @@ Version=2.0
 
 [Options]
 Title=Shibboleth
-Company=University Corporation for Advanced Internet Development, Inc.
+Company=Internet2
 CompanyEMail=
-BasePath=Media\shibboleth\Disk Images
+BasePath=C:\cvs\shibboleth\c\installshield\Media\Shibboleth 1.3\Disk Images
 ImportPath=Media\shibboleth
 UseRTF=0
 SaveFiles=0
@@ -13,15 +13,15 @@ SubFolders=1
 ApplicationName=Shibboleth
 Description=
 Comments=
-Notice=(c) UCAID, Inc.
-Version=1.2
-OutputSpec=Shibboleth.exe
+Notice=(c) 2005 Internet2
+Version=1.3
+OutputSpec=C:\Documents and Settings\Scott Cantor\Desktop\shibboleth-1.3-win32.exe
 GUIDs=0
 Type=2
 Compress=1
 Sign=0
 Transfer=0
-Files=19
+Files=18
 
 [Engine]
 Setup=Disk1\Setup.exe
@@ -57,115 +57,109 @@ Count=1
 Folder1=Disk1
 
 [File 1]
-Name=DATA.TAG
-Path=Media\shibboleth\Disk Images\Disk1\
-Flags=1
+Name=_ISDel.exe
+Path=C:\cvs\shibboleth\c\installshield\Media\Shibboleth 1.3\Disk Images\Disk1\
+Flags=589825
 Disk=0
 
 [File 2]
-Name=data1.cab
-Path=Media\shibboleth\Disk Images\Disk1\
-Flags=2097153
+Name=_INST32I.EX_
+Path=C:\cvs\shibboleth\c\installshield\Media\Shibboleth 1.3\Disk Images\Disk1\
+Flags=524289
 Disk=0
 
 [File 3]
-Name=data1.hdr
-Path=Media\shibboleth\Disk Images\Disk1\
-Flags=2097153
+Name=Setup.exe
+Path=C:\cvs\shibboleth\c\installshield\Media\Shibboleth 1.3\Disk Images\Disk1\
+Flags=589825
 Disk=0
 
 [File 4]
-Name=lang.dat
-Path=Media\shibboleth\Disk Images\Disk1\
+Name=os.dat
+Path=C:\cvs\shibboleth\c\installshield\Media\Shibboleth 1.3\Disk Images\Disk1\
 Flags=1
 Disk=0
 
 [File 5]
-Name=layout.bin
-Path=Media\shibboleth\Disk Images\Disk1\
+Name=lang.dat
+Path=C:\cvs\shibboleth\c\installshield\Media\Shibboleth 1.3\Disk Images\Disk1\
 Flags=1
 Disk=0
 
 [File 6]
-Name=os.dat
-Path=Media\shibboleth\Disk Images\Disk1\
-Flags=1
+Name=_Setup.dll
+Path=C:\cvs\shibboleth\c\installshield\Media\Shibboleth 1.3\Disk Images\Disk1\
+Flags=655377
 Disk=0
 
 [File 7]
-Name=setup.bmp
-Path=Media\shibboleth\Disk Images\Disk1\
+Name=setup.ins
+Path=C:\cvs\shibboleth\c\installshield\Media\Shibboleth 1.3\Disk Images\Disk1\
 Flags=1
 Disk=0
 
 [File 8]
-Name=Setup.exe
-Path=Media\shibboleth\Disk Images\Disk1\
-Flags=589825
+Name=_sys1.hdr
+Path=C:\cvs\shibboleth\c\installshield\Media\Shibboleth 1.3\Disk Images\Disk1\
+Flags=2097153
 Disk=0
 
 [File 9]
-Name=SETUP.INI
-Path=Media\shibboleth\Disk Images\Disk1\
-Flags=1
+Name=_sys1.cab
+Path=C:\cvs\shibboleth\c\installshield\Media\Shibboleth 1.3\Disk Images\Disk1\
+Flags=2097153
 Disk=0
 
 [File 10]
-Name=setup.ins
-Path=Media\shibboleth\Disk Images\Disk1\
-Flags=1
+Name=_user1.hdr
+Path=C:\cvs\shibboleth\c\installshield\Media\Shibboleth 1.3\Disk Images\Disk1\
+Flags=2097153
 Disk=0
 
 [File 11]
-Name=setup.lid
-Path=Media\shibboleth\Disk Images\Disk1\
-Flags=1
+Name=_user1.cab
+Path=C:\cvs\shibboleth\c\installshield\Media\Shibboleth 1.3\Disk Images\Disk1\
+Flags=2097153
 Disk=0
 
 [File 12]
-Name=Thumbs.db
-Path=Media\shibboleth\Disk Images\Disk1\
+Name=DATA.TAG
+Path=C:\cvs\shibboleth\c\installshield\Media\Shibboleth 1.3\Disk Images\Disk1\
 Flags=1
 Disk=0
 
 [File 13]
-Name=_INST32I.EX_
-Path=Media\shibboleth\Disk Images\Disk1\
-Flags=524289
+Name=SETUP.INI
+Path=C:\cvs\shibboleth\c\installshield\Media\Shibboleth 1.3\Disk Images\Disk1\
+Flags=1
 Disk=0
 
 [File 14]
-Name=_ISDel.exe
-Path=Media\shibboleth\Disk Images\Disk1\
-Flags=589825
+Name=setup.lid
+Path=C:\cvs\shibboleth\c\installshield\Media\Shibboleth 1.3\Disk Images\Disk1\
+Flags=1
 Disk=0
 
 [File 15]
-Name=_Setup.dll
-Path=Media\shibboleth\Disk Images\Disk1\
-Flags=655377
+Name=setup.bmp
+Path=C:\cvs\shibboleth\c\installshield\Media\Shibboleth 1.3\Disk Images\Disk1\
+Flags=1
 Disk=0
 
 [File 16]
-Name=_sys1.cab
-Path=Media\shibboleth\Disk Images\Disk1\
+Name=data1.hdr
+Path=C:\cvs\shibboleth\c\installshield\Media\Shibboleth 1.3\Disk Images\Disk1\
 Flags=2097153
 Disk=0
 
 [File 17]
-Name=_sys1.hdr
-Path=Media\shibboleth\Disk Images\Disk1\
+Name=data1.cab
+Path=C:\cvs\shibboleth\c\installshield\Media\Shibboleth 1.3\Disk Images\Disk1\
 Flags=2097153
 Disk=0
 
 [File 18]
-Name=_user1.cab
-Path=Media\shibboleth\Disk Images\Disk1\
-Flags=2097153
-Disk=0
-
-[File 19]
-Name=_user1.hdr
-Path=Media\shibboleth\Disk Images\Disk1\
-Flags=2097153
+Name=layout.bin
+Path=C:\cvs\shibboleth\c\installshield\Media\Shibboleth 1.3\Disk Images\Disk1\
+Flags=1
 Disk=0
