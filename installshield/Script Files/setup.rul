@@ -430,7 +430,7 @@ begin
         svSharInstallParms = "-remove Default";
         nResult = LaunchAppAndWait(svSharExe, svSharInstallParms, WAIT);
         // Now install the new Default
-        svSharExe = TARGETDIR + "\\bin\\shibd.exe";
+        svSharExe = TARGETDIR + "\\sbin\\shibd.exe";
         svSharInstallParms = "-install Default -config " + (TARGETDIR + "\\etc\\shibboleth\\shibboleth.xml -schemadir ") +
             (TARGETDIR + "\\share\\xml\\shibboleth");
         nResult = LaunchAppAndWait(svSharExe, svSharInstallParms, WAIT);
@@ -500,9 +500,9 @@ begin
     //        your log file.  Under 32-bit this is automatically done by Windows.
     szName = SHELL_OBJECT_FOLDER;
     svPathToLicense = TARGETDIR + "\\doc\\shibboleth\\license.txt";
-    svPathToDeployment = TARGETDIR + "\\doc\\shibboleth\\DEPLOY-GUIDE-TARGET.html";
+    // svPathToDeployment = TARGETDIR + "\\doc\\shibboleth\\DEPLOY-GUIDE-TARGET.html";
     LongPathToQuote( svPathToLicense, TRUE );
-    LongPathToQuote( svPathToDeployment, TRUE);
+    // LongPathToQuote( svPathToDeployment, TRUE);
 
     ProgDefGroupType(COMMON);
     CreateProgramFolder( szName );
@@ -515,14 +515,14 @@ begin
                     "",
                     NULL);
 
-    AddFolderIcon(  FOLDER_PROGRAMS ^ szName ,
-                    "Shibboleth SP Deployment Guide",
-                    svPathToDeployment,
-                    "",
-                    "",
-                    0,
-                    "",
-                    NULL);
+    // AddFolderIcon(  FOLDER_PROGRAMS ^ szName ,
+    //                "Shibboleth SP Deployment Guide",
+    //                svPathToDeployment,
+    //                "",
+    //                "",
+    //                0,
+    //                "",
+    //                NULL);
     nResult = CreateShellObjects( "" );
 
     return nResult;
@@ -893,12 +893,13 @@ begin
         bOpt2 = FALSE;
         szMsg1 = "Setup has finished installing %P on your computer.  You should restart your computer before using the software to make sure that the environment is properly configured!";
         szMsg2 = "";
-        szOption1 = "Display the Shibboleth SP Deployment Guide?";
+        szOption1 = "";
+        // "Display the Shibboleth SP Deployment Guide?";
         szOption2 = "Restart Computer?";
         nResult = SdFinish( szTitle, szMsg1, szMsg2, szOption1, szOption2, bOpt1, bOpt2 );
-        if (bOpt1 = TRUE) then
-            LaunchURL(TARGETDIR+"\\doc\\shibboleth\\DEPLOY-GUIDE-TARGET.html");
-        endif;
+        // if (bOpt1 = TRUE) then
+        //    LaunchURL(TARGETDIR+"\\doc\\shibboleth\\DEPLOY-GUIDE-TARGET.html");
+        // endif;
         if (bOpt2 = TRUE) then
             RebootDialog("", "You have elected to restart your computer!  Are you sure you wish to restart now?", SYS_BOOTMACHINE);
         endif;
