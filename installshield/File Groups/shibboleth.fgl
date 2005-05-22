@@ -129,6 +129,11 @@ file11=..\schemas\credentials.xsd
 file12=..\schemas\saml-schema-metadata-2.0.xsd
 file13=..\schemas\saml-schema-assertion-2.0.xsd
 file14=..\schemas\shibboleth-metadata-1.0.xsd
+file15=..\schemas\metadata_v12_to_v11.xsl
+file16=..\schemas\metadata_v12_to_v13.xsl
+file17=..\schemas\metadata_v13_to_v12.xsl
+file18=..\schemas\trust_v12_to_v11.xsl
+file19=..\schemas\trust_v13_to_v12.xsl
 
 [include\shib]
 file0=..\shib\shib.h
