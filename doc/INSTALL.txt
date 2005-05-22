@@ -1,14 +1,13 @@
-11/15/04
-Version 1.2.1
+6/15/05
+Version 1.3
 
 Binary distributions of the Shibboleth code are available.
 Information on obtaining and installing binaries can be found at
-http://shibboleth.internet2.edu/ and in the deploy guide in this
-directory.
+http://shibboleth.internet2.edu/
 
 This document provides details for those wishing to build from source.
 
-C++ / TARGET
+C++ Service Provider
 
 Your first step is going to be the OpenSAML INSTALL.txt file. Please read it
 thoroughly to understand the issues. All the requirements in that file
@@ -36,7 +35,7 @@ thread flag (usually -pthread or -pthreads, depends on your platform).
 
 --- MySQL (optional)
 
-The distribution now includes a session cache plugin using embedded MySQL.
+The distribution now includes a cache plugin using embedded MySQL.
 This plugin will be included in the build by default if the embedded MySQL
 library (libmysqld.a) can be found, or if the --with-mysql option is passed
 to configure. You can force exclude the plugin with the --disable-mysql option.
@@ -46,8 +45,8 @@ be surprised if it's not there. Also, just as with PHP and certain other package
 that include C++, you'll need to build it with the same compiler used to build
 Shibboleth.
 
-The MySQL 4.0.x build is currently not clean on either platform. There are errors
-in several Makefile.in files that have to corrected to get the build to work.
+The MySQL 4.0.x build is currently not clean. There are errors in several
+Makefile.in files that have to corrected to get the build to work.
 The patch for the pre-configure Makefile.in files in version 4.0.12 is included
 in this directory as the file "mysql-4.0.12.diff", which can be applied from the
 mysql-4.0.12 directory.
@@ -71,16 +70,9 @@ are needed to get a correct build of the library to link against.
 
 --- Shibboleth
 
-Building the Shibboleth target libraries, shar, test programs, and Apache
+Building the Shibboleth libraries, shibd, test programs, and Apache
 modules is more or less like building OpenSAML. You can get the code from
 CVS and run the bootstrap script if you want, or just use a source tarball.
-
-On Solaris/OS X, if you're rebuilding into a prefixed location that already
-contains a copy of the software and headers, you'll want to remove
-some of the headers to prevent extra build work when you run the make
-install command. Just do:
-
-$ rm -rf /opt/shibboleth/include/rpc
 
 With the source distribution or the results of your bootstrap:
 
@@ -101,8 +93,8 @@ for some guidance on what these should be).
 
 To test your installation, you can try the shibtest utility, which actually
 loads your configuration and attempts to obtain attributes from a Shibboleth
-Attribute Authority of your choosing. You indicate to it the "handle" of the
-principal to query, and the identifier (providerId) of the origin site,
+Attribute Authority of your choosing. You indicate to it the identifier of
+the principal to query, and the identifier (providerId) of the origin site,
 and it will use your configuration files to locate the proper AA.
 
 $ set LD_LIBRARY_PATH=/opt/shibboleth/lib; export LD_LIBRARY_PATH
@@ -111,6 +103,6 @@ $ /opt/shibboleth/bin/shibtest -h test-handle \
 	-q urn:mace:inqueue:example.edu
 
 The example shown uses a built-in test principal, and uses the InQueue
-example origin, which is known to the target after initial installation.
+example origin, which is known to the SP after initial installation.
 You should get some reasonably structured output back that lists some simple
 attributes. An error here is a pretty good sign there's trouble.
