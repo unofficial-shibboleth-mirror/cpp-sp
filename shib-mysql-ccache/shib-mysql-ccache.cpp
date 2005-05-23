@@ -112,7 +112,7 @@ protected:
 };
 
 // Forward declarations
-void mysqlInit(const DOMElement* e, Category& log);
+static void mysqlInit(const DOMElement* e, Category& log);
 
 extern "C" void shib_mysql_destroy_handle(void* data)
 {
