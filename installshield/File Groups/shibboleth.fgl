@@ -91,7 +91,7 @@ file0=..\configs\shibboleth.xml.in
 file1=..\configs\shibboleth.logger
 file2=..\configs\native.logger.in
 file3=..\configs\sessionError.html
-file4=..\configs\IQ-sites.xml.in
+file4=..\configs\IQ-metadata.xml.in
 file5=..\configs\AAP.xml.in
 file6=..\configs\inqueue.pem
 file7=..\configs\accessError.html
@@ -102,7 +102,7 @@ file11=\openssl-0.9.7e\apps\openssl.cnf
 file12=..\configs\apache2.config.in
 file13=..\configs\sp-example.crt
 file14=..\configs\sp-example.key
-file15=..\configs\example-sites.xml.in
+file15=..\configs\example-metadata.xml.in
 file16=..\configs\metadataError.html
 
 [share\xml\opensaml]
