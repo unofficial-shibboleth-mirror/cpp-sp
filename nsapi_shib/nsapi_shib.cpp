@@ -289,18 +289,6 @@ public:
   virtual string getRemoteUser(void) {
     return getHeader("remote-user");
   }
-  // Override this function because we want to add the NSAPI Directory override
-  /*
-  virtual pair<bool,bool> getRequireSession(IRequestMapper::Settings &settings) {
-    pair<bool,bool> requireSession=settings.first->getBool("requireSession");
-    if (!requireSession.first || !requireSession.second) {
-      const char* param=pblock_findval("require-session",pb);
-      if (param && (!strcmp(param,"1") || !strcasecmp(param,"true")))
-	requireSession.second=true;
-    }
-    return requireSession;
-  }
-  */
 
   virtual void* sendPage(
     const string& msg,
@@ -366,12 +354,6 @@ extern "C" NSAPI_PUBLIC int nsapi_shib(pblock* pb, Session* sn, Request* rq)
     if (res.first) return (int)res.second;
 
     // user authN was okay -- export the assertions now
-    /*
-    const char* param=pblock_findval("export-assertion", pb);
-    bool doExportAssn = false;
-    if (param && (!strcmp(param,"1") || !strcasecmp(param,"true")))
-      doExportAssn = true;
-    */
     res = stn.doExportAssertions();
     if (res.first) return (int)res.second;
 
