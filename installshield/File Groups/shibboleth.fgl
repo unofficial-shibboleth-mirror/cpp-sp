@@ -202,7 +202,7 @@ file1=..\apache\Debug\mod_shib_13.so
 file2=..\apache\mod_shib20___Win32_Debug\mod_shib_20.so
 file3=..\shib-mysql-ccache\Debug\shib-mysql-ccache.so
 file4=..\xmlproviders\Debug\xmlproviders.so
-file5=..\nsapi_shib\Release\nsapi_shib.dll
+file5=..\nsapi_shib\Debug\nsapi_shib.dll
 
 [lib]
 file0=\xml-security-c-1.1.0\Build\Win32\VC6\Release\xsec_1.lib
