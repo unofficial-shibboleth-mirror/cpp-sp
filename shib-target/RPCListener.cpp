@@ -271,17 +271,23 @@ EntryWrapper::EntryWrapper(shibrpc_get_session_ret_2& ret, Category& log)
     istringstream authstream(ret.auth_statement);
     log.debugStream() << "trying to decode authentication statement: "
         << ret.auth_statement << CategoryStream::ENDLINE;
-    auto_ptr<SAMLAuthenticationStatement> s(new SAMLAuthenticationStatement(authstream));
+    auto_ptr<SAMLAuthenticationStatement> s(
+    	(ret.auth_statement && *ret.auth_statement) ? new SAMLAuthenticationStatement(authstream) : NULL
+    	);
 
     istringstream prestream(ret.attr_response_pre);
     log.debugStream() << "trying to decode unfiltered attribute response: "
         << ret.attr_response_pre << CategoryStream::ENDLINE;
-    auto_ptr<SAMLResponse> pre(new SAMLResponse(prestream,minor));
+    auto_ptr<SAMLResponse> pre(
+    	(ret.attr_response_pre && *ret.attr_response_pre) ? new SAMLResponse(prestream,minor) : NULL
+    	);
 
     istringstream poststream(ret.attr_response_post);
     log.debugStream() << "trying to decode filtered attribute response: "
         << ret.attr_response_post << CategoryStream::ENDLINE;
-    auto_ptr<SAMLResponse> post(new SAMLResponse(poststream,minor));
+    auto_ptr<SAMLResponse> post(
+    	(ret.attr_response_post && *ret.attr_response_post) ? new SAMLResponse(poststream,minor) : NULL
+    	);
 
     statement=s.release();
     pre_response = pre.release();
