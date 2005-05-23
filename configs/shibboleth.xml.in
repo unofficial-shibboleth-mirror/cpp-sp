@@ -204,11 +204,11 @@
 
 		<!-- Dummy metadata for private testing, delete for production deployments. -->
 		<MetadataProvider type="edu.internet2.middleware.shibboleth.metadata.provider.XMLMetadata"
-			uri="@-PKGSYSCONFDIR-@/example-sites.xml"/>
+			uri="@-PKGSYSCONFDIR-@/example-metadata.xml"/>
 
 		<!-- InQueue pilot federation, delete for production deployments. -->
 		<MetadataProvider type="edu.internet2.middleware.shibboleth.metadata.provider.XMLMetadata"
-			uri="@-PKGSYSCONFDIR-@/IQ-sites.xml"/>
+			uri="@-PKGSYSCONFDIR-@/IQ-metadata.xml"/>
 		
 		<!-- The standard trust provider supports SAMLv2 metadata with path validation extensions. -->
 		<TrustProvider type="edu.internet2.middleware.shibboleth.common.provider.ShibbolethTrust"/>

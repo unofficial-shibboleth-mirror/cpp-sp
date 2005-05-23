@@ -21,8 +21,8 @@ BUILTCONFIGFILES = \
 	native.logger \
 	shibd.logger \
 	AAP.xml \
-	IQ-sites.xml \
-	example-sites.xml
+	IQ-metadata.xml \
+	example-metadata.xml
 
 # While BUILTCONFIGFILES are processed, these are not; so we should pull
 # them from SRCDIR.
@@ -69,10 +69,10 @@ shibboleth.xml: ${srcdir}/shibboleth.xml.in Makefile ${top_builddir}/config.stat
 AAP.xml: ${srcdir}/AAP.xml.in Makefile ${top_builddir}/config.status
 	$(MAKE) do-build-file FILE=$@
 
-IQ-sites.xml: ${srcdir}/IQ-sites.xml.in Makefile ${top_builddir}/config.status
+IQ-metadata.xml: ${srcdir}/IQ-metadata.xml.in Makefile ${top_builddir}/config.status
 	$(MAKE) do-build-file FILE=$@
 
-example-sites.xml: ${srcdir}/example-sites.xml.in Makefile ${top_builddir}/config.status
+example-metadata.xml: ${srcdir}/example-metadata.xml.in Makefile ${top_builddir}/config.status
 	$(MAKE) do-build-file FILE=$@
 
 all-data-local: $(BUILTCONFIGFILES)
@@ -104,8 +104,8 @@ CLEANFILES = \
 	native.logger \
 	shibboleth.xml \
 	AAP.xml \
-	IQ-sites.xml \
-	example-sites.xml
+	IQ-metadata.xml \
+	example-metadata.xml
 
 EXTRA_DIST = .cvsignore \
 	shibboleth.xml.in \
@@ -119,8 +119,8 @@ EXTRA_DIST = .cvsignore \
 	sessionError.html \
 	metadataError.html \
 	AAP.xml.in \
-	IQ-sites.xml.in \
-	example-sites.xml.in \
+	IQ-metadata.xml.in \
+	example-metadata.xml.in \
 	inqueue.pem \
 	sp-example.key \
 	sp-example.crt
