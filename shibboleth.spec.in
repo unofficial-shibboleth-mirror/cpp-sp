@@ -128,8 +128,8 @@ restorecon %{_sbindir}/shibd
 %config %{_sysconfdir}/shibboleth/*.html
 %config %{_sysconfdir}/shibboleth/*.logger
 %config %{_sysconfdir}/shibboleth/inqueue.pem
-%config %{_sysconfdir}/shibboleth/example.crt
-%config %{_sysconfdir}/shibboleth/example.key
+%config %{_sysconfdir}/shibboleth/sp-example.crt
+%config %{_sysconfdir}/shibboleth/sp-example.key
 %{_sysconfdir}/shibboleth/*.dist
 %{_sysconfdir}/shibboleth/apache*.config
 
