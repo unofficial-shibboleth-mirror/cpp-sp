@@ -112,9 +112,8 @@ restorecon %{_sbindir}/shibd
 
 %files -f rpm.filelist
 %defattr(-,root,root,-)
-%doc _docs/CREDITS.txt _docs/InQueue.html _docs/NEWS.txt _docs/logo.jpg
-%doc _docs/DEPLOY-GUIDE-ORIGIN.html _docs/main.css _docs/README.txt
-%doc _docs/DEPLOY-GUIDE-TARGET.html _docs/LICENSE.txt _docs/mysql-4.0.12.diff
+%doc _docs/CREDITS.txt _docs/NOTICE.txt _docs/NEWS.txt _docs/logo.jpg
+%doc _docs/main.css _docs/README.txt _docs/LICENSE.txt _docs/mysql-4.0.12.diff
 %{_sbindir}/shibd
 %{_sbindir}/siterefresh
 %{_bindir}/shibtest
