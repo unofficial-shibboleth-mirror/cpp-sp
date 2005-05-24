@@ -13,10 +13,19 @@
 	requires metadata from its opposite in order to interact with it.
 	Thus, your metadata describes you, and your partner(s)' metadata
 	is fed into your configuration.
+	
+	The software components do not configure themselves using metadata
+	(e.g. the IdP does not configure itself using IdP metadata). Instead,
+	metadata about SPs is fed into IdPs and metadata about IdPs is fed into
+	SPs. Other metadata is ignored, so the software does not look for
+	conflicts between its own configuration and the metadata that might
+	be present about itself. Metadata is instead maintained based on the
+	external details of your configuration.
 	-->
 
+	<EntityDescriptor entityID="https://idp.example.org/shibboleth">
 	<!--
-	The entityID below looks like a location, but it's actually just a name.
+	The entityID above looks like a location, but it's actually just a name.
 	Each entity is assigned a URI name. By convention, it will often be a
 	URL, but it should never contain a physical machine hostname that you
 	would not otherwise publish to users of the service. For example, if your
@@ -26,8 +35,9 @@
 	of the real hostname when you assign an entityID. You should use a name
 	like this even if you don't actually register the server in DNS using it.
 	The URL does *not* have to resolve into anything to use it as a name.
+	The point is for the name you choose to be stable, which is why including
+	hostnames is generally bad, since they tend to change.
 	-->
-	<EntityDescriptor entityID="https://idp.example.org/shibboleth">
 		
 		<!-- A Shib IdP contains this element with protocol support as shown. -->
 		<IDPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:1.1:protocol urn:mace:shibboleth:1.0">
@@ -38,9 +48,22 @@
 			
 			<!--
 			One or more KeyDescriptors tell SPs how the IdP will authenticate itself. A single
-			descriptor can be used for both signing and for server-TLS. You can place an
-			X.509 certificate directly in this element to specify the exact public key certificate
-			to use. The dates and other fields in the certificate are totally ignored.
+			descriptor can be used for both signing and for server-TLS if its use attribute
+			is set to "signing". You can place an X.509 certificate directly in this element
+			to specify the exact public key certificate to use. This only reflects the public
+			half of the keypair used by the IdP.
+			
+			When the IdP signs XML, it uses the private key included in its Credentials
+			configuration element, and when TLS is used, the web server will use the
+			certificate and private key defined by the web server's configuration.
+			An SP will then try to match the certificates in the KeyDescriptors here
+			to the ones presented in the XML Signature or SSL session.
+			
+			When an inline certificate is used, do not assume that an expired certificate
+			will be detected and rejected. Often only the key will be extracted without
+			regard for the certificate, but at the same time, it may be risky to include
+			an expired certificate and assume it will work. Your SAML implementation
+			may provide specific guidance on this.
 			-->
 			<KeyDescriptor use="signing">
 			    <ds:KeyInfo>
@@ -138,9 +161,21 @@ jBp8wDQehvl6f0mzUg8vZ+lj8IJImG1cM9rJey1cPTFTkYqhNLI/fF/rMwLMttIY
 		
 			<!--
 			One or more KeyDescriptors tell IdPs how the SP will authenticate itself. A single
-			descriptor can be used for both signing and for client-TLS. You can place an
-			X.509 certificate directly in this element to specify the exact public key certificate
-			to use. The dates and other fields in the certificate are totally ignored.
+			descriptor can be used for both signing and for client-TLS if its use attribute
+			is set to "signing". You can place an X.509 certificate directly in this element
+			to specify the exact public key certificate to use. This only reflects the public
+			half of the keypair used by the IdP.
+			
+			The SP uses the private key included in its Credentials	configuration element
+			for both XML signing and client-side TLS. An IdP will then try to match the
+			certificates in the KeyDescriptors here to the ones presented in the XML
+			Signature or SSL session.
+			
+			When an inline certificate is used, do not assume that an expired certificate
+			will be detected and rejected. Often only the key will be extracted without
+			regard for the certificate, but at the same time, it may be risky to include
+			an expired certificate and assume it will work. Your SAML implementation
+			may provide specific guidance on this.
 			-->
 			<KeyDescriptor use="signing">
 			    <ds:KeyInfo>
