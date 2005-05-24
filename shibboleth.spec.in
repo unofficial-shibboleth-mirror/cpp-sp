@@ -122,6 +122,7 @@ restorecon %{_sbindir}/shibd
 %dir /var/log/shibboleth
 %dir %{_datadir}/xml/shibboleth
 %{_datadir}/xml/shibboleth/*.xsd
+%{_datadir}/xml/shibboleth/*.xsl
 %dir %{_sysconfdir}/shibboleth
 %config %{_sysconfdir}/shibboleth/*.xml
 %config %{_sysconfdir}/shibboleth/*.html
