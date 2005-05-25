@@ -190,6 +190,10 @@ class ShibTargetNSAPI : public ShibTarget
 {
 public:
   ShibTargetNSAPI(pblock* pb, Session* sn, Request* rq) {
+    m_pb = pb;
+    m_sn = sn;
+    m_rq = rq;
+
     // Get everything but hostname...
     const char* uri=pblock_findval("uri", rq->reqpb);
     const char* qstr=pblock_findval("query", rq->reqpb);
@@ -221,10 +225,6 @@ public:
     const char *method = pblock_findval("method", rq->reqpb);
 
     init(scheme, host, port, url.c_str(), content_type, remote_ip, method);
-
-    m_pb = pb;
-    m_sn = sn;
-    m_rq = rq;
   }
   ~ShibTargetNSAPI() {}
 
@@ -354,6 +354,10 @@ extern "C" NSAPI_PUBLIC int nsapi_shib(pblock* pb, Session* sn, Request* rq)
     if (res.first) return (int)res.second;
 
     // user authN was okay -- export the assertions now
+    param_free(pblock_remove("auth-user",rq->vars));
+    // This seems to be required in order to eventually set
+    // the auth-user var.
+    pblock_nvinsert("auth-type","shibboleth",rq->vars);
     res = stn.doExportAssertions();
     if (res.first) return (int)res.second;
 
