@@ -91,14 +91,14 @@ jBp8wDQehvl6f0mzUg8vZ+lj8IJImG1cM9rJey1cPTFTkYqhNLI/fF/rMwLMttIY
 			<!-- This tells SPs where/how to resolve SAML 1.x artifacts into SAML assertions. -->
 			<ArtifactResolutionService index="1"
 				Binding="urn:oasis:names:tc:SAML:1.0:bindings:SOAP-binding"
-				Location="https://idp.example.org:8443/shibboleth/Artifact"/>
+				Location="https://idp.example.org:8443/shibboleth-idp/Artifact"/>
 			
 			<!-- This tells SPs that you support only the Shib handle format. -->
 			<NameIDFormat>urn:mace:shibboleth:1.0:nameIdentifier</NameIDFormat>
 			
 			<!-- This tells SPs how and where to request authentication. -->
 			<SingleSignOnService Binding="urn:mace:shibboleth:1.0:profiles:AuthnRequest"
-			    Location="https://idp.example.org/shibboleth/SSO"/>
+			    Location="https://idp.example.org/shibboleth-idp/SSO"/>
 		</IDPSSODescriptor>
 		
 		<!-- Most Shib IdPs also support SAML attribute queries, so this role is also included. -->
@@ -134,7 +134,7 @@ jBp8wDQehvl6f0mzUg8vZ+lj8IJImG1cM9rJey1cPTFTkYqhNLI/fF/rMwLMttIY
 
 			<!-- This tells SPs how and where to send queries. -->
 			<AttributeService Binding="urn:oasis:names:tc:SAML:1.0:bindings:SOAP-binding"
-			    Location="https://idp.example.org:8443/shibboleth/AA"/>
+			    Location="https://idp.example.org:8443/shibboleth-idp/AA"/>
 			    
 			<!-- This tells SPs that you support only the Shib handle format. -->
 			<NameIDFormat>urn:mace:shibboleth:1.0:nameIdentifier</NameIDFormat>

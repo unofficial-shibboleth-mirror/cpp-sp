@@ -142,7 +142,15 @@
 			can be started with any initiator. The only Binding supported is the
 			"urn:mace:shibboleth:sp:1.3:SessionInit" lazy session profile.
 			-->
-			<SessionInitiator isDefault="true" id="IQ" Location="/WAYF/InQueue"
+			
+			<!-- This default example directs users to a specific IdP's SSO service. -->
+			<SessionInitiator isDefault="true" id="example" Location="/WAYF/idp.example.org"
+				Binding="urn:mace:shibboleth:sp:1.3:SessionInit"
+				wayfURL="https://idp.example.org/shibboleth-idp/SSO"
+				wayfBinding="urn:mace:shibboleth:1.0:profiles:AuthnRequest"/>
+				
+			<!-- This example directs users to a specific federation's WAYF service. -->
+			<SessionInitiator id="IQ" Location="/WAYF/InQueue"
 				Binding="urn:mace:shibboleth:sp:1.3:SessionInit"
 				wayfURL="https://wayf.internet2.edu/InQueue/WAYF"
 				wayfBinding="urn:mace:shibboleth:1.0:profiles:AuthnRequest"/>
