@@ -8,9 +8,9 @@
     validUntil="2010-01-01T00:00:00Z">
 
     <Extensions>
-		<!-- This extension contains the list of CAs used by InQueue entities.  -->
+        <!-- This extension contains the list of CAs used by InQueue entities.  -->
         <shibmeta:KeyAuthority VerifyDepth="1">
-        	<!-- Verisign -->
+            <!-- Verisign -->
             <ds:KeyInfo>
                 <ds:X509Data>
                     <ds:X509Certificate>
@@ -49,6 +49,29 @@ BgNVHRMBAf8EBTADAQH/MAsGA1UdDwQEAwIBpjANBgkqhkiG9w0BAQQFAAOBgQB1
 8ZXB+KeXbDVkz+b2xVXYmJiWrp73IOvi3DuIuX1n88tbIH0ts7dJLEqr+c0owgtu
 QBqLb9DfPG2GkJ1uOK75wPY6XWusCKDJKMVY/N4ec9ew55MnDlFFvl4C+LkiS2YS
 Ysrh7fFJKKp7Pkc1fxsusK+MBXjVZtq0baXsU637qw==
+                    </ds:X509Certificate>
+                 </ds:X509Data>
+            </ds:KeyInfo>
+            <!-- Bossie Intermediate -->
+            <ds:KeyInfo>
+                <ds:X509Data>
+                    <ds:X509Certificate>
+MIIC6zCCAlSgAwIBAgICAlYwDQYJKoZIhvcNAQEEBQAwgakxCzAJBgNVBAYTAlVT
+MRIwEAYDVQQIEwlXaXNjb25zaW4xEDAOBgNVBAcTB01hZGlzb24xIDAeBgNVBAoT
+F1VuaXZlcnNpdHkgb2YgV2lzY29uc2luMSswKQYDVQQLEyJEaXZpc2lvbiBvZiBJ
+bmZvcm1hdGlvbiBUZWNobm9sb2d5MSUwIwYDVQQDExxIRVBLSSBNYXN0ZXIgQ0Eg
+LS0gMjAwMjA3MDFBMB4XDTAyMDYzMDIyMzIxNFoXDTI3MDIyMDIyMzIxNFowgakx
+CzAJBgNVBAYTAlVTMRIwEAYDVQQIEwlXaXNjb25zaW4xEDAOBgNVBAcTB01hZGlz
+b24xIDAeBgNVBAoTF1VuaXZlcnNpdHkgb2YgV2lzY29uc2luMSswKQYDVQQLEyJE
+aXZpc2lvbiBvZiBJbmZvcm1hdGlvbiBUZWNobm9sb2d5MSUwIwYDVQQDExxIRVBL
+SSBTZXJ2ZXIgQ0EgLS0gMjAwMjA3MDFBMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCB
+iQKBgQCvImusW7uaRS7xLsi2ZzZuUz6gbfATwxwvtQ+8cuyDpRlhvr1qnghC9Enj
+RH9qpq/Z5FVZ5bqyGziCy0kEPt+2WiZMGRiQEzloi5HNEtz1Nlc7FCJ0HATxtkEU
+hQ96v2DmoIEogPINqLICIqfiraPWFHOp6qDritrdj/fwLptQawIDAQABoyAwHjAP
+BgNVHRMBAf8EBTADAQH/MAsGA1UdDwQEAwIBpjANBgkqhkiG9w0BAQQFAAOBgQAt
+txlP3fTyIVMAIm8ddE8Bvk0/5Bhn5KvMAOMtnlCEArcFd4/m+pU4vEDwK6JSIoKf
+N/ySLXlu5ItApeJMWhcqvrczq5BF4/WQZukC1ha6FS2cAmjy35jYWMfVWcdBi9Yi
+M4SJ6gjGf83y9axPpuHcjwxQ5fLqZfnvrWH+1owJhQ==
                     </ds:X509Certificate>
                  </ds:X509Data>
             </ds:KeyInfo>
