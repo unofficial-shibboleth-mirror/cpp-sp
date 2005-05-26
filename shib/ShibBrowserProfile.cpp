@@ -137,6 +137,7 @@ SAMLBrowserProfile::BrowserProfileResponse ShibBrowserProfile::receive(
         // Try a non-strict lookup for more contact info.
         const IEntityDescriptor* provider=m.lookup(bpr.assertion->getIssuer(),false);
         if (provider) {
+    		log.debug("found invalid metadata for assertion issuer, using for contact info");
             bpr.clear();
             MetadataException ex("metadata lookup failed, unable to process assertion");
             annotateException(&ex,provider);  // throws it
