@@ -201,8 +201,6 @@
 		<!--
 		<saml:AttributeDesignator AttributeName="urn:mace:dir:attribute-def:eduPersonScopedAffiliation"
 			AttributeNamespace="urn:mace:shibboleth:1.0:attributeNamespace:uri"/>
-		<saml:AttributeDesignator AttributeName="urn:mace:dir:attribute-def:eduPersonTargetedID"
-			AttributeNamespace="urn:mace:shibboleth:1.0:attributeNamespace:uri"/>
 		-->
 
 		<!-- AAP can be inline or in a separate file -->
