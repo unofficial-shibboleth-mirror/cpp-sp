@@ -448,6 +448,26 @@ pair<bool,void*> ShibTarget::doCheckAuthZ(void)
 
         // Do we have an access control plugin?
         if (m_priv->m_settings.second) {
+        	
+	        if (!m_priv->m_cacheEntry) {
+	            // No data yet, so we may need to try and get the session.
+		        pair<string,const char*> shib_cookie=getCookieNameProps("_shibsession_");
+		        const char *session_id = getCookie(shib_cookie.first);
+	            try {
+		        	if (session_id && *session_id) {
+			            m_priv->m_conf->getListener()->sessionGet(
+			                m_priv->m_app,
+			                session_id,
+			                m_remote_addr.c_str(),
+			                &m_priv->m_cacheEntry
+			                );
+		        	}
+	            }
+	            catch (SAMLException&) {
+	            	log(LogLevelError, "doCheckAuthZ: unable to obtain session information to pass to access control provider");
+	            }
+	        }
+	
             Locker acllock(m_priv->m_settings.second);
             if (m_priv->m_settings.second->authorized(this,m_priv->m_cacheEntry)) {
                 // Let the caller decide how to proceed.
@@ -482,7 +502,7 @@ pair<bool,void*> ShibTarget::doCheckAuthZ(void)
     return make_pair(true,m_priv->sendError(this, "access", mlp));
 }
 
-pair<bool,void*> ShibTarget::doExportAssertions()
+pair<bool,void*> ShibTarget::doExportAssertions(bool requireSession)
 {
 #ifdef _DEBUG
     saml::NDC ndc("doExportAssertions");
@@ -496,18 +516,35 @@ pair<bool,void*> ShibTarget::doExportAssertions()
         if (!m_priv->m_app)
             throw ConfigurationException("System uninitialized, application did not supply request information.");
 
-        pair<string,const char*> shib_cookie=getCookieNameProps("_shibsession_");
-        const char *session_id = getCookie(shib_cookie.first);
-
         if (!m_priv->m_cacheEntry) {
             // No data yet, so we need to get the session. This can only happen
             // if the call to doCheckAuthn doesn't happen in the same object lifetime.
-            m_priv->m_conf->getListener()->sessionGet(
-                m_priv->m_app,
-                session_id,
-                m_remote_addr.c_str(),
-                &m_priv->m_cacheEntry
-                );
+	        pair<string,const char*> shib_cookie=getCookieNameProps("_shibsession_");
+	        const char *session_id = getCookie(shib_cookie.first);
+            try {
+	        	if (session_id && *session_id) {
+		            m_priv->m_conf->getListener()->sessionGet(
+		                m_priv->m_app,
+		                session_id,
+		                m_remote_addr.c_str(),
+		                &m_priv->m_cacheEntry
+		                );
+	        	}
+            }
+            catch (SAMLException&) {
+            	log(LogLevelError, "unable to obtain session information to export into request headers");
+            	// If we have to have a session, then this is a fatal error.
+            	if (requireSession)
+            		throw;
+            }
+        }
+
+		// Still no data?
+        if (!m_priv->m_cacheEntry) {
+        	if (requireSession)
+        		throw InvalidSessionException("Unable to obtain session information for request.");
+        	else
+        		return pair<bool,void*>(false,NULL);	// just bail silently
         }
 
         // Get the AAP providers, which contain the attribute policy info.

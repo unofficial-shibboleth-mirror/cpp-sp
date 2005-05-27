@@ -424,7 +424,7 @@ namespace shibtarget {
     std::pair<bool,void*> doCheckAuthN(bool handler = false);
     std::pair<bool,void*> doHandler();
     std::pair<bool,void*> doCheckAuthZ();
-    std::pair<bool,void*> doExportAssertions();
+    std::pair<bool,void*> doExportAssertions(bool requireSession = true);
 
     // Basic request access in case any plugins need the info
     virtual const IConfig* getConfig() const;
