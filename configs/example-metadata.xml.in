@@ -87,11 +87,43 @@ jBp8wDQehvl6f0mzUg8vZ+lj8IJImG1cM9rJey1cPTFTkYqhNLI/fF/rMwLMttIY
 			        </ds:X509Data>
 			    </ds:KeyInfo>
 			</KeyDescriptor>
+
+			<!-- This key is used by Internet2's test site. -->
+			<KeyDescriptor use="signing">
+			    <ds:KeyInfo>
+			        <ds:X509Data>
+			        	<ds:X509Certificate>
+MIIDADCCAmmgAwIBAgICBPIwDQYJKoZIhvcNAQEEBQAwgakxCzAJBgNVBAYTAlVT
+MRIwEAYDVQQIEwlXaXNjb25zaW4xEDAOBgNVBAcTB01hZGlzb24xIDAeBgNVBAoT
+F1VuaXZlcnNpdHkgb2YgV2lzY29uc2luMSswKQYDVQQLEyJEaXZpc2lvbiBvZiBJ
+bmZvcm1hdGlvbiBUZWNobm9sb2d5MSUwIwYDVQQDExxIRVBLSSBTZXJ2ZXIgQ0Eg
+LS0gMjAwMjA3MDFBMB4XDTA1MDUyNjAxMDE1MloXDTA5MDcwNTAxMDE1MlowPjEL
+MAkGA1UEBhMCVVMxEjAQBgNVBAoTCUludGVybmV0MjEbMBkGA1UEAxMSd2F5Zi5p
+bnRlcm5ldDIuZWR1MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxpUs
+kDqIN54O/AbF9rVqe8FJ1q/Ep7edGGOQUjlnt2c2AyVuvveSfW/Hh82DjdF0HMaW
+C5kv/ZInBLi4kO6Xx2EjPijZmK11WxHx+WbhgCziY4KzetL3XT63QdCSSQVnaEJV
+oM9yWsOOHpeWaFiX2alAfkYbCVt9kQiB2amyCuwcOwPWh0Saf7UTEyXoE9IMNWUz
+oaydiwm6TH2zJ7ZNMogeL14o5Fv7I6znKwVGvqrz6iIGWTI7v/ZmnF/jwyW4GOdS
+fX7s/G+M6uSndSM5si+s7iE+MdtP0qZ2M3xd4zWSpYTWRnq3uVMc9w04mF5LZM5q
+B8ktgtaTLS5X2sWv6QIDAQABox0wGzAMBgNVHRMBAf8EAjAAMAsGA1UdDwQEAwIF
+oDANBgkqhkiG9w0BAQQFAAOBgQBDiDqvFbuhMMxAQ89CNBFLiXkcMLrX2Ht96Zux
+JfS8fAx/Obbz5im1jK7peLhFr/9KgLtAkoz4aWtBL+qWcL3a1VYTu9H3Q2w9QbV2
+rxmbK0h8tw6qTA+F4FrErGufQv+kEmm1WRXXeyqEcsadZpsXauRD8iraq9f5WrLX
+AtThLg==
+			        	</ds:X509Certificate>
+			        </ds:X509Data>
+			    </ds:KeyInfo>
+			</KeyDescriptor>
 			
 			<!-- This tells SPs where/how to resolve SAML 1.x artifacts into SAML assertions. -->
 			<ArtifactResolutionService index="1"
 				Binding="urn:oasis:names:tc:SAML:1.0:bindings:SOAP-binding"
 				Location="https://idp.example.org:8443/shibboleth-idp/Artifact"/>
+
+			<!-- This enables testing against Internet2's test site. -->
+			<ArtifactResolutionService index="2"
+				Binding="urn:oasis:names:tc:SAML:1.0:bindings:SOAP-binding"
+				Location="https://wayf.internet2.edu:8443/shibboleth-idp/Artifact"/>
 			
 			<!-- This tells SPs that you support only the Shib handle format. -->
 			<NameIDFormat>urn:mace:shibboleth:1.0:nameIdentifier</NameIDFormat>
@@ -99,6 +131,10 @@ jBp8wDQehvl6f0mzUg8vZ+lj8IJImG1cM9rJey1cPTFTkYqhNLI/fF/rMwLMttIY
 			<!-- This tells SPs how and where to request authentication. -->
 			<SingleSignOnService Binding="urn:mace:shibboleth:1.0:profiles:AuthnRequest"
 			    Location="https://idp.example.org/shibboleth-idp/SSO"/>
+
+			<!-- This enables testing against Internet2's test site. -->
+			<SingleSignOnService Binding="urn:mace:shibboleth:1.0:profiles:AuthnRequest"
+			    Location="https://wayf.internet2.edu/shibboleth-idp/SSO"/>
 		</IDPSSODescriptor>
 		
 		<!-- Most Shib IdPs also support SAML attribute queries, so this role is also included. -->
@@ -132,10 +168,41 @@ jBp8wDQehvl6f0mzUg8vZ+lj8IJImG1cM9rJey1cPTFTkYqhNLI/fF/rMwLMttIY
 			    </ds:KeyInfo>
 			</KeyDescriptor>
 
+			<!-- This key is used by Internet2's test site. -->
+			<KeyDescriptor use="signing">
+			    <ds:KeyInfo>
+			        <ds:X509Data>
+			        	<ds:X509Certificate>
+MIIDADCCAmmgAwIBAgICBPIwDQYJKoZIhvcNAQEEBQAwgakxCzAJBgNVBAYTAlVT
+MRIwEAYDVQQIEwlXaXNjb25zaW4xEDAOBgNVBAcTB01hZGlzb24xIDAeBgNVBAoT
+F1VuaXZlcnNpdHkgb2YgV2lzY29uc2luMSswKQYDVQQLEyJEaXZpc2lvbiBvZiBJ
+bmZvcm1hdGlvbiBUZWNobm9sb2d5MSUwIwYDVQQDExxIRVBLSSBTZXJ2ZXIgQ0Eg
+LS0gMjAwMjA3MDFBMB4XDTA1MDUyNjAxMDE1MloXDTA5MDcwNTAxMDE1MlowPjEL
+MAkGA1UEBhMCVVMxEjAQBgNVBAoTCUludGVybmV0MjEbMBkGA1UEAxMSd2F5Zi5p
+bnRlcm5ldDIuZWR1MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxpUs
+kDqIN54O/AbF9rVqe8FJ1q/Ep7edGGOQUjlnt2c2AyVuvveSfW/Hh82DjdF0HMaW
+C5kv/ZInBLi4kO6Xx2EjPijZmK11WxHx+WbhgCziY4KzetL3XT63QdCSSQVnaEJV
+oM9yWsOOHpeWaFiX2alAfkYbCVt9kQiB2amyCuwcOwPWh0Saf7UTEyXoE9IMNWUz
+oaydiwm6TH2zJ7ZNMogeL14o5Fv7I6znKwVGvqrz6iIGWTI7v/ZmnF/jwyW4GOdS
+fX7s/G+M6uSndSM5si+s7iE+MdtP0qZ2M3xd4zWSpYTWRnq3uVMc9w04mF5LZM5q
+B8ktgtaTLS5X2sWv6QIDAQABox0wGzAMBgNVHRMBAf8EAjAAMAsGA1UdDwQEAwIF
+oDANBgkqhkiG9w0BAQQFAAOBgQBDiDqvFbuhMMxAQ89CNBFLiXkcMLrX2Ht96Zux
+JfS8fAx/Obbz5im1jK7peLhFr/9KgLtAkoz4aWtBL+qWcL3a1VYTu9H3Q2w9QbV2
+rxmbK0h8tw6qTA+F4FrErGufQv+kEmm1WRXXeyqEcsadZpsXauRD8iraq9f5WrLX
+AtThLg==
+			        	</ds:X509Certificate>
+			        </ds:X509Data>
+			    </ds:KeyInfo>
+			</KeyDescriptor>
+
 			<!-- This tells SPs how and where to send queries. -->
 			<AttributeService Binding="urn:oasis:names:tc:SAML:1.0:bindings:SOAP-binding"
 			    Location="https://idp.example.org:8443/shibboleth-idp/AA"/>
-			    
+
+			<!-- This enables testing against Internet2's test site. -->
+			<AttributeService Binding="urn:oasis:names:tc:SAML:1.0:bindings:SOAP-binding"
+			    Location="https://wayf.internet2.edu:8443/shibboleth-idp/AA"/>
+
 			<!-- This tells SPs that you support only the Shib handle format. -->
 			<NameIDFormat>urn:mace:shibboleth:1.0:nameIdentifier</NameIDFormat>
 		</AttributeAuthorityDescriptor>
@@ -215,6 +282,15 @@ Yt0LOC4i/8fpCqcHaHVNKvgWipNyEXr6r0nia5NmmrM7I5SQMM2VZv2G4c/KogBe
 		    <AssertionConsumerService index="2"
 		        Binding="urn:oasis:names:tc:SAML:1.0:profiles:artifact-01"
 		        Location="https://sp.example.org/Shibboleth.sso/SAML/Artifact"/>
+
+			<!-- These enable testing against Internet2's test site. -->
+			<AssertionConsumerService index="3"
+				Binding="urn:oasis:names:tc:SAML:1.0:profiles:browser-post"
+				Location="https://wayf.internet2.edu/Shibboleth.sso/SAML/POST"/>
+			<AssertionConsumerService index="4"
+				Binding="urn:oasis:names:tc:SAML:1.0:profiles:artifact-01"
+				Location="https://wayf.internet2.edu/Shibboleth.sso/SAML/Artifact"/>
+
 		</SPSSODescriptor>
 		
 	</EntityDescriptor>
