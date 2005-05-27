@@ -313,7 +313,7 @@ extern "C" int shib_check_user(request_rec* r)
 #endif
     ShibTargetApache sta(r);
 
-    // Check user authentication, the set the handler bypass
+    // Check user authentication and export information, then set the handler bypass
     pair<bool,void*> res = sta.doCheckAuthN(true);
     apr_pool_userdata_setn((const void*)42,g_UserDataKey,NULL,r->pool);
     if (res.first) return (int)res.second;
@@ -639,13 +639,13 @@ bool htAccessControl::authorized(
         t = reqs[x].requirement;
         w = ap_getword_white(sta->m_req->pool, &t);
 
-        if (!strcasecmp(w,"Shibboleth")) {
+        if (!strcasecmp(w,"shibboleth")) {
             // This is a dummy rule needed because Apache conflates authn and authz.
             // Without some require rule, AuthType is ignored and no check_user hooks run.
             SHIB_AP_CHECK_IS_OK;
         }
-        else if (!strcmp(w,"valid-user")) {
-            st->log(ShibTarget::LogLevelDebug,"htAccessControl plugin accepting valid-user");
+        else if (!strcmp(w,"valid-user") && entry) {
+            st->log(ShibTarget::LogLevelDebug,"htAccessControl plugin accepting valid-user based on active session");
             SHIB_AP_CHECK_IS_OK;
         }
         else if (!strcmp(w,"user") && !remote_user.empty()) {
