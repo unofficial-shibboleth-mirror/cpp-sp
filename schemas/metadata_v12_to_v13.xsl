@@ -92,6 +92,10 @@
 		<xsl:param name="Domain"/>
 		<IDPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:1.1:protocol urn:mace:shibboleth:1.0">
 			<!--
+				Map @ErrorURL (if present) to @errorURL
+			-->
+			<xsl:apply-templates select="../@ErrorURL"/>
+			<!--
 				Extensions appears iff there is something to put in it.
 			-->
 			<xsl:if test="boolean($Domain)">
@@ -117,6 +121,10 @@
 	<xsl:template match="shib:AttributeAuthority">
 		<xsl:param name="Domain"/>
 		<AttributeAuthorityDescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:1.1:protocol">
+			<!--
+				Map @ErrorURL (if present) to @errorURL
+			-->
+			<xsl:apply-templates select="../@ErrorURL"/>
 			<!--
 				Extensions appears iff there is something to put in it.
 			-->
