@@ -275,7 +275,7 @@
 			-->
 			<!--
 			<FileResolver Id="inqueuecreds">
-				<Key format="PEM" password="handsoff">
+				<Key format="PEM">
 					<Path>@-PKGSYSCONFDIR-@/inqueue.key</Path>
 				</Key>
 				<Certificate format="PEM">
