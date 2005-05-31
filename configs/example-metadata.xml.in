@@ -283,14 +283,6 @@ Yt0LOC4i/8fpCqcHaHVNKvgWipNyEXr6r0nia5NmmrM7I5SQMM2VZv2G4c/KogBe
 		        Binding="urn:oasis:names:tc:SAML:1.0:profiles:artifact-01"
 		        Location="https://sp.example.org/Shibboleth.sso/SAML/Artifact"/>
 
-			<!-- These enable testing against Internet2's test site. -->
-			<AssertionConsumerService index="3"
-				Binding="urn:oasis:names:tc:SAML:1.0:profiles:browser-post"
-				Location="https://wayf.internet2.edu/Shibboleth.sso/SAML/POST"/>
-			<AssertionConsumerService index="4"
-				Binding="urn:oasis:names:tc:SAML:1.0:profiles:artifact-01"
-				Location="https://wayf.internet2.edu/Shibboleth.sso/SAML/Artifact"/>
-
 		</SPSSODescriptor>
 		
 	</EntityDescriptor>
