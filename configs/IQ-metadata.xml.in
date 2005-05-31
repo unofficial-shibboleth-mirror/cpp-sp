@@ -82,7 +82,7 @@ M4SJ6gjGf83y9axPpuHcjwxQ5fLqZfnvrWH+1owJhQ==
 	This is a starter set of metadata for the example system used within the
 	InQueue test federation. The InQueue deployment guide describes how to use
 	metadatatool or siterefresh to pick up the most current signed files.
-	Ordinarily a single EntityDescriptor would contain IdP/AA or SP information,
+	Ordinarily a single EntityDescriptor would contain IdP/AA or SP role information,
 	but not both. The sample site for InQueue just happens to contain both.
 	-->
 
@@ -109,13 +109,18 @@ M4SJ6gjGf83y9axPpuHcjwxQ5fLqZfnvrWH+1owJhQ==
 			        <ds:KeyName>wayf.internet2.edu</ds:KeyName>
 			    </ds:KeyInfo>
 			</KeyDescriptor>
+
+			<!-- This tells SPs where/how to resolve SAML 1.x artifacts into SAML assertions. -->
+			<ArtifactResolutionService index="1"
+				Binding="urn:oasis:names:tc:SAML:1.0:bindings:SOAP-binding"
+				Location="https://wayf.internet2.edu:8443/shibboleth-idp/Artifact"/>
 			
 			<!-- This tells SPs that you support only the Shib handle format. -->
 			<NameIDFormat>urn:mace:shibboleth:1.0:nameIdentifier</NameIDFormat>
 			
 			<!-- This tells SPs how and where to request authentication. -->
 			<SingleSignOnService Binding="urn:mace:shibboleth:1.0:profiles:AuthnRequest"
-			    Location="https://wayf.internet2.edu/shibboleth-1.2/HS"/>
+			    Location="https://wayf.internet2.edu/shibboleth-idp/SSO"/>
 		</IDPSSODescriptor>
 		
 		<!-- Most Shib IdPs also support SAML attribute queries, so this role is also included. -->
@@ -134,7 +139,7 @@ M4SJ6gjGf83y9axPpuHcjwxQ5fLqZfnvrWH+1owJhQ==
 			
 			<!-- This tells SPs how and where to send queries. -->
 			<AttributeService Binding="urn:oasis:names:tc:SAML:1.0:bindings:SOAP-binding"
-			    Location="https://wayf.internet2.edu/shibboleth-1.2/AA"/>
+			    Location="https://wayf.internet2.edu:8443/shibboleth-idp/AA"/>
 			    
 			<!-- This tells SPs that you support only the Shib handle format. -->
 			<NameIDFormat>urn:mace:shibboleth:1.0:nameIdentifier</NameIDFormat>
@@ -166,9 +171,12 @@ M4SJ6gjGf83y9axPpuHcjwxQ5fLqZfnvrWH+1owJhQ==
 			is how the IdP validates the location and also figures out which
 			SAML profile to use.
 			-->
-		    <AssertionConsumerService index="0"
-		        Binding="urn:oasis:names:tc:SAML:1.0:profiles:browser-post"
-		        Location="https://wayf.internet2.edu/Shibboleth.shire"/>
+			<AssertionConsumerService index="1"
+				Binding="urn:oasis:names:tc:SAML:1.0:profiles:browser-post"
+				Location="https://wayf.internet2.edu/Shibboleth.sso/SAML/POST"/>
+			<AssertionConsumerService index="2"
+				Binding="urn:oasis:names:tc:SAML:1.0:profiles:artifact-01"
+				Location="https://wayf.internet2.edu/Shibboleth.sso/SAML/Artifact"/>
 		</SPSSODescriptor>
 		
 		<!-- This is just information about the entity in human terms. -->
