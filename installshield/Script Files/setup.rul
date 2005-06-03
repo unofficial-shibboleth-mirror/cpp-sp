@@ -370,8 +370,8 @@ begin
     svOldTargetDir = TARGETDIR;
     TARGETDIR = SRCDIR;
     RenameFile("AAP.xml.in", "AAP.xml");
-    RenameFile("example-sites.xml.in", "example-sites.xml");
-    RenameFile("IQ-sites.xml.in", "IQ-sites.xml");
+    RenameFile("example-metadata.xml.in", "example-metadata.xml");
+    RenameFile("IQ-metadata.xml.in", "IQ-metadata.xml");
     RenameFile("shibboleth.xml.in", "shibboleth.xml");
     RenameFile("shibd.logger.in", "shibd.logger");
     RenameFile("native.logger.in", "native.logger");
@@ -383,10 +383,10 @@ begin
     svFileName = "AAP.xml";
     ReplaceTextInFile(svFileName, "@-PKGXMLDIR-@", svDirectory + "/share/xml/shibboleth");
 
-    svFileName = "example-sites.xml";
+    svFileName = "example-metadata.xml";
     ReplaceTextInFile(svFileName, "@-PKGXMLDIR-@", svDirectory + "/share/xml/shibboleth");
 
-    svFileName = "IQ-sites.xml";
+    svFileName = "IQ-metadata.xml";
     ReplaceTextInFile(svFileName, "@-PKGXMLDIR-@", svDirectory + "/share/xml/shibboleth");
 
     svFileName = "shibboleth.xml";
