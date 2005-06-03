@@ -134,6 +134,7 @@ file15=..\schemas\metadata_v12_to_v13.xsl
 file16=..\schemas\metadata_v13_to_v12.xsl
 file17=..\schemas\trust_v12_to_v11.xsl
 file18=..\schemas\trust_v13_to_v12.xsl
+file19=..\schemas\xenc-schema.xsd
 
 [include\shib]
 file0=..\shib\shib.h
