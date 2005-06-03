@@ -18,7 +18,7 @@
 		-->
     
 		<!-- Only one listener can be defined. -->
-		<UnixListener address="@-VARRUNDIR-@/shib-shar.sock"/>
+		   <UnixListener address="@-VARRUNDIR-@/shib-shar.sock"/>
 		
 		<!-- <TCPListener address="127.0.0.1" port="12345" acl="127.0.0.1"/> -->
 		
