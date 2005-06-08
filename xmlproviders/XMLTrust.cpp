@@ -158,8 +158,10 @@ X509_STORE* XMLTrustImpl::KeyAuthority::getX509Store()
         log_openssl();
         return NULL;
     }
+#if (OPENSSL_VERSION_NUMBER >= 0x00907000L)
     X509_STORE_set_flags(store,X509_V_FLAG_CRL_CHECK_ALL);
-    
+#endif
+
     for (vector<X509*>::iterator j=m_certs.begin(); j!=m_certs.end(); j++) {
         if (!X509_STORE_add_cert(store,*j)) {
             log_openssl();
@@ -673,7 +675,7 @@ bool XMLTrust::validate(void* certEE, const Iterator<void*>& certChain, const IR
                 return false;
             }
 #else
-            X509_STORE_CTX_init(&ctx,store,certEE,untrusted);
+            X509_STORE_CTX_init(&ctx,store,(X509*)certEE,untrusted);
 #endif
             X509_STORE_CTX_set_depth(&ctx,100);    // handle depth below
             X509_STORE_CTX_set_verify_cb(&ctx,error_callback);

@@ -200,7 +200,9 @@ bool ShibbolethTrust::validate(X509* EE, STACK_OF(X509)* untrusted, const IKeyAu
         log_openssl();
         return false;
     }
+#if (OPENSSL_VERSION_NUMBER >= 0x00907000L)
     X509_STORE_set_flags(store,X509_V_FLAG_CRL_CHECK_ALL);
+#endif
 
     STACK_OF(X509)* CAstack = sk_X509_new_null();
     
