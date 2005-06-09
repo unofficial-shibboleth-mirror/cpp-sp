@@ -2,14 +2,14 @@
     xmlns="urn:oasis:names:tc:SAML:2.0:metadata"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
-    xmlns:shibmeta="urn:mace:shibboleth:metadata:1.0"
+    xmlns:shibmd="urn:mace:shibboleth:metadata:1.0"
     xsi:schemaLocation="urn:oasis:names:tc:SAML:2.0:metadata @-PKGXMLDIR-@/saml-schema-metadata-2.0.xsd urn:mace:shibboleth:metadata:1.0 @-PKGXMLDIR-@/shibboleth-metadata-1.0.xsd http://www.w3.org/2000/09/xmldsig# @-PKGXMLDIR-@/xmldsig-core-schema.xsd"
     Name="urn:mace:inqueue"
     validUntil="2010-01-01T00:00:00Z">
 
     <Extensions>
         <!-- This extension contains the list of CAs used by InQueue entities.  -->
-        <shibmeta:KeyAuthority VerifyDepth="1">
+        <shibmd:KeyAuthority VerifyDepth="1">
             <!-- Verisign -->
             <ds:KeyInfo>
                 <ds:X509Data>
@@ -75,7 +75,7 @@ M4SJ6gjGf83y9axPpuHcjwxQ5fLqZfnvrWH+1owJhQ==
                     </ds:X509Certificate>
                  </ds:X509Data>
             </ds:KeyInfo>
-        </shibmeta:KeyAuthority>
+        </shibmd:KeyAuthority>
     </Extensions>
 
 	<!--
@@ -93,7 +93,7 @@ M4SJ6gjGf83y9axPpuHcjwxQ5fLqZfnvrWH+1owJhQ==
 		<IDPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:1.1:protocol urn:mace:shibboleth:1.0">
 			<Extensions>
 				<!-- This is a Shibboleth extension to express attribute scope rules. -->
-		        <shib:Scope xmlns:shib="urn:mace:shibboleth:metadata:1.0">example.edu</shib:Scope>
+				<shibmd:Scope>example.edu</shibmd:Scope>
 			</Extensions>
 			
 			<!--
@@ -127,7 +127,7 @@ M4SJ6gjGf83y9axPpuHcjwxQ5fLqZfnvrWH+1owJhQ==
 		<AttributeAuthorityDescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:1.1:protocol">
 			<Extensions>
 				<!-- This is a Shibboleth extension to express attribute scope rules. -->
-		        <shib:Scope xmlns:shib="urn:mace:shibboleth:metadata:1.0">example.edu</shib:Scope>
+				<shibmd:Scope>example.edu</shibmd:Scope>
 			</Extensions>
 			
 			<!--

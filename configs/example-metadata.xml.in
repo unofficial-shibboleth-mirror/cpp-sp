@@ -2,7 +2,7 @@
     xmlns="urn:oasis:names:tc:SAML:2.0:metadata"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
-    xmlns:shibmeta="urn:mace:shibboleth:metadata:1.0"
+    xmlns:shibmd="urn:mace:shibboleth:metadata:1.0"
     xsi:schemaLocation="urn:oasis:names:tc:SAML:2.0:metadata @-PKGXMLDIR-@/saml-schema-metadata-2.0.xsd urn:mace:shibboleth:metadata:1.0 @-PKGXMLDIR-@/shibboleth-metadata-1.0.xsd http://www.w3.org/2000/09/xmldsig# @-PKGXMLDIR-@/xmldsig-core-schema.xsd"
     Name="urn:mace:shibboleth:examples"
     validUntil="2010-01-01T00:00:00Z">
@@ -43,9 +43,9 @@
 		<IDPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:1.1:protocol urn:mace:shibboleth:1.0">
 			<Extensions>
 				<!-- This is a Shibboleth extension to express attribute scope rules. -->
-				<shib:Scope xmlns:shib="urn:mace:shibboleth:metadata:1.0">example.org</shib:Scope>
+				<shibmd:Scope>example.org</shibmd:Scope>
 				<!-- This enables testing against Internet2's test site. -->
-				<shib:Scope xmlns:shib="urn:mace:shibboleth:metadata:1.0">example.edu</shib:Scope>
+				<shibmd:Scope>example.edu</shibmd:Scope>
 			</Extensions>
 			
 			<!--
@@ -143,9 +143,9 @@ AtThLg==
 		<AttributeAuthorityDescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:1.1:protocol">
 			<Extensions>
 				<!-- This is a Shibboleth extension to express attribute scope rules. -->
-				<shib:Scope xmlns:shib="urn:mace:shibboleth:metadata:1.0">example.org</shib:Scope>
+				<shibmd:Scope>example.org</shibmd:Scope>
 				<!-- This enables testing against Internet2's test site. -->
-				<shib:Scope xmlns:shib="urn:mace:shibboleth:metadata:1.0">example.edu</shib:Scope>
+				<shibmd:Scope>example.edu</shibmd:Scope>
 			</Extensions>
 			
 			<!-- The certificate has to be repeated here (or a different one specified if necessary). -->
