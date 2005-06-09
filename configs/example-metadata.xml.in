@@ -43,7 +43,9 @@
 		<IDPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:1.1:protocol urn:mace:shibboleth:1.0">
 			<Extensions>
 				<!-- This is a Shibboleth extension to express attribute scope rules. -->
-		        <shib:Scope xmlns:shib="urn:mace:shibboleth:metadata:1.0">example.org</shib:Scope>
+				<shib:Scope xmlns:shib="urn:mace:shibboleth:metadata:1.0">example.org</shib:Scope>
+				<!-- This enables testing against Internet2's test site. -->
+				<shib:Scope xmlns:shib="urn:mace:shibboleth:metadata:1.0">example.edu</shib:Scope>
 			</Extensions>
 			
 			<!--
@@ -141,7 +143,9 @@ AtThLg==
 		<AttributeAuthorityDescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:1.1:protocol">
 			<Extensions>
 				<!-- This is a Shibboleth extension to express attribute scope rules. -->
-		        <shib:Scope xmlns:shib="urn:mace:shibboleth:metadata:1.0">example.org</shib:Scope>
+				<shib:Scope xmlns:shib="urn:mace:shibboleth:metadata:1.0">example.org</shib:Scope>
+				<!-- This enables testing against Internet2's test site. -->
+				<shib:Scope xmlns:shib="urn:mace:shibboleth:metadata:1.0">example.edu</shib:Scope>
 			</Extensions>
 			
 			<!-- The certificate has to be repeated here (or a different one specified if necessary). -->
