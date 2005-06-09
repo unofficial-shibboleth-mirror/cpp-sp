@@ -76,9 +76,12 @@ static int verify_callback(X509_STORE_CTX* x509_ctx, void* arg)
     ShibHTTPHook::ShibHTTPHookCallContext* ctx = reinterpret_cast<ShibHTTPHook::ShibHTTPHookCallContext*>(arg);
 #else
     // Yes, this sucks. I'd use TLS, but there's no really obvious spot to put the thread key
-    // and global variables suck too.
+    // and global variables suck too. We can't access the X509_STORE_CTX depth directly because
+    // OpenSSL only copies it into the context if it's >=0, and the unsigned pointer may be
+    // negative in the SSL structure's int member.
+    SSL* ssl = reinterpret_cast<SSL*>(X509_STORE_CTX_get_ex_data(x509_ctx,SSL_get_ex_data_X509_STORE_CTX_idx()));
     ShibHTTPHook::ShibHTTPHookCallContext* ctx =
-        reinterpret_cast<ShibHTTPHook::ShibHTTPHookCallContext*>(x509_ctx->depth);
+        reinterpret_cast<ShibHTTPHook::ShibHTTPHookCallContext*>(SSL_get_verify_depth(ssl));
 #endif
 
     // Instead of using the supplied verifier, we let the plugins do whatever they want to do
@@ -131,7 +134,11 @@ static bool ssl_ctx_callback(void* ssl_ctx, void* userptr)
         // With 0.9.6, there's no argument, so we're going to use a really embarrassing hack and
         // stuff the argument in the depth property where it will get copied to the context object
         // that's handed to the callback.
-        SSL_CTX_set_cert_verify_callback(reinterpret_cast<SSL_CTX*>(ssl_ctx),reinterpret_cast<int (*)()>(verify_callback),NULL);
+        SSL_CTX_set_cert_verify_callback(
+            reinterpret_cast<SSL_CTX*>(ssl_ctx),
+            reinterpret_cast<int (*)(X509_STORE_CTX*,void*)>(verify_callback),
+            NULL
+            );
         SSL_CTX_set_verify_depth(reinterpret_cast<SSL_CTX*>(ssl_ctx),reinterpret_cast<int>(userptr));
 #endif
     }
