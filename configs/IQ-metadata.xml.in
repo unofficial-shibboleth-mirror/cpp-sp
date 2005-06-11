@@ -8,7 +8,14 @@
     validUntil="2010-01-01T00:00:00Z">
 
     <Extensions>
-        <!-- This extension contains the list of CAs used by InQueue entities.  -->
+        <!--
+        This Shibboleth extension contains a list of CAs that InQueue entities trust as they
+        evaluate the credentials they receive. They constitute the so-called "root store" or
+        "trust list" when interacting with the entities included in this file. The VerifyDepth
+        of "1" is PKIX-specified as the number of intermediaries permitted between the end-entity
+        certificate and the trust anchor. Each CA certificate is placed in its own <ds:KeyInfo>
+        container and is base64-encoded.
+        -->
         <shibmd:KeyAuthority VerifyDepth="1">
             <!-- Verisign -->
             <ds:KeyInfo>
@@ -99,10 +106,18 @@ M4SJ6gjGf83y9axPpuHcjwxQ5fLqZfnvrWH+1owJhQ==
 			<!--
 			One or more KeyDescriptors tell SPs how the IdP will authenticate itself. A single
 			descriptor can be used for both signing and for server-TLS. You can place an
-			X.509 certificate directly in this element for the simplest use cases. This
-			example is more advanced, with the key/certificate identified by common name.
-			The certificate is then validated using the KeyAuthority extension element up
-			above.
+			X.509 certificate directly in this element for the simplest use cases, in which case
+			no <shibmd:KeyAuthority> extension is needed. This example is more advanced,
+			with the key/certificate identified indirectly using a <ds:KeyName> element
+			containing the common name (CN) from the certificate. The certificate is then
+			validated using the trust anchors found in the applicable <shibmd:KeyAuthority>
+			extension element(s).
+			
+			To identify certificates by name, you can use the CN attribute from the Subject,
+			a DNS or URI-valued subjectAltName extension value, or in special cases, the
+			entire Subject DN. We don't suggest the latter, because you must encode the DN
+			in a particular way (LDAP order, separated by commas) and because software is
+			unpredictable in how it will translate the RDN components into a text string.
 			-->
 			<KeyDescriptor use="signing">
 			    <ds:KeyInfo>
@@ -131,10 +146,11 @@ M4SJ6gjGf83y9axPpuHcjwxQ5fLqZfnvrWH+1owJhQ==
 			</Extensions>
 			
 			<!--
-			Note that because TLS with certificate validation is used, there is no KeyDescriptor
-			needed. Since server TLS is used to authenticate the AA, its "key name" is implicit
+			Note that because TLS with certificate validation is used, there is no <KeyDescriptor>
+			needed. Since server TLS is used to authenticate the AA, its <ds:KeyName> is implicit
 			in the URL used to connect to it. If you were to place the certificate directly
-			in the metadata in the role above, you'll also need a copy here.
+			in the metadata in the role above, you'll also need a copy here. You'll also need
+			a <KeyDescriptor> if you want to allow the AA to sign assertions.
 			-->
 			
 			<!-- This tells SPs how and where to send queries. -->
@@ -150,11 +166,19 @@ M4SJ6gjGf83y9axPpuHcjwxQ5fLqZfnvrWH+1owJhQ==
 		
 			<!--
 			One or more KeyDescriptors tell IdPs how the SP will authenticate itself. A single
-			descriptor can be used for both signing and for client-TLS. You can place an
-			X.509 certificate directly in this element for the simplest use cases. This
-			example is more advanced, with the key/certificate identified by common name.
-			The certificate is then validated using the KeyAuthority extension element up
-			above.
+			descriptor can be used for both signing and for server-TLS. You can place an
+			X.509 certificate directly in this element for the simplest use cases, in which case
+			no <shibmd:KeyAuthority> extension is needed. This example is more advanced,
+			with the key/certificate identified indirectly using a <ds:KeyName> element
+			containing the common name (CN) from the certificate. The certificate is then
+			validated using the trust anchors found in the applicable <shibmd:KeyAuthority>
+			extension element(s).
+			
+			To identify certificates by name, you can use the CN attribute from the Subject,
+			a DNS or URI-valued subjectAltName extension value, or in special cases, the
+			entire Subject DN. We don't suggest the latter, because you must encode the DN
+			in a particular way (LDAP order, separated by commas) and because software is
+			unpredictable in how it will translate the RDN components into a text string.
 			-->
 			<KeyDescriptor>
 			    <ds:KeyInfo>
@@ -169,7 +193,9 @@ M4SJ6gjGf83y9axPpuHcjwxQ5fLqZfnvrWH+1owJhQ==
 			This tells IdPs where and how to send authentication assertions. Mostly
 			the SP will tell the IdP what location to use in its request, but this
 			is how the IdP validates the location and also figures out which
-			SAML profile to use.
+			SAML profile to use. Each one must have a unique index attribute, mostly
+			for future use in SAML 2.0. The examples below show one endpoint supporting
+			the POST profile, and one endpoint supporting the Artifact profile.
 			-->
 			<AssertionConsumerService index="1"
 				Binding="urn:oasis:names:tc:SAML:1.0:profiles:browser-post"
