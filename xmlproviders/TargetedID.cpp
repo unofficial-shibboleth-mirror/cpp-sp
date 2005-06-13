@@ -91,7 +91,7 @@ namespace {
         void addValue(const XMLCh* value) {
             throw SAMLException("unsupported operation");
         }
-        void removeValue(unsigned int index);
+        void removeValue(unsigned long index);
         
         static const XMLCh NameID[];
         static const XMLCh SPNameQualifier[];
@@ -212,7 +212,7 @@ Iterator<string> TargetedID::getSingleByteValues() const
     return m_sbValues;
 }
 
-void TargetedID::removeValue(unsigned int index)
+void TargetedID::removeValue(unsigned long index)
 {
     if (m_bOwnStrings) {
         XMLCh* p=const_cast<XMLCh*>(m_nameQualifiers[index]);
