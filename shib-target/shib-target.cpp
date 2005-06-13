@@ -729,7 +729,7 @@ pair<string,const char*> ShibTarget::getCookieNameProps(const char* prefix) cons
     }
     
     // Shouldn't happen, but just in case..
-    return make_pair(prefix,defProps);
+    return pair<string,const char*>(prefix,defProps);
 }
 
 string ShibTarget::getHandlerURL(const char* resource) const
