@@ -45,19 +45,19 @@ be surprised if it's not there. Also, just as with PHP and certain other package
 that include C++, you'll need to build it with the same compiler used to build
 Shibboleth.
 
-The MySQL 4.0.x build is currently not clean. There are errors in several
+The MySQL 4.x build is currently not clean. There are errors in several
 Makefile.in files that have to corrected to get the build to work.
 The patch for the pre-configure Makefile.in files in version 4.0.12 is included
 in this directory as the file "mysql-4.0.12.diff", which can be applied from the
-mysql-4.0.12 directory.
+mysql-4.0.12 directory. Similar changes may be needed in other versions.
 
 After patching, to get it to build, the --with-embedded-server option is used
-with MySQL. An example build is below:
+with MySQL. An example build with gcc/g++ is below:
 
-$ cd mysql-4.0.12
+$ cd mysql-4.1.12
 $ env CFLAGS="-fPIC -DPIC" CXXFLAGS="-fPIC -DPIC"
 $ ./configure --prefix=/opt/mysql \
-    --libexecdir='${exec_prefix}/sbin' \
+    --libexecdir='${exec_prefix}/sbin' --disable-static \
     --enable-thread-safe-client --enable-assembler --enable-local-infile \
     --with-extra-charsets=complex --with-embedded-server \
     --with-berkeley-db --with-innodb --with-raid
