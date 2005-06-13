@@ -1,0 +1,11 @@
+ARCH=sparc
+PKG=SHIBmysql
+NAME=MySQL - MySQL database including embedded library
+VERSION=4.1.12
+CATEGORY=system
+VENDOR=http://mysql.com/ packaged for Shibboleth by Scott Cantor
+HOTLINE=http://bugzilla.internet2.edu/
+EMAIL=cantor.2@osu.edu
+PSTAMP=11Jun2005
+CLASSES=none
+BASEDIR=/opt/mysql
