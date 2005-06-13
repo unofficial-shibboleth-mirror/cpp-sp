@@ -1061,7 +1061,7 @@ XMLMetadataImpl::EntityDescriptor::EntityDescriptor(
     }
 
     auto_ptr_char id(m_id);
-    wrapper->m_sites.insert(pair<string,const EntityDescriptor*>(id.get(),this));
+    wrapper->m_sites.insert(pair<const string,const EntityDescriptor*>(id.get(),this));
     
     // Look for an IdP role, and register the artifact source ID and endpoints.
     const IDPRole* idp=NULL;
@@ -1069,16 +1069,16 @@ XMLMetadataImpl::EntityDescriptor::EntityDescriptor(
         if (idp=dynamic_cast<const IDPRole*>(*r)) {
             if (idp->m_sourceId) {
                 auto_ptr_char sourceid(idp->m_sourceId);
-                wrapper->m_sources.insert(pair<string,const EntityDescriptor*>(sourceid.get(),this));
+                wrapper->m_sources.insert(pair<const string,const EntityDescriptor*>(sourceid.get(),this));
             }
             else {
                 string sourceid=SAMLArtifact::toHex(SAMLArtifactType0001::generateSourceId(id.get()));
-                wrapper->m_sources.insert(pair<string,const EntityDescriptor*>(sourceid,this));
+                wrapper->m_sources.insert(pair<const string,const EntityDescriptor*>(sourceid,this));
             }
             Iterator<const IEndpoint*> locs=idp->getArtifactResolutionServiceManager()->getEndpoints();
             while (locs.hasNext()) {
                 auto_ptr_char loc(locs.next()->getLocation());
-                wrapper->m_sources.insert(pair<string,const EntityDescriptor*>(loc.get(),this));
+                wrapper->m_sources.insert(pair<const string,const EntityDescriptor*>(loc.get(),this));
             }
         }
     }
@@ -1163,7 +1163,7 @@ XMLMetadataImpl::EntitiesDescriptor::EntitiesDescriptor(
 
     if (!saml::XML::isEmpty(m_name)) {
         auto_ptr_char n(m_name);
-        wrapper->m_groups.insert(pair<string,const EntitiesDescriptor*>(n.get(),this));
+        wrapper->m_groups.insert(pair<const string,const EntitiesDescriptor*>(n.get(),this));
     }
     else
         m_name=NULL;
@@ -1411,7 +1411,7 @@ const IEntityDescriptor* XMLMetadata::lookup(const char* providerId, bool strict
         return NULL;
         
     XMLMetadataImpl* impl=dynamic_cast<XMLMetadataImpl*>(getImplementation());
-    pair<XMLMetadataImpl::sitemap_t::const_iterator,XMLMetadataImpl::sitemap_t::const_iterator> range=
+    pair<XMLMetadataImpl::sitemap_t::iterator,XMLMetadataImpl::sitemap_t::iterator> range=
         impl->m_sites.equal_range(providerId);
 
     time_t now=time(NULL);
@@ -1435,7 +1435,7 @@ const IEntityDescriptor* XMLMetadata::lookup(const SAMLArtifact* artifact) const
 {
     time_t now=time(NULL);
     XMLMetadataImpl* impl=dynamic_cast<XMLMetadataImpl*>(getImplementation());
-    pair<XMLMetadataImpl::sitemap_t::const_iterator,XMLMetadataImpl::sitemap_t::const_iterator> range;
+    pair<XMLMetadataImpl::sitemap_t::iterator,XMLMetadataImpl::sitemap_t::iterator> range;
     
     // Depends on type of artifact.
     const SAMLArtifactType0001* type1=dynamic_cast<const SAMLArtifactType0001*>(artifact);
@@ -1459,7 +1459,7 @@ const IEntityDescriptor* XMLMetadata::lookup(const SAMLArtifact* artifact) const
         else if (!m_exclusions && m_set.find(id.get())==m_set.end())
             return NULL;
 
-        for (XMLMetadataImpl::sitemap_t::const_iterator i=range.first; i!=range.second; i++)
+        for (XMLMetadataImpl::sitemap_t::iterator i=range.first; i!=range.second; i++)
             if (now < i->second->getValidUntil())
                 return i->second;
     }
@@ -1475,11 +1475,11 @@ const IEntitiesDescriptor* XMLMetadata::lookupGroup(const char* name, bool stric
         return NULL;
         
     XMLMetadataImpl* impl=dynamic_cast<XMLMetadataImpl*>(getImplementation());
-    pair<XMLMetadataImpl::groupmap_t::const_iterator,XMLMetadataImpl::groupmap_t::const_iterator> range=
+    pair<XMLMetadataImpl::groupmap_t::iterator,XMLMetadataImpl::groupmap_t::iterator> range=
         impl->m_groups.equal_range(name);
 
     time_t now=time(NULL);
-    for (XMLMetadataImpl::groupmap_t::const_iterator i=range.first; i!=range.second; i++)
+    for (XMLMetadataImpl::groupmap_t::iterator i=range.first; i!=range.second; i++)
         if (now < i->second->getValidUntil())
             return i->second;
     
@@ -1498,6 +1498,6 @@ const IEntitiesDescriptor* XMLMetadata::lookupGroup(const XMLCh* name, bool stri
 pair<const IEntitiesDescriptor*,const IEntityDescriptor*> XMLMetadata::getRoot() const
 {
     XMLMetadataImpl* impl=dynamic_cast<XMLMetadataImpl*>(getImplementation());
-    return make_pair(impl->m_rootGroup,impl->m_rootProvider);
+    return pair<const IEntitiesDescriptor*,const IEntityDescriptor*>(impl->m_rootGroup,impl->m_rootProvider);
 }
 

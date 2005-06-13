@@ -510,9 +510,9 @@ pair<bool,const char*> ApacheRequestMapper::getString(const char* name, const ch
             }
         }
         else if (name && !strcmp(name,"applicationId") && sta->m_dc->szApplicationId)
-            return make_pair(true,sta->m_dc->szApplicationId);
+            return pair<bool,const char*>(true,sta->m_dc->szApplicationId);
         else if (name && !strcmp(name,"requireSessionWith") && sta->m_dc->szRequireWith)
-            return make_pair(true,sta->m_dc->szRequireWith);
+            return pair<bool,const char*>(true,sta->m_dc->szRequireWith);
     }
     return s ? s->getString(name,ns) : pair<bool,const char*>(false,NULL);
 }
