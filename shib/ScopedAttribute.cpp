@@ -162,7 +162,7 @@ void ScopedAttribute::addValue(const XMLCh* value)
     throw SAMLException("unsupported operation");
 }
 
-void ScopedAttribute::removeValue(unsigned int index)
+void ScopedAttribute::removeValue(unsigned long index)
 {
     if (m_bOwnStrings) {
         XMLCh* p=const_cast<XMLCh*>(m_scopes[index]);

@@ -111,7 +111,7 @@ namespace shibboleth {
         saml::Iterator<std::string> getSingleByteValues() const;
         void setValues(const saml::Iterator<const XMLCh*>& values=EMPTY(const XMLCh*));
         void addValue(const XMLCh* value);
-        void removeValue(unsigned int index);
+        void removeValue(unsigned long index);
         
         static const XMLCh Scope[];
     protected:
