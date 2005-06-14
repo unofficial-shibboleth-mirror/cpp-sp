@@ -65,9 +65,9 @@
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
-#include <process.h>
 
 #ifdef WIN32
+# include <process.h>
 # define XP_WIN32
 #else
 # define XP_UNIX
@@ -459,7 +459,7 @@ pair<bool,bool> SunRequestMapper::getBool(const char* name, const char* ns) cons
     if (stn && !ns && name) {
         // Override boolean properties.
         const char* param=pblock_findval(name,stn->m_pb);
-        if (param && (!strcmp(param,"1") || !util_strcasecmp(param,"true")))
+        if (param && (!strcmp(param,"1") || !strcasecmp(param,"true")))
             return make_pair(true,true);
     }
     return s ? s->getBool(name,ns) : make_pair(false,false);
