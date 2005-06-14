@@ -288,6 +288,17 @@ Yt0LOC4i/8fpCqcHaHVNKvgWipNyEXr6r0nia5NmmrM7I5SQMM2VZv2G4c/KogBe
 		        Location="https://sp.example.org/Shibboleth.sso/SAML/Artifact"/>
 
 		</SPSSODescriptor>
+
+		<!-- This is just information about the entity in human terms. -->
+		<Organization>
+			<OrganizationName xml:lang="en">Example Service Provider</OrganizationName>
+			<OrganizationDisplayName xml:lang="en">Services 'R' Us</OrganizationDisplayName>
+			<OrganizationURL xml:lang="en">http://sp.example.org/</OrganizationURL>
+		</Organization>
+		<ContactPerson contactType="technical">
+			<SurName>Technical Support</SurName>
+			<EmailAddress>support@sp.example.org</EmailAddress>
+		</ContactPerson>
 		
 	</EntityDescriptor>
 
