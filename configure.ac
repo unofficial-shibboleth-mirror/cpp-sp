@@ -251,6 +251,48 @@ if test $NATIVE_RPC = "no"; then
 fi
 AM_CONDITIONAL(USE_OUR_ONCRPC,test "$NATIVE_RPC" = "no")
 
+#
+# Build NSAPI module?
+#
+AC_MSG_CHECKING(for NSAPI module option)
+AC_ARG_WITH(nsapi,
+	AC_HELP_STRING([--with-nsapi=DIR], [Build NSAPI module for Netscape/iPlanet/SunONE]),
+	[WANT_NSAPI=$withval],[WANT_NSAPI=no])
+AC_MSG_RESULT($WANT_NSAPI)
+
+if test "$WANT_NSAPI" != "no"; then
+  if test ! -d $WANT_NSAPI/bin ; then
+    AC_MSG_ERROR(Please specify the path to the root of your Netscape/iPlanet/SunONE server using --with-nsapi=DIR)
+  fi
+  AC_MSG_CHECKING(for NSAPI include files)
+  if test -d $WANT_NSAPI/include ; then
+    NSAPI_INCLUDE=$WANT_NSAPI/include
+    AC_MSG_RESULT(Netscape-Enterprise 3.x style)
+    AC_CHECK_HEADERS([$NSAPI_INCLUDE/nsapi.h])
+  fi
+  if test -d $WANT_NSAPI/plugins/include ; then
+    test -n "$NSAPI_INCLUDE" && NSAPI_INC_DIR="-I$NSAPI_INCLUDE"
+    NSAPI_INCLUDE="$WANT_NSAPI/plugins/include"
+    AC_MSG_RESULT(iPlanet 4.x / SunONE 6.x style)
+    AC_CHECK_HEADERS([$NSAPI_INCLUDE/nsapi.h])
+    NSAPI_INCLUDE="$NSAPI_INC_DIR -I$NSAPI_INCLUDE"
+  fi
+  if test "$NSAPI_INCLUDE" = ""; then
+    AC_MSG_ERROR(Please check you have nsapi.h in either $WANT_NSAPI/include or $WANT_NSAPI/plugins/include)
+  fi
+fi
+
+AC_SUBST(NSAPI_INCLUDE)
+
+# always output the Makefile, even if you don't use it
+AC_CONFIG_FILES([nsapi_shib/Makefile])
+AM_CONDITIONAL(BUILD_NSAPI,test ! "$WANT_NSAPI" = "no")
+
+# add the NSAPI module to the list of wanted subdirs..
+if test ! "$WANT_NSAPI" = "no" ; then
+    WANT_SUBDIRS="$WANT_SUBDIRS nsapi_shib"
+fi
+
 
 # Apache 1.3 (mod_shib_13)
 #   --enable-apache-13
