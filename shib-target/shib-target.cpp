@@ -258,15 +258,10 @@ pair<bool,void*> ShibTarget::doCheckAuthN(bool handler)
                 // do not authenticate the user at this time.
                 return pair<bool,void*>(true, returnOK());
 
-            // Try and cast down. This should throw an exception if it fails.
-            bool retryable=false;
-            try {
-                RetryableProfileException& trycast=dynamic_cast<RetryableProfileException&>(e);
-                retryable=true;
-            }
-            catch (exception&) {
-            }
-            if (retryable) {
+            // Try and cast down.
+            SAMLException* base = &e;
+            RetryableProfileException* trycast=dynamic_cast<RetryableProfileException*>(base);
+            if (trycast) {
                 // Session is invalid but we can retry -- initiate a new session.
                 procState = "Session Initiator Error";
                 const IPropertySet* initiator=NULL;
