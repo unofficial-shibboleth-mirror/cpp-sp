@@ -897,8 +897,11 @@ void ShibTargetPriv::get_application(ShibTarget* st, const string& protocol, con
 
   // Compute the full target URL
   st->m_url = protocol + "://" + hostname;
-  if ((protocol == "http" && port != 80) || (protocol == "https" && port != 443))
-    st->m_url += ":" + port;
+  if ((protocol == "http" && port != 80) || (protocol == "https" && port != 443)) {
+  	ostringstream portstr;
+  	portstr << port;
+    st->m_url += ":" + portstr.str();
+  }
   st->m_url += uri;
 }
 
