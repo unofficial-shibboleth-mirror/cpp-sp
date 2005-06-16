@@ -633,18 +633,6 @@ void InternalCCacheEntry::populate()
   }
 
   try {
-    // Transaction Logging
-    STConfig& stc=static_cast<STConfig&>(ShibTargetConfig::getConfig());
-    stc.getTransactionLog().infoStream() <<
-        "Making attribute query for session (ID: " <<
-            m_id <<
-        ") on (applicationId: " <<
-            m_application_id <<
-        ") for principal from (IdP: " <<
-            m_provider_id <<
-        ")";
-    stc.releaseTransactionLog();
-
     pair<SAMLResponse*,SAMLResponse*> new_responses=getNewResponse();
     if (new_responses.first) {
         delete m_response_pre;
@@ -654,6 +642,7 @@ void InternalCCacheEntry::populate()
         m_responseCreated=time(NULL);
         m_lastRetry=0;
         log->debug("fetched and stored new response");
+    	STConfig& stc=static_cast<STConfig&>(ShibTargetConfig::getConfig());
         stc.getTransactionLog().infoStream() <<  "Successful attribute query for session (ID: " << m_id << ")";
         stc.releaseTransactionLog();
     }
@@ -683,8 +672,21 @@ pair<SAMLResponse*,SAMLResponse*> InternalCCacheEntry::getNewResponse()
     if (m_lastRetry)
         log->debug("retry interval exceeded, so trying again");
     m_lastRetry=now;
-    
+
     log->info("trying to get new attributes for session (ID=%s)", m_id.c_str());
+    
+    // Transaction Logging
+    STConfig& stc=static_cast<STConfig&>(ShibTargetConfig::getConfig());
+    stc.getTransactionLog().infoStream() <<
+        "Making attribute query for session (ID: " <<
+            m_id <<
+        ") on (applicationId: " <<
+            m_application_id <<
+        ") for principal from (IdP: " <<
+            m_provider_id <<
+        ")";
+    stc.releaseTransactionLog();
+
 
     // Caller must be holding the config lock.
     // Lookup application for session to get providerId and attributes to request.
