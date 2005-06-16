@@ -319,7 +319,7 @@ void RPCListener::sessionGet(
         throw FatalProfileException("Invalid client address.");
     }
 
-    log->info("getting session for client at (%s)", ip);
+    log->debug("getting session for client at (%s)", ip);
     log->debug("session cookie (%s)", cookie);
 
     shibrpc_get_session_args_2 arg;
