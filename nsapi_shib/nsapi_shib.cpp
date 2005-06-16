@@ -296,23 +296,26 @@ public:
     const string& content_type="text/html",
     const saml::Iterator<header_t>& headers=EMPTY(header_t)
     ) {
-    pblock_nvinsert("Content-Type", content_type.c_str(), m_rq->srvhdrs);
-    pblock_nninsert("Content-Length", msg.length(), m_rq->srvhdrs);
-    pblock_nvinsert("Connection","close",m_rq->srvhdrs);
+    param_free(pblock_remove("content-type", m_rq->srvhdrs));
+    pblock_nvinsert("content-type", content_type.c_str(), m_rq->srvhdrs);
+    pblock_nninsert("content-length", msg.length(), m_rq->srvhdrs);
+    pblock_nvinsert("connection","close",m_rq->srvhdrs);
     while (headers.hasNext()) {
         const header_t& h=headers.next();
         pblock_nvinsert(h.first.c_str(), h.second.c_str(), m_rq->srvhdrs);
     }
     protocol_status(m_sn, m_rq, code, NULL);
+    protocol_start_response(m_sn, m_rq);
     net_write(m_sn->csd,const_cast<char*>(msg.c_str()),msg.length());
     return (void*)REQ_EXIT;
   }
   virtual void* sendRedirect(const string& url) {
-    pblock_nvinsert("Content-Type", "text/html", m_rq->srvhdrs);
-    pblock_nninsert("Content-Length", 40, m_rq->srvhdrs);
-    pblock_nvinsert("Expires", "01-Jan-1997 12:00:00 GMT", m_rq->srvhdrs);
-    pblock_nvinsert("Cache-Control", "private,no-store,no-cache", m_rq->srvhdrs);
-    pblock_nvinsert("Location", url.c_str(), m_rq->srvhdrs);
+    param_free(pblock_remove("content-type", m_rq->srvhdrs));
+    pblock_nvinsert("content-type", "text/html", m_rq->srvhdrs);
+    pblock_nninsert("content-length", 40, m_rq->srvhdrs);
+    pblock_nvinsert("expires", "01-Jan-1997 12:00:00 GMT", m_rq->srvhdrs);
+    pblock_nvinsert("cache-control", "private,no-store,no-cache", m_rq->srvhdrs);
+    pblock_nvinsert("location", url.c_str(), m_rq->srvhdrs);
     protocol_status(m_sn, m_rq, PROTOCOL_REDIRECT, "302 Please wait");
     protocol_start_response(m_sn, m_rq);
     char* msg="<HTML><BODY>Redirecting...</BODY></HTML>";
