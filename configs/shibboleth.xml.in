@@ -138,9 +138,13 @@
 			<!--
 			SessionInitiators handle session requests and relay them to a WAYF or directly
 			to an IdP, if possible. Automatic session setup will use the default or first
-			element (or requestSessionWith can specify a specific id to use). Lazy sessions
-			can be started with any initiator. The only Binding supported is the
-			"urn:mace:shibboleth:sp:1.3:SessionInit" lazy session profile.
+			element (or requireSessionWith can specify a specific id to use). Lazy sessions
+			can be started with any initiator by redirecting to it. The only Binding supported
+			is the "urn:mace:shibboleth:sp:1.3:SessionInit" lazy session profile using query
+			string parameters:
+		         *  target      the resource to direct back to later (or homeURL will be used)
+		         *  acsIndex    optional index of an ACS to use on the way back in
+		         *  providerId  optional direct invocation of a specific IdP
 			-->
 			
 			<!-- This default example directs users to a specific IdP's SSO service. -->
