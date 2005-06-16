@@ -870,6 +870,7 @@ XMLMetadataImpl::IDPRole::IDPRole(const EntityDescriptor* provider, time_t valid
         }
     }
     else {
+        m_protocolEnum.push_back(Constants::SHIB_NS);
         m_attrprofs.push_back(Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
         int i;
         DOMNodeList* nlist=e->getElementsByTagNameNS(::XML::SHIB_NS,SHIB_L(HandleService));
