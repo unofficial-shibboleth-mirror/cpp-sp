@@ -796,7 +796,7 @@ XMLMetadataImpl::ScopedRole::ScopedRole(const DOMElement* e)
     DOMNodeList* nlist=NULL;
     if (!XMLString::compareString(e->getNamespaceURI(),::XML::SAML2META_NS)) {
         e=saml::XML::getFirstChildElement(e,::XML::SAML2META_NS,SHIB_L(Extensions));
-        nlist=e->getElementsByTagNameNS(::XML::SHIBMETA_NS,SHIB_L(Scope));
+        if (e) nlist=e->getElementsByTagNameNS(::XML::SHIBMETA_NS,SHIB_L(Scope));
     }
     else {
         nlist=e->getElementsByTagNameNS(::XML::SHIB_NS,SHIB_L(Domain));
