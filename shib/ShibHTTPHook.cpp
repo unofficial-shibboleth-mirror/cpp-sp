@@ -136,7 +136,7 @@ static bool ssl_ctx_callback(void* ssl_ctx, void* userptr)
         // that's handed to the callback.
         SSL_CTX_set_cert_verify_callback(
             reinterpret_cast<SSL_CTX*>(ssl_ctx),
-            reinterpret_cast<int (*)(X509_STORE_CTX*,void*)>(verify_callback),
+            reinterpret_cast<int (*)()>(verify_callback),
             NULL
             );
         SSL_CTX_set_verify_depth(reinterpret_cast<SSL_CTX*>(ssl_ctx),reinterpret_cast<int>(userptr));
