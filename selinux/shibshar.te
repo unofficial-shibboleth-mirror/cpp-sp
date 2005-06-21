@@ -23,6 +23,8 @@ allow shibshar_t shibshar_t:unix_stream_socket create_stream_socket_perms;
 allow shibshar_t shibshar_t:netlink_route_socket { create bind getattr};
 allow shibshar_t usr_t:dir r_dir_perms;
 allow shibshar_t usr_t:file rx_file_perms;
+
+allow shibshar_t urandom_device_t:chr_file { getattr read };
  
 # Enable HTTPD to connect to the shib-shar socket and read/write to it
 can_unix_connect(httpd_t, shibshar_var_run_t)
