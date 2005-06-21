@@ -591,11 +591,10 @@ pair<bool,void*> ShibTarget::doExportAssertions(bool requireSession)
         while (provs.hasNext()) {
             IAAP* aap=provs.next();
             Locker locker(aap);
-            const IAttributeRule* rule=aap->lookup(
-                m_priv->m_cacheEntry->getAuthnStatement()->getSubject()->getNameIdentifier()->getFormat()
-                );
+            const XMLCh* format = m_priv->m_cacheEntry->getAuthnStatement()->getSubject()->getNameIdentifier()->getFormat();
+            const IAttributeRule* rule=aap->lookup(format ? format : SAMLNameIdentifier::UNSPECIFIED);
             if (rule && rule->getHeader()) {
-                auto_ptr_char form(m_priv->m_cacheEntry->getAuthnStatement()->getSubject()->getNameIdentifier()->getFormat());
+                auto_ptr_char form(format ? format : SAMLNameIdentifier::UNSPECIFIED);
                 auto_ptr_char nameid(m_priv->m_cacheEntry->getAuthnStatement()->getSubject()->getNameIdentifier()->getName());
                 setHeader("Shib-NameIdentifier-Format", form.get());
                 if (!strcmp(rule->getHeader(),"REMOTE_USER"))
