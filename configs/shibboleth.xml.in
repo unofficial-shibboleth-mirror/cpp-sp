@@ -190,8 +190,8 @@
 			rm="@-PKGSYSCONFDIR-@/rmError.html"
 			access="@-PKGSYSCONFDIR-@/accessError.html"
 			supportContact="root@localhost"
-			logoLocation="/shibtarget/logo.jpg"
-			styleSheet="/shibtarget/main.css"/>
+			logoLocation="/shibboleth-sp/logo.jpg"
+			styleSheet="/shibboleth-sp/main.css"/>
 
 		<!-- Indicates what credentials to use when communicating -->
 		<CredentialUse TLS="defcreds" Signing="defcreds">
