@@ -97,6 +97,7 @@ SAMLResponse* STArtifactMapper::resolve(SAMLRequest* request)
     }
 
 	SAMLResponse* response = NULL;
+	bool authenticated = false;
 
     // Depends on type of artifact.
     const SAMLArtifactType0001* type1=dynamic_cast<const SAMLArtifactType0001*>(artifact);
@@ -112,23 +113,26 @@ SAMLResponse* STArtifactMapper::resolve(SAMLRequest* request)
             while (!response && eps.hasNext()) {
                 const IEndpoint* ep=eps.next();
                 const SAMLBinding* binding = m_app->getBinding(ep->getBinding());
-                if (binding) {
-                    auto_ptr_char loc(ep->getLocation());
-			        log.debug("sending artifact request to %s",loc.get());
-			        try {
-			            response = binding->send(ep->getLocation(),*request,&callCtx);
-			            if (log.isDebugEnabled())
-			            	log.debugStream() << "SAML response from artifact request:\n" << *response << CategoryStream::ENDLINE;
-			            
-			            if (!response->getAssertions().hasNext()) {
-			                delete response;
-			                throw FatalProfileException("No SAML assertions returned in response to artifact profile request.");
-			            }
-			        }
-			        catch (SAMLException& ex) {
-			        	annotateException(&ex,idp); // rethrows it
-			        }
+                if (!binding) {
+                    auto_ptr_char prot(ep->getBinding());
+                    log.warn("skipping binding on unsupported protocol (%s)", prot.get());
+                    continue;
                 }
+                auto_ptr_char loc(ep->getLocation());
+		        try {
+		            response = binding->send(ep->getLocation(),*request,&callCtx);
+		            if (log.isDebugEnabled())
+		            	log.debugStream() << "SAML response from artifact request:\n" << *response << CategoryStream::ENDLINE;
+		            
+		            if (!response->getAssertions().hasNext()) {
+		                delete response;
+		                throw FatalProfileException("No SAML assertions returned in response to artifact profile request.");
+		            }
+		            authenticated = callCtx.isAuthenticated();
+		        }
+		        catch (SAMLException& ex) {
+		        	annotateException(&ex,idp); // rethrows it
+		        }
             }
         }
     }
@@ -146,25 +150,28 @@ SAMLResponse* STArtifactMapper::resolve(SAMLRequest* request)
                 while (eps.hasNext()) {
                     const IEndpoint* ep=eps.next();
                     auto_ptr_char loc(ep->getLocation());
-                    if (!strcmp(loc.get(),type2->getSourceLocation())) {
-		                const SAMLBinding* binding = m_app->getBinding(ep->getBinding());
-		                if (binding) {
-					        log.debug("sending artifact request to %s", loc.get());
-					        try {
-					            response = binding->send(ep->getLocation(),*request,&callCtx);
-					            if (log.isDebugEnabled())
-					            	log.debugStream() << "SAML response from artifact request:\n" << *response << CategoryStream::ENDLINE;
-					            
-					            if (!response->getAssertions().hasNext()) {
-					                delete response;
-					                throw FatalProfileException("No SAML assertions returned in response to artifact profile request.");
-					            }
-					        }
-					        catch (SAMLException& ex) {
-					        	annotateException(&ex,idp); // rethrows it
-					        }
-		                }
-                    }
+                    if (strcmp(loc.get(),type2->getSourceLocation()))
+                    	continue;
+	                const SAMLBinding* binding = m_app->getBinding(ep->getBinding());
+	                if (!binding) {
+	                    auto_ptr_char prot(ep->getBinding());
+	                    log.warn("skipping binding on unsupported protocol (%s)", prot.get());
+	                    continue;
+	                }
+			        try {
+			            response = binding->send(ep->getLocation(),*request,&callCtx);
+			            if (log.isDebugEnabled())
+			            	log.debugStream() << "SAML response from artifact request:\n" << *response << CategoryStream::ENDLINE;
+			            
+			            if (!response->getAssertions().hasNext()) {
+			                delete response;
+			                throw FatalProfileException("No SAML assertions returned in response to artifact profile request.");
+			            }
+			            authenticated = callCtx.isAuthenticated();
+			        }
+			        catch (SAMLException& ex) {
+			        	annotateException(&ex,idp); // rethrows it
+			        }
                 }
             }
         }
@@ -181,10 +188,12 @@ SAMLResponse* STArtifactMapper::resolve(SAMLRequest* request)
 	    MetadataException ex("Unable to locate acceptable binding/endpoint to resolve artifact.");
 	    annotateException(&ex,entity); // throws it
     }
-    else if (signedResponse.first && signedResponse.second && !response->isSigned()) {
-        log.error("unsigned response obtained, but we were told it must be signed.");
-        TrustException ex("Unable to obtain a signed response from artifact request.");
-	    annotateException(&ex,entity); // throws it
+    else if (!response->isSigned()) {
+    	if (!authenticated || (signedResponse.first && signedResponse.second)) {
+	        log.error("unsigned response obtained, but it must be signed.");
+	        TrustException ex("Unable to obtain a signed response from artifact request.");
+		    annotateException(&ex,entity); // throws it
+    	}
     }
     
     return response;

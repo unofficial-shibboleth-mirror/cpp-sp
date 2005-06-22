@@ -753,8 +753,8 @@ pair<SAMLResponse*,SAMLResponse*> InternalCCacheEntry::getNewResponse()
         log->debug("trying to query an AA...");
 
         // Call context object
-        ShibHTTPHook::ShibHTTPHookCallContext ctx(credUse ? credUse->getString("TLS").second : NULL,AA);
         Trust t(application->getTrustProviders());
+        ShibHTTPHook::ShibHTTPHookCallContext ctx(credUse ? credUse->getString("TLS").second : NULL,AA);
         
         // Use metadata to locate endpoints.
         Iterator<const IEndpoint*> endpoints=AA->getAttributeServiceManager()->getEndpoints();
@@ -769,8 +769,12 @@ pair<SAMLResponse*,SAMLResponse*> InternalCCacheEntry::getNewResponse()
                     continue;
                 }
                 auto_ptr<SAMLResponse> r(binding->send(ep->getLocation(), *(req.get()), &ctx));
-                if (r->isSigned() && !t.validate(*r,AA))
-                    throw TrustException("CCacheEntry::getNewResponse() unable to verify signed response");
+                if (r->isSigned()) {
+                	if (!t.validate(*r,AA))
+	                    throw TrustException("Unable to verify signed response message.");
+                }
+                else if (!ctx.isAuthenticated())
+                	throw TrustException("Response message was unauthenticated.");
                 response = r.release();
             }
             catch (SAMLException& e) {
@@ -792,7 +796,7 @@ pair<SAMLResponse*,SAMLResponse*> InternalCCacheEntry::getNewResponse()
             if (signedResponse.first && signedResponse.second && !response->isSigned()) {
                 delete response;
                 log->error("unsigned response obtained, but we were told it must be signed.");
-                throw TrustException("CCacheEntry::getNewResponse() unable to obtain a signed response");
+                throw TrustException("Unable to obtain a signed response message.");
             }
             
             // Run it through the filter.
