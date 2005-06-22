@@ -63,45 +63,71 @@ using namespace saml;
 using namespace shibboleth;
 using namespace shibtarget;
 
-SAMLBrowserProfile::ArtifactMapper::ArtifactMapperResponse STArtifactMapper::map(const SAMLArtifact* artifact, int minorVersion)
+SAMLResponse* STArtifactMapper::resolve(SAMLRequest* request)
 {
     Category& log=Category::getInstance("shibtarget.ArtifactMapper");
     
     // First do a search for the issuer.
-    const IEntityDescriptor* entity=m_metadata.lookup(artifact);
+    SAMLArtifact* artifact=request->getArtifacts().next();
+    Metadata m(m_app->getMetadataProviders());
+    const IEntityDescriptor* entity=m.lookup(artifact);
     if (!entity) {
         log.error(
             "metadata lookup failed, unable to determine issuer of artifact (0x%s)",
             SAMLArtifact::toHex(artifact->getBytes()).c_str()
             );
-        throw MetadataException("ArtifactMapper::map() metadata lookup failed, unable to determine artifact issuer");
+        throw MetadataException("Metadata lookup failed, unable to determine artifact issuer");
     }
     
-    SAMLBrowserProfile::ArtifactMapper::ArtifactMapperResponse amr;
     auto_ptr_char issuer(entity->getId());
     log.info("lookup succeeded, artifact issued by (%s)", issuer.get());
-    amr.source=issuer.get();
     
+    // Sign it?
     const IPropertySet* credUse=m_app->getCredentialUse(entity);
+    pair<bool,bool> signRequest=credUse ? credUse->getBool("signRequest") : make_pair(false,false);
+    pair<bool,bool> signedResponse=credUse ? credUse->getBool("signedResponse") : make_pair(false,false);
+    pair<bool,const char*> signingCred=credUse ? credUse->getString("Signing") : pair<bool,const char*>(false,NULL);
+    if (signRequest.first && signRequest.second && signingCred.first) {
+        Credentials creds(ShibTargetConfig::getConfig().getINI()->getCredentialsProviders());
+        const ICredResolver* cr=creds.lookup(signingCred.second);
+        if (cr)
+            request->sign(SIGNATURE_RSA,cr->getKey(),cr->getCertificates());
+        else
+            log.error("unable to sign artifact request, specified credential (%) was not found",signingCred.second);
+    }
+
+	SAMLResponse* response = NULL;
 
     // Depends on type of artifact.
     const SAMLArtifactType0001* type1=dynamic_cast<const SAMLArtifactType0001*>(artifact);
     if (type1) {
         // With type 01, any endpoint will do.
         const IIDPSSODescriptor* idp=entity->getIDPSSODescriptor(
-            minorVersion==1 ? saml::XML::SAML11_PROTOCOL_ENUM : saml::XML::SAML10_PROTOCOL_ENUM
+            request->getMinorVersion()==1 ? saml::XML::SAML11_PROTOCOL_ENUM : saml::XML::SAML10_PROTOCOL_ENUM
             );
         if (idp) {
+		    ShibHTTPHook::ShibHTTPHookCallContext callCtx(credUse ? credUse->getString("TLS").second : NULL,idp);
             const IEndpointManager* mgr=idp->getArtifactResolutionServiceManager();
             Iterator<const IEndpoint*> eps=mgr ? mgr->getEndpoints() : EMPTY(const IEndpoint*);
-            while (eps.hasNext()) {
+            while (!response && eps.hasNext()) {
                 const IEndpoint* ep=eps.next();
-                amr.binding = m_app->getBinding(ep->getBinding());
-                if (amr.binding) {
+                const SAMLBinding* binding = m_app->getBinding(ep->getBinding());
+                if (binding) {
                     auto_ptr_char loc(ep->getLocation());
-                    amr.endpoint = loc.get();
-                    amr.callCtx = m_ctx = new ShibHTTPHook::ShibHTTPHookCallContext(credUse ? credUse->getString("TLS").second : NULL,idp);
-                    return amr;
+			        log.debug("sending artifact request to %s",loc.get());
+			        try {
+			            response = binding->send(ep->getLocation(),*request,&callCtx);
+			            if (log.isDebugEnabled())
+			            	log.debugStream() << "SAML response from artifact request:\n" << *response << CategoryStream::ENDLINE;
+			            
+			            if (!response->getAssertions().hasNext()) {
+			                delete response;
+			                throw FatalProfileException("No SAML assertions returned in response to artifact profile request.");
+			            }
+			        }
+			        catch (SAMLException& ex) {
+			        	annotateException(&ex,idp); // rethrows it
+			        }
                 }
             }
         }
@@ -111,21 +137,33 @@ SAMLBrowserProfile::ArtifactMapper::ArtifactMapperResponse STArtifactMapper::map
         if (type2) {
             // With type 02, we have to find the matching location.
             const IIDPSSODescriptor* idp=entity->getIDPSSODescriptor(
-                minorVersion==1 ? saml::XML::SAML11_PROTOCOL_ENUM : saml::XML::SAML10_PROTOCOL_ENUM
+                request->getMinorVersion()==1 ? saml::XML::SAML11_PROTOCOL_ENUM : saml::XML::SAML10_PROTOCOL_ENUM
                 );
             if (idp) {
+    		    ShibHTTPHook::ShibHTTPHookCallContext callCtx(credUse ? credUse->getString("TLS").second : NULL,idp);
                 const IEndpointManager* mgr=idp->getArtifactResolutionServiceManager();
                 Iterator<const IEndpoint*> eps=mgr ? mgr->getEndpoints() : EMPTY(const IEndpoint*);
                 while (eps.hasNext()) {
                     const IEndpoint* ep=eps.next();
                     auto_ptr_char loc(ep->getLocation());
                     if (!strcmp(loc.get(),type2->getSourceLocation())) {
-                        amr.binding = m_app->getBinding(ep->getBinding());
-                        if (amr.binding) {
-                            amr.endpoint = loc.get();
-                            amr.callCtx = m_ctx = new ShibHTTPHook::ShibHTTPHookCallContext(credUse ? credUse->getString("TLS").second : NULL,idp);
-                            return amr;
-                        }
+		                const SAMLBinding* binding = m_app->getBinding(ep->getBinding());
+		                if (binding) {
+					        log.debug("sending artifact request to %s", loc.get());
+					        try {
+					            response = binding->send(ep->getLocation(),*request,&callCtx);
+					            if (log.isDebugEnabled())
+					            	log.debugStream() << "SAML response from artifact request:\n" << *response << CategoryStream::ENDLINE;
+					            
+					            if (!response->getAssertions().hasNext()) {
+					                delete response;
+					                throw FatalProfileException("No SAML assertions returned in response to artifact profile request.");
+					            }
+					        }
+					        catch (SAMLException& ex) {
+					        	annotateException(&ex,idp); // rethrows it
+					        }
+		                }
                     }
                 }
             }
@@ -133,13 +171,21 @@ SAMLBrowserProfile::ArtifactMapper::ArtifactMapperResponse STArtifactMapper::map
         else {
             log.error("unrecognized artifact type (0x%s)", SAMLArtifact::toHex(artifact->getTypeCode()).c_str());
             throw UnsupportedExtensionException(
-                string("ArtifactMapper::map() unrecognized artifact type (0x") + SAMLArtifact::toHex(artifact->getTypeCode()) + ")"
+                string("Received unrecognized artifact type (0x") + SAMLArtifact::toHex(artifact->getTypeCode()) + ")"
                 );
         }
     }
     
-    log.error("unable to locate acceptable binding endpoint to resolve artifact");
-    MetadataException ex("Unable to locate acceptable binding endpoint to resolve artifact.");
-    annotateException(&ex,entity,false);
-    throw ex;
+    if (!response) {
+	    log.error("unable to locate acceptable binding/endpoint to resolve artifact");
+	    MetadataException ex("Unable to locate acceptable binding/endpoint to resolve artifact.");
+	    annotateException(&ex,entity); // throws it
+    }
+    else if (signedResponse.first && signedResponse.second && !response->isSigned()) {
+        log.error("unsigned response obtained, but we were told it must be signed.");
+        TrustException ex("Unable to obtain a signed response from artifact request.");
+	    annotateException(&ex,entity); // throws it
+    }
+    
+    return response;
 }
