@@ -98,6 +98,7 @@ static int verify_callback(X509_STORE_CTX* x509_ctx, void* arg)
     }
     
     // Signal success. Hopefully it doesn't matter what's actually in the structure now.
+    ctx->setAuthenticated();
     return 1;
 }
 
@@ -163,6 +164,7 @@ bool ShibHTTPHook::outgoing(HTTPClient* conn, void* globalCtx, void* callCtx)
         
     // The callCtx is our nested context class. Copy in the parent pointer.
     reinterpret_cast<ShibHTTPHookCallContext*>(callCtx)->m_hook=this;
+    reinterpret_cast<ShibHTTPHookCallContext*>(callCtx)->m_authenticated=false;
  
     // The hook function is called before connecting to the HTTP server. This
     // gives us a chance to attach our own SSL callback, and set a version header.

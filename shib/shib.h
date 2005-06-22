@@ -520,15 +520,18 @@ namespace shibboleth
         class SHIB_EXPORTS ShibHTTPHookCallContext {
         public:
             ShibHTTPHookCallContext(const char* credResolverId, const IRoleDescriptor* role)
-                : m_credResolverId(credResolverId), m_role(role), m_hook(NULL) {}
+                : m_credResolverId(credResolverId), m_role(role), m_hook(NULL), m_authenticated(false) {}
             const ShibHTTPHook* getHook() {return m_hook;}
             const char* getCredResolverId() {return m_credResolverId;}
             const IRoleDescriptor* getRoleDescriptor() {return m_role;}
+            bool isAuthenticated() const {return m_authenticated;}
+            void setAuthenticated() {m_authenticated=true;}
             
         private:
             const char* m_credResolverId;
             const IRoleDescriptor* m_role;
             ShibHTTPHook* m_hook;
+            bool m_authenticated;
             friend class ShibHTTPHook;
         };
         
