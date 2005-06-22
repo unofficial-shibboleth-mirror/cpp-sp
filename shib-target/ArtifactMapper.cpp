@@ -100,7 +100,7 @@ SAMLBrowserProfile::ArtifactMapper::ArtifactMapperResponse STArtifactMapper::map
                 if (amr.binding) {
                     auto_ptr_char loc(ep->getLocation());
                     amr.endpoint = loc.get();
-                    amr.callCtx = new ShibHTTPHook::ShibHTTPHookCallContext(credUse ? credUse->getString("TLS").second : NULL,idp);
+                    amr.callCtx = m_ctx = new ShibHTTPHook::ShibHTTPHookCallContext(credUse ? credUse->getString("TLS").second : NULL,idp);
                     return amr;
                 }
             }
@@ -123,7 +123,7 @@ SAMLBrowserProfile::ArtifactMapper::ArtifactMapperResponse STArtifactMapper::map
                         amr.binding = m_app->getBinding(ep->getBinding());
                         if (amr.binding) {
                             amr.endpoint = loc.get();
-                            amr.callCtx = new ShibHTTPHook::ShibHTTPHookCallContext(credUse ? credUse->getString("TLS").second : NULL,idp);
+                            amr.callCtx = m_ctx = new ShibHTTPHook::ShibHTTPHookCallContext(credUse ? credUse->getString("TLS").second : NULL,idp);
                             return amr;
                         }
                     }
