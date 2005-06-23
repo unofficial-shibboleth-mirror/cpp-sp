@@ -470,6 +470,8 @@
 		<attribute name="TLS" type="string" use="optional"/>
 		<attribute name="Signing" type="string" use="optional"/>
 		<attribute name="signRequest" type="boolean" use="optional" default="false"/>
+		<attribute name="signatureAlg" type="anyURI" use="optional"/>
+		<attribute name="digestAlg" type="anyURI" use="optional"/>
 		<attribute name="signedResponse" type="boolean" use="optional" default="false"/>
 		<attribute name="signedAssertions" type="boolean" use="optional" default="false"/>
 	</attributeGroup>
