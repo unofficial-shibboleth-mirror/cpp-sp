@@ -349,7 +349,7 @@ pair<bool,void*> SAML1Consumer::run(ShibTarget* st, const IPropertySet* handler,
         pair<bool,const char*> homeURL=app->getString("homeURL");
         target=homeURL.first ? homeURL.second : "/";
     }
-    else if (target=="cookie") {
+    else if (target=="cookie" || target.empty()) {
         // Pull the target value from the "relay state" cookie.
         pair<string,const char*> relay_cookie = st->getCookieNameProps("_shibstate_");
         const char* relay_state = st->getCookie(relay_cookie.first);
