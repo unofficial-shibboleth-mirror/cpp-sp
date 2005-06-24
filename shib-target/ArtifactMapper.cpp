@@ -85,15 +85,21 @@ SAMLResponse* STArtifactMapper::resolve(SAMLRequest* request)
     // Sign it?
     const IPropertySet* credUse=m_app->getCredentialUse(entity);
     pair<bool,bool> signRequest=credUse ? credUse->getBool("signRequest") : make_pair(false,false);
+    pair<bool,const char*> signatureAlg=credUse ? credUse->getString("signatureAlg") : pair<bool,const char*>(false,NULL);
+    if (!signatureAlg.first)
+        signatureAlg.second=URI_ID_RSA_SHA1;
+    pair<bool,const char*> digestAlg=credUse ? credUse->getString("digestAlg") : pair<bool,const char*>(false,NULL);
+    if (!digestAlg.first)
+        digestAlg.second=URI_ID_SHA1;
     pair<bool,bool> signedResponse=credUse ? credUse->getBool("signedResponse") : make_pair(false,false);
     pair<bool,const char*> signingCred=credUse ? credUse->getString("Signing") : pair<bool,const char*>(false,NULL);
     if (signRequest.first && signRequest.second && signingCred.first) {
         Credentials creds(ShibTargetConfig::getConfig().getINI()->getCredentialsProviders());
         const ICredResolver* cr=creds.lookup(signingCred.second);
         if (cr)
-            request->sign(cr->getKey(),cr->getCertificates());
+            request->sign(cr->getKey(),cr->getCertificates(),signatureAlg.second,digestAlg.second);
         else
-            log.error("unable to sign artifact request, specified credential (%) was not found",signingCred.second);
+            log.error("unable to sign artifact request, specified credential (%s) was not found",signingCred.second);
     }
 
 	SAMLResponse* response = NULL;

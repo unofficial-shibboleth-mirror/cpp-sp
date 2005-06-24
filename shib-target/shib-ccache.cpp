@@ -726,6 +726,12 @@ pair<SAMLResponse*,SAMLResponse*> InternalCCacheEntry::getNewResponse()
     // Get protocol signing policy.
     const IPropertySet* credUse=application->getCredentialUse(site);
     pair<bool,bool> signRequest=credUse ? credUse->getBool("signRequest") : make_pair(false,false);
+    pair<bool,const char*> signatureAlg=credUse ? credUse->getString("signatureAlg") : pair<bool,const char*>(false,NULL);
+    if (!signatureAlg.first)
+        signatureAlg.second=URI_ID_RSA_SHA1;
+    pair<bool,const char*> digestAlg=credUse ? credUse->getString("digestAlg") : pair<bool,const char*>(false,NULL);
+    if (!digestAlg.first)
+        digestAlg.second=URI_ID_SHA1;
     pair<bool,bool> signedResponse=credUse ? credUse->getBool("signedResponse") : make_pair(false,false);
     pair<bool,const char*> signingCred=credUse ? credUse->getString("Signing") : pair<bool,const char*>(false,NULL);
     
@@ -745,9 +751,9 @@ pair<SAMLResponse*,SAMLResponse*> InternalCCacheEntry::getNewResponse()
             Credentials creds(conf->getCredentialsProviders());
             const ICredResolver* cr=creds.lookup(signingCred.second);
             if (cr)
-                req->sign(cr->getKey(),cr->getCertificates());
+                req->sign(cr->getKey(),cr->getCertificates(),signatureAlg.second,digestAlg.second);
             else
-                log->error("unable to sign attribute query, specified credential (%) was not found",signingCred.second);
+                log->error("unable to sign attribute query, specified credential (%s) was not found",signingCred.second);
         }
             
         log->debug("trying to query an AA...");
