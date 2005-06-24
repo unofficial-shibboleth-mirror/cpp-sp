@@ -91,7 +91,7 @@ SAMLResponse* STArtifactMapper::resolve(SAMLRequest* request)
         Credentials creds(ShibTargetConfig::getConfig().getINI()->getCredentialsProviders());
         const ICredResolver* cr=creds.lookup(signingCred.second);
         if (cr)
-            request->sign(SIGNATURE_RSA,cr->getKey(),cr->getCertificates());
+            request->sign(cr->getKey(),cr->getCertificates());
         else
             log.error("unable to sign artifact request, specified credential (%) was not found",signingCred.second);
     }

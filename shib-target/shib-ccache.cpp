@@ -745,7 +745,7 @@ pair<SAMLResponse*,SAMLResponse*> InternalCCacheEntry::getNewResponse()
             Credentials creds(conf->getCredentialsProviders());
             const ICredResolver* cr=creds.lookup(signingCred.second);
             if (cr)
-                req->sign(SIGNATURE_RSA,cr->getKey(),cr->getCertificates());
+                req->sign(cr->getKey(),cr->getCertificates());
             else
                 log->error("unable to sign attribute query, specified credential (%) was not found",signingCred.second);
         }
