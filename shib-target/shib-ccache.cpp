@@ -511,9 +511,8 @@ InternalCCacheEntry::InternalCCacheEntry(
 
   // If pushing attributes, filter the response.
   if (r) {
-    log->debug("filtering attribute information");
-    m_response_post=static_cast<SAMLResponse*>(r->clone());
-    filter(m_response_post, application, source);
+    log->debug("filtering pushed attribute information");
+    m_response_post=filter(r, application, source);
   }
 
   m_lock = Mutex::create();
@@ -560,52 +559,55 @@ bool InternalCCacheEntry::isValid(time_t lifetime, time_t timeout) const
 ISessionCacheEntry::CachedResponse InternalCCacheEntry::getResponse()
 {
 #ifdef _DEBUG
-  saml::NDC ndc("getResponse");
+    saml::NDC ndc("getResponse");
 #endif
-  populate();
-  return CachedResponse(m_response_pre,m_response_post);
+    populate();
+    return CachedResponse(m_response_pre,m_response_post);
 }
 
 bool InternalCCacheEntry::responseValid()
 {
 #ifdef _DEBUG
-  saml::NDC ndc("responseValid");
+    saml::NDC ndc("responseValid");
 #endif
-  log->debug("checking attribute data validity");
-  time_t now=time(NULL) - SAMLConfig::getConfig().clock_skew_secs;
+    log->debug("checking validity of attribute assertions");
+    time_t now=time(NULL) - SAMLConfig::getConfig().clock_skew_secs;
 
-  int count = 0;
-  Iterator<SAMLAssertion*> iter = m_response_pre->getAssertions();
-  while (iter.hasNext()) {
-    SAMLAssertion* assertion = iter.next();
-
-    log->debug("testing assertion...");
-
-    const SAMLDateTime* thistime = assertion->getNotOnOrAfter();
-
-    // If there is no time, then just continue and ignore this assertion.
-    if (!thistime)
-      continue;
-
-    count++;
-
-    if (now >= thistime->getEpoch()) {
-      log->debug("nope, not still valid");
-      return false;
+    int count = 0;
+    Iterator<SAMLAssertion*> assertions = m_response_post->getAssertions();
+    while (assertions.hasNext()) {
+        SAMLAssertion* assertion = assertions.next();
+        
+        // Only examine this assertion if it contains an attribute statement.
+        Iterator<SAMLStatement*> statements = assertion->getStatements();
+        while (statements.hasNext()) {
+            if (dynamic_cast<SAMLAttributeStatement*>(statements.next())) {
+                const SAMLDateTime* thistime = assertion->getNotOnOrAfter();
+        
+                // If there is no time, then just continue and ignore this assertion.
+                if (!thistime)
+                    break;
+        
+                count++;
+                if (now >= thistime->getEpoch()) {
+                    log->debug("found an expired attribute assertion, response is invalid");
+                    return false;
+                }
+            }
+        }
     }
-  }
 
-  // If we didn't find any assertions with times, then see if we're
-  // older than the default response lifetime.
-  if (!count) {
-      if ((now - m_responseCreated) > m_cache->m_defaultLifetime) {
-        log->debug("response is beyond default life, so it's invalid");
-        return false;
-      }
-  }
+    // If we didn't find any assertions with times, then see if we're
+    // older than the default response lifetime.
+    if (!count) {
+        if ((now - m_responseCreated) > m_cache->m_defaultLifetime) {
+            log->debug("response is beyond default life, so it's invalid");
+            return false;
+        }
+    }
   
-  log->debug("yep, response still valid");
-  return true;
+    log->debug("response still valid");
+    return true;
 }
 
 void InternalCCacheEntry::populate()
