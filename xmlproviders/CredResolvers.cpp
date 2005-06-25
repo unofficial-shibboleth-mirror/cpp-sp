@@ -97,8 +97,13 @@ public:
     virtual saml::Iterator<XSECCryptoX509*> getCertificates() const { return m_xseccerts; }
     virtual void dump(FILE* f) const;
     
-protected:
-    enum format_t { DER=SSL_FILETYPE_ASN1, PEM=SSL_FILETYPE_PEM, _PKCS12 };
+private:
+    enum format_t { PEM=SSL_FILETYPE_PEM, DER=SSL_FILETYPE_ASN1, _PKCS12, UNKNOWN };
+
+    format_t getEncodingFormat(BIO* in) const;
+    string formatToString(format_t format) const;
+    format_t xmlFormatToFormat(const XMLCh* format_xml) const;
+
     format_t m_keyformat;
     string m_keypath,m_keypass;
     vector<X509*> m_certs;
@@ -110,25 +115,24 @@ IPlugIn* FileCredResolverFactory(const DOMElement* e)
     return new FileResolver(e);
 }
 
-FileResolver::FileResolver(const DOMElement* e) : m_keyformat(PEM)
+FileResolver::FileResolver(const DOMElement* e)
 {
 #ifdef _DEBUG
     saml::NDC ndc("FileResolver");
 #endif
-    static const XMLCh cPEM[] = { chLatin_P, chLatin_E, chLatin_M, chNull };
-    static const XMLCh cDER[] = { chLatin_D, chLatin_E, chLatin_R, chNull };
+    Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".CredResolvers");
+
+    format_t format;
+    BIO* in = NULL;
     
     // Move to Key
     const DOMElement* root=e;
     e=saml::XML::getFirstChildElement(root,::XML::CREDS_NS,SHIB_L(Key));
     if (e) {
-        const XMLCh* format=e->getAttributeNS(NULL,SHIB_L(format));
-        if (!format || !*format || !XMLString::compareString(format,cPEM))
-            m_keyformat=PEM;
-        else if (!XMLString::compareString(format,cDER))
-            m_keyformat=DER;
-        else
-            m_keyformat=_PKCS12;
+
+        // Get raw format attrib value, but defer processing til later since may need to 
+        // determine format dynamically, and we need the Path for that.
+        const XMLCh* format_xml=e->getAttributeNS(NULL,SHIB_L(format));
             
         const XMLCh* password=e->getAttributeNS(NULL,SHIB_L(password));
         if (password) {
@@ -148,15 +152,49 @@ FileResolver::FileResolver(const DOMElement* e) : m_keyformat(PEM)
             if (stat(kpath.get(), &stat_buf) != 0)
 #endif
             {
-                Category::getInstance(XMLPROVIDERS_LOGCAT".CredResolvers").error("key file '%s' can't be opened", kpath.get());
-                throw CredentialException("FileResolver can't access key file");
+                log.error("key file (%s) can't be opened", kpath.get());
+                throw CredentialException("FileResolver can't access key file ($1)",params(1,kpath.get()));
             }
             m_keypath=kpath.get();
         }
         else {
-            Category::getInstance(XMLPROVIDERS_LOGCAT".CredResolvers").error("Path element missing inside Key element");
-            throw CredentialException("FileResolver can't access key file");
+            log.error("Path element missing inside Key element");
+            throw CredentialException("FileResolver can't access key file, no Path element specified.");
         }
+
+        // Determine the key encoding format dynamically, if not explicitly specified
+        try {
+            if (format_xml && *format_xml) {
+                format = xmlFormatToFormat(format_xml);
+                if (format != UNKNOWN) {
+                    m_keyformat = format;
+                }
+                else {
+                    auto_ptr_char unknown(format_xml);
+                    log.error("Configuration specifies unknown key encoding format (%s)", unknown.get());
+                    throw CredentialException("FileResolver configuration contains unknown key encoding format ($1)",params(1,unknown.get()));
+                }
+            }
+            else {
+                in=BIO_new(BIO_s_file_internal());
+                if (in && BIO_read_filename(in,m_keypath.c_str())>0) {
+                    m_keyformat = getEncodingFormat(in);
+                    log.debug("Key encoding format for (%s) dynamically resolved as (%s)", m_keypath.c_str(), formatToString(m_keyformat).c_str());
+                }
+                else {
+                    log.error("Key file (%s) can't be read to determine encoding format", m_keypath.c_str());
+                    throw CredentialException("FileResolver can't read key file ($1) to determine encoding format",params(1,m_keypath.c_str()));
+                }
+                if (in)
+                    BIO_free(in);
+                in = NULL;    
+            }
+        }
+        catch (...) {
+            log.error("Error determining key encoding format");
+            throw;
+        }
+
     }
         
     // Check for Certificate
@@ -167,56 +205,74 @@ FileResolver::FileResolver(const DOMElement* e) : m_keyformat(PEM)
     
     DOMElement* ep=saml::XML::getFirstChildElement(e,::XML::CREDS_NS,SHIB_L(Path));
     if (!ep || !ep->hasChildNodes()) {
-        Category::getInstance(XMLPROVIDERS_LOGCAT".CredResolvers").error("Path element missing inside Certificate element");
-        throw CredentialException("FileResolver can't access certificate file");
+        log.error("Path element missing inside Certificate element");
+        throw CredentialException("FileResolver can't access certificate file, missing Path element.");
     }
     
     auto_ptr_char certpath(ep->getFirstChild()->getNodeValue());
-    const XMLCh* format=e->getAttributeNS(NULL,SHIB_L(format));
-
+    const XMLCh* format_xml=e->getAttributeNS(NULL,SHIB_L(format));
+    if (format_xml && *format_xml) {
+        format = xmlFormatToFormat(format_xml);
+        if (format == UNKNOWN) {
+            auto_ptr_char unknown(format_xml);
+            log.error("Configuration specifies unknown certificate encoding format (%s)", unknown.get());
+            throw CredentialException("FileResolver configuration contains unknown certificate encoding format ($1)",params(1,unknown.get()));
+        }
+    }
+    
     try {
         X509* x=NULL;
-        BIO* in=BIO_new(BIO_s_file_internal());
+        PKCS12* p12=NULL;
+        in=BIO_new(BIO_s_file_internal());
         if (in && BIO_read_filename(in,certpath.get())>0) {
-            if (!format || !*format || !XMLString::compareString(format,cPEM)) {
-                while (x=PEM_read_bio_X509(in,NULL,passwd_callback,const_cast<char*>(certpass.get()))) {
-                    m_certs.push_back(x);
-                }
+            if (!format_xml || !*format_xml) {
+                // Determine the cert encoding format dynamically, if not explicitly specified
+                format = getEncodingFormat(in);
+                log.debug("Cert encoding format for (%s) dynamically resolved as (%s)", certpath.get(), formatToString(format).c_str());
             }
-            else if (!XMLString::compareString(format,cDER)) {
-                x=d2i_X509_bio(in,NULL);
-                if (x)
-                    m_certs.push_back(x);
-                else {
-                    log_openssl();
-                    BIO_free(in);
-                    throw CredentialException("FileResolver unable to load DER certificate from file");
-                }
-            }
-            else {
-                PKCS12* p12=d2i_PKCS12_bio(in,NULL);
-                if (p12) {
-                    PKCS12_parse(p12, certpass.get(), NULL, &x, NULL);
-                    PKCS12_free(p12);
-                }
-                if (x) {
-                    m_certs.push_back(x);
-                    x=NULL;
-                }
-                else {
-                    log_openssl();
-                    BIO_free(in);
-                    throw CredentialException("FileResolver unable to load PKCS12 certificate from file");
-                }
-            }
-        }
-        else {
+
+            switch(format) {
+                case PEM:
+                    while (x=PEM_read_bio_X509(in,NULL,passwd_callback,const_cast<char*>(certpass.get()))) {
+                           m_certs.push_back(x);
+                    }
+                    break;
+                                
+                case DER:
+                    x=d2i_X509_bio(in,NULL);
+                    if (x)
+                        m_certs.push_back(x);
+                    else {
+                        log_openssl();
+                        BIO_free(in);
+                        throw CredentialException("FileResolver unable to load DER certificate from file ($1)",params(1,certpath.get()));
+                    }
+                    break;
+
+                case _PKCS12:
+                    p12=d2i_PKCS12_bio(in,NULL);
+                    if (p12) {
+                        PKCS12_parse(p12, certpass.get(), NULL, &x, NULL);
+                        PKCS12_free(p12);
+                    }
+                    if (x) {
+                        m_certs.push_back(x);
+                        x=NULL;
+                    } else {
+                        log_openssl();
+                        BIO_free(in);
+                        throw CredentialException("FileResolver unable to load PKCS12 certificate from file ($1)",params(1,certpath.get()));
+                    }
+                    break;
+            } // end switch
+
+        } else {
             log_openssl();
             if (in) {
                 BIO_free(in);
                 in=NULL;
             }
-            throw CredentialException("FileResolver unable to load PEM certificate(s) from file");
+            throw CredentialException("FileResolver unable to load certificate(s) from file ($1)",params(1,certpath.get()));
         }
         if (in) {
             BIO_free(in);
@@ -234,47 +290,59 @@ FileResolver::FileResolver(const DOMElement* e) : m_keyformat(PEM)
                 continue;
             auto_ptr_char capath(static_cast<DOMElement*>(nlist->item(i))->getFirstChild()->getNodeValue());
             x=NULL;
+            p12=NULL;
             in=BIO_new(BIO_s_file_internal());
             if (in && BIO_read_filename(in,capath.get())>0) {
-                if (!format || !*format || !XMLString::compareString(format,cPEM)) {
-                    while (x=PEM_read_bio_X509(in,NULL,passwd_callback,const_cast<char*>(certpass.get()))) {
-                        m_certs.push_back(x);
-                    }
+                if (!format_xml || !*format_xml) {
+                    // Determine the cert encoding format dynamically, if not explicitly specified
+                    format = getEncodingFormat(in);
+                    log.debug("Cert encoding format for (%s) dynamically resolved as (%s)", certpath.get(), formatToString(format).c_str());
                 }
-                else if (!XMLString::compareString(format,cDER)) {
-                    x=d2i_X509_bio(in,NULL);
-                    if (x)
-                        m_certs.push_back(x);
-                    else {
-                        log_openssl();
-                        BIO_free(in);
-                        throw CredentialException("FileResolver unable to load DER CA certificate from file");
-                    }
-                }
-                else {
-                    PKCS12* p12 = d2i_PKCS12_bio(in, NULL);
-                    if (p12) {
-                        PKCS12_parse(p12, certpass.get(), NULL, &x, NULL);
-                        PKCS12_free(p12);
-                    }
-                    if (x) {
-                        m_certs.push_back(x);
-                        x=NULL;
-                    }
-                    else {
-                        log_openssl();
-                        BIO_free(in);
-                        throw CredentialException("FileResolver unable to load PKCS12 CA certificate from file");
-                    }
-                }
+
+                switch (format)
+                {
+                    case PEM:
+                        while (x=PEM_read_bio_X509(in,NULL,passwd_callback,const_cast<char*>(certpass.get()))) {
+                            m_certs.push_back(x);
+                        }
+                        break;
+
+                    case DER:
+                        x=d2i_X509_bio(in,NULL);
+                        if (x)
+                            m_certs.push_back(x);
+                        else {
+                            log_openssl();
+                            BIO_free(in);
+                            throw CredentialException("FileResolver unable to load DER CA certificate from file ($1)",params(1,capath.get()));
+                        }
+                        break;
+
+                    case _PKCS12:
+                        p12 = d2i_PKCS12_bio(in, NULL);
+                        if (p12) {
+                            PKCS12_parse(p12, certpass.get(), NULL, &x, NULL);
+                            PKCS12_free(p12);
+                        }
+                        if (x) {
+                            m_certs.push_back(x);
+                            x=NULL;
+                        } else {
+                            log_openssl();
+                            BIO_free(in);
+                            throw CredentialException("FileResolver unable to load PKCS12 CA certificate from file ($1)",params(1,capath.get()));
+                        }
+                        break;
+                } //end switch
+
                 BIO_free(in);
-            }
-            else {
+
+            } else {
                 if (in)
                     BIO_free(in);
                 log_openssl();
-                Category::getInstance(XMLPROVIDERS_LOGCAT".CredResolvers").error("CA file '%s' can't be opened", capath.get());
-                throw CredentialException("FileResolver can't open CA file");
+                log.error("CA file (%s) can't be opened", capath.get());
+                throw CredentialException("FileResolver can't open CA file ($1)",params(1,capath.get()));
             }
         }
     }
@@ -310,8 +378,7 @@ void FileResolver::attach(void* ctx) const
     SSL_CTX_set_default_passwd_cb_userdata(ssl_ctx, const_cast<char*>(m_keypass.c_str()));
 
     int ret=0;
-    switch (m_keyformat)
-    {
+    switch (m_keyformat) {
         case PEM:
             ret=SSL_CTX_use_PrivateKey_file(ssl_ctx, m_keypath.c_str(), m_keyformat);
             break;
@@ -341,7 +408,7 @@ void FileResolver::attach(void* ctx) const
     
     if (ret!=1) {
         log_openssl();
-        throw CredentialException("FileResolver::attach() unable to set private key");
+        throw CredentialException("Unable to attach private key to SSL context");
     }
 
     // Attach certs.
@@ -349,7 +416,7 @@ void FileResolver::attach(void* ctx) const
         if (i==m_certs.begin()) {
             if (SSL_CTX_use_certificate(ssl_ctx, *i) != 1) {
                 log_openssl();
-                throw CredentialException("FileResolver::attach() unable to set EE certificate in context");
+                throw CredentialException("Unable to attach SP client certificate to SSL context");
             }
         }
         else {
@@ -358,7 +425,7 @@ void FileResolver::attach(void* ctx) const
             if (SSL_CTX_add_extra_chain_cert(ssl_ctx, dup) != 1) {
                 X509_free(dup);
                 log_openssl();
-                throw CredentialException("FileResolver::attach() unable to add CA certificate to context");
+                throw CredentialException("Unable to attach CA certificate to SSL context");
             }
         }
     }
@@ -374,8 +441,7 @@ XSECCryptoKey* FileResolver::getKey() const
     EVP_PKEY* pkey=NULL;
     BIO* in=BIO_new(BIO_s_file_internal());
     if (in && BIO_read_filename(in,m_keypath.c_str())>0) {
-        switch (m_keyformat)
-        {
+        switch (m_keyformat) {
             case PEM:
                 pkey=PEM_read_bio_PrivateKey(in, NULL, passwd_callback, const_cast<char*>(m_keypass.c_str()));
                 break;
@@ -399,8 +465,7 @@ XSECCryptoKey* FileResolver::getKey() const
     // Now map it to an XSEC wrapper.
     if (pkey) {
         XSECCryptoKey* ret=NULL;
-        switch (pkey->type)
-        {
+        switch (pkey->type) {
             case EVP_PKEY_RSA:
                 ret=new OpenSSLCryptoKeyRSA(pkey);
                 break;
@@ -468,4 +533,93 @@ void FileResolver::dump(FILE* f) const
         X509_print_fp(f,*i);
 #endif
     }
+}
+
+// Used to determine the encoding format of credentials files
+// dynamically. Supports: PEM, DER, PKCS12.
+FileResolver::format_t FileResolver::getEncodingFormat(BIO* in) const
+{
+    PKCS12* p12 = NULL;
+    format_t format;
+
+    const int READSIZE = 1;
+    char buf[READSIZE];
+    char b1;
+    int mark;
+
+    try {
+        if ( (mark = BIO_tell(in)) < 0 ) 
+            throw CredentialException("getEncodingFormat: BIO_tell() can't get the file position");
+        if ( BIO_read(in, buf, READSIZE) <= 0 ) 
+            throw CredentialException("getEncodingFormat: BIO_read() can't read from the stream");
+        if ( BIO_seek(in, mark) < 0 ) 
+            throw CredentialException("getEncodingFormat: BIO_seek() can't reset the file position");
+    }
+    catch (...) {
+        log_openssl();
+        throw;
+    }
+
+    b1 = buf[0];
+
+    // This is a slight variation of the Java code by Chad La Joie.
+    //
+    // Check the first byte of the file.  If it's some kind of
+    // DER-encoded structure (including PKCS12), it will begin with ASCII 048.
+    // Otherwise, assume it's PEM.
+    if (b1 !=  48) {
+        format = PEM;
+    } else {
+        // Here we know it's DER-encoded, now try to parse it as a PKCS12
+        // ASN.1 structure.  If it fails, must be another kind of DER-encoded
+        // key/cert structure.  A little inefficient...but it works.
+        if ( (p12=d2i_PKCS12_bio(in,NULL)) == NULL ) {
+            format = DER;
+        } else {
+            format = _PKCS12;
+        }
+        if (p12)
+            PKCS12_free(p12);    
+        if ( BIO_seek(in, mark) < 0 ) {
+            log_openssl();
+            throw CredentialException("getEncodingFormat: BIO_seek() can't reset the file position");
+        }
+    }
+
+    return format;
+}
+
+// Convert key/cert format_t types to a human-meaningful string for debug output
+string FileResolver::formatToString(format_t format) const
+{
+    switch(format) {
+        case PEM:
+            return "PEM";
+        case DER:
+            return "DER";
+        case _PKCS12:
+            return "PKCS12";
+        default:
+            return "UNKNOWN";
+    }
+}
+
+// Convert key/cert raw XML format attribute (XMLCh[]) to format_t type
+FileResolver::format_t FileResolver::xmlFormatToFormat(const XMLCh* format_xml) const
+{
+    static const XMLCh cPEM[] = { chLatin_P, chLatin_E, chLatin_M, chNull };
+    static const XMLCh cDER[] = { chLatin_D, chLatin_E, chLatin_R, chNull };
+    static const XMLCh cPKCS12[] = { chLatin_P, chLatin_K, chLatin_C, chLatin_S, chDigit_1, chDigit_2, chNull };
+    format_t format;
+
+    if (!XMLString::compareString(format_xml,cPEM))
+        format=PEM;
+    else if (!XMLString::compareString(format_xml,cDER))
+        format=DER;
+    else if (!XMLString::compareString(format_xml,cPKCS12))
+        format=_PKCS12;
+    else
+        format=UNKNOWN;
+
+    return format;
 }

@@ -264,10 +264,10 @@
 	<CredentialsProvider type="edu.internet2.middleware.shibboleth.common.Credentials">
 		<Credentials xmlns="urn:mace:shibboleth:credentials:1.0">
 			<FileResolver Id="defcreds">
-				<Key format="PEM">
+				<Key>
 					<Path>@-PKGSYSCONFDIR-@/sp-example.key</Path>
 				</Key>
-				<Certificate format="PEM">
+				<Certificate>
 					<Path>@-PKGSYSCONFDIR-@/sp-example.crt</Path>
 				</Certificate>
 			</FileResolver>
@@ -279,10 +279,10 @@
 			-->
 			<!--
 			<FileResolver Id="inqueuecreds">
-				<Key format="PEM">
+				<Key>
 					<Path>@-PKGSYSCONFDIR-@/inqueue.key</Path>
 				</Key>
-				<Certificate format="PEM">
+				<Certificate>
 					<Path>@-PKGSYSCONFDIR-@/inqueue.crt</Path>
 				</Certificate>
 			</FileResolver>
