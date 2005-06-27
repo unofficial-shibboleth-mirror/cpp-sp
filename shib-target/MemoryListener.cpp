@@ -256,9 +256,6 @@ void MemoryListener::sessionNew(
     // It passes all our tests -- create a new session.
     log->info("creating new session");
 
-    // Create a new session key.
-    cookie = conf->getSessionCache()->generateKey();
-
     // Are attributes present?
     bool attributesPushed=false;
     Iterator<SAMLAssertion*> assertions=bpr.response->getAssertions();
@@ -274,6 +271,9 @@ void MemoryListener::sessionNew(
     auto_ptr_char hname(bpr.authnStatement->getSubject()->getNameIdentifier()->getName());
 
     try {
+        // Create a new session key.
+        cookie = conf->getSessionCache()->generateKey();
+
         // Insert into cache.
         auto_ptr<SAMLAuthenticationStatement> as(static_cast<SAMLAuthenticationStatement*>(bpr.authnStatement->clone()));
         conf->getSessionCache()->insert(
