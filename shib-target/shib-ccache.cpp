@@ -776,12 +776,13 @@ pair<SAMLResponse*,SAMLResponse*> InternalCCacheEntry::getNewResponse()
                     log->warn("skipping binding on unsupported protocol (%s)", prot.get());
                     continue;
                 }
+                static const XMLCh https[] = {chLatin_h, chLatin_t, chLatin_t, chLatin_p, chLatin_s, chColon, chNull};
                 auto_ptr<SAMLResponse> r(binding->send(ep->getLocation(), *(req.get()), &ctx));
                 if (r->isSigned()) {
                 	if (!t.validate(*r,AA))
 	                    throw TrustException("Unable to verify signed response message.");
                 }
-                else if (!ctx.isAuthenticated())
+                else if (!ctx.isAuthenticated() || XMLString::compareNString(ep->getLocation(),https,6))
                 	throw TrustException("Response message was unauthenticated.");
                 response = r.release();
             }

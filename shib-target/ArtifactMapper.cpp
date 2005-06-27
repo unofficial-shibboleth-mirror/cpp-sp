@@ -104,6 +104,7 @@ SAMLResponse* STArtifactMapper::resolve(SAMLRequest* request)
 
 	SAMLResponse* response = NULL;
 	bool authenticated = false;
+    static const XMLCh https[] = {chLatin_h, chLatin_t, chLatin_t, chLatin_p, chLatin_s, chColon, chNull};
 
     // Depends on type of artifact.
     const SAMLArtifactType0001* type1=dynamic_cast<const SAMLArtifactType0001*>(artifact);
@@ -124,7 +125,6 @@ SAMLResponse* STArtifactMapper::resolve(SAMLRequest* request)
                     log.warn("skipping binding on unsupported protocol (%s)", prot.get());
                     continue;
                 }
-                auto_ptr_char loc(ep->getLocation());
 		        try {
 		            response = binding->send(ep->getLocation(),*request,&callCtx);
 		            if (log.isDebugEnabled())
@@ -134,7 +134,7 @@ SAMLResponse* STArtifactMapper::resolve(SAMLRequest* request)
 		                delete response;
 		                throw FatalProfileException("No SAML assertions returned in response to artifact profile request.");
 		            }
-		            authenticated = callCtx.isAuthenticated();
+		            authenticated = callCtx.isAuthenticated() && !XMLString::compareNString(ep->getLocation(),https,6);
 		        }
 		        catch (SAMLException& ex) {
 		        	annotateException(&ex,idp); // rethrows it
@@ -173,7 +173,7 @@ SAMLResponse* STArtifactMapper::resolve(SAMLRequest* request)
 			                delete response;
 			                throw FatalProfileException("No SAML assertions returned in response to artifact profile request.");
 			            }
-			            authenticated = callCtx.isAuthenticated();
+                        authenticated = callCtx.isAuthenticated() && !XMLString::compareNString(ep->getLocation(),https,6);
 			        }
 			        catch (SAMLException& ex) {
 			        	annotateException(&ex,idp); // rethrows it

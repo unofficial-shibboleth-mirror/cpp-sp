@@ -98,7 +98,6 @@ static int verify_callback(X509_STORE_CTX* x509_ctx, void* arg)
     }
     
     // Signal success. Hopefully it doesn't matter what's actually in the structure now.
-    ctx->setAuthenticated();
     return 1;
 }
 
@@ -141,7 +140,12 @@ static bool ssl_ctx_callback(void* ssl_ctx, void* userptr)
             NULL
             );
         SSL_CTX_set_verify_depth(reinterpret_cast<SSL_CTX*>(ssl_ctx),reinterpret_cast<int>(userptr));
+
 #endif
+        // The best we can do is assume authentication succeeds because when libcurl reuses
+        // SSL connections, no callback is made. Since we always authenticate SSL connections,
+        // the caller should check that the protocol is https.
+        ctx->setAuthenticated();
     }
     catch (SAMLException& e) {
         log.error(string("caught a SAML exception while attaching credentials to request: ") + e.what());
@@ -153,6 +157,7 @@ static bool ssl_ctx_callback(void* ssl_ctx, void* userptr)
         return false;
     }
 #endif
+    
     return true;
 }
 
