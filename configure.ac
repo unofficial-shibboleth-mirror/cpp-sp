@@ -12,11 +12,9 @@ AC_ARG_ENABLE(debug,
     enable_debug=$enableval, enable_debug=no)
 
 if test "$enable_debug" = "yes" ; then
-    GCC_CPPFLAGS="$CPPFLAGS -D_DEBUG"
     GCC_CFLAGS="$CFLAGS -g -D_DEBUG"
     GCC_CXXFLAGS="$CXXFLAGS -g -D_DEBUG"
 else
-    GCC_CPPFLAGS="$CPPFLAGS -DNDEBUG"
     GCC_CFLAGS="$CFLAGS -O2 -DNDEBUG"
     GCC_CXXFLAGS="$CXXFLAGS -O2 -DNDEBUG"
 fi
@@ -25,7 +23,6 @@ AC_PROG_CC([gcc gcc3 cc])
 AC_PROG_CXX([g++ g++3 c++ CC])
 
 if test "$GCC" = "yes" ; then
-    CPPFLAGS="$GCC_CPPFLAGS"
     CFLAGS="$GCC_CFLAGS"
     CXXFLAGS="$GCC_CXXFLAGS"
 fi
