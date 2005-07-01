@@ -194,7 +194,9 @@ void AAP::apply(const saml::Iterator<IAAP*>& aaps, saml::SAMLAssertion& assertio
     }
     aaps.reset();
     while (aaps.hasNext()) {
-        if (aaps.next()->anyAttribute()) {
+        IAAP* p=aaps.next();
+        Locker locker(p);
+        if (p->anyAttribute()) {
             log.info("any attribute enabled, accepting entire assertion");
             return;
         }
