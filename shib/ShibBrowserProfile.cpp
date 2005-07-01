@@ -120,7 +120,8 @@ SAMLBrowserProfile::BrowserProfileResponse ShibBrowserProfile::receive(
     const IEntityDescriptor* provider=m.lookup(bpr.assertion->getIssuer());
     if (provider)
         log.debug("matched assertion issuer against metadata");
-    else if (bpr.authnStatement->getSubject()->getNameIdentifier()->getNameQualifier()) {
+    else if (bpr.authnStatement->getSubject()->getNameIdentifier() &&
+             bpr.authnStatement->getSubject()->getNameIdentifier()->getNameQualifier()) {
         // Might be a down-level origin.
         provider=m.lookup(bpr.authnStatement->getSubject()->getNameIdentifier()->getNameQualifier());
         if (provider)
