@@ -243,16 +243,14 @@ void AAP::apply(const saml::Iterator<IAAP*>& aaps, saml::SAMLAssertion& assertio
             aaps.reset();
             while (aaps.hasNext()) {
                 IAAP* i=aaps.next();
-                i->lock();
+                Locker locker(i);
                 if (rule=i->lookup(a->getName(),a->getNamespace())) {
                     ruleFound=true;
                     try {
                         rule->apply(*a,role);
-                        i->unlock();
                     }
                     catch (SAMLException&) {
                         // The attribute is now defunct.
-                        i->unlock();
                         log.info("no values remain, removing attribute");
                         s->removeAttribute(acount--);
                         break;
