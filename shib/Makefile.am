@@ -16,7 +16,6 @@ libshib_la_SOURCES = \
                     ShibbolethTrust.cpp \
                     ShibConfig.cpp \
                     ShibBrowserProfile.cpp \
-                    ShibHTTPHook.cpp \
                     shib-threads.cpp \
                     ScopedAttribute.cpp
 

@@ -1,52 +1,18 @@
 /*
- * The Shibboleth License, Version 1.
- * Copyright (c) 2002
- * University Corporation for Advanced Internet Development, Inc.
- * All rights reserved
+ *  Copyright 2001-2005 Internet2
  *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution, if any, must include
- * the following acknowledgment: "This product includes software developed by
- * the University Corporation for Advanced Internet Development
- * <http://www.ucaid.edu>Internet2 Project. Alternately, this acknowledegement
- * may appear in the software itself, if and wherever such third-party
- * acknowledgments normally appear.
- *
- * Neither the name of Shibboleth nor the names of its contributors, nor
- * Internet2, nor the University Corporation for Advanced Internet Development,
- * Inc., nor UCAID may be used to endorse or promote products derived from this
- * software without specific prior written permission. For written permission,
- * please contact shibboleth@shibboleth.org
- *
- * Products derived from this software may not be called Shibboleth, Internet2,
- * UCAID, or the University Corporation for Advanced Internet Development, nor
- * may Shibboleth appear in their name, without prior written permission of the
- * University Corporation for Advanced Internet Development.
- *
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND WITH ALL FAULTS. ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
- * PARTICULAR PURPOSE, AND NON-INFRINGEMENT ARE DISCLAIMED AND THE ENTIRE RISK
- * OF SATISFACTORY QUALITY, PERFORMANCE, ACCURACY, AND EFFORT IS WITH LICENSEE.
- * IN NO EVENT SHALL THE COPYRIGHT OWNER, CONTRIBUTORS OR THE UNIVERSITY
- * CORPORATION FOR ADVANCED INTERNET DEVELOPMENT, INC. BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-
 
 /* shib.h - Shibboleth header file
 
@@ -500,46 +466,6 @@ namespace shibboleth
         saml::SAMLBrowserProfile* m_profile;
         saml::Iterator<IMetadata*> m_metadatas;
         saml::Iterator<ITrust*> m_trusts;
-    };
-
-    // Instead of wrapping the binding to deal with mutual authentication, we
-    // just use the HTTP hook functionality offered by OpenSAML. The hook will
-    // register "itself" as a globalCtx pointer with the SAML binding and the caller
-    // will declare and pass the embedded struct as callCtx for use by the hook.
-    class SHIB_EXPORTS ShibHTTPHook : virtual public saml::SAMLSOAPHTTPBinding::HTTPHook
-    {
-    public:
-        ShibHTTPHook(const saml::Iterator<ITrust*>& trusts, const saml::Iterator<ICredentials*>& creds)
-            : m_trusts(trusts), m_creds(creds) {}
-        virtual ~ShibHTTPHook() {}
-        
-        // Only hook we need here is for outgoing connection to server.
-        virtual bool outgoing(saml::HTTPClient* conn, void* globalCtx=NULL, void* callCtx=NULL);
-
-        // Client declares a context object and pass as callCtx to send() method.
-        class SHIB_EXPORTS ShibHTTPHookCallContext {
-        public:
-            ShibHTTPHookCallContext(const char* credResolverId, const IRoleDescriptor* role)
-                : m_credResolverId(credResolverId), m_role(role), m_hook(NULL), m_authenticated(false) {}
-            const ShibHTTPHook* getHook() {return m_hook;}
-            const char* getCredResolverId() {return m_credResolverId;}
-            const IRoleDescriptor* getRoleDescriptor() {return m_role;}
-            bool isAuthenticated() const {return m_authenticated;}
-            void setAuthenticated() {m_authenticated=true;}
-            
-        private:
-            const char* m_credResolverId;
-            const IRoleDescriptor* m_role;
-            ShibHTTPHook* m_hook;
-            bool m_authenticated;
-            friend class ShibHTTPHook;
-        };
-        
-        const saml::Iterator<ITrust*>& getTrustProviders() const {return m_trusts;}
-        const saml::Iterator<ICredentials*>& getCredentialProviders() const {return m_creds;}
-    private:
-        saml::Iterator<ITrust*> m_trusts;
-        saml::Iterator<ICredentials*> m_creds;
     };
 
     class SHIB_EXPORTS ShibConfig
