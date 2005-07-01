@@ -143,7 +143,7 @@ int main(int argc,char* argv[])
         if (!AA)
             throw SAMLException("Unable to locate metadata for origin site's Attribute Authority.");
 
-        ShibHTTPHook::ShibHTTPHookCallContext ctx(app->getCredentialUse(site)->getString("TLS").second,AA);
+        ShibHTTPHook::ShibHTTPHookCallContext ctx(app->getCredentialUse(site),AA);
         Trust t(app->getTrustProviders());
 
         SAMLResponse* response=NULL;
