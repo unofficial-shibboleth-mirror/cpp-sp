@@ -136,6 +136,46 @@ namespace shibtarget {
         virtual ~IApplication() {}
     };
 
+    // Instead of wrapping the binding to deal with mutual authentication, we
+    // just use the HTTP hook functionality offered by OpenSAML. The hook will
+    // register "itself" as a globalCtx pointer with the SAML binding and the caller
+    // will declare and pass the embedded struct as callCtx for use by the hook.
+    class ShibHTTPHook : virtual public saml::SAMLSOAPHTTPBinding::HTTPHook
+    {
+    public:
+        ShibHTTPHook(const saml::Iterator<shibboleth::ITrust*>& trusts, const saml::Iterator<shibboleth::ICredentials*>& creds)
+            : m_trusts(trusts), m_creds(creds) {}
+        virtual ~ShibHTTPHook() {}
+        
+        // Only hook we need here is for outgoing connection to server.
+        virtual bool outgoing(saml::HTTPClient* conn, void* globalCtx=NULL, void* callCtx=NULL);
+
+        // Client declares a context object and pass as callCtx to send() method.
+        class ShibHTTPHookCallContext {
+        public:
+            ShibHTTPHookCallContext(const IPropertySet* credUse, const shibboleth::IRoleDescriptor* role)
+                : m_credUse(credUse), m_role(role), m_hook(NULL), m_authenticated(false) {}
+            const ShibHTTPHook* getHook() {return m_hook;}
+            const IPropertySet* getCredentialUse() {return m_credUse;}
+            const shibboleth::IRoleDescriptor* getRoleDescriptor() {return m_role;}
+            bool isAuthenticated() const {return m_authenticated;}
+            void setAuthenticated() {m_authenticated=true;}
+            
+        private:
+            const IPropertySet* m_credUse;
+            const shibboleth::IRoleDescriptor* m_role;
+            ShibHTTPHook* m_hook;
+            bool m_authenticated;
+            friend class ShibHTTPHook;
+        };
+        
+        const saml::Iterator<shibboleth::ITrust*>& getTrustProviders() const {return m_trusts;}
+        const saml::Iterator<shibboleth::ICredentials*>& getCredentialProviders() const {return m_creds;}
+    private:
+        saml::Iterator<shibboleth::ITrust*> m_trusts;
+        saml::Iterator<shibboleth::ICredentials*> m_creds;
+    };
+
     struct SHIBTARGET_EXPORTS ISessionCacheEntry : public virtual saml::ILockable
     {
         virtual bool isValid(time_t lifetime, time_t timeout) const=0;

@@ -21,6 +21,7 @@ libshib_target_la_SOURCES = \
 	ArtifactMapper.cpp \
 	MemoryListener.cpp \
 	RPCListener.cpp \
+    ShibHTTPHook.cpp \
 	shib-ccache.cpp \
 	shib-config.cpp \
 	shib-handlers.cpp \

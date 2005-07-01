@@ -53,7 +53,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386
-# ADD LINK32 log4cpp.lib xerces-c_2.lib wsock32.lib saml_5.lib /nologo /dll /machine:I386 /out:"Release/shibtarget_5.dll" /libpath:"..\..\..\opensaml\c\saml\Release"
+# ADD LINK32 log4cpp.lib xerces-c_2.lib saml_5.lib wsock32.lib libeay32.lib ssleay32.lib /nologo /dll /machine:I386 /out:"Release/shibtarget_5.dll" /libpath:"..\..\..\opensaml\c\saml\Release" /libpath:"\openssl-0.9.7e\out32dll"
 # SUBTRACT LINK32 /pdb:none
 
 !ELSEIF  "$(CFG)" == "shibtarget - Win32 Debug"
@@ -70,7 +70,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "SHIBTARGET_EXPORTS" /YX /FD /GZ /c
-# ADD CPP /nologo /MDd /W3 /Gm /GR /GX /ZI /Od /I "." /I ".." /I "..\oncrpc" /I "..\..\..\opensaml\c" /D "_DEBUG" /D "_AFXDLL" /D "_WINDOWS" /D "WIN32" /D "_MBCS" /D "WANT_TCP_SHAR" /FR /YX /FD /GZ /c
+# ADD CPP /nologo /MDd /W3 /Gm /GR /GX /ZI /Od /I "." /I ".." /I "..\oncrpc" /I "..\..\..\opensaml\c" /D "_WINDOWS" /D "WANT_TCP_SHAR" /D "WIN32" /D "_DEBUG" /D "_MBCS" /FR /YX /FD /GZ /c
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
@@ -80,7 +80,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 log4cppD.lib xerces-c_2D.lib wsock32.lib saml_5D.lib /nologo /dll /debug /machine:I386 /out:"Debug/shibtarget_5D.dll" /pdbtype:sept /libpath:"..\..\..\opensaml\c\saml\Debug"
+# ADD LINK32 log4cppD.lib xerces-c_2D.lib saml_5D.lib wsock32.lib libeay32.lib ssleay32.lib /nologo /dll /debug /machine:I386 /out:"Debug/shibtarget_5D.dll" /pdbtype:sept /libpath:"..\..\..\opensaml\c\saml\Debug" /libpath:"\openssl-0.9.7e\out32dll.dbg"
 # SUBTRACT LINK32 /pdb:none
 
 !ENDIF 
@@ -148,6 +148,10 @@ SOURCE=".\shib-target.h"
 # Begin Source File
 
 SOURCE=".\shib-target.rc"
+# End Source File
+# Begin Source File
+
+SOURCE=.\ShibHTTPHook.cpp
 # End Source File
 # Begin Source File
 

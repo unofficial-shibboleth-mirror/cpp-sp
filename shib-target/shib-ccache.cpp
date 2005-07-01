@@ -762,7 +762,7 @@ pair<SAMLResponse*,SAMLResponse*> InternalCCacheEntry::getNewResponse()
 
         // Call context object
         Trust t(application->getTrustProviders());
-        ShibHTTPHook::ShibHTTPHookCallContext ctx(credUse ? credUse->getString("TLS").second : NULL,AA);
+        ShibHTTPHook::ShibHTTPHookCallContext ctx(credUse,AA);
         
         // Use metadata to locate endpoints.
         Iterator<const IEndpoint*> endpoints=AA->getAttributeServiceManager()->getEndpoints();

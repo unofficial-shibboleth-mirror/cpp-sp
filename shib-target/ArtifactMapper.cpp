@@ -114,7 +114,7 @@ SAMLResponse* STArtifactMapper::resolve(SAMLRequest* request)
             request->getMinorVersion()==1 ? saml::XML::SAML11_PROTOCOL_ENUM : saml::XML::SAML10_PROTOCOL_ENUM
             );
         if (idp) {
-		    ShibHTTPHook::ShibHTTPHookCallContext callCtx(credUse ? credUse->getString("TLS").second : NULL,idp);
+		    ShibHTTPHook::ShibHTTPHookCallContext callCtx(credUse,idp);
             const IEndpointManager* mgr=idp->getArtifactResolutionServiceManager();
             Iterator<const IEndpoint*> eps=mgr ? mgr->getEndpoints() : EMPTY(const IEndpoint*);
             while (!response && eps.hasNext()) {
@@ -150,7 +150,7 @@ SAMLResponse* STArtifactMapper::resolve(SAMLRequest* request)
                 request->getMinorVersion()==1 ? saml::XML::SAML11_PROTOCOL_ENUM : saml::XML::SAML10_PROTOCOL_ENUM
                 );
             if (idp) {
-    		    ShibHTTPHook::ShibHTTPHookCallContext callCtx(credUse ? credUse->getString("TLS").second : NULL,idp);
+    		    ShibHTTPHook::ShibHTTPHookCallContext callCtx(credUse,idp);
                 const IEndpointManager* mgr=idp->getArtifactResolutionServiceManager();
                 Iterator<const IEndpoint*> eps=mgr ? mgr->getEndpoints() : EMPTY(const IEndpoint*);
                 while (eps.hasNext()) {
