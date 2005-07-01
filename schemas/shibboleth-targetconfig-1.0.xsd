@@ -474,6 +474,18 @@
 		<attribute name="digestAlg" type="anyURI" use="optional"/>
 		<attribute name="signedResponse" type="boolean" use="optional" default="false"/>
 		<attribute name="signedAssertions" type="boolean" use="optional" default="false"/>
+		<attribute name="authType" use="optional">
+			<simpleType>
+				<restriction base="string">
+					<enumeration value="basic"/>
+					<enumeration value="digest"/>
+					<enumeration value="ntlm"/>
+					<enumeration value="gss"/>
+				</restriction>
+			</simpleType>
+		</attribute>
+		<attribute name="authUsername" use="optional"/>
+		<attribute name="authPassword" use="optional"/>
 	</attributeGroup>
 
 	<element name="CredentialUse">
