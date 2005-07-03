@@ -12,8 +12,8 @@ file0=\mysql-4.1.12\share\english\errmsg.sys
 file1=\mysql-4.1.12\share\english\errmsg.txt
 
 [lib\debug]
-file0=\xml-security-c-1.1.0\Build\Win32\VC6\Debug\xsec_1_1_0D.dll
-file1=\xml-security-c-1.1.0\Build\Win32\VC6\Debug\xsec_1D.lib
+file0=\xml-security-c-1.2.0\Build\Win32\VC6\Debug\xsec_1_2_0D.dll
+file1=\xml-security-c-1.2.0\Build\Win32\VC6\Debug\xsec_1_2D.lib
 file2=\curl-7.13.1\lib\libcurld_imp.lib
 file3=\curl-7.13.1\lib\libcurld.dll
 file4=\openssl-0.9.7e\out32dll.dbg\ssleay32.lib
@@ -206,8 +206,8 @@ file4=..\xmlproviders\Debug\xmlproviders.so
 file5=..\nsapi_shib\Debug\nsapi_shib.dll
 
 [lib]
-file0=\xml-security-c-1.1.0\Build\Win32\VC6\Release\xsec_1.lib
-file1=\xml-security-c-1.1.0\Build\Win32\VC6\Release\xsec_1_1_0.dll
+file0=\xml-security-c-1.2.0\Build\Win32\VC6\Release\xsec_1_2.lib
+file1=\xml-security-c-1.2.0\Build\Win32\VC6\Release\xsec_1_2_0.dll
 file15=..\shib-target\Release\shibtarget_5.dll
 file16=..\shib\Release\shib_6.lib
 file17=..\shib\Release\shib_6.dll
