@@ -62,7 +62,7 @@ static char sccsid[] = "@(#)svc.c 1.41 87/10/13 Copyr 1984 Sun Micro";
 #include <rpc/pmap_clnt.h>
 #include <pthread.h>
 
-static pthread_mutex_t __thr_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t __thr_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 extern int errno;
 #endif
