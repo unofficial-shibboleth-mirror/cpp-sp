@@ -113,10 +113,6 @@ static bool ssl_ctx_callback(void* ssl_ctx, void* userptr)
         SSL_CTX_set_verify_depth(reinterpret_cast<SSL_CTX*>(ssl_ctx),reinterpret_cast<int>(userptr));
 
 #endif
-        // The best we can do is assume authentication succeeds because when libcurl reuses
-        // SSL connections, no callback is made. Since we always authenticate SSL connections,
-        // the caller should check that the protocol is https.
-        ctx->setAuthenticated();
     }
     catch (SAMLException& e) {
         log.error(string("caught a SAML exception while attaching credentials to request: ") + e.what());
@@ -137,13 +133,13 @@ bool ShibHTTPHook::outgoing(HTTPClient* conn, void* globalCtx, void* callCtx)
     // Sanity check...
     if (globalCtx != this)
         return false;
-        
+
+    // Clear authn status.
+    reinterpret_cast<ShibHTTPHookCallContext*>(callCtx)->m_authenticated=false;
+         
     // The callCtx is our nested context class. Copy in the parent pointer.
     reinterpret_cast<ShibHTTPHookCallContext*>(callCtx)->m_hook=this;
     
-    // Clear authn status.
-    reinterpret_cast<ShibHTTPHookCallContext*>(callCtx)->m_authenticated=false;
- 
     // The hook function is called before connecting to the HTTP server. This
     // gives us a chance to attach our own SSL callback, and set a version header.
     if (!conn->setSSLCallback(ssl_ctx_callback,callCtx))
@@ -188,5 +184,10 @@ bool ShibHTTPHook::outgoing(HTTPClient* conn, void* globalCtx, void* callCtx)
         log.debug("configured for HTTP authentication (method=%s, username=%s)", authType.second, username.second);
         return conn->setAuth(type,username.second,password.second);
     }
+
+    // The best we can do is assume authentication succeeds because when libcurl reuses
+    // SSL and HTTP connections, no callback is made. Since we always authenticate SSL connections,
+    // the caller should check that the protocol is https.
+    reinterpret_cast<ShibHTTPHookCallContext*>(callCtx)->setAuthenticated();
     return true;
 }
