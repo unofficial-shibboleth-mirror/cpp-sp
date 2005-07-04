@@ -230,7 +230,7 @@ IPlugIn* MemoryCacheFactory(const DOMElement* e)
 InternalCCache::InternalCCache(const DOMElement* e)
     : m_root(e), m_AATimeout(30), m_AAConnectTimeout(15), m_defaultLifetime(1800), m_retryInterval(300),
         m_strictValidity(true), m_propagateErrors(false), lock(RWLock::create()),
-        log (&Category::getInstance("shibtarget.InternalCCache"))
+        log (&Category::getInstance(SHIBT_LOGCAT".SessionCache"))
 {
     const XMLCh* tag=m_root->getAttributeNS(NULL,AATimeout);
     if (tag && *tag) {
@@ -390,12 +390,14 @@ void InternalCCache::remove(const char* key)
 
 void InternalCCache::cleanup()
 {
-  Mutex* mutex = Mutex::create();
-  saml::NDC ndc("InternalCCache::cleanup()");
+#ifdef _DEBUG
+  saml::NDC ndc("cleanup()");
+#endif
 
   int rerun_timer = 0;
   int timeout_life = 0;
-
+  Mutex* mutex = Mutex::create();
+  
   // Load our configuration details...
   const XMLCh* tag=m_root->getAttributeNS(NULL,cleanupInterval);
   if (tag && *tag)
@@ -413,7 +415,7 @@ void InternalCCache::cleanup()
 
   mutex->lock();
 
-  log->debug("Cleanup thread started...  Run every %d secs; timeout after %d secs",
+  log->info("Cleanup thread started...  Run every %d secs; timeout after %d secs",
 	     rerun_timer, timeout_life);
 
   while (shutdown == false) {
@@ -422,7 +424,7 @@ void InternalCCache::cleanup()
     if (shutdown == true)
       break;
 
-    log->info("Cleanup thread running...");
+    log->debug("Cleanup thread running...");
 
     // Ok, let's run through the cleanup process and clean out
     // really old sessions.  This is a two-pass process.  The
@@ -461,7 +463,7 @@ void InternalCCache::cleanup()
     }
   }
 
-  log->debug("Cleanup thread finished.");
+  log->info("Cleanup thread finished.");
 
   mutex->unlock();
   delete mutex;

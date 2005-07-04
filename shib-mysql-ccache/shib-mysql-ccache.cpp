@@ -756,7 +756,7 @@ void ShibMySQLCCache::cleanup()
     mysql_free_result(rows);
   }
 
-  log->debug("cleanup thread exiting...");
+  log->info("cleanup thread exiting...");
 
   mutex->unlock();
   delete mutex;
