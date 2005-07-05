@@ -42,7 +42,7 @@ namespace shibboleth
     DECLARE_SAML_EXCEPTION(SHIB_EXPORTS,ResourceAccessException,SAMLException);
     DECLARE_SAML_EXCEPTION(SHIB_EXPORTS,MetadataException,SAMLException);
     DECLARE_SAML_EXCEPTION(SHIB_EXPORTS,CredentialException,SAMLException);
-    DECLARE_SAML_EXCEPTION(SHIB_EXPORTS,InvalidHandleException,RetryableProfileException);
+    DECLARE_SAML_EXCEPTION(SHIB_EXPORTS,InvalidHandleException,SAMLException);
     DECLARE_SAML_EXCEPTION(SHIB_EXPORTS,InvalidSessionException,RetryableProfileException);
 
     // Metadata abstract interfaces, based on SAML 2.0
