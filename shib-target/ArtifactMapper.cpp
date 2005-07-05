@@ -94,12 +94,16 @@ SAMLResponse* STArtifactMapper::resolve(SAMLRequest* request)
     pair<bool,bool> signedResponse=credUse ? credUse->getBool("signedResponse") : make_pair(false,false);
     pair<bool,const char*> signingCred=credUse ? credUse->getString("Signing") : pair<bool,const char*>(false,NULL);
     if (signRequest.first && signRequest.second && signingCred.first) {
-        Credentials creds(ShibTargetConfig::getConfig().getINI()->getCredentialsProviders());
-        const ICredResolver* cr=creds.lookup(signingCred.second);
-        if (cr)
-            request->sign(cr->getKey(),cr->getCertificates(),signatureAlg.second,digestAlg.second);
+        if (request->getMinorVersion()==1) {
+            Credentials creds(ShibTargetConfig::getConfig().getINI()->getCredentialsProviders());
+            const ICredResolver* cr=creds.lookup(signingCred.second);
+            if (cr)
+                request->sign(cr->getKey(),cr->getCertificates(),signatureAlg.second,digestAlg.second);
+            else
+                log.error("unable to sign artifact request, specified credential (%s) was not found",signingCred.second);
+        }
         else
-            log.error("unable to sign artifact request, specified credential (%s) was not found",signingCred.second);
+            log.error("unable to sign SAML 1.0 artifact request, only SAML 1.1 defines signing adequately");
     }
 
 	SAMLResponse* response = NULL;

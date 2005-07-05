@@ -651,8 +651,8 @@ void InternalCCacheEntry::populate()
         stc.releaseTransactionLog();
     }
   }
-  catch (SAMLException& e) {
-    if (typeid(e)==typeid(InvalidHandleException) || m_cache->m_propagateErrors)
+  catch (SAMLException&) {
+    if (m_cache->m_propagateErrors)
         throw;
     log->warn("suppressed SAML exception caught while trying to fetch attributes");
   }
@@ -752,12 +752,16 @@ pair<SAMLResponse*,SAMLResponse*> InternalCCacheEntry::getNewResponse()
         
         // Sign it? Highly doubtful we'll ever use this, but just for fun...
         if (signRequest.first && signRequest.second && signingCred.first) {
-            Credentials creds(conf->getCredentialsProviders());
-            const ICredResolver* cr=creds.lookup(signingCred.second);
-            if (cr)
-                req->sign(cr->getKey(),cr->getCertificates(),signatureAlg.second,digestAlg.second);
+            if (req->getMinorVersion()==1) {
+                Credentials creds(conf->getCredentialsProviders());
+                const ICredResolver* cr=creds.lookup(signingCred.second);
+                if (cr)
+                    req->sign(cr->getKey(),cr->getCertificates(),signatureAlg.second,digestAlg.second);
+                else
+                    log->error("unable to sign attribute query, specified credential (%s) was not found",signingCred.second);
+            }
             else
-                log->error("unable to sign attribute query, specified credential (%s) was not found",signingCred.second);
+                log->error("unable to sign SAML 1.0 artifact request, only SAML 1.1 defines signing adequately");
         }
             
         log->debug("trying to query an AA...");
