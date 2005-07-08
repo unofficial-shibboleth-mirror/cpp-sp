@@ -420,7 +420,8 @@ pair<bool,void*> ShibLogout::run(ShibTarget* st, const IPropertySet* handler, bo
             st->log(ShibTarget::LogLevelError, "logout processing failed with unknown exception");
         }
 #endif
-        st->setCookie(shib_cookie.first,"");
+        // We send the cookie property alone, which acts as an empty value.
+        st->setCookie(shib_cookie.first,shib_cookie.second);
     }
     
     string query=st->getArgs();
