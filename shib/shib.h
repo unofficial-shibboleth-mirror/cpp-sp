@@ -385,7 +385,7 @@ namespace shibboleth
         Metadata(const Metadata&);
         void operator=(const Metadata&);
         IMetadata* m_mapper;
-        const saml::Iterator<IMetadata*>& m_metadatas;
+        saml::Iterator<IMetadata*> m_metadatas;
     };
 
     class SHIB_EXPORTS Trust
@@ -405,7 +405,7 @@ namespace shibboleth
     private:
         Trust(const Trust&);
         void operator=(const Trust&);
-        const saml::Iterator<ITrust*>& m_trusts;
+        saml::Iterator<ITrust*> m_trusts;
     };
     
     class SHIB_EXPORTS Credentials
@@ -420,7 +420,7 @@ namespace shibboleth
         Credentials(const Credentials&);
         void operator=(const Credentials&);
         ICredentials* m_mapper;
-        const saml::Iterator<ICredentials*>& m_creds;
+        saml::Iterator<ICredentials*> m_creds;
     };
 
     class SHIB_EXPORTS AAP
