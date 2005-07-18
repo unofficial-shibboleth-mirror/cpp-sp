@@ -1,4 +1,4 @@
-6/15/04
+7/15/04
 Version 1.3
 
 Welcome to Internet2's Shibboleth
@@ -6,7 +6,7 @@ Welcome to Internet2's Shibboleth
 Shibboleth is a federated web authentication and attribute exchange system
 based on SAML developed by Internet2 and MACE.
 
-Please review the terms described in the LICENSE file before using this
+Please review the terms described in the LICENSE.txt file before using this
 code. It is now the Apache 2.0 license.
 
 A wealth of information about Shibboleth can be found at

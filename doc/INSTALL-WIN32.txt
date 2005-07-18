@@ -1,7 +1,7 @@
-11/15/04
-Version 1.2.1, shib Library version "5", shibtarget Library Version "4"
+7/15/05
+Version 1.3, shib Library version "6", shibtarget Library Version "5"
 
-This release works with SAML library version "4".
+This release works with SAML library version "5".
 
 Please read the README.txt and INSTALL.txt files in the same directory
 with this file before continuing. More general information is available
