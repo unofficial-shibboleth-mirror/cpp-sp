@@ -8,4 +8,4 @@ HOTLINE=http://bugzilla.internet2.edu/
 EMAIL=cantor.2@osu.edu
 PSTAMP=12Jun2005
 CLASSES=none
-BASEDIR=/opt/shibboleth
+BASEDIR=/opt/shibboleth-sp
