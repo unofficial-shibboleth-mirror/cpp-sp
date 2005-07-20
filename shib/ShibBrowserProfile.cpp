@@ -126,6 +126,7 @@ SAMLBrowserProfile::BrowserProfileResponse ShibBrowserProfile::receive(
             log.debug("passing signed response to trust layer");
             if (!t.validate(*bpr.response,role)) {
                 bpr.clear();
+                log.error("unable to verify signed profile response");
                 TrustException ex("unable to verify signed profile response");
                 annotateException(&ex,role); // throws it
             }
@@ -135,6 +136,7 @@ SAMLBrowserProfile::BrowserProfileResponse ShibBrowserProfile::receive(
             log.debug("passing signed authentication assertion to trust layer"); 
             if (!t.validate(*bpr.assertion,role)) {
                 bpr.clear();
+                log.error("unable to verify signed authentication assertion");
                 TrustException ex("unable to verify signed authentication assertion");
                 annotateException(&ex,role); // throws it
             }
