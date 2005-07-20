@@ -622,11 +622,13 @@ void InternalCCacheEntry::populate()
         throw;
     log->warn("suppressed SAML exception caught while trying to fetch attributes");
   }
+#ifndef _DEBUG
   catch (...) {
     if (m_cache->m_propagateErrors)
         throw;
     log->warn("suppressed unknown exception caught while trying to fetch attributes");
   }
+#endif
 }
 
 pair<SAMLResponse*,SAMLResponse*> InternalCCacheEntry::getNewResponse()
@@ -677,7 +679,7 @@ pair<SAMLResponse*,SAMLResponse*> InternalCCacheEntry::getNewResponse()
     const IEntityDescriptor* site=m.lookup(m_provider_id.c_str());
     if (!site) {
         log->error("unable to locate identity provider's metadata during attribute query");
-        throw MetadataException("Unable to locate identity provider's metadata during attribute query.");
+        return pair<SAMLResponse*,SAMLResponse*>(NULL,NULL);
     }
 
     // Try to locate an AA role.
@@ -686,9 +688,8 @@ pair<SAMLResponse*,SAMLResponse*> InternalCCacheEntry::getNewResponse()
     if (!AA) {
         AA=site->getAttributeAuthorityDescriptor(saml::XML::SAML10_PROTOCOL_ENUM);
         if (!AA) {
-            log->error("unable to locate metadata for identity provider's Attribute Authority");
-            MetadataException ex("Unable to locate metadata for identity provider's Attribute Authority.");
-            annotateException(&ex,site);
+            log->warn("unable to locate metadata for identity provider's Attribute Authority");
+            return pair<SAMLResponse*,SAMLResponse*>(NULL,NULL);
         }
         minorVersion=0;
     }
@@ -727,7 +728,7 @@ pair<SAMLResponse*,SAMLResponse*> InternalCCacheEntry::getNewResponse()
                     log->error("unable to sign attribute query, specified credential (%s) was not found",signingCred.second);
             }
             else
-                log->error("unable to sign SAML 1.0 artifact request, only SAML 1.1 defines signing adequately");
+                log->error("unable to sign SAML 1.0 attribute query, only SAML 1.1 defines signing adequately");
         }
             
         log->debug("trying to query an AA...");
@@ -790,9 +791,7 @@ pair<SAMLResponse*,SAMLResponse*> InternalCCacheEntry::getNewResponse()
     }
     
     log->error("no response obtained");
-    SAMLException ex("Unable to obtain attributes from user's identity provider.");
-    annotateException(&ex,AA,false);
-    throw ex;
+    return pair<SAMLResponse*,SAMLResponse*>(NULL,NULL);
 }
 
 SAMLResponse* InternalCCacheEntry::filter(SAMLResponse* r, const IApplication* application, const IRoleDescriptor* source)
