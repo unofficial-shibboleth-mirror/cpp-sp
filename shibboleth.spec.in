@@ -1,7 +1,7 @@
 Name:		shibboleth
 Summary:	Open source system to enable inter-institutional resource sharing
 Version:	@-VERSION-@
-Release:	3
+Release:	4
 #Copyright:	University Corporation for Advanced Internet Development, Inc.
 Group:		System Environment/Libraries
 License:	Apache style
