@@ -44,8 +44,16 @@ static const XMLCh resolver[] =
 static const XMLCh type[] =
 { chLatin_t, chLatin_y, chLatin_p, chLatin_e, chNull };
 
-BasicTrust::BasicTrust(const DOMElement* e)
+static const XMLCh debug[] =
+{ chLatin_d, chLatin_e, chLatin_b, chLatin_u, chLatin_g, chNull };
+
+BasicTrust::BasicTrust(const DOMElement* e) : m_debug(false)
 {
+    // Debug mode?
+    const XMLCh* flag=e->getAttributeNS(NULL,debug);
+    if (flag && (*flag==chLatin_t || *flag==chDigit_1))
+        m_debug=true;
+    
     // Find any KeyResolver plugins.
     e=saml::XML::getFirstChildElement(e);
     while (e) {
@@ -86,6 +94,11 @@ bool BasicTrust::validate(void* certEE, const Iterator<void*>& certChain, const 
     if (!certEE) {
         log.error("no certificate provided for comparison");
         return false;
+    }
+
+    if (m_debug) {
+        log.warn("running in debug mode, we accept anything!");
+        return true;
     }
 
     // The new "basic" trust implementation relies solely on certificates living within the
@@ -129,6 +142,11 @@ bool BasicTrust::validate(const saml::SAMLSignedObject& token, const IRoleDescri
     saml::NDC ndc("validate");
 #endif
     Category& log=Category::getInstance(SHIB_LOGCAT".Trust.Basic");
+
+    if (m_debug) {
+        log.warn("running in debug mode, we accept anything!");
+        return true;
+    }
 
     // The new "basic" trust implementation relies solely on keys living within the
     // role interface to verify the token. No indirection of any sort is allowed,

@@ -53,6 +53,7 @@ namespace shibboleth {
         bool validate(const saml::SAMLSignedObject& token, const IRoleDescriptor* role, ITrust* certValidator=NULL);
     
     protected:
+        bool m_debug;
         std::vector<saml::KeyInfoResolver*> m_resolvers;
     };
 
