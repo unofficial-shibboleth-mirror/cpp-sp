@@ -278,16 +278,13 @@ public:
   }
   virtual void* sendRedirect(const string& url) {
     param_free(pblock_remove("content-type", m_rq->srvhdrs));
-    pblock_nvinsert("content-type", "text/html", m_rq->srvhdrs);
-    pblock_nninsert("content-length", 40, m_rq->srvhdrs);
+    pblock_nninsert("content-length", 0, m_rq->srvhdrs);
     pblock_nvinsert("expires", "01-Jan-1997 12:00:00 GMT", m_rq->srvhdrs);
     pblock_nvinsert("cache-control", "private,no-store,no-cache", m_rq->srvhdrs);
     pblock_nvinsert("location", url.c_str(), m_rq->srvhdrs);
-    protocol_status(m_sn, m_rq, PROTOCOL_REDIRECT, "302 Please wait");
+    protocol_status(m_sn, m_rq, PROTOCOL_REDIRECT, NULL);
     protocol_start_response(m_sn, m_rq);
-    char* msg="<HTML><BODY>Redirecting...</BODY></HTML>";
-    net_write(m_sn->csd,msg,strlen(msg));
-    return (void*)REQ_EXIT;
+    return (void*)REQ_ABORTED;
   }
   virtual void* returnDecline(void) { return (void*)REQ_NOACTION; }
   virtual void* returnOK(void) { return (void*)REQ_PROCEED; }
