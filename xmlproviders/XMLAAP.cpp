@@ -163,7 +163,7 @@ void XMLAAPImpl::init()
 
         // Loop over the AttributeRule elements.
         DOMNodeList* nlist = m_root->getElementsByTagNameNS(::XML::SHIB_NS,SHIB_L(AttributeRule));
-        for (int i=0; nlist && i<nlist->getLength(); i++)
+        for (unsigned int i=0; nlist && i<nlist->getLength(); i++)
         {
             AttributeRule* rule=new AttributeRule(static_cast<DOMElement*>(nlist->item(i)));
 #ifdef HAVE_GOOD_STL
@@ -232,7 +232,7 @@ XMLAAPImpl::AttributeRule::AttributeRule(const DOMElement* e) :
     {
         // Process Scope elements.
         DOMNodeList* vlist = static_cast<DOMElement*>(anysite)->getElementsByTagNameNS(::XML::SHIB_NS,SHIB_L(Scope));
-        for (int i=0; vlist && i<vlist->getLength(); i++)
+        for (unsigned int i=0; vlist && i<vlist->getLength(); i++)
         {
             m_scoped=true;
             DOMElement* se=static_cast<DOMElement*>(vlist->item(i));
@@ -257,7 +257,7 @@ XMLAAPImpl::AttributeRule::AttributeRule(const DOMElement* e) :
         {
             // Process each Value element.
             vlist = static_cast<DOMElement*>(anysite)->getElementsByTagNameNS(::XML::SHIB_NS,SHIB_L(Value));
-            for (int j=0; vlist && j<vlist->getLength(); j++)
+            for (unsigned int j=0; vlist && j<vlist->getLength(); j++)
             {
                 DOMElement* ve=static_cast<DOMElement*>(vlist->item(j));
                 DOMNode* valnode=ve->getFirstChild();
@@ -274,7 +274,7 @@ XMLAAPImpl::AttributeRule::AttributeRule(const DOMElement* e) :
 
     // Loop over the SiteRule elements.
     DOMNodeList* slist = e->getElementsByTagNameNS(::XML::SHIB_NS,SHIB_L(SiteRule));
-    for (int k=0; slist && k<slist->getLength(); k++)
+    for (unsigned int k=0; slist && k<slist->getLength(); k++)
     {
         const XMLCh* srulename=static_cast<DOMElement*>(slist->item(k))->getAttributeNS(NULL,SHIB_L(Name));
 #ifdef HAVE_GOOD_STL
@@ -288,7 +288,7 @@ XMLAAPImpl::AttributeRule::AttributeRule(const DOMElement* e) :
 
         // Process Scope elements.
         DOMNodeList* vlist = static_cast<DOMElement*>(slist->item(k))->getElementsByTagNameNS(::XML::SHIB_NS,SHIB_L(Scope));
-        for (int i=0; vlist && i<vlist->getLength(); i++)
+        for (unsigned int i=0; vlist && i<vlist->getLength(); i++)
         {
             m_scoped=true;
             DOMElement* se=static_cast<DOMElement*>(vlist->item(i));
@@ -313,7 +313,7 @@ XMLAAPImpl::AttributeRule::AttributeRule(const DOMElement* e) :
         {
             // Process each Value element.
             vlist = static_cast<DOMElement*>(slist->item(k))->getElementsByTagNameNS(::XML::SHIB_NS,SHIB_L(Value));
-            for (int j=0; vlist && j<vlist->getLength(); j++)
+            for (unsigned int j=0; vlist && j<vlist->getLength(); j++)
             {
                 DOMElement* ve=static_cast<DOMElement*>(vlist->item(j));
                 DOMNode* valnode=ve->getFirstChild();
@@ -598,7 +598,7 @@ void XMLAAPImpl::AttributeRule::apply(SAMLAttribute& attribute, const IRoleDescr
     // Check each value.
     DOMNodeList* vals=attribute.getValueElements();
     int i2=0;
-    for (int i=0; vals && i < vals->getLength(); i++) {
+    for (unsigned int i=0; vals && i < vals->getLength(); i++) {
         if (!accept(static_cast<DOMElement*>(vals->item(i)),role ? dynamic_cast<const IScopedRoleDescriptor*>(role) : NULL))
             attribute.removeValue(i2);
         else

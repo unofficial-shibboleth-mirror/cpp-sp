@@ -252,7 +252,7 @@ FileResolver::FileResolver(const DOMElement* e)
 
         // Load any extra CA files.
         DOMNodeList* nlist=e->getElementsByTagNameNS(::XML::CREDS_NS,SHIB_L(CAPath));
-        for (int i=0; nlist && i<nlist->getLength(); i++) {
+        for (unsigned int i=0; nlist && i<nlist->getLength(); i++) {
             if (!nlist->item(i)->hasChildNodes())
                 continue;
             auto_ptr_char capath(static_cast<DOMElement*>(nlist->item(i))->getFirstChild()->getNodeValue());

@@ -185,7 +185,7 @@ void XMLTrustImpl::init()
 
         // Loop over the KeyAuthority elements.
         DOMNodeList* nlist=m_root->getElementsByTagNameNS(::XML::TRUST_NS,SHIB_L(KeyAuthority));
-        for (int i=0; nlist && i<nlist->getLength(); i++) {
+        for (unsigned int i=0; nlist && i<nlist->getLength(); i++) {
             auto_ptr<KeyAuthority> ka(new KeyAuthority());
             
             const DOMElement* e=static_cast<DOMElement*>(nlist->item(i));
@@ -206,7 +206,7 @@ void XMLTrustImpl::init()
             
             // Very rudimentary, grab up all the in-band X509Certificate elements, and flatten into one list.
             DOMNodeList* certlist=k_child->getElementsByTagNameNS(saml::XML::XMLSIG_NS,L(X509Certificate));
-            for (int j=0; certlist && j<certlist->getLength(); j++) {
+            for (unsigned int j=0; certlist && j<certlist->getLength(); j++) {
                 auto_ptr_char blob(certlist->item(j)->getFirstChild()->getNodeValue());
                 X509* x=B64_to_X509(blob.get());
                 if (x)
@@ -217,7 +217,7 @@ void XMLTrustImpl::init()
 
             // Now look for externally referenced objects.
             certlist=k_child->getElementsByTagNameNS(saml::XML::XMLSIG_NS,SHIB_L(RetrievalMethod));
-            for (int k=0; certlist && k<certlist->getLength(); k++) {
+            for (unsigned int k=0; certlist && k<certlist->getLength(); k++) {
                 DOMElement* cert=static_cast<DOMElement*>(certlist->item(k));
                 if (!XMLString::compareString(cert->getAttributeNS(NULL,SHIB_L(Type)),::XML::XMLSIG_RETMETHOD_RAWX509)) {
                     // DER format
@@ -239,7 +239,7 @@ void XMLTrustImpl::init()
 
             // Very rudimentary, grab up all the in-band X509CRL elements, and flatten into one list.
             certlist=k_child->getElementsByTagNameNS(saml::XML::XMLSIG_NS,SHIB_L(X509CRL));
-            for (int r=0; certlist && r<certlist->getLength(); r++) {
+            for (unsigned int r=0; certlist && r<certlist->getLength(); r++) {
                 auto_ptr_char blob(certlist->item(r)->getFirstChild()->getNodeValue());
                 X509_CRL* x=B64_to_CRL(blob.get());
                 if (x)

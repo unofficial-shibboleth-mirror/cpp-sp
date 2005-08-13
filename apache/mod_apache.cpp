@@ -741,7 +741,7 @@ bool htAccessControl::authorized(
                     
                     string vals_str(vals);
                     int j = 0;
-                    for (int i = 0;  i < vals_str.length();  i++) {
+                    for (unsigned int i = 0;  i < vals_str.length();  i++) {
                         if (vals_str.at(i) == ';') {
                             if (i == 0) {
                                 st->log(ShibTarget::LogLevelError, string("htAccessControl plugin found invalid header encoding (") +

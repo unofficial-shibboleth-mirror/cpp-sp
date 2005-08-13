@@ -429,7 +429,7 @@ XMLApplication::XMLApplication(
         }
         
         // Process general configuration elements.
-        int i;
+        unsigned int i;
         DOMNodeList* nlist=e->getElementsByTagNameNS(saml::XML::SAML_NS,L(AttributeDesignator));
         for (i=0; nlist && i<nlist->getLength(); i++)
             if (nlist->item(i)->getParentNode()->isSameNode(e))
@@ -1064,7 +1064,7 @@ void XMLConfigImpl::init(bool first)
         DOMNodeList* nlist;
         if (conf.isEnabled(ShibTargetConfig::Credentials)) {
             nlist=ReloadableXMLFileImpl::m_root->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(CredentialsProvider));
-            for (int i=0; nlist && i<nlist->getLength(); i++) {
+            for (unsigned int i=0; nlist && i<nlist->getLength(); i++) {
                 auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
                 log.info("building credentials provider of type %s...",type.get());
                 try {
@@ -1087,7 +1087,7 @@ void XMLConfigImpl::init(bool first)
 
         // Now we load any attribute factories
         nlist=ReloadableXMLFileImpl::m_root->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(AttributeFactory));
-        for (int i=0; nlist && i<nlist->getLength(); i++) {
+        for (unsigned int i=0; nlist && i<nlist->getLength(); i++) {
             auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
             log.info("building Attribute factory of type %s...",type.get());
             try {
@@ -1125,7 +1125,7 @@ void XMLConfigImpl::init(bool first)
         
         // Load any overrides.
         nlist=app->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Application));
-        for (int j=0; nlist && j<nlist->getLength(); j++) {
+        for (unsigned int j=0; nlist && j<nlist->getLength(); j++) {
             XMLApplication* iapp=new XMLApplication(m_outer,m_creds,static_cast<DOMElement*>(nlist->item(j)),defapp);
             if (m_appmap.find(iapp->getId())!=m_appmap.end()) {
                 log.fatal("found conf:Application element with duplicate Id attribute");

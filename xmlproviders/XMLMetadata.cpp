@@ -468,7 +468,8 @@ XMLMetadataImpl::ContactPerson::ContactPerson(const DOMElement* e) : m_root(e)
     // Old metadata or new?
     if (saml::XML::isElementNamed(e,::XML::SHIB_NS,SHIB_L(Contact))) {
         type=e->getAttributeNS(NULL,SHIB_L(Type));
-        m_surName=auto_ptr<char>(toUTF8(e->getAttributeNS(NULL,SHIB_L(Name))));
+        auto_ptr<char> wrapper(toUTF8(e->getAttributeNS(NULL,SHIB_L(Name))));
+        m_surName=wrapper;
         if (e->hasAttributeNS(NULL,SHIB_L(Email))) {
             auto_ptr<char> temp(toUTF8(e->getAttributeNS(NULL,SHIB_L(Email))));
             if (temp.get())
@@ -477,34 +478,27 @@ XMLMetadataImpl::ContactPerson::ContactPerson(const DOMElement* e) : m_root(e)
     }
     else if (saml::XML::isElementNamed(e,::XML::SAML2META_NS,SHIB_L(ContactPerson))) {
         type=e->getAttributeNS(NULL,SHIB_L(contactType));
-        DOMNode* n=NULL;
         e=saml::XML::getFirstChildElement(e);
         while (e) {
-            if (saml::XML::isElementNamed(e,::XML::SAML2META_NS,SHIB_L(Company))) {
-                n=e->getFirstChild();
-                if (n) m_company=auto_ptr<char>(toUTF8(n->getNodeValue()));
+            if (saml::XML::isElementNamed(e,::XML::SAML2META_NS,SHIB_L(Company)) && e->hasChildNodes()) {
+                auto_ptr<char> wrapper(toUTF8(e->getFirstChild()->getNodeValue()));
+                m_company=wrapper;
             }
-            else if (saml::XML::isElementNamed(e,::XML::SAML2META_NS,SHIB_L(GivenName))) {
-                n=e->getFirstChild();
-                if (n) m_givenName=auto_ptr<char>(toUTF8(n->getNodeValue()));
+            else if (saml::XML::isElementNamed(e,::XML::SAML2META_NS,SHIB_L(GivenName)) && e->hasChildNodes()) {
+                auto_ptr<char> wrapper(toUTF8(e->getFirstChild()->getNodeValue()));
+                m_givenName=wrapper;
             }
-            else if (saml::XML::isElementNamed(e,::XML::SAML2META_NS,SHIB_L(SurName))) {
-                n=e->getFirstChild();
-                if (n) m_surName=auto_ptr<char>(toUTF8(n->getNodeValue()));
+            else if (saml::XML::isElementNamed(e,::XML::SAML2META_NS,SHIB_L(SurName)) && e->hasChildNodes()) {
+                auto_ptr<char> wrapper(toUTF8(e->getFirstChild()->getNodeValue()));
+                m_surName=wrapper;
             }
-            else if (saml::XML::isElementNamed(e,::XML::SAML2META_NS,SHIB_L(EmailAddress))) {
-                n=e->getFirstChild();
-                if (n) {
-                    auto_ptr<char> temp(toUTF8(n->getNodeValue()));
-                    if (temp.get()) m_emails.push_back(temp.get());
-                }
+            else if (saml::XML::isElementNamed(e,::XML::SAML2META_NS,SHIB_L(EmailAddress)) && e->hasChildNodes()) {
+                auto_ptr<char> temp(toUTF8(e->getFirstChild()->getNodeValue()));
+                if (temp.get()) m_emails.push_back(temp.get());
             }
-            else if (saml::XML::isElementNamed(e,::XML::SAML2META_NS,SHIB_L(TelephoneNumber))) {
-                n=e->getFirstChild();
-                if (n) {
-                    auto_ptr<char> temp(toUTF8(n->getNodeValue()));
-                    if (temp.get()) m_phones.push_back(temp.get());
-                }
+            else if (saml::XML::isElementNamed(e,::XML::SAML2META_NS,SHIB_L(TelephoneNumber)) && e->hasChildNodes()) {
+                auto_ptr<char> temp(toUTF8(e->getFirstChild()->getNodeValue()));
+                if (temp.get()) m_phones.push_back(temp.get());
             }
             e=saml::XML::getNextSiblingElement(e);
         }
@@ -732,7 +726,7 @@ XMLMetadataImpl::SSORole::SSORole(const EntityDescriptor* provider, time_t valid
 {
     // Check the root element namespace. If SAML2, assume it's the std schema.
     if (!XMLString::compareString(e->getNamespaceURI(),::XML::SAML2META_NS)) {
-        int i;
+        unsigned int i;
         DOMNodeList* nlist=e->getElementsByTagNameNS(::XML::SAML2META_NS,SHIB_L(ArtifactResolutionService));
         for (i=0; nlist && i<nlist->getLength(); i++)
             m_artifact.add(new IndexedEndpoint(static_cast<DOMElement*>(nlist->item(i))));
@@ -770,7 +764,7 @@ XMLMetadataImpl::ScopedRole::ScopedRole(const DOMElement* e)
         nlist=e->getElementsByTagNameNS(::XML::SHIB_NS,SHIB_L(Domain));
     }
     
-    for (int i=0; nlist && i < nlist->getLength(); i++) {
+    for (unsigned int i=0; nlist && i < nlist->getLength(); i++) {
         const XMLCh* dom=(nlist->item(i)->hasChildNodes()) ? nlist->item(i)->getFirstChild()->getNodeValue() : NULL;
         if (dom && *dom) {
             const XMLCh* regexp=static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIB_L(regexp));
@@ -797,7 +791,7 @@ XMLMetadataImpl::IDPRole::IDPRole(const EntityDescriptor* provider, time_t valid
                 m_sourceId=ext->getFirstChild()->getNodeValue();
         }
         
-        int i;
+        unsigned int i;
         DOMNodeList* nlist=e->getElementsByTagNameNS(::XML::SAML2META_NS,SHIB_L(SingleSignOnService));
         for (i=0; nlist && i<nlist->getLength(); i++)
             m_sso.add(new Endpoint(static_cast<DOMElement*>(nlist->item(i))));
@@ -828,7 +822,7 @@ XMLMetadataImpl::IDPRole::IDPRole(const EntityDescriptor* provider, time_t valid
                 src=saml::XML::getNextSiblingElement(src,::XML::SAML2ASSERT_NS,L(AttributeValue));
                 DOMElement* val=e->getOwnerDocument()->createElementNS(saml::XML::SAML_NS,L(AttributeValue));
                 DOMNamedNodeMap* attrs = src->getAttributes();
-                for (int j=0; j<attrs->getLength(); j++)
+                for (unsigned int j=0; j<attrs->getLength(); j++)
                     val->setAttributeNodeNS(static_cast<DOMAttr*>(e->getOwnerDocument()->importNode(attrs->item(j),true)));
                 while (src->hasChildNodes())
                     val->appendChild(src->getFirstChild());
@@ -840,7 +834,7 @@ XMLMetadataImpl::IDPRole::IDPRole(const EntityDescriptor* provider, time_t valid
     else {
         m_protocolEnum.push_back(Constants::SHIB_NS);
         m_attrprofs.push_back(Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
-        int i;
+        unsigned int i;
         DOMNodeList* nlist=e->getElementsByTagNameNS(::XML::SHIB_NS,SHIB_L(HandleService));
         for (i=0; nlist && i<nlist->getLength(); i++) {
             // Manufacture an endpoint for the "Shib" binding.
@@ -876,7 +870,7 @@ XMLMetadataImpl::AARole::AARole(const EntityDescriptor* provider, time_t validUn
 {
     // Check the root element namespace. If SAML2, assume it's the std schema.
     if (!XMLString::compareString(e->getNamespaceURI(),::XML::SAML2META_NS)) {
-        int i;
+        unsigned int i;
         DOMNodeList* nlist=e->getElementsByTagNameNS(::XML::SAML2META_NS,SHIB_L(AttributeService));
         for (i=0; nlist && i<nlist->getLength(); i++)
             m_query.add(new Endpoint(static_cast<DOMElement*>(nlist->item(i))));
@@ -909,7 +903,7 @@ XMLMetadataImpl::AARole::AARole(const EntityDescriptor* provider, time_t validUn
                 src=saml::XML::getNextSiblingElement(src,::XML::SAML2ASSERT_NS,L(AttributeValue));
                 DOMElement* val=e->getOwnerDocument()->createElementNS(saml::XML::SAML_NS,L(AttributeValue));
                 DOMNamedNodeMap* attrs = src->getAttributes();
-                for (int j=0; j<attrs->getLength(); j++)
+                for (unsigned int j=0; j<attrs->getLength(); j++)
                     val->setAttributeNodeNS(static_cast<DOMAttr*>(e->getOwnerDocument()->importNode(attrs->item(j),true)));
                 while (src->hasChildNodes())
                     val->appendChild(src->getFirstChild());
@@ -923,7 +917,7 @@ XMLMetadataImpl::AARole::AARole(const EntityDescriptor* provider, time_t validUn
         m_protocolEnum.push_back(saml::XML::SAML11_PROTOCOL_ENUM);
         m_formats.push_back(Constants::SHIB_NAMEID_FORMAT_URI);
         m_attrprofs.push_back(Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
-        int i;
+        unsigned int i;
         DOMNodeList* nlist=e->getElementsByTagNameNS(::XML::SHIB_NS,SHIB_L(AttributeAuthority));
         for (i=0; nlist && i<nlist->getLength(); i++) {
             // Manufacture an endpoint for the SOAP binding.
@@ -1006,7 +1000,8 @@ XMLMetadataImpl::EntityDescriptor::EntityDescriptor(
     }
     else {
         m_id=e->getAttributeNS(NULL,SHIB_L(Name));
-        m_errorURL=auto_ptr<char>(toUTF8(e->getAttributeNS(NULL,SHIB_L(ErrorURL))));
+        auto_ptr<char> wrapper(toUTF8(e->getAttributeNS(NULL,SHIB_L(ErrorURL))));
+        m_errorURL=wrapper;
         
         bool idp=false,aa=false;    // only want to build a role once
         DOMElement* child=saml::XML::getFirstChildElement(e);
@@ -1211,7 +1206,7 @@ XMLMetadata::XMLMetadata(const DOMElement* e) : ReloadableXMLFile(e), m_exclusio
     if (e->hasAttributeNS(NULL,uri)) {
         // First check for explicit enablement of entities.
         DOMNodeList* nlist=e->getElementsByTagName(SHIB_L(Include));
-        for (int i=0; nlist && i<nlist->getLength(); i++) {
+        for (unsigned int i=0; nlist && i<nlist->getLength(); i++) {
             if (nlist->item(i)->hasChildNodes()) {
                 auto_ptr_char temp(nlist->item(i)->getFirstChild()->getNodeValue());
                 if (temp.get()) {
@@ -1223,7 +1218,7 @@ XMLMetadata::XMLMetadata(const DOMElement* e) : ReloadableXMLFile(e), m_exclusio
         // If there was no explicit enablement, build a set of exclusions.
         if (m_exclusions) {
             nlist=e->getElementsByTagName(SHIB_L(Exclude));
-            for (int j=0; nlist && j<nlist->getLength(); j++) {
+            for (unsigned int j=0; nlist && j<nlist->getLength(); j++) {
                 if (nlist->item(j)->hasChildNodes()) {
                     auto_ptr_char temp(nlist->item(j)->getFirstChild()->getNodeValue());
                     if (temp.get())
@@ -1322,7 +1317,7 @@ bool XMLMetadata::verifySignature(DOMDocument* doc, const DOMElement* parent, bo
                 if (!URI || !*URI || (*URI==chPound &&
                         !XMLString::compareString(&URI[1],static_cast<DOMElement*>(sigNode->getParentNode())->getAttributeNS(NULL,ID)))) {
                     DSIGTransformList* tlist=ref->getTransforms();
-                    for (int i=0; tlist && i<tlist->getSize(); i++) {
+                    for (unsigned int i=0; tlist && i<tlist->getSize(); i++) {
                         if (tlist->item(i)->getTransformType()==TRANSFORM_ENVELOPED_SIGNATURE)
                             valid=true;
                         else if (tlist->item(i)->getTransformType()!=TRANSFORM_EXC_C14N &&

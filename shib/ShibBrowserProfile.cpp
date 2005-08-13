@@ -144,7 +144,7 @@ SAMLBrowserProfile::BrowserProfileResponse ShibBrowserProfile::receive(
         
         // Finally, discard any assertions not issued by the same entity that issued the authn.
         Iterator<SAMLAssertion*> assertions=bpr.response->getAssertions();
-        for (int a=0; a<assertions.size();) {
+        for (unsigned int a=0; a<assertions.size();) {
             if (XMLString::compareString(bpr.assertion->getIssuer(),assertions[a]->getIssuer())) {
                 auto_ptr_char bad(assertions[a]->getIssuer());
                 log.warn("discarding assertion not issued by authenticating IdP, instead by (%s)",bad.get());

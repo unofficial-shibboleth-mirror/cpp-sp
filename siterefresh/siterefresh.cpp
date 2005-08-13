@@ -85,7 +85,7 @@ void verifySignature(DOMDocument* doc, DOMNode* sigNode, const char* cert=NULL)
                 if (!URI || !*URI || (*URI==chPound &&
                         !XMLString::compareString(&URI[1],static_cast<DOMElement*>(sigNode->getParentNode())->getAttributeNS(NULL,ID)))) {
                     DSIGTransformList* tlist=ref->getTransforms();
-                    for (int i=0; tlist && i<tlist->getSize(); i++) {
+                    for (unsigned int i=0; tlist && i<tlist->getSize(); i++) {
                         if (tlist->item(i)->getTransformType()==TRANSFORM_ENVELOPED_SIGNATURE)
                             valid=true;
                         else if (tlist->item(i)->getTransformType()!=TRANSFORM_EXC_C14N) {
@@ -253,7 +253,7 @@ int main(int argc,char* argv[])
 
         // Verify all signatures.
         DOMNodeList* siglist=doc->getElementsByTagNameNS(saml::XML::XMLSIG_NS,L(Signature));
-        for (int i=0; siglist && i<siglist->getLength(); i++)
+        for (unsigned int i=0; siglist && i<siglist->getLength(); i++)
             verifySignature(doc,siglist->item(i),cert_param);
 
         if (out_param) {

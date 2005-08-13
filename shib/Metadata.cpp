@@ -214,7 +214,7 @@ void AAP::apply(const saml::Iterator<IAAP*>& aaps, saml::SAMLAssertion& assertio
         
         // Check each attribute, applying any matching rules.
         Iterator<SAMLAttribute*> attrs=s->getAttributes();
-        for (long acount=0; acount < attrs.size();) {
+        for (unsigned long acount=0; acount < attrs.size();) {
             SAMLAttribute* a=attrs[acount];
             bool ruleFound=false;
             aaps.reset();

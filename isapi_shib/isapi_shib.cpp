@@ -71,7 +71,7 @@ namespace {
             if (p.get()) m_port=p.get();
             if (p2.get()) m_sslport=p2.get();
             DOMNodeList* nlist=e->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,Alias);
-            for (int i=0; nlist && i<nlist->getLength(); i++) {
+            for (unsigned int i=0; nlist && i<nlist->getLength(); i++) {
                 if (nlist->item(i)->hasChildNodes()) {
                     auto_ptr_char alias(nlist->item(i)->getFirstChild()->getNodeValue());
                     m_aliases.insert(alias.get());
@@ -691,7 +691,7 @@ public:
     const string& content_type="text/html",
     const Iterator<header_t>& headers=EMPTY(header_t)) {
     string hdr = string ("Connection: close\r\nContent-type: ") + content_type + "\r\n";
-    for (int k = 0; k < headers.size(); k++) {
+    for (unsigned int k = 0; k < headers.size(); k++) {
       hdr += headers[k].first + ": " + headers[k].second + "\r\n";
     }
     hdr += "\r\n";
