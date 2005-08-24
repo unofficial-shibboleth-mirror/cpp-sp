@@ -524,16 +524,33 @@ pair<bool,void*> ShibTarget::doExportAssertions(bool requireSession)
             }
         }
         
+        // Reconstitute SAML objects from XML in session cache and wrap them in smart pointers
+        SAMLAuthenticationStatement* authn=NULL;
+        SAMLResponse* response=NULL;
+        
+        const char* xml=m_priv->m_cacheEntry->getAuthnStatement();
+        if (xml && *xml) {
+            istringstream authstream(xml);
+            log(LogLevelDebug,string("parsing authentication statement: ") + xml);
+            authn = new SAMLAuthenticationStatement(authstream);
+        }
+        auto_ptr<SAMLAuthenticationStatement> authnwrapper(authn);
+    
         ISessionCacheEntry::CachedResponse cr=m_priv->m_cacheEntry->getResponse();
-
+        if (cr.unfiltered && *cr.unfiltered) {
+            int minor = (m_priv->m_cacheEntry->getProfile()==SAML10_POST || m_priv->m_cacheEntry->getProfile()==SAML10_ARTIFACT) ? 0 : 1;
+            istringstream rstream((cr.filtered && *cr.filtered) ? cr.filtered : cr.unfiltered);
+            log(LogLevelDebug,string("parsing attribute response: ") + ((cr.filtered && *cr.filtered) ? cr.filtered : cr.unfiltered));
+            response = new SAMLResponse(rstream,minor);
+        }
+        auto_ptr<SAMLResponse> responsewrapper(response);
+    
         // Maybe export the response.
         clearHeader("Shib-Attributes");
         pair<bool,bool> exp=m_priv->m_settings.first->getBool("exportAssertion");
-        if (exp.first && exp.second && cr.unfiltered) {
-            ostringstream os;
-            os << *cr.unfiltered;
+        if (exp.first && exp.second && cr.unfiltered && *cr.unfiltered) {
             unsigned int outlen;
-            XMLByte* serialized = Base64::encode(reinterpret_cast<XMLByte*>((char*)os.str().c_str()), os.str().length(), &outlen);
+            XMLByte* serialized = Base64::encode(reinterpret_cast<XMLByte*>((char*)cr.unfiltered), strlen(cr.unfiltered), &outlen);
             XMLByte *pos, *pos2;
             for (pos=serialized, pos2=serialized; *pos2; pos2++)
                 if (isgraph(*pos2))
@@ -550,7 +567,7 @@ pair<bool,void*> ShibTarget::doExportAssertions(bool requireSession)
         clearHeader("Shib-NameIdentifier-Format");
         setHeader("Shib-Origin-Site", m_priv->m_cacheEntry->getProviderId());
         setHeader("Shib-Identity-Provider", m_priv->m_cacheEntry->getProviderId());
-        auto_ptr_char am(m_priv->m_cacheEntry->getAuthnStatement()->getAuthMethod());
+        auto_ptr_char am(authn->getAuthMethod());
         setHeader("Shib-Authentication-Method", am.get());
         
         // Export NameID?
@@ -558,11 +575,11 @@ pair<bool,void*> ShibTarget::doExportAssertions(bool requireSession)
         while (provs.hasNext()) {
             IAAP* aap=provs.next();
             Locker locker(aap);
-            const XMLCh* format = m_priv->m_cacheEntry->getAuthnStatement()->getSubject()->getNameIdentifier()->getFormat();
+            const XMLCh* format = authn->getSubject()->getNameIdentifier()->getFormat();
             const IAttributeRule* rule=aap->lookup(format ? format : SAMLNameIdentifier::UNSPECIFIED);
             if (rule && rule->getHeader()) {
                 auto_ptr_char form(format ? format : SAMLNameIdentifier::UNSPECIFIED);
-                auto_ptr_char nameid(m_priv->m_cacheEntry->getAuthnStatement()->getSubject()->getNameIdentifier()->getName());
+                auto_ptr_char nameid(authn->getSubject()->getNameIdentifier()->getName());
                 setHeader("Shib-NameIdentifier-Format", form.get());
                 if (!strcmp(rule->getHeader(),"REMOTE_USER"))
                     setRemoteUser(nameid.get());
@@ -575,7 +592,7 @@ pair<bool,void*> ShibTarget::doExportAssertions(bool requireSession)
         setHeader("Shib-Application-ID", m_priv->m_app->getId());
     
         // Export the attributes.
-        Iterator<SAMLAssertion*> a_iter(cr.filtered ? cr.filtered->getAssertions() : EMPTY(SAMLAssertion*));
+        Iterator<SAMLAssertion*> a_iter(response ? response->getAssertions() : EMPTY(SAMLAssertion*));
         while (a_iter.hasNext()) {
             SAMLAssertion* assert=a_iter.next();
             Iterator<SAMLStatement*> statements=assert->getStatements();

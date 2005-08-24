@@ -242,7 +242,6 @@ void MemoryListener::sessionNew(
         cookie = conf->getSessionCache()->generateKey();
 
         // Insert into cache.
-        auto_ptr<SAMLAuthenticationStatement> as(static_cast<SAMLAuthenticationStatement*>(bpr.authnStatement->clone()));
         conf->getSessionCache()->insert(
             cookie.c_str(),
             app,
@@ -250,11 +249,10 @@ void MemoryListener::sessionNew(
             (bpr.profile==SAMLBrowserProfile::Post) ?
                 (minorVersion==1 ? SAML11_POST : SAML10_POST) : (minorVersion==1 ? SAML11_ARTIFACT : SAML10_ARTIFACT),
             oname.get(),
-            as.get(),
+            bpr.authnStatement,
             (attributesPushed ? bpr.response : NULL),
             role
             );
-        as.release();   // owned by cache now
     }
     catch (SAMLException&) {
         bpr.clear();
@@ -274,9 +272,8 @@ void MemoryListener::sessionNew(
     target = bpr.TARGET;
     provider_id = oname.get();
 
-    // Maybe delete the response...
-    if (!attributesPushed)
-        bpr.clear();
+    // Delete the response...
+    bpr.clear();
 
     log->debug("new session id: %s", cookie.c_str());
   

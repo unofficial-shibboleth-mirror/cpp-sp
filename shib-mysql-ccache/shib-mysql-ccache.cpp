@@ -371,9 +371,9 @@ static void mysqlInit(const DOMElement* e, Category& log)
   }
 
   // Compute the argument array
-  int arg_count = arg_array.size();
+  vector<string>::size_type arg_count = arg_array.size();
   const char** args=new const char*[arg_count];
-  for (int i = 0; i < arg_count; i++)
+  for (vector<string>::size_type i = 0; i < arg_count; i++)
     args[i] = arg_array[i].c_str();
 
   // Initialize MySQL with the arguments
@@ -397,7 +397,7 @@ public:
   virtual const char* getClientAddress() const { return m_cacheEntry->getClientAddress(); }
   virtual ShibProfile getProfile() const { return m_cacheEntry->getProfile(); }
   virtual const char* getProviderId() const { return m_cacheEntry->getProviderId(); }
-  virtual const SAMLAuthenticationStatement* getAuthnStatement() const { return m_cacheEntry->getAuthnStatement(); }
+  virtual const char* getAuthnStatement() const { return m_cacheEntry->getAuthnStatement(); }
   virtual CachedResponse getResponse();
 
 private:
@@ -406,7 +406,7 @@ private:
   ShibMySQLCCache* m_cache;
   ISessionCacheEntry* m_cacheEntry;
   string m_key;
-  XMLCh* m_responseId;
+  char* m_responseId;
 };
 
 class ShibMySQLCCache : public MySQLBase, virtual public ISessionCache
@@ -426,7 +426,7 @@ public:
     const char* client_addr,
     ShibProfile profile,
     const char* providerId,
-    saml::SAMLAuthenticationStatement* s,
+    const saml::SAMLAuthenticationStatement* s,
     saml::SAMLResponse* r=NULL,
     const shibboleth::IRoleDescriptor* source=NULL,
     time_t created=0,
@@ -548,8 +548,6 @@ ISessionCacheEntry* ShibMySQLCCache::find(const char* key, const IApplication* a
         return NULL;
     }
 
-    SAMLAuthenticationStatement* s=NULL;
-    SAMLResponse* r=NULL;
     ShibProfile profile=static_cast<ShibProfile>(atoi(row[4]));
     const IRoleDescriptor* role=NULL;
     if (profile==SAML11_POST || profile==SAML11_ARTIFACT)
@@ -567,42 +565,41 @@ ISessionCacheEntry* ShibMySQLCCache::find(const char* key, const IApplication* a
     // Try to parse the SAML data
     try {
         istringstream istr(row[6]);
-        s = new SAMLAuthenticationStatement(istr);
+        auto_ptr<SAMLAuthenticationStatement> s(new SAMLAuthenticationStatement(istr));
+
+        SAMLResponse* r=NULL;
         if (row[7]) {
             istringstream istr2(row[7]);
             r = new SAMLResponse(istr2);
         }
+        auto_ptr<SAMLResponse> rwrap(r);
+
+        // Insert it into the memory cache
+        m_cache->insert(
+            key,
+            application,
+            row[3],
+            profile,
+            row[5],
+            s.get(),
+            r,
+            role,
+            atoi(row[1]),
+            atoi(row[2])
+            );
     }
     catch (SAMLException& e) {
         log->error(string("caught SAML exception while loading objects from SQL record: ") + e.what());
-        delete s;
-        delete r;
         mysql_free_result(rows);
         return NULL;
     }
 #ifndef _DEBUG
     catch (...) {
         log->error("caught unknown exception while loading objects from SQL record");
-        delete s;
-        delete r;
         mysql_free_result(rows);
         return NULL;
     }
 #endif
-
-    // Insert it into the memory cache
-    m_cache->insert(
-        key,
-        application,
-        row[3],
-        profile,
-        row[5],
-        s,
-        r,
-        role,
-        atoi(row[1]),
-        atoi(row[2])
-        );
 
     // Free the results, and then re-run the 'find' query
     mysql_free_result(rows);
@@ -620,7 +617,7 @@ void ShibMySQLCCache::insert(
     const char* client_addr,
     ShibProfile profile,
     const char* providerId,
-    saml::SAMLAuthenticationStatement* s,
+    const saml::SAMLAuthenticationStatement* s,
     saml::SAMLResponse* r,
     const shibboleth::IRoleDescriptor* source,
     time_t created,
@@ -828,7 +825,7 @@ ISessionCacheEntry::CachedResponse ShibMySQLCCacheEntry::getResponse()
         return m_cacheEntry->getResponse();
     
     CachedResponse r=m_cacheEntry->getResponse();
-    if (r.empty()) return r;
+    if (!r.unfiltered || !*r.unfiltered) return r;
     
     // Load the key from state if needed.
     if (!m_responseId) {
@@ -856,21 +853,28 @@ ISessionCacheEntry::CachedResponse ShibMySQLCCacheEntry::getResponse()
         
         MYSQL_ROW row=mysql_fetch_row(rows);
         if (row)
-            m_responseId=XMLString::transcode(row[0]);
+            m_responseId=strdup(row[0]);
         mysql_free_result(rows);
     }
     
     // Compare it with what we have now.
-    if (m_responseId && !XMLString::compareString(m_responseId,r.unfiltered->getId()))
-        return r;
+    char* start=NULL;
+    if (m_responseId) {
+        start=strstr(r.unfiltered,"ResponseID=\"");
+        if (start && !strncmp(start + 12,m_responseId,strlen(m_responseId)))
+            return r;
+        start+=12;
+        free(m_responseId);
+    }
     
     // No match, so we need to update our copy.
-    if (m_responseId) XMLString::release(&m_responseId);
-    m_responseId = XMLString::replicate(r.unfiltered->getId());
-    auto_ptr_char id(m_responseId);
+    char* end=strchr(start,'"');
+    m_responseId = (char*)malloc(sizeof(char)*(end-start+1));
+    memset(m_responseId,0,sizeof(char)*(end-start+1));
+    strncpy(m_responseId,start,end-start);
 
     ostringstream q;
-    q << "UPDATE state SET response_id='" << id.get() << "',response='" << *r.unfiltered << "' WHERE cookie='" << m_key << "'";
+    q << "UPDATE state SET response_id='" << m_responseId << "',response='" << r.unfiltered << "' WHERE cookie='" << m_key << "'";
     m_cache->log->debug("Query: %s", q.str().c_str());
 
     MYSQL* mysql = m_cache->getMYSQL();

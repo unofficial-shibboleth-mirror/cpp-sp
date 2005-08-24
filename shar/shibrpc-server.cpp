@@ -115,23 +115,18 @@ extern "C" bool_t shibrpc_get_session_2_svc(
         free(result->provider_id);
         result->provider_id = strdup(entry->getProviderId());
      
-        // Now grab the serialized authentication statement and responses
-        ostringstream os;
-        os << *(entry->getAuthnStatement());
+        // Now grab the pre-serialized authentication statement and responses
         free(result->auth_statement);
-        result->auth_statement = strdup(os.str().c_str());
+        result->auth_statement = strdup(entry->getAuthnStatement());
       
         ISessionCacheEntry::CachedResponse responses=entry->getResponse();
-        if (!responses.empty()) {
-            os.str("");
-            os << *responses.unfiltered;
+        if (responses.unfiltered) {
             free(result->attr_response_pre);
-            result->attr_response_pre = strdup(os.str().c_str());
-
-            os.str("");
-            os << *responses.filtered;
-            free(result->attr_response_post);
-            result->attr_response_post = strdup(os.str().c_str());
+            result->attr_response_pre = strdup(responses.unfiltered);
+            if (responses.filtered) {
+                free(result->attr_response_post);
+                result->attr_response_post = strdup(responses.filtered);
+            }
         }
 
         // Ok, just release it.

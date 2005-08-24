@@ -149,15 +149,14 @@ namespace shibtarget {
         virtual const char* getClientAddress() const=0;
         virtual ShibProfile getProfile() const=0;
         virtual const char* getProviderId() const=0;
-        virtual const saml::SAMLAuthenticationStatement* getAuthnStatement() const=0;
+        virtual const char* getAuthnStatement() const=0;
         struct SHIBTARGET_EXPORTS CachedResponse {
-            CachedResponse(const saml::SAMLResponse* unfiltered, const saml::SAMLResponse* filtered) {
+            CachedResponse(const char* unfiltered, const char* filtered) {
                 this->unfiltered=unfiltered;
                 this->filtered=filtered;
             }
-            bool empty() {return unfiltered==NULL;}
-            const saml::SAMLResponse* unfiltered;
-            const saml::SAMLResponse* filtered;
+            const char* unfiltered;
+            const char* filtered;
         };
         virtual CachedResponse getResponse()=0;
         virtual ~ISessionCacheEntry() {}
@@ -174,9 +173,10 @@ namespace shibtarget {
             const char* client_addr,
             ShibProfile profile,
             const char* providerId,
-            saml::SAMLAuthenticationStatement* s,
-            saml::SAMLResponse* r=NULL,
-            const shibboleth::IRoleDescriptor* source=NULL,
+            const saml::SAMLAuthenticationStatement* s,
+            // use this to feed any pushed attributes inside a SAML response
+            saml::SAMLResponse* r=NULL, // (object may be modified but is still owned by caller)
+            const shibboleth::IRoleDescriptor* source=NULL, // source of pushed attributes
             time_t created=0,
             time_t accessed=0
             )=0;
