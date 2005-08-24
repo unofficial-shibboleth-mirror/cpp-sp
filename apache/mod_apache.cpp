@@ -183,7 +183,7 @@ extern "C" const char* ap_set_global_string_slot(cmd_parms* parms, void*, const 
 extern "C" const char* shib_set_server_string_slot(cmd_parms* parms, void*, const char* arg)
 {
     char* base=(char*)ap_get_module_config(parms->server->module_config,&mod_shib);
-    int offset=(int)parms->info;
+    size_t offset=(size_t)parms->info;
     *((char**)(base + offset))=ap_pstrdup(parms->pool,arg);
     return NULL;
 }
