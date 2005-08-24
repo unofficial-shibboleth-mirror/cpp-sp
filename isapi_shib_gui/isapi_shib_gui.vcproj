@@ -31,6 +31,7 @@
 				BrowseInformation="1"
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
+				Detect64BitPortabilityProblems="TRUE"
 				DebugInformationFormat="4"
 				CompileAs="0"/>
 			<Tool
@@ -104,6 +105,7 @@ echo regsvr32 exec. time &gt; &quot;$(OutDir)\regsvr32.trg&quot;
 				BrowseInformation="1"
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
+				Detect64BitPortabilityProblems="TRUE"
 				CompileAs="0"/>
 			<Tool
 				Name="VCCustomBuildTool"

@@ -35,6 +35,7 @@
 				ProgramDataBaseFileName=".\Release/"
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
+				Detect64BitPortabilityProblems="TRUE"
 				CompileAs="0"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
@@ -101,6 +102,7 @@
 				BrowseInformation="1"
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
+				Detect64BitPortabilityProblems="TRUE"
 				DebugInformationFormat="4"
 				CompileAs="0"/>
 			<Tool
@@ -148,6 +150,21 @@
 	<References>
 	</References>
 	<Files>
+		<File
+			RelativePath=".\mod_apache.cpp">
+			<FileConfiguration
+				Name="Release|Win32"
+				ExcludedFromBuild="TRUE">
+				<Tool
+					Name="VCCLCompilerTool"/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="Debug|Win32"
+				ExcludedFromBuild="TRUE">
+				<Tool
+					Name="VCCLCompilerTool"/>
+			</FileConfiguration>
+		</File>
 		<File
 			RelativePath="mod_shib_13.cpp">
 			<FileConfiguration

@@ -36,6 +36,7 @@
 				ProgramDataBaseFileName=".\Release/"
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
+				Detect64BitPortabilityProblems="TRUE"
 				CompileAs="0"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
@@ -102,6 +103,7 @@
 				BrowseInformation="1"
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
+				Detect64BitPortabilityProblems="TRUE"
 				DebugInformationFormat="4"
 				CompileAs="0"/>
 			<Tool
