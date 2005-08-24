@@ -46,7 +46,7 @@ ShibMLPPriv::ShibMLPPriv() : log(&(log4cpp::Category::getInstance("shibtarget.Sh
 
 static void trimspace (string& s)
 {
-  int end = s.size() - 1, start = 0;
+  size_t end = s.size() - 1, start = 0;
 
   // Trim stuff on right.
   while (end > 0 && !isgraph(s[end])) end--;

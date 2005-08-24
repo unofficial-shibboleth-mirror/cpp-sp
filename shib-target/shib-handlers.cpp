@@ -44,7 +44,7 @@ namespace {
   class CgiParse
   {
   public:
-    CgiParse(const char* data, unsigned int len);
+    CgiParse(const char* data, size_t len);
     ~CgiParse();
     const char* get_value(const char* name) const;
     
