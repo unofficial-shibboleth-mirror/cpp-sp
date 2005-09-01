@@ -1,3 +1,8 @@
+9/1/05
+Version 1.3a
+
+Fix for secadv 20050901
+
 7/15/05
 Version 1.3
 
