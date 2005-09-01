@@ -42,6 +42,7 @@
 #include "shar-utils.h"
 #include <log4cpp/Category.hh>
 
+
 using namespace std;
 using namespace saml;
 using namespace shibboleth;
@@ -122,6 +123,43 @@ static void shar_svc_run(IListener::ShibSocket& listener, const Iterator<ShibRPC
 
 #ifdef WIN32
 
+//#include <CRTDBG.H>
+
+#define nNoMansLandSize 4
+typedef struct _CrtMemBlockHeader
+{
+        struct _CrtMemBlockHeader * pBlockHeaderNext;
+        struct _CrtMemBlockHeader * pBlockHeaderPrev;
+        char *                      szFileName;
+        int                         nLine;
+        size_t                      nDataSize;
+        int                         nBlockUse;
+        long                        lRequest;
+        unsigned char               gap[nNoMansLandSize];
+        /* followed by:
+         *  unsigned char           data[nDataSize];
+         *  unsigned char           anotherGap[nNoMansLandSize];
+         */
+} _CrtMemBlockHeader;
+
+/*
+int MyAllocHook(int nAllocType, void *pvData,
+      size_t nSize, int nBlockUse, long lRequest,
+      const unsigned char * szFileName, int nLine)
+{
+    if ( nBlockUse == _CRT_BLOCK )
+      return( TRUE );
+    if (nAllocType == _HOOK_FREE) {
+        _CrtMemBlockHeader* ptr = (_CrtMemBlockHeader*)(((_CrtMemBlockHeader *)pvData)-1);
+        if (ptr->nDataSize == 8192)
+            fprintf(stderr,"free  request %u size %u\n", ptr->lRequest, ptr->nDataSize);
+    }
+    else if (nAllocType == _HOOK_ALLOC && nSize == 8192)
+        fprintf(stderr,"%s request %u size %u\n", ((nAllocType == _HOOK_ALLOC) ? "alloc" : "realloc"), lRequest, nSize);
+    return (TRUE);
+}
+*/
+
 int real_main(int preinit)
 {
     static IListener::ShibSocket sock;
@@ -192,6 +230,9 @@ int real_main(int preinit)
         SHARUtils::init();
     }
     else {
+
+        //_CrtSetAllocHook(MyAllocHook);
+
         // Run the listener
         if (!shar_checkonly) {
             shar_svc_run(sock, ArrayIterator<ShibRPCProtocols>(protos,1));
