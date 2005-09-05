@@ -12,6 +12,7 @@ can_exec(shibshar_t, shibshar_exec_t)
 uses_shlib(shibshar_t)
 can_network(shibshar_t)
 can_tcp_connect(shibshar_t, unconfined_t)
+allow shibshar_t port_type:tcp_socket name_connect;
 allow shibshar_t etc_t:file r_file_perms;
 allow shibshar_t bin_t:dir r_dir_perms;
 allow shibshar_t bin_t:file rx_file_perms;
@@ -24,7 +25,7 @@ allow shibshar_t shibshar_t:netlink_route_socket { create bind getattr};
 allow shibshar_t usr_t:dir r_dir_perms;
 allow shibshar_t usr_t:file rx_file_perms;
 
-allow shibshar_t urandom_device_t:chr_file { getattr read };
+allow shibshar_t urandom_device_t:chr_file { getattr ioctl read };
  
 # Enable HTTPD to connect to the shib-shar socket and read/write to it
 can_unix_connect(httpd_t, shibshar_var_run_t)
