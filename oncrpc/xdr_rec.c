@@ -69,7 +69,7 @@ static char sccsid[] = "@(#)xdr_rec.c 1.21 87/08/11 Copyr 1984 Sun Micro";
 #include <rpc/xdr.h>
 #include <netinet/in.h>
 
-extern long	lseek();
+extern off_t lseek(int, off_t, int);
 #endif
 
 static u_int	fix_buf_size();
