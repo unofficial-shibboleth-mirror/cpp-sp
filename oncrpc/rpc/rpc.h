@@ -95,6 +95,7 @@ extern int xdr_opaque_auth(DOTS);
 #else
 #include <rpc/types.h>		/* some typedefs */
 #include <netinet/in.h>
+#include <pthread.h>
 #endif
 
 /* external data representation interfaces */
