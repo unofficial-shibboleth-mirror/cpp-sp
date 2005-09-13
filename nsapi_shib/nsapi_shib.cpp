@@ -311,9 +311,7 @@ extern "C" NSAPI_PUBLIC int nsapi_shib(pblock* pb, Session* sn, Request* rq)
   threadid << "[" << getpid() << "] nsapi_shib" << '\0';
   saml::NDC ndc(threadid.str().c_str());
 
-#ifndef _DEBUG
   try {
-#endif
     ShibTargetNSAPI stn(pb, sn, rq);
 
     // Check user authentication
@@ -334,11 +332,14 @@ extern "C" NSAPI_PUBLIC int nsapi_shib(pblock* pb, Session* sn, Request* rq)
 
     // this user is ok.
     return REQ_PROCEED;
-
-#ifndef _DEBUG
   }
+  catch (SAMLException& e) {
+    log_error(LOG_FAILURE,FUNC,sn,rq,const_cast<char*>(e.what()));
+    return WriteClientError(sn, rq, FUNC, "Shibboleth filter threw an exception, see web server log for error.");
+  }
+#ifndef _DEBUG
   catch (...) {
-    return WriteClientError(sn, rq, FUNC, "threw an uncaught exception.");
+    return WriteClientError(sn, rq, FUNC, "Shibboleth filter threw an uncaught exception.");
   }
 #endif
 }
@@ -352,20 +353,21 @@ extern "C" NSAPI_PUBLIC int shib_handler(pblock* pb, Session* sn, Request* rq)
   threadid << "[" << getpid() << "] shib_handler" << '\0';
   saml::NDC ndc(threadid.str().c_str());
 
-#ifndef _DEBUG
   try {
-#endif
     ShibTargetNSAPI stn(pb, sn, rq);
 
     pair<bool,void*> res = stn.doHandler();
     if (res.first) return (int)res.second;
 
     return WriteClientError(sn, rq, FUNC, "Shibboleth handler did not do anything.");
-
-#ifndef _DEBUG
   }
+  catch (SAMLException& e) {
+    log_error(LOG_FAILURE,FUNC,sn,rq,const_cast<char*>(e.what()));
+    return WriteClientError(sn, rq, FUNC, "Shibboleth handler threw an exception, see web server log for error.");
+  }
+#ifndef _DEBUG
   catch (...) {
-    return WriteClientError(sn, rq, FUNC, "Filter threw an unknown exception.");
+    return WriteClientError(sn, rq, FUNC, "Shibboleth handler threw an unknown exception.");
   }
 #endif
 }
