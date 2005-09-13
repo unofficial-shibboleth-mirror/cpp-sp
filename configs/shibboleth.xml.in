@@ -81,8 +81,10 @@
 				-->
 				<Host name="sp.example.org">
 					<Path name="secure" authType="shibboleth" requireSession="true" exportAssertion="true">
-						<!-- Example shows a subfolder on the SSL port assigned to a separate <Application> -->
+						<!-- Example shows the folder "/secure/admin" assigned to a separate <Application> -->
+						<!--
 						<Path name="admin" applicationId="foo-admin"/>
+						-->
 					</Path>
 				</Host>
 			</RequestMap>
