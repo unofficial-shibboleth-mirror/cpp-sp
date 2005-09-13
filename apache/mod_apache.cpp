@@ -324,9 +324,7 @@ extern "C" int shib_check_user(request_rec* r)
   threadid << "[" << getpid() << "] shib_check_user" << '\0';
   saml::NDC ndc(threadid.str().c_str());
 
-#ifndef _DEBUG
   try {
-#endif
     ShibTargetApache sta(r);
 
     // Check user authentication and export information, then set the handler bypass
@@ -340,9 +338,13 @@ extern "C" int shib_check_user(request_rec* r)
 
     // export happened successfully..  this user is ok.
     return OK;
-
+  }
+  catch (SAMLException& e) {
+    ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_check_user threw an exception: %s", e.what());
+    return SERVER_ERROR;
+  }
 #ifndef _DEBUG
-  } catch (...) {
+  catch (...) {
     ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_check_user threw an uncaught exception!");
     return SERVER_ERROR;
   }
@@ -373,9 +375,7 @@ extern "C" int shib_handler(request_rec* r)
 
   ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_handler(%d): ENTER: %s", (int)getpid(), r->handler);
 
-#ifndef _DEBUG
   try {
-#endif
     ShibTargetApache sta(r);
 
     pair<bool,void*> res = sta.doHandler();
@@ -383,9 +383,13 @@ extern "C" int shib_handler(request_rec* r)
 
     ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "doHandler() did not do anything.");
     return SERVER_ERROR;
-
+  }
+  catch (SAMLException& e) {
+    ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_handler threw an exception: %s", e.what());
+    return SERVER_ERROR;
+  }
 #ifndef _DEBUG
-  } catch (...) {
+  catch (...) {
     ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_handler threw an uncaught exception!");
     return SERVER_ERROR;
   }
@@ -408,9 +412,7 @@ extern "C" int shib_auth_checker(request_rec* r)
   threadid << "[" << getpid() << "] shib_auth_checker" << '\0';
   saml::NDC ndc(threadid.str().c_str());
 
-#ifndef _DEBUG
   try {
-#endif
     ShibTargetApache sta(r);
 
     pair<bool,void*> res = sta.doCheckAuthZ();
@@ -418,9 +420,13 @@ extern "C" int shib_auth_checker(request_rec* r)
 
     // We're all okay.
     return OK;
-
+  }
+  catch (SAMLException& e) {
+    ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_auth_checker threw an exception: %s", e.what());
+    return SERVER_ERROR;
+  }
 #ifndef _DEBUG
-  } catch (...) {
+  catch (...) {
     ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_auth_checker threw an uncaught exception!");
     return SERVER_ERROR;
   }

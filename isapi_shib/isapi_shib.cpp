@@ -531,15 +531,19 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
         if (e==ERROR_NO_DATA)
             return WriteClientError(pfc,"A required variable or header was empty.");
         else
-            return WriteClientError(pfc,"Server detected unexpected IIS error.");
+            return WriteClientError(pfc,"Shibboleth Filter detected unexpected IIS error.");
+    }
+    catch (SAMLException& e) {
+        LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, e.what());
+        return WriteClientError(pfc,"Shibboleth Filter caught an exception, check Event Log for details.");
     }
 #ifndef _DEBUG
     catch(...) {
-        return WriteClientError(pfc,"Server caught an unknown exception.");
+        return WriteClientError(pfc,"Shibboleth Filter caught an unknown exception.");
     }
 #endif
 
-    return WriteClientError(pfc,"Server reached unreachable code, save my walrus!");
+    return WriteClientError(pfc,"Shibboleth Filter reached unreachable code, save my walrus!");
 }
         
 
@@ -771,9 +775,13 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
         else
             return WriteClientError(lpECB,"Server detected unexpected IIS error.");
     }
+    catch (SAMLException& e) {
+        LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, e.what());
+        return WriteClientError(lpECB,"Shibboleth Extension caught an exception, check Event Log for details.");
+    }
 #ifndef _DEBUG
     catch(...) {
-        return WriteClientError(lpECB,"Server caught an unknown exception.");
+        return WriteClientError(lpECB,"Shibboleth Extension caught an unknown exception.");
     }
 #endif
 
