@@ -81,8 +81,10 @@
 				-->
 				<Host name="sp.example.org">
 					<Path name="secure" authType="shibboleth" requireSession="true" exportAssertion="true">
-						<!-- Example shows a subfolder on the SSL port assigned to a separate <Application> -->
+						<!-- Example shows the folder "/secure/admin" assigned to a separate <Application> -->
+						<!--
 						<Path name="admin" applicationId="foo-admin"/>
+						-->
 					</Path>
 				</Host>
 			</RequestMap>
@@ -127,7 +129,7 @@
 		You MUST supply an effectively unique handlerURL value for each of your applications.
 		The value can be a relative path, a URL with no hostname (https:///path) or a full URL.
 		The system can compute a relative value based on the virtual host. Using handlerSSL="true"
-		will force the protocol to be https. You should also add a cookieProps setting of "; secure"
+		will force the protocol to be https. You should also add a cookieProps setting of "; path=/; secure"
 		in that case. Note that while we default checkAddress to "false", this has a negative
 		impact on the security of the SP. Stealing cookies/sessions is much easier with this
 		disabled.
