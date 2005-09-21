@@ -146,12 +146,18 @@ M4SJ6gjGf83y9axPpuHcjwxQ5fLqZfnvrWH+1owJhQ==
 			</Extensions>
 			
 			<!--
-			Note that because TLS with certificate validation is used, there is no <KeyDescriptor>
+			Note that when TLS with certificate validation is used, there may be no <KeyDescriptor>
 			needed. Since server TLS is used to authenticate the AA, its <ds:KeyName> is implicit
 			in the URL used to connect to it. If you were to place the certificate directly
 			in the metadata in the role above, you'll also need a copy here. You'll also need
-			a <KeyDescriptor> if you want to allow the AA to sign assertions.
+			a <KeyDescriptor> if you want to allow the AA to sign assertions. For the latter reason,
+			as a precaution, we'll include it.
 			-->
+			<KeyDescriptor use="signing">
+			    <ds:KeyInfo>
+			        <ds:KeyName>wayf.internet2.edu</ds:KeyName>
+			    </ds:KeyInfo>
+			</KeyDescriptor>
 			
 			<!-- This tells SPs how and where to send queries. -->
 			<AttributeService Binding="urn:oasis:names:tc:SAML:1.0:bindings:SOAP-binding"
