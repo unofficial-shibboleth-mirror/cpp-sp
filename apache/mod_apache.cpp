@@ -666,9 +666,13 @@ bool htAccessControl::authorized(
             // Without some require rule, AuthType is ignored and no check_user hooks run.
             SHIB_AP_CHECK_IS_OK;
         }
-        else if (!strcmp(w,"valid-user") && entry) {
-            st->log(ShibTarget::LogLevelDebug,"htAccessControl plugin accepting valid-user based on active session");
-            SHIB_AP_CHECK_IS_OK;
+        else if (!strcmp(w,"valid-user")) {
+            if (entry) {
+                st->log(ShibTarget::LogLevelDebug,"htAccessControl plugin accepting valid-user based on active session");
+                SHIB_AP_CHECK_IS_OK;
+            }
+            else
+                st->log(ShibTarget::LogLevelError,"htAccessControl plugin rejecting access for valid-user rule, no session is active");
         }
         else if (!strcmp(w,"user") && !remote_user.empty()) {
             bool regexp=false;
