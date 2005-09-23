@@ -15,8 +15,7 @@
  */
 
 /*
- * shar.cpp -- the SHAR "main" code.  All the functionality is elsewhere
- *           (in case you want to turn this into a library later).
+ * shar.cpp -- the shibd "main" code.  All the functionality is elsewhere
  *
  * Created By:	Derek Atkins <derek@ihtfp.com>
  *
@@ -63,6 +62,7 @@ const char* shar_config = NULL;
 const char* shar_schemadir = NULL;
 bool shar_checkonly = false;
 static int unlink_socket = 0;
+const char* pidfile = NULL;
 
 static bool new_connection(IListener::ShibSocket& listener, const Iterator<ShibRPCProtocols>& protos)
 {
@@ -301,6 +301,7 @@ static void usage(char* whoami)
     fprintf(stderr, "  -d\tschema directory to use.\n");
     fprintf(stderr, "  -t\tcheck configuration file for problems.\n");
     fprintf(stderr, "  -f\tforce removal of listener socket.\n");
+    fprintf(stderr, "  -p\tpid file to use.\n");
     fprintf(stderr, "  -h\tprint this help message.\n");
     exit(1);
 }
@@ -309,7 +310,7 @@ static int parse_args(int argc, char* argv[])
 {
     int opt;
 
-    while ((opt = getopt(argc, argv, "c:d:fth")) > 0) {
+    while ((opt = getopt(argc, argv, "c:d:p:fth")) > 0) {
         switch (opt) {
             case 'c':
                 shar_config=optarg;
@@ -322,6 +323,9 @@ static int parse_args(int argc, char* argv[])
                 break;
             case 't':
                 shar_checkonly=true;
+                break;
+            case 'p':
+                pidfile=optarg;
                 break;
             default:
                 return -1;
@@ -398,6 +402,17 @@ int main(int argc, char *argv[])
             conf.shutdown();
             return -5;
         }
+
+        // Write the pid file
+        if (pidfile) {
+            FILE* pidf = fopen(pidfile, "w");
+            if (pidf) {
+                fprintf(pidf, "%d\n", getpid());
+                fclose(pidf);
+            } else {
+                perror(pidfile);  // keep running though
+            }
+        }
     
         // Initialize the SHAR Utilitites
         SHARUtils::init();
@@ -414,6 +429,8 @@ int main(int argc, char *argv[])
     }
 
     conf.shutdown();
+    if (pidfile)
+        unlink(pidfile);
     fprintf(stderr, "shibd shutdown complete\n");
     return 0;
 }
