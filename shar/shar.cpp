@@ -15,8 +15,7 @@
  */
 
 /*
- * shar.cpp -- the SHAR "main" code.  All the functionality is elsewhere
- *           (in case you want to turn this into a library later).
+ * shar.cpp -- the shibd "main" code.  All the functionality is elsewhere
  *
  * Created By:	Derek Atkins <derek@ihtfp.com>
  *
@@ -42,6 +41,7 @@
 #include "shar-utils.h"
 #include <log4cpp/Category.hh>
 
+
 using namespace std;
 using namespace saml;
 using namespace shibboleth;
@@ -62,6 +62,7 @@ const char* shar_config = NULL;
 const char* shar_schemadir = NULL;
 bool shar_checkonly = false;
 static int unlink_socket = 0;
+const char* pidfile = NULL;
 
 static bool new_connection(IListener::ShibSocket& listener, const Iterator<ShibRPCProtocols>& protos)
 {
@@ -121,6 +122,43 @@ static void shar_svc_run(IListener::ShibSocket& listener, const Iterator<ShibRPC
 }
 
 #ifdef WIN32
+
+//#include <CRTDBG.H>
+
+#define nNoMansLandSize 4
+typedef struct _CrtMemBlockHeader
+{
+        struct _CrtMemBlockHeader * pBlockHeaderNext;
+        struct _CrtMemBlockHeader * pBlockHeaderPrev;
+        char *                      szFileName;
+        int                         nLine;
+        size_t                      nDataSize;
+        int                         nBlockUse;
+        long                        lRequest;
+        unsigned char               gap[nNoMansLandSize];
+        /* followed by:
+         *  unsigned char           data[nDataSize];
+         *  unsigned char           anotherGap[nNoMansLandSize];
+         */
+} _CrtMemBlockHeader;
+
+/*
+int MyAllocHook(int nAllocType, void *pvData,
+      size_t nSize, int nBlockUse, long lRequest,
+      const unsigned char * szFileName, int nLine)
+{
+    if ( nBlockUse == _CRT_BLOCK )
+      return( TRUE );
+    if (nAllocType == _HOOK_FREE) {
+        _CrtMemBlockHeader* ptr = (_CrtMemBlockHeader*)(((_CrtMemBlockHeader *)pvData)-1);
+        if (ptr->nDataSize == 8192)
+            fprintf(stderr,"free  request %u size %u\n", ptr->lRequest, ptr->nDataSize);
+    }
+    else if (nAllocType == _HOOK_ALLOC && nSize == 8192)
+        fprintf(stderr,"%s request %u size %u\n", ((nAllocType == _HOOK_ALLOC) ? "alloc" : "realloc"), lRequest, nSize);
+    return (TRUE);
+}
+*/
 
 int real_main(int preinit)
 {
@@ -192,6 +230,9 @@ int real_main(int preinit)
         SHARUtils::init();
     }
     else {
+
+        //_CrtSetAllocHook(MyAllocHook);
+
         // Run the listener
         if (!shar_checkonly) {
             shar_svc_run(sock, ArrayIterator<ShibRPCProtocols>(protos,1));
@@ -260,6 +301,7 @@ static void usage(char* whoami)
     fprintf(stderr, "  -d\tschema directory to use.\n");
     fprintf(stderr, "  -t\tcheck configuration file for problems.\n");
     fprintf(stderr, "  -f\tforce removal of listener socket.\n");
+    fprintf(stderr, "  -p\tpid file to use.\n");
     fprintf(stderr, "  -h\tprint this help message.\n");
     exit(1);
 }
@@ -268,7 +310,7 @@ static int parse_args(int argc, char* argv[])
 {
     int opt;
 
-    while ((opt = getopt(argc, argv, "c:d:fth")) > 0) {
+    while ((opt = getopt(argc, argv, "c:d:p:fth")) > 0) {
         switch (opt) {
             case 'c':
                 shar_config=optarg;
@@ -281,6 +323,9 @@ static int parse_args(int argc, char* argv[])
                 break;
             case 't':
                 shar_checkonly=true;
+                break;
+            case 'p':
+                pidfile=optarg;
                 break;
             default:
                 return -1;
@@ -357,6 +402,17 @@ int main(int argc, char *argv[])
             conf.shutdown();
             return -5;
         }
+
+        // Write the pid file
+        if (pidfile) {
+            FILE* pidf = fopen(pidfile, "w");
+            if (pidf) {
+                fprintf(pidf, "%d\n", getpid());
+                fclose(pidf);
+            } else {
+                perror(pidfile);  // keep running though
+            }
+        }
     
         // Initialize the SHAR Utilitites
         SHARUtils::init();
@@ -373,6 +429,8 @@ int main(int argc, char *argv[])
     }
 
     conf.shutdown();
+    if (pidfile)
+        unlink(pidfile);
     fprintf(stderr, "shibd shutdown complete\n");
     return 0;
 }
