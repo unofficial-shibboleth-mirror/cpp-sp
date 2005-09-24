@@ -109,7 +109,7 @@ fi
 /sbin/ldconfig
 
 # delete the shibboleth apache configuration if we're being removed
-[ "$0" = 0 ] || exit 0
+[ "$1" = 0 ] || exit 0
 [ -f %{_sysconfdir}/httpd/conf.d/shib.conf ] && \
     rm -f %{_sysconfdir}/httpd/conf.d/shib.conf
 
