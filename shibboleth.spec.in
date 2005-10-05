@@ -141,9 +141,9 @@ restorecon %{_sbindir}/shibd
 %{_datadir}/xml/shibboleth/*.xsd
 %{_datadir}/xml/shibboleth/*.xsl
 %dir %{_sysconfdir}/shibboleth
-%config %{_sysconfdir}/shibboleth/*.xml
-%config %{_sysconfdir}/shibboleth/*.html
-%config %{_sysconfdir}/shibboleth/*.logger
+%config(noreplace) %{_sysconfdir}/shibboleth/*.xml
+%config(noreplace) %{_sysconfdir}/shibboleth/*.html
+%config(noreplace) %{_sysconfdir}/shibboleth/*.logger
 %config %{_sysconfdir}/shibboleth/inqueue.pem
 %config %{_sysconfdir}/shibboleth/sp-example.crt
 %config %{_sysconfdir}/shibboleth/sp-example.key
@@ -172,6 +172,7 @@ restorecon %{_sbindir}/shibd
 - pidfile patch
 - Fix shib.conf creation
 - Integrated init.d script
+- Prevent replacement of config files
 
 * Thu Sep 1 2005  Scott Cantor  <cantor.2@osu.edu>  - 1.3-5
 - Applied fix for secadv 20050901 plus rollup of NSAPI fixes
