@@ -265,6 +265,9 @@
 				<xsl:when test="md:GivenName">
 					<xsl:attribute name="Name"><xsl:value-of select="md:GivenName"/></xsl:attribute>
 				</xsl:when>
+				<xsl:when test="md:SurName">
+					<xsl:attribute name="Name"><xsl:value-of select="md:SurName"/></xsl:attribute>
+				</xsl:when>
 				<xsl:otherwise>
 					<xsl:attribute name="Name">Nobody</xsl:attribute>
 				</xsl:otherwise>
