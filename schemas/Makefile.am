@@ -19,6 +19,7 @@ pkgxml_DATA = \
                 shibboleth-targetconfig-1.0.xsd \
 				saml-schema-assertion-2.0.xsd \
 				saml-schema-metadata-2.0.xsd \
+				WS-Trust.xsd \
 				metadata_v12_to_v11.xsl \
 				metadata_v12_to_v13.xsl \
 				metadata_v13_to_v12.xsl \
