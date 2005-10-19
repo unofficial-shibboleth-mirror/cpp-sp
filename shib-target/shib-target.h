@@ -53,7 +53,8 @@ namespace shibtarget {
       SAML10_ARTIFACT = 2,
       SAML11_POST = 4,
       SAML11_ARTIFACT = 8,
-      SAML20_SSO = 16
+      SAML20_SSO = 16,
+      ADFS_SSO = 32
     };
 
     // Abstract APIs for access to configuration information
