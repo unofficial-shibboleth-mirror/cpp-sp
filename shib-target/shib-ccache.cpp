@@ -568,7 +568,7 @@ bool InternalCCacheEntry::responseValid()
     // If we didn't find any assertions with times, then see if we're
     // older than the default response lifetime.
     if (!count) {
-        if ((now - m_responseCreated) > m_cache->m_defaultLifetime) {
+        if (abs(now - m_responseCreated) > m_cache->m_defaultLifetime) {
             m_cache->log->debug("response is beyond default life, so it's invalid");
             return false;
         }
