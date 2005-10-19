@@ -167,6 +167,14 @@ void ADFSListener::sessionNew(
                             try {
                                 // Check over the assertion.
                                 SAMLAuthenticationStatement* authnStatement=checkAssertionProfile(assertion.get());
+
+                                if (!checkReplay.first || checkReplay.second) {
+                                    auto_ptr_char id(assertion->getId());
+                                    string key(id.get());
+                                    key="P_" + key;
+                                    if (!conf->getReplayCache()->check(key.c_str(),assertion->getNotOnOrAfter()->getEpoch()))
+                                        throw ReplayedAssertionException(string("Rejecting replayed assertion ID (") + id.get() + ")");
+                                }
                                 
                                 // Check signature.
                                 log->debug("passing signed ADFS assertion to trust layer");
