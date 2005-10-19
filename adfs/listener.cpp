@@ -153,9 +153,39 @@ void ADFSListener::sessionNew(
                     if (e) {
                         e=saml::XML::getFirstChildElement(e,saml::XML::SAML_NS,L(Assertion));
                         if (e) {
-                            auto_ptr<SAMLAssertion> assertion(new SAMLAssertion(e));
+
+                            // Wrap the assertion DOM in a dummy samlp:Response for subsequent processing.
+                            // We have to manually create the Response DOM first in order to avoid
+                            // corrupting the namespace declarations in the Assertion.
+
+                            static const XMLCh One[]={chDigit_1, chNull};
+                            static const XMLCh dummyID[] = {chLatin_A, chLatin_D, chLatin_F, chLatin_S, chNull};
+                            static const XMLCh samlp_Success[]=
+                            { chLatin_s, chLatin_a, chLatin_m, chLatin_l, chLatin_p, chColon,
+                              chLatin_S, chLatin_u, chLatin_c, chLatin_c, chLatin_e, chLatin_s, chLatin_s, chNull };
+                            DOMElement* rdom=rdoc->createElementNS(saml::XML::SAMLP_NS,L(Response));
+                            rdom->setAttributeNS(saml::XML::XMLNS_NS,L_QNAME(xmlns,samlp),saml::XML::SAMLP_NS);
+                            rdom->setAttributeNS(saml::XML::XMLNS_NS,L(xmlns),saml::XML::SAMLP_NS);
+                            rdom->setAttributeNS(NULL,L(MajorVersion),One);
+                            rdom->setAttributeNS(NULL,L(MinorVersion),One);
+                            rdom->setAttributeNS(NULL,L(ResponseID),dummyID);
+                            SAMLDateTime issued(time(NULL));
+                            issued.parseDateTime();
+                            rdom->setAttributeNS(NULL,L(IssueInstant),issued.getRawData());
+                            DOMElement* status=rdoc->createElementNS(saml::XML::SAMLP_NS,L(Status));
+                            rdom->appendChild(status);
+                            DOMElement* code=rdoc->createElementNS(saml::XML::SAMLP_NS,L(StatusCode));
+                            code->setAttributeNS(NULL,L(Value),samlp_Success);
+                            status->appendChild(code);
+                            rdom->appendChild(e);   // append the assertion
+                            auto_ptr<SAMLResponse> response(new SAMLResponse(rdom));
+                            response->setDocument(rdoc);    // give the Document to the response object
+                            // root the response in the document so the signature will verify
+                            rdoc->replaceChild(response->toDOM(rdoc,false),rdoc->getDocumentElement());
+                            rdoc=NULL;
                             
                             // Try and map to metadata.
+                            SAMLAssertion* assertion=response->getAssertions().next();
                             const IEntityDescriptor* provider=m.lookup(assertion->getIssuer());
                             if (provider)
                                 role=provider->getIDPSSODescriptor(adfs::XML::WSFED_NS);
@@ -166,7 +196,7 @@ void ADFSListener::sessionNew(
                             
                             try {
                                 // Check over the assertion.
-                                SAMLAuthenticationStatement* authnStatement=checkAssertionProfile(assertion.get());
+                                SAMLAuthenticationStatement* authnStatement=checkAssertionProfile(assertion);
 
                                 if (!checkReplay.first || checkReplay.second) {
                                     auto_ptr_char id(assertion->getId());
@@ -179,19 +209,10 @@ void ADFSListener::sessionNew(
                                 // Check signature.
                                 log->debug("passing signed ADFS assertion to trust layer");
                                 Trust t(app->getTrustProviders());
-                                if (!t.validate(*(assertion.get()),role)) {
+                                if (!t.validate(*assertion,role)) {
                                     log->error("unable to verify signed authentication assertion");
                                     throw TrustException("unable to verify signed authentication assertion");
                                 }
-                                
-                                // Wrap the assertion in a dummy samlp:Response for subsequent processing.
-                                // Generate the Response DOM using the assertion's document and then
-                                // transfer ownership of the tree to the Response.
-                                auto_ptr<SAMLResponse> response(new SAMLResponse());
-                                response->addAssertion(assertion.release());
-                                response->toDOM(rdoc);
-                                response->setDocument(rdoc);
-                                rdoc=NULL;
                                 
                                 // Now dummy up the SAML profile response wrapper.
                                 param=parser.get_value("wctx");
@@ -199,7 +220,7 @@ void ADFSListener::sessionNew(
                                     bpr.TARGET=param;
                                 bpr.profile=SAMLBrowserProfile::Post;   // not really, but...
                                 bpr.response=response.release();
-                                bpr.assertion=response->getAssertions().next();
+                                bpr.assertion=assertion;
                                 bpr.authnStatement=authnStatement;
                             }
                             catch (SAMLException& ex) {
