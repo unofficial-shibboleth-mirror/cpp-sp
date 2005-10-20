@@ -24,6 +24,7 @@
 
 #include "internal.h"
 
+#include <log4cpp/FixedContextCategory.hh>
 #include <xercesc/framework/MemBufInputSource.hpp>
 
 using namespace std;
@@ -412,7 +413,8 @@ void ADFSListener::sessionNew(
     log->debug("new session id: %s", cookie.c_str());
   
     // Transaction Logging
-    Category::getInstance(SHIBTRAN_LOGCAT).infoStream() <<
+    FixedContextCategory tranLog(SHIBTRAN_LOGCAT);
+    tranLog.infoStream() <<
         "New session (ID: " <<
             cookie <<
         ") with (applicationId: " <<
