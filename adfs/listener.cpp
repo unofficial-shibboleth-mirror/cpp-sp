@@ -434,113 +434,7 @@ void ADFSListener::sessionGet(
     ISessionCacheEntry** pentry
     ) const
 {
-#ifdef _DEBUG
-    saml::NDC ndc("sessionGet");
-#endif
-
-    *pentry=NULL;
-    log->debug("checking for session: %s@%s", cookie, ip);
-
-    // See if the session exists...
-
-    ShibTargetConfig& stc=ShibTargetConfig::getConfig();
-    IConfig* conf=stc.getINI();
-    log->debug("application: %s", app->getId());
-
-    bool checkIPAddress=true;
-    int lifetime=0,timeout=0;
-    const IPropertySet* props=app->getPropertySet("Sessions");
-    if (props) {
-        pair<bool,unsigned int> p=props->getUnsignedInt("lifetime");
-        if (p.first)
-            lifetime = p.second;
-        p=props->getUnsignedInt("timeout");
-        if (p.first)
-            timeout = p.second;
-        pair<bool,bool> pcheck=props->getBool("checkAddress");
-        if (pcheck.first)
-            checkIPAddress = pcheck.second;
-    }
-    
-    *pentry = conf->getSessionCache()->find(cookie,app);
-
-    // If not, leave now..
-    if (!*pentry) {
-        log->debug("session not found");
-        throw InvalidSessionException("No session exists for key value ($session_id)",namedparams(1,"session_id",cookie));
-    }
-
-    // TEST the session...
-    try {
-        // Verify the address is the same
-        if (checkIPAddress) {
-            log->debug("Checking address against %s", (*pentry)->getClientAddress());
-            if (strcmp(ip, (*pentry)->getClientAddress())) {
-                log->debug("client address mismatch");
-                InvalidSessionException ex(
-                    SESSION_E_ADDRESSMISMATCH,
-                    "Your IP address (%1) does not match the address recorded at the time the session was established.",
-                    params(1,ip)
-                    );
-                Metadata m(app->getMetadataProviders());
-                annotateException(&ex,m.lookup((*pentry)->getProviderId())); // throws it
-            }
-        }
-
-        // and that the session is still valid...
-        if (!(*pentry)->isValid(lifetime,timeout)) {
-            log->debug("session expired");
-            InvalidSessionException ex(SESSION_E_EXPIRED, "Your session has expired, and you must re-authenticate.");
-            Metadata m(app->getMetadataProviders());
-            annotateException(&ex,m.lookup((*pentry)->getProviderId())); // throws it
-        }
-    }
-    catch (SAMLException&) {
-        (*pentry)->unlock();
-        *pentry=NULL;
-        conf->getSessionCache()->remove(cookie);
-      
-        // Transaction Logging
-        Category::getInstance(SHIBTRAN_LOGCAT).infoStream() <<
-            "Destroyed invalid session (ID: " <<
-                cookie <<
-            ") with (applicationId: " <<
-                app->getId() <<
-            "), request was from (ClientAddress: " <<
-                ip <<
-            ")";
-        //stc.releaseTransactionLog();
-        throw;
-    }
-    catch (...) {
-        log->error("caught unknown exception");
-#ifndef _DEBUG
-        InvalidSessionException ex("An unexpected error occurred while validating your session, and you must re-authenticate.");
-        Metadata m(app->getMetadataProviders());
-        annotateException(&ex,m.lookup((*pentry)->getProviderId()),false);
-#endif
-        (*pentry)->unlock();
-        *pentry=NULL;
-        conf->getSessionCache()->remove(cookie);
-
-        // Transaction Logging
-        Category::getInstance(SHIBTRAN_LOGCAT).infoStream() <<
-            "Destroyed invalid session (ID: " <<
-                cookie <<
-            ") with (applicationId: " <<
-                app->getId() <<
-            "), request was from (ClientAddress: " <<
-                ip <<
-            ")";
-        //stc.releaseTransactionLog();
-#ifdef _DEBUG
-        throw;
-#else
-        ex.raise();
-#endif
-    }
-
-    log->debug("session ok");
+    g_MemoryListener->sessionGet(app,cookie,ip,pentry);
 }
 
 void ADFSListener::sessionEnd(
@@ -548,21 +442,10 @@ void ADFSListener::sessionEnd(
     const char* cookie
     ) const
 {
-#ifdef _DEBUG
-    saml::NDC ndc("sessionEnd");
-#endif
-
-    log->debug("removing session: %s", cookie);
-
-    ShibTargetConfig& stc=ShibTargetConfig::getConfig();
-    stc.getINI()->getSessionCache()->remove(cookie);
-  
-    // Transaction Logging
-    Category::getInstance(SHIBTRAN_LOGCAT).infoStream() << "Destroyed session (ID: " << cookie << ")";
-    //stc.releaseTransactionLog();
+    g_MemoryListener->sessionEnd(application,cookie);
 }
 
 void ADFSListener::ping(int& i) const
 {
-    i++;
+    g_MemoryListener->ping(i);
 }

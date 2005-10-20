@@ -34,6 +34,7 @@
 using namespace std;
 using namespace saml;
 using namespace shibboleth;
+using namespace shibtarget;
 using namespace adfs;
 using namespace log4cpp;
 
@@ -42,14 +43,27 @@ PlugManager::Factory ADFSListenerFactory;
 PlugManager::Factory ADFSSessionInitiatorFactory;
 PlugManager::Factory ADFSHandlerFactory;
 
+IListener* adfs::g_MemoryListener = NULL;
 
 extern "C" int ADFS_EXPORTS saml_extension_init(void*)
 {
+    SAMLConfig& conf=SAMLConfig::getConfig();
+
+    if (ShibTargetConfig::getConfig().isEnabled(ShibTargetConfig::Caching)) {
+        // Build an internal "listener" to handle the work.
+        IPlugIn* plugin=conf.getPlugMgr().newPlugin(shibtarget::XML::MemoryListenerType,NULL);
+        g_MemoryListener=dynamic_cast<IListener*>(plugin);
+        if (!g_MemoryListener) {
+            delete plugin;
+            fprintf(stderr, "Basic MemoryListener plugin failed to load");
+            return -1;
+        }
+    }
+    
     // Register extension schema.
     saml::XML::registerSchema(adfs::XML::WSTRUST_NS,adfs::XML::WSTRUST_SCHEMA_ID);
 
     // Register plugin factories (some override existing Shib functionality).
-    SAMLConfig& conf=SAMLConfig::getConfig();
     conf.getPlugMgr().regFactory(shibtarget::XML::MemoryListenerType,&ADFSListenerFactory);
 
     auto_ptr_char temp1(Constants::SHIB_SESSIONINIT_PROFILE_URI);
@@ -72,6 +86,9 @@ extern "C" void ADFS_EXPORTS saml_extension_term()
     
     auto_ptr_char temp2(adfs::XML::WSFED_NS);
     conf.getPlugMgr().unregFactory(temp2.get());
+    
+    delete g_MemoryListener;
+    g_MemoryListener=NULL;
 }
 
 // For now, we'll just put the meat of the profile here.

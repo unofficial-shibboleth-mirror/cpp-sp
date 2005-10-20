@@ -38,6 +38,8 @@
 
 namespace adfs {
 
+    extern shibtarget::IListener* g_MemoryListener;
+
     class XML
     {
     public:
