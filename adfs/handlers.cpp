@@ -389,19 +389,62 @@ pair<bool,void*> ADFSHandler::run(ShibTarget* st, const IPropertySet* handler, b
 {
     const IApplication* app=st->getApplication();
     
+    // Check for logout/GET first.
+    if (!strcasecmp(st->getRequestMethod(), "GET")) {
+        /* 
+         * Only legal GET is a signoutcleanup request...
+         *  wa=wsignoutcleanup1.0
+         */
+        string query=st->getArgs();
+        CgiParse parser(query.c_str(),query.length());
+        const char* wa=parser.get_value("wa");
+        if (!wa || strcmp(wa,"wsignoutcleanup1.0"))
+            throw FatalProfileException("ADFS protocol handler received invalid action request ($1)", params(1,wa ? wa : "none"));
+        
+        // Recover the session key.
+        pair<string,const char*> shib_cookie = st->getCookieNameProps("_shibsession_");
+        const char* session_id = st->getCookie(shib_cookie.first);
+        
+        // Logout is best effort.
+        if (session_id && *session_id) {
+            try {
+                st->getConfig()->getListener()->sessionEnd(st->getApplication(),session_id);
+            }
+            catch (SAMLException& e) {
+                st->log(ShibTarget::LogLevelError, string("logout processing failed with exception: ") + e.what());
+            }
+#ifndef _DEBUG
+            catch (...) {
+                st->log(ShibTarget::LogLevelError, "logout processing failed with unknown exception");
+            }
+#endif
+            // We send the cookie property alone, which acts as an empty value.
+            st->setCookie(shib_cookie.first,shib_cookie.second);
+        }
+        
+        const char* ret=parser.get_value("wreply");
+        if (!ret)
+            ret=handler->getString("ResponseLocation").second;
+        if (!ret)
+            ret=st->getApplication()->getString("homeURL").second;
+        if (!ret)
+            ret="/";
+        return make_pair(true, st->sendRedirect(ret));
+    }
+    
     if (strcasecmp(st->getRequestMethod(), "POST"))
         throw FatalProfileException(
-            "ADFS protocol handler does not support HTTP method ($1).", params(1,st->getRequestMethod())
+            "ADFS protocol handler does not support HTTP method ($1)", params(1,st->getRequestMethod())
             );
     
     if (!st->getContentType() || strcasecmp(st->getContentType(),"application/x-www-form-urlencoded"))
         throw FatalProfileException(
-            "Blocked invalid content-type ($1) submitted to ADFS protocol handler.", params(1,st->getContentType())
+            "Blocked invalid content-type ($1) submitted to ADFS protocol handler", params(1,st->getContentType())
             );
 
     string input=st->getPostData();
     if (input.empty())
-        throw FatalProfileException("ADFS protocol handler received no data from browser.");
+        throw FatalProfileException("ADFS protocol handler received no data from browser");
 
     ShibProfile profile=ADFS_SSO;
     string cookie,target,providerId;
