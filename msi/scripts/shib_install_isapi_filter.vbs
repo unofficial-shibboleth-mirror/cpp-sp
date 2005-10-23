@@ -4,7 +4,7 @@ Dim LoadOrder
 Dim FilterName
 Dim FilterPath
 Dim FilterDesc
-Dim WebObj
+Dim WebObj, WebSite, WebSiteRoot
 Dim existsFlag
 Dim ScriptMaps
 Dim newScriptLine
@@ -78,9 +78,9 @@ if (Err = 0) then
   FilterObj.SetInfo
 
   'Create file extension mapping to ISAPI filter
+  newScriptLine = ShibFileExtension & "," & ShibISAPIPath & ",1"
   ScriptMaps = WebObj.ScriptMaps
   'Check if exists
-  newScriptLine = ShibFileExtension & "," & ShibISAPIPath & ",1"
   existsFlag = "not_exist"
   lineIndex = 0
   for each line in ScriptMaps
@@ -104,12 +104,43 @@ if (Err = 0) then
     WebObj.SetInfo
   end if
 
+  'Create file extension mapping to filter on each web site root
+  For Each WebSite in WebObj
+    Set WebSiteRoot = GetObject(WebSite.ADsPath & "/ROOT")
+    if (Err = 0) then
+      ScriptMaps = WebSiteRoot.ScriptMaps
+      'Check if exists
+      existsFlag = "not_exist"
+      lineIndex = 0
+      for each line in ScriptMaps
+        lineArray = split(line,",")
+        if (lineArray(0) = ShibFileExtension) then
+          existsFlag = "exists"
+          Exit For
+        end if
+        lineIndex = lineIndex + 1
+      next
+      if (existsFlag = "not_exist") then
+        redim preserve ScriptMaps(UBound(ScriptMaps)+1)
+        ScriptMaps(UBound(ScriptMaps)) = newScriptLine
+        WebSiteRoot.ScriptMaps = ScriptMaps
+        WebSiteRoot.SetInfo
+      else
+        'msgbox ".sso already exists: " & lineIndex
+        'We already warned user in dialog that this value would be updated
+        ScriptMaps(lineIndex) = newScriptLine
+        WebSiteRoot.ScriptMaps = ScriptMaps
+        WebSiteRoot.SetInfo
+      end if
+    End If
+  Next
+
 
   'Web Services Extension
   Err = 0
   WebSvcExts = WebObj.WebSvcExtRestrictionList
   if (Err = 0) then
-  newWebSvcExtLine = "1," & ShibISAPIPath & ",1,ShibGroup,Shibboleth Web Service Extension"
+    newWebSvcExtLine = "1," & ShibISAPIPath & ",1,ShibGroup,Shibboleth Web Service Extension"
 
     existsFlag = "not_exist"
     lineIndex = 0
