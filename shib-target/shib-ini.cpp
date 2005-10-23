@@ -775,7 +775,9 @@ const IPropertySet* XMLApplication::getHandlerConfig(const char* path) const
 {
     string wrap(path);
     map<string,XMLPropertySet*>::const_iterator i=m_handlerMap.find(wrap.substr(0,wrap.find('?')));
-    return (i!=m_handlerMap.end()) ? i->second : NULL;
+    if (i!=m_handlerMap.end())
+        return i->second;
+    return m_base ? m_base->getHandlerConfig(path) : NULL;
 }
 
 ReloadableXMLFileImpl* XMLConfig::newImplementation(const char* pathname, bool first) const
