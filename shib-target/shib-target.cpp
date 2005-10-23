@@ -56,6 +56,7 @@ namespace shibtarget {
     // Helper functions
     void get_application(ShibTarget* st, const string& protocol, const string& hostname, int port, const string& uri);
     void* sendError(ShibTarget* st, const char* page, ShibMLP &mlp);
+    void clearHeaders(ShibTarget* st);
     
     // Handlers do the real Shibboleth work
     pair<bool,void*> dispatch(
@@ -178,6 +179,9 @@ pair<bool,void*> ShibTarget::doCheckAuthN(bool handler)
                 (!authType.first || stricmp(authType.second,"shibboleth")))
 #endif
             return pair<bool,void*>(true,returnDecline());
+
+        // Fix for secadv 20050901
+        m_priv->clearHeaders(this);
 
         pair<string,const char*> shib_cookie = getCookieNameProps("_shibsession_");
         const char* session_id = getCookie(shib_cookie.first);
@@ -509,21 +513,8 @@ pair<bool,void*> ShibTarget::doExportAssertions(bool requireSession)
         		return pair<bool,void*>(false,NULL);	// just bail silently
         }
 
-        // Get the AAP providers, which contain the attribute policy info.
-        Iterator<IAAP*> provs=m_priv->m_app->getAAPProviders();
+        ISessionCacheEntry::CachedResponse cr=m_priv->m_cacheEntry->getResponse();
 
-        // Clear out the list of mapped attributes
-        while (provs.hasNext()) {
-            IAAP* aap=provs.next();
-            Locker locker(aap);
-            Iterator<const IAttributeRule*> rules=aap->getAttributeRules();
-            while (rules.hasNext()) {
-                const char* header=rules.next()->getHeader();
-                if (header)
-                    clearHeader(header);
-            }
-        }
-        
         // Reconstitute SAML objects from XML in session cache and wrap them in smart pointers
         SAMLAuthenticationStatement* authn=NULL;
         SAMLResponse* response=NULL;
@@ -546,7 +537,6 @@ pair<bool,void*> ShibTarget::doExportAssertions(bool requireSession)
         auto_ptr<SAMLResponse> responsewrapper(response);
     
         // Maybe export the response.
-        clearHeader("Shib-Attributes");
         pair<bool,bool> exp=m_priv->m_settings.first->getBool("exportAssertion");
         if (exp.first && exp.second && cr.unfiltered && *cr.unfiltered) {
             unsigned int outlen;
@@ -561,17 +551,15 @@ pair<bool,void*> ShibTarget::doExportAssertions(bool requireSession)
         }
     
         // Export the SAML AuthnMethod and the origin site name, and possibly the NameIdentifier.
-        clearHeader("Shib-Origin-Site");
-        clearHeader("Shib-Identity-Provider");
-        clearHeader("Shib-Authentication-Method");
-        clearHeader("Shib-NameIdentifier-Format");
         setHeader("Shib-Origin-Site", m_priv->m_cacheEntry->getProviderId());
         setHeader("Shib-Identity-Provider", m_priv->m_cacheEntry->getProviderId());
         auto_ptr_char am(authn->getAuthMethod());
         setHeader("Shib-Authentication-Method", am.get());
         
+        // Get the AAP providers, which contain the attribute policy info.
+        Iterator<IAAP*> provs=m_priv->m_app->getAAPProviders();
+
         // Export NameID?
-        provs.reset();
         while (provs.hasNext()) {
             IAAP* aap=provs.next();
             Locker locker(aap);
@@ -588,7 +576,6 @@ pair<bool,void*> ShibTarget::doExportAssertions(bool requireSession)
             }
         }
         
-        clearHeader("Shib-Application-ID");
         setHeader("Shib-Application-ID", m_priv->m_app->getId());
     
         // Export the attributes.
@@ -917,6 +904,30 @@ void* ShibTargetPriv::sendError(ShibTarget* st, const char* page, ShibMLP &mlp)
     return st->sendPage(
         "Internal Server Error. Please contact the site administrator.", 500, "text/html", ArrayIterator<ShibTarget::header_t>(hdrs,2)
         );
+}
+
+void ShibTargetPriv::clearHeaders(ShibTarget* st)
+{
+    // Clear invariant stuff.
+    st->clearHeader("Shib-Origin-Site");
+    st->clearHeader("Shib-Identity-Provider");
+    st->clearHeader("Shib-Authentication-Method");
+    st->clearHeader("Shib-NameIdentifier-Format");
+    st->clearHeader("Shib-Attributes");
+    st->clearHeader("Shib-Application-ID");
+
+    // Clear out the list of mapped attributes
+    Iterator<IAAP*> provs=m_app->getAAPProviders();
+    while (provs.hasNext()) {
+        IAAP* aap=provs.next();
+        Locker locker(aap);
+        Iterator<const IAttributeRule*> rules=aap->getAttributeRules();
+        while (rules.hasNext()) {
+            const char* header=rules.next()->getHeader();
+            if (header)
+                st->clearHeader(header);
+        }
+    }
 }
 
 pair<bool,void*> ShibTargetPriv::dispatch(
