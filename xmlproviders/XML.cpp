@@ -24,8 +24,6 @@
 
 #include "internal.h"
 
-const char XML::XMLAccessControlType[] =    "edu.internet2.middleware.shibboleth.sp.provider.XMLAccessControl";
-
 // Namespace and schema string literals
 
 const XMLCh XML::SHIB_NS[] = // urn:mace:shibboleth:1.0
