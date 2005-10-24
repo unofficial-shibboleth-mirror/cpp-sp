@@ -527,7 +527,6 @@ pair<bool,void*> ShibTarget::doExportAssertions(bool requireSession)
         }
         auto_ptr<SAMLAuthenticationStatement> authnwrapper(authn);
     
-        ISessionCacheEntry::CachedResponse cr=m_priv->m_cacheEntry->getResponse();
         if (cr.unfiltered && *cr.unfiltered) {
             int minor = (m_priv->m_cacheEntry->getProfile()==SAML10_POST || m_priv->m_cacheEntry->getProfile()==SAML10_ARTIFACT) ? 0 : 1;
             istringstream rstream((cr.filtered && *cr.filtered) ? cr.filtered : cr.unfiltered);
