@@ -40,7 +40,6 @@ namespace shibtarget {
         Override() : m_base(NULL), m_acl(NULL) {}
         Override(const DOMElement* e, Category& log, const Override* base=NULL);
         ~Override();
-        IAccessControl* m_acl;
 
         // IPropertySet
         pair<bool,bool> getBool(const char* name, const char* ns=NULL) const;
@@ -54,6 +53,7 @@ namespace shibtarget {
         short acceptNode(const DOMNode* node) const;
 
         const Override* locate(const char* path) const;
+        IAccessControl* getAC() const { return (m_acl ? m_acl : (m_base ? m_base->getAC() : NULL)); }
         
     protected:
         void loadACL(const DOMElement* e, Category& log);
@@ -62,6 +62,7 @@ namespace shibtarget {
     
     private:
         const Override* m_base;
+        IAccessControl* m_acl;
     };
 
     class XMLRequestMapperImpl : public ReloadableXMLFileImpl, public Override
@@ -468,5 +469,5 @@ IRequestMapper::Settings XMLRequestMapper::getSettings(ShibTarget* st) const
         impl->log->debug("mapped %s%s to %s", vhost.str().c_str(), st->getRequestURI() ? st->getRequestURI() : "", ret.second);
     }
 
-    return Settings(o,o->m_acl);
+    return Settings(o,o->getAC());
 }
