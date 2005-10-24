@@ -113,6 +113,10 @@ SOURCE=.\XMLAAP.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\XMLAccessControl.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\XMLCredentials.cpp
 # End Source File
 # Begin Source File
