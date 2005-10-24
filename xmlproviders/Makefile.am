@@ -8,13 +8,15 @@ plugin_LTLIBRARIES = xmlproviders.la
 noinst_HEADERS = internal.h
 
 xmlproviders_la_LIBADD = \
-	../shib/libshib.la
+	$(top_builddir)/shib/libshib.la \
+	$(top_builddir)/shib-target/libshib-target.la
 
 xmlproviders_la_SOURCES = \
 	CredResolvers.cpp \
 	TargetedID.cpp \
 	XML.cpp \
 	XMLAAP.cpp \
+	XMLAccessControl.cpp \
 	XMLCredentials.cpp \
 	XMLMetadata.cpp \
 	XMLProviders.cpp \

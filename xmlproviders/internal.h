@@ -65,6 +65,8 @@ public:
     static const XMLCh XMLSIG_RETMETHOD_RAWX509[];  // http://www.w3.org/2000/09/xmldsig#rawX509Certificate
     static const XMLCh XMLSIG_RETMETHOD_RAWX509CRL[]; // http://www.w3.org/2000/09/xmldsig-more#rawX509CRL
 
+    static const char XMLAccessControlType[];   // Proprietary but portable XML authz syntax
+
     struct Literals
     {
         // old metadata constants
@@ -202,6 +204,14 @@ public:
         static const XMLCh validUntil[];
         static const XMLCh WantAuthnRequestsSigned[];
         static const XMLCh WantAssertionsSigned[];
+
+        // access control constants
+        static const XMLCh AccessControl[];
+        static const XMLCh AND[];
+        static const XMLCh NOT[];
+        static const XMLCh OR[];
+        static const XMLCh require[];
+        static const XMLCh Rule[];
     };
 };
 

@@ -45,6 +45,7 @@ PlugManager::Factory XMLTrustFactory;
 PlugManager::Factory XMLCredentialsFactory;
 PlugManager::Factory XMLAAPFactory;
 PlugManager::Factory FileCredResolverFactory;
+PlugManager::Factory XMLAccessControlFactory;
 
 extern "C" int XML_EXPORTS saml_extension_init(void*)
 {
@@ -68,6 +69,7 @@ extern "C" int XML_EXPORTS saml_extension_init(void*)
     conf.getPlugMgr().regFactory("edu.internet2.middleware.shibboleth.common.Credentials.FileCredentialResolver",&FileCredResolverFactory);
     conf.getPlugMgr().regFactory("edu.internet2.middleware.shibboleth.aap.provider.XMLAAP",&XMLAAPFactory);
     conf.getPlugMgr().regFactory("edu.internet2.middleware.shibboleth.target.provider.XMLAAP",&XMLAAPFactory);
+    conf.getPlugMgr().regFactory(::XML::XMLAccessControlType,&XMLAccessControlFactory);
 
     return 0;
 }
@@ -85,6 +87,7 @@ extern "C" void XML_EXPORTS saml_extension_term()
     conf.getPlugMgr().unregFactory("edu.internet2.middleware.shibboleth.common.Credentials.FileCredentialResolver");
     conf.getPlugMgr().unregFactory("edu.internet2.middleware.shibboleth.aap.provider.XMLAAP");
     conf.getPlugMgr().unregFactory("edu.internet2.middleware.shibboleth.target.provider.XMLAAP");
+    conf.getPlugMgr().unregFactory(::XML::XMLAccessControlType);
 }
 
 void log_openssl()
