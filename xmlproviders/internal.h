@@ -202,6 +202,14 @@ public:
         static const XMLCh validUntil[];
         static const XMLCh WantAuthnRequestsSigned[];
         static const XMLCh WantAssertionsSigned[];
+
+        // access control constants
+        static const XMLCh AccessControl[];
+        static const XMLCh AND[];
+        static const XMLCh NOT[];
+        static const XMLCh OR[];
+        static const XMLCh require[];
+        static const XMLCh Rule[];
     };
 };
 

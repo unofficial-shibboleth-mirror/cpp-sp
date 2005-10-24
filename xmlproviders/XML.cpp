@@ -617,3 +617,23 @@ const XMLCh XML::Literals::WantAssertionsSigned[] =
   chLatin_A, chLatin_s, chLatin_s, chLatin_e, chLatin_r, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chLatin_s,
   chLatin_S, chLatin_i, chLatin_g, chLatin_n, chLatin_e, chLatin_d, chNull
 };
+
+const XMLCh XML::Literals::AccessControl[] =
+{ chLatin_A, chLatin_c, chLatin_c, chLatin_e, chLatin_s, chLatin_s,
+  chLatin_C, chLatin_o, chLatin_n, chLatin_t, chLatin_r, chLatin_o, chLatin_l, chNull
+};
+
+const XMLCh XML::Literals::AND[] =
+{ chLatin_A, chLatin_N, chLatin_D, chNull };
+
+const XMLCh XML::Literals::NOT[] =
+{ chLatin_N, chLatin_O, chLatin_T, chNull };
+
+const XMLCh XML::Literals::OR[] =
+{ chLatin_O, chLatin_R, chNull };
+
+const XMLCh XML::Literals::require[] =
+{ chLatin_r, chLatin_e, chLatin_q, chLatin_u, chLatin_i, chLatin_r, chLatin_e, chNull };
+
+const XMLCh XML::Literals::Rule[] =
+{ chLatin_R, chLatin_u, chLatin_l, chLatin_e, chNull };
