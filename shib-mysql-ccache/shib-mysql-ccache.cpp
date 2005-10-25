@@ -397,8 +397,10 @@ public:
   virtual const char* getClientAddress() const { return m_cacheEntry->getClientAddress(); }
   virtual ShibProfile getProfile() const { return m_cacheEntry->getProfile(); }
   virtual const char* getProviderId() const { return m_cacheEntry->getProviderId(); }
-  virtual const char* getAuthnStatement() const { return m_cacheEntry->getAuthnStatement(); }
-  virtual CachedResponse getResponse();
+  virtual const char* getAuthnStatementXML() const { return m_cacheEntry->getAuthnStatementXML(); }
+  virtual const SAMLAuthenticationStatement* getAuthnStatementSAML() const { return m_cacheEntry->getAuthnStatementSAML(); }
+  virtual CachedResponseXML getResponseXML();
+  virtual CachedResponseSAML getResponseSAML() { return m_cacheEntry->getResponseSAML(); }
 
 private:
   bool touch() const;
@@ -817,14 +819,14 @@ bool ShibMySQLCCacheEntry::touch() const
   return true;
 }
 
-ISessionCacheEntry::CachedResponse ShibMySQLCCacheEntry::getResponse()
+ISessionCacheEntry::CachedResponseXML ShibMySQLCCacheEntry::getResponseXML()
 {
     // Let the memory cache do the work first.
     // If we're hands off, just pass it back.
     if (!m_cache->m_storeAttributes)
-        return m_cacheEntry->getResponse();
+        return m_cacheEntry->getResponseXML();
     
-    CachedResponse r=m_cacheEntry->getResponse();
+    CachedResponseXML r=m_cacheEntry->getResponseXML();
     if (!r.unfiltered || !*r.unfiltered) return r;
     
     // Load the key from state if needed.

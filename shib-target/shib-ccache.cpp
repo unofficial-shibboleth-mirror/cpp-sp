@@ -104,8 +104,10 @@ public:
   const char* getClientAddress() const { return m_clientAddress.c_str(); }
   ShibProfile getProfile() const { return m_profile; }
   const char* getProviderId() const { return m_provider_id.c_str(); }
-  const char* getAuthnStatement() const { return m_auth_statement.c_str(); }
-  CachedResponse getResponse();
+  const char* getAuthnStatementXML() const { return m_auth_statement.c_str(); }
+  CachedResponseXML getResponseXML();
+  const SAMLAuthenticationStatement* getAuthnStatementSAML() const { throw SAMLException("unsupported operation"); }
+  CachedResponseSAML getResponseSAML() { throw SAMLException("unsupported operation"); }
 
   time_t lastAccess() const { return m_lastAccess; }
   
@@ -542,10 +544,10 @@ bool InternalCCacheEntry::isValid(time_t lifetime, time_t timeout) const
   return true;
 }
 
-ISessionCacheEntry::CachedResponse InternalCCacheEntry::getResponse()
+ISessionCacheEntry::CachedResponseXML InternalCCacheEntry::getResponseXML()
 {
     populate();
-    return CachedResponse(m_response_pre.c_str(),m_response_post.c_str());
+    return CachedResponseXML(m_response_pre.c_str(),m_response_post.c_str());
 }
 
 time_t InternalCCacheEntry::calculateExpiration(const SAMLResponse& r) const

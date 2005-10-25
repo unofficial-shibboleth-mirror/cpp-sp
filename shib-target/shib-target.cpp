@@ -513,33 +513,15 @@ pair<bool,void*> ShibTarget::doExportAssertions(bool requireSession)
         		return pair<bool,void*>(false,NULL);	// just bail silently
         }
 
-        ISessionCacheEntry::CachedResponse cr=m_priv->m_cacheEntry->getResponse();
+        const SAMLAuthenticationStatement* authn=m_priv->m_cacheEntry->getAuthnStatementSAML();
+        ISessionCacheEntry::CachedResponseSAML scr=m_priv->m_cacheEntry->getResponseSAML();
+        ISessionCacheEntry::CachedResponseXML xcr=m_priv->m_cacheEntry->getResponseXML();
 
-        // Reconstitute SAML objects from XML in session cache and wrap them in smart pointers
-        SAMLAuthenticationStatement* authn=NULL;
-        SAMLResponse* response=NULL;
-        
-        const char* xml=m_priv->m_cacheEntry->getAuthnStatement();
-        if (xml && *xml) {
-            istringstream authstream(xml);
-            log(LogLevelDebug,string("parsing authentication statement: ") + xml);
-            authn = new SAMLAuthenticationStatement(authstream);
-        }
-        auto_ptr<SAMLAuthenticationStatement> authnwrapper(authn);
-    
-        if (cr.unfiltered && *cr.unfiltered) {
-            int minor = (m_priv->m_cacheEntry->getProfile()==SAML10_POST || m_priv->m_cacheEntry->getProfile()==SAML10_ARTIFACT) ? 0 : 1;
-            istringstream rstream((cr.filtered && *cr.filtered) ? cr.filtered : cr.unfiltered);
-            log(LogLevelDebug,string("parsing attribute response: ") + ((cr.filtered && *cr.filtered) ? cr.filtered : cr.unfiltered));
-            response = new SAMLResponse(rstream,minor);
-        }
-        auto_ptr<SAMLResponse> responsewrapper(response);
-    
         // Maybe export the response.
         pair<bool,bool> exp=m_priv->m_settings.first->getBool("exportAssertion");
-        if (exp.first && exp.second && cr.unfiltered && *cr.unfiltered) {
+        if (exp.first && exp.second && xcr.unfiltered && *xcr.unfiltered) {
             unsigned int outlen;
-            XMLByte* serialized = Base64::encode(reinterpret_cast<XMLByte*>((char*)cr.unfiltered), strlen(cr.unfiltered), &outlen);
+            XMLByte* serialized = Base64::encode(reinterpret_cast<XMLByte*>((char*)xcr.unfiltered), strlen(xcr.unfiltered), &outlen);
             XMLByte *pos, *pos2;
             for (pos=serialized, pos2=serialized; *pos2; pos2++)
                 if (isgraph(*pos2))
@@ -548,7 +530,7 @@ pair<bool,void*> ShibTarget::doExportAssertions(bool requireSession)
             setHeader("Shib-Attributes", reinterpret_cast<char*>(serialized));
             XMLString::release(&serialized);
         }
-    
+
         // Export the SAML AuthnMethod and the origin site name, and possibly the NameIdentifier.
         setHeader("Shib-Origin-Site", m_priv->m_cacheEntry->getProviderId());
         setHeader("Shib-Identity-Provider", m_priv->m_cacheEntry->getProviderId());
@@ -578,7 +560,7 @@ pair<bool,void*> ShibTarget::doExportAssertions(bool requireSession)
         setHeader("Shib-Application-ID", m_priv->m_app->getId());
     
         // Export the attributes.
-        Iterator<SAMLAssertion*> a_iter(response ? response->getAssertions() : EMPTY(SAMLAssertion*));
+        Iterator<SAMLAssertion*> a_iter(scr.filtered ? scr.filtered->getAssertions() : EMPTY(SAMLAssertion*));
         while (a_iter.hasNext()) {
             SAMLAssertion* assert=a_iter.next();
             Iterator<SAMLStatement*> statements=assert->getStatements();

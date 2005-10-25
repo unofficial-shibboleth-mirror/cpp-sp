@@ -132,7 +132,7 @@ bool Rule::authorized(ShibTarget* st, ISessionCacheEntry* entry) const
     }
     
     // Find the corresponding attribute. This isn't very efficient...
-    ISessionCacheEntry::CachedResponse cr=entry->getResponse();
+    ISessionCacheEntry::CachedResponseSAML cr=entry->getResponseSAML();
     Iterator<SAMLAssertion*> a_iter(cr.filtered ? cr.filtered->getAssertions() : EMPTY(SAMLAssertion*));
     while (a_iter.hasNext()) {
         SAMLAssertion* assert=a_iter.next();

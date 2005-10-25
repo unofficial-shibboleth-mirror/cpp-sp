@@ -117,9 +117,9 @@ extern "C" bool_t shibrpc_get_session_2_svc(
      
         // Now grab the pre-serialized authentication statement and responses
         free(result->auth_statement);
-        result->auth_statement = strdup(entry->getAuthnStatement());
+        result->auth_statement = strdup(entry->getAuthnStatementXML());
       
-        ISessionCacheEntry::CachedResponse responses=entry->getResponse();
+        ISessionCacheEntry::CachedResponseXML responses=entry->getResponseXML();
         if (responses.unfiltered) {
             free(result->attr_response_pre);
             result->attr_response_pre = strdup(responses.unfiltered);

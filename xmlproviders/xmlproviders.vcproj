@@ -242,6 +242,9 @@
 			</FileConfiguration>
 		</File>
 		<File
+			RelativePath=".\XMLAccessControl.cpp">
+		</File>
+		<File
 			RelativePath="XMLCredentials.cpp">
 			<FileConfiguration
 				Name="Release|Win32">

@@ -89,22 +89,25 @@ namespace shibtarget {
     {
     public:
         EntryWrapper(shibrpc_get_session_ret_2& ret, Category& log);
-        ~EntryWrapper() {}
+        ~EntryWrapper() { delete p_statement; delete p_pre_response; delete p_post_response; }
         void lock() {}
         void unlock() { delete this; }
         virtual bool isValid(time_t lifetime, time_t timeout) const { return true; }
         virtual const char* getClientAddress() const { return NULL; }
         virtual ShibProfile getProfile() const { return profile; }
         virtual const char* getProviderId() const { return provider_id.c_str(); }
-        virtual const char* getAuthnStatement() const { return statement.c_str(); }
-        virtual CachedResponse getResponse() { return CachedResponse(pre_response.c_str(),post_response.c_str()); }
+        virtual const char* getAuthnStatementXML() const { return statement.c_str(); }
+        virtual const SAMLAuthenticationStatement* getAuthnStatementSAML() const { return p_statement; }
+        virtual CachedResponseXML getResponseXML() { return CachedResponseXML(pre_response.c_str(),post_response.c_str()); }
+        virtual CachedResponseSAML getResponseSAML() { return CachedResponseSAML(p_pre_response,p_post_response); }
     
     private:
         string provider_id;
         ShibProfile profile;
-        string statement;
-        string pre_response;
-        string post_response;
+        string statement,pre_response,post_response;
+        SAMLAuthenticationStatement* p_statement;
+        SAMLResponse* p_pre_response;
+        SAMLResponse* p_post_response;
     };
 }
 
@@ -231,15 +234,42 @@ void RPCListener::sessionNew(
 EntryWrapper::EntryWrapper(shibrpc_get_session_ret_2& ret, Category& log)
 {
     profile = static_cast<ShibProfile>(ret.profile);
+    int minor = (profile==SAML10_POST || profile==SAML10_ARTIFACT) ? 0 : 1;
+
     provider_id = ret.provider_id;
-    
-    // Just copy over the XML.
+
+    // Copy over the XML.
     if (ret.auth_statement)
         statement=ret.auth_statement;
     if (ret.attr_response_pre)
         pre_response = ret.attr_response_pre;
     if (ret.attr_response_post)
         post_response = ret.attr_response_post;
+
+    istringstream authstream(ret.auth_statement);
+    log.debugStream() << "trying to decode authentication statement: "
+        << ((ret.auth_statement && *ret.auth_statement) ? ret.auth_statement : "(none)") << CategoryStream::ENDLINE;
+    auto_ptr<SAMLAuthenticationStatement> s(
+    	(ret.auth_statement && *ret.auth_statement) ? new SAMLAuthenticationStatement(authstream) : NULL
+    	);
+
+    istringstream prestream(ret.attr_response_pre);
+    log.debugStream() << "trying to decode unfiltered attribute response: "
+        << ((ret.attr_response_pre && *ret.attr_response_pre) ? ret.attr_response_pre : "(none)") << CategoryStream::ENDLINE;
+    auto_ptr<SAMLResponse> pre(
+    	(ret.attr_response_pre && *ret.attr_response_pre) ? new SAMLResponse(prestream,minor) : NULL
+    	);
+
+    istringstream poststream(ret.attr_response_post);
+    log.debugStream() << "trying to decode filtered attribute response: "
+        << ((ret.attr_response_post && *ret.attr_response_post) ? ret.attr_response_post : "(none)") << CategoryStream::ENDLINE;
+    auto_ptr<SAMLResponse> post(
+    	(ret.attr_response_post && *ret.attr_response_post) ? new SAMLResponse(poststream,minor) : NULL
+    	);
+
+    p_statement=s.release();
+    p_pre_response = pre.release();
+    p_post_response = post.release();
 }
 
 void RPCListener::sessionGet(

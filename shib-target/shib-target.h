@@ -149,16 +149,26 @@ namespace shibtarget {
         virtual const char* getClientAddress() const=0;
         virtual ShibProfile getProfile() const=0;
         virtual const char* getProviderId() const=0;
-        virtual const char* getAuthnStatement() const=0;
-        struct SHIBTARGET_EXPORTS CachedResponse {
-            CachedResponse(const char* unfiltered, const char* filtered) {
+        virtual const char* getAuthnStatementXML() const=0;
+        virtual const saml::SAMLAuthenticationStatement* getAuthnStatementSAML() const=0;
+        struct SHIBTARGET_EXPORTS CachedResponseXML {
+            CachedResponseXML(const char* unfiltered, const char* filtered) {
                 this->unfiltered=unfiltered;
                 this->filtered=filtered;
             }
             const char* unfiltered;
             const char* filtered;
         };
-        virtual CachedResponse getResponse()=0;
+        struct SHIBTARGET_EXPORTS CachedResponseSAML {
+            CachedResponseSAML(const saml::SAMLResponse* unfiltered, const saml::SAMLResponse* filtered) {
+                this->unfiltered=unfiltered;
+                this->filtered=filtered;
+            }
+            const saml::SAMLResponse* unfiltered;
+            const saml::SAMLResponse* filtered;
+        };
+        virtual CachedResponseXML getResponseXML()=0;
+        virtual CachedResponseSAML getResponseSAML()=0;
         virtual ~ISessionCacheEntry() {}
     };
 
