@@ -130,6 +130,10 @@ bool Rule::authorized(ShibTarget* st, ISessionCacheEntry* entry) const
         st->log(ShibTarget::LogLevelWarn, string("AccessControl plugin didn't recognize rule (") + m_alias + "), check AAP for corresponding Alias");
         return false;
     }
+    else if (!entry) {
+        st->log(ShibTarget::LogLevelWarn, "AccessControl plugin not given a valid session to evaluate, are you using lazy sessions?");
+        return false;
+    }
     
     // Find the corresponding attribute. This isn't very efficient...
     ISessionCacheEntry::CachedResponseSAML cr=entry->getResponseSAML();
