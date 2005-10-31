@@ -165,7 +165,6 @@ Override::Override(const DOMElement* e, Category& log, const Override* base) : m
         unsigned int count=0;
         DOMElement* path=saml::XML::getFirstChildElement(e,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Path));
         while (path) {
-            count++;
             const XMLCh* n=path->getAttributeNS(NULL,SHIBT_L(name));
             
             // Skip any leading slashes.
@@ -174,7 +173,7 @@ Override::Override(const DOMElement* e, Category& log, const Override* base) : m
             
             // Check for empty name.
             if (!n || !*n) {
-                log.warn("skipping Path element (%d) with empty name attribute",count);
+                log.warn("skipping Path element with empty name attribute");
                 path=saml::XML::getNextSiblingElement(path,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Path));
                 continue;
             }
@@ -200,6 +199,7 @@ Override::Override(const DOMElement* e, Category& log, const Override* base) : m
                     DOMElement* newpath=path->getOwnerDocument()->createElementNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Path));
                     newpath->setAttributeNS(NULL,SHIBT_L(name),namebuf);
                     path->setAttributeNS(NULL,SHIBT_L(name),n);
+                    path->getParentNode()->replaceChild(newpath,path);
                     newpath->appendChild(path);
                     
                     // Repoint our locals at the new parent.
