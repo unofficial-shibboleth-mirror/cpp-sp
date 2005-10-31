@@ -107,9 +107,11 @@ short Override::acceptNode(const DOMNode* node) const
     if (XMLString::compareString(node->getNamespaceURI(),shibtarget::XML::SHIBTARGET_NS))
         return FILTER_ACCEPT;
     const XMLCh* name=node->getLocalName();
-    if (XMLString::compareString(name,SHIBT_L(AccessControlProvider)) ||
-        XMLString::compareString(name,SHIBT_L(Host)) ||
-        XMLString::compareString(name,SHIBT_L(Path)))
+    if (!XMLString::compareString(name,SHIBT_L(Host)) ||
+        !XMLString::compareString(name,SHIBT_L(Path)) ||
+        !XMLString::compareString(name,SHIBT_L(AccessControl)) ||
+        !XMLString::compareString(name,SHIBT_L(htaccess)) ||
+        !XMLString::compareString(name,SHIBT_L(AccessControlProvider)))
         return FILTER_REJECT;
 
     return FILTER_ACCEPT;
@@ -160,18 +162,58 @@ Override::Override(const DOMElement* e, Category& log, const Override* base) : m
         loadACL(e,log);
     
         // Handle nested Paths.
-        DOMNodeList* nlist=e->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Path));
-        for (unsigned int i=0; nlist && i<nlist->getLength(); i++) {
-            DOMElement* path=static_cast<DOMElement*>(nlist->item(i));
+        unsigned int count=0;
+        DOMElement* path=saml::XML::getFirstChildElement(e,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Path));
+        while (path) {
+            count++;
             const XMLCh* n=path->getAttributeNS(NULL,SHIBT_L(name));
+            
+            // Skip any leading slashes.
+            while (n && *n==chForwardSlash)
+                n++;
+            
+            // Check for empty name.
             if (!n || !*n) {
-                log.warn("skipping Path element (%d) with empty name attribute",i);
+                log.warn("skipping Path element (%d) with empty name attribute",count);
+                path=saml::XML::getNextSiblingElement(path,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Path));
                 continue;
             }
-            else if (*n==chForwardSlash && !n[1]) {
-                log.warn("skipping Path element (%d) with a lone slash in the name attribute",i);
-                continue;
+
+            // Check for an embedded slash.
+            int slash=XMLString::indexOf(n,chForwardSlash);
+            if (slash>0) {
+                // Copy the first path segment.
+                XMLCh* namebuf=new XMLCh[slash + 1];
+                for (int pos=0; pos < slash; pos++)
+                    namebuf[pos]=n[pos];
+                namebuf[slash]=chNull;
+                
+                // Move past the slash in the original pathname.
+                n=n+slash+1;
+                
+                // Skip any leading slashes again.
+                while (*n==chForwardSlash)
+                    n++;
+                
+                if (*n) {
+                    // Create a placeholder Path element for the first path segment and replant under it.
+                    DOMElement* newpath=path->getOwnerDocument()->createElementNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Path));
+                    newpath->setAttributeNS(NULL,SHIBT_L(name),namebuf);
+                    path->setAttributeNS(NULL,SHIBT_L(name),n);
+                    newpath->appendChild(path);
+                    
+                    // Repoint our locals at the new parent.
+                    path=newpath;
+                    n=path->getAttributeNS(NULL,SHIBT_L(name));
+                }
+                else {
+                    // All we had was a pathname with trailing slash(es), so just reset it without them.
+                    path->setAttributeNS(NULL,SHIBT_L(name),namebuf);
+                    n=path->getAttributeNS(NULL,SHIBT_L(name));
+                }
+                delete[] namebuf;
             }
+            
             Override* o=new Override(path,log,this);
             pair<bool,const char*> name=o->getString("name");
             char* dup=strdup(name.second);
@@ -181,10 +223,13 @@ Override::Override(const DOMElement* e, Category& log, const Override* base) : m
                 log.warn("Skipping duplicate Path element (%s)",dup);
                 free(dup);
                 delete o;
+                path=saml::XML::getNextSiblingElement(path,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Path));
                 continue;
             }
             m_map[dup]=o;
             free(dup);
+            
+            path=saml::XML::getNextSiblingElement(path,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Path));
         }
     }
     catch (...) {
