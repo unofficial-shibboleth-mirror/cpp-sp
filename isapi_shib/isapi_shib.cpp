@@ -397,7 +397,7 @@ public:
   }
   
   virtual void clearHeader(const string &name) {
-    string hdr = name + ":";
+    string hdr = (name=="REMOTE_USER" ? "remote-user" : name) + ":";
     m_pn->SetHeader(m_pfc, const_cast<char*>(hdr.c_str()), "");
   }
   virtual void setHeader(const string &name, const string &value) {

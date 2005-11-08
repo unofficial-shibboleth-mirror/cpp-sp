@@ -238,7 +238,12 @@ public:
     }
   }
   virtual void clearHeader(const string &name) {
-    param_free(pblock_remove(name.c_str(), m_rq->headers));
+    if (name=="REMOTE_USER") {
+        param_free(pblock_remove("auth-user",m_rq->vars));
+        param_free(pblock_remove("remote-user",m_rq->headers));
+    }
+    else
+        param_free(pblock_remove(name.c_str(), m_rq->headers));
   }
   virtual void setHeader(const string &name, const string &value) {
     pblock_nvinsert(name.c_str(), value.c_str() ,m_rq->headers);
