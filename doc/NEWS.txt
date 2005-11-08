@@ -1,3 +1,12 @@
+11/8/05
+Version 1.3b
+
+Updated fix for secadv 20050901
+Fixes for bugs involving embedded slashes in RequestMap Paths,
+inheritance of handler locations in overridden Applications,
+inheritance of Access Control plugins in RequestMap,
+creation of per-site script mapping in IIS install
+
 9/1/05
 Version 1.3a
 
