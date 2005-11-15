@@ -96,9 +96,11 @@ namespace shibtarget {
         // Used by session initiators to get endpoint to forward to IdP/WAYF
         virtual const IPropertySet* getDefaultAssertionConsumerService() const=0;
         virtual const IPropertySet* getAssertionConsumerServiceByIndex(unsigned short index) const=0;
+        virtual saml::Iterator<const IPropertySet*> getAssertionConsumerServicesByBinding(const char* binding) const=0;
+        virtual saml::Iterator<const IPropertySet*> getAssertionConsumerServicesByBinding(const XMLCh* binding) const=0;
         
-        // Used by dispatcher to locate the handler configuration for a Shibboleth request
-        virtual const IPropertySet* getHandlerConfig(const char* path) const=0;
+        // Used by dispatcher to locate the handler configuration(s) for a Shibboleth request
+        virtual saml::Iterator<const IPropertySet*> getHandlerConfig(const char* path) const=0;
 
         virtual ~IApplication() {}
     };

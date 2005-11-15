@@ -69,7 +69,9 @@ namespace shibtarget {
         const IPropertySet* getSessionInitiatorById(const char* id) const;
         const IPropertySet* getDefaultAssertionConsumerService() const;
         const IPropertySet* getAssertionConsumerServiceByIndex(unsigned short index) const;
-        const IPropertySet* getHandlerConfig(const char* path) const;
+        Iterator<const IPropertySet*> getAssertionConsumerServicesByBinding(const XMLCh* binding) const;
+        Iterator<const IPropertySet*> getAssertionConsumerServicesByBinding(const char* binding) const;
+        Iterator<const IPropertySet*> getHandlerConfig(const char* path) const;
         
         // Provides filter to exclude special config elements.
         short acceptNode(const DOMNode* node) const;
@@ -87,8 +89,10 @@ namespace shibtarget {
         ShibBrowserProfile* m_profile;
         SAMLBinding* m_binding;
         ShibHTTPHook* m_bindingHook;
-        map<string,XMLPropertySet*> m_handlerMap;
-        map<unsigned int,const IPropertySet*> m_acsMap;
+        vector<XMLPropertySet*> m_handlers;
+        map<string,vector<const IPropertySet*> > m_handlerMap;
+        map<unsigned int,const IPropertySet*> m_acsIndexMap;
+        map<string,vector<const IPropertySet*> > m_acsBindingMap;
         const IPropertySet* m_acsDefault;
         map<string,const IPropertySet*> m_sessionInitMap;
         const IPropertySet* m_sessionInitDefault;
@@ -391,11 +395,26 @@ XMLApplication::XMLApplication(
             while (handler) {
                 XMLPropertySet* hprops=new XMLPropertySet();
                 hprops->load(handler,log,this); // filter irrelevant for now, no embedded elements expected
-                m_handlerMap[hprops->getString("Location").second]=hprops;
+                m_handlers.push_back(hprops);
+                
+                // Check for it in the map.
+                const char* location=hprops->getString("Location").second;
+                if (m_handlerMap.count(location)==0)
+                    m_handlerMap[location]=vector<const IPropertySet*>(1,hprops);
+                else
+                    m_handlerMap[location].push_back(hprops);
                 
                 // If it's an ACS or SI, handle lookup mappings and defaulting.
                 if (saml::XML::isElementNamed(handler,shibtarget::XML::SAML2META_NS,SHIBT_L(AssertionConsumerService))) {
-                    m_acsMap[hprops->getUnsignedInt("index").second]=hprops;
+                    
+                    // Map it.                    
+                    const char* binding=hprops->getString("Binding").second;
+                    if (m_acsBindingMap.count(binding)==0)
+                        m_acsBindingMap[binding]=vector<const IPropertySet*>(1,hprops);
+                    else
+                        m_acsBindingMap[binding].push_back(hprops);
+                    m_acsIndexMap[hprops->getUnsignedInt("index").second]=hprops;
+                    
                     if (!hardACS) {
                         pair<bool,bool> defprop=hprops->getBool("isDefault");
                         if (defprop.first) {
@@ -584,20 +603,16 @@ void XMLApplication::cleanup()
     delete m_bindingHook;
     delete m_binding;
     delete m_profile;
-    map<string,XMLPropertySet*>::iterator h=m_handlerMap.begin();
-    while (h!=m_handlerMap.end()) {
-        delete h->second;
-        h++;
-    }
+    for (vector<XMLPropertySet*>::iterator h=m_handlers.begin(); h!=m_handlers.end(); h++)
+        delete *h;
+        
     delete m_credDefault;
 #ifdef HAVE_GOOD_STL
-    map<xstring,XMLPropertySet*>::iterator c=m_credMap.begin();
+    for (map<xstring,XMLPropertySet*>::iterator c=m_credMap.begin(); c!=m_credMap.end(); c++) {
 #else
-    map<const XMLCh*,XMLPropertySet*>::iterator c=m_credMap.begin();
+    for (map<const XMLCh*,XMLPropertySet*>::iterator c=m_credMap.begin(); c!=m_credMap.end(); c++) {
 #endif
-    while (c!=m_credMap.end()) {
         delete c->second;
-        c++;
     }
     Iterator<SAMLAttributeDesignator*> i(m_designators);
     while (i.hasNext())
@@ -766,18 +781,32 @@ const IPropertySet* XMLApplication::getDefaultAssertionConsumerService() const
 
 const IPropertySet* XMLApplication::getAssertionConsumerServiceByIndex(unsigned short index) const
 {
-    map<unsigned int,const IPropertySet*>::const_iterator i=m_acsMap.find(index);
-    if (i!=m_acsMap.end()) return i->second;
+    map<unsigned int,const IPropertySet*>::const_iterator i=m_acsIndexMap.find(index);
+    if (i!=m_acsIndexMap.end()) return i->second;
     return m_base ? m_base->getAssertionConsumerServiceByIndex(index) : NULL;
 }
 
-const IPropertySet* XMLApplication::getHandlerConfig(const char* path) const
+Iterator<const IPropertySet*> XMLApplication::getAssertionConsumerServicesByBinding(const char* binding) const
+{
+    map<string,vector<const IPropertySet*> >::const_iterator i=m_acsBindingMap.find(binding);
+    if (i!=m_acsBindingMap.end())
+        return i->second;
+    return m_base ? m_base->getAssertionConsumerServicesByBinding(binding) : EMPTY(const IPropertySet*);
+}
+
+Iterator<const IPropertySet*> XMLApplication::getAssertionConsumerServicesByBinding(const XMLCh* binding) const
+{
+    auto_ptr_char temp(binding);
+    return getAssertionConsumerServicesByBinding(temp.get());
+}
+
+Iterator<const IPropertySet*> XMLApplication::getHandlerConfig(const char* path) const
 {
     string wrap(path);
-    map<string,XMLPropertySet*>::const_iterator i=m_handlerMap.find(wrap.substr(0,wrap.find('?')));
+    map<string,vector<const IPropertySet*> >::const_iterator i=m_handlerMap.find(wrap.substr(0,wrap.find('?')));
     if (i!=m_handlerMap.end())
         return i->second;
-    return m_base ? m_base->getHandlerConfig(path) : NULL;
+    return m_base ? m_base->getHandlerConfig(path) : EMPTY(const IPropertySet*);
 }
 
 ReloadableXMLFileImpl* XMLConfig::newImplementation(const char* pathname, bool first) const
