@@ -287,6 +287,7 @@ public:
     pblock_nvinsert("expires", "01-Jan-1997 12:00:00 GMT", m_rq->srvhdrs);
     pblock_nvinsert("cache-control", "private,no-store,no-cache", m_rq->srvhdrs);
     pblock_nvinsert("location", url.c_str(), m_rq->srvhdrs);
+    pblock_nvinsert("connection","close",m_rq->srvhdrs);
     protocol_status(m_sn, m_rq, PROTOCOL_REDIRECT, NULL);
     protocol_start_response(m_sn, m_rq);
     return (void*)REQ_ABORTED;
