@@ -116,10 +116,11 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, Session* sn, Request* rq
         g_Config=&ShibTargetConfig::getConfig();
         g_Config->setFeatures(
             ShibTargetConfig::Listener |
+            ShibTargetConfig::Caching |
             ShibTargetConfig::Metadata |
             ShibTargetConfig::AAP |
             ShibTargetConfig::RequestMapper |
-            ShibTargetConfig::LocalExtensions |
+            ShibTargetConfig::InProcess |
             ShibTargetConfig::Logging
             );
         if (!g_Config->init(schemadir)) {
@@ -155,8 +156,10 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, Session* sn, Request* rq
 
 class ShibTargetNSAPI : public ShibTarget
 {
+    mutable string m_body;
+    mutable bool m_gotBody;
 public:
-  ShibTargetNSAPI(pblock* pb, Session* sn, Request* rq) {
+  ShibTargetNSAPI(pblock* pb, Session* sn, Request* rq) : m_gotBody(false) {
     m_pb = pb;
     m_sn = sn;
     m_rq = rq;
@@ -210,31 +213,31 @@ public:
     string cookie = name + '=' + value;
     pblock_nvinsert("Set-Cookie", cookie.c_str(), m_rq->srvhdrs);
   }
-  virtual string getArgs(void) { 
-    const char *q = pblock_findval("query", m_rq->reqpb);
-    return string(q ? q : "");
+  virtual const char* getQueryString() const { 
+    return pblock_findval("query", m_rq->reqpb);
   }
-  virtual string getPostData(void) {
+  virtual const char* getRequestBody() const {
+    if (m_gotBody)
+        return m_body.c_str();
     char* content_length=NULL;
     if (request_header("content-length", &content_length, m_sn, m_rq)!=REQ_PROCEED ||
          atoi(content_length) > 1024*1024) // 1MB?
-      throw FatalProfileException("Blocked too-large a submission to profile endpoint.");
+      throw SAMLException("Blocked POST request body exceeding size limit.");
     else {
       char ch=IO_EOF+1;
       int cl=atoi(content_length);
-      string cgistr;
+      m_gotBody=true;
       while (cl && ch != IO_EOF) {
         ch=netbuf_getc(m_sn->inbuf);
-      
         // Check for error.
         if(ch==IO_ERROR)
           break;
-        cgistr += ch;
+        m_body += ch;
         cl--;
       }
       if (cl)
-        throw FatalProfileException("Error reading profile submission from browser.");
-      return cgistr;
+        throw SAMLException("Error reading POST request body from browser.");
+      return m_body.c_str();
     }
   }
   virtual void clearHeader(const string &name) {
@@ -287,6 +290,7 @@ public:
     pblock_nvinsert("expires", "01-Jan-1997 12:00:00 GMT", m_rq->srvhdrs);
     pblock_nvinsert("cache-control", "private,no-store,no-cache", m_rq->srvhdrs);
     pblock_nvinsert("location", url.c_str(), m_rq->srvhdrs);
+    pblock_nvinsert("connection","close",m_rq->srvhdrs);
     protocol_status(m_sn, m_rq, PROTOCOL_REDIRECT, NULL);
     protocol_start_response(m_sn, m_rq);
     return (void*)REQ_ABORTED;
