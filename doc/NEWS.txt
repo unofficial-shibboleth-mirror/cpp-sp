@@ -1,3 +1,11 @@
+12/27/05
+Version 1.3c
+
+Updated fix for secadv 20051227
+Fixed seldom-used Apache commands
+Fixed NSAPI redirects
+Included optional ADFS support
+
 11/8/05
 Version 1.3b
 
