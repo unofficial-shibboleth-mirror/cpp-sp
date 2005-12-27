@@ -40,7 +40,27 @@ public:
   ShibMLPPriv();
   ~ShibMLPPriv() {}
   log4cpp::Category *log;
+
+  static void html_encode(string& os, const char* start);
 };  
+
+
+void ShibMLPPriv::html_encode(string& os, const char* start)
+{
+    while (start && *start) {
+        switch (*start) {
+            case '<':   os += "&lt;";       break;
+            case '>':   os += "&gt;";       break;
+            case '"':   os += "&quot;";     break;
+            case '\'':  os += "&rsquo;";    break;
+            case '(':   os += "&#40;";      break;
+            case ')':   os += "&#41;";      break;
+            case ':':   os += "&#58;";      break;
+            default:    os += *start;
+        }
+        start++;
+    }
+}
 
 ShibMLPPriv::ShibMLPPriv() : log(&(log4cpp::Category::getInstance("shibtarget.ShibMLP"))) {}
 
@@ -112,12 +132,12 @@ const char* ShibMLP::run(const string& is, const IPropertySet* props, std::strin
     
             map<string,string>::const_iterator i=m_map.find(key);
             if (i != m_map.end()) {
-                *output += i->second;
+                m_priv->html_encode(*output,i->second.c_str());
             }
             else {
                 pair<bool,const char*> p=props ? props->getString(key.c_str()) : pair<bool,const char*>(false,NULL);
                 if (p.first) {
-                    *output += p.second;
+                    m_priv->html_encode(*output,p.second);
                 }
                 else {
                     static const char* s1 = "<!-- Unknown SHIBMLP key: ";
