@@ -237,11 +237,11 @@ saml::SAMLConfig::getConfig();
         [AC_MSG_ERROR([unable to link with saml, or version too old])])
 
 # output the underlying makefiles
-WANT_SUBDIRS="doc shib schemas configs shib-target shar siterefresh test xmlproviders"
+WANT_SUBDIRS="doc shib schemas configs shib-target shar siterefresh test xmlproviders adfs"
 AC_CONFIG_FILES([Makefile doc/Makefile shib/Makefile schemas/Makefile \
 		 configs/Makefile oncrpc/Makefile oncrpc/rpc/Makefile \
 		 shib-target/Makefile shar/Makefile siterefresh/Makefile \
-		 test/Makefile xmlproviders/Makefile selinux/Makefile])
+		 test/Makefile xmlproviders/Makefile adfs/Makefile selinux/Makefile])
 
 
 # now deal with the rpc library, to see if we need to build our own
