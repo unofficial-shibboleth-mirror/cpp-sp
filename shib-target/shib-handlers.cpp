@@ -536,7 +536,7 @@ static inline char hexchar(unsigned short s)
 
 string CgiParse::url_encode(const char* s)
 {
-    static char badchars[]="\"\\+<>#%{}|^~[]`;/?:@=&";
+    static char badchars[]="\"\\+<>#%{}|^~[]()'`;/?:@=&";
 
     string ret;
     for (; *s; s++) {
