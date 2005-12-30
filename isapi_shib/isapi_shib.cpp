@@ -387,8 +387,6 @@ public:
 
   virtual void log(ShibLogLevel level, const string &msg) {
     ShibTarget::log(level,msg);
-    if (level == LogLevelError)
-        LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, msg.c_str());
   }
   virtual string getCookies() const {
     dynabuf buf(128);
