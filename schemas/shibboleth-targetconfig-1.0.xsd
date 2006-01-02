@@ -37,10 +37,12 @@
 		<sequence>
 			<element ref="conf:Extensions" minOccurs="0"/>
 			<choice minOccurs="0">
+				<element name="OutOfProcess" type="conf:GlobalConfigurationType"/>
 				<element name="Global" type="conf:GlobalConfigurationType"/>
 				<element name="SHAR" type="conf:GlobalConfigurationType"/>
 			</choice>
 			<choice minOccurs="0">
+				<element name="InProcess" type="conf:LocalConfigurationType"/>
 				<element name="Local" type="conf:LocalConfigurationType"/>
 				<element name="SHIRE" type="conf:LocalConfigurationType"/>
 			</choice>

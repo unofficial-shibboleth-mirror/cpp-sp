@@ -8,8 +8,8 @@
 		<Library path="@-LIBEXECDIR-@/xmlproviders.so" fatal="true"/>
 	</Extensions>
 
-	<!-- The Global section pertains to shared Shibboleth processes like the shibd daemon. -->
-	<Global logger="@-PKGSYSCONFDIR-@/shibd.logger">
+	<!-- The OutOfProcess section pertains to components that rely on a single long-lived process. -->
+	<OutOfProcess logger="@-PKGSYSCONFDIR-@/shibd.logger">
 		
 		<!--
 		<Extensions>
@@ -51,10 +51,10 @@
 			<Argument>&#x2D;&#x2D;datadir=@-PREFIX-@/data</Argument>
 		</MySQLReplayCache>
 		-->
-	</Global>
+	</OutOfProcess>
     
-	<!-- The Local section pertains to resource-serving processes (often process pools) like web servers. -->
-	<Local logger="@-PKGSYSCONFDIR-@/native.logger" localRelayState="true">
+	<!-- The InProcess section pertains to components that support transient process pools like most web servers. -->
+	<InProcess logger="@-PKGSYSCONFDIR-@/native.logger" localRelayState="true">
 		<!--
 		To customize behavior, map hostnames and path components to applicationId and other settings.
 		The following provider types are available with the delivered code:
@@ -112,7 +112,7 @@
 				</Site>
 			</ISAPI>
 		</Implementation>
-	</Local>
+	</InProcess>
 
 	<!--
 	The Applications section is where most of Shibboleth's SAML bits are defined.
