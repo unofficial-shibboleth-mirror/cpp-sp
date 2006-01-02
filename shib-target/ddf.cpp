@@ -1,0 +1,1011 @@
+/*
+ *  Copyright 2001-2005 Internet2
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/*
+ * ddf.cpp - C++ DDF abstraction for interpretive RPC
+ *
+ * Created by:  Scott Cantor and Tom Sanfilippo, OSU
+ *
+ * $Id$
+ */
+
+#ifdef WIN32
+# define _CRT_NONSTDC_NO_DEPRECATE 1
+# define _CRT_SECURE_NO_DEPRECATE 1
+# define SHIBTARGET_EXPORTS __declspec(dllexport)
+# define snprintf _snprintf
+#endif
+
+#include <saml/saml.h>
+#include <shib-target/ddf.h>
+
+using namespace saml;
+using namespace shibtarget;
+using namespace std;
+
+// defensive string functions
+
+size_t ddf_strlen(const char* s)
+{
+    return s ? strlen(s) : 0;
+}
+
+char* ddf_strdup(const char* s)
+{
+    return (s && *s) ? strdup(s) : NULL;
+}
+
+#define MAX_NAME_LEN 255
+
+/* Parses '.' notation paths, where each component is at most MAX_NAME_LEN long.
+   path contains the address of a constant string which is the current path.
+   name points to a buffer in which to place the first path component.
+   After execution, the path pointer will be moved past the first dot.
+   The actual path string is never modified. Only name is written to.
+   The name buffer is returned from the function. */
+char* ddf_token(const char** path, char* name)
+{
+    const char* temp=NULL;
+    
+    *name='\0';
+    if (*path==NULL || **path=='\0')
+        return name;
+
+    temp=strchr(*path,'.');
+    if (temp==NULL)
+    {
+        strcpy(name,*path);
+        *path=NULL;
+    }
+    else if (temp>*path)
+    {
+        strncpy(name,*path,temp-*path);
+        name[temp-*path]='\0';
+        *path=temp+1;
+    }
+    else
+        *path=temp+1;
+    return name;
+}
+
+// body implementation
+
+struct shibtarget::ddf_body_t {
+    ddf_body_t() : name(NULL), parent(NULL), next(NULL), prev(NULL), type(DDF_EMPTY) {}
+
+    char* name;                     // name of node
+    ddf_body_t* parent;             // parent node, if any
+    ddf_body_t* next;               // next node, if any
+    ddf_body_t* prev;               // previous node, if any
+
+    enum {
+	    DDF_EMPTY,
+	    DDF_STRING,
+	    DDF_INT,
+        DDF_FLOAT,
+	    DDF_STRUCT,
+        DDF_LIST,
+	    DDF_POINTER
+    } type;                         // data type of node
+
+    union {
+        char* string;
+        long integer;
+        double floating;
+        void* pointer;
+        struct {
+	        ddf_body_t* first;
+	        ddf_body_t* last;
+	        ddf_body_t* current;
+	        unsigned long count;
+        } children;
+    } value;                        // value of node
+};
+
+// library implementation
+
+DDF::DDF(const char* n)
+{
+    m_handle=new(nothrow) ddf_body_t;
+    name(n);
+}
+
+DDF::DDF(const char* n, const char* val)
+{
+    m_handle=new(nothrow) ddf_body_t;
+    name(n);
+    string(val);
+}
+
+DDF::DDF(const char* n, long val)
+{
+    m_handle=new(nothrow) ddf_body_t;
+    name(n);
+    integer(val);
+}
+
+DDF::DDF(const char* n, double val)
+{
+    m_handle=new(nothrow) ddf_body_t;
+    name(n);
+    floating(val);
+}
+
+DDF::DDF(const char* n, void* val)
+{
+    m_handle=new(nothrow) ddf_body_t;
+    name(n);
+    pointer(val);
+}
+
+DDF& DDF::destroy()
+{
+    remove().empty().name(NULL);
+    delete m_handle;
+    m_handle=NULL;
+    return *this;
+}
+
+DDF DDF::copy() const
+{
+    if (m_handle==NULL)
+        return DDF();
+
+    switch (m_handle->type) {
+        case ddf_body_t::DDF_EMPTY:
+            return DDF(m_handle->name);
+        case ddf_body_t::DDF_STRING:
+            return DDF(m_handle->name,m_handle->value.string);
+        case ddf_body_t::DDF_INT:
+            return DDF(m_handle->name,m_handle->value.integer);
+        case ddf_body_t::DDF_FLOAT:
+            return DDF(m_handle->name,m_handle->value.floating);
+        case ddf_body_t::DDF_POINTER:
+            return DDF(m_handle->name,m_handle->value.pointer);
+        case ddf_body_t::DDF_STRUCT:
+        case ddf_body_t::DDF_LIST:
+        {
+            DDF copy(m_handle->name), temp;
+            if (m_handle->type==ddf_body_t::DDF_STRUCT)
+                copy.structure();
+            else
+                copy.list();
+            ddf_body_t* child=m_handle->value.children.first;
+            while (child) {
+                temp.m_handle=child;
+                DDF temp2=temp.copy();
+                copy.add(temp2);
+                if (copy.m_handle==NULL)
+                    return copy;
+                if (m_handle->value.children.current==child)
+                    copy.m_handle->value.children.current=copy.m_handle->value.children.last;
+                child=child->next;
+            }
+            return copy;
+        }
+    }
+    return DDF();
+}
+
+inline const char* DDF::name() const
+{
+    return (m_handle) ? m_handle->name : NULL;
+}
+
+DDF& DDF::name(const char* name)
+{
+    char trunc_name[MAX_NAME_LEN+1]="";
+
+    if (m_handle) {
+        if (m_handle->name)
+            free(m_handle->name);
+        if (name && *name) {
+            strncpy(trunc_name,name,MAX_NAME_LEN);
+            trunc_name[MAX_NAME_LEN]='\0';
+            m_handle->name=ddf_strdup(trunc_name);
+            if (!m_handle->name)
+                destroy();
+        }
+        else
+            m_handle->name=NULL;
+    }
+    return *this;
+}
+
+inline bool DDF::isnull() const
+{
+    return m_handle ? false : true;
+}
+
+inline bool DDF::isempty() const
+{
+    return m_handle ? (m_handle->type==ddf_body_t::DDF_EMPTY) : false;
+}
+
+inline bool DDF::isstring() const
+{
+    return m_handle ? (m_handle->type==ddf_body_t::DDF_STRING) : false;
+}
+
+inline bool DDF::isint() const
+{
+    return m_handle ? (m_handle->type==ddf_body_t::DDF_INT) : false;
+}
+
+inline bool DDF::isfloat() const
+{
+    return m_handle ? (m_handle->type==ddf_body_t::DDF_FLOAT) : false;
+}
+
+inline bool DDF::isstruct() const
+{
+    return m_handle ? (m_handle->type==ddf_body_t::DDF_STRUCT) : false;
+}
+
+inline bool DDF::islist() const
+{
+    return m_handle ? (m_handle->type==ddf_body_t::DDF_LIST) : false;
+}
+
+inline bool DDF::ispointer() const
+{
+    return m_handle ? (m_handle->type==ddf_body_t::DDF_POINTER) : false;
+}
+
+inline const char* DDF::string() const
+{
+    return isstring() ? m_handle->value.string : NULL;
+}
+
+long DDF::integer() const
+{
+    if (m_handle) {
+        switch(m_handle->type) {
+            case ddf_body_t::DDF_INT:
+                return m_handle->value.integer;
+            case ddf_body_t::DDF_FLOAT:
+                return static_cast<long>(m_handle->value.floating);
+            case ddf_body_t::DDF_STRING:
+                return m_handle->value.string ? atol(m_handle->value.string) : 0;
+            case ddf_body_t::DDF_STRUCT:
+            case ddf_body_t::DDF_LIST:
+                return m_handle->value.children.count;
+            case ddf_body_t::DDF_POINTER:
+                return reinterpret_cast<long>(m_handle->value.pointer);
+        }
+    }
+    return 0;
+}
+
+double DDF::floating() const
+{
+    if (m_handle) {
+        switch(m_handle->type) {
+            case ddf_body_t::DDF_INT:
+                return m_handle->value.integer;
+            case ddf_body_t::DDF_FLOAT:
+                return m_handle->value.floating;
+            case ddf_body_t::DDF_STRING:
+                return m_handle->value.string ? atof(m_handle->value.string) : 0;
+            case ddf_body_t::DDF_STRUCT:
+            case ddf_body_t::DDF_LIST:
+                return m_handle->value.children.count;
+        }
+    }
+    return 0;
+}
+
+inline void* DDF::pointer() const
+{
+    return ispointer() ? m_handle->value.pointer : NULL;
+}
+
+inline size_t DDF::strlen() const
+{
+    return ddf_strlen(string());
+}
+
+bool DDF::operator==(const char* s) const
+{
+    if (string()==NULL || s==NULL)
+        return (string()==NULL && s==NULL);
+    else
+        return (::strcmp(string(),s)==0);
+}
+
+DDF& DDF::empty()
+{
+    if (m_handle) {
+        switch (m_handle->type) {
+            case ddf_body_t::DDF_STRING:
+                if (m_handle->value.string)
+                    free(m_handle->value.string);
+                break;
+            case ddf_body_t::DDF_LIST:
+            case ddf_body_t::DDF_STRUCT:
+            {
+                DDF temp;
+                while (m_handle->value.children.first)
+                {
+                    temp.m_handle=m_handle->value.children.first;
+                    temp.destroy();
+                }
+            }
+        }
+        m_handle->type=ddf_body_t::DDF_EMPTY;
+    }
+    return *this;
+}
+
+DDF& DDF::string(const char* val)
+{
+    if (empty().m_handle) {
+        m_handle->value.string=ddf_strdup(val);
+        if (!m_handle->value.string && val && *val)
+            return destroy();
+        m_handle->type=ddf_body_t::DDF_STRING;
+    }
+    return *this;
+}
+
+DDF& DDF::string(long val)
+{
+    char buf[20];
+
+    sprintf(buf,"%ld",val);
+    return string(buf);
+}
+
+DDF& DDF::string(double val)
+{
+    char buf[40];
+
+    snprintf(buf,39,"%f",val);
+    return string(buf);
+}
+
+DDF& DDF::integer(long val)
+{
+    if (empty().m_handle) {
+        m_handle->value.integer=val;
+        m_handle->type=ddf_body_t::DDF_INT;
+    }
+    return *this;
+}
+
+DDF& DDF::integer(const char* val)
+{
+    if (empty().m_handle) {
+        m_handle->value.integer=(val ? atol(val) : 0);
+        m_handle->type=ddf_body_t::DDF_INT;
+    }
+    return *this;
+}
+
+DDF& DDF::floating(double val)
+{
+    if (empty().m_handle) {
+        m_handle->value.floating=val;
+        m_handle->type=ddf_body_t::DDF_FLOAT;
+    }
+    return *this;
+}
+
+DDF& DDF::floating(const char* val)
+{
+    if (empty().m_handle) {
+        m_handle->value.floating=(val ? atof(val) : 0);
+        m_handle->type=ddf_body_t::DDF_FLOAT;
+    }
+    return *this;
+}
+
+DDF& DDF::structure()
+{
+    if (empty().m_handle) {
+        m_handle->type=ddf_body_t::DDF_STRUCT;
+        m_handle->value.children.first=NULL;
+        m_handle->value.children.last=NULL;
+        m_handle->value.children.current=NULL;
+        m_handle->value.children.count=0;
+    }
+    return *this;
+}
+
+DDF& DDF::list()
+{
+    if (empty().m_handle) {
+        m_handle->type=ddf_body_t::DDF_LIST;
+        m_handle->value.children.first=NULL;
+        m_handle->value.children.last=NULL;
+        m_handle->value.children.current=NULL;
+        m_handle->value.children.count=0;
+    }
+    return *this;
+}
+
+DDF& DDF::pointer(void* val)
+{
+    if (empty().m_handle) {
+        m_handle->value.pointer=val;
+        m_handle->type=ddf_body_t::DDF_POINTER;
+    }
+    return *this;
+}
+
+DDF& DDF::add(DDF& child)
+{
+    if ((!isstruct() && !islist()) || !child.m_handle)
+        return child;
+
+    if (m_handle==child.m_handle->parent)
+        return child;
+
+    if (isstruct()) {
+        if (!child.name())
+            return child;
+        getmember(child.name()).destroy();
+    }
+
+    child.remove();
+    if (!m_handle->value.children.first)
+        m_handle->value.children.first=child.m_handle;
+    else {
+        m_handle->value.children.last->next=child.m_handle;
+        child.m_handle->prev=m_handle->value.children.last;
+    }
+    m_handle->value.children.last=child.m_handle;
+    child.m_handle->parent=m_handle;
+    m_handle->value.children.count++;
+    return child;
+}
+
+DDF& DDF::addbefore(DDF& child, DDF& before)
+{
+    if (!islist() || !child.m_handle || !before.m_handle || before.m_handle->parent!=m_handle)
+        return child;
+
+    child.remove();
+    if (m_handle->value.children.first==before.m_handle)
+        m_handle->value.children.first=child.m_handle;
+    child.m_handle->prev=before.m_handle->prev;
+    if (child.m_handle->prev)
+        child.m_handle->prev->next=child.m_handle;
+    before.m_handle->prev=child.m_handle;
+    child.m_handle->next=before.m_handle;
+    child.m_handle->parent=m_handle;
+    m_handle->value.children.count++;
+    return child;
+}
+
+DDF& DDF::addafter(DDF& child, DDF& after)
+{
+    if (!islist() || !child.m_handle || !after.m_handle || after.m_handle->parent!=m_handle)
+        return child;
+
+    child.remove();
+    if (m_handle->value.children.last==after.m_handle)
+        m_handle->value.children.last=child.m_handle;
+    child.m_handle->next=after.m_handle->next;
+    if (child.m_handle->next)
+        child.m_handle->next->prev=child.m_handle;
+    after.m_handle->next=child.m_handle;
+    child.m_handle->prev=after.m_handle;
+    child.m_handle->parent=m_handle;
+    m_handle->value.children.count++;
+    return child;
+}
+
+void DDF::swap(DDF& arg)
+{
+    ddf_body_t* temp=arg.m_handle;
+    arg.m_handle=m_handle;
+    m_handle=temp;
+}
+
+DDF& DDF::remove()
+{
+    if (!m_handle || !m_handle->parent)
+        return *this;
+
+    if (m_handle->next)
+        m_handle->next->prev=m_handle->prev;
+
+    if (m_handle->prev)
+        m_handle->prev->next=m_handle->next;
+
+    if (m_handle->parent->value.children.first==m_handle)
+        m_handle->parent->value.children.first=m_handle->next;
+
+    if (m_handle->parent->value.children.last==m_handle)
+        m_handle->parent->value.children.last=m_handle->prev;
+
+    if (m_handle->parent->value.children.current==m_handle)
+        m_handle->parent->value.children.current=m_handle->prev;
+
+    m_handle->parent->value.children.count--;
+    m_handle->parent=NULL;
+    m_handle->next=NULL;
+    m_handle->prev=NULL;
+    return *this;
+}
+
+inline DDF DDF::parent() const
+{
+    DDF p;
+
+    p.m_handle=(m_handle ? m_handle->parent : NULL);
+    return p;
+}
+
+DDF DDF::first()
+{
+    DDF f;
+
+    if (islist() || isstruct())
+        f.m_handle=m_handle->value.children.current=m_handle->value.children.first;
+    return f;
+}
+
+DDF DDF::next()
+{
+    DDF n;
+
+    if ((islist() || isstruct()) && m_handle->value.children.current!=m_handle->value.children.last) {
+        if (!m_handle->value.children.current)
+            n.m_handle=m_handle->value.children.current=m_handle->value.children.first;
+        else
+            n.m_handle=m_handle->value.children.current=m_handle->value.children.current->next;
+    }
+    return n;
+}
+
+DDF DDF::last()
+{
+    DDF l;
+
+    if ((islist() || isstruct()) && m_handle->value.children.last) {
+        m_handle->value.children.current=m_handle->value.children.last->prev;
+        l.m_handle=m_handle->value.children.last;
+    }
+    return l;
+}
+
+DDF DDF::previous()
+{
+    DDF p;
+
+    if (islist() || isstruct()) {
+        p.m_handle=m_handle->value.children.current;
+        if (p.m_handle)
+            m_handle->value.children.current=m_handle->value.children.current->prev;
+    }
+    return p;
+}
+
+DDF DDF::operator[](unsigned long index) const
+{
+    DDF d;
+
+    if (islist() && index<m_handle->value.children.count) {
+        for (d.m_handle=m_handle->value.children.first; index; index--)
+            d.m_handle=d.m_handle->next;
+    }
+    else
+        throw range_error("DDF object not a list with >=index+1 elements");
+    return d;
+}
+
+DDF DDF::addmember(const char* path)
+{
+    char name[MAX_NAME_LEN+1];
+    const char* path_ptr=path;
+    
+    if (m_handle && ddf_strlen(ddf_token(&path_ptr,name))>0) {
+        if (!isstruct())
+            structure();
+
+        DDF new_member=getmember(name);
+        if (!new_member.m_handle) {
+            DDF temp(name);
+            new_member=add(temp);
+        }
+
+        if (new_member.m_handle) {
+            if (ddf_strlen(path_ptr)>0) {
+                DDF last_member=new_member.addmember(path_ptr);
+                if (!last_member.m_handle)
+                    return new_member.destroy();
+                else
+                    return last_member;
+            }
+            return new_member;
+        }
+        return new_member;
+    }
+    return DDF();
+}
+
+DDF DDF::getmember(const char* path) const
+{
+    char name[MAX_NAME_LEN+1];
+    const char* path_ptr=path;
+    DDF current;
+
+    if (isstruct() && ddf_strlen(ddf_token(&path_ptr,name))>0) {
+        current.m_handle=m_handle->value.children.first;
+        while (current.m_handle && strcmp(current.m_handle->name,name)!=0)
+            current.m_handle=current.m_handle->next;
+
+        if (current.m_handle && ddf_strlen(path_ptr)>0)
+            current=current.getmember(path_ptr);
+    }
+    return current;
+}
+
+
+void ddf_print_indent(FILE* f, int indent)
+{
+    for (; indent>0; indent--)
+        putc(' ',f);
+}
+
+void DDF::dump(FILE* f, int indent) const
+{
+    if (!f)
+        f=stderr;
+
+    ddf_print_indent(f,indent);
+    if (m_handle) {
+        switch (m_handle->type) {
+            
+            case ddf_body_t::DDF_EMPTY:
+                fprintf(f,"empty");
+                if (m_handle->name)
+                    fprintf(f," %s",m_handle->name);
+                break;
+
+            case ddf_body_t::DDF_STRING:
+                if (m_handle->name)
+                    fprintf(f,"char* %s = ",m_handle->name);
+                else
+                    fprintf(f,"char* = ");
+                if (const char* chptr=m_handle->value.string) {
+                    putc('"',f);
+                    while (*chptr)
+                        fputc(*chptr++,f);
+                    putc('"',f);
+                }
+                else
+                    fprintf(f,"NULL");
+                break;
+
+            case ddf_body_t::DDF_INT:
+                if (m_handle->name)
+                    fprintf(f,"long %s = ",m_handle->name);
+                else
+                    fprintf(f,"long = ");
+                fprintf(f,"%ld",m_handle->value.integer);
+                break;
+
+            case ddf_body_t::DDF_FLOAT:
+                if (m_handle->name)
+                    fprintf(f,"double %s = ",m_handle->name);
+                else
+                    fprintf(f,"double = ");
+                fprintf(f,"%.15f",m_handle->value.floating);
+                break;
+
+            case ddf_body_t::DDF_STRUCT:
+                fprintf(f,"struct ");
+                if (m_handle->name)
+                    fprintf(f,"%s ",m_handle->name);
+                putc('{',f);
+                if (m_handle->value.children.count) {
+                    putc('\n',f);
+                    DDF child;
+                    child.m_handle=m_handle->value.children.first;
+                    while (child.m_handle) {
+                        child.dump(f,indent+2);
+                        child.m_handle=child.m_handle->next;
+                    }
+                }
+                ddf_print_indent(f,indent);
+                putc('}',f);
+                break;
+
+            case ddf_body_t::DDF_LIST:
+                fprintf(f,"list");
+                if (m_handle->name)
+                    fprintf(f," %s",m_handle->name);
+                fprintf(f,"[%lu] {",m_handle->value.children.count);
+                if (m_handle->value.children.count) {
+                    putc('\n',f);
+                    DDF child;
+                    child.m_handle=m_handle->value.children.first;
+                    while (child.m_handle) {
+                        child.dump(f,indent+2);
+                        child.m_handle=child.m_handle->next;
+                    }
+                }
+                ddf_print_indent(f,indent);
+                putc('}',f);
+                break;
+
+            case ddf_body_t::DDF_POINTER:
+                if (m_handle->name)
+                    fprintf(f,"void* %s = ",m_handle->name);
+                else
+                    fprintf(f,"void* = ");
+                if (m_handle->value.pointer)
+                    fprintf(f,"%p",m_handle->value.pointer);
+                else
+                    fprintf(f,"NULL");
+                break;
+
+            default:
+                fprintf(f,"UNKNOWN -- WARNING: ILLEGAL VALUE");
+        }
+    }
+    else
+        fprintf(f,"NULL");
+    fprintf(f,";\n");
+}
+
+// Serialization is fairly easy. We have to walk the DDF and hand-generate a
+// wddxPacket XML fragment, with some simple extensions. We escape the four major
+// special characters, which requires that we output strings one char at a time.
+
+void xml_encode(ostream& os, const char* start)
+{
+    while (start && *start) {
+        switch (*start) {
+            case '\'':  os << "&apos;";     break;
+            case '<':   os << "&lt;";       break;
+            case '>':   os << "&gt;";       break;
+            case '&':   os << "&amp;";      break;
+            default:    os << *start;
+        }
+        start++;
+    }
+}
+
+void serialize(ddf_body_t* p, ostream& os, bool name_attr=true)
+{
+    if (p) {
+        switch (p->type) {
+            
+            case ddf_body_t::DDF_STRING:
+                os << "<string";
+                if (name_attr && p->name) {
+                    os << " name='";
+                    xml_encode(os,p->name);
+                    os << '\'';
+                }
+                if (p->value.string) {
+                    os << '>';
+                    xml_encode(os,p->value.string);
+                    os << "</string>\n";
+                }
+                else
+                    os << "/>\n";
+                break;
+
+            case ddf_body_t::DDF_INT:
+                os << "<number";
+                if (name_attr && p->name) {
+                    os << " name='";
+                    xml_encode(os,p->name);
+                    os << '\'';
+                }
+                os << '>' << p->value.integer << "</number>\n";
+                break;
+
+            case ddf_body_t::DDF_FLOAT:
+                os << "<number";
+                if (name_attr && p->name) {
+                    os << " name='";
+                    xml_encode(os,p->name);
+                    os << '\'';
+                }
+                os << '>' << fixed << p->value.floating << dec << "</number>\n";
+                break;
+
+            case ddf_body_t::DDF_STRUCT:
+            {
+                os << "<struct";
+                if (name_attr && p->name) {
+                    os << " name='";
+                    xml_encode(os,p->name);
+                    os << '\'';
+                }
+                os << ">\n";
+                ddf_body_t* child=p->value.children.first;
+                while (child) {
+                    os << "<var name='";
+                    xml_encode(os,child->name);
+                    os << "'>\n";
+                    serialize(child,os,false);
+                    os << "</var>\n";
+                    child=child->next;
+                }
+                os << "</struct>\n";
+                break;
+            }
+
+            case ddf_body_t::DDF_LIST:
+            {
+                os << "<array length='" << p->value.children.count << '\'';
+                if (name_attr && p->name) {
+                    os << " name='";
+                    xml_encode(os,p->name);
+                    os << '\'';
+                }
+                os << ">\n";
+                ddf_body_t* child=p->value.children.first;
+                while (child) {
+                    serialize(child,os);
+                    child=child->next;
+                }
+                os << "</array>\n";
+                break;
+            }
+
+            case ddf_body_t::DDF_EMPTY:
+            case ddf_body_t::DDF_POINTER:
+            default:
+                os << "<null";
+                if (name_attr && p->name) {
+                    os << " name='";
+                    xml_encode(os,p->name);
+                    os << '\'';
+                }
+                os << "/>\n";
+                break;
+        }
+    }
+    else
+        os << "<null/>\n";
+}
+
+// The stream insertion will work for any ostream-based object.
+
+SHIBTARGET_EXPORTS ostream& shibtarget::operator<<(ostream& os, const DDF& obj)
+{
+    os.precision(15);
+    os << "<wddxPacket version=\"1.0\" lowercase=\"no\">\n<header/>\n<data>\n";
+    serialize(obj.m_handle,os);
+    os << "</data>\n</wddxPacket>\n";
+    return os;
+}
+
+// This is a DTD internal subset based on a compatible permutation of the WDDX spec, with the
+// extension of a name attribute on all the typed elements, which DDF has, but WDDX does not.
+
+static const char* g_DocType=
+"\
+<!DOCTYPE wddxPacket [\n\
+<!ELEMENT wddxPacket (header, data)>\n\
+<!ATTLIST wddxPacket version CDATA #FIXED \"1.0\" lowercase (yes|no) \"yes\">\n\
+<!ELEMENT header (comment?)>\n\
+<!ELEMENT comment (#PCDATA)>\n\
+<!ELEMENT data (null | number | string | array | struct)>\n\
+<!ELEMENT null EMPTY>\n\
+<!ATTLIST null name CDATA #IMPLIED type CDATA #IMPLIED>\n\
+<!ELEMENT string (#PCDATA | char)*>\n\
+<!ATTLIST string name CDATA #IMPLIED type CDATA #IMPLIED>\n\
+<!ELEMENT char EMPTY>\n\
+<!ATTLIST char code CDATA #REQUIRED>\n\
+<!ELEMENT number (#PCDATA)>\n\
+<!ATTLIST number name CDATA #IMPLIED type CDATA #IMPLIED>\n\
+<!ELEMENT array (null | number | string | array | struct)*>\n\
+<!ATTLIST array length CDATA #REQUIRED name CDATA #IMPLIED type CDATA #IMPLIED>\n\
+<!ELEMENT struct (var*)>\n\
+<!ATTLIST struct name CDATA #IMPLIED type CDATA #IMPLIED>\n\
+<!ELEMENT var (null | number | string | array | struct)>\n\
+<!ATTLIST var name CDATA #REQUIRED>\n\
+]>\n";
+
+// This function constructs a DDF object equivalent to the wddx data element rooted
+// by the input.
+
+static const XMLCh _no[] = { chLatin_n, chLatin_o, chNull };
+static const XMLCh _name[] = { chLatin_n, chLatin_a, chLatin_m, chLatin_e, chNull };
+static const XMLCh _var[] = { chLatin_v, chLatin_a, chLatin_r, chNull };
+static const XMLCh _string[] = { chLatin_s, chLatin_t, chLatin_r, chLatin_i, chLatin_n, chLatin_g, chNull };
+static const XMLCh _number[] = { chLatin_n, chLatin_u, chLatin_m, chLatin_b, chLatin_e, chLatin_r, chNull };
+static const XMLCh _array[] = { chLatin_a, chLatin_r, chLatin_r, chLatin_a, chLatin_y, chNull };
+static const XMLCh _struct[] = { chLatin_s, chLatin_t, chLatin_r, chLatin_u, chLatin_c, chLatin_t, chNull };
+static const XMLCh _lowercase[] =
+{ chLatin_l, chLatin_o, chLatin_w, chLatin_e, chLatin_r, chLatin_c, chLatin_a, chLatin_s, chLatin_e, chNull };
+
+DDF deserialize(DOMElement* root, bool lowercase)
+{
+    DDF obj(NULL);
+    auto_ptr_char name_val(root->getAttribute(_name));
+    if (name_val.get() && *name_val.get()) {
+        if (lowercase)
+            for (char* pch=const_cast<char*>(name_val.get()); *pch=tolower(*pch); pch++);
+        obj.name(name_val.get());
+    }
+
+    const XMLCh* tag=root->getTagName();
+    if (!XMLString::compareString(tag,_var)) {
+        root=saml::XML::getFirstChildElement(root);
+        tag=(root ? root->getTagName() : &chNull);
+    }
+
+    if (!XMLString::compareString(tag,_string)) {
+        DOMNode* child=root->getFirstChild();
+        if (child && child->getNodeType()==DOMNode::TEXT_NODE) {
+            auto_ptr_char val(child->getNodeValue());
+            obj.string(val.get());
+        }
+    }
+    else if (!XMLString::compareString(tag,_number)) {
+        DOMNode* child=root->getFirstChild();
+        if (child && child->getNodeType()==DOMNode::TEXT_NODE) {
+            auto_ptr_char val(child->getNodeValue());
+            if (val.get() && strchr(val.get(),'.'))
+                obj.floating(val.get());
+            else
+                obj.integer(val.get());
+        }
+    }
+    else if (!XMLString::compareString(tag,_array)) {
+        obj.list();
+        DOMNodeList* children=root->getChildNodes();
+        for (unsigned int i=0; children && i<children->getLength(); i++)
+            if (children->item(i)->getNodeType()==DOMNode::ELEMENT_NODE) {
+                DDF temp=deserialize(static_cast<DOMElement*>(children->item(i)),lowercase);
+                obj.add(temp);
+            }
+    }
+    else if (!XMLString::compareString(tag,_struct)) {
+        obj.structure();
+        DOMNodeList* children=root->getChildNodes();
+        for (unsigned int i=0; children && i<children->getLength(); i++)
+            if (children->item(i)->getNodeType()==DOMNode::ELEMENT_NODE) {
+                DDF temp=deserialize(static_cast<DOMElement*>(children->item(i)),lowercase);
+                obj.add(temp);
+            }
+    }
+
+    return obj;
+}
+
+SHIBTARGET_EXPORTS istream& shibtarget::operator>>(istream& is, DDF& obj)
+{
+    // Parse the input stream into a DOM tree and construct the equivalent DDF.
+    DOMDocument* doc=NULL;
+    try {
+        XML::StreamInputSource src(is);
+        Wrapper4InputSource dsrc(&src,false);
+        saml::XML::Parser parser(false);    // non-validating
+        doc=parser.parse(dsrc);
+        const XMLCh* lowercase=doc->getDocumentElement()->getAttribute(_lowercase);
+        DOMElement* first=saml::XML::getFirstChildElement(saml::XML::getLastChildElement(doc->getDocumentElement()));
+        obj.destroy();
+        obj=deserialize(first,XMLString::compareString(lowercase,_no)!=0);
+        doc->release();
+    }
+    catch(...) {
+        if (doc)
+            doc->release();
+        throw;
+    }
+    return is;
+}
