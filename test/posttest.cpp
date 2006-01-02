@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+#ifdef WIN32
+# define _CRT_NONSTDC_NO_DEPRECATE 1
+# define _CRT_SECURE_NO_DEPRECATE 1
+#endif
+
 #include "../shib/shib.h"
 #include <sstream>
 
@@ -78,7 +83,7 @@ int main(int argc,char* argv[])
             cin >> ch;
         }
 
-        SAMLBrowserProfile::BrowserProfileResponse bpr=p.receive(buf.c_str(),recip.get(),SAMLBrowserProfile::Post);
+        SAMLBrowserProfile::BrowserProfileResponse bpr=p.receive(buf.c_str(),recip.get(),NULL);
         cout << "Consumed Response: " << endl << *bpr.response << endl;
         bpr.clear();
     }

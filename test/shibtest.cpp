@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+#ifdef WIN32
+# define _CRT_NONSTDC_NO_DEPRECATE 1
+# define _CRT_SECURE_NO_DEPRECATE 1
+#endif
+
 #include "../shib-target/shib-target.h"
 
 using namespace std;
@@ -67,7 +72,7 @@ int main(int argc,char* argv[])
         ShibTargetConfig::Trust |
         ShibTargetConfig::Credentials |
         ShibTargetConfig::AAP |
-        ShibTargetConfig::GlobalExtensions |
+        ShibTargetConfig::OutOfProcess |
         ShibTargetConfig::Caching
         );
     if (!conf.init(path) || !conf.load(config))
