@@ -25,6 +25,11 @@
 #ifndef __internal_h__
 #define __internal_h__
 
+#ifdef WIN32
+# define _CRT_NONSTDC_NO_DEPRECATE 1
+# define _CRT_SECURE_NO_DEPRECATE 1
+#endif
+
 #include <saml/saml.h>
 #include <shib/shib.h>
 #include <shib/shib-threads.h>
@@ -212,5 +217,11 @@ public:
         static const XMLCh Rule[];
     };
 };
+
+namespace xmlproviders {
+    // Template cleanup functions for use with for_each algorithm
+    template<class T> void cleanup(const T* ptr) { delete const_cast<T*>(ptr); }
+    template<class A,class B> void cleanup(std::pair<A,B*> p) { delete p.second; }
+}
 
 #endif
