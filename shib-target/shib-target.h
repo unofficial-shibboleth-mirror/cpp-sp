@@ -35,29 +35,24 @@
 # endif
 # define SHIB_SCHEMAS "/opt/shibboleth-sp/share/xml/shibboleth"
 # define SHIB_CONFIG "/opt/shibboleth-sp/etc/shibboleth/shibboleth.xml"
-# include <winsock.h>
 #else
 # include <shib-target/shib-paths.h>
 # define SHIBTARGET_EXPORTS
 #endif
 
+#include <shib-target/ddf.h>
 
 namespace shibtarget {
   
     DECLARE_SAML_EXCEPTION(SHIBTARGET_EXPORTS,ListenerException,SAMLException);
     DECLARE_SAML_EXCEPTION(SHIBTARGET_EXPORTS,ConfigurationException,SAMLException);
 
-    enum ShibProfile {
-      PROFILE_UNSPECIFIED = 0,
-      SAML10_POST = 1,
-      SAML10_ARTIFACT = 2,
-      SAML11_POST = 4,
-      SAML11_ARTIFACT = 8,
-      SAML20_SSO = 16
-    };
-
     // Abstract APIs for access to configuration information
     
+    /**
+     * Interface to a generic set of typed properties or a DOM container of additional
+     * data.
+     */
     struct SHIBTARGET_EXPORTS IPropertySet
     {
         virtual std::pair<bool,bool> getBool(const char* name, const char* ns=NULL) const=0;
@@ -70,6 +65,37 @@ namespace shibtarget {
         virtual ~IPropertySet() {}
     };
 
+    // Forward declaration
+    class SHIBTARGET_EXPORTS ShibTarget;
+
+    /**
+     * Interface to a protocol handler
+     * 
+     * Protocol handlers perform system functions such as processing SAML protocol
+     * messages to create and logout sessions or creating protocol requests.
+     */
+    struct SHIBTARGET_EXPORTS IHandler : public virtual saml::IPlugIn
+    {
+        IHandler() : m_props(NULL) {}
+        virtual ~IHandler() {}
+        virtual const IPropertySet* getProperties() const { return m_props; }
+        virtual void setProperties(const IPropertySet* properties) { m_props=properties; }
+        virtual std::pair<bool,void*> run(ShibTarget* st, bool isHandler=true) const=0;
+    private:
+        const IPropertySet* m_props;
+    };
+    
+    /**
+     * Interface to Shibboleth Applications, which exposes most of the functionality
+     * required to process web requests or security protocol messages for resources
+     * associated with them.
+     * 
+     * Applications are implementation-specific, but generally correspond to collections
+     * of resources related to one another in logical ways, such as a virtual host or
+     * a Java servlet context. Most complex configuration data is associated with an
+     * Application. Implementations should always expose an application named "default"
+     * as a last resort.
+     */
     struct SHIBTARGET_EXPORTS IApplication : public virtual IPropertySet
     {
         virtual const char* getId() const=0;
@@ -90,17 +116,16 @@ namespace shibtarget {
         virtual saml::SAMLBrowserProfile::ArtifactMapper* getArtifactMapper() const=0;
 
         // Used to locate a default or designated session initiator for automatic sessions
-        virtual const IPropertySet* getDefaultSessionInitiator() const=0;
-        virtual const IPropertySet* getSessionInitiatorById(const char* id) const=0;
+        virtual const IHandler* getDefaultSessionInitiator() const=0;
+        virtual const IHandler* getSessionInitiatorById(const char* id) const=0;
         
         // Used by session initiators to get endpoint to forward to IdP/WAYF
-        virtual const IPropertySet* getDefaultAssertionConsumerService() const=0;
-        virtual const IPropertySet* getAssertionConsumerServiceByIndex(unsigned short index) const=0;
-        virtual saml::Iterator<const IPropertySet*> getAssertionConsumerServicesByBinding(const char* binding) const=0;
-        virtual saml::Iterator<const IPropertySet*> getAssertionConsumerServicesByBinding(const XMLCh* binding) const=0;
+        virtual const IHandler* getDefaultAssertionConsumerService() const=0;
+        virtual const IHandler* getAssertionConsumerServiceByIndex(unsigned short index) const=0;
+        virtual saml::Iterator<const IHandler*> getAssertionConsumerServicesByBinding(const XMLCh* binding) const=0;
         
-        // Used by dispatcher to locate the handler configuration(s) for a Shibboleth request
-        virtual saml::Iterator<const IPropertySet*> getHandlerConfig(const char* path) const=0;
+        // Used by dispatcher to locate the handler(s) for a request
+        virtual saml::Iterator<const IHandler*> getHandlers(const char* path) const=0;
 
         virtual ~IApplication() {}
     };
@@ -145,112 +170,132 @@ namespace shibtarget {
         saml::Iterator<shibboleth::ICredentials*> m_creds;
     };
 
+    /**
+     * Interface to a cached user session.
+     * 
+     * Cache entries provide implementations with access to the raw SAML information they
+     * need to publish or provide access to the data for applications to use. All creation
+     * or access to entries is through the ISessionCache interface, and callers must unlock
+     * the entry when finished using it, rather than explicitly freeing them.
+     */
     struct SHIBTARGET_EXPORTS ISessionCacheEntry : public virtual saml::ILockable
     {
-        virtual bool isValid(time_t lifetime, time_t timeout) const=0;
         virtual const char* getClientAddress() const=0;
-        virtual ShibProfile getProfile() const=0;
         virtual const char* getProviderId() const=0;
-        virtual const char* getAuthnStatementXML() const=0;
-        virtual const saml::SAMLAuthenticationStatement* getAuthnStatementSAML() const=0;
-        struct SHIBTARGET_EXPORTS CachedResponseXML {
-            CachedResponseXML(const char* unfiltered, const char* filtered) {
-                this->unfiltered=unfiltered;
-                this->filtered=filtered;
-            }
-            const char* unfiltered;
-            const char* filtered;
-        };
-        struct SHIBTARGET_EXPORTS CachedResponseSAML {
-            CachedResponseSAML(const saml::SAMLResponse* unfiltered, const saml::SAMLResponse* filtered) {
-                this->unfiltered=unfiltered;
-                this->filtered=filtered;
-            }
-            const saml::SAMLResponse* unfiltered;
-            const saml::SAMLResponse* filtered;
-        };
-        virtual CachedResponseXML getResponseXML()=0;
-        virtual CachedResponseSAML getResponseSAML()=0;
+        virtual std::pair<const char*,const saml::SAMLSubject*> getSubject(bool xml=true, bool obj=false) const=0;
+        virtual const char* getAuthnContext() const=0;
+        virtual std::pair<const char*,const saml::SAMLResponse*> getTokens(bool xml=true, bool obj=false) const=0;
+        virtual std::pair<const char*,const saml::SAMLResponse*> getFilteredTokens(bool xml=true, bool obj=false) const=0;
         virtual ~ISessionCacheEntry() {}
     };
 
+    /**
+     * Interface to the session cache.
+     * 
+     * The session cache abstracts a persistent (meaning across requests) cache of
+     * instances of the ISessionCacheEntry interface. Creation of new entries and entry
+     * lookup are confined to this interface to enable implementations to flexibly
+     * remote and/or optimize calls by implementing custom versions of the
+     * ISessionCacheEntry interface as required.
+     */
     struct SHIBTARGET_EXPORTS ISessionCache : public virtual saml::IPlugIn
     {
-        virtual void thread_init()=0;
-        virtual void thread_end()=0;
-        virtual std::string generateKey() const=0;
-        virtual void insert(
+        virtual std::string insert(
+            const IApplication* application,
+            const shibboleth::IRoleDescriptor* source,
+            const char* client_addr,
+            const saml::SAMLSubject* subject,
+            const char* authnContext,
+            saml::SAMLResponse* tokens
+            )=0;
+        virtual ISessionCacheEntry* find(const char* key, const IApplication* application, const char* client_addr)=0;
+        virtual void remove(const char* key, const IApplication* application, const char* client_addr)=0;
+        virtual ~ISessionCache() {}
+    
+    protected:
+        // used by cache implementations to load raw cache entry, as from disk or other back-end
+        virtual void load(
             const char* key,
             const IApplication* application,
+            const shibboleth::IRoleDescriptor* source,
             const char* client_addr,
-            ShibProfile profile,
             const char* providerId,
-            const saml::SAMLAuthenticationStatement* s,
-            // use this to feed any pushed attributes inside a SAML response
-            saml::SAMLResponse* r=NULL, // (object may be modified but is still owned by caller)
-            const shibboleth::IRoleDescriptor* source=NULL, // source of pushed attributes
+            const char* subject,
+            const char* authnContext,
+            const char* tokens,
+            int majorVersion,
+            int minorVersion,
             time_t created=0,
             time_t accessed=0
             )=0;
-        virtual ISessionCacheEntry* find(const char* key, const IApplication* application)=0;
-        virtual void remove(const char* key)=0;
-        virtual ~ISessionCache() {}
     };
 
-    struct SHIBTARGET_EXPORTS IListener : public virtual saml::IPlugIn
+    /**
+     * Interface to a remoted service
+     * 
+     * Plugins that support remoted messages delivered by the IListener runtime
+     * support this interface and register themselves with the runtime to receive
+     * particular messages.
+     */
+    struct SHIBTARGET_EXPORTS IRemoted : public virtual saml::IPlugIn
     {
-        // The socket APIs should really be somewhere else, but compatibility
-        // with older configuration files dictates that the Listener handles
-        // both client and server socket handling. We can fix this for 2.0...?
-#ifdef WIN32
-        typedef SOCKET ShibSocket;
-#else
-        typedef int ShibSocket;
-#endif
-        virtual bool create(ShibSocket& s) const=0;
-        virtual bool bind(ShibSocket& s, bool force=false) const=0;
-        virtual bool connect(ShibSocket& s) const=0;
-        virtual bool close(ShibSocket& s) const=0;
-        virtual bool accept(ShibSocket& listener, ShibSocket& s) const=0;
-
-        // The "real" Listener API abstracts the primitive operations that make up
-        // the meat of the SP's job. Right now, that's session create/read/delete.
-        virtual void sessionNew(
-            const IApplication* application,
-            int supported_profiles,
-            const char* recipient,
-            const char* packet,
-            const char* ip,
-            std::string& target,
-            std::string& cookie,
-            std::string& provider_id
-            ) const=0;
-    
-        virtual void sessionGet(
-            const IApplication* application,
-            const char* cookie,
-            const char* ip,
-            ISessionCacheEntry** pentry
-            ) const=0;
-    
-        virtual void sessionEnd(
-            const IApplication* application,
-            const char* cookie
-            ) const=0;
-            
-        virtual void ping(int& i) const=0;
-        
-        virtual ~IListener() {}
+        virtual DDF receive(const DDF& in)=0;
+        virtual ~IRemoted() {}
     };
 
-    class SHIBTARGET_EXPORTS ShibTarget;
+    /**
+     * Interface to the remoting engine
+     * 
+     * A listener supports the remoting of DDF objects, which are dynamic data trees
+     * that interface implementations can use to remote themselves by calling an
+     * out-of-process peer implementation with arbitrary data to carry out tasks
+     * on the implementation's behalf that require isolation from the dynamic process
+     * fluctuations that web servers are prone to. The ability to pass arbitrary data
+     * trees across the boundary allows arbitrary separation of duty between the
+     * in-process and out-of-process "halves". The implementation is responsible
+     * for marshalling and transmitting messages, as well as managing connections
+     * and communication errors.
+     */
+    class SHIBTARGET_EXPORTS IListener : public virtual IRemoted
+    {
+    public:
+        virtual DDF send(const DDF& in)=0;
+        virtual DDF receive(const DDF& in);
+        virtual ~IListener() {}
 
+        // Remoted classes register and unregister for messages using these methods.
+        // Registration returns any existing listeners, allowing message hooking.
+        virtual IRemoted* regListener(const char* address, IRemoted* listener);
+        virtual bool unregListener(const char* address, IRemoted* current, IRemoted* restore=NULL);
+        virtual IRemoted* lookup(const char* address) const;
+
+        // OutOfProcess servers can implement server-side transport handling by
+        // calling the run method and supplying a flag to monitor for shutdown.
+        virtual bool run(bool* shutdown)=0;
+
+    private:
+        std::map<std::string,IRemoted*> m_listenerMap;
+    };
+
+    /**
+     * Interface to an access control plugin
+     * 
+     * Access control plugins return authorization decisions based on the intersection
+     * of the resource request and the active session. They can be implemented through
+     * cross-platform or platform-specific mechanisms.
+     */
     struct SHIBTARGET_EXPORTS IAccessControl : public virtual saml::ILockable, public virtual saml::IPlugIn
     {
         virtual bool authorized(ShibTarget* st, ISessionCacheEntry* entry) const=0;
         virtual ~IAccessControl() {}
     };
 
+    /**
+     * Interface to a request mapping plugin
+     * 
+     * Request mapping plugins return configuration settings that apply to resource requests.
+     * They can be implemented through cross-platform or platform-specific mechanisms.
+     */
     struct SHIBTARGET_EXPORTS IRequestMapper : public virtual saml::ILockable, public virtual saml::IPlugIn
     {
         typedef std::pair<const IPropertySet*,IAccessControl*> Settings;
@@ -258,15 +303,12 @@ namespace shibtarget {
         virtual ~IRequestMapper() {}
     };
     
-    struct SHIBTARGET_EXPORTS IHandler : public virtual saml::IPlugIn
-    {
-        virtual std::pair<bool,void*> run(ShibTarget* st, const IPropertySet* config, bool isHandler=true)=0;
-        virtual ~IHandler() {}
-    };
-    
     struct SHIBTARGET_EXPORTS IConfig : public virtual saml::ILockable, public virtual IPropertySet, public virtual saml::IPlugIn
     {
-        virtual const IListener* getListener() const=0;
+        // loads initial configuration
+        virtual void init()=0;
+
+        virtual IListener* getListener() const=0;
         virtual ISessionCache* getSessionCache() const=0;
         virtual saml::IReplayCache* getReplayCache() const=0;
         virtual IRequestMapper* getRequestMapper() const=0;
@@ -293,8 +335,8 @@ namespace shibtarget {
             Credentials = 16,
             AAP = 32,
             RequestMapper = 64,
-            GlobalExtensions = 128,
-            LocalExtensions = 256,
+            OutOfProcess = 128,
+            InProcess = 256,
             Logging = 512
         };
         void setFeatures(long enabled) {m_features = enabled;}
@@ -310,189 +352,207 @@ namespace shibtarget {
         unsigned long m_features;
     };
 
-  class ShibTargetPriv;
-  class SHIBTARGET_EXPORTS ShibTarget {
-  public:
-    ShibTarget(const IApplication *app);
-    virtual ~ShibTarget(void);
-
-    // These are defined here so the subclass does not need to specifically
-    // depend on log4cpp.  We could use log4cpp::Priority::PriorityLevel
-    // but this is just as easy, IMHO.  It's just a case statement in the
-    // implementation to handle the event level.
-    enum ShibLogLevel {
-      LogLevelDebug,
-      LogLevelInfo,
-      LogLevelWarn,
-      LogLevelError
+    // Helper class for SAML 2.0 Common Domain Cookie operations
+    class CommonDomainCookie
+    {
+    public:
+        CommonDomainCookie(const char* cookie);
+        ~CommonDomainCookie() {}
+        saml::Iterator<std::string> get() {return m_list;}
+        const char* set(const char* providerId);
+        static const char CDCName[];
+    private:
+        std::string m_encoded;
+        std::vector<std::string> m_list;
     };
 
-    //
-    // Note: subclasses MUST implement ALL of these virtual methods
-    //
-    
-    // Send a message to the Webserver log
-    virtual void log(ShibLogLevel level, const std::string &msg)=0;
 
-    void log(ShibLogLevel level, const char *msg) {
-      std::string s = msg;
-      log(level, s);
-    }
+    class ShibTargetPriv;
+    class SHIBTARGET_EXPORTS ShibTarget {
+    public:
+        ShibTarget(const IApplication* app);
+        virtual ~ShibTarget(void);
 
-    // Get/Set a cookie for this request
-    virtual std::string getCookies() const=0;
-    virtual void setCookie(const std::string &name, const std::string &value)=0;
-    virtual const char* getCookie(const std::string& name) const;
-    void setCookie(const char *name, const char *value) {
-      std::string ns = name;
-      std::string vs = value;
-      setCookie(ns, vs);
-    }
-    void setCookie(const char *name, const std::string &value) {
-      std::string ns = name;
-      setCookie(ns, value);
-    }
+        // These are defined here so the subclass does not need to specifically
+        // depend on log4cpp.  We could use log4cpp::Priority::PriorityLevel
+        // but this is just as easy, IMHO.  It's just a case statement in the
+        // implementation to handle the event level.
+        enum ShibLogLevel {
+          LogLevelDebug,
+          LogLevelInfo,
+          LogLevelWarn,
+          LogLevelError
+        };
 
+        //
+        // Note: subclasses MUST implement ALL of these virtual methods
+        //
+        
+        // Send a message to the Webserver log
+        virtual void log(ShibLogLevel level, const std::string &msg)=0;
 
-    // Get the request's GET arguments or POST data from the server
-    virtual std::string getArgs(void)=0;
-    virtual std::string getPostData(void)=0;
+        void log(ShibLogLevel level, const char* msg) {
+          std::string s = msg;
+          log(level, s);
+        }
 
-    // Clear a header, set a header
-    // These APIs are used for exporting the Assertions into the
-    // Headers.  It will clear some well-known headers first to make
-    // sure none remain.  Then it will process the set of assertions
-    // and export them via setHeader().
-    virtual void clearHeader(const std::string &name)=0;
-    virtual void setHeader(const std::string &name, const std::string &value)=0;
-    virtual std::string getHeader(const std::string &name)=0;
-    virtual void setRemoteUser(const std::string &user)=0;
-    virtual std::string getRemoteUser(void)=0;
+        // Get/Set a cookie for this request
+        virtual std::string getCookies() const=0;
+        virtual void setCookie(const std::string& name, const std::string& value)=0;
+        virtual const char* getCookie(const std::string& name) const;
+        void setCookie(const char* name, const char* value) {
+          std::string ns = name;
+          std::string vs = value;
+          setCookie(ns, vs);
+        }
+        void setCookie(const char* name, const std::string& value) {
+          std::string ns = name;
+          setCookie(ns, value);
+        }
 
-    void clearHeader(const char *n) {
-      std::string s = n;
-      clearHeader(s);
-    }
-    void setHeader(const char *n, const char *v) {
-      std::string ns = n;
-      std::string vs = v;
-      setHeader(ns, vs);
-    }
-    void setHeader(const std::string &n, const char *v) {
-      std::string vs = v;
-      setHeader(n, vs);
-    }
-    void setHeader(const char *n, const std::string &v) {
-      std::string ns = n;
-      setHeader(ns, v);
-    }
-    std::string getHeader(const char *n) {
-      std::string s = n;
-      return getHeader(s);
-    }
-    void setRemoteUser(const char *n) {
-      std::string s = n;
-      setRemoteUser(s);
-    }
+        // Get any URL-encoded arguments or the raw POST body from the server
+        virtual const char* getQueryString() const=0;
+        virtual const char* getRequestBody() const=0;
+        virtual const char* getRequestParameter(const char* param, size_t index=0) const;
 
-    // We're done.  Finish up.  Send specific result content or a redirect.
-    // If there are no headers supplied assume the content-type is text/html
-    typedef std::pair<std::string, std::string> header_t;
-    virtual void* sendPage(
-        const std::string& msg,
-        int code = 200,
-        const std::string& content_type = "text/html",
-        const saml::Iterator<header_t>& headers = EMPTY(header_t)
-        )=0;
-    void* sendPage(const char *msg) {
-      std::string m = msg;
-      return sendPage(m);
-    }
-    virtual void* sendRedirect(const std::string& url)=0;
-    
-    // These next two APIs are used to obtain the module-specific "OK"
-    // and "Decline" results.  OK means "we believe that this request
-    // should be accepted".  Declined means "we believe that this is
-    // not a shibbolized request so we have no comment".
+        // Clear a header, set a header
+        // These APIs are used for exporting the Assertions into the
+        // Headers.  It will clear some well-known headers first to make
+        // sure none remain.  Then it will process the set of assertions
+        // and export them via setHeader().
+        virtual void clearHeader(const std::string& name)=0;
+        virtual void setHeader(const std::string& name, const std::string& value)=0;
+        virtual std::string getHeader(const std::string& name)=0;
+        virtual void setRemoteUser(const std::string& user)=0;
+        virtual std::string getRemoteUser()=0;
 
-    virtual void* returnDecline(void);
-    virtual void* returnOK(void);
+        void clearHeader(const char* n) {
+          std::string s = n;
+          clearHeader(s);
+        }
+        void setHeader(const char* n, const char* v) {
+          std::string ns = n;
+          std::string vs = v;
+          setHeader(ns, vs);
+        }
+        void setHeader(const std::string& n, const char* v) {
+          std::string vs = v;
+          setHeader(n, vs);
+        }
+        void setHeader(const char* n, const std::string& v) {
+          std::string ns = n;
+          setHeader(ns, v);
+        }
+        std::string getHeader(const char* n) {
+          std::string s = n;
+          return getHeader(s);
+        }
+        void setRemoteUser(const char* n) {
+          std::string s = n;
+          setRemoteUser(s);
+        }
 
-    //
-    // Note:  Subclasses need not implement anything below this line
-    //
+        // We're done.  Finish up.  Send specific result content or a redirect.
+        // If there are no headers supplied assume the content-type is text/html
+        typedef std::pair<std::string, std::string> header_t;
+        virtual void* sendPage(
+            const std::string& msg,
+            int code = 200,
+            const std::string& content_type = "text/html",
+            const saml::Iterator<header_t>& headers = EMPTY(header_t)
+            )=0;
+        void* sendPage(const char* msg) {
+          std::string m = msg;
+          return sendPage(m);
+        }
+        virtual void* sendRedirect(const std::string& url)=0;
+        
+        // These next two APIs are used to obtain the module-specific "OK"
+        // and "Decline" results.  OK means "we believe that this request
+        // should be accepted".  Declined means "we believe that this is
+        // not a shibbolized request so we have no comment".
 
-    // These functions implement the server-agnostic shibboleth engine
-    // The web server modules implement a subclass and then call into 
-    // these methods once they instantiate their request object.
-    // 
-    // Return value:
-    //   these APIs will always return the result of sendPage(), sendRedirect(),
-    //   returnDecline(), or returnOK() in the void* portion of the return code.
-    //   Exactly what those values are is module- (subclass-) implementation
-    //   specific.  The 'bool' part of the return value declares whether the
-    //   void* is valid or not.  If the bool is true then the void* is valid.
-    //   If the bool is false then the API did not call any callback, the void*
-    //   is not valid, and the caller should continue processing (the API Call
-    //   finished successfully).
-    //
-    //   The handleProfile argument declares whether doCheckAuthN() should
-    //   automatically call doHandlePOST() when it encounters a request for
-    //   the ShireURL;  if false it will call returnOK() instead.
-    //
-    std::pair<bool,void*> doCheckAuthN(bool handler = false);
-    std::pair<bool,void*> doHandler();
-    std::pair<bool,void*> doCheckAuthZ();
-    std::pair<bool,void*> doExportAssertions(bool requireSession = true);
+        virtual void* returnDecline();
+        virtual void* returnOK();
 
-    // Basic request access in case any plugins need the info
-    virtual const IConfig* getConfig() const;
-    virtual const IApplication* getApplication() const;
-    const char* getRequestMethod() const {return m_method.c_str();}
-    const char* getProtocol() const {return m_protocol.c_str();}
-    const char* getHostname() const {return m_hostname.c_str();}
-    int getPort() const {return m_port;}
-    const char* getRequestURI() const {return m_uri.c_str();}
-    const char* getContentType() const {return m_content_type.c_str();}
-    const char* getRemoteAddr() const {return m_remote_addr.c_str();}
-    const char* getRequestURL() const {return m_url.c_str();}
-    
-    // Advanced methods useful to profile handlers implemented outside core
-    
-    // Get per-application session and state cookie name and properties
-    virtual std::pair<std::string,const char*> getCookieNameProps(const char* prefix) const;
-    
-    // Determine the effective handler URL based on the resource URL
-    virtual std::string getHandlerURL(const char* resource) const;
+        //
+        // Note:  Subclasses need not implement anything below this line
+        //
 
-  protected:
-    ShibTarget();
+        // These functions implement the server-agnostic shibboleth engine
+        // The web server modules implement a subclass and then call into 
+        // these methods once they instantiate their request object.
+        // 
+        // Return value:
+        //   these APIs will always return the result of sendPage(), sendRedirect(),
+        //   returnDecline(), or returnOK() in the void* portion of the return code.
+        //   Exactly what those values are is module- (subclass-) implementation
+        //   specific.  The 'bool' part of the return value declares whether the
+        //   void* is valid or not.  If the bool is true then the void* is valid.
+        //   If the bool is false then the API did not call any callback, the void*
+        //   is not valid, and the caller should continue processing (the API Call
+        //   finished successfully).
+        //
+        //   The handleProfile argument declares whether doCheckAuthN() should
+        //   automatically call doHandlePOST() when it encounters a request for
+        //   the ShireURL;  if false it will call returnOK() instead.
+        //
+        std::pair<bool,void*> doCheckAuthN(bool handler = false);
+        std::pair<bool,void*> doHandler();
+        std::pair<bool,void*> doCheckAuthZ();
+        std::pair<bool,void*> doExportAssertions(bool requireSession = true);
 
-    // Internal APIs
+        // Basic request access in case any plugins need the info
+        virtual const IConfig* getConfig() const;
+        virtual const IApplication* getApplication() const;
+        const char* getRequestMethod() const {return m_method.c_str();}
+        const char* getProtocol() const {return m_protocol.c_str();}
+        const char* getHostname() const {return m_hostname.c_str();}
+        int getPort() const {return m_port;}
+        const char* getRequestURI() const {return m_uri.c_str();}
+        const char* getContentType() const {return m_content_type.c_str();}
+        const char* getRemoteAddr() const {return m_remote_addr.c_str();}
+        const char* getRequestURL() const {return m_url.c_str();}
+        
+        // Advanced methods useful to profile handlers implemented outside core
+        
+        // Get per-application session and state cookie name and properties
+        virtual std::pair<std::string,const char*> getCookieNameProps(const char* prefix) const;
+        
+        // Determine the effective handler URL based on the resource URL
+        virtual std::string getHandlerURL(const char* resource) const;
 
-    // Initialize the request from the parsed URL
-    // protocol == http, https, etc
-    // hostname == server name
-    // port == server port
-    // uri == resource path
-    // method == GET, POST, etc.
-    void init(
-        const char* protocol,
-        const char* hostname,
-        int port,
-        const char* uri,
-        const char* content_type,
-        const char* remote_addr,
-        const char* method
-        );
+        static void url_decode(char* s);
+        static std::string url_encode(const char* s);
 
-    std::string m_url, m_method, m_protocol, m_hostname, m_uri, m_content_type, m_remote_addr;
-    int m_port;
+    protected:
+        ShibTarget();
 
-  private:
-    mutable ShibTargetPriv* m_priv;
-    friend class ShibTargetPriv;
-  };
+        // Internal APIs
+
+        // Initialize the request from the parsed URL
+        // protocol == http, https, etc
+        // hostname == server name
+        // port == server port
+        // uri == resource path
+        // method == GET, POST, etc.
+        void init(
+            const char* protocol,
+            const char* hostname,
+            int port,
+            const char* uri,
+            const char* content_type,
+            const char* remote_addr,
+            const char* method
+            );
+
+        std::string m_url, m_method, m_protocol, m_hostname, m_uri, m_content_type, m_remote_addr;
+        int m_port;
+
+    private:
+        mutable ShibTargetPriv* m_priv;
+        friend class ShibTargetPriv;
+    };
 
     struct SHIBTARGET_EXPORTS XML
     {
@@ -551,6 +611,7 @@ namespace shibtarget {
             static const XMLCh htaccess[];
             static const XMLCh Implementation[];
             static const XMLCh index[];
+            static const XMLCh InProcess[];
             static const XMLCh isDefault[];
             static const XMLCh Library[];
             static const XMLCh Listener[];
@@ -565,6 +626,7 @@ namespace shibtarget {
             static const XMLCh Name[];
             static const XMLCh NOT[];
             static const XMLCh OR[];
+            static const XMLCh OutOfProcess[];
             static const XMLCh Path[];
             static const XMLCh path[];
             static const XMLCh RelyingParty[];
