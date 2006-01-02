@@ -1,23 +1,49 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="7.10"
+	Version="8.00"
 	Name="shibtarget"
-	SccProjectName=""
-	SccLocalPath="">
+	ProjectGUID="{84890110-2190-4AAE-9BDC-58F90DF71E4F}"
+	>
 	<Platforms>
 		<Platform
-			Name="Win32"/>
+			Name="Win32"
+		/>
 	</Platforms>
+	<ToolFiles>
+	</ToolFiles>
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory=".\Debug"
 			IntermediateDirectory=".\Debug"
 			ConfigurationType="2"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE"
-			CharacterSet="2">
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				PreprocessorDefinitions="_DEBUG"
+				MkTypLibCompatible="true"
+				SuppressStartupBanner="true"
+				TargetEnvironment="1"
+				TypeLibraryName=".\Debug/shibtarget.tlb"
+				HeaderFileName=""
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
@@ -25,462 +51,578 @@
 				PreprocessorDefinitions="_WINDOWS;WANT_TCP_SHAR;WIN32;_DEBUG"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
-				RuntimeTypeInfo="TRUE"
-				UsePrecompiledHeader="2"
+				RuntimeTypeInfo="true"
+				UsePrecompiledHeader="0"
 				PrecompiledHeaderFile=".\Debug/shibtarget.pch"
 				AssemblerListingLocation=".\Debug/"
 				ObjectFile=".\Debug/"
 				ProgramDataBaseFileName=".\Debug/"
 				BrowseInformation="1"
 				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
-				Detect64BitPortabilityProblems="TRUE"
+				SuppressStartupBanner="true"
+				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="4"
-				CompileAs="0"/>
+				CompileAs="0"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="log4cppD.lib xerces-c_2D.lib saml_5D.lib wsock32.lib libeay32.lib ssleay32.lib"
-				OutputFile="Debug/shibtarget_5D.dll"
-				LinkIncremental="2"
-				SuppressStartupBanner="TRUE"
-				AdditionalLibraryDirectories="..\..\..\opensaml\c\saml\Debug,\openssl-0.9.8\out32dll.dbg"
-				GenerateDebugInformation="TRUE"
-				ImportLibrary=".\Debug/shibtarget_5D.lib"
-				TargetMachine="1"/>
-			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions="_DEBUG"
-				MkTypLibCompatible="TRUE"
-				SuppressStartupBanner="TRUE"
-				TargetEnvironment="1"
-				TypeLibraryName=".\Debug/shibtarget.tlb"
-				HeaderFileName=""/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
 			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="_DEBUG"
-				Culture="1033"/>
+				Culture="1033"
+			/>
 			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
-				Name="VCXMLDataGeneratorTool"/>
+				Name="VCLinkerTool"
+				AdditionalDependencies="log4cppD.lib xerces-c_2D.lib saml_5D.lib wsock32.lib libeay32_0_9_8D.lib ssleay32_0_9_8D.lib"
+				OutputFile="Debug/shibtarget_5D.dll"
+				LinkIncremental="2"
+				SuppressStartupBanner="true"
+				AdditionalLibraryDirectories="..\..\..\opensaml\c\saml\Debug"
+				GenerateDebugInformation="true"
+				ImportLibrary=".\Debug/shibtarget_5D.lib"
+				TargetMachine="1"
+			/>
 			<Tool
-				Name="VCWebDeploymentTool"/>
+				Name="VCALinkTool"
+			/>
 			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
+				Name="VCManifestTool"
+			/>
 			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory=".\Release"
 			IntermediateDirectory=".\Release"
 			ConfigurationType="2"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE"
-			CharacterSet="2">
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				PreprocessorDefinitions="NDEBUG"
+				MkTypLibCompatible="true"
+				SuppressStartupBanner="true"
+				TargetEnvironment="1"
+				TypeLibraryName=".\Release/shibtarget.tlb"
+				HeaderFileName=""
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
 				AdditionalIncludeDirectories=".,..,..\oncrpc,..\..\..\opensaml\c"
 				PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;WANT_TCP_SHAR"
-				StringPooling="TRUE"
+				StringPooling="true"
 				RuntimeLibrary="2"
-				EnableFunctionLevelLinking="TRUE"
-				RuntimeTypeInfo="TRUE"
-				UsePrecompiledHeader="2"
+				EnableFunctionLevelLinking="true"
+				RuntimeTypeInfo="true"
+				UsePrecompiledHeader="0"
 				PrecompiledHeaderFile=".\Release/shibtarget.pch"
 				AssemblerListingLocation=".\Release/"
 				ObjectFile=".\Release/"
 				ProgramDataBaseFileName=".\Release/"
 				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
-				Detect64BitPortabilityProblems="TRUE"
-				CompileAs="0"/>
+				SuppressStartupBanner="true"
+				Detect64BitPortabilityProblems="true"
+				CompileAs="0"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="log4cpp.lib xerces-c_2.lib saml_5.lib wsock32.lib libeay32.lib ssleay32.lib"
-				OutputFile="Release/shibtarget_5.dll"
-				LinkIncremental="1"
-				SuppressStartupBanner="TRUE"
-				AdditionalLibraryDirectories="..\..\..\opensaml\c\saml\Release,\openssl-0.9.8\out32dll"
-				ProgramDatabaseFile=".\Release/shibtarget_5.pdb"
-				ImportLibrary=".\Release/shibtarget_5.lib"
-				TargetMachine="1"/>
-			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions="NDEBUG"
-				MkTypLibCompatible="TRUE"
-				SuppressStartupBanner="TRUE"
-				TargetEnvironment="1"
-				TypeLibraryName=".\Release/shibtarget.tlb"
-				HeaderFileName=""/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
 			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="NDEBUG"
-				Culture="1033"/>
+				Culture="1033"
+			/>
 			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
-				Name="VCXMLDataGeneratorTool"/>
+				Name="VCLinkerTool"
+				AdditionalDependencies="log4cpp.lib xerces-c_2.lib saml_5.lib wsock32.lib libeay32_0_9_8.lib ssleay32_0_9_8.lib"
+				OutputFile="Release/shibtarget_5.dll"
+				LinkIncremental="1"
+				SuppressStartupBanner="true"
+				AdditionalLibraryDirectories="..\..\..\opensaml\c\saml\Release"
+				ProgramDatabaseFile=".\Release/shibtarget_5.pdb"
+				ImportLibrary=".\Release/shibtarget_5.lib"
+				TargetMachine="1"
+			/>
 			<Tool
-				Name="VCWebDeploymentTool"/>
+				Name="VCALinkTool"
+			/>
 			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
+				Name="VCManifestTool"
+			/>
 			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 	</Configurations>
 	<References>
 	</References>
 	<Files>
 		<File
-			RelativePath="ArtifactMapper.cpp">
+			RelativePath="ArtifactMapper.cpp"
+			>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_WINDOWS;WANT_TCP_SHAR;WIN32;_DEBUG;_MBCS;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;_MBCS;WANT_TCP_SHAR;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;_MBCS;WANT_TCP_SHAR;$(NoInherit)"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="hresult.h">
+			RelativePath=".\CommonDomainCookie.cpp"
+			>
 		</File>
 		<File
-			RelativePath="internal.h">
+			RelativePath=".\ddf.cpp"
+			>
 		</File>
 		<File
-			RelativePath="MemoryListener.cpp">
+			RelativePath=".\ddf.h"
+			>
+		</File>
+		<File
+			RelativePath="hresult.h"
+			>
+		</File>
+		<File
+			RelativePath=".\IListener.cpp"
+			>
+		</File>
+		<File
+			RelativePath="internal.h"
+			>
+		</File>
+		<File
+			RelativePath="resource.h"
+			>
+		</File>
+		<File
+			RelativePath="RPCListener.cpp"
+			>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_WINDOWS;WANT_TCP_SHAR;WIN32;_DEBUG;_MBCS;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;_MBCS;WANT_TCP_SHAR;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;_MBCS;WANT_TCP_SHAR;$(NoInherit)"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="resource.h">
+			RelativePath=".\RPCListener.h"
+			>
 		</File>
 		<File
-			RelativePath="RPCListener.cpp">
+			RelativePath="shib-ccache.cpp"
+			>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_WINDOWS;WANT_TCP_SHAR;WIN32;_DEBUG;_MBCS;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;_MBCS;WANT_TCP_SHAR;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;_MBCS;WANT_TCP_SHAR;$(NoInherit)"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="shib-ccache.cpp">
+			RelativePath="shib-config.cpp"
+			>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_WINDOWS;WANT_TCP_SHAR;WIN32;_DEBUG;_MBCS;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;_MBCS;WANT_TCP_SHAR;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;_MBCS;WANT_TCP_SHAR;$(NoInherit)"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="shib-config.cpp">
+			RelativePath="shib-handlers.cpp"
+			>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_WINDOWS;WANT_TCP_SHAR;WIN32;_DEBUG;_MBCS;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;_MBCS;WANT_TCP_SHAR;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;_MBCS;WANT_TCP_SHAR;$(NoInherit)"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="shib-handlers.cpp">
+			RelativePath="shib-ini.cpp"
+			>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_WINDOWS;WANT_TCP_SHAR;WIN32;_DEBUG;_MBCS;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;_MBCS;WANT_TCP_SHAR;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;_MBCS;WANT_TCP_SHAR;$(NoInherit)"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="shib-ini.cpp">
+			RelativePath="shib-mlp.cpp"
+			>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_WINDOWS;WANT_TCP_SHAR;WIN32;_DEBUG;_MBCS;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;_MBCS;WANT_TCP_SHAR;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;_MBCS;WANT_TCP_SHAR;$(NoInherit)"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="shib-mlp.cpp">
+			RelativePath="shib-sock.cpp"
+			>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_WINDOWS;WANT_TCP_SHAR;WIN32;_DEBUG;_MBCS;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;_MBCS;WANT_TCP_SHAR;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;_MBCS;WANT_TCP_SHAR;$(NoInherit)"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="shib-sock.cpp">
+			RelativePath="shib-target.cpp"
+			>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_WINDOWS;WANT_TCP_SHAR;WIN32;_DEBUG;_MBCS;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;_MBCS;WANT_TCP_SHAR;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;_MBCS;WANT_TCP_SHAR;$(NoInherit)"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="shib-target.cpp">
+			RelativePath="shib-target.h"
+			>
+		</File>
+		<File
+			RelativePath="shib-target.rc"
+			>
+		</File>
+		<File
+			RelativePath="ShibHTTPHook.cpp"
+			>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_WINDOWS;WANT_TCP_SHAR;WIN32;_DEBUG;_MBCS;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;_MBCS;WANT_TCP_SHAR;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;_MBCS;WANT_TCP_SHAR;$(NoInherit)"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="shib-target.h">
-		</File>
-		<File
-			RelativePath="shib-target.rc">
-		</File>
-		<File
-			RelativePath="ShibHTTPHook.cpp">
+			RelativePath="shibrpc-clnt.c"
+			>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_WINDOWS;WANT_TCP_SHAR;WIN32;_DEBUG;_MBCS;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;_MBCS;WANT_TCP_SHAR;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;_MBCS;WANT_TCP_SHAR;$(NoInherit)"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="shibrpc-clnt.c">
+			RelativePath=".\shibrpc-svc.c"
+			>
+		</File>
+		<File
+			RelativePath="shibrpc-xdr.c"
+			>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_WINDOWS;WANT_TCP_SHAR;WIN32;_DEBUG;_MBCS;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;_MBCS;WANT_TCP_SHAR;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;_MBCS;WANT_TCP_SHAR;$(NoInherit)"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="shibrpc-xdr.c">
+			RelativePath="shibrpc.h"
+			>
+		</File>
+		<File
+			RelativePath="XML.cpp"
+			>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_WINDOWS;WANT_TCP_SHAR;WIN32;_DEBUG;_MBCS;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;_MBCS;WANT_TCP_SHAR;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;_MBCS;WANT_TCP_SHAR;$(NoInherit)"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="shibrpc.h">
-		</File>
-		<File
-			RelativePath="XML.cpp">
+			RelativePath="XMLRequestMapper.cpp"
+			>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_WINDOWS;WANT_TCP_SHAR;WIN32;_DEBUG;_MBCS;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;_MBCS;WANT_TCP_SHAR;$(NoInherit)"/>
-			</FileConfiguration>
-		</File>
-		<File
-			RelativePath="XMLRequestMapper.cpp">
-			<FileConfiguration
-				Name="Debug|Win32">
-				<Tool
-					Name="VCCLCompilerTool"
-					Optimization="0"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="_WINDOWS;WANT_TCP_SHAR;WIN32;_DEBUG;_MBCS;$(NoInherit)"
-					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Release|Win32">
-				<Tool
-					Name="VCCLCompilerTool"
-					Optimization="2"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;_MBCS;WANT_TCP_SHAR;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;_MBCS;WANT_TCP_SHAR;$(NoInherit)"
+				/>
 			</FileConfiguration>
 		</File>
 	</Files>
