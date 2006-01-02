@@ -22,9 +22,27 @@
  *
  */
 
-#include <saml/saml.h>  // need this to "prime" the xmlsec-constrained windows.h declaration
-#include <shib-target/shibrpc.h>
-#include "internal.h"
+#include "RPCListener.h"
+
+// Deal with inadequate Sun RPC libraries
+
+#if !HAVE_DECL_SVCFD_CREATE
+  extern "C" SVCXPRT* svcfd_create(int, u_int, u_int);
+#endif
+
+#ifndef HAVE_WORKING_SVC_DESTROY
+struct tcp_conn {  /* kept in xprt->xp_p1 */
+    enum xprt_stat strm_stat;
+    u_long x_id;
+    XDR xdrs;
+    char verf_body[MAX_AUTH_BYTES];
+};
+#endif
+
+extern "C" void shibrpc_prog_3(struct svc_req* rqstp, register SVCXPRT* transp);
+
+#include <errno.h>
+#include <sstream>
 
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
@@ -50,7 +68,7 @@ namespace shibtarget {
     private:
         Category& m_log;
         CLIENT* m_clnt;
-        IListener::ShibSocket m_sock;
+        RPCListener::ShibSocket m_sock;
     };
   
     // Manages the pool of connections
@@ -84,84 +102,129 @@ namespace shibtarget {
         RPCHandlePool& m_pool;
     };
     
-    // Local-wrapper for an ISessionCacheEntry
-    class EntryWrapper : public virtual ISessionCacheEntry
-    {
+    // Worker threads in server
+    class ServerThread {
     public:
-        EntryWrapper(shibrpc_get_session_ret_2& ret, Category& log);
-        ~EntryWrapper() { delete p_statement; delete p_pre_response; delete p_post_response; }
-        void lock() {}
-        void unlock() { delete this; }
-        virtual bool isValid(time_t lifetime, time_t timeout) const { return true; }
-        virtual const char* getClientAddress() const { return NULL; }
-        virtual ShibProfile getProfile() const { return profile; }
-        virtual const char* getProviderId() const { return provider_id.c_str(); }
-        virtual const char* getAuthnStatementXML() const { return statement.c_str(); }
-        virtual const SAMLAuthenticationStatement* getAuthnStatementSAML() const { return p_statement; }
-        virtual CachedResponseXML getResponseXML() { return CachedResponseXML(pre_response.c_str(),post_response.c_str()); }
-        virtual CachedResponseSAML getResponseSAML() { return CachedResponseSAML(p_pre_response,p_post_response); }
-    
+        ServerThread(RPCListener::ShibSocket& s, RPCListener* listener);
+        ~ServerThread();
+        void run();
+
     private:
-        string provider_id;
-        ShibProfile profile;
-        string statement,pre_response,post_response;
-        SAMLAuthenticationStatement* p_statement;
-        SAMLResponse* p_pre_response;
-        SAMLResponse* p_post_response;
+        bool svc_create();
+        RPCListener::ShibSocket m_sock;
+        Thread* m_child;
+        RPCListener* m_listener;
     };
 }
 
 
-RPCListener::RPCListener(const DOMElement* e) : log(&Category::getInstance(SHIBT_LOGCAT".Listener"))
+RPCListener::RPCListener(const DOMElement* e) : log(&Category::getInstance(SHIBT_LOGCAT".Listener")),
+    m_shutdown(NULL), m_child_lock(NULL), m_child_wait(NULL), m_rpcpool(NULL), m_socket((ShibSocket)0)
 {
-    m_rpcpool=new RPCHandlePool(*log,this);
+    // Are we a client?
+    if (ShibTargetConfig::getConfig().isEnabled(ShibTargetConfig::InProcess)) {
+        m_rpcpool=new RPCHandlePool(*log,this);
+    }
+    // Are we a server?
+    if (ShibTargetConfig::getConfig().isEnabled(ShibTargetConfig::OutOfProcess)) {
+        m_child_lock = Mutex::create();
+        m_child_wait = CondWait::create();
+    }
 }
 
 RPCListener::~RPCListener()
 {
     delete m_rpcpool;
+    delete m_child_wait;
+    delete m_child_lock;
 }
 
-void RPCListener::sessionNew(
-    const IApplication* application,
-    int supported_profiles,
-    const char* recipient,
-    const char* packet,
-    const char* ip,
-    string& target,
-    string& cookie,
-    string& provider_id
-    ) const
+bool RPCListener::run(bool* shutdown)
 {
 #ifdef _DEBUG
-    saml::NDC ndc("sessionNew");
+    saml::NDC ndc("run");
 #endif
 
-    if (!packet || !*packet) {
-        log->error("missing profile response");
-        throw FatalProfileException("Profile response missing.");
+    // Save flag to monitor for shutdown request.
+    m_shutdown=shutdown;
+
+    if (!create(m_socket)) {
+        log->crit("failed to create socket");
+        return false;
+    }
+    if (!bind(m_socket,true)) {
+        this->close(m_socket);
+        log->crit("failed to bind to socket.");
+        return false;
     }
 
-    if (!ip || !*ip) {
-        log->error("missing client address");
-        throw FatalProfileException("Invalid client address.");
-    }
-  
-    if (supported_profiles <= 0) {
-        log->error("no profile support indicated");
-        throw FatalProfileException("No profile support indicated.");
-    }
-  
-    shibrpc_new_session_args_2 arg;
-    arg.recipient = (char*)recipient;
-    arg.application_id = (char*)application->getId();
-    arg.packet = (char*)packet;
-    arg.client_addr = (char*)ip;
-    arg.supported_profiles = supported_profiles;
+    while (!*m_shutdown) {
+        fd_set readfds;
+        FD_ZERO(&readfds);
+        FD_SET(m_socket, &readfds);
+        struct timeval tv = { 0, 0 };
+        tv.tv_sec = 5;
+    
+        switch (select(m_socket + 1, &readfds, 0, 0, &tv)) {
+#ifdef WIN32
+            case SOCKET_ERROR:
+#else
+            case -1:
+#endif
+                if (errno == EINTR) continue;
+                log_error();
+                log->error("select() on main listener socket failed");
+                return false;
+        
+            case 0:
+                continue;
+        
+            default:
+            {
+                // Accept the connection.
+                RPCListener::ShibSocket newsock;
+                if (!accept(m_socket, newsock))
+                    log->crit("failed to accept incoming socket connection");
 
-    log->info("create session for user at (%s) for application (%s)", ip, arg.application_id);
+                // We throw away the result because the children manage themselves...
+                try {
+                    new ServerThread(newsock,this);
+                }
+                catch (...) {
+                    log->crit("error starting new server thread to service incoming request");
+                }
+            }
+        }
+    }
+    log->info("listener service shutting down");
 
-    shibrpc_new_session_ret_2 ret;
+    // Wait for all children to exit.
+    m_child_lock->lock();
+    while (!m_children.empty())
+        m_child_wait->wait(m_child_lock);
+    m_child_lock->unlock();
+
+    this->close(m_socket);
+    m_socket=(ShibSocket)0;
+    return true;
+}
+
+DDF RPCListener::send(const DDF& in)
+{
+#ifdef _DEBUG
+    saml::NDC ndc("send");
+#endif
+
+    // Serialize data for transmission.
+    ostringstream os;
+    os << in;
+    shibrpc_args_3 arg;
+    string ostr(os.str());
+    arg.xml = const_cast<char*>(ostr.c_str());
+
+    log->debug("sending message: %s", in.name());
+
+    shibrpc_ret_3 ret;
     memset(&ret, 0, sizeof(ret));
 
     // Loop on the RPC in case we lost contact the first time through
@@ -170,15 +233,15 @@ void RPCListener::sessionNew(
     RPC rpc(*m_rpcpool);
     do {
         clnt = rpc->connect(this);
-        clnt_stat status = shibrpc_new_session_2(&arg, &ret, clnt);
+        clnt_stat status = shibrpc_call_3(&arg, &ret, clnt);
         if (status != RPC_SUCCESS) {
             // FAILED.  Release, disconnect, and retry
-            log->error("RPC Failure: (CLIENT: %p) (%d): %s", clnt, status, clnt_spcreateerror("shibrpc_new_session_2"));
+            log->error("RPC Failure: (CLIENT: %p) (%d): %s", clnt, status, clnt_spcreateerror("shibrpc_call_3"));
             rpc->disconnect(this);
             if (retry)
                 retry--;
             else
-                throw ListenerException("Failure passing session setup information to listener.");
+                throw ListenerException("Failure sending remoted message ($1).",params(1,in.name()));
         }
         else {
             // SUCCESS.  Pool and continue
@@ -186,333 +249,78 @@ void RPCListener::sessionNew(
         }
     } while (retry>=0);
 
-    if (ret.status && *ret.status)
-        log->debug("RPC completed with exception: %s", ret.status);
-    else
-        log->debug("RPC completed successfully");
+    log->debug("call completed, unmarshalling response message");
 
-    SAMLException* except=NULL;
-    if (ret.status && *ret.status) {
+    // Deserialize data.
+    DDF out;
+    try {
+        istringstream is(ret.xml);
+        is >> out;
+        clnt_freeres(clnt, (xdrproc_t)xdr_shibrpc_ret_3, (caddr_t)&ret);
+        rpc.pool();
+    }
+    catch (...) {
+        log->error("caught exception while unmarshalling response message");
+        clnt_freeres(clnt, (xdrproc_t)xdr_shibrpc_ret_3, (caddr_t)&ret);
+        rpc.pool();
+        throw;
+    }
+    
+    // Check for exception to unmarshall and throw, otherwise return.
+    if (out.isstring() && out.name() && !strcmp(out.name(),"exception")) {
         // Reconstitute exception object.
+        DDFJanitor jout(out);
+        SAMLException* except=NULL;
         try { 
-            istringstream estr(ret.status);
-            except=SAMLException::getInstance(estr);
+            istringstream es(out.string());
+            SAMLException* except=SAMLException::getInstance(es);
         }
         catch (SAMLException& e) {
             log->error("caught SAML Exception while building the SAMLException: %s", e.what());
-            log->error("XML was: %s", ret.status);
-            clnt_freeres(clnt, (xdrproc_t)xdr_shibrpc_new_session_ret_2, (caddr_t)&ret);
-            rpc.pool();
-            throw FatalProfileException("An unrecoverable error occurred while creating your session.");
+            log->error("XML was: %s", out.string());
+            throw ListenerException("Remote call failed with an unparsable exception.");
         }
 #ifndef _DEBUG
         catch (...) {
             log->error("caught unknown exception building SAMLException");
-            log->error("XML was: %s", ret.status);
-            clnt_freeres(clnt, (xdrproc_t)xdr_shibrpc_new_session_ret_2, (caddr_t)&ret);
-            rpc.pool();
+            log->error("XML was: %s", out.string());
             throw;
         }
 #endif
-    }
-    else {
-        log->debug("new session from IdP (%s) with key (%s)", ret.provider_id, ret.cookie);
-        cookie = ret.cookie;
-        provider_id = ret.provider_id;
-        if (ret.target)
-            target = ret.target;
-    }
-
-    clnt_freeres(clnt, (xdrproc_t)xdr_shibrpc_new_session_ret_2, (caddr_t)&ret);
-    rpc.pool();
-    if (except) {
         auto_ptr<SAMLException> wrapper(except);
         wrapper->raise();
     }
+
+    return out;
 }
 
-EntryWrapper::EntryWrapper(shibrpc_get_session_ret_2& ret, Category& log)
+bool RPCListener::log_error() const
 {
-    profile = static_cast<ShibProfile>(ret.profile);
-    int minor = (profile==SAML10_POST || profile==SAML10_ARTIFACT) ? 0 : 1;
-
-    provider_id = ret.provider_id;
-
-    // Copy over the XML.
-    if (ret.auth_statement)
-        statement=ret.auth_statement;
-    if (ret.attr_response_pre)
-        pre_response = ret.attr_response_pre;
-    if (ret.attr_response_post)
-        post_response = ret.attr_response_post;
-
-    istringstream authstream(ret.auth_statement);
-    log.debugStream() << "trying to decode authentication statement: "
-        << ((ret.auth_statement && *ret.auth_statement) ? ret.auth_statement : "(none)") << CategoryStream::ENDLINE;
-    auto_ptr<SAMLAuthenticationStatement> s(
-    	(ret.auth_statement && *ret.auth_statement) ? new SAMLAuthenticationStatement(authstream) : NULL
-    	);
-
-    istringstream prestream(ret.attr_response_pre);
-    log.debugStream() << "trying to decode unfiltered attribute response: "
-        << ((ret.attr_response_pre && *ret.attr_response_pre) ? ret.attr_response_pre : "(none)") << CategoryStream::ENDLINE;
-    auto_ptr<SAMLResponse> pre(
-    	(ret.attr_response_pre && *ret.attr_response_pre) ? new SAMLResponse(prestream,minor) : NULL
-    	);
-
-    istringstream poststream(ret.attr_response_post);
-    log.debugStream() << "trying to decode filtered attribute response: "
-        << ((ret.attr_response_post && *ret.attr_response_post) ? ret.attr_response_post : "(none)") << CategoryStream::ENDLINE;
-    auto_ptr<SAMLResponse> post(
-    	(ret.attr_response_post && *ret.attr_response_post) ? new SAMLResponse(poststream,minor) : NULL
-    	);
-
-    p_statement=s.release();
-    p_pre_response = pre.release();
-    p_post_response = post.release();
-}
-
-void RPCListener::sessionGet(
-    const IApplication* application,
-    const char* cookie,
-    const char* ip,
-    ISessionCacheEntry** pentry
-    ) const
-{
-#ifdef _DEBUG
-    saml::NDC ndc("sessionGet");
+#ifdef WIN32
+    int rc=WSAGetLastError();
+#else
+    int rc=errno;
 #endif
-
-    if (!cookie || !*cookie) {
-        log->error("no session key provided");
-        throw InvalidSessionException("No session key was provided.");
-    }
-    else if (strchr(cookie,'=')) {
-        log->error("cookie value not extracted successfully, probably overlapping cookies across domains");
-        throw InvalidSessionException("The session key wasn't extracted successfully from the browser cookie.");
-    }
-
-    if (!ip || !*ip) {
-        log->error("invalid client Address");
-        throw FatalProfileException("Invalid client address.");
-    }
-
-    log->debug("getting session for client at (%s)", ip);
-    log->debug("session cookie (%s)", cookie);
-
-    shibrpc_get_session_args_2 arg;
-    arg.cookie = (char*)cookie;
-    arg.client_addr = (char*)ip;
-    arg.application_id = (char*)application->getId();
-
-    shibrpc_get_session_ret_2 ret;
-    memset (&ret, 0, sizeof(ret));
-
-    // Loop on the RPC in case we lost contact the first time through
-    int retry = 1;
-    CLIENT *clnt;
-    RPC rpc(*m_rpcpool);
-    do {
-        clnt = rpc->connect(this);
-        clnt_stat status = shibrpc_get_session_2(&arg, &ret, clnt);
-        if (status != RPC_SUCCESS) {
-            // FAILED.  Release, disconnect, and try again...
-            log->error("RPC Failure: (CLIENT: %p) (%d) %s", clnt, status, clnt_spcreateerror("shibrpc_get_session_2"));
-            rpc->disconnect(this);
-            if (retry)
-                retry--;
-            else
-                throw ListenerException("Failure requesting session information from listener.");
-        }
-        else {
-            // SUCCESS
-            retry = -1;
-        }
-    } while (retry>=0);
-
-    if (ret.status && *ret.status)
-        log->debug("RPC completed with exception: %s", ret.status);
-    else
-        log->debug("RPC completed successfully");
-
-    SAMLException* except=NULL;
-    if (ret.status && *ret.status) {
-        // Reconstitute exception object.
-        try { 
-            istringstream estr(ret.status);
-            except=SAMLException::getInstance(estr);
-        }
-        catch (SAMLException& e) {
-            log->error("caught SAML Exception while building the SAMLException: %s", e.what());
-            log->error("XML was: %s", ret.status);
-            clnt_freeres(clnt, (xdrproc_t)xdr_shibrpc_get_session_ret_2, (caddr_t)&ret);
-            rpc.pool();
-            throw FatalProfileException("An unrecoverable error occurred while accessing your session.");
-        }
-        catch (...) {
-            log->error("caught unknown exception building SAMLException");
-            log->error("XML was: %s", ret.status);
-            clnt_freeres(clnt, (xdrproc_t)xdr_shibrpc_get_session_ret_2, (caddr_t)&ret);
-            rpc.pool();
-            throw;
-        }
-    }
-    else {
-        try {
-            *pentry=new EntryWrapper(ret,*log);
-        }
-        catch (SAMLException& e) {
-            log->error("caught SAML exception while reconstituting session objects: %s", e.what());
-            clnt_freeres(clnt, (xdrproc_t)xdr_shibrpc_get_session_ret_2, (caddr_t)&ret);
-            rpc.pool();
-            throw;
-        }
-#ifndef _DEBUG
-        catch (...) {
-            log->error("caught unknown exception while reconstituting session objects");
-            clnt_freeres(clnt, (xdrproc_t)xdr_shibrpc_get_session_ret_2, (caddr_t)&ret);
-            rpc.pool();
-            throw;
-        }
+#ifdef HAVE_STRERROR_R
+    char buf[256];
+    memset(buf,0,sizeof(buf));
+    strerror_r(rc,buf,sizeof(buf));
+    log->error("socket call resulted in error (%d): %s",rc,isprint(*buf) ? buf : "no message");
+#else
+    const char* buf=strerror(rc);
+    log->error("socket call resulted in error (%d): %s",rc,isprint(*buf) ? buf : "no message");
 #endif
-    }
-
-    clnt_freeres(clnt, (xdrproc_t)xdr_shibrpc_get_session_ret_2, (caddr_t)&ret);
-    rpc.pool();
-    if (except) {
-        auto_ptr<SAMLException> wrapper(except);
-        wrapper->raise();
-    }
+    return false;
 }
 
-void RPCListener::sessionEnd(
-    const IApplication* application,
-    const char* cookie
-    ) const
+RPCHandle::RPCHandle(Category& log) : m_clnt(NULL), m_sock((RPCListener::ShibSocket)0), m_log(log)
 {
-#ifdef _DEBUG
-    saml::NDC ndc("sessionEnd");
-#endif
-
-    if (!cookie || !*cookie) {
-        log->error("no session key provided");
-        throw InvalidSessionException("No session key was provided.");
-    }
-    else if (strchr(cookie,'=')) {
-        log->error("cookie value not extracted successfully, probably overlapping cookies across domains");
-        throw InvalidSessionException("The session key wasn't extracted successfully from the browser cookie.");
-    }
-
-    log->debug("ending session with cookie (%s)", cookie);
-
-    shibrpc_end_session_args_2 arg;
-    arg.cookie = (char*)cookie;
-
-    shibrpc_end_session_ret_2 ret;
-    memset (&ret, 0, sizeof(ret));
-
-    // Loop on the RPC in case we lost contact the first time through
-    int retry = 1;
-    CLIENT *clnt;
-    RPC rpc(*m_rpcpool);
-    do {
-        clnt = rpc->connect(this);
-        clnt_stat status = shibrpc_end_session_2(&arg, &ret, clnt);
-        if (status != RPC_SUCCESS) {
-            // FAILED.  Release, disconnect, and try again...
-            log->error("RPC Failure: (CLIENT: %p) (%d) %s", clnt, status, clnt_spcreateerror("shibrpc_end_session_2"));
-            rpc->disconnect(this);
-            if (retry)
-                retry--;
-            else
-                throw ListenerException("Failure ending session through listener.");
-        }
-        else {
-            // SUCCESS
-            retry = -1;
-        }
-    } while (retry>=0);
-
-    if (ret.status && *ret.status)
-        log->debug("RPC completed with exception: %s", ret.status);
-    else
-        log->debug("RPC completed successfully");
-
-    SAMLException* except=NULL;
-    if (ret.status && *ret.status) {
-        // Reconstitute exception object.
-        try { 
-            istringstream estr(ret.status);
-            except=SAMLException::getInstance(estr);
-        }
-        catch (SAMLException& e) {
-            log->error("caught SAML Exception while building the SAMLException: %s", e.what());
-            log->error("XML was: %s", ret.status);
-            clnt_freeres(clnt, (xdrproc_t)xdr_shibrpc_end_session_ret_2, (caddr_t)&ret);
-            rpc.pool();
-            throw FatalProfileException("An unrecoverable error occurred while accessing your session.");
-        }
-        catch (...) {
-            log->error("caught unknown exception building SAMLException");
-            log->error("XML was: %s", ret.status);
-            clnt_freeres(clnt, (xdrproc_t)xdr_shibrpc_end_session_ret_2, (caddr_t)&ret);
-            rpc.pool();
-            throw;
-        }
-    }
-
-    clnt_freeres (clnt, (xdrproc_t)xdr_shibrpc_end_session_ret_2, (caddr_t)&ret);
-    rpc.pool();
-    if (except) {
-        auto_ptr<SAMLException> wrapper(except);
-        wrapper->raise();
-    }
-}
-
-void RPCListener::ping(int& i) const
-{
-#ifdef _DEBUG
-    saml::NDC ndc("ping");
-#endif
-
-    int result=-1;
-    log->debug("pinging with (%d)", i);
-
-    // Loop on the RPC in case we lost contact the first time through
-    int retry = 1;
-    CLIENT *clnt;
-    RPC rpc(*m_rpcpool);
-    do {
-        clnt = rpc->connect(this);
-        clnt_stat status = shibrpc_ping_2(&i, &result, clnt);
-        if (status != RPC_SUCCESS) {
-            // FAILED.  Release, disconnect, and try again...
-            log->error("RPC Failure: (CLIENT: %p) (%d) %s", clnt, status, clnt_spcreateerror("shibrpc_end_session_2"));
-            rpc->disconnect(this);
-            if (retry)
-                retry--;
-            else
-                throw ListenerException("Failure pinging listener.");
-        }
-        else {
-            // SUCCESS
-            retry = -1;
-        }
-    } while (retry>=0);
-
-    log->debug("RPC completed successfully");
-    i=result;
-    rpc.pool();
-}
-
-RPCHandle::RPCHandle(Category& log) : m_clnt(NULL), m_sock((IListener::ShibSocket)0), m_log(log)
-{
-    m_log.debug("New RPCHandle created: %p", this);
+    m_log.debug("new RPCHandle created: %p", this);
 }
 
 RPCHandle::~RPCHandle()
 {
-    m_log.debug("Destroying RPC Handle: %p", this);
+    m_log.debug("destroying RPC Handle: %p", this);
     disconnect();
 }
 
@@ -523,7 +331,7 @@ void RPCHandle::disconnect(const RPCListener* listener)
         m_clnt=NULL;
         if (listener) {
             listener->close(m_sock);
-            m_sock=(IListener::ShibSocket)0;
+            m_sock=(RPCListener::ShibSocket)0;
         }
         else {
 #ifdef WIN32
@@ -531,7 +339,7 @@ void RPCHandle::disconnect(const RPCListener* listener)
 #else
             ::close(m_sock);
 #endif
-            m_sock=(IListener::ShibSocket)0;
+            m_sock=(RPCListener::ShibSocket)0;
         }
     }
 }
@@ -548,7 +356,7 @@ CLIENT* RPCHandle::connect(const RPCListener* listener)
 
     m_log.debug("trying to connect to socket");
 
-    IListener::ShibSocket sock;
+    RPCListener::ShibSocket sock;
     if (!listener->create(sock)) {
         m_log.error("cannot create socket");
         throw ListenerException("Cannot create socket");
@@ -580,7 +388,7 @@ CLIENT* RPCHandle::connect(const RPCListener* listener)
         throw ListenerException("Cannot connect to listener process, a site adminstrator should be notified.");
     }
 
-    CLIENT* clnt = (CLIENT*)listener->getClientHandle(sock, SHIBRPC_PROG, SHIBRPC_VERS_2);
+    CLIENT* clnt = (CLIENT*)listener->getClientHandle(sock, SHIBRPC_PROG, SHIBRPC_VERS_3);
     if (!clnt) {
         const char* rpcerror = clnt_spcreateerror("RPCHandle::connect");
         m_log.crit("RPC failed for %p: %s", this, rpcerror);
@@ -632,4 +440,211 @@ void RPCHandlePool::put(RPCHandle* handle)
 RPC::RPC(RPCHandlePool& pool) : m_pool(pool)
 {
     m_handle=m_pool.get();
+}
+
+// actual function run in listener on server threads
+void* server_thread_fn(void* arg)
+{
+    ServerThread* child = (ServerThread*)arg;
+
+    // First, let's block all signals
+    Thread::mask_all_signals();
+
+    // TODO: wrap this inside some other thread hook
+    ShibTargetConfig::getConfig().getINI()->getSessionCache()->thread_init();
+    ShibTargetConfig::getConfig().getINI()->getReplayCache()->thread_init();
+
+    // Run the child until it exits.
+    child->run();
+
+    // TODO: wrap this inside some other thread hook
+    ShibTargetConfig::getConfig().getINI()->getSessionCache()->thread_end();
+    ShibTargetConfig::getConfig().getINI()->getReplayCache()->thread_end();
+
+    // Now we can clean up and exit the thread.
+    delete child;
+    return NULL;
+}
+
+ServerThread::ServerThread(RPCListener::ShibSocket& s, RPCListener* listener)
+    : m_sock(s), m_child(NULL), m_listener(listener)
+{
+    // Create the child thread
+    m_child = Thread::create(server_thread_fn, (void*)this);
+    m_child->detach();
+}
+
+ServerThread::~ServerThread()
+{
+    // Then lock the children map, remove this socket/thread, signal waiters, and return
+    m_listener->m_child_lock->lock();
+    m_listener->m_children.erase(m_sock);
+    m_listener->m_child_lock->unlock();
+    m_listener->m_child_wait->signal();
+  
+    delete m_child;
+}
+
+void ServerThread::run()
+{
+    // Before starting up, make sure we fully "own" this socket.
+    m_listener->m_child_lock->lock();
+    while (m_listener->m_children.find(m_sock)!=m_listener->m_children.end())
+        m_listener->m_child_wait->wait(m_listener->m_child_lock);
+    m_listener->m_children[m_sock] = m_child;
+    m_listener->m_child_lock->unlock();
+    
+    if (!svc_create())
+        return;
+
+    fd_set readfds;
+    struct timeval tv = { 0, 0 };
+
+    while(!*(m_listener->m_shutdown) && FD_ISSET(m_sock, &svc_fdset)) {
+        FD_ZERO(&readfds);
+        FD_SET(m_sock, &readfds);
+        tv.tv_sec = 1;
+
+        switch (select(m_sock+1, &readfds, 0, 0, &tv)) {
+#ifdef WIN32
+        case SOCKET_ERROR:
+#else
+        case -1:
+#endif
+            if (errno == EINTR) continue;
+            m_listener->log_error();
+            m_listener->log->error("select() on incoming request socket (%u) returned error", m_sock);
+            return;
+
+        case 0:
+            break;
+
+        default:
+            svc_getreqset(&readfds);
+        }
+    }
+}
+
+bool ServerThread::svc_create()
+{
+    /* Wrap an RPC Service around the new connection socket. */
+    SVCXPRT* transp = svcfd_create(m_sock, 0, 0);
+    if (!transp) {
+#ifdef _DEBUG
+        NDC ndc("svc_create");
+#endif
+        m_listener->log->error("failed to wrap RPC service around socket");
+        return false;
+    }
+
+    /* Register the SHIBRPC RPC Program */
+    if (!svc_register (transp, SHIBRPC_PROG, SHIBRPC_VERS_3, shibrpc_prog_3, 0)) {
+#ifdef HAVE_WORKING_SVC_DESTROY
+        svc_destroy(transp);
+#else
+        /* we have to inline svc_destroy because we can't pass in the xprt variable */
+        struct tcp_conn *cd = (struct tcp_conn *)transp->xp_p1;
+        xprt_unregister(transp);
+        close(transp->xp_sock);
+        if (transp->xp_port != 0) {
+            /* a rendezvouser socket */
+            transp->xp_port = 0;
+        }
+        else {
+            /* an actual connection socket */
+            XDR_DESTROY(&(cd->xdrs));
+        }
+        mem_free((caddr_t)cd, sizeof(struct tcp_conn));
+        mem_free((caddr_t)transp, sizeof(SVCXPRT));
+#endif
+#ifdef _DEBUG
+        NDC ndc("svc_create");
+#endif
+        m_listener->log->error("failed to register RPC program");
+        return false;
+    }
+
+    return true;
+}
+
+static string get_threadid()
+{
+  static u_long counter = 0;
+  ostringstream buf;
+  buf << "[" << counter++ << "]";
+  return buf.str();
+}
+
+extern "C" bool_t shibrpc_call_3_svc(
+    shibrpc_args_3 *argp,
+    shibrpc_ret_3 *result,
+    struct svc_req *rqstp
+    )
+{
+    string ctx=get_threadid();
+    saml::NDC ndc(ctx);
+    Category& log = Category::getInstance("shibd.Listener");
+
+    if (!argp || !result) {
+        log.error("RPC Argument Error");
+        return FALSE;
+    }
+
+    memset(result, 0, sizeof (*result));
+
+    DDF out;
+    DDFJanitor jout(out);
+
+    try {
+        // Lock the configuration.
+        IConfig* conf=ShibTargetConfig::getConfig().getINI();
+        Locker locker(conf);
+
+        // Get listener interface.
+        IListener* listener=conf->getListener();
+        if (!listener)
+            throw ListenerException("No listener implementation found to process incoming message.");
+        
+        // Unmarshal the message.
+        DDF in;
+        DDFJanitor jin(in);
+        istringstream is(argp->xml);
+        is >> in;
+
+        // Dispatch the message.
+        out=listener->receive(in);
+    }
+    catch (SAMLException &e) {
+        log.error("error processing incoming message: %s", e.what());
+        ostringstream os;
+        os << e;
+        out=DDF("exception").string(os.str().c_str());
+    }
+#ifndef _DEBUG
+    catch (...) {
+        log.error("unexpected error processing incoming message");
+        ListenerException ex("An unexpected error occurred while processing an incoming message.");
+        ostringstream os;
+        os << ex;
+        out=DDF("exception").string(os.str().c_str());
+    }
+#endif
+    
+    // Return whatever's available.
+    ostringstream xmlout;
+    xmlout << out;
+    result->xml=strdup(xmlout.str().c_str());
+    return TRUE;
+}
+
+extern "C" int
+shibrpc_prog_3_freeresult (SVCXPRT *transp, xdrproc_t xdr_result, caddr_t result)
+{
+	xdr_free (xdr_result, result);
+
+	/*
+	 * Insert additional freeing code here, if needed
+	 */
+
+	return 1;
 }
