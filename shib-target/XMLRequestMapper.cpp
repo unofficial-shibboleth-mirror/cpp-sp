@@ -24,6 +24,7 @@
 
 #include "internal.h"
 
+#include <algorithm>
 #include <log4cpp/Category.hh>
 
 using namespace std;
@@ -241,8 +242,7 @@ Override::Override(const DOMElement* e, Category& log, const Override* base) : m
 Override::~Override()
 {
     delete m_acl;
-    for (map<string,Override*>::iterator i=m_map.begin(); i!=m_map.end(); i++)
-        delete i->second;
+    for_each(m_map.begin(),m_map.end(),cleanup<string,Override>);
 }
 
 pair<bool,bool> Override::getBool(const char* name, const char* ns) const
