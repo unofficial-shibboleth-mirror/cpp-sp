@@ -23,9 +23,13 @@
  */
 
 #include "config_win32.h"
-#include "shar-utils.h"
 
-extern int shar_run;                    // signals shutdown to Unix side
+#define _CRT_NONSTDC_NO_DEPRECATE 1
+#define _CRT_SECURE_NO_DEPRECATE 1
+
+#include <shib-target/shib-target.h>
+
+extern bool shibd_shutdown;                    // signals shutdown to Unix side
 extern const char* shar_schemadir;
 extern const char* shar_config;
 extern bool shar_checkonly;
@@ -195,7 +199,7 @@ VOID ServiceStop()
 {
     if (!bConsole)
         LogEvent(NULL, EVENTLOG_INFORMATION_TYPE, 7701, NULL, "shibd stopping...");
-    shar_run=0;
+    shibd_shutdown=true;
 }
 
 
