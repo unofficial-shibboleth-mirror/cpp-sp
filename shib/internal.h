@@ -26,6 +26,8 @@
 #define __shib_internal_h__
 
 #ifdef WIN32
+# define _CRT_NONSTDC_NO_DEPRECATE 1
+# define _CRT_SECURE_NO_DEPRECATE 1
 # define SHIB_EXPORTS __declspec(dllexport)
 #endif
 
