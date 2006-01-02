@@ -22,6 +22,7 @@
  * $Id$
  */
 
+
 // eventually we might be able to support autoconf via cygwin...
 #if defined (_MSC_VER) || defined(__BORLANDC__)
 # include "config_win32.h"
@@ -29,18 +30,21 @@
 # include "config.h"
 #endif
 
+#ifdef WIN32
+# define _CRT_NONSTDC_NO_DEPRECATE 1
+# define _CRT_SECURE_NO_DEPRECATE 1
+#endif
+
+#include <shib-target/shib-target.h>
+
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #include <sys/select.h>
 #endif
 
 #include <stdio.h>
-#include <errno.h>
 #include <signal.h>
-
-#include "shar-utils.h"
 #include <log4cpp/Category.hh>
-
 
 using namespace std;
 using namespace saml;
@@ -48,78 +52,12 @@ using namespace shibboleth;
 using namespace shibtarget;
 using namespace log4cpp;
 
-#ifndef FD_SETSIZE
-# define FD_SETSIZE 1024
-#endif
-
-extern "C" void shibrpc_prog_2(struct svc_req* rqstp, register SVCXPRT* transp);
-
-// Declare a "MemoryListener" that our server methods will forward their work to.
-IListener* g_MemoryListener = NULL;
-
-int shar_run = 1;
+bool shibd_shutdown = false;
 const char* shar_config = NULL;
 const char* shar_schemadir = NULL;
 bool shar_checkonly = false;
 static int unlink_socket = 0;
 const char* pidfile = NULL;
-
-static bool new_connection(IListener::ShibSocket& listener, const Iterator<ShibRPCProtocols>& protos)
-{
-    IListener::ShibSocket sock;
-
-    // Accept the connection.
-    if (!ShibTargetConfig::getConfig().getINI()->getListener()->accept(listener, sock))
-        return false;
-
-    // We throw away the result because the children manage themselves...
-    try {
-        new SharChild(sock,protos);
-    }
-    catch (...) {
-        saml::NDC ndc("new_connection");
-        Category& log=Category::getInstance("shibd");
-        log.crit("error starting new child thread to service request");
-        return false;
-    }
-    return true;
-}
-
-static void shar_svc_run(IListener::ShibSocket& listener, const Iterator<ShibRPCProtocols>& protos)
-{
-#ifdef _DEBUG
-    saml::NDC ndc("shar_svc_run");
-#endif
-    Category& log=Category::getInstance("shibd");
-
-    while (shar_run) {
-        fd_set readfds;
-        FD_ZERO(&readfds);
-        FD_SET(listener, &readfds);
-        struct timeval tv = { 0, 0 };
-        tv.tv_sec = 5;
-    
-        switch (select(listener + 1, &readfds, 0, 0, &tv)) {
-#ifdef WIN32
-            case SOCKET_ERROR:
-#else
-            case -1:
-#endif
-                if (errno == EINTR) continue;
-                SHARUtils::log_error();
-                log.error("select() on main listener socket failed");
-                return;
-        
-            case 0:
-                continue;
-        
-            default:
-                if (!new_connection(listener, protos))
-                    log.crit("new_connection failed");
-        }
-    }
-    log.info("shar_svc_run ended");
-}
 
 #ifdef WIN32
 
@@ -162,11 +100,6 @@ int MyAllocHook(int nAllocType, void *pvData,
 
 int real_main(int preinit)
 {
-    static IListener::ShibSocket sock;
-    ShibRPCProtocols protos[1] = {
-        { SHIBRPC_PROG, SHIBRPC_VERS_2, shibrpc_prog_2 }
-    };
-
     ShibTargetConfig& conf=ShibTargetConfig::getConfig();
     if (preinit) {
 
@@ -178,8 +111,8 @@ int real_main(int preinit)
             ShibTargetConfig::Trust |
             ShibTargetConfig::Credentials |
             ShibTargetConfig::AAP |
-            ShibTargetConfig::GlobalExtensions |
-            (shar_checkonly ? (ShibTargetConfig::LocalExtensions | ShibTargetConfig::RequestMapper) : ShibTargetConfig::Logging)
+            ShibTargetConfig::OutOfProcess |
+            (shar_checkonly ? (ShibTargetConfig::InProcess | ShibTargetConfig::RequestMapper) : ShibTargetConfig::Logging)
             );
         if (!shar_config)
             shar_config=getenv("SHIBCONFIG");
@@ -199,35 +132,6 @@ int real_main(int preinit)
             fprintf(stdout, "overall configuration is loadable, check console for non-fatal problems\n");
             return 0;
         }
-        
-        // Build an internal "listener" to handle the work.
-        IPlugIn* plugin=SAMLConfig::getConfig().getPlugMgr().newPlugin(shibtarget::XML::MemoryListenerType,NULL);
-        g_MemoryListener=dynamic_cast<IListener*>(plugin);
-        if (!g_MemoryListener) {
-            delete plugin;
-            fprintf(stderr, "MemoryListener plugin failed to load");
-            conf.shutdown();
-            return -3;
-        }
-
-        const IListener* listener=conf.getINI()->getListener();
-        
-        // Create the SHAR listener socket
-        if (!listener->create(sock)) {
-            delete g_MemoryListener;
-            conf.shutdown();
-            return -4;
-        }
-
-        // Bind to the proper port
-        if (!listener->bind(sock)) {
-            delete g_MemoryListener;
-            conf.shutdown();
-            return -5;
-        }
-
-        // Initialize the SHAR Utilitites
-        SHARUtils::init();
     }
     else {
 
@@ -235,17 +139,15 @@ int real_main(int preinit)
 
         // Run the listener
         if (!shar_checkonly) {
-            shar_svc_run(sock, ArrayIterator<ShibRPCProtocols>(protos,1));
-            fprintf(stdout,"shar_svc_run returned\n");
 
-            // Finalize the SHAR, close all clients
-            SHARUtils::fini();
-            conf.getINI()->getListener()->close(sock);
+            // Run the listener.
+            if (!conf.getINI()->getListener()->run(&shibd_shutdown)) {
+                fprintf(stderr, "listener failed to enter listen loop\n");
+                return -3;
+            }
         }
 
-        delete g_MemoryListener;
         conf.shutdown();
-        fprintf(stdout, "shibd shutdown complete\n");
     }
     return 0;
 }
@@ -254,20 +156,17 @@ int real_main(int preinit)
 
 static void term_handler(int arg)
 {
-    shar_run = 0;
+    shibd_shutdown = true;
 }
 
 static int setup_signals(void)
 {
-    NDC ndc("setup_signals");
-    
     struct sigaction sa;
     memset(&sa, 0, sizeof (sa));
     sa.sa_handler = SIG_IGN;
     sa.sa_flags = SA_RESTART;
 
     if (sigaction(SIGPIPE, &sa, NULL) < 0) {
-        SHARUtils::log_error();
         return -1;
     }
 
@@ -276,19 +175,15 @@ static int setup_signals(void)
     sa.sa_flags = SA_RESTART;
 
     if (sigaction(SIGHUP, &sa, NULL) < 0) {
-        SHARUtils::log_error();
         return -1;
     }
     if (sigaction(SIGINT, &sa, NULL) < 0) {
-        SHARUtils::log_error();
         return -1;
     }
     if (sigaction(SIGQUIT, &sa, NULL) < 0) {
-        SHARUtils::log_error();
         return -1;
     }
     if (sigaction(SIGTERM, &sa, NULL) < 0) {
-        SHARUtils::log_error();
         return -1;
     }
     return 0;
@@ -336,11 +231,6 @@ static int parse_args(int argc, char* argv[])
 
 int main(int argc, char *argv[])
 {
-    IListener::ShibSocket sock;
-    ShibRPCProtocols protos[] = {
-        { SHIBRPC_PROG, SHIBRPC_VERS_2, shibrpc_prog_2 }
-    };
-
     if (setup_signals() != 0)
         return -1;
 
@@ -365,8 +255,8 @@ int main(int argc, char *argv[])
         ShibTargetConfig::Trust |
         ShibTargetConfig::Credentials |
         ShibTargetConfig::AAP |
-        ShibTargetConfig::GlobalExtensions |
-        (shar_checkonly ? (ShibTargetConfig::LocalExtensions | ShibTargetConfig::RequestMapper) : ShibTargetConfig::Logging)
+        ShibTargetConfig::OutOfProcess |
+        (shar_checkonly ? (ShibTargetConfig::InProcess | ShibTargetConfig::RequestMapper) : ShibTargetConfig::Logging)
         );
     if (!conf.init(shar_schemadir) || !conf.load(shar_config)) {
         fprintf(stderr, "configuration is invalid, check console for specific problems\n");
@@ -376,32 +266,6 @@ int main(int argc, char *argv[])
     if (shar_checkonly)
         fprintf(stderr, "overall configuration is loadable, check console for non-fatal problems\n");
     else {
-
-        // Build an internal "listener" to handle the work.
-        IPlugIn* plugin=SAMLConfig::getConfig().getPlugMgr().newPlugin(shibtarget::XML::MemoryListenerType,NULL);
-        g_MemoryListener=dynamic_cast<IListener*>(plugin);
-        if (!g_MemoryListener) {
-            delete plugin;
-            fprintf(stderr, "MemoryListener plugin failed to load");
-            conf.shutdown();
-            return -3;
-        }
-
-        const IListener* listener=conf.getINI()->getListener();
-        
-        // Create the SHAR listener socket
-        if (!listener->create(sock)) {
-            delete g_MemoryListener;
-            conf.shutdown();
-            return -4;
-        }
-    
-        // Bind to the proper port
-        if (!listener->bind(sock, unlink_socket==1)) {
-            delete g_MemoryListener;
-            conf.shutdown();
-            return -5;
-        }
 
         // Write the pid file
         if (pidfile) {
@@ -414,24 +278,16 @@ int main(int argc, char *argv[])
             }
         }
     
-        // Initialize the SHAR Utilitites
-        SHARUtils::init();
-    
         // Run the listener
-        shar_svc_run(sock, ArrayIterator<ShibRPCProtocols>(protos,1));
-    
-        /* Finalize the SHAR, close all clients */
-        SHARUtils::fini();
-        fprintf(stderr, "shar utils finalized\n");
-    
-        listener->close(sock);
-        fprintf(stderr, "shib socket closed\n");
+        if (!conf.getINI()->getListener()->run(&shibd_shutdown)) {
+            fprintf(stderr, "listener failed to enter listen loop\n");
+            return -3;
+        }
     }
 
     conf.shutdown();
     if (pidfile)
         unlink(pidfile);
-    fprintf(stderr, "shibd shutdown complete\n");
     return 0;
 }
 
