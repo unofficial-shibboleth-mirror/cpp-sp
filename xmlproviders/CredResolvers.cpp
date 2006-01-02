@@ -26,7 +26,7 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-
+#include <algorithm>
 #include <openssl/pkcs12.h>
 #include <log4cpp/Category.hh>
 #include <xsec/enc/OpenSSL/OpenSSLCryptoX509.hpp>
@@ -35,6 +35,7 @@
 
 using namespace saml;
 using namespace shibboleth;
+using namespace xmlproviders;
 using namespace log4cpp;
 using namespace std;
 
@@ -326,10 +327,8 @@ FileResolver::FileResolver(const DOMElement* e)
 
 FileResolver::~FileResolver()
 {
-    for (vector<X509*>::iterator i=m_certs.begin(); i!=m_certs.end(); i++)
-        X509_free(*i);
-    for (vector<XSECCryptoX509*>::iterator j=m_xseccerts.begin(); j!=m_xseccerts.end(); j++)
-        delete (*j);
+    for_each(m_certs.begin(),m_certs.end(),X509_free);
+    for_each(m_xseccerts.begin(),m_xseccerts.end(),cleanup<XSECCryptoX509>);
 }
 
 void FileResolver::attach(void* ctx) const

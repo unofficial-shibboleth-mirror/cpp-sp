@@ -24,11 +24,13 @@
 
 #include "internal.h"
 
+#include <algorithm>
 #include <sys/types.h>
 #include <sys/stat.h>
 
 #include <log4cpp/Category.hh>
 
+using namespace xmlproviders;
 using namespace shibboleth;
 using namespace saml;
 using namespace log4cpp;
@@ -145,8 +147,7 @@ void XMLCredentialsImpl::init()
 
 XMLCredentialsImpl::~XMLCredentialsImpl()
 {
-    for (resolvermap_t::iterator j=m_resolverMap.begin(); j!=m_resolverMap.end(); j++)
-        delete j->second;
+    for_each(m_resolverMap.begin(),m_resolverMap.end(),cleanup<string,ICredResolver>);
 }
 
 const ICredResolver* XMLCredentials::lookup(const char* id) const

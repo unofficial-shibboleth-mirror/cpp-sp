@@ -24,6 +24,7 @@
 
 #include "internal.h"
 
+#include <algorithm>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -37,6 +38,7 @@
 #include <xsec/enc/XSECCryptoException.hpp>
 #include <xsec/enc/XSECKeyInfoResolverDefault.hpp>
 
+using namespace xmlproviders;
 using namespace shibboleth;
 using namespace saml;
 using namespace log4cpp;
@@ -150,10 +152,8 @@ X509_STORE* XMLTrustImpl::KeyAuthority::getX509Store()
 
 XMLTrustImpl::KeyAuthority::~KeyAuthority()
 {
-    for (vector<X509*>::iterator i=m_certs.begin(); i!=m_certs.end(); i++)
-        X509_free(*i);
-    for (vector<X509_CRL*>::iterator j=m_crls.begin(); j!=m_crls.end(); j++)
-        X509_CRL_free(*j);
+    for_each(m_certs.begin(),m_certs.end(),X509_free);
+    for_each(m_crls.begin(),m_crls.end(),X509_CRL_free);
 }
 
 class KeyInfoNodeFilter : public DOMNodeFilter
@@ -345,10 +345,8 @@ void XMLTrustImpl::init()
 
 XMLTrustImpl::~XMLTrustImpl()
 {
-    for (vector<KeyAuthority*>::iterator i=m_keyauths.begin(); i!=m_keyauths.end(); i++)
-        delete (*i);
-    for (vector<DSIGKeyInfoList*>::iterator j=m_keybinds.begin(); j!=m_keybinds.end(); j++)
-        delete (*j);
+    for_each(m_keyauths.begin(),m_keyauths.end(),cleanup<KeyAuthority>);
+    for_each(m_keybinds.begin(),m_keybinds.end(),cleanup<DSIGKeyInfoList>);
 }
 
 XMLTrust::XMLTrust(const DOMElement* e) : ReloadableXMLFile(e), m_delegate(NULL)
@@ -404,8 +402,7 @@ XMLTrust::XMLTrust(const DOMElement* e) : ReloadableXMLFile(e), m_delegate(NULL)
 XMLTrust::~XMLTrust()
 {
     delete m_delegate;
-    for (vector<KeyInfoResolver*>::iterator i=m_resolvers.begin(); i!=m_resolvers.end(); i++)
-        delete *i;
+    for_each(m_resolvers.begin(),m_resolvers.end(),cleanup<KeyInfoResolver>);
 }
 
 static int error_callback(int ok, X509_STORE_CTX* ctx)
@@ -485,7 +482,7 @@ bool XMLTrust::validate(void* certEE, const Iterator<void*>& certChain, const IR
 #ifdef HAVE_STRCASECMP
                 if (!strcasecmp(n->c_str(),subjectstr.c_str()) || !strcasecmp(n->c_str(),subjectstr2.c_str())) {
 #else
-                if (!stricmp(n->c_str(),subjectstr.c_str()) || !stricmp(n->c_str(),subjectstr2.c_str())) {
+                if (!_stricmp(n->c_str(),subjectstr.c_str()) || !_stricmp(n->c_str(),subjectstr2.c_str())) {
 #endif
                     log.info("matched full subject DN to a key name (%s)", n->c_str());
                     checkName=false;
@@ -510,7 +507,7 @@ bool XMLTrust::validate(void* certEE, const Iterator<void*>& certChain, const IR
 #ifdef HAVE_STRCASECMP
                                 if (!strncasecmp(altptr,n->c_str(),altlen)) {
 #else
-                                if (!strnicmp(altptr,n->c_str(),altlen)) {
+                                if (!_strnicmp(altptr,n->c_str(),altlen)) {
 #endif
                                     log.info("matched DNS/URI subjectAltName to a key name (%s)", n->c_str());
                                     checkName=false;
@@ -530,7 +527,7 @@ bool XMLTrust::validate(void* certEE, const Iterator<void*>& certChain, const IR
 #ifdef HAVE_STRCASECMP
                             if (!strcasecmp(buf,n->c_str())) {
 #else
-                            if (!stricmp(buf,n->c_str())) {
+                            if (!_stricmp(buf,n->c_str())) {
 #endif
                                 log.info("matched subject CN to a key name (%s)", n->c_str());
                                 checkName=false;

@@ -21,19 +21,22 @@
 */
 
 #include "internal.h"
-#include <shib-target/shib-target.h>
 
+#include <algorithm>
+
+#include <shib-target/shib-target.h>
 #include <log4cpp/Category.hh>
 
 #ifndef HAVE_STRCASECMP
-# define strcasecmp stricmp
+# define strcasecmp _stricmp
 #endif
 
-using namespace std;
-using namespace log4cpp;
 using namespace saml;
 using namespace shibboleth;
 using namespace shibtarget;
+using namespace xmlproviders;
+using namespace std;
+using namespace log4cpp;
 
 namespace {
     struct IAuthz {
@@ -136,8 +139,8 @@ bool Rule::authorized(ShibTarget* st, ISessionCacheEntry* entry) const
     }
     
     // Find the corresponding attribute. This isn't very efficient...
-    ISessionCacheEntry::CachedResponseSAML cr=entry->getResponseSAML();
-    Iterator<SAMLAssertion*> a_iter(cr.filtered ? cr.filtered->getAssertions() : EMPTY(SAMLAssertion*));
+    pair<const char*,const SAMLResponse*> filtered=entry->getFilteredTokens(false,true);
+    Iterator<SAMLAssertion*> a_iter(filtered.second ? filtered.second->getAssertions() : EMPTY(SAMLAssertion*));
     while (a_iter.hasNext()) {
         SAMLAssertion* assert=a_iter.next();
         Iterator<SAMLStatement*> statements=assert->getStatements();
@@ -210,8 +213,7 @@ Operator::Operator(const DOMElement* e)
 
 Operator::~Operator()
 {
-    for (vector<IAuthz*>::iterator i=m_operands.begin(); i!=m_operands.end(); i++)
-        delete *i;
+    for_each(m_operands.begin(),m_operands.end(),cleanup<IAuthz>);
 }
 
 bool Operator::authorized(ShibTarget* st, ISessionCacheEntry* entry) const

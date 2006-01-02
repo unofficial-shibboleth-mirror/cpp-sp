@@ -25,6 +25,7 @@
 
 #include "internal.h"
 
+#include <algorithm>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -39,6 +40,7 @@
 #include <xsec/framework/XSECException.hpp>
 #include <xsec/framework/XSECProvider.hpp>
 
+using namespace xmlproviders;
 using namespace shibboleth;
 using namespace saml;
 using namespace log4cpp;
@@ -605,8 +607,7 @@ XMLMetadataImpl::KeyDescriptor::KeyDescriptor(const DOMElement* e) : m_root(e), 
 
 XMLMetadataImpl::KeyDescriptor::~KeyDescriptor()
 {
-    for (vector<const XENCEncryptionMethod*>::iterator i=m_methods.begin(); i!=m_methods.end(); i++)
-        delete const_cast<XENCEncryptionMethod*>(*i);
+    for_each(m_methods.begin(),m_methods.end(),cleanup<XENCEncryptionMethod>);
     delete m_klist;
 }
 
@@ -651,8 +652,7 @@ XMLMetadataImpl::KeyAuthority::KeyAuthority(const DOMElement* e) : m_depth(1)
 
 XMLMetadataImpl::KeyAuthority::~KeyAuthority()
 {
-    for (vector<DSIGKeyInfoList*>::iterator i=m_klists.begin(); i!=m_klists.end(); i++)
-        delete (*i);
+    for_each(m_klists.begin(),m_klists.end(),cleanup<DSIGKeyInfoList>);
 }
 
 XMLMetadataImpl::Role::Role(const EntityDescriptor* provider, time_t validUntil, const DOMElement* e)
@@ -705,10 +705,8 @@ XMLMetadataImpl::Role::~Role()
     delete m_org;
     delete m_errorURL;
     if (m_protocolEnumCopy) XMLString::release(&m_protocolEnumCopy);
-    for (vector<const IKeyDescriptor*>::iterator i=m_keys.begin(); i!=m_keys.end(); i++)
-        delete const_cast<IKeyDescriptor*>(*i);
-    for (vector<const IContactPerson*>::iterator j=m_contacts.begin(); j!=m_contacts.end(); j++)
-        delete const_cast<IContactPerson*>(*j);
+    for_each(m_keys.begin(),m_keys.end(),cleanup<IKeyDescriptor>);
+    for_each(m_contacts.begin(),m_contacts.end(),cleanup<IContactPerson>);
 }
 
 bool XMLMetadataImpl::Role::hasSupport(const XMLCh* protocol) const
@@ -861,8 +859,7 @@ XMLMetadataImpl::IDPRole::IDPRole(const EntityDescriptor* provider, time_t valid
 
 XMLMetadataImpl::IDPRole::~IDPRole()
 {
-    for (vector<const SAMLAttribute*>::iterator i=m_attrs.begin(); i!=m_attrs.end(); i++)
-        delete const_cast<SAMLAttribute*>(*i);
+    for_each(m_attrs.begin(),m_attrs.end(),cleanup<SAMLAttribute>);
 }
 
 XMLMetadataImpl::AARole::AARole(const EntityDescriptor* provider, time_t validUntil, const DOMElement* e)
@@ -946,8 +943,7 @@ XMLMetadataImpl::AARole::AARole(const EntityDescriptor* provider, time_t validUn
 
 XMLMetadataImpl::AARole::~AARole()
 {
-    for (vector<const SAMLAttribute*>::iterator i=m_attrs.begin(); i!=m_attrs.end(); i++)
-        delete const_cast<SAMLAttribute*>(*i);
+    for_each(m_attrs.begin(),m_attrs.end(),cleanup<SAMLAttribute>);
 }
 
 XMLMetadataImpl::EntityDescriptor::EntityDescriptor(
@@ -1071,12 +1067,9 @@ const IAttributeAuthorityDescriptor* XMLMetadataImpl::EntityDescriptor::getAttri
 XMLMetadataImpl::EntityDescriptor::~EntityDescriptor()
 {
     delete m_org;
-    for (vector<const IContactPerson*>::iterator i=m_contacts.begin(); i!=m_contacts.end(); i++)
-        delete const_cast<IContactPerson*>(*i);
-    for (vector<const IRoleDescriptor*>::iterator j=m_roles.begin(); j!=m_roles.end(); j++)
-        delete const_cast<IRoleDescriptor*>(*j);
-    for (vector<const IKeyAuthority*>::iterator k=m_keyauths.begin(); k!=m_keyauths.end(); k++)
-        delete const_cast<IKeyAuthority*>(*k);
+    for_each(m_contacts.begin(),m_contacts.end(),cleanup<IContactPerson>);
+    for_each(m_roles.begin(),m_roles.end(),cleanup<IRoleDescriptor>);
+    for_each(m_keyauths.begin(),m_keyauths.end(),cleanup<IKeyAuthority>);
 }
 
 XMLMetadataImpl::EntitiesDescriptor::EntitiesDescriptor(
@@ -1135,12 +1128,9 @@ XMLMetadataImpl::EntitiesDescriptor::EntitiesDescriptor(
 
 XMLMetadataImpl::EntitiesDescriptor::~EntitiesDescriptor()
 {
-    for (vector<const IEntityDescriptor*>::iterator i=m_providers.begin(); i!=m_providers.end(); i++)
-        delete const_cast<IEntityDescriptor*>(*i);
-    for (vector<const IEntitiesDescriptor*>::iterator j=m_groups.begin(); j!=m_groups.end(); j++)
-        delete const_cast<IEntitiesDescriptor*>(*j);
-    for (vector<const IKeyAuthority*>::iterator k=m_keyauths.begin(); k!=m_keyauths.end(); k++)
-        delete const_cast<IKeyAuthority*>(*k);
+    for_each(m_providers.begin(),m_providers.end(),cleanup<IEntityDescriptor>);
+    for_each(m_groups.begin(),m_groups.end(),cleanup<IEntitiesDescriptor>);
+    for_each(m_keyauths.begin(),m_keyauths.end(),cleanup<IKeyAuthority>);
 }
 
 void XMLMetadataImpl::init()

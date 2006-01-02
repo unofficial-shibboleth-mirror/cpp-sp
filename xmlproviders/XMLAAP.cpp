@@ -23,11 +23,12 @@
 */
 
 #include "internal.h"
-
+#include <algorithm>
 #include <log4cpp/Category.hh>
 
-using namespace shibboleth;
 using namespace saml;
+using namespace shibboleth;
+using namespace xmlproviders;
 using namespace log4cpp;
 using namespace std;
 
@@ -205,8 +206,11 @@ void XMLAAPImpl::init()
 
 XMLAAPImpl::~XMLAAPImpl()
 {
-    for (attrmap_t::iterator i=m_attrMap.begin(); i!=m_attrMap.end(); i++)
-        delete i->second;
+#ifdef HAVE_GOOD_STL
+    for_each(m_attrMap.begin(),m_attrMap.end(),cleanup<xstring,AttributeRule>);
+#else
+    for_each(m_attrMap.begin(),m_attrMap.end(),cleanup<string,AttributeRule>);
+#endif
 }
 
 XMLAAPImpl::AttributeRule::AttributeRule(const DOMElement* e) :
