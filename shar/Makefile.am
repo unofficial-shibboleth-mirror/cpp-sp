@@ -13,8 +13,7 @@ endif
 
 test_client_SOURCES = test-client.cpp
 
-shibd_SOURCES = shar.cpp shar-utils.cpp shibrpc-server.cpp ../shib-target/shibrpc-svc.c
-noinst_HEADERS = shar-utils.h
+shibd_SOURCES = shar.cpp
 
 test_client_LDADD = \
   $(top_builddir)/shib-target/libshib-target.la \
