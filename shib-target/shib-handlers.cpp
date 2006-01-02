@@ -28,11 +28,6 @@
 #endif
 
 #include <shib/shib-threads.h>
-#include <xercesc/util/Base64.hpp>
-
-#ifndef HAVE_STRCASECMP
-# define strcasecmp stricmp
-#endif
 
 using namespace std;
 using namespace saml;
@@ -41,67 +36,41 @@ using namespace shibtarget;
 using namespace log4cpp;
 
 namespace {
-  class CgiParse
-  {
-  public:
-    CgiParse(const char* data, size_t len);
-    ~CgiParse();
-    const char* get_value(const char* name) const;
-    
-    static char x2c(char *what);
-    static void url_decode(char *url);
-    static string url_encode(const char* s);
-  private:
-    char * fmakeword(char stop, unsigned int *cl, const char** ppch);
-    char * makeword(char *line, char stop);
-    void plustospace(char *str);
-
-    map<string,char*> kvp_map;
-  };
-
-    // Helper class for SAML 2.0 Common Domain Cookie operations
-    class CommonDomainCookie
-    {
-    public:
-        CommonDomainCookie(const char* cookie);
-        ~CommonDomainCookie() {}
-        saml::Iterator<std::string> get() {return m_list;}
-        const char* set(const char* providerId);
-        static const char CDCName[];
-    private:
-        std::string m_encoded;
-        std::vector<std::string> m_list;
-    };
-
   class SessionInitiator : virtual public IHandler
   {
   public:
     SessionInitiator(const DOMElement* e) {}
     ~SessionInitiator() {}
-    pair<bool,void*> run(ShibTarget* st, const IPropertySet* handler, bool isHandler=true);
+    pair<bool,void*> run(ShibTarget* st, bool isHandler=true) const;
     pair<bool,void*> ShibAuthnRequest(
         ShibTarget* st,
-        const IPropertySet* shire,
+        const IHandler* shire,
         const char* dest,
         const char* target,
         const char* providerId
-        );
+        ) const;
   };
 
-  class SAML1Consumer : virtual public IHandler
+  class SAML1Consumer : virtual public IHandler, public virtual IRemoted
   {
   public:
-    SAML1Consumer(const DOMElement* e) {}
-    ~SAML1Consumer() {}
-    pair<bool,void*> run(ShibTarget* st, const IPropertySet* handler, bool isHandler=true);
+    SAML1Consumer(const DOMElement* e);
+    ~SAML1Consumer();
+    pair<bool,void*> run(ShibTarget* st, bool isHandler=true) const;
+    DDF receive(const DDF& in);
+  private:
+    string m_address;
+    static int counter;
   };
+
+  int SAML1Consumer::counter = 0;
 
   class ShibLogout : virtual public IHandler
   {
   public:
     ShibLogout(const DOMElement* e) {}
     ~ShibLogout() {}
-    pair<bool,void*> run(ShibTarget* st, const IPropertySet* handler, bool isHandler=true);
+    pair<bool,void*> run(ShibTarget* st, bool isHandler=true) const;
   };
 }
 
@@ -126,11 +95,11 @@ IPlugIn* ShibLogoutFactory(const DOMElement* e)
     return new ShibLogout(e);
 }
 
-pair<bool,void*> SessionInitiator::run(ShibTarget* st, const IPropertySet* handler, bool isHandler)
+pair<bool,void*> SessionInitiator::run(ShibTarget* st, bool isHandler) const
 {
     string dupresource;
     const char* resource=NULL;
-    const IPropertySet* ACS=NULL;
+    const IHandler* ACS=NULL;
     const IApplication* app=st->getApplication();
     
     if (isHandler) {
@@ -140,15 +109,12 @@ pair<bool,void*> SessionInitiator::run(ShibTarget* st, const IPropertySet* handl
          *  acsIndex    optional index of an ACS to use on the way back in
          *  providerId  optional direct invocation of a specific IdP
          */
-        string query=st->getArgs();
-        CgiParse parser(query.c_str(),query.length());
-
-        const char* option=parser.get_value("acsIndex");
+        const char* option=st->getRequestParameter("acsIndex");
         if (option)
             ACS=app->getAssertionConsumerServiceByIndex(atoi(option));
-        option=parser.get_value("providerId");
+        option=st->getRequestParameter("providerId");
         
-        resource=parser.get_value("target");
+        resource=st->getRequestParameter("target");
         if (!resource || !*resource) {
             pair<bool,const char*> home=app->getString("homeURL");
             if (home.first)
@@ -194,173 +160,438 @@ pair<bool,void*> SessionInitiator::run(ShibTarget* st, const IPropertySet* handl
     if (!ACS) ACS=app->getDefaultAssertionConsumerService();
     
     // For now, we only support external session initiation via a wayfURL
-    pair<bool,const char*> wayfURL=handler->getString("wayfURL");
+    pair<bool,const char*> wayfURL=getProperties()->getString("wayfURL");
     if (!wayfURL.first)
         throw ConfigurationException("Session initiator is missing wayfURL property.");
 
-    pair<bool,const XMLCh*> wayfBinding=handler->getXMLString("wayfBinding");
+    pair<bool,const XMLCh*> wayfBinding=getProperties()->getXMLString("wayfBinding");
     if (!wayfBinding.first || !XMLString::compareString(wayfBinding.second,Constants::SHIB_AUTHNREQUEST_PROFILE_URI))
         // Standard Shib 1.x
         return ShibAuthnRequest(st,ACS,wayfURL.second,resource,app->getString("providerId").second);
     else if (!XMLString::compareString(wayfBinding.second,Constants::SHIB_LEGACY_AUTHNREQUEST_PROFILE_URI))
         // Shib pre-1.2
         return ShibAuthnRequest(st,ACS,wayfURL.second,resource,NULL);
-    else if (!strcmp(handler->getString("wayfBinding").second,"urn:mace:shibboleth:1.0:profiles:EAuth")) {
+    else if (!strcmp(getProperties()->getString("wayfBinding").second,"urn:mace:shibboleth:1.0:profiles:EAuth")) {
         // TODO: Finalize E-Auth profile URI
-        pair<bool,bool> localRelayState=st->getConfig()->getPropertySet("Local")->getBool("localRelayState");
+        pair<bool,bool> localRelayState=st->getConfig()->getPropertySet("InProcess")->getBool("localRelayState");
         if (!localRelayState.first || !localRelayState.second)
             throw ConfigurationException("E-Authn requests cannot include relay state, so localRelayState must be enabled.");
 
         // Here we store the state in a cookie.
         pair<string,const char*> shib_cookie=st->getCookieNameProps("_shibstate_");
-        st->setCookie(shib_cookie.first,CgiParse::url_encode(resource) + shib_cookie.second);
+        st->setCookie(shib_cookie.first,ShibTarget::url_encode(resource) + shib_cookie.second);
         return make_pair(true, st->sendRedirect(wayfURL.second));
     }
    
-    throw UnsupportedProfileException("Unsupported WAYF binding ($1).", params(1,handler->getString("wayfBinding").second));
+    throw UnsupportedProfileException("Unsupported WAYF binding ($1).", params(1,getProperties()->getString("wayfBinding").second));
 }
 
 // Handles Shib 1.x AuthnRequest profile.
 pair<bool,void*> SessionInitiator::ShibAuthnRequest(
     ShibTarget* st,
-    const IPropertySet* shire,
+    const IHandler* shire,
     const char* dest,
     const char* target,
     const char* providerId
-    )
+    ) const
 {
-    // Compute the ACS URL. We add the ACS location to the handler baseURL.
-    // Legacy configs will not have an ACS specified, so no suffix will be added.
+    // Compute the ACS URL. We add the ACS location to the base handlerURL.
+    // Legacy configs will not have the Location property specified, so no suffix will be added.
     string ACSloc=st->getHandlerURL(target);
-    if (shire) ACSloc+=shire->getString("Location").second;
+    pair<bool,const char*> loc=shire ? shire->getProperties()->getString("Location") : pair<bool,const char*>(false,NULL);
+    if (loc.first) ACSloc+=loc.second;
     
     char timebuf[16];
     sprintf(timebuf,"%u",time(NULL));
-    string req=string(dest) + "?shire=" + CgiParse::url_encode(ACSloc.c_str()) + "&time=" + timebuf;
+    string req=string(dest) + "?shire=" + ShibTarget::url_encode(ACSloc.c_str()) + "&time=" + timebuf;
 
     // How should the resource value be preserved?
-    pair<bool,bool> localRelayState=st->getConfig()->getPropertySet("Local")->getBool("localRelayState");
+    pair<bool,bool> localRelayState=st->getConfig()->getPropertySet("InProcess")->getBool("localRelayState");
     if (!localRelayState.first || !localRelayState.second) {
         // The old way, just send it along.
-        req+="&target=" + CgiParse::url_encode(target);
+        req+="&target=" + ShibTarget::url_encode(target);
     }
     else {
         // Here we store the state in a cookie and send a fixed
         // value to the IdP so we can recognize it on the way back.
         pair<string,const char*> shib_cookie=st->getCookieNameProps("_shibstate_");
-        st->setCookie(shib_cookie.first,CgiParse::url_encode(target) + shib_cookie.second);
+        st->setCookie(shib_cookie.first,ShibTarget::url_encode(target) + shib_cookie.second);
         req+="&target=cookie";
     }
     
     // Only omitted for 1.1 style requests.
     if (providerId)
-        req+="&providerId=" + CgiParse::url_encode(providerId);
+        req+="&providerId=" + ShibTarget::url_encode(providerId);
 
     return make_pair(true, st->sendRedirect(req));
 }
 
-pair<bool,void*> SAML1Consumer::run(ShibTarget* st, const IPropertySet* handler, bool isHandler)
+SAML1Consumer::SAML1Consumer(const DOMElement* e)
 {
-    int profile=0;
-    string input,cookie,target,providerId;
-    const IApplication* app=st->getApplication();
+    m_address += ('A' + (counter++));
+    m_address += "::SAML1Consumer::run";
+
+    // Register for remoted messages.
+    if (ShibTargetConfig::getConfig().isEnabled(ShibTargetConfig::OutOfProcess)) {
+        IListener* listener=ShibTargetConfig::getConfig().getINI()->getListener();
+        if (listener)
+            listener->regListener(m_address.c_str(),this);
+        else
+            throw ListenerException("Plugin requires a Listener service");
+    }
+}
+
+SAML1Consumer::~SAML1Consumer()
+{
+    IListener* listener=ShibTargetConfig::getConfig().getINI()->getListener();
+    if (listener && ShibTargetConfig::getConfig().isEnabled(ShibTargetConfig::OutOfProcess))
+        listener->unregListener(m_address.c_str(),this);
+    counter--;
+}
+
+/*
+ * IPC message definitions:
+ * 
+ *  [A-Z]::SAML1Consumer::run
+ * 
+ *      IN
+ *      application_id
+ *      client_address
+ *      recipient
+ *      SAMLResponse or SAMLart list
+ * 
+ *      OUT
+ *      key
+ *      provider_id
+ */
+DDF SAML1Consumer::receive(const DDF& in)
+{
+#ifdef _DEBUG
+    saml::NDC ndc("receive");
+#endif
+    Category& log=Category::getInstance(SHIBT_LOGCAT".SAML1Consumer");
+
+    // Find application.
+    const char* aid=in["application_id"].string();
+    const IApplication* app=aid ? ShibTargetConfig::getConfig().getINI()->getApplication(aid) : NULL;
+    if (!app) {
+        // Something's horribly wrong.
+        log.error("couldn't find application (%s) for new session", aid ? aid : "(missing)");
+        throw SAMLException("Unable to locate application for new session, deleted?");
+    }
+
+    // Check required parameters.
+    const char* client_address=in["client_address"].string();
+    const char* recipient=in["recipient"].string();
+    if (!client_address || !recipient)
+        throw SAMLException("Required parameters missing in call to SAML1Consumer::run");
     
+    log.debug("processing new assertion for %s", client_address);
+    log.debug("recipient: %s", recipient);
+    log.debug("application: %s", app->getId());
+
+    // Access the application config. It's already locked behind us.
+    STConfig& stc=static_cast<STConfig&>(ShibTargetConfig::getConfig());
+    IConfig* conf=stc.getINI();
+
+    auto_ptr_XMLCh wrecipient(recipient);
+
+    pair<bool,bool> checkAddress=pair<bool,bool>(false,true);
+    pair<bool,bool> checkReplay=pair<bool,bool>(false,true);
+    const IPropertySet* props=app->getPropertySet("Sessions");
+    if (props) {
+        checkAddress=props->getBool("checkAddress");
+        if (!checkAddress.first)
+            checkAddress.second=true;
+        checkReplay=props->getBool("checkReplay");
+        if (!checkReplay.first)
+            checkReplay.second=true;
+    }
+
     // Supports either version...
-    pair<bool,unsigned int> version=handler->getUnsignedInt("MinorVersion","urn:oasis:names:tc:SAML:1.0:protocol");
+    pair<bool,unsigned int> version=getProperties()->getUnsignedInt("MinorVersion","urn:oasis:names:tc:SAML:1.0:protocol");
     if (!version.first)
         version.second=1;
 
-    pair<bool,const XMLCh*> binding=handler->getXMLString("Binding");
-    if (!binding.first || !XMLString::compareString(binding.second,SAMLBrowserProfile::BROWSER_POST)) {
-        if (strcasecmp(st->getRequestMethod(), "POST"))
-            throw FatalProfileException(
-                "SAML 1.x Browser/POST handler does not support HTTP method ($1).", params(1,st->getRequestMethod())
+    const IRoleDescriptor* role=NULL;
+    Metadata m(app->getMetadataProviders());
+    SAMLBrowserProfile::BrowserProfileResponse bpr;
+
+    try {
+        const char* samlResponse=in["SAMLResponse"].string();
+        if (samlResponse) {
+            // POST profile
+            log.debug("executing Browser/POST profile...");
+            bpr=app->getBrowserProfile()->receive(
+                samlResponse,
+                wrecipient.get(),
+                checkReplay.second ? conf->getReplayCache() : NULL,
+                version.second
                 );
+        }
+        else {
+            // Artifact profile
+            vector<const char*> SAMLart;
+            DDF arts=in["SAMLart"];
+            DDF art=arts.first();
+            while (art.isstring()) {
+                SAMLart.push_back(art.string());
+                art=arts.next();
+            }
+            auto_ptr<SAMLBrowserProfile::ArtifactMapper> artifactMapper(app->getArtifactMapper());
+            log.debug("executing Browser/Artifact profile...");
+            bpr=app->getBrowserProfile()->receive(
+                SAMLart,
+                wrecipient.get(),
+                artifactMapper.get(),
+                checkReplay.second ? conf->getReplayCache() : NULL,
+                version.second
+                );
+
+            // Blow it away to clear any locks that might be held.
+            delete artifactMapper.release();
+        }
+
+        // Try and map to metadata (again).
+        // Once the metadata layer is in the SAML core, the repetition should be fixed.
+        const IEntityDescriptor* provider=m.lookup(bpr.assertion->getIssuer());
+        if (!provider && bpr.authnStatement->getSubject()->getNameIdentifier() &&
+                bpr.authnStatement->getSubject()->getNameIdentifier()->getNameQualifier())
+            provider=m.lookup(bpr.authnStatement->getSubject()->getNameIdentifier()->getNameQualifier());
+        if (provider) {
+            const IIDPSSODescriptor* IDP=provider->getIDPSSODescriptor(
+                version.second==1 ? saml::XML::SAML11_PROTOCOL_ENUM : saml::XML::SAML10_PROTOCOL_ENUM
+                );
+            role=IDP;
+        }
         
-        if (!st->getContentType() || strcasecmp(st->getContentType(),"application/x-www-form-urlencoded"))
-            throw FatalProfileException(
-                "Blocked invalid content-type ($1) submitted to SAML 1.x Browser/POST handler.", params(1,st->getContentType())
-                );
-        input=st->getPostData();
-        profile|=(version.second==1 ? SAML11_POST : SAML10_POST);
+        // This isn't likely, since the profile must have found a role.
+        if (!role) {
+            MetadataException ex("Unable to locate role-specific metadata for identity provider.");
+            annotateException(&ex,provider); // throws it
+        }
+    
+        // Maybe verify the client address....
+        if (checkAddress.second) {
+            log.debug("verifying client address");
+            // Verify the client address exists
+            const XMLCh* wip = bpr.authnStatement->getSubjectIP();
+            if (wip && *wip) {
+                // Verify the client address matches authentication
+                auto_ptr_char this_ip(wip);
+                if (strcmp(client_address, this_ip.get())) {
+                    FatalProfileException ex(
+                        SESSION_E_ADDRESSMISMATCH,
+                       "Your client's current address ($1) differs from the one used when you authenticated "
+                        "to your identity provider. To correct this problem, you may need to bypass a proxy server. "
+                        "Please contact your local support staff or help desk for assistance.",
+                        params(1,client_address)
+                        );
+                    annotateException(&ex,role); // throws it
+                }
+            }
+        }
+      
+        // Verify condition(s) on authentication assertion.
+        // Attribute assertions get filtered later, essentially just like an AAP.
+        Iterator<SAMLCondition*> conditions=bpr.assertion->getConditions();
+        while (conditions.hasNext()) {
+            SAMLCondition* cond=conditions.next();
+            const SAMLAudienceRestrictionCondition* ac=dynamic_cast<const SAMLAudienceRestrictionCondition*>(cond);
+            if (!ac) {
+                ostringstream os;
+                os << *cond;
+                log.error("Unrecognized Condition in authentication assertion (%s), tossing it.",os.str().c_str());
+                FatalProfileException ex("Unable to create session due to unrecognized condition in authentication assertion.");
+                annotateException(&ex,role); // throws it
+            }
+            else if (!ac->eval(app->getAudiences())) {
+                ostringstream os;
+                os << *ac;
+                log.error("Unacceptable AudienceRestrictionCondition in authentication assertion (%s), tossing it.",os.str().c_str());
+                FatalProfileException ex("Unable to create session due to unacceptable AudienceRestrictionCondition in authentication assertion.");
+                annotateException(&ex,role); // throws it
+            }
+        }
+    }
+    catch (SAMLException&) {
+        bpr.clear();
+        throw;
+    }
+    catch (...) {
+        log.error("caught unknown exception");
+        bpr.clear();
+#ifdef _DEBUG
+        throw;
+#else
+        SAMLException e("An unexpected error occurred while creating your session.");
+        annotateException(&e,role);
+#endif
+    }
+
+    // It passes all our tests -- create a new session.
+    log.info("creating new session");
+
+    DDF out;
+    try {
+        // Insert into cache.
+        auto_ptr_char authContext(bpr.authnStatement->getAuthMethod());
+        string key=conf->getSessionCache()->insert(
+            app,
+            role,
+            client_address,
+            bpr.authnStatement->getSubject(),
+            authContext.get(),
+            bpr.response
+            );
+        // objects owned by cache now
+        log.debug("new session id: %s", key.c_str());
+        auto_ptr_char oname(role->getEntityDescriptor()->getId());
+        out=DDF(NULL).structure();
+        out.addmember("key").string(key.c_str());
+        out.addmember("provider_id").string(oname.get());
+    }
+    catch (...) {
+#ifdef _DEBUG
+        throw;
+#else
+        SAMLException e("An unexpected error occurred while creating your session.");
+        annotateException(&e,role);
+#endif
+    }
+
+    return out;
+}
+
+pair<bool,void*> SAML1Consumer::run(ShibTarget* st, bool isHandler) const
+{
+    DDF in,out;
+    DDFJanitor jin(in),jout(out);
+
+    pair<bool,const XMLCh*> binding=getProperties()->getXMLString("Binding");
+    if (!binding.first || !XMLString::compareString(binding.second,SAMLBrowserProfile::BROWSER_POST)) {
+#ifdef HAVE_STRCASECMP
+        if (strcasecmp(st->getRequestMethod(), "POST")) {
+#else
+        if (_stricmp(st->getRequestMethod(), "POST")) {
+#endif
+            st->log(ShibTarget::LogLevelInfo, "SAML 1.x Browser/POST handler ignoring non-POST request");
+            return pair<bool,void*>(false,NULL);
+        }
+#ifdef HAVE_STRCASECMP
+        if (!st->getContentType() || strcasecmp(st->getContentType(),"application/x-www-form-urlencoded")) {
+#else
+        if (!st->getContentType() || _stricmp(st->getContentType(),"application/x-www-form-urlencoded")) {
+#endif
+            st->log(ShibTarget::LogLevelInfo, "SAML 1.x Browser/POST handler ignoring submission with unknown content-type.");
+            return pair<bool,void*>(false,NULL);
+        }
+
+        const char* samlResponse = st->getRequestParameter("SAMLResponse");
+        if (!samlResponse) {
+            st->log(ShibTarget::LogLevelInfo, "SAML 1.x Browser/POST handler ignoring request with no SAMLResponse parameter.");
+            return pair<bool,void*>(false,NULL);
+        }
+
+        in=DDF(m_address.c_str()).structure();
+        in.addmember("SAMLResponse").string(samlResponse);
     }
     else if (!XMLString::compareString(binding.second,SAMLBrowserProfile::BROWSER_ARTIFACT)) {
-        if (strcasecmp(st->getRequestMethod(), "GET"))
-            throw FatalProfileException(
-                "SAML 1.x Browser/Artifact handler does not support HTTP method ($1).", params(1,st->getRequestMethod())
-                );
-        input=st->getArgs();
-        profile|=(version.second==1 ? SAML11_ARTIFACT : SAML10_ARTIFACT);
+#ifdef HAVE_STRCASECMP
+        if (strcasecmp(st->getRequestMethod(), "GET")) {
+#else
+        if (_stricmp(st->getRequestMethod(), "GET")) {
+#endif
+            st->log(ShibTarget::LogLevelInfo, "SAML 1.x Browser/Artifact handler ignoring non-GET request");
+            return pair<bool,void*>(false,NULL);
+        }
+
+        const char* SAMLart=st->getRequestParameter("SAMLart");
+        if (!SAMLart) {
+            st->log(ShibTarget::LogLevelInfo, "SAML 1.x Browser/Artifact handler ignoring request with no SAMLart parameter.");
+            return pair<bool,void*>(false,NULL);
+        }
+
+        in=DDF(m_address.c_str()).structure();
+        DDF artlist=in.addmember("SAMLart").list();
+
+        while (SAMLart) {
+            artlist.add(DDF(NULL).string(SAMLart));
+            SAMLart=st->getRequestParameter("SAMLart",artlist.integer());
+        }
     }
     
-    if (input.empty())
-        throw FatalProfileException("SAML 1.x Browser Profile handler received no data from browser.");
-    
+    // Compute the endpoint location.
     string hURL=st->getHandlerURL(st->getRequestURL());
-    pair<bool,const char*> loc=handler->getString("Location");
+    pair<bool,const char*> loc=getProperties()->getString("Location");
     string recipient=loc.first ? hURL + loc.second : hURL;
-    st->getConfig()->getListener()->sessionNew(
-        app,
-        profile,
-        recipient.c_str(),
-        input.c_str(),
-        st->getRemoteAddr(),
-        target,
-        cookie,
-        providerId
-        );
+    in.addmember("recipient").string(recipient.c_str());
 
-    st->log(ShibTarget::LogLevelDebug, string("profile processing succeeded, new session created (") + cookie + ")");
+    // Add remaining parameters.
+    in.addmember("application_id").string(st->getApplication()->getId());
+    in.addmember("client_address").string(st->getRemoteAddr());
 
-    if (target=="default") {
-        pair<bool,const char*> homeURL=app->getString("homeURL");
+    out=st->getConfig()->getListener()->send(in);
+    if (!out["key"].isstring())
+        throw FatalProfileException("Remote processing of SAML 1.x Browser profile did not return a usable session key.");
+    string key=out["key"].string();
+
+    st->log(ShibTarget::LogLevelDebug, string("profile processing succeeded, new session created (") + key + ")");
+
+    const char* target=st->getRequestParameter("TARGET");
+    if (target && !strcmp(target,"default")) {
+        pair<bool,const char*> homeURL=st->getApplication()->getString("homeURL");
         target=homeURL.first ? homeURL.second : "/";
     }
-    else if (target=="cookie" || target.empty()) {
+    else if (!target || !strcmp(target,"cookie")) {
         // Pull the target value from the "relay state" cookie.
         pair<string,const char*> relay_cookie = st->getCookieNameProps("_shibstate_");
         const char* relay_state = st->getCookie(relay_cookie.first);
         if (!relay_state || !*relay_state) {
             // No apparent relay state value to use, so fall back on the default.
-            pair<bool,const char*> homeURL=app->getString("homeURL");
+            pair<bool,const char*> homeURL=st->getApplication()->getString("homeURL");
             target=homeURL.first ? homeURL.second : "/";
         }
         else {
             char* rscopy=strdup(relay_state);
-            CgiParse::url_decode(rscopy);
-            target=rscopy;
+            ShibTarget::url_decode(rscopy);
+            hURL=rscopy;
             free(rscopy);
+            target=hURL.c_str();
         }
     }
 
     // We've got a good session, set the session cookie.
     pair<string,const char*> shib_cookie=st->getCookieNameProps("_shibsession_");
-    st->setCookie(shib_cookie.first, cookie + shib_cookie.second);
+    st->setCookie(shib_cookie.first, key + shib_cookie.second);
 
-    const IPropertySet* sessionProps=app->getPropertySet("Sessions");
-    pair<bool,bool> idpHistory=sessionProps->getBool("idpHistory");
-    if (!idpHistory.first || idpHistory.second) {
-        // Set an IdP history cookie locally (essentially just a CDC).
-        CommonDomainCookie cdc(st->getCookie(CommonDomainCookie::CDCName));
+    const char* providerId=out["provider_id"].string();
+    if (providerId) {
+        const IPropertySet* sessionProps=st->getApplication()->getPropertySet("Sessions");
+        pair<bool,bool> idpHistory=sessionProps->getBool("idpHistory");
+        if (!idpHistory.first || idpHistory.second) {
+            // Set an IdP history cookie locally (essentially just a CDC).
+            CommonDomainCookie cdc(st->getCookie(CommonDomainCookie::CDCName));
 
-        // Either leave in memory or set an expiration.
-        pair<bool,unsigned int> days=sessionProps->getUnsignedInt("idpHistoryDays");
-            if (!days.first || days.second==0)
-                st->setCookie(CommonDomainCookie::CDCName,string(cdc.set(providerId.c_str())) + shib_cookie.second);
-            else {
-                time_t now=time(NULL) + (days.second * 24 * 60 * 60);
+            // Either leave in memory or set an expiration.
+            pair<bool,unsigned int> days=sessionProps->getUnsignedInt("idpHistoryDays");
+                if (!days.first || days.second==0)
+                    st->setCookie(CommonDomainCookie::CDCName,string(cdc.set(providerId)) + shib_cookie.second);
+                else {
+                    time_t now=time(NULL) + (days.second * 24 * 60 * 60);
 #ifdef HAVE_GMTIME_R
-                struct tm res;
-                struct tm* ptime=gmtime_r(&now,&res);
+                    struct tm res;
+                    struct tm* ptime=gmtime_r(&now,&res);
 #else
-                struct tm* ptime=gmtime(&now);
+                    struct tm* ptime=gmtime(&now);
 #endif
-                char timebuf[64];
-                strftime(timebuf,64,"%a, %d %b %Y %H:%M:%S GMT",ptime);
-                st->setCookie(
-                    CommonDomainCookie::CDCName,
-                    string(cdc.set(providerId.c_str())) + shib_cookie.second + "; expires=" + timebuf
-                    );
+                    char timebuf[64];
+                    strftime(timebuf,64,"%a, %d %b %Y %H:%M:%S GMT",ptime);
+                    st->setCookie(
+                        CommonDomainCookie::CDCName,
+                        string(cdc.set(providerId)) + shib_cookie.second + "; expires=" + timebuf
+                        );
+            }
         }
     }
 
@@ -368,7 +599,7 @@ pair<bool,void*> SAML1Consumer::run(ShibTarget* st, const IPropertySet* handler,
     return make_pair(true, st->sendRedirect(target));
 }
 
-pair<bool,void*> ShibLogout::run(ShibTarget* st, const IPropertySet* handler, bool isHandler)
+pair<bool,void*> ShibLogout::run(ShibTarget* st, bool isHandler) const
 {
     // Recover the session key.
     pair<string,const char*> shib_cookie = st->getCookieNameProps("_shibsession_");
@@ -377,7 +608,7 @@ pair<bool,void*> ShibLogout::run(ShibTarget* st, const IPropertySet* handler, bo
     // Logout is best effort.
     if (session_id && *session_id) {
         try {
-            st->getConfig()->getListener()->sessionEnd(st->getApplication(),session_id);
+            st->getConfig()->getSessionCache()->remove(session_id,st->getApplication(),st->getRemoteAddr());
         }
         catch (SAMLException& e) {
             st->log(ShibTarget::LogLevelError, string("logout processing failed with exception: ") + e.what());
@@ -391,236 +622,12 @@ pair<bool,void*> ShibLogout::run(ShibTarget* st, const IPropertySet* handler, bo
         st->setCookie(shib_cookie.first,shib_cookie.second);
     }
     
-    string query=st->getArgs();
-    CgiParse parser(query.c_str(),query.length());
-
-    const char* ret=parser.get_value("return");
+    const char* ret=st->getRequestParameter("return");
     if (!ret)
-        ret=handler->getString("ResponseLocation").second;
+        ret=getProperties()->getString("ResponseLocation").second;
     if (!ret)
         ret=st->getApplication()->getString("homeURL").second;
     if (!ret)
         ret="/";
     return make_pair(true, st->sendRedirect(ret));
-}
-
-/*************************************************************************
- * CGI Parser implementation
- */
-
-CgiParse::CgiParse(const char* data, unsigned int len)
-{
-    const char* pch = data;
-    unsigned int cl = len;
-        
-    while (cl && pch) {
-        char *name;
-        char *value;
-        value=fmakeword('&',&cl,&pch);
-        plustospace(value);
-        url_decode(value);
-        name=makeword(value,'=');
-        kvp_map[name]=value;
-        free(name);
-    }
-}
-
-CgiParse::~CgiParse()
-{
-    for (map<string,char*>::iterator i=kvp_map.begin(); i!=kvp_map.end(); i++)
-        free(i->second);
-}
-
-const char*
-CgiParse::get_value(const char* name) const
-{
-    map<string,char*>::const_iterator i=kvp_map.find(name);
-    if (i==kvp_map.end())
-        return NULL;
-    return i->second;
-}
-
-/* Parsing routines modified from NCSA source. */
-char *
-CgiParse::makeword(char *line, char stop)
-{
-    int x = 0,y;
-    char *word = (char *) malloc(sizeof(char) * (strlen(line) + 1));
-
-    for(x=0;((line[x]) && (line[x] != stop));x++)
-        word[x] = line[x];
-
-    word[x] = '\0';
-    if(line[x])
-        ++x;
-    y=0;
-
-    while(line[x])
-      line[y++] = line[x++];
-    line[y] = '\0';
-    return word;
-}
-
-char *
-CgiParse::fmakeword(char stop, unsigned int *cl, const char** ppch)
-{
-    int wsize;
-    char *word;
-    int ll;
-
-    wsize = 1024;
-    ll=0;
-    word = (char *) malloc(sizeof(char) * (wsize + 1));
-
-    while(1)
-    {
-        word[ll] = *((*ppch)++);
-        if(ll==wsize-1)
-        {
-            word[ll+1] = '\0';
-            wsize+=1024;
-            word = (char *)realloc(word,sizeof(char)*(wsize+1));
-        }
-        --(*cl);
-        if((word[ll] == stop) || word[ll] == EOF || (!(*cl)))
-        {
-            if(word[ll] != stop)
-                ll++;
-            word[ll] = '\0';
-            return word;
-        }
-        ++ll;
-    }
-}
-
-void
-CgiParse::plustospace(char *str)
-{
-    register int x;
-
-    for(x=0;str[x];x++)
-        if(str[x] == '+') str[x] = ' ';
-}
-
-char
-CgiParse::x2c(char *what)
-{
-    register char digit;
-
-    digit = (what[0] >= 'A' ? ((what[0] & 0xdf) - 'A')+10 : (what[0] - '0'));
-    digit *= 16;
-    digit += (what[1] >= 'A' ? ((what[1] & 0xdf) - 'A')+10 : (what[1] - '0'));
-    return(digit);
-}
-
-void
-CgiParse::url_decode(char *url)
-{
-    register int x,y;
-
-    for(x=0,y=0;url[y];++x,++y)
-    {
-        if((url[x] = url[y]) == '%')
-        {
-            url[x] = x2c(&url[y+1]);
-            y+=2;
-        }
-    }
-    url[x] = '\0';
-}
-
-static inline char hexchar(unsigned short s)
-{
-    return (s<=9) ? ('0' + s) : ('A' + s - 10);
-}
-
-string CgiParse::url_encode(const char* s)
-{
-    static char badchars[]="\"\\+<>#%{}|^~[]`;/?:@=&";
-
-    string ret;
-    for (; *s; s++) {
-        if (strchr(badchars,*s) || *s<=0x20 || *s>=0x7F) {
-            ret+='%';
-        ret+=hexchar(*s >> 4);
-        ret+=hexchar(*s & 0x0F);
-        }
-        else
-            ret+=*s;
-    }
-    return ret;
-}
-
-// CDC implementation
-
-const char CommonDomainCookie::CDCName[] = "_saml_idp";
-
-CommonDomainCookie::CommonDomainCookie(const char* cookie)
-{
-    if (!cookie)
-        return;
-
-    Category& log=Category::getInstance(SHIBT_LOGCAT".CommonDomainCookie");
-
-    // Copy it so we can URL-decode it.
-    char* b64=strdup(cookie);
-    CgiParse::url_decode(b64);
-
-    // Chop it up and save off elements.
-    vector<string> templist;
-    char* ptr=b64;
-    while (*ptr) {
-        while (*ptr && isspace(*ptr)) ptr++;
-        char* end=ptr;
-        while (*end && !isspace(*end)) end++;
-        templist.push_back(string(ptr,end-ptr));
-        ptr=end;
-    }
-    free(b64);
-
-    // Now Base64 decode the list.
-    for (vector<string>::iterator i=templist.begin(); i!=templist.end(); i++) {
-        unsigned int len;
-        XMLByte* decoded=Base64::decode(reinterpret_cast<const XMLByte*>(i->c_str()),&len);
-        if (decoded && *decoded) {
-            m_list.push_back(reinterpret_cast<char*>(decoded));
-            XMLString::release(&decoded);
-        }
-        else
-            log.warn("cookie element does not appear to be base64-encoded");
-    }
-}
-
-const char* CommonDomainCookie::set(const char* providerId)
-{
-    // First scan the list for this IdP.
-    for (vector<string>::iterator i=m_list.begin(); i!=m_list.end(); i++) {
-        if (*i == providerId) {
-            m_list.erase(i);
-            break;
-        }
-    }
-    
-    // Append it to the end.
-    m_list.push_back(providerId);
-    
-    // Now rebuild the delimited list.
-    string delimited;
-    for (vector<string>::const_iterator j=m_list.begin(); j!=m_list.end(); j++) {
-        if (!delimited.empty()) delimited += ' ';
-        
-        unsigned int len;
-        XMLByte* b64=Base64::encode(reinterpret_cast<const XMLByte*>(j->c_str()),j->length(),&len);
-        XMLByte *pos, *pos2;
-        for (pos=b64, pos2=b64; *pos2; pos2++)
-            if (isgraph(*pos2))
-                *pos++=*pos2;
-        *pos=0;
-        
-        delimited += reinterpret_cast<char*>(b64);
-        XMLString::release(&b64);
-    }
-    
-    m_encoded=CgiParse::url_encode(delimited.c_str());
-    return m_encoded.c_str();
 }
