@@ -20,9 +20,7 @@
  * Created by:	Derek Atkins <derek@ihtfp.com>, revised by Scott Cantor
  */
 
-#include <saml/saml.h>  // need this to "prime" the xmlsec-constrained windows.h declaration
-#include <shib-target/shibrpc.h>
-#include "internal.h"
+#include "RPCListener.h"
 
 #ifdef HAVE_UNISTD_H
 # include <sys/socket.h>
@@ -57,11 +55,10 @@ public:
     bool connect(ShibSocket& s) const;
     bool close(ShibSocket& s) const;
     bool accept(ShibSocket& listener, ShibSocket& s) const;
-    void* getClientHandle(ShibSocket& s, u_long program, u_long version) const;
+    CLIENT* getClientHandle(ShibSocket& s, u_long program, u_long version) const;
     
 private:
     void setup_tcp_sockaddr(struct sockaddr_in* addr) const;
-    bool log_error() const;
 
     string m_address;
     unsigned short m_port;
@@ -115,25 +112,6 @@ void TCPListener::setup_tcp_sockaddr(struct sockaddr_in* addr) const
     addr->sin_family=AF_INET;
     addr->sin_port=htons(m_port);
     addr->sin_addr.s_addr=inet_addr(m_address.c_str());
-}
-
-bool TCPListener::log_error() const
-{
-#ifdef WIN32
-    int rc=WSAGetLastError();
-#else
-    int rc=errno;
-#endif
-#ifdef HAVE_STRERROR_R
-    char buf[256];
-    memset(buf,0,sizeof(buf));
-    strerror_r(rc,buf,sizeof(buf));
-    log->error("socket call resulted in error (%d): %s",rc,isprint(*buf) ? buf : "no message");
-#else
-    const char* buf=strerror(rc);
-    log->error("socket call resulted in error (%d): %s",rc,isprint(*buf) ? buf : "no message");
-#endif
-    return false;
 }
 
 bool TCPListener::create(ShibSocket& s) const
@@ -223,7 +201,7 @@ bool TCPListener::accept(ShibSocket& listener, ShibSocket& s) const
     return false;
 }
 
-void* TCPListener::getClientHandle(ShibSocket& s, u_long program, u_long version) const
+CLIENT* TCPListener::getClientHandle(ShibSocket& s, u_long program, u_long version) const
 {
     struct sockaddr_in sin;
     memset (&sin, 0, sizeof (sin));
@@ -244,11 +222,9 @@ public:
     bool connect(ShibSocket& s) const;
     bool close(ShibSocket& s) const;
     bool accept(ShibSocket& listener, ShibSocket& s) const;
-    void* getClientHandle(ShibSocket& s, u_long program, u_long version) const;
+    CLIENT* getClientHandle(ShibSocket& s, u_long program, u_long version) const;
     
 private:
-    bool log_error() const;
-
     string m_address;
     mutable bool m_bound;
 };
@@ -266,21 +242,6 @@ UnixListener::UnixListener(const DOMElement* e) : RPCListener(e), m_address("/va
         auto_ptr_char a(tag);
         m_address=a.get();
     }
-}
-
-bool UnixListener::log_error() const
-{
-    int rc=errno;
-#ifdef HAVE_STRERROR_R
-    char buf[256];
-    memset(buf,0,sizeof(buf));
-    strerror_r(rc,buf,sizeof(buf));
-    log->error("socket call resulted in error (%d): %s",rc,isprint(*buf) ? buf : "no message");
-#else
-    const char* buf=strerror(rc);
-    log->error("socket call resulted in error (%d): %s",rc,isprint(*buf) ? buf : "no message");
-#endif
-    return false;
 }
 
 #ifndef UNIX_PATH_MAX
@@ -311,9 +272,8 @@ bool UnixListener::bind(ShibSocket& s, bool force) const
         return false;
     }
 
-    /* Make sure that only the creator can read -- we don't want just
-     * anyone connecting, do we?
-     */
+    // Make sure that only the creator can read -- we don't want just
+    // anyone connecting, do we?
     if (chmod(m_address.c_str(),0777) < 0) {
         log_error();
         close(s);
@@ -351,7 +311,7 @@ bool UnixListener::accept(ShibSocket& listener, ShibSocket& s) const
     return true;
 }
 
-void* UnixListener::getClientHandle(ShibSocket& s, u_long program, u_long version) const
+CLIENT* UnixListener::getClientHandle(ShibSocket& s, u_long program, u_long version) const
 {
     struct sockaddr_in sin;
     memset (&sin, 0, sizeof (sin));
