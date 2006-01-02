@@ -14,12 +14,14 @@ AM_CXXFLAGS = -I${top_srcdir}/oncrpc
 endif
 
 libshib_targetdir = $(includedir)/shib-target
-libshib_target_HEADERS = shib-target.h shibrpc.h shib-paths.h hresult.h
-noinst_HEADERS = internal.h
+libshib_target_HEADERS = shib-target.h shib-paths.h hresult.h ddf.h
+noinst_HEADERS = internal.h RPCListener.h shibrpc.h
 
 libshib_target_la_SOURCES = \
 	ArtifactMapper.cpp \
-	MemoryListener.cpp \
+	CommonDomainCookie.cpp \
+	ddf.cpp \
+	IListener.cpp \
 	RPCListener.cpp \
     ShibHTTPHook.cpp \
 	shib-ccache.cpp \
@@ -30,13 +32,14 @@ libshib_target_la_SOURCES = \
 	shib-sock.cpp \
 	shib-target.cpp \
 	shibrpc-clnt.c \
+	shibrpc-svc.c \
 	shibrpc-xdr.c \
 	XML.cpp \
 	XMLRequestMapper.cpp
 
 # this is different from the project version
 # http://sources.redhat.com/autobook/autobook/autobook_91.html
-libshib_target_la_LDFLAGS = -version-info 6:0:0
+libshib_target_la_LDFLAGS = -version-info 7:0:0
 
 
 
