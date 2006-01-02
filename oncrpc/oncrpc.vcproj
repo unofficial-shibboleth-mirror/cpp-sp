@@ -1,90 +1,146 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="7.10"
+	Version="8.00"
 	Name="oncrpc"
-	SccProjectName=""
-	SccLocalPath="">
+	ProjectGUID="{A7C8998F-65D7-440D-B5BE-8438C682DF93}"
+	>
 	<Platforms>
 		<Platform
-			Name="Win32"/>
+			Name="Win32"
+		/>
 	</Platforms>
+	<ToolFiles>
+	</ToolFiles>
 	<Configurations>
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory=".\Release"
 			IntermediateDirectory=".\Release"
 			ConfigurationType="2"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE"
-			CharacterSet="2">
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				PreprocessorDefinitions="NDEBUG"
+				MkTypLibCompatible="true"
+				SuppressStartupBanner="true"
+				TargetEnvironment="1"
+				TypeLibraryName=".\Release/oncrpc.tlb"
+				HeaderFileName=""
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
 				AdditionalIncludeDirectories=".,.."
 				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;ONCRPCDLL"
-				StringPooling="TRUE"
+				StringPooling="true"
 				RuntimeLibrary="2"
-				EnableFunctionLevelLinking="TRUE"
-				UsePrecompiledHeader="2"
+				EnableFunctionLevelLinking="true"
+				UsePrecompiledHeader="0"
 				PrecompiledHeaderFile=".\Release/oncrpc.pch"
 				AssemblerListingLocation=".\Release/"
 				ObjectFile=".\Release/"
 				ProgramDataBaseFileName=".\Release/"
 				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
-				Detect64BitPortabilityProblems="TRUE"
-				CompileAs="0"/>
+				SuppressStartupBanner="true"
+				Detect64BitPortabilityProblems="true"
+				CompileAs="0"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="NDEBUG"
+				Culture="1033"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="wsock32.lib"
 				OutputFile=".\Release/oncrpc.dll"
 				LinkIncremental="1"
-				SuppressStartupBanner="TRUE"
+				SuppressStartupBanner="true"
 				ModuleDefinitionFile=".\oncrpc.def"
 				ProgramDatabaseFile=".\Release/oncrpc.pdb"
 				ImportLibrary=".\Release/oncrpc.lib"
-				TargetMachine="1"/>
+				TargetMachine="1"
+			/>
 			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions="NDEBUG"
-				MkTypLibCompatible="TRUE"
-				SuppressStartupBanner="TRUE"
-				TargetEnvironment="1"
-				TypeLibraryName=".\Release/oncrpc.tlb"
-				HeaderFileName=""/>
+				Name="VCALinkTool"
+			/>
 			<Tool
-				Name="VCPostBuildEventTool"/>
+				Name="VCManifestTool"
+			/>
 			<Tool
-				Name="VCPreBuildEventTool"/>
+				Name="VCXDCMakeTool"
+			/>
 			<Tool
-				Name="VCPreLinkEventTool"/>
+				Name="VCBscMakeTool"
+			/>
 			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1033"/>
+				Name="VCFxCopTool"
+			/>
 			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
+				Name="VCAppVerifierTool"
+			/>
 			<Tool
-				Name="VCXMLDataGeneratorTool"/>
+				Name="VCWebDeploymentTool"
+			/>
 			<Tool
-				Name="VCWebDeploymentTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory=".\Debug"
 			IntermediateDirectory=".\Debug"
 			ConfigurationType="2"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE"
-			CharacterSet="2">
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				PreprocessorDefinitions="_DEBUG"
+				MkTypLibCompatible="true"
+				SuppressStartupBanner="true"
+				TargetEnvironment="1"
+				TypeLibraryName=".\Debug/oncrpc.tlb"
+				HeaderFileName=""
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
@@ -92,57 +148,64 @@
 				PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;ONCRPCDLL"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
-				UsePrecompiledHeader="2"
+				UsePrecompiledHeader="0"
 				PrecompiledHeaderFile=".\Debug/oncrpc.pch"
 				AssemblerListingLocation=".\Debug/"
 				ObjectFile=".\Debug/"
 				ProgramDataBaseFileName=".\Debug/"
 				BrowseInformation="1"
 				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
-				Detect64BitPortabilityProblems="TRUE"
+				SuppressStartupBanner="true"
+				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="4"
-				CompileAs="0"/>
+				CompileAs="0"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="_DEBUG"
+				Culture="1033"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="wsock32.lib"
 				OutputFile=".\Debug/oncrpc.dll"
 				LinkIncremental="2"
-				SuppressStartupBanner="TRUE"
+				SuppressStartupBanner="true"
 				ModuleDefinitionFile=".\oncrpc.def"
-				GenerateDebugInformation="TRUE"
+				GenerateDebugInformation="true"
 				ImportLibrary=".\Debug/oncrpc.lib"
-				TargetMachine="1"/>
+				TargetMachine="1"
+			/>
 			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions="_DEBUG"
-				MkTypLibCompatible="TRUE"
-				SuppressStartupBanner="TRUE"
-				TargetEnvironment="1"
-				TypeLibraryName=".\Debug/oncrpc.tlb"
-				HeaderFileName=""/>
+				Name="VCALinkTool"
+			/>
 			<Tool
-				Name="VCPostBuildEventTool"/>
+				Name="VCManifestTool"
+			/>
 			<Tool
-				Name="VCPreBuildEventTool"/>
+				Name="VCXDCMakeTool"
+			/>
 			<Tool
-				Name="VCPreLinkEventTool"/>
+				Name="VCBscMakeTool"
+			/>
 			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG"
-				Culture="1033"/>
+				Name="VCFxCopTool"
+			/>
 			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
+				Name="VCAppVerifierTool"
+			/>
 			<Tool
-				Name="VCXMLDataGeneratorTool"/>
+				Name="VCWebDeploymentTool"
+			/>
 			<Tool
-				Name="VCWebDeploymentTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 	</Configurations>
 	<References>
@@ -150,876 +213,1088 @@
 	<Files>
 		<Filter
 			Name="rpc"
-			Filter="">
+			>
 			<File
-				RelativePath="rpc\auth.h">
+				RelativePath="rpc\auth.h"
+				>
 			</File>
 			<File
-				RelativePath="rpc\auth_unix.h">
+				RelativePath="rpc\auth_unix.h"
+				>
 			</File>
 			<File
-				RelativePath="rpc\bcopy.h">
+				RelativePath="rpc\bcopy.h"
+				>
 			</File>
 			<File
-				RelativePath="rpc\clnt.h">
+				RelativePath="rpc\clnt.h"
+				>
 			</File>
 			<File
-				RelativePath="rpc\netdb.h">
+				RelativePath="rpc\netdb.h"
+				>
 			</File>
 			<File
-				RelativePath="rpc\pmap_clnt.h">
+				RelativePath="rpc\pmap_clnt.h"
+				>
 			</File>
 			<File
-				RelativePath="rpc\pmap_prot.h">
+				RelativePath="rpc\pmap_prot.h"
+				>
 			</File>
 			<File
-				RelativePath="rpc\pmap_rmt.h">
+				RelativePath="rpc\pmap_rmt.h"
+				>
 			</File>
 			<File
-				RelativePath="rpc\rpc.h">
+				RelativePath="rpc\rpc.h"
+				>
 			</File>
 			<File
-				RelativePath="rpc\rpc_msg.h">
+				RelativePath="rpc\rpc_msg.h"
+				>
 			</File>
 			<File
-				RelativePath="rpc\svc.h">
+				RelativePath="rpc\svc.h"
+				>
 			</File>
 			<File
-				RelativePath="rpc\svc_auth.h">
+				RelativePath="rpc\svc_auth.h"
+				>
 			</File>
 			<File
-				RelativePath="rpc\types.h">
+				RelativePath="rpc\types.h"
+				>
 			</File>
 			<File
-				RelativePath="rpc\xdr.h">
+				RelativePath="rpc\xdr.h"
+				>
 			</File>
 		</Filter>
 		<File
-			RelativePath="auth_non.c">
+			RelativePath="auth_non.c"
+			>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="auth_uni.c">
+			RelativePath="auth_uni.c"
+			>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="authunix.c">
+			RelativePath="authunix.c"
+			>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="bcopy.c">
+			RelativePath="bcopy.c"
+			>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="bindresv.c">
+			RelativePath="bindresv.c"
+			>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="clnt_gen.c">
+			RelativePath="clnt_gen.c"
+			>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="clnt_per.c">
+			RelativePath="clnt_per.c"
+			>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="clnt_raw.c">
+			RelativePath="clnt_raw.c"
+			>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="clnt_sim.c">
+			RelativePath="clnt_sim.c"
+			>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="clnt_tcp.c">
+			RelativePath="clnt_tcp.c"
+			>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="clnt_udp.c">
+			RelativePath="clnt_udp.c"
+			>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="get_myad.c">
+			RelativePath="get_myad.c"
+			>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="getrpcen.c">
+			RelativePath="getrpcen.c"
+			>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="getrpcpo.c">
+			RelativePath="getrpcpo.c"
+			>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="nt.c">
+			RelativePath="nt.c"
+			>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="oncrpc.def">
+			RelativePath="oncrpc.def"
+			>
 		</File>
 		<File
-			RelativePath="oncrpc.rc">
+			RelativePath="oncrpc.rc"
+			>
 		</File>
 		<File
-			RelativePath="pmap_cln.c">
+			RelativePath="pmap_cln.c"
+			>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="pmap_get.c">
+			RelativePath="pmap_get.c"
+			>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="pmap_gma.c">
+			RelativePath="pmap_gma.c"
+			>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="pmap_pr.c">
+			RelativePath="pmap_pr.c"
+			>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="pmap_pro.c">
+			RelativePath="pmap_pro.c"
+			>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="pmap_rmt.c">
+			RelativePath="pmap_rmt.c"
+			>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="resource.h">
+			RelativePath="resource.h"
+			>
 		</File>
 		<File
-			RelativePath="rpc_call.c">
+			RelativePath="rpc_call.c"
+			>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="rpc_comm.c">
+			RelativePath="rpc_comm.c"
+			>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="rpc_prot.c">
+			RelativePath="rpc_prot.c"
+			>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="svc.c">
+			RelativePath="svc.c"
+			>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="svc_auth.c">
+			RelativePath="svc_auth.c"
+			>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="svc_autu.c">
+			RelativePath="svc_autu.c"
+			>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="svc_raw.c">
+			RelativePath="svc_raw.c"
+			>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="svc_run.c">
+			RelativePath="svc_run.c"
+			>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="svc_simp.c">
+			RelativePath="svc_simp.c"
+			>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="svc_tcp.c">
+			RelativePath="svc_tcp.c"
+			>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="svc_udp.c">
+			RelativePath="svc_udp.c"
+			>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="xdr.c">
+			RelativePath="xdr.c"
+			>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="xdr_arra.c">
+			RelativePath="xdr_arra.c"
+			>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="xdr_floa.c">
+			RelativePath="xdr_floa.c"
+			>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="xdr_mem.c">
+			RelativePath="xdr_mem.c"
+			>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="xdr_rec.c">
+			RelativePath="xdr_rec.c"
+			>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="xdr_refe.c">
+			RelativePath="xdr_refe.c"
+			>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="xdr_stdi.c">
+			RelativePath="xdr_stdi.c"
+			>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
 					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"/>
+					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
 					AdditionalIncludeDirectories=""
 					PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;_MBCS;ONCRPCDLL;$(NoInherit)"
 					BasicRuntimeChecks="3"
-					BrowseInformation="1"/>
+					BrowseInformation="1"
+				/>
 			</FileConfiguration>
 		</File>
 	</Files>
