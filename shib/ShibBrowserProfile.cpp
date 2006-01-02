@@ -45,11 +45,9 @@ ShibBrowserProfile::~ShibBrowserProfile()
 }
 
 SAMLBrowserProfile::BrowserProfileResponse ShibBrowserProfile::receive(
-    const char* packet,
+    const char* samlResponse,
     const XMLCh* recipient,
-    int supportedProfiles,
-    IReplayCache* replayCache,
-    SAMLBrowserProfile::ArtifactMapper* callback,
+    saml::IReplayCache* replayCache,
     int minorVersion
     ) const
 {
@@ -63,7 +61,7 @@ SAMLBrowserProfile::BrowserProfileResponse ShibBrowserProfile::receive(
     // as an exception.
     SAMLBrowserProfile::BrowserProfileResponse bpr;
     try {
-        bpr=m_profile->receive(packet, recipient, supportedProfiles, replayCache, callback, minorVersion);
+        bpr=m_profile->receive(samlResponse, recipient, replayCache, minorVersion);
     }
     catch (SAMLException& e) {
         // Try our best to attach additional information.
@@ -81,6 +79,64 @@ SAMLBrowserProfile::BrowserProfileResponse ShibBrowserProfile::receive(
         throw;
     }
     
+    try {
+        postprocess(bpr,minorVersion);
+        return bpr;
+    }
+    catch (...) {
+        bpr.clear();
+        throw;
+    }
+}
+
+SAMLBrowserProfile::BrowserProfileResponse ShibBrowserProfile::receive(
+    Iterator<const char*> artifacts,
+    const XMLCh* recipient,
+    SAMLBrowserProfile::ArtifactMapper* artifactMapper,
+    IReplayCache* replayCache,
+    int minorVersion
+    ) const
+{
+    // The built-in SAML functionality will do most of the basic non-crypto checks.
+    // Note that if the response only contains a status error, it gets tossed out
+    // as an exception.
+    SAMLBrowserProfile::BrowserProfileResponse bpr;
+    try {
+        bpr=m_profile->receive(artifacts, recipient, artifactMapper, replayCache, minorVersion);
+    }
+    catch (SAMLException& e) {
+        // Try our best to attach additional information.
+        if (e.getProperty("issuer")) {
+            Metadata m(m_metadatas);
+            const IEntityDescriptor* provider=m.lookup(e.getProperty("issuer"),false);
+            if (provider) {
+                const IIDPSSODescriptor* role=provider->getIDPSSODescriptor(
+                    minorVersion==1 ? saml::XML::SAML11_PROTOCOL_ENUM : saml::XML::SAML10_PROTOCOL_ENUM
+                    );
+                if (role) annotateException(&e,role); // throws it
+                annotateException(&e,provider);  // throws it
+            }
+        }
+        throw;
+    }
+    
+    try {
+        postprocess(bpr,minorVersion);
+        return bpr;
+    }
+    catch (...) {
+        bpr.clear();
+        throw;
+    }
+}
+
+void ShibBrowserProfile::postprocess(SAMLBrowserProfile::BrowserProfileResponse& bpr, int minorVersion) const
+{
+#ifdef _DEBUG
+    saml::NDC("postprocess");
+#endif
+    Category& log=Category::getInstance(SHIB_LOGCAT".ShibBrowserProfile");
+
     // Try and locate metadata for the IdP. We try Issuer first.
     log.debug("searching metadata for assertion issuer...");
     Metadata m(m_metadatas);
@@ -106,11 +162,9 @@ SAMLBrowserProfile::BrowserProfileResponse ShibBrowserProfile::receive(
         const IEntityDescriptor* provider=m.lookup(bpr.assertion->getIssuer(),false);
         if (provider) {
     		log.debug("found invalid metadata for assertion issuer, using for contact info");
-            bpr.clear();
             MetadataException ex("metadata lookup failed, unable to process assertion");
             annotateException(&ex,provider);  // throws it
         }
-        bpr.clear();
         throw MetadataException("metadata lookup failed, unable to process assertion",namedparams(1,"issuer",issuer.get()));
     }
 
@@ -125,7 +179,6 @@ SAMLBrowserProfile::BrowserProfileResponse ShibBrowserProfile::receive(
         if (bpr.response->isSigned()) {        
             log.debug("passing signed response to trust layer");
             if (!t.validate(*bpr.response,role)) {
-                bpr.clear();
                 log.error("unable to verify signed profile response");
                 TrustException ex("unable to verify signed profile response");
                 annotateException(&ex,role); // throws it
@@ -135,7 +188,6 @@ SAMLBrowserProfile::BrowserProfileResponse ShibBrowserProfile::receive(
         if (bpr.assertion->isSigned()) {
             log.debug("passing signed authentication assertion to trust layer"); 
             if (!t.validate(*bpr.assertion,role)) {
-                bpr.clear();
                 log.error("unable to verify signed authentication assertion");
                 TrustException ex("unable to verify signed authentication assertion");
                 annotateException(&ex,role); // throws it
@@ -154,14 +206,13 @@ SAMLBrowserProfile::BrowserProfileResponse ShibBrowserProfile::receive(
             a++;
         }
         
-        return bpr;
+        return;
     }
 
     auto_ptr_char issuer(bpr.assertion->getIssuer());
     auto_ptr_char nq(bpr.authnStatement->getSubject()->getNameIdentifier()->getNameQualifier());
     log.error("metadata for assertion issuer indicates no SAML 1.%d identity provider role (Issuer='%s', NameQualifier='%s'",
         minorVersion, issuer.get(), (nq.get() ? nq.get() : "none"));
-    bpr.clear();
     MetadataException ex("metadata lookup failed, issuer not registered as SAML 1.x identity provider");
     annotateException(&ex,provider,false);
     throw ex;

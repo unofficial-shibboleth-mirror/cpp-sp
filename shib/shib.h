@@ -454,15 +454,22 @@ namespace shibboleth
         virtual ~ShibBrowserProfile();
 
         virtual saml::SAMLBrowserProfile::BrowserProfileResponse receive(
-            const char* packet,
+            const char* samlResponse,
             const XMLCh* recipient,
-            int supportedProfiles,
-            saml::IReplayCache* replayCache=NULL,
-            saml::SAMLBrowserProfile::ArtifactMapper* callback=NULL,
+            saml::IReplayCache* replayCache,
+            int minorVersion=1
+            ) const;
+        virtual saml::SAMLBrowserProfile::BrowserProfileResponse receive(
+            saml::Iterator<const char*> artifacts,
+            const XMLCh* recipient,
+            saml::SAMLBrowserProfile::ArtifactMapper* artifactMapper,
+            saml::IReplayCache* replayCache,
             int minorVersion=1
             ) const;
 
     private:
+        void postprocess(saml::SAMLBrowserProfile::BrowserProfileResponse& bpr, int minorVersion=1) const;
+
         saml::SAMLBrowserProfile* m_profile;
         saml::Iterator<IMetadata*> m_metadatas;
         saml::Iterator<ITrust*> m_trusts;
