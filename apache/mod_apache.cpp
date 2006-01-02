@@ -26,12 +26,21 @@
 #undef _XOPEN_SOURCE    // causes gethostname conflict in unistd.h
 #endif
 
+#ifdef WIN32
+# define _CRT_NONSTDC_NO_DEPRECATE 1
+# define _CRT_SECURE_NO_DEPRECATE 1
+#endif
+
 // SAML Runtime
 #include <saml/saml.h>
 #include <shib/shib.h>
 #include <shib/shib-threads.h>
 #include <shib-target/shib-target.h>
 #include <xercesc/util/regx/RegularExpression.hpp>
+
+#ifdef WIN32
+# include <winsock.h>
+#endif
 
 #undef _XPG4_2
 
@@ -205,8 +214,15 @@ extern "C" const char* shib_ap_set_file_slot(cmd_parms* parms,
 
 class ShibTargetApache : public ShibTarget
 {
+  mutable string m_body;
+  mutable bool m_gotBody;
+
 public:
-  ShibTargetApache(request_rec* req) {
+  request_rec* m_req;
+  shib_dir_config* m_dc;
+  shib_server_config* m_sc;
+
+  ShibTargetApache(request_rec* req) : m_gotBody(false) {
     m_sc = (shib_server_config*)ap_get_module_config(req->server->module_config, &mod_shib);
     m_dc = (shib_dir_config*)ap_get_module_config(req->per_dir_config, &mod_shib);
 
@@ -222,7 +238,7 @@ public:
 
     m_req = req;
   }
-  ~ShibTargetApache() { }
+  ~ShibTargetApache() {}
 
   virtual void log(ShibLogLevel level, const string &msg) {
     ShibTarget::log(level,msg);
@@ -244,27 +260,28 @@ public:
     char* val = ap_psprintf(m_req->pool, "%s=%s", name.c_str(), value.c_str());
     ap_table_addn(m_req->err_headers_out, "Set-Cookie", val);
   }
-  virtual string getArgs(void) { return string(m_req->args ? m_req->args : ""); }
-  virtual string getPostData(void) {
+  virtual const char* getQueryString() const { return m_req->args; }
+  virtual const char* getRequestBody() const {
+    if (m_gotBody)
+        return m_body.c_str();
     // Read the posted data
     if (ap_setup_client_block(m_req, REQUEST_CHUNKED_ERROR))
-        throw FatalProfileException("Apache function (setup_client_block) failed while reading profile submission.");
+        throw SAMLException("Apache function (setup_client_block) failed while reading POST request body.");
     if (!ap_should_client_block(m_req))
-        throw FatalProfileException("Apache function (should_client_block) failed while reading profile submission.");
+        throw SAMLException("Apache function (should_client_block) failed while reading POST request body.");
     if (m_req->remaining > 1024*1024)
-        throw FatalProfileException("Blocked too-large a submission to profile endpoint.");
-    string cgistr;
+        throw SAMLException("Blocked POST request body larger than size limit.");
+    m_gotBody=true;
     char buff[HUGE_STRING_LEN];
-    ap_hard_timeout("[mod_shib] getPostData", m_req);
+    ap_hard_timeout("[mod_shib] getRequestBody", m_req);
     memset(buff, 0, sizeof(buff));
     while (ap_get_client_block(m_req, buff, sizeof(buff)-1) > 0) {
       ap_reset_timeout(m_req);
-      cgistr += buff;
+      m_body += buff;
       memset(buff, 0, sizeof(buff));
     }
     ap_kill_timeout(m_req);
-
-    return cgistr;
+    return m_body.c_str();
   }
   virtual void clearHeader(const string &name) {
     ap_table_unset(m_req->headers_in, name.c_str());
@@ -303,10 +320,6 @@ public:
   }
   virtual void* returnDecline(void) { return (void*)DECLINED; }
   virtual void* returnOK(void) { return (void*)OK; }
-
-  request_rec* m_req;
-  shib_dir_config* m_dc;
-  shib_server_config* m_sc;
 };
 
 /********************************************************************************/
@@ -889,11 +902,12 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
     try {
         g_Config=&ShibTargetConfig::getConfig();
         g_Config->setFeatures(
+            ShibTargetConfig::Caching |
             ShibTargetConfig::Listener |
             ShibTargetConfig::Metadata |
             ShibTargetConfig::AAP |
             ShibTargetConfig::RequestMapper |
-            ShibTargetConfig::LocalExtensions |
+            ShibTargetConfig::InProcess |
             ShibTargetConfig::Logging
             );
         if (!g_Config->init(g_szSchemaDir)) {

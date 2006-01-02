@@ -22,6 +22,9 @@
 
 #include "config_win32.h"
 
+#define _CRT_NONSTDC_NO_DEPRECATE 1
+#define _CRT_SECURE_NO_DEPRECATE 1
+
 // SAML Runtime
 #include <saml/saml.h>
 #include <shib/shib.h>
@@ -154,10 +157,11 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
         g_Config=&ShibTargetConfig::getConfig();
         g_Config->setFeatures(
             ShibTargetConfig::Listener |
+            ShibTargetConfig::Caching |
             ShibTargetConfig::Metadata |
             ShibTargetConfig::AAP |
             ShibTargetConfig::RequestMapper |
-            ShibTargetConfig::LocalExtensions |
+            ShibTargetConfig::InProcess |
             ShibTargetConfig::Logging
             );
         if (!g_Config->init(schemadir)) {
@@ -462,8 +466,8 @@ public:
     // Set the cookie for later.  Use it during the redirect.
     m_cookie += "Set-Cookie: " + name + "=" + value + "\r\n";
   }
-  virtual string getArgs(void) { throw runtime_error("getArgs not implemented"); }
-  virtual string getPostData(void) { throw runtime_error("getPostData not implemented"); }
+  virtual const char* getQueryString() const { throw runtime_error("getQueryString not implemented"); }
+  virtual const char* getRequestBody() const { throw runtime_error("getRequestBody not implemented"); }
 };
 
 DWORD WriteClientError(PHTTP_FILTER_CONTEXT pfc, const char* msg)
@@ -571,9 +575,11 @@ class ShibTargetIsapiE : public ShibTarget
 {
   LPEXTENSION_CONTROL_BLOCK m_lpECB;
   string m_cookie;
+  mutable string m_body;
+  mutable bool m_gotBody;
   
 public:
-  ShibTargetIsapiE(LPEXTENSION_CONTROL_BLOCK lpECB, const site_t& site) {
+  ShibTargetIsapiE(LPEXTENSION_CONTROL_BLOCK lpECB, const site_t& site) : m_gotBody(false) {
     dynabuf ssl(5);
     GetServerVariable(lpECB,"HTTPS",ssl,5);
     bool SSL=(ssl=="on" || ssl=="ON");
@@ -666,28 +672,32 @@ public:
     // Set the cookie for later.  Use it during the redirect.
     m_cookie += "Set-Cookie: " + name + "=" + value + "\r\n";
   }
-  virtual string getArgs(void) {
-    return string(m_lpECB->lpszQueryString ? m_lpECB->lpszQueryString : "");
+  virtual const char* getQueryString() const {
+    return m_lpECB->lpszQueryString;
   }
-  virtual string getPostData(void) {
+  virtual const char* getRequestBody() const {
+    if (m_gotBody)
+        return m_body.c_str();
     if (m_lpECB->cbTotalBytes > 1024*1024) // 1MB?
-      throw FatalProfileException("Blocked too-large a submission to profile endpoint.");
+      throw SAMLException("Size of POST request body exceeded limit.");
     else if (m_lpECB->cbTotalBytes != m_lpECB->cbAvailable) {
-      string cgistr;
+      m_gotBody=true;
       char buf[8192];
       DWORD datalen=m_lpECB->cbTotalBytes;
       while (datalen) {
         DWORD buflen=8192;
         BOOL ret = m_lpECB->ReadClient(m_lpECB->ConnID, buf, &buflen);
         if (!ret || !buflen)
-          throw FatalProfileException("Error reading profile submission from browser.");
-        cgistr.append(buf, buflen);
+          throw SAMLException("Error reading POST request body from browser.");
+        m_body.append(buf, buflen);
         datalen-=buflen;
       }
-      return cgistr;
     }
-    else
-      return string(reinterpret_cast<char*>(m_lpECB->lpbData),m_lpECB->cbAvailable);
+    else {
+        m_gotBody=true;
+        m_body.assign(reinterpret_cast<char*>(m_lpECB->lpbData),m_lpECB->cbAvailable);
+    }
+    return m_body.c_str();
   }
   virtual void* sendPage(
     const string &msg,

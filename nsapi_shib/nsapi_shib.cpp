@@ -20,7 +20,17 @@
    12/13/04
 */
 
-#include "config_win32.h"
+#if defined (_MSC_VER) || defined(__BORLANDC__)
+# include "config_win32.h"
+#else
+# include "config.h"
+#endif
+
+#ifdef WIN32
+# define _CRT_NONSTDC_NO_DEPRECATE 1
+# define _CRT_SECURE_NO_DEPRECATE 1
+#endif
+
 
 // SAML Runtime
 #include <saml/saml.h>
