@@ -180,6 +180,9 @@ const XMLCh XML::Literals::Implementation[] =
 const XMLCh XML::Literals::index[] =
 { chLatin_i, chLatin_n, chLatin_d, chLatin_e, chLatin_x, chNull };
 
+const XMLCh XML::Literals::InProcess[] =
+{ chLatin_I, chLatin_n, chLatin_P, chLatin_r, chLatin_o, chLatin_c, chLatin_e, chLatin_s, chLatin_s, chNull };
+
 const XMLCh XML::Literals::isDefault[] =
 { chLatin_i, chLatin_s, chLatin_D, chLatin_e, chLatin_f, chLatin_a, chLatin_u, chLatin_l, chLatin_t, chNull };
 
@@ -224,6 +227,11 @@ const XMLCh XML::Literals::MySQLSessionCache[] =
 const XMLCh XML::Literals::name[]= { chLatin_n, chLatin_a, chLatin_m, chLatin_e, chNull };
 
 const XMLCh XML::Literals::Name[]= { chLatin_N, chLatin_a, chLatin_m, chLatin_e, chNull };
+
+const XMLCh XML::Literals::OutOfProcess[] =
+{ chLatin_O, chLatin_u, chLatin_t, chLatin_O, chLatin_f,
+  chLatin_P, chLatin_r, chLatin_o, chLatin_c, chLatin_e, chLatin_s, chLatin_s, chNull
+};
 
 const XMLCh XML::Literals::Path[]= { chLatin_P, chLatin_a, chLatin_t, chLatin_h, chNull };
 
