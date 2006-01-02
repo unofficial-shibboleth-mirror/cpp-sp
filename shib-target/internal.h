@@ -26,6 +26,8 @@
 #define __shibtarget_internal_h__
 
 #ifdef WIN32
+# define _CRT_NONSTDC_NO_DEPRECATE 1
+# define _CRT_SECURE_NO_DEPRECATE 1
 # define SHIBTARGET_EXPORTS __declspec(dllexport)
 #endif
 
@@ -52,49 +54,6 @@
 #define SHIB_LOGGING "WARN"
 
 namespace shibtarget {
-
-    class RPCHandlePool;
-    class RPCListener : public virtual IListener
-    {
-    public:
-        RPCListener(const DOMElement* e);
-        ~RPCListener();
-
-        void sessionNew(
-            const IApplication* application,
-            int supported_profiles,
-            const char* recipient,
-            const char* packet,
-            const char* ip,
-            std::string& target,
-            std::string& cookie,
-            std::string& provider_id
-            ) const;
-    
-        void sessionGet(
-            const IApplication* application,
-            const char* cookie,
-            const char* ip,
-            ISessionCacheEntry** pentry
-            ) const;
-    
-        void sessionEnd(
-            const IApplication* application,
-            const char* cookie
-        ) const;
-        
-        void ping(int& i) const;
-
-        // Implemented by socket-specific subclasses. Return type must be ONC CLIENT*
-        virtual void* getClientHandle(ShibSocket& s, u_long program, u_long version) const=0;
-
-    protected:
-        log4cpp::Category* log;
-    
-    private:
-        mutable RPCHandlePool* m_rpcpool;
-    };
-
     // Generic class, which handles the IPropertySet configuration interface.
     // Most of the basic configuration details are exposed via this interface.
     // This implementation extracts the XML tree structure and caches it in a map
@@ -189,7 +148,7 @@ namespace shibtarget {
         bool init(const char* schemadir);
         bool load(const char* config);
         void shutdown();
-        
+
         log4cpp::Category& getTransactionLog() { m_tranLogLock->lock(); return *m_tranLog; }
         void releaseTransactionLog() { m_tranLogLock->unlock();}
     private:
@@ -197,6 +156,10 @@ namespace shibtarget {
         shibboleth::Mutex* m_tranLogLock;
         static IConfig* ShibTargetConfigFactory(const DOMElement* e);
     };
+
+    // Template cleanup functions for use with for_each algorithm
+    template<class T> void cleanup(T* ptr) { delete ptr; }
+    template<class A,class B> void cleanup(std::pair<A,B*> p) { delete p.second; }
 }
 
 #endif
