@@ -10,37 +10,10 @@
 static struct timeval TIMEOUT = { 25, 0 };
 
 enum clnt_stat 
-shibrpc_ping_2(int *argp, int *clnt_res, CLIENT *clnt)
+shibrpc_call_3(shibrpc_args_3 *argp, shibrpc_ret_3 *clnt_res, CLIENT *clnt)
 {
-	return (clnt_call(clnt, shibrpc_ping,
-		(xdrproc_t) xdr_int, (caddr_t) argp,
-		(xdrproc_t) xdr_int, (caddr_t) clnt_res,
-		TIMEOUT));
-}
-
-enum clnt_stat 
-shibrpc_new_session_2(shibrpc_new_session_args_2 *argp, shibrpc_new_session_ret_2 *clnt_res, CLIENT *clnt)
-{
-	return (clnt_call(clnt, shibrpc_new_session,
-		(xdrproc_t) xdr_shibrpc_new_session_args_2, (caddr_t) argp,
-		(xdrproc_t) xdr_shibrpc_new_session_ret_2, (caddr_t) clnt_res,
-		TIMEOUT));
-}
-
-enum clnt_stat 
-shibrpc_get_session_2(shibrpc_get_session_args_2 *argp, shibrpc_get_session_ret_2 *clnt_res, CLIENT *clnt)
-{
-	return (clnt_call(clnt, shibrpc_get_session,
-		(xdrproc_t) xdr_shibrpc_get_session_args_2, (caddr_t) argp,
-		(xdrproc_t) xdr_shibrpc_get_session_ret_2, (caddr_t) clnt_res,
-		TIMEOUT));
-}
-
-enum clnt_stat 
-shibrpc_end_session_2(shibrpc_end_session_args_2 *argp, shibrpc_end_session_ret_2 *clnt_res, CLIENT *clnt)
-{
-	return (clnt_call(clnt, shibrpc_end_session,
-		(xdrproc_t) xdr_shibrpc_end_session_args_2, (caddr_t) argp,
-		(xdrproc_t) xdr_shibrpc_end_session_ret_2, (caddr_t) clnt_res,
+	return (clnt_call(clnt, shibrpc_call,
+		(xdrproc_t) xdr_shibrpc_args_3, (caddr_t) argp,
+		(xdrproc_t) xdr_shibrpc_ret_3, (caddr_t) clnt_res,
 		TIMEOUT));
 }

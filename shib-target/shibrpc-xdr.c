@@ -12,89 +12,21 @@
 
 
 bool_t
-xdr_shibrpc_new_session_args_2 (XDR *xdrs, shibrpc_new_session_args_2 *objp)
+xdr_shibrpc_args_3 (XDR *xdrs, shibrpc_args_3 *objp)
 {
 	register int32_t *buf;
 
-	 if (!xdr_int (xdrs, &objp->supported_profiles))
-		 return FALSE;
-	 if (!xdr_string (xdrs, &objp->application_id, ~0))
-		 return FALSE;
-	 if (!xdr_string (xdrs, &objp->packet, ~0))
-		 return FALSE;
-	 if (!xdr_string (xdrs, &objp->recipient, ~0))
-		 return FALSE;
-	 if (!xdr_string (xdrs, &objp->client_addr, ~0))
+	 if (!xdr_string (xdrs, &objp->xml, ~0))
 		 return FALSE;
 	return TRUE;
 }
 
 bool_t
-xdr_shibrpc_new_session_ret_2 (XDR *xdrs, shibrpc_new_session_ret_2 *objp)
+xdr_shibrpc_ret_3 (XDR *xdrs, shibrpc_ret_3 *objp)
 {
 	register int32_t *buf;
 
-	 if (!xdr_string (xdrs, &objp->status, ~0))
-		 return FALSE;
-	 if (!xdr_string (xdrs, &objp->target, ~0))
-		 return FALSE;
-	 if (!xdr_string (xdrs, &objp->cookie, ~0))
-		 return FALSE;
-	 if (!xdr_string (xdrs, &objp->provider_id, ~0))
-		 return FALSE;
-	return TRUE;
-}
-
-bool_t
-xdr_shibrpc_get_session_args_2 (XDR *xdrs, shibrpc_get_session_args_2 *objp)
-{
-	register int32_t *buf;
-
-	 if (!xdr_string (xdrs, &objp->application_id, ~0))
-		 return FALSE;
-	 if (!xdr_string (xdrs, &objp->cookie, ~0))
-		 return FALSE;
-	 if (!xdr_string (xdrs, &objp->client_addr, ~0))
-		 return FALSE;
-	return TRUE;
-}
-
-bool_t
-xdr_shibrpc_get_session_ret_2 (XDR *xdrs, shibrpc_get_session_ret_2 *objp)
-{
-	register int32_t *buf;
-
-	 if (!xdr_string (xdrs, &objp->status, ~0))
-		 return FALSE;
-	 if (!xdr_int (xdrs, &objp->profile))
-		 return FALSE;
-	 if (!xdr_string (xdrs, &objp->provider_id, ~0))
-		 return FALSE;
-	 if (!xdr_string (xdrs, &objp->auth_statement, ~0))
-		 return FALSE;
-	 if (!xdr_string (xdrs, &objp->attr_response_pre, ~0))
-		 return FALSE;
-	 if (!xdr_string (xdrs, &objp->attr_response_post, ~0))
-		 return FALSE;
-	return TRUE;
-}
-
-bool_t
-xdr_shibrpc_end_session_args_2 (XDR *xdrs, shibrpc_end_session_args_2 *objp)
-{
-	register int32_t *buf;
-
-	 if (!xdr_string (xdrs, &objp->cookie, ~0))
-		 return FALSE;
-	return TRUE;
-}
-
-bool_t
-xdr_shibrpc_end_session_ret_2 (XDR *xdrs, shibrpc_end_session_ret_2 *objp)
-{
-	register int32_t *buf;
-
-	 if (!xdr_string (xdrs, &objp->status, ~0))
+	 if (!xdr_string (xdrs, &objp->xml, ~0))
 		 return FALSE;
 	return TRUE;
 }

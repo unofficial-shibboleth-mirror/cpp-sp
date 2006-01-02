@@ -9,6 +9,7 @@
 #include <rpc/pmap_clnt.h>
 #include <string.h>
 #include <memory.h>
+
 #ifdef WIN32
 # include <winsock.h>
 #else
@@ -21,47 +22,27 @@
 #endif
 
 void
-shibrpc_prog_2(struct svc_req *rqstp, register SVCXPRT *transp)
+shibrpc_prog_3(struct svc_req *rqstp, register SVCXPRT *transp)
 {
 	union {
-		int shibrpc_ping_2_arg;
-		shibrpc_new_session_args_2 shibrpc_new_session_2_arg;
-		shibrpc_get_session_args_2 shibrpc_get_session_2_arg;
-		shibrpc_end_session_args_2 shibrpc_end_session_2_arg;
+		shibrpc_args_3 shibrpc_call_3_arg;
 	} argument;
 	union {
-		int shibrpc_ping_2_res;
-		shibrpc_new_session_ret_2 shibrpc_new_session_2_res;
-		shibrpc_get_session_ret_2 shibrpc_get_session_2_res;
-		shibrpc_end_session_ret_2 shibrpc_end_session_2_res;
+		shibrpc_ret_3 shibrpc_call_3_res;
 	} result;
 	bool_t retval;
 	xdrproc_t _xdr_argument, _xdr_result;
 	bool_t (*local)(char *, void *, struct svc_req *);
 
 	switch (rqstp->rq_proc) {
-	case shibrpc_ping:
-		_xdr_argument = (xdrproc_t) xdr_int;
-		_xdr_result = (xdrproc_t) xdr_int;
-		local = (bool_t (*) (char *, void *,  struct svc_req *))shibrpc_ping_2_svc;
-		break;
+	case NULLPROC:
+		(void) svc_sendreply (transp, (xdrproc_t) xdr_void, (char *)NULL);
+		return;
 
-	case shibrpc_new_session:
-		_xdr_argument = (xdrproc_t) xdr_shibrpc_new_session_args_2;
-		_xdr_result = (xdrproc_t) xdr_shibrpc_new_session_ret_2;
-		local = (bool_t (*) (char *, void *,  struct svc_req *))shibrpc_new_session_2_svc;
-		break;
-
-	case shibrpc_get_session:
-		_xdr_argument = (xdrproc_t) xdr_shibrpc_get_session_args_2;
-		_xdr_result = (xdrproc_t) xdr_shibrpc_get_session_ret_2;
-		local = (bool_t (*) (char *, void *,  struct svc_req *))shibrpc_get_session_2_svc;
-		break;
-
-	case shibrpc_end_session:
-		_xdr_argument = (xdrproc_t) xdr_shibrpc_end_session_args_2;
-		_xdr_result = (xdrproc_t) xdr_shibrpc_end_session_ret_2;
-		local = (bool_t (*) (char *, void *,  struct svc_req *))shibrpc_end_session_2_svc;
+	case shibrpc_call:
+		_xdr_argument = (xdrproc_t) xdr_shibrpc_args_3;
+		_xdr_result = (xdrproc_t) xdr_shibrpc_ret_3;
+		local = (bool_t (*) (char *, void *,  struct svc_req *))shibrpc_call_3_svc;
 		break;
 
 	default:
@@ -81,7 +62,7 @@ shibrpc_prog_2(struct svc_req *rqstp, register SVCXPRT *transp)
 		fprintf (stderr, "%s", "unable to free arguments");
 		exit (1);
 	}
-	if (!shibrpc_prog_2_freeresult (transp, _xdr_result, (caddr_t) &result))
+	if (!shibrpc_prog_3_freeresult (transp, _xdr_result, (caddr_t) &result))
 		fprintf (stderr, "%s", "unable to free results");
 
 	return;
