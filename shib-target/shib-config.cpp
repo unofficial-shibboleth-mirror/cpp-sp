@@ -42,7 +42,7 @@ namespace {
 PlugManager::Factory UnixListenerFactory;
 #endif
 PlugManager::Factory TCPListenerFactory;
-PlugManager::Factory MemoryListenerFactory;
+//PlugManager::Factory MemoryListenerFactory;
 PlugManager::Factory MemoryCacheFactory;
 PlugManager::Factory XMLRequestMapFactory;
 PlugManager::Factory ShibSessionInitiatorFactory;
@@ -134,7 +134,7 @@ bool STConfig::init(const char* schemadir)
     samlConf.getPlugMgr().regFactory(shibtarget::XML::UnixListenerType,&UnixListenerFactory);
 #endif
     samlConf.getPlugMgr().regFactory(shibtarget::XML::TCPListenerType,&TCPListenerFactory);
-    samlConf.getPlugMgr().regFactory(shibtarget::XML::MemoryListenerType,&MemoryListenerFactory);
+    //samlConf.getPlugMgr().regFactory(shibtarget::XML::MemoryListenerType,&MemoryListenerFactory);
     samlConf.getPlugMgr().regFactory(shibtarget::XML::MemorySessionCacheType,&MemoryCacheFactory);
     samlConf.getPlugMgr().regFactory(shibtarget::XML::LegacyRequestMapType,&XMLRequestMapFactory);
     samlConf.getPlugMgr().regFactory(shibtarget::XML::XMLRequestMapType,&XMLRequestMapFactory);
@@ -181,6 +181,7 @@ bool STConfig::load(const char* config)
         dummy->setAttributeNS(NULL,uri,src.get());
         m_ini=ShibTargetConfigFactory(dummy);
         dummydoc->release();
+        m_ini->init();
         
         pair<bool,unsigned int> skew=m_ini->getUnsignedInt("clockSkew");
         SAMLConfig::getConfig().clock_skew_secs=skew.first ? skew.second : 180;
