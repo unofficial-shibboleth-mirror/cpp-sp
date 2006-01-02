@@ -25,7 +25,7 @@
 #include <shib/shib-threads.h>
 #include <log4cpp/Category.hh>
 #include <log4cpp/PropertyConfigurator.hh>
-
+#include <algorithm>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -65,13 +65,12 @@ namespace shibtarget {
         const SAMLBinding* getBinding(const XMLCh* binding) const
             {return XMLString::compareString(SAMLBinding::SOAP,binding) ? NULL : m_binding;}
         SAMLBrowserProfile::ArtifactMapper* getArtifactMapper() const {return new STArtifactMapper(this);}
-        const IPropertySet* getDefaultSessionInitiator() const;
-        const IPropertySet* getSessionInitiatorById(const char* id) const;
-        const IPropertySet* getDefaultAssertionConsumerService() const;
-        const IPropertySet* getAssertionConsumerServiceByIndex(unsigned short index) const;
-        Iterator<const IPropertySet*> getAssertionConsumerServicesByBinding(const XMLCh* binding) const;
-        Iterator<const IPropertySet*> getAssertionConsumerServicesByBinding(const char* binding) const;
-        Iterator<const IPropertySet*> getHandlerConfig(const char* path) const;
+        const IHandler* getDefaultSessionInitiator() const;
+        const IHandler* getSessionInitiatorById(const char* id) const;
+        const IHandler* getDefaultAssertionConsumerService() const;
+        const IHandler* getAssertionConsumerServiceByIndex(unsigned short index) const;
+        Iterator<const IHandler*> getAssertionConsumerServicesByBinding(const XMLCh* binding) const;
+        Iterator<const IHandler*> getHandlers(const char* path) const;
         
         // Provides filter to exclude special config elements.
         short acceptNode(const DOMNode* node) const;
@@ -89,13 +88,34 @@ namespace shibtarget {
         ShibBrowserProfile* m_profile;
         SAMLBinding* m_binding;
         ShibHTTPHook* m_bindingHook;
-        vector<XMLPropertySet*> m_handlers;
-        map<string,vector<const IPropertySet*> > m_handlerMap;
-        map<unsigned int,const IPropertySet*> m_acsIndexMap;
-        map<string,vector<const IPropertySet*> > m_acsBindingMap;
-        const IPropertySet* m_acsDefault;
-        map<string,const IPropertySet*> m_sessionInitMap;
-        const IPropertySet* m_sessionInitDefault;
+
+        // vectors manage object life for handlers and their property sets
+        vector<IHandler*> m_handlers;
+        vector<XMLPropertySet*> m_handlerProps;
+
+        // maps location (path info) to applicable handlers
+        map<string,vector<const IHandler*> > m_handlerMap;
+
+        // maps unique indexes to consumer services
+        map<unsigned int,const IHandler*> m_acsIndexMap;
+        
+        // pointer to default consumer service
+        const IHandler* m_acsDefault;
+
+        // maps binding strings to supporting consumer service(s)
+#ifdef HAVE_GOOD_STL
+        typedef map<xstring,vector<const IHandler*> > ACSBindingMap;
+#else
+        typedef map<string,vector<const IHandler*> > ACSBindingMap;
+#endif
+        ACSBindingMap m_acsBindingMap;
+
+        // maps unique ID strings to session initiators
+        map<string,const IHandler*> m_sessionInitMap;
+
+        // pointer to default session initiator
+        const IHandler* m_sessionInitDefault;
+
         XMLPropertySet* m_credDefault;
 #ifdef HAVE_GOOD_STL
         map<xstring,XMLPropertySet*> m_credMap;
@@ -132,7 +152,16 @@ namespace shibtarget {
     {
     public:
         XMLConfig(const DOMElement* e) : ReloadableXMLFile(e), m_listener(NULL), m_sessionCache(NULL), m_replayCache(NULL) {}
-        ~XMLConfig() {delete m_listener; delete m_sessionCache; delete m_replayCache;}
+        ~XMLConfig() {
+            delete m_sessionCache;
+            m_sessionCache=NULL;
+            delete m_replayCache;
+            m_replayCache=NULL;
+            delete m_listener;
+            m_listener=NULL;
+        }
+
+        void init() { getImplementation(); }
 
         // IPropertySet
         pair<bool,bool> getBool(const char* name, const char* ns=NULL) const {return static_cast<XMLConfigImpl*>(m_impl)->getBool(name,ns);}
@@ -144,7 +173,7 @@ namespace shibtarget {
         const DOMElement* getElement() const {return static_cast<XMLConfigImpl*>(m_impl)->getElement();}
 
         // IConfig
-        const IListener* getListener() const {return m_listener;}
+        IListener* getListener() const {return m_listener;}
         ISessionCache* getSessionCache() const {return m_sessionCache;}
         IReplayCache* getReplayCache() const {return m_replayCache;}
         IRequestMapper* getRequestMapper() const {return static_cast<XMLConfigImpl*>(m_impl)->m_requestMapper;}
@@ -168,17 +197,14 @@ namespace shibtarget {
 
 IConfig* STConfig::ShibTargetConfigFactory(const DOMElement* e)
 {
-    auto_ptr<XMLConfig> ret(new XMLConfig(e));
-    ret->getImplementation();
-    return ret.release();
+    return new XMLConfig(e);
 }
 
 XMLPropertySet::~XMLPropertySet()
 {
     for (map<string,pair<char*,const XMLCh*> >::iterator i=m_map.begin(); i!=m_map.end(); i++)
         XMLString::release(&(i->second.first));
-    for (map<string,IPropertySet*>::iterator j=m_nested.begin(); j!=m_nested.end(); j++)
-        delete j->second;
+    for_each(m_nested.begin(),m_nested.end(),cleanup<string,IPropertySet>);
 }
 
 void XMLPropertySet::load(
@@ -207,7 +233,7 @@ void XMLPropertySet::load(
             if (remapper) {
                 map<string,string>::const_iterator remap=remapper->find(realname);
                 if (remap!=remapper->end()) {
-                    log.debug("remapping property (%s) to (%s)",realname,remap->second.c_str());
+                    log.warn("remapping property (%s) to (%s)",realname,remap->second.c_str());
                     realname=remap->second.c_str();
                 }
             }
@@ -235,7 +261,7 @@ void XMLPropertySet::load(
         if (remapper) {
             map<string,string>::const_iterator remap=remapper->find(realname);
             if (remap!=remapper->end()) {
-                log.debug("remapping property set (%s) to (%s)",realname,remap->second.c_str());
+                log.warn("remapping property set (%s) to (%s)",realname,remap->second.c_str());
                 realname=remap->second.c_str();
             }
         }
@@ -259,7 +285,7 @@ void XMLPropertySet::load(
 
 pair<bool,bool> XMLPropertySet::getBool(const char* name, const char* ns) const
 {
-    pair<bool,bool> ret=pair<bool,bool>(false,false);
+    pair<bool,bool> ret(false,false);
     map<string,pair<char*,const XMLCh*> >::const_iterator i;
 
     if (ns)
@@ -276,7 +302,7 @@ pair<bool,bool> XMLPropertySet::getBool(const char* name, const char* ns) const
 
 pair<bool,const char*> XMLPropertySet::getString(const char* name, const char* ns) const
 {
-    pair<bool,const char*> ret=pair<bool,const char*>(false,NULL);
+    pair<bool,const char*> ret(false,NULL);
     map<string,pair<char*,const XMLCh*> >::const_iterator i;
 
     if (ns)
@@ -293,7 +319,7 @@ pair<bool,const char*> XMLPropertySet::getString(const char* name, const char* n
 
 pair<bool,const XMLCh*> XMLPropertySet::getXMLString(const char* name, const char* ns) const
 {
-    pair<bool,const XMLCh*> ret=pair<bool,const XMLCh*>(false,NULL);
+    pair<bool,const XMLCh*> ret(false,NULL);
     map<string,pair<char*,const XMLCh*> >::const_iterator i;
 
     if (ns)
@@ -310,7 +336,7 @@ pair<bool,const XMLCh*> XMLPropertySet::getXMLString(const char* name, const cha
 
 pair<bool,unsigned int> XMLPropertySet::getUnsignedInt(const char* name, const char* ns) const
 {
-    pair<bool,unsigned int> ret=pair<bool,unsigned int>(false,0);
+    pair<bool,unsigned int> ret(false,0);
     map<string,pair<char*,const XMLCh*> >::const_iterator i;
 
     if (ns)
@@ -327,7 +353,7 @@ pair<bool,unsigned int> XMLPropertySet::getUnsignedInt(const char* name, const c
 
 pair<bool,int> XMLPropertySet::getInt(const char* name, const char* ns) const
 {
-    pair<bool,int> ret=pair<bool,int>(false,0);
+    pair<bool,int> ret(false,0);
     map<string,pair<char*,const XMLCh*> >::const_iterator i;
 
     if (ns)
@@ -388,63 +414,126 @@ XMLApplication::XMLApplication(
         ShibTargetConfig& conf=ShibTargetConfig::getConfig();
         SAMLConfig& shibConf=SAMLConfig::getConfig();
 
-        if (conf.isEnabled(ShibTargetConfig::RequestMapper)) {
-            // Process handlers.
-            bool hardACS=false, hardSessionInit=false;
-            DOMElement* handler=saml::XML::getFirstChildElement(propcheck->getElement());
-            while (handler) {
-                XMLPropertySet* hprops=new XMLPropertySet();
+        // Process handlers.
+        bool hardACS=false, hardSessionInit=false;
+        DOMElement* handler=saml::XML::getFirstChildElement(propcheck->getElement());
+        while (handler) {
+            // A handler is split across a property set and the plugin itself, which is based on the Binding property.
+            // We build both objects first and then insert them into various structures for lookup.
+            IHandler* hobj=NULL;
+            XMLPropertySet* hprops=new XMLPropertySet();
+            try {
                 hprops->load(handler,log,this); // filter irrelevant for now, no embedded elements expected
-                m_handlers.push_back(hprops);
-                
-                // Check for it in the map.
-                const char* location=hprops->getString("Location").second;
-                if (m_handlerMap.count(location)==0)
-                    m_handlerMap[location]=vector<const IPropertySet*>(1,hprops);
-                else
-                    m_handlerMap[location].push_back(hprops);
-                
-                // If it's an ACS or SI, handle lookup mappings and defaulting.
-                if (saml::XML::isElementNamed(handler,shibtarget::XML::SAML2META_NS,SHIBT_L(AssertionConsumerService))) {
-                    
-                    // Map it.                    
-                    const char* binding=hprops->getString("Binding").second;
-                    if (m_acsBindingMap.count(binding)==0)
-                        m_acsBindingMap[binding]=vector<const IPropertySet*>(1,hprops);
-                    else
-                        m_acsBindingMap[binding].push_back(hprops);
-                    m_acsIndexMap[hprops->getUnsignedInt("index").second]=hprops;
-                    
-                    if (!hardACS) {
-                        pair<bool,bool> defprop=hprops->getBool("isDefault");
-                        if (defprop.first) {
-                            if (defprop.second) {
-                                hardACS=true;
-                                m_acsDefault=hprops;
-                            }
-                        }
-                        else if (!m_acsDefault)
-                            m_acsDefault=hprops;
-                    }
+                const char* bindprop=hprops->getString("Binding").second;
+                if (!bindprop)
+                    throw ConfigurationException("Handler element has no Binding attribute, skipping it...");
+                IPlugIn* hplug=shibConf.getPlugMgr().newPlugin(bindprop,handler);
+                hobj=dynamic_cast<IHandler*>(hplug);
+                if (!hobj) {
+                    delete hplug;
+                    throw UnsupportedProfileException(
+                        "Plugin for binding ($1) does not implement IHandler interface.",params(1,bindprop)
+                        );
                 }
-                else if (saml::XML::isElementNamed(handler,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(SessionInitiator))) {
-                    pair<bool,const char*> si_id=hprops->getString("id");
-                    if (si_id.first && si_id.second)
-                        m_sessionInitMap[si_id.second]=hprops;
-                    if (!hardSessionInit) {
-                        pair<bool,bool> defprop=hprops->getBool("isDefault");
-                        if (defprop.first) {
-                            if (defprop.second) {
-                                hardSessionInit=true;
-                                m_sessionInitDefault=hprops;
-                            }
-                        }
-                        else if (!m_sessionInitDefault)
-                            m_sessionInitDefault=hprops;
-                    }
-                }
-                handler=saml::XML::getNextSiblingElement(handler);
             }
+            catch (SAMLException& ex) {
+                // If we get here, the handler's not built, so dispose of the property set.
+                log.error("caught exception processing a handler element: %s",ex.what());
+                delete hprops;
+                hprops=NULL;
+            }
+            if (!hprops)
+                continue;
+            
+            // Save off the objects after giving the property set to the handler for its use.
+            hobj->setProperties(hprops);
+            m_handlers.push_back(hobj);
+            m_handlerProps.push_back(hprops);
+
+            // Check for it in the location map.
+            const char* location=hprops->getString("Location").second;
+            if (m_handlerMap.count(location)==0)
+                m_handlerMap[location]=vector<const IHandler*>(1,hobj);
+            else
+                m_handlerMap[location].push_back(hobj);
+            
+            // If it's an ACS or SI, handle index/id mappings and defaulting.
+            if (saml::XML::isElementNamed(handler,shibtarget::XML::SAML2META_NS,SHIBT_L(AssertionConsumerService))) {
+                // Map it.
+#ifdef HAVE_GOOD_STL
+                const XMLCh* binding=hprops->getXMLString("Binding").second;
+#else
+                const char* binding=hprops->getString("Binding").second;
+#endif
+                if (m_acsBindingMap.count(binding)==0)
+                    m_acsBindingMap[binding]=vector<const IHandler*>(1,hobj);
+                else
+                    m_acsBindingMap[binding].push_back(hobj);
+                m_acsIndexMap[hprops->getUnsignedInt("index").second]=hobj;
+                
+                if (!hardACS) {
+                    pair<bool,bool> defprop=hprops->getBool("isDefault");
+                    if (defprop.first) {
+                        if (defprop.second) {
+                            hardACS=true;
+                            m_acsDefault=hobj;
+                        }
+                    }
+                    else if (!m_acsDefault)
+                        m_acsDefault=hobj;
+                }
+            }
+            else if (saml::XML::isElementNamed(handler,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(SessionInitiator))) {
+                pair<bool,const char*> si_id=hprops->getString("id");
+                if (si_id.first && si_id.second)
+                    m_sessionInitMap[si_id.second]=hobj;
+                if (!hardSessionInit) {
+                    pair<bool,bool> defprop=hprops->getBool("isDefault");
+                    if (defprop.first) {
+                        if (defprop.second) {
+                            hardSessionInit=true;
+                            m_sessionInitDefault=hobj;
+                        }
+                    }
+                    else if (!m_sessionInitDefault)
+                        m_sessionInitDefault=hobj;
+                }
+            }
+            handler=saml::XML::getNextSiblingElement(handler);
+        }
+
+        // If no handlers defined at the root, assume a legacy configuration.
+        if (!m_base && m_handlers.empty()) {
+            // A legacy config installs a SAML POST handler and a Shib session-initiator
+            // at the root handler location. We use the Sessions element itself as the
+            // IPropertySet.
+            auto_ptr_char b1(Constants::SHIB_SESSIONINIT_PROFILE_URI);
+            IPlugIn* hplug=shibConf.getPlugMgr().newPlugin(b1.get(),propcheck->getElement());
+            IHandler* h1=dynamic_cast<IHandler*>(hplug);
+            if (!h1) {
+                delete hplug;
+                throw UnsupportedProfileException(
+                    "Plugin for binding ($1) does not implement IHandler interface.",params(1,b1.get())
+                    );
+            }
+            h1->setProperties(propcheck);
+            m_handlers.push_back(h1);
+            m_handlerMap[""]=vector<const IHandler*>(1,h1);
+            m_sessionInitDefault=h1;
+
+            auto_ptr_char b2(SAMLBrowserProfile::BROWSER_POST);
+            hplug=shibConf.getPlugMgr().newPlugin(b1.get(),propcheck->getElement());
+            IHandler* h2=dynamic_cast<IHandler*>(hplug);
+            if (!h2) {
+                delete hplug;
+                throw UnsupportedProfileException(
+                    "Plugin for binding ($1) does not implement IHandler interface.",params(1,b2.get())
+                    );
+            }
+            h2->setProperties(propcheck);
+            m_handlers.push_back(h2);
+            m_handlerMap[""].push_back(h2);
+            m_acsDefault=h2;
         }
         
         // Process general configuration elements.
@@ -603,29 +692,18 @@ void XMLApplication::cleanup()
     delete m_bindingHook;
     delete m_binding;
     delete m_profile;
-    for (vector<XMLPropertySet*>::iterator h=m_handlers.begin(); h!=m_handlers.end(); h++)
-        delete *h;
+    for_each(m_handlers.begin(),m_handlers.end(),shibtarget::cleanup<IHandler>);
         
     delete m_credDefault;
 #ifdef HAVE_GOOD_STL
-    for (map<xstring,XMLPropertySet*>::iterator c=m_credMap.begin(); c!=m_credMap.end(); c++) {
+    for_each(m_credMap.begin(),m_credMap.end(),shibtarget::cleanup<xstring,XMLPropertySet>);
 #else
-    for (map<const XMLCh*,XMLPropertySet*>::iterator c=m_credMap.begin(); c!=m_credMap.end(); c++) {
+    for_each(m_credMap.begin(),m_credMap.end(),shibtarget::cleanup<const XMLCh*,XMLPropertySet>);
 #endif
-        delete c->second;
-    }
-    Iterator<SAMLAttributeDesignator*> i(m_designators);
-    while (i.hasNext())
-        delete i.next();
-    Iterator<IAAP*> j(m_aaps);
-    while (j.hasNext())
-        delete j.next();
-    Iterator<IMetadata*> k(m_metadatas);
-    while (k.hasNext())
-        delete k.next();
-    Iterator<ITrust*> l(m_trusts);
-    while (l.hasNext())
-        delete l.next();
+    for_each(m_designators.begin(),m_designators.end(),shibtarget::cleanup<SAMLAttributeDesignator>);
+    for_each(m_aaps.begin(),m_aaps.end(),shibtarget::cleanup<IAAP>);
+    for_each(m_metadatas.begin(),m_metadatas.end(),shibtarget::cleanup<IMetadata>);
+    for_each(m_trusts.begin(),m_trusts.end(),shibtarget::cleanup<ITrust>);
 }
 
 short XMLApplication::acceptNode(const DOMNode* node) const
@@ -760,53 +838,52 @@ const IPropertySet* XMLApplication::getCredentialUse(const IEntityDescriptor* pr
     return m_credDefault;
 }
 
-const IPropertySet* XMLApplication::getDefaultSessionInitiator() const
+const IHandler* XMLApplication::getDefaultSessionInitiator() const
 {
     if (m_sessionInitDefault) return m_sessionInitDefault;
     return m_base ? m_base->getDefaultSessionInitiator() : NULL;
 }
 
-const IPropertySet* XMLApplication::getSessionInitiatorById(const char* id) const
+const IHandler* XMLApplication::getSessionInitiatorById(const char* id) const
 {
-    map<string,const IPropertySet*>::const_iterator i=m_sessionInitMap.find(id);
+    map<string,const IHandler*>::const_iterator i=m_sessionInitMap.find(id);
     if (i!=m_sessionInitMap.end()) return i->second;
     return m_base ? m_base->getSessionInitiatorById(id) : NULL;
 }
 
-const IPropertySet* XMLApplication::getDefaultAssertionConsumerService() const
+const IHandler* XMLApplication::getDefaultAssertionConsumerService() const
 {
     if (m_acsDefault) return m_acsDefault;
     return m_base ? m_base->getDefaultAssertionConsumerService() : NULL;
 }
 
-const IPropertySet* XMLApplication::getAssertionConsumerServiceByIndex(unsigned short index) const
+const IHandler* XMLApplication::getAssertionConsumerServiceByIndex(unsigned short index) const
 {
-    map<unsigned int,const IPropertySet*>::const_iterator i=m_acsIndexMap.find(index);
+    map<unsigned int,const IHandler*>::const_iterator i=m_acsIndexMap.find(index);
     if (i!=m_acsIndexMap.end()) return i->second;
     return m_base ? m_base->getAssertionConsumerServiceByIndex(index) : NULL;
 }
 
-Iterator<const IPropertySet*> XMLApplication::getAssertionConsumerServicesByBinding(const char* binding) const
+Iterator<const IHandler*> XMLApplication::getAssertionConsumerServicesByBinding(const XMLCh* binding) const
 {
-    map<string,vector<const IPropertySet*> >::const_iterator i=m_acsBindingMap.find(binding);
+#ifdef HAVE_GOOD_STL
+    ACSBindingMap::const_iterator i=m_acsBindingMap.find(binding);
+#else
+    auto_ptr_char temp(binding);
+    ACSBindingMap::const_iterator i=m_acsBindingMap.find(temp.get());
+#endif
     if (i!=m_acsBindingMap.end())
         return i->second;
-    return m_base ? m_base->getAssertionConsumerServicesByBinding(binding) : EMPTY(const IPropertySet*);
+    return m_base ? m_base->getAssertionConsumerServicesByBinding(binding) : EMPTY(const IHandler*);
 }
 
-Iterator<const IPropertySet*> XMLApplication::getAssertionConsumerServicesByBinding(const XMLCh* binding) const
-{
-    auto_ptr_char temp(binding);
-    return getAssertionConsumerServicesByBinding(temp.get());
-}
-
-Iterator<const IPropertySet*> XMLApplication::getHandlerConfig(const char* path) const
+Iterator<const IHandler*> XMLApplication::getHandlers(const char* path) const
 {
     string wrap(path);
-    map<string,vector<const IPropertySet*> >::const_iterator i=m_handlerMap.find(wrap.substr(0,wrap.find('?')));
+    map<string,vector<const IHandler*> >::const_iterator i=m_handlerMap.find(wrap.substr(0,wrap.find('?')));
     if (i!=m_handlerMap.end())
         return i->second;
-    return m_base ? m_base->getHandlerConfig(path) : EMPTY(const IPropertySet*);
+    return m_base ? m_base->getHandlers(path) : EMPTY(const IHandler*);
 }
 
 ReloadableXMLFileImpl* XMLConfig::newImplementation(const char* pathname, bool first) const
@@ -863,36 +940,41 @@ void XMLConfigImpl::init(bool first)
         const DOMElement* SHAR=saml::XML::getFirstChildElement(ReloadableXMLFileImpl::m_root,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(SHAR));
         if (!SHAR)
             SHAR=saml::XML::getFirstChildElement(ReloadableXMLFileImpl::m_root,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Global));
+        if (!SHAR)
+            SHAR=saml::XML::getFirstChildElement(ReloadableXMLFileImpl::m_root,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(OutOfProcess));
         const DOMElement* SHIRE=saml::XML::getFirstChildElement(ReloadableXMLFileImpl::m_root,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(SHIRE));
         if (!SHIRE)
             SHIRE=saml::XML::getFirstChildElement(ReloadableXMLFileImpl::m_root,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Local));
+        if (!SHIRE)
+            SHIRE=saml::XML::getFirstChildElement(ReloadableXMLFileImpl::m_root,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(InProcess));
 
         // Initialize log4cpp manually in order to redirect log messages as soon as possible.
         if (conf.isEnabled(ShibTargetConfig::Logging)) {
             const XMLCh* logger=NULL;
-            if (conf.isEnabled(ShibTargetConfig::GlobalExtensions))
+            if (conf.isEnabled(ShibTargetConfig::OutOfProcess))
                 logger=SHAR->getAttributeNS(NULL,SHIBT_L(logger));
-            else if (conf.isEnabled(ShibTargetConfig::LocalExtensions))
+            else if (conf.isEnabled(ShibTargetConfig::InProcess))
                 logger=SHIRE->getAttributeNS(NULL,SHIBT_L(logger));
             if (!logger || !*logger)
                 logger=ReloadableXMLFileImpl::m_root->getAttributeNS(NULL,SHIBT_L(logger));
             if (logger && *logger) {
                 auto_ptr_char logpath(logger);
-                cerr << "loading new logging configuration from " << logpath.get() << "\n";
+                log.debug("loading new logging configuration from (%s), check log destination for status of configuration",logpath.get());
                 try {
                     PropertyConfigurator::configure(logpath.get());
-                    cerr << "New logging configuration loaded, check log destination for process status..." << "\n";
                 }
                 catch (ConfigureFailure& e) {
-                    cerr << "Error reading logging configuration: " << e.what() << "\n";
+                    log.error("Error reading logging configuration: %s",e.what());
                 }
             }
         }
         
         // First load any property sets.
         map<string,string> root_remap;
-        root_remap["SHAR"]="Global";
-        root_remap["SHIRE"]="Local";
+        root_remap["SHAR"]="OutOfProcess";
+        root_remap["SHIRE"]="InProcess";
+        root_remap["Global"]="OutOfProcess";
+        root_remap["Local"]="InProcess";
         load(ReloadableXMLFileImpl::m_root,log,this,&root_remap);
 
         // Much of the processing can only occur on the first instantiation.
@@ -921,7 +1003,7 @@ void XMLConfigImpl::init(bool first)
                 }
             }
             
-            if (conf.isEnabled(ShibTargetConfig::GlobalExtensions)) {
+            if (conf.isEnabled(ShibTargetConfig::OutOfProcess)) {
                 exts=saml::XML::getFirstChildElement(SHAR,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Extensions));
                 if (exts) {
                     exts=saml::XML::getFirstChildElement(exts,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Library));
@@ -945,7 +1027,7 @@ void XMLConfigImpl::init(bool first)
                 }
             }
 
-            if (conf.isEnabled(ShibTargetConfig::LocalExtensions)) {
+            if (conf.isEnabled(ShibTargetConfig::InProcess)) {
                 exts=saml::XML::getFirstChildElement(SHIRE,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Extensions));
                 if (exts) {
                     exts=saml::XML::getFirstChildElement(exts,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Library));
@@ -1157,12 +1239,11 @@ void XMLConfigImpl::init(bool first)
         // Load any overrides.
         nlist=app->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Application));
         for (unsigned int j=0; nlist && j<nlist->getLength(); j++) {
-            XMLApplication* iapp=new XMLApplication(m_outer,m_creds,static_cast<DOMElement*>(nlist->item(j)),defapp);
-            if (m_appmap.find(iapp->getId())!=m_appmap.end()) {
-                log.fatal("found conf:Application element with duplicate Id attribute");
-                throw ConfigurationException("found conf:Application element with duplicate Id attribute");
-            }
-            m_appmap[iapp->getId()]=iapp;
+            auto_ptr<XMLApplication> iapp(new XMLApplication(m_outer,m_creds,static_cast<DOMElement*>(nlist->item(j)),defapp));
+            if (m_appmap.find(iapp->getId())!=m_appmap.end())
+                log.crit("found conf:Application element with duplicate Id attribute, ignoring it");
+            else
+                m_appmap[iapp->getId()]=iapp.release();
         }
     }
     catch (SAMLException& e) {
@@ -1180,11 +1261,8 @@ void XMLConfigImpl::init(bool first)
 XMLConfigImpl::~XMLConfigImpl()
 {
     delete m_requestMapper;
-    for (map<string,IApplication*>::iterator i=m_appmap.begin(); i!=m_appmap.end(); i++)
-        delete i->second;
-    for (vector<ICredentials*>::iterator j=m_creds.begin(); j!=m_creds.end(); j++)
-        delete (*j);
+    for_each(m_appmap.begin(),m_appmap.end(),cleanup<string,IApplication>);
+    for_each(m_creds.begin(),m_creds.end(),cleanup<ICredentials>);
     ShibConfig::getConfig().clearAttributeMappings();
-    for (vector<IAttributeFactory*>::iterator k=m_attrFactories.begin(); k!=m_attrFactories.end(); k++)
-        delete (*k);
+    for_each(m_attrFactories.begin(),m_attrFactories.end(),cleanup<IAttributeFactory>);
 }
