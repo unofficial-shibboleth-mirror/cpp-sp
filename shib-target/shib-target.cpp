@@ -47,39 +47,49 @@ using namespace shibtarget;
 using namespace log4cpp;
 
 namespace shibtarget {
-  class ShibTargetPriv
-  {
-  public:
-    ShibTargetPriv();
-    ~ShibTargetPriv();
+    class CgiParse
+    {
+    public:
+        CgiParse(const ShibTarget* st);
+        ~CgiParse();
 
-    // Helper functions
-    void get_application(ShibTarget* st, const string& protocol, const string& hostname, int port, const string& uri);
-    void* sendError(ShibTarget* st, const char* page, ShibMLP &mlp);
-    void clearHeaders(ShibTarget* st);
+        typedef multimap<string,char*>::const_iterator walker;
+        pair<walker,walker> get_values(const char* name) const;
+        
+    private:
+        char* fmakeword(char stop, unsigned int *cl, const char** ppch);
+        char* makeword(char *line, char stop);
+        void plustospace(char *str);
+
+        multimap<string,char*> kvp_map;
+    };
+
+    class ShibTargetPriv
+    {
+    public:
+        ShibTargetPriv();
+        ~ShibTargetPriv();
+
+        // Helper functions
+        void get_application(ShibTarget* st, const string& protocol, const string& hostname, int port, const string& uri);
+        void* sendError(ShibTarget* st, const char* page, ShibMLP &mlp);
+        void clearHeaders(ShibTarget* st);
     
-    // Handlers do the real Shibboleth work
-    pair<bool,void*> dispatch(
-        ShibTarget* st,
-        const IPropertySet* handler,
-        bool isHandler=true,
-        const char* forceType=NULL
-        ) const;
+    private:
+        friend class ShibTarget;
+        IRequestMapper::Settings m_settings;
+        const IApplication *m_app;
+        mutable string m_handlerURL;
+        mutable map<string,string> m_cookieMap;
+        mutable CgiParse* m_cgiParser;
 
-  private:
-    friend class ShibTarget;
-    IRequestMapper::Settings m_settings;
-    const IApplication *m_app;
-    mutable string m_handlerURL;
-    mutable map<string,string> m_cookieMap;
+        ISessionCacheEntry* m_cacheEntry;
 
-    ISessionCacheEntry* m_cacheEntry;
+        ShibTargetConfig* m_Config;
 
-    ShibTargetConfig* m_Config;
-
-    IConfig* m_conf;
-    IRequestMapper* m_mapper;
-  };
+        IConfig* m_conf;
+        IRequestMapper* m_mapper;
+    };
 }
 
 
@@ -87,20 +97,16 @@ namespace shibtarget {
  * Shib Target implementation
  */
 
-ShibTarget::ShibTarget(void) : m_priv(NULL)
-{
-  m_priv = new ShibTargetPriv();
-}
+ShibTarget::ShibTarget() : m_priv(new ShibTargetPriv()) {}
 
-ShibTarget::ShibTarget(const IApplication *app) : m_priv(NULL)
+ShibTarget::ShibTarget(const IApplication *app) : m_priv(new ShibTargetPriv())
 {
-  m_priv = new ShibTargetPriv();
-  m_priv->m_app = app;
+    m_priv->m_app = app;
 }
 
 ShibTarget::~ShibTarget(void)
 {
-  if (m_priv) delete m_priv;
+    delete m_priv;
 }
 
 void ShibTarget::init(
@@ -114,21 +120,21 @@ void ShibTarget::init(
     )
 {
 #ifdef _DEBUG
-  saml::NDC ndc("init");
+    saml::NDC ndc("init");
 #endif
 
-  if (m_priv->m_app)
-    throw SAMLException("Request initialization occurred twice!");
+    if (m_priv->m_app)
+        throw SAMLException("Request initialization occurred twice!");
 
-  if (method) m_method = method;
-  if (protocol) m_protocol = protocol;
-  if (hostname) m_hostname = hostname;
-  if (uri) m_uri = uri;
-  if (content_type) m_content_type = content_type;
-  if (remote_addr) m_remote_addr = remote_addr;
-  m_port = port;
-  m_priv->m_Config = &ShibTargetConfig::getConfig();
-  m_priv->get_application(this, protocol, hostname, port, uri);
+    if (method) m_method = method;
+    if (protocol) m_protocol = protocol;
+    if (hostname) m_hostname = hostname;
+    if (uri) m_uri = uri;
+    if (content_type) m_content_type = content_type;
+    if (remote_addr) m_remote_addr = remote_addr;
+    m_port = port;
+    m_priv->m_Config = &ShibTargetConfig::getConfig();
+    m_priv->get_application(this, protocol, hostname, port, uri);
 }
 
 
@@ -176,7 +182,7 @@ pair<bool,void*> ShibTarget::doCheckAuthN(bool handler)
 #ifdef HAVE_STRCASECMP
                 (!authType.first || strcasecmp(authType.second,"shibboleth")))
 #else
-                (!authType.first || stricmp(authType.second,"shibboleth")))
+                (!authType.first || _stricmp(authType.second,"shibboleth")))
 #endif
             return pair<bool,void*>(true,returnDecline());
 
@@ -192,31 +198,34 @@ pair<bool,void*> ShibTarget::doCheckAuthN(bool handler)
 
             // No cookie, but we require a session. Initiate a new session using the indicated method.
             procState = "Session Initiator Error";
-            const IPropertySet* initiator=NULL;
-            if (requireSessionWith.first)
+            const IHandler* initiator=NULL;
+            if (requireSessionWith.first) {
                 initiator=m_priv->m_app->getSessionInitiatorById(requireSessionWith.second);
-            if (!initiator)
-                initiator=m_priv->m_app->getDefaultSessionInitiator();
-            
-            // Standard handler element, so we dispatch normally.
-            if (initiator)
-                return m_priv->dispatch(this,initiator,false);
-            else {
-                // Legacy config support maps the Sessions element to the Shib profile.
-                auto_ptr_char binding(Constants::SHIB_SESSIONINIT_PROFILE_URI);
-                return m_priv->dispatch(this, m_priv->m_app->getPropertySet("Sessions"), false, binding.get());
+                if (!initiator)
+                    throw ConfigurationException(
+                        "No session initiator found with id ($1), check requireSessionWith command.",
+                        params(1,requireSessionWith.second)
+                        );
             }
+            else {
+                initiator=m_priv->m_app->getDefaultSessionInitiator();
+                if (!initiator)
+                    throw ConfigurationException("No default session initiator found, check configuration.");
+            }
+
+            return initiator->run(this,false);
         }
 
         procState = "Session Processing Error";
         try {
-            // Localized exception throw if the session isn't valid.
-            m_priv->m_conf->getListener()->sessionGet(
-                m_priv->m_app,
+            m_priv->m_cacheEntry=m_priv->m_conf->getSessionCache()->find(
                 session_id,
-                m_remote_addr.c_str(),
-                &m_priv->m_cacheEntry
+                m_priv->m_app,
+                m_remote_addr.c_str()
                 );
+            // Make a localized exception throw if the session isn't valid.
+            if (!m_priv->m_cacheEntry)
+                throw InvalidSessionException("Session no longer valid.");
         }
         catch (SAMLException& e) {
             log(LogLevelError, string("session processing failed: ") + e.what());
@@ -235,19 +244,21 @@ pair<bool,void*> ShibTarget::doCheckAuthN(bool handler)
             if (trycast) {
                 // Session is invalid but we can retry -- initiate a new session.
                 procState = "Session Initiator Error";
-                const IPropertySet* initiator=NULL;
-                if (requireSessionWith.first)
+                const IHandler* initiator=NULL;
+                if (requireSessionWith.first) {
                     initiator=m_priv->m_app->getSessionInitiatorById(requireSessionWith.second);
-                if (!initiator)
-                    initiator=m_priv->m_app->getDefaultSessionInitiator();
-                // Standard handler element, so we dispatch normally.
-                if (initiator)
-                    return m_priv->dispatch(this,initiator,false);
-                else {
-                    // Legacy config support maps the Sessions element to the Shib profile.
-                    auto_ptr_char binding(Constants::SHIB_SESSIONINIT_PROFILE_URI);
-                    return m_priv->dispatch(this, m_priv->m_app->getPropertySet("Sessions"), false, binding.get());
+                    if (!initiator)
+                        throw ConfigurationException(
+                            "No session initiator found with id ($1), check requireSessionWith command.",
+                            params(1,requireSessionWith.second)
+                            );
                 }
+                else {
+                    initiator=m_priv->m_app->getDefaultSessionInitiator();
+                    if (!initiator)
+                        throw ConfigurationException("No default session initiator found, check configuration.");
+                }
+                return initiator->run(this,false);
             }
             throw;    // send it to the outer handler
         }
@@ -310,45 +321,33 @@ pair<bool,void*> ShibTarget::doHandler(void)
 
         // We dispatch based on our path info. We know the request URL begins with or equals the handler URL,
         // so the path info is the next character (or null).
-        const IPropertySet* handler=m_priv->m_app->getHandlerConfig(targetURL + strlen(handlerURL));
-        if (handler) {
-            if (saml::XML::isElementNamed(handler->getElement(),shibtarget::XML::SAML2META_NS,SHIBT_L(AssertionConsumerService))) {
-                procState = "Session Creation Error";
-                return m_priv->dispatch(this,handler);
-            }
-            else if (saml::XML::isElementNamed(handler->getElement(),shibtarget::XML::SHIBTARGET_NS,SHIBT_L(SessionInitiator))) {
-                procState = "Session Initiator Error";
-                return m_priv->dispatch(this,handler);
-            }
-            else if (saml::XML::isElementNamed(handler->getElement(),shibtarget::XML::SAML2META_NS,SHIBT_L(SingleLogoutService))) {
-                procState = "Session Termination Error";
-                return m_priv->dispatch(this,handler);
-            }
-            else if (saml::XML::isElementNamed(handler->getElement(),shibtarget::XML::SHIBTARGET_NS,SHIBT_L(DiagnosticService))) {
-                procState = "Diagnostics Error";
-                return m_priv->dispatch(this,handler);
-            }
-            else {
-                procState = "Extension Service Error";
-                return m_priv->dispatch(this,handler);
-            }
-        }
-        
-        if (strlen(targetURL)>strlen(handlerURL) && targetURL[strlen(handlerURL)]!='?')
+        pair<bool,void*> hret;
+        Iterator<const IHandler*> handlers=m_priv->m_app->getHandlers(targetURL + strlen(handlerURL));
+
+        if (handlers.size()==0)
             throw SAMLException("Shibboleth handler invoked at an unconfigured location.");
-        
-        // This is a legacy direct execution of the handler (the old shireURL).
-        // If this is a GET, we see if it's a lazy session request, otherwise
-        // assume it's a SAML 1.x POST profile response and process it.
-        if (!strcasecmp(m_method.c_str(), "GET")) {
-            procState = "Session Initiator Error";
-            auto_ptr_char binding(Constants::SHIB_SESSIONINIT_PROFILE_URI);
-            return m_priv->dispatch(this, sessionProps, true, binding.get());
+
+        while (handlers.hasNext()) {
+            const IHandler* handler=handlers.next();
+
+            if (saml::XML::isElementNamed(handler->getProperties()->getElement(),shibtarget::XML::SAML2META_NS,SHIBT_L(AssertionConsumerService)))
+                procState = "Session Creation Error";
+            else if (saml::XML::isElementNamed(handler->getProperties()->getElement(),shibtarget::XML::SHIBTARGET_NS,SHIBT_L(SessionInitiator)))
+                procState = "Session Initiator Error";
+            else if (saml::XML::isElementNamed(handler->getProperties()->getElement(),shibtarget::XML::SAML2META_NS,SHIBT_L(SingleLogoutService)))
+                procState = "Session Termination Error";
+            else if (saml::XML::isElementNamed(handler->getProperties()->getElement(),shibtarget::XML::SHIBTARGET_NS,SHIBT_L(DiagnosticService)))
+                procState = "Diagnostics Error";
+            else
+                procState = "Extension Service Error";
+            hret=handler->run(this);
+
+            // Did the handler run successfully?
+            if (hret.first)
+                return hret;
         }
         
-        procState = "Session Creation Error";
-        auto_ptr_char binding(SAMLBrowserProfile::BROWSER_POST);
-        return m_priv->dispatch(this, sessionProps, true, binding.get());
+        throw SAMLException("Configured Shibboleth handler(s) failed to fully process the request.");
     }
     catch (MetadataException& e) {
         mlp.insert(e);
@@ -408,7 +407,7 @@ pair<bool,void*> ShibTarget::doCheckAuthZ(void)
 #ifdef HAVE_STRCASECMP
                 (!authType.first || strcasecmp(authType.second,"shibboleth")))
 #else
-                (!authType.first || stricmp(authType.second,"shibboleth")))
+                (!authType.first || _stricmp(authType.second,"shibboleth")))
 #endif
             return pair<bool,void*>(true,returnDecline());
 
@@ -421,12 +420,11 @@ pair<bool,void*> ShibTarget::doCheckAuthZ(void)
 		        const char *session_id = getCookie(shib_cookie.first);
 	            try {
 		        	if (session_id && *session_id) {
-			            m_priv->m_conf->getListener()->sessionGet(
-			                m_priv->m_app,
-			                session_id,
-			                m_remote_addr.c_str(),
-			                &m_priv->m_cacheEntry
-			                );
+                        m_priv->m_cacheEntry=m_priv->m_conf->getSessionCache()->find(
+                            session_id,
+                            m_priv->m_app,
+                            m_remote_addr.c_str()
+                            );
 		        	}
 	            }
 	            catch (SAMLException&) {
@@ -489,12 +487,11 @@ pair<bool,void*> ShibTarget::doExportAssertions(bool requireSession)
 	        const char *session_id = getCookie(shib_cookie.first);
             try {
 	        	if (session_id && *session_id) {
-		            m_priv->m_conf->getListener()->sessionGet(
-		                m_priv->m_app,
-		                session_id,
-		                m_remote_addr.c_str(),
-		                &m_priv->m_cacheEntry
-		                );
+                    m_priv->m_cacheEntry=m_priv->m_conf->getSessionCache()->find(
+                        session_id,
+                        m_priv->m_app,
+                        m_remote_addr.c_str()
+                        );
 	        	}
             }
             catch (SAMLException&) {
@@ -512,16 +509,18 @@ pair<bool,void*> ShibTarget::doExportAssertions(bool requireSession)
         	else
         		return pair<bool,void*>(false,NULL);	// just bail silently
         }
+        
+        // Extract data from session.
+        pair<const char*,const SAMLSubject*> sub=m_priv->m_cacheEntry->getSubject(false,true);
+        pair<const char*,const SAMLResponse*> unfiltered=m_priv->m_cacheEntry->getTokens(true,false);
+        pair<const char*,const SAMLResponse*> filtered=m_priv->m_cacheEntry->getTokens(false,true);
 
-        const SAMLAuthenticationStatement* authn=m_priv->m_cacheEntry->getAuthnStatementSAML();
-        ISessionCacheEntry::CachedResponseSAML scr=m_priv->m_cacheEntry->getResponseSAML();
-        ISessionCacheEntry::CachedResponseXML xcr=m_priv->m_cacheEntry->getResponseXML();
-
-        // Maybe export the response.
+        // Maybe export the tokens.
         pair<bool,bool> exp=m_priv->m_settings.first->getBool("exportAssertion");
-        if (exp.first && exp.second && xcr.unfiltered && *xcr.unfiltered) {
+        if (exp.first && exp.second && unfiltered.first && *unfiltered.first) {
             unsigned int outlen;
-            XMLByte* serialized = Base64::encode(reinterpret_cast<XMLByte*>((char*)xcr.unfiltered), strlen(xcr.unfiltered), &outlen);
+            XMLByte* serialized =
+                Base64::encode(reinterpret_cast<XMLByte*>((char*)unfiltered.first), XMLString::stringLen(unfiltered.first), &outlen);
             XMLByte *pos, *pos2;
             for (pos=serialized, pos2=serialized; *pos2; pos2++)
                 if (isgraph(*pos2))
@@ -534,8 +533,7 @@ pair<bool,void*> ShibTarget::doExportAssertions(bool requireSession)
         // Export the SAML AuthnMethod and the origin site name, and possibly the NameIdentifier.
         setHeader("Shib-Origin-Site", m_priv->m_cacheEntry->getProviderId());
         setHeader("Shib-Identity-Provider", m_priv->m_cacheEntry->getProviderId());
-        auto_ptr_char am(authn->getAuthMethod());
-        setHeader("Shib-Authentication-Method", am.get());
+        setHeader("Shib-Authentication-Method", m_priv->m_cacheEntry->getAuthnContext());
         
         // Get the AAP providers, which contain the attribute policy info.
         Iterator<IAAP*> provs=m_priv->m_app->getAAPProviders();
@@ -544,11 +542,11 @@ pair<bool,void*> ShibTarget::doExportAssertions(bool requireSession)
         while (provs.hasNext()) {
             IAAP* aap=provs.next();
             Locker locker(aap);
-            const XMLCh* format = authn->getSubject()->getNameIdentifier()->getFormat();
+            const XMLCh* format = sub.second->getNameIdentifier()->getFormat();
             const IAttributeRule* rule=aap->lookup(format ? format : SAMLNameIdentifier::UNSPECIFIED);
             if (rule && rule->getHeader()) {
                 auto_ptr_char form(format ? format : SAMLNameIdentifier::UNSPECIFIED);
-                auto_ptr_char nameid(authn->getSubject()->getNameIdentifier()->getName());
+                auto_ptr_char nameid(sub.second->getNameIdentifier()->getName());
                 setHeader("Shib-NameIdentifier-Format", form.get());
                 if (!strcmp(rule->getHeader(),"REMOTE_USER"))
                     setRemoteUser(nameid.get());
@@ -560,7 +558,7 @@ pair<bool,void*> ShibTarget::doExportAssertions(bool requireSession)
         setHeader("Shib-Application-ID", m_priv->m_app->getId());
     
         // Export the attributes.
-        Iterator<SAMLAssertion*> a_iter(scr.filtered ? scr.filtered->getAssertions() : EMPTY(SAMLAssertion*));
+        Iterator<SAMLAssertion*> a_iter(filtered.second ? filtered.second->getAssertions() : EMPTY(SAMLAssertion*));
         while (a_iter.hasNext()) {
             SAMLAssertion* assert=a_iter.next();
             Iterator<SAMLStatement*> statements=assert->getStatements();
@@ -626,6 +624,22 @@ pair<bool,void*> ShibTarget::doExportAssertions(bool requireSession)
         mlp.insert("requestURL", m_url.substr(0,m_url.find('?')));
 
     return make_pair(true,m_priv->sendError(this, "rm", mlp));
+}
+
+const char* ShibTarget::getRequestParameter(const char* param, size_t index) const
+{
+    if (!m_priv->m_cgiParser)
+        m_priv->m_cgiParser=new CgiParse(this);
+    
+    pair<CgiParse::walker,CgiParse::walker> bounds=m_priv->m_cgiParser->get_values(param);
+    
+    // Advance to the right index.
+    while (index && bounds.first!=bounds.second) {
+        index--;
+        bounds.first++;
+    }
+
+    return (bounds.first==bounds.second) ? NULL : bounds.first->second;
 }
 
 const char* ShibTarget::getCookie(const string& name) const
@@ -788,12 +802,59 @@ void* ShibTarget::returnOK(void)
     return NULL;
 }
 
+static char x2c(char *what)
+{
+    register char digit;
+
+    digit = (what[0] >= 'A' ? ((what[0] & 0xdf) - 'A')+10 : (what[0] - '0'));
+    digit *= 16;
+    digit += (what[1] >= 'A' ? ((what[1] & 0xdf) - 'A')+10 : (what[1] - '0'));
+    return(digit);
+}
+
+void ShibTarget::url_decode(char* s)
+{
+    register int x,y;
+
+    for(x=0,y=0;s[y];++x,++y)
+    {
+        if((s[x] = s[y]) == '%')
+        {
+            s[x] = x2c(&s[y+1]);
+            y+=2;
+        }
+    }
+    s[x] = '\0';
+}
+
+static inline char hexchar(unsigned short s)
+{
+    return (s<=9) ? ('0' + s) : ('A' + s - 10);
+}
+
+string ShibTarget::url_encode(const char* s)
+{
+    static char badchars[]="\"\\+<>#%{}|^~[]`;/?:@=&";
+
+    string ret;
+    for (; *s; s++) {
+        if (strchr(badchars,*s) || *s<=0x20 || *s>=0x7F) {
+            ret+='%';
+        ret+=hexchar(*s >> 4);
+        ret+=hexchar(*s & 0x0F);
+        }
+        else
+            ret+=*s;
+    }
+    return ret;
+}
 
 /*************************************************************************
  * Shib Target Private implementation
  */
 
-ShibTargetPriv::ShibTargetPriv() : m_app(NULL), m_mapper(NULL), m_conf(NULL), m_Config(NULL), m_cacheEntry(NULL) {}
+ShibTargetPriv::ShibTargetPriv()
+    : m_app(NULL), m_mapper(NULL), m_conf(NULL), m_Config(NULL), m_cacheEntry(NULL), m_cgiParser(NULL) {}
 
 ShibTargetPriv::~ShibTargetPriv()
 {
@@ -812,6 +873,7 @@ ShibTargetPriv::~ShibTargetPriv()
         m_conf = NULL;
     }
 
+    delete m_cgiParser;
     m_app = NULL;
     m_Config = NULL;
 }
@@ -911,22 +973,98 @@ void ShibTargetPriv::clearHeaders(ShibTarget* st)
     }
 }
 
-pair<bool,void*> ShibTargetPriv::dispatch(
-    ShibTarget* st,
-    const IPropertySet* config,
-    bool isHandler,
-    const char* forceType
-    ) const
+/*************************************************************************
+ * CGI Parser implementation
+ */
+
+CgiParse::CgiParse(const ShibTarget* st)
 {
-    pair<bool,const char*> binding=forceType ? make_pair(true,forceType) : config->getString("Binding");
-    if (binding.first) {
-        auto_ptr<IPlugIn> plugin(SAMLConfig::getConfig().getPlugMgr().newPlugin(binding.second,config->getElement()));
-        IHandler* handler=dynamic_cast<IHandler*>(plugin.get());
-        if (!handler)
-            throw UnsupportedProfileException(
-                "Plugin for binding ($1) does not implement IHandler interface.",params(1,binding.second)
-                );
-        return handler->run(st,config,isHandler);
+    const char* pch=NULL;
+    if (!strcmp(st->getRequestMethod(),"POST"))
+        pch=st->getRequestBody();
+    else
+        pch=st->getQueryString();
+    size_t cl=pch ? strlen(pch) : 0;
+    
+        
+    while (cl && pch) {
+        char *name;
+        char *value;
+        value=fmakeword('&',&cl,&pch);
+        plustospace(value);
+        ShibTarget::url_decode(value);
+        name=makeword(value,'=');
+        kvp_map.insert(pair<string,char*>(name,value));
+        free(name);
     }
-    throw UnsupportedProfileException("Handler element is missing Binding attribute to determine what handler to run.");
+}
+
+CgiParse::~CgiParse()
+{
+    for (multimap<string,char*>::iterator i=kvp_map.begin(); i!=kvp_map.end(); i++)
+        free(i->second);
+}
+
+pair<CgiParse::walker,CgiParse::walker> CgiParse::get_values(const char* name) const
+{
+    return kvp_map.equal_range(name);
+}
+
+/* Parsing routines modified from NCSA source. */
+char* CgiParse::makeword(char *line, char stop)
+{
+    int x = 0,y;
+    char *word = (char *) malloc(sizeof(char) * (strlen(line) + 1));
+
+    for(x=0;((line[x]) && (line[x] != stop));x++)
+        word[x] = line[x];
+
+    word[x] = '\0';
+    if(line[x])
+        ++x;
+    y=0;
+
+    while(line[x])
+      line[y++] = line[x++];
+    line[y] = '\0';
+    return word;
+}
+
+char* CgiParse::fmakeword(char stop, size_t *cl, const char** ppch)
+{
+    int wsize;
+    char *word;
+    int ll;
+
+    wsize = 1024;
+    ll=0;
+    word = (char *) malloc(sizeof(char) * (wsize + 1));
+
+    while(1)
+    {
+        word[ll] = *((*ppch)++);
+        if(ll==wsize-1)
+        {
+            word[ll+1] = '\0';
+            wsize+=1024;
+            word = (char *)realloc(word,sizeof(char)*(wsize+1));
+        }
+        --(*cl);
+        if((word[ll] == stop) || word[ll] == EOF || (!(*cl)))
+        {
+            if(word[ll] != stop)
+                ll++;
+            word[ll] = '\0';
+            return word;
+        }
+        ++ll;
+    }
+}
+
+void CgiParse::plustospace(char *str)
+{
+    register int x;
+
+    for(x=0;str[x];x++)
+        if(str[x] == '+') str[x] = ' ';
 }
