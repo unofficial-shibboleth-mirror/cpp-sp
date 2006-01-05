@@ -52,10 +52,19 @@ void ShibMLPPriv::html_encode(string& os, const char* start)
             case '<':   os += "&lt;";       break;
             case '>':   os += "&gt;";       break;
             case '"':   os += "&quot;";     break;
-            case '\'':  os += "&rsquo;";    break;
+            case '#':   os += "&#35;";      break;
+            case '%':   os += "&#37;";      break;
+            case '&':   os += "&#38;";      break;
+            case '\'':  os += "&#39;";      break;
             case '(':   os += "&#40;";      break;
             case ')':   os += "&#41;";      break;
             case ':':   os += "&#58;";      break;
+            case '[':   os += "&#91;";      break;
+            case '\\':  os += "&#92;";      break;
+            case ']':   os += "&#93;";      break;
+            case '`':   os += "&#96;";      break;
+            case '{':   os += "&#123;";     break;
+            case '}':   os += "&#125;";     break;
             default:    os += *start;
         }
         start++;
