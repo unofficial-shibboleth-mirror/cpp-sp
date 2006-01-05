@@ -169,7 +169,7 @@ void MemoryListener::sessionNew(
             const XMLCh* wip = bpr.authnStatement->getSubjectIP();
             if (wip && *wip) {
                 // Verify the client address matches authentication
-                auto_ptr_char this_ip(ip);
+                auto_ptr_char this_ip(wip);
                 if (strcmp(ip, this_ip.get())) {
                     FatalProfileException ex(
                         SESSION_E_ADDRESSMISMATCH,
@@ -317,7 +317,7 @@ void MemoryListener::sessionGet(
     IConfig* conf=stc.getINI();
     log->debug("application: %s", app->getId());
 
-    bool checkIPAddress=true;
+    bool consistentIPAddress=true;
     int lifetime=0,timeout=0;
     const IPropertySet* props=app->getPropertySet("Sessions");
     if (props) {
@@ -327,9 +327,9 @@ void MemoryListener::sessionGet(
         p=props->getUnsignedInt("timeout");
         if (p.first)
             timeout = p.second;
-        pair<bool,bool> pcheck=props->getBool("checkAddress");
+        pair<bool,bool> pcheck=props->getBool("consistentAddress");
         if (pcheck.first)
-            checkIPAddress = pcheck.second;
+            consistentIPAddress = pcheck.second;
     }
     
     *pentry = conf->getSessionCache()->find(cookie,app);
@@ -343,7 +343,7 @@ void MemoryListener::sessionGet(
     // TEST the session...
     try {
         // Verify the address is the same
-        if (checkIPAddress) {
+        if (consistentIPAddress) {
             log->debug("Checking address against %s", (*pentry)->getClientAddress());
             if (strcmp(ip, (*pentry)->getClientAddress())) {
                 log->debug("client address mismatch");
