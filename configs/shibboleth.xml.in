@@ -132,9 +132,12 @@
 		will force the protocol to be https. You should also add a cookieProps setting of "; path=/; secure"
 		in that case. Note that while we default checkAddress to "false", this has a negative
 		impact on the security of the SP. Stealing cookies/sessions is much easier with this
-		disabled.
+		disabled. The consistentAddress property is even more critical, and should rarely be
+		disabled. It will only trip if a client uses a different source address at the SP
+		after the cookie is issued. Allowing that means many scripting attacks against
+		applications can result in theft and impersonation using the Shibboleth session.
 		-->
-		<Sessions lifetime="7200" timeout="3600" checkAddress="false"
+		<Sessions lifetime="7200" timeout="3600" checkAddress="false" consistentAddress="true"
 			handlerURL="/Shibboleth.sso" handlerSSL="false" idpHistory="true" idpHistoryDays="7">
 			
 			<!--
