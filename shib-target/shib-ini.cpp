@@ -849,13 +849,12 @@ void XMLConfigImpl::init(bool first)
                 logger=ReloadableXMLFileImpl::m_root->getAttributeNS(NULL,SHIBT_L(logger));
             if (logger && *logger) {
                 auto_ptr_char logpath(logger);
-                cerr << "loading new logging configuration from " << logpath.get() << "\n";
+                log.debug("loading new logging configuration from (%s), check log destination for status of configuration",logpath.get());
                 try {
                     PropertyConfigurator::configure(logpath.get());
-                    cerr << "New logging configuration loaded, check log destination for process status..." << "\n";
                 }
                 catch (ConfigureFailure& e) {
-                    cerr << "Error reading logging configuration: " << e.what() << "\n";
+                    log.error("Error reading logging configuration: %s",e.what());
                 }
             }
         }
