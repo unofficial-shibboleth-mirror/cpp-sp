@@ -145,6 +145,7 @@ extern "C" bool_t shibrpc_get_session_2_svc(
             entry->unlock();
             conf->getSessionCache()->remove(argp->cookie);
         }
+        log.error("caught exception while retrieving session: %s", e.what());
         ostringstream os;
         os << e;
         result->status = strdup(os.str().c_str());
@@ -156,6 +157,7 @@ extern "C" bool_t shibrpc_get_session_2_svc(
             entry->unlock();
             conf->getSessionCache()->remove(argp->cookie);
         }
+        log.error("caught unexpected exception while retrieving session");
         InvalidSessionException ex("An unexpected error occurred while validating your session, and you must re-authenticate.");
         ostringstream os;
         os << ex;
@@ -226,12 +228,14 @@ shibrpc_new_session_2_svc(
         result->status = strdup("");
     }
     catch (SAMLException& e) {
+        log.error("caught exception while creating session: %s", e.what());
         ostringstream os;
         os << e;
         result->status = strdup(os.str().c_str());
     }
 #ifndef _DEBUG
     catch (...) {
+        log.error("caught unexpected exception while creating session");
         SAMLException e("An unexpected error occurred while creating your session.");
         ostringstream os;
         os << e;
@@ -268,12 +272,14 @@ shibrpc_end_session_2_svc(
         result->status=strdup("");
     }
     catch (SAMLException& e) {
+        log.error("caught exception while ending session: %s", e.what());
         ostringstream os;
         os << e;
         result->status = strdup(os.str().c_str());
     }
 #ifndef _DEBUG
     catch (...) {
+        log.error("caught unexpected exception while ending session");
         SAMLException ex("An unexpected error occurred while ending your session.");
         ostringstream os;
         os << ex;
