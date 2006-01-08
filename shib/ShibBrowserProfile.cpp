@@ -33,8 +33,9 @@ using namespace saml;
 using namespace log4cpp;
 using namespace std;
 
-ShibBrowserProfile::ShibBrowserProfile(const Iterator<IMetadata*>& metadatas, const Iterator<ITrust*>& trusts)
-    : m_metadatas(metadatas), m_trusts(trusts)
+ShibBrowserProfile::ShibBrowserProfile(
+    const ITokenValidator* validator, const Iterator<IMetadata*>& metadatas, const Iterator<ITrust*>& trusts
+    ) : m_validator(validator), m_metadatas(metadatas), m_trusts(trusts)
 {
     m_profile=SAMLBrowserProfile::getInstance();
 }
@@ -165,55 +166,59 @@ void ShibBrowserProfile::postprocess(SAMLBrowserProfile::BrowserProfileResponse&
             MetadataException ex("metadata lookup failed, unable to process assertion");
             annotateException(&ex,provider);  // throws it
         }
-        throw MetadataException("metadata lookup failed, unable to process assertion",namedparams(1,"issuer",issuer.get()));
+        throw MetadataException("Metadata lookup failed, unable to process assertion",namedparams(1,"issuer",issuer.get()));
     }
 
     // Is this provider an IdP?
     const IIDPSSODescriptor* role=provider->getIDPSSODescriptor(
         minorVersion==1 ? saml::XML::SAML11_PROTOCOL_ENUM : saml::XML::SAML10_PROTOCOL_ENUM
         );
-    if (role) {
-        // Use this role to evaluate the signature(s). If the response is unsigned, we know
-        // it was an artifact profile run.
-        Trust t(m_trusts);
-        if (bpr.response->isSigned()) {        
-            log.debug("passing signed response to trust layer");
-            if (!t.validate(*bpr.response,role)) {
-                log.error("unable to verify signed profile response");
-                TrustException ex("unable to verify signed profile response");
-                annotateException(&ex,role); // throws it
-            }
-        }    
-        // SSO assertion signed?
-        if (bpr.assertion->isSigned()) {
-            log.debug("passing signed authentication assertion to trust layer"); 
-            if (!t.validate(*bpr.assertion,role)) {
-                log.error("unable to verify signed authentication assertion");
-                TrustException ex("unable to verify signed authentication assertion");
-                annotateException(&ex,role); // throws it
-            }
-        }
-        
-        // Finally, discard any assertions not issued by the same entity that issued the authn.
-        Iterator<SAMLAssertion*> assertions=bpr.response->getAssertions();
-        for (unsigned int a=0; a<assertions.size();) {
-            if (XMLString::compareString(bpr.assertion->getIssuer(),assertions[a]->getIssuer())) {
-                auto_ptr_char bad(assertions[a]->getIssuer());
-                log.warn("discarding assertion not issued by authenticating IdP, instead by (%s)",bad.get());
-                bpr.response->removeAssertion(a);
-                continue;
-            }
-            a++;
-        }
-        
-        return;
+    if (!role) {
+        auto_ptr_char issuer(bpr.assertion->getIssuer());
+        auto_ptr_char nq(bpr.authnStatement->getSubject()->getNameIdentifier()->getNameQualifier());
+        log.error("metadata for assertion issuer indicates no SAML 1.%d identity provider role (Issuer='%s', NameQualifier='%s'",
+            minorVersion, issuer.get(), (nq.get() ? nq.get() : "none"));
+        MetadataException ex("Metadata lookup failed, issuer not registered as SAML 1.x identity provider");
+        annotateException(&ex,provider); // throws it
     }
 
-    auto_ptr_char issuer(bpr.assertion->getIssuer());
-    auto_ptr_char nq(bpr.authnStatement->getSubject()->getNameIdentifier()->getNameQualifier());
-    log.error("metadata for assertion issuer indicates no SAML 1.%d identity provider role (Issuer='%s', NameQualifier='%s'",
-        minorVersion, issuer.get(), (nq.get() ? nq.get() : "none"));
-    MetadataException ex("metadata lookup failed, issuer not registered as SAML 1.x identity provider");
-    annotateException(&ex,provider,false);
-    throw ex;
+    // Use this role to evaluate the signature(s). If the response is unsigned, we know
+    // it was an artifact profile run.
+    Trust t(m_trusts);
+    if (bpr.response->isSigned()) {        
+        log.debug("passing signed response to trust layer");
+        if (!t.validate(*bpr.response,role)) {
+            log.error("unable to verify signed profile response");
+            TrustException ex("Unable to verify signed profile response.");
+            annotateException(&ex,role); // throws it
+        }
+    }
+
+    time_t now=time(NULL);
+    Iterator<SAMLAssertion*> assertions=bpr.response->getAssertions();
+    for (unsigned int a=0; a<assertions.size();) {
+        // Discard any assertions not issued by the same entity that issued the authn.
+        if (bpr.assertion!=assertions[a] && XMLString::compareString(bpr.assertion->getIssuer(),assertions[a]->getIssuer())) {
+            auto_ptr_char bad(assertions[a]->getIssuer());
+            log.warn("discarding assertion not issued by authenticating IdP, instead by (%s)",bad.get());
+            bpr.response->removeAssertion(a);
+            continue;
+        }
+
+        // Validate the token.
+        try {
+            m_validator->validateToken(assertions[a],now,role,m_trusts);
+            a++;
+        }
+        catch (SAMLException& e) {
+            if (assertions[a]==bpr.assertion) {
+                // If the authn token fails, we have to fail the whole profile run.
+                log.error("authentication assertion failed to validate");
+                annotateException(&e,role,false);
+                throw;
+            }
+            log.warn("token failed to validate, removing it from response");
+            bpr.response->removeAssertion(a);
+        }
+    }
 }
