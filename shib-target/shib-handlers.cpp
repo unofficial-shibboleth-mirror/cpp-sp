@@ -391,28 +391,6 @@ DDF SAML1Consumer::receive(const DDF& in)
                 }
             }
         }
-      
-        // Verify condition(s) on authentication assertion.
-        // Attribute assertions get filtered later, essentially just like an AAP.
-        Iterator<SAMLCondition*> conditions=bpr.assertion->getConditions();
-        while (conditions.hasNext()) {
-            SAMLCondition* cond=conditions.next();
-            const SAMLAudienceRestrictionCondition* ac=dynamic_cast<const SAMLAudienceRestrictionCondition*>(cond);
-            if (!ac) {
-                ostringstream os;
-                os << *cond;
-                log.error("Unrecognized Condition in authentication assertion (%s), tossing it.",os.str().c_str());
-                FatalProfileException ex("Unable to create session due to unrecognized condition in authentication assertion.");
-                annotateException(&ex,role); // throws it
-            }
-            else if (!ac->eval(app->getAudiences())) {
-                ostringstream os;
-                os << *ac;
-                log.error("Unacceptable AudienceRestrictionCondition in authentication assertion (%s), tossing it.",os.str().c_str());
-                FatalProfileException ex("Unable to create session due to unacceptable AudienceRestrictionCondition in authentication assertion.");
-                annotateException(&ex,role); // throws it
-            }
-        }
     }
     catch (SAMLException&) {
         bpr.clear();
@@ -438,7 +416,7 @@ DDF SAML1Consumer::receive(const DDF& in)
         auto_ptr_char authContext(bpr.authnStatement->getAuthMethod());
         string key=conf->getSessionCache()->insert(
             app,
-            role,
+            role->getEntityDescriptor(),
             client_address,
             bpr.authnStatement->getSubject(),
             authContext.get(),
