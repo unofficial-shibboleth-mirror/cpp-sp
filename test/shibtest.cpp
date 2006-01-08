@@ -153,7 +153,7 @@ int main(int argc,char* argv[])
         Iterator<SAMLAssertion*> a=response->getAssertions();
         for (unsigned long c=0; c < a.size();) {
             try {
-                AAP::apply(app->getAAPProviders(),*(a[c]),AA);
+                AAP::apply(app->getAAPProviders(),*(a[c]),site);
                 c++;
             }
             catch (SAMLException&) {

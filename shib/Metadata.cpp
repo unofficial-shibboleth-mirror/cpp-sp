@@ -180,7 +180,7 @@ AAP::~AAP()
     }
 }
 
-void AAP::apply(const saml::Iterator<IAAP*>& aaps, saml::SAMLAssertion& assertion, const IRoleDescriptor* role)
+void AAP::apply(const saml::Iterator<IAAP*>& aaps, saml::SAMLAssertion& assertion, const IEntityDescriptor* source)
 {
 #ifdef _DEBUG
     saml::NDC("apply");
@@ -224,7 +224,7 @@ void AAP::apply(const saml::Iterator<IAAP*>& aaps, saml::SAMLAssertion& assertio
                 if (rule=i->lookup(a->getName(),a->getNamespace())) {
                     ruleFound=true;
                     try {
-                        rule->apply(*a,role);
+                        rule->apply(*a,source);
                     }
                     catch (SAMLException&) {
                         // The attribute is now defunct.

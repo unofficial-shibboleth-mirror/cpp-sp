@@ -56,7 +56,7 @@ namespace {
             const char* getHeader() const { return m_header.get(); }
             bool getCaseSensitive() const { return m_caseSensitive; }
             bool getScoped() const { return m_scoped; }
-            void apply(SAMLAttribute& attribute, const IRoleDescriptor* role=NULL) const;
+            void apply(SAMLAttribute& attribute, const IEntityDescriptor* source=NULL) const;
     
             enum value_type { literal, regexp, xpath };
         private:    
@@ -80,10 +80,10 @@ namespace {
             value_type toValueType(const DOMElement* e);
             bool scopeCheck(
                 const DOMElement* e,
-                const IScopedRoleDescriptor* role,
+                const IExtendedEntityDescriptor* source,
                 const vector<const SiteRule*>& ruleStack
                 ) const;
-            bool accept(const DOMElement* e, const IScopedRoleDescriptor* role=NULL) const;
+            bool accept(const DOMElement* e, const IExtendedEntityDescriptor* source=NULL) const;
             
             SiteRule m_anySiteRule;
     #ifdef HAVE_GOOD_STL
@@ -399,7 +399,7 @@ namespace {
 
 bool XMLAAPImpl::AttributeRule::scopeCheck(
     const DOMElement* e,
-    const IScopedRoleDescriptor* role,
+    const IExtendedEntityDescriptor* source,
     const vector<const SiteRule*>& ruleStack
     ) const
 {
@@ -451,8 +451,8 @@ bool XMLAAPImpl::AttributeRule::scopeCheck(
     }
 
     // If we still can't decide, defer to metadata.
-    if (role) {
-        Iterator<pair<const XMLCh*,bool> > domains=role->getScopes();
+    if (source) {
+        Iterator<pair<const XMLCh*,bool> > domains=source->getScopes();
         while (domains.hasNext()) {
             const pair<const XMLCh*,bool>& p=domains.next();
             if ((p.second && match(p.first,scope)) || !XMLString::compareString(p.first,scope)) {
@@ -470,7 +470,7 @@ bool XMLAAPImpl::AttributeRule::scopeCheck(
     return false;
 }
 
-bool XMLAAPImpl::AttributeRule::accept(const DOMElement* e, const IScopedRoleDescriptor* role) const
+bool XMLAAPImpl::AttributeRule::accept(const DOMElement* e, const IExtendedEntityDescriptor* source) const
 {
 #ifdef _DEBUG
     saml::NDC ndc("accept");
@@ -479,7 +479,7 @@ bool XMLAAPImpl::AttributeRule::accept(const DOMElement* e, const IScopedRoleDes
     
     if (log.isDebugEnabled()) {
         auto_ptr_char temp(m_name);
-        auto_ptr_char temp2(role ? role->getEntityDescriptor()->getId() : NULL);
+        auto_ptr_char temp2(source ? source->getId() : NULL);
         log.debug("evaluating value for attribute (%s) from site (%s)",temp.get(),temp2.get() ? temp2.get() : "<unspecified>");
     }
     
@@ -487,12 +487,12 @@ bool XMLAAPImpl::AttributeRule::accept(const DOMElement* e, const IScopedRoleDes
     // The first step is to build a list of matching rules, most-specific to least-specific.
     
     vector<const SiteRule*> ruleStack;
-    if (role) {
+    if (source) {
         // Primary match is against entityID.
 #ifdef HAVE_GOOD_STL
-        const XMLCh* os=role->getEntityDescriptor()->getId();
+        const XMLCh* os=source->getId();
 #else
-        auto_ptr_char pos(role->getEntityDescriptor()->getId());
+        auto_ptr_char pos(source->getId());
         const char* os=pos.get();
 #endif
         sitemap_t::const_iterator srule=m_siteMap.find(os);
@@ -500,7 +500,7 @@ bool XMLAAPImpl::AttributeRule::accept(const DOMElement* e, const IScopedRoleDes
             ruleStack.push_back(&srule->second);
         
         // Secondary matches are on groups.
-        const IEntitiesDescriptor* group=role->getEntityDescriptor()->getEntitiesDescriptor();
+        const IEntitiesDescriptor* group=source->getEntitiesDescriptor();
         while (group) {
             if (group->getName()) {
 #ifdef HAVE_GOOD_STL
@@ -529,7 +529,7 @@ bool XMLAAPImpl::AttributeRule::accept(const DOMElement* e, const IScopedRoleDes
         // Check for shortcut AnyValue blanket rule.
         if ((*rule)->anyValue) {
             log.debug("matching site rule, any value match");
-            return scopeCheck(e,role,ruleStack);
+            return scopeCheck(e,source,ruleStack);
         }
 
         // Now run any denials.
@@ -570,14 +570,14 @@ bool XMLAAPImpl::AttributeRule::accept(const DOMElement* e, const IScopedRoleDes
                     if ((m_caseSensitive && !XMLString::compareString(i->second,n->getNodeValue())) ||
                         (!m_caseSensitive && !XMLString::compareIString(i->second,n->getNodeValue()))) {
                         log.debug("site rule, value match");
-                        return scopeCheck(e,role,ruleStack);
+                        return scopeCheck(e,source,ruleStack);
                     }
                     break;
                 
                 case regexp:
                     if (match(i->second,n->getNodeValue())) {
                         log.debug("site rule, value match");
-                        return scopeCheck(e,role,ruleStack);
+                        return scopeCheck(e,source,ruleStack);
                     }
                     break;
                 
@@ -597,13 +597,13 @@ bool XMLAAPImpl::AttributeRule::accept(const DOMElement* e, const IScopedRoleDes
     return false;
 }
 
-void XMLAAPImpl::AttributeRule::apply(SAMLAttribute& attribute, const IRoleDescriptor* role) const
+void XMLAAPImpl::AttributeRule::apply(SAMLAttribute& attribute, const IEntityDescriptor* source) const
 {
     // Check each value.
     DOMNodeList* vals=attribute.getValueElements();
     int i2=0;
     for (unsigned int i=0; vals && i < vals->getLength(); i++) {
-        if (!accept(static_cast<DOMElement*>(vals->item(i)),role ? dynamic_cast<const IScopedRoleDescriptor*>(role) : NULL))
+        if (!accept(static_cast<DOMElement*>(vals->item(i)),source ? dynamic_cast<const IExtendedEntityDescriptor*>(source) : NULL))
             attribute.removeValue(i2);
         else
             i2++;

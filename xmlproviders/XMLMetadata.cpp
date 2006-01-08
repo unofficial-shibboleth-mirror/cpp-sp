@@ -280,17 +280,7 @@ namespace {
             vector<const XMLCh*> m_formats;
         };
 
-        class ScopedRole : public virtual IScopedRoleDescriptor
-        {
-        public:
-            ScopedRole(const DOMElement* e);
-            saml::Iterator<std::pair<const XMLCh*,bool> > getScopes() const {return m_scopes;}
-
-        private:
-            vector<pair<const XMLCh*,bool> > m_scopes;
-        };
-        
-        class IDPRole : public SSORole, public ScopedRole, public virtual IIDPSSODescriptor
+        class IDPRole : public SSORole, public virtual IIDPSSODescriptor
         {
         public:
             IDPRole(const EntityDescriptor* provider, time_t validUntil, const DOMElement* e);
@@ -311,7 +301,7 @@ namespace {
             friend class EntityDescriptor;
         };
 
-        class AARole : public Role, public ScopedRole, public virtual IAttributeAuthorityDescriptor
+        class AARole : public Role, public virtual IAttributeAuthorityDescriptor
         {
         public:
             AARole(const EntityDescriptor* provider, time_t validUntil, const DOMElement* e);
@@ -354,6 +344,7 @@ namespace {
             Iterator<pair<const XMLCh*,const XMLCh*> > getAdditionalMetadataLocations() const {return m_locs;}
             const IEntitiesDescriptor* getEntitiesDescriptor() const {return m_parent;}
             Iterator<const IKeyAuthority*> getKeyAuthorities() const {return m_keyauths;}
+            saml::Iterator<std::pair<const XMLCh*,bool> > getScopes() const {return m_scopes;}
             const DOMElement* getElement() const {return m_root;}
 
             // Used internally
@@ -369,6 +360,7 @@ namespace {
             vector<const IRoleDescriptor*> m_roles;
             vector<pair<const XMLCh*,const XMLCh*> > m_locs;
             vector<const IKeyAuthority*> m_keyauths;
+            vector<pair<const XMLCh*,bool> > m_scopes;
             time_t m_validUntil;
         };
 
@@ -750,31 +742,8 @@ XMLMetadataImpl::SSORole::SSORole(const EntityDescriptor* provider, time_t valid
     }
 }
 
-XMLMetadataImpl::ScopedRole::ScopedRole(const DOMElement* e)
-{
-    // Check the root element namespace. If SAML2, assume it's the std schema.
-    DOMNodeList* nlist=NULL;
-    if (!XMLString::compareString(e->getNamespaceURI(),::XML::SAML2META_NS)) {
-        e=saml::XML::getFirstChildElement(e,::XML::SAML2META_NS,SHIB_L(Extensions));
-        if (e) nlist=e->getElementsByTagNameNS(::XML::SHIBMETA_NS,SHIB_L(Scope));
-    }
-    else {
-        nlist=e->getElementsByTagNameNS(::XML::SHIB_NS,SHIB_L(Domain));
-    }
-    
-    for (unsigned int i=0; nlist && i < nlist->getLength(); i++) {
-        const XMLCh* dom=(nlist->item(i)->hasChildNodes()) ? nlist->item(i)->getFirstChild()->getNodeValue() : NULL;
-        if (dom && *dom) {
-            const XMLCh* regexp=static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIB_L(regexp));
-            m_scopes.push_back(
-                pair<const XMLCh*,bool>(dom,(regexp && (*regexp==chLatin_t || *regexp==chDigit_1)))
-                );
-        }
-    }
-}
-
 XMLMetadataImpl::IDPRole::IDPRole(const EntityDescriptor* provider, time_t validUntil, const DOMElement* e)
-    : SSORole(provider,validUntil,e), ScopedRole(e), m_wantAuthnRequestsSigned(false), m_sourceId(NULL)
+    : SSORole(provider,validUntil,e), m_wantAuthnRequestsSigned(false), m_sourceId(NULL)
 {
     // Check the root element namespace. If SAML2, assume it's the std schema.
     if (!XMLString::compareString(e->getNamespaceURI(),::XML::SAML2META_NS)) {
@@ -863,7 +832,7 @@ XMLMetadataImpl::IDPRole::~IDPRole()
 }
 
 XMLMetadataImpl::AARole::AARole(const EntityDescriptor* provider, time_t validUntil, const DOMElement* e)
-    : Role(provider,validUntil,e), ScopedRole(e)
+    : Role(provider,validUntil,e)
 {
     // Check the root element namespace. If SAML2, assume it's the std schema.
     if (!XMLString::compareString(e->getNamespaceURI(),::XML::SAML2META_NS)) {
@@ -951,6 +920,7 @@ XMLMetadataImpl::EntityDescriptor::EntityDescriptor(
     ) : m_root(e), m_parent(parent), m_org(NULL), m_validUntil(validUntil)
 {
     // Check the root element namespace. If SAML2, assume it's the std schema.
+    DOMNodeList* scopes=NULL;
     if (!XMLString::compareString(e->getNamespaceURI(),::XML::SAML2META_NS)) {
         m_id=e->getAttributeNS(NULL,SHIB_L(entityID));
 
@@ -993,6 +963,9 @@ XMLMetadataImpl::EntityDescriptor::EntityDescriptor(
             }
             child = saml::XML::getNextSiblingElement(child);
         }
+
+        // Grab all the shibmd:Scope elements here and at the role level.
+        scopes=e->getElementsByTagNameNS(::XML::SHIBMETA_NS,SHIB_L(Scope));
     }
     else {
         m_id=e->getAttributeNS(NULL,SHIB_L(Name));
@@ -1017,6 +990,20 @@ XMLMetadataImpl::EntityDescriptor::EntityDescriptor(
                 aa=true;
             }
             child = saml::XML::getNextSiblingElement(child);
+        }
+
+        // Grab all the shib:Domain elements.
+        scopes=e->getElementsByTagNameNS(::XML::SHIB_NS,SHIB_L(Domain));
+    }
+
+    // Process scopes.
+    for (unsigned int i=0; scopes && i < scopes->getLength(); i++) {
+        const XMLCh* dom=(scopes->item(i)->hasChildNodes()) ? scopes->item(i)->getFirstChild()->getNodeValue() : NULL;
+        if (dom && *dom) {
+            const XMLCh* regexp=static_cast<DOMElement*>(scopes->item(i))->getAttributeNS(NULL,SHIB_L(regexp));
+            m_scopes.push_back(
+                pair<const XMLCh*,bool>(dom,(regexp && (*regexp==chLatin_t || *regexp==chDigit_1)))
+                );
         }
     }
 
