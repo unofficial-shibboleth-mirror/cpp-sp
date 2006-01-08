@@ -65,6 +65,12 @@ namespace shibtarget {
         const SAMLBinding* getBinding(const XMLCh* binding) const
             {return XMLString::compareString(SAMLBinding::SOAP,binding) ? NULL : m_binding;}
         SAMLBrowserProfile::ArtifactMapper* getArtifactMapper() const {return new STArtifactMapper(this);}
+        void validateToken(
+            SAMLAssertion* token,
+            time_t t=0,
+            const IRoleDescriptor* role=NULL,
+            const Iterator<ITrust*>& trusts=EMPTY(ITrust*)
+            ) const;
         const IHandler* getDefaultSessionInitiator() const;
         const IHandler* getSessionInitiatorById(const char* id) const;
         const IHandler* getDefaultAssertionConsumerService() const;
@@ -654,9 +660,10 @@ XMLApplication::XMLApplication(
             }
         }
         
-        if (conf.isEnabled(ShibTargetConfig::Caching)) {
+        if (conf.isEnabled(ShibTargetConfig::OutOfProcess)) {
             // Really finally, build local browser profile and binding objects.
             m_profile=new ShibBrowserProfile(
+                this,
                 getMetadataProviders(),
                 getTrustProviders()
                 );
@@ -836,6 +843,58 @@ const IPropertySet* XMLApplication::getCredentialUse(const IEntityDescriptor* pr
     }
 #endif
     return m_credDefault;
+}
+
+void XMLApplication::validateToken(SAMLAssertion* token, time_t ts, const IRoleDescriptor* role, const Iterator<ITrust*>& trusts) const
+{
+#ifdef _DEBUG
+    saml::NDC ndc("validateToken");
+#endif
+    Category& log=Category::getInstance("shibtarget.XMLApplication");
+
+    // First we verify the time conditions, using the specified timestamp, if non-zero.
+    SAMLConfig& config=SAMLConfig::getConfig();
+    if (ts>0) {
+        const SAMLDateTime* notBefore=token->getNotBefore();
+        if (notBefore && ts+config.clock_skew_secs < notBefore->getEpoch())
+            throw ExpiredAssertionException("Assertion is not yet valid.");
+        const SAMLDateTime* notOnOrAfter=token->getNotOnOrAfter();
+        if (notOnOrAfter && notOnOrAfter->getEpoch() <= ts-config.clock_skew_secs)
+            throw ExpiredAssertionException("Assertion is no longer valid.");
+    }
+
+    // Now we process conditions. Only audience restrictions at the moment.
+    Iterator<SAMLCondition*> conditions=token->getConditions();
+    while (conditions.hasNext()) {
+        SAMLCondition* cond=conditions.next();
+        const SAMLAudienceRestrictionCondition* ac=dynamic_cast<const SAMLAudienceRestrictionCondition*>(cond);
+        if (!ac) {
+            ostringstream os;
+            os << *cond;
+            log.error("unrecognized Condition in assertion (%s)",os.str().c_str());
+            throw UnsupportedExtensionException("Assertion contains an unrecognized condition.");
+        }
+        else if (!ac->eval(getAudiences())) {
+            ostringstream os;
+            os << *ac;
+            log.error("unacceptable AudienceRestrictionCondition in assertion (%s)",os.str().c_str());
+            throw UnsupportedProfileException("Assertion contains an unacceptable AudienceRestrictionCondition.");
+        }
+    }
+
+    if (!role) {
+        log.warn("no metadata provided, so no signature validation was performed");
+        return;
+    }
+
+    const IPropertySet* credUse=getCredentialUse(role->getEntityDescriptor());
+    pair<bool,bool> signedAssertions=credUse ? credUse->getBool("signedAssertions") : make_pair(false,false);
+    Trust t(trusts);
+
+    if (token->isSigned() && !t.validate(*token,role))
+        throw TrustException("Assertion signature did not validate.");
+    else if (signedAssertions.first && signedAssertions.second)
+        throw TrustException("Assertion was unsigned, violating policy based on the issuer.");
 }
 
 const IHandler* XMLApplication::getDefaultSessionInitiator() const
