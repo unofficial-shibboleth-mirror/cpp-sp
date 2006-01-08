@@ -225,14 +225,7 @@ namespace shibboleth
         virtual ~IEntitiesDescriptor() {}
     };
     
-    // Supports Shib role extension describing attribute scoping rules
-    struct SHIB_EXPORTS IScopedRoleDescriptor : public virtual IRoleDescriptor
-    {
-        virtual saml::Iterator<std::pair<const XMLCh*,bool> > getScopes() const=0;
-        virtual ~IScopedRoleDescriptor() {}
-    };
-    
-    // Shib extension interfaces to key authority data
+    // Shib extension interfaces
     struct SHIB_EXPORTS IKeyAuthority
     {
         virtual int getVerifyDepth() const=0;
@@ -243,6 +236,7 @@ namespace shibboleth
     struct SHIB_EXPORTS IExtendedEntityDescriptor : public virtual IEntityDescriptor
     {
         virtual saml::Iterator<const IKeyAuthority*> getKeyAuthorities() const=0;
+        virtual saml::Iterator<std::pair<const XMLCh*,bool> > getScopes() const=0;
         virtual ~IExtendedEntityDescriptor() {}
     };
 
@@ -316,7 +310,7 @@ namespace shibboleth
         virtual const char* getAlias() const=0;
         virtual const char* getHeader() const=0;
         virtual bool getCaseSensitive() const=0;
-        virtual void apply(saml::SAMLAttribute& attribute, const IRoleDescriptor* role=NULL) const=0;
+        virtual void apply(saml::SAMLAttribute& attribute, const IEntityDescriptor* source=NULL) const=0;
         virtual ~IAttributeRule() {}
     };
     
@@ -433,7 +427,7 @@ namespace shibboleth
         const IAttributeRule* operator->() const {return m_rule;}
         operator const IAttributeRule*() const {return m_rule;}
         
-        static void apply(const saml::Iterator<IAAP*>& aaps, saml::SAMLAssertion& assertion, const IRoleDescriptor* role=NULL);
+        static void apply(const saml::Iterator<IAAP*>& aaps, saml::SAMLAssertion& assertion, const IEntityDescriptor* source=NULL);
         
     private:
         AAP(const AAP&);
@@ -447,7 +441,18 @@ namespace shibboleth
     class SHIB_EXPORTS ShibBrowserProfile : virtual public saml::SAMLBrowserProfile
     {
     public:
+        struct SHIB_EXPORTS ITokenValidator {
+            virtual void validateToken(
+                saml::SAMLAssertion* token,
+                time_t=0,
+                const IRoleDescriptor* role=NULL,
+                const saml::Iterator<ITrust*>& trusts=EMPTY(ITrust*)
+                ) const=0;
+            virtual ~ITokenValidator() {}
+        };
+
         ShibBrowserProfile(
+            const ITokenValidator* validator,
             const saml::Iterator<IMetadata*>& metadatas=EMPTY(IMetadata*),
             const saml::Iterator<ITrust*>& trusts=EMPTY(ITrust*)
             );
@@ -473,6 +478,7 @@ namespace shibboleth
         saml::SAMLBrowserProfile* m_profile;
         saml::Iterator<IMetadata*> m_metadatas;
         saml::Iterator<ITrust*> m_trusts;
+        const ITokenValidator* m_validator;
     };
 
     class SHIB_EXPORTS ShibConfig
