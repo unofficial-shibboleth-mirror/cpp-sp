@@ -96,7 +96,8 @@ namespace shibtarget {
      * Application. Implementations should always expose an application named "default"
      * as a last resort.
      */
-    struct SHIBTARGET_EXPORTS IApplication : public virtual IPropertySet
+    struct SHIBTARGET_EXPORTS IApplication : public virtual IPropertySet,
+        public virtual shibboleth::ShibBrowserProfile::ITokenValidator
     {
         virtual const char* getId() const=0;
         virtual const char* getHash() const=0;
@@ -115,6 +116,14 @@ namespace shibtarget {
         // caller is given ownership of object, must use and delete within scope of config lock
         virtual saml::SAMLBrowserProfile::ArtifactMapper* getArtifactMapper() const=0;
 
+        // general token validation based on conditions, signatures, etc.
+        virtual void validateToken(
+            saml::SAMLAssertion* token,
+            time_t t=0,
+            const shibboleth::IRoleDescriptor* role=NULL,
+            const saml::Iterator<shibboleth::ITrust*>& trusts=EMPTY(shibboleth::ITrust*)
+            ) const=0;
+
         // Used to locate a default or designated session initiator for automatic sessions
         virtual const IHandler* getDefaultSessionInitiator() const=0;
         virtual const IHandler* getSessionInitiatorById(const char* id) const=0;
@@ -130,10 +139,14 @@ namespace shibtarget {
         virtual ~IApplication() {}
     };
 
-    // Instead of wrapping the binding to deal with mutual authentication, we
-    // just use the HTTP hook functionality offered by OpenSAML. The hook will
-    // register "itself" as a globalCtx pointer with the SAML binding and the caller
-    // will declare and pass the embedded struct as callCtx for use by the hook.
+    /**
+     * OpenSAML binding hook
+     *
+     * Instead of wrapping the binding to deal with mutual authentication, we
+     * just use the HTTP hook functionality offered by OpenSAML. The hook will
+     * register "itself" as a globalCtx pointer with the SAML binding and the caller
+     * will declare and pass the embedded struct as callCtx for use by the hook.
+     */
     class ShibHTTPHook : virtual public saml::SAMLSOAPHTTPBinding::HTTPHook
     {
     public:
@@ -190,6 +203,40 @@ namespace shibtarget {
     };
 
     /**
+     * Interface to a sink for session cache events.
+     *
+     * All caches support registration of a backing store that can be informed
+     * of significant events in the lifecycle of a cache entry.
+     */
+    struct SHIBTARGET_EXPORTS ISessionCacheStore
+    {
+        virtual void onCreate(
+            const char* key,
+            const IApplication* application,
+            const ISessionCacheEntry* entry,
+            int majorVersion,
+            int minorVersion,
+            time_t created
+            )=0;
+        virtual bool onRead(
+            const char* key,
+            std::string& applicationId,
+            std::string& clientAddress,
+            std::string& providerId,
+            std::string& subject,
+            std::string& authnContext,
+            std::string& tokens,
+            int& majorVersion,
+            int& minorVersion,
+            time_t& created,
+            time_t& accessed
+            )=0;
+        virtual void onUpdate(const char* key, const char* tokens)=0;
+        virtual void onDelete(const char* key, time_t lastAccess, bool dormant)=0;
+        virtual ~ISessionCacheStore() {}
+    };
+
+    /**
      * Interface to the session cache.
      * 
      * The session cache abstracts a persistent (meaning across requests) cache of
@@ -202,32 +249,21 @@ namespace shibtarget {
     {
         virtual std::string insert(
             const IApplication* application,
-            const shibboleth::IRoleDescriptor* source,
+            const shibboleth::IEntityDescriptor* source,
             const char* client_addr,
             const saml::SAMLSubject* subject,
             const char* authnContext,
-            saml::SAMLResponse* tokens
+            const saml::SAMLResponse* tokens
             )=0;
-        virtual ISessionCacheEntry* find(const char* key, const IApplication* application, const char* client_addr)=0;
-        virtual void remove(const char* key, const IApplication* application, const char* client_addr)=0;
+        virtual ISessionCacheEntry* find(
+            const char* key, const IApplication* application, const char* client_addr
+            )=0;
+        virtual void remove(
+            const char* key, const IApplication* application, const char* client_addr
+            )=0;
+
+        virtual bool setBackingStore(ISessionCacheStore* store)=0;
         virtual ~ISessionCache() {}
-    
-    protected:
-        // used by cache implementations to load raw cache entry, as from disk or other back-end
-        virtual void load(
-            const char* key,
-            const IApplication* application,
-            const shibboleth::IRoleDescriptor* source,
-            const char* client_addr,
-            const char* providerId,
-            const char* subject,
-            const char* authnContext,
-            const char* tokens,
-            int majorVersion,
-            int minorVersion,
-            time_t created=0,
-            time_t accessed=0
-            )=0;
     };
 
     /**
