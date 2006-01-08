@@ -170,32 +170,18 @@ public:
 
     string insert(
         const IApplication* application,
-        const IRoleDescriptor* source,
+        const IEntityDescriptor* source,
         const char* client_addr,
         const SAMLSubject* subject,
         const char* authnContext,
-        SAMLResponse* tokens
+        const SAMLResponse* tokens
     );
     ISessionCacheEntry* find(const char* key, const IApplication* application, const char* client_addr);
     void remove(const char* key, const IApplication* application, const char* client_addr);
 
+    bool setBackingStore(ISessionCacheStore*) { return false; }
+
 private:
-    // The front-end cache is never loaded from the "back door".
-    void load(
-        const char* key,
-        const IApplication* application,
-        const IRoleDescriptor* source,
-        const char* client_addr,
-        const char* providerId,
-        const char* subject,
-        const char* authnContext,
-        const char* tokens,
-        int majorVersion,
-        int minorVersion,
-        time_t created=0,
-        time_t accessed=0
-        ) { throw SAMLException("Unsupported operation."); }
-    
     Category* m_log;
 };
 
@@ -208,11 +194,11 @@ StubCache::StubCache(const DOMElement* e) : m_log(&Category::getInstance(SHIBT_L
 
 string StubCache::insert(
     const IApplication* application,
-    const IRoleDescriptor* source,
+    const IEntityDescriptor* source,
     const char* client_addr,
     const SAMLSubject* subject,
     const char* authnContext,
-    SAMLResponse* tokens
+    const SAMLResponse* tokens
     )
 {
     DDF in("SessionCache::insert"),out;
@@ -220,10 +206,8 @@ string StubCache::insert(
     in.structure();
     in.addmember("application_id").string(application->getId());
     in.addmember("client_address").string(client_addr);
-    auto_ptr_char provid(source->getEntityDescriptor()->getId());
+    auto_ptr_char provid(source->getId());
     in.addmember("provider_id").string(provid.get());
-    auto_ptr_char prot(source->getProtocolSupportEnumeration().next());
-    in.addmember("protocol").string(prot.get());
     in.addmember("major_version").integer(1);
     in.addmember("minor_version").integer(tokens->getMinorVersion());
     in.addmember("authn_context").string(authnContext);
@@ -278,7 +262,6 @@ void StubCache::remove(const char* key, const IApplication* application, const c
     ShibTargetConfig::getConfig().getINI()->getListener()->send(in);
 }
 
-
 /*
  * Long-lived cache entries that store the actual sessions and
  * wrap attribute query/refresh/filtering
@@ -291,19 +274,18 @@ public:
         MemorySessionCache* cache,
         const char* key,
         const IApplication* application,
-        const IRoleDescriptor* source,
+        const IEntityDescriptor* source,
         const char* client_addr,
         const SAMLSubject* subject,
         const char* authnContext,
-        SAMLResponse* tokens
+        const SAMLResponse* tokens
         );
     MemorySessionCacheEntry(
         MemorySessionCache* cache,
         const char* key,
         const IApplication* application,
-        const IRoleDescriptor* source,
+        const IEntityDescriptor* source,
         const char* client_addr,
-        const char* providerId,
         const char* subject,
         const char* authnContext,
         const char* tokens,
@@ -316,24 +298,19 @@ public:
 
     void lock() { m_lock->lock(); }
     void unlock() { m_lock->unlock(); }
-
-    pair<const char*,const SAMLResponse*> getTokens(bool xml=true, bool obj=false) const
-    { populate(); return StubCacheEntry::getTokens(xml,obj); }
-    pair<const char*,const SAMLResponse*> getFilteredTokens(bool xml=true, bool obj=false) const
-    { return StubCacheEntry::getFilteredTokens(xml,obj); }
-
+    
     HRESULT isValid(const IApplication* application, const char* client_addr) const;
+    bool populate() const;            // wraps process of maintaining attributes, returns true iff data reused
     bool checkApplication(const IApplication* application) { return (m_obj["application_id"]==application->getId()); }
+    time_t created() const { return m_sessionCreated; }
     time_t lastAccess() const { return m_lastAccess; }
     const DDF& getDDF() const { return m_obj; }
   
 private:
     bool hasAttributes(const SAMLResponse& r) const;
     time_t calculateExpiration(const SAMLResponse& r) const;
-    void populate() const;            // wraps process of checking cache, and repopulating if need be
-    bool responseValid() const;       // checks validity of existing response
     pair<SAMLResponse*,SAMLResponse*> getNewResponse() const;   // wraps an actual query
-    SAMLResponse* filter(SAMLResponse* r, const IApplication* application, const IRoleDescriptor* source) const;
+    SAMLResponse* filter(const SAMLResponse* r, const IApplication* application, const IEntityDescriptor* source) const;
   
     time_t m_sessionCreated;
     mutable time_t m_responseExpiration, m_lastAccess, m_lastRetry;
@@ -355,32 +332,21 @@ public:
 
     string insert(
         const IApplication* application,
-        const IRoleDescriptor* source,
+        const IEntityDescriptor* source,
         const char* client_addr,
         const SAMLSubject* subject,
         const char* authnContext,
-        SAMLResponse* tokens
+        const SAMLResponse* tokens
     );
     ISessionCacheEntry* find(const char* key, const IApplication* application, const char* client_addr);
     void remove(const char* key, const IApplication* application, const char* client_addr);
 
     void cleanup();
 
+    bool setBackingStore(ISessionCacheStore* store);
+
 private:
-    void load(
-        const char* key,
-        const IApplication* application,
-        const IRoleDescriptor* source,
-        const char* client_addr,
-        const char* providerId,
-        const char* subject,
-        const char* authnContext,
-        const char* tokens,
-        int majorVersion,
-        int minorVersion,
-        time_t created,
-        time_t accessed
-        );
+    void dormant(const char* key);
 
     const DOMElement* m_root;         // Only valid during initialization
     RWLock* m_lock;
@@ -390,6 +356,7 @@ private:
     IRemoted* restoreInsert;
     IRemoted* restoreFind;
     IRemoted* restoreRemove;
+    ISessionCacheStore* m_sink;
 
     static void* cleanup_fcn(void*);
     bool shutdown;
@@ -407,14 +374,13 @@ MemorySessionCacheEntry::MemorySessionCacheEntry(
     MemorySessionCache* cache,
     const char* key,
     const IApplication* application,
-    const IRoleDescriptor* source,
+    const IEntityDescriptor* source,
     const char* client_addr,
     const SAMLSubject* subject,
     const char* authnContext,
-    SAMLResponse* tokens
+    const SAMLResponse* tokens
     ) : StubCacheEntry(cache->m_log), m_cache(cache), m_responseExpiration(0), m_lastRetry(0)
 {
-    auto_ptr<SAMLResponse> unfiltered(tokens);
     m_sessionCreated = m_lastAccess = time(NULL);
 
     // Store session properties in DDF.
@@ -422,7 +388,7 @@ MemorySessionCacheEntry::MemorySessionCacheEntry(
     m_obj.addmember("key").string(key);
     m_obj.addmember("client_address").string(client_addr);
     m_obj.addmember("application_id").string(application->getId());
-    auto_ptr_char pid(source ? source->getEntityDescriptor()->getId() : tokens->getAssertions().next()->getIssuer());
+    auto_ptr_char pid(source->getId());
     m_obj.addmember("provider_id").string(pid.get());
     m_obj.addmember("major_version").integer(1);
     m_obj.addmember("minor_version").integer(tokens->getMinorVersion());
@@ -457,7 +423,6 @@ MemorySessionCacheEntry::MemorySessionCacheEntry(
         // Save actual objects only if we're running inprocess. The subject needs to be
         // owned by the entry, so we'll defer creation of a cloned copy.
         if (ShibTargetConfig::getConfig().isEnabled(ShibTargetConfig::InProcess)) {
-            m_pUnfiltered=unfiltered.release();
             if (m_obj["tokens.filtered"].isstring())
                 m_pFiltered=filtered.release();
         }
@@ -491,9 +456,8 @@ MemorySessionCacheEntry::MemorySessionCacheEntry(
     MemorySessionCache* cache,
     const char* key,
     const IApplication* application,
-    const IRoleDescriptor* source,
+    const IEntityDescriptor* source,
     const char* client_addr,
-    const char* providerId,
     const char* subject,
     const char* authnContext,
     const char* tokens,
@@ -515,7 +479,8 @@ MemorySessionCacheEntry::MemorySessionCacheEntry(
     m_obj.addmember("key").string(key);
     m_obj.addmember("client_address").string(client_addr);
     m_obj.addmember("application_id").string(application->getId());
-    m_obj.addmember("provider_id").string(providerId);
+    auto_ptr_char pid(source->getId());
+    m_obj.addmember("provider_id").string(pid.get());
     m_obj.addmember("subject").string(subject);
     m_obj.addmember("authn_context").string(authnContext);
     m_obj.addmember("tokens.unfiltered").string(tokens);
@@ -562,8 +527,9 @@ HRESULT MemorySessionCacheEntry::isValid(const IApplication* app, const char* cl
 #ifdef _DEBUG
     saml::NDC ndc("isValid");
 #endif
+
     // Obtain validation rules from application settings.
-    bool checkIPAddress=true;
+    bool consistentIPAddress=true;
     int lifetime=0,timeout=0;
     const IPropertySet* props=app->getPropertySet("Sessions");
     if (props) {
@@ -573,9 +539,9 @@ HRESULT MemorySessionCacheEntry::isValid(const IApplication* app, const char* cl
         p=props->getUnsignedInt("timeout");
         if (p.first)
             timeout = p.second;
-        pair<bool,bool> pcheck=props->getBool("checkAddress");
+        pair<bool,bool> pcheck=props->getBool("consistentIPAddress");
         if (pcheck.first)
-            checkIPAddress = pcheck.second;
+            consistentIPAddress = pcheck.second;
     }
     
     if (m_log->isDebugEnabled())
@@ -593,7 +559,7 @@ HRESULT MemorySessionCacheEntry::isValid(const IApplication* app, const char* cl
         return SESSION_E_EXPIRED;
     }
 
-    if (checkIPAddress) {
+    if (consistentIPAddress) {
         if (m_log->isDebugEnabled())
             m_log->debug("comparing client address %s against %s", client_addr, getClientAddress());
         if (strcmp(client_addr, getClientAddress())) {
@@ -603,8 +569,7 @@ HRESULT MemorySessionCacheEntry::isValid(const IApplication* app, const char* cl
     }
 
     m_lastAccess=now;
-    populate();
-    return NOERROR;
+    return populate() ? NOERROR : S_FALSE;
 }
 
 bool MemorySessionCacheEntry::hasAttributes(const SAMLResponse& r) const
@@ -654,7 +619,7 @@ time_t MemorySessionCacheEntry::calculateExpiration(const SAMLResponse& r) const
     return expiration;
 }
 
-void MemorySessionCacheEntry::populate() const
+bool MemorySessionCacheEntry::populate() const
 {
 #ifdef _DEBUG
     saml::NDC ndc("populate");
@@ -664,7 +629,7 @@ void MemorySessionCacheEntry::populate() const
     if (m_responseExpiration > 0) {
         // Can we use what we have?
         if (time(NULL) < m_responseExpiration)
-            return;
+            return true;
       
         // If we're being strict, dump what we have and reset timestamps.
         if (m_cache->m_strictValidity) {
@@ -715,6 +680,7 @@ void MemorySessionCacheEntry::populate() const
             STConfig& stc=static_cast<STConfig&>(ShibTargetConfig::getConfig());
             stc.getTransactionLog().infoStream() <<  "Successful attribute query for session (ID: " << m_obj["key"].string() << ")";
             stc.releaseTransactionLog();
+            return false;
         }
     }
     catch (SAMLException&) {
@@ -729,6 +695,7 @@ void MemorySessionCacheEntry::populate() const
         m_log->warn("suppressed unknown exception caught while trying to fetch attributes");
     }
 #endif
+    return true;
 }
 
 pair<SAMLResponse*,SAMLResponse*> MemorySessionCacheEntry::getNewResponse() const
@@ -888,8 +855,31 @@ pair<SAMLResponse*,SAMLResponse*> MemorySessionCacheEntry::getNewResponse() cons
                 throw TrustException("Unable to obtain a signed response message.");
             }
             
+            // Iterate over the tokens and apply basic validation.
+            time_t now=time(NULL);
+            Iterator<SAMLAssertion*> assertions=response->getAssertions();
+            for (unsigned int a=0; a<assertions.size();) {
+                // Discard any assertions not issued by the right entity.
+                if (XMLString::compareString(site->getId(),assertions[a]->getIssuer())) {
+                    auto_ptr_char bad(assertions[a]->getIssuer());
+                    m_log->warn("discarding assertion not issued by (%s), instead by (%s)",m_obj["provider_id"].string(),bad.get());
+                    response->removeAssertion(a);
+                    continue;
+                }
+
+                // Validate the token.
+                try {
+                    application->validateToken(assertions[a],now,AA,application->getTrustProviders());
+                    a++;
+                }
+                catch (SAMLException&) {
+                    m_log->warn("assertion failed to validate, removing it from response");
+                    response->removeAssertion(a);
+                }
+            }
+
             // Run it through the filter.
-            return make_pair(response,filter(response,application,AA));
+            return make_pair(response,filter(response,application,site));
         }
     }
     catch (SAMLException& e) {
@@ -902,48 +892,14 @@ pair<SAMLResponse*,SAMLResponse*> MemorySessionCacheEntry::getNewResponse() cons
 }
 
 SAMLResponse* MemorySessionCacheEntry::filter(
-    SAMLResponse* r, const IApplication* application, const IRoleDescriptor* source
+    const SAMLResponse* r, const IApplication* application, const IEntityDescriptor* source
     ) const
 {
-    const IPropertySet* credUse=application->getCredentialUse(source->getEntityDescriptor());
-    pair<bool,bool> signedAssertions=credUse ? credUse->getBool("signedAssertions") : make_pair(false,false);
-    Trust t(application->getTrustProviders());
+#ifdef _DEBUG
+    saml::NDC ndc("filter");
+#endif
 
-    // Examine each original assertion...
-    Iterator<SAMLAssertion*> assertions=r->getAssertions();
-    for (unsigned long i=0; i < assertions.size();) {
-        // Check signing policy.
-        if (signedAssertions.first && signedAssertions.second && !(assertions[i]->isSigned())) {
-            m_log->warn("removing unsigned assertion from response, in accordance with signedAssertions policy");
-            r->removeAssertion(i);
-            continue;
-        }
-
-        // Check any conditions.
-        bool pruned=false;
-        Iterator<SAMLCondition*> conds=assertions[i]->getConditions();
-        while (conds.hasNext()) {
-            SAMLAudienceRestrictionCondition* cond=dynamic_cast<SAMLAudienceRestrictionCondition*>(conds.next());
-            if (!cond || !cond->eval(application->getAudiences())) {
-                m_log->warn("assertion condition invalid, removing it");
-                r->removeAssertion(i);
-                pruned=true;
-                break;
-            }
-        }
-        if (pruned)
-            continue;
-        
-        // Check token signature.
-        if (assertions[i]->isSigned() && !t.validate(*(assertions[i]),source)) {
-            m_log->warn("signed assertion failed to validate, removing it");
-            r->removeAssertion(i);
-            continue;
-        }
-        i++;
-    }
-
-    // Make a copy of whatever's left and process that against the AAP.
+    // Make a copy of the original and process that against the AAP.
     auto_ptr<SAMLResponse> copy(static_cast<SAMLResponse*>(r->clone()));
     copy->toDOM();
 
@@ -999,7 +955,7 @@ MemorySessionCache::MemorySessionCache(const DOMElement* e)
     : m_root(e), m_AATimeout(30), m_AAConnectTimeout(15), m_defaultLifetime(1800), m_retryInterval(300),
         m_strictValidity(true), m_propagateErrors(false), m_lock(RWLock::create()),
         m_log(&Category::getInstance(SHIBT_LOGCAT".SessionCache")),
-        restoreInsert(NULL),restoreFind(NULL),restoreRemove(NULL)
+        restoreInsert(NULL), restoreFind(NULL), restoreRemove(NULL), m_sink(NULL)
 {
     const XMLCh* tag=m_root->getAttributeNS(NULL,AATimeout);
     if (tag && *tag) {
@@ -1074,6 +1030,14 @@ MemorySessionCache::~MemorySessionCache()
     delete shutdown_wait;
 }
 
+bool MemorySessionCache::setBackingStore(ISessionCacheStore* store)
+{
+    if (m_sink && store!=m_sink)
+        return false;
+    m_sink=store;
+    return true;
+}
+
 /*
  * IPC message definitions:
  * 
@@ -1083,7 +1047,6 @@ MemorySessionCache::~MemorySessionCache()
  *      application_id
  *      client_address
  *      provider_id
- *      protocol
  *      major_version
  *      minor_version
  *      authn_context
@@ -1120,6 +1083,10 @@ MemorySessionCache::~MemorySessionCache()
 
 DDF MemorySessionCache::receive(const DDF& in)
 {
+#ifdef _DEBUG
+    saml::NDC ndc("receive");
+#endif
+
     // Find application.
     const char* aid=in["application_id"].string();
     const IApplication* app=aid ? ShibTargetConfig::getConfig().getINI()->getApplication(aid) : NULL;
@@ -1164,11 +1131,10 @@ DDF MemorySessionCache::receive(const DDF& in)
         // Check required parameters.
         const char* client_address=in["client_address"].string();
         const char* provider_id=in["provider_id"].string();
-        const char* protocol=in["protocol"].string();
         const char* authn_context=in["authn_context"].string();
         const char* subject=in["subject"].string();
         const char* tokens=in["tokens.unfiltered"].string();
-        if (!client_address || !provider_id || !protocol || !authn_context || !subject || !tokens)
+        if (!client_address || !provider_id || !authn_context || !subject || !tokens)
             throw SAMLException("Required parameters missing in call to SessionCache::insert");
         int minor=in["minor_version"].integer();
         
@@ -1179,153 +1145,232 @@ DDF MemorySessionCache::receive(const DDF& in)
             m_log->error("unable to locate issuing identity provider's metadata");
             throw MetadataException("Unable to locate identity provider's metadata.");
         }
-        auto_ptr_XMLCh prot(protocol);
-        const IIDPSSODescriptor* IDP=site->getIDPSSODescriptor(prot.get());
-        if (!IDP)
-            m_log->warn("unable to locate metadata for identity provider role, scoped attributes may be limited");
-        
         // Deserialize XML for insert method.
         istringstream subis(subject);
         auto_ptr<SAMLSubject> pSubject(new SAMLSubject(subis));
         istringstream tokis(tokens);
-        SAMLResponse* pTokens=new SAMLResponse(tokis,minor);
+        auto_ptr<SAMLResponse> pTokens=new SAMLResponse(tokis,minor);
         
         // Insert the data and return the cache key.
-        string key=insert(app,IDP,client_address,pSubject.get(),authn_context,pTokens);
+        string key=insert(app,site,client_address,pSubject.get(),authn_context,pTokens.get());
         
         DDF out(NULL);
         out.structure();
         out.addmember("key").string(key.c_str());
         return out;
     }
-    throw ListenerException("unsupported operation ($1)",params(1,in.name()));
+    throw ListenerException("Unsupported operation ($1)",params(1,in.name()));
 }
 
 string MemorySessionCache::insert(
     const IApplication* application,
-    const IRoleDescriptor* source,
+    const IEntityDescriptor* source,
     const char* client_addr,
     const SAMLSubject* subject,
     const char* authnContext,
-    SAMLResponse* tokens
+    const SAMLResponse* tokens
     )
 {
+#ifdef _DEBUG
+    saml::NDC ndc("insert");
+#endif
+
     SAMLIdentifier id;
     auto_ptr_char key(id);
 
     if (m_log->isDebugEnabled())
         m_log->debug("creating new cache entry for application %s: \"%s\"", application->getId(), key.get());
 
-    MemorySessionCacheEntry* entry = new MemorySessionCacheEntry(
-        this,
-        key.get(),
-        application,
-        source,
-        client_addr,
-        subject,
-        authnContext,
-        tokens
+    auto_ptr<MemorySessionCacheEntry> entry(
+        new MemorySessionCacheEntry(
+            this,
+            key.get(),
+            application,
+            source,
+            client_addr,
+            subject,
+            authnContext,
+            tokens
+            )
         );
+    entry->populate();
+
+    if (m_sink)
+        m_sink->onCreate(key.get(),application,entry.get(),1,tokens->getMinorVersion(),entry->created());
 
     m_lock->wrlock();
-    m_hashtable[key.get()]=entry;
+    m_hashtable[key.get()]=entry.release();
     m_lock->unlock();
 
     return key.get();
 }
 
-void MemorySessionCache::load(
-    const char* key,
-    const IApplication* application,
-    const IRoleDescriptor* source,
-    const char* client_addr,
-    const char* providerId,
-    const char* subject,
-    const char* authnContext,
-    const char* tokens,
-    int minorVersion,
-    int majorVersion,
-    time_t created,
-    time_t accessed
-    )
-{
-    if (m_log->isDebugEnabled())
-        m_log->debug("loading cache entry back into memory for application %s: \"%s\"", application->getId(), key);
-
-    MemorySessionCacheEntry* entry = new MemorySessionCacheEntry(
-        this,
-        key,
-        application,
-        source,
-        client_addr,
-        providerId,
-        subject,
-        authnContext,
-        tokens,
-        minorVersion,
-        majorVersion,
-        created,
-        accessed
-        );
-
-    m_lock->wrlock();
-    m_hashtable[key]=entry;
-    m_lock->unlock();
-}
-
 ISessionCacheEntry* MemorySessionCache::find(const char* key, const IApplication* application, const char* client_addr)
 {
+#ifdef _DEBUG
+    saml::NDC ndc("find");
+#endif
+
     m_log->debug("searching memory cache for key (%s)", key);
-    ReadLock rwlock(m_lock);
+    m_lock->rdlock();
 
     map<string,MemorySessionCacheEntry*>::const_iterator i=m_hashtable.find(key);
     if (i==m_hashtable.end()) {
+        m_lock->unlock();
         m_log->debug("no match found");
-        return NULL;
+        if (!m_sink)
+            return NULL;    // no backing store to search
+
+        m_log->debug("searching backing store");
+        string appid,addr,pid,sub,ac,tokens;
+        int major,minor;
+        time_t created,accessed;
+        if (!m_sink->onRead(key,appid,addr,pid,sub,ac,tokens,major,minor,created,accessed))
+            return NULL;
+        const IApplication* eapp=ShibTargetConfig::getConfig().getINI()->getApplication(appid.c_str());
+        if (!eapp) {
+            // Something's horribly wrong.
+            m_log->error("couldn't find application (%s) for session", appid.c_str());
+            m_sink->onDelete(key,0,false);
+            return NULL;
+        }
+        if (m_log->isDebugEnabled())
+            m_log->debug("loading cache entry (ID: %s) back into memory for application (%s)", key, appid);
+
+        // Locate role descriptor to use in filtering.
+        Metadata m(eapp->getMetadataProviders());
+        const IEntityDescriptor* site=m.lookup(pid.c_str());
+        if (!site) {
+            m_log->error("unable to locate issuing identity provider's metadata");
+            m_sink->onDelete(key,0,false);
+            return NULL;
+        }
+        MemorySessionCacheEntry* entry = new MemorySessionCacheEntry(
+            this,
+            key,
+            eapp,
+            site,
+            addr.c_str(),
+            sub.c_str(),
+            ac.c_str(),
+            tokens.c_str(),
+            major,
+            minor,
+            created,
+            accessed
+            );
+        m_lock->wrlock();
+        m_hashtable[key]=entry;
+        m_lock->unlock();
+
+        // Downgrade to a read lock and repeat the initial search.
+        m_lock->rdlock();
+        i=m_hashtable.find(key);
+        if (i==m_hashtable.end()) {
+            m_lock->unlock();
+            m_log->warn("cache entry was loaded from backing store, but disappeared after lock downgrade");
+            return NULL;
+        }
     }
-    m_log->debug("match found");
+    else
+        m_log->debug("match found");
 
     // Check for application mismatch (could also do this with partitioned caches by application ID)
     if (!i->second->checkApplication(application)) {
+        m_lock->unlock();
         m_log->crit("An application (%s) attempted to access another application's session!", application->getId());
         return NULL;
     }
     
     // Check for timeouts, expiration, address mismatch, etc (also updates last access)
     // Use the return code to assign specific error messages.
-    HRESULT hr=i->second->isValid(application, client_addr);
-    if (FAILED(hr)) {
-        Metadata m(application->getMetadataProviders());
-        switch (hr) {
-            case SESSION_E_EXPIRED: {
-                InvalidSessionException ex(SESSION_E_EXPIRED, "Your session has expired, and you must re-authenticate.");
-                annotateException(&ex,m.lookup(i->second->getProviderId())); // throws it
-            }
-            
-            case SESSION_E_ADDRESSMISMATCH: {
-                InvalidSessionException ex(
-                    SESSION_E_ADDRESSMISMATCH,
-                    "Your IP address (%1) does not match the address recorded at the time the session was established.",
-                    params(1,client_addr)
-                    );
-                annotateException(&ex,m.lookup(i->second->getProviderId())); // throws it
-            }
-            
-            default: {
-                InvalidSessionException ex(hr, "Your session is invalid.");
-                annotateException(&ex,m.lookup(i->second->getProviderId())); // throws it
+    try {
+        HRESULT hr=i->second->isValid(application, client_addr);
+        if (FAILED(hr)) {
+            Metadata m(application->getMetadataProviders());
+            switch (hr) {
+                case SESSION_E_EXPIRED: {
+                    InvalidSessionException ex(SESSION_E_EXPIRED, "Your session has expired, and you must re-authenticate.");
+                    annotateException(&ex,m.lookup(i->second->getProviderId())); // throws it
+                }
+                
+                case SESSION_E_ADDRESSMISMATCH: {
+                    InvalidSessionException ex(
+                        SESSION_E_ADDRESSMISMATCH,
+                        "Your IP address (%1) does not match the address recorded at the time the session was established.",
+                        params(1,client_addr)
+                        );
+                    annotateException(&ex,m.lookup(i->second->getProviderId())); // throws it
+                }
+                
+                default: {
+                    InvalidSessionException ex(hr, "Your session is invalid.");
+                    annotateException(&ex,m.lookup(i->second->getProviderId())); // throws it
+                }
             }
         }
+
+        // The data inside the entry changed?
+        if (m_sink && hr==S_FALSE)
+            m_sink->onUpdate(key,i->second->getDDF().getmember("tokens.unfiltered").string());
+    }
+    catch (...) {
+        m_lock->unlock();
+        throw;
     }
 
     // Lock the cache entry for the caller -- they have to unlock it.
     i->second->lock();
+    m_lock->unlock();
     return i->second;
 }
 
 void MemorySessionCache::remove(const char* key, const IApplication* application, const char* client_addr)
 {
+#ifdef _DEBUG
+    saml::NDC ndc("remove");
+#endif
+
     m_log->debug("removing cache entry with key (%s)", key);
+
+    // lock the cache for writing, which means we know nobody is sitting in find()
+    m_lock->wrlock();
+
+    // grab the entry from the database.
+    map<string,MemorySessionCacheEntry*>::const_iterator i=m_hashtable.find(key);
+    if (i==m_hashtable.end()) {
+        m_lock->unlock();
+        return;
+    }
+
+    // ok, remove the entry and lock it
+    MemorySessionCacheEntry* entry=i->second;
+    m_hashtable.erase(key);
+    entry->lock();
+    
+    // unlock the cache
+    m_lock->unlock();
+
+    entry->unlock();
+
+    // Notify sink. Wrapper will make sure entry gets deleted.
+    auto_ptr<ISessionCacheEntry*> entrywrap(entry);
+    if (m_sink)
+        m_sink->onDelete(key,entry->lastAccess(),false);
+
+    // Transaction Logging
+    STConfig& stc=static_cast<STConfig&>(ShibTargetConfig::getConfig());
+    stc.getTransactionLog().infoStream() << "Destroyed session (ID: " << key << ")";
+    stc.releaseTransactionLog();
+}
+
+void MemorySessionCache::dormant(const char* key)
+{
+#ifdef _DEBUG
+    saml::NDC ndc("dormant");
+#endif
+
+    m_log->debug("purging old cache entry with key (%s)", key);
 
     // lock the cache for writing, which means we know nobody is sitting in find()
     m_lock->wrlock();
@@ -1348,13 +1393,10 @@ void MemorySessionCache::remove(const char* key, const IApplication* application
     // we can release the cache entry lock because we know we're not in the cache anymore
     entry->unlock();
 
-    // Now delete the entry
-    delete entry;
-
-    // Transaction Logging
-    STConfig& stc=static_cast<STConfig&>(ShibTargetConfig::getConfig());
-    stc.getTransactionLog().infoStream() << "Destroyed session (ID: " << key << ")";
-    stc.releaseTransactionLog();
+    // Notify sink. Wrapper will make sure entry gets deleted.
+    auto_ptr<ISessionCacheEntry*> entrywrap(entry);
+    if (m_sink)
+        m_sink->onDelete(key,entry->lastAccess(),true);
 }
 
 void MemorySessionCache::cleanup()
@@ -1384,14 +1426,14 @@ void MemorySessionCache::cleanup()
 
     mutex->lock();
 
-    m_log->info("Cleanup thread started...Run every %d secs; timeout after %d secs", rerun_timer, timeout_life);
+    m_log->info("cleanup thread started...Run every %d secs; timeout after %d secs", rerun_timer, timeout_life);
 
     while (!shutdown) {
         shutdown_wait->timedwait(mutex,rerun_timer);
         if (shutdown)
             break;
 
-        m_log->debug("Cleanup thread running...");
+        m_log->debug("cleanup thread running...");
 
         // Ok, let's run through the cleanup process and clean out
         // really old sessions.  This is a two-pass process.  The
@@ -1416,16 +1458,11 @@ void MemorySessionCache::cleanup()
         }
         m_lock->unlock();
     
-        m_log->info("deleting %d old items.", stale_keys.size());
+        m_log->info("purging %d old sessions", stale_keys.size());
     
         // Pass 2: walk through the list of stale entries and remove them from the cache
-        for (vector<string>::const_iterator j = stale_keys.begin(); j != stale_keys.end(); j++) {
-            remove(j->c_str(),NULL,NULL);
-            // Transaction Logging
-            STConfig& stc=static_cast<STConfig&>(ShibTargetConfig::getConfig());
-            stc.getTransactionLog().infoStream() << "Purged expired session from memory (ID: " << j->c_str() << ")";
-            stc.releaseTransactionLog();
-        }
+        for (vector<string>::const_iterator j = stale_keys.begin(); j != stale_keys.end(); j++)
+            dormant(j->c_str());
     }
 
     m_log->info("Cleanup thread finished.");
