@@ -32,6 +32,12 @@ using namespace std;
 using namespace saml;
 using namespace shibboleth;
 
+struct TV : public ShibBrowserProfile::ITokenValidator
+{
+    void validateToken(SAMLAssertion*, time_t ts=0, const IRoleDescriptor* r=NULL, const Iterator<ITrust*>& t=EMPTY(ITrust*)) const
+    { }
+};
+
 int main(int argc,char* argv[])
 {
     SAMLConfig& conf1=SAMLConfig::getConfig();
@@ -56,7 +62,6 @@ int main(int argc,char* argv[])
 
     try
     {
-
         DOMImplementation* impl=DOMImplementationRegistry::getDOMImplementation(NULL);
         DOMDocument* dummydoc=impl->createDocument();
         DOMElement* dummy = dummydoc->createElementNS(NULL,L(Request));
@@ -70,9 +75,9 @@ int main(int argc,char* argv[])
         ArrayIterator<IMetadata*> sites(metadatas,1);
         
         Metadata m(sites);
-
+        TV tv;
         auto_ptr<XMLCh> recip(XMLString::transcode("https://shib2.internet2.edu/shib/SHIRE"));
-        ShibBrowserProfile p (sites,EMPTY(ITrust*));
+        ShibBrowserProfile p (&tv,sites,EMPTY(ITrust*));
 
         char ch;
         string buf;
