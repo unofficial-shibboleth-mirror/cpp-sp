@@ -300,7 +300,7 @@ void ADFSListener::sessionNew(
             const XMLCh* wip = bpr.authnStatement->getSubjectIP();
             if (wip && *wip) {
                 // Verify the client address matches authentication
-                auto_ptr_char this_ip(ip);
+                auto_ptr_char this_ip(wip);
                 if (strcmp(ip, this_ip.get())) {
                     FatalProfileException ex(
                         SESSION_E_ADDRESSMISMATCH,
