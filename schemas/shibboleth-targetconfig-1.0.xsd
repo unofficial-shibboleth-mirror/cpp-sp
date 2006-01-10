@@ -404,6 +404,7 @@
 			<attribute name="lifetime" type="unsignedInt" use="optional"/>
 			<attribute name="timeout" type="unsignedInt" use="optional"/>
 			<attribute name="checkAddress" type="boolean" use="optional"/>
+			<attribute name="consistentAddress" type="boolean" use="optional" default="true"/>
 			<attribute name="checkReplay" type="boolean" use="optional" default="true"/>
 			<anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
