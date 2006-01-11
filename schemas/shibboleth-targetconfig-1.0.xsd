@@ -37,14 +37,14 @@
 		<sequence>
 			<element ref="conf:Extensions" minOccurs="0"/>
 			<choice minOccurs="0">
-				<element name="OutOfProcess" type="conf:GlobalConfigurationType"/>
-				<element name="Global" type="conf:GlobalConfigurationType"/>
-				<element name="SHAR" type="conf:GlobalConfigurationType"/>
+				<element name="OutOfProcess" type="conf:OutOfProcessType"/>
+				<element name="Global" type="conf:OutOfProcessType"/>
+				<element name="SHAR" type="conf:OutOfProcessType"/>
 			</choice>
 			<choice minOccurs="0">
-				<element name="InProcess" type="conf:LocalConfigurationType"/>
-				<element name="Local" type="conf:LocalConfigurationType"/>
-				<element name="SHIRE" type="conf:LocalConfigurationType"/>
+				<element name="InProcess" type="conf:InProcessType"/>
+				<element name="Local" type="conf:InProcessType"/>
+				<element name="SHIRE" type="conf:InProcessType"/>
 			</choice>
 			<element ref="conf:Applications"/>
 			<element name="CredentialsProvider" type="conf:PluggableType" minOccurs="0" maxOccurs="unbounded"/>
@@ -76,7 +76,45 @@
 		</complexType>
 	</element>
 
-	<complexType name="GlobalConfigurationType">
+	<attributeGroup name="SessionCacheProperties">
+		<attribute name="cleanupInterval" type="unsignedInt" use="optional" default="300"/>
+		<attribute name="cacheTimeout" type="unsignedInt" use="optional" default="28800"/>
+		<attribute name="AAConnectTimeout" type="unsignedInt" use="optional" default="15"/>
+		<attribute name="AATimeout" type="unsignedInt" use="optional" default="30"/>
+		<attribute name="defaultLifetime" type="unsignedInt" use="optional" default="1800"/>
+		<attribute name="retryInterval" type="unsignedInt" use="optional" default="300"/>
+		<attribute name="strictValidity" type="boolean" use="optional" default="true"/>
+		<attribute name="propagateErrors" type="boolean" use="optional" default="false"/>
+	</attributeGroup>
+	
+	<element name="MemorySessionCache">
+		<complexType>
+			<attributeGroup ref="conf:SessionCacheProperties"/>
+			<anyAttribute namespace="##other" processContents="lax"/>
+		</complexType>
+	</element>
+	<element name="MySQLSessionCache">
+		<complexType>
+			<sequence>
+				<element name="Argument" type="string" minOccurs="0" maxOccurs="unbounded"/>
+			</sequence>
+			<attributeGroup ref="conf:SessionCacheProperties"/>
+			<attribute name="mysqlTimeout" type="unsignedInt" use="optional" default="14400"/>
+			<attribute name="storeAttributes" type="boolean" use="optional" default="false"/>
+			<anyAttribute namespace="##other" processContents="lax"/>
+		</complexType>
+	</element>
+	<element name="SessionCache">
+		<complexType>
+			<complexContent>
+				<extension base="conf:PluggableType">
+					<attributeGroup ref="conf:SessionCacheProperties"/>
+				</extension>
+			</complexContent>
+		</complexType>
+	</element>
+	
+	<complexType name="OutOfProcessType">
 		<annotation>
 			<documentation>Container for global (server independent) configuration</documentation>
 		</annotation>
@@ -103,32 +141,9 @@
 				<element name="Listener" type="conf:PluggableType"/>
 			</choice>
 			<choice>
-				<element name="MemorySessionCache">
-					<complexType>
-						<attributeGroup ref="conf:SessionCacheProperties"/>
-						<anyAttribute namespace="##other" processContents="lax"/>
-					</complexType>
-				</element>
-				<element name="MySQLSessionCache">
-					<complexType>
-						<sequence>
-							<element name="Argument" type="string" minOccurs="0" maxOccurs="unbounded"/>
-						</sequence>
-						<attributeGroup ref="conf:SessionCacheProperties"/>
-						<attribute name="mysqlTimeout" type="unsignedInt" use="optional" default="14400"/>
-						<attribute name="storeAttributes" type="boolean" use="optional" default="false"/>
-						<anyAttribute namespace="##other" processContents="lax"/>
-					</complexType>
-				</element>
-				<element name="SessionCache">
-					<complexType>
-						<complexContent>
-							<extension base="conf:PluggableType">
-								<attributeGroup ref="conf:SessionCacheProperties"/>
-							</extension>
-						</complexContent>
-					</complexType>
-				</element>
+				<element ref="conf:MemorySessionCache"/>
+				<element ref="conf:MySQLSessionCache"/>
+				<element ref="conf:SessionCache"/>
 			</choice>
 			<choice minOccurs="0">
 				<element name="MySQLReplayCache">
@@ -147,18 +162,7 @@
 		<anyAttribute namespace="##other" processContents="lax"/>
 	</complexType>
 
-	<attributeGroup name="SessionCacheProperties">
-    	<attribute name="cleanupInterval" type="unsignedInt" use="optional" default="300"/>
-    	<attribute name="cacheTimeout" type="unsignedInt" use="optional" default="28800"/>
-		<attribute name="AAConnectTimeout" type="unsignedInt" use="optional" default="15"/>
-		<attribute name="AATimeout" type="unsignedInt" use="optional" default="30"/>
-		<attribute name="defaultLifetime" type="unsignedInt" use="optional" default="1800"/>
-		<attribute name="retryInterval" type="unsignedInt" use="optional" default="300"/>
-		<attribute name="strictValidity" type="boolean" use="optional" default="true"/>
-		<attribute name="propagateErrors" type="boolean" use="optional" default="false"/>
-	</attributeGroup>
-
-	<complexType name="LocalConfigurationType">
+	<complexType name="InProcessType">
 		<annotation>
 			<documentation>
 			Container for configuration of locally integrated or platform-specific
@@ -167,6 +171,11 @@
 		</annotation>
 		<sequence>
 			<element ref="conf:Extensions" minOccurs="0"/>
+			<choice minOccurs="0">
+				<element ref="conf:MemorySessionCache"/>
+				<element ref="conf:MySQLSessionCache"/>
+				<element ref="conf:SessionCache"/>
+			</choice>
 			<element name="RequestMapProvider" type="conf:PluggableType" minOccurs="0"/>
 			<element name="Implementation" minOccurs="0">
 				<complexType>
