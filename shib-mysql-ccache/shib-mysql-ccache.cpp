@@ -22,14 +22,6 @@
  * $Id$
  */
 
-/* This file is loosely based off the Shibboleth Credential Cache.
- * This plug-in is designed as a two-layer cache.  Layer 1, the
- * long-term cache, stores data in a MySQL embedded database.
- *
- * Short-term data is cached in memory as SAML objects in the layer 2
- * cache.
- */
-
 // eventually we might be able to support autoconf via cygwin...
 #if defined (_MSC_VER) || defined(__BORLANDC__)
 # include "config_win32.h"
@@ -47,13 +39,15 @@
 # include <unistd.h>
 #endif
 
-#include <shib-target/shib-target.h>
 #include <shib/shib-threads.h>
+#include <shib-target/shib-target.h>
 #include <log4cpp/Category.hh>
 
 #include <sstream>
-#include <stdexcept>
 
+#ifdef WIN32
+# include <winsock.h>
+#endif
 #include <mysql.h>
 
 // wanted to use MySQL codes for this, but can't seem to get back a 145
@@ -69,20 +63,22 @@ using namespace shibboleth;
 using namespace shibtarget;
 using namespace log4cpp;
 
-#define PLUGIN_VER_MAJOR 2
+#define PLUGIN_VER_MAJOR 3
 #define PLUGIN_VER_MINOR 0
 
 #define STATE_TABLE \
-  "CREATE TABLE state (cookie VARCHAR(64) PRIMARY KEY, " \
+  "CREATE TABLE state (" \
+  "cookie VARCHAR(64) PRIMARY KEY, " \
   "application_id VARCHAR(255)," \
   "ctime TIMESTAMP," \
   "atime TIMESTAMP," \
   "addr VARCHAR(128)," \
-  "profile INT," \
+  "major INT," \
+  "minor INT," \
   "provider VARCHAR(256)," \
-  "response_id VARCHAR(128)," \
-  "response TEXT," \
-  "statement TEXT)"
+  "subject TEXT," \
+  "authn_context TEXT," \
+  "tokens TEXT)"
 
 #define REPLAY_TABLE \
   "CREATE TABLE replay (id VARCHAR(255) PRIMARY KEY, " \
@@ -102,16 +98,13 @@ static const XMLCh mysqlTimeout[] =
 static const XMLCh storeAttributes[] =
 { chLatin_s, chLatin_t, chLatin_o, chLatin_r, chLatin_e, chLatin_A, chLatin_t, chLatin_t, chLatin_r, chLatin_i, chLatin_b, chLatin_u, chLatin_t, chLatin_e, chLatin_s, chNull };
 
-class MySQLBase
+class MySQLBase : public virtual saml::IPlugIn
 {
 public:
   MySQLBase(const DOMElement* e);
   virtual ~MySQLBase();
 
-  void thread_init();
-  void thread_end() {}
-
-  MYSQL* getMYSQL() const;
+  MYSQL* getMYSQL();
   bool repairTable(MYSQL*&, const char* table);
 
   log4cpp::Category* log;
@@ -124,7 +117,7 @@ protected:
 
   void createDatabase(MYSQL*, int major, int minor);
   void upgradeDatabase(MYSQL*);
-  void getVersion(MYSQL*, int* major_p, int* minor_p);
+  pair<int,int> getVersion(MYSQL*);
 };
 
 // Forward declarations
@@ -147,90 +140,94 @@ MySQLBase::MySQLBase(const DOMElement* e) : m_root(e)
 
   initialized = false;
   mysqlInit(e,*log);
-  thread_init();
+  getMYSQL();
   initialized = true;
 }
 
 MySQLBase::~MySQLBase()
 {
-  thread_end();
-
   delete m_mysql;
 }
 
-MYSQL* MySQLBase::getMYSQL() const
-{
-  return (MYSQL*)m_mysql->getData();
-}
-
-void MySQLBase::thread_init()
+MYSQL* MySQLBase::getMYSQL()
 {
 #ifdef _DEBUG
-  saml::NDC ndc("thread_init");
+    saml::NDC ndc("getMYSQL");
 #endif
 
-  // Connect to the database
-  MYSQL* mysql = mysql_init(NULL);
-  if (!mysql) {
-    log->error("mysql_init failed");
-    mysql_close(mysql);
-    throw SAMLException("MySQLBase::thread_init(): mysql_init() failed");
-  }
+    // Do we already have a handle?
+    MYSQL* mysql=reinterpret_cast<MYSQL*>(m_mysql->getData());
+    if (mysql)
+        return mysql;
 
-  if (!mysql_real_connect(mysql, NULL, NULL, NULL, "shar", 0, NULL, 0)) {
-    if (initialized) {
-      log->crit("mysql_real_connect failed: %s", mysql_error(mysql));
-      mysql_close(mysql);
-      throw SAMLException("MySQLBase::thread_init(): mysql_real_connect() failed");
-    } else {
-      log->info("mysql_real_connect failed: %s.  Trying to create", mysql_error(mysql));
-
-      // This will throw an exception if it fails.
-      createDatabase(mysql, PLUGIN_VER_MAJOR, PLUGIN_VER_MINOR);
-    }
-  }
-
-  int major = -1, minor = -1;
-  getVersion (mysql, &major, &minor);
-
-  // Make sure we've got the right version
-  if (major != PLUGIN_VER_MAJOR || minor != PLUGIN_VER_MINOR) {
-   
-    // If we're capable, try upgrading on the fly...
-    if (major == 0  || major == 1) {
-       upgradeDatabase(mysql);
-    }
-    else {
+    // Connect to the database
+    mysql = mysql_init(NULL);
+    if (!mysql) {
+        log->error("mysql_init failed");
         mysql_close(mysql);
-        log->crit("Unknown database version: %d.%d", major, minor);
-        throw SAMLException("MySQLBase::thread_init(): Unknown database version");
+        throw SAMLException("MySQLBase::getMYSQL(): mysql_init() failed");
     }
-  }
 
-  // We're all set.. Save off the handle for this thread.
-  m_mysql->setData(mysql);
+    if (!mysql_real_connect(mysql, NULL, NULL, NULL, "shibd", 0, NULL, 0)) {
+        if (initialized) {
+            log->crit("mysql_real_connect failed: %s", mysql_error(mysql));
+            mysql_close(mysql);
+            throw SAMLException("MySQLBase::getMYSQL(): mysql_real_connect() failed");
+        }
+        else {
+            log->info("mysql_real_connect failed: %s.  Trying to create", mysql_error(mysql));
+
+            // This will throw an exception if it fails.
+            createDatabase(mysql, PLUGIN_VER_MAJOR, PLUGIN_VER_MINOR);
+        }
+    }
+
+    pair<int,int> v=getVersion (mysql);
+
+    // Make sure we've got the right version
+    if (v.first != PLUGIN_VER_MAJOR || v.second != PLUGIN_VER_MINOR) {
+   
+        // If we're capable, try upgrading on the fly...
+        if (v.first == 0  || v.first == 1 || v.first == 2) {
+            if (mysql_query(mysql, "DROP TABLE state")) {
+                log->error("error dropping old session state table: %s", mysql_error(mysql));
+            }
+            if (v.first==2 && mysql_query(mysql, "DROP TABLE replay")) {
+                log->error("error dropping old session state table: %s", mysql_error(mysql));
+            }
+            upgradeDatabase(mysql);
+        }
+        else {
+            mysql_close(mysql);
+            log->crit("Unknown database version: %d.%d", v.first, v.second);
+            throw SAMLException("MySQLBase::getMYSQL(): Unknown database version");
+        }
+    }
+
+    // We're all set.. Save off the handle for this thread.
+    m_mysql->setData(mysql);
+    return mysql;
 }
 
 bool MySQLBase::repairTable(MYSQL*& mysql, const char* table)
 {
-  string q = string("REPAIR TABLE ") + table;
-  if (mysql_query(mysql, q.c_str())) {
-    log->error("Error repairing table %s: %s", table, mysql_error(mysql));
-    return false;
-  }
+    string q = string("REPAIR TABLE ") + table;
+    if (mysql_query(mysql, q.c_str())) {
+        log->error("Error repairing table %s: %s", table, mysql_error(mysql));
+        return false;
+    }
 
-  // seems we have to recycle the connection to get the thread to keep working
-  // other threads seem to be ok, but we should monitor that
-  mysql_close(mysql);
-  m_mysql->setData(NULL);
-  thread_init();
-  mysql=getMYSQL();
-  return true;
+    // seems we have to recycle the connection to get the thread to keep working
+    // other threads seem to be ok, but we should monitor that
+    mysql_close(mysql);
+    m_mysql->setData(NULL);
+    mysql=getMYSQL();
+    return true;
 }
 
 void MySQLBase::createDatabase(MYSQL* mysql, int major, int minor)
 {
-  log->info("Creating database.");
+  log->info("creating database");
 
   MYSQL* ms = NULL;
   try {
@@ -245,13 +242,13 @@ void MySQLBase::createDatabase(MYSQL* mysql, int major, int minor)
       throw SAMLException("ShibMySQLCCache::createDatabase(): mysql_real_connect failed");
     }
 
-    if (mysql_query(ms, "CREATE DATABASE shar")) {
-      log->crit("cannot create shar database: %s", mysql_error(ms));
+    if (mysql_query(ms, "CREATE DATABASE shibd")) {
+      log->crit("cannot create shibd database: %s", mysql_error(ms));
       throw SAMLException("ShibMySQLCCache::createDatabase(): create db cmd failed");
     }
 
-    if (!mysql_real_connect(mysql, NULL, NULL, NULL, "shar", 0, NULL, 0)) {
-      log->crit("cannot open SHAR database");
+    if (!mysql_real_connect(mysql, NULL, NULL, NULL, "shibd", 0, NULL, 0)) {
+      log->crit("cannot open shibd database");
       throw SAMLException("ShibMySQLCCache::createDatabase(): mysql_real_connect to plugin db failed");
     }
 
@@ -269,429 +266,402 @@ void MySQLBase::createDatabase(MYSQL* mysql, int major, int minor)
   log->info("Creating database tables");
 
   if (mysql_query(mysql, "CREATE TABLE version (major INT, minor INT)")) {
-    log->error ("Error creating version: %s", mysql_error(mysql));
+    log->error ("error creating version: %s", mysql_error(mysql));
     throw SAMLException("ShibMySQLCCache::createDatabase(): create table cmd failed");
   }
 
   if (mysql_query(mysql,STATE_TABLE)) {
-    log->error ("Error creating state table: %s", mysql_error(mysql));
+    log->error ("error creating state table: %s", mysql_error(mysql));
     throw SAMLException("ShibMySQLCCache::createDatabase(): create table cmd failed");
   }
 
   if (mysql_query(mysql,REPLAY_TABLE)) {
-    log->error ("Error creating replay table: %s", mysql_error(mysql));
+    log->error ("error creating replay table: %s", mysql_error(mysql));
     throw SAMLException("ShibMySQLCCache::createDatabase(): create table cmd failed");
   }
 
   ostringstream q;
   q << "INSERT INTO version VALUES(" << major << "," << minor << ")";
   if (mysql_query(mysql, q.str().c_str())) {
-    log->error ("Error setting version: %s", mysql_error(mysql));
+    log->error ("error setting version: %s", mysql_error(mysql));
     throw SAMLException("ShibMySQLCCache::createDatabase(): version insert failed");
   }
 }
 
 void MySQLBase::upgradeDatabase(MYSQL* mysql)
 {
-    if (mysql_query(mysql, "DROP TABLE state")) {
-        log->error("Error dropping old session state table: %s", mysql_error(mysql));
-    }
-
     if (mysql_query(mysql,STATE_TABLE)) {
-        log->error ("Error creating state table: %s", mysql_error(mysql));
+        log->error ("error creating state table: %s", mysql_error(mysql));
         throw SAMLException("ShibMySQLCCache::upgradeDatabase(): error creating state table");
     }
 
     if (mysql_query(mysql,REPLAY_TABLE)) {
-        log->error ("Error creating replay table: %s", mysql_error(mysql));
+        log->error ("error creating replay table: %s", mysql_error(mysql));
         throw SAMLException("ShibMySQLCCache::upgradeDatabase(): error creating replay table");
     }
 
     ostringstream q;
     q << "UPDATE version SET major = " << PLUGIN_VER_MAJOR;
     if (mysql_query(mysql, q.str().c_str())) {
-        log->error ("Error updating version: %s", mysql_error(mysql));
+        log->error ("error updating version: %s", mysql_error(mysql));
         throw SAMLException("ShibMySQLCCache::upgradeDatabase(): error updating version");
     }
 }
 
-void MySQLBase::getVersion(MYSQL* mysql, int* major_p, int* minor_p)
+pair<int,int> MySQLBase::getVersion(MYSQL* mysql)
 {
-  // grab the version number from the database
-  if (mysql_query(mysql, "SELECT * FROM version"))
-    log->error ("Error reading version: %s", mysql_error(mysql));
+    // grab the version number from the database
+    if (mysql_query(mysql, "SELECT * FROM version"))
+        log->error ("Error reading version: %s", mysql_error(mysql));
 
-  MYSQL_RES* rows = mysql_store_result(mysql);
-  if (rows) {
-    if (mysql_num_rows(rows) == 1 && mysql_num_fields(rows) == 2)  {
-      MYSQL_ROW row = mysql_fetch_row(rows);
-
-      int major = row[0] ? atoi(row[0]) : -1;
-      int minor = row[1] ? atoi(row[1]) : -1;
-      log->debug("opening database version %d.%d", major, minor);
-      
-      mysql_free_result (rows);
-
-      *major_p = major;
-      *minor_p = minor;
-      return;
-
-    } else {
-      // Wrong number of rows or wrong number of fields...
-
-      log->crit("Houston, we've got a problem with the database...");
-      mysql_free_result (rows);
-      throw SAMLException("ShibMySQLCCache::getVersion(): version verification failed");
+    MYSQL_RES* rows = mysql_store_result(mysql);
+    if (rows) {
+        if (mysql_num_rows(rows) == 1 && mysql_num_fields(rows) == 2)  {
+          MYSQL_ROW row = mysql_fetch_row(rows);
+          int major = row[0] ? atoi(row[0]) : -1;
+          int minor = row[1] ? atoi(row[1]) : -1;
+          log->debug("opening database version %d.%d", major, minor);
+          mysql_free_result(rows);
+          return make_pair(major,minor);
+        } else {
+            // Wrong number of rows or wrong number of fields...
+            log->crit("Houston, we've got a problem with the database...");
+            mysql_free_result (rows);
+            throw SAMLException("ShibMySQLCCache::getVersion(): version verification failed");
+        }
     }
-  }
-  log->crit("MySQL Read Failed in version verificatoin");
-  throw SAMLException("ShibMySQLCCache::getVersion(): error reading version");
+    log->crit("MySQL Read Failed in version verification");
+    throw SAMLException("ShibMySQLCCache::getVersion(): error reading version");
 }
 
 static void mysqlInit(const DOMElement* e, Category& log)
 {
-  static bool done = false;
-  if (done) {
-    log.info("MySQL embedded server already initialized");
-    return;
-  }
-  log.info("initializing MySQL embedded server");
+    static bool done = false;
+    if (done) {
+        log.info("MySQL embedded server already initialized");
+        return;
+    }
+    log.info("initializing MySQL embedded server");
 
-  // Setup the argument array
-  vector<string> arg_array;
-  arg_array.push_back("shibboleth");
+    // Setup the argument array
+    vector<string> arg_array;
+    arg_array.push_back("shibboleth");
 
-  // grab any MySQL parameters from the config file
-  e=saml::XML::getFirstChildElement(e,shibtarget::XML::SHIBTARGET_NS,Argument);
-  while (e) {
-      auto_ptr_char arg(e->getFirstChild()->getNodeValue());
-      if (arg.get())
-          arg_array.push_back(arg.get());
-      e=saml::XML::getNextSiblingElement(e,shibtarget::XML::SHIBTARGET_NS,Argument);
-  }
+    // grab any MySQL parameters from the config file
+    e=saml::XML::getFirstChildElement(e,shibtarget::XML::SHIBTARGET_NS,Argument);
+    while (e) {
+        auto_ptr_char arg(e->getFirstChild()->getNodeValue());
+        if (arg.get())
+            arg_array.push_back(arg.get());
+        e=saml::XML::getNextSiblingElement(e,shibtarget::XML::SHIBTARGET_NS,Argument);
+    }
 
-  // Compute the argument array
-  vector<string>::size_type arg_count = arg_array.size();
-  const char** args=new const char*[arg_count];
-  for (vector<string>::size_type i = 0; i < arg_count; i++)
-    args[i] = arg_array[i].c_str();
+    // Compute the argument array
+    vector<string>::size_type arg_count = arg_array.size();
+    const char** args=new const char*[arg_count];
+    for (vector<string>::size_type i = 0; i < arg_count; i++)
+        args[i] = arg_array[i].c_str();
 
-  // Initialize MySQL with the arguments
-  mysql_server_init(arg_count, (char **)args, NULL);
+    // Initialize MySQL with the arguments
+    mysql_server_init(arg_count, (char **)args, NULL);
 
-  delete[] args;
-  done = true;
+    delete[] args;
+    done = true;
 }  
 
-class ShibMySQLCCache;
-class ShibMySQLCCacheEntry : public ISessionCacheEntry
+class ShibMySQLCCache : public MySQLBase, virtual public ISessionCache, virtual public ISessionCacheStore
 {
 public:
-  ShibMySQLCCacheEntry(const char* key, ISessionCacheEntry* entry, ShibMySQLCCache* cache)
-    : m_cacheEntry(entry), m_key(key), m_cache(cache), m_responseId(NULL) {}
-  ~ShibMySQLCCacheEntry() {if (m_responseId) XMLString::release(&m_responseId);}
+    ShibMySQLCCache(const DOMElement* e);
+    virtual ~ShibMySQLCCache();
 
-  virtual void lock() {}
-  virtual void unlock() { m_cacheEntry->unlock(); delete this; }
-  virtual bool isValid(time_t lifetime, time_t timeout) const;
-  virtual const char* getClientAddress() const { return m_cacheEntry->getClientAddress(); }
-  virtual ShibProfile getProfile() const { return m_cacheEntry->getProfile(); }
-  virtual const char* getProviderId() const { return m_cacheEntry->getProviderId(); }
-  virtual const char* getAuthnStatementXML() const { return m_cacheEntry->getAuthnStatementXML(); }
-  virtual const SAMLAuthenticationStatement* getAuthnStatementSAML() const { return m_cacheEntry->getAuthnStatementSAML(); }
-  virtual CachedResponseXML getResponseXML();
-  virtual CachedResponseSAML getResponseSAML() { return m_cacheEntry->getResponseSAML(); }
+    // Delegate all the ISessionCache methods.
+    string insert(
+        const IApplication* application,
+        const IEntityDescriptor* source,
+        const char* client_addr,
+        const SAMLSubject* subject,
+        const char* authnContext,
+        const SAMLResponse* tokens
+        )
+    { return m_cache->insert(application,source,client_addr,subject,authnContext,tokens); }
+    ISessionCacheEntry* find(const char* key, const IApplication* application, const char* client_addr)
+    { return m_cache->find(key,application,client_addr); }
+    void remove(const char* key, const IApplication* application, const char* client_addr)
+    { m_cache->remove(key,application,client_addr); }
 
-private:
-  bool touch() const;
+    bool setBackingStore(ISessionCacheStore*) {return false;}
 
-  ShibMySQLCCache* m_cache;
-  ISessionCacheEntry* m_cacheEntry;
-  string m_key;
-  char* m_responseId;
-};
+    // Store methods handle the database work
+    HRESULT onCreate(
+        const char* key,
+        const IApplication* application,
+        const ISessionCacheEntry* entry,
+        int majorVersion,
+        int minorVersion,
+        time_t created
+        );
+    HRESULT onRead(
+        const char* key,
+        string& applicationId,
+        string& clientAddress,
+        string& providerId,
+        string& subject,
+        string& authnContext,
+        string& tokens,
+        int& majorVersion,
+        int& minorVersion,
+        time_t& created,
+        time_t& accessed
+        );
+    HRESULT onUpdate(const char* key, const char* tokens=NULL, time_t lastAccess=0);
+    HRESULT onDelete(const char* key);
 
-class ShibMySQLCCache : public MySQLBase, virtual public ISessionCache
-{
-public:
-  ShibMySQLCCache(const DOMElement* e);
-  virtual ~ShibMySQLCCache();
-
-  virtual void thread_init() {MySQLBase::thread_init();}
-  virtual void thread_end() {MySQLBase::thread_end();}
-
-  virtual string generateKey() const {return m_cache->generateKey();}
-  virtual ISessionCacheEntry* find(const char* key, const IApplication* application);
-  virtual void insert(
-    const char* key,
-    const IApplication* application,
-    const char* client_addr,
-    ShibProfile profile,
-    const char* providerId,
-    const saml::SAMLAuthenticationStatement* s,
-    saml::SAMLResponse* r=NULL,
-    const shibboleth::IRoleDescriptor* source=NULL,
-    time_t created=0,
-    time_t accessed=0
-    );
-  virtual void remove(const char* key);
-
-  virtual void cleanup();
-
-  bool m_storeAttributes;
+    void cleanup();
 
 private:
-  ISessionCache* m_cache;
-  CondWait* shutdown_wait;
-  bool shutdown;
-  Thread* cleanup_thread;
+    bool m_storeAttributes;
+    ISessionCache* m_cache;
+    CondWait* shutdown_wait;
+    bool shutdown;
+    Thread* cleanup_thread;
 
-  static void* cleanup_fcn(void*); // XXX Assumed an ShibMySQLCCache
+    static void* cleanup_fcn(void*); // XXX Assumed an ShibMySQLCCache
 };
 
 ShibMySQLCCache::ShibMySQLCCache(const DOMElement* e) : MySQLBase(e), m_storeAttributes(false)
 {
 #ifdef _DEBUG
-  saml::NDC ndc("ShibMySQLCCache");
+    saml::NDC ndc("ShibMySQLCCache");
 #endif
+    log = &(Category::getInstance("shibmysql.SessionCache"));
 
-  log = &(Category::getInstance("shibmysql.SessionCache"));
-
-  shutdown_wait = CondWait::create();
-  shutdown = false;
-
-  m_cache = dynamic_cast<ISessionCache*>(
-      SAMLConfig::getConfig().getPlugMgr().newPlugin(
-        "edu.internet2.middleware.shibboleth.sp.provider.MemorySessionCacheProvider", e
-        )
+    m_cache = dynamic_cast<ISessionCache*>(
+        SAMLConfig::getConfig().getPlugMgr().newPlugin(shibtarget::XML::MemorySessionCacheType, e)
     );
+    if (!m_cache->setBackingStore(this)) {
+        delete m_cache;
+        throw SAMLException("Unable to register MySQL cache plugin as a cache store.");
+    }
     
-  // Load our configuration details...
-  const XMLCh* tag=m_root->getAttributeNS(NULL,storeAttributes);
-  if (tag && *tag && (*tag==chLatin_t || *tag==chDigit_1))
-    m_storeAttributes=true;
+    shutdown_wait = CondWait::create();
+    shutdown = false;
 
-  // Initialize the cleanup thread
-  cleanup_thread = Thread::create(&cleanup_fcn, (void*)this);
+    // Load our configuration details...
+    const XMLCh* tag=m_root->getAttributeNS(NULL,storeAttributes);
+    if (tag && *tag && (*tag==chLatin_t || *tag==chDigit_1))
+        m_storeAttributes=true;
+
+    // Initialize the cleanup thread
+    cleanup_thread = Thread::create(&cleanup_fcn, (void*)this);
 }
 
 ShibMySQLCCache::~ShibMySQLCCache()
 {
-  shutdown = true;
-  shutdown_wait->signal();
-  cleanup_thread->join(NULL);
-
-  delete m_cache;
+    shutdown = true;
+    shutdown_wait->signal();
+    cleanup_thread->join(NULL);
+    delete m_cache;
 }
 
-ISessionCacheEntry* ShibMySQLCCache::find(const char* key, const IApplication* application)
+HRESULT ShibMySQLCCache::onCreate(
+    const char* key,
+    const IApplication* application,
+    const ISessionCacheEntry* entry,
+    int majorVersion,
+    int minorVersion,
+    time_t created
+    )
 {
 #ifdef _DEBUG
-  saml::NDC ndc("find");
+    saml::NDC ndc("onCreate");
 #endif
 
-  ISessionCacheEntry* res = m_cache->find(key, application);
-  if (!res) {
+    // Get XML data from entry. Default is not to return SAML objects.
+    const char* context=entry->getAuthnContext();
+    pair<const char*,const SAMLSubject*> subject=entry->getSubject();
+    pair<const char*,const SAMLResponse*> tokens=entry->getTokens();
 
-    log->debug("Looking in database...");
+    ostringstream q;
+    q << "INSERT INTO state VALUES('" << key << "','" << application->getId() << "',";
+    if (created==0)
+        q << "NOW(),NOW(),'";
+    else
+        q << "FROM_UNIXTIME(" << created << "),NOW(),'";
+    q << entry->getClientAddress() << "'," << majorVersion << "," << minorVersion << ",'" << entry->getProviderId() << "','"
+        << subject.first << "','" << context << "',";
 
-    // nothing cached; see if this exists in the database
-    string q = string("SELECT application_id,UNIX_TIMESTAMP(ctime),UNIX_TIMESTAMP(atime),addr,profile,provider,statement,response FROM state WHERE cookie='") + key + "' LIMIT 1";
+    if (m_storeAttributes && tokens.first)
+        q << "'" << tokens.first << "')";
+    else
+        q << "null)";
+
+    if (log->isDebugEnabled())
+        log->debug("SQL insert: %s", q.str().c_str());
+
+    // then add it to the database
+    MYSQL* mysql = getMYSQL();
+    if (mysql_query(mysql, q.str().c_str())) {
+        const char* err=mysql_error(mysql);
+        log->error("error inserting %s: %s", key, err);
+        if (isCorrupt(err) && repairTable(mysql,"state")) {
+            // Try again...
+            if (mysql_query(mysql, q.str().c_str())) {
+                log->error("error inserting %s: %s", key, mysql_error(mysql));
+                return E_FAIL;
+            }
+        }
+        else
+            throw E_FAIL;
+    }
+
+    return NOERROR;
+}
+
+HRESULT ShibMySQLCCache::onRead(
+    const char* key,
+    string& applicationId,
+    string& clientAddress,
+    string& providerId,
+    string& subject,
+    string& authnContext,
+    string& tokens,
+    int& majorVersion,
+    int& minorVersion,
+    time_t& created,
+    time_t& accessed
+    )
+{
+#ifdef _DEBUG
+    saml::NDC ndc("onRead");
+#endif
+
+    log->debug("searching MySQL database...");
+
+    string q = string("SELECT application_id,UNIX_TIMESTAMP(ctime),UNIX_TIMESTAMP(atime),addr,major,minor,provider,subject,authn_context,tokens FROM state WHERE cookie='") + key + "' LIMIT 1";
 
     MYSQL* mysql = getMYSQL();
     if (mysql_query(mysql, q.c_str())) {
-      const char* err=mysql_error(mysql);
-      log->error("Error searching for %s: %s", key, err);
-      if (isCorrupt(err) && repairTable(mysql,"state")) {
-        if (mysql_query(mysql, q.c_str()))
-          log->error("Error retrying search for %s: %s", key, mysql_error(mysql));
-      }
+        const char* err=mysql_error(mysql);
+        log->error("error searching for %s: %s", key, err);
+        if (isCorrupt(err) && repairTable(mysql,"state")) {
+            if (mysql_query(mysql, q.c_str()))
+                log->error("error retrying search for %s: %s", key, mysql_error(mysql));
+        }
     }
 
     MYSQL_RES* rows = mysql_store_result(mysql);
 
     // Nope, doesn't exist.
     if (!rows)
-      return NULL;
+        return S_FALSE;
 
     // Make sure we got 1 and only 1 rows.
     if (mysql_num_rows(rows) != 1) {
-      log->error("Select returned wrong number of rows: %d", mysql_num_rows(rows));
-      mysql_free_result(rows);
-      return NULL;
+        log->error("Database select returned wrong number of rows: %d", mysql_num_rows(rows));
+        mysql_free_result(rows);
+        return S_FALSE;
     }
 
-    log->debug("Match found.  Parsing...");
+    log->debug("match found, tranfering data back into memory...");
     
     /* Columns in query:
         0: application_id
         1: ctime
         2: atime
         3: address
-        4: profile
-        5: provider
-        6: statement
-        7: response
+        4: major
+        5: minor
+        6: provider
+        7: subject
+        8: authncontext
+        9: tokens
      */
 
-    // Pull apart the row and process the results
     MYSQL_ROW row = mysql_fetch_row(rows);
-    if (strcmp(application->getId(),row[0])) {
-        log->crit("An application (%s) attempted to access another application's (%s) session!", application->getId(), row[0]);
-        mysql_free_result(rows);
-        return NULL;
-    }
+    applicationId=row[0];
+    created=atoi(row[1]);
+    accessed=atoi(row[2]);
+    clientAddress=row[3];
+    majorVersion=atoi(row[4]);
+    minorVersion=atoi(row[5]);
+    providerId=row[6];
+    subject=row[7];
+    authnContext=row[8];
+    if (row[9])
+        tokens=row[9];
 
-    Metadata m(application->getMetadataProviders());
-    const IEntityDescriptor* provider=m.lookup(row[5]);
-    if (!provider) {
-        log->crit("no metadata found for identity provider (%s) responsible for the session.", row[5]);
-        mysql_free_result(rows);
-        return NULL;
-    }
-
-    ShibProfile profile=static_cast<ShibProfile>(atoi(row[4]));
-    const IRoleDescriptor* role=NULL;
-    if (profile==SAML11_POST || profile==SAML11_ARTIFACT)
-        role=provider->getIDPSSODescriptor(saml::XML::SAML11_PROTOCOL_ENUM);
-    else if (profile==SAML10_POST || profile==SAML10_ARTIFACT)
-        role=provider->getIDPSSODescriptor(saml::XML::SAML10_PROTOCOL_ENUM);
-    if (!role) {
-        log->crit(
-            "no matching IdP role for profile (%s) found for identity provider (%s) responsible for the session.", row[4], row[5]
-            );
-        mysql_free_result(rows);
-        return NULL;
-    }
-
-    // Try to parse the SAML data
-    try {
-        istringstream istr(row[6]);
-        auto_ptr<SAMLAuthenticationStatement> s(new SAMLAuthenticationStatement(istr));
-
-        SAMLResponse* r=NULL;
-        if (row[7]) {
-            istringstream istr2(row[7]);
-            r = new SAMLResponse(istr2);
-        }
-        auto_ptr<SAMLResponse> rwrap(r);
-
-        // Insert it into the memory cache
-        m_cache->insert(
-            key,
-            application,
-            row[3],
-            profile,
-            row[5],
-            s.get(),
-            r,
-            role,
-            atoi(row[1]),
-            atoi(row[2])
-            );
-    }
-    catch (SAMLException& e) {
-        log->error(string("caught SAML exception while loading objects from SQL record: ") + e.what());
-        mysql_free_result(rows);
-        return NULL;
-    }
-#ifndef _DEBUG
-    catch (...) {
-        log->error("caught unknown exception while loading objects from SQL record");
-        mysql_free_result(rows);
-        return NULL;
-    }
-#endif
-
-    // Free the results, and then re-run the 'find' query
+    // Free the results.
     mysql_free_result(rows);
-    res = m_cache->find(key,application);
-    if (!res)
-      return NULL;
-  }
 
-  return new ShibMySQLCCacheEntry(key, res, this);
+    return NOERROR;
 }
 
-void ShibMySQLCCache::insert(
-    const char* key,
-    const IApplication* application,
-    const char* client_addr,
-    ShibProfile profile,
-    const char* providerId,
-    const saml::SAMLAuthenticationStatement* s,
-    saml::SAMLResponse* r,
-    const shibboleth::IRoleDescriptor* source,
-    time_t created,
-    time_t accessed
-    )
+HRESULT ShibMySQLCCache::onUpdate(const char* key, const char* tokens, time_t lastAccess)
 {
 #ifdef _DEBUG
-  saml::NDC ndc("insert");
+    saml::NDC ndc("onUpdate");
 #endif
-  
-  ostringstream q;
-  q << "INSERT INTO state VALUES('" << key << "','" << application->getId() << "',";
-  if (created==0)
-    q << "NOW(),";
-  else
-    q << "FROM_UNIXTIME(" << created << "),";
-  if (accessed==0)
-    q << "NOW(),'";
-  else
-    q << "FROM_UNIXTIME(" << accessed << "),'";
-  q << client_addr << "'," << profile << ",'" << providerId << "',";
-  if (m_storeAttributes && r) {
-    auto_ptr_char id(r->getId());
-    q << "'" << id.get() << "','" << *r << "','";
-  }
-  else
-    q << "null,null,'";
-  q << *s << "')";
 
-  log->debug("Query: %s", q.str().c_str());
+    ostringstream q;
+    if (tokens) {
+        q << "UPDATE state SET tokens=";
+        if (*tokens)
+            q << "'" << tokens << "'";
+        else
+            q << "null";
+    }
+    else if (lastAccess>0)
+        q << "UPDATE state SET atime=FROM_UNIXTIME(" << lastAccess << ")";
+    else {
+        log->warn("onUpdate called with nothing to do!");
+        return S_FALSE;
+    }
+ 
+    q << " WHERE cookie='" << key << "'";
 
-  // then add it to the database
-  MYSQL* mysql = getMYSQL();
-  if (mysql_query(mysql, q.str().c_str())) {
-    const char* err=mysql_error(mysql);
-    log->error("Error inserting %s: %s", key, err);
-    if (isCorrupt(err) && repairTable(mysql,"state")) {
-        // Try again...
-        if (mysql_query(mysql, q.str().c_str())) {
-          log->error("Error inserting %s: %s", key, mysql_error(mysql));
-          throw SAMLException("ShibMySQLCCache::insert(): insertion failed");
+    MYSQL* mysql = getMYSQL();
+    if (mysql_query(mysql, q.str().c_str())) {
+        const char* err=mysql_error(mysql);
+        log->error("error updating %s: %s", key, err);
+        if (isCorrupt(err) && repairTable(mysql,"state")) {
+            // Try again...
+            if (mysql_query(mysql, q.str().c_str())) {
+                log->error("error updating %s: %s", key, mysql_error(mysql));
+                return E_FAIL;
+            }
         }
+        else
+            return E_FAIL;
     }
-    else
-        throw SAMLException("ShibMySQLCCache::insert(): insertion failed");
-  }
 
-  // Add it to the memory cache
-  m_cache->insert(key, application, client_addr, profile, providerId, s, r, source, created, accessed);
+    return NOERROR;
 }
 
-void ShibMySQLCCache::remove(const char* key)
+HRESULT ShibMySQLCCache::onDelete(const char* key)
 {
 #ifdef _DEBUG
-  saml::NDC ndc("remove");
+    saml::NDC ndc("onDelete");
 #endif
 
-  // Remove the cached version
-  m_cache->remove(key);
-
-  // Remove from the database
-  string q = string("DELETE FROM state WHERE cookie='") + key + "'";
-  MYSQL* mysql = getMYSQL();
-  if (mysql_query(mysql, q.c_str())) {
-    const char* err=mysql_error(mysql);
-    log->error("Error deleting entry %s: %s", key, err);
-    if (isCorrupt(err) && repairTable(mysql,"state")) {
-        // Try again...
-        if (mysql_query(mysql, q.c_str()))
-          log->error("Error deleting entry %s: %s", key, mysql_error(mysql));
+    // Remove from the database
+    string q = string("DELETE FROM state WHERE cookie='") + key + "'";
+    MYSQL* mysql = getMYSQL();
+    if (mysql_query(mysql, q.c_str())) {
+        const char* err=mysql_error(mysql);
+        log->error("error deleting entry %s: %s", key, err);
+        if (isCorrupt(err) && repairTable(mysql,"state")) {
+            // Try again...
+            if (mysql_query(mysql, q.c_str())) {
+                log->error("error deleting entry %s: %s", key, mysql_error(mysql));
+                return E_FAIL;
+            }
+        }
+        else
+            return E_FAIL;
     }
-  }
+
+    return NOERROR;
 }
 
 void ShibMySQLCCache::cleanup()
@@ -701,7 +671,6 @@ void ShibMySQLCCache::cleanup()
 #endif
 
   Mutex* mutex = Mutex::create();
-  MySQLBase::thread_init();
 
   int rerun_timer = 0;
   int timeout_life = 0;
@@ -731,6 +700,8 @@ void ShibMySQLCCache::cleanup()
 
   MYSQL* mysql = getMYSQL();
 
+  log->info("cleanup thread started...Run every %d secs; timeout after %d secs", rerun_timer, timeout_life);
+
   while (shutdown == false) {
     shutdown_wait->timedwait(mutex, rerun_timer);
 
@@ -741,41 +712,22 @@ void ShibMySQLCCache::cleanup()
     // recently In particular, find all entries that have not been
     // accessed in 'timeout_life' seconds.
     ostringstream q;
-    q << "SELECT cookie FROM state WHERE " <<
-      "UNIX_TIMESTAMP(NOW()) - UNIX_TIMESTAMP(atime) >= " << timeout_life;
+    q << "DELETE FROM state WHERE " << "UNIX_TIMESTAMP(NOW()) - UNIX_TIMESTAMP(atime) >= " << timeout_life;
 
     if (mysql_query(mysql, q.str().c_str())) {
       const char* err=mysql_error(mysql);
-      log->error("Error searching for old items: %s", err);
+      log->error("error purging old records: %s", err);
         if (isCorrupt(err) && repairTable(mysql,"state")) {
           if (mysql_query(mysql, q.str().c_str()))
-            log->error("Error re-searching for old items: %s", mysql_error(mysql));
+            log->error("error re-purging old records: %s", mysql_error(mysql));
         }
     }
-
-    MYSQL_RES* rows = mysql_store_result(mysql);
-    if (!rows)
-      continue;
-
-    if (mysql_num_fields(rows) != 1) {
-      log->error("Wrong number of columns, 1 != %d", mysql_num_fields(rows));
-      mysql_free_result(rows);
-      continue;
-    }
-
-    // For each row, remove the entry from the database.
-    MYSQL_ROW row;
-    while ((row = mysql_fetch_row(rows)) != NULL)
-      remove(row[0]);
-
-    mysql_free_result(rows);
   }
 
   log->info("cleanup thread exiting...");
 
   mutex->unlock();
   delete mutex;
-  MySQLBase::thread_end();
   Thread::exit(NULL);
 }
 
@@ -791,116 +743,11 @@ void* ShibMySQLCCache::cleanup_fcn(void* cache_p)
   return NULL;
 }
 
-/*************************************************************************
- * The CCacheEntry here is mostly a wrapper around the "memory"
- * cacheentry provided by shibboleth.  The only difference is that we
- * intercept isSessionValid() so that we can "touch()" the
- * database if the session is still valid and getResponse() so we can
- * store the data if we need to.
- */
-
-bool ShibMySQLCCacheEntry::isValid(time_t lifetime, time_t timeout) const
-{
-  bool res = m_cacheEntry->isValid(lifetime, timeout);
-  if (res == true)
-    res = touch();
-  return res;
-}
-
-bool ShibMySQLCCacheEntry::touch() const
-{
-  string q=string("UPDATE state SET atime=NOW() WHERE cookie='") + m_key + "'";
-
-  MYSQL* mysql = m_cache->getMYSQL();
-  if (mysql_query(mysql, q.c_str())) {
-    m_cache->log->info("Error updating timestamp on %s: %s", m_key.c_str(), mysql_error(mysql));
-    return false;
-  }
-  return true;
-}
-
-ISessionCacheEntry::CachedResponseXML ShibMySQLCCacheEntry::getResponseXML()
-{
-    // Let the memory cache do the work first.
-    // If we're hands off, just pass it back.
-    if (!m_cache->m_storeAttributes)
-        return m_cacheEntry->getResponseXML();
-    
-    CachedResponseXML r=m_cacheEntry->getResponseXML();
-    if (!r.unfiltered || !*r.unfiltered) return r;
-    
-    // Load the key from state if needed.
-    if (!m_responseId) {
-        string qselect=string("SELECT response_id from state WHERE cookie='") + m_key + "' LIMIT 1";
-        MYSQL* mysql = m_cache->getMYSQL();
-        if (mysql_query(mysql, qselect.c_str())) {
-            const char* err=mysql_error(mysql);
-            m_cache->log->error("error accessing response ID for %s: %s", m_key.c_str(), err);
-            if (isCorrupt(err) && m_cache->repairTable(mysql,"state")) {
-                // Try again...
-                if (mysql_query(mysql, qselect.c_str())) {
-                    m_cache->log->error("error accessing response ID for %s: %s", m_key.c_str(), mysql_error(mysql));
-                    return r;
-                }
-            }
-        }
-        MYSQL_RES* rows = mysql_store_result(mysql);
-    
-        // Make sure we got 1 and only 1 row.
-        if (!rows || mysql_num_rows(rows) != 1) {
-            m_cache->log->error("select returned wrong number of rows");
-            if (rows) mysql_free_result(rows);
-            return r;
-        }
-        
-        MYSQL_ROW row=mysql_fetch_row(rows);
-        if (row)
-            m_responseId=strdup(row[0]);
-        mysql_free_result(rows);
-    }
-    
-    // Compare it with what we have now.
-    char* start=NULL;
-    if (m_responseId) {
-        start=strstr(r.unfiltered,"ResponseID=\"");
-        if (start && !strncmp(start + 12,m_responseId,strlen(m_responseId)))
-            return r;
-        start+=12;
-        free(m_responseId);
-    }
-    
-    // No match, so we need to update our copy.
-    char* end=strchr(start,'"');
-    m_responseId = (char*)malloc(sizeof(char)*(end-start+1));
-    memset(m_responseId,0,sizeof(char)*(end-start+1));
-    strncpy(m_responseId,start,end-start);
-
-    ostringstream q;
-    q << "UPDATE state SET response_id='" << m_responseId << "',response='" << r.unfiltered << "' WHERE cookie='" << m_key << "'";
-    m_cache->log->debug("Query: %s", q.str().c_str());
-
-    MYSQL* mysql = m_cache->getMYSQL();
-    if (mysql_query(mysql, q.str().c_str())) {
-        const char* err=mysql_error(mysql);
-        m_cache->log->error("Error updating response for %s: %s", m_key.c_str(), err);
-        if (isCorrupt(err) && m_cache->repairTable(mysql,"state")) {
-            // Try again...
-            if (mysql_query(mysql, q.str().c_str()))
-              m_cache->log->error("Error updating response for %s: %s", m_key.c_str(), mysql_error(mysql));
-        }
-    }
-    
-    return r;
-}
-
 class MySQLReplayCache : public MySQLBase, virtual public IReplayCache
 {
 public:
   MySQLReplayCache(const DOMElement* e);
   virtual ~MySQLReplayCache() {}
-
-  void thread_init() {MySQLBase::thread_init();}
-  void thread_end() {MySQLBase::thread_end();}
 
   bool check(const XMLCh* str, time_t expires) {auto_ptr_XMLCh temp(str); return check(temp.get(),expires);}
   bool check(const char* str, time_t expires);
@@ -982,29 +829,26 @@ bool MySQLReplayCache::check(const char* str, time_t expires)
 
 IPlugIn* new_mysql_ccache(const DOMElement* e)
 {
-  return new ShibMySQLCCache(e);
+    return new ShibMySQLCCache(e);
 }
 
 IPlugIn* new_mysql_replay(const DOMElement* e)
 {
-  return new MySQLReplayCache(e);
+    return new MySQLReplayCache(e);
 }
-
-#define REPLAYPLUGINTYPE "edu.internet2.middleware.shibboleth.sp.provider.MySQLReplayCacheProvider"
-#define SESSIONPLUGINTYPE "edu.internet2.middleware.shibboleth.sp.provider.MySQLSessionCacheProvider"
 
 extern "C" int SHIBMYSQL_EXPORTS saml_extension_init(void*)
 {
-  // register this ccache type
-  SAMLConfig::getConfig().getPlugMgr().regFactory(REPLAYPLUGINTYPE, &new_mysql_replay);
-  SAMLConfig::getConfig().getPlugMgr().regFactory(SESSIONPLUGINTYPE, &new_mysql_ccache);
-  return 0;
+    // register this ccache type
+    SAMLConfig::getConfig().getPlugMgr().regFactory(shibtarget::XML::MySQLReplayCacheType, &new_mysql_replay);
+    SAMLConfig::getConfig().getPlugMgr().regFactory(shibtarget::XML::MySQLSessionCacheType, &new_mysql_ccache);
+    return 0;
 }
 
 extern "C" void SHIBMYSQL_EXPORTS saml_extension_term()
 {
-  // Shutdown MySQL
-  mysql_server_end();
-  SAMLConfig::getConfig().getPlugMgr().unregFactory(REPLAYPLUGINTYPE);
-  SAMLConfig::getConfig().getPlugMgr().unregFactory(SESSIONPLUGINTYPE);
+    // Shutdown MySQL
+    mysql_server_end();
+    SAMLConfig::getConfig().getPlugMgr().unregFactory(shibtarget::XML::MySQLReplayCacheType);
+    SAMLConfig::getConfig().getPlugMgr().unregFactory(shibtarget::XML::MySQLSessionCacheType);
 }
