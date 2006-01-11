@@ -1307,7 +1307,7 @@ void XMLConfigImpl::init(bool first)
     }
     catch (SAMLException& e) {
         log.errorStream() << "Error while loading SP configuration: " << e.what() << CategoryStream::ENDLINE;
-        throw;
+        throw ConfigurationException(e.what());
     }
 #ifndef _DEBUG
     catch (...) {
