@@ -123,10 +123,10 @@ int main(int argc, char *argv[])
     {
         // Install break handler, then run the C routine twice, once to setup, once to start running.
         SetConsoleCtrlHandler(&BreakHandler,TRUE);
-        if (real_main(1)!=0)
+        if ((i=real_main(1))!=0)
         {
             LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, "shibd startup failed, check shibd.log for further details");
-            return -1;
+            return i;
         }
         return real_main(0);
     }
