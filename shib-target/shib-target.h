@@ -210,7 +210,7 @@ namespace shibtarget {
      */
     struct SHIBTARGET_EXPORTS ISessionCacheStore
     {
-        virtual void onCreate(
+        virtual HRESULT onCreate(
             const char* key,
             const IApplication* application,
             const ISessionCacheEntry* entry,
@@ -218,7 +218,7 @@ namespace shibtarget {
             int minorVersion,
             time_t created
             )=0;
-        virtual bool onRead(
+        virtual HRESULT onRead(
             const char* key,
             std::string& applicationId,
             std::string& clientAddress,
@@ -231,8 +231,8 @@ namespace shibtarget {
             time_t& created,
             time_t& accessed
             )=0;
-        virtual void onUpdate(const char* key, const char* tokens)=0;
-        virtual void onDelete(const char* key, time_t lastAccess, bool dormant)=0;
+        virtual HRESULT onUpdate(const char* key, const char* tokens=NULL, time_t lastAccess=0)=0;
+        virtual HRESULT onDelete(const char* key)=0;
         virtual ~ISessionCacheStore() {}
     };
 

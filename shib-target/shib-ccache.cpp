@@ -300,7 +300,7 @@ public:
     void unlock() { m_lock->unlock(); }
     
     HRESULT isValid(const IApplication* application, const char* client_addr) const;
-    bool populate() const;            // wraps process of maintaining attributes, returns true iff data reused
+    void populate() const;
     bool checkApplication(const IApplication* application) { return (m_obj["application_id"]==application->getId()); }
     time_t created() const { return m_sessionCreated; }
     time_t lastAccess() const { return m_lastAccess; }
@@ -346,8 +346,6 @@ public:
     bool setBackingStore(ISessionCacheStore* store);
 
 private:
-    void dormant(const char* key);
-
     const DOMElement* m_root;         // Only valid during initialization
     RWLock* m_lock;
     map<string,MemorySessionCacheEntry*> m_hashtable;
@@ -358,6 +356,7 @@ private:
     IRemoted* restoreRemove;
     ISessionCacheStore* m_sink;
 
+    void dormant(const char* key);
     static void* cleanup_fcn(void*);
     bool shutdown;
     CondWait* shutdown_wait;
@@ -517,8 +516,6 @@ MemorySessionCacheEntry::MemorySessionCacheEntry(
 
 MemorySessionCacheEntry::~MemorySessionCacheEntry()
 {
-    if (m_log->isDebugEnabled())
-        m_log->debug("deleting cache entry (ID: %s)", m_obj["key"].string());
     delete m_lock;
 }
 
@@ -569,7 +566,7 @@ HRESULT MemorySessionCacheEntry::isValid(const IApplication* app, const char* cl
     }
 
     m_lastAccess=now;
-    return populate() ? NOERROR : S_FALSE;
+    return NOERROR;
 }
 
 bool MemorySessionCacheEntry::hasAttributes(const SAMLResponse& r) const
@@ -619,7 +616,7 @@ time_t MemorySessionCacheEntry::calculateExpiration(const SAMLResponse& r) const
     return expiration;
 }
 
-bool MemorySessionCacheEntry::populate() const
+void MemorySessionCacheEntry::populate() const
 {
 #ifdef _DEBUG
     saml::NDC ndc("populate");
@@ -629,7 +626,7 @@ bool MemorySessionCacheEntry::populate() const
     if (m_responseExpiration > 0) {
         // Can we use what we have?
         if (time(NULL) < m_responseExpiration)
-            return true;
+            return;
       
         // If we're being strict, dump what we have and reset timestamps.
         if (m_cache->m_strictValidity) {
@@ -639,7 +636,11 @@ bool MemorySessionCacheEntry::populate() const
             delete m_pFiltered;
             m_pUnfiltered=m_pFiltered=NULL;
             m_responseExpiration=0;
-            m_lastRetry=0; 
+            m_lastRetry=0;
+            if (m_cache->m_sink) {
+                if (FAILED(m_cache->m_sink->onUpdate(m_obj["key"].string(),"")))
+                    m_log->error("cache store returned failure while clearing tokens from entry");
+            }
         }
     }
 
@@ -675,12 +676,17 @@ bool MemorySessionCacheEntry::populate() const
                     m_pFiltered=r2.release();
             }
 
+            // Update backing store.
+            if (m_cache->m_sink) {
+                if (FAILED(m_cache->m_sink->onUpdate(m_obj["key"].string(),m_obj["tokens.unfiltered"].string())))
+                    m_log->error("cache store returned failure while updating tokens in entry");
+            }
+
             m_lastRetry=0;
             m_log->debug("fetched and stored new response");
             STConfig& stc=static_cast<STConfig&>(ShibTargetConfig::getConfig());
             stc.getTransactionLog().infoStream() <<  "Successful attribute query for session (ID: " << m_obj["key"].string() << ")";
             stc.releaseTransactionLog();
-            return false;
         }
     }
     catch (SAMLException&) {
@@ -695,7 +701,6 @@ bool MemorySessionCacheEntry::populate() const
         m_log->warn("suppressed unknown exception caught while trying to fetch attributes");
     }
 #endif
-    return true;
 }
 
 pair<SAMLResponse*,SAMLResponse*> MemorySessionCacheEntry::getNewResponse() const
@@ -1195,8 +1200,13 @@ string MemorySessionCache::insert(
         );
     entry->populate();
 
-    if (m_sink)
-        m_sink->onCreate(key.get(),application,entry.get(),1,tokens->getMinorVersion(),entry->created());
+    if (m_sink) {
+        HRESULT hr=m_sink->onCreate(key.get(),application,entry.get(),1,tokens->getMinorVersion(),entry->created());
+        if (FAILED(hr)) {
+            m_log->error("cache store returned failure while storing new entry");
+            throw SAMLException(hr,"Unable to record new session in cache store.");
+        }
+    }
 
     m_lock->wrlock();
     m_hashtable[key.get()]=entry.release();
@@ -1225,24 +1235,31 @@ ISessionCacheEntry* MemorySessionCache::find(const char* key, const IApplication
         string appid,addr,pid,sub,ac,tokens;
         int major,minor;
         time_t created,accessed;
-        if (!m_sink->onRead(key,appid,addr,pid,sub,ac,tokens,major,minor,created,accessed))
+        HRESULT hr=m_sink->onRead(key,appid,addr,pid,sub,ac,tokens,major,minor,created,accessed);
+        if (hr==S_FALSE)
             return NULL;
+        else if (FAILED(hr)) {
+            m_log->error("cache store returned failure during search");
+            return NULL;
+        }
         const IApplication* eapp=ShibTargetConfig::getConfig().getINI()->getApplication(appid.c_str());
         if (!eapp) {
             // Something's horribly wrong.
             m_log->error("couldn't find application (%s) for session", appid.c_str());
-            m_sink->onDelete(key,0,false);
+            if (FAILED(m_sink->onDelete(key)))
+                m_log->error("cache store returned failure during delete");
             return NULL;
         }
         if (m_log->isDebugEnabled())
-            m_log->debug("loading cache entry (ID: %s) back into memory for application (%s)", key, appid);
+            m_log->debug("loading cache entry (ID: %s) back into memory for application (%s)", key, appid.c_str());
 
         // Locate role descriptor to use in filtering.
         Metadata m(eapp->getMetadataProviders());
         const IEntityDescriptor* site=m.lookup(pid.c_str());
         if (!site) {
             m_log->error("unable to locate issuing identity provider's metadata");
-            m_sink->onDelete(key,0,false);
+            if (FAILED(m_sink->onDelete(key)))
+                m_log->error("cache store returned failure during delete");
             return NULL;
         }
         MemorySessionCacheEntry* entry = new MemorySessionCacheEntry(
@@ -1309,10 +1326,6 @@ ISessionCacheEntry* MemorySessionCache::find(const char* key, const IApplication
                 }
             }
         }
-
-        // The data inside the entry changed?
-        if (m_sink && hr==S_FALSE)
-            m_sink->onUpdate(key,i->second->getDDF().getmember("tokens.unfiltered").string());
     }
     catch (...) {
         m_lock->unlock();
@@ -1353,10 +1366,12 @@ void MemorySessionCache::remove(const char* key, const IApplication* application
 
     entry->unlock();
 
-    // Notify sink. Wrapper will make sure entry gets deleted.
-    auto_ptr<ISessionCacheEntry*> entrywrap(entry);
-    if (m_sink)
-        m_sink->onDelete(key,entry->lastAccess(),false);
+    // Notify sink. Smart ptr will make sure entry gets deleted.
+    auto_ptr<ISessionCacheEntry> entrywrap(entry);
+    if (m_sink) {
+        if (FAILED(m_sink->onDelete(key)))
+            m_log->error("cache store failed to delete entry");
+    }
 
     // Transaction Logging
     STConfig& stc=static_cast<STConfig&>(ShibTargetConfig::getConfig());
@@ -1393,10 +1408,12 @@ void MemorySessionCache::dormant(const char* key)
     // we can release the cache entry lock because we know we're not in the cache anymore
     entry->unlock();
 
-    // Notify sink. Wrapper will make sure entry gets deleted.
-    auto_ptr<ISessionCacheEntry*> entrywrap(entry);
-    if (m_sink)
-        m_sink->onDelete(key,entry->lastAccess(),true);
+    // Update sink with last access data. Wrapper will make sure entry gets deleted.
+    auto_ptr<ISessionCacheEntry> entrywrap(entry);
+    if (m_sink) {
+        if (FAILED(m_sink->onUpdate(key,NULL,entry->lastAccess())))
+            m_log->error("cache store failed to update last access timestamp");
+    }
 }
 
 void MemorySessionCache::cleanup()
@@ -1433,8 +1450,6 @@ void MemorySessionCache::cleanup()
         if (shutdown)
             break;
 
-        m_log->debug("cleanup thread running...");
-
         // Ok, let's run through the cleanup process and clean out
         // really old sessions.  This is a two-pass process.  The
         // first pass is done holding a read-lock while we iterate over
@@ -1465,7 +1480,7 @@ void MemorySessionCache::cleanup()
             dormant(j->c_str());
     }
 
-    m_log->info("Cleanup thread finished.");
+    m_log->info("cleanup thread finished.");
 
     mutex->unlock();
     delete mutex;
