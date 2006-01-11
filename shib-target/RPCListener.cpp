@@ -450,16 +450,8 @@ void* server_thread_fn(void* arg)
     // First, let's block all signals
     Thread::mask_all_signals();
 
-    // TODO: wrap this inside some other thread hook
-    ShibTargetConfig::getConfig().getINI()->getSessionCache()->thread_init();
-    ShibTargetConfig::getConfig().getINI()->getReplayCache()->thread_init();
-
     // Run the child until it exits.
     child->run();
-
-    // TODO: wrap this inside some other thread hook
-    ShibTargetConfig::getConfig().getINI()->getSessionCache()->thread_end();
-    ShibTargetConfig::getConfig().getINI()->getReplayCache()->thread_end();
 
     // Now we can clean up and exit the thread.
     delete child;
