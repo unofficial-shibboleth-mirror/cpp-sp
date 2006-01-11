@@ -1151,27 +1151,28 @@ void XMLConfigImpl::init(bool first)
 
             if (conf.isEnabled(ShibTargetConfig::Caching)) {
                 IPlugIn* plugin=NULL;
-                exts=saml::XML::getFirstChildElement(SHAR,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(MemorySessionCache));
+                const DOMElement* container=conf.isEnabled(ShibTargetConfig::OutOfProcess) ? SHAR : SHIRE;
+                exts=saml::XML::getFirstChildElement(container,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(MemorySessionCache));
                 if (exts) {
                     log.info("building Session Cache of type %s...",shibtarget::XML::MemorySessionCacheType);
                     plugin=shibConf.getPlugMgr().newPlugin(shibtarget::XML::MemorySessionCacheType,exts);
                 }
                 else {
-                    exts=saml::XML::getFirstChildElement(SHAR,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(MySQLSessionCache));
+                    exts=saml::XML::getFirstChildElement(container,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(MySQLSessionCache));
                     if (exts) {
                         log.info("building Session Cache of type %s...",shibtarget::XML::MySQLSessionCacheType);
                         plugin=shibConf.getPlugMgr().newPlugin(shibtarget::XML::MySQLSessionCacheType,exts);
                     }
                     else {
-                        exts=saml::XML::getFirstChildElement(SHAR,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(SessionCache));
+                        exts=saml::XML::getFirstChildElement(container,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(SessionCache));
                         if (exts) {
                             auto_ptr_char type(exts->getAttributeNS(NULL,SHIBT_L(type)));
                             log.info("building Session Cache of type %s...",type.get());
                             plugin=shibConf.getPlugMgr().newPlugin(type.get(),exts);
                         }
                         else {
-                            log.fatal("can't build Session Cache object, missing conf:SessionCache element?");
-                            throw ConfigurationException("can't build Session Cache object, missing conf:SessionCache element?");
+                            log.info("session cache not specified, building Session Cache of type %s...",shibtarget::XML::MemorySessionCacheType);
+                            plugin=shibConf.getPlugMgr().newPlugin(shibtarget::XML::MemorySessionCacheType,exts);
                         }
                     }
                 }
