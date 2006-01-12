@@ -90,6 +90,7 @@
 	<element name="MemorySessionCache">
 		<complexType>
 			<attributeGroup ref="conf:SessionCacheProperties"/>
+			<attribute name="writeThrough" type="boolean" use="optional" default="true"/>
 			<anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>
