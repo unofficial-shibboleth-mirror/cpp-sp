@@ -85,12 +85,12 @@
 		<attribute name="retryInterval" type="unsignedInt" use="optional" default="300"/>
 		<attribute name="strictValidity" type="boolean" use="optional" default="true"/>
 		<attribute name="propagateErrors" type="boolean" use="optional" default="false"/>
+		<attribute name="writeThrough" type="boolean" use="optional" default="true"/>
 	</attributeGroup>
 	
 	<element name="MemorySessionCache">
 		<complexType>
 			<attributeGroup ref="conf:SessionCacheProperties"/>
-			<attribute name="writeThrough" type="boolean" use="optional" default="true"/>
 			<anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>
