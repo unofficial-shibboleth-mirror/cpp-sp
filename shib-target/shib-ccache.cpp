@@ -75,6 +75,10 @@ static const XMLCh propagateErrors[] =
 { chLatin_p, chLatin_r, chLatin_o, chLatin_p, chLatin_a, chLatin_g, chLatin_a, chLatin_t, chLatin_e,
   chLatin_E, chLatin_r, chLatin_r, chLatin_o, chLatin_r, chLatin_s, chNull
 };
+static const XMLCh writeThrough[] =
+{ chLatin_w, chLatin_r, chLatin_i, chLatin_t, chLatin_e,
+  chLatin_T, chLatin_h, chLatin_r, chLatin_o, chLatin_u, chLatin_g, chLatin_h, chNull
+};
 
 
 /*
@@ -300,7 +304,7 @@ public:
     void unlock() { m_lock->unlock(); }
     
     HRESULT isValid(const IApplication* application, const char* client_addr) const;
-    void populate() const;
+    void populate(const IApplication* application, const IEntityDescriptor* source) const;
     bool checkApplication(const IApplication* application) { return (m_obj["application_id"]==application->getId()); }
     time_t created() const { return m_sessionCreated; }
     time_t lastAccess() const { return m_lastAccess; }
@@ -309,7 +313,7 @@ public:
 private:
     bool hasAttributes(const SAMLResponse& r) const;
     time_t calculateExpiration(const SAMLResponse& r) const;
-    pair<SAMLResponse*,SAMLResponse*> getNewResponse() const;   // wraps an actual query
+    pair<SAMLResponse*,SAMLResponse*> getNewResponse(const IApplication* application, const IEntityDescriptor* source) const;
     SAMLResponse* filter(const SAMLResponse* r, const IApplication* application, const IEntityDescriptor* source) const;
   
     time_t m_sessionCreated;
@@ -365,7 +369,7 @@ private:
     // extracted config settings
     unsigned int m_AATimeout,m_AAConnectTimeout;
     unsigned int m_defaultLifetime,m_retryInterval;
-    bool m_strictValidity,m_propagateErrors;
+    bool m_strictValidity,m_propagateErrors,m_writeThrough;
     friend class MemorySessionCacheEntry;
 };
 
@@ -552,8 +556,19 @@ HRESULT MemorySessionCacheEntry::isValid(const IApplication* app, const char* cl
     }
 
     if (timeout > 0 && now-m_lastAccess >= timeout) {
-        m_log->info("session timed out (ID: %s)", m_obj["key"].string());
-        return SESSION_E_EXPIRED;
+        // May need to query sink first to find out if another cluster member has been used.
+        if (m_cache->m_sink && m_cache->m_writeThrough) {
+            if (NOERROR!=m_cache->m_sink->onRead(m_obj["key"].string(),m_lastAccess))
+                m_log->error("cache store failed to return last access timestamp");
+            if (now-m_lastAccess >= timeout) {
+                m_log->info("session timed out (ID: %s)", m_obj["key"].string());
+                return SESSION_E_EXPIRED;
+            }
+        }
+        else {
+            m_log->info("session timed out (ID: %s)", m_obj["key"].string());
+            return SESSION_E_EXPIRED;
+        }
     }
 
     if (consistentIPAddress) {
@@ -566,6 +581,13 @@ HRESULT MemorySessionCacheEntry::isValid(const IApplication* app, const char* cl
     }
 
     m_lastAccess=now;
+
+    if (m_cache->m_sink && m_cache->m_writeThrough && timeout > 0) {
+        // Update sink with last access data, if possible.
+        if (FAILED(m_cache->m_sink->onUpdate(m_obj["key"].string(),NULL,m_lastAccess)))
+            m_log->error("cache store failed to update last access timestamp");
+    }
+
     return NOERROR;
 }
 
@@ -616,7 +638,7 @@ time_t MemorySessionCacheEntry::calculateExpiration(const SAMLResponse& r) const
     return expiration;
 }
 
-void MemorySessionCacheEntry::populate() const
+void MemorySessionCacheEntry::populate(const IApplication* application, const IEntityDescriptor* source) const
 {
 #ifdef _DEBUG
     saml::NDC ndc("populate");
@@ -627,7 +649,50 @@ void MemorySessionCacheEntry::populate() const
         // Can we use what we have?
         if (time(NULL) < m_responseExpiration)
             return;
-      
+        
+        // Possibly check the sink in case another cluster member already refreshed it.
+        if (m_cache->m_sink && m_cache->m_writeThrough) {
+            string tokensFromSink;
+            HRESULT hr=m_cache->m_sink->onRead(m_obj["key"].string(),tokensFromSink);
+            if (FAILED(hr))
+                m_log->error("cache store failed to return updated tokens");
+            else if (hr==NOERROR && tokensFromSink!=m_obj["tokens.unfiltered"].string()) {
+                // The tokens in the sink were different.
+                istringstream is(tokensFromSink);
+                auto_ptr<SAMLResponse> respFromSink(new SAMLResponse(is,m_obj["minor_version"].integer()));
+                auto_ptr<SAMLResponse> filteredFromSink(filter(respFromSink.get(),application,source));
+                time_t expFromSink=calculateExpiration(*(filteredFromSink.get()));
+                
+                // Recheck to see if the new tokens are valid.
+                if (expFromSink < time(NULL)) {
+                    m_log->info("loading replacement tokens into memory from cache store");
+                    m_obj["tokens"].destroy();
+                    delete m_pUnfiltered;
+                    delete m_pFiltered;
+                    m_pUnfiltered=m_pFiltered=NULL;
+                    m_obj.addmember("tokens.unfiltered").string(tokensFromSink.c_str());
+
+                    // Serialize filtered assertions (if changes were made).
+                    ostringstream os;
+                    os << *(filteredFromSink.get());
+                    string fstr=os.str();
+                    if (fstr.length() != m_obj.getmember("tokens.unfiltered").strlen())
+                        m_obj.addmember("tokens.filtered").string(fstr.c_str());
+                    
+                    // Save actual objects only if we're running inprocess.
+                    if (ShibTargetConfig::getConfig().isEnabled(ShibTargetConfig::InProcess)) {
+                        m_pUnfiltered=respFromSink.release();
+                        if (m_obj["tokens.filtered"].isstring())
+                            m_pFiltered=filteredFromSink.release();
+                    }
+
+                    m_responseExpiration=expFromSink;
+                    m_lastRetry=0;
+                    return;
+                }
+            }
+        }
+
         // If we're being strict, dump what we have and reset timestamps.
         if (m_cache->m_strictValidity) {
             m_log->info("strictly enforcing attribute validity, dumping expired data");
@@ -645,7 +710,7 @@ void MemorySessionCacheEntry::populate() const
     }
 
     try {
-        pair<SAMLResponse*,SAMLResponse*> new_responses=getNewResponse();
+        pair<SAMLResponse*,SAMLResponse*> new_responses=getNewResponse(application,source);
         auto_ptr<SAMLResponse> r1(new_responses.first),r2(new_responses.second);
         if (new_responses.first) {
             m_obj["tokens"].destroy();
@@ -703,7 +768,9 @@ void MemorySessionCacheEntry::populate() const
 #endif
 }
 
-pair<SAMLResponse*,SAMLResponse*> MemorySessionCacheEntry::getNewResponse() const
+pair<SAMLResponse*,SAMLResponse*> MemorySessionCacheEntry::getNewResponse(
+    const IApplication* application, const IEntityDescriptor* source
+    ) const
 {
 #ifdef _DEBUG
     saml::NDC ndc("getNewResponse");
@@ -732,30 +799,14 @@ pair<SAMLResponse*,SAMLResponse*> MemorySessionCacheEntry::getNewResponse() cons
     stc.releaseTransactionLog();
 
 
-    // Caller must be holding the config lock.
-    // Lookup application for session to get providerId and attributes to request.
-    IConfig* conf=ShibTargetConfig::getConfig().getINI();
-    const IApplication* application=conf->getApplication(m_obj["application_id"].string());
-    if (!application) {
-        m_log->crit("unable to locate application for session, deleted?");
-        throw SAMLException("Unable to locate application for session, deleted?");
-    }
     pair<bool,const XMLCh*> providerID=application->getXMLString("providerId");
     if (!providerID.first) {
         m_log->crit("unable to determine ProviderID for application, not set?");
         throw SAMLException("Unable to determine ProviderID for application, not set?");
     }
 
-    // Try this request.
-    Metadata m(application->getMetadataProviders());
-    const IEntityDescriptor* site=m.lookup(m_obj["provider_id"].string());
-    if (!site) {
-        m_log->error("unable to locate identity provider's metadata for attribute query");
-        throw MetadataException("Unable to locate identity provider's metadata for attribute query.");
-    }
-
     // Try to locate an AA role.
-    const IAttributeAuthorityDescriptor* AA=site->getAttributeAuthorityDescriptor(
+    const IAttributeAuthorityDescriptor* AA=source->getAttributeAuthorityDescriptor(
         m_obj["minor_version"].integer()==1 ? saml::XML::SAML11_PROTOCOL_ENUM : saml::XML::SAML10_PROTOCOL_ENUM
         );
     if (!AA) {
@@ -764,7 +815,7 @@ pair<SAMLResponse*,SAMLResponse*> MemorySessionCacheEntry::getNewResponse() cons
     }
 
     // Get protocol signing policy.
-    const IPropertySet* credUse=application->getCredentialUse(site);
+    const IPropertySet* credUse=application->getCredentialUse(source);
     pair<bool,bool> signRequest=credUse ? credUse->getBool("signRequest") : make_pair(false,false);
     pair<bool,const char*> signatureAlg=credUse ? credUse->getString("signatureAlg") : pair<bool,const char*>(false,NULL);
     if (!signatureAlg.first)
@@ -799,7 +850,7 @@ pair<SAMLResponse*,SAMLResponse*> MemorySessionCacheEntry::getNewResponse() cons
         // Sign it?
         if (signRequest.first && signRequest.second && signingCred.first) {
             if (req->getMinorVersion()==1) {
-                Credentials creds(conf->getCredentialsProviders());
+                Credentials creds(ShibTargetConfig::getConfig().getINI()->getCredentialsProviders());
                 const ICredResolver* cr=creds.lookup(signingCred.second);
                 if (cr)
                     req->sign(cr->getKey(),cr->getCertificates(),signatureAlg.second,digestAlg.second);
@@ -865,7 +916,7 @@ pair<SAMLResponse*,SAMLResponse*> MemorySessionCacheEntry::getNewResponse() cons
             Iterator<SAMLAssertion*> assertions=response->getAssertions();
             for (unsigned int a=0; a<assertions.size();) {
                 // Discard any assertions not issued by the right entity.
-                if (XMLString::compareString(site->getId(),assertions[a]->getIssuer())) {
+                if (XMLString::compareString(source->getId(),assertions[a]->getIssuer())) {
                     auto_ptr_char bad(assertions[a]->getIssuer());
                     m_log->warn("discarding assertion not issued by (%s), instead by (%s)",m_obj["provider_id"].string(),bad.get());
                     response->removeAssertion(a);
@@ -884,7 +935,7 @@ pair<SAMLResponse*,SAMLResponse*> MemorySessionCacheEntry::getNewResponse() cons
             }
 
             // Run it through the filter.
-            return make_pair(response,filter(response,application,site));
+            return make_pair(response,filter(response,application,source));
         }
     }
     catch (SAMLException& e) {
@@ -1198,7 +1249,7 @@ string MemorySessionCache::insert(
             tokens
             )
         );
-    entry->populate();
+    entry->populate(application,source);
 
     if (m_sink) {
         HRESULT hr=m_sink->onCreate(key.get(),application,entry.get(),1,tokens->getMinorVersion(),entry->created());
@@ -1335,6 +1386,17 @@ ISessionCacheEntry* MemorySessionCache::find(const char* key, const IApplication
     // Lock the cache entry for the caller -- they have to unlock it.
     i->second->lock();
     m_lock->unlock();
+
+    try {
+        // Make sure the entry has valid tokens.
+        Metadata m(application->getMetadataProviders());
+        i->second->populate(application,m.lookup(i->second->getProviderId()));
+    }
+    catch (...) {
+        i->second->unlock();
+        throw;
+    }
+
     return i->second;
 }
 
@@ -1408,9 +1470,9 @@ void MemorySessionCache::dormant(const char* key)
     // we can release the cache entry lock because we know we're not in the cache anymore
     entry->unlock();
 
-    // Update sink with last access data. Wrapper will make sure entry gets deleted.
     auto_ptr<ISessionCacheEntry> entrywrap(entry);
-    if (m_sink) {
+    if (m_sink && !m_writeThrough) {
+        // Update sink with last access data. Wrapper will make sure entry gets deleted.
         if (FAILED(m_sink->onUpdate(key,NULL,entry->lastAccess())))
             m_log->error("cache store failed to update last access timestamp");
     }
