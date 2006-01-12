@@ -555,17 +555,21 @@ HRESULT ShibMySQLCCache::onRead(
     MYSQL_RES* rows = mysql_store_result(mysql);
 
     // Nope, doesn't exist.
-    if (!rows)
-        return S_FALSE;
-
-    // Make sure we got 1 and only 1 rows.
-    if (mysql_num_rows(rows) != 1) {
-        log->error("Database select returned wrong number of rows: %d", mysql_num_rows(rows));
-        mysql_free_result(rows);
+    if (!rows || mysql_num_rows(rows)==0) {
+        log->debug("not found in database");
+        if (rows)
+            mysql_free_result(rows);
         return S_FALSE;
     }
 
-    log->debug("match found, tranfering data back into memory");
+    // Make sure we got 1 and only 1 row.
+    if (mysql_num_rows(rows) > 1) {
+        log->error("database select returned %d rows!", mysql_num_rows(rows));
+        mysql_free_result(rows);
+        return E_FAIL;
+    }
+
+    log->debug("session found, tranfering data back into memory");
     
     /* Columns in query:
         0: application_id
@@ -622,14 +626,18 @@ HRESULT ShibMySQLCCache::onRead(const char* key, time_t& accessed)
     MYSQL_RES* rows = mysql_store_result(mysql);
 
     // Nope, doesn't exist.
-    if (!rows)
+    if (!rows || mysql_num_rows(rows)==0) {
+        log->warn("session expected, but not found in database");
+        if (rows)
+            mysql_free_result(rows);
         return S_FALSE;
+    }
 
-    // Make sure we got 1 and only 1 rows.
+    // Make sure we got 1 and only 1 row.
     if (mysql_num_rows(rows) != 1) {
-        log->error("database select returned wrong number of rows: %d", mysql_num_rows(rows));
+        log->error("database select returned %d rows!", mysql_num_rows(rows));
         mysql_free_result(rows);
-        return S_FALSE;
+        return E_FAIL;
     }
 
     MYSQL_ROW row = mysql_fetch_row(rows);
@@ -667,14 +675,18 @@ HRESULT ShibMySQLCCache::onRead(const char* key, string& tokens)
     MYSQL_RES* rows = mysql_store_result(mysql);
 
     // Nope, doesn't exist.
-    if (!rows)
+    if (!rows || mysql_num_rows(rows)==0) {
+        log->warn("session expected, but not found in database");
+        if (rows)
+            mysql_free_result(rows);
         return S_FALSE;
+    }
 
-    // Make sure we got 1 and only 1 rows.
+    // Make sure we got 1 and only 1 row.
     if (mysql_num_rows(rows) != 1) {
-        log->error("database select returned wrong number of rows: %d", mysql_num_rows(rows));
+        log->error("database select returned %d rows!", mysql_num_rows(rows));
         mysql_free_result(rows);
-        return S_FALSE;
+        return E_FAIL;
     }
 
     MYSQL_ROW row = mysql_fetch_row(rows);
