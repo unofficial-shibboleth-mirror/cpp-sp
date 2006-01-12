@@ -414,7 +414,9 @@ public:
         time_t& created,
         time_t& accessed
         );
-    HRESULT onUpdate(const char* key, const char* tokens=NULL, time_t lastAccess=0);
+    HRESULT onRead(const char* key, time_t& accessed);
+    HRESULT onRead(const char* key, string& tokens);
+    HRESULT onUpdate(const char* key, const char* tokens=NULL, time_t accessed=0);
     HRESULT onDelete(const char* key);
 
     void cleanup();
@@ -563,7 +565,7 @@ HRESULT ShibMySQLCCache::onRead(
         return S_FALSE;
     }
 
-    log->debug("match found, tranfering data back into memory...");
+    log->debug("match found, tranfering data back into memory");
     
     /* Columns in query:
         0: application_id
@@ -597,6 +599,94 @@ HRESULT ShibMySQLCCache::onRead(
     return NOERROR;
 }
 
+HRESULT ShibMySQLCCache::onRead(const char* key, time_t& accessed)
+{
+#ifdef _DEBUG
+    saml::NDC ndc("onRead");
+#endif
+
+    log->debug("reading last access time from MySQL database");
+
+    string q = string("SELECT UNIX_TIMESTAMP(atime) FROM state WHERE cookie='") + key + "' LIMIT 1";
+
+    MYSQL* mysql = getMYSQL();
+    if (mysql_query(mysql, q.c_str())) {
+        const char* err=mysql_error(mysql);
+        log->error("error searching for %s: %s", key, err);
+        if (isCorrupt(err) && repairTable(mysql,"state")) {
+            if (mysql_query(mysql, q.c_str()))
+                log->error("error retrying search for %s: %s", key, mysql_error(mysql));
+        }
+    }
+
+    MYSQL_RES* rows = mysql_store_result(mysql);
+
+    // Nope, doesn't exist.
+    if (!rows)
+        return S_FALSE;
+
+    // Make sure we got 1 and only 1 rows.
+    if (mysql_num_rows(rows) != 1) {
+        log->error("database select returned wrong number of rows: %d", mysql_num_rows(rows));
+        mysql_free_result(rows);
+        return S_FALSE;
+    }
+
+    MYSQL_ROW row = mysql_fetch_row(rows);
+    accessed=atoi(row[0]);
+
+    // Free the results.
+    mysql_free_result(rows);
+
+    return NOERROR;
+}
+
+HRESULT ShibMySQLCCache::onRead(const char* key, string& tokens)
+{
+#ifdef _DEBUG
+    saml::NDC ndc("onRead");
+#endif
+
+    if (!m_storeAttributes)
+        return S_FALSE;
+
+    log->debug("reading cached tokens from MySQL database");
+
+    string q = string("SELECT tokens FROM state WHERE cookie='") + key + "' LIMIT 1";
+
+    MYSQL* mysql = getMYSQL();
+    if (mysql_query(mysql, q.c_str())) {
+        const char* err=mysql_error(mysql);
+        log->error("error searching for %s: %s", key, err);
+        if (isCorrupt(err) && repairTable(mysql,"state")) {
+            if (mysql_query(mysql, q.c_str()))
+                log->error("error retrying search for %s: %s", key, mysql_error(mysql));
+        }
+    }
+
+    MYSQL_RES* rows = mysql_store_result(mysql);
+
+    // Nope, doesn't exist.
+    if (!rows)
+        return S_FALSE;
+
+    // Make sure we got 1 and only 1 rows.
+    if (mysql_num_rows(rows) != 1) {
+        log->error("database select returned wrong number of rows: %d", mysql_num_rows(rows));
+        mysql_free_result(rows);
+        return S_FALSE;
+    }
+
+    MYSQL_ROW row = mysql_fetch_row(rows);
+    if (row[0])
+        tokens=row[0];
+
+    // Free the results.
+    mysql_free_result(rows);
+
+    return NOERROR;
+}
+
 HRESULT ShibMySQLCCache::onUpdate(const char* key, const char* tokens, time_t lastAccess)
 {
 #ifdef _DEBUG
@@ -604,15 +694,17 @@ HRESULT ShibMySQLCCache::onUpdate(const char* key, const char* tokens, time_t la
 #endif
 
     ostringstream q;
-    if (tokens) {
+    if (lastAccess>0)
+        q << "UPDATE state SET atime=FROM_UNIXTIME(" << lastAccess << ")";
+    else if (tokens) {
+        if (!m_storeAttributes)
+            return S_FALSE;
         q << "UPDATE state SET tokens=";
         if (*tokens)
             q << "'" << tokens << "'";
         else
             q << "null";
     }
-    else if (lastAccess>0)
-        q << "UPDATE state SET atime=FROM_UNIXTIME(" << lastAccess << ")";
     else {
         log->warn("onUpdate called with nothing to do!");
         return S_FALSE;
