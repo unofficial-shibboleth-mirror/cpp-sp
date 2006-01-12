@@ -31,6 +31,7 @@
 			strictValidity - if we have expired attrs, and can't get new ones, keep using them?
 			propagateErrors - suppress errors while getting attrs or let user see them?
 			retryInterval - if propagateErrors is false and query fails, how long to wait before trying again
+			writeThrough - tells database-backed caches that multiple web servers are sharing the database
 		Only one session cache can be defined.
 		-->
 		<MemorySessionCache cleanupInterval="300" cacheTimeout="3600" AATimeout="30" AAConnectTimeout="15"
@@ -38,7 +39,7 @@
 		<!--
 		<MySQLSessionCache cleanupInterval="300" cacheTimeout="3600" AATimeout="30" AAConnectTimeout="15"
 			defaultLifetime="1800" retryInterval="300" strictValidity="false" propagateErrors="false"
-			mysqlTimeout="14400" storeAttributes="false">
+			mysqlTimeout="14400" storeAttributes="true" writeThrough="false">
 			<Argument>&#x2D;&#x2D;language=@-PREFIX-@/share/english</Argument>
 			<Argument>&#x2D;&#x2D;datadir=@-PREFIX-@/data</Argument>
 		</MySQLSessionCache>
