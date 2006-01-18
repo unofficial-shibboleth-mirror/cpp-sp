@@ -341,12 +341,12 @@ bool ShibbolethTrust::validate(void* certEE, const Iterator<void*>& certChain, c
                 STACK_OF(GENERAL_NAME)* altnames=(STACK_OF(GENERAL_NAME)*)X509_get_ext_d2i(x, NID_subject_alt_name, NULL, NULL);
                 if (altnames) {
                     int numalts = sk_GENERAL_NAME_num(altnames);
-                    for (int an=0; !checkName && an<numalts; an++) {
+                    for (int an=0; checkName && an<numalts; an++) {
                         const GENERAL_NAME* check = sk_GENERAL_NAME_value(altnames, an);
                         if (check->type==GEN_DNS || check->type==GEN_URI) {
                             const char* altptr = (char*)ASN1_STRING_data(check->d.ia5);
                             const int altlen = ASN1_STRING_length(check->d.ia5);
-                            
+
                             for (vector<string>::const_iterator n=keynames.begin(); n!=keynames.end(); n++) {
 #ifdef HAVE_STRCASECMP
                                 if (!strncasecmp(altptr,n->c_str(),altlen)) {
