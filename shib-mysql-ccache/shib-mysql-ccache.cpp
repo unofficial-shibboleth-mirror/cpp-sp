@@ -98,6 +98,8 @@ static const XMLCh mysqlTimeout[] =
 static const XMLCh storeAttributes[] =
 { chLatin_s, chLatin_t, chLatin_o, chLatin_r, chLatin_e, chLatin_A, chLatin_t, chLatin_t, chLatin_r, chLatin_i, chLatin_b, chLatin_u, chLatin_t, chLatin_e, chLatin_s, chNull };
 
+static bool g_MySQLInitialized = false;
+
 class MySQLBase : public virtual saml::IPlugIn
 {
 public:
@@ -114,6 +116,7 @@ protected:
   const DOMElement* m_root; // can only use this during initialization
 
   bool initialized;
+  bool handleShutdown;
 
   void createDatabase(MYSQL*, int major, int minor);
   void upgradeDatabase(MYSQL*);
@@ -134,7 +137,7 @@ MySQLBase::MySQLBase(const DOMElement* e) : m_root(e)
 #ifdef _DEBUG
   saml::NDC ndc("MySQLBase");
 #endif
-  log = &(Category::getInstance("shibmysql.MySQLBase"));
+  log = &(Category::getInstance("shibtarget.SessionCache.MySQL"));
 
   m_mysql = ThreadKey::create(&shib_mysql_destroy_handle);
 
@@ -311,8 +314,10 @@ void MySQLBase::upgradeDatabase(MYSQL* mysql)
 pair<int,int> MySQLBase::getVersion(MYSQL* mysql)
 {
     // grab the version number from the database
-    if (mysql_query(mysql, "SELECT * FROM version"))
-        log->error ("Error reading version: %s", mysql_error(mysql));
+    if (mysql_query(mysql, "SELECT * FROM version")) {
+        log->error("error reading version: %s", mysql_error(mysql));
+        throw SAMLException("MySQLBase::getVersion(): error reading version");
+    }
 
     MYSQL_RES* rows = mysql_store_result(mysql);
     if (rows) {
@@ -323,21 +328,21 @@ pair<int,int> MySQLBase::getVersion(MYSQL* mysql)
           log->debug("opening database version %d.%d", major, minor);
           mysql_free_result(rows);
           return make_pair(major,minor);
-        } else {
+        }
+        else {
             // Wrong number of rows or wrong number of fields...
             log->crit("Houston, we've got a problem with the database...");
-            mysql_free_result (rows);
-            throw SAMLException("ShibMySQLCCache::getVersion(): version verification failed");
+            mysql_free_result(rows);
+            throw SAMLException("MySQLBase::getVersion(): version verification failed");
         }
     }
     log->crit("MySQL Read Failed in version verification");
-    throw SAMLException("ShibMySQLCCache::getVersion(): error reading version");
+    throw SAMLException("MySQLBase::getVersion(): error reading version");
 }
 
 static void mysqlInit(const DOMElement* e, Category& log)
 {
-    static bool done = false;
-    if (done) {
+    if (g_MySQLInitialized) {
         log.info("MySQL embedded server already initialized");
         return;
     }
@@ -366,7 +371,7 @@ static void mysqlInit(const DOMElement* e, Category& log)
     mysql_server_init(arg_count, (char **)args, NULL);
 
     delete[] args;
-    done = true;
+    g_MySQLInitialized = true;
 }  
 
 class ShibMySQLCCache : public MySQLBase, virtual public ISessionCache, virtual public ISessionCacheStore
@@ -436,7 +441,6 @@ ShibMySQLCCache::ShibMySQLCCache(const DOMElement* e) : MySQLBase(e), m_storeAtt
 #ifdef _DEBUG
     saml::NDC ndc("ShibMySQLCCache");
 #endif
-    log = &(Category::getInstance("shibmysql.SessionCache"));
 
     m_cache = dynamic_cast<ISessionCache*>(
         SAMLConfig::getConfig().getPlugMgr().newPlugin(shibtarget::XML::MemorySessionCacheType, e)
@@ -857,14 +861,7 @@ public:
   bool check(const char* str, time_t expires);
 };
 
-MySQLReplayCache::MySQLReplayCache(const DOMElement* e) : MySQLBase(e)
-{
-#ifdef _DEBUG
-  saml::NDC ndc("MySQLReplayCache");
-#endif
-
-  log = &(Category::getInstance("shibmysql.ReplayCache"));
-}
+MySQLReplayCache::MySQLReplayCache(const DOMElement* e) : MySQLBase(e) {}
 
 bool MySQLReplayCache::check(const char* str, time_t expires)
 {
@@ -952,7 +949,8 @@ extern "C" int SHIBMYSQL_EXPORTS saml_extension_init(void*)
 extern "C" void SHIBMYSQL_EXPORTS saml_extension_term()
 {
     // Shutdown MySQL
-    mysql_server_end();
+    if (g_MySQLInitialized)
+        mysql_server_end();
     SAMLConfig::getConfig().getPlugMgr().unregFactory(shibtarget::XML::MySQLReplayCacheType);
     SAMLConfig::getConfig().getPlugMgr().unregFactory(shibtarget::XML::MySQLSessionCacheType);
 }
