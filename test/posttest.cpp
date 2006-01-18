@@ -19,93 +19,91 @@
 # define _CRT_SECURE_NO_DEPRECATE 1
 #endif
 
-#include "../shib/shib.h"
-#include <sstream>
-
-#include <openssl/bio.h>
-#include <openssl/err.h>
-#include <openssl/rsa.h>
-#include <openssl/evp.h>
-#include <openssl/pem.h>
+#include <fstream>
+#include "../shib-target/shib-target.h"
 
 using namespace std;
 using namespace saml;
 using namespace shibboleth;
-
-struct TV : public ShibBrowserProfile::ITokenValidator
-{
-    void validateToken(SAMLAssertion*, time_t ts=0, const IRoleDescriptor* r=NULL, const Iterator<ITrust*>& t=EMPTY(ITrust*)) const
-    { }
-};
+using namespace shibtarget;
 
 int main(int argc,char* argv[])
 {
-    SAMLConfig& conf1=SAMLConfig::getConfig();
-    ShibConfig& conf2=ShibConfig::getConfig();
-    char* path="";
-    char* key="";
+    char* a_param=NULL;
+    char* r_param=NULL;
+    char* f_param=NULL;
+    char* path=NULL;
+    char* config=NULL;
 
-    for (int i=1; i<argc; i++)
-    {
-        if (!strcmp(argv[i],"-d") && i+1<argc)
+    for (int i=1; i<argc; i++) {
+        if (!strcmp(argv[i],"-c") && i+1<argc)
+            config=argv[++i];
+        else if (!strcmp(argv[i],"-d") && i+1<argc)
             path=argv[++i];
-        else if (!strcmp(argv[i],"-k") && i+1<argc)
-            key=argv[++i];
+        else if (!strcmp(argv[i],"-r") && i+1<argc)
+            r_param=argv[++i];
+        else if (!strcmp(argv[i],"-f") && i+1<argc)
+            f_param=argv[++i];
+        else if (!strcmp(argv[i],"-a") && i+1<argc)
+            a_param=argv[++i];
     }
 
-    conf1.schema_dir=path;
-    if (!conf1.init())
-        cerr << "unable to initialize SAML runtime" << endl;
+    if (!r_param || !f_param) {
+        cerr << "usage: posttest -f <file> -r <recipient URL> [-a <application_id> -d <schema path> -c <config>]" << endl;
+        exit(0);
+    }
+    
+    if (!path)
+        path=getenv("SHIBSCHEMAS");
+    if (!path)
+        path=SHIB_SCHEMAS;
+    if (!config)
+        config=getenv("SHIBCONFIG");
+    if (!config)
+        config=SHIB_CONFIG;
+    if (!a_param)
+        a_param="default";
 
-    if (!conf2.init())
-        cerr << "unable to initialize Shibboleth runtime" << endl;
+    ShibTargetConfig& conf=ShibTargetConfig::getConfig();
+    conf.setFeatures(
+        ShibTargetConfig::Listener |
+        ShibTargetConfig::Metadata |
+        ShibTargetConfig::Trust |
+        ShibTargetConfig::OutOfProcess
+        );
+    if (!conf.init(path) || !conf.load(config))
+        return -10;
 
-    try
-    {
-        DOMImplementation* impl=DOMImplementationRegistry::getDOMImplementation(NULL);
-        DOMDocument* dummydoc=impl->createDocument();
-        DOMElement* dummy = dummydoc->createElementNS(NULL,L(Request));
-        static const XMLCh url[] = { chLatin_u, chLatin_r, chLatin_l, chNull };
-        auto_ptr_XMLCh src("/opt/shibboleth/etc/shibboleth/sites.xml");
-        dummy->setAttributeNS(NULL,url,src.get());
-
-        IMetadata* metadatas[1];
-        metadatas[0]=dynamic_cast<IMetadata*>(conf1.getPlugMgr().newPlugin("edu.internet2.middleware.shibboleth.provider.XMLMetadata",dummy));
-        dummydoc->release();
-        ArrayIterator<IMetadata*> sites(metadatas,1);
-        
-        Metadata m(sites);
-        TV tv;
-        auto_ptr<XMLCh> recip(XMLString::transcode("https://shib2.internet2.edu/shib/SHIRE"));
-        ShibBrowserProfile p (&tv,sites,EMPTY(ITrust*));
-
-        char ch;
+    try {
         string buf;
-        cin >> ch;
-        while (!cin.fail())
-        {
+        ifstream is(f_param);
+        char ch;
+        is >> ch;
+        while (!is.fail()) {
             buf+=ch;
-            cin >> ch;
+            is >> ch;
         }
 
-        SAMLBrowserProfile::BrowserProfileResponse bpr=p.receive(buf.c_str(),recip.get(),NULL);
-        cout << "Consumed Response: " << endl << *bpr.response << endl;
+        auto_ptr_XMLCh recip(r_param);
+
+        IConfig* ini=ShibTargetConfig::getConfig().getINI();
+        Locker locker(ini);
+
+        const IApplication* app=ini->getApplication(a_param);
+        if (!app) {
+            throw SAMLException("Unable to locate application for new session, deleted?");
+        }
+
+        SAMLBrowserProfile::BrowserProfileResponse bpr=
+            app->getBrowserProfile()->receive(buf.c_str(), recip.get(), NULL, 1);
+
+        cout << "Success!" << endl;
         bpr.clear();
     }
-    catch(SAMLException& e)
-    {
+    catch(SAMLException& e) {
         cerr << "caught a SAML exception: " << e << endl;
     }
-    catch(XMLException& e)
-    {
-        cerr << "caught an XML exception: "; xmlout(cerr,e.getMessage()); cerr << endl;
-    }
-    catch(...)
-    {
-        cerr << "caught an unknown exception" << endl;
-    }
 
-    conf2.term();
-    conf1.term();
+    conf.shutdown();
     return 0;
 }
