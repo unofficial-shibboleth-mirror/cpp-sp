@@ -606,9 +606,11 @@ namespace shibtarget {
         // Session cache implementations
         static const char MemorySessionCacheType[];
         static const char MySQLSessionCacheType[];
+        static const char ODBCSessionCacheType[];
         
         // Replay cache implementations
         static const char MySQLReplayCacheType[];
+        static const char ODBCReplayCacheType[];
         
         // Request mapping/settings implementations
         static const char XMLRequestMapType[];      // portable XML-based map
@@ -663,6 +665,8 @@ namespace shibtarget {
             static const XMLCh name[];
             static const XMLCh Name[];
             static const XMLCh NOT[];
+            static const XMLCh ODBCReplayCache[];
+            static const XMLCh ODBCSessionCache[];
             static const XMLCh OR[];
             static const XMLCh OutOfProcess[];
             static const XMLCh Path[];

@@ -28,8 +28,10 @@ using namespace shibtarget;
 
 const char XML::MemorySessionCacheType[] =  "edu.internet2.middleware.shibboleth.sp.provider.MemorySessionCacheProvider";
 const char XML::MySQLSessionCacheType[] =   "edu.internet2.middleware.shibboleth.sp.provider.MySQLSessionCacheProvider";
+const char XML::ODBCSessionCacheType[] =    "edu.internet2.middleware.shibboleth.sp.provider.ODBCSessionCacheProvider";
 
 const char XML::MySQLReplayCacheType[] =    "edu.internet2.middleware.shibboleth.sp.provider.MySQLReplayCacheProvider";
+const char XML::ODBCReplayCacheType[] =     "edu.internet2.middleware.shibboleth.sp.provider.ODBCReplayCacheProvider";
 
 const char XML::XMLRequestMapType[] =       "edu.internet2.middleware.shibboleth.sp.provider.XMLRequestMapProvider";
 const char XML::NativeRequestMapType[] =    "edu.internet2.middleware.shibboleth.sp.provider.NativeRequestMapProvider";
@@ -227,6 +229,18 @@ const XMLCh XML::Literals::MySQLSessionCache[] =
 const XMLCh XML::Literals::name[]= { chLatin_n, chLatin_a, chLatin_m, chLatin_e, chNull };
 
 const XMLCh XML::Literals::Name[]= { chLatin_N, chLatin_a, chLatin_m, chLatin_e, chNull };
+
+const XMLCh XML::Literals::ODBCReplayCache[] =
+{ chLatin_O, chLatin_D, chLatin_B, chLatin_C,
+  chLatin_R, chLatin_e, chLatin_p, chLatin_l, chLatin_a, chLatin_y,
+  chLatin_C, chLatin_a, chLatin_c, chLatin_h, chLatin_e, chNull
+};
+
+const XMLCh XML::Literals::ODBCSessionCache[] =
+{ chLatin_O, chLatin_D, chLatin_B, chLatin_C,
+  chLatin_S, chLatin_e, chLatin_s, chLatin_s, chLatin_i, chLatin_o, chLatin_n,
+  chLatin_C, chLatin_a, chLatin_c, chLatin_h, chLatin_e, chNull
+};
 
 const XMLCh XML::Literals::OutOfProcess[] =
 { chLatin_O, chLatin_u, chLatin_t, chLatin_O, chLatin_f,

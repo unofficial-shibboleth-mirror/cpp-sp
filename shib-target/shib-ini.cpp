@@ -1158,21 +1158,28 @@ void XMLConfigImpl::init(bool first)
                     plugin=shibConf.getPlugMgr().newPlugin(shibtarget::XML::MemorySessionCacheType,exts);
                 }
                 else {
-                    exts=saml::XML::getFirstChildElement(container,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(MySQLSessionCache));
+                    exts=saml::XML::getFirstChildElement(container,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(ODBCSessionCache));
                     if (exts) {
-                        log.info("building Session Cache of type %s...",shibtarget::XML::MySQLSessionCacheType);
-                        plugin=shibConf.getPlugMgr().newPlugin(shibtarget::XML::MySQLSessionCacheType,exts);
+                        log.info("building Session Cache of type %s...",shibtarget::XML::ODBCSessionCacheType);
+                        plugin=shibConf.getPlugMgr().newPlugin(shibtarget::XML::ODBCSessionCacheType,exts);
                     }
                     else {
-                        exts=saml::XML::getFirstChildElement(container,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(SessionCache));
+                        exts=saml::XML::getFirstChildElement(container,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(MySQLSessionCache));
                         if (exts) {
-                            auto_ptr_char type(exts->getAttributeNS(NULL,SHIBT_L(type)));
-                            log.info("building Session Cache of type %s...",type.get());
-                            plugin=shibConf.getPlugMgr().newPlugin(type.get(),exts);
+                            log.info("building Session Cache of type %s...",shibtarget::XML::MySQLSessionCacheType);
+                            plugin=shibConf.getPlugMgr().newPlugin(shibtarget::XML::MySQLSessionCacheType,exts);
                         }
                         else {
-                            log.info("session cache not specified, building Session Cache of type %s...",shibtarget::XML::MemorySessionCacheType);
-                            plugin=shibConf.getPlugMgr().newPlugin(shibtarget::XML::MemorySessionCacheType,exts);
+                            exts=saml::XML::getFirstChildElement(container,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(SessionCache));
+                            if (exts) {
+                                auto_ptr_char type(exts->getAttributeNS(NULL,SHIBT_L(type)));
+                                log.info("building Session Cache of type %s...",type.get());
+                                plugin=shibConf.getPlugMgr().newPlugin(type.get(),exts);
+                            }
+                            else {
+                                log.info("session cache not specified, building Session Cache of type %s...",shibtarget::XML::MemorySessionCacheType);
+                                plugin=shibConf.getPlugMgr().newPlugin(shibtarget::XML::MemorySessionCacheType,exts);
+                            }
                         }
                     }
                 }
@@ -1188,22 +1195,29 @@ void XMLConfigImpl::init(bool first)
                 }
                 
                 // Replay cache.
-                exts=saml::XML::getFirstChildElement(SHAR,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(MySQLReplayCache));
+                exts=saml::XML::getFirstChildElement(SHAR,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(ODBCReplayCache));
                 if (exts) {
-                    log.info("building Replay Cache of type %s...",shibtarget::XML::MySQLReplayCacheType);
-                    m_outer->m_replayCache=IReplayCache::getInstance(shibtarget::XML::MySQLReplayCacheType,exts);
+                    log.info("building Replay Cache of type %s...",shibtarget::XML::ODBCReplayCacheType);
+                    m_outer->m_replayCache=IReplayCache::getInstance(shibtarget::XML::ODBCReplayCacheType,exts);
                 }
                 else {
-                    exts=saml::XML::getFirstChildElement(SHAR,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(ReplayCache));
+                    exts=saml::XML::getFirstChildElement(SHAR,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(MySQLReplayCache));
                     if (exts) {
-                        auto_ptr_char type(exts->getAttributeNS(NULL,SHIBT_L(type)));
-                        log.info("building Replay Cache of type %s...",type.get());
-                        m_outer->m_replayCache=IReplayCache::getInstance(type.get(),exts);
+                        log.info("building Replay Cache of type %s...",shibtarget::XML::MySQLReplayCacheType);
+                        m_outer->m_replayCache=IReplayCache::getInstance(shibtarget::XML::MySQLReplayCacheType,exts);
                     }
                     else {
-                        // OpenSAML default provider.
-                        log.info("building default Replay Cache...");
-                        m_outer->m_replayCache=IReplayCache::getInstance();
+                        exts=saml::XML::getFirstChildElement(SHAR,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(ReplayCache));
+                        if (exts) {
+                            auto_ptr_char type(exts->getAttributeNS(NULL,SHIBT_L(type)));
+                            log.info("building Replay Cache of type %s...",type.get());
+                            m_outer->m_replayCache=IReplayCache::getInstance(type.get(),exts);
+                        }
+                        else {
+                            // OpenSAML default provider.
+                            log.info("building default Replay Cache...");
+                            m_outer->m_replayCache=IReplayCache::getInstance();
+                        }
                     }
                 }
             }
