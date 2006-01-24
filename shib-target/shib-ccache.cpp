@@ -1009,47 +1009,54 @@ SAMLResponse* MemorySessionCacheEntry::filter(
 
 MemorySessionCache::MemorySessionCache(const DOMElement* e)
     : m_root(e), m_AATimeout(30), m_AAConnectTimeout(15), m_defaultLifetime(1800), m_retryInterval(300),
-        m_strictValidity(true), m_propagateErrors(false), m_lock(RWLock::create()),
+        m_strictValidity(true), m_propagateErrors(false), m_writeThrough(false), m_lock(RWLock::create()),
         m_log(&Category::getInstance(SHIBT_LOGCAT".SessionCache")),
         restoreInsert(NULL), restoreFind(NULL), restoreRemove(NULL), m_sink(NULL)
 {
-    const XMLCh* tag=m_root->getAttributeNS(NULL,AATimeout);
-    if (tag && *tag) {
-        m_AATimeout = XMLString::parseInt(tag);
-        if (!m_AATimeout)
-            m_AATimeout=30;
-    }
-    SAMLConfig::getConfig().timeout = m_AATimeout;
+    if (m_root) {
+        const XMLCh* tag=m_root->getAttributeNS(NULL,AATimeout);
+        if (tag && *tag) {
+            m_AATimeout = XMLString::parseInt(tag);
+            if (!m_AATimeout)
+                m_AATimeout=30;
+        }
 
-    tag=m_root->getAttributeNS(NULL,AAConnectTimeout);
-    if (tag && *tag) {
-        m_AAConnectTimeout = XMLString::parseInt(tag);
-        if (!m_AAConnectTimeout)
-            m_AAConnectTimeout=15;
-    }
-    SAMLConfig::getConfig().conn_timeout = m_AAConnectTimeout;
-    
-    tag=m_root->getAttributeNS(NULL,defaultLifetime);
-    if (tag && *tag) {
-        m_defaultLifetime = XMLString::parseInt(tag);
-        if (!m_defaultLifetime)
-            m_defaultLifetime=1800;
-    }
-
-    tag=m_root->getAttributeNS(NULL,retryInterval);
-    if (tag && *tag) {
-        m_retryInterval = XMLString::parseInt(tag);
-        if (!m_retryInterval)
-            m_retryInterval=300;
-    }
-    
-    tag=m_root->getAttributeNS(NULL,strictValidity);
-    if (tag && (*tag==chDigit_0 || *tag==chLatin_f))
-        m_strictValidity=false;
+        tag=m_root->getAttributeNS(NULL,AAConnectTimeout);
+        if (tag && *tag) {
+            m_AAConnectTimeout = XMLString::parseInt(tag);
+            if (!m_AAConnectTimeout)
+                m_AAConnectTimeout=15;
+        }
         
-    tag=m_root->getAttributeNS(NULL,propagateErrors);
-    if (tag && (*tag==chDigit_1 || *tag==chLatin_t))
-        m_propagateErrors=true;
+        tag=m_root->getAttributeNS(NULL,defaultLifetime);
+        if (tag && *tag) {
+            m_defaultLifetime = XMLString::parseInt(tag);
+            if (!m_defaultLifetime)
+                m_defaultLifetime=1800;
+        }
+
+        tag=m_root->getAttributeNS(NULL,retryInterval);
+        if (tag && *tag) {
+            m_retryInterval = XMLString::parseInt(tag);
+            if (!m_retryInterval)
+                m_retryInterval=300;
+        }
+        
+        tag=m_root->getAttributeNS(NULL,strictValidity);
+        if (tag && (*tag==chDigit_0 || *tag==chLatin_f))
+            m_strictValidity=false;
+            
+        tag=m_root->getAttributeNS(NULL,propagateErrors);
+        if (tag && (*tag==chDigit_1 || *tag==chLatin_t))
+            m_propagateErrors=true;
+
+        tag=m_root->getAttributeNS(NULL,writeThrough);
+        if (tag && (*tag==chDigit_1 || *tag==chLatin_t))
+            m_writeThrough=true;
+    }
+
+    SAMLConfig::getConfig().timeout = m_AATimeout;
+    SAMLConfig::getConfig().conn_timeout = m_AAConnectTimeout;
 
     // Register for remoted messages.
     IListener* listener=ShibTargetConfig::getConfig().getINI()->getListener();
