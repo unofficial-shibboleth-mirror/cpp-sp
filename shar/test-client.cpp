@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+#ifdef WIN32
+# define _CRT_NONSTDC_NO_DEPRECATE 1
+# define _CRT_SECURE_NO_DEPRECATE 1
+#endif
+
 #include <shib-target/shib-target.h>
 #include <iostream>
 
@@ -31,14 +36,19 @@ int main (int argc, char *argv[])
     schemadir=SHIB_SCHEMAS;
 
   ShibTargetConfig& conf=ShibTargetConfig::getConfig();
-  conf.setFeatures(ShibTargetConfig::Listener);
+  conf.setFeatures(ShibTargetConfig::Listener | ShibTargetConfig::InProcess);
   if (!conf.init(schemadir) || !conf.load(config))
       return -10;
 
   try {
-      int i=0;
-      conf.getINI()->getListener()->ping(i);
-      cerr << 0 << " -> " << i << "\n";
+      DDF in("ping");
+      DDFJanitor injan(in);
+      in.integer(0L);
+
+      DDF out=conf.getINI()->getListener()->send(in);
+      DDFJanitor outjan(out);
+
+      cerr << 0 << " -> " << out.integer() << "\n";
   }
   catch (SAMLException& e) {
       cerr << "caught SAML exception: " << e.what() << "\n";
