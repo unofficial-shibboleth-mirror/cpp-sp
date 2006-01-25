@@ -273,7 +273,7 @@ DDF RPCListener::send(const DDF& in)
         SAMLException* except=NULL;
         try { 
             istringstream es(out.string());
-            SAMLException* except=SAMLException::getInstance(es);
+            except=SAMLException::getInstance(es);
         }
         catch (SAMLException& e) {
             log->error("caught SAML Exception while building the SAMLException: %s", e.what());
