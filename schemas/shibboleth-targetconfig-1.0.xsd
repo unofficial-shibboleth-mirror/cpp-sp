@@ -85,7 +85,7 @@
 		<attribute name="retryInterval" type="unsignedInt" use="optional" default="300"/>
 		<attribute name="strictValidity" type="boolean" use="optional" default="true"/>
 		<attribute name="propagateErrors" type="boolean" use="optional" default="false"/>
-		<attribute name="writeThrough" type="boolean" use="optional" default="true"/>
+		<attribute name="writeThrough" type="boolean" use="optional" default="false"/>
 	</attributeGroup>
 	
 	<element name="MemorySessionCache">
