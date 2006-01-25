@@ -304,7 +304,7 @@ public:
     void unlock() { m_lock->unlock(); }
     
     HRESULT isValid(const IApplication* application, const char* client_addr) const;
-    void populate(const IApplication* application, const IEntityDescriptor* source) const;
+    void populate(const IApplication* application, const IEntityDescriptor* source, bool initial=false) const;
     bool checkApplication(const IApplication* application) { return (m_obj["application_id"]==application->getId()); }
     time_t created() const { return m_sessionCreated; }
     time_t lastAccess() const { return m_lastAccess; }
@@ -638,7 +638,7 @@ time_t MemorySessionCacheEntry::calculateExpiration(const SAMLResponse& r) const
     return expiration;
 }
 
-void MemorySessionCacheEntry::populate(const IApplication* application, const IEntityDescriptor* source) const
+void MemorySessionCacheEntry::populate(const IApplication* application, const IEntityDescriptor* source, bool initial) const
 {
 #ifdef _DEBUG
     saml::NDC ndc("populate");
@@ -742,7 +742,7 @@ void MemorySessionCacheEntry::populate(const IApplication* application, const IE
             }
 
             // Update backing store.
-            if (m_cache->m_sink) {
+            if (!initial && m_cache->m_sink) {
                 if (FAILED(m_cache->m_sink->onUpdate(m_obj["key"].string(),m_obj["tokens.unfiltered"].string())))
                     m_log->error("cache store returned failure while updating tokens in entry");
             }
@@ -1256,7 +1256,7 @@ string MemorySessionCache::insert(
             tokens
             )
         );
-    entry->populate(application,source);
+    entry->populate(application,source,true);
 
     if (m_sink) {
         HRESULT hr=m_sink->onCreate(key.get(),application,entry.get(),1,tokens->getMinorVersion(),entry->created());
@@ -1542,11 +1542,13 @@ void MemorySessionCache::cleanup()
         }
         m_lock->unlock();
     
-        m_log->info("purging %d old sessions", stale_keys.size());
+        if (!stale_keys.empty()) {
+            m_log->info("purging %d old sessions", stale_keys.size());
     
-        // Pass 2: walk through the list of stale entries and remove them from the cache
-        for (vector<string>::const_iterator j = stale_keys.begin(); j != stale_keys.end(); j++)
-            dormant(j->c_str());
+            // Pass 2: walk through the list of stale entries and remove them from the cache
+            for (vector<string>::const_iterator j = stale_keys.begin(); j != stale_keys.end(); j++)
+                dormant(j->c_str());
+        }
     }
 
     m_log->info("cleanup thread finished.");
