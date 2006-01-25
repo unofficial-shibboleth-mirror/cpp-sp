@@ -209,7 +209,7 @@ void ODBCBase::log_error(SQLHANDLE handle, SQLSMALLINT htype)
         ret = SQLGetDiagRec(htype, handle, ++i, state, &native, text, sizeof(text), &len);
         if (SQL_SUCCEEDED(ret))
             log->error("ODBC Error: %s:%ld:%ld:%s", state, i, native, text);
-    } while(ret==SQL_SUCCESS);
+    } while(SQL_SUCCEEDED(ret));
 }
 
 SQLHDBC ODBCBase::getHDBC()
@@ -252,8 +252,8 @@ pair<int,int> ODBCBase::getVersion(SQLHDBC conn)
 
     SQLINTEGER major;
     SQLINTEGER minor;
-    SQLBindCol(hstmt,1,SQL_INTEGER,&major,0,NULL);
-    SQLBindCol(hstmt,2,SQL_INTEGER,&minor,0,NULL);
+    SQLBindCol(hstmt,1,SQL_C_SLONG,&major,0,NULL);
+    SQLBindCol(hstmt,2,SQL_C_SLONG,&minor,0,NULL);
 
     if ((sr=SQLFetch(hstmt)) != SQL_NO_DATA) {
         SQLCloseCursor(hstmt);
@@ -336,7 +336,7 @@ ODBCCCache::ODBCCCache(const DOMElement* e) : ODBCBase(e), m_storeAttributes(fal
 #endif
 
     m_cache = dynamic_cast<ISessionCache*>(
-        SAMLConfig::getConfig().getPlugMgr().newPlugin(shibtarget::XML::MemorySessionCacheType, e)
+        SAMLConfig::getConfig().getPlugMgr().newPlugin(shibtarget::XML::MemorySessionCacheType, m_root)
     );
     if (!m_cache->setBackingStore(this)) {
         delete m_cache;
@@ -395,14 +395,9 @@ HRESULT ODBCCCache::onCreate(
 
     // Prepare insert statement.
     ostringstream q;
-    q << "INSERT INTO state VALUES('" << key << "','" << application->getId() << "'," << timebuf << "," << timebuf
+    q << "INSERT state VALUES ('" << key << "','" << application->getId() << "'," << timebuf << "," << timebuf
         << ",'" << entry->getClientAddress() << "'," << majorVersion << "," << minorVersion << ",'" << entry->getProviderId()
         << "',?,?,?)";
-
-    if (m_storeAttributes && tokens.first)
-        q << "'" << tokens.first << "')";
-    else
-        q << "null)";
 
     if (log->isDebugEnabled())
         log->debug("SQL insert: %s", q.str().c_str());
@@ -412,29 +407,24 @@ HRESULT ODBCCCache::onCreate(
     ODBCConn conn(getHDBC());
     SQLAllocHandle(SQL_HANDLE_STMT,conn,&hstmt);
 
-    // Prepare it.
-    SQLRETURN sr=SQLPrepare(hstmt, (SQLCHAR*)q.str().c_str(), SQL_NTS);
-    if (!SQL_SUCCEEDED(sr)) {
-        log->error("failed to prepare insert statement");
-        log_error(hstmt, SQL_HANDLE_STMT);
-        SQLFreeHandle(SQL_HANDLE_STMT,hstmt);
-        return E_FAIL;
-    }
-
     // Bind text parameters to statement.
-    SQLINTEGER cbSubject,cbContext,cbTokens;
-    SQLBindParameter(hstmt,1,SQL_PARAM_INPUT,SQL_C_CHAR,SQL_LONGVARCHAR,0,0,(SQLPOINTER)subject.first,0,&cbSubject);
-    SQLBindParameter(hstmt,2,SQL_PARAM_INPUT,SQL_C_CHAR,SQL_LONGVARCHAR,0,0,(SQLPOINTER)context,0,&cbContext);
-    SQLBindParameter(hstmt,3,SQL_PARAM_INPUT,SQL_C_CHAR,SQL_LONGVARCHAR,0,0,(SQLPOINTER)tokens.first,0,&cbTokens);
-    cbSubject=SQL_LEN_DATA_AT_EXEC(strlen(subject.first));
-    cbContext=SQL_LEN_DATA_AT_EXEC(strlen(context));
+    SQLINTEGER cbSubject=SQL_LEN_DATA_AT_EXEC(0),cbContext=SQL_LEN_DATA_AT_EXEC(0),cbTokens;
     if (!m_storeAttributes || !tokens.first)
         cbTokens=SQL_NULL_DATA;
     else
-        cbTokens=SQL_LEN_DATA_AT_EXEC(strlen(tokens.first));
+        cbTokens=SQL_LEN_DATA_AT_EXEC(0);
+    SQLRETURN sr=SQLBindParameter(hstmt,1,SQL_PARAM_INPUT,SQL_C_CHAR,SQL_LONGVARCHAR,LONGDATA_BUFLEN,0,(SQLPOINTER)subject.first,0,&cbSubject);
+    if (!SQL_SUCCEEDED(sr))
+        log_error(hstmt, SQL_HANDLE_STMT);
+    sr=SQLBindParameter(hstmt,2,SQL_PARAM_INPUT,SQL_C_CHAR,SQL_LONGVARCHAR,LONGDATA_BUFLEN,0,(SQLPOINTER)context,0,&cbContext);
+    if (!SQL_SUCCEEDED(sr))
+        log_error(hstmt, SQL_HANDLE_STMT);
+    sr=SQLBindParameter(hstmt,3,SQL_PARAM_INPUT,SQL_C_CHAR,SQL_LONGVARCHAR,LONGDATA_BUFLEN,0,(SQLPOINTER)tokens.first,0,&cbTokens);
+    if (!SQL_SUCCEEDED(sr))
+        log_error(hstmt, SQL_HANDLE_STMT);
 
     // Execute statement.
-    sr=SQLExecute(hstmt);
+    sr=SQLExecDirect(hstmt, (SQLCHAR*)q.str().c_str(), SQL_NTS);
     if (sr==SQL_NEED_DATA) {
         // Loop to send text data into driver.
         // pData is set each round by the driver to the pointers we bound above.
@@ -443,9 +433,10 @@ HRESULT ODBCCCache::onCreate(
         while (sr==SQL_NEED_DATA) {
             size_t len=strlen(pData);
             while (len>0) {
-                SQLPutData(hstmt, pData, min(LONGDATA_BUFLEN,len));
-                pData += min(LONGDATA_BUFLEN,len);
-                len = len - LONGDATA_BUFLEN;
+                size_t amt = min(LONGDATA_BUFLEN,len);
+                SQLPutData(hstmt, pData, amt);
+                pData += amt;
+                len = len - amt;
             }
             sr=SQLParamData(hstmt,(SQLPOINTER*)&pData);
        }
@@ -481,7 +472,7 @@ HRESULT ODBCCCache::onRead(
     saml::NDC ndc("onRead");
 #endif
 
-    log->debug("searching MySQL database...");
+    log->debug("searching database...");
 
     SQLHSTMT hstmt;
     ODBCConn conn(getHDBC());
@@ -504,13 +495,13 @@ HRESULT ODBCCCache::onRead(
     SQLCHAR provider_id[COLSIZE_PROVIDER_ID+1];
 
     // Bind simple output columns.
-    SQLBindCol(hstmt,1,SQL_VARCHAR,application_id,sizeof(application_id),NULL);
-    SQLBindCol(hstmt,2,SQL_TYPE_TIMESTAMP,&ctime,0,NULL);
-    SQLBindCol(hstmt,3,SQL_TYPE_TIMESTAMP,&atime,0,NULL);
-    SQLBindCol(hstmt,4,SQL_VARCHAR,addr,sizeof(addr),NULL);
-    SQLBindCol(hstmt,5,SQL_INTEGER,&major,0,NULL);
-    SQLBindCol(hstmt,6,SQL_INTEGER,&minor,0,NULL);
-    SQLBindCol(hstmt,7,SQL_VARCHAR,provider_id,sizeof(provider_id),NULL);
+    SQLBindCol(hstmt,1,SQL_C_CHAR,application_id,sizeof(application_id),NULL);
+    SQLBindCol(hstmt,2,SQL_C_TYPE_TIMESTAMP,&ctime,0,NULL);
+    SQLBindCol(hstmt,3,SQL_C_TYPE_TIMESTAMP,&atime,0,NULL);
+    SQLBindCol(hstmt,4,SQL_C_CHAR,addr,sizeof(addr),NULL);
+    SQLBindCol(hstmt,5,SQL_C_SLONG,&major,0,NULL);
+    SQLBindCol(hstmt,6,SQL_C_SLONG,&minor,0,NULL);
+    SQLBindCol(hstmt,7,SQL_C_CHAR,provider_id,sizeof(provider_id),NULL);
 
     if ((sr=SQLFetch(hstmt)) == SQL_NO_DATA) {
         SQLCloseCursor(hstmt);
@@ -583,7 +574,7 @@ HRESULT ODBCCCache::onRead(const char* key, time_t& accessed)
     saml::NDC ndc("onRead");
 #endif
 
-    log->debug("reading last access time from MySQL database");
+    log->debug("reading last access time from database");
 
     SQLHSTMT hstmt;
     ODBCConn conn(getHDBC());
@@ -600,7 +591,7 @@ HRESULT ODBCCCache::onRead(const char* key, time_t& accessed)
     }
 
     SQL_TIMESTAMP_STRUCT atime;
-    SQLBindCol(hstmt,1,SQL_TYPE_TIMESTAMP,&atime,0,NULL);
+    SQLBindCol(hstmt,1,SQL_C_TYPE_TIMESTAMP,&atime,0,NULL);
 
     if ((sr=SQLFetch(hstmt)) == SQL_NO_DATA) {
         log->warn("session expected, but not found in database");
@@ -638,7 +629,7 @@ HRESULT ODBCCCache::onRead(const char* key, string& tokens)
     if (!m_storeAttributes)
         return S_FALSE;
 
-    log->debug("reading cached tokens from MySQL database");
+    log->debug("reading cached tokens from database");
 
     SQLHSTMT hstmt;
     ODBCConn conn(getHDBC());
@@ -689,7 +680,6 @@ HRESULT ODBCCCache::onUpdate(const char* key, const char* tokens, time_t lastAcc
     SQLHSTMT hstmt;
     ODBCConn conn(getHDBC());
 
-    ostringstream q;
     if (lastAccess>0) {
 #ifndef HAVE_GMTIME_R
         struct tm* ptime=gmtime(&lastAccess);
@@ -699,6 +689,8 @@ HRESULT ODBCCCache::onUpdate(const char* key, const char* tokens, time_t lastAcc
 #endif
         char timebuf[32];
         strftime(timebuf,32,"{ts '%Y-%m-%d %H:%M:%S'}",ptime);
+
+        ostringstream q;
         q << "UPDATE state SET atime=" << timebuf << " WHERE cookie='" << key << "'";
 
         SQLAllocHandle(SQL_HANDLE_STMT,conn,&hstmt);
@@ -707,29 +699,16 @@ HRESULT ODBCCCache::onUpdate(const char* key, const char* tokens, time_t lastAcc
     else if (tokens) {
         if (!m_storeAttributes)
             return S_FALSE;
-        q << "UPDATE state SET tokens=? WHERE cookie='" << key << "'";
+        string q = string("UPDATE state SET tokens=? WHERE cookie='") + key + "'";
 
         SQLAllocHandle(SQL_HANDLE_STMT,conn,&hstmt);
 
-        // Prepare it.
-        sr=SQLPrepare(hstmt, (SQLCHAR*)q.str().c_str(), SQL_NTS);
-        if (!SQL_SUCCEEDED(sr)) {
-            log->error("failed to prepare insert statement");
-            log_error(hstmt, SQL_HANDLE_STMT);
-            SQLFreeHandle(SQL_HANDLE_STMT,hstmt);
-            return E_FAIL;
-        }
-
         // Bind text parameters to statement.
-        SQLINTEGER cbTokens;
-        SQLBindParameter(hstmt,1,SQL_PARAM_INPUT,SQL_C_CHAR,SQL_LONGVARCHAR,0,0,(SQLPOINTER)tokens,0,&cbTokens);
-        if (tokens)
-            cbTokens=SQL_LEN_DATA_AT_EXEC(strlen(tokens));
-        else
-            cbTokens=SQL_NULL_DATA;
+        SQLINTEGER cbTokens = tokens ? SQL_LEN_DATA_AT_EXEC(0) : SQL_NULL_DATA;
+        sr=SQLBindParameter(hstmt,1,SQL_PARAM_INPUT,SQL_C_CHAR,SQL_LONGVARCHAR,LONGDATA_BUFLEN,0,(SQLPOINTER)tokens,0,&cbTokens);
 
         // Execute statement.
-        sr=SQLExecute(hstmt);
+        sr=SQLExecDirect(hstmt, (SQLCHAR*)q.c_str(), SQL_NTS);
         if (sr==SQL_NEED_DATA) {
             // Loop to send text data into driver.
             // pData is set each round by the driver to the pointers we bound above.
@@ -738,9 +717,10 @@ HRESULT ODBCCCache::onUpdate(const char* key, const char* tokens, time_t lastAcc
             while (sr==SQL_NEED_DATA) {
                 size_t len=strlen(pData);
                 while (len>0) {
-                    SQLPutData(hstmt, pData, min(LONGDATA_BUFLEN,len));
-                    pData += min(LONGDATA_BUFLEN,len);
-                    len = len - LONGDATA_BUFLEN;
+                    size_t amt=min(LONGDATA_BUFLEN,len);
+                    SQLPutData(hstmt, pData, amt);
+                    pData += amt;
+                    len = len - amt;
                 }
                 sr=SQLParamData(hstmt,(SQLPOINTER*)&pData);
            }
@@ -751,12 +731,16 @@ HRESULT ODBCCCache::onUpdate(const char* key, const char* tokens, time_t lastAcc
         return S_FALSE;
     }
  
-    HRESULT hr=NOERROR;
-    if (!SQL_SUCCEEDED(sr)) {
+    HRESULT hr;
+    if (sr==SQL_NO_DATA)
+        hr=S_FALSE;
+    else if (!SQL_SUCCEEDED(sr)) {
         log->error("error updating record (key=%s)", key);
         log_error(hstmt, SQL_HANDLE_STMT);
         hr=E_FAIL;
     }
+    else
+        hr=NOERROR;
 
     SQLCloseCursor(hstmt);
     SQLFreeHandle(SQL_HANDLE_STMT,hstmt);
@@ -775,12 +759,16 @@ HRESULT ODBCCCache::onDelete(const char* key)
     string q = string("DELETE FROM state WHERE cookie='") + key + "'";
     SQLRETURN sr=SQLExecDirect(hstmt, (SQLCHAR*)q.c_str(), SQL_NTS);
  
-    HRESULT hr=NOERROR;
-    if (!SQL_SUCCEEDED(sr)) {
+    HRESULT hr;
+    if (sr==SQL_NO_DATA)
+        hr=S_FALSE;
+    else if (!SQL_SUCCEEDED(sr)) {
         log->error("error deleting record (key=%s)", key);
         log_error(hstmt, SQL_HANDLE_STMT);
         hr=E_FAIL;
     }
+    else
+        hr=NOERROR;
 
     SQLCloseCursor(hstmt);
     SQLFreeHandle(SQL_HANDLE_STMT,hstmt);
@@ -843,16 +831,21 @@ void ODBCCCache::cleanup()
         char timebuf[32];
         strftime(timebuf,32,"{ts '%Y-%m-%d %H:%M:%S'}",ptime);
 
-        string q = string("DELETE FROM state WHERE atime < ") +  timebuf;
+        string q = string("DELETE state WHERE atime < ") +  timebuf;
 
         SQLHSTMT hstmt;
         ODBCConn conn(getHDBC());
         SQLAllocHandle(SQL_HANDLE_STMT,conn,&hstmt);
         SQLRETURN sr=SQLExecDirect(hstmt, (SQLCHAR*)q.c_str(), SQL_NTS);
-        if (!SQL_SUCCEEDED(sr)) {
+        if (sr!=SQL_NO_DATA && !SQL_SUCCEEDED(sr)) {
             log->error("error purging old records");
             log_error(hstmt, SQL_HANDLE_STMT);
         }
+
+        SQLINTEGER rowcount=0;
+        sr=SQLRowCount(hstmt,&rowcount);
+        if (SQL_SUCCEEDED(sr) && rowcount > 0)
+            log->info("purging %d old sessions",rowcount);
 
         SQLCloseCursor(hstmt);
         SQLFreeHandle(SQL_HANDLE_STMT,hstmt);
@@ -968,7 +961,7 @@ IPlugIn* new_mysql_replay(const DOMElement* e)
  * The registration functions here...
  */
 
-IPlugIn* new_mysql_ccache(const DOMElement* e)
+IPlugIn* new_odbc_ccache(const DOMElement* e)
 {
     return new ODBCCCache(e);
 }
@@ -977,13 +970,13 @@ IPlugIn* new_mysql_ccache(const DOMElement* e)
 extern "C" int SHIBODBC_EXPORTS saml_extension_init(void*)
 {
     // register this ccache type
-//    SAMLConfig::getConfig().getPlugMgr().regFactory(shibtarget::XML::MySQLReplayCacheType, &new_mysql_replay);
-    SAMLConfig::getConfig().getPlugMgr().regFactory(shibtarget::XML::MySQLSessionCacheType, &new_mysql_ccache);
+//    SAMLConfig::getConfig().getPlugMgr().regFactory(shibtarget::XML::ODBCReplayCacheType, &new_odbc_replay);
+    SAMLConfig::getConfig().getPlugMgr().regFactory(shibtarget::XML::ODBCSessionCacheType, &new_odbc_ccache);
     return 0;
 }
 
 extern "C" void SHIBODBC_EXPORTS saml_extension_term()
 {
-    SAMLConfig::getConfig().getPlugMgr().unregFactory(shibtarget::XML::MySQLSessionCacheType);
-//    SAMLConfig::getConfig().getPlugMgr().unregFactory(shibtarget::XML::MySQLReplayCacheType);
+    SAMLConfig::getConfig().getPlugMgr().unregFactory(shibtarget::XML::ODBCSessionCacheType);
+//    SAMLConfig::getConfig().getPlugMgr().unregFactory(shibtarget::XML::ODBCReplayCacheType);
 }
