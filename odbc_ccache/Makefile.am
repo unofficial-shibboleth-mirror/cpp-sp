@@ -6,7 +6,7 @@ plugin_LTLIBRARIES = odbc_ccache.la
 AM_CFLAGS = $(ODBC_CFLAGS)
 AM_CXXFLAGS = $(AM_CFLAGS)
 
-shib_mysql_ccache_la_LIBADD = \
+odbc_ccache_la_LIBADD = \
 	../shib-target/libshib-target.la \
 	../shib/libshib.la \
 	$(ODBC_LIBS)
