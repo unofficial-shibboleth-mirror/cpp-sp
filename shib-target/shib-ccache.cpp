@@ -1212,7 +1212,7 @@ DDF MemorySessionCache::receive(const DDF& in)
         istringstream subis(subject);
         auto_ptr<SAMLSubject> pSubject(new SAMLSubject(subis));
         istringstream tokis(tokens);
-        auto_ptr<SAMLResponse> pTokens=new SAMLResponse(tokis,minor);
+        auto_ptr<SAMLResponse> pTokens(new SAMLResponse(tokis,minor));
         
         // Insert the data and return the cache key.
         string key=insert(app,site,client_address,pSubject.get(),authn_context,pTokens.get());
