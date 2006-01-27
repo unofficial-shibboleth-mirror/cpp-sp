@@ -32,6 +32,8 @@
 #include <saml/saml.h>
 #include <shib-target/ddf.h>
 
+#include <stdexcept>
+
 using namespace saml;
 using namespace shibtarget;
 using namespace std;
