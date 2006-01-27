@@ -1195,19 +1195,20 @@ void XMLConfigImpl::init(bool first)
                 }
                 
                 // Replay cache.
-                exts=saml::XML::getFirstChildElement(SHAR,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(ODBCReplayCache));
+                container=conf.isEnabled(ShibTargetConfig::OutOfProcess) ? SHAR : SHIRE;
+                exts=saml::XML::getFirstChildElement(container,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(ODBCReplayCache));
                 if (exts) {
                     log.info("building Replay Cache of type %s...",shibtarget::XML::ODBCReplayCacheType);
                     m_outer->m_replayCache=IReplayCache::getInstance(shibtarget::XML::ODBCReplayCacheType,exts);
                 }
                 else {
-                    exts=saml::XML::getFirstChildElement(SHAR,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(MySQLReplayCache));
+                    exts=saml::XML::getFirstChildElement(container,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(MySQLReplayCache));
                     if (exts) {
                         log.info("building Replay Cache of type %s...",shibtarget::XML::MySQLReplayCacheType);
                         m_outer->m_replayCache=IReplayCache::getInstance(shibtarget::XML::MySQLReplayCacheType,exts);
                     }
                     else {
-                        exts=saml::XML::getFirstChildElement(SHAR,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(ReplayCache));
+                        exts=saml::XML::getFirstChildElement(container,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(ReplayCache));
                         if (exts) {
                             auto_ptr_char type(exts->getAttributeNS(NULL,SHIBT_L(type)));
                             log.info("building Replay Cache of type %s...",type.get());
