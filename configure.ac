@@ -794,26 +794,10 @@ if test "$build_odbc" = "yes" ; then
    fi
 fi
 
-# if we found odbc_config then build_odbc is 'yes'
-if test "$ODBC_CONFIG" != no ; then
-   AC_MSG_CHECKING(for ODBC libraries)
-   ODBC_LIBS=`$ODBC_CONFIG --libs`
-   if test $? != 0 ; then
-      found_odbc=no
-      if test "$odbc_enabled" = "yes" ; then
-        AC_MSG_ERROR(Could not find the ODBC libraries.)
-      else
-        AC_MSG_RESULT(no.. skipping ODBC)
-      fi
-   else
-      found_odbc=yes
-      AC_MSG_RESULT(yes)
-   fi
-fi
-
-if test "$found_odbc" = yes ; then
+if test "$build_odbc" = yes ; then
    ODBC_CFLAGS=`$ODBC_CONFIG --cflags`
    ODBC_CFLAGS=`eval echo $ODBC_CFLAGS`
+   ODBC_LIBS=`$ODBC_CONFIG --libs`
    ODBC_LIBS=`eval echo $ODBC_LIBS`
 
    save_CPPFLAGS="$CPPFLAGS"
@@ -830,6 +814,7 @@ if test "$found_odbc" = yes ; then
       AC_MSG_CHECKING(if we can link againt ODBC)
       AC_TRY_LINK(
         [#include <sql.h>
+         #include <sqlext.h>
          #include <stdio.h>],
         [SQLSetEnvAttr(SQL_NULL_HANDLE, SQL_ATTR_CONNECTION_POOLING, (void*)SQL_CP_ONE_PER_HENV, 0)],
         [have_odbc_libs=yes],
