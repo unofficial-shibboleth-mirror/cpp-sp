@@ -125,55 +125,51 @@ protected:
 
     static SQLHENV m_henv;          // single handle for both plugins
     bool m_bInitializedODBC;        // tracks which class handled the process
+    static const char* p_connstring;
 
     pair<int,int> getVersion(SQLHDBC);
     void log_error(SQLHANDLE handle, SQLSMALLINT htype);
 };
 
 SQLHENV ODBCBase::m_henv = SQL_NULL_HANDLE;
-
-/*
-extern "C" void shib_mysql_destroy_handle(void* data)
-{
-  MYSQL* mysql = (MYSQL*) data;
-  if (mysql) mysql_close(mysql);
-}
-*/
+const char* ODBCBase::p_connstring = NULL;
 
 ODBCBase::ODBCBase(const DOMElement* e) : m_root(e), m_bInitializedODBC(false)
 {
 #ifdef _DEBUG
     saml::NDC ndc("ODBCBase");
 #endif
-    log = &(Category::getInstance("shibtarget.SessionCache.ODBC"));
-    //m_mysql = ThreadKey::create(&shib_mysql_destroy_handle);
+    log = &(Category::getInstance("shibtarget.ODBC"));
 
-    if (m_henv != SQL_NULL_HANDLE) {
-        log->info("ODBC already initialized");
-        return;
+    if (m_henv == SQL_NULL_HANDLE) {
+        // Enable connection pooling.
+        SQLSetEnvAttr(SQL_NULL_HANDLE, SQL_ATTR_CONNECTION_POOLING, (void*)SQL_CP_ONE_PER_HENV, 0);
+
+        // Allocate the environment.
+        if (!SQL_SUCCEEDED(SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &m_henv)))
+            throw ConfigurationException("ODBC failed to initialize.");
+
+        // Specify ODBC 3.x
+        SQLSetEnvAttr(m_henv, SQL_ATTR_ODBC_VERSION, (void*)SQL_OV_ODBC3, 0);
+
+        log->info("ODBC initialized");
+        m_bInitializedODBC = true;
     }
-
-    // Enable connection pooling.
-    SQLSetEnvAttr(SQL_NULL_HANDLE, SQL_ATTR_CONNECTION_POOLING, (void*)SQL_CP_ONE_PER_HENV, 0);
-
-    // Allocate the environment.
-    if (!SQL_SUCCEEDED(SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &m_henv)))
-        throw ConfigurationException("ODBC failed to initialize.");
-
-    // Specify ODBC 3.x
-    SQLSetEnvAttr(m_henv, SQL_ATTR_ODBC_VERSION, (void*)SQL_OV_ODBC3, 0);
-
-    log->info("ODBC initialized");
-    m_bInitializedODBC = true;
 
     // Grab connection string from the configuration.
     e=saml::XML::getFirstChildElement(e,shibtarget::XML::SHIBTARGET_NS,ConnectionString);
     if (!e || !e->hasChildNodes()) {
-        this->~ODBCBase();
-        throw ConfigurationException("ODBC cache requires ConnectionString element in configuration.");
+        if (!p_connstring) {
+            this->~ODBCBase();
+            throw ConfigurationException("ODBC cache requires ConnectionString element in configuration.");
+        }
+        m_connstring=p_connstring;
     }
-    auto_ptr_char arg(e->getFirstChild()->getNodeValue());
-    m_connstring=arg.get();
+    else {
+        auto_ptr_char arg(e->getFirstChild()->getNodeValue());
+        m_connstring=arg.get();
+        p_connstring=m_connstring.c_str();
+    }
 
     // Connect and check version.
     SQLHDBC conn=getHDBC();
@@ -193,7 +189,9 @@ ODBCBase::~ODBCBase()
     //delete m_mysql;
     if (m_bInitializedODBC)
         SQLFreeHandle(SQL_HANDLE_ENV,m_henv);
+    m_bInitializedODBC=false;
     m_henv = SQL_NULL_HANDLE;
+    p_connstring=NULL;
 }
 
 void ODBCBase::log_error(SQLHANDLE handle, SQLSMALLINT htype)
@@ -256,12 +254,10 @@ pair<int,int> ODBCBase::getVersion(SQLHDBC conn)
     SQLBindCol(hstmt,2,SQL_C_SLONG,&minor,0,NULL);
 
     if ((sr=SQLFetch(hstmt)) != SQL_NO_DATA) {
-        SQLCloseCursor(hstmt);
         SQLFreeHandle(SQL_HANDLE_STMT,hstmt);
         return pair<int,int>(major,minor);
     }
 
-    SQLCloseCursor(hstmt);
     SQLFreeHandle(SQL_HANDLE_STMT,hstmt);
     log->error("no rows returned in version query");
     throw SAMLException("ODBCBase::getVersion failed to read version from database");
@@ -334,6 +330,7 @@ ODBCCCache::ODBCCCache(const DOMElement* e) : ODBCBase(e), m_storeAttributes(fal
 #ifdef _DEBUG
     saml::NDC ndc("ODBCCCache");
 #endif
+    log = &(Category::getInstance("shibtarget.SessionCache.ODBC"));
 
     m_cache = dynamic_cast<ISessionCache*>(
         SAMLConfig::getConfig().getPlugMgr().newPlugin(shibtarget::XML::MemorySessionCacheType, m_root)
@@ -449,7 +446,6 @@ HRESULT ODBCCCache::onCreate(
         hr=E_FAIL;
     }
 
-    SQLCloseCursor(hstmt);
     SQLFreeHandle(SQL_HANDLE_STMT,hstmt);
     return hr;
 }
@@ -483,7 +479,6 @@ HRESULT ODBCCCache::onRead(
     if (!SQL_SUCCEEDED(sr)) {
         log->error("error searching for (%s)",key);
         log_error(hstmt, SQL_HANDLE_STMT);
-        SQLCloseCursor(hstmt);
         SQLFreeHandle(SQL_HANDLE_STMT,hstmt);
         return E_FAIL;
     }
@@ -504,7 +499,6 @@ HRESULT ODBCCCache::onRead(
     SQLBindCol(hstmt,7,SQL_C_CHAR,provider_id,sizeof(provider_id),NULL);
 
     if ((sr=SQLFetch(hstmt)) == SQL_NO_DATA) {
-        SQLCloseCursor(hstmt);
         SQLFreeHandle(SQL_HANDLE_STMT,hstmt);
         return S_FALSE;
     }
@@ -563,7 +557,6 @@ HRESULT ODBCCCache::onRead(
         }
     }
 
-    SQLCloseCursor(hstmt);
     SQLFreeHandle(SQL_HANDLE_STMT,hstmt);
     return hr;
 }
@@ -585,7 +578,6 @@ HRESULT ODBCCCache::onRead(const char* key, time_t& accessed)
     if (!SQL_SUCCEEDED(sr)) {
         log->error("error searching for (%s)",key);
         log_error(hstmt, SQL_HANDLE_STMT);
-        SQLCloseCursor(hstmt);
         SQLFreeHandle(SQL_HANDLE_STMT,hstmt);
         return E_FAIL;
     }
@@ -595,12 +587,10 @@ HRESULT ODBCCCache::onRead(const char* key, time_t& accessed)
 
     if ((sr=SQLFetch(hstmt)) == SQL_NO_DATA) {
         log->warn("session expected, but not found in database");
-        SQLCloseCursor(hstmt);
         SQLFreeHandle(SQL_HANDLE_STMT,hstmt);
         return S_FALSE;
     }
 
-    SQLCloseCursor(hstmt);
     SQLFreeHandle(SQL_HANDLE_STMT,hstmt);
 
     struct tm t;
@@ -640,14 +630,12 @@ HRESULT ODBCCCache::onRead(const char* key, string& tokens)
     if (!SQL_SUCCEEDED(sr)) {
         log->error("error searching for (%s)",key);
         log_error(hstmt, SQL_HANDLE_STMT);
-        SQLCloseCursor(hstmt);
         SQLFreeHandle(SQL_HANDLE_STMT,hstmt);
         return E_FAIL;
     }
 
     if ((sr=SQLFetch(hstmt)) == SQL_NO_DATA) {
         log->warn("session expected, but not found in database");
-        SQLCloseCursor(hstmt);
         SQLFreeHandle(SQL_HANDLE_STMT,hstmt);
         return S_FALSE;
     }
@@ -665,7 +653,6 @@ HRESULT ODBCCCache::onRead(const char* key, string& tokens)
         tokens += (char*)buf;
     }
 
-    SQLCloseCursor(hstmt);
     SQLFreeHandle(SQL_HANDLE_STMT,hstmt);
     return hr;
 }
@@ -742,7 +729,6 @@ HRESULT ODBCCCache::onUpdate(const char* key, const char* tokens, time_t lastAcc
     else
         hr=NOERROR;
 
-    SQLCloseCursor(hstmt);
     SQLFreeHandle(SQL_HANDLE_STMT,hstmt);
     return hr;
 }
@@ -770,7 +756,6 @@ HRESULT ODBCCCache::onDelete(const char* key)
     else
         hr=NOERROR;
 
-    SQLCloseCursor(hstmt);
     SQLFreeHandle(SQL_HANDLE_STMT,hstmt);
     return hr;
 }
@@ -847,7 +832,6 @@ void ODBCCCache::cleanup()
         if (SQL_SUCCEEDED(sr) && rowcount > 0)
             log->info("purging %d old sessions",rowcount);
 
-        SQLCloseCursor(hstmt);
         SQLFreeHandle(SQL_HANDLE_STMT,hstmt);
      }
 
@@ -870,107 +854,109 @@ void* ODBCCCache::cleanup_fcn(void* cache_p)
   return NULL;
 }
 
-/*
-class MySQLReplayCache : public MySQLBase, virtual public IReplayCache
+
+class ODBCReplayCache : public ODBCBase, virtual public IReplayCache
 {
 public:
-  MySQLReplayCache(const DOMElement* e);
-  virtual ~MySQLReplayCache() {}
+  ODBCReplayCache(const DOMElement* e);
+  virtual ~ODBCReplayCache() {}
 
   bool check(const XMLCh* str, time_t expires) {auto_ptr_XMLCh temp(str); return check(temp.get(),expires);}
   bool check(const char* str, time_t expires);
 };
 
-MySQLReplayCache::MySQLReplayCache(const DOMElement* e) : MySQLBase(e)
+ODBCReplayCache::ODBCReplayCache(const DOMElement* e) : ODBCBase(e)
 {
 #ifdef _DEBUG
-  saml::NDC ndc("MySQLReplayCache");
+    saml::NDC ndc("ODBCReplayCache");
 #endif
-
-  log = &(Category::getInstance("shibmysql.ReplayCache"));
+    log = &(Category::getInstance("shibtarget.ReplayCache.ODBC"));
 }
 
-bool MySQLReplayCache::check(const char* str, time_t expires)
+bool ODBCReplayCache::check(const char* str, time_t expires)
 {
 #ifdef _DEBUG
     saml::NDC ndc("check");
 #endif
   
-    // Remove expired entries
-    string q = string("DELETE FROM replay WHERE expires < NOW()");
-    MYSQL* mysql = getMYSQL();
-    if (mysql_query(mysql, q.c_str())) {
-        const char* err=mysql_error(mysql);
-        log->error("Error deleting expired entries: %s", err);
-        if (isCorrupt(err) && repairTable(mysql,"replay")) {
-            // Try again...
-            if (mysql_query(mysql, q.c_str()))
-                log->error("Error deleting expired entries: %s", mysql_error(mysql));
-        }
+    time_t now=time(NULL);
+#ifndef HAVE_GMTIME_R
+    struct tm* ptime=gmtime(&now);
+#else
+    struct tm res;
+    struct tm* ptime=gmtime_r(&now,&res);
+#endif
+    char timebuf[32];
+    strftime(timebuf,32,"{ts '%Y-%m-%d %H:%M:%S'}",ptime);
+
+    // Remove expired entries.
+    SQLHSTMT hstmt;
+    ODBCConn conn(getHDBC());
+    SQLAllocHandle(SQL_HANDLE_STMT,conn,&hstmt);
+    string q = string("DELETE FROM replay WHERE expires < ") + timebuf;
+    SQLRETURN sr=SQLExecDirect(hstmt, (SQLCHAR*)q.c_str(), SQL_NTS);
+    if (sr!=SQL_NO_DATA && !SQL_SUCCEEDED(sr)) {
+        log->error("error purging old replay cache entries");
+        log_error(hstmt, SQL_HANDLE_STMT);
     }
+    SQLCloseCursor(hstmt);
   
-    string q2 = string("SELECT id FROM replay WHERE id='") + str + "'";
-    if (mysql_query(mysql, q2.c_str())) {
-        const char* err=mysql_error(mysql);
-        log->error("Error searching for %s: %s", str, err);
-        if (isCorrupt(err) && repairTable(mysql,"replay")) {
-            if (mysql_query(mysql, q2.c_str())) {
-                log->error("Error retrying search for %s: %s", str, mysql_error(mysql));
-                throw SAMLException("Replay cache failed, please inform application support staff.");
-            }
-        }
-        else
-            throw SAMLException("Replay cache failed, please inform application support staff.");
+    // Look for a replay.
+    q = string("SELECT id FROM replay WHERE id='") + str + "'";
+    sr=SQLExecDirect(hstmt, (SQLCHAR*)q.c_str(), SQL_NTS);
+    if (!SQL_SUCCEEDED(sr)) {
+        log->error("error searching replay cache");
+        log_error(hstmt, SQL_HANDLE_STMT);
+        SQLFreeHandle(SQL_HANDLE_STMT,hstmt);
+        throw SAMLException("Replay cache failed, please inform application support staff.");
     }
 
-    // Did we find it?
-    MYSQL_RES* rows = mysql_store_result(mysql);
-    if (rows && mysql_num_rows(rows)>0) {
-      mysql_free_result(rows);
-      return false;
+    // If we got a record, we return false.
+    if ((sr=SQLFetch(hstmt)) != SQL_NO_DATA) {
+        SQLFreeHandle(SQL_HANDLE_STMT,hstmt);
+        return false;
     }
-
-    ostringstream q3;
-    q3 << "INSERT INTO replay VALUES('" << str << "'," << "FROM_UNIXTIME(" << expires << "))";
-
-    // then add it to the database
-    if (mysql_query(mysql, q3.str().c_str())) {
-        const char* err=mysql_error(mysql);
-        log->error("Error inserting %s: %s", str, err);
-        if (isCorrupt(err) && repairTable(mysql,"state")) {
-            // Try again...
-            if (mysql_query(mysql, q3.str().c_str())) {
-                log->error("Error inserting %s: %s", str, mysql_error(mysql));
-                throw SAMLException("Replay cache failed, please inform application support staff.");
-            }
-        }
-        else
-            throw SAMLException("Replay cache failed, please inform application support staff.");
-    }
+    SQLCloseCursor(hstmt);
     
+#ifndef HAVE_GMTIME_R
+    ptime=gmtime(&expires);
+#else
+    ptime=gmtime_r(&expires,&res);
+#endif
+    strftime(timebuf,32,"{ts '%Y-%m-%d %H:%M:%S'}",ptime);
+
+    // Add it to the database.
+    q = string("INSERT replay VALUES('") + str + "'," + timebuf + ")";
+    sr=SQLExecDirect(hstmt, (SQLCHAR*)q.c_str(), SQL_NTS);
+    if (!SQL_SUCCEEDED(sr)) {
+        log->error("error inserting replay cache entry", str);
+        log_error(hstmt, SQL_HANDLE_STMT);
+        SQLFreeHandle(SQL_HANDLE_STMT,hstmt);
+        throw SAMLException("Replay cache failed, please inform application support staff.");
+    }
+
+    SQLFreeHandle(SQL_HANDLE_STMT,hstmt);
     return true;
 }
 
-IPlugIn* new_mysql_replay(const DOMElement* e)
-{
-    return new MySQLReplayCache(e);
-}
-*/
 
-/*************************************************************************
- * The registration functions here...
- */
+// Factories
 
 IPlugIn* new_odbc_ccache(const DOMElement* e)
 {
     return new ODBCCCache(e);
 }
 
+IPlugIn* new_odbc_replay(const DOMElement* e)
+{
+    return new ODBCReplayCache(e);
+}
+
 
 extern "C" int SHIBODBC_EXPORTS saml_extension_init(void*)
 {
     // register this ccache type
-//    SAMLConfig::getConfig().getPlugMgr().regFactory(shibtarget::XML::ODBCReplayCacheType, &new_odbc_replay);
+    SAMLConfig::getConfig().getPlugMgr().regFactory(shibtarget::XML::ODBCReplayCacheType, &new_odbc_replay);
     SAMLConfig::getConfig().getPlugMgr().regFactory(shibtarget::XML::ODBCSessionCacheType, &new_odbc_ccache);
     return 0;
 }
@@ -978,5 +964,5 @@ extern "C" int SHIBODBC_EXPORTS saml_extension_init(void*)
 extern "C" void SHIBODBC_EXPORTS saml_extension_term()
 {
     SAMLConfig::getConfig().getPlugMgr().unregFactory(shibtarget::XML::ODBCSessionCacheType);
-//    SAMLConfig::getConfig().getPlugMgr().unregFactory(shibtarget::XML::ODBCReplayCacheType);
+    SAMLConfig::getConfig().getPlugMgr().unregFactory(shibtarget::XML::ODBCReplayCacheType);
 }
