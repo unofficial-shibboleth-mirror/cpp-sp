@@ -24,4 +24,4 @@ shibd_LDADD = \
   $(top_builddir)/shib/libshib.la \
   $(ONCRPC_LIBS)
 
-EXTRA_DIST = shar.dsp shar_win32.cpp testclient.dsp resource.h shar.rc
+EXTRA_DIST = shar.vcproj shar_win32.cpp testclient.vcproj resource.h shar.rc

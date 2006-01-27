@@ -12,4 +12,4 @@ siterefresh_LDADD = \
   $(top_builddir)/shib-target/libshib-target.la \
   $(top_builddir)/shib/libshib.la
 
-EXTRA_DIST = siterefresh.dsp
+EXTRA_DIST = siterefresh.vcproj

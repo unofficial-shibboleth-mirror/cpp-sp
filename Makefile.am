@@ -4,8 +4,8 @@ ACLOCAL_AMFLAGS = -I .
 
 EXTRA_DIST = \
 	schemas doc isapi_shib isapi_shib_gui \
-	Shibboleth.dsw libtool.m4 acx_pthread.m4 acx_rpctest.m4 depcomp \
-	config_win32.h posttest/posttest.dsp shibtest/shibtest.dsp \
+	Shibboleth.sln libtool.m4 acx_pthread.m4 acx_rpctest.m4 depcomp \
+	config_win32.h posttest/posttest.vcproj shibtest/shibtest.vcproj \
 	shibboleth.spec.in shibboleth.spec pkginfo.in pkginfo checkinstall
 
 dist-hook:
@@ -22,7 +22,8 @@ WANT_SUBDIRS = @WANT_SUBDIRS@
 SUBDIRS = $(WANT_SUBDIRS)
 
 DIST_SUBDIRS = doc oncrpc shib schemas configs shib-target shar test \
-	apache siterefresh shib-mysql-ccache xmlproviders nsapi_shib selinux
+	apache siterefresh odbc_ccache shib-mysql-ccache xmlproviders \
+	nsapi_shib selinux
 
 all-local: shibboleth.spec pkginfo
 

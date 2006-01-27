@@ -15,5 +15,5 @@ install-exec-hook:
 
 endif
 
-EXTRA_DIST = nsapi_shib.dsp resource.h nsapi_shib.rc nsapi_shib.cpp
+EXTRA_DIST = nsapi_shib.vcproj resource.h nsapi_shib.rc nsapi_shib.cpp
 

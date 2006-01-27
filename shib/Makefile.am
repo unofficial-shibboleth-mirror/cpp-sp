@@ -27,5 +27,5 @@ libshib_la_LDFLAGS = -version-info 6:0:0
 install-exec-hook:
 	for la in $(lib_LTLIBRARIES) ; do rm -f $(DESTDIR)$(libdir)/$$la ; done
 
-EXTRA_DIST = shib.dsp shib-threads-win32.cpp resource.h shib.rc
+EXTRA_DIST = shib.vcproj shib-threads-win32.cpp resource.h shib.rc
 
