@@ -97,7 +97,7 @@
 	<element name="ODBCSessionCache">
 		<complexType>
 			<sequence>
-				<element name="ConnectionString" type="string"/>
+				<element name="ConnectionString" type="string" minOccurs="0"/>
 			</sequence>
 			<attributeGroup ref="conf:SessionCacheProperties"/>
 			<attribute name="odbcTimeout" type="unsignedInt" use="optional" default="14400"/>
@@ -162,7 +162,7 @@
 				<element name="ODBCReplayCache">
 					<complexType>
 						<sequence>
-							<element name="ConnectionString" type="string"/>
+							<element name="ConnectionString" type="string" minOccurs="0"/>
 						</sequence>
 						<anyAttribute namespace="##other" processContents="lax"/>
 					</complexType>
