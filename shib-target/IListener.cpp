@@ -46,6 +46,7 @@ bool IListener::unregListener(const char* address, IRemoted* current, IRemoted* 
             m_listenerMap[address]=restore;
         else
             m_listenerMap.erase(address);
+        Category::getInstance(SHIBT_LOGCAT".Listener").info("unregistered remoted message endpoint (%s)",address);
         return true;
     }
     return false;
