@@ -692,6 +692,19 @@ namespace shibtarget {
             static const XMLCh UnixListener[];
         };
     };
+
+
+    // Template cleanup functors for use with for_each algorithm
+    template<class T> struct cleanup
+    {
+        void operator()(T* ptr) {delete ptr;}
+        void operator()(const T* ptr) {delete const_cast<T*>(ptr);}
+    };
+
+    template<class A,class B> struct cleanup_pair
+    {
+        void operator()(std::pair<A,B*> p) {delete p.second;}
+    };
 }
 
 #endif /* SHIB_TARGET_H */
