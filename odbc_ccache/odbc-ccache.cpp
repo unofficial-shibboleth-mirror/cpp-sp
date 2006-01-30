@@ -32,6 +32,7 @@
 #ifdef WIN32
 # define _CRT_NONSTDC_NO_DEPRECATE 1
 # define _CRT_SECURE_NO_DEPRECATE 1
+# define NOMINMAX
 # define SHIBODBC_EXPORTS __declspec(dllexport)
 #else
 # define SHIBODBC_EXPORTS
@@ -41,6 +42,7 @@
 #include <shib-target/shib-target.h>
 #include <log4cpp/Category.hh>
 
+#include <algorithm>
 #include <sstream>
 
 #include <sql.h>
@@ -430,7 +432,7 @@ HRESULT ODBCCCache::onCreate(
         while (sr==SQL_NEED_DATA) {
             size_t len=strlen(pData);
             while (len>0) {
-                size_t amt = min(LONGDATA_BUFLEN,len);
+                size_t amt = std::min<size_t>(LONGDATA_BUFLEN,len);
                 SQLPutData(hstmt, pData, amt);
                 pData += amt;
                 len = len - amt;
@@ -704,7 +706,7 @@ HRESULT ODBCCCache::onUpdate(const char* key, const char* tokens, time_t lastAcc
             while (sr==SQL_NEED_DATA) {
                 size_t len=strlen(pData);
                 while (len>0) {
-                    size_t amt=min(LONGDATA_BUFLEN,len);
+                    size_t amt=std::min<size_t>(LONGDATA_BUFLEN,len);
                     SQLPutData(hstmt, pData, amt);
                     pData += amt;
                     len = len - amt;
