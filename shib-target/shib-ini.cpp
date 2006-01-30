@@ -159,6 +159,8 @@ namespace shibtarget {
     public:
         XMLConfig(const DOMElement* e) : ReloadableXMLFile(e), m_listener(NULL), m_sessionCache(NULL), m_replayCache(NULL) {}
         ~XMLConfig() {
+            delete m_impl;
+            m_impl=NULL;
             delete m_sessionCache;
             m_sessionCache=NULL;
             delete m_replayCache;
