@@ -157,9 +157,16 @@ namespace shibtarget {
         static IConfig* ShibTargetConfigFactory(const DOMElement* e);
     };
 
-    // Template cleanup functions for use with for_each algorithm
-    template<class T> void cleanup(T* ptr) { delete ptr; }
-    template<class A,class B> void cleanup(std::pair<A,B*> p) { delete p.second; }
+    // Template cleanup functors for use with for_each algorithm
+    template<class T> struct cleanup
+    {
+        void operator()(T* ptr) {delete ptr;}
+    };
+
+    template<class A,class B> struct cleanup_pair
+    {
+        void operator()(std::pair<A,B*> p) {delete p.second;}
+    };
 }
 
 #endif

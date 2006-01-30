@@ -1088,7 +1088,7 @@ MemorySessionCache::~MemorySessionCache()
         listener->unregListener("SessionCache::remove",this,restoreRemove);
     }
 
-    for_each(m_hashtable.begin(),m_hashtable.end(),shibtarget::cleanup<string,MemorySessionCacheEntry>);
+    for_each(m_hashtable.begin(),m_hashtable.end(),shibtarget::cleanup_pair<string,MemorySessionCacheEntry>());
     delete m_lock;
     delete shutdown_wait;
 }

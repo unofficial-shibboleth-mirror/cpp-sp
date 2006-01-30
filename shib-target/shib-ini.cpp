@@ -210,7 +210,7 @@ XMLPropertySet::~XMLPropertySet()
 {
     for (map<string,pair<char*,const XMLCh*> >::iterator i=m_map.begin(); i!=m_map.end(); i++)
         XMLString::release(&(i->second.first));
-    for_each(m_nested.begin(),m_nested.end(),cleanup<string,IPropertySet>);
+    for_each(m_nested.begin(),m_nested.end(),shibtarget::cleanup_pair<string,IPropertySet>());
 }
 
 void XMLPropertySet::load(
@@ -699,18 +699,18 @@ void XMLApplication::cleanup()
     delete m_bindingHook;
     delete m_binding;
     delete m_profile;
-    for_each(m_handlers.begin(),m_handlers.end(),shibtarget::cleanup<IHandler>);
+    for_each(m_handlers.begin(),m_handlers.end(),shibtarget::cleanup<IHandler>());
         
     delete m_credDefault;
 #ifdef HAVE_GOOD_STL
-    for_each(m_credMap.begin(),m_credMap.end(),shibtarget::cleanup<xstring,XMLPropertySet>);
+    for_each(m_credMap.begin(),m_credMap.end(),shibtarget::cleanup_pair<xstring,XMLPropertySet>());
 #else
-    for_each(m_credMap.begin(),m_credMap.end(),shibtarget::cleanup<const XMLCh*,XMLPropertySet>);
+    for_each(m_credMap.begin(),m_credMap.end(),shibtarget::cleanup_pair<const XMLCh*,XMLPropertySet>());
 #endif
-    for_each(m_designators.begin(),m_designators.end(),shibtarget::cleanup<SAMLAttributeDesignator>);
-    for_each(m_aaps.begin(),m_aaps.end(),shibtarget::cleanup<IAAP>);
-    for_each(m_metadatas.begin(),m_metadatas.end(),shibtarget::cleanup<IMetadata>);
-    for_each(m_trusts.begin(),m_trusts.end(),shibtarget::cleanup<ITrust>);
+    for_each(m_designators.begin(),m_designators.end(),shibtarget::cleanup<SAMLAttributeDesignator>());
+    for_each(m_aaps.begin(),m_aaps.end(),shibtarget::cleanup<IAAP>());
+    for_each(m_metadatas.begin(),m_metadatas.end(),shibtarget::cleanup<IMetadata>());
+    for_each(m_trusts.begin(),m_trusts.end(),shibtarget::cleanup<ITrust>());
 }
 
 short XMLApplication::acceptNode(const DOMNode* node) const
@@ -1336,8 +1336,8 @@ void XMLConfigImpl::init(bool first)
 XMLConfigImpl::~XMLConfigImpl()
 {
     delete m_requestMapper;
-    for_each(m_appmap.begin(),m_appmap.end(),cleanup<string,IApplication>);
-    for_each(m_creds.begin(),m_creds.end(),cleanup<ICredentials>);
+    for_each(m_appmap.begin(),m_appmap.end(),cleanup_pair<string,IApplication>());
+    for_each(m_creds.begin(),m_creds.end(),cleanup<ICredentials>());
     ShibConfig::getConfig().clearAttributeMappings();
-    for_each(m_attrFactories.begin(),m_attrFactories.end(),cleanup<IAttributeFactory>);
+    for_each(m_attrFactories.begin(),m_attrFactories.end(),cleanup<IAttributeFactory>());
 }
