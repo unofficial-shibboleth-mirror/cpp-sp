@@ -202,7 +202,7 @@ DDF DDF::copy() const
     return DDF();
 }
 
-inline const char* DDF::name() const
+const char* DDF::name() const
 {
     return (m_handle) ? m_handle->name : NULL;
 }
@@ -227,47 +227,47 @@ DDF& DDF::name(const char* name)
     return *this;
 }
 
-inline bool DDF::isnull() const
+bool DDF::isnull() const
 {
     return m_handle ? false : true;
 }
 
-inline bool DDF::isempty() const
+bool DDF::isempty() const
 {
     return m_handle ? (m_handle->type==ddf_body_t::DDF_EMPTY) : false;
 }
 
-inline bool DDF::isstring() const
+bool DDF::isstring() const
 {
     return m_handle ? (m_handle->type==ddf_body_t::DDF_STRING) : false;
 }
 
-inline bool DDF::isint() const
+bool DDF::isint() const
 {
     return m_handle ? (m_handle->type==ddf_body_t::DDF_INT) : false;
 }
 
-inline bool DDF::isfloat() const
+bool DDF::isfloat() const
 {
     return m_handle ? (m_handle->type==ddf_body_t::DDF_FLOAT) : false;
 }
 
-inline bool DDF::isstruct() const
+bool DDF::isstruct() const
 {
     return m_handle ? (m_handle->type==ddf_body_t::DDF_STRUCT) : false;
 }
 
-inline bool DDF::islist() const
+bool DDF::islist() const
 {
     return m_handle ? (m_handle->type==ddf_body_t::DDF_LIST) : false;
 }
 
-inline bool DDF::ispointer() const
+bool DDF::ispointer() const
 {
     return m_handle ? (m_handle->type==ddf_body_t::DDF_POINTER) : false;
 }
 
-inline const char* DDF::string() const
+const char* DDF::string() const
 {
     return isstring() ? m_handle->value.string : NULL;
 }
@@ -310,12 +310,12 @@ double DDF::floating() const
     return 0;
 }
 
-inline void* DDF::pointer() const
+void* DDF::pointer() const
 {
     return ispointer() ? m_handle->value.pointer : NULL;
 }
 
-inline size_t DDF::strlen() const
+size_t DDF::strlen() const
 {
     return ddf_strlen(string());
 }
@@ -545,7 +545,7 @@ DDF& DDF::remove()
     return *this;
 }
 
-inline DDF DDF::parent() const
+DDF DDF::parent() const
 {
     DDF p;
 
