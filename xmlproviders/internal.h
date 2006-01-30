@@ -30,6 +30,13 @@
 # define _CRT_SECURE_NO_DEPRECATE 1
 #endif
 
+// eventually we might be able to support autoconf via cygwin...
+#if defined (_MSC_VER) || defined(__BORLANDC__)
+# include "config_win32.h"
+#else
+# include "config.h"
+#endif
+
 #include <shib-target/shib-target.h>
 #include <shib/shib-threads.h>
 #include <openssl/ssl.h>
