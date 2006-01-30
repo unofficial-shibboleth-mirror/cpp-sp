@@ -35,7 +35,6 @@
 
 using namespace saml;
 using namespace shibboleth;
-using namespace xmlproviders;
 using namespace log4cpp;
 using namespace std;
 
@@ -328,7 +327,7 @@ FileResolver::FileResolver(const DOMElement* e)
 FileResolver::~FileResolver()
 {
     for_each(m_certs.begin(),m_certs.end(),X509_free);
-    for_each(m_xseccerts.begin(),m_xseccerts.end(),cleanup<XSECCryptoX509>);
+    for_each(m_xseccerts.begin(),m_xseccerts.end(),shibtarget::cleanup<XSECCryptoX509>());
 }
 
 void FileResolver::attach(void* ctx) const

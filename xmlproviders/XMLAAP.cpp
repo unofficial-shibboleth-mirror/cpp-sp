@@ -28,7 +28,6 @@
 
 using namespace saml;
 using namespace shibboleth;
-using namespace xmlproviders;
 using namespace log4cpp;
 using namespace std;
 
@@ -207,9 +206,9 @@ void XMLAAPImpl::init()
 XMLAAPImpl::~XMLAAPImpl()
 {
 #ifdef HAVE_GOOD_STL
-    for_each(m_attrMap.begin(),m_attrMap.end(),cleanup<xstring,AttributeRule>);
+    for_each(m_attrMap.begin(),m_attrMap.end(),shibtarget::cleanup_pair<xstring,AttributeRule>());
 #else
-    for_each(m_attrMap.begin(),m_attrMap.end(),cleanup<string,AttributeRule>);
+    for_each(m_attrMap.begin(),m_attrMap.end(),shibtarget::cleanup_pair<string,AttributeRule>());
 #endif
 }
 

@@ -34,7 +34,6 @@
 using namespace saml;
 using namespace shibboleth;
 using namespace shibtarget;
-using namespace xmlproviders;
 using namespace std;
 using namespace log4cpp;
 
@@ -213,7 +212,7 @@ Operator::Operator(const DOMElement* e)
 
 Operator::~Operator()
 {
-    for_each(m_operands.begin(),m_operands.end(),cleanup<IAuthz>);
+    for_each(m_operands.begin(),m_operands.end(),shibtarget::cleanup<IAuthz>());
 }
 
 bool Operator::authorized(ShibTarget* st, ISessionCacheEntry* entry) const

@@ -30,7 +30,6 @@
 
 #include <log4cpp/Category.hh>
 
-using namespace xmlproviders;
 using namespace shibboleth;
 using namespace saml;
 using namespace log4cpp;
@@ -147,7 +146,7 @@ void XMLCredentialsImpl::init()
 
 XMLCredentialsImpl::~XMLCredentialsImpl()
 {
-    for_each(m_resolverMap.begin(),m_resolverMap.end(),cleanup<string,ICredResolver>);
+    for_each(m_resolverMap.begin(),m_resolverMap.end(),shibtarget::cleanup_pair<string,ICredResolver>());
 }
 
 const ICredResolver* XMLCredentials::lookup(const char* id) const

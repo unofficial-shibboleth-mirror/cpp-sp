@@ -38,7 +38,6 @@
 #include <xsec/enc/XSECCryptoException.hpp>
 #include <xsec/enc/XSECKeyInfoResolverDefault.hpp>
 
-using namespace xmlproviders;
 using namespace shibboleth;
 using namespace saml;
 using namespace log4cpp;
@@ -345,8 +344,8 @@ void XMLTrustImpl::init()
 
 XMLTrustImpl::~XMLTrustImpl()
 {
-    for_each(m_keyauths.begin(),m_keyauths.end(),cleanup<KeyAuthority>);
-    for_each(m_keybinds.begin(),m_keybinds.end(),cleanup<DSIGKeyInfoList>);
+    for_each(m_keyauths.begin(),m_keyauths.end(),shibtarget::cleanup<KeyAuthority>());
+    for_each(m_keybinds.begin(),m_keybinds.end(),shibtarget::cleanup<DSIGKeyInfoList>());
 }
 
 XMLTrust::XMLTrust(const DOMElement* e) : ReloadableXMLFile(e), m_delegate(NULL)
@@ -402,7 +401,7 @@ XMLTrust::XMLTrust(const DOMElement* e) : ReloadableXMLFile(e), m_delegate(NULL)
 XMLTrust::~XMLTrust()
 {
     delete m_delegate;
-    for_each(m_resolvers.begin(),m_resolvers.end(),cleanup<KeyInfoResolver>);
+    for_each(m_resolvers.begin(),m_resolvers.end(),shibtarget::cleanup<KeyInfoResolver>());
 }
 
 static int error_callback(int ok, X509_STORE_CTX* ctx)
