@@ -65,7 +65,7 @@ using namespace log4cpp;
 #define COLSIZE_APPLICATION_ID 256
 #define COLSIZE_ADDRESS 128
 #define COLSIZE_PROVIDER_ID 256
-#define LONGDATA_BUFLEN 2048
+#define LONGDATA_BUFLEN 32768
 
 /*
   CREATE TABLE state (
@@ -362,6 +362,18 @@ ODBCCCache::~ODBCCCache()
     delete m_cache;
 }
 
+void appendXML(ostream& os, const char* str)
+{
+    const char* pos=strchr(str,'\'');
+    while (pos) {
+        os.write(str,pos-str);
+        os << "''";
+        str=pos+1;
+        pos=strchr(str,'\'');
+    }
+    os << str;
+}
+
 HRESULT ODBCCCache::onCreate(
     const char* key,
     const IApplication* application,
@@ -396,8 +408,18 @@ HRESULT ODBCCCache::onCreate(
     ostringstream q;
     q << "INSERT state VALUES ('" << key << "','" << application->getId() << "'," << timebuf << "," << timebuf
         << ",'" << entry->getClientAddress() << "'," << majorVersion << "," << minorVersion << ",'" << entry->getProviderId()
-        << "',?,?,?)";
-
+        << "','";
+    appendXML(q,subject.first);
+    q << "','";
+    appendXML(q,context);
+    q << "',";
+    if (m_storeAttributes && tokens.first) {
+        q << "'";
+        appendXML(q,tokens.first);
+	q << "')";
+    }
+    else
+        q << "null)";
     if (log->isDebugEnabled())
         log->debug("SQL insert: %s", q.str().c_str());
 
@@ -406,42 +428,9 @@ HRESULT ODBCCCache::onCreate(
     ODBCConn conn(getHDBC());
     SQLAllocHandle(SQL_HANDLE_STMT,conn,&hstmt);
 
-    // Bind text parameters to statement.
-    SQLINTEGER cbSubject=SQL_LEN_DATA_AT_EXEC(0),cbContext=SQL_LEN_DATA_AT_EXEC(0),cbTokens;
-    if (!m_storeAttributes || !tokens.first)
-        cbTokens=SQL_NULL_DATA;
-    else
-        cbTokens=SQL_LEN_DATA_AT_EXEC(0);
-    SQLRETURN sr=SQLBindParameter(hstmt,1,SQL_PARAM_INPUT,SQL_C_CHAR,SQL_LONGVARCHAR,LONGDATA_BUFLEN,0,(SQLPOINTER)subject.first,0,&cbSubject);
-    if (!SQL_SUCCEEDED(sr))
-        log_error(hstmt, SQL_HANDLE_STMT);
-    sr=SQLBindParameter(hstmt,2,SQL_PARAM_INPUT,SQL_C_CHAR,SQL_LONGVARCHAR,LONGDATA_BUFLEN,0,(SQLPOINTER)context,0,&cbContext);
-    if (!SQL_SUCCEEDED(sr))
-        log_error(hstmt, SQL_HANDLE_STMT);
-    sr=SQLBindParameter(hstmt,3,SQL_PARAM_INPUT,SQL_C_CHAR,SQL_LONGVARCHAR,LONGDATA_BUFLEN,0,(SQLPOINTER)tokens.first,0,&cbTokens);
-    if (!SQL_SUCCEEDED(sr))
-        log_error(hstmt, SQL_HANDLE_STMT);
-
     // Execute statement.
-    sr=SQLExecDirect(hstmt, (SQLCHAR*)q.str().c_str(), SQL_NTS);
-    if (sr==SQL_NEED_DATA) {
-        // Loop to send text data into driver.
-        // pData is set each round by the driver to the pointers we bound above.
-        char* pData;
-        sr=SQLParamData(hstmt,(SQLPOINTER*)&pData);
-        while (sr==SQL_NEED_DATA) {
-            size_t len=strlen(pData);
-            while (len>0) {
-                size_t amt = std::min<size_t>(LONGDATA_BUFLEN,len);
-                SQLPutData(hstmt, pData, amt);
-                pData += amt;
-                len = len - amt;
-            }
-            sr=SQLParamData(hstmt,(SQLPOINTER*)&pData);
-       }
-    }
-
     HRESULT hr=NOERROR;
+    SQLRETURN sr=SQLExecDirect(hstmt, (SQLCHAR*)q.str().c_str(), SQL_NTS);
     if (!SQL_SUCCEEDED(sr)) {
         log->error("failed to insert record into database");
         log_error(hstmt, SQL_HANDLE_STMT);
@@ -665,9 +654,7 @@ HRESULT ODBCCCache::onUpdate(const char* key, const char* tokens, time_t lastAcc
     saml::NDC ndc("onUpdate");
 #endif
 
-    SQLRETURN sr;
-    SQLHSTMT hstmt;
-    ODBCConn conn(getHDBC());
+    ostringstream q;
 
     if (lastAccess>0) {
 #ifndef HAVE_GMTIME_R
@@ -679,48 +666,31 @@ HRESULT ODBCCCache::onUpdate(const char* key, const char* tokens, time_t lastAcc
         char timebuf[32];
         strftime(timebuf,32,"{ts '%Y-%m-%d %H:%M:%S'}",ptime);
 
-        ostringstream q;
         q << "UPDATE state SET atime=" << timebuf << " WHERE cookie='" << key << "'";
-
-        SQLAllocHandle(SQL_HANDLE_STMT,conn,&hstmt);
-        sr=SQLExecDirect(hstmt, (SQLCHAR*)q.str().c_str(), SQL_NTS);
     }
     else if (tokens) {
         if (!m_storeAttributes)
             return S_FALSE;
-        string q = string("UPDATE state SET tokens=? WHERE cookie='") + key + "'";
-
-        SQLAllocHandle(SQL_HANDLE_STMT,conn,&hstmt);
-
-        // Bind text parameters to statement.
-        SQLINTEGER cbTokens = tokens ? SQL_LEN_DATA_AT_EXEC(0) : SQL_NULL_DATA;
-        sr=SQLBindParameter(hstmt,1,SQL_PARAM_INPUT,SQL_C_CHAR,SQL_LONGVARCHAR,LONGDATA_BUFLEN,0,(SQLPOINTER)tokens,0,&cbTokens);
-
-        // Execute statement.
-        sr=SQLExecDirect(hstmt, (SQLCHAR*)q.c_str(), SQL_NTS);
-        if (sr==SQL_NEED_DATA) {
-            // Loop to send text data into driver.
-            // pData is set each round by the driver to the pointers we bound above.
-            char* pData;
-            sr=SQLParamData(hstmt,(SQLPOINTER*)&pData);
-            while (sr==SQL_NEED_DATA) {
-                size_t len=strlen(pData);
-                while (len>0) {
-                    size_t amt=std::min<size_t>(LONGDATA_BUFLEN,len);
-                    SQLPutData(hstmt, pData, amt);
-                    pData += amt;
-                    len = len - amt;
-                }
-                sr=SQLParamData(hstmt,(SQLPOINTER*)&pData);
-           }
-        }
+        q << "UPDATE state SET tokens=";
+	if (*tokens) {
+	    q << "'";
+	    appendXML(q,tokens);
+	    q << "' ";
+	}
+	else
+	    q << "null ";
+	q << "WHERE cookie='" << key << "'";
     }
     else {
         log->warn("onUpdate called with nothing to do!");
         return S_FALSE;
     }
  
-    HRESULT hr;
+    HRESULT hr=NOERROR;
+    SQLHSTMT hstmt;
+    ODBCConn conn(getHDBC());
+    SQLAllocHandle(SQL_HANDLE_STMT,conn,&hstmt);
+    SQLRETURN sr=SQLExecDirect(hstmt, (SQLCHAR*)q.str().c_str(), SQL_NTS);
     if (sr==SQL_NO_DATA)
         hr=S_FALSE;
     else if (!SQL_SUCCEEDED(sr)) {
@@ -728,8 +698,6 @@ HRESULT ODBCCCache::onUpdate(const char* key, const char* tokens, time_t lastAcc
         log_error(hstmt, SQL_HANDLE_STMT);
         hr=E_FAIL;
     }
-    else
-        hr=NOERROR;
 
     SQLFreeHandle(SQL_HANDLE_STMT,hstmt);
     return hr;
@@ -747,7 +715,7 @@ HRESULT ODBCCCache::onDelete(const char* key)
     string q = string("DELETE FROM state WHERE cookie='") + key + "'";
     SQLRETURN sr=SQLExecDirect(hstmt, (SQLCHAR*)q.c_str(), SQL_NTS);
  
-    HRESULT hr;
+    HRESULT hr=NOERROR;
     if (sr==SQL_NO_DATA)
         hr=S_FALSE;
     else if (!SQL_SUCCEEDED(sr)) {
@@ -755,8 +723,6 @@ HRESULT ODBCCCache::onDelete(const char* key)
         log_error(hstmt, SQL_HANDLE_STMT);
         hr=E_FAIL;
     }
-    else
-        hr=NOERROR;
 
     SQLFreeHandle(SQL_HANDLE_STMT,hstmt);
     return hr;
