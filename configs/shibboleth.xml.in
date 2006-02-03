@@ -37,20 +37,18 @@
 		<MemorySessionCache cleanupInterval="300" cacheTimeout="3600" AATimeout="30" AAConnectTimeout="15"
 			defaultLifetime="1800" retryInterval="300" strictValidity="false" propagateErrors="false"/>
 		<!--
-		<MySQLSessionCache cleanupInterval="300" cacheTimeout="3600" AATimeout="30" AAConnectTimeout="15"
+		<ODBCSessionCache cleanupInterval="300" cacheTimeout="3600" AATimeout="30" AAConnectTimeout="15"
 			defaultLifetime="1800" retryInterval="300" strictValidity="false" propagateErrors="false"
-			mysqlTimeout="14400" storeAttributes="true" writeThrough="false">
-			<Argument>&#x2D;&#x2D;language=@-PREFIX-@/share/english</Argument>
-			<Argument>&#x2D;&#x2D;datadir=@-PREFIX-@/data</Argument>
-		</MySQLSessionCache>
+			odbcTimeout="7200" storeAttributes="true" writeThrough="true">
+			<ConnectionString>
+			DRIVER=drivername;SERVER=dbserver;UID=shibboleth;PWD=password;DATABASE=shibboleth;APP=Shibboleth
+			</ConnectionString>
+		</ODBCSessionCache>
 		-->
         
 		<!-- Default replay cache is in-memory. -->
 		<!--
-		<MySQLReplayCache>
-			<Argument>&#x2D;&#x2D;language=@-PREFIX-@/share/english</Argument>
-			<Argument>&#x2D;&#x2D;datadir=@-PREFIX-@/data</Argument>
-		</MySQLReplayCache>
+		<ODBCReplayCache/>
 		-->
 	</OutOfProcess>
     
