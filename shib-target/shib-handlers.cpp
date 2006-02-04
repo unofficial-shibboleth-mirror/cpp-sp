@@ -537,6 +537,7 @@ pair<bool,void*> SAML1Consumer::run(ShibTarget* st, bool isHandler) const
             free(rscopy);
             target=hURL.c_str();
         }
+        st->setCookie(relay_cookie.first,relay_cookie.second);
     }
 
     // We've got a good session, set the session cookie.
