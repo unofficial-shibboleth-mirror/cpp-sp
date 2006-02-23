@@ -114,7 +114,6 @@ namespace shibtarget {
         IRequestMapper* m_requestMapper;
         map<string,IApplication*> m_appmap;
         vector<ICredentials*> m_creds;
-        vector<IAttributeFactory*> m_attrFactories;
         
         // Provides filter to exclude special config elements.
         short acceptNode(const DOMNode* node) const;
@@ -128,7 +127,7 @@ namespace shibtarget {
     {
     public:
         XMLConfig(const DOMElement* e) : ReloadableXMLFile(e), m_listener(NULL), m_sessionCache(NULL), m_replayCache(NULL) {}
-        ~XMLConfig() {delete m_listener; delete m_sessionCache; delete m_replayCache;}
+        ~XMLConfig();
 
         // IPropertySet
         pair<bool,bool> getBool(const char* name, const char* ns=NULL) const {return static_cast<XMLConfigImpl*>(m_impl)->getBool(name,ns);}
@@ -159,6 +158,7 @@ namespace shibtarget {
         mutable IListener* m_listener;
         mutable ISessionCache* m_sessionCache;
         mutable IReplayCache* m_replayCache;
+        mutable vector<IAttributeFactory*> m_attrFactories;
     };
 }
 
@@ -1035,6 +1035,33 @@ void XMLConfigImpl::init(bool first)
                     }
                 }
             }
+
+            // Now we load any attribute factories.
+            DOMNodeList* nlist=ReloadableXMLFileImpl::m_root->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(AttributeFactory));
+            for (int i=0; nlist && i<nlist->getLength(); i++) {
+                auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
+                log.info("building Attribute factory of type %s...",type.get());
+                try {
+                    IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
+                    if (plugin) {
+                        IAttributeFactory* fact=dynamic_cast<IAttributeFactory*>(plugin);
+                        if (fact) {
+                            m_outer->m_attrFactories.push_back(fact);
+                            ShibConfig::getConfig().regAttributeMapping(
+                                static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,L(AttributeName)),
+                                fact
+                                );
+                        }
+                        else {
+                            delete plugin;
+                            log.crit("plugin was not an Attribute factory");
+                        }
+                    }
+                }
+                catch (SAMLException& ex) {
+                    log.crit("error building Attribute factory: %s",ex.what());
+                }
+            }
         }
         
         // Back to the fully dynamic stuff...next up is the Request Mapper.
@@ -1086,33 +1113,6 @@ void XMLConfigImpl::init(bool first)
             }
         }
 
-        // Now we load any attribute factories
-        nlist=ReloadableXMLFileImpl::m_root->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(AttributeFactory));
-        for (int i=0; nlist && i<nlist->getLength(); i++) {
-            auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
-            log.info("building Attribute factory of type %s...",type.get());
-            try {
-                IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
-                if (plugin) {
-                    IAttributeFactory* fact=dynamic_cast<IAttributeFactory*>(plugin);
-                    if (fact) {
-                        m_attrFactories.push_back(fact);
-                        ShibConfig::getConfig().regAttributeMapping(
-                            static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,L(AttributeName)),
-                            fact
-                            );
-                    }
-                    else {
-                        delete plugin;
-                        log.crit("plugin was not an Attribute factory");
-                    }
-                }
-            }
-            catch (SAMLException& ex) {
-                log.crit("error building Attribute factory: %s",ex.what());
-            }
-        }
-
         // Load the default application. This actually has a fixed ID of "default". ;-)
         const DOMElement* app=saml::XML::getFirstChildElement(
             ReloadableXMLFileImpl::m_root,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Applications)
@@ -1154,6 +1154,13 @@ XMLConfigImpl::~XMLConfigImpl()
         delete i->second;
     for (vector<ICredentials*>::iterator j=m_creds.begin(); j!=m_creds.end(); j++)
         delete (*j);
+}
+
+XMLConfig::~XMLConfig()
+{
+    delete m_listener;
+    delete m_sessionCache;
+    delete m_replayCache;
     ShibConfig::getConfig().clearAttributeMappings();
     for (vector<IAttributeFactory*>::iterator k=m_attrFactories.begin(); k!=m_attrFactories.end(); k++)
         delete (*k);
