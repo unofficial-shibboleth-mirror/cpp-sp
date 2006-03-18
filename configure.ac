@@ -186,13 +186,13 @@ AC_CHECK_HEADER([xercesc/dom/DOM.hpp],,
 AC_MSG_CHECKING([Xerces version])
 AC_PREPROC_IFELSE(
         [AC_LANG_PROGRAM([#include <xercesc/util/XercesVersion.hpp>],
-[#if  _XERCES_VERSION == 20601
+[#if  _XERCES_VERSION > 20200 && _XERCES_VERSION != 20600
 int i = 0;
 #else
-#error must use patched version 2.6.1 provided by Shibboleth project (http://wayf.internet2.edu/shibboleth/)
+#error requires version > 2.2.0 but not 2.6.0
 #endif])],
         [AC_MSG_RESULT(OK)],
-        [AC_MSG_ERROR([Shibboleth requires patched Xerces version 2.6.1 (http://wayf.internet2.edu/shibboleth/)])])
+        [AC_MSG_ERROR([Shibboleth requires patched Xerces version 2.6.1 (http://shibboleth.internet2.edu/downloads/)])])
 AC_TRY_LINK(
         [#include <xercesc/util/PlatformUtils.hpp>],
         [xercesc::XMLPlatformUtils::Initialize()],
