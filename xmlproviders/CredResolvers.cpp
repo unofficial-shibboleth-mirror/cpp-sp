@@ -89,7 +89,7 @@ FileResolver::FileResolver(const DOMElement* e)
 #endif
     Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".CredResolvers");
 
-    format_t format;
+    format_t format=UNKNOWN;
     BIO* in = NULL;
     
     // Move to Key
@@ -231,6 +231,7 @@ FileResolver::FileResolver(const DOMElement* e)
                         throw CredentialException("FileResolver unable to load PKCS12 certificate from file ($1)",params(1,certpath.get()));
                     }
                     break;
+                case UNKNOWN:
             } // end switch
 
         } else {
@@ -252,7 +253,7 @@ FileResolver::FileResolver(const DOMElement* e)
 
         // Load any extra CA files.
         DOMNodeList* nlist=e->getElementsByTagNameNS(::XML::CREDS_NS,SHIB_L(CAPath));
-        for (int i=0; nlist && i<nlist->getLength(); i++) {
+        for (XMLSize_t i=0; nlist && i<nlist->getLength(); i++) {
             if (!nlist->item(i)->hasChildNodes())
                 continue;
             auto_ptr_char capath(static_cast<DOMElement*>(nlist->item(i))->getFirstChild()->getNodeValue());
@@ -300,6 +301,7 @@ FileResolver::FileResolver(const DOMElement* e)
                             throw CredentialException("FileResolver unable to load PKCS12 CA certificate from file ($1)",params(1,capath.get()));
                         }
                         break;
+                    case UNKNOWN:
                 } //end switch
 
                 BIO_free(in);

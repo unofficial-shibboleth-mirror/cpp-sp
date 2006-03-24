@@ -402,9 +402,9 @@ namespace {
         };
 
         XMLMetadataImpl(const char* pathname, const XMLMetadata* wrapper)
-            : ReloadableXMLFileImpl(pathname), m_outer(wrapper), m_rootProvider(NULL), m_rootGroup(NULL) { init(); }
+            : ReloadableXMLFileImpl(pathname), m_rootProvider(NULL), m_rootGroup(NULL), m_outer(wrapper) { init(); }
         XMLMetadataImpl(const DOMElement* e, const XMLMetadata* wrapper)
-            : ReloadableXMLFileImpl(e), m_outer(wrapper), m_rootProvider(NULL), m_rootGroup(NULL) { init(); }
+            : ReloadableXMLFileImpl(e), m_rootProvider(NULL), m_rootGroup(NULL), m_outer(wrapper) { init(); }
         void init();
         ~XMLMetadataImpl();
 
@@ -662,7 +662,7 @@ XMLMetadataImpl::KeyAuthority::~KeyAuthority()
 }
 
 XMLMetadataImpl::Role::Role(const EntityDescriptor* provider, time_t validUntil, const DOMElement* e)
-    : m_provider(provider), m_errorURL(NULL), m_protocolEnumCopy(NULL), m_org(NULL), m_validUntil(validUntil), m_root(e)
+    : m_provider(provider), m_root(e), m_protocolEnumCopy(NULL), m_errorURL(NULL), m_org(NULL), m_validUntil(validUntil)
 {
     // Check the root element namespace. If SAML2, assume it's the std schema.
     if (e && !XMLString::compareString(e->getNamespaceURI(),::XML::SAML2META_NS)) {
@@ -732,7 +732,7 @@ XMLMetadataImpl::SSORole::SSORole(const EntityDescriptor* provider, time_t valid
 {
     // Check the root element namespace. If SAML2, assume it's the std schema.
     if (!XMLString::compareString(e->getNamespaceURI(),::XML::SAML2META_NS)) {
-        int i;
+        XMLSize_t i;
         DOMNodeList* nlist=e->getElementsByTagNameNS(::XML::SAML2META_NS,SHIB_L(ArtifactResolutionService));
         for (i=0; nlist && i<nlist->getLength(); i++)
             m_artifact.add(new IndexedEndpoint(static_cast<DOMElement*>(nlist->item(i))));
@@ -770,7 +770,7 @@ XMLMetadataImpl::ScopedRole::ScopedRole(const DOMElement* e)
         nlist=e->getElementsByTagNameNS(::XML::SHIB_NS,SHIB_L(Domain));
     }
     
-    for (int i=0; nlist && i < nlist->getLength(); i++) {
+    for (XMLSize_t i=0; nlist && i < nlist->getLength(); i++) {
         const XMLCh* dom=(nlist->item(i)->hasChildNodes()) ? nlist->item(i)->getFirstChild()->getNodeValue() : NULL;
         if (dom && *dom) {
             const XMLCh* regexp=static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIB_L(regexp));
@@ -797,7 +797,7 @@ XMLMetadataImpl::IDPRole::IDPRole(const EntityDescriptor* provider, time_t valid
                 m_sourceId=ext->getFirstChild()->getNodeValue();
         }
         
-        int i;
+        XMLSize_t i;
         DOMNodeList* nlist=e->getElementsByTagNameNS(::XML::SAML2META_NS,SHIB_L(SingleSignOnService));
         for (i=0; nlist && i<nlist->getLength(); i++)
             m_sso.add(new Endpoint(static_cast<DOMElement*>(nlist->item(i))));
@@ -840,7 +840,7 @@ XMLMetadataImpl::IDPRole::IDPRole(const EntityDescriptor* provider, time_t valid
     else {
         m_protocolEnum.push_back(Constants::SHIB_NS);
         m_attrprofs.push_back(Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
-        int i;
+        XMLSize_t i;
         DOMNodeList* nlist=e->getElementsByTagNameNS(::XML::SHIB_NS,SHIB_L(HandleService));
         for (i=0; nlist && i<nlist->getLength(); i++) {
             // Manufacture an endpoint for the "Shib" binding.
@@ -876,7 +876,7 @@ XMLMetadataImpl::AARole::AARole(const EntityDescriptor* provider, time_t validUn
 {
     // Check the root element namespace. If SAML2, assume it's the std schema.
     if (!XMLString::compareString(e->getNamespaceURI(),::XML::SAML2META_NS)) {
-        int i;
+        XMLSize_t i;
         DOMNodeList* nlist=e->getElementsByTagNameNS(::XML::SAML2META_NS,SHIB_L(AttributeService));
         for (i=0; nlist && i<nlist->getLength(); i++)
             m_query.add(new Endpoint(static_cast<DOMElement*>(nlist->item(i))));
@@ -923,7 +923,7 @@ XMLMetadataImpl::AARole::AARole(const EntityDescriptor* provider, time_t validUn
         m_protocolEnum.push_back(saml::XML::SAML11_PROTOCOL_ENUM);
         m_formats.push_back(Constants::SHIB_NAMEID_FORMAT_URI);
         m_attrprofs.push_back(Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
-        int i;
+        XMLSize_t i;
         DOMNodeList* nlist=e->getElementsByTagNameNS(::XML::SHIB_NS,SHIB_L(AttributeAuthority));
         for (i=0; nlist && i<nlist->getLength(); i++) {
             // Manufacture an endpoint for the SOAP binding.
@@ -1211,7 +1211,7 @@ XMLMetadata::XMLMetadata(const DOMElement* e) : ReloadableXMLFile(e), m_exclusio
     if (e->hasAttributeNS(NULL,uri)) {
         // First check for explicit enablement of entities.
         DOMNodeList* nlist=e->getElementsByTagName(SHIB_L(Include));
-        for (int i=0; nlist && i<nlist->getLength(); i++) {
+        for (XMLSize_t i=0; nlist && i<nlist->getLength(); i++) {
             if (nlist->item(i)->hasChildNodes()) {
                 auto_ptr_char temp(nlist->item(i)->getFirstChild()->getNodeValue());
                 if (temp.get()) {
