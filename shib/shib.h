@@ -338,25 +338,25 @@ namespace shibboleth
 #ifdef SHIB_INSTANTIATE
 };
 namespace saml {
-    template class SHIB_EXPORTS saml::Iterator<const IContactPerson*>;
-    template class SHIB_EXPORTS saml::Iterator<const XENCEncryptionMethod*>;
-    template class SHIB_EXPORTS saml::Iterator<const IKeyDescriptor*>;
-    template class SHIB_EXPORTS saml::Iterator<const IAttributeConsumingService*>;
-    template class SHIB_EXPORTS saml::Iterator<const IRoleDescriptor*>;
-    template class SHIB_EXPORTS saml::Iterator<const IEntityDescriptor*>;
-    template class SHIB_EXPORTS saml::Iterator<const IEntitiesDescriptor*>;
-    template class SHIB_EXPORTS saml::Iterator<const IEndpoint*>;
-    template class SHIB_EXPORTS saml::Iterator<const IAttributeRule*>;
-    template class SHIB_EXPORTS saml::Iterator<const IKeyAuthority*>;
-    template class SHIB_EXPORTS saml::Iterator<DSIGKeyInfoList*>;
-    template class SHIB_EXPORTS saml::Iterator<IMetadata*>;
-    template class SHIB_EXPORTS saml::ArrayIterator<IMetadata*>;
-    template class SHIB_EXPORTS saml::Iterator<ITrust*>;
-    template class SHIB_EXPORTS saml::ArrayIterator<ITrust*>;
-    template class SHIB_EXPORTS saml::Iterator<ICredentials*>;
-    template class SHIB_EXPORTS saml::ArrayIterator<ICredentials*>;
-    template class SHIB_EXPORTS saml::Iterator<IAAP*>;
-    template class SHIB_EXPORTS saml::ArrayIterator<IAAP*>;
+    template class SHIB_EXPORTS Iterator<const shibboleth::IContactPerson*>;
+    template class SHIB_EXPORTS Iterator<const XENCEncryptionMethod*>;
+    template class SHIB_EXPORTS Iterator<const shibboleth::IKeyDescriptor*>;
+    template class SHIB_EXPORTS Iterator<const shibboleth::IAttributeConsumingService*>;
+    template class SHIB_EXPORTS Iterator<const shibboleth::IRoleDescriptor*>;
+    template class SHIB_EXPORTS Iterator<const shibboleth::IEntityDescriptor*>;
+    template class SHIB_EXPORTS Iterator<const shibboleth::IEntitiesDescriptor*>;
+    template class SHIB_EXPORTS Iterator<const shibboleth::IEndpoint*>;
+    template class SHIB_EXPORTS Iterator<const shibboleth::IAttributeRule*>;
+    template class SHIB_EXPORTS Iterator<const shibboleth::IKeyAuthority*>;
+    template class SHIB_EXPORTS Iterator<DSIGKeyInfoList*>;
+    template class SHIB_EXPORTS Iterator<shibboleth::IMetadata*>;
+    template class SHIB_EXPORTS ArrayIterator<shibboleth::IMetadata*>;
+    template class SHIB_EXPORTS Iterator<shibboleth::ITrust*>;
+    template class SHIB_EXPORTS ArrayIterator<shibboleth::ITrust*>;
+    template class SHIB_EXPORTS Iterator<shibboleth::ICredentials*>;
+    template class SHIB_EXPORTS ArrayIterator<shibboleth::ICredentials*>;
+    template class SHIB_EXPORTS Iterator<shibboleth::IAAP*>;
+    template class SHIB_EXPORTS ArrayIterator<shibboleth::IAAP*>;
 };
 namespace shibboleth {
 #endif
