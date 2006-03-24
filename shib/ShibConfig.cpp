@@ -232,8 +232,8 @@ void shibboleth::annotateException(saml::SAMLException* e, const IRoleDescriptor
         auto_ptr_char id(role->getEntityDescriptor()->getId());
         e->addProperty("providerId",id.get());
         const char* temp=role->getErrorURL();
-        if (role->getErrorURL())
-            e->addProperty("errorURL",role->getErrorURL());
+        if (temp)
+            e->addProperty("errorURL",temp);
 
         Iterator<const IContactPerson*> i=role->getContactPersons();
         while (i.hasNext()) {

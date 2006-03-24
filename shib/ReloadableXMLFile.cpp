@@ -95,7 +95,7 @@ ReloadableXMLFileImpl::~ReloadableXMLFileImpl()
     }
 }
 
-ReloadableXMLFile::ReloadableXMLFile(const DOMElement* e) : m_root(e), m_impl(NULL), m_filestamp(0), m_lock(NULL)
+ReloadableXMLFile::ReloadableXMLFile(const DOMElement* e) : m_impl(NULL), m_root(e), m_filestamp(0), m_lock(NULL)
 {
     static const XMLCh uri[] = { chLatin_u, chLatin_r, chLatin_i, chNull };
     const XMLCh* pathname=e->getAttributeNS(NULL,uri);
