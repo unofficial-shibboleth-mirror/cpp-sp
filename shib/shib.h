@@ -336,6 +336,8 @@ namespace shibboleth
     };
 
 #ifdef SHIB_INSTANTIATE
+};
+namespace saml {
     template class SHIB_EXPORTS saml::Iterator<const IContactPerson*>;
     template class SHIB_EXPORTS saml::Iterator<const XENCEncryptionMethod*>;
     template class SHIB_EXPORTS saml::Iterator<const IKeyDescriptor*>;
@@ -355,6 +357,8 @@ namespace shibboleth
     template class SHIB_EXPORTS saml::ArrayIterator<ICredentials*>;
     template class SHIB_EXPORTS saml::Iterator<IAAP*>;
     template class SHIB_EXPORTS saml::ArrayIterator<IAAP*>;
+};
+namespace shibboleth {
 #endif
 
     struct SHIB_EXPORTS Constants
@@ -374,7 +378,7 @@ namespace shibboleth
     class SHIB_EXPORTS Metadata
     {
     public:
-        Metadata(const saml::Iterator<IMetadata*>& metadatas) : m_metadatas(metadatas), m_mapper(NULL) {}
+        Metadata(const saml::Iterator<IMetadata*>& metadatas) : m_mapper(NULL), m_metadatas(metadatas) {}
         ~Metadata();
 
         const IEntityDescriptor* lookup(const char* id, bool strict=true);
@@ -411,7 +415,7 @@ namespace shibboleth
     class SHIB_EXPORTS Credentials
     {
     public:
-        Credentials(const saml::Iterator<ICredentials*>& creds) : m_creds(creds), m_mapper(NULL) {}
+        Credentials(const saml::Iterator<ICredentials*>& creds) : m_mapper(NULL), m_creds(creds) {}
         ~Credentials();
 
         const ICredResolver* lookup(const char* id);
