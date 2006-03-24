@@ -232,6 +232,7 @@ FileResolver::FileResolver(const DOMElement* e)
                     }
                     break;
                 case UNKNOWN:
+                    break;
             } // end switch
 
         } else {
@@ -302,6 +303,7 @@ FileResolver::FileResolver(const DOMElement* e)
                         }
                         break;
                     case UNKNOWN:
+                        break;
                 } //end switch
 
                 BIO_free(in);
