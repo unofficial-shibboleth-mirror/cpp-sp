@@ -235,7 +235,7 @@ pair<bool,void*> SessionInitiator::ShibAuthnRequest(
     if (shire) ACSloc+=shire->getString("Location").second;
     
     char timebuf[16];
-    sprintf(timebuf,"%u",time(NULL));
+    sprintf(timebuf,"%lu",time(NULL));
     string req=string(dest) + "?shire=" + CgiParse::url_encode(ACSloc.c_str()) + "&time=" + timebuf;
 
     // How should the resource value be preserved?

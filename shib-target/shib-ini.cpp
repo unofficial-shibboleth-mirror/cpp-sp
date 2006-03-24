@@ -106,9 +106,9 @@ namespace shibtarget {
     {
     public:
         XMLConfigImpl(const char* pathname, bool first, const XMLConfig* outer)
-            : ReloadableXMLFileImpl(pathname), m_outer(outer), m_requestMapper(NULL) { init(first); }
+            : ReloadableXMLFileImpl(pathname), m_requestMapper(NULL), m_outer(outer) { init(first); }
         XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* outer)
-            : ReloadableXMLFileImpl(e), m_outer(outer), m_requestMapper(NULL) { init(first); }
+            : ReloadableXMLFileImpl(e), m_requestMapper(NULL), m_outer(outer) { init(first); }
         ~XMLConfigImpl();
         
         IRequestMapper* m_requestMapper;
@@ -356,7 +356,7 @@ XMLApplication::XMLApplication(
     const DOMElement* e,
     const XMLApplication* base
     ) : m_ini(ini), m_base(base), m_profile(NULL), m_binding(NULL), m_bindingHook(NULL),
-        m_credDefault(NULL), m_sessionInitDefault(NULL), m_acsDefault(NULL)
+        m_acsDefault(NULL), m_sessionInitDefault(NULL), m_credDefault(NULL)
 {
 #ifdef _DEBUG
     saml::NDC ndc("XMLApplication");
@@ -429,7 +429,7 @@ XMLApplication::XMLApplication(
         }
         
         // Process general configuration elements.
-        int i;
+        XMLSize_t i;
         DOMNodeList* nlist=e->getElementsByTagNameNS(saml::XML::SAML_NS,L(AttributeDesignator));
         for (i=0; nlist && i<nlist->getLength(); i++)
             if (nlist->item(i)->getParentNode()->isSameNode(e))
@@ -1038,7 +1038,7 @@ void XMLConfigImpl::init(bool first)
 
             // Now we load any attribute factories.
             DOMNodeList* nlist=ReloadableXMLFileImpl::m_root->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(AttributeFactory));
-            for (int i=0; nlist && i<nlist->getLength(); i++) {
+            for (XMLSize_t i=0; nlist && i<nlist->getLength(); i++) {
                 auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
                 log.info("building Attribute factory of type %s...",type.get());
                 try {
@@ -1092,7 +1092,7 @@ void XMLConfigImpl::init(bool first)
         DOMNodeList* nlist;
         if (conf.isEnabled(ShibTargetConfig::Credentials)) {
             nlist=ReloadableXMLFileImpl::m_root->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(CredentialsProvider));
-            for (int i=0; nlist && i<nlist->getLength(); i++) {
+            for (XMLSize_t i=0; nlist && i<nlist->getLength(); i++) {
                 auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
                 log.info("building credentials provider of type %s...",type.get());
                 try {
@@ -1126,7 +1126,7 @@ void XMLConfigImpl::init(bool first)
         
         // Load any overrides.
         nlist=app->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Application));
-        for (int j=0; nlist && j<nlist->getLength(); j++) {
+        for (XMLSize_t j=0; nlist && j<nlist->getLength(); j++) {
             XMLApplication* iapp=new XMLApplication(m_outer,m_creds,static_cast<DOMElement*>(nlist->item(j)),defapp);
             if (m_appmap.find(iapp->getId())!=m_appmap.end()) {
                 log.fatal("found conf:Application element with duplicate Id attribute");

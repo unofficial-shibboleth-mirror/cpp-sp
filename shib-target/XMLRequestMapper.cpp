@@ -162,7 +162,6 @@ Override::Override(const DOMElement* e, Category& log, const Override* base) : m
         loadACL(e,log);
     
         // Handle nested Paths.
-        unsigned int count=0;
         DOMElement* path=saml::XML::getFirstChildElement(e,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Path));
         while (path) {
             const XMLCh* n=path->getAttributeNS(NULL,SHIBT_L(name));
@@ -348,7 +347,7 @@ void XMLRequestMapperImpl::init()
     
         // Loop over the Host elements.
         DOMNodeList* nlist = ReloadableXMLFileImpl::m_root->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Host));
-        for (int i=0; nlist && i<nlist->getLength(); i++) {
+        for (XMLSize_t i=0; nlist && i<nlist->getLength(); i++) {
             DOMElement* host=static_cast<DOMElement*>(nlist->item(i));
             const XMLCh* n=host->getAttributeNS(NULL,SHIBT_L(name));
             if (!n || !*n) {

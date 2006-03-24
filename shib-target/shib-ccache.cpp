@@ -193,9 +193,10 @@ IPlugIn* MemoryCacheFactory(const DOMElement* e)
 /******************************************************************************/
 
 InternalCCache::InternalCCache(const DOMElement* e)
-    : m_root(e), m_AATimeout(30), m_AAConnectTimeout(15), m_defaultLifetime(1800), m_retryInterval(300),
-        m_strictValidity(true), m_propagateErrors(false), lock(RWLock::create()),
-        log (&Category::getInstance(SHIBT_LOGCAT".SessionCache"))
+    : m_root(e), lock(RWLock::create()), log(&Category::getInstance(SHIBT_LOGCAT".SessionCache")),
+        m_AATimeout(30), m_AAConnectTimeout(15), m_defaultLifetime(1800), m_retryInterval(300),
+        m_strictValidity(true), m_propagateErrors(false) 
+        
 {
     const XMLCh* tag=m_root->getAttributeNS(NULL,AATimeout);
     if (tag && *tag) {
@@ -463,8 +464,8 @@ InternalCCacheEntry::InternalCCacheEntry(
     const IRoleDescriptor* source,
     time_t created,
     time_t accessed
-    ) : m_cache(cache), m_application_id(application->getId()), m_profile(profile), m_auth_statement(s),
-        m_response_pre(r), m_response_post(NULL), m_responseCreated(r ? time(NULL) : 0), m_lastRetry(0)
+    ) : m_application_id(application->getId()), m_responseCreated(r ? time(NULL) : 0), m_lastRetry(0),
+        m_profile(profile), m_auth_statement(s), m_response_pre(r), m_response_post(NULL), m_cache(cache) 
 {
   if (!cache || !key || !s || !client_addr || !providerId) {
     if (cache) cache->log->error("missing required cache entry details");

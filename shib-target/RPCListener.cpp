@@ -58,7 +58,7 @@ namespace shibtarget {
     {
     public:
         RPCHandlePool(Category& log, const RPCListener* listener)
-            : m_log(log), m_listener(listener), m_lock(shibboleth::Mutex::create()) {}
+            : m_listener(listener), m_log(log), m_lock(shibboleth::Mutex::create()) {}
         ~RPCHandlePool();
         RPCHandle* get();
         void put(RPCHandle*);
@@ -494,7 +494,7 @@ void RPCListener::ping(int& i) const
     rpc.pool();
 }
 
-RPCHandle::RPCHandle(Category& log) : m_clnt(NULL), m_sock((IListener::ShibSocket)0), m_log(log)
+RPCHandle::RPCHandle(Category& log) : m_log(log), m_clnt(NULL), m_sock((IListener::ShibSocket)0)
 {
     m_log.debug("New RPCHandle created: %p", this);
 }

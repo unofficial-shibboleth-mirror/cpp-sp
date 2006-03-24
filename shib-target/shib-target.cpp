@@ -793,7 +793,7 @@ void* ShibTarget::returnOK(void)
  * Shib Target Private implementation
  */
 
-ShibTargetPriv::ShibTargetPriv() : m_app(NULL), m_mapper(NULL), m_conf(NULL), m_Config(NULL), m_cacheEntry(NULL) {}
+ShibTargetPriv::ShibTargetPriv() : m_app(NULL), m_cacheEntry(NULL), m_Config(NULL), m_conf(NULL), m_mapper(NULL) {}
 
 ShibTargetPriv::~ShibTargetPriv()
 {

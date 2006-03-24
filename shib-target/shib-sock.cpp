@@ -94,8 +94,8 @@ TCPListener::TCPListener(const DOMElement* e) : RPCListener(e), m_address("127.0
         auto_ptr_char temp(tag);
         string sockacl=temp.get();
         if (sockacl.length()) {
-            int j = 0;
-            for (int i=0;  i < sockacl.length();  i++) {
+            unsigned int j = 0;
+            for (unsigned int i=0;  i < sockacl.length();  i++) {
                 if (sockacl.at(i)==' ') {
                     m_acl.push_back(sockacl.substr(j, i-j));
                     j = i+1;
