@@ -241,7 +241,7 @@ const IPropertySet* SessionInitiator::getCompatibleACS(const IApplication* app, 
     
     // If not, iterate by profile.
     for (vector<ShibProfile>::const_iterator i=profiles.begin(); i!=profiles.end(); i++) {
-        for (unsigned short j=0; j<=65535; j++) {
+        for (unsigned int j=0; j<=65535; j++) {
             ACS=app->getAssertionConsumerServiceByIndex(j);
             if (!ACS && j)
                 break;  // we're past 0 and didn't get a hit, so we'll bail
@@ -270,6 +270,8 @@ const IPropertySet* SessionInitiator::getCompatibleACS(const IApplication* app, 
                     case SAML10_ARTIFACT:
                         if (version.second==0 && !XMLString::compareString(binding.second,SAMLBrowserProfile::BROWSER_ARTIFACT))
                             return ACS;
+                        break;
+                    default:
                         break;
                 }
             }
@@ -306,7 +308,7 @@ pair<bool,void*> SessionInitiator::ShibAuthnRequest(
     if (shire) ACSloc+=shire->getString("Location").second;
     
     char timebuf[16];
-    sprintf(timebuf,"%u",time(NULL));
+    sprintf(timebuf,"%lu",time(NULL));
     string req=string(dest) + "?shire=" + CgiParse::url_encode(ACSloc.c_str()) + "&time=" + timebuf;
 
     // How should the resource value be preserved?

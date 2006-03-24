@@ -828,7 +828,7 @@ XMLMetadataImpl::IDPRole::IDPRole(const EntityDescriptor* provider, time_t valid
                 src=saml::XML::getNextSiblingElement(src,::XML::SAML2ASSERT_NS,L(AttributeValue));
                 DOMElement* val=e->getOwnerDocument()->createElementNS(saml::XML::SAML_NS,L(AttributeValue));
                 DOMNamedNodeMap* attrs = src->getAttributes();
-                for (int j=0; j<attrs->getLength(); j++)
+                for (XMLSize_t j=0; j<attrs->getLength(); j++)
                     val->setAttributeNodeNS(static_cast<DOMAttr*>(e->getOwnerDocument()->importNode(attrs->item(j),true)));
                 while (src->hasChildNodes())
                     val->appendChild(src->getFirstChild());
@@ -909,7 +909,7 @@ XMLMetadataImpl::AARole::AARole(const EntityDescriptor* provider, time_t validUn
                 src=saml::XML::getNextSiblingElement(src,::XML::SAML2ASSERT_NS,L(AttributeValue));
                 DOMElement* val=e->getOwnerDocument()->createElementNS(saml::XML::SAML_NS,L(AttributeValue));
                 DOMNamedNodeMap* attrs = src->getAttributes();
-                for (int j=0; j<attrs->getLength(); j++)
+                for (XMLSize_t j=0; j<attrs->getLength(); j++)
                     val->setAttributeNodeNS(static_cast<DOMAttr*>(e->getOwnerDocument()->importNode(attrs->item(j),true)));
                 while (src->hasChildNodes())
                     val->appendChild(src->getFirstChild());
@@ -1086,7 +1086,7 @@ XMLMetadataImpl::EntityDescriptor::~EntityDescriptor()
 
 XMLMetadataImpl::EntitiesDescriptor::EntitiesDescriptor(
     const DOMElement* e, XMLMetadataImpl* wrapper, time_t validUntil, const IEntitiesDescriptor* parent
-    ) : m_root(e), m_name(e->getAttributeNS(NULL,SHIB_L(Name))), m_parent(parent), m_validUntil(validUntil)
+    ) : m_root(e),  m_parent(parent), m_name(e->getAttributeNS(NULL,SHIB_L(Name))), m_validUntil(validUntil)
 {
     // Check the root element namespace. If SAML2, assume it's the std schema.
     if (!XMLString::compareString(e->getNamespaceURI(),::XML::SAML2META_NS)) {
@@ -1223,7 +1223,7 @@ XMLMetadata::XMLMetadata(const DOMElement* e) : ReloadableXMLFile(e), m_exclusio
         // If there was no explicit enablement, build a set of exclusions.
         if (m_exclusions) {
             nlist=e->getElementsByTagName(SHIB_L(Exclude));
-            for (int j=0; nlist && j<nlist->getLength(); j++) {
+            for (XMLSize_t j=0; nlist && j<nlist->getLength(); j++) {
                 if (nlist->item(j)->hasChildNodes()) {
                     auto_ptr_char temp(nlist->item(j)->getFirstChild()->getNodeValue());
                     if (temp.get())
@@ -1322,7 +1322,7 @@ bool XMLMetadata::verifySignature(DOMDocument* doc, const DOMElement* parent, bo
                 if (!URI || !*URI || (*URI==chPound &&
                         !XMLString::compareString(&URI[1],static_cast<DOMElement*>(sigNode->getParentNode())->getAttributeNS(NULL,ID)))) {
                     DSIGTransformList* tlist=ref->getTransforms();
-                    for (int i=0; tlist && i<tlist->getSize(); i++) {
+                    for (unsigned int i=0; tlist && i<tlist->getSize(); i++) {
                         if (tlist->item(i)->getTransformType()==TRANSFORM_ENVELOPED_SIGNATURE)
                             valid=true;
                         else if (tlist->item(i)->getTransformType()!=TRANSFORM_EXC_C14N &&

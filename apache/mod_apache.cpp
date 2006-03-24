@@ -481,7 +481,7 @@ IPlugIn* ApacheRequestMapFactory(const DOMElement* e)
     return new ApacheRequestMapper(e);
 }
 
-ApacheRequestMapper::ApacheRequestMapper(const DOMElement* e) : m_mapper(NULL), m_htaccess(NULL), m_staKey(NULL), m_propsKey(NULL)
+ApacheRequestMapper::ApacheRequestMapper(const DOMElement* e) : m_mapper(NULL), m_staKey(NULL), m_propsKey(NULL), m_htaccess(NULL)
 {
     IPlugIn* p=SAMLConfig::getConfig().getPlugMgr().newPlugin(shibtarget::XML::XMLRequestMapType,e);
     m_mapper=dynamic_cast<IRequestMapper*>(p);
@@ -750,8 +750,8 @@ bool htAccessControl::authorized(
                     }
                     
                     string vals_str(vals);
-                    int j = 0;
-                    for (int i = 0;  i < vals_str.length();  i++) {
+                    unsigned int j = 0;
+                    for (unsigned int i = 0;  i < vals_str.length();  i++) {
                         if (vals_str.at(i) == ';') {
                             if (i == 0) {
                                 st->log(ShibTarget::LogLevelError, string("htAccessControl plugin found invalid header encoding (") +
