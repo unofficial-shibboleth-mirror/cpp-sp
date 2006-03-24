@@ -12,11 +12,11 @@ AC_ARG_ENABLE(debug,
     enable_debug=$enableval, enable_debug=no)
 
 if test "$enable_debug" = "yes" ; then
-    GCC_CFLAGS="$CFLAGS -g -D_DEBUG"
-    GCC_CXXFLAGS="$CXXFLAGS -g -D_DEBUG"
+    GCC_CFLAGS="$CFLAGS -Wall -g -D_DEBUG"
+    GCC_CXXFLAGS="$CXXFLAGS -Wall -g -D_DEBUG"
 else
-    GCC_CFLAGS="$CFLAGS -O2 -DNDEBUG"
-    GCC_CXXFLAGS="$CXXFLAGS -O2 -DNDEBUG"
+    GCC_CFLAGS="$CFLAGS -Wall -O2 -DNDEBUG"
+    GCC_CXXFLAGS="$CXXFLAGS -Wall -O2 -DNDEBUG"
 fi
 
 AC_PROG_CC([gcc gcc3 cc])
@@ -764,6 +764,8 @@ if test -n "$APXS2_CC" && test "$APXS2_CC" != "$CC" ; then
   echo "This could cause some problems."
   echo "=================================================================="
 fi
+
+LIBTOOL="$LIBTOOL --silent"
 
 AC_OUTPUT
 
