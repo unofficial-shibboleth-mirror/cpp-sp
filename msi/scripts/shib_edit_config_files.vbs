@@ -191,6 +191,9 @@ if (Err = 0) then
     FileSystemObj.CopyFile DistDir & "sp-example.key", ConfigDir, false
   End If
 
+  If (NOT FileSystemObj.FileExists(ConfigDir & "sslError.html")) then
+    FileSystemObj.CopyFile DistDir & "sslError.html", ConfigDir, false
+  End If
 
 'Last End If
 End If
