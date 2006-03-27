@@ -349,10 +349,11 @@ bool ShibbolethTrust::validate(void* certEE, const Iterator<void*>& certChain, c
                             
                             for (vector<string>::const_iterator n=keynames.begin(); n!=keynames.end(); n++) {
 #ifdef HAVE_STRCASECMP
-                                if (!strncasecmp(altptr,n->c_str(),altlen)) {
+                                if ((check->type==GEN_DNS && !strncasecmp(altptr,n->c_str(),altlen))
 #else
-                                if (!strnicmp(altptr,n->c_str(),altlen)) {
+                                if ((check->type==GEN_DNS && !strnicmp(altptr,n->c_str(),altlen))
 #endif
+                                        || (check->type==GEN_URI && !strncmp(altptr,n->c_str(),altlen))) {
                                     log.info("matched DNS/URI subjectAltName to a key name (%s)", n->c_str());
                                     checkName=false;
                                     break;
