@@ -20,7 +20,12 @@
    12/13/04
 */
 
-#include "config_win32.h"
+#if defined (_MSC_VER) || defined(__BORLANDC__)
+# include "config_win32.h"
+#else
+# include "config.h"
+#endif
+
 
 // SAML Runtime
 #include <saml/saml.h>
