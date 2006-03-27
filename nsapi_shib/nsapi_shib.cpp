@@ -478,13 +478,27 @@ pair<bool,const XMLCh*> SunRequestMapper::getXMLString(const char* name, const c
 
 pair<bool,unsigned int> SunRequestMapper::getUnsignedInt(const char* name, const char* ns) const
 {
+    ShibTargetNSAPI* stn=reinterpret_cast<ShibTargetNSAPI*>(m_stKey->getData());
     const IPropertySet* s=reinterpret_cast<const IPropertySet*>(m_propsKey->getData());
+    if (stn && !ns && name) {
+        // Override int properties.
+        const char* param=pblock_findval(name,stn->m_pb);
+        if (param)
+            return pair<bool,unsigned int>(true,strtol(param,NULL,10));
+    }
     return s ? s->getUnsignedInt(name,ns) : pair<bool,unsigned int>(false,0);
 }
 
 pair<bool,int> SunRequestMapper::getInt(const char* name, const char* ns) const
 {
+    ShibTargetNSAPI* stn=reinterpret_cast<ShibTargetNSAPI*>(m_stKey->getData());
     const IPropertySet* s=reinterpret_cast<const IPropertySet*>(m_propsKey->getData());
+    if (stn && !ns && name) {
+        // Override int properties.
+        const char* param=pblock_findval(name,stn->m_pb);
+        if (param)
+            return pair<bool,int>(true,atoi(param));
+    }
     return s ? s->getInt(name,ns) : pair<bool,int>(false,0);
 }
 

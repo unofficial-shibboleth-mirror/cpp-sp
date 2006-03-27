@@ -156,6 +156,26 @@ pair<bool,void*> ShibTarget::doCheckAuthN(bool handler)
         if (!m_priv->m_app)
             throw ConfigurationException("System uninitialized, application did not supply request information.");
 
+        // If not SSL, check to see if we should block or redirect it.
+        if (!strcmp("http",getProtocol())) {
+            pair<bool,const char*> redirectToSSL = m_priv->m_settings.first->getString("redirectToSSL");
+            if (redirectToSSL.first) {
+                if (!strcasecmp("GET",getRequestMethod()) || !strcasecmp("HEAD",getRequestMethod())) {
+                    // Compute the new target URL
+                    string redirectURL = string("https://") + getHostname();
+                    if (strcmp(redirectToSSL.second,"443")) {
+                        redirectURL = redirectURL + ':' + redirectToSSL.second;
+                    }
+                    redirectURL += getRequestURI();
+                    return make_pair(true, sendRedirect(redirectURL));
+                }
+                else {
+                    mlp.insert("requestURL", m_url.substr(0,m_url.find('?')));
+                    return make_pair(true,m_priv->sendError(this,"ssl", mlp));
+                }
+            }
+        }
+        
         string hURL = getHandlerURL(targetURL);
         const char* handlerURL=hURL.c_str();
         if (!handlerURL)

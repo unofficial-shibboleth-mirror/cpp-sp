@@ -125,6 +125,7 @@ struct shib_dir_config
     // Content Configuration
     char* szApplicationId;  // Shib applicationId value
     char* szRequireWith;    // require a session using a specific initiator?
+    char* szRedirectToSSL;  // redirect non-SSL requests to SSL port
     int bOff;               // flat-out disable all Shib processing
     int bBasicHijack;       // activate for AuthType Basic?
     int bRequireSession;    // require a session?
@@ -140,6 +141,7 @@ extern "C" void* create_shib_dir_config (SH_AP_POOL* p, char* d)
     dc->bRequireSession = -1;
     dc->bExportAssertion = -1;
     dc->bRequireAll = -1;
+    dc->szRedirectToSSL = NULL;
     dc->szAuthGrpFile = NULL;
     dc->szApplicationId = NULL;
     dc->szRequireWith = NULL;
@@ -173,6 +175,13 @@ extern "C" void* merge_shib_dir_config (SH_AP_POOL* p, void* base, void* sub)
         dc->szRequireWith=ap_pstrdup(p,parent->szRequireWith);
     else
         dc->szRequireWith=NULL;
+
+    if (child->szRedirectToSSL)
+        dc->szRedirectToSSL=ap_pstrdup(p,child->szRedirectToSSL);
+    else if (parent->szRedirectToSSL)
+        dc->szRedirectToSSL=ap_pstrdup(p,parent->szRedirectToSSL);
+    else
+        dc->szRedirectToSSL=NULL;
 
     dc->bOff=((child->bOff==-1) ? parent->bOff : child->bOff);
     dc->bBasicHijack=((child->bBasicHijack==-1) ? parent->bBasicHijack : child->bBasicHijack);
@@ -238,7 +247,7 @@ public:
 
     m_req = req;
   }
-  ~ShibTargetApache() {}
+  virtual ~ShibTargetApache() {}
 
   virtual void log(ShibLogLevel level, const string &msg) {
     ShibTarget::log(level,msg);
@@ -494,7 +503,7 @@ IPlugIn* ApacheRequestMapFactory(const DOMElement* e)
     return new ApacheRequestMapper(e);
 }
 
-ApacheRequestMapper::ApacheRequestMapper(const DOMElement* e) : m_mapper(NULL), m_htaccess(NULL), m_staKey(NULL), m_propsKey(NULL)
+ApacheRequestMapper::ApacheRequestMapper(const DOMElement* e) : m_mapper(NULL), m_staKey(NULL), m_propsKey(NULL), m_htaccess(NULL)
 {
     IPlugIn* p=SAMLConfig::getConfig().getPlugMgr().newPlugin(shibtarget::XML::XMLRequestMapType,e);
     m_mapper=dynamic_cast<IRequestMapper*>(p);
@@ -548,6 +557,8 @@ pair<bool,const char*> ApacheRequestMapper::getString(const char* name, const ch
             return pair<bool,const char*>(true,sta->m_dc->szApplicationId);
         else if (name && !strcmp(name,"requireSessionWith") && sta->m_dc->szRequireWith)
             return pair<bool,const char*>(true,sta->m_dc->szRequireWith);
+        else if (name && !strcmp(name,"redirectToSSL") && sta->m_dc->szRedirectToSSL)
+            return pair<bool,const char*>(true,sta->m_dc->szRedirectToSSL);
     }
     return s ? s->getString(name,ns) : pair<bool,const char*>(false,NULL);
 }
@@ -560,13 +571,25 @@ pair<bool,const XMLCh*> ApacheRequestMapper::getXMLString(const char* name, cons
 
 pair<bool,unsigned int> ApacheRequestMapper::getUnsignedInt(const char* name, const char* ns) const
 {
+    ShibTargetApache* sta=reinterpret_cast<ShibTargetApache*>(m_staKey->getData());
     const IPropertySet* s=reinterpret_cast<const IPropertySet*>(m_propsKey->getData());
+    if (sta && !ns) {
+        // Override Apache-settable int properties.
+        if (name && !strcmp(name,"redirectToSSL") && sta->m_dc->szRedirectToSSL)
+            return pair<bool,unsigned int>(true,strtol(sta->m_dc->szRedirectToSSL,NULL,10));
+    }
     return s ? s->getUnsignedInt(name,ns) : pair<bool,unsigned int>(false,0);
 }
 
 pair<bool,int> ApacheRequestMapper::getInt(const char* name, const char* ns) const
 {
+    ShibTargetApache* sta=reinterpret_cast<ShibTargetApache*>(m_staKey->getData());
     const IPropertySet* s=reinterpret_cast<const IPropertySet*>(m_propsKey->getData());
+    if (sta && !ns) {
+        // Override Apache-settable int properties.
+        if (name && !strcmp(name,"redirectToSSL") && sta->m_dc->szRedirectToSSL)
+            return pair<bool,int>(true,atoi(sta->m_dc->szRedirectToSSL));
+    }
     return s ? s->getInt(name,ns) : pair<bool,int>(false,0);
 }
 
@@ -942,16 +965,14 @@ typedef const char* (*config_fn_t)(void);
 // SHIB Module commands
 
 static command_rec shire_cmds[] = {
-  {"SHIREConfig", (config_fn_t)ap_set_global_string_slot, &g_szSHIBConfig,
-   RSRC_CONF, TAKE1, "Path to shibboleth.xml config file."},
   {"ShibConfig", (config_fn_t)ap_set_global_string_slot, &g_szSHIBConfig,
-   RSRC_CONF, TAKE1, "Path to shibboleth.xml config file."},
+   RSRC_CONF, TAKE1, "Path to shibboleth.xml config file"},
   {"ShibSchemaDir", (config_fn_t)ap_set_global_string_slot, &g_szSchemaDir,
-   RSRC_CONF, TAKE1, "Path to Shibboleth XML schema directory."},
+   RSRC_CONF, TAKE1, "Path to Shibboleth XML schema directory"},
 
   {"ShibURLScheme", (config_fn_t)shib_set_server_string_slot,
    (void *) XtOffsetOf (shib_server_config, szScheme),
-   RSRC_CONF, TAKE1, "URL scheme to force into generated URLs for a vhost."},
+   RSRC_CONF, TAKE1, "URL scheme to force into generated URLs for a vhost"},
    
   {"ShibDisable", (config_fn_t)ap_set_flag_slot,
    (void *) XtOffsetOf (shib_dir_config, bOff),
@@ -961,22 +982,25 @@ static command_rec shire_cmds[] = {
    OR_AUTHCFG, TAKE1, "Set Shibboleth applicationId property for content"},
   {"ShibBasicHijack", (config_fn_t)ap_set_flag_slot,
    (void *) XtOffsetOf (shib_dir_config, bBasicHijack),
-   OR_AUTHCFG, FLAG, "Respond to AuthType Basic and convert to shib?"},
+   OR_AUTHCFG, FLAG, "Respond to AuthType Basic and convert to shibboleth"},
   {"ShibRequireSession", (config_fn_t)ap_set_flag_slot,
    (void *) XtOffsetOf (shib_dir_config, bRequireSession),
-   OR_AUTHCFG, FLAG, "Initiates a new session if one does not exist."},
+   OR_AUTHCFG, FLAG, "Initiates a new session if one does not exist"},
   {"ShibRequireSessionWith", (config_fn_t)ap_set_string_slot,
    (void *) XtOffsetOf (shib_dir_config, szRequireWith),
    OR_AUTHCFG, TAKE1, "Initiates a new session if one does not exist using a specific SessionInitiator"},
   {"ShibExportAssertion", (config_fn_t)ap_set_flag_slot,
    (void *) XtOffsetOf (shib_dir_config, bExportAssertion),
-   OR_AUTHCFG, FLAG, "Export SAML attribute assertion(s) to Shib-Attributes header?"},
+   OR_AUTHCFG, FLAG, "Export SAML attribute assertion(s) to Shib-Attributes header"},
+  {"ShibRedirectToSSL", (config_fn_t)ap_set_string_slot,
+   (void *) XtOffsetOf (shib_dir_config, szRedirectToSSL),
+   OR_AUTHCFG, TAKE1, "Redirect non-SSL requests to designated port" },
   {"AuthGroupFile", (config_fn_t)shib_ap_set_file_slot,
    (void *) XtOffsetOf (shib_dir_config, szAuthGrpFile),
    OR_AUTHCFG, TAKE1, "text file containing group names and member user IDs"},
   {"ShibRequireAll", (config_fn_t)ap_set_flag_slot,
    (void *) XtOffsetOf (shib_dir_config, bRequireAll),
-   OR_AUTHCFG, FLAG, "All require directives must match!"},
+   OR_AUTHCFG, FLAG, "All require directives must match"},
 
   {NULL}
 };
@@ -1025,40 +1049,43 @@ extern "C" {
 static command_rec shib_cmds[] = {
   AP_INIT_TAKE1("ShibConfig",
 		(config_fn_t)ap_set_global_string_slot, &g_szSHIBConfig,
-		RSRC_CONF, "Path to shibboleth.xml config file."),
+		RSRC_CONF, "Path to shibboleth.xml config file"),
   AP_INIT_TAKE1("ShibSchemaDir",
      (config_fn_t)ap_set_global_string_slot, &g_szSchemaDir,
-      RSRC_CONF, "Path to Shibboleth XML schema directory."),
+      RSRC_CONF, "Path to Shibboleth XML schema directory"),
 
   AP_INIT_TAKE1("ShibURLScheme",
      (config_fn_t)shib_set_server_string_slot,
      (void *) offsetof (shib_server_config, szScheme),
-      RSRC_CONF, "URL scheme to force into generated URLs for a vhost."),
+      RSRC_CONF, "URL scheme to force into generated URLs for a vhost"),
 
   AP_INIT_FLAG("ShibDisable", (config_fn_t)ap_set_flag_slot,
-         (void *) offsetof (shib_dir_config, bOff),
+        (void *) offsetof (shib_dir_config, bOff),
         OR_AUTHCFG, "Disable all Shib module activity here to save processing effort"),
   AP_INIT_TAKE1("ShibApplicationId", (config_fn_t)ap_set_string_slot,
-         (void *) offsetof (shib_dir_config, szApplicationId),
+        (void *) offsetof (shib_dir_config, szApplicationId),
         OR_AUTHCFG, "Set Shibboleth applicationId property for content"),
   AP_INIT_FLAG("ShibBasicHijack", (config_fn_t)ap_set_flag_slot,
-	       (void *) offsetof (shib_dir_config, bBasicHijack),
-	       OR_AUTHCFG, "Respond to AuthType Basic and convert to shib?"),
+        (void *) offsetof (shib_dir_config, bBasicHijack),
+        OR_AUTHCFG, "Respond to AuthType Basic and convert to shibboleth"),
   AP_INIT_FLAG("ShibRequireSession", (config_fn_t)ap_set_flag_slot,
-         (void *) offsetof (shib_dir_config, bRequireSession),
-        OR_AUTHCFG, "Initiates a new session if one does not exist."),
+        (void *) offsetof (shib_dir_config, bRequireSession),
+        OR_AUTHCFG, "Initiates a new session if one does not exist"),
   AP_INIT_TAKE1("ShibRequireSessionWith", (config_fn_t)ap_set_string_slot,
-         (void *) offsetof (shib_dir_config, szRequireWith),
+        (void *) offsetof (shib_dir_config, szRequireWith),
         OR_AUTHCFG, "Initiates a new session if one does not exist using a specific SessionInitiator"),
   AP_INIT_FLAG("ShibExportAssertion", (config_fn_t)ap_set_flag_slot,
-         (void *) offsetof (shib_dir_config, bExportAssertion),
-        OR_AUTHCFG, "Export SAML attribute assertion(s) to Shib-Attributes header?"),
+        (void *) offsetof (shib_dir_config, bExportAssertion),
+        OR_AUTHCFG, "Export SAML attribute assertion(s) to Shib-Attributes header"),
+  AP_INIT_TAKE1("ShibRedirectToSSL", (config_fn_t)ap_set_string_slot,
+        (void *) offsetof (shib_dir_config, szRedirectToSSL),
+        OR_AUTHCFG, "Redirect non-SSL requests to designated port"),
   AP_INIT_TAKE1("AuthGroupFile", (config_fn_t)shib_ap_set_file_slot,
 		(void *) offsetof (shib_dir_config, szAuthGrpFile),
 		OR_AUTHCFG, "Text file containing group names and member user IDs"),
   AP_INIT_FLAG("ShibRequireAll", (config_fn_t)ap_set_flag_slot,
-	       (void *) offsetof (shib_dir_config, bRequireAll),
-	       OR_AUTHCFG, "All require directives must match!"),
+        (void *) offsetof (shib_dir_config, bRequireAll),
+        OR_AUTHCFG, "All require directives must match"),
 
   {NULL}
 };

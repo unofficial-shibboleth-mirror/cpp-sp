@@ -280,6 +280,7 @@
 		<attribute name="requireSession" type="boolean" use="optional"/>
 		<attribute name="requireSessionWith" type="string" use="optional"/>
 		<attribute name="exportAssertion" type="boolean" use="optional"/>
+		<attribute name="redirectToSSL" type="unsignedInt" use="optional"/>
 		<anyAttribute namespace="##other" processContents="lax"/>
 	</attributeGroup>
 	<element name="AccessControlProvider" type="conf:PluggableType"/>
@@ -491,6 +492,7 @@
 			<attribute name="metadata" type="anyURI" use="optional"/>
 			<attribute name="rm" type="anyURI" use="required"/>
 			<attribute name="access" type="anyURI" use="optional"/>
+			<attribute name="ssl" type="anyURI" use="optional"/>
 			<attribute name="supportContact" type="string" use="optional"/>
 			<attribute name="logoLocation" type="anyURI" use="optional"/>
 			<attribute name="styleSheet" type="anyURI" use="optional"/>
