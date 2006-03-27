@@ -190,6 +190,7 @@
 			metadata="@-PKGSYSCONFDIR-@/metadataError.html"
 			rm="@-PKGSYSCONFDIR-@/rmError.html"
 			access="@-PKGSYSCONFDIR-@/accessError.html"
+			ssl="@-PKGSYSCONFDIR-@/sslError.html"
 			supportContact="root@localhost"
 			logoLocation="/shibboleth-sp/logo.jpg"
 			styleSheet="/shibboleth-sp/main.css"/>

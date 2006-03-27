@@ -33,6 +33,7 @@ CONFIGFILES = \
 	rmError.html \
 	sessionError.html \
 	metadataError.html \
+	sslError.html \
 	sp-example.key \
 	sp-example.crt
 
@@ -124,6 +125,7 @@ EXTRA_DIST = .cvsignore \
 	rmError.html \
 	sessionError.html \
 	metadataError.html \
+	sslError.html \
 	AAP.xml.in \
 	IQ-metadata.xml.in \
 	example-metadata.xml.in \
