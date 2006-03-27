@@ -548,14 +548,29 @@ if test "$APXS2" = "no"; then
 
 elif test -n "$APXS2"; then
 
-	# APR settings
-	AC_PATH_PROG(APR_CONFIG,apr-config)
-	AC_ARG_WITH(apr,
-	            AC_HELP_STRING([--with-apr=PATH], [where APR is installed]),
-	            [APR_CONFIG="${with_apr}/bin/apr-config"])
+    # APR settings
+    AC_ARG_WITH(apr, 
+        AC_HELP_STRING([--with-apr=PATH], [where apr-config is installed]),
+        [
+        AC_MSG_CHECKING(for user-specified apr-config name/location)
+        if test "$withval" != "no" ; then
+            if test "$withval" != "yes"; then
+                APR_CONFIG=$withval
+                AC_MSG_RESULT("$withval")
+            fi
+        fi
+        ],
+        [
+        AC_PATH_PROG(APR_CONFIG, apr-config)
+        if test "$APR_CONFIG" == "" ; then
+            AC_PATH_PROG(APR_CONFIG, apr-1-config)
+        fi
+        ])
 	if test -f "${APR_CONFIG}"; then
-	    APR_CFLAGS="`${APR_CONFIG} --cflags` `${APR_CONFIG} --cppflags` `${APR_CONFIG} --includes`"
-	fi
+        APR_CFLAGS="`${APR_CONFIG} --cflags` `${APR_CONFIG} --cppflags` `${APR_CONFIG} --includes`"
+    else
+        AC_MSG_ERROR([Unable to locate apr-config, may need --with-apr option.])
+    fi
 
     # extract settings we need from APXS2 -q
     APXS2_CC="`$APXS2 -q CC`"
