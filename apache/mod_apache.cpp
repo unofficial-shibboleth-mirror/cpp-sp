@@ -768,8 +768,12 @@ bool htAccessControl::authorized(
             }
 
             bool regexp=false;
-            const char* vals=ap_table_get(sta->m_req->headers_in,wrapper->getHeader());
-            while (*t && vals) {
+            const char* vals;
+            if (!strcmp(wrapper->getHeader(),"REMOTE_USER"))
+                vals=remote_user.c_str();
+            else
+                vals=ap_table_get(sta->m_req->headers_in,wrapper->getHeader());
+            while (*t && vals && *vals) {
                 w=ap_getword_conf(sta->m_req->pool,&t);
                 if (*w=='~') {
                     regexp=true;
