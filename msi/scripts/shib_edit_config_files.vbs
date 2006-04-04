@@ -152,6 +152,19 @@ if (Err = 0) then
   End If
   FileSystemObj.MoveFile ConfigFile, DistDir & "apache2.config"
 
+  ConfigFile = DistDir & "apache22.config.in"
+  ReplaceInFile ConfigFile, "@-PKGXMLDIR-@", ConvertedDir & "/share/xml/shibboleth"
+  ReplaceInFile ConfigFile, "@-PKGSYSCONFDIR-@", ConvertedDir & "/etc/shibboleth"
+  ReplaceInFile ConfigFile, "@-LIBEXECDIR-@", ConvertedDir & "/libexec"
+  ReplaceInFile ConfigFile, "@-PREFIX-@", ConvertedDir
+  If (NOT FileSystemObj.FileExists(ConfigDir & "apache22.config")) then
+    FileSystemObj.CopyFile ConfigFile, ConfigDir & "apache22.config", false
+  End If
+  If (FileSystemObj.FileExists(DistDir & "apache22.config")) then
+    FileSystemObj.DeleteFile DistDir & "apache22.config", true
+  End If
+  FileSystemObj.MoveFile ConfigFile, DistDir & "apache22.config"
+
 
   'Now just copy the other non-edited files over as well (if possible)
 
