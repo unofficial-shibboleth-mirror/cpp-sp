@@ -1025,7 +1025,7 @@ module MODULE_VAR_EXPORT mod_shib = {
     NULL			/* post read-request */
 };
 
-#elif defined(SHIB_APACHE_20)
+#elif defined(SHIB_APACHE_20) || defined(SHIB_APACHE_22)
 
 extern "C" void shib_register_hooks (apr_pool_t *p)
 {
