@@ -63,7 +63,10 @@ installed.
 %setup -q
 
 %build
-%configure --enable-apache-20
+# Default value is --enable-apache-20
+# If no Apache macro exists, then add the default definition
+%{!?_with_apache13: %{!?_with_apache20: %{!?_with_apache22: %define _with_apache20 1}}}
+%configure %{?shib_options} %{?_with_apache13: --enable-apache-13} %{?_with_apache20: --enable-apache-20} %{?_with_apache22: --enable-apache-22}
 make
 make -C selinux
 
@@ -87,14 +90,19 @@ make check
 %post
 /sbin/ldconfig
 
-# Plug the shibboleth SP into Apache2 on a Red Hat system.
+# Plug the shibboleth SP into Apache on a Red Hat system.
+%{?_with_apache13: %define apache_config apache.config}
+%{?_with_apache20: %define apache_config apache2.config}
+%{?_with_apache22: %define apache_config apache22.config}
+%if %{?apache_config:1}
 if [ -d %{_sysconfdir}/httpd/conf.d ] ; then 
 	if [ ! -f %{_sysconfdir}/httpd/conf.d/shib.conf ] ; then
 		sed "s/\/usr\/doc\/shibboleth/\/usr\/share\/doc\/shibboleth-@-VERSION-@/g" \
-			%{_sysconfdir}/shibboleth/apache2.config \
+			%{_sysconfdir}/shibboleth/{?apache_config} \
 			> %{_sysconfdir}/httpd/conf.d/shib.conf
 	fi
 fi
+%endif
 
 # Install the shibd init.d scripts and service
 if [ -d %{_sysconfdir}/init.d ] ; then
@@ -167,8 +175,8 @@ restorecon %{_sbindir}/shibd
 %{_sysconfdir}/selinux/targeted/src/policy/domains/program/*.te
 
 %changelog
-* Fri Mar 24 2006 Scott Cantor  <cantor.2@osu.edu>  - 1.3-9
-- General cleanup, fixes, 64-bit support
+* Fri Apr 15 2006 Scott Cantor  <cantor.2@osu.edu>  - 1.3-9
+- Misc. patches, Apache 2.2, gcc 4.1, and 64-bit support
 
 * Mon Jan 9 2006 Scott Cantor  <cantor.2@osu.edu>  - 1.3-8
 - Applied new fix for secadv 20060109
