@@ -339,8 +339,7 @@ if test "$WANT_APACHE_13" = "yes" ; then
     AC_MSG_CHECKING([to see if apxs was located])
     if test ! -f "$APXS" ; then
         AC_MSG_RESULT(no)
-        AC_MSG_ERROR([Unable to locate apxs script. An Apache development package may be missing
-            from your server, or you may need to use the --with-apxs option.])
+        AC_MSG_ERROR([Unable to locate apxs script. An Apache development package may be missing from your server, or you may need to use the --with-apxs option.])
     fi
     AC_MSG_RESULT($APXS)
     AC_SUBST(APXS)
@@ -400,8 +399,7 @@ if test "$WANT_APACHE_20" = "yes" ; then
     AC_MSG_CHECKING([to see if Apache2 apxs was located])
     if test ! -f "$APXS2" ; then
         AC_MSG_RESULT(no)
-        AC_MSG_ERROR([Unable to locate Apache2 apxs script. An Apache development package may be missing
-            from your server, or you may need to use the --with-apxs2 option.])
+        AC_MSG_ERROR([Unable to locate Apache2 apxs script. An Apache development package may be missing from your server, or you may need to use the --with-apxs2 option.])
     fi
     AC_MSG_RESULT($APXS2)
     AC_SUBST(APXS2)
@@ -482,8 +480,7 @@ if test "$WANT_APACHE_22" = "yes" ; then
     AC_MSG_CHECKING([to see if Apache2.2 apxs was located])
     if test ! -f "$APXS22" ; then
         AC_MSG_RESULT(no)
-        AC_MSG_ERROR([Unable to locate Apache2.2 apxs script. An Apache development package may be missing
-            from your server, or you may need to use the --with-apxs22 option.])
+        AC_MSG_ERROR([Unable to locate Apache2.2 apxs script. An Apache development package may be missing from your server, or you may need to use the --with-apxs22 option.])
     fi
     AC_MSG_RESULT($APXS22)
     AC_SUBST(APXS22)
