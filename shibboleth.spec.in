@@ -98,7 +98,7 @@ make check
 if [ -d %{_sysconfdir}/httpd/conf.d ] ; then 
 	if [ ! -f %{_sysconfdir}/httpd/conf.d/shib.conf ] ; then
 		sed "s/\/usr\/doc\/shibboleth/\/usr\/share\/doc\/shibboleth-@-VERSION-@/g" \
-			%{_sysconfdir}/shibboleth/{?apache_config} \
+			%{_sysconfdir}/shibboleth/%{apache_config} \
 			> %{_sysconfdir}/httpd/conf.d/shib.conf
 	fi
 fi
