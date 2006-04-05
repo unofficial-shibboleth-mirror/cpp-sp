@@ -36,7 +36,7 @@ if BUILD_AP22
 modshib22dir = $(libexecdir)
 modshib22_LTLIBRARIES = mod_shib_22.la
 mod_shib_22_la_SOURCES = mod_shib_22.cpp
-mod_shib_22_la_CXXFLAGS = $(APXS2_CFLAGS) -I$(APXS2_INCLUDE)
+mod_shib_22_la_CXXFLAGS = $(APXS22_CFLAGS) -I$(APXS22_INCLUDE)
 mod_shib_22_la_LDFLAGS = -module -avoid-version
 mod_shib_22_la_LIBADD = \
   $(top_builddir)/shib/libshib.la \
