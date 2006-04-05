@@ -43,7 +43,7 @@ mod_shib_22_la_LIBADD = \
   $(top_builddir)/shib-target/libshib-target.la
 
 install-exec-hook:
-        for la in $(modshib22_LTLIBRARIES) ; do rm -f $(DESTDIR)$(modshib22dir)/$$la ; done
+	for la in $(modshib22_LTLIBRARIES) ; do rm -f $(DESTDIR)$(modshib22dir)/$$la ; done
 
 endif
 
