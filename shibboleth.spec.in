@@ -2,17 +2,24 @@ Name:		shibboleth
 Summary:	Open source system to enable inter-institutional resource sharing
 Version:	@-VERSION-@
 Release:	9
-#Copyright:	University Corporation for Advanced Internet Development, Inc.
+#Copyright:	Internet2
 Group:		System Environment/Libraries
 License:	Apache style
 URL:		http://shibboleth.internet2.edu/
-Source0:	http://wayf.internet2.edu/shibboleth/%{name}-%{version}.tar.gz
-Source1:	http://wayf.internet2.edu/shibboleth/%{name}-%{version}.tar.gz.asc
+Source0:	http://shibboleth.internet2.edu/downloads/%{name}-%{version}.tar.gz
+Source1:	http://shibboleth.internet2.edu/downloads/%{name}-%{version}.tar.gz.asc
 BuildRoot:	%{_tmppath}/%{name}-%{version}-root
 
 BuildRequires:	openssl-devel, curl-devel >= 7.10.6, xerces-c-devel >= 2.6.1
 BuildRequires:	xml-security-c-devel >= 1.1.0, log4cpp-devel >= 0.3.5
-BuildRequires:	zlib-devel, opensaml-devel >= 1.1, httpd-devel
+BuildRequires:	zlib-devel, opensaml-devel >= 1.1
+%if "%{_vendor}" == "redhat"
+BuildRequires:	httpd-devel
+%endif
+%if "%{_vendor}" == "suse"
+BuildRequires:	apache2-devel
+%endif
+
 
 %description
 Shibboleth, a project of Internet2/MACE, is developing architectures,
@@ -90,16 +97,29 @@ make check
 %post
 /sbin/ldconfig
 
-# Plug the shibboleth SP into Apache on a Red Hat system.
+# Plug the SP into Apache on a recognized system.
 %{?_with_apache13: %define apache_config apache.config}
 %{?_with_apache20: %define apache_config apache2.config}
 %{?_with_apache22: %define apache_config apache22.config}
 %if %{?apache_config:1}
-if [ -d %{_sysconfdir}/httpd/conf.d ] ; then 
-	if [ ! -f %{_sysconfdir}/httpd/conf.d/shib.conf ] ; then
+APACHE_CONFD = "no"
+if [ -d %{_sysconfdir}/httpd/conf.d ] ; then
+    APACHE_CONFD=%{_sysconfdir}/httpd/conf.d
+else
+    if [ -d %{_sysconfdir}/apache2/conf.d ] ; then
+        APACHE_CONFD=%{_sysconfdir}/apache2/conf.d
+    fi
+fi
+if [ $APACHE_CONFD != "no" ] ; then 
+	if [ ! -f $APACHE_CONFD/shib.conf ] ; then
 		sed "s/\/usr\/doc\/shibboleth/\/usr\/share\/doc\/shibboleth-@-VERSION-@/g" \
+<<<<<<< shibboleth.spec.in
+			%{_sysconfdir}/shibboleth/{?apache_config} \
+			> $APACHE_CONFD/shib.conf
+=======
 			%{_sysconfdir}/shibboleth/%{apache_config} \
 			> %{_sysconfdir}/httpd/conf.d/shib.conf
+>>>>>>> 1.22.2.11
 	fi
 fi
 %endif
@@ -116,10 +136,12 @@ fi
 %postun
 /sbin/ldconfig
 
-# delete the shibboleth apache configuration if we're being removed
+# delete the Apache configuration if we're being removed
 [ "$1" = 0 ] || exit 0
 [ -f %{_sysconfdir}/httpd/conf.d/shib.conf ] && \
     rm -f %{_sysconfdir}/httpd/conf.d/shib.conf
+[ -f %{_sysconfdir}/apache2/conf.d/shib.conf ] && \
+    rm -f %{_sysconfdir}/apache2/conf.d/shib.conf
 
 # clear init.d state
 chkconfig --del shibd
@@ -176,7 +198,7 @@ restorecon %{_sbindir}/shibd
 
 %changelog
 * Fri Apr 15 2006 Scott Cantor  <cantor.2@osu.edu>  - 1.3-9
-- Misc. patches, Apache 2.2, gcc 4.1, and 64-bit support
+- Misc. patches, SuSE, Apache 2.2, gcc 4.1, and 64-bit support
 
 * Mon Jan 9 2006 Scott Cantor  <cantor.2@osu.edu>  - 1.3-8
 - Applied new fix for secadv 20060109
