@@ -327,9 +327,9 @@ if test "$WANT_APACHE_13" = "yes" ; then
         ],
         [
         AC_PATH_PROG(APXS, apxs, no)
-        if test -z "$APXS" ; then
+        if test "$APXS" = "no" ; then
           for i in /usr/sbin /usr/local/apache/bin ; do
-            if test -f "$i/apxs"; then
+            if test "$APXS" = "no" && test -f "$i/apxs"; then
               APXS="$i/apxs"
             fi
           done
@@ -386,13 +386,23 @@ if test "$WANT_APACHE_20" = "yes" ; then
         fi
         ],
         [
-        AC_PATH_PROG(APXS2, apxs, no)
-        if test -z "$APXS2" ; then
+        AC_PATH_PROG(APXS2, apxs2, no)
+        if test "$APXS2" = "no" ; then
+            AC_PATH_PROG(APXS2, apxs, no)
+        fi
+        if test "$APXS2" = "no" ; then
           for i in /usr/sbin /usr/local/apache2/bin /usr/local/apache/bin ; do
-            if test -f "$i/apxs"; then
-              APXS2="$i/apxs"
+            if test "$APXS2" = "no" && test -f "$i/apxs2" ; then
+              APXS2="$i/apxs2"
             fi
           done
+          if test "$APXS2" = "no" ; then
+            for i in /usr/sbin /usr/local/apache2/bin /usr/local/apache/bin ; do
+              if test "$APXS2" = "no" && test -f "$i/apxs" ; then
+                APXS2="$i/apxs"
+              fi
+            done
+          fi
         fi
         ])
 
@@ -467,13 +477,23 @@ if test "$WANT_APACHE_22" = "yes" ; then
         fi
         ],
         [
-        AC_PATH_PROG(APXS22, apxs, no)
-        if test -z "$APXS22" ; then
+        AC_PATH_PROG(APXS22, apxs2, no)
+        if test "$APXS22" = "no" ; then
+            AC_PATH_PROG(APXS22, apxs, no)
+        fi
+        if test "$APXS22" = "no" ; then
           for i in /usr/sbin /usr/local/apache2/bin /usr/local/apache/bin ; do
-            if test -f "$i/apxs"; then
-              APXS22="$i/apxs"
+            if test "$APXS22" = "no" && test -f "$i/apxs2" ; then
+              APXS22="$i/apxs2"
             fi
           done
+          if test "$APXS22" = "no" ; then
+            for i in /usr/sbin /usr/local/apache2/bin /usr/local/apache/bin ; do
+              if test "$APXS22" = "no" && test -f "$i/apxs" ; then
+                APXS22="$i/apxs"
+              fi
+            done
+          fi
         fi
         ])
 
