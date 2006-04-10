@@ -113,13 +113,8 @@ fi
 if [ $APACHE_CONFD != "no" ] ; then 
 	if [ ! -f $APACHE_CONFD/shib.conf ] ; then
 		sed "s/\/usr\/doc\/shibboleth/\/usr\/share\/doc\/shibboleth-@-VERSION-@/g" \
-<<<<<<< shibboleth.spec.in
 			%{_sysconfdir}/shibboleth/{?apache_config} \
 			> $APACHE_CONFD/shib.conf
-=======
-			%{_sysconfdir}/shibboleth/%{apache_config} \
-			> %{_sysconfdir}/httpd/conf.d/shib.conf
->>>>>>> 1.22.2.11
 	fi
 fi
 %endif
