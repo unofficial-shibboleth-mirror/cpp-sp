@@ -102,20 +102,20 @@ make check
 %{?_with_apache20: %define apache_config apache2.config}
 %{?_with_apache22: %define apache_config apache22.config}
 %if %{?apache_config:1}
-if [ -d %{_sysconfdir}/httpd/conf.d ] ; then
-    %define apache_confd %{_sysconfdir}/httpd/conf.d
-else
-    if [ -d %{_sysconfdir}/apache2/conf.d ] ; then
-        %define apache_confd %{_sysconfdir}/apache2/conf.d
-    fi
-fi
-%if %{?apache_confd:1} 
-	if [ ! -f $APACHE_CONFD/shib.conf ] ; then
-		sed "s/\/usr\/doc\/shibboleth/\/usr\/share\/doc\/shibboleth-@-VERSION-@/g" \
-			%{_sysconfdir}/shibboleth/%{?apache_config} \
-			> %{?apache_confd}/shib.conf
+	APACHE_CONFD="no"
+	if [ -d %{_sysconfdir}/httpd/conf.d ] ; then
+    		APACHE_CONFD="%{_sysconfdir}/httpd/conf.d"
 	fi
-%endif
+	if [ -d %{_sysconfdir}/apache2/conf.d ] ; then
+    		APACHE_CONFD="%{_sysconfdir}/apache2/conf.d"
+	fi
+	if [ "$APACHE_CONFD" != "no" ] ; then
+		if [ ! -f $APACHE_CONFD/shib.conf ] ; then
+			sed "s/\/usr\/doc\/shibboleth/\/usr\/share\/doc\/shibboleth-@-VERSION-@/g" \
+				%{_sysconfdir}/shibboleth/%{?apache_config} \
+				> $APACHE_CONFD/shib.conf
+		fi
+	fi
 %endif
 
 # Install the shibd init.d scripts and service
