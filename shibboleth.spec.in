@@ -119,13 +119,15 @@ make check
 %endif
 
 # Install the shibd init.d scripts and service
-if [ -d %{_sysconfdir}/init.d ] ; then
-	if [ ! -f %{_sysconfdir}/init.d/shibd ] ; then
-		cp -p %{_sysconfdir}/shibboleth/shibd %{_sysconfdir}/init.d/shibd
-		chmod 755 %{_sysconfdir}/init.d/shibd
-		chkconfig --add shibd
+%if "%{_vendor}" == "redhat"
+	if [ -d %{_sysconfdir}/init.d ] ; then
+		if [ ! -f %{_sysconfdir}/init.d/shibd ] ; then
+			cp -p %{_sysconfdir}/shibboleth/shibd %{_sysconfdir}/init.d/shibd
+			chmod 755 %{_sysconfdir}/init.d/shibd
+			chkconfig --add shibd
+		fi
 	fi
-fi
+%endif
 
 %postun
 /sbin/ldconfig
@@ -138,9 +140,11 @@ fi
     rm -f %{_sysconfdir}/apache2/conf.d/shib.conf
 
 # clear init.d state
-chkconfig --del shibd
-[ -f %{_sysconfdir}/init.d/shibd ] && \
-    rm -f %{_sysconfdir}/init.d/shibd
+%if "%{_vendor}" == "redhat"
+	chkconfig --del shibd
+	[ -f %{_sysconfdir}/init.d/shibd ] && \
+	    rm -f %{_sysconfdir}/init.d/shibd
+%endif
 
 %triggerin selinux-policy-targeted -- %{name}
 restorecon %{_sbindir}/shibd
