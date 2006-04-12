@@ -26,8 +26,8 @@
 #include <algorithm>
 #include <log4cpp/Category.hh>
 
-using namespace saml;
 using namespace shibboleth;
+using namespace saml;
 using namespace log4cpp;
 using namespace std;
 
@@ -163,7 +163,7 @@ void XMLAAPImpl::init()
 
         // Loop over the AttributeRule elements.
         DOMNodeList* nlist = m_root->getElementsByTagNameNS(::XML::SHIB_NS,SHIB_L(AttributeRule));
-        for (unsigned int i=0; nlist && i<nlist->getLength(); i++)
+        for (XMLSize_t i=0; nlist && i<nlist->getLength(); i++)
         {
             AttributeRule* rule=new AttributeRule(static_cast<DOMElement*>(nlist->item(i)));
 #ifdef HAVE_GOOD_STL
@@ -183,8 +183,12 @@ void XMLAAPImpl::init()
 #endif
             m_attrMap[key]=rule;
             m_attrs.push_back(rule);
-            if (rule->getAlias())
-                m_aliasMap[rule->getAlias()]=rule;
+            if (rule->getAlias()) {
+                if (!strcmp(rule->getAlias(),"user"))
+                    m_aliasMap[rule->getAlias()]=rule;
+                else
+                    log.error("<AttributeRule> cannot specify Alias of 'user', please use alternate value");
+            }
         }
     }
     catch (SAMLException& e)
@@ -235,7 +239,7 @@ XMLAAPImpl::AttributeRule::AttributeRule(const DOMElement* e) :
     {
         // Process Scope elements.
         DOMNodeList* vlist = static_cast<DOMElement*>(anysite)->getElementsByTagNameNS(::XML::SHIB_NS,SHIB_L(Scope));
-        for (unsigned int i=0; vlist && i<vlist->getLength(); i++)
+        for (XMLSize_t i=0; vlist && i<vlist->getLength(); i++)
         {
             m_scoped=true;
             DOMElement* se=static_cast<DOMElement*>(vlist->item(i));
@@ -260,7 +264,7 @@ XMLAAPImpl::AttributeRule::AttributeRule(const DOMElement* e) :
         {
             // Process each Value element.
             vlist = static_cast<DOMElement*>(anysite)->getElementsByTagNameNS(::XML::SHIB_NS,SHIB_L(Value));
-            for (unsigned int j=0; vlist && j<vlist->getLength(); j++)
+            for (XMLSize_t j=0; vlist && j<vlist->getLength(); j++)
             {
                 DOMElement* ve=static_cast<DOMElement*>(vlist->item(j));
                 DOMNode* valnode=ve->getFirstChild();
@@ -277,7 +281,7 @@ XMLAAPImpl::AttributeRule::AttributeRule(const DOMElement* e) :
 
     // Loop over the SiteRule elements.
     DOMNodeList* slist = e->getElementsByTagNameNS(::XML::SHIB_NS,SHIB_L(SiteRule));
-    for (unsigned int k=0; slist && k<slist->getLength(); k++)
+    for (XMLSize_t k=0; slist && k<slist->getLength(); k++)
     {
         const XMLCh* srulename=static_cast<DOMElement*>(slist->item(k))->getAttributeNS(NULL,SHIB_L(Name));
 #ifdef HAVE_GOOD_STL
@@ -291,7 +295,7 @@ XMLAAPImpl::AttributeRule::AttributeRule(const DOMElement* e) :
 
         // Process Scope elements.
         DOMNodeList* vlist = static_cast<DOMElement*>(slist->item(k))->getElementsByTagNameNS(::XML::SHIB_NS,SHIB_L(Scope));
-        for (unsigned int i=0; vlist && i<vlist->getLength(); i++)
+        for (XMLSize_t i=0; vlist && i<vlist->getLength(); i++)
         {
             m_scoped=true;
             DOMElement* se=static_cast<DOMElement*>(vlist->item(i));
@@ -316,7 +320,7 @@ XMLAAPImpl::AttributeRule::AttributeRule(const DOMElement* e) :
         {
             // Process each Value element.
             vlist = static_cast<DOMElement*>(slist->item(k))->getElementsByTagNameNS(::XML::SHIB_NS,SHIB_L(Value));
-            for (unsigned int j=0; vlist && j<vlist->getLength(); j++)
+            for (XMLSize_t j=0; vlist && j<vlist->getLength(); j++)
             {
                 DOMElement* ve=static_cast<DOMElement*>(vlist->item(j));
                 DOMNode* valnode=ve->getFirstChild();
@@ -601,7 +605,7 @@ void XMLAAPImpl::AttributeRule::apply(SAMLAttribute& attribute, const IEntityDes
     // Check each value.
     DOMNodeList* vals=attribute.getValueElements();
     int i2=0;
-    for (unsigned int i=0; vals && i < vals->getLength(); i++) {
+    for (XMLSize_t i=0; vals && i < vals->getLength(); i++) {
         if (!accept(static_cast<DOMElement*>(vals->item(i)),source ? dynamic_cast<const IExtendedEntityDescriptor*>(source) : NULL))
             attribute.removeValue(i2);
         else
