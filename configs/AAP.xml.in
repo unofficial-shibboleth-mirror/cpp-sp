@@ -164,6 +164,12 @@
             <AnyValue/>
         </AnySite>
 	</AttributeRule>
+
+	<AttributeRule Name="urn:mace:dir:attribute-def:mail" Header="Shib-InetOrgPerson-mail">
+		<AnySite>
+            <AnyValue/>
+        </AnySite>
+	</AttributeRule>
 	
 	<AttributeRule Name="urn:mace:dir:attribute-def:telephoneNumber" Header="Shib-Person-telephoneNumber">
 		<AnySite>
