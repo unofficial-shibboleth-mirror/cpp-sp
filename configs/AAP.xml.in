@@ -12,8 +12,20 @@
 	and to an htaccess rule name respectively. Without Header, the attribute
 	will only be obtainable from the exported SAML assertion in raw XML.
 	
-	Scoped attributes are also filtered on Scope via the Domain elements
-	in the site metadata.
+	Scoped attributes can also be filtered on Scope via rules in the
+	asserting identity provider's metadata.
+	
+	Finally, a note on naming. The attributes in this file are mostly drawn from
+	the set documented here:
+	
+	http://middleware.internet2.edu/urn-mace/urn-mace-dir-attribute-def.html
+	
+	The	actual naming convention most of them follow is NOT to be used for
+	any subsequent attributes bound to SAML, and you are NOT free to just
+	make up names using it, because the urn:mace:dir namespace tree is
+	controlled. For help and advice on defining new attributes, refer to:
+	
+	https://authdev.it.ohio-state.edu/twiki/bin/view/Shibboleth/AttributeNaming
 	-->
 	
 	<!-- First some useful eduPerson attributes that many sites might use. -->
@@ -89,7 +101,7 @@
         </AnySite>
 	</AttributeRule>
 
-	<!-- Second, the new version: -->
+	<!-- Second, the new version (note the OID-style name): -->
 	<AttributeRule Name="urn:oid:1.3.6.1.4.1.5923.1.1.1.10" Header="Shib-TargetedID" Alias="targeted_id">
         <AnySite>
             <AnyValue/>
@@ -148,6 +160,12 @@
 	</AttributeRule>
 	
 	<AttributeRule Name="urn:mace:dir:attribute-def:sn" Header="Shib-Person-surname">
+		<AnySite>
+            <AnyValue/>
+        </AnySite>
+	</AttributeRule>
+
+	<AttributeRule Name="urn:mace:dir:attribute-def:mail" Header="Shib-InetOrgPerson-mail">
 		<AnySite>
             <AnyValue/>
         </AnySite>
