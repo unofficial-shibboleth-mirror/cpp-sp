@@ -209,16 +209,14 @@ void MemoryListener::sessionNew(
         bpr.clear();
         throw;
     }
+#ifndef _DEBUG
     catch (...) {
         log->error("caught unknown exception");
         bpr.clear();
-#ifdef _DEBUG
-        throw;
-#else
         SAMLException e("An unexpected error occurred while creating your session.");
         annotateException(&e,role);
-#endif
     }
+#endif
 
     // It passes all our tests -- create a new session.
     log->info("creating new session");
@@ -260,16 +258,14 @@ void MemoryListener::sessionNew(
         bpr.clear();
         throw;
     }
+#ifndef _DEBUG
     catch (...) {
         log->error("caught unknown exception");
         bpr.clear();
-#ifdef _DEBUG
-        throw;
-#else
         SAMLException e("An unexpected error occurred while creating your session.");
         annotateException(&e,role);
-#endif
     }
+#endif
 
     target = bpr.TARGET;
     provider_id = oname.get();
