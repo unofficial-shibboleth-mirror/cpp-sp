@@ -1,4 +1,11 @@
-12/27/05
+4/15/06
+Version 1.3d
+
+Support for Apache 2.2, improved autoconf and RPM support
+Support for some 64-bit platforms (e.g. x86_64 Linux)
+Misc. fixes and small enhancements
+
+12/15/06
 Version 1.3c
 
 Updated fix for secadv 20051227

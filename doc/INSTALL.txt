@@ -3,6 +3,8 @@ Information on obtaining and installing binaries can be found at
 http://shibboleth.internet2.edu/
 
 This document provides details for those wishing to build from source.
+The Wiki contains additional information and more up to date build
+notes.
 
 C++ Service Provider
 
@@ -26,7 +28,7 @@ or apparent module conflicts, make sure you've built Apache and any
 modules with threading support and ideally as much dynamically as
 possible.
 
-Apache 1.x does not directly support threads, but you can set the
+Apache 1.3 does not directly support threads, but you can set the
 CFLAGS variable before running configure to include the proper gcc
 thread flag (usually -pthread or -pthreads, depends on your platform).
 
@@ -74,32 +76,25 @@ CVS and run the bootstrap script if you want, or just use a source tarball.
 With the source distribution or the results of your bootstrap:
 
 $ ./configure --prefix=/opt/shibboleth-sp --with-log4cpp=/opt/shibboleth-sp \
-    --enable-apache-13 --with-apxs --enable-apache-20 --with-apxs2 -C
+    --enable-apache-20 -C
 $ make
 $ make install
 
-This will build the Apache 1.x and 2.x modules by extracting build settings
-from apxs. The configure script will look in normal spots for the script
-(/usr/bin/apxs, /usr/local/apache/bin/apxs) but you can point to it so that
-both modules can be built at once.
+This will build the Apache 2.0 modules by extracting build settings
+from apxs. You can use different options to build for other Apache
+versions or specify the location of the apxs script.
 
-If you want to build the modules but not use apxs, you can use the
---without-apxs option, and provide flags using the APXS_PREFIX, APXS_CFLAGS,
-APXS_INCLUDE, APXS_LIBEXEC, and APXS_SYSCONFDIR variables (see the apxs docs
-for some guidance on what these should be).
-
-To test your installation, you can try the shibtest utility, which actually
+To test your installation, you can run the shibtest utility, which actually
 loads your configuration and attempts to obtain attributes from a Shibboleth
-Attribute Authority of your choosing. You indicate to it the identifier of
-the principal to query, and the identifier (providerId) of the origin site,
-and it will use your configuration files to locate the proper AA.
+Attribute Authority. It's not a great tool for testing because normally you
+can't query on a known principal name.
 
 $ set LD_LIBRARY_PATH=/opt/shibboleth-sp/lib; export LD_LIBRARY_PATH
 $ /opt/shibboleth/bin/shibtest -h test-handle \
 	-f urn:mace:shibboleth:test:nameIdentifier \
-	-q urn:mace:inqueue:example.edu
+	-q  https://idp.example.org/shibboleth
 
-The example shown uses a built-in test principal, and uses the InQueue
-example origin, which is known to the SP after initial installation.
-You should get some reasonably structured output back that lists some simple
-attributes. An error here is a pretty good sign there's trouble.
+The example shown uses a test principal that is specific to the InQueue
+sample IdP, which is known to the SP after initial installation.
+You should get some reasonably structured output back that lists some
+attributes. Some warnings or errors are normal.

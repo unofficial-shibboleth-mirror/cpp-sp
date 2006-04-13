@@ -16,10 +16,6 @@ Shibboleth Implementation Team
    The Ohio State University
    cantor.2@osu.edu
    
-   Howard Gilbert
-   Yale University
-   Howard.Gilbert@yale.edu
-
    Walter Hoehn
    The University of Memphis
    wassa@memphis.edu
@@ -74,3 +70,6 @@ Thanks to:
 
 	Ian Young for donating XSLT scripts for converting metadata across
 	  Shibboleth versions
+	  
+	Many, many community members who have donated time and machines to
+      help test the software and packaging on newer platforms.
