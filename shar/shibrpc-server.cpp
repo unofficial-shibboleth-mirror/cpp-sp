@@ -140,24 +140,26 @@ extern "C" bool_t shibrpc_get_session_2_svc(
         result->status=strdup("");
     }
     catch (SAMLException &e) {
+        log.error("caught exception while retrieving session: %s", e.what());
+
         // If the entry is set, it happened after the call.
         if (entry) {
             entry->unlock();
             conf->getSessionCache()->remove(argp->cookie);
         }
-        log.error("caught exception while retrieving session: %s", e.what());
         ostringstream os;
         os << e;
         result->status = strdup(os.str().c_str());
     }
 #ifndef _DEBUG
     catch (...) {
+        log.error("caught unexpected exception while retrieving session");
+
         // If the entry is set, it happened after the call.
         if (entry) {
             entry->unlock();
             conf->getSessionCache()->remove(argp->cookie);
         }
-        log.error("caught unexpected exception while retrieving session");
         InvalidSessionException ex("An unexpected error occurred while validating your session, and you must re-authenticate.");
         ostringstream os;
         os << ex;
