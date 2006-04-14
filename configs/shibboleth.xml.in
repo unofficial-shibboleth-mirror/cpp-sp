@@ -23,7 +23,7 @@
 		<!-- <TCPListener address="127.0.0.1" port="12345" acl="127.0.0.1"/> -->
 		
 		<!--
-		See deploy guide for details, but:
+		See Wiki for details:
 			cacheTimeout - how long before expired sessions are purged from the cache
 			AATimeout - how long to wait for an AA to respond
 			AAConnectTimeout - how long to wait while connecting to an AA
@@ -57,19 +57,7 @@
 	<Local logger="@-PKGSYSCONFDIR-@/native.logger" localRelayState="true">
 		<!--
 		To customize behavior, map hostnames and path components to applicationId and other settings.
-		The following provider types are available with the delivered code:
-			type="edu.internet2.middleware.shibboleth.sp.provider.NativeRequestMapProvider"
-				- Web-server-specific plugin that allows native commands (like Apache's
-					ShibRequireSession) to override or supplement the XML syntax. The Apache
-					version also supplies an htaccess authz plugin for all content.
-
-			type="edu.internet2.middleware.shibboleth.sp.provider.XMLRequestMapProvider"
-				- portable plugin that does not support the older Apache-specific commands and works
-					the same on all web platforms, this plugin does NOT support htaccess files
-					for authz unless you also place an <htaccess/> element somewhere in the map
-
-			By default, the "native" plugin (the first one above) is used, since it matches older
-			behavior on both Apache and IIS.
+		See: https://authdev.it.ohio-state.edu/twiki/bin/view/Shibboleth/RequestMap
 		-->
 		<RequestMapProvider type="edu.internet2.middleware.shibboleth.sp.provider.NativeRequestMapProvider">
 			<RequestMap applicationId="default">
@@ -77,16 +65,18 @@
 				This requires a session for documents in /secure on the containing host with http and
 				https on the default ports. Note that the name and port in the <Host> elements MUST match
 				Apache's ServerName and Port directives or the IIS Site name in the <ISAPI> element
-				below.
+				below. You should also be sure that Apache's UseCanonicalName setting is On
 				-->
 				<Host name="sp.example.org">
-					<Path name="secure" authType="shibboleth" requireSession="true" exportAssertion="true">
-						<!-- Example shows the folder "/secure/admin" assigned to a separate <Application> -->
-						<!--
-						<Path name="admin" applicationId="foo-admin"/>
-						-->
-					</Path>
+					<Path name="secure" authType="shibboleth" requireSession="true"/>
 				</Host>
+				
+				<!-- Example shows the vhost "sp-admin.example.org" assigned to a separate <Application> -->
+				<!--
+				<Host name="sp-admin.example.org" applicationId="admin" redirectToSSL="443">
+					<Path name="secure" authType="shibboleth" requireSession="true"/>
+				</Host>
+				-->
 			</RequestMap>
 		</RequestMapProvider>
 		
@@ -131,7 +121,7 @@
 		The system can compute a relative value based on the virtual host. Using handlerSSL="true"
 		will force the protocol to be https. You should also add a cookieProps setting of "; path=/; secure"
 		in that case. Note that while we default checkAddress to "false", this has a negative
-		impact on the security of the SP. Stealing cookies/sessions is much easier with this
+		impact on the security of the SP. Certain attacks are a bit easier with this
 		disabled. The consistentAddress property is even more critical, and should rarely be
 		disabled. It will only trip if a client uses a different source address at the SP
 		after the cookie is issued. Allowing that means many scripting attacks against
@@ -249,16 +239,14 @@
 		is sufficient, since the hostname will distinguish the application.
 		
 		The example below shows a special application that requires use of SSL when establishing
-		sessions, restricts the session cookie to SSL and a specific folder, and inherits most other
-		behavior except that it requests only EPPN from the origin instead of asking for all attributes.
-		Note that it will inherit all of the handler endpoints defined for the default application
-		but will append them to the handlerURL defined here.
+		sessions, restricts the session cookie to SSL, and inherits most other behavior except that
+		it requests only EPPN from the IdP instead of asking for all attributes. Note that it will
+		inherit all of the handler endpoints defined for the default application.
 		-->
 		<!-- 
-		<Application id="foo-admin">
-			<Sessions lifetime="7200" timeout="3600" checkAddress="true"
-				handlerURL="/secure/admin/Shibboleth.sso" handlerSSL="true"
-				cookieProps="; path=/secure/admin; secure"/>
+		<Application id="admin">
+			<Sessions lifetime="7200" timeout="3600" checkAddress="true" consistentAddress="true"
+				handlerURL="/Shibboleth.sso" handlerSSL="true" cookieProps="; path=/; secure"/>
 			<saml:AttributeDesignator AttributeName="urn:mace:dir:attribute-def:eduPersonPrincipalName"
 				AttributeNamespace="urn:mace:shibboleth:1.0:attributeNamespace:uri"/>
 		</Application>
