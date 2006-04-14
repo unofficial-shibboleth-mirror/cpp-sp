@@ -90,7 +90,7 @@ Attribute Authority. It's not a great tool for testing because normally you
 can't query on a known principal name.
 
 $ set LD_LIBRARY_PATH=/opt/shibboleth-sp/lib; export LD_LIBRARY_PATH
-$ /opt/shibboleth/bin/shibtest -h test-handle \
+$ /opt/shibboleth-sp/bin/shibtest -h test-handle \
 	-f urn:mace:shibboleth:test:nameIdentifier \
 	-q  https://idp.example.org/shibboleth
 
