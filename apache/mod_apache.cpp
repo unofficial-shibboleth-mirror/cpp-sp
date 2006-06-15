@@ -277,6 +277,7 @@ public:
   }
   virtual void clearHeader(const string &name) {
     ap_table_unset(m_req->headers_in, name.c_str());
+    ap_table_set(m_req->headers_in, name.c_str(), "");
   }
   virtual void setHeader(const string &name, const string &value) {
     ap_table_set(m_req->headers_in, name.c_str(), value.c_str());
