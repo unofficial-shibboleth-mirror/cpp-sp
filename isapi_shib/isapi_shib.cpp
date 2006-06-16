@@ -86,6 +86,7 @@ namespace {
     ShibTargetConfig* g_Config = NULL;
     map<string,site_t> g_Sites;
     bool g_bNormalizeRequest = true;
+    string g_unsetHeaderValue;
 }
 
 BOOL LogEvent(
@@ -178,6 +179,9 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
         Locker locker(conf);
         const IPropertySet* props=conf->getPropertySet("Local");
         if (props) {
+            pair<bool,const char*> unsetValue=props->getString("unsetHeaderValue");
+            if (unsetValue.first)
+                g_unsetHeaderValue = unsetValue.second;
             const DOMElement* impl=saml::XML::getFirstChildElement(
                 props->getElement(),shibtarget::XML::SHIBTARGET_NS,Implementation
                 );
@@ -396,7 +400,7 @@ public:
   
   virtual void clearHeader(const string &name) {
     string hdr = (name=="REMOTE_USER" ? "remote-user" : name) + ":";
-    m_pn->SetHeader(m_pfc, const_cast<char*>(hdr.c_str()), "");
+    m_pn->SetHeader(m_pfc, const_cast<char*>(hdr.c_str()), const_cast<char*>(g_unsetHeaderValue.c_str()));
   }
   virtual void setHeader(const string &name, const string &value) {
     string hdr = name + ":";

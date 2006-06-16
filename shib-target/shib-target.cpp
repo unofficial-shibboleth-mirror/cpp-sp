@@ -579,6 +579,14 @@ pair<bool,void*> ShibTarget::doExportAssertions(bool requireSession)
         
         setHeader("Shib-Application-ID", m_priv->m_app->getId());
     
+        string strUnsetValue;
+        const IPropertySet* localProps=m_priv->m_Config->getINI()->getPropertySet("Local");
+        if (localProps) {
+            pair<bool,const char*> unsetValue=localProps->getString("unsetHeaderValue");
+            if (unsetValue.first)
+                strUnsetValue = unsetValue.second;
+        }
+
         // Export the attributes.
         Iterator<SAMLAssertion*> a_iter(cr.filtered ? cr.filtered->getAssertions() : EMPTY(SAMLAssertion*));
         while (a_iter.hasNext()) {
@@ -607,7 +615,9 @@ pair<bool,void*> ShibTarget::doExportAssertions(bool requireSession)
                         else {
                             int it=0;
                             string header = getHeader(rule->getHeader());
-                            if (!header.empty())
+                            if (header == strUnsetValue)
+                                header.erase();
+                            else
                                 it++;
                             for (; vals.hasNext(); it++) {
                                 string value = vals.next();

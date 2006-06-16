@@ -66,6 +66,7 @@ namespace {
     ShibTargetConfig* g_Config=NULL;
     string g_ServerName;
     string g_ServerScheme;
+    string g_unsetHeaderValue;
 }
 
 PlugManager::Factory SunRequestMapFactory;
@@ -145,6 +146,15 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, Session* sn, Request* rq
 
         daemon_atrestart(nsapi_shib_exit,NULL);
 #ifndef _DEBUG
+
+        IConfig* conf=g_Config->getINI();
+        Locker locker(conf);
+        const IPropertySet* props=conf->getPropertySet("Local");
+        if (props) {
+            pair<bool,const char*> unsetValue=props->getString("unsetHeaderValue");
+            if (unsetValue.first)
+                g_unsetHeaderValue = unsetValue.second;
+        }
     }
     catch (...) {
         g_Config=NULL;
@@ -249,10 +259,11 @@ public:
     }
     else {
         param_free(pblock_remove(name.c_str(), m_rq->headers));
-        pblock_nvinsert(name.c_str(), "" ,m_rq->headers);
+        pblock_nvinsert(name.c_str(), g_unsetHeaderValue.c_str() ,m_rq->headers);
     }
   }
   virtual void setHeader(const string &name, const string &value) {
+    param_free(pblock_remove(name.c_str(), m_rq->headers));
     pblock_nvinsert(name.c_str(), value.c_str() ,m_rq->headers);
   }
   virtual string getHeader(const string &name) {
