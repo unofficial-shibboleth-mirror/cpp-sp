@@ -409,8 +409,10 @@ extern "C" int shib_check_user(request_rec* r)
             Iterator<const IAttributeRule*> rules=aap->getAttributeRules();
             while (rules.hasNext()) {
                 const char* header=rules.next()->getHeader();
-                if (header)
+                if (header) {
                     ap_table_unset(r->headers_in,header);
+                    ap_table_set(r->headers_in,header,"");
+                }
             }
         }
         catch(...) {
