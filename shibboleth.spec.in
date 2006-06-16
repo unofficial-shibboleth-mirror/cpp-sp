@@ -1,7 +1,7 @@
 Name:		shibboleth
 Summary:	Open source system to enable inter-institutional resource sharing
 Version:	@-VERSION-@
-Release:	9
+Release:	10
 #Copyright:	Internet2
 Group:		System Environment/Libraries
 License:	Apache style
@@ -195,6 +195,9 @@ restorecon %{_sbindir}/shibd
 %{_sysconfdir}/selinux/targeted/src/policy/domains/program/*.te
 
 %changelog
+* Wed Jun 15 2006 Scott Cantor  <cantor.2@osu.edu>  - 1.3-10
+- Applied fix for sec 20060615
+
 * Fri Apr 15 2006 Scott Cantor  <cantor.2@osu.edu>  - 1.3-9
 - Misc. patches, SuSE, Apache 2.2, gcc 4.1, and 64-bit support
 

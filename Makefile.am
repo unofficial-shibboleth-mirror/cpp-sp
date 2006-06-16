@@ -16,6 +16,7 @@ dist-hook:
 	rm -rf `find $(distdir)/doc -name CVS`
 	rm -rf `find $(distdir)/doc -name Makefile`
 	rm -rf `find $(distdir)/isapi_shib -name CVS`
+	rm -rf `find $(distdir)/isapi_shib_gui -name CVS`
 
 WANT_SUBDIRS = @WANT_SUBDIRS@
 

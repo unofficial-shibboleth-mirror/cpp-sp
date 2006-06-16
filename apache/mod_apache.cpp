@@ -68,6 +68,7 @@ namespace {
     char* g_szSHIBConfig = NULL;
     char* g_szSchemaDir = NULL;
     ShibTargetConfig* g_Config = NULL;
+    string g_unsetHeaderValue;
     static const char* g_UserDataKey = "_shib_check_user_";
 }
 
@@ -277,7 +278,7 @@ public:
   }
   virtual void clearHeader(const string &name) {
     ap_table_unset(m_req->headers_in, name.c_str());
-    ap_table_set(m_req->headers_in, name.c_str(), "");
+    ap_table_set(m_req->headers_in, name.c_str(), g_unsetHeaderValue.c_str());
   }
   virtual void setHeader(const string &name, const string &value) {
     ap_table_set(m_req->headers_in, name.c_str(), value.c_str());
@@ -936,6 +937,15 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
         if (!g_Config->load(g_szSHIBConfig)) {
             ap_log_error(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() failed to load configuration");
             exit(1);
+        }
+
+        IConfig* conf=g_Config->getINI();
+        Locker locker(conf);
+        const IPropertySet* props=conf->getPropertySet("Local");
+        if (props) {
+            pair<bool,const char*> unsetValue=props->getString("unsetHeaderValue");
+            if (unsetValue.first)
+                g_unsetHeaderValue = unsetValue.second;
         }
     }
     catch (...) {

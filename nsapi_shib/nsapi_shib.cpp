@@ -145,7 +145,6 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, Session* sn, Request* rq
         }
 
         daemon_atrestart(nsapi_shib_exit,NULL);
-#ifndef _DEBUG
 
         IConfig* conf=g_Config->getINI();
         Locker locker(conf);
@@ -155,6 +154,7 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, Session* sn, Request* rq
             if (unsetValue.first)
                 g_unsetHeaderValue = unsetValue.second;
         }
+#ifndef _DEBUG
     }
     catch (...) {
         g_Config=NULL;
