@@ -184,7 +184,14 @@ void XMLAAPImpl::init()
             m_attrMap[key]=rule;
             m_attrs.push_back(rule);
             if (rule->getAlias()) {
-                if (!strcmp(rule->getAlias(),"user"))
+                // user can only apply to REMOTE_USER
+                if (!strcmp(rule->getAlias(),"user")) {
+                    if (strcmp(rule->getHeader(),"REMOTE_USER"))
+                        log.error("<AttributeRule> cannot specify Alias of 'user', please use alternate value");
+                    else
+                        m_aliasMap[rule->getAlias()]=rule;
+                }
+                else {
                     m_aliasMap[rule->getAlias()]=rule;
                 else
                     log.error("<AttributeRule> cannot specify Alias of 'user', please use alternate value");
