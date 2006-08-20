@@ -193,8 +193,7 @@ void XMLAAPImpl::init()
                 }
                 else {
                     m_aliasMap[rule->getAlias()]=rule;
-                else
-                    log.error("<AttributeRule> cannot specify Alias of 'user', please use alternate value");
+                }
             }
         }
     }
