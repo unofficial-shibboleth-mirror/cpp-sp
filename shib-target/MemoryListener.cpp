@@ -345,7 +345,7 @@ void MemoryListener::sessionGet(
                 log->debug("client address mismatch");
                 InvalidSessionException ex(
                     SESSION_E_ADDRESSMISMATCH,
-                    "Your IP address (%1) does not match the address recorded at the time the session was established.",
+                    "Your IP address ($1) does not match the address recorded at the time the session was established.",
                     params(1,ip)
                     );
                 Metadata m(app->getMetadataProviders());
