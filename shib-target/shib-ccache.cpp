@@ -1372,7 +1372,7 @@ ISessionCacheEntry* MemorySessionCache::find(const char* key, const IApplication
                 case SESSION_E_ADDRESSMISMATCH: {
                     InvalidSessionException ex(
                         SESSION_E_ADDRESSMISMATCH,
-                        "Your IP address (%1) does not match the address recorded at the time the session was established.",
+                        "Your IP address ($1) does not match the address recorded at the time the session was established.",
                         params(1,client_addr)
                         );
                     annotateException(&ex,m.lookup(i->second->getProviderId())); // throws it
