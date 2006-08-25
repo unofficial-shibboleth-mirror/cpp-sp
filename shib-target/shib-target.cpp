@@ -785,7 +785,7 @@ string ShibTarget::getHandlerURL(const char* resource) const
         colon += 3;      // Get past the ://
         slash = strchr(colon, '/');
     }
-    string host(colon, slash-colon);
+    string host(colon, (slash ? slash-colon : strlen(colon)));
 
     // Build the handler URL
     m_priv->m_handlerURL+=host + path;
