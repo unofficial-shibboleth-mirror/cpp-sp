@@ -174,6 +174,16 @@ static int shib_error_page(request_rec* r, const IApplication* app, const char* 
     return SERVER_ERROR;
 }
 
+static char _x2c(const char *what)
+{
+    register char digit;
+
+    digit = (what[0] >= 'A' ? ((what[0] & 0xdf) - 'A')+10 : (what[0] - '0'));
+    digit *= 16;
+    digit += (what[1] >= 'A' ? ((what[1] & 0xdf) - 'A')+10 : (what[1] - '0'));
+    return(digit);
+}
+
 static char* shib_get_targeturl(request_rec* r, const char* scheme=NULL)
 {
     // On 1.3, this is always canonical, but on 2.0, UseCanonicalName comes into play.
@@ -200,15 +210,43 @@ extern "C" int shib_check_user(request_rec* r)
 
     const char* targeturl=shib_get_targeturl(r,sc->szScheme);
 
+    // Fix for bug 574, secadv 20061002
+    // Unescape unparsed URI up to query string delimiter by looking for %XX escapes.
+    // Adapted from Apache's util.c, ap_unescape_url function.
+    string safe_uri;
+    const char* uri = r->unparsed_uri;
+    if (uri) {
+        while (*uri) {
+            if (*uri == '?') {
+                safe_uri += uri;
+                break;
+            }
+            else if (*uri != '%') {
+                safe_uri += *uri;
+            }
+            else {
+                ++uri;
+                if (!isxdigit(*uri) || !isxdigit(*(uri+1))) {
+                    ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,SH_AP_R(r),
+                        "shib_check_user: bad request, contained unsupported encoded characters");
+                    return SERVER_ERROR;
+                }
+                safe_uri += _x2c(uri);
+                ++uri;
+            }
+            ++uri;
+        }
+    }
+
     // We lock the configuration system for the duration.
     IConfig* conf=g_Config->getINI();
     Locker locker(conf);
-    
+
     // Map request to application and content settings.
     IRequestMapper* mapper=conf->getRequestMapper();
     Locker locker2(mapper);
     IRequestMapper::Settings settings=mapper->getSettingsFromParsedURL(
-        (sc-> szScheme ? sc-> szScheme : ap_http_method(r)), ap_get_server_name(r), ap_get_server_port(r), r->unparsed_uri
+        (sc-> szScheme ? sc-> szScheme : ap_http_method(r)), ap_get_server_name(r), ap_get_server_port(r), safe_uri.c_str()
         );
     pair<bool,const char*> application_id=settings.first->getString("applicationId");
     const IApplication* application=conf->getApplication(application_id.second);
@@ -543,6 +581,34 @@ extern "C" int shib_post_handler(request_rec* r)
     threadid << "[" << getpid() << "] shib_post_handler" << '\0';
     saml::NDC ndc(threadid.str().c_str());
 
+    // Fix for bug 574, secadv 20061002
+    // Unescape unparsed URI up to query string delimiter by looking for %XX escapes.
+    // Adapted from Apache's util.c, ap_unescape_url function.
+    string safe_uri;
+    const char* uri = r->unparsed_uri;
+    if (uri) {
+        while (*uri) {
+            if (*uri == '?') {
+                safe_uri += uri;
+                break;
+            }
+            else if (*uri != '%') {
+                safe_uri += *uri;
+            }
+            else {
+                ++uri;
+                if (!isxdigit(*uri) || !isxdigit(*(uri+1))) {
+                    ap_log_rerror(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,SH_AP_R(r),
+                        "shib_check_user: bad request, contained unsupported encoded characters");
+                    return SERVER_ERROR;
+                }
+                safe_uri += _x2c(uri);
+                ++uri;
+            }
+            ++uri;
+        }
+    }
+
     // We lock the configuration system for the duration.
     IConfig* conf=g_Config->getINI();
     Locker locker(conf);
@@ -551,7 +617,7 @@ extern "C" int shib_post_handler(request_rec* r)
     IRequestMapper* mapper=conf->getRequestMapper();
     Locker locker2(mapper);
     IRequestMapper::Settings settings=mapper->getSettingsFromParsedURL(
-        (sc->szScheme ? sc->szScheme : ap_http_method(r)), ap_get_server_name(r), ap_get_server_port(r), r->unparsed_uri
+        (sc->szScheme ? sc->szScheme : ap_http_method(r)), ap_get_server_name(r), ap_get_server_port(r), safe_uri.c_str()
         );
     pair<bool,const char*> application_id=settings.first->getString("applicationId");
     const IApplication* application=conf->getApplication(application_id.second);

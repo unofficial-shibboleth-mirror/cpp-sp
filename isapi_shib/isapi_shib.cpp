@@ -357,6 +357,14 @@ IRequestMapper::Settings map_request(
     dynabuf url(256);
     GetHeader(pn,pfc,"url",url,256,false);
 
+    // Fix for encoding bug, a bit draconian, but people should upgrade anyway.
+    if (!url.empty()) {
+        const char* percent = strchr(url,'%');
+        const char* question = strchr(url,'?');
+        if (percent && (!question || question > percent))
+            throw SAMLException("Bad request, contained encoded characters in path.");
+    }
+    
     // Port may come from IIS or from site def.
     dynabuf port(11);
     if (site.m_port.empty() || !g_bNormalizeRequest)
@@ -819,6 +827,14 @@ IRequestMapper::Settings map_request(
     // URL path always come from IIS.
     dynabuf url(256);
     GetServerVariable(lpECB,"URL",url,255);
+
+    // Fix for encoding bug, a bit draconian, but people should upgrade anyway.
+    if (!url.empty()) {
+        const char* percent = strchr(url,'%');
+        const char* question = strchr(url,'?');
+        if (percent && (!question || question > percent))
+            throw SAMLException("Bad request, contained encoded characters in path.");
+    }
 
     // Port may come from IIS or from site def.
     dynabuf port(11);

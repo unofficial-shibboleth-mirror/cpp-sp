@@ -1,5 +1,5 @@
-11/15/04
-Version 1.2.1
+10/02/06
+Version 1.2.1d
 
 Binary distributions of the Shibboleth code are available.
 Information on obtaining and installing binaries can be found at

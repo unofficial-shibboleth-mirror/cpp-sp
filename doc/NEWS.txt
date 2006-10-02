@@ -1,10 +1,8 @@
-11/15/04
-Version 1.2.1
+10/02/06
+Version 1.2.1d
 
-This release is a fully compatible minor update
-to the Shibboleth 1.2.1 release. It addesses problems
-and small functional gaps identified since the release
-of the previous version.
+This release is a fully compatible security patch 
+for the Shibboleth 1.2.1 release.
 
 New Features
 -------------------

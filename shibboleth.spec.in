@@ -1,13 +1,13 @@
 Name:		shibboleth
 Summary:	Open source system to enable inter-institutional resource sharing
 Version:	@-VERSION-@
-Release:	2
+Release:	3
 #Copyright:	University Corporation for Advanced Internet Development, Inc.
 Group:		System Environment/Libraries
 License:	Apache style
 URL:		http://shibboleth.internet2.edu/
-Source0:	http://wayf.internet2.edu/shibboleth/%{name}-%{version}.tar.gz
-Source1:	http://wayf.internet2.edu/shibboleth/%{name}-%{version}.tar.gz.asc
+Source0:	http://shibboleth.internet2.edu/downloads/%{name}-%{version}.tar.gz
+Source1:	http://shibboleth.internet2.edu/downloads/%{name}-%{version}.tar.gz.asc
 BuildRoot:	%{_tmppath}/%{name}-%{version}-root
 
 BuildRequires:	openssl-devel, curl-devel >= 7.10.6, xerces-c-devel >= 2.6.1
@@ -101,5 +101,8 @@ make check
 %{_libdir}/libshib-target.so
 
 %changelog
+* Mon Oct 2 2006   Scott Cantor  <cantor.2@osu.edu> - 1.2-3
+Catching up spec file for patch releases.
+
 * Tue Oct 19 2004  Derek Atkins  <derek@ihtfp.com>  - 1.2-1
 - Create SPEC file based on various versions in existence.
