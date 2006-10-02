@@ -139,25 +139,31 @@ void ShibTarget::init(
     if (method) m_method = method;
     if (protocol) m_protocol = protocol;
     if (hostname) m_hostname = hostname;
-    if (uri) m_uri = uri;
     if (content_type) m_content_type = content_type;
     if (remote_addr) m_remote_addr = remote_addr;
     m_port = port;
   
     // Fix for bug 574, secadv 20061002
     // Unescape URI up to query string delimiter by looking for %XX escapes.
-    // Copied from Apache's util.c, ap_unescape_url function.
-    register int x,y;
-    for(x=0,y=0; m_uri[y] && m_uri[y] != '?'; ++x,++y) {
-        if((m_uri[x] = m_uri[y]) == '%') {
-            m_uri[x] = _x2c(&m_uri[y+1]);
-            y+=2;
+    // Adapted from Apache's util.c, ap_unescape_url function.
+    if (uri) {
+        while (*uri) {
+            if (*uri == '?') {
+                m_uri += uri;
+                break;
+            }
+            else if (*uri != '%') {
+                m_uri += *uri;
+            }
+            else {
+                m_uri += _x2c(uri);
+            }
+            ++uri;
         }
     }
-    m_uri[x] = '\0';
   
     m_priv->m_Config = &ShibTargetConfig::getConfig();
-    m_priv->get_application(this, protocol, hostname, port, uri);
+    m_priv->get_application(this, protocol, hostname, port, m_uri);
 }
 
 
