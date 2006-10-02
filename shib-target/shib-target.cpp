@@ -113,12 +113,6 @@ ShibTarget::~ShibTarget(void)
   if (m_priv) delete m_priv;
 }
 
-#ifdef WIN32 
-# define IS_SLASH(s) ((s == '/') || (s == '\\'))
-#else
-# define IS_SLASH(s) (s == '/')
-#endif
-
 void ShibTarget::init(
     const char* protocol,
     const char* hostname,
@@ -156,7 +150,8 @@ void ShibTarget::init(
                 m_uri += *uri;
             }
             else {
-                m_uri += _x2c(uri);
+                m_uri += _x2c(++uri);
+                ++uri;
             }
             ++uri;
         }
