@@ -87,7 +87,7 @@ namespace shibtarget {
  * Shib Target implementation
  */
 
-static char _x2c(char *what)
+static char _x2c(const char *what)
 {
     register char digit;
 
