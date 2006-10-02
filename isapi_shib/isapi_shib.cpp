@@ -537,7 +537,7 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
     }
     catch (SAMLException& e) {
         LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, e.what());
-        return WriteClientError(pfc,"Shibboleth Filter caught an exception, check Event Log for details.");
+        return WriteClientError(pfc,"Shibboleth Filter caught an exception, ask administrator to check Event Log for details.");
     }
 #ifndef _DEBUG
     catch(...) {
