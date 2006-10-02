@@ -604,9 +604,11 @@ XMLMetadataImpl::KeyDescriptor::KeyDescriptor(const DOMElement* e) : m_root(e), 
     }
     
     // Check for encryption methods.
-    e=saml::XML::getNextSiblingElement(e);
-    while (e && saml::XML::isElementNamed(e,::XML::SAML2META_NS,SHIB_L(EncryptionMethod)))
+    e=saml::XML::getNextSiblingElement(e,::XML::SAML2META_NS,SHIB_L(EncryptionMethod));
+    while (e) {
         m_methods.push_back(new EncryptionMethod(e));
+        e=saml::XML::getNextSiblingElement(e,::XML::SAML2META_NS,SHIB_L(EncryptionMethod));
+    }
 }
 
 XMLMetadataImpl::KeyDescriptor::~KeyDescriptor()
