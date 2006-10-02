@@ -236,7 +236,9 @@ pair<bool,void*> SessionInitiator::ShibAuthnRequest(
     
     char timebuf[16];
     sprintf(timebuf,"%lu",time(NULL));
-    string req=string(dest) + "?shire=" + CgiParse::url_encode(ACSloc.c_str()) + "&time=" + timebuf;
+    string req=string(dest);
+    req += strchr(dest,'?') ? '&' : '?';
+    req = req + "shire=" + CgiParse::url_encode(ACSloc.c_str()) + "&time=" + timebuf;
 
     // How should the resource value be preserved?
     pair<bool,bool> localRelayState=st->getConfig()->getPropertySet("Local")->getBool("localRelayState");
