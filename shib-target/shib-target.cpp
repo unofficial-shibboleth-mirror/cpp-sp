@@ -150,7 +150,10 @@ void ShibTarget::init(
                 m_uri += *uri;
             }
             else {
-                m_uri += _x2c(++uri);
+                ++uri;
+                if (!isxdigit(*uri) || !isxdigit(*(uri+1)))
+                    throw SAMLException("Bad request, contained unsupported encoded characters.");
+                m_uri += _x2c(uri);
                 ++uri;
             }
             ++uri;
