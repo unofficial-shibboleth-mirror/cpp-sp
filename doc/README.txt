@@ -1,5 +1,5 @@
-6/15/06
-Version 1.3e
+Oct 2, 2006
+Version 1.3f
 
 Welcome to Internet2's Shibboleth
 
@@ -18,7 +18,7 @@ IdP in Java and the SP in C and C++.
 Source and binary distributions are available from
 http://shibboleth.internet2.edu/downloads/
 
-A CVS is available for anonymous access, as described at the Shibboleth
+SVN is available for anonymous access, as described at the Shibboleth
 site. Mailing lists and a bugzilla (http://bugzilla.internet2.edu/) are also
 available. Not all of the lists are open, but a general support list is
 available and is open.

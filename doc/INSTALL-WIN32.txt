@@ -1,4 +1,4 @@
-Version 1.3d, shib Library version "6", shibtarget Library Version "5"
+Version 1.3f, shib Library version "6", shibtarget Library Version "5"
 
 This release works with SAML library version "5".
 

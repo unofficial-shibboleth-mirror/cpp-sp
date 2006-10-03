@@ -71,7 +71,7 @@ are needed to get a correct build of the library to link against.
 
 Building the Shibboleth libraries, shibd, test programs, and Apache
 modules is more or less like building OpenSAML. You can get the code from
-CVS and run the bootstrap script if you want, or just use a source tarball.
+SVN and run the bootstrap script if you want, or just use a source tarball.
 
 With the source distribution or the results of your bootstrap:
 
