@@ -6,6 +6,6 @@ CATEGORY=system
 VENDOR=http://shibboleth.internet2.edu/ packaged for Shibboleth by Scott Cantor
 HOTLINE=http://bugzilla.internet2.edu/
 EMAIL=cantor.2@osu.edu
-PSTAMP=15Jun2006
+PSTAMP=02Oct2006
 CLASSES=none
 BASEDIR=/opt/shibboleth-sp
