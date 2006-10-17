@@ -101,7 +101,12 @@ const char* ShibMLP::run(const string& is, const IPropertySet* props, std::strin
 {
   // Create a timestamp
   time_t now = time(NULL);
+#ifdef HAVE_CTIME_R
+  char timebuf[32];
+  insert("now", ctime_r(&now,timebuf));
+#else
   insert("now", ctime(&now));
+#endif
 
   if (!output)
     output=&m_generated;

@@ -46,7 +46,7 @@ AC_STRUCT_TM
 # Checks for library functions.
 AC_FUNC_STRFTIME
 AC_FUNC_STRERROR_R
-AC_CHECK_FUNCS([strchr strdup strstr gmtime_r strtok_r strcasecmp])
+AC_CHECK_FUNCS([strchr strdup strstr gmtime_r ctime_r strtok_r strcasecmp])
 AC_CHECK_HEADERS([dlfcn.h])
 
 # old_LIBS="$LIBS"

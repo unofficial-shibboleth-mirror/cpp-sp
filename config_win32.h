@@ -19,6 +19,9 @@
 /* Define to 1 if you have the `gmtime_r' function. */
 /* #undef HAVE_GMTIME_R */
 
+/* Define to 1 if you have the `ctime_r' function. */
+/* #undef HAVE_CTIME_R */
+
 /* Define to 1 if you have the <inttypes.h> header file. */
 #define HAVE_INTTYPES_H 1
 
