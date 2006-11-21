@@ -1031,25 +1031,27 @@ XMLMetadataImpl::EntityDescriptor::EntityDescriptor(
         }
     }
 
-    auto_ptr_char id(m_id);
-    wrapper->m_sites.insert(pair<const string,const EntityDescriptor*>(id.get(),this));
-    
-    // Look for an IdP role, and register the artifact source ID and endpoints.
-    const IDPRole* idp=NULL;
-    for (vector<const IRoleDescriptor*>::const_iterator r=m_roles.begin(); r!=m_roles.end(); r++) {
-        if (idp=dynamic_cast<const IDPRole*>(*r)) {
-            if (idp->m_sourceId) {
-                auto_ptr_char sourceid(idp->m_sourceId);
-                wrapper->m_sources.insert(pair<const string,const EntityDescriptor*>(sourceid.get(),this));
-            }
-            else {
-                string sourceid=SAMLArtifact::toHex(SAMLArtifactType0001::generateSourceId(id.get()));
-                wrapper->m_sources.insert(pair<const string,const EntityDescriptor*>(sourceid,this));
-            }
-            Iterator<const IEndpoint*> locs=idp->getArtifactResolutionServiceManager()->getEndpoints();
-            while (locs.hasNext()) {
-                auto_ptr_char loc(locs.next()->getLocation());
-                wrapper->m_sources.insert(pair<const string,const EntityDescriptor*>(loc.get(),this));
+    if (m_id && *m_id) {
+        auto_ptr_char id(m_id);
+        wrapper->m_sites.insert(pair<const string,const EntityDescriptor*>(id.get(),this));
+        
+        // Look for an IdP role, and register the artifact source ID and endpoints.
+        const IDPRole* idp=NULL;
+        for (vector<const IRoleDescriptor*>::const_iterator r=m_roles.begin(); r!=m_roles.end(); r++) {
+            if (idp=dynamic_cast<const IDPRole*>(*r)) {
+                if (idp->m_sourceId) {
+                    auto_ptr_char sourceid(idp->m_sourceId);
+                    wrapper->m_sources.insert(pair<const string,const EntityDescriptor*>(sourceid.get(),this));
+                }
+                else {
+                    string sourceid=SAMLArtifact::toHex(SAMLArtifactType0001::generateSourceId(id.get()));
+                    wrapper->m_sources.insert(pair<const string,const EntityDescriptor*>(sourceid,this));
+                }
+                Iterator<const IEndpoint*> locs=idp->getArtifactResolutionServiceManager()->getEndpoints();
+                while (locs.hasNext()) {
+                    auto_ptr_char loc(locs.next()->getLocation());
+                    wrapper->m_sources.insert(pair<const string,const EntityDescriptor*>(loc.get(),this));
+                }
             }
         }
     }
