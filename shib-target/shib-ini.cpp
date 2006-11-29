@@ -391,7 +391,16 @@ XMLApplication::XMLApplication(
             while (handler) {
                 XMLPropertySet* hprops=new XMLPropertySet();
                 hprops->load(handler,log,this); // filter irrelevant for now, no embedded elements expected
-                m_handlerMap[hprops->getString("Location").second]=hprops;
+                const char* loc = hprops->getString("Location").second;
+                if (!loc) {
+                    delete hprops;
+                    handler=saml::XML::getNextSiblingElement(handler);
+                    continue;
+                }
+                if (*loc == '/')
+                    m_handlerMap[loc]=hprops;
+                else
+                    m_handlerMap[string("/") + loc]=hprops;
                 
                 // If it's an ACS or SI, handle lookup mappings and defaulting.
                 if (saml::XML::isElementNamed(handler,shibtarget::XML::SAML2META_NS,SHIBT_L(AssertionConsumerService))) {
