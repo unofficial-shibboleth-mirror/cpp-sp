@@ -341,33 +341,27 @@ pair<bool,void*> ShibTarget::doHandler(void)
 
         // We dispatch based on our path info. We know the request URL begins with or equals the handler URL,
         // so the path info is the next character (or null).
-        pair<bool,void*> hret;
-        Iterator<const IHandler*> handlers=m_priv->m_app->getHandlers(targetURL + strlen(handlerURL));
-
-        if (handlers.size()==0)
+        const IHandler* handler=m_priv->m_app->getHandler(targetURL + strlen(handlerURL));
+        if (!handler)
             throw SAMLException("Shibboleth handler invoked at an unconfigured location.");
 
-        while (handlers.hasNext()) {
-            const IHandler* handler=handlers.next();
+        if (saml::XML::isElementNamed(handler->getProperties()->getElement(),shibtarget::XML::SAML2META_NS,SHIBT_L(AssertionConsumerService)))
+            procState = "Session Creation Error";
+        else if (saml::XML::isElementNamed(handler->getProperties()->getElement(),shibtarget::XML::SHIBTARGET_NS,SHIBT_L(SessionInitiator)))
+            procState = "Session Initiator Error";
+        else if (saml::XML::isElementNamed(handler->getProperties()->getElement(),shibtarget::XML::SAML2META_NS,SHIBT_L(SingleLogoutService)))
+            procState = "Session Termination Error";
+        else if (saml::XML::isElementNamed(handler->getProperties()->getElement(),shibtarget::XML::SHIBTARGET_NS,SHIBT_L(DiagnosticService)))
+            procState = "Diagnostics Error";
+        else
+            procState = "Extension Service Error";
+        pair<bool,void*> hret=handler->run(this);
 
-            if (saml::XML::isElementNamed(handler->getProperties()->getElement(),shibtarget::XML::SAML2META_NS,SHIBT_L(AssertionConsumerService)))
-                procState = "Session Creation Error";
-            else if (saml::XML::isElementNamed(handler->getProperties()->getElement(),shibtarget::XML::SHIBTARGET_NS,SHIBT_L(SessionInitiator)))
-                procState = "Session Initiator Error";
-            else if (saml::XML::isElementNamed(handler->getProperties()->getElement(),shibtarget::XML::SAML2META_NS,SHIBT_L(SingleLogoutService)))
-                procState = "Session Termination Error";
-            else if (saml::XML::isElementNamed(handler->getProperties()->getElement(),shibtarget::XML::SHIBTARGET_NS,SHIBT_L(DiagnosticService)))
-                procState = "Diagnostics Error";
-            else
-                procState = "Extension Service Error";
-            hret=handler->run(this);
-
-            // Did the handler run successfully?
-            if (hret.first)
-                return hret;
-        }
-        
-        throw SAMLException("Configured Shibboleth handler(s) failed to fully process the request.");
+        // Did the handler run successfully?
+        if (hret.first)
+            return hret;
+       
+        throw SAMLException("Configured Shibboleth handler failed to process the request.");
     }
     catch (MetadataException& e) {
         mlp.insert(e);

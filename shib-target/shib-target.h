@@ -133,8 +133,8 @@ namespace shibtarget {
         virtual const IHandler* getAssertionConsumerServiceByIndex(unsigned short index) const=0;
         virtual saml::Iterator<const IHandler*> getAssertionConsumerServicesByBinding(const XMLCh* binding) const=0;
         
-        // Used by dispatcher to locate the handler(s) for a request
-        virtual saml::Iterator<const IHandler*> getHandlers(const char* path) const=0;
+        // Used by dispatcher to locate the handler for a request
+        virtual const IHandler* getHandler(const char* path) const=0;
 
         virtual ~IApplication() {}
     };

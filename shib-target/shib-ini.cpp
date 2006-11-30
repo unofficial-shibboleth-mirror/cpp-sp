@@ -76,7 +76,7 @@ namespace shibtarget {
         const IHandler* getDefaultAssertionConsumerService() const;
         const IHandler* getAssertionConsumerServiceByIndex(unsigned short index) const;
         Iterator<const IHandler*> getAssertionConsumerServicesByBinding(const XMLCh* binding) const;
-        Iterator<const IHandler*> getHandlers(const char* path) const;
+        const IHandler* getHandler(const char* path) const;
         
         // Provides filter to exclude special config elements.
         short acceptNode(const DOMNode* node) const;
@@ -100,7 +100,7 @@ namespace shibtarget {
         vector<XMLPropertySet*> m_handlerProps;
 
         // maps location (path info) to applicable handlers
-        map<string,vector<const IHandler*> > m_handlerMap;
+        map<string,const IHandler*> m_handlerMap;
 
         // maps unique indexes to consumer services
         map<unsigned int,const IHandler*> m_acsIndexMap;
@@ -450,21 +450,26 @@ XMLApplication::XMLApplication(
                 delete hprops;
                 hprops=NULL;
             }
-            if (!hprops)
+            
+            const char* location=hprops ? hprops->getString("Location").second : NULL;
+            if (!location) {
+                delete hprops;
+                hprops=NULL;
+                handler=saml::XML::getNextSiblingElement(handler);
                 continue;
+            }
             
             // Save off the objects after giving the property set to the handler for its use.
             hobj->setProperties(hprops);
             m_handlers.push_back(hobj);
             m_handlerProps.push_back(hprops);
 
-            // Check for it in the location map.
-            const char* location=hprops->getString("Location").second;
-            if (m_handlerMap.count(location)==0)
-                m_handlerMap[location]=vector<const IHandler*>(1,hobj);
+            // Insert into location map.
+            if (*location == '/')
+                m_handlerMap[location]=hobj;
             else
-                m_handlerMap[location].push_back(hobj);
-            
+                m_handlerMap[string("/") + location]=hobj;
+
             // If it's an ACS or SI, handle index/id mappings and defaulting.
             if (saml::XML::isElementNamed(handler,shibtarget::XML::SAML2META_NS,SHIBT_L(AssertionConsumerService))) {
                 // Map it.
@@ -512,9 +517,9 @@ XMLApplication::XMLApplication(
 
         // If no handlers defined at the root, assume a legacy configuration.
         if (!m_base && m_handlers.empty()) {
-            // A legacy config installs a SAML POST handler and a Shib session-initiator
-            // at the root handler location. We use the Sessions element itself as the
-            // IPropertySet.
+            // A legacy config installs a SAML POST handler at the root handler location.
+            // We use the Sessions element itself as the IPropertySet.
+
             auto_ptr_char b1(Constants::SHIB_SESSIONINIT_PROFILE_URI);
             IPlugIn* hplug=shibConf.getPlugMgr().newPlugin(b1.get(),propcheck->getElement());
             IHandler* h1=dynamic_cast<IHandler*>(hplug);
@@ -526,11 +531,10 @@ XMLApplication::XMLApplication(
             }
             h1->setProperties(propcheck);
             m_handlers.push_back(h1);
-            m_handlerMap[""]=vector<const IHandler*>(1,h1);
             m_sessionInitDefault=h1;
 
             auto_ptr_char b2(SAMLBrowserProfile::BROWSER_POST);
-            hplug=shibConf.getPlugMgr().newPlugin(b1.get(),propcheck->getElement());
+            hplug=shibConf.getPlugMgr().newPlugin(b2.get(),propcheck->getElement());
             IHandler* h2=dynamic_cast<IHandler*>(hplug);
             if (!h2) {
                 delete hplug;
@@ -540,7 +544,7 @@ XMLApplication::XMLApplication(
             }
             h2->setProperties(propcheck);
             m_handlers.push_back(h2);
-            m_handlerMap[""].push_back(h2);
+            m_handlerMap[""] = h2;
             m_acsDefault=h2;
         }
         
@@ -938,13 +942,13 @@ Iterator<const IHandler*> XMLApplication::getAssertionConsumerServicesByBinding(
     return m_base ? m_base->getAssertionConsumerServicesByBinding(binding) : EMPTY(const IHandler*);
 }
 
-Iterator<const IHandler*> XMLApplication::getHandlers(const char* path) const
+const IHandler* XMLApplication::getHandler(const char* path) const
 {
     string wrap(path);
-    map<string,vector<const IHandler*> >::const_iterator i=m_handlerMap.find(wrap.substr(0,wrap.find('?')));
+    map<string,const IHandler*>::const_iterator i=m_handlerMap.find(wrap.substr(0,wrap.find('?')));
     if (i!=m_handlerMap.end())
         return i->second;
-    return m_base ? m_base->getHandlers(path) : EMPTY(const IHandler*);
+    return m_base ? m_base->getHandler(path) : NULL;
 }
 
 ReloadableXMLFileImpl* XMLConfig::newImplementation(const char* pathname, bool first) const
