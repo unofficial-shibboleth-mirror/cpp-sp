@@ -749,6 +749,15 @@ string ShibTarget::getHandlerURL(const char* resource) const
     if (!m_priv->m_app)
         throw ConfigurationException("Internal error in ShibTargetPriv::getHandlerURL, missing application pointer.");
 
+#ifdef HAVE_STRCASECMP
+    if (!resource || (strncasecmp(resource,"http://",7) && strncasecmp(resource,"https://",8)))
+#else
+    if (!resource || (strnicmp(resource,"http://",7) && strnicmp(resource,"https://",8)))
+#endif
+        throw SAMLException("Target resource was not an absolute URL.");
+        
+
+
     bool ssl_only=false;
     const char* handler=NULL;
     const IPropertySet* props=m_priv->m_app->getPropertySet("Sessions");
