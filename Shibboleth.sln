@@ -82,6 +82,12 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "xmlproviders", "xmlprovider
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "odbc_ccache", "odbc_ccache\odbc_ccache.vcproj", "{DAC7FB99-038A-45C9-A27C-21B6C8D4CD1E}"
 	ProjectSection(ProjectDependencies) = postProject
+		{E6CAB6C8-1D73-4410-970A-52BF9EC57810} = {E6CAB6C8-1D73-4410-970A-52BF9EC57810}
+		{84890110-2190-4AAE-9BDC-58F90DF71E4F} = {84890110-2190-4AAE-9BDC-58F90DF71E4F}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mod_shib22", "apache\mod_shib22.vcproj", "{B44C0852-83B8-4FB2-A86E-097C9C8256D0}"
+	ProjectSection(ProjectDependencies) = postProject
 		{84890110-2190-4AAE-9BDC-58F90DF71E4F} = {84890110-2190-4AAE-9BDC-58F90DF71E4F}
 		{E6CAB6C8-1D73-4410-970A-52BF9EC57810} = {E6CAB6C8-1D73-4410-970A-52BF9EC57810}
 	EndProjectSection
@@ -156,6 +162,10 @@ Global
 		{DAC7FB99-038A-45C9-A27C-21B6C8D4CD1E}.Debug|Win32.Build.0 = Debug|Win32
 		{DAC7FB99-038A-45C9-A27C-21B6C8D4CD1E}.Release|Win32.ActiveCfg = Release|Win32
 		{DAC7FB99-038A-45C9-A27C-21B6C8D4CD1E}.Release|Win32.Build.0 = Release|Win32
+		{B44C0852-83B8-4FB2-A86E-097C9C8256D0}.Debug|Win32.ActiveCfg = Debug|Win32
+		{B44C0852-83B8-4FB2-A86E-097C9C8256D0}.Debug|Win32.Build.0 = Debug|Win32
+		{B44C0852-83B8-4FB2-A86E-097C9C8256D0}.Release|Win32.ActiveCfg = Release|Win32
+		{B44C0852-83B8-4FB2-A86E-097C9C8256D0}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

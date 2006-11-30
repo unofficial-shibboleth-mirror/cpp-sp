@@ -147,7 +147,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=".,..,..\..\..\opensaml\c"
+				AdditionalIncludeDirectories=".,..,..\..\cpp-opensaml1"
 				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -182,7 +182,7 @@
 				OutputFile=".\Debug/isapi_shib.dll"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="..\..\..\opensaml\c\saml\Debug"
+				AdditionalLibraryDirectories="..\..\cpp-opensaml1\saml\Debug"
 				GenerateDebugInformation="true"
 				ImportLibrary=".\Debug/isapi_shib.lib"
 				TargetMachine="1"

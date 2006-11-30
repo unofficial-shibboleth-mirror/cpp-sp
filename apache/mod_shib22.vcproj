@@ -178,7 +178,7 @@
 				OutputFile="mod_shib22___Win32_Debug/mod_shib_22.so"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="../../../opensaml/c/saml/Debug,\Apache22D\lib"
+				AdditionalLibraryDirectories="..\..\cpp-opensaml1\saml\Debug,\Apache22D\lib"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile=".\mod_shib22___Win32_Debug/mod_shib_22.pdb"
 				ImportLibrary=".\mod_shib22___Win32_Debug/mod_shib_22.lib"

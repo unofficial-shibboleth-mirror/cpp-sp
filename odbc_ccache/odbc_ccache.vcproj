@@ -40,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..;..\..\..\opensaml\c"
+				AdditionalIncludeDirectories="..;&quot;..\..\cpp-opensaml1&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -64,7 +64,7 @@
 				AdditionalDependencies="log4cppD.lib xerces-c_2D.lib saml_5D.lib"
 				OutputFile="$(OutDir)\$(ProjectName).so"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="..\..\..\opensaml\c\saml\Debug"
+				AdditionalLibraryDirectories="..\..\cpp-opensaml1\saml\Debug"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				TargetMachine="1"

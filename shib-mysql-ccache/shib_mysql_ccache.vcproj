@@ -47,7 +47,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..;..\..\..\opensaml\c;&quot;\mysql-5.0.16\include&quot;"
+				AdditionalIncludeDirectories="..;&quot;..\..\cpp-opensaml1&quot;;&quot;\mysql-5.0.16\include&quot;"
 				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -81,7 +81,7 @@
 				OutputFile="Debug/shib-mysql-ccache.so"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="..\..\..\opensaml\c\saml\Debug,\mysql-4.1.12\lib_debug"
+				AdditionalLibraryDirectories="..\..\cpp-opensaml1\saml\Debug,\mysql-4.1.12\lib_debug"
 				GenerateDebugInformation="true"
 				ImportLibrary=".\Debug/shib-mysql-ccache.lib"
 				TargetMachine="1"

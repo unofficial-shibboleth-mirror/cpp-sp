@@ -179,7 +179,7 @@
 				OutputFile="mod_shib20___Win32_Debug/mod_shib_20.so"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="../../../opensaml/c/saml/Debug,\httpd-2.0.52\srclib\apr\Debug,\httpd-2.0.52\Debug"
+				AdditionalLibraryDirectories="..\..\cpp-opensaml1\saml\Debug,\httpd-2.0.52\srclib\apr\Debug,\httpd-2.0.52\Debug"
 				GenerateDebugInformation="true"
 				ImportLibrary=".\mod_shib20___Win32_Debug/mod_shib_20.lib"
 				TargetMachine="1"

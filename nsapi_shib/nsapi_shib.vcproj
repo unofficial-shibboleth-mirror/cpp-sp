@@ -145,7 +145,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=".,..,..\..\..\opensaml\c,\\KRAMER\iPlanet\plugins\include"
+				AdditionalIncludeDirectories=".;..;&quot;..\..\cpp-opensaml1&quot;;\\KRAMER\iPlanet\plugins\include"
 				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -179,7 +179,7 @@
 				OutputFile=".\Debug/nsapi_shib.dll"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="..\..\..\opensaml\c\saml\Debug,\\KRAMER\iPlanet\plugins\lib"
+				AdditionalLibraryDirectories="..\..\cpp-opensaml1\saml\Debug,\\KRAMER\iPlanet\plugins\lib"
 				GenerateDebugInformation="true"
 				ImportLibrary=".\Debug/nsapi_shib.lib"
 				TargetMachine="1"
