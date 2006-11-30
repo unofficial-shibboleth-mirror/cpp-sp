@@ -32,5 +32,21 @@ install-exec-hook:
 
 endif
 
-EXTRA_DIST = mod_apache.cpp mod_shib_13.cpp mod_shib_20.cpp mod_shib13.vcproj mod_shib20.vcproj \
-	resource.h mod_shib_13.rc mod_shib_20.rc
+if BUILD_AP22
+modshib22dir = $(libexecdir)
+modshib22_LTLIBRARIES = mod_shib_22.la
+mod_shib_22_la_SOURCES = mod_shib_22.cpp
+mod_shib_22_la_CXXFLAGS = $(APXS22_CFLAGS) -I$(APXS22_INCLUDE)
+mod_shib_22_la_LDFLAGS = -module -avoid-version
+mod_shib_22_la_LIBADD = \
+  $(top_builddir)/shib/libshib.la \
+  $(top_builddir)/shib-target/libshib-target.la
+
+install-exec-hook:
+	for la in $(modshib22_LTLIBRARIES) ; do rm -f $(DESTDIR)$(modshib22dir)/$$la ; done
+
+endif
+
+EXTRA_DIST = mod_apache.cpp mod_shib_13.cpp mod_shib_20.cpp mod_shib_22.cpp \
+	mod_shib13.vcproj mod_shib20.vcproj mod_shib22.vcproj \
+	resource.h mod_shib_13.rc mod_shib_20.rc mod_shib_22.rc

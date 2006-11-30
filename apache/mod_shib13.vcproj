@@ -145,7 +145,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..,..\..\..\opensaml\c,\Apache\include"
+				AdditionalIncludeDirectories="..;&quot;..\..\cpp-opensaml1&quot;;\Apache\include"
 				PreprocessorDefinitions="_WINDOWS;EAPI;WIN32;_DEBUG"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
