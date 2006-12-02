@@ -7,12 +7,6 @@ pkgxmldir = $(datadir)/xml/@PACKAGE@
 
 lib_LTLIBRARIES = libshib-target.la
 
-if USE_OUR_ONCRPC
-libshib_target_la_LIBADD = ${top_builddir}/oncrpc/liboncrpc.la
-AM_CFLAGS = -I${top_srcdir}/oncrpc
-AM_CXXFLAGS = -I${top_srcdir}/oncrpc
-endif
-
 libshib_targetdir = $(includedir)/shib-target
 libshib_target_HEADERS = shib-target.h shib-paths.h hresult.h ddf.h
 noinst_HEADERS = internal.h SocketListener.h
