@@ -15,25 +15,23 @@ endif
 
 libshib_targetdir = $(includedir)/shib-target
 libshib_target_HEADERS = shib-target.h shib-paths.h hresult.h ddf.h
-noinst_HEADERS = internal.h RPCListener.h shibrpc.h
+noinst_HEADERS = internal.h SocketListener.h
 
 libshib_target_la_SOURCES = \
 	ArtifactMapper.cpp \
 	CommonDomainCookie.cpp \
 	ddf.cpp \
 	IListener.cpp \
-	RPCListener.cpp \
+	SocketListener.cpp \
     ShibHTTPHook.cpp \
 	shib-ccache.cpp \
 	shib-config.cpp \
 	shib-handlers.cpp \
 	shib-ini.cpp \
 	shib-mlp.cpp \
-	shib-sock.cpp \
 	shib-target.cpp \
-	shibrpc-clnt.c \
-	shibrpc-svc.c \
-	shibrpc-xdr.c \
+	TCPListener.cpp \
+	UnixListener.cpp \
 	XML.cpp \
 	XMLRequestMapper.cpp
 
@@ -42,23 +40,6 @@ libshib_target_la_SOURCES = \
 libshib_target_la_LDFLAGS = -version-info 7:0:0
 
 
-
-RPCGEN=rpcgen -M
-RPCGEN_SRC=shibrpc.x
-
-very-clean: 
-	$(RM) shibrpc.h shibrpc-xdr.c shibrpc-clnt.c shibrpc-svc.c
-
-rpcgen:
-	$(MAKE) do_rpcgen RPCGEN_TARGET=shibrpc.h RPCGEN_ARGS=-h
-	$(MAKE) do_rpcgen RPCGEN_TARGET=shibrpc-xdr.c RPCGEN_ARGS=-c
-	$(MAKE) do_rpcgen RPCGEN_TARGET=shibrpc-clnt.c RPCGEN_ARGS=-l
-	$(MAKE) do_rpcgen RPCGEN_TARGET=shibrpc-svc.c RPCGEN_ARGS=-m
-	$(MAKE) do_rpcgen RPCGEN_TARGET=shibrpc-server-stubs.c RPCGEN_ARGS=-Ss
-
-do_rpcgen:
-	$(RM) $(RPCGEN_TARGET)
-	$(RPCGEN) $(RPCGEN_ARGS) -o $(RPCGEN_TARGET) $(RPCGEN_SRC)
 
 shib-paths.h: ${srcdir}/shib-paths.h.in Makefile ${top_builddir}/config.status
 	rm -f $@.tmp

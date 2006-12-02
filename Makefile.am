@@ -21,7 +21,7 @@ WANT_SUBDIRS = @WANT_SUBDIRS@
 
 SUBDIRS = $(WANT_SUBDIRS)
 
-DIST_SUBDIRS = doc oncrpc shib schemas configs shib-target shar test \
+DIST_SUBDIRS = doc shib schemas configs shib-target shar test \
 	apache siterefresh odbc_ccache shib-mysql-ccache xmlproviders \
 	nsapi_shib selinux
 

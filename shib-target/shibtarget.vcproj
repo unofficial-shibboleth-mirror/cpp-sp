@@ -47,7 +47,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=".;..;..\oncrpc;&quot;..\..\cpp-opensaml1&quot;"
+				AdditionalIncludeDirectories=".;..;&quot;..\..\cpp-opensaml1&quot;"
 				PreprocessorDefinitions="_WINDOWS;WANT_TCP_SHAR;WIN32;_DEBUG"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -146,7 +146,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories=".,..,..\oncrpc,..\..\..\opensaml\c"
+				AdditionalIncludeDirectories=".;..;..\..\..\opensaml\c"
 				PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;WANT_TCP_SHAR"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -265,36 +265,6 @@
 		</File>
 		<File
 			RelativePath="resource.h"
-			>
-		</File>
-		<File
-			RelativePath="RPCListener.cpp"
-			>
-			<FileConfiguration
-				Name="Debug|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					Optimization="0"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="_WINDOWS;WANT_TCP_SHAR;WIN32;_DEBUG;_MBCS;$(NoInherit)"
-					BasicRuntimeChecks="3"
-					BrowseInformation="1"
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Release|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					Optimization="2"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;_MBCS;WANT_TCP_SHAR;$(NoInherit)"
-				/>
-			</FileConfiguration>
-		</File>
-		<File
-			RelativePath=".\RPCListener.h"
 			>
 		</File>
 		<File
@@ -428,32 +398,6 @@
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="shib-sock.cpp"
-			>
-			<FileConfiguration
-				Name="Debug|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					Optimization="0"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="_WINDOWS;WANT_TCP_SHAR;WIN32;_DEBUG;_MBCS;$(NoInherit)"
-					BasicRuntimeChecks="3"
-					BrowseInformation="1"
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Release|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					Optimization="2"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;_MBCS;WANT_TCP_SHAR;$(NoInherit)"
-				/>
-			</FileConfiguration>
-		</File>
-		<File
 			RelativePath="shib-target.cpp"
 			>
 			<FileConfiguration
@@ -514,63 +458,15 @@
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="shibrpc-clnt.c"
-			>
-			<FileConfiguration
-				Name="Debug|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					Optimization="0"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="_WINDOWS;WANT_TCP_SHAR;WIN32;_DEBUG;_MBCS;$(NoInherit)"
-					BasicRuntimeChecks="3"
-					BrowseInformation="1"
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Release|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					Optimization="2"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;_MBCS;WANT_TCP_SHAR;$(NoInherit)"
-				/>
-			</FileConfiguration>
-		</File>
-		<File
-			RelativePath=".\shibrpc-svc.c"
+			RelativePath=".\SocketListener.cpp"
 			>
 		</File>
 		<File
-			RelativePath="shibrpc-xdr.c"
+			RelativePath=".\SocketListener.h"
 			>
-			<FileConfiguration
-				Name="Debug|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					Optimization="0"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="_WINDOWS;WANT_TCP_SHAR;WIN32;_DEBUG;_MBCS;$(NoInherit)"
-					BasicRuntimeChecks="3"
-					BrowseInformation="1"
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Release|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					Optimization="2"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;_MBCS;WANT_TCP_SHAR;$(NoInherit)"
-				/>
-			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="shibrpc.h"
+			RelativePath=".\TCPListener.cpp"
 			>
 		</File>
 		<File

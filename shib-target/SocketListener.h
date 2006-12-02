@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2005 Internet2
+ *  Copyright 2001-2006 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,36 +14,32 @@
  * limitations under the License.
  */
 
-/* RPCListener.h - ONC RPC-based Listener implementation
+/**
+ * @file shib-target/SocketListener.h
+ * 
+ * Berkeley Socket-based Listener implementation
+ */
 
-   $Id$
-*/
-
-#ifndef __RPCListener_h__
-#define __RPCListener_h__
-
-#ifdef WIN32
-# define _CRT_NONSTDC_NO_DEPRECATE 1
-# define _CRT_SECURE_NO_DEPRECATE 1
-#endif
+#ifndef __st_socklisten_h__
+#define __st_socklisten_h__
 
 #ifndef FD_SETSIZE
 # define FD_SETSIZE 1024
 #endif
 
-#include <saml/saml.h>  // need this to "prime" the xmlsec-constrained windows.h declaration
-#include <shib-target/shibrpc.h>
 #include "internal.h"
+
+#include <winsock.h>
 
 namespace shibtarget {
 
-    class RPCHandlePool;
+    class SocketPool;
     class ServerThread;
-    class RPCListener : public virtual IListener
+    class SocketListener : public virtual IListener
     {
     public:
-        RPCListener(const DOMElement* e);
-        ~RPCListener();
+        SocketListener(const DOMElement* e);
+        ~SocketListener();
 
         DDF send(const DDF& in);
         bool run(bool* shutdown);
@@ -59,14 +55,15 @@ namespace shibtarget {
         virtual bool bind(ShibSocket& s, bool force=false) const=0;
         virtual bool accept(ShibSocket& listener, ShibSocket& s) const=0;
         virtual bool close(ShibSocket& s) const=0;
-        virtual CLIENT* getClientHandle(ShibSocket& s, u_long program, u_long version) const=0;
+        virtual int send(ShibSocket& s, const char* buf, int len) const=0;
+        virtual int recv(ShibSocket& s, char* buf, int buflen) const=0;
 
     protected:
         bool log_error() const; // for OS-level errors
         log4cpp::Category* log;
     
     private:
-        mutable RPCHandlePool* m_rpcpool;
+        mutable SocketPool* m_socketpool;
         bool* m_shutdown;
 
         // Manage child threads
@@ -80,4 +77,4 @@ namespace shibtarget {
     };
 }
 
-#endif
+#endif /* __st_socklisten_h__ */
