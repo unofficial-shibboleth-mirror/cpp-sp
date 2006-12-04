@@ -7,7 +7,7 @@
 #
 # Load the SHIBBOLETH module
 #
-LoadModule mod_shib @-LIBEXECDIR-@/mod_shib_20.so
+LoadModule mod_shib @-LIBEXECDIR-@/mod_shib_22.so
 
 #
 # Global Configuration

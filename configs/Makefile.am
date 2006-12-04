@@ -11,6 +11,7 @@ pkgsysconf_DATA = \
 	shibd \
 	apache.config \
 	apache2.config \
+	apache22.config \
 	inqueue.pem
 
 # The config files are installed "special".  Unlike the entries in
@@ -59,6 +60,9 @@ apache.config: ${srcdir}/apache.config.in Makefile ${top_builddir}/config.status
 apache2.config: ${srcdir}/apache2.config.in Makefile ${top_builddir}/config.status
 	$(MAKE) do-build-file FILE=$@
 
+apache22.config: ${srcdir}/apache22.config.in Makefile ${top_builddir}/config.status
+	$(MAKE) do-build-file FILE=$@
+
 shibd: ${srcdir}/shibd.in Makefile ${top_builddir}/config.status
 	$(MAKE) do-build-file FILE=$@
 
@@ -105,6 +109,7 @@ install-data-local:	all-data-local
 CLEANFILES = \
 	apache.config \
 	apache2.config \
+	apache22.config \
 	shibd \
 	shibd.logger \
 	native.logger \
@@ -119,6 +124,7 @@ EXTRA_DIST = .cvsignore \
 	shibd.logger.in \
 	apache.config.in \
 	apache2.config.in \
+	apache22.config.in \
 	shibd.in \
 	shibboleth.logger \
 	accessError.html \
