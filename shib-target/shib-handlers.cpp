@@ -22,6 +22,7 @@
  */
 
 #include "internal.h"
+#include <saml/util/CommonDomainCookie.h>
 
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
@@ -34,6 +35,8 @@ using namespace saml;
 using namespace shibboleth;
 using namespace shibtarget;
 using namespace log4cpp;
+
+using opensaml::CommonDomainCookie;
 
 namespace {
   class SessionInitiator : virtual public IHandler

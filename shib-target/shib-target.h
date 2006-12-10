@@ -390,21 +390,6 @@ namespace shibtarget {
         unsigned long m_features;
     };
 
-    // Helper class for SAML 2.0 Common Domain Cookie operations
-    class CommonDomainCookie
-    {
-    public:
-        CommonDomainCookie(const char* cookie);
-        ~CommonDomainCookie() {}
-        saml::Iterator<std::string> get() {return m_list;}
-        const char* set(const char* providerId);
-        static const char CDCName[];
-    private:
-        std::string m_encoded;
-        std::vector<std::string> m_list;
-    };
-
-
     class ShibTargetPriv;
     class SHIBTARGET_EXPORTS ShibTarget {
     public:

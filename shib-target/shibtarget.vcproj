@@ -47,7 +47,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=".;..;&quot;..\..\cpp-opensaml1&quot;"
+				AdditionalIncludeDirectories=".;..;&quot;..\..\cpp-opensaml1&quot;;&quot;..\..\cpp-opensaml2&quot;;&quot;..\..\cpp-xmltooling&quot;"
 				PreprocessorDefinitions="_WINDOWS;WANT_TCP_SHAR;WIN32;_DEBUG"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -77,11 +77,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="log4cppD.lib xerces-c_2D.lib saml_5D.lib wsock32.lib libeay32_0_9_8D.lib ssleay32_0_9_8D.lib"
+				AdditionalDependencies="log4cppD.lib xerces-c_2D.lib saml_5D.lib saml2D.lib xmltooling1D.lib wsock32.lib libeay32_0_9_8D.lib ssleay32_0_9_8D.lib"
 				OutputFile="Debug/shibtarget_5D.dll"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="..\..\cpp-opensaml1\saml\Debug"
+				AdditionalLibraryDirectories="&quot;..\..\cpp-opensaml1\saml\Debug&quot;;&quot;..\..\cpp-opensaml2\Debug&quot;;&quot;..\..\cpp-xmltooling\Debug&quot;"
 				GenerateDebugInformation="true"
 				ImportLibrary=".\Debug/shibtarget_5D.lib"
 				TargetMachine="1"
@@ -146,7 +146,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories=".;..;..\..\..\opensaml\c"
+				AdditionalIncludeDirectories=".;..;&quot;..\..\cpp-opensaml1&quot;;&quot;..\..\cpp-opensaml2&quot;;&quot;..\..\cpp-xmltooling&quot;"
 				PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;WANT_TCP_SHAR"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -238,10 +238,6 @@
 					PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;_MBCS;WANT_TCP_SHAR;$(NoInherit)"
 				/>
 			</FileConfiguration>
-		</File>
-		<File
-			RelativePath=".\CommonDomainCookie.cpp"
-			>
 		</File>
 		<File
 			RelativePath=".\ddf.cpp"

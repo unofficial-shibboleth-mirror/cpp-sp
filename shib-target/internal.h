@@ -25,9 +25,9 @@
 #ifndef __shibtarget_internal_h__
 #define __shibtarget_internal_h__
 
+#include <saml/base.h>
+
 #ifdef WIN32
-# define _CRT_NONSTDC_NO_DEPRECATE 1
-# define _CRT_SECURE_NO_DEPRECATE 1
 # define SHIBTARGET_EXPORTS __declspec(dllexport)
 #endif
 
