@@ -156,7 +156,7 @@ bool BasicTrust::validate(const saml::SAMLSignedObject& token, const IRoleDescri
     Iterator<const IKeyDescriptor*> kd_i=role->getKeyDescriptors();
     while (kd_i.hasNext()) {
         const IKeyDescriptor* kd=kd_i.next();
-        if (kd->getUse()!=IKeyDescriptor::signing)
+        if (kd->getUse()==IKeyDescriptor::encryption)
             continue;
         DSIGKeyInfoList* KIL=kd->getKeyInfo();
         if (!KIL)
