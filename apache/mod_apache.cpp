@@ -72,6 +72,14 @@ namespace {
     static const char* g_UserDataKey = "_shib_check_user_";
 }
 
+/* Apache 2.2.x headers must be accumulated and set in the output filter.
+   Apache 2.0.49+ supports the filter method.
+   Apache 1.3.x and lesser 2.0.x must write the headers directly. */
+
+#if (defined(SHIB_APACHE_20) || defined(SHIB_APACHE_22)) && AP_MODULE_MAGIC_AT_LEAST(20020903,6)
+#define SHIB_DEFERRED_HEADERS
+#endif
+
 /********************************************************************************/
 // Basic Apache Configuration code.
 //
@@ -122,6 +130,7 @@ struct shib_dir_config
     int bBasicHijack;       // activate for AuthType Basic?
     int bRequireSession;    // require a session?
     int bExportAssertion;   // export SAML assertion to the environment?
+    int bUseEnvVars;        // use environment instead of headers?
 };
 
 // creates per-directory config structure
@@ -137,6 +146,7 @@ extern "C" void* create_shib_dir_config (SH_AP_POOL* p, char* d)
     dc->szAuthGrpFile = NULL;
     dc->szApplicationId = NULL;
     dc->szRequireWith = NULL;
+    dc->bUseEnvVars = -1;
     return dc;
 }
 
@@ -180,7 +190,28 @@ extern "C" void* merge_shib_dir_config (SH_AP_POOL* p, void* base, void* sub)
     dc->bRequireSession=((child->bRequireSession==-1) ? parent->bRequireSession : child->bRequireSession);
     dc->bExportAssertion=((child->bExportAssertion==-1) ? parent->bExportAssertion : child->bExportAssertion);
     dc->bRequireAll=((child->bRequireAll==-1) ? parent->bRequireAll : child->bRequireAll);
+    dc->bUseEnvVars=((child->bUseEnvVars==-1) ? parent->bUseEnvVars : child->bUseEnvVars);
     return dc;
+}
+
+// per-request module structure
+struct shib_request_config
+{
+    SH_AP_TABLE *env;        // environment vars 
+#ifdef SHIB_DEFERRED_HEADERS
+    SH_AP_TABLE *hdr_out;    // headers to browser
+    SH_AP_TABLE *hdr_err;    // err headers to browser
+#endif
+};
+
+// create a request record
+static shib_request_config *init_request_config(request_rec *r)
+{
+    shib_request_config* rc=(shib_request_config*)ap_pcalloc(r->pool,sizeof(shib_request_config));
+    ap_set_module_config (r->request_config, &mod_shib, rc);
+    memset(rc, 0, sizeof(shib_request_config));
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_init_rc\n");
+    return rc;
 }
 
 // generic global slot handlers
@@ -193,7 +224,7 @@ extern "C" const char* ap_set_global_string_slot(cmd_parms* parms, void*, const 
 extern "C" const char* shib_set_server_string_slot(cmd_parms* parms, void*, const char* arg)
 {
     char* base=(char*)ap_get_module_config(parms->server->module_config,&mod_shib);
-    int offset=(int)parms->info;
+    long offset=(long)parms->info;
     *((char**)(base + offset))=ap_pstrdup(parms->pool,arg);
     return NULL;
 }
@@ -219,6 +250,7 @@ public:
   ShibTargetApache(request_rec* req) {
     m_sc = (shib_server_config*)ap_get_module_config(req->server->module_config, &mod_shib);
     m_dc = (shib_dir_config*)ap_get_module_config(req->per_dir_config, &mod_shib);
+    m_rc = (shib_request_config*)ap_get_module_config(req->request_config, &mod_shib);
 
     init(
         m_sc->szScheme ? m_sc->szScheme : ap_http_method(req),
@@ -252,7 +284,11 @@ public:
   }
   virtual void setCookie(const string &name, const string &value) {
     char* val = ap_psprintf(m_req->pool, "%s=%s", name.c_str(), value.c_str());
+#ifdef SHIB_DEFERRED_HEADERS
+    ap_table_addn(m_rc->hdr_err, "Set-Cookie", val);
+#else
     ap_table_addn(m_req->err_headers_out, "Set-Cookie", val);
+#endif
   }
   virtual string getArgs(void) { return string(m_req->args ? m_req->args : ""); }
   virtual string getPostData(void) {
@@ -277,11 +313,29 @@ public:
     return cgistr;
   }
   virtual void clearHeader(const string &name) {
-    ap_table_unset(m_req->headers_in, name.c_str());
-    ap_table_set(m_req->headers_in, name.c_str(), g_unsetHeaderValue.c_str());
+    if (m_dc->bUseEnvVars==1) {
+       // ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_clear_header: env\n");
+       // anything to do?
+    } else {
+       // ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_clear_header: hdr\n");
+       ap_table_unset(m_req->headers_in, name.c_str());
+       ap_table_set(m_req->headers_in, name.c_str(), g_unsetHeaderValue.c_str());
+    }
   }
   virtual void setHeader(const string &name, const string &value) {
-    ap_table_set(m_req->headers_in, name.c_str(), value.c_str());
+    if (m_dc->bUseEnvVars==1) {
+       if (!m_rc) {
+          // this happens on subrequests
+          ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_setheadet: no_m_rc\n");
+          m_rc = init_request_config(m_req);
+       }
+       if (!m_rc->env) m_rc->env = ap_make_table(m_req->pool, 10);
+       ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_set_env: %s=%s\n", name.c_str(), value.c_str()?value.c_str():"NUL");
+       ap_table_set(m_rc->env, name.c_str(), value.c_str()?value.c_str():"");
+    } else {
+       ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_set_hdr: %s=%s\n", name.c_str(), value.c_str()?value.c_str():"NUL");
+       ap_table_set(m_req->headers_in, name.c_str(), value.c_str());
+    }
   }
   virtual string getHeader(const string &name) {
     const char *hdr = ap_table_get(m_req->headers_in, name.c_str());
@@ -318,6 +372,7 @@ public:
   request_rec* m_req;
   shib_dir_config* m_dc;
   shib_server_config* m_sc;
+  shib_request_config* m_rc;
 };
 
 /********************************************************************************/
@@ -341,11 +396,11 @@ extern "C" int shib_check_user(request_rec* r)
     // Check user authentication and export information, then set the handler bypass
     pair<bool,void*> res = sta.doCheckAuthN(true);
     apr_pool_userdata_setn((const void*)42,g_UserDataKey,NULL,r->pool);
-    if (res.first) return (int)res.second;
+    if (res.first) return (int)(long)res.second;
 
     // user auth was okay -- export the assertions now
     res = sta.doExportAssertions();
-    if (res.first) return (int)res.second;
+    if (res.first) return (int)(long)res.second;
 
     // export happened successfully..  this user is ok.
     return OK;
@@ -390,7 +445,7 @@ extern "C" int shib_handler(request_rec* r)
     ShibTargetApache sta(r);
 
     pair<bool,void*> res = sta.doHandler();
-    if (res.first) return (int)res.second;
+    if (res.first) return (int)(long)res.second;
 
     ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "doHandler() did not do anything.");
     return SERVER_ERROR;
@@ -427,7 +482,7 @@ extern "C" int shib_auth_checker(request_rec* r)
     ShibTargetApache sta(r);
 
     pair<bool,void*> res = sta.doCheckAuthZ();
-    if (res.first) return (int)res.second;
+    if (res.first) return (int)(long)res.second;
 
     // We're all okay.
     return OK;
@@ -855,6 +910,7 @@ bool htAccessControl::authorized(
     return false;
 }
 
+
 #ifndef SHIB_APACHE_13
 /*
  * shib_exit()
@@ -870,6 +926,58 @@ extern "C" apr_status_t shib_exit(void* data)
     return OK;
 }
 #endif
+
+// Initial look at a request - create the per-request structure
+static int shib_post_read(request_rec *r)
+{
+    shib_request_config* rc = init_request_config(r);
+
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_post_read: E=%s\n", rc->env?"env":"hdr");
+
+#ifdef SHIB_DEFERRED_HEADERS
+    rc->hdr_out = ap_make_table(r->pool, 5);
+    rc->hdr_err = ap_make_table(r->pool, 5);
+#endif
+    return DECLINED;
+}
+
+// fixups: set environment vars
+
+extern "C" int shib_fixups(request_rec* r)
+{
+  // Short-circuit entirely?
+  shib_dir_config *dc = (shib_dir_config*)ap_get_module_config(r->per_dir_config, &mod_shib);
+  if (dc->bOff==1 || dc->bUseEnvVars!=1) 
+    return DECLINED;
+    
+  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_fixup(%d): ENTER\n", (int)getpid());
+
+  ostringstream threadid;
+  threadid << "[" << getpid() << "] shib_fixup" << '\0';
+  saml::NDC ndc(threadid.str().c_str());
+
+  try {
+    ShibTargetApache sta(r);
+
+    if (sta.m_rc==NULL || sta.m_rc->env==NULL || ap_is_empty_table(sta.m_rc->env))
+        return DECLINED;
+
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_fixup adding %d vars\n", ap_table_elts(sta.m_rc->env)->nelts);
+    r->subprocess_env = ap_overlay_tables(r->pool, r->subprocess_env, sta.m_rc->env);
+
+    return OK;
+  }
+  catch (SAMLException& e) {
+    ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_check_user threw an exception: %s", e.what());
+    return SERVER_ERROR;
+  }
+#ifndef _DEBUG
+  catch (...) {
+    ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_check_user threw an uncaught exception!");
+    return SERVER_ERROR;
+  }
+#endif
+}
 
 
 /*
@@ -959,6 +1067,54 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
     ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() done");
 }
 
+// Output filters 
+#ifdef SHIB_DEFERRED_HEADERS
+static void set_output_filter(request_rec *r)
+{
+   ap_add_output_filter("SHIB_HEADERS_OUT", NULL, r, r->connection);
+}
+
+static void set_error_filter(request_rec *r)
+{
+   ap_add_output_filter("SHIB_HEADERS_ERR", NULL, r, r->connection);
+}
+
+static apr_status_t do_output_filter(ap_filter_t *f, apr_bucket_brigade *in)
+{
+    request_rec *r = f->r;
+    shib_request_config *rc = (shib_request_config*) ap_get_module_config(r->request_config, &mod_shib);
+
+    if (rc) {
+        ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_out_filter: merging %d headers", apr_table_elts(rc->hdr_out)->nelts);
+        apr_table_overlap(r->headers_out, rc->hdr_out, APR_OVERLAP_TABLES_MERGE);
+    }
+
+    /* remove ourselves from the filter chain */
+    ap_remove_output_filter(f);
+
+    /* send the data up the stack */
+    return ap_pass_brigade(f->next,in);
+}
+
+static apr_status_t do_error_filter(ap_filter_t *f, apr_bucket_brigade *in)
+{
+    request_rec *r = f->r;
+    shib_request_config *rc = (shib_request_config*) ap_get_module_config(r->request_config, &mod_shib);
+
+    if (rc) {
+        ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_err_filter: merging %d headers", apr_table_elts(rc->hdr_err)->nelts);
+        apr_table_overlap(r->err_headers_out, rc->hdr_err, APR_OVERLAP_TABLES_MERGE);
+    }
+
+    /* remove ourselves from the filter chain */
+    ap_remove_output_filter(f);
+
+    /* send the data up the stack */
+    return ap_pass_brigade(f->next,in);
+}
+#endif // SHIB_DEFERRED_HEADERS
+
+
 typedef const char* (*config_fn_t)(void);
 
 #ifdef SHIB_APACHE_13
@@ -1004,6 +1160,9 @@ static command_rec shire_cmds[] = {
   {"ShibRequireAll", (config_fn_t)ap_set_flag_slot,
    (void *) XtOffsetOf (shib_dir_config, bRequireAll),
    OR_AUTHCFG, FLAG, "All require directives must match"},
+  {"ShibUseEnvironment", (config_fn_t)ap_set_flag_slot,
+   (void *) XtOffsetOf (shib_dir_config, bUseEnvVars),
+   OR_AUTHCFG, FLAG, "Export data in environment instead of headers"},
 
   {NULL}
 };
@@ -1028,22 +1187,30 @@ module MODULE_VAR_EXPORT mod_shib = {
     shib_auth_checker,		/* check auth */
     NULL,			/* check access */
     NULL,			/* type_checker */
-    NULL,			/* fixups */
+    shib_fixups,		/* fixups */
     NULL,			/* logger */
     NULL,			/* header parser */
     shib_child_init,		/* child_init */
     shib_child_exit,		/* child_exit */
-    NULL			/* post read-request */
+    shib_post_read		/* post read-request */
 };
 
 #elif defined(SHIB_APACHE_20) || defined(SHIB_APACHE_22)
 
 extern "C" void shib_register_hooks (apr_pool_t *p)
 {
+#ifdef SHIB_DEFERRED_HEADERS
+  ap_register_output_filter("SHIB_HEADERS_OUT", do_output_filter, NULL, AP_FTYPE_CONTENT_SET);
+  ap_hook_insert_filter(set_output_filter, NULL, NULL, APR_HOOK_LAST);
+  ap_register_output_filter("SHIB_HEADERS_ERR", do_error_filter, NULL, AP_FTYPE_CONTENT_SET);
+  ap_hook_insert_error_filter(set_error_filter, NULL, NULL, APR_HOOK_LAST);
+  ap_hook_post_read_request(shib_post_read, NULL, NULL, APR_HOOK_MIDDLE);
+#endif
   ap_hook_child_init(shib_child_init, NULL, NULL, APR_HOOK_MIDDLE);
   ap_hook_check_user_id(shib_check_user, NULL, NULL, APR_HOOK_MIDDLE);
   ap_hook_auth_checker(shib_auth_checker, NULL, NULL, APR_HOOK_FIRST);
   ap_hook_handler(shib_handler, NULL, NULL, APR_HOOK_LAST);
+  ap_hook_fixups(shib_fixups, NULL, NULL, APR_HOOK_MIDDLE);
 }
 
 // SHIB Module commands
@@ -1089,6 +1256,9 @@ static command_rec shib_cmds[] = {
   AP_INIT_FLAG("ShibRequireAll", (config_fn_t)ap_set_flag_slot,
         (void *) offsetof (shib_dir_config, bRequireAll),
         OR_AUTHCFG, "All require directives must match"),
+  AP_INIT_FLAG("ShibUseEnvironment", (config_fn_t)ap_set_flag_slot,
+        (void *) offsetof (shib_dir_config, bUseEnvVars),
+        OR_AUTHCFG, "Export data in environment instead of headers"),
 
   {NULL}
 };
