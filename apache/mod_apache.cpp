@@ -315,7 +315,7 @@ public:
   virtual void clearHeader(const string &name) {
     if (m_dc->bUseEnvVars==1) {
        // ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_clear_header: env\n");
-       // anything to do?
+       if (m_rc && m_rc->env) ap_table_unset(m_rc->env, name.c_str());
     } else {
        // ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_clear_header: hdr\n");
        ap_table_unset(m_req->headers_in, name.c_str());
@@ -326,19 +326,27 @@ public:
     if (m_dc->bUseEnvVars==1) {
        if (!m_rc) {
           // this happens on subrequests
-          ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_setheadet: no_m_rc\n");
+          ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_setheader: no_m_rc\n");
           m_rc = init_request_config(m_req);
        }
        if (!m_rc->env) m_rc->env = ap_make_table(m_req->pool, 10);
-       ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_set_env: %s=%s\n", name.c_str(), value.c_str()?value.c_str():"NUL");
+       ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_set_env: %s=%s\n", name.c_str(), value.c_str()?value.c_str():"Null");
        ap_table_set(m_rc->env, name.c_str(), value.c_str()?value.c_str():"");
     } else {
-       ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_set_hdr: %s=%s\n", name.c_str(), value.c_str()?value.c_str():"NUL");
+       ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_set_hdr: %s=%s\n", name.c_str(), value.c_str()?value.c_str():"Null");
        ap_table_set(m_req->headers_in, name.c_str(), value.c_str());
     }
   }
   virtual string getHeader(const string &name) {
-    const char *hdr = ap_table_get(m_req->headers_in, name.c_str());
+    const char *hdr;
+    if (m_dc->bUseEnvVars==1) {
+       if (m_rc && m_rc->env) hdr = ap_table_get(m_rc->env, name.c_str());
+       else hdr = NULL;
+       ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_get_hdr_env: %s=%s\n", name.c_str(), hdr?hdr:"NULL");
+    } else {
+       hdr = ap_table_get(m_req->headers_in, name.c_str());
+       ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_get_hdr: %s=%s\n", name.c_str(), hdr?hdr:"NULL");
+    }
     return string(hdr ? hdr : "");
   }
   virtual void setRemoteUser(const string &user) {
@@ -816,7 +824,13 @@ bool htAccessControl::authorized(
             if (!strcmp(wrapper->getHeader(),"REMOTE_USER"))
                 vals=remote_user.c_str();
             else
-                vals=ap_table_get(sta->m_req->headers_in,wrapper->getHeader());
+                if (sta->m_dc->bUseEnvVars==1) {
+                   if (sta->m_rc && sta->m_rc->env) vals=ap_table_get(sta->m_rc->env,wrapper->getHeader());
+                   else vals = NULL;
+                } else {
+                   vals=ap_table_get(sta->m_req->headers_in,wrapper->getHeader());
+                }
+
             while (*t && vals && *vals) {
                 w=ap_getword_conf(sta->m_req->pool,&t);
                 if (*w=='~') {
@@ -945,38 +959,20 @@ static int shib_post_read(request_rec *r)
 
 extern "C" int shib_fixups(request_rec* r)
 {
-  // Short-circuit entirely?
+  shib_request_config *rc = (shib_request_config*)ap_get_module_config(r->request_config, &mod_shib);
   shib_dir_config *dc = (shib_dir_config*)ap_get_module_config(r->per_dir_config, &mod_shib);
   if (dc->bOff==1 || dc->bUseEnvVars!=1) 
     return DECLINED;
     
   ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_fixup(%d): ENTER\n", (int)getpid());
 
-  ostringstream threadid;
-  threadid << "[" << getpid() << "] shib_fixup" << '\0';
-  saml::NDC ndc(threadid.str().c_str());
-
-  try {
-    ShibTargetApache sta(r);
-
-    if (sta.m_rc==NULL || sta.m_rc->env==NULL || ap_is_empty_table(sta.m_rc->env))
+  if (rc==NULL || rc->env==NULL || ap_is_empty_table(rc->env))
         return DECLINED;
 
-    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_fixup adding %d vars\n", ap_table_elts(sta.m_rc->env)->nelts);
-    r->subprocess_env = ap_overlay_tables(r->pool, r->subprocess_env, sta.m_rc->env);
+  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_fixup adding %d vars\n", ap_table_elts(rc->env)->nelts);
+  r->subprocess_env = ap_overlay_tables(r->pool, r->subprocess_env, rc->env);
 
-    return OK;
-  }
-  catch (SAMLException& e) {
-    ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_check_user threw an exception: %s", e.what());
-    return SERVER_ERROR;
-  }
-#ifndef _DEBUG
-  catch (...) {
-    ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_check_user threw an uncaught exception!");
-    return SERVER_ERROR;
-  }
-#endif
+  return OK;
 }
 
 
