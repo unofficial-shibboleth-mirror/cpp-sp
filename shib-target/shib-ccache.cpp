@@ -26,10 +26,9 @@
 # include <unistd.h>
 #endif
 
-#include <shib/shib-threads.h>
-
 #include <log4cpp/Category.hh>
 
+#include <ctime>
 #include <algorithm>
 #include <sstream>
 #include <stdexcept>
@@ -38,11 +37,12 @@
 #include <dmalloc.h>
 #endif
 
-using namespace std;
-using namespace log4cpp;
-using namespace saml;
-using namespace shibboleth;
 using namespace shibtarget;
+using namespace shibboleth;
+using namespace saml;
+using namespace xmltooling;
+using namespace log4cpp;
+using namespace std;
 
 static const XMLCh cleanupInterval[] =
 { chLatin_c, chLatin_l, chLatin_e, chLatin_a, chLatin_n, chLatin_u, chLatin_p,
@@ -898,7 +898,7 @@ pair<SAMLResponse*,SAMLResponse*> MemorySessionCacheEntry::getNewResponse(
                     if (!XMLString::compareString(code.getNamespaceURI(),shibboleth::Constants::SHIB_NS) &&
                         !XMLString::compareString(code.getLocalName(), shibboleth::Constants::InvalidHandle)) {
                         codes.reset();
-                        throw InvalidHandleException(e.what(),params(),codes);
+                        throw InvalidHandleException(e.what(),saml::params(),codes);
                     }
                 }
             }
@@ -1222,7 +1222,7 @@ DDF MemorySessionCache::receive(const DDF& in)
         out.addmember("key").string(key.c_str());
         return out;
     }
-    throw ListenerException("Unsupported operation ($1)",params(1,in.name()));
+    throw ListenerException("Unsupported operation ($1)",saml::params(1,in.name()));
 }
 
 string MemorySessionCache::insert(
@@ -1373,7 +1373,7 @@ ISessionCacheEntry* MemorySessionCache::find(const char* key, const IApplication
                     InvalidSessionException ex(
                         SESSION_E_ADDRESSMISMATCH,
                         "Your IP address ($1) does not match the address recorded at the time the session was established.",
-                        params(1,client_addr)
+                        saml::params(1,client_addr)
                         );
                     annotateException(&ex,m.lookup(i->second->getProviderId())); // throws it
                 }
@@ -1562,8 +1562,10 @@ void* MemorySessionCache::cleanup_fcn(void* cache_p)
 {
     MemorySessionCache* cache = reinterpret_cast<MemorySessionCache*>(cache_p);
 
+#ifndef WIN32
     // First, let's block all signals 
     Thread::mask_all_signals();
+#endif
 
     // Now run the cleanup process.
     cache->cleanup();

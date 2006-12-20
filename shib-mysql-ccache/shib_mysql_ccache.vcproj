@@ -47,7 +47,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..;&quot;..\..\cpp-opensaml1&quot;;&quot;\mysql-5.0.16\include&quot;"
+				AdditionalIncludeDirectories="..;&quot;..\..\cpp-opensaml1&quot;;&quot;..\..\cpp-opensaml2&quot;;&quot;..\..\cpp-xmltooling&quot;;&quot;\mysql-5.0.16\include&quot;"
 				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -77,11 +77,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="log4cppD.lib libmysqld.lib xerces-c_2D.lib saml_5D.lib"
+				AdditionalDependencies="log4cppD.lib libmysqld.lib xerces-c_2D.lib saml_5D.lib xmltooling1D.lib"
 				OutputFile="Debug/shib-mysql-ccache.so"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="..\..\cpp-opensaml1\saml\Debug,\mysql-4.1.12\lib_debug"
+				AdditionalLibraryDirectories="..\..\cpp-xmltooling\Debug;..\..\cpp-opensaml1\saml\Debug,\mysql-4.1.12\lib_debug"
 				GenerateDebugInformation="true"
 				ImportLibrary=".\Debug/shib-mysql-ccache.lib"
 				TargetMachine="1"
@@ -146,7 +146,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="..;..\..\..\opensaml\c;&quot;\mysql-5.0.16\include&quot;"
+				AdditionalIncludeDirectories="..;&quot;..\..\cpp-opensaml1&quot;;&quot;..\..\cpp-opensaml2&quot;;&quot;..\..\cpp-xmltooling&quot;;&quot;\mysql-5.0.16\include&quot;"
 				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -175,11 +175,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="log4cpp.lib libmysqld.lib xerces-c_2.lib saml_5.lib"
+				AdditionalDependencies="log4cpp.lib libmysqld.lib xerces-c_2.lib saml_5.lib xmltooling1.lib"
 				OutputFile="Release/shib-mysql-ccache.so"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="..\..\..\opensaml\c\saml\Release,\mysql-4.1.12\lib_release"
+				AdditionalLibraryDirectories="..\..\cpp-xmltooling\Release;..\..\cpp-opensaml1\Release,\mysql-4.1.12\lib_release"
 				ProgramDatabaseFile=".\Release/shib-mysql-ccache.pdb"
 				ImportLibrary=".\Release/shib-mysql-ccache.lib"
 				TargetMachine="1"

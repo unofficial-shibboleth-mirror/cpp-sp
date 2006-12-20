@@ -175,11 +175,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="log4cpp.lib xerces-c_2.lib saml_5.lib wsock32.lib libeay32_0_9_8.lib ssleay32_0_9_8.lib"
+				AdditionalDependencies="log4cpp.lib xerces-c_2.lib saml_5.lib saml2.lib xmltooling1.lib wsock32.lib libeay32_0_9_8.lib ssleay32_0_9_8.lib"
 				OutputFile="Release/shibtarget_5.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="..\..\..\opensaml\c\saml\Release"
+				AdditionalLibraryDirectories="&quot;..\..\cpp-opensaml1\saml\Release&quot;;&quot;..\..\cpp-opensaml2\Release&quot;;&quot;..\..\cpp-xmltooling\Release&quot;"
 				ProgramDatabaseFile=".\Release/shibtarget_5.pdb"
 				ImportLibrary=".\Release/shibtarget_5.lib"
 				TargetMachine="1"
@@ -343,32 +343,6 @@
 		</File>
 		<File
 			RelativePath="shib-ini.cpp"
-			>
-			<FileConfiguration
-				Name="Debug|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					Optimization="0"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="_WINDOWS;WANT_TCP_SHAR;WIN32;_DEBUG;_MBCS;$(NoInherit)"
-					BasicRuntimeChecks="3"
-					BrowseInformation="1"
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Release|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					Optimization="2"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;_MBCS;WANT_TCP_SHAR;$(NoInherit)"
-				/>
-			</FileConfiguration>
-		</File>
-		<File
-			RelativePath="shib-mlp.cpp"
 			>
 			<FileConfiguration
 				Name="Debug|Win32"

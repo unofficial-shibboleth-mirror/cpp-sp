@@ -29,12 +29,12 @@
 #define SHIB_INSTANTIATE
 
 #include "internal.h"
-#include "shib-threads.h"
 
 #include <openssl/err.h>
 
 using namespace saml;
 using namespace shibboleth;
+using namespace xmltooling;
 using namespace log4cpp;
 using namespace std;
 

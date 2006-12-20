@@ -28,7 +28,6 @@
 // SAML Runtime
 #include <saml/saml.h>
 #include <shib/shib.h>
-#include <shib/shib-threads.h>
 #include <shib-target/shib-target.h>
 
 #include <ctime>
@@ -40,10 +39,10 @@
 #include <httpfilt.h>
 #include <httpext.h>
 
-using namespace std;
-using namespace saml;
-using namespace shibboleth;
 using namespace shibtarget;
+using namespace saml;
+using namespace xmltooling;
+using namespace std;
 
 // globals
 namespace {

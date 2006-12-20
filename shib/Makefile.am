@@ -5,19 +5,18 @@ AUTOMAKE_OPTIONS = foreign
 lib_LTLIBRARIES = libshib.la
 
 libshibdir = $(includedir)/shib
-libshib_HEADERS = shib.h shib-threads.h hresult.h
+libshib_HEADERS = shib.h hresult.h
 noinst_HEADERS = internal.h
 
 libshib_la_SOURCES = \
-					BasicTrust.cpp \
-                    Constants.cpp \
-                    Metadata.cpp \
-                    ReloadableXMLFile.cpp \
-                    ShibbolethTrust.cpp \
-                    ShibConfig.cpp \
-                    ShibBrowserProfile.cpp \
-                    shib-threads.cpp \
-                    ScopedAttribute.cpp
+	BasicTrust.cpp \
+    Constants.cpp \
+    Metadata.cpp \
+    ReloadableXMLFile.cpp \
+    ShibbolethTrust.cpp \
+    ShibConfig.cpp \
+    ShibBrowserProfile.cpp \
+    ScopedAttribute.cpp
 
 
 # this is different from the project version
@@ -27,5 +26,5 @@ libshib_la_LDFLAGS = -version-info 6:0:0
 install-exec-hook:
 	for la in $(lib_LTLIBRARIES) ; do rm -f $(DESTDIR)$(libdir)/$$la ; done
 
-EXTRA_DIST = shib.vcproj shib-threads-win32.cpp resource.h shib.rc
+EXTRA_DIST = shib.vcproj resource.h shib.rc
 

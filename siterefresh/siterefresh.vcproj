@@ -44,7 +44,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="..,..\..\..\opensaml\c"
+				AdditionalIncludeDirectories="..;&quot;..\..\cpp-opensaml2&quot;;&quot;..\..\cpp-xmltooling&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -73,11 +73,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="log4cpp.lib xerces-c_2.lib xsec_1.lib saml_5.lib"
+				AdditionalDependencies="log4cpp.lib xerces-c_2.lib xsec_1.lib saml2.lib"
 				OutputFile=".\Release/siterefresh.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="..\..\..\opensaml\c\saml\Release"
+				AdditionalLibraryDirectories="..\..\cpp-opensaml2\Release;..\..\cpp-xmltooling\Release"
 				ProgramDatabaseFile=".\Release/siterefresh.pdb"
 				SubSystem="1"
 				TargetMachine="1"
@@ -137,7 +137,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..;&quot;..\..\cpp-opensaml1&quot;"
+				AdditionalIncludeDirectories="..;&quot;..\..\cpp-opensaml2&quot;;&quot;..\..\cpp-xmltooling&quot;"
 				PreprocessorDefinitions="_CONSOLE;WIN32;_DEBUG"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -167,11 +167,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="log4cppD.lib xerces-c_2D.lib xsec_1D.lib saml_5D.lib"
+				AdditionalDependencies="log4cppD.lib xerces-c_2D.lib xsec_1D.lib saml2D.lib xmltooling1D.lib"
 				OutputFile=".\Debug/siterefresh.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="..\..\cpp-opensaml1\saml\Debug"
+				AdditionalLibraryDirectories="..\..\cpp-opensaml2\Debug;..\..\cpp-xmltooling\Debug"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="1"

@@ -25,8 +25,9 @@
 #ifndef __shib_h__
 #define __shib_h__
 
+#include <xmltooling/util/Threads.h>
+
 #include <saml/saml.h>
-#include <shib/shib-threads.h>
 #include <xsec/xenc/XENCEncryptionMethod.hpp>
 
 #ifdef WIN32
@@ -538,7 +539,7 @@ namespace shibboleth
         const DOMElement* m_root;
         std::string m_source;
         time_t m_filestamp;
-        RWLock* m_lock;
+        xmltooling::RWLock* m_lock;
     };
 
     /* These helpers attach metadata-derived information as exception properties and then

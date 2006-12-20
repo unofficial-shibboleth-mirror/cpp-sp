@@ -22,13 +22,19 @@
    $Id$
 */
 
-#include <shib-target/shib-target.h>
+#include <saml/SAMLConfig.h>
+#include <saml/saml2/metadata/Metadata.h>
+#include <saml/util/SAMLConstants.h>
+#include <xmltooling/XMLToolingConfig.h>
+#include <xmltooling/signature/Signature.h>
+#include <xmltooling/util/XMLHelper.h>
 
 #include <fstream>
 #include <log4cpp/Category.hh>
 #include <log4cpp/OstreamAppender.hh>
 #include <xercesc/framework/URLInputSource.hpp>
 #include <xercesc/framework/StdInInputSource.hpp>
+#include <xercesc/framework/Wrapper4InputSource.hpp>
 #include <xsec/enc/XSECCryptoProvider.hpp>
 #include <xsec/enc/XSECKeyInfoResolverDefault.hpp>
 #include <xsec/enc/XSECCryptoException.hpp>
@@ -40,27 +46,14 @@
 #include <xsec/dsig/DSIGReference.hpp>
 #include <xsec/dsig/DSIGTransformList.hpp>
 
-using namespace std;
-using namespace saml;
-using namespace shibboleth;
+using namespace xmlsignature;
+using namespace xmlconstants;
+using namespace xmltooling;
+using namespace samlconstants;
+using namespace opensaml::saml2md;
+using namespace opensaml;
 using namespace log4cpp;
-
-static const XMLCh TRUST_NS[] = // urn:mace:shibboleth:trust:1.0
-{ chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
-  chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
-  chLatin_t, chLatin_r, chLatin_u, chLatin_s, chLatin_t, chColon, chDigit_1, chPeriod, chDigit_0, chNull
-};
-
-static const XMLCh TRUST_SCHEMA_ID[] = // shibboleth-trust-1.0.xsd
-{ chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chDash,
-  chLatin_t, chLatin_r, chLatin_u, chLatin_s, chLatin_t, chDash, chDigit_1, chPeriod, chDigit_0, chPeriod,
-  chLatin_x, chLatin_s, chLatin_d, chNull
-};
-
-static const XMLCh SHIB_SCHEMA_ID[] = // shibboleth.xsd
-{ chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chPeriod,
-  chLatin_x, chLatin_s, chLatin_d, chNull
-};
+using namespace std;
 
 void verifySignature(DOMDocument* doc, DOMNode* sigNode, const char* cert=NULL)
 {
@@ -99,7 +92,7 @@ void verifySignature(DOMDocument* doc, DOMNode* sigNode, const char* cert=NULL)
     
         if (!valid) {
             log.error("detected an invalid signature profile");
-            throw InvalidCryptoException("detected an invalid signature profile");
+            throw SignatureException("detected an invalid signature profile");
         }
 
         if (cert) {
@@ -127,7 +120,7 @@ void verifySignature(DOMDocument* doc, DOMNode* sigNode, const char* cert=NULL)
         
         if (!sig->verify()) {
             log.error("detected an invalid signature value");
-            throw InvalidCryptoException("detected an invalid signature value");
+            throw SignatureException("detected an invalid signature value");
         }
 
         prov.releaseSignature(sig);
@@ -179,60 +172,46 @@ int main(int argc,char* argv[])
         return -100;
     }
 
-    static const XMLCh Trust[] = { chLatin_T, chLatin_r, chLatin_u, chLatin_s, chLatin_t, chNull };
-    static const XMLCh SiteGroup[] =
-    { chLatin_S, chLatin_i, chLatin_t, chLatin_e, chLatin_G, chLatin_r, chLatin_o, chLatin_u, chLatin_p, chNull };
-    static const XMLCh EntitiesDescriptor[] =
-    { chLatin_E, chLatin_n, chLatin_t, chLatin_i, chLatin_t, chLatin_i, chLatin_e, chLatin_s,
-      chLatin_D, chLatin_e, chLatin_s, chLatin_c, chLatin_r, chLatin_i, chLatin_p, chLatin_t, chLatin_o, chLatin_r, chNull };
-    static const XMLCh EntityDescriptor[] =
-    { chLatin_E, chLatin_n, chLatin_t, chLatin_i, chLatin_t, chLatin_y,
-      chLatin_D, chLatin_e, chLatin_s, chLatin_c, chLatin_r, chLatin_i, chLatin_p, chLatin_t, chLatin_o, chLatin_r, chNull };
-
     Category::setRootPriority(Priority::WARN);
     Category::getRoot().addAppender(new OstreamAppender("default",&cerr));
     Category& log=Category::getInstance("siterefresh");
-    conf.schema_dir=path ? path : SHIB_SCHEMAS;
     if (!conf.init())
         return -10;
 
-    saml::XML::registerSchema(Constants::SHIB_NS,SHIB_SCHEMA_ID);
-    saml::XML::registerSchema(TRUST_NS,TRUST_SCHEMA_ID);
+    /*
     saml::XML::registerSchema(shibtarget::XML::SAML2META_NS,shibtarget::XML::SAML2META_SCHEMA_ID);
     saml::XML::registerSchema(shibtarget::XML::SAML2ASSERT_NS,shibtarget::XML::SAML2ASSERT_SCHEMA_ID);
     saml::XML::registerSchema(shibtarget::XML::XMLENC_NS,shibtarget::XML::XMLENC_SCHEMA_ID);
+    */
 
     try {
         // Parse the specified document.
-        saml::XML::Parser p;
         static XMLCh base[]={chLatin_f, chLatin_i, chLatin_l, chLatin_e, chColon, chForwardSlash, chForwardSlash, chForwardSlash, chNull};
         DOMDocument* doc=NULL;
         if (url_param && *url_param) {
             URLInputSource src(base,url_param);
             Wrapper4InputSource dsrc(&src,false);
-            doc=p.parse(dsrc);
+            doc=XMLToolingConfig::getConfig().getParser().parse(dsrc);
         }
         else {
             StdInInputSource src;
             Wrapper4InputSource dsrc(&src,false);
-            doc=p.parse(dsrc);
+            doc=XMLToolingConfig::getConfig().getParser().parse(dsrc);
         }
     
         // Check root element.
         if (ns_param && name_param) {
             auto_ptr_XMLCh ns(ns_param);
             auto_ptr_XMLCh name(name_param);
-            if (!saml::XML::isElementNamed(doc->getDocumentElement(),ns.get(),name.get()))
-                throw MalformedException(string("Root element does not match specified QName of {") + ns_param + "}:" + name_param);
+            if (!XMLHelper::isNodeNamed(doc->getDocumentElement(),ns.get(),name.get()))
+                throw XMLObjectException(string("Root element does not match specified QName of {") + ns_param + "}:" + name_param);
         }
-        else if (!saml::XML::isElementNamed(doc->getDocumentElement(),Constants::SHIB_NS,SiteGroup) &&
-                 !saml::XML::isElementNamed(doc->getDocumentElement(),shibtarget::XML::SAML2META_NS,EntitiesDescriptor) &&
-                 !saml::XML::isElementNamed(doc->getDocumentElement(),shibtarget::XML::SAML2META_NS,EntityDescriptor) &&
-                 !saml::XML::isElementNamed(doc->getDocumentElement(),TRUST_NS,Trust))
-            throw MalformedException("Root element does not signify a known metadata or trust format");
+        else if (!XMLHelper::isNodeNamed(doc->getDocumentElement(),SAML20MD_NS,EntitiesDescriptor::LOCAL_NAME) &&
+                 !XMLHelper::isNodeNamed(doc->getDocumentElement(),SAML20MD_NS,EntityDescriptor::LOCAL_NAME))
+            throw XMLObjectException("Root element does not signify a known metadata format");
 
         // Verify the "root" signature.
-        DOMElement* rootSig=saml::XML::getFirstChildElement(doc->getDocumentElement(),saml::XML::XMLSIG_NS,L(Signature));
+        DOMElement* rootSig=XMLHelper::getFirstChildElement(doc->getDocumentElement(),XMLSIG_NS,Signature::LOCAL_NAME);
         if (verify) {
             if (rootSig) {
                 verifySignature(doc,rootSig,cert_param);
@@ -240,7 +219,7 @@ int main(int argc,char* argv[])
             else {
                 doc->release();
                 log.error("unable to locate root signature to verify in document");
-                throw InvalidCryptoException("Verification implies that the document must be signed");
+                throw SignatureException("Verification implies that the document must be signed");
             }
         }
         else if (rootSig) {
@@ -252,7 +231,7 @@ int main(int argc,char* argv[])
         }
 
         // Verify all signatures.
-        DOMNodeList* siglist=doc->getElementsByTagNameNS(saml::XML::XMLSIG_NS,L(Signature));
+        DOMNodeList* siglist=doc->getElementsByTagNameNS(XMLSIG_NS,Signature::LOCAL_NAME);
         for (unsigned int i=0; siglist && i<siglist->getLength(); i++)
             verifySignature(doc,siglist->item(i),cert_param);
 
@@ -265,11 +244,11 @@ int main(int argc,char* argv[])
             cout << *(doc->getDocumentElement());
         doc->release();
     }
-    catch (InvalidCryptoException&) {
+    catch (SignatureException&) {
         ret=-1;
     }
-    catch(SAMLException& e) {
-        log.errorStream() << "caught a SAML exception: " << e.what() << CategoryStream::ENDLINE;
+    catch(XMLToolingException& e) {
+        log.errorStream() << "caught an XMLTooling exception: " << e.what() << CategoryStream::ENDLINE;
         ret=-2;
     }
     catch(XMLException& e) {

@@ -22,7 +22,6 @@
 
 #include "internal.h"
 
-#include <shib/shib-threads.h>
 #include <log4cpp/Category.hh>
 #include <log4cpp/PropertyConfigurator.hh>
 #include <algorithm>

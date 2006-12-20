@@ -23,14 +23,22 @@
  */
 
 #include "internal.h"
+#include <saml/SAMLConfig.h>
+#include <saml/util/SAMLConstants.h>
+#include <xmltooling/XMLToolingConfig.h>
+#include <xmltooling/util/NDC.h>
+#include <xmltooling/util/TemplateEngine.h>
 
 #include <log4cpp/OstreamAppender.hh>
 
-using namespace std;
-using namespace log4cpp;
-using namespace saml;
-using namespace shibboleth;
 using namespace shibtarget;
+using namespace shibboleth;
+using namespace saml;
+using namespace log4cpp;
+using namespace std;
+
+using xmltooling::TemplateEngine;
+using xmltooling::XMLToolingConfig;
 
 namespace {
     STConfig g_Config;
@@ -61,34 +69,14 @@ ShibTargetConfig& ShibTargetConfig::getConfig()
 
 bool STConfig::init(const char* schemadir)
 {
-    // With new build of log4cpp, we need to establish a "default"
-    // logging appender to stderr up front.
+    // Chain this to XMLTooling for now...
     const char* loglevel=getenv("SHIB_LOGGING");
     if (!loglevel)
-        loglevel = SHIB_LOGGING;    
-    Category& root = Category::getRoot();
-    if (!strcmp(loglevel,"DEBUG"))
-        root.setPriority(Priority::DEBUG);
-    else if (!strcmp(loglevel,"INFO"))
-        root.setPriority(Priority::INFO);
-    else if (!strcmp(loglevel,"NOTICE"))
-        root.setPriority(Priority::NOTICE);
-    else if (!strcmp(loglevel,"WARN"))
-        root.setPriority(Priority::WARN);
-    else if (!strcmp(loglevel,"ERROR"))
-        root.setPriority(Priority::ERROR);
-    else if (!strcmp(loglevel,"CRIT"))
-        root.setPriority(Priority::CRIT);
-    else if (!strcmp(loglevel,"ALERT"))
-        root.setPriority(Priority::ALERT);
-    else if (!strcmp(loglevel,"EMERG"))
-        root.setPriority(Priority::EMERG);
-    else if (!strcmp(loglevel,"FATAL"))
-        root.setPriority(Priority::FATAL);
-    root.setAppender(new OstreamAppender("default",&cerr));
+        loglevel = SHIB_LOGGING;
+    XMLToolingConfig::getConfig().log_config(loglevel);
  
 #ifdef _DEBUG
-    saml::NDC ndc("init");
+    xmltooling::NDC ndc("init");
 #endif
     Category& log = Category::getInstance("shibtarget.Config");
 
@@ -103,7 +91,7 @@ bool STConfig::init(const char* schemadir)
     if (schemadir)
         samlConf.schema_dir = schemadir;
     try {
-        if (!samlConf.init()) {
+        if (!samlConf.init() || !opensaml::SAMLConfig::getConfig().init()) {
             log.fatal("Failed to initialize SAML Library");
             return false;
         }
@@ -112,6 +100,9 @@ bool STConfig::init(const char* schemadir)
         log.fatal("Died initializing SAML Library");
         return false;
     }
+
+    XMLToolingConfig::getConfig().setTemplateEngine(new TemplateEngine());
+    XMLToolingConfig::getConfig().getTemplateEngine()->setTagPrefix("shibmlp");
     
     ShibConfig& shibConf=ShibConfig::getConfig();
     try { 
@@ -142,17 +133,15 @@ bool STConfig::init(const char* schemadir)
     
     auto_ptr_char temp1(Constants::SHIB_SESSIONINIT_PROFILE_URI);
     samlConf.getPlugMgr().regFactory(temp1.get(),&ShibSessionInitiatorFactory);
-    auto_ptr_char temp2(SAMLBrowserProfile::BROWSER_POST);
-    samlConf.getPlugMgr().regFactory(temp2.get(),&SAML1POSTFactory);
-    auto_ptr_char temp3(SAMLBrowserProfile::BROWSER_ARTIFACT);
-    samlConf.getPlugMgr().regFactory(temp3.get(),&SAML1ArtifactFactory);
+    samlConf.getPlugMgr().regFactory(samlconstants::SAML1_PROFILE_BROWSER_POST,&SAML1POSTFactory);
+    samlConf.getPlugMgr().regFactory(samlconstants::SAML1_PROFILE_BROWSER_ARTIFACT,&SAML1ArtifactFactory);
     auto_ptr_char temp4(Constants::SHIB_LOGOUT_PROFILE_URI);
     samlConf.getPlugMgr().regFactory(temp4.get(),&ShibLogoutFactory);
     
     saml::XML::registerSchema(shibtarget::XML::SHIBTARGET_NS,shibtarget::XML::SHIBTARGET_SCHEMA_ID,NULL,false);
-    saml::XML::registerSchema(shibtarget::XML::SAML2META_NS,shibtarget::XML::SAML2META_SCHEMA_ID,NULL,false);
-    saml::XML::registerSchema(shibtarget::XML::SAML2ASSERT_NS,shibtarget::XML::SAML2ASSERT_SCHEMA_ID,NULL,false);
-    saml::XML::registerSchema(shibtarget::XML::XMLENC_NS,shibtarget::XML::XMLENC_SCHEMA_ID,NULL,false);
+    saml::XML::registerSchema(samlconstants::SAML20MD_NS,shibtarget::XML::SAML2META_SCHEMA_ID,NULL,false);
+    saml::XML::registerSchema(samlconstants::SAML20_NS,shibtarget::XML::SAML2ASSERT_SCHEMA_ID,NULL,false);
+    saml::XML::registerSchema(xmlconstants::XMLENC_NS,shibtarget::XML::XMLENC_SCHEMA_ID,NULL,false);
     
     log.info("finished initializing");
     return true;
@@ -161,7 +150,7 @@ bool STConfig::init(const char* schemadir)
 bool STConfig::load(const char* config)
 {
 #ifdef _DEBUG
-    saml::NDC ndc("load");
+    xmltooling::NDC ndc("load");
 #endif
     Category& log = Category::getInstance("shibtarget.Config");
 
@@ -185,10 +174,12 @@ bool STConfig::load(const char* config)
         
         pair<bool,unsigned int> skew=m_ini->getUnsignedInt("clockSkew");
         SAMLConfig::getConfig().clock_skew_secs=skew.first ? skew.second : 180;
+        if (skew.first)
+            xmltooling::XMLToolingConfig::getConfig().clock_skew_secs=skew.second;
         
         m_tranLog=new FixedContextCategory(SHIBTRAN_LOGCAT);
         m_tranLog->info("opened transaction log");
-        m_tranLogLock = Mutex::create();
+        m_tranLogLock = xmltooling::Mutex::create();
     }
     catch (SAMLException& ex) {
         log.fatal("caught exception while loading/initializing configuration: %s",ex.what());
@@ -210,7 +201,7 @@ bool STConfig::load(const char* config)
 void STConfig::shutdown()
 {
 #ifdef _DEBUG
-    saml::NDC ndc("shutdown");
+    xmltooling::NDC ndc("shutdown");
 #endif
     Category& log = Category::getInstance("shibtarget.Config");
     log.info("shutting down the library");
@@ -220,6 +211,7 @@ void STConfig::shutdown()
     delete m_ini;
     m_ini = NULL;
     ShibConfig::getConfig().term();
+    opensaml::SAMLConfig::getConfig().term();
     SAMLConfig::getConfig().term();
     log.info("library shutdown complete");
 }

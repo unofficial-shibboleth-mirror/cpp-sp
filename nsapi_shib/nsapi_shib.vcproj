@@ -48,7 +48,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories=".,..,..\..\..\opensaml\c,\\KRAMER\iPlanet\plugins\include"
+				AdditionalIncludeDirectories=".;..;&quot;..\..\cpp-opensaml1&quot;;&quot;..\..\cpp-opensaml2&quot;;&quot;..\..\cpp-xmltooling&quot;"
 				PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -77,11 +77,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="log4cpp.lib xerces-c_2.lib saml_5.lib ns-httpd30.lib"
+				AdditionalDependencies="log4cpp.lib xerces-c_2.lib saml_5.lib saml2.lib xmltooling1.lib ns-httpd30.lib"
 				OutputFile=".\Release/nsapi_shib.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="..\..\..\opensaml\c\saml\Release,\\KRAMER\iPlanet\plugins\lib"
+				AdditionalLibraryDirectories="&quot;..\..\cpp-opensaml1\saml\Release&quot;;&quot;..\..\cpp-opensaml2\Release&quot;;&quot;..\..\cpp-xmltooling\Release&quot;"
 				ProgramDatabaseFile=".\Release/nsapi_shib.pdb"
 				ImportLibrary=".\Release/nsapi_shib.lib"
 				TargetMachine="1"
@@ -145,7 +145,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=".;..;&quot;..\..\cpp-opensaml1&quot;;\\KRAMER\iPlanet\plugins\include"
+				AdditionalIncludeDirectories=".;..;&quot;..\..\cpp-opensaml1&quot;;&quot;..\..\cpp-opensaml2&quot;;&quot;..\..\cpp-xmltooling&quot;"
 				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -175,11 +175,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="log4cppD.lib xerces-c_2D.lib saml_5D.lib ns-httpd30.lib"
+				AdditionalDependencies="log4cppD.lib xerces-c_2D.lib saml_5D.lib saml2D.lib xmltooling1D.lib ns-httpd30.lib"
 				OutputFile=".\Debug/nsapi_shib.dll"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="..\..\cpp-opensaml1\saml\Debug,\\KRAMER\iPlanet\plugins\lib"
+				AdditionalLibraryDirectories="&quot;..\..\cpp-opensaml1\saml\Debug&quot;;&quot;..\..\cpp-opensaml2\Debug&quot;;&quot;..\..\cpp-xmltooling\Debug&quot;"
 				GenerateDebugInformation="true"
 				ImportLibrary=".\Debug/nsapi_shib.lib"
 				TargetMachine="1"

@@ -25,8 +25,6 @@
 #ifndef __shibtarget_internal_h__
 #define __shibtarget_internal_h__
 
-#include <saml/base.h>
-
 #ifdef WIN32
 # define SHIBTARGET_EXPORTS __declspec(dllexport)
 #endif
@@ -40,6 +38,8 @@
 
 #include "shib-target.h"
 #include "hresult.h"
+
+#include <xmltooling/util/Threads.h>
 
 #include <log4cpp/Category.hh>
 #include <log4cpp/FixedContextCategory.hh>
@@ -102,43 +102,6 @@ namespace shibtarget {
         const IApplication* m_app;
     };
 
-    // Error template class
-    class ShibMLPPriv;
-    class ShibMLP {
-    public:
-        ShibMLP();
-        ~ShibMLP();
-
-        void insert (const std::string& key, const std::string& value);
-        void insert (const std::string& key, const char* value) {
-          std::string v = value;
-          insert (key, v);
-        }
-        void insert (const char* key, const std::string& value) {
-          std::string k = key;
-          insert (k, value);
-        }
-        void insert (const char* key, const char* value) {
-          std::string k = key, v = value;
-          insert(k,v);
-        }
-        void insert (saml::SAMLException& e);
-
-        void clear () { m_map.clear(); }
-
-        const char* run (std::istream& s, const IPropertySet* props=NULL, std::string* output=NULL);
-        const char* run (const std::string& input, const IPropertySet* props=NULL, std::string* output=NULL);
-        const char* run (const char* input, const IPropertySet* props=NULL, std::string* output=NULL) {
-            std::string i = input;
-            return run(i,props,output);
-        }
-
-    private:
-        ShibMLPPriv *m_priv;
-        std::map<std::string,std::string> m_map;
-        std::string m_generated;
-    };
-    
     class STConfig : public ShibTargetConfig
     {
     public:
@@ -153,7 +116,7 @@ namespace shibtarget {
         void releaseTransactionLog() { m_tranLogLock->unlock();}
     private:
         log4cpp::FixedContextCategory* m_tranLog;
-        shibboleth::Mutex* m_tranLogLock;
+        xmltooling::Mutex* m_tranLogLock;
         static IConfig* ShibTargetConfigFactory(const DOMElement* e);
     };
 }

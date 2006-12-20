@@ -35,7 +35,6 @@
 // SAML Runtime
 #include <saml/saml.h>
 #include <shib/shib.h>
-#include <shib/shib-threads.h>
 #include <shib-target/shib-target.h>
 
 #include <ctime>
@@ -58,10 +57,10 @@ extern "C"
 #include <nsapi.h>
 }
 
-using namespace std;
-using namespace saml;
-using namespace shibboleth;
 using namespace shibtarget;
+using namespace saml;
+using namespace xmltooling;
+using namespace std;
 
 // macros to output text to client
 #define NET_WRITE(str) \

@@ -45,7 +45,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="..,../oncrpc,..\..\..\opensaml\c"
+				AdditionalIncludeDirectories="..;&quot;..\..\cpp-opensaml2&quot;;..\..\cpp-xmltooling;..\..\cpp-opensaml1"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -136,7 +136,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..,../oncrpc,..\..\cpp-opensaml1"
+				AdditionalIncludeDirectories="..;&quot;..\..\cpp-opensaml1&quot;;&quot;..\..\cpp-xmltooling&quot;;&quot;..\..\cpp-opensaml2&quot;"
 				PreprocessorDefinitions="_CONSOLE;WIN32;_DEBUG"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"

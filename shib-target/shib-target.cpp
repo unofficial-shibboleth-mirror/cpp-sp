@@ -29,22 +29,29 @@
 # include <unistd.h>
 #endif
 
+#include <ctime>
 #include <sstream>
 #include <fstream>
 #include <stdexcept>
 
-#include <shib/shib-threads.h>
 #include <xercesc/util/Base64.hpp>
+#include <xmltooling/XMLToolingConfig.h>
+#include <xmltooling/util/NDC.h>
+#include <xmltooling/util/TemplateEngine.h>
 
 #ifndef HAVE_STRCASECMP
 # define strcasecmp stricmp
 #endif
 
-using namespace std;
-using namespace saml;
-using namespace shibboleth;
 using namespace shibtarget;
+using namespace shibboleth;
+using namespace saml;
 using namespace log4cpp;
+using namespace std;
+
+using xmltooling::TemplateEngine;
+using xmltooling::XMLToolingException;
+using xmltooling::XMLToolingConfig;
 
 namespace shibtarget {
     class CgiParse
@@ -64,6 +71,35 @@ namespace shibtarget {
         multimap<string,char*> kvp_map;
     };
 
+    class ExtTemplateParameters : public TemplateEngine::TemplateParameters
+    {
+        const IPropertySet* m_props;
+    public:
+        ExtTemplateParameters() : m_props(NULL) {}
+        ~ExtTemplateParameters() {}
+
+        void setPropertySet(const IPropertySet* props) {
+            m_props = props;
+
+            // Create a timestamp.
+            time_t now = time(NULL);
+#ifdef HAVE_CTIME_R
+            char timebuf[32];
+            m_map["now"] = ctime_r(&now,timebuf);
+#else
+            m_map["now"] = ctime(&now);
+#endif
+        }
+
+        const char* getParameter(const char* name) const {
+            const char* pch = TemplateParameters::getParameter(name);
+            if (pch || !m_props)
+                return pch;
+            pair<bool,const char*> p = m_props->getString(name);
+            return p.first ? p.second : NULL;
+        }
+    };
+
     class ShibTargetPriv
     {
     public:
@@ -72,7 +108,7 @@ namespace shibtarget {
 
         // Helper functions
         void get_application(ShibTarget* st, const string& protocol, const string& hostname, int port, const string& uri);
-        void* sendError(ShibTarget* st, const char* page, ShibMLP &mlp);
+        void* sendError(ShibTarget* st, const char* page, ExtTemplateParameters& tp, const XMLToolingException* ex=NULL);
         void clearHeaders(ShibTarget* st);
     
     private:
@@ -120,7 +156,7 @@ void ShibTarget::init(
     )
 {
 #ifdef _DEBUG
-    saml::NDC ndc("init");
+    xmltooling::NDC ndc("init");
 #endif
 
     if (m_priv->m_app)
@@ -145,12 +181,12 @@ void ShibTarget::init(
 pair<bool,void*> ShibTarget::doCheckAuthN(bool handler)
 {
 #ifdef _DEBUG
-    saml::NDC ndc("doCheckAuthN");
+    xmltooling::NDC ndc("doCheckAuthN");
 #endif
 
     const char* procState = "Request Processing Error";
     const char* targetURL = m_url.c_str();
-    ShibMLP mlp;
+    ExtTemplateParameters tp;
 
     try {
         if (!m_priv->m_app)
@@ -170,8 +206,8 @@ pair<bool,void*> ShibTarget::doCheckAuthN(bool handler)
                     return make_pair(true, sendRedirect(redirectURL));
                 }
                 else {
-                    mlp.insert("requestURL", m_url.substr(0,m_url.find('?')));
-                    return make_pair(true,m_priv->sendError(this,"ssl", mlp));
+                    tp.m_map["requestURL"] = m_url.substr(0,m_url.find('?'));
+                    return make_pair(true,m_priv->sendError(this,"ssl", tp));
                 }
             }
         }
@@ -187,7 +223,7 @@ pair<bool,void*> ShibTarget::doCheckAuthN(bool handler)
             if (handler)
                 return doHandler();
             else
-                return pair<bool,void*>(true, returnOK());
+                return make_pair(true, returnOK());
         }
 
         // Three settings dictate how to proceed.
@@ -204,7 +240,7 @@ pair<bool,void*> ShibTarget::doCheckAuthN(bool handler)
 #else
                 (!authType.first || _stricmp(authType.second,"shibboleth")))
 #endif
-            return pair<bool,void*>(true,returnDecline());
+            return make_pair(true,returnDecline());
 
         // Fix for secadv 20050901
         m_priv->clearHeaders(this);
@@ -214,7 +250,7 @@ pair<bool,void*> ShibTarget::doCheckAuthN(bool handler)
         if (!session_id || !*session_id) {
             // No session.  Maybe that's acceptable?
             if ((!requireSession.first || !requireSession.second) && !requireSessionWith.first)
-                return pair<bool,void*>(true,returnOK());
+                return make_pair(true,returnOK());
 
             // No cookie, but we require a session. Initiate a new session using the indicated method.
             procState = "Session Initiator Error";
@@ -256,7 +292,7 @@ pair<bool,void*> ShibTarget::doCheckAuthN(bool handler)
                 // to fail when it can't locate anything to process the
                 // AuthType.  No session plus requireSession false means
                 // do not authenticate the user at this time.
-                return pair<bool,void*>(true, returnOK());
+                return make_pair(true, returnOK());
 
             // Try and cast down.
             SAMLException* base = &e;
@@ -286,34 +322,42 @@ pair<bool,void*> ShibTarget::doCheckAuthN(bool handler)
         // We're done.  Everything is okay.  Nothing to report.  Nothing to do..
         // Let the caller decide how to proceed.
         log(LogLevelDebug, "doCheckAuthN succeeded");
-        return pair<bool,void*>(false,NULL);
+        return make_pair(false,(void*)NULL);
     }
-    catch (SAMLException& e) {
-        mlp.insert(e);
+    catch (SAMLException& e) {                  // TODO: we're going to yank this handler...
+        tp.m_map["errorType"] = procState;
+        tp.m_map["errorText"] = e.what();
+        if (targetURL)
+            tp.m_map["requestURL"] = m_url.substr(0,m_url.find('?'));
+        return make_pair(true,m_priv->sendError(this, "session", tp));
+    }
+    catch (XMLToolingException& e) {
+        tp.m_map["errorType"] = procState;
+        tp.m_map["errorText"] = e.what();
+        if (targetURL)
+            tp.m_map["requestURL"] = m_url.substr(0,m_url.find('?'));
+        return make_pair(true,m_priv->sendError(this, "session", tp, &e));
     }
 #ifndef _DEBUG
     catch (...) {
-        mlp.insert("errorText", "Caught an unknown exception.");
+        tp.m_map["errorType"] = procState;
+        tp.m_map["errorText"] = "Caught an unknown exception.";
+        if (targetURL)
+            tp.m_map["requestURL"] = m_url.substr(0,m_url.find('?'));
+        return make_pair(true,m_priv->sendError(this, "session", tp));
     }
 #endif
-
-    // If we get here then we've got an error.
-    mlp.insert("errorType", procState);
-    if (targetURL)
-        mlp.insert("requestURL", m_url.substr(0,m_url.find('?')));
-
-    return pair<bool,void*>(true,m_priv->sendError(this,"session", mlp));
 }
 
 pair<bool,void*> ShibTarget::doHandler(void)
 {
 #ifdef _DEBUG
-    saml::NDC ndc("doHandler");
+    xmltooling::NDC ndc("doHandler");
 #endif
 
+    ExtTemplateParameters tp;
     const char* procState = "Shibboleth Handler Error";
     const char* targetURL = m_url.c_str();
-    ShibMLP mlp;
 
     try {
         if (!m_priv->m_app)
@@ -326,7 +370,7 @@ pair<bool,void*> ShibTarget::doHandler(void)
 
         // Make sure we only process handler requests.
         if (!strstr(targetURL,handlerURL))
-            return pair<bool,void*>(true, returnDecline());
+            return make_pair(true, returnDecline());
 
         const IPropertySet* sessionProps=m_priv->m_app->getPropertySet("Sessions");
         if (!sessionProps)
@@ -361,47 +405,55 @@ pair<bool,void*> ShibTarget::doHandler(void)
         if (hret.first)
             return hret;
        
-        throw SAMLException("Configured Shibboleth handler failed to process the request.");
+        throw XMLToolingException("Configured Shibboleth handler failed to process the request.");
     }
     catch (MetadataException& e) {
-        mlp.insert(e);
+        tp.m_map["errorText"] = e.what();
         // See if a metadata error page is installed.
         const IPropertySet* props=m_priv->m_app->getPropertySet("Errors");
         if (props) {
             pair<bool,const char*> p=props->getString("metadata");
             if (p.first) {
-                mlp.insert("errorType", procState);
+                tp.m_map["errorType"] = procState;
                 if (targetURL)
-                    mlp.insert("requestURL", targetURL);
-                return make_pair(true,m_priv->sendError(this,"metadata", mlp));
+                    tp.m_map["requestURL"] = targetURL;
+                return make_pair(true,m_priv->sendError(this, "metadata", tp));
             }
         }
+        throw;
     }
     catch (SAMLException& e) {
-        mlp.insert(e);
+        tp.m_map["errorType"] = procState;
+        tp.m_map["errorText"] = e.what();
+        if (targetURL)
+            tp.m_map["requestURL"] = m_url.substr(0,m_url.find('?'));
+        return make_pair(true,m_priv->sendError(this, "session", tp));
+    }
+    catch (XMLToolingException& e) {
+        tp.m_map["errorType"] = procState;
+        tp.m_map["errorText"] = e.what();
+        if (targetURL)
+            tp.m_map["requestURL"] = m_url.substr(0,m_url.find('?'));
+        return make_pair(true,m_priv->sendError(this, "session", tp, &e));
     }
 #ifndef _DEBUG
     catch (...) {
-        mlp.insert("errorText", "Caught an unknown exception.");
+        tp.m_map["errorType"] = procState;
+        tp.m_map["errorText"] = "Caught an unknown exception.";
+        if (targetURL)
+            tp.m_map["requestURL"] = m_url.substr(0,m_url.find('?'));
+        return make_pair(true,m_priv->sendError(this, "session", tp));
     }
 #endif
-
-    // If we get here then we've got an error.
-    mlp.insert("errorType", procState);
-
-    if (targetURL)
-        mlp.insert("requestURL", m_url.substr(0,m_url.find('?')));
-
-    return make_pair(true,m_priv->sendError(this,"session", mlp));
 }
 
 pair<bool,void*> ShibTarget::doCheckAuthZ(void)
 {
 #ifdef _DEBUG
-    saml::NDC ndc("doCheckAuthZ");
+    xmltooling::NDC ndc("doCheckAuthZ");
 #endif
 
-    ShibMLP mlp;
+    ExtTemplateParameters tp;
     const char* procState = "Authorization Processing Error";
     const char* targetURL = m_url.c_str();
 
@@ -423,7 +475,7 @@ pair<bool,void*> ShibTarget::doCheckAuthZ(void)
 #else
                 (!authType.first || _stricmp(authType.second,"shibboleth")))
 #endif
-            return pair<bool,void*>(true,returnDecline());
+            return make_pair(true,returnDecline());
 
         // Do we have an access control plugin?
         if (m_priv->m_settings.second) {
@@ -450,43 +502,50 @@ pair<bool,void*> ShibTarget::doCheckAuthZ(void)
             if (m_priv->m_settings.second->authorized(this,m_priv->m_cacheEntry)) {
                 // Let the caller decide how to proceed.
                 log(LogLevelDebug, "doCheckAuthZ: access control provider granted access");
-                return pair<bool,void*>(false,NULL);
+                return make_pair(false,(void*)NULL);
             }
             else {
                 log(LogLevelWarn, "doCheckAuthZ: access control provider denied access");
                 if (targetURL)
-                    mlp.insert("requestURL", targetURL);
-                return make_pair(true,m_priv->sendError(this, "access", mlp));
+                    tp.m_map["requestURL"] = targetURL;
+                return make_pair(true,m_priv->sendError(this, "access", tp));
             }
         }
         else
             return make_pair(true,returnDecline());
     }
     catch (SAMLException& e) {
-        mlp.insert(e);
+        tp.m_map["errorType"] = procState;
+        tp.m_map["errorText"] = e.what();
+        if (targetURL)
+            tp.m_map["requestURL"] = m_url.substr(0,m_url.find('?'));
+        return make_pair(true,m_priv->sendError(this, "access", tp));
+    }
+    catch (XMLToolingException& e) {
+        tp.m_map["errorType"] = procState;
+        tp.m_map["errorText"] = e.what();
+        if (targetURL)
+            tp.m_map["requestURL"] = m_url.substr(0,m_url.find('?'));
+        return make_pair(true,m_priv->sendError(this, "access", tp, &e));
     }
 #ifndef _DEBUG
     catch (...) {
-        mlp.insert("errorText", "Caught an unknown exception.");
+        tp.m_map["errorType"] = procState;
+        tp.m_map["errorText"] = "Caught an unknown exception.";
+        if (targetURL)
+            tp.m_map["requestURL"] = m_url.substr(0,m_url.find('?'));
+        return make_pair(true,m_priv->sendError(this, "access", tp));
     }
 #endif
-
-    // If we get here then we've got an error.
-    mlp.insert("errorType", procState);
-
-    if (targetURL)
-        mlp.insert("requestURL", m_url.substr(0,m_url.find('?')));
-
-    return make_pair(true,m_priv->sendError(this, "access", mlp));
 }
 
 pair<bool,void*> ShibTarget::doExportAssertions(bool requireSession)
 {
 #ifdef _DEBUG
-    saml::NDC ndc("doExportAssertions");
+    xmltooling::NDC ndc("doExportAssertions");
 #endif
 
-    ShibMLP mlp;
+    ExtTemplateParameters tp;
     const char* procState = "Attribute Processing Error";
     const char* targetURL = m_url.c_str();
 
@@ -521,7 +580,7 @@ pair<bool,void*> ShibTarget::doExportAssertions(bool requireSession)
         	if (requireSession)
         		throw InvalidSessionException("Unable to obtain session information for request.");
         	else
-        		return pair<bool,void*>(false,NULL);	// just bail silently
+        		return make_pair(false,(void*)NULL);	// just bail silently
         }
         
         // Extract data from session.
@@ -620,24 +679,31 @@ pair<bool,void*> ShibTarget::doExportAssertions(bool requireSession)
             }
         }
     
-        return pair<bool,void*>(false,NULL);
+        return make_pair(false,(void*)NULL);
     }
     catch (SAMLException& e) {
-        mlp.insert(e);
+        tp.m_map["errorType"] = procState;
+        tp.m_map["errorText"] = e.what();
+        if (targetURL)
+            tp.m_map["requestURL"] = m_url.substr(0,m_url.find('?'));
+        return make_pair(true,m_priv->sendError(this, "rm", tp));
+    }
+    catch (XMLToolingException& e) {
+        tp.m_map["errorType"] = procState;
+        tp.m_map["errorText"] = e.what();
+        if (targetURL)
+            tp.m_map["requestURL"] = m_url.substr(0,m_url.find('?'));
+        return make_pair(true,m_priv->sendError(this, "rm", tp, &e));
     }
 #ifndef _DEBUG
     catch (...) {
-        mlp.insert("errorText", "Caught an unknown exception.");
+        tp.m_map["errorType"] = procState;
+        tp.m_map["errorText"] = "Caught an unknown exception.";
+        if (targetURL)
+            tp.m_map["requestURL"] = m_url.substr(0,m_url.find('?'));
+        return make_pair(true,m_priv->sendError(this, "rm", tp));
     }
 #endif
-
-    // If we get here then we've got an error.
-    mlp.insert("errorType", procState);
-
-    if (targetURL)
-        mlp.insert("requestURL", m_url.substr(0,m_url.find('?')));
-
-    return make_pair(true,m_priv->sendError(this, "rm", mlp));
 }
 
 const char* ShibTarget::getRequestParameter(const char* param, size_t index) const
@@ -932,22 +998,26 @@ void ShibTargetPriv::get_application(ShibTarget* st, const string& protocol, con
   st->m_url += uri;
 }
 
-void* ShibTargetPriv::sendError(ShibTarget* st, const char* page, ShibMLP &mlp)
+void* ShibTargetPriv::sendError(
+    ShibTarget* st, const char* page, ExtTemplateParameters& tp, const XMLToolingException* ex
+    )
 {
     ShibTarget::header_t hdrs[] = {
         ShibTarget::header_t("Expires","01-Jan-1997 12:00:00 GMT"),
         ShibTarget::header_t("Cache-Control","private,no-store,no-cache")
         };
     
+    TemplateEngine* engine = XMLToolingConfig::getConfig().getTemplateEngine();
     const IPropertySet* props=m_app->getPropertySet("Errors");
     if (props) {
         pair<bool,const char*> p=props->getString(page);
         if (p.first) {
             ifstream infile(p.second);
-            if (!infile.fail()) {
-                const char* res = mlp.run(infile,props);
-                if (res)
-                    return st->sendPage(res, 200, "text/html", ArrayIterator<ShibTarget::header_t>(hdrs,2));
+            if (infile) {
+                tp.setPropertySet(props);
+                ostringstream ostr;
+                engine->run(infile, ostr, tp, ex);
+                return st->sendPage(ostr.str().c_str(), 200, "text/html", ArrayIterator<ShibTarget::header_t>(hdrs,2));
             }
         }
         else if (!strcmp(page,"access"))

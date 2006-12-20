@@ -25,9 +25,13 @@
 #ifndef SHIB_TARGET_H
 #define SHIB_TARGET_H
 
+// New headers
+#include <saml/base.h>
+#include <xmltooling/PluginManager.h>
+
+// Old headers
 #include <saml/saml.h>
 #include <shib/shib.h>
-#include <shib/shib-threads.h>
 
 #ifdef WIN32
 # ifndef SHIBTARGET_EXPORTS

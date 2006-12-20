@@ -44,7 +44,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="..,..\..\..\opensaml\c"
+				AdditionalIncludeDirectories="..,..\..\cpp-opensaml1;&quot;..\..\cpp-opensaml2&quot;;&quot;..\..\cpp-xmltooling&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -73,11 +73,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="xerces-c_2.lib saml_5.lib"
+				AdditionalDependencies="xerces-c_2.lib saml_5.lib saml2.lib xmltooling1.lib"
 				OutputFile=".\Release/posttest.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="..\..\..\opensaml\c\saml\Release"
+				AdditionalLibraryDirectories="..\..\cpp-opensaml1\saml\Release;..\..\cpp-opensaml2\Release;..\..\cpp-xmltooling\Release"
 				ProgramDatabaseFile=".\Release/posttest.pdb"
 				SubSystem="1"
 				TargetMachine="1"
@@ -137,7 +137,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..;&quot;..\..\cpp-opensaml1&quot;"
+				AdditionalIncludeDirectories="..;&quot;..\..\cpp-opensaml1&quot;;&quot;..\..\cpp-opensaml2&quot;;&quot;..\..\cpp-xmltooling&quot;"
 				PreprocessorDefinitions="_CONSOLE;WIN32;_DEBUG"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -167,11 +167,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="xerces-c_2D.lib saml_5D.lib"
+				AdditionalDependencies="xerces-c_2D.lib saml_5D.lib saml2D.lib xmltooling1D.lib"
 				OutputFile=".\Debug/posttest.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="..\..\cpp-opensaml1\saml\Debug"
+				AdditionalLibraryDirectories="..\..\cpp-opensaml1\saml\Debug;..\..\cpp-opensaml2\Debug;..\..\cpp-xmltooling\Debug"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="1"

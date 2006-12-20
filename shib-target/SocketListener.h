@@ -68,9 +68,9 @@ namespace shibtarget {
 
         // Manage child threads
         friend class ServerThread;
-        std::map<ShibSocket,shibboleth::Thread*> m_children;
-        shibboleth::Mutex* m_child_lock;
-        shibboleth::CondWait* m_child_wait;
+        std::map<ShibSocket,xmltooling::Thread*> m_children;
+        xmltooling::Mutex* m_child_lock;
+        xmltooling::CondWait* m_child_wait;
 
         // Primary socket
         ShibSocket m_socket;

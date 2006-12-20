@@ -34,7 +34,6 @@
 // SAML Runtime
 #include <saml/saml.h>
 #include <shib/shib.h>
-#include <shib/shib-threads.h>
 #include <shib-target/shib-target.h>
 #include <xercesc/util/regx/RegularExpression.hpp>
 
@@ -66,10 +65,10 @@
 #include <unistd.h>		// for getpid()
 #endif
 
-using namespace std;
-using namespace saml;
-using namespace shibboleth;
 using namespace shibtarget;
+using namespace saml;
+using namespace xmltooling;
+using namespace std;
 
 extern "C" module MODULE_VAR_EXPORT mod_shib;
 
@@ -762,8 +761,8 @@ bool htAccessControl::authorized(
             }
         }
         else {
-            Iterator<IAAP*> provs=st->getApplication()->getAAPProviders();
-            AAP wrapper(provs,w);
+            Iterator<shibboleth::IAAP*> provs=st->getApplication()->getAAPProviders();
+            shibboleth::AAP wrapper(provs,w);
             if (wrapper.fail()) {
                 st->log(ShibTarget::LogLevelWarn, string("htAccessControl plugin didn't recognize require rule: ") + w);
                 continue;

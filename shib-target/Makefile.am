@@ -22,7 +22,6 @@ libshib_target_la_SOURCES = \
 	shib-config.cpp \
 	shib-handlers.cpp \
 	shib-ini.cpp \
-	shib-mlp.cpp \
 	shib-target.cpp \
 	TCPListener.cpp \
 	UnixListener.cpp \

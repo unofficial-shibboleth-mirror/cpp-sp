@@ -38,10 +38,11 @@
 # define SHIBODBC_EXPORTS
 #endif
 
-#include <shib/shib-threads.h>
 #include <shib-target/shib-target.h>
 #include <log4cpp/Category.hh>
+#include <xmltooling/util/NDC.h>
 
+#include <ctime>
 #include <algorithm>
 #include <sstream>
 
@@ -52,11 +53,12 @@
 #include <dmalloc.h>
 #endif
 
-using namespace std;
-using namespace saml;
-using namespace shibboleth;
 using namespace shibtarget;
+using namespace shibboleth;
+using namespace saml;
+using namespace xmltooling;
 using namespace log4cpp;
+using namespace std;
 
 #define PLUGIN_VER_MAJOR 3
 #define PLUGIN_VER_MINOR 0
@@ -118,10 +120,9 @@ public:
 
     SQLHDBC getHDBC();
 
-    log4cpp::Category* log;
+    Category* log;
 
 protected:
-    //ThreadKey* m_mysql;
     const DOMElement* m_root; // can only use this during initialization
     string m_connstring;
 
@@ -139,7 +140,7 @@ const char* ODBCBase::p_connstring = NULL;
 ODBCBase::ODBCBase(const DOMElement* e) : m_root(e), m_bInitializedODBC(false)
 {
 #ifdef _DEBUG
-    saml::NDC ndc("ODBCBase");
+    xmltooling::NDC ndc("ODBCBase");
 #endif
     log = &(Category::getInstance("shibtarget.ODBC"));
 
@@ -215,7 +216,7 @@ void ODBCBase::log_error(SQLHANDLE handle, SQLSMALLINT htype)
 SQLHDBC ODBCBase::getHDBC()
 {
 #ifdef _DEBUG
-    saml::NDC ndc("getMYSQL");
+    xmltooling::NDC ndc("getMYSQL");
 #endif
 
     // Get a handle.
@@ -320,9 +321,9 @@ public:
 private:
     bool m_storeAttributes;
     ISessionCache* m_cache;
-    CondWait* shutdown_wait;
+    xmltooling::CondWait* shutdown_wait;
     bool shutdown;
-    Thread* cleanup_thread;
+    xmltooling::Thread* cleanup_thread;
 
     static void* cleanup_fcn(void*); // XXX Assumed an ODBCCCache
 };
@@ -330,7 +331,7 @@ private:
 ODBCCCache::ODBCCCache(const DOMElement* e) : ODBCBase(e), m_storeAttributes(false)
 {
 #ifdef _DEBUG
-    saml::NDC ndc("ODBCCCache");
+    xmltooling::NDC ndc("ODBCCCache");
 #endif
     log = &(Category::getInstance("shibtarget.SessionCache.ODBC"));
 
@@ -384,7 +385,7 @@ HRESULT ODBCCCache::onCreate(
     )
 {
 #ifdef _DEBUG
-    saml::NDC ndc("onCreate");
+    xmltooling::NDC ndc("onCreate");
 #endif
 
     // Get XML data from entry. Default is not to return SAML objects.
@@ -456,7 +457,7 @@ HRESULT ODBCCCache::onRead(
     )
 {
 #ifdef _DEBUG
-    saml::NDC ndc("onRead");
+    xmltooling::NDC ndc("onRead");
 #endif
 
     log->debug("searching database...");
@@ -555,7 +556,7 @@ HRESULT ODBCCCache::onRead(
 HRESULT ODBCCCache::onRead(const char* key, time_t& accessed)
 {
 #ifdef _DEBUG
-    saml::NDC ndc("onRead");
+    xmltooling::NDC ndc("onRead");
 #endif
 
     log->debug("reading last access time from database");
@@ -604,7 +605,7 @@ HRESULT ODBCCCache::onRead(const char* key, time_t& accessed)
 HRESULT ODBCCCache::onRead(const char* key, string& tokens)
 {
 #ifdef _DEBUG
-    saml::NDC ndc("onRead");
+    xmltooling::NDC ndc("onRead");
 #endif
 
     if (!m_storeAttributes)
@@ -651,7 +652,7 @@ HRESULT ODBCCCache::onRead(const char* key, string& tokens)
 HRESULT ODBCCCache::onUpdate(const char* key, const char* tokens, time_t lastAccess)
 {
 #ifdef _DEBUG
-    saml::NDC ndc("onUpdate");
+    xmltooling::NDC ndc("onUpdate");
 #endif
 
     ostringstream q;
@@ -706,7 +707,7 @@ HRESULT ODBCCCache::onUpdate(const char* key, const char* tokens, time_t lastAcc
 HRESULT ODBCCCache::onDelete(const char* key)
 {
 #ifdef _DEBUG
-    saml::NDC ndc("onDelete");
+    xmltooling::NDC ndc("onDelete");
 #endif
 
     SQLHSTMT hstmt;
@@ -731,10 +732,10 @@ HRESULT ODBCCCache::onDelete(const char* key)
 void ODBCCCache::cleanup()
 {
 #ifdef _DEBUG
-    saml::NDC ndc("cleanup");
+    xmltooling::NDC ndc("cleanup");
 #endif
 
-    Mutex* mutex = Mutex::create();
+    Mutex* mutex = xmltooling::Mutex::create();
 
     int rerun_timer = 0;
     int timeout_life = 0;
@@ -807,15 +808,17 @@ void ODBCCCache::cleanup()
 
     mutex->unlock();
     delete mutex;
-    Thread::exit(NULL);
+    xmltooling::Thread::exit(NULL);
 }
 
 void* ODBCCCache::cleanup_fcn(void* cache_p)
 {
   ODBCCCache* cache = (ODBCCCache*)cache_p;
 
+#ifndef WIN32
   // First, let's block all signals
   Thread::mask_all_signals();
+#endif
 
   // Now run the cleanup process.
   cache->cleanup();

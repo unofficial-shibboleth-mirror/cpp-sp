@@ -48,7 +48,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="..,..\..\..\opensaml\c,\Apache\include"
+				AdditionalIncludeDirectories="..;&quot;..\..\cpp-opensaml1&quot;;\Apache\include;&quot;..\..\cpp-opensaml2&quot;;&quot;..\..\cpp-xmltooling&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;EAPI"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -77,11 +77,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="log4cpp.lib xerces-c_2.lib ApacheCore.lib saml_5.lib"
+				AdditionalDependencies="log4cpp.lib xerces-c_2.lib ApacheCore.lib saml_5.lib saml2.lib xmltooling1.lib"
 				OutputFile="Release/mod_shib_13.so"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="../../../opensaml/c/saml/Release,\Apache\libexec"
+				AdditionalLibraryDirectories="&quot;..\..\cpp-opensaml1\saml\Release&quot;;&quot;..\..\cpp-opensaml2\Release&quot;;&quot;..\..\cpp-xmltooling\Release&quot;,\Apache\libexec"
 				ProgramDatabaseFile=".\Release/mod_shib_13.pdb"
 				ImportLibrary=".\Release/mod_shib_13.lib"
 				TargetMachine="1"
@@ -145,7 +145,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..;&quot;..\..\cpp-opensaml1&quot;;\Apache\include"
+				AdditionalIncludeDirectories="..;&quot;..\..\cpp-opensaml1&quot;;\Apache\include;&quot;..\..\cpp-opensaml2&quot;;&quot;..\..\cpp-xmltooling&quot;"
 				PreprocessorDefinitions="_WINDOWS;EAPI;WIN32;_DEBUG"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -175,11 +175,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="log4cppD.lib xerces-c_2D.lib ApacheCore.lib saml_5D.lib"
+				AdditionalDependencies="log4cppD.lib xerces-c_2D.lib ApacheCore.lib saml_5D.lib saml2D.lib xmltooling1D.lib"
 				OutputFile="Debug/mod_shib_13.so"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="..\..\cpp-opensaml1\saml\Debug,\Apache\libexec"
+				AdditionalLibraryDirectories="&quot;..\..\cpp-opensaml1\saml\Debug&quot;;&quot;..\..\cpp-opensaml2\Debug&quot;;&quot;..\..\cpp-xmltooling\Debug&quot;;\Apache\libexec"
 				GenerateDebugInformation="true"
 				ImportLibrary=".\Debug/mod_shib_13.lib"
 				TargetMachine="1"

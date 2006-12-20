@@ -4,6 +4,7 @@
 	Version="8.00"
 	Name="xmlproviders"
 	ProjectGUID="{68E46D06-6B91-4C59-A700-78DD4D4C420B}"
+	RootNamespace="xmlproviders"
 	Keyword="MFCProj"
 	>
 	<Platforms>
@@ -49,7 +50,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="..,..\..\..\opensaml\c"
+				AdditionalIncludeDirectories="..;&quot;..\..\cpp-opensaml1&quot;;&quot;..\..\cpp-opensaml2&quot;;&quot;..\..\cpp-xmltooling&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -78,11 +79,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libeay32_0_9_8.lib ssleay32_0_9_8.lib log4cpp.lib xerces-c_2.lib xsec_1.lib saml_5.lib"
+				AdditionalDependencies="libeay32_0_9_8.lib ssleay32_0_9_8.lib log4cpp.lib xerces-c_2.lib xsec_1.lib saml_5.lib saml2.lib xmltooling1.lib"
 				OutputFile="Release/xmlproviders.so"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="..\..\..\opensaml\c\saml\Release"
+				AdditionalLibraryDirectories="&quot;..\..\cpp-opensaml1\saml\Release&quot;;&quot;..\..\cpp-opensaml2\Release&quot;;&quot;..\..\cpp-xmltooling\Release&quot;"
 				ProgramDatabaseFile=".\Release/xmlproviders.pdb"
 				ImportLibrary=".\Release/xmlproviders.lib"
 				TargetMachine="1"
@@ -146,7 +147,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..;&quot;..\..\cpp-opensaml1&quot;"
+				AdditionalIncludeDirectories="..;&quot;..\..\cpp-opensaml1&quot;;&quot;..\..\cpp-opensaml2&quot;;&quot;..\..\cpp-xmltooling&quot;"
 				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -176,11 +177,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libeay32_0_9_8D.lib ssleay32_0_9_8D.lib log4cppD.lib xerces-c_2D.lib xsec_1D.lib saml_5D.lib"
+				AdditionalDependencies="libeay32_0_9_8D.lib ssleay32_0_9_8D.lib log4cppD.lib xerces-c_2D.lib xsec_1D.lib saml_5D.lib saml2D.lib xmltooling1D.lib"
 				OutputFile="Debug/xmlproviders.so"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="..\..\cpp-opensaml1\saml\Debug"
+				AdditionalLibraryDirectories="&quot;..\..\cpp-opensaml1\saml\Debug&quot;;&quot;..\..\cpp-opensaml2\Debug&quot;;&quot;..\..\cpp-xmltooling\Debug&quot;"
 				GenerateDebugInformation="true"
 				ImportLibrary=".\Debug/xmlproviders.lib"
 				TargetMachine="1"

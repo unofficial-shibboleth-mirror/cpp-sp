@@ -39,8 +39,9 @@
 # include <unistd.h>
 #endif
 
-#include <shib/shib-threads.h>
 #include <shib-target/shib-target.h>
+
+#include <xmltooling/util/NDC.h>
 #include <log4cpp/Category.hh>
 
 #include <sstream>
@@ -57,11 +58,11 @@
 #include <dmalloc.h>
 #endif
 
-using namespace std;
-using namespace saml;
-using namespace shibboleth;
 using namespace shibtarget;
+using namespace shibboleth;
+using namespace saml;
 using namespace log4cpp;
+using namespace std;
 
 #define PLUGIN_VER_MAJOR 3
 #define PLUGIN_VER_MINOR 0
@@ -112,7 +113,7 @@ public:
   log4cpp::Category* log;
 
 protected:
-  ThreadKey* m_mysql;
+    xmltooling::ThreadKey* m_mysql;
   const DOMElement* m_root; // can only use this during initialization
 
   bool initialized;
@@ -135,11 +136,11 @@ extern "C" void shib_mysql_destroy_handle(void* data)
 MySQLBase::MySQLBase(const DOMElement* e) : m_root(e)
 {
 #ifdef _DEBUG
-  saml::NDC ndc("MySQLBase");
+  xmltooling::NDC ndc("MySQLBase");
 #endif
   log = &(Category::getInstance("shibtarget.SessionCache.MySQL"));
 
-  m_mysql = ThreadKey::create(&shib_mysql_destroy_handle);
+  m_mysql = xmltooling::ThreadKey::create(&shib_mysql_destroy_handle);
 
   initialized = false;
   mysqlInit(e,*log);
@@ -155,7 +156,7 @@ MySQLBase::~MySQLBase()
 MYSQL* MySQLBase::getMYSQL()
 {
 #ifdef _DEBUG
-    saml::NDC ndc("getMYSQL");
+    xmltooling::NDC ndc("getMYSQL");
 #endif
 
     // Do we already have a handle?
@@ -429,9 +430,9 @@ public:
 private:
     bool m_storeAttributes;
     ISessionCache* m_cache;
-    CondWait* shutdown_wait;
+    xmltooling::CondWait* shutdown_wait;
     bool shutdown;
-    Thread* cleanup_thread;
+    xmltooling::Thread* cleanup_thread;
 
     static void* cleanup_fcn(void*); // XXX Assumed an ShibMySQLCCache
 };
@@ -439,7 +440,7 @@ private:
 ShibMySQLCCache::ShibMySQLCCache(const DOMElement* e) : MySQLBase(e), m_storeAttributes(false)
 {
 #ifdef _DEBUG
-    saml::NDC ndc("ShibMySQLCCache");
+    xmltooling::NDC ndc("ShibMySQLCCache");
 #endif
 
     m_cache = dynamic_cast<ISessionCache*>(
@@ -450,7 +451,7 @@ ShibMySQLCCache::ShibMySQLCCache(const DOMElement* e) : MySQLBase(e), m_storeAtt
         throw SAMLException("Unable to register MySQL cache plugin as a cache store.");
     }
     
-    shutdown_wait = CondWait::create();
+    shutdown_wait = xmltooling::CondWait::create();
     shutdown = false;
 
     // Load our configuration details...
@@ -459,7 +460,7 @@ ShibMySQLCCache::ShibMySQLCCache(const DOMElement* e) : MySQLBase(e), m_storeAtt
         m_storeAttributes=true;
 
     // Initialize the cleanup thread
-    cleanup_thread = Thread::create(&cleanup_fcn, (void*)this);
+    cleanup_thread = xmltooling::Thread::create(&cleanup_fcn, (void*)this);
 }
 
 ShibMySQLCCache::~ShibMySQLCCache()
@@ -480,7 +481,7 @@ HRESULT ShibMySQLCCache::onCreate(
     )
 {
 #ifdef _DEBUG
-    saml::NDC ndc("onCreate");
+    xmltooling::NDC ndc("onCreate");
 #endif
 
     // Get XML data from entry. Default is not to return SAML objects.
@@ -539,7 +540,7 @@ HRESULT ShibMySQLCCache::onRead(
     )
 {
 #ifdef _DEBUG
-    saml::NDC ndc("onRead");
+    xmltooling::NDC ndc("onRead");
 #endif
 
     log->debug("searching MySQL database...");
@@ -610,7 +611,7 @@ HRESULT ShibMySQLCCache::onRead(
 HRESULT ShibMySQLCCache::onRead(const char* key, time_t& accessed)
 {
 #ifdef _DEBUG
-    saml::NDC ndc("onRead");
+    xmltooling::NDC ndc("onRead");
 #endif
 
     log->debug("reading last access time from MySQL database");
@@ -656,7 +657,7 @@ HRESULT ShibMySQLCCache::onRead(const char* key, time_t& accessed)
 HRESULT ShibMySQLCCache::onRead(const char* key, string& tokens)
 {
 #ifdef _DEBUG
-    saml::NDC ndc("onRead");
+    xmltooling::NDC ndc("onRead");
 #endif
 
     if (!m_storeAttributes)
@@ -706,7 +707,7 @@ HRESULT ShibMySQLCCache::onRead(const char* key, string& tokens)
 HRESULT ShibMySQLCCache::onUpdate(const char* key, const char* tokens, time_t lastAccess)
 {
 #ifdef _DEBUG
-    saml::NDC ndc("onUpdate");
+    xmltooling::NDC ndc("onUpdate");
 #endif
 
     ostringstream q;
@@ -749,7 +750,7 @@ HRESULT ShibMySQLCCache::onUpdate(const char* key, const char* tokens, time_t la
 HRESULT ShibMySQLCCache::onDelete(const char* key)
 {
 #ifdef _DEBUG
-    saml::NDC ndc("onDelete");
+    xmltooling::NDC ndc("onDelete");
 #endif
 
     // Remove from the database
@@ -775,10 +776,10 @@ HRESULT ShibMySQLCCache::onDelete(const char* key)
 void ShibMySQLCCache::cleanup()
 {
 #ifdef _DEBUG
-  saml::NDC ndc("cleanup");
+  xmltooling::NDC ndc("cleanup");
 #endif
 
-  Mutex* mutex = Mutex::create();
+  xmltooling::Mutex* mutex = xmltooling::Mutex::create();
 
   int rerun_timer = 0;
   int timeout_life = 0;
@@ -836,15 +837,17 @@ void ShibMySQLCCache::cleanup()
 
   mutex->unlock();
   delete mutex;
-  Thread::exit(NULL);
+  xmltooling::Thread::exit(NULL);
 }
 
 void* ShibMySQLCCache::cleanup_fcn(void* cache_p)
 {
   ShibMySQLCCache* cache = (ShibMySQLCCache*)cache_p;
 
+#ifndef WIN32
   // First, let's block all signals
-  Thread::mask_all_signals();
+  xmltooling::Thread::mask_all_signals();
+#endif
 
   // Now run the cleanup process.
   cache->cleanup();
@@ -866,7 +869,7 @@ MySQLReplayCache::MySQLReplayCache(const DOMElement* e) : MySQLBase(e) {}
 bool MySQLReplayCache::check(const char* str, time_t expires)
 {
 #ifdef _DEBUG
-    saml::NDC ndc("check");
+    xmltooling::NDC ndc("check");
 #endif
   
     // Remove expired entries

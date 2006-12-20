@@ -29,11 +29,11 @@
 # include <unistd.h>
 #endif
 
-using namespace std;
-using namespace log4cpp;
-using namespace saml;
-using namespace shibboleth;
 using namespace shibtarget;
+using namespace saml;
+using namespace xmltooling;
+using namespace log4cpp;
+using namespace std;
 
 namespace shibtarget {
   
@@ -42,7 +42,7 @@ namespace shibtarget {
     {
     public:
         SocketPool(Category& log, const SocketListener* listener)
-            : m_log(log), m_listener(listener), m_lock(shibboleth::Mutex::create()) {}
+            : m_log(log), m_listener(listener), m_lock(Mutex::create()) {}
         ~SocketPool();
         SocketListener::ShibSocket get();
         void put(SocketListener::ShibSocket s);
@@ -273,7 +273,7 @@ DDF SocketListener::send(const DDF& in)
             if (retry)
                 retry--;
             else
-                throw ListenerException("Failure sending remoted message ($1).", params(1,in.name()));
+                throw ListenerException("Failure sending remoted message ($1).", saml::params(1,in.name()));
         }
         else {
             // SUCCESS.
@@ -287,7 +287,7 @@ DDF SocketListener::send(const DDF& in)
     if (recv(sock,(char*)&len,sizeof(len)) != sizeof(len)) {
         log->error("error reading size of output message");
         this->close(sock);
-        throw ListenerException("Failure receiving response to remoted message ($1).", params(1,in.name()));
+        throw ListenerException("Failure receiving response to remoted message ($1).", saml::params(1,in.name()));
     }
     len = ntohl(len);
     
@@ -302,7 +302,7 @@ DDF SocketListener::send(const DDF& in)
     if (len) {
         log->error("error reading output message from socket");
         this->close(sock);
-        throw ListenerException("Failure receiving response to remoted message ($1).", params(1,in.name()));
+        throw ListenerException("Failure receiving response to remoted message ($1).", saml::params(1,in.name()));
     }
     
     m_socketpool->put(sock);
@@ -357,8 +357,10 @@ void* server_thread_fn(void* arg)
 {
     ServerThread* child = (ServerThread*)arg;
 
+#ifndef WIN32
     // First, let's block all signals
     Thread::mask_all_signals();
+#endif
 
     // Run the child until it exits.
     child->run();

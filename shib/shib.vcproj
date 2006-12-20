@@ -48,7 +48,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="..,.,..\..\..\opensaml\c"
+				AdditionalIncludeDirectories=".;..;&quot;..\..\cpp-opensaml1&quot;;&quot;..\..\cpp-opensaml2&quot;;&quot;..\..\cpp-xmltooling&quot;"
 				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -77,11 +77,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libeay32_0_9_8.lib ssleay32_0_9_8.lib log4cpp.lib xerces-c_2.lib xsec_1.lib saml_5.lib"
+				AdditionalDependencies="libeay32_0_9_8.lib ssleay32_0_9_8.lib log4cpp.lib xerces-c_2.lib xsec_1.lib saml_5.lib saml2.lib xmltooling1.lib"
 				OutputFile="Release/shib_6.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="..\..\..\opensaml\c\saml\Release"
+				AdditionalLibraryDirectories="&quot;..\..\cpp-opensaml1\saml\Release&quot;;&quot;..\..\cpp-opensaml2\Release&quot;;&quot;..\..\cpp-xmltooling\Release&quot;"
 				ProgramDatabaseFile=".\Release/shib_6.pdb"
 				ImportLibrary=".\Release/shib_6.lib"
 				TargetMachine="1"
@@ -145,7 +145,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..;.;..\..\cpp-opensaml1"
+				AdditionalIncludeDirectories=".;..;&quot;..\..\cpp-opensaml1&quot;;&quot;..\..\cpp-opensaml2&quot;;&quot;..\..\cpp-xmltooling&quot;"
 				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -175,11 +175,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libeay32_0_9_8D.lib ssleay32_0_9_8D.lib log4cppD.lib xerces-c_2D.lib xsec_1D.lib saml_5D.lib"
+				AdditionalDependencies="libeay32_0_9_8D.lib ssleay32_0_9_8D.lib log4cppD.lib xerces-c_2D.lib xsec_1D.lib saml_5D.lib saml2D.lib xmltooling1D.lib"
 				OutputFile="Debug/shib_6D.dll"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="..\..\cpp-opensaml1\saml\Debug"
+				AdditionalLibraryDirectories="&quot;..\..\cpp-opensaml1\saml\Debug&quot;;&quot;..\..\cpp-opensaml2\Debug&quot;;&quot;..\..\cpp-xmltooling\Debug&quot;"
 				GenerateDebugInformation="true"
 				ImportLibrary=".\Debug/shib_6D.lib"
 				TargetMachine="1"
@@ -358,36 +358,6 @@
 					BrowseInformation="1"
 				/>
 			</FileConfiguration>
-		</File>
-		<File
-			RelativePath="shib-threads-win32.cpp"
-			>
-			<FileConfiguration
-				Name="Release|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					Optimization="2"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;$(NoInherit)"
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Debug|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					Optimization="0"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_MBCS;$(NoInherit)"
-					BasicRuntimeChecks="3"
-					BrowseInformation="1"
-				/>
-			</FileConfiguration>
-		</File>
-		<File
-			RelativePath="shib-threads.h"
-			>
 		</File>
 		<File
 			RelativePath="shib.h"

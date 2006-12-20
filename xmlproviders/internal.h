@@ -38,7 +38,6 @@
 #endif
 
 #include <shib-target/shib-target.h>
-#include <shib/shib-threads.h>
 #include <openssl/ssl.h>
 
 #define XMLPROVIDERS_LOGCAT "XMLProviders"

@@ -112,7 +112,7 @@ ReloadableXMLFile::ReloadableXMLFile(const DOMElement* e) : m_root(e), m_impl(NU
         if (stat(m_source.c_str(), &stat_buf) == 0)
 #endif
             m_filestamp=stat_buf.st_mtime;
-        m_lock=RWLock::create();
+        m_lock=xmltooling::RWLock::create();
     }
 }
 

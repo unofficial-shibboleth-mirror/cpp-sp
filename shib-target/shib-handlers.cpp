@@ -22,13 +22,12 @@
  */
 
 #include "internal.h"
+#include <ctime>
 #include <saml/util/CommonDomainCookie.h>
 
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
 #endif
-
-#include <shib/shib-threads.h>
 
 using namespace std;
 using namespace saml;
