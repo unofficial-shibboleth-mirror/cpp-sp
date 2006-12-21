@@ -216,28 +216,6 @@
 		<File
 			RelativePath="nsapi_shib.cpp"
 			>
-			<FileConfiguration
-				Name="Release|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					Optimization="2"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;_MBCS;$(NoInherit)"
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Debug|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					Optimization="0"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_MBCS;$(NoInherit)"
-					BasicRuntimeChecks="3"
-					BrowseInformation="1"
-				/>
-			</FileConfiguration>
 		</File>
 		<File
 			RelativePath="nsapi_shib.rc"

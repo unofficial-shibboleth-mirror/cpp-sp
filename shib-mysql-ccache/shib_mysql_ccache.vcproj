@@ -220,28 +220,6 @@
 		<File
 			RelativePath="shib-mysql-ccache.cpp"
 			>
-			<FileConfiguration
-				Name="Debug|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					Optimization="0"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_MBCS;$(NoInherit)"
-					BasicRuntimeChecks="3"
-					BrowseInformation="1"
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Release|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					Optimization="2"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;_MBCS;$(NoInherit)"
-				/>
-			</FileConfiguration>
 		</File>
 		<File
 			RelativePath="shib_mysql_ccache.rc"

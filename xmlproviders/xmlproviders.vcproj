@@ -218,28 +218,6 @@
 		<File
 			RelativePath="CredResolvers.cpp"
 			>
-			<FileConfiguration
-				Name="Release|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					Optimization="2"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_MBCS;$(NoInherit)"
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Debug|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					Optimization="0"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="_WINDOWS;_WINDLL;WIN32;_DEBUG;_MBCS;$(NoInherit)"
-					BasicRuntimeChecks="3"
-					BrowseInformation="1"
-				/>
-			</FileConfiguration>
 		</File>
 		<File
 			RelativePath="internal.h"
@@ -252,80 +230,14 @@
 		<File
 			RelativePath="TargetedID.cpp"
 			>
-			<FileConfiguration
-				Name="Release|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					Optimization="2"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_MBCS;$(NoInherit)"
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Debug|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					Optimization="0"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="_WINDOWS;_WINDLL;WIN32;_DEBUG;_MBCS;$(NoInherit)"
-					BasicRuntimeChecks="3"
-					BrowseInformation="1"
-				/>
-			</FileConfiguration>
 		</File>
 		<File
 			RelativePath="XML.cpp"
 			>
-			<FileConfiguration
-				Name="Release|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					Optimization="2"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_MBCS;$(NoInherit)"
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Debug|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					Optimization="0"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="_WINDOWS;_WINDLL;WIN32;_DEBUG;_MBCS;$(NoInherit)"
-					BasicRuntimeChecks="3"
-					BrowseInformation="1"
-				/>
-			</FileConfiguration>
 		</File>
 		<File
 			RelativePath="XMLAAP.cpp"
 			>
-			<FileConfiguration
-				Name="Release|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					Optimization="2"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_MBCS;$(NoInherit)"
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Debug|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					Optimization="0"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="_WINDOWS;_WINDLL;WIN32;_DEBUG;_MBCS;$(NoInherit)"
-					BasicRuntimeChecks="3"
-					BrowseInformation="1"
-				/>
-			</FileConfiguration>
 		</File>
 		<File
 			RelativePath=".\XMLAccessControl.cpp"
@@ -334,80 +246,14 @@
 		<File
 			RelativePath="XMLCredentials.cpp"
 			>
-			<FileConfiguration
-				Name="Release|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					Optimization="2"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_MBCS;$(NoInherit)"
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Debug|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					Optimization="0"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="_WINDOWS;_WINDLL;WIN32;_DEBUG;_MBCS;$(NoInherit)"
-					BasicRuntimeChecks="3"
-					BrowseInformation="1"
-				/>
-			</FileConfiguration>
 		</File>
 		<File
 			RelativePath="XMLMetadata.cpp"
 			>
-			<FileConfiguration
-				Name="Release|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					Optimization="2"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_MBCS;$(NoInherit)"
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Debug|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					Optimization="0"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="_WINDOWS;_WINDLL;WIN32;_DEBUG;_MBCS;$(NoInherit)"
-					BasicRuntimeChecks="3"
-					BrowseInformation="1"
-				/>
-			</FileConfiguration>
 		</File>
 		<File
 			RelativePath="XMLProviders.cpp"
 			>
-			<FileConfiguration
-				Name="Release|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					Optimization="2"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_MBCS;$(NoInherit)"
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Debug|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					Optimization="0"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="_WINDOWS;_WINDLL;WIN32;_DEBUG;_MBCS;$(NoInherit)"
-					BasicRuntimeChecks="3"
-					BrowseInformation="1"
-				/>
-			</FileConfiguration>
 		</File>
 		<File
 			RelativePath="xmlproviders.rc"
@@ -416,28 +262,6 @@
 		<File
 			RelativePath="XMLTrust.cpp"
 			>
-			<FileConfiguration
-				Name="Release|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					Optimization="2"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_MBCS;$(NoInherit)"
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Debug|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					Optimization="0"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions="_WINDOWS;_WINDLL;WIN32;_DEBUG;_MBCS;$(NoInherit)"
-					BasicRuntimeChecks="3"
-					BrowseInformation="1"
-				/>
-			</FileConfiguration>
 		</File>
 	</Files>
 	<Globals>
