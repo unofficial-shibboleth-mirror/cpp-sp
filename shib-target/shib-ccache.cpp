@@ -27,6 +27,7 @@
 #endif
 
 #include <log4cpp/Category.hh>
+#include <shibsp/SPConfig.h>
 
 #include <ctime>
 #include <algorithm>
@@ -37,6 +38,7 @@
 #include <dmalloc.h>
 #endif
 
+using namespace shibsp;
 using namespace shibtarget;
 using namespace shibboleth;
 using namespace saml;
@@ -425,7 +427,7 @@ MemorySessionCacheEntry::MemorySessionCacheEntry(
 
         // Save actual objects only if we're running inprocess. The subject needs to be
         // owned by the entry, so we'll defer creation of a cloned copy.
-        if (ShibTargetConfig::getConfig().isEnabled(ShibTargetConfig::InProcess)) {
+        if (SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {
             if (m_obj["tokens.filtered"].isstring())
                 m_pFiltered=filtered.release();
         }
@@ -504,7 +506,7 @@ MemorySessionCacheEntry::MemorySessionCacheEntry(
             m_obj.addmember("tokens.filtered").string(fstr.c_str());
 
         // Save actual objects only if we're running inprocess.
-        if (ShibTargetConfig::getConfig().isEnabled(ShibTargetConfig::InProcess)) {
+        if (SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {
             m_pUnfiltered=unfiltered.release();
             if (m_obj["tokens.filtered"].isstring())
                 m_pFiltered=filtered.release();
@@ -680,7 +682,7 @@ void MemorySessionCacheEntry::populate(const IApplication* application, const IE
                         m_obj.addmember("tokens.filtered").string(fstr.c_str());
                     
                     // Save actual objects only if we're running inprocess.
-                    if (ShibTargetConfig::getConfig().isEnabled(ShibTargetConfig::InProcess)) {
+                    if (SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {
                         m_pUnfiltered=respFromSink.release();
                         if (m_obj["tokens.filtered"].isstring())
                             m_pFiltered=filteredFromSink.release();
@@ -735,7 +737,7 @@ void MemorySessionCacheEntry::populate(const IApplication* application, const IE
             m_responseExpiration=calculateExpiration(*new_responses.second);
 
             // Save actual objects only if we're running inprocess.
-            if (ShibTargetConfig::getConfig().isEnabled(ShibTargetConfig::InProcess)) {
+            if (SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {
                 m_pUnfiltered=r1.release();
                 if (m_obj["tokens.filtered"].isstring())
                     m_pFiltered=r2.release();
@@ -1060,7 +1062,7 @@ MemorySessionCache::MemorySessionCache(const DOMElement* e)
 
     // Register for remoted messages.
     IListener* listener=ShibTargetConfig::getConfig().getINI()->getListener();
-    if (listener && ShibTargetConfig::getConfig().isEnabled(ShibTargetConfig::OutOfProcess)) {
+    if (listener && SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
         restoreInsert=listener->regListener("SessionCache::insert",this);
         restoreFind=listener->regListener("SessionCache::find",this);
         restoreRemove=listener->regListener("SessionCache::remove",this);
@@ -1082,13 +1084,13 @@ MemorySessionCache::~MemorySessionCache()
 
     // Unregister remoted messages.
     IListener* listener=ShibTargetConfig::getConfig().getINI()->getListener();
-    if (listener && ShibTargetConfig::getConfig().isEnabled(ShibTargetConfig::OutOfProcess)) {
+    if (listener && SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
         listener->unregListener("SessionCache::insert",this,restoreInsert);
         listener->unregListener("SessionCache::find",this,restoreFind);
         listener->unregListener("SessionCache::remove",this,restoreRemove);
     }
 
-    for_each(m_hashtable.begin(),m_hashtable.end(),shibtarget::cleanup_pair<string,MemorySessionCacheEntry>());
+    for_each(m_hashtable.begin(),m_hashtable.end(),xmltooling::cleanup_pair<string,MemorySessionCacheEntry>());
     delete m_lock;
     delete shutdown_wait;
 }
@@ -1575,7 +1577,7 @@ void* MemorySessionCache::cleanup_fcn(void* cache_p)
 IPlugIn* MemoryCacheFactory(const DOMElement* e)
 {
     // If this is a long-lived process, we return the "real" cache.
-    if (ShibTargetConfig::getConfig().isEnabled(ShibTargetConfig::OutOfProcess))
+    if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess))
         return new MemorySessionCache(e);
     // Otherwise, we return a stubbed front-end that remotes calls to the real cache.
     return new StubCache(e);

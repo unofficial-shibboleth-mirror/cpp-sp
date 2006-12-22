@@ -19,12 +19,14 @@
 # define _CRT_SECURE_NO_DEPRECATE 1
 #endif
 
-#include "../shib-target/shib-target.h"
+#include <shib-target/shib-target.h>
+#include <shibsp/SPConfig.h>
 
-using namespace std;
-using namespace saml;
-using namespace shibboleth;
+using namespace shibsp;
 using namespace shibtarget;
+using namespace shibboleth;
+using namespace saml;
+using namespace std;
 
 int main(int argc,char* argv[])
 {
@@ -67,13 +69,13 @@ int main(int argc,char* argv[])
         a_param="default";
 
     ShibTargetConfig& conf=ShibTargetConfig::getConfig();
-    conf.setFeatures(
-        ShibTargetConfig::Metadata |
-        ShibTargetConfig::Trust |
-        ShibTargetConfig::Credentials |
-        ShibTargetConfig::AAP |
-        ShibTargetConfig::OutOfProcess |
-        ShibTargetConfig::Caching
+    SPConfig::getConfig().setFeatures(
+        SPConfig::Metadata |
+        SPConfig::Trust |
+        SPConfig::Credentials |
+        SPConfig::AAP |
+        SPConfig::OutOfProcess |
+        SPConfig::Caching
         );
     if (!conf.init(path) || !conf.load(config))
         return -10;

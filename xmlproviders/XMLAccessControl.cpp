@@ -212,7 +212,7 @@ Operator::Operator(const DOMElement* e)
 
 Operator::~Operator()
 {
-    for_each(m_operands.begin(),m_operands.end(),shibtarget::cleanup<IAuthz>());
+    for_each(m_operands.begin(),m_operands.end(),xmltooling::cleanup<IAuthz>());
 }
 
 bool Operator::authorized(ShibTarget* st, ISessionCacheEntry* entry) const

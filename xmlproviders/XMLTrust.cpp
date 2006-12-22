@@ -344,8 +344,8 @@ void XMLTrustImpl::init()
 
 XMLTrustImpl::~XMLTrustImpl()
 {
-    for_each(m_keyauths.begin(),m_keyauths.end(),shibtarget::cleanup<KeyAuthority>());
-    for_each(m_keybinds.begin(),m_keybinds.end(),shibtarget::cleanup<DSIGKeyInfoList>());
+    for_each(m_keyauths.begin(),m_keyauths.end(),xmltooling::cleanup<KeyAuthority>());
+    for_each(m_keybinds.begin(),m_keybinds.end(),xmltooling::cleanup<DSIGKeyInfoList>());
 }
 
 XMLTrust::XMLTrust(const DOMElement* e) : ReloadableXMLFile(e), m_delegate(NULL)
@@ -401,7 +401,7 @@ XMLTrust::XMLTrust(const DOMElement* e) : ReloadableXMLFile(e), m_delegate(NULL)
 XMLTrust::~XMLTrust()
 {
     delete m_delegate;
-    for_each(m_resolvers.begin(),m_resolvers.end(),shibtarget::cleanup<KeyInfoResolver>());
+    for_each(m_resolvers.begin(),m_resolvers.end(),xmltooling::cleanup<KeyInfoResolver>());
 }
 
 static int error_callback(int ok, X509_STORE_CTX* ctx)

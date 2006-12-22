@@ -598,7 +598,7 @@ XMLMetadataImpl::KeyDescriptor::KeyDescriptor(const DOMElement* e) : m_root(e), 
 
 XMLMetadataImpl::KeyDescriptor::~KeyDescriptor()
 {
-    for_each(m_methods.begin(),m_methods.end(),shibtarget::cleanup<XENCEncryptionMethod>());
+    for_each(m_methods.begin(),m_methods.end(),xmltooling::cleanup<XENCEncryptionMethod>());
     delete m_klist;
 }
 
@@ -643,7 +643,7 @@ XMLMetadataImpl::KeyAuthority::KeyAuthority(const DOMElement* e) : m_depth(1)
 
 XMLMetadataImpl::KeyAuthority::~KeyAuthority()
 {
-    for_each(m_klists.begin(),m_klists.end(),shibtarget::cleanup<DSIGKeyInfoList>());
+    for_each(m_klists.begin(),m_klists.end(),xmltooling::cleanup<DSIGKeyInfoList>());
 }
 
 XMLMetadataImpl::Role::Role(const EntityDescriptor* provider, time_t validUntil, const DOMElement* e)
@@ -696,8 +696,8 @@ XMLMetadataImpl::Role::~Role()
     delete m_org;
     delete m_errorURL;
     if (m_protocolEnumCopy) XMLString::release(&m_protocolEnumCopy);
-    for_each(m_keys.begin(),m_keys.end(),shibtarget::cleanup<IKeyDescriptor>());
-    for_each(m_contacts.begin(),m_contacts.end(),shibtarget::cleanup<IContactPerson>());
+    for_each(m_keys.begin(),m_keys.end(),xmltooling::cleanup<IKeyDescriptor>());
+    for_each(m_contacts.begin(),m_contacts.end(),xmltooling::cleanup<IContactPerson>());
 }
 
 bool XMLMetadataImpl::Role::hasSupport(const XMLCh* protocol) const
@@ -827,7 +827,7 @@ XMLMetadataImpl::IDPRole::IDPRole(const EntityDescriptor* provider, time_t valid
 
 XMLMetadataImpl::IDPRole::~IDPRole()
 {
-    for_each(m_attrs.begin(),m_attrs.end(),shibtarget::cleanup<SAMLAttribute>());
+    for_each(m_attrs.begin(),m_attrs.end(),xmltooling::cleanup<SAMLAttribute>());
 }
 
 XMLMetadataImpl::AARole::AARole(const EntityDescriptor* provider, time_t validUntil, const DOMElement* e)
@@ -911,7 +911,7 @@ XMLMetadataImpl::AARole::AARole(const EntityDescriptor* provider, time_t validUn
 
 XMLMetadataImpl::AARole::~AARole()
 {
-    for_each(m_attrs.begin(),m_attrs.end(),shibtarget::cleanup<SAMLAttribute>());
+    for_each(m_attrs.begin(),m_attrs.end(),xmltooling::cleanup<SAMLAttribute>());
 }
 
 XMLMetadataImpl::EntityDescriptor::EntityDescriptor(
@@ -1053,9 +1053,9 @@ const IAttributeAuthorityDescriptor* XMLMetadataImpl::EntityDescriptor::getAttri
 XMLMetadataImpl::EntityDescriptor::~EntityDescriptor()
 {
     delete m_org;
-    for_each(m_contacts.begin(),m_contacts.end(),shibtarget::cleanup<IContactPerson>());
-    for_each(m_roles.begin(),m_roles.end(),shibtarget::cleanup<IRoleDescriptor>());
-    for_each(m_keyauths.begin(),m_keyauths.end(),shibtarget::cleanup<IKeyAuthority>());
+    for_each(m_contacts.begin(),m_contacts.end(),xmltooling::cleanup<IContactPerson>());
+    for_each(m_roles.begin(),m_roles.end(),xmltooling::cleanup<IRoleDescriptor>());
+    for_each(m_keyauths.begin(),m_keyauths.end(),xmltooling::cleanup<IKeyAuthority>());
 }
 
 XMLMetadataImpl::EntitiesDescriptor::EntitiesDescriptor(
@@ -1114,9 +1114,9 @@ XMLMetadataImpl::EntitiesDescriptor::EntitiesDescriptor(
 
 XMLMetadataImpl::EntitiesDescriptor::~EntitiesDescriptor()
 {
-    for_each(m_providers.begin(),m_providers.end(),shibtarget::cleanup<IEntityDescriptor>());
-    for_each(m_groups.begin(),m_groups.end(),shibtarget::cleanup<IEntitiesDescriptor>());
-    for_each(m_keyauths.begin(),m_keyauths.end(),shibtarget::cleanup<IKeyAuthority>());
+    for_each(m_providers.begin(),m_providers.end(),xmltooling::cleanup<IEntityDescriptor>());
+    for_each(m_groups.begin(),m_groups.end(),xmltooling::cleanup<IEntitiesDescriptor>());
+    for_each(m_keyauths.begin(),m_keyauths.end(),xmltooling::cleanup<IKeyAuthority>());
 }
 
 void XMLMetadataImpl::init()

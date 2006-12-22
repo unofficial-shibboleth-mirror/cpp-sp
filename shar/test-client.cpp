@@ -20,11 +20,13 @@
 #endif
 
 #include <shib-target/shib-target.h>
+#include <shibsp/SPConfig.h>
 #include <iostream>
 
-using namespace std;
-using namespace saml;
+using namespace shibsp;
 using namespace shibtarget;
+using namespace saml;
+using namespace std;
 
 int main (int argc, char *argv[])
 {
@@ -36,7 +38,7 @@ int main (int argc, char *argv[])
     schemadir=SHIB_SCHEMAS;
 
   ShibTargetConfig& conf=ShibTargetConfig::getConfig();
-  conf.setFeatures(ShibTargetConfig::Listener | ShibTargetConfig::InProcess);
+  SPConfig::getConfig().setFeatures(SPConfig::Listener | SPConfig::InProcess);
   if (!conf.init(schemadir) || !conf.load(config))
       return -10;
 

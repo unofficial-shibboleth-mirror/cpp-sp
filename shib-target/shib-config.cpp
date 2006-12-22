@@ -23,21 +23,20 @@
  */
 
 #include "internal.h"
-#include <saml/SAMLConfig.h>
 #include <saml/util/SAMLConstants.h>
+#include <shibsp/SPConfig.h>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/NDC.h>
-#include <xmltooling/util/TemplateEngine.h>
 
 #include <log4cpp/OstreamAppender.hh>
 
+using namespace shibsp;
 using namespace shibtarget;
 using namespace shibboleth;
 using namespace saml;
 using namespace log4cpp;
 using namespace std;
 
-using xmltooling::TemplateEngine;
 using xmltooling::XMLToolingConfig;
 
 namespace {
@@ -69,12 +68,6 @@ ShibTargetConfig& ShibTargetConfig::getConfig()
 
 bool STConfig::init(const char* schemadir)
 {
-    // Chain this to XMLTooling for now...
-    const char* loglevel=getenv("SHIB_LOGGING");
-    if (!loglevel)
-        loglevel = SHIB_LOGGING;
-    XMLToolingConfig::getConfig().log_config(loglevel);
- 
 #ifdef _DEBUG
     xmltooling::NDC ndc("init");
 #endif
@@ -90,30 +83,14 @@ bool STConfig::init(const char* schemadir)
     SAMLConfig& samlConf=SAMLConfig::getConfig();
     if (schemadir)
         samlConf.schema_dir = schemadir;
-    try {
-        if (!samlConf.init() || !opensaml::SAMLConfig::getConfig().init()) {
-            log.fatal("Failed to initialize SAML Library");
-            return false;
-        }
-    }
-    catch (...) {
-        log.fatal("Died initializing SAML Library");
+    if (!samlConf.init() || !SPConfig::getConfig().init(NULL)) {
+        log.fatal("failed to initialize SP library");
         return false;
     }
 
-    XMLToolingConfig::getConfig().setTemplateEngine(new TemplateEngine());
-    XMLToolingConfig::getConfig().getTemplateEngine()->setTagPrefix("shibmlp");
-    
     ShibConfig& shibConf=ShibConfig::getConfig();
-    try { 
-        if (!shibConf.init()) {
-            log.fatal("Failed to initialize Shib library");
-            samlConf.term();
-            return false;
-        }
-    }
-    catch (...) {
-        log.fatal("Died initializing Shib library.");
+    if (!shibConf.init()) {
+        log.fatal("Failed to initialize Shib library");
         samlConf.term();
         return false;
     }
@@ -175,7 +152,7 @@ bool STConfig::load(const char* config)
         pair<bool,unsigned int> skew=m_ini->getUnsignedInt("clockSkew");
         SAMLConfig::getConfig().clock_skew_secs=skew.first ? skew.second : 180;
         if (skew.first)
-            xmltooling::XMLToolingConfig::getConfig().clock_skew_secs=skew.second;
+            XMLToolingConfig::getConfig().clock_skew_secs=skew.second;
         
         m_tranLog=new FixedContextCategory(SHIBTRAN_LOGCAT);
         m_tranLog->info("opened transaction log");
@@ -211,7 +188,7 @@ void STConfig::shutdown()
     delete m_ini;
     m_ini = NULL;
     ShibConfig::getConfig().term();
-    opensaml::SAMLConfig::getConfig().term();
     SAMLConfig::getConfig().term();
+    SPConfig::getConfig().term();
     log.info("library shutdown complete");
 }

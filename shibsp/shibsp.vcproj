@@ -67,7 +67,7 @@
 				AdditionalLibraryDirectories="&quot;..\..\cpp-opensaml1\saml\Debug&quot;;&quot;..\..\cpp-opensaml2\Debug&quot;;&quot;..\..\cpp-xmltooling\Debug&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="2"
-				ImportLibrary="$(TargetDir)$(TargetName)1D.lib"
+				ImportLibrary="$(TargetDir)$(ProjectName)1D.lib"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -147,7 +147,7 @@
 				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
-				ImportLibrary="$(TargetDir)$(TargetName)1.lib"
+				ImportLibrary="$(TargetDir)$(ProjectName)1.lib"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -184,12 +184,36 @@
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
+			<File
+				RelativePath=".\SPConfig.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
+			<File
+				RelativePath=".\base.h"
+				>
+			</File>
+			<File
+				RelativePath=".\exceptions.h"
+				>
+			</File>
+			<File
+				RelativePath=".\internal.h"
+				>
+			</File>
+			<File
+				RelativePath=".\SPConfig.h"
+				>
+			</File>
+			<File
+				RelativePath=".\version.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"

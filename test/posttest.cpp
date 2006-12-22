@@ -20,12 +20,15 @@
 #endif
 
 #include <fstream>
-#include "../shib-target/shib-target.h"
+#include <shib-target/shib-target.h>
 
-using namespace std;
-using namespace saml;
-using namespace shibboleth;
+#include <shibsp/SPConfig.h>
+
+using namespace shibsp;
 using namespace shibtarget;
+using namespace shibboleth;
+using namespace saml;
+using namespace std;
 
 int main(int argc,char* argv[])
 {
@@ -65,11 +68,11 @@ int main(int argc,char* argv[])
         a_param="default";
 
     ShibTargetConfig& conf=ShibTargetConfig::getConfig();
-    conf.setFeatures(
-        ShibTargetConfig::Listener |
-        ShibTargetConfig::Metadata |
-        ShibTargetConfig::Trust |
-        ShibTargetConfig::OutOfProcess
+    SPConfig::getConfig().setFeatures(
+        SPConfig::Listener |
+        SPConfig::Metadata |
+        SPConfig::Trust |
+        SPConfig::OutOfProcess
         );
     if (!conf.init(path) || !conf.load(config))
         return -10;

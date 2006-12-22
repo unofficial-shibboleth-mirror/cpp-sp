@@ -35,6 +35,7 @@
 #include <saml/saml.h>
 #include <shib/shib.h>
 #include <shib-target/shib-target.h>
+#include <shibsp/SPConfig.h>
 #include <xercesc/util/regx/RegularExpression.hpp>
 
 #ifdef WIN32
@@ -65,6 +66,7 @@
 #include <unistd.h>		// for getpid()
 #endif
 
+using namespace shibsp;
 using namespace shibtarget;
 using namespace saml;
 using namespace xmltooling;
@@ -929,14 +931,14 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
 
     try {
         g_Config=&ShibTargetConfig::getConfig();
-        g_Config->setFeatures(
-            ShibTargetConfig::Caching |
-            ShibTargetConfig::Listener |
-            ShibTargetConfig::Metadata |
-            ShibTargetConfig::AAP |
-            ShibTargetConfig::RequestMapper |
-            ShibTargetConfig::InProcess |
-            ShibTargetConfig::Logging
+        SPConfig::getConfig().setFeatures(
+            SPConfig::Caching |
+            SPConfig::Listener |
+            SPConfig::Metadata |
+            SPConfig::AAP |
+            SPConfig::RequestMapper |
+            SPConfig::InProcess |
+            SPConfig::Logging
             );
         if (!g_Config->init(g_szSchemaDir)) {
             ap_log_error(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() failed to initialize libraries");

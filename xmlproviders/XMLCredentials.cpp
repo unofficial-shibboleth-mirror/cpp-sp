@@ -146,7 +146,7 @@ void XMLCredentialsImpl::init()
 
 XMLCredentialsImpl::~XMLCredentialsImpl()
 {
-    for_each(m_resolverMap.begin(),m_resolverMap.end(),shibtarget::cleanup_pair<string,ICredResolver>());
+    for_each(m_resolverMap.begin(),m_resolverMap.end(),xmltooling::cleanup_pair<string,ICredResolver>());
 }
 
 const ICredResolver* XMLCredentials::lookup(const char* id) const

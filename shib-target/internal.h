@@ -49,10 +49,6 @@
 #define SHIBT_LOGCAT "shibtarget"
 #define SHIBTRAN_LOGCAT "Shibboleth-TRANSACTION"
 
-// Controls default logging level of console tools and other situations
-// where full shibboleth.xml-based logging isn't used.
-#define SHIB_LOGGING "WARN"
-
 namespace shibtarget {
     // Generic class, which handles the IPropertySet configuration interface.
     // Most of the basic configuration details are exposed via this interface.

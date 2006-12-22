@@ -36,6 +36,7 @@
 #include <saml/saml.h>
 #include <shib/shib.h>
 #include <shib-target/shib-target.h>
+#include <shibsp/SPConfig.h>
 
 #include <ctime>
 #include <fstream>
@@ -57,6 +58,7 @@ extern "C"
 #include <nsapi.h>
 }
 
+using namespace shibsp;
 using namespace shibtarget;
 using namespace saml;
 using namespace xmltooling;
@@ -123,14 +125,14 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, Session* sn, Request* rq
         if (!config)
             config=SHIB_CONFIG;
         g_Config=&ShibTargetConfig::getConfig();
-        g_Config->setFeatures(
-            ShibTargetConfig::Listener |
-            ShibTargetConfig::Caching |
-            ShibTargetConfig::Metadata |
-            ShibTargetConfig::AAP |
-            ShibTargetConfig::RequestMapper |
-            ShibTargetConfig::InProcess |
-            ShibTargetConfig::Logging
+        SPConfig::getConfig().setFeatures(
+            SPConfig::Listener |
+            SPConfig::Caching |
+            SPConfig::Metadata |
+            SPConfig::AAP |
+            SPConfig::RequestMapper |
+            SPConfig::InProcess |
+            SPConfig::Logging
             );
         if (!g_Config->init(schemadir)) {
             g_Config=NULL;

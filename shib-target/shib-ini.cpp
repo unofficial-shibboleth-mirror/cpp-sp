@@ -22,17 +22,19 @@
 
 #include "internal.h"
 
+#include <shibsp/SPConfig.h>
 #include <log4cpp/Category.hh>
 #include <log4cpp/PropertyConfigurator.hh>
 #include <algorithm>
 #include <sys/types.h>
 #include <sys/stat.h>
 
-using namespace std;
-using namespace saml;
-using namespace shibboleth;
+using namespace shibsp;
 using namespace shibtarget;
+using namespace shibboleth;
+using namespace saml;
 using namespace log4cpp;
+using namespace std;
 
 namespace shibtarget {
 
@@ -211,7 +213,7 @@ XMLPropertySet::~XMLPropertySet()
 {
     for (map<string,pair<char*,const XMLCh*> >::iterator i=m_map.begin(); i!=m_map.end(); i++)
         XMLString::release(&(i->second.first));
-    for_each(m_nested.begin(),m_nested.end(),shibtarget::cleanup_pair<string,IPropertySet>());
+    for_each(m_nested.begin(),m_nested.end(),xmltooling::cleanup_pair<string,IPropertySet>());
 }
 
 void XMLPropertySet::load(
@@ -418,7 +420,7 @@ XMLApplication::XMLApplication(
         m_hash+=getString("providerId").second;
         m_hash=SAMLArtifact::toHex(SAMLArtifactType0001::generateSourceId(m_hash.c_str()));
 
-        ShibTargetConfig& conf=ShibTargetConfig::getConfig();
+        SPConfig& conf=SPConfig::getConfig();
         SAMLConfig& shibConf=SAMLConfig::getConfig();
 
         // Process handlers.
@@ -562,7 +564,7 @@ XMLApplication::XMLApplication(
         // Always include our own providerId as an audience.
         m_audiences.push_back(getXMLString("providerId").second);
 
-        if (conf.isEnabled(ShibTargetConfig::AAP)) {
+        if (conf.isEnabled(SPConfig::AAP)) {
             nlist=e->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(AAPProvider));
             for (i=0; nlist && i<nlist->getLength(); i++) {
                 if (nlist->item(i)->getParentNode()->isSameNode(e)) {
@@ -585,7 +587,7 @@ XMLApplication::XMLApplication(
             }
         }
 
-        if (conf.isEnabled(ShibTargetConfig::Metadata)) {
+        if (conf.isEnabled(SPConfig::Metadata)) {
             nlist=e->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(MetadataProvider));
             for (i=0; nlist && i<nlist->getLength(); i++) {
                 if (nlist->item(i)->getParentNode()->isSameNode(e)) {
@@ -628,7 +630,7 @@ XMLApplication::XMLApplication(
             }
         }
 
-        if (conf.isEnabled(ShibTargetConfig::Trust)) {
+        if (conf.isEnabled(SPConfig::Trust)) {
             nlist=e->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(TrustProvider));
             for (i=0; nlist && i<nlist->getLength(); i++) {
                 if (nlist->item(i)->getParentNode()->isSameNode(e)) {
@@ -665,7 +667,7 @@ XMLApplication::XMLApplication(
             }
         }
         
-        if (conf.isEnabled(ShibTargetConfig::OutOfProcess)) {
+        if (conf.isEnabled(SPConfig::OutOfProcess)) {
             // Really finally, build local browser profile and binding objects.
             m_profile=new ShibBrowserProfile(
                 this,
@@ -704,18 +706,18 @@ void XMLApplication::cleanup()
     delete m_bindingHook;
     delete m_binding;
     delete m_profile;
-    for_each(m_handlers.begin(),m_handlers.end(),shibtarget::cleanup<IHandler>());
+    for_each(m_handlers.begin(),m_handlers.end(),xmltooling::cleanup<IHandler>());
         
     delete m_credDefault;
 #ifdef HAVE_GOOD_STL
-    for_each(m_credMap.begin(),m_credMap.end(),shibtarget::cleanup_pair<xstring,XMLPropertySet>());
+    for_each(m_credMap.begin(),m_credMap.end(),xmltooling::cleanup_pair<xstring,XMLPropertySet>());
 #else
-    for_each(m_credMap.begin(),m_credMap.end(),shibtarget::cleanup_pair<const XMLCh*,XMLPropertySet>());
+    for_each(m_credMap.begin(),m_credMap.end(),xmltooling::cleanup_pair<const XMLCh*,XMLPropertySet>());
 #endif
-    for_each(m_designators.begin(),m_designators.end(),shibtarget::cleanup<SAMLAttributeDesignator>());
-    for_each(m_aaps.begin(),m_aaps.end(),shibtarget::cleanup<IAAP>());
-    for_each(m_metadatas.begin(),m_metadatas.end(),shibtarget::cleanup<IMetadata>());
-    for_each(m_trusts.begin(),m_trusts.end(),shibtarget::cleanup<ITrust>());
+    for_each(m_designators.begin(),m_designators.end(),xmltooling::cleanup<SAMLAttributeDesignator>());
+    for_each(m_aaps.begin(),m_aaps.end(),xmltooling::cleanup<IAAP>());
+    for_each(m_metadatas.begin(),m_metadatas.end(),xmltooling::cleanup<IMetadata>());
+    for_each(m_trusts.begin(),m_trusts.end(),xmltooling::cleanup<ITrust>());
 }
 
 short XMLApplication::acceptNode(const DOMNode* node) const
@@ -1000,7 +1002,7 @@ void XMLConfigImpl::init(bool first)
         }
 
         SAMLConfig& shibConf=SAMLConfig::getConfig();
-        ShibTargetConfig& conf=ShibTargetConfig::getConfig();
+        SPConfig& conf=SPConfig::getConfig();
         const DOMElement* SHAR=saml::XML::getFirstChildElement(ReloadableXMLFileImpl::m_root,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(SHAR));
         if (!SHAR)
             SHAR=saml::XML::getFirstChildElement(ReloadableXMLFileImpl::m_root,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Global));
@@ -1013,11 +1015,11 @@ void XMLConfigImpl::init(bool first)
             SHIRE=saml::XML::getFirstChildElement(ReloadableXMLFileImpl::m_root,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(InProcess));
 
         // Initialize log4cpp manually in order to redirect log messages as soon as possible.
-        if (conf.isEnabled(ShibTargetConfig::Logging)) {
+        if (conf.isEnabled(SPConfig::Logging)) {
             const XMLCh* logger=NULL;
-            if (conf.isEnabled(ShibTargetConfig::OutOfProcess))
+            if (conf.isEnabled(SPConfig::OutOfProcess))
                 logger=SHAR->getAttributeNS(NULL,SHIBT_L(logger));
-            else if (conf.isEnabled(ShibTargetConfig::InProcess))
+            else if (conf.isEnabled(SPConfig::InProcess))
                 logger=SHIRE->getAttributeNS(NULL,SHIBT_L(logger));
             if (!logger || !*logger)
                 logger=ReloadableXMLFileImpl::m_root->getAttributeNS(NULL,SHIBT_L(logger));
@@ -1067,7 +1069,7 @@ void XMLConfigImpl::init(bool first)
                 }
             }
             
-            if (conf.isEnabled(ShibTargetConfig::OutOfProcess)) {
+            if (conf.isEnabled(SPConfig::OutOfProcess)) {
                 exts=saml::XML::getFirstChildElement(SHAR,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Extensions));
                 if (exts) {
                     exts=saml::XML::getFirstChildElement(exts,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Library));
@@ -1091,7 +1093,7 @@ void XMLConfigImpl::init(bool first)
                 }
             }
 
-            if (conf.isEnabled(ShibTargetConfig::InProcess)) {
+            if (conf.isEnabled(SPConfig::InProcess)) {
                 exts=saml::XML::getFirstChildElement(SHIRE,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Extensions));
                 if (exts) {
                     exts=saml::XML::getFirstChildElement(exts,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Library));
@@ -1116,7 +1118,7 @@ void XMLConfigImpl::init(bool first)
             }
             
             // Instantiate the Listener and SessionCache objects.
-            if (conf.isEnabled(ShibTargetConfig::Listener)) {
+            if (conf.isEnabled(SPConfig::Listener)) {
                 IPlugIn* plugin=NULL;
                 exts=saml::XML::getFirstChildElement(SHAR,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(UnixListener));
                 if (exts) {
@@ -1154,9 +1156,9 @@ void XMLConfigImpl::init(bool first)
                 }
             }
 
-            if (conf.isEnabled(ShibTargetConfig::Caching)) {
+            if (conf.isEnabled(SPConfig::Caching)) {
                 IPlugIn* plugin=NULL;
-                const DOMElement* container=conf.isEnabled(ShibTargetConfig::OutOfProcess) ? SHAR : SHIRE;
+                const DOMElement* container=conf.isEnabled(SPConfig::OutOfProcess) ? SHAR : SHIRE;
                 exts=saml::XML::getFirstChildElement(container,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(MemorySessionCache));
                 if (exts) {
                     log.info("building Session Cache of type %s...",shibtarget::XML::MemorySessionCacheType);
@@ -1200,7 +1202,7 @@ void XMLConfigImpl::init(bool first)
                 }
                 
                 // Replay cache.
-                container=conf.isEnabled(ShibTargetConfig::OutOfProcess) ? SHAR : SHIRE;
+                container=conf.isEnabled(SPConfig::OutOfProcess) ? SHAR : SHIRE;
                 exts=saml::XML::getFirstChildElement(container,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(ODBCReplayCache));
                 if (exts) {
                     log.info("building Replay Cache of type %s...",shibtarget::XML::ODBCReplayCacheType);
@@ -1230,7 +1232,7 @@ void XMLConfigImpl::init(bool first)
         }
         
         // Back to the fully dynamic stuff...next up is the Request Mapper.
-        if (conf.isEnabled(ShibTargetConfig::RequestMapper)) {
+        if (conf.isEnabled(SPConfig::RequestMapper)) {
             const DOMElement* child=saml::XML::getFirstChildElement(SHIRE,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(RequestMapProvider));
             if (child) {
                 auto_ptr_char type(child->getAttributeNS(NULL,SHIBT_L(type)));
@@ -1255,7 +1257,7 @@ void XMLConfigImpl::init(bool first)
         
         // Now we load any credentials providers.
         DOMNodeList* nlist;
-        if (conf.isEnabled(ShibTargetConfig::Credentials)) {
+        if (conf.isEnabled(SPConfig::Credentials)) {
             nlist=ReloadableXMLFileImpl::m_root->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(CredentialsProvider));
             for (unsigned int i=0; nlist && i<nlist->getLength(); i++) {
                 auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
@@ -1341,8 +1343,8 @@ void XMLConfigImpl::init(bool first)
 XMLConfigImpl::~XMLConfigImpl()
 {
     delete m_requestMapper;
-    for_each(m_appmap.begin(),m_appmap.end(),cleanup_pair<string,IApplication>());
-    for_each(m_creds.begin(),m_creds.end(),cleanup<ICredentials>());
+    for_each(m_appmap.begin(),m_appmap.end(),xmltooling::cleanup_pair<string,IApplication>());
+    for_each(m_creds.begin(),m_creds.end(),xmltooling::cleanup<ICredentials>());
     ShibConfig::getConfig().clearAttributeMappings();
-    for_each(m_attrFactories.begin(),m_attrFactories.end(),cleanup<IAttributeFactory>());
+    for_each(m_attrFactories.begin(),m_attrFactories.end(),xmltooling::cleanup<IAttributeFactory>());
 }

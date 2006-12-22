@@ -24,11 +24,13 @@
 
 #include <errno.h>
 #include <sstream>
+#include <shibsp/SPConfig.h>
 
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
 #endif
 
+using namespace shibsp;
 using namespace shibtarget;
 using namespace saml;
 using namespace xmltooling;
@@ -153,11 +155,11 @@ SocketListener::SocketListener(const DOMElement* e) : log(&Category::getInstance
     m_shutdown(NULL), m_child_lock(NULL), m_child_wait(NULL), m_socketpool(NULL), m_socket((ShibSocket)0)
 {
     // Are we a client?
-    if (ShibTargetConfig::getConfig().isEnabled(ShibTargetConfig::InProcess)) {
+    if (SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {
         m_socketpool=new SocketPool(*log,this);
     }
     // Are we a server?
-    if (ShibTargetConfig::getConfig().isEnabled(ShibTargetConfig::OutOfProcess)) {
+    if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
         m_child_lock = Mutex::create();
         m_child_wait = CondWait::create();
     }

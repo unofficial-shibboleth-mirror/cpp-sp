@@ -22,18 +22,21 @@
  */
 
 #include "internal.h"
+
 #include <ctime>
 #include <saml/util/CommonDomainCookie.h>
+#include <shibsp/SPConfig.h>
 
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
 #endif
 
-using namespace std;
-using namespace saml;
-using namespace shibboleth;
+using namespace shibsp;
 using namespace shibtarget;
+using namespace shibboleth;
+using namespace saml;
 using namespace log4cpp;
+using namespace std;
 
 using opensaml::CommonDomainCookie;
 
@@ -234,7 +237,7 @@ SAML1Consumer::SAML1Consumer(const DOMElement* e)
     m_address += "::SAML1Consumer::run";
 
     // Register for remoted messages.
-    if (ShibTargetConfig::getConfig().isEnabled(ShibTargetConfig::OutOfProcess)) {
+    if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
         IListener* listener=ShibTargetConfig::getConfig().getINI()->getListener();
         if (listener)
             listener->regListener(m_address.c_str(),this);
@@ -246,7 +249,7 @@ SAML1Consumer::SAML1Consumer(const DOMElement* e)
 SAML1Consumer::~SAML1Consumer()
 {
     IListener* listener=ShibTargetConfig::getConfig().getINI()->getListener();
-    if (listener && ShibTargetConfig::getConfig().isEnabled(ShibTargetConfig::OutOfProcess))
+    if (listener && SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess))
         listener->unregListener(m_address.c_str(),this);
     counter--;
 }

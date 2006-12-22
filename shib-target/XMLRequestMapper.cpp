@@ -242,7 +242,7 @@ Override::Override(const DOMElement* e, Category& log, const Override* base) : m
 Override::~Override()
 {
     delete m_acl;
-    for_each(m_map.begin(),m_map.end(),cleanup_pair<string,Override>());
+    for_each(m_map.begin(),m_map.end(),xmltooling::cleanup_pair<string,Override>());
 }
 
 pair<bool,bool> Override::getBool(const char* name, const char* ns) const

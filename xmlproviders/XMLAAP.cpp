@@ -216,9 +216,9 @@ void XMLAAPImpl::init()
 XMLAAPImpl::~XMLAAPImpl()
 {
 #ifdef HAVE_GOOD_STL
-    for_each(m_attrMap.begin(),m_attrMap.end(),shibtarget::cleanup_pair<xstring,AttributeRule>());
+    for_each(m_attrMap.begin(),m_attrMap.end(),xmltooling::cleanup_pair<xstring,AttributeRule>());
 #else
-    for_each(m_attrMap.begin(),m_attrMap.end(),shibtarget::cleanup_pair<string,AttributeRule>());
+    for_each(m_attrMap.begin(),m_attrMap.end(),xmltooling::cleanup_pair<string,AttributeRule>());
 #endif
 }
 

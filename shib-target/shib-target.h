@@ -362,36 +362,19 @@ namespace shibtarget {
     class SHIBTARGET_EXPORTS ShibTargetConfig
     {
     public:
-        ShibTargetConfig() : m_ini(NULL), m_features(0) {}
+        ShibTargetConfig() : m_ini(NULL) {}
         virtual ~ShibTargetConfig() {}
         
         virtual bool init(const char* schemadir) = 0;
         virtual bool load(const char* config) = 0;
         virtual void shutdown() = 0;
 
-        enum components_t {
-            Listener = 1,
-            Caching = 2,
-            Metadata = 4,
-            Trust = 8,
-            Credentials = 16,
-            AAP = 32,
-            RequestMapper = 64,
-            OutOfProcess = 128,
-            InProcess = 256,
-            Logging = 512
-        };
-        void setFeatures(long enabled) {m_features = enabled;}
-        bool isEnabled(components_t feature) {return (m_features & feature)>0;}
         virtual IConfig* getINI() const {return m_ini;}
 
         static ShibTargetConfig& getConfig();
 
     protected:
         IConfig* m_ini;
-        
-    private:
-        unsigned long m_features;
     };
 
     class ShibTargetPriv;
@@ -680,19 +663,6 @@ namespace shibtarget {
             static const XMLCh type[];
             static const XMLCh UnixListener[];
         };
-    };
-
-
-    // Template cleanup functors for use with for_each algorithm
-    template<class T> struct cleanup
-    {
-        void operator()(T* ptr) {delete ptr;}
-        void operator()(const T* ptr) {delete const_cast<T*>(ptr);}
-    };
-
-    template<class A,class B> struct cleanup_pair
-    {
-        void operator()(std::pair<A,B*> p) {delete p.second;}
     };
 }
 

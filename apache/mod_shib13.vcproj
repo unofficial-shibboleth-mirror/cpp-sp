@@ -214,10 +214,6 @@
 	</References>
 	<Files>
 		<File
-			RelativePath="mod_apache.cpp"
-			>
-		</File>
-		<File
 			RelativePath="mod_shib_13.cpp"
 			>
 		</File>

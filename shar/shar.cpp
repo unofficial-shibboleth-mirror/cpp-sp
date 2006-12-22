@@ -36,6 +36,7 @@
 #endif
 
 #include <shib-target/shib-target.h>
+#include <shibsp/SPConfig.h>
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -46,11 +47,12 @@
 #include <signal.h>
 #include <log4cpp/Category.hh>
 
-using namespace std;
-using namespace saml;
-using namespace shibboleth;
+using namespace shibsp;
 using namespace shibtarget;
+using namespace shibboleth;
+using namespace saml;
 using namespace log4cpp;
+using namespace std;
 
 bool shibd_shutdown = false;
 const char* shar_config = NULL;
@@ -104,15 +106,15 @@ int real_main(int preinit)
     if (preinit) {
 
         // initialize the shib-target library
-        conf.setFeatures(
-            ShibTargetConfig::Listener |
-            ShibTargetConfig::Caching |
-            ShibTargetConfig::Metadata |
-            ShibTargetConfig::Trust |
-            ShibTargetConfig::Credentials |
-            ShibTargetConfig::AAP |
-            ShibTargetConfig::OutOfProcess |
-            (shar_checkonly ? (ShibTargetConfig::InProcess | ShibTargetConfig::RequestMapper) : ShibTargetConfig::Logging)
+        SPConfig::getConfig().setFeatures(
+            SPConfig::Listener |
+            SPConfig::Caching |
+            SPConfig::Metadata |
+            SPConfig::Trust |
+            SPConfig::Credentials |
+            SPConfig::AAP |
+            SPConfig::OutOfProcess |
+            (shar_checkonly ? (SPConfig::InProcess | SPConfig::RequestMapper) : SPConfig::Logging)
             );
         if (!shar_config)
             shar_config=getenv("SHIBCONFIG");
@@ -248,15 +250,15 @@ int main(int argc, char *argv[])
 
     // initialize the shib-target library
     ShibTargetConfig& conf=ShibTargetConfig::getConfig();
-    conf.setFeatures(
-        ShibTargetConfig::Listener |
-        ShibTargetConfig::Caching |
-        ShibTargetConfig::Metadata |
-        ShibTargetConfig::Trust |
-        ShibTargetConfig::Credentials |
-        ShibTargetConfig::AAP |
-        ShibTargetConfig::OutOfProcess |
-        (shar_checkonly ? (ShibTargetConfig::InProcess | ShibTargetConfig::RequestMapper) : ShibTargetConfig::Logging)
+    SPConfig::getConfig().setFeatures(
+        SPConfig::Listener |
+        SPConfig::Caching |
+        SPConfig::Metadata |
+        SPConfig::Trust |
+        SPConfig::Credentials |
+        SPConfig::AAP |
+        SPConfig::OutOfProcess |
+        (shar_checkonly ? (SPConfig::InProcess | SPConfig::RequestMapper) : SPConfig::Logging)
         );
     if (!conf.init(shar_schemadir) || !conf.load(shar_config)) {
         fprintf(stderr, "configuration is invalid, check console for specific problems\n");
