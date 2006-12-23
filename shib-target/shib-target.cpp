@@ -34,8 +34,9 @@
 #include <fstream>
 #include <stdexcept>
 
+#include <saml/SAMLConfig.h>
+#include <saml/binding/URLEncoder.h>
 #include <xercesc/util/Base64.hpp>
-#include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/TemplateEngine.h>
 
@@ -882,53 +883,6 @@ void* ShibTarget::returnOK(void)
     return NULL;
 }
 
-static char x2c(char *what)
-{
-    register char digit;
-
-    digit = (what[0] >= 'A' ? ((what[0] & 0xdf) - 'A')+10 : (what[0] - '0'));
-    digit *= 16;
-    digit += (what[1] >= 'A' ? ((what[1] & 0xdf) - 'A')+10 : (what[1] - '0'));
-    return(digit);
-}
-
-void ShibTarget::url_decode(char* s)
-{
-    register int x,y;
-
-    for(x=0,y=0;s[y];++x,++y)
-    {
-        if((s[x] = s[y]) == '%')
-        {
-            s[x] = x2c(&s[y+1]);
-            y+=2;
-        }
-    }
-    s[x] = '\0';
-}
-
-static inline char hexchar(unsigned short s)
-{
-    return (s<=9) ? ('0' + s) : ('A' + s - 10);
-}
-
-string ShibTarget::url_encode(const char* s)
-{
-    static char badchars[]="\"\\+<>#%{}|^~[]`;/?:@=&";
-
-    string ret;
-    for (; *s; s++) {
-        if (strchr(badchars,*s) || *s<=0x20 || *s>=0x7F) {
-            ret+='%';
-        ret+=hexchar(*s >> 4);
-        ret+=hexchar(*s & 0x0F);
-        }
-        else
-            ret+=*s;
-    }
-    return ret;
-}
-
 /*************************************************************************
  * Shib Target Private implementation
  */
@@ -1076,7 +1030,7 @@ CgiParse::CgiParse(const ShibTarget* st)
         char *value;
         value=fmakeword('&',&cl,&pch);
         plustospace(value);
-        ShibTarget::url_decode(value);
+        opensaml::SAMLConfig::getConfig().getURLEncoder()->decode(value);
         name=makeword(value,'=');
         kvp_map.insert(pair<string,char*>(name,value));
         free(name);

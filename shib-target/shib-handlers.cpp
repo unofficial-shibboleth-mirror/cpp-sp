@@ -24,6 +24,8 @@
 #include "internal.h"
 
 #include <ctime>
+#include <saml/SAMLConfig.h>
+#include <saml/binding/URLEncoder.h>
 #include <saml/util/CommonDomainCookie.h>
 #include <shibsp/SPConfig.h>
 
@@ -39,6 +41,7 @@ using namespace log4cpp;
 using namespace std;
 
 using opensaml::CommonDomainCookie;
+using opensaml::URLEncoder;
 
 namespace {
   class SessionInitiator : virtual public IHandler
@@ -184,7 +187,7 @@ pair<bool,void*> SessionInitiator::run(ShibTarget* st, bool isHandler) const
 
         // Here we store the state in a cookie.
         pair<string,const char*> shib_cookie=st->getCookieNameProps("_shibstate_");
-        st->setCookie(shib_cookie.first,ShibTarget::url_encode(resource) + shib_cookie.second);
+        st->setCookie(shib_cookie.first,opensaml::SAMLConfig::getConfig().getURLEncoder()->encode(resource) + shib_cookie.second);
         return make_pair(true, st->sendRedirect(wayfURL.second));
     }
    
@@ -206,27 +209,29 @@ pair<bool,void*> SessionInitiator::ShibAuthnRequest(
     pair<bool,const char*> loc=shire ? shire->getProperties()->getString("Location") : pair<bool,const char*>(false,NULL);
     if (loc.first) ACSloc+=loc.second;
     
+    URLEncoder* urlenc = opensaml::SAMLConfig::getConfig().getURLEncoder();
+
     char timebuf[16];
     sprintf(timebuf,"%u",time(NULL));
-    string req=string(dest) + "?shire=" + ShibTarget::url_encode(ACSloc.c_str()) + "&time=" + timebuf;
+    string req=string(dest) + "?shire=" + urlenc->encode(ACSloc.c_str()) + "&time=" + timebuf;
 
     // How should the resource value be preserved?
     pair<bool,bool> localRelayState=st->getConfig()->getPropertySet("InProcess")->getBool("localRelayState");
     if (!localRelayState.first || !localRelayState.second) {
         // The old way, just send it along.
-        req+="&target=" + ShibTarget::url_encode(target);
+        req+="&target=" + urlenc->encode(target);
     }
     else {
         // Here we store the state in a cookie and send a fixed
         // value to the IdP so we can recognize it on the way back.
         pair<string,const char*> shib_cookie=st->getCookieNameProps("_shibstate_");
-        st->setCookie(shib_cookie.first,ShibTarget::url_encode(target) + shib_cookie.second);
+        st->setCookie(shib_cookie.first,urlenc->encode(target) + shib_cookie.second);
         req+="&target=cookie";
     }
     
     // Only omitted for 1.1 style requests.
     if (providerId)
-        req+="&providerId=" + ShibTarget::url_encode(providerId);
+        req+="&providerId=" + urlenc->encode(providerId);
 
     return make_pair(true, st->sendRedirect(req));
 }
@@ -537,7 +542,7 @@ pair<bool,void*> SAML1Consumer::run(ShibTarget* st, bool isHandler) const
         }
         else {
             char* rscopy=strdup(relay_state);
-            ShibTarget::url_decode(rscopy);
+            opensaml::SAMLConfig::getConfig().getURLEncoder()->decode(rscopy);
             hURL=rscopy;
             free(rscopy);
             target=hURL.c_str();

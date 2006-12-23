@@ -532,9 +532,6 @@ namespace shibtarget {
         // Determine the effective handler URL based on the resource URL
         virtual std::string getHandlerURL(const char* resource) const;
 
-        static void url_decode(char* s);
-        static std::string url_encode(const char* s);
-
     protected:
         ShibTarget();
 
