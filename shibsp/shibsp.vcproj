@@ -189,6 +189,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\DOMPropertySet.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\ListenerService.cpp"
 				>
 			</File>
@@ -215,6 +219,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\DOMPropertySet.h"
+				>
+			</File>
+			<File
 				RelativePath=".\exceptions.h"
 				>
 			</File>
@@ -224,6 +232,10 @@
 			</File>
 			<File
 				RelativePath=".\ListenerService.h"
+				>
+			</File>
+			<File
+				RelativePath=".\PropertySet.h"
 				>
 			</File>
 			<File

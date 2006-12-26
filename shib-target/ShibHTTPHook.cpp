@@ -28,11 +28,12 @@
 #include <openssl/ssl.h>
 #include <openssl/x509_vfy.h>
 
-using namespace std;
-using namespace log4cpp;
+using namespace shibsp;
 using namespace shibtarget;
 using namespace shibboleth;
 using namespace saml;
+using namespace log4cpp;
+using namespace std;
 
 /*
  * Our verifier callback is a front-end for invoking each trust plugin until
@@ -84,7 +85,7 @@ static bool ssl_ctx_callback(void* ssl_ctx, void* userptr)
     try {
         log.debug("OpenSAML invoked SSL context callback");
         ShibHTTPHook::ShibHTTPHookCallContext* ctx = reinterpret_cast<ShibHTTPHook::ShibHTTPHookCallContext*>(userptr);
-        const IPropertySet* credUse=ctx->getCredentialUse();
+        const PropertySet* credUse=ctx->getCredentialUse();
         pair<bool,const char*> TLS=credUse ? credUse->getString("TLS") : pair<bool,const char*>(false,NULL);
         if (TLS.first) {
             Credentials c(ctx->getHook()->getCredentialProviders());
@@ -155,7 +156,7 @@ bool ShibHTTPHook::outgoing(HTTPClient* conn, void* globalCtx, void* callCtx)
         return false;
 
     // Check for HTTP authentication...
-    const IPropertySet* credUse=reinterpret_cast<ShibHTTPHookCallContext*>(callCtx)->getCredentialUse();
+    const PropertySet* credUse=reinterpret_cast<ShibHTTPHookCallContext*>(callCtx)->getCredentialUse();
     pair<bool,const char*> authType=credUse ? credUse->getString("authType") : pair<bool,const char*>(false,NULL);
     if (authType.first) {
 #ifdef _DEBUG

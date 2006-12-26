@@ -28,6 +28,7 @@
 // New headers
 #include <saml/base.h>
 #include <shibsp/ListenerService.h>
+#include <shibsp/PropertySet.h>
 
 // Old headers
 #include <saml/saml.h>
@@ -51,22 +52,6 @@ namespace shibtarget {
 
     // Abstract APIs for access to configuration information
     
-    /**
-     * Interface to a generic set of typed properties or a DOM container of additional
-     * data.
-     */
-    struct SHIBTARGET_EXPORTS IPropertySet
-    {
-        virtual std::pair<bool,bool> getBool(const char* name, const char* ns=NULL) const=0;
-        virtual std::pair<bool,const char*> getString(const char* name, const char* ns=NULL) const=0;
-        virtual std::pair<bool,const XMLCh*> getXMLString(const char* name, const char* ns=NULL) const=0;
-        virtual std::pair<bool,unsigned int> getUnsignedInt(const char* name, const char* ns=NULL) const=0;
-        virtual std::pair<bool,int> getInt(const char* name, const char* ns=NULL) const=0;
-        virtual const IPropertySet* getPropertySet(const char* name, const char* ns="urn:mace:shibboleth:target:config:1.0") const=0;
-        virtual const DOMElement* getElement() const=0;
-        virtual ~IPropertySet() {}
-    };
-
     // Forward declaration
     class SHIBTARGET_EXPORTS ShibTarget;
 
@@ -80,11 +65,11 @@ namespace shibtarget {
     {
         IHandler() : m_props(NULL) {}
         virtual ~IHandler() {}
-        virtual const IPropertySet* getProperties() const { return m_props; }
-        virtual void setProperties(const IPropertySet* properties) { m_props=properties; }
+        virtual const shibsp::PropertySet* getProperties() const { return m_props; }
+        virtual void setProperties(const shibsp::PropertySet* properties) { m_props=properties; }
         virtual std::pair<bool,void*> run(ShibTarget* st, bool isHandler=true) const=0;
     private:
-        const IPropertySet* m_props;
+        const shibsp::PropertySet* m_props;
     };
     
     /**
@@ -98,7 +83,7 @@ namespace shibtarget {
      * Application. Implementations should always expose an application named "default"
      * as a last resort.
      */
-    struct SHIBTARGET_EXPORTS IApplication : public virtual IPropertySet,
+    struct SHIBTARGET_EXPORTS IApplication : public virtual shibsp::PropertySet,
         public virtual shibboleth::ShibBrowserProfile::ITokenValidator
     {
         virtual const char* getId() const=0;
@@ -109,7 +94,7 @@ namespace shibtarget {
         virtual saml::Iterator<shibboleth::IMetadata*> getMetadataProviders() const=0;
         virtual saml::Iterator<shibboleth::ITrust*> getTrustProviders() const=0;
         virtual saml::Iterator<const XMLCh*> getAudiences() const=0;
-        virtual const IPropertySet* getCredentialUse(const shibboleth::IEntityDescriptor* provider) const=0;
+        virtual const shibsp::PropertySet* getCredentialUse(const shibboleth::IEntityDescriptor* provider) const=0;
 
         // caller is borrowing object, must use within scope of config lock
         virtual const saml::SAMLBrowserProfile* getBrowserProfile() const=0;
@@ -162,16 +147,16 @@ namespace shibtarget {
         // Client declares a context object and pass as callCtx to send() method.
         class ShibHTTPHookCallContext {
         public:
-            ShibHTTPHookCallContext(const IPropertySet* credUse, const shibboleth::IRoleDescriptor* role)
+            ShibHTTPHookCallContext(const shibsp::PropertySet* credUse, const shibboleth::IRoleDescriptor* role)
                 : m_credUse(credUse), m_role(role), m_hook(NULL), m_authenticated(false) {}
             const ShibHTTPHook* getHook() {return m_hook;}
-            const IPropertySet* getCredentialUse() {return m_credUse;}
+            const shibsp::PropertySet* getCredentialUse() {return m_credUse;}
             const shibboleth::IRoleDescriptor* getRoleDescriptor() {return m_role;}
             bool isAuthenticated() const {return m_authenticated;}
             void setAuthenticated() {m_authenticated=true;}
             
         private:
-            const IPropertySet* m_credUse;
+            const shibsp::PropertySet* m_credUse;
             const shibboleth::IRoleDescriptor* m_role;
             ShibHTTPHook* m_hook;
             bool m_authenticated;
@@ -291,12 +276,12 @@ namespace shibtarget {
      */
     struct SHIBTARGET_EXPORTS IRequestMapper : public virtual saml::ILockable, public virtual saml::IPlugIn
     {
-        typedef std::pair<const IPropertySet*,IAccessControl*> Settings;
+        typedef std::pair<const shibsp::PropertySet*,IAccessControl*> Settings;
         virtual Settings getSettings(ShibTarget* st) const=0;
         virtual ~IRequestMapper() {}
     };
     
-    struct SHIBTARGET_EXPORTS IConfig : public virtual saml::ILockable, public virtual IPropertySet, public virtual saml::IPlugIn
+    struct SHIBTARGET_EXPORTS IConfig : public virtual saml::ILockable, public virtual shibsp::PropertySet, public virtual saml::IPlugIn
     {
         // loads initial configuration
         virtual void init()=0;

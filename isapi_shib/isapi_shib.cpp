@@ -181,7 +181,7 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
         // Access the implementation-specifics for site mappings.
         IConfig* conf=g_Config->getINI();
         Locker locker(conf);
-        const IPropertySet* props=conf->getPropertySet("Local");
+        const PropertySet* props=conf->getPropertySet("Local");
         if (props) {
             const DOMElement* impl=saml::XML::getFirstChildElement(
                 props->getElement(),shibtarget::XML::SHIBTARGET_NS,Implementation

@@ -26,29 +26,31 @@
 
 #include <algorithm>
 #include <log4cpp/Category.hh>
+#include <shibsp/DOMPropertySet.h>
 
-using namespace std;
-using namespace log4cpp;
-using namespace saml;
-using namespace shibboleth;
+using namespace shibsp;
 using namespace shibtarget;
+using namespace shibboleth;
+using namespace saml;
+using namespace log4cpp;
+using namespace std;
 
 namespace shibtarget {
 
-    class Override : public XMLPropertySet, public DOMNodeFilter
+    class Override : public DOMPropertySet, public DOMNodeFilter
     {
     public:
         Override() : m_base(NULL), m_acl(NULL) {}
         Override(const DOMElement* e, Category& log, const Override* base=NULL);
         ~Override();
 
-        // IPropertySet
+        // PropertySet
         pair<bool,bool> getBool(const char* name, const char* ns=NULL) const;
         pair<bool,const char*> getString(const char* name, const char* ns=NULL) const;
         pair<bool,const XMLCh*> getXMLString(const char* name, const char* ns=NULL) const;
         pair<bool,unsigned int> getUnsignedInt(const char* name, const char* ns=NULL) const;
         pair<bool,int> getInt(const char* name, const char* ns=NULL) const;
-        const IPropertySet* getPropertySet(const char* name, const char* ns="urn:mace:shibboleth:target:config:1.0") const;
+        const PropertySet* getPropertySet(const char* name, const char* ns="urn:mace:shibboleth:target:config:1.0") const;
         
         // Provides filter to exclude special config elements.
         short acceptNode(const DOMNode* node) const;
@@ -247,7 +249,7 @@ Override::~Override()
 
 pair<bool,bool> Override::getBool(const char* name, const char* ns) const
 {
-    pair<bool,bool> ret=XMLPropertySet::getBool(name,ns);
+    pair<bool,bool> ret=DOMPropertySet::getBool(name,ns);
     if (ret.first)
         return ret;
     return m_base ? m_base->getBool(name,ns) : ret;
@@ -255,7 +257,7 @@ pair<bool,bool> Override::getBool(const char* name, const char* ns) const
 
 pair<bool,const char*> Override::getString(const char* name, const char* ns) const
 {
-    pair<bool,const char*> ret=XMLPropertySet::getString(name,ns);
+    pair<bool,const char*> ret=DOMPropertySet::getString(name,ns);
     if (ret.first)
         return ret;
     return m_base ? m_base->getString(name,ns) : ret;
@@ -263,7 +265,7 @@ pair<bool,const char*> Override::getString(const char* name, const char* ns) con
 
 pair<bool,const XMLCh*> Override::getXMLString(const char* name, const char* ns) const
 {
-    pair<bool,const XMLCh*> ret=XMLPropertySet::getXMLString(name,ns);
+    pair<bool,const XMLCh*> ret=DOMPropertySet::getXMLString(name,ns);
     if (ret.first)
         return ret;
     return m_base ? m_base->getXMLString(name,ns) : ret;
@@ -271,7 +273,7 @@ pair<bool,const XMLCh*> Override::getXMLString(const char* name, const char* ns)
 
 pair<bool,unsigned int> Override::getUnsignedInt(const char* name, const char* ns) const
 {
-    pair<bool,unsigned int> ret=XMLPropertySet::getUnsignedInt(name,ns);
+    pair<bool,unsigned int> ret=DOMPropertySet::getUnsignedInt(name,ns);
     if (ret.first)
         return ret;
     return m_base ? m_base->getUnsignedInt(name,ns) : ret;
@@ -279,15 +281,15 @@ pair<bool,unsigned int> Override::getUnsignedInt(const char* name, const char* n
 
 pair<bool,int> Override::getInt(const char* name, const char* ns) const
 {
-    pair<bool,int> ret=XMLPropertySet::getInt(name,ns);
+    pair<bool,int> ret=DOMPropertySet::getInt(name,ns);
     if (ret.first)
         return ret;
     return m_base ? m_base->getInt(name,ns) : ret;
 }
 
-const IPropertySet* Override::getPropertySet(const char* name, const char* ns) const
+const PropertySet* Override::getPropertySet(const char* name, const char* ns) const
 {
-    const IPropertySet* ret=XMLPropertySet::getPropertySet(name,ns);
+    const PropertySet* ret=DOMPropertySet::getPropertySet(name,ns);
     if (ret || !m_base)
         return ret;
     return m_base->getPropertySet(name,ns);
@@ -508,7 +510,7 @@ IRequestMapper::Settings XMLRequestMapper::getSettings(ShibTarget* st) const
 
     if (impl->log->isDebugEnabled()) {
 #ifdef _DEBUG
-        saml::NDC ndc("getSettings");
+        NDC ndc("getSettings");
 #endif
         pair<bool,const char*> ret=o->getString("applicationId");
         impl->log->debug("mapped %s%s to %s", vhost.str().c_str(), st->getRequestURI() ? st->getRequestURI() : "", ret.second);

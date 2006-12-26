@@ -10,9 +10,11 @@ libshibspincludedir = $(includedir)/shibsp
 libshibspinclude_HEADERS = \
 	base.h \
 	ddf.h \
+	DOMPropertySet.h \
 	exceptions.h \
 	ListenerService.h \
 	paths.h \
+	PropertySet.h \
 	version.h \
 	SocketListener.h \
 	SPConfig.h
@@ -22,6 +24,7 @@ noinst_HEADERS = \
 
 libshibsp_la_SOURCES = \
 	ddf.cpp \
+	DOMPropertySet.cpp \
 	ListenerService.cpp \
 	SocketListener.cpp \
 	TCPListener.cpp \

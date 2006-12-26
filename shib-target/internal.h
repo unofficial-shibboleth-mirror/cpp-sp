@@ -50,42 +50,6 @@
 #define SHIBTRAN_LOGCAT "Shibboleth-TRANSACTION"
 
 namespace shibtarget {
-    // Generic class, which handles the IPropertySet configuration interface.
-    // Most of the basic configuration details are exposed via this interface.
-    // This implementation extracts the XML tree structure and caches it in a map
-    // with the attributes stored in the various possible formats they might be fetched.
-    // Elements are treated as nested IPropertySets.
-    // The "trick" to this is to pass in an "exclude list" using a DOMNodeFilter. Nested
-    // property sets are extracted by running a TreeWalker againt the filter for the
-    // immediate children. The filter should skip any excluded elements that will be
-    // processed separately.
-    class XMLPropertySet : public virtual IPropertySet
-    {
-    public:
-        XMLPropertySet() {}
-        ~XMLPropertySet();
-
-        std::pair<bool,bool> getBool(const char* name, const char* ns=NULL) const;
-        std::pair<bool,const char*> getString(const char* name, const char* ns=NULL) const;
-        std::pair<bool,const XMLCh*> getXMLString(const char* name, const char* ns=NULL) const;
-        std::pair<bool,unsigned int> getUnsignedInt(const char* name, const char* ns=NULL) const;
-        std::pair<bool,int> getInt(const char* name, const char* ns=NULL) const;
-        const IPropertySet* getPropertySet(const char* name, const char* ns="urn:mace:shibboleth:target:config:1.0") const;
-        const DOMElement* getElement() const {return m_root;}
-    
-        void load(
-            const DOMElement* e,    // root element of property set
-            log4cpp::Category& log, // log object for tracing
-            DOMNodeFilter* filter,  // control what subelements to include
-            const std::map<std::string,std::string>* remapper=NULL   // on the fly property renaming for legacy support
-            );
-
-    private:
-        const DOMElement* m_root;
-        std::map<std::string,std::pair<char*,const XMLCh*> > m_map;
-        std::map<std::string,IPropertySet*> m_nested;
-    };
-
     // ST-aware class that maps SAML artifacts to appropriate binding information
     class STArtifactMapper : public virtual saml::SAMLBrowserProfile::ArtifactMapper
     {

@@ -477,7 +477,7 @@ IPlugIn* htAccessFactory(const DOMElement* e)
     return new htAccessControl();
 }
 
-class ApacheRequestMapper : public virtual IRequestMapper, public virtual IPropertySet
+class ApacheRequestMapper : public virtual IRequestMapper, public virtual PropertySet
 {
 public:
     ApacheRequestMapper(const DOMElement* e);
@@ -491,7 +491,7 @@ public:
     pair<bool,const XMLCh*> getXMLString(const char* name, const char* ns=NULL) const;
     pair<bool,unsigned int> getUnsignedInt(const char* name, const char* ns=NULL) const;
     pair<bool,int> getInt(const char* name, const char* ns=NULL) const;
-    const IPropertySet* getPropertySet(const char* name, const char* ns="urn:mace:shibboleth:target:config:1.0") const;
+    const PropertySet* getPropertySet(const char* name, const char* ns="urn:mace:shibboleth:target:config:1.0") const;
     const DOMElement* getElement() const;
 
 private:
@@ -524,13 +524,13 @@ IRequestMapper::Settings ApacheRequestMapper::getSettings(ShibTarget* st) const
     Settings s=m_mapper->getSettings(st);
     m_staKey->setData(dynamic_cast<ShibTargetApache*>(st));
     m_propsKey->setData((void*)s.first);
-    return pair<const IPropertySet*,IAccessControl*>(this,s.second ? s.second : m_htaccess);
+    return pair<const PropertySet*,IAccessControl*>(this,s.second ? s.second : m_htaccess);
 }
 
 pair<bool,bool> ApacheRequestMapper::getBool(const char* name, const char* ns) const
 {
     ShibTargetApache* sta=reinterpret_cast<ShibTargetApache*>(m_staKey->getData());
-    const IPropertySet* s=reinterpret_cast<const IPropertySet*>(m_propsKey->getData());
+    const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
     if (sta && !ns) {
         // Override Apache-settable boolean properties.
         if (name && !strcmp(name,"requireSession") && sta->m_dc->bRequireSession==1)
@@ -544,7 +544,7 @@ pair<bool,bool> ApacheRequestMapper::getBool(const char* name, const char* ns) c
 pair<bool,const char*> ApacheRequestMapper::getString(const char* name, const char* ns) const
 {
     ShibTargetApache* sta=reinterpret_cast<ShibTargetApache*>(m_staKey->getData());
-    const IPropertySet* s=reinterpret_cast<const IPropertySet*>(m_propsKey->getData());
+    const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
     if (sta && !ns) {
         // Override Apache-settable string properties.
         if (name && !strcmp(name,"authType")) {
@@ -568,14 +568,14 @@ pair<bool,const char*> ApacheRequestMapper::getString(const char* name, const ch
 
 pair<bool,const XMLCh*> ApacheRequestMapper::getXMLString(const char* name, const char* ns) const
 {
-    const IPropertySet* s=reinterpret_cast<const IPropertySet*>(m_propsKey->getData());
+    const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
     return s ? s->getXMLString(name,ns) : pair<bool,const XMLCh*>(false,NULL);
 }
 
 pair<bool,unsigned int> ApacheRequestMapper::getUnsignedInt(const char* name, const char* ns) const
 {
     ShibTargetApache* sta=reinterpret_cast<ShibTargetApache*>(m_staKey->getData());
-    const IPropertySet* s=reinterpret_cast<const IPropertySet*>(m_propsKey->getData());
+    const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
     if (sta && !ns) {
         // Override Apache-settable int properties.
         if (name && !strcmp(name,"redirectToSSL") && sta->m_dc->szRedirectToSSL)
@@ -587,7 +587,7 @@ pair<bool,unsigned int> ApacheRequestMapper::getUnsignedInt(const char* name, co
 pair<bool,int> ApacheRequestMapper::getInt(const char* name, const char* ns) const
 {
     ShibTargetApache* sta=reinterpret_cast<ShibTargetApache*>(m_staKey->getData());
-    const IPropertySet* s=reinterpret_cast<const IPropertySet*>(m_propsKey->getData());
+    const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
     if (sta && !ns) {
         // Override Apache-settable int properties.
         if (name && !strcmp(name,"redirectToSSL") && sta->m_dc->szRedirectToSSL)
@@ -596,15 +596,15 @@ pair<bool,int> ApacheRequestMapper::getInt(const char* name, const char* ns) con
     return s ? s->getInt(name,ns) : pair<bool,int>(false,0);
 }
 
-const IPropertySet* ApacheRequestMapper::getPropertySet(const char* name, const char* ns) const
+const PropertySet* ApacheRequestMapper::getPropertySet(const char* name, const char* ns) const
 {
-    const IPropertySet* s=reinterpret_cast<const IPropertySet*>(m_propsKey->getData());
+    const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
     return s ? s->getPropertySet(name,ns) : NULL;
 }
 
 const DOMElement* ApacheRequestMapper::getElement() const
 {
-    const IPropertySet* s=reinterpret_cast<const IPropertySet*>(m_propsKey->getData());
+    const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
     return s ? s->getElement() : NULL;
 }
 
@@ -956,7 +956,7 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
 
         IConfig* conf=g_Config->getINI();
         Locker locker(conf);
-        const IPropertySet* props=conf->getPropertySet("Local");
+        const PropertySet* props=conf->getPropertySet("Local");
         if (props) {
             pair<bool,const char*> unsetValue=props->getString("unsetHeaderValue");
             if (unsetValue.first)

@@ -22,6 +22,7 @@
 
 #include "internal.h"
 
+#include <shibsp/DOMPropertySet.h>
 #include <shibsp/SPConfig.h>
 #include <log4cpp/Category.hh>
 #include <log4cpp/PropertyConfigurator.hh>
@@ -39,19 +40,19 @@ using namespace std;
 namespace shibtarget {
 
     // Application configuration wrapper
-    class XMLApplication : public virtual IApplication, public XMLPropertySet, public DOMNodeFilter
+    class XMLApplication : public virtual IApplication, public DOMPropertySet, public DOMNodeFilter
     {
     public:
         XMLApplication(const IConfig*, const Iterator<ICredentials*>& creds, const DOMElement* e, const XMLApplication* base=NULL);
         ~XMLApplication() { cleanup(); }
     
-        // IPropertySet
+        // PropertySet
         pair<bool,bool> getBool(const char* name, const char* ns=NULL) const;
         pair<bool,const char*> getString(const char* name, const char* ns=NULL) const;
         pair<bool,const XMLCh*> getXMLString(const char* name, const char* ns=NULL) const;
         pair<bool,unsigned int> getUnsignedInt(const char* name, const char* ns=NULL) const;
         pair<bool,int> getInt(const char* name, const char* ns=NULL) const;
-        const IPropertySet* getPropertySet(const char* name, const char* ns="urn:mace:shibboleth:target:config:1.0") const;
+        const PropertySet* getPropertySet(const char* name, const char* ns="urn:mace:shibboleth:target:config:1.0") const;
 
         // IApplication
         const char* getId() const {return getString("id").second;}
@@ -61,7 +62,7 @@ namespace shibtarget {
         Iterator<IMetadata*> getMetadataProviders() const;
         Iterator<ITrust*> getTrustProviders() const;
         Iterator<const XMLCh*> getAudiences() const;
-        const IPropertySet* getCredentialUse(const IEntityDescriptor* provider) const;
+        const PropertySet* getCredentialUse(const IEntityDescriptor* provider) const;
         const SAMLBrowserProfile* getBrowserProfile() const {return m_profile;}
         const SAMLBinding* getBinding(const XMLCh* binding) const
             {return XMLString::compareString(SAMLBinding::SOAP,binding) ? NULL : m_binding;}
@@ -98,7 +99,7 @@ namespace shibtarget {
 
         // vectors manage object life for handlers and their property sets
         vector<IHandler*> m_handlers;
-        vector<XMLPropertySet*> m_handlerProps;
+        vector<PropertySet*> m_handlerProps;
 
         // maps location (path info) to applicable handlers
         map<string,const IHandler*> m_handlerMap;
@@ -123,17 +124,17 @@ namespace shibtarget {
         // pointer to default session initiator
         const IHandler* m_sessionInitDefault;
 
-        XMLPropertySet* m_credDefault;
+        DOMPropertySet* m_credDefault;
 #ifdef HAVE_GOOD_STL
-        map<xstring,XMLPropertySet*> m_credMap;
+        map<xstring,PropertySet*> m_credMap;
 #else
-        map<const XMLCh*,XMLPropertySet*> m_credMap;
+        map<const XMLCh*,PropertySet*> m_credMap;
 #endif
     };
 
     // Top-level configuration implementation
     class XMLConfig;
-    class XMLConfigImpl : public ReloadableXMLFileImpl, public XMLPropertySet, public DOMNodeFilter
+    class XMLConfigImpl : public ReloadableXMLFileImpl, public DOMPropertySet, public DOMNodeFilter
     {
     public:
         XMLConfigImpl(const char* pathname, bool first, const XMLConfig* outer)
@@ -172,13 +173,13 @@ namespace shibtarget {
 
         void init() { getImplementation(); }
 
-        // IPropertySet
+        // PropertySet
         pair<bool,bool> getBool(const char* name, const char* ns=NULL) const {return static_cast<XMLConfigImpl*>(m_impl)->getBool(name,ns);}
         pair<bool,const char*> getString(const char* name, const char* ns=NULL) const {return static_cast<XMLConfigImpl*>(m_impl)->getString(name,ns);}
         pair<bool,const XMLCh*> getXMLString(const char* name, const char* ns=NULL) const {return static_cast<XMLConfigImpl*>(m_impl)->getXMLString(name,ns);}
         pair<bool,unsigned int> getUnsignedInt(const char* name, const char* ns=NULL) const {return static_cast<XMLConfigImpl*>(m_impl)->getUnsignedInt(name,ns);}
         pair<bool,int> getInt(const char* name, const char* ns=NULL) const {return static_cast<XMLConfigImpl*>(m_impl)->getInt(name,ns);}
-        const IPropertySet* getPropertySet(const char* name, const char* ns="urn:mace:shibboleth:target:config:1.0") const {return static_cast<XMLConfigImpl*>(m_impl)->getPropertySet(name,ns);}
+        const PropertySet* getPropertySet(const char* name, const char* ns="urn:mace:shibboleth:target:config:1.0") const {return static_cast<XMLConfigImpl*>(m_impl)->getPropertySet(name,ns);}
         const DOMElement* getElement() const {return static_cast<XMLConfigImpl*>(m_impl)->getElement();}
 
         // IConfig
@@ -209,186 +210,6 @@ IConfig* STConfig::ShibTargetConfigFactory(const DOMElement* e)
     return new XMLConfig(e);
 }
 
-XMLPropertySet::~XMLPropertySet()
-{
-    for (map<string,pair<char*,const XMLCh*> >::iterator i=m_map.begin(); i!=m_map.end(); i++)
-        XMLString::release(&(i->second.first));
-    for_each(m_nested.begin(),m_nested.end(),xmltooling::cleanup_pair<string,IPropertySet>());
-}
-
-void XMLPropertySet::load(
-    const DOMElement* e,
-    Category& log,
-    DOMNodeFilter* filter,
-    const std::map<std::string,std::string>* remapper
-    )
-{
-#ifdef _DEBUG
-    saml::NDC ndc("load");
-#endif
-    m_root=e;
-
-    // Process each attribute as a property.
-    DOMNamedNodeMap* attrs=m_root->getAttributes();
-    for (XMLSize_t i=0; i<attrs->getLength(); i++) {
-        DOMNode* a=attrs->item(i);
-        if (!XMLString::compareString(a->getNamespaceURI(),saml::XML::XMLNS_NS))
-            continue;
-        char* val=XMLString::transcode(a->getNodeValue());
-        if (val && *val) {
-            auto_ptr_char ns(a->getNamespaceURI());
-            auto_ptr_char name(a->getLocalName());
-            const char* realname=name.get();
-            if (remapper) {
-                map<string,string>::const_iterator remap=remapper->find(realname);
-                if (remap!=remapper->end()) {
-                    log.warn("remapping property (%s) to (%s)",realname,remap->second.c_str());
-                    realname=remap->second.c_str();
-                }
-            }
-            if (ns.get()) {
-                m_map[string("{") + ns.get() + '}' + realname]=pair<char*,const XMLCh*>(val,a->getNodeValue());
-                log.debug("added property {%s}%s (%s)",ns.get(),realname,val);
-            }
-            else {
-                m_map[realname]=pair<char*,const XMLCh*>(val,a->getNodeValue());
-                log.debug("added property %s (%s)",realname,val);
-            }
-        }
-    }
-    
-    // Process non-excluded elements as nested sets.
-    DOMTreeWalker* walker=
-        static_cast<DOMDocumentTraversal*>(
-            m_root->getOwnerDocument())->createTreeWalker(const_cast<DOMElement*>(m_root),DOMNodeFilter::SHOW_ELEMENT,filter,false
-            );
-    e=static_cast<DOMElement*>(walker->firstChild());
-    while (e) {
-        auto_ptr_char ns(e->getNamespaceURI());
-        auto_ptr_char name(e->getLocalName());
-        const char* realname=name.get();
-        if (remapper) {
-            map<string,string>::const_iterator remap=remapper->find(realname);
-            if (remap!=remapper->end()) {
-                log.warn("remapping property set (%s) to (%s)",realname,remap->second.c_str());
-                realname=remap->second.c_str();
-            }
-        }
-        string key;
-        if (ns.get())
-            key=string("{") + ns.get() + '}' + realname;
-        else
-            key=realname;
-        if (m_nested.find(key)!=m_nested.end())
-            log.warn("load() skipping duplicate property set: %s",key.c_str());
-        else {
-            XMLPropertySet* set=new XMLPropertySet();
-            set->load(e,log,filter,remapper);
-            m_nested[key]=set;
-            log.debug("added nested property set: %s",key.c_str());
-        }
-        e=static_cast<DOMElement*>(walker->nextSibling());
-    }
-    walker->release();
-}
-
-pair<bool,bool> XMLPropertySet::getBool(const char* name, const char* ns) const
-{
-    pair<bool,bool> ret(false,false);
-    map<string,pair<char*,const XMLCh*> >::const_iterator i;
-
-    if (ns)
-        i=m_map.find(string("{") + ns + '}' + name);
-    else
-        i=m_map.find(name);
-
-    if (i!=m_map.end()) {
-        ret.first=true;
-        ret.second=(!strcmp(i->second.first,"true") || !strcmp(i->second.first,"1"));
-    }
-    return ret;
-}
-
-pair<bool,const char*> XMLPropertySet::getString(const char* name, const char* ns) const
-{
-    pair<bool,const char*> ret(false,NULL);
-    map<string,pair<char*,const XMLCh*> >::const_iterator i;
-
-    if (ns)
-        i=m_map.find(string("{") + ns + '}' + name);
-    else
-        i=m_map.find(name);
-
-    if (i!=m_map.end()) {
-        ret.first=true;
-        ret.second=i->second.first;
-    }
-    return ret;
-}
-
-pair<bool,const XMLCh*> XMLPropertySet::getXMLString(const char* name, const char* ns) const
-{
-    pair<bool,const XMLCh*> ret(false,NULL);
-    map<string,pair<char*,const XMLCh*> >::const_iterator i;
-
-    if (ns)
-        i=m_map.find(string("{") + ns + '}' + name);
-    else
-        i=m_map.find(name);
-
-    if (i!=m_map.end()) {
-        ret.first=true;
-        ret.second=i->second.second;
-    }
-    return ret;
-}
-
-pair<bool,unsigned int> XMLPropertySet::getUnsignedInt(const char* name, const char* ns) const
-{
-    pair<bool,unsigned int> ret(false,0);
-    map<string,pair<char*,const XMLCh*> >::const_iterator i;
-
-    if (ns)
-        i=m_map.find(string("{") + ns + '}' + name);
-    else
-        i=m_map.find(name);
-
-    if (i!=m_map.end()) {
-        ret.first=true;
-        ret.second=strtol(i->second.first,NULL,10);
-    }
-    return ret;
-}
-
-pair<bool,int> XMLPropertySet::getInt(const char* name, const char* ns) const
-{
-    pair<bool,int> ret(false,0);
-    map<string,pair<char*,const XMLCh*> >::const_iterator i;
-
-    if (ns)
-        i=m_map.find(string("{") + ns + '}' + name);
-    else
-        i=m_map.find(name);
-
-    if (i!=m_map.end()) {
-        ret.first=true;
-        ret.second=atoi(i->second.first);
-    }
-    return ret;
-}
-
-const IPropertySet* XMLPropertySet::getPropertySet(const char* name, const char* ns) const
-{
-    map<string,IPropertySet*>::const_iterator i;
-
-    if (ns)
-        i=m_nested.find(string("{") + ns + '}' + name);
-    else
-        i=m_nested.find(name);
-
-    return (i!=m_nested.end()) ? i->second : NULL;
-}
-
 XMLApplication::XMLApplication(
     const IConfig* ini,
     const Iterator<ICredentials*>& creds,
@@ -398,7 +219,7 @@ XMLApplication::XMLApplication(
         m_credDefault(NULL), m_sessionInitDefault(NULL), m_acsDefault(NULL)
 {
 #ifdef _DEBUG
-    saml::NDC ndc("XMLApplication");
+    NDC ndc("XMLApplication");
 #endif
     Category& log=Category::getInstance("shibtarget.XMLApplication");
 
@@ -409,7 +230,7 @@ XMLApplication::XMLApplication(
         root_remap["shireURL"]="handlerURL";
         root_remap["shireSSL"]="handlerSSL";
         load(e,log,this,&root_remap);
-        const IPropertySet* propcheck=getPropertySet("Errors");
+        const PropertySet* propcheck=getPropertySet("Errors");
         if (propcheck && !propcheck->getString("session").first)
             throw ConfigurationException("<Errors> element requires 'session' (or deprecated 'shire') attribute");
         propcheck=getPropertySet("Sessions");
@@ -430,7 +251,7 @@ XMLApplication::XMLApplication(
             // A handler is split across a property set and the plugin itself, which is based on the Binding property.
             // We build both objects first and then insert them into various structures for lookup.
             IHandler* hobj=NULL;
-            XMLPropertySet* hprops=new XMLPropertySet();
+            DOMPropertySet* hprops=new DOMPropertySet();
             try {
                 hprops->load(handler,log,this); // filter irrelevant for now, no embedded elements expected
                 const char* bindprop=hprops->getString("Binding").second;
@@ -519,7 +340,7 @@ XMLApplication::XMLApplication(
         // If no handlers defined at the root, assume a legacy configuration.
         if (!m_base && m_handlers.empty()) {
             // A legacy config installs a SAML POST handler at the root handler location.
-            // We use the Sessions element itself as the IPropertySet.
+            // We use the Sessions element itself as the PropertySet.
 
             auto_ptr_char b1(Constants::SHIB_SESSIONINIT_PROFILE_URI);
             IPlugIn* hplug=shibConf.getPlugMgr().newPlugin(b1.get(),propcheck->getElement());
@@ -656,11 +477,11 @@ XMLApplication::XMLApplication(
         // Finally, load credential mappings.
         const DOMElement* cu=saml::XML::getFirstChildElement(e,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(CredentialUse));
         if (cu) {
-            m_credDefault=new XMLPropertySet();
+            m_credDefault=new DOMPropertySet();
             m_credDefault->load(cu,log,this);
             cu=saml::XML::getFirstChildElement(cu,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(RelyingParty));
             while (cu) {
-                XMLPropertySet* rp=new XMLPropertySet();
+                DOMPropertySet* rp=new DOMPropertySet();
                 rp->load(cu,log,this);
                 m_credMap[cu->getAttributeNS(NULL,SHIBT_L(Name))]=rp;
                 cu=saml::XML::getNextSiblingElement(cu,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(RelyingParty));
@@ -710,9 +531,9 @@ void XMLApplication::cleanup()
         
     delete m_credDefault;
 #ifdef HAVE_GOOD_STL
-    for_each(m_credMap.begin(),m_credMap.end(),xmltooling::cleanup_pair<xstring,XMLPropertySet>());
+    for_each(m_credMap.begin(),m_credMap.end(),xmltooling::cleanup_pair<xstring,PropertySet>());
 #else
-    for_each(m_credMap.begin(),m_credMap.end(),xmltooling::cleanup_pair<const XMLCh*,XMLPropertySet>());
+    for_each(m_credMap.begin(),m_credMap.end(),xmltooling::cleanup_pair<const XMLCh*,PropertySet>());
 #endif
     for_each(m_designators.begin(),m_designators.end(),xmltooling::cleanup<SAMLAttributeDesignator>());
     for_each(m_aaps.begin(),m_aaps.end(),xmltooling::cleanup<IAAP>());
@@ -745,7 +566,7 @@ short XMLApplication::acceptNode(const DOMNode* node) const
 
 pair<bool,bool> XMLApplication::getBool(const char* name, const char* ns) const
 {
-    pair<bool,bool> ret=XMLPropertySet::getBool(name,ns);
+    pair<bool,bool> ret=DOMPropertySet::getBool(name,ns);
     if (ret.first)
         return ret;
     return m_base ? m_base->getBool(name,ns) : ret;
@@ -753,7 +574,7 @@ pair<bool,bool> XMLApplication::getBool(const char* name, const char* ns) const
 
 pair<bool,const char*> XMLApplication::getString(const char* name, const char* ns) const
 {
-    pair<bool,const char*> ret=XMLPropertySet::getString(name,ns);
+    pair<bool,const char*> ret=DOMPropertySet::getString(name,ns);
     if (ret.first)
         return ret;
     return m_base ? m_base->getString(name,ns) : ret;
@@ -761,7 +582,7 @@ pair<bool,const char*> XMLApplication::getString(const char* name, const char* n
 
 pair<bool,const XMLCh*> XMLApplication::getXMLString(const char* name, const char* ns) const
 {
-    pair<bool,const XMLCh*> ret=XMLPropertySet::getXMLString(name,ns);
+    pair<bool,const XMLCh*> ret=DOMPropertySet::getXMLString(name,ns);
     if (ret.first)
         return ret;
     return m_base ? m_base->getXMLString(name,ns) : ret;
@@ -769,7 +590,7 @@ pair<bool,const XMLCh*> XMLApplication::getXMLString(const char* name, const cha
 
 pair<bool,unsigned int> XMLApplication::getUnsignedInt(const char* name, const char* ns) const
 {
-    pair<bool,unsigned int> ret=XMLPropertySet::getUnsignedInt(name,ns);
+    pair<bool,unsigned int> ret=DOMPropertySet::getUnsignedInt(name,ns);
     if (ret.first)
         return ret;
     return m_base ? m_base->getUnsignedInt(name,ns) : ret;
@@ -777,15 +598,15 @@ pair<bool,unsigned int> XMLApplication::getUnsignedInt(const char* name, const c
 
 pair<bool,int> XMLApplication::getInt(const char* name, const char* ns) const
 {
-    pair<bool,int> ret=XMLPropertySet::getInt(name,ns);
+    pair<bool,int> ret=DOMPropertySet::getInt(name,ns);
     if (ret.first)
         return ret;
     return m_base ? m_base->getInt(name,ns) : ret;
 }
 
-const IPropertySet* XMLApplication::getPropertySet(const char* name, const char* ns) const
+const PropertySet* XMLApplication::getPropertySet(const char* name, const char* ns) const
 {
-    const IPropertySet* ret=XMLPropertySet::getPropertySet(name,ns);
+    const PropertySet* ret=DOMPropertySet::getPropertySet(name,ns);
     if (ret || !m_base)
         return ret;
     return m_base->getPropertySet(name,ns);
@@ -818,13 +639,13 @@ Iterator<const XMLCh*> XMLApplication::getAudiences() const
     return (m_audiences.empty() && m_base) ? m_base->getAudiences() : m_audiences;
 }
 
-const IPropertySet* XMLApplication::getCredentialUse(const IEntityDescriptor* provider) const
+const PropertySet* XMLApplication::getCredentialUse(const IEntityDescriptor* provider) const
 {
     if (!m_credDefault && m_base)
         return m_base->getCredentialUse(provider);
         
 #ifdef HAVE_GOOD_STL
-    map<xstring,XMLPropertySet*>::const_iterator i=m_credMap.find(provider->getId());
+    map<xstring,PropertySet*>::const_iterator i=m_credMap.find(provider->getId());
     if (i!=m_credMap.end())
         return i->second;
     const IEntitiesDescriptor* group=provider->getEntitiesDescriptor();
@@ -837,7 +658,7 @@ const IPropertySet* XMLApplication::getCredentialUse(const IEntityDescriptor* pr
         group=group->getEntitiesDescriptor();
     }
 #else
-    map<const XMLCh*,XMLPropertySet*>::const_iterator i=m_credMap.begin();
+    map<const XMLCh*,PropertySet*>::const_iterator i=m_credMap.begin();
     for (; i!=m_credMap.end(); i++) {
         if (!XMLString::compareString(i->first,provider->getId()))
             return i->second;
@@ -894,7 +715,7 @@ void XMLApplication::validateToken(SAMLAssertion* token, time_t ts, const IRoleD
         return;
     }
 
-    const IPropertySet* credUse=getCredentialUse(role->getEntityDescriptor());
+    const PropertySet* credUse=getCredentialUse(role->getEntityDescriptor());
     pair<bool,bool> signedAssertions=credUse ? credUse->getBool("signedAssertions") : make_pair(false,false);
     Trust t(trusts);
 

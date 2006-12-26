@@ -534,7 +534,7 @@ HRESULT MemorySessionCacheEntry::isValid(const IApplication* app, const char* cl
     // Obtain validation rules from application settings.
     bool consistentIPAddress=true;
     int lifetime=0,timeout=0;
-    const IPropertySet* props=app->getPropertySet("Sessions");
+    const PropertySet* props=app->getPropertySet("Sessions");
     if (props) {
         pair<bool,unsigned int> p=props->getUnsignedInt("lifetime");
         if (p.first)
@@ -817,7 +817,7 @@ pair<SAMLResponse*,SAMLResponse*> MemorySessionCacheEntry::getNewResponse(
     }
 
     // Get protocol signing policy.
-    const IPropertySet* credUse=application->getCredentialUse(source);
+    const PropertySet* credUse=application->getCredentialUse(source);
     pair<bool,bool> signRequest=credUse ? credUse->getBool("signRequest") : make_pair(false,false);
     pair<bool,const char*> signatureAlg=credUse ? credUse->getString("signatureAlg") : pair<bool,const char*>(false,NULL);
     if (!signatureAlg.first)

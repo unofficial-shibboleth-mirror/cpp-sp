@@ -50,6 +50,7 @@ using namespace saml;
 using namespace log4cpp;
 using namespace std;
 
+using shibsp::PropertySet;
 using xmltooling::TemplateEngine;
 using xmltooling::XMLToolingException;
 using xmltooling::XMLToolingConfig;
@@ -74,12 +75,12 @@ namespace shibtarget {
 
     class ExtTemplateParameters : public TemplateEngine::TemplateParameters
     {
-        const IPropertySet* m_props;
+        const PropertySet* m_props;
     public:
         ExtTemplateParameters() : m_props(NULL) {}
         ~ExtTemplateParameters() {}
 
-        void setPropertySet(const IPropertySet* props) {
+        void setPropertySet(const PropertySet* props) {
             m_props = props;
 
             // Create a timestamp.
@@ -373,7 +374,7 @@ pair<bool,void*> ShibTarget::doHandler(void)
         if (!strstr(targetURL,handlerURL))
             return make_pair(true, returnDecline());
 
-        const IPropertySet* sessionProps=m_priv->m_app->getPropertySet("Sessions");
+        const PropertySet* sessionProps=m_priv->m_app->getPropertySet("Sessions");
         if (!sessionProps)
             throw ConfigurationException("Unable to map request to application session settings, check configuration.");
 
@@ -411,7 +412,7 @@ pair<bool,void*> ShibTarget::doHandler(void)
     catch (MetadataException& e) {
         tp.m_map["errorText"] = e.what();
         // See if a metadata error page is installed.
-        const IPropertySet* props=m_priv->m_app->getPropertySet("Errors");
+        const PropertySet* props=m_priv->m_app->getPropertySet("Errors");
         if (props) {
             pair<bool,const char*> p=props->getString("metadata");
             if (p.first) {
@@ -758,7 +759,7 @@ pair<string,const char*> ShibTarget::getCookieNameProps(const char* prefix) cons
 {
     static const char* defProps="; path=/";
     
-    const IPropertySet* props=m_priv->m_app ? m_priv->m_app->getPropertySet("Sessions") : NULL;
+    const PropertySet* props=m_priv->m_app ? m_priv->m_app->getPropertySet("Sessions") : NULL;
     if (props) {
         pair<bool,const char*> p=props->getString("cookieProps");
         if (!p.first)
@@ -783,7 +784,7 @@ string ShibTarget::getHandlerURL(const char* resource) const
 
     bool ssl_only=false;
     const char* handler=NULL;
-    const IPropertySet* props=m_priv->m_app->getPropertySet("Sessions");
+    const PropertySet* props=m_priv->m_app->getPropertySet("Sessions");
     if (props) {
         pair<bool,bool> p=props->getBool("handlerSSL");
         if (p.first)
@@ -962,7 +963,7 @@ void* ShibTargetPriv::sendError(
         };
     
     TemplateEngine* engine = XMLToolingConfig::getConfig().getTemplateEngine();
-    const IPropertySet* props=m_app->getPropertySet("Errors");
+    const PropertySet* props=m_app->getPropertySet("Errors");
     if (props) {
         pair<bool,const char*> p=props->getString(page);
         if (p.first) {

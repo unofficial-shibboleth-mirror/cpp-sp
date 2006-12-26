@@ -24,11 +24,12 @@
 
 #include "internal.h"
 
-using namespace std;
-using namespace log4cpp;
-using namespace saml;
-using namespace shibboleth;
+using namespace shibsp;
 using namespace shibtarget;
+using namespace shibboleth;
+using namespace saml;
+using namespace log4cpp;
+using namespace std;
 
 SAMLResponse* STArtifactMapper::resolve(SAMLRequest* request)
 {
@@ -50,7 +51,7 @@ SAMLResponse* STArtifactMapper::resolve(SAMLRequest* request)
     log.info("lookup succeeded, artifact issued by (%s)", issuer.get());
     
     // Sign it?
-    const IPropertySet* credUse=m_app->getCredentialUse(entity);
+    const PropertySet* credUse=m_app->getCredentialUse(entity);
     pair<bool,bool> signRequest=credUse ? credUse->getBool("signRequest") : make_pair(false,false);
     pair<bool,const char*> signatureAlg=credUse ? credUse->getString("signatureAlg") : pair<bool,const char*>(false,NULL);
     if (!signatureAlg.first)

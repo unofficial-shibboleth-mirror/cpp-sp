@@ -393,7 +393,7 @@ extern "C" NSAPI_PUBLIC int shib_handler(pblock* pb, Session* sn, Request* rq)
 }
 
 
-class SunRequestMapper : public virtual IRequestMapper, public virtual IPropertySet
+class SunRequestMapper : public virtual IRequestMapper, public virtual PropertySet
 {
 public:
     SunRequestMapper(const DOMElement* e);
@@ -407,7 +407,7 @@ public:
     pair<bool,const XMLCh*> getXMLString(const char* name, const char* ns=NULL) const;
     pair<bool,unsigned int> getUnsignedInt(const char* name, const char* ns=NULL) const;
     pair<bool,int> getInt(const char* name, const char* ns=NULL) const;
-    const IPropertySet* getPropertySet(const char* name, const char* ns="urn:mace:shibboleth:target:config:1.0") const;
+    const PropertySet* getPropertySet(const char* name, const char* ns="urn:mace:shibboleth:target:config:1.0") const;
     const DOMElement* getElement() const;
 
 private:
@@ -438,13 +438,13 @@ IRequestMapper::Settings SunRequestMapper::getSettings(ShibTarget* st) const
     Settings s=m_mapper->getSettings(st);
     m_stKey->setData(dynamic_cast<ShibTargetNSAPI*>(st));
     m_propsKey->setData((void*)s.first);
-    return pair<const IPropertySet*,IAccessControl*>(this,s.second);
+    return pair<const PropertySet*,IAccessControl*>(this,s.second);
 }
 
 pair<bool,bool> SunRequestMapper::getBool(const char* name, const char* ns) const
 {
     ShibTargetNSAPI* stn=reinterpret_cast<ShibTargetNSAPI*>(m_stKey->getData());
-    const IPropertySet* s=reinterpret_cast<const IPropertySet*>(m_propsKey->getData());
+    const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
     if (stn && !ns && name) {
         // Override boolean properties.
         const char* param=pblock_findval(name,stn->m_pb);
@@ -457,7 +457,7 @@ pair<bool,bool> SunRequestMapper::getBool(const char* name, const char* ns) cons
 pair<bool,const char*> SunRequestMapper::getString(const char* name, const char* ns) const
 {
     ShibTargetNSAPI* stn=reinterpret_cast<ShibTargetNSAPI*>(m_stKey->getData());
-    const IPropertySet* s=reinterpret_cast<const IPropertySet*>(m_propsKey->getData());
+    const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
     if (stn && !ns && name) {
         // Override string properties.
         if (!strcmp(name,"authType"))
@@ -473,14 +473,14 @@ pair<bool,const char*> SunRequestMapper::getString(const char* name, const char*
 
 pair<bool,const XMLCh*> SunRequestMapper::getXMLString(const char* name, const char* ns) const
 {
-    const IPropertySet* s=reinterpret_cast<const IPropertySet*>(m_propsKey->getData());
+    const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
     return s ? s->getXMLString(name,ns) : pair<bool,const XMLCh*>(false,NULL);
 }
 
 pair<bool,unsigned int> SunRequestMapper::getUnsignedInt(const char* name, const char* ns) const
 {
     ShibTargetNSAPI* stn=reinterpret_cast<ShibTargetNSAPI*>(m_stKey->getData());
-    const IPropertySet* s=reinterpret_cast<const IPropertySet*>(m_propsKey->getData());
+    const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
     if (stn && !ns && name) {
         // Override int properties.
         const char* param=pblock_findval(name,stn->m_pb);
@@ -493,7 +493,7 @@ pair<bool,unsigned int> SunRequestMapper::getUnsignedInt(const char* name, const
 pair<bool,int> SunRequestMapper::getInt(const char* name, const char* ns) const
 {
     ShibTargetNSAPI* stn=reinterpret_cast<ShibTargetNSAPI*>(m_stKey->getData());
-    const IPropertySet* s=reinterpret_cast<const IPropertySet*>(m_propsKey->getData());
+    const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
     if (stn && !ns && name) {
         // Override int properties.
         const char* param=pblock_findval(name,stn->m_pb);
@@ -503,14 +503,14 @@ pair<bool,int> SunRequestMapper::getInt(const char* name, const char* ns) const
     return s ? s->getInt(name,ns) : pair<bool,int>(false,0);
 }
 
-const IPropertySet* SunRequestMapper::getPropertySet(const char* name, const char* ns) const
+const PropertySet* SunRequestMapper::getPropertySet(const char* name, const char* ns) const
 {
-    const IPropertySet* s=reinterpret_cast<const IPropertySet*>(m_propsKey->getData());
+    const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
     return s ? s->getPropertySet(name,ns) : NULL;
 }
 
 const DOMElement* SunRequestMapper::getElement() const
 {
-    const IPropertySet* s=reinterpret_cast<const IPropertySet*>(m_propsKey->getData());
+    const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
     return s ? s->getElement() : NULL;
 }

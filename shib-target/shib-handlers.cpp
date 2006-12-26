@@ -308,7 +308,7 @@ DDF SAML1Consumer::receive(const DDF& in)
 
     pair<bool,bool> checkAddress=pair<bool,bool>(false,true);
     pair<bool,bool> checkReplay=pair<bool,bool>(false,true);
-    const IPropertySet* props=app->getPropertySet("Sessions");
+    const PropertySet* props=app->getPropertySet("Sessions");
     if (props) {
         checkAddress=props->getBool("checkAddress");
         if (!checkAddress.first)
@@ -556,7 +556,7 @@ pair<bool,void*> SAML1Consumer::run(ShibTarget* st, bool isHandler) const
 
     const char* providerId=out["provider_id"].string();
     if (providerId) {
-        const IPropertySet* sessionProps=st->getApplication()->getPropertySet("Sessions");
+        const PropertySet* sessionProps=st->getApplication()->getPropertySet("Sessions");
         pair<bool,bool> idpHistory=sessionProps->getBool("idpHistory");
         if (!idpHistory.first || idpHistory.second) {
             // Set an IdP history cookie locally (essentially just a CDC).
