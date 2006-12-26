@@ -98,11 +98,7 @@ bool STConfig::init(const char* schemadir)
     // Register built-in plugin types.
     REGISTER_EXCEPTION_FACTORY(ListenerException);
     REGISTER_EXCEPTION_FACTORY(ConfigurationException);
-#ifndef WIN32
-    samlConf.getPlugMgr().regFactory(shibtarget::XML::UnixListenerType,&UnixListenerFactory);
-#endif
-    samlConf.getPlugMgr().regFactory(shibtarget::XML::TCPListenerType,&TCPListenerFactory);
-    //samlConf.getPlugMgr().regFactory(shibtarget::XML::MemoryListenerType,&MemoryListenerFactory);
+
     samlConf.getPlugMgr().regFactory(shibtarget::XML::MemorySessionCacheType,&MemoryCacheFactory);
     samlConf.getPlugMgr().regFactory(shibtarget::XML::LegacyRequestMapType,&XMLRequestMapFactory);
     samlConf.getPlugMgr().regFactory(shibtarget::XML::XMLRequestMapType,&XMLRequestMapFactory);

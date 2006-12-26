@@ -218,19 +218,7 @@
 			>
 		</File>
 		<File
-			RelativePath=".\ddf.cpp"
-			>
-		</File>
-		<File
-			RelativePath=".\ddf.h"
-			>
-		</File>
-		<File
 			RelativePath="hresult.h"
-			>
-		</File>
-		<File
-			RelativePath=".\IListener.cpp"
 			>
 		</File>
 		<File
@@ -252,11 +240,11 @@
 		<File
 			RelativePath="shib-handlers.cpp"
 			>
-			</File>
+		</File>
 		<File
 			RelativePath="shib-ini.cpp"
 			>
-			</File>
+		</File>
 		<File
 			RelativePath="shib-target.cpp"
 			>
@@ -271,18 +259,6 @@
 		</File>
 		<File
 			RelativePath="ShibHTTPHook.cpp"
-			>
-		</File>
-		<File
-			RelativePath=".\SocketListener.cpp"
-			>
-		</File>
-		<File
-			RelativePath=".\SocketListener.h"
-			>
-		</File>
-		<File
-			RelativePath=".\TCPListener.cpp"
 			>
 		</File>
 		<File

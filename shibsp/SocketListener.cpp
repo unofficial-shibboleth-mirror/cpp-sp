@@ -17,27 +17,30 @@
 /**
  * SocketListener.cpp
  * 
- * Berkeley Socket-based Listener implementation
+ * Berkeley Socket-based ListenerService implementation
  */
 
+#include "internal.h"
+#include "exceptions.h"
 #include "SocketListener.h"
 
 #include <errno.h>
+#include <stack>
 #include <sstream>
 #include <shibsp/SPConfig.h>
+#include <xmltooling/util/NDC.h>
 
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
 #endif
 
 using namespace shibsp;
-using namespace shibtarget;
-using namespace saml;
 using namespace xmltooling;
 using namespace log4cpp;
 using namespace std;
+using xercesc::DOMElement;
 
-namespace shibtarget {
+namespace shibsp {
   
     // Manages the pool of connections
     class SocketPool
@@ -78,7 +81,7 @@ namespace shibtarget {
 SocketListener::ShibSocket SocketPool::connect()
 {
 #ifdef _DEBUG
-    saml::NDC ndc("connect");
+    NDC ndc("connect");
 #endif
 
     m_log.debug("trying to connect to listener");
@@ -112,7 +115,7 @@ SocketListener::ShibSocket SocketPool::connect()
     if (!connected) {
         m_log.crit("socket server unavailable, failing");
         m_listener->close(sock);
-        throw ListenerException("Cannot connect to listener process, a site adminstrator should be notified.");
+        throw ListenerException("Cannot connect to shibd process, a site adminstrator should be notified.");
     }
 
     m_log.debug("socket (%u) connected successfully", sock);
@@ -151,7 +154,7 @@ void SocketPool::put(SocketListener::ShibSocket s)
     m_lock->unlock();
 }
 
-SocketListener::SocketListener(const DOMElement* e) : log(&Category::getInstance(SHIBT_LOGCAT".Listener")),
+SocketListener::SocketListener(const DOMElement* e) : log(&Category::getInstance(SHIBSP_LOGCAT".Listener")),
     m_shutdown(NULL), m_child_lock(NULL), m_child_wait(NULL), m_socketpool(NULL), m_socket((ShibSocket)0)
 {
     // Are we a client?
@@ -175,7 +178,7 @@ SocketListener::~SocketListener()
 bool SocketListener::run(bool* shutdown)
 {
 #ifdef _DEBUG
-    saml::NDC ndc("run");
+    NDC ndc("run");
 #endif
 
     // Save flag to monitor for shutdown request.
@@ -246,7 +249,7 @@ bool SocketListener::run(bool* shutdown)
 DDF SocketListener::send(const DDF& in)
 {
 #ifdef _DEBUG
-    saml::NDC ndc("send");
+    NDC ndc("send");
 #endif
 
     log->debug("sending message: %s", in.name());
@@ -275,7 +278,7 @@ DDF SocketListener::send(const DDF& in)
             if (retry)
                 retry--;
             else
-                throw ListenerException("Failure sending remoted message ($1).", saml::params(1,in.name()));
+                throw ListenerException("Failure sending remoted message ($1).", params(1,in.name()));
         }
         else {
             // SUCCESS.
@@ -289,7 +292,7 @@ DDF SocketListener::send(const DDF& in)
     if (recv(sock,(char*)&len,sizeof(len)) != sizeof(len)) {
         log->error("error reading size of output message");
         this->close(sock);
-        throw ListenerException("Failure receiving response to remoted message ($1).", saml::params(1,in.name()));
+        throw ListenerException("Failure receiving response to remoted message ($1).", params(1,in.name()));
     }
     len = ntohl(len);
     
@@ -304,7 +307,7 @@ DDF SocketListener::send(const DDF& in)
     if (len) {
         log->error("error reading output message from socket");
         this->close(sock);
-        throw ListenerException("Failure receiving response to remoted message ($1).", saml::params(1,in.name()));
+        throw ListenerException("Failure receiving response to remoted message ($1).", params(1,in.name()));
     }
     
     m_socketpool->put(sock);
@@ -317,18 +320,17 @@ DDF SocketListener::send(const DDF& in)
     if (out.isstring() && out.name() && !strcmp(out.name(),"exception")) {
         // Reconstitute exception object.
         DDFJanitor jout(out);
-        SAMLException* except=NULL;
+        XMLToolingException* except=NULL;
         try { 
-            istringstream es(out.string());
-            except=SAMLException::getInstance(es);
+            except=XMLToolingException::fromString(out.string());
         }
-        catch (SAMLException& e) {
-            log->error("caught SAML Exception while building the SAMLException: %s", e.what());
+        catch (XMLToolingException& e) {
+            log->error("caught XMLToolingException while building the XMLToolingException: %s", e.what());
             log->error("XML was: %s", out.string());
             throw ListenerException("Remote call failed with an unparsable exception.");
         }
 
-        auto_ptr<SAMLException> wrapper(except);
+        auto_ptr<XMLToolingException> wrapper(except);
         wrapper->raise();
     }
 
@@ -398,7 +400,7 @@ ServerThread::~ServerThread()
 
 void ServerThread::run()
 {
-    saml::NDC ndc(m_id);
+    NDC ndc(m_id);
 
     // Before starting up, make sure we fully "own" this socket.
     m_listener->m_child_lock->lock();
@@ -453,10 +455,6 @@ bool ServerThread::job()
 #endif
 
     try {
-        // Lock the configuration.
-        IConfig* conf=ShibTargetConfig::getConfig().getINI();
-        Locker locker(conf);
-
         // Read the message.
         if (m_listener->recv(m_sock,(char*)&len,sizeof(len)) != sizeof(len)) {
             log.error("error reading size of input message");
@@ -484,19 +482,15 @@ bool ServerThread::job()
         // Dispatch the message.
         out=m_listener->receive(in);
     }
-    catch (SAMLException &e) {
+    catch (XMLToolingException &e) {
         log.error("error processing incoming message: %s", e.what());
-        ostringstream os;
-        os << e;
-        out=DDF("exception").string(os.str().c_str());
+        out=DDF("exception").string(e.toString().c_str());
     }
 #ifndef _DEBUG
     catch (...) {
         log.error("unexpected error processing incoming message");
         ListenerException ex("An unexpected error occurred while processing an incoming message.");
-        ostringstream os;
-        os << ex;
-        out=DDF("exception").string(os.str().c_str());
+        out=DDF("exception").string(ex.toString().c_str());
     }
 #endif
     

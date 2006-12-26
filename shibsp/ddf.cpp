@@ -14,28 +14,30 @@
  * limitations under the License.
  */
 
-/*
- * ddf.cpp - C++ DDF abstraction for interpretive RPC
- *
- * Created by:  Scott Cantor and Tom Sanfilippo, OSU
- *
- * $Id$
+/**
+ * ddf.cpp
+ * 
+ * C++ DDF abstraction for interpretive RPC
  */
 
+#include "internal.h"
+
 #ifdef WIN32
-# define _CRT_NONSTDC_NO_DEPRECATE 1
-# define _CRT_SECURE_NO_DEPRECATE 1
-# define SHIBTARGET_EXPORTS __declspec(dllexport)
 # define snprintf _snprintf
 #endif
 
-#include <saml/saml.h>
-#include <shib-target/ddf.h>
+#include <shibsp/ddf.h>
 
 #include <stdexcept>
+#include <xercesc/dom/DOM.hpp>
+#include <xercesc/util/XMLUniDefs.hpp>
+#include <xmltooling/XMLToolingConfig.h>
+#include <xmltooling/util/ParserPool.h>
+#include <xmltooling/util/XMLHelper.h>
 
-using namespace saml;
-using namespace shibtarget;
+using namespace shibsp;
+using namespace xmltooling;
+using namespace xercesc;
 using namespace std;
 
 // defensive string functions
@@ -85,7 +87,7 @@ char* ddf_token(const char** path, char* name)
 
 // body implementation
 
-struct shibtarget::ddf_body_t {
+struct shibsp::ddf_body_t {
     ddf_body_t() : name(NULL), parent(NULL), next(NULL), prev(NULL), type(DDF_EMPTY) {}
 
     char* name;                     // name of node
@@ -285,8 +287,6 @@ long DDF::integer() const
             case ddf_body_t::DDF_STRUCT:
             case ddf_body_t::DDF_LIST:
                 return m_handle->value.children.count;
-            case ddf_body_t::DDF_POINTER:
-                return reinterpret_cast<long>(m_handle->value.pointer);
         }
     }
     return 0;
@@ -885,7 +885,7 @@ void serialize(ddf_body_t* p, ostream& os, bool name_attr=true)
 
 // The stream insertion will work for any ostream-based object.
 
-SHIBTARGET_EXPORTS ostream& shibtarget::operator<<(ostream& os, const DDF& obj)
+SHIBSP_API ostream& shibsp::operator<<(ostream& os, const DDF& obj)
 {
     os.precision(15);
     os << "<wddxPacket version=\"1.0\" lowercase=\"no\">\n<header/>\n<data>\n";
@@ -924,15 +924,14 @@ static const char* g_DocType=
 // This function constructs a DDF object equivalent to the wddx data element rooted
 // by the input.
 
-static const XMLCh _no[] = { chLatin_n, chLatin_o, chNull };
-static const XMLCh _name[] = { chLatin_n, chLatin_a, chLatin_m, chLatin_e, chNull };
-static const XMLCh _var[] = { chLatin_v, chLatin_a, chLatin_r, chNull };
-static const XMLCh _string[] = { chLatin_s, chLatin_t, chLatin_r, chLatin_i, chLatin_n, chLatin_g, chNull };
-static const XMLCh _number[] = { chLatin_n, chLatin_u, chLatin_m, chLatin_b, chLatin_e, chLatin_r, chNull };
-static const XMLCh _array[] = { chLatin_a, chLatin_r, chLatin_r, chLatin_a, chLatin_y, chNull };
-static const XMLCh _struct[] = { chLatin_s, chLatin_t, chLatin_r, chLatin_u, chLatin_c, chLatin_t, chNull };
-static const XMLCh _lowercase[] =
-{ chLatin_l, chLatin_o, chLatin_w, chLatin_e, chLatin_r, chLatin_c, chLatin_a, chLatin_s, chLatin_e, chNull };
+static const XMLCh _no[] =      UNICODE_LITERAL_2(n,o);
+static const XMLCh _name[] =    UNICODE_LITERAL_4(n,a,m,e);
+static const XMLCh _var[] =     UNICODE_LITERAL_3(v,a,r);
+static const XMLCh _string[] =  UNICODE_LITERAL_6(s,t,r,i,n,g);
+static const XMLCh _number[] =  UNICODE_LITERAL_6(n,u,m,b,e,r);
+static const XMLCh _array[] =   UNICODE_LITERAL_5(a,r,r,a,y);
+static const XMLCh _struct[] =  UNICODE_LITERAL_6(s,t,r,u,c,t);
+static const XMLCh _lowercase[] = UNICODE_LITERAL_9(l,o,w,e,r,c,a,s,e);
 
 DDF deserialize(DOMElement* root, bool lowercase)
 {
@@ -946,7 +945,7 @@ DDF deserialize(DOMElement* root, bool lowercase)
 
     const XMLCh* tag=root->getTagName();
     if (!XMLString::compareString(tag,_var)) {
-        root=saml::XML::getFirstChildElement(root);
+        root=XMLHelper::getFirstChildElement(root);
         tag=(root ? root->getTagName() : &chNull);
     }
 
@@ -989,25 +988,14 @@ DDF deserialize(DOMElement* root, bool lowercase)
     return obj;
 }
 
-SHIBTARGET_EXPORTS istream& shibtarget::operator>>(istream& is, DDF& obj)
+SHIBSP_API istream& shibsp::operator>>(istream& is, DDF& obj)
 {
     // Parse the input stream into a DOM tree and construct the equivalent DDF.
-    DOMDocument* doc=NULL;
-    try {
-        XML::StreamInputSource src(is);
-        Wrapper4InputSource dsrc(&src,false);
-        saml::XML::Parser parser(false);    // non-validating
-        doc=parser.parse(dsrc);
-        const XMLCh* lowercase=doc->getDocumentElement()->getAttribute(_lowercase);
-        DOMElement* first=saml::XML::getFirstChildElement(saml::XML::getLastChildElement(doc->getDocumentElement()));
-        obj.destroy();
-        obj=deserialize(first,XMLString::compareString(lowercase,_no)!=0);
-        doc->release();
-    }
-    catch(...) {
-        if (doc)
-            doc->release();
-        throw;
-    }
+    DOMDocument* doc = XMLToolingConfig::getConfig().getParser().parse(is);
+    XercesJanitor<DOMDocument> docj(doc);
+    const XMLCh* lowercase=doc->getDocumentElement()->getAttribute(_lowercase);
+    DOMElement* first=XMLHelper::getFirstChildElement(XMLHelper::getLastChildElement(doc->getDocumentElement()));
+    obj.destroy();
+    obj=deserialize(first,XMLString::compareString(lowercase,_no)!=0);
     return is;
 }

@@ -182,7 +182,7 @@ namespace shibtarget {
         const DOMElement* getElement() const {return static_cast<XMLConfigImpl*>(m_impl)->getElement();}
 
         // IConfig
-        IListener* getListener() const {return m_listener;}
+        ListenerService* getListener() const {return m_listener;}
         ISessionCache* getSessionCache() const {return m_sessionCache;}
         IReplayCache* getReplayCache() const {return m_replayCache;}
         IRequestMapper* getRequestMapper() const {return static_cast<XMLConfigImpl*>(m_impl)->m_requestMapper;}
@@ -198,7 +198,7 @@ namespace shibtarget {
 
     private:
         friend class XMLConfigImpl;
-        mutable IListener* m_listener;
+        mutable ListenerService* m_listener;
         mutable ISessionCache* m_sessionCache;
         mutable IReplayCache* m_replayCache;
     };
@@ -1117,41 +1117,30 @@ void XMLConfigImpl::init(bool first)
                 }
             }
             
-            // Instantiate the Listener and SessionCache objects.
+            // Instantiate the ListenerService and SessionCache objects.
             if (conf.isEnabled(SPConfig::Listener)) {
-                IPlugIn* plugin=NULL;
                 exts=saml::XML::getFirstChildElement(SHAR,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(UnixListener));
                 if (exts) {
-                    log.info("building Listener of type %s...",shibtarget::XML::UnixListenerType);
-                    plugin=shibConf.getPlugMgr().newPlugin(shibtarget::XML::UnixListenerType,exts);
+                    log.info("building Listener of type %s...",UNIX_LISTENER_SERVICE);
+                    m_outer->m_listener=conf.ListenerServiceManager.newPlugin(UNIX_LISTENER_SERVICE,exts);
                 }
                 else {
                     exts=saml::XML::getFirstChildElement(SHAR,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(TCPListener));
                     if (exts) {
-                        log.info("building Listener of type %s...",shibtarget::XML::TCPListenerType);
-                        plugin=shibConf.getPlugMgr().newPlugin(shibtarget::XML::TCPListenerType,exts);
+                        log.info("building Listener of type %s...",TCP_LISTENER_SERVICE);
+                        m_outer->m_listener=conf.ListenerServiceManager.newPlugin(TCP_LISTENER_SERVICE,exts);
                     }
                     else {
                         exts=saml::XML::getFirstChildElement(SHAR,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Listener));
                         if (exts) {
                             auto_ptr_char type(exts->getAttributeNS(NULL,SHIBT_L(type)));
                             log.info("building Listener of type %s...",type.get());
-                            plugin=shibConf.getPlugMgr().newPlugin(type.get(),exts);
+                            m_outer->m_listener=conf.ListenerServiceManager.newPlugin(type.get(),exts);
                         }
                         else {
                             log.fatal("can't build Listener object, missing conf:Listener element?");
                             throw ConfigurationException("can't build Listener object, missing conf:Listener element?");
                         }
-                    }
-                }
-                if (plugin) {
-                    IListener* listen=dynamic_cast<IListener*>(plugin);
-                    if (listen)
-                        m_outer->m_listener=listen;
-                    else {
-                        delete plugin;
-                        log.fatal("plugin was not a Listener object");
-                        throw UnsupportedExtensionException("plugin was not a Listener object");
                     }
                 }
             }
@@ -1327,6 +1316,10 @@ void XMLConfigImpl::init(bool first)
             else
                 m_appmap[iapp->getId()]=iapp.release();
         }
+    }
+    catch (xmltooling::XMLToolingException& e) {
+        log.errorStream() << "Error while loading SP configuration: " << e.what() << CategoryStream::ENDLINE;
+        throw ConfigurationException(e.what());
     }
     catch (SAMLException& e) {
         log.errorStream() << "Error while loading SP configuration: " << e.what() << CategoryStream::ENDLINE;

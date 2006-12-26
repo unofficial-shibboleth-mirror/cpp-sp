@@ -20,7 +20,11 @@
  * Unix Domain-based SocketListener implementation
  */
 
-#include "RPCListener.h"
+#include "internal.h"
+#include "SocketListener.h"
+
+#include <xercesc/util/XMLUniDefs.hpp>
+#include <xmltooling/unicode.h>
 
 #ifdef HAVE_UNISTD_H
 # include <sys/socket.h>
@@ -35,45 +39,47 @@
 #include <stdlib.h>
 #include <errno.h>
 
+using namespace shibsp;
+using namespace xmltooling;
+using namespace xercesc;
 using namespace std;
-using namespace saml;
-using namespace shibboleth;
-using namespace shibtarget;
-using namespace log4cpp;
 
-static const XMLCh address[] = { chLatin_a, chLatin_d, chLatin_d, chLatin_r, chLatin_e, chLatin_s, chLatin_s, chNull };
 
-class UnixListener : virtual public SocketListener
-{
-public:
-    UnixListener(const DOMElement* e);
-    ~UnixListener() {if (m_bound) unlink(m_address.c_str());}
+namespace shibsp {
+    static const XMLCh address[] = UNICODE_LITERAL_7(a,d,d,r,e,s,s);
 
-    bool create(ShibSocket& s) const;
-    bool bind(ShibSocket& s, bool force=false) const;
-    bool connect(ShibSocket& s) const;
-    bool close(ShibSocket& s) const;
-    bool accept(ShibSocket& listener, ShibSocket& s) const;
+    class UnixListener : virtual public SocketListener
+    {
+    public:
+        UnixListener(const DOMElement* e);
+        ~UnixListener() {if (m_bound) unlink(m_address.c_str());}
 
-    int send(ShibSocket& s, const char* buf, int len) const {
-        return ::send(s, buf, len, 0);
+        bool create(ShibSocket& s) const;
+        bool bind(ShibSocket& s, bool force=false) const;
+        bool connect(ShibSocket& s) const;
+        bool close(ShibSocket& s) const;
+        bool accept(ShibSocket& listener, ShibSocket& s) const;
+
+        int send(ShibSocket& s, const char* buf, int len) const {
+            return ::send(s, buf, len, 0);
+        }
+        
+        int recv(ShibSocket& s, char* buf, int buflen) const {
+            return ::recv(s, buf, buflen, 0);
+        }
+        
+    private:
+        string m_address;
+        mutable bool m_bound;
+    };
+
+    ListenerService* SHIBSP_DLLLOCAL UnixListenerServiceFactory(const DOMElement* const & e)
+    {
+        return new UnixListener(e);
     }
-    
-    int recv(ShibSocket& s, char* buf, int buflen) const {
-        return ::recv(s, buf, buflen, 0);
-    }
-    
-private:
-    string m_address;
-    mutable bool m_bound;
 };
 
-IPlugIn* UnixListenerFactory(const DOMElement* e)
-{
-    return new UnixListener(e);
-}
-
-UnixListener::UnixListener(const DOMElement* e) : RPCListener(e), m_address("/var/run/shar-socket"), m_bound(false)
+UnixListener::UnixListener(const DOMElement* e) : SocketListener(e), m_address("/var/run/shar-socket"), m_bound(false)
 {
     // We're stateless, but we need to load the configuration.
     const XMLCh* tag=e->getAttributeNS(NULL,address);
@@ -148,12 +154,4 @@ bool UnixListener::accept(ShibSocket& listener, ShibSocket& s) const
     if (s < 0)
         return log_error();
     return true;
-}
-
-CLIENT* UnixListener::getClientHandle(ShibSocket& s, u_long program, u_long version) const
-{
-    struct sockaddr_in sin;
-    memset (&sin, 0, sizeof (sin));
-    sin.sin_port = 1;
-    return clnttcp_create(&sin, program, version, &s, 0, 0);
 }

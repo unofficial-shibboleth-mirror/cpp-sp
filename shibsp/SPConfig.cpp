@@ -23,6 +23,7 @@
 
 #include "internal.h"
 #include "exceptions.h"
+#include "ListenerService.h"
 #include "SPConfig.h"
 
 #include <log4cpp/Category.hh>
@@ -84,6 +85,8 @@ bool SPInternalConfig::init(const char* catalog_path)
     
     REGISTER_XMLTOOLING_EXCEPTION_FACTORY(ConfigurationException,shibsp);
     REGISTER_XMLTOOLING_EXCEPTION_FACTORY(ListenerException,shibsp);
+    
+    registerListenerServices();
 
     log.info("library initialization complete");
     return true;
@@ -99,6 +102,8 @@ void SPInternalConfig::term()
 
     //delete m_serviceProvider;
     m_serviceProvider = NULL;
+    
+    ListenerServiceManager.deregisterFactories();
 
     SAMLConfig::getConfig().term();
     log.info("library shutdown complete");

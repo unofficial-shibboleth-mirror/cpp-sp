@@ -26,10 +26,15 @@
 using namespace shibsp;
 using namespace shibtarget;
 using namespace saml;
+using namespace xmltooling;
 using namespace std;
 
 int main (int argc, char *argv[])
 {
+    if (argc<=1) {
+        cerr << "usage: testclient <integer>" << endl;
+        return -1;
+    }
   const char* config=getenv("SHIBCONFIG");
   if (!config)
     config=SHIB_CONFIG;
@@ -45,15 +50,15 @@ int main (int argc, char *argv[])
   try {
       DDF in("ping");
       DDFJanitor injan(in);
-      in.integer(0L);
+      in.integer(atol(argv[1]));
 
       DDF out=conf.getINI()->getListener()->send(in);
       DDFJanitor outjan(out);
 
-      cerr << 0 << " -> " << out.integer() << "\n";
+      cerr << argv[1] << " -> " << out.integer() << "\n";
   }
-  catch (SAMLException& e) {
-      cerr << "caught SAML exception: " << e.what() << "\n";
+  catch (exception& e) {
+      cerr << "caught exception: " << e.what() << "\n";
   }
   
   conf.shutdown();

@@ -9,15 +9,23 @@ libshibspincludedir = $(includedir)/shibsp
 
 libshibspinclude_HEADERS = \
 	base.h \
+	ddf.h \
 	exceptions.h \
+	ListenerService.h \
 	paths.h \
 	version.h \
+	SocketListener.h \
 	SPConfig.h
 
 noinst_HEADERS = \
 	internal.h
 
 libshibsp_la_SOURCES = \
+	ddf.cpp \
+	ListenerService.cpp \
+	SocketListener.cpp \
+	TCPListener.cpp \
+	UnixListener.cpp \
 	SPConfig.cpp
 
 # this is different from the project version
@@ -35,5 +43,5 @@ paths.h: ${srcdir}/paths.h.in Makefile ${top_builddir}/config.status
 install-exec-hook:
 	for la in $(lib_LTLIBRARIES) ; do rm -f $(DESTDIR)$(libdir)/$$la ; done
 
-EXTRA_DIST = shibsp.vcproj paths.h.in
+EXTRA_DIST = shibsp.vcproj paths.h.in resource.h shibsp.rc
 BUILT_SOURCES = paths.h

@@ -15,30 +15,41 @@
  */
 
 /**
- * @file shib-target/SocketListener.h
+ * @file shibsp/SocketListener.h
  * 
- * Berkeley Socket-based Listener implementation
+ * Berkeley Socket-based ListenerService implementation
  */
 
-#ifndef __st_socklisten_h__
-#define __st_socklisten_h__
+#ifndef __shibsp_socklisten_h__
+#define __shibsp_socklisten_h__
 
 #ifndef FD_SETSIZE
 # define FD_SETSIZE 1024
 #endif
 
-#include "internal.h"
+#include <shibsp/ListenerService.h>
 
-#include <winsock.h>
+#include <log4cpp/Category.hh>
+#include <xercesc/dom/DOM.hpp>
+#include <xmltooling/util/Threads.h>
 
-namespace shibtarget {
+#ifdef WIN32
+# include <winsock.h>
+#endif
+
+namespace shibsp {
 
     class SocketPool;
     class ServerThread;
-    class SocketListener : public virtual IListener
+    
+    /**
+     * Berkeley Socket-based ListenerService implementation
+     */
+    class SocketListener : public virtual ListenerService
     {
     public:
-        SocketListener(const DOMElement* e);
+        /// @cond OFF
+        SocketListener(const xercesc::DOMElement* e);
         ~SocketListener();
 
         DDF send(const DDF& in);
@@ -61,6 +72,7 @@ namespace shibtarget {
     protected:
         bool log_error() const; // for OS-level errors
         log4cpp::Category* log;
+        /// @endcond
     
     private:
         mutable SocketPool* m_socketpool;
@@ -77,4 +89,4 @@ namespace shibtarget {
     };
 }
 
-#endif /* __st_socklisten_h__ */
+#endif /* __shibsp_socklisten_h__ */

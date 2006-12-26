@@ -20,7 +20,11 @@
  * TCP-based SocketListener implementation
  */
 
+#include "internal.h"
 #include "SocketListener.h"
+
+#include <xercesc/util/XMLUniDefs.hpp>
+#include <xmltooling/unicode.h>
 
 #ifdef HAVE_UNISTD_H
 # include <sys/socket.h>
@@ -35,47 +39,49 @@
 #include <stdlib.h>
 #include <errno.h>
 
+using namespace shibsp;
+using namespace xmltooling;
+using namespace xercesc;
 using namespace std;
-using namespace saml;
-using namespace shibboleth;
-using namespace shibtarget;
-using namespace log4cpp;
 
-static const XMLCh address[] = { chLatin_a, chLatin_d, chLatin_d, chLatin_r, chLatin_e, chLatin_s, chLatin_s, chNull };
-static const XMLCh port[] = { chLatin_p, chLatin_o, chLatin_r, chLatin_t, chNull };
+namespace shibsp {
+    static const XMLCh address[] = UNICODE_LITERAL_7(a,d,d,r,e,s,s);
+    static const XMLCh port[] = UNICODE_LITERAL_4(p,o,r,t);
+    static const XMLCh acl[] = UNICODE_LITERAL_3(a,c,l);
 
-class TCPListener : virtual public SocketListener
-{
-public:
-    TCPListener(const DOMElement* e);
-    ~TCPListener() {}
+    class TCPListener : virtual public SocketListener
+    {
+    public:
+        TCPListener(const DOMElement* e);
+        ~TCPListener() {}
 
-    bool create(ShibSocket& s) const;
-    bool bind(ShibSocket& s, bool force=false) const;
-    bool connect(ShibSocket& s) const;
-    bool close(ShibSocket& s) const;
-    bool accept(ShibSocket& listener, ShibSocket& s) const;
-    
-    int send(ShibSocket& s, const char* buf, int len) const {
-        return ::send(s, buf, len, 0);
+        bool create(ShibSocket& s) const;
+        bool bind(ShibSocket& s, bool force=false) const;
+        bool connect(ShibSocket& s) const;
+        bool close(ShibSocket& s) const;
+        bool accept(ShibSocket& listener, ShibSocket& s) const;
+        
+        int send(ShibSocket& s, const char* buf, int len) const {
+            return ::send(s, buf, len, 0);
+        }
+        
+        int recv(ShibSocket& s, char* buf, int buflen) const {
+            return ::recv(s, buf, buflen, 0);
+        }
+        
+    private:
+        void setup_tcp_sockaddr(struct sockaddr_in* addr) const;
+
+        string m_address;
+        unsigned short m_port;
+        vector<string> m_acl;
+    };
+
+    ListenerService* SHIBSP_DLLLOCAL TCPListenerServiceFactory(const DOMElement* const & e)
+    {
+        return new TCPListener(e);
     }
-    
-    int recv(ShibSocket& s, char* buf, int buflen) const {
-        return ::recv(s, buf, buflen, 0);
-    }
-    
-private:
-    void setup_tcp_sockaddr(struct sockaddr_in* addr) const;
-
-    string m_address;
-    unsigned short m_port;
-    vector<string> m_acl;
 };
-
-IPlugIn* TCPListenerFactory(const DOMElement* e)
-{
-    return new TCPListener(e);
-}
 
 TCPListener::TCPListener(const DOMElement* e) : SocketListener(e), m_address("127.0.0.1"), m_port(12345)
 {
@@ -93,7 +99,7 @@ TCPListener::TCPListener(const DOMElement* e) : SocketListener(e), m_address("12
             m_port=12345;
     }
     
-    tag=e->getAttributeNS(NULL,SHIBT_L(acl));
+    tag=e->getAttributeNS(NULL,acl);
     if (tag && *tag) {
         auto_ptr_char temp(tag);
         string sockacl=temp.get();

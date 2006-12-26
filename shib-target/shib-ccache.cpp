@@ -328,7 +328,7 @@ private:
 /*
  * The actual in-memory session cache implementation.
  */
-class MemorySessionCache : public virtual ISessionCache, public virtual IRemoted
+class MemorySessionCache : public virtual ISessionCache, public virtual Remoted
 {
 public:
     MemorySessionCache(const DOMElement* e);
@@ -357,9 +357,9 @@ private:
     map<string,MemorySessionCacheEntry*> m_hashtable;
 
     Category* m_log;
-    IRemoted* restoreInsert;
-    IRemoted* restoreFind;
-    IRemoted* restoreRemove;
+    Remoted* restoreInsert;
+    Remoted* restoreFind;
+    Remoted* restoreRemove;
     ISessionCacheStore* m_sink;
 
     void dormant(const char* key);
@@ -1061,7 +1061,7 @@ MemorySessionCache::MemorySessionCache(const DOMElement* e)
     SAMLConfig::getConfig().conn_timeout = m_AAConnectTimeout;
 
     // Register for remoted messages.
-    IListener* listener=ShibTargetConfig::getConfig().getINI()->getListener();
+    ListenerService* listener=ShibTargetConfig::getConfig().getINI()->getListener();
     if (listener && SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
         restoreInsert=listener->regListener("SessionCache::insert",this);
         restoreFind=listener->regListener("SessionCache::find",this);
@@ -1083,7 +1083,7 @@ MemorySessionCache::~MemorySessionCache()
     cleanup_thread->join(NULL);
 
     // Unregister remoted messages.
-    IListener* listener=ShibTargetConfig::getConfig().getINI()->getListener();
+    ListenerService* listener=ShibTargetConfig::getConfig().getINI()->getListener();
     if (listener && SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
         listener->unregListener("SessionCache::insert",this,restoreInsert);
         listener->unregListener("SessionCache::find",this,restoreFind);

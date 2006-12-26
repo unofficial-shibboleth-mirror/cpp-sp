@@ -27,7 +27,7 @@
 
 // New headers
 #include <saml/base.h>
-#include <xmltooling/PluginManager.h>
+#include <shibsp/ListenerService.h>
 
 // Old headers
 #include <saml/saml.h>
@@ -43,8 +43,6 @@
 # include <shib-target/shib-paths.h>
 # define SHIBTARGET_EXPORTS
 #endif
-
-#include <shib-target/ddf.h>
 
 namespace shibtarget {
   
@@ -273,53 +271,6 @@ namespace shibtarget {
     };
 
     /**
-     * Interface to a remoted service
-     * 
-     * Plugins that support remoted messages delivered by the IListener runtime
-     * support this interface and register themselves with the runtime to receive
-     * particular messages.
-     */
-    struct SHIBTARGET_EXPORTS IRemoted : public virtual saml::IPlugIn
-    {
-        virtual DDF receive(const DDF& in)=0;
-        virtual ~IRemoted() {}
-    };
-
-    /**
-     * Interface to the remoting engine
-     * 
-     * A listener supports the remoting of DDF objects, which are dynamic data trees
-     * that interface implementations can use to remote themselves by calling an
-     * out-of-process peer implementation with arbitrary data to carry out tasks
-     * on the implementation's behalf that require isolation from the dynamic process
-     * fluctuations that web servers are prone to. The ability to pass arbitrary data
-     * trees across the boundary allows arbitrary separation of duty between the
-     * in-process and out-of-process "halves". The implementation is responsible
-     * for marshalling and transmitting messages, as well as managing connections
-     * and communication errors.
-     */
-    class SHIBTARGET_EXPORTS IListener : public virtual IRemoted
-    {
-    public:
-        virtual DDF send(const DDF& in)=0;
-        virtual DDF receive(const DDF& in);
-        virtual ~IListener() {}
-
-        // Remoted classes register and unregister for messages using these methods.
-        // Registration returns any existing listeners, allowing message hooking.
-        virtual IRemoted* regListener(const char* address, IRemoted* listener);
-        virtual bool unregListener(const char* address, IRemoted* current, IRemoted* restore=NULL);
-        virtual IRemoted* lookup(const char* address) const;
-
-        // OutOfProcess servers can implement server-side transport handling by
-        // calling the run method and supplying a flag to monitor for shutdown.
-        virtual bool run(bool* shutdown)=0;
-
-    private:
-        std::map<std::string,IRemoted*> m_listenerMap;
-    };
-
-    /**
      * Interface to an access control plugin
      * 
      * Access control plugins return authorization decisions based on the intersection
@@ -350,7 +301,7 @@ namespace shibtarget {
         // loads initial configuration
         virtual void init()=0;
 
-        virtual IListener* getListener() const=0;
+        virtual shibsp::ListenerService* getListener() const=0;
         virtual ISessionCache* getSessionCache() const=0;
         virtual saml::IReplayCache* getReplayCache() const=0;
         virtual IRequestMapper* getRequestMapper() const=0;
@@ -590,11 +541,6 @@ namespace shibtarget {
         static const char htAccessControlType[];    // Apache-specific .htaccess authz module
         static const char XMLAccessControlType[];   // Proprietary but portable XML authz syntax
 
-        // Listener implementations
-        static const char TCPListenerType[];        // ONC RPC via TCP socket
-        static const char UnixListenerType[];       // ONC RPC via domain socker
-        static const char MemoryListenerType[];     // "faked" in-process marshalling
-    
         struct SHIBTARGET_EXPORTS Literals
         {
             static const XMLCh AAPProvider[];

@@ -24,6 +24,8 @@
 #define __shibsp_config_h__
 
 #include <shibsp/base.h>
+#include <xmltooling/PluginManager.h>
+#include <xercesc/dom/DOM.hpp>
 
 /**
  * @namespace shibsp
@@ -31,7 +33,13 @@
  */
 namespace shibsp {
 
+    class SHIBSP_API ListenerService;
     class SHIBSP_API ServiceProvider;
+
+#if defined (_MSC_VER)
+    #pragma warning( push )
+    #pragma warning( disable : 4250 4251 )
+#endif
 
     /**
      * Singleton object that manages library startup/shutdown.
@@ -121,6 +129,11 @@ namespace shibsp {
             return m_serviceProvider;
         }
 
+        /**
+         * Manages factories for ListenerService plugins.
+         */
+        xmltooling::PluginManager<ListenerService,const xercesc::DOMElement*> ListenerServiceManager;
+
     protected:
         SPConfig() : m_serviceProvider(NULL) {}
         
@@ -130,6 +143,10 @@ namespace shibsp {
     private:
         unsigned long m_features;
     };
+
+#if defined (_MSC_VER)
+    #pragma warning( pop )
+#endif
 
 };
 

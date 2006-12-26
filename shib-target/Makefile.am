@@ -8,23 +8,17 @@ pkgxmldir = $(datadir)/xml/@PACKAGE@
 lib_LTLIBRARIES = libshib-target.la
 
 libshib_targetdir = $(includedir)/shib-target
-libshib_target_HEADERS = shib-target.h shib-paths.h hresult.h ddf.h
-noinst_HEADERS = internal.h SocketListener.h
+libshib_target_HEADERS = shib-target.h shib-paths.h hresult.h
+noinst_HEADERS = internal.h
 
 libshib_target_la_SOURCES = \
 	ArtifactMapper.cpp \
-	CommonDomainCookie.cpp \
-	ddf.cpp \
-	IListener.cpp \
-	SocketListener.cpp \
     ShibHTTPHook.cpp \
 	shib-ccache.cpp \
 	shib-config.cpp \
 	shib-handlers.cpp \
 	shib-ini.cpp \
 	shib-target.cpp \
-	TCPListener.cpp \
-	UnixListener.cpp \
 	XML.cpp \
 	XMLRequestMapper.cpp
 

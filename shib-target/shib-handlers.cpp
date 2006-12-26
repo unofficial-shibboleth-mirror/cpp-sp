@@ -59,7 +59,7 @@ namespace {
         ) const;
   };
 
-  class SAML1Consumer : virtual public IHandler, public virtual IRemoted
+  class SAML1Consumer : virtual public IHandler, public virtual Remoted
   {
   public:
     SAML1Consumer(const DOMElement* e);
@@ -243,7 +243,7 @@ SAML1Consumer::SAML1Consumer(const DOMElement* e)
 
     // Register for remoted messages.
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
-        IListener* listener=ShibTargetConfig::getConfig().getINI()->getListener();
+        ListenerService* listener=ShibTargetConfig::getConfig().getINI()->getListener();
         if (listener)
             listener->regListener(m_address.c_str(),this);
         else
@@ -253,7 +253,7 @@ SAML1Consumer::SAML1Consumer(const DOMElement* e)
 
 SAML1Consumer::~SAML1Consumer()
 {
-    IListener* listener=ShibTargetConfig::getConfig().getINI()->getListener();
+    ListenerService* listener=ShibTargetConfig::getConfig().getINI()->getListener();
     if (listener && SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess))
         listener->unregListener(m_address.c_str(),this);
     counter--;

@@ -21,6 +21,10 @@
 #ifndef __shibsp_internal_h__
 #define __shibsp_internal_h__
 
+#ifndef FD_SETSIZE
+# define FD_SETSIZE 1024
+#endif
+
 #ifdef WIN32
 # define _CRT_SECURE_NO_DEPRECATE 1
 # define _CRT_NONSTDC_NO_DEPRECATE 1
