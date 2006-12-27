@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE catalog PUBLIC "-//OASIS//DTD Entity Resolution XML Catalog V1.0//EN" "http://www.oasis-open.org/committees/entity/release/1.0/catalog.dtd">
+<catalog xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog">
+    <uri name="urn:mace:shibboleth:metadata:1.0" uri="@-PKGXMLDIR-@/shibboleth-metadata-1.0.xsd"/>
+    <uri name="urn:mace:shibboleth:target:config:1.0" uri="@-PKGXMLDIR-@/shibboleth-targetconfig-1.0.xsd"/>
+    <uri name="urn:mace:shibboleth:sp:config:2.0" uri="@-PKGXMLDIR-@/shibboleth-spconfig-2.0.xsd"/>
+</catalog>
