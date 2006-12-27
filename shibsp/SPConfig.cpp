@@ -24,6 +24,7 @@
 #include "internal.h"
 #include "exceptions.h"
 #include "ListenerService.h"
+#include "MetadataExt.h"
 #include "SPConfig.h"
 
 #include <log4cpp/Category.hh>
@@ -87,6 +88,7 @@ bool SPInternalConfig::init(const char* catalog_path)
     REGISTER_XMLTOOLING_EXCEPTION_FACTORY(ListenerException,shibsp);
     
     registerListenerServices();
+    registerMetadataExtClasses();
 
     log.info("library initialization complete");
     return true;

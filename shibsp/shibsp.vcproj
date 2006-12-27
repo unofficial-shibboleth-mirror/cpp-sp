@@ -197,6 +197,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\MetadataExtImpl.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\MetadataExtSchemaValidators.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\SocketListener.cpp"
 				>
 			</File>
@@ -236,6 +244,10 @@
 			</File>
 			<File
 				RelativePath=".\ListenerService.h"
+				>
+			</File>
+			<File
+				RelativePath=".\MetadataExt.h"
 				>
 			</File>
 			<File

@@ -32,6 +32,15 @@ const XMLCh shibspconstants::SHIB1_PROTOCOL_ENUM[] = // urn:mace:shibboleth:1.0
   chDigit_1, chPeriod, chDigit_0, chNull
 };
 
+const XMLCh shibspconstants::SHIBMD_NS[] = // urn:mace:shibboleth:metadata:1.0
+{ chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
+  chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
+  chLatin_m, chLatin_e, chLatin_t, chLatin_a, chLatin_d, chLatin_a, chLatin_t, chLatin_a, chColon,
+  chDigit_1, chPeriod, chDigit_0, chNull
+};
+
+const XMLCh shibspconstants::SHIBMD_PREFIX[] = UNICODE_LITERAL_6(s,h,i,b,m,d);
+
 const XMLCh shibspconstants::SHIB1_ATTRIBUTE_NAMESPACE_URI[] = // urn:mace:shibboleth:1.0:attributeNamespace:uri
 { chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
   chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,

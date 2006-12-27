@@ -13,11 +13,13 @@ libshibspinclude_HEADERS = \
 	DOMPropertySet.h \
 	exceptions.h \
 	ListenerService.h \
+	MetadataExt.h \
 	paths.h \
 	PropertySet.h \
 	version.h \
 	SocketListener.h \
-	SPConfig.h
+	SPConfig.h \
+	SPConstants.h
 
 noinst_HEADERS = \
 	internal.h
@@ -26,10 +28,13 @@ libshibsp_la_SOURCES = \
 	ddf.cpp \
 	DOMPropertySet.cpp \
 	ListenerService.cpp \
+	MetadataExtImpl.cpp \
+	MetadataExtSchemaValidators.cpp \
 	SocketListener.cpp \
 	TCPListener.cpp \
 	UnixListener.cpp \
-	SPConfig.cpp
+	SPConfig.cpp \
+	SPConstants.cpp
 
 # this is different from the project version
 # http://sources.redhat.com/autobook/autobook/autobook_91.html

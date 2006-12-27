@@ -23,6 +23,7 @@
 #ifndef __shibsp_constants_h__
 #define __shibsp_constants_h__
 
+#include <shibsp/base.h>
 #include <saml/util/SAMLConstants.h>
 
 /**
