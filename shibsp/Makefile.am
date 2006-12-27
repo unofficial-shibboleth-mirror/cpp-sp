@@ -15,6 +15,7 @@ libshibspinclude_HEADERS = \
 	ListenerService.h \
 	MetadataExt.h \
 	paths.h \
+	PKIXTrustEngine.h \
 	PropertySet.h \
 	version.h \
 	SocketListener.h \
@@ -30,11 +31,12 @@ libshibsp_la_SOURCES = \
 	ListenerService.cpp \
 	MetadataExtImpl.cpp \
 	MetadataExtSchemaValidators.cpp \
+	PKIXTrustEngine.cpp \
+	SPConfig.cpp \
+	SPConstants.cpp \ 
 	SocketListener.cpp \
 	TCPListener.cpp \
-	UnixListener.cpp \
-	SPConfig.cpp \
-	SPConstants.cpp
+	UnixListener.cpp
 
 # this is different from the project version
 # http://sources.redhat.com/autobook/autobook/autobook_91.html

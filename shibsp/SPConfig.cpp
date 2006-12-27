@@ -25,6 +25,7 @@
 #include "exceptions.h"
 #include "ListenerService.h"
 #include "MetadataExt.h"
+#include "PKIXTrustEngine.h"
 #include "SPConfig.h"
 
 #include <log4cpp/Category.hh>
@@ -89,6 +90,7 @@ bool SPInternalConfig::init(const char* catalog_path)
     
     registerListenerServices();
     registerMetadataExtClasses();
+    registerPKIXTrustEngine();
 
     log.info("library initialization complete");
     return true;

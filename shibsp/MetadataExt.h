@@ -15,7 +15,7 @@
  */
 
 /**
- * @file shibsp/MetadataExt
+ * @file shibsp/MetadataExt.h
  * 
  * XMLObjects representing Shibboleth metadata extensions
  */
