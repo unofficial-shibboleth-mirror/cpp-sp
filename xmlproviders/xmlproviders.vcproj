@@ -259,10 +259,6 @@
 			RelativePath="xmlproviders.rc"
 			>
 		</File>
-		<File
-			RelativePath="XMLTrust.cpp"
-			>
-		</File>
 	</Files>
 	<Globals>
 	</Globals>

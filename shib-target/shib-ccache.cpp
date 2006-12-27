@@ -212,7 +212,7 @@ string StubCache::insert(
     in.structure();
     in.addmember("application_id").string(application->getId());
     in.addmember("client_address").string(client_addr);
-    auto_ptr_char provid(source->getId());
+    xmltooling::auto_ptr_char provid(source->getId());
     in.addmember("provider_id").string(provid.get());
     in.addmember("major_version").integer(1);
     in.addmember("minor_version").integer(tokens->getMinorVersion());
@@ -393,7 +393,7 @@ MemorySessionCacheEntry::MemorySessionCacheEntry(
     m_obj.addmember("key").string(key);
     m_obj.addmember("client_address").string(client_addr);
     m_obj.addmember("application_id").string(application->getId());
-    auto_ptr_char pid(source->getId());
+    xmltooling::auto_ptr_char pid(source->getId());
     m_obj.addmember("provider_id").string(pid.get());
     m_obj.addmember("major_version").integer(1);
     m_obj.addmember("minor_version").integer(tokens->getMinorVersion());
@@ -440,7 +440,7 @@ MemorySessionCacheEntry::MemorySessionCacheEntry(
     }
 
     // Transaction Logging
-    auto_ptr_char hname(subject->getNameIdentifier()->getName());
+    xmltooling::auto_ptr_char hname(subject->getNameIdentifier()->getName());
     STConfig& stc=static_cast<STConfig&>(ShibTargetConfig::getConfig());
     stc.getTransactionLog().infoStream() <<
         "New session (ID: " <<
@@ -484,7 +484,7 @@ MemorySessionCacheEntry::MemorySessionCacheEntry(
     m_obj.addmember("key").string(key);
     m_obj.addmember("client_address").string(client_addr);
     m_obj.addmember("application_id").string(application->getId());
-    auto_ptr_char pid(source->getId());
+    xmltooling::auto_ptr_char pid(source->getId());
     m_obj.addmember("provider_id").string(pid.get());
     m_obj.addmember("subject").string(subject);
     m_obj.addmember("authn_context").string(authnContext);
@@ -877,7 +877,7 @@ pair<SAMLResponse*,SAMLResponse*> MemorySessionCacheEntry::getNewResponse(
                 // Get a binding object for this protocol.
                 const SAMLBinding* binding = application->getBinding(ep->getBinding());
                 if (!binding) {
-                    auto_ptr_char prot(ep->getBinding());
+                    xmltooling::auto_ptr_char prot(ep->getBinding());
                     m_log->warn("skipping binding on unsupported protocol (%s)", prot.get());
                     continue;
                 }
@@ -893,16 +893,6 @@ pair<SAMLResponse*,SAMLResponse*> MemorySessionCacheEntry::getNewResponse(
             }
             catch (SAMLException& e) {
                 m_log->error("caught SAML exception during SAML attribute query: %s", e.what());
-                // Check for shib:InvalidHandle error and propagate it out.
-                Iterator<saml::QName> codes=e.getCodes();
-                if (codes.size()>1) {
-                    const saml::QName& code=codes[1];
-                    if (!XMLString::compareString(code.getNamespaceURI(),shibboleth::Constants::SHIB_NS) &&
-                        !XMLString::compareString(code.getLocalName(), shibboleth::Constants::InvalidHandle)) {
-                        codes.reset();
-                        throw InvalidHandleException(e.what(),saml::params(),codes);
-                    }
-                }
             }
         }
 
@@ -919,7 +909,7 @@ pair<SAMLResponse*,SAMLResponse*> MemorySessionCacheEntry::getNewResponse(
             for (unsigned int a=0; a<assertions.size();) {
                 // Discard any assertions not issued by the right entity.
                 if (XMLString::compareString(source->getId(),assertions[a]->getIssuer())) {
-                    auto_ptr_char bad(assertions[a]->getIssuer());
+                    xmltooling::auto_ptr_char bad(assertions[a]->getIssuer());
                     m_log->warn("discarding assertion not issued by (%s), instead by (%s)",m_obj["provider_id"].string(),bad.get());
                     response->removeAssertion(a);
                     continue;
@@ -997,7 +987,7 @@ SAMLResponse* MemorySessionCacheEntry::filter(
                 Iterator<SAMLAttribute*> attrs=state ? state->getAttributes() : EMPTY(SAMLAttribute*);
                 while (attrs.hasNext()) {
                     SAMLAttribute* attr=attrs.next();
-                    auto_ptr_char attrname(attr->getName());
+                    xmltooling::auto_ptr_char attrname(attr->getName());
                     tran.infoStream() << "\t" << attrname.get() << " (" << attr->getValues().size() << " values)";
                 }
             }
@@ -1241,7 +1231,7 @@ string MemorySessionCache::insert(
 #endif
 
     SAMLIdentifier id;
-    auto_ptr_char key(id);
+    xmltooling::auto_ptr_char key(id);
 
     if (m_log->isDebugEnabled())
         m_log->debug("creating new cache entry for application %s: \"%s\"", application->getId(), key.get());

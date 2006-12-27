@@ -10,7 +10,6 @@ noinst_HEADERS = internal.h
 
 libshib_la_SOURCES = \
 	BasicTrust.cpp \
-    Constants.cpp \
     Metadata.cpp \
     ReloadableXMLFile.cpp \
     ShibbolethTrust.cpp \

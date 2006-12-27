@@ -24,6 +24,7 @@
 
 #include <shibsp/DOMPropertySet.h>
 #include <shibsp/SPConfig.h>
+#include <shibsp/SPConstants.h>
 #include <log4cpp/Category.hh>
 #include <log4cpp/PropertyConfigurator.hh>
 #include <algorithm>
@@ -36,6 +37,9 @@ using namespace shibboleth;
 using namespace saml;
 using namespace log4cpp;
 using namespace std;
+
+using xmltooling::TrustEngine;
+using opensaml::saml2md::MetadataProvider;
 
 namespace shibtarget {
 
@@ -63,6 +67,10 @@ namespace shibtarget {
         Iterator<ITrust*> getTrustProviders() const;
         Iterator<const XMLCh*> getAudiences() const;
         const PropertySet* getCredentialUse(const IEntityDescriptor* provider) const;
+
+        const MetadataProvider* getMetadataProvider() const;
+        const TrustEngine* getTrustEngine() const;
+        
         const SAMLBrowserProfile* getBrowserProfile() const {return m_profile;}
         const SAMLBinding* getBinding(const XMLCh* binding) const
             {return XMLString::compareString(SAMLBinding::SOAP,binding) ? NULL : m_binding;}
@@ -92,6 +100,8 @@ namespace shibtarget {
         vector<IAAP*> m_aaps;
         vector<IMetadata*> m_metadatas;
         vector<ITrust*> m_trusts;
+        MetadataProvider* m_metadata;
+        TrustEngine* m_trust;
         vector<const XMLCh*> m_audiences;
         ShibBrowserProfile* m_profile;
         SAMLBinding* m_binding;
@@ -215,7 +225,7 @@ XMLApplication::XMLApplication(
     const Iterator<ICredentials*>& creds,
     const DOMElement* e,
     const XMLApplication* base
-    ) : m_ini(ini), m_base(base), m_profile(NULL), m_binding(NULL), m_bindingHook(NULL),
+    ) : m_ini(ini), m_base(base), m_metadata(NULL), m_trust(NULL), m_profile(NULL), m_binding(NULL), m_bindingHook(NULL),
         m_credDefault(NULL), m_sessionInitDefault(NULL), m_acsDefault(NULL)
 {
 #ifdef _DEBUG
@@ -342,7 +352,7 @@ XMLApplication::XMLApplication(
             // A legacy config installs a SAML POST handler at the root handler location.
             // We use the Sessions element itself as the PropertySet.
 
-            auto_ptr_char b1(Constants::SHIB_SESSIONINIT_PROFILE_URI);
+            auto_ptr_char b1(shibspconstants::SHIB1_SESSIONINIT_PROFILE_URI);
             IPlugIn* hplug=shibConf.getPlugMgr().newPlugin(b1.get(),propcheck->getElement());
             IHandler* h1=dynamic_cast<IHandler*>(hplug);
             if (!h1) {
@@ -452,6 +462,8 @@ XMLApplication::XMLApplication(
         }
 
         if (conf.isEnabled(SPConfig::Trust)) {
+            // First build the old plugins.
+            // TODO: remove this later
             nlist=e->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(TrustProvider));
             for (i=0; nlist && i<nlist->getLength(); i++) {
                 if (nlist->item(i)->getParentNode()->isSameNode(e)) {
@@ -671,6 +683,16 @@ const PropertySet* XMLApplication::getCredentialUse(const IEntityDescriptor* pro
     }
 #endif
     return m_credDefault;
+}
+
+const MetadataProvider* XMLApplication::getMetadataProvider() const
+{
+    return (!m_metadata && m_base) ? m_base->getMetadataProvider() : m_metadata;
+}
+
+const TrustEngine* XMLApplication::getTrustEngine() const
+{
+    return (!m_trust && m_base) ? m_base->getTrustEngine() : m_trust;
 }
 
 void XMLApplication::validateToken(SAMLAssertion* token, time_t ts, const IRoleDescriptor* role, const Iterator<ITrust*>& trusts) const

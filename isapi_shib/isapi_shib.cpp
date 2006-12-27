@@ -42,7 +42,6 @@
 
 using namespace shibsp;
 using namespace shibtarget;
-using namespace saml;
 using namespace xmltooling;
 using namespace std;
 
@@ -180,7 +179,7 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
         
         // Access the implementation-specifics for site mappings.
         IConfig* conf=g_Config->getINI();
-        Locker locker(conf);
+        saml::Locker locker(conf);
         const PropertySet* props=conf->getPropertySet("Local");
         if (props) {
             const DOMElement* impl=saml::XML::getFirstChildElement(
@@ -426,7 +425,7 @@ public:
     const string& msg,
     int code=200,
     const string& content_type="text/html",
-    const Iterator<header_t>& headers=EMPTY(header_t)) {
+    const saml::Iterator<header_t>& headers=EMPTY(header_t)) {
     string hdr = string ("Connection: close\r\nContent-type: ") + content_type + "\r\n";
     while (headers.hasNext()) {
         const header_t& h=headers.next();
@@ -538,7 +537,7 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
         else
             return WriteClientError(pfc,"Shibboleth Filter detected unexpected IIS error.");
     }
-    catch (SAMLException& e) {
+    catch (saml::SAMLException& e) {
         LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, e.what());
         return WriteClientError(pfc,"Shibboleth Filter caught an exception, check Event Log for details.");
     }
@@ -680,7 +679,7 @@ public:
     if (m_gotBody)
         return m_body.c_str();
     if (m_lpECB->cbTotalBytes > 1024*1024) // 1MB?
-      throw SAMLException("Size of POST request body exceeded limit.");
+        throw saml::SAMLException("Size of POST request body exceeded limit.");
     else if (m_lpECB->cbTotalBytes != m_lpECB->cbAvailable) {
       m_gotBody=true;
       char buf[8192];
@@ -689,7 +688,7 @@ public:
         DWORD buflen=8192;
         BOOL ret = m_lpECB->ReadClient(m_lpECB->ConnID, buf, &buflen);
         if (!ret || !buflen)
-          throw SAMLException("Error reading POST request body from browser.");
+            throw saml::SAMLException("Error reading POST request body from browser.");
         m_body.append(buf, buflen);
         datalen-=buflen;
       }
@@ -704,7 +703,7 @@ public:
     const string &msg,
     int code=200,
     const string& content_type="text/html",
-    const Iterator<header_t>& headers=EMPTY(header_t)) {
+    const saml::Iterator<header_t>& headers=EMPTY(header_t)) {
     string hdr = string ("Connection: close\r\nContent-type: ") + content_type + "\r\n";
     for (unsigned int k = 0; k < headers.size(); k++) {
       hdr += headers[k].first + ": " + headers[k].second + "\r\n";
@@ -786,7 +785,7 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
         else
             return WriteClientError(lpECB,"Server detected unexpected IIS error.");
     }
-    catch (SAMLException& e) {
+    catch (saml::SAMLException& e) {
         LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, e.what());
         return WriteClientError(lpECB,"Shibboleth Extension caught an exception, check Event Log for details.");
     }

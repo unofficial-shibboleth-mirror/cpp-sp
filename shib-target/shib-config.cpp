@@ -23,8 +23,8 @@
  */
 
 #include "internal.h"
-#include <saml/util/SAMLConstants.h>
 #include <shibsp/SPConfig.h>
+#include <shibsp/SPConstants.h>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/NDC.h>
 
@@ -104,11 +104,11 @@ bool STConfig::init(const char* schemadir)
     samlConf.getPlugMgr().regFactory(shibtarget::XML::XMLRequestMapType,&XMLRequestMapFactory);
     samlConf.getPlugMgr().regFactory(shibtarget::XML::NativeRequestMapType,&XMLRequestMapFactory);
     
-    auto_ptr_char temp1(Constants::SHIB_SESSIONINIT_PROFILE_URI);
+    auto_ptr_char temp1(shibspconstants::SHIB1_SESSIONINIT_PROFILE_URI);
     samlConf.getPlugMgr().regFactory(temp1.get(),&ShibSessionInitiatorFactory);
     samlConf.getPlugMgr().regFactory(samlconstants::SAML1_PROFILE_BROWSER_POST,&SAML1POSTFactory);
     samlConf.getPlugMgr().regFactory(samlconstants::SAML1_PROFILE_BROWSER_ARTIFACT,&SAML1ArtifactFactory);
-    auto_ptr_char temp4(Constants::SHIB_LOGOUT_PROFILE_URI);
+    auto_ptr_char temp4(shibspconstants::SHIB1_LOGOUT_PROFILE_URI);
     samlConf.getPlugMgr().regFactory(temp4.get(),&ShibLogoutFactory);
     
     saml::XML::registerSchema(shibtarget::XML::SHIBTARGET_NS,shibtarget::XML::SHIBTARGET_SCHEMA_ID,NULL,false);

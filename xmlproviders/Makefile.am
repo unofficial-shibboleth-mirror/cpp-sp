@@ -19,8 +19,7 @@ xmlproviders_la_SOURCES = \
 	XMLAccessControl.cpp \
 	XMLCredentials.cpp \
 	XMLMetadata.cpp \
-	XMLProviders.cpp \
-	XMLTrust.cpp
+	XMLProviders.cpp
 
 
 xmlproviders_la_LDFLAGS = -module -avoid-version

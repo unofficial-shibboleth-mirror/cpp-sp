@@ -42,7 +42,6 @@ using namespace std;
 
 PlugManager::Factory TargetedIDFactory;
 PlugManager::Factory XMLMetadataFactory;
-PlugManager::Factory XMLTrustFactory;
 PlugManager::Factory XMLCredentialsFactory;
 PlugManager::Factory XMLAAPFactory;
 PlugManager::Factory FileCredResolverFactory;
@@ -53,7 +52,6 @@ extern "C" int XML_EXPORTS saml_extension_init(void*)
     // Register extension schemas.
     saml::XML::registerSchema(::XML::SHIB_NS,::XML::SHIB_SCHEMA_ID);
     saml::XML::registerSchema(::XML::SHIBMETA_NS,::XML::SHIBMETA_SCHEMA_ID);
-    saml::XML::registerSchema(::XML::TRUST_NS,::XML::TRUST_SCHEMA_ID);
     saml::XML::registerSchema(::XML::CREDS_NS,::XML::CREDS_SCHEMA_ID);
     saml::XML::registerSchema(::XML::SAML2META_NS,::XML::SAML2META_SCHEMA_ID);
     saml::XML::registerSchema(::XML::SAML2ASSERT_NS,::XML::SAML2ASSERT_SCHEMA_ID);
@@ -64,8 +62,6 @@ extern "C" int XML_EXPORTS saml_extension_init(void*)
     conf.getPlugMgr().regFactory("edu.internet2.middleware.shibboleth.common.provider.TargetedIDFactory",&TargetedIDFactory);
     conf.getPlugMgr().regFactory("edu.internet2.middleware.shibboleth.metadata.provider.XMLMetadata",&XMLMetadataFactory);
     conf.getPlugMgr().regFactory("edu.internet2.middleware.shibboleth.common.provider.XMLMetadata",&XMLMetadataFactory);
-    conf.getPlugMgr().regFactory("edu.internet2.middleware.shibboleth.trust.provider.XMLTrust",&XMLTrustFactory);
-    conf.getPlugMgr().regFactory("edu.internet2.middleware.shibboleth.common.provider.XMLTrust",&XMLTrustFactory);
     conf.getPlugMgr().regFactory("edu.internet2.middleware.shibboleth.common.Credentials",&XMLCredentialsFactory);
     conf.getPlugMgr().regFactory("edu.internet2.middleware.shibboleth.common.Credentials.FileCredentialResolver",&FileCredResolverFactory);
     conf.getPlugMgr().regFactory("edu.internet2.middleware.shibboleth.aap.provider.XMLAAP",&XMLAAPFactory);
@@ -82,8 +78,6 @@ extern "C" void XML_EXPORTS saml_extension_term()
     conf.getPlugMgr().unregFactory("edu.internet2.middleware.shibboleth.common.provider.TargetedIDFactory");
     conf.getPlugMgr().unregFactory("edu.internet2.middleware.shibboleth.metadata.provider.XMLMetadata");
     conf.getPlugMgr().unregFactory("edu.internet2.middleware.shibboleth.common.provider.XMLMetadata");
-    conf.getPlugMgr().unregFactory("edu.internet2.middleware.shibboleth.trust.provider.XMLTrust");
-    conf.getPlugMgr().unregFactory("edu.internet2.middleware.shibboleth.common.provider.XMLTrust");
     conf.getPlugMgr().unregFactory("edu.internet2.middleware.shibboleth.common.Credentials");
     conf.getPlugMgr().unregFactory("edu.internet2.middleware.shibboleth.common.Credentials.FileCredentialResolver");
     conf.getPlugMgr().unregFactory("edu.internet2.middleware.shibboleth.aap.provider.XMLAAP");

@@ -352,18 +352,6 @@ namespace shibboleth
     template class SHIB_EXPORTS saml::ArrayIterator<IAAP*>;
 #endif
 
-    struct SHIB_EXPORTS Constants
-    {
-        static const XMLCh SHIB_ATTRIBUTE_NAMESPACE_URI[];
-        static const XMLCh SHIB_NAMEID_FORMAT_URI[];
-        static const XMLCh SHIB_AUTHNREQUEST_PROFILE_URI[];
-        static const XMLCh SHIB_LEGACY_AUTHNREQUEST_PROFILE_URI[];
-        static const XMLCh SHIB_SESSIONINIT_PROFILE_URI[];
-        static const XMLCh SHIB_LOGOUT_PROFILE_URI[];
-        static const XMLCh SHIB_NS[];
-        static const XMLCh InvalidHandle[];
-    };
-
     // Glue classes between abstract metadata and concrete providers
     
     class SHIB_EXPORTS Metadata

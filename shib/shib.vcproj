@@ -222,10 +222,6 @@
 			>
 		</File>
 		<File
-			RelativePath="Constants.cpp"
-			>
-		</File>
-		<File
 			RelativePath="hresult.h"
 			>
 		</File>

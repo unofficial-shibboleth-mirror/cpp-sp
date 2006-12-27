@@ -21,6 +21,7 @@
 
 #include <shib-target/shib-target.h>
 #include <shibsp/SPConfig.h>
+#include <shibsp/SPConstants.h>
 
 using namespace shibsp;
 using namespace shibtarget;
@@ -97,7 +98,7 @@ int main(int argc,char* argv[])
                         new SAMLNameIdentifier(
                             handle.get(),
                             domain.get(),
-                            format.get() ? format.get() : Constants::SHIB_NAMEID_FORMAT_URI
+                            format.get() ? format.get() : shibspconstants::SHIB1_NAMEID_FORMAT_URI
                             )
                         ),
                     resource.get(),
@@ -134,17 +135,7 @@ int main(int argc,char* argv[])
                     throw TrustException("unable to verify signed response");
                 response = r.release();
             }
-            catch (SAMLException& e) {
-                // Check for shib:InvalidHandle error and propagate it out.
-                Iterator<saml::QName> codes=e.getCodes();
-                if (codes.size()>1) {
-                    const saml::QName& code=codes[1];
-                    if (!XMLString::compareString(code.getNamespaceURI(),shibboleth::Constants::SHIB_NS) &&
-                        !XMLString::compareString(code.getLocalName(), shibboleth::Constants::InvalidHandle)) {
-                        codes.reset();
-                        throw InvalidHandleException(e.what(),params(),codes);
-                    }
-                }
+            catch (SAMLException&) {
             }
         }
 

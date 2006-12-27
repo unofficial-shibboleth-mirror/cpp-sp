@@ -40,6 +40,8 @@
 #include <xsec/framework/XSECException.hpp>
 #include <xsec/framework/XSECProvider.hpp>
 
+#include <shibsp/SPConstants.h>
+
 using namespace shibboleth;
 using namespace saml;
 using namespace log4cpp;
@@ -737,7 +739,7 @@ XMLMetadataImpl::SSORole::SSORole(const EntityDescriptor* provider, time_t valid
     else {
         // For old style, we just do SAML 1.1 compatibility with Shib handles.
         m_protocolEnum.push_back(saml::XML::SAML11_PROTOCOL_ENUM);
-        m_formats.push_back(shibboleth::Constants::SHIB_NAMEID_FORMAT_URI);
+        m_formats.push_back(shibspconstants::SHIB1_NAMEID_FORMAT_URI);
     }
 }
 
@@ -798,14 +800,14 @@ XMLMetadataImpl::IDPRole::IDPRole(const EntityDescriptor* provider, time_t valid
         }
     }
     else {
-        m_protocolEnum.push_back(Constants::SHIB_NS);
-        m_attrprofs.push_back(Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
+        m_protocolEnum.push_back(::XML::SHIB_NS);
+        m_attrprofs.push_back(shibspconstants::SHIB1_ATTRIBUTE_NAMESPACE_URI);
         unsigned int i;
         DOMNodeList* nlist=e->getElementsByTagNameNS(::XML::SHIB_NS,SHIB_L(HandleService));
         for (i=0; nlist && i<nlist->getLength(); i++) {
             // Manufacture an endpoint for the "Shib" binding.
             m_sso.add(
-                new Endpoint(Constants::SHIB_AUTHNREQUEST_PROFILE_URI,static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,L(Location)))
+                new Endpoint(shibspconstants::SHIB1_AUTHNREQUEST_PROFILE_URI,static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,L(Location)))
                 );
 
             // We're going to "mock up" a KeyDescriptor that contains the specified Name as a ds:KeyName.
@@ -880,8 +882,8 @@ XMLMetadataImpl::AARole::AARole(const EntityDescriptor* provider, time_t validUn
     else {
         // For old style, we just do SAML 1.1 compatibility with Shib handles.
         m_protocolEnum.push_back(saml::XML::SAML11_PROTOCOL_ENUM);
-        m_formats.push_back(Constants::SHIB_NAMEID_FORMAT_URI);
-        m_attrprofs.push_back(Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
+        m_formats.push_back(shibspconstants::SHIB1_NAMEID_FORMAT_URI);
+        m_attrprofs.push_back(shibspconstants::SHIB1_ATTRIBUTE_NAMESPACE_URI);
         unsigned int i;
         DOMNodeList* nlist=e->getElementsByTagNameNS(::XML::SHIB_NS,SHIB_L(AttributeAuthority));
         for (i=0; nlist && i<nlist->getLength(); i++) {

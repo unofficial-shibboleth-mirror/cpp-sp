@@ -68,7 +68,6 @@
 
 using namespace shibsp;
 using namespace shibtarget;
-using namespace saml;
 using namespace xmltooling;
 using namespace std;
 
@@ -277,11 +276,11 @@ public:
         return m_body.c_str();
     // Read the posted data
     if (ap_setup_client_block(m_req, REQUEST_CHUNKED_ERROR))
-        throw SAMLException("Apache function (setup_client_block) failed while reading POST request body.");
+        throw saml::SAMLException("Apache function (setup_client_block) failed while reading POST request body.");
     if (!ap_should_client_block(m_req))
-        throw SAMLException("Apache function (should_client_block) failed while reading POST request body.");
+        throw saml::SAMLException("Apache function (should_client_block) failed while reading POST request body.");
     if (m_req->remaining > 1024*1024)
-        throw SAMLException("Blocked POST request body larger than size limit.");
+        throw saml::SAMLException("Blocked POST request body larger than size limit.");
     m_gotBody=true;
     char buff[HUGE_STRING_LEN];
     ap_hard_timeout("[mod_shib] getRequestBody", m_req);
@@ -315,7 +314,7 @@ public:
     const string& msg,
     int code=200,
     const string& content_type="text/html",
-	const Iterator<header_t>& headers=EMPTY(header_t)
+    const saml::Iterator<header_t>& headers=EMPTY(header_t)
     ) {
     m_req->content_type = ap_psprintf(m_req->pool, content_type.c_str());
     while (headers.hasNext()) {
@@ -364,7 +363,7 @@ extern "C" int shib_check_user(request_rec* r)
     // export happened successfully..  this user is ok.
     return OK;
   }
-  catch (SAMLException& e) {
+  catch (saml::SAMLException& e) {
     ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_check_user threw an exception: %s", e.what());
     return SERVER_ERROR;
   }
@@ -409,7 +408,7 @@ extern "C" int shib_handler(request_rec* r)
     ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "doHandler() did not do anything.");
     return SERVER_ERROR;
   }
-  catch (SAMLException& e) {
+  catch (saml::SAMLException& e) {
     ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_handler threw an exception: %s", e.what());
     return SERVER_ERROR;
   }
@@ -446,7 +445,7 @@ extern "C" int shib_auth_checker(request_rec* r)
     // We're all okay.
     return OK;
   }
-  catch (SAMLException& e) {
+  catch (saml::SAMLException& e) {
     ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_auth_checker threw an exception: %s", e.what());
     return SERVER_ERROR;
   }
@@ -472,7 +471,7 @@ public:
     ) const;
 };
 
-IPlugIn* htAccessFactory(const DOMElement* e)
+saml::IPlugIn* htAccessFactory(const DOMElement* e)
 {
     return new htAccessControl();
 }
@@ -501,18 +500,18 @@ private:
     IAccessControl* m_htaccess;
 };
 
-IPlugIn* ApacheRequestMapFactory(const DOMElement* e)
+saml::IPlugIn* ApacheRequestMapFactory(const DOMElement* e)
 {
     return new ApacheRequestMapper(e);
 }
 
 ApacheRequestMapper::ApacheRequestMapper(const DOMElement* e) : m_mapper(NULL), m_staKey(NULL), m_propsKey(NULL), m_htaccess(NULL)
 {
-    IPlugIn* p=SAMLConfig::getConfig().getPlugMgr().newPlugin(shibtarget::XML::XMLRequestMapType,e);
+    saml::IPlugIn* p=saml::SAMLConfig::getConfig().getPlugMgr().newPlugin(shibtarget::XML::XMLRequestMapType,e);
     m_mapper=dynamic_cast<IRequestMapper*>(p);
     if (!m_mapper) {
         delete p;
-        throw UnsupportedExtensionException("Embedded request mapper plugin was not of correct type.");
+        throw saml::UnsupportedExtensionException("Embedded request mapper plugin was not of correct type.");
     }
     m_htaccess=new htAccessControl();
     m_staKey=ThreadKey::create(NULL);
@@ -763,7 +762,7 @@ bool htAccessControl::authorized(
             }
         }
         else {
-            Iterator<shibboleth::IAAP*> provs=st->getApplication()->getAAPProviders();
+            saml::Iterator<shibboleth::IAAP*> provs=st->getApplication()->getAAPProviders();
             shibboleth::AAP wrapper(provs,w);
             if (wrapper.fail()) {
                 st->log(ShibTarget::LogLevelWarn, string("htAccessControl plugin didn't recognize require rule: ") + w);
@@ -799,7 +798,7 @@ bool htAccessControl::authorized(
                             if (i == 0) {
                                 st->log(ShibTarget::LogLevelError, string("htAccessControl plugin found invalid header encoding (") +
                                     vals + "): starts with a semicolon");
-                                throw SAMLException("Invalid information supplied to authorization plugin.");
+                                throw saml::SAMLException("Invalid information supplied to authorization plugin.");
                             }
 
                             if (vals_str.at(i-1) == '\\') {
@@ -944,10 +943,10 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
             ap_log_error(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() failed to initialize libraries");
             exit(1);
         }
-        SAMLConfig::getConfig().getPlugMgr().regFactory(shibtarget::XML::htAccessControlType,&htAccessFactory);
-        SAMLConfig::getConfig().getPlugMgr().regFactory(shibtarget::XML::NativeRequestMapType,&ApacheRequestMapFactory);
+        saml::SAMLConfig::getConfig().getPlugMgr().regFactory(shibtarget::XML::htAccessControlType,&htAccessFactory);
+        saml::SAMLConfig::getConfig().getPlugMgr().regFactory(shibtarget::XML::NativeRequestMapType,&ApacheRequestMapFactory);
         // We hijack the legacy type so that 1.2 config files will load this plugin
-        SAMLConfig::getConfig().getPlugMgr().regFactory(shibtarget::XML::LegacyRequestMapType,&ApacheRequestMapFactory);
+        saml::SAMLConfig::getConfig().getPlugMgr().regFactory(shibtarget::XML::LegacyRequestMapType,&ApacheRequestMapFactory);
         
         if (!g_Config->load(g_szSHIBConfig)) {
             ap_log_error(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() failed to load configuration");
@@ -955,7 +954,7 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
         }
 
         IConfig* conf=g_Config->getINI();
-        Locker locker(conf);
+        saml::Locker locker(conf);
         const PropertySet* props=conf->getPropertySet("Local");
         if (props) {
             pair<bool,const char*> unsetValue=props->getString("unsetHeaderValue");

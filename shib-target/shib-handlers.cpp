@@ -28,6 +28,7 @@
 #include <saml/binding/URLEncoder.h>
 #include <saml/util/CommonDomainCookie.h>
 #include <shibsp/SPConfig.h>
+#include <shibsp/SPConstants.h>
 
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
@@ -142,13 +143,13 @@ pair<bool,void*> SessionInitiator::run(ShibTarget* st, bool isHandler) const
             const IEntityDescriptor* entity=m.lookup(option);
             if (!entity)
                 throw MetadataException("Session initiator unable to locate metadata for provider ($1).", params(1,option));
-            const IIDPSSODescriptor* role=entity->getIDPSSODescriptor(Constants::SHIB_NS);
+            const IIDPSSODescriptor* role=entity->getIDPSSODescriptor(shibspconstants::SHIB1_PROTOCOL_ENUM);
             if (!role)
                 throw MetadataException(
                     "Session initiator unable to locate a Shibboleth-aware identity provider role for provider ($1).", params(1,option)
                     );
             const IEndpointManager* SSO=role->getSingleSignOnServiceManager();
-            const IEndpoint* ep=SSO->getEndpointByBinding(Constants::SHIB_AUTHNREQUEST_PROFILE_URI);
+            const IEndpoint* ep=SSO->getEndpointByBinding(shibspconstants::SHIB1_AUTHNREQUEST_PROFILE_URI);
             if (!ep)
                 throw MetadataException(
                     "Session initiator unable to locate compatible SSO service for provider ($1).", params(1,option)
@@ -173,12 +174,9 @@ pair<bool,void*> SessionInitiator::run(ShibTarget* st, bool isHandler) const
         throw ConfigurationException("Session initiator is missing wayfURL property.");
 
     pair<bool,const XMLCh*> wayfBinding=getProperties()->getXMLString("wayfBinding");
-    if (!wayfBinding.first || !XMLString::compareString(wayfBinding.second,Constants::SHIB_AUTHNREQUEST_PROFILE_URI))
+    if (!wayfBinding.first || !XMLString::compareString(wayfBinding.second,shibspconstants::SHIB1_AUTHNREQUEST_PROFILE_URI))
         // Standard Shib 1.x
         return ShibAuthnRequest(st,ACS,wayfURL.second,resource,app->getString("providerId").second);
-    else if (!XMLString::compareString(wayfBinding.second,Constants::SHIB_LEGACY_AUTHNREQUEST_PROFILE_URI))
-        // Shib pre-1.2
-        return ShibAuthnRequest(st,ACS,wayfURL.second,resource,NULL);
     else if (!strcmp(getProperties()->getString("wayfBinding").second,"urn:mace:shibboleth:1.0:profiles:EAuth")) {
         // TODO: Finalize E-Auth profile URI
         pair<bool,bool> localRelayState=st->getConfig()->getPropertySet("InProcess")->getBool("localRelayState");

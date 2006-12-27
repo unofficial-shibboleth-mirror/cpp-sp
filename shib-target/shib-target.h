@@ -27,8 +27,10 @@
 
 // New headers
 #include <saml/base.h>
+#include <saml/saml2/metadata/MetadataProvider.h>
 #include <shibsp/ListenerService.h>
 #include <shibsp/PropertySet.h>
+#include <xmltooling/security/TrustEngine.h>
 
 // Old headers
 #include <saml/saml.h>
@@ -95,6 +97,9 @@ namespace shibtarget {
         virtual saml::Iterator<shibboleth::ITrust*> getTrustProviders() const=0;
         virtual saml::Iterator<const XMLCh*> getAudiences() const=0;
         virtual const shibsp::PropertySet* getCredentialUse(const shibboleth::IEntityDescriptor* provider) const=0;
+
+        virtual const opensaml::saml2md::MetadataProvider* getMetadataProvider() const=0;
+        virtual const xmltooling::TrustEngine* getTrustEngine() const=0;
 
         // caller is borrowing object, must use within scope of config lock
         virtual const saml::SAMLBrowserProfile* getBrowserProfile() const=0;

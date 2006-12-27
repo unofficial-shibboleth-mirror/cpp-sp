@@ -25,6 +25,7 @@
 #include "internal.h"
 #include <algorithm>
 #include <log4cpp/Category.hh>
+#include <shibsp/SPConstants.h>
 
 using namespace shibboleth;
 using namespace saml;
@@ -168,7 +169,7 @@ void XMLAAPImpl::init()
             AttributeRule* rule=new AttributeRule(static_cast<DOMElement*>(nlist->item(i)));
 #ifdef HAVE_GOOD_STL
             xstring key=rule->getName();
-            key=key + chBang + chBang + (rule->getNamespace() ? rule->getNamespace() : Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
+            key=key + chBang + chBang + (rule->getNamespace() ? rule->getNamespace() : shibspconstants::SHIB1_ATTRIBUTE_NAMESPACE_URI);
 #else
             auto_ptr_char aname(rule->getName());
             string key(aname.get());
@@ -231,7 +232,7 @@ XMLAAPImpl::AttributeRule::AttributeRule(const DOMElement* e) :
     m_name=e->getAttributeNS(NULL,SHIB_L(Name));
     m_namespace=e->getAttributeNS(NULL,SHIB_L(Namespace));
     if (!m_namespace || !*m_namespace)
-        m_namespace=Constants::SHIB_ATTRIBUTE_NAMESPACE_URI;
+        m_namespace=shibspconstants::SHIB1_ATTRIBUTE_NAMESPACE_URI;
     
     const XMLCh* caseSensitive=e->getAttributeNS(NULL,SHIB_L(CaseSensitive));
     m_caseSensitive=(!caseSensitive || !*caseSensitive || *caseSensitive==chDigit_1 || *caseSensitive==chLatin_t);
@@ -357,7 +358,7 @@ const IAttributeRule* XMLAAP::lookup(const XMLCh* attrName, const XMLCh* attrNam
 {
 #ifdef HAVE_GOOD_STL
     xstring key=attrName;
-    key=key + chBang + chBang + (attrNamespace ? attrNamespace : Constants::SHIB_ATTRIBUTE_NAMESPACE_URI);
+    key=key + chBang + chBang + (attrNamespace ? attrNamespace : shibspconstants::SHIB1_ATTRIBUTE_NAMESPACE_URI);
 #else
     auto_ptr_char aname(attrName);
     string key=aname.get();

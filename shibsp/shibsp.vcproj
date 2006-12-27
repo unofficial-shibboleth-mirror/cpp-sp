@@ -204,6 +204,10 @@
 				RelativePath=".\SPConfig.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\SPConstants.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -248,6 +252,10 @@
 			</File>
 			<File
 				RelativePath=".\SPConfig.h"
+				>
+			</File>
+			<File
+				RelativePath=".\SPConstants.h"
 				>
 			</File>
 			<File

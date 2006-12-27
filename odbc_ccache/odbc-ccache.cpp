@@ -169,7 +169,7 @@ ODBCBase::ODBCBase(const DOMElement* e) : m_root(e), m_bInitializedODBC(false)
         m_connstring=p_connstring;
     }
     else {
-        auto_ptr_char arg(e->getFirstChild()->getNodeValue());
+        xmltooling::auto_ptr_char arg(e->getFirstChild()->getNodeValue());
         m_connstring=arg.get();
         p_connstring=m_connstring.c_str();
     }
@@ -832,7 +832,7 @@ public:
   ODBCReplayCache(const DOMElement* e);
   virtual ~ODBCReplayCache() {}
 
-  bool check(const XMLCh* str, time_t expires) {auto_ptr_XMLCh temp(str); return check(temp.get(),expires);}
+  bool check(const XMLCh* str, time_t expires) {xmltooling::auto_ptr_XMLCh temp(str); return check(temp.get(),expires);}
   bool check(const char* str, time_t expires);
 };
 
