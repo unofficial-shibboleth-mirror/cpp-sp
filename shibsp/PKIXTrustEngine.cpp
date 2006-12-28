@@ -118,27 +118,27 @@ AbstractPKIXTrustEngine::PKIXValidationInfoIterator* PKIXTrustEngine::getPKIXVal
 
 bool MetadataPKIXIterator::next()
 {
-    // If we had a KeyAuthority, look for another in the same block.
-    if (m_current) {
-        // Keep going until we hit the end of the Extensions.
+    // If we had an active block, look for another in the same block.
+    if (m_extBlock) {
+        // Keep going until we hit the end of the block.
         vector<XMLObject*>::const_iterator end = m_extBlock->getUnknownXMLObjects().end();
-        while (++m_iter != end) {
-            // If we hit another KeyAuthority, remember it and signal.
-            if (m_current=dynamic_cast<KeyAuthority*>(*m_iter)) {
+        while (m_iter != end) {
+            // If we hit a KeyAuthority, remember it and signal.
+            if (m_current=dynamic_cast<KeyAuthority*>(*m_iter++)) {
                 populate();
                 return true;
             }
         }
-
+        
         // If we get here, we hit the end of this Extensions block.
         // Climb a level, if possible.
-        m_obj = m_extBlock->getParent()->getParent();
+        m_obj = m_obj->getParent();
         m_current = NULL;
         m_extBlock = NULL;
     }
 
     // If we get here, we try and find an Extensions block.
-    if (m_obj) {
+    while (m_obj) {
         const EntityDescriptor* entity = dynamic_cast<const EntityDescriptor*>(m_obj);
         if (entity) {
             m_extBlock = entity->getExtensions();
@@ -148,30 +148,17 @@ bool MetadataPKIXIterator::next()
             if (entities) {
                 m_extBlock = entities->getExtensions();
             }
-            else {
-                // Jump a level and try again.
-                m_obj = m_obj->getParent();
-                return next();
-            }
         }
-    }
-
-    if (m_extBlock) {
-        // We're starting over at a new block.
-        const vector<XMLObject*>& exts = m_extBlock->getUnknownXMLObjects();
-        for (m_iter=exts.begin(); m_iter!=exts.end(); ++m_iter) {
-            // If we hit a KeyAuthority, remember it and signal.
-            if (m_current=dynamic_cast<KeyAuthority*>(*m_iter)) {
-                populate();
-                return true;
-            }
+        
+        if (m_extBlock) {
+            m_iter = m_extBlock->getUnknownXMLObjects().begin();
+            return next();
         }
-
+        
         // Jump a level and try again.
         m_obj = m_obj->getParent();
-        return next();
     }
-    
+
     return false;
 }
 
