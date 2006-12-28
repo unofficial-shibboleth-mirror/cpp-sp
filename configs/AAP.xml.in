@@ -25,7 +25,7 @@
 	make up names using it, because the urn:mace:dir namespace tree is
 	controlled. For help and advice on defining new attributes, refer to:
 	
-	https://authdev.it.ohio-state.edu/twiki/bin/view/Shibboleth/AttributeNaming
+	https://spaces.internet2.edu/display/SHIB/AttributeNaming
 	-->
 	
 	<!-- First some useful eduPerson attributes that many sites might use. -->

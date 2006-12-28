@@ -23,7 +23,6 @@ BUILTCONFIGFILES = \
 	native.logger \
 	shibd.logger \
 	AAP.xml \
-	IQ-metadata.xml \
 	example-metadata.xml
 
 # While BUILTCONFIGFILES are processed, these are not; so we should pull
@@ -78,9 +77,6 @@ shibboleth.xml: ${srcdir}/shibboleth.xml.in Makefile ${top_builddir}/config.stat
 AAP.xml: ${srcdir}/AAP.xml.in Makefile ${top_builddir}/config.status
 	$(MAKE) do-build-file FILE=$@
 
-IQ-metadata.xml: ${srcdir}/IQ-metadata.xml.in Makefile ${top_builddir}/config.status
-	$(MAKE) do-build-file FILE=$@
-
 example-metadata.xml: ${srcdir}/example-metadata.xml.in Makefile ${top_builddir}/config.status
 	$(MAKE) do-build-file FILE=$@
 
@@ -115,7 +111,6 @@ CLEANFILES = \
 	native.logger \
 	shibboleth.xml \
 	AAP.xml \
-	IQ-metadata.xml \
 	example-metadata.xml
 
 EXTRA_DIST = .cvsignore \
@@ -133,8 +128,6 @@ EXTRA_DIST = .cvsignore \
 	metadataError.html \
 	sslError.html \
 	AAP.xml.in \
-	IQ-metadata.xml.in \
 	example-metadata.xml.in \
-	inqueue.pem \
 	sp-example.key \
 	sp-example.crt
