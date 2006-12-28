@@ -30,6 +30,8 @@
 #include <shibsp/PKIXTrustEngine.h>
 #include <shibsp/SPConfig.h>
 #include <shibsp/SPConstants.h>
+#include <saml/SAMLConfig.h>
+#include <saml/saml2/metadata/ChainingMetadataProvider.h>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/security/ChainingTrustEngine.h>
 #include <xmltooling/util/NDC.h>
@@ -38,11 +40,10 @@ using namespace shibsp;
 using namespace shibtarget;
 using namespace shibboleth;
 using namespace saml;
+using namespace opensaml::saml2md;
 using namespace xmltooling;
 using namespace log4cpp;
 using namespace std;
-
-using opensaml::saml2md::MetadataProvider;
 
 namespace shibtarget {
 
@@ -256,6 +257,7 @@ XMLApplication::XMLApplication(
 
         SPConfig& conf=SPConfig::getConfig();
         XMLToolingConfig& xmlConf=XMLToolingConfig::getConfig();
+        opensaml::SAMLConfig& samlConf=opensaml::SAMLConfig::getConfig();
         SAMLConfig& shibConf=SAMLConfig::getConfig();
 
         // Process handlers.
@@ -423,12 +425,14 @@ XMLApplication::XMLApplication(
         }
 
         if (conf.isEnabled(SPConfig::Metadata)) {
+            vector<MetadataProvider*> os2providers;
             nlist=e->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(MetadataProvider));
             for (i=0; nlist && i<nlist->getLength(); i++) {
                 if (nlist->item(i)->getParentNode()->isSameNode(e)) {
                     xmltooling::auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
                     log.info("building metadata provider of type %s...",type.get());
                     try {
+                        // Old plugins...TODO: remove
                         IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
                         IMetadata* md=dynamic_cast<IMetadata*>(plugin);
                         if (md)
@@ -437,43 +441,59 @@ XMLApplication::XMLApplication(
                             delete plugin;
                             log.crit("plugin was not a metadata provider");
                         }
+                        
+                        // New plugins...
+                        if (!strcmp(type.get(),"edu.internet2.middleware.shibboleth.common.provider.XMLMetadata") ||
+                            !strcmp(type.get(),"edu.internet2.middleware.shibboleth.metadata.provider.XMLMetadata")) {
+                            os2providers.push_back(
+                                samlConf.MetadataProviderManager.newPlugin(
+                                    FILESYSTEM_METADATA_PROVIDER,static_cast<DOMElement*>(nlist->item(i))
+                                )
+                            );
+                        }
+                        else {
+                            os2providers.push_back(
+                                samlConf.MetadataProviderManager.newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)))
+                            );
+                        }
+                    }
+                    catch (XMLToolingException& ex) {
+                        log.crit("error building metadata provider: %s",ex.what());
+                        for_each(os2providers.begin(), os2providers.end(), xmltooling::cleanup<MetadataProvider>());
                     }
                     catch (SAMLException& ex) {
                         log.crit("error building metadata provider: %s",ex.what());
                     }
                 }
             }
-            nlist=e->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(FederationProvider));
-            for (i=0; nlist && i<nlist->getLength(); i++) {
-                if (nlist->item(i)->getParentNode()->isSameNode(e)) {
-                    xmltooling::auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
-                    log.info("building metadata provider of type %s...",type.get());
-                    try {
-                        IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
-                        IMetadata* md=dynamic_cast<IMetadata*>(plugin);
-                        if (md)
-                            m_metadatas.push_back(md);
-                        else {
-                            delete plugin;
-                            log.crit("plugin was not a metadata provider");
-                        }
+            
+            if (os2providers.size()==1)
+                m_metadata=os2providers.front();
+            else {
+                try {
+                    m_metadata = samlConf.MetadataProviderManager.newPlugin(CHAINING_METADATA_PROVIDER,NULL);
+                    ChainingMetadataProvider* chainMeta = dynamic_cast<ChainingMetadataProvider*>(m_metadata);
+                    while (!os2providers.empty()) {
+                        chainMeta->addMetadataProvider(os2providers.back());
+                        os2providers.pop_back();
                     }
-                    catch (SAMLException& ex) {
-                        log.crit("error building metadata provider: %s",ex.what());
-                    }
+                }
+                catch (XMLToolingException& ex) {
+                    log.crit("error building metadata provider: %s",ex.what());
+                    for_each(os2providers.begin(), os2providers.end(), xmltooling::cleanup<MetadataProvider>());
                 }
             }
         }
 
         if (conf.isEnabled(SPConfig::Trust)) {
-            // First build the old plugins.
-            // TODO: remove this later
+            ChainingTrustEngine* chainTrust = NULL;
             nlist=e->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(TrustProvider));
             for (i=0; nlist && i<nlist->getLength(); i++) {
                 if (nlist->item(i)->getParentNode()->isSameNode(e)) {
                     xmltooling::auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
                     log.info("building trust provider of type %s...",type.get());
                     try {
+                        // Old plugins...TODO: remove
                         IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
                         ITrust* trust=dynamic_cast<ITrust*>(plugin);
                         if (trust)
@@ -482,25 +502,11 @@ XMLApplication::XMLApplication(
                             delete plugin;
                             log.crit("plugin was not a trust provider");
                         }
-                    }
-                    catch (SAMLException& ex) {
-                        log.crit("error building trust provider: %s",ex.what());
-                    }
-                }
-            }
-            
-            // Loop again to build the new engines.
-            ChainingTrustEngine* chainTrust = NULL;
-            for (i=0; nlist && i<nlist->getLength(); i++) {
-                if (nlist->item(i)->getParentNode()->isSameNode(e)) {
 
-                    // For compatibility with old engine types, we're assuming a Shib engine is likely,
-                    // which requires chaining, so we'll build that regardless.
-
-                    xmltooling::auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
-                    log.info("building trust engine of type %s...",type.get());
-                    try {
+                        // New plugins...
                         if (!m_trust) {
+                            // For compatibility with old engine types, we're assuming a Shib engine is likely,
+                            // which requires chaining, so we'll build that regardless.
                             m_trust = xmlConf.TrustEngineManager.newPlugin(CHAINING_TRUSTENGINE,NULL);
                             chainTrust = dynamic_cast<ChainingTrustEngine*>(m_trust);
                         }
@@ -530,6 +536,9 @@ XMLApplication::XMLApplication(
                         }
                     }
                     catch (XMLToolingException& ex) {
+                        log.crit("error building trust provider: %s",ex.what());
+                    }
+                    catch (SAMLException& ex) {
                         log.crit("error building trust provider: %s",ex.what());
                     }
                 }
