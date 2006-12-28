@@ -22,23 +22,26 @@
 
 #include "internal.h"
 
-#include <shibsp/DOMPropertySet.h>
-#include <shibsp/SPConfig.h>
-#include <shibsp/SPConstants.h>
-#include <log4cpp/Category.hh>
-#include <log4cpp/PropertyConfigurator.hh>
-#include <algorithm>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <log4cpp/Category.hh>
+#include <log4cpp/PropertyConfigurator.hh>
+#include <shibsp/DOMPropertySet.h>
+#include <shibsp/PKIXTrustEngine.h>
+#include <shibsp/SPConfig.h>
+#include <shibsp/SPConstants.h>
+#include <xmltooling/XMLToolingConfig.h>
+#include <xmltooling/security/ChainingTrustEngine.h>
+#include <xmltooling/util/NDC.h>
 
 using namespace shibsp;
 using namespace shibtarget;
 using namespace shibboleth;
 using namespace saml;
+using namespace xmltooling;
 using namespace log4cpp;
 using namespace std;
 
-using xmltooling::TrustEngine;
 using opensaml::saml2md::MetadataProvider;
 
 namespace shibtarget {
@@ -122,7 +125,7 @@ namespace shibtarget {
 
         // maps binding strings to supporting consumer service(s)
 #ifdef HAVE_GOOD_STL
-        typedef map<xstring,vector<const IHandler*> > ACSBindingMap;
+        typedef map<xmltooling::xstring,vector<const IHandler*> > ACSBindingMap;
 #else
         typedef map<string,vector<const IHandler*> > ACSBindingMap;
 #endif
@@ -136,7 +139,7 @@ namespace shibtarget {
 
         DOMPropertySet* m_credDefault;
 #ifdef HAVE_GOOD_STL
-        map<xstring,PropertySet*> m_credMap;
+        map<xmltooling::xstring,PropertySet*> m_credMap;
 #else
         map<const XMLCh*,PropertySet*> m_credMap;
 #endif
@@ -229,7 +232,7 @@ XMLApplication::XMLApplication(
         m_credDefault(NULL), m_sessionInitDefault(NULL), m_acsDefault(NULL)
 {
 #ifdef _DEBUG
-    NDC ndc("XMLApplication");
+    xmltooling::NDC ndc("XMLApplication");
 #endif
     Category& log=Category::getInstance("shibtarget.XMLApplication");
 
@@ -252,6 +255,7 @@ XMLApplication::XMLApplication(
         m_hash=SAMLArtifact::toHex(SAMLArtifactType0001::generateSourceId(m_hash.c_str()));
 
         SPConfig& conf=SPConfig::getConfig();
+        XMLToolingConfig& xmlConf=XMLToolingConfig::getConfig();
         SAMLConfig& shibConf=SAMLConfig::getConfig();
 
         // Process handlers.
@@ -272,7 +276,7 @@ XMLApplication::XMLApplication(
                 if (!hobj) {
                     delete hplug;
                     throw UnsupportedProfileException(
-                        "Plugin for binding ($1) does not implement IHandler interface.",params(1,bindprop)
+                        "Plugin for binding ($1) does not implement IHandler interface.",saml::params(1,bindprop)
                         );
                 }
             }
@@ -352,26 +356,26 @@ XMLApplication::XMLApplication(
             // A legacy config installs a SAML POST handler at the root handler location.
             // We use the Sessions element itself as the PropertySet.
 
-            auto_ptr_char b1(shibspconstants::SHIB1_SESSIONINIT_PROFILE_URI);
+            xmltooling::auto_ptr_char b1(shibspconstants::SHIB1_SESSIONINIT_PROFILE_URI);
             IPlugIn* hplug=shibConf.getPlugMgr().newPlugin(b1.get(),propcheck->getElement());
             IHandler* h1=dynamic_cast<IHandler*>(hplug);
             if (!h1) {
                 delete hplug;
                 throw UnsupportedProfileException(
-                    "Plugin for binding ($1) does not implement IHandler interface.",params(1,b1.get())
+                    "Plugin for binding ($1) does not implement IHandler interface.",saml::params(1,b1.get())
                     );
             }
             h1->setProperties(propcheck);
             m_handlers.push_back(h1);
             m_sessionInitDefault=h1;
 
-            auto_ptr_char b2(SAMLBrowserProfile::BROWSER_POST);
+            xmltooling::auto_ptr_char b2(SAMLBrowserProfile::BROWSER_POST);
             hplug=shibConf.getPlugMgr().newPlugin(b2.get(),propcheck->getElement());
             IHandler* h2=dynamic_cast<IHandler*>(hplug);
             if (!h2) {
                 delete hplug;
                 throw UnsupportedProfileException(
-                    "Plugin for binding ($1) does not implement IHandler interface.",params(1,b2.get())
+                    "Plugin for binding ($1) does not implement IHandler interface.",saml::params(1,b2.get())
                     );
             }
             h2->setProperties(propcheck);
@@ -399,7 +403,7 @@ XMLApplication::XMLApplication(
             nlist=e->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(AAPProvider));
             for (i=0; nlist && i<nlist->getLength(); i++) {
                 if (nlist->item(i)->getParentNode()->isSameNode(e)) {
-                    auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
+                    xmltooling::auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
                     log.info("building AAP provider of type %s...",type.get());
                     try {
                         IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
@@ -422,7 +426,7 @@ XMLApplication::XMLApplication(
             nlist=e->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(MetadataProvider));
             for (i=0; nlist && i<nlist->getLength(); i++) {
                 if (nlist->item(i)->getParentNode()->isSameNode(e)) {
-                    auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
+                    xmltooling::auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
                     log.info("building metadata provider of type %s...",type.get());
                     try {
                         IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
@@ -442,7 +446,7 @@ XMLApplication::XMLApplication(
             nlist=e->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(FederationProvider));
             for (i=0; nlist && i<nlist->getLength(); i++) {
                 if (nlist->item(i)->getParentNode()->isSameNode(e)) {
-                    auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
+                    xmltooling::auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
                     log.info("building metadata provider of type %s...",type.get());
                     try {
                         IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
@@ -467,7 +471,7 @@ XMLApplication::XMLApplication(
             nlist=e->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(TrustProvider));
             for (i=0; nlist && i<nlist->getLength(); i++) {
                 if (nlist->item(i)->getParentNode()->isSameNode(e)) {
-                    auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
+                    xmltooling::auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
                     log.info("building trust provider of type %s...",type.get());
                     try {
                         IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
@@ -480,6 +484,52 @@ XMLApplication::XMLApplication(
                         }
                     }
                     catch (SAMLException& ex) {
+                        log.crit("error building trust provider: %s",ex.what());
+                    }
+                }
+            }
+            
+            // Loop again to build the new engines.
+            ChainingTrustEngine* chainTrust = NULL;
+            for (i=0; nlist && i<nlist->getLength(); i++) {
+                if (nlist->item(i)->getParentNode()->isSameNode(e)) {
+
+                    // For compatibility with old engine types, we're assuming a Shib engine is likely,
+                    // which requires chaining, so we'll build that regardless.
+
+                    xmltooling::auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
+                    log.info("building trust engine of type %s...",type.get());
+                    try {
+                        if (!m_trust) {
+                            m_trust = xmlConf.TrustEngineManager.newPlugin(CHAINING_TRUSTENGINE,NULL);
+                            chainTrust = dynamic_cast<ChainingTrustEngine*>(m_trust);
+                        }
+                        if (!strcmp(type.get(),"edu.internet2.middleware.shibboleth.common.provider.ShibbolethTrust")) {
+                            chainTrust->addTrustEngine(
+                                xmlConf.TrustEngineManager.newPlugin(
+                                    EXPLICIT_KEY_TRUSTENGINE,static_cast<DOMElement*>(nlist->item(i))
+                                )
+                            );
+                            chainTrust->addTrustEngine(
+                                xmlConf.TrustEngineManager.newPlugin(
+                                    SHIBBOLETH_PKIX_TRUSTENGINE,static_cast<DOMElement*>(nlist->item(i))
+                                )
+                            );
+                        }
+                        else if (!strcmp(type.get(),"edu.internet2.middleware.shibboleth.common.provider.BasicTrust")) {
+                            chainTrust->addTrustEngine(
+                                xmlConf.TrustEngineManager.newPlugin(
+                                    EXPLICIT_KEY_TRUSTENGINE,static_cast<DOMElement*>(nlist->item(i))
+                                )
+                            );
+                        }
+                        else {
+                            chainTrust->addTrustEngine(
+                                xmlConf.TrustEngineManager.newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)))
+                            );
+                        }
+                    }
+                    catch (XMLToolingException& ex) {
                         log.crit("error building trust provider: %s",ex.what());
                     }
                 }
@@ -540,10 +590,13 @@ void XMLApplication::cleanup()
     delete m_binding;
     delete m_profile;
     for_each(m_handlers.begin(),m_handlers.end(),xmltooling::cleanup<IHandler>());
-        
+    
+    delete m_trust;
+    delete m_metadata;
+    
     delete m_credDefault;
 #ifdef HAVE_GOOD_STL
-    for_each(m_credMap.begin(),m_credMap.end(),xmltooling::cleanup_pair<xstring,PropertySet>());
+    for_each(m_credMap.begin(),m_credMap.end(),xmltooling::cleanup_pair<xmltooling::xstring,PropertySet>());
 #else
     for_each(m_credMap.begin(),m_credMap.end(),xmltooling::cleanup_pair<const XMLCh*,PropertySet>());
 #endif
@@ -657,7 +710,7 @@ const PropertySet* XMLApplication::getCredentialUse(const IEntityDescriptor* pro
         return m_base->getCredentialUse(provider);
         
 #ifdef HAVE_GOOD_STL
-    map<xstring,PropertySet*>::const_iterator i=m_credMap.find(provider->getId());
+    map<xmltooling::xstring,PropertySet*>::const_iterator i=m_credMap.find(provider->getId());
     if (i!=m_credMap.end())
         return i->second;
     const IEntitiesDescriptor* group=provider->getEntitiesDescriptor();
@@ -698,7 +751,7 @@ const TrustEngine* XMLApplication::getTrustEngine() const
 void XMLApplication::validateToken(SAMLAssertion* token, time_t ts, const IRoleDescriptor* role, const Iterator<ITrust*>& trusts) const
 {
 #ifdef _DEBUG
-    saml::NDC ndc("validateToken");
+    xmltooling::NDC ndc("validateToken");
 #endif
     Category& log=Category::getInstance("shibtarget.XMLApplication");
 
@@ -778,7 +831,7 @@ Iterator<const IHandler*> XMLApplication::getAssertionConsumerServicesByBinding(
 #ifdef HAVE_GOOD_STL
     ACSBindingMap::const_iterator i=m_acsBindingMap.find(binding);
 #else
-    auto_ptr_char temp(binding);
+    xmltooling::auto_ptr_char temp(binding);
     ACSBindingMap::const_iterator i=m_acsBindingMap.find(temp.get());
 #endif
     if (i!=m_acsBindingMap.end())
@@ -833,7 +886,7 @@ short XMLConfigImpl::acceptNode(const DOMNode* node) const
 void XMLConfigImpl::init(bool first)
 {
 #ifdef _DEBUG
-    saml::NDC ndc("init");
+    xmltooling::NDC ndc("init");
 #endif
     Category& log=Category::getInstance("shibtarget.Config");
 
@@ -867,7 +920,7 @@ void XMLConfigImpl::init(bool first)
             if (!logger || !*logger)
                 logger=ReloadableXMLFileImpl::m_root->getAttributeNS(NULL,SHIBT_L(logger));
             if (logger && *logger) {
-                auto_ptr_char logpath(logger);
+                xmltooling::auto_ptr_char logpath(logger);
                 log.debug("loading new logging configuration from (%s), check log destination for status of configuration",logpath.get());
                 try {
                     PropertyConfigurator::configure(logpath.get());
@@ -894,7 +947,7 @@ void XMLConfigImpl::init(bool first)
             if (exts) {
                 exts=saml::XML::getFirstChildElement(exts,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Library));
                 while (exts) {
-                    auto_ptr_char path(exts->getAttributeNS(NULL,SHIBT_L(path)));
+                    xmltooling::auto_ptr_char path(exts->getAttributeNS(NULL,SHIBT_L(path)));
                     try {
                         SAMLConfig::getConfig().saml_register_extension(path.get(),exts);
                         log.debug("loaded global extension library %s",path.get());
@@ -917,7 +970,7 @@ void XMLConfigImpl::init(bool first)
                 if (exts) {
                     exts=saml::XML::getFirstChildElement(exts,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Library));
                     while (exts) {
-                        auto_ptr_char path(exts->getAttributeNS(NULL,SHIBT_L(path)));
+                        xmltooling::auto_ptr_char path(exts->getAttributeNS(NULL,SHIBT_L(path)));
                         try {
                             SAMLConfig::getConfig().saml_register_extension(path.get(),exts);
                             log.debug("loaded Global extension library %s",path.get());
@@ -941,7 +994,7 @@ void XMLConfigImpl::init(bool first)
                 if (exts) {
                     exts=saml::XML::getFirstChildElement(exts,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Library));
                     while (exts) {
-                        auto_ptr_char path(exts->getAttributeNS(NULL,SHIBT_L(path)));
+                        xmltooling::auto_ptr_char path(exts->getAttributeNS(NULL,SHIBT_L(path)));
                         try {
                             SAMLConfig::getConfig().saml_register_extension(path.get(),exts);
                             log.debug("loaded Local extension library %s",path.get());
@@ -976,7 +1029,7 @@ void XMLConfigImpl::init(bool first)
                     else {
                         exts=saml::XML::getFirstChildElement(SHAR,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Listener));
                         if (exts) {
-                            auto_ptr_char type(exts->getAttributeNS(NULL,SHIBT_L(type)));
+                            xmltooling::auto_ptr_char type(exts->getAttributeNS(NULL,SHIBT_L(type)));
                             log.info("building Listener of type %s...",type.get());
                             m_outer->m_listener=conf.ListenerServiceManager.newPlugin(type.get(),exts);
                         }
@@ -1011,7 +1064,7 @@ void XMLConfigImpl::init(bool first)
                         else {
                             exts=saml::XML::getFirstChildElement(container,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(SessionCache));
                             if (exts) {
-                                auto_ptr_char type(exts->getAttributeNS(NULL,SHIBT_L(type)));
+                                xmltooling::auto_ptr_char type(exts->getAttributeNS(NULL,SHIBT_L(type)));
                                 log.info("building Session Cache of type %s...",type.get());
                                 plugin=shibConf.getPlugMgr().newPlugin(type.get(),exts);
                             }
@@ -1049,7 +1102,7 @@ void XMLConfigImpl::init(bool first)
                     else {
                         exts=saml::XML::getFirstChildElement(container,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(ReplayCache));
                         if (exts) {
-                            auto_ptr_char type(exts->getAttributeNS(NULL,SHIBT_L(type)));
+                            xmltooling::auto_ptr_char type(exts->getAttributeNS(NULL,SHIBT_L(type)));
                             log.info("building Replay Cache of type %s...",type.get());
                             m_outer->m_replayCache=IReplayCache::getInstance(type.get(),exts);
                         }
@@ -1067,7 +1120,7 @@ void XMLConfigImpl::init(bool first)
         if (conf.isEnabled(SPConfig::RequestMapper)) {
             const DOMElement* child=saml::XML::getFirstChildElement(SHIRE,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(RequestMapProvider));
             if (child) {
-                auto_ptr_char type(child->getAttributeNS(NULL,SHIBT_L(type)));
+                xmltooling::auto_ptr_char type(child->getAttributeNS(NULL,SHIBT_L(type)));
                 log.info("building Request Mapper of type %s...",type.get());
                 IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),child);
                 if (plugin) {
@@ -1092,7 +1145,7 @@ void XMLConfigImpl::init(bool first)
         if (conf.isEnabled(SPConfig::Credentials)) {
             nlist=ReloadableXMLFileImpl::m_root->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(CredentialsProvider));
             for (unsigned int i=0; nlist && i<nlist->getLength(); i++) {
-                auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
+                xmltooling::auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
                 log.info("building credentials provider of type %s...",type.get());
                 try {
                     IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
@@ -1115,7 +1168,7 @@ void XMLConfigImpl::init(bool first)
         // Now we load any attribute factories
         nlist=ReloadableXMLFileImpl::m_root->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(AttributeFactory));
         for (unsigned int i=0; nlist && i<nlist->getLength(); i++) {
-            auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
+            xmltooling::auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
             log.info("building Attribute factory of type %s...",type.get());
             try {
                 IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
