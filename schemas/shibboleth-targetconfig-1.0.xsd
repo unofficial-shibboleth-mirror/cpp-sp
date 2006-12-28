@@ -363,7 +363,6 @@
                     <element ref="saml:AttributeDesignator"/>
                     <element ref="saml:Audience"/>
                     <element name="AAPProvider" type="conf:PluggableType"/>
-                    <!-- deprecated --> <element name="FederationProvider" type="conf:PluggableType"/>
                     <element name="MetadataProvider" type="conf:PluggableType"/>
                     <element name="TrustProvider" type="conf:PluggableType"/>
 				</choice>
