@@ -124,7 +124,7 @@ SAMLResponse* STArtifactMapper::resolve(SAMLRequest* request)
     		    ShibHTTPHook::ShibHTTPHookCallContext callCtx(credUse,idp);
                 const IEndpointManager* mgr=idp->getArtifactResolutionServiceManager();
                 Iterator<const IEndpoint*> eps=mgr ? mgr->getEndpoints() : EMPTY(const IEndpoint*);
-                while (eps.hasNext()) {
+                while (!response && eps.hasNext()) {
                     const IEndpoint* ep=eps.next();
                     auto_ptr_char loc(ep->getLocation());
                     if (strcmp(loc.get(),type2->getSourceLocation()))
