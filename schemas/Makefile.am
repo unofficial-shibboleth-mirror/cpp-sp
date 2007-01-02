@@ -8,7 +8,6 @@ pkgxml_DATA = \
 	catalog.xml \
     shibboleth-metadata-1.0.xsd \
     shibboleth-targetconfig-1.0.xsd \
-            credentials.xsd \
             cs-sstc-schema-assertion-01.xsd \
             cs-sstc-schema-protocol-01.xsd \
             cs-sstc-schema-assertion-1.1.xsd \
