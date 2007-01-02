@@ -154,12 +154,6 @@
 				wayfURL="https://idp.example.org/shibboleth-idp/SSO"
 				wayfBinding="urn:mace:shibboleth:1.0:profiles:AuthnRequest"/>
 				
-			<!-- This example directs users to a specific federation's WAYF service. -->
-			<SessionInitiator id="IQ" Location="/WAYF/InQueue"
-				Binding="urn:mace:shibboleth:sp:1.3:SessionInit"
-				wayfURL="https://wayf.internet2.edu/InQueue/WAYF"
-				wayfBinding="urn:mace:shibboleth:1.0:profiles:AuthnRequest"/>
-			
 			<!--
 			md:AssertionConsumerService elements replace the old shireURL function with an
 			explicit handler for particular profiles, such as SAML 1.1 POST or Artifact.
@@ -196,12 +190,7 @@
 			styleSheet="/shibboleth-sp/main.css"/>
 
 		<!-- Indicates what credentials to use when communicating -->
-		<CredentialUse TLS="defcreds" Signing="defcreds">
-			<!-- RelyingParty elements can customize credentials for specific IdPs/sets. -->
-			<!--
-			<RelyingParty Name="urn:mace:inqueue" TLS="inqueuecreds" Signing="inqueuecreds"/>
-			-->
-		</CredentialUse>
+		<CredentialUse TLS="defcreds" Signing="defcreds"/>
 			
 		<!-- Use designators to request specific attributes or none to ask for all -->
 		<!--
@@ -218,20 +207,9 @@
 		<MetadataProvider type="edu.internet2.middleware.shibboleth.metadata.provider.XMLMetadata"
 			uri="@-PKGSYSCONFDIR-@/example-metadata.xml"/>
 
-		<!-- InQueue pilot federation, delete for production deployments. -->
-		<MetadataProvider type="edu.internet2.middleware.shibboleth.metadata.provider.XMLMetadata"
-			uri="@-PKGSYSCONFDIR-@/IQ-metadata.xml"/>
-		
 		<!-- The standard trust provider supports SAMLv2 metadata with path validation extensions. -->
 		<TrustProvider type="edu.internet2.middleware.shibboleth.common.provider.ShibbolethTrust"/>
 					
-		<!--
-		Zero or more SAML Audience condition matches (mainly for Shib 1.1 compatibility).
-		If you get "policy mismatch errors, you probably need to supply metadata about
-		your SP to the IdP if it's running 1.2. Adding an element here is only a partial fix.
-		-->
-		<saml:Audience>urn:mace:inqueue</saml:Audience>
-		
 		<!--
 		You can customize behavior of specific applications here. The default elements inside the
 		outer <Applications> element generally have to be overridden in an all or nothing fashion.
@@ -273,22 +251,6 @@
 					<Path>@-PKGSYSCONFDIR-@/sp-example.crt</Path>
 				</Certificate>
 			</FileResolver>
-			
-			<!--
-			Mostly you can define a single keypair above, but you can define and name a second
-			keypair to be used only in specific cases and then specify when to use it inside a
-			<CredentialUse> element.
-			-->
-			<!--
-			<FileResolver Id="inqueuecreds">
-				<Key>
-					<Path>@-PKGSYSCONFDIR-@/inqueue.key</Path>
-				</Key>
-				<Certificate>
-					<Path>@-PKGSYSCONFDIR-@/inqueue.crt</Path>
-				</Certificate>
-			</FileResolver>
-			-->
 		</Credentials>
 	</CredentialsProvider>
 
