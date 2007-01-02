@@ -39,13 +39,12 @@
 
 #include <shib-target/shib-target.h>
 #include <openssl/ssl.h>
+#include <xmltooling/util/NDC.h>
 
 #define XMLPROVIDERS_LOGCAT "XMLProviders"
 
 #define SHIB_L(s) ::XML::Literals::s
 #define SHIB_L_QNAME(p,s) ::XML::Literals::p##_##s
-
-void log_openssl();
 
 class XML
 {
@@ -53,24 +52,9 @@ public:
         // URI constants
     static const XMLCh SHIB_NS[];
     static const XMLCh SHIB_SCHEMA_ID[];
-    static const XMLCh CREDS_NS[];
-    static const XMLCh CREDS_SCHEMA_ID[];
 
     struct Literals
     {
-        // credentials constants
-        static const XMLCh CAPath[];
-        static const XMLCh Certificate[];
-        static const XMLCh Class[];
-        static const XMLCh Credentials[];
-        static const XMLCh CustomResolver[];
-        static const XMLCh Key[];
-        static const XMLCh FileResolver[];
-        static const XMLCh format[];
-        static const XMLCh Id[];
-        static const XMLCh password[];
-        static const XMLCh Path[];
-        
         // SAML attribute constants
         static const XMLCh Accept[];
         static const XMLCh Alias[];

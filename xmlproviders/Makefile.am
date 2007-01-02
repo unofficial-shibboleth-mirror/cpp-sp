@@ -12,7 +12,6 @@ xmlproviders_la_LIBADD = \
 	$(top_builddir)/shib-target/libshib-target.la
 
 xmlproviders_la_SOURCES = \
-	CredResolvers.cpp \
 	TargetedID.cpp \
 	XML.cpp \
 	XMLAAP.cpp \

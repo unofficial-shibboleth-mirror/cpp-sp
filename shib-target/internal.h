@@ -49,7 +49,9 @@
 #include <log4cpp/Category.hh>
 #include <log4cpp/FixedContextCategory.hh>
 #include <shibsp/exceptions.h>
+#include <xmltooling/util/NDC.h>
 #include <xmltooling/util/Threads.h>
+
 
 #define SHIBT_L(s) shibtarget::XML::Literals::s
 #define SHIBT_L_QNAME(p,s) shibtarget::XML::Literals::p##_##s

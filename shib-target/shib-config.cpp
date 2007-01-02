@@ -26,7 +26,6 @@
 #include <shibsp/SPConfig.h>
 #include <shibsp/SPConstants.h>
 #include <xmltooling/XMLToolingConfig.h>
-#include <xmltooling/util/NDC.h>
 
 #include <log4cpp/OstreamAppender.hh>
 

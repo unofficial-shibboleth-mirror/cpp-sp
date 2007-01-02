@@ -246,7 +246,7 @@ bool Operator::authorized(ShibTarget* st, ISessionCacheEntry* entry) const
 void XMLAccessControlImpl::init()
 {
 #ifdef _DEBUG
-    NDC ndc("init");
+    xmltooling::NDC ndc("init");
 #endif
     Category* log=&Category::getInstance(XMLPROVIDERS_LOGCAT".AccessControl");
 

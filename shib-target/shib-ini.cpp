@@ -35,7 +35,6 @@
 #include <saml/saml2/metadata/ChainingMetadataProvider.h>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/security/ChainingTrustEngine.h>
-#include <xmltooling/util/NDC.h>
 
 using namespace shibsp;
 using namespace shibtarget;

@@ -29,14 +29,15 @@ using namespace shibboleth;
 using namespace opensaml::saml2md;
 using namespace saml;
 using namespace std;
+using xmlsignature::CredentialResolver;
 
-const ICredResolver* Credentials::lookup(const char* id)
+CredentialResolver* Credentials::lookup(const char* id)
 {
     if (m_mapper) {
         m_mapper->unlock();
         m_mapper=NULL;
     }
-    const ICredResolver* ret=NULL;
+    CredentialResolver* ret=NULL;
     m_creds.reset();
     while (m_creds.hasNext()) {
         m_mapper=m_creds.next();

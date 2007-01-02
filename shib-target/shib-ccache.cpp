@@ -30,9 +30,7 @@
 #include <algorithm>
 #include <sstream>
 #include <stdexcept>
-#include <log4cpp/Category.hh>
 #include <shibsp/SPConfig.h>
-#include <xmltooling/util/NDC.h>
 
 #ifdef HAVE_LIBDMALLOCXX
 #include <dmalloc.h>
@@ -45,6 +43,7 @@ using namespace opensaml::saml2md;
 using namespace xmltooling;
 using namespace log4cpp;
 using namespace std;
+using xmlsignature::CredentialResolver;
 
 static const XMLCh cleanupInterval[] =
 { chLatin_c, chLatin_l, chLatin_e, chLatin_a, chLatin_n, chLatin_u, chLatin_p,
@@ -866,9 +865,11 @@ pair<SAMLResponse*,SAMLResponse*> MemorySessionCacheEntry::getNewResponse(
         if (signRequest.first && signRequest.second && signingCred.first) {
             if (req->getMinorVersion()==1) {
                 shibboleth::Credentials creds(ShibTargetConfig::getConfig().getINI()->getCredentialsProviders());
-                const shibboleth::ICredResolver* cr=creds.lookup(signingCred.second);
-                if (cr)
+                CredentialResolver* cr=creds.lookup(signingCred.second);
+                if (cr) {
+                    xmltooling::Locker locker(cr);
                     req->sign(cr->getKey(),cr->getCertificates(),signatureAlg.second,digestAlg.second);
+                }
                 else
                     m_log->error("unable to sign attribute query, specified credential (%s) was not found",signingCred.second);
             }

@@ -216,10 +216,6 @@
 	</References>
 	<Files>
 		<File
-			RelativePath="CredResolvers.cpp"
-			>
-		</File>
-		<File
 			RelativePath="internal.h"
 			>
 		</File>

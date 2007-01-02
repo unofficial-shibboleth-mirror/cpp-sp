@@ -28,6 +28,7 @@
 #include <saml/saml2/metadata/Metadata.h>
 #include <saml/saml2/metadata/MetadataProvider.h>
 #include <xmltooling/security/TrustEngine.h>
+#include <xmltooling/signature/CredentialResolver.h>
 #include <xmltooling/util/Threads.h>
 
 #include <saml/saml.h>
@@ -45,19 +46,9 @@ namespace shibboleth
 {
     // Credentials interface abstracts access to "owned" keys and certificates.
     
-    struct SHIB_EXPORTS ICredResolver : public virtual saml::IPlugIn
-    {
-        virtual void attach(void* ctx) const=0;
-        virtual XSECCryptoKey* getKey() const=0;
-        virtual saml::Iterator<XSECCryptoX509*> getCertificates() const=0;
-        virtual void dump(FILE* f) const=0;
-        virtual void dump() const { dump(stdout); }
-        virtual ~ICredResolver() {}
-    };
-
     struct SHIB_EXPORTS ICredentials : public virtual saml::ILockable, public virtual saml::IPlugIn
     {
-        virtual const ICredResolver* lookup(const char* id) const=0;
+        virtual xmlsignature::CredentialResolver* lookup(const char* id) const=0;
         virtual ~ICredentials() {}
     };
     
@@ -102,7 +93,7 @@ namespace shibboleth
         Credentials(const saml::Iterator<ICredentials*>& creds) : m_creds(creds), m_mapper(NULL) {}
         ~Credentials();
 
-        const ICredResolver* lookup(const char* id);
+        xmlsignature::CredentialResolver* lookup(const char* id);
 
     private:
         Credentials(const Credentials&);

@@ -32,6 +32,7 @@ using namespace opensaml::saml2md;
 using namespace xmltooling;
 using namespace log4cpp;
 using namespace std;
+using xmlsignature::CredentialResolver;
 
 SAMLResponse* STArtifactMapper::resolve(SAMLRequest* request)
 {
@@ -68,9 +69,11 @@ SAMLResponse* STArtifactMapper::resolve(SAMLRequest* request)
     if (signRequest.first && signRequest.second && signingCred.first) {
         if (request->getMinorVersion()==1) {
             shibboleth::Credentials creds(ShibTargetConfig::getConfig().getINI()->getCredentialsProviders());
-            const shibboleth::ICredResolver* cr=creds.lookup(signingCred.second);
-            if (cr)
+            CredentialResolver* cr=creds.lookup(signingCred.second);
+            if (cr) {
+                xmltooling::Locker locker(cr);
                 request->sign(cr->getKey(),cr->getCertificates(),signatureAlg.second,digestAlg.second);
+            }
             else
                 log.error("unable to sign artifact request, specified credential (%s) was not found",signingCred.second);
         }

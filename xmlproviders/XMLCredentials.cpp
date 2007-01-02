@@ -30,13 +30,15 @@
 
 #include <log4cpp/Category.hh>
 #include <shibsp/exceptions.h>
+#include <xmltooling/XMLToolingConfig.h>
+#include <xmltooling/util/XMLHelper.h>
 
 using namespace shibsp;
 using namespace shibboleth;
-using namespace saml;
 using namespace xmltooling;
 using namespace log4cpp;
 using namespace std;
+using xmlsignature::CredentialResolver;
 
 namespace {
     
@@ -48,7 +50,7 @@ namespace {
         void init();
         ~XMLCredentialsImpl();
         
-        typedef map<string,ICredResolver*> resolvermap_t;
+        typedef map<string,CredentialResolver*> resolvermap_t;
         resolvermap_t m_resolverMap;
     };
 
@@ -58,7 +60,7 @@ namespace {
         XMLCredentials(const DOMElement* e) : ReloadableXMLFile(e) {}
         ~XMLCredentials() {}
         
-        const ICredResolver* lookup(const char* id) const;
+        CredentialResolver* lookup(const char* id) const;
 
     protected:
         virtual ReloadableXMLFileImpl* newImplementation(const char* pathname, bool first=true) const;
@@ -67,7 +69,7 @@ namespace {
 
 }
 
-IPlugIn* XMLCredentialsFactory(const DOMElement* e)
+saml::IPlugIn* XMLCredentialsFactory(const DOMElement* e)
 {
     auto_ptr<XMLCredentials> creds(new XMLCredentials(e));
     creds->getImplementation();
@@ -84,75 +86,57 @@ ReloadableXMLFileImpl* XMLCredentials::newImplementation(const DOMElement* e, bo
     return new XMLCredentialsImpl(e);
 }
 
+static const XMLCh Id[] = UNICODE_LITERAL_2(I,d);
+static const XMLCh type[] = UNICODE_LITERAL_4(t,y,p,e);
+static const XMLCh FileResolver[] = UNICODE_LITERAL_12(F,i,l,e,R,e,s,o,l,v,e,r);
+
 void XMLCredentialsImpl::init()
 {
 #ifdef _DEBUG
-    saml::NDC ndc("init");
+    NDC ndc("init");
 #endif
     Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".Credentials");
 
-    try {
-        if (!saml::XML::isElementNamed(m_root,::XML::CREDS_NS,SHIB_L(Credentials))) {
-            log.error("Construction requires a valid creds file: (creds:Credentials as root element)");
-            throw ConfigurationException("Construction requires a valid creds file: (creds:Credentials as root element)");
+    DOMElement* child=XMLHelper::getFirstChildElement(m_root);
+    while (child) {
+        string cr_type;
+        auto_ptr_char id(child->getAttributeNS(NULL,Id));
+        if (!id.get()) {
+            child = XMLHelper::getNextSiblingElement(child);
+            continue;
         }
-
-        DOMElement* child=saml::XML::getFirstChildElement(m_root);
-        while (child) {
-            string cr_type;
-            auto_ptr<char> id(XMLString::transcode(child->getAttributeNS(NULL,SHIB_L(Id))));
-            
-            if (saml::XML::isElementNamed(child,::XML::CREDS_NS,SHIB_L(FileResolver)))
-                cr_type="edu.internet2.middleware.shibboleth.common.Credentials.FileCredentialResolver";
-            else if (saml::XML::isElementNamed(child,::XML::CREDS_NS,SHIB_L(CustomResolver))) {
-                xmltooling::auto_ptr_char c(child->getAttributeNS(NULL,SHIB_L(Class)));
-                cr_type=c.get();
-            }
-            
-            if (!cr_type.empty()) {
-                try {
-                    IPlugIn* plugin=SAMLConfig::getConfig().getPlugMgr().newPlugin(cr_type.c_str(),child);
-                    ICredResolver* cr=dynamic_cast<ICredResolver*>(plugin);
-                    if (cr)
-                        m_resolverMap[id.get()]=cr;
-                    else {
-                        log.error("plugin was not a credential resolver");
-                        throw UnknownExtensionException("plugin was not a credential resolver");
-                    }
-                }
-                catch (exception& e) {
-                    log.error("failed to instantiate credential resolver (%s): %s", id.get(), e.what());
-                    throw;
-                }
-            }
-            else {
-                log.error("unknown or unimplemented type of credential resolver (%s)", id.get());
-                throw UnknownExtensionException("Unknown or unimplemented type of credential resolver");
-            }
-            
-            child=saml::XML::getNextSiblingElement(child);
+        
+        if (XMLString::equals(child->getLocalName(),FileResolver))
+            cr_type=FILESYSTEM_CREDENTIAL_RESOLVER;
+        else {
+            xmltooling::auto_ptr_char c(child->getAttributeNS(NULL,type));
+            cr_type=c.get();
         }
+        
+        if (!cr_type.empty()) {
+            try {
+                CredentialResolver* plugin=
+                    XMLToolingConfig::getConfig().CredentialResolverManager.newPlugin(cr_type.c_str(),child);
+                m_resolverMap[id.get()] = plugin;
+            }
+            catch (exception& e) {
+                log.error("failed to instantiate credential resolver (%s): %s", id.get(), e.what());
+            }
+        }
+        else {
+            log.error("unknown type of credential resolver (%s)", id.get());
+        }
+        
+        child = XMLHelper::getNextSiblingElement(child);
     }
-    catch (exception& e) {
-        log.errorStream() << "Error while parsing creds configuration: " << e.what() << CategoryStream::ENDLINE;
-        this->~XMLCredentialsImpl();
-        throw;
-    }
-#ifndef _DEBUG
-    catch (...) {
-        log.error("Unexpected error while parsing creds configuration");
-        this->~XMLCredentialsImpl();
-        throw;
-    }
-#endif
 }
 
 XMLCredentialsImpl::~XMLCredentialsImpl()
 {
-    for_each(m_resolverMap.begin(),m_resolverMap.end(),xmltooling::cleanup_pair<string,ICredResolver>());
+    for_each(m_resolverMap.begin(),m_resolverMap.end(),xmltooling::cleanup_pair<string,CredentialResolver>());
 }
 
-const ICredResolver* XMLCredentials::lookup(const char* id) const
+CredentialResolver* XMLCredentials::lookup(const char* id) const
 {
     if (id) {
         XMLCredentialsImpl* impl=dynamic_cast<XMLCredentialsImpl*>(getImplementation());

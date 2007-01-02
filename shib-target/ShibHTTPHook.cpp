@@ -25,6 +25,7 @@
 #include "internal.h"
 
 #include <xmltooling/security/OpenSSLTrustEngine.h>
+#include <xmltooling/signature/OpenSSLCredentialResolver.h>
 
 #include <saml/version.h>
 #include <openssl/ssl.h>
@@ -37,6 +38,7 @@ using namespace saml;
 using namespace xmltooling;
 using namespace log4cpp;
 using namespace std;
+using xmlsignature::OpenSSLCredentialResolver;
 
 /*
  * Our verifier callback is a front-end for invoking each trust plugin until
@@ -85,9 +87,11 @@ static bool ssl_ctx_callback(void* ssl_ctx, void* userptr)
         pair<bool,const char*> TLS=credUse ? credUse->getString("TLS") : pair<bool,const char*>(false,NULL);
         if (TLS.first) {
             Credentials c(ctx->getHook()->getCredentialProviders());
-            const ICredResolver* cr=c.lookup(TLS.second);
-            if (cr)
-                cr->attach(ssl_ctx);
+            OpenSSLCredentialResolver* cr=dynamic_cast<OpenSSLCredentialResolver*>(c.lookup(TLS.second));
+            if (cr) {
+                xmltooling::Locker locker(cr);
+                cr->attach(reinterpret_cast<SSL_CTX*>(ssl_ctx));
+            }
             else
                 log.error("unable to attach credentials to request using (%s), leaving anonymous",TLS.second);
         }

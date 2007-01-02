@@ -27,7 +27,6 @@
 #include <log4cpp/Category.hh>
 #include <shibsp/MetadataExt.h>
 #include <shibsp/SPConstants.h>
-#include <xmltooling/util/NDC.h>
 
 using namespace shibsp;
 using namespace shibboleth;

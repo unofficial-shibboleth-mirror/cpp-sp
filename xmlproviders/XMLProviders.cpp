@@ -43,20 +43,17 @@ using namespace std;
 PlugManager::Factory TargetedIDFactory;
 PlugManager::Factory XMLCredentialsFactory;
 PlugManager::Factory XMLAAPFactory;
-PlugManager::Factory FileCredResolverFactory;
 PlugManager::Factory XMLAccessControlFactory;
 
 extern "C" int XML_EXPORTS saml_extension_init(void*)
 {
     // Register extension schemas.
     saml::XML::registerSchema(::XML::SHIB_NS,::XML::SHIB_SCHEMA_ID);
-    saml::XML::registerSchema(::XML::CREDS_NS,::XML::CREDS_SCHEMA_ID);
 
     // Register metadata factories (some are legacy aliases)
     SAMLConfig& conf=SAMLConfig::getConfig();
     conf.getPlugMgr().regFactory("edu.internet2.middleware.shibboleth.common.provider.TargetedIDFactory",&TargetedIDFactory);
     conf.getPlugMgr().regFactory("edu.internet2.middleware.shibboleth.common.Credentials",&XMLCredentialsFactory);
-    conf.getPlugMgr().regFactory("edu.internet2.middleware.shibboleth.common.Credentials.FileCredentialResolver",&FileCredResolverFactory);
     conf.getPlugMgr().regFactory("edu.internet2.middleware.shibboleth.aap.provider.XMLAAP",&XMLAAPFactory);
     conf.getPlugMgr().regFactory("edu.internet2.middleware.shibboleth.target.provider.XMLAAP",&XMLAAPFactory);
     conf.getPlugMgr().regFactory(shibtarget::XML::XMLAccessControlType,&XMLAccessControlFactory);
@@ -70,24 +67,7 @@ extern "C" void XML_EXPORTS saml_extension_term()
     SAMLConfig& conf=SAMLConfig::getConfig();
     conf.getPlugMgr().unregFactory("edu.internet2.middleware.shibboleth.common.provider.TargetedIDFactory");
     conf.getPlugMgr().unregFactory("edu.internet2.middleware.shibboleth.common.Credentials");
-    conf.getPlugMgr().unregFactory("edu.internet2.middleware.shibboleth.common.Credentials.FileCredentialResolver");
     conf.getPlugMgr().unregFactory("edu.internet2.middleware.shibboleth.aap.provider.XMLAAP");
     conf.getPlugMgr().unregFactory("edu.internet2.middleware.shibboleth.target.provider.XMLAAP");
     conf.getPlugMgr().unregFactory(shibtarget::XML::XMLAccessControlType);
-}
-
-void log_openssl()
-{
-    const char* file;
-    const char* data;
-    int flags,line;
-
-    unsigned long code=ERR_get_error_line_data(&file,&line,&data,&flags);
-    while (code) {
-        Category& log=Category::getInstance("OpenSSL");
-        log.errorStream() << "error code: " << code << " in " << file << ", line " << line << CategoryStream::ENDLINE;
-        if (data && (flags & ERR_TXT_STRING))
-            log.errorStream() << "error data: " << data << CategoryStream::ENDLINE;
-        code=ERR_get_error_line_data(&file,&line,&data,&flags);
-    }
 }

@@ -25,7 +25,6 @@
 #include "internal.h"
 
 #include <algorithm>
-#include <log4cpp/Category.hh>
 #include <shibsp/DOMPropertySet.h>
 
 using namespace shibsp;
