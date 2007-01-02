@@ -8,7 +8,7 @@ pkgxmldir = $(datadir)/xml/@PACKAGE@
 lib_LTLIBRARIES = libshib-target.la
 
 libshib_targetdir = $(includedir)/shib-target
-libshib_target_HEADERS = shib-target.h shib-paths.h hresult.h
+libshib_target_HEADERS = shib-target.h shib-paths.h
 noinst_HEADERS = internal.h
 
 libshib_target_la_SOURCES = \

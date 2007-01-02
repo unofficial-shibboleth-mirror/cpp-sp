@@ -5,14 +5,12 @@ AUTOMAKE_OPTIONS = foreign
 lib_LTLIBRARIES = libshib.la
 
 libshibdir = $(includedir)/shib
-libshib_HEADERS = shib.h hresult.h
+libshib_HEADERS = shib.h
 noinst_HEADERS = internal.h
 
 libshib_la_SOURCES = \
-	BasicTrust.cpp \
     Metadata.cpp \
     ReloadableXMLFile.cpp \
-    ShibbolethTrust.cpp \
     ShibConfig.cpp \
     ShibBrowserProfile.cpp \
     ScopedAttribute.cpp

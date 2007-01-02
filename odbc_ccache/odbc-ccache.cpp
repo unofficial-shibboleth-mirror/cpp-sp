@@ -39,6 +39,7 @@
 #endif
 
 #include <shib-target/shib-target.h>
+#include <shibsp/exceptions.h>
 #include <log4cpp/Category.hh>
 #include <xmltooling/util/NDC.h>
 
@@ -53,8 +54,9 @@
 #include <dmalloc.h>
 #endif
 
+using namespace shibsp;
 using namespace shibtarget;
-using namespace shibboleth;
+using namespace opensaml::saml2md;
 using namespace saml;
 using namespace xmltooling;
 using namespace log4cpp;
@@ -275,13 +277,13 @@ public:
     // Delegate all the ISessionCache methods.
     string insert(
         const IApplication* application,
-        const IEntityDescriptor* source,
+        const RoleDescriptor* role,
         const char* client_addr,
         const SAMLSubject* subject,
         const char* authnContext,
         const SAMLResponse* tokens
         )
-    { return m_cache->insert(application,source,client_addr,subject,authnContext,tokens); }
+    { return m_cache->insert(application,role,client_addr,subject,authnContext,tokens); }
     ISessionCacheEntry* find(const char* key, const IApplication* application, const char* client_addr)
     { return m_cache->find(key,application,client_addr); }
     void remove(const char* key, const IApplication* application, const char* client_addr)

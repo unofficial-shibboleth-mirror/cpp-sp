@@ -32,9 +32,10 @@
 #include <xsec/enc/OpenSSL/OpenSSLCryptoX509.hpp>
 #include <xsec/enc/OpenSSL/OpenSSLCryptoKeyRSA.hpp>
 #include <xsec/enc/OpenSSL/OpenSSLCryptoKeyDSA.hpp>
+#include <xmltooling/util/NDC.h>
 
-using namespace saml;
 using namespace shibboleth;
+using namespace xmltooling;
 using namespace log4cpp;
 using namespace std;
 
@@ -77,7 +78,7 @@ private:
     vector<XSECCryptoX509*> m_xseccerts;
 };
 
-IPlugIn* FileCredResolverFactory(const DOMElement* e)
+saml::IPlugIn* FileCredResolverFactory(const DOMElement* e)
 {
     return new FileResolver(e);
 }
@@ -85,7 +86,7 @@ IPlugIn* FileCredResolverFactory(const DOMElement* e)
 FileResolver::FileResolver(const DOMElement* e)
 {
 #ifdef _DEBUG
-    saml::NDC ndc("FileResolver");
+    xmltooling::NDC ndc("FileResolver");
 #endif
     Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".CredResolvers");
 
@@ -120,13 +121,13 @@ FileResolver::FileResolver(const DOMElement* e)
 #endif
             {
                 log.error("key file (%s) can't be opened", kpath.get());
-                throw CredentialException("FileResolver can't access key file ($1)",params(1,kpath.get()));
+                throw IOException("FileResolver can't access key file ($1)",params(1,kpath.get()));
             }
             m_keypath=kpath.get();
         }
         else {
             log.error("Path element missing inside Key element");
-            throw CredentialException("FileResolver can't access key file, no Path element specified.");
+            throw IOException("FileResolver can't access key file, no Path element specified.");
         }
 
         // Determine the key encoding format dynamically, if not explicitly specified
@@ -139,7 +140,7 @@ FileResolver::FileResolver(const DOMElement* e)
                 else {
                     auto_ptr_char unknown(format_xml);
                     log.error("Configuration specifies unknown key encoding format (%s)", unknown.get());
-                    throw CredentialException("FileResolver configuration contains unknown key encoding format ($1)",params(1,unknown.get()));
+                    throw IOException("FileResolver configuration contains unknown key encoding format ($1)",params(1,unknown.get()));
                 }
             }
             else {
@@ -150,7 +151,7 @@ FileResolver::FileResolver(const DOMElement* e)
                 }
                 else {
                     log.error("Key file (%s) can't be read to determine encoding format", m_keypath.c_str());
-                    throw CredentialException("FileResolver can't read key file ($1) to determine encoding format",params(1,m_keypath.c_str()));
+                    throw IOException("FileResolver can't read key file ($1) to determine encoding format",params(1,m_keypath.c_str()));
                 }
                 if (in)
                     BIO_free(in);
@@ -173,7 +174,7 @@ FileResolver::FileResolver(const DOMElement* e)
     DOMElement* ep=saml::XML::getFirstChildElement(e,::XML::CREDS_NS,SHIB_L(Path));
     if (!ep || !ep->hasChildNodes()) {
         log.error("Path element missing inside Certificate element");
-        throw CredentialException("FileResolver can't access certificate file, missing Path element.");
+        throw IOException("FileResolver can't access certificate file, missing Path element.");
     }
     
     auto_ptr_char certpath(ep->getFirstChild()->getNodeValue());
@@ -183,7 +184,7 @@ FileResolver::FileResolver(const DOMElement* e)
         if (format == UNKNOWN) {
             auto_ptr_char unknown(format_xml);
             log.error("Configuration specifies unknown certificate encoding format (%s)", unknown.get());
-            throw CredentialException("FileResolver configuration contains unknown certificate encoding format ($1)",params(1,unknown.get()));
+            throw IOException("FileResolver configuration contains unknown certificate encoding format ($1)",params(1,unknown.get()));
         }
     }
     
@@ -212,7 +213,7 @@ FileResolver::FileResolver(const DOMElement* e)
                     else {
                         log_openssl();
                         BIO_free(in);
-                        throw CredentialException("FileResolver unable to load DER certificate from file ($1)",params(1,certpath.get()));
+                        throw IOException("FileResolver unable to load DER certificate from file ($1)",params(1,certpath.get()));
                     }
                     break;
 
@@ -228,7 +229,7 @@ FileResolver::FileResolver(const DOMElement* e)
                     } else {
                         log_openssl();
                         BIO_free(in);
-                        throw CredentialException("FileResolver unable to load PKCS12 certificate from file ($1)",params(1,certpath.get()));
+                        throw IOException("FileResolver unable to load PKCS12 certificate from file ($1)",params(1,certpath.get()));
                     }
                     break;
             } // end switch
@@ -239,7 +240,7 @@ FileResolver::FileResolver(const DOMElement* e)
                 BIO_free(in);
                 in=NULL;
             }
-            throw CredentialException("FileResolver unable to load certificate(s) from file ($1)",params(1,certpath.get()));
+            throw IOException("FileResolver unable to load certificate(s) from file ($1)",params(1,certpath.get()));
         }
         if (in) {
             BIO_free(in);
@@ -247,7 +248,7 @@ FileResolver::FileResolver(const DOMElement* e)
         }
 
         if (m_certs.empty()) {
-            throw CredentialException("FileResolver unable to load any certificate(s)");
+            throw IOException("FileResolver unable to load any certificate(s)");
         }
 
         // Load any extra CA files.
@@ -281,7 +282,7 @@ FileResolver::FileResolver(const DOMElement* e)
                         else {
                             log_openssl();
                             BIO_free(in);
-                            throw CredentialException("FileResolver unable to load DER CA certificate from file ($1)",params(1,capath.get()));
+                            throw IOException("FileResolver unable to load DER CA certificate from file ($1)",params(1,capath.get()));
                         }
                         break;
 
@@ -297,7 +298,7 @@ FileResolver::FileResolver(const DOMElement* e)
                         } else {
                             log_openssl();
                             BIO_free(in);
-                            throw CredentialException("FileResolver unable to load PKCS12 CA certificate from file ($1)",params(1,capath.get()));
+                            throw IOException("FileResolver unable to load PKCS12 CA certificate from file ($1)",params(1,capath.get()));
                         }
                         break;
                 } //end switch
@@ -309,7 +310,7 @@ FileResolver::FileResolver(const DOMElement* e)
                     BIO_free(in);
                 log_openssl();
                 log.error("CA file (%s) can't be opened", capath.get());
-                throw CredentialException("FileResolver can't open CA file ($1)",params(1,capath.get()));
+                throw IOException("FileResolver can't open CA file ($1)",params(1,capath.get()));
             }
         }
     }
@@ -373,7 +374,7 @@ void FileResolver::attach(void* ctx) const
     
     if (ret!=1) {
         log_openssl();
-        throw CredentialException("Unable to attach private key to SSL context");
+        throw IOException("Unable to attach private key to SSL context");
     }
 
     // Attach certs.
@@ -381,7 +382,7 @@ void FileResolver::attach(void* ctx) const
         if (i==m_certs.begin()) {
             if (SSL_CTX_use_certificate(ssl_ctx, *i) != 1) {
                 log_openssl();
-                throw CredentialException("Unable to attach SP client certificate to SSL context");
+                throw IOException("Unable to attach SP client certificate to SSL context");
             }
         }
         else {
@@ -390,7 +391,7 @@ void FileResolver::attach(void* ctx) const
             if (SSL_CTX_add_extra_chain_cert(ssl_ctx, dup) != 1) {
                 X509_free(dup);
                 log_openssl();
-                throw CredentialException("Unable to attach CA certificate to SSL context");
+                throw IOException("Unable to attach CA certificate to SSL context");
             }
         }
     }
@@ -514,11 +515,11 @@ FileResolver::format_t FileResolver::getEncodingFormat(BIO* in) const
 
     try {
         if ( (mark = BIO_tell(in)) < 0 ) 
-            throw CredentialException("getEncodingFormat: BIO_tell() can't get the file position");
+            throw IOException("getEncodingFormat: BIO_tell() can't get the file position");
         if ( BIO_read(in, buf, READSIZE) <= 0 ) 
-            throw CredentialException("getEncodingFormat: BIO_read() can't read from the stream");
+            throw IOException("getEncodingFormat: BIO_read() can't read from the stream");
         if ( BIO_seek(in, mark) < 0 ) 
-            throw CredentialException("getEncodingFormat: BIO_seek() can't reset the file position");
+            throw IOException("getEncodingFormat: BIO_seek() can't reset the file position");
     }
     catch (...) {
         log_openssl();
@@ -547,7 +548,7 @@ FileResolver::format_t FileResolver::getEncodingFormat(BIO* in) const
             PKCS12_free(p12);    
         if ( BIO_seek(in, mark) < 0 ) {
             log_openssl();
-            throw CredentialException("getEncodingFormat: BIO_seek() can't reset the file position");
+            throw IOException("getEncodingFormat: BIO_seek() can't reset the file position");
         }
     }
 

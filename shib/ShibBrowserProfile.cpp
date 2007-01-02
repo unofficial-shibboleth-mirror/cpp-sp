@@ -25,17 +25,22 @@
 #include "internal.h"
 
 #include <ctime>
-
 #include <openssl/x509v3.h>
+#include <saml/saml1/core/Protocols.h>
+#include <xmltooling/XMLToolingConfig.h>
+#include <xmltooling/util/NDC.h>
 
 using namespace shibboleth;
 using namespace saml;
+using namespace opensaml::saml1p;
+using namespace opensaml::saml2md;
+using namespace xmltooling;
 using namespace log4cpp;
 using namespace std;
 
 ShibBrowserProfile::ShibBrowserProfile(
-    const ITokenValidator* validator, const Iterator<IMetadata*>& metadatas, const Iterator<ITrust*>& trusts
-    ) : m_validator(validator), m_metadatas(metadatas), m_trusts(trusts)
+    const ITokenValidator* validator, MetadataProvider* metadata, TrustEngine* trust
+    ) : m_validator(validator), m_metadata(metadata), m_trust(trust)
 {
     m_profile=SAMLBrowserProfile::getInstance();
 }
@@ -53,32 +58,14 @@ SAMLBrowserProfile::BrowserProfileResponse ShibBrowserProfile::receive(
     ) const
 {
 #ifdef _DEBUG
-    saml::NDC("recieve");
+    xmltooling::NDC("recieve");
 #endif
     Category& log=Category::getInstance(SHIB_LOGCAT".ShibBrowserProfile");
  
     // The built-in SAML functionality will do most of the basic non-crypto checks.
     // Note that if the response only contains a status error, it gets tossed out
     // as an exception.
-    SAMLBrowserProfile::BrowserProfileResponse bpr;
-    try {
-        bpr=m_profile->receive(samlResponse, recipient, replayCache, minorVersion);
-    }
-    catch (SAMLException& e) {
-        // Try our best to attach additional information.
-        if (e.getProperty("issuer")) {
-            Metadata m(m_metadatas);
-            const IEntityDescriptor* provider=m.lookup(e.getProperty("issuer"),false);
-            if (provider) {
-                const IIDPSSODescriptor* role=provider->getIDPSSODescriptor(
-                    minorVersion==1 ? saml::XML::SAML11_PROTOCOL_ENUM : saml::XML::SAML10_PROTOCOL_ENUM
-                    );
-                if (role) annotateException(&e,role); // throws it
-                annotateException(&e,provider);  // throws it
-            }
-        }
-        throw;
-    }
+    SAMLBrowserProfile::BrowserProfileResponse bpr=m_profile->receive(samlResponse, recipient, replayCache, minorVersion);
     
     try {
         postprocess(bpr,minorVersion);
@@ -101,25 +88,7 @@ SAMLBrowserProfile::BrowserProfileResponse ShibBrowserProfile::receive(
     // The built-in SAML functionality will do most of the basic non-crypto checks.
     // Note that if the response only contains a status error, it gets tossed out
     // as an exception.
-    SAMLBrowserProfile::BrowserProfileResponse bpr;
-    try {
-        bpr=m_profile->receive(artifacts, recipient, artifactMapper, replayCache, minorVersion);
-    }
-    catch (SAMLException& e) {
-        // Try our best to attach additional information.
-        if (e.getProperty("issuer")) {
-            Metadata m(m_metadatas);
-            const IEntityDescriptor* provider=m.lookup(e.getProperty("issuer"),false);
-            if (provider) {
-                const IIDPSSODescriptor* role=provider->getIDPSSODescriptor(
-                    minorVersion==1 ? saml::XML::SAML11_PROTOCOL_ENUM : saml::XML::SAML10_PROTOCOL_ENUM
-                    );
-                if (role) annotateException(&e,role); // throws it
-                annotateException(&e,provider);  // throws it
-            }
-        }
-        throw;
-    }
+    SAMLBrowserProfile::BrowserProfileResponse bpr=m_profile->receive(artifacts, recipient, artifactMapper, replayCache, minorVersion);
     
     try {
         postprocess(bpr,minorVersion);
@@ -134,48 +103,51 @@ SAMLBrowserProfile::BrowserProfileResponse ShibBrowserProfile::receive(
 void ShibBrowserProfile::postprocess(SAMLBrowserProfile::BrowserProfileResponse& bpr, int minorVersion) const
 {
 #ifdef _DEBUG
-    saml::NDC("postprocess");
+    xmltooling::NDC("postprocess");
 #endif
     Category& log=Category::getInstance(SHIB_LOGCAT".ShibBrowserProfile");
 
+    if (!m_metadata)
+        throw MetadataException("No metadata found, unable to process assertion.");
+
     // Try and locate metadata for the IdP. We try Issuer first.
     log.debug("searching metadata for assertion issuer...");
-    Metadata m(m_metadatas);
-    const IEntityDescriptor* provider=m.lookup(bpr.assertion->getIssuer());
+    xmltooling::Locker locker(m_metadata);
+    const EntityDescriptor* provider=m_metadata->getEntityDescriptor(bpr.assertion->getIssuer());
     if (provider)
         log.debug("matched assertion issuer against metadata");
     else if (bpr.authnStatement->getSubject()->getNameIdentifier() &&
              bpr.authnStatement->getSubject()->getNameIdentifier()->getNameQualifier()) {
         // Might be a down-level origin.
-        provider=m.lookup(bpr.authnStatement->getSubject()->getNameIdentifier()->getNameQualifier());
+        provider=m_metadata->getEntityDescriptor(bpr.authnStatement->getSubject()->getNameIdentifier()->getNameQualifier());
         if (provider)
             log.debug("matched subject name qualifier against metadata");
     }
 
     // No metadata at all.
     if (!provider) {
-        auto_ptr_char issuer(bpr.assertion->getIssuer());
-        auto_ptr_char nq(bpr.authnStatement->getSubject()->getNameIdentifier()->getNameQualifier());
+        xmltooling::auto_ptr_char issuer(bpr.assertion->getIssuer());
+        xmltooling::auto_ptr_char nq(bpr.authnStatement->getSubject()->getNameIdentifier()->getNameQualifier());
         log.error("assertion issuer not found in metadata (Issuer='%s', NameQualifier='%s')",
             issuer.get(), (nq.get() ? nq.get() : "none"));
         
         // Try a non-strict lookup for more contact info.
-        const IEntityDescriptor* provider=m.lookup(bpr.assertion->getIssuer(),false);
+        const EntityDescriptor* provider=m_metadata->getEntityDescriptor(bpr.assertion->getIssuer(),false);
         if (provider) {
     		log.debug("found invalid metadata for assertion issuer, using for contact info");
             MetadataException ex("metadata lookup failed, unable to process assertion");
             annotateException(&ex,provider);  // throws it
         }
-        throw MetadataException("Metadata lookup failed, unable to process assertion",namedparams(1,"issuer",issuer.get()));
+        throw MetadataException("Metadata lookup failed, unable to process assertion",xmltooling::namedparams(1,"issuer",issuer.get()));
     }
 
     // Is this provider an IdP?
-    const IIDPSSODescriptor* role=provider->getIDPSSODescriptor(
-        minorVersion==1 ? saml::XML::SAML11_PROTOCOL_ENUM : saml::XML::SAML10_PROTOCOL_ENUM
+    const IDPSSODescriptor* role=provider->getIDPSSODescriptor(
+        minorVersion==1 ? samlconstants::SAML11_PROTOCOL_ENUM : samlconstants::SAML10_PROTOCOL_ENUM
         );
     if (!role) {
-        auto_ptr_char issuer(bpr.assertion->getIssuer());
-        auto_ptr_char nq(bpr.authnStatement->getSubject()->getNameIdentifier()->getNameQualifier());
+        xmltooling::auto_ptr_char issuer(bpr.assertion->getIssuer());
+        xmltooling::auto_ptr_char nq(bpr.authnStatement->getSubject()->getNameIdentifier()->getNameQualifier());
         log.error("metadata for assertion issuer indicates no SAML 1.%d identity provider role (Issuer='%s', NameQualifier='%s'",
             minorVersion, issuer.get(), (nq.get() ? nq.get() : "none"));
         MetadataException ex("Metadata lookup failed, issuer not registered as SAML 1.x identity provider");
@@ -184,12 +156,25 @@ void ShibBrowserProfile::postprocess(SAMLBrowserProfile::BrowserProfileResponse&
 
     // Use this role to evaluate the signature(s). If the response is unsigned, we know
     // it was an artifact profile run.
-    Trust t(m_trusts);
-    if (bpr.response->isSigned()) {        
+    if (bpr.response->isSigned()) {
         log.debug("passing signed response to trust layer");
-        if (!t.validate(*bpr.response,role)) {
+        if (!m_trust) {
+            XMLSecurityException ex("No trust provider, unable to verify signed profile response.");
+            annotateException(&ex,role); // throws it
+        }
+        
+        // This will all change, but for fun, we'll port the object from OS1->OS2 for validation.
+        stringstream s;
+        s << *bpr.response;
+        DOMDocument* doc = XMLToolingConfig::getConfig().getValidatingParser().parse(s);
+        XercesJanitor<DOMDocument> jdoc(doc);
+        auto_ptr<Response> os2resp(ResponseBuilder::buildResponse());
+        os2resp->unmarshall(doc->getDocumentElement(),true);
+        jdoc.release();
+
+        if (!m_trust->validate(*(os2resp->getSignature()),*role,m_metadata->getKeyResolver())) {
             log.error("unable to verify signed profile response");
-            TrustException ex("Unable to verify signed profile response.");
+            XMLSecurityException ex("Unable to verify signed profile response.");
             annotateException(&ex,role); // throws it
         }
     }
@@ -199,7 +184,7 @@ void ShibBrowserProfile::postprocess(SAMLBrowserProfile::BrowserProfileResponse&
     for (unsigned int a=0; a<assertions.size();) {
         // Discard any assertions not issued by the same entity that issued the authn.
         if (bpr.assertion!=assertions[a] && XMLString::compareString(bpr.assertion->getIssuer(),assertions[a]->getIssuer())) {
-            auto_ptr_char bad(assertions[a]->getIssuer());
+            xmltooling::auto_ptr_char bad(assertions[a]->getIssuer());
             log.warn("discarding assertion not issued by authenticating IdP, instead by (%s)",bad.get());
             bpr.response->removeAssertion(a);
             continue;
@@ -207,14 +192,14 @@ void ShibBrowserProfile::postprocess(SAMLBrowserProfile::BrowserProfileResponse&
 
         // Validate the token.
         try {
-            m_validator->validateToken(assertions[a],now,role,m_trusts);
+            m_validator->validateToken(assertions[a],now,role,m_trust);
             a++;
         }
-        catch (SAMLException& e) {
+        catch (SAMLException&) {
             if (assertions[a]==bpr.assertion) {
                 // If the authn token fails, we have to fail the whole profile run.
                 log.error("authentication assertion failed to validate");
-                annotateException(&e,role,false);
+                //annotateException(&e,role,false);
                 throw;
             }
             log.warn("token failed to validate, removing it from response");

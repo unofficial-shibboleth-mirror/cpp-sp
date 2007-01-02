@@ -39,20 +39,11 @@ using namespace log4cpp;
 using namespace std;
 
 
-SAML_EXCEPTION_FACTORY(ResourceAccessException);
-SAML_EXCEPTION_FACTORY(MetadataException);
-SAML_EXCEPTION_FACTORY(CredentialException);
-SAML_EXCEPTION_FACTORY(InvalidHandleException);
-SAML_EXCEPTION_FACTORY(InvalidSessionException);
-
-PlugManager::Factory BasicTrustFactory;
-PlugManager::Factory ShibbolethTrustFactory;
-
 namespace {
     ShibConfig g_config;
     vector<Mutex*> g_openssl_locks;
 #ifdef HAVE_GOOD_STL
-    map<xstring,const IAttributeFactory*> attrMap;
+    map<xmltooling::xstring,const IAttributeFactory*> attrMap;
 #else
     map<XMLCh*,const IAttributeFactory*> attrMap;
 #endif
@@ -62,7 +53,7 @@ extern "C" SAMLAttribute* ShibAttributeFactory(DOMElement* e)
 {
     // First check for an explicit factory.
 #ifdef HAVE_GOOD_STL
-    map<xstring,const IAttributeFactory*>::const_iterator i=attrMap.find(e->getAttributeNS(NULL,L(AttributeName)));
+    map<xmltooling::xstring,const IAttributeFactory*>::const_iterator i=attrMap.find(e->getAttributeNS(NULL,L(AttributeName)));
 #else
     const XMLCh* aname=e->getAttributeNS(NULL,L(AttributeName));
     map<XMLCh*,const IAttributeFactory*>::const_iterator i;
@@ -139,17 +130,6 @@ extern "C" unsigned long openssl_thread_id(void)
 
 bool ShibConfig::init()
 {
-    REGISTER_EXCEPTION_FACTORY(ResourceAccessException);
-    REGISTER_EXCEPTION_FACTORY(MetadataException);
-    REGISTER_EXCEPTION_FACTORY(CredentialException);
-    REGISTER_EXCEPTION_FACTORY(InvalidHandleException);
-    REGISTER_EXCEPTION_FACTORY(InvalidSessionException);
-
-    // Register plugin factories (some are legacy aliases)
-    SAMLConfig& conf=SAMLConfig::getConfig();
-    conf.getPlugMgr().regFactory("edu.internet2.middleware.shibboleth.common.provider.BasicTrust",&BasicTrustFactory);
-    conf.getPlugMgr().regFactory("edu.internet2.middleware.shibboleth.common.provider.ShibbolethTrust",&ShibbolethTrustFactory);
-
     // Set up OpenSSL locking.
 	for (int i=0; i<CRYPTO_num_locks(); i++)
         g_openssl_locks.push_back(Mutex::create());
@@ -171,92 +151,9 @@ void ShibConfig::term()
     for (vector<Mutex*>::iterator j=g_openssl_locks.begin(); j!=g_openssl_locks.end(); j++)
         delete (*j);
     g_openssl_locks.clear();
-
-    // Unregister plugin factories
-    SAMLConfig& conf=SAMLConfig::getConfig();
-    conf.getPlugMgr().unregFactory("edu.internet2.middleware.shibboleth.common.provider.BasicTrust");
-    conf.getPlugMgr().unregFactory("edu.internet2.middleware.shibboleth.common.provider.ShibbolethTrust");
 }
 
 ShibConfig& ShibConfig::getConfig()
 {
     return g_config;
-}
-
-void shibboleth::annotateException(SAMLException* e, const IEntityDescriptor* entity, bool rethrow)
-{
-    if (entity) {
-        auto_ptr_char id(entity->getId());
-        e->addProperty("providerId",id.get());
-        Iterator<const IRoleDescriptor*> roles=entity->getRoleDescriptors();
-        while (roles.hasNext()) {
-            const IRoleDescriptor* role=roles.next();
-            if (role->isValid()) {
-                const char* temp=role->getErrorURL();
-                if (temp) {
-                    e->addProperty("errorURL",temp);
-                    break;
-                }
-            }
-        }
-
-        Iterator<const IContactPerson*> i=entity->getContactPersons();
-        while (i.hasNext()) {
-            const IContactPerson* c=i.next();
-            if ((c->getType()==IContactPerson::technical || c->getType()==IContactPerson::support)) {
-                const char* fname=c->getGivenName();
-                const char* lname=c->getSurName();
-                if (fname && lname) {
-                    string contact=string(fname) + ' ' + lname;
-                    e->addProperty("contactName",contact.c_str());
-                }
-                else if (fname)
-                    e->addProperty("contactName",fname);
-                else if (lname)
-                    e->addProperty("contactName",lname);
-                Iterator<string> emails=c->getEmailAddresses();
-                if (emails.hasNext())
-                    e->addProperty("contactEmail",emails.next().c_str());
-                break;
-            }
-        }
-    }
-    
-    if (rethrow)
-        e->raise();
-}
-
-void shibboleth::annotateException(saml::SAMLException* e, const IRoleDescriptor* role, bool rethrow)
-{
-    if (role) {
-        auto_ptr_char id(role->getEntityDescriptor()->getId());
-        e->addProperty("providerId",id.get());
-        const char* temp=role->getErrorURL();
-        if (role->getErrorURL())
-            e->addProperty("errorURL",role->getErrorURL());
-
-        Iterator<const IContactPerson*> i=role->getContactPersons();
-        while (i.hasNext()) {
-            const IContactPerson* c=i.next();
-            if ((c->getType()==IContactPerson::technical || c->getType()==IContactPerson::support)) {
-                const char* fname=c->getGivenName();
-                const char* lname=c->getSurName();
-                if (fname && lname) {
-                    string contact=string(fname) + ' ' + lname;
-                    e->addProperty("contactName",contact.c_str());
-                }
-                else if (fname)
-                    e->addProperty("contactName",fname);
-                else if (lname)
-                    e->addProperty("contactName",lname);
-                Iterator<string> emails=c->getEmailAddresses();
-                if (emails.hasNext())
-                    e->addProperty("contactEmail",emails.next().c_str());
-                break;
-            }
-        }
-    }
-    
-    if (rethrow)
-        e->raise();
 }

@@ -25,7 +25,7 @@
 
 using namespace shibsp;
 using namespace shibtarget;
-using namespace shibboleth;
+using namespace opensaml::saml2md;
 using namespace saml;
 using namespace std;
 
@@ -107,46 +107,42 @@ int main(int argc,char* argv[])
                 )
             );
 
-        Metadata m(app->getMetadataProviders());
-        const IEntityDescriptor* site=m.lookup(domain.get());
+        MetadataProvider* m=app->getMetadataProvider();
+        xmltooling::Locker locker(m);
+        const EntityDescriptor* site=m->getEntityDescriptor(domain.get());
         if (!site)
-            throw SAMLException("Unable to locate specified origin site's metadata.");
+            throw MetadataException("Unable to locate specified origin site's metadata.");
 
         // Try to locate an AA role.
-        const IAttributeAuthorityDescriptor* AA=site->getAttributeAuthorityDescriptor(saml::XML::SAML11_PROTOCOL_ENUM);
+        const AttributeAuthorityDescriptor* AA=site->getAttributeAuthorityDescriptor(saml::XML::SAML11_PROTOCOL_ENUM);
         if (!AA)
-            throw SAMLException("Unable to locate metadata for origin site's Attribute Authority.");
+            throw MetadataException("Unable to locate metadata for origin site's Attribute Authority.");
 
         ShibHTTPHook::ShibHTTPHookCallContext ctx(app->getCredentialUse(site),AA);
-        Trust t(app->getTrustProviders());
 
         SAMLResponse* response=NULL;
-        Iterator<const IEndpoint*> endpoints=AA->getAttributeServiceManager()->getEndpoints();
-        while (!response && endpoints.hasNext()) {
-            const IEndpoint* ep=endpoints.next();
+        const vector<AttributeService*>& endpoints=AA->getAttributeServices();
+        for (vector<AttributeService*>::const_iterator ep=endpoints.begin(); !response && ep!=endpoints.end(); ++ep) {
             try {
                 // Get a binding object for this protocol.
-                const SAMLBinding* binding = app->getBinding(ep->getBinding());
+                const SAMLBinding* binding = app->getBinding((*ep)->getBinding());
                 if (!binding) {
                     continue;
                 }
-                auto_ptr<SAMLResponse> r(binding->send(ep->getLocation(), *(req.get()), &ctx));
-                if (r->isSigned() && !t.validate(*r,AA))
-                    throw TrustException("unable to verify signed response");
-                response = r.release();
+                response=binding->send((*ep)->getLocation(), *(req.get()), &ctx);
             }
-            catch (SAMLException&) {
+            catch (exception&) {
             }
         }
 
         if (!response)
-            throw SAMLException("unable to successfully query for attributes");
+            throw opensaml::BindingException("unable to successfully query for attributes");
 
         // Run it through the AAP. Note that we could end up with an empty response!
         Iterator<SAMLAssertion*> a=response->getAssertions();
         for (unsigned long c=0; c < a.size();) {
             try {
-                AAP::apply(app->getAAPProviders(),*(a[c]),site);
+                shibboleth::AAP::apply(app->getAAPProviders(),*(a[c]),AA);
                 c++;
             }
             catch (SAMLException&) {
@@ -195,13 +191,9 @@ int main(int argc,char* argv[])
             }
         }
     }
-    catch(SAMLException& e)
+    catch(exception& e)
     {
-        cerr << "caught a SAML exception: " << e.what() << endl;
-    }
-    catch(XMLException& e)
-    {
-        cerr << "caught an XML exception: "; xmlout(cerr,e.getMessage()); cerr << endl;
+        cerr << "caught an exception: " << e.what() << endl;
     }
 
     conf.shutdown();

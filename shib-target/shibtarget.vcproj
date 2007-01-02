@@ -47,7 +47,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=".;..;&quot;..\..\cpp-opensaml1&quot;;&quot;..\..\cpp-opensaml2&quot;;&quot;..\..\cpp-xmltooling&quot;"
+				AdditionalIncludeDirectories=".;..;&quot;..\..\cpp-xmltooling&quot;;&quot;..\..\cpp-opensaml1&quot;;&quot;..\..\cpp-opensaml2&quot;"
 				PreprocessorDefinitions="_WINDOWS;WANT_TCP_SHAR;WIN32;_DEBUG"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"

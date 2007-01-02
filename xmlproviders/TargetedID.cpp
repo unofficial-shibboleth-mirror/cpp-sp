@@ -23,10 +23,12 @@
 */
 
 #include "internal.h"
+#include <saml/saml2/core/Assertions.h>
 #include <xercesc/util/Base64.hpp>
 
 using namespace shibboleth;
 using namespace saml;
+using namespace opensaml::saml2;
 using namespace std;
 
 namespace {
@@ -201,10 +203,10 @@ void TargetedID::removeValue(unsigned long index)
 void TargetedID::valueFromDOM(DOMElement* e)
 {
     // Look for a SAML2 NameID.
-    e=saml::XML::getFirstChildElement(e,::XML::SAML2ASSERT_NS,NameID);
-    if (e && !XMLString::compareString(FORMAT_PERSISTENT,e->getAttributeNS(NULL,L(Format)))) {
-        m_nameQualifiers.push_back(e->getAttributeNS(NULL,L(NameQualifier)));
-        m_spNameQualifiers.push_back(e->getAttributeNS(NULL,SPNameQualifier));
+    e=saml::XML::getFirstChildElement(e,samlconstants::SAML20_NS,NameID::LOCAL_NAME);
+    if (e && !XMLString::compareString(NameIDType::PERSISTENT,e->getAttributeNS(NULL,NameIDType::FORMAT_ATTRIB_NAME))) {
+        m_nameQualifiers.push_back(e->getAttributeNS(NULL,NameIDType::NAMEQUALIFIER_ATTRIB_NAME));
+        m_spNameQualifiers.push_back(e->getAttributeNS(NULL,NameIDType::SPNAMEQUALIFIER_ATTRIB_NAME));
         if (e->hasChildNodes() && e->getFirstChild()->getNodeType()==DOMNode::TEXT_NODE)
             m_values.push_back(e->getFirstChild()->getNodeValue());
         else
@@ -225,10 +227,10 @@ void TargetedID::valueToDOM(unsigned int index, DOMElement* e) const
     const XMLCh* val=m_values[index];
     if (!saml::XML::isEmpty(nq) && !saml::XML::isEmpty(spnq) && !saml::XML::isEmpty(val)) {
         // Build a SAML2 NameID.
-        DOMElement* nameid=e->getOwnerDocument()->createElementNS(::XML::SAML2ASSERT_NS,NameID);
-        nameid->setAttributeNS(NULL,L(Format),FORMAT_PERSISTENT);    
-        nameid->setAttributeNS(NULL,L(NameQualifier),nq);
-        nameid->setAttributeNS(NULL,SPNameQualifier,spnq);
+        DOMElement* nameid=e->getOwnerDocument()->createElementNS(samlconstants::SAML20_NS,NameID::LOCAL_NAME);
+        nameid->setAttributeNS(NULL,NameIDType::FORMAT_ATTRIB_NAME,NameIDType::PERSISTENT);    
+        nameid->setAttributeNS(NULL,NameIDType::NAMEQUALIFIER_ATTRIB_NAME,nq);
+        nameid->setAttributeNS(NULL,NameIDType::SPNAMEQUALIFIER_ATTRIB_NAME,spnq);
         nameid->appendChild(e->getOwnerDocument()->createTextNode(val));
         e->appendChild(nameid);
     }
@@ -238,21 +240,3 @@ SAMLObject* TargetedID::clone() const
 {
     return new TargetedID(m_name,m_namespace,m_type,m_lifetime,m_values,m_nameQualifiers,m_spNameQualifiers);
 }
-
-const XMLCh TargetedID::NameID[] =
-{ chLatin_N, chLatin_a, chLatin_m, chLatin_e, chLatin_I, chLatin_D, chNull };
-
-const XMLCh TargetedID::SPNameQualifier[] =
-{ chLatin_S, chLatin_P, chLatin_N, chLatin_a, chLatin_m, chLatin_e,
-  chLatin_Q, chLatin_u, chLatin_a, chLatin_l, chLatin_i, chLatin_f, chLatin_i, chLatin_e, chLatin_r, chNull
-};
-
-const XMLCh TargetedID::FORMAT_PERSISTENT[] =
-{
-    chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_o, chLatin_a, chLatin_s, chLatin_i, chLatin_s, chColon,
-    chLatin_n, chLatin_a, chLatin_m, chLatin_e, chLatin_s, chColon, chLatin_t, chLatin_c, chColon,
-    chLatin_S, chLatin_A, chLatin_M, chLatin_L, chColon, chDigit_2, chPeriod, chDigit_0, chColon,
-    chLatin_n, chLatin_a, chLatin_m, chLatin_e, chLatin_i, chLatin_d, chDash,
-    chLatin_f, chLatin_o, chLatin_r, chLatin_m, chLatin_a, chLatin_t, chColon,
-    chLatin_p, chLatin_e, chLatin_r, chLatin_s, chLatin_i, chLatin_s, chLatin_t, chLatin_e, chLatin_n, chLatin_t, chNull
-};

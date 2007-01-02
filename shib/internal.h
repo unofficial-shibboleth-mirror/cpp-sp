@@ -45,19 +45,6 @@
 #define SHIB_LOGCAT "Shibboleth"
 
 namespace shibboleth {
-    class BasicTrust : public ITrust
-    {
-    public:
-        BasicTrust(const DOMElement* e);
-        ~BasicTrust();
-
-        bool validate(void* certEE, const saml::Iterator<void*>& certChain, const IRoleDescriptor* role, bool checkName=true);
-        bool validate(const saml::SAMLSignedObject& token, const IRoleDescriptor* role, ITrust* certValidator=NULL);
-    
-    protected:
-        std::vector<saml::KeyInfoResolver*> m_resolvers;
-    };
-
     class ScopedAttribute : public saml::SAMLAttribute
     {
     public:

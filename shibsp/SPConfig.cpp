@@ -74,8 +74,11 @@ bool SPInternalConfig::init(const char* catalog_path)
         loglevel = SHIBSP_LOGGING;
     XMLToolingConfig::getConfig().log_config(loglevel);
 
-    if (catalog_path)
-        XMLToolingConfig::getConfig().catalog_path = catalog_path;
+    if (!catalog_path)
+        catalog_path = getenv("SHIBSP_SCHEMAS");
+    if (!catalog_path)
+        catalog_path = SHIBSP_SCHEMAS;
+    XMLToolingConfig::getConfig().catalog_path = catalog_path;
 
     if (!SAMLConfig::getConfig().init()) {
         log.fatal("failed to initialize OpenSAML library");

@@ -214,10 +214,6 @@
 	</References>
 	<Files>
 		<File
-			RelativePath="BasicTrust.cpp"
-			>
-		</File>
-		<File
 			RelativePath="..\config_win32.h"
 			>
 		</File>
@@ -251,10 +247,6 @@
 		</File>
 		<File
 			RelativePath="shib.rc"
-			>
-		</File>
-		<File
-			RelativePath="ShibbolethTrust.cpp"
 			>
 		</File>
 		<File

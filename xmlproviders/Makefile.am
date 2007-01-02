@@ -18,7 +18,6 @@ xmlproviders_la_SOURCES = \
 	XMLAAP.cpp \
 	XMLAccessControl.cpp \
 	XMLCredentials.cpp \
-	XMLMetadata.cpp \
 	XMLProviders.cpp
 
 

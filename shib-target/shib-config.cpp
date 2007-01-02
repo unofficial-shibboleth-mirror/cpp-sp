@@ -58,9 +58,6 @@ PlugManager::Factory SAML1ArtifactFactory;
 PlugManager::Factory ShibLogoutFactory;
 //PlugManager::Factory htaccessFactory;
 
-SAML_EXCEPTION_FACTORY(ListenerException);
-SAML_EXCEPTION_FACTORY(ConfigurationException);
-
 ShibTargetConfig& ShibTargetConfig::getConfig()
 {
     return g_Config;
@@ -96,8 +93,6 @@ bool STConfig::init(const char* schemadir)
     }
 
     // Register built-in plugin types.
-    REGISTER_EXCEPTION_FACTORY(ListenerException);
-    REGISTER_EXCEPTION_FACTORY(ConfigurationException);
 
     samlConf.getPlugMgr().regFactory(shibtarget::XML::MemorySessionCacheType,&MemoryCacheFactory);
     samlConf.getPlugMgr().regFactory(shibtarget::XML::LegacyRequestMapType,&XMLRequestMapFactory);

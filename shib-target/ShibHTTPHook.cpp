@@ -24,6 +24,8 @@
 
 #include "internal.h"
 
+#include <xmltooling/security/OpenSSLTrustEngine.h>
+
 #include <saml/version.h>
 #include <openssl/ssl.h>
 #include <openssl/x509_vfy.h>
@@ -32,6 +34,7 @@ using namespace shibsp;
 using namespace shibtarget;
 using namespace shibboleth;
 using namespace saml;
+using namespace xmltooling;
 using namespace log4cpp;
 using namespace std;
 
@@ -54,15 +57,8 @@ static int verify_callback(X509_STORE_CTX* x509_ctx, void* arg)
         reinterpret_cast<ShibHTTPHook::ShibHTTPHookCallContext*>(SSL_get_verify_depth(ssl));
 #endif
 
-    // Instead of using the supplied verifier, we let the plugins do whatever they want to do
-    // with the untrusted certificates we find in the object. We can save a bit of memory by
-    // just building a vector that points at them inside the supplied structure.
-    vector<void*> chain;
-    for (int i=0; i<sk_X509_num(x509_ctx->untrusted); i++)
-        chain.push_back(sk_X509_value(x509_ctx->untrusted,i));
-    
-    Trust t(ctx->getHook()->getTrustProviders());
-    if (!t.validate(x509_ctx->cert,chain,ctx->getRoleDescriptor(),false)) { // bypass name check (handled for us)
+    const OpenSSLTrustEngine* t = dynamic_cast<const OpenSSLTrustEngine*>(ctx->getHook()->getTrustEngine());
+    if (!t || !t->validate(x509_ctx->cert,x509_ctx->untrusted,*(ctx->getRoleDescriptor()),false)) { // bypass name check (handled for us)
         x509_ctx->error=X509_V_ERR_APPLICATION_VERIFICATION;     // generic error, check log for plugin specifics
         return 0;
     }

@@ -26,6 +26,11 @@
 #define __shibtarget_internal_h__
 
 #ifdef WIN32
+# define _CRT_SECURE_NO_DEPRECATE 1
+# define _CRT_NONSTDC_NO_DEPRECATE 1
+#endif
+
+#ifdef WIN32
 # define SHIBTARGET_EXPORTS __declspec(dllexport)
 #endif
 
@@ -36,13 +41,15 @@
 # include "config.h"
 #endif
 
+#include <shibsp/SPConstants.h>
+
 #include "shib-target.h"
 #include "hresult.h"
 
-#include <xmltooling/util/Threads.h>
-
 #include <log4cpp/Category.hh>
 #include <log4cpp/FixedContextCategory.hh>
+#include <shibsp/exceptions.h>
+#include <xmltooling/util/Threads.h>
 
 #define SHIBT_L(s) shibtarget::XML::Literals::s
 #define SHIBT_L_QNAME(p,s) shibtarget::XML::Literals::p##_##s

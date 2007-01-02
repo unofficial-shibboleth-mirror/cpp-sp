@@ -31,6 +31,7 @@
 #include <shibsp/SPConfig.h>
 #include <shibsp/SPConstants.h>
 #include <saml/SAMLConfig.h>
+#include <saml/saml1/core/Assertions.h>
 #include <saml/saml2/metadata/ChainingMetadataProvider.h>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/security/ChainingTrustEngine.h>
@@ -40,6 +41,7 @@ using namespace shibsp;
 using namespace shibtarget;
 using namespace shibboleth;
 using namespace saml;
+using namespace opensaml::saml1;
 using namespace opensaml::saml2md;
 using namespace xmltooling;
 using namespace log4cpp;
@@ -67,14 +69,11 @@ namespace shibtarget {
         const char* getHash() const {return m_hash.c_str();}
         Iterator<SAMLAttributeDesignator*> getAttributeDesignators() const;
         Iterator<IAAP*> getAAPProviders() const;
-        Iterator<IMetadata*> getMetadataProviders() const;
-        Iterator<ITrust*> getTrustProviders() const;
+        MetadataProvider* getMetadataProvider() const;
+        TrustEngine* getTrustEngine() const;
         Iterator<const XMLCh*> getAudiences() const;
-        const PropertySet* getCredentialUse(const IEntityDescriptor* provider) const;
+        const PropertySet* getCredentialUse(const EntityDescriptor* provider) const;
 
-        const MetadataProvider* getMetadataProvider() const;
-        const TrustEngine* getTrustEngine() const;
-        
         const SAMLBrowserProfile* getBrowserProfile() const {return m_profile;}
         const SAMLBinding* getBinding(const XMLCh* binding) const
             {return XMLString::compareString(SAMLBinding::SOAP,binding) ? NULL : m_binding;}
@@ -82,8 +81,8 @@ namespace shibtarget {
         void validateToken(
             SAMLAssertion* token,
             time_t t=0,
-            const IRoleDescriptor* role=NULL,
-            const Iterator<ITrust*>& trusts=EMPTY(ITrust*)
+            const RoleDescriptor* role=NULL,
+            const TrustEngine* trust=NULL
             ) const;
         const IHandler* getDefaultSessionInitiator() const;
         const IHandler* getSessionInitiatorById(const char* id) const;
@@ -102,8 +101,6 @@ namespace shibtarget {
         string m_hash;
         vector<SAMLAttributeDesignator*> m_designators;
         vector<IAAP*> m_aaps;
-        vector<IMetadata*> m_metadatas;
-        vector<ITrust*> m_trusts;
         MetadataProvider* m_metadata;
         TrustEngine* m_trust;
         vector<const XMLCh*> m_audiences;
@@ -277,12 +274,12 @@ XMLApplication::XMLApplication(
                 hobj=dynamic_cast<IHandler*>(hplug);
                 if (!hobj) {
                     delete hplug;
-                    throw UnsupportedProfileException(
+                    throw UnsupportedExtensionException(
                         "Plugin for binding ($1) does not implement IHandler interface.",saml::params(1,bindprop)
                         );
                 }
             }
-            catch (SAMLException& ex) {
+            catch (exception& ex) {
                 // If we get here, the handler's not built, so dispose of the property set.
                 log.error("caught exception processing a handler element: %s",ex.what());
                 delete hprops;
@@ -363,7 +360,7 @@ XMLApplication::XMLApplication(
             IHandler* h1=dynamic_cast<IHandler*>(hplug);
             if (!h1) {
                 delete hplug;
-                throw UnsupportedProfileException(
+                throw UnsupportedExtensionException(
                     "Plugin for binding ($1) does not implement IHandler interface.",saml::params(1,b1.get())
                     );
             }
@@ -376,7 +373,7 @@ XMLApplication::XMLApplication(
             IHandler* h2=dynamic_cast<IHandler*>(hplug);
             if (!h2) {
                 delete hplug;
-                throw UnsupportedProfileException(
+                throw UnsupportedExtensionException(
                     "Plugin for binding ($1) does not implement IHandler interface.",saml::params(1,b2.get())
                     );
             }
@@ -417,7 +414,7 @@ XMLApplication::XMLApplication(
                             log.crit("plugin was not an AAP provider");
                         }
                     }
-                    catch (SAMLException& ex) {
+                    catch (exception& ex) {
                         log.crit("error building AAP provider: %s",ex.what());
                     }
                 }
@@ -432,36 +429,25 @@ XMLApplication::XMLApplication(
                     xmltooling::auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
                     log.info("building metadata provider of type %s...",type.get());
                     try {
-                        // Old plugins...TODO: remove
-                        IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
-                        IMetadata* md=dynamic_cast<IMetadata*>(plugin);
-                        if (md)
-                            m_metadatas.push_back(md);
-                        else {
-                            delete plugin;
-                            log.crit("plugin was not a metadata provider");
-                        }
-                        
-                        // New plugins...
                         if (!strcmp(type.get(),"edu.internet2.middleware.shibboleth.common.provider.XMLMetadata") ||
                             !strcmp(type.get(),"edu.internet2.middleware.shibboleth.metadata.provider.XMLMetadata")) {
-                            os2providers.push_back(
+                            auto_ptr<MetadataProvider> mp(
                                 samlConf.MetadataProviderManager.newPlugin(
                                     FILESYSTEM_METADATA_PROVIDER,static_cast<DOMElement*>(nlist->item(i))
-                                )
-                            );
+                                    )
+                                );
+                            mp->init();
+                            os2providers.push_back(mp.release());
                         }
                         else {
-                            os2providers.push_back(
+                            auto_ptr<MetadataProvider> mp(
                                 samlConf.MetadataProviderManager.newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)))
-                            );
+                                );
+                            mp->init();
+                            os2providers.push_back(mp.release());
                         }
                     }
-                    catch (XMLToolingException& ex) {
-                        log.crit("error building metadata provider: %s",ex.what());
-                        for_each(os2providers.begin(), os2providers.end(), xmltooling::cleanup<MetadataProvider>());
-                    }
-                    catch (SAMLException& ex) {
+                    catch (exception& ex) {
                         log.crit("error building metadata provider: %s",ex.what());
                     }
                 }
@@ -469,7 +455,7 @@ XMLApplication::XMLApplication(
             
             if (os2providers.size()==1)
                 m_metadata=os2providers.front();
-            else {
+            else if (os2providers.size()>1) {
                 try {
                     m_metadata = samlConf.MetadataProviderManager.newPlugin(CHAINING_METADATA_PROVIDER,NULL);
                     ChainingMetadataProvider* chainMeta = dynamic_cast<ChainingMetadataProvider*>(m_metadata);
@@ -478,8 +464,8 @@ XMLApplication::XMLApplication(
                         os2providers.pop_back();
                     }
                 }
-                catch (XMLToolingException& ex) {
-                    log.crit("error building metadata provider: %s",ex.what());
+                catch (exception& ex) {
+                    log.crit("error building chaining metadata provider wrapper: %s",ex.what());
                     for_each(os2providers.begin(), os2providers.end(), xmltooling::cleanup<MetadataProvider>());
                 }
             }
@@ -493,17 +479,6 @@ XMLApplication::XMLApplication(
                     xmltooling::auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
                     log.info("building trust provider of type %s...",type.get());
                     try {
-                        // Old plugins...TODO: remove
-                        IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
-                        ITrust* trust=dynamic_cast<ITrust*>(plugin);
-                        if (trust)
-                            m_trusts.push_back(trust);
-                        else {
-                            delete plugin;
-                            log.crit("plugin was not a trust provider");
-                        }
-
-                        // New plugins...
                         if (!m_trust) {
                             // For compatibility with old engine types, we're assuming a Shib engine is likely,
                             // which requires chaining, so we'll build that regardless.
@@ -535,10 +510,7 @@ XMLApplication::XMLApplication(
                             );
                         }
                     }
-                    catch (XMLToolingException& ex) {
-                        log.crit("error building trust provider: %s",ex.what());
-                    }
-                    catch (SAMLException& ex) {
+                    catch (exception& ex) {
                         log.crit("error building trust provider: %s",ex.what());
                     }
                 }
@@ -563,11 +535,11 @@ XMLApplication::XMLApplication(
             // Really finally, build local browser profile and binding objects.
             m_profile=new ShibBrowserProfile(
                 this,
-                getMetadataProviders(),
-                getTrustProviders()
+                getMetadataProvider(),
+                getTrustEngine()
                 );
             m_bindingHook=new ShibHTTPHook(
-                getTrustProviders(),
+                getTrustEngine(),
                 creds
                 );
             m_binding=SAMLBinding::getInstance(SAMLBinding::SOAP);
@@ -579,7 +551,7 @@ XMLApplication::XMLApplication(
             bptr->addHook(m_bindingHook,m_bindingHook); // the hook is its own global context
         }
     }
-    catch (SAMLException& e) {
+    catch (exception& e) {
         log.errorStream() << "Error while processing applicaton element: " << e.what() << CategoryStream::ENDLINE;
         cleanup();
         throw;
@@ -600,9 +572,6 @@ void XMLApplication::cleanup()
     delete m_profile;
     for_each(m_handlers.begin(),m_handlers.end(),xmltooling::cleanup<IHandler>());
     
-    delete m_trust;
-    delete m_metadata;
-    
     delete m_credDefault;
 #ifdef HAVE_GOOD_STL
     for_each(m_credMap.begin(),m_credMap.end(),xmltooling::cleanup_pair<xmltooling::xstring,PropertySet>());
@@ -611,8 +580,9 @@ void XMLApplication::cleanup()
 #endif
     for_each(m_designators.begin(),m_designators.end(),xmltooling::cleanup<SAMLAttributeDesignator>());
     for_each(m_aaps.begin(),m_aaps.end(),xmltooling::cleanup<IAAP>());
-    for_each(m_metadatas.begin(),m_metadatas.end(),xmltooling::cleanup<IMetadata>());
-    for_each(m_trusts.begin(),m_trusts.end(),xmltooling::cleanup<ITrust>());
+
+    delete m_trust;
+    delete m_metadata;
 }
 
 short XMLApplication::acceptNode(const DOMNode* node) const
@@ -698,14 +668,14 @@ Iterator<IAAP*> XMLApplication::getAAPProviders() const
     return (m_aaps.empty() && m_base) ? m_base->getAAPProviders() : m_aaps;
 }
 
-Iterator<IMetadata*> XMLApplication::getMetadataProviders() const
+MetadataProvider* XMLApplication::getMetadataProvider() const
 {
-    return (m_metadatas.empty() && m_base) ? m_base->getMetadataProviders() : m_metadatas;
+    return (!m_metadata && m_base) ? m_base->getMetadataProvider() : m_metadata;
 }
 
-Iterator<ITrust*> XMLApplication::getTrustProviders() const
+TrustEngine* XMLApplication::getTrustEngine() const
 {
-    return (m_trusts.empty() && m_base) ? m_base->getTrustProviders() : m_trusts;
+    return (!m_trust && m_base) ? m_base->getTrustEngine() : m_trust;
 }
 
 Iterator<const XMLCh*> XMLApplication::getAudiences() const
@@ -713,51 +683,41 @@ Iterator<const XMLCh*> XMLApplication::getAudiences() const
     return (m_audiences.empty() && m_base) ? m_base->getAudiences() : m_audiences;
 }
 
-const PropertySet* XMLApplication::getCredentialUse(const IEntityDescriptor* provider) const
+const PropertySet* XMLApplication::getCredentialUse(const EntityDescriptor* provider) const
 {
     if (!m_credDefault && m_base)
         return m_base->getCredentialUse(provider);
         
 #ifdef HAVE_GOOD_STL
-    map<xmltooling::xstring,PropertySet*>::const_iterator i=m_credMap.find(provider->getId());
+    map<xmltooling::xstring,PropertySet*>::const_iterator i=m_credMap.find(provider->getEntityID());
     if (i!=m_credMap.end())
         return i->second;
-    const IEntitiesDescriptor* group=provider->getEntitiesDescriptor();
+    const EntitiesDescriptor* group=dynamic_cast<const EntitiesDescriptor*>(provider->getParent());
     while (group) {
         if (group->getName()) {
             i=m_credMap.find(group->getName());
             if (i!=m_credMap.end())
                 return i->second;
         }
-        group=group->getEntitiesDescriptor();
+        group=dynamic_cast<const EntitiesDescriptor*>(group->getParent());
     }
 #else
     map<const XMLCh*,PropertySet*>::const_iterator i=m_credMap.begin();
     for (; i!=m_credMap.end(); i++) {
         if (!XMLString::compareString(i->first,provider->getId()))
             return i->second;
-        const IEntitiesDescriptor* group=provider->getEntitiesDescriptor();
+        const EntitiesDescriptor* group=dynamic_cast<const EntitiesDescriptor*>(provider->getParent());
         while (group) {
             if (!XMLString::compareString(i->first,group->getName()))
                 return i->second;
-            group=group->getEntitiesDescriptor();
+            group=dynamic_cast<const EntitiesDescriptor*>(group->getParent());
         }
     }
 #endif
     return m_credDefault;
 }
 
-const MetadataProvider* XMLApplication::getMetadataProvider() const
-{
-    return (!m_metadata && m_base) ? m_base->getMetadataProvider() : m_metadata;
-}
-
-const TrustEngine* XMLApplication::getTrustEngine() const
-{
-    return (!m_trust && m_base) ? m_base->getTrustEngine() : m_trust;
-}
-
-void XMLApplication::validateToken(SAMLAssertion* token, time_t ts, const IRoleDescriptor* role, const Iterator<ITrust*>& trusts) const
+void XMLApplication::validateToken(SAMLAssertion* token, time_t ts, const RoleDescriptor* role, const TrustEngine* trust) const
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("validateToken");
@@ -769,10 +729,10 @@ void XMLApplication::validateToken(SAMLAssertion* token, time_t ts, const IRoleD
     if (ts>0) {
         const SAMLDateTime* notBefore=token->getNotBefore();
         if (notBefore && ts+config.clock_skew_secs < notBefore->getEpoch())
-            throw ExpiredAssertionException("Assertion is not yet valid.");
+            throw opensaml::FatalProfileException("Assertion is not yet valid.");
         const SAMLDateTime* notOnOrAfter=token->getNotOnOrAfter();
         if (notOnOrAfter && notOnOrAfter->getEpoch() <= ts-config.clock_skew_secs)
-            throw ExpiredAssertionException("Assertion is no longer valid.");
+            throw opensaml::FatalProfileException("Assertion is no longer valid.");
     }
 
     // Now we process conditions. Only audience restrictions at the moment.
@@ -784,29 +744,40 @@ void XMLApplication::validateToken(SAMLAssertion* token, time_t ts, const IRoleD
             ostringstream os;
             os << *cond;
             log.error("unrecognized Condition in assertion (%s)",os.str().c_str());
-            throw UnsupportedExtensionException("Assertion contains an unrecognized condition.");
+            throw xmltooling::UnknownExtensionException("Assertion contains an unrecognized condition.");
         }
         else if (!ac->eval(getAudiences())) {
             ostringstream os;
             os << *ac;
             log.error("unacceptable AudienceRestrictionCondition in assertion (%s)",os.str().c_str());
-            throw UnsupportedProfileException("Assertion contains an unacceptable AudienceRestrictionCondition.");
+            throw opensaml::FatalProfileException("Assertion contains an unacceptable AudienceRestrictionCondition.");
         }
     }
 
-    if (!role) {
+    if (!role || !trust) {
         log.warn("no metadata provided, so no signature validation was performed");
         return;
     }
 
-    const PropertySet* credUse=getCredentialUse(role->getEntityDescriptor());
+    const PropertySet* credUse=getCredentialUse(dynamic_cast<const EntityDescriptor*>(role->getParent()));
     pair<bool,bool> signedAssertions=credUse ? credUse->getBool("signedAssertions") : make_pair(false,false);
-    Trust t(trusts);
 
-    if (token->isSigned() && !t.validate(*token,role))
-        throw TrustException("Assertion signature did not validate.");
+    if (token->isSigned()) {
+
+        // This will all change, but for fun, we'll port the object from OS1->OS2 for validation.
+        stringstream s;
+        s << *token;
+        DOMDocument* doc = XMLToolingConfig::getConfig().getValidatingParser().parse(s);
+        XercesJanitor<DOMDocument> jdoc(doc);
+        auto_ptr<Assertion> os2ass(AssertionBuilder::buildAssertion());
+        os2ass->unmarshall(doc->getDocumentElement(),true);
+        jdoc.release();
+
+        if (!trust->validate(*(os2ass->getSignature()),*role))
+            throw xmltooling::XMLSecurityException("Assertion signature did not validate.");
+    }
     else if (signedAssertions.first && signedAssertions.second)
-        throw TrustException("Assertion was unsigned, violating policy based on the issuer.");
+        throw xmltooling::XMLSecurityException("Assertion was unsigned, violating policy based on the issuer.");
 }
 
 const IHandler* XMLApplication::getDefaultSessionInitiator() const
@@ -961,7 +932,7 @@ void XMLConfigImpl::init(bool first)
                         SAMLConfig::getConfig().saml_register_extension(path.get(),exts);
                         log.debug("loaded global extension library %s",path.get());
                     }
-                    catch (SAMLException& e) {
+                    catch (exception& e) {
                         const XMLCh* fatal=exts->getAttributeNS(NULL,SHIBT_L(fatal));
                         if (fatal && (*fatal==chLatin_t || *fatal==chDigit_1)) {
                             log.fatal("unable to load mandatory global extension library %s: %s", path.get(), e.what());
@@ -984,7 +955,7 @@ void XMLConfigImpl::init(bool first)
                             SAMLConfig::getConfig().saml_register_extension(path.get(),exts);
                             log.debug("loaded Global extension library %s",path.get());
                         }
-                        catch (SAMLException& e) {
+                        catch (exception& e) {
                             const XMLCh* fatal=exts->getAttributeNS(NULL,SHIBT_L(fatal));
                             if (fatal && (*fatal==chLatin_t || *fatal==chDigit_1)) {
                                 log.fatal("unable to load mandatory Global extension library %s: %s", path.get(), e.what());
@@ -1008,7 +979,7 @@ void XMLConfigImpl::init(bool first)
                             SAMLConfig::getConfig().saml_register_extension(path.get(),exts);
                             log.debug("loaded Local extension library %s",path.get());
                         }
-                        catch (SAMLException& e) {
+                        catch (exception& e) {
                             const XMLCh* fatal=exts->getAttributeNS(NULL,SHIBT_L(fatal));
                             if (fatal && (*fatal==chLatin_t || *fatal==chDigit_1)) {
                                 log.fatal("unable to load mandatory Local extension library %s: %s", path.get(), e.what());
@@ -1168,7 +1139,7 @@ void XMLConfigImpl::init(bool first)
                         }
                     }
                 }
-                catch (SAMLException& ex) {
+                catch (exception& ex) {
                     log.crit("error building credentials provider: %s",ex.what());
                 }
             }
@@ -1196,7 +1167,7 @@ void XMLConfigImpl::init(bool first)
                     }
                 }
             }
-            catch (SAMLException& ex) {
+            catch (exception& ex) {
                 log.crit("error building Attribute factory: %s",ex.what());
             }
         }
@@ -1222,11 +1193,7 @@ void XMLConfigImpl::init(bool first)
                 m_appmap[iapp->getId()]=iapp.release();
         }
     }
-    catch (xmltooling::XMLToolingException& e) {
-        log.errorStream() << "Error while loading SP configuration: " << e.what() << CategoryStream::ENDLINE;
-        throw ConfigurationException(e.what());
-    }
-    catch (SAMLException& e) {
+    catch (exception& e) {
         log.errorStream() << "Error while loading SP configuration: " << e.what() << CategoryStream::ENDLINE;
         throw ConfigurationException(e.what());
     }

@@ -482,9 +482,14 @@ bool ServerThread::job()
         // Dispatch the message.
         out=m_listener->receive(in);
     }
-    catch (XMLToolingException &e) {
+    catch (XMLToolingException& e) {
         log.error("error processing incoming message: %s", e.what());
         out=DDF("exception").string(e.toString().c_str());
+    }
+    catch (exception& e) {
+        log.error("error processing incoming message: %s", e.what());
+        ListenerException ex(e.what());
+        out=DDF("exception").string(ex.toString().c_str());
     }
 #ifndef _DEBUG
     catch (...) {

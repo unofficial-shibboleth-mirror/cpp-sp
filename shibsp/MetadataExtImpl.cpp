@@ -54,7 +54,7 @@ namespace shibsp {
         public AbstractXMLObjectUnmarshaller
     {
         void init() {
-            m_regexp=XML_BOOL_NULL;
+            m_Regexp=XML_BOOL_NULL;
         }
 
     public:
@@ -67,19 +67,19 @@ namespace shibsp {
         ScopeImpl(const ScopeImpl& src)
                 : AbstractXMLObject(src), AbstractSimpleElement(src), AbstractDOMCachingXMLObject(src) {
             init();
-            regexp(src.m_regexp);
+            Regexp(src.m_Regexp);
         }
         
         IMPL_XMLOBJECT_CLONE(Scope);
-        IMPL_BOOLEAN_ATTRIB(regexp);
+        IMPL_BOOLEAN_ATTRIB(Regexp);
 
     protected:
         void marshallAttributes(DOMElement* domElement) const {
-            MARSHALL_BOOLEAN_ATTRIB(regexp,REGEXP,NULL);
+            MARSHALL_BOOLEAN_ATTRIB(Regexp,REGEXP,NULL);
         }
 
         void processAttribute(const DOMAttr* attribute) {
-            PROC_BOOLEAN_ATTRIB(regexp,REGEXP,NULL);
+            PROC_BOOLEAN_ATTRIB(Regexp,REGEXP,NULL);
             AbstractXMLObjectUnmarshaller::processAttribute(attribute);
         }
     };

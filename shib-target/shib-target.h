@@ -26,10 +26,10 @@
 #define SHIB_TARGET_H
 
 // New headers
-#include <saml/base.h>
-#include <saml/saml2/metadata/MetadataProvider.h>
+#include <shibsp/base.h>
 #include <shibsp/ListenerService.h>
 #include <shibsp/PropertySet.h>
+#include <saml/saml2/metadata/MetadataProvider.h>
 #include <xmltooling/security/TrustEngine.h>
 
 // Old headers
@@ -49,9 +49,6 @@
 
 namespace shibtarget {
   
-    DECLARE_SAML_EXCEPTION(SHIBTARGET_EXPORTS,ListenerException,SAMLException);
-    DECLARE_SAML_EXCEPTION(SHIBTARGET_EXPORTS,ConfigurationException,SAMLException);
-
     // Abstract APIs for access to configuration information
     
     // Forward declaration
@@ -93,13 +90,10 @@ namespace shibtarget {
         
         virtual saml::Iterator<saml::SAMLAttributeDesignator*> getAttributeDesignators() const=0;
         virtual saml::Iterator<shibboleth::IAAP*> getAAPProviders() const=0;
-        virtual saml::Iterator<shibboleth::IMetadata*> getMetadataProviders() const=0;
-        virtual saml::Iterator<shibboleth::ITrust*> getTrustProviders() const=0;
+        virtual opensaml::saml2md::MetadataProvider* getMetadataProvider() const=0;
+        virtual xmltooling::TrustEngine* getTrustEngine() const=0;
         virtual saml::Iterator<const XMLCh*> getAudiences() const=0;
-        virtual const shibsp::PropertySet* getCredentialUse(const shibboleth::IEntityDescriptor* provider) const=0;
-
-        virtual const opensaml::saml2md::MetadataProvider* getMetadataProvider() const=0;
-        virtual const xmltooling::TrustEngine* getTrustEngine() const=0;
+        virtual const shibsp::PropertySet* getCredentialUse(const opensaml::saml2md::EntityDescriptor* provider) const=0;
 
         // caller is borrowing object, must use within scope of config lock
         virtual const saml::SAMLBrowserProfile* getBrowserProfile() const=0;
@@ -112,8 +106,8 @@ namespace shibtarget {
         virtual void validateToken(
             saml::SAMLAssertion* token,
             time_t t=0,
-            const shibboleth::IRoleDescriptor* role=NULL,
-            const saml::Iterator<shibboleth::ITrust*>& trusts=EMPTY(shibboleth::ITrust*)
+            const opensaml::saml2md::RoleDescriptor* role=NULL,
+            const xmltooling::TrustEngine* trust=NULL
             ) const=0;
 
         // Used to locate a default or designated session initiator for automatic sessions
@@ -142,8 +136,8 @@ namespace shibtarget {
     class ShibHTTPHook : virtual public saml::SAMLSOAPHTTPBinding::HTTPHook
     {
     public:
-        ShibHTTPHook(const saml::Iterator<shibboleth::ITrust*>& trusts, const saml::Iterator<shibboleth::ICredentials*>& creds)
-            : m_trusts(trusts), m_creds(creds) {}
+        ShibHTTPHook(const xmltooling::TrustEngine* trust, const saml::Iterator<shibboleth::ICredentials*>& creds)
+            : m_trust(trust), m_creds(creds) {}
         virtual ~ShibHTTPHook() {}
         
         // Only hook we need here is for outgoing connection to server.
@@ -152,26 +146,26 @@ namespace shibtarget {
         // Client declares a context object and pass as callCtx to send() method.
         class ShibHTTPHookCallContext {
         public:
-            ShibHTTPHookCallContext(const shibsp::PropertySet* credUse, const shibboleth::IRoleDescriptor* role)
+            ShibHTTPHookCallContext(const shibsp::PropertySet* credUse, const opensaml::saml2md::RoleDescriptor* role)
                 : m_credUse(credUse), m_role(role), m_hook(NULL), m_authenticated(false) {}
             const ShibHTTPHook* getHook() {return m_hook;}
             const shibsp::PropertySet* getCredentialUse() {return m_credUse;}
-            const shibboleth::IRoleDescriptor* getRoleDescriptor() {return m_role;}
+            const opensaml::saml2md::RoleDescriptor* getRoleDescriptor() {return m_role;}
             bool isAuthenticated() const {return m_authenticated;}
             void setAuthenticated() {m_authenticated=true;}
             
         private:
             const shibsp::PropertySet* m_credUse;
-            const shibboleth::IRoleDescriptor* m_role;
+            const opensaml::saml2md::RoleDescriptor* m_role;
             ShibHTTPHook* m_hook;
             bool m_authenticated;
             friend class ShibHTTPHook;
         };
         
-        const saml::Iterator<shibboleth::ITrust*>& getTrustProviders() const {return m_trusts;}
+        const xmltooling::TrustEngine* getTrustEngine() const {return m_trust;}
         const saml::Iterator<shibboleth::ICredentials*>& getCredentialProviders() const {return m_creds;}
     private:
-        saml::Iterator<shibboleth::ITrust*> m_trusts;
+        const xmltooling::TrustEngine* m_trust;
         saml::Iterator<shibboleth::ICredentials*> m_creds;
     };
 
@@ -243,7 +237,7 @@ namespace shibtarget {
     {
         virtual std::string insert(
             const IApplication* application,
-            const shibboleth::IEntityDescriptor* source,
+            const opensaml::saml2md::RoleDescriptor* source,
             const char* client_addr,
             const saml::SAMLSubject* subject,
             const char* authnContext,

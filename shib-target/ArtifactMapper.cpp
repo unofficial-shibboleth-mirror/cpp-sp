@@ -23,11 +23,13 @@
 */
 
 #include "internal.h"
+#include <saml/binding/SAMLArtifact.h>
 
 using namespace shibsp;
 using namespace shibtarget;
-using namespace shibboleth;
 using namespace saml;
+using namespace opensaml::saml2md;
+using namespace xmltooling;
 using namespace log4cpp;
 using namespace std;
 
@@ -37,17 +39,19 @@ SAMLResponse* STArtifactMapper::resolve(SAMLRequest* request)
     
     // First do a search for the issuer.
     SAMLArtifact* artifact=request->getArtifacts().next();
-    Metadata m(m_app->getMetadataProviders());
-    const IEntityDescriptor* entity=m.lookup(artifact);
+    auto_ptr<opensaml::SAMLArtifact> os2art(opensaml::SAMLArtifact::parse(artifact->encode().c_str()));
+
+    MetadataProvider* m=m_app->getMetadataProvider();
+    const EntityDescriptor* entity=m->getEntityDescriptor(os2art.get());
     if (!entity) {
         log.error(
             "metadata lookup failed, unable to determine issuer of artifact (0x%s)",
-            SAMLArtifact::toHex(artifact->getBytes()).c_str()
+            opensaml::SAMLArtifact::toHex(artifact->getBytes()).c_str()
             );
         throw MetadataException("Metadata lookup failed, unable to determine artifact issuer");
     }
     
-    auto_ptr_char issuer(entity->getId());
+    xmltooling::auto_ptr_char issuer(entity->getEntityID());
     log.info("lookup succeeded, artifact issued by (%s)", issuer.get());
     
     // Sign it?
@@ -63,8 +67,8 @@ SAMLResponse* STArtifactMapper::resolve(SAMLRequest* request)
     pair<bool,const char*> signingCred=credUse ? credUse->getString("Signing") : pair<bool,const char*>(false,NULL);
     if (signRequest.first && signRequest.second && signingCred.first) {
         if (request->getMinorVersion()==1) {
-            Credentials creds(ShibTargetConfig::getConfig().getINI()->getCredentialsProviders());
-            const ICredResolver* cr=creds.lookup(signingCred.second);
+            shibboleth::Credentials creds(ShibTargetConfig::getConfig().getINI()->getCredentialsProviders());
+            const shibboleth::ICredResolver* cr=creds.lookup(signingCred.second);
             if (cr)
                 request->sign(cr->getKey(),cr->getCertificates(),signatureAlg.second,digestAlg.second);
             else
@@ -82,23 +86,21 @@ SAMLResponse* STArtifactMapper::resolve(SAMLRequest* request)
     const SAMLArtifactType0001* type1=dynamic_cast<const SAMLArtifactType0001*>(artifact);
     if (type1) {
         // With type 01, any endpoint will do.
-        const IIDPSSODescriptor* idp=entity->getIDPSSODescriptor(
-            request->getMinorVersion()==1 ? saml::XML::SAML11_PROTOCOL_ENUM : saml::XML::SAML10_PROTOCOL_ENUM
+        const IDPSSODescriptor* idp=entity->getIDPSSODescriptor(
+            request->getMinorVersion()==1 ? samlconstants::SAML11_PROTOCOL_ENUM : samlconstants::SAML10_PROTOCOL_ENUM
             );
         if (idp) {
 		    ShibHTTPHook::ShibHTTPHookCallContext callCtx(credUse,idp);
-            const IEndpointManager* mgr=idp->getArtifactResolutionServiceManager();
-            Iterator<const IEndpoint*> eps=mgr ? mgr->getEndpoints() : EMPTY(const IEndpoint*);
-            while (!response && eps.hasNext()) {
-                const IEndpoint* ep=eps.next();
-                const SAMLBinding* binding = m_app->getBinding(ep->getBinding());
+            const vector<ArtifactResolutionService*>& endpoints=idp->getArtifactResolutionServices();
+            for (vector<ArtifactResolutionService*>::const_iterator ep=endpoints.begin(); !response && ep!=endpoints.end(); ++ep) {
+                const SAMLBinding* binding = m_app->getBinding((*ep)->getBinding());
                 if (!binding) {
-                    auto_ptr_char prot(ep->getBinding());
+                    xmltooling::auto_ptr_char prot((*ep)->getBinding());
                     log.warn("skipping binding on unsupported protocol (%s)", prot.get());
                     continue;
                 }
 		        try {
-		            response = binding->send(ep->getLocation(),*request,&callCtx);
+		            response = binding->send((*ep)->getLocation(),*request,&callCtx);
 		            if (log.isDebugEnabled())
 		            	log.debugStream() << "SAML response from artifact request:\n" << *response << CategoryStream::ENDLINE;
 		            
@@ -106,11 +108,15 @@ SAMLResponse* STArtifactMapper::resolve(SAMLRequest* request)
 		                delete response;
 		                throw FatalProfileException("No SAML assertions returned in response to artifact profile request.");
 		            }
-		            authenticated = callCtx.isAuthenticated() && !XMLString::compareNString(ep->getLocation(),https,6);
+		            authenticated = callCtx.isAuthenticated() && !XMLString::compareNString((*ep)->getLocation(),https,6);
 		        }
-		        catch (SAMLException& ex) {
+		        catch (XMLToolingException& ex) {
 		        	annotateException(&ex,idp); // rethrows it
 		        }
+                catch (exception& ex) {
+                    opensaml::BindingException ex2(ex.what());
+                    annotateException(&ex2,idp); // rethrows it
+                }
             }
         }
     }
@@ -118,26 +124,24 @@ SAMLResponse* STArtifactMapper::resolve(SAMLRequest* request)
         const SAMLArtifactType0002* type2=dynamic_cast<const SAMLArtifactType0002*>(artifact);
         if (type2) {
             // With type 02, we have to find the matching location.
-            const IIDPSSODescriptor* idp=entity->getIDPSSODescriptor(
-                request->getMinorVersion()==1 ? saml::XML::SAML11_PROTOCOL_ENUM : saml::XML::SAML10_PROTOCOL_ENUM
+            const IDPSSODescriptor* idp=entity->getIDPSSODescriptor(
+                request->getMinorVersion()==1 ? samlconstants::SAML11_PROTOCOL_ENUM : samlconstants::SAML10_PROTOCOL_ENUM
                 );
             if (idp) {
     		    ShibHTTPHook::ShibHTTPHookCallContext callCtx(credUse,idp);
-                const IEndpointManager* mgr=idp->getArtifactResolutionServiceManager();
-                Iterator<const IEndpoint*> eps=mgr ? mgr->getEndpoints() : EMPTY(const IEndpoint*);
-                while (eps.hasNext()) {
-                    const IEndpoint* ep=eps.next();
-                    auto_ptr_char loc(ep->getLocation());
+                const vector<ArtifactResolutionService*>& endpoints=idp->getArtifactResolutionServices();
+                for (vector<ArtifactResolutionService*>::const_iterator ep=endpoints.begin(); !response && ep!=endpoints.end(); ++ep) {
+                    xmltooling::auto_ptr_char loc((*ep)->getLocation());
                     if (strcmp(loc.get(),type2->getSourceLocation()))
                     	continue;
-	                const SAMLBinding* binding = m_app->getBinding(ep->getBinding());
+	                const SAMLBinding* binding = m_app->getBinding((*ep)->getBinding());
 	                if (!binding) {
-	                    auto_ptr_char prot(ep->getBinding());
+	                    xmltooling::auto_ptr_char prot((*ep)->getBinding());
 	                    log.warn("skipping binding on unsupported protocol (%s)", prot.get());
 	                    continue;
 	                }
 			        try {
-			            response = binding->send(ep->getLocation(),*request,&callCtx);
+			            response = binding->send((*ep)->getLocation(),*request,&callCtx);
 			            if (log.isDebugEnabled())
 			            	log.debugStream() << "SAML response from artifact request:\n" << *response << CategoryStream::ENDLINE;
 			            
@@ -145,17 +149,21 @@ SAMLResponse* STArtifactMapper::resolve(SAMLRequest* request)
 			                delete response;
 			                throw FatalProfileException("No SAML assertions returned in response to artifact profile request.");
 			            }
-                        authenticated = callCtx.isAuthenticated() && !XMLString::compareNString(ep->getLocation(),https,6);
+                        authenticated = callCtx.isAuthenticated() && !XMLString::compareNString((*ep)->getLocation(),https,6);
 			        }
-			        catch (SAMLException& ex) {
-			        	annotateException(&ex,idp); // rethrows it
-			        }
+		            catch (XMLToolingException& ex) {
+		        	    annotateException(&ex,idp); // rethrows it
+		            }
+                    catch (exception& ex) {
+                        opensaml::BindingException ex2(ex.what());
+                        annotateException(&ex2,idp); // rethrows it
+                    }
                 }
             }
         }
         else {
             log.error("unrecognized artifact type (0x%s)", SAMLArtifact::toHex(artifact->getTypeCode()).c_str());
-            throw UnsupportedExtensionException(
+            throw xmltooling::UnknownExtensionException(
                 string("Received unrecognized artifact type (0x") + SAMLArtifact::toHex(artifact->getTypeCode()) + ")"
                 );
         }
@@ -169,7 +177,7 @@ SAMLResponse* STArtifactMapper::resolve(SAMLRequest* request)
     else if (!response->isSigned()) {
     	if (!authenticated || (signedResponse.first && signedResponse.second)) {
 	        log.error("unsigned response obtained, but it must be signed.");
-	        TrustException ex("Unable to obtain a signed response from artifact request.");
+	        XMLSecurityException ex("Unable to obtain a signed response from artifact request.");
 		    annotateException(&ex,entity); // throws it
     	}
     }

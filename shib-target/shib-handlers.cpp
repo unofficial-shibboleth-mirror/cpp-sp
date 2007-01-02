@@ -26,9 +26,12 @@
 #include <ctime>
 #include <saml/SAMLConfig.h>
 #include <saml/binding/URLEncoder.h>
+#include <saml/saml2/metadata/Metadata.h>
+#include <saml/saml2/metadata/EndpointManager.h>
 #include <saml/util/CommonDomainCookie.h>
 #include <shibsp/SPConfig.h>
 #include <shibsp/SPConstants.h>
+#include <xmltooling/util/NDC.h>
 
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
@@ -38,6 +41,7 @@ using namespace shibsp;
 using namespace shibtarget;
 using namespace shibboleth;
 using namespace saml;
+using namespace opensaml::saml2md;
 using namespace log4cpp;
 using namespace std;
 
@@ -129,7 +133,7 @@ pair<bool,void*> SessionInitiator::run(ShibTarget* st, bool isHandler) const
             if (home.first)
                 resource=home.second;
             else
-                throw FatalProfileException("Session initiator requires a target parameter or a homeURL application property.");
+                throw opensaml::FatalProfileException("Session initiator requires a target parameter or a homeURL application property.");
         }
         else if (!option) {
             dupresource=resource;
@@ -139,20 +143,24 @@ pair<bool,void*> SessionInitiator::run(ShibTarget* st, bool isHandler) const
         if (option) {
             // Here we actually use metadata to invoke the SSO service directly.
             // The only currently understood binding is the Shibboleth profile.
-            Metadata m(app->getMetadataProviders());
-            const IEntityDescriptor* entity=m.lookup(option);
+            
+            MetadataProvider* m=app->getMetadataProvider();
+            xmltooling::Locker locker(m);
+            const EntityDescriptor* entity=m->getEntityDescriptor(option);
             if (!entity)
-                throw MetadataException("Session initiator unable to locate metadata for provider ($1).", params(1,option));
-            const IIDPSSODescriptor* role=entity->getIDPSSODescriptor(shibspconstants::SHIB1_PROTOCOL_ENUM);
+                throw MetadataException("Session initiator unable to locate metadata for provider ($1).", xmltooling::params(1,option));
+            const IDPSSODescriptor* role=entity->getIDPSSODescriptor(shibspconstants::SHIB1_PROTOCOL_ENUM);
             if (!role)
                 throw MetadataException(
-                    "Session initiator unable to locate a Shibboleth-aware identity provider role for provider ($1).", params(1,option)
+                    "Session initiator unable to locate a Shibboleth-aware identity provider role for provider ($1).",
+                    xmltooling::params(1,option)
                     );
-            const IEndpointManager* SSO=role->getSingleSignOnServiceManager();
-            const IEndpoint* ep=SSO->getEndpointByBinding(shibspconstants::SHIB1_AUTHNREQUEST_PROFILE_URI);
+            const EndpointType* ep=EndpointManager<SingleSignOnService>(role->getSingleSignOnServices()).getByBinding(
+                shibspconstants::SHIB1_AUTHNREQUEST_PROFILE_URI
+                );
             if (!ep)
                 throw MetadataException(
-                    "Session initiator unable to locate compatible SSO service for provider ($1).", params(1,option)
+                    "Session initiator unable to locate compatible SSO service for provider ($1).", xmltooling::params(1,option)
                     );
             auto_ptr_char dest(ep->getLocation());
             return ShibAuthnRequest(
@@ -189,7 +197,7 @@ pair<bool,void*> SessionInitiator::run(ShibTarget* st, bool isHandler) const
         return make_pair(true, st->sendRedirect(wayfURL.second));
     }
    
-    throw UnsupportedProfileException("Unsupported WAYF binding ($1).", params(1,getProperties()->getString("wayfBinding").second));
+    throw opensaml::BindingException("Unsupported WAYF binding ($1).", xmltooling::params(1,getProperties()->getString("wayfBinding").second));
 }
 
 // Handles Shib 1.x AuthnRequest profile.
@@ -275,7 +283,7 @@ SAML1Consumer::~SAML1Consumer()
 DDF SAML1Consumer::receive(const DDF& in)
 {
 #ifdef _DEBUG
-    saml::NDC ndc("receive");
+    xmltooling::NDC ndc("receive");
 #endif
     Category& log=Category::getInstance(SHIBT_LOGCAT".SAML1Consumer");
 
@@ -298,9 +306,10 @@ DDF SAML1Consumer::receive(const DDF& in)
     log.debug("recipient: %s", recipient);
     log.debug("application: %s", app->getId());
 
-    // Access the application config. It's already locked behind us.
+    // Access the application config.
     STConfig& stc=static_cast<STConfig&>(ShibTargetConfig::getConfig());
     IConfig* conf=stc.getINI();
+    saml::Locker confLocker(conf);
 
     auto_ptr_XMLCh wrecipient(recipient);
 
@@ -321,8 +330,10 @@ DDF SAML1Consumer::receive(const DDF& in)
     if (!version.first)
         version.second=1;
 
-    const IRoleDescriptor* role=NULL;
-    Metadata m(app->getMetadataProviders());
+    const EntityDescriptor* provider=NULL;
+    const RoleDescriptor* role=NULL;
+    MetadataProvider* m=app->getMetadataProvider();
+    xmltooling::Locker locker(m);
     SAMLBrowserProfile::BrowserProfileResponse bpr;
 
     try {
@@ -361,16 +372,15 @@ DDF SAML1Consumer::receive(const DDF& in)
         }
 
         // Try and map to metadata (again).
-        // Once the metadata layer is in the SAML core, the repetition should be fixed.
-        const IEntityDescriptor* provider=m.lookup(bpr.assertion->getIssuer());
+        // Once the metadata layer is in the SAML core, the repetition will be fixed.
+        provider=m->getEntityDescriptor(bpr.assertion->getIssuer());
         if (!provider && bpr.authnStatement->getSubject()->getNameIdentifier() &&
                 bpr.authnStatement->getSubject()->getNameIdentifier()->getNameQualifier())
-            provider=m.lookup(bpr.authnStatement->getSubject()->getNameIdentifier()->getNameQualifier());
+            provider=m->getEntityDescriptor(bpr.authnStatement->getSubject()->getNameIdentifier()->getNameQualifier());
         if (provider) {
-            const IIDPSSODescriptor* IDP=provider->getIDPSSODescriptor(
-                version.second==1 ? saml::XML::SAML11_PROTOCOL_ENUM : saml::XML::SAML10_PROTOCOL_ENUM
+            role=provider->getIDPSSODescriptor(
+                version.second==1 ? samlconstants::SAML11_PROTOCOL_ENUM : samlconstants::SAML10_PROTOCOL_ENUM
                 );
-            role=IDP;
         }
         
         // This isn't likely, since the profile must have found a role.
@@ -388,19 +398,18 @@ DDF SAML1Consumer::receive(const DDF& in)
                 // Verify the client address matches authentication
                 auto_ptr_char this_ip(wip);
                 if (strcmp(client_address, this_ip.get())) {
-                    FatalProfileException ex(
-                        SESSION_E_ADDRESSMISMATCH,
+                    opensaml::FatalProfileException ex(
                        "Your client's current address ($1) differs from the one used when you authenticated "
                         "to your identity provider. To correct this problem, you may need to bypass a proxy server. "
                         "Please contact your local support staff or help desk for assistance.",
-                        params(1,client_address)
+                        xmltooling::params(1,client_address)
                         );
                     annotateException(&ex,role); // throws it
                 }
             }
         }
     }
-    catch (SAMLException&) {
+    catch (exception&) {
         bpr.clear();
         throw;
     }
@@ -411,40 +420,29 @@ DDF SAML1Consumer::receive(const DDF& in)
         throw;
 #else
         SAMLException e("An unexpected error occurred while creating your session.");
-        annotateException(&e,role);
+        shibboleth::annotateException(&e,role);
 #endif
     }
 
     // It passes all our tests -- create a new session.
     log.info("creating new session");
 
-    DDF out;
-    try {
-        // Insert into cache.
-        auto_ptr_char authContext(bpr.authnStatement->getAuthMethod());
-        string key=conf->getSessionCache()->insert(
-            app,
-            role->getEntityDescriptor(),
-            client_address,
-            bpr.authnStatement->getSubject(),
-            authContext.get(),
-            bpr.response
-            );
-        // objects owned by cache now
-        log.debug("new session id: %s", key.c_str());
-        auto_ptr_char oname(role->getEntityDescriptor()->getId());
-        out=DDF(NULL).structure();
-        out.addmember("key").string(key.c_str());
-        out.addmember("provider_id").string(oname.get());
-    }
-    catch (...) {
-#ifdef _DEBUG
-        throw;
-#else
-        SAMLException e("An unexpected error occurred while creating your session.");
-        annotateException(&e,role);
-#endif
-    }
+    // Insert into cache.
+    auto_ptr_char authContext(bpr.authnStatement->getAuthMethod());
+    string key=conf->getSessionCache()->insert(
+        app,
+        role,
+        client_address,
+        bpr.authnStatement->getSubject(),
+        authContext.get(),
+        bpr.response
+        );
+    // objects owned by cache now
+    log.debug("new session id: %s", key.c_str());
+    auto_ptr_char oname(provider->getEntityID());
+    DDF out=DDF(NULL).structure();
+    out.addmember("key").string(key.c_str());
+    out.addmember("provider_id").string(oname.get());
 
     return out;
 }
@@ -519,7 +517,7 @@ pair<bool,void*> SAML1Consumer::run(ShibTarget* st, bool isHandler) const
 
     out=st->getConfig()->getListener()->send(in);
     if (!out["key"].isstring())
-        throw FatalProfileException("Remote processing of SAML 1.x Browser profile did not return a usable session key.");
+        throw opensaml::FatalProfileException("Remote processing of SAML 1.x Browser profile did not return a usable session key.");
     string key=out["key"].string();
 
     st->log(ShibTarget::LogLevelDebug, string("profile processing succeeded, new session created (") + key + ")");
@@ -597,7 +595,7 @@ pair<bool,void*> ShibLogout::run(ShibTarget* st, bool isHandler) const
         try {
             st->getConfig()->getSessionCache()->remove(session_id,st->getApplication(),st->getRemoteAddr());
         }
-        catch (SAMLException& e) {
+        catch (exception& e) {
             st->log(ShibTarget::LogLevelError, string("logout processing failed with exception: ") + e.what());
         }
 #ifndef _DEBUG

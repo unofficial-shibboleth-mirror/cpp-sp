@@ -39,21 +39,24 @@
 #include <xercesc/util/Base64.hpp>
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/TemplateEngine.h>
+#include <xmltooling/util/XMLHelper.h>
 
 #ifndef HAVE_STRCASECMP
 # define strcasecmp stricmp
 #endif
 
+using namespace shibsp;
 using namespace shibtarget;
 using namespace shibboleth;
 using namespace saml;
+using namespace opensaml::saml2md;
 using namespace log4cpp;
 using namespace std;
 
-using shibsp::PropertySet;
 using xmltooling::TemplateEngine;
 using xmltooling::XMLToolingException;
 using xmltooling::XMLToolingConfig;
+using xmltooling::XMLHelper;
 
 namespace shibtarget {
     class CgiParse
@@ -162,7 +165,7 @@ void ShibTarget::init(
 #endif
 
     if (m_priv->m_app)
-        throw SAMLException("Request initialization occurred twice!");
+        throw XMLToolingException("Request initialization occurred twice!");
 
     if (method) m_method = method;
     if (protocol) m_protocol = protocol;
@@ -262,7 +265,7 @@ pair<bool,void*> ShibTarget::doCheckAuthN(bool handler)
                 if (!initiator)
                     throw ConfigurationException(
                         "No session initiator found with id ($1), check requireSessionWith command.",
-                        params(1,requireSessionWith.second)
+                        xmltooling::params(1,requireSessionWith.second)
                         );
             }
             else {
@@ -283,9 +286,9 @@ pair<bool,void*> ShibTarget::doCheckAuthN(bool handler)
                 );
             // Make a localized exception throw if the session isn't valid.
             if (!m_priv->m_cacheEntry)
-                throw InvalidSessionException("Session no longer valid.");
+                throw RetryableProfileException("Session no longer valid.");
         }
-        catch (SAMLException& e) {
+        catch (exception& e) {
             log(LogLevelError, string("session processing failed: ") + e.what());
 
             // If no session is required, bail now.
@@ -297,7 +300,7 @@ pair<bool,void*> ShibTarget::doCheckAuthN(bool handler)
                 return make_pair(true, returnOK());
 
             // Try and cast down.
-            SAMLException* base = &e;
+            exception* base = &e;
             RetryableProfileException* trycast=dynamic_cast<RetryableProfileException*>(base);
             if (trycast) {
                 // Session is invalid but we can retry -- initiate a new session.
@@ -308,7 +311,7 @@ pair<bool,void*> ShibTarget::doCheckAuthN(bool handler)
                     if (!initiator)
                         throw ConfigurationException(
                             "No session initiator found with id ($1), check requireSessionWith command.",
-                            params(1,requireSessionWith.second)
+                            xmltooling::params(1,requireSessionWith.second)
                             );
                 }
                 else {
@@ -325,13 +328,6 @@ pair<bool,void*> ShibTarget::doCheckAuthN(bool handler)
         // Let the caller decide how to proceed.
         log(LogLevelDebug, "doCheckAuthN succeeded");
         return make_pair(false,(void*)NULL);
-    }
-    catch (SAMLException& e) {                  // TODO: we're going to yank this handler...
-        tp.m_map["errorType"] = procState;
-        tp.m_map["errorText"] = e.what();
-        if (targetURL)
-            tp.m_map["requestURL"] = m_url.substr(0,m_url.find('?'));
-        return make_pair(true,m_priv->sendError(this, "session", tp));
     }
     catch (XMLToolingException& e) {
         tp.m_map["errorType"] = procState;
@@ -383,21 +379,21 @@ pair<bool,void*> ShibTarget::doHandler(void)
       
         // Make sure this is SSL, if it should be
         if ((!handlerSSL.first || handlerSSL.second) && m_protocol != "https")
-            throw FatalProfileException("Blocked non-SSL access to Shibboleth handler.");
+            throw opensaml::FatalProfileException("Blocked non-SSL access to Shibboleth handler.");
 
         // We dispatch based on our path info. We know the request URL begins with or equals the handler URL,
         // so the path info is the next character (or null).
         const IHandler* handler=m_priv->m_app->getHandler(targetURL + strlen(handlerURL));
         if (!handler)
-            throw SAMLException("Shibboleth handler invoked at an unconfigured location.");
+            throw opensaml::BindingException("Shibboleth handler invoked at an unconfigured location.");
 
-        if (saml::XML::isElementNamed(handler->getProperties()->getElement(),shibtarget::XML::SAML2META_NS,SHIBT_L(AssertionConsumerService)))
+        if (XMLHelper::isNodeNamed(handler->getProperties()->getElement(),samlconstants::SAML20MD_NS,SHIBT_L(AssertionConsumerService)))
             procState = "Session Creation Error";
-        else if (saml::XML::isElementNamed(handler->getProperties()->getElement(),shibtarget::XML::SHIBTARGET_NS,SHIBT_L(SessionInitiator)))
+        else if (XMLHelper::isNodeNamed(handler->getProperties()->getElement(),shibtarget::XML::SHIBTARGET_NS,SHIBT_L(SessionInitiator)))
             procState = "Session Initiator Error";
-        else if (saml::XML::isElementNamed(handler->getProperties()->getElement(),shibtarget::XML::SAML2META_NS,SHIBT_L(SingleLogoutService)))
+        else if (XMLHelper::isNodeNamed(handler->getProperties()->getElement(),samlconstants::SAML20MD_NS,SHIBT_L(SingleLogoutService)))
             procState = "Session Termination Error";
-        else if (saml::XML::isElementNamed(handler->getProperties()->getElement(),shibtarget::XML::SHIBTARGET_NS,SHIBT_L(DiagnosticService)))
+        else if (XMLHelper::isNodeNamed(handler->getProperties()->getElement(),shibtarget::XML::SHIBTARGET_NS,SHIBT_L(DiagnosticService)))
             procState = "Diagnostics Error";
         else
             procState = "Extension Service Error";
@@ -407,7 +403,7 @@ pair<bool,void*> ShibTarget::doHandler(void)
         if (hret.first)
             return hret;
        
-        throw XMLToolingException("Configured Shibboleth handler failed to process the request.");
+        throw opensaml::BindingException("Configured Shibboleth handler failed to process the request.");
     }
     catch (MetadataException& e) {
         tp.m_map["errorText"] = e.what();
@@ -423,13 +419,6 @@ pair<bool,void*> ShibTarget::doHandler(void)
             }
         }
         throw;
-    }
-    catch (SAMLException& e) {
-        tp.m_map["errorType"] = procState;
-        tp.m_map["errorText"] = e.what();
-        if (targetURL)
-            tp.m_map["requestURL"] = m_url.substr(0,m_url.find('?'));
-        return make_pair(true,m_priv->sendError(this, "session", tp));
     }
     catch (XMLToolingException& e) {
         tp.m_map["errorType"] = procState;
@@ -495,7 +484,7 @@ pair<bool,void*> ShibTarget::doCheckAuthZ(void)
                             );
 		        	}
 	            }
-	            catch (SAMLException&) {
+	            catch (exception&) {
 	            	log(LogLevelError, "doCheckAuthZ: unable to obtain session information to pass to access control provider");
 	            }
 	        }
@@ -516,19 +505,12 @@ pair<bool,void*> ShibTarget::doCheckAuthZ(void)
         else
             return make_pair(true,returnDecline());
     }
-    catch (SAMLException& e) {
+    catch (exception& e) {
         tp.m_map["errorType"] = procState;
         tp.m_map["errorText"] = e.what();
         if (targetURL)
             tp.m_map["requestURL"] = m_url.substr(0,m_url.find('?'));
         return make_pair(true,m_priv->sendError(this, "access", tp));
-    }
-    catch (XMLToolingException& e) {
-        tp.m_map["errorType"] = procState;
-        tp.m_map["errorText"] = e.what();
-        if (targetURL)
-            tp.m_map["requestURL"] = m_url.substr(0,m_url.find('?'));
-        return make_pair(true,m_priv->sendError(this, "access", tp, &e));
     }
 #ifndef _DEBUG
     catch (...) {
@@ -569,7 +551,7 @@ pair<bool,void*> ShibTarget::doExportAssertions(bool requireSession)
                         );
 	        	}
             }
-            catch (SAMLException&) {
+            catch (exception&) {
             	log(LogLevelError, "unable to obtain session information to export into request headers");
             	// If we have to have a session, then this is a fatal error.
             	if (requireSession)
@@ -580,7 +562,7 @@ pair<bool,void*> ShibTarget::doExportAssertions(bool requireSession)
 		// Still no data?
         if (!m_priv->m_cacheEntry) {
         	if (requireSession)
-        		throw InvalidSessionException("Unable to obtain session information for request.");
+        		throw RetryableProfileException("Unable to obtain session information for request.");
         	else
         		return make_pair(false,(void*)NULL);	// just bail silently
         }
@@ -682,13 +664,6 @@ pair<bool,void*> ShibTarget::doExportAssertions(bool requireSession)
         }
     
         return make_pair(false,(void*)NULL);
-    }
-    catch (SAMLException& e) {
-        tp.m_map["errorType"] = procState;
-        tp.m_map["errorText"] = e.what();
-        if (targetURL)
-            tp.m_map["requestURL"] = m_url.substr(0,m_url.find('?'));
-        return make_pair(true,m_priv->sendError(this, "rm", tp));
     }
     catch (XMLToolingException& e) {
         tp.m_map["errorType"] = procState;
@@ -798,7 +773,7 @@ string ShibTarget::getHandlerURL(const char* resource) const
     if (!handler || (*handler!='/' && strncmp(handler,"http:",5) && strncmp(handler,"https:",6)))
         throw ConfigurationException(
             "Invalid handlerURL property ($1) in Application ($2)",
-            params(2, handler ? handler : "null", m_priv->m_app->getId())
+            xmltooling::params(2, handler ? handler : "null", m_priv->m_app->getId())
             );
 
     // The "handlerURL" property can be in one of three formats:

@@ -41,7 +41,6 @@ using namespace std;
 // Metadata Factories
 
 PlugManager::Factory TargetedIDFactory;
-PlugManager::Factory XMLMetadataFactory;
 PlugManager::Factory XMLCredentialsFactory;
 PlugManager::Factory XMLAAPFactory;
 PlugManager::Factory FileCredResolverFactory;
@@ -51,17 +50,11 @@ extern "C" int XML_EXPORTS saml_extension_init(void*)
 {
     // Register extension schemas.
     saml::XML::registerSchema(::XML::SHIB_NS,::XML::SHIB_SCHEMA_ID);
-    saml::XML::registerSchema(::XML::SHIBMETA_NS,::XML::SHIBMETA_SCHEMA_ID);
     saml::XML::registerSchema(::XML::CREDS_NS,::XML::CREDS_SCHEMA_ID);
-    saml::XML::registerSchema(::XML::SAML2META_NS,::XML::SAML2META_SCHEMA_ID);
-    saml::XML::registerSchema(::XML::SAML2ASSERT_NS,::XML::SAML2ASSERT_SCHEMA_ID);
-    saml::XML::registerSchema(::XML::XMLENC_NS,::XML::XMLENC_SCHEMA_ID);
 
     // Register metadata factories (some are legacy aliases)
     SAMLConfig& conf=SAMLConfig::getConfig();
     conf.getPlugMgr().regFactory("edu.internet2.middleware.shibboleth.common.provider.TargetedIDFactory",&TargetedIDFactory);
-    conf.getPlugMgr().regFactory("edu.internet2.middleware.shibboleth.metadata.provider.XMLMetadata",&XMLMetadataFactory);
-    conf.getPlugMgr().regFactory("edu.internet2.middleware.shibboleth.common.provider.XMLMetadata",&XMLMetadataFactory);
     conf.getPlugMgr().regFactory("edu.internet2.middleware.shibboleth.common.Credentials",&XMLCredentialsFactory);
     conf.getPlugMgr().regFactory("edu.internet2.middleware.shibboleth.common.Credentials.FileCredentialResolver",&FileCredResolverFactory);
     conf.getPlugMgr().regFactory("edu.internet2.middleware.shibboleth.aap.provider.XMLAAP",&XMLAAPFactory);
@@ -76,8 +69,6 @@ extern "C" void XML_EXPORTS saml_extension_term()
     // Unregister metadata factories
     SAMLConfig& conf=SAMLConfig::getConfig();
     conf.getPlugMgr().unregFactory("edu.internet2.middleware.shibboleth.common.provider.TargetedIDFactory");
-    conf.getPlugMgr().unregFactory("edu.internet2.middleware.shibboleth.metadata.provider.XMLMetadata");
-    conf.getPlugMgr().unregFactory("edu.internet2.middleware.shibboleth.common.provider.XMLMetadata");
     conf.getPlugMgr().unregFactory("edu.internet2.middleware.shibboleth.common.Credentials");
     conf.getPlugMgr().unregFactory("edu.internet2.middleware.shibboleth.common.Credentials.FileCredentialResolver");
     conf.getPlugMgr().unregFactory("edu.internet2.middleware.shibboleth.aap.provider.XMLAAP");
@@ -99,30 +90,4 @@ void log_openssl()
             log.errorStream() << "error data: " << data << CategoryStream::ENDLINE;
         code=ERR_get_error_line_data(&file,&line,&data,&flags);
     }
-}
-
-X509* B64_to_X509(const char* buf)
-{
-    BIO* bmem = BIO_new_mem_buf((void*)buf,-1);
-    BIO* b64 = BIO_new(BIO_f_base64());
-    b64 = BIO_push(b64, bmem);
-    X509* x=NULL;
-    d2i_X509_bio(b64,&x);
-    if (!x)
-        log_openssl();
-    BIO_free_all(b64);
-    return x;
-}
-
-X509_CRL* B64_to_CRL(const char* buf)
-{
-    BIO* bmem = BIO_new_mem_buf((void*)buf,-1);
-    BIO* b64 = BIO_new(BIO_f_base64());
-    b64 = BIO_push(b64, bmem);
-    X509_CRL* x=NULL;
-    d2i_X509_CRL_bio(b64,&x);
-    if (!x)
-        log_openssl();
-    BIO_free_all(b64);
-    return x;
 }

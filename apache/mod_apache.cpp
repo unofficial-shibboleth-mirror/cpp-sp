@@ -31,11 +31,13 @@
 # define _CRT_SECURE_NO_DEPRECATE 1
 #endif
 
+#include <shibsp/exceptions.h>
+#include <shibsp/SPConfig.h>
+
 // SAML Runtime
 #include <saml/saml.h>
 #include <shib/shib.h>
 #include <shib-target/shib-target.h>
-#include <shibsp/SPConfig.h>
 #include <xercesc/util/regx/RegularExpression.hpp>
 
 #ifdef WIN32

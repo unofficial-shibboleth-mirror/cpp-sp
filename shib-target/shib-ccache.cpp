@@ -26,13 +26,13 @@
 # include <unistd.h>
 #endif
 
-#include <log4cpp/Category.hh>
-#include <shibsp/SPConfig.h>
-
 #include <ctime>
 #include <algorithm>
 #include <sstream>
 #include <stdexcept>
+#include <log4cpp/Category.hh>
+#include <shibsp/SPConfig.h>
+#include <xmltooling/util/NDC.h>
 
 #ifdef HAVE_LIBDMALLOCXX
 #include <dmalloc.h>
@@ -40,8 +40,8 @@
 
 using namespace shibsp;
 using namespace shibtarget;
-using namespace shibboleth;
 using namespace saml;
+using namespace opensaml::saml2md;
 using namespace xmltooling;
 using namespace log4cpp;
 using namespace std;
@@ -176,7 +176,7 @@ public:
 
     string insert(
         const IApplication* application,
-        const IEntityDescriptor* source,
+        const RoleDescriptor* role,
         const char* client_addr,
         const SAMLSubject* subject,
         const char* authnContext,
@@ -200,7 +200,7 @@ StubCache::StubCache(const DOMElement* e) : m_log(&Category::getInstance(SHIBT_L
 
 string StubCache::insert(
     const IApplication* application,
-    const IEntityDescriptor* source,
+    const RoleDescriptor* role,
     const char* client_addr,
     const SAMLSubject* subject,
     const char* authnContext,
@@ -212,7 +212,7 @@ string StubCache::insert(
     in.structure();
     in.addmember("application_id").string(application->getId());
     in.addmember("client_address").string(client_addr);
-    xmltooling::auto_ptr_char provid(source->getId());
+    xmltooling::auto_ptr_char provid(dynamic_cast<EntityDescriptor*>(role->getParent())->getEntityID());
     in.addmember("provider_id").string(provid.get());
     in.addmember("major_version").integer(1);
     in.addmember("minor_version").integer(tokens->getMinorVersion());
@@ -228,7 +228,7 @@ string StubCache::insert(
     out=ShibTargetConfig::getConfig().getINI()->getListener()->send(in);
     if (out["key"].isstring())
         return out["key"].string();
-    throw InvalidSessionException("A remoted cache insertion operation did not return a usable session key.");
+    throw opensaml::RetryableProfileException("A remoted cache insertion operation did not return a usable session key.");
 }
 
 ISessionCacheEntry* StubCache::find(const char* key, const IApplication* application, const char* client_addr)
@@ -280,7 +280,7 @@ public:
         MemorySessionCache* cache,
         const char* key,
         const IApplication* application,
-        const IEntityDescriptor* source,
+        const RoleDescriptor* role,
         const char* client_addr,
         const SAMLSubject* subject,
         const char* authnContext,
@@ -290,7 +290,7 @@ public:
         MemorySessionCache* cache,
         const char* key,
         const IApplication* application,
-        const IEntityDescriptor* source,
+        const RoleDescriptor* role,
         const char* client_addr,
         const char* subject,
         const char* authnContext,
@@ -306,7 +306,7 @@ public:
     void unlock() { m_lock->unlock(); }
     
     HRESULT isValid(const IApplication* application, const char* client_addr) const;
-    void populate(const IApplication* application, const IEntityDescriptor* source, bool initial=false) const;
+    void populate(const IApplication* application, const EntityDescriptor* source, bool initial=false) const;
     bool checkApplication(const IApplication* application) { return (m_obj["application_id"]==application->getId()); }
     time_t created() const { return m_sessionCreated; }
     time_t lastAccess() const { return m_lastAccess; }
@@ -315,8 +315,8 @@ public:
 private:
     bool hasAttributes(const SAMLResponse& r) const;
     time_t calculateExpiration(const SAMLResponse& r) const;
-    pair<SAMLResponse*,SAMLResponse*> getNewResponse(const IApplication* application, const IEntityDescriptor* source) const;
-    SAMLResponse* filter(const SAMLResponse* r, const IApplication* application, const IEntityDescriptor* source) const;
+    pair<SAMLResponse*,SAMLResponse*> getNewResponse(const IApplication* application, const EntityDescriptor* source) const;
+    SAMLResponse* filter(const SAMLResponse* r, const IApplication* application, const RoleDescriptor* role) const;
   
     time_t m_sessionCreated;
     mutable time_t m_responseExpiration, m_lastAccess, m_lastRetry;
@@ -338,7 +338,7 @@ public:
 
     string insert(
         const IApplication* application,
-        const IEntityDescriptor* source,
+        const RoleDescriptor* role,
         const char* client_addr,
         const SAMLSubject* subject,
         const char* authnContext,
@@ -379,7 +379,7 @@ MemorySessionCacheEntry::MemorySessionCacheEntry(
     MemorySessionCache* cache,
     const char* key,
     const IApplication* application,
-    const IEntityDescriptor* source,
+    const RoleDescriptor* role,
     const char* client_addr,
     const SAMLSubject* subject,
     const char* authnContext,
@@ -393,7 +393,7 @@ MemorySessionCacheEntry::MemorySessionCacheEntry(
     m_obj.addmember("key").string(key);
     m_obj.addmember("client_address").string(client_addr);
     m_obj.addmember("application_id").string(application->getId());
-    xmltooling::auto_ptr_char pid(source->getId());
+    xmltooling::auto_ptr_char pid(dynamic_cast<EntityDescriptor*>(role->getParent())->getEntityID());
     m_obj.addmember("provider_id").string(pid.get());
     m_obj.addmember("major_version").integer(1);
     m_obj.addmember("minor_version").integer(tokens->getMinorVersion());
@@ -413,7 +413,7 @@ MemorySessionCacheEntry::MemorySessionCacheEntry(
 
     if (hasAttributes(*tokens)) {
         // Filter attributes in the response.
-        auto_ptr<SAMLResponse> filtered(filter(tokens, application, source));
+        auto_ptr<SAMLResponse> filtered(filter(tokens, application, role));
         
         // Calculate expiration.
         m_responseExpiration=calculateExpiration(*(filtered.get()));
@@ -461,7 +461,7 @@ MemorySessionCacheEntry::MemorySessionCacheEntry(
     MemorySessionCache* cache,
     const char* key,
     const IApplication* application,
-    const IEntityDescriptor* source,
+    const RoleDescriptor* role,
     const char* client_addr,
     const char* subject,
     const char* authnContext,
@@ -484,7 +484,7 @@ MemorySessionCacheEntry::MemorySessionCacheEntry(
     m_obj.addmember("key").string(key);
     m_obj.addmember("client_address").string(client_addr);
     m_obj.addmember("application_id").string(application->getId());
-    xmltooling::auto_ptr_char pid(source->getId());
+    xmltooling::auto_ptr_char pid(dynamic_cast<EntityDescriptor*>(role->getParent())->getEntityID());
     m_obj.addmember("provider_id").string(pid.get());
     m_obj.addmember("subject").string(subject);
     m_obj.addmember("authn_context").string(authnContext);
@@ -493,7 +493,7 @@ MemorySessionCacheEntry::MemorySessionCacheEntry(
     m_obj.addmember("minor_version").integer(minorVersion);
 
     if (hasAttributes(*(unfiltered.get()))) {
-        auto_ptr<SAMLResponse> filtered(filter(unfiltered.get(), application, source));
+        auto_ptr<SAMLResponse> filtered(filter(unfiltered.get(), application, role));
     
         // Calculate expiration.
         m_responseExpiration=calculateExpiration(*(filtered.get()));
@@ -528,7 +528,7 @@ MemorySessionCacheEntry::~MemorySessionCacheEntry()
 HRESULT MemorySessionCacheEntry::isValid(const IApplication* app, const char* client_addr) const
 {
 #ifdef _DEBUG
-    saml::NDC ndc("isValid");
+    xmltooling::NDC ndc("isValid");
 #endif
 
     // Obtain validation rules from application settings.
@@ -640,10 +640,10 @@ time_t MemorySessionCacheEntry::calculateExpiration(const SAMLResponse& r) const
     return expiration;
 }
 
-void MemorySessionCacheEntry::populate(const IApplication* application, const IEntityDescriptor* source, bool initial) const
+void MemorySessionCacheEntry::populate(const IApplication* application, const EntityDescriptor* source, bool initial) const
 {
 #ifdef _DEBUG
-    saml::NDC ndc("populate");
+    xmltooling::NDC ndc("populate");
 #endif
 
     // Do we have any attribute data cached?
@@ -659,10 +659,23 @@ void MemorySessionCacheEntry::populate(const IApplication* application, const IE
             if (FAILED(hr))
                 m_log->error("cache store failed to return updated tokens");
             else if (hr==NOERROR && tokensFromSink!=m_obj["tokens.unfiltered"].string()) {
+
+                // Bah...find role again.
+                const RoleDescriptor* role=source->getAttributeAuthorityDescriptor(samlconstants::SAML11_PROTOCOL_ENUM);
+                if (!role)
+                    role=source->getAttributeAuthorityDescriptor(samlconstants::SAML10_PROTOCOL_ENUM);
+                if (!role)
+                    role=source->getIDPSSODescriptor(samlconstants::SAML11_PROTOCOL_ENUM);
+                if (!role)
+                    role=source->getIDPSSODescriptor(samlconstants::SAML10_PROTOCOL_ENUM);
+                if (!role) {
+                    throw MetadataException("Unable to locate attribute-issuing role in metadata.");
+                }
+
                 // The tokens in the sink were different.
                 istringstream is(tokensFromSink);
                 auto_ptr<SAMLResponse> respFromSink(new SAMLResponse(is,m_obj["minor_version"].integer()));
-                auto_ptr<SAMLResponse> filteredFromSink(filter(respFromSink.get(),application,source));
+                auto_ptr<SAMLResponse> filteredFromSink(filter(respFromSink.get(),application,role));
                 time_t expFromSink=calculateExpiration(*(filteredFromSink.get()));
                 
                 // Recheck to see if the new tokens are valid.
@@ -756,10 +769,10 @@ void MemorySessionCacheEntry::populate(const IApplication* application, const IE
             stc.releaseTransactionLog();
         }
     }
-    catch (SAMLException&) {
+    catch (exception&) {
         if (m_cache->m_propagateErrors)
             throw;
-        m_log->warn("suppressed SAML exception caught while trying to fetch attributes");
+        m_log->warn("suppressed exception caught while trying to fetch attributes");
     }
 #ifndef _DEBUG
     catch (...) {
@@ -771,11 +784,11 @@ void MemorySessionCacheEntry::populate(const IApplication* application, const IE
 }
 
 pair<SAMLResponse*,SAMLResponse*> MemorySessionCacheEntry::getNewResponse(
-    const IApplication* application, const IEntityDescriptor* source
+    const IApplication* application, const EntityDescriptor* source
     ) const
 {
 #ifdef _DEBUG
-    saml::NDC ndc("getNewResponse");
+    xmltooling::NDC ndc("getNewResponse");
 #endif
 
     // The retryInterval determines how often to poll an AA that might be down.
@@ -804,12 +817,12 @@ pair<SAMLResponse*,SAMLResponse*> MemorySessionCacheEntry::getNewResponse(
     pair<bool,const XMLCh*> providerID=application->getXMLString("providerId");
     if (!providerID.first) {
         m_log->crit("unable to determine ProviderID for application, not set?");
-        throw SAMLException("Unable to determine ProviderID for application, not set?");
+        throw ConfigurationException("Unable to determine ProviderID for application, not set?");
     }
 
     // Try to locate an AA role.
-    const IAttributeAuthorityDescriptor* AA=source->getAttributeAuthorityDescriptor(
-        m_obj["minor_version"].integer()==1 ? saml::XML::SAML11_PROTOCOL_ENUM : saml::XML::SAML10_PROTOCOL_ENUM
+    const AttributeAuthorityDescriptor* AA=source->getAttributeAuthorityDescriptor(
+        m_obj["minor_version"].integer()==1 ? samlconstants::SAML11_PROTOCOL_ENUM : samlconstants::SAML10_PROTOCOL_ENUM
         );
     if (!AA) {
         m_log->warn("unable to locate metadata for identity provider's Attribute Authority");
@@ -852,8 +865,8 @@ pair<SAMLResponse*,SAMLResponse*> MemorySessionCacheEntry::getNewResponse(
         // Sign it?
         if (signRequest.first && signRequest.second && signingCred.first) {
             if (req->getMinorVersion()==1) {
-                Credentials creds(ShibTargetConfig::getConfig().getINI()->getCredentialsProviders());
-                const ICredResolver* cr=creds.lookup(signingCred.second);
+                shibboleth::Credentials creds(ShibTargetConfig::getConfig().getINI()->getCredentialsProviders());
+                const shibboleth::ICredResolver* cr=creds.lookup(signingCred.second);
                 if (cr)
                     req->sign(cr->getKey(),cr->getCertificates(),signatureAlg.second,digestAlg.second);
                 else
@@ -867,32 +880,31 @@ pair<SAMLResponse*,SAMLResponse*> MemorySessionCacheEntry::getNewResponse(
 
         // Call context object
         ShibHTTPHook::ShibHTTPHookCallContext ctx(credUse,AA);
-        Trust t(application->getTrustProviders());
         
         // Use metadata to locate endpoints.
-        Iterator<const IEndpoint*> endpoints=AA->getAttributeServiceManager()->getEndpoints();
-        while (!response && endpoints.hasNext()) {
-            const IEndpoint* ep=endpoints.next();
+        const vector<AttributeService*>& endpoints=AA->getAttributeServices();
+        for (vector<AttributeService*>::const_iterator ep=endpoints.begin(); !response && ep!=endpoints.end(); ++ep) {
             try {
                 // Get a binding object for this protocol.
-                const SAMLBinding* binding = application->getBinding(ep->getBinding());
+                const SAMLBinding* binding = application->getBinding((*ep)->getBinding());
                 if (!binding) {
-                    xmltooling::auto_ptr_char prot(ep->getBinding());
+                    xmltooling::auto_ptr_char prot((*ep)->getBinding());
                     m_log->warn("skipping binding on unsupported protocol (%s)", prot.get());
                     continue;
                 }
                 static const XMLCh https[] = {chLatin_h, chLatin_t, chLatin_t, chLatin_p, chLatin_s, chColon, chNull};
-                auto_ptr<SAMLResponse> r(binding->send(ep->getLocation(), *(req.get()), &ctx));
+                auto_ptr<SAMLResponse> r(binding->send((*ep)->getLocation(), *(req.get()), &ctx));
                 if (r->isSigned()) {
-                    if (!t.validate(*r,AA))
-                        throw TrustException("Unable to verify signed response message.");
+                    // TODO: trust stuff will be changing anyway...
+                    //if (!t.validate(*r,AA))
+                    //    throw TrustException("Unable to verify signed response message.");
                 }
-                else if (!ctx.isAuthenticated() || XMLString::compareNString(ep->getLocation(),https,6))
-                    throw TrustException("Response message was unauthenticated.");
+                else if (!ctx.isAuthenticated() || XMLString::compareNString((*ep)->getLocation(),https,6))
+                    throw XMLSecurityException("Response message was unauthenticated.");
                 response = r.release();
             }
-            catch (SAMLException& e) {
-                m_log->error("caught SAML exception during SAML attribute query: %s", e.what());
+            catch (exception& e) {
+                m_log->error("caught exception during SAML attribute query: %s", e.what());
             }
         }
 
@@ -900,7 +912,7 @@ pair<SAMLResponse*,SAMLResponse*> MemorySessionCacheEntry::getNewResponse(
             if (signedResponse.first && signedResponse.second && !response->isSigned()) {
                 delete response;
                 m_log->error("unsigned response obtained, but we were told it must be signed.");
-                throw TrustException("Unable to obtain a signed response message.");
+                throw XMLSecurityException("Unable to obtain a signed response message.");
             }
             
             // Iterate over the tokens and apply basic validation.
@@ -908,7 +920,7 @@ pair<SAMLResponse*,SAMLResponse*> MemorySessionCacheEntry::getNewResponse(
             Iterator<SAMLAssertion*> assertions=response->getAssertions();
             for (unsigned int a=0; a<assertions.size();) {
                 // Discard any assertions not issued by the right entity.
-                if (XMLString::compareString(source->getId(),assertions[a]->getIssuer())) {
+                if (XMLString::compareString(source->getEntityID(),assertions[a]->getIssuer())) {
                     xmltooling::auto_ptr_char bad(assertions[a]->getIssuer());
                     m_log->warn("discarding assertion not issued by (%s), instead by (%s)",m_obj["provider_id"].string(),bad.get());
                     response->removeAssertion(a);
@@ -917,22 +929,22 @@ pair<SAMLResponse*,SAMLResponse*> MemorySessionCacheEntry::getNewResponse(
 
                 // Validate the token.
                 try {
-                    application->validateToken(assertions[a],now,AA,application->getTrustProviders());
+                    application->validateToken(assertions[a],now,AA,application->getTrustEngine());
                     a++;
                 }
-                catch (SAMLException&) {
+                catch (exception&) {
                     m_log->warn("assertion failed to validate, removing it from response");
                     response->removeAssertion(a);
                 }
             }
 
             // Run it through the filter.
-            return make_pair(response,filter(response,application,source));
+            return make_pair(response,filter(response,application,AA));
         }
     }
-    catch (SAMLException& e) {
-        m_log->error("caught SAML exception during query to AA: %s", e.what());
-        annotateException(&e,AA);
+    catch (exception& e) {
+        m_log->error("caught exception during query to AA: %s", e.what());
+        throw;
     }
     
     m_log->error("no response obtained");
@@ -940,11 +952,11 @@ pair<SAMLResponse*,SAMLResponse*> MemorySessionCacheEntry::getNewResponse(
 }
 
 SAMLResponse* MemorySessionCacheEntry::filter(
-    const SAMLResponse* r, const IApplication* application, const IEntityDescriptor* source
+    const SAMLResponse* r, const IApplication* application, const RoleDescriptor* role
     ) const
 {
 #ifdef _DEBUG
-    saml::NDC ndc("filter");
+    xmltooling::NDC ndc("filter");
 #endif
 
     // Make a copy of the original and process that against the AAP.
@@ -955,11 +967,11 @@ SAMLResponse* MemorySessionCacheEntry::filter(
     for (unsigned long j=0; j < copies.size();) {
         try {
             // Finally, filter the content.
-            AAP::apply(application->getAAPProviders(),*(copies[j]),source);
+            shibboleth::AAP::apply(application->getAAPProviders(),*(copies[j]),role);
             j++;
 
         }
-        catch (SAMLException&) {
+        catch (exception&) {
             m_log->info("no statements remain after AAP, removing assertion");
             copy->removeAssertion(j);
         }
@@ -1139,16 +1151,17 @@ bool MemorySessionCache::setBackingStore(ISessionCacheStore* store)
 DDF MemorySessionCache::receive(const DDF& in)
 {
 #ifdef _DEBUG
-    saml::NDC ndc("receive");
+    xmltooling::NDC ndc("receive");
 #endif
 
     // Find application.
+    saml::Locker confLocker(ShibTargetConfig::getConfig().getINI());
     const char* aid=in["application_id"].string();
     const IApplication* app=aid ? ShibTargetConfig::getConfig().getINI()->getApplication(aid) : NULL;
     if (!app) {
         // Something's horribly wrong.
         m_log->error("couldn't find application (%s) for session", aid ? aid : "(missing)");
-        throw SAMLException("Unable to locate application for session, deleted?");
+        throw ConfigurationException("Unable to locate application for session, deleted?");
     }
 
     if (!strcmp(in.name(),"SessionCache::find")) {
@@ -1167,7 +1180,7 @@ DDF MemorySessionCache::receive(const DDF& in)
             entry->unlock();
             return dup;
         }
-        catch (SAMLException&) {
+        catch (exception&) {
             remove(key,app,client_address);
             throw;
         }
@@ -1193,13 +1206,26 @@ DDF MemorySessionCache::receive(const DDF& in)
             throw SAMLException("Required parameters missing in call to SessionCache::insert");
         int minor=in["minor_version"].integer();
         
-        // Locate role descriptor to use in filtering.
-        Metadata m(app->getMetadataProviders());
-        const IEntityDescriptor* site=m.lookup(provider_id);
+        // Locate entity descriptor to use in filtering.
+        MetadataProvider* m=app->getMetadataProvider();
+        xmltooling::Locker locker(m);
+        const EntityDescriptor* site=m->getEntityDescriptor(provider_id);
         if (!site) {
             m_log->error("unable to locate issuing identity provider's metadata");
             throw MetadataException("Unable to locate identity provider's metadata.");
         }
+        const RoleDescriptor* role=site->getAttributeAuthorityDescriptor(samlconstants::SAML11_PROTOCOL_ENUM);
+        if (!role)
+            role=site->getAttributeAuthorityDescriptor(samlconstants::SAML10_PROTOCOL_ENUM);
+        if (!role)
+            role=site->getIDPSSODescriptor(samlconstants::SAML11_PROTOCOL_ENUM);
+        if (!role)
+            role=site->getIDPSSODescriptor(samlconstants::SAML10_PROTOCOL_ENUM);
+        if (!role) {
+            m_log->error("unable to locate attribute-issuing role in identity provider's metadata");
+            throw MetadataException("Unable to locate attribute-issuing role in identity provider's metadata.");
+        }
+
         // Deserialize XML for insert method.
         istringstream subis(subject);
         auto_ptr<SAMLSubject> pSubject(new SAMLSubject(subis));
@@ -1207,19 +1233,19 @@ DDF MemorySessionCache::receive(const DDF& in)
         auto_ptr<SAMLResponse> pTokens(new SAMLResponse(tokis,minor));
         
         // Insert the data and return the cache key.
-        string key=insert(app,site,client_address,pSubject.get(),authn_context,pTokens.get());
+        string key=insert(app,role,client_address,pSubject.get(),authn_context,pTokens.get());
         
         DDF out(NULL);
         out.structure();
         out.addmember("key").string(key.c_str());
         return out;
     }
-    throw ListenerException("Unsupported operation ($1)",saml::params(1,in.name()));
+    throw ListenerException("Unsupported operation ($1)",xmltooling::params(1,in.name()));
 }
 
 string MemorySessionCache::insert(
     const IApplication* application,
-    const IEntityDescriptor* source,
+    const RoleDescriptor* role,
     const char* client_addr,
     const SAMLSubject* subject,
     const char* authnContext,
@@ -1227,7 +1253,7 @@ string MemorySessionCache::insert(
     )
 {
 #ifdef _DEBUG
-    saml::NDC ndc("insert");
+    xmltooling::NDC ndc("insert");
 #endif
 
     SAMLIdentifier id;
@@ -1241,20 +1267,20 @@ string MemorySessionCache::insert(
             this,
             key.get(),
             application,
-            source,
+            role,
             client_addr,
             subject,
             authnContext,
             tokens
             )
         );
-    entry->populate(application,source,true);
+    entry->populate(application,dynamic_cast<EntityDescriptor*>(role->getParent()),true);
 
     if (m_sink) {
         HRESULT hr=m_sink->onCreate(key.get(),application,entry.get(),1,tokens->getMinorVersion(),entry->created());
         if (FAILED(hr)) {
             m_log->error("cache store returned failure while storing new entry");
-            throw SAMLException(hr,"Unable to record new session in cache store.");
+            throw IOException("Unable to record new session in cache store.");
         }
     }
 
@@ -1268,7 +1294,7 @@ string MemorySessionCache::insert(
 ISessionCacheEntry* MemorySessionCache::find(const char* key, const IApplication* application, const char* client_addr)
 {
 #ifdef _DEBUG
-    saml::NDC ndc("find");
+    xmltooling::NDC ndc("find");
 #endif
 
     m_log->debug("searching memory cache for key (%s)", key);
@@ -1303,20 +1329,35 @@ ISessionCacheEntry* MemorySessionCache::find(const char* key, const IApplication
         if (m_log->isDebugEnabled())
             m_log->debug("loading cache entry (ID: %s) back into memory for application (%s)", key, appid.c_str());
 
-        // Locate role descriptor to use in filtering.
-        Metadata m(eapp->getMetadataProviders());
-        const IEntityDescriptor* site=m.lookup(pid.c_str());
+        // Locate role to use in filtering.
+        MetadataProvider* m=eapp->getMetadataProvider();
+        xmltooling::Locker locker(m);
+        const EntityDescriptor* site=m->getEntityDescriptor(pid.c_str());
         if (!site) {
             m_log->error("unable to locate issuing identity provider's metadata");
             if (FAILED(m_sink->onDelete(key)))
                 m_log->error("cache store returned failure during delete");
             return NULL;
         }
+        const RoleDescriptor* role=site->getAttributeAuthorityDescriptor(samlconstants::SAML11_PROTOCOL_ENUM);
+        if (!role)
+            role=site->getAttributeAuthorityDescriptor(samlconstants::SAML10_PROTOCOL_ENUM);
+        if (!role)
+            role=site->getIDPSSODescriptor(samlconstants::SAML11_PROTOCOL_ENUM);
+        if (!role)
+            role=site->getIDPSSODescriptor(samlconstants::SAML10_PROTOCOL_ENUM);
+        if (!role) {
+            m_log->error("unable to locate attribute-issuing role in identity provider's metadata");
+            if (FAILED(m_sink->onDelete(key)))
+                m_log->error("cache store returned failure during delete");
+            return NULL;
+        }
+
         MemorySessionCacheEntry* entry = new MemorySessionCacheEntry(
             this,
             key,
             eapp,
-            site,
+            role,
             addr.c_str(),
             sub.c_str(),
             ac.c_str(),
@@ -1354,25 +1395,25 @@ ISessionCacheEntry* MemorySessionCache::find(const char* key, const IApplication
     try {
         HRESULT hr=i->second->isValid(application, client_addr);
         if (FAILED(hr)) {
-            Metadata m(application->getMetadataProviders());
+            MetadataProvider* m=application->getMetadataProvider();
+            xmltooling::Locker locker(m);
             switch (hr) {
                 case SESSION_E_EXPIRED: {
-                    InvalidSessionException ex(SESSION_E_EXPIRED, "Your session has expired, and you must re-authenticate.");
-                    annotateException(&ex,m.lookup(i->second->getProviderId())); // throws it
+                    opensaml::RetryableProfileException ex("Your session has expired, and you must re-authenticate.");
+                    annotateException(&ex,m->getEntityDescriptor(i->second->getProviderId(),false)); // throws it
                 }
                 
                 case SESSION_E_ADDRESSMISMATCH: {
-                    InvalidSessionException ex(
-                        SESSION_E_ADDRESSMISMATCH,
+                    opensaml::RetryableProfileException ex(
                         "Your IP address ($1) does not match the address recorded at the time the session was established.",
-                        saml::params(1,client_addr)
+                        xmltooling::params(1,client_addr)
                         );
-                    annotateException(&ex,m.lookup(i->second->getProviderId())); // throws it
+                    annotateException(&ex,m->getEntityDescriptor(i->second->getProviderId(),false)); // throws it
                 }
                 
                 default: {
-                    InvalidSessionException ex(hr, "Your session is invalid.");
-                    annotateException(&ex,m.lookup(i->second->getProviderId())); // throws it
+                    opensaml::RetryableProfileException ex("Your session is invalid.");
+                    annotateException(&ex,m->getEntityDescriptor(i->second->getProviderId(),false)); // throws it
                 }
             }
         }
@@ -1388,8 +1429,9 @@ ISessionCacheEntry* MemorySessionCache::find(const char* key, const IApplication
 
     try {
         // Make sure the entry has valid tokens.
-        Metadata m(application->getMetadataProviders());
-        i->second->populate(application,m.lookup(i->second->getProviderId()));
+        MetadataProvider* m=application->getMetadataProvider();
+        xmltooling::Locker locker(m);
+        i->second->populate(application,m->getEntityDescriptor(i->second->getProviderId()));
     }
     catch (...) {
         i->second->unlock();
@@ -1402,7 +1444,7 @@ ISessionCacheEntry* MemorySessionCache::find(const char* key, const IApplication
 void MemorySessionCache::remove(const char* key, const IApplication* application, const char* client_addr)
 {
 #ifdef _DEBUG
-    saml::NDC ndc("remove");
+    xmltooling::NDC ndc("remove");
 #endif
 
     m_log->debug("removing cache entry with key (%s)", key);
@@ -1443,7 +1485,7 @@ void MemorySessionCache::remove(const char* key, const IApplication* application
 void MemorySessionCache::dormant(const char* key)
 {
 #ifdef _DEBUG
-    saml::NDC ndc("dormant");
+    xmltooling::NDC ndc("dormant");
 #endif
 
     m_log->debug("purging old cache entry with key (%s)", key);
@@ -1480,7 +1522,7 @@ void MemorySessionCache::dormant(const char* key)
 void MemorySessionCache::cleanup()
 {
 #ifdef _DEBUG
-    saml::NDC ndc("cleanup()");
+    xmltooling::NDC ndc("cleanup()");
 #endif
 
     int rerun_timer = 0;

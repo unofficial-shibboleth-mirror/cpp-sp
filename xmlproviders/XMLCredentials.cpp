@@ -29,9 +29,12 @@
 #include <sys/stat.h>
 
 #include <log4cpp/Category.hh>
+#include <shibsp/exceptions.h>
 
+using namespace shibsp;
 using namespace shibboleth;
 using namespace saml;
+using namespace xmltooling;
 using namespace log4cpp;
 using namespace std;
 
@@ -91,7 +94,7 @@ void XMLCredentialsImpl::init()
     try {
         if (!saml::XML::isElementNamed(m_root,::XML::CREDS_NS,SHIB_L(Credentials))) {
             log.error("Construction requires a valid creds file: (creds:Credentials as root element)");
-            throw CredentialException("Construction requires a valid creds file: (creds:Credentials as root element)");
+            throw ConfigurationException("Construction requires a valid creds file: (creds:Credentials as root element)");
         }
 
         DOMElement* child=saml::XML::getFirstChildElement(m_root);
@@ -102,7 +105,7 @@ void XMLCredentialsImpl::init()
             if (saml::XML::isElementNamed(child,::XML::CREDS_NS,SHIB_L(FileResolver)))
                 cr_type="edu.internet2.middleware.shibboleth.common.Credentials.FileCredentialResolver";
             else if (saml::XML::isElementNamed(child,::XML::CREDS_NS,SHIB_L(CustomResolver))) {
-                auto_ptr_char c(child->getAttributeNS(NULL,SHIB_L(Class)));
+                xmltooling::auto_ptr_char c(child->getAttributeNS(NULL,SHIB_L(Class)));
                 cr_type=c.get();
             }
             
@@ -114,23 +117,23 @@ void XMLCredentialsImpl::init()
                         m_resolverMap[id.get()]=cr;
                     else {
                         log.error("plugin was not a credential resolver");
-                        throw UnsupportedExtensionException("plugin was not a credential resolver");
+                        throw UnknownExtensionException("plugin was not a credential resolver");
                     }
                 }
-                catch (SAMLException& e) {
+                catch (exception& e) {
                     log.error("failed to instantiate credential resolver (%s): %s", id.get(), e.what());
                     throw;
                 }
             }
             else {
                 log.error("unknown or unimplemented type of credential resolver (%s)", id.get());
-                throw CredentialException("Unknown or unimplemented type of credential resolver");
+                throw UnknownExtensionException("Unknown or unimplemented type of credential resolver");
             }
             
             child=saml::XML::getNextSiblingElement(child);
         }
     }
-    catch (SAMLException& e) {
+    catch (exception& e) {
         log.errorStream() << "Error while parsing creds configuration: " << e.what() << CategoryStream::ENDLINE;
         this->~XMLCredentialsImpl();
         throw;

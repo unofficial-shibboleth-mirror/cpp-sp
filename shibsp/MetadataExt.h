@@ -34,7 +34,7 @@
 namespace shibsp {
 
     BEGIN_XMLOBJECT(SHIBSP_API,Scope,xmltooling::XMLObject,Scope element);
-        DECL_BOOLEAN_ATTRIB(regexp,REGEXP,false);
+        DECL_BOOLEAN_ATTRIB(Regexp,REGEXP,false);
         DECL_SIMPLE_CONTENT(Value);
     END_XMLOBJECT;
 

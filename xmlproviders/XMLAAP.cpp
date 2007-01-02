@@ -25,10 +25,15 @@
 #include "internal.h"
 #include <algorithm>
 #include <log4cpp/Category.hh>
+#include <shibsp/MetadataExt.h>
 #include <shibsp/SPConstants.h>
+#include <xmltooling/util/NDC.h>
 
+using namespace shibsp;
 using namespace shibboleth;
 using namespace saml;
+using namespace opensaml::saml2md;
+using namespace xmltooling;
 using namespace log4cpp;
 using namespace std;
 
@@ -56,14 +61,14 @@ namespace {
             const char* getHeader() const { return m_header.get(); }
             bool getCaseSensitive() const { return m_caseSensitive; }
             bool getScoped() const { return m_scoped; }
-            void apply(SAMLAttribute& attribute, const IEntityDescriptor* source=NULL) const;
+            void apply(SAMLAttribute& attribute, const RoleDescriptor* role=NULL) const;
     
             enum value_type { literal, regexp, xpath };
         private:    
             const XMLCh* m_name;
             const XMLCh* m_namespace;
-            auto_ptr_char m_alias;
-            auto_ptr_char m_header;
+            xmltooling::auto_ptr_char m_alias;
+            xmltooling::auto_ptr_char m_header;
             bool m_caseSensitive;
             bool m_scoped;
 
@@ -80,14 +85,14 @@ namespace {
             value_type toValueType(const DOMElement* e);
             bool scopeCheck(
                 const DOMElement* e,
-                const IExtendedEntityDescriptor* source,
+                const RoleDescriptor* role,
                 const vector<const SiteRule*>& ruleStack
                 ) const;
-            bool accept(const DOMElement* e, const IExtendedEntityDescriptor* source=NULL) const;
+            bool accept(const DOMElement* e, const RoleDescriptor* role=NULL) const;
             
             SiteRule m_anySiteRule;
     #ifdef HAVE_GOOD_STL
-            typedef map<xstring,SiteRule> sitemap_t;
+            typedef map<xmltooling::xstring,SiteRule> sitemap_t;
     #else
             typedef map<string,SiteRule> sitemap_t;
     #endif
@@ -98,7 +103,7 @@ namespace {
         vector<const IAttributeRule*> m_attrs;
         map<string,const IAttributeRule*> m_aliasMap;
     #ifdef HAVE_GOOD_STL
-        typedef map<xstring,AttributeRule*> attrmap_t;
+        typedef map<xmltooling::xstring,AttributeRule*> attrmap_t;
     #else
         typedef map<string,AttributeRule*> attrmap_t;
     #endif
@@ -143,7 +148,7 @@ ReloadableXMLFileImpl* XMLAAP::newImplementation(const char* pathname, bool firs
 void XMLAAPImpl::init()
 {
 #ifdef _DEBUG
-    saml::NDC ndc("init");
+    xmltooling::NDC ndc("init");
 #endif
     Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".AAP");
 
@@ -168,7 +173,7 @@ void XMLAAPImpl::init()
         {
             AttributeRule* rule=new AttributeRule(static_cast<DOMElement*>(nlist->item(i)));
 #ifdef HAVE_GOOD_STL
-            xstring key=rule->getName();
+            xmltooling::xstring key=rule->getName();
             key=key + chBang + chBang + (rule->getNamespace() ? rule->getNamespace() : shibspconstants::SHIB1_ATTRIBUTE_NAMESPACE_URI);
 #else
             auto_ptr_char aname(rule->getName());
@@ -217,7 +222,7 @@ void XMLAAPImpl::init()
 XMLAAPImpl::~XMLAAPImpl()
 {
 #ifdef HAVE_GOOD_STL
-    for_each(m_attrMap.begin(),m_attrMap.end(),xmltooling::cleanup_pair<xstring,AttributeRule>());
+    for_each(m_attrMap.begin(),m_attrMap.end(),xmltooling::cleanup_pair<xmltooling::xstring,AttributeRule>());
 #else
     for_each(m_attrMap.begin(),m_attrMap.end(),xmltooling::cleanup_pair<string,AttributeRule>());
 #endif
@@ -357,7 +362,7 @@ XMLAAPImpl::AttributeRule::value_type XMLAAPImpl::AttributeRule::toValueType(con
 const IAttributeRule* XMLAAP::lookup(const XMLCh* attrName, const XMLCh* attrNamespace) const
 {
 #ifdef HAVE_GOOD_STL
-    xstring key=attrName;
+    xmltooling::xstring key=attrName;
     key=key + chBang + chBang + (attrNamespace ? attrNamespace : shibspconstants::SHIB1_ATTRIBUTE_NAMESPACE_URI);
 #else
     auto_ptr_char aname(attrName);
@@ -391,15 +396,13 @@ Iterator<const IAttributeRule*> XMLAAP::getAttributeRules() const
 namespace {
     bool match(const XMLCh* exp, const XMLCh* test)
     {
-        try
-        {
+        try {
             RegularExpression re(exp);
             if (re.matches(test))
                 return true;
         }
-        catch (XMLException& ex)
-        {
-            auto_ptr<char> tmp(XMLString::transcode(ex.getMessage()));
+        catch (XMLException& ex) {
+            xmltooling::auto_ptr_char tmp(ex.getMessage());
             Category::getInstance(XMLPROVIDERS_LOGCAT".XMLAAPImpl").errorStream()
                 << "caught exception while parsing regular expression: " << tmp.get() << CategoryStream::ENDLINE;
         }
@@ -409,12 +412,12 @@ namespace {
 
 bool XMLAAPImpl::AttributeRule::scopeCheck(
     const DOMElement* e,
-    const IExtendedEntityDescriptor* source,
+    const RoleDescriptor* role,
     const vector<const SiteRule*>& ruleStack
     ) const
 {
 #ifdef _DEBUG
-    saml::NDC ndc("scopeCheck");
+    xmltooling::NDC ndc("scopeCheck");
 #endif
     Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".AAP");
 
@@ -423,7 +426,7 @@ bool XMLAAPImpl::AttributeRule::scopeCheck(
     if (!scope || !*scope) {
         // Are we allowed to be unscoped?
         if (m_scoped && log.isWarnEnabled()) {
-                auto_ptr_char temp(m_name);
+                xmltooling::auto_ptr_char temp(m_name);
                 log.warn("attribute (%s) is scoped, no scope supplied, rejecting it",temp.get());
         }
         return !m_scoped;
@@ -438,8 +441,8 @@ bool XMLAAPImpl::AttributeRule::scopeCheck(
             if ((i->first==literal && !XMLString::compareString(i->second,scope)) ||
                 (i->first==regexp && match(i->second,scope))) {
                 if (log.isWarnEnabled()) {
-                    auto_ptr_char temp(m_name);
-                    auto_ptr_char temp2(scope);
+                    xmltooling::auto_ptr_char temp(m_name);
+                    xmltooling::auto_ptr_char temp2(scope);
                     log.warn("attribute (%s) scope (%s) denied by site rule, rejecting it",temp.get(),temp2.get());
                 }
                 return false;
@@ -461,11 +464,13 @@ bool XMLAAPImpl::AttributeRule::scopeCheck(
     }
 
     // If we still can't decide, defer to metadata.
-    if (source) {
-        Iterator<pair<const XMLCh*,bool> > domains=source->getScopes();
-        while (domains.hasNext()) {
-            const pair<const XMLCh*,bool>& p=domains.next();
-            if ((p.second && match(p.first,scope)) || !XMLString::compareString(p.first,scope)) {
+    if (role && role->getExtensions()) {
+        const vector<XMLObject*>& exts=const_cast<const Extensions*>(role->getExtensions())->getUnknownXMLObjects();
+        for (vector<XMLObject*>::const_iterator it=exts.begin(); it!=exts.end(); ++it) {
+            const Scope* s=dynamic_cast<const Scope*>(*it);
+            if (!s)
+                continue;
+            if ((s->Regexp() && match(s->getValue(),scope)) || XMLString::equals(s->getValue(),scope)) {
                 log.debug("scope match via site metadata");
                 return true;
             }
@@ -473,23 +478,25 @@ bool XMLAAPImpl::AttributeRule::scopeCheck(
     }
     
     if (log.isWarnEnabled()) {
-        auto_ptr_char temp(m_name);
-        auto_ptr_char temp2(scope);
+        xmltooling::auto_ptr_char temp(m_name);
+        xmltooling::auto_ptr_char temp2(scope);
         log.warn("attribute (%s) scope (%s) not accepted",temp.get(),temp2.get());
     }
     return false;
 }
 
-bool XMLAAPImpl::AttributeRule::accept(const DOMElement* e, const IExtendedEntityDescriptor* source) const
+bool XMLAAPImpl::AttributeRule::accept(const DOMElement* e, const RoleDescriptor* role) const
 {
 #ifdef _DEBUG
-    saml::NDC ndc("accept");
+    xmltooling::NDC ndc("accept");
 #endif
     Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".AAP");
-    
+
+    const EntityDescriptor* source = role ? dynamic_cast<const EntityDescriptor*>(role->getParent()) : NULL;
+
     if (log.isDebugEnabled()) {
-        auto_ptr_char temp(m_name);
-        auto_ptr_char temp2(source ? source->getId() : NULL);
+        xmltooling::auto_ptr_char temp(m_name);
+        xmltooling::auto_ptr_char temp2(source ? source->getEntityID() : NULL);
         log.debug("evaluating value for attribute (%s) from site (%s)",temp.get(),temp2.get() ? temp2.get() : "<unspecified>");
     }
     
@@ -500,9 +507,9 @@ bool XMLAAPImpl::AttributeRule::accept(const DOMElement* e, const IExtendedEntit
     if (source) {
         // Primary match is against entityID.
 #ifdef HAVE_GOOD_STL
-        const XMLCh* os=source->getId();
+        const XMLCh* os=source->getEntityID();
 #else
-        auto_ptr_char pos(source->getId());
+        auto_ptr_char pos(source->getEntityID());
         const char* os=pos.get();
 #endif
         sitemap_t::const_iterator srule=m_siteMap.find(os);
@@ -510,7 +517,7 @@ bool XMLAAPImpl::AttributeRule::accept(const DOMElement* e, const IExtendedEntit
             ruleStack.push_back(&srule->second);
         
         // Secondary matches are on groups.
-        const IEntitiesDescriptor* group=source->getEntitiesDescriptor();
+        const EntitiesDescriptor* group=dynamic_cast<const EntitiesDescriptor*>(source->getParent());
         while (group) {
             if (group->getName()) {
 #ifdef HAVE_GOOD_STL
@@ -523,7 +530,7 @@ bool XMLAAPImpl::AttributeRule::accept(const DOMElement* e, const IExtendedEntit
                 if (srule!=m_siteMap.end())
                     ruleStack.push_back(&srule->second);
             }
-            group = group->getEntitiesDescriptor();
+            group=dynamic_cast<const EntitiesDescriptor*>(group->getParent());
         }
     }
     // Tertiary match is the AnySite rule.
@@ -539,7 +546,7 @@ bool XMLAAPImpl::AttributeRule::accept(const DOMElement* e, const IExtendedEntit
         // Check for shortcut AnyValue blanket rule.
         if ((*rule)->anyValue) {
             log.debug("matching site rule, any value match");
-            return scopeCheck(e,source,ruleStack);
+            return scopeCheck(e,role,ruleStack);
         }
 
         // Now run any denials.
@@ -550,7 +557,7 @@ bool XMLAAPImpl::AttributeRule::accept(const DOMElement* e, const IExtendedEntit
                     if ((m_caseSensitive && !XMLString::compareString(i->second,n->getNodeValue())) ||
                         (!m_caseSensitive && !XMLString::compareIString(i->second,n->getNodeValue()))) {
                         if (log.isWarnEnabled()) {
-                            auto_ptr_char temp(m_name);
+                            xmltooling::auto_ptr_char temp(m_name);
                             log.warn("attribute (%s) value explicitly denied by site rule, rejecting it",temp.get());
                         }
                         return false;
@@ -560,7 +567,7 @@ bool XMLAAPImpl::AttributeRule::accept(const DOMElement* e, const IExtendedEntit
                 case regexp:
                     if (match(i->second,n->getNodeValue())) {
                         if (log.isWarnEnabled()) {
-                            auto_ptr_char temp(m_name);
+                            xmltooling::auto_ptr_char temp(m_name);
                             log.warn("attribute (%s) value explicitly denied by site rule, rejecting it",temp.get());
                         }
                         return false;
@@ -580,14 +587,14 @@ bool XMLAAPImpl::AttributeRule::accept(const DOMElement* e, const IExtendedEntit
                     if ((m_caseSensitive && !XMLString::compareString(i->second,n->getNodeValue())) ||
                         (!m_caseSensitive && !XMLString::compareIString(i->second,n->getNodeValue()))) {
                         log.debug("site rule, value match");
-                        return scopeCheck(e,source,ruleStack);
+                        return scopeCheck(e,role,ruleStack);
                     }
                     break;
                 
                 case regexp:
                     if (match(i->second,n->getNodeValue())) {
                         log.debug("site rule, value match");
-                        return scopeCheck(e,source,ruleStack);
+                        return scopeCheck(e,role,ruleStack);
                     }
                     break;
                 
@@ -599,21 +606,21 @@ bool XMLAAPImpl::AttributeRule::accept(const DOMElement* e, const IExtendedEntit
     }
 
     if (log.isWarnEnabled()) {
-        auto_ptr_char temp(m_name);
-        auto_ptr_char temp2(n->getNodeValue());
+        xmltooling::auto_ptr_char temp(m_name);
+        xmltooling::auto_ptr_char temp2(n->getNodeValue());
         log.warn("%sattribute (%s) value (%s) could not be validated by policy, rejecting it",
                  (bSimple ? "" : "complex "),temp.get(),temp2.get());
     }
     return false;
 }
 
-void XMLAAPImpl::AttributeRule::apply(SAMLAttribute& attribute, const IEntityDescriptor* source) const
+void XMLAAPImpl::AttributeRule::apply(SAMLAttribute& attribute, const RoleDescriptor* role) const
 {
     // Check each value.
     DOMNodeList* vals=attribute.getValueElements();
     int i2=0;
     for (XMLSize_t i=0; vals && i < vals->getLength(); i++) {
-        if (!accept(static_cast<DOMElement*>(vals->item(i)),source ? dynamic_cast<const IExtendedEntityDescriptor*>(source) : NULL))
+        if (!accept(static_cast<DOMElement*>(vals->item(i)),role))
             attribute.removeValue(i2);
         else
             i2++;

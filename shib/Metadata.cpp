@@ -23,98 +23,12 @@
 */
 
 #include "internal.h"
+#include <xmltooling/util/NDC.h>
 
 using namespace shibboleth;
+using namespace opensaml::saml2md;
 using namespace saml;
 using namespace std;
-
-const IEntityDescriptor* Metadata::lookup(const XMLCh* id, bool strict)
-{
-    if (m_mapper) {
-        m_mapper->unlock();
-        m_mapper=NULL;
-    }
-    const IEntityDescriptor* ret=NULL;
-    m_metadatas.reset();
-    while (m_metadatas.hasNext()) {
-        m_mapper=m_metadatas.next();
-        m_mapper->lock();
-        if (ret=m_mapper->lookup(id,strict)) {
-            return ret;
-        }
-        m_mapper->unlock();
-        m_mapper=NULL;
-    }
-    return NULL;
-}
-
-const IEntityDescriptor* Metadata::lookup(const char* id, bool strict)
-{
-    if (m_mapper) {
-        m_mapper->unlock();
-        m_mapper=NULL;
-    }
-    const IEntityDescriptor* ret=NULL;
-    m_metadatas.reset();
-    while (m_metadatas.hasNext()) {
-        m_mapper=m_metadatas.next();
-        m_mapper->lock();
-        if (ret=m_mapper->lookup(id,strict)) {
-            return ret;
-        }
-        m_mapper->unlock();
-        m_mapper=NULL;
-    }
-    return NULL;
-}
-
-const IEntityDescriptor* Metadata::lookup(const SAMLArtifact* artifact)
-{
-    if (m_mapper) {
-        m_mapper->unlock();
-        m_mapper=NULL;
-    }
-    const IEntityDescriptor* ret=NULL;
-    m_metadatas.reset();
-    while (m_metadatas.hasNext()) {
-        m_mapper=m_metadatas.next();
-        m_mapper->lock();
-        if (ret=m_mapper->lookup(artifact)) {
-            return ret;
-        }
-        m_mapper->unlock();
-        m_mapper=NULL;
-    }
-    return NULL;
-}
-
-Metadata::~Metadata()
-{
-    if (m_mapper) {
-        m_mapper->unlock();
-        m_mapper=NULL;
-    }
-}
-
-bool Trust::validate(const SAMLSignedObject& token, const IRoleDescriptor* role) const
-{
-    m_trusts.reset();
-    while (m_trusts.hasNext()) {
-        if (m_trusts.next()->validate(token,role))
-            return true;
-    }
-    return false;
-}
-
-bool Trust::validate(void* certEE, const Iterator<void*>& certChain, const IRoleDescriptor* role, bool checkName) const
-{
-    m_trusts.reset();
-    while (m_trusts.hasNext()) {
-        if (m_trusts.next()->validate(certEE,certChain,role,checkName))
-            return true;
-    }
-    return false;
-}
 
 const ICredResolver* Credentials::lookup(const char* id)
 {
@@ -180,10 +94,10 @@ AAP::~AAP()
     }
 }
 
-void AAP::apply(const saml::Iterator<IAAP*>& aaps, saml::SAMLAssertion& assertion, const IEntityDescriptor* source)
+void AAP::apply(const saml::Iterator<IAAP*>& aaps, saml::SAMLAssertion& assertion, const RoleDescriptor* role)
 {
 #ifdef _DEBUG
-    saml::NDC("apply");
+    xmltooling::NDC("apply");
 #endif
     log4cpp::Category& log=log4cpp::Category::getInstance(SHIB_LOGCAT".AAP");
     
@@ -224,7 +138,7 @@ void AAP::apply(const saml::Iterator<IAAP*>& aaps, saml::SAMLAssertion& assertio
                 if (rule=i->lookup(a->getName(),a->getNamespace())) {
                     ruleFound=true;
                     try {
-                        rule->apply(*a,source);
+                        rule->apply(*a,role);
                     }
                     catch (SAMLException&) {
                         // The attribute is now defunct.
