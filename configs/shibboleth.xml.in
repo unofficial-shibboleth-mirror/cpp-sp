@@ -264,7 +264,7 @@
 	
 	<!-- Define all the private keys and certificates here that you reference from <CredentialUse>. -->
 	<CredentialsProvider type="edu.internet2.middleware.shibboleth.common.Credentials">
-		<Credentials xmlns="urn:mace:shibboleth:credentials:1.0">
+		<Credentials>
 			<FileResolver Id="defcreds">
 				<Key>
 					<Path>@-PKGSYSCONFDIR-@/sp-example.key</Path>
