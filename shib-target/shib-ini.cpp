@@ -428,23 +428,11 @@ XMLApplication::XMLApplication(
                     xmltooling::auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
                     log.info("building metadata provider of type %s...",type.get());
                     try {
-                        if (!strcmp(type.get(),"edu.internet2.middleware.shibboleth.common.provider.XMLMetadata") ||
-                            !strcmp(type.get(),"edu.internet2.middleware.shibboleth.metadata.provider.XMLMetadata")) {
-                            auto_ptr<MetadataProvider> mp(
-                                samlConf.MetadataProviderManager.newPlugin(
-                                    FILESYSTEM_METADATA_PROVIDER,static_cast<DOMElement*>(nlist->item(i))
-                                    )
-                                );
-                            mp->init();
-                            os2providers.push_back(mp.release());
-                        }
-                        else {
-                            auto_ptr<MetadataProvider> mp(
-                                samlConf.MetadataProviderManager.newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)))
-                                );
-                            mp->init();
-                            os2providers.push_back(mp.release());
-                        }
+                        auto_ptr<MetadataProvider> mp(
+                            samlConf.MetadataProviderManager.newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)))
+                            );
+                        mp->init();
+                        os2providers.push_back(mp.release());
                     }
                     catch (exception& ex) {
                         log.crit("error building metadata provider: %s",ex.what());
