@@ -299,7 +299,7 @@ const XMLCh XML::Literals::xpath[] =
 { chLatin_x, chLatin_p, chLatin_a, chLatin_t, chLatin_h, chNull };
 
 const XMLCh XML::Literals::administrative[] =
-{ chLatin_a, chLatin_m, chLatin_i, chLatin_n, chLatin_i, chLatin_s, chLatin_t, chLatin_r, chLatin_a, chLatin_t, chLatin_i, chLatin_v, chLatin_e, chNull };
+{ chLatin_a, chLatin_d, chLatin_m, chLatin_i, chLatin_n, chLatin_i, chLatin_s, chLatin_t, chLatin_r, chLatin_a, chLatin_t, chLatin_i, chLatin_v, chLatin_e, chNull };
 
 const XMLCh XML::Literals::billing[] =
 { chLatin_b, chLatin_i, chLatin_l, chLatin_l, chLatin_i, chLatin_n, chLatin_g, chNull };

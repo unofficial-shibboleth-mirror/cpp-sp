@@ -461,7 +461,7 @@ ReloadableXMLFileImpl* XMLMetadata::newImplementation(const char* pathname, bool
     return new XMLMetadataImpl(pathname,this);
 }
 
-XMLMetadataImpl::ContactPerson::ContactPerson(const DOMElement* e) : m_root(e)
+XMLMetadataImpl::ContactPerson::ContactPerson(const DOMElement* e) : m_root(e), m_type(IContactPerson::other)
 {
     const XMLCh* type=NULL;
     
@@ -518,8 +518,6 @@ XMLMetadataImpl::ContactPerson::ContactPerson(const DOMElement* e) : m_root(e)
         m_type=IContactPerson::administrative;
     else if (!XMLString::compareString(type,SHIB_L(billing)))
         m_type=IContactPerson::billing;
-    else if (!XMLString::compareString(type,SHIB_L(other)))
-        m_type=IContactPerson::other;
 }
 
 XMLMetadataImpl::Organization::Organization(const DOMElement* e) : m_root(e)
