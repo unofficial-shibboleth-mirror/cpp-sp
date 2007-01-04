@@ -25,17 +25,19 @@
 #include <algorithm>
 
 #include <shib-target/shib-target.h>
-#include <log4cpp/Category.hh>
+#include <xmltooling/util/ReloadableXMLFile.h>
+#include <xmltooling/util/XMLHelper.h>
 
 #ifndef HAVE_STRCASECMP
 # define strcasecmp _stricmp
 #endif
 
+using namespace shibsp;
+using namespace shibtarget;
 using namespace saml;
 using namespace shibboleth;
-using namespace shibtarget;
+using namespace xmltooling;
 using namespace std;
-using namespace log4cpp;
 
 namespace {
     struct IAuthz {
@@ -67,46 +69,56 @@ namespace {
         vector<IAuthz*> m_operands;
     };
 
-    class XMLAccessControlImpl : public ReloadableXMLFileImpl
+#if defined (_MSC_VER)
+    #pragma warning( push )
+    #pragma warning( disable : 4250 )
+#endif
+
+    class XMLAccessControl : public IAccessControl, public xmltooling::ReloadableXMLFile
     {
     public:
-        XMLAccessControlImpl(const char* pathname) : ReloadableXMLFileImpl(pathname) { init(); }
-        XMLAccessControlImpl(const DOMElement* e) : ReloadableXMLFileImpl(e) { init(); }
-        void init();
-        ~XMLAccessControlImpl() {delete m_rootAuthz;}
+        XMLAccessControl(const DOMElement* e) : xmltooling::ReloadableXMLFile(e), m_rootAuthz(NULL) {
+            load(); // guarantees an exception or the policy is loaded
+        }
         
+        ~XMLAccessControl() {
+            delete m_rootAuthz;
+        }
+
+        bool authorized(ShibTarget* st, ISessionCacheEntry* entry) const;
+
+    protected:
+        pair<bool,DOMElement*> load();
+
+    private:
         IAuthz* m_rootAuthz;
     };
 
-    class XMLAccessControl : public IAccessControl, public ReloadableXMLFile
-    {
-    public:
-        XMLAccessControl(const DOMElement* e) : ReloadableXMLFile(e) {}
-        ~XMLAccessControl() {}
+#if defined (_MSC_VER)
+    #pragma warning( pop )
+#endif
 
-        virtual bool authorized(ShibTarget* st, ISessionCacheEntry* entry) const;
-
-    protected:
-        virtual ReloadableXMLFileImpl* newImplementation(const char* pathname, bool first=true) const;
-        virtual ReloadableXMLFileImpl* newImplementation(const DOMElement* e, bool first=true) const;
-    };
+    static const XMLCh AccessControl[] = UNICODE_LITERAL_13(A,c,c,e,s,s,C,o,n,t,r,o,l);
+    static const XMLCh require[] = UNICODE_LITERAL_7(r,e,q,u,i,r,e);
+    static const XMLCh NOT[] = UNICODE_LITERAL_3(N,O,T);
+    static const XMLCh AND[] = UNICODE_LITERAL_3(A,N,D);
+    static const XMLCh OR[] = UNICODE_LITERAL_2(O,R);
+    static const XMLCh _Rule[] = UNICODE_LITERAL_4(R,u,l,e);
 }
 
 IPlugIn* XMLAccessControlFactory(const DOMElement* e)
 {
-    auto_ptr<XMLAccessControl> a(new XMLAccessControl(e));
-    a->getImplementation();
-    return a.release();
+    return new XMLAccessControl(e);
 }
 
 Rule::Rule(const DOMElement* e)
 {
-    auto_ptr_char req(e->getAttributeNS(NULL,SHIB_L(require)));
+    xmltooling::auto_ptr_char req(e->getAttributeNS(NULL,require));
     if (!req.get() || !*req.get())
-        throw MalformedException("Access control rule missing require attribute");
+        throw ConfigurationException("Access control rule missing require attribute");
     m_alias=req.get();
     
-    auto_ptr_char vals(e->hasChildNodes() ? e->getFirstChild()->getNodeValue() : NULL);
+    xmltooling::auto_ptr_char vals(e->hasChildNodes() ? e->getFirstChild()->getNodeValue() : NULL);
 #ifdef HAVE_STRTOK_R
     char* pos=NULL;
     const char* token=strtok_r(const_cast<char*>(vals.get()),"/",&pos);
@@ -176,18 +188,18 @@ bool Rule::authorized(ShibTarget* st, ISessionCacheEntry* entry) const
 
 Operator::Operator(const DOMElement* e)
 {
-    if (saml::XML::isElementNamed(e,shibtarget::XML::SHIBTARGET_NS,SHIB_L(NOT)))
+    if (XMLString::equals(e->getLocalName(),NOT))
         m_op=OP_NOT;
-    else if (saml::XML::isElementNamed(e,shibtarget::XML::SHIBTARGET_NS,SHIB_L(AND)))
+    else if (XMLString::equals(e->getLocalName(),AND))
         m_op=OP_AND;
-    else if (saml::XML::isElementNamed(e,shibtarget::XML::SHIBTARGET_NS,SHIB_L(OR)))
+    else if (XMLString::equals(e->getLocalName(),OR))
         m_op=OP_OR;
     else
-        throw MalformedException("Unrecognized operator in access control rule");
+        throw ConfigurationException("Unrecognized operator in access control rule");
     
     try {
-        e=saml::XML::getFirstChildElement(e);
-        if (saml::XML::isElementNamed(e,shibtarget::XML::SHIBTARGET_NS,SHIB_L(Rule)))
+        e=XMLHelper::getFirstChildElement(e);
+        if (XMLString::equals(e->getLocalName(),_Rule))
             m_operands.push_back(new Rule(e));
         else
             m_operands.push_back(new Operator(e));
@@ -195,17 +207,17 @@ Operator::Operator(const DOMElement* e)
         if (m_op==OP_NOT)
             return;
         
-        e=saml::XML::getNextSiblingElement(e);
+        e=XMLHelper::getNextSiblingElement(e);
         while (e) {
-            if (saml::XML::isElementNamed(e,shibtarget::XML::SHIBTARGET_NS,SHIB_L(Rule)))
+            if (XMLString::equals(e->getLocalName(),_Rule))
                 m_operands.push_back(new Rule(e));
             else
                 m_operands.push_back(new Operator(e));
-            e=saml::XML::getNextSiblingElement(e);
+            e=XMLHelper::getNextSiblingElement(e);
         }
     }
-    catch (SAMLException&) {
-        this->~Operator();
+    catch (exception&) {
+        for_each(m_operands.begin(),m_operands.end(),xmltooling::cleanup<IAuthz>());
         throw;
     }
 }
@@ -243,50 +255,30 @@ bool Operator::authorized(ShibTarget* st, ISessionCacheEntry* entry) const
     return false;
 }
 
-void XMLAccessControlImpl::init()
+pair<bool,DOMElement*> XMLAccessControl::load()
 {
-#ifdef _DEBUG
-    xmltooling::NDC ndc("init");
-#endif
-    Category* log=&Category::getInstance(XMLPROVIDERS_LOGCAT".AccessControl");
+    // Load from source using base class.
+    pair<bool,DOMElement*> raw = ReloadableXMLFile::load();
+    
+    // If we own it, wrap it.
+    XercesJanitor<DOMDocument> docjanitor(raw.first ? raw.second->getOwnerDocument() : NULL);
 
-    try {
-        // We need to move below the AccessControl root element if the policy is in a separate file.
-        // Unlike most of the plugins, an inline policy will end up handing us the first inline
-        // content element, and not the outer wrapper.
-        const DOMElement* rootElement=ReloadableXMLFileImpl::m_root;
-        if (saml::XML::isElementNamed(rootElement,shibtarget::XML::SHIBTARGET_NS,SHIB_L(AccessControl)))
-            rootElement = saml::XML::getFirstChildElement(rootElement);
-        
-        if (saml::XML::isElementNamed(rootElement,shibtarget::XML::SHIBTARGET_NS,SHIB_L(Rule)))
-            m_rootAuthz=new Rule(rootElement);
-        else
-            m_rootAuthz=new Operator(rootElement);
-    }
-    catch (SAMLException& e) {
-        log->errorStream() << "Error while parsing access control configuration: " << e.what() << CategoryStream::ENDLINE;
-        throw;
-    }
-#ifndef _DEBUG
-    catch (...)
-    {
-        log->error("Unexpected error while parsing access control configuration");
-        throw;
-    }
-#endif
-}
+    // Check for AccessControl wrapper and drop a level.
+    if (XMLString::equals(raw.second->getLocalName(),AccessControl))
+        raw.second = XMLHelper::getFirstChildElement(raw.second);
+    
+    IAuthz* authz;
+    if (XMLString::equals(raw.second->getLocalName(),_Rule))
+        authz=new Rule(raw.second);
+    else
+        authz=new Operator(raw.second);
 
-ReloadableXMLFileImpl* XMLAccessControl::newImplementation(const char* pathname, bool first) const
-{
-    return new XMLAccessControlImpl(pathname);
-}
-
-ReloadableXMLFileImpl* XMLAccessControl::newImplementation(const DOMElement* e, bool first) const
-{
-    return new XMLAccessControlImpl(e);
+    delete m_rootAuthz;
+    m_rootAuthz = authz;
+    return make_pair(false,(DOMElement*)NULL);
 }
 
 bool XMLAccessControl::authorized(ShibTarget* st, ISessionCacheEntry* entry) const
 {
-    return static_cast<XMLAccessControlImpl*>(getImplementation())->m_rootAuthz->authorized(st,entry);
+    return m_rootAuthz ? m_rootAuthz->authorized(st,entry) : false;
 }

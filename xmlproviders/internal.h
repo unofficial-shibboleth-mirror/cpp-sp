@@ -38,7 +38,7 @@
 #endif
 
 #include <shib-target/shib-target.h>
-#include <openssl/ssl.h>
+#include <shibsp/exceptions.h>
 #include <xmltooling/util/NDC.h>
 
 #define XMLPROVIDERS_LOGCAT "XMLProviders"
@@ -77,16 +77,6 @@ public:
         static const XMLCh literal[];
         static const XMLCh regexp[];
         static const XMLCh xpath[];
-
-        static const XMLCh url[];
-        
-        // access control constants
-        static const XMLCh AccessControl[];
-        static const XMLCh AND[];
-        static const XMLCh NOT[];
-        static const XMLCh OR[];
-        static const XMLCh require[];
-        static const XMLCh Rule[];
     };
 };
 
