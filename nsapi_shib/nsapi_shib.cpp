@@ -398,7 +398,7 @@ class SunRequestMapper : public virtual IRequestMapper, public virtual PropertyS
 public:
     SunRequestMapper(const DOMElement* e);
     ~SunRequestMapper() { delete m_mapper; delete m_stKey; delete m_propsKey; }
-    void lock() { m_mapper->lock(); }
+    Lockable* lock() { return m_mapper->lock(); }
     void unlock() { m_stKey->setData(NULL); m_propsKey->setData(NULL); m_mapper->unlock(); }
     Settings getSettings(ShibTarget* st) const;
     

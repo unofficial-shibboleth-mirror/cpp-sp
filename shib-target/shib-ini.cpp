@@ -273,8 +273,8 @@ XMLApplication::XMLApplication(
                 hobj=dynamic_cast<IHandler*>(hplug);
                 if (!hobj) {
                     delete hplug;
-                    throw UnsupportedExtensionException(
-                        "Plugin for binding ($1) does not implement IHandler interface.",saml::params(1,bindprop)
+                    throw UnknownExtensionException(
+                        "Plugin for binding ($1) does not implement IHandler interface.",xmltooling::params(1,bindprop)
                         );
                 }
             }
@@ -305,7 +305,7 @@ XMLApplication::XMLApplication(
                 m_handlerMap[string("/") + location]=hobj;
 
             // If it's an ACS or SI, handle index/id mappings and defaulting.
-            if (saml::XML::isElementNamed(handler,shibtarget::XML::SAML2META_NS,SHIBT_L(AssertionConsumerService))) {
+            if (XMLHelper::isNodeNamed(handler,samlconstants::SAML20MD_NS,AssertionConsumerService::LOCAL_NAME)) {
                 // Map it.
 #ifdef HAVE_GOOD_STL
                 const XMLCh* binding=hprops->getXMLString("Binding").second;
@@ -330,7 +330,7 @@ XMLApplication::XMLApplication(
                         m_acsDefault=hobj;
                 }
             }
-            else if (saml::XML::isElementNamed(handler,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(SessionInitiator))) {
+            else if (XMLHelper::isNodeNamed(handler,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(SessionInitiator))) {
                 pair<bool,const char*> si_id=hprops->getString("id");
                 if (si_id.first && si_id.second)
                     m_sessionInitMap[si_id.second]=hobj;
@@ -579,17 +579,16 @@ short XMLApplication::acceptNode(const DOMNode* node) const
     else if (saml::XML::isElementNamed(static_cast<const DOMElement*>(node),saml::XML::SAML_NS,L(Audience)))
         return FILTER_REJECT;
     const XMLCh* name=node->getLocalName();
-    if (!XMLString::compareString(name,SHIBT_L(Application)) ||
-        !XMLString::compareString(name,SHIBT_L(AssertionConsumerService)) ||
-        !XMLString::compareString(name,SHIBT_L(SingleLogoutService)) ||
-        !XMLString::compareString(name,SHIBT_L(DiagnosticService)) ||
-        !XMLString::compareString(name,SHIBT_L(SessionInitiator)) ||
-        !XMLString::compareString(name,SHIBT_L(AAPProvider)) ||
-        !XMLString::compareString(name,SHIBT_L(CredentialUse)) ||
-        !XMLString::compareString(name,SHIBT_L(RelyingParty)) ||
-        !XMLString::compareString(name,SHIBT_L(FederationProvider)) ||
-        !XMLString::compareString(name,SHIBT_L(MetadataProvider)) ||
-        !XMLString::compareString(name,SHIBT_L(TrustProvider)))
+    if (XMLString::equals(name,SHIBT_L(Application)) ||
+        XMLString::equals(name,AssertionConsumerService::LOCAL_NAME) ||
+        XMLString::equals(name,SingleLogoutService::LOCAL_NAME) ||
+        XMLString::equals(name,SHIBT_L(DiagnosticService)) ||
+        XMLString::equals(name,SHIBT_L(SessionInitiator)) ||
+        XMLString::equals(name,SHIBT_L(AAPProvider)) ||
+        XMLString::equals(name,SHIBT_L(CredentialUse)) ||
+        XMLString::equals(name,SHIBT_L(RelyingParty)) ||
+        XMLString::equals(name,SHIBT_L(MetadataProvider)) ||
+        XMLString::equals(name,SHIBT_L(TrustProvider)))
         return FILTER_REJECT;
 
     return FILTER_ACCEPT;
@@ -691,11 +690,11 @@ const PropertySet* XMLApplication::getCredentialUse(const EntityDescriptor* prov
 #else
     map<const XMLCh*,PropertySet*>::const_iterator i=m_credMap.begin();
     for (; i!=m_credMap.end(); i++) {
-        if (!XMLString::compareString(i->first,provider->getId()))
+        if (XMLString::equals(i->first,provider->getId()))
             return i->second;
         const EntitiesDescriptor* group=dynamic_cast<const EntitiesDescriptor*>(provider->getParent());
         while (group) {
-            if (!XMLString::compareString(i->first,group->getName()))
+            if (XMLString::equals(i->first,group->getName()))
                 return i->second;
             group=dynamic_cast<const EntitiesDescriptor*>(group->getParent());
         }
@@ -830,21 +829,21 @@ short XMLConfigImpl::acceptNode(const DOMNode* node) const
     if (XMLString::compareString(node->getNamespaceURI(),shibtarget::XML::SHIBTARGET_NS))
         return FILTER_ACCEPT;
     const XMLCh* name=node->getLocalName();
-    if (!XMLString::compareString(name,SHIBT_L(Applications)) ||
-        !XMLString::compareString(name,SHIBT_L(AttributeFactory)) ||
-        !XMLString::compareString(name,SHIBT_L(CredentialsProvider)) ||
-        !XMLString::compareString(name,SHIBT_L(Extensions)) ||
-        !XMLString::compareString(name,SHIBT_L(Implementation)) ||
-        !XMLString::compareString(name,SHIBT_L(Listener)) ||
-        !XMLString::compareString(name,SHIBT_L(MemorySessionCache)) ||
-        !XMLString::compareString(name,SHIBT_L(MySQLReplayCache)) ||
-        !XMLString::compareString(name,SHIBT_L(MySQLSessionCache)) ||
-        !XMLString::compareString(name,SHIBT_L(RequestMap)) ||
-        !XMLString::compareString(name,SHIBT_L(RequestMapProvider)) ||
-        !XMLString::compareString(name,SHIBT_L(ReplayCache)) ||
-        !XMLString::compareString(name,SHIBT_L(SessionCache)) ||
-        !XMLString::compareString(name,SHIBT_L(TCPListener)) ||
-        !XMLString::compareString(name,SHIBT_L(UnixListener)))
+    if (XMLString::equals(name,SHIBT_L(Applications)) ||
+        XMLString::equals(name,SHIBT_L(AttributeFactory)) ||
+        XMLString::equals(name,SHIBT_L(CredentialsProvider)) ||
+        XMLString::equals(name,SHIBT_L(Extensions)) ||
+        XMLString::equals(name,SHIBT_L(Implementation)) ||
+        XMLString::equals(name,SHIBT_L(Listener)) ||
+        XMLString::equals(name,SHIBT_L(MemorySessionCache)) ||
+        XMLString::equals(name,SHIBT_L(MySQLReplayCache)) ||
+        XMLString::equals(name,SHIBT_L(MySQLSessionCache)) ||
+        XMLString::equals(name,SHIBT_L(RequestMap)) ||
+        XMLString::equals(name,SHIBT_L(RequestMapProvider)) ||
+        XMLString::equals(name,SHIBT_L(ReplayCache)) ||
+        XMLString::equals(name,SHIBT_L(SessionCache)) ||
+        XMLString::equals(name,SHIBT_L(TCPListener)) ||
+        XMLString::equals(name,SHIBT_L(UnixListener)))
         return FILTER_REJECT;
 
     return FILTER_ACCEPT;

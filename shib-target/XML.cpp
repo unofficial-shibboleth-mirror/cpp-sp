@@ -97,17 +97,6 @@ const XMLCh XML::XMLENC_SCHEMA_ID[] = // xenc-schema.xsd
 const XMLCh XML::Literals::AAPProvider[] =
 { chLatin_A, chLatin_A, chLatin_P, chLatin_P, chLatin_r, chLatin_o, chLatin_v, chLatin_i, chLatin_d, chLatin_e, chLatin_r, chNull };
 
-const XMLCh XML::Literals::AccessControlProvider[] =
-{ chLatin_A, chLatin_c, chLatin_c, chLatin_e, chLatin_s, chLatin_s,
-  chLatin_C, chLatin_o, chLatin_n, chLatin_t, chLatin_r, chLatin_o, chLatin_l,
-  chLatin_P, chLatin_r, chLatin_o, chLatin_v, chLatin_i, chLatin_d, chLatin_e, chLatin_r, chNull
-};
-
-const XMLCh XML::Literals::AccessControl[] =
-{ chLatin_A, chLatin_c, chLatin_c, chLatin_e, chLatin_s, chLatin_s,
-  chLatin_C, chLatin_o, chLatin_n, chLatin_t, chLatin_r, chLatin_o, chLatin_l, chNull
-};
-
 const XMLCh XML::Literals::acl[] =
 { chLatin_a, chLatin_c, chLatin_l, chNull };
 
@@ -121,12 +110,6 @@ const XMLCh XML::Literals::Application[] =
 
 const XMLCh XML::Literals::Applications[] =
 { chLatin_A, chLatin_p, chLatin_p, chLatin_l, chLatin_i, chLatin_c, chLatin_a, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chLatin_s, chNull };
-
-const XMLCh XML::Literals::AssertionConsumerService[] =
-{ chLatin_A, chLatin_s, chLatin_s, chLatin_e, chLatin_r, chLatin_t, chLatin_i, chLatin_o, chLatin_n,
-  chLatin_C, chLatin_o, chLatin_n, chLatin_s, chLatin_u, chLatin_m, chLatin_e, chLatin_r,
-  chLatin_S, chLatin_e, chLatin_r, chLatin_v, chLatin_i, chLatin_c, chLatin_e, chNull
-};
 
 const XMLCh XML::Literals::AttributeFactory[] =
 { chLatin_A, chLatin_t, chLatin_t, chLatin_r, chLatin_i, chLatin_b, chLatin_u, chLatin_t, chLatin_e,
@@ -159,18 +142,8 @@ const XMLCh XML::Literals::Extensions[] =
 
 const XMLCh XML::Literals::fatal[]= { chLatin_f, chLatin_a, chLatin_t, chLatin_a, chLatin_l, chNull };
 
-const XMLCh XML::Literals::FederationProvider[] =
-{ chLatin_F, chLatin_e, chLatin_d, chLatin_e, chLatin_r, chLatin_a, chLatin_t, chLatin_i, chLatin_o, chLatin_n,
-  chLatin_P, chLatin_r, chLatin_o, chLatin_v, chLatin_i, chLatin_d, chLatin_e, chLatin_r, chNull
-};
-
 const XMLCh XML::Literals::Global[] =
 { chLatin_G, chLatin_l, chLatin_o, chLatin_b, chLatin_a, chLatin_l, chNull };
-
-const XMLCh XML::Literals::Host[]= { chLatin_H, chLatin_o, chLatin_s, chLatin_t, chNull };
-
-const XMLCh XML::Literals::htaccess[]=
-{ chLatin_h, chLatin_t, chLatin_a, chLatin_c, chLatin_c, chLatin_e, chLatin_s, chLatin_s, chNull };
 
 const XMLCh XML::Literals::Implementation[] =
 { chLatin_I, chLatin_m, chLatin_p, chLatin_l, chLatin_e, chLatin_m, chLatin_e, chLatin_n, chLatin_t, chLatin_a, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chNull };
@@ -243,8 +216,6 @@ const XMLCh XML::Literals::OutOfProcess[] =
   chLatin_P, chLatin_r, chLatin_o, chLatin_c, chLatin_e, chLatin_s, chLatin_s, chNull
 };
 
-const XMLCh XML::Literals::Path[]= { chLatin_P, chLatin_a, chLatin_t, chLatin_h, chNull };
-
 const XMLCh XML::Literals::path[]= { chLatin_p, chLatin_a, chLatin_t, chLatin_h, chNull };
 
 const XMLCh XML::Literals::RelyingParty[] =
@@ -282,12 +253,6 @@ const XMLCh XML::Literals::ShibbolethTargetConfig[] =
 const XMLCh XML::Literals::SHIRE[]= { chLatin_S, chLatin_H, chLatin_I, chLatin_R, chLatin_E, chNull };
 
 const XMLCh XML::Literals::Signing[] = { chLatin_S, chLatin_i, chLatin_g, chLatin_n, chLatin_i, chLatin_n, chLatin_g, chNull };
-
-const XMLCh XML::Literals::SingleLogoutService[] =
-{ chLatin_S, chLatin_i, chLatin_n, chLatin_g, chLatin_l, chLatin_e,
-  chLatin_L, chLatin_o, chLatin_g, chLatin_o, chLatin_u, chLatin_t,
-  chLatin_S, chLatin_e, chLatin_r, chLatin_v, chLatin_i, chLatin_c, chLatin_e, chNull
-};
 
 const XMLCh XML::Literals::SPConfig[] =
 { chLatin_S, chLatin_P, chLatin_C, chLatin_o, chLatin_n, chLatin_f, chLatin_i, chLatin_g, chNull };

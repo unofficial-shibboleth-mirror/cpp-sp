@@ -387,11 +387,11 @@ pair<bool,void*> ShibTarget::doHandler(void)
         if (!handler)
             throw opensaml::BindingException("Shibboleth handler invoked at an unconfigured location.");
 
-        if (XMLHelper::isNodeNamed(handler->getProperties()->getElement(),samlconstants::SAML20MD_NS,SHIBT_L(AssertionConsumerService)))
+        if (XMLHelper::isNodeNamed(handler->getProperties()->getElement(),samlconstants::SAML20MD_NS,AssertionConsumerService::LOCAL_NAME))
             procState = "Session Creation Error";
         else if (XMLHelper::isNodeNamed(handler->getProperties()->getElement(),shibtarget::XML::SHIBTARGET_NS,SHIBT_L(SessionInitiator)))
             procState = "Session Initiator Error";
-        else if (XMLHelper::isNodeNamed(handler->getProperties()->getElement(),samlconstants::SAML20MD_NS,SHIBT_L(SingleLogoutService)))
+        else if (XMLHelper::isNodeNamed(handler->getProperties()->getElement(),samlconstants::SAML20MD_NS,SingleLogoutService::LOCAL_NAME))
             procState = "Session Termination Error";
         else if (XMLHelper::isNodeNamed(handler->getProperties()->getElement(),shibtarget::XML::SHIBTARGET_NS,SHIBT_L(DiagnosticService)))
             procState = "Diagnostics Error";
@@ -489,7 +489,7 @@ pair<bool,void*> ShibTarget::doCheckAuthZ(void)
 	            }
 	        }
 	
-            Locker acllock(m_priv->m_settings.second);
+            xmltooling::Locker acllock(m_priv->m_settings.second);
             if (m_priv->m_settings.second->authorized(this,m_priv->m_cacheEntry)) {
                 // Let the caller decide how to proceed.
                 log(LogLevelDebug, "doCheckAuthZ: access control provider granted access");

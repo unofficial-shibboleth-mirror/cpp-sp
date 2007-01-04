@@ -26,15 +26,31 @@
 
 #include <algorithm>
 #include <shibsp/DOMPropertySet.h>
+#include <xmltooling/util/ReloadableXMLFile.h>
+#include <xmltooling/util/XMLHelper.h>
 
 using namespace shibsp;
 using namespace shibtarget;
-using namespace shibboleth;
-using namespace saml;
+using namespace xmltooling;
 using namespace log4cpp;
 using namespace std;
 
 namespace shibtarget {
+
+    // Blocks access when an ACL plugin fails to load. 
+    class AccessControlDummy : public IAccessControl
+    {
+    public:
+        Lockable* lock() {
+            return this;
+        }
+        
+        void unlock() {}
+    
+        bool authorized(ShibTarget* st, ISessionCacheEntry* entry) const {
+            return false;
+        }
+    };
 
     class Override : public DOMPropertySet, public DOMNodeFilter
     {
@@ -67,53 +83,80 @@ namespace shibtarget {
         IAccessControl* m_acl;
     };
 
-    class XMLRequestMapperImpl : public ReloadableXMLFileImpl, public Override
+    class XMLRequestMapperImpl : public Override
     {
     public:
-        XMLRequestMapperImpl(const char* pathname) : ReloadableXMLFileImpl(pathname) { init(); }
-        XMLRequestMapperImpl(const DOMElement* e) : ReloadableXMLFileImpl(e) { init(); }
-        void init();
-        ~XMLRequestMapperImpl() {}
+        XMLRequestMapperImpl(const DOMElement* e, Category& log);
+
+        ~XMLRequestMapperImpl() {
+            if (m_document)
+                m_document->release();
+        }
+
+        void setDocument(DOMDocument* doc) {
+            m_document = doc;
+        }
     
         const Override* findOverride(const char* vhost, const char* path) const;
-        Category* log;
 
     private:    
         map<string,Override*> m_extras;
+        DOMDocument* m_document;
     };
 
-    // An implementation of the URL->application mapping API using an XML file
-    class XMLRequestMapper : public IRequestMapper, public ReloadableXMLFile
+#if defined (_MSC_VER)
+    #pragma warning( push )
+    #pragma warning( disable : 4250 )
+#endif
+
+    class XMLRequestMapper : public IRequestMapper, public xmltooling::ReloadableXMLFile
     {
     public:
-        XMLRequestMapper(const DOMElement* e) : ReloadableXMLFile(e) {}
+        XMLRequestMapper(const DOMElement* e)
+                : xmltooling::ReloadableXMLFile(e), m_impl(NULL), m_log(Category::getInstance(SHIBT_LOGCAT".RequestMapper")) {
+            load();
+        }
+
         ~XMLRequestMapper() {}
 
         virtual Settings getSettings(ShibTarget* st) const;
 
     protected:
-        virtual ReloadableXMLFileImpl* newImplementation(const char* pathname, bool first=true) const;
-        virtual ReloadableXMLFileImpl* newImplementation(const DOMElement* e, bool first=true) const;
+        pair<bool,DOMElement*> load();
+
+    private:
+        XMLRequestMapperImpl* m_impl;
+        Category& m_log;
     };
+
+#if defined (_MSC_VER)
+    #pragma warning( pop )
+#endif
+
+    static const XMLCh AccessControl[] =            UNICODE_LITERAL_13(A,c,c,e,s,s,C,o,n,t,r,o,l);
+    static const XMLCh AccessControlProvider[] =    UNICODE_LITERAL_21(A,c,c,e,s,s,C,o,n,t,r,o,l,P,r,o,v,i,d,e,r);
+    static const XMLCh htaccess[] =                 UNICODE_LITERAL_8(h,t,a,c,c,e,s,s);
+    static const XMLCh Host[] =                     UNICODE_LITERAL_4(H,o,s,t);
+    static const XMLCh Path[] =                     UNICODE_LITERAL_4(P,a,t,h);
+    static const XMLCh name[] =                     UNICODE_LITERAL_4(n,a,m,e);
+    static const XMLCh type[] =                     UNICODE_LITERAL_4(t,y,p,e);
 }
 
-IPlugIn* XMLRequestMapFactory(const DOMElement* e)
+saml::IPlugIn* XMLRequestMapFactory(const DOMElement* e)
 {
-    auto_ptr<XMLRequestMapper> m(new XMLRequestMapper(e));
-    m->getImplementation();
-    return m.release();
+    return new XMLRequestMapper(e);
 }
 
 short Override::acceptNode(const DOMNode* node) const
 {
-    if (XMLString::compareString(node->getNamespaceURI(),shibtarget::XML::SHIBTARGET_NS))
+    if (!XMLString::equals(node->getNamespaceURI(),shibtarget::XML::SHIBTARGET_NS))
         return FILTER_ACCEPT;
     const XMLCh* name=node->getLocalName();
-    if (!XMLString::compareString(name,SHIBT_L(Host)) ||
-        !XMLString::compareString(name,SHIBT_L(Path)) ||
-        !XMLString::compareString(name,SHIBT_L(AccessControl)) ||
-        !XMLString::compareString(name,SHIBT_L(htaccess)) ||
-        !XMLString::compareString(name,SHIBT_L(AccessControlProvider)))
+    if (XMLString::equals(name,Host) ||
+        XMLString::equals(name,Path) ||
+        XMLString::equals(name,AccessControl) ||
+        XMLString::equals(name,htaccess) ||
+        XMLString::equals(name,AccessControlProvider))
         return FILTER_REJECT;
 
     return FILTER_ACCEPT;
@@ -121,36 +164,41 @@ short Override::acceptNode(const DOMNode* node) const
 
 void Override::loadACL(const DOMElement* e, Category& log)
 {
-    IPlugIn* plugin=NULL;
-    const DOMElement* acl=saml::XML::getFirstChildElement(e,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(htaccess));
-    if (acl) {
-        log.info("building Apache htaccess provider...");
-        plugin=SAMLConfig::getConfig().getPlugMgr().newPlugin(shibtarget::XML::htAccessControlType,acl);
-    }
-    else {
-        acl=saml::XML::getFirstChildElement(e,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(AccessControl));
+    try {
+        saml::IPlugIn* plugin=NULL;
+        const DOMElement* acl=XMLHelper::getFirstChildElement(e,htaccess);
         if (acl) {
-            log.info("building XML-based Access Control provider...");
-            plugin=SAMLConfig::getConfig().getPlugMgr().newPlugin(shibtarget::XML::XMLAccessControlType,acl);
+            log.info("building Apache htaccess provider...");
+            plugin=saml::SAMLConfig::getConfig().getPlugMgr().newPlugin(shibtarget::XML::htAccessControlType,acl);
         }
         else {
-            acl=saml::XML::getFirstChildElement(e,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(AccessControlProvider));
+            acl=XMLHelper::getFirstChildElement(e,AccessControl);
             if (acl) {
-                auto_ptr_char type(acl->getAttributeNS(NULL,SHIBT_L(type)));
-                log.info("building Access Control provider of type %s...",type.get());
-                plugin=SAMLConfig::getConfig().getPlugMgr().newPlugin(type.get(),acl);
+                log.info("building XML-based Access Control provider...");
+                plugin=saml::SAMLConfig::getConfig().getPlugMgr().newPlugin(shibtarget::XML::XMLAccessControlType,acl);
+            }
+            else {
+                acl=XMLHelper::getFirstChildElement(e,AccessControlProvider);
+                if (acl) {
+                    xmltooling::auto_ptr_char type(acl->getAttributeNS(NULL,type));
+                    log.info("building Access Control provider of type %s...",type.get());
+                    plugin=saml::SAMLConfig::getConfig().getPlugMgr().newPlugin(type.get(),acl);
+                }
+            }
+        }
+        if (plugin) {
+            IAccessControl* acl=dynamic_cast<IAccessControl*>(plugin);
+            if (acl)
+                m_acl=acl;
+            else {
+                delete plugin;
+                throw UnknownExtensionException("plugin was not an Access Control provider");
             }
         }
     }
-    if (plugin) {
-        IAccessControl* acl=dynamic_cast<IAccessControl*>(plugin);
-        if (acl)
-            m_acl=acl;
-        else {
-            delete plugin;
-            log.fatal("plugin was not an Access Control provider");
-            throw UnsupportedExtensionException("plugin was not an Access Control provider");
-        }
+    catch (exception& ex) {
+        log.crit("exception building AccessControl provider: %s", ex.what());
+        m_acl = new AccessControlDummy();
     }
 }
 
@@ -164,10 +212,9 @@ Override::Override(const DOMElement* e, Category& log, const Override* base) : m
         loadACL(e,log);
     
         // Handle nested Paths.
-        unsigned int count=0;
-        DOMElement* path=saml::XML::getFirstChildElement(e,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Path));
-        while (path) {
-            const XMLCh* n=path->getAttributeNS(NULL,SHIBT_L(name));
+        DOMElement* path = XMLHelper::getFirstChildElement(e,Path);
+        for (int i=1; path; ++i, path=XMLHelper::getNextSiblingElement(path,Path)) {
+            const XMLCh* n=path->getAttributeNS(NULL,name);
             
             // Skip any leading slashes.
             while (n && *n==chForwardSlash)
@@ -175,8 +222,7 @@ Override::Override(const DOMElement* e, Category& log, const Override* base) : m
             
             // Check for empty name.
             if (!n || !*n) {
-                log.warn("skipping Path element with empty name attribute");
-                path=saml::XML::getNextSiblingElement(path,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Path));
+                log.warn("skipping Path element (%d) with empty name attribute", i);
                 continue;
             }
 
@@ -198,20 +244,20 @@ Override::Override(const DOMElement* e, Category& log, const Override* base) : m
                 
                 if (*n) {
                     // Create a placeholder Path element for the first path segment and replant under it.
-                    DOMElement* newpath=path->getOwnerDocument()->createElementNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Path));
-                    newpath->setAttributeNS(NULL,SHIBT_L(name),namebuf);
-                    path->setAttributeNS(NULL,SHIBT_L(name),n);
+                    DOMElement* newpath=path->getOwnerDocument()->createElementNS(shibtarget::XML::SHIBTARGET_NS,Path);
+                    newpath->setAttributeNS(NULL,name,namebuf);
+                    path->setAttributeNS(NULL,name,n);
                     path->getParentNode()->replaceChild(newpath,path);
                     newpath->appendChild(path);
                     
                     // Repoint our locals at the new parent.
                     path=newpath;
-                    n=path->getAttributeNS(NULL,SHIBT_L(name));
+                    n=path->getAttributeNS(NULL,name);
                 }
                 else {
                     // All we had was a pathname with trailing slash(es), so just reset it without them.
-                    path->setAttributeNS(NULL,SHIBT_L(name),namebuf);
-                    n=path->getAttributeNS(NULL,SHIBT_L(name));
+                    path->setAttributeNS(NULL,name,namebuf);
+                    n=path->getAttributeNS(NULL,name);
                 }
                 delete[] namebuf;
             }
@@ -225,17 +271,15 @@ Override::Override(const DOMElement* e, Category& log, const Override* base) : m
                 log.warn("Skipping duplicate Path element (%s)",dup);
                 free(dup);
                 delete o;
-                path=saml::XML::getNextSiblingElement(path,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Path));
                 continue;
             }
             m_map[dup]=o;
             free(dup);
-            
-            path=saml::XML::getNextSiblingElement(path,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Path));
         }
     }
-    catch (...) {
-        this->~Override();
+    catch (exception&) {
+        delete m_acl;
+        for_each(m_map.begin(),m_map.end(),xmltooling::cleanup_pair<string,Override>());
         throw;
     }
 }
@@ -328,150 +372,130 @@ const Override* Override::locate(const char* path) const
     return o;
 }
 
-void XMLRequestMapperImpl::init()
+XMLRequestMapperImpl::XMLRequestMapperImpl(const DOMElement* e, Category& log) : m_document(NULL)
 {
 #ifdef _DEBUG
-    NDC ndc("init");
+    xmltooling::NDC ndc("XMLRequestMapperImpl");
 #endif
-    log=&Category::getInstance("shibtarget.RequestMapper");
 
-    try {
-        if (!saml::XML::isElementNamed(ReloadableXMLFileImpl::m_root,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(RequestMap))) {
-            log->error("Construction requires a valid request mapping file: (conf:RequestMap as root element)");
-            throw MalformedException("Construction requires a valid request mapping file: (conf:RequestMap as root element)");
+    // Load the property set.
+    load(e,log,this);
+    
+    // Load any AccessControl provider.
+    loadACL(e,log);
+
+    // Loop over the Host elements.
+    const DOMElement* host = XMLHelper::getFirstChildElement(e,Host);
+    for (int i=1; host; ++i, host=XMLHelper::getNextSiblingElement(host,Host)) {
+        const XMLCh* n=host->getAttributeNS(NULL,name);
+        if (!n || !*n) {
+            log.warn("Skipping Host element (%d) with empty name attribute",i);
+            continue;
+        }
+        
+        Override* o=new Override(host,log,this);
+        pair<bool,const char*> name=o->getString("name");
+        pair<bool,const char*> scheme=o->getString("scheme");
+        pair<bool,const char*> port=o->getString("port");
+        
+        char* dup=strdup(name.second);
+        for (char* pch=dup; *pch; pch++)
+            *pch=tolower(*pch);
+        auto_ptr<char> dupwrap(dup);
+
+        if (!scheme.first && port.first) {
+            // No scheme, but a port, so assume http.
+            scheme = pair<bool,const char*>(true,"http");
+        }
+        else if (scheme.first && !port.first) {
+            // Scheme, no port, so default it.
+            // XXX Use getservbyname instead?
+            port.first = true;
+            if (!strcmp(scheme.second,"http"))
+                port.second = "80";
+            else if (!strcmp(scheme.second,"https"))
+                port.second = "443";
+            else if (!strcmp(scheme.second,"ftp"))
+                port.second = "21";
+            else if (!strcmp(scheme.second,"ldap"))
+                port.second = "389";
+            else if (!strcmp(scheme.second,"ldaps"))
+                port.second = "636";
         }
 
-        // Load the property set.
-        load(ReloadableXMLFileImpl::m_root,*log,this);
-        
-        // Load any AccessControl provider.
-        loadACL(ReloadableXMLFileImpl::m_root,*log);
-    
-        // Loop over the Host elements.
-        DOMNodeList* nlist = ReloadableXMLFileImpl::m_root->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Host));
-        for (unsigned int i=0; nlist && i<nlist->getLength(); i++) {
-            DOMElement* host=static_cast<DOMElement*>(nlist->item(i));
-            const XMLCh* n=host->getAttributeNS(NULL,SHIBT_L(name));
-            if (!n || !*n) {
-                log->warn("Skipping Host element (%d) with empty name attribute",i);
-                continue;
-            }
+        if (scheme.first) {
+            string url(scheme.second);
+            url=url + "://" + dup;
             
-            Override* o=new Override(host,*log,this);
-            pair<bool,const char*> name=o->getString("name");
-            pair<bool,const char*> scheme=o->getString("scheme");
-            pair<bool,const char*> port=o->getString("port");
-            
-            char* dup=strdup(name.second);
-            for (char* pch=dup; *pch; pch++)
-                *pch=tolower(*pch);
-            auto_ptr<char> dupwrap(dup);
-
-            if (!scheme.first && port.first) {
-                // No scheme, but a port, so assume http.
-                scheme = pair<bool,const char*>(true,"http");
-            }
-            else if (scheme.first && !port.first) {
-                // Scheme, no port, so default it.
-                // XXX Use getservbyname instead?
-                port.first = true;
-                if (!strcmp(scheme.second,"http"))
-                    port.second = "80";
-                else if (!strcmp(scheme.second,"https"))
-                    port.second = "443";
-                else if (!strcmp(scheme.second,"ftp"))
-                    port.second = "21";
-                else if (!strcmp(scheme.second,"ldap"))
-                    port.second = "389";
-                else if (!strcmp(scheme.second,"ldaps"))
-                    port.second = "636";
-            }
-
-            if (scheme.first) {
-                string url(scheme.second);
-                url=url + "://" + dup;
-                
-                // Is this the default port?
-                if ((!strcmp(scheme.second,"http") && !strcmp(port.second,"80")) ||
-                    (!strcmp(scheme.second,"https") && !strcmp(port.second,"443")) ||
-                    (!strcmp(scheme.second,"ftp") && !strcmp(port.second,"21")) ||
-                    (!strcmp(scheme.second,"ldap") && !strcmp(port.second,"389")) ||
-                    (!strcmp(scheme.second,"ldaps") && !strcmp(port.second,"636"))) {
-                    // First store a port-less version.
-                    if (m_map.count(url) || m_extras.count(url)) {
-                        log->warn("Skipping duplicate Host element (%s)",url.c_str());
-                        delete o;
-                        continue;
-                    }
-                    m_map[url]=o;
-                    log->debug("Added <Host> mapping for %s",url.c_str());
-                    
-                    // Now append the port. We use the extras vector, to avoid double freeing the object later.
-                    url=url + ':' + port.second;
-                    m_extras[url]=o;
-                    log->debug("Added <Host> mapping for %s",url.c_str());
-                }
-                else {
-                    url=url + ':' + port.second;
-                    if (m_map.count(url) || m_extras.count(url)) {
-                        log->warn("Skipping duplicate Host element (%s)",url.c_str());
-                        delete o;
-                        continue;
-                    }
-                    m_map[url]=o;
-                    log->debug("Added <Host> mapping for %s",url.c_str());
-                }
-            }
-            else {
-                // No scheme or port, so we enter dual hosts on http:80 and https:443
-                string url("http://");
-                url = url + dup;
+            // Is this the default port?
+            if ((!strcmp(scheme.second,"http") && !strcmp(port.second,"80")) ||
+                (!strcmp(scheme.second,"https") && !strcmp(port.second,"443")) ||
+                (!strcmp(scheme.second,"ftp") && !strcmp(port.second,"21")) ||
+                (!strcmp(scheme.second,"ldap") && !strcmp(port.second,"389")) ||
+                (!strcmp(scheme.second,"ldaps") && !strcmp(port.second,"636"))) {
+                // First store a port-less version.
                 if (m_map.count(url) || m_extras.count(url)) {
-                    log->warn("Skipping duplicate Host element (%s)",url.c_str());
+                    log.warn("Skipping duplicate Host element (%s)",url.c_str());
                     delete o;
                     continue;
                 }
                 m_map[url]=o;
-                log->debug("Added <Host> mapping for %s",url.c_str());
+                log.debug("Added <Host> mapping for %s",url.c_str());
                 
-                url = url + ":80";
+                // Now append the port. We use the extras vector, to avoid double freeing the object later.
+                url=url + ':' + port.second;
+                m_extras[url]=o;
+                log.debug("Added <Host> mapping for %s",url.c_str());
+            }
+            else {
+                url=url + ':' + port.second;
                 if (m_map.count(url) || m_extras.count(url)) {
-                    log->warn("Skipping duplicate Host element (%s)",url.c_str());
+                    log.warn("Skipping duplicate Host element (%s)",url.c_str());
+                    delete o;
                     continue;
                 }
-                m_extras[url]=o;
-                log->debug("Added <Host> mapping for %s",url.c_str());
-                
-                url = "https://";
-                url = url + dup;
-                if (m_map.count(url) || m_extras.count(url)) {
-                    log->warn("Skipping duplicate Host element (%s)",url.c_str());
-                    continue;
-                }
-                m_extras[url]=o;
-                log->debug("Added <Host> mapping for %s",url.c_str());
-                
-                url = url + ":443";
-                if (m_map.count(url) || m_extras.count(url)) {
-                    log->warn("Skipping duplicate Host element (%s)",url.c_str());
-                    continue;
-                }
-                m_extras[url]=o;
-                log->debug("Added <Host> mapping for %s",url.c_str());
+                m_map[url]=o;
+                log.debug("Added <Host> mapping for %s",url.c_str());
             }
         }
+        else {
+            // No scheme or port, so we enter dual hosts on http:80 and https:443
+            string url("http://");
+            url = url + dup;
+            if (m_map.count(url) || m_extras.count(url)) {
+                log.warn("Skipping duplicate Host element (%s)",url.c_str());
+                delete o;
+                continue;
+            }
+            m_map[url]=o;
+            log.debug("Added <Host> mapping for %s",url.c_str());
+            
+            url = url + ":80";
+            if (m_map.count(url) || m_extras.count(url)) {
+                log.warn("Skipping duplicate Host element (%s)",url.c_str());
+                continue;
+            }
+            m_extras[url]=o;
+            log.debug("Added <Host> mapping for %s",url.c_str());
+            
+            url = "https://";
+            url = url + dup;
+            if (m_map.count(url) || m_extras.count(url)) {
+                log.warn("Skipping duplicate Host element (%s)",url.c_str());
+                continue;
+            }
+            m_extras[url]=o;
+            log.debug("Added <Host> mapping for %s",url.c_str());
+            
+            url = url + ":443";
+            if (m_map.count(url) || m_extras.count(url)) {
+                log.warn("Skipping duplicate Host element (%s)",url.c_str());
+                continue;
+            }
+            m_extras[url]=o;
+            log.debug("Added <Host> mapping for %s",url.c_str());
+        }
     }
-    catch (SAMLException& e) {
-        log->errorStream() << "Error while parsing request mapping configuration: " << e.what() << CategoryStream::ENDLINE;
-        throw;
-    }
-#ifndef _DEBUG
-    catch (...)
-    {
-        log->error("Unexpected error while parsing request mapping configuration");
-        throw;
-    }
-#endif
 }
 
 const Override* XMLRequestMapperImpl::findOverride(const char* vhost, const char* path) const
@@ -489,14 +513,23 @@ const Override* XMLRequestMapperImpl::findOverride(const char* vhost, const char
     return o ? o->locate(path) : this;
 }
 
-ReloadableXMLFileImpl* XMLRequestMapper::newImplementation(const char* pathname, bool first) const
+pair<bool,DOMElement*> XMLRequestMapper::load()
 {
-    return new XMLRequestMapperImpl(pathname);
-}
+    // Load from source using base class.
+    pair<bool,DOMElement*> raw = ReloadableXMLFile::load();
+    
+    // If we own it, wrap it.
+    XercesJanitor<DOMDocument> docjanitor(raw.first ? raw.second->getOwnerDocument() : NULL);
 
-ReloadableXMLFileImpl* XMLRequestMapper::newImplementation(const DOMElement* e, bool first) const
-{
-    return new XMLRequestMapperImpl(e);
+    XMLRequestMapperImpl* impl = new XMLRequestMapperImpl(raw.second,m_log);
+    
+    // If we held the document, transfer it to the impl. If we didn't, it's a no-op.
+    impl->setDocument(docjanitor.release());
+
+    delete m_impl;
+    m_impl = impl;
+
+    return make_pair(false,(DOMElement*)NULL);
 }
 
 IRequestMapper::Settings XMLRequestMapper::getSettings(ShibTarget* st) const
@@ -504,15 +537,14 @@ IRequestMapper::Settings XMLRequestMapper::getSettings(ShibTarget* st) const
     ostringstream vhost;
     vhost << st->getProtocol() << "://" << st->getHostname() << ':' << st->getPort();
 
-    XMLRequestMapperImpl* impl=static_cast<XMLRequestMapperImpl*>(getImplementation());
-    const Override* o=impl->findOverride(vhost.str().c_str(), st->getRequestURI());
+    const Override* o=m_impl->findOverride(vhost.str().c_str(), st->getRequestURI());
 
-    if (impl->log->isDebugEnabled()) {
+    if (m_log.isDebugEnabled()) {
 #ifdef _DEBUG
-        NDC ndc("getSettings");
+        xmltooling::NDC ndc("getSettings");
 #endif
         pair<bool,const char*> ret=o->getString("applicationId");
-        impl->log->debug("mapped %s%s to %s", vhost.str().c_str(), st->getRequestURI() ? st->getRequestURI() : "", ret.second);
+        m_log.debug("mapped %s%s to %s", vhost.str().c_str(), st->getRequestURI() ? st->getRequestURI() : "", ret.second);
     }
 
     return Settings(o,o->getAC());

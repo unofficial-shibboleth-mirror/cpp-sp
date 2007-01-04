@@ -528,7 +528,7 @@ class htAccessControl : virtual public IAccessControl
 public:
     htAccessControl() {}
     ~htAccessControl() {}
-    void lock() {}
+    Lockable* lock() {return this;}
     void unlock() {}
     bool authorized(
         ShibTarget* st,
@@ -546,7 +546,7 @@ class ApacheRequestMapper : public virtual IRequestMapper, public virtual Proper
 public:
     ApacheRequestMapper(const DOMElement* e);
     ~ApacheRequestMapper() { delete m_mapper; delete m_htaccess; delete m_staKey; delete m_propsKey; }
-    void lock() { m_mapper->lock(); }
+    Lockable* lock() { return m_mapper->lock(); }
     void unlock() { m_staKey->setData(NULL); m_propsKey->setData(NULL); m_mapper->unlock(); }
     Settings getSettings(ShibTarget* st) const;
     

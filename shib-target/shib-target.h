@@ -261,7 +261,7 @@ namespace shibtarget {
      * of the resource request and the active session. They can be implemented through
      * cross-platform or platform-specific mechanisms.
      */
-    struct SHIBTARGET_EXPORTS IAccessControl : public virtual saml::ILockable, public virtual saml::IPlugIn
+    struct SHIBTARGET_EXPORTS IAccessControl : public virtual xmltooling::Lockable, public virtual saml::IPlugIn
     {
         virtual bool authorized(ShibTarget* st, ISessionCacheEntry* entry) const=0;
         virtual ~IAccessControl() {}
@@ -273,7 +273,7 @@ namespace shibtarget {
      * Request mapping plugins return configuration settings that apply to resource requests.
      * They can be implemented through cross-platform or platform-specific mechanisms.
      */
-    struct SHIBTARGET_EXPORTS IRequestMapper : public virtual saml::ILockable, public virtual saml::IPlugIn
+    struct SHIBTARGET_EXPORTS IRequestMapper : public virtual xmltooling::Lockable, public virtual saml::IPlugIn
     {
         typedef std::pair<const shibsp::PropertySet*,IAccessControl*> Settings;
         virtual Settings getSettings(ShibTarget* st) const=0;
@@ -528,14 +528,11 @@ namespace shibtarget {
         struct SHIBTARGET_EXPORTS Literals
         {
             static const XMLCh AAPProvider[];
-            static const XMLCh AccessControl[];
-            static const XMLCh AccessControlProvider[];
             static const XMLCh acl[];
             static const XMLCh AND[];
             static const XMLCh applicationId[];
             static const XMLCh Application[];
             static const XMLCh Applications[];
-            static const XMLCh AssertionConsumerService[];
             static const XMLCh AttributeFactory[];
             static const XMLCh config[];
             static const XMLCh CredentialsProvider[];
@@ -544,10 +541,7 @@ namespace shibtarget {
             static const XMLCh echo[];
             static const XMLCh Extensions[];
             static const XMLCh fatal[];
-            static const XMLCh FederationProvider[];
             static const XMLCh Global[];
-            static const XMLCh Host[];
-            static const XMLCh htaccess[];
             static const XMLCh Implementation[];
             static const XMLCh index[];
             static const XMLCh InProcess[];
@@ -568,7 +562,6 @@ namespace shibtarget {
             static const XMLCh ODBCSessionCache[];
             static const XMLCh OR[];
             static const XMLCh OutOfProcess[];
-            static const XMLCh Path[];
             static const XMLCh path[];
             static const XMLCh RelyingParty[];
             static const XMLCh ReplayCache[];
@@ -582,7 +575,6 @@ namespace shibtarget {
             static const XMLCh ShibbolethTargetConfig[];
             static const XMLCh SHIRE[];
             static const XMLCh Signing[];
-            static const XMLCh SingleLogoutService[];
             static const XMLCh SPConfig[];
             static const XMLCh TCPListener[];
             static const XMLCh TLS[];
