@@ -117,7 +117,9 @@ namespace shibtarget {
             load();
         }
 
-        ~XMLRequestMapper() {}
+        ~XMLRequestMapper() {
+            delete m_impl;
+        }
 
         virtual Settings getSettings(ShibTarget* st) const;
 
