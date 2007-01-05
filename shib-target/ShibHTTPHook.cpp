@@ -76,7 +76,7 @@ static int verify_callback(X509_STORE_CTX* x509_ctx, void* arg)
 static bool ssl_ctx_callback(void* ssl_ctx, void* userptr)
 {
 #ifdef _DEBUG
-    saml::NDC("ssl_ctx_callback");
+    xmltooling::NDC("ssl_ctx_callback");
 #endif
     Category& log=Category::getInstance(SHIBT_LOGCAT".ShibHTTPHook");
     
@@ -86,8 +86,7 @@ static bool ssl_ctx_callback(void* ssl_ctx, void* userptr)
         const PropertySet* credUse=ctx->getCredentialUse();
         pair<bool,const char*> TLS=credUse ? credUse->getString("TLS") : pair<bool,const char*>(false,NULL);
         if (TLS.first) {
-            Credentials c(ctx->getHook()->getCredentialProviders());
-            OpenSSLCredentialResolver* cr=dynamic_cast<OpenSSLCredentialResolver*>(c.lookup(TLS.second));
+            OpenSSLCredentialResolver* cr=dynamic_cast<OpenSSLCredentialResolver*>(ShibTargetConfig::getConfig().getINI()->getCredentialResolver(TLS.second));
             if (cr) {
                 xmltooling::Locker locker(cr);
                 cr->attach(reinterpret_cast<SSL_CTX*>(ssl_ctx));

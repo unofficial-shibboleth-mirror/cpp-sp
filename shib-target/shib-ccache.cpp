@@ -864,8 +864,7 @@ pair<SAMLResponse*,SAMLResponse*> MemorySessionCacheEntry::getNewResponse(
         // Sign it?
         if (signRequest.first && signRequest.second && signingCred.first) {
             if (req->getMinorVersion()==1) {
-                shibboleth::Credentials creds(ShibTargetConfig::getConfig().getINI()->getCredentialsProviders());
-                CredentialResolver* cr=creds.lookup(signingCred.second);
+                CredentialResolver* cr=ShibTargetConfig::getConfig().getINI()->getCredentialResolver(signingCred.second);
                 if (cr) {
                     xmltooling::Locker locker(cr);
                     req->sign(cr->getKey(),cr->getCertificates(),signatureAlg.second,digestAlg.second);

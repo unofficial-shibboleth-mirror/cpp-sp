@@ -28,7 +28,6 @@
 #include <saml/saml2/metadata/Metadata.h>
 #include <saml/saml2/metadata/MetadataProvider.h>
 #include <xmltooling/security/TrustEngine.h>
-#include <xmltooling/signature/CredentialResolver.h>
 #include <xmltooling/util/Threads.h>
 
 #include <saml/saml.h>
@@ -44,14 +43,6 @@
 
 namespace shibboleth
 {
-    // Credentials interface abstracts access to "owned" keys and certificates.
-    
-    struct SHIB_EXPORTS ICredentials : public virtual saml::ILockable, public virtual saml::IPlugIn
-    {
-        virtual xmlsignature::CredentialResolver* lookup(const char* id) const=0;
-        virtual ~ICredentials() {}
-    };
-    
     // Attribute acceptance processing interfaces, applied to incoming attributes.
 
     struct SHIB_EXPORTS IAttributeRule
@@ -81,26 +72,9 @@ namespace shibboleth
     };
 
 #ifdef SHIB_INSTANTIATE
-    template class SHIB_EXPORTS saml::Iterator<ICredentials*>;
-    template class SHIB_EXPORTS saml::ArrayIterator<ICredentials*>;
     template class SHIB_EXPORTS saml::Iterator<IAAP*>;
     template class SHIB_EXPORTS saml::ArrayIterator<IAAP*>;
 #endif
-
-    class SHIB_EXPORTS Credentials
-    {
-    public:
-        Credentials(const saml::Iterator<ICredentials*>& creds) : m_creds(creds), m_mapper(NULL) {}
-        ~Credentials();
-
-        xmlsignature::CredentialResolver* lookup(const char* id);
-
-    private:
-        Credentials(const Credentials&);
-        void operator=(const Credentials&);
-        ICredentials* m_mapper;
-        saml::Iterator<ICredentials*> m_creds;
-    };
 
     class SHIB_EXPORTS AAP
     {

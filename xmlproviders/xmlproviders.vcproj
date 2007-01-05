@@ -236,10 +236,6 @@
 			>
 		</File>
 		<File
-			RelativePath="XMLCredentials.cpp"
-			>
-		</File>
-		<File
 			RelativePath="XMLProviders.cpp"
 			>
 		</File>

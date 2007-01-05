@@ -45,14 +45,15 @@ using namespace opensaml::saml2md;
 using namespace xmltooling;
 using namespace log4cpp;
 using namespace std;
+using xmlsignature::CredentialResolver;
 
-namespace shibtarget {
+namespace {
 
     // Application configuration wrapper
     class XMLApplication : public virtual IApplication, public DOMPropertySet, public DOMNodeFilter
     {
     public:
-        XMLApplication(const IConfig*, const Iterator<ICredentials*>& creds, const DOMElement* e, const XMLApplication* base=NULL);
+        XMLApplication(const IConfig*, const DOMElement* e, const XMLApplication* base=NULL);
         ~XMLApplication() { cleanup(); }
     
         // PropertySet
@@ -155,7 +156,7 @@ namespace shibtarget {
         
         IRequestMapper* m_requestMapper;
         map<string,IApplication*> m_appmap;
-        vector<ICredentials*> m_creds;
+        map<string,CredentialResolver*> m_credResolverMap;
         vector<IAttributeFactory*> m_attrFactories;
         
         // Provides filter to exclude special config elements.
@@ -201,7 +202,16 @@ namespace shibtarget {
             map<string,IApplication*>::const_iterator i=static_cast<XMLConfigImpl*>(m_impl)->m_appmap.find(applicationId);
             return (i!=static_cast<XMLConfigImpl*>(m_impl)->m_appmap.end()) ? i->second : NULL;
         }
-        Iterator<ICredentials*> getCredentialsProviders() const {return static_cast<XMLConfigImpl*>(m_impl)->m_creds;}
+
+        CredentialResolver* getCredentialResolver(const char* id) const {
+            if (id) {
+                XMLConfigImpl* impl=static_cast<XMLConfigImpl*>(getImplementation());
+                map<string,CredentialResolver*>::const_iterator i=impl->m_credResolverMap.find(id);
+                if (i!=impl->m_credResolverMap.end())
+                    return i->second;
+            }
+            return NULL;
+        }
 
     protected:
         virtual ReloadableXMLFileImpl* newImplementation(const char* pathname, bool first=true) const;
@@ -213,6 +223,12 @@ namespace shibtarget {
         mutable ISessionCache* m_sessionCache;
         mutable IReplayCache* m_replayCache;
     };
+
+    static const XMLCh Credentials[] =          UNICODE_LITERAL_11(C,r,e,d,e,n,t,i,a,l,s);
+    static const XMLCh FileResolver[] =         UNICODE_LITERAL_12(F,i,l,e,R,e,s,o,l,v,e,r);
+    static const XMLCh Id[] =                   UNICODE_LITERAL_2(I,d);
+    static const XMLCh type[] =                 UNICODE_LITERAL_4(t,y,p,e);
+    
 }
 
 IConfig* STConfig::ShibTargetConfigFactory(const DOMElement* e)
@@ -222,7 +238,6 @@ IConfig* STConfig::ShibTargetConfigFactory(const DOMElement* e)
 
 XMLApplication::XMLApplication(
     const IConfig* ini,
-    const Iterator<ICredentials*>& creds,
     const DOMElement* e,
     const XMLApplication* base
     ) : m_ini(ini), m_base(base), m_metadata(NULL), m_trust(NULL), m_profile(NULL), m_binding(NULL), m_bindingHook(NULL),
@@ -525,10 +540,7 @@ XMLApplication::XMLApplication(
                 getMetadataProvider(),
                 getTrustEngine()
                 );
-            m_bindingHook=new ShibHTTPHook(
-                getTrustEngine(),
-                creds
-                );
+            m_bindingHook=new ShibHTTPHook(getTrustEngine());
             m_binding=SAMLBinding::getInstance(SAMLBinding::SOAP);
             SAMLSOAPHTTPBinding* bptr=dynamic_cast<SAMLSOAPHTTPBinding*>(m_binding);
             if (!bptr) {
@@ -1084,7 +1096,7 @@ void XMLConfigImpl::init(bool first)
         
         // Back to the fully dynamic stuff...next up is the Request Mapper.
         if (conf.isEnabled(SPConfig::RequestMapper)) {
-            const DOMElement* child=saml::XML::getFirstChildElement(SHIRE,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(RequestMapProvider));
+            const DOMElement* child=XMLHelper::getFirstChildElement(SHIRE,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(RequestMapProvider));
             if (child) {
                 xmltooling::auto_ptr_char type(child->getAttributeNS(NULL,SHIBT_L(type)));
                 log.info("building Request Mapper of type %s...",type.get());
@@ -1106,32 +1118,52 @@ void XMLConfigImpl::init(bool first)
             }
         }
         
-        // Now we load any credentials providers.
-        DOMNodeList* nlist;
+        // Now we load the credentials map.
         if (conf.isEnabled(SPConfig::Credentials)) {
-            nlist=ReloadableXMLFileImpl::m_root->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(CredentialsProvider));
-            for (unsigned int i=0; nlist && i<nlist->getLength(); i++) {
-                xmltooling::auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
-                log.info("building credentials provider of type %s...",type.get());
-                try {
-                    IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
-                    if (plugin) {
-                        ICredentials* creds=dynamic_cast<ICredentials*>(plugin);
-                        if (creds)
-                            m_creds.push_back(creds);
-                        else {
-                            delete plugin;
-                            log.crit("plugin was not a credentials provider");
+            // Old format was to wrap it in a CredentialsProvider plugin, we're inlining that...
+            const DOMElement* child = XMLHelper::getFirstChildElement(ReloadableXMLFileImpl::m_root,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(CredentialsProvider));
+            if (!child)
+                child = XMLHelper::getFirstChildElement(ReloadableXMLFileImpl::m_root,Credentials);
+            if (child) {
+                // Step down and process resolvers.
+                child=XMLHelper::getFirstChildElement(child);
+                while (child) {
+                    xmltooling::auto_ptr_char id(child->getAttributeNS(NULL,Id));
+                    if (!id.get() || !*(id.get())) {
+                        log.warn("skipping CredentialsResolver with no Id attribute");
+                        child = XMLHelper::getNextSiblingElement(child);
+                        continue;
+                    }
+                    
+                    string cr_type;
+                    if (XMLString::equals(child->getLocalName(),FileResolver))
+                        cr_type=FILESYSTEM_CREDENTIAL_RESOLVER;
+                    else {
+                        xmltooling::auto_ptr_char c(child->getAttributeNS(NULL,type));
+                        cr_type=c.get();
+                    }
+                    
+                    if (!cr_type.empty()) {
+                        try {
+                            CredentialResolver* plugin=
+                                XMLToolingConfig::getConfig().CredentialResolverManager.newPlugin(cr_type.c_str(),child);
+                            m_credResolverMap[id.get()] = plugin;
+                        }
+                        catch (exception& e) {
+                            log.crit("failed to instantiate CredentialResolver (%s): %s", id.get(), e.what());
                         }
                     }
-                }
-                catch (exception& ex) {
-                    log.crit("error building credentials provider: %s",ex.what());
+                    else {
+                        log.error("unknown type of CredentialResolver with Id (%s)", id.get());
+                    }
+                    
+                    child = XMLHelper::getNextSiblingElement(child);
                 }
             }
         }
 
         // Now we load any attribute factories
+        DOMNodeList* nlist;
         nlist=ReloadableXMLFileImpl::m_root->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(AttributeFactory));
         for (unsigned int i=0; nlist && i<nlist->getLength(); i++) {
             xmltooling::auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
@@ -1166,13 +1198,13 @@ void XMLConfigImpl::init(bool first)
             log.fatal("can't build default Application object, missing conf:Applications element?");
             throw ConfigurationException("can't build default Application object, missing conf:Applications element?");
         }
-        XMLApplication* defapp=new XMLApplication(m_outer, m_creds, app);
+        XMLApplication* defapp=new XMLApplication(m_outer,app);
         m_appmap[defapp->getId()]=defapp;
         
         // Load any overrides.
         nlist=app->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Application));
         for (unsigned int j=0; nlist && j<nlist->getLength(); j++) {
-            auto_ptr<XMLApplication> iapp(new XMLApplication(m_outer,m_creds,static_cast<DOMElement*>(nlist->item(j)),defapp));
+            auto_ptr<XMLApplication> iapp(new XMLApplication(m_outer,static_cast<DOMElement*>(nlist->item(j)),defapp));
             if (m_appmap.find(iapp->getId())!=m_appmap.end())
                 log.crit("found conf:Application element with duplicate Id attribute, ignoring it");
             else
@@ -1183,19 +1215,13 @@ void XMLConfigImpl::init(bool first)
         log.errorStream() << "Error while loading SP configuration: " << e.what() << CategoryStream::ENDLINE;
         throw ConfigurationException(e.what());
     }
-#ifndef _DEBUG
-    catch (...) {
-        log.error("Unexpected error while loading SP configuration");
-        throw;
-    }
-#endif
 }
 
 XMLConfigImpl::~XMLConfigImpl()
 {
     delete m_requestMapper;
     for_each(m_appmap.begin(),m_appmap.end(),xmltooling::cleanup_pair<string,IApplication>());
-    for_each(m_creds.begin(),m_creds.end(),xmltooling::cleanup<ICredentials>());
+    for_each(m_credResolverMap.begin(),m_credResolverMap.end(),xmltooling::cleanup_pair<string,CredentialResolver>());
     ShibConfig::getConfig().clearAttributeMappings();
     for_each(m_attrFactories.begin(),m_attrFactories.end(),xmltooling::cleanup<IAttributeFactory>());
 }

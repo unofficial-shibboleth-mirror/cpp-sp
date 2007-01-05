@@ -39,7 +39,6 @@ using namespace std;
 // Metadata Factories
 
 PlugManager::Factory TargetedIDFactory;
-PlugManager::Factory XMLCredentialsFactory;
 PlugManager::Factory XMLAAPFactory;
 PlugManager::Factory XMLAccessControlFactory;
 
@@ -48,7 +47,6 @@ extern "C" int XML_EXPORTS saml_extension_init(void*)
     // Register metadata factories (some are legacy aliases)
     SAMLConfig& conf=SAMLConfig::getConfig();
     conf.getPlugMgr().regFactory("edu.internet2.middleware.shibboleth.common.provider.TargetedIDFactory",&TargetedIDFactory);
-    conf.getPlugMgr().regFactory("edu.internet2.middleware.shibboleth.common.Credentials",&XMLCredentialsFactory);
     conf.getPlugMgr().regFactory("edu.internet2.middleware.shibboleth.aap.provider.XMLAAP",&XMLAAPFactory);
     conf.getPlugMgr().regFactory("edu.internet2.middleware.shibboleth.target.provider.XMLAAP",&XMLAAPFactory);
     conf.getPlugMgr().regFactory(shibtarget::XML::XMLAccessControlType,&XMLAccessControlFactory);
@@ -61,7 +59,6 @@ extern "C" void XML_EXPORTS saml_extension_term()
     // Unregister metadata factories
     SAMLConfig& conf=SAMLConfig::getConfig();
     conf.getPlugMgr().unregFactory("edu.internet2.middleware.shibboleth.common.provider.TargetedIDFactory");
-    conf.getPlugMgr().unregFactory("edu.internet2.middleware.shibboleth.common.Credentials");
     conf.getPlugMgr().unregFactory("edu.internet2.middleware.shibboleth.aap.provider.XMLAAP");
     conf.getPlugMgr().unregFactory("edu.internet2.middleware.shibboleth.target.provider.XMLAAP");
     conf.getPlugMgr().unregFactory(shibtarget::XML::XMLAccessControlType);

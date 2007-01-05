@@ -15,7 +15,6 @@ xmlproviders_la_SOURCES = \
 	TargetedID.cpp \
 	XMLAAP.cpp \
 	XMLAccessControl.cpp \
-	XMLCredentials.cpp \
 	XMLProviders.cpp
 
 

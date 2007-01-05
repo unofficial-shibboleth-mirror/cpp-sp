@@ -31,6 +31,7 @@
 #include <shibsp/PropertySet.h>
 #include <saml/saml2/metadata/MetadataProvider.h>
 #include <xmltooling/security/TrustEngine.h>
+#include <xmltooling/signature/CredentialResolver.h>
 
 // Old headers
 #include <saml/saml.h>
@@ -136,8 +137,7 @@ namespace shibtarget {
     class ShibHTTPHook : virtual public saml::SAMLSOAPHTTPBinding::HTTPHook
     {
     public:
-        ShibHTTPHook(const xmltooling::TrustEngine* trust, const saml::Iterator<shibboleth::ICredentials*>& creds)
-            : m_trust(trust), m_creds(creds) {}
+        ShibHTTPHook(const xmltooling::TrustEngine* trust) : m_trust(trust) {}
         virtual ~ShibHTTPHook() {}
         
         // Only hook we need here is for outgoing connection to server.
@@ -163,10 +163,8 @@ namespace shibtarget {
         };
         
         const xmltooling::TrustEngine* getTrustEngine() const {return m_trust;}
-        const saml::Iterator<shibboleth::ICredentials*>& getCredentialProviders() const {return m_creds;}
     private:
         const xmltooling::TrustEngine* m_trust;
-        saml::Iterator<shibboleth::ICredentials*> m_creds;
     };
 
     /**
@@ -290,7 +288,7 @@ namespace shibtarget {
         virtual saml::IReplayCache* getReplayCache() const=0;
         virtual IRequestMapper* getRequestMapper() const=0;
         virtual const IApplication* getApplication(const char* applicationId) const=0;
-        virtual saml::Iterator<shibboleth::ICredentials*> getCredentialsProviders() const=0;
+        virtual xmlsignature::CredentialResolver* getCredentialResolver(const char* id) const=0;
         virtual ~IConfig() {}
     };
 

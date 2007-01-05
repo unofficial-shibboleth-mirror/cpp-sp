@@ -29,35 +29,6 @@ using namespace shibboleth;
 using namespace opensaml::saml2md;
 using namespace saml;
 using namespace std;
-using xmlsignature::CredentialResolver;
-
-CredentialResolver* Credentials::lookup(const char* id)
-{
-    if (m_mapper) {
-        m_mapper->unlock();
-        m_mapper=NULL;
-    }
-    CredentialResolver* ret=NULL;
-    m_creds.reset();
-    while (m_creds.hasNext()) {
-        m_mapper=m_creds.next();
-        m_mapper->lock();
-        if (ret=m_mapper->lookup(id)) {
-            return ret;
-        }
-        m_mapper->unlock();
-        m_mapper=NULL;
-    }
-    return NULL;
-}
-
-Credentials::~Credentials()
-{
-    if (m_mapper) {
-        m_mapper->unlock();
-        m_mapper=NULL;
-    }
-}
 
 AAP::AAP(const saml::Iterator<IAAP*>& aaps, const XMLCh* attrName, const XMLCh* attrNamespace) : m_mapper(NULL), m_rule(NULL)
 {
