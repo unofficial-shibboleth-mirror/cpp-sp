@@ -228,10 +228,6 @@
 			>
 		</File>
 		<File
-			RelativePath="XML.cpp"
-			>
-		</File>
-		<File
 			RelativePath="XMLAAP.cpp"
 			>
 		</File>

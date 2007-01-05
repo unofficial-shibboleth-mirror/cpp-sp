@@ -31,11 +31,9 @@
 #include "internal.h"
 #include <shib-target/shib-target.h>
 #include <log4cpp/Category.hh>
-#include <openssl/err.h>
 
 using namespace saml;
 using namespace shibboleth;
-using namespace log4cpp;
 using namespace std;
 
 // Metadata Factories
@@ -47,9 +45,6 @@ PlugManager::Factory XMLAccessControlFactory;
 
 extern "C" int XML_EXPORTS saml_extension_init(void*)
 {
-    // Register extension schemas.
-    saml::XML::registerSchema(::XML::SHIB_NS,::XML::SHIB_SCHEMA_ID);
-
     // Register metadata factories (some are legacy aliases)
     SAMLConfig& conf=SAMLConfig::getConfig();
     conf.getPlugMgr().regFactory("edu.internet2.middleware.shibboleth.common.provider.TargetedIDFactory",&TargetedIDFactory);

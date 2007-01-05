@@ -43,41 +43,4 @@
 
 #define XMLPROVIDERS_LOGCAT "XMLProviders"
 
-#define SHIB_L(s) ::XML::Literals::s
-#define SHIB_L_QNAME(p,s) ::XML::Literals::p##_##s
-
-class XML
-{
-public:
-        // URI constants
-    static const XMLCh SHIB_NS[];
-    static const XMLCh SHIB_SCHEMA_ID[];
-
-    struct Literals
-    {
-        // SAML attribute constants
-        static const XMLCh Accept[];
-        static const XMLCh Alias[];
-        static const XMLCh AnyAttribute[];
-        static const XMLCh AnySite[];
-        static const XMLCh AnyValue[];
-        static const XMLCh AttributeAcceptancePolicy[];
-        static const XMLCh AttributeRule[];
-        static const XMLCh CaseSensitive[];
-        static const XMLCh Factory[];
-        static const XMLCh Header[];
-        static const XMLCh Name[];
-        static const XMLCh Namespace[];
-        static const XMLCh Scope[];
-        static const XMLCh Scoped[];
-        static const XMLCh SiteRule[];
-        static const XMLCh Type[];
-        static const XMLCh Value[];
-
-        static const XMLCh literal[];
-        static const XMLCh regexp[];
-        static const XMLCh xpath[];
-    };
-};
-
 #endif

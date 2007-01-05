@@ -110,7 +110,7 @@ void AAP::apply(const saml::Iterator<IAAP*>& aaps, saml::SAMLAssertion& assertio
     aaps.reset();
     while (aaps.hasNext()) {
         IAAP* p=aaps.next();
-        Locker locker(p);
+        xmltooling::Locker locker(p);
         if (p->anyAttribute()) {
             log.info("any attribute enabled, accepting entire assertion");
             return;
@@ -135,7 +135,7 @@ void AAP::apply(const saml::Iterator<IAAP*>& aaps, saml::SAMLAssertion& assertio
             aaps.reset();
             while (aaps.hasNext()) {
                 IAAP* i=aaps.next();
-                Locker locker(i);
+                xmltooling::Locker locker(i);
                 if (rule=i->lookup(a->getName(),a->getNamespace())) {
                     ruleFound=true;
                     try {

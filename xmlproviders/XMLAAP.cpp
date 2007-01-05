@@ -27,6 +27,8 @@
 #include <log4cpp/Category.hh>
 #include <shibsp/MetadataExt.h>
 #include <shibsp/SPConstants.h>
+#include <xmltooling/util/ReloadableXMLFile.h>
+#include <xmltooling/util/XMLHelper.h>
 
 using namespace shibsp;
 using namespace shibboleth;
@@ -40,14 +42,16 @@ using namespace std;
 
 namespace {
 
-    class XMLAAPImpl : public ReloadableXMLFileImpl
+    class XMLAAPImpl
     {
     public:
-        XMLAAPImpl(const char* pathname) : ReloadableXMLFileImpl(pathname), anyAttribute(false) { init(); }
-        XMLAAPImpl(const DOMElement* e) : ReloadableXMLFileImpl(e), anyAttribute(false) { init(); }
-        void init();
+        XMLAAPImpl(const DOMElement* e);
         ~XMLAAPImpl();
-        
+
+        void setDocument(DOMDocument* doc) {
+            m_document = doc;
+        }
+    
         class AttributeRule : public IAttributeRule
         {
         public:
@@ -98,6 +102,7 @@ namespace {
             sitemap_t m_siteMap;
         };
     
+        DOMDocument* m_document;
         bool anyAttribute;
         vector<const IAttributeRule*> m_attrs;
         map<string,const IAttributeRule*> m_aliasMap;
@@ -109,82 +114,109 @@ namespace {
         attrmap_t m_attrMap;
     };
 
-    class XMLAAP : public IAAP, public ReloadableXMLFile
+#if defined (_MSC_VER)
+    #pragma warning( push )
+    #pragma warning( disable : 4250 )
+#endif
+
+    class XMLAAP : public IAAP, public xmltooling::ReloadableXMLFile
     {
     public:
-        XMLAAP(const DOMElement* e) : ReloadableXMLFile(e) {}
-        ~XMLAAP() {}
+        XMLAAP(const DOMElement* e) : xmltooling::ReloadableXMLFile(e), m_impl(NULL) {}
+        ~XMLAAP() {
+            delete m_impl;
+        }
         
-        bool anyAttribute() const {return static_cast<XMLAAPImpl*>(getImplementation())->anyAttribute;}
+        bool anyAttribute() const {return m_impl->anyAttribute;}
         const IAttributeRule* lookup(const XMLCh* attrName, const XMLCh* attrNamespace=NULL) const;
         const IAttributeRule* lookup(const char* alias) const;
         Iterator<const IAttributeRule*> getAttributeRules() const;
 
     protected:
-        virtual ReloadableXMLFileImpl* newImplementation(const char* pathname, bool first=true) const;
-        virtual ReloadableXMLFileImpl* newImplementation(const DOMElement* e, bool first=true) const;
+        pair<bool,DOMElement*> load();
+        XMLAAPImpl* m_impl;
     };
 
+#if defined (_MSC_VER)
+    #pragma warning( pop )
+#endif
+
+    static const XMLCh Accept[]=        UNICODE_LITERAL_6(A,c,c,e,p,t);
+    static const XMLCh Alias[]=         UNICODE_LITERAL_5(A,l,i,a,s);
+    static const XMLCh AnyAttribute[]=  UNICODE_LITERAL_12(A,n,y,A,t,t,r,i,b,u,t,e);
+    static const XMLCh AnySite[]=       UNICODE_LITERAL_7(A,n,y,S,i,t,e);
+    static const XMLCh AnyValue[]=      UNICODE_LITERAL_8(A,n,y,V,a,l,u,e);
+    static const XMLCh _AttributeRule[]=UNICODE_LITERAL_13(A,t,t,r,i,b,u,t,e,R,u,l,e);
+    static const XMLCh CaseSensitive[]= UNICODE_LITERAL_13(C,a,s,e,S,e,n,s,i,t,i,v,e);
+    static const XMLCh Header[]=        UNICODE_LITERAL_6(H,e,a,d,e,r);
+    static const XMLCh Name[]=          UNICODE_LITERAL_4(N,a,m,e);
+    static const XMLCh Namespace[]=     UNICODE_LITERAL_9(N,a,m,e,s,p,a,c,e);
+    static const XMLCh Scoped[]=        UNICODE_LITERAL_6(S,c,o,p,e,d);
+    static const XMLCh _SiteRule[]=     UNICODE_LITERAL_8(S,i,t,e,R,u,l,e);
+    static const XMLCh Type[]=          UNICODE_LITERAL_4(T,y,p,e);
+    static const XMLCh Value[]=         UNICODE_LITERAL_5(V,a,l,u,e);
+
+    static const XMLCh _literal[]=      UNICODE_LITERAL_7(l,i,t,e,r,a,l);
+    static const XMLCh _regexp[]=       UNICODE_LITERAL_6(r,e,g,e,x,p);
+    static const XMLCh _xpath[]=        UNICODE_LITERAL_5(x,p,a,t,h);
 }
 
 IPlugIn* XMLAAPFactory(const DOMElement* e)
 {
-    auto_ptr<XMLAAP> aap(new XMLAAP(e));
-    aap->getImplementation();
-    return aap.release();
+    return new XMLAAP(e);
 }
 
-ReloadableXMLFileImpl* XMLAAP::newImplementation(const DOMElement* e, bool first) const
+pair<bool,DOMElement*> XMLAAP::load()
 {
-    return new XMLAAPImpl(e);
+    // Load from source using base class.
+    pair<bool,DOMElement*> raw = xmltooling::ReloadableXMLFile::load();
+    
+    // If we own it, wrap it.
+    XercesJanitor<DOMDocument> docjanitor(raw.first ? raw.second->getOwnerDocument() : NULL);
+
+    XMLAAPImpl* impl = new XMLAAPImpl(raw.second);
+    
+    // If we held the document, transfer it to the impl. If we didn't, it's a no-op.
+    impl->setDocument(docjanitor.release());
+
+    delete m_impl;
+    m_impl = impl;
+
+    return make_pair(false,(DOMElement*)NULL);
 }
 
-ReloadableXMLFileImpl* XMLAAP::newImplementation(const char* pathname, bool first) const
-{
-    return new XMLAAPImpl(pathname);
-}
-
-void XMLAAPImpl::init()
+XMLAAPImpl::XMLAAPImpl(const DOMElement* e) : anyAttribute(false), m_document(NULL)
 {
 #ifdef _DEBUG
-    xmltooling::NDC ndc("init");
+    xmltooling::NDC ndc("XMLAAPImpl");
 #endif
     Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".AAP");
 
-    try
-    {
-        if (!saml::XML::isElementNamed(m_root,::XML::SHIB_NS,SHIB_L(AttributeAcceptancePolicy)))
-        {
-            log.error("Construction requires a valid AAP file: (shib:AttributeAcceptancePolicy as root element)");
-            throw MalformedException("Construction requires a valid AAP file: (shib:AttributeAcceptancePolicy as root element)");
-        }
-
+    try {
         // Check for AnyAttribute element.
-        DOMElement* anyAttr = saml::XML::getFirstChildElement(m_root,::XML::SHIB_NS,SHIB_L(AnyAttribute));
-        if (anyAttr) {
+        if (XMLHelper::getFirstChildElement(e,AnyAttribute)) {
             anyAttribute = true;
             log.warn("<AnyAttribute> found, will short-circuit all attribute value and scope filtering");
         }
 
         // Loop over the AttributeRule elements.
-        DOMNodeList* nlist = m_root->getElementsByTagNameNS(::XML::SHIB_NS,SHIB_L(AttributeRule));
-        for (XMLSize_t i=0; nlist && i<nlist->getLength(); i++)
-        {
-            AttributeRule* rule=new AttributeRule(static_cast<DOMElement*>(nlist->item(i)));
+        e = XMLHelper::getFirstChildElement(e, _AttributeRule); 
+        while (e) {
+            AttributeRule* rule=new AttributeRule(e);
 #ifdef HAVE_GOOD_STL
             xmltooling::xstring key=rule->getName();
             key=key + chBang + chBang + (rule->getNamespace() ? rule->getNamespace() : shibspconstants::SHIB1_ATTRIBUTE_NAMESPACE_URI);
 #else
-            auto_ptr_char aname(rule->getName());
+            xmltooling::auto_ptr_char aname(rule->getName());
             string key(aname.get());
             key+="!!";
-            if (rule->getNamespace())
-            {
-                auto_ptr_char ans(rule->getNamespace());
+            if (rule->getNamespace()) {
+                xmltooling::auto_ptr_char ans(rule->getNamespace());
                 key+=ans.get();
             }
-            else
+            else {
                 key+="urn:mace:shibboleth:1.0:attributeNamespace:uri";
+            }
 #endif
             m_attrMap[key]=rule;
             m_attrs.push_back(rule);
@@ -193,29 +225,26 @@ void XMLAAPImpl::init()
                 if (!strcmp(rule->getAlias(),"user")) {
                     if (strcmp(rule->getHeader(),"REMOTE_USER"))
                         log.error("<AttributeRule> cannot specify Alias of 'user', please use alternate value");
-                    else
+                    else {
                         m_aliasMap[rule->getAlias()]=rule;
+                    }
                 }
                 else {
                     m_aliasMap[rule->getAlias()]=rule;
                 }
             }
+            
+            e = XMLHelper::getNextSiblingElement(e, _AttributeRule);
         }
     }
-    catch (SAMLException& e)
-    {
-        log.errorStream() << "Error while parsing AAP: " << e.what() << CategoryStream::ENDLINE;
-        this->~XMLAAPImpl();
-        throw;
-    }
-#ifndef _DEBUG
-    catch (...)
-    {
-        log.error("Unexpected error while parsing AAP");
-        this->~XMLAAPImpl();
-        throw;
-    }
+    catch (exception&) {
+#ifdef HAVE_GOOD_STL
+        for_each(m_attrMap.begin(),m_attrMap.end(),xmltooling::cleanup_pair<xmltooling::xstring,AttributeRule>());
+#else
+        for_each(m_attrMap.begin(),m_attrMap.end(),xmltooling::cleanup_pair<string,AttributeRule>());
 #endif
+        throw;
+    }
 }
 
 XMLAAPImpl::~XMLAAPImpl()
@@ -225,137 +254,132 @@ XMLAAPImpl::~XMLAAPImpl()
 #else
     for_each(m_attrMap.begin(),m_attrMap.end(),xmltooling::cleanup_pair<string,AttributeRule>());
 #endif
+    if (m_document)
+        m_document->release();
 }
 
 XMLAAPImpl::AttributeRule::AttributeRule(const DOMElement* e) :
-    m_alias(e->hasAttributeNS(NULL,SHIB_L(Alias)) ? e->getAttributeNS(NULL,SHIB_L(Alias)) : NULL),
-    m_header(e->hasAttributeNS(NULL,SHIB_L(Header)) ? e->getAttributeNS(NULL,SHIB_L(Header)) : NULL),
+    m_alias(e->hasAttributeNS(NULL,Alias) ? e->getAttributeNS(NULL,Alias) : NULL),
+    m_header(e->hasAttributeNS(NULL,Header) ? e->getAttributeNS(NULL,Header) : NULL),
     m_scoped(false)
     
 {
-    m_name=e->getAttributeNS(NULL,SHIB_L(Name));
-    m_namespace=e->getAttributeNS(NULL,SHIB_L(Namespace));
+    m_name=e->getAttributeNS(NULL,Name);
+    m_namespace=e->getAttributeNS(NULL,Namespace);
     if (!m_namespace || !*m_namespace)
         m_namespace=shibspconstants::SHIB1_ATTRIBUTE_NAMESPACE_URI;
     
-    const XMLCh* caseSensitive=e->getAttributeNS(NULL,SHIB_L(CaseSensitive));
+    const XMLCh* caseSensitive=e->getAttributeNS(NULL,CaseSensitive);
     m_caseSensitive=(!caseSensitive || !*caseSensitive || *caseSensitive==chDigit_1 || *caseSensitive==chLatin_t);
     
-    const XMLCh* scoped=e->getAttributeNS(NULL,SHIB_L(Scoped));
+    const XMLCh* scoped=e->getAttributeNS(NULL,Scoped);
     m_scoped=(scoped && (*scoped==chDigit_1 || *scoped==chLatin_t));
     
     // Check for an AnySite rule.
-    DOMElement* anysite = saml::XML::getFirstChildElement(e);
-    if (anysite && saml::XML::isElementNamed(static_cast<DOMElement*>(anysite),::XML::SHIB_NS,SHIB_L(AnySite)))
-    {
+    const DOMElement* anysite = XMLHelper::getFirstChildElement(e);
+    if (anysite && XMLString::equals(anysite->getLocalName(),AnySite)) {
         // Process Scope elements.
-        DOMNodeList* vlist = static_cast<DOMElement*>(anysite)->getElementsByTagNameNS(::XML::SHIB_NS,SHIB_L(Scope));
-        for (XMLSize_t i=0; vlist && i<vlist->getLength(); i++)
-        {
+        const DOMElement* se = XMLHelper::getFirstChildElement(anysite,Scope::LOCAL_NAME);
+        while (se) {
             m_scoped=true;
-            DOMElement* se=static_cast<DOMElement*>(vlist->item(i));
             DOMNode* valnode=se->getFirstChild();
-            if (valnode && valnode->getNodeType()==DOMNode::TEXT_NODE)
-            {
-                const XMLCh* accept=se->getAttributeNS(NULL,SHIB_L(Accept));
+            if (valnode && valnode->getNodeType()==DOMNode::TEXT_NODE) {
+                const XMLCh* accept=se->getAttributeNS(NULL,Accept);
                 if (!accept || !*accept || *accept==chDigit_1 || *accept==chLatin_t)
                     m_anySiteRule.scopeAccepts.push_back(pair<value_type,const XMLCh*>(toValueType(se),valnode->getNodeValue()));
                 else
                     m_anySiteRule.scopeDenials.push_back(pair<value_type,const XMLCh*>(toValueType(se),valnode->getNodeValue()));
             }
+            
+            se = XMLHelper::getNextSiblingElement(se,Scope::LOCAL_NAME);
         }
 
         // Check for an AnyValue rule.
-        vlist = static_cast<DOMElement*>(anysite)->getElementsByTagNameNS(::XML::SHIB_NS,SHIB_L(AnyValue));
-        if (vlist && vlist->getLength())
-        {
+        if (XMLHelper::getFirstChildElement(anysite,AnyValue)) {
             m_anySiteRule.anyValue=true;
         }
-        else
-        {
+        else {
             // Process each Value element.
-            vlist = static_cast<DOMElement*>(anysite)->getElementsByTagNameNS(::XML::SHIB_NS,SHIB_L(Value));
-            for (XMLSize_t j=0; vlist && j<vlist->getLength(); j++)
-            {
-                DOMElement* ve=static_cast<DOMElement*>(vlist->item(j));
+            const DOMElement* ve = XMLHelper::getFirstChildElement(anysite,Value);
+            while (ve) {
                 DOMNode* valnode=ve->getFirstChild();
                 if (valnode && valnode->getNodeType()==DOMNode::TEXT_NODE) {
-                    const XMLCh* accept=ve->getAttributeNS(NULL,SHIB_L(Accept));
+                    const XMLCh* accept=ve->getAttributeNS(NULL,Accept);
                     if (!accept || !*accept || *accept==chDigit_1 || *accept==chLatin_t)
                         m_anySiteRule.valueAccepts.push_back(pair<value_type,const XMLCh*>(toValueType(ve),valnode->getNodeValue()));
                     else
                         m_anySiteRule.valueDenials.push_back(pair<value_type,const XMLCh*>(toValueType(ve),valnode->getNodeValue()));
                 }
+                
+                ve = XMLHelper::getNextSiblingElement(ve,Value);
             }
         }
     }
 
     // Loop over the SiteRule elements.
-    DOMNodeList* slist = e->getElementsByTagNameNS(::XML::SHIB_NS,SHIB_L(SiteRule));
-    for (XMLSize_t k=0; slist && k<slist->getLength(); k++)
-    {
-        const XMLCh* srulename=static_cast<DOMElement*>(slist->item(k))->getAttributeNS(NULL,SHIB_L(Name));
+    const DOMElement* sr = XMLHelper::getFirstChildElement(e,_SiteRule);
+    while (sr) {
+        const XMLCh* srulename=sr->getAttributeNS(NULL,Name);
 #ifdef HAVE_GOOD_STL
         m_siteMap[srulename]=SiteRule();
         SiteRule& srule=m_siteMap[srulename];
 #else
-        auto_ptr_char srulename2(srulename);
+        xmltooling::auto_ptr_char srulename2(srulename);
         m_siteMap[srulename2.get()]=SiteRule();
         SiteRule& srule=m_siteMap[srulename2.get()];
 #endif
 
         // Process Scope elements.
-        DOMNodeList* vlist = static_cast<DOMElement*>(slist->item(k))->getElementsByTagNameNS(::XML::SHIB_NS,SHIB_L(Scope));
-        for (XMLSize_t i=0; vlist && i<vlist->getLength(); i++)
-        {
+        const DOMElement* se = XMLHelper::getFirstChildElement(sr,Scope::LOCAL_NAME);
+        while (se) {
             m_scoped=true;
-            DOMElement* se=static_cast<DOMElement*>(vlist->item(i));
             DOMNode* valnode=se->getFirstChild();
-            if (valnode && valnode->getNodeType()==DOMNode::TEXT_NODE)
-            {
-                const XMLCh* accept=se->getAttributeNS(NULL,SHIB_L(Accept));
+            if (valnode && valnode->getNodeType()==DOMNode::TEXT_NODE) {
+                const XMLCh* accept=se->getAttributeNS(NULL,Accept);
                 if (!accept || !*accept || *accept==chDigit_1 || *accept==chLatin_t)
                     srule.scopeAccepts.push_back(pair<value_type,const XMLCh*>(toValueType(se),valnode->getNodeValue()));
                 else
                     srule.scopeDenials.push_back(pair<value_type,const XMLCh*>(toValueType(se),valnode->getNodeValue()));
             }
+            
+            se = XMLHelper::getNextSiblingElement(se,Scope::LOCAL_NAME);
         }
 
         // Check for an AnyValue rule.
-        vlist = static_cast<DOMElement*>(slist->item(k))->getElementsByTagNameNS(::XML::SHIB_NS,SHIB_L(AnyValue));
-        if (vlist && vlist->getLength())
-        {
+        if (XMLHelper::getFirstChildElement(sr,AnyValue)) {
             srule.anyValue=true;
         }
         else
         {
             // Process each Value element.
-            vlist = static_cast<DOMElement*>(slist->item(k))->getElementsByTagNameNS(::XML::SHIB_NS,SHIB_L(Value));
-            for (XMLSize_t j=0; vlist && j<vlist->getLength(); j++)
-            {
-                DOMElement* ve=static_cast<DOMElement*>(vlist->item(j));
+            const DOMElement* ve = XMLHelper::getFirstChildElement(sr,Value);
+            while (ve) {
                 DOMNode* valnode=ve->getFirstChild();
                 if (valnode && valnode->getNodeType()==DOMNode::TEXT_NODE) {
-                    const XMLCh* accept=ve->getAttributeNS(NULL,SHIB_L(Accept));
+                    const XMLCh* accept=ve->getAttributeNS(NULL,Accept);
                     if (!accept || !*accept || *accept==chDigit_1 || *accept==chLatin_t)
                         srule.valueAccepts.push_back(pair<value_type,const XMLCh*>(toValueType(ve),valnode->getNodeValue()));
                     else
                         srule.valueDenials.push_back(pair<value_type,const XMLCh*>(toValueType(ve),valnode->getNodeValue()));
                 }
+                
+                ve = XMLHelper::getNextSiblingElement(ve,Value);
             }
         }
+        
+        sr = XMLHelper::getNextSiblingElement(sr,_SiteRule);
     }
 }
 
 XMLAAPImpl::AttributeRule::value_type XMLAAPImpl::AttributeRule::toValueType(const DOMElement* e)
 {
-    if (!XMLString::compareString(SHIB_L(literal),e->getAttributeNS(NULL,SHIB_L(Type))))
+    if (XMLString::equals(_literal,e->getAttributeNS(NULL,Type)))
         return literal;
-    else if (!XMLString::compareString(SHIB_L(regexp),e->getAttributeNS(NULL,SHIB_L(Type))))
+    else if (XMLString::equals(_regexp,e->getAttributeNS(NULL,Type)))
         return regexp;
-    else if (!XMLString::compareString(SHIB_L(xpath),e->getAttributeNS(NULL,SHIB_L(Type))))
+    else if (XMLString::equals(_xpath,e->getAttributeNS(NULL,Type)))
         return xpath;
-    throw MalformedException("Found an invalid value or scope rule type.");
+    throw ConfigurationException("Found an invalid value or scope rule type.");
 }
 
 const IAttributeRule* XMLAAP::lookup(const XMLCh* attrName, const XMLCh* attrNamespace) const
@@ -364,32 +388,30 @@ const IAttributeRule* XMLAAP::lookup(const XMLCh* attrName, const XMLCh* attrNam
     xmltooling::xstring key=attrName;
     key=key + chBang + chBang + (attrNamespace ? attrNamespace : shibspconstants::SHIB1_ATTRIBUTE_NAMESPACE_URI);
 #else
-    auto_ptr_char aname(attrName);
+    xmltooling::auto_ptr_char aname(attrName);
     string key=aname.get();
     key+="!!";
-    if (attrNamespace)
-    {
-        auto_ptr_char ans(attrNamespace);
+    if (attrNamespace) {
+        xmltooling::auto_ptr_char ans(attrNamespace);
         key+=ans.get();
     }
-    else
+    else {
         key+="urn:mace:shibboleth:1.0:attributeNamespace:uri";
+    }
 #endif
-    XMLAAPImpl* impl=dynamic_cast<XMLAAPImpl*>(getImplementation());
-    XMLAAPImpl::attrmap_t::const_iterator i=impl->m_attrMap.find(key);
-    return (i==impl->m_attrMap.end()) ? NULL : i->second;
+    XMLAAPImpl::attrmap_t::const_iterator i=m_impl->m_attrMap.find(key);
+    return (i==m_impl->m_attrMap.end()) ? NULL : i->second;
 }
 
 const IAttributeRule* XMLAAP::lookup(const char* alias) const
 {
-    XMLAAPImpl* impl=dynamic_cast<XMLAAPImpl*>(getImplementation());
-    map<string,const IAttributeRule*>::const_iterator i=impl->m_aliasMap.find(alias);
-    return (i==impl->m_aliasMap.end()) ? NULL : i->second;
+    map<string,const IAttributeRule*>::const_iterator i=m_impl->m_aliasMap.find(alias);
+    return (i==m_impl->m_aliasMap.end()) ? NULL : i->second;
 }
 
 Iterator<const IAttributeRule*> XMLAAP::getAttributeRules() const
 {
-    return dynamic_cast<XMLAAPImpl*>(getImplementation())->m_attrs;
+    return m_impl->m_attrs;
 }
 
 namespace {
@@ -402,7 +424,7 @@ namespace {
         }
         catch (XMLException& ex) {
             xmltooling::auto_ptr_char tmp(ex.getMessage());
-            Category::getInstance(XMLPROVIDERS_LOGCAT".XMLAAPImpl").errorStream()
+            Category::getInstance(XMLPROVIDERS_LOGCAT".AAP").errorStream()
                 << "caught exception while parsing regular expression: " << tmp.get() << CategoryStream::ENDLINE;
         }
         return false;
@@ -421,7 +443,7 @@ bool XMLAAPImpl::AttributeRule::scopeCheck(
     Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".AAP");
 
     // Are we scoped?
-    const XMLCh* scope=e->getAttributeNS(NULL,SHIB_L(Scope));
+    const XMLCh* scope=e->getAttributeNS(NULL,Scope::LOCAL_NAME);
     if (!scope || !*scope) {
         // Are we allowed to be unscoped?
         if (m_scoped && log.isWarnEnabled()) {
@@ -437,7 +459,7 @@ bool XMLAAPImpl::AttributeRule::scopeCheck(
         // Now run any denials.
         vector<pair<value_type,const XMLCh*> >::const_iterator i;
         for (i=(*rule)->scopeDenials.begin(); i!=(*rule)->scopeDenials.end(); i++) {
-            if ((i->first==literal && !XMLString::compareString(i->second,scope)) ||
+            if ((i->first==literal && XMLString::equals(i->second,scope)) ||
                 (i->first==regexp && match(i->second,scope))) {
                 if (log.isWarnEnabled()) {
                     xmltooling::auto_ptr_char temp(m_name);
@@ -452,7 +474,7 @@ bool XMLAAPImpl::AttributeRule::scopeCheck(
 
         // Now run any accepts.
         for (i=(*rule)->scopeAccepts.begin(); i!=(*rule)->scopeAccepts.end(); i++) {
-            if ((i->first==literal && !XMLString::compareString(i->second,scope)) ||
+            if ((i->first==literal && XMLString::equals(i->second,scope)) ||
                 (i->first==regexp && match(i->second,scope))) {
                 log.debug("matching site rule, scope match");
                 return true;

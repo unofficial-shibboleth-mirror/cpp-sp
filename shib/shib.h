@@ -65,7 +65,7 @@ namespace shibboleth
         virtual ~IAttributeRule() {}
     };
     
-    struct SHIB_EXPORTS IAAP : public virtual saml::ILockable, public virtual saml::IPlugIn
+    struct SHIB_EXPORTS IAAP : public virtual xmltooling::Lockable, public virtual saml::IPlugIn
     {
         virtual bool anyAttribute() const=0;
         virtual const IAttributeRule* lookup(const XMLCh* attrName, const XMLCh* attrNamespace=NULL) const=0;

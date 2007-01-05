@@ -13,7 +13,6 @@ xmlproviders_la_LIBADD = \
 
 xmlproviders_la_SOURCES = \
 	TargetedID.cpp \
-	XML.cpp \
 	XMLAAP.cpp \
 	XMLAccessControl.cpp \
 	XMLCredentials.cpp \

@@ -598,7 +598,7 @@ pair<bool,void*> ShibTarget::doExportAssertions(bool requireSession)
         // Export NameID?
         while (provs.hasNext()) {
             IAAP* aap=provs.next();
-            Locker locker(aap);
+            xmltooling::Locker locker(aap);
             const XMLCh* format = sub.second->getNameIdentifier()->getFormat();
             const IAttributeRule* rule=aap->lookup(format ? format : SAMLNameIdentifier::UNSPECIFIED);
             if (rule && rule->getHeader()) {
@@ -631,7 +631,7 @@ pair<bool,void*> ShibTarget::doExportAssertions(bool requireSession)
                     provs.reset();
                     while (provs.hasNext()) {
                         IAAP* aap=provs.next();
-                        Locker locker(aap);
+                        xmltooling::Locker locker(aap);
                         const IAttributeRule* rule=aap->lookup(attr->getName(),attr->getNamespace());
                         if (!rule || !rule->getHeader())
                             continue;
@@ -977,7 +977,7 @@ void ShibTargetPriv::clearHeaders(ShibTarget* st)
     Iterator<IAAP*> provs=m_app->getAAPProviders();
     while (provs.hasNext()) {
         IAAP* aap=provs.next();
-        Locker locker(aap);
+        xmltooling::Locker locker(aap);
         Iterator<const IAttributeRule*> rules=aap->getAttributeRules();
         while (rules.hasNext()) {
             const char* header=rules.next()->getHeader();
