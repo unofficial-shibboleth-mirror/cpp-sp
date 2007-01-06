@@ -87,16 +87,17 @@ bool STConfig::init(const char* schemadir)
     ShibConfig& shibConf=ShibConfig::getConfig();
     if (!shibConf.init()) {
         log.fatal("Failed to initialize Shib library");
+        SPConfig::getConfig().term();
         samlConf.term();
         return false;
     }
 
     // Register built-in plugin types.
 
-    samlConf.getPlugMgr().regFactory(shibtarget::XML::MemorySessionCacheType,&MemoryCacheFactory);
-    samlConf.getPlugMgr().regFactory(shibtarget::XML::LegacyRequestMapType,&XMLRequestMapFactory);
-    samlConf.getPlugMgr().regFactory(shibtarget::XML::XMLRequestMapType,&XMLRequestMapFactory);
-    samlConf.getPlugMgr().regFactory(shibtarget::XML::NativeRequestMapType,&XMLRequestMapFactory);
+    samlConf.getPlugMgr().regFactory(MEMORY_SESSIONCACHE,&MemoryCacheFactory);
+    samlConf.getPlugMgr().regFactory(LEGACY_REQUESTMAP_PROVIDER,&XMLRequestMapFactory);
+    samlConf.getPlugMgr().regFactory(XML_REQUESTMAP_PROVIDER,&XMLRequestMapFactory);
+    samlConf.getPlugMgr().regFactory(NATIVE_REQUESTMAP_PROVIDER,&XMLRequestMapFactory);
     
     auto_ptr_char temp1(shibspconstants::SHIB1_SESSIONINIT_PROFILE_URI);
     samlConf.getPlugMgr().regFactory(temp1.get(),&ShibSessionInitiatorFactory);
@@ -104,11 +105,6 @@ bool STConfig::init(const char* schemadir)
     samlConf.getPlugMgr().regFactory(samlconstants::SAML1_PROFILE_BROWSER_ARTIFACT,&SAML1ArtifactFactory);
     auto_ptr_char temp4(shibspconstants::SHIB1_LOGOUT_PROFILE_URI);
     samlConf.getPlugMgr().regFactory(temp4.get(),&ShibLogoutFactory);
-    
-    saml::XML::registerSchema(shibtarget::XML::SHIBTARGET_NS,shibtarget::XML::SHIBTARGET_SCHEMA_ID,NULL,false);
-    saml::XML::registerSchema(samlconstants::SAML20MD_NS,shibtarget::XML::SAML2META_SCHEMA_ID,NULL,false);
-    saml::XML::registerSchema(samlconstants::SAML20_NS,shibtarget::XML::SAML2ASSERT_SCHEMA_ID,NULL,false);
-    saml::XML::registerSchema(xmlconstants::XMLENC_NS,shibtarget::XML::XMLENC_SCHEMA_ID,NULL,false);
     
     log.info("finished initializing");
     return true;
@@ -129,14 +125,16 @@ bool STConfig::load(const char* config)
 
     try {
         log.info("loading configuration file: %s", config);
-        static const XMLCh uri[] = { chLatin_u, chLatin_r, chLatin_i, chNull };
+        static const XMLCh path[] = UNICODE_LITERAL_4(p,a,t,h);
         DOMImplementation* impl=DOMImplementationRegistry::getDOMImplementation(NULL);
         DOMDocument* dummydoc=impl->createDocument();
-        DOMElement* dummy = dummydoc->createElementNS(NULL,XML::Literals::ShibbolethTargetConfig);
+        xmltooling::XercesJanitor<DOMDocument> docjanitor(dummydoc);
+        DOMElement* dummy = dummydoc->createElementNS(NULL,path);
+
         auto_ptr_XMLCh src(config);
-        dummy->setAttributeNS(NULL,uri,src.get());
+        dummy->setAttributeNS(NULL,path,src.get());
+
         m_ini=ShibTargetConfigFactory(dummy);
-        dummydoc->release();
         m_ini->init();
         
         pair<bool,unsigned int> skew=m_ini->getUnsignedInt("clockSkew");

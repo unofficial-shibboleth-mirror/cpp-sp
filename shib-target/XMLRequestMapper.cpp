@@ -109,11 +109,11 @@ namespace shibtarget {
     #pragma warning( disable : 4250 )
 #endif
 
-    class XMLRequestMapper : public IRequestMapper, public xmltooling::ReloadableXMLFile
+    class XMLRequestMapper : public IRequestMapper, public ReloadableXMLFile
     {
     public:
         XMLRequestMapper(const DOMElement* e)
-                : xmltooling::ReloadableXMLFile(e), m_impl(NULL), m_log(Category::getInstance(SHIBT_LOGCAT".RequestMapper")) {
+                : ReloadableXMLFile(e), m_impl(NULL), m_log(Category::getInstance(SHIBT_LOGCAT".RequestMapper")) {
             load();
         }
 
@@ -151,7 +151,7 @@ saml::IPlugIn* XMLRequestMapFactory(const DOMElement* e)
 
 short Override::acceptNode(const DOMNode* node) const
 {
-    if (!XMLString::equals(node->getNamespaceURI(),shibtarget::XML::SHIBTARGET_NS))
+    if (!XMLString::equals(node->getNamespaceURI(),shibspconstants::SHIB1SPCONFIG_NS))
         return FILTER_ACCEPT;
     const XMLCh* name=node->getLocalName();
     if (XMLString::equals(name,Host) ||
@@ -171,13 +171,13 @@ void Override::loadACL(const DOMElement* e, Category& log)
         const DOMElement* acl=XMLHelper::getFirstChildElement(e,htaccess);
         if (acl) {
             log.info("building Apache htaccess provider...");
-            plugin=saml::SAMLConfig::getConfig().getPlugMgr().newPlugin(shibtarget::XML::htAccessControlType,acl);
+            plugin=saml::SAMLConfig::getConfig().getPlugMgr().newPlugin(HTACCESS_ACCESSCONTROL,acl);
         }
         else {
             acl=XMLHelper::getFirstChildElement(e,AccessControl);
             if (acl) {
                 log.info("building XML-based Access Control provider...");
-                plugin=saml::SAMLConfig::getConfig().getPlugMgr().newPlugin(shibtarget::XML::XMLAccessControlType,acl);
+                plugin=saml::SAMLConfig::getConfig().getPlugMgr().newPlugin(XML_ACCESSCONTROL,acl);
             }
             else {
                 acl=XMLHelper::getFirstChildElement(e,AccessControlProvider);
@@ -246,7 +246,7 @@ Override::Override(const DOMElement* e, Category& log, const Override* base) : m
                 
                 if (*n) {
                     // Create a placeholder Path element for the first path segment and replant under it.
-                    DOMElement* newpath=path->getOwnerDocument()->createElementNS(shibtarget::XML::SHIBTARGET_NS,Path);
+                    DOMElement* newpath=path->getOwnerDocument()->createElementNS(shibspconstants::SHIB1SPCONFIG_NS,Path);
                     newpath->setAttributeNS(NULL,name,namebuf);
                     path->setAttributeNS(NULL,name,n);
                     path->getParentNode()->replaceChild(newpath,path);

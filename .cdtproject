@@ -9,6 +9,7 @@
     <item id="org.eclipse.cdt.core.pathentry">
 <pathentry kind="src" path="shibsp"/>
 <pathentry kind="out" path=""/>
+<pathentry kind="src" path="odbc-store"/>
 </item>
 </data>
 </cdtproject>

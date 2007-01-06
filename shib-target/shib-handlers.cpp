@@ -308,7 +308,7 @@ DDF SAML1Consumer::receive(const DDF& in)
     // Access the application config.
     STConfig& stc=static_cast<STConfig&>(ShibTargetConfig::getConfig());
     IConfig* conf=stc.getINI();
-    saml::Locker confLocker(conf);
+    xmltooling::Locker confLocker(conf);
 
     auto_ptr_XMLCh wrecipient(recipient);
 

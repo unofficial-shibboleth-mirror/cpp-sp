@@ -28,7 +28,6 @@
 #include <saml/saml2/metadata/Metadata.h>
 #include <saml/saml2/metadata/MetadataProvider.h>
 #include <xmltooling/security/TrustEngine.h>
-#include <xmltooling/util/Threads.h>
 
 #include <saml/saml.h>
 #undef SAML10_PROTOCOL_ENUM
@@ -159,47 +158,6 @@ namespace shibboleth
 
         // enables runtime and clients to access configuration
         static ShibConfig& getConfig();
-    };
-
-    /* Helper classes for implementing reloadable XML-based config files
-       The ILockable interface will usually be inherited twice, once as
-       part of the external interface to clients and once as an implementation
-       detail of the reloading class below.
-     */
-    
-    class SHIB_EXPORTS ReloadableXMLFileImpl
-    {
-    public:
-        ReloadableXMLFileImpl(const char* pathname);
-        ReloadableXMLFileImpl(const DOMElement* pathname);
-        virtual ~ReloadableXMLFileImpl();
-        
-    protected:
-        DOMDocument* m_doc;
-        const DOMElement* m_root;
-    };
-
-    class SHIB_EXPORTS ReloadableXMLFile : protected virtual saml::ILockable
-    {
-    public:
-        ReloadableXMLFile(const DOMElement* e);
-        ~ReloadableXMLFile() { delete m_lock; delete m_impl; }
-
-        virtual void lock();
-        virtual void unlock() { if (m_lock) m_lock->unlock(); }
-
-        ReloadableXMLFileImpl* getImplementation() const;
-
-    protected:
-        virtual ReloadableXMLFileImpl* newImplementation(const char* pathname, bool first=true) const=0;
-        virtual ReloadableXMLFileImpl* newImplementation(const DOMElement* e, bool first=true) const=0;
-        mutable ReloadableXMLFileImpl* m_impl;
-        
-    private:
-        const DOMElement* m_root;
-        std::string m_source;
-        time_t m_filestamp;
-        xmltooling::RWLock* m_lock;
     };
 }
 

@@ -262,10 +262,6 @@
 			>
 		</File>
 		<File
-			RelativePath="XML.cpp"
-			>
-		</File>
-		<File
 			RelativePath="XMLRequestMapper.cpp"
 			>
 		</File>

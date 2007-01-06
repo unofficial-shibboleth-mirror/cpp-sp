@@ -1155,7 +1155,7 @@ DDF MemorySessionCache::receive(const DDF& in)
 #endif
 
     // Find application.
-    saml::Locker confLocker(ShibTargetConfig::getConfig().getINI());
+    xmltooling::Locker confLocker(ShibTargetConfig::getConfig().getINI());
     const char* aid=in["application_id"].string();
     const IApplication* app=aid ? ShibTargetConfig::getConfig().getINI()->getApplication(aid) : NULL;
     if (!app) {

@@ -74,10 +74,10 @@ namespace {
     #pragma warning( disable : 4250 )
 #endif
 
-    class XMLAccessControl : public IAccessControl, public xmltooling::ReloadableXMLFile
+    class XMLAccessControl : public IAccessControl, public ReloadableXMLFile
     {
     public:
-        XMLAccessControl(const DOMElement* e) : xmltooling::ReloadableXMLFile(e), m_rootAuthz(NULL) {
+        XMLAccessControl(const DOMElement* e) : ReloadableXMLFile(e), m_rootAuthz(NULL) {
             load(); // guarantees an exception or the policy is loaded
         }
         
@@ -98,12 +98,12 @@ namespace {
     #pragma warning( pop )
 #endif
 
-    static const XMLCh AccessControl[] = UNICODE_LITERAL_13(A,c,c,e,s,s,C,o,n,t,r,o,l);
-    static const XMLCh require[] = UNICODE_LITERAL_7(r,e,q,u,i,r,e);
-    static const XMLCh NOT[] = UNICODE_LITERAL_3(N,O,T);
-    static const XMLCh AND[] = UNICODE_LITERAL_3(A,N,D);
-    static const XMLCh OR[] = UNICODE_LITERAL_2(O,R);
-    static const XMLCh _Rule[] = UNICODE_LITERAL_4(R,u,l,e);
+    static const XMLCh AccessControl[] =    UNICODE_LITERAL_13(A,c,c,e,s,s,C,o,n,t,r,o,l);
+    static const XMLCh require[] =          UNICODE_LITERAL_7(r,e,q,u,i,r,e);
+    static const XMLCh NOT[] =              UNICODE_LITERAL_3(N,O,T);
+    static const XMLCh AND[] =              UNICODE_LITERAL_3(A,N,D);
+    static const XMLCh OR[] =               UNICODE_LITERAL_2(O,R);
+    static const XMLCh _Rule[] =            UNICODE_LITERAL_4(R,u,l,e);
 }
 
 IPlugIn* XMLAccessControlFactory(const DOMElement* e)

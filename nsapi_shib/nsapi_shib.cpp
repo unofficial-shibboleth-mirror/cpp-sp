@@ -32,6 +32,7 @@
 #endif
 
 #include <shibsp/SPConfig.h>
+#include <xmltooling/util/Threads.h>
 
 // SAML Runtime
 #include <saml/saml.h>
@@ -140,9 +141,9 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, Session* sn, Request* rq
             return REQ_ABORTED;
         }
 
-        SAMLConfig::getConfig().getPlugMgr().regFactory(shibtarget::XML::NativeRequestMapType,&SunRequestMapFactory);
+        SAMLConfig::getConfig().getPlugMgr().regFactory(NATIVE_REQUESTMAP_PROVIDER,&SunRequestMapFactory);
         // We hijack the legacy type so that 1.2 config files will load this plugin
-        SAMLConfig::getConfig().getPlugMgr().regFactory(shibtarget::XML::LegacyRequestMapType,&SunRequestMapFactory);
+        SAMLConfig::getConfig().getPlugMgr().regFactory(LEGACY_REQUESTMAP_PROVIDER,&SunRequestMapFactory);
 
         if (!g_Config->load(config)) {
             g_Config=NULL;
@@ -423,7 +424,7 @@ IPlugIn* SunRequestMapFactory(const DOMElement* e)
 
 SunRequestMapper::SunRequestMapper(const DOMElement* e) : m_mapper(NULL), m_stKey(NULL), m_propsKey(NULL)
 {
-    IPlugIn* p=SAMLConfig::getConfig().getPlugMgr().newPlugin(shibtarget::XML::XMLRequestMapType,e);
+    IPlugIn* p=SAMLConfig::getConfig().getPlugMgr().newPlugin(XML_REQUESTMAP_PROVIDER,e);
     m_mapper=dynamic_cast<IRequestMapper*>(p);
     if (!m_mapper) {
         delete p;

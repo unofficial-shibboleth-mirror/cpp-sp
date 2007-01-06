@@ -41,8 +41,11 @@
 
 #include <shib-target/shib-target.h>
 
-#include <xmltooling/util/NDC.h>
 #include <log4cpp/Category.hh>
+#include <xmltooling/util/NDC.h>
+#include <xmltooling/util/Threads.h>
+#include <xmltooling/util/XMLHelper.h>
+using xmltooling::XMLHelper;
 
 #include <sstream>
 
@@ -354,12 +357,12 @@ static void mysqlInit(const DOMElement* e, Category& log)
     arg_array.push_back("shibboleth");
 
     // grab any MySQL parameters from the config file
-    e=saml::XML::getFirstChildElement(e,shibtarget::XML::SHIBTARGET_NS,Argument);
+    e=XMLHelper::getFirstChildElement(e,Argument);
     while (e) {
         auto_ptr_char arg(e->getFirstChild()->getNodeValue());
         if (arg.get())
             arg_array.push_back(arg.get());
-        e=saml::XML::getNextSiblingElement(e,shibtarget::XML::SHIBTARGET_NS,Argument);
+        e=XMLHelper::getNextSiblingElement(e,Argument);
     }
 
     // Compute the argument array
@@ -444,7 +447,7 @@ ShibMySQLCCache::ShibMySQLCCache(const DOMElement* e) : MySQLBase(e), m_storeAtt
 #endif
 
     m_cache = dynamic_cast<ISessionCache*>(
-        SAMLConfig::getConfig().getPlugMgr().newPlugin(shibtarget::XML::MemorySessionCacheType, e)
+        SAMLConfig::getConfig().getPlugMgr().newPlugin(MEMORY_SESSIONCACHE, e)
     );
     if (!m_cache->setBackingStore(this)) {
         delete m_cache;
@@ -944,8 +947,8 @@ IPlugIn* new_mysql_replay(const DOMElement* e)
 extern "C" int SHIBMYSQL_EXPORTS saml_extension_init(void*)
 {
     // register this ccache type
-    SAMLConfig::getConfig().getPlugMgr().regFactory(shibtarget::XML::MySQLReplayCacheType, &new_mysql_replay);
-    SAMLConfig::getConfig().getPlugMgr().regFactory(shibtarget::XML::MySQLSessionCacheType, &new_mysql_ccache);
+    SAMLConfig::getConfig().getPlugMgr().regFactory(MYSQL_REPLAYCACHE, &new_mysql_replay);
+    SAMLConfig::getConfig().getPlugMgr().regFactory(MYSQL_SESSIONCACHE, &new_mysql_ccache);
     return 0;
 }
 
@@ -954,6 +957,6 @@ extern "C" void SHIBMYSQL_EXPORTS saml_extension_term()
     // Shutdown MySQL
     if (g_MySQLInitialized)
         mysql_server_end();
-    SAMLConfig::getConfig().getPlugMgr().unregFactory(shibtarget::XML::MySQLReplayCacheType);
-    SAMLConfig::getConfig().getPlugMgr().unregFactory(shibtarget::XML::MySQLSessionCacheType);
+    SAMLConfig::getConfig().getPlugMgr().unregFactory(MYSQL_REPLAYCACHE);
+    SAMLConfig::getConfig().getPlugMgr().unregFactory(MYSQL_SESSIONCACHE);
 }

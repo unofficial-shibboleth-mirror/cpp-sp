@@ -35,6 +35,7 @@
 #include <saml/saml2/metadata/ChainingMetadataProvider.h>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/security/ChainingTrustEngine.h>
+#include <xmltooling/util/ReloadableXMLFile.h>
 
 using namespace shibsp;
 using namespace shibtarget;
@@ -145,13 +146,10 @@ namespace {
 
     // Top-level configuration implementation
     class XMLConfig;
-    class XMLConfigImpl : public ReloadableXMLFileImpl, public DOMPropertySet, public DOMNodeFilter
+    class XMLConfigImpl : public DOMPropertySet, public DOMNodeFilter
     {
     public:
-        XMLConfigImpl(const char* pathname, bool first, const XMLConfig* outer)
-            : ReloadableXMLFileImpl(pathname), m_outer(outer), m_requestMapper(NULL) { init(first); }
-        XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* outer)
-            : ReloadableXMLFileImpl(e), m_outer(outer), m_requestMapper(NULL) { init(first); }
+        XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* outer);
         ~XMLConfigImpl();
         
         IRequestMapper* m_requestMapper;
@@ -162,72 +160,115 @@ namespace {
         // Provides filter to exclude special config elements.
         short acceptNode(const DOMNode* node) const;
 
+        void setDocument(DOMDocument* doc) {
+            m_document = doc;
+        }
+
     private:
-        void init(bool first);
+        void doExtensions(const DOMElement* e, const char* label, Category& log);
+
         const XMLConfig* m_outer;
+        DOMDocument* m_document;
     };
-    
+
+#if defined (_MSC_VER)
+    #pragma warning( push )
+    #pragma warning( disable : 4250 )
+#endif
+
     class XMLConfig : public IConfig, public ReloadableXMLFile
     {
     public:
-        XMLConfig(const DOMElement* e) : ReloadableXMLFile(e), m_listener(NULL), m_sessionCache(NULL), m_replayCache(NULL) {}
-        ~XMLConfig() {
-            delete m_impl;
-            m_impl=NULL;
-            delete m_sessionCache;
-            m_sessionCache=NULL;
-            delete m_replayCache;
-            m_replayCache=NULL;
-            delete m_listener;
-            m_listener=NULL;
+        XMLConfig(const DOMElement* e)
+            : ReloadableXMLFile(e), m_impl(NULL), m_listener(NULL), m_sessionCache(NULL), m_replayCache(NULL) {
+        }
+        
+        void init() {
+            load();
         }
 
-        void init() { getImplementation(); }
+        ~XMLConfig() {
+            delete m_impl;
+            delete m_sessionCache;
+            delete m_replayCache;
+            delete m_listener;
+        }
 
         // PropertySet
-        pair<bool,bool> getBool(const char* name, const char* ns=NULL) const {return static_cast<XMLConfigImpl*>(m_impl)->getBool(name,ns);}
-        pair<bool,const char*> getString(const char* name, const char* ns=NULL) const {return static_cast<XMLConfigImpl*>(m_impl)->getString(name,ns);}
-        pair<bool,const XMLCh*> getXMLString(const char* name, const char* ns=NULL) const {return static_cast<XMLConfigImpl*>(m_impl)->getXMLString(name,ns);}
-        pair<bool,unsigned int> getUnsignedInt(const char* name, const char* ns=NULL) const {return static_cast<XMLConfigImpl*>(m_impl)->getUnsignedInt(name,ns);}
-        pair<bool,int> getInt(const char* name, const char* ns=NULL) const {return static_cast<XMLConfigImpl*>(m_impl)->getInt(name,ns);}
-        const PropertySet* getPropertySet(const char* name, const char* ns="urn:mace:shibboleth:target:config:1.0") const {return static_cast<XMLConfigImpl*>(m_impl)->getPropertySet(name,ns);}
-        const DOMElement* getElement() const {return static_cast<XMLConfigImpl*>(m_impl)->getElement();}
+        pair<bool,bool> getBool(const char* name, const char* ns=NULL) const {return m_impl->getBool(name,ns);}
+        pair<bool,const char*> getString(const char* name, const char* ns=NULL) const {return m_impl->getString(name,ns);}
+        pair<bool,const XMLCh*> getXMLString(const char* name, const char* ns=NULL) const {return m_impl->getXMLString(name,ns);}
+        pair<bool,unsigned int> getUnsignedInt(const char* name, const char* ns=NULL) const {return m_impl->getUnsignedInt(name,ns);}
+        pair<bool,int> getInt(const char* name, const char* ns=NULL) const {return m_impl->getInt(name,ns);}
+        const PropertySet* getPropertySet(const char* name, const char* ns="urn:mace:shibboleth:target:config:1.0") const {return m_impl->getPropertySet(name,ns);}
+        const DOMElement* getElement() const {return m_impl->getElement();}
 
         // IConfig
         ListenerService* getListener() const {return m_listener;}
         ISessionCache* getSessionCache() const {return m_sessionCache;}
         IReplayCache* getReplayCache() const {return m_replayCache;}
-        IRequestMapper* getRequestMapper() const {return static_cast<XMLConfigImpl*>(m_impl)->m_requestMapper;}
+        IRequestMapper* getRequestMapper() const {return m_impl->m_requestMapper;}
         const IApplication* getApplication(const char* applicationId) const {
-            map<string,IApplication*>::const_iterator i=static_cast<XMLConfigImpl*>(m_impl)->m_appmap.find(applicationId);
-            return (i!=static_cast<XMLConfigImpl*>(m_impl)->m_appmap.end()) ? i->second : NULL;
+            map<string,IApplication*>::const_iterator i=m_impl->m_appmap.find(applicationId);
+            return (i!=m_impl->m_appmap.end()) ? i->second : NULL;
         }
 
         CredentialResolver* getCredentialResolver(const char* id) const {
             if (id) {
-                XMLConfigImpl* impl=static_cast<XMLConfigImpl*>(getImplementation());
-                map<string,CredentialResolver*>::const_iterator i=impl->m_credResolverMap.find(id);
-                if (i!=impl->m_credResolverMap.end())
+                map<string,CredentialResolver*>::const_iterator i=m_impl->m_credResolverMap.find(id);
+                if (i!=m_impl->m_credResolverMap.end())
                     return i->second;
             }
             return NULL;
         }
 
     protected:
-        virtual ReloadableXMLFileImpl* newImplementation(const char* pathname, bool first=true) const;
-        virtual ReloadableXMLFileImpl* newImplementation(const DOMElement* e, bool first=true) const;
+        pair<bool,DOMElement*> load();
 
     private:
         friend class XMLConfigImpl;
+        XMLConfigImpl* m_impl;
         mutable ListenerService* m_listener;
         mutable ISessionCache* m_sessionCache;
         mutable IReplayCache* m_replayCache;
     };
 
+#if defined (_MSC_VER)
+    #pragma warning( pop )
+#endif
+
+    static const XMLCh AAPProvider[] =          UNICODE_LITERAL_11(A,A,P,P,r,o,v,i,d,e,r);
+    static const XMLCh Application[] =          UNICODE_LITERAL_11(A,p,p,l,i,c,a,t,i,o,n);
+    static const XMLCh Applications[] =         UNICODE_LITERAL_12(A,p,p,l,i,c,a,t,i,o,n,s);
+    static const XMLCh AttributeFactory[] =     UNICODE_LITERAL_16(A,t,t,r,i,b,u,t,e,F,a,c,t,o,r,y);
     static const XMLCh Credentials[] =          UNICODE_LITERAL_11(C,r,e,d,e,n,t,i,a,l,s);
+    static const XMLCh CredentialsProvider[] =  UNICODE_LITERAL_19(C,r,e,d,e,n,t,i,a,l,s,P,r,o,v,i,d,e,r);
+    static const XMLCh CredentialUse[] =        UNICODE_LITERAL_13(C,r,e,d,e,n,t,i,a,l,U,s,e);
+    static const XMLCh DiagnosticService[] =    UNICODE_LITERAL_17(D,i,a,g,n,o,s,t,i,c,S,e,r,v,i,c,e);
+    static const XMLCh fatal[] =                UNICODE_LITERAL_5(f,a,t,a,l);
     static const XMLCh FileResolver[] =         UNICODE_LITERAL_12(F,i,l,e,R,e,s,o,l,v,e,r);
+    static const XMLCh Global[] =               UNICODE_LITERAL_6(G,l,o,b,a,l);
     static const XMLCh Id[] =                   UNICODE_LITERAL_2(I,d);
-    static const XMLCh type[] =                 UNICODE_LITERAL_4(t,y,p,e);
+    static const XMLCh Implementation[] =       UNICODE_LITERAL_14(I,m,p,l,e,m,e,n,t,a,t,i,o,n);
+    static const XMLCh InProcess[] =            UNICODE_LITERAL_9(I,n,P,r,o,c,e,s,s);
+    static const XMLCh Library[] =              UNICODE_LITERAL_7(L,i,b,r,a,r,y);
+    static const XMLCh Listener[] =             UNICODE_LITERAL_8(L,i,s,t,e,n,e,r);
+    static const XMLCh Local[] =                UNICODE_LITERAL_5(L,o,c,a,l);
+    static const XMLCh logger[] =               UNICODE_LITERAL_6(l,o,g,g,e,r);
+    static const XMLCh MemoryListener[] =       UNICODE_LITERAL_14(M,e,m,o,r,y,L,i,s,t,e,n,e,r);
+    static const XMLCh MemorySessionCache[] =   UNICODE_LITERAL_18(M,e,m,o,r,y,S,e,s,s,i,o,n,C,a,c,h,e);
+    static const XMLCh RelyingParty[] =         UNICODE_LITERAL_12(R,e,l,y,i,n,g,P,a,r,t,y);
+    static const XMLCh ReplayCache[] =          UNICODE_LITERAL_11(R,e,p,l,a,y,C,a,c,h,e);
+    static const XMLCh RequestMapProvider[] =   UNICODE_LITERAL_18(R,e,q,u,e,s,t,M,a,p,P,r,o,v,i,d,e,r);
+    static const XMLCh SessionCache[] =         UNICODE_LITERAL_12(S,e,s,s,i,o,n,C,a,c,h,e);
+    static const XMLCh SessionInitiator[] =     UNICODE_LITERAL_16(S,e,s,s,i,o,n,I,n,i,t,i,a,t,o,r);
+    static const XMLCh OutOfProcess[] =         UNICODE_LITERAL_12(O,u,t,O,f,P,r,o,c,e,s,s);
+    static const XMLCh TCPListener[] =          UNICODE_LITERAL_11(T,C,P,L,i,s,t,e,n,e,r);
+    static const XMLCh TrustProvider[] =        UNICODE_LITERAL_13(T,r,u,s,t,P,r,o,v,i,d,e,r);
+    static const XMLCh UnixListener[] =         UNICODE_LITERAL_12(U,n,i,x,L,i,s,t,e,n,e,r);
+    static const XMLCh _MetadataProvider[] =    UNICODE_LITERAL_16(M,e,t,a,d,a,t,a,P,r,o,v,i,d,e,r);
+    static const XMLCh _path[] =                UNICODE_LITERAL_4(p,a,t,h);
+    static const XMLCh _type[] =                UNICODE_LITERAL_4(t,y,p,e);
     
 }
 
@@ -246,7 +287,7 @@ XMLApplication::XMLApplication(
 #ifdef _DEBUG
     xmltooling::NDC ndc("XMLApplication");
 #endif
-    Category& log=Category::getInstance("shibtarget.XMLApplication");
+    Category& log=Category::getInstance(SHIBT_LOGCAT".Application");
 
     try {
         // First load any property sets.
@@ -255,6 +296,7 @@ XMLApplication::XMLApplication(
         root_remap["shireURL"]="handlerURL";
         root_remap["shireSSL"]="handlerSSL";
         load(e,log,this,&root_remap);
+
         const PropertySet* propcheck=getPropertySet("Errors");
         if (propcheck && !propcheck->getString("session").first)
             throw ConfigurationException("<Errors> element requires 'session' (or deprecated 'shire') attribute");
@@ -262,32 +304,35 @@ XMLApplication::XMLApplication(
         if (propcheck && !propcheck->getString("handlerURL").first)
             throw ConfigurationException("<Sessions> element requires 'handlerURL' (or deprecated 'shireURL') attribute");
 
-        m_hash=getId();
-        m_hash+=getString("providerId").second;
-        m_hash=SAMLArtifact::toHex(SAMLArtifactType0001::generateSourceId(m_hash.c_str()));
-
         SPConfig& conf=SPConfig::getConfig();
         XMLToolingConfig& xmlConf=XMLToolingConfig::getConfig();
         opensaml::SAMLConfig& samlConf=opensaml::SAMLConfig::getConfig();
         SAMLConfig& shibConf=SAMLConfig::getConfig();
 
+        m_hash=getId();
+        m_hash+=getString("providerId").second;
+        m_hash=samlConf.hashSHA1(m_hash.c_str(), true);
+
+        const DOMElement* child;
+        IPlugIn* plugin=NULL;
+
         // Process handlers.
         bool hardACS=false, hardSessionInit=false;
-        DOMElement* handler=saml::XML::getFirstChildElement(propcheck->getElement());
-        while (handler) {
+        child = XMLHelper::getFirstChildElement(propcheck->getElement());
+        while (child) {
             // A handler is split across a property set and the plugin itself, which is based on the Binding property.
             // We build both objects first and then insert them into various structures for lookup.
             IHandler* hobj=NULL;
             DOMPropertySet* hprops=new DOMPropertySet();
             try {
-                hprops->load(handler,log,this); // filter irrelevant for now, no embedded elements expected
+                hprops->load(child,log,this); // filter irrelevant for now, no embedded elements expected
                 const char* bindprop=hprops->getString("Binding").second;
                 if (!bindprop)
                     throw ConfigurationException("Handler element has no Binding attribute, skipping it...");
-                IPlugIn* hplug=shibConf.getPlugMgr().newPlugin(bindprop,handler);
-                hobj=dynamic_cast<IHandler*>(hplug);
+                plugin=shibConf.getPlugMgr().newPlugin(bindprop,child);
+                hobj=dynamic_cast<IHandler*>(plugin);
                 if (!hobj) {
-                    delete hplug;
+                    delete plugin;
                     throw UnknownExtensionException(
                         "Plugin for binding ($1) does not implement IHandler interface.",xmltooling::params(1,bindprop)
                         );
@@ -303,8 +348,7 @@ XMLApplication::XMLApplication(
             const char* location=hprops ? hprops->getString("Location").second : NULL;
             if (!location) {
                 delete hprops;
-                hprops=NULL;
-                handler=saml::XML::getNextSiblingElement(handler);
+                child = XMLHelper::getNextSiblingElement(child);
                 continue;
             }
             
@@ -320,7 +364,7 @@ XMLApplication::XMLApplication(
                 m_handlerMap[string("/") + location]=hobj;
 
             // If it's an ACS or SI, handle index/id mappings and defaulting.
-            if (XMLHelper::isNodeNamed(handler,samlconstants::SAML20MD_NS,AssertionConsumerService::LOCAL_NAME)) {
+            if (XMLHelper::isNodeNamed(child,samlconstants::SAML20MD_NS,AssertionConsumerService::LOCAL_NAME)) {
                 // Map it.
 #ifdef HAVE_GOOD_STL
                 const XMLCh* binding=hprops->getXMLString("Binding").second;
@@ -345,7 +389,7 @@ XMLApplication::XMLApplication(
                         m_acsDefault=hobj;
                 }
             }
-            else if (XMLHelper::isNodeNamed(handler,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(SessionInitiator))) {
+            else if (XMLString::equals(child->getLocalName(),SessionInitiator)) {
                 pair<bool,const char*> si_id=hprops->getString("id");
                 if (si_id.first && si_id.second)
                     m_sessionInitMap[si_id.second]=hobj;
@@ -361,7 +405,7 @@ XMLApplication::XMLApplication(
                         m_sessionInitDefault=hobj;
                 }
             }
-            handler=saml::XML::getNextSiblingElement(handler);
+            child = XMLHelper::getNextSiblingElement(child);
         }
 
         // If no handlers defined at the root, assume a legacy configuration.
@@ -370,25 +414,25 @@ XMLApplication::XMLApplication(
             // We use the Sessions element itself as the PropertySet.
 
             xmltooling::auto_ptr_char b1(shibspconstants::SHIB1_SESSIONINIT_PROFILE_URI);
-            IPlugIn* hplug=shibConf.getPlugMgr().newPlugin(b1.get(),propcheck->getElement());
-            IHandler* h1=dynamic_cast<IHandler*>(hplug);
+            plugin=shibConf.getPlugMgr().newPlugin(b1.get(),propcheck->getElement());
+            IHandler* h1=dynamic_cast<IHandler*>(plugin);
             if (!h1) {
-                delete hplug;
-                throw UnsupportedExtensionException(
-                    "Plugin for binding ($1) does not implement IHandler interface.",saml::params(1,b1.get())
+                delete plugin;
+                throw UnknownExtensionException(
+                    "Plugin for binding ($1) does not implement IHandler interface.",xmltooling::params(1,b1.get())
                     );
             }
             h1->setProperties(propcheck);
             m_handlers.push_back(h1);
             m_sessionInitDefault=h1;
 
-            xmltooling::auto_ptr_char b2(SAMLBrowserProfile::BROWSER_POST);
-            hplug=shibConf.getPlugMgr().newPlugin(b2.get(),propcheck->getElement());
-            IHandler* h2=dynamic_cast<IHandler*>(hplug);
+            xmltooling::auto_ptr_char b2(samlconstants::SAML1_PROFILE_BROWSER_POST);
+            plugin=shibConf.getPlugMgr().newPlugin(b2.get(),propcheck->getElement());
+            IHandler* h2=dynamic_cast<IHandler*>(plugin);
             if (!h2) {
-                delete hplug;
-                throw UnsupportedExtensionException(
-                    "Plugin for binding ($1) does not implement IHandler interface.",saml::params(1,b2.get())
+                delete plugin;
+                throw UnknownExtensionException(
+                    "Plugin for binding ($1) does not implement IHandler interface.",xmltooling::params(1,b2.get())
                     );
             }
             h2->setProperties(propcheck);
@@ -398,61 +442,59 @@ XMLApplication::XMLApplication(
         }
         
         // Process general configuration elements.
-        unsigned int i;
-        DOMNodeList* nlist=e->getElementsByTagNameNS(saml::XML::SAML_NS,L(AttributeDesignator));
+        XMLSize_t i;
+        DOMNodeList* nlist=e->getElementsByTagNameNS(samlconstants::SAML1_NS,AttributeDesignator::LOCAL_NAME);
         for (i=0; nlist && i<nlist->getLength(); i++)
             if (nlist->item(i)->getParentNode()->isSameNode(e))
                 m_designators.push_back(new SAMLAttributeDesignator(static_cast<DOMElement*>(nlist->item(i))));
 
-        nlist=e->getElementsByTagNameNS(saml::XML::SAML_NS,L(Audience));
+        nlist=e->getElementsByTagNameNS(samlconstants::SAML1_NS,Audience::LOCAL_NAME);
         for (i=0; nlist && i<nlist->getLength(); i++)
-            if (nlist->item(i)->getParentNode()->isSameNode(e))
+            if (nlist->item(i)->getParentNode()->isSameNode(e) && nlist->item(i)->hasChildNodes())
                 m_audiences.push_back(nlist->item(i)->getFirstChild()->getNodeValue());
 
         // Always include our own providerId as an audience.
         m_audiences.push_back(getXMLString("providerId").second);
 
         if (conf.isEnabled(SPConfig::AAP)) {
-            nlist=e->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(AAPProvider));
-            for (i=0; nlist && i<nlist->getLength(); i++) {
-                if (nlist->item(i)->getParentNode()->isSameNode(e)) {
-                    xmltooling::auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
-                    log.info("building AAP provider of type %s...",type.get());
-                    try {
-                        IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
-                        IAAP* aap=dynamic_cast<IAAP*>(plugin);
-                        if (aap)
-                            m_aaps.push_back(aap);
-                        else {
-                            delete plugin;
-                            log.crit("plugin was not an AAP provider");
-                        }
-                    }
-                    catch (exception& ex) {
-                        log.crit("error building AAP provider: %s",ex.what());
+            child = XMLHelper::getFirstChildElement(e,AAPProvider);
+            while (child) {
+                xmltooling::auto_ptr_char type(child->getAttributeNS(NULL,_type));
+                log.info("building AAP provider of type %s...",type.get());
+                try {
+                    plugin=shibConf.getPlugMgr().newPlugin(type.get(),child);
+                    IAAP* aap=dynamic_cast<IAAP*>(plugin);
+                    if (aap)
+                        m_aaps.push_back(aap);
+                    else {
+                        delete plugin;
+                        log.crit("plugin was not an AAP provider");
                     }
                 }
+                catch (exception& ex) {
+                    log.crit("error building AAP provider: %s", ex.what());
+                }
+
+                child = XMLHelper::getNextSiblingElement(child,AAPProvider);
             }
         }
 
         if (conf.isEnabled(SPConfig::Metadata)) {
             vector<MetadataProvider*> os2providers;
-            nlist=e->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(MetadataProvider));
-            for (i=0; nlist && i<nlist->getLength(); i++) {
-                if (nlist->item(i)->getParentNode()->isSameNode(e)) {
-                    xmltooling::auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
-                    log.info("building metadata provider of type %s...",type.get());
-                    try {
-                        auto_ptr<MetadataProvider> mp(
-                            samlConf.MetadataProviderManager.newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)))
-                            );
-                        mp->init();
-                        os2providers.push_back(mp.release());
-                    }
-                    catch (exception& ex) {
-                        log.crit("error building metadata provider: %s",ex.what());
-                    }
+            child = XMLHelper::getFirstChildElement(e,_MetadataProvider);
+            while (child) {
+                xmltooling::auto_ptr_char type(child->getAttributeNS(NULL,_type));
+                log.info("building metadata provider of type %s...",type.get());
+                try {
+                    auto_ptr<MetadataProvider> mp(samlConf.MetadataProviderManager.newPlugin(type.get(),child));
+                    mp->init();
+                    os2providers.push_back(mp.release());
                 }
+                catch (exception& ex) {
+                    log.crit("error building/initializing metadata provider: %s", ex.what());
+                }
+
+                child = XMLHelper::getNextSiblingElement(child,_MetadataProvider);
             }
             
             if (os2providers.size()==1)
@@ -475,89 +517,69 @@ XMLApplication::XMLApplication(
 
         if (conf.isEnabled(SPConfig::Trust)) {
             ChainingTrustEngine* chainTrust = NULL;
-            nlist=e->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(TrustProvider));
-            for (i=0; nlist && i<nlist->getLength(); i++) {
-                if (nlist->item(i)->getParentNode()->isSameNode(e)) {
-                    xmltooling::auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
-                    log.info("building trust provider of type %s...",type.get());
-                    try {
-                        if (!m_trust) {
-                            // For compatibility with old engine types, we're assuming a Shib engine is likely,
-                            // which requires chaining, so we'll build that regardless.
-                            m_trust = xmlConf.TrustEngineManager.newPlugin(CHAINING_TRUSTENGINE,NULL);
-                            chainTrust = dynamic_cast<ChainingTrustEngine*>(m_trust);
-                        }
-                        if (!strcmp(type.get(),"edu.internet2.middleware.shibboleth.common.provider.ShibbolethTrust")) {
-                            chainTrust->addTrustEngine(
-                                xmlConf.TrustEngineManager.newPlugin(
-                                    EXPLICIT_KEY_TRUSTENGINE,static_cast<DOMElement*>(nlist->item(i))
-                                )
-                            );
-                            chainTrust->addTrustEngine(
-                                xmlConf.TrustEngineManager.newPlugin(
-                                    SHIBBOLETH_PKIX_TRUSTENGINE,static_cast<DOMElement*>(nlist->item(i))
-                                )
-                            );
-                        }
-                        else if (!strcmp(type.get(),"edu.internet2.middleware.shibboleth.common.provider.BasicTrust")) {
-                            chainTrust->addTrustEngine(
-                                xmlConf.TrustEngineManager.newPlugin(
-                                    EXPLICIT_KEY_TRUSTENGINE,static_cast<DOMElement*>(nlist->item(i))
-                                )
-                            );
-                        }
-                        else {
-                            chainTrust->addTrustEngine(
-                                xmlConf.TrustEngineManager.newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)))
-                            );
-                        }
+            child = XMLHelper::getFirstChildElement(e,TrustProvider);
+            while (child) {
+                xmltooling::auto_ptr_char type(child->getAttributeNS(NULL,_type));
+                log.info("building trust provider of type %s...",type.get());
+                try {
+                    if (!m_trust) {
+                        // For compatibility with old engine types, we're assuming a Shib engine is likely,
+                        // which requires chaining, so we'll build that regardless.
+                        m_trust = xmlConf.TrustEngineManager.newPlugin(CHAINING_TRUSTENGINE,NULL);
+                        chainTrust = dynamic_cast<ChainingTrustEngine*>(m_trust);
                     }
-                    catch (exception& ex) {
-                        log.crit("error building trust provider: %s",ex.what());
+                    if (!strcmp(type.get(),"edu.internet2.middleware.shibboleth.common.provider.ShibbolethTrust")) {
+                        chainTrust->addTrustEngine(xmlConf.TrustEngineManager.newPlugin(EXPLICIT_KEY_TRUSTENGINE,child));
+                        chainTrust->addTrustEngine(xmlConf.TrustEngineManager.newPlugin(SHIBBOLETH_PKIX_TRUSTENGINE,child));
+                    }
+                    else if (!strcmp(type.get(),"edu.internet2.middleware.shibboleth.common.provider.BasicTrust")) {
+                        chainTrust->addTrustEngine(xmlConf.TrustEngineManager.newPlugin(EXPLICIT_KEY_TRUSTENGINE,child));
+                    }
+                    else {
+                        chainTrust->addTrustEngine(xmlConf.TrustEngineManager.newPlugin(type.get(),child));
                     }
                 }
+                catch (exception& ex) {
+                    log.crit("error building trust provider: %s",ex.what());
+                }
+    
+                child = XMLHelper::getNextSiblingElement(child,TrustProvider);
             }
         }
         
         // Finally, load credential mappings.
-        const DOMElement* cu=saml::XML::getFirstChildElement(e,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(CredentialUse));
-        if (cu) {
+        child = XMLHelper::getFirstChildElement(e,CredentialUse);
+        if (child) {
             m_credDefault=new DOMPropertySet();
-            m_credDefault->load(cu,log,this);
-            cu=saml::XML::getFirstChildElement(cu,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(RelyingParty));
-            while (cu) {
+            m_credDefault->load(child,log,this);
+            child = XMLHelper::getFirstChildElement(child,RelyingParty);
+            while (child) {
                 DOMPropertySet* rp=new DOMPropertySet();
-                rp->load(cu,log,this);
-                m_credMap[cu->getAttributeNS(NULL,SHIBT_L(Name))]=rp;
-                cu=saml::XML::getNextSiblingElement(cu,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(RelyingParty));
+                rp->load(child,log,this);
+                m_credMap[child->getAttributeNS(NULL,opensaml::saml2::Attribute::NAME_ATTRIB_NAME)]=rp;
+                child = XMLHelper::getNextSiblingElement(child,RelyingParty);
             }
         }
         
         if (conf.isEnabled(SPConfig::OutOfProcess)) {
             // Really finally, build local browser profile and binding objects.
-            m_profile=new ShibBrowserProfile(
-                this,
-                getMetadataProvider(),
-                getTrustEngine()
-                );
+            m_profile=new ShibBrowserProfile(this, getMetadataProvider(), getTrustEngine());
             m_bindingHook=new ShibHTTPHook(getTrustEngine());
             m_binding=SAMLBinding::getInstance(SAMLBinding::SOAP);
             SAMLSOAPHTTPBinding* bptr=dynamic_cast<SAMLSOAPHTTPBinding*>(m_binding);
             if (!bptr) {
                 log.fatal("binding implementation was not SOAP over HTTP");
-                throw UnsupportedExtensionException("binding implementation was not SOAP over HTTP");
+                throw UnknownExtensionException("binding implementation was not SOAP over HTTP");
             }
             bptr->addHook(m_bindingHook,m_bindingHook); // the hook is its own global context
         }
     }
-    catch (exception& e) {
-        log.errorStream() << "Error while processing applicaton element: " << e.what() << CategoryStream::ENDLINE;
+    catch (exception&) {
         cleanup();
         throw;
     }
 #ifndef _DEBUG
     catch (...) {
-        log.error("Unexpected error while processing application element");
         cleanup();
         throw;
     }
@@ -586,21 +608,21 @@ void XMLApplication::cleanup()
 
 short XMLApplication::acceptNode(const DOMNode* node) const
 {
-    if (saml::XML::isElementNamed(static_cast<const DOMElement*>(node),saml::XML::SAML_NS,L(AttributeDesignator)))
+    if (XMLHelper::isNodeNamed(node,samlconstants::SAML1_NS,AttributeDesignator::LOCAL_NAME))
         return FILTER_REJECT;
-    else if (saml::XML::isElementNamed(static_cast<const DOMElement*>(node),saml::XML::SAML_NS,L(Audience)))
+    else if (XMLHelper::isNodeNamed(node,samlconstants::SAML1_NS,Audience::LOCAL_NAME))
         return FILTER_REJECT;
     const XMLCh* name=node->getLocalName();
-    if (XMLString::equals(name,SHIBT_L(Application)) ||
+    if (XMLString::equals(name,Application) ||
         XMLString::equals(name,AssertionConsumerService::LOCAL_NAME) ||
         XMLString::equals(name,SingleLogoutService::LOCAL_NAME) ||
-        XMLString::equals(name,SHIBT_L(DiagnosticService)) ||
-        XMLString::equals(name,SHIBT_L(SessionInitiator)) ||
-        XMLString::equals(name,SHIBT_L(AAPProvider)) ||
-        XMLString::equals(name,SHIBT_L(CredentialUse)) ||
-        XMLString::equals(name,SHIBT_L(RelyingParty)) ||
-        XMLString::equals(name,SHIBT_L(MetadataProvider)) ||
-        XMLString::equals(name,SHIBT_L(TrustProvider)))
+        XMLString::equals(name,DiagnosticService) ||
+        XMLString::equals(name,SessionInitiator) ||
+        XMLString::equals(name,AAPProvider) ||
+        XMLString::equals(name,CredentialUse) ||
+        XMLString::equals(name,RelyingParty) ||
+        XMLString::equals(name,_MetadataProvider) ||
+        XMLString::equals(name,TrustProvider))
         return FILTER_REJECT;
 
     return FILTER_ACCEPT;
@@ -720,7 +742,7 @@ void XMLApplication::validateToken(SAMLAssertion* token, time_t ts, const RoleDe
 #ifdef _DEBUG
     xmltooling::NDC ndc("validateToken");
 #endif
-    Category& log=Category::getInstance("shibtarget.XMLApplication");
+    Category& log=Category::getInstance(SHIBT_LOGCAT".Application");
 
     // First we verify the time conditions, using the specified timestamp, if non-zero.
     SAMLConfig& config=SAMLConfig::getConfig();
@@ -826,231 +848,165 @@ const IHandler* XMLApplication::getHandler(const char* path) const
     return m_base ? m_base->getHandler(path) : NULL;
 }
 
-ReloadableXMLFileImpl* XMLConfig::newImplementation(const char* pathname, bool first) const
-{
-    return new XMLConfigImpl(pathname,first,this);
-}
-
-ReloadableXMLFileImpl* XMLConfig::newImplementation(const DOMElement* e, bool first) const
-{
-    return new XMLConfigImpl(e,first,this);
-}
-
 short XMLConfigImpl::acceptNode(const DOMNode* node) const
 {
-    if (XMLString::compareString(node->getNamespaceURI(),shibtarget::XML::SHIBTARGET_NS))
+    if (!XMLString::equals(node->getNamespaceURI(),shibspconstants::SHIB1SPCONFIG_NS))
         return FILTER_ACCEPT;
     const XMLCh* name=node->getLocalName();
-    if (XMLString::equals(name,SHIBT_L(Applications)) ||
-        XMLString::equals(name,SHIBT_L(AttributeFactory)) ||
-        XMLString::equals(name,SHIBT_L(CredentialsProvider)) ||
-        XMLString::equals(name,SHIBT_L(Extensions)) ||
-        XMLString::equals(name,SHIBT_L(Implementation)) ||
-        XMLString::equals(name,SHIBT_L(Listener)) ||
-        XMLString::equals(name,SHIBT_L(MemorySessionCache)) ||
-        XMLString::equals(name,SHIBT_L(MySQLReplayCache)) ||
-        XMLString::equals(name,SHIBT_L(MySQLSessionCache)) ||
-        XMLString::equals(name,SHIBT_L(RequestMap)) ||
-        XMLString::equals(name,SHIBT_L(RequestMapProvider)) ||
-        XMLString::equals(name,SHIBT_L(ReplayCache)) ||
-        XMLString::equals(name,SHIBT_L(SessionCache)) ||
-        XMLString::equals(name,SHIBT_L(TCPListener)) ||
-        XMLString::equals(name,SHIBT_L(UnixListener)))
+    if (XMLString::equals(name,Applications) ||
+        XMLString::equals(name,AttributeFactory) ||
+        XMLString::equals(name,Credentials) ||
+        XMLString::equals(name,CredentialsProvider) ||
+        XMLString::equals(name,Extensions::LOCAL_NAME) ||
+        XMLString::equals(name,Implementation) ||
+        XMLString::equals(name,Listener) ||
+        XMLString::equals(name,MemoryListener) ||
+        XMLString::equals(name,MemorySessionCache) ||
+        XMLString::equals(name,RequestMapProvider) ||
+        XMLString::equals(name,ReplayCache) ||
+        XMLString::equals(name,SessionCache) ||
+        XMLString::equals(name,TCPListener) ||
+        XMLString::equals(name,UnixListener))
         return FILTER_REJECT;
 
     return FILTER_ACCEPT;
 }
 
-void XMLConfigImpl::init(bool first)
+void XMLConfigImpl::doExtensions(const DOMElement* e, const char* label, Category& log)
+{
+    const DOMElement* exts=XMLHelper::getFirstChildElement(e,Extensions::LOCAL_NAME);
+    if (exts) {
+        exts=XMLHelper::getFirstChildElement(exts,Library);
+        while (exts) {
+            xmltooling::auto_ptr_char path(exts->getAttributeNS(NULL,_path));
+            try {
+                if (path.get()) {
+                    // TODO: replace with xmltooling extension load...
+                    SAMLConfig::getConfig().saml_register_extension(path.get(),(void*)exts);
+                    log.debug("loaded %s extension library (%s)", label, path.get());
+                }
+            }
+            catch (exception& e) {
+                const XMLCh* fatal=exts->getAttributeNS(NULL,fatal);
+                if (fatal && (*fatal==chLatin_t || *fatal==chDigit_1)) {
+                    log.fatal("unable to load mandatory %s extension library %s: %s", label, path.get(), e.what());
+                    throw;
+                }
+                else {
+                    log.crit("unable to load optional %s extension library %s: %s", label, path.get(), e.what());
+                }
+            }
+            exts=XMLHelper::getNextSiblingElement(exts,Library);
+        }
+    }
+}
+
+XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* outer) : m_outer(outer), m_requestMapper(NULL)
 {
 #ifdef _DEBUG
-    xmltooling::NDC ndc("init");
+    xmltooling::NDC ndc("XMLConfigImpl");
 #endif
-    Category& log=Category::getInstance("shibtarget.Config");
+    Category& log=Category::getInstance(SHIBT_LOGCAT".Config");
 
     try {
-        if (!saml::XML::isElementNamed(ReloadableXMLFileImpl::m_root,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(ShibbolethTargetConfig)) &&
-            !saml::XML::isElementNamed(ReloadableXMLFileImpl::m_root,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(SPConfig))) {
-            log.error("Construction requires a valid configuration file: (conf:SPConfig as root element)");
-            throw ConfigurationException("Construction requires a valid configuration file: (conf:SPConfig as root element)");
-        }
-
         SAMLConfig& shibConf=SAMLConfig::getConfig();
         SPConfig& conf=SPConfig::getConfig();
-        const DOMElement* SHAR=saml::XML::getFirstChildElement(ReloadableXMLFileImpl::m_root,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(SHAR));
+        const DOMElement* SHAR=XMLHelper::getFirstChildElement(e,OutOfProcess);
         if (!SHAR)
-            SHAR=saml::XML::getFirstChildElement(ReloadableXMLFileImpl::m_root,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Global));
-        if (!SHAR)
-            SHAR=saml::XML::getFirstChildElement(ReloadableXMLFileImpl::m_root,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(OutOfProcess));
-        const DOMElement* SHIRE=saml::XML::getFirstChildElement(ReloadableXMLFileImpl::m_root,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(SHIRE));
+            SHAR=XMLHelper::getFirstChildElement(e,Global);
+        const DOMElement* SHIRE=XMLHelper::getFirstChildElement(e,InProcess);
         if (!SHIRE)
-            SHIRE=saml::XML::getFirstChildElement(ReloadableXMLFileImpl::m_root,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Local));
-        if (!SHIRE)
-            SHIRE=saml::XML::getFirstChildElement(ReloadableXMLFileImpl::m_root,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(InProcess));
+            SHIRE=XMLHelper::getFirstChildElement(e,Local);
 
         // Initialize log4cpp manually in order to redirect log messages as soon as possible.
         if (conf.isEnabled(SPConfig::Logging)) {
-            const XMLCh* logger=NULL;
+            const XMLCh* logconf=NULL;
             if (conf.isEnabled(SPConfig::OutOfProcess))
-                logger=SHAR->getAttributeNS(NULL,SHIBT_L(logger));
+                logconf=SHAR->getAttributeNS(NULL,logger);
             else if (conf.isEnabled(SPConfig::InProcess))
-                logger=SHIRE->getAttributeNS(NULL,SHIBT_L(logger));
-            if (!logger || !*logger)
-                logger=ReloadableXMLFileImpl::m_root->getAttributeNS(NULL,SHIBT_L(logger));
-            if (logger && *logger) {
-                xmltooling::auto_ptr_char logpath(logger);
+                logconf=SHIRE->getAttributeNS(NULL,logger);
+            if (!logconf || !*logconf)
+                logconf=e->getAttributeNS(NULL,logger);
+            if (logconf && *logconf) {
+                xmltooling::auto_ptr_char logpath(logconf);
                 log.debug("loading new logging configuration from (%s), check log destination for status of configuration",logpath.get());
-                try {
-                    PropertyConfigurator::configure(logpath.get());
-                }
-                catch (ConfigureFailure& e) {
-                    log.error("Error reading logging configuration: %s",e.what());
-                }
+                XMLToolingConfig::getConfig().log_config(logpath.get());
             }
         }
         
         // First load any property sets.
         map<string,string> root_remap;
-        root_remap["SHAR"]="OutOfProcess";
-        root_remap["SHIRE"]="InProcess";
         root_remap["Global"]="OutOfProcess";
         root_remap["Local"]="InProcess";
-        load(ReloadableXMLFileImpl::m_root,log,this,&root_remap);
+        load(e,log,this,&root_remap);
+
+        const DOMElement* child;
+        IPlugIn* plugin=NULL;
+        string plugtype;
 
         // Much of the processing can only occur on the first instantiation.
         if (first) {
-            // Now load any extensions to insure any needed plugins are registered.
-            DOMElement* exts=
-                saml::XML::getFirstChildElement(ReloadableXMLFileImpl::m_root,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Extensions));
-            if (exts) {
-                exts=saml::XML::getFirstChildElement(exts,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Library));
-                while (exts) {
-                    xmltooling::auto_ptr_char path(exts->getAttributeNS(NULL,SHIBT_L(path)));
-                    try {
-                        SAMLConfig::getConfig().saml_register_extension(path.get(),exts);
-                        log.debug("loaded global extension library %s",path.get());
-                    }
-                    catch (exception& e) {
-                        const XMLCh* fatal=exts->getAttributeNS(NULL,SHIBT_L(fatal));
-                        if (fatal && (*fatal==chLatin_t || *fatal==chDigit_1)) {
-                            log.fatal("unable to load mandatory global extension library %s: %s", path.get(), e.what());
-                            throw;
-                        }
-                        else
-                            log.crit("unable to load optional global extension library %s: %s", path.get(), e.what());
-                    }
-                    exts=saml::XML::getNextSiblingElement(exts,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Library));
-                }
-            }
-            
-            if (conf.isEnabled(SPConfig::OutOfProcess)) {
-                exts=saml::XML::getFirstChildElement(SHAR,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Extensions));
-                if (exts) {
-                    exts=saml::XML::getFirstChildElement(exts,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Library));
-                    while (exts) {
-                        xmltooling::auto_ptr_char path(exts->getAttributeNS(NULL,SHIBT_L(path)));
-                        try {
-                            SAMLConfig::getConfig().saml_register_extension(path.get(),exts);
-                            log.debug("loaded Global extension library %s",path.get());
-                        }
-                        catch (exception& e) {
-                            const XMLCh* fatal=exts->getAttributeNS(NULL,SHIBT_L(fatal));
-                            if (fatal && (*fatal==chLatin_t || *fatal==chDigit_1)) {
-                                log.fatal("unable to load mandatory Global extension library %s: %s", path.get(), e.what());
-                                throw;
-                            }
-                            else
-                                log.crit("unable to load optional Global extension library %s: %s", path.get(), e.what());
-                        }
-                        exts=saml::XML::getNextSiblingElement(exts,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Library));
-                    }
-                }
-            }
 
-            if (conf.isEnabled(SPConfig::InProcess)) {
-                exts=saml::XML::getFirstChildElement(SHIRE,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Extensions));
-                if (exts) {
-                    exts=saml::XML::getFirstChildElement(exts,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Library));
-                    while (exts) {
-                        xmltooling::auto_ptr_char path(exts->getAttributeNS(NULL,SHIBT_L(path)));
-                        try {
-                            SAMLConfig::getConfig().saml_register_extension(path.get(),exts);
-                            log.debug("loaded Local extension library %s",path.get());
-                        }
-                        catch (exception& e) {
-                            const XMLCh* fatal=exts->getAttributeNS(NULL,SHIBT_L(fatal));
-                            if (fatal && (*fatal==chLatin_t || *fatal==chDigit_1)) {
-                                log.fatal("unable to load mandatory Local extension library %s: %s", path.get(), e.what());
-                                throw;
-                            }
-                            else
-                                log.crit("unable to load optional Local extension library %s: %s", path.get(), e.what());
-                        }
-                        exts=saml::XML::getNextSiblingElement(exts,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Library));
-                    }
-                }
-            }
+            // Extensions
+            doExtensions(e, "global", log);
+            if (conf.isEnabled(SPConfig::OutOfProcess))
+                doExtensions(SHAR, "out of process", log);
+
+            if (conf.isEnabled(SPConfig::InProcess))
+                doExtensions(SHIRE, "in process", log);
             
             // Instantiate the ListenerService and SessionCache objects.
             if (conf.isEnabled(SPConfig::Listener)) {
-                exts=saml::XML::getFirstChildElement(SHAR,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(UnixListener));
-                if (exts) {
-                    log.info("building Listener of type %s...",UNIX_LISTENER_SERVICE);
-                    m_outer->m_listener=conf.ListenerServiceManager.newPlugin(UNIX_LISTENER_SERVICE,exts);
+                child=XMLHelper::getFirstChildElement(SHAR,UnixListener);
+                if (child)
+                    plugtype=UNIX_LISTENER_SERVICE;
+                else {
+                    child=XMLHelper::getFirstChildElement(SHAR,TCPListener);
+                    if (child)
+                        plugtype=TCP_LISTENER_SERVICE;
+                    else {
+                        child=XMLHelper::getFirstChildElement(SHAR,MemoryListener);
+                        if (child)
+                            plugtype=MEMORY_LISTENER_SERVICE;
+                        else {
+                            child=XMLHelper::getFirstChildElement(SHAR,Listener);
+                            if (child) {
+                                xmltooling::auto_ptr_char type(child->getAttributeNS(NULL,_type));
+                                if (type.get())
+                                    plugtype=type.get();
+                            }
+                        }
+                    }
+                }
+                if (child) {
+                    log.info("building ListenerService of type %s...", plugtype.c_str());
+                    m_outer->m_listener = conf.ListenerServiceManager.newPlugin(plugtype.c_str(),child);
                 }
                 else {
-                    exts=saml::XML::getFirstChildElement(SHAR,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(TCPListener));
-                    if (exts) {
-                        log.info("building Listener of type %s...",TCP_LISTENER_SERVICE);
-                        m_outer->m_listener=conf.ListenerServiceManager.newPlugin(TCP_LISTENER_SERVICE,exts);
-                    }
-                    else {
-                        exts=saml::XML::getFirstChildElement(SHAR,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Listener));
-                        if (exts) {
-                            xmltooling::auto_ptr_char type(exts->getAttributeNS(NULL,SHIBT_L(type)));
-                            log.info("building Listener of type %s...",type.get());
-                            m_outer->m_listener=conf.ListenerServiceManager.newPlugin(type.get(),exts);
-                        }
-                        else {
-                            log.fatal("can't build Listener object, missing conf:Listener element?");
-                            throw ConfigurationException("can't build Listener object, missing conf:Listener element?");
-                        }
-                    }
+                    log.fatal("can't build ListenerService, missing conf:Listener element?");
+                    throw ConfigurationException("Can't build ListenerService, missing conf:Listener element?");
                 }
             }
 
             if (conf.isEnabled(SPConfig::Caching)) {
-                IPlugIn* plugin=NULL;
+                // TODO: This code's a mess, due to a very bad config layout for the caches...
+                // Needs rework with the new config file.
                 const DOMElement* container=conf.isEnabled(SPConfig::OutOfProcess) ? SHAR : SHIRE;
-                exts=saml::XML::getFirstChildElement(container,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(MemorySessionCache));
-                if (exts) {
-                    log.info("building Session Cache of type %s...",shibtarget::XML::MemorySessionCacheType);
-                    plugin=shibConf.getPlugMgr().newPlugin(shibtarget::XML::MemorySessionCacheType,exts);
+                child=XMLHelper::getFirstChildElement(container,MemorySessionCache);
+                if (child) {
+                    log.info("building Session Cache of type %s...",MEMORY_SESSIONCACHE);
+                    plugin=shibConf.getPlugMgr().newPlugin(MEMORY_SESSIONCACHE,child);
                 }
                 else {
-                    exts=saml::XML::getFirstChildElement(container,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(ODBCSessionCache));
-                    if (exts) {
-                        log.info("building Session Cache of type %s...",shibtarget::XML::ODBCSessionCacheType);
-                        plugin=shibConf.getPlugMgr().newPlugin(shibtarget::XML::ODBCSessionCacheType,exts);
+                    child=XMLHelper::getFirstChildElement(container,SessionCache);
+                    if (child) {
+                        xmltooling::auto_ptr_char type(child->getAttributeNS(NULL,_type));
+                        log.info("building Session Cache of type %s...",type.get());
+                        plugin=shibConf.getPlugMgr().newPlugin(type.get(),child);
                     }
                     else {
-                        exts=saml::XML::getFirstChildElement(container,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(MySQLSessionCache));
-                        if (exts) {
-                            log.info("building Session Cache of type %s...",shibtarget::XML::MySQLSessionCacheType);
-                            plugin=shibConf.getPlugMgr().newPlugin(shibtarget::XML::MySQLSessionCacheType,exts);
-                        }
-                        else {
-                            exts=saml::XML::getFirstChildElement(container,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(SessionCache));
-                            if (exts) {
-                                xmltooling::auto_ptr_char type(exts->getAttributeNS(NULL,SHIBT_L(type)));
-                                log.info("building Session Cache of type %s...",type.get());
-                                plugin=shibConf.getPlugMgr().newPlugin(type.get(),exts);
-                            }
-                            else {
-                                log.info("session cache not specified, building Session Cache of type %s...",shibtarget::XML::MemorySessionCacheType);
-                                plugin=shibConf.getPlugMgr().newPlugin(shibtarget::XML::MemorySessionCacheType,exts);
-                            }
-                        }
+                        log.info("custom SessionCache unspecified or no longer supported, building SessionCache of type %s...",MEMORY_SESSIONCACHE);
+                        plugin=shibConf.getPlugMgr().newPlugin(MEMORY_SESSIONCACHE,child);
                     }
                 }
                 if (plugin) {
@@ -1060,70 +1016,55 @@ void XMLConfigImpl::init(bool first)
                     else {
                         delete plugin;
                         log.fatal("plugin was not a Session Cache object");
-                        throw UnsupportedExtensionException("plugin was not a Session Cache object");
+                        throw UnknownExtensionException("plugin was not a Session Cache object");
                     }
                 }
                 
                 // Replay cache.
-                container=conf.isEnabled(SPConfig::OutOfProcess) ? SHAR : SHIRE;
-                exts=saml::XML::getFirstChildElement(container,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(ODBCReplayCache));
-                if (exts) {
-                    log.info("building Replay Cache of type %s...",shibtarget::XML::ODBCReplayCacheType);
-                    m_outer->m_replayCache=IReplayCache::getInstance(shibtarget::XML::ODBCReplayCacheType,exts);
+                // TODO: switch to new cache interface
+                child=XMLHelper::getFirstChildElement(container,ReplayCache);
+                if (child) {
+                    xmltooling::auto_ptr_char type(child->getAttributeNS(NULL,_type));
+                    log.info("building ReplayCache of type %s...",type.get());
+                    m_outer->m_replayCache=IReplayCache::getInstance(type.get(),child);
                 }
                 else {
-                    exts=saml::XML::getFirstChildElement(container,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(MySQLReplayCache));
-                    if (exts) {
-                        log.info("building Replay Cache of type %s...",shibtarget::XML::MySQLReplayCacheType);
-                        m_outer->m_replayCache=IReplayCache::getInstance(shibtarget::XML::MySQLReplayCacheType,exts);
-                    }
-                    else {
-                        exts=saml::XML::getFirstChildElement(container,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(ReplayCache));
-                        if (exts) {
-                            xmltooling::auto_ptr_char type(exts->getAttributeNS(NULL,SHIBT_L(type)));
-                            log.info("building Replay Cache of type %s...",type.get());
-                            m_outer->m_replayCache=IReplayCache::getInstance(type.get(),exts);
-                        }
-                        else {
-                            // OpenSAML default provider.
-                            log.info("building default Replay Cache...");
-                            m_outer->m_replayCache=IReplayCache::getInstance();
-                        }
-                    }
+                    // OpenSAML default provider.
+                    log.info("custom ReplayCache unspecified or no longer supported, building default ReplayCache...");
+                    m_outer->m_replayCache=IReplayCache::getInstance();
                 }
             }
-        }
+        } // end of first-time-only stuff
         
-        // Back to the fully dynamic stuff...next up is the Request Mapper.
+        // Back to the fully dynamic stuff...next up is the RequestMapper.
         if (conf.isEnabled(SPConfig::RequestMapper)) {
-            const DOMElement* child=XMLHelper::getFirstChildElement(SHIRE,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(RequestMapProvider));
+            child=XMLHelper::getFirstChildElement(SHIRE,RequestMapProvider);
             if (child) {
-                xmltooling::auto_ptr_char type(child->getAttributeNS(NULL,SHIBT_L(type)));
-                log.info("building Request Mapper of type %s...",type.get());
-                IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),child);
+                xmltooling::auto_ptr_char type(child->getAttributeNS(NULL,_type));
+                log.info("building RequestMapper of type %s...",type.get());
+                plugin=shibConf.getPlugMgr().newPlugin(type.get(),child);
                 if (plugin) {
                     IRequestMapper* reqmap=dynamic_cast<IRequestMapper*>(plugin);
                     if (reqmap)
                         m_requestMapper=reqmap;
                     else {
                         delete plugin;
-                        log.fatal("plugin was not a Request Mapper object");
-                        throw UnsupportedExtensionException("plugin was not a Request Mapper object");
+                        log.fatal("plugin was not a RequestMapper object");
+                        throw UnknownExtensionException("plugin was not a RequestMapper object");
                     }
                 }
             }
             else {
-                log.fatal("can't build Request Mapper object, missing conf:RequestMapProvider element?");
-                throw ConfigurationException("can't build Request Mapper object, missing conf:RequestMapProvider element?");
+                log.fatal("can't build RequestMapper, missing conf:RequestMapProvider element?");
+                throw ConfigurationException("can't build RequestMapper, missing conf:RequestMapProvider element?");
             }
         }
         
         // Now we load the credentials map.
         if (conf.isEnabled(SPConfig::Credentials)) {
             // Old format was to wrap it in a CredentialsProvider plugin, we're inlining that...
-            const DOMElement* child = XMLHelper::getFirstChildElement(ReloadableXMLFileImpl::m_root,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(CredentialsProvider));
-            if (!child)
-                child = XMLHelper::getFirstChildElement(ReloadableXMLFileImpl::m_root,Credentials);
+            child = XMLHelper::getFirstChildElement(e,CredentialsProvider);
+            child = XMLHelper::getFirstChildElement(child ? child : e,Credentials);
             if (child) {
                 // Step down and process resolvers.
                 child=XMLHelper::getFirstChildElement(child);
@@ -1135,22 +1076,21 @@ void XMLConfigImpl::init(bool first)
                         continue;
                     }
                     
-                    string cr_type;
                     if (XMLString::equals(child->getLocalName(),FileResolver))
-                        cr_type=FILESYSTEM_CREDENTIAL_RESOLVER;
+                        plugtype=FILESYSTEM_CREDENTIAL_RESOLVER;
                     else {
-                        xmltooling::auto_ptr_char c(child->getAttributeNS(NULL,type));
-                        cr_type=c.get();
+                        xmltooling::auto_ptr_char c(child->getAttributeNS(NULL,_type));
+                        plugtype=c.get();
                     }
                     
-                    if (!cr_type.empty()) {
+                    if (!plugtype.empty()) {
                         try {
-                            CredentialResolver* plugin=
-                                XMLToolingConfig::getConfig().CredentialResolverManager.newPlugin(cr_type.c_str(),child);
-                            m_credResolverMap[id.get()] = plugin;
+                            CredentialResolver* cr=
+                                XMLToolingConfig::getConfig().CredentialResolverManager.newPlugin(plugtype.c_str(),child);
+                            m_credResolverMap[id.get()] = cr;
                         }
-                        catch (exception& e) {
-                            log.crit("failed to instantiate CredentialResolver (%s): %s", id.get(), e.what());
+                        catch (exception& ex) {
+                            log.crit("failed to instantiate CredentialResolver (%s): %s", id.get(), ex.what());
                         }
                     }
                     else {
@@ -1163,20 +1103,18 @@ void XMLConfigImpl::init(bool first)
         }
 
         // Now we load any attribute factories
-        DOMNodeList* nlist;
-        nlist=ReloadableXMLFileImpl::m_root->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(AttributeFactory));
-        for (unsigned int i=0; nlist && i<nlist->getLength(); i++) {
-            xmltooling::auto_ptr_char type(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,SHIBT_L(type)));
+        child = XMLHelper::getFirstChildElement(e,AttributeFactory);
+        while (child) {
+            xmltooling::auto_ptr_char type(child->getAttributeNS(NULL,_type));
             log.info("building Attribute factory of type %s...",type.get());
             try {
-                IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),static_cast<DOMElement*>(nlist->item(i)));
+                plugin=shibConf.getPlugMgr().newPlugin(type.get(),child);
                 if (plugin) {
                     IAttributeFactory* fact=dynamic_cast<IAttributeFactory*>(plugin);
                     if (fact) {
                         m_attrFactories.push_back(fact);
                         ShibConfig::getConfig().regAttributeMapping(
-                            static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,L(AttributeName)),
-                            fact
+                            child->getAttributeNS(NULL,Attribute::ATTRIBUTENAME_ATTRIB_NAME), fact
                             );
                     }
                     else {
@@ -1186,42 +1124,71 @@ void XMLConfigImpl::init(bool first)
                 }
             }
             catch (exception& ex) {
-                log.crit("error building Attribute factory: %s",ex.what());
+                log.crit("error building Attribute factory: %s", ex.what());
             }
+
+            child = XMLHelper::getNextSiblingElement(child,AttributeFactory);
         }
 
         // Load the default application. This actually has a fixed ID of "default". ;-)
-        const DOMElement* app=saml::XML::getFirstChildElement(
-            ReloadableXMLFileImpl::m_root,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Applications)
-            );
-        if (!app) {
+        child=XMLHelper::getFirstChildElement(e,Applications);
+        if (!child) {
             log.fatal("can't build default Application object, missing conf:Applications element?");
             throw ConfigurationException("can't build default Application object, missing conf:Applications element?");
         }
-        XMLApplication* defapp=new XMLApplication(m_outer,app);
+        XMLApplication* defapp=new XMLApplication(m_outer,child);
         m_appmap[defapp->getId()]=defapp;
         
         // Load any overrides.
-        nlist=app->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Application));
-        for (unsigned int j=0; nlist && j<nlist->getLength(); j++) {
-            auto_ptr<XMLApplication> iapp(new XMLApplication(m_outer,static_cast<DOMElement*>(nlist->item(j)),defapp));
+        child = XMLHelper::getFirstChildElement(child,Application);
+        while (child) {
+            auto_ptr<XMLApplication> iapp(new XMLApplication(m_outer,child,defapp));
             if (m_appmap.find(iapp->getId())!=m_appmap.end())
-                log.crit("found conf:Application element with duplicate Id attribute, ignoring it");
+                log.crit("found conf:Application element with duplicate Id attribute (%s), skipping it", iapp->getId());
             else
                 m_appmap[iapp->getId()]=iapp.release();
+
+            child = XMLHelper::getNextSiblingElement(child,Application);
         }
     }
-    catch (exception& e) {
-        log.errorStream() << "Error while loading SP configuration: " << e.what() << CategoryStream::ENDLINE;
-        throw ConfigurationException(e.what());
+    catch (exception&) {
+        this->~XMLConfigImpl();
+        throw;
     }
+#ifndef _DEBUG
+    catch (...) {
+        this->~XMLConfigImpl();
+        throw;
+    }
+#endif
 }
 
 XMLConfigImpl::~XMLConfigImpl()
 {
-    delete m_requestMapper;
     for_each(m_appmap.begin(),m_appmap.end(),xmltooling::cleanup_pair<string,IApplication>());
-    for_each(m_credResolverMap.begin(),m_credResolverMap.end(),xmltooling::cleanup_pair<string,CredentialResolver>());
     ShibConfig::getConfig().clearAttributeMappings();
     for_each(m_attrFactories.begin(),m_attrFactories.end(),xmltooling::cleanup<IAttributeFactory>());
+    for_each(m_credResolverMap.begin(),m_credResolverMap.end(),xmltooling::cleanup_pair<string,CredentialResolver>());
+    delete m_requestMapper;
+    if (m_document)
+        m_document->release();
+}
+
+pair<bool,DOMElement*> XMLConfig::load()
+{
+    // Load from source using base class.
+    pair<bool,DOMElement*> raw = ReloadableXMLFile::load();
+    
+    // If we own it, wrap it.
+    XercesJanitor<DOMDocument> docjanitor(raw.first ? raw.second->getOwnerDocument() : NULL);
+
+    XMLConfigImpl* impl = new XMLConfigImpl(raw.second,(m_impl==NULL),this);
+    
+    // If we held the document, transfer it to the impl. If we didn't, it's a no-op.
+    impl->setDocument(docjanitor.release());
+
+    delete m_impl;
+    m_impl = impl;
+
+    return make_pair(false,(DOMElement*)NULL);
 }

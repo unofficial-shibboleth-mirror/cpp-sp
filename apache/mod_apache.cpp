@@ -39,6 +39,7 @@
 #include <shib/shib.h>
 #include <shib-target/shib-target.h>
 #include <xercesc/util/regx/RegularExpression.hpp>
+#include <xmltooling/util/Threads.h>
 
 #ifdef WIN32
 # include <winsock.h>
@@ -572,7 +573,7 @@ saml::IPlugIn* ApacheRequestMapFactory(const DOMElement* e)
 
 ApacheRequestMapper::ApacheRequestMapper(const DOMElement* e) : m_mapper(NULL), m_staKey(NULL), m_propsKey(NULL), m_htaccess(NULL)
 {
-    saml::IPlugIn* p=saml::SAMLConfig::getConfig().getPlugMgr().newPlugin(shibtarget::XML::XMLRequestMapType,e);
+    saml::IPlugIn* p=saml::SAMLConfig::getConfig().getPlugMgr().newPlugin(XML_REQUESTMAP_PROVIDER,e);
     m_mapper=dynamic_cast<IRequestMapper*>(p);
     if (!m_mapper) {
         delete p;
@@ -1048,10 +1049,10 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
             ap_log_error(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() failed to initialize libraries");
             exit(1);
         }
-        saml::SAMLConfig::getConfig().getPlugMgr().regFactory(shibtarget::XML::htAccessControlType,&htAccessFactory);
-        saml::SAMLConfig::getConfig().getPlugMgr().regFactory(shibtarget::XML::NativeRequestMapType,&ApacheRequestMapFactory);
+        saml::SAMLConfig::getConfig().getPlugMgr().regFactory(HTACCESS_ACCESSCONTROL,&htAccessFactory);
+        saml::SAMLConfig::getConfig().getPlugMgr().regFactory(NATIVE_REQUESTMAP_PROVIDER,&ApacheRequestMapFactory);
         // We hijack the legacy type so that 1.2 config files will load this plugin
-        saml::SAMLConfig::getConfig().getPlugMgr().regFactory(shibtarget::XML::LegacyRequestMapType,&ApacheRequestMapFactory);
+        saml::SAMLConfig::getConfig().getPlugMgr().regFactory(LEGACY_REQUESTMAP_PROVIDER,&ApacheRequestMapFactory);
         
         if (!g_Config->load(g_szSHIBConfig)) {
             ap_log_error(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() failed to load configuration");
@@ -1059,7 +1060,7 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
         }
 
         IConfig* conf=g_Config->getINI();
-        saml::Locker locker(conf);
+        xmltooling::Locker locker(conf);
         const PropertySet* props=conf->getPropertySet("Local");
         if (props) {
             pair<bool,const char*> unsetValue=props->getString("unsetHeaderValue");

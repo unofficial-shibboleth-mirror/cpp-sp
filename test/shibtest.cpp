@@ -81,8 +81,11 @@ int main(int argc,char* argv[])
     if (!conf.init(path) || !conf.load(config))
         return -10;
 
+    IConfig* ini=ShibTargetConfig::getConfig().getINI();
+    xmltooling::Locker locker(ini);
+
     try {
-        const IApplication* app=conf.getINI()->getApplication(a_param);
+        const IApplication* app=ini->getApplication(a_param);
         if (!app)
             throw SAMLException("specified <Application> section not found in configuration");
 

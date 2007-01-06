@@ -22,15 +22,14 @@
    $History:$
 */
 
-#include <time.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-
 #define SHIB_INSTANTIATE
-
 #include "internal.h"
 
+#include <ctime>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <openssl/err.h>
+#include <xmltooling/util/Threads.h>
 
 using namespace saml;
 using namespace shibboleth;

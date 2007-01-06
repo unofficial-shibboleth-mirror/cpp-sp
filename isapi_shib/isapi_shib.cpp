@@ -57,11 +57,8 @@ namespace {
     { chLatin_I, chLatin_m, chLatin_p, chLatin_l, chLatin_e, chLatin_m, chLatin_e, chLatin_n, chLatin_t, chLatin_a, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chNull };
     static const XMLCh ISAPI[] = { chLatin_I, chLatin_S, chLatin_A, chLatin_P, chLatin_I, chNull };
     static const XMLCh Alias[] = { chLatin_A, chLatin_l, chLatin_i, chLatin_a, chLatin_s, chNull };
-    static const XMLCh normalizeRequest[] =
-    { chLatin_n, chLatin_o, chLatin_r, chLatin_m, chLatin_a, chLatin_l, chLatin_i, chLatin_z, chLatin_e,
-      chLatin_R, chLatin_e, chLatin_q, chLatin_u, chLatin_e, chLatin_s, chLatin_t, chNull
-    };
-    static const XMLCh Site[] = { chLatin_S, chLatin_i, chLatin_t, chLatin_e, chNull };
+    static const XMLCh normalizeRequest[] = UNICODE_LITERAL_16(n,o,r,m,a,l,i,z,e,R,e,q,u,e,s,t);
+    static const XMLCh Site[] =             UNICODE_LITERAL_4(S,i,t,e);
 
     struct site_t {
         site_t(const DOMElement* e)
@@ -74,12 +71,13 @@ namespace {
             if (s.get()) m_scheme=s.get();
             if (p.get()) m_port=p.get();
             if (p2.get()) m_sslport=p2.get();
-            DOMNodeList* nlist=e->getElementsByTagNameNS(shibtarget::XML::SHIBTARGET_NS,Alias);
-            for (unsigned int i=0; nlist && i<nlist->getLength(); i++) {
-                if (nlist->item(i)->hasChildNodes()) {
-                    auto_ptr_char alias(nlist->item(i)->getFirstChild()->getNodeValue());
+            e = XMLHelper::getFirstChildElement(e, Alias);
+            while (e) {
+                if (e->hasChildNodes()) {
+                    auto_ptr_char alias(e->getFirstChild()->getNodeValue());
                     m_aliases.insert(alias.get());
                 }
+                e = XMLHelper::getNextSiblingElement(e, Alias);
             }
         }
         string m_scheme,m_port,m_sslport,m_name;
@@ -180,21 +178,19 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
         
         // Access the implementation-specifics for site mappings.
         IConfig* conf=g_Config->getINI();
-        saml::Locker locker(conf);
+        xmltooling::Locker locker(conf);
         const PropertySet* props=conf->getPropertySet("Local");
         if (props) {
-            const DOMElement* impl=saml::XML::getFirstChildElement(
-                props->getElement(),shibtarget::XML::SHIBTARGET_NS,Implementation
-                );
-            if (impl && (impl=saml::XML::getFirstChildElement(impl,shibtarget::XML::SHIBTARGET_NS,ISAPI))) {
+            const DOMElement* impl=XMLHelper::getFirstChildElement(props->getElement(),Implementation);
+            if (impl && (impl=XMLHelper::getFirstChildElement(impl,ISAPI))) {
                 const XMLCh* flag=impl->getAttributeNS(NULL,normalizeRequest);
                 g_bNormalizeRequest=(!flag || !*flag || *flag==chDigit_1 || *flag==chLatin_t);
-                impl=saml::XML::getFirstChildElement(impl,shibtarget::XML::SHIBTARGET_NS,Site);
+                impl=XMLHelper::getFirstChildElement(impl,Site);
                 while (impl) {
                     auto_ptr_char id(impl->getAttributeNS(NULL,id));
                     if (id.get())
                         g_Sites.insert(pair<string,site_t>(id.get(),site_t(impl)));
-                    impl=saml::XML::getNextSiblingElement(impl,shibtarget::XML::SHIBTARGET_NS,Site);
+                    impl=XMLHelper::getNextSiblingElement(impl,Site);
                 }
             }
         }

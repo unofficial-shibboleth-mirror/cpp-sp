@@ -252,6 +252,14 @@ namespace shibtarget {
         virtual ~ISessionCache() {}
     };
 
+    #define MEMORY_SESSIONCACHE "edu.internet2.middleware.shibboleth.sp.provider.MemorySessionCacheProvider"
+    #define MYSQL_SESSIONCACHE  "edu.internet2.middleware.shibboleth.sp.provider.MySQLSessionCacheProvider"
+    #define ODBC_SESSIONCACHE   "edu.internet2.middleware.shibboleth.sp.provider.ODBCSessionCacheProvider"
+
+    #define MYSQL_REPLAYCACHE   "edu.internet2.middleware.shibboleth.sp.provider.MySQLReplayCacheProvider"
+    #define ODBC_REPLAYCACHE    "edu.internet2.middleware.shibboleth.sp.provider.ODBCReplayCacheProvider"
+
+
     /**
      * Interface to an access control plugin
      * 
@@ -265,6 +273,9 @@ namespace shibtarget {
         virtual ~IAccessControl() {}
     };
 
+    #define HTACCESS_ACCESSCONTROL  "edu.internet2.middleware.shibboleth.sp.apache.provider.htAccessControl"
+    #define XML_ACCESSCONTROL       "edu.internet2.middleware.shibboleth.sp.provider.XMLAccessControl"
+
     /**
      * Interface to a request mapping plugin
      * 
@@ -277,12 +288,14 @@ namespace shibtarget {
         virtual Settings getSettings(ShibTarget* st) const=0;
         virtual ~IRequestMapper() {}
     };
-    
-    struct SHIBTARGET_EXPORTS IConfig : public virtual saml::ILockable, public virtual shibsp::PropertySet, public virtual saml::IPlugIn
-    {
-        // loads initial configuration
-        virtual void init()=0;
 
+    #define XML_REQUESTMAP_PROVIDER     "edu.internet2.middleware.shibboleth.sp.provider.XMLRequestMapProvider"
+    #define NATIVE_REQUESTMAP_PROVIDER  "edu.internet2.middleware.shibboleth.sp.provider.NativeRequestMapProvider"
+    #define LEGACY_REQUESTMAP_PROVIDER  "edu.internet2.middleware.shibboleth.target.provider.XMLRequestMap"
+
+    struct SHIBTARGET_EXPORTS IConfig : public virtual xmltooling::Lockable, public virtual shibsp::PropertySet, public virtual saml::IPlugIn
+    {
+        virtual void init()=0;
         virtual shibsp::ListenerService* getListener() const=0;
         virtual ISessionCache* getSessionCache() const=0;
         virtual saml::IReplayCache* getReplayCache() const=0;
@@ -494,93 +507,6 @@ namespace shibtarget {
         friend class ShibTargetPriv;
     };
 
-    struct SHIBTARGET_EXPORTS XML
-    {
-        static const XMLCh SHIBTARGET_NS[];
-        static const XMLCh SHIBTARGET_SCHEMA_ID[];
-        static const XMLCh SAML2ASSERT_NS[];
-        static const XMLCh SAML2ASSERT_SCHEMA_ID[];
-        static const XMLCh SAML2META_NS[];
-        static const XMLCh SAML2META_SCHEMA_ID[];
-        static const XMLCh XMLENC_NS[];
-        static const XMLCh XMLENC_SCHEMA_ID[];
-    
-        // Session cache implementations
-        static const char MemorySessionCacheType[];
-        static const char MySQLSessionCacheType[];
-        static const char ODBCSessionCacheType[];
-        
-        // Replay cache implementations
-        static const char MySQLReplayCacheType[];
-        static const char ODBCReplayCacheType[];
-        
-        // Request mapping/settings implementations
-        static const char XMLRequestMapType[];      // portable XML-based map
-        static const char NativeRequestMapType[];   // Native web server command override of XML-based map
-        static const char LegacyRequestMapType[];   // older designation of XML map, hijacked by web server
-        
-        // Access control implementations
-        static const char htAccessControlType[];    // Apache-specific .htaccess authz module
-        static const char XMLAccessControlType[];   // Proprietary but portable XML authz syntax
-
-        struct SHIBTARGET_EXPORTS Literals
-        {
-            static const XMLCh AAPProvider[];
-            static const XMLCh acl[];
-            static const XMLCh AND[];
-            static const XMLCh applicationId[];
-            static const XMLCh Application[];
-            static const XMLCh Applications[];
-            static const XMLCh AttributeFactory[];
-            static const XMLCh config[];
-            static const XMLCh CredentialsProvider[];
-            static const XMLCh CredentialUse[];
-            static const XMLCh DiagnosticService[];
-            static const XMLCh echo[];
-            static const XMLCh Extensions[];
-            static const XMLCh fatal[];
-            static const XMLCh Global[];
-            static const XMLCh Implementation[];
-            static const XMLCh index[];
-            static const XMLCh InProcess[];
-            static const XMLCh isDefault[];
-            static const XMLCh Library[];
-            static const XMLCh Listener[];
-            static const XMLCh Local[];
-            static const XMLCh log[];
-            static const XMLCh logger[];
-            static const XMLCh MemorySessionCache[];
-            static const XMLCh MetadataProvider[];
-            static const XMLCh MySQLReplayCache[];
-            static const XMLCh MySQLSessionCache[];
-            static const XMLCh name[];
-            static const XMLCh Name[];
-            static const XMLCh NOT[];
-            static const XMLCh ODBCReplayCache[];
-            static const XMLCh ODBCSessionCache[];
-            static const XMLCh OR[];
-            static const XMLCh OutOfProcess[];
-            static const XMLCh path[];
-            static const XMLCh RelyingParty[];
-            static const XMLCh ReplayCache[];
-            static const XMLCh RequestMap[];
-            static const XMLCh RequestMapProvider[];
-            static const XMLCh require[];
-            static const XMLCh Rule[];
-            static const XMLCh SessionCache[];
-            static const XMLCh SessionInitiator[];
-            static const XMLCh SHAR[];
-            static const XMLCh ShibbolethTargetConfig[];
-            static const XMLCh SHIRE[];
-            static const XMLCh Signing[];
-            static const XMLCh SPConfig[];
-            static const XMLCh TCPListener[];
-            static const XMLCh TLS[];
-            static const XMLCh TrustProvider[];
-            static const XMLCh type[];
-            static const XMLCh UnixListener[];
-        };
-    };
 }
 
 #endif /* SHIB_TARGET_H */

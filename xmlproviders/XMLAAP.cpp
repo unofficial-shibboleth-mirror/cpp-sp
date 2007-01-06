@@ -119,10 +119,10 @@ namespace {
     #pragma warning( disable : 4250 )
 #endif
 
-    class XMLAAP : public IAAP, public xmltooling::ReloadableXMLFile
+    class XMLAAP : public IAAP, public ReloadableXMLFile
     {
     public:
-        XMLAAP(const DOMElement* e) : xmltooling::ReloadableXMLFile(e), m_impl(NULL) {}
+        XMLAAP(const DOMElement* e) : ReloadableXMLFile(e), m_impl(NULL) {}
         ~XMLAAP() {
             delete m_impl;
         }
@@ -169,7 +169,7 @@ IPlugIn* XMLAAPFactory(const DOMElement* e)
 pair<bool,DOMElement*> XMLAAP::load()
 {
     // Load from source using base class.
-    pair<bool,DOMElement*> raw = xmltooling::ReloadableXMLFile::load();
+    pair<bool,DOMElement*> raw = ReloadableXMLFile::load();
     
     // If we own it, wrap it.
     XercesJanitor<DOMDocument> docjanitor(raw.first ? raw.second->getOwnerDocument() : NULL);

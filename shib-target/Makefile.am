@@ -19,7 +19,6 @@ libshib_target_la_SOURCES = \
 	shib-handlers.cpp \
 	shib-ini.cpp \
 	shib-target.cpp \
-	XML.cpp \
 	XMLRequestMapper.cpp
 
 # this is different from the project version

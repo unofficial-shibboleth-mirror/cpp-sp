@@ -131,6 +131,9 @@ namespace shibtarget {
         IConfig* m_conf;
         IRequestMapper* m_mapper;
     };
+
+    static const XMLCh SessionInitiator[] =     UNICODE_LITERAL_16(S,e,s,s,i,o,n,I,n,i,t,i,a,t,o,r);
+    static const XMLCh DiagnosticService[] =    UNICODE_LITERAL_17(D,i,a,g,n,o,s,t,i,c,S,e,r,v,i,c,e);
 }
 
 
@@ -389,11 +392,11 @@ pair<bool,void*> ShibTarget::doHandler(void)
 
         if (XMLHelper::isNodeNamed(handler->getProperties()->getElement(),samlconstants::SAML20MD_NS,AssertionConsumerService::LOCAL_NAME))
             procState = "Session Creation Error";
-        else if (XMLHelper::isNodeNamed(handler->getProperties()->getElement(),shibtarget::XML::SHIBTARGET_NS,SHIBT_L(SessionInitiator)))
+        else if (XMLString::equals(handler->getProperties()->getElement()->getLocalName(),SessionInitiator))
             procState = "Session Initiator Error";
         else if (XMLHelper::isNodeNamed(handler->getProperties()->getElement(),samlconstants::SAML20MD_NS,SingleLogoutService::LOCAL_NAME))
             procState = "Session Termination Error";
-        else if (XMLHelper::isNodeNamed(handler->getProperties()->getElement(),shibtarget::XML::SHIBTARGET_NS,SHIBT_L(DiagnosticService)))
+        else if (XMLString::equals(handler->getProperties()->getElement()->getLocalName(),DiagnosticService))
             procState = "Diagnostics Error";
         else
             procState = "Extension Service Error";

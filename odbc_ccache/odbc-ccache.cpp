@@ -42,6 +42,7 @@
 #include <shibsp/exceptions.h>
 #include <log4cpp/Category.hh>
 #include <xmltooling/util/NDC.h>
+#include <xmltooling/util/Threads.h>
 
 #include <ctime>
 #include <algorithm>
@@ -162,7 +163,7 @@ ODBCBase::ODBCBase(const DOMElement* e) : m_root(e), m_bInitializedODBC(false)
     }
 
     // Grab connection string from the configuration.
-    e=saml::XML::getFirstChildElement(e,shibtarget::XML::SHIBTARGET_NS,ConnectionString);
+    e=XMLHelper::getFirstChildElement(e,ConnectionString);
     if (!e || !e->hasChildNodes()) {
         if (!p_connstring) {
             this->~ODBCBase();
@@ -338,7 +339,7 @@ ODBCCCache::ODBCCCache(const DOMElement* e) : ODBCBase(e), m_storeAttributes(fal
     log = &(Category::getInstance("shibtarget.SessionCache.ODBC"));
 
     m_cache = dynamic_cast<ISessionCache*>(
-        SAMLConfig::getConfig().getPlugMgr().newPlugin(shibtarget::XML::MemorySessionCacheType, m_root)
+        SAMLConfig::getConfig().getPlugMgr().newPlugin(MEMORY_SESSIONCACHE, m_root)
     );
     if (!m_cache->setBackingStore(this)) {
         delete m_cache;
@@ -929,13 +930,13 @@ IPlugIn* new_odbc_replay(const DOMElement* e)
 extern "C" int SHIBODBC_EXPORTS saml_extension_init(void*)
 {
     // register this ccache type
-    SAMLConfig::getConfig().getPlugMgr().regFactory(shibtarget::XML::ODBCReplayCacheType, &new_odbc_replay);
-    SAMLConfig::getConfig().getPlugMgr().regFactory(shibtarget::XML::ODBCSessionCacheType, &new_odbc_ccache);
+    SAMLConfig::getConfig().getPlugMgr().regFactory(ODBC_REPLAYCACHE, &new_odbc_replay);
+    SAMLConfig::getConfig().getPlugMgr().regFactory(ODBC_SESSIONCACHE, &new_odbc_ccache);
     return 0;
 }
 
 extern "C" void SHIBODBC_EXPORTS saml_extension_term()
 {
-    SAMLConfig::getConfig().getPlugMgr().unregFactory(shibtarget::XML::ODBCSessionCacheType);
-    SAMLConfig::getConfig().getPlugMgr().unregFactory(shibtarget::XML::ODBCReplayCacheType);
+    SAMLConfig::getConfig().getPlugMgr().unregFactory(ODBC_SESSIONCACHE);
+    SAMLConfig::getConfig().getPlugMgr().unregFactory(ODBC_REPLAYCACHE);
 }

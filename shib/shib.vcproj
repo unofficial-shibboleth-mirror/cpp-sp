@@ -230,10 +230,6 @@
 			>
 		</File>
 		<File
-			RelativePath="ReloadableXMLFile.cpp"
-			>
-		</File>
-		<File
 			RelativePath="resource.h"
 			>
 		</File>

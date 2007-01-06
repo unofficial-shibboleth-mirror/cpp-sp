@@ -22,6 +22,7 @@
 #include <fstream>
 #include <shib-target/shib-target.h>
 
+#include <shibsp/exceptions.h>
 #include <shibsp/SPConfig.h>
 
 using namespace shibsp;
@@ -90,11 +91,11 @@ int main(int argc,char* argv[])
         auto_ptr_XMLCh recip(r_param);
 
         IConfig* ini=ShibTargetConfig::getConfig().getINI();
-        Locker locker(ini);
+        xmltooling::Locker locker(ini);
 
         const IApplication* app=ini->getApplication(a_param);
         if (!app) {
-            throw SAMLException("Unable to locate application for new session, deleted?");
+            throw ConfigurationException("Unable to locate application for new session, deleted?");
         }
 
         SAMLBrowserProfile::BrowserProfileResponse bpr=
@@ -103,8 +104,8 @@ int main(int argc,char* argv[])
         cout << "Success!" << endl;
         bpr.clear();
     }
-    catch(SAMLException& e) {
-        cerr << "caught a SAML exception: " << e << endl;
+    catch(exception& e) {
+        cerr << "caught an exception: " << e.what() << endl;
     }
 
     conf.shutdown();
