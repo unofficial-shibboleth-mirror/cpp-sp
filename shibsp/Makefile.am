@@ -18,6 +18,7 @@ libshibspinclude_HEADERS = \
 	PKIXTrustEngine.h \
 	PropertySet.h \
 	version.h \
+	ServiceProvider.h \
 	SocketListener.h \
 	SPConfig.h \
 	SPConstants.h
@@ -32,6 +33,7 @@ libshibsp_la_SOURCES = \
 	MetadataExtImpl.cpp \
 	MetadataExtSchemaValidators.cpp \
 	PKIXTrustEngine.cpp \
+	ServiceProvider.cpp \
 	SPConfig.cpp \
 	SPConstants.cpp \ 
 	SocketListener.cpp \

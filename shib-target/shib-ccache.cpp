@@ -224,7 +224,7 @@ string StubCache::insert(
     os << *tokens;
     in.addmember("tokens.unfiltered").string(os.str().c_str());
 
-    out=ShibTargetConfig::getConfig().getINI()->getListener()->send(in);
+    out=ShibTargetConfig::getConfig().getINI()->getListenerService()->send(in);
     if (out["key"].isstring())
         return out["key"].string();
     throw opensaml::RetryableProfileException("A remoted cache insertion operation did not return a usable session key.");
@@ -240,7 +240,7 @@ ISessionCacheEntry* StubCache::find(const char* key, const IApplication* applica
     in.addmember("client_address").string(client_addr);
     
     try {
-        out=ShibTargetConfig::getConfig().getINI()->getListener()->send(in);
+        out=ShibTargetConfig::getConfig().getINI()->getListenerService()->send(in);
         if (!out.isstruct()) {
             out.destroy();
             return NULL;
@@ -264,7 +264,7 @@ void StubCache::remove(const char* key, const IApplication* application, const c
     in.addmember("application_id").string(application->getId());
     in.addmember("client_address").string(client_addr);
     
-    ShibTargetConfig::getConfig().getINI()->getListener()->send(in);
+    ShibTargetConfig::getConfig().getINI()->getListenerService()->send(in);
 }
 
 /*
@@ -1063,7 +1063,7 @@ MemorySessionCache::MemorySessionCache(const DOMElement* e)
     SAMLConfig::getConfig().conn_timeout = m_AAConnectTimeout;
 
     // Register for remoted messages.
-    ListenerService* listener=ShibTargetConfig::getConfig().getINI()->getListener();
+    ListenerService* listener=ShibTargetConfig::getConfig().getINI()->getListenerService(false);
     if (listener && SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
         restoreInsert=listener->regListener("SessionCache::insert",this);
         restoreFind=listener->regListener("SessionCache::find",this);
@@ -1085,7 +1085,7 @@ MemorySessionCache::~MemorySessionCache()
     cleanup_thread->join(NULL);
 
     // Unregister remoted messages.
-    ListenerService* listener=ShibTargetConfig::getConfig().getINI()->getListener();
+    ListenerService* listener=ShibTargetConfig::getConfig().getINI()->getListenerService(false);
     if (listener && SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
         listener->unregListener("SessionCache::insert",this,restoreInsert);
         listener->unregListener("SessionCache::find",this,restoreFind);

@@ -134,6 +134,11 @@ namespace shibsp {
          */
         xmltooling::PluginManager<ListenerService,const xercesc::DOMElement*> ListenerServiceManager;
 
+        /**
+         * Manages factories for ServiceProvider plugins.
+         */
+        xmltooling::PluginManager<ServiceProvider,const xercesc::DOMElement*> ServiceProviderManager;
+
     protected:
         SPConfig() : m_serviceProvider(NULL) {}
         

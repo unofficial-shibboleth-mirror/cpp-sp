@@ -49,6 +49,7 @@
 #include <log4cpp/Category.hh>
 #include <log4cpp/FixedContextCategory.hh>
 #include <shibsp/exceptions.h>
+#include <xmltooling/PluginManager.h>
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/Threads.h>
 
@@ -86,8 +87,10 @@ namespace shibtarget {
     private:
         log4cpp::FixedContextCategory* m_tranLog;
         xmltooling::Mutex* m_tranLogLock;
-        static IConfig* ShibTargetConfigFactory(const DOMElement* e);
     };
+    
+    // TODO: move this over to shibsp lib.
+    xmltooling::PluginManager<shibsp::ServiceProvider,const DOMElement*>::Factory XMLServiceProviderFactory;
 }
 
 #endif

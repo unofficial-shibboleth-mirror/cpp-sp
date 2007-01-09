@@ -247,18 +247,13 @@ SAML1Consumer::SAML1Consumer(const DOMElement* e)
     m_address += "::SAML1Consumer::run";
 
     // Register for remoted messages.
-    if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
-        ListenerService* listener=ShibTargetConfig::getConfig().getINI()->getListener();
-        if (listener)
-            listener->regListener(m_address.c_str(),this);
-        else
-            throw ListenerException("Plugin requires a Listener service");
-    }
+    if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess))
+        ShibTargetConfig::getConfig().getINI()->getListenerService()->regListener(m_address.c_str(),this);
 }
 
 SAML1Consumer::~SAML1Consumer()
 {
-    ListenerService* listener=ShibTargetConfig::getConfig().getINI()->getListener();
+    ListenerService* listener=ShibTargetConfig::getConfig().getINI()->getListenerService(false);
     if (listener && SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess))
         listener->unregListener(m_address.c_str(),this);
     counter--;
@@ -514,7 +509,7 @@ pair<bool,void*> SAML1Consumer::run(ShibTarget* st, bool isHandler) const
     in.addmember("application_id").string(st->getApplication()->getId());
     in.addmember("client_address").string(st->getRemoteAddr());
 
-    out=st->getConfig()->getListener()->send(in);
+    out=st->getConfig()->getListenerService()->send(in);
     if (!out["key"].isstring())
         throw opensaml::FatalProfileException("Remote processing of SAML 1.x Browser profile did not return a usable session key.");
     string key=out["key"].string();

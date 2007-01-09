@@ -26,12 +26,10 @@
 #define SHIB_TARGET_H
 
 // New headers
-#include <shibsp/base.h>
 #include <shibsp/ListenerService.h>
-#include <shibsp/PropertySet.h>
+#include <shibsp/ServiceProvider.h>
 #include <saml/saml2/metadata/MetadataProvider.h>
 #include <xmltooling/security/TrustEngine.h>
-#include <xmltooling/signature/CredentialResolver.h>
 
 // Old headers
 #include <saml/saml.h>
@@ -293,15 +291,12 @@ namespace shibtarget {
     #define NATIVE_REQUESTMAP_PROVIDER  "edu.internet2.middleware.shibboleth.sp.provider.NativeRequestMapProvider"
     #define LEGACY_REQUESTMAP_PROVIDER  "edu.internet2.middleware.shibboleth.target.provider.XMLRequestMap"
 
-    struct SHIBTARGET_EXPORTS IConfig : public virtual xmltooling::Lockable, public virtual shibsp::PropertySet, public virtual saml::IPlugIn
+    struct SHIBTARGET_EXPORTS IConfig : public virtual shibsp::ServiceProvider
     {
-        virtual void init()=0;
-        virtual shibsp::ListenerService* getListener() const=0;
         virtual ISessionCache* getSessionCache() const=0;
         virtual saml::IReplayCache* getReplayCache() const=0;
         virtual IRequestMapper* getRequestMapper() const=0;
         virtual const IApplication* getApplication(const char* applicationId) const=0;
-        virtual xmlsignature::CredentialResolver* getCredentialResolver(const char* id) const=0;
         virtual ~IConfig() {}
     };
 

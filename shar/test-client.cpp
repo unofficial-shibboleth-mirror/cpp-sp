@@ -52,7 +52,7 @@ int main (int argc, char *argv[])
       DDFJanitor injan(in);
       in.integer(atol(argv[1]));
 
-      DDF out=conf.getINI()->getListener()->send(in);
+      DDF out=conf.getINI()->getListenerService()->send(in);
       DDFJanitor outjan(out);
 
       cerr << argv[1] << " -> " << out.integer() << "\n";

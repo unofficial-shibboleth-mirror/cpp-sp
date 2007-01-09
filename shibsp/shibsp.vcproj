@@ -209,6 +209,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\ServiceProvider.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\SocketListener.cpp"
 				>
 			</File>
@@ -264,6 +268,10 @@
 			</File>
 			<File
 				RelativePath=".\resource.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ServiceProvider.h"
 				>
 			</File>
 			<File

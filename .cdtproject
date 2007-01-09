@@ -10,6 +10,7 @@
 <pathentry kind="src" path="shibsp"/>
 <pathentry kind="out" path=""/>
 <pathentry kind="src" path="odbc-store"/>
+<pathentry kind="src" path="apache"/>
 </item>
 </data>
 </cdtproject>

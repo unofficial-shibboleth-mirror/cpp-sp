@@ -37,6 +37,7 @@ using namespace log4cpp;
 using namespace std;
 
 using xmltooling::XMLToolingConfig;
+using xmltooling::PluginManager;
 
 namespace {
     STConfig g_Config;
@@ -67,7 +68,7 @@ bool STConfig::init(const char* schemadir)
 #ifdef _DEBUG
     xmltooling::NDC ndc("init");
 #endif
-    Category& log = Category::getInstance("shibtarget.Config");
+    Category& log = Category::getInstance(SHIBT_LOGCAT".Config");
 
     if (!schemadir) {
         log.fatal("XML schema directory not supplied");
@@ -79,20 +80,27 @@ bool STConfig::init(const char* schemadir)
     SAMLConfig& samlConf=SAMLConfig::getConfig();
     if (schemadir)
         samlConf.schema_dir = schemadir;
-    if (!samlConf.init() || !SPConfig::getConfig().init(NULL)) {
-        log.fatal("failed to initialize SP library");
+    if (!samlConf.init()) {
+        log.fatal("failed to initialize OpenSAML1 library");
         return false;
     }
 
     ShibConfig& shibConf=ShibConfig::getConfig();
     if (!shibConf.init()) {
         log.fatal("Failed to initialize Shib library");
-        SPConfig::getConfig().term();
+        samlConf.term();
+        return false;
+    }
+    
+    if (!SPConfig::getConfig().init(NULL)) {
+        log.fatal("Failed to initialize SP library");
+        shibConf.term();
         samlConf.term();
         return false;
     }
 
     // Register built-in plugin types.
+    SPConfig::getConfig().ServiceProviderManager.registerFactory(XML_SERVICE_PROVIDER, XMLServiceProviderFactory);
 
     samlConf.getPlugMgr().regFactory(MEMORY_SESSIONCACHE,&MemoryCacheFactory);
     samlConf.getPlugMgr().regFactory(LEGACY_REQUESTMAP_PROVIDER,&XMLRequestMapFactory);
@@ -115,7 +123,7 @@ bool STConfig::load(const char* config)
 #ifdef _DEBUG
     xmltooling::NDC ndc("load");
 #endif
-    Category& log = Category::getInstance("shibtarget.Config");
+    Category& log = Category::getInstance(SHIBT_LOGCAT".Config");
 
     if (!config) {
         log.fatal("path to configuration file not supplied");
@@ -134,7 +142,7 @@ bool STConfig::load(const char* config)
         auto_ptr_XMLCh src(config);
         dummy->setAttributeNS(NULL,path,src.get());
 
-        m_ini=ShibTargetConfigFactory(dummy);
+        m_ini=dynamic_cast<IConfig*>(SPConfig::getConfig().ServiceProviderManager.newPlugin(XML_SERVICE_PROVIDER,dummy));
         m_ini->init();
         
         pair<bool,unsigned int> skew=m_ini->getUnsignedInt("clockSkew");
@@ -168,7 +176,7 @@ void STConfig::shutdown()
 #ifdef _DEBUG
     xmltooling::NDC ndc("shutdown");
 #endif
-    Category& log = Category::getInstance("shibtarget.Config");
+    Category& log = Category::getInstance(SHIBT_LOGCAT".Config");
     log.info("shutting down the library");
     delete m_tranLogLock;
     m_tranLogLock = NULL;

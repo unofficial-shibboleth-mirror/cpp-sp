@@ -143,7 +143,7 @@ int real_main(int preinit)
         if (!shar_checkonly) {
 
             // Run the listener.
-            if (!conf.getINI()->getListener()->run(&shibd_shutdown)) {
+            if (!conf.getINI()->getListenerService()->run(&shibd_shutdown)) {
                 fprintf(stderr, "listener failed to enter listen loop\n");
                 return -3;
             }
@@ -281,7 +281,7 @@ int main(int argc, char *argv[])
         }
     
         // Run the listener
-        if (!conf.getINI()->getListener()->run(&shibd_shutdown)) {
+        if (!conf.getINI()->getListenerService()->run(&shibd_shutdown)) {
             fprintf(stderr, "listener failed to enter listen loop\n");
             return -3;
         }

@@ -203,8 +203,13 @@ namespace {
         const PropertySet* getPropertySet(const char* name, const char* ns="urn:mace:shibboleth:target:config:1.0") const {return m_impl->getPropertySet(name,ns);}
         const DOMElement* getElement() const {return m_impl->getElement();}
 
-        // IConfig
-        ListenerService* getListener() const {return m_listener;}
+        // ServiceProvider
+        ListenerService* getListenerService(bool required=true) const {
+            if (required && !m_listener)
+                throw ConfigurationException("No ListenerService available.");
+            return m_listener;
+        }
+
         ISessionCache* getSessionCache() const {return m_sessionCache;}
         IReplayCache* getReplayCache() const {return m_replayCache;}
         IRequestMapper* getRequestMapper() const {return m_impl->m_requestMapper;}
@@ -272,7 +277,7 @@ namespace {
     
 }
 
-IConfig* STConfig::ShibTargetConfigFactory(const DOMElement* e)
+ServiceProvider* shibtarget::XMLServiceProviderFactory(const DOMElement* const & e)
 {
     return new XMLConfig(e);
 }
