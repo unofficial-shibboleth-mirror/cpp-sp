@@ -15,7 +15,7 @@
  */
 
 /**
- * @file shibsp/SocketListener.h
+ * SocketListener.h
  * 
  * Berkeley Socket-based ListenerService implementation
  */
@@ -27,7 +27,7 @@
 # define FD_SETSIZE 1024
 #endif
 
-#include <shibsp/ListenerService.h>
+#include <shibsp/remoting/ListenerService.h>
 
 #include <log4cpp/Category.hh>
 #include <xercesc/dom/DOM.hpp>

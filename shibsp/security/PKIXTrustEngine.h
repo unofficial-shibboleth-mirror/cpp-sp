@@ -15,7 +15,7 @@
  */
 
 /**
- * @file shibsp/PKIXTrustEngine.h
+ * @file shibsp/security/PKIXTrustEngine.h
  * 
  * Shibboleth-specific PKIX-validation TrustEngine 
  */

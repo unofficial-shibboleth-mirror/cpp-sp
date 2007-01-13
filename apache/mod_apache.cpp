@@ -31,7 +31,9 @@
 # define _CRT_SECURE_NO_DEPRECATE 1
 #endif
 
+#include <shibsp/AccessControl.h>
 #include <shibsp/exceptions.h>
+#include <shibsp/RequestMapper.h>
 #include <shibsp/SPConfig.h>
 
 // SAML Runtime
@@ -39,6 +41,7 @@
 #include <shib/shib.h>
 #include <shib-target/shib-target.h>
 #include <xercesc/util/regx/RegularExpression.hpp>
+#include <xmltooling/util/NDC.h>
 #include <xmltooling/util/Threads.h>
 
 #ifdef WIN32
@@ -222,7 +225,7 @@ static shib_request_config *init_request_config(request_rec *r)
     shib_request_config* rc=(shib_request_config*)ap_pcalloc(r->pool,sizeof(shib_request_config));
     ap_set_module_config (r->request_config, &mod_shib, rc);
     memset(rc, 0, sizeof(shib_request_config));
-    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_init_rc\n");
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_init_rc");
     return rc;
 }
 
@@ -260,6 +263,7 @@ class ShibTargetApache : public ShibTarget
 {
   mutable string m_body;
   mutable bool m_gotBody;
+  vector<XSECCryptoX509*> m_certs;
 
 public:
   request_rec* m_req;
@@ -271,6 +275,7 @@ public:
     m_sc = (shib_server_config*)ap_get_module_config(req->server->module_config, &mod_shib);
     m_dc = (shib_dir_config*)ap_get_module_config(req->per_dir_config, &mod_shib);
     m_rc = (shib_request_config*)ap_get_module_config(req->request_config, &mod_shib);
+    m_req = req;
 
     init(
         m_sc->szScheme ? m_sc->szScheme : ap_http_method(req),
@@ -281,46 +286,57 @@ public:
 	    req->connection->remote_ip,
         req->method
         );
-
-    m_req = req;
   }
   virtual ~ShibTargetApache() {}
 
-  virtual void log(ShibLogLevel level, const string &msg) {
-    ShibTarget::log(level,msg);
-#ifdef SHIB_APACHE_13
-    ap_log_rerror(APLOG_MARK,
-        (level == LogLevelDebug ? APLOG_DEBUG :
-            (level == LogLevelInfo ? APLOG_INFO :
-            (level == LogLevelWarn ? APLOG_WARNING : APLOG_ERR)))|APLOG_NOERRNO, SH_AP_R(m_req), msg.c_str());
-#else
-    if (level == LogLevelError)
-        ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(m_req), msg.c_str());
-#endif
+  const char* getScheme() const {
+    return m_sc->szScheme ? m_sc->szScheme : ap_http_method(m_req);
   }
-  virtual string getCookies(void) const {
-    const char *c = ap_table_get(m_req->headers_in, "Cookie");
-    return string(c ? c : "");
+  const char* getHostname() const {
+    return ap_get_server_name(m_req);
   }
-  virtual void setCookie(const string &name, const string &value) {
-    char* val = ap_psprintf(m_req->pool, "%s=%s", name.c_str(), value.c_str());
-#ifdef SHIB_DEFERRED_HEADERS
-    ap_table_addn(m_rc->hdr_err, "Set-Cookie", val);
-#else
-    ap_table_addn(m_req->err_headers_out, "Set-Cookie", val);
-#endif
+  int getPort() const {
+    return ap_get_server_port(m_req);
   }
-  virtual const char* getQueryString() const { return m_req->args; }
-  virtual const char* getRequestBody() const {
+  const char* getRequestURI() const {
+    return m_req->unparsed_uri;
+  }
+  const char* getMethod() const {
+    return m_req->method;
+  }
+  string getContentType() const {
+    const char* type = ap_table_get(m_req->headers_in, "Content-Type");
+    return type ? type : "";
+  }
+  long getContentLength() const {
+      return m_gotBody ? m_body.length() : m_req->remaining;
+  }
+  string getRemoteAddr() const {
+    return m_req->connection->remote_ip;
+  }
+  void log(SPLogLevel level, const string& msg) const {
+    AbstractSPRequest::log(level,msg);
+    ap_log_rerror(
+        APLOG_MARK,
+        (level == SPDebug ? APLOG_DEBUG :
+        (level == SPInfo ? APLOG_INFO :
+        (level == SPWarn ? APLOG_WARNING :
+        (level == SPError ? APLOG_ERR : APLOG_CRIT))))|APLOG_NOERRNO,
+        SH_AP_R(m_req),
+        msg.c_str()
+        );
+  }
+  const char* getQueryString() const { return m_req->args; }
+  const char* getRequestBody() const {
     if (m_gotBody)
         return m_body.c_str();
     // Read the posted data
     if (ap_setup_client_block(m_req, REQUEST_CHUNKED_ERROR))
-        throw saml::SAMLException("Apache function (setup_client_block) failed while reading POST request body.");
+        throw opensaml::BindingException("Apache function (setup_client_block) failed while reading POST request body.");
     if (!ap_should_client_block(m_req))
-        throw saml::SAMLException("Apache function (should_client_block) failed while reading POST request body.");
+        throw opensaml::BindingException("Apache function (should_client_block) failed while reading POST request body.");
     if (m_req->remaining > 1024*1024)
-        throw saml::SAMLException("Blocked POST request body larger than size limit.");
+        throw opensaml::BindingException("Blocked POST request body larger than size limit.");
     m_gotBody=true;
     char buff[HUGE_STRING_LEN];
     ap_hard_timeout("[mod_shib] getRequestBody", m_req);
@@ -333,17 +349,17 @@ public:
     ap_kill_timeout(m_req);
     return m_body.c_str();
   }
-  virtual void clearHeader(const string &name) {
+  void clearHeader(const char* name) {
     if (m_dc->bUseEnvVars!=0) {
        // ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_clear_header: env\n");
-       if (m_rc && m_rc->env) ap_table_unset(m_rc->env, name.c_str());
+       if (m_rc && m_rc->env) ap_table_unset(m_rc->env, name);
     } else {
        // ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_clear_header: hdr\n");
-       ap_table_unset(m_req->headers_in, name.c_str());
-       ap_table_set(m_req->headers_in, name.c_str(), g_unsetHeaderValue.c_str());
+       ap_table_unset(m_req->headers_in, name);
+       ap_table_set(m_req->headers_in, name, g_unsetHeaderValue.c_str());
     }
   }
-  virtual void setHeader(const string &name, const string &value) {
+  void setHeader(const char* name, const char* value) {
     if (m_dc->bUseEnvVars!=0) {
        if (!m_rc) {
           // this happens on subrequests
@@ -351,52 +367,66 @@ public:
           m_rc = init_request_config(m_req);
        }
        if (!m_rc->env) m_rc->env = ap_make_table(m_req->pool, 10);
-       // ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_set_env: %s=%s\n", name.c_str(), value.c_str()?value.c_str():"Null");
-       ap_table_set(m_rc->env, name.c_str(), value.c_str()?value.c_str():"");
-    } else {
-       // ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_set_hdr: %s=%s\n", name.c_str(), value.c_str()?value.c_str():"Null");
-       ap_table_set(m_req->headers_in, name.c_str(), value.c_str());
+       // ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_set_env: %s=%s\n", name, value?value:"Null");
+       ap_table_set(m_rc->env, name, value?value:"");
+    }
+    else {
+       ap_table_set(m_req->headers_in, name, value);
     }
   }
-  virtual string getHeader(const string &name) {
-    const char *hdr;
-    if (m_dc->bUseEnvVars!=0) {
-       if (m_rc && m_rc->env) hdr = ap_table_get(m_rc->env, name.c_str());
-       else hdr = NULL;
-       // ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_get_hdr_env: %s=%s\n", name.c_str(), hdr?hdr:"NULL");
-    } else {
-       hdr = ap_table_get(m_req->headers_in, name.c_str());
-       // ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_get_hdr: %s=%s\n", name.c_str(), hdr?hdr:"NULL");
-    }
+  string getHeader(const char* name) const {
+    const char* hdr = ap_table_get(m_req->headers_in, name);
     return string(hdr ? hdr : "");
   }
-  virtual void setRemoteUser(const string &user) {
-    SH_AP_USER(m_req) = ap_pstrdup(m_req->pool, user.c_str());
+  string getSecureHeader(const char* name) const {
+    if (m_dc->bUseEnvVars!=0) {
+       const char *hdr;
+       if (m_rc && m_rc->env)
+           hdr = ap_table_get(m_rc->env, name);
+       else
+           hdr = NULL;
+       return string(hdr ? hdr : "");
+    }
+    return getHeader(name);
   }
-  virtual string getRemoteUser(void) {
+  void setRemoteUser(const char* user) {
+      SH_AP_USER(m_req) = user ? ap_pstrdup(m_req->pool, user) : NULL;
+  }
+  string getRemoteUser() const {
     return string(SH_AP_USER(m_req) ? SH_AP_USER(m_req) : "");
   }
-  virtual void* sendPage(
-    const string& msg,
-    int code=200,
-    const string& content_type="text/html",
-    const saml::Iterator<header_t>& headers=EMPTY(header_t)
-    ) {
-    m_req->content_type = ap_psprintf(m_req->pool, content_type.c_str());
-    while (headers.hasNext()) {
-        const header_t& h=headers.next();
-        ap_table_set(m_req->headers_out, h.first.c_str(), h.second.c_str());
-    }
+  void setContentType(const char* type) {
+      m_req->content_type = ap_psprintf(m_req->pool, type);
+  }
+  void setResponseHeader(const char* name, const char* value) {
+#ifdef SHIB_DEFERRED_HEADERS
+   if (!m_rc)
+      // this happens on subrequests
+      m_rc = init_request_config(m_req);
+    ap_table_add(m_rc->hdr_err, name, value);
+    ap_table_add(m_rc->hdr_out, name, value);
+#else
+    ap_table_add(m_req->err_headers_out, name, value);
+#endif
+  }
+  long sendResponse(istream& in, long status) {
     ap_send_http_header(m_req);
-    ap_rprintf(m_req, msg.c_str());
-    return (void*)((code==200) ? DONE : code);
+    char buf[1024];
+    while (in) {
+        in.read(buf,1024);
+        ap_rwrite(buf,in.gcount(),m_req);
+    }
+    return ((status==SAML_HTTP_STATUS_OK) ? DONE : status);
   }
-  virtual void* sendRedirect(const string& url) {
-    ap_table_set(m_req->headers_out, "Location", url.c_str());
-    return (void*)REDIRECT;
+  long sendRedirect(const char* url) {
+    ap_table_set(m_req->headers_out, "Location", url);
+    return REDIRECT;
   }
-  virtual void* returnDecline(void) { return (void*)DECLINED; }
-  virtual void* returnOK(void) { return (void*)OK; }
+  const vector<XSECCryptoX509*>& getClientCertificates() const {
+      return m_certs;
+  }
+  long returnDecline(void) { return DECLINED; }
+  long returnOK(void) { return OK; }
 };
 
 /********************************************************************************/
@@ -412,24 +442,24 @@ extern "C" int shib_check_user(request_rec* r)
 
   ostringstream threadid;
   threadid << "[" << getpid() << "] shib_check_user" << '\0';
-  saml::NDC ndc(threadid.str().c_str());
+  xmltooling::NDC ndc(threadid.str().c_str());
 
   try {
     ShibTargetApache sta(r);
 
     // Check user authentication and export information, then set the handler bypass
-    pair<bool,void*> res = sta.doCheckAuthN(true);
+    pair<bool,long> res = sta.doCheckAuthN(true);
     apr_pool_userdata_setn((const void*)42,g_UserDataKey,NULL,r->pool);
-    if (res.first) return (int)(long)res.second;
+    if (res.first) return res.second;
 
     // user auth was okay -- export the assertions now
     res = sta.doExportAssertions();
-    if (res.first) return (int)(long)res.second;
+    if (res.first) return res.second;
 
     // export happened successfully..  this user is ok.
     return OK;
   }
-  catch (saml::SAMLException& e) {
+  catch (exception& e) {
     ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_check_user threw an exception: %s", e.what());
     return SERVER_ERROR;
   }
@@ -449,7 +479,7 @@ extern "C" int shib_handler(request_rec* r)
 
   ostringstream threadid;
   threadid << "[" << getpid() << "] shib_handler" << '\0';
-  saml::NDC ndc(threadid.str().c_str());
+  xmltooling::NDC ndc(threadid.str().c_str());
 
 #ifndef SHIB_APACHE_13
   // With 2.x, this handler always runs, though last.
@@ -468,13 +498,13 @@ extern "C" int shib_handler(request_rec* r)
   try {
     ShibTargetApache sta(r);
 
-    pair<bool,void*> res = sta.doHandler();
-    if (res.first) return (int)(long)res.second;
+    pair<bool,long> res = sta.doHandler();
+    if (res.first) return res.second;
 
     ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "doHandler() did not do anything.");
     return SERVER_ERROR;
   }
-  catch (saml::SAMLException& e) {
+  catch (exception& e) {
     ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_handler threw an exception: %s", e.what());
     return SERVER_ERROR;
   }
@@ -500,18 +530,18 @@ extern "C" int shib_auth_checker(request_rec* r)
 
   ostringstream threadid;
   threadid << "[" << getpid() << "] shib_auth_checker" << '\0';
-  saml::NDC ndc(threadid.str().c_str());
+  xmltooling::NDC ndc(threadid.str().c_str());
 
   try {
     ShibTargetApache sta(r);
 
-    pair<bool,void*> res = sta.doCheckAuthZ();
-    if (res.first) return (int)(long)res.second;
+    pair<bool,long> res = sta.doCheckAuthZ();
+    if (res.first) return res.second;
 
     // We're all okay.
     return OK;
   }
-  catch (saml::SAMLException& e) {
+  catch (exception& e) {
     ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_auth_checker threw an exception: %s", e.what());
     return SERVER_ERROR;
   }
@@ -524,32 +554,29 @@ extern "C" int shib_auth_checker(request_rec* r)
 }
 
 // Access control plugin that enforces htaccess rules
-class htAccessControl : virtual public IAccessControl
+class htAccessControl : virtual public AccessControl
 {
 public:
     htAccessControl() {}
     ~htAccessControl() {}
     Lockable* lock() {return this;}
     void unlock() {}
-    bool authorized(
-        ShibTarget* st,
-        ISessionCacheEntry* entry
-    ) const;
+    bool authorized(SPRequest& request, Session* session) const;
 };
 
-saml::IPlugIn* htAccessFactory(const DOMElement* e)
+AccessControl* htAccessFactory(const DOMElement* const & e)
 {
     return new htAccessControl();
 }
 
-class ApacheRequestMapper : public virtual IRequestMapper, public virtual PropertySet
+class ApacheRequestMapper : public virtual RequestMapper, public virtual PropertySet
 {
 public:
     ApacheRequestMapper(const DOMElement* e);
     ~ApacheRequestMapper() { delete m_mapper; delete m_htaccess; delete m_staKey; delete m_propsKey; }
     Lockable* lock() { return m_mapper->lock(); }
     void unlock() { m_staKey->setData(NULL); m_propsKey->setData(NULL); m_mapper->unlock(); }
-    Settings getSettings(ShibTarget* st) const;
+    Settings getSettings(const SPRequest& request) const;
     
     pair<bool,bool> getBool(const char* name, const char* ns=NULL) const;
     pair<bool,const char*> getString(const char* name, const char* ns=NULL) const;
@@ -560,41 +587,36 @@ public:
     const DOMElement* getElement() const;
 
 private:
-    IRequestMapper* m_mapper;
+    RequestMapper* m_mapper;
     ThreadKey* m_staKey;
     ThreadKey* m_propsKey;
-    IAccessControl* m_htaccess;
+    AccessControl* m_htaccess;
 };
 
-saml::IPlugIn* ApacheRequestMapFactory(const DOMElement* e)
+RequestMapper* ApacheRequestMapFactory(const DOMElement* const & e)
 {
     return new ApacheRequestMapper(e);
 }
 
 ApacheRequestMapper::ApacheRequestMapper(const DOMElement* e) : m_mapper(NULL), m_staKey(NULL), m_propsKey(NULL), m_htaccess(NULL)
 {
-    saml::IPlugIn* p=saml::SAMLConfig::getConfig().getPlugMgr().newPlugin(XML_REQUESTMAP_PROVIDER,e);
-    m_mapper=dynamic_cast<IRequestMapper*>(p);
-    if (!m_mapper) {
-        delete p;
-        throw saml::UnsupportedExtensionException("Embedded request mapper plugin was not of correct type.");
-    }
+    m_mapper=SPConfig::getConfig().RequestMapperManager.newPlugin(XML_REQUEST_MAPPER,e);
     m_htaccess=new htAccessControl();
     m_staKey=ThreadKey::create(NULL);
     m_propsKey=ThreadKey::create(NULL);
 }
 
-IRequestMapper::Settings ApacheRequestMapper::getSettings(ShibTarget* st) const
+RequestMapper::Settings ApacheRequestMapper::getSettings(const SPRequest& request) const
 {
-    Settings s=m_mapper->getSettings(st);
-    m_staKey->setData(dynamic_cast<ShibTargetApache*>(st));
+    Settings s=m_mapper->getSettings(request);
+    m_staKey->setData((void*)dynamic_cast<const ShibTargetApache*>(&request));
     m_propsKey->setData((void*)s.first);
-    return pair<const PropertySet*,IAccessControl*>(this,s.second ? s.second : m_htaccess);
+    return pair<const PropertySet*,AccessControl*>(this,s.second ? s.second : m_htaccess);
 }
 
 pair<bool,bool> ApacheRequestMapper::getBool(const char* name, const char* ns) const
 {
-    ShibTargetApache* sta=reinterpret_cast<ShibTargetApache*>(m_staKey->getData());
+    const ShibTargetApache* sta=reinterpret_cast<const ShibTargetApache*>(m_staKey->getData());
     const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
     if (sta && !ns) {
         // Override Apache-settable boolean properties.
@@ -608,7 +630,7 @@ pair<bool,bool> ApacheRequestMapper::getBool(const char* name, const char* ns) c
 
 pair<bool,const char*> ApacheRequestMapper::getString(const char* name, const char* ns) const
 {
-    ShibTargetApache* sta=reinterpret_cast<ShibTargetApache*>(m_staKey->getData());
+    const ShibTargetApache* sta=reinterpret_cast<const ShibTargetApache*>(m_staKey->getData());
     const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
     if (sta && !ns) {
         // Override Apache-settable string properties.
@@ -639,7 +661,7 @@ pair<bool,const XMLCh*> ApacheRequestMapper::getXMLString(const char* name, cons
 
 pair<bool,unsigned int> ApacheRequestMapper::getUnsignedInt(const char* name, const char* ns) const
 {
-    ShibTargetApache* sta=reinterpret_cast<ShibTargetApache*>(m_staKey->getData());
+    const ShibTargetApache* sta=reinterpret_cast<const ShibTargetApache*>(m_staKey->getData());
     const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
     if (sta && !ns) {
         // Override Apache-settable int properties.
@@ -651,7 +673,7 @@ pair<bool,unsigned int> ApacheRequestMapper::getUnsignedInt(const char* name, co
 
 pair<bool,int> ApacheRequestMapper::getInt(const char* name, const char* ns) const
 {
-    ShibTargetApache* sta=reinterpret_cast<ShibTargetApache*>(m_staKey->getData());
+    const ShibTargetApache* sta=reinterpret_cast<const ShibTargetApache*>(m_staKey->getData());
     const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
     if (sta && !ns) {
         // Override Apache-settable int properties.
@@ -721,13 +743,10 @@ static SH_AP_TABLE* groups_for_user(request_rec* r, const char* user, char* grpf
     return grps;
 }
 
-bool htAccessControl::authorized(
-    ShibTarget* st,
-    ISessionCacheEntry* entry
-) const
+bool htAccessControl::authorized(SPRequest& request, Session* session) const
 {
     // Make sure the object is our type.
-    ShibTargetApache* sta=dynamic_cast<ShibTargetApache*>(st);
+    ShibTargetApache* sta=dynamic_cast<ShibTargetApache*>(&request);
     if (!sta)
         throw ConfigurationException("Request wrapper object was not of correct type.");
 
@@ -760,7 +779,7 @@ bool htAccessControl::authorized(
         if (!(reqs[x].method_mask & (1 << m)))
             continue;
         method_restricted=true;
-        string remote_user = st->getRemoteUser();
+        string remote_user = request.getRemoteUser();
 
         t = reqs[x].requirement;
         w = ap_getword_white(sta->m_req->pool, &t);
@@ -771,12 +790,12 @@ bool htAccessControl::authorized(
             SHIB_AP_CHECK_IS_OK;
         }
         else if (!strcmp(w,"valid-user")) {
-            if (entry) {
-                st->log(ShibTarget::LogLevelDebug,"htAccessControl plugin accepting valid-user based on active session");
+            if (session) {
+                request.log(SPRequest::SPDebug,"htAccessControl plugin accepting valid-user based on active session");
                 SHIB_AP_CHECK_IS_OK;
             }
             else
-                st->log(ShibTarget::LogLevelError,"htAccessControl plugin rejecting access for valid-user rule, no session is active");
+                request.log(SPRequest::SPError,"htAccessControl plugin rejecting access for valid-user rule, no session is active");
         }
         else if (!strcmp(w,"user") && !remote_user.empty()) {
             bool regexp=false;
@@ -794,18 +813,18 @@ bool htAccessControl::authorized(
                         RegularExpression re(trans.get());
                         auto_ptr<XMLCh> trans2(fromUTF8(remote_user.c_str()));
                         if (re.matches(trans2.get())) {
-                            st->log(ShibTarget::LogLevelDebug, string("htAccessControl plugin accepting user (") + w + ")");
+                            request.log(SPRequest::SPDebug, string("htAccessControl plugin accepting user (") + w + ")");
                             SHIB_AP_CHECK_IS_OK;
                         }
                     }
                     catch (XMLException& ex) {
                         auto_ptr_char tmp(ex.getMessage());
-                        st->log(ShibTarget::LogLevelError,
+                        request.log(SPRequest::SPError,
                             string("htAccessControl plugin caught exception while parsing regular expression (") + w + "): " + tmp.get());
                     }
                 }
                 else if (remote_user==w) {
-                    st->log(ShibTarget::LogLevelDebug, string("htAccessControl plugin accepting user (") + w + ")");
+                    request.log(SPRequest::SPDebug, string("htAccessControl plugin accepting user (") + w + ")");
                     SHIB_AP_CHECK_IS_OK;
                 }
             }
@@ -813,7 +832,7 @@ bool htAccessControl::authorized(
         else if (!strcmp(w,"group")) {
             SH_AP_TABLE* grpstatus=NULL;
             if (sta->m_dc->szAuthGrpFile && !remote_user.empty()) {
-                st->log(ShibTarget::LogLevelDebug,string("htAccessControl plugin using groups file: ") + sta->m_dc->szAuthGrpFile);
+                request.log(SPRequest::SPDebug,string("htAccessControl plugin using groups file: ") + sta->m_dc->szAuthGrpFile);
                 grpstatus=groups_for_user(sta->m_req,remote_user.c_str(),sta->m_dc->szAuthGrpFile);
             }
             if (!grpstatus)
@@ -822,16 +841,16 @@ bool htAccessControl::authorized(
             while (*t) {
                 w=ap_getword_conf(sta->m_req->pool,&t);
                 if (ap_table_get(grpstatus,w)) {
-                    st->log(ShibTarget::LogLevelDebug, string("htAccessControl plugin accepting group (") + w + ")");
+                    request.log(SPRequest::SPDebug, string("htAccessControl plugin accepting group (") + w + ")");
                     SHIB_AP_CHECK_IS_OK;
                 }
             }
         }
         else {
-            saml::Iterator<shibboleth::IAAP*> provs=st->getApplication()->getAAPProviders();
+            saml::Iterator<shibboleth::IAAP*> provs=dynamic_cast<const IApplication&>(request.getSPApplication()).getAAPProviders();
             shibboleth::AAP wrapper(provs,w);
             if (wrapper.fail()) {
-                st->log(ShibTarget::LogLevelWarn, string("htAccessControl plugin didn't recognize require rule: ") + w);
+                request.log(SPRequest::SPWarn, string("htAccessControl plugin didn't recognize require rule: ") + w);
                 continue;
             }
 
@@ -868,7 +887,7 @@ bool htAccessControl::authorized(
                     for (unsigned int i = 0;  i < vals_str.length();  i++) {
                         if (vals_str.at(i) == ';') {
                             if (i == 0) {
-                                st->log(ShibTarget::LogLevelError, string("htAccessControl plugin found invalid header encoding (") +
+                                request.log(SPRequest::SPError, string("htAccessControl plugin found invalid header encoding (") +
                                     vals + "): starts with a semicolon");
                                 throw saml::SAMLException("Invalid information supplied to authorization plugin.");
                             }
@@ -884,18 +903,18 @@ bool htAccessControl::authorized(
                             if (regexp) {
                                 auto_ptr<XMLCh> trans(fromUTF8(val.c_str()));
                                 if (re->matches(trans.get())) {
-                                    st->log(ShibTarget::LogLevelDebug, string("htAccessControl plugin expecting ") + w +
+                                    request.log(SPRequest::SPDebug, string("htAccessControl plugin expecting ") + w +
                                        ", got " + val + ": authorization granted");
                                     SHIB_AP_CHECK_IS_OK;
                                 }
                             }
                             else if ((wrapper->getCaseSensitive() && val==w) || (!wrapper->getCaseSensitive() && !strcasecmp(val.c_str(),w))) {
-                                st->log(ShibTarget::LogLevelDebug, string("htAccessControl plugin expecting ") + w +
+                                request.log(SPRequest::SPDebug, string("htAccessControl plugin expecting ") + w +
                                     ", got " + val + ": authorization granted.");
                                 SHIB_AP_CHECK_IS_OK;
                             }
                             else {
-                                st->log(ShibTarget::LogLevelDebug, string("htAccessControl plugin expecting ") + w +
+                                request.log(SPRequest::SPDebug, string("htAccessControl plugin expecting ") + w +
                                     ", got " + val + ": authoritzation not granted.");
                             }
                         }
@@ -905,24 +924,24 @@ bool htAccessControl::authorized(
                     if (regexp) {
                         auto_ptr<XMLCh> trans(fromUTF8(val.c_str()));
                         if (re->matches(trans.get())) {
-                            st->log(ShibTarget::LogLevelDebug, string("htAccessControl plugin expecting ") + w +
+                            request.log(SPRequest::SPDebug, string("htAccessControl plugin expecting ") + w +
                                 ", got " + val + ": authorization granted.");
                             SHIB_AP_CHECK_IS_OK;
                         }
                     }
                     else if ((wrapper->getCaseSensitive() && val==w) || (!wrapper->getCaseSensitive() && !strcasecmp(val.c_str(),w))) {
-                        st->log(ShibTarget::LogLevelDebug, string("htAccessControl plugin expecting ") + w +
+                        request.log(SPRequest::SPDebug, string("htAccessControl plugin expecting ") + w +
                             ", got " + val + ": authorization granted");
                         SHIB_AP_CHECK_IS_OK;
                     }
                     else {
-                            st->log(ShibTarget::LogLevelDebug, string("htAccessControl plugin expecting ") + w +
+                            request.log(SPRequest::SPDebug, string("htAccessControl plugin expecting ") + w +
                                 ", got " + val + ": authorization not granted");
                     }
                 }
                 catch (XMLException& ex) {
                     auto_ptr_char tmp(ex.getMessage());
-                    st->log(ShibTarget::LogLevelError, string("htAccessControl plugin caught exception while parsing regular expression (")
+                    request.log(SPRequest::SPError, string("htAccessControl plugin caught exception while parsing regular expression (")
                         + w + "): " + tmp.get());
                 }
             }
@@ -951,7 +970,7 @@ extern "C" apr_status_t shib_exit(void* data)
         g_Config->shutdown();
         g_Config = NULL;
     }
-    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,NULL,"shib_exit() done\n");
+    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,NULL,"shib_exit() done");
     return OK;
 }
 #endif
@@ -962,7 +981,7 @@ static int shib_post_read(request_rec *r)
 {
     shib_request_config* rc = init_request_config(r);
 
-    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_post_read: E=%s\n", rc->env?"env":"hdr");
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_post_read: E=%s", rc->env?"env":"hdr");
 
 #ifdef SHIB_DEFERRED_HEADERS
     rc->hdr_out = ap_make_table(r->pool, 5);
@@ -980,12 +999,12 @@ extern "C" int shib_fixups(request_rec* r)
   if (dc->bOff==1 || dc->bUseEnvVars==0)
     return DECLINED;
 
-  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_fixup(%d): ENTER\n", (int)getpid());
+  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_fixup(%d): ENTER", (int)getpid());
 
   if (rc==NULL || rc->env==NULL || ap_is_empty_table(rc->env))
         return DECLINED;
 
-  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_fixup adding %d vars\n", ap_table_elts(rc->env)->nelts);
+  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_fixup adding %d vars", ap_table_elts(rc->env)->nelts);
   r->subprocess_env = ap_overlay_tables(r->pool, r->subprocess_env, rc->env);
 
   return OK;
@@ -1007,7 +1026,7 @@ extern "C" apr_status_t shib_child_exit(void* data)
     ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_child_exit(%d) dealing with g_Config..", (int)getpid());
     g_Config->shutdown();
     g_Config = NULL;
-    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_child_exit() done\n");
+    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_child_exit() done");
 
 #ifndef SHIB_APACHE_13
     return OK;
@@ -1041,7 +1060,7 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
             SPConfig::Listener |
             SPConfig::Metadata |
             SPConfig::AAP |
-            SPConfig::RequestMapper |
+            SPConfig::RequestMapping |
             SPConfig::InProcess |
             SPConfig::Logging
             );
@@ -1049,10 +1068,8 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
             ap_log_error(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() failed to initialize libraries");
             exit(1);
         }
-        saml::SAMLConfig::getConfig().getPlugMgr().regFactory(HTACCESS_ACCESSCONTROL,&htAccessFactory);
-        saml::SAMLConfig::getConfig().getPlugMgr().regFactory(NATIVE_REQUESTMAP_PROVIDER,&ApacheRequestMapFactory);
-        // We hijack the legacy type so that 1.2 config files will load this plugin
-        saml::SAMLConfig::getConfig().getPlugMgr().regFactory(LEGACY_REQUESTMAP_PROVIDER,&ApacheRequestMapFactory);
+        SPConfig::getConfig().AccessControlManager.registerFactory(HT_ACCESS_CONTROL,&htAccessFactory);
+        SPConfig::getConfig().RequestMapperManager.registerFactory(NATIVE_REQUEST_MAPPER,&ApacheRequestMapFactory);
         
         if (!g_Config->load(g_szSHIBConfig)) {
             ap_log_error(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() failed to load configuration");

@@ -261,10 +261,6 @@
 			RelativePath="ShibHTTPHook.cpp"
 			>
 		</File>
-		<File
-			RelativePath="XMLRequestMapper.cpp"
-			>
-		</File>
 	</Files>
 	<Globals>
 	</Globals>

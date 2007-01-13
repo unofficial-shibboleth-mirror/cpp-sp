@@ -26,10 +26,10 @@
 #define SHIB_TARGET_H
 
 // New headers
-#include <shibsp/ListenerService.h>
+#include <shibsp/AbstractSPRequest.h>
+#include <shibsp/Application.h>
 #include <shibsp/ServiceProvider.h>
-#include <saml/saml2/metadata/MetadataProvider.h>
-#include <xmltooling/security/TrustEngine.h>
+#include <shibsp/remoting/ListenerService.h>
 
 // Old headers
 #include <saml/saml.h>
@@ -65,7 +65,7 @@ namespace shibtarget {
         virtual ~IHandler() {}
         virtual const shibsp::PropertySet* getProperties() const { return m_props; }
         virtual void setProperties(const shibsp::PropertySet* properties) { m_props=properties; }
-        virtual std::pair<bool,void*> run(ShibTarget* st, bool isHandler=true) const=0;
+        virtual std::pair<bool,long> run(ShibTarget* st, bool isHandler=true) const=0;
     private:
         const shibsp::PropertySet* m_props;
     };
@@ -81,18 +81,12 @@ namespace shibtarget {
      * Application. Implementations should always expose an application named "default"
      * as a last resort.
      */
-    struct SHIBTARGET_EXPORTS IApplication : public virtual shibsp::PropertySet,
+    struct SHIBTARGET_EXPORTS IApplication : public virtual shibsp::Application,
         public virtual shibboleth::ShibBrowserProfile::ITokenValidator
     {
-        virtual const char* getId() const=0;
-        virtual const char* getHash() const=0;
-        
         virtual saml::Iterator<saml::SAMLAttributeDesignator*> getAttributeDesignators() const=0;
         virtual saml::Iterator<shibboleth::IAAP*> getAAPProviders() const=0;
-        virtual opensaml::saml2md::MetadataProvider* getMetadataProvider() const=0;
-        virtual xmltooling::TrustEngine* getTrustEngine() const=0;
         virtual saml::Iterator<const XMLCh*> getAudiences() const=0;
-        virtual const shibsp::PropertySet* getCredentialUse(const opensaml::saml2md::EntityDescriptor* provider) const=0;
 
         // caller is borrowing object, must use within scope of config lock
         virtual const saml::SAMLBrowserProfile* getBrowserProfile() const=0;
@@ -258,45 +252,10 @@ namespace shibtarget {
     #define ODBC_REPLAYCACHE    "edu.internet2.middleware.shibboleth.sp.provider.ODBCReplayCacheProvider"
 
 
-    /**
-     * Interface to an access control plugin
-     * 
-     * Access control plugins return authorization decisions based on the intersection
-     * of the resource request and the active session. They can be implemented through
-     * cross-platform or platform-specific mechanisms.
-     */
-    struct SHIBTARGET_EXPORTS IAccessControl : public virtual xmltooling::Lockable, public virtual saml::IPlugIn
-    {
-        virtual bool authorized(ShibTarget* st, ISessionCacheEntry* entry) const=0;
-        virtual ~IAccessControl() {}
-    };
-
-    #define HTACCESS_ACCESSCONTROL  "edu.internet2.middleware.shibboleth.sp.apache.provider.htAccessControl"
-    #define XML_ACCESSCONTROL       "edu.internet2.middleware.shibboleth.sp.provider.XMLAccessControl"
-
-    /**
-     * Interface to a request mapping plugin
-     * 
-     * Request mapping plugins return configuration settings that apply to resource requests.
-     * They can be implemented through cross-platform or platform-specific mechanisms.
-     */
-    struct SHIBTARGET_EXPORTS IRequestMapper : public virtual xmltooling::Lockable, public virtual saml::IPlugIn
-    {
-        typedef std::pair<const shibsp::PropertySet*,IAccessControl*> Settings;
-        virtual Settings getSettings(ShibTarget* st) const=0;
-        virtual ~IRequestMapper() {}
-    };
-
-    #define XML_REQUESTMAP_PROVIDER     "edu.internet2.middleware.shibboleth.sp.provider.XMLRequestMapProvider"
-    #define NATIVE_REQUESTMAP_PROVIDER  "edu.internet2.middleware.shibboleth.sp.provider.NativeRequestMapProvider"
-    #define LEGACY_REQUESTMAP_PROVIDER  "edu.internet2.middleware.shibboleth.target.provider.XMLRequestMap"
-
     struct SHIBTARGET_EXPORTS IConfig : public virtual shibsp::ServiceProvider
     {
         virtual ISessionCache* getSessionCache() const=0;
         virtual saml::IReplayCache* getReplayCache() const=0;
-        virtual IRequestMapper* getRequestMapper() const=0;
-        virtual const IApplication* getApplication(const char* applicationId) const=0;
         virtual ~IConfig() {}
     };
 
@@ -319,112 +278,18 @@ namespace shibtarget {
     };
 
     class ShibTargetPriv;
-    class SHIBTARGET_EXPORTS ShibTarget {
+    class SHIBTARGET_EXPORTS ShibTarget : public shibsp::AbstractSPRequest {
     public:
         ShibTarget(const IApplication* app);
         virtual ~ShibTarget(void);
 
-        // These are defined here so the subclass does not need to specifically
-        // depend on log4cpp.  We could use log4cpp::Priority::PriorityLevel
-        // but this is just as easy, IMHO.  It's just a case statement in the
-        // implementation to handle the event level.
-        enum ShibLogLevel {
-          LogLevelDebug,
-          LogLevelInfo,
-          LogLevelWarn,
-          LogLevelError
-        };
-
-        //
-        // Note: subclasses MUST implement ALL of these virtual methods
-        //
-        
-        // Send a message to the Webserver log
-        virtual void log(ShibLogLevel level, const std::string &msg)=0;
-
-        void log(ShibLogLevel level, const char* msg) {
-          std::string s = msg;
-          log(level, s);
-        }
-
-        // Get/Set a cookie for this request
-        virtual std::string getCookies() const=0;
-        virtual void setCookie(const std::string& name, const std::string& value)=0;
-        virtual const char* getCookie(const std::string& name) const;
-        void setCookie(const char* name, const char* value) {
-          std::string ns = name;
-          std::string vs = value;
-          setCookie(ns, vs);
-        }
-        void setCookie(const char* name, const std::string& value) {
-          std::string ns = name;
-          setCookie(ns, value);
-        }
-
-        // Get any URL-encoded arguments or the raw POST body from the server
-        virtual const char* getQueryString() const=0;
-        virtual const char* getRequestBody() const=0;
-        virtual const char* getRequestParameter(const char* param, size_t index=0) const;
-
-        // Clear a header, set a header
-        // These APIs are used for exporting the Assertions into the
-        // Headers.  It will clear some well-known headers first to make
-        // sure none remain.  Then it will process the set of assertions
-        // and export them via setHeader().
-        virtual void clearHeader(const std::string& name)=0;
-        virtual void setHeader(const std::string& name, const std::string& value)=0;
-        virtual std::string getHeader(const std::string& name)=0;
-        virtual void setRemoteUser(const std::string& user)=0;
-        virtual std::string getRemoteUser()=0;
-
-        void clearHeader(const char* n) {
-          std::string s = n;
-          clearHeader(s);
-        }
-        void setHeader(const char* n, const char* v) {
-          std::string ns = n;
-          std::string vs = v;
-          setHeader(ns, vs);
-        }
-        void setHeader(const std::string& n, const char* v) {
-          std::string vs = v;
-          setHeader(n, vs);
-        }
-        void setHeader(const char* n, const std::string& v) {
-          std::string ns = n;
-          setHeader(ns, v);
-        }
-        std::string getHeader(const char* n) {
-          std::string s = n;
-          return getHeader(s);
-        }
-        void setRemoteUser(const char* n) {
-          std::string s = n;
-          setRemoteUser(s);
-        }
-
-        // We're done.  Finish up.  Send specific result content or a redirect.
-        // If there are no headers supplied assume the content-type is text/html
-        typedef std::pair<std::string, std::string> header_t;
-        virtual void* sendPage(
-            const std::string& msg,
-            int code = 200,
-            const std::string& content_type = "text/html",
-            const saml::Iterator<header_t>& headers = EMPTY(header_t)
-            )=0;
-        void* sendPage(const char* msg) {
-          std::string m = msg;
-          return sendPage(m);
-        }
-        virtual void* sendRedirect(const std::string& url)=0;
-        
         // These next two APIs are used to obtain the module-specific "OK"
         // and "Decline" results.  OK means "we believe that this request
         // should be accepted".  Declined means "we believe that this is
         // not a shibbolized request so we have no comment".
 
-        virtual void* returnDecline();
-        virtual void* returnOK();
+        virtual long returnDecline();
+        virtual long returnOK();
 
         //
         // Note:  Subclasses need not implement anything below this line
@@ -448,44 +313,29 @@ namespace shibtarget {
         //   automatically call doHandlePOST() when it encounters a request for
         //   the ShireURL;  if false it will call returnOK() instead.
         //
-        std::pair<bool,void*> doCheckAuthN(bool handler = false);
-        std::pair<bool,void*> doHandler();
-        std::pair<bool,void*> doCheckAuthZ();
-        std::pair<bool,void*> doExportAssertions(bool requireSession = true);
+        std::pair<bool,long> doCheckAuthN(bool handler = false);
+        std::pair<bool,long> doHandler();
+        std::pair<bool,long> doCheckAuthZ();
+        std::pair<bool,long> doExportAssertions(bool requireSession = true);
 
         // Basic request access in case any plugins need the info
         virtual const IConfig* getConfig() const;
         virtual const IApplication* getApplication() const;
-        const char* getRequestMethod() const {return m_method.c_str();}
-        const char* getProtocol() const {return m_protocol.c_str();}
-        const char* getHostname() const {return m_hostname.c_str();}
-        int getPort() const {return m_port;}
-        const char* getRequestURI() const {return m_uri.c_str();}
-        const char* getContentType() const {return m_content_type.c_str();}
-        const char* getRemoteAddr() const {return m_remote_addr.c_str();}
         const char* getRequestURL() const {return m_url.c_str();}
         
-        // Advanced methods useful to profile handlers implemented outside core
-        
-        // Get per-application session and state cookie name and properties
-        virtual std::pair<std::string,const char*> getCookieNameProps(const char* prefix) const;
-        
-        // Determine the effective handler URL based on the resource URL
-        virtual std::string getHandlerURL(const char* resource) const;
-
     protected:
         ShibTarget();
 
         // Internal APIs
 
         // Initialize the request from the parsed URL
-        // protocol == http, https, etc
+        // scheme == http, https, etc
         // hostname == server name
         // port == server port
         // uri == resource path
         // method == GET, POST, etc.
         void init(
-            const char* protocol,
+            const char* scheme,
             const char* hostname,
             int port,
             const char* uri,
@@ -494,7 +344,7 @@ namespace shibtarget {
             const char* method
             );
 
-        std::string m_url, m_method, m_protocol, m_hostname, m_uri, m_content_type, m_remote_addr;
+        std::string m_url, m_method, m_scheme, m_hostname, m_uri, m_content_type, m_remote_addr;
         int m_port;
 
     private:

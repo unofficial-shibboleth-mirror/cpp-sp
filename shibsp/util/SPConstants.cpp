@@ -21,7 +21,7 @@
  */
 
 #include "internal.h"
-#include "SPConstants.h"
+#include "util/SPConstants.h"
 #include <xercesc/util/XMLUniDefs.hpp>
 
 using namespace shibspconstants;

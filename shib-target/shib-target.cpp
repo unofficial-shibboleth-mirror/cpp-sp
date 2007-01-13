@@ -29,14 +29,12 @@
 # include <unistd.h>
 #endif
 
-#include <ctime>
-#include <sstream>
 #include <fstream>
-#include <stdexcept>
 
 #include <saml/SAMLConfig.h>
-#include <saml/binding/URLEncoder.h>
 #include <xercesc/util/Base64.hpp>
+#include <shibsp/AccessControl.h>
+#include <shibsp/RequestMapper.h>
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/TemplateEngine.h>
 #include <xmltooling/util/XMLHelper.h>
@@ -59,22 +57,6 @@ using xmltooling::XMLToolingConfig;
 using xmltooling::XMLHelper;
 
 namespace shibtarget {
-    class CgiParse
-    {
-    public:
-        CgiParse(const ShibTarget* st);
-        ~CgiParse();
-
-        typedef multimap<string,char*>::const_iterator walker;
-        pair<walker,walker> get_values(const char* name) const;
-        
-    private:
-        char* fmakeword(char stop, unsigned int *cl, const char** ppch);
-        char* makeword(char *line, char stop);
-        void plustospace(char *str);
-
-        multimap<string,char*> kvp_map;
-    };
 
     class ExtTemplateParameters : public TemplateEngine::TemplateParameters
     {
@@ -113,23 +95,20 @@ namespace shibtarget {
 
         // Helper functions
         void get_application(ShibTarget* st, const string& protocol, const string& hostname, int port, const string& uri);
-        void* sendError(ShibTarget* st, const char* page, ExtTemplateParameters& tp, const XMLToolingException* ex=NULL);
+        long sendError(ShibTarget* st, const char* page, ExtTemplateParameters& tp, const XMLToolingException* ex=NULL);
         void clearHeaders(ShibTarget* st);
     
     private:
         friend class ShibTarget;
-        IRequestMapper::Settings m_settings;
+        RequestMapper::Settings m_settings;
         const IApplication *m_app;
-        mutable string m_handlerURL;
-        mutable map<string,string> m_cookieMap;
-        mutable CgiParse* m_cgiParser;
 
         ISessionCacheEntry* m_cacheEntry;
 
         ShibTargetConfig* m_Config;
 
         IConfig* m_conf;
-        IRequestMapper* m_mapper;
+        RequestMapper* m_mapper;
     };
 
     static const XMLCh SessionInitiator[] =     UNICODE_LITERAL_16(S,e,s,s,i,o,n,I,n,i,t,i,a,t,o,r);
@@ -154,7 +133,7 @@ ShibTarget::~ShibTarget(void)
 }
 
 void ShibTarget::init(
-    const char* protocol,
+    const char* scheme,
     const char* hostname,
     int port,
     const char* uri,
@@ -171,14 +150,15 @@ void ShibTarget::init(
         throw XMLToolingException("Request initialization occurred twice!");
 
     if (method) m_method = method;
-    if (protocol) m_protocol = protocol;
+    if (scheme) m_scheme = scheme;
     if (hostname) m_hostname = hostname;
     if (uri) m_uri = uri;
     if (content_type) m_content_type = content_type;
     if (remote_addr) m_remote_addr = remote_addr;
     m_port = port;
     m_priv->m_Config = &ShibTargetConfig::getConfig();
-    m_priv->get_application(this, protocol, hostname, port, uri);
+    m_priv->get_application(this, scheme, hostname, port, uri);
+    AbstractSPRequest::m_app = m_priv->m_app;
 }
 
 
@@ -186,7 +166,7 @@ void ShibTarget::init(
 // The web server modules implement a subclass and then call into 
 // these methods once they instantiate their request object.
 
-pair<bool,void*> ShibTarget::doCheckAuthN(bool handler)
+pair<bool,long> ShibTarget::doCheckAuthN(bool handler)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("doCheckAuthN");
@@ -201,17 +181,17 @@ pair<bool,void*> ShibTarget::doCheckAuthN(bool handler)
             throw ConfigurationException("System uninitialized, application did not supply request information.");
 
         // If not SSL, check to see if we should block or redirect it.
-        if (!strcmp("http",getProtocol())) {
+        if (!strcmp("http",getScheme())) {
             pair<bool,const char*> redirectToSSL = m_priv->m_settings.first->getString("redirectToSSL");
             if (redirectToSSL.first) {
-                if (!strcasecmp("GET",getRequestMethod()) || !strcasecmp("HEAD",getRequestMethod())) {
+                if (!strcasecmp("GET",getMethod()) || !strcasecmp("HEAD",getMethod())) {
                     // Compute the new target URL
                     string redirectURL = string("https://") + getHostname();
                     if (strcmp(redirectToSSL.second,"443")) {
                         redirectURL = redirectURL + ':' + redirectToSSL.second;
                     }
                     redirectURL += getRequestURI();
-                    return make_pair(true, sendRedirect(redirectURL));
+                    return make_pair(true, sendRedirect(redirectURL.c_str()));
                 }
                 else {
                     tp.m_map["requestURL"] = m_url.substr(0,m_url.find('?'));
@@ -253,8 +233,8 @@ pair<bool,void*> ShibTarget::doCheckAuthN(bool handler)
         // Fix for secadv 20050901
         m_priv->clearHeaders(this);
 
-        pair<string,const char*> shib_cookie = getCookieNameProps("_shibsession_");
-        const char* session_id = getCookie(shib_cookie.first);
+        pair<string,const char*> shib_cookie = m_priv->m_app->getCookieNameProps("_shibsession_");
+        const char* session_id = getCookie(shib_cookie.first.c_str());
         if (!session_id || !*session_id) {
             // No session.  Maybe that's acceptable?
             if ((!requireSession.first || !requireSession.second) && !requireSessionWith.first)
@@ -292,7 +272,7 @@ pair<bool,void*> ShibTarget::doCheckAuthN(bool handler)
                 throw RetryableProfileException("Session no longer valid.");
         }
         catch (exception& e) {
-            log(LogLevelError, string("session processing failed: ") + e.what());
+            log(SPError, string("session processing failed: ") + e.what());
 
             // If no session is required, bail now.
             if ((!requireSession.first || !requireSession.second) && !requireSessionWith.first)
@@ -329,8 +309,8 @@ pair<bool,void*> ShibTarget::doCheckAuthN(bool handler)
 
         // We're done.  Everything is okay.  Nothing to report.  Nothing to do..
         // Let the caller decide how to proceed.
-        log(LogLevelDebug, "doCheckAuthN succeeded");
-        return make_pair(false,(void*)NULL);
+        log(SPDebug, "doCheckAuthN succeeded");
+        return make_pair(false,0);
     }
     catch (XMLToolingException& e) {
         tp.m_map["errorType"] = procState;
@@ -350,7 +330,7 @@ pair<bool,void*> ShibTarget::doCheckAuthN(bool handler)
 #endif
 }
 
-pair<bool,void*> ShibTarget::doHandler(void)
+pair<bool,long> ShibTarget::doHandler(void)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("doHandler");
@@ -381,8 +361,8 @@ pair<bool,void*> ShibTarget::doHandler(void)
         pair<bool,bool> handlerSSL=sessionProps->getBool("handlerSSL");
       
         // Make sure this is SSL, if it should be
-        if ((!handlerSSL.first || handlerSSL.second) && m_protocol != "https")
-            throw opensaml::FatalProfileException("Blocked non-SSL access to Shibboleth handler.");
+        if ((!handlerSSL.first || handlerSSL.second) && m_scheme != "https")
+            throw FatalProfileException("Blocked non-SSL access to Shibboleth handler.");
 
         // We dispatch based on our path info. We know the request URL begins with or equals the handler URL,
         // so the path info is the next character (or null).
@@ -400,7 +380,7 @@ pair<bool,void*> ShibTarget::doHandler(void)
             procState = "Diagnostics Error";
         else
             procState = "Extension Service Error";
-        pair<bool,void*> hret=handler->run(this);
+        pair<bool,long> hret=handler->run(this);
 
         // Did the handler run successfully?
         if (hret.first)
@@ -441,7 +421,7 @@ pair<bool,void*> ShibTarget::doHandler(void)
 #endif
 }
 
-pair<bool,void*> ShibTarget::doCheckAuthZ(void)
+pair<bool,long> ShibTarget::doCheckAuthZ(void)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("doCheckAuthZ");
@@ -476,8 +456,8 @@ pair<bool,void*> ShibTarget::doCheckAuthZ(void)
         	
 	        if (!m_priv->m_cacheEntry) {
 	            // No data yet, so we may need to try and get the session.
-		        pair<string,const char*> shib_cookie=getCookieNameProps("_shibsession_");
-		        const char *session_id = getCookie(shib_cookie.first);
+		        pair<string,const char*> shib_cookie=m_priv->m_app->getCookieNameProps("_shibsession_");
+                const char *session_id = getCookie(shib_cookie.first.c_str());
 	            try {
 		        	if (session_id && *session_id) {
                         m_priv->m_cacheEntry=m_priv->m_conf->getSessionCache()->find(
@@ -488,15 +468,16 @@ pair<bool,void*> ShibTarget::doCheckAuthZ(void)
 		        	}
 	            }
 	            catch (exception&) {
-	            	log(LogLevelError, "doCheckAuthZ: unable to obtain session information to pass to access control provider");
+	            	log(SPError, "doCheckAuthZ: unable to obtain session information to pass to access control provider");
 	            }
 	        }
 	
             xmltooling::Locker acllock(m_priv->m_settings.second);
+            /* TODO: port
             if (m_priv->m_settings.second->authorized(this,m_priv->m_cacheEntry)) {
                 // Let the caller decide how to proceed.
                 log(LogLevelDebug, "doCheckAuthZ: access control provider granted access");
-                return make_pair(false,(void*)NULL);
+                return make_pair(false,0);
             }
             else {
                 log(LogLevelWarn, "doCheckAuthZ: access control provider denied access");
@@ -504,6 +485,8 @@ pair<bool,void*> ShibTarget::doCheckAuthZ(void)
                     tp.m_map["requestURL"] = targetURL;
                 return make_pair(true,m_priv->sendError(this, "access", tp));
             }
+            */
+            return make_pair(false,0);
         }
         else
             return make_pair(true,returnDecline());
@@ -526,7 +509,7 @@ pair<bool,void*> ShibTarget::doCheckAuthZ(void)
 #endif
 }
 
-pair<bool,void*> ShibTarget::doExportAssertions(bool requireSession)
+pair<bool,long> ShibTarget::doExportAssertions(bool requireSession)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("doExportAssertions");
@@ -543,8 +526,8 @@ pair<bool,void*> ShibTarget::doExportAssertions(bool requireSession)
         if (!m_priv->m_cacheEntry) {
             // No data yet, so we need to get the session. This can only happen
             // if the call to doCheckAuthn doesn't happen in the same object lifetime.
-	        pair<string,const char*> shib_cookie=getCookieNameProps("_shibsession_");
-	        const char *session_id = getCookie(shib_cookie.first);
+	        pair<string,const char*> shib_cookie=m_priv->m_app->getCookieNameProps("_shibsession_");
+            const char *session_id = getCookie(shib_cookie.first.c_str());
             try {
 	        	if (session_id && *session_id) {
                     m_priv->m_cacheEntry=m_priv->m_conf->getSessionCache()->find(
@@ -555,7 +538,7 @@ pair<bool,void*> ShibTarget::doExportAssertions(bool requireSession)
 	        	}
             }
             catch (exception&) {
-            	log(LogLevelError, "unable to obtain session information to export into request headers");
+            	log(SPError, "unable to obtain session information to export into request headers");
             	// If we have to have a session, then this is a fatal error.
             	if (requireSession)
             		throw;
@@ -567,7 +550,7 @@ pair<bool,void*> ShibTarget::doExportAssertions(bool requireSession)
         	if (requireSession)
         		throw RetryableProfileException("Unable to obtain session information for request.");
         	else
-        		return make_pair(false,(void*)NULL);	// just bail silently
+        		return make_pair(false,0);	// just bail silently
         }
         
         // Extract data from session.
@@ -641,10 +624,10 @@ pair<bool,void*> ShibTarget::doExportAssertions(bool requireSession)
                     
                         Iterator<string> vals=attr->getSingleByteValues();
                         if (!strcmp(rule->getHeader(),"REMOTE_USER") && vals.hasNext())
-                            setRemoteUser(vals.next());
+                            setRemoteUser(vals.next().c_str());
                         else {
                             int it=0;
-                            string header = getHeader(rule->getHeader());
+                            string header = getSecureHeader(rule->getHeader());
                             if (!header.empty())
                                 it++;
                             for (; vals.hasNext(); it++) {
@@ -659,14 +642,14 @@ pair<bool,void*> ShibTarget::doExportAssertions(bool requireSession)
                                     header += ";";
                                 header += value;
                             }
-                            setHeader(rule->getHeader(), header);
+                            setHeader(rule->getHeader(), header.c_str());
                         }
                     }
                 }
             }
         }
     
-        return make_pair(false,(void*)NULL);
+        return make_pair(false,0);
     }
     catch (XMLToolingException& e) {
         tp.m_map["errorType"] = procState;
@@ -686,162 +669,6 @@ pair<bool,void*> ShibTarget::doExportAssertions(bool requireSession)
 #endif
 }
 
-const char* ShibTarget::getRequestParameter(const char* param, size_t index) const
-{
-    if (!m_priv->m_cgiParser)
-        m_priv->m_cgiParser=new CgiParse(this);
-    
-    pair<CgiParse::walker,CgiParse::walker> bounds=m_priv->m_cgiParser->get_values(param);
-    
-    // Advance to the right index.
-    while (index && bounds.first!=bounds.second) {
-        index--;
-        bounds.first++;
-    }
-
-    return (bounds.first==bounds.second) ? NULL : bounds.first->second;
-}
-
-const char* ShibTarget::getCookie(const string& name) const
-{
-    if (m_priv->m_cookieMap.empty()) {
-        string cookies=getCookies();
-
-        string::size_type pos=0,cname,namelen,val,vallen;
-        while (pos !=string::npos && pos < cookies.length()) {
-            while (isspace(cookies[pos])) pos++;
-            cname=pos;
-            pos=cookies.find_first_of("=",pos);
-            if (pos == string::npos)
-                break;
-            namelen=pos-cname;
-            pos++;
-            if (pos==cookies.length())
-                break;
-            val=pos;
-            pos=cookies.find_first_of(";",pos);
-            if (pos != string::npos) {
-                vallen=pos-val;
-                pos++;
-                m_priv->m_cookieMap.insert(make_pair(cookies.substr(cname,namelen),cookies.substr(val,vallen)));
-            }
-            else
-                m_priv->m_cookieMap.insert(make_pair(cookies.substr(cname,namelen),cookies.substr(val)));
-        }
-    }
-    map<string,string>::const_iterator lookup=m_priv->m_cookieMap.find(name);
-    return (lookup==m_priv->m_cookieMap.end()) ? NULL : lookup->second.c_str();
-}
-
-pair<string,const char*> ShibTarget::getCookieNameProps(const char* prefix) const
-{
-    static const char* defProps="; path=/";
-    
-    const PropertySet* props=m_priv->m_app ? m_priv->m_app->getPropertySet("Sessions") : NULL;
-    if (props) {
-        pair<bool,const char*> p=props->getString("cookieProps");
-        if (!p.first)
-            p.second=defProps;
-        pair<bool,const char*> p2=props->getString("cookieName");
-        if (p2.first)
-            return make_pair(string(prefix) + p2.second,p.second);
-        return make_pair(string(prefix) + m_priv->m_app->getHash(),p.second);
-    }
-    
-    // Shouldn't happen, but just in case..
-    return pair<string,const char*>(prefix,defProps);
-}
-
-string ShibTarget::getHandlerURL(const char* resource) const
-{
-    if (!m_priv->m_handlerURL.empty() && resource && !strcmp(getRequestURL(),resource))
-        return m_priv->m_handlerURL;
-        
-    if (!m_priv->m_app)
-        throw ConfigurationException("Internal error in ShibTargetPriv::getHandlerURL, missing application pointer.");
-
-    bool ssl_only=false;
-    const char* handler=NULL;
-    const PropertySet* props=m_priv->m_app->getPropertySet("Sessions");
-    if (props) {
-        pair<bool,bool> p=props->getBool("handlerSSL");
-        if (p.first)
-            ssl_only=p.second;
-        pair<bool,const char*> p2=props->getString("handlerURL");
-        if (p2.first)
-            handler=p2.second;
-    }
-    
-    // Should never happen...
-    if (!handler || (*handler!='/' && strncmp(handler,"http:",5) && strncmp(handler,"https:",6)))
-        throw ConfigurationException(
-            "Invalid handlerURL property ($1) in Application ($2)",
-            xmltooling::params(2, handler ? handler : "null", m_priv->m_app->getId())
-            );
-
-    // The "handlerURL" property can be in one of three formats:
-    //
-    // 1) a full URI:       http://host/foo/bar
-    // 2) a hostless URI:   http:///foo/bar
-    // 3) a relative path:  /foo/bar
-    //
-    // #  Protocol  Host        Path
-    // 1  handler   handler     handler
-    // 2  handler   resource    handler
-    // 3  resource  resource    handler
-    //
-    // note: if ssl_only is true, make sure the protocol is https
-
-    const char* path = NULL;
-
-    // Decide whether to use the handler or the resource for the "protocol"
-    const char* prot;
-    if (*handler != '/') {
-        prot = handler;
-    }
-    else {
-        prot = resource;
-        path = handler;
-    }
-
-    // break apart the "protocol" string into protocol, host, and "the rest"
-    const char* colon=strchr(prot,':');
-    colon += 3;
-    const char* slash=strchr(colon,'/');
-    if (!path)
-        path = slash;
-
-    // Compute the actual protocol and store in member.
-    if (ssl_only)
-        m_priv->m_handlerURL.assign("https://");
-    else
-        m_priv->m_handlerURL.assign(prot, colon-prot);
-
-    // create the "host" from either the colon/slash or from the target string
-    // If prot == handler then we're in either #1 or #2, else #3.
-    // If slash == colon then we're in #2.
-    if (prot != handler || slash == colon) {
-        colon = strchr(resource, ':');
-        colon += 3;      // Get past the ://
-        slash = strchr(colon, '/');
-    }
-    string host(colon, (slash ? slash-colon : strlen(colon)));
-
-    // Build the handler URL
-    m_priv->m_handlerURL+=host + path;
-    return m_priv->m_handlerURL;
-}
-
-void ShibTarget::log(ShibLogLevel level, const string& msg)
-{
-    Category::getInstance("shibtarget.ShibTarget").log(
-        (level == LogLevelDebug ? Priority::DEBUG :
-        (level == LogLevelInfo ? Priority::INFO :
-        (level == LogLevelWarn ? Priority::WARN : Priority::ERROR))),
-        msg
-    );
-}
-
 const IApplication* ShibTarget::getApplication() const
 {
     return m_priv->m_app;
@@ -852,12 +679,12 @@ const IConfig* ShibTarget::getConfig() const
     return m_priv->m_conf;
 }
 
-void* ShibTarget::returnDecline(void)
+long ShibTarget::returnDecline(void)
 {
     return NULL;
 }
 
-void* ShibTarget::returnOK(void)
+long ShibTarget::returnOK(void)
 {
     return NULL;
 }
@@ -867,7 +694,7 @@ void* ShibTarget::returnOK(void)
  */
 
 ShibTargetPriv::ShibTargetPriv()
-    : m_app(NULL), m_mapper(NULL), m_conf(NULL), m_Config(NULL), m_cacheEntry(NULL), m_cgiParser(NULL) {}
+    : m_app(NULL), m_mapper(NULL), m_conf(NULL), m_Config(NULL), m_cacheEntry(NULL) {}
 
 ShibTargetPriv::~ShibTargetPriv()
 {
@@ -886,7 +713,6 @@ ShibTargetPriv::~ShibTargetPriv()
         m_conf = NULL;
     }
 
-    delete m_cgiParser;
     m_app = NULL;
     m_Config = NULL;
 }
@@ -908,11 +734,11 @@ void ShibTargetPriv::get_application(ShibTarget* st, const string& protocol, con
   m_mapper->lock();
 
   // Obtain the application settings from the parsed URL
-  m_settings = m_mapper->getSettings(st);
+  m_settings = m_mapper->getSettings(*st);
 
   // Now find the application from the URL settings
   pair<bool,const char*> application_id=m_settings.first->getString("applicationId");
-  m_app=m_conf->getApplication(application_id.second);
+  m_app=dynamic_cast<const IApplication*>(m_conf->getApplication(application_id.second));
   if (!m_app) {
     m_mapper->unlock();
     m_mapper = NULL;
@@ -931,15 +757,14 @@ void ShibTargetPriv::get_application(ShibTarget* st, const string& protocol, con
   st->m_url += uri;
 }
 
-void* ShibTargetPriv::sendError(
+long ShibTargetPriv::sendError(
     ShibTarget* st, const char* page, ExtTemplateParameters& tp, const XMLToolingException* ex
     )
 {
-    ShibTarget::header_t hdrs[] = {
-        ShibTarget::header_t("Expires","01-Jan-1997 12:00:00 GMT"),
-        ShibTarget::header_t("Cache-Control","private,no-store,no-cache")
-        };
-    
+    st->setContentType("text/html");
+    st->setResponseHeader("Expires","01-Jan-1997 12:00:00 GMT");
+    st->setResponseHeader("Cache-Control","private,no-store,no-cache");
+
     TemplateEngine* engine = XMLToolingConfig::getConfig().getTemplateEngine();
     const PropertySet* props=m_app->getPropertySet("Errors");
     if (props) {
@@ -948,22 +773,23 @@ void* ShibTargetPriv::sendError(
             ifstream infile(p.second);
             if (infile) {
                 tp.setPropertySet(props);
-                ostringstream ostr;
-                engine->run(infile, ostr, tp, ex);
-                return st->sendPage(ostr.str().c_str(), 200, "text/html", ArrayIterator<ShibTarget::header_t>(hdrs,2));
+                stringstream str;
+                engine->run(infile, str, tp, ex);
+                return st->sendResponse(str);
             }
         }
-        else if (!strcmp(page,"access"))
-            return st->sendPage("Access Denied", 403, "text/html", ArrayIterator<ShibTarget::header_t>(hdrs,2));
+        else if (!strcmp(page,"access")) {
+            istringstream msg("Access Denied");
+            return static_cast<opensaml::GenericResponse*>(st)->sendResponse(msg, opensaml::HTTPResponse::SAML_HTTP_STATUS_FORBIDDEN);
+        }
     }
 
     string errstr = string("sendError could not process error template (") + page + ") for application (";
     errstr += m_app->getId();
     errstr += ")";
-    st->log(ShibTarget::LogLevelError, errstr);
-    return st->sendPage(
-        "Internal Server Error. Please contact the site administrator.", 500, "text/html", ArrayIterator<ShibTarget::header_t>(hdrs,2)
-        );
+    st->log(SPRequest::SPError, errstr);
+    istringstream msg("Internal Server Error. Please contact the site administrator.");
+    return st->sendError(msg);
 }
 
 void ShibTargetPriv::clearHeaders(ShibTarget* st)
@@ -988,100 +814,4 @@ void ShibTargetPriv::clearHeaders(ShibTarget* st)
                 st->clearHeader(header);
         }
     }
-}
-
-/*************************************************************************
- * CGI Parser implementation
- */
-
-CgiParse::CgiParse(const ShibTarget* st)
-{
-    const char* pch=NULL;
-    if (!strcmp(st->getRequestMethod(),"POST"))
-        pch=st->getRequestBody();
-    else
-        pch=st->getQueryString();
-    size_t cl=pch ? strlen(pch) : 0;
-    
-        
-    while (cl && pch) {
-        char *name;
-        char *value;
-        value=fmakeword('&',&cl,&pch);
-        plustospace(value);
-        opensaml::SAMLConfig::getConfig().getURLEncoder()->decode(value);
-        name=makeword(value,'=');
-        kvp_map.insert(pair<string,char*>(name,value));
-        free(name);
-    }
-}
-
-CgiParse::~CgiParse()
-{
-    for (multimap<string,char*>::iterator i=kvp_map.begin(); i!=kvp_map.end(); i++)
-        free(i->second);
-}
-
-pair<CgiParse::walker,CgiParse::walker> CgiParse::get_values(const char* name) const
-{
-    return kvp_map.equal_range(name);
-}
-
-/* Parsing routines modified from NCSA source. */
-char* CgiParse::makeword(char *line, char stop)
-{
-    int x = 0,y;
-    char *word = (char *) malloc(sizeof(char) * (strlen(line) + 1));
-
-    for(x=0;((line[x]) && (line[x] != stop));x++)
-        word[x] = line[x];
-
-    word[x] = '\0';
-    if(line[x])
-        ++x;
-    y=0;
-
-    while(line[x])
-      line[y++] = line[x++];
-    line[y] = '\0';
-    return word;
-}
-
-char* CgiParse::fmakeword(char stop, size_t *cl, const char** ppch)
-{
-    int wsize;
-    char *word;
-    int ll;
-
-    wsize = 1024;
-    ll=0;
-    word = (char *) malloc(sizeof(char) * (wsize + 1));
-
-    while(1)
-    {
-        word[ll] = *((*ppch)++);
-        if(ll==wsize-1)
-        {
-            word[ll+1] = '\0';
-            wsize+=1024;
-            word = (char *)realloc(word,sizeof(char)*(wsize+1));
-        }
-        --(*cl);
-        if((word[ll] == stop) || word[ll] == EOF || (!(*cl)))
-        {
-            if(word[ll] != stop)
-                ll++;
-            word[ll] = '\0';
-            return word;
-        }
-        ++ll;
-    }
-}
-
-void CgiParse::plustospace(char *str)
-{
-    register int x;
-
-    for(x=0;str[x];x++)
-        if(str[x] == '+') str[x] = ' ';
 }

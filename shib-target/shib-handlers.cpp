@@ -30,7 +30,6 @@
 #include <saml/saml2/metadata/EndpointManager.h>
 #include <saml/util/CommonDomainCookie.h>
 #include <shibsp/SPConfig.h>
-#include <shibsp/SPConstants.h>
 
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
@@ -53,8 +52,8 @@ namespace {
   public:
     SessionInitiator(const DOMElement* e) {}
     ~SessionInitiator() {}
-    pair<bool,void*> run(ShibTarget* st, bool isHandler=true) const;
-    pair<bool,void*> ShibAuthnRequest(
+    pair<bool,long> run(ShibTarget* st, bool isHandler=true) const;
+    pair<bool,long> ShibAuthnRequest(
         ShibTarget* st,
         const IHandler* shire,
         const char* dest,
@@ -68,7 +67,7 @@ namespace {
   public:
     SAML1Consumer(const DOMElement* e);
     ~SAML1Consumer();
-    pair<bool,void*> run(ShibTarget* st, bool isHandler=true) const;
+    pair<bool,long> run(ShibTarget* st, bool isHandler=true) const;
     DDF receive(const DDF& in);
   private:
     string m_address;
@@ -82,7 +81,7 @@ namespace {
   public:
     ShibLogout(const DOMElement* e) {}
     ~ShibLogout() {}
-    pair<bool,void*> run(ShibTarget* st, bool isHandler=true) const;
+    pair<bool,long> run(ShibTarget* st, bool isHandler=true) const;
   };
 }
 
@@ -107,7 +106,7 @@ IPlugIn* ShibLogoutFactory(const DOMElement* e)
     return new ShibLogout(e);
 }
 
-pair<bool,void*> SessionInitiator::run(ShibTarget* st, bool isHandler) const
+pair<bool,long> SessionInitiator::run(ShibTarget* st, bool isHandler) const
 {
     string dupresource;
     const char* resource=NULL;
@@ -121,12 +120,12 @@ pair<bool,void*> SessionInitiator::run(ShibTarget* st, bool isHandler) const
          *  acsIndex    optional index of an ACS to use on the way back in
          *  providerId  optional direct invocation of a specific IdP
          */
-        const char* option=st->getRequestParameter("acsIndex");
+        const char* option=st->getParameter("acsIndex");
         if (option)
             ACS=app->getAssertionConsumerServiceByIndex(atoi(option));
-        option=st->getRequestParameter("providerId");
+        option=st->getParameter("providerId");
         
-        resource=st->getRequestParameter("target");
+        resource=st->getParameter("target");
         if (!resource || !*resource) {
             pair<bool,const char*> home=app->getString("homeURL");
             if (home.first)
@@ -191,8 +190,9 @@ pair<bool,void*> SessionInitiator::run(ShibTarget* st, bool isHandler) const
             throw ConfigurationException("E-Authn requests cannot include relay state, so localRelayState must be enabled.");
 
         // Here we store the state in a cookie.
-        pair<string,const char*> shib_cookie=st->getCookieNameProps("_shibstate_");
-        st->setCookie(shib_cookie.first,opensaml::SAMLConfig::getConfig().getURLEncoder()->encode(resource) + shib_cookie.second);
+        pair<string,const char*> shib_cookie=app->getCookieNameProps("_shibstate_");
+        string stateval = opensaml::SAMLConfig::getConfig().getURLEncoder()->encode(resource) + shib_cookie.second;
+            st->setCookie(shib_cookie.first.c_str(),stateval.c_str());
         return make_pair(true, st->sendRedirect(wayfURL.second));
     }
    
@@ -200,7 +200,7 @@ pair<bool,void*> SessionInitiator::run(ShibTarget* st, bool isHandler) const
 }
 
 // Handles Shib 1.x AuthnRequest profile.
-pair<bool,void*> SessionInitiator::ShibAuthnRequest(
+pair<bool,long> SessionInitiator::ShibAuthnRequest(
     ShibTarget* st,
     const IHandler* shire,
     const char* dest,
@@ -229,8 +229,9 @@ pair<bool,void*> SessionInitiator::ShibAuthnRequest(
     else {
         // Here we store the state in a cookie and send a fixed
         // value to the IdP so we can recognize it on the way back.
-        pair<string,const char*> shib_cookie=st->getCookieNameProps("_shibstate_");
-        st->setCookie(shib_cookie.first,urlenc->encode(target) + shib_cookie.second);
+        pair<string,const char*> shib_cookie=st->getApplication()->getCookieNameProps("_shibstate_");
+        string stateval = urlenc->encode(target) + shib_cookie.second;
+        st->setCookie(shib_cookie.first.c_str(),stateval.c_str());
         req+="&target=cookie";
     }
     
@@ -238,7 +239,7 @@ pair<bool,void*> SessionInitiator::ShibAuthnRequest(
     if (providerId)
         req+="&providerId=" + urlenc->encode(providerId);
 
-    return make_pair(true, st->sendRedirect(req));
+    return make_pair(true, st->sendRedirect(req.c_str()));
 }
 
 SAML1Consumer::SAML1Consumer(const DOMElement* e)
@@ -283,7 +284,7 @@ DDF SAML1Consumer::receive(const DDF& in)
 
     // Find application.
     const char* aid=in["application_id"].string();
-    const IApplication* app=aid ? ShibTargetConfig::getConfig().getINI()->getApplication(aid) : NULL;
+    const IApplication* app=aid ? dynamic_cast<const IApplication*>(ShibTargetConfig::getConfig().getINI()->getApplication(aid)) : NULL;
     if (!app) {
         // Something's horribly wrong.
         log.error("couldn't find application (%s) for new session", aid ? aid : "(missing)");
@@ -441,7 +442,7 @@ DDF SAML1Consumer::receive(const DDF& in)
     return out;
 }
 
-pair<bool,void*> SAML1Consumer::run(ShibTarget* st, bool isHandler) const
+pair<bool,long> SAML1Consumer::run(ShibTarget* st, bool isHandler) const
 {
     DDF in,out;
     DDFJanitor jin(in),jout(out);
@@ -449,26 +450,26 @@ pair<bool,void*> SAML1Consumer::run(ShibTarget* st, bool isHandler) const
     pair<bool,const XMLCh*> binding=getProperties()->getXMLString("Binding");
     if (!binding.first || !XMLString::compareString(binding.second,SAMLBrowserProfile::BROWSER_POST)) {
 #ifdef HAVE_STRCASECMP
-        if (strcasecmp(st->getRequestMethod(), "POST")) {
+        if (strcasecmp(st->getMethod(), "POST")) {
 #else
-        if (_stricmp(st->getRequestMethod(), "POST")) {
+        if (_stricmp(st->getMethod(), "POST")) {
 #endif
-            st->log(ShibTarget::LogLevelInfo, "SAML 1.x Browser/POST handler ignoring non-POST request");
-            return pair<bool,void*>(false,NULL);
+            st->log(SPRequest::SPInfo, "SAML 1.x Browser/POST handler ignoring non-POST request");
+            return pair<bool,long>(false,NULL);
         }
 #ifdef HAVE_STRCASECMP
-        if (!st->getContentType() || strcasecmp(st->getContentType(),"application/x-www-form-urlencoded")) {
+        if (strcasecmp(st->getContentType().c_str(),"application/x-www-form-urlencoded")) {
 #else
-        if (!st->getContentType() || _stricmp(st->getContentType(),"application/x-www-form-urlencoded")) {
+        if (_stricmp(st->getContentType().c_str(),"application/x-www-form-urlencoded")) {
 #endif
-            st->log(ShibTarget::LogLevelInfo, "SAML 1.x Browser/POST handler ignoring submission with unknown content-type.");
-            return pair<bool,void*>(false,NULL);
+            st->log(SPRequest::SPInfo, "SAML 1.x Browser/POST handler ignoring submission with unknown content-type.");
+            return pair<bool,long>(false,0);
         }
 
-        const char* samlResponse = st->getRequestParameter("SAMLResponse");
+        const char* samlResponse = st->getParameter("SAMLResponse");
         if (!samlResponse) {
-            st->log(ShibTarget::LogLevelInfo, "SAML 1.x Browser/POST handler ignoring request with no SAMLResponse parameter.");
-            return pair<bool,void*>(false,NULL);
+            st->log(SPRequest::SPInfo, "SAML 1.x Browser/POST handler ignoring request with no SAMLResponse parameter.");
+            return pair<bool,long>(false,0);
         }
 
         in=DDF(m_address.c_str()).structure();
@@ -476,27 +477,25 @@ pair<bool,void*> SAML1Consumer::run(ShibTarget* st, bool isHandler) const
     }
     else if (!XMLString::compareString(binding.second,SAMLBrowserProfile::BROWSER_ARTIFACT)) {
 #ifdef HAVE_STRCASECMP
-        if (strcasecmp(st->getRequestMethod(), "GET")) {
+        if (strcasecmp(st->getMethod(), "GET")) {
 #else
-        if (_stricmp(st->getRequestMethod(), "GET")) {
+        if (_stricmp(st->getMethod(), "GET")) {
 #endif
-            st->log(ShibTarget::LogLevelInfo, "SAML 1.x Browser/Artifact handler ignoring non-GET request");
-            return pair<bool,void*>(false,NULL);
+            st->log(SPRequest::SPInfo, "SAML 1.x Browser/Artifact handler ignoring non-GET request");
+            return pair<bool,long>(false,0);
         }
 
-        const char* SAMLart=st->getRequestParameter("SAMLart");
-        if (!SAMLart) {
-            st->log(ShibTarget::LogLevelInfo, "SAML 1.x Browser/Artifact handler ignoring request with no SAMLart parameter.");
-            return pair<bool,void*>(false,NULL);
+        vector<const char*> arts;
+        if (st->getParameters("SAMLart",arts)==0) {
+            st->log(SPRequest::SPInfo, "SAML 1.x Browser/Artifact handler ignoring request with no SAMLart parameter.");
+            return pair<bool,long>(false,0);
         }
 
         in=DDF(m_address.c_str()).structure();
         DDF artlist=in.addmember("SAMLart").list();
 
-        while (SAMLart) {
-            artlist.add(DDF(NULL).string(SAMLart));
-            SAMLart=st->getRequestParameter("SAMLart",artlist.integer());
-        }
+        for (vector<const char*>::const_iterator a=arts.begin(); a!=arts.end(); ++a)
+            artlist.add(DDF(NULL).string(*a));
     }
     
     // Compute the endpoint location.
@@ -507,24 +506,24 @@ pair<bool,void*> SAML1Consumer::run(ShibTarget* st, bool isHandler) const
 
     // Add remaining parameters.
     in.addmember("application_id").string(st->getApplication()->getId());
-    in.addmember("client_address").string(st->getRemoteAddr());
+    in.addmember("client_address").string(st->getRemoteAddr().c_str());
 
     out=st->getConfig()->getListenerService()->send(in);
     if (!out["key"].isstring())
         throw opensaml::FatalProfileException("Remote processing of SAML 1.x Browser profile did not return a usable session key.");
     string key=out["key"].string();
 
-    st->log(ShibTarget::LogLevelDebug, string("profile processing succeeded, new session created (") + key + ")");
+    st->log(SPRequest::SPDebug, string("profile processing succeeded, new session created (") + key + ")");
 
-    const char* target=st->getRequestParameter("TARGET");
+    const char* target=st->getParameter("TARGET");
     if (target && !strcmp(target,"default")) {
         pair<bool,const char*> homeURL=st->getApplication()->getString("homeURL");
         target=homeURL.first ? homeURL.second : "/";
     }
     else if (!target || !strcmp(target,"cookie")) {
         // Pull the target value from the "relay state" cookie.
-        pair<string,const char*> relay_cookie = st->getCookieNameProps("_shibstate_");
-        const char* relay_state = st->getCookie(relay_cookie.first);
+        pair<string,const char*> relay_cookie = st->getApplication()->getCookieNameProps("_shibstate_");
+        const char* relay_state = st->getCookie(relay_cookie.first.c_str());
         if (!relay_state || !*relay_state) {
             // No apparent relay state value to use, so fall back on the default.
             pair<bool,const char*> homeURL=st->getApplication()->getString("homeURL");
@@ -537,12 +536,13 @@ pair<bool,void*> SAML1Consumer::run(ShibTarget* st, bool isHandler) const
             free(rscopy);
             target=hURL.c_str();
         }
-        st->setCookie(relay_cookie.first,relay_cookie.second);
+        st->setCookie(relay_cookie.first.c_str(),relay_cookie.second);
     }
 
     // We've got a good session, set the session cookie.
-    pair<string,const char*> shib_cookie=st->getCookieNameProps("_shibsession_");
-    st->setCookie(shib_cookie.first, key + shib_cookie.second);
+    pair<string,const char*> shib_cookie=st->getApplication()->getCookieNameProps("_shibsession_");
+    key += shib_cookie.second;
+    st->setCookie(shib_cookie.first.c_str(), key.c_str());
 
     const char* providerId=out["provider_id"].string();
     if (providerId) {
@@ -554,22 +554,22 @@ pair<bool,void*> SAML1Consumer::run(ShibTarget* st, bool isHandler) const
 
             // Either leave in memory or set an expiration.
             pair<bool,unsigned int> days=sessionProps->getUnsignedInt("idpHistoryDays");
-                if (!days.first || days.second==0)
-                    st->setCookie(CommonDomainCookie::CDCName,string(cdc.set(providerId)) + shib_cookie.second);
-                else {
-                    time_t now=time(NULL) + (days.second * 24 * 60 * 60);
+            if (!days.first || days.second==0) {
+                key = string(cdc.set(providerId)) + shib_cookie.second;
+                st->setCookie(CommonDomainCookie::CDCName, key.c_str());
+            }
+            else {
+                time_t now=time(NULL) + (days.second * 24 * 60 * 60);
 #ifdef HAVE_GMTIME_R
-                    struct tm res;
-                    struct tm* ptime=gmtime_r(&now,&res);
+                struct tm res;
+                struct tm* ptime=gmtime_r(&now,&res);
 #else
-                    struct tm* ptime=gmtime(&now);
+                struct tm* ptime=gmtime(&now);
 #endif
-                    char timebuf[64];
-                    strftime(timebuf,64,"%a, %d %b %Y %H:%M:%S GMT",ptime);
-                    st->setCookie(
-                        CommonDomainCookie::CDCName,
-                        string(cdc.set(providerId)) + shib_cookie.second + "; expires=" + timebuf
-                        );
+                char timebuf[64];
+                strftime(timebuf,64,"%a, %d %b %Y %H:%M:%S GMT",ptime);
+                key = string(cdc.set(providerId)) + shib_cookie.second + "; expires=" + timebuf;
+                st->setCookie(CommonDomainCookie::CDCName, key.c_str());
             }
         }
     }
@@ -578,30 +578,30 @@ pair<bool,void*> SAML1Consumer::run(ShibTarget* st, bool isHandler) const
     return make_pair(true, st->sendRedirect(target));
 }
 
-pair<bool,void*> ShibLogout::run(ShibTarget* st, bool isHandler) const
+pair<bool,long> ShibLogout::run(ShibTarget* st, bool isHandler) const
 {
     // Recover the session key.
-    pair<string,const char*> shib_cookie = st->getCookieNameProps("_shibsession_");
-    const char* session_id = st->getCookie(shib_cookie.first);
+    pair<string,const char*> shib_cookie = st->getApplication()->getCookieNameProps("_shibsession_");
+    const char* session_id = st->getCookie(shib_cookie.first.c_str());
     
     // Logout is best effort.
     if (session_id && *session_id) {
         try {
-            st->getConfig()->getSessionCache()->remove(session_id,st->getApplication(),st->getRemoteAddr());
+            st->getConfig()->getSessionCache()->remove(session_id,st->getApplication(),st->getRemoteAddr().c_str());
         }
         catch (exception& e) {
-            st->log(ShibTarget::LogLevelError, string("logout processing failed with exception: ") + e.what());
+            st->log(SPRequest::SPError, string("logout processing failed with exception: ") + e.what());
         }
 #ifndef _DEBUG
         catch (...) {
-            st->log(ShibTarget::LogLevelError, "logout processing failed with unknown exception");
+            st->log(SPRequest::SPError, "logout processing failed with unknown exception");
         }
 #endif
         // We send the cookie property alone, which acts as an empty value.
-        st->setCookie(shib_cookie.first,shib_cookie.second);
+        st->setCookie(shib_cookie.first.c_str(),shib_cookie.second);
     }
     
-    const char* ret=st->getRequestParameter("return");
+    const char* ret=st->getParameter("return");
     if (!ret)
         ret=getProperties()->getString("ResponseLocation").second;
     if (!ret)

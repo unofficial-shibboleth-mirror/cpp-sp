@@ -22,7 +22,7 @@
 
 #include "internal.h"
 #include "exceptions.h"
-#include "SocketListener.h"
+#include "remoting/impl/SocketListener.h"
 
 #include <errno.h>
 #include <stack>

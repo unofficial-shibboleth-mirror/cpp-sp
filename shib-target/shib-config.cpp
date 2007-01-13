@@ -24,7 +24,6 @@
 
 #include "internal.h"
 #include <shibsp/SPConfig.h>
-#include <shibsp/SPConstants.h>
 #include <xmltooling/XMLToolingConfig.h>
 
 #include <log4cpp/OstreamAppender.hh>
@@ -51,7 +50,6 @@ PlugManager::Factory UnixListenerFactory;
 PlugManager::Factory TCPListenerFactory;
 //PlugManager::Factory MemoryListenerFactory;
 PlugManager::Factory MemoryCacheFactory;
-PlugManager::Factory XMLRequestMapFactory;
 PlugManager::Factory ShibSessionInitiatorFactory;
 PlugManager::Factory SAML1POSTFactory;
 PlugManager::Factory SAML1ArtifactFactory;
@@ -103,9 +101,6 @@ bool STConfig::init(const char* schemadir)
     SPConfig::getConfig().ServiceProviderManager.registerFactory(XML_SERVICE_PROVIDER, XMLServiceProviderFactory);
 
     samlConf.getPlugMgr().regFactory(MEMORY_SESSIONCACHE,&MemoryCacheFactory);
-    samlConf.getPlugMgr().regFactory(LEGACY_REQUESTMAP_PROVIDER,&XMLRequestMapFactory);
-    samlConf.getPlugMgr().regFactory(XML_REQUESTMAP_PROVIDER,&XMLRequestMapFactory);
-    samlConf.getPlugMgr().regFactory(NATIVE_REQUESTMAP_PROVIDER,&XMLRequestMapFactory);
     
     auto_ptr_char temp1(shibspconstants::SHIB1_SESSIONINIT_PROFILE_URI);
     samlConf.getPlugMgr().regFactory(temp1.get(),&ShibSessionInitiatorFactory);

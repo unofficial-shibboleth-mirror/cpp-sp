@@ -15,7 +15,7 @@
  */
 
 /**
- * @file shibsp/MetadataExt.h
+ * @file shibsp/metadata/MetadataExt.h
  * 
  * XMLObjects representing Shibboleth metadata extensions
  */
@@ -23,7 +23,7 @@
 #ifndef __shibsp_metaext_h__
 #define __shibsp_metaext_h__
 
-#include <shibsp/SPConstants.h>
+#include <shibsp/util/SPConstants.h>
 #include <xmltooling/XMLObjectBuilder.h>
 #include <xmltooling/signature/KeyInfo.h>
 #include <xercesc/util/XMLUniDefs.hpp>

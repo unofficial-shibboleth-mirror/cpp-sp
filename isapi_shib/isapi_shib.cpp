@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-/* isapi_shib.cpp - Shibboleth ISAPI filter
-
-   Scott Cantor
-   8/23/02
-*/
+/**
+ * isapi_shib.cpp
+ * 
+ * Shibboleth ISAPI filter
+ */
 
 #include "config_win32.h"
 
@@ -26,16 +26,15 @@
 #define _CRT_SECURE_NO_DEPRECATE 1
 
 #include <shibsp/SPConfig.h>
+#include <xmltooling/util/NDC.h>
 
 // SAML Runtime
 #include <saml/saml.h>
 #include <shib/shib.h>
 #include <shib-target/shib-target.h>
 
-#include <ctime>
-#include <fstream>
 #include <sstream>
-#include <stdexcept>
+#include <fstream>
 #include <process.h>
 
 #include <httpfilt.h>
@@ -48,15 +47,14 @@ using namespace std;
 
 // globals
 namespace {
-    static const XMLCh name[] = { chLatin_n, chLatin_a, chLatin_m, chLatin_e, chNull };
-    static const XMLCh port[] = { chLatin_p, chLatin_o, chLatin_r, chLatin_t, chNull };
-    static const XMLCh sslport[] = { chLatin_s, chLatin_s, chLatin_l, chLatin_p, chLatin_o, chLatin_r, chLatin_t, chNull };
-    static const XMLCh scheme[] = { chLatin_s, chLatin_c, chLatin_h, chLatin_e, chLatin_m, chLatin_e, chNull };
-    static const XMLCh id[] = { chLatin_i, chLatin_d, chNull };
-    static const XMLCh Implementation[] =
-    { chLatin_I, chLatin_m, chLatin_p, chLatin_l, chLatin_e, chLatin_m, chLatin_e, chLatin_n, chLatin_t, chLatin_a, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chNull };
-    static const XMLCh ISAPI[] = { chLatin_I, chLatin_S, chLatin_A, chLatin_P, chLatin_I, chNull };
-    static const XMLCh Alias[] = { chLatin_A, chLatin_l, chLatin_i, chLatin_a, chLatin_s, chNull };
+    static const XMLCh name[] =             UNICODE_LITERAL_4(n,a,m,e);
+    static const XMLCh port[] =             UNICODE_LITERAL_4(p,o,r,t);
+    static const XMLCh sslport[] =          UNICODE_LITERAL_7(s,s,l,p,o,r,t);
+    static const XMLCh scheme[] =           UNICODE_LITERAL_6(s,c,h,e,m,e);
+    static const XMLCh id[] =               UNICODE_LITERAL_2(i,d);
+    static const XMLCh Implementation[] =   UNICODE_LITERAL_14(I,m,p,l,e,m,e,n,t,a,t,i,o,n);
+    static const XMLCh ISAPI[] =            UNICODE_LITERAL_5(I,S,A,P,I);
+    static const XMLCh Alias[] =            UNICODE_LITERAL_5(A,l,i,a,s);
     static const XMLCh normalizeRequest[] = UNICODE_LITERAL_16(n,o,r,m,a,l,i,z,e,R,e,q,u,e,s,t);
     static const XMLCh Site[] =             UNICODE_LITERAL_4(S,i,t,e);
 
@@ -116,8 +114,7 @@ extern "C" BOOL WINAPI GetExtensionVersion(HSE_VERSION_INFO* pVer)
     if (!pVer)
         return FALSE;
         
-    if (!g_Config)
-    {
+    if (!g_Config) {
         LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL,
                 "Extension mode startup not possible, is the DLL loaded as a filter?");
         return FALSE;
@@ -159,7 +156,7 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
             SPConfig::Caching |
             SPConfig::Metadata |
             SPConfig::AAP |
-            SPConfig::RequestMapper |
+            SPConfig::RequestMapping |
             SPConfig::InProcess |
             SPConfig::Logging
             );
@@ -274,14 +271,12 @@ bool dynabuf::operator==(const char* s) const
 }
 
 void GetServerVariable(PHTTP_FILTER_CONTEXT pfc, LPSTR lpszVariable, dynabuf& s, DWORD size=80, bool bRequired=true)
-    throw (bad_alloc, DWORD)
 {
     s.reserve(size);
     s.erase();
     size=s.size();
 
-    while (!pfc->GetServerVariable(pfc,lpszVariable,s,&size))
-    {
+    while (!pfc->GetServerVariable(pfc,lpszVariable,s,&size)) {
         // Grumble. Check the error.
         DWORD e=GetLastError();
         if (e==ERROR_INSUFFICIENT_BUFFER)
@@ -294,14 +289,12 @@ void GetServerVariable(PHTTP_FILTER_CONTEXT pfc, LPSTR lpszVariable, dynabuf& s,
 }
 
 void GetServerVariable(LPEXTENSION_CONTROL_BLOCK lpECB, LPSTR lpszVariable, dynabuf& s, DWORD size=80, bool bRequired=true)
-    throw (bad_alloc, DWORD)
 {
     s.reserve(size);
     s.erase();
     size=s.size();
 
-    while (!lpECB->GetServerVariable(lpECB->ConnID,lpszVariable,s,&size))
-    {
+    while (!lpECB->GetServerVariable(lpECB->ConnID,lpszVariable,s,&size)) {
         // Grumble. Check the error.
         DWORD e=GetLastError();
         if (e==ERROR_INSUFFICIENT_BUFFER)
@@ -315,14 +308,12 @@ void GetServerVariable(LPEXTENSION_CONTROL_BLOCK lpECB, LPSTR lpszVariable, dyna
 
 void GetHeader(PHTTP_FILTER_PREPROC_HEADERS pn, PHTTP_FILTER_CONTEXT pfc,
                LPSTR lpszName, dynabuf& s, DWORD size=80, bool bRequired=true)
-    throw (bad_alloc, DWORD)
 {
     s.reserve(size);
     s.erase();
     size=s.size();
 
-    while (!pn->GetHeader(pfc,lpszName,s,&size))
-    {
+    while (!pn->GetHeader(pfc,lpszName,s,&size)) {
         // Grumble. Check the error.
         DWORD e=GetLastError();
         if (e==ERROR_INSUFFICIENT_BUFFER)
@@ -341,9 +332,14 @@ class ShibTargetIsapiF : public ShibTarget
 {
   PHTTP_FILTER_CONTEXT m_pfc;
   PHTTP_FILTER_PREPROC_HEADERS m_pn;
-  string m_cookie;
+  map<string,string> m_headers;
+  vector<XSECCryptoX509*> m_certs;
+
 public:
   ShibTargetIsapiF(PHTTP_FILTER_CONTEXT pfc, PHTTP_FILTER_PREPROC_HEADERS pn, const site_t& site) {
+
+    m_pfc = pfc;
+    m_pn = pn;
 
     // URL path always come from IIS.
     dynabuf url(256);
@@ -380,91 +376,117 @@ public:
         host=site.m_name.c_str();
 
     init(scheme, host, atoi(port), url, content_type, remote_addr, method); 
-
-    m_pfc = pfc;
-    m_pn = pn;
   }
   ~ShibTargetIsapiF() { }
 
-  virtual void log(ShibLogLevel level, const string &msg) {
-    ShibTarget::log(level,msg);
-    if (level == LogLevelError)
+  const char* getScheme() const {
+    return m_scheme.c_str();
+  }
+  const char* getHostname() const {
+    return m_hostname.c_str();
+  }
+  int getPort() const {
+    return m_port;
+  }
+  const char* getRequestURI() const {
+    return m_uri.c_str();
+  }
+  const char* getMethod() const {
+    return m_method.c_str();
+  }
+  string getContentType() const {
+    return m_content_type;
+  }
+  long getContentLength() const {
+      return 0;
+  }
+  string getRemoteAddr() const {
+    return m_remote_addr;
+  }
+  void log(SPLogLevel level, const string& msg) {
+    AbstractSPRequest::log(level,msg);
+    if (level >= SPError)
         LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, msg.c_str());
   }
-  virtual string getCookies() const {
-    dynabuf buf(128);
-    GetHeader(m_pn, m_pfc, "Cookie:", buf, 128, false);
-    return buf.empty() ? "" : buf;
-  }
-  
-  virtual void clearHeader(const string &name) {
-    string hdr = (name=="REMOTE_USER" ? "remote-user" : name) + ":";
+  void clearHeader(const char* name) {
+    string hdr(!strcmp(name,"REMOTE_USER") ? "remote-user" : name);
+    hdr += ':';
     m_pn->SetHeader(m_pfc, const_cast<char*>(hdr.c_str()), "");
   }
-  virtual void setHeader(const string &name, const string &value) {
-    string hdr = name + ":";
-    m_pn->SetHeader(m_pfc, const_cast<char*>(hdr.c_str()),
-		    const_cast<char*>(value.c_str()));
+  void setHeader(const char* name, const char* value) {
+    string hdr(name);
+    hdr += ':';
+    m_pn->SetHeader(m_pfc, const_cast<char*>(hdr.c_str()), const_cast<char*>(value));
   }
-  virtual string getHeader(const string &name) {
-    string hdr = name + ":";
+  string getHeader(const char* name) const {
+    string hdr(name);
+    hdr += ':';
     dynabuf buf(1024);
     GetHeader(m_pn, m_pfc, const_cast<char*>(hdr.c_str()), buf, 1024, false);
     return string(buf);
   }
-  virtual void setRemoteUser(const string &user) {
-    setHeader(string("remote-user"), user);
+  void setRemoteUser(const char* user) {
+    setHeader("remote-user", user);
   }
-  virtual string getRemoteUser(void) {
-    return getHeader(string("remote-user"));
+  string getRemoteUser() const {
+    return getHeader("remote-user");
   }
-  virtual void* sendPage(
-    const string& msg,
-    int code=200,
-    const string& content_type="text/html",
-    const saml::Iterator<header_t>& headers=EMPTY(header_t)) {
-    string hdr = string ("Connection: close\r\nContent-type: ") + content_type + "\r\n";
-    while (headers.hasNext()) {
-        const header_t& h=headers.next();
-        hdr += h.first + ": " + h.second + "\r\n";
-    }
+  void setResponseHeader(const char* name, const char* value) {
+    // Set for later.
+    if (value)
+        m_headers[name] = value;
+    else
+        m_headers.erase(name);
+  }
+  long sendResponse(istream& in, long status) {
+    string hdr = string("Connection: close\r\n");
+    for (map<string,string>::const_iterator i=m_headers.begin(); i!=m_headers.end(); ++i)
+        hdr += i->first + ": " + i->second + "\r\n";
     hdr += "\r\n";
     const char* codestr="200 OK";
-    switch (code) {
-        case 403:   codestr="403 Forbidden"; break;
-        case 404:   codestr="404 Not Found"; break;
-        case 500:   codestr="500 Server Error"; break;
+    switch (status) {
+        case SAML_HTTP_STATUS_FORBIDDEN:codestr="403 Forbidden"; break;
+        case SAML_HTTP_STATUS_NOTFOUND: codestr="404 Not Found"; break;
+        case SAML_HTTP_STATUS_ERROR:    codestr="500 Server Error"; break;
     }
     m_pfc->ServerSupportFunction(m_pfc, SF_REQ_SEND_RESPONSE_HEADER, (void*)codestr, (DWORD)hdr.c_str(), 0);
-    DWORD resplen = msg.size();
-    m_pfc->WriteClient(m_pfc, (LPVOID)msg.c_str(), &resplen, 0);
-    return (void*)SF_STATUS_REQ_FINISHED;
+    char buf[1024];
+    while (in) {
+        in.read(buf,1024);
+        DWORD resplen = in.gcount();
+        m_pfc->WriteClient(m_pfc, buf, &resplen, 0);
+    }
+    return SF_STATUS_REQ_FINISHED;
   }
-  virtual void* sendRedirect(const string& url) {
+  long sendRedirect(const char* url) {
     // XXX: Don't support the httpRedirect option, yet.
-    string hdrs=m_cookie + string("Location: ") + url + "\r\n"
+    string hdr=string("Location: ") + url + "\r\n"
       "Content-Type: text/html\r\n"
       "Content-Length: 40\r\n"
       "Expires: 01-Jan-1997 12:00:00 GMT\r\n"
-      "Cache-Control: private,no-store,no-cache\r\n\r\n";
-    m_pfc->ServerSupportFunction(m_pfc, SF_REQ_SEND_RESPONSE_HEADER,
-				 "302 Please Wait", (DWORD)hdrs.c_str(), 0);
+      "Cache-Control: private,no-store,no-cache\r\n";
+    for (map<string,string>::const_iterator i=m_headers.begin(); i!=m_headers.end(); ++i)
+        hdr += i->first + ": " + i->second + "\r\n";
+    hdr += "\r\n";
+    m_pfc->ServerSupportFunction(m_pfc, SF_REQ_SEND_RESPONSE_HEADER, "302 Please Wait", (DWORD)hdr.c_str(), 0);
     static const char* redmsg="<HTML><BODY>Redirecting...</BODY></HTML>";
     DWORD resplen=40;
     m_pfc->WriteClient(m_pfc, (LPVOID)redmsg, &resplen, 0);
-    return reinterpret_cast<void*>(SF_STATUS_REQ_FINISHED);
+    return SF_STATUS_REQ_FINISHED;
   }
   // XXX: We might not ever hit the 'decline' status in this filter.
-  //virtual void* returnDecline(void) { }
-  virtual void* returnOK(void) { return (void*) SF_STATUS_REQ_NEXT_NOTIFICATION; }
-
-  // The filter never processes the POST, so stub these methods.
-  virtual void setCookie(const string &name, const string &value) {
-    // Set the cookie for later.  Use it during the redirect.
-    m_cookie += "Set-Cookie: " + name + "=" + value + "\r\n";
+  //long returnDecline(void) { }
+  long returnOK(void) {
+    return SF_STATUS_REQ_NEXT_NOTIFICATION;
   }
-  virtual const char* getQueryString() const { throw runtime_error("getQueryString not implemented"); }
-  virtual const char* getRequestBody() const { throw runtime_error("getRequestBody not implemented"); }
+
+  const vector<XSECCryptoX509*>& getClientCertificates() const {
+      return m_certs;
+  }
+  
+  // The filter never processes the POST, so stub these methods.
+  const char* getQueryString() const { throw runtime_error("getQueryString not implemented"); }
+  const char* getRequestBody() const { throw runtime_error("getRequestBody not implemented"); }
 };
 
 DWORD WriteClientError(PHTTP_FILTER_CONTEXT pfc, const char* msg)
@@ -508,20 +530,20 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
             
         ostringstream threadid;
         threadid << "[" << getpid() << "] isapi_shib" << '\0';
-        saml::NDC ndc(threadid.str().c_str());
+        xmltooling::NDC ndc(threadid.str().c_str());
 
         ShibTargetIsapiF stf(pfc, pn, map_i->second);
 
         // "false" because we don't override the Shib settings
-        pair<bool,void*> res = stf.doCheckAuthN();
-        if (res.first) return (DWORD)res.second;
+        pair<bool,long> res = stf.doCheckAuthN();
+        if (res.first) return res.second;
 
         // "false" because we don't override the Shib settings
         res = stf.doExportAssertions();
-        if (res.first) return (DWORD)res.second;
+        if (res.first) return res.second;
 
         res = stf.doCheckAuthZ();
-        if (res.first) return (DWORD)res.second;
+        if (res.first) return res.second;
 
         return SF_STATUS_REQ_NEXT_NOTIFICATION;
     }
@@ -534,7 +556,7 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
         else
             return WriteClientError(pfc,"Shibboleth Filter detected unexpected IIS error.");
     }
-    catch (saml::SAMLException& e) {
+    catch (exception& e) {
         LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, e.what());
         return WriteClientError(pfc,"Shibboleth Filter caught an exception, check Event Log for details.");
     }
@@ -571,12 +593,13 @@ DWORD WriteClientError(LPEXTENSION_CONTROL_BLOCK lpECB, const char* msg)
 class ShibTargetIsapiE : public ShibTarget
 {
   LPEXTENSION_CONTROL_BLOCK m_lpECB;
-  string m_cookie;
+  map<string,string> m_headers;
+  vector<XSECCryptoX509*> m_certs;
   mutable string m_body;
   mutable bool m_gotBody;
   
 public:
-  ShibTargetIsapiE(LPEXTENSION_CONTROL_BLOCK lpECB, const site_t& site) : m_gotBody(false) {
+  ShibTargetIsapiE(LPEXTENSION_CONTROL_BLOCK lpECB, const site_t& site) : m_lpECB(lpECB), m_gotBody(false) {
     dynabuf ssl(5);
     GetServerVariable(lpECB,"HTTPS",ssl,5);
     bool SSL=(ssl=="on" || ssl=="ON");
@@ -650,33 +673,65 @@ public:
         fullurl+=lpECB->lpszQueryString;
     }
     init(scheme, host, atoi(port), fullurl.c_str(), lpECB->lpszContentType, remote_addr, lpECB->lpszMethod);
-
-    m_lpECB = lpECB;
   }
   ~ShibTargetIsapiE() { }
 
-  virtual void log(ShibLogLevel level, const string &msg) {
-      ShibTarget::log(level,msg);
-      if (level == LogLevelError)
+  const char* getScheme() const {
+    return m_scheme.c_str();
+  }
+  const char* getHostname() const {
+    return m_hostname.c_str();
+  }
+  int getPort() const {
+    return m_port;
+  }
+  const char* getRequestURI() const {
+    return m_uri.c_str();
+  }
+  const char* getMethod() const {
+    return m_lpECB->lpszMethod ? m_lpECB->lpszMethod : "";
+  }
+  string getContentType() const {
+    return m_lpECB->lpszContentType ? m_lpECB->lpszContentType : "";
+  }
+  long getContentLength() const {
+      return m_lpECB->cbTotalBytes;
+  }
+  string getRemoteAddr() const {
+    return m_remote_addr;
+  }
+  void log(SPLogLevel level, const string& msg) {
+      AbstractSPRequest::log(level,msg);
+      if (level >= SPError)
           LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, msg.c_str());
   }
-  virtual string getCookies() const {
+  string getHeader(const char* name) const {
+    string hdr("HTTP_");
+    for (; *name; ++name) {
+        if (*name=='-')
+            hdr += '_';
+        else
+            hdr += toupper(*name);
+    }
     dynabuf buf(128);
-    GetServerVariable(m_lpECB, "HTTP_COOKIE", buf, 128, false);
+    GetServerVariable(m_lpECB, const_cast<char*>(hdr.c_str()), buf, 128, false);
     return buf.empty() ? "" : buf;
   }
-  virtual void setCookie(const string &name, const string &value) {
-    // Set the cookie for later.  Use it during the redirect.
-    m_cookie += "Set-Cookie: " + name + "=" + value + "\r\n";
+  void setResponseHeader(const char* name, const char* value) {
+    // Set for later.
+    if (value)
+        m_headers[name] = value;
+    else
+        m_headers.erase(name);
   }
-  virtual const char* getQueryString() const {
+  const char* getQueryString() const {
     return m_lpECB->lpszQueryString;
   }
-  virtual const char* getRequestBody() const {
+  const char* getRequestBody() const {
     if (m_gotBody)
         return m_body.c_str();
     if (m_lpECB->cbTotalBytes > 1024*1024) // 1MB?
-        throw saml::SAMLException("Size of POST request body exceeded limit.");
+        throw opensaml::BindingException("Size of POST request body exceeded limit.");
     else if (m_lpECB->cbTotalBytes != m_lpECB->cbAvailable) {
       m_gotBody=true;
       char buf[8192];
@@ -696,56 +751,63 @@ public:
     }
     return m_body.c_str();
   }
-  virtual void* sendPage(
-    const string &msg,
-    int code=200,
-    const string& content_type="text/html",
-    const saml::Iterator<header_t>& headers=EMPTY(header_t)) {
-    string hdr = string ("Connection: close\r\nContent-type: ") + content_type + "\r\n";
-    for (unsigned int k = 0; k < headers.size(); k++) {
-      hdr += headers[k].first + ": " + headers[k].second + "\r\n";
-    }
+  long sendResponse(istream& in, long status) {
+    string hdr = string("Connection: close\r\n");
+    for (map<string,string>::const_iterator i=m_headers.begin(); i!=m_headers.end(); ++i)
+        hdr += i->first + ": " + i->second + "\r\n";
     hdr += "\r\n";
     const char* codestr="200 OK";
-    switch (code) {
-        case 403:   codestr="403 Forbidden"; break;
-        case 404:   codestr="404 Not Found"; break;
-        case 500:   codestr="500 Server Error"; break;
+    switch (status) {
+        case SAML_HTTP_STATUS_FORBIDDEN:codestr="403 Forbidden"; break;
+        case SAML_HTTP_STATUS_NOTFOUND: codestr="404 Not Found"; break;
+        case SAML_HTTP_STATUS_ERROR:    codestr="500 Server Error"; break;
     }
     m_lpECB->ServerSupportFunction(m_lpECB->ConnID, HSE_REQ_SEND_RESPONSE_HEADER, (void*)codestr, 0, (LPDWORD)hdr.c_str());
-    DWORD resplen = msg.size();
-    m_lpECB->WriteClient(m_lpECB->ConnID, (LPVOID)msg.c_str(), &resplen, HSE_IO_SYNC);
-    return (void*)HSE_STATUS_SUCCESS;
+    char buf[1024];
+    while (in) {
+        in.read(buf,1024);
+        DWORD resplen = in.gcount();
+        m_lpECB->WriteClient(m_lpECB->ConnID, buf, &resplen, HSE_IO_SYNC);
+    }
+    return HSE_STATUS_SUCCESS;
   }
-  virtual void* sendRedirect(const string& url) {
-    // XXX: Don't support the httpRedirect option, yet.
-    string hdrs = m_cookie + "Location: " + url + "\r\n"
+  long sendRedirect(const char* url) {
+    string hdr=string("Location: ") + url + "\r\n"
       "Content-Type: text/html\r\n"
       "Content-Length: 40\r\n"
       "Expires: 01-Jan-1997 12:00:00 GMT\r\n"
-      "Cache-Control: private,no-store,no-cache\r\n\r\n";
-    m_lpECB->ServerSupportFunction(m_lpECB->ConnID, HSE_REQ_SEND_RESPONSE_HEADER,
-				 "302 Moved", 0, (LPDWORD)hdrs.c_str());
+      "Cache-Control: private,no-store,no-cache\r\n";
+    for (map<string,string>::const_iterator i=m_headers.begin(); i!=m_headers.end(); ++i)
+        hdr += i->first + ": " + i->second + "\r\n";
+    hdr += "\r\n";
+    m_lpECB->ServerSupportFunction(m_lpECB->ConnID, HSE_REQ_SEND_RESPONSE_HEADER, "302 Moved", 0, (LPDWORD)hdr.c_str());
     static const char* redmsg="<HTML><BODY>Redirecting...</BODY></HTML>";
     DWORD resplen=40;
     m_lpECB->WriteClient(m_lpECB->ConnID, (LPVOID)redmsg, &resplen, HSE_IO_SYNC);
-    return (void*)HSE_STATUS_SUCCESS;
+    return HSE_STATUS_SUCCESS;
   }
   // Decline happens in the POST processor if this isn't the shire url
   // Note that it can also happen with HTAccess, but we don't support that, yet.
-  virtual void* returnDecline(void) {
-    return (void*)
-      WriteClientError(m_lpECB, "ISAPI extension can only be invoked to process Shibboleth protocol requests."
-		       "Make sure the mapped file extension doesn't match actual content.");
+  long returnDecline() {
+    return WriteClientError(
+        m_lpECB,
+        "ISAPI extension can only be invoked to process Shibboleth protocol requests."
+		"Make sure the mapped file extension doesn't match actual content."
+        );
   }
-  virtual void* returnOK(void) { return (void*) HSE_STATUS_SUCCESS; }
+  long returnOK() {
+      return HSE_STATUS_SUCCESS;
+  }
+
+  const vector<XSECCryptoX509*>& getClientCertificates() const {
+      return m_certs;
+  }
 
   // Not used in the extension.
-  virtual void clearHeader(const string &name) { throw runtime_error("clearHeader not implemented"); }
-  virtual void setHeader(const string &name, const string &value) { throw runtime_error("setHeader not implemented"); }
-  virtual string getHeader(const string &name) { throw runtime_error("getHeader not implemented"); }
-  virtual void setRemoteUser(const string &user) { throw runtime_error("setRemoteUser not implemented"); }
-  virtual string getRemoteUser(void) { throw runtime_error("getRemoteUser not implemented"); }
+  virtual void clearHeader(const char* name) { throw runtime_error("clearHeader not implemented"); }
+  virtual void setHeader(const char* name, const char* value) { throw runtime_error("setHeader not implemented"); }
+  virtual void setRemoteUser(const char* user) { throw runtime_error("setRemoteUser not implemented"); }
+  virtual string getRemoteUser() const { throw runtime_error("getRemoteUser not implemented"); }
 };
 
 extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
@@ -755,7 +817,7 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
     try {
         ostringstream threadid;
         threadid << "[" << getpid() << "] isapi_shib_extension" << '\0';
-        saml::NDC ndc(threadid.str().c_str());
+        xmltooling::NDC ndc(threadid.str().c_str());
 
         // Determine web site number. This can't really fail, I don't think.
         dynabuf buf(128);
@@ -767,8 +829,8 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
             return WriteClientError(lpECB, "Shibboleth Extension not configured for this web site.");
 
         ShibTargetIsapiE ste(lpECB, map_i->second);
-        pair<bool,void*> res = ste.doHandler();
-        if (res.first) return (DWORD)res.second;
+        pair<bool,long> res = ste.doHandler();
+        if (res.first) return res.second;
         
         return WriteClientError(lpECB, "Shibboleth Extension failed to process request");
 
@@ -782,7 +844,7 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
         else
             return WriteClientError(lpECB,"Server detected unexpected IIS error.");
     }
-    catch (saml::SAMLException& e) {
+    catch (exception& e) {
         LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, e.what());
         return WriteClientError(lpECB,"Shibboleth Extension caught an exception, check Event Log for details.");
     }

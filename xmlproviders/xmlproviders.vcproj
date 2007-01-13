@@ -232,10 +232,6 @@
 			>
 		</File>
 		<File
-			RelativePath=".\XMLAccessControl.cpp"
-			>
-		</File>
-		<File
 			RelativePath="XMLProviders.cpp"
 			>
 		</File>

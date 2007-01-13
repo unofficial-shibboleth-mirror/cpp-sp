@@ -23,12 +23,16 @@
 #ifndef __shibsp_sp_h__
 #define __shibsp_sp_h__
 
-#include <shibsp/PropertySet.h>
+#include <shibsp/util/PropertySet.h>
 #include <xmltooling/signature/CredentialResolver.h>
 
 namespace shibsp {
 
-    class ListenerService;
+    class SHIBSP_API Application;
+    class SHIBSP_API ListenerService;
+    class SHIBSP_API RequestMapper;
+    class SHIBSP_API SessionCache;
+    class SHIBSP_API SPRequest;
 
     /**
      * Interface to a Shibboleth ServiceProvider instance.
@@ -69,11 +73,68 @@ namespace shibsp {
          */
         virtual xmlsignature::CredentialResolver* getCredentialResolver(const char* id) const=0;
 
+        /**
+         * Returns a RequestMapper instance.
+         * 
+         * @param a RequestMapper if available, or NULL
+         */
+        virtual RequestMapper* getRequestMapper() const=0;
+        
         //virtual ISessionCache* getSessionCache() const=0;
         
-        //virtual IRequestMapper* getRequestMapper() const=0;
+        /**
+         * Returns an Application instance matching the specified ID.
+         * 
+         * @param applicationId the ID of the application
+         * @return  pointer to the application, or NULL
+         */
+        virtual const Application* getApplication(const char* applicationId) const=0;
+
+        /**
+         * Enforces requirements for an authenticated session.
+         * 
+         * <p>If the return value's first member is true, then request processing should terminate
+         * with the second member as a status value. If false, processing can continue. 
+         * 
+         * @param request   SP request interface
+         * @param handler   true iff a request to a registered Handler location can be directly executed
+         * @return a pair containing a "request completed" indicator and a server-specific response code
+         */
+        virtual std::pair<bool,long> doAuthentication(SPRequest& request, bool handler=false) const;
         
-        //virtual const IApplication* getApplication(const char* applicationId) const=0;
+        /**
+         * Enforces authorization requirements based on the authenticated session.
+         * 
+         * <p>If the return value's first member is true, then request processing should terminate
+         * with the second member as a status value. If false, processing can continue. 
+         * 
+         * @param request   SP request interface
+         * @return a pair containing a "request completed" indicator and a server-specific response code
+         */
+        virtual std::pair<bool,long> doAuthorization(SPRequest& request) const;
+        
+        /**
+         * Publishes session contents to the request in the form of headers or environment variables.
+         * 
+         * <p>If the return value's first member is true, then request processing should terminate
+         * with the second member as a status value. If false, processing can continue. 
+         * 
+         * @param request   SP request interface
+         * @param requireSession    set to true iff an error should result if no session exists 
+         * @return a pair containing a "request completed" indicator and a server-specific response code
+         */
+        virtual std::pair<bool,long> doExport(SPRequest& request, bool requireSession=true) const;
+
+        /**
+         * Services requests for registered Handler locations. 
+         * 
+         * <p>If the return value's first member is true, then request processing should terminate
+         * with the second member as a status value. If false, processing can continue. 
+         * 
+         * @param request   SP request interface
+         * @return a pair containing a "request completed" indicator and a server-specific response code
+         */
+        virtual std::pair<bool,long> doHandler(SPRequest& request) const;
     };
 
     /**

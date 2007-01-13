@@ -15,7 +15,7 @@
  */
 
 /**
- * @file shibsp/ddf.h
+ * @file shibsp/remoting/ddf.h
  * 
  * C++ DDF abstraction for interpretive RPC
  */

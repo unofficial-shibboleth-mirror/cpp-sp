@@ -22,7 +22,7 @@
 
 #include "internal.h"
 #include "exceptions.h"
-#include "ListenerService.h"
+#include "remoting/ListenerService.h"
 
 #include <log4cpp/Category.hh>
 #include <xercesc/dom/DOM.hpp>

@@ -21,7 +21,7 @@
  */
 
 #include "internal.h"
-#include "DOMPropertySet.h"
+#include "util/DOMPropertySet.h"
 
 #include <algorithm>
 #include <xmltooling/util/NDC.h>

@@ -25,8 +25,8 @@
 #include "internal.h"
 #include <algorithm>
 #include <log4cpp/Category.hh>
-#include <shibsp/MetadataExt.h>
-#include <shibsp/SPConstants.h>
+#include <shibsp/metadata/MetadataExt.h>
+#include <shibsp/util/SPConstants.h>
 #include <xmltooling/util/ReloadableXMLFile.h>
 #include <xmltooling/util/XMLHelper.h>
 
@@ -122,7 +122,9 @@ namespace {
     class XMLAAP : public IAAP, public ReloadableXMLFile
     {
     public:
-        XMLAAP(const DOMElement* e) : ReloadableXMLFile(e), m_impl(NULL) {}
+        XMLAAP(const DOMElement* e) : ReloadableXMLFile(e), m_impl(NULL) {
+            load();
+        }
         ~XMLAAP() {
             delete m_impl;
         }

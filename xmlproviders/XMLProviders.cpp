@@ -40,7 +40,6 @@ using namespace std;
 
 PlugManager::Factory TargetedIDFactory;
 PlugManager::Factory XMLAAPFactory;
-PlugManager::Factory XMLAccessControlFactory;
 
 extern "C" int XML_EXPORTS saml_extension_init(void*)
 {
@@ -49,7 +48,6 @@ extern "C" int XML_EXPORTS saml_extension_init(void*)
     conf.getPlugMgr().regFactory("edu.internet2.middleware.shibboleth.common.provider.TargetedIDFactory",&TargetedIDFactory);
     conf.getPlugMgr().regFactory("edu.internet2.middleware.shibboleth.aap.provider.XMLAAP",&XMLAAPFactory);
     conf.getPlugMgr().regFactory("edu.internet2.middleware.shibboleth.target.provider.XMLAAP",&XMLAAPFactory);
-    conf.getPlugMgr().regFactory(XML_ACCESSCONTROL,&XMLAccessControlFactory);
 
     return 0;
 }
@@ -61,5 +59,4 @@ extern "C" void XML_EXPORTS saml_extension_term()
     conf.getPlugMgr().unregFactory("edu.internet2.middleware.shibboleth.common.provider.TargetedIDFactory");
     conf.getPlugMgr().unregFactory("edu.internet2.middleware.shibboleth.aap.provider.XMLAAP");
     conf.getPlugMgr().unregFactory("edu.internet2.middleware.shibboleth.target.provider.XMLAAP");
-    conf.getPlugMgr().unregFactory(XML_ACCESSCONTROL);
 }

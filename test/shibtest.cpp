@@ -21,7 +21,7 @@
 
 #include <shib-target/shib-target.h>
 #include <shibsp/SPConfig.h>
-#include <shibsp/SPConstants.h>
+#include <shibsp/util/SPConstants.h>
 
 using namespace shibsp;
 using namespace shibtarget;
@@ -85,7 +85,7 @@ int main(int argc,char* argv[])
     xmltooling::Locker locker(ini);
 
     try {
-        const IApplication* app=ini->getApplication(a_param);
+        const IApplication* app=dynamic_cast<const IApplication*>(ini->getApplication(a_param));
         if (!app)
             throw SAMLException("specified <Application> section not found in configuration");
 

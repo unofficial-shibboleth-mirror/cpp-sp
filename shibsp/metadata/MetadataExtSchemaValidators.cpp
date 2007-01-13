@@ -22,7 +22,7 @@
 
 #include "internal.h"
 #include "exceptions.h"
-#include "MetadataExt.h"
+#include "metadata/MetadataExt.h"
 
 #include <xmltooling/validation/ValidatorSuite.h>
 

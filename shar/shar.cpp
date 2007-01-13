@@ -114,7 +114,7 @@ int real_main(int preinit)
             SPConfig::Credentials |
             SPConfig::AAP |
             SPConfig::OutOfProcess |
-            (shar_checkonly ? (SPConfig::InProcess | SPConfig::RequestMapper) : SPConfig::Logging)
+            (shar_checkonly ? (SPConfig::InProcess | SPConfig::RequestMapping) : SPConfig::Logging)
             );
         if (!shar_config)
             shar_config=getenv("SHIBCONFIG");
@@ -258,7 +258,7 @@ int main(int argc, char *argv[])
         SPConfig::Credentials |
         SPConfig::AAP |
         SPConfig::OutOfProcess |
-        (shar_checkonly ? (SPConfig::InProcess | SPConfig::RequestMapper) : SPConfig::Logging)
+        (shar_checkonly ? (SPConfig::InProcess | SPConfig::RequestMapping) : SPConfig::Logging)
         );
     if (!conf.init(shar_schemadir) || !conf.load(shar_config)) {
         fprintf(stderr, "configuration is invalid, check console for specific problems\n");

@@ -15,7 +15,7 @@
  */
 
 /**
- * @file shibsp/PropertySet.h
+ * @file shibsp/util/PropertySet.h
  * 
  * Interface to a generic set of typed properties or a DOM container of additional data.
  */

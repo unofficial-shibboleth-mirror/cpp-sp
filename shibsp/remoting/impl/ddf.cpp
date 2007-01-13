@@ -21,12 +21,11 @@
  */
 
 #include "internal.h"
+#include "remoting/ddf.h"
 
 #ifdef WIN32
 # define snprintf _snprintf
 #endif
-
-#include <shibsp/ddf.h>
 
 #include <stdexcept>
 #include <xercesc/dom/DOM.hpp>

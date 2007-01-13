@@ -7,10 +7,16 @@
 <data>
         
     <item id="org.eclipse.cdt.core.pathentry">
-<pathentry kind="src" path="shibsp"/>
+<pathentry kind="src" path="apache"/>
 <pathentry kind="out" path=""/>
 <pathentry kind="src" path="odbc-store"/>
-<pathentry kind="src" path="apache"/>
+<pathentry excluding="util/|impl/|security/|metadata/|remoting/|remoting/impl/" kind="src" path="shibsp"/>
+<pathentry kind="src" path="shibsp/impl"/>
+<pathentry kind="src" path="shibsp/metadata"/>
+<pathentry excluding="impl/" kind="src" path="shibsp/remoting"/>
+<pathentry kind="src" path="shibsp/remoting/impl"/>
+<pathentry kind="src" path="shibsp/security"/>
+<pathentry kind="src" path="shibsp/util"/>
 </item>
 </data>
 </cdtproject>

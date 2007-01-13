@@ -21,8 +21,8 @@
  */
 
 #include "internal.h"
-#include "MetadataExt.h"
-#include "PKIXTrustEngine.h"
+#include "metadata/MetadataExt.h"
+#include "security/PKIXTrustEngine.h"
 
 #include <saml/saml2/metadata/Metadata.h>
 #include <xmltooling/XMLToolingConfig.h>

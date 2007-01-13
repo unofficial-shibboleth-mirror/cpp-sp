@@ -41,7 +41,7 @@
 # include "config.h"
 #endif
 
-#include <shibsp/SPConstants.h>
+#include <shibsp/util/SPConstants.h>
 
 #include "shib-target.h"
 #include "hresult.h"

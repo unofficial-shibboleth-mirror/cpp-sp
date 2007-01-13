@@ -15,7 +15,7 @@
  */
 
 /**
- * @file shibsp/DOMPropertySet.h
+ * @file shibsp/util/DOMPropertySet.h
  * 
  * DOM-based property set implementation.
  */
@@ -23,7 +23,7 @@
 #ifndef __shibsp_dompropset_h__
 #define __shibsp_dompropset_h__
 
-#include <shibsp/PropertySet.h>
+#include <shibsp/util/PropertySet.h>
 #include <log4cpp/Category.hh>
 
 namespace shibsp {

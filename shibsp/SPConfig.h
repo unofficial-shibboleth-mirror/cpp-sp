@@ -33,7 +33,9 @@
  */
 namespace shibsp {
 
+    class SHIBSP_API AccessControl;
     class SHIBSP_API ListenerService;
+    class SHIBSP_API RequestMapper;
     class SHIBSP_API ServiceProvider;
 
 #if defined (_MSC_VER)
@@ -67,7 +69,7 @@ namespace shibsp {
             Trust = 8,
             Credentials = 16,
             AAP = 32,
-            RequestMapper = 64,
+            RequestMapping = 64,
             OutOfProcess = 128,
             InProcess = 256,
             Logging = 512
@@ -130,9 +132,19 @@ namespace shibsp {
         }
 
         /**
+         * Manages factories for AccessControl plugins.
+         */
+        xmltooling::PluginManager<AccessControl,const xercesc::DOMElement*> AccessControlManager;
+
+        /**
          * Manages factories for ListenerService plugins.
          */
         xmltooling::PluginManager<ListenerService,const xercesc::DOMElement*> ListenerServiceManager;
+
+        /**
+         * Manages factories for RequestMapper plugins.
+         */
+        xmltooling::PluginManager<RequestMapper,const xercesc::DOMElement*> RequestMapperManager;
 
         /**
          * Manages factories for ServiceProvider plugins.

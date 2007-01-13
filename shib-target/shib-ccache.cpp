@@ -1157,7 +1157,7 @@ DDF MemorySessionCache::receive(const DDF& in)
     // Find application.
     xmltooling::Locker confLocker(ShibTargetConfig::getConfig().getINI());
     const char* aid=in["application_id"].string();
-    const IApplication* app=aid ? ShibTargetConfig::getConfig().getINI()->getApplication(aid) : NULL;
+    const IApplication* app=aid ? dynamic_cast<const IApplication*>(ShibTargetConfig::getConfig().getINI()->getApplication(aid)) : NULL;
     if (!app) {
         // Something's horribly wrong.
         m_log->error("couldn't find application (%s) for session", aid ? aid : "(missing)");
@@ -1318,7 +1318,7 @@ ISessionCacheEntry* MemorySessionCache::find(const char* key, const IApplication
             m_log->error("cache store returned failure during search");
             return NULL;
         }
-        const IApplication* eapp=ShibTargetConfig::getConfig().getINI()->getApplication(appid.c_str());
+        const IApplication* eapp=dynamic_cast<const IApplication*>(ShibTargetConfig::getConfig().getINI()->getApplication(appid.c_str()));
         if (!eapp) {
             // Something's horribly wrong.
             m_log->error("couldn't find application (%s) for session", appid.c_str());

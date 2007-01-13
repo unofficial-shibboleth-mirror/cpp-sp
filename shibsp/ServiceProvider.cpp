@@ -38,3 +38,23 @@ void SHIBSP_API shibsp::registerServiceProviders()
 {
     //SPConfig::getConfig().ServiceProviderManager.registerFactory(XML_SERVICE_PROVIDER, XMLServiceProviderFactory);
 }
+
+pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handler) const
+{
+    return make_pair(true,0);
+}
+
+pair<bool,long> ServiceProvider::doAuthorization(SPRequest& request) const
+{
+    return make_pair(true,0);
+}
+
+pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSession) const
+{
+    return make_pair(true,0);
+}
+
+pair<bool,long> ServiceProvider::doHandler(SPRequest& request) const
+{
+    return make_pair(true,0);
+}

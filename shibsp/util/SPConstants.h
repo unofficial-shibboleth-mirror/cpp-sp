@@ -15,7 +15,7 @@
  */
 
 /**
- * @file shibsp/SPConstants.h
+ * @file shibsp/util/SPConstants.h
  * 
  * Shibboleth SP XML constants. 
  */

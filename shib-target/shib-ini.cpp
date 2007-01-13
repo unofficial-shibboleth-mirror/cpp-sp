@@ -26,10 +26,10 @@
 #include <sys/stat.h>
 #include <log4cpp/Category.hh>
 #include <log4cpp/PropertyConfigurator.hh>
-#include <shibsp/DOMPropertySet.h>
-#include <shibsp/PKIXTrustEngine.h>
+#include <shibsp/RequestMapper.h>
 #include <shibsp/SPConfig.h>
-#include <shibsp/SPConstants.h>
+#include <shibsp/security/PKIXTrustEngine.h>
+#include <shibsp/util/DOMPropertySet.h>
 #include <saml/SAMLConfig.h>
 #include <saml/saml1/core/Assertions.h>
 #include <saml/saml2/metadata/ChainingMetadataProvider.h>
@@ -152,7 +152,7 @@ namespace {
         XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* outer);
         ~XMLConfigImpl();
         
-        IRequestMapper* m_requestMapper;
+        RequestMapper* m_requestMapper;
         map<string,IApplication*> m_appmap;
         map<string,CredentialResolver*> m_credResolverMap;
         vector<IAttributeFactory*> m_attrFactories;
@@ -212,7 +212,7 @@ namespace {
 
         ISessionCache* getSessionCache() const {return m_sessionCache;}
         IReplayCache* getReplayCache() const {return m_replayCache;}
-        IRequestMapper* getRequestMapper() const {return m_impl->m_requestMapper;}
+        RequestMapper* getRequestMapper() const {return m_impl->m_requestMapper;}
         const IApplication* getApplication(const char* applicationId) const {
             map<string,IApplication*>::const_iterator i=m_impl->m_appmap.find(applicationId);
             return (i!=m_impl->m_appmap.end()) ? i->second : NULL;
@@ -243,7 +243,7 @@ namespace {
 #endif
 
     static const XMLCh AAPProvider[] =          UNICODE_LITERAL_11(A,A,P,P,r,o,v,i,d,e,r);
-    static const XMLCh Application[] =          UNICODE_LITERAL_11(A,p,p,l,i,c,a,t,i,o,n);
+    static const XMLCh _Application[] =         UNICODE_LITERAL_11(A,p,p,l,i,c,a,t,i,o,n);
     static const XMLCh Applications[] =         UNICODE_LITERAL_12(A,p,p,l,i,c,a,t,i,o,n,s);
     static const XMLCh AttributeFactory[] =     UNICODE_LITERAL_16(A,t,t,r,i,b,u,t,e,F,a,c,t,o,r,y);
     static const XMLCh Credentials[] =          UNICODE_LITERAL_11(C,r,e,d,e,n,t,i,a,l,s);
@@ -618,7 +618,7 @@ short XMLApplication::acceptNode(const DOMNode* node) const
     else if (XMLHelper::isNodeNamed(node,samlconstants::SAML1_NS,Audience::LOCAL_NAME))
         return FILTER_REJECT;
     const XMLCh* name=node->getLocalName();
-    if (XMLString::equals(name,Application) ||
+    if (XMLString::equals(name,_Application) ||
         XMLString::equals(name,AssertionConsumerService::LOCAL_NAME) ||
         XMLString::equals(name,SingleLogoutService::LOCAL_NAME) ||
         XMLString::equals(name,DiagnosticService) ||
@@ -1042,22 +1042,12 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
         } // end of first-time-only stuff
         
         // Back to the fully dynamic stuff...next up is the RequestMapper.
-        if (conf.isEnabled(SPConfig::RequestMapper)) {
+        if (conf.isEnabled(SPConfig::RequestMapping)) {
             child=XMLHelper::getFirstChildElement(SHIRE,RequestMapProvider);
             if (child) {
                 xmltooling::auto_ptr_char type(child->getAttributeNS(NULL,_type));
                 log.info("building RequestMapper of type %s...",type.get());
-                plugin=shibConf.getPlugMgr().newPlugin(type.get(),child);
-                if (plugin) {
-                    IRequestMapper* reqmap=dynamic_cast<IRequestMapper*>(plugin);
-                    if (reqmap)
-                        m_requestMapper=reqmap;
-                    else {
-                        delete plugin;
-                        log.fatal("plugin was not a RequestMapper object");
-                        throw UnknownExtensionException("plugin was not a RequestMapper object");
-                    }
-                }
+                m_requestMapper=conf.RequestMapperManager.newPlugin(type.get(),child);
             }
             else {
                 log.fatal("can't build RequestMapper, missing conf:RequestMapProvider element?");
@@ -1145,7 +1135,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
         m_appmap[defapp->getId()]=defapp;
         
         // Load any overrides.
-        child = XMLHelper::getFirstChildElement(child,Application);
+        child = XMLHelper::getFirstChildElement(child,_Application);
         while (child) {
             auto_ptr<XMLApplication> iapp(new XMLApplication(m_outer,child,defapp));
             if (m_appmap.find(iapp->getId())!=m_appmap.end())
@@ -1153,7 +1143,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
             else
                 m_appmap[iapp->getId()]=iapp.release();
 
-            child = XMLHelper::getNextSiblingElement(child,Application);
+            child = XMLHelper::getNextSiblingElement(child,_Application);
         }
     }
     catch (exception&) {

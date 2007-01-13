@@ -7,38 +7,64 @@ lib_LTLIBRARIES = libshibsp.la
 
 libshibspincludedir = $(includedir)/shibsp
 
+mdincludedir = $(includedir)/shibsp/metadata
+
+remincludedir = $(includedir)/shibsp/remoting
+
+secincludedir = $(includedir)/shibsp/security
+
+utilincludedir = $(includedir)/shibsp/util
+
 libshibspinclude_HEADERS = \
+	AbstractSPRequest.h \
+	AccessControl.h \
+	Application.h \
 	base.h \
-	ddf.h \
-	DOMPropertySet.h \
 	exceptions.h \
-	ListenerService.h \
-	MetadataExt.h \
 	paths.h \
-	PKIXTrustEngine.h \
-	PropertySet.h \
-	version.h \
+	RequestMapper.h \
 	ServiceProvider.h \
-	SocketListener.h \
+	SessionCache.h \
 	SPConfig.h \
-	SPConstants.h
+	SPRequest.h \
+	version.h
+
+mdinclude_HEADERS = \
+	metadata/MetadataExt.h
+
+reminclude_HEADERS = \
+	ddf.h \
+	ListenerService.h
+	
+secinclude_HEADERS = \
+	security/PKIXTrustEngine.h
+
+utilinclude_HEADERS = \
+	util/DOMPropertySet.h \
+	util/PropertySet.h \
+	util/SPConstants.h
 
 noinst_HEADERS = \
-	internal.h
+	internal.h \
+	remoting/impl/SocketListener.h
 
 libshibsp_la_SOURCES = \
-	ddf.cpp \
-	DOMPropertySet.cpp \
-	ListenerService.cpp \
-	MetadataExtImpl.cpp \
-	MetadataExtSchemaValidators.cpp \
-	PKIXTrustEngine.cpp \
+	AbstractSPRequest.cpp \
+	Application.cpp \
 	ServiceProvider.cpp \
 	SPConfig.cpp \
-	SPConstants.cpp \ 
-	SocketListener.cpp \
-	TCPListener.cpp \
-	UnixListener.cpp
+	impl/XMLAccessControl.cpp \
+	impl/XMLRequestMapper.cpp \
+	metadata/MetadataExtImpl.cpp \
+	metadata/MetadataExtSchemaValidators.cpp \
+	remoting/impl/ddf.cpp \
+	remoting/impl/ListenerService.cpp \
+	remoting/impl/SocketListener.cpp \
+	remoting/impl/TCPListener.cpp \
+	remoting/impl/UnixListener.cpp \
+	security/PKIXTrustEngine.cpp \
+	util/DOMPropertySet.cpp \
+	util/SPConstants.cpp 
 
 # this is different from the project version
 # http://sources.redhat.com/autobook/autobook/autobook_91.html

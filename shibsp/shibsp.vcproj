@@ -185,27 +185,11 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\ddf.cpp"
+				RelativePath=".\AbstractSPRequest.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\DOMPropertySet.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\ListenerService.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\MetadataExtImpl.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\MetadataExtSchemaValidators.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\PKIXTrustEngine.cpp"
+				RelativePath=".\Application.cpp"
 				>
 			</File>
 			<File
@@ -213,17 +197,85 @@
 				>
 			</File>
 			<File
-				RelativePath=".\SocketListener.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\SPConfig.cpp"
 				>
 			</File>
-			<File
-				RelativePath=".\SPConstants.cpp"
+			<Filter
+				Name="util"
 				>
-			</File>
+				<File
+					RelativePath=".\util\CGIParser.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\util\DOMPropertySet.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\util\SPConstants.cpp"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="security"
+				>
+				<File
+					RelativePath=".\security\PKIXTrustEngine.cpp"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="metadata"
+				>
+				<File
+					RelativePath=".\metadata\MetadataExtImpl.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\metadata\MetadataExtSchemaValidators.cpp"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="remoting"
+				>
+				<Filter
+					Name="impl"
+					>
+					<File
+						RelativePath=".\remoting\impl\ddf.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\remoting\impl\ListenerService.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\remoting\impl\SocketListener.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\remoting\impl\SocketListener.h"
+						>
+					</File>
+					<File
+						RelativePath=".\remoting\impl\TCPListener.cpp"
+						>
+					</File>
+				</Filter>
+			</Filter>
+			<Filter
+				Name="impl"
+				>
+				<File
+					RelativePath=".\impl\XMLAccessControl.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\impl\XMLRequestMapper.cpp"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -231,15 +283,19 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath=".\AbstractSPRequest.h"
+				>
+			</File>
+			<File
+				RelativePath=".\AccessControl.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Application.h"
+				>
+			</File>
+			<File
 				RelativePath=".\base.h"
-				>
-			</File>
-			<File
-				RelativePath=".\ddf.h"
-				>
-			</File>
-			<File
-				RelativePath=".\DOMPropertySet.h"
 				>
 			</File>
 			<File
@@ -251,19 +307,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\ListenerService.h"
-				>
-			</File>
-			<File
-				RelativePath=".\MetadataExt.h"
-				>
-			</File>
-			<File
-				RelativePath=".\PKIXTrustEngine.h"
-				>
-			</File>
-			<File
-				RelativePath=".\PropertySet.h"
+				RelativePath=".\RequestMapper.h"
 				>
 			</File>
 			<File
@@ -275,7 +319,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\SocketListener.h"
+				RelativePath=".\SessionCache.h"
 				>
 			</File>
 			<File
@@ -283,17 +327,61 @@
 				>
 			</File>
 			<File
-				RelativePath=".\SPConstants.h"
-				>
-			</File>
-			<File
-				RelativePath=".\TCPListener.cpp"
+				RelativePath=".\SPRequest.h"
 				>
 			</File>
 			<File
 				RelativePath=".\version.h"
 				>
 			</File>
+			<Filter
+				Name="util"
+				>
+				<File
+					RelativePath=".\util\CGIParser.h"
+					>
+				</File>
+				<File
+					RelativePath=".\util\DOMPropertySet.h"
+					>
+				</File>
+				<File
+					RelativePath=".\util\PropertySet.h"
+					>
+				</File>
+				<File
+					RelativePath=".\util\SPConstants.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="security"
+				>
+				<File
+					RelativePath=".\security\PKIXTrustEngine.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="metadata"
+				>
+				<File
+					RelativePath=".\metadata\MetadataExt.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="remoting"
+				>
+				<File
+					RelativePath=".\remoting\ddf.h"
+					>
+				</File>
+				<File
+					RelativePath=".\remoting\ListenerService.h"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Resource Files"

@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-/* nsapi_shib.cpp - Shibboleth NSAPI filter
-
-   Scott Cantor
-   12/13/04
-*/
+/**
+ * nsapi_shib.cpp
+ * 
+ * Shibboleth NSAPI filter
+ */
 
 #if defined (_MSC_VER) || defined(__BORLANDC__)
 # include "config_win32.h"
@@ -31,7 +31,9 @@
 # define _CRT_SECURE_NO_DEPRECATE 1
 #endif
 
+#include <shibsp/RequestMapper.h>
 #include <shibsp/SPConfig.h>
+#include <xmltooling/util/NDC.h>
 #include <xmltooling/util/Threads.h>
 
 // SAML Runtime
@@ -39,10 +41,8 @@
 #include <shib/shib.h>
 #include <shib-target/shib-target.h>
 
-#include <ctime>
 #include <fstream>
 #include <sstream>
-#include <stdexcept>
 
 #ifdef WIN32
 # include <process.h>
@@ -61,7 +61,6 @@ extern "C"
 
 using namespace shibsp;
 using namespace shibtarget;
-using namespace saml;
 using namespace xmltooling;
 using namespace std;
 
@@ -73,9 +72,10 @@ namespace {
     ShibTargetConfig* g_Config=NULL;
     string g_ServerName;
     string g_ServerScheme;
+    string g_unsetHeaderValue;
 }
 
-PlugManager::Factory SunRequestMapFactory;
+PluginManager<RequestMapper,const DOMElement*>::Factory SunRequestMapFactory;
 
 extern "C" NSAPI_PUBLIC void nsapi_shib_exit(void*)
 {
@@ -131,7 +131,7 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, Session* sn, Request* rq
             SPConfig::Caching |
             SPConfig::Metadata |
             SPConfig::AAP |
-            SPConfig::RequestMapper |
+            SPConfig::RequestMapping |
             SPConfig::InProcess |
             SPConfig::Logging
             );
@@ -141,9 +141,7 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, Session* sn, Request* rq
             return REQ_ABORTED;
         }
 
-        SAMLConfig::getConfig().getPlugMgr().regFactory(NATIVE_REQUESTMAP_PROVIDER,&SunRequestMapFactory);
-        // We hijack the legacy type so that 1.2 config files will load this plugin
-        SAMLConfig::getConfig().getPlugMgr().regFactory(LEGACY_REQUESTMAP_PROVIDER,&SunRequestMapFactory);
+        SPConfig::getConfig().RequestMapperManager.registerFactory(XML_REQUEST_MAPPER,&SunRequestMapFactory);
 
         if (!g_Config->load(config)) {
             g_Config=NULL;
@@ -152,6 +150,15 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, Session* sn, Request* rq
         }
 
         daemon_atrestart(nsapi_shib_exit,NULL);
+
+        IConfig* conf=g_Config->getINI();
+        Locker locker(conf);
+        const PropertySet* props=conf->getPropertySet("Local");
+        if (props) {
+            pair<bool,const char*> unsetValue=props->getString("unsetHeaderValue");
+            if (unsetValue.first)
+                g_unsetHeaderValue = unsetValue.second;
+        }
 #ifndef _DEBUG
     }
     catch (...) {
@@ -168,8 +175,10 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, Session* sn, Request* rq
 
 class ShibTargetNSAPI : public ShibTarget
 {
-    mutable string m_body;
-    mutable bool m_gotBody;
+  mutable string m_body;
+  mutable bool m_gotBody;
+  vector<XSECCryptoX509*> m_certs;
+
 public:
   ShibTargetNSAPI(pblock* pb, Session* sn, Request* rq) : m_gotBody(false) {
     m_pb = pb;
@@ -210,31 +219,60 @@ public:
   }
   ~ShibTargetNSAPI() {}
 
-  virtual void log(ShibLogLevel level, const string &msg) {
-    ShibTarget::log(level,msg);
-    if (level==LogLevelError)
+  const char* getScheme() const {
+    return security_active ? "https" : "http";
+  }
+  const char* getHostname() const {
+#ifdef vs_is_default_vs
+    // This is 6.0 or later, so we can distinguish requests to name-based vhosts.
+    if (!vs_is_default_vs)
+        // The beauty here is, a non-default vhost can *only* be accessed if the client
+        // specified the exact name in the Host header. So we can trust the Host header.
+        return pblock_findval("host", m_rq->headers);
+    else
+#endif
+    // In other cases, we're going to rely on the initialization process...
+    return g_ServerName.c_str();
+  }
+  int getPort() const {
+    return server_portnum;
+  }
+  const char* getRequestURI() const {
+    return m_uri.c_str();
+  }
+  const char* getMethod() const {
+    return pblock_findval("method", m_rq->reqpb);
+  }
+  string getContentType() const {
+    char* content_type = "";
+    request_header("content-type", &content_type, m_sn, m_rq);
+    return content_type;
+  }
+  long getContentLength() const {
+    if (m_gotBody)
+        return m_body.length();
+    char* content_length="";
+    request_header("content-length", &content_length, m_sn, m_rq);
+    return atoi(content_length);
+  }
+  string getRemoteAddr() const {
+    return pblock_findval("ip", m_sn->client);
+  }
+  void log(SPLogLevel level, const string& msg) {
+    AbstractSPRequest::log(level,msg);
+    if (level>=SPError)
         log_error(LOG_FAILURE, "nsapi_shib", m_sn, m_rq, const_cast<char*>(msg.c_str()));
   }
-  virtual string getCookies(void) const {
-    char *cookies = NULL;
-    if (request_header("cookie", &cookies, m_sn, m_rq) == REQ_ABORTED)
-      throw("error accessing cookie header");
-    return string(cookies ? cookies : "");
-  }
-  virtual void setCookie(const string &name, const string &value) {
-    string cookie = name + '=' + value;
-    pblock_nvinsert("Set-Cookie", cookie.c_str(), m_rq->srvhdrs);
-  }
-  virtual const char* getQueryString() const { 
+  const char* getQueryString() const { 
     return pblock_findval("query", m_rq->reqpb);
   }
-  virtual const char* getRequestBody() const {
+  const char* getRequestBody() const {
     if (m_gotBody)
         return m_body.c_str();
     char* content_length=NULL;
     if (request_header("content-length", &content_length, m_sn, m_rq)!=REQ_PROCEED ||
          atoi(content_length) > 1024*1024) // 1MB?
-      throw SAMLException("Blocked POST request body exceeding size limit.");
+      throw opensaml::BindingException("Blocked POST request body exceeding size limit.");
     else {
       char ch=IO_EOF+1;
       int cl=atoi(content_length);
@@ -248,67 +286,70 @@ public:
         cl--;
       }
       if (cl)
-        throw SAMLException("Error reading POST request body from browser.");
+        throw opensaml::BindingException("Error reading POST request body from browser.");
       return m_body.c_str();
     }
   }
-  virtual void clearHeader(const string &name) {
-    if (name=="REMOTE_USER") {
+  void clearHeader(const char* name) {
+    if (!strcmp(name,"REMOTE_USER")) {
         param_free(pblock_remove("auth-user",m_rq->vars));
         param_free(pblock_remove("remote-user",m_rq->headers));
     }
-    else
-        param_free(pblock_remove(name.c_str(), m_rq->headers));
+    else {
+        param_free(pblock_remove(name, m_rq->headers));
+        pblock_nvinsert(name, g_unsetHeaderValue.c_str() ,m_rq->headers);
+    }
   }
-  virtual void setHeader(const string &name, const string &value) {
-    pblock_nvinsert(name.c_str(), value.c_str() ,m_rq->headers);
+  void setHeader(const char* name, const char* value) {
+    pblock_nvinsert(name, value, m_rq->headers);
   }
-  virtual string getHeader(const string &name) {
-    char *hdr = NULL;
-    if (request_header(const_cast<char*>(name.c_str()), &hdr, m_sn, m_rq) != REQ_PROCEED)
+  string getHeader(const char* name) const {
+    char* hdr = NULL;
+    if (request_header(const_cast<char*>(name), &hdr, m_sn, m_rq) != REQ_PROCEED)
       hdr = NULL;
     return string(hdr ? hdr : "");
   }
-  virtual void setRemoteUser(const string &user) {
-    pblock_nvinsert("remote-user", user.c_str(), m_rq->headers);
-    pblock_nvinsert("auth-user", user.c_str(), m_rq->vars);
+  void setRemoteUser(const char* user) {
+    pblock_nvinsert("remote-user", user, m_rq->headers);
+    pblock_nvinsert("auth-user", user, m_rq->vars);
   }
-  virtual string getRemoteUser(void) {
+  string getRemoteUser() const {
     return getHeader("remote-user");
   }
+  void setResponseHeader(const char* name, const char* value) {
+    pblock_nvinsert(name, value, m_rq->srvhdrs);
+  }
 
-  virtual void* sendPage(
-    const string& msg,
-    int code=200,
-    const string& content_type="text/html",
-    const saml::Iterator<header_t>& headers=EMPTY(header_t)
-    ) {
-    param_free(pblock_remove("content-type", m_rq->srvhdrs));
-    pblock_nvinsert("content-type", content_type.c_str(), m_rq->srvhdrs);
-    pblock_nninsert("content-length", msg.length(), m_rq->srvhdrs);
-    pblock_nvinsert("connection","close",m_rq->srvhdrs);
-    while (headers.hasNext()) {
-        const header_t& h=headers.next();
-        pblock_nvinsert(h.first.c_str(), h.second.c_str(), m_rq->srvhdrs);
+  long sendResponse(istream& in, long status) {
+    string msg;
+    char buf[1024];
+    while (in) {
+        in.read(buf,1024);
+        msg.append(buf,in.gcount());
     }
-    protocol_status(m_sn, m_rq, code, NULL);
+    pblock_nvinsert("connection","close",m_rq->srvhdrs);
+    pblock_nninsert("content-length", msg.length(), m_rq->srvhdrs);
+    protocol_status(m_sn, m_rq, status, NULL);
     protocol_start_response(m_sn, m_rq);
     net_write(m_sn->csd,const_cast<char*>(msg.c_str()),msg.length());
-    return (void*)REQ_EXIT;
+    return REQ_EXIT;
   }
-  virtual void* sendRedirect(const string& url) {
+  long sendRedirect(const char* url) {
     param_free(pblock_remove("content-type", m_rq->srvhdrs));
     pblock_nninsert("content-length", 0, m_rq->srvhdrs);
     pblock_nvinsert("expires", "01-Jan-1997 12:00:00 GMT", m_rq->srvhdrs);
     pblock_nvinsert("cache-control", "private,no-store,no-cache", m_rq->srvhdrs);
-    pblock_nvinsert("location", url.c_str(), m_rq->srvhdrs);
+    pblock_nvinsert("location", url, m_rq->srvhdrs);
     pblock_nvinsert("connection","close",m_rq->srvhdrs);
     protocol_status(m_sn, m_rq, PROTOCOL_REDIRECT, NULL);
     protocol_start_response(m_sn, m_rq);
-    return (void*)REQ_ABORTED;
+    return REQ_ABORTED;
   }
-  virtual void* returnDecline(void) { return (void*)REQ_NOACTION; }
-  virtual void* returnOK(void) { return (void*)REQ_PROCEED; }
+  long returnDecline() { return REQ_NOACTION; }
+  long returnOK() { return REQ_PROCEED; }
+  const vector<XSECCryptoX509*>& getClientCertificates() const {
+      return m_certs;
+  }
 
   pblock* m_pb;
   Session* m_sn;
@@ -330,13 +371,13 @@ extern "C" NSAPI_PUBLIC int nsapi_shib(pblock* pb, Session* sn, Request* rq)
 {
   ostringstream threadid;
   threadid << "[" << getpid() << "] nsapi_shib" << '\0';
-  saml::NDC ndc(threadid.str().c_str());
+  xmltooling::NDC ndc(threadid.str().c_str());
 
   try {
     ShibTargetNSAPI stn(pb, sn, rq);
 
     // Check user authentication
-    pair<bool,void*> res = stn.doCheckAuthN();
+    pair<bool,long> res = stn.doCheckAuthN();
     if (res.first) return (int)res.second;
 
     // user authN was okay -- export the assertions now
@@ -354,13 +395,13 @@ extern "C" NSAPI_PUBLIC int nsapi_shib(pblock* pb, Session* sn, Request* rq)
     // this user is ok.
     return REQ_PROCEED;
   }
-  catch (SAMLException& e) {
+  catch (exception& e) {
     log_error(LOG_FAILURE,FUNC,sn,rq,const_cast<char*>(e.what()));
-    return WriteClientError(sn, rq, FUNC, "Shibboleth filter threw an exception, see web server log for error.");
+    return WriteClientError(sn, rq, FUNC, "Shibboleth module threw an exception, see web server log for error.");
   }
 #ifndef _DEBUG
   catch (...) {
-    return WriteClientError(sn, rq, FUNC, "Shibboleth filter threw an uncaught exception.");
+    return WriteClientError(sn, rq, FUNC, "Shibboleth module threw an uncaught exception.");
   }
 #endif
 }
@@ -372,17 +413,17 @@ extern "C" NSAPI_PUBLIC int shib_handler(pblock* pb, Session* sn, Request* rq)
 {
   ostringstream threadid;
   threadid << "[" << getpid() << "] shib_handler" << '\0';
-  saml::NDC ndc(threadid.str().c_str());
+  xmltooling::NDC ndc(threadid.str().c_str());
 
   try {
     ShibTargetNSAPI stn(pb, sn, rq);
 
-    pair<bool,void*> res = stn.doHandler();
+    pair<bool,long> res = stn.doHandler();
     if (res.first) return (int)res.second;
 
     return WriteClientError(sn, rq, FUNC, "Shibboleth handler did not do anything.");
   }
-  catch (SAMLException& e) {
+  catch (exception& e) {
     log_error(LOG_FAILURE,FUNC,sn,rq,const_cast<char*>(e.what()));
     return WriteClientError(sn, rq, FUNC, "Shibboleth handler threw an exception, see web server log for error.");
   }
@@ -394,14 +435,14 @@ extern "C" NSAPI_PUBLIC int shib_handler(pblock* pb, Session* sn, Request* rq)
 }
 
 
-class SunRequestMapper : public virtual IRequestMapper, public virtual PropertySet
+class SunRequestMapper : public virtual RequestMapper, public virtual PropertySet
 {
 public:
     SunRequestMapper(const DOMElement* e);
     ~SunRequestMapper() { delete m_mapper; delete m_stKey; delete m_propsKey; }
     Lockable* lock() { return m_mapper->lock(); }
     void unlock() { m_stKey->setData(NULL); m_propsKey->setData(NULL); m_mapper->unlock(); }
-    Settings getSettings(ShibTarget* st) const;
+    Settings getSettings(const SPRequest& request) const;
     
     pair<bool,bool> getBool(const char* name, const char* ns=NULL) const;
     pair<bool,const char*> getString(const char* name, const char* ns=NULL) const;
@@ -412,39 +453,34 @@ public:
     const DOMElement* getElement() const;
 
 private:
-    IRequestMapper* m_mapper;
+    RequestMapper* m_mapper;
     ThreadKey* m_stKey;
     ThreadKey* m_propsKey;
 };
 
-IPlugIn* SunRequestMapFactory(const DOMElement* e)
+RequestMapper* SunRequestMapFactory(const DOMElement* const & e)
 {
     return new SunRequestMapper(e);
 }
 
 SunRequestMapper::SunRequestMapper(const DOMElement* e) : m_mapper(NULL), m_stKey(NULL), m_propsKey(NULL)
 {
-    IPlugIn* p=SAMLConfig::getConfig().getPlugMgr().newPlugin(XML_REQUESTMAP_PROVIDER,e);
-    m_mapper=dynamic_cast<IRequestMapper*>(p);
-    if (!m_mapper) {
-        delete p;
-        throw UnsupportedExtensionException("Embedded request mapper plugin was not of correct type.");
-    }
+    m_mapper = SPConfig::getConfig().RequestMapperManager.newPlugin(XML_REQUEST_MAPPER,e);
     m_stKey=ThreadKey::create(NULL);
     m_propsKey=ThreadKey::create(NULL);
 }
 
-IRequestMapper::Settings SunRequestMapper::getSettings(ShibTarget* st) const
+RequestMapper::Settings SunRequestMapper::getSettings(const SPRequest& request) const
 {
-    Settings s=m_mapper->getSettings(st);
-    m_stKey->setData(dynamic_cast<ShibTargetNSAPI*>(st));
+    Settings s=m_mapper->getSettings(request);
+    m_stKey->setData((void*)dynamic_cast<const ShibTargetNSAPI*>(&request));
     m_propsKey->setData((void*)s.first);
-    return pair<const PropertySet*,IAccessControl*>(this,s.second);
+    return pair<const PropertySet*,AccessControl*>(this,s.second);
 }
 
 pair<bool,bool> SunRequestMapper::getBool(const char* name, const char* ns) const
 {
-    ShibTargetNSAPI* stn=reinterpret_cast<ShibTargetNSAPI*>(m_stKey->getData());
+    const ShibTargetNSAPI* stn=reinterpret_cast<const ShibTargetNSAPI*>(m_stKey->getData());
     const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
     if (stn && !ns && name) {
         // Override boolean properties.
@@ -457,7 +493,7 @@ pair<bool,bool> SunRequestMapper::getBool(const char* name, const char* ns) cons
 
 pair<bool,const char*> SunRequestMapper::getString(const char* name, const char* ns) const
 {
-    ShibTargetNSAPI* stn=reinterpret_cast<ShibTargetNSAPI*>(m_stKey->getData());
+    const ShibTargetNSAPI* stn=reinterpret_cast<const ShibTargetNSAPI*>(m_stKey->getData());
     const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
     if (stn && !ns && name) {
         // Override string properties.
@@ -480,7 +516,7 @@ pair<bool,const XMLCh*> SunRequestMapper::getXMLString(const char* name, const c
 
 pair<bool,unsigned int> SunRequestMapper::getUnsignedInt(const char* name, const char* ns) const
 {
-    ShibTargetNSAPI* stn=reinterpret_cast<ShibTargetNSAPI*>(m_stKey->getData());
+    const ShibTargetNSAPI* stn=reinterpret_cast<const ShibTargetNSAPI*>(m_stKey->getData());
     const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
     if (stn && !ns && name) {
         // Override int properties.
@@ -493,7 +529,7 @@ pair<bool,unsigned int> SunRequestMapper::getUnsignedInt(const char* name, const
 
 pair<bool,int> SunRequestMapper::getInt(const char* name, const char* ns) const
 {
-    ShibTargetNSAPI* stn=reinterpret_cast<ShibTargetNSAPI*>(m_stKey->getData());
+    const ShibTargetNSAPI* stn=reinterpret_cast<const ShibTargetNSAPI*>(m_stKey->getData());
     const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
     if (stn && !ns && name) {
         // Override int properties.

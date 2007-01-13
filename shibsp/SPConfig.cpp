@@ -23,11 +23,13 @@
 
 #include "internal.h"
 #include "exceptions.h"
-#include "ListenerService.h"
-#include "MetadataExt.h"
-#include "PKIXTrustEngine.h"
+#include "AccessControl.h"
+#include "RequestMapper.h"
 #include "ServiceProvider.h"
 #include "SPConfig.h"
+#include "metadata/MetadataExt.h"
+#include "remoting/ListenerService.h"
+#include "security/PKIXTrustEngine.h"
 
 #include <log4cpp/Category.hh>
 #include <saml/SAMLConfig.h>
@@ -94,7 +96,9 @@ bool SPInternalConfig::init(const char* catalog_path)
     
     registerMetadataExtClasses();
     registerPKIXTrustEngine();
+    registerAccessControls();
     registerListenerServices();
+    registerRequestMappers();
     registerServiceProviders();
 
     log.info("library initialization complete");
@@ -112,8 +116,10 @@ void SPInternalConfig::term()
     delete m_serviceProvider;
     m_serviceProvider = NULL;
     
-    ListenerServiceManager.deregisterFactories();
     ServiceProviderManager.deregisterFactories();
+    RequestMapperManager.deregisterFactories();
+    ListenerServiceManager.deregisterFactories();
+    AccessControlManager.deregisterFactories();
 
     SAMLConfig::getConfig().term();
     log.info("library shutdown complete");

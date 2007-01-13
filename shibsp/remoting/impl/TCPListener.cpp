@@ -21,7 +21,7 @@
  */
 
 #include "internal.h"
-#include "SocketListener.h"
+#include "remoting/impl/SocketListener.h"
 
 #include <xercesc/util/XMLUniDefs.hpp>
 #include <xmltooling/unicode.h>

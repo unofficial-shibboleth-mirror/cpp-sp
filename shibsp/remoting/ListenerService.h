@@ -15,7 +15,7 @@
  */
 
 /**
- * @file shibsp/ListenerService.h
+ * @file shibsp/remoting/ListenerService.h
  * 
  * Interprocess remoting engine.
  */
@@ -23,7 +23,7 @@
 #ifndef __shibsp_listener_h__
 #define __shibsp_listener_h__
 
-#include <shibsp/ddf.h>
+#include <shibsp/remoting/ddf.h>
 #include <map>
 
 namespace shibsp {
