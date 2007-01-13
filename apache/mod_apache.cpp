@@ -285,7 +285,13 @@ public:
   virtual void setCookie(const string &name, const string &value) {
     char* val = ap_psprintf(m_req->pool, "%s=%s", name.c_str(), value.c_str());
 #ifdef SHIB_DEFERRED_HEADERS
+    if (!m_rc) {
+      // this happens on subrequests
+      ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_setheader: no_m_rc");
+      m_rc = init_request_config(m_req);
+    }
     ap_table_addn(m_rc->hdr_err, "Set-Cookie", val);
+    ap_table_addn(m_rc->hdr_out, "Set-Cookie", val);
 #else
     ap_table_addn(m_req->err_headers_out, "Set-Cookie", val);
 #endif
@@ -314,10 +320,10 @@ public:
   }
   virtual void clearHeader(const string &name) {
     if (m_dc->bUseEnvVars==1) {
-       // ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_clear_header: env\n");
+       // ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_clear_header: env");
        if (m_rc && m_rc->env) ap_table_unset(m_rc->env, name.c_str());
     } else {
-       // ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_clear_header: hdr\n");
+       // ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_clear_header: hdr");
        ap_table_unset(m_req->headers_in, name.c_str());
        ap_table_set(m_req->headers_in, name.c_str(), g_unsetHeaderValue.c_str());
     }
@@ -326,14 +332,14 @@ public:
     if (m_dc->bUseEnvVars==1) {
        if (!m_rc) {
           // this happens on subrequests
-          ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_setheader: no_m_rc\n");
+          ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_setheader: no_m_rc");
           m_rc = init_request_config(m_req);
        }
        if (!m_rc->env) m_rc->env = ap_make_table(m_req->pool, 10);
-       ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_set_env: %s=%s\n", name.c_str(), value.c_str()?value.c_str():"Null");
+       ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_set_env: %s=%s", name.c_str(), value.c_str()?value.c_str():"Null");
        ap_table_set(m_rc->env, name.c_str(), value.c_str()?value.c_str():"");
     } else {
-       ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_set_hdr: %s=%s\n", name.c_str(), value.c_str()?value.c_str():"Null");
+       ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_set_hdr: %s=%s", name.c_str(), value.c_str()?value.c_str():"Null");
        ap_table_set(m_req->headers_in, name.c_str(), value.c_str());
     }
   }
@@ -342,10 +348,10 @@ public:
     if (m_dc->bUseEnvVars==1) {
        if (m_rc && m_rc->env) hdr = ap_table_get(m_rc->env, name.c_str());
        else hdr = NULL;
-       ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_get_hdr_env: %s=%s\n", name.c_str(), hdr?hdr:"NULL");
+       ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_get_hdr_env: %s=%s", name.c_str(), hdr?hdr:"NULL");
     } else {
        hdr = ap_table_get(m_req->headers_in, name.c_str());
-       ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_get_hdr: %s=%s\n", name.c_str(), hdr?hdr:"NULL");
+       ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_get_hdr: %s=%s", name.c_str(), hdr?hdr:"NULL");
     }
     return string(hdr ? hdr : "");
   }
@@ -392,7 +398,7 @@ extern "C" int shib_check_user(request_rec* r)
   if (((shib_dir_config*)ap_get_module_config(r->per_dir_config, &mod_shib))->bOff==1)
     return DECLINED;
     
-  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_check_user(%d): ENTER\n", (int)getpid());
+  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_check_user(%d): ENTER", (int)getpid());
 
   ostringstream threadid;
   threadid << "[" << getpid() << "] shib_check_user" << '\0';
@@ -669,7 +675,7 @@ static SH_AP_TABLE* groups_for_user(request_rec* r, const char* user, char* grpf
 #else
     if (ap_pcfg_openfile(&f,r->pool,grpfile) != APR_SUCCESS) {
 #endif
-        ap_log_rerror(APLOG_MARK,APLOG_DEBUG,SH_AP_R(r),"groups_for_user() could not open group file: %s\n",grpfile);
+        ap_log_rerror(APLOG_MARK,APLOG_DEBUG,SH_AP_R(r),"groups_for_user() could not open group file: %s",grpfile);
         return NULL;
     }
 
@@ -936,7 +942,7 @@ extern "C" apr_status_t shib_exit(void* data)
         g_Config->shutdown();
         g_Config = NULL;
     }
-    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,NULL,"shib_exit() done\n");
+    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,NULL,"shib_exit() done");
     return OK;
 }
 #endif
@@ -946,7 +952,7 @@ static int shib_post_read(request_rec *r)
 {
     shib_request_config* rc = init_request_config(r);
 
-    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_post_read: E=%s\n", rc->env?"env":"hdr");
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_post_read: E=%s", rc->env?"env":"hdr");
 
 #ifdef SHIB_DEFERRED_HEADERS
     rc->hdr_out = ap_make_table(r->pool, 5);
@@ -964,12 +970,12 @@ extern "C" int shib_fixups(request_rec* r)
   if (dc->bOff==1 || dc->bUseEnvVars!=1) 
     return DECLINED;
     
-  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_fixup(%d): ENTER\n", (int)getpid());
+  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_fixup(%d): ENTER", (int)getpid());
 
   if (rc==NULL || rc->env==NULL || ap_is_empty_table(rc->env))
         return DECLINED;
 
-  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_fixup adding %d vars\n", ap_table_elts(rc->env)->nelts);
+  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_fixup adding %d vars", ap_table_elts(rc->env)->nelts);
   r->subprocess_env = ap_overlay_tables(r->pool, r->subprocess_env, rc->env);
 
   return OK;
@@ -992,7 +998,7 @@ extern "C" apr_status_t shib_child_exit(void* data)
     ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_child_exit(%d) dealing with g_Config..", (int)getpid());
     g_Config->shutdown();
     g_Config = NULL;
-    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_child_exit() done\n");
+    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_child_exit() done");
 
 #ifndef SHIB_APACHE_13
     return OK;
