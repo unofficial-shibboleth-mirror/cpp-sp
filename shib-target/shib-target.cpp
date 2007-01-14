@@ -136,26 +136,12 @@ void ShibTarget::init(
     const char* scheme,
     const char* hostname,
     int port,
-    const char* uri,
-    const char* content_type,
-    const char* remote_addr,
-    const char* method
+    const char* uri
     )
 {
-#ifdef _DEBUG
-    xmltooling::NDC ndc("init");
-#endif
-
     if (m_priv->m_app)
         throw XMLToolingException("Request initialization occurred twice!");
 
-    if (method) m_method = method;
-    if (scheme) m_scheme = scheme;
-    if (hostname) m_hostname = hostname;
-    if (uri) m_uri = uri;
-    if (content_type) m_content_type = content_type;
-    if (remote_addr) m_remote_addr = remote_addr;
-    m_port = port;
     m_priv->m_Config = &ShibTargetConfig::getConfig();
     m_priv->get_application(this, scheme, hostname, port, uri);
     AbstractSPRequest::m_app = m_priv->m_app;
@@ -265,7 +251,7 @@ pair<bool,long> ShibTarget::doCheckAuthN(bool handler)
             m_priv->m_cacheEntry=m_priv->m_conf->getSessionCache()->find(
                 session_id,
                 m_priv->m_app,
-                m_remote_addr.c_str()
+                getRemoteAddr().c_str()
                 );
             // Make a localized exception throw if the session isn't valid.
             if (!m_priv->m_cacheEntry)
@@ -361,7 +347,7 @@ pair<bool,long> ShibTarget::doHandler(void)
         pair<bool,bool> handlerSSL=sessionProps->getBool("handlerSSL");
       
         // Make sure this is SSL, if it should be
-        if ((!handlerSSL.first || handlerSSL.second) && m_scheme != "https")
+        if ((!handlerSSL.first || handlerSSL.second) && strcmp(getScheme(),"https"))
             throw FatalProfileException("Blocked non-SSL access to Shibboleth handler.");
 
         // We dispatch based on our path info. We know the request URL begins with or equals the handler URL,
@@ -463,7 +449,7 @@ pair<bool,long> ShibTarget::doCheckAuthZ(void)
                         m_priv->m_cacheEntry=m_priv->m_conf->getSessionCache()->find(
                             session_id,
                             m_priv->m_app,
-                            m_remote_addr.c_str()
+                            getRemoteAddr().c_str()
                             );
 		        	}
 	            }
@@ -533,7 +519,7 @@ pair<bool,long> ShibTarget::doExportAssertions(bool requireSession)
                     m_priv->m_cacheEntry=m_priv->m_conf->getSessionCache()->find(
                         session_id,
                         m_priv->m_app,
-                        m_remote_addr.c_str()
+                        getRemoteAddr().c_str()
                         );
 	        	}
             }

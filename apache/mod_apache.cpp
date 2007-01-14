@@ -281,10 +281,7 @@ public:
         m_sc->szScheme ? m_sc->szScheme : ap_http_method(req),
 	    ap_get_server_name(req),
         (int)ap_get_server_port(req),
-	    req->unparsed_uri,
-        ap_table_get(req->headers_in, "Content-type"),
-	    req->connection->remote_ip,
-        req->method
+	    req->unparsed_uri
         );
   }
   virtual ~ShibTargetApache() {}

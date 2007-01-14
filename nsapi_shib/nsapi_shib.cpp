@@ -175,6 +175,7 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, Session* sn, Request* rq
 
 class ShibTargetNSAPI : public ShibTarget
 {
+  string m_uri;
   mutable string m_body;
   mutable bool m_gotBody;
   vector<XSECCryptoX509*> m_certs;
@@ -188,16 +189,16 @@ public:
     // Get everything but hostname...
     const char* uri=pblock_findval("uri", rq->reqpb);
     const char* qstr=pblock_findval("query", rq->reqpb);
-    int port=server_portnum;
-    const char* scheme=security_active ? "https" : "http";
-    const char* host=NULL;
 
     string url;
-    if (uri)
-        url=uri;
+    if (uri) {
+        url = uri;
+        m_uri = uri;
+    }
     if (qstr)
         url=url + '?' + qstr;
     
+    const char* host=NULL;
 #ifdef vs_is_default_vs
     // This is 6.0 or later, so we can distinguish requests to name-based vhosts.
     if (!vs_is_default_vs)
@@ -209,13 +210,12 @@ public:
     // In other cases, we're going to rely on the initialization process...
     host=g_ServerName.c_str();
 
-    char* content_type = "";
-    request_header("content-type", &content_type, sn, rq);
-      
-    const char *remote_ip = pblock_findval("ip", sn->client);
-    const char *method = pblock_findval("method", rq->reqpb);
-
-    init(scheme, host, port, url.c_str(), content_type, remote_ip, method);
+    init(
+        security_active ? "https" : "http",
+        host,
+        server_portnum,
+        url.c_str()
+        );
   }
   ~ShibTargetNSAPI() {}
 

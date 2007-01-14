@@ -321,7 +321,6 @@ namespace shibtarget {
         // Basic request access in case any plugins need the info
         virtual const IConfig* getConfig() const;
         virtual const IApplication* getApplication() const;
-        const char* getRequestURL() const {return m_url.c_str();}
         
     protected:
         ShibTarget();
@@ -338,14 +337,8 @@ namespace shibtarget {
             const char* scheme,
             const char* hostname,
             int port,
-            const char* uri,
-            const char* content_type,
-            const char* remote_addr,
-            const char* method
+            const char* uri
             );
-
-        std::string m_url, m_method, m_scheme, m_hostname, m_uri, m_content_type, m_remote_addr;
-        int m_port;
 
     private:
         mutable ShibTargetPriv* m_priv;

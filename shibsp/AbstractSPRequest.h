@@ -45,6 +45,10 @@ namespace shibsp {
         
     public:
         virtual ~AbstractSPRequest();
+
+        const char* getRequestURL() const {
+            return m_url.c_str();
+        }
         
         const Application& getSPApplication() const {
             return *m_app;
@@ -65,6 +69,9 @@ namespace shibsp {
     protected:
         /** Holds effective Application. */
         const Application* m_app;
+
+        /** Complete "canonical" request URL. */
+        std::string m_url;
     
     private:
         void* m_log; // declared void* to avoid log4cpp header conflicts in Apache

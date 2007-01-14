@@ -334,6 +334,9 @@ class ShibTargetIsapiF : public ShibTarget
   PHTTP_FILTER_PREPROC_HEADERS m_pn;
   map<string,string> m_headers;
   vector<XSECCryptoX509*> m_certs;
+  int m_port;
+  string m_scheme,m_hostname,m_uri;
+  mutable string m_remote_addr,m_content_type,m_method;
 
 public:
   ShibTargetIsapiF(PHTTP_FILTER_CONTEXT pfc, PHTTP_FILTER_PREPROC_HEADERS pn, const site_t& site) {
@@ -342,40 +345,35 @@ public:
     m_pn = pn;
 
     // URL path always come from IIS.
-    dynabuf url(256);
-    GetHeader(pn,pfc,"url",url,256,false);
+    dynabuf var(256);
+    GetHeader(pn,pfc,"url",var,256,false);
+    m_uri = var;
 
     // Port may come from IIS or from site def.
-    dynabuf port(11);
-    if (!g_bNormalizeRequest || (pfc->fIsSecurePort && site.m_sslport.empty()) || (!pfc->fIsSecurePort && site.m_port.empty()))
-        GetServerVariable(pfc,"SERVER_PORT",port,10);
+    if (!g_bNormalizeRequest || (pfc->fIsSecurePort && site.m_sslport.empty()) || (!pfc->fIsSecurePort && site.m_port.empty())) {
+        GetServerVariable(pfc,"SERVER_PORT",var,10);
+        m_port = atoi(var);
+    }
     else if (pfc->fIsSecurePort) {
-        strncpy(port,site.m_sslport.c_str(),10);
-        static_cast<char*>(port)[10]=0;
+        m_port = atoi(site.m_sslport.c_str());
     }
     else {
-        strncpy(port,site.m_port.c_str(),10);
-        static_cast<char*>(port)[10]=0;
+        m_port = atoi(site.m_port.c_str());
     }
     
     // Scheme may come from site def or be derived from IIS.
-    const char* scheme=site.m_scheme.c_str();
-    if (!scheme || !*scheme || !g_bNormalizeRequest)
-        scheme=pfc->fIsSecurePort ? "https" : "http";
+    m_scheme=site.m_scheme;
+    if (m_scheme.empty() || !g_bNormalizeRequest)
+        m_scheme=pfc->fIsSecurePort ? "https" : "http";
 
-    // Get the rest of the server variables.
-    dynabuf remote_addr(16),method(5),content_type(32),hostname(32);
-    GetServerVariable(pfc,"SERVER_NAME",hostname,32);
-    GetServerVariable(pfc,"REMOTE_ADDR",remote_addr,16);
-    GetServerVariable(pfc,"REQUEST_METHOD",method,5,false);
-    GetServerVariable(pfc,"CONTENT_TYPE",content_type,32,false);
+    GetServerVariable(pfc,"SERVER_NAME",var,32);
 
     // Make sure SERVER_NAME is "authorized" for use on this site. If not, set to canonical name.
-    const char* host=hostname;
-    if (site.m_name!=host && site.m_aliases.find(host)==site.m_aliases.end())
-        host=site.m_name.c_str();
+    m_hostname = var;
+    if (site.m_name!=m_hostname && site.m_aliases.find(m_hostname)==site.m_aliases.end())
+        m_hostname=site.m_name;
 
-    init(scheme, host, atoi(port), url, content_type, remote_addr, method); 
+    init(m_scheme.c_str(), m_hostname.c_str(), m_port, m_uri.c_str()); 
   }
   ~ShibTargetIsapiF() { }
 
@@ -392,15 +390,33 @@ public:
     return m_uri.c_str();
   }
   const char* getMethod() const {
+    if (m_method.empty()) {
+        dynabuf var(5);
+        GetServerVariable(m_pfc,"REQUEST_METHOD",var,5,false);
+        if (!var.empty())
+            m_method = var;
+    }
     return m_method.c_str();
   }
   string getContentType() const {
+    if (m_content_type.empty()) {
+        dynabuf var(32);
+        GetServerVariable(m_pfc,"CONTENT_TYPE",var,32,false);
+        if (!var.empty())
+            m_content_type = var;
+    }
     return m_content_type;
   }
   long getContentLength() const {
       return 0;
   }
   string getRemoteAddr() const {
+    if (m_remote_addr.empty()) {
+        dynabuf var(16);
+        GetServerVariable(m_pfc,"REMOTE_ADDR",var,16,false);
+        if (!var.empty())
+            m_remote_addr = var;
+    }
     return m_remote_addr;
   }
   void log(SPLogLevel level, const string& msg) {
@@ -597,12 +613,20 @@ class ShibTargetIsapiE : public ShibTarget
   vector<XSECCryptoX509*> m_certs;
   mutable string m_body;
   mutable bool m_gotBody;
+  int m_port;
+  string m_scheme,m_hostname,m_uri;
+  mutable string m_remote_addr;
   
 public:
   ShibTargetIsapiE(LPEXTENSION_CONTROL_BLOCK lpECB, const site_t& site) : m_lpECB(lpECB), m_gotBody(false) {
     dynabuf ssl(5);
     GetServerVariable(lpECB,"HTTPS",ssl,5);
     bool SSL=(ssl=="on" || ssl=="ON");
+
+    // Scheme may come from site def or be derived from IIS.
+    m_scheme=site.m_scheme;
+    if (m_scheme.empty() || !g_bNormalizeRequest)
+        m_scheme = SSL ? "https" : "http";
 
     // URL path always come from IIS.
     dynabuf url(256);
@@ -620,22 +644,15 @@ public:
         strncpy(port,site.m_port.c_str(),10);
         static_cast<char*>(port)[10]=0;
     }
+    m_port = atoi(port);
 
-    // Scheme may come from site def or be derived from IIS.
-    const char* scheme=site.m_scheme.c_str();
-    if (!scheme || !*scheme || !g_bNormalizeRequest) {
-        scheme = SSL ? "https" : "http";
-    }
-
-    // Get the other server variables.
-    dynabuf remote_addr(16),hostname(32);
-    GetServerVariable(lpECB, "REMOTE_ADDR", remote_addr, 16);
-    GetServerVariable(lpECB, "SERVER_NAME", hostname, 32);
+    dynabuf var(32);
+    GetServerVariable(lpECB, "SERVER_NAME", var, 32);
 
     // Make sure SERVER_NAME is "authorized" for use on this site. If not, set to canonical name.
-    const char* host=hostname;
-    if (site.m_name!=host && site.m_aliases.find(host)==site.m_aliases.end())
-        host=site.m_name.c_str();
+    m_hostname=var;
+    if (site.m_name!=m_hostname && site.m_aliases.find(m_hostname)==site.m_aliases.end())
+        m_hostname=site.m_name;
 
     /*
      * IIS screws us over on PATH_INFO (the hits keep on coming). We need to figure out if
@@ -654,25 +671,29 @@ public:
      *      PathInfo:   /SAML/POST
      */
     
-    string fullurl;
-    
     // Clearly we're only in bad mode if path info exists at all.
     if (lpECB->lpszPathInfo && *(lpECB->lpszPathInfo)) {
         if (strstr(lpECB->lpszPathInfo,url))
             // Pretty good chance we're in bad mode, unless the PathInfo repeats the path itself.
-            fullurl=lpECB->lpszPathInfo;
+            m_uri = lpECB->lpszPathInfo;
         else {
-            fullurl+=url;
-            fullurl+=lpECB->lpszPathInfo;
+            m_uri = url;
+            m_uri += lpECB->lpszPathInfo;
         }
     }
     
     // For consistency with Apache, let's add the query string.
     if (lpECB->lpszQueryString && *(lpECB->lpszQueryString)) {
-        fullurl+='?';
-        fullurl+=lpECB->lpszQueryString;
+        m_uri += '?';
+        m_uri += lpECB->lpszQueryString;
     }
-    init(scheme, host, atoi(port), fullurl.c_str(), lpECB->lpszContentType, remote_addr, lpECB->lpszMethod);
+
+    init(
+        m_scheme.c_str(),
+        m_hostname.c_str(),
+        m_port,
+        m_uri.c_str()
+        );
   }
   ~ShibTargetIsapiE() { }
 
@@ -689,7 +710,7 @@ public:
     return m_uri.c_str();
   }
   const char* getMethod() const {
-    return m_lpECB->lpszMethod ? m_lpECB->lpszMethod : "";
+    return m_lpECB->lpszMethod;
   }
   string getContentType() const {
     return m_lpECB->lpszContentType ? m_lpECB->lpszContentType : "";
@@ -698,6 +719,12 @@ public:
       return m_lpECB->cbTotalBytes;
   }
   string getRemoteAddr() const {
+    if (m_remote_addr.empty()) {
+        dynabuf var(16);
+        GetServerVariable(m_lpECB, "REMOTE_ADDR", var, 16, false);
+        if (!var.empty())
+            m_remote_addr = var;
+    }
     return m_remote_addr;
   }
   void log(SPLogLevel level, const string& msg) {
