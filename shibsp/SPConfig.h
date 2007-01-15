@@ -34,6 +34,7 @@
 namespace shibsp {
 
     class SHIBSP_API AccessControl;
+    class SHIBSP_API Handler;
     class SHIBSP_API ListenerService;
     class SHIBSP_API RequestMapper;
     class SHIBSP_API ServiceProvider;
@@ -137,9 +138,24 @@ namespace shibsp {
         xmltooling::PluginManager<AccessControl,const xercesc::DOMElement*> AccessControlManager;
 
         /**
+         * Manages factories for Handler plugins that implement AssertionConsumerService functionality.
+         */
+        xmltooling::PluginManager<Handler,const xercesc::DOMElement*> AssertionConsumerServiceManager;
+
+        /**
+         * Manages factories for Handler plugins that implement customized functionality.
+         */
+        xmltooling::PluginManager<Handler,const xercesc::DOMElement*> HandlerManager;
+
+        /**
          * Manages factories for ListenerService plugins.
          */
         xmltooling::PluginManager<ListenerService,const xercesc::DOMElement*> ListenerServiceManager;
+
+        /**
+         * Manages factories for Handler plugins that implement ManageNameIDService functionality.
+         */
+        xmltooling::PluginManager<Handler,const xercesc::DOMElement*> ManageNameIDServiceManager;
 
         /**
          * Manages factories for RequestMapper plugins.
@@ -150,6 +166,16 @@ namespace shibsp {
          * Manages factories for ServiceProvider plugins.
          */
         xmltooling::PluginManager<ServiceProvider,const xercesc::DOMElement*> ServiceProviderManager;
+
+        /**
+         * Manages factories for Handler plugins that implement SessionInitiator functionality.
+         */
+        xmltooling::PluginManager<Handler,const xercesc::DOMElement*> SessionInitiatorManager;
+
+        /**
+         * Manages factories for Handler plugins that implement SingleLogoutService functionality.
+         */
+        xmltooling::PluginManager<Handler,const xercesc::DOMElement*> SingleLogoutServiceManager;
 
     protected:
         SPConfig() : m_serviceProvider(NULL) {}

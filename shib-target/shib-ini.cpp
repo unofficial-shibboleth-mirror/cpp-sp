@@ -85,12 +85,12 @@ namespace {
             const RoleDescriptor* role=NULL,
             const TrustEngine* trust=NULL
             ) const;
-        const IHandler* getDefaultSessionInitiator() const;
-        const IHandler* getSessionInitiatorById(const char* id) const;
-        const IHandler* getDefaultAssertionConsumerService() const;
-        const IHandler* getAssertionConsumerServiceByIndex(unsigned short index) const;
-        Iterator<const IHandler*> getAssertionConsumerServicesByBinding(const XMLCh* binding) const;
-        const IHandler* getHandler(const char* path) const;
+        const Handler* getDefaultSessionInitiator() const;
+        const Handler* getSessionInitiatorById(const char* id) const;
+        const Handler* getDefaultAssertionConsumerService() const;
+        const Handler* getAssertionConsumerServiceByIndex(unsigned short index) const;
+        Iterator<const Handler*> getAssertionConsumerServicesByBinding(const XMLCh* binding) const;
+        const Handler* getHandler(const char* path) const;
         
         // Provides filter to exclude special config elements.
         short acceptNode(const DOMNode* node) const;
@@ -109,32 +109,31 @@ namespace {
         SAMLBinding* m_binding;
         ShibHTTPHook* m_bindingHook;
 
-        // vectors manage object life for handlers and their property sets
-        vector<IHandler*> m_handlers;
-        vector<PropertySet*> m_handlerProps;
+        // manage handler objects
+        vector<Handler*> m_handlers;
 
         // maps location (path info) to applicable handlers
-        map<string,const IHandler*> m_handlerMap;
+        map<string,const Handler*> m_handlerMap;
 
         // maps unique indexes to consumer services
-        map<unsigned int,const IHandler*> m_acsIndexMap;
+        map<unsigned int,const Handler*> m_acsIndexMap;
         
         // pointer to default consumer service
-        const IHandler* m_acsDefault;
+        const Handler* m_acsDefault;
 
         // maps binding strings to supporting consumer service(s)
 #ifdef HAVE_GOOD_STL
-        typedef map<xmltooling::xstring,vector<const IHandler*> > ACSBindingMap;
+        typedef map<xmltooling::xstring,vector<const Handler*> > ACSBindingMap;
 #else
-        typedef map<string,vector<const IHandler*> > ACSBindingMap;
+        typedef map<string,vector<const Handler*> > ACSBindingMap;
 #endif
         ACSBindingMap m_acsBindingMap;
 
         // maps unique ID strings to session initiators
-        map<string,const IHandler*> m_sessionInitMap;
+        map<string,const Handler*> m_sessionInitMap;
 
         // pointer to default session initiator
-        const IHandler* m_sessionInitDefault;
+        const Handler* m_sessionInitDefault;
 
         DOMPropertySet* m_credDefault;
 #ifdef HAVE_GOOD_STL
@@ -153,7 +152,7 @@ namespace {
         ~XMLConfigImpl();
         
         RequestMapper* m_requestMapper;
-        map<string,IApplication*> m_appmap;
+        map<string,Application*> m_appmap;
         map<string,CredentialResolver*> m_credResolverMap;
         vector<IAttributeFactory*> m_attrFactories;
         
@@ -213,8 +212,8 @@ namespace {
         ISessionCache* getSessionCache() const {return m_sessionCache;}
         IReplayCache* getReplayCache() const {return m_replayCache;}
         RequestMapper* getRequestMapper() const {return m_impl->m_requestMapper;}
-        const IApplication* getApplication(const char* applicationId) const {
-            map<string,IApplication*>::const_iterator i=m_impl->m_appmap.find(applicationId);
+        const Application* getApplication(const char* applicationId) const {
+            map<string,Application*>::const_iterator i=m_impl->m_appmap.find(applicationId);
             return (i!=m_impl->m_appmap.end()) ? i->second : NULL;
         }
 
@@ -318,98 +317,84 @@ XMLApplication::XMLApplication(
         m_hash+=getString("providerId").second;
         m_hash=samlConf.hashSHA1(m_hash.c_str(), true);
 
-        const DOMElement* child;
-        IPlugIn* plugin=NULL;
-
         // Process handlers.
+        Handler* handler=NULL;
         bool hardACS=false, hardSessionInit=false;
-        child = XMLHelper::getFirstChildElement(propcheck->getElement());
+        const DOMElement* child = XMLHelper::getFirstChildElement(propcheck->getElement());
         while (child) {
-            // A handler is split across a property set and the plugin itself, which is based on the Binding property.
-            // We build both objects first and then insert them into various structures for lookup.
-            IHandler* hobj=NULL;
-            DOMPropertySet* hprops=new DOMPropertySet();
-            try {
-                hprops->load(child,log,this); // filter irrelevant for now, no embedded elements expected
-                const char* bindprop=hprops->getString("Binding").second;
-                if (!bindprop)
-                    throw ConfigurationException("Handler element has no Binding attribute, skipping it...");
-                plugin=shibConf.getPlugMgr().newPlugin(bindprop,child);
-                hobj=dynamic_cast<IHandler*>(plugin);
-                if (!hobj) {
-                    delete plugin;
-                    throw UnknownExtensionException(
-                        "Plugin for binding ($1) does not implement IHandler interface.",xmltooling::params(1,bindprop)
-                        );
-                }
-            }
-            catch (exception& ex) {
-                // If we get here, the handler's not built, so dispose of the property set.
-                log.error("caught exception processing a handler element: %s",ex.what());
-                delete hprops;
-                hprops=NULL;
-            }
-            
-            const char* location=hprops ? hprops->getString("Location").second : NULL;
-            if (!location) {
-                delete hprops;
+            xmltooling::auto_ptr_char bindprop(child->getAttributeNS(NULL,EndpointType::BINDING_ATTRIB_NAME));
+            if (!bindprop.get() || !*(bindprop.get())) {
+                log.warn("md:AssertionConsumerService element has no Binding attribute, skipping it...");
                 child = XMLHelper::getNextSiblingElement(child);
                 continue;
             }
             
+            try {
+                // A handler is based on the Binding property in conjunction with the element name.
+                // If it's an ACS or SI, also handle index/id mappings and defaulting.
+                if (XMLHelper::isNodeNamed(child,samlconstants::SAML20MD_NS,AssertionConsumerService::LOCAL_NAME)) {
+                    handler=conf.AssertionConsumerServiceManager.newPlugin(bindprop.get(),child);
+                    // Map by binding (may be > 1 per binding, e.g. SAML 1.0 vs 1.1)
+#ifdef HAVE_GOOD_STL
+                    m_acsBindingMap[handler->getXMLString("Binding").second].push_back(handler);
+#else
+                    m_acsBindingMap[handler->getString("Binding").second].push_back(handler);
+#endif
+                    m_acsIndexMap[handler->getUnsignedInt("index").second]=handler;
+                    
+                    if (!hardACS) {
+                        pair<bool,bool> defprop=handler->getBool("isDefault");
+                        if (defprop.first) {
+                            if (defprop.second) {
+                                hardACS=true;
+                                m_acsDefault=handler;
+                            }
+                        }
+                        else if (!m_acsDefault)
+                            m_acsDefault=handler;
+                    }
+                }
+                else if (XMLString::equals(child->getLocalName(),SessionInitiator)) {
+                    handler=conf.SessionInitiatorManager.newPlugin(bindprop.get(),child);
+                    pair<bool,const char*> si_id=handler->getString("id");
+                    if (si_id.first && si_id.second)
+                        m_sessionInitMap[si_id.second]=handler;
+                    if (!hardSessionInit) {
+                        pair<bool,bool> defprop=handler->getBool("isDefault");
+                        if (defprop.first) {
+                            if (defprop.second) {
+                                hardSessionInit=true;
+                                m_sessionInitDefault=handler;
+                            }
+                        }
+                        else if (!m_sessionInitDefault)
+                            m_sessionInitDefault=handler;
+                    }
+                }
+                else if (XMLHelper::isNodeNamed(child,samlconstants::SAML20MD_NS,SingleLogoutService::LOCAL_NAME)) {
+                    handler=conf.SingleLogoutServiceManager.newPlugin(bindprop.get(),child);
+                }
+                else if (XMLHelper::isNodeNamed(child,samlconstants::SAML20MD_NS,ManageNameIDService::LOCAL_NAME)) {
+                    handler=conf.ManageNameIDServiceManager.newPlugin(bindprop.get(),child);
+                }
+                else {
+                    handler=conf.HandlerManager.newPlugin(bindprop.get(),child);
+                }
+            }
+            catch (exception& ex) {
+                log.error("caught exception processing md:AssertionConsumerService element: %s",ex.what());
+            }
+            
             // Save off the objects after giving the property set to the handler for its use.
-            hobj->setProperties(hprops);
-            m_handlers.push_back(hobj);
-            m_handlerProps.push_back(hprops);
+            m_handlers.push_back(handler);
 
             // Insert into location map.
-            if (*location == '/')
-                m_handlerMap[location]=hobj;
-            else
-                m_handlerMap[string("/") + location]=hobj;
+            pair<bool,const char*> location=handler->getString("Location");
+            if (location.first && *location.second == '/')
+                m_handlerMap[location.second]=handler;
+            else if (location.first)
+                m_handlerMap[string("/") + location.second]=handler;
 
-            // If it's an ACS or SI, handle index/id mappings and defaulting.
-            if (XMLHelper::isNodeNamed(child,samlconstants::SAML20MD_NS,AssertionConsumerService::LOCAL_NAME)) {
-                // Map it.
-#ifdef HAVE_GOOD_STL
-                const XMLCh* binding=hprops->getXMLString("Binding").second;
-#else
-                const char* binding=hprops->getString("Binding").second;
-#endif
-                if (m_acsBindingMap.count(binding)==0)
-                    m_acsBindingMap[binding]=vector<const IHandler*>(1,hobj);
-                else
-                    m_acsBindingMap[binding].push_back(hobj);
-                m_acsIndexMap[hprops->getUnsignedInt("index").second]=hobj;
-                
-                if (!hardACS) {
-                    pair<bool,bool> defprop=hprops->getBool("isDefault");
-                    if (defprop.first) {
-                        if (defprop.second) {
-                            hardACS=true;
-                            m_acsDefault=hobj;
-                        }
-                    }
-                    else if (!m_acsDefault)
-                        m_acsDefault=hobj;
-                }
-            }
-            else if (XMLString::equals(child->getLocalName(),SessionInitiator)) {
-                pair<bool,const char*> si_id=hprops->getString("id");
-                if (si_id.first && si_id.second)
-                    m_sessionInitMap[si_id.second]=hobj;
-                if (!hardSessionInit) {
-                    pair<bool,bool> defprop=hprops->getBool("isDefault");
-                    if (defprop.first) {
-                        if (defprop.second) {
-                            hardSessionInit=true;
-                            m_sessionInitDefault=hobj;
-                        }
-                    }
-                    else if (!m_sessionInitDefault)
-                        m_sessionInitDefault=hobj;
-                }
-            }
             child = XMLHelper::getNextSiblingElement(child);
         }
 
@@ -417,30 +402,15 @@ XMLApplication::XMLApplication(
         if (!m_base && m_handlers.empty()) {
             // A legacy config installs a SAML POST handler at the root handler location.
             // We use the Sessions element itself as the PropertySet.
-
-            xmltooling::auto_ptr_char b1(shibspconstants::SHIB1_SESSIONINIT_PROFILE_URI);
-            plugin=shibConf.getPlugMgr().newPlugin(b1.get(),propcheck->getElement());
-            IHandler* h1=dynamic_cast<IHandler*>(plugin);
-            if (!h1) {
-                delete plugin;
-                throw UnknownExtensionException(
-                    "Plugin for binding ($1) does not implement IHandler interface.",xmltooling::params(1,b1.get())
-                    );
-            }
-            h1->setProperties(propcheck);
+            Handler* h1=conf.SessionInitiatorManager.newPlugin(
+                shibspconstants::SHIB1_SESSIONINIT_PROFILE_URI,propcheck->getElement()
+                );
             m_handlers.push_back(h1);
             m_sessionInitDefault=h1;
 
-            xmltooling::auto_ptr_char b2(samlconstants::SAML1_PROFILE_BROWSER_POST);
-            plugin=shibConf.getPlugMgr().newPlugin(b2.get(),propcheck->getElement());
-            IHandler* h2=dynamic_cast<IHandler*>(plugin);
-            if (!h2) {
-                delete plugin;
-                throw UnknownExtensionException(
-                    "Plugin for binding ($1) does not implement IHandler interface.",xmltooling::params(1,b2.get())
-                    );
-            }
-            h2->setProperties(propcheck);
+            Handler* h2=conf.AssertionConsumerServiceManager.newPlugin(
+                samlconstants::SAML1_PROFILE_BROWSER_POST,propcheck->getElement()
+                );
             m_handlers.push_back(h2);
             m_handlerMap[""] = h2;
             m_acsDefault=h2;
@@ -467,7 +437,7 @@ XMLApplication::XMLApplication(
                 xmltooling::auto_ptr_char type(child->getAttributeNS(NULL,_type));
                 log.info("building AAP provider of type %s...",type.get());
                 try {
-                    plugin=shibConf.getPlugMgr().newPlugin(type.get(),child);
+                    IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),child);
                     IAAP* aap=dynamic_cast<IAAP*>(plugin);
                     if (aap)
                         m_aaps.push_back(aap);
@@ -596,7 +566,7 @@ void XMLApplication::cleanup()
     delete m_bindingHook;
     delete m_binding;
     delete m_profile;
-    for_each(m_handlers.begin(),m_handlers.end(),xmltooling::cleanup<IHandler>());
+    for_each(m_handlers.begin(),m_handlers.end(),xmltooling::cleanup<Handler>());
     
     delete m_credDefault;
 #ifdef HAVE_GOOD_STL
@@ -805,33 +775,33 @@ void XMLApplication::validateToken(SAMLAssertion* token, time_t ts, const RoleDe
         throw xmltooling::XMLSecurityException("Assertion was unsigned, violating policy based on the issuer.");
 }
 
-const IHandler* XMLApplication::getDefaultSessionInitiator() const
+const Handler* XMLApplication::getDefaultSessionInitiator() const
 {
     if (m_sessionInitDefault) return m_sessionInitDefault;
     return m_base ? m_base->getDefaultSessionInitiator() : NULL;
 }
 
-const IHandler* XMLApplication::getSessionInitiatorById(const char* id) const
+const Handler* XMLApplication::getSessionInitiatorById(const char* id) const
 {
-    map<string,const IHandler*>::const_iterator i=m_sessionInitMap.find(id);
+    map<string,const Handler*>::const_iterator i=m_sessionInitMap.find(id);
     if (i!=m_sessionInitMap.end()) return i->second;
     return m_base ? m_base->getSessionInitiatorById(id) : NULL;
 }
 
-const IHandler* XMLApplication::getDefaultAssertionConsumerService() const
+const Handler* XMLApplication::getDefaultAssertionConsumerService() const
 {
     if (m_acsDefault) return m_acsDefault;
     return m_base ? m_base->getDefaultAssertionConsumerService() : NULL;
 }
 
-const IHandler* XMLApplication::getAssertionConsumerServiceByIndex(unsigned short index) const
+const Handler* XMLApplication::getAssertionConsumerServiceByIndex(unsigned short index) const
 {
-    map<unsigned int,const IHandler*>::const_iterator i=m_acsIndexMap.find(index);
+    map<unsigned int,const Handler*>::const_iterator i=m_acsIndexMap.find(index);
     if (i!=m_acsIndexMap.end()) return i->second;
     return m_base ? m_base->getAssertionConsumerServiceByIndex(index) : NULL;
 }
 
-Iterator<const IHandler*> XMLApplication::getAssertionConsumerServicesByBinding(const XMLCh* binding) const
+Iterator<const Handler*> XMLApplication::getAssertionConsumerServicesByBinding(const XMLCh* binding) const
 {
 #ifdef HAVE_GOOD_STL
     ACSBindingMap::const_iterator i=m_acsBindingMap.find(binding);
@@ -841,13 +811,13 @@ Iterator<const IHandler*> XMLApplication::getAssertionConsumerServicesByBinding(
 #endif
     if (i!=m_acsBindingMap.end())
         return i->second;
-    return m_base ? m_base->getAssertionConsumerServicesByBinding(binding) : EMPTY(const IHandler*);
+    return m_base ? m_base->getAssertionConsumerServicesByBinding(binding) : EMPTY(const Handler*);
 }
 
-const IHandler* XMLApplication::getHandler(const char* path) const
+const Handler* XMLApplication::getHandler(const char* path) const
 {
     string wrap(path);
-    map<string,const IHandler*>::const_iterator i=m_handlerMap.find(wrap.substr(0,wrap.find('?')));
+    map<string,const Handler*>::const_iterator i=m_handlerMap.find(wrap.substr(0,wrap.find('?')));
     if (i!=m_handlerMap.end())
         return i->second;
     return m_base ? m_base->getHandler(path) : NULL;
@@ -1160,7 +1130,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
 
 XMLConfigImpl::~XMLConfigImpl()
 {
-    for_each(m_appmap.begin(),m_appmap.end(),xmltooling::cleanup_pair<string,IApplication>());
+    for_each(m_appmap.begin(),m_appmap.end(),xmltooling::cleanup_pair<string,Application>());
     ShibConfig::getConfig().clearAttributeMappings();
     for_each(m_attrFactories.begin(),m_attrFactories.end(),xmltooling::cleanup<IAttributeFactory>());
     for_each(m_credResolverMap.begin(),m_credResolverMap.end(),xmltooling::cleanup_pair<string,CredentialResolver>());

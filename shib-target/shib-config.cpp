@@ -50,11 +50,11 @@ PlugManager::Factory UnixListenerFactory;
 PlugManager::Factory TCPListenerFactory;
 //PlugManager::Factory MemoryListenerFactory;
 PlugManager::Factory MemoryCacheFactory;
-PlugManager::Factory ShibSessionInitiatorFactory;
-PlugManager::Factory SAML1POSTFactory;
-PlugManager::Factory SAML1ArtifactFactory;
-PlugManager::Factory ShibLogoutFactory;
-//PlugManager::Factory htaccessFactory;
+
+PluginManager<Handler,const DOMElement*>::Factory ShibSessionInitiatorFactory;
+PluginManager<Handler,const DOMElement*>::Factory SAML1POSTFactory;
+PluginManager<Handler,const DOMElement*>::Factory SAML1ArtifactFactory;
+PluginManager<Handler,const DOMElement*>::Factory ShibLogoutFactory;
 
 ShibTargetConfig& ShibTargetConfig::getConfig()
 {
@@ -90,6 +90,7 @@ bool STConfig::init(const char* schemadir)
         return false;
     }
     
+    SPConfig& conf=SPConfig::getConfig();
     if (!SPConfig::getConfig().init(NULL)) {
         log.fatal("Failed to initialize SP library");
         shibConf.term();
@@ -98,16 +99,14 @@ bool STConfig::init(const char* schemadir)
     }
 
     // Register built-in plugin types.
-    SPConfig::getConfig().ServiceProviderManager.registerFactory(XML_SERVICE_PROVIDER, XMLServiceProviderFactory);
+    conf.ServiceProviderManager.registerFactory(XML_SERVICE_PROVIDER, XMLServiceProviderFactory);
 
-    samlConf.getPlugMgr().regFactory(MEMORY_SESSIONCACHE,&MemoryCacheFactory);
+    conf.SessionInitiatorManager.registerFactory(shibspconstants::SHIB1_SESSIONINIT_PROFILE_URI,&ShibSessionInitiatorFactory);
+    conf.AssertionConsumerServiceManager.registerFactory(samlconstants::SAML1_PROFILE_BROWSER_POST,&SAML1POSTFactory);
+    conf.AssertionConsumerServiceManager.registerFactory(samlconstants::SAML1_PROFILE_BROWSER_ARTIFACT,&SAML1ArtifactFactory);
+    conf.SingleLogoutServiceManager.registerFactory(shibspconstants::SHIB1_LOGOUT_PROFILE_URI,&ShibLogoutFactory);
     
-    auto_ptr_char temp1(shibspconstants::SHIB1_SESSIONINIT_PROFILE_URI);
-    samlConf.getPlugMgr().regFactory(temp1.get(),&ShibSessionInitiatorFactory);
-    samlConf.getPlugMgr().regFactory(samlconstants::SAML1_PROFILE_BROWSER_POST,&SAML1POSTFactory);
-    samlConf.getPlugMgr().regFactory(samlconstants::SAML1_PROFILE_BROWSER_ARTIFACT,&SAML1ArtifactFactory);
-    auto_ptr_char temp4(shibspconstants::SHIB1_LOGOUT_PROFILE_URI);
-    samlConf.getPlugMgr().regFactory(temp4.get(),&ShibLogoutFactory);
+    samlConf.getPlugMgr().regFactory(MEMORY_SESSIONCACHE,&MemoryCacheFactory);
     
     log.info("finished initializing");
     return true;

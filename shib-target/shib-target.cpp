@@ -90,7 +90,6 @@ namespace shibtarget {
     long _sendError(SPRequest* st, const char* page, ExtTemplateParameters& tp, const XMLToolingException* ex=NULL);
 
     static const XMLCh SessionInitiator[] =     UNICODE_LITERAL_16(S,e,s,s,i,o,n,I,n,i,t,i,a,t,o,r);
-    static const XMLCh DiagnosticService[] =    UNICODE_LITERAL_17(D,i,a,g,n,o,s,t,i,c,S,e,r,v,i,c,e);
 }
 
 
@@ -179,7 +178,7 @@ pair<bool,long> ShibTarget::doCheckAuthN(bool handler)
 
             // No cookie, but we require a session. Initiate a new session using the indicated method.
             procState = "Session Initiator Error";
-            const IHandler* initiator=NULL;
+            const Handler* initiator=NULL;
             if (requireSessionWith.first) {
                 initiator=app.getSessionInitiatorById(requireSessionWith.second);
                 if (!initiator)
@@ -194,7 +193,7 @@ pair<bool,long> ShibTarget::doCheckAuthN(bool handler)
                     throw ConfigurationException("No default session initiator found, check configuration.");
             }
 
-            return initiator->run(this,false);
+            return initiator->run(*this,false);
         }
 
         procState = "Session Processing Error";
@@ -222,7 +221,7 @@ pair<bool,long> ShibTarget::doCheckAuthN(bool handler)
             if (trycast) {
                 // Session is invalid but we can retry -- initiate a new session.
                 procState = "Session Initiator Error";
-                const IHandler* initiator=NULL;
+                const Handler* initiator=NULL;
                 if (requireSessionWith.first) {
                     initiator=app.getSessionInitiatorById(requireSessionWith.second);
                     if (!initiator)
@@ -236,7 +235,7 @@ pair<bool,long> ShibTarget::doCheckAuthN(bool handler)
                     if (!initiator)
                         throw ConfigurationException("No default session initiator found, check configuration.");
                 }
-                return initiator->run(this,false);
+                return initiator->run(*this,false);
             }
             throw;    // send it to the outer handler
         }
@@ -298,21 +297,19 @@ pair<bool,long> ShibTarget::doHandler(void)
 
         // We dispatch based on our path info. We know the request URL begins with or equals the handler URL,
         // so the path info is the next character (or null).
-        const IHandler* handler=app->getHandler(targetURL.c_str() + strlen(handlerURL));
+        const Handler* handler=app->getHandler(targetURL.c_str() + strlen(handlerURL));
         if (!handler)
             throw opensaml::BindingException("Shibboleth handler invoked at an unconfigured location.");
 
-        if (XMLHelper::isNodeNamed(handler->getProperties()->getElement(),samlconstants::SAML20MD_NS,AssertionConsumerService::LOCAL_NAME))
+        if (XMLHelper::isNodeNamed(handler->getElement(),samlconstants::SAML20MD_NS,AssertionConsumerService::LOCAL_NAME))
             procState = "Session Creation Error";
-        else if (XMLString::equals(handler->getProperties()->getElement()->getLocalName(),SessionInitiator))
+        else if (XMLString::equals(handler->getElement()->getLocalName(),SessionInitiator))
             procState = "Session Initiator Error";
-        else if (XMLHelper::isNodeNamed(handler->getProperties()->getElement(),samlconstants::SAML20MD_NS,SingleLogoutService::LOCAL_NAME))
+        else if (XMLHelper::isNodeNamed(handler->getElement(),samlconstants::SAML20MD_NS,SingleLogoutService::LOCAL_NAME))
             procState = "Session Termination Error";
-        else if (XMLString::equals(handler->getProperties()->getElement()->getLocalName(),DiagnosticService))
-            procState = "Diagnostics Error";
         else
-            procState = "Extension Service Error";
-        pair<bool,long> hret=handler->run(this);
+            procState = "Protocol Handler Error";
+        pair<bool,long> hret=handler->run(*this);
 
         // Did the handler run successfully?
         if (hret.first)

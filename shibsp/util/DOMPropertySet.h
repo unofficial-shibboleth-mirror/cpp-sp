@@ -34,7 +34,7 @@ namespace shibsp {
     class SHIBSP_API DOMPropertySet : public virtual PropertySet
     {
     public:
-        DOMPropertySet() {}
+        DOMPropertySet() : m_root(NULL) {}
         
         virtual ~DOMPropertySet();
 
@@ -69,6 +69,7 @@ namespace shibsp {
         std::map<std::string,std::pair<char*,const XMLCh*> > m_map;
         std::map<std::string,DOMPropertySet*> m_nested;
     };
+
 };
 
 #endif /* __shibsp_dompropset_h__ */

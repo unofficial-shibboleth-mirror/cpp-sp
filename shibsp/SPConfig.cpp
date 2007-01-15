@@ -22,8 +22,9 @@
  */
 
 #include "internal.h"
-#include "exceptions.h"
 #include "AccessControl.h"
+#include "exceptions.h"
+#include "Handler.h"
 #include "RequestMapper.h"
 #include "ServiceProvider.h"
 #include "SPConfig.h"
@@ -116,9 +117,14 @@ void SPInternalConfig::term()
     delete m_serviceProvider;
     m_serviceProvider = NULL;
     
+    SingleLogoutServiceManager.deregisterFactories();
+    SessionInitiatorManager.deregisterFactories();
     ServiceProviderManager.deregisterFactories();
     RequestMapperManager.deregisterFactories();
+    ManageNameIDServiceManager.deregisterFactories();
     ListenerServiceManager.deregisterFactories();
+    HandlerManager.deregisterFactories();
+    AssertionConsumerServiceManager.deregisterFactories();
     AccessControlManager.deregisterFactories();
 
     SAMLConfig::getConfig().term();

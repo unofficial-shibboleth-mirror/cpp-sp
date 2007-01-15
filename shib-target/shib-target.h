@@ -28,6 +28,7 @@
 // New headers
 #include <shibsp/AbstractSPRequest.h>
 #include <shibsp/Application.h>
+#include <shibsp/Handler.h>
 #include <shibsp/RequestMapper.h>
 #include <shibsp/ServiceProvider.h>
 #include <shibsp/remoting/ListenerService.h>
@@ -50,26 +51,6 @@
 namespace shibtarget {
   
     // Abstract APIs for access to configuration information
-    
-    // Forward declaration
-    class SHIBTARGET_EXPORTS ShibTarget;
-
-    /**
-     * Interface to a protocol handler
-     * 
-     * Protocol handlers perform system functions such as processing SAML protocol
-     * messages to create and logout sessions or creating protocol requests.
-     */
-    struct SHIBTARGET_EXPORTS IHandler : public virtual saml::IPlugIn
-    {
-        IHandler() : m_props(NULL) {}
-        virtual ~IHandler() {}
-        virtual const shibsp::PropertySet* getProperties() const { return m_props; }
-        virtual void setProperties(const shibsp::PropertySet* properties) { m_props=properties; }
-        virtual std::pair<bool,long> run(ShibTarget* st, bool isHandler=true) const=0;
-    private:
-        const shibsp::PropertySet* m_props;
-    };
     
     /**
      * Interface to Shibboleth Applications, which exposes most of the functionality
@@ -105,16 +86,16 @@ namespace shibtarget {
             ) const=0;
 
         // Used to locate a default or designated session initiator for automatic sessions
-        virtual const IHandler* getDefaultSessionInitiator() const=0;
-        virtual const IHandler* getSessionInitiatorById(const char* id) const=0;
+        virtual const shibsp::Handler* getDefaultSessionInitiator() const=0;
+        virtual const shibsp::Handler* getSessionInitiatorById(const char* id) const=0;
         
         // Used by session initiators to get endpoint to forward to IdP/WAYF
-        virtual const IHandler* getDefaultAssertionConsumerService() const=0;
-        virtual const IHandler* getAssertionConsumerServiceByIndex(unsigned short index) const=0;
-        virtual saml::Iterator<const IHandler*> getAssertionConsumerServicesByBinding(const XMLCh* binding) const=0;
+        virtual const shibsp::Handler* getDefaultAssertionConsumerService() const=0;
+        virtual const shibsp::Handler* getAssertionConsumerServiceByIndex(unsigned short index) const=0;
+        virtual saml::Iterator<const shibsp::Handler*> getAssertionConsumerServicesByBinding(const XMLCh* binding) const=0;
         
         // Used by dispatcher to locate the handler for a request
-        virtual const IHandler* getHandler(const char* path) const=0;
+        virtual const shibsp::Handler* getHandler(const char* path) const=0;
 
         virtual ~IApplication() {}
     };

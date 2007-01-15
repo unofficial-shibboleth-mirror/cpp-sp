@@ -56,10 +56,10 @@ namespace shibspconstants {
     extern SHIBSP_API const XMLCh SHIB1_AUTHNREQUEST_PROFILE_URI[];
 
     /** Shibboleth 1.3 SessionInit binding/profile ("urn:mace:shibboleth:sp:1.3:SessionInit") */
-    extern SHIBSP_API const XMLCh SHIB1_SESSIONINIT_PROFILE_URI[];
+    extern SHIBSP_API const char SHIB1_SESSIONINIT_PROFILE_URI[];
 
     /** Shibboleth 1.3 Local Logout binding/profile ("urn:mace:shibboleth:sp:1.3:Logout") */
-    extern SHIBSP_API const XMLCh SHIB1_LOGOUT_PROFILE_URI[];
+    extern SHIBSP_API const char SHIB1_LOGOUT_PROFILE_URI[];
 };
 
 #endif /* __shibsp_constants_h__ */

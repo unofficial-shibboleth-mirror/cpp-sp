@@ -16,11 +16,13 @@ secincludedir = $(includedir)/shibsp/security
 utilincludedir = $(includedir)/shibsp/util
 
 libshibspinclude_HEADERS = \
+	AbstractHandler.h \
 	AbstractSPRequest.h \
 	AccessControl.h \
 	Application.h \
 	base.h \
 	exceptions.h \
+	Handler.h \
 	paths.h \
 	RequestMapper.h \
 	ServiceProvider.h \
@@ -49,6 +51,7 @@ noinst_HEADERS = \
 	remoting/impl/SocketListener.h
 
 libshibsp_la_SOURCES = \
+	AbstractHandler.cpp \
 	AbstractSPRequest.cpp \
 	Application.cpp \
 	ServiceProvider.cpp \
