@@ -36,24 +36,25 @@ namespace shibsp {
     class SHIBSP_API AbstractSPRequest : public virtual SPRequest
     {
     protected:
-        /**
-         * Constructor
-         * 
-         * @param app   pointer to effective Application, if known
-         */
-        AbstractSPRequest(const Application* app=NULL);
+        AbstractSPRequest();
         
     public:
         virtual ~AbstractSPRequest();
 
-        const char* getRequestURL() const {
-            return m_url.c_str();
-        }
-        
-        const Application& getSPApplication() const {
-            return *m_app;
+        const ServiceProvider& getServiceProvider() const {
+            return *m_sp;
         }
 
+        RequestMapper::Settings getRequestSettings() const;
+
+        const Application& getApplication() const;
+        
+        const Session* getSession() const {
+            return m_session;
+        }
+
+        const char* getRequestURL() const;
+        
         const char* getParameter(const char* name) const;
 
         std::vector<const char*>::size_type getParameters(const char* name, std::vector<const char*>& values) const;
@@ -66,14 +67,13 @@ namespace shibsp {
 
         bool isPriorityEnabled(SPLogLevel level) const;
 
-    protected:
-        /** Holds effective Application. */
-        const Application* m_app;
-
-        /** Complete "canonical" request URL. */
-        std::string m_url;
-    
     private:
+        ServiceProvider* m_sp;
+        mutable RequestMapper* m_mapper;
+        mutable RequestMapper::Settings m_settings;
+        mutable const Application* m_app;
+        mutable Session* m_session;
+        mutable std::string m_url;
         void* m_log; // declared void* to avoid log4cpp header conflicts in Apache
         mutable std::string m_handlerURL;
         mutable std::map<std::string,std::string> m_cookieMap;

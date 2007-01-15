@@ -23,6 +23,8 @@
 #include "internal.h"
 #include "AbstractSPRequest.h"
 #include "Application.h"
+#include "ServiceProvider.h"
+#include "SessionCache.h"
 #include "util/CGIParser.h"
 
 #include <log4cpp/Category.hh>
@@ -32,16 +34,63 @@ using namespace xmltooling;
 using namespace log4cpp;
 using namespace std;
 
-AbstractSPRequest::AbstractSPRequest(const Application* app)
-    : m_app(app), m_log(&Category::getInstance(SHIBSP_LOGCAT)), m_parser(NULL)
+AbstractSPRequest::AbstractSPRequest()
+    : m_sp(NULL), m_mapper(NULL), m_app(NULL), m_session(NULL), m_log(&Category::getInstance(SHIBSP_LOGCAT)), m_parser(NULL)
 {
-    if (m_app)
-        return;
+    m_sp=SPConfig::getConfig().getServiceProvider();
+    m_sp->lock();
 }
 
 AbstractSPRequest::~AbstractSPRequest()
 {
+    if (m_session)
+        m_session->unlock();
+    if (m_mapper)
+        m_mapper->unlock();
+    if (m_sp)
+        m_sp->unlock();
     delete m_parser;
+}
+
+RequestMapper::Settings AbstractSPRequest::getRequestSettings() const
+{
+    if (m_mapper)
+        return m_settings;
+
+    // Map request to application and content settings.
+    m_mapper=m_sp->getRequestMapper();
+    m_mapper->lock();
+    return m_settings = m_mapper->getSettings(*this);
+
+}
+
+const Application& AbstractSPRequest::getApplication() const
+{
+    if (!m_app) {
+        // Now find the application from the URL settings
+        m_app=m_sp->getApplication(getRequestSettings().first->getString("applicationId").second);
+        if (!m_app)
+            throw ConfigurationException("Unable to map request to application settings, check configuration.");
+    }    
+    return *m_app;
+}
+
+const char* AbstractSPRequest::getRequestURL() const {
+    if (m_url.empty()) {
+        // Compute the full target URL
+        int port = getPort();
+        const char* scheme = getScheme();
+        m_url = string(scheme) + "://" + getHostname();
+        if ((!strcmp(scheme,"http") && port!=80) || (!strcmp(scheme,"https") && port!=443)) { 
+            ostringstream portstr;
+            portstr << port;
+            m_url += ":" + portstr.str();
+        }
+        scheme = getRequestURI();
+        if (scheme)
+            m_url += scheme;
+    }
+    return m_url.c_str();
 }
 
 const char* AbstractSPRequest::getParameter(const char* name) const

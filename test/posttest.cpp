@@ -90,10 +90,10 @@ int main(int argc,char* argv[])
 
         auto_ptr_XMLCh recip(r_param);
 
-        IConfig* ini=ShibTargetConfig::getConfig().getINI();
-        xmltooling::Locker locker(ini);
+        ServiceProvider* sp=SPConfig::getConfig().getServiceProvider();
+        xmltooling::Locker locker(sp);
 
-        const IApplication* app=dynamic_cast<const IApplication*>(ini->getApplication(a_param));
+        const IApplication* app=dynamic_cast<const IApplication*>(sp->getApplication(a_param));
         if (!app) {
             throw ConfigurationException("Unable to locate application for new session, deleted?");
         }

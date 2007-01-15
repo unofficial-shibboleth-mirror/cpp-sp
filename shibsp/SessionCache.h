@@ -28,6 +28,8 @@
 
 namespace shibsp {
 
+    class SHIBSP_API Application;
+
     class SHIBSP_API Session : public virtual xmltooling::Lockable
     {
         MAKE_NONCOPYABLE(Session);
@@ -60,11 +62,15 @@ namespace shibsp {
     public:
         /**
          * Constructor
+         *
+         * @param e root of DOM to configure cache
          */
         SessionCache(const xercesc::DOMElement* e);
 
         virtual ~SessionCache();
 
+        /** TODO: just a stub for now */
+        virtual Session* find(const char* key, const Application& app, const char* address)=0;
     };
 };
 

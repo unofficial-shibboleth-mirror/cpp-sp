@@ -48,7 +48,7 @@ namespace shibsp {
         
         void unlock() {}
     
-        bool authorized(SPRequest& request, Session* session) const {
+        bool authorized(const SPRequest& request, const Session* session) const {
             return false;
         }
     };

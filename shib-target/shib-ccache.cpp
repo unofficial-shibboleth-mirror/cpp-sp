@@ -224,7 +224,7 @@ string StubCache::insert(
     os << *tokens;
     in.addmember("tokens.unfiltered").string(os.str().c_str());
 
-    out=ShibTargetConfig::getConfig().getINI()->getListenerService()->send(in);
+    out=SPConfig::getConfig().getServiceProvider()->getListenerService()->send(in);
     if (out["key"].isstring())
         return out["key"].string();
     throw opensaml::RetryableProfileException("A remoted cache insertion operation did not return a usable session key.");
@@ -240,7 +240,7 @@ ISessionCacheEntry* StubCache::find(const char* key, const IApplication* applica
     in.addmember("client_address").string(client_addr);
     
     try {
-        out=ShibTargetConfig::getConfig().getINI()->getListenerService()->send(in);
+        out=SPConfig::getConfig().getServiceProvider()->getListenerService()->send(in);
         if (!out.isstruct()) {
             out.destroy();
             return NULL;
@@ -264,7 +264,7 @@ void StubCache::remove(const char* key, const IApplication* application, const c
     in.addmember("application_id").string(application->getId());
     in.addmember("client_address").string(client_addr);
     
-    ShibTargetConfig::getConfig().getINI()->getListenerService()->send(in);
+    SPConfig::getConfig().getServiceProvider()->getListenerService()->send(in);
 }
 
 /*
@@ -864,7 +864,7 @@ pair<SAMLResponse*,SAMLResponse*> MemorySessionCacheEntry::getNewResponse(
         // Sign it?
         if (signRequest.first && signRequest.second && signingCred.first) {
             if (req->getMinorVersion()==1) {
-                CredentialResolver* cr=ShibTargetConfig::getConfig().getINI()->getCredentialResolver(signingCred.second);
+                CredentialResolver* cr=SPConfig::getConfig().getServiceProvider()->getCredentialResolver(signingCred.second);
                 if (cr) {
                     xmltooling::Locker locker(cr);
                     req->sign(cr->getKey(),cr->getCertificates(),signatureAlg.second,digestAlg.second);
@@ -1063,7 +1063,7 @@ MemorySessionCache::MemorySessionCache(const DOMElement* e)
     SAMLConfig::getConfig().conn_timeout = m_AAConnectTimeout;
 
     // Register for remoted messages.
-    ListenerService* listener=ShibTargetConfig::getConfig().getINI()->getListenerService(false);
+    ListenerService* listener=SPConfig::getConfig().getServiceProvider()->getListenerService(false);
     if (listener && SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
         restoreInsert=listener->regListener("SessionCache::insert",this);
         restoreFind=listener->regListener("SessionCache::find",this);
@@ -1085,7 +1085,7 @@ MemorySessionCache::~MemorySessionCache()
     cleanup_thread->join(NULL);
 
     // Unregister remoted messages.
-    ListenerService* listener=ShibTargetConfig::getConfig().getINI()->getListenerService(false);
+    ListenerService* listener=SPConfig::getConfig().getServiceProvider()->getListenerService(false);
     if (listener && SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
         listener->unregListener("SessionCache::insert",this,restoreInsert);
         listener->unregListener("SessionCache::find",this,restoreFind);
@@ -1155,9 +1155,9 @@ DDF MemorySessionCache::receive(const DDF& in)
 #endif
 
     // Find application.
-    xmltooling::Locker confLocker(ShibTargetConfig::getConfig().getINI());
+    xmltooling::Locker confLocker(SPConfig::getConfig().getServiceProvider());
     const char* aid=in["application_id"].string();
-    const IApplication* app=aid ? dynamic_cast<const IApplication*>(ShibTargetConfig::getConfig().getINI()->getApplication(aid)) : NULL;
+    const IApplication* app=aid ? dynamic_cast<const IApplication*>(SPConfig::getConfig().getServiceProvider()->getApplication(aid)) : NULL;
     if (!app) {
         // Something's horribly wrong.
         m_log->error("couldn't find application (%s) for session", aid ? aid : "(missing)");
@@ -1318,7 +1318,7 @@ ISessionCacheEntry* MemorySessionCache::find(const char* key, const IApplication
             m_log->error("cache store returned failure during search");
             return NULL;
         }
-        const IApplication* eapp=dynamic_cast<const IApplication*>(ShibTargetConfig::getConfig().getINI()->getApplication(appid.c_str()));
+        const IApplication* eapp=dynamic_cast<const IApplication*>(SPConfig::getConfig().getServiceProvider()->getApplication(appid.c_str()));
         if (!eapp) {
             // Something's horribly wrong.
             m_log->error("couldn't find application (%s) for session", appid.c_str());

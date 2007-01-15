@@ -137,13 +137,14 @@ bool STConfig::load(const char* config)
         auto_ptr_XMLCh src(config);
         dummy->setAttributeNS(NULL,path,src.get());
 
-        m_ini=dynamic_cast<IConfig*>(SPConfig::getConfig().ServiceProviderManager.newPlugin(XML_SERVICE_PROVIDER,dummy));
-        m_ini->init();
+        auto_ptr<ServiceProvider> sp(SPConfig::getConfig().ServiceProviderManager.newPlugin(XML_SERVICE_PROVIDER,dummy));
+        sp->init();
         
-        pair<bool,unsigned int> skew=m_ini->getUnsignedInt("clockSkew");
+        pair<bool,unsigned int> skew=sp->getUnsignedInt("clockSkew");
         SAMLConfig::getConfig().clock_skew_secs=skew.first ? skew.second : 180;
         if (skew.first)
             XMLToolingConfig::getConfig().clock_skew_secs=skew.second;
+        SPConfig::getConfig().setServiceProvider(sp.release());
         
         m_tranLog=new FixedContextCategory(SHIBTRAN_LOGCAT);
         m_tranLog->info("opened transaction log");
@@ -176,10 +177,8 @@ void STConfig::shutdown()
     delete m_tranLogLock;
     m_tranLogLock = NULL;
     //delete m_tranLog; // This is crashing for some reason, but we're shutting down anyway.
-    delete m_ini;
-    m_ini = NULL;
+    SPConfig::getConfig().term();
     ShibConfig::getConfig().term();
     SAMLConfig::getConfig().term();
-    SPConfig::getConfig().term();
     log.info("library shutdown complete");
 }

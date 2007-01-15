@@ -23,6 +23,7 @@
 */
 
 #include "internal.h"
+#include <shibsp/SPConfig.h>
 #include <saml/binding/SAMLArtifact.h>
 
 using namespace shibsp;
@@ -68,7 +69,7 @@ SAMLResponse* STArtifactMapper::resolve(SAMLRequest* request)
     pair<bool,const char*> signingCred=credUse ? credUse->getString("Signing") : pair<bool,const char*>(false,NULL);
     if (signRequest.first && signRequest.second && signingCred.first) {
         if (request->getMinorVersion()==1) {
-            CredentialResolver* cr=ShibTargetConfig::getConfig().getINI()->getCredentialResolver(signingCred.second);
+            CredentialResolver* cr=SPConfig::getConfig().getServiceProvider()->getCredentialResolver(signingCred.second);
             if (cr) {
                 xmltooling::Locker locker(cr);
                 request->sign(cr->getKey(),cr->getCertificates(),signatureAlg.second,digestAlg.second);

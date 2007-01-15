@@ -28,6 +28,7 @@
 // New headers
 #include <shibsp/AbstractSPRequest.h>
 #include <shibsp/Application.h>
+#include <shibsp/RequestMapper.h>
 #include <shibsp/ServiceProvider.h>
 #include <shibsp/remoting/ListenerService.h>
 
@@ -262,34 +263,20 @@ namespace shibtarget {
     class SHIBTARGET_EXPORTS ShibTargetConfig
     {
     public:
-        ShibTargetConfig() : m_ini(NULL) {}
+        ShibTargetConfig() {}
         virtual ~ShibTargetConfig() {}
         
         virtual bool init(const char* schemadir) = 0;
         virtual bool load(const char* config) = 0;
         virtual void shutdown() = 0;
 
-        virtual IConfig* getINI() const {return m_ini;}
-
         static ShibTargetConfig& getConfig();
-
-    protected:
-        IConfig* m_ini;
     };
 
     class ShibTargetPriv;
     class SHIBTARGET_EXPORTS ShibTarget : public shibsp::AbstractSPRequest {
     public:
-        ShibTarget(const IApplication* app);
-        virtual ~ShibTarget(void);
-
-        // These next two APIs are used to obtain the module-specific "OK"
-        // and "Decline" results.  OK means "we believe that this request
-        // should be accepted".  Declined means "we believe that this is
-        // not a shibbolized request so we have no comment".
-
-        virtual long returnDecline();
-        virtual long returnOK();
+        virtual ~ShibTarget() {}
 
         //
         // Note:  Subclasses need not implement anything below this line
@@ -318,31 +305,11 @@ namespace shibtarget {
         std::pair<bool,long> doCheckAuthZ();
         std::pair<bool,long> doExportAssertions(bool requireSession = true);
 
-        // Basic request access in case any plugins need the info
-        virtual const IConfig* getConfig() const;
-        virtual const IApplication* getApplication() const;
-        
     protected:
-        ShibTarget();
-
-        // Internal APIs
-
-        // Initialize the request from the parsed URL
-        // scheme == http, https, etc
-        // hostname == server name
-        // port == server port
-        // uri == resource path
-        // method == GET, POST, etc.
-        void init(
-            const char* scheme,
-            const char* hostname,
-            int port,
-            const char* uri
-            );
+        ShibTarget() {}
 
     private:
-        mutable ShibTargetPriv* m_priv;
-        friend class ShibTargetPriv;
+        void clearHeaders();
     };
 
 }

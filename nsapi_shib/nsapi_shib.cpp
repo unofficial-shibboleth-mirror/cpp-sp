@@ -84,7 +84,7 @@ extern "C" NSAPI_PUBLIC void nsapi_shib_exit(void*)
     g_Config = NULL;
 }
 
-extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, Session* sn, Request* rq)
+extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, ::Session* sn, Request* rq)
 {
     // Save off a default hostname for this virtual server.
     char* name=pblock_findval("server-name",pb);
@@ -151,7 +151,7 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, Session* sn, Request* rq
 
         daemon_atrestart(nsapi_shib_exit,NULL);
 
-        IConfig* conf=g_Config->getINI();
+        ServiceProvider* conf=SPConfig::getConfig().getServiceProvider();
         Locker locker(conf);
         const PropertySet* props=conf->getPropertySet("Local");
         if (props) {
@@ -181,7 +181,7 @@ class ShibTargetNSAPI : public ShibTarget
   vector<XSECCryptoX509*> m_certs;
 
 public:
-  ShibTargetNSAPI(pblock* pb, Session* sn, Request* rq) : m_gotBody(false) {
+  ShibTargetNSAPI(pblock* pb, ::Session* sn, Request* rq) : m_gotBody(false) {
     m_pb = pb;
     m_sn = sn;
     m_rq = rq;
@@ -209,13 +209,6 @@ public:
 #endif
     // In other cases, we're going to rely on the initialization process...
     host=g_ServerName.c_str();
-
-    init(
-        security_active ? "https" : "http",
-        host,
-        server_portnum,
-        url.c_str()
-        );
   }
   ~ShibTargetNSAPI() {}
 
@@ -352,13 +345,13 @@ public:
   }
 
   pblock* m_pb;
-  Session* m_sn;
+  ::Session* m_sn;
   Request* m_rq;
 };
 
 /********************************************************************************/
 
-int WriteClientError(Session* sn, Request* rq, char* func, char* msg)
+int WriteClientError(::Session* sn, Request* rq, char* func, char* msg)
 {
     log_error(LOG_FAILURE,func,sn,rq,msg);
     protocol_status(sn,rq,PROTOCOL_SERVER_ERROR,msg);
@@ -367,7 +360,7 @@ int WriteClientError(Session* sn, Request* rq, char* func, char* msg)
 
 #undef FUNC
 #define FUNC "shibboleth"
-extern "C" NSAPI_PUBLIC int nsapi_shib(pblock* pb, Session* sn, Request* rq)
+extern "C" NSAPI_PUBLIC int nsapi_shib(pblock* pb, ::Session* sn, Request* rq)
 {
   ostringstream threadid;
   threadid << "[" << getpid() << "] nsapi_shib" << '\0';
@@ -409,7 +402,7 @@ extern "C" NSAPI_PUBLIC int nsapi_shib(pblock* pb, Session* sn, Request* rq)
 
 #undef FUNC
 #define FUNC "shib_handler"
-extern "C" NSAPI_PUBLIC int shib_handler(pblock* pb, Session* sn, Request* rq)
+extern "C" NSAPI_PUBLIC int shib_handler(pblock* pb, ::Session* sn, Request* rq)
 {
   ostringstream threadid;
   threadid << "[" << getpid() << "] shib_handler" << '\0';

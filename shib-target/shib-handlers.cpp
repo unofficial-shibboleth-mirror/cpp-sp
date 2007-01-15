@@ -111,7 +111,7 @@ pair<bool,long> SessionInitiator::run(ShibTarget* st, bool isHandler) const
     string dupresource;
     const char* resource=NULL;
     const IHandler* ACS=NULL;
-    const IApplication* app=st->getApplication();
+    const IApplication& app=dynamic_cast<const IApplication&>(st->getApplication());
     
     if (isHandler) {
         /* 
@@ -122,12 +122,12 @@ pair<bool,long> SessionInitiator::run(ShibTarget* st, bool isHandler) const
          */
         const char* option=st->getParameter("acsIndex");
         if (option)
-            ACS=app->getAssertionConsumerServiceByIndex(atoi(option));
+            ACS=app.getAssertionConsumerServiceByIndex(atoi(option));
         option=st->getParameter("providerId");
         
         resource=st->getParameter("target");
         if (!resource || !*resource) {
-            pair<bool,const char*> home=app->getString("homeURL");
+            pair<bool,const char*> home=app.getString("homeURL");
             if (home.first)
                 resource=home.second;
             else
@@ -142,7 +142,7 @@ pair<bool,long> SessionInitiator::run(ShibTarget* st, bool isHandler) const
             // Here we actually use metadata to invoke the SSO service directly.
             // The only currently understood binding is the Shibboleth profile.
             
-            MetadataProvider* m=app->getMetadataProvider();
+            MetadataProvider* m=app.getMetadataProvider();
             xmltooling::Locker locker(m);
             const EntityDescriptor* entity=m->getEntityDescriptor(option);
             if (!entity)
@@ -162,7 +162,7 @@ pair<bool,long> SessionInitiator::run(ShibTarget* st, bool isHandler) const
                     );
             auto_ptr_char dest(ep->getLocation());
             return ShibAuthnRequest(
-                st,ACS ? ACS : app->getDefaultAssertionConsumerService(),dest.get(),resource,app->getString("providerId").second
+                st,ACS ? ACS : app.getDefaultAssertionConsumerService(),dest.get(),resource,app.getString("providerId").second
                 );
         }
     }
@@ -172,7 +172,7 @@ pair<bool,long> SessionInitiator::run(ShibTarget* st, bool isHandler) const
         resource=st->getRequestURL();
     }
     
-    if (!ACS) ACS=app->getDefaultAssertionConsumerService();
+    if (!ACS) ACS=app.getDefaultAssertionConsumerService();
     
     // For now, we only support external session initiation via a wayfURL
     pair<bool,const char*> wayfURL=getProperties()->getString("wayfURL");
@@ -182,15 +182,15 @@ pair<bool,long> SessionInitiator::run(ShibTarget* st, bool isHandler) const
     pair<bool,const XMLCh*> wayfBinding=getProperties()->getXMLString("wayfBinding");
     if (!wayfBinding.first || !XMLString::compareString(wayfBinding.second,shibspconstants::SHIB1_AUTHNREQUEST_PROFILE_URI))
         // Standard Shib 1.x
-        return ShibAuthnRequest(st,ACS,wayfURL.second,resource,app->getString("providerId").second);
+        return ShibAuthnRequest(st,ACS,wayfURL.second,resource,app.getString("providerId").second);
     else if (!strcmp(getProperties()->getString("wayfBinding").second,"urn:mace:shibboleth:1.0:profiles:EAuth")) {
         // TODO: Finalize E-Auth profile URI
-        pair<bool,bool> localRelayState=st->getConfig()->getPropertySet("InProcess")->getBool("localRelayState");
+        pair<bool,bool> localRelayState=st->getServiceProvider().getPropertySet("InProcess")->getBool("localRelayState");
         if (!localRelayState.first || !localRelayState.second)
             throw ConfigurationException("E-Authn requests cannot include relay state, so localRelayState must be enabled.");
 
         // Here we store the state in a cookie.
-        pair<string,const char*> shib_cookie=app->getCookieNameProps("_shibstate_");
+        pair<string,const char*> shib_cookie=app.getCookieNameProps("_shibstate_");
         string stateval = opensaml::SAMLConfig::getConfig().getURLEncoder()->encode(resource) + shib_cookie.second;
             st->setCookie(shib_cookie.first.c_str(),stateval.c_str());
         return make_pair(true, st->sendRedirect(wayfURL.second));
@@ -221,7 +221,7 @@ pair<bool,long> SessionInitiator::ShibAuthnRequest(
     string req=string(dest) + "?shire=" + urlenc->encode(ACSloc.c_str()) + "&time=" + timebuf;
 
     // How should the resource value be preserved?
-    pair<bool,bool> localRelayState=st->getConfig()->getPropertySet("InProcess")->getBool("localRelayState");
+    pair<bool,bool> localRelayState=st->getServiceProvider().getPropertySet("InProcess")->getBool("localRelayState");
     if (!localRelayState.first || !localRelayState.second) {
         // The old way, just send it along.
         req+="&target=" + urlenc->encode(target);
@@ -229,7 +229,7 @@ pair<bool,long> SessionInitiator::ShibAuthnRequest(
     else {
         // Here we store the state in a cookie and send a fixed
         // value to the IdP so we can recognize it on the way back.
-        pair<string,const char*> shib_cookie=st->getApplication()->getCookieNameProps("_shibstate_");
+        pair<string,const char*> shib_cookie=st->getApplication().getCookieNameProps("_shibstate_");
         string stateval = urlenc->encode(target) + shib_cookie.second;
         st->setCookie(shib_cookie.first.c_str(),stateval.c_str());
         req+="&target=cookie";
@@ -249,12 +249,12 @@ SAML1Consumer::SAML1Consumer(const DOMElement* e)
 
     // Register for remoted messages.
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess))
-        ShibTargetConfig::getConfig().getINI()->getListenerService()->regListener(m_address.c_str(),this);
+        SPConfig::getConfig().getServiceProvider()->getListenerService()->regListener(m_address.c_str(),this);
 }
 
 SAML1Consumer::~SAML1Consumer()
 {
-    ListenerService* listener=ShibTargetConfig::getConfig().getINI()->getListenerService(false);
+    ListenerService* listener=SPConfig::getConfig().getServiceProvider()->getListenerService(false);
     if (listener && SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess))
         listener->unregListener(m_address.c_str(),this);
     counter--;
@@ -284,7 +284,7 @@ DDF SAML1Consumer::receive(const DDF& in)
 
     // Find application.
     const char* aid=in["application_id"].string();
-    const IApplication* app=aid ? dynamic_cast<const IApplication*>(ShibTargetConfig::getConfig().getINI()->getApplication(aid)) : NULL;
+    const IApplication* app=aid ? dynamic_cast<const IApplication*>(SPConfig::getConfig().getServiceProvider()->getApplication(aid)) : NULL;
     if (!app) {
         // Something's horribly wrong.
         log.error("couldn't find application (%s) for new session", aid ? aid : "(missing)");
@@ -302,8 +302,7 @@ DDF SAML1Consumer::receive(const DDF& in)
     log.debug("application: %s", app->getId());
 
     // Access the application config.
-    STConfig& stc=static_cast<STConfig&>(ShibTargetConfig::getConfig());
-    IConfig* conf=stc.getINI();
+    IConfig* conf=dynamic_cast<IConfig*>(SPConfig::getConfig().getServiceProvider());
     xmltooling::Locker confLocker(conf);
 
     auto_ptr_XMLCh wrecipient(recipient);
@@ -505,10 +504,10 @@ pair<bool,long> SAML1Consumer::run(ShibTarget* st, bool isHandler) const
     in.addmember("recipient").string(recipient.c_str());
 
     // Add remaining parameters.
-    in.addmember("application_id").string(st->getApplication()->getId());
+    in.addmember("application_id").string(st->getApplication().getId());
     in.addmember("client_address").string(st->getRemoteAddr().c_str());
 
-    out=st->getConfig()->getListenerService()->send(in);
+    out=st->getServiceProvider().getListenerService()->send(in);
     if (!out["key"].isstring())
         throw opensaml::FatalProfileException("Remote processing of SAML 1.x Browser profile did not return a usable session key.");
     string key=out["key"].string();
@@ -517,16 +516,16 @@ pair<bool,long> SAML1Consumer::run(ShibTarget* st, bool isHandler) const
 
     const char* target=st->getParameter("TARGET");
     if (target && !strcmp(target,"default")) {
-        pair<bool,const char*> homeURL=st->getApplication()->getString("homeURL");
+        pair<bool,const char*> homeURL=st->getApplication().getString("homeURL");
         target=homeURL.first ? homeURL.second : "/";
     }
     else if (!target || !strcmp(target,"cookie")) {
         // Pull the target value from the "relay state" cookie.
-        pair<string,const char*> relay_cookie = st->getApplication()->getCookieNameProps("_shibstate_");
+        pair<string,const char*> relay_cookie = st->getApplication().getCookieNameProps("_shibstate_");
         const char* relay_state = st->getCookie(relay_cookie.first.c_str());
         if (!relay_state || !*relay_state) {
             // No apparent relay state value to use, so fall back on the default.
-            pair<bool,const char*> homeURL=st->getApplication()->getString("homeURL");
+            pair<bool,const char*> homeURL=st->getApplication().getString("homeURL");
             target=homeURL.first ? homeURL.second : "/";
         }
         else {
@@ -540,13 +539,13 @@ pair<bool,long> SAML1Consumer::run(ShibTarget* st, bool isHandler) const
     }
 
     // We've got a good session, set the session cookie.
-    pair<string,const char*> shib_cookie=st->getApplication()->getCookieNameProps("_shibsession_");
+    pair<string,const char*> shib_cookie=st->getApplication().getCookieNameProps("_shibsession_");
     key += shib_cookie.second;
     st->setCookie(shib_cookie.first.c_str(), key.c_str());
 
     const char* providerId=out["provider_id"].string();
     if (providerId) {
-        const PropertySet* sessionProps=st->getApplication()->getPropertySet("Sessions");
+        const PropertySet* sessionProps=st->getApplication().getPropertySet("Sessions");
         pair<bool,bool> idpHistory=sessionProps->getBool("idpHistory");
         if (!idpHistory.first || idpHistory.second) {
             // Set an IdP history cookie locally (essentially just a CDC).
@@ -581,13 +580,14 @@ pair<bool,long> SAML1Consumer::run(ShibTarget* st, bool isHandler) const
 pair<bool,long> ShibLogout::run(ShibTarget* st, bool isHandler) const
 {
     // Recover the session key.
-    pair<string,const char*> shib_cookie = st->getApplication()->getCookieNameProps("_shibsession_");
+    pair<string,const char*> shib_cookie = st->getApplication().getCookieNameProps("_shibsession_");
     const char* session_id = st->getCookie(shib_cookie.first.c_str());
     
     // Logout is best effort.
     if (session_id && *session_id) {
         try {
-            st->getConfig()->getSessionCache()->remove(session_id,st->getApplication(),st->getRemoteAddr().c_str());
+            // TODO: port to new cache API
+            //st->getServiceProvider().getSessionCache()->remove(session_id,st->getApplication(),st->getRemoteAddr().c_str());
         }
         catch (exception& e) {
             st->log(SPRequest::SPError, string("logout processing failed with exception: ") + e.what());
@@ -605,7 +605,7 @@ pair<bool,long> ShibLogout::run(ShibTarget* st, bool isHandler) const
     if (!ret)
         ret=getProperties()->getString("ResponseLocation").second;
     if (!ret)
-        ret=st->getApplication()->getString("homeURL").second;
+        ret=st->getApplication().getString("homeURL").second;
     if (!ret)
         ret="/";
     return make_pair(true, st->sendRedirect(ret));

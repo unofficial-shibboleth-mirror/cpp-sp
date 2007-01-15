@@ -24,6 +24,7 @@
 
 #include "internal.h"
 
+#include <shibsp/SPConfig.h>
 #include <xmltooling/security/OpenSSLTrustEngine.h>
 #include <xmltooling/signature/OpenSSLCredentialResolver.h>
 
@@ -86,7 +87,7 @@ static bool ssl_ctx_callback(void* ssl_ctx, void* userptr)
         const PropertySet* credUse=ctx->getCredentialUse();
         pair<bool,const char*> TLS=credUse ? credUse->getString("TLS") : pair<bool,const char*>(false,NULL);
         if (TLS.first) {
-            OpenSSLCredentialResolver* cr=dynamic_cast<OpenSSLCredentialResolver*>(ShibTargetConfig::getConfig().getINI()->getCredentialResolver(TLS.second));
+            OpenSSLCredentialResolver* cr=dynamic_cast<OpenSSLCredentialResolver*>(SPConfig::getConfig().getServiceProvider()->getCredentialResolver(TLS.second));
             if (cr) {
                 xmltooling::Locker locker(cr);
                 cr->attach(reinterpret_cast<SSL_CTX*>(ssl_ctx));

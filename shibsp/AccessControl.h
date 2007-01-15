@@ -53,7 +53,7 @@ namespace shibsp {
          * @param session   active user session, if any
          * @return true iff access should be granted
          */
-        virtual bool authorized(SPRequest& request, Session* session) const=0;
+        virtual bool authorized(const SPRequest& request, const Session* session) const=0;
     };
 
     /**

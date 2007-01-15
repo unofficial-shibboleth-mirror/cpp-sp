@@ -81,11 +81,11 @@ int main(int argc,char* argv[])
     if (!conf.init(path) || !conf.load(config))
         return -10;
 
-    IConfig* ini=ShibTargetConfig::getConfig().getINI();
-    xmltooling::Locker locker(ini);
+    ServiceProvider* sp=SPConfig::getConfig().getServiceProvider();
+    xmltooling::Locker locker(sp);
 
     try {
-        const IApplication* app=dynamic_cast<const IApplication*>(ini->getApplication(a_param));
+        const IApplication* app=dynamic_cast<const IApplication*>(sp->getApplication(a_param));
         if (!app)
             throw SAMLException("specified <Application> section not found in configuration");
 

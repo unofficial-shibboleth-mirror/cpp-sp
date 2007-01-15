@@ -174,7 +174,7 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
         }
         
         // Access the implementation-specifics for site mappings.
-        IConfig* conf=g_Config->getINI();
+        ServiceProvider* conf=SPConfig::getConfig().getServiceProvider();
         xmltooling::Locker locker(conf);
         const PropertySet* props=conf->getPropertySet("Local");
         if (props) {
@@ -372,8 +372,6 @@ public:
     m_hostname = var;
     if (site.m_name!=m_hostname && site.m_aliases.find(m_hostname)==site.m_aliases.end())
         m_hostname=site.m_name;
-
-    init(m_scheme.c_str(), m_hostname.c_str(), m_port, m_uri.c_str()); 
   }
   ~ShibTargetIsapiF() { }
 
@@ -490,9 +488,10 @@ public:
     m_pfc->WriteClient(m_pfc, (LPVOID)redmsg, &resplen, 0);
     return SF_STATUS_REQ_FINISHED;
   }
-  // XXX: We might not ever hit the 'decline' status in this filter.
-  //long returnDecline(void) { }
-  long returnOK(void) {
+  long returnDecline() {
+      return SF_STATUS_REQ_NEXT_NOTIFICATION;
+  }
+  long returnOK() {
     return SF_STATUS_REQ_NEXT_NOTIFICATION;
   }
 
@@ -687,13 +686,6 @@ public:
         m_uri += '?';
         m_uri += lpECB->lpszQueryString;
     }
-
-    init(
-        m_scheme.c_str(),
-        m_hostname.c_str(),
-        m_port,
-        m_uri.c_str()
-        );
   }
   ~ShibTargetIsapiE() { }
 

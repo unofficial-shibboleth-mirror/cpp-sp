@@ -276,13 +276,6 @@ public:
     m_dc = (shib_dir_config*)ap_get_module_config(req->per_dir_config, &mod_shib);
     m_rc = (shib_request_config*)ap_get_module_config(req->request_config, &mod_shib);
     m_req = req;
-
-    init(
-        m_sc->szScheme ? m_sc->szScheme : ap_http_method(req),
-	    ap_get_server_name(req),
-        (int)ap_get_server_port(req),
-	    req->unparsed_uri
-        );
   }
   virtual ~ShibTargetApache() {}
 
@@ -558,7 +551,7 @@ public:
     ~htAccessControl() {}
     Lockable* lock() {return this;}
     void unlock() {}
-    bool authorized(SPRequest& request, Session* session) const;
+    bool authorized(const SPRequest& request, const Session* session) const;
 };
 
 AccessControl* htAccessFactory(const DOMElement* const & e)
@@ -740,10 +733,10 @@ static SH_AP_TABLE* groups_for_user(request_rec* r, const char* user, char* grpf
     return grps;
 }
 
-bool htAccessControl::authorized(SPRequest& request, Session* session) const
+bool htAccessControl::authorized(const SPRequest& request, const Session* session) const
 {
     // Make sure the object is our type.
-    ShibTargetApache* sta=dynamic_cast<ShibTargetApache*>(&request);
+    const ShibTargetApache* sta=dynamic_cast<const ShibTargetApache*>(&request);
     if (!sta)
         throw ConfigurationException("Request wrapper object was not of correct type.");
 
@@ -844,7 +837,7 @@ bool htAccessControl::authorized(SPRequest& request, Session* session) const
             }
         }
         else {
-            saml::Iterator<shibboleth::IAAP*> provs=dynamic_cast<const IApplication&>(request.getSPApplication()).getAAPProviders();
+            saml::Iterator<shibboleth::IAAP*> provs=dynamic_cast<const IApplication&>(request.getApplication()).getAAPProviders();
             shibboleth::AAP wrapper(provs,w);
             if (wrapper.fail()) {
                 request.log(SPRequest::SPWarn, string("htAccessControl plugin didn't recognize require rule: ") + w);
@@ -1073,7 +1066,7 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
             exit(1);
         }
 
-        IConfig* conf=g_Config->getINI();
+        ServiceProvider* conf=SPConfig::getConfig().getServiceProvider();
         xmltooling::Locker locker(conf);
         const PropertySet* props=conf->getPropertySet("Local");
         if (props) {

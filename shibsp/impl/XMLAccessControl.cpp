@@ -48,7 +48,7 @@ namespace {
         Lockable* lock() {return this;}
         void unlock() {}
 
-        bool authorized(SPRequest& request, Session* session) const;
+        bool authorized(const SPRequest& request, const Session* session) const;
     
     private:
         string m_alias;
@@ -64,7 +64,7 @@ namespace {
         Lockable* lock() {return this;}
         void unlock() {}
 
-        bool authorized(SPRequest& request, Session* session) const;
+        bool authorized(const SPRequest& request, const Session* session) const;
         
     private:
         enum operator_t { OP_NOT, OP_AND, OP_OR } m_op;
@@ -87,7 +87,7 @@ namespace {
             delete m_rootAuthz;
         }
 
-        bool authorized(SPRequest& request, Session* session) const;
+        bool authorized(const SPRequest& request, const Session* session) const;
 
     protected:
         pair<bool,DOMElement*> load();
@@ -142,7 +142,7 @@ Rule::Rule(const DOMElement* e)
     }
 }
 
-bool Rule::authorized(SPRequest& request, Session* session) const
+bool Rule::authorized(const SPRequest& request, const Session* session) const
 {
     /*
     TODO: port...
@@ -236,7 +236,7 @@ Operator::~Operator()
     for_each(m_operands.begin(),m_operands.end(),xmltooling::cleanup<AccessControl>());
 }
 
-bool Operator::authorized(SPRequest& request, Session* session) const
+bool Operator::authorized(const SPRequest& request, const Session* session) const
 {
     switch (m_op) {
         case OP_NOT:
@@ -287,7 +287,7 @@ pair<bool,DOMElement*> XMLAccessControl::load()
     return make_pair(false,(DOMElement*)NULL);
 }
 
-bool XMLAccessControl::authorized(SPRequest& request, Session* session) const
+bool XMLAccessControl::authorized(const SPRequest& request, const Session* session) const
 {
     return m_rootAuthz ? m_rootAuthz->authorized(request,session) : false;
 }

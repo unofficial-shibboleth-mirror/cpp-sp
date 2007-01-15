@@ -87,29 +87,7 @@ namespace shibtarget {
         }
     };
 
-    class ShibTargetPriv
-    {
-    public:
-        ShibTargetPriv();
-        ~ShibTargetPriv();
-
-        // Helper functions
-        void get_application(ShibTarget* st, const string& protocol, const string& hostname, int port, const string& uri);
-        long sendError(ShibTarget* st, const char* page, ExtTemplateParameters& tp, const XMLToolingException* ex=NULL);
-        void clearHeaders(ShibTarget* st);
-    
-    private:
-        friend class ShibTarget;
-        RequestMapper::Settings m_settings;
-        const IApplication *m_app;
-
-        ISessionCacheEntry* m_cacheEntry;
-
-        ShibTargetConfig* m_Config;
-
-        IConfig* m_conf;
-        RequestMapper* m_mapper;
-    };
+    long _sendError(SPRequest* st, const char* page, ExtTemplateParameters& tp, const XMLToolingException* ex=NULL);
 
     static const XMLCh SessionInitiator[] =     UNICODE_LITERAL_16(S,e,s,s,i,o,n,I,n,i,t,i,a,t,o,r);
     static const XMLCh DiagnosticService[] =    UNICODE_LITERAL_17(D,i,a,g,n,o,s,t,i,c,S,e,r,v,i,c,e);
@@ -120,32 +98,6 @@ namespace shibtarget {
  * Shib Target implementation
  */
 
-ShibTarget::ShibTarget() : m_priv(new ShibTargetPriv()) {}
-
-ShibTarget::ShibTarget(const IApplication *app) : m_priv(new ShibTargetPriv())
-{
-    m_priv->m_app = app;
-}
-
-ShibTarget::~ShibTarget(void)
-{
-    delete m_priv;
-}
-
-void ShibTarget::init(
-    const char* scheme,
-    const char* hostname,
-    int port,
-    const char* uri
-    )
-{
-    if (m_priv->m_app)
-        throw XMLToolingException("Request initialization occurred twice!");
-
-    m_priv->m_Config = &ShibTargetConfig::getConfig();
-    m_priv->get_application(this, scheme, hostname, port, uri);
-    AbstractSPRequest::m_app = m_priv->m_app;
-}
 
 
 // These functions implement the server-agnostic shibboleth engine
@@ -159,16 +111,16 @@ pair<bool,long> ShibTarget::doCheckAuthN(bool handler)
 #endif
 
     const char* procState = "Request Processing Error";
-    const char* targetURL = m_url.c_str();
+    string targetURL = getRequestURL();
     ExtTemplateParameters tp;
 
     try {
-        if (!m_priv->m_app)
-            throw ConfigurationException("System uninitialized, application did not supply request information.");
+        RequestMapper::Settings settings = getRequestSettings();
+        const IApplication& app = dynamic_cast<const IApplication&>(getApplication());
 
         // If not SSL, check to see if we should block or redirect it.
         if (!strcmp("http",getScheme())) {
-            pair<bool,const char*> redirectToSSL = m_priv->m_settings.first->getString("redirectToSSL");
+            pair<bool,const char*> redirectToSSL = settings.first->getString("redirectToSSL");
             if (redirectToSSL.first) {
                 if (!strcasecmp("GET",getMethod()) || !strcasecmp("HEAD",getMethod())) {
                     // Compute the new target URL
@@ -180,20 +132,19 @@ pair<bool,long> ShibTarget::doCheckAuthN(bool handler)
                     return make_pair(true, sendRedirect(redirectURL.c_str()));
                 }
                 else {
-                    tp.m_map["requestURL"] = m_url.substr(0,m_url.find('?'));
-                    return make_pair(true,m_priv->sendError(this,"ssl", tp));
+                    tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
+                    return make_pair(true,_sendError(this, "ssl", tp));
                 }
             }
         }
         
-        string hURL = getHandlerURL(targetURL);
-        const char* handlerURL=hURL.c_str();
+        const char* handlerURL=getHandlerURL(targetURL.c_str());
         if (!handlerURL)
             throw ConfigurationException("Cannot determine handler from resource URL, check configuration.");
 
         // If the request URL contains the handler base URL for this application, either dispatch
         // directly (mainly Apache 2.0) or just pass back control.
-        if (strstr(targetURL,handlerURL)) {
+        if (strstr(targetURL.c_str(),handlerURL)) {
             if (handler)
                 return doHandler();
             else
@@ -201,9 +152,9 @@ pair<bool,long> ShibTarget::doCheckAuthN(bool handler)
         }
 
         // Three settings dictate how to proceed.
-        pair<bool,const char*> authType = m_priv->m_settings.first->getString("authType");
-        pair<bool,bool> requireSession = m_priv->m_settings.first->getBool("requireSession");
-        pair<bool,const char*> requireSessionWith = m_priv->m_settings.first->getString("requireSessionWith");
+        pair<bool,const char*> authType = settings.first->getString("authType");
+        pair<bool,bool> requireSession = settings.first->getBool("requireSession");
+        pair<bool,const char*> requireSessionWith = settings.first->getString("requireSessionWith");
 
         // If no session is required AND the AuthType (an Apache-derived concept) isn't shibboleth,
         // then we ignore this request and consider it unprotected. Apache might lie to us if
@@ -217,9 +168,9 @@ pair<bool,long> ShibTarget::doCheckAuthN(bool handler)
             return make_pair(true,returnDecline());
 
         // Fix for secadv 20050901
-        m_priv->clearHeaders(this);
+        clearHeaders();
 
-        pair<string,const char*> shib_cookie = m_priv->m_app->getCookieNameProps("_shibsession_");
+        pair<string,const char*> shib_cookie = app.getCookieNameProps("_shibsession_");
         const char* session_id = getCookie(shib_cookie.first.c_str());
         if (!session_id || !*session_id) {
             // No session.  Maybe that's acceptable?
@@ -230,7 +181,7 @@ pair<bool,long> ShibTarget::doCheckAuthN(bool handler)
             procState = "Session Initiator Error";
             const IHandler* initiator=NULL;
             if (requireSessionWith.first) {
-                initiator=m_priv->m_app->getSessionInitiatorById(requireSessionWith.second);
+                initiator=app.getSessionInitiatorById(requireSessionWith.second);
                 if (!initiator)
                     throw ConfigurationException(
                         "No session initiator found with id ($1), check requireSessionWith command.",
@@ -238,7 +189,7 @@ pair<bool,long> ShibTarget::doCheckAuthN(bool handler)
                         );
             }
             else {
-                initiator=m_priv->m_app->getDefaultSessionInitiator();
+                initiator=app.getDefaultSessionInitiator();
                 if (!initiator)
                     throw ConfigurationException("No default session initiator found, check configuration.");
             }
@@ -247,18 +198,15 @@ pair<bool,long> ShibTarget::doCheckAuthN(bool handler)
         }
 
         procState = "Session Processing Error";
+        const Session* session=NULL;
         try {
-            m_priv->m_cacheEntry=m_priv->m_conf->getSessionCache()->find(
-                session_id,
-                m_priv->m_app,
-                getRemoteAddr().c_str()
-                );
+            session=getSession();
             // Make a localized exception throw if the session isn't valid.
-            if (!m_priv->m_cacheEntry)
+            if (!session)
                 throw RetryableProfileException("Session no longer valid.");
         }
         catch (exception& e) {
-            log(SPError, string("session processing failed: ") + e.what());
+            log(SPWarn, string("session processing failed: ") + e.what());
 
             // If no session is required, bail now.
             if ((!requireSession.first || !requireSession.second) && !requireSessionWith.first)
@@ -276,7 +224,7 @@ pair<bool,long> ShibTarget::doCheckAuthN(bool handler)
                 procState = "Session Initiator Error";
                 const IHandler* initiator=NULL;
                 if (requireSessionWith.first) {
-                    initiator=m_priv->m_app->getSessionInitiatorById(requireSessionWith.second);
+                    initiator=app.getSessionInitiatorById(requireSessionWith.second);
                     if (!initiator)
                         throw ConfigurationException(
                             "No session initiator found with id ($1), check requireSessionWith command.",
@@ -284,7 +232,7 @@ pair<bool,long> ShibTarget::doCheckAuthN(bool handler)
                             );
                 }
                 else {
-                    initiator=m_priv->m_app->getDefaultSessionInitiator();
+                    initiator=app.getDefaultSessionInitiator();
                     if (!initiator)
                         throw ConfigurationException("No default session initiator found, check configuration.");
                 }
@@ -301,17 +249,15 @@ pair<bool,long> ShibTarget::doCheckAuthN(bool handler)
     catch (XMLToolingException& e) {
         tp.m_map["errorType"] = procState;
         tp.m_map["errorText"] = e.what();
-        if (targetURL)
-            tp.m_map["requestURL"] = m_url.substr(0,m_url.find('?'));
-        return make_pair(true,m_priv->sendError(this, "session", tp, &e));
+        tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
+        return make_pair(true,_sendError(this, "session", tp, &e));
     }
 #ifndef _DEBUG
     catch (...) {
         tp.m_map["errorType"] = procState;
         tp.m_map["errorText"] = "Caught an unknown exception.";
-        if (targetURL)
-            tp.m_map["requestURL"] = m_url.substr(0,m_url.find('?'));
-        return make_pair(true,m_priv->sendError(this, "session", tp));
+        tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
+        return make_pair(true,_sendError(this, "session", tp));
     }
 #endif
 }
@@ -322,24 +268,24 @@ pair<bool,long> ShibTarget::doHandler(void)
     xmltooling::NDC ndc("doHandler");
 #endif
 
+    const IApplication* app=NULL;
     ExtTemplateParameters tp;
     const char* procState = "Shibboleth Handler Error";
-    const char* targetURL = m_url.c_str();
+    string targetURL = getRequestURL();
 
     try {
-        if (!m_priv->m_app)
-            throw ConfigurationException("System uninitialized, application did not supply request information.");
+        RequestMapper::Settings settings = getRequestSettings();
+        app = dynamic_cast<const IApplication*>(&getApplication());
 
-        string hURL = getHandlerURL(targetURL);
-        const char* handlerURL=hURL.c_str();
+        const char* handlerURL=getHandlerURL(targetURL.c_str());
         if (!handlerURL)
             throw ConfigurationException("Cannot determine handler from resource URL, check configuration.");
 
         // Make sure we only process handler requests.
-        if (!strstr(targetURL,handlerURL))
+        if (!strstr(targetURL.c_str(),handlerURL))
             return make_pair(true, returnDecline());
 
-        const PropertySet* sessionProps=m_priv->m_app->getPropertySet("Sessions");
+        const PropertySet* sessionProps=app->getPropertySet("Sessions");
         if (!sessionProps)
             throw ConfigurationException("Unable to map request to application session settings, check configuration.");
 
@@ -352,7 +298,7 @@ pair<bool,long> ShibTarget::doHandler(void)
 
         // We dispatch based on our path info. We know the request URL begins with or equals the handler URL,
         // so the path info is the next character (or null).
-        const IHandler* handler=m_priv->m_app->getHandler(targetURL + strlen(handlerURL));
+        const IHandler* handler=app->getHandler(targetURL.c_str() + strlen(handlerURL));
         if (!handler)
             throw opensaml::BindingException("Shibboleth handler invoked at an unconfigured location.");
 
@@ -377,14 +323,13 @@ pair<bool,long> ShibTarget::doHandler(void)
     catch (MetadataException& e) {
         tp.m_map["errorText"] = e.what();
         // See if a metadata error page is installed.
-        const PropertySet* props=m_priv->m_app->getPropertySet("Errors");
+        const PropertySet* props=app->getPropertySet("Errors");
         if (props) {
             pair<bool,const char*> p=props->getString("metadata");
             if (p.first) {
                 tp.m_map["errorType"] = procState;
-                if (targetURL)
-                    tp.m_map["requestURL"] = targetURL;
-                return make_pair(true,m_priv->sendError(this, "metadata", tp));
+                tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
+                return make_pair(true,_sendError(this, "metadata", tp));
             }
         }
         throw;
@@ -392,17 +337,15 @@ pair<bool,long> ShibTarget::doHandler(void)
     catch (XMLToolingException& e) {
         tp.m_map["errorType"] = procState;
         tp.m_map["errorText"] = e.what();
-        if (targetURL)
-            tp.m_map["requestURL"] = m_url.substr(0,m_url.find('?'));
-        return make_pair(true,m_priv->sendError(this, "session", tp, &e));
+        tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
+        return make_pair(true,_sendError(this, "session", tp, &e));
     }
 #ifndef _DEBUG
     catch (...) {
         tp.m_map["errorType"] = procState;
         tp.m_map["errorText"] = "Caught an unknown exception.";
-        if (targetURL)
-            tp.m_map["requestURL"] = m_url.substr(0,m_url.find('?'));
-        return make_pair(true,m_priv->sendError(this, "session", tp));
+        tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
+        return make_pair(true,_sendError(this, "session", tp));
     }
 #endif
 }
@@ -413,18 +356,19 @@ pair<bool,long> ShibTarget::doCheckAuthZ(void)
     xmltooling::NDC ndc("doCheckAuthZ");
 #endif
 
+    const IApplication* app=NULL;
     ExtTemplateParameters tp;
     const char* procState = "Authorization Processing Error";
-    const char* targetURL = m_url.c_str();
+    string targetURL = getRequestURL();
 
     try {
-        if (!m_priv->m_app)
-            throw ConfigurationException("System uninitialized, application did not supply request information.");
+        RequestMapper::Settings settings = getRequestSettings();
+        app = dynamic_cast<const IApplication*>(&getApplication());
 
         // Three settings dictate how to proceed.
-        pair<bool,const char*> authType = m_priv->m_settings.first->getString("authType");
-        pair<bool,bool> requireSession = m_priv->m_settings.first->getBool("requireSession");
-        pair<bool,const char*> requireSessionWith = m_priv->m_settings.first->getString("requireSessionWith");
+        pair<bool,const char*> authType = settings.first->getString("authType");
+        pair<bool,bool> requireSession = settings.first->getBool("requireSession");
+        pair<bool,const char*> requireSessionWith = settings.first->getString("requireSessionWith");
 
         // If no session is required AND the AuthType (an Apache-derived concept) isn't shibboleth,
         // then we ignore this request and consider it unprotected. Apache might lie to us if
@@ -438,40 +382,30 @@ pair<bool,long> ShibTarget::doCheckAuthZ(void)
             return make_pair(true,returnDecline());
 
         // Do we have an access control plugin?
-        if (m_priv->m_settings.second) {
-        	
-	        if (!m_priv->m_cacheEntry) {
-	            // No data yet, so we may need to try and get the session.
-		        pair<string,const char*> shib_cookie=m_priv->m_app->getCookieNameProps("_shibsession_");
-                const char *session_id = getCookie(shib_cookie.first.c_str());
-	            try {
-		        	if (session_id && *session_id) {
-                        m_priv->m_cacheEntry=m_priv->m_conf->getSessionCache()->find(
-                            session_id,
-                            m_priv->m_app,
-                            getRemoteAddr().c_str()
-                            );
-		        	}
-	            }
-	            catch (exception&) {
-	            	log(SPError, "doCheckAuthZ: unable to obtain session information to pass to access control provider");
-	            }
-	        }
+        if (settings.second) {
+            const Session* session =NULL;
+	        pair<string,const char*> shib_cookie=app->getCookieNameProps("_shibsession_");
+            const char *session_id = getCookie(shib_cookie.first.c_str());
+            try {
+	        	if (session_id && *session_id) {
+                    session = getSession();
+	        	}
+            }
+            catch (exception&) {
+            	log(SPWarn, "doCheckAuthZ: unable to obtain session information to pass to access control provider");
+            }
 	
-            xmltooling::Locker acllock(m_priv->m_settings.second);
-            /* TODO: port
-            if (m_priv->m_settings.second->authorized(this,m_priv->m_cacheEntry)) {
+            xmltooling::Locker acllock(settings.second);
+            if (settings.second->authorized(*this,session)) {
                 // Let the caller decide how to proceed.
-                log(LogLevelDebug, "doCheckAuthZ: access control provider granted access");
+                log(SPDebug, "doCheckAuthZ: access control provider granted access");
                 return make_pair(false,0);
             }
             else {
-                log(LogLevelWarn, "doCheckAuthZ: access control provider denied access");
-                if (targetURL)
-                    tp.m_map["requestURL"] = targetURL;
-                return make_pair(true,m_priv->sendError(this, "access", tp));
+                log(SPWarn, "doCheckAuthZ: access control provider denied access");
+                tp.m_map["requestURL"] = targetURL;
+                return make_pair(true,_sendError(this, "access", tp));
             }
-            */
             return make_pair(false,0);
         }
         else
@@ -480,17 +414,15 @@ pair<bool,long> ShibTarget::doCheckAuthZ(void)
     catch (exception& e) {
         tp.m_map["errorType"] = procState;
         tp.m_map["errorText"] = e.what();
-        if (targetURL)
-            tp.m_map["requestURL"] = m_url.substr(0,m_url.find('?'));
-        return make_pair(true,m_priv->sendError(this, "access", tp));
+        tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
+        return make_pair(true,_sendError(this, "access", tp));
     }
 #ifndef _DEBUG
     catch (...) {
         tp.m_map["errorType"] = procState;
         tp.m_map["errorText"] = "Caught an unknown exception.";
-        if (targetURL)
-            tp.m_map["requestURL"] = m_url.substr(0,m_url.find('?'));
-        return make_pair(true,m_priv->sendError(this, "access", tp));
+        tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
+        return make_pair(true,_sendError(this, "access", tp));
     }
 #endif
 }
@@ -501,51 +433,47 @@ pair<bool,long> ShibTarget::doExportAssertions(bool requireSession)
     xmltooling::NDC ndc("doExportAssertions");
 #endif
 
+    const IApplication* app=NULL;
     ExtTemplateParameters tp;
     const char* procState = "Attribute Processing Error";
-    const char* targetURL = m_url.c_str();
+    string targetURL = getRequestURL();
 
     try {
-        if (!m_priv->m_app)
-            throw ConfigurationException("System uninitialized, application did not supply request information.");
+        RequestMapper::Settings settings = getRequestSettings();
+        app = dynamic_cast<const IApplication*>(&getApplication());
 
-        if (!m_priv->m_cacheEntry) {
-            // No data yet, so we need to get the session. This can only happen
-            // if the call to doCheckAuthn doesn't happen in the same object lifetime.
-	        pair<string,const char*> shib_cookie=m_priv->m_app->getCookieNameProps("_shibsession_");
-            const char *session_id = getCookie(shib_cookie.first.c_str());
-            try {
-	        	if (session_id && *session_id) {
-                    m_priv->m_cacheEntry=m_priv->m_conf->getSessionCache()->find(
-                        session_id,
-                        m_priv->m_app,
-                        getRemoteAddr().c_str()
-                        );
-	        	}
-            }
-            catch (exception&) {
-            	log(SPError, "unable to obtain session information to export into request headers");
-            	// If we have to have a session, then this is a fatal error.
-            	if (requireSession)
-            		throw;
-            }
+        const Session* session=NULL;
+        pair<string,const char*> shib_cookie=app->getCookieNameProps("_shibsession_");
+        const char *session_id = getCookie(shib_cookie.first.c_str());
+        try {
+        	if (session_id && *session_id) {
+                session = getSession();
+        	}
+        }
+        catch (exception&) {
+        	log(SPWarn, "unable to obtain session information to export into request headers");
+        	// If we have to have a session, then this is a fatal error.
+        	if (requireSession)
+        		throw;
         }
 
 		// Still no data?
-        if (!m_priv->m_cacheEntry) {
+        if (!session) {
         	if (requireSession)
         		throw RetryableProfileException("Unable to obtain session information for request.");
         	else
         		return make_pair(false,0);	// just bail silently
         }
         
+        /*
+        TODO: port to new cache API
         // Extract data from session.
-        pair<const char*,const SAMLSubject*> sub=m_priv->m_cacheEntry->getSubject(false,true);
-        pair<const char*,const SAMLResponse*> unfiltered=m_priv->m_cacheEntry->getTokens(true,false);
-        pair<const char*,const SAMLResponse*> filtered=m_priv->m_cacheEntry->getTokens(false,true);
+        pair<const char*,const SAMLSubject*> sub=m_cacheEntry->getSubject(false,true);
+        pair<const char*,const SAMLResponse*> unfiltered=m_cacheEntry->getTokens(true,false);
+        pair<const char*,const SAMLResponse*> filtered=m_cacheEntry->getTokens(false,true);
 
         // Maybe export the tokens.
-        pair<bool,bool> exp=m_priv->m_settings.first->getBool("exportAssertion");
+        pair<bool,bool> exp=m_settings.first->getBool("exportAssertion");
         if (exp.first && exp.second && unfiltered.first && *unfiltered.first) {
             unsigned int outlen;
             XMLByte* serialized =
@@ -560,12 +488,12 @@ pair<bool,long> ShibTarget::doExportAssertions(bool requireSession)
         }
 
         // Export the SAML AuthnMethod and the origin site name, and possibly the NameIdentifier.
-        setHeader("Shib-Origin-Site", m_priv->m_cacheEntry->getProviderId());
-        setHeader("Shib-Identity-Provider", m_priv->m_cacheEntry->getProviderId());
-        setHeader("Shib-Authentication-Method", m_priv->m_cacheEntry->getAuthnContext());
+        setHeader("Shib-Origin-Site", m_cacheEntry->getProviderId());
+        setHeader("Shib-Identity-Provider", m_cacheEntry->getProviderId());
+        setHeader("Shib-Authentication-Method", m_cacheEntry->getAuthnContext());
         
         // Get the AAP providers, which contain the attribute policy info.
-        Iterator<IAAP*> provs=m_priv->m_app->getAAPProviders();
+        Iterator<IAAP*> provs=m_app->getAAPProviders();
 
         // Export NameID?
         while (provs.hasNext()) {
@@ -584,7 +512,7 @@ pair<bool,long> ShibTarget::doExportAssertions(bool requireSession)
             }
         }
         
-        setHeader("Shib-Application-ID", m_priv->m_app->getId());
+        setHeader("Shib-Application-ID", m_app->getId());
     
         // Export the attributes.
         Iterator<SAMLAssertion*> a_iter(filtered.second ? filtered.second->getAssertions() : EMPTY(SAMLAssertion*));
@@ -634,117 +562,32 @@ pair<bool,long> ShibTarget::doExportAssertions(bool requireSession)
                 }
             }
         }
+        */
     
         return make_pair(false,0);
     }
     catch (XMLToolingException& e) {
         tp.m_map["errorType"] = procState;
         tp.m_map["errorText"] = e.what();
-        if (targetURL)
-            tp.m_map["requestURL"] = m_url.substr(0,m_url.find('?'));
-        return make_pair(true,m_priv->sendError(this, "rm", tp, &e));
+        tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
+        return make_pair(true,_sendError(this, "rm", tp, &e));
     }
 #ifndef _DEBUG
     catch (...) {
         tp.m_map["errorType"] = procState;
         tp.m_map["errorText"] = "Caught an unknown exception.";
-        if (targetURL)
-            tp.m_map["requestURL"] = m_url.substr(0,m_url.find('?'));
-        return make_pair(true,m_priv->sendError(this, "rm", tp));
+        tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
+        return make_pair(true,_sendError(this, "rm", tp));
     }
 #endif
-}
-
-const IApplication* ShibTarget::getApplication() const
-{
-    return m_priv->m_app;
-}
-
-const IConfig* ShibTarget::getConfig() const
-{
-    return m_priv->m_conf;
-}
-
-long ShibTarget::returnDecline(void)
-{
-    return NULL;
-}
-
-long ShibTarget::returnOK(void)
-{
-    return NULL;
 }
 
 /*************************************************************************
  * Shib Target Private implementation
  */
 
-ShibTargetPriv::ShibTargetPriv()
-    : m_app(NULL), m_mapper(NULL), m_conf(NULL), m_Config(NULL), m_cacheEntry(NULL) {}
-
-ShibTargetPriv::~ShibTargetPriv()
-{
-    if (m_cacheEntry) {
-        m_cacheEntry->unlock();
-        m_cacheEntry = NULL;
-    }
-
-    if (m_mapper) {
-        m_mapper->unlock();
-        m_mapper = NULL;
-    }
-    
-    if (m_conf) {
-        m_conf->unlock();
-        m_conf = NULL;
-    }
-
-    m_app = NULL;
-    m_Config = NULL;
-}
-
-void ShibTargetPriv::get_application(ShibTarget* st, const string& protocol, const string& hostname, int port, const string& uri)
-{
-  if (m_app)
-    return;
-
-  // XXX: Do we need to keep conf and mapper locked while we hold m_app?
-  // TODO: No, should be able to hold the conf but release the mapper.
-
-  // We lock the configuration system for the duration.
-  m_conf=m_Config->getINI();
-  m_conf->lock();
-    
-  // Map request to application and content settings.
-  m_mapper=m_conf->getRequestMapper();
-  m_mapper->lock();
-
-  // Obtain the application settings from the parsed URL
-  m_settings = m_mapper->getSettings(*st);
-
-  // Now find the application from the URL settings
-  pair<bool,const char*> application_id=m_settings.first->getString("applicationId");
-  m_app=dynamic_cast<const IApplication*>(m_conf->getApplication(application_id.second));
-  if (!m_app) {
-    m_mapper->unlock();
-    m_mapper = NULL;
-    m_conf->unlock();
-    m_conf = NULL;
-    throw ConfigurationException("Unable to map request to application settings, check configuration.");
-  }
-
-  // Compute the full target URL
-  st->m_url = protocol + "://" + hostname;
-  if ((protocol == "http" && port != 80) || (protocol == "https" && port != 443)) {
-  	ostringstream portstr;
-  	portstr << port;
-    st->m_url += ":" + portstr.str();
-  }
-  st->m_url += uri;
-}
-
-long ShibTargetPriv::sendError(
-    ShibTarget* st, const char* page, ExtTemplateParameters& tp, const XMLToolingException* ex
+long shibtarget::_sendError(
+    SPRequest* st, const char* page, ExtTemplateParameters& tp, const XMLToolingException* ex
     )
 {
     st->setContentType("text/html");
@@ -752,7 +595,7 @@ long ShibTargetPriv::sendError(
     st->setResponseHeader("Cache-Control","private,no-store,no-cache");
 
     TemplateEngine* engine = XMLToolingConfig::getConfig().getTemplateEngine();
-    const PropertySet* props=m_app->getPropertySet("Errors");
+    const PropertySet* props=st->getApplication().getPropertySet("Errors");
     if (props) {
         pair<bool,const char*> p=props->getString(page);
         if (p.first) {
@@ -770,26 +613,24 @@ long ShibTargetPriv::sendError(
         }
     }
 
-    string errstr = string("sendError could not process error template (") + page + ") for application (";
-    errstr += m_app->getId();
-    errstr += ")";
+    string errstr = string("sendError could not process error template (") + page + ")";
     st->log(SPRequest::SPError, errstr);
     istringstream msg("Internal Server Error. Please contact the site administrator.");
     return st->sendError(msg);
 }
 
-void ShibTargetPriv::clearHeaders(ShibTarget* st)
+void ShibTarget::clearHeaders()
 {
     // Clear invariant stuff.
-    st->clearHeader("Shib-Origin-Site");
-    st->clearHeader("Shib-Identity-Provider");
-    st->clearHeader("Shib-Authentication-Method");
-    st->clearHeader("Shib-NameIdentifier-Format");
-    st->clearHeader("Shib-Attributes");
-    st->clearHeader("Shib-Application-ID");
+    clearHeader("Shib-Origin-Site");
+    clearHeader("Shib-Identity-Provider");
+    clearHeader("Shib-Authentication-Method");
+    clearHeader("Shib-NameIdentifier-Format");
+    clearHeader("Shib-Attributes");
+    clearHeader("Shib-Application-ID");
 
     // Clear out the list of mapped attributes
-    Iterator<IAAP*> provs=m_app->getAAPProviders();
+    Iterator<IAAP*> provs=dynamic_cast<const IApplication&>(getApplication()).getAAPProviders();
     while (provs.hasNext()) {
         IAAP* aap=provs.next();
         xmltooling::Locker locker(aap);
@@ -797,7 +638,7 @@ void ShibTargetPriv::clearHeaders(ShibTarget* st)
         while (rules.hasNext()) {
             const char* header=rules.next()->getHeader();
             if (header)
-                st->clearHeader(header);
+                clearHeader(header);
         }
     }
 }

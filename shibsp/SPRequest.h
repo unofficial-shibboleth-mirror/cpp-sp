@@ -23,13 +23,15 @@
 #ifndef __shibsp_req_h__
 #define __shibsp_req_h__
 
-#include <shibsp/base.h>
+#include <shibsp/RequestMapper.h>
 #include <saml/binding/HTTPRequest.h>
 #include <saml/binding/HTTPResponse.h>
 
 namespace shibsp {
     
     class SHIBSP_API Application;
+    class SHIBSP_API ServiceProvider;
+    class SHIBSP_API Session;
     
     /**
      * Interface to server request being processed
@@ -48,12 +50,34 @@ namespace shibsp {
         virtual ~SPRequest() {}
         
         /**
+         * Returns the locked ServiceProvider processing the request.
+         * 
+         * @return reference to ServiceProvider
+         */
+        virtual const ServiceProvider& getServiceProvider() const=0;
+
+        /**
+         * Returns RequestMapper Settings associated with the request, guaranteed
+         * to be valid for the request's duration.
+         * 
+         * @return copy of settings
+         */
+        virtual RequestMapper::Settings getRequestSettings() const=0;
+        
+        /**
          * Returns the Application governing the request.
          * 
          * @return reference to Application
          */
-        virtual const Application& getSPApplication() const=0;
-        
+        virtual const Application& getApplication() const=0;
+
+        /**
+         * Returns a locked Session associated with the request.
+         * 
+         * @return pointer to Session, or NULL
+         */
+        virtual const Session* getSession() const=0;
+
         /**
          * Returns the effective base Handler URL for a resource,
          * or the current request URL.
@@ -129,6 +153,20 @@ namespace shibsp {
          * @return true iff logging level is enabled
          */
         virtual bool isPriorityEnabled(SPLogLevel level) const=0;
+
+        /**
+         * Indicates that processing was declined, meaning no action is required during this phase of processing.
+         * 
+         * @return  a status code to pass back to the server-specific layer
+         */        
+        virtual long returnDecline()=0;
+
+        /**
+         * Indicates that processing was completed.
+         * 
+         * @return  a status code to pass back to the server-specific layer
+         */        
+        virtual long returnOK()=0;
     };
 };
 
