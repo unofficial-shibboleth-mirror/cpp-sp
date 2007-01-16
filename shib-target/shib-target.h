@@ -85,18 +85,6 @@ namespace shibtarget {
             const xmltooling::TrustEngine* trust=NULL
             ) const=0;
 
-        // Used to locate a default or designated session initiator for automatic sessions
-        virtual const shibsp::Handler* getDefaultSessionInitiator() const=0;
-        virtual const shibsp::Handler* getSessionInitiatorById(const char* id) const=0;
-        
-        // Used by session initiators to get endpoint to forward to IdP/WAYF
-        virtual const shibsp::Handler* getDefaultAssertionConsumerService() const=0;
-        virtual const shibsp::Handler* getAssertionConsumerServiceByIndex(unsigned short index) const=0;
-        virtual saml::Iterator<const shibsp::Handler*> getAssertionConsumerServicesByBinding(const XMLCh* binding) const=0;
-        
-        // Used by dispatcher to locate the handler for a request
-        virtual const shibsp::Handler* getHandler(const char* path) const=0;
-
         virtual ~IApplication() {}
     };
 

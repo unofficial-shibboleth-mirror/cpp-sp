@@ -28,6 +28,8 @@
 #include <xmltooling/security/TrustEngine.h>
 
 namespace shibsp {
+    
+    class SHIBSP_API Handler;
 
     /**
      * Interface to a Shibboleth Application instance.
@@ -85,7 +87,60 @@ namespace shibsp {
          * @param provider  a peer entity's metadata
          * @return  the applicable PropertySet
          */
-        virtual const shibsp::PropertySet* getCredentialUse(const opensaml::saml2md::EntityDescriptor* provider) const=0;
+        virtual const PropertySet* getCredentialUse(const opensaml::saml2md::EntityDescriptor* provider) const=0;
+
+        /**
+         * Returns the default SessionInitiator Handler when automatically
+         * requesting a session.
+         * 
+         * @return the default SessionInitiator, or NULL
+         */
+        virtual const Handler* getDefaultSessionInitiator() const=0;
+        
+        /**
+         * Returns a SessionInitiator Handler with a particular ID when automatically
+         * requesting a session.
+         * 
+         * @param id    an identifier unique to an application
+         * @return the designated SessionInitiator, or NULL
+         */
+        virtual const Handler* getSessionInitiatorById(const char* id) const=0;
+        
+        /**
+         * Returns the default AssertionConsumerService Handler
+         * for use in AuthnRequest messages.
+         * 
+         * @return the default AssertionConsumerService, or NULL
+         */
+        virtual const Handler* getDefaultAssertionConsumerService() const=0;
+
+        /**
+         * Returns an AssertionConsumerService Handler with a particular index
+         * for use in AuthnRequest messages.
+         * 
+         * @param index an index unique to an application
+         * @return the designated AssertionConsumerService, or NULL
+         */
+        virtual const Handler* getAssertionConsumerServiceByIndex(unsigned short index) const=0;
+
+        /**
+         * Returns one or more AssertionConsumerService Handlers that support
+         * a particular protocol binding.
+         * 
+         * @param binding   a protocol binding identifier
+         * @return a set of qualifying AssertionConsumerServices
+         */
+        virtual const std::vector<const Handler*>& getAssertionConsumerServicesByBinding(const XMLCh* binding) const=0;
+        
+        /**
+         * Returns the Handler associated with a particular path/location.
+         * 
+         * @param path  the PATH_INFO appended to the end of a base Handler location
+         *              that invokes the Handler
+         * @return the mapped Handler, or NULL 
+         */
+        virtual const Handler* getHandler(const char* path) const=0;
+
     };
 };
 

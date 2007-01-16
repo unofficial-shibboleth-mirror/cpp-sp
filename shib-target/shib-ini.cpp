@@ -50,6 +50,8 @@ using xmlsignature::CredentialResolver;
 
 namespace {
 
+    vector<const Handler*> g_noHandlers;
+
     // Application configuration wrapper
     class XMLApplication : public virtual IApplication, public DOMPropertySet, public DOMNodeFilter
     {
@@ -89,7 +91,7 @@ namespace {
         const Handler* getSessionInitiatorById(const char* id) const;
         const Handler* getDefaultAssertionConsumerService() const;
         const Handler* getAssertionConsumerServiceByIndex(unsigned short index) const;
-        Iterator<const Handler*> getAssertionConsumerServicesByBinding(const XMLCh* binding) const;
+        const vector<const Handler*>& getAssertionConsumerServicesByBinding(const XMLCh* binding) const;
         const Handler* getHandler(const char* path) const;
         
         // Provides filter to exclude special config elements.
@@ -801,7 +803,7 @@ const Handler* XMLApplication::getAssertionConsumerServiceByIndex(unsigned short
     return m_base ? m_base->getAssertionConsumerServiceByIndex(index) : NULL;
 }
 
-Iterator<const Handler*> XMLApplication::getAssertionConsumerServicesByBinding(const XMLCh* binding) const
+const vector<const Handler*>& XMLApplication::getAssertionConsumerServicesByBinding(const XMLCh* binding) const
 {
 #ifdef HAVE_GOOD_STL
     ACSBindingMap::const_iterator i=m_acsBindingMap.find(binding);
@@ -811,7 +813,7 @@ Iterator<const Handler*> XMLApplication::getAssertionConsumerServicesByBinding(c
 #endif
     if (i!=m_acsBindingMap.end())
         return i->second;
-    return m_base ? m_base->getAssertionConsumerServicesByBinding(binding) : EMPTY(const Handler*);
+    return m_base ? m_base->getAssertionConsumerServicesByBinding(binding) : g_noHandlers;
 }
 
 const Handler* XMLApplication::getHandler(const char* path) const
