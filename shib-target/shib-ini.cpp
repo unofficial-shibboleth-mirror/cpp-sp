@@ -70,11 +70,10 @@ namespace {
         // IApplication
         const char* getId() const {return getString("id").second;}
         const char* getHash() const {return m_hash.c_str();}
-        Iterator<SAMLAttributeDesignator*> getAttributeDesignators() const;
         Iterator<IAAP*> getAAPProviders() const;
         MetadataProvider* getMetadataProvider() const;
         TrustEngine* getTrustEngine() const;
-        Iterator<const XMLCh*> getAudiences() const;
+        const vector<const XMLCh*>& getAudiences() const;
         const PropertySet* getCredentialUse(const EntityDescriptor* provider) const;
 
         const SAMLBrowserProfile* getBrowserProfile() const {return m_profile;}
@@ -102,7 +101,6 @@ namespace {
         const IConfig* m_ini;   // this is ok because its locking scope includes us
         const XMLApplication* m_base;
         string m_hash;
-        vector<SAMLAttributeDesignator*> m_designators;
         vector<IAAP*> m_aaps;
         MetadataProvider* m_metadata;
         TrustEngine* m_trust;
@@ -418,15 +416,8 @@ XMLApplication::XMLApplication(
             m_acsDefault=h2;
         }
         
-        // Process general configuration elements.
-        XMLSize_t i;
-        DOMNodeList* nlist=e->getElementsByTagNameNS(samlconstants::SAML1_NS,AttributeDesignator::LOCAL_NAME);
-        for (i=0; nlist && i<nlist->getLength(); i++)
-            if (nlist->item(i)->getParentNode()->isSameNode(e))
-                m_designators.push_back(new SAMLAttributeDesignator(static_cast<DOMElement*>(nlist->item(i))));
-
-        nlist=e->getElementsByTagNameNS(samlconstants::SAML1_NS,Audience::LOCAL_NAME);
-        for (i=0; nlist && i<nlist->getLength(); i++)
+        DOMNodeList* nlist=e->getElementsByTagNameNS(samlconstants::SAML1_NS,Audience::LOCAL_NAME);
+        for (XMLSize_t i=0; nlist && i<nlist->getLength(); i++)
             if (nlist->item(i)->getParentNode()->isSameNode(e) && nlist->item(i)->hasChildNodes())
                 m_audiences.push_back(nlist->item(i)->getFirstChild()->getNodeValue());
 
@@ -576,7 +567,6 @@ void XMLApplication::cleanup()
 #else
     for_each(m_credMap.begin(),m_credMap.end(),xmltooling::cleanup_pair<const XMLCh*,PropertySet>());
 #endif
-    for_each(m_designators.begin(),m_designators.end(),xmltooling::cleanup<SAMLAttributeDesignator>());
     for_each(m_aaps.begin(),m_aaps.end(),xmltooling::cleanup<IAAP>());
 
     delete m_trust;
@@ -586,6 +576,8 @@ void XMLApplication::cleanup()
 short XMLApplication::acceptNode(const DOMNode* node) const
 {
     if (XMLHelper::isNodeNamed(node,samlconstants::SAML1_NS,AttributeDesignator::LOCAL_NAME))
+        return FILTER_REJECT;
+    else if (XMLHelper::isNodeNamed(node,samlconstants::SAML20_NS,Attribute::LOCAL_NAME))
         return FILTER_REJECT;
     else if (XMLHelper::isNodeNamed(node,samlconstants::SAML1_NS,Audience::LOCAL_NAME))
         return FILTER_REJECT;
@@ -653,13 +645,6 @@ const PropertySet* XMLApplication::getPropertySet(const char* name, const char* 
     return m_base->getPropertySet(name,ns);
 }
 
-Iterator<SAMLAttributeDesignator*> XMLApplication::getAttributeDesignators() const
-{
-    if (!m_designators.empty() || !m_base)
-        return m_designators;
-    return m_base->getAttributeDesignators();
-}
-
 Iterator<IAAP*> XMLApplication::getAAPProviders() const
 {
     return (m_aaps.empty() && m_base) ? m_base->getAAPProviders() : m_aaps;
@@ -675,7 +660,7 @@ TrustEngine* XMLApplication::getTrustEngine() const
     return (!m_trust && m_base) ? m_base->getTrustEngine() : m_trust;
 }
 
-Iterator<const XMLCh*> XMLApplication::getAudiences() const
+const vector<const XMLCh*>& XMLApplication::getAudiences() const
 {
     return (m_audiences.empty() && m_base) ? m_base->getAudiences() : m_audiences;
 }

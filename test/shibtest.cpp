@@ -104,8 +104,7 @@ int main(int argc,char* argv[])
                             format.get() ? format.get() : shibspconstants::SHIB1_NAMEID_FORMAT_URI
                             )
                         ),
-                    resource.get(),
-                    app->getAttributeDesignators().clone()
+                    resource.get()
                     )
                 )
             );

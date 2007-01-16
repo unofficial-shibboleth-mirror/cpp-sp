@@ -101,7 +101,7 @@ namespace shibsp {
          * Returns a SessionInitiator Handler with a particular ID when automatically
          * requesting a session.
          * 
-         * @param id    an identifier unique to an application
+         * @param id    an identifier unique to the Application
          * @return the designated SessionInitiator, or NULL
          */
         virtual const Handler* getSessionInitiatorById(const char* id) const=0;
@@ -141,6 +141,12 @@ namespace shibsp {
          */
         virtual const Handler* getHandler(const char* path) const=0;
 
+        /**
+         * Returns the set of audience values associated with this Application.
+         * 
+         * @return set of audience values associated with the Application
+         */
+        virtual const std::vector<const XMLCh*>& getAudiences() const=0;
     };
 };
 

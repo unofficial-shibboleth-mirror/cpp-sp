@@ -855,8 +855,7 @@ pair<SAMLResponse*,SAMLResponse*> MemorySessionCacheEntry::getNewResponse(
         // Build a SAML Request....
         SAMLAttributeQuery* q=new SAMLAttributeQuery(
             new SAMLSubject(nameid),
-            providerID.second,
-            application->getAttributeDesignators().clone()
+            providerID.second
             );
         auto_ptr<SAMLRequest> req(new SAMLRequest(q));
         req->setMinorVersion(m_obj["minor_version"].integer());
