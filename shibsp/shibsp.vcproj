@@ -272,6 +272,10 @@
 				Name="impl"
 				>
 				<File
+					RelativePath=".\impl\StorageServiceSessionCache.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\impl\XMLAccessControl.cpp"
 					>
 				</File>

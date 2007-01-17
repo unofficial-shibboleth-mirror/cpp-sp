@@ -40,6 +40,7 @@
 
 #include <shib-target/shib-target.h>
 #include <shibsp/exceptions.h>
+#include <shibsp/SPConfig.h>
 #include <log4cpp/Category.hh>
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/Threads.h>
@@ -916,7 +917,7 @@ bool ODBCReplayCache::check(const char* str, time_t expires)
 
 // Factories
 
-IPlugIn* new_odbc_ccache(const DOMElement* e)
+SessionCache* new_odbc_ccache(const DOMElement* const & e)
 {
     return new ODBCCCache(e);
 }
@@ -931,12 +932,11 @@ extern "C" int SHIBODBC_EXPORTS saml_extension_init(void*)
 {
     // register this ccache type
     SAMLConfig::getConfig().getPlugMgr().regFactory(ODBC_REPLAYCACHE, &new_odbc_replay);
-    SAMLConfig::getConfig().getPlugMgr().regFactory(ODBC_SESSIONCACHE, &new_odbc_ccache);
+    SPConfig::getConfig().SessionCacheManager.registerFactory(ODBC_SESSIONCACHE, &new_odbc_ccache);
     return 0;
 }
 
 extern "C" void SHIBODBC_EXPORTS saml_extension_term()
 {
-    SAMLConfig::getConfig().getPlugMgr().unregFactory(ODBC_SESSIONCACHE);
     SAMLConfig::getConfig().getPlugMgr().unregFactory(ODBC_REPLAYCACHE);
 }

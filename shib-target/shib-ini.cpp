@@ -56,7 +56,7 @@ namespace {
     class XMLApplication : public virtual IApplication, public DOMPropertySet, public DOMNodeFilter
     {
     public:
-        XMLApplication(const IConfig*, const DOMElement* e, const XMLApplication* base=NULL);
+        XMLApplication(const ServiceProvider*, const DOMElement* e, const XMLApplication* base=NULL);
         ~XMLApplication() { cleanup(); }
     
         // PropertySet
@@ -98,7 +98,7 @@ namespace {
     
     private:
         void cleanup();
-        const IConfig* m_ini;   // this is ok because its locking scope includes us
+        const ServiceProvider* m_sp;   // this is ok because its locking scope includes us
         const XMLApplication* m_base;
         string m_hash;
         vector<IAAP*> m_aaps;
@@ -175,11 +175,11 @@ namespace {
     #pragma warning( disable : 4250 )
 #endif
 
-    class XMLConfig : public IConfig, public ReloadableXMLFile
+    class XMLConfig : public ServiceProvider, public ReloadableXMLFile
     {
     public:
         XMLConfig(const DOMElement* e)
-            : ReloadableXMLFile(e), m_impl(NULL), m_listener(NULL), m_sessionCache(NULL), m_replayCache(NULL) {
+            : ReloadableXMLFile(e), m_impl(NULL), m_listener(NULL), m_sessionCache(NULL) {
         }
         
         void init() {
@@ -189,7 +189,6 @@ namespace {
         ~XMLConfig() {
             delete m_impl;
             delete m_sessionCache;
-            delete m_replayCache;
             delete m_listener;
         }
 
@@ -209,9 +208,18 @@ namespace {
             return m_listener;
         }
 
-        ISessionCache* getSessionCache() const {return m_sessionCache;}
-        IReplayCache* getReplayCache() const {return m_replayCache;}
-        RequestMapper* getRequestMapper() const {return m_impl->m_requestMapper;}
+        SessionCache* getSessionCache(bool required=true) const {
+            if (required && !m_sessionCache)
+                throw ConfigurationException("No SessionCache available.");
+            return m_sessionCache;
+        }
+
+        RequestMapper* getRequestMapper(bool required=true) const {
+            if (required && !m_impl->m_requestMapper)
+                throw ConfigurationException("No RequestMapper available.");
+            return m_impl->m_requestMapper;
+        }
+
         const Application* getApplication(const char* applicationId) const {
             map<string,Application*>::const_iterator i=m_impl->m_appmap.find(applicationId);
             return (i!=m_impl->m_appmap.end()) ? i->second : NULL;
@@ -233,8 +241,7 @@ namespace {
         friend class XMLConfigImpl;
         XMLConfigImpl* m_impl;
         mutable ListenerService* m_listener;
-        mutable ISessionCache* m_sessionCache;
-        mutable IReplayCache* m_replayCache;
+        mutable SessionCache* m_sessionCache;
     };
 
 #if defined (_MSC_VER)
@@ -282,10 +289,10 @@ ServiceProvider* shibtarget::XMLServiceProviderFactory(const DOMElement* const &
 }
 
 XMLApplication::XMLApplication(
-    const IConfig* ini,
+    const ServiceProvider* sp,
     const DOMElement* e,
     const XMLApplication* base
-    ) : m_ini(ini), m_base(base), m_metadata(NULL), m_trust(NULL), m_profile(NULL), m_binding(NULL), m_bindingHook(NULL),
+    ) : m_sp(sp), m_base(base), m_metadata(NULL), m_trust(NULL), m_profile(NULL), m_binding(NULL), m_bindingHook(NULL),
         m_credDefault(NULL), m_sessionInitDefault(NULL), m_acsDefault(NULL)
 {
 #ifdef _DEBUG
@@ -903,7 +910,6 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
         load(e,log,this,&root_remap);
 
         const DOMElement* child;
-        IPlugIn* plugin=NULL;
         string plugtype;
 
         // Much of the processing can only occur on the first instantiation.
@@ -957,33 +963,24 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                 child=XMLHelper::getFirstChildElement(container,MemorySessionCache);
                 if (child) {
                     log.info("building Session Cache of type %s...",MEMORY_SESSIONCACHE);
-                    plugin=shibConf.getPlugMgr().newPlugin(MEMORY_SESSIONCACHE,child);
+                    m_outer->m_sessionCache=conf.SessionCacheManager.newPlugin(MEMORY_SESSIONCACHE,child);
                 }
                 else {
                     child=XMLHelper::getFirstChildElement(container,SessionCache);
                     if (child) {
                         xmltooling::auto_ptr_char type(child->getAttributeNS(NULL,_type));
                         log.info("building Session Cache of type %s...",type.get());
-                        plugin=shibConf.getPlugMgr().newPlugin(type.get(),child);
+                        m_outer->m_sessionCache=conf.SessionCacheManager.newPlugin(type.get(),child);
                     }
                     else {
                         log.info("custom SessionCache unspecified or no longer supported, building SessionCache of type %s...",MEMORY_SESSIONCACHE);
-                        plugin=shibConf.getPlugMgr().newPlugin(MEMORY_SESSIONCACHE,child);
-                    }
-                }
-                if (plugin) {
-                    ISessionCache* cache=dynamic_cast<ISessionCache*>(plugin);
-                    if (cache)
-                        m_outer->m_sessionCache=cache;
-                    else {
-                        delete plugin;
-                        log.fatal("plugin was not a Session Cache object");
-                        throw UnknownExtensionException("plugin was not a Session Cache object");
+                        m_outer->m_sessionCache=conf.SessionCacheManager.newPlugin(MEMORY_SESSIONCACHE,child);
                     }
                 }
                 
                 // Replay cache.
                 // TODO: switch to new cache interface
+                /*
                 child=XMLHelper::getFirstChildElement(container,ReplayCache);
                 if (child) {
                     xmltooling::auto_ptr_char type(child->getAttributeNS(NULL,_type));
@@ -995,6 +992,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                     log.info("custom ReplayCache unspecified or no longer supported, building default ReplayCache...");
                     m_outer->m_replayCache=IReplayCache::getInstance();
                 }
+                */
             }
         } // end of first-time-only stuff
         
@@ -1060,7 +1058,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
             xmltooling::auto_ptr_char type(child->getAttributeNS(NULL,_type));
             log.info("building Attribute factory of type %s...",type.get());
             try {
-                plugin=shibConf.getPlugMgr().newPlugin(type.get(),child);
+                IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),child);
                 if (plugin) {
                     IAttributeFactory* fact=dynamic_cast<IAttributeFactory*>(plugin);
                     if (fact) {

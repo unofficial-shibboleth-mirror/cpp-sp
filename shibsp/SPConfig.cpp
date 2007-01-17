@@ -27,6 +27,7 @@
 #include "Handler.h"
 #include "RequestMapper.h"
 #include "ServiceProvider.h"
+#include "SessionCache.h"
 #include "SPConfig.h"
 #include "metadata/MetadataExt.h"
 #include "remoting/ListenerService.h"
@@ -100,6 +101,7 @@ bool SPInternalConfig::init(const char* catalog_path)
     registerAccessControls();
     registerListenerServices();
     registerRequestMappers();
+    registerSessionCaches();
     registerServiceProviders();
 
     log.info("library initialization complete");
@@ -119,6 +121,7 @@ void SPInternalConfig::term()
     
     SingleLogoutServiceManager.deregisterFactories();
     SessionInitiatorManager.deregisterFactories();
+    SessionCacheManager.deregisterFactories();
     ServiceProviderManager.deregisterFactories();
     RequestMapperManager.deregisterFactories();
     ManageNameIDServiceManager.deregisterFactories();

@@ -56,6 +56,7 @@ libshibsp_la_SOURCES = \
 	Application.cpp \
 	ServiceProvider.cpp \
 	SPConfig.cpp \
+	impl/StorageServiceSessionCache.cpp \
 	impl/XMLAccessControl.cpp \
 	impl/XMLRequestMapper.cpp \
 	metadata/MetadataExtImpl.cpp \

@@ -31,6 +31,7 @@
 #include <shibsp/Handler.h>
 #include <shibsp/RequestMapper.h>
 #include <shibsp/ServiceProvider.h>
+#include <shibsp/SessionCache.h>
 #include <shibsp/remoting/ListenerService.h>
 
 // Old headers
@@ -191,7 +192,7 @@ namespace shibtarget {
      * remote and/or optimize calls by implementing custom versions of the
      * ISessionCacheEntry interface as required.
      */
-    struct SHIBTARGET_EXPORTS ISessionCache : public virtual saml::IPlugIn
+    struct SHIBTARGET_EXPORTS ISessionCache : virtual public shibsp::SessionCache
     {
         virtual std::string insert(
             const IApplication* application,
@@ -219,13 +220,6 @@ namespace shibtarget {
     #define MYSQL_REPLAYCACHE   "edu.internet2.middleware.shibboleth.sp.provider.MySQLReplayCacheProvider"
     #define ODBC_REPLAYCACHE    "edu.internet2.middleware.shibboleth.sp.provider.ODBCReplayCacheProvider"
 
-
-    struct SHIBTARGET_EXPORTS IConfig : public virtual shibsp::ServiceProvider
-    {
-        virtual ISessionCache* getSessionCache() const=0;
-        virtual saml::IReplayCache* getReplayCache() const=0;
-        virtual ~IConfig() {}
-    };
 
     class SHIBTARGET_EXPORTS ShibTargetConfig
     {

@@ -59,19 +59,16 @@ namespace shibsp {
     class SHIBSP_API SessionCache
     {
         MAKE_NONCOPYABLE(SessionCache);
+    protected:
+        SessionCache() {}
     public:
-        /**
-         * Constructor
-         *
-         * @param e root of DOM to configure cache
-         */
-        SessionCache(const xercesc::DOMElement* e);
-
-        virtual ~SessionCache();
-
-        /** TODO: just a stub for now */
-        virtual Session* find(const char* key, const Application& app, const char* address)=0;
+        virtual ~SessionCache() {}
     };
+
+    /**
+     * Registers SessionCache classes into the runtime.
+     */
+    void SHIBSP_API registerSessionCaches();
 };
 
 #endif /* __shibsp_sessioncache_h__ */

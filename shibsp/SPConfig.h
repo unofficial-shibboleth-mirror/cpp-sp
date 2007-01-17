@@ -38,6 +38,7 @@ namespace shibsp {
     class SHIBSP_API ListenerService;
     class SHIBSP_API RequestMapper;
     class SHIBSP_API ServiceProvider;
+    class SHIBSP_API SessionCache;
 
 #if defined (_MSC_VER)
     #pragma warning( push )
@@ -166,6 +167,11 @@ namespace shibsp {
          * Manages factories for ServiceProvider plugins.
          */
         xmltooling::PluginManager<ServiceProvider,const xercesc::DOMElement*> ServiceProviderManager;
+
+        /**
+         * Manages factories for SessionCache plugins.
+         */
+        xmltooling::PluginManager<SessionCache,const xercesc::DOMElement*> SessionCacheManager;
 
         /**
          * Manages factories for Handler plugins that implement SessionInitiator functionality.

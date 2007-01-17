@@ -1605,7 +1605,7 @@ void* MemorySessionCache::cleanup_fcn(void* cache_p)
     return NULL;
 }
 
-IPlugIn* MemoryCacheFactory(const DOMElement* e)
+SessionCache* MemoryCacheFactory(const DOMElement* const & e)
 {
     // If this is a long-lived process, we return the "real" cache.
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess))

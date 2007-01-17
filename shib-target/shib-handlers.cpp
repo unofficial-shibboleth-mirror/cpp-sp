@@ -311,7 +311,7 @@ DDF SAML1Consumer::receive(const DDF& in)
     log.debug("application: %s", app->getId());
 
     // Access the application config.
-    IConfig* conf=dynamic_cast<IConfig*>(SPConfig::getConfig().getServiceProvider());
+    ServiceProvider* conf=SPConfig::getConfig().getServiceProvider();
     xmltooling::Locker confLocker(conf);
 
     auto_ptr_XMLCh wrecipient(recipient);
@@ -347,7 +347,7 @@ DDF SAML1Consumer::receive(const DDF& in)
             bpr=app->getBrowserProfile()->receive(
                 samlResponse,
                 wrecipient.get(),
-                checkReplay.second ? conf->getReplayCache() : NULL,
+                NULL,
                 version.second
                 );
         }
@@ -366,7 +366,7 @@ DDF SAML1Consumer::receive(const DDF& in)
                 SAMLart,
                 wrecipient.get(),
                 artifactMapper.get(),
-                checkReplay.second ? conf->getReplayCache() : NULL,
+                NULL,
                 version.second
                 );
 
@@ -432,7 +432,7 @@ DDF SAML1Consumer::receive(const DDF& in)
 
     // Insert into cache.
     auto_ptr_char authContext(bpr.authnStatement->getAuthMethod());
-    string key=conf->getSessionCache()->insert(
+    string key=dynamic_cast<ISessionCache*>(conf->getSessionCache())->insert(
         app,
         role,
         client_address,

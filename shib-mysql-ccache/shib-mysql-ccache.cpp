@@ -45,6 +45,7 @@
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/Threads.h>
 #include <xmltooling/util/XMLHelper.h>
+#include <shibsp/SPConfig.h>
 using xmltooling::XMLHelper;
 
 #include <sstream>
@@ -61,6 +62,7 @@ using xmltooling::XMLHelper;
 #include <dmalloc.h>
 #endif
 
+using namespace shibsp;
 using namespace shibtarget;
 using namespace opensaml::saml2md;
 using namespace saml;
@@ -934,7 +936,7 @@ bool MySQLReplayCache::check(const char* str, time_t expires)
  * The registration functions here...
  */
 
-IPlugIn* new_mysql_ccache(const DOMElement* e)
+SessionCache* new_mysql_ccache(const DOMElement* const & e)
 {
     return new ShibMySQLCCache(e);
 }
@@ -948,7 +950,7 @@ extern "C" int SHIBMYSQL_EXPORTS saml_extension_init(void*)
 {
     // register this ccache type
     SAMLConfig::getConfig().getPlugMgr().regFactory(MYSQL_REPLAYCACHE, &new_mysql_replay);
-    SAMLConfig::getConfig().getPlugMgr().regFactory(MYSQL_SESSIONCACHE, &new_mysql_ccache);
+    SPConfig::getConfig().SessionCacheManager.registerFactory(MYSQL_SESSIONCACHE, &new_mysql_ccache);
     return 0;
 }
 
@@ -958,5 +960,4 @@ extern "C" void SHIBMYSQL_EXPORTS saml_extension_term()
     if (g_MySQLInitialized)
         mysql_server_end();
     SAMLConfig::getConfig().getPlugMgr().unregFactory(MYSQL_REPLAYCACHE);
-    SAMLConfig::getConfig().getPlugMgr().unregFactory(MYSQL_SESSIONCACHE);
 }
