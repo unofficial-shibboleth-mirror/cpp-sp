@@ -745,8 +745,6 @@ public:
 
 extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
 {
-    string targeturl;
-    const IApplication* application=NULL;
     try {
         ostringstream threadid;
         threadid << "[" << getpid() << "] isapi_shib_extension" << '\0';
