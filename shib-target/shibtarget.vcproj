@@ -246,10 +246,6 @@
 			>
 		</File>
 		<File
-			RelativePath="shib-target.cpp"
-			>
-		</File>
-		<File
 			RelativePath="shib-target.h"
 			>
 		</File>

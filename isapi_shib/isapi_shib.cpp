@@ -25,6 +25,7 @@
 #define _CRT_NONSTDC_NO_DEPRECATE 1
 #define _CRT_SECURE_NO_DEPRECATE 1
 
+#include <shibsp/AbstractSPRequest.h>
 #include <shibsp/SPConfig.h>
 #include <xmltooling/util/NDC.h>
 
@@ -41,7 +42,6 @@
 #include <httpext.h>
 
 using namespace shibsp;
-using namespace shibtarget;
 using namespace xmltooling;
 using namespace std;
 
@@ -83,7 +83,7 @@ namespace {
     };
     
     HINSTANCE g_hinstDLL;
-    ShibTargetConfig* g_Config = NULL;
+    shibtarget::ShibTargetConfig* g_Config = NULL;
     map<string,site_t> g_Sites;
     bool g_bNormalizeRequest = true;
 }
@@ -150,7 +150,7 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
         LPCSTR config=getenv("SHIBCONFIG");
         if (!config)
             config=SHIB_CONFIG;
-        g_Config=&ShibTargetConfig::getConfig();
+        g_Config=&shibtarget::ShibTargetConfig::getConfig();
         SPConfig::getConfig().setFeatures(
             SPConfig::Listener |
             SPConfig::Caching |
@@ -328,7 +328,7 @@ void GetHeader(PHTTP_FILTER_PREPROC_HEADERS pn, PHTTP_FILTER_CONTEXT pfc,
 /****************************************************************************/
 // ISAPI Filter
 
-class ShibTargetIsapiF : public ShibTarget
+class ShibTargetIsapiF : public AbstractSPRequest
 {
   PHTTP_FILTER_CONTEXT m_pfc;
   PHTTP_FILTER_PREPROC_HEADERS m_pn;
@@ -550,14 +550,14 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
         ShibTargetIsapiF stf(pfc, pn, map_i->second);
 
         // "false" because we don't override the Shib settings
-        pair<bool,long> res = stf.doCheckAuthN();
+        pair<bool,long> res = stf.getServiceProvider().doAuthentication(stf);
         if (res.first) return res.second;
 
         // "false" because we don't override the Shib settings
-        res = stf.doExportAssertions();
+        res = stf.getServiceProvider().doExport(stf);
         if (res.first) return res.second;
 
-        res = stf.doCheckAuthZ();
+        res = stf.getServiceProvider().doAuthorization(stf);
         if (res.first) return res.second;
 
         return SF_STATUS_REQ_NEXT_NOTIFICATION;
@@ -605,7 +605,7 @@ DWORD WriteClientError(LPEXTENSION_CONTROL_BLOCK lpECB, const char* msg)
 }
 
 
-class ShibTargetIsapiE : public ShibTarget
+class ShibTargetIsapiE : public AbstractSPRequest
 {
   LPEXTENSION_CONTROL_BLOCK m_lpECB;
   map<string,string> m_headers;
@@ -831,8 +831,6 @@ public:
 
 extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
 {
-    string targeturl;
-    const IApplication* application=NULL;
     try {
         ostringstream threadid;
         threadid << "[" << getpid() << "] isapi_shib_extension" << '\0';
@@ -848,7 +846,7 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
             return WriteClientError(lpECB, "Shibboleth Extension not configured for this web site.");
 
         ShibTargetIsapiE ste(lpECB, map_i->second);
-        pair<bool,long> res = ste.doHandler();
+        pair<bool,long> res = ste.getServiceProvider().doHandler(ste);
         if (res.first) return res.second;
         
         return WriteClientError(lpECB, "Shibboleth Extension failed to process request");

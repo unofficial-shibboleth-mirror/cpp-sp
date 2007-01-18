@@ -44,7 +44,8 @@ secinclude_HEADERS = \
 utilinclude_HEADERS = \
 	util/DOMPropertySet.h \
 	util/PropertySet.h \
-	util/SPConstants.h
+	util/SPConstants.h \
+	util/TemplateParameters.h
 
 noinst_HEADERS = \
 	internal.h \
@@ -68,7 +69,8 @@ libshibsp_la_SOURCES = \
 	remoting/impl/UnixListener.cpp \
 	security/PKIXTrustEngine.cpp \
 	util/DOMPropertySet.cpp \
-	util/SPConstants.cpp 
+	util/SPConstants.cpp \
+	util/TemplateParameters.cpp
 
 # this is different from the project version
 # http://sources.redhat.com/autobook/autobook/autobook_91.html

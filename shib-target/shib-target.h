@@ -26,7 +26,6 @@
 #define SHIB_TARGET_H
 
 // New headers
-#include <shibsp/AbstractSPRequest.h>
 #include <shibsp/Application.h>
 #include <shibsp/Handler.h>
 #include <shibsp/RequestMapper.h>
@@ -232,45 +231,6 @@ namespace shibtarget {
         virtual void shutdown() = 0;
 
         static ShibTargetConfig& getConfig();
-    };
-
-    class ShibTargetPriv;
-    class SHIBTARGET_EXPORTS ShibTarget : public shibsp::AbstractSPRequest {
-    public:
-        virtual ~ShibTarget() {}
-
-        //
-        // Note:  Subclasses need not implement anything below this line
-        //
-
-        // These functions implement the server-agnostic shibboleth engine
-        // The web server modules implement a subclass and then call into 
-        // these methods once they instantiate their request object.
-        // 
-        // Return value:
-        //   these APIs will always return the result of sendPage(), sendRedirect(),
-        //   returnDecline(), or returnOK() in the void* portion of the return code.
-        //   Exactly what those values are is module- (subclass-) implementation
-        //   specific.  The 'bool' part of the return value declares whether the
-        //   void* is valid or not.  If the bool is true then the void* is valid.
-        //   If the bool is false then the API did not call any callback, the void*
-        //   is not valid, and the caller should continue processing (the API Call
-        //   finished successfully).
-        //
-        //   The handleProfile argument declares whether doCheckAuthN() should
-        //   automatically call doHandlePOST() when it encounters a request for
-        //   the ShireURL;  if false it will call returnOK() instead.
-        //
-        std::pair<bool,long> doCheckAuthN(bool handler = false);
-        std::pair<bool,long> doHandler();
-        std::pair<bool,long> doCheckAuthZ();
-        std::pair<bool,long> doExportAssertions(bool requireSession = true);
-
-    protected:
-        ShibTarget() {}
-
-    private:
-        void clearHeaders();
     };
 
 }

@@ -31,6 +31,7 @@
 # define _CRT_SECURE_NO_DEPRECATE 1
 #endif
 
+#include <shibsp/AbstractSPRequest.h>
 #include <shibsp/AccessControl.h>
 #include <shibsp/exceptions.h>
 #include <shibsp/RequestMapper.h>
@@ -73,7 +74,6 @@
 #endif
 
 using namespace shibsp;
-using namespace shibtarget;
 using namespace xmltooling;
 using namespace std;
 
@@ -82,7 +82,7 @@ extern "C" module MODULE_VAR_EXPORT mod_shib;
 namespace {
     char* g_szSHIBConfig = NULL;
     char* g_szSchemaDir = NULL;
-    ShibTargetConfig* g_Config = NULL;
+    shibtarget::ShibTargetConfig* g_Config = NULL;
     string g_unsetHeaderValue;
     static const char* g_UserDataKey = "_shib_check_user_";
 }
@@ -259,7 +259,7 @@ extern "C" const char* shib_ap_set_file_slot(cmd_parms* parms,
 /********************************************************************************/
 // Apache ShibTarget subclass(es) here.
 
-class ShibTargetApache : public ShibTarget
+class ShibTargetApache : public AbstractSPRequest
 {
   mutable string m_body;
   mutable bool m_gotBody;
@@ -438,12 +438,12 @@ extern "C" int shib_check_user(request_rec* r)
     ShibTargetApache sta(r);
 
     // Check user authentication and export information, then set the handler bypass
-    pair<bool,long> res = sta.doCheckAuthN(true);
+    pair<bool,long> res = sta.getServiceProvider().doAuthentication(sta,true);
     apr_pool_userdata_setn((const void*)42,g_UserDataKey,NULL,r->pool);
     if (res.first) return res.second;
 
     // user auth was okay -- export the assertions now
-    res = sta.doExportAssertions();
+    res = sta.getServiceProvider().doExport(sta);
     if (res.first) return res.second;
 
     // export happened successfully..  this user is ok.
@@ -488,7 +488,7 @@ extern "C" int shib_handler(request_rec* r)
   try {
     ShibTargetApache sta(r);
 
-    pair<bool,long> res = sta.doHandler();
+    pair<bool,long> res = sta.getServiceProvider().doHandler(sta);
     if (res.first) return res.second;
 
     ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "doHandler() did not do anything.");
@@ -525,7 +525,7 @@ extern "C" int shib_auth_checker(request_rec* r)
   try {
     ShibTargetApache sta(r);
 
-    pair<bool,long> res = sta.doCheckAuthZ();
+    pair<bool,long> res = sta.getServiceProvider().doAuthorization(sta);
     if (res.first) return res.second;
 
     // We're all okay.
@@ -837,7 +837,7 @@ bool htAccessControl::authorized(const SPRequest& request, const Session* sessio
             }
         }
         else {
-            saml::Iterator<shibboleth::IAAP*> provs=dynamic_cast<const IApplication&>(request.getApplication()).getAAPProviders();
+            saml::Iterator<shibboleth::IAAP*> provs=dynamic_cast<const shibtarget::IApplication&>(request.getApplication()).getAAPProviders();
             shibboleth::AAP wrapper(provs,w);
             if (wrapper.fail()) {
                 request.log(SPRequest::SPWarn, string("htAccessControl plugin didn't recognize require rule: ") + w);
@@ -1044,7 +1044,7 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
     }
 
     try {
-        g_Config=&ShibTargetConfig::getConfig();
+        g_Config=&shibtarget::ShibTargetConfig::getConfig();
         SPConfig::getConfig().setFeatures(
             SPConfig::Caching |
             SPConfig::Listener |

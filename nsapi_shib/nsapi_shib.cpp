@@ -31,6 +31,7 @@
 # define _CRT_SECURE_NO_DEPRECATE 1
 #endif
 
+#include <shibsp/AbstractSPRequest.h>
 #include <shibsp/RequestMapper.h>
 #include <shibsp/SPConfig.h>
 #include <xmltooling/util/NDC.h>
@@ -60,7 +61,6 @@ extern "C"
 }
 
 using namespace shibsp;
-using namespace shibtarget;
 using namespace xmltooling;
 using namespace std;
 
@@ -69,7 +69,7 @@ using namespace std;
     if (IO_ERROR==net_write(sn->csd,str,strlen(str))) return REQ_EXIT
 
 namespace {
-    ShibTargetConfig* g_Config=NULL;
+    shibtarget::ShibTargetConfig* g_Config=NULL;
     string g_ServerName;
     string g_ServerScheme;
     string g_unsetHeaderValue;
@@ -125,7 +125,7 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, ::Session* sn, Request* 
             config=getenv("SHIBCONFIG");
         if (!config)
             config=SHIB_CONFIG;
-        g_Config=&ShibTargetConfig::getConfig();
+        g_Config=&shibtarget::ShibTargetConfig::getConfig();
         SPConfig::getConfig().setFeatures(
             SPConfig::Listener |
             SPConfig::Caching |
@@ -173,7 +173,7 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, ::Session* sn, Request* 
 /********************************************************************************/
 // NSAPI Shib Target Subclass
 
-class ShibTargetNSAPI : public ShibTarget
+class ShibTargetNSAPI : public AbstractSPRequest
 {
   string m_uri;
   mutable string m_body;
@@ -370,7 +370,7 @@ extern "C" NSAPI_PUBLIC int nsapi_shib(pblock* pb, ::Session* sn, Request* rq)
     ShibTargetNSAPI stn(pb, sn, rq);
 
     // Check user authentication
-    pair<bool,long> res = stn.doCheckAuthN();
+    pair<bool,long> res = stn.getServiceProvider().doAuthentication(stn);
     if (res.first) return (int)res.second;
 
     // user authN was okay -- export the assertions now
@@ -378,11 +378,11 @@ extern "C" NSAPI_PUBLIC int nsapi_shib(pblock* pb, ::Session* sn, Request* rq)
     // This seems to be required in order to eventually set
     // the auth-user var.
     pblock_nvinsert("auth-type","shibboleth",rq->vars);
-    res = stn.doExportAssertions();
+    res = stn.getServiceProvider().doExport(stn);
     if (res.first) return (int)res.second;
 
     // Check the Authorization
-    res = stn.doCheckAuthZ();
+    res = stn.getServiceProvider().doAuthorization(stn);
     if (res.first) return (int)res.second;
 
     // this user is ok.
@@ -411,7 +411,7 @@ extern "C" NSAPI_PUBLIC int shib_handler(pblock* pb, ::Session* sn, Request* rq)
   try {
     ShibTargetNSAPI stn(pb, sn, rq);
 
-    pair<bool,long> res = stn.doHandler();
+    pair<bool,long> res = stn.getServiceProvider().doHandler(stn);
     if (res.first) return (int)res.second;
 
     return WriteClientError(sn, rq, FUNC, "Shibboleth handler did not do anything.");

@@ -33,6 +33,7 @@ namespace shibsp {
     class SHIBSP_API RequestMapper;
     class SHIBSP_API SessionCache;
     class SHIBSP_API SPRequest;
+    class SHIBSP_API TemplateParameters;
 
     /**
      * Interface to a Shibboleth ServiceProvider instance.

@@ -17,8 +17,7 @@ libshib_target_la_SOURCES = \
 	shib-ccache.cpp \
 	shib-config.cpp \
 	shib-handlers.cpp \
-	shib-ini.cpp \
-	shib-target.cpp
+	shib-ini.cpp
 
 # this is different from the project version
 # http://sources.redhat.com/autobook/autobook/autobook_91.html

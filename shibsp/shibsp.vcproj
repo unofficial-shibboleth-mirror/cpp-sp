@@ -219,6 +219,10 @@
 					RelativePath=".\util\SPConstants.cpp"
 					>
 				</File>
+				<File
+					RelativePath=".\util\TemplateParameters.cpp"
+					>
+				</File>
 			</Filter>
 			<Filter
 				Name="security"
@@ -367,6 +371,10 @@
 				</File>
 				<File
 					RelativePath=".\util\SPConstants.h"
+					>
+				</File>
+				<File
+					RelativePath=".\util\TemplateParameters.h"
 					>
 				</File>
 			</Filter>

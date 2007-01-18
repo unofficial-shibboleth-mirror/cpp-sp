@@ -31,6 +31,7 @@
 #include <saml/util/CommonDomainCookie.h>
 #include <shibsp/AbstractHandler.h>
 #include <shibsp/SPConfig.h>
+#include <shibsp/SPRequest.h>
 
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
