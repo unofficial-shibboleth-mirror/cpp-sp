@@ -7,6 +7,8 @@ lib_LTLIBRARIES = libshibsp.la
 
 libshibspincludedir = $(includedir)/shibsp
 
+attrincludedir = $(includedir)/shibsp/attribute
+
 mdincludedir = $(includedir)/shibsp/metadata
 
 remincludedir = $(includedir)/shibsp/remoting
@@ -30,6 +32,12 @@ libshibspinclude_HEADERS = \
 	SPConfig.h \
 	SPRequest.h \
 	version.h
+
+attrinclude_HEADERS = \
+	attribute/Attribute.h \
+	attribute/NameIDAttribute.h \
+	attribute/ScopedAttribute.h \
+	attribute/SimpleAttribute.h
 
 mdinclude_HEADERS = \
 	metadata/MetadataExt.h

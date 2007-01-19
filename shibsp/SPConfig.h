@@ -133,6 +133,9 @@ namespace shibsp {
             return m_serviceProvider;
         }
 
+        /** Separator for serialized values of multi-valued attributes. */
+        char attribute_value_delimeter;
+        
         /**
          * Manages factories for AccessControl plugins.
          */
@@ -184,7 +187,7 @@ namespace shibsp {
         xmltooling::PluginManager<Handler,const xercesc::DOMElement*> SingleLogoutServiceManager;
 
     protected:
-        SPConfig() : m_serviceProvider(NULL) {}
+        SPConfig() : attribute_value_delimeter(';'), m_serviceProvider(NULL), m_features(0) {}
         
         /** Global ServiceProvider instance. */
         ServiceProvider* m_serviceProvider;

@@ -33,6 +33,10 @@
 #include "remoting/ListenerService.h"
 #include "security/PKIXTrustEngine.h"
 
+#include "attribute/SimpleAttribute.h"
+#include "attribute/ScopedAttribute.h"
+#include "attribute/NameIDAttribute.h"
+
 #include <log4cpp/Category.hh>
 #include <saml/SAMLConfig.h>
 #include <xmltooling/util/NDC.h>
