@@ -23,7 +23,7 @@
 #ifndef __shibsp_attribute_h__
 #define __shibsp_attribute_h__
 
-#include <shibsp/base.h>
+#include <shibsp/remoting/ddf.h>
 
 #include <string>
 #include <vector>
@@ -84,9 +84,23 @@ namespace shibsp {
         
         /**
          * Informs the attribute that values have changed and any serializations
-         * must be reset. 
+         * must be cleared. 
          */
         virtual void clearSerializedValues()=0;
+        
+        /**
+         * Marshalls an Attribute for remoting.
+         * 
+         * This allows Attribute objects to be communicated across process boundaries
+         * without excess XML parsing. The DDF returned must be a struct containing
+         * a string member called "id" and a list called "values". The name of the struct
+         * should contain the registered name of the Attribute implementation.  
+         */
+        virtual DDF marshall() const {
+            DDF ddf(NULL);
+            ddf.structure().addmember("id").string(m_id.c_str());
+            return ddf;
+        }
         
     private:
         std::string m_id;

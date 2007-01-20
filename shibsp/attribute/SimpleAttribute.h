@@ -57,6 +57,14 @@ namespace shibsp {
         void clearSerializedValues() const {
             // Do nothing, since our values are already serialized.
         }
+        
+        DDF marshall() const {
+            DDF ddf = Attribute::marshall();
+            DDF vlist = ddf.addmember("values").list();
+            for (std::vector<std::string>::const_iterator i=m_serialized.begin(); i!=m_serialized.end(); ++i)
+                vlist.add(DDF(NULL).string(i->c_str()));
+            return ddf;
+        }
     };
 
 };

@@ -71,6 +71,19 @@ namespace shibsp {
             }
             return Attribute::getSerializedValues();
         }
+
+        DDF marshall() const {
+            DDF ddf = Attribute::marshall();
+            ddf.name("ScopedAttribute");
+            DDF vlist = ddf.addmember("values").list();
+            for (std::vector< std::pair<std::string,std::string> >::const_iterator i=m_values.begin(); i!=m_values.end(); ++i) {
+                DDF val = DDF(NULL).structure();
+                val.addmember("value").string(i->first.c_str());
+                val.addmember("scope").string(i->second.c_str());
+                vlist.add(val);
+            }
+            return ddf;
+        }
     
     private:
         std::vector< std::pair<std::string,std::string> > m_values;

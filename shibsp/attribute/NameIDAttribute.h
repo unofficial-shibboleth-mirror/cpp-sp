@@ -96,6 +96,26 @@ namespace shibsp {
             return Attribute::getSerializedValues();
         }
     
+        DDF marshall() const {
+            DDF ddf = Attribute::marshall();
+            ddf.name("NameIDAttribute");
+            DDF vlist = ddf.addmember("values").list();
+            for (std::vector<Value>::const_iterator i=m_values.begin(); i!=m_values.end(); ++i) {
+                DDF val = DDF(NULL).structure();
+                val.addmember("Name").string(i->m_Name.c_str());
+                if (!i->m_Format.empty())
+                    val.addmember("Format").string(i->m_Format.c_str());
+                if (!i->m_NameQualifier.empty())
+                    val.addmember("NameQualifier").string(i->m_NameQualifier.c_str());
+                if (!i->m_SPNameQualifier.empty())
+                    val.addmember("SPNameQualifier").string(i->m_SPNameQualifier.c_str());
+                if (!i->m_SPProvidedID.empty())
+                    val.addmember("SPProvidedID").string(i->m_SPProvidedID.c_str());
+                vlist.add(val);
+            }
+            return ddf;
+        }
+    
     private:
         std::vector<Value> m_values;
         std::string m_formatter;
