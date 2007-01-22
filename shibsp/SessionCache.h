@@ -60,6 +60,38 @@ namespace shibsp {
          * @return  the authentication timestamp 
          */
         virtual time_t getAuthnInstant() const=0;
+
+        /**
+         * Returns the NameID associated with a session.
+         * 
+         * <p>SAML 1.x identifiers will be promoted to the 2.0 type.
+         * 
+         * @return reference to a SAML 2.0 NameID
+         */
+        virtual const opensaml::saml2::NameID& getNameID() const=0;
+
+        /**
+         * Returns the SessionIndex provided with the session.
+         * 
+         * @return the SessionIndex from the original SSO assertion, if any
+         */
+        virtual const char* getSessionIndex() const=0;
+
+        /**
+         * Returns a URI containing an AuthnContextClassRef provided with the session.
+         * 
+         * <p>SAML 1.x AuthenticationMethods will be returned as class references.
+         * 
+         * @return  a URI identifying the authentication context class
+         */
+        virtual const char* getAuthnContextClassRef() const=0;
+
+        /**
+         * Returns a URI containing an AuthnContextDeclRef provided with the session.
+         * 
+         * @return  a URI identifying the authentication context declaration
+         */
+        virtual const char* getAuthnContextDeclRef() const=0;
         
         /**
          * Returns the set of resolved attributes associated with the session.
@@ -100,66 +132,6 @@ namespace shibsp {
         virtual void addAssertion(opensaml::RootObject* assertion)=0;        
     };
     
-    class SHIBSP_API SAML1Session : public virtual Session
-    {
-    protected:
-        SAML1Session() {}
-        virtual ~SAML1Session() {}
-        
-    public:        
-        /**
-         * Returns the NameIdentifier associated with a SAML 1.x session.
-         * 
-         * @return reference to a SAML 1.x NameIdentifier
-         */
-        virtual const opensaml::saml1::NameIdentifier& getNameIdentifier() const=0;
-
-        /**
-         * Returns a URI containing the AuthenticationMethod.
-         * 
-         * @return  a URI identifying the authentication method
-         */
-        virtual const char* getAuthenticationMethod() const=0;
-
-    };
-
-    class SHIBSP_API SAML2Session : public virtual Session
-    {
-    protected:
-        SAML2Session() {}
-        virtual ~SAML2Session() {}
-        
-    public:        
-        /**
-         * Returns the NameID associated with a SAML 2.0 session.
-         * 
-         * @return reference to a SAML 2.0 NameID
-         */
-        virtual const opensaml::saml2::NameID& getNameID() const=0;
-
-        /**
-         * Returns the SessionIndex provided with the session.
-         * 
-         * @return the SessionIndex from the original SSO assertion, if any
-         */
-        virtual const char* getSessionIndex() const=0;
-
-        /**
-         * Returns a URI containing an AuthnContextClassRef provided with the session.
-         * 
-         * @return  a URI identifying the authentication context class
-         */
-        virtual const char* getAuthnContextClassRef() const=0;
-
-        /**
-         * Returns a URI containing an AuthnContextDeclRef provided with the session.
-         * 
-         * @return  a URI identifying the authentication context declaration
-         */
-        virtual const char* getAuthnContextDeclRef() const=0;
-
-    };
-    
     /**
      * Creates and manages user sessions
      * 
@@ -193,6 +165,18 @@ namespace shibsp {
          */
         SessionCache(const DOMElement* e);
         
+        /** maximum lifetime in seconds for sessions */
+        unsigned long m_cacheTimeout;
+        
+        /** interval in seconds between attempts to purge expired sessions */
+        unsigned long m_cleanupInterval;
+        
+        /** whether to honor SessionNotOnOrAfter information */
+        bool m_strictValidity;
+        
+        /** whether every session access should update persistent storage */
+        bool m_writeThrough;
+        
     public:
         virtual ~SessionCache() {}
         
@@ -205,20 +189,24 @@ namespace shibsp {
          * @param application   reference to Application that owns the Session
          * @param client_addr   network address of client
          * @param ssoToken      reference to SSO assertion initiating the session
-         * @param issuer        issuing metadata role of assertion issuer, if known
+         * @param issuer        issuing metadata of assertion issuer, if known
          * @param attributes    optional set of resolved Attributes to cache with session
-         * @return  pointer to newly created (and locked) Session
+         * @return  newly created session's key
          */
-        virtual Session* insert(
+        virtual std::string insert(
             const Application& application,
             const char* client_addr,
             const opensaml::RootObject& ssoToken,
-            const opensaml::saml2md::RoleDescriptor* issuer=NULL,
+            const opensaml::saml2md::EntityDescriptor* issuer=NULL,
             const std::vector<Attribute*>* attributes=NULL
             )=0;
 
         /**
          * Locates an existing session.
+         * 
+         * <p>If "writeThrough" is configured, then every attempt to locate a session
+         * requires that the record be updated in persistent storage to reflect the fact
+         * that it was accessed (to maintain timeout information).
          * 
          * @param key           session key
          * @param application   reference to Application that owns the Session
@@ -237,7 +225,10 @@ namespace shibsp {
         virtual void remove(const char* key, const Application& application, const char* client_addr)=0;
     };
 
-    /** Remoting-aware SessionCache implementation backed by a StorageService. */
+    /** SessionCache implementation that delegates to a remoted version. */
+    #define REMOTED_SESSION_CACHE    "edu.internet2.middleware.shibboleth.sp.provider.RemotedSessionCache"
+
+    /** SessionCache implementation backed by a StorageService. */
     #define STORAGESERVICE_SESSION_CACHE    "edu.internet2.middleware.shibboleth.sp.provider.StorageServiceSessionCache"
 
     /**

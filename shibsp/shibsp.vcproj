@@ -201,6 +201,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\SessionCache.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\SPConfig.cpp"
 				>
 			</File>
@@ -275,6 +279,10 @@
 			<Filter
 				Name="impl"
 				>
+				<File
+					RelativePath=".\impl\RemotedSessionCache.cpp"
+					>
+				</File>
 				<File
 					RelativePath=".\impl\StorageServiceSessionCache.cpp"
 					>

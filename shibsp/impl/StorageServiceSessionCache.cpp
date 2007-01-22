@@ -40,9 +40,5 @@ namespace shibsp {
         return NULL;
     }
 
-}
-
-void SHIBSP_API shibsp::registerSessionCaches()
-{
-    SPConfig::getConfig().SessionCacheManager.registerFactory(STORAGESERVICE_SESSION_CACHE, StorageServiceCacheFactory);
+    static const XMLCh storageService[] =   UNICODE_LITERAL_14(s,t,o,r,a,g,e,S,e,r,v,i,c,e);
 }
