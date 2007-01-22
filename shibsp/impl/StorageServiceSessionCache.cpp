@@ -32,17 +32,17 @@ using namespace shibsp;
 using namespace xmltooling;
 using namespace log4cpp;
 using namespace std;
-/*
+
 namespace shibsp {
 
-    SessionCache* SHIBSP_DLLLOCAL XMLRequestMapperFactory(const DOMElement* const & e)
+    SessionCache* SHIBSP_DLLLOCAL StorageServiceCacheFactory(const DOMElement* const & e)
     {
-        return new XMLRequestMapper(e);
+        return NULL;
     }
 
 }
-*/
+
 void SHIBSP_API shibsp::registerSessionCaches()
 {
-    //SPConfig::getConfig().SessionCacheManager.registerFactory(XML_REQUEST_MAPPER, XMLRequestMapperFactory);
+    SPConfig::getConfig().SessionCacheManager.registerFactory(STORAGESERVICE_SESSION_CACHE, StorageServiceCacheFactory);
 }

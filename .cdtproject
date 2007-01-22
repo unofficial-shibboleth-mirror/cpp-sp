@@ -10,7 +10,8 @@
 <pathentry kind="src" path="apache"/>
 <pathentry kind="out" path=""/>
 <pathentry kind="src" path="odbc-store"/>
-<pathentry excluding="util/|impl/|security/|metadata/|remoting/|remoting/impl/" kind="src" path="shibsp"/>
+<pathentry excluding="util/|impl/|security/|metadata/|remoting/|remoting/impl/|attribute/" kind="src" path="shibsp"/>
+<pathentry kind="src" path="shibsp/attribute"/>
 <pathentry kind="src" path="shibsp/impl"/>
 <pathentry kind="src" path="shibsp/metadata"/>
 <pathentry excluding="impl/" kind="src" path="shibsp/remoting"/>

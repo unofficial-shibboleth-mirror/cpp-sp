@@ -584,7 +584,7 @@ short XMLApplication::acceptNode(const DOMNode* node) const
 {
     if (XMLHelper::isNodeNamed(node,samlconstants::SAML1_NS,AttributeDesignator::LOCAL_NAME))
         return FILTER_REJECT;
-    else if (XMLHelper::isNodeNamed(node,samlconstants::SAML20_NS,Attribute::LOCAL_NAME))
+    else if (XMLHelper::isNodeNamed(node,samlconstants::SAML20_NS,opensaml::saml1::Attribute::LOCAL_NAME))
         return FILTER_REJECT;
     else if (XMLHelper::isNodeNamed(node,samlconstants::SAML1_NS,Audience::LOCAL_NAME))
         return FILTER_REJECT;
@@ -962,8 +962,8 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                 const DOMElement* container=conf.isEnabled(SPConfig::OutOfProcess) ? SHAR : SHIRE;
                 child=XMLHelper::getFirstChildElement(container,MemorySessionCache);
                 if (child) {
-                    log.info("building Session Cache of type %s...",MEMORY_SESSIONCACHE);
-                    m_outer->m_sessionCache=conf.SessionCacheManager.newPlugin(MEMORY_SESSIONCACHE,child);
+                    log.info("building Session Cache of type %s...",STORAGESERVICE_SESSION_CACHE);
+                    m_outer->m_sessionCache=conf.SessionCacheManager.newPlugin(STORAGESERVICE_SESSION_CACHE,child);
                 }
                 else {
                     child=XMLHelper::getFirstChildElement(container,SessionCache);
@@ -973,8 +973,8 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                         m_outer->m_sessionCache=conf.SessionCacheManager.newPlugin(type.get(),child);
                     }
                     else {
-                        log.info("custom SessionCache unspecified or no longer supported, building SessionCache of type %s...",MEMORY_SESSIONCACHE);
-                        m_outer->m_sessionCache=conf.SessionCacheManager.newPlugin(MEMORY_SESSIONCACHE,child);
+                        log.info("custom SessionCache unspecified or no longer supported, building SessionCache of type %s...",STORAGESERVICE_SESSION_CACHE);
+                        m_outer->m_sessionCache=conf.SessionCacheManager.newPlugin(STORAGESERVICE_SESSION_CACHE,child);
                     }
                 }
                 
@@ -1064,7 +1064,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                     if (fact) {
                         m_attrFactories.push_back(fact);
                         ShibConfig::getConfig().regAttributeMapping(
-                            child->getAttributeNS(NULL,Attribute::ATTRIBUTENAME_ATTRIB_NAME), fact
+                            child->getAttributeNS(NULL,opensaml::saml1::Attribute::ATTRIBUTENAME_ATTRIB_NAME), fact
                             );
                     }
                     else {

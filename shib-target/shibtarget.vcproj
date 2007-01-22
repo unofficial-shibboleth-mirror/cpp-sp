@@ -230,10 +230,6 @@
 			>
 		</File>
 		<File
-			RelativePath="shib-ccache.cpp"
-			>
-		</File>
-		<File
 			RelativePath="shib-config.cpp"
 			>
 		</File>

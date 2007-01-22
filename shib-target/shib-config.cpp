@@ -50,7 +50,6 @@ PlugManager::Factory UnixListenerFactory;
 PlugManager::Factory TCPListenerFactory;
 //PlugManager::Factory MemoryListenerFactory;
 
-PluginManager<SessionCache,const DOMElement*>::Factory MemoryCacheFactory;
 PluginManager<Handler,const DOMElement*>::Factory ShibSessionInitiatorFactory;
 PluginManager<Handler,const DOMElement*>::Factory SAML1POSTFactory;
 PluginManager<Handler,const DOMElement*>::Factory SAML1ArtifactFactory;
@@ -105,8 +104,6 @@ bool STConfig::init(const char* schemadir)
     conf.AssertionConsumerServiceManager.registerFactory(samlconstants::SAML1_PROFILE_BROWSER_POST,&SAML1POSTFactory);
     conf.AssertionConsumerServiceManager.registerFactory(samlconstants::SAML1_PROFILE_BROWSER_ARTIFACT,&SAML1ArtifactFactory);
     conf.SingleLogoutServiceManager.registerFactory(shibspconstants::SHIB1_LOGOUT_PROFILE_URI,&ShibLogoutFactory);
-    
-    conf.SessionCacheManager.registerFactory(MEMORY_SESSIONCACHE,&MemoryCacheFactory);
     
     log.info("finished initializing");
     return true;
