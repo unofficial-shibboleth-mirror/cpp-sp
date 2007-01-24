@@ -29,16 +29,14 @@
 #include "remoting/ListenerService.h"
 #include "util/SPConstants.h"
 
-#include <log4cpp/Category.hh>
+#include <sstream>
 #include <xmltooling/XMLToolingConfig.h>
-#include <xmltooling/util/NDC.h>
 #include <xmltooling/util/XMLHelper.h>
 
 using namespace shibsp;
 using namespace opensaml::saml2md;
 using namespace opensaml;
 using namespace xmltooling;
-using namespace log4cpp;
 using namespace std;
 
 namespace shibsp {
@@ -68,7 +66,7 @@ namespace shibsp {
             m_obj.destroy();
             delete m_nameid;
             for_each(m_attributes.begin(), m_attributes.end(), xmltooling::cleanup<Attribute>());
-            for_each(m_tokens.begin(), m_tokens.end(), xmltooling::cleanup<RootObject>());
+            for_each(m_tokens.begin(), m_tokens.end(), xmltooling::cleanup_pair<string,RootObject>());
         }
         
         Lockable* lock() {
@@ -84,8 +82,8 @@ namespace shibsp {
         const char* getEntityID() const {
             return m_obj["entity_id"].string();
         }
-        time_t getAuthnInstant() const {
-            return m_obj["authn_instant"].integer();
+        const char* getAuthnInstant() const {
+            return m_obj["authn_instant"].string();
         }
         const opensaml::saml2::NameID& getNameID() const {
             return *m_nameid;
@@ -117,25 +115,31 @@ namespace shibsp {
         const RootObject* getAssertion(const char* id) const;
         void addAssertion(RootObject* assertion);
 
-    protected:
+    private:
         string m_key;
         mutable DDF m_obj;
         saml2::NameID* m_nameid;
         vector<const Attribute*> m_attributes;
         mutable vector<const char*> m_ids;
-        mutable vector<RootObject*> m_tokens;
+        mutable map<string,RootObject*> m_tokens;
     };
     
     class RemotedCache : public SessionCache
     {
     public:
         RemotedCache(const DOMElement* e);
+        ~RemotedCache() {}
     
         string insert(
             const Application& application,
             const char* client_addr,
-            const RootObject& ssoToken,
-            const EntityDescriptor* issuer=NULL,
+            const saml2md::EntityDescriptor* issuer,
+            const saml2::NameID& nameid,
+            const char* authn_instant=NULL,
+            const char* session_index=NULL,
+            const char* authncontext_class=NULL,
+            const char* authncontext_decl=NULL,
+            const RootObject* ssoToken=NULL,
             const vector<Attribute*>* attributes=NULL
             );
         Session* find(const char* key, const Application& application, const char* client_addr);
@@ -144,7 +148,7 @@ namespace shibsp {
 
     SessionCache* SHIBSP_DLLLOCAL RemotedCacheFactory(const DOMElement* const & e)
     {
-        return NULL;
+        return new RemotedCache(e);
     }
 }
 
@@ -171,6 +175,10 @@ void RemotedSession::addAttributes(const vector<Attribute*>& attributes)
 
 const RootObject* RemotedSession::getAssertion(const char* id) const
 {
+    map<string,RootObject*>::const_iterator i = m_tokens.find(id);
+    if (i!=m_tokens.end())
+        return i->second;
+    
     DDF in("getAssertion::"REMOTED_SESSION_CACHE);
     DDFJanitor jin(in);
     in.structure();
@@ -197,7 +205,7 @@ const RootObject* RemotedSession::getAssertion(const char* id) const
 
     // Transfer ownership to us.
     xmlObject.release();
-    m_tokens.push_back(token);
+    m_tokens[id]=token;
     return token;
 }
 
@@ -229,8 +237,13 @@ RemotedCache::RemotedCache(const DOMElement* e) : SessionCache(e)
 string RemotedCache::insert(
     const Application& application,
     const char* client_addr,
-    const RootObject& ssoToken,
-    const EntityDescriptor* issuer,
+    const saml2md::EntityDescriptor* issuer,
+    const saml2::NameID& nameid,
+    const char* authn_instant,
+    const char* session_index,
+    const char* authncontext_class,
+    const char* authncontext_decl,
+    const RootObject* ssoToken,
     const vector<Attribute*>* attributes
     )
 {
@@ -243,10 +256,26 @@ string RemotedCache::insert(
         auto_ptr_char provid(issuer->getEntityID());
         in.addmember("entity_id").string(provid.get());
     }
+    if (authn_instant)
+        in.addmember("authn_instant").string(authn_instant);
+    if (session_index)
+        in.addmember("session_index").string(session_index);
+    if (authncontext_class)
+        in.addmember("authncontext_class").string(authncontext_class);
+    if (authncontext_decl)
+        in.addmember("authncontext_decl").string(authncontext_decl);
     
-    ostringstream os;
-    os << ssoToken;
-    in.addmember("token").string(os.str().c_str());
+    ostringstream namestr;
+    namestr << nameid;
+    in.addmember("nameid").string(namestr.str().c_str());
+
+    if (ssoToken) {
+        ostringstream tokenstr;
+        tokenstr << *ssoToken;
+        auto_ptr_char tokenid(ssoToken->getID());
+        in.addmember("assertion_ids").list().add(DDF(NULL).string(tokenid.get()));
+        in.addmember("assertions").list().add(DDF(NULL).string(tokenstr.str().c_str()));
+    }
     
     if (attributes) {
         DDF attr;

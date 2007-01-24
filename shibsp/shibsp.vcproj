@@ -363,6 +363,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\TransactionLog.h"
+				>
+			</File>
+			<File
 				RelativePath=".\version.h"
 				>
 			</File>

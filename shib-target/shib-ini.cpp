@@ -28,6 +28,7 @@
 #include <log4cpp/PropertyConfigurator.hh>
 #include <shibsp/RequestMapper.h>
 #include <shibsp/SPConfig.h>
+#include <shibsp/TransactionLog.h>
 #include <shibsp/security/PKIXTrustEngine.h>
 #include <shibsp/util/DOMPropertySet.h>
 #include <saml/SAMLConfig.h>
@@ -190,6 +191,7 @@ namespace {
             delete m_impl;
             delete m_sessionCache;
             delete m_listener;
+            delete m_tranLog;
         }
 
         // PropertySet
@@ -202,6 +204,12 @@ namespace {
         const DOMElement* getElement() const {return m_impl->getElement();}
 
         // ServiceProvider
+        TransactionLog* getTransactionLog() const {
+            if (m_tranLog)
+                return m_tranLog;
+            throw ConfigurationException("No TransactionLog available.");
+        }
+        
         ListenerService* getListenerService(bool required=true) const {
             if (required && !m_listener)
                 throw ConfigurationException("No ListenerService available.");
@@ -242,6 +250,7 @@ namespace {
         XMLConfigImpl* m_impl;
         mutable ListenerService* m_listener;
         mutable SessionCache* m_sessionCache;
+        mutable TransactionLog* m_tranLog;
     };
 
 #if defined (_MSC_VER)
@@ -901,6 +910,9 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                 log.debug("loading new logging configuration from (%s), check log destination for status of configuration",logpath.get());
                 XMLToolingConfig::getConfig().log_config(logpath.get());
             }
+            
+            if (first)
+                m_outer->m_tranLog = new TransactionLog();
         }
         
         // First load any property sets.

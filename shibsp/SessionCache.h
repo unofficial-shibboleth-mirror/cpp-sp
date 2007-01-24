@@ -55,11 +55,11 @@ namespace shibsp {
         virtual const char* getEntityID() const=0;
         
         /**
-         * Returns the timestamp on the authentication event at the IdP.
+         * Returns the UTC timestamp on the authentication event at the IdP.
          * 
-         * @return  the authentication timestamp 
+         * @return  the UTC authentication timestamp 
          */
-        virtual time_t getAuthnInstant() const=0;
+        virtual const char* getAuthnInstant() const=0;
 
         /**
          * Returns the NameID associated with a session.
@@ -152,30 +152,15 @@ namespace shibsp {
          * <p>The following XML content is supported to configure the cache:
          * <dl>
          *  <dt>cacheTimeout</dt>
-         *  <dd>attribute containing maximum lifetime in seconds for sessions in cache</dd>
-         *  <dt>cleanupInterval</dt>
-         *  <dd>attribute containing interval in seconds between attempts to purge expired sessions</dd>
-         *  <dt>strictValidity</dt>
-         *  <dd>boolean attribute indicating whether to honor SessionNotOnOrAfter information</dd>
-         *  <dt>writeThrough</dt>
-         *  <dd>boolean attribute indicating that every access to a session should update persistent storage</dd>
+         *  <dd>attribute containing maximum lifetime in seconds for unused sessions to remain in cache</dd>
          * </dl>
          * 
          * @param e root of DOM tree to configure the cache
          */
         SessionCache(const DOMElement* e);
         
-        /** maximum lifetime in seconds for sessions */
+        /** maximum lifetime in seconds for unused sessions to be cached */
         unsigned long m_cacheTimeout;
-        
-        /** interval in seconds between attempts to purge expired sessions */
-        unsigned long m_cleanupInterval;
-        
-        /** whether to honor SessionNotOnOrAfter information */
-        bool m_strictValidity;
-        
-        /** whether every session access should update persistent storage */
-        bool m_writeThrough;
         
     public:
         virtual ~SessionCache() {}
@@ -183,21 +168,31 @@ namespace shibsp {
         /**
          * Inserts a new session into the cache.
          * 
-         * <p>The SSO token remains owned by the caller and must be copied by the
+         * <p>The SSO token remains owned by the caller and is copied by the
          * cache. Any Attributes supplied become the property of the cache.  
          * 
-         * @param application   reference to Application that owns the Session
-         * @param client_addr   network address of client
-         * @param ssoToken      reference to SSO assertion initiating the session
-         * @param issuer        issuing metadata of assertion issuer, if known
-         * @param attributes    optional set of resolved Attributes to cache with session
+         * @param application       reference to Application that owns the Session
+         * @param client_addr       network address of client
+         * @param issuer            issuing metadata of assertion issuer, if known
+         * @param authn_instant     UTC timestamp of authentication at IdP
+         * @param nameid            principal identifier, normalized to SAML 2
+         * @param session_index     index of session between principal and IdP
+         * @param authncontext_class    method/category of authentication event
+         * @param authncontext_decl specifics of authentication event 
+         * @param ssoToken          SSO assertion initiating the session, if any
+         * @param attributes        optional set of resolved Attributes to cache with session
          * @return  newly created session's key
          */
         virtual std::string insert(
             const Application& application,
             const char* client_addr,
-            const opensaml::RootObject& ssoToken,
-            const opensaml::saml2md::EntityDescriptor* issuer=NULL,
+            const opensaml::saml2md::EntityDescriptor* issuer,
+            const opensaml::saml2::NameID& nameid,
+            const char* authn_instant=NULL,
+            const char* session_index=NULL,
+            const char* authncontext_class=NULL,
+            const char* authncontext_decl=NULL,
+            const opensaml::RootObject* ssoToken=NULL,
             const std::vector<Attribute*>* attributes=NULL
             )=0;
 

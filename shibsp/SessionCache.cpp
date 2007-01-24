@@ -31,10 +31,7 @@ namespace shibsp {
     SHIBSP_DLLLOCAL PluginManager<SessionCache,const DOMElement*>::Factory RemotedCacheFactory;
     SHIBSP_DLLLOCAL PluginManager<SessionCache,const DOMElement*>::Factory StorageServiceCacheFactory;
 
-    static const XMLCh cleanupInterval[] =  UNICODE_LITERAL_15(c,l,e,a,n,u,p,I,n,t,e,r,v,a,l);
     static const XMLCh cacheTimeout[] =     UNICODE_LITERAL_12(c,a,c,h,e,T,i,m,e,o,u,t);
-    static const XMLCh strictValidity[] =   UNICODE_LITERAL_14(s,t,r,i,c,t,V,a,l,i,d,i,t,y);
-    static const XMLCh writeThrough[] =     UNICODE_LITERAL_12(w,r,i,t,e,T,h,r,o,u,g,h);
 }
 
 void SHIBSP_API shibsp::registerSessionCaches()
@@ -44,30 +41,14 @@ void SHIBSP_API shibsp::registerSessionCaches()
     conf.SessionCacheManager.registerFactory(STORAGESERVICE_SESSION_CACHE, StorageServiceCacheFactory);
 }
 
-SessionCache::SessionCache(const DOMElement* e)
-    : m_cleanupInterval(60*5), m_cacheTimeout(60*60*8), m_strictValidity(true), m_writeThrough(false)
+SessionCache::SessionCache(const DOMElement* e) : m_cacheTimeout(60*60*8)
 {
     if (e) {
-        const XMLCh* tag=e->getAttributeNS(NULL,cleanupInterval);
-        if (tag && *tag) {
-            m_cleanupInterval = XMLString::parseInt(tag);
-            if (!m_cleanupInterval)
-                m_cleanupInterval=60*5;
-        }
-
-        tag=e->getAttributeNS(NULL,cacheTimeout);
+        const XMLCh* tag=e->getAttributeNS(NULL,cacheTimeout);
         if (tag && *tag) {
             m_cacheTimeout = XMLString::parseInt(tag);
             if (!m_cacheTimeout)
                 m_cacheTimeout=60*60*8;
         }
-        
-        tag=e->getAttributeNS(NULL,strictValidity);
-        if (tag && (*tag==chDigit_0 || *tag==chLatin_f))
-            m_strictValidity=false;
-            
-        tag=e->getAttributeNS(NULL,writeThrough);
-        if (tag && (*tag==chDigit_1 || *tag==chLatin_t))
-            m_writeThrough=true;
     }
 }

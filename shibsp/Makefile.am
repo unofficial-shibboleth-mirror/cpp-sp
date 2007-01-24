@@ -31,6 +31,7 @@ libshibspinclude_HEADERS = \
 	SessionCache.h \
 	SPConfig.h \
 	SPRequest.h \
+	TransactionLog.h \
 	version.h
 
 attrinclude_HEADERS = \

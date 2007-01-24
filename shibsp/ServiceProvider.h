@@ -34,6 +34,7 @@ namespace shibsp {
     class SHIBSP_API SessionCache;
     class SHIBSP_API SPRequest;
     class SHIBSP_API TemplateParameters;
+    class SHIBSP_API TransactionLog;
 
     /**
      * Interface to a Shibboleth ServiceProvider instance.
@@ -57,6 +58,13 @@ namespace shibsp {
          * from the SPConfig singleton.
          */
         virtual void init()=0;
+
+        /**
+         * Returns a TransactionLog instance.
+         * 
+         * @return  a TransactionLog instance
+         */
+        virtual TransactionLog* getTransactionLog() const=0;
         
         /**
          * Returns a SessionCache instance.
