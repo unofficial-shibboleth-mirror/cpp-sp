@@ -71,6 +71,10 @@ namespace shibsp {
             return m_values;
         }
         
+        size_t valueCount() const {
+            return m_values.size();
+        }
+        
         void clearSerializedValues() {
             m_serialized.clear();
         }

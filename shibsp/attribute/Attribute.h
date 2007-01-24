@@ -74,6 +74,15 @@ namespace shibsp {
         }
         
         /**
+         * Returns the number of values.
+         * 
+         * @return  number of values
+         */
+        virtual size_t valueCount() const {
+            return m_serialized.size();
+        }
+        
+        /**
          * Returns serialized attribute values encoded as UTF-8 strings.
          * 
          * @return  an immutable vector of values

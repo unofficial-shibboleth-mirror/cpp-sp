@@ -59,6 +59,10 @@ namespace shibsp {
         std::vector< std::pair<std::string,std::string> >& getValues() {
             return m_values;
         }
+
+        size_t valueCount() const {
+            return m_values.size();
+        }
         
         void clearSerializedValues() {
             m_serialized.clear();
