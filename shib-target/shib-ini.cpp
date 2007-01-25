@@ -990,41 +990,54 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                 const DOMElement* container=conf.isEnabled(SPConfig::OutOfProcess) ? SHAR : SHIRE;
 
                 // First build any StorageServices.
+                string inmemID;
                 child=XMLHelper::getFirstChildElement(container,_StorageService);
                 while (child) {
                     xmltooling::auto_ptr_char id(child->getAttributeNS(NULL,Id));
                     xmltooling::auto_ptr_char type(child->getAttributeNS(NULL,_type));
                     if (id.get() && type.get()) {
-                        log.info("building StorageService (%s) of type %s...", id.get(), type.get());
-                        m_outer->m_storage[id.get()] = xmlConf.StorageServiceManager.newPlugin(type.get(),child);
+                        try {
+                            log.info("building StorageService (%s) of type %s...", id.get(), type.get());
+                            m_outer->m_storage[id.get()] = xmlConf.StorageServiceManager.newPlugin(type.get(),child);
+                            if (!strcmp(type.get(),MEMORY_STORAGE_SERVICE))
+                                inmemID = id.get();
+                        }
+                        catch (exception& ex) {
+                            log.crit("failed to instantiate StorageService (%s): %s", id.get(), ex.what());
+                        }
                     }
                     child=XMLHelper::getNextSiblingElement(container,_StorageService);
                 }
-
-                child=XMLHelper::getFirstChildElement(container,MemorySessionCache);
+                
+                child=XMLHelper::getFirstChildElement(container,_SessionCache);
                 if (child) {
-                    log.info("building Session Cache of type %s...",STORAGESERVICE_SESSION_CACHE);
+                    xmltooling::auto_ptr_char type(child->getAttributeNS(NULL,_type));
+                    log.info("building Session Cache of type %s...",type.get());
+                    m_outer->m_sessionCache=conf.SessionCacheManager.newPlugin(type.get(),child);
+                }
+                else if (conf.isEnabled(SPConfig::OutOfProcess)) {
+                    log.warn("custom SessionCache unspecified or no longer supported, building SessionCache of type %s...",STORAGESERVICE_SESSION_CACHE);
+                    if (inmemID.empty()) {
+                        inmemID = "memory";
+                        log.info("no StorageServices configured, providing in-memory version for legacy config");
+                        m_outer->m_storage[inmemID] = xmlConf.StorageServiceManager.newPlugin(MEMORY_STORAGE_SERVICE,NULL);
+                    }
+                    child = container->getOwnerDocument()->createElementNS(NULL,_SessionCache);
+                    xmltooling::auto_ptr_XMLCh ssid(inmemID.c_str());
+                    const_cast<DOMElement*>(child)->setAttributeNS(NULL,_StorageService,ssid.get());
                     m_outer->m_sessionCache=conf.SessionCacheManager.newPlugin(STORAGESERVICE_SESSION_CACHE,child);
                 }
                 else {
-                    child=XMLHelper::getFirstChildElement(container,_SessionCache);
-                    if (child) {
-                        xmltooling::auto_ptr_char type(child->getAttributeNS(NULL,_type));
-                        log.info("building Session Cache of type %s...",type.get());
-                        m_outer->m_sessionCache=conf.SessionCacheManager.newPlugin(type.get(),child);
-                    }
-                    else {
-                        log.info("custom SessionCache unspecified or no longer supported, building SessionCache of type %s...",STORAGESERVICE_SESSION_CACHE);
-                        m_outer->m_sessionCache=conf.SessionCacheManager.newPlugin(STORAGESERVICE_SESSION_CACHE,child);
-                    }
+                    log.warn("custom SessionCache unspecified or no longer supported, building SessionCache of type %s...",REMOTED_SESSION_CACHE);
+                    m_outer->m_sessionCache=conf.SessionCacheManager.newPlugin(REMOTED_SESSION_CACHE,NULL);
                 }
                 
                 // Replay cache.
-                StorageService* replaySS = NULL;
+                StorageService* replaySS=NULL;
                 child=XMLHelper::getFirstChildElement(container,_ReplayCache);
                 if (child) {
                     xmltooling::auto_ptr_char ssid(child->getAttributeNS(NULL,_StorageService));
-                    if (ssid.get()) {
+                    if (ssid.get() && *ssid.get()) {
                         replaySS = m_outer->m_storage[ssid.get()];
                         if (replaySS)
                             log.info("building ReplayCache on top of StorageService (%s)...", ssid.get());
@@ -1032,8 +1045,15 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                             log.crit("unable to locate StorageService (%s) in configuration", ssid.get());
                     }
                 }
-                if (!replaySS)
+                if (!replaySS) {
                     log.info("building ReplayCache using in-memory StorageService...");
+                    if (inmemID.empty()) {
+                        inmemID = "memory";
+                        log.info("no StorageServices configured, providing in-memory version for legacy config");
+                        m_outer->m_storage[inmemID] = xmlConf.StorageServiceManager.newPlugin(MEMORY_STORAGE_SERVICE,NULL);
+                    }
+                    replaySS = m_outer->m_storage[inmemID];
+                }
                 xmlConf.setReplayCache(new ReplayCache(replaySS));
             }
         } // end of first-time-only stuff
