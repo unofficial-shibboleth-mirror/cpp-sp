@@ -47,9 +47,9 @@ namespace shibsp {
          * Remoted classes implement this method to process incoming messages.
          * 
          * @param in    incoming DDF message
-         * @return  DDF message response
+         * @param out   stream to write outgoing DDF message to
          */
-        virtual DDF receive(const DDF& in)=0;
+        virtual void receive(const DDF& in, std::ostream& out)=0;
     };
 
 #if defined (_MSC_VER)
@@ -83,7 +83,7 @@ namespace shibsp {
          */
         virtual DDF send(const DDF& in)=0;
         
-        virtual DDF receive(const DDF& in);
+        virtual void receive(const DDF& in, std::ostream& out);
 
         // Remoted classes register and unregister for messages using these methods.
         // Registration returns any existing listeners, allowing message hooking.

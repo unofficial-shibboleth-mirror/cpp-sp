@@ -82,18 +82,19 @@ Remoted* ListenerService::lookup(const char *address) const
     return (i==m_listenerMap.end()) ? NULL : i->second;
 }
 
-DDF ListenerService::receive(const DDF &in)
+void ListenerService::receive(const DDF &in, ostream& out)
 {
     if (!in.name())
         throw ListenerException("Incoming message with no destination address rejected.");
     else if (!strcmp("ping",in.name())) {
-        DDF out=DDF(NULL).integer(in.integer() + 1);
-        return out;
+        DDF outmsg=DDF(NULL).integer(in.integer() + 1);
+        DDFJanitor jan(outmsg);
+        out << outmsg;
     }
 
     Remoted* dest=lookup(in.name());
     if (!dest)
         throw ListenerException("No destination registered for incoming message addressed to ($1).",params(1,in.name()));
     
-    return dest->receive(in);
+    dest->receive(in, out);
 }

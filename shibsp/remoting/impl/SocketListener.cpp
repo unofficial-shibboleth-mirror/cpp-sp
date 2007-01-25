@@ -446,8 +446,7 @@ bool ServerThread::job()
 {
     Category& log = Category::getInstance("shibd.Listener");
 
-    DDF out;
-    DDFJanitor jout(out);
+    ostringstream sink;
 #ifdef WIN32
     u_long len;
 #else
@@ -480,29 +479,33 @@ bool ServerThread::job()
         is >> in;
 
         // Dispatch the message.
-        out=m_listener->receive(in);
+        m_listener->receive(in, sink);
     }
     catch (XMLToolingException& e) {
         log.error("error processing incoming message: %s", e.what());
-        out=DDF("exception").string(e.toString().c_str());
+        DDF out=DDF("exception").string(e.toString().c_str());
+        DDFJanitor jout(out);
+        sink << out;
     }
     catch (exception& e) {
         log.error("error processing incoming message: %s", e.what());
         ListenerException ex(e.what());
-        out=DDF("exception").string(ex.toString().c_str());
+        DDF out=DDF("exception").string(ex.toString().c_str());
+        DDFJanitor jout(out);
+        sink << out;
     }
 #ifndef _DEBUG
     catch (...) {
         log.error("unexpected error processing incoming message");
         ListenerException ex("An unexpected error occurred while processing an incoming message.");
-        out=DDF("exception").string(ex.toString().c_str());
+        DDF out=DDF("exception").string(ex.toString().c_str());
+        DDFJanitor jout(out);
+        sink << out;
     }
 #endif
     
     // Return whatever's available.
-    ostringstream xmlout;
-    xmlout << out;
-    string response(xmlout.str());
+    string response(sink.str());
     int outlen = response.length();
     len = htonl(outlen);
     if (m_listener->send(m_sock,(char*)&len,sizeof(len)) != sizeof(len)) {
