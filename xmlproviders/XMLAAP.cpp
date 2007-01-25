@@ -596,9 +596,14 @@ bool XMLAAPImpl::AttributeRule::accept(const DOMElement* e, const IScopedRoleDes
 
     if (log.isWarnEnabled()) {
         auto_ptr_char temp(m_name);
-        auto_ptr_char temp2(n->getNodeValue());
-        log.warn("%sattribute (%s) value (%s) could not be validated by policy, rejecting it",
-                 (bSimple ? "" : "complex "),temp.get(),temp2.get());
+        if (n) {
+            auto_ptr_char temp2(n->getNodeValue());
+            log.warn("%sattribute (%s) value (%s) could not be validated by policy, rejecting it",
+                     (bSimple ? "" : "complex "),temp.get(),temp2.get());
+        }
+        else {
+            log.warn("empty value in attribute (%s) is not valid SAML, rejecting", temp.get());
+        }
     }
     return false;
 }
