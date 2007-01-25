@@ -75,7 +75,7 @@ namespace {
     SAML1Consumer(const DOMElement* e);
     ~SAML1Consumer();
     pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
-    DDF receive(const DDF& in);
+    void receive(const DDF& in, ostream& out);
   private:
     string m_address;
     static int counter;
@@ -285,7 +285,7 @@ SAML1Consumer::~SAML1Consumer()
  *      key
  *      provider_id
  */
-DDF SAML1Consumer::receive(const DDF& in)
+void SAML1Consumer::receive(const DDF& in, ostream& sink)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("receive");
@@ -448,7 +448,7 @@ DDF SAML1Consumer::receive(const DDF& in)
     out.addmember("key").string(key.c_str());
     out.addmember("provider_id").string(oname.get());
 
-    return out;
+    sink << out;
 }
 
 pair<bool,long> SAML1Consumer::run(SPRequest& request, bool isHandler) const
