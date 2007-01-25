@@ -37,6 +37,7 @@
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/security/ChainingTrustEngine.h>
 #include <xmltooling/util/ReloadableXMLFile.h>
+#include <xmltooling/util/ReplayCache.h>
 
 using namespace shibsp;
 using namespace shibtarget;
@@ -192,6 +193,8 @@ namespace {
             delete m_sessionCache;
             delete m_listener;
             delete m_tranLog;
+            XMLToolingConfig::getConfig().setReplayCache(NULL);
+            for_each(m_storage.begin(), m_storage.end(), xmltooling::cleanup_pair<string,StorageService>());
         }
 
         // PropertySet
@@ -209,7 +212,16 @@ namespace {
                 return m_tranLog;
             throw ConfigurationException("No TransactionLog available.");
         }
-        
+
+        StorageService* getStorageService(const char* id) const {
+            if (id) {
+                map<string,StorageService*>::const_iterator i=m_storage.find(id);
+                if (i!=m_storage.end())
+                    return i->second;
+            }
+            return NULL;
+        }
+
         ListenerService* getListenerService(bool required=true) const {
             if (required && !m_listener)
                 throw ConfigurationException("No ListenerService available.");
@@ -251,6 +263,7 @@ namespace {
         mutable ListenerService* m_listener;
         mutable SessionCache* m_sessionCache;
         mutable TransactionLog* m_tranLog;
+        mutable map<string,StorageService*> m_storage;
     };
 
 #if defined (_MSC_VER)
@@ -278,10 +291,11 @@ namespace {
     static const XMLCh MemoryListener[] =       UNICODE_LITERAL_14(M,e,m,o,r,y,L,i,s,t,e,n,e,r);
     static const XMLCh MemorySessionCache[] =   UNICODE_LITERAL_18(M,e,m,o,r,y,S,e,s,s,i,o,n,C,a,c,h,e);
     static const XMLCh RelyingParty[] =         UNICODE_LITERAL_12(R,e,l,y,i,n,g,P,a,r,t,y);
-    static const XMLCh ReplayCache[] =          UNICODE_LITERAL_11(R,e,p,l,a,y,C,a,c,h,e);
+    static const XMLCh _ReplayCache[] =         UNICODE_LITERAL_11(R,e,p,l,a,y,C,a,c,h,e);
     static const XMLCh RequestMapProvider[] =   UNICODE_LITERAL_18(R,e,q,u,e,s,t,M,a,p,P,r,o,v,i,d,e,r);
-    static const XMLCh SessionCache[] =         UNICODE_LITERAL_12(S,e,s,s,i,o,n,C,a,c,h,e);
+    static const XMLCh _SessionCache[] =        UNICODE_LITERAL_12(S,e,s,s,i,o,n,C,a,c,h,e);
     static const XMLCh SessionInitiator[] =     UNICODE_LITERAL_16(S,e,s,s,i,o,n,I,n,i,t,i,a,t,o,r);
+    static const XMLCh _StorageService[] =      UNICODE_LITERAL_14(S,t,o,r,a,g,e,S,e,r,v,i,c,e);
     static const XMLCh OutOfProcess[] =         UNICODE_LITERAL_12(O,u,t,O,f,P,r,o,c,e,s,s);
     static const XMLCh TCPListener[] =          UNICODE_LITERAL_11(T,C,P,L,i,s,t,e,n,e,r);
     static const XMLCh TrustProvider[] =        UNICODE_LITERAL_13(T,r,u,s,t,P,r,o,v,i,d,e,r);
@@ -841,8 +855,9 @@ short XMLConfigImpl::acceptNode(const DOMNode* node) const
         XMLString::equals(name,MemoryListener) ||
         XMLString::equals(name,MemorySessionCache) ||
         XMLString::equals(name,RequestMapProvider) ||
-        XMLString::equals(name,ReplayCache) ||
-        XMLString::equals(name,SessionCache) ||
+        XMLString::equals(name,_ReplayCache) ||
+        XMLString::equals(name,_SessionCache) ||
+        XMLString::equals(name,_StorageService) ||
         XMLString::equals(name,TCPListener) ||
         XMLString::equals(name,UnixListener))
         return FILTER_REJECT;
@@ -887,8 +902,9 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
     Category& log=Category::getInstance(SHIBT_LOGCAT".Config");
 
     try {
-        SAMLConfig& shibConf=SAMLConfig::getConfig();
         SPConfig& conf=SPConfig::getConfig();
+        SAMLConfig& shibConf=SAMLConfig::getConfig();
+        XMLToolingConfig& xmlConf=XMLToolingConfig::getConfig();
         const DOMElement* SHAR=XMLHelper::getFirstChildElement(e,OutOfProcess);
         if (!SHAR)
             SHAR=XMLHelper::getFirstChildElement(e,Global);
@@ -972,13 +988,26 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                 // TODO: This code's a mess, due to a very bad config layout for the caches...
                 // Needs rework with the new config file.
                 const DOMElement* container=conf.isEnabled(SPConfig::OutOfProcess) ? SHAR : SHIRE;
+
+                // First build any StorageServices.
+                child=XMLHelper::getFirstChildElement(container,_StorageService);
+                while (child) {
+                    xmltooling::auto_ptr_char id(child->getAttributeNS(NULL,Id));
+                    xmltooling::auto_ptr_char type(child->getAttributeNS(NULL,_type));
+                    if (id.get() && type.get()) {
+                        log.info("building StorageService (%s) of type %s...", id.get(), type.get());
+                        m_outer->m_storage[id.get()] = xmlConf.StorageServiceManager.newPlugin(type.get(),child);
+                    }
+                    child=XMLHelper::getNextSiblingElement(container,_StorageService);
+                }
+
                 child=XMLHelper::getFirstChildElement(container,MemorySessionCache);
                 if (child) {
                     log.info("building Session Cache of type %s...",STORAGESERVICE_SESSION_CACHE);
                     m_outer->m_sessionCache=conf.SessionCacheManager.newPlugin(STORAGESERVICE_SESSION_CACHE,child);
                 }
                 else {
-                    child=XMLHelper::getFirstChildElement(container,SessionCache);
+                    child=XMLHelper::getFirstChildElement(container,_SessionCache);
                     if (child) {
                         xmltooling::auto_ptr_char type(child->getAttributeNS(NULL,_type));
                         log.info("building Session Cache of type %s...",type.get());
@@ -991,20 +1020,21 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                 }
                 
                 // Replay cache.
-                // TODO: switch to new cache interface
-                /*
-                child=XMLHelper::getFirstChildElement(container,ReplayCache);
+                StorageService* replaySS = NULL;
+                child=XMLHelper::getFirstChildElement(container,_ReplayCache);
                 if (child) {
-                    xmltooling::auto_ptr_char type(child->getAttributeNS(NULL,_type));
-                    log.info("building ReplayCache of type %s...",type.get());
-                    m_outer->m_replayCache=IReplayCache::getInstance(type.get(),child);
+                    xmltooling::auto_ptr_char ssid(child->getAttributeNS(NULL,_StorageService));
+                    if (ssid.get()) {
+                        replaySS = m_outer->m_storage[ssid.get()];
+                        if (replaySS)
+                            log.info("building ReplayCache on top of StorageService (%s)...", ssid.get());
+                        else
+                            log.crit("unable to locate StorageService (%s) in configuration", ssid.get());
+                    }
                 }
-                else {
-                    // OpenSAML default provider.
-                    log.info("custom ReplayCache unspecified or no longer supported, building default ReplayCache...");
-                    m_outer->m_replayCache=IReplayCache::getInstance();
-                }
-                */
+                if (!replaySS)
+                    log.info("building ReplayCache using in-memory StorageService...");
+                xmlConf.setReplayCache(new ReplayCache(replaySS));
             }
         } // end of first-time-only stuff
         

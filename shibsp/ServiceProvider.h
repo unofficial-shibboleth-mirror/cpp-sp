@@ -25,6 +25,7 @@
 
 #include <shibsp/util/PropertySet.h>
 #include <xmltooling/signature/CredentialResolver.h>
+#include <xmltooling/util/StorageService.h>
 
 namespace shibsp {
 
@@ -65,7 +66,15 @@ namespace shibsp {
          * @return  a TransactionLog instance
          */
         virtual TransactionLog* getTransactionLog() const=0;
-        
+
+        /**
+         * Returns a StorageService instance based on an ID.
+         * 
+         * @param id    a NULL-terminated key identifying the StorageService to the configuration 
+         * @return  a StorageService if available, or NULL
+         */
+        virtual xmltooling::StorageService* getStorageService(const char* id) const=0;
+
         /**
          * Returns a SessionCache instance.
          * 
