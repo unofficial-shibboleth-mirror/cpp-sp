@@ -131,6 +131,7 @@ namespace shibsp {
         ~RemotedCache() {}
     
         string insert(
+            time_t expires,
             const Application& application,
             const char* client_addr,
             const saml2md::EntityDescriptor* issuer,
@@ -142,7 +143,7 @@ namespace shibsp {
             const RootObject* ssoToken=NULL,
             const vector<Attribute*>* attributes=NULL
             );
-        Session* find(const char* key, const Application& application, const char* client_addr);
+        Session* find(const char* key, const Application& application, const char* client_addr=NULL, time_t timeout=0);
         void remove(const char* key, const Application& application, const char* client_addr);
     };
 
@@ -235,6 +236,7 @@ RemotedCache::RemotedCache(const DOMElement* e) : SessionCache(e)
 }
 
 string RemotedCache::insert(
+    time_t expires,
     const Application& application,
     const char* client_addr,
     const saml2md::EntityDescriptor* issuer,
@@ -250,6 +252,17 @@ string RemotedCache::insert(
     DDF in("insert::"REMOTED_SESSION_CACHE);
     DDFJanitor jin(in);
     in.structure();
+    if (expires) {
+#ifndef HAVE_GMTIME_R
+        struct tm* ptime=gmtime(&expires);
+#else
+        struct tm res;
+        struct tm* ptime=gmtime_r(&expires,&res);
+#endif
+        char timebuf[32];
+        strftime(timebuf,32,"%Y-%m-%dT%H:%M:%SZ",ptime);
+        in.addmember("expires").string(timebuf);
+    }
     in.addmember("application_id").string(application.getId());
     in.addmember("client_address").string(client_addr);
     if (issuer) {
@@ -295,7 +308,7 @@ string RemotedCache::insert(
     throw RetryableProfileException("A remoted cache insertion operation did not return a usable session key.");
 }
 
-Session* RemotedCache::find(const char* key, const Application& application, const char* client_addr)
+Session* RemotedCache::find(const char* key, const Application& application, const char* client_addr, time_t timeout)
 {
     DDF in("find::"REMOTED_SESSION_CACHE), out;
     DDFJanitor jin(in);

@@ -171,6 +171,7 @@ namespace shibsp {
          * <p>The SSO token remains owned by the caller and is copied by the
          * cache. Any Attributes supplied become the property of the cache.  
          * 
+         * @param expires           expiration time of session
          * @param application       reference to Application that owns the Session
          * @param client_addr       network address of client
          * @param issuer            issuing metadata of assertion issuer, if known
@@ -184,6 +185,7 @@ namespace shibsp {
          * @return  newly created session's key
          */
         virtual std::string insert(
+            time_t expires,
             const Application& application,
             const char* client_addr,
             const opensaml::saml2md::EntityDescriptor* issuer,
@@ -199,16 +201,16 @@ namespace shibsp {
         /**
          * Locates an existing session.
          * 
-         * <p>If "writeThrough" is configured, then every attempt to locate a session
-         * requires that the record be updated in persistent storage to reflect the fact
-         * that it was accessed (to maintain timeout information).
+         * <p>If the client address is supplied, then a check will be performed against
+         * the address recorded in the record.
          * 
          * @param key           session key
          * @param application   reference to Application that owns the Session
          * @param client_addr   network address of client (if known)
+         * @param timeout       inactivity timeout to enforce (0 for none)
          * @return  pointer to locked Session, or NULL
          */
-        virtual Session* find(const char* key, const Application& application, const char* client_addr)=0;
+        virtual Session* find(const char* key, const Application& application, const char* client_addr=NULL, time_t timeout=0)=0;
             
         /**
          * Deletes an existing session.
