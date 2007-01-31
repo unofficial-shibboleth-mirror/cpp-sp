@@ -11,8 +11,7 @@ pkgsysconf_DATA = \
 	shibd \
 	apache.config \
 	apache2.config \
-	apache22.config \
-	inqueue.pem
+	apache22.config
 
 # The config files are installed "special".  Unlike the entries in
 # pkgsysconf_DATA, these files are installed as "foo.dist" and only
