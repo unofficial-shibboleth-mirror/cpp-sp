@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-/** StorageServiceSessionCache.cpp
+/**
+ * StorageServiceSessionCache.cpp
  * 
  * StorageService-based SessionCache implementation.
  * 
@@ -57,8 +58,8 @@ namespace shibsp {
     class StoredSession : public virtual Session
     {
     public:
-        StoredSession(SSCache* cache, const Application& app, DDF& obj, int version)
-                : m_appId(app.getId()), m_version(version), m_obj(obj), m_cache(cache) {
+        StoredSession(SSCache* cache, const Application& app, DDF& obj)
+                : m_appId(app.getId()), m_obj(obj), m_cache(cache) {
             const char* nameid = obj["nameid"].string();
             if (!nameid)
                 throw FatalProfileException("NameID missing from cached session.");
@@ -86,7 +87,7 @@ namespace shibsp {
         }
         
         const char* getClientAddress() const {
-            return m_obj["client_address"].string();
+            return m_obj["client_addr"].string();
         }
         const char* getEntityID() const {
             return m_obj["entity_id"].string();
@@ -126,7 +127,6 @@ namespace shibsp {
 
     private:
         string m_appId;
-        int m_version;
         DDF m_obj;
         saml2::NameID* m_nameid;
         vector<const Attribute*> m_attributes;
@@ -141,7 +141,7 @@ namespace shibsp {
         SSCache(const DOMElement* e);
         ~SSCache() {}
     
-        void receive(const DDF& in, ostream& out);
+        void receive(DDF& in, ostream& out);
         
         string insert(
             time_t expires,
@@ -198,13 +198,17 @@ void StoredSession::addAttributes(const vector<Attribute*>& attributes)
             attrs.add(attr);
         }
         
+        // Tentatively increment the version.
+        m_obj["version"].integer(m_obj["version"].integer()+1);
+        
         ostringstream str;
         str << m_obj;
         string record(str.str()); 
 
-        ver = m_cache->m_storage->updateText(m_appId.c_str(), m_obj.name(), record.c_str(), 0, m_version);
+        ver = m_cache->m_storage->updateText(m_appId.c_str(), m_obj.name(), record.c_str(), 0, m_obj["version"].integer()-1);
         if (ver <= 0) {
             // Roll back modification to record.
+            m_obj["version"].integer(m_obj["version"].integer()-1);
             vector<Attribute*>::size_type count = attributes.size();
             while (count--)
                 attrs.last().destroy();            
@@ -232,15 +236,11 @@ void StoredSession::addAttributes(const vector<Attribute*>& attributes)
             m_ids.clear();
             for_each(m_attributes.begin(), m_attributes.end(), xmltooling::cleanup<Attribute>());
             m_attributes.clear();
-            m_version = ver;
+            newobj["version"].integer(ver);
             m_obj = newobj;
             // TODO: handle attributes
             
             ver = -1;
-        }
-        else {
-            // Update with new version.
-            m_version = ver;
         }
     } while (ver < 0);  // negative indicates a sync issue so we retry
 
@@ -308,14 +308,19 @@ void StoredSession::addAssertion(RootObject* assertion)
         if (!token.isstruct())
             token = m_obj.addmember("assertions").structure();
         token = token.addmember(id.get()).string(os.str().c_str());
+
+        // Tentatively increment the version.
+        m_obj["version"].integer(m_obj["version"].integer()+1);
     
         ostringstream str;
         str << m_obj;
         string record(str.str()); 
 
-        ver = m_cache->m_storage->updateText(m_appId.c_str(), m_obj.name(), record.c_str(), 0, m_version);
-        if (ver <= 0)
-            token.destroy();            
+        ver = m_cache->m_storage->updateText(m_appId.c_str(), m_obj.name(), record.c_str(), 0, m_obj["version"].integer()-1);
+        if (ver <= 0) {
+            token.destroy();
+            m_obj["version"].integer(m_obj["version"].integer()-1);
+        }            
         if (!ver) {
             // Fatal problem with update.
             m_cache->m_log.error("updateText failed on StorageService for session (%s)", m_obj.name());
@@ -339,15 +344,11 @@ void StoredSession::addAssertion(RootObject* assertion)
             m_ids.clear();
             for_each(m_attributes.begin(), m_attributes.end(), xmltooling::cleanup<Attribute>());
             m_attributes.clear();
-            m_version = ver;
+            newobj["version"].integer(ver);
             m_obj = newobj;
             // TODO: handle attributes
             
             ver = -1;
-        }
-        else {
-            // Update with new version.
-            m_version = ver;
         }
     } while (ver < 0); // negative indicates a sync issue so we retry
 
@@ -410,6 +411,7 @@ string SSCache::insert(
 
     // Store session properties in DDF.
     DDF obj = DDF(key.get()).structure();
+    obj.addmember("version").integer(1);
     if (expires > 0) {
         // On 64-bit Windows, time_t doesn't fit in a long, so I'm using ISO timestamps.  
 #ifndef HAVE_GMTIME_R
@@ -422,7 +424,7 @@ string SSCache::insert(
         strftime(timebuf,32,"%Y-%m-%dT%H:%M:%SZ",ptime);
         obj.addmember("expires").string(timebuf);
     }
-    obj.addmember("client_address").string(client_addr);
+    obj.addmember("client_addr").string(client_addr);
     if (issuer) {
         auto_ptr_char entity_id(issuer->getEntityID());
         obj.addmember("entity_id").string(entity_id.get());
@@ -508,15 +510,17 @@ Session* SSCache::find(const char* key, const Application& application, const ch
  
     if (client_addr) {
         if (m_log.isDebugEnabled())
-            m_log.debug("comparing client address %s against %s", client_addr, obj["client_address"].string());
-        if (strcmp(obj["client_address"].string(),client_addr)) {
-            m_log.info("client address mismatch");
+            m_log.debug("comparing client address %s against %s", client_addr, obj["client_addr"].string());
+        if (strcmp(obj["client_addr"].string(),client_addr)) {
+            m_log.warn("client address mismatch");
             RetryableProfileException ex(
                 "Your IP address ($1) does not match the address recorded at the time the session was established.",
                 params(1,client_addr)
                 );
             string eid(obj["entity_id"].string());
             obj.destroy();
+            if (eid.empty())
+                throw ex;
             MetadataProvider* m=application.getMetadataProvider();
             Locker locker(m);
             annotateException(&ex,m->getEntityDescriptor(eid.c_str(),false)); // throws it
@@ -530,6 +534,8 @@ Session* SSCache::find(const char* key, const Application& application, const ch
         RetryableProfileException ex("Your session has expired, and you must re-authenticate.");
         string eid(obj["entity_id"].string());
         obj.destroy();
+        if (eid.empty())
+            throw ex;
         MetadataProvider* m=application.getMetadataProvider();
         Locker locker(m);
         annotateException(&ex,m->getEntityDescriptor(eid.c_str(),false)); // throws it
@@ -544,6 +550,8 @@ Session* SSCache::find(const char* key, const Application& application, const ch
             RetryableProfileException ex("Your session has expired, and you must re-authenticate.");
             string eid(obj["entity_id"].string());
             obj.destroy();
+            if (eid.empty())
+                throw ex;
             MetadataProvider* m=application.getMetadataProvider();
             Locker locker(m);
             annotateException(&ex,m->getEntityDescriptor(eid.c_str(),false)); // throws it
@@ -551,13 +559,12 @@ Session* SSCache::find(const char* key, const Application& application, const ch
     }
     
     // Update storage expiration, if possible.
-    ver = m_storage->updateText(application.getId(), key, NULL, now + m_cacheTimeout); 
-    if (!ver)
+    if (!m_storage->updateText(application.getId(), key, NULL, now + m_cacheTimeout))
         m_log.error("failed to update record expiration");
 
     // Finally build the Session object.
     try {
-        return new StoredSession(this, application, obj, ver);
+        return new StoredSession(this, application, obj);
     }
     catch (exception&) {
         obj.destroy();
@@ -580,6 +587,136 @@ void SSCache::remove(const char* key, const Application& application, const char
     xlog->log.info("Destroyed session (applicationId: %s) (ID: %s)", application.getId(), key);
 }
 
-void SSCache::receive(const DDF& in, ostream& out)
+void SSCache::receive(DDF& in, ostream& out)
 {
+#ifdef _DEBUG
+    xmltooling::NDC ndc("receive");
+#endif
+
+    // Find application.
+    ServiceProvider* sp = SPConfig::getConfig().getServiceProvider(); 
+    Locker confLocker(sp);
+    const char* aid=in["application_id"].string();
+    const Application* app=aid ? sp->getApplication(aid) : NULL;
+    if (!app) {
+        // Something's horribly wrong.
+        m_log.error("couldn't find application (%s) for session", aid ? aid : "(missing)");
+        throw ConfigurationException("Unable to locate application for session, deleted?");
+    }
+
+    if (!strcmp(in.name(),"insert::"REMOTED_SESSION_CACHE)) {
+        in["application_id"].destroy();
+        auto_ptr_char key(SAMLConfig::getConfig().generateIdentifier());
+        in.name(key.get());
+        
+        m_log.debug("storing new session...");
+        ostringstream record;
+        record << in;
+        m_storage->createText(app->getId(), key.get(), record.str().c_str(), time(NULL) + m_cacheTimeout);
+        const char* pid = in["entity_id"].string();
+        m_log.debug("new session created: SessionID (%s) IdP (%s) Address (%s)", key.get(), pid ? pid : "none", in["client_addr"].string());
+    
+        DDF ret = DDF(NULL).structure();
+        DDFJanitor jan(ret);
+        ret.addmember("key").string(key.get());
+        out << ret;
+    }
+    else if (!strcmp(in.name(),"find::"REMOTED_SESSION_CACHE)) {
+        const char* key=in["key"].string();
+        if (!key)
+            throw ListenerException("Required parameters missing for session removal.");
+
+        // Do an unversioned read.
+        string record;
+        time_t lastAccess;
+        if (!m_storage->readText(aid, key, &record, &lastAccess)) {
+            DDF ret(NULL);
+            DDFJanitor jan(ret);
+            out << ret;
+            return;
+        }
+
+        // Adjust for expiration to recover last access time and check timeout.
+        lastAccess -= m_cacheTimeout;
+        time_t now=time(NULL);
+
+        // See if we need to check for a timeout.
+        time_t timeout = 0;
+        auto_ptr_XMLCh dt(in["timeout"].string());
+        if (dt.get()) {
+            DateTime dtobj(dt.get());
+            dtobj.parseDateTime();
+            timeout = dtobj.getEpoch();
+        }
+                
+        if (timeout > 0 && now - lastAccess >= timeout) {
+            m_log.info("session timed out (ID: %s)", key);
+            throw RetryableProfileException("Your session has expired, and you must re-authenticate.");
+        } 
+
+        // Update storage expiration, if possible.
+        if (!m_storage->updateText(aid, key, NULL, now + m_cacheTimeout)) 
+            m_log.error("failed to update record expiration");
+            
+        // Send the record back.
+        out << record;
+    }
+    else if (!strcmp(in.name(),"touch::"REMOTED_SESSION_CACHE)) {
+        const char* key=in["key"].string();
+        if (!key)
+            throw ListenerException("Required parameters missing for session check.");
+
+        // Do a versioned read.
+        string record;
+        time_t lastAccess;
+        int curver = in["version"].integer();
+        int ver = m_storage->readText(aid, key, &record, &lastAccess, curver);
+        if (ver == 0) {
+            m_log.warn("unsuccessful versioned read of session (ID: %s), caches out of sync?", key);
+            throw RetryableProfileException("Your session has expired, and you must re-authenticate.");
+        }
+
+        // Adjust for expiration to recover last access time and check timeout.
+        lastAccess -= m_cacheTimeout;
+        time_t now=time(NULL);
+
+        // See if we need to check for a timeout.
+        time_t timeout = 0;
+        auto_ptr_XMLCh dt(in["timeout"].string());
+        if (dt.get()) {
+            DateTime dtobj(dt.get());
+            dtobj.parseDateTime();
+            timeout = dtobj.getEpoch();
+        }
+                
+        if (timeout > 0 && now - lastAccess >= timeout) {
+            m_log.info("session timed out (ID: %s)", key);
+            throw RetryableProfileException("Your session has expired, and you must re-authenticate.");
+        } 
+
+        // Update storage expiration, if possible.
+        if (!m_storage->updateText(aid, key, NULL, now + m_cacheTimeout)) 
+            m_log.error("failed to update record expiration");
+            
+        if (ver > curver) {
+            // Send the record back.
+            out << record;
+        }
+        else {
+            DDF ret(NULL);
+            DDFJanitor jan(ret);
+            out << ret;
+        }
+    }
+    else if (!strcmp(in.name(),"remove::"REMOTED_SESSION_CACHE)) {
+        const char* key=in["key"].string();
+        const char* client_addr=in["client_addr"].string();
+        if (!key || !client_addr)
+            throw ListenerException("Required parameters missing for session removal.");
+        
+        remove(key,*app,client_addr);
+        DDF ret(NULL);
+        DDFJanitor jan(ret);
+        out << ret;
+    }
 }

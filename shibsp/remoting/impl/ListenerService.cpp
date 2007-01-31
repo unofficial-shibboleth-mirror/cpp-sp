@@ -82,7 +82,7 @@ Remoted* ListenerService::lookup(const char *address) const
     return (i==m_listenerMap.end()) ? NULL : i->second;
 }
 
-void ListenerService::receive(const DDF &in, ostream& out)
+void ListenerService::receive(DDF &in, ostream& out)
 {
     if (!in.name())
         throw ListenerException("Incoming message with no destination address rejected.");

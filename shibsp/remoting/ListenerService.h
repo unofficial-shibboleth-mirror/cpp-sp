@@ -49,7 +49,7 @@ namespace shibsp {
          * @param in    incoming DDF message
          * @param out   stream to write outgoing DDF message to
          */
-        virtual void receive(const DDF& in, std::ostream& out)=0;
+        virtual void receive(DDF& in, std::ostream& out)=0;
     };
 
 #if defined (_MSC_VER)
@@ -83,7 +83,7 @@ namespace shibsp {
          */
         virtual DDF send(const DDF& in)=0;
         
-        virtual void receive(const DDF& in, std::ostream& out);
+        void receive(DDF& in, std::ostream& out);
 
         // Remoted classes register and unregister for messages using these methods.
         // Registration returns any existing listeners, allowing message hooking.
