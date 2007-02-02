@@ -67,6 +67,7 @@ libshibsp_la_SOURCES = \
 	ServiceProvider.cpp \
 	SessionCache.cpp \
 	SPConfig.cpp \
+	attribute/Attribute.cpp \
 	impl/RemotedSessionCache.cpp \
 	impl/StorageServiceSessionCache.cpp \
 	impl/XMLAccessControl.cpp \

@@ -107,7 +107,8 @@ bool SPInternalConfig::init(const char* catalog_path)
     registerRequestMappers();
     registerSessionCaches();
     registerServiceProviders();
-
+    registerAttributeFactories();
+    
     log.info("library initialization complete");
     return true;
 }
@@ -122,6 +123,8 @@ void SPInternalConfig::term()
 
     delete m_serviceProvider;
     m_serviceProvider = NULL;
+
+    Attribute::deregisterFactories();
     
     SingleLogoutServiceManager.deregisterFactories();
     SessionInitiatorManager.deregisterFactories();

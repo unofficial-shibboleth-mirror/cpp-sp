@@ -23,12 +23,19 @@
 #ifndef __shibsp_attribute_h__
 #define __shibsp_attribute_h__
 
+#include <shibsp/exceptions.h>
 #include <shibsp/remoting/ddf.h>
 
+#include <map>
 #include <string>
 #include <vector>
 
 namespace shibsp {
+
+#if defined (_MSC_VER)
+    #pragma warning( push )
+    #pragma warning( disable : 4251 )
+#endif
 
     /**
      * A resolved attribute.
@@ -52,7 +59,26 @@ namespace shibsp {
          * 
          * @param id    Attribute identifier 
          */
-        Attribute(const char* id) : m_id(id) {}
+        Attribute(const char* id) : m_id(id ? id : "") {
+        }
+
+        /**
+         * Constructs based on a remoted Attribute.
+         * 
+         * <p>This allows Attribute objects to be recreated after marshalling.
+         * The DDF supplied must be a struct containing a single list member named
+         * with the Attribute's "id" and containing the values.
+         * 
+         * @param in    input object containing marshalled Attribute
+         */
+        Attribute(DDF& in) {
+            const char* id = in.first().name();
+            if (id && *id)
+                m_id = id;
+            else
+                throw AttributeException("No id found in marshalled attribute content.");
+        }
+        
 
         /**
          * Maintains a copy of serialized attribute values, when possible.
@@ -83,7 +109,7 @@ namespace shibsp {
         }
         
         /**
-         * Returns serialized attribute values encoded as UTF-8 strings.
+         * Returns serialized Attribute values encoded as UTF-8 strings.
          * 
          * @return  an immutable vector of values
          */
@@ -92,7 +118,7 @@ namespace shibsp {
         }
         
         /**
-         * Informs the attribute that values have changed and any serializations
+         * Informs the Attribute that values have changed and any serializations
          * must be cleared. 
          */
         virtual void clearSerializedValues()=0;
@@ -100,21 +126,66 @@ namespace shibsp {
         /**
          * Marshalls an Attribute for remoting.
          * 
-         * This allows Attribute objects to be communicated across process boundaries
+         * <p>This allows Attribute objects to be communicated across process boundaries
          * without excess XML parsing. The DDF returned must be a struct containing
-         * a string member called "id" and a list called "values". The name of the struct
-         * should contain the registered name of the Attribute implementation.  
+         * a single list member named with the Attribute's "id". The name of the struct
+         * should contain the registered name of the Attribute implementation.
          */
         virtual DDF marshall() const {
             DDF ddf(NULL);
-            ddf.structure().addmember("id").string(m_id.c_str());
+            ddf.structure().addmember(m_id.c_str()).list();
             return ddf;
         }
         
+        /**
+         * Unmarshalls a remoted Attribute.
+         * 
+         * @param in    remoted Attribute data
+         * @return  a resolved Attribute of the proper subclass 
+         */
+        static Attribute* unmarshall(DDF& in);
+        
+        /** A function that unmarshalls remoted data into the proper Attribute subclass. */
+        typedef Attribute* AttributeFactory(DDF& in);
+
+        /**
+         * Registers an AttributeFactory function for a given attribute "type".
+         * 
+         * @param type      string used at the root of remoted Attribute structures
+         * @param factory   factory function
+         */        
+        static void registerFactory(const char* type, AttributeFactory* factory) {
+            m_factoryMap[type] = factory;
+        }
+
+        /**
+         * Deregisters an AttributeFactory function for a given attribute "type".
+         * 
+         * @param type      string used at the root of remoted Attribute structures
+         */        
+        static void deregisterFactory(const char* type) {
+            m_factoryMap.erase(type);
+        }
+
+        /**
+         * Clears the map of factories.
+         */
+        static void deregisterFactories() {
+            m_factoryMap.clear();
+        }
+        
     private:
+        static std::map<std::string,AttributeFactory*> m_factoryMap;
         std::string m_id;
     };
 
+#if defined (_MSC_VER)
+    #pragma warning( pop )
+#endif
+
+    /** Registers built-in Attribute types into the runtime. */
+    void registerAttributeFactories();
+    
 };
 
 #endif /* __shibsp_attribute_h__ */

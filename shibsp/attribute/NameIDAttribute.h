@@ -28,6 +28,11 @@
 
 namespace shibsp {
 
+#if defined (_MSC_VER)
+    #pragma warning( push )
+    #pragma warning( disable : 4251 )
+#endif
+
     /** Default serialization format for NameIDs */
     #define DEFAULT_NAMEID_FORMATTER    "$Name!!$NameQualifier!!$SPNameQualifier"
 
@@ -44,6 +49,34 @@ namespace shibsp {
          */
         NameIDAttribute(const char* id, const char* formatter=DEFAULT_NAMEID_FORMATTER)
             : Attribute(id), m_formatter(formatter) {
+        }
+
+        /**
+         * Constructs based on a remoted NameIDAttribute.
+         * 
+         * @param in    input object containing marshalled NameIDAttribute
+         */
+        NameIDAttribute(DDF& in) : Attribute(in) {
+            const char* pch;
+            DDF val = in.first().first();
+            while (val.name()) {
+                m_values.push_back(Value());
+                Value& v = m_values.back();
+                v.m_Name = val.name();
+                pch = val["Format"].string();
+                if (pch)
+                    v.m_Format = pch;
+                pch = val["NameQualifier"].string();
+                if (pch)
+                    v.m_NameQualifier = pch;
+                pch = val["SPNameQualifier"].string();
+                if (pch)
+                    v.m_SPNameQualifier = pch;
+                pch = val["SPProvidedID"].string();
+                if (pch)
+                    v.m_SPProvidedID = pch;
+                val = val.next();
+            }
         }
         
         virtual ~NameIDAttribute() {}
@@ -102,11 +135,10 @@ namespace shibsp {
     
         DDF marshall() const {
             DDF ddf = Attribute::marshall();
-            ddf.name("NameIDAttribute");
-            DDF vlist = ddf.addmember("values").list();
+            ddf.name("nameid");
+            DDF vlist = ddf.first();
             for (std::vector<Value>::const_iterator i=m_values.begin(); i!=m_values.end(); ++i) {
-                DDF val = DDF(NULL).structure();
-                val.addmember("Name").string(i->m_Name.c_str());
+                DDF val = DDF(i->m_Name.c_str()).structure();
                 if (!i->m_Format.empty())
                     val.addmember("Format").string(i->m_Format.c_str());
                 if (!i->m_NameQualifier.empty())
@@ -124,6 +156,10 @@ namespace shibsp {
         std::vector<Value> m_values;
         std::string m_formatter;
     };
+
+#if defined (_MSC_VER)
+    #pragma warning( pop )
+#endif
 
 };
 

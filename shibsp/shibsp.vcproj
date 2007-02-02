@@ -299,6 +299,10 @@
 			<Filter
 				Name="attribute"
 				>
+				<File
+					RelativePath=".\attribute\Attribute.cpp"
+					>
+				</File>
 			</Filter>
 		</Filter>
 		<Filter

@@ -39,6 +39,19 @@ namespace shibsp {
          * @param id    Attribute identifier
          */
         SimpleAttribute(const char* id) : Attribute(id) {}
+
+        /**
+         * Constructs based on a remoted SimpleAttribute.
+         * 
+         * @param in    input object containing marshalled SimpleAttribute
+         */
+        SimpleAttribute(DDF& in) : Attribute(in) {
+            DDF val = in.first().first();
+            while (val.string()) {
+                m_serialized.push_back(val.string());
+                val = val.next();
+            }
+        }
         
         virtual ~SimpleAttribute() {}
         
@@ -54,13 +67,13 @@ namespace shibsp {
             return m_serialized;
         }
         
-        void clearSerializedValues() const {
+        void clearSerializedValues() {
             // Do nothing, since our values are already serialized.
         }
         
         DDF marshall() const {
             DDF ddf = Attribute::marshall();
-            DDF vlist = ddf.addmember("values").list();
+            DDF vlist = ddf.first();
             for (std::vector<std::string>::const_iterator i=m_serialized.begin(); i!=m_serialized.end(); ++i)
                 vlist.add(DDF(NULL).string(i->c_str()));
             return ddf;

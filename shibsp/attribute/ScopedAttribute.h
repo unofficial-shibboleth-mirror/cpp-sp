@@ -27,6 +27,11 @@
 
 namespace shibsp {
 
+#if defined (_MSC_VER)
+    #pragma warning( push )
+    #pragma warning( disable : 4251 )
+#endif
+
     /**
      * An Attribute whose values are relations of a value and a scope.
      * 
@@ -46,6 +51,19 @@ namespace shibsp {
          * @param id    Attribute identifier
          */
         ScopedAttribute(const char* id) : Attribute(id) {}
+
+        /**
+         * Constructs based on a remoted ScopedAttribute.
+         * 
+         * @param in    input object containing marshalled ScopedAttribute
+         */
+        ScopedAttribute(DDF& in) : Attribute(in) {
+            DDF val = in.first().first();
+            while (val.name() && val.string()) {
+                m_values.push_back(std::make_pair(val.name(), val.string()));
+                val = val.next();
+            }
+        }
         
         virtual ~ScopedAttribute() {}
         
@@ -78,12 +96,10 @@ namespace shibsp {
 
         DDF marshall() const {
             DDF ddf = Attribute::marshall();
-            ddf.name("ScopedAttribute");
-            DDF vlist = ddf.addmember("values").list();
+            ddf.name("scoped");
+            DDF vlist = ddf.first();
             for (std::vector< std::pair<std::string,std::string> >::const_iterator i=m_values.begin(); i!=m_values.end(); ++i) {
-                DDF val = DDF(NULL).structure();
-                val.addmember("value").string(i->first.c_str());
-                val.addmember("scope").string(i->second.c_str());
+                DDF val = DDF(i->first.c_str()).string(i->second.c_str());
                 vlist.add(val);
             }
             return ddf;
@@ -92,6 +108,10 @@ namespace shibsp {
     private:
         std::vector< std::pair<std::string,std::string> > m_values;
     };
+
+#if defined (_MSC_VER)
+    #pragma warning( pop )
+#endif
 
 };
 
