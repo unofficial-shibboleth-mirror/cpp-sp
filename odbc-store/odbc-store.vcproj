@@ -175,6 +175,10 @@
 	<References>
 	</References>
 	<Files>
+		<File
+			RelativePath=".\odbc-store.cpp"
+			>
+		</File>
 	</Files>
 	<Globals>
 	</Globals>
