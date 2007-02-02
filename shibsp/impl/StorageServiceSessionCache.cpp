@@ -72,7 +72,14 @@ namespace shibsp {
             n->unmarshall(doc->getDocumentElement(), true);
             janitor.release();
             
-            // TODO: Process attributes...
+            try {
+                DDF attrs = m_obj["attributes"];
+                unmarshallAttributes(attrs);
+            }
+            catch (...) {
+                for_each(m_attributes.begin(), m_attributes.end(), xmltooling::cleanup<Attribute>());
+                throw;
+            }
 
             m_nameid = n.release();
         }
@@ -126,6 +133,8 @@ namespace shibsp {
         void addAssertion(RootObject* assertion);
 
     private:
+        void unmarshallAttributes(DDF& in);
+
         string m_appId;
         DDF m_obj;
         saml2::NameID* m_nameid;
@@ -179,6 +188,24 @@ StoredSession::~StoredSession()
     for_each(m_tokens.begin(), m_tokens.end(), xmltooling::cleanup_pair<string,RootObject>());
 }
 
+void StoredSession::unmarshallAttributes(DDF& in)
+{
+    DDF attr = in.first();
+    while (!attr.isnull()) {
+        try {
+            m_attributes.push_back(Attribute::unmarshall(attr));
+            if (m_cache->m_log.isDebugEnabled())
+                m_cache->m_log.debug("unmarshalled attribute (ID: %s) with %d value%s",
+                    attr.first().name(), attr.first().integer(), attr.first().integer()!=1 ? "s" : "");
+        }
+        catch (AttributeException& ex) {
+            const char* id = attr.first().name();
+            m_cache->m_log.error("error unmarshalling attribute (ID: %s): %s", id ? id : "none", ex.what());
+        }
+        attr = attr.next();
+    }
+}
+
 void StoredSession::addAttributes(const vector<Attribute*>& attributes)
 {
 #ifdef _DEBUG
@@ -223,8 +250,8 @@ void StoredSession::addAttributes(const vector<Attribute*>& attributes)
             m_cache->m_log.warn("storage service indicates the record is out of sync, updating with a fresh copy...");
             ver = m_cache->m_storage->readText(m_appId.c_str(), m_obj.name(), &record, NULL);
             if (!ver) {
-                m_cache->m_log.error("updateText failed on StorageService for session (%s)", m_obj.name());
-                throw IOException("Unable to update stored session.");
+                m_cache->m_log.error("readText failed on StorageService for session (%s)", m_obj.name());
+                throw IOException("Unable to read back stored session.");
             }
             
             // Reset object.
@@ -232,14 +259,15 @@ void StoredSession::addAttributes(const vector<Attribute*>& attributes)
             istringstream in(record);
             in >> newobj;
 
-            m_obj.destroy();
             m_ids.clear();
             for_each(m_attributes.begin(), m_attributes.end(), xmltooling::cleanup<Attribute>());
             m_attributes.clear();
             newobj["version"].integer(ver);
+            m_obj.destroy();
             m_obj = newobj;
-            // TODO: handle attributes
-            
+            DDF attrs = m_obj["attributes"];
+            unmarshallAttributes(attrs);
+
             ver = -1;
         }
     } while (ver < 0);  // negative indicates a sync issue so we retry
@@ -331,8 +359,8 @@ void StoredSession::addAssertion(RootObject* assertion)
             m_cache->m_log.warn("storage service indicates the record is out of sync, updating with a fresh copy...");
             ver = m_cache->m_storage->readText(m_appId.c_str(), m_obj.name(), &record, NULL);
             if (!ver) {
-                m_cache->m_log.error("updateText failed on StorageService for session (%s)", m_obj.name());
-                throw IOException("Unable to update stored session.");
+                m_cache->m_log.error("readText failed on StorageService for session (%s)", m_obj.name());
+                throw IOException("Unable to read back stored session.");
             }
             
             // Reset object.
@@ -340,13 +368,14 @@ void StoredSession::addAssertion(RootObject* assertion)
             istringstream in(record);
             in >> newobj;
 
-            m_obj.destroy();
             m_ids.clear();
             for_each(m_attributes.begin(), m_attributes.end(), xmltooling::cleanup<Attribute>());
             m_attributes.clear();
             newobj["version"].integer(ver);
+            m_obj.destroy();
             m_obj = newobj;
-            // TODO: handle attributes
+            DDF attrs = m_obj["attributes"];
+            unmarshallAttributes(attrs);
             
             ver = -1;
         }

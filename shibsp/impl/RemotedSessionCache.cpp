@@ -56,7 +56,7 @@ namespace shibsp {
             if (!nameid)
                 throw FatalProfileException("NameID missing from remotely cached session.");
             
-            // Parse and bind the document into an XMLObject.
+            // Parse and bind the NameID into an XMLObject.
             istringstream instr(nameid);
             DOMDocument* doc = XMLToolingConfig::getConfig().getParser().parse(instr); 
             XercesJanitor<DOMDocument> janitor(doc);
@@ -64,7 +64,14 @@ namespace shibsp {
             n->unmarshall(doc->getDocumentElement(), true);
             janitor.release();
             
-            // TODO: Process attributes...
+            try {
+                DDF attrs = m_obj["attributes"];
+                unmarshallAttributes(attrs);
+            }
+            catch (...) {
+                for_each(m_attributes.begin(), m_attributes.end(), xmltooling::cleanup<Attribute>());
+                throw;
+            }
 
             auto_ptr_XMLCh exp(m_obj["expires"].string());
             if (exp.get()) {
@@ -134,7 +141,7 @@ namespace shibsp {
             throw ConfigurationException("addAttributes method not implemented by this session cache plugin.");
         }
         void addAssertion(RootObject* assertion) {
-            throw ConfigurationException("addAttributes method not implemented by this session cache plugin.");
+            throw ConfigurationException("addAssertion method not implemented by this session cache plugin.");
         }
 
         time_t expires() const { return m_expires; }
@@ -142,6 +149,8 @@ namespace shibsp {
         void validate(const Application& application, const char* client_addr, time_t timeout, bool local=true);
 
     private:
+        void unmarshallAttributes(DDF& in);
+
         string m_appId;
         int m_version;
         mutable DDF m_obj;
@@ -194,6 +203,24 @@ namespace shibsp {
     SessionCache* SHIBSP_DLLLOCAL RemotedCacheFactory(const DOMElement* const & e)
     {
         return new RemotedCache(e);
+    }
+}
+
+void RemotedSession::unmarshallAttributes(DDF& in)
+{
+    DDF attr = in.first();
+    while (!attr.isnull()) {
+        try {
+            m_attributes.push_back(Attribute::unmarshall(attr));
+            if (m_cache->m_log.isDebugEnabled())
+                m_cache->m_log.debug("unmarshalled attribute (ID: %s) with %d value%s",
+                    attr.first().name(), attr.first().integer(), attr.first().integer()!=1 ? "s" : "");
+        }
+        catch (AttributeException& ex) {
+            const char* id = attr.first().name();
+            m_cache->m_log.error("error unmarshalling attribute (ID: %s): %s", id ? id : "none", ex.what());
+        }
+        attr = attr.next();
     }
 }
 
@@ -280,22 +307,23 @@ void RemotedSession::validate(const Application& application, const char* client
 
     try {
         out=SPConfig::getConfig().getServiceProvider()->getListenerService()->send(in);
-        if (out.isstruct()) {
-            // We got an updated record back.
-            m_ids.clear();
-            for_each(m_attributes.begin(), m_attributes.end(), xmltooling::cleanup<Attribute>());
-            m_attributes.clear();
-            m_obj.destroy();
-            m_obj = out;
-            
-            // TODO: handle attributes
-        }
     }
     catch (...) {
         out.destroy();
         throw;
     }
-    
+
+    if (out.isstruct()) {
+        // We got an updated record back.
+        m_ids.clear();
+        for_each(m_attributes.begin(), m_attributes.end(), xmltooling::cleanup<Attribute>());
+        m_attributes.clear();
+        m_obj.destroy();
+        m_obj = out;
+        DDF attrs = m_obj["attributes"];
+        unmarshallAttributes(attrs);
+    }
+
     m_lastAccess = now;
 }
 
