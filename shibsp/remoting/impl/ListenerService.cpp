@@ -22,6 +22,7 @@
 
 #include "internal.h"
 #include "exceptions.h"
+#include "ServiceProvider.h"
 #include "remoting/ListenerService.h"
 
 #include <log4cpp/Category.hh>
@@ -96,5 +97,6 @@ void ListenerService::receive(DDF &in, ostream& out)
     if (!dest)
         throw ListenerException("No destination registered for incoming message addressed to ($1).",params(1,in.name()));
     
+    Locker locker(SPConfig::getConfig().getServiceProvider());
     dest->receive(in, out);
 }
