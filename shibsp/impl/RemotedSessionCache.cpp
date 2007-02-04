@@ -49,9 +49,8 @@ namespace shibsp {
     class RemotedSession : public virtual Session
     {
     public:
-        RemotedSession(RemotedCache* cache, const Application& app, DDF& obj)
-                : m_appId(app.getId()), m_version(obj["version"].integer()), m_obj(obj),
-                    m_nameid(NULL), m_expires(0), m_lastAccess(time(NULL)), m_cache(cache), m_lock(NULL) {
+        RemotedSession(RemotedCache* cache, DDF& obj) : m_version(obj["version"].integer()), m_obj(obj),
+                m_nameid(NULL), m_expires(0), m_lastAccess(time(NULL)), m_cache(cache), m_lock(NULL) {
             const char* nameid = obj["nameid"].string();
             if (!nameid)
                 throw FatalProfileException("NameID missing from remotely cached session.");
@@ -99,7 +98,10 @@ namespace shibsp {
         void unlock() {
             m_lock->unlock();
         }
-        
+
+        const char* getApplicationID() const {
+            return m_obj["application_id"].string();
+        }
         const char* getClientAddress() const {
             return m_obj["client_addr"].string();
         }
@@ -128,7 +130,7 @@ namespace shibsp {
             if (m_ids.empty()) {
                 DDF id = m_obj["assertions"].first();
                 while (id.isstring()) {
-                    m_ids.push_back(id.name());
+                    m_ids.push_back(id.string());
                     id = id.next();
                 }
             }
@@ -151,7 +153,6 @@ namespace shibsp {
     private:
         void unmarshallAttributes(DDF& in);
 
-        string m_appId;
         int m_version;
         mutable DDF m_obj;
         saml2::NameID* m_nameid;
@@ -230,12 +231,18 @@ const RootObject* RemotedSession::getAssertion(const char* id) const
     if (i!=m_tokens.end())
         return i->second;
 
-    const char* tokenstr = m_obj["assertions"][id].string();
-    if (!tokenstr)
-        return NULL;
+    // Fetch from remoted cache.
+    DDF in("getAssertion::"REMOTED_SESSION_CACHE);
+    DDFJanitor jin(in);
+    in.structure();
+    in.addmember("key").string(m_obj.name());
+    in.addmember("id").string(id);
+
+    DDF out=SPConfig::getConfig().getServiceProvider()->getListenerService()->send(in);
+    DDFJanitor jout(out);
     
     // Parse and bind the document into an XMLObject.
-    istringstream instr(tokenstr);
+    istringstream instr(out.string());
     DOMDocument* doc = XMLToolingConfig::getConfig().getParser().parse(instr); 
     XercesJanitor<DOMDocument> janitor(doc);
     auto_ptr<XMLObject> xmlObject(XMLObjectBuilder::buildOneFromElement(doc->getDocumentElement(), true));
@@ -290,7 +297,6 @@ void RemotedSession::validate(const Application& application, const char* client
     DDFJanitor jin(in);
     in.structure();
     in.addmember("key").string(m_obj.name());
-    in.addmember("application_id").string(m_appId.c_str());
     in.addmember("version").integer(m_obj["version"].integer());
     if (timeout) {
         // On 64-bit Windows, time_t doesn't fit in a long, so I'm using ISO timestamps.  
@@ -398,10 +404,12 @@ string RemotedCache::insert(
     in.addmember("nameid").string(namestr.str().c_str());
 
     if (ssoToken) {
-        ostringstream tokenstr;
-        tokenstr << *ssoToken;
+        ostringstream tstr;
+        tstr << *ssoToken;
         auto_ptr_char tokenid(ssoToken->getID());
-        in.addmember("assertions").list().add(DDF(tokenid.get()).string(tokenstr.str().c_str()));
+        DDF tokid = DDF(NULL).string(tokenid.get());
+        in.addmember("assertions").list().add(tokid);
+        in.addmember("token").string(tstr.str().c_str());
     }
     
     if (attributes) {
@@ -460,7 +468,6 @@ Session* RemotedCache::find(const char* key, const Application& application, con
         DDFJanitor jin(in);
         in.structure();
         in.addmember("key").string(key);
-        in.addmember("application_id").string(application.getId());
         if (timeout) {
             // On 64-bit Windows, time_t doesn't fit in a long, so I'm using ISO timestamps.  
 #ifndef HAVE_GMTIME_R
@@ -483,7 +490,7 @@ Session* RemotedCache::find(const char* key, const Application& application, con
             }
             
             // Wrap the results in a local entry and save it.
-            session = new RemotedSession(this, application, out);
+            session = new RemotedSession(this, out);
             // The remote end has handled timeout issues, we handle address and expiration checks.
             localValidation = true;
         }
@@ -516,12 +523,20 @@ Session* RemotedCache::find(const char* key, const Application& application, con
         m_log.debug("session found locally, validating it for use");
     }
 
-    // Verify currency and update the timestamp. If the local switch is false, we also update the access time.
+    if (!XMLString::equals(session->getApplicationID(), application.getId())) {
+        m_log.error("an application (%s) tried to access another application's session", application.getId());
+        session->unlock();
+        return NULL;
+    }
+
+    // Verify currency and update the timestamp.
+    // If the local switch is false, we also update the access time.
     try {
         session->validate(application, client_addr, timeout, localValidation);
     }
     catch (...) {
         session->unlock();
+        remove(key, application, client_addr);
         throw;
     }
     
