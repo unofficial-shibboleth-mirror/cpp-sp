@@ -24,6 +24,8 @@
 #include "exceptions.h"
 #include "AccessControl.h"
 #include "SessionCache.h"
+#include "SPRequest.h"
+#include "attribute/Attribute.h"
 
 #include <xmltooling/util/ReloadableXMLFile.h>
 #include <xmltooling/util/XMLHelper.h>
@@ -144,55 +146,36 @@ Rule::Rule(const DOMElement* e)
 
 bool Rule::authorized(const SPRequest& request, const Session* session) const
 {
-    /*
-    TODO: port...
+    // We can make this more complex later using pluggable comparison functions,
+    // but for now, just a straight port to the new Attribute API.
+
     // Map alias in rule to the attribute.
-    Iterator<IAAP*> provs=st->getApplication()->getAAPProviders();
-    AAP wrapper(provs,m_alias.c_str());
-    if (wrapper.fail()) {
-        st->log(ShibTarget::LogLevelWarn, string("AccessControl plugin didn't recognize rule (") + m_alias + "), check AAP for corresponding Alias");
-        return false;
-    }
-    else if (!entry) {
-        st->log(ShibTarget::LogLevelWarn, "AccessControl plugin not given a valid session to evaluate, are you using lazy sessions?");
+    if (!session) {
+        request.log(SPRequest::SPWarn, "AccessControl plugin not given a valid session to evaluate, are you using lazy sessions?");
         return false;
     }
     
-    // Find the corresponding attribute. This isn't very efficient...
-    pair<const char*,const SAMLResponse*> filtered=entry->getFilteredTokens(false,true);
-    Iterator<SAMLAssertion*> a_iter(filtered.second ? filtered.second->getAssertions() : EMPTY(SAMLAssertion*));
-    while (a_iter.hasNext()) {
-        SAMLAssertion* assert=a_iter.next();
-        Iterator<SAMLStatement*> statements=assert->getStatements();
-        while (statements.hasNext()) {
-            SAMLAttributeStatement* astate=dynamic_cast<SAMLAttributeStatement*>(statements.next());
-            if (!astate)
-                continue;
-            Iterator<SAMLAttribute*> attrs=astate->getAttributes();
-            while (attrs.hasNext()) {
-                SAMLAttribute* attr=attrs.next();
-                if (!XMLString::compareString(attr->getName(),wrapper->getName()) &&
-                    !XMLString::compareString(attr->getNamespace(),wrapper->getNamespace())) {
-                    // Now we have to intersect the attribute's values against the rule's list.
-                    Iterator<string> vals=attr->getSingleByteValues();
-                    if (!vals.hasNext())
-                        return false;
-                    for (vector<string>::const_iterator ival=m_vals.begin(); ival!=m_vals.end(); ival++) {
-                        vals.reset();
-                        while (vals.hasNext()) {
-                            const string& v=vals.next();
-                            if ((wrapper->getCaseSensitive() && v == *ival) || (!wrapper->getCaseSensitive() && !strcasecmp(v.c_str(),ival->c_str()))) {
-                                st->log(ShibTarget::LogLevelDebug, string("XMLAccessControl plugin expecting " + *ival + ", authz granted"));
-                                return true;
-                            }
-                        }
-                    }
-                }
+    // Find the attribute matching the require rule.
+    map<string,const Attribute*>::const_iterator attr = session->getAttributes().find(m_alias);
+    if (attr == session->getAttributes().end()) {
+        request.log(SPRequest::SPWarn, string("rule requires attribute (") + m_alias + "), not found in session");
+        return false;
+    }
+
+    bool caseSensitive = attr->second->isCaseSensitive();
+
+    // Now we have to intersect the attribute's values against the rule's list.
+    const vector<string>& vals = attr->second->getSerializedValues();
+    for (vector<string>::const_iterator i=m_vals.begin(); i!=m_vals.end(); ++i) {
+        for (vector<string>::const_iterator j=vals.begin(); j!=vals.end(); ++j) {
+            if ((caseSensitive && *i == *j) || (!caseSensitive && !strcasecmp(i->c_str(),j->c_str()))) {
+                request.log(SPRequest::SPDebug, string("AccessControl plugin expecting ") + *j + ", authz granted");
+                return true;
             }
         }
     }
-    */
-    return true;
+
+    return false;
 }
 
 Operator::Operator(const DOMElement* e)
@@ -260,7 +243,7 @@ bool Operator::authorized(const SPRequest& request, const Session* session) cons
             return false;
         }
     }
-    //st->log(ShibTarget::LogLevelWarn,"Unknown operation in access control policy, denying access");
+    request.log(SPRequest::SPWarn,"unknown operation in access control policy, denying access");
     return false;
 }
 

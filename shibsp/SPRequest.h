@@ -76,7 +76,7 @@ namespace shibsp {
          * 
          * @return pointer to Session, or NULL
          */
-        virtual const Session* getSession() const=0;
+        virtual Session* getSession() const=0;
 
         /**
          * Returns the effective base Handler URL for a resource,

@@ -94,11 +94,11 @@ namespace shibsp {
         virtual const char* getAuthnContextDeclRef() const=0;
         
         /**
-         * Returns the set of resolved attributes associated with the session.
+         * Returns the resolved attributes associated with the session.
          * 
-         * @return an immutable array of attributes
+         * @return an immutable map of attributes keyed by attribute ID
          */
-        virtual const std::vector<const Attribute*>& getAttributes() const=0;
+        virtual const std::map<std::string,const Attribute*>& getAttributes() const=0;
         
         /**
          * Adds additional attributes to the session.

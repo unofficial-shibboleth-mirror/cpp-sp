@@ -28,6 +28,7 @@
 #include "ServiceProvider.h"
 #include "SessionCache.h"
 #include "SPRequest.h"
+#include "attribute/Attribute.h"
 #include "util/TemplateParameters.h"
 
 #include <fstream>
@@ -81,15 +82,15 @@ namespace shibsp {
     
     void SHIBSP_DLLLOCAL clearHeaders(SPRequest& request) {
         // Clear invariant stuff.
-        request.clearHeader("Shib-Origin-Site");
         request.clearHeader("Shib-Identity-Provider");
         request.clearHeader("Shib-Authentication-Method");
-        request.clearHeader("Shib-NameIdentifier-Format");
+        request.clearHeader("Shib-AuthnContext-Class");
+        request.clearHeader("Shib-AuthnContext-Decl");
         request.clearHeader("Shib-Attributes");
         request.clearHeader("Shib-Application-ID");
     
         // Clear out the list of mapped attributes
-        /* TODO: port
+        /* TODO: need some kind of master attribute list via the new resolver
         Iterator<IAAP*> provs=dynamic_cast<const IApplication&>(getApplication()).getAAPProviders();
         while (provs.hasNext()) {
             IAAP* aap=provs.next();
@@ -183,14 +184,25 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
         // Fix for secadv 20050901
         clearHeaders(request);
 
-        pair<string,const char*> shib_cookie = app->getCookieNameProps("_shibsession_");
-        const char* session_id = request.getCookie(shib_cookie.first.c_str());
-        if (!session_id || !*session_id) {
+        procState = "Session Processing Error";
+
+        Session* session = NULL;
+        try {
+            session = request.getSession();
+        }
+        catch (exception& e) {
+            request.log(SPRequest::SPWarn, string("error during session lookup: ") + e.what());
+            // If it's not a retryable session failure, we throw to the outer handler for reporting.
+            if (dynamic_cast<RetryableProfileException*>(&e)==NULL)
+                throw;
+        }
+
+        if (!session) {
             // No session.  Maybe that's acceptable?
             if ((!requireSession.first || !requireSession.second) && !requireSessionWith.first)
                 return make_pair(true,request.returnOK());
 
-            // No cookie, but we require a session. Initiate a new session using the indicated method.
+            // No session, but we require one. Initiate a new session using the indicated method.
             procState = "Session Initiator Error";
             const Handler* initiator=NULL;
             if (requireSessionWith.first) {
@@ -208,50 +220,6 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
             }
 
             return initiator->run(request,false);
-        }
-
-        procState = "Session Processing Error";
-        const Session* session=NULL;
-        try {
-            session=request.getSession();
-            // Make a localized exception throw if the session isn't valid.
-            if (!session)
-                throw RetryableProfileException("Session no longer valid.");
-        }
-        catch (exception& e) {
-            request.log(SPRequest::SPWarn, string("session processing failed: ") + e.what());
-
-            // If no session is required, bail now.
-            if ((!requireSession.first || !requireSession.second) && !requireSessionWith.first)
-                // Has to be OK because DECLINED will just cause Apache
-                // to fail when it can't locate anything to process the
-                // AuthType.  No session plus requireSession false means
-                // do not authenticate the user at this time.
-                return make_pair(true, request.returnOK());
-
-            // Try and cast down.
-            exception* base = &e;
-            RetryableProfileException* trycast=dynamic_cast<RetryableProfileException*>(base);
-            if (trycast) {
-                // Session is invalid but we can retry -- initiate a new session.
-                procState = "Session Initiator Error";
-                const Handler* initiator=NULL;
-                if (requireSessionWith.first) {
-                    initiator=app->getSessionInitiatorById(requireSessionWith.second);
-                    if (!initiator)
-                        throw ConfigurationException(
-                            "No session initiator found with id ($1), check requireSessionWith command.",
-                            params(1,requireSessionWith.second)
-                            );
-                }
-                else {
-                    initiator=app->getDefaultSessionInitiator();
-                    if (!initiator)
-                        throw ConfigurationException("No default session initiator found, check configuration.");
-                }
-                return initiator->run(request,false);
-            }
-            throw;    // send it to the outer handler
         }
 
         // We're done.  Everything is okay.  Nothing to report.  Nothing to do..
@@ -316,16 +284,12 @@ pair<bool,long> ServiceProvider::doAuthorization(SPRequest& request) const
 
         // Do we have an access control plugin?
         if (settings.second) {
-            const Session* session =NULL;
-	        pair<string,const char*> shib_cookie=app->getCookieNameProps("_shibsession_");
-            const char *session_id = request.getCookie(shib_cookie.first.c_str());
+            const Session* session = NULL;
             try {
-	        	if (session_id && *session_id) {
-                    session = request.getSession();
-	        	}
+                session = request.getSession();
             }
-            catch (exception&) {
-                request.log(SPRequest::SPWarn, "unable to obtain session information to pass to access control provider");
+            catch (exception& e) {
+                request.log(SPRequest::SPWarn, string("unable to obtain session to pass to access control provider: ") + e.what());
             }
 	
             Locker acllock(settings.second);
@@ -384,16 +348,12 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
         RequestMapper::Settings settings = request.getRequestSettings();
         app = &(request.getApplication());
 
-        const Session* session=NULL;
-        pair<string,const char*> shib_cookie=app->getCookieNameProps("_shibsession_");
-        const char *session_id = request.getCookie(shib_cookie.first.c_str());
+        const Session* session = NULL;
         try {
-        	if (session_id && *session_id) {
-                session = request.getSession();
-        	}
+            session = request.getSession();
         }
-        catch (exception&) {
-            request.log(SPRequest::SPWarn, "unable to obtain session information to export into request headers");
+        catch (exception& e) {
+            request.log(SPRequest::SPWarn, string("unable to obtain session to export to request: ") +  e.what());
         	// If we have to have a session, then this is a fatal error.
         	if (requireSession)
         		throw;
@@ -402,109 +362,61 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
 		// Still no data?
         if (!session) {
         	if (requireSession)
-        		throw RetryableProfileException("Unable to obtain session information for request.");
+        		throw RetryableProfileException("Unable to obtain session to export to request.");
         	else
         		return make_pair(false,0);	// just bail silently
         }
         
-        /*
-        TODO: port to new cache API
-        // Extract data from session.
-        pair<const char*,const SAMLSubject*> sub=m_cacheEntry->getSubject(false,true);
-        pair<const char*,const SAMLResponse*> unfiltered=m_cacheEntry->getTokens(true,false);
-        pair<const char*,const SAMLResponse*> filtered=m_cacheEntry->getTokens(false,true);
+        request.setHeader("Shib-Application-ID", app->getId());
 
-        // Maybe export the tokens.
-        pair<bool,bool> exp=m_settings.first->getBool("exportAssertion");
-        if (exp.first && exp.second && unfiltered.first && *unfiltered.first) {
-            unsigned int outlen;
-            XMLByte* serialized =
-                Base64::encode(reinterpret_cast<XMLByte*>((char*)unfiltered.first), XMLString::stringLen(unfiltered.first), &outlen);
-            XMLByte *pos, *pos2;
-            for (pos=serialized, pos2=serialized; *pos2; pos2++)
-                if (isgraph(*pos2))
-                    *pos++=*pos2;
-            *pos=0;
-            setHeader("Shib-Attributes", reinterpret_cast<char*>(serialized));
-            XMLString::release(&serialized);
+        // Export the IdP name and Authn method/context info.
+        const char* hval = session->getEntityID();
+        if (hval)
+            request.setHeader("Shib-Identity-Provider", hval);
+        hval = session->getAuthnContextClassRef();
+        if (hval) {
+            request.setHeader("Shib-Authentication-Method", hval);
+            request.setHeader("Shib-AuthnContext-Class", hval);
+        }
+        hval = session->getAuthnContextDeclRef();
+        if (hval)
+            request.setHeader("Shib-AuthnContext-Decl", hval);
+        
+        // Maybe export the assertion keys.
+        pair<bool,bool> exp=settings.first->getBool("exportAssertion");
+        if (exp.first && exp.second) {
+            //setHeader("Shib-Attributes", reinterpret_cast<char*>(serialized));
+            // TODO: export lookup URLs to access assertions by ID
+            const vector<const char*>& tokens = session->getAssertionIDs();
         }
 
-        // Export the SAML AuthnMethod and the origin site name, and possibly the NameIdentifier.
-        setHeader("Shib-Origin-Site", m_cacheEntry->getProviderId());
-        setHeader("Shib-Identity-Provider", m_cacheEntry->getProviderId());
-        setHeader("Shib-Authentication-Method", m_cacheEntry->getAuthnContext());
-        
-        // Get the AAP providers, which contain the attribute policy info.
-        Iterator<IAAP*> provs=m_app->getAAPProviders();
-
-        // Export NameID?
-        while (provs.hasNext()) {
-            IAAP* aap=provs.next();
-            xmltooling::Locker locker(aap);
-            const XMLCh* format = sub.second->getNameIdentifier()->getFormat();
-            const IAttributeRule* rule=aap->lookup(format ? format : SAMLNameIdentifier::UNSPECIFIED);
-            if (rule && rule->getHeader()) {
-                auto_ptr_char form(format ? format : SAMLNameIdentifier::UNSPECIFIED);
-                auto_ptr_char nameid(sub.second->getNameIdentifier()->getName());
-                setHeader("Shib-NameIdentifier-Format", form.get());
-                if (!strcmp(rule->getHeader(),"REMOTE_USER"))
-                    setRemoteUser(nameid.get());
-                else
-                    setHeader(rule->getHeader(), nameid.get());
-            }
-        }
-        
-        setHeader("Shib-Application-ID", m_app->getId());
-    
         // Export the attributes.
-        Iterator<SAMLAssertion*> a_iter(filtered.second ? filtered.second->getAssertions() : EMPTY(SAMLAssertion*));
-        while (a_iter.hasNext()) {
-            SAMLAssertion* assert=a_iter.next();
-            Iterator<SAMLStatement*> statements=assert->getStatements();
-            while (statements.hasNext()) {
-                SAMLAttributeStatement* astate=dynamic_cast<SAMLAttributeStatement*>(statements.next());
-                if (!astate)
-                    continue;
-                Iterator<SAMLAttribute*> attrs=astate->getAttributes();
-                while (attrs.hasNext()) {
-                    SAMLAttribute* attr=attrs.next();
-            
-                    // Are we supposed to export it?
-                    provs.reset();
-                    while (provs.hasNext()) {
-                        IAAP* aap=provs.next();
-                        xmltooling::Locker locker(aap);
-                        const IAttributeRule* rule=aap->lookup(attr->getName(),attr->getNamespace());
-                        if (!rule || !rule->getHeader())
-                            continue;
-                    
-                        Iterator<string> vals=attr->getSingleByteValues();
-                        if (!strcmp(rule->getHeader(),"REMOTE_USER") && vals.hasNext())
-                            setRemoteUser(vals.next().c_str());
-                        else {
-                            int it=0;
-                            string header = getSecureHeader(rule->getHeader());
-                            if (!header.empty())
-                                it++;
-                            for (; vals.hasNext(); it++) {
-                                string value = vals.next();
-                                for (string::size_type pos = value.find_first_of(";", string::size_type(0));
-                                        pos != string::npos;
-                                        pos = value.find_first_of(";", pos)) {
-                                    value.insert(pos, "\\");
-                                    pos += 2;
-                                }
-                                if (it)
-                                    header += ";";
-                                header += value;
-                            }
-                            setHeader(rule->getHeader(), header.c_str());
+        const map<string,const Attribute*>& attributes = session->getAttributes();
+        for (map<string,const Attribute*>::const_iterator a = attributes.begin(); a!=attributes.end(); ++a) {
+            const vector<string>& vals = a->second->getSerializedValues();
+            if (!strcmp(a->second->getId(), "REMOTE_USER") && !vals.empty())
+                request.setRemoteUser(vals.front().c_str());
+            else {
+                string header(request.getSecureHeader(a->second->getId()));
+                for (vector<string>::const_iterator v = vals.begin(); v!=vals.end(); ++v) {
+                    if (!header.empty())
+                        header += ";";
+                    string::size_type pos = v->find_first_of(';',string::size_type(0));
+                    if (pos!=string::npos) {
+                        string value(*v);
+                        for (; pos != string::npos; pos = value.find_first_of(';',pos)) {
+                            value.insert(pos, "\\");
+                            pos += 2;
                         }
+                        header += value;
+                    }
+                    else {
+                        header += (*v);
                     }
                 }
+                request.setHeader(a->second->getId(), header.c_str());
             }
         }
-        */
     
         return make_pair(false,0);
     }
@@ -563,7 +475,7 @@ pair<bool,long> ServiceProvider::doHandler(SPRequest& request) const
         pair<bool,bool> handlerSSL=sessionProps->getBool("handlerSSL");
       
         // Make sure this is SSL, if it should be
-        if ((!handlerSSL.first || handlerSSL.second) && strcmp(request.getScheme(),"https"))
+        if ((!handlerSSL.first || handlerSSL.second) && !request.isSecure())
             throw FatalProfileException("Blocked non-SSL access to Shibboleth handler.");
 
         // We dispatch based on our path info. We know the request URL begins with or equals the handler URL,

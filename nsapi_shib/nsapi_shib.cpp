@@ -37,9 +37,6 @@
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/Threads.h>
 
-// SAML Runtime
-#include <saml/saml.h>
-#include <shib/shib.h>
 #include <shib-target/shib-target.h>
 
 #include <fstream>

@@ -70,16 +70,6 @@ namespace shibsp {
             auto_ptr<saml2::NameID> n(saml2::NameIDBuilder::buildNameID());
             n->unmarshall(doc->getDocumentElement(), true);
             janitor.release();
-            
-            try {
-                DDF attrs = m_obj["attributes"];
-                unmarshallAttributes(attrs);
-            }
-            catch (...) {
-                for_each(m_attributes.begin(), m_attributes.end(), xmltooling::cleanup<Attribute>());
-                throw;
-            }
-
             m_nameid = n.release();
         }
         
@@ -113,7 +103,9 @@ namespace shibsp {
         const char* getAuthnContextDeclRef() const {
             return m_obj["authncontext_decl"].string();
         }
-        const vector<const Attribute*>& getAttributes() const {
+        const map<string,const Attribute*>& getAttributes() const {
+            if (m_attributes.empty())
+                unmarshallAttributes();
             return m_attributes;
         }
         const vector<const char*>& getAssertionIDs() const {
@@ -132,11 +124,11 @@ namespace shibsp {
         void addAssertion(RootObject* assertion);
 
     private:
-        void unmarshallAttributes(DDF& in);
+        void unmarshallAttributes() const;
 
         DDF m_obj;
         saml2::NameID* m_nameid;
-        vector<const Attribute*> m_attributes;
+        mutable map<string,const Attribute*> m_attributes;
         mutable vector<const char*> m_ids;
         mutable map<string,RootObject*> m_tokens;
         SSCache* m_cache;
@@ -182,19 +174,21 @@ StoredSession::~StoredSession()
 {
     m_obj.destroy();
     delete m_nameid;
-    for_each(m_attributes.begin(), m_attributes.end(), xmltooling::cleanup<Attribute>());
-    for_each(m_tokens.begin(), m_tokens.end(), xmltooling::cleanup_pair<string,RootObject>());
+    for_each(m_attributes.begin(), m_attributes.end(), cleanup_const_pair<string,Attribute>());
+    for_each(m_tokens.begin(), m_tokens.end(), cleanup_pair<string,RootObject>());
 }
 
-void StoredSession::unmarshallAttributes(DDF& in)
+void StoredSession::unmarshallAttributes() const
 {
-    DDF attr = in.first();
+    Attribute* attribute;
+    DDF attr = m_obj["attributes"].first();
     while (!attr.isnull()) {
         try {
-            m_attributes.push_back(Attribute::unmarshall(attr));
+            attribute = Attribute::unmarshall(attr);
+            m_attributes[attribute->getId()] = attribute;
             if (m_cache->m_log.isDebugEnabled())
                 m_cache->m_log.debug("unmarshalled attribute (ID: %s) with %d value%s",
-                    attr.first().name(), attr.first().integer(), attr.first().integer()!=1 ? "s" : "");
+                    attribute->getId(), attr.first().integer(), attr.first().integer()!=1 ? "s" : "");
         }
         catch (AttributeException& ex) {
             const char* id = attr.first().name();
@@ -268,20 +262,15 @@ void StoredSession::addAttributes(const vector<Attribute*>& attributes)
             in >> newobj;
 
             m_ids.clear();
-            for_each(m_attributes.begin(), m_attributes.end(), xmltooling::cleanup<Attribute>());
+            for_each(m_attributes.begin(), m_attributes.end(), cleanup_const_pair<string,Attribute>());
             m_attributes.clear();
             newobj["version"].integer(ver);
             m_obj.destroy();
             m_obj = newobj;
-            DDF attrs = m_obj["attributes"];
-            unmarshallAttributes(attrs);
 
             ver = -1;
         }
     } while (ver < 0);  // negative indicates a sync issue so we retry
-
-    // Transfer ownership to us.
-    m_attributes.insert(m_attributes.end(), attributes.begin(), attributes.end());
 
     TransactionLog* xlog = SPConfig::getConfig().getServiceProvider()->getTransactionLog();
     Locker locker(xlog);
@@ -294,6 +283,9 @@ void StoredSession::addAttributes(const vector<Attribute*>& attributes)
     for (vector<Attribute*>::const_iterator a=attributes.begin(); a!=attributes.end(); ++a)
         xlog->log.infoStream() << "\t" << (*a)->getId() << " (" << (*a)->valueCount() << " values)";
     xlog->log.info("}");
+
+    // We own them now, so clean them up.
+    for_each(attributes.begin(), attributes.end(), xmltooling::cleanup<Attribute>());
 }
 
 const RootObject* StoredSession::getAssertion(const char* id) const
@@ -392,13 +384,11 @@ void StoredSession::addAssertion(RootObject* assertion)
             in >> newobj;
 
             m_ids.clear();
-            for_each(m_attributes.begin(), m_attributes.end(), xmltooling::cleanup<Attribute>());
+            for_each(m_attributes.begin(), m_attributes.end(), cleanup_const_pair<string,Attribute>());
             m_attributes.clear();
             newobj["version"].integer(ver);
             m_obj.destroy();
             m_obj = newobj;
-            DDF attrs = m_obj["attributes"];
-            unmarshallAttributes(attrs);
             
             ver = -1;
         }
@@ -550,6 +540,19 @@ string SSCache::insert(
             name.get() <<
         ")";
     
+    if (attributes) {
+        xlog->log.infoStream() <<
+            "Cached the following attributes with session (ID: " <<
+                key.get() <<
+            ") for (applicationId: " <<
+                application.getId() <<
+            ") {";
+        for (vector<Attribute*>::const_iterator a=attributes->begin(); a!=attributes->end(); ++a)
+            xlog->log.infoStream() << "\t" << (*a)->getId() << " (" << (*a)->valueCount() << " values)";
+        xlog->log.info("}");
+        for_each(attributes->begin(), attributes->end(), xmltooling::cleanup<Attribute>());
+    }
+
     return key.get();
 }
 

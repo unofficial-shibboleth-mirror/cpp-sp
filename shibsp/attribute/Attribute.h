@@ -98,6 +98,15 @@ namespace shibsp {
         const char* getId() const {
             return m_id.c_str();
         }
+
+        /**
+         * Indicates whether case sensitivity should apply to basic value comparisons.
+         *
+         * @return  true iff value comparisons should be case sensitive
+         */
+        virtual bool isCaseSensitive() const {
+            return true;
+        }
         
         /**
          * Returns the number of values.

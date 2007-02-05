@@ -29,9 +29,6 @@
 #include <shibsp/SPConfig.h>
 #include <xmltooling/util/NDC.h>
 
-// SAML Runtime
-#include <saml/saml.h>
-#include <shib/shib.h>
 #include <shib-target/shib-target.h>
 
 #include <sstream>

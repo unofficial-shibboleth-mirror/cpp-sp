@@ -63,15 +63,6 @@ namespace shibsp {
             n->unmarshall(doc->getDocumentElement(), true);
             janitor.release();
             
-            try {
-                DDF attrs = m_obj["attributes"];
-                unmarshallAttributes(attrs);
-            }
-            catch (...) {
-                for_each(m_attributes.begin(), m_attributes.end(), xmltooling::cleanup<Attribute>());
-                throw;
-            }
-
             auto_ptr_XMLCh exp(m_obj["expires"].string());
             if (exp.get()) {
                 DateTime iso(exp.get());
@@ -79,16 +70,16 @@ namespace shibsp {
                 m_expires = iso.getEpoch();
             }
 
-            m_nameid = n.release();
             m_lock = Mutex::create();
+            m_nameid = n.release();
         }
         
         ~RemotedSession() {
             delete m_lock;
             m_obj.destroy();
             delete m_nameid;
-            for_each(m_attributes.begin(), m_attributes.end(), xmltooling::cleanup<Attribute>());
-            for_each(m_tokens.begin(), m_tokens.end(), xmltooling::cleanup_pair<string,RootObject>());
+            for_each(m_attributes.begin(), m_attributes.end(), cleanup_const_pair<string,Attribute>());
+            for_each(m_tokens.begin(), m_tokens.end(), cleanup_pair<string,RootObject>());
         }
         
         Lockable* lock() {
@@ -123,7 +114,9 @@ namespace shibsp {
         const char* getAuthnContextDeclRef() const {
             return m_obj["authncontext_decl"].string();
         }
-        const vector<const Attribute*>& getAttributes() const {
+        const map<string,const Attribute*>& getAttributes() const {
+            if (m_attributes.empty())
+                unmarshallAttributes();
             return m_attributes;
         }
         const vector<const char*>& getAssertionIDs() const {
@@ -151,12 +144,12 @@ namespace shibsp {
         void validate(const Application& application, const char* client_addr, time_t timeout, bool local=true);
 
     private:
-        void unmarshallAttributes(DDF& in);
+        void unmarshallAttributes() const;
 
         int m_version;
         mutable DDF m_obj;
         saml2::NameID* m_nameid;
-        vector<const Attribute*> m_attributes;
+        mutable map<string,const Attribute*> m_attributes;
         mutable vector<const char*> m_ids;
         mutable map<string,RootObject*> m_tokens;
         time_t m_expires,m_lastAccess;
@@ -207,15 +200,17 @@ namespace shibsp {
     }
 }
 
-void RemotedSession::unmarshallAttributes(DDF& in)
+void RemotedSession::unmarshallAttributes() const
 {
-    DDF attr = in.first();
+    Attribute* attribute;
+    DDF attr = m_obj["attributes"].first();
     while (!attr.isnull()) {
         try {
-            m_attributes.push_back(Attribute::unmarshall(attr));
+            attribute = Attribute::unmarshall(attr);
+            m_attributes[attribute->getId()] = attribute;
             if (m_cache->m_log.isDebugEnabled())
                 m_cache->m_log.debug("unmarshalled attribute (ID: %s) with %d value%s",
-                    attr.first().name(), attr.first().integer(), attr.first().integer()!=1 ? "s" : "");
+                    attribute->getId(), attr.first().integer(), attr.first().integer()!=1 ? "s" : "");
         }
         catch (AttributeException& ex) {
             const char* id = attr.first().name();
@@ -322,12 +317,10 @@ void RemotedSession::validate(const Application& application, const char* client
     if (out.isstruct()) {
         // We got an updated record back.
         m_ids.clear();
-        for_each(m_attributes.begin(), m_attributes.end(), xmltooling::cleanup<Attribute>());
+        for_each(m_attributes.begin(), m_attributes.end(), cleanup_const_pair<string,Attribute>());
         m_attributes.clear();
         m_obj.destroy();
         m_obj = out;
-        DDF attrs = m_obj["attributes"];
-        unmarshallAttributes(attrs);
     }
 
     m_lastAccess = now;
@@ -424,8 +417,6 @@ string RemotedCache::insert(
     DDF out=SPConfig::getConfig().getServiceProvider()->getListenerService()->send(in);
     DDFJanitor jout(out);
     if (out["key"].isstring()) {
-        for_each(attributes->begin(), attributes->end(), xmltooling::cleanup<Attribute>());
-
         // Transaction Logging
         auto_ptr_char name(nameid.getName());
         const char* pid = in["entity_id"].string();
@@ -443,6 +434,19 @@ string RemotedCache::insert(
             ") with (NameIdentifier: " <<
                 name.get() <<
             ")";
+
+        if (attributes) {
+            xlog->log.infoStream() <<
+                "Cached the following attributes with session (ID: " <<
+                    out["key"].string() <<
+                ") for (applicationId: " <<
+                    application.getId() <<
+                ") {";
+            for (vector<Attribute*>::const_iterator a=attributes->begin(); a!=attributes->end(); ++a)
+                xlog->log.infoStream() << "\t" << (*a)->getId() << " (" << (*a)->valueCount() << " values)";
+            xlog->log.info("}");
+            for_each(attributes->begin(), attributes->end(), xmltooling::cleanup<Attribute>());
+        }
 
         return out["key"].string();
     }

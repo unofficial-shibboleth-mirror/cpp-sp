@@ -216,6 +216,18 @@
 	</References>
 	<Files>
 		<File
+			RelativePath=".\mod_apache.cpp"
+			>
+			<FileConfiguration
+				Name="Debug|Win32"
+				ExcludedFromBuild="true"
+				>
+				<Tool
+					Name="VCCLCompilerTool"
+				/>
+			</FileConfiguration>
+		</File>
+		<File
 			RelativePath="mod_shib_22.cpp"
 			>
 		</File>

@@ -36,10 +36,8 @@
 #include <shibsp/exceptions.h>
 #include <shibsp/RequestMapper.h>
 #include <shibsp/SPConfig.h>
+#include <shibsp/attribute/Attribute.h>
 
-// SAML Runtime
-#include <saml/saml.h>
-#include <shib/shib.h>
 #include <shib-target/shib-target.h>
 #include <xercesc/util/regx/RegularExpression.hpp>
 #include <xmltooling/util/NDC.h>
@@ -826,7 +824,7 @@ bool htAccessControl::authorized(const SPRequest& request, const Session* sessio
                 grpstatus=groups_for_user(sta->m_req,remote_user.c_str(),sta->m_dc->szAuthGrpFile);
             }
             if (!grpstatus)
-                return false;
+                continue;
     
             while (*t) {
                 w=ap_getword_conf(sta->m_req->pool,&t);
@@ -837,26 +835,24 @@ bool htAccessControl::authorized(const SPRequest& request, const Session* sessio
             }
         }
         else {
-            saml::Iterator<shibboleth::IAAP*> provs=dynamic_cast<const shibtarget::IApplication&>(request.getApplication()).getAAPProviders();
-            shibboleth::AAP wrapper(provs,w);
-            if (wrapper.fail()) {
-                request.log(SPRequest::SPWarn, string("htAccessControl plugin didn't recognize require rule: ") + w);
+            // Map alias in rule to the attribute.
+            if (!session) {
+                request.log(SPRequest::SPError, "htAccessControl plugin not given a valid session to evaluate, are you using lazy sessions?");
+                continue;
+            }
+            
+            // Find the attribute matching the require rule.
+            map<string,const Attribute*>::const_iterator attr = session->getAttributes().find(w);
+            if (attr == session->getAttributes().end()) {
+                request.log(SPRequest::SPWarn, string("htAccessControl rule requires attribute (") + w + "), not found in session");
                 continue;
             }
 
             bool regexp=false;
-            const char* vals;
-            if (!strcmp(wrapper->getHeader(),"REMOTE_USER"))
-                vals=remote_user.c_str();
-            else
-                if (sta->m_dc->bUseEnvVars!=0) {
-                   if (sta->m_rc && sta->m_rc->env) vals=ap_table_get(sta->m_rc->env,wrapper->getHeader());
-                   else vals = NULL;
-                } else {
-                   vals=ap_table_get(sta->m_req->headers_in,wrapper->getHeader());
-                }
+            bool caseSensitive = attr->second->isCaseSensitive();
+            const vector<string>& vals = attr->second->getSerializedValues();
 
-            while (*t && vals && *vals) {
+            while (!auth_OK[x] && *t) {
                 w=ap_getword_conf(sta->m_req->pool,&t);
                 if (*w=='~') {
                     regexp=true;
@@ -872,67 +868,34 @@ bool htAccessControl::authorized(const SPRequest& request, const Session* sessio
                         re=temp;
                     }
                     
-                    string vals_str(vals);
-                    int j = 0;
-                    for (unsigned int i = 0;  i < vals_str.length();  i++) {
-                        if (vals_str.at(i) == ';') {
-                            if (i == 0) {
-                                request.log(SPRequest::SPError, string("htAccessControl plugin found invalid header encoding (") +
-                                    vals + "): starts with a semicolon");
-                                throw saml::SAMLException("Invalid information supplied to authorization plugin.");
-                            }
-
-                            if (vals_str.at(i-1) == '\\') {
-                                vals_str.erase(i-1, 1);
-                                i--;
-                                continue;
-                            }
-
-                            string val = vals_str.substr(j, i-j);
-                            j = i+1;
-                            if (regexp) {
-                                auto_ptr<XMLCh> trans(fromUTF8(val.c_str()));
-                                if (re->matches(trans.get())) {
-                                    request.log(SPRequest::SPDebug, string("htAccessControl plugin expecting ") + w +
-                                       ", got " + val + ": authorization granted");
-                                    SHIB_AP_CHECK_IS_OK;
-                                }
-                            }
-                            else if ((wrapper->getCaseSensitive() && val==w) || (!wrapper->getCaseSensitive() && !strcasecmp(val.c_str(),w))) {
-                                request.log(SPRequest::SPDebug, string("htAccessControl plugin expecting ") + w +
-                                    ", got " + val + ": authorization granted.");
+                    for (vector<string>::const_iterator v=vals.begin(); !auth_OK[x] && v!=vals.end(); ++v) {
+                        if (regexp) {
+                            auto_ptr<XMLCh> trans(fromUTF8(v->c_str()));
+                            if (re->matches(trans.get())) {
+                                request.log(SPRequest::SPDebug,
+                                    string("htAccessControl plugin expecting ") + w + ", got " + *v + ": authorization granted"
+                                    );
                                 SHIB_AP_CHECK_IS_OK;
                             }
-                            else {
-                                request.log(SPRequest::SPDebug, string("htAccessControl plugin expecting ") + w +
-                                    ", got " + val + ": authoritzation not granted.");
-                            }
                         }
-                    }
-    
-                    string val = vals_str.substr(j, vals_str.length()-j);
-                    if (regexp) {
-                        auto_ptr<XMLCh> trans(fromUTF8(val.c_str()));
-                        if (re->matches(trans.get())) {
-                            request.log(SPRequest::SPDebug, string("htAccessControl plugin expecting ") + w +
-                                ", got " + val + ": authorization granted.");
+                        else if ((caseSensitive && *v == w) || (!caseSensitive && !strcasecmp(v->c_str(),w))) {
+                            request.log(SPRequest::SPDebug,
+                                string("htAccessControl plugin expecting ") + w + ", got " + *v + ": authorization granted."
+                                );
                             SHIB_AP_CHECK_IS_OK;
                         }
-                    }
-                    else if ((wrapper->getCaseSensitive() && val==w) || (!wrapper->getCaseSensitive() && !strcasecmp(val.c_str(),w))) {
-                        request.log(SPRequest::SPDebug, string("htAccessControl plugin expecting ") + w +
-                            ", got " + val + ": authorization granted");
-                        SHIB_AP_CHECK_IS_OK;
-                    }
-                    else {
-                            request.log(SPRequest::SPDebug, string("htAccessControl plugin expecting ") + w +
-                                ", got " + val + ": authorization not granted");
+                        else {
+                            request.log(SPRequest::SPDebug,
+                                string("htAccessControl plugin expecting ") + w + ", got " + *v + ": authorization not granted."
+                                );
+                        }
                     }
                 }
                 catch (XMLException& ex) {
                     auto_ptr_char tmp(ex.getMessage());
-                    request.log(SPRequest::SPError, string("htAccessControl plugin caught exception while parsing regular expression (")
-                        + w + "): " + tmp.get());
+                    request.log(SPRequest::SPError,
+                        string("htAccessControl plugin caught exception while parsing regular expression (") + w + "): " + tmp.get()
+                        );
                 }
             }
         }

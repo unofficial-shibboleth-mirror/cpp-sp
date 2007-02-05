@@ -49,9 +49,7 @@ namespace shibsp {
 
         const Application& getApplication() const;
         
-        const Session* getSession() const {
-            return m_session;
-        }
+        Session* getSession() const;
 
         const char* getRequestURL() const;
         
@@ -72,6 +70,7 @@ namespace shibsp {
         mutable RequestMapper* m_mapper;
         mutable RequestMapper::Settings m_settings;
         mutable const Application* m_app;
+        mutable bool m_sessionTried;
         mutable Session* m_session;
         mutable std::string m_url;
         void* m_log; // declared void* to avoid log4cpp header conflicts in Apache

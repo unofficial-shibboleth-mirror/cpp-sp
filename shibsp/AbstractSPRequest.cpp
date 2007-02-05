@@ -35,7 +35,8 @@ using namespace log4cpp;
 using namespace std;
 
 AbstractSPRequest::AbstractSPRequest()
-    : m_sp(NULL), m_mapper(NULL), m_app(NULL), m_session(NULL), m_log(&Category::getInstance(SHIBSP_LOGCAT)), m_parser(NULL)
+    : m_sp(NULL), m_mapper(NULL), m_app(NULL), m_sessionTried(false), m_session(NULL),
+        m_log(&Category::getInstance(SHIBSP_LOGCAT)), m_parser(NULL)
 {
     m_sp=SPConfig::getConfig().getServiceProvider();
     m_sp->lock();
@@ -73,6 +74,39 @@ const Application& AbstractSPRequest::getApplication() const
             throw ConfigurationException("Unable to map request to application settings, check configuration.");
     }    
     return *m_app;
+}
+
+Session* AbstractSPRequest::getSession() const
+{
+    // Only attempt this once.
+    if (m_sessionTried)
+        return m_session;
+    m_sessionTried = true;
+
+    // Get session ID from cookie.
+    const Application& app = getApplication();
+    pair<string,const char*> shib_cookie = app.getCookieNameProps("_shibsession_");
+    const char* session_id = getCookie(shib_cookie.first.c_str());
+    if (!session_id || !*session_id)
+        return NULL;
+
+    // Need address checking and timeout settings.
+    int timeout=0;
+    bool consistent=true;
+    const PropertySet* props=app.getPropertySet("Sessions");
+    if (props) {
+        pair<bool,unsigned int> p=props->getUnsignedInt("timeout");
+        if (p.first)
+            timeout = p.second;
+        pair<bool,bool> pcheck=props->getBool("consistentAddress");
+        if (pcheck.first)
+            consistent = pcheck.second;
+    }
+
+    // The cache will either silently pass a session or NULL back, or throw an exception out.
+    return m_session = getServiceProvider().getSessionCache()->find(
+        session_id, app, consistent ? getRemoteAddr().c_str() : NULL, timeout
+        );
 }
 
 const char* AbstractSPRequest::getRequestURL() const {
