@@ -66,7 +66,7 @@ SPInternalConfig& SPInternalConfig::getInternalConfig()
 
 void SPConfig::setServiceProvider(ServiceProvider* serviceProvider)
 {
-    //delete m_serviceProvider;
+    delete m_serviceProvider;
     m_serviceProvider = serviceProvider;
 }
 
