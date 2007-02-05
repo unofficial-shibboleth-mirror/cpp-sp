@@ -195,7 +195,7 @@ saml::SAMLConfig::getConfig();
 WANT_SUBDIRS="doc shib schemas configs shib-target shar siterefresh test xmlproviders"
 AC_CONFIG_FILES([Makefile doc/Makefile shib/Makefile schemas/Makefile \
 		 configs/Makefile shib-target/Makefile shar/Makefile siterefresh/Makefile \
-		 test/Makefile xmlproviders/Makefile selinux/Makefile])
+		 test/Makefile selinux/Makefile])
 
 
 #

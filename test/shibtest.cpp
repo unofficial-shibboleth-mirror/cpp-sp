@@ -140,18 +140,6 @@ int main(int argc,char* argv[])
         if (!response)
             throw opensaml::BindingException("unable to successfully query for attributes");
 
-        // Run it through the AAP. Note that we could end up with an empty response!
-        Iterator<SAMLAssertion*> a=response->getAssertions();
-        for (unsigned long c=0; c < a.size();) {
-            try {
-                shibboleth::AAP::apply(app->getAAPProviders(),*(a[c]),AA);
-                c++;
-            }
-            catch (SAMLException&) {
-                response->removeAssertion(c);
-            }
-        }
-
         Iterator<SAMLAssertion*> i=response->getAssertions();
         if (i.hasNext())
         {

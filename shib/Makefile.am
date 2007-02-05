@@ -9,7 +9,6 @@ libshib_HEADERS = shib.h
 noinst_HEADERS = internal.h
 
 libshib_la_SOURCES = \
-    Metadata.cpp \
     ShibConfig.cpp \
     ShibBrowserProfile.cpp \
     ScopedAttribute.cpp

@@ -226,10 +226,6 @@
 			>
 		</File>
 		<File
-			RelativePath="Metadata.cpp"
-			>
-		</File>
-		<File
 			RelativePath="resource.h"
 			>
 		</File>

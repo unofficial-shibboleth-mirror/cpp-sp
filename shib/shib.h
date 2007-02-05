@@ -42,58 +42,10 @@
 
 namespace shibboleth
 {
-    // Attribute acceptance processing interfaces, applied to incoming attributes.
-
-    struct SHIB_EXPORTS IAttributeRule
-    {
-        virtual const XMLCh* getName() const=0;
-        virtual const XMLCh* getNamespace() const=0;
-        virtual const char* getAlias() const=0;
-        virtual const char* getHeader() const=0;
-        virtual bool getCaseSensitive() const=0;
-        virtual void apply(saml::SAMLAttribute& attribute, const opensaml::saml2md::RoleDescriptor* role=NULL) const=0;
-        virtual ~IAttributeRule() {}
-    };
-    
-    struct SHIB_EXPORTS IAAP : public virtual xmltooling::Lockable, public virtual saml::IPlugIn
-    {
-        virtual bool anyAttribute() const=0;
-        virtual const IAttributeRule* lookup(const XMLCh* attrName, const XMLCh* attrNamespace=NULL) const=0;
-        virtual const IAttributeRule* lookup(const char* alias) const=0;
-        virtual saml::Iterator<const IAttributeRule*> getAttributeRules() const=0;
-        virtual ~IAAP() {}
-    };
-    
     struct SHIB_EXPORTS IAttributeFactory : public virtual saml::IPlugIn
     {
         virtual saml::SAMLAttribute* build(DOMElement* e) const=0;
         virtual ~IAttributeFactory() {}
-    };
-
-#ifdef SHIB_INSTANTIATE
-    template class SHIB_EXPORTS saml::Iterator<IAAP*>;
-    template class SHIB_EXPORTS saml::ArrayIterator<IAAP*>;
-#endif
-
-    class SHIB_EXPORTS AAP
-    {
-    public:
-        AAP(const saml::Iterator<IAAP*>& aaps, const XMLCh* attrName, const XMLCh* attrNamespace=NULL);
-        AAP(const saml::Iterator<IAAP*>& aaps, const char* alias);
-        ~AAP();
-        bool fail() const {return m_mapper==NULL;}
-        const IAttributeRule* operator->() const {return m_rule;}
-        operator const IAttributeRule*() const {return m_rule;}
-        
-        static void apply(
-            const saml::Iterator<IAAP*>& aaps, saml::SAMLAssertion& assertion, const opensaml::saml2md::RoleDescriptor* role=NULL
-            );
-        
-    private:
-        AAP(const AAP&);
-        void operator=(const AAP&);
-        IAAP* m_mapper;
-        const IAttributeRule* m_rule;
     };
 
     // Subclass around the OpenSAML browser profile interface,

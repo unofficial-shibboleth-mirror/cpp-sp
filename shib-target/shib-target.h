@@ -66,8 +66,6 @@ namespace shibtarget {
     struct SHIBTARGET_EXPORTS IApplication : public virtual shibsp::Application,
         public virtual shibboleth::ShibBrowserProfile::ITokenValidator
     {
-        virtual saml::Iterator<shibboleth::IAAP*> getAAPProviders() const=0;
-
         // caller is borrowing object, must use within scope of config lock
         virtual const saml::SAMLBrowserProfile* getBrowserProfile() const=0;
         virtual const saml::SAMLBinding* getBinding(const XMLCh* binding) const=0;

@@ -72,7 +72,6 @@ namespace {
         // IApplication
         const char* getId() const {return getString("id").second;}
         const char* getHash() const {return m_hash.c_str();}
-        Iterator<IAAP*> getAAPProviders() const;
         MetadataProvider* getMetadataProvider() const;
         TrustEngine* getTrustEngine() const;
         const vector<const XMLCh*>& getAudiences() const;
@@ -103,7 +102,6 @@ namespace {
         const ServiceProvider* m_sp;   // this is ok because its locking scope includes us
         const XMLApplication* m_base;
         string m_hash;
-        vector<IAAP*> m_aaps;
         MetadataProvider* m_metadata;
         TrustEngine* m_trust;
         vector<const XMLCh*> m_audiences;
@@ -457,22 +455,7 @@ XMLApplication::XMLApplication(
         if (conf.isEnabled(SPConfig::AAP)) {
             child = XMLHelper::getFirstChildElement(e,AAPProvider);
             while (child) {
-                xmltooling::auto_ptr_char type(child->getAttributeNS(NULL,_type));
-                log.info("building AAP provider of type %s...",type.get());
-                try {
-                    IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),child);
-                    IAAP* aap=dynamic_cast<IAAP*>(plugin);
-                    if (aap)
-                        m_aaps.push_back(aap);
-                    else {
-                        delete plugin;
-                        log.crit("plugin was not an AAP provider");
-                    }
-                }
-                catch (exception& ex) {
-                    log.crit("error building AAP provider: %s", ex.what());
-                }
-
+                // TODO: some kind of compatibility
                 child = XMLHelper::getNextSiblingElement(child,AAPProvider);
             }
         }
@@ -597,7 +580,6 @@ void XMLApplication::cleanup()
 #else
     for_each(m_credMap.begin(),m_credMap.end(),xmltooling::cleanup_pair<const XMLCh*,PropertySet>());
 #endif
-    for_each(m_aaps.begin(),m_aaps.end(),xmltooling::cleanup<IAAP>());
 
     delete m_trust;
     delete m_metadata;
@@ -673,11 +655,6 @@ const PropertySet* XMLApplication::getPropertySet(const char* name, const char* 
     if (ret || !m_base)
         return ret;
     return m_base->getPropertySet(name,ns);
-}
-
-Iterator<IAAP*> XMLApplication::getAAPProviders() const
-{
-    return (m_aaps.empty() && m_base) ? m_base->getAAPProviders() : m_aaps;
 }
 
 MetadataProvider* XMLApplication::getMetadataProvider() const
