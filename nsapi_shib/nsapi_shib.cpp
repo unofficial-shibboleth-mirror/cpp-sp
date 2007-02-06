@@ -34,10 +34,12 @@
 #include <shibsp/AbstractSPRequest.h>
 #include <shibsp/RequestMapper.h>
 #include <shibsp/SPConfig.h>
+#include <shibsp/ServiceProvider.h>
+#include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/Threads.h>
-
-#include <shib-target/shib-target.h>
+#include <xmltooling/util/XMLHelper.h>
+#include <xercesc/util/XMLUniDefs.hpp>
 
 #include <fstream>
 #include <sstream>
@@ -66,10 +68,12 @@ using namespace std;
     if (IO_ERROR==net_write(sn->csd,str,strlen(str))) return REQ_EXIT
 
 namespace {
-    shibtarget::ShibTargetConfig* g_Config=NULL;
+    SPConfig* g_Config=NULL;
     string g_ServerName;
     string g_ServerScheme;
     string g_unsetHeaderValue;
+
+    static const XMLCh path[] =             UNICODE_LITERAL_4(p,a,t,h);
 }
 
 PluginManager<RequestMapper,const DOMElement*>::Factory SunRequestMapFactory;
@@ -77,7 +81,7 @@ PluginManager<RequestMapper,const DOMElement*>::Factory SunRequestMapFactory;
 extern "C" NSAPI_PUBLIC void nsapi_shib_exit(void*)
 {
     if (g_Config)
-        g_Config->shutdown();
+        g_Config->term();
     g_Config = NULL;
 }
 
@@ -109,61 +113,60 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, ::Session* sn, Request* 
 
     log_error(LOG_INFORM,"nsapi_shib_init",sn,rq,"nsapi_shib loaded for host (%s)",g_ServerName.c_str());
 
-#ifndef _DEBUG
-    try {
-#endif
-        const char* schemadir=pblock_findval("shib-schemas",pb);
-        if (!schemadir)
-            schemadir=getenv("SHIBSCHEMAS");
-        if (!schemadir)
-            schemadir=SHIB_SCHEMAS;
-        const char* config=pblock_findval("shib-config",pb);
-        if (!config)
-            config=getenv("SHIBCONFIG");
-        if (!config)
-            config=SHIB_CONFIG;
-        g_Config=&shibtarget::ShibTargetConfig::getConfig();
-        SPConfig::getConfig().setFeatures(
-            SPConfig::Listener |
-            SPConfig::Caching |
-            SPConfig::Metadata |
-            SPConfig::AAP |
-            SPConfig::RequestMapping |
-            SPConfig::InProcess |
-            SPConfig::Logging
-            );
-        if (!g_Config->init(schemadir)) {
-            g_Config=NULL;
-            pblock_nvinsert("error","unable to initialize Shibboleth libraries",pb);
-            return REQ_ABORTED;
-        }
-
-        SPConfig::getConfig().RequestMapperManager.registerFactory(XML_REQUEST_MAPPER,&SunRequestMapFactory);
-
-        if (!g_Config->load(config)) {
-            g_Config=NULL;
-            pblock_nvinsert("error","unable to initialize load Shibboleth configuration",pb);
-            return REQ_ABORTED;
-        }
-
-        daemon_atrestart(nsapi_shib_exit,NULL);
-
-        ServiceProvider* conf=SPConfig::getConfig().getServiceProvider();
-        Locker locker(conf);
-        const PropertySet* props=conf->getPropertySet("Local");
-        if (props) {
-            pair<bool,const char*> unsetValue=props->getString("unsetHeaderValue");
-            if (unsetValue.first)
-                g_unsetHeaderValue = unsetValue.second;
-        }
-#ifndef _DEBUG
-    }
-    catch (...) {
+    const char* schemadir=pblock_findval("shib-schemas",pb);
+    if (!schemadir)
+        schemadir=getenv("SHIBSCHEMAS");
+    if (!schemadir)
+        schemadir=SHIBSP_SCHEMAS;
+    const char* config=pblock_findval("shib-config",pb);
+    if (!config)
+        config=getenv("SHIBCONFIG");
+    if (!config)
+        config=SHIBSP_CONFIG;
+    g_Config=&SPConfig::getConfig();
+    g_Config->setFeatures(
+        SPConfig::Listener |
+        SPConfig::Caching |
+        SPConfig::Metadata |
+        SPConfig::RequestMapping |
+        SPConfig::InProcess |
+        SPConfig::Logging
+        );
+    if (!g_Config->init(schemadir)) {
         g_Config=NULL;
-        pblock_nvinsert("error","caught exception, unable to initialize Shibboleth libraries",pb);
+        pblock_nvinsert("error","unable to initialize Shibboleth libraries",pb);
         return REQ_ABORTED;
     }
-#endif
+
+    g_Config->RequestMapperManager.registerFactory(XML_REQUEST_MAPPER,&SunRequestMapFactory);
+
+    try {
+        DOMDocument* dummydoc=XMLToolingConfig::getConfig().getParser().newDocument();
+        XercesJanitor<DOMDocument> docjanitor(dummydoc);
+        DOMElement* dummy = dummydoc->createElementNS(NULL,path);
+        auto_ptr_XMLCh src(config);
+        dummy->setAttributeNS(NULL,path,src.get());
+
+        g_Config->setServiceProvider(g_Config->ServiceProviderManager.newPlugin(XML_SERVICE_PROVIDER,dummy));
+        g_Config->getServiceProvider()->init();
+    }
+    catch (exception& ex) {
+        pblock_nvinsert("error",ex.what(),pb);
+        g_Config->term();
+        g_Config=NULL;
+        return REQ_ABORTED;
+    }
+
+    daemon_atrestart(nsapi_shib_exit,NULL);
+
+    ServiceProvider* sp=g_Config->getServiceProvider();
+    Locker locker(sp);
+    const PropertySet* props=sp->getPropertySet("Local");
+    if (props) {
+        pair<bool,const char*> unsetValue=props->getString("unsetHeaderValue");
+        if (unsetValue.first)
+            g_unsetHeaderValue = unsetValue.second;
+    }
     return REQ_PROCEED;
 }
 

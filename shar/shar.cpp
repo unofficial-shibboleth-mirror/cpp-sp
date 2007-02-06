@@ -35,7 +35,6 @@
 # define _CRT_SECURE_NO_DEPRECATE 1
 #endif
 
-#include <shib-target/shib-target.h>
 #include <shibsp/SPConfig.h>
 
 #ifdef HAVE_UNISTD_H
@@ -46,12 +45,15 @@
 #include <stdio.h>
 #include <signal.h>
 #include <log4cpp/Category.hh>
+#include <shibsp/ServiceProvider.h>
+#include <shibsp/remoting/ListenerService.h>
+#include <xercesc/util/XMLUniDefs.hpp>
+#include <xmltooling/XMLToolingConfig.h>
+#include <xmltooling/util/XMLHelper.h>
 
 using namespace shibsp;
-using namespace shibtarget;
-using namespace shibboleth;
-using namespace saml;
 using namespace log4cpp;
+using namespace xmltooling;
 using namespace std;
 
 bool shibd_shutdown = false;
@@ -102,17 +104,17 @@ int MyAllocHook(int nAllocType, void *pvData,
 
 int real_main(int preinit)
 {
-    ShibTargetConfig& conf=ShibTargetConfig::getConfig();
+    SPConfig& conf=SPConfig::getConfig();
     if (preinit) {
 
-        // initialize the shib-target library
-        SPConfig::getConfig().setFeatures(
+        // Initialize the SP library.
+        conf.setFeatures(
             SPConfig::Listener |
             SPConfig::Caching |
             SPConfig::Metadata |
             SPConfig::Trust |
             SPConfig::Credentials |
-            SPConfig::AAP |
+            SPConfig::AttributeResolver |
             SPConfig::OutOfProcess |
             (shar_checkonly ? (SPConfig::InProcess | SPConfig::RequestMapping) : SPConfig::Logging)
             );
@@ -121,11 +123,29 @@ int real_main(int preinit)
         if (!shar_schemadir)
             shar_schemadir=getenv("SHIBSCHEMAS");
         if (!shar_schemadir)
-            shar_schemadir=SHIB_SCHEMAS;
+            shar_schemadir=SHIBSP_SCHEMAS;
         if (!shar_config)
-            shar_config=SHIB_CONFIG;
-        if (!conf.init(shar_schemadir) || !conf.load(shar_config)) {
+            shar_config=SHIBSP_CONFIG;
+        if (!conf.init(shar_schemadir)) {
             fprintf(stderr, "configuration is invalid, see console for specific problems\n");
+            return -1;
+        }
+        
+        try {
+            fprintf(stderr, "loading configuration file: %s\n", shar_config);
+            static const XMLCh path[] = UNICODE_LITERAL_4(p,a,t,h);
+            DOMDocument* dummydoc=XMLToolingConfig::getConfig().getParser().newDocument();
+            XercesJanitor<DOMDocument> docjanitor(dummydoc);
+            DOMElement* dummy = dummydoc->createElementNS(NULL,path);
+            auto_ptr_XMLCh src(shar_config);
+            dummy->setAttributeNS(NULL,path,src.get());
+    
+            conf.setServiceProvider(conf.ServiceProviderManager.newPlugin(XML_SERVICE_PROVIDER,dummy));
+            conf.getServiceProvider()->init();
+        }
+        catch (exception& ex) {
+            fprintf(stderr, "caught exception while loading configuration: %s\n", ex.what());
+            conf.term();
             return -2;
         }
 
@@ -143,13 +163,13 @@ int real_main(int preinit)
         if (!shar_checkonly) {
 
             // Run the listener.
-            if (!SPConfig::getConfig().getServiceProvider()->getListenerService()->run(&shibd_shutdown)) {
+            if (!conf.getServiceProvider()->getListenerService()->run(&shibd_shutdown)) {
                 fprintf(stderr, "listener failed to enter listen loop\n");
                 return -3;
             }
         }
 
-        conf.shutdown();
+        conf.term();
     }
     return 0;
 }
@@ -244,24 +264,42 @@ int main(int argc, char *argv[])
     if (!shar_schemadir)
         shar_schemadir=getenv("SHIBSCHEMAS");
     if (!shar_schemadir)
-        shar_schemadir=SHIB_SCHEMAS;
+        shar_schemadir=SHIBSP_SCHEMAS;
     if (!shar_config)
-        shar_config=SHIB_CONFIG;
+        shar_config=SHIBSP_CONFIG;
 
     // initialize the shib-target library
-    ShibTargetConfig& conf=ShibTargetConfig::getConfig();
-    SPConfig::getConfig().setFeatures(
+    SPConfig& conf=SPConfig::getConfig();
+    conf.setFeatures(
         SPConfig::Listener |
         SPConfig::Caching |
         SPConfig::Metadata |
         SPConfig::Trust |
         SPConfig::Credentials |
-        SPConfig::AAP |
+        SPConfig::AttributeResolver |
         SPConfig::OutOfProcess |
         (shar_checkonly ? (SPConfig::InProcess | SPConfig::RequestMapping) : SPConfig::Logging)
         );
-    if (!conf.init(shar_schemadir) || !conf.load(shar_config)) {
+    if (!conf.init(shar_schemadir)) {
         fprintf(stderr, "configuration is invalid, check console for specific problems\n");
+        return -1;
+    }
+
+    try {
+        fprintf(stderr, "loading configuration file: %s\n", shar_config);
+        static const XMLCh path[] = UNICODE_LITERAL_4(p,a,t,h);
+        DOMDocument* dummydoc=XMLToolingConfig::getConfig().getParser().newDocument();
+        XercesJanitor<DOMDocument> docjanitor(dummydoc);
+        DOMElement* dummy = dummydoc->createElementNS(NULL,path);
+        auto_ptr_XMLCh src(shar_config);
+        dummy->setAttributeNS(NULL,path,src.get());
+
+        conf.setServiceProvider(conf.ServiceProviderManager.newPlugin(XML_SERVICE_PROVIDER,dummy));
+        conf.getServiceProvider()->init();
+    }
+    catch (exception& ex) {
+        fprintf(stderr, "caught exception while loading configuration: %s\n", ex.what());
+        conf.term();
         return -2;
     }
 
@@ -281,13 +319,13 @@ int main(int argc, char *argv[])
         }
     
         // Run the listener
-        if (!SPConfig::getConfig().getServiceProvider()->getListenerService()->run(&shibd_shutdown)) {
+        if (!conf.getServiceProvider()->getListenerService()->run(&shibd_shutdown)) {
             fprintf(stderr, "listener failed to enter listen loop\n");
             return -3;
         }
     }
 
-    conf.shutdown();
+    conf.term();
     if (pidfile)
         unlink(pidfile);
     return 0;

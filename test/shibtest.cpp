@@ -74,7 +74,7 @@ int main(int argc,char* argv[])
         SPConfig::Metadata |
         SPConfig::Trust |
         SPConfig::Credentials |
-        SPConfig::AAP |
+        SPConfig::AttributeResolver |
         SPConfig::OutOfProcess |
         SPConfig::Caching
         );

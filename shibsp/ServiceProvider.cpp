@@ -46,7 +46,7 @@ using namespace xmltooling;
 using namespace std;
 
 namespace shibsp {
-    //SHIBSP_DLLLOCAL PluginManager<ServiceProvider,const DOMElement*>::Factory XMLServiceProviderFactory;
+    SHIBSP_DLLLOCAL PluginManager<ServiceProvider,const DOMElement*>::Factory XMLServiceProviderFactory;
 
     long SHIBSP_DLLLOCAL sendError(
         SPRequest& request, const Application* app, const char* page, TemplateParameters& tp, const XMLToolingException* ex=NULL
@@ -110,7 +110,7 @@ namespace shibsp {
 
 void SHIBSP_API shibsp::registerServiceProviders()
 {
-    //SPConfig::getConfig().ServiceProviderManager.registerFactory(XML_SERVICE_PROVIDER, XMLServiceProviderFactory);
+    SPConfig::getConfig().ServiceProviderManager.registerFactory(XML_SERVICE_PROVIDER, XMLServiceProviderFactory);
 }
 
 pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handler) const

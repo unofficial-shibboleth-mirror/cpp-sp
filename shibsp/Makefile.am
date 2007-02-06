@@ -72,6 +72,7 @@ libshibsp_la_SOURCES = \
 	impl/StorageServiceSessionCache.cpp \
 	impl/XMLAccessControl.cpp \
 	impl/XMLRequestMapper.cpp \
+	impl/XMLServiceProvider.cpp \
 	metadata/MetadataExtImpl.cpp \
 	metadata/MetadataExtSchemaValidators.cpp \
 	remoting/impl/ddf.cpp \

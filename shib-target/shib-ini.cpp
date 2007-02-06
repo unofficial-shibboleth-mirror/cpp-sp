@@ -452,7 +452,7 @@ XMLApplication::XMLApplication(
         // Always include our own providerId as an audience.
         m_audiences.push_back(getXMLString("providerId").second);
 
-        if (conf.isEnabled(SPConfig::AAP)) {
+        if (conf.isEnabled(SPConfig::AttributeResolver)) {
             child = XMLHelper::getFirstChildElement(e,AAPProvider);
             while (child) {
                 // TODO: some kind of compatibility
@@ -819,7 +819,8 @@ const Handler* XMLApplication::getHandler(const char* path) const
 
 short XMLConfigImpl::acceptNode(const DOMNode* node) const
 {
-    if (!XMLString::equals(node->getNamespaceURI(),shibspconstants::SHIB1SPCONFIG_NS))
+    if (!XMLString::equals(node->getNamespaceURI(),shibspconstants::SHIB1SPCONFIG_NS) &&
+        !XMLString::equals(node->getNamespaceURI(),shibspconstants::SHIB2SPCONFIG_NS))
         return FILTER_ACCEPT;
     const XMLCh* name=node->getLocalName();
     if (XMLString::equals(name,Applications) ||
@@ -880,7 +881,6 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
 
     try {
         SPConfig& conf=SPConfig::getConfig();
-        SAMLConfig& shibConf=SAMLConfig::getConfig();
         XMLToolingConfig& xmlConf=XMLToolingConfig::getConfig();
         const DOMElement* SHAR=XMLHelper::getFirstChildElement(e,OutOfProcess);
         if (!SHAR)
@@ -919,6 +919,10 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
 
         // Much of the processing can only occur on the first instantiation.
         if (first) {
+            // Set clock skew.
+            pair<bool,unsigned int> skew=getUnsignedInt("clockSkew");
+            if (skew.first)
+                xmlConf.clock_skew_secs=skew.second;
 
             // Extensions
             doExtensions(e, "global", log);
@@ -1089,34 +1093,6 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                     child = XMLHelper::getNextSiblingElement(child);
                 }
             }
-        }
-
-        // Now we load any attribute factories
-        child = XMLHelper::getFirstChildElement(e,AttributeFactory);
-        while (child) {
-            xmltooling::auto_ptr_char type(child->getAttributeNS(NULL,_type));
-            log.info("building Attribute factory of type %s...",type.get());
-            try {
-                IPlugIn* plugin=shibConf.getPlugMgr().newPlugin(type.get(),child);
-                if (plugin) {
-                    IAttributeFactory* fact=dynamic_cast<IAttributeFactory*>(plugin);
-                    if (fact) {
-                        m_attrFactories.push_back(fact);
-                        ShibConfig::getConfig().regAttributeMapping(
-                            child->getAttributeNS(NULL,opensaml::saml1::Attribute::ATTRIBUTENAME_ATTRIB_NAME), fact
-                            );
-                    }
-                    else {
-                        delete plugin;
-                        log.crit("plugin was not an Attribute factory");
-                    }
-                }
-            }
-            catch (exception& ex) {
-                log.crit("error building Attribute factory: %s", ex.what());
-            }
-
-            child = XMLHelper::getNextSiblingElement(child,AttributeFactory);
         }
 
         // Load the default application. This actually has a fixed ID of "default". ;-)

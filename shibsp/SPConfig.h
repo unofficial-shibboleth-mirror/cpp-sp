@@ -70,7 +70,7 @@ namespace shibsp {
             Metadata = 4,
             Trust = 8,
             Credentials = 16,
-            AAP = 32,
+            AttributeResolver = 32,
             RequestMapping = 64,
             OutOfProcess = 128,
             InProcess = 256,

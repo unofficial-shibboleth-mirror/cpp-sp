@@ -36,12 +36,15 @@
 #include <shibsp/exceptions.h>
 #include <shibsp/RequestMapper.h>
 #include <shibsp/SPConfig.h>
+#include <shibsp/ServiceProvider.h>
+#include <shibsp/SessionCache.h>
 #include <shibsp/attribute/Attribute.h>
 
-#include <shib-target/shib-target.h>
 #include <xercesc/util/regx/RegularExpression.hpp>
+#include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/Threads.h>
+#include <xmltooling/util/XMLHelper.h>
 
 #ifdef WIN32
 # include <winsock.h>
@@ -78,11 +81,12 @@ using namespace std;
 extern "C" module MODULE_VAR_EXPORT mod_shib;
 
 namespace {
-    char* g_szSHIBConfig = NULL;
-    char* g_szSchemaDir = NULL;
-    shibtarget::ShibTargetConfig* g_Config = NULL;
+    char* g_szSHIBConfig = SHIBSP_CONFIG;
+    char* g_szSchemaDir = SHIBSP_SCHEMAS;
+    SPConfig* g_Config = NULL;
     string g_unsetHeaderValue;
     static const char* g_UserDataKey = "_shib_check_user_";
+    static const XMLCh path[] = UNICODE_LITERAL_4(p,a,t,h);
 }
 
 /* Apache 2.2.x headers must be accumulated and set in the output filter.
@@ -920,7 +924,7 @@ bool htAccessControl::authorized(const SPRequest& request, const Session* sessio
 extern "C" apr_status_t shib_exit(void* data)
 {
     if (g_Config) {
-        g_Config->shutdown();
+        g_Config->term();
         g_Config = NULL;
     }
     ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,NULL,"shib_exit() done");
@@ -977,7 +981,7 @@ extern "C" apr_status_t shib_child_exit(void* data)
 #endif
 
     ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_child_exit(%d) dealing with g_Config..", (int)getpid());
-    g_Config->shutdown();
+    g_Config->term();
     g_Config = NULL;
     ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_child_exit() done");
 
@@ -1006,41 +1010,45 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
         exit(1);
     }
 
-    try {
-        g_Config=&shibtarget::ShibTargetConfig::getConfig();
-        SPConfig::getConfig().setFeatures(
-            SPConfig::Caching |
-            SPConfig::Listener |
-            SPConfig::Metadata |
-            SPConfig::AAP |
-            SPConfig::RequestMapping |
-            SPConfig::InProcess |
-            SPConfig::Logging
-            );
-        if (!g_Config->init(g_szSchemaDir)) {
-            ap_log_error(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() failed to initialize libraries");
-            exit(1);
-        }
-        SPConfig::getConfig().AccessControlManager.registerFactory(HT_ACCESS_CONTROL,&htAccessFactory);
-        SPConfig::getConfig().RequestMapperManager.registerFactory(NATIVE_REQUEST_MAPPER,&ApacheRequestMapFactory);
-        
-        if (!g_Config->load(g_szSHIBConfig)) {
-            ap_log_error(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() failed to load configuration");
-            exit(1);
-        }
-
-        ServiceProvider* conf=SPConfig::getConfig().getServiceProvider();
-        xmltooling::Locker locker(conf);
-        const PropertySet* props=conf->getPropertySet("Local");
-        if (props) {
-            pair<bool,const char*> unsetValue=props->getString("unsetHeaderValue");
-            if (unsetValue.first)
-                g_unsetHeaderValue = unsetValue.second;
-        }
-    }
-    catch (...) {
-        ap_log_error(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() failed to initialize system");
+    g_Config=&SPConfig::getConfig();
+    g_Config->setFeatures(
+        SPConfig::Caching |
+        SPConfig::Listener |
+        SPConfig::Metadata |
+        SPConfig::RequestMapping |
+        SPConfig::InProcess |
+        SPConfig::Logging
+        );
+    if (!g_Config->init(g_szSchemaDir)) {
+        ap_log_error(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() failed to initialize libraries");
         exit(1);
+    }
+    g_Config->AccessControlManager.registerFactory(HT_ACCESS_CONTROL,&htAccessFactory);
+    g_Config->RequestMapperManager.registerFactory(NATIVE_REQUEST_MAPPER,&ApacheRequestMapFactory);
+    
+    try {
+        DOMDocument* dummydoc=XMLToolingConfig::getConfig().getParser().newDocument();
+        XercesJanitor<DOMDocument> docjanitor(dummydoc);
+        DOMElement* dummy = dummydoc->createElementNS(NULL,path);
+        auto_ptr_XMLCh src(g_szSHIBConfig);
+        dummy->setAttributeNS(NULL,path,src.get());
+
+        g_Config->setServiceProvider(g_Config->ServiceProviderManager.newPlugin(XML_SERVICE_PROVIDER,dummy));
+        g_Config->getServiceProvider()->init();
+    }
+    catch (exception& ex) {
+        ap_log_error(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,SH_AP_R(s),ex.what());
+        ap_log_error(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() failed to load configuration");
+        exit(1);
+    }
+
+    ServiceProvider* sp=g_Config->getServiceProvider();
+    xmltooling::Locker locker(sp);
+    const PropertySet* props=sp->getPropertySet("Local");
+    if (props) {
+        pair<bool,const char*> unsetValue=props->getString("unsetHeaderValue");
+        if (unsetValue.first)
+            g_unsetHeaderValue = unsetValue.second;
     }
 
     // Set the cleanup handler

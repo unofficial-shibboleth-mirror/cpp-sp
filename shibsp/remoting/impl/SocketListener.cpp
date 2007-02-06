@@ -180,6 +180,7 @@ bool SocketListener::run(bool* shutdown)
 #ifdef _DEBUG
     NDC ndc("run");
 #endif
+    log->info("listener service starting");
 
     // Save flag to monitor for shutdown request.
     m_shutdown=shutdown;

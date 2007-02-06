@@ -295,6 +295,10 @@
 					RelativePath=".\impl\XMLRequestMapper.cpp"
 					>
 				</File>
+				<File
+					RelativePath=".\impl\XMLServiceProvider.cpp"
+					>
+				</File>
 			</Filter>
 			<Filter
 				Name="attribute"

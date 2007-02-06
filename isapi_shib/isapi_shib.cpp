@@ -27,10 +27,14 @@
 
 #include <shibsp/AbstractSPRequest.h>
 #include <shibsp/SPConfig.h>
+#include <shibsp/ServiceProvider.h>
+#include <xmltooling/unicode.h>
+#include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/NDC.h>
+#include <xmltooling/util/XMLHelper.h>
+#include <xercesc/util/XMLUniDefs.hpp>
 
-#include <shib-target/shib-target.h>
-
+#include <set>
 #include <sstream>
 #include <fstream>
 #include <process.h>
@@ -40,10 +44,12 @@
 
 using namespace shibsp;
 using namespace xmltooling;
+using namespace xercesc;
 using namespace std;
 
 // globals
 namespace {
+    static const XMLCh path[] =             UNICODE_LITERAL_4(p,a,t,h);
     static const XMLCh name[] =             UNICODE_LITERAL_4(n,a,m,e);
     static const XMLCh port[] =             UNICODE_LITERAL_4(p,o,r,t);
     static const XMLCh sslport[] =          UNICODE_LITERAL_7(s,s,l,p,o,r,t);
@@ -80,7 +86,7 @@ namespace {
     };
     
     HINSTANCE g_hinstDLL;
-    shibtarget::ShibTargetConfig* g_Config = NULL;
+    SPConfig* g_Config = NULL;
     map<string,site_t> g_Sites;
     bool g_bNormalizeRequest = true;
 }
@@ -137,65 +143,65 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
         return TRUE;
     }
 
-#ifndef _DEBUG
-    try
-    {
-#endif
-        LPCSTR schemadir=getenv("SHIBSCHEMAS");
-        if (!schemadir)
-            schemadir=SHIB_SCHEMAS;
-        LPCSTR config=getenv("SHIBCONFIG");
-        if (!config)
-            config=SHIB_CONFIG;
-        g_Config=&shibtarget::ShibTargetConfig::getConfig();
-        SPConfig::getConfig().setFeatures(
-            SPConfig::Listener |
-            SPConfig::Caching |
-            SPConfig::Metadata |
-            SPConfig::AAP |
-            SPConfig::RequestMapping |
-            SPConfig::InProcess |
-            SPConfig::Logging
-            );
-        if (!g_Config->init(schemadir)) {
-            g_Config=NULL;
-            LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL,
-                    "Filter startup failed during library initialization, check native log for help.");
-            return FALSE;
-        }
-        else if (!g_Config->load(config)) {
-            g_Config=NULL;
-            LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL,
-                    "Filter startup failed to load configuration, check native log for help.");
-            return FALSE;
-        }
-        
-        // Access the implementation-specifics for site mappings.
-        ServiceProvider* conf=SPConfig::getConfig().getServiceProvider();
-        xmltooling::Locker locker(conf);
-        const PropertySet* props=conf->getPropertySet("Local");
-        if (props) {
-            const DOMElement* impl=XMLHelper::getFirstChildElement(props->getElement(),Implementation);
-            if (impl && (impl=XMLHelper::getFirstChildElement(impl,ISAPI))) {
-                const XMLCh* flag=impl->getAttributeNS(NULL,normalizeRequest);
-                g_bNormalizeRequest=(!flag || !*flag || *flag==chDigit_1 || *flag==chLatin_t);
-                impl=XMLHelper::getFirstChildElement(impl,Site);
-                while (impl) {
-                    auto_ptr_char id(impl->getAttributeNS(NULL,id));
-                    if (id.get())
-                        g_Sites.insert(pair<string,site_t>(id.get(),site_t(impl)));
-                    impl=XMLHelper::getNextSiblingElement(impl,Site);
-                }
-            }
-        }
-#ifndef _DEBUG
-    }
-    catch (...)
-    {
-        LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, "Filter startup failed with an exception.");
+    LPCSTR schemadir=getenv("SHIBSCHEMAS");
+    if (!schemadir)
+        schemadir=SHIBSP_SCHEMAS;
+    LPCSTR config=getenv("SHIBCONFIG");
+    if (!config)
+        config=SHIBSP_CONFIG;
+    g_Config=&SPConfig::getConfig();
+    g_Config->setFeatures(
+        SPConfig::Listener |
+        SPConfig::Caching |
+        SPConfig::Metadata |
+        SPConfig::RequestMapping |
+        SPConfig::InProcess |
+        SPConfig::Logging
+        );
+    if (!g_Config->init(schemadir)) {
+        g_Config=NULL;
+        LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL,
+                "Filter startup failed during library initialization, check native log for help.");
         return FALSE;
     }
-#endif
+
+    try {
+        DOMDocument* dummydoc=XMLToolingConfig::getConfig().getParser().newDocument();
+        XercesJanitor<DOMDocument> docjanitor(dummydoc);
+        DOMElement* dummy = dummydoc->createElementNS(NULL,path);
+        auto_ptr_XMLCh src(config);
+        dummy->setAttributeNS(NULL,path,src.get());
+
+        g_Config->setServiceProvider(g_Config->ServiceProviderManager.newPlugin(XML_SERVICE_PROVIDER,dummy));
+        g_Config->getServiceProvider()->init();
+    }
+    catch (exception& ex) {
+        g_Config->term();
+        g_Config=NULL;
+        LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, ex.what());
+        LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL,
+                "Filter startup failed to load configuration, check native log for details.");
+        return FALSE;
+    }
+    
+    // Access the implementation-specifics for site mappings.
+    ServiceProvider* sp=g_Config->getServiceProvider();
+    xmltooling::Locker locker(sp);
+    const PropertySet* props=sp->getPropertySet("Local");
+    if (props) {
+        const DOMElement* impl=XMLHelper::getFirstChildElement(props->getElement(),Implementation);
+        if (impl && (impl=XMLHelper::getFirstChildElement(impl,ISAPI))) {
+            const XMLCh* flag=impl->getAttributeNS(NULL,normalizeRequest);
+            g_bNormalizeRequest=(!flag || !*flag || *flag==chDigit_1 || *flag==chLatin_t);
+            impl=XMLHelper::getFirstChildElement(impl,Site);
+            while (impl) {
+                auto_ptr_char id(impl->getAttributeNS(NULL,id));
+                if (id.get())
+                    g_Sites.insert(pair<string,site_t>(id.get(),site_t(impl)));
+                impl=XMLHelper::getNextSiblingElement(impl,Site);
+            }
+        }
+    }
 
     pVer->dwFilterVersion=HTTP_FILTER_REVISION;
     strncpy(pVer->lpszFilterDesc,"Shibboleth ISAPI Filter",SF_MAX_FILTER_DESC_LEN);
@@ -211,7 +217,7 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
 extern "C" BOOL WINAPI TerminateFilter(DWORD)
 {
     if (g_Config)
-        g_Config->shutdown();
+        g_Config->term();
     g_Config = NULL;
     LogEvent(NULL, EVENTLOG_INFORMATION_TYPE, 7701, NULL, "Filter shut down...");
     return TRUE;
@@ -497,8 +503,8 @@ public:
   }
   
   // The filter never processes the POST, so stub these methods.
-  const char* getQueryString() const { throw runtime_error("getQueryString not implemented"); }
-  const char* getRequestBody() const { throw runtime_error("getRequestBody not implemented"); }
+  const char* getQueryString() const { throw IOException("getQueryString not implemented"); }
+  const char* getRequestBody() const { throw IOException("getRequestBody not implemented"); }
 };
 
 DWORD WriteClientError(PHTTP_FILTER_CONTEXT pfc, const char* msg)
@@ -756,7 +762,7 @@ public:
         DWORD buflen=8192;
         BOOL ret = m_lpECB->ReadClient(m_lpECB->ConnID, buf, &buflen);
         if (!ret || !buflen)
-            throw saml::SAMLException("Error reading POST request body from browser.");
+            throw IOException("Error reading POST request body from browser.");
         m_body.append(buf, buflen);
         datalen-=buflen;
       }

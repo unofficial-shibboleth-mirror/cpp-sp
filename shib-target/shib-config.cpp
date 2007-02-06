@@ -138,8 +138,6 @@ bool STConfig::load(const char* config)
         
         pair<bool,unsigned int> skew=sp->getUnsignedInt("clockSkew");
         SAMLConfig::getConfig().clock_skew_secs=skew.first ? skew.second : 180;
-        if (skew.first)
-            XMLToolingConfig::getConfig().clock_skew_secs=skew.second;
         SPConfig::getConfig().setServiceProvider(sp.release());
         
         m_tranLog=new FixedContextCategory(SHIBTRAN_LOGCAT);
