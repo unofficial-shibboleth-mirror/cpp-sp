@@ -85,23 +85,11 @@
 		<attribute name="retryInterval" type="unsignedInt" use="optional" default="300"/>
 		<attribute name="strictValidity" type="boolean" use="optional" default="true"/>
 		<attribute name="propagateErrors" type="boolean" use="optional" default="false"/>
-		<attribute name="writeThrough" type="boolean" use="optional" default="false"/>
 	</attributeGroup>
 	
 	<element name="MemorySessionCache">
 		<complexType>
 			<attributeGroup ref="conf:SessionCacheProperties"/>
-			<anyAttribute namespace="##other" processContents="lax"/>
-		</complexType>
-	</element>
-	<element name="ODBCSessionCache">
-		<complexType>
-			<sequence>
-				<element name="ConnectionString" type="string" minOccurs="0"/>
-			</sequence>
-			<attributeGroup ref="conf:SessionCacheProperties"/>
-			<attribute name="odbcTimeout" type="unsignedInt" use="optional" default="14400"/>
-			<attribute name="storeAttributes" type="boolean" use="optional" default="false"/>
 			<anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>
@@ -154,19 +142,10 @@
 			</choice>
 			<choice>
 				<element ref="conf:MemorySessionCache"/>
-				<element ref="conf:ODBCSessionCache"/>
 				<element ref="conf:MySQLSessionCache"/>
 				<element ref="conf:SessionCache"/>
 			</choice>
 			<choice minOccurs="0">
-				<element name="ODBCReplayCache">
-					<complexType>
-						<sequence>
-							<element name="ConnectionString" type="string" minOccurs="0"/>
-						</sequence>
-						<anyAttribute namespace="##other" processContents="lax"/>
-					</complexType>
-				</element>
 				<element name="MySQLReplayCache">
 					<complexType>
 						<sequence>
@@ -209,6 +188,7 @@
 		</sequence>
 		<attribute name="logger" type="anyURI" use="optional"/>
 		<attribute name="localRelayState" type="boolean" use="optional" default="false"/>
+		<attribute name="unsetHeaderValue" type="string" use="optional"/>
 		<anyAttribute namespace="##other" processContents="lax"/>
 	</complexType>
 	

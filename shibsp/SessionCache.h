@@ -223,10 +223,10 @@ namespace shibsp {
     };
 
     /** SessionCache implementation that delegates to a remoted version. */
-    #define REMOTED_SESSION_CACHE    "edu.internet2.middleware.shibboleth.sp.provider.RemotedSessionCache"
+    #define REMOTED_SESSION_CACHE    "Remoted"
 
     /** SessionCache implementation backed by a StorageService. */
-    #define STORAGESERVICE_SESSION_CACHE    "edu.internet2.middleware.shibboleth.sp.provider.StorageServiceSessionCache"
+    #define STORAGESERVICE_SESSION_CACHE    "StorageService"
 
     /**
      * Registers SessionCache classes into the runtime.

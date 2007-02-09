@@ -64,10 +64,10 @@ namespace shibsp {
     void SHIBSP_API registerRequestMappers();
 
     /** XML-based RequestMapper implementation. */
-    #define XML_REQUEST_MAPPER      "edu.internet2.middleware.shibboleth.sp.provider.XMLRequestMapProvider"
+    #define XML_REQUEST_MAPPER      "XML"
 
     /** Hybrid of XML and platform-specific configuration. */
-    #define NATIVE_REQUEST_MAPPER   "edu.internet2.middleware.shibboleth.sp.provider.NativeRequestMapProvider"
+    #define NATIVE_REQUEST_MAPPER   "Native"
 };
 
 #endif /* __shibsp_reqmap_h__ */

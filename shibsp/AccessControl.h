@@ -62,10 +62,10 @@ namespace shibsp {
     void SHIBSP_API registerAccessControls();
 
     /** AccessControl based on rudimentary XML syntax. */
-    #define XML_ACCESS_CONTROL  "edu.internet2.middleware.shibboleth.sp.provider.XMLAccessControl"
+    #define XML_ACCESS_CONTROL  "XML"
 
     /** Reserved for Apache-style .htaccess support. */
-    #define HT_ACCESS_CONTROL   "edu.internet2.middleware.shibboleth.sp.apache.provider.htAccessControl"
+    #define HT_ACCESS_CONTROL   "htaccess"
 };
 
 #endif /* __shibsp_acl_h__ */

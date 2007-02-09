@@ -117,7 +117,9 @@ namespace {
 
 void SHIBSP_API shibsp::registerAccessControls()
 {
-    SPConfig::getConfig().AccessControlManager.registerFactory(XML_ACCESS_CONTROL, XMLAccessControlFactory);
+    SPConfig& conf=SPConfig::getConfig();
+    conf.AccessControlManager.registerFactory(XML_ACCESS_CONTROL, XMLAccessControlFactory);
+    conf.AccessControlManager.registerFactory("edu.internet2.middleware.shibboleth.sp.provider.XMLAccessControl", XMLAccessControlFactory);
 }
 
 Rule::Rule(const DOMElement* e)

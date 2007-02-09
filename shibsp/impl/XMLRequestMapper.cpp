@@ -154,7 +154,10 @@ void SHIBSP_API shibsp::registerRequestMappers()
 {
     SPConfig& conf=SPConfig::getConfig();
     conf.RequestMapperManager.registerFactory(XML_REQUEST_MAPPER, XMLRequestMapperFactory);
+    conf.RequestMapperManager.registerFactory("edu.internet2.middleware.shibboleth.sp.provider.XMLRequestMapProvider", XMLRequestMapperFactory);
+    conf.RequestMapperManager.registerFactory("edu.internet2.middleware.shibboleth.target.provider.XMLRequestMap", XMLRequestMapperFactory);
     conf.RequestMapperManager.registerFactory(NATIVE_REQUEST_MAPPER, XMLRequestMapperFactory);
+    conf.RequestMapperManager.registerFactory("edu.internet2.middleware.shibboleth.sp.provider.NativeRequestMapProvider", XMLRequestMapperFactory);
 }
 
 short Override::acceptNode(const DOMNode* node) const

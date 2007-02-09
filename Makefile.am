@@ -5,7 +5,7 @@ ACLOCAL_AMFLAGS = -I .
 EXTRA_DIST = \
 	schemas doc isapi_shib isapi_shib_gui \
 	Shibboleth.sln libtool.m4 acx_pthread.m4 acx_rpctest.m4 depcomp \
-	config_win32.h posttest/posttest.vcproj shibtest/shibtest.vcproj \
+	config_win32.h shibtest/shibtest.vcproj \
 	shibboleth.spec.in shibboleth.spec pkginfo.in pkginfo checkinstall
 
 dist-hook:

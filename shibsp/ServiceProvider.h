@@ -170,7 +170,7 @@ namespace shibsp {
     void SHIBSP_API registerServiceProviders();
 
     /** SP based on integrated XML and native server configuration. */
-    #define XML_SERVICE_PROVIDER "edu.internet2.middleware.shibboleth.sp.provider.XMLServiceProvider"
+    #define XML_SERVICE_PROVIDER "XML"
 };
 
 #endif /* __shibsp_sp_h__ */

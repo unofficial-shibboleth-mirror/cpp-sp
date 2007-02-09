@@ -138,13 +138,13 @@ namespace shibsp {
     void SHIBSP_API registerListenerServices();
 
     /** Listener based on in-memory simulated remoting. */
-    #define MEMORY_LISTENER_SERVICE "edu.internet2.middleware.shibboleth.sp.provider.MemoryListener"
+    #define MEMORY_LISTENER_SERVICE "MemoryListener"
 
     /** Listener based on TCP socket remoting. */
-    #define TCP_LISTENER_SERVICE "edu.internet2.middleware.shibboleth.sp.provider.TCPListener"
+    #define TCP_LISTENER_SERVICE "TCPListener"
 
     /** Listener based on UNIX domain socket remoting. */
-    #define UNIX_LISTENER_SERVICE "edu.internet2.middleware.shibboleth.sp.provider.UnixListener"
+    #define UNIX_LISTENER_SERVICE "UnixListener"
 };
 
 #endif /* __shibsp_listener_h__ */

@@ -343,17 +343,16 @@ XMLApplication::XMLApplication(
         bool hardACS=false, hardSessionInit=false;
         const DOMElement* child = XMLHelper::getFirstChildElement(propcheck->getElement());
         while (child) {
-            xmltooling::auto_ptr_char bindprop(child->getAttributeNS(NULL,EndpointType::BINDING_ATTRIB_NAME));
-            if (!bindprop.get() || !*(bindprop.get())) {
-                log.warn("md:AssertionConsumerService element has no Binding attribute, skipping it...");
-                child = XMLHelper::getNextSiblingElement(child);
-                continue;
-            }
-            
             try {
                 // A handler is based on the Binding property in conjunction with the element name.
                 // If it's an ACS or SI, also handle index/id mappings and defaulting.
                 if (XMLHelper::isNodeNamed(child,samlconstants::SAML20MD_NS,AssertionConsumerService::LOCAL_NAME)) {
+                    auto_ptr_char bindprop(child->getAttributeNS(NULL,EndpointType::BINDING_ATTRIB_NAME));
+                    if (!bindprop.get() || !*(bindprop.get())) {
+                        log.warn("md:AssertionConsumerService element has no Binding attribute, skipping it...");
+                        child = XMLHelper::getNextSiblingElement(child);
+                        continue;
+                    }
                     handler=conf.AssertionConsumerServiceManager.newPlugin(bindprop.get(),child);
                     // Map by binding (may be > 1 per binding, e.g. SAML 1.0 vs 1.1)
 #ifdef HAVE_GOOD_STL
@@ -376,6 +375,12 @@ XMLApplication::XMLApplication(
                     }
                 }
                 else if (XMLString::equals(child->getLocalName(),SessionInitiator)) {
+                    auto_ptr_char bindprop(child->getAttributeNS(NULL,EndpointType::BINDING_ATTRIB_NAME));
+                    if (!bindprop.get() || !*(bindprop.get())) {
+                        log.warn("SessionInitiator element has no Binding attribute, skipping it...");
+                        child = XMLHelper::getNextSiblingElement(child);
+                        continue;
+                    }
                     handler=conf.SessionInitiatorManager.newPlugin(bindprop.get(),child);
                     pair<bool,const char*> si_id=handler->getString("id");
                     if (si_id.first && si_id.second)
@@ -393,13 +398,31 @@ XMLApplication::XMLApplication(
                     }
                 }
                 else if (XMLHelper::isNodeNamed(child,samlconstants::SAML20MD_NS,SingleLogoutService::LOCAL_NAME)) {
+                    auto_ptr_char bindprop(child->getAttributeNS(NULL,EndpointType::BINDING_ATTRIB_NAME));
+                    if (!bindprop.get() || !*(bindprop.get())) {
+                        log.warn("md:SingleLogoutService element has no Binding attribute, skipping it...");
+                        child = XMLHelper::getNextSiblingElement(child);
+                        continue;
+                    }
                     handler=conf.SingleLogoutServiceManager.newPlugin(bindprop.get(),child);
                 }
                 else if (XMLHelper::isNodeNamed(child,samlconstants::SAML20MD_NS,ManageNameIDService::LOCAL_NAME)) {
+                    auto_ptr_char bindprop(child->getAttributeNS(NULL,EndpointType::BINDING_ATTRIB_NAME));
+                    if (!bindprop.get() || !*(bindprop.get())) {
+                        log.warn("md:ManageNameIDService element has no Binding attribute, skipping it...");
+                        child = XMLHelper::getNextSiblingElement(child);
+                        continue;
+                    }
                     handler=conf.ManageNameIDServiceManager.newPlugin(bindprop.get(),child);
                 }
                 else {
-                    handler=conf.HandlerManager.newPlugin(bindprop.get(),child);
+                    auto_ptr_char type(child->getAttributeNS(NULL,_type));
+                    if (!type.get() || !*(type.get())) {
+                        log.warn("Handler element has no type attribute, skipping it...");
+                        child = XMLHelper::getNextSiblingElement(child);
+                        continue;
+                    }
+                    handler=conf.HandlerManager.newPlugin(type.get(),child);
                 }
 
                 // Save off the objects after giving the property set to the handler for its use.
@@ -463,7 +486,7 @@ XMLApplication::XMLApplication(
             vector<MetadataProvider*> os2providers;
             child = XMLHelper::getFirstChildElement(e,_MetadataProvider);
             while (child) {
-                xmltooling::auto_ptr_char type(child->getAttributeNS(NULL,_type));
+                auto_ptr_char type(child->getAttributeNS(NULL,_type));
                 log.info("building metadata provider of type %s...",type.get());
                 try {
                     auto_ptr<MetadataProvider> mp(samlConf.MetadataProviderManager.newPlugin(type.get(),child));
@@ -499,7 +522,7 @@ XMLApplication::XMLApplication(
             ChainingTrustEngine* chainTrust = NULL;
             child = XMLHelper::getFirstChildElement(e,TrustProvider);
             while (child) {
-                xmltooling::auto_ptr_char type(child->getAttributeNS(NULL,_type));
+                auto_ptr_char type(child->getAttributeNS(NULL,_type));
                 log.info("building trust provider of type %s...",type.get());
                 try {
                     if (!m_trust) {
@@ -725,7 +748,7 @@ const vector<const Handler*>& XMLApplication::getAssertionConsumerServicesByBind
 #ifdef HAVE_GOOD_STL
     ACSBindingMap::const_iterator i=m_acsBindingMap.find(binding);
 #else
-    xmltooling::auto_ptr_char temp(binding);
+    auto_ptr_char temp(binding);
     ACSBindingMap::const_iterator i=m_acsBindingMap.find(temp.get());
 #endif
     if (i!=m_acsBindingMap.end())
@@ -774,7 +797,7 @@ void XMLConfigImpl::doExtensions(const DOMElement* e, const char* label, Categor
     if (exts) {
         exts=XMLHelper::getFirstChildElement(exts,Library);
         while (exts) {
-            xmltooling::auto_ptr_char path(exts->getAttributeNS(NULL,_path));
+            auto_ptr_char path(exts->getAttributeNS(NULL,_path));
             try {
                 if (path.get()) {
                     XMLToolingConfig::getConfig().load_library(path.get(),(void*)exts);
@@ -823,7 +846,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
             if (!logconf || !*logconf)
                 logconf=e->getAttributeNS(NULL,logger);
             if (logconf && *logconf) {
-                xmltooling::auto_ptr_char logpath(logconf);
+                auto_ptr_char logpath(logconf);
                 log.debug("loading new logging configuration from (%s), check log destination for status of configuration",logpath.get());
                 XMLToolingConfig::getConfig().log_config(logpath.get());
             }
@@ -872,7 +895,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                         else {
                             child=XMLHelper::getFirstChildElement(SHAR,Listener);
                             if (child) {
-                                xmltooling::auto_ptr_char type(child->getAttributeNS(NULL,_type));
+                                auto_ptr_char type(child->getAttributeNS(NULL,_type));
                                 if (type.get())
                                     plugtype=type.get();
                             }
@@ -898,8 +921,8 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                 string inmemID;
                 child=XMLHelper::getFirstChildElement(container,_StorageService);
                 while (child) {
-                    xmltooling::auto_ptr_char id(child->getAttributeNS(NULL,Id));
-                    xmltooling::auto_ptr_char type(child->getAttributeNS(NULL,_type));
+                    auto_ptr_char id(child->getAttributeNS(NULL,Id));
+                    auto_ptr_char type(child->getAttributeNS(NULL,_type));
                     if (id.get() && type.get()) {
                         try {
                             log.info("building StorageService (%s) of type %s...", id.get(), type.get());
@@ -916,7 +939,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                 
                 child=XMLHelper::getFirstChildElement(container,_SessionCache);
                 if (child) {
-                    xmltooling::auto_ptr_char type(child->getAttributeNS(NULL,_type));
+                    auto_ptr_char type(child->getAttributeNS(NULL,_type));
                     log.info("building Session Cache of type %s...",type.get());
                     m_outer->m_sessionCache=conf.SessionCacheManager.newPlugin(type.get(),child);
                 }
@@ -941,7 +964,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                 StorageService* replaySS=NULL;
                 child=XMLHelper::getFirstChildElement(container,_ReplayCache);
                 if (child) {
-                    xmltooling::auto_ptr_char ssid(child->getAttributeNS(NULL,_StorageService));
+                    auto_ptr_char ssid(child->getAttributeNS(NULL,_StorageService));
                     if (ssid.get() && *ssid.get()) {
                         replaySS = m_outer->m_storage[ssid.get()];
                         if (replaySS)
@@ -967,7 +990,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
         if (conf.isEnabled(SPConfig::RequestMapping)) {
             child=XMLHelper::getFirstChildElement(SHIRE,RequestMapProvider);
             if (child) {
-                xmltooling::auto_ptr_char type(child->getAttributeNS(NULL,_type));
+                auto_ptr_char type(child->getAttributeNS(NULL,_type));
                 log.info("building RequestMapper of type %s...",type.get());
                 m_requestMapper=conf.RequestMapperManager.newPlugin(type.get(),child);
             }
@@ -986,9 +1009,9 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                 // Step down and process resolvers.
                 child=XMLHelper::getFirstChildElement(child);
                 while (child) {
-                    xmltooling::auto_ptr_char id(child->getAttributeNS(NULL,Id));
+                    auto_ptr_char id(child->getAttributeNS(NULL,Id));
                     if (!id.get() || !*(id.get())) {
-                        log.warn("skipping CredentialsResolver with no Id attribute");
+                        log.warn("skipping CredentialResolver with no Id attribute");
                         child = XMLHelper::getNextSiblingElement(child);
                         continue;
                     }
@@ -996,7 +1019,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                     if (XMLString::equals(child->getLocalName(),FileResolver))
                         plugtype=FILESYSTEM_CREDENTIAL_RESOLVER;
                     else {
-                        xmltooling::auto_ptr_char c(child->getAttributeNS(NULL,_type));
+                        auto_ptr_char c(child->getAttributeNS(NULL,_type));
                         plugtype=c.get();
                     }
                     

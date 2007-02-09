@@ -1,0 +1,479 @@
+<?xml version="1.0" encoding="US-ASCII"?>
+<schema targetNamespace="urn:mace:shibboleth:sp:config:2.0"
+	xmlns="http://www.w3.org/2001/XMLSchema"
+	xmlns:conf="urn:mace:shibboleth:sp:config:2.0"
+	xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"
+	xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"
+	elementFormDefault="qualified"
+	attributeFormDefault="unqualified"
+	blockDefault="substitution"
+	version="2.0">
+
+	<import namespace="urn:oasis:names:tc:SAML:2.0:assertion" schemaLocation="../../cpp-opensaml2/schemas/saml-schema-assertion-2.0.xsd"/>
+	<import namespace="urn:oasis:names:tc:SAML:2.0:metadata" schemaLocation="../../cpp-opensaml2/schemas/saml-schema-metadata-2.0.xsd"/>
+
+	<annotation>
+		<documentation>
+    	2.0 schema for XML-based configuration of Shibboleth SP instances.
+    	First appearing in Shibboleth 2.0 release.
+    	</documentation>
+    </annotation>
+
+	<complexType name="PluggableType">
+		<sequence>
+			<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+		</sequence>
+		<attribute name="type" type="string" use="required"/>
+		<anyAttribute namespace="##any" processContents="lax"/>
+	</complexType>
+
+	<element name="ShibbolethTargetConfig" type="conf:SPConfigType"/> <!-- deprecated -->
+	<element name="ShibbolethSPConfig" type="conf:SPConfigType"/>
+	<element name="SPConfig" type="conf:SPConfigType"/>
+	<complexType name="SPConfigType">
+		<annotation>
+			<documentation>Root of configuration</documentation>
+		</annotation>
+		<sequence>
+			<element ref="conf:Extensions" minOccurs="0"/>
+			<choice minOccurs="0">
+				<element name="OutOfProcess" type="conf:OutOfProcessType"/>
+				<element name="Global" type="conf:OutOfProcessType"/> <!-- deprecated -->
+			</choice>
+			<choice minOccurs="0">
+				<element name="InProcess" type="conf:InProcessType"/>
+				<element name="Local" type="conf:InProcessType"/> <!-- deprecated -->
+			</choice>
+			<element ref="conf:Applications"/>
+			<choice minOccurs="0">
+				<element name="CredentialsProvider" type="conf:PluggableType"/>	<!-- deprecated -->
+				<element ref="conf:Credentials"/>
+			</choice>
+		</sequence>
+		<attribute name="logger" type="anyURI" use="optional"/>
+		<attribute name="clockSkew" type="unsignedInt" use="optional"/>
+		<anyAttribute namespace="##other" processContents="lax"/>
+	</complexType>
+
+	<element name="Extensions">
+		<annotation>
+			<documentation>Container for extension libraries and custom configuration</documentation>
+		</annotation>
+		<complexType>
+			<sequence>
+				<element name="Library" minOccurs="0" maxOccurs="unbounded">
+					<complexType>
+						<sequence>
+							<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+						</sequence>
+						<attribute name="path" type="anyURI" use="required"/>
+						<attribute name="fatal" type="boolean" use="optional"/>
+						<anyAttribute namespace="##any" processContents="lax"/>
+					</complexType>
+				</element>
+				<any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+			</sequence>
+		</complexType>
+	</element>
+
+	<element name="SessionCache">
+		<complexType>
+			<complexContent>
+				<restriction base="conf:PluggableType">
+					<sequence>
+						<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+					</sequence>
+					<attribute name="cleanupInterval" type="unsignedInt" use="optional" default="900"/>
+					<attribute name="cacheTimeout" type="unsignedInt" use="optional" default="28800"/>
+				</restriction>
+			</complexContent>
+		</complexType>
+	</element>
+	
+	<element name="ReplayCache" type="conf:PluggableType"/>
+	
+	<complexType name="OutOfProcessType">
+		<annotation>
+			<documentation>Container for shibd out-of-process configuration</documentation>
+		</annotation>
+		<sequence>
+			<element ref="conf:Extensions" minOccurs="0"/>
+			<choice>
+				<element name="UnixListener">
+					<complexType>
+						<attribute name="address" type="string" use="required"/>
+					</complexType>
+				</element>
+				<element name="TCPListener">
+					<complexType>
+						<attribute name="address" type="string" use="required"/>
+						<attribute name="port" type="unsignedInt" use="required"/>
+						<attribute name="acl" use="optional" default="127.0.0.1">
+							<simpleType>
+								<list itemType="string"/>
+							</simpleType>
+						</attribute>
+					</complexType>
+				</element>
+				<element name="Listener" type="conf:PluggableType"/>
+			</choice>
+			<element ref="conf:SessionCache" minOccurs="0"/>
+			<element ref="conf:ReplayCache" minOccurs="0"/>
+			<any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+		</sequence>
+		<attribute name="logger" type="anyURI" use="optional"/>
+		<anyAttribute namespace="##other" processContents="lax"/>
+	</complexType>
+
+	<complexType name="InProcessType">
+		<annotation>
+			<documentation>
+			Container for configuration of locally integrated or platform-specific
+			features (e.g. web server filters)
+			</documentation>
+		</annotation>
+		<sequence>
+			<element ref="conf:Extensions" minOccurs="0"/>
+			<element ref="conf:SessionCache" minOccurs="0"/>
+			<element ref="conf:ReplayCache" minOccurs="0"/>
+			<element name="RequestMapProvider" type="conf:PluggableType" minOccurs="0"/>
+			<element name="Implementation" minOccurs="0">
+				<complexType>
+					<sequence>
+						<element ref="conf:ISAPI" minOccurs="0"/>
+						<any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+					</sequence>
+				</complexType>
+			</element>
+			<any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+		</sequence>
+		<attribute name="logger" type="anyURI" use="optional"/>
+		<attribute name="localRelayState" type="boolean" use="optional" default="false"/>
+		<anyAttribute namespace="##other" processContents="lax"/>
+	</complexType>
+	
+	<element name="ISAPI">
+		<complexType>
+			<sequence>
+				<element name="Site" maxOccurs="unbounded">
+					<complexType>
+						<sequence>
+							<element name="Alias" type="string" minOccurs="0" maxOccurs="unbounded"/>
+						</sequence>
+						<attribute name="id" type="unsignedInt" use="required"/>
+						<attribute name="name" type="string" use="required"/>
+						<attribute name="port" type="unsignedInt" use="optional"/>
+						<attribute name="sslport" type="unsignedInt" use="optional"/>
+						<attribute name="scheme" type="string" use="optional"/>
+					</complexType>
+				</element>
+				<any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+			</sequence>
+			<attribute name="normalizeRequest" type="boolean" use="optional"/>
+			<anyAttribute namespace="##other" processContents="lax"/>
+		</complexType>
+	</element>
+
+	<element name="AccessControl" type="conf:UniOperatorType">
+		<annotation>
+			<documentation>
+			A simple example access policy language extension that supersedes Apache .htaccess
+			</documentation>
+		</annotation>
+	</element>
+	<element name="OR" type="conf:MultiOperatorType"/>
+	<element name="AND" type="conf:MultiOperatorType"/>
+	<element name="NOT" type="conf:UniOperatorType"/>
+	<complexType name="UniOperatorType">
+		<choice>
+			<element ref="conf:AND"/>
+			<element ref="conf:OR"/>
+			<element ref="conf:NOT"/>
+			<element ref="conf:Rule"/>
+		</choice>
+	</complexType>
+	<complexType name="MultiOperatorType">
+		<choice minOccurs="2" maxOccurs="unbounded">
+			<element ref="conf:AND"/>
+			<element ref="conf:OR"/>
+			<element ref="conf:NOT"/>
+			<element ref="conf:Rule"/>
+		</choice>
+	</complexType>
+	<element name="Rule">
+		<complexType>
+			<simpleContent>
+				<extension base="conf:listOfStrings">
+					<attribute name="require" type="string" use="required"/>
+				</extension>
+			</simpleContent>
+		</complexType>
+	</element>
+	<simpleType name="listOfStrings">
+		<list itemType="string"/>
+	</simpleType>
+	
+	<attributeGroup name="ContentSettings">
+		<attribute name="authType" type="string" use="optional"/>
+		<attribute name="requireSession" type="boolean" use="optional"/>
+		<attribute name="requireSessionWith" type="string" use="optional"/>
+		<attribute name="exportAssertion" type="boolean" use="optional"/>
+		<attribute name="redirectToSSL" type="unsignedInt" use="optional"/>
+		<anyAttribute namespace="##other" processContents="lax"/>
+	</attributeGroup>
+	<element name="AccessControlProvider" type="conf:PluggableType"/>
+	<element name="htaccess" type="conf:PluggableType"/>
+
+    <element name="RequestMap">
+		<annotation>
+			<documentation>
+			Built-in request mapping syntax, decomposes URLs into Host/Path/Path/...
+			</documentation>
+		</annotation>
+        <complexType>
+            <sequence>
+            	<choice minOccurs="0">
+            		<element ref="conf:htaccess"/>
+					<element ref="conf:AccessControl"/>
+	            	<element ref="conf:AccessControlProvider"/>
+	            </choice>
+                <element ref="conf:Host" minOccurs="0" maxOccurs="unbounded"/>
+            </sequence>
+            <attribute name="applicationId" type="string" fixed="default"/>
+         	<attributeGroup ref="conf:ContentSettings"/>
+        </complexType>
+    </element>
+
+    <element name="Host">
+    	<complexType>
+    		<sequence>
+            	<choice minOccurs="0">
+            		<element ref="conf:htaccess"/>
+					<element ref="conf:AccessControl"/>
+	            	<element ref="conf:AccessControlProvider"/>
+	            </choice>
+    			<element ref="conf:Path" minOccurs="0" maxOccurs="unbounded"/>
+    		</sequence>
+    		<attribute name="scheme" use="optional">
+			    <simpleType>
+			        <restriction base="string">
+			            <enumeration value="http"/>
+			            <enumeration value="https"/>
+			            <enumeration value="ftp"/>
+			            <enumeration value="ldap"/>
+			            <enumeration value="ldaps"/>
+			        </restriction>
+			    </simpleType>
+    		</attribute>
+    		<attribute name="name" type="string" use="required"/>
+    		<attribute name="port" type="unsignedInt" use="optional"/>
+    		<attribute name="applicationId" type="string" use="optional"/>
+           	<attributeGroup ref="conf:ContentSettings"/>
+    	</complexType>
+    </element>
+
+    <element name="Path">
+        <complexType>
+    		<sequence>
+            	<choice minOccurs="0">
+            		<element ref="conf:htaccess"/>
+					<element ref="conf:AccessControl"/>
+	            	<element ref="conf:AccessControlProvider"/>
+	            </choice>
+    			<element ref="conf:Path" minOccurs="0" maxOccurs="unbounded"/>
+    		</sequence>
+    		<attribute name="name" type="string" use="required"/>
+    		<attribute name="applicationId" type="string" use="optional"/>
+           	<attributeGroup ref="conf:ContentSettings"/>
+        </complexType>
+    </element>
+
+	<element name="Applications">
+		<annotation>
+			<documentation>Container for global settings and application-specific overrides</documentation>
+		</annotation>
+		<complexType>
+			<sequence>
+				<element ref="conf:Sessions"/>
+				<element ref="conf:Errors"/>
+				<element ref="conf:CredentialUse" minOccurs="0"/>
+				<choice minOccurs="0" maxOccurs="unbounded">
+                    <element ref="saml:Attribute"/>
+                    <element ref="saml:Audience"/>
+                    <element name="MetadataProvider" type="conf:PluggableType"/>
+                    <element name="TrustProvider" type="conf:PluggableType"/>
+				</choice>
+				<element ref="conf:Application" minOccurs="0" maxOccurs="unbounded"/>
+			</sequence>
+			<attribute name="id" type="string" fixed="default"/>
+			<attribute name="providerId" type="anyURI" use="required"/>
+			<attribute name="homeURL" type="anyURI" use="optional"/>
+	        <anyAttribute namespace="##other" processContents="lax"/>
+		</complexType>
+	</element>
+	
+	<element name="Application">
+		<annotation>
+			<documentation>Container for application-specific overrides</documentation>
+		</annotation>
+		<complexType>
+			<sequence>
+				<element ref="conf:Sessions" minOccurs="0"/>
+				<element ref="conf:Errors" minOccurs="0"/>
+				<element ref="conf:CredentialUse" minOccurs="0"/>
+				<choice minOccurs="0" maxOccurs="unbounded">
+                    <element ref="saml:Attribute"/>
+                    <element ref="saml:Audience"/>
+                    <element name="MetadataProvider" type="conf:PluggableType"/>
+                    <element name="TrustProvider" type="conf:PluggableType"/>
+				</choice>
+			</sequence>
+			<attribute name="id" type="string" use="required"/>
+			<attribute name="providerId" type="anyURI" use="optional"/>
+			<attribute name="homeURL" type="anyURI" use="optional"/>
+	        <anyAttribute namespace="##other" processContents="lax"/>
+		</complexType>
+	</element>
+
+	<element name="Sessions">
+		<annotation>
+			<documentation>Container for specifying protocol handlers and session policy</documentation>
+		</annotation>
+		<complexType>
+			<choice maxOccurs="unbounded">
+				<element ref="conf:SessionInitiator"/>
+				<element ref="md:AssertionConsumerService"/>
+				<element ref="md:SingleLogoutService"/>
+				<element ref="md:ManageNameIDService"/>
+				<element name="Handler">
+					<complexType>
+						<complexContent>
+							<restriction base="conf:PluggableType">
+								<sequence>
+									<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+								</sequence>
+								<attribute name="Location" type="anyURI" use="required"/>
+							</restriction>
+						</complexContent>
+					</complexType>
+				</element>
+			</choice>
+			<attribute name="handlerURL" type="anyURI" use="optional"/>
+			<attribute name="handlerSSL" type="boolean" use="optional" default="true"/>
+			<attribute name="cookieName" type="string" use="optional"/>
+			<attribute name="cookieProps" type="string" use="optional"/>
+			<attribute name="idpHistory" type="boolean" use="optional" default="true"/>
+			<attribute name="idpHistoryDays" type="unsignedInt" use="optional"/>
+			<attribute name="lifetime" type="unsignedInt" use="optional"/>
+			<attribute name="timeout" type="unsignedInt" use="optional"/>
+			<attribute name="checkAddress" type="boolean" use="optional"/>
+			<attribute name="consistentAddress" type="boolean" use="optional" default="true"/>
+			<anyAttribute namespace="##other" processContents="lax"/>
+		</complexType>
+	</element>
+	<element name="SessionInitiator">
+		<annotation>
+			<documentation>Used to specify handlers that can issue AuthnRequests</documentation>
+		</annotation>
+		<complexType>
+			<sequence>
+				<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+			</sequence>
+			<attribute name="Location" type="anyURI" use="required"/>
+			<attribute name="Binding" type="anyURI" use="required"/>
+			<attribute name="wayfURL" type="anyURI" use="optional"/>
+			<attribute name="wayfBinding" type="anyURI" use="optional"/>
+			<attribute name="checkCDC" type="anyURI" use="optional"/>
+			<attribute name="isDefault" type="boolean" use="optional"/>
+			<attribute name="id" type="string" use="optional"/>
+			<anyAttribute namespace="##any" processContents="lax"/>
+		</complexType>
+	</element>
+
+	<element name="Errors">
+		<annotation>
+			<documentation>Container for error templates and associated details</documentation>
+		</annotation>
+		<complexType>
+			<sequence>
+				<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+			</sequence>
+			<attribute name="session" type="anyURI" use="required"/>
+			<attribute name="metadata" type="anyURI" use="optional"/>
+			<attribute name="rm" type="anyURI" use="optional"/>
+			<attribute name="access" type="anyURI" use="optional"/>
+			<attribute name="ssl" type="anyURI" use="optional"/>
+			<attribute name="supportContact" type="string" use="optional"/>
+			<attribute name="logoLocation" type="anyURI" use="optional"/>
+			<attribute name="styleSheet" type="anyURI" use="optional"/>
+			<anyAttribute namespace="##any" processContents="lax"/>
+		</complexType>
+	</element>
+
+	<attributeGroup name="CredentialUseGroup">
+		<attribute name="TLS" type="string" use="optional"/>
+		<attribute name="Signing" type="string" use="optional"/>
+		<attribute name="signRequest" type="boolean" use="optional" default="false"/>
+		<attribute name="signatureAlg" type="anyURI" use="optional"/>
+		<attribute name="signedAssertions" type="boolean" use="optional" default="false"/>
+		<attribute name="authType" use="optional">
+			<simpleType>
+				<restriction base="string">
+					<enumeration value="basic"/>
+					<enumeration value="digest"/>
+					<enumeration value="ntlm"/>
+					<enumeration value="gss"/>
+				</restriction>
+			</simpleType>
+		</attribute>
+		<attribute name="authUsername" use="optional"/>
+		<attribute name="authPassword" use="optional"/>
+	</attributeGroup>
+
+	<element name="CredentialUse">
+		<annotation>
+			<documentation>Container for specifying security methods to use with particular peers</documentation>
+		</annotation>
+		<complexType>
+			<sequence>
+				<element name="RelyingParty" minOccurs="0" maxOccurs="unbounded">
+					<complexType>
+						<sequence>
+							<any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+						</sequence>
+						<attribute name="Name" type="string" use="required"/>
+						<attributeGroup ref="conf:CredentialUseGroup"/>
+						<anyAttribute namespace="##other" processContents="lax"/>
+					</complexType>
+				</element>
+				<any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+			</sequence>
+			<attributeGroup ref="conf:CredentialUseGroup"/>
+	        <anyAttribute namespace="##other" processContents="lax"/>
+		</complexType>
+	</element>
+	
+	<element name="Credentials">
+		<annotation>
+			<documentation>Container for specifying sources of credentials</documentation>
+		</annotation>
+		<complexType>
+			<sequence>
+				<element name="CredentialResolver" minOccurs="1" maxOccurs="unbounded">
+					<complexType>
+						<complexContent>
+							<restriction base="conf:PluggableType">
+								<sequence>
+									<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+								</sequence>
+								<attribute name="Id" type="string" use="required"/>
+							</restriction>
+						</complexContent>
+					</complexType>
+				</element>
+			</sequence>
+		</complexType>
+	</element>
+	
+</schema>
+
