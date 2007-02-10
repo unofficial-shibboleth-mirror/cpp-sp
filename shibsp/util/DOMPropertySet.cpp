@@ -37,7 +37,7 @@ DOMPropertySet::~DOMPropertySet()
 {
     for (map<string,pair<char*,const XMLCh*> >::iterator i=m_map.begin(); i!=m_map.end(); i++)
         XMLString::release(&(i->second.first));
-    for_each(m_nested.begin(),m_nested.end(),xmltooling::cleanup_pair<string,DOMPropertySet>());
+    for_each(m_nested.begin(),m_nested.end(),cleanup_pair<string,DOMPropertySet>());
 }
 
 void DOMPropertySet::load(
@@ -63,15 +63,20 @@ void DOMPropertySet::load(
             auto_ptr_char ns(a->getNamespaceURI());
             auto_ptr_char name(a->getLocalName());
             const char* realname=name.get();
+            map<string,string>::const_iterator remap;
             if (remapper) {
-                map<string,string>::const_iterator remap=remapper->find(realname);
+                remap=remapper->find(realname);
                 if (remap!=remapper->end()) {
                     log.warn("remapping property (%s) to (%s)",realname,remap->second.c_str());
                     realname=remap->second.c_str();
                 }
             }
             if (ns.get()) {
-                m_map[string("{") + ns.get() + '}' + realname]=pair<char*,const XMLCh*>(val,a->getNodeValue());
+                remap=remapper->find(ns.get());
+                if (remap!=remapper->end())
+                    m_map[string("{") + remap->second.c_str() + '}' + realname]=pair<char*,const XMLCh*>(val,a->getNodeValue());
+                else
+                    m_map[string("{") + ns.get() + '}' + realname]=pair<char*,const XMLCh*>(val,a->getNodeValue());
                 log.debug("added property {%s}%s (%s)",ns.get(),realname,val);
             }
             else {
@@ -91,16 +96,22 @@ void DOMPropertySet::load(
         auto_ptr_char ns(e->getNamespaceURI());
         auto_ptr_char name(e->getLocalName());
         const char* realname=name.get();
+        map<string,string>::const_iterator remap;
         if (remapper) {
-            map<string,string>::const_iterator remap=remapper->find(realname);
+            remap=remapper->find(realname);
             if (remap!=remapper->end()) {
                 log.warn("remapping property set (%s) to (%s)",realname,remap->second.c_str());
                 realname=remap->second.c_str();
             }
         }
         string key;
-        if (ns.get())
-            key=string("{") + ns.get() + '}' + realname;
+        if (ns.get()) {
+            remap=remapper->find(ns.get());
+            if (remap!=remapper->end())
+                key=string("{") + remap->second.c_str() + '}' + realname;
+            else
+                key=string("{") + ns.get() + '}' + realname;
+        }
         else
             key=realname;
         if (m_nested.find(key)!=m_nested.end())
