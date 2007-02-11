@@ -2,8 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8.00"
-	Name="shar"
+	Name="shibd"
 	ProjectGUID="{F13141B5-6C87-40BB-8D4E-5CC56EBB4C59}"
+	RootNamespace="shibd"
 	>
 	<Platforms>
 		<Platform
@@ -15,8 +16,8 @@
 	<Configurations>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory=".\Release"
-			IntermediateDirectory=".\Release"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
@@ -37,7 +38,7 @@
 			/>
 			<Tool
 				Name="VCMIDLTool"
-				TypeLibraryName=".\Release/shar.tlb"
+				TypeLibraryName=".\Release/shibd.tlb"
 				HeaderFileName=""
 			/>
 			<Tool
@@ -51,10 +52,6 @@
 				EnableFunctionLevelLinking="true"
 				RuntimeTypeInfo="true"
 				UsePrecompiledHeader="0"
-				PrecompiledHeaderFile=".\Release/shar.pch"
-				AssemblerListingLocation=".\Release/"
-				ObjectFile=".\Release/"
-				ProgramDataBaseFileName=".\Release/"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
 				Detect64BitPortabilityProblems="true"
@@ -73,12 +70,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="wsock32.lib log4cpp.lib saml_5.lib saml2.lib xmltooling1.lib"
-				OutputFile="Release/shibd.exe"
+				AdditionalDependencies="wsock32.lib log4cpp.lib saml2.lib xmltooling1.lib"
+				OutputFile="$(OutDir)/shibd.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="&quot;..\..\cpp-opensaml1\saml\Release&quot;;&quot;..\..\cpp-opensaml2\Release&quot;;&quot;..\..\cpp-xmltooling\Release&quot;"
-				ProgramDatabaseFile=".\Release/shibd.pdb"
 				SubSystem="1"
 				TargetMachine="1"
 			/>
@@ -109,8 +105,8 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory=".\Debug"
-			IntermediateDirectory=".\Debug"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
@@ -131,7 +127,7 @@
 			/>
 			<Tool
 				Name="VCMIDLTool"
-				TypeLibraryName=".\Debug/shar.tlb"
+				TypeLibraryName=".\Debug/shibd.tlb"
 				HeaderFileName=""
 			/>
 			<Tool
@@ -143,10 +139,6 @@
 				RuntimeLibrary="3"
 				RuntimeTypeInfo="true"
 				UsePrecompiledHeader="0"
-				PrecompiledHeaderFile=".\Debug/shar.pch"
-				AssemblerListingLocation=".\Debug/"
-				ObjectFile=".\Debug/"
-				ProgramDataBaseFileName=".\Debug/"
 				BrowseInformation="1"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
@@ -167,8 +159,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="wsock32.lib log4cppD.lib saml_5D.lib saml2D.lib xmltooling1D.lib"
-				OutputFile="Debug/shibd.exe"
+				AdditionalDependencies="wsock32.lib log4cppD.lib saml2D.lib xmltooling1D.lib"
+				OutputFile="$(OutDir)/shibd.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="&quot;..\..\cpp-opensaml1\saml\Debug&quot;;&quot;..\..\cpp-opensaml2\Debug&quot;;&quot;..\..\cpp-xmltooling\Debug&quot;"
@@ -210,15 +202,15 @@
 			>
 		</File>
 		<File
-			RelativePath="shar.cpp"
+			RelativePath=".\shibd.cpp"
 			>
 		</File>
 		<File
-			RelativePath="shar.rc"
+			RelativePath=".\shibd.rc"
 			>
 		</File>
 		<File
-			RelativePath="shar_win32.cpp"
+			RelativePath=".\shibd_win32.cpp"
 			>
 		</File>
 	</Files>

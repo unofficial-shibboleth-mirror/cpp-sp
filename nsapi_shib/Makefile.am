@@ -7,8 +7,7 @@ nsapi_shib_la_SOURCES = nsapi_shib.cpp
 nsapi_shib_la_CXXFLAGS = $(NSAPI_INCLUDE)
 nsapi_shib_la_LDFLAGS = -module -avoid-version
 nsapi_shib_la_LIBADD = \
-  $(top_builddir)/shib/libshib.la \
-  $(top_builddir)/shib-target/libshib-target.la
+  $(top_builddir)/shibsp/libshibsp.la
 
 install-exec-hook:
 	for la in $(nsapi_shib_LTLIBRARIES) ; do rm -f $(DESTDIR)$(nsapi_shibdir)/$$la ; done

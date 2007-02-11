@@ -183,18 +183,18 @@ LIBS="-lsaml $LIBS"
 AC_TRY_LINK(
 	[#include <saml/saml.h>
 #include <saml/version.h>],
-	[#if _OPENSAML_VERSION >= 10100
-saml::SAMLConfig::getConfig();
+	[#if _OPENSAML_VERSION >= 20000
+opensaml::SAMLConfig::getConfig();
 #else
-#error Need OpenSAML version 1.1 or higher
+#error Need OpenSAML version 2.0 or higher
 #endif],
         [AC_DEFINE(HAVE_SAML,1,[Define if saml library was found])],
         [AC_MSG_ERROR([unable to link with saml, or version too old])])
 
 # output the underlying makefiles
-WANT_SUBDIRS="doc shib schemas configs shib-target shar siterefresh test"
-AC_CONFIG_FILES([Makefile doc/Makefile shib/Makefile schemas/Makefile \
-		 configs/Makefile shib-target/Makefile shar/Makefile siterefresh/Makefile \
+WANT_SUBDIRS="doc schemas configs shibsp shibd siterefresh test"
+AC_CONFIG_FILES([Makefile doc/Makefile schemas/Makefile \
+		 configs/Makefile shibsp/Makefile shibd/Makefile siterefresh/Makefile \
 		 test/Makefile selinux/Makefile])
 
 

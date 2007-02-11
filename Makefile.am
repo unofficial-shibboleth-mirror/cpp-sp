@@ -9,20 +9,16 @@ EXTRA_DIST = \
 	shibboleth.spec.in shibboleth.spec pkginfo.in pkginfo checkinstall
 
 dist-hook:
-	rm -rf `find $(distdir)/schemas -name CVS`
 	rm -rf `find $(distdir)/schemas -name Makefile`
-	rm -rf `find $(distdir)/configs -name CVS`
 	rm -rf `find $(distdir)/configs -name Makefile`
-	rm -rf `find $(distdir)/doc -name CVS`
 	rm -rf `find $(distdir)/doc -name Makefile`
-	rm -rf `find $(distdir)/isapi_shib -name CVS`
 
 WANT_SUBDIRS = @WANT_SUBDIRS@
 
 SUBDIRS = $(WANT_SUBDIRS)
 
-DIST_SUBDIRS = doc shib schemas configs shib-target shar test \
-	apache siterefresh odbc_ccache nsapi_shib selinux
+DIST_SUBDIRS = doc schemas configs shibsp shibd test \
+	apache siterefresh odbc-store nsapi_shib selinux
 
 all-local: shibboleth.spec pkginfo
 
