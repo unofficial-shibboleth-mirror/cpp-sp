@@ -87,6 +87,7 @@ namespace {
     string g_unsetHeaderValue;
     static const char* g_UserDataKey = "_shib_check_user_";
     static const XMLCh path[] = UNICODE_LITERAL_4(p,a,t,h);
+    static const XMLCh validate[] = UNICODE_LITERAL_8(v,a,l,i,d,a,t,e);
 }
 
 /* Apache 2.2.x headers must be accumulated and set in the output filter.
@@ -1012,7 +1013,6 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
 
     g_Config=&SPConfig::getConfig();
     g_Config->setFeatures(
-        SPConfig::Caching |
         SPConfig::Listener |
         SPConfig::Metadata |
         SPConfig::RequestMapping |
@@ -1032,6 +1032,7 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
         DOMElement* dummy = dummydoc->createElementNS(NULL,path);
         auto_ptr_XMLCh src(g_szSHIBConfig);
         dummy->setAttributeNS(NULL,path,src.get());
+        dummy->setAttributeNS(NULL,validate,xmlconstants::XML_ONE);
 
         g_Config->setServiceProvider(g_Config->ServiceProviderManager.newPlugin(XML_SERVICE_PROVIDER,dummy));
         g_Config->getServiceProvider()->init();

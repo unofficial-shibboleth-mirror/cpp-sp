@@ -612,7 +612,7 @@ void RemotedCache::cleanup()
         rerun_timer = XMLString::parseInt(tag);
 
     if (rerun_timer <= 0)
-        rerun_timer = 300;        // rerun every 5 minutes
+        rerun_timer = 900;        // rerun every 5 minutes
 
     mutex->lock();
 

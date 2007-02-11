@@ -50,6 +50,7 @@ using namespace std;
 // globals
 namespace {
     static const XMLCh path[] =             UNICODE_LITERAL_4(p,a,t,h);
+    static const XMLCh validate[] = UNICODE_LITERAL_8(v,a,l,i,d,a,t,e);
     static const XMLCh name[] =             UNICODE_LITERAL_4(n,a,m,e);
     static const XMLCh port[] =             UNICODE_LITERAL_4(p,o,r,t);
     static const XMLCh sslport[] =          UNICODE_LITERAL_7(s,s,l,p,o,r,t);
@@ -152,7 +153,6 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
     g_Config=&SPConfig::getConfig();
     g_Config->setFeatures(
         SPConfig::Listener |
-        SPConfig::Caching |
         SPConfig::Metadata |
         SPConfig::RequestMapping |
         SPConfig::InProcess |
@@ -171,6 +171,7 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
         DOMElement* dummy = dummydoc->createElementNS(NULL,path);
         auto_ptr_XMLCh src(config);
         dummy->setAttributeNS(NULL,path,src.get());
+        dummy->setAttributeNS(NULL,validate,xmlconstants::XML_ONE);
 
         g_Config->setServiceProvider(g_Config->ServiceProviderManager.newPlugin(XML_SERVICE_PROVIDER,dummy));
         g_Config->getServiceProvider()->init();

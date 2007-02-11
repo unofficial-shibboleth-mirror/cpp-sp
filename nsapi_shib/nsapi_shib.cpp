@@ -73,7 +73,8 @@ namespace {
     string g_ServerScheme;
     string g_unsetHeaderValue;
 
-    static const XMLCh path[] =             UNICODE_LITERAL_4(p,a,t,h);
+    static const XMLCh path[] =     UNICODE_LITERAL_4(p,a,t,h);
+    static const XMLCh validate[] = UNICODE_LITERAL_8(v,a,l,i,d,a,t,e);
 }
 
 PluginManager<RequestMapper,const DOMElement*>::Factory SunRequestMapFactory;
@@ -126,7 +127,6 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, ::Session* sn, Request* 
     g_Config=&SPConfig::getConfig();
     g_Config->setFeatures(
         SPConfig::Listener |
-        SPConfig::Caching |
         SPConfig::Metadata |
         SPConfig::RequestMapping |
         SPConfig::InProcess |
@@ -146,6 +146,7 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, ::Session* sn, Request* 
         DOMElement* dummy = dummydoc->createElementNS(NULL,path);
         auto_ptr_XMLCh src(config);
         dummy->setAttributeNS(NULL,path,src.get());
+        dummy->setAttributeNS(NULL,validate,xmlconstants::XML_ONE);
 
         g_Config->setServiceProvider(g_Config->ServiceProviderManager.newPlugin(XML_SERVICE_PROVIDER,dummy));
         g_Config->getServiceProvider()->init();

@@ -162,7 +162,7 @@ void SHIBSP_API shibsp::registerRequestMappers()
 
 short Override::acceptNode(const DOMNode* node) const
 {
-    if (!XMLString::equals(node->getNamespaceURI(),shibspconstants::SHIB1SPCONFIG_NS))
+    if (!XMLString::equals(node->getNamespaceURI(),shibspconstants::SHIB2SPCONFIG_NS))
         return FILTER_ACCEPT;
     const XMLCh* name=node->getLocalName();
     if (XMLString::equals(name,Host) ||
@@ -247,7 +247,7 @@ Override::Override(const DOMElement* e, Category& log, const Override* base) : m
                 
                 if (*n) {
                     // Create a placeholder Path element for the first path segment and replant under it.
-                    DOMElement* newpath=path->getOwnerDocument()->createElementNS(shibspconstants::SHIB1SPCONFIG_NS,Path);
+                    DOMElement* newpath=path->getOwnerDocument()->createElementNS(shibspconstants::SHIB2SPCONFIG_NS,Path);
                     newpath->setAttributeNS(NULL,name,namebuf);
                     path->setAttributeNS(NULL,name,n);
                     path->getParentNode()->replaceChild(newpath,path);

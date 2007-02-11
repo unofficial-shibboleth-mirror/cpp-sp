@@ -1,19 +1,22 @@
-<SPConfig xmlns="urn:mace:shibboleth:target:config:1.0"
+<SPConfig xmlns="urn:mace:shibboleth:sp:config:2.0"
+	xmlns:conf="urn:mace:shibboleth:sp:config:2.0"
+	xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="urn:mace:shibboleth:target:config:1.0 @-PKGXMLDIR-@/shibboleth-targetconfig-1.0.xsd"
+	xsi:schemaLocation="urn:mace:shibboleth:sp:config:2.0 @-PKGXMLDIR-@/shibboleth-spconfig-2.0.xsd"
 	logger="@-PKGSYSCONFDIR-@/shibboleth.logger" clockSkew="180">
 
-	<!-- These extensions are "universal", loaded by all Shibboleth-aware processes. -->
+	<!--
 	<Extensions>
-		<Library path="@-LIBEXECDIR-@/xmlproviders.so" fatal="true"/>
+		<Library path="@-LIBEXECDIR-@/adfs.so" fatal="true"/>
 	</Extensions>
+	-->
 
 	<!-- The OutOfProcess section pertains to components that rely on a single long-lived process. -->
 	<OutOfProcess logger="@-PKGSYSCONFDIR-@/shibd.logger">
 		
 		<!--
 		<Extensions>
-			<Library path="@-LIBEXECDIR-@/shib-mysql-ccache.so" fatal="false"/>
+			<Library path="@-LIBEXECDIR-@/odbc-store.so" fatal="true"/>
 		</Extensions>
 		-->
     
@@ -22,34 +25,19 @@
 		
 		<!-- <TCPListener address="127.0.0.1" port="12345" acl="127.0.0.1"/> -->
 		
+		<StorageService type="Memory" id="memory" cleanupInterval="900"/>
+
 		<!--
-		See deploy guide for details, but:
-			cacheTimeout - how long before expired sessions are purged from the cache
-			AATimeout - how long to wait for an AA to respond
-			AAConnectTimeout - how long to wait while connecting to an AA
-			defaultLifetime - if attributes come back without guidance, how long should they last?
-			strictValidity - if we have expired attrs, and can't get new ones, keep using them?
-			propagateErrors - suppress errors while getting attrs or let user see them?
-			retryInterval - if propagateErrors is false and query fails, how long to wait before trying again
-			writeThrough - tells database-backed caches that multiple web servers are sharing the database
-		Only one session cache can be defined.
-		-->
-		<MemorySessionCache cleanupInterval="300" cacheTimeout="3600" AATimeout="30" AAConnectTimeout="15"
-			defaultLifetime="1800" retryInterval="300" strictValidity="false" propagateErrors="false"/>
-		<!--
-		<ODBCSessionCache cleanupInterval="300" cacheTimeout="3600" AATimeout="30" AAConnectTimeout="15"
-			defaultLifetime="1800" retryInterval="300" strictValidity="false" propagateErrors="false"
-			odbcTimeout="7200" storeAttributes="true" writeThrough="true">
+		<StorageService type="ODBC" id="db" cleanupInterval="900">
 			<ConnectionString>
 			DRIVER=drivername;SERVER=dbserver;UID=shibboleth;PWD=password;DATABASE=shibboleth;APP=Shibboleth
 			</ConnectionString>
-		</ODBCSessionCache>
+		</StorageService>
 		-->
-        
-		<!-- Default replay cache is in-memory. -->
-		<!--
-		<ODBCReplayCache/>
-		-->
+		
+		<SessionCache type="StorageService" StorageService="memory" cacheTimeout="3600"/>
+		<ReplayCache StorageService="memory"/>
+		
 	</OutOfProcess>
     
 	<!-- The InProcess section pertains to components that support transient process pools like most web servers. -->
@@ -57,12 +45,12 @@
 		<!--
 		To customize behavior, map hostnames and path components to applicationId and other settings.
 		The following provider types are available with the delivered code:
-			type="edu.internet2.middleware.shibboleth.sp.provider.NativeRequestMapProvider"
+			type="Native"
 				- Web-server-specific plugin that allows native commands (like Apache's
 					ShibRequireSession) to override or supplement the XML syntax. The Apache
 					version also supplies an htaccess authz plugin for all content.
 
-			type="edu.internet2.middleware.shibboleth.sp.provider.XMLRequestMapProvider"
+			type="XML"
 				- portable plugin that does not support the older Apache-specific commands and works
 					the same on all web platforms, this plugin does NOT support htaccess files
 					for authz unless you also place an <htaccess/> element somewhere in the map
@@ -70,7 +58,7 @@
 			By default, the "native" plugin (the first one above) is used, since it matches older
 			behavior on both Apache and IIS.
 		-->
-		<RequestMapProvider type="edu.internet2.middleware.shibboleth.sp.provider.NativeRequestMapProvider">
+		<RequestMapper type="Native">
 			<RequestMap applicationId="default">
 				<!--
 				This requires a session for documents in /secure on the containing host with http and
@@ -87,7 +75,7 @@
 					</Path>
 				</Host>
 			</RequestMap>
-		</RequestMapProvider>
+		</RequestMapper>
 		
 		<Implementation>
 			<ISAPI normalizeRequest="true">
@@ -119,9 +107,7 @@
 	points into to this section.
 	-->
 	<Applications id="default" providerId="https://sp.example.org/shibboleth"
-		homeURL="https://sp.example.org/index.html"
-		xmlns:saml="urn:oasis:names:tc:SAML:1.0:assertion"
-		xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata">
+		homeURL="https://sp.example.org/index.html">
 
 		<!--
 		Controls session lifetimes, address checks, cookie handling, and the protocol handlers.
@@ -192,71 +178,44 @@
 		<!-- Indicates what credentials to use when communicating -->
 		<CredentialUse TLS="defcreds" Signing="defcreds"/>
 			
-		<!-- Use designators to request specific attributes or none to ask for all -->
-		<!--
-		<saml:AttributeDesignator AttributeName="urn:mace:dir:attribute-def:eduPersonScopedAffiliation"
-			AttributeNamespace="urn:mace:shibboleth:1.0:attributeNamespace:uri"/>
-		-->
+		<!-- When adding multiple metadata sources, uncomment the chained provider around them. -->
+		<!-- <MetadataProvider type="Chaining"> -->
+			<!-- Dummy metadata for private testing, delete for production deployments. -->
+			<MetadataProvider type="XML" path="@-PKGSYSCONFDIR-@/example-metadata.xml"/>
+		<!-- </MetadataProvider> -->
 
-		<!-- AAP can be inline or in a separate file -->
-		<AAPProvider type="edu.internet2.middleware.shibboleth.aap.provider.XMLAAP" uri="@-PKGSYSCONFDIR-@/AAP.xml"/>
-		
-		<!-- Operational config consists of metadata and trust providers. Can be external or inline. -->
-
-		<!-- Dummy metadata for private testing, delete for production deployments. -->
-		<MetadataProvider type="edu.internet2.middleware.shibboleth.metadata.provider.XMLMetadata"
-			uri="@-PKGSYSCONFDIR-@/example-metadata.xml"/>
-
-		<!-- The standard trust provider supports SAMLv2 metadata with path validation extensions. -->
-		<TrustProvider type="edu.internet2.middleware.shibboleth.common.provider.ShibbolethTrust"/>
-					
-		<!--
-		You can customize behavior of specific applications here. The default elements inside the
-		outer <Applications> element generally have to be overridden in an all or nothing fashion.
-		That is, if you supply a <Sessions> or <Errors> override, you MUST include all attributes
-		you want to apply, as they will not be inherited. Similarly, if you specify an element such as
-		<MetadataProvider>, it is not additive with the defaults, but replaces them.
-		
-		Note that each application must have a handlerURL that maps uniquely to it and no other
-		application in the <RequestMap>. Otherwise no sessions will reach the application.
-		If each application lives on its own vhost, then a single handler at "/Shibboleth.sso"
-		is sufficient, since the hostname will distinguish the application.
-		
-		The example below shows a special application that requires use of SSL when establishing
-		sessions, restricts the session cookie to SSL and a specific folder, and inherits most other
-		behavior except that it requests only EPPN from the origin instead of asking for all attributes.
-		Note that it will inherit all of the handler endpoints defined for the default application
-		but will append them to the handlerURL defined here.
-		-->
-		<!-- 
-		<Application id="foo-admin">
-			<Sessions lifetime="7200" timeout="3600" checkAddress="true"
-				handlerURL="/secure/admin/Shibboleth.sso" handlerSSL="true"
-				cookieProps="; path=/secure/admin; secure"/>
-			<saml:AttributeDesignator AttributeName="urn:mace:dir:attribute-def:eduPersonPrincipalName"
-				AttributeNamespace="urn:mace:shibboleth:1.0:attributeNamespace:uri"/>
-		</Application>
-		-->
+		<!-- Chain the two built-in trust engines together. -->
+		<TrustEngine type="Chaining">
+			<TrustEngine type="ExplicitKey"/>
+			<TrustEngine type="PKIX"/>
+		</TrustEngine>
 
 	</Applications>
 	
 	<!-- Define all the private keys and certificates here that you reference from <CredentialUse>. -->
-	<CredentialsProvider type="edu.internet2.middleware.shibboleth.common.Credentials">
-		<Credentials>
-			<FileResolver Id="defcreds">
-				<Key>
-					<Path>@-PKGSYSCONFDIR-@/sp-example.key</Path>
-				</Key>
-				<Certificate>
-					<Path>@-PKGSYSCONFDIR-@/sp-example.crt</Path>
-				</Certificate>
-			</FileResolver>
-		</Credentials>
-	</CredentialsProvider>
+	<Credentials>
+		<CredentialResolver id="defcreds">
+			<Key>
+				<Path>@-PKGSYSCONFDIR-@/sp-example.key</Path>
+			</Key>
+			<Certificate>
+				<Path>@-PKGSYSCONFDIR-@/sp-example.crt</Path>
+			</Certificate>
+		</CredentialResolver>
+	</Credentials>
 
-	<!-- Specialized attribute handling for cases with complex syntax. -->
-	<AttributeFactory AttributeName="urn:oid:1.3.6.1.4.1.5923.1.1.1.10"
-		type="edu.internet2.middleware.shibboleth.common.provider.TargetedIDFactory"/>
+	<!-- Each policy defines a set of rules to use to secure SAML (and other) messages. -->
+	<SecurityPolicies default="full">
+		<!-- The predefined policy handles SAML 1 and 2 protocols and permits signing and TLS. -->
+		<Policy id="full">
+			<Rule type="SAML1Message"/>
+			<Rule type="SAML2Message"/>
+			<Rule type="MessageFlow" checkReplay="true" expires="60"/>
+			<Rule type="ClientCertAuth" errorFatal="true"/>
+			<Rule type="XMLSigning" errorFatal="true"/>
+			<Rule type="SimpleSigning" errorFatal="true"/>
+		</Policy>
+	</SecurityPolicies>
 
 </SPConfig>
 

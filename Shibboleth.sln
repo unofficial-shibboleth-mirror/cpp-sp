@@ -42,17 +42,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nsapi_shib", "nsapi_shib\ns
 		{81F0F7A6-DC36-46EF-957F-F9E81D4403F6} = {81F0F7A6-DC36-46EF-957F-F9E81D4403F6}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "posttest", "posttest\posttest.vcproj", "{16E70C47-789E-43D5-AFDF-964D386C3CB5}"
-	ProjectSection(WebsiteProperties) = preProject
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(ProjectDependencies) = postProject
-		{E6CAB6C8-1D73-4410-970A-52BF9EC57810} = {E6CAB6C8-1D73-4410-970A-52BF9EC57810}
-		{81F0F7A6-DC36-46EF-957F-F9E81D4403F6} = {81F0F7A6-DC36-46EF-957F-F9E81D4403F6}
-		{84890110-2190-4AAE-9BDC-58F90DF71E4F} = {84890110-2190-4AAE-9BDC-58F90DF71E4F}
-	EndProjectSection
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "shar", "shar\shar.vcproj", "{F13141B5-6C87-40BB-8D4E-5CC56EBB4C59}"
 	ProjectSection(WebsiteProperties) = preProject
 		Debug.AspNetCompiler.Debug = "True"
@@ -62,30 +51,12 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "shar", "shar\shar.vcproj", 
 		{81F0F7A6-DC36-46EF-957F-F9E81D4403F6} = {81F0F7A6-DC36-46EF-957F-F9E81D4403F6}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "shib", "shib\shib.vcproj", "{E6CAB6C8-1D73-4410-970A-52BF9EC57810}"
-	ProjectSection(WebsiteProperties) = preProject
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "shibtarget", "shib-target\shibtarget.vcproj", "{84890110-2190-4AAE-9BDC-58F90DF71E4F}"
-	ProjectSection(WebsiteProperties) = preProject
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(ProjectDependencies) = postProject
-		{E6CAB6C8-1D73-4410-970A-52BF9EC57810} = {E6CAB6C8-1D73-4410-970A-52BF9EC57810}
-		{81F0F7A6-DC36-46EF-957F-F9E81D4403F6} = {81F0F7A6-DC36-46EF-957F-F9E81D4403F6}
-	EndProjectSection
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "shibtest", "shibtest\shibtest.vcproj", "{67AF22A3-C26E-40BE-B0CA-2ABEE5123763}"
 	ProjectSection(WebsiteProperties) = preProject
 		Debug.AspNetCompiler.Debug = "True"
 		Release.AspNetCompiler.Debug = "False"
 	EndProjectSection
 	ProjectSection(ProjectDependencies) = postProject
-		{84890110-2190-4AAE-9BDC-58F90DF71E4F} = {84890110-2190-4AAE-9BDC-58F90DF71E4F}
-		{E6CAB6C8-1D73-4410-970A-52BF9EC57810} = {E6CAB6C8-1D73-4410-970A-52BF9EC57810}
 		{81F0F7A6-DC36-46EF-957F-F9E81D4403F6} = {81F0F7A6-DC36-46EF-957F-F9E81D4403F6}
 	EndProjectSection
 EndProject
@@ -93,17 +64,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "siterefresh", "siterefresh\
 	ProjectSection(WebsiteProperties) = preProject
 		Debug.AspNetCompiler.Debug = "True"
 		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "testclient", "shar\testclient.vcproj", "{B3F1E899-86F9-4D3A-8026-B57D1A5B90B1}"
-	ProjectSection(WebsiteProperties) = preProject
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(ProjectDependencies) = postProject
-		{E6CAB6C8-1D73-4410-970A-52BF9EC57810} = {E6CAB6C8-1D73-4410-970A-52BF9EC57810}
-		{81F0F7A6-DC36-46EF-957F-F9E81D4403F6} = {81F0F7A6-DC36-46EF-957F-F9E81D4403F6}
-		{84890110-2190-4AAE-9BDC-58F90DF71E4F} = {84890110-2190-4AAE-9BDC-58F90DF71E4F}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mod_shib22", "apache\mod_shib22.vcproj", "{B44C0852-83B8-4FB2-A86E-097C9C8256D0}"
@@ -171,22 +131,10 @@ Global
 		{1396D80A-8672-4224-9B02-95F3F4207CDB}.Debug|Win32.Build.0 = Debug|Win32
 		{1396D80A-8672-4224-9B02-95F3F4207CDB}.Release|Win32.ActiveCfg = Release|Win32
 		{1396D80A-8672-4224-9B02-95F3F4207CDB}.Release|Win32.Build.0 = Release|Win32
-		{16E70C47-789E-43D5-AFDF-964D386C3CB5}.Debug|Win32.ActiveCfg = Debug|Win32
-		{16E70C47-789E-43D5-AFDF-964D386C3CB5}.Debug|Win32.Build.0 = Debug|Win32
-		{16E70C47-789E-43D5-AFDF-964D386C3CB5}.Release|Win32.ActiveCfg = Release|Win32
-		{16E70C47-789E-43D5-AFDF-964D386C3CB5}.Release|Win32.Build.0 = Release|Win32
 		{F13141B5-6C87-40BB-8D4E-5CC56EBB4C59}.Debug|Win32.ActiveCfg = Debug|Win32
 		{F13141B5-6C87-40BB-8D4E-5CC56EBB4C59}.Debug|Win32.Build.0 = Debug|Win32
 		{F13141B5-6C87-40BB-8D4E-5CC56EBB4C59}.Release|Win32.ActiveCfg = Release|Win32
 		{F13141B5-6C87-40BB-8D4E-5CC56EBB4C59}.Release|Win32.Build.0 = Release|Win32
-		{E6CAB6C8-1D73-4410-970A-52BF9EC57810}.Debug|Win32.ActiveCfg = Debug|Win32
-		{E6CAB6C8-1D73-4410-970A-52BF9EC57810}.Debug|Win32.Build.0 = Debug|Win32
-		{E6CAB6C8-1D73-4410-970A-52BF9EC57810}.Release|Win32.ActiveCfg = Release|Win32
-		{E6CAB6C8-1D73-4410-970A-52BF9EC57810}.Release|Win32.Build.0 = Release|Win32
-		{84890110-2190-4AAE-9BDC-58F90DF71E4F}.Debug|Win32.ActiveCfg = Debug|Win32
-		{84890110-2190-4AAE-9BDC-58F90DF71E4F}.Debug|Win32.Build.0 = Debug|Win32
-		{84890110-2190-4AAE-9BDC-58F90DF71E4F}.Release|Win32.ActiveCfg = Release|Win32
-		{84890110-2190-4AAE-9BDC-58F90DF71E4F}.Release|Win32.Build.0 = Release|Win32
 		{67AF22A3-C26E-40BE-B0CA-2ABEE5123763}.Debug|Win32.ActiveCfg = Debug|Win32
 		{67AF22A3-C26E-40BE-B0CA-2ABEE5123763}.Debug|Win32.Build.0 = Debug|Win32
 		{67AF22A3-C26E-40BE-B0CA-2ABEE5123763}.Release|Win32.ActiveCfg = Release|Win32
@@ -195,10 +143,6 @@ Global
 		{4D02F36E-D2CD-4FD1-AC50-2941E27BB3FB}.Debug|Win32.Build.0 = Debug|Win32
 		{4D02F36E-D2CD-4FD1-AC50-2941E27BB3FB}.Release|Win32.ActiveCfg = Release|Win32
 		{4D02F36E-D2CD-4FD1-AC50-2941E27BB3FB}.Release|Win32.Build.0 = Release|Win32
-		{B3F1E899-86F9-4D3A-8026-B57D1A5B90B1}.Debug|Win32.ActiveCfg = Debug|Win32
-		{B3F1E899-86F9-4D3A-8026-B57D1A5B90B1}.Debug|Win32.Build.0 = Debug|Win32
-		{B3F1E899-86F9-4D3A-8026-B57D1A5B90B1}.Release|Win32.ActiveCfg = Release|Win32
-		{B3F1E899-86F9-4D3A-8026-B57D1A5B90B1}.Release|Win32.Build.0 = Release|Win32
 		{B44C0852-83B8-4FB2-A86E-097C9C8256D0}.Debug|Win32.ActiveCfg = Debug|Win32
 		{B44C0852-83B8-4FB2-A86E-097C9C8256D0}.Debug|Win32.Build.0 = Debug|Win32
 		{B44C0852-83B8-4FB2-A86E-097C9C8256D0}.Release|Win32.ActiveCfg = Release|Win32
@@ -223,9 +167,7 @@ Global
 		{87C25D4E-8D19-4513-B0BA-BC668BC2DEE3} = {26BA8F84-6E42-41FA-9B13-5D3F4B5B2050}
 		{D341DCD8-7DCD-43A2-8559-C07DAB838711} = {96AE4FC9-45EF-4C18-9F3B-EDA439E26E4C}
 		{666A63A7-983F-4C19-8411-207F24305197} = {96AE4FC9-45EF-4C18-9F3B-EDA439E26E4C}
-		{67AF22A3-C26E-40BE-B0CA-2ABEE5123763} = {FED80230-119E-4B2F-9F53-D2660A5F022B}
 		{4D02F36E-D2CD-4FD1-AC50-2941E27BB3FB} = {FED80230-119E-4B2F-9F53-D2660A5F022B}
-		{B3F1E899-86F9-4D3A-8026-B57D1A5B90B1} = {FED80230-119E-4B2F-9F53-D2660A5F022B}
-		{16E70C47-789E-43D5-AFDF-964D386C3CB5} = {FED80230-119E-4B2F-9F53-D2660A5F022B}
+		{67AF22A3-C26E-40BE-B0CA-2ABEE5123763} = {FED80230-119E-4B2F-9F53-D2660A5F022B}
 	EndGlobalSection
 EndGlobal

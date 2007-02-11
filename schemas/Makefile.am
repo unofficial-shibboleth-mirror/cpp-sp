@@ -7,10 +7,8 @@ pkgxmldir = $(datadir)/xml/@PACKAGE@
 pkgxml_DATA = \
 	catalog.xml \
     shibboleth-metadata-1.0.xsd \
-    shibboleth-targetconfig-1.0.xsd \
     shibboleth-spconfig-2.0.xsd \
             shibboleth.xsd \
-            shibboleth-trust-1.0.xsd \
 			metadata_v12_to_v11.xsl \
 			metadata_v12_to_v13.xsl \
 			metadata_v13_to_v12.xsl \
@@ -32,8 +30,4 @@ catalog.xml: ${srcdir}/catalog.xml.in Makefile ${top_builddir}/config.status
 
 CLEANFILES = catalog.xml
 
-EXTRA_DIST =
-	catalog.xml.in \
-    shibboleth-metadata-1.0.xsd \
-    shibboleth-targetconfig-1.0.xsd \
-	shibboleth-spconfig-2.0.xsd
+EXTRA_DIST = catalog.xml.in

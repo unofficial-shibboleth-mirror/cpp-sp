@@ -24,12 +24,14 @@
 #define __shibsp_sp_h__
 
 #include <shibsp/util/PropertySet.h>
+#include <saml/binding/SecurityPolicyRule.h>
 #include <xmltooling/signature/CredentialResolver.h>
 #include <xmltooling/util/StorageService.h>
 
 namespace shibsp {
 
     class SHIBSP_API Application;
+    class SHIBSP_API Handler;
     class SHIBSP_API ListenerService;
     class SHIBSP_API RequestMapper;
     class SHIBSP_API SessionCache;
@@ -43,7 +45,7 @@ namespace shibsp {
      * <p>A ServiceProvider exposes configuration and infrastructure services required
      * by the SP implementation, allowing a flexible configuration format.
      */
-    class SHIBSP_API ServiceProvider : public virtual xmltooling::Lockable, public virtual PropertySet
+	class SHIBSP_API ServiceProvider : public virtual xmltooling::Lockable, public virtual PropertySet
     {
         MAKE_NONCOPYABLE(ServiceProvider);
     protected:
@@ -100,14 +102,20 @@ namespace shibsp {
         virtual xmlsignature::CredentialResolver* getCredentialResolver(const char* id) const=0;
 
         /**
+		 * Returns the security policy rules in effect for a Handler instance.
+         *
+		 * @param handler    identifies the Handler for which to return the policy rules
+         * @return array of policy rules
+		 */
+		virtual std::vector<const opensaml::SecurityPolicyRule*>& getPolicyRules(const Handler& handler) const=0;
+
+        /**
          * Returns a RequestMapper instance.
          * 
          * @param required  true iff an exception should be thrown if no RequestMapper is available
          * @param a RequestMapper
          */
         virtual RequestMapper* getRequestMapper(bool required=true) const=0;
-        
-        //virtual ISessionCache* getSessionCache() const=0;
         
         /**
          * Returns an Application instance matching the specified ID.

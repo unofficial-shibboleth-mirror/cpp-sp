@@ -72,8 +72,7 @@ void DOMPropertySet::load(
                 }
             }
             if (ns.get()) {
-                remap=remapper->find(ns.get());
-                if (remap!=remapper->end())
+                if (remapper && (remap=remapper->find(ns.get()))!=remapper->end())
                     m_map[string("{") + remap->second.c_str() + '}' + realname]=pair<char*,const XMLCh*>(val,a->getNodeValue());
                 else
                     m_map[string("{") + ns.get() + '}' + realname]=pair<char*,const XMLCh*>(val,a->getNodeValue());
@@ -106,8 +105,7 @@ void DOMPropertySet::load(
         }
         string key;
         if (ns.get()) {
-            remap=remapper->find(ns.get());
-            if (remap!=remapper->end())
+            if (remapper && (remap=remapper->find(ns.get()))!=remapper->end())
                 key=string("{") + remap->second.c_str() + '}' + realname;
             else
                 key=string("{") + ns.get() + '}' + realname;

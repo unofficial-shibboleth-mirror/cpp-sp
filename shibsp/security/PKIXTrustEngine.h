@@ -32,7 +32,7 @@ namespace shibsp {
     void SHIBSP_API registerPKIXTrustEngine();
 
     /** TrustEngine based on Shibboleth PKIX metadata extension. */
-    #define SHIBBOLETH_PKIX_TRUSTENGINE  "edu.internet2.middleware.shibboleth.security.provider.PKIXTrustEngine"
+    #define SHIBBOLETH_PKIX_TRUSTENGINE  "PKIX"
 };
 
 #endif /* __shibsp_pkixtrust_h__ */
