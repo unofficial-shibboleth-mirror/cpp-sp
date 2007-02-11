@@ -3,4 +3,5 @@
 <catalog xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog">
     <uri name="urn:mace:shibboleth:metadata:1.0" uri="@-PKGXMLDIR-@/shibboleth-metadata-1.0.xsd"/>
     <uri name="urn:mace:shibboleth:sp:config:2.0" uri="@-PKGXMLDIR-@/shibboleth-spconfig-2.0.xsd"/>
+    <uri name="urn:mace:shibboleth:1.0" uri="@-PKGXMLDIR-@/shibboleth.xsd"/>
 </catalog>

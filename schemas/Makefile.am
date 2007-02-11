@@ -6,14 +6,12 @@ pkgxmldir = $(datadir)/xml/@PACKAGE@
 
 pkgxml_DATA = \
 	catalog.xml \
+	shibboleth.xsd \
     shibboleth-metadata-1.0.xsd \
     shibboleth-spconfig-2.0.xsd \
-            shibboleth.xsd \
-			metadata_v12_to_v11.xsl \
-			metadata_v12_to_v13.xsl \
-			metadata_v13_to_v12.xsl \
-			trust_v12_to_v11.xsl \
-			trust_v13_to_v12.xsl
+    metadata_v12_to_v13.xsl \
+    metadata_v13_to_v12.xsl \
+    trust_v13_to_v12.xsl
 
 #
 # Some of these need building
