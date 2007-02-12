@@ -19,7 +19,6 @@
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			CharacterSet="2"
@@ -38,20 +37,18 @@
 			/>
 			<Tool
 				Name="VCMIDLTool"
-				TypeLibraryName=".\Release/shibd.tlb"
 				HeaderFileName=""
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories=".;..;&quot;..\..\cpp-opensaml1&quot;;&quot;..\..\cpp-opensaml2&quot;;&quot;..\..\cpp-xmltooling&quot;"
+				AdditionalIncludeDirectories=".;..;&quot;..\..\cpp-opensaml2&quot;;&quot;..\..\cpp-xmltooling&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				StringPooling="true"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				RuntimeTypeInfo="true"
-				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
 				Detect64BitPortabilityProblems="true"
@@ -71,10 +68,9 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="wsock32.lib log4cpp.lib saml2.lib xmltooling1.lib"
-				OutputFile="$(OutDir)/shibd.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="&quot;..\..\cpp-opensaml1\saml\Release&quot;;&quot;..\..\cpp-opensaml2\Release&quot;;&quot;..\..\cpp-xmltooling\Release&quot;"
+				AdditionalLibraryDirectories="&quot;..\..\cpp-opensaml2\Release&quot;;&quot;..\..\cpp-xmltooling\Release&quot;"
 				SubSystem="1"
 				TargetMachine="1"
 			/>
@@ -108,7 +104,6 @@
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			CharacterSet="2"
@@ -127,18 +122,16 @@
 			/>
 			<Tool
 				Name="VCMIDLTool"
-				TypeLibraryName=".\Debug/shibd.tlb"
 				HeaderFileName=""
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=".;..;&quot;..\..\cpp-opensaml1&quot;;&quot;..\..\cpp-opensaml2&quot;;&quot;..\..\cpp-xmltooling&quot;"
+				AdditionalIncludeDirectories=".;..;&quot;..\..\cpp-opensaml2&quot;;&quot;..\..\cpp-xmltooling&quot;"
 				PreprocessorDefinitions="_CONSOLE;WIN32;_DEBUG"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
 				RuntimeTypeInfo="true"
-				UsePrecompiledHeader="0"
 				BrowseInformation="1"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
@@ -160,10 +153,9 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="wsock32.lib log4cppD.lib saml2D.lib xmltooling1D.lib"
-				OutputFile="$(OutDir)/shibd.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="&quot;..\..\cpp-opensaml1\saml\Debug&quot;;&quot;..\..\cpp-opensaml2\Debug&quot;;&quot;..\..\cpp-xmltooling\Debug&quot;"
+				AdditionalLibraryDirectories="&quot;..\..\cpp-opensaml2\Debug&quot;;&quot;..\..\cpp-xmltooling\Debug&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="1"

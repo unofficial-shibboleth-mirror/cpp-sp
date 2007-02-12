@@ -2,10 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8.00"
-	Name="odbc-store"
-	ProjectGUID="{666A63A7-983F-4C19-8411-207F24305197}"
-	RootNamespace="odbcstore"
-	Keyword="Win32Proj"
+	Name="samlquery"
+	ProjectGUID="{F13141B6-6C87-40BB-8D4E-5CC56EBB4C59}"
+	RootNamespace="samlquery"
 	>
 	<Platforms>
 		<Platform
@@ -16,10 +15,12 @@
 	</ToolFiles>
 	<Configurations>
 		<Configuration
-			Name="Debug|Win32"
+			Name="Release|Win32"
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="2"
+			ConfigurationType="1"
+			UseOfMFC="0"
+			ATLMinimizesCRunTimeLibraryUsage="false"
 			CharacterSet="2"
 			>
 			<Tool
@@ -36,35 +37,41 @@
 			/>
 			<Tool
 				Name="VCMIDLTool"
+				HeaderFileName=""
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="0"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;ODBCSTORE_EXPORTS"
-				MinimalRebuild="true"
-				BasicRuntimeChecks="3"
-				RuntimeLibrary="3"
+				Optimization="2"
+				InlineFunctionExpansion="1"
+				AdditionalIncludeDirectories=".;..;&quot;..\..\cpp-opensaml2&quot;;&quot;..\..\cpp-xmltooling&quot;"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
+				StringPooling="true"
+				RuntimeLibrary="2"
+				EnableFunctionLevelLinking="true"
+				RuntimeTypeInfo="true"
 				WarningLevel="3"
+				SuppressStartupBanner="true"
 				Detect64BitPortabilityProblems="true"
-				DebugInformationFormat="4"
+				CompileAs="0"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="NDEBUG"
+				Culture="1033"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="log4cppD.lib xmltooling1D.lib"
-				OutputFile="$(OutDir)\$(ProjectName).so"
-				LinkIncremental="2"
-				AdditionalLibraryDirectories="..\..\cpp-xmltooling\Debug"
-				GenerateDebugInformation="true"
-				SubSystem="2"
+				AdditionalDependencies="wsock32.lib log4cpp.lib saml2.lib xmltooling1.lib xerces-c_2.lib"
+				LinkIncremental="1"
+				SuppressStartupBanner="true"
+				AdditionalLibraryDirectories="&quot;..\..\cpp-opensaml2\Release&quot;;&quot;..\..\cpp-xmltooling\Release&quot;"
+				SubSystem="1"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -93,12 +100,14 @@
 			/>
 		</Configuration>
 		<Configuration
-			Name="Release|Win32"
+			Name="Debug|Win32"
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="2"
+			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			UseOfMFC="0"
+			ATLMinimizesCRunTimeLibraryUsage="false"
 			CharacterSet="2"
-			WholeProgramOptimization="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -114,34 +123,42 @@
 			/>
 			<Tool
 				Name="VCMIDLTool"
+				HeaderFileName=""
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;ODBCSTORE_EXPORTS"
-				RuntimeLibrary="2"
+				Optimization="0"
+				AdditionalIncludeDirectories=".;..;&quot;..\..\cpp-opensaml2&quot;;&quot;..\..\cpp-xmltooling&quot;"
+				PreprocessorDefinitions="_CONSOLE;WIN32;_DEBUG"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="3"
+				RuntimeTypeInfo="true"
+				BrowseInformation="1"
 				WarningLevel="3"
+				SuppressStartupBanner="true"
 				Detect64BitPortabilityProblems="true"
-				DebugInformationFormat="3"
+				DebugInformationFormat="4"
+				CompileAs="0"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="_DEBUG"
+				Culture="1033"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="log4cpp.lib xmltooling1.lib"
-				OutputFile="$(OutDir)\$(ProjectName).so"
-				LinkIncremental="1"
-				AdditionalLibraryDirectories="..\..\cpp-xmltooling\Release"
+				AdditionalDependencies="wsock32.lib log4cppD.lib saml2D.lib xmltooling1D.lib xerces-c_2D.lib"
+				LinkIncremental="2"
+				SuppressStartupBanner="true"
+				AdditionalLibraryDirectories="&quot;..\..\cpp-opensaml2\Debug&quot;;&quot;..\..\cpp-xmltooling\Debug&quot;"
 				GenerateDebugInformation="true"
-				SubSystem="2"
-				OptimizeReferences="2"
-				EnableCOMDATFolding="2"
+				SubSystem="1"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -174,7 +191,7 @@
 	</References>
 	<Files>
 		<File
-			RelativePath=".\odbc-store.cpp"
+			RelativePath=".\samlquery.cpp"
 			>
 		</File>
 	</Files>

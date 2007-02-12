@@ -42,15 +42,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nsapi_shib", "nsapi_shib\ns
 		{81F0F7A6-DC36-46EF-957F-F9E81D4403F6} = {81F0F7A6-DC36-46EF-957F-F9E81D4403F6}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "shibtest", "shibtest\shibtest.vcproj", "{67AF22A3-C26E-40BE-B0CA-2ABEE5123763}"
-	ProjectSection(WebsiteProperties) = preProject
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(ProjectDependencies) = postProject
-		{81F0F7A6-DC36-46EF-957F-F9E81D4403F6} = {81F0F7A6-DC36-46EF-957F-F9E81D4403F6}
-	EndProjectSection
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "siterefresh", "siterefresh\siterefresh.vcproj", "{4D02F36E-D2CD-4FD1-AC50-2941E27BB3FB}"
 	ProjectSection(WebsiteProperties) = preProject
 		Debug.AspNetCompiler.Debug = "True"
@@ -105,6 +96,15 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "shibd", "shibd\shibd.vcproj
 		{81F0F7A6-DC36-46EF-957F-F9E81D4403F6} = {81F0F7A6-DC36-46EF-957F-F9E81D4403F6}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "samlquery", "util\samlquery.vcproj", "{F13141B6-6C87-40BB-8D4E-5CC56EBB4C59}"
+	ProjectSection(WebsiteProperties) = preProject
+		Debug.AspNetCompiler.Debug = "True"
+		Release.AspNetCompiler.Debug = "False"
+	EndProjectSection
+	ProjectSection(ProjectDependencies) = postProject
+		{81F0F7A6-DC36-46EF-957F-F9E81D4403F6} = {81F0F7A6-DC36-46EF-957F-F9E81D4403F6}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -131,10 +131,6 @@ Global
 		{1396D80A-8672-4224-9B02-95F3F4207CDB}.Debug|Win32.Build.0 = Debug|Win32
 		{1396D80A-8672-4224-9B02-95F3F4207CDB}.Release|Win32.ActiveCfg = Release|Win32
 		{1396D80A-8672-4224-9B02-95F3F4207CDB}.Release|Win32.Build.0 = Release|Win32
-		{67AF22A3-C26E-40BE-B0CA-2ABEE5123763}.Debug|Win32.ActiveCfg = Debug|Win32
-		{67AF22A3-C26E-40BE-B0CA-2ABEE5123763}.Debug|Win32.Build.0 = Debug|Win32
-		{67AF22A3-C26E-40BE-B0CA-2ABEE5123763}.Release|Win32.ActiveCfg = Release|Win32
-		{67AF22A3-C26E-40BE-B0CA-2ABEE5123763}.Release|Win32.Build.0 = Release|Win32
 		{4D02F36E-D2CD-4FD1-AC50-2941E27BB3FB}.Debug|Win32.ActiveCfg = Debug|Win32
 		{4D02F36E-D2CD-4FD1-AC50-2941E27BB3FB}.Debug|Win32.Build.0 = Debug|Win32
 		{4D02F36E-D2CD-4FD1-AC50-2941E27BB3FB}.Release|Win32.ActiveCfg = Release|Win32
@@ -155,6 +151,10 @@ Global
 		{F13141B5-6C87-40BB-8D4E-5CC56EBB4C59}.Debug|Win32.Build.0 = Debug|Win32
 		{F13141B5-6C87-40BB-8D4E-5CC56EBB4C59}.Release|Win32.ActiveCfg = Release|Win32
 		{F13141B5-6C87-40BB-8D4E-5CC56EBB4C59}.Release|Win32.Build.0 = Release|Win32
+		{F13141B6-6C87-40BB-8D4E-5CC56EBB4C59}.Debug|Win32.ActiveCfg = Debug|Win32
+		{F13141B6-6C87-40BB-8D4E-5CC56EBB4C59}.Debug|Win32.Build.0 = Debug|Win32
+		{F13141B6-6C87-40BB-8D4E-5CC56EBB4C59}.Release|Win32.ActiveCfg = Release|Win32
+		{F13141B6-6C87-40BB-8D4E-5CC56EBB4C59}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -168,6 +168,6 @@ Global
 		{D341DCD8-7DCD-43A2-8559-C07DAB838711} = {96AE4FC9-45EF-4C18-9F3B-EDA439E26E4C}
 		{666A63A7-983F-4C19-8411-207F24305197} = {96AE4FC9-45EF-4C18-9F3B-EDA439E26E4C}
 		{4D02F36E-D2CD-4FD1-AC50-2941E27BB3FB} = {FED80230-119E-4B2F-9F53-D2660A5F022B}
-		{67AF22A3-C26E-40BE-B0CA-2ABEE5123763} = {FED80230-119E-4B2F-9F53-D2660A5F022B}
+		{F13141B6-6C87-40BB-8D4E-5CC56EBB4C59} = {FED80230-119E-4B2F-9F53-D2660A5F022B}
 	EndGlobalSection
 EndGlobal

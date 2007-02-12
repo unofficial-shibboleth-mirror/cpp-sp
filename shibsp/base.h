@@ -66,12 +66,12 @@
 /**
  * Default catalog path on Windows.
  */
-# define SHIBSP_SCHEMAS "/opt/shibboleth-sp/share/xml/xmltooling/catalog.xml;/opt/shibboleth-sp/share/xml/opensaml/saml20-catalog.xml;/opt/shibboleth-sp/share/xml/opensaml/saml11-catalog.xml;/opt/shibboleth-sp/share/xml/shibboleth/catalog.xml"
+# define SHIBSP_SCHEMAS "c:\\opt\\shibboleth-sp\\share\\xml\\xmltooling\\catalog.xml;c:\\opt\\shibboleth-sp\\share\\xml\\opensaml\\saml20-catalog.xml;c:\\opt\\shibboleth-sp\\share\\xml\\opensaml\\saml11-catalog.xml;c:\\opt\\shibboleth-sp\\share\\xml\\shibboleth\\catalog.xml"
 
 /**
  * Default path to configuration file on Windows.
  */
-# define SHIBSP_CONFIG "/opt/shibboleth-sp/etc/shibboleth/shibboleth.xml"
+# define SHIBSP_CONFIG "c:\\opt\\shibboleth-sp\\etc\\shibboleth\\shibboleth.xml"
 
 #else
 # include <shibsp/paths.h>

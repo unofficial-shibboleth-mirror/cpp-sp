@@ -21,6 +21,7 @@
 <pathentry kind="src" path="shibsp/security"/>
 <pathentry kind="src" path="shibsp/util"/>
 <pathentry kind="src" path="shibd"/>
+<pathentry kind="src" path="util"/>
 </item>
 </data>
 </cdtproject>

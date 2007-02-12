@@ -27,7 +27,8 @@
 #define _CRT_NONSTDC_NO_DEPRECATE 1
 #define _CRT_SECURE_NO_DEPRECATE 1
 
-#include <shib-target/shib-target.h>
+#include <shibsp/base.h>
+#include <windows.h>
 
 extern bool shibd_shutdown;                    // signals shutdown to Unix side
 extern const char* shar_schemadir;

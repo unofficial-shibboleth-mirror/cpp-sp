@@ -195,7 +195,7 @@ opensaml::SAMLConfig::getConfig();
 WANT_SUBDIRS="doc schemas configs shibsp shibd siterefresh test"
 AC_CONFIG_FILES([Makefile doc/Makefile schemas/Makefile \
 		 configs/Makefile shibsp/Makefile shibd/Makefile siterefresh/Makefile \
-		 test/Makefile selinux/Makefile])
+		 util/Makefile selinux/Makefile])
 
 
 #

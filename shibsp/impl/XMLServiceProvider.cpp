@@ -249,13 +249,12 @@ namespace {
             return NULL;
         }
 
-        vector<const SecurityPolicyRule*>& getPolicyRules(const Handler& handler) const {
-            pair<bool,const char*> pid = handler.getString("policyId", "urn:mace:shibboleth:sp:config:2.0");
-            if (!pid.first)
-                pid.second = m_impl->m_policyDefault.c_str();
-            if (m_impl->m_policyMap.count(pid.second))
-                return m_impl->m_policyMap[pid.second];
-            throw ConfigurationException("Security Policy ($1) not found, check <SecurityPolicies> element.", params(1,pid.second));
+        vector<const SecurityPolicyRule*>& getPolicyRules(const char* id=NULL) const {
+            if (!id)
+                id = m_impl->m_policyDefault.c_str();
+            if (m_impl->m_policyMap.count(id))
+                return m_impl->m_policyMap[id];
+            throw ConfigurationException("Security Policy ($1) not found, check <SecurityPolicies> element.", params(1,id));
         }
 
     protected:
@@ -938,27 +937,6 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
             }
         }
 
-        // Load the default application. This actually has a fixed ID of "default". ;-)
-        child=XMLHelper::getLastChildElement(e,Applications);
-        if (!child) {
-            log.fatal("can't build default Application object, missing conf:Applications element?");
-            throw ConfigurationException("can't build default Application object, missing conf:Applications element?");
-        }
-        XMLApplication* defapp=new XMLApplication(m_outer,child);
-        m_appmap[defapp->getId()]=defapp;
-        
-        // Load any overrides.
-        child = XMLHelper::getFirstChildElement(child,_Application);
-        while (child) {
-            auto_ptr<XMLApplication> iapp(new XMLApplication(m_outer,child,defapp));
-            if (m_appmap.count(iapp->getId()))
-                log.crit("found conf:Application element with duplicate id attribute (%s), skipping it", iapp->getId());
-            else
-                m_appmap[iapp->getId()]=iapp.release();
-
-            child = XMLHelper::getNextSiblingElement(child,_Application);
-        }
-
         // Load security policies.
         child = XMLHelper::getLastChildElement(e,SecurityPolicies);
         if (child) {
@@ -983,6 +961,27 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
             }
             if (!m_policyMap.count(m_policyDefault))
                 throw ConfigurationException("Default security policy ($1) not found in conf:SecurityPolicies element.", params(1,m_policyDefault.c_str()));
+        }
+
+        // Load the default application. This actually has a fixed ID of "default". ;-)
+        child=XMLHelper::getLastChildElement(e,Applications);
+        if (!child) {
+            log.fatal("can't build default Application object, missing conf:Applications element?");
+            throw ConfigurationException("can't build default Application object, missing conf:Applications element?");
+        }
+        XMLApplication* defapp=new XMLApplication(m_outer,child);
+        m_appmap[defapp->getId()]=defapp;
+        
+        // Load any overrides.
+        child = XMLHelper::getFirstChildElement(child,_Application);
+        while (child) {
+            auto_ptr<XMLApplication> iapp(new XMLApplication(m_outer,child,defapp));
+            if (m_appmap.count(iapp->getId()))
+                log.crit("found conf:Application element with duplicate id attribute (%s), skipping it", iapp->getId());
+            else
+                m_appmap[iapp->getId()]=iapp.release();
+
+            child = XMLHelper::getNextSiblingElement(child,_Application);
         }
     }
     catch (exception&) {
