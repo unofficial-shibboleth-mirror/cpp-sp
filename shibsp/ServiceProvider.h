@@ -102,12 +102,20 @@ namespace shibsp {
         virtual xmlsignature::CredentialResolver* getCredentialResolver(const char* id) const=0;
 
         /**
+		 * Returns the security policy settings for an identified policy.
+         *
+		 * @param id    identifies the policy to return
+         * @return a PropertySet
+		 */
+        virtual const PropertySet* getPolicySettings(const char* id) const=0;
+
+        /**
 		 * Returns the security policy rules for an identified policy.
          *
-		 * @param id    identifies the policy rules to return, or NULL for the default policy
+		 * @param id    identifies the policy to return
          * @return an array of policy rules
 		 */
-		virtual std::vector<const opensaml::SecurityPolicyRule*>& getPolicyRules(const char* id=NULL) const=0;
+        virtual const std::vector<const opensaml::SecurityPolicyRule*>& getPolicyRules(const char* id) const=0;
 
         /**
          * Returns a RequestMapper instance.

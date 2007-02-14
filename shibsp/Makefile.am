@@ -9,6 +9,8 @@ libshibspincludedir = $(includedir)/shibsp
 
 attrincludedir = $(includedir)/shibsp/attribute
 
+bindincludedir = $(includedir)/shibsp/binding
+
 mdincludedir = $(includedir)/shibsp/metadata
 
 remincludedir = $(includedir)/shibsp/remoting
@@ -40,6 +42,9 @@ attrinclude_HEADERS = \
 	attribute/ScopedAttribute.h \
 	attribute/SimpleAttribute.h
 
+bindinclude_HEADERS = \
+	binding/SOAPClient.h
+	
 mdinclude_HEADERS = \
 	metadata/MetadataExt.h
 
@@ -68,6 +73,7 @@ libshibsp_la_SOURCES = \
 	SessionCache.cpp \
 	SPConfig.cpp \
 	attribute/Attribute.cpp \
+	binding/impl/SOAPClient.cpp \
 	impl/RemotedSessionCache.cpp \
 	impl/StorageServiceSessionCache.cpp \
 	impl/XMLAccessControl.cpp \

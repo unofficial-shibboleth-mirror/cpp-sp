@@ -155,8 +155,7 @@ namespace {
         RequestMapper* m_requestMapper;
         map<string,Application*> m_appmap;
         map<string,CredentialResolver*> m_credResolverMap;
-        map< string,vector<const SecurityPolicyRule*> > m_policyMap;
-        string m_policyDefault;
+        map< string,pair< PropertySet*,vector<const SecurityPolicyRule*> > > m_policyMap;
         
         // Provides filter to exclude special config elements.
         short acceptNode(const DOMNode* node) const;
@@ -249,11 +248,17 @@ namespace {
             return NULL;
         }
 
-        vector<const SecurityPolicyRule*>& getPolicyRules(const char* id=NULL) const {
-            if (!id)
-                id = m_impl->m_policyDefault.c_str();
-            if (m_impl->m_policyMap.count(id))
-                return m_impl->m_policyMap[id];
+        const PropertySet* getPolicySettings(const char* id) const {
+            map<string,pair<PropertySet*,vector<const SecurityPolicyRule*> > >::const_iterator i = m_impl->m_policyMap.find(id);
+            if (i!=m_impl->m_policyMap.end())
+                return i->second.first;
+            throw ConfigurationException("Security Policy ($1) not found, check <SecurityPolicies> element.", params(1,id));
+        }
+
+        const vector<const SecurityPolicyRule*>& getPolicyRules(const char* id) const {
+            map<string,pair<PropertySet*,vector<const SecurityPolicyRule*> > >::const_iterator i = m_impl->m_policyMap.find(id);
+            if (i!=m_impl->m_policyMap.end())
+                return i->second.second;
             throw ConfigurationException("Security Policy ($1) not found, check <SecurityPolicies> element.", params(1,id));
         }
 
@@ -277,7 +282,6 @@ namespace {
     static const XMLCh Applications[] =         UNICODE_LITERAL_12(A,p,p,l,i,c,a,t,i,o,n,s);
     static const XMLCh Credentials[] =          UNICODE_LITERAL_11(C,r,e,d,e,n,t,i,a,l,s);
     static const XMLCh CredentialUse[] =        UNICODE_LITERAL_13(C,r,e,d,e,n,t,i,a,l,U,s,e);
-    static const XMLCh _default[] =             UNICODE_LITERAL_7(d,e,f,a,u,l,t);
     static const XMLCh fatal[] =                UNICODE_LITERAL_5(f,a,t,a,l);
     static const XMLCh _Handler[] =             UNICODE_LITERAL_7(H,a,n,d,l,e,r);
     static const XMLCh _id[] =                  UNICODE_LITERAL_2(i,d);
@@ -303,6 +307,16 @@ namespace {
     static const XMLCh _MetadataProvider[] =    UNICODE_LITERAL_16(M,e,t,a,d,a,t,a,P,r,o,v,i,d,e,r);
     static const XMLCh _path[] =                UNICODE_LITERAL_4(p,a,t,h);
     static const XMLCh _type[] =                UNICODE_LITERAL_4(t,y,p,e);
+
+    class SHIBSP_DLLLOCAL PolicyNodeFilter : public DOMNodeFilter
+    {
+    public:
+        short acceptNode(const DOMNode* node) const {
+            if (XMLHelper::isNodeNamed(node,shibspconstants::SHIB2SPCONFIG_NS,Rule))
+                return FILTER_REJECT;
+            return FILTER_ACCEPT;
+        }
+    };
 };
 
 namespace shibsp {
@@ -940,17 +954,20 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
         // Load security policies.
         child = XMLHelper::getLastChildElement(e,SecurityPolicies);
         if (child) {
-            auto_ptr_char def(child->getAttributeNS(NULL,_default));
-            m_policyDefault = def.get();
+            PolicyNodeFilter filter;
             child = XMLHelper::getFirstChildElement(child,Policy);
             while (child) {
                 auto_ptr_char id(child->getAttributeNS(NULL,_id));
-                vector<const SecurityPolicyRule*>& rules = m_policyMap[id.get()];
+                pair< PropertySet*,vector<const SecurityPolicyRule*> >& rules = m_policyMap[id.get()];
+                rules.first = NULL;
+                auto_ptr<DOMPropertySet> settings(new DOMPropertySet());
+                settings->load(child, log, &filter);
+                rules.first = settings.release();
                 const DOMElement* rule = XMLHelper::getFirstChildElement(child,Rule);
                 while (rule) {
                     auto_ptr_char type(rule->getAttributeNS(NULL,_type));
                     try {
-                        rules.push_back(samlConf.SecurityPolicyRuleManager.newPlugin(type.get(),rule));
+                        rules.second.push_back(samlConf.SecurityPolicyRuleManager.newPlugin(type.get(),rule));
                     }
                     catch (exception& ex) {
                         log.crit("error instantiating policy rule (%s) in policy (%s): %s", type.get(), id.get(), ex.what());
@@ -959,8 +976,6 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                 }
                 child = XMLHelper::getNextSiblingElement(child,Policy);
             }
-            if (!m_policyMap.count(m_policyDefault))
-                throw ConfigurationException("Default security policy ($1) not found in conf:SecurityPolicies element.", params(1,m_policyDefault.c_str()));
         }
 
         // Load the default application. This actually has a fixed ID of "default". ;-)
@@ -1000,8 +1015,10 @@ XMLConfigImpl::~XMLConfigImpl()
 {
     for_each(m_appmap.begin(),m_appmap.end(),cleanup_pair<string,Application>());
     for_each(m_credResolverMap.begin(),m_credResolverMap.end(),cleanup_pair<string,CredentialResolver>());
-    for (map< string,vector<const SecurityPolicyRule*> >::iterator i=m_policyMap.begin(); i!=m_policyMap.end(); ++i)
-        for_each(i->second.begin(), i->second.end(), xmltooling::cleanup<SecurityPolicyRule>());
+    for (map< string,pair<PropertySet*,vector<const SecurityPolicyRule*> > >::iterator i=m_policyMap.begin(); i!=m_policyMap.end(); ++i) {
+        delete i->second.first;
+        for_each(i->second.second.begin(), i->second.second.end(), xmltooling::cleanup<SecurityPolicyRule>());
+    }
     delete m_requestMapper;
     if (m_document)
         m_document->release();

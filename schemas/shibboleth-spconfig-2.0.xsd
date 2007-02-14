@@ -50,8 +50,8 @@
 				<element ref="conf:Credentials" minOccurs="0"/>
 				<element ref="conf:SecurityPolicies"/>
 			</sequence>
-			<attribute name="logger" type="anyURI" use="optional"/>
-			<attribute name="clockSkew" type="unsignedInt" use="optional"/>
+			<attribute name="logger" type="anyURI"/>
+			<attribute name="clockSkew" type="unsignedInt"/>
 			<anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>
@@ -70,7 +70,7 @@
 									<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
 								</sequence>
 								<attribute name="path" type="anyURI" use="required"/>
-								<attribute name="fatal" type="boolean" use="optional"/>
+								<attribute name="fatal" type="boolean" default="true"/>
 							</restriction>
 						</complexContent>
 					</complexType>
@@ -91,7 +91,7 @@
 						<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
 					</sequence>
 					<attribute name="id" type="conf:string" use="required"/>
-					<attribute name="cleanupInterval" type="unsignedInt" use="optional" default="900"/>
+					<attribute name="cleanupInterval" type="unsignedInt" default="900"/>
 					<anyAttribute namespace="##any" processContents="lax"/>
 				</restriction>
 			</complexContent>
@@ -108,7 +108,7 @@
 					<sequence>
 						<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
 					</sequence>
-					<attribute name="cacheTimeout" type="unsignedInt" use="optional" default="28800"/>
+					<attribute name="cacheTimeout" type="unsignedInt" default="28800"/>
 					<anyAttribute namespace="##any" processContents="lax"/>
 				</restriction>
 			</complexContent>
@@ -142,7 +142,7 @@
 						<complexType>
 							<attribute name="address" type="conf:string" use="required"/>
 							<attribute name="port" type="unsignedInt" use="required"/>
-							<attribute name="acl" type="conf:listOfStrings" use="optional" default="127.0.0.1"/>
+							<attribute name="acl" type="conf:listOfStrings" default="127.0.0.1"/>
 						</complexType>
 					</element>
 					<element name="Listener" type="conf:PluggableType"/>
@@ -152,7 +152,7 @@
 				<element ref="conf:ReplayCache" minOccurs="0"/>
 				<any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
 			</sequence>
-			<attribute name="logger" type="anyURI" use="optional"/>
+			<attribute name="logger" type="anyURI"/>
 			<anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>
@@ -178,8 +178,8 @@
 				</element>
 				<any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
 			</sequence>
-			<attribute name="logger" type="anyURI" use="optional"/>
-			<attribute name="localRelayState" type="boolean" use="optional" default="false"/>
+			<attribute name="logger" type="anyURI"/>
+			<attribute name="localRelayState" type="boolean" default="false"/>
 			<anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>
@@ -194,14 +194,14 @@
 						</sequence>
 						<attribute name="id" type="unsignedInt" use="required"/>
 						<attribute name="name" type="conf:string" use="required"/>
-						<attribute name="port" type="unsignedInt" use="optional"/>
-						<attribute name="sslport" type="unsignedInt" use="optional"/>
-						<attribute name="scheme" type="conf:string" use="optional"/>
+						<attribute name="port" type="unsignedInt"/>
+						<attribute name="sslport" type="unsignedInt"/>
+						<attribute name="scheme" type="conf:string"/>
 					</complexType>
 				</element>
 				<any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
 			</sequence>
-			<attribute name="normalizeRequest" type="boolean" use="optional"/>
+			<attribute name="normalizeRequest" type="boolean" default="true"/>
 			<anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>
@@ -243,11 +243,11 @@
 	</element>
 	
 	<attributeGroup name="ContentSettings">
-		<attribute name="authType" type="conf:string" use="optional"/>
-		<attribute name="requireSession" type="boolean" use="optional"/>
-		<attribute name="requireSessionWith" type="conf:string" use="optional"/>
-		<attribute name="exportAssertion" type="boolean" use="optional"/>
-		<attribute name="redirectToSSL" type="unsignedInt" use="optional"/>
+		<attribute name="authType" type="conf:string"/>
+		<attribute name="requireSession" type="boolean"/>
+		<attribute name="requireSessionWith" type="conf:string"/>
+		<attribute name="exportAssertion" type="boolean"/>
+		<attribute name="redirectToSSL" type="unsignedInt"/>
 		<anyAttribute namespace="##other" processContents="lax"/>
 	</attributeGroup>
 	<element name="AccessControlProvider" type="conf:PluggableType"/>
@@ -283,7 +283,7 @@
 	            </choice>
     			<element ref="conf:Path" minOccurs="0" maxOccurs="unbounded"/>
     		</sequence>
-    		<attribute name="scheme" use="optional">
+    		<attribute name="scheme">
 			    <simpleType>
 			        <restriction base="conf:string">
 			            <enumeration value="http"/>
@@ -295,8 +295,8 @@
 			    </simpleType>
     		</attribute>
     		<attribute name="name" type="conf:string" use="required"/>
-    		<attribute name="port" type="unsignedInt" use="optional"/>
-    		<attribute name="applicationId" type="conf:string" use="optional"/>
+    		<attribute name="port" type="unsignedInt"/>
+    		<attribute name="applicationId" type="conf:string"/>
            	<attributeGroup ref="conf:ContentSettings"/>
     	</complexType>
     </element>
@@ -312,7 +312,7 @@
     			<element ref="conf:Path" minOccurs="0" maxOccurs="unbounded"/>
     		</sequence>
     		<attribute name="name" type="conf:string" use="required"/>
-    		<attribute name="applicationId" type="conf:string" use="optional"/>
+    		<attribute name="applicationId" type="conf:string"/>
            	<attributeGroup ref="conf:ContentSettings"/>
         </complexType>
     </element>
@@ -333,7 +333,8 @@
 			</sequence>
 			<attribute name="id" type="conf:string" fixed="default"/>
 			<attribute name="providerId" type="anyURI" use="required"/>
-			<attribute name="homeURL" type="anyURI" use="optional"/>
+			<attribute name="policyId" type="conf:string" use="required"/>
+			<attribute name="homeURL" type="anyURI"/>
 	        <anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>
@@ -352,8 +353,9 @@
 				<element name="TrustEngine" type="conf:PluggableType" minOccurs="0"/>
 			</sequence>
 			<attribute name="id" type="conf:string" use="required"/>
-			<attribute name="providerId" type="anyURI" use="optional"/>
-			<attribute name="homeURL" type="anyURI" use="optional"/>
+			<attribute name="providerId" type="anyURI"/>
+			<attribute name="policyId" type="conf:string"/>
+			<attribute name="homeURL" type="anyURI"/>
 	        <anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>
@@ -381,17 +383,16 @@
 					</complexType>
 				</element>
 			</choice>
-			<attribute name="handlerURL" type="anyURI" use="optional"/>
-			<attribute name="handlerSSL" type="boolean" use="optional" default="true"/>
-			<attribute name="cookieName" type="conf:string" use="optional"/>
-			<attribute name="cookieProps" type="conf:string" use="optional"/>
-			<attribute name="idpHistory" type="boolean" use="optional" default="true"/>
-			<attribute name="idpHistoryDays" type="unsignedInt" use="optional"/>
-			<attribute name="lifetime" type="unsignedInt" use="optional"/>
-			<attribute name="timeout" type="unsignedInt" use="optional"/>
-			<attribute name="checkAddress" type="boolean" use="optional"/>
-			<attribute name="consistentAddress" type="boolean" use="optional" default="true"/>
-			<attribute name="validate" type="boolean" use="optional"/>
+			<attribute name="handlerURL" type="anyURI"/>
+			<attribute name="handlerSSL" type="boolean" default="true"/>
+			<attribute name="cookieName" type="conf:string"/>
+			<attribute name="cookieProps" type="conf:string"/>
+			<attribute name="idpHistory" type="boolean" default="true"/>
+			<attribute name="idpHistoryDays" type="unsignedInt"/>
+			<attribute name="lifetime" type="unsignedInt" default="28800"/>
+			<attribute name="timeout" type="unsignedInt" default="3600"/>
+			<attribute name="checkAddress" type="boolean" default="true"/>
+			<attribute name="consistentAddress" type="boolean" default="true"/>
 			<anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>
@@ -405,11 +406,10 @@
 			</sequence>
 			<attribute name="Location" type="anyURI" use="required"/>
 			<attribute name="Binding" type="anyURI" use="required"/>
-			<attribute name="wayfURL" type="anyURI" use="optional"/>
-			<attribute name="wayfBinding" type="anyURI" use="optional"/>
-			<attribute name="checkCDC" type="anyURI" use="optional"/>
-			<attribute name="isDefault" type="boolean" use="optional"/>
-			<attribute name="id" type="conf:string" use="optional"/>
+			<attribute name="wayfURL" type="anyURI"/>
+			<attribute name="wayfBinding" type="anyURI"/>
+			<attribute name="isDefault" type="boolean"/>
+			<attribute name="id" type="conf:string"/>
 			<anyAttribute namespace="##any" processContents="lax"/>
 		</complexType>
 	</element>
@@ -423,24 +423,23 @@
 				<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
 			</sequence>
 			<attribute name="session" type="anyURI" use="required"/>
-			<attribute name="metadata" type="anyURI" use="optional"/>
-			<attribute name="rm" type="anyURI" use="optional"/>
-			<attribute name="access" type="anyURI" use="optional"/>
-			<attribute name="ssl" type="anyURI" use="optional"/>
-			<attribute name="supportContact" type="conf:string" use="optional"/>
-			<attribute name="logoLocation" type="anyURI" use="optional"/>
-			<attribute name="styleSheet" type="anyURI" use="optional"/>
+			<attribute name="metadata" type="anyURI"/>
+			<attribute name="rm" type="anyURI"/>
+			<attribute name="access" type="anyURI"/>
+			<attribute name="ssl" type="anyURI"/>
+			<attribute name="supportContact" type="conf:string"/>
+			<attribute name="logoLocation" type="anyURI"/>
+			<attribute name="styleSheet" type="anyURI"/>
 			<anyAttribute namespace="##any" processContents="lax"/>
 		</complexType>
 	</element>
 
 	<attributeGroup name="CredentialUseGroup">
-		<attribute name="TLS" type="conf:string" use="optional"/>
-		<attribute name="Signing" type="conf:string" use="optional"/>
-		<attribute name="signRequest" type="boolean" use="optional" default="false"/>
-		<attribute name="signatureAlg" type="anyURI" use="optional"/>
-		<attribute name="signedAssertions" type="boolean" use="optional" default="false"/>
-		<attribute name="authType" use="optional">
+		<attribute name="TLS" type="conf:string"/>
+		<attribute name="Signing" type="conf:string"/>
+		<attribute name="signRequest" type="boolean" default="false"/>
+		<attribute name="signatureAlg" type="anyURI"/>
+		<attribute name="authType">
 			<simpleType>
 				<restriction base="conf:string">
 					<enumeration value="basic"/>
@@ -450,8 +449,8 @@
 				</restriction>
 			</simpleType>
 		</attribute>
-		<attribute name="authUsername" use="optional"/>
-		<attribute name="authPassword" use="optional"/>
+		<attribute name="authUsername"/>
+		<attribute name="authPassword"/>
 	</attributeGroup>
 
 	<element name="CredentialUse">
@@ -518,10 +517,16 @@
 							<element name="Rule" type="conf:PluggableType" minOccurs="1" maxOccurs="unbounded"/>
 						</sequence>
 						<attribute name="id" type="conf:string" use="required"/>
+						<attribute name="validate" type="boolean" default="false"/>
+						<attribute name="signedAssertions" type="boolean" default="false"/>
+						<attribute name="requireConfidentiality" type="boolean" default="true"/>
+						<attribute name="requireTransportAuth" type="boolean" default="true"/>
+						<attribute name="connectTimeout" type="unsignedShort" default="15"/>
+						<attribute name="timeout" type="unsignedShort" default="30"/>
+						<anyAttribute namespace="##any" processContents="lax"/>
 					</complexType>
 				</element>
 			</sequence>
-			<attribute name="default" type="conf:string" use="required"/>
 		</complexType>
 	</element>
 	

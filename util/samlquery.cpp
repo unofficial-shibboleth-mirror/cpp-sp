@@ -35,6 +35,7 @@
 #include <shibsp/exceptions.h>
 #include <shibsp/SPConfig.h>
 #include <shibsp/ServiceProvider.h>
+#include <shibsp/binding/SOAPClient.h>
 #include <shibsp/util/SPConstants.h>
 
 #include <saml/binding/SecurityPolicy.h>
@@ -127,7 +128,7 @@ int main(int argc,char* argv[])
     }
 
     ServiceProvider* sp=conf.getServiceProvider();
-    xmltooling::Locker locker(sp);
+    sp->lock();
 
     try {
         const Application* app=sp->getApplication(a_param);
@@ -157,12 +158,11 @@ int main(int argc,char* argv[])
         else
             throw MetadataException("No AttributeAuthority role found in metadata.");
 
-        QName role(samlconstants::SAML20P_NS, AttributeAuthorityDescriptor::LOCAL_NAME);
-        SecurityPolicy policy(sp->getPolicyRules(), m, &role, app->getTrustEngine());
+        SecurityPolicy policy;
+        shibsp::SOAPClient soaper(*app,policy);
 
         if (ver == v20) {
             auto_ptr_XMLCh binding(samlconstants::SAML20_BINDING_SOAP);
-            SAML2SOAPClient soaper(policy,true);
             opensaml::saml2p::StatusResponseType* srt=NULL;
             const vector<AttributeService*>& endpoints=AA->getAttributeServices();
             for (vector<AttributeService*>::const_iterator ep=endpoints.begin(); !srt && ep!=endpoints.end(); ++ep) {
@@ -181,10 +181,9 @@ int main(int argc,char* argv[])
                     subject->setNameID(nameid);
                     query->setSubject(subject);
                     query->setIssuer(iss);
-                    auto_ptr<opensaml::saml2p::AttributeQuery> wrapper(query);
-                    soaper.sendSAML(query, *AA, loc.get());
-                    wrapper.release();  // freed by SOAP client
-                    srt = soaper.receiveSAML();
+                    SAML2SOAPClient client(soaper);
+                    client.sendSAML(query, *AA, loc.get());
+                    srt = client.receiveSAML();
                 }
                 catch (exception& ex) {
                     cerr << ex.what() << endl;
@@ -206,7 +205,6 @@ int main(int argc,char* argv[])
         }
         else {
             auto_ptr_XMLCh binding(samlconstants::SAML1_BINDING_SOAP);
-            SAML1SOAPClient soaper(policy,true);
             const opensaml::saml1p::Response* response=NULL;
             const vector<AttributeService*>& endpoints=AA->getAttributeServices();
             for (vector<AttributeService*>::const_iterator ep=endpoints.begin(); !response && ep!=endpoints.end(); ++ep) {
@@ -225,10 +223,9 @@ int main(int argc,char* argv[])
                     query->setSubject(subject);
                     query->setResource(issuer.get());
                     request->setMinorVersion(ver==v11 ? 1 : 0);
-                    auto_ptr<Request> wrapper(request);
-                    soaper.sendSAML(request, *AA, loc.get());
-                    wrapper.release();  // freed by SOAP client
-                    response = soaper.receiveSAML();
+                    SAML1SOAPClient client(soaper);
+                    client.sendSAML(request, *AA, loc.get());
+                    response = client.receiveSAML();
                 }
                 catch (exception& ex) {
                     cerr << ex.what() << endl;
@@ -252,6 +249,7 @@ int main(int argc,char* argv[])
         cerr << ex.what() << endl;
     }
 
+    sp->unlock();
     conf.term();
     return 0;
 }
