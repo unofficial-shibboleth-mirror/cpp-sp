@@ -79,7 +79,7 @@ void SOAPClient::send(const soap11::Envelope& env, const KeyInfoSource& peer, co
         if (flag.first && flag.second) {
             CredentialResolver* cr=NULL;
             pair<bool,const char*> cred = m_credUse->getString("Signing");
-            if (cred.first && (cr==SPConfig::getConfig().getServiceProvider()->getCredentialResolver(cred.second))) {
+            if (cred.first && (cr=SPConfig::getConfig().getServiceProvider()->getCredentialResolver(cred.second))) {
                 // Looks like we're supposed to sign, so check for message.
                 const vector<XMLObject*>& bodies=const_cast<const soap11::Body*>(env.getBody())->getUnknownXMLObjects();
                 if (!bodies.empty()) {
