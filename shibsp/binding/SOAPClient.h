@@ -64,7 +64,7 @@ namespace shibsp {
          * 
          * @param transport reference to transport layer
          */
-        void prepareTransport(const xmltooling::SOAPTransport& transport);
+        void prepareTransport(xmltooling::SOAPTransport& transport);
 
         /** Application supplied to client. */
         const Application& m_app;

@@ -103,8 +103,7 @@ int main(int argc,char* argv[])
         SPConfig::Trust |
         SPConfig::Credentials |
         SPConfig::AttributeResolver |
-        SPConfig::OutOfProcess |
-        SPConfig::Caching
+        SPConfig::OutOfProcess
         );
     if (!conf.init(path))
         return -10;
@@ -171,22 +170,22 @@ int main(int argc,char* argv[])
                         continue;
                     auto_ptr_char loc((*ep)->getLocation());
                     NameID* nameid = NameIDBuilder::buildNameID();
-                    Issuer* iss = IssuerBuilder::buildIssuer();
                     opensaml::saml2::Subject* subject = opensaml::saml2::SubjectBuilder::buildSubject();
+                    subject->setNameID(nameid);
                     opensaml::saml2p::AttributeQuery* query = opensaml::saml2p::AttributeQueryBuilder::buildAttributeQuery();
+                    query->setSubject(subject);
+                    Issuer* iss = IssuerBuilder::buildIssuer();
+                    query->setIssuer(iss);
                     nameid->setName(name.get());
                     nameid->setFormat(format.get() ? format.get() : NameID::TRANSIENT);
                     nameid->setNameQualifier(domain.get());
                     iss->setName(issuer.get());
-                    subject->setNameID(nameid);
-                    query->setSubject(subject);
-                    query->setIssuer(iss);
                     SAML2SOAPClient client(soaper);
                     client.sendSAML(query, *AA, loc.get());
                     srt = client.receiveSAML();
                 }
                 catch (exception& ex) {
-                    cerr << ex.what() << endl;
+                    cerr << "Caught exception: " << ex.what() << endl << endl;
                     soaper.reset();
                 }
             }
@@ -214,13 +213,14 @@ int main(int argc,char* argv[])
                     auto_ptr_char loc((*ep)->getLocation());
                     NameIdentifier* nameid = NameIdentifierBuilder::buildNameIdentifier();
                     opensaml::saml1::Subject* subject = opensaml::saml1::SubjectBuilder::buildSubject();
+                    subject->setNameIdentifier(nameid);
                     opensaml::saml1p::AttributeQuery* query = opensaml::saml1p::AttributeQueryBuilder::buildAttributeQuery();
+                    query->setSubject(subject);
                     Request* request = RequestBuilder::buildRequest();
+                    request->setAttributeQuery(query);
                     nameid->setName(name.get());
                     nameid->setFormat(format.get() ? format.get() : shibspconstants::SHIB1_NAMEID_FORMAT_URI);
                     nameid->setNameQualifier(domain.get());
-                    subject->setNameIdentifier(nameid);
-                    query->setSubject(subject);
                     query->setResource(issuer.get());
                     request->setMinorVersion(ver==v11 ? 1 : 0);
                     SAML1SOAPClient client(soaper);
@@ -228,7 +228,7 @@ int main(int argc,char* argv[])
                     response = client.receiveSAML();
                 }
                 catch (exception& ex) {
-                    cerr << ex.what() << endl;
+                    cerr << "Caught exception: " << ex.what() << endl << endl;
                     soaper.reset();
                 }
             }

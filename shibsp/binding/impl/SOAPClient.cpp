@@ -38,6 +38,18 @@ using namespace xmltooling;
 using namespace log4cpp;
 using namespace std;
 
+namespace {
+    class SHIBSP_DLLLOCAL _addcert : public binary_function<X509Data*,XSECCryptoX509*,void> {
+    public:
+        void operator()(X509Data* bag, XSECCryptoX509* cert) const {
+            safeBuffer& buf=cert->getDEREncodingSB();
+            X509Certificate* x=X509CertificateBuilder::buildX509Certificate();
+            x->setValue(buf.sbStrToXMLCh());
+            bag->getX509Certificates().push_back(x);
+        }
+    };
+};
+
 SOAPClient::SOAPClient(const Application& application, opensaml::SecurityPolicy& policy)
     : opensaml::SOAPClient(policy), m_app(application), m_settings(NULL), m_credUse(NULL), m_credResolver(NULL)
 {
@@ -50,18 +62,6 @@ SOAPClient::SOAPClient(const Application& application, opensaml::SecurityPolicy&
     policy.setMetadataProvider(application.getMetadataProvider());
     policy.setTrustEngine(application.getTrustEngine());
 }
-
-namespace {
-    class SHIBSP_DLLLOCAL _addcert : public binary_function<X509Data*,XSECCryptoX509*,void> {
-    public:
-        void operator()(X509Data* bag, XSECCryptoX509* cert) const {
-            safeBuffer& buf=cert->getDEREncodingSB();
-            X509Certificate* x=X509CertificateBuilder::buildX509Certificate();
-            x->setValue(buf.sbStrToXMLCh());
-            bag->getX509Certificates().push_back(x);
-        }
-    };
-};
 
 void SOAPClient::send(const soap11::Envelope& env, const KeyInfoSource& peer, const char* endpoint)
 {
@@ -116,7 +116,7 @@ void SOAPClient::send(const soap11::Envelope& env, const KeyInfoSource& peer, co
     opensaml::SOAPClient::send(env, peer, endpoint);
 }
 
-void SOAPClient::prepareTransport(const SOAPTransport& transport)
+void SOAPClient::prepareTransport(SOAPTransport& transport)
 {
 #ifdef _DEBUG
     xmltooling::NDC("prepareTransport");
@@ -185,9 +185,12 @@ void SOAPClient::prepareTransport(const SOAPTransport& transport)
     transport.setConnectTimeout(m_settings->getUnsignedInt("connectTimeout").second);
     transport.setTimeout(m_settings->getUnsignedInt("timeout").second);
 
-    const HTTPSOAPTransport* http = dynamic_cast<const HTTPSOAPTransport*>(&transport);
-    if (http)
+    HTTPSOAPTransport* http = dynamic_cast<HTTPSOAPTransport*>(&transport);
+    if (http) {
+        flag = m_settings->getBool("chunkedEncoding");
+        http->useChunkedEncoding(!flag.first || flag.second);
         http->setRequestHeader("Shibboleth", PACKAGE_VERSION);
+    }
 }
 
 void SOAPClient::reset()
