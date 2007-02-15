@@ -437,7 +437,7 @@
 	<attributeGroup name="CredentialUseGroup">
 		<attribute name="TLS" type="conf:string"/>
 		<attribute name="Signing" type="conf:string"/>
-		<attribute name="signRequest" type="boolean" default="false"/>
+		<attribute name="signRequests" type="boolean" default="false"/>
 		<attribute name="signatureAlg" type="anyURI"/>
 		<attribute name="authType">
 			<simpleType>
