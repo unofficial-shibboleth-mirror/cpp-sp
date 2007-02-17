@@ -1,12 +1,13 @@
 # set overall behavior
 log4j.rootCategory=INFO, native_log
 
-# these are fairly verbose for DEBUG, so generally leave at INFO
-log4j.category.SAML.XML=INFO
-log4j.category.shibtarget.XMLApplication=INFO
+# fairly verbose for DEBUG, so generally leave at INFO
+log4j.category.XMLTooling.XMLObject=INFO
 
-# shut off transaction log from this end
-log4j.category.Shibboleth-TRANSACTION=WARN
+# the tran log blocks the "default" appender(s) at runtime
+# Level should be left at INFO for this category
+log4j.category.Shibboleth-TRANSACTION=INFO, tran_log
+log4j.additivity.Shibboleth-TRANSACTION=false
 
 # define the appenders
 
@@ -17,3 +18,10 @@ log4j.appender.native_log.maxBackupIndex=10
 #log4j.appender.native_log.layout=org.apache.log4j.BasicLayout
 log4j.appender.native_log.layout=org.apache.log4j.PatternLayout
 log4j.appender.native_log.layout.ConversionPattern=%d{%Y-%m-%d %H:%M:%S} %p %c %x: %m%n
+
+log4j.appender.tran_log=org.apache.log4j.RollingFileAppender
+log4j.appender.tran_log.fileName=@-PKGLOGDIR-@/transaction.log
+log4j.appender.tran_log.maxFileSize=1000000
+log4j.appender.tran_log.maxBackupIndex=20
+log4j.appender.tran_log.layout=org.apache.log4j.PatternLayout
+log4j.appender.tran_log.layout.ConversionPattern=%d{%Y-%m-%d %H:%M:%S} %p %c %x: %m%n

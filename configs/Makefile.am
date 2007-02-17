@@ -27,7 +27,8 @@ BUILTCONFIGFILES = \
 # While BUILTCONFIGFILES are processed, these are not; so we should pull
 # them from SRCDIR.
 CONFIGFILES = \
-	shibboleth.logger \
+	console.logger \
+	syslog.logger \
 	accessError.html \
 	rmError.html \
 	sessionError.html \
@@ -120,7 +121,8 @@ EXTRA_DIST = .cvsignore \
 	apache2.config.in \
 	apache22.config.in \
 	shibd.in \
-	shibboleth.logger \
+	console.logger \
+	syslog.logger \
 	accessError.html \
 	rmError.html \
 	sessionError.html \

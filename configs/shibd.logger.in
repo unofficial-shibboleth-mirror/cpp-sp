@@ -1,9 +1,8 @@
 # set overall behavior
 log4j.rootCategory=INFO, shibd_log
 
-# these are fairly verbose for DEBUG, so generally leave at INFO
-log4j.category.SAML.XML=INFO
-log4j.category.shibtarget.XMLApplication=INFO
+# fairly verbose for DEBUG, so generally leave at INFO
+log4j.category.XMLTooling.XMLObject=INFO
 
 # the tran log blocks the "default" appender(s) at runtime
 # Level should be left at INFO for this category

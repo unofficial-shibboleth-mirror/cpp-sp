@@ -1,0 +1,9 @@
+log4j.rootCategory=INFO, console
+
+# fairly verbose for DEBUG, so generally leave at INFO
+log4j.category.XMLTooling.XMLObject=INFO
+
+log4j.appender.console=org.apache.log4j.ConsoleAppender
+#log4j.appender.console.layout=org.apache.log4j.BasicLayout
+log4j.appender.console.layout=org.apache.log4j.PatternLayout
+log4j.appender.console.layout.ConversionPattern=%d{%Y-%m-%d %H:%M:%S} %p %c %x: %m%n

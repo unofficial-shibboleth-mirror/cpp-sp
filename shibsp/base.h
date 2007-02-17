@@ -91,6 +91,6 @@
  * Controls default logging level of console tools and other situations
  * where fully-configured logging isn't used.
  */
-#define SHIBSP_LOGGING "WARN"
+#define SHIBSP_LOGGING "c:\\opt\\shibboleth-sp\\etc\\shibboleth\\console.logger"
 
 #endif /* __shibsp_base_h__ */

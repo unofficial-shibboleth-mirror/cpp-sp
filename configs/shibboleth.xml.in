@@ -3,7 +3,7 @@
 	xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="urn:mace:shibboleth:sp:config:2.0 @-PKGXMLDIR-@/shibboleth-spconfig-2.0.xsd"
-	logger="@-PKGSYSCONFDIR-@/shibboleth.logger" clockSkew="180">
+	logger="@-PKGSYSCONFDIR-@/syslog.logger" clockSkew="180">
 
 	<!--
 	<Extensions>

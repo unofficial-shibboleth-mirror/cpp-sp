@@ -97,6 +97,8 @@ int main(int argc,char* argv[])
     if (!a_param)
         a_param="default";
 
+    XMLToolingConfig::getConfig().log_config(getenv("SHIBSP_LOGGING") ? getenv("SHIBSP_LOGGING") : SHIBSP_LOGGING);
+
     SPConfig& conf=SPConfig::getConfig();
     conf.setFeatures(
         SPConfig::Metadata |

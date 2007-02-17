@@ -33,4 +33,9 @@
  */
 #define SHIBSP_CONFIG "@-PKGSYSCONFDIR-@/shibboleth.xml"
 
+/**
+ * Default location of SP configuration file.
+ */
+#define SHIBSP_LOGGING "@-PKGSYSCONFDIR-@/console.logger"
+
 #endif /* __shibsp_paths_h__ */
