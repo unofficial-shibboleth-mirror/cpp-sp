@@ -38,6 +38,7 @@ libshibspinclude_HEADERS = \
 
 attrinclude_HEADERS = \
 	attribute/Attribute.h \
+	attribute/AttributeDecoder.h \
 	attribute/NameIDAttribute.h \
 	attribute/ScopedAttribute.h \
 	attribute/SimpleAttribute.h
@@ -73,6 +74,8 @@ libshibsp_la_SOURCES = \
 	SessionCache.cpp \
 	SPConfig.cpp \
 	attribute/Attribute.cpp \
+	attribute/SimpleAttributeDecoder.cpp \
+	attribute/ScopedAttributeDecoder.cpp \
 	binding/impl/SOAPClient.cpp \
 	impl/RemotedSessionCache.cpp \
 	impl/StorageServiceSessionCache.cpp \

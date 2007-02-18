@@ -473,14 +473,14 @@ XMLApplication::XMLApplication(
             child = XMLHelper::getFirstChildElement(e,_MetadataProvider);
             if (child) {
                 auto_ptr_char type(child->getAttributeNS(NULL,_type));
-                log.info("building metadata provider of type %s...",type.get());
+                log.info("building MetadataProvider of type %s...",type.get());
                 try {
                     auto_ptr<MetadataProvider> mp(samlConf.MetadataProviderManager.newPlugin(type.get(),child));
                     mp->init();
                     m_metadata = mp.release();
                 }
                 catch (exception& ex) {
-                    log.crit("error building/initializing metadata provider: %s", ex.what());
+                    log.crit("error building/initializing MetadataProvider: %s", ex.what());
                 }
             }
         }
@@ -489,12 +489,12 @@ XMLApplication::XMLApplication(
             child = XMLHelper::getFirstChildElement(e,_TrustEngine);
             if (child) {
                 auto_ptr_char type(child->getAttributeNS(NULL,_type));
-                log.info("building trust engine of type %s...",type.get());
+                log.info("building TrustEngine of type %s...",type.get());
                 try {
                     m_trust = xmlConf.TrustEngineManager.newPlugin(type.get(),child);
                 }
                 catch (exception& ex) {
-                    log.crit("error building trust engine: %s",ex.what());
+                    log.crit("error building TrustEngine: %s",ex.what());
                 }
             }
         }

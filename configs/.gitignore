@@ -1,0 +1,12 @@
+/Makefile
+/Makefile.in
+/apache.config
+/apache2.config
+/shar.logger
+/shire.logger
+/shibboleth.ini
+/shibboleth.xml
+/creds.xml
+/AAP.xml
+/IQ-sites.xml
+/IQ-trust.xml

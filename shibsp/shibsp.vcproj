@@ -305,6 +305,14 @@
 					RelativePath=".\attribute\Attribute.cpp"
 					>
 				</File>
+				<File
+					RelativePath=".\attribute\ScopedAttributeDecoder.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\attribute\SimpleAttributeDecoder.cpp"
+					>
+				</File>
 			</Filter>
 			<Filter
 				Name="binding"

@@ -29,13 +29,10 @@
 #include "ServiceProvider.h"
 #include "SessionCache.h"
 #include "SPConfig.h"
+#include "attribute/AttributeDecoder.h"
 #include "metadata/MetadataExt.h"
 #include "remoting/ListenerService.h"
 #include "security/PKIXTrustEngine.h"
-
-#include "attribute/SimpleAttribute.h"
-#include "attribute/ScopedAttribute.h"
-#include "attribute/NameIDAttribute.h"
 
 #include <log4cpp/Category.hh>
 #include <saml/SAMLConfig.h>
@@ -108,6 +105,7 @@ bool SPInternalConfig::init(const char* catalog_path)
     registerSessionCaches();
     registerServiceProviders();
     registerAttributeFactories();
+    registerAttributeDecoders();
     
     log.info("library initialization complete");
     return true;
@@ -124,8 +122,6 @@ void SPInternalConfig::term()
     delete m_serviceProvider;
     m_serviceProvider = NULL;
 
-    Attribute::deregisterFactories();
-    
     SingleLogoutServiceManager.deregisterFactories();
     SessionInitiatorManager.deregisterFactories();
     SessionCacheManager.deregisterFactories();
@@ -134,6 +130,8 @@ void SPInternalConfig::term()
     ManageNameIDServiceManager.deregisterFactories();
     ListenerServiceManager.deregisterFactories();
     HandlerManager.deregisterFactories();
+    Attribute::deregisterFactories();
+    AttributeDecoderManager.deregisterFactories();
     AssertionConsumerServiceManager.deregisterFactories();
     AccessControlManager.deregisterFactories();
 

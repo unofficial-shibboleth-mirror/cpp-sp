@@ -34,6 +34,7 @@
 namespace shibsp {
 
     class SHIBSP_API AccessControl;
+    class SHIBSP_API AttributeDecoder;
     class SHIBSP_API Handler;
     class SHIBSP_API ListenerService;
     class SHIBSP_API RequestMapper;
@@ -140,6 +141,11 @@ namespace shibsp {
          * Manages factories for AccessControl plugins.
          */
         xmltooling::PluginManager<AccessControl,const xercesc::DOMElement*> AccessControlManager;
+
+        /**
+         * Manages factories for AttributeDecoder plugins.
+         */
+        xmltooling::PluginManager<AttributeDecoder,const xercesc::DOMElement*> AttributeDecoderManager;
 
         /**
          * Manages factories for Handler plugins that implement AssertionConsumerService functionality.

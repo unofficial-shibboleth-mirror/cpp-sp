@@ -20,30 +20,44 @@
  * A resolved attribute.
  */
 
-
 #include "internal.h"
+#include "attribute/AttributeDecoder.h"
 #include "attribute/SimpleAttribute.h"
 #include "attribute/ScopedAttribute.h"
 #include "attribute/NameIDAttribute.h"
 
+#include <shibsp/SPConfig.h>
+
 using namespace shibsp;
+using namespace xmltooling;
 using namespace std;
 
 namespace shibsp {
 
-    Attribute* SimpleAttributeFactory(DDF& in) {
+    SHIBSP_DLLLOCAL Attribute* SimpleAttributeFactory(DDF& in) {
         return new SimpleAttribute(in);
     }
     
-    Attribute* ScopedAttributeFactory(DDF& in) {
+    SHIBSP_DLLLOCAL Attribute* ScopedAttributeFactory(DDF& in) {
         return new ScopedAttribute(in);
     }
     
-    Attribute* NameIDAttributeFactory(DDF& in) {
+    SHIBSP_DLLLOCAL Attribute* NameIDAttributeFactory(DDF& in) {
         return new NameIDAttribute(in);
     }
     
+    SHIBSP_DLLLOCAL PluginManager<AttributeDecoder,const DOMElement*>::Factory SimpleAttributeDecoderFactory;
+    SHIBSP_DLLLOCAL PluginManager<AttributeDecoder,const DOMElement*>::Factory ScopedAttributeDecoderFactory;
+    //SHIBSP_DLLLOCAL PluginManager<AttributeDecoder,const DOMElement*>::Factory NameIDAttributeDecoderFactory;
 };
+
+void shibsp::registerAttributeDecoders()
+{
+    SPConfig& conf = SPConfig::getConfig();
+    conf.AttributeDecoderManager.registerFactory(SIMPLE_ATTRIBUTE_DECODER, SimpleAttributeDecoderFactory);
+    conf.AttributeDecoderManager.registerFactory(SCOPED_ATTRIBUTE_DECODER, ScopedAttributeDecoderFactory);
+    //conf.AttributeDecoderManager.registerFactory(NAMEID_ATTRIBUTE_DECODER, NameIDAttributeDecoderFactory);
+}
 
 void shibsp::registerAttributeFactories()
 {
