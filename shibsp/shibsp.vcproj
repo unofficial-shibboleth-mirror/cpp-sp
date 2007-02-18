@@ -306,6 +306,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\attribute\NameIDAttributeDecoder.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\attribute\ScopedAttributeDecoder.cpp"
 					>
 				</File>

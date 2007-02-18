@@ -48,7 +48,7 @@ namespace shibsp {
     
     SHIBSP_DLLLOCAL PluginManager<AttributeDecoder,const DOMElement*>::Factory SimpleAttributeDecoderFactory;
     SHIBSP_DLLLOCAL PluginManager<AttributeDecoder,const DOMElement*>::Factory ScopedAttributeDecoderFactory;
-    //SHIBSP_DLLLOCAL PluginManager<AttributeDecoder,const DOMElement*>::Factory NameIDAttributeDecoderFactory;
+    SHIBSP_DLLLOCAL PluginManager<AttributeDecoder,const DOMElement*>::Factory NameIDAttributeDecoderFactory;
 };
 
 void shibsp::registerAttributeDecoders()
@@ -56,15 +56,15 @@ void shibsp::registerAttributeDecoders()
     SPConfig& conf = SPConfig::getConfig();
     conf.AttributeDecoderManager.registerFactory(SIMPLE_ATTRIBUTE_DECODER, SimpleAttributeDecoderFactory);
     conf.AttributeDecoderManager.registerFactory(SCOPED_ATTRIBUTE_DECODER, ScopedAttributeDecoderFactory);
-    //conf.AttributeDecoderManager.registerFactory(NAMEID_ATTRIBUTE_DECODER, NameIDAttributeDecoderFactory);
+    conf.AttributeDecoderManager.registerFactory(NAMEID_ATTRIBUTE_DECODER, NameIDAttributeDecoderFactory);
 }
 
 void shibsp::registerAttributeFactories()
 {
     Attribute::registerFactory("", SimpleAttributeFactory);
-    Attribute::registerFactory("simple", SimpleAttributeFactory);
-    Attribute::registerFactory("scoped", ScopedAttributeFactory);
-    Attribute::registerFactory("nameid", NameIDAttributeFactory);
+    Attribute::registerFactory("Simple", SimpleAttributeFactory);
+    Attribute::registerFactory("Scoped", ScopedAttributeFactory);
+    Attribute::registerFactory("NameID", NameIDAttributeFactory);
 }
 
 std::map<std::string,Attribute::AttributeFactory*> Attribute::m_factoryMap;

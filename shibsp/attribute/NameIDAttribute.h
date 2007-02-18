@@ -135,7 +135,7 @@ namespace shibsp {
     
         DDF marshall() const {
             DDF ddf = Attribute::marshall();
-            ddf.name("nameid");
+            ddf.name("NameID");
             DDF vlist = ddf.first();
             for (std::vector<Value>::const_iterator i=m_values.begin(); i!=m_values.end(); ++i) {
                 DDF val = DDF(i->m_Name.c_str()).structure();

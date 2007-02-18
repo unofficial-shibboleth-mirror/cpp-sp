@@ -74,6 +74,7 @@ libshibsp_la_SOURCES = \
 	SessionCache.cpp \
 	SPConfig.cpp \
 	attribute/Attribute.cpp \
+	attribute/NameIDAttributeDecoder.cpp \
 	attribute/SimpleAttributeDecoder.cpp \
 	attribute/ScopedAttributeDecoder.cpp \
 	binding/impl/SOAPClient.cpp \

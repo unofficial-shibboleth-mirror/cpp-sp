@@ -100,7 +100,7 @@ namespace shibsp {
 
         DDF marshall() const {
             DDF ddf = Attribute::marshall();
-            ddf.name("scoped");
+            ddf.name("Scoped");
             if (!m_caseSensitive)
                 ddf.addmember("case_insensitive");
             DDF vlist = ddf.first();

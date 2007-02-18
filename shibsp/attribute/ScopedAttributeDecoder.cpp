@@ -36,7 +36,7 @@ using namespace log4cpp;
 using namespace std;
 
 namespace shibsp {
-    class ScopedAttributeDecoder : virtual public AttributeDecoder
+    class SHIBSP_DLLLOCAL ScopedAttributeDecoder : virtual public AttributeDecoder
     {
     public:
         ScopedAttributeDecoder(const DOMElement* e) {}
