@@ -84,6 +84,7 @@ namespace {
         const PropertySet* getPropertySet(const char* name, const char* ns="urn:mace:shibboleth:target:config:1.0") const;
 
         // Application
+        const ServiceProvider& getServiceProvider() const {return *m_sp;}
         const char* getId() const {return getString("id").second;}
         const char* getHash() const {return m_hash.c_str();}
         MetadataProvider* getMetadataProvider() const;

@@ -53,10 +53,9 @@ namespace {
 SOAPClient::SOAPClient(const Application& application, opensaml::SecurityPolicy& policy)
     : opensaml::SOAPClient(policy), m_app(application), m_settings(NULL), m_credUse(NULL), m_credResolver(NULL)
 {
-    SPConfig& conf = SPConfig::getConfig();
     pair<bool,const char*> policyId = m_app.getString("policyId");
-    m_settings = conf.getServiceProvider()->getPolicySettings(policyId.second);
-    const vector<const opensaml::SecurityPolicyRule*>& rules = conf.getServiceProvider()->getPolicyRules(policyId.second);
+    m_settings = application.getServiceProvider().getPolicySettings(policyId.second);
+    const vector<const opensaml::SecurityPolicyRule*>& rules = application.getServiceProvider().getPolicyRules(policyId.second);
     for (vector<const opensaml::SecurityPolicyRule*>::const_iterator rule=rules.begin(); rule!=rules.end(); ++rule)
         policy.addRule(*rule);
     policy.setMetadataProvider(application.getMetadataProvider());
@@ -79,7 +78,7 @@ void SOAPClient::send(const soap11::Envelope& env, const KeyInfoSource& peer, co
         if (flag.first && flag.second) {
             CredentialResolver* cr=NULL;
             pair<bool,const char*> cred = m_credUse->getString("Signing");
-            if (cred.first && (cr=SPConfig::getConfig().getServiceProvider()->getCredentialResolver(cred.second))) {
+            if (cred.first && (cr=m_app.getServiceProvider().getCredentialResolver(cred.second))) {
                 // Looks like we're supposed to sign, so check for message.
                 const vector<XMLObject*>& bodies=const_cast<const soap11::Body*>(env.getBody())->getUnknownXMLObjects();
                 if (!bodies.empty()) {
@@ -167,7 +166,7 @@ void SOAPClient::prepareTransport(SOAPTransport& transport)
         
         authType = m_credUse->getString("TLS");
         if (authType.first) {
-            m_credResolver = SPConfig::getConfig().getServiceProvider()->getCredentialResolver(authType.second);
+            m_credResolver = m_app.getServiceProvider().getCredentialResolver(authType.second);
             if (m_credResolver) {
                 m_credResolver->lock();
                 if (!transport.setCredentialResolver(m_credResolver)) {

@@ -307,7 +307,7 @@ void RemotedSession::validate(const Application& application, const char* client
     }
 
     try {
-        out=SPConfig::getConfig().getServiceProvider()->getListenerService()->send(in);
+        out=application.getServiceProvider().getListenerService()->send(in);
     }
     catch (...) {
         out.destroy();
@@ -414,13 +414,13 @@ string RemotedCache::insert(
         }
     }
 
-    DDF out=SPConfig::getConfig().getServiceProvider()->getListenerService()->send(in);
+    DDF out=application.getServiceProvider().getListenerService()->send(in);
     DDFJanitor jout(out);
     if (out["key"].isstring()) {
         // Transaction Logging
         auto_ptr_char name(nameid.getName());
         const char* pid = in["entity_id"].string();
-        TransactionLog* xlog = SPConfig::getConfig().getServiceProvider()->getTransactionLog();
+        TransactionLog* xlog = application.getServiceProvider().getTransactionLog();
         Locker locker(xlog);
         xlog->log.infoStream() <<
             "New session (ID: " <<
@@ -486,7 +486,7 @@ Session* RemotedCache::find(const char* key, const Application& application, con
         }
         
         try {
-            out=SPConfig::getConfig().getServiceProvider()->getListenerService()->send(in);
+            out=application.getServiceProvider().getListenerService()->send(in);
             if (!out.isstruct()) {
                 out.destroy();
                 m_log.debug("session not found in remote cache");
@@ -560,7 +560,7 @@ void RemotedCache::remove(const char* key, const Application& application, const
     in.addmember("application_id").string(application.getId());
     in.addmember("client_addr").string(client_addr);
     
-    DDF out = SPConfig::getConfig().getServiceProvider()->getListenerService()->send(in);
+    DDF out = application.getServiceProvider().getListenerService()->send(in);
     out.destroy();
 }
 

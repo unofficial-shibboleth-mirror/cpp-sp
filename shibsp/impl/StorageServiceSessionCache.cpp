@@ -525,7 +525,7 @@ string SSCache::insert(
 
     // Transaction Logging
     auto_ptr_char name(nameid.getName());
-    TransactionLog* xlog = SPConfig::getConfig().getServiceProvider()->getTransactionLog();
+    TransactionLog* xlog = application.getServiceProvider().getTransactionLog();
     Locker locker(xlog);
     xlog->log.infoStream() <<
         "New session (ID: " <<
@@ -664,7 +664,7 @@ void SSCache::remove(const char* key, const Application& application, const char
 
     m_storage->deleteContext(key);
 
-    TransactionLog* xlog = SPConfig::getConfig().getServiceProvider()->getTransactionLog();
+    TransactionLog* xlog = application.getServiceProvider().getTransactionLog();
     Locker locker(xlog);
     xlog->log.info("Destroyed session (applicationId: %s) (ID: %s)", application.getId(), key);
 }

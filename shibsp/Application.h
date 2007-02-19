@@ -30,6 +30,7 @@
 namespace shibsp {
     
     class SHIBSP_API Handler;
+    class SHIBSP_API ServiceProvider;
 
     /**
      * Interface to a Shibboleth Application instance.
@@ -44,6 +45,13 @@ namespace shibsp {
         Application() {}
     public:
         virtual ~Application() {}
+
+        /**
+         * Returns the owning ServiceProvider instance.
+         *
+         * @return a locked ServiceProvider
+         */
+        virtual const ServiceProvider& getServiceProvider() const=0;
 
         /**
          * Returns the Application's ID.
