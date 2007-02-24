@@ -1,0 +1,30 @@
+<schema targetNamespace="urn:mace:shibboleth:2.0:resolver:simple" xmlns="http://www.w3.org/2001/XMLSchema"
+    xmlns:resolver="urn:mace:shibboleth:2.0:resolver:simple"
+    xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
+
+    <annotation>
+        <documentation>Shibboleth 2.0 Simple Attribute Resolver configuration schema</documentation>
+    </annotation>
+
+    <import namespace="urn:oasis:names:tc:SAML:2.0:assertion" schemaLocation="saml-schema-assertion-2.0.xsd"/>
+    
+    <element name="AttributeResolver" type="resolver:AttributeResolverType">
+        <annotation>
+            <documentation>Root of the simple attribute resolver configuration file.</documentation>
+        </annotation>
+    </element>
+    <complexType name="AttributeResolverType">
+        <sequence>
+            <element ref="saml:Attribute" minOccurs="0" maxOccurs="unbounded"/>
+        </sequence>
+        <attribute name="allowQuery" type="boolean" default="true"/>
+    </complexType>
+
+    <simpleType name="string">
+        <restriction base="string">
+            <minLength value="1"/>
+        </restriction>
+    </simpleType>
+
+    <attribute name="decoderType" type="resolver:string"/>
+</schema>

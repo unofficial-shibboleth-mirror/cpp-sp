@@ -104,7 +104,6 @@ int main(int argc,char* argv[])
         SPConfig::Metadata |
         SPConfig::Trust |
         SPConfig::Credentials |
-        SPConfig::AttributeResolver |
         SPConfig::OutOfProcess
         );
     if (!conf.init(path))

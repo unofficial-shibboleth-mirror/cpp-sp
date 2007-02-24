@@ -26,6 +26,7 @@
 #include <shibsp/util/PropertySet.h>
 #include <saml/saml2/metadata/MetadataProvider.h>
 #include <xmltooling/security/TrustEngine.h>
+#include <xmltooling/validation/Validator.h>
 
 namespace shibsp {
     
@@ -155,6 +156,17 @@ namespace shibsp {
          * @return set of audience values associated with the Application
          */
         virtual const std::vector<const XMLCh*>& getAudiences() const=0;
+
+        /**
+         * Returns a validator for applying verification rules to incoming SAML tokens.
+         *
+         * <p>The validator must be freed by the caller.
+         * 
+         * @param ts    timestamp against which to evaluate the token's validity, or 0 to ignore
+         * @param role  metadata role of token issuer, if known
+         * @return a validator
+         */
+        virtual xmltooling::Validator* getTokenValidator(time_t ts=0, const opensaml::saml2md::RoleDescriptor* role=NULL) const=0;
     };
 };
 

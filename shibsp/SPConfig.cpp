@@ -30,6 +30,7 @@
 #include "SessionCache.h"
 #include "SPConfig.h"
 #include "attribute/AttributeDecoder.h"
+#include "attribute/resolver/AttributeResolver.h"
 #include "metadata/MetadataExt.h"
 #include "remoting/ListenerService.h"
 #include "security/PKIXTrustEngine.h"
@@ -44,6 +45,8 @@ using namespace opensaml;
 using namespace xmltooling;
 using namespace log4cpp;
 
+DECL_XMLTOOLING_EXCEPTION_FACTORY(AttributeException,shibsp);
+DECL_XMLTOOLING_EXCEPTION_FACTORY(AttributeResolutionException,shibsp);
 DECL_XMLTOOLING_EXCEPTION_FACTORY(ConfigurationException,shibsp);
 DECL_XMLTOOLING_EXCEPTION_FACTORY(ListenerException,shibsp);
 
@@ -94,18 +97,22 @@ bool SPInternalConfig::init(const char* catalog_path)
     XMLToolingConfig::getConfig().setTemplateEngine(new TemplateEngine());
     XMLToolingConfig::getConfig().getTemplateEngine()->setTagPrefix("shibmlp");
     
+    REGISTER_XMLTOOLING_EXCEPTION_FACTORY(AttributeException,shibsp);
+    REGISTER_XMLTOOLING_EXCEPTION_FACTORY(AttributeResolutionException,shibsp);
     REGISTER_XMLTOOLING_EXCEPTION_FACTORY(ConfigurationException,shibsp);
     REGISTER_XMLTOOLING_EXCEPTION_FACTORY(ListenerException,shibsp);
     
     registerMetadataExtClasses();
     registerPKIXTrustEngine();
+
     registerAccessControls();
+    registerAttributeDecoders();
+    registerAttributeFactories();
+    registerAttributeResolvers();
     registerListenerServices();
     registerRequestMappers();
     registerSessionCaches();
     registerServiceProviders();
-    registerAttributeFactories();
-    registerAttributeDecoders();
     
     log.info("library initialization complete");
     return true;
@@ -122,17 +129,19 @@ void SPInternalConfig::term()
     delete m_serviceProvider;
     m_serviceProvider = NULL;
 
-    SingleLogoutServiceManager.deregisterFactories();
-    SessionInitiatorManager.deregisterFactories();
-    SessionCacheManager.deregisterFactories();
-    ServiceProviderManager.deregisterFactories();
-    RequestMapperManager.deregisterFactories();
+    AssertionConsumerServiceManager.deregisterFactories();
     ManageNameIDServiceManager.deregisterFactories();
+    SessionInitiatorManager.deregisterFactories();
+    SingleLogoutServiceManager.deregisterFactories();
+    
+    ServiceProviderManager.deregisterFactories();
+    SessionCacheManager.deregisterFactories();
+    RequestMapperManager.deregisterFactories();
     ListenerServiceManager.deregisterFactories();
     HandlerManager.deregisterFactories();
-    Attribute::deregisterFactories();
+    AttributeResolverManager.deregisterFactories();
     AttributeDecoderManager.deregisterFactories();
-    AssertionConsumerServiceManager.deregisterFactories();
+    Attribute::deregisterFactories();
     AccessControlManager.deregisterFactories();
 
     SAMLConfig::getConfig().term();

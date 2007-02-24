@@ -2,5 +2,7 @@
 <catalog xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog">
     <system systemId="urn:mace:shibboleth:metadata:1.0" uri="@-PKGXMLDIR-@/shibboleth-metadata-1.0.xsd"/>
     <system systemId="urn:mace:shibboleth:sp:config:2.0" uri="@-PKGXMLDIR-@/shibboleth-spconfig-2.0.xsd"/>
+    <system systemId="urn:mace:shibboleth:2.0:resolver" uri="@-PKGXMLDIR-@/shibboleth-2.0-attribute-resolver.xsd"/>
+    <system systemId="urn:mace:shibboleth:2.0:resolver:simple" uri="@-PKGXMLDIR-@/shibboleth-2.0-simple-resolver.xsd"/>
     <system systemId="urn:mace:shibboleth:1.0" uri="@-PKGXMLDIR-@/shibboleth.xsd"/>
 </catalog>

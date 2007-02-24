@@ -35,6 +35,7 @@ namespace shibsp {
 
     class SHIBSP_API AccessControl;
     class SHIBSP_API AttributeDecoder;
+    class SHIBSP_API AttributeResolver;
     class SHIBSP_API Handler;
     class SHIBSP_API ListenerService;
     class SHIBSP_API RequestMapper;
@@ -71,7 +72,7 @@ namespace shibsp {
             Metadata = 4,
             Trust = 8,
             Credentials = 16,
-            AttributeResolver = 32,
+            AttributeResolution = 32,
             RequestMapping = 64,
             OutOfProcess = 128,
             InProcess = 256,
@@ -146,6 +147,11 @@ namespace shibsp {
          * Manages factories for AttributeDecoder plugins.
          */
         xmltooling::PluginManager<AttributeDecoder,const xercesc::DOMElement*> AttributeDecoderManager;
+
+        /**
+         * Manages factories for AttributeResolver plugins.
+         */
+        xmltooling::PluginManager<AttributeResolver,const xercesc::DOMElement*> AttributeResolverManager;
 
         /**
          * Manages factories for Handler plugins that implement AssertionConsumerService functionality.

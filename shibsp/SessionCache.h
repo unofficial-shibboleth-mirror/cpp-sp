@@ -175,8 +175,8 @@ namespace shibsp {
          * @param application       reference to Application that owns the Session
          * @param client_addr       network address of client
          * @param issuer            issuing metadata of assertion issuer, if known
-         * @param authn_instant     UTC timestamp of authentication at IdP
          * @param nameid            principal identifier, normalized to SAML 2
+         * @param authn_instant     UTC timestamp of authentication at IdP
          * @param session_index     index of session between principal and IdP
          * @param authncontext_class    method/category of authentication event
          * @param authncontext_decl specifics of authentication event 

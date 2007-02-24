@@ -317,6 +317,22 @@
 					RelativePath=".\attribute\SimpleAttributeDecoder.cpp"
 					>
 				</File>
+				<Filter
+					Name="resolver"
+					>
+					<Filter
+						Name="impl"
+						>
+						<File
+							RelativePath=".\attribute\resolver\impl\AttributeResolver.cpp"
+							>
+						</File>
+						<File
+							RelativePath=".\attribute\resolver\impl\SimpleAttributeResolver.cpp"
+							>
+						</File>
+					</Filter>
+				</Filter>
 			</Filter>
 			<Filter
 				Name="binding"
@@ -460,6 +476,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\attribute\AttributeDecoder.h"
+					>
+				</File>
+				<File
 					RelativePath=".\attribute\NameIDAttribute.h"
 					>
 				</File>
@@ -471,6 +491,18 @@
 					RelativePath=".\attribute\SimpleAttribute.h"
 					>
 				</File>
+				<Filter
+					Name="resolver"
+					>
+					<File
+						RelativePath=".\attribute\resolver\AttributeResolver.h"
+						>
+					</File>
+					<File
+						RelativePath=".\attribute\resolver\ResolutionContext.h"
+						>
+					</File>
+				</Filter>
 			</Filter>
 			<Filter
 				Name="binding"

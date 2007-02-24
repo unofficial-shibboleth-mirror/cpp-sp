@@ -9,6 +9,8 @@ libshibspincludedir = $(includedir)/shibsp
 
 attrincludedir = $(includedir)/shibsp/attribute
 
+attrresincludedir = $(includedir)/shibsp/attribute/resolver
+
 bindincludedir = $(includedir)/shibsp/binding
 
 mdincludedir = $(includedir)/shibsp/metadata
@@ -42,6 +44,10 @@ attrinclude_HEADERS = \
 	attribute/NameIDAttribute.h \
 	attribute/ScopedAttribute.h \
 	attribute/SimpleAttribute.h
+
+attrresinclude_HEADERS = \
+	attribute/resolver/AttributeResolver.h \
+	attribute/resolver/ResolutionContext.h
 
 bindinclude_HEADERS = \
 	binding/SOAPClient.h
@@ -77,6 +83,8 @@ libshibsp_la_SOURCES = \
 	attribute/NameIDAttributeDecoder.cpp \
 	attribute/SimpleAttributeDecoder.cpp \
 	attribute/ScopedAttributeDecoder.cpp \
+	attribute/resolver/impl/AttributeResolver.cpp \
+	attribute/resolver/impl/SimpleAttributeResolver.cpp \
 	binding/impl/SOAPClient.cpp \
 	impl/RemotedSessionCache.cpp \
 	impl/StorageServiceSessionCache.cpp \

@@ -10,6 +10,7 @@ pkgxml_DATA = \
     shibboleth-metadata-1.0.xsd \
     shibboleth-spconfig-2.0.xsd \
     shibboleth-2.0-attribute-resolver.xsd \
+    shibboleth-2.0-simple-resolver.xsd \
     metadata_v12_to_v13.xsl \
     metadata_v13_to_v12.xsl \
     trust_v13_to_v12.xsl

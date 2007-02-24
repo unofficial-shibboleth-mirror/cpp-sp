@@ -25,6 +25,7 @@
 
 #include <shibsp/Application.h>
 #include <saml/binding/SOAPClient.h>
+#include <xmltooling/signature/CredentialResolver.h>
 
 namespace shibsp {
 
