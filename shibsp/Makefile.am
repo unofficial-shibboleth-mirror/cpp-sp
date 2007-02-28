@@ -57,7 +57,8 @@ mdinclude_HEADERS = \
 
 reminclude_HEADERS = \
 	ddf.h \
-	ListenerService.h
+	ListenerService.h \
+	RemotedHandler.h
 	
 secinclude_HEADERS = \
 	security/PKIXTrustEngine.h
@@ -95,6 +96,7 @@ libshibsp_la_SOURCES = \
 	metadata/MetadataExtSchemaValidators.cpp \
 	remoting/impl/ddf.cpp \
 	remoting/impl/ListenerService.cpp \
+	remoting/impl/RemotedHandler.cpp \
 	remoting/impl/SocketListener.cpp \
 	remoting/impl/TCPListener.cpp \
 	remoting/impl/UnixListener.cpp \

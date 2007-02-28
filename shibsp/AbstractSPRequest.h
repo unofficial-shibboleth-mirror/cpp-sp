@@ -25,10 +25,9 @@
 
 #include <shibsp/exceptions.h>
 #include <shibsp/SPRequest.h>
+#include <saml/util/CGIParser.h>
 
 namespace shibsp {
-
-    class SHIBSP_API CGIParser;
     
     /**
      * Abstract base for SPRequest implementations
@@ -76,7 +75,7 @@ namespace shibsp {
         void* m_log; // declared void* to avoid log4cpp header conflicts in Apache
         mutable std::string m_handlerURL;
         mutable std::map<std::string,std::string> m_cookieMap;
-        mutable CGIParser* m_parser;
+        mutable opensaml::CGIParser* m_parser;
     };
 };
 

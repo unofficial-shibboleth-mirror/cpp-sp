@@ -25,18 +25,19 @@
 #include "Application.h"
 #include "ServiceProvider.h"
 #include "SessionCache.h"
-#include "util/CGIParser.h"
 
 #include <log4cpp/Category.hh>
+#include <saml/util/CGIParser.h>
 
 using namespace shibsp;
+using namespace opensaml;
 using namespace xmltooling;
 using namespace log4cpp;
 using namespace std;
 
 AbstractSPRequest::AbstractSPRequest()
     : m_sp(NULL), m_mapper(NULL), m_app(NULL), m_sessionTried(false), m_session(NULL),
-        m_log(&Category::getInstance(SHIBSP_LOGCAT)), m_parser(NULL)
+        m_log(&Category::getInstance(SHIBSP_LOGCAT".SPRequest")), m_parser(NULL)
 {
     m_sp=SPConfig::getConfig().getServiceProvider();
     m_sp->lock();
