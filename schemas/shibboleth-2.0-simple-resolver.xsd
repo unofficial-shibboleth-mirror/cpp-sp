@@ -15,10 +15,25 @@
     </element>
     <complexType name="AttributeResolverType">
         <sequence>
-            <element ref="saml:Attribute" minOccurs="0" maxOccurs="unbounded"/>
+            <element ref="resolver:AttributeDecoder" maxOccurs="unbounded"/>
+            <element ref="saml:Attribute" maxOccurs="unbounded"/>
         </sequence>
         <attribute name="allowQuery" type="boolean" default="true"/>
     </complexType>
+
+    <element name="AttributeDecoder">
+        <annotation>
+            <documentation>Instantiates decoders for use by Attribute definitions.</documentation>
+        </annotation>
+        <complexType>
+            <sequence>
+                <any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+            </sequence>
+            <attribute name="type" type="resolver:string" use="required"/>
+            <attribute name="id" type="ID" use="required"/>
+            <anyAttribute namespace="##any" processContents="lax"/>
+        </complexType>
+    </element>
 
     <simpleType name="string">
         <restriction base="string">
@@ -26,5 +41,5 @@
         </restriction>
     </simpleType>
 
-    <attribute name="decoderType" type="resolver:string"/>
+    <attribute name="decoderId" type="IDREF"/>
 </schema>

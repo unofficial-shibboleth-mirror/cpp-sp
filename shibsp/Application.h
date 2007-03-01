@@ -30,6 +30,7 @@
 
 namespace shibsp {
     
+    class SHIBSP_API AttributeResolver;
     class SHIBSP_API Handler;
     class SHIBSP_API ServiceProvider;
 
@@ -89,7 +90,14 @@ namespace shibsp {
          * @return  a TrustEngine instance, or NULL
          */
         virtual xmltooling::TrustEngine* getTrustEngine() const=0;
-        
+
+        /**
+         * Returns an AttributeResolver for use with this Application.
+         * 
+         * @return  an AttributeResolver, or NULL
+         */
+        virtual AttributeResolver* getAttributeResolver() const=0;
+
         /**
          * Returns configuration properties governing security interactions with a peer entity.
          * 

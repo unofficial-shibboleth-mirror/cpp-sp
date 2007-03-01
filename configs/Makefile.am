@@ -21,7 +21,7 @@ BUILTCONFIGFILES = \
 	shibboleth.xml \
 	native.logger \
 	shibd.logger \
-	AAP.xml \
+	resolver-simple.xml \
 	example-metadata.xml
 
 # While BUILTCONFIGFILES are processed, these are not; so we should pull
@@ -74,7 +74,7 @@ native.logger: ${srcdir}/native.logger.in Makefile ${top_builddir}/config.status
 shibboleth.xml: ${srcdir}/shibboleth.xml.in Makefile ${top_builddir}/config.status
 	$(MAKE) do-build-file FILE=$@
 
-AAP.xml: ${srcdir}/AAP.xml.in Makefile ${top_builddir}/config.status
+resolver-simple.xml: ${srcdir}/resolver-simple.xml.in Makefile ${top_builddir}/config.status
 	$(MAKE) do-build-file FILE=$@
 
 example-metadata.xml: ${srcdir}/example-metadata.xml.in Makefile ${top_builddir}/config.status
@@ -110,7 +110,7 @@ CLEANFILES = \
 	shibd.logger \
 	native.logger \
 	shibboleth.xml \
-	AAP.xml \
+	resolver-simple.xml \
 	example-metadata.xml
 
 EXTRA_DIST = .cvsignore \
@@ -128,7 +128,7 @@ EXTRA_DIST = .cvsignore \
 	sessionError.html \
 	metadataError.html \
 	sslError.html \
-	AAP.xml.in \
+	resolver-simple.xml.in \
 	example-metadata.xml.in \
 	sp-example.key \
 	sp-example.crt

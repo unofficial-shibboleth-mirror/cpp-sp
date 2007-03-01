@@ -226,9 +226,12 @@ namespace shibsp {
         chLatin_r, chLatin_e, chLatin_s, chLatin_o, chLatin_l, chLatin_v, chLatin_e, chLatin_r, chColon,
         chLatin_s, chLatin_i, chLatin_m, chLatin_p, chLatin_l, chLatin_e, chNull
     };
+    static const XMLCh _AttributeDecoder[] =    UNICODE_LITERAL_16(A,t,t,r,i,b,u,t,e,D,e,c,o,d,e,r);
     static const XMLCh _AttributeResolver[] =   UNICODE_LITERAL_17(A,t,t,r,i,b,u,t,e,R,e,s,o,l,v,e,r);
     static const XMLCh allowQuery[] =           UNICODE_LITERAL_10(a,l,l,o,w,Q,u,e,r,y);
-    static const XMLCh decoderType[] =          UNICODE_LITERAL_11(d,e,c,o,d,e,r,T,y,p,e);
+    static const XMLCh decoderId[] =            UNICODE_LITERAL_9(d,e,c,o,d,e,r,I,d);
+    static const XMLCh _id[] =                  UNICODE_LITERAL_2(i,d);
+    static const XMLCh _type[] =                UNICODE_LITERAL_4(t,y,p,e);
 };
 
 SimpleResolverImpl::SimpleResolverImpl(const DOMElement* e) : m_document(NULL), m_allowQuery(true)
@@ -246,42 +249,42 @@ SimpleResolverImpl::SimpleResolverImpl(const DOMElement* e) : m_document(NULL), 
         log.info("SAML attribute queries disabled");
         m_allowQuery = false;
     }
+
+    DOMElement* child = XMLHelper::getFirstChildElement(e, SIMPLE_NS, _AttributeDecoder);
+    while (child) {
+        auto_ptr_char id(child->getAttributeNS(NULL, _id));
+        auto_ptr_char type(child->getAttributeNS(NULL, _type));
+        try {
+            log.info("building AttributeDecoder (%s) of type %s", id.get(), type.get());
+            m_decoderMap[id.get()] = SPConfig::getConfig().AttributeDecoderManager.newPlugin(type.get(), child);
+        }
+        catch (exception& ex) {
+            log.error("error building AttributeDecoder (%s): %s", id.get(), ex.what());
+        }
+        child = XMLHelper::getNextSiblingElement(child, SIMPLE_NS, _AttributeDecoder);
+    }
     
-    e = XMLHelper::getFirstChildElement(e, samlconstants::SAML20_NS, opensaml::saml2::Attribute::LOCAL_NAME);
-    while (e) {
+    child = XMLHelper::getFirstChildElement(e, samlconstants::SAML20_NS, opensaml::saml2::Attribute::LOCAL_NAME);
+    while (child) {
         // Check for missing Name.
-        const XMLCh* name = e->getAttributeNS(NULL, opensaml::saml2::Attribute::NAME_ATTRIB_NAME);
+        const XMLCh* name = child->getAttributeNS(NULL, opensaml::saml2::Attribute::NAME_ATTRIB_NAME);
         if (!name || !*name) {
             log.warn("skipping saml:Attribute declared with no Name");
-            e = XMLHelper::getNextSiblingElement(e, samlconstants::SAML20_NS, opensaml::saml2::Attribute::LOCAL_NAME);
+            child = XMLHelper::getNextSiblingElement(child, samlconstants::SAML20_NS, opensaml::saml2::Attribute::LOCAL_NAME);
             continue;
         }
 
-        auto_ptr_char id(e->getAttributeNS(NULL, opensaml::saml2::Attribute::FRIENDLYNAME_ATTRIB_NAME));
-        if (!id.get() || !*id.get()) {
-            log.warn("skipping saml:Attribute declared with no FriendlyName");
-            e = XMLHelper::getNextSiblingElement(e, samlconstants::SAML20_NS, opensaml::saml2::Attribute::LOCAL_NAME);
+        const AttributeDecoder* decoder=NULL;
+        auto_ptr_char id(child->getAttributeNS(NULL, opensaml::saml2::Attribute::FRIENDLYNAME_ATTRIB_NAME));
+        auto_ptr_char d(child->getAttributeNS(SIMPLE_NS, decoderId));
+        if (!id.get() || !*id.get() || !d.get() || !*d.get() || !(decoder=m_decoderMap[d.get()])) {
+            log.warn("skipping saml:Attribute declared with no FriendlyName or resolvable AttributeDecoder");
+            child = XMLHelper::getNextSiblingElement(child, samlconstants::SAML20_NS, opensaml::saml2::Attribute::LOCAL_NAME);
             continue;
         }
         
-        auto_ptr_char d(e->getAttributeNS(SIMPLE_NS, decoderType));
-        const char* dtype = d.get();
-        if (!dtype || !*dtype)
-            dtype = SIMPLE_ATTRIBUTE_DECODER;
-        AttributeDecoder*& decoder = m_decoderMap[dtype];
-        if (!decoder) {
-            try {
-                decoder = SPConfig::getConfig().AttributeDecoderManager.newPlugin(dtype, NULL);
-            }
-            catch (exception& ex) {
-                log.error("error building AttributeDecoder: %s", ex.what());
-                e = XMLHelper::getNextSiblingElement(e, samlconstants::SAML20_NS, opensaml::saml2::Attribute::LOCAL_NAME);
-                continue;
-            }
-        }
-                
         // Empty NameFormat implies the usual Shib URI naming defaults.
-        const XMLCh* format = e->getAttributeNS(NULL, opensaml::saml2::Attribute::NAMEFORMAT_ATTRIB_NAME);
+        const XMLCh* format = child->getAttributeNS(NULL, opensaml::saml2::Attribute::NAMEFORMAT_ATTRIB_NAME);
         if (!format || XMLString::equals(format, shibspconstants::SHIB1_ATTRIBUTE_NAMESPACE_URI) ||
                 XMLString::equals(format, opensaml::saml2::Attribute::URI_REFERENCE))
             format = &chNull;  // ignore default Format/Namespace values
@@ -296,7 +299,7 @@ SimpleResolverImpl::SimpleResolverImpl(const DOMElement* e) : m_document(NULL), 
 #endif
         if (decl.first) {
             log.warn("skipping duplicate saml:Attribute declaration (same Name and NameFormat)");
-            e = XMLHelper::getNextSiblingElement(e, samlconstants::SAML20_NS, opensaml::saml2::Attribute::LOCAL_NAME);
+            child = XMLHelper::getNextSiblingElement(child, samlconstants::SAML20_NS, opensaml::saml2::Attribute::LOCAL_NAME);
             continue;
         }
 
@@ -305,13 +308,13 @@ SimpleResolverImpl::SimpleResolverImpl(const DOMElement* e) : m_document(NULL), 
             auto_ptr_char n(name);
             auto_ptr_char f(format);
 #endif
-            log.debug("creating declaration for (Name=%s) %s%s)", n.get(), *f.get() ? "(Format/Namespace=" : "", f.get());
+            log.debug("creating declaration for Attribute %s%s%s", n.get(), *f.get() ? ", Format/Namespace:" : "", f.get());
         }
         
         decl.first = decoder;
         decl.second = id.get();
         
-        e = XMLHelper::getNextSiblingElement(e, samlconstants::SAML20_NS, opensaml::saml2::Attribute::LOCAL_NAME);
+        child = XMLHelper::getNextSiblingElement(child, samlconstants::SAML20_NS, opensaml::saml2::Attribute::LOCAL_NAME);
     }
 }
 
@@ -325,6 +328,9 @@ void SimpleResolverImpl::resolve(
             aset.insert(*i);
 
     vector<shibsp::Attribute*>& resolved = ctx.getResolvedAttributes();
+
+    auto_ptr_char assertingParty(ctx.getEntityDescriptor() ? ctx.getEntityDescriptor()->getEntityID() : NULL);
+    const char* relyingParty = ctx.getApplication().getString("providerId").second;
 
 #ifdef HAVE_GOOD_STL
     map< pair<xstring,xstring>,pair<const AttributeDecoder*,string> >::const_iterator rule;
@@ -343,8 +349,13 @@ void SimpleResolverImpl::resolve(
         auto_ptr_char temp(format);
         if ((rule=m_attrMap.find(make_pair(temp.get(),string()))) != m_attrMap.end()) {
 #endif
-            if (aset.empty() || aset.count(rule->second.second))
-                resolved.push_back(rule->second.first->decode(rule->second.second.c_str(), &ctx.getNameID()));
+            if (aset.empty() || aset.count(rule->second.second)) {
+                resolved.push_back(
+                    rule->second.first->decode(
+                        rule->second.second.c_str(), &ctx.getNameID(), assertingParty.get(), relyingParty
+                        )
+                    );
+            }
         }
     }
 
@@ -365,8 +376,11 @@ void SimpleResolverImpl::resolve(
             auto_ptr_char temp2(format);
             if ((rule=m_attrMap.find(make_pair(temp1.get(),temp2.get()))) != m_attrMap.end()) {
 #endif
-            if (aset.empty() || aset.count(rule->second.second))
-                resolved.push_back(rule->second.first->decode(rule->second.second.c_str(), *a));
+                if (aset.empty() || aset.count(rule->second.second)) {
+                    resolved.push_back(
+                        rule->second.first->decode(rule->second.second.c_str(), *a, assertingParty.get(), relyingParty)
+                        );
+                }
             }
         }
     }
@@ -382,6 +396,9 @@ void SimpleResolverImpl::resolve(
             aset.insert(*i);
 
     vector<shibsp::Attribute*>& resolved = ctx.getResolvedAttributes();
+
+    auto_ptr_char assertingParty(ctx.getEntityDescriptor() ? ctx.getEntityDescriptor()->getEntityID() : NULL);
+    const char* relyingParty = ctx.getApplication().getString("providerId").second;
 
 #ifdef HAVE_GOOD_STL
     map< pair<xstring,xstring>,pair<const AttributeDecoder*,string> >::const_iterator rule;
@@ -400,8 +417,13 @@ void SimpleResolverImpl::resolve(
         auto_ptr_char temp(format);
         if ((rule=m_attrMap.find(make_pair(temp.get(),string()))) != m_attrMap.end()) {
 #endif
-            if (aset.empty() || aset.count(rule->second.second))
-                resolved.push_back(rule->second.first->decode(rule->second.second.c_str(), &ctx.getNameID()));
+            if (aset.empty() || aset.count(rule->second.second)) {
+                resolved.push_back(
+                    rule->second.first->decode(
+                        rule->second.second.c_str(), &ctx.getNameID(), assertingParty.get(), relyingParty
+                        )
+                    );
+            }
         }
     }
 
@@ -422,8 +444,11 @@ void SimpleResolverImpl::resolve(
             auto_ptr_char temp2(format);
             if ((rule=m_attrMap.find(make_pair(temp1.get(),temp2.get()))) != m_attrMap.end()) {
 #endif
-            if (aset.empty() || aset.count(rule->second.second))
-                resolved.push_back(rule->second.first->decode(rule->second.second.c_str(), *a));
+                if (aset.empty() || aset.count(rule->second.second)) {
+                    resolved.push_back(
+                        rule->second.first->decode(rule->second.second.c_str(), *a, assertingParty.get(), relyingParty)
+                        );
+                }
             }
         }
     }

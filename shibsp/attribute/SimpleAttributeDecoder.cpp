@@ -42,7 +42,9 @@ namespace shibsp {
         SimpleAttributeDecoder(const DOMElement* e) {}
         ~SimpleAttributeDecoder() {}
 
-        shibsp::Attribute* decode(const char* id, const XMLObject* xmlObject) const;
+        shibsp::Attribute* decode(
+            const char* id, const XMLObject* xmlObject, const char* assertingParty=NULL, const char* relyingParty=NULL
+            ) const;
     };
 
     AttributeDecoder* SHIBSP_DLLLOCAL SimpleAttributeDecoderFactory(const DOMElement* const & e)
@@ -51,7 +53,9 @@ namespace shibsp {
     }
 };
 
-shibsp::Attribute* SimpleAttributeDecoder::decode(const char* id, const XMLObject* xmlObject) const
+shibsp::Attribute* SimpleAttributeDecoder::decode(
+    const char* id, const XMLObject* xmlObject, const char* assertingParty, const char* relyingParty
+    ) const
 {
     char* val;
     auto_ptr<SimpleAttribute> simple(new SimpleAttribute(id));

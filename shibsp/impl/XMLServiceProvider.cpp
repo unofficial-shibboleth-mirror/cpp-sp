@@ -31,7 +31,7 @@
 #include "SPConfig.h"
 #include "SPRequest.h"
 #include "TransactionLog.h"
-#include "attribute/Attribute.h"
+#include "attribute/resolver/AttributeResolver.h"
 #include "remoting/ListenerService.h"
 #include "security/PKIXTrustEngine.h"
 #include "util/DOMPropertySet.h"
@@ -93,14 +93,23 @@ namespace {
         pair<bool,const XMLCh*> getXMLString(const char* name, const char* ns=NULL) const;
         pair<bool,unsigned int> getUnsignedInt(const char* name, const char* ns=NULL) const;
         pair<bool,int> getInt(const char* name, const char* ns=NULL) const;
-        const PropertySet* getPropertySet(const char* name, const char* ns="urn:mace:shibboleth:target:config:1.0") const;
+        const PropertySet* getPropertySet(const char* name, const char* ns="urn:mace:shibboleth:sp:config:2.0") const;
 
         // Application
         const ServiceProvider& getServiceProvider() const {return *m_sp;}
         const char* getId() const {return getString("id").second;}
         const char* getHash() const {return m_hash.c_str();}
-        MetadataProvider* getMetadataProvider() const;
-        TrustEngine* getTrustEngine() const;
+
+        MetadataProvider* getMetadataProvider() const {
+            return (!m_metadata && m_base) ? m_base->getMetadataProvider() : m_metadata;
+        }
+        TrustEngine* getTrustEngine() const {
+            return (!m_trust && m_base) ? m_base->getTrustEngine() : m_trust;
+        }
+        AttributeResolver* getAttributeResolver() const {
+            return (!m_attrResolver && m_base) ? m_base->getAttributeResolver() : m_attrResolver;
+        }
+
         const PropertySet* getCredentialUse(const EntityDescriptor* provider) const;
 
         const Handler* getDefaultSessionInitiator() const;
@@ -110,12 +119,12 @@ namespace {
         const vector<const Handler*>& getAssertionConsumerServicesByBinding(const XMLCh* binding) const;
         const Handler* getHandler(const char* path) const;
 
-        const vector<const XMLCh*>& getAudiences() const;
+        const vector<const XMLCh*>& getAudiences() const {
+            return (m_audiences.empty() && m_base) ? m_base->getAudiences() : m_audiences;
+        }
         Validator* getTokenValidator(time_t ts=0, const opensaml::saml2md::RoleDescriptor* role=NULL) const {
             return new TokenValidator(*this, ts, role);
         }
-
-        void validator(const XMLObject* xmlObject) const;
 
         // Provides filter to exclude special config elements.
         short acceptNode(const DOMNode* node) const;
@@ -127,6 +136,7 @@ namespace {
         string m_hash;
         MetadataProvider* m_metadata;
         TrustEngine* m_trust;
+        AttributeResolver* m_attrResolver;
         vector<const XMLCh*> m_audiences;
 
         // manage handler objects
@@ -299,6 +309,7 @@ namespace {
 
     static const XMLCh _Application[] =         UNICODE_LITERAL_11(A,p,p,l,i,c,a,t,i,o,n);
     static const XMLCh Applications[] =         UNICODE_LITERAL_12(A,p,p,l,i,c,a,t,i,o,n,s);
+    static const XMLCh _AttributeResolver[] =   UNICODE_LITERAL_17(A,t,t,r,i,b,u,t,e,R,e,s,o,l,v,e,r);
     static const XMLCh Credentials[] =          UNICODE_LITERAL_11(C,r,e,d,e,n,t,i,a,l,s);
     static const XMLCh CredentialUse[] =        UNICODE_LITERAL_13(C,r,e,d,e,n,t,i,a,l,U,s,e);
     static const XMLCh fatal[] =                UNICODE_LITERAL_5(f,a,t,a,l);
@@ -465,7 +476,7 @@ XMLApplication::XMLApplication(
     const ServiceProvider* sp,
     const DOMElement* e,
     const XMLApplication* base
-    ) : m_sp(sp), m_base(base), m_metadata(NULL), m_trust(NULL),
+    ) : m_sp(sp), m_base(base), m_metadata(NULL), m_trust(NULL), m_attrResolver(NULL),
         m_credDefault(NULL), m_sessionInitDefault(NULL), m_acsDefault(NULL)
 {
 #ifdef _DEBUG
@@ -600,10 +611,6 @@ XMLApplication::XMLApplication(
         // Always include our own providerId as an audience.
         m_audiences.push_back(getXMLString("providerId").second);
 
-        if (conf.isEnabled(SPConfig::AttributeResolution)) {
-            // TODO
-        }
-
         if (conf.isEnabled(SPConfig::Metadata)) {
             child = XMLHelper::getFirstChildElement(e,_MetadataProvider);
             if (child) {
@@ -629,11 +636,25 @@ XMLApplication::XMLApplication(
                     m_trust = xmlConf.TrustEngineManager.newPlugin(type.get(),child);
                 }
                 catch (exception& ex) {
-                    log.crit("error building TrustEngine: %s",ex.what());
+                    log.crit("error building TrustEngine: %s", ex.what());
                 }
             }
         }
-        
+
+        if (conf.isEnabled(SPConfig::AttributeResolution)) {
+            child = XMLHelper::getFirstChildElement(e,_AttributeResolver);
+            if (child) {
+                auto_ptr_char type(child->getAttributeNS(NULL,_type));
+                log.info("building AttributeResolver of type %s...",type.get());
+                try {
+                    m_attrResolver = conf.AttributeResolverManager.newPlugin(type.get(),child);
+                }
+                catch (exception& ex) {
+                    log.crit("error building AttributeResolver: %s", ex.what());
+                }
+            }
+        }
+
         // Finally, load credential mappings.
         child = XMLHelper::getFirstChildElement(e,CredentialUse);
         if (child) {
@@ -676,6 +697,7 @@ void XMLApplication::cleanup()
     for_each(m_credMap.begin(),m_credMap.end(),cleanup_pair<const XMLCh*,PropertySet>());
 #endif
 
+    delete m_attrResolver;
     delete m_trust;
     delete m_metadata;
 }
@@ -695,7 +717,8 @@ short XMLApplication::acceptNode(const DOMNode* node) const
         XMLString::equals(name,CredentialUse) ||
         XMLString::equals(name,RelyingParty) ||
         XMLString::equals(name,_MetadataProvider) ||
-        XMLString::equals(name,_TrustEngine))
+        XMLString::equals(name,_TrustEngine) ||
+        XMLString::equals(name,_AttributeResolver))
         return FILTER_REJECT;
 
     return FILTER_ACCEPT;
@@ -747,21 +770,6 @@ const PropertySet* XMLApplication::getPropertySet(const char* name, const char* 
     if (ret || !m_base)
         return ret;
     return m_base->getPropertySet(name,ns);
-}
-
-MetadataProvider* XMLApplication::getMetadataProvider() const
-{
-    return (!m_metadata && m_base) ? m_base->getMetadataProvider() : m_metadata;
-}
-
-TrustEngine* XMLApplication::getTrustEngine() const
-{
-    return (!m_trust && m_base) ? m_base->getTrustEngine() : m_trust;
-}
-
-const vector<const XMLCh*>& XMLApplication::getAudiences() const
-{
-    return (m_audiences.empty() && m_base) ? m_base->getAudiences() : m_audiences;
 }
 
 const PropertySet* XMLApplication::getCredentialUse(const EntityDescriptor* provider) const

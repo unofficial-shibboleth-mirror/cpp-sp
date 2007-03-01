@@ -190,6 +190,7 @@
 			<TrustEngine type="PKIX"/>
 		</TrustEngine>
 
+		<AttributeResolver type="Simple" path="@-PKGSYSCONFDIR-@/resolver-simple.xml"/>
 	</Applications>
 	
 	<!-- Define all the private keys and certificates here that you reference from <CredentialUse>. -->

@@ -329,6 +329,7 @@
 				<element ref="saml:Audience" minOccurs="0" maxOccurs="unbounded"/>
                 <element name="MetadataProvider" type="conf:PluggableType"/>
 				<element name="TrustEngine" type="conf:PluggableType"/>
+				<element name="AttributeResolver" type="conf:PluggableType"/>
 				<element ref="conf:Application" minOccurs="0" maxOccurs="unbounded"/>
 			</sequence>
 			<attribute name="id" type="conf:string" fixed="default"/>
@@ -351,6 +352,7 @@
 				<element ref="saml:Audience" minOccurs="0" maxOccurs="unbounded"/>
 				<element name="MetadataProvider" type="conf:PluggableType" minOccurs="0"/>
 				<element name="TrustEngine" type="conf:PluggableType" minOccurs="0"/>
+				<element name="AttributeResolver" type="conf:PluggableType" minOccurs="0"/>
 			</sequence>
 			<attribute name="id" type="conf:string" use="required"/>
 			<attribute name="providerId" type="anyURI"/>

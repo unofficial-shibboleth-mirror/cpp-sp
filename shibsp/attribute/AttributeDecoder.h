@@ -42,11 +42,15 @@ namespace shibsp {
         /**
          * Decodes an XMLObject into a resolved Attribute.
          * 
-         * @param id        ID of resolved attribute
-         * @param xmlObject XMLObject to decode
+         * @param id                ID of resolved attribute
+         * @param xmlObject         XMLObject to decode
+         * @param assertingParty    name of the party asserting the attribute
+         * @param relyingParty      name of the party relying on the attribute
          * @return a resolved Attribute
          */
-        virtual Attribute* decode(const char* id, const xmltooling::XMLObject* xmlObject) const=0;
+        virtual Attribute* decode(
+            const char* id, const xmltooling::XMLObject* xmlObject, const char* assertingParty=NULL, const char* relyingParty=NULL
+            ) const=0;
     };
 
     /** Decodes SimpleAttributes */

@@ -44,11 +44,17 @@ namespace shibsp {
         NameIDAttributeDecoder(const DOMElement* e) : m_formatter(e ? e->getAttributeNS(NULL,formatter) : NULL) {}
         ~NameIDAttributeDecoder() {}
 
-        shibsp::Attribute* decode(const char* id, const XMLObject* xmlObject) const;
+        shibsp::Attribute* decode(
+            const char* id, const XMLObject* xmlObject, const char* assertingParty=NULL, const char* relyingParty=NULL
+            ) const;
 
     private:
-        void extract(const NameID* n, vector<NameIDAttribute::Value>& dest) const;
-        void extract(const NameIdentifier* n, vector<NameIDAttribute::Value>& dest) const;
+        void extract(
+            const NameIDType* n, vector<NameIDAttribute::Value>& dest, const char* assertingParty=NULL, const char* relyingParty=NULL
+            ) const;
+        void extract(
+            const NameIdentifier* n, vector<NameIDAttribute::Value>& dest, const char* assertingParty=NULL, const char* relyingParty=NULL
+            ) const;
         auto_ptr_char m_formatter;
     };
 
@@ -58,7 +64,9 @@ namespace shibsp {
     }
 };
 
-shibsp::Attribute* NameIDAttributeDecoder::decode(const char* id, const XMLObject* xmlObject) const
+shibsp::Attribute* NameIDAttributeDecoder::decode(
+    const char* id, const XMLObject* xmlObject, const char* assertingParty, const char* relyingParty
+    ) const
 {
     auto_ptr<NameIDAttribute> nameid(
         new NameIDAttribute(id, (m_formatter.get() && *m_formatter.get()) ? m_formatter.get() : DEFAULT_NAMEID_FORMATTER)
@@ -97,7 +105,7 @@ shibsp::Attribute* NameIDAttributeDecoder::decode(const char* id, const XMLObjec
         }
 
         for (; v!=stop; ++v) {
-            const NameID* n2 = dynamic_cast<const NameID*>(*v);
+            const NameIDType* n2 = dynamic_cast<const NameIDType*>(*v);
             if (n2)
                 extract(n2, dest);
             else {
@@ -107,7 +115,7 @@ shibsp::Attribute* NameIDAttributeDecoder::decode(const char* id, const XMLObjec
                 else if ((*v)->hasChildren()) {
                     const list<XMLObject*>& values = (*v)->getOrderedChildren();
                     for (list<XMLObject*>::const_iterator vv = values.begin(); vv!=values.end(); ++vv) {
-                        if (n2=dynamic_cast<const NameID*>(*vv))
+                        if (n2=dynamic_cast<const NameIDType*>(*vv))
                             extract(n2, dest);
                         else if (n1=dynamic_cast<const NameIdentifier*>(*vv))
                             extract(n1, dest);
@@ -121,7 +129,7 @@ shibsp::Attribute* NameIDAttributeDecoder::decode(const char* id, const XMLObjec
         return dest.empty() ? NULL : nameid.release();
     }
 
-    const NameID* saml2name = dynamic_cast<const NameID*>(xmlObject);
+    const NameIDType* saml2name = dynamic_cast<const NameIDType*>(xmlObject);
     if (saml2name) {
         if (log.isDebugEnabled()) {
             auto_ptr_char f(saml2name->getFormat());
@@ -147,7 +155,9 @@ shibsp::Attribute* NameIDAttributeDecoder::decode(const char* id, const XMLObjec
     return dest.empty() ? NULL : nameid.release();
 }
 
-void NameIDAttributeDecoder::extract(const NameID* n, vector<NameIDAttribute::Value>& dest) const
+void NameIDAttributeDecoder::extract(
+    const NameIDType* n, vector<NameIDAttribute::Value>& dest, const char* assertingParty, const char* relyingParty
+    ) const
 {
     char* name = toUTF8(n->getName());
     if (name && *name) {
@@ -159,16 +169,21 @@ void NameIDAttributeDecoder::extract(const NameID* n, vector<NameIDAttribute::Va
             val.m_Format = str;
             delete[] str;
         }
+        
         str = toUTF8(n->getNameQualifier());
-        if (str) {
+        if (str && *str)
             val.m_NameQualifier = str;
-            delete[] str;
-        }
+        else if (assertingParty)
+            val.m_NameQualifier = assertingParty;
+        delete[] str;
+        
         str = toUTF8(n->getSPNameQualifier());
-        if (str) {
+        if (str && *str)
             val.m_SPNameQualifier = str;
-            delete[] str;
-        }
+        else if (relyingParty)
+            val.m_SPNameQualifier = relyingParty;
+        delete[] str;
+        
         str = toUTF8(n->getSPProvidedID());
         if (str) {
             val.m_SPProvidedID = str;
@@ -178,7 +193,9 @@ void NameIDAttributeDecoder::extract(const NameID* n, vector<NameIDAttribute::Va
     delete[] name;
 }
 
-void NameIDAttributeDecoder::extract(const NameIdentifier* n, vector<NameIDAttribute::Value>& dest) const
+void NameIDAttributeDecoder::extract(
+    const NameIdentifier* n, vector<NameIDAttribute::Value>& dest, const char* assertingParty, const char* relyingParty
+    ) const
 {
     char* name = toUTF8(n->getName());
     if (name && *name) {
@@ -190,11 +207,16 @@ void NameIDAttributeDecoder::extract(const NameIdentifier* n, vector<NameIDAttri
             val.m_Format = str;
             delete[] str;
         }
+
         str = toUTF8(n->getNameQualifier());
-        if (str) {
+        if (str && *str)
             val.m_NameQualifier = str;
-            delete[] str;
-        }
+        else if (assertingParty)
+            val.m_NameQualifier = assertingParty;
+        delete[] str;
+        
+        if (relyingParty)
+            val.m_SPNameQualifier = relyingParty;
     }
     delete[] name;
 }

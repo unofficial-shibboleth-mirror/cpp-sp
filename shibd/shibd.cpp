@@ -119,9 +119,9 @@ int real_main(int preinit)
             (shar_checkonly ? (SPConfig::InProcess | SPConfig::RequestMapping) : SPConfig::Logging)
             );
         if (!shar_config)
-            shar_config=getenv("SHIBCONFIG");
+            shar_config=getenv("SHIBSP_CONFIG");
         if (!shar_schemadir)
-            shar_schemadir=getenv("SHIBSCHEMAS");
+            shar_schemadir=getenv("SHIBSP_SCHEMAS");
         if (!shar_schemadir)
             shar_schemadir=SHIBSP_SCHEMAS;
         if (!shar_config)
@@ -262,9 +262,9 @@ int main(int argc, char *argv[])
         usage(argv[0]);
 
     if (!shar_config)
-        shar_config=getenv("SHIBCONFIG");
+        shar_config=getenv("SHIBSP_CONFIG");
     if (!shar_schemadir)
-        shar_schemadir=getenv("SHIBSCHEMAS");
+        shar_schemadir=getenv("SHIBSP_SCHEMAS");
     if (!shar_schemadir)
         shar_schemadir=SHIBSP_SCHEMAS;
     if (!shar_config)

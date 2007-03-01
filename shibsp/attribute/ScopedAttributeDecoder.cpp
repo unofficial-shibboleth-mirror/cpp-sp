@@ -42,7 +42,9 @@ namespace shibsp {
         ScopedAttributeDecoder(const DOMElement* e) {}
         ~ScopedAttributeDecoder() {}
 
-        shibsp::Attribute* decode(const char* id, const XMLObject* xmlObject) const;
+        shibsp::Attribute* decode(
+            const char* id, const XMLObject* xmlObject, const char* assertingParty=NULL, const char* relyingParty=NULL
+            ) const;
     };
 
     AttributeDecoder* SHIBSP_DLLLOCAL ScopedAttributeDecoderFactory(const DOMElement* const & e)
@@ -53,7 +55,9 @@ namespace shibsp {
     static const XMLCh Scope[] = UNICODE_LITERAL_5(S,c,o,p,e);
 };
 
-shibsp::Attribute* ScopedAttributeDecoder::decode(const char* id, const XMLObject* xmlObject) const
+shibsp::Attribute* ScopedAttributeDecoder::decode(
+    const char* id, const XMLObject* xmlObject, const char* assertingParty, const char* relyingParty
+    ) const
 {
     char* val;
     char* scope;
