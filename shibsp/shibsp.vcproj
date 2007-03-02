@@ -183,10 +183,6 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\AbstractHandler.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\AbstractSPRequest.cpp"
 				>
 			</File>
@@ -254,10 +250,6 @@
 					</File>
 					<File
 						RelativePath=".\remoting\impl\ListenerService.cpp"
-						>
-					</File>
-					<File
-						RelativePath=".\remoting\impl\RemotedHandler.cpp"
 						>
 					</File>
 					<File
@@ -346,16 +338,28 @@
 					</File>
 				</Filter>
 			</Filter>
+			<Filter
+				Name="handler"
+				>
+				<Filter
+					Name="impl"
+					>
+					<File
+						RelativePath=".\handler\impl\AbstractHandler.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\handler\impl\RemotedHandler.cpp"
+						>
+					</File>
+				</Filter>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
-			<File
-				RelativePath=".\AbstractHandler.h"
-				>
-			</File>
 			<File
 				RelativePath=".\AbstractSPRequest.h"
 				>
@@ -374,10 +378,6 @@
 			</File>
 			<File
 				RelativePath=".\exceptions.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Handler.h"
 				>
 			</File>
 			<File
@@ -463,10 +463,6 @@
 					RelativePath=".\remoting\ListenerService.h"
 					>
 				</File>
-				<File
-					RelativePath=".\remoting\RemotedHandler.h"
-					>
-				</File>
 			</Filter>
 			<Filter
 				Name="attribute"
@@ -509,6 +505,22 @@
 				>
 				<File
 					RelativePath=".\binding\SOAPClient.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="handler"
+				>
+				<File
+					RelativePath=".\handler\AbstractHandler.h"
+					>
+				</File>
+				<File
+					RelativePath=".\handler\Handler.h"
+					>
+				</File>
+				<File
+					RelativePath=".\handler\RemotedHandler.h"
 					>
 				</File>
 			</Filter>

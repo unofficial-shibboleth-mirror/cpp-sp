@@ -15,7 +15,7 @@
  */
 
 /**
- * @file shibsp/remoting/RemotedHandler.h
+ * @file shibsp/handler/RemotedHandler.h
  * 
  * Base class for handlers that need SP request/response layer to be remoted. 
  */
@@ -24,7 +24,7 @@
 #define __shibsp_remhandler_h__
 
 #include <shibsp/SPRequest.h>
-#include <shibsp/Handler.h>
+#include <shibsp/handler/Handler.h>
 #include <shibsp/remoting/ListenerService.h>
 
 namespace shibsp {
@@ -32,13 +32,13 @@ namespace shibsp {
     /**
      * Base class for handlers that need HTTP request/response layer to be remoted.
      */
-    class SHIBSP_API RemotedHandler : public Handler, public Remoted 
+    class SHIBSP_API RemotedHandler : public virtual Handler, public Remoted 
     {
     public:
         virtual ~RemotedHandler() {}
 
     protected:
-        RemotedHandler(const xercesc::DOMElement* e=NULL) {}
+        RemotedHandler() {}
 
         /**
          * Wraps a request by annotating an outgoing data flow with the data needed

@@ -15,7 +15,7 @@
  */
 
 /**
- * @file shibsp/AbstractHandler.h
+ * @file shibsp/handler/AbstractHandler.h
  * 
  * Base class for handlers based on a DOMPropertySet. 
  */
@@ -23,7 +23,7 @@
 #ifndef __shibsp_abshandler_h__
 #define __shibsp_abshandler_h__
 
-#include <shibsp/Handler.h>
+#include <shibsp/handler/Handler.h>
 #include <shibsp/util/DOMPropertySet.h>
 
 namespace shibsp {

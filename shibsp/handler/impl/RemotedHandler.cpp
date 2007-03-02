@@ -21,7 +21,7 @@
  */
 
 #include "internal.h"
-#include "remoting/RemotedHandler.h"
+#include "handler/RemotedHandler.h"
 
 #include <algorithm>
 #include <log4cpp/Category.hh>

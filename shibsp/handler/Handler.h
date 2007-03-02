@@ -15,7 +15,7 @@
  */
 
 /**
- * @file shibsp/Handler.h
+ * @file shibsp/handler/Handler.h
  * 
  * Pluggable runtime functionality that implement protocols and services 
  */

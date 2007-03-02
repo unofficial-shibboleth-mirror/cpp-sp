@@ -13,6 +13,8 @@ attrresincludedir = $(includedir)/shibsp/attribute/resolver
 
 bindincludedir = $(includedir)/shibsp/binding
 
+handincludedir = $(includedir)/shibsp/handler
+
 mdincludedir = $(includedir)/shibsp/metadata
 
 remincludedir = $(includedir)/shibsp/remoting
@@ -22,13 +24,11 @@ secincludedir = $(includedir)/shibsp/security
 utilincludedir = $(includedir)/shibsp/util
 
 libshibspinclude_HEADERS = \
-	AbstractHandler.h \
 	AbstractSPRequest.h \
 	AccessControl.h \
 	Application.h \
 	base.h \
 	exceptions.h \
-	Handler.h \
 	paths.h \
 	RequestMapper.h \
 	ServiceProvider.h \
@@ -51,14 +51,18 @@ attrresinclude_HEADERS = \
 
 bindinclude_HEADERS = \
 	binding/SOAPClient.h
-	
+
+handinclude_HEADERS = \
+	handler/AbstractHandler.h \
+	handler/Handler.h \
+	handler/RemotedHandler.h
+
 mdinclude_HEADERS = \
 	metadata/MetadataExt.h
 
 reminclude_HEADERS = \
-	ddf.h \
-	ListenerService.h \
-	RemotedHandler.h
+	remoting/ddf.h \
+	remoting/ListenerService.h
 	
 secinclude_HEADERS = \
 	security/PKIXTrustEngine.h
@@ -74,7 +78,6 @@ noinst_HEADERS = \
 	remoting/impl/SocketListener.h
 
 libshibsp_la_SOURCES = \
-	AbstractHandler.cpp \
 	AbstractSPRequest.cpp \
 	Application.cpp \
 	ServiceProvider.cpp \
@@ -87,6 +90,8 @@ libshibsp_la_SOURCES = \
 	attribute/resolver/impl/AttributeResolver.cpp \
 	attribute/resolver/impl/SimpleAttributeResolver.cpp \
 	binding/impl/SOAPClient.cpp \
+	handler/impl/RemotedHandler.cpp \
+	handler/impl/AbstractHandler.cpp \
 	impl/RemotedSessionCache.cpp \
 	impl/StorageServiceSessionCache.cpp \
 	impl/XMLAccessControl.cpp \
@@ -96,7 +101,6 @@ libshibsp_la_SOURCES = \
 	metadata/MetadataExtSchemaValidators.cpp \
 	remoting/impl/ddf.cpp \
 	remoting/impl/ListenerService.cpp \
-	remoting/impl/RemotedHandler.cpp \
 	remoting/impl/SocketListener.cpp \
 	remoting/impl/TCPListener.cpp \
 	remoting/impl/UnixListener.cpp \

@@ -21,7 +21,7 @@
  */
 
 #include "internal.h"
-#include "AbstractHandler.h"
+#include "handler/AbstractHandler.h"
 
 using namespace shibsp;
 using namespace xercesc;
@@ -30,5 +30,5 @@ using namespace std;
 AbstractHandler::AbstractHandler(
     const DOMElement* e, DOMNodeFilter* filter, const map<string,string>* remapper
     ) {
-    load(e,log4cpp::Category::getInstance(SHIBSP_LOGCAT".AbstractHandler"),filter,remapper);
+    load(e,log4cpp::Category::getInstance(SHIBSP_LOGCAT".Handler"),filter,remapper);
 }
