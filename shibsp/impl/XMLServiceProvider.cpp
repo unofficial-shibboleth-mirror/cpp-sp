@@ -42,6 +42,7 @@
 #include <log4cpp/Category.hh>
 #include <log4cpp/PropertyConfigurator.hh>
 #include <saml/SAMLConfig.h>
+#include <saml/binding/ArtifactMap.h>
 #include <saml/saml1/core/Assertions.h>
 #include <saml/saml2/metadata/ChainingMetadataProvider.h>
 #include <xmltooling/XMLToolingConfig.h>
@@ -216,6 +217,7 @@ namespace {
             delete m_listener;
             delete m_tranLog;
             XMLToolingConfig::getConfig().setReplayCache(NULL);
+            SAMLConfig::getConfig().setArtifactMap(NULL);
             for_each(m_storage.begin(), m_storage.end(), cleanup_pair<string,StorageService>());
         }
 
@@ -308,6 +310,7 @@ namespace {
 
     static const XMLCh _Application[] =         UNICODE_LITERAL_11(A,p,p,l,i,c,a,t,i,o,n);
     static const XMLCh Applications[] =         UNICODE_LITERAL_12(A,p,p,l,i,c,a,t,i,o,n,s);
+    static const XMLCh _ArtifactMap[] =         UNICODE_LITERAL_11(A,r,t,i,f,a,c,t,M,a,p);
     static const XMLCh _AttributeResolver[] =   UNICODE_LITERAL_17(A,t,t,r,i,b,u,t,e,R,e,s,o,l,v,e,r);
     static const XMLCh Credentials[] =          UNICODE_LITERAL_11(C,r,e,d,e,n,t,i,a,l,s);
     static const XMLCh CredentialUse[] =        UNICODE_LITERAL_13(C,r,e,d,e,n,t,i,a,l,U,s,e);
@@ -320,6 +323,9 @@ namespace {
     static const XMLCh Listener[] =             UNICODE_LITERAL_8(L,i,s,t,e,n,e,r);
     static const XMLCh logger[] =               UNICODE_LITERAL_6(l,o,g,g,e,r);
     static const XMLCh MemoryListener[] =       UNICODE_LITERAL_14(M,e,m,o,r,y,L,i,s,t,e,n,e,r);
+    static const XMLCh _MetadataProvider[] =    UNICODE_LITERAL_16(M,e,t,a,d,a,t,a,P,r,o,v,i,d,e,r);
+    static const XMLCh OutOfProcess[] =         UNICODE_LITERAL_12(O,u,t,O,f,P,r,o,c,e,s,s);
+    static const XMLCh _path[] =                UNICODE_LITERAL_4(p,a,t,h);
     static const XMLCh Policy[] =               UNICODE_LITERAL_6(P,o,l,i,c,y);
     static const XMLCh RelyingParty[] =         UNICODE_LITERAL_12(R,e,l,y,i,n,g,P,a,r,t,y);
     static const XMLCh _ReplayCache[] =         UNICODE_LITERAL_11(R,e,p,l,a,y,C,a,c,h,e);
@@ -329,13 +335,10 @@ namespace {
     static const XMLCh _SessionCache[] =        UNICODE_LITERAL_12(S,e,s,s,i,o,n,C,a,c,h,e);
     static const XMLCh SessionInitiator[] =     UNICODE_LITERAL_16(S,e,s,s,i,o,n,I,n,i,t,i,a,t,o,r);
     static const XMLCh _StorageService[] =      UNICODE_LITERAL_14(S,t,o,r,a,g,e,S,e,r,v,i,c,e);
-    static const XMLCh OutOfProcess[] =         UNICODE_LITERAL_12(O,u,t,O,f,P,r,o,c,e,s,s);
     static const XMLCh TCPListener[] =          UNICODE_LITERAL_11(T,C,P,L,i,s,t,e,n,e,r);
     static const XMLCh _TrustEngine[] =         UNICODE_LITERAL_11(T,r,u,s,t,E,n,g,i,n,e);
-    static const XMLCh UnixListener[] =         UNICODE_LITERAL_12(U,n,i,x,L,i,s,t,e,n,e,r);
-    static const XMLCh _MetadataProvider[] =    UNICODE_LITERAL_16(M,e,t,a,d,a,t,a,P,r,o,v,i,d,e,r);
-    static const XMLCh _path[] =                UNICODE_LITERAL_4(p,a,t,h);
     static const XMLCh _type[] =                UNICODE_LITERAL_4(t,y,p,e);
+    static const XMLCh UnixListener[] =         UNICODE_LITERAL_12(U,n,i,x,L,i,s,t,e,n,e,r);
 
     class SHIBSP_DLLLOCAL PolicyNodeFilter : public DOMNodeFilter
     {
@@ -859,6 +862,7 @@ short XMLConfigImpl::acceptNode(const DOMNode* node) const
         return FILTER_ACCEPT;
     const XMLCh* name=node->getLocalName();
     if (XMLString::equals(name,Applications) ||
+        XMLString::equals(name,_ArtifactMap) ||
         XMLString::equals(name,Credentials) ||
         XMLString::equals(name,Extensions::LOCAL_NAME) ||
         XMLString::equals(name,Implementation) ||
@@ -1054,6 +1058,20 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                         replaySS = m_outer->m_storage[inmemID];
                     }
                     xmlConf.setReplayCache(new ReplayCache(replaySS));
+                    
+                    // ArtifactMap
+                    child=XMLHelper::getFirstChildElement(SHAR,_ArtifactMap);
+                    if (child) {
+                        auto_ptr_char ssid(child->getAttributeNS(NULL,_StorageService));
+                        if (ssid.get() && *ssid.get() && m_outer->m_storage.count(ssid.get())) {
+                            log.info("building ArtifactMap on top of StorageService (%s)...", ssid.get());
+                            samlConf.setArtifactMap(new ArtifactMap(child, m_outer->m_storage[ssid.get()]));
+                        }
+                    }
+                    if (samlConf.getArtifactMap()==NULL) {
+                        log.info("building in-memory ArtifactMap...");
+                        samlConf.setArtifactMap(new ArtifactMap(child));
+                    }
                 }
                 else {
                     log.info("building in-process SessionCache of type %s...",REMOTED_SESSION_CACHE);

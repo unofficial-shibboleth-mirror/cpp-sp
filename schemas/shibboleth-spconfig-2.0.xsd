@@ -90,7 +90,7 @@
 					<sequence>
 						<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
 					</sequence>
-					<attribute name="id" type="conf:string" use="required"/>
+					<attribute name="id" type="ID" use="required"/>
 					<attribute name="cleanupInterval" type="unsignedInt" default="900"/>
 					<anyAttribute namespace="##any" processContents="lax"/>
 				</restriction>
@@ -108,6 +108,7 @@
 					<sequence>
 						<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
 					</sequence>
+					<attribute name="StorageService" type="IDREF"/>
 					<attribute name="cacheTimeout" type="unsignedInt" default="28800"/>
 					<anyAttribute namespace="##any" processContents="lax"/>
 				</restriction>
@@ -117,12 +118,20 @@
 	
 	<element name="ReplayCache">
 		<annotation>
-			<documentation>Ties ReplayCache to custom StorageService</documentation>
+			<documentation>Ties ReplayCache to a custom StorageService</documentation>
 		</annotation>
-		<complexType>
-			<sequence/>
-			<attribute name="StorageService" type="conf:string" use="required"/>
-		</complexType>
+		<sequence/>
+		<attribute name="StorageService" type="IDREF" use="required"/>
+	</element>
+	
+	<element name="ArtifactMap">
+		<annotation>
+			<documentation>Customizes an ArtifactMap</documentation>
+		</annotation>
+		<sequence/>
+		<attribute name="StorageService" type="IDREF"/>
+		<attribute name="context" type="conf:string"/>
+		<attribute name="artifactTTL" type="unsignedInt" default="180"/>
 	</element>
 	
 	<element name="OutOfProcess">
@@ -150,6 +159,7 @@
 				<element ref="conf:StorageService" minOccurs="0" maxOccurs="unbounded"/>
 				<element ref="conf:SessionCache" minOccurs="0"/>
 				<element ref="conf:ReplayCache" minOccurs="0"/>
+				<element ref="conf:ArtifactMap" minOccurs="0"/>
 				<any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
 			</sequence>
 			<attribute name="logger" type="anyURI"/>

@@ -25,7 +25,11 @@
 		
 		<!-- <TCPListener address="127.0.0.1" port="12345" acl="127.0.0.1"/> -->
 		
+
 		<StorageService type="Memory" id="memory" cleanupInterval="900"/>
+		<SessionCache type="StorageService" StorageService="memory" cacheTimeout="3600"/>
+		<ReplayCache StorageService="memory"/>
+		<ArtifactMap artifactTTL="180"/>
 
 		<!--
 		<StorageService type="ODBC" id="db" cleanupInterval="900">
@@ -33,11 +37,10 @@
 			DRIVER=drivername;SERVER=dbserver;UID=shibboleth;PWD=password;DATABASE=shibboleth;APP=Shibboleth
 			</ConnectionString>
 		</StorageService>
+		<SessionCache type="StorageService" StorageService="db" cacheTimeout="3600"/>
+		<ReplayCache StorageService="db"/>
+		<ArtifactMap StorageService="db" artifactTTL="180"/>
 		-->
-		
-		<SessionCache type="StorageService" StorageService="memory" cacheTimeout="3600"/>
-		<ReplayCache StorageService="memory"/>
-		
 	</OutOfProcess>
     
 	<!-- The InProcess section pertains to components that support transient process pools like most web servers. -->
