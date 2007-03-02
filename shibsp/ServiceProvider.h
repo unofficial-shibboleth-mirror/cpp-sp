@@ -25,7 +25,7 @@
 
 #include <shibsp/util/PropertySet.h>
 #include <saml/binding/SecurityPolicyRule.h>
-#include <xmltooling/signature/CredentialResolver.h>
+#include <xmltooling/security/CredentialResolver.h>
 #include <xmltooling/util/StorageService.h>
 
 namespace shibsp {
@@ -99,7 +99,7 @@ namespace shibsp {
          * @param id    a NULL-terminated key identifying the CredentialResolver to the configuration 
          * @return  a CredentialResolver if available, or NULL
          */
-        virtual xmlsignature::CredentialResolver* getCredentialResolver(const char* id) const=0;
+        virtual xmltooling::CredentialResolver* getCredentialResolver(const char* id) const=0;
 
         /**
 		 * Returns the security policy settings for an identified policy.

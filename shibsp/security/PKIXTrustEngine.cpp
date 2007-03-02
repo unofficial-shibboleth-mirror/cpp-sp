@@ -85,14 +85,14 @@ namespace shibsp {
         }
     };
 
-    class SHIBSP_DLLLOCAL PKIXTrustEngine : public xmltooling::AbstractPKIXTrustEngine
+    class SHIBSP_DLLLOCAL PKIXTrustEngine : public AbstractPKIXTrustEngine
     {
     public:
         PKIXTrustEngine(const DOMElement* e=NULL) : AbstractPKIXTrustEngine(e) {}
         virtual ~PKIXTrustEngine() {}
         
-        xmltooling::AbstractPKIXTrustEngine::PKIXValidationInfoIterator* getPKIXValidationInfoIterator(
-            const xmltooling::KeyInfoSource& pkixSource, const xmlsignature::KeyResolver& keyResolver
+        AbstractPKIXTrustEngine::PKIXValidationInfoIterator* getPKIXValidationInfoIterator(
+            const KeyInfoSource& pkixSource, const KeyResolver& keyResolver
             ) const;
     };
     

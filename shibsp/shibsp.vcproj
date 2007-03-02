@@ -60,7 +60,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="log4cppD.lib xerces-c_2D.lib xsec_1D.lib saml2D.lib xmltooling1D.lib wsock32.lib libeay32_0_9_8D.lib ssleay32_0_9_8D.lib"
+				AdditionalDependencies="log4cppD.lib xerces-c_2D.lib xsec_1D.lib saml2D.lib xmltooling1D.lib wsock32.lib"
 				OutputFile="$(OutDir)\$(ProjectName)1_0D.dll"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="&quot;..\..\cpp-opensaml1\saml\Debug&quot;;&quot;..\..\cpp-opensaml2\Debug&quot;;&quot;..\..\cpp-xmltooling\Debug&quot;"
@@ -137,7 +137,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="log4cpp.lib xerces-c_2.lib xsec_1.lib saml2.lib xmltooling1.lib wsock32.lib libeay32_0_9_8.lib ssleay32_0_9_8.lib"
+				AdditionalDependencies="log4cpp.lib xerces-c_2.lib xsec_1.lib saml2.lib xmltooling1.lib wsock32.lib"
 				OutputFile="$(OutDir)\$(ProjectName)1_0.dll"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;..\..\cpp-opensaml1\saml\Release&quot;;&quot;..\..\cpp-opensaml2\Release&quot;;&quot;..\..\cpp-xmltooling\Release&quot;"

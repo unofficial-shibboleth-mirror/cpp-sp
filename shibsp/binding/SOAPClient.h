@@ -25,7 +25,7 @@
 
 #include <shibsp/Application.h>
 #include <saml/binding/SOAPClient.h>
-#include <xmltooling/signature/CredentialResolver.h>
+#include <xmltooling/security/CredentialResolver.h>
 
 namespace shibsp {
 
@@ -77,7 +77,7 @@ namespace shibsp {
         const PropertySet* m_credUse;
 
         /** Locked CredentialResolver for transport, set after transport prep. */
-        xmlsignature::CredentialResolver* m_credResolver;
+        xmltooling::CredentialResolver* m_credResolver;
     };
 
 };

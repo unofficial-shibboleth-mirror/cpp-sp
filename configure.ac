@@ -46,7 +46,6 @@ AC_STRUCT_TM
 AC_FUNC_STRFTIME
 AC_FUNC_STRERROR_R
 AC_CHECK_FUNCS([strchr strdup strstr gmtime_r ctime_r strtok_r strcasecmp])
-AC_CHECK_HEADERS([dlfcn.h])
 
 # old_LIBS="$LIBS"
 # AC_SEARCH_LIBS(xdr_uint64_t,nsl,,
@@ -64,48 +63,6 @@ else
     CFLAGS="$PTHREAD_CFLAGS $CFLAGS"
     CXXFLAGS="$PTHREAD_CFLAGS $CXXFLAGS"
 fi
-
-AC_ARG_WITH(dmalloc,
-            AC_HELP_STRING([--with-dmalloc=PATH], [where dmalloc is installed]),
-            [if test x_$with_dmalloc != x_/usr; then
-                LDFLAGS="-L${with_dmalloc}/lib $LDFLAGS"
-                CPPFLAGS="-I${with_dmalloc}/include $CPPFLAGS"
-            fi
-	    AC_CHECK_LIB(dmallocxx, dmalloc_shutdown,,
-		         AC_MSG_ERROR([unable to find dmallocxx library]))
-	    ])
-
-# OpenSSL settings
-AC_PATH_PROG(PKG_CONFIG, pkg-config)
-if test "x$PKG_CONFIG" = x || test "x$PKG_CONFIG" = "xno" ; then
-    AC_ARG_WITH(openssl, 
-            AC_HELP_STRING([--with-openssl=PATH], [where openssl is installed]),
-            [if test x_$with_openssl != x_/usr; then
-	    SSLLIBS="-L${with_openssl}/lib"
-	    SSLFLAGS="-I${with_openssl}/include"
-            fi])
-    SSLLIBS="$SSLLIBS -lssl -lcrypto"
-else
-    SSLLIBS="`$PKG_CONFIG --libs openssl`"
-    SSLFLAGS="`$PKG_CONFIG --cflags openssl`"
-fi
-AC_MSG_CHECKING(for OpenSSL libraries)
-AC_MSG_RESULT($SSLLIBS)
-LIBS="$LIBS $SSLLIBS"
-AC_MSG_CHECKING(for OpenSSL cflags)
-AC_MSG_RESULT($SSLFLAGS)
-CPPFLAGS="$SSLFLAGS $CPPFLAGS"
-
-AC_CHECK_HEADER([openssl/ssl.h],,
-                AC_MSG_ERROR([unable to find openssl header files]))
-AC_MSG_CHECKING(for ERR_load_CRYPTO_string)
-AC_TRY_LINK_FUNC([ERR_load_CRYPTO_strings],,
-             AC_MSG_ERROR([unable to link with openssl libraries]))
-AC_MSG_RESULT(yes)
-AC_MSG_CHECKING(for SSL_library_init)
-AC_TRY_LINK_FUNC([SSL_library_init],, 
-             AC_MSG_ERROR([unable to link with openssl libraries]))
-AC_MSG_RESULT(yes)
 
 AC_LANG(C++)
 
@@ -140,14 +97,14 @@ AC_CHECK_HEADER([xercesc/dom/DOM.hpp],,
                 AC_MSG_ERROR([unable to find xerces header files]))
 AC_MSG_CHECKING([Xerces version])
 AC_PREPROC_IFELSE(
-        [AC_LANG_PROGRAM([#include <xercesc/util/XercesVersion.hpp>],
-[#if  _XERCES_VERSION > 20200 && _XERCES_VERSION != 20600
+    [AC_LANG_PROGRAM([#include <xercesc/util/XercesVersion.hpp>],
+[#if  _XERCES_VERSION != 20600
 int i = 0;
 #else
-#error requires version > 2.2.0 but not 2.6.0
+#error cannot use version 2.6.0
 #endif])],
-        [AC_MSG_RESULT(OK)],
-        [AC_MSG_ERROR([Shibboleth requires patched Xerces version 2.6.1 (http://shibboleth.internet2.edu/downloads/)])])
+    [AC_MSG_RESULT(OK)],
+    [AC_MSG_FAILURE([Xerces-C v2.6.0 has bugs that inhibit use with signed XML, please use a newer version])])
 AC_TRY_LINK(
         [#include <xercesc/util/PlatformUtils.hpp>],
         [xercesc::XMLPlatformUtils::Initialize()],
@@ -157,18 +114,29 @@ AC_TRY_LINK(
 
 # XML-Security settings
 AC_ARG_WITH(xmlsec,
-            AC_HELP_STRING([--with-xmlsec=PATH], [where xmlsec is installed]),
-            [if test x_$with_xmlsec != x_/usr; then
-                LDFLAGS="-L${with_xmlsec}/lib $LDFLAGS"
-                CPPFLAGS="-I${with_xmlsec}/include $CPPFLAGS"
-            fi])
+            AC_HELP_STRING([--with-xmlsec=PATH], [where xmlsec is installed]),,
+            [with_xmlsec=/usr])
+
+if test x_$with_xmlsec != x_/usr; then
+    LDFLAGS="-L${with_xmlsec}/lib $LDFLAGS"
+    CPPFLAGS="-I${with_xmlsec}/include $CPPFLAGS"
+fi        
 LIBS="-lxml-security-c $LIBS"
-AC_CHECK_HEADER([xsec/xenc/XENCEncryptionMethod.hpp],,AC_MSG_ERROR([unable to find xml-security 1.1 header files]),[#include <xercesc/dom/DOM.hpp>])
+AC_CHECK_HEADER([xsec/utils/XSECPlatformUtils.hpp],,AC_MSG_ERROR([unable to find XML-Security header files]))
+AC_MSG_CHECKING([XML-Security version])
+AC_PREPROC_IFELSE(
+    [AC_LANG_PROGRAM([#include <xsec/utils/XSECPlatformUtils.hpp>],
+    [#if XSEC_VERSION_MAJOR > 1 || XSEC_VERSION_MEDIUM >2 
+int i = 0;
+#else
+#error need version 1.3 or later
+#endif])],
+    [AC_MSG_RESULT(OK)],
+    [AC_MSG_FAILURE([XML-Security version 1.3 or greater is required.])])
 AC_TRY_LINK(
         [#include <xsec/utils/XSECPlatformUtils.hpp>],
-        [XSECPlatformUtils::Initialise()],
-        [AC_DEFINE(HAVE_LIBXSEC,1,[Define if XML-Sec library was found])],
-        [AC_MSG_ERROR([unable to link with xml-security])])
+        [XSECPlatformUtils::Initialise()],,
+        [AC_MSG_ERROR([unable to link with XML-Sec])])
 
 # OpenSAML settings
 AC_ARG_WITH(saml,
@@ -189,7 +157,7 @@ opensaml::SAMLConfig::getConfig();
 #error Need OpenSAML version 2.0 or higher
 #endif],
         [AC_DEFINE(HAVE_SAML,1,[Define if saml library was found])],
-        [AC_MSG_ERROR([unable to link with saml, or version too old])])
+        [AC_MSG_ERROR([unable to link with OpenSAML, or version was too old])])
 
 # output the underlying makefiles
 WANT_SUBDIRS="doc schemas configs shibsp shibd siterefresh test"

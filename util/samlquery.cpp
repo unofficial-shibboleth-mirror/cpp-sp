@@ -35,6 +35,7 @@
 #include <shibsp/exceptions.h>
 #include <shibsp/SPConfig.h>
 #include <shibsp/ServiceProvider.h>
+#include <shibsp/attribute/resolver/AttributeResolver.h>
 #include <shibsp/binding/SOAPClient.h>
 #include <shibsp/util/SPConstants.h>
 
