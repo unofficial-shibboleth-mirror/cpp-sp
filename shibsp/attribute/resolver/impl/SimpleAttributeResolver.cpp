@@ -61,8 +61,8 @@ namespace shibsp {
     {
     public:
         SimpleContext(const Application& application, const Session& session)
-            : m_app(application), m_session(&session), m_metadata(NULL), m_entity(NULL),
-                m_nameid(session.getNameID()), m_token(NULL) {
+            : m_app(application), m_session(&session), m_client_addr(NULL), m_metadata(NULL), m_entity(NULL),
+                m_nameid(session.getNameID()), m_tokens(NULL) {
         }
         
         SimpleContext(
@@ -70,10 +70,8 @@ namespace shibsp {
             const char* client_addr,
             const EntityDescriptor* issuer,
             const NameID& nameid,
-            const opensaml::RootObject* ssoToken=NULL
-            ) : m_app(application), m_session(NULL), m_entity(issuer), m_nameid(nameid), m_token(ssoToken) {
-            if (client_addr)
-                m_client_addr = client_addr;
+            const vector<const opensaml::RootObject*>* tokens=NULL
+            ) : m_app(application), m_session(NULL), m_client_addr(client_addr), m_entity(issuer), m_nameid(nameid), m_tokens(tokens) {
         }
         
         ~SimpleContext() {
@@ -87,7 +85,7 @@ namespace shibsp {
             return m_app;
         }
         const char* getClientAddress() const {
-            return m_session ? m_session->getClientAddress() : m_client_addr.c_str();
+            return m_session ? m_session->getClientAddress() : m_client_addr;
         }
         const EntityDescriptor* getEntityDescriptor() const {
             if (m_entity)
@@ -104,15 +102,8 @@ namespace shibsp {
         const NameID& getNameID() const {
             return m_nameid;
         }
-        const opensaml::RootObject* getSSOToken() const {
-            if (m_token)
-                return m_token;
-            if (m_session) {
-                const vector<const char*>& ids = m_session->getAssertionIDs();
-                if (!ids.empty())
-                    return m_token = m_session->getAssertion(ids.front());
-            }
-            return NULL;
+        const vector<const opensaml::RootObject*>* getTokens() const {
+            return m_tokens;
         }
         const Session* getSession() const {
             return m_session;
@@ -127,11 +118,11 @@ namespace shibsp {
     private:
         const Application& m_app;
         const Session* m_session;
-        string m_client_addr;
+        const char* m_client_addr;
         mutable MetadataProvider* m_metadata;
         mutable const EntityDescriptor* m_entity;
         const NameID& m_nameid;
-        mutable const opensaml::RootObject* m_token;
+        const vector<const opensaml::RootObject*>* m_tokens;
         vector<shibsp::Attribute*> m_attributes;
         vector<opensaml::RootObject*> m_assertions;
     };
@@ -156,10 +147,10 @@ namespace shibsp {
         }
 
         void query(
-            ResolutionContext& ctx, const opensaml::saml1::Assertion* token, const vector<const char*>* attributes=NULL
+            ResolutionContext& ctx, const NameIdentifier& nameid, const vector<const char*>* attributes=NULL
             ) const;
         void query(
-            ResolutionContext& ctx, const opensaml::saml2::Assertion* token, const vector<const char*>* attributes=NULL
+            ResolutionContext& ctx, const NameID& nameid, const vector<const char*>* attributes=NULL
             ) const;
         void resolve(
             ResolutionContext& ctx, const opensaml::saml1::Assertion* token, const vector<const char*>* attributes=NULL
@@ -168,9 +159,9 @@ namespace shibsp {
             ResolutionContext& ctx, const opensaml::saml2::Assertion* token, const vector<const char*>* attributes=NULL
             ) const;
 
+        bool m_allowQuery;
     private:
         DOMDocument* m_document;
-        bool m_allowQuery;
         map<string,AttributeDecoder*> m_decoderMap;
 #ifdef HAVE_GOOD_STL
         map< pair<xstring,xstring>,pair<const AttributeDecoder*,string> > m_attrMap;
@@ -194,9 +185,9 @@ namespace shibsp {
             const char* client_addr,
             const EntityDescriptor* issuer,
             const NameID& nameid,
-            const opensaml::RootObject* ssoToken=NULL
+            const vector<const opensaml::RootObject*>* tokens=NULL
             ) const {
-            return new SimpleContext(application,client_addr,issuer,nameid,ssoToken);
+            return new SimpleContext(application,client_addr,issuer,nameid,tokens);
         }
 
         ResolutionContext* createResolutionContext(const Application& application, const Session& session) const {
@@ -454,11 +445,8 @@ void SimpleResolverImpl::resolve(
     }
 }
 
-void SimpleResolverImpl::query(ResolutionContext& ctx, const opensaml::saml1::Assertion* token, const vector<const char*>* attributes) const
+void SimpleResolverImpl::query(ResolutionContext& ctx, const NameIdentifier& nameid, const vector<const char*>* attributes) const
 {
-    if (!m_allowQuery)
-        return;
-
 #ifdef _DEBUG
     xmltooling::NDC ndc("query");
 #endif
@@ -469,12 +457,15 @@ void SimpleResolverImpl::query(ResolutionContext& ctx, const opensaml::saml1::As
         log.debug("no issuer information available, skipping query");
         return;
     }
-    const AttributeAuthorityDescriptor* AA =
-        entity->getAttributeAuthorityDescriptor(
-            token->getMinorVersion().second==1 ? samlconstants::SAML11_PROTOCOL_ENUM : samlconstants::SAML10_PROTOCOL_ENUM
-            );
+
+    int version = 1;
+    const AttributeAuthorityDescriptor* AA = entity->getAttributeAuthorityDescriptor(samlconstants::SAML11_PROTOCOL_ENUM);
     if (!AA) {
-        log.debug("no SAML 1.%d AttributeAuthority role found in metadata", token->getMinorVersion().second);
+        AA = entity->getAttributeAuthorityDescriptor(samlconstants::SAML10_PROTOCOL_ENUM);
+        version = 0;
+    }
+    if (!AA) {
+        log.info("no SAML 1.x AttributeAuthority role found in metadata");
         return;
     }
 
@@ -491,13 +482,13 @@ void SimpleResolverImpl::query(ResolutionContext& ctx, const opensaml::saml1::As
             auto_ptr_char loc((*ep)->getLocation());
             auto_ptr_XMLCh issuer(ctx.getApplication().getString("providerId").second);
             opensaml::saml1::Subject* subject = opensaml::saml1::SubjectBuilder::buildSubject();
-            subject->setNameIdentifier(token->getAuthenticationStatements().front()->getSubject()->getNameIdentifier()->cloneNameIdentifier());
+            subject->setNameIdentifier(nameid.cloneNameIdentifier());
             opensaml::saml1p::AttributeQuery* query = opensaml::saml1p::AttributeQueryBuilder::buildAttributeQuery();
             query->setSubject(subject);
             Request* request = RequestBuilder::buildRequest();
             request->setAttributeQuery(query);
             query->setResource(issuer.get());
-            request->setMinorVersion(token->getMinorVersion().second);
+            request->setMinorVersion(version);
             SAML1SOAPClient client(soaper);
             client.sendSAML(request, *AA, loc.get());
             response = client.receiveSAML();
@@ -553,11 +544,8 @@ void SimpleResolverImpl::query(ResolutionContext& ctx, const opensaml::saml1::As
     }
 }
 
-void SimpleResolverImpl::query(ResolutionContext& ctx, const opensaml::saml2::Assertion* token, const vector<const char*>* attributes) const
+void SimpleResolverImpl::query(ResolutionContext& ctx, const NameID& nameid, const vector<const char*>* attributes) const
 {
-    if (!m_allowQuery)
-        return;
-
 #ifdef _DEBUG
     xmltooling::NDC ndc("query");
 #endif
@@ -570,7 +558,7 @@ void SimpleResolverImpl::query(ResolutionContext& ctx, const opensaml::saml2::As
     }
     const AttributeAuthorityDescriptor* AA = entity->getAttributeAuthorityDescriptor(samlconstants::SAML20P_NS);
     if (!AA) {
-        log.debug("no SAML 2 AttributeAuthority role found in metadata");
+        log.info("no SAML 2 AttributeAuthority role found in metadata");
         return;
     }
 
@@ -587,7 +575,7 @@ void SimpleResolverImpl::query(ResolutionContext& ctx, const opensaml::saml2::As
             auto_ptr_char loc((*ep)->getLocation());
             auto_ptr_XMLCh issuer(ctx.getApplication().getString("providerId").second);
             opensaml::saml2::Subject* subject = opensaml::saml2::SubjectBuilder::buildSubject();
-            subject->setNameID(token->getSubject()->getNameID()->cloneNameID());
+            subject->setNameID(nameid.cloneNameID());
             opensaml::saml2p::AttributeQuery* query = opensaml::saml2p::AttributeQueryBuilder::buildAttributeQuery();
             query->setSubject(subject);
             Issuer* iss = IssuerBuilder::buildIssuer();
@@ -661,32 +649,38 @@ void SimpleResolver::resolveAttributes(ResolutionContext& ctx, const vector<cons
 #endif
     Category& log=Category::getInstance(SHIBSP_LOGCAT".AttributeResolver");
     
-    log.debug("examining incoming SSO token");
+    log.debug("examining tokens to resolve");
 
-    const opensaml::RootObject* token = ctx.getSSOToken();
-    if (!token) {
-        log.warn("no SSO token supplied to resolver, returning nothing");
-        return;
-    }
-    const opensaml::saml2::Assertion* token2 = dynamic_cast<const opensaml::saml2::Assertion*>(token);
-    if (token2) {
-        if (!token2->getAttributeStatements().empty()) {
-            log.debug("found SAML 2 SSO token with an AttributeStatement");
-            return m_impl->resolve(ctx, token2, attributes);
+    bool query = m_impl->m_allowQuery;
+    const opensaml::saml1::Assertion* token1;
+    const opensaml::saml2::Assertion* token2;
+    if (ctx.getTokens()) {
+        for (vector<const opensaml::RootObject*>::const_iterator t = ctx.getTokens()->begin(); t!=ctx.getTokens()->end(); ++t) {
+            token2 = dynamic_cast<const opensaml::saml2::Assertion*>(*t);
+            if (token2 && !token2->getAttributeStatements().empty()) {
+                log.debug("resolving SAML 2 token with an AttributeStatement");
+                m_impl->resolve(ctx, token2, attributes);
+                query = false;
+            }
+            else {
+                token1 = dynamic_cast<const opensaml::saml1::Assertion*>(*t);
+                if (token1 && !token1->getAttributeStatements().empty()) {
+                    log.debug("resolving SAML 1 token with an AttributeStatement");
+                    m_impl->resolve(ctx, token1, attributes);
+                    query = false;
+                }
+            }
         }
-        return m_impl->query(ctx, token2, attributes);
     }
 
-    const opensaml::saml1::Assertion* token1 = dynamic_cast<const opensaml::saml1::Assertion*>(token);
-    if (token1) {
-        if (!token1->getAttributeStatements().empty()) {
-            log.debug("found SAML 1 SSO token with an AttributeStatement");
-            return m_impl->resolve(ctx, token1, attributes);
+    if (query) {
+        if (token1 && !token1->getAuthenticationStatements().empty()) {
+            log.debug("attempting SAML 1.x attribute query");
+            return m_impl->query(ctx, *(token1->getAuthenticationStatements().front()->getSubject()->getNameIdentifier()), attributes);
         }
-        return m_impl->query(ctx, token1, attributes);
+        log.debug("attempting SAML 2.0 attribute query");
+        m_impl->query(ctx, ctx.getNameID(), attributes);
     }
-
-    log.warn("unrecognized token type, returning nothing");
 }
 
 pair<bool,DOMElement*> SimpleResolver::load()

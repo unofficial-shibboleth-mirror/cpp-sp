@@ -62,7 +62,7 @@ namespace shibsp {
          * @param client_addr       network address of client
          * @param issuer            issuing metadata of assertion issuer, if known
          * @param nameid            principal identifier, normalized to SAML 2
-         * @param ssoToken          SSO assertion initiating the session, if any
+         * @param tokens            assertions initiating the session, if any
          * @return  newly created ResolutionContext, owned by caller
          */
         virtual ResolutionContext* createResolutionContext(
@@ -70,7 +70,7 @@ namespace shibsp {
             const char* client_addr,
             const opensaml::saml2md::EntityDescriptor* issuer,
             const opensaml::saml2::NameID& nameid,
-            const opensaml::RootObject* ssoToken=NULL
+            const std::vector<const opensaml::RootObject*>* tokens=NULL
             ) const=0;
 
         /**

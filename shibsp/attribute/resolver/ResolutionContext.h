@@ -75,11 +75,11 @@ namespace shibsp {
         virtual const opensaml::saml2::NameID& getNameID() const=0;
 
         /**
-         * Returns the SSO token associated with the subject, if any.
+         * Returns unresolved tokens associated with the subject, if any.
          * 
-         * @return the SSO token, or NULL
+         * @return pointer to an array of tokens, or NULL
          */
-        virtual const opensaml::RootObject* getSSOToken() const=0;
+        virtual const std::vector<const opensaml::RootObject*>* getTokens() const=0;
         
         /**
          * Returns the active session associated with the subject, if any.
