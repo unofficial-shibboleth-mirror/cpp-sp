@@ -180,7 +180,7 @@ namespace shibsp {
          * @param session_index     index of session between principal and IdP
          * @param authncontext_class    method/category of authentication event
          * @param authncontext_decl specifics of authentication event 
-         * @param ssoToken          SSO assertion initiating the session, if any
+         * @param tokens            assertions to cache with session, if any
          * @param attributes        optional set of resolved Attributes to cache with session
          * @return  newly created session's key
          */
@@ -194,7 +194,7 @@ namespace shibsp {
             const char* session_index=NULL,
             const char* authncontext_class=NULL,
             const char* authncontext_decl=NULL,
-            const opensaml::RootObject* ssoToken=NULL,
+            const std::vector<const opensaml::RootObject*>* tokens=NULL,
             const std::vector<Attribute*>* attributes=NULL
             )=0;
 

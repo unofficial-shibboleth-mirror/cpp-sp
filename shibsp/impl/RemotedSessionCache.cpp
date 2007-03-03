@@ -173,7 +173,7 @@ namespace shibsp {
             const char* session_index=NULL,
             const char* authncontext_class=NULL,
             const char* authncontext_decl=NULL,
-            const RootObject* ssoToken=NULL,
+            const vector<const RootObject*>* tokens=NULL,
             const vector<Attribute*>* attributes=NULL
             );
         Session* find(const char* key, const Application& application, const char* client_addr=NULL, time_t timeout=0);
@@ -227,7 +227,7 @@ const RootObject* RemotedSession::getAssertion(const char* id) const
         return i->second;
 
     // Fetch from remoted cache.
-    DDF in("getAssertion::"REMOTED_SESSION_CACHE);
+    DDF in("getAssertion::"REMOTED_SESSION_CACHE"::SessionCache");
     DDFJanitor jin(in);
     in.structure();
     in.addmember("key").string(m_obj.name());
@@ -288,7 +288,7 @@ void RemotedSession::validate(const Application& application, const char* client
     if (local)
         return;
     
-    DDF in("touch::"REMOTED_SESSION_CACHE), out;
+    DDF in("touch::"REMOTED_SESSION_CACHE"::SessionCache"), out;
     DDFJanitor jin(in);
     in.structure();
     in.addmember("key").string(m_obj.name());
@@ -359,11 +359,11 @@ string RemotedCache::insert(
     const char* session_index,
     const char* authncontext_class,
     const char* authncontext_decl,
-    const RootObject* ssoToken,
+    const vector<const RootObject*>* tokens,
     const vector<Attribute*>* attributes
     )
 {
-    DDF in("insert::"REMOTED_SESSION_CACHE);
+    DDF in("insert::"REMOTED_SESSION_CACHE"::SessionCache");
     DDFJanitor jin(in);
     in.structure();
     if (expires) {
@@ -396,13 +396,18 @@ string RemotedCache::insert(
     namestr << nameid;
     in.addmember("nameid").string(namestr.str().c_str());
 
-    if (ssoToken) {
-        ostringstream tstr;
-        tstr << *ssoToken;
-        auto_ptr_char tokenid(ssoToken->getID());
-        DDF tokid = DDF(NULL).string(tokenid.get());
-        in.addmember("assertions").list().add(tokid);
-        in.addmember("token").string(tstr.str().c_str());
+    if (tokens) {
+        in.addmember("assertions").list();
+        in.addmember("tokens").list();
+        for (vector<const RootObject*>::const_iterator t = tokens->begin(); t!=tokens->end(); ++t) {
+            ostringstream tokenstr;
+            tokenstr << *(*t);
+            auto_ptr_char tokenid((*t)->getID());
+            DDF tokid = DDF(NULL).string(tokenid.get());
+            in["assertions"].add(tokid);
+            DDF tok = DDF(tokenid.get()).string(tokenstr.str().c_str());
+            in["tokens"].add(tok);
+        }
     }
     
     if (attributes) {
@@ -468,7 +473,7 @@ Session* RemotedCache::find(const char* key, const Application& application, con
         m_lock->unlock();
         m_log.debug("session not found locally, searching remote cache");
 
-        DDF in("find::"REMOTED_SESSION_CACHE), out;
+        DDF in("find::"REMOTED_SESSION_CACHE"::SessionCache"), out;
         DDFJanitor jin(in);
         in.structure();
         in.addmember("key").string(key);
@@ -553,7 +558,7 @@ void RemotedCache::remove(const char* key, const Application& application, const
     dormant(key);
     
     // Now remote...
-    DDF in("remove::"REMOTED_SESSION_CACHE);
+    DDF in("remove::"REMOTED_SESSION_CACHE"::SessionCache");
     DDFJanitor jin(in);
     in.structure();
     in.addmember("key").string(key);

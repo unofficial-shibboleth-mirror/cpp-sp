@@ -138,7 +138,7 @@ namespace shibsp {
     {
     public:
         SSCache(const DOMElement* e);
-        ~SSCache() {}
+        ~SSCache();
     
         void receive(DDF& in, ostream& out);
         
@@ -152,7 +152,7 @@ namespace shibsp {
             const char* session_index=NULL,
             const char* authncontext_class=NULL,
             const char* authncontext_decl=NULL,
-            const RootObject* ssoToken=NULL,
+            const vector<const RootObject*>* tokens=NULL,
             const vector<Attribute*>* attributes=NULL
             );
         Session* find(const char* key, const Application& application, const char* client_addr=NULL, time_t timeout=0);
@@ -421,12 +421,27 @@ SSCache::SSCache(const DOMElement* e)
 
     ListenerService* listener=conf.getServiceProvider()->getListenerService(false);
     if (listener && conf.isEnabled(SPConfig::OutOfProcess)) {
-        listener->regListener("insert::"REMOTED_SESSION_CACHE,this);
-        listener->regListener("find::"REMOTED_SESSION_CACHE,this);
-        listener->regListener("remove::"REMOTED_SESSION_CACHE,this);
+        listener->regListener("insert::"REMOTED_SESSION_CACHE"::SessionCache",this);
+        listener->regListener("find::"REMOTED_SESSION_CACHE"::SessionCache",this);
+        listener->regListener("remove::"REMOTED_SESSION_CACHE"::SessionCache",this);
+        listener->regListener("touch::"REMOTED_SESSION_CACHE"::SessionCache",this);
+        listener->regListener("getAssertion::"REMOTED_SESSION_CACHE"::SessionCache",this);
     }
     else {
-        m_log.info("no ListenerService available, cache remoting is disabled");
+        m_log.info("no ListenerService available, cache remoting disabled");
+    }
+}
+
+SSCache::~SSCache()
+{
+    SPConfig& conf = SPConfig::getConfig();
+    ListenerService* listener=conf.getServiceProvider()->getListenerService(false);
+    if (listener && conf.isEnabled(SPConfig::OutOfProcess)) {
+        listener->unregListener("insert::"REMOTED_SESSION_CACHE"::SessionCache",this);
+        listener->unregListener("find::"REMOTED_SESSION_CACHE"::SessionCache",this);
+        listener->unregListener("remove::"REMOTED_SESSION_CACHE"::SessionCache",this);
+        listener->unregListener("touch::"REMOTED_SESSION_CACHE"::SessionCache",this);
+        listener->unregListener("getAssertion::"REMOTED_SESSION_CACHE"::SessionCache",this);
     }
 }
 
@@ -440,7 +455,7 @@ string SSCache::insert(
     const char* session_index,
     const char* authncontext_class,
     const char* authncontext_decl,
-    const RootObject* ssoToken,
+    const vector<const RootObject*>* tokens,
     const vector<Attribute*>* attributes
     )
 {
@@ -486,14 +501,13 @@ string SSCache::insert(
     namestr << nameid;
     obj.addmember("nameid").string(namestr.str().c_str());
     
-    string tokenstr;
-    if (ssoToken) {
-        ostringstream tstr;
-        tstr << *ssoToken;
-        tokenstr = tstr.str();
-        auto_ptr_char tokenid(ssoToken->getID());
-        DDF tokid = DDF(NULL).string(tokenid.get());
-        obj.addmember("assertions").list().add(tokid);
+    if (tokens) {
+        obj.addmember("assertions").list();
+        for (vector<const RootObject*>::const_iterator t = tokens->begin(); t!=tokens->end(); ++t) {
+            auto_ptr_char tokenid((*t)->getID());
+            DDF tokid = DDF(NULL).string(tokenid.get());
+            obj["assertions"].add(tokid);
+        }
     }
     
     if (attributes) {
@@ -511,9 +525,14 @@ string SSCache::insert(
     m_log.debug("storing new session...");
     time_t now = time(NULL);
     m_storage->createText(key.get(), "session", record.str().c_str(), now + m_cacheTimeout);
-    if (ssoToken) {
+    if (tokens) {
         try {
-            m_storage->createText(key.get(), obj["assertions"].first().string(), tokenstr.c_str(), now + m_cacheTimeout);
+            for (vector<const RootObject*>::const_iterator t = tokens->begin(); t!=tokens->end(); ++t) {
+                ostringstream tokenstr;
+                tokenstr << *(*t);
+                auto_ptr_char tokenid((*t)->getID());
+                m_storage->createText(key.get(), tokenid.get(), tokenstr.str().c_str(), now + m_cacheTimeout);
+            }
         }
         catch (exception& ex) {
             m_log.error("error storing assertion along with session: %s", ex.what());
@@ -675,21 +694,25 @@ void SSCache::receive(DDF& in, ostream& out)
     xmltooling::NDC ndc("receive");
 #endif
 
-    if (!strcmp(in.name(),"insert::"REMOTED_SESSION_CACHE)) {
+    if (!strcmp(in.name(),"insert::"REMOTED_SESSION_CACHE"::SessionCache")) {
         auto_ptr_char key(SAMLConfig::getConfig().generateIdentifier());
         in.name(key.get());
 
-        DDF token = in["token"].remove();
-        DDFJanitor tjan(token);
+        DDF tokens = in["tokens"].remove();
+        DDFJanitor tjan(tokens);
         
         m_log.debug("storing new session...");
         ostringstream record;
         record << in;
         time_t now = time(NULL);
         m_storage->createText(key.get(), "session", record.str().c_str(), now + m_cacheTimeout);
-        if (token.isstring()) {
+        if (tokens.islist()) {
             try {
-                m_storage->createText(key.get(), in["assertions"].first().string(), token.string(), now + m_cacheTimeout);
+                DDF token = tokens.first();
+                while (token.isstring()) {
+                    m_storage->createText(key.get(), token.name(), token.string(), now + m_cacheTimeout);
+                    token = tokens.next();
+                }
             }
             catch (IOException& ex) {
                 m_log.error("error storing assertion along with session: %s", ex.what());
@@ -703,7 +726,7 @@ void SSCache::receive(DDF& in, ostream& out)
         ret.addmember("key").string(key.get());
         out << ret;
     }
-    else if (!strcmp(in.name(),"find::"REMOTED_SESSION_CACHE)) {
+    else if (!strcmp(in.name(),"find::"REMOTED_SESSION_CACHE"::SessionCache")) {
         const char* key=in["key"].string();
         if (!key)
             throw ListenerException("Required parameters missing for session removal.");
@@ -748,7 +771,7 @@ void SSCache::receive(DDF& in, ostream& out)
         // Send the record back.
         out << record;
     }
-    else if (!strcmp(in.name(),"touch::"REMOTED_SESSION_CACHE)) {
+    else if (!strcmp(in.name(),"touch::"REMOTED_SESSION_CACHE"::SessionCache")) {
         const char* key=in["key"].string();
         if (!key)
             throw ListenerException("Required parameters missing for session check.");
@@ -799,7 +822,7 @@ void SSCache::receive(DDF& in, ostream& out)
             out << ret;
         }
     }
-    else if (!strcmp(in.name(),"remove::"REMOTED_SESSION_CACHE)) {
+    else if (!strcmp(in.name(),"remove::"REMOTED_SESSION_CACHE"::SessionCache")) {
         const char* key=in["key"].string();
         if (!key)
             throw ListenerException("Required parameter missing for session removal.");
@@ -809,7 +832,7 @@ void SSCache::receive(DDF& in, ostream& out)
         DDFJanitor jan(ret);
         out << ret;
     }
-    else if (!strcmp(in.name(),"getAssertion::"REMOTED_SESSION_CACHE)) {
+    else if (!strcmp(in.name(),"getAssertion::"REMOTED_SESSION_CACHE"::SessionCache")) {
         const char* key=in["key"].string();
         const char* id=in["id"].string();
         if (!key || !id)
