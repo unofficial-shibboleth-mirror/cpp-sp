@@ -25,7 +25,7 @@
 
 #include <shibsp/base.h>
 
-#include <saml/saml1/core/Assertions.h>
+#include <saml/Assertion.h>
 #include <saml/saml2/metadata/Metadata.h>
 #include <xmltooling/Lockable.h>
 
@@ -70,7 +70,7 @@ namespace shibsp {
             const char* client_addr,
             const opensaml::saml2md::EntityDescriptor* issuer,
             const opensaml::saml2::NameID& nameid,
-            const std::vector<const opensaml::RootObject*>* tokens=NULL
+            const std::vector<const opensaml::Assertion*>* tokens=NULL
             ) const=0;
 
         /**

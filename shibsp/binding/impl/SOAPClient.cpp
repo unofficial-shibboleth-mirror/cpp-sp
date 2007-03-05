@@ -60,6 +60,9 @@ SOAPClient::SOAPClient(const Application& application, opensaml::SecurityPolicy&
         policy.addRule(*rule);
     policy.setMetadataProvider(application.getMetadataProvider());
     policy.setTrustEngine(application.getTrustEngine());
+    pair<bool,bool> validate = m_settings->getBool("validate");
+    policy.setValidating(validate.first && validate.second);
+    setValidating(validate.first && validate.second);
 }
 
 void SOAPClient::send(const soap11::Envelope& env, const KeyInfoSource& peer, const char* endpoint)

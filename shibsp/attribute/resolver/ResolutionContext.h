@@ -25,7 +25,7 @@
 
 #include <shibsp/base.h>
 
-#include <saml/saml1/core/Assertions.h>
+#include <saml/Assertion.h>
 #include <saml/saml2/metadata/Metadata.h>
 
 namespace shibsp {
@@ -79,7 +79,7 @@ namespace shibsp {
          * 
          * @return pointer to an array of tokens, or NULL
          */
-        virtual const std::vector<const opensaml::RootObject*>* getTokens() const=0;
+        virtual const std::vector<const opensaml::Assertion*>* getTokens() const=0;
         
         /**
          * Returns the active session associated with the subject, if any.
@@ -108,7 +108,7 @@ namespace shibsp {
          * 
          * @return  a mutable array of Assertions
          */
-        virtual std::vector<opensaml::RootObject*>& getResolvedAssertions()=0;
+        virtual std::vector<opensaml::Assertion*>& getResolvedAssertions()=0;
     };
 };
 

@@ -70,7 +70,7 @@ namespace shibsp {
             const char* client_addr,
             const EntityDescriptor* issuer,
             const NameID& nameid,
-            const vector<const opensaml::RootObject*>* tokens=NULL
+            const vector<const opensaml::Assertion*>* tokens=NULL
             ) : m_app(application), m_session(NULL), m_client_addr(client_addr), m_entity(issuer), m_nameid(nameid), m_tokens(tokens) {
         }
         
@@ -78,7 +78,7 @@ namespace shibsp {
             if (m_metadata)
                 m_metadata->unlock();
             for_each(m_attributes.begin(), m_attributes.end(), xmltooling::cleanup<shibsp::Attribute>());
-            for_each(m_assertions.begin(), m_assertions.end(), xmltooling::cleanup<opensaml::RootObject>());
+            for_each(m_assertions.begin(), m_assertions.end(), xmltooling::cleanup<opensaml::Assertion>());
         }
     
         const Application& getApplication() const {
@@ -102,7 +102,7 @@ namespace shibsp {
         const NameID& getNameID() const {
             return m_nameid;
         }
-        const vector<const opensaml::RootObject*>* getTokens() const {
+        const vector<const opensaml::Assertion*>* getTokens() const {
             return m_tokens;
         }
         const Session* getSession() const {
@@ -111,7 +111,7 @@ namespace shibsp {
         vector<shibsp::Attribute*>& getResolvedAttributes() {
             return m_attributes;
         }
-        vector<opensaml::RootObject*>& getResolvedAssertions() {
+        vector<opensaml::Assertion*>& getResolvedAssertions() {
             return m_assertions;
         }
 
@@ -122,9 +122,9 @@ namespace shibsp {
         mutable MetadataProvider* m_metadata;
         mutable const EntityDescriptor* m_entity;
         const NameID& m_nameid;
-        const vector<const opensaml::RootObject*>* m_tokens;
+        const vector<const opensaml::Assertion*>* m_tokens;
         vector<shibsp::Attribute*> m_attributes;
-        vector<opensaml::RootObject*> m_assertions;
+        vector<opensaml::Assertion*> m_assertions;
     };
     
 #if defined (_MSC_VER)
@@ -153,10 +153,10 @@ namespace shibsp {
             ResolutionContext& ctx, const NameID& nameid, const vector<const char*>* attributes=NULL
             ) const;
         void resolve(
-            ResolutionContext& ctx, const opensaml::saml1::Assertion* token, const vector<const char*>* attributes=NULL
+            ResolutionContext& ctx, const saml1::Assertion* token, const vector<const char*>* attributes=NULL
             ) const;
         void resolve(
-            ResolutionContext& ctx, const opensaml::saml2::Assertion* token, const vector<const char*>* attributes=NULL
+            ResolutionContext& ctx, const saml2::Assertion* token, const vector<const char*>* attributes=NULL
             ) const;
 
         bool m_allowQuery;
@@ -185,7 +185,7 @@ namespace shibsp {
             const char* client_addr,
             const EntityDescriptor* issuer,
             const NameID& nameid,
-            const vector<const opensaml::RootObject*>* tokens=NULL
+            const vector<const opensaml::Assertion*>* tokens=NULL
             ) const {
             return new SimpleContext(application,client_addr,issuer,nameid,tokens);
         }
@@ -255,29 +255,29 @@ SimpleResolverImpl::SimpleResolverImpl(const DOMElement* e) : m_document(NULL), 
         child = XMLHelper::getNextSiblingElement(child, SIMPLE_NS, _AttributeDecoder);
     }
     
-    child = XMLHelper::getFirstChildElement(e, samlconstants::SAML20_NS, opensaml::saml2::Attribute::LOCAL_NAME);
+    child = XMLHelper::getFirstChildElement(e, samlconstants::SAML20_NS, saml2::Attribute::LOCAL_NAME);
     while (child) {
         // Check for missing Name.
-        const XMLCh* name = child->getAttributeNS(NULL, opensaml::saml2::Attribute::NAME_ATTRIB_NAME);
+        const XMLCh* name = child->getAttributeNS(NULL, saml2::Attribute::NAME_ATTRIB_NAME);
         if (!name || !*name) {
             log.warn("skipping saml:Attribute declared with no Name");
-            child = XMLHelper::getNextSiblingElement(child, samlconstants::SAML20_NS, opensaml::saml2::Attribute::LOCAL_NAME);
+            child = XMLHelper::getNextSiblingElement(child, samlconstants::SAML20_NS, saml2::Attribute::LOCAL_NAME);
             continue;
         }
 
         const AttributeDecoder* decoder=NULL;
-        auto_ptr_char id(child->getAttributeNS(NULL, opensaml::saml2::Attribute::FRIENDLYNAME_ATTRIB_NAME));
+        auto_ptr_char id(child->getAttributeNS(NULL, saml2::Attribute::FRIENDLYNAME_ATTRIB_NAME));
         auto_ptr_char d(child->getAttributeNS(SIMPLE_NS, decoderId));
         if (!id.get() || !*id.get() || !d.get() || !*d.get() || !(decoder=m_decoderMap[d.get()])) {
             log.warn("skipping saml:Attribute declared with no FriendlyName or resolvable AttributeDecoder");
-            child = XMLHelper::getNextSiblingElement(child, samlconstants::SAML20_NS, opensaml::saml2::Attribute::LOCAL_NAME);
+            child = XMLHelper::getNextSiblingElement(child, samlconstants::SAML20_NS, saml2::Attribute::LOCAL_NAME);
             continue;
         }
         
         // Empty NameFormat implies the usual Shib URI naming defaults.
-        const XMLCh* format = child->getAttributeNS(NULL, opensaml::saml2::Attribute::NAMEFORMAT_ATTRIB_NAME);
+        const XMLCh* format = child->getAttributeNS(NULL, saml2::Attribute::NAMEFORMAT_ATTRIB_NAME);
         if (!format || XMLString::equals(format, shibspconstants::SHIB1_ATTRIBUTE_NAMESPACE_URI) ||
-                XMLString::equals(format, opensaml::saml2::Attribute::URI_REFERENCE))
+                XMLString::equals(format, saml2::Attribute::URI_REFERENCE))
             format = &chNull;  // ignore default Format/Namespace values
 
         // Fetch/create the map entry and see if it's a duplicate rule.
@@ -290,7 +290,7 @@ SimpleResolverImpl::SimpleResolverImpl(const DOMElement* e) : m_document(NULL), 
 #endif
         if (decl.first) {
             log.warn("skipping duplicate saml:Attribute declaration (same Name and NameFormat)");
-            child = XMLHelper::getNextSiblingElement(child, samlconstants::SAML20_NS, opensaml::saml2::Attribute::LOCAL_NAME);
+            child = XMLHelper::getNextSiblingElement(child, samlconstants::SAML20_NS, saml2::Attribute::LOCAL_NAME);
             continue;
         }
 
@@ -305,12 +305,12 @@ SimpleResolverImpl::SimpleResolverImpl(const DOMElement* e) : m_document(NULL), 
         decl.first = decoder;
         decl.second = id.get();
         
-        child = XMLHelper::getNextSiblingElement(child, samlconstants::SAML20_NS, opensaml::saml2::Attribute::LOCAL_NAME);
+        child = XMLHelper::getNextSiblingElement(child, samlconstants::SAML20_NS, saml2::Attribute::LOCAL_NAME);
     }
 }
 
 void SimpleResolverImpl::resolve(
-    ResolutionContext& ctx, const opensaml::saml1::Assertion* token, const vector<const char*>* attributes
+    ResolutionContext& ctx, const saml1::Assertion* token, const vector<const char*>* attributes
     ) const
 {
     set<string> aset;
@@ -350,10 +350,10 @@ void SimpleResolverImpl::resolve(
         }
     }
 
-    const vector<opensaml::saml1::AttributeStatement*>& statements = token->getAttributeStatements();
-    for (vector<opensaml::saml1::AttributeStatement*>::const_iterator s = statements.begin(); s!=statements.end(); ++s) {
-        const vector<opensaml::saml1::Attribute*>& attrs = const_cast<const opensaml::saml1::AttributeStatement*>(*s)->getAttributes();
-        for (vector<opensaml::saml1::Attribute*>::const_iterator a = attrs.begin(); a!=attrs.end(); ++a) {
+    const vector<saml1::AttributeStatement*>& statements = token->getAttributeStatements();
+    for (vector<saml1::AttributeStatement*>::const_iterator s = statements.begin(); s!=statements.end(); ++s) {
+        const vector<saml1::Attribute*>& attrs = const_cast<const saml1::AttributeStatement*>(*s)->getAttributes();
+        for (vector<saml1::Attribute*>::const_iterator a = attrs.begin(); a!=attrs.end(); ++a) {
             name = (*a)->getAttributeName();
             format = (*a)->getAttributeNamespace();
             if (!name || !*name)
@@ -378,7 +378,7 @@ void SimpleResolverImpl::resolve(
 }
 
 void SimpleResolverImpl::resolve(
-    ResolutionContext& ctx, const opensaml::saml2::Assertion* token, const vector<const char*>* attributes
+    ResolutionContext& ctx, const saml2::Assertion* token, const vector<const char*>* attributes
     ) const
 {
     set<string> aset;
@@ -418,10 +418,10 @@ void SimpleResolverImpl::resolve(
         }
     }
 
-    const vector<opensaml::saml2::AttributeStatement*>& statements = token->getAttributeStatements();
-    for (vector<opensaml::saml2::AttributeStatement*>::const_iterator s = statements.begin(); s!=statements.end(); ++s) {
-        const vector<opensaml::saml2::Attribute*>& attrs = const_cast<const opensaml::saml2::AttributeStatement*>(*s)->getAttributes();
-        for (vector<opensaml::saml2::Attribute*>::const_iterator a = attrs.begin(); a!=attrs.end(); ++a) {
+    const vector<saml2::AttributeStatement*>& statements = token->getAttributeStatements();
+    for (vector<saml2::AttributeStatement*>::const_iterator s = statements.begin(); s!=statements.end(); ++s) {
+        const vector<saml2::Attribute*>& attrs = const_cast<const saml2::AttributeStatement*>(*s)->getAttributes();
+        for (vector<saml2::Attribute*>::const_iterator a = attrs.begin(); a!=attrs.end(); ++a) {
             name = (*a)->getName();
             format = (*a)->getNameFormat();
             if (!name || !*name)
@@ -473,7 +473,7 @@ void SimpleResolverImpl::query(ResolutionContext& ctx, const NameIdentifier& nam
     shibsp::SOAPClient soaper(ctx.getApplication(),policy);
 
     auto_ptr_XMLCh binding(samlconstants::SAML1_BINDING_SOAP);
-    opensaml::saml1p::Response* response=NULL;
+    saml1p::Response* response=NULL;
     const vector<AttributeService*>& endpoints=AA->getAttributeServices();
     for (vector<AttributeService*>::const_iterator ep=endpoints.begin(); !response && ep!=endpoints.end(); ++ep) {
         try {
@@ -481,9 +481,9 @@ void SimpleResolverImpl::query(ResolutionContext& ctx, const NameIdentifier& nam
                 continue;
             auto_ptr_char loc((*ep)->getLocation());
             auto_ptr_XMLCh issuer(ctx.getApplication().getString("providerId").second);
-            opensaml::saml1::Subject* subject = opensaml::saml1::SubjectBuilder::buildSubject();
+            saml1::Subject* subject = saml1::SubjectBuilder::buildSubject();
             subject->setNameIdentifier(nameid.cloneNameIdentifier());
-            opensaml::saml1p::AttributeQuery* query = opensaml::saml1p::AttributeQueryBuilder::buildAttributeQuery();
+            saml1p::AttributeQuery* query = saml1p::AttributeQueryBuilder::buildAttributeQuery();
             query->setSubject(subject);
             Request* request = RequestBuilder::buildRequest();
             request->setAttributeQuery(query);
@@ -506,10 +506,10 @@ void SimpleResolverImpl::query(ResolutionContext& ctx, const NameIdentifier& nam
 
     time_t now = time(NULL);
     const Validator* tokval = ctx.getApplication().getTokenValidator(now, AA);
-    const vector<opensaml::saml1::Assertion*>& assertions = const_cast<const opensaml::saml1p::Response*>(response)->getAssertions();
+    const vector<saml1::Assertion*>& assertions = const_cast<const saml1p::Response*>(response)->getAssertions();
     if (assertions.size()==1) {
-        auto_ptr<opensaml::saml1p::Response> wrapper(response);
-        opensaml::saml1::Assertion* newtoken = assertions.front();
+        auto_ptr<saml1p::Response> wrapper(response);
+        saml1::Assertion* newtoken = assertions.front();
         if (!XMLString::equals(policy.getIssuer() ? policy.getIssuer()->getName() : NULL, newtoken->getIssuer())) {
             log.error("assertion issued by someone other than AA, rejecting it");
             return;
@@ -526,8 +526,8 @@ void SimpleResolverImpl::query(ResolutionContext& ctx, const NameIdentifier& nam
         resolve(ctx, newtoken, attributes);
     }
     else {
-        auto_ptr<opensaml::saml1p::Response> wrapper(response);
-        for (vector<opensaml::saml1::Assertion*>::const_iterator a = assertions.begin(); a!=assertions.end(); ++a) {
+        auto_ptr<saml1p::Response> wrapper(response);
+        for (vector<saml1::Assertion*>::const_iterator a = assertions.begin(); a!=assertions.end(); ++a) {
             if (!XMLString::equals(policy.getIssuer() ? policy.getIssuer()->getName() : NULL, (*a)->getIssuer())) {
                 log.error("assertion issued by someone other than AA, rejecting it");
                 continue;
@@ -566,7 +566,7 @@ void SimpleResolverImpl::query(ResolutionContext& ctx, const NameID& nameid, con
     shibsp::SOAPClient soaper(ctx.getApplication(),policy);
 
     auto_ptr_XMLCh binding(samlconstants::SAML20_BINDING_SOAP);
-    opensaml::saml2p::StatusResponseType* srt=NULL;
+    saml2p::StatusResponseType* srt=NULL;
     const vector<AttributeService*>& endpoints=AA->getAttributeServices();
     for (vector<AttributeService*>::const_iterator ep=endpoints.begin(); !srt && ep!=endpoints.end(); ++ep) {
         try {
@@ -574,9 +574,9 @@ void SimpleResolverImpl::query(ResolutionContext& ctx, const NameID& nameid, con
                 continue;
             auto_ptr_char loc((*ep)->getLocation());
             auto_ptr_XMLCh issuer(ctx.getApplication().getString("providerId").second);
-            opensaml::saml2::Subject* subject = opensaml::saml2::SubjectBuilder::buildSubject();
+            saml2::Subject* subject = saml2::SubjectBuilder::buildSubject();
             subject->setNameID(nameid.cloneNameID());
-            opensaml::saml2p::AttributeQuery* query = opensaml::saml2p::AttributeQueryBuilder::buildAttributeQuery();
+            saml2p::AttributeQuery* query = saml2p::AttributeQueryBuilder::buildAttributeQuery();
             query->setSubject(subject);
             Issuer* iss = IssuerBuilder::buildIssuer();
             query->setIssuer(iss);
@@ -595,7 +595,7 @@ void SimpleResolverImpl::query(ResolutionContext& ctx, const NameID& nameid, con
         log.error("unable to successfully query for attributes");
         return;
     }
-    opensaml::saml2p::Response* response = dynamic_cast<opensaml::saml2p::Response*>(srt);
+    saml2p::Response* response = dynamic_cast<saml2p::Response*>(srt);
     if (!response) {
         delete srt;
         log.error("message was not a samlp:Response");
@@ -604,10 +604,10 @@ void SimpleResolverImpl::query(ResolutionContext& ctx, const NameID& nameid, con
 
     time_t now = time(NULL);
     const Validator* tokval = ctx.getApplication().getTokenValidator(now, AA);
-    const vector<opensaml::saml2::Assertion*>& assertions = const_cast<const opensaml::saml2p::Response*>(response)->getAssertions();
+    const vector<saml2::Assertion*>& assertions = const_cast<const saml2p::Response*>(response)->getAssertions();
     if (assertions.size()==1) {
-        auto_ptr<opensaml::saml2p::Response> wrapper(response);
-        opensaml::saml2::Assertion* newtoken = assertions.front();
+        auto_ptr<saml2p::Response> wrapper(response);
+        saml2::Assertion* newtoken = assertions.front();
         if (!XMLString::equals(policy.getIssuer() ? policy.getIssuer()->getName() : NULL, newtoken->getIssuer() ? newtoken->getIssuer()->getName() : NULL)) {
             log.error("assertion issued by someone other than AA, rejecting it");
             return;
@@ -624,8 +624,8 @@ void SimpleResolverImpl::query(ResolutionContext& ctx, const NameID& nameid, con
         resolve(ctx, newtoken, attributes);
     }
     else {
-        auto_ptr<opensaml::saml2p::Response> wrapper(response);
-        for (vector<opensaml::saml2::Assertion*>::const_iterator a = assertions.begin(); a!=assertions.end(); ++a) {
+        auto_ptr<saml2p::Response> wrapper(response);
+        for (vector<saml2::Assertion*>::const_iterator a = assertions.begin(); a!=assertions.end(); ++a) {
             if (!XMLString::equals(policy.getIssuer() ? policy.getIssuer()->getName() : NULL, (*a)->getIssuer() ? (*a)->getIssuer()->getName() : NULL)) {
                 log.error("assertion issued by someone other than AA, rejecting it");
                 return;
@@ -652,18 +652,18 @@ void SimpleResolver::resolveAttributes(ResolutionContext& ctx, const vector<cons
     log.debug("examining tokens to resolve");
 
     bool query = m_impl->m_allowQuery;
-    const opensaml::saml1::Assertion* token1;
-    const opensaml::saml2::Assertion* token2;
+    const saml1::Assertion* token1;
+    const saml2::Assertion* token2;
     if (ctx.getTokens()) {
-        for (vector<const opensaml::RootObject*>::const_iterator t = ctx.getTokens()->begin(); t!=ctx.getTokens()->end(); ++t) {
-            token2 = dynamic_cast<const opensaml::saml2::Assertion*>(*t);
+        for (vector<const opensaml::Assertion*>::const_iterator t = ctx.getTokens()->begin(); t!=ctx.getTokens()->end(); ++t) {
+            token2 = dynamic_cast<const saml2::Assertion*>(*t);
             if (token2 && !token2->getAttributeStatements().empty()) {
                 log.debug("resolving SAML 2 token with an AttributeStatement");
                 m_impl->resolve(ctx, token2, attributes);
                 query = false;
             }
             else {
-                token1 = dynamic_cast<const opensaml::saml1::Assertion*>(*t);
+                token1 = dynamic_cast<const saml1::Assertion*>(*t);
                 if (token1 && !token1->getAttributeStatements().empty()) {
                     log.debug("resolving SAML 1 token with an AttributeStatement");
                     m_impl->resolve(ctx, token1, attributes);

@@ -122,7 +122,7 @@ namespace {
         const vector<const XMLCh*>& getAudiences() const {
             return (m_audiences.empty() && m_base) ? m_base->getAudiences() : m_audiences;
         }
-        Validator* getTokenValidator(time_t ts=0, const opensaml::saml2md::RoleDescriptor* role=NULL) const {
+        Validator* getTokenValidator(time_t ts=0, const saml2md::RoleDescriptor* role=NULL) const {
             return new TokenValidator(*this, ts, role);
         }
 
@@ -365,10 +365,10 @@ void TokenValidator::validate(const XMLObject* xmlObject) const
 #endif
     Category& log=Category::getInstance(SHIBSP_LOGCAT".Application");
 
-    const opensaml::RootObject* root = NULL;
-    const opensaml::saml2::Assertion* token2 = dynamic_cast<const opensaml::saml2::Assertion*>(xmlObject);
+    const opensaml::Assertion* root = NULL;
+    const saml2::Assertion* token2 = dynamic_cast<const saml2::Assertion*>(xmlObject);
     if (token2) {
-        const opensaml::saml2::Conditions* conds = token2->getConditions();
+        const saml2::Conditions* conds = token2->getConditions();
         // First verify the time conditions, using the specified timestamp, if non-zero.
         if (m_ts>0 && conds) {
             unsigned int skew = XMLToolingConfig::getConfig().clock_skew_secs;
@@ -381,9 +381,9 @@ void TokenValidator::validate(const XMLObject* xmlObject) const
         }
 
         // Now we process conditions. Only audience restrictions at the moment.
-        const vector<opensaml::saml2::Condition*>& convec = conds->getConditions();
-        for (vector<opensaml::saml2::Condition*>::const_iterator c = convec.begin(); c!=convec.end(); ++c) {
-            const opensaml::saml2::AudienceRestriction* ac=dynamic_cast<const opensaml::saml2::AudienceRestriction*>(*c);
+        const vector<saml2::Condition*>& convec = conds->getConditions();
+        for (vector<saml2::Condition*>::const_iterator c = convec.begin(); c!=convec.end(); ++c) {
+            const saml2::AudienceRestriction* ac=dynamic_cast<const saml2::AudienceRestriction*>(*c);
             if (!ac) {
                 log.error("unrecognized Condition in assertion (%s)",
                     (*c)->getSchemaType() ? (*c)->getSchemaType()->toString().c_str() : (*c)->getElementQName().toString().c_str());
@@ -391,9 +391,9 @@ void TokenValidator::validate(const XMLObject* xmlObject) const
             }
 
             bool found = false;
-            const vector<opensaml::saml2::Audience*>& auds1 = ac->getAudiences();
+            const vector<saml2::Audience*>& auds1 = ac->getAudiences();
             const vector<const XMLCh*>& auds2 = m_app.getAudiences();
-            for (vector<opensaml::saml2::Audience*>::const_iterator a = auds1.begin(); !found && a!=auds1.end(); ++a) {
+            for (vector<saml2::Audience*>::const_iterator a = auds1.begin(); !found && a!=auds1.end(); ++a) {
                 for (vector<const XMLCh*>::const_iterator a2 = auds2.begin(); !found && a2!=auds2.end(); ++a2) {
                     found = XMLString::equals((*a)->getAudienceURI(), *a2);
                 }
@@ -410,9 +410,9 @@ void TokenValidator::validate(const XMLObject* xmlObject) const
         root = token2;
     }
     else {
-        const opensaml::saml1::Assertion* token1 = dynamic_cast<const opensaml::saml1::Assertion*>(xmlObject);
+        const saml1::Assertion* token1 = dynamic_cast<const saml1::Assertion*>(xmlObject);
         if (token1) {
-            const opensaml::saml1::Conditions* conds = token1->getConditions();
+            const saml1::Conditions* conds = token1->getConditions();
             // First verify the time conditions, using the specified timestamp, if non-zero.
             if (m_ts>0 && conds) {
                 unsigned int skew = XMLToolingConfig::getConfig().clock_skew_secs;
@@ -425,9 +425,9 @@ void TokenValidator::validate(const XMLObject* xmlObject) const
             }
 
             // Now we process conditions. Only audience restrictions at the moment.
-            const vector<opensaml::saml1::Condition*>& convec = conds->getConditions();
-            for (vector<opensaml::saml1::Condition*>::const_iterator c = convec.begin(); c!=convec.end(); ++c) {
-                const opensaml::saml1::AudienceRestrictionCondition* ac=dynamic_cast<const opensaml::saml1::AudienceRestrictionCondition*>(*c);
+            const vector<saml1::Condition*>& convec = conds->getConditions();
+            for (vector<saml1::Condition*>::const_iterator c = convec.begin(); c!=convec.end(); ++c) {
+                const saml1::AudienceRestrictionCondition* ac=dynamic_cast<const saml1::AudienceRestrictionCondition*>(*c);
                 if (!ac) {
                     log.error("unrecognized Condition in assertion (%s)",
                         (*c)->getSchemaType() ? (*c)->getSchemaType()->toString().c_str() : (*c)->getElementQName().toString().c_str());
@@ -435,9 +435,9 @@ void TokenValidator::validate(const XMLObject* xmlObject) const
                 }
 
                 bool found = false;
-                const vector<opensaml::saml1::Audience*>& auds1 = ac->getAudiences();
+                const vector<saml1::Audience*>& auds1 = ac->getAudiences();
                 const vector<const XMLCh*>& auds2 = m_app.getAudiences();
-                for (vector<opensaml::saml1::Audience*>::const_iterator a = auds1.begin(); !found && a!=auds1.end(); ++a) {
+                for (vector<saml1::Audience*>::const_iterator a = auds1.begin(); !found && a!=auds1.end(); ++a) {
                     for (vector<const XMLCh*>::const_iterator a2 = auds2.begin(); !found && a2!=auds2.end(); ++a2) {
                         found = XMLString::equals((*a)->getAudienceURI(), *a2);
                     }
@@ -666,7 +666,7 @@ XMLApplication::XMLApplication(
             while (child) {
                 DOMPropertySet* rp=new DOMPropertySet();
                 rp->load(child,log,this);
-                m_credMap[child->getAttributeNS(NULL,opensaml::saml2::Attribute::NAME_ATTRIB_NAME)]=rp;
+                m_credMap[child->getAttributeNS(NULL,saml2::Attribute::NAME_ATTRIB_NAME)]=rp;
                 child = XMLHelper::getNextSiblingElement(child,RelyingParty);
             }
         }
@@ -706,7 +706,7 @@ void XMLApplication::cleanup()
 
 short XMLApplication::acceptNode(const DOMNode* node) const
 {
-    if (XMLHelper::isNodeNamed(node,samlconstants::SAML20_NS,opensaml::saml2::Attribute::LOCAL_NAME))
+    if (XMLHelper::isNodeNamed(node,samlconstants::SAML20_NS,saml2::Attribute::LOCAL_NAME))
         return FILTER_REJECT;
     else if (XMLHelper::isNodeNamed(node,samlconstants::SAML20_NS,Audience::LOCAL_NAME))
         return FILTER_REJECT;

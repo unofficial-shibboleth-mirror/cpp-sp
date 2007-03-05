@@ -122,14 +122,14 @@ namespace shibsp {
          * @param id    identifier of the assertion to retrieve
          * @return pointer to assertion, or NULL
          */
-        virtual const opensaml::RootObject* getAssertion(const char* id) const=0;
+        virtual const opensaml::Assertion* getAssertion(const char* id) const=0;
         
         /**
          * Stores an assertion in the session.
          * 
          * @param assertion pointer to an assertion to cache (will be freed by cache)
          */
-        virtual void addAssertion(opensaml::RootObject* assertion)=0;        
+        virtual void addAssertion(opensaml::Assertion* assertion)=0;        
     };
     
     /**
@@ -194,7 +194,7 @@ namespace shibsp {
             const char* session_index=NULL,
             const char* authncontext_class=NULL,
             const char* authncontext_decl=NULL,
-            const std::vector<const opensaml::RootObject*>* tokens=NULL,
+            const std::vector<const opensaml::Assertion*>* tokens=NULL,
             const std::vector<Attribute*>* attributes=NULL
             )=0;
 

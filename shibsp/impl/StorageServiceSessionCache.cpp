@@ -120,8 +120,8 @@ namespace shibsp {
         }
         
         void addAttributes(const vector<Attribute*>& attributes);
-        const RootObject* getAssertion(const char* id) const;
-        void addAssertion(RootObject* assertion);
+        const Assertion* getAssertion(const char* id) const;
+        void addAssertion(Assertion* assertion);
 
     private:
         void unmarshallAttributes() const;
@@ -130,7 +130,7 @@ namespace shibsp {
         saml2::NameID* m_nameid;
         mutable map<string,const Attribute*> m_attributes;
         mutable vector<const char*> m_ids;
-        mutable map<string,RootObject*> m_tokens;
+        mutable map<string,Assertion*> m_tokens;
         SSCache* m_cache;
     };
     
@@ -152,7 +152,7 @@ namespace shibsp {
             const char* session_index=NULL,
             const char* authncontext_class=NULL,
             const char* authncontext_decl=NULL,
-            const vector<const RootObject*>* tokens=NULL,
+            const vector<const Assertion*>* tokens=NULL,
             const vector<Attribute*>* attributes=NULL
             );
         Session* find(const char* key, const Application& application, const char* client_addr=NULL, time_t timeout=0);
@@ -175,7 +175,7 @@ StoredSession::~StoredSession()
     m_obj.destroy();
     delete m_nameid;
     for_each(m_attributes.begin(), m_attributes.end(), cleanup_const_pair<string,Attribute>());
-    for_each(m_tokens.begin(), m_tokens.end(), cleanup_pair<string,RootObject>());
+    for_each(m_tokens.begin(), m_tokens.end(), cleanup_pair<string,Assertion>());
 }
 
 void StoredSession::unmarshallAttributes() const
@@ -288,9 +288,9 @@ void StoredSession::addAttributes(const vector<Attribute*>& attributes)
     for_each(attributes.begin(), attributes.end(), xmltooling::cleanup<Attribute>());
 }
 
-const RootObject* StoredSession::getAssertion(const char* id) const
+const Assertion* StoredSession::getAssertion(const char* id) const
 {
-    map<string,RootObject*>::const_iterator i = m_tokens.find(id);
+    map<string,Assertion*>::const_iterator i = m_tokens.find(id);
     if (i!=m_tokens.end())
         return i->second;
     
@@ -305,8 +305,8 @@ const RootObject* StoredSession::getAssertion(const char* id) const
     auto_ptr<XMLObject> xmlObject(XMLObjectBuilder::buildOneFromElement(doc->getDocumentElement(), true));
     janitor.release();
     
-    RootObject* token = dynamic_cast<RootObject*>(xmlObject.get());
-    if (!token || !token->isAssertion())
+    Assertion* token = dynamic_cast<Assertion*>(xmlObject.get());
+    if (!token)
         throw FatalProfileException("Request for cached assertion returned an unknown object type.");
 
     // Transfer ownership to us.
@@ -315,13 +315,13 @@ const RootObject* StoredSession::getAssertion(const char* id) const
     return token;
 }
 
-void StoredSession::addAssertion(RootObject* assertion)
+void StoredSession::addAssertion(Assertion* assertion)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("addAssertion");
 #endif
     
-    if (!assertion || !assertion->isAssertion())
+    if (!assertion)
         throw FatalProfileException("Unknown object type passed to session for storage.");
 
     auto_ptr_char id(assertion->getID());
@@ -455,7 +455,7 @@ string SSCache::insert(
     const char* session_index,
     const char* authncontext_class,
     const char* authncontext_decl,
-    const vector<const RootObject*>* tokens,
+    const vector<const Assertion*>* tokens,
     const vector<Attribute*>* attributes
     )
 {
@@ -503,7 +503,7 @@ string SSCache::insert(
     
     if (tokens) {
         obj.addmember("assertions").list();
-        for (vector<const RootObject*>::const_iterator t = tokens->begin(); t!=tokens->end(); ++t) {
+        for (vector<const Assertion*>::const_iterator t = tokens->begin(); t!=tokens->end(); ++t) {
             auto_ptr_char tokenid((*t)->getID());
             DDF tokid = DDF(NULL).string(tokenid.get());
             obj["assertions"].add(tokid);
@@ -527,7 +527,7 @@ string SSCache::insert(
     m_storage->createText(key.get(), "session", record.str().c_str(), now + m_cacheTimeout);
     if (tokens) {
         try {
-            for (vector<const RootObject*>::const_iterator t = tokens->begin(); t!=tokens->end(); ++t) {
+            for (vector<const Assertion*>::const_iterator t = tokens->begin(); t!=tokens->end(); ++t) {
                 ostringstream tokenstr;
                 tokenstr << *(*t);
                 auto_ptr_char tokenid((*t)->getID());
