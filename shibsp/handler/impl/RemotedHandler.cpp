@@ -21,6 +21,7 @@
  */
 
 #include "internal.h"
+#include "ServiceProvider.h"
 #include "handler/RemotedHandler.h"
 
 #include <algorithm>
@@ -201,10 +202,35 @@ long RemotedResponse::sendRedirect(const char* url)
 }
 
 
-const DDF& RemotedHandler::wrap(const SPRequest& request, DDF& in, const vector<string>& headers, bool certs) const
+unsigned int RemotedHandler::m_counter = 0;
+
+RemotedHandler::RemotedHandler()
 {
-    if (!in.isstruct())
-        in.structure();
+    m_address += ('A' + (m_counter++));
+    m_address += "::run::RemotedHandler";
+
+    SPConfig& conf = SPConfig::getConfig();
+    if (conf.isEnabled(SPConfig::OutOfProcess)) {
+        ListenerService* listener = conf.getServiceProvider()->getListenerService(false);
+        if (listener)
+            listener->regListener(m_address.c_str(),this);
+        else
+            Category::getInstance(SHIBSP_LOGCAT".Handler").info("no ListenerService available, handler remoting disabled");
+    }
+}
+
+RemotedHandler::~RemotedHandler()
+{
+    SPConfig& conf = SPConfig::getConfig();
+    ListenerService* listener=conf.getServiceProvider()->getListenerService(false);
+    if (listener && conf.isEnabled(SPConfig::OutOfProcess))
+        listener->unregListener(m_address.c_str(),this);
+    m_counter--;
+}
+
+DDF RemotedHandler::wrap(const SPRequest& request, const vector<string>* headers, bool certs) const
+{
+    DDF in = DDF(m_address.c_str()).structure();
     in.addmember("scheme").string(request.getScheme());
     in.addmember("hostname").string(request.getHostname());
     in.addmember("port").integer(request.getPort());
@@ -218,21 +244,23 @@ const DDF& RemotedHandler::wrap(const SPRequest& request, DDF& in, const vector<
     in.addmember("url").string(request.getRequestURL());
     in.addmember("query").string(request.getQueryString());
 
-    string hdr;
-    DDF hin = in.addmember("headers").structure();
-    for (vector<string>::const_iterator h = headers.begin(); h!=headers.end(); ++h) {
-        hdr = request.getHeader(h->c_str());
-        if (!hdr.empty())
-            hin.addmember(h->c_str()).string(hdr.c_str());
+    if (headers) {
+        string hdr;
+        DDF hin = in.addmember("headers").structure();
+        for (vector<string>::const_iterator h = headers->begin(); h!=headers->end(); ++h) {
+            hdr = request.getHeader(h->c_str());
+            if (!hdr.empty())
+                hin.addmember(h->c_str()).string(hdr.c_str());
+        }
     }
 
     if (certs) {
         const vector<XSECCryptoX509*>& xvec = request.getClientCertificates();
         if (!xvec.empty()) {
-            hin = in.addmember("certificates").list();
+            DDF clist = in.addmember("certificates").list();
             for (vector<XSECCryptoX509*>::const_iterator x = xvec.begin(); x!=xvec.end(); ++x) {
                 DDF x509 = DDF(NULL).string((*x)->getDEREncodingSB().rawCharBuffer());
-                hin.add(x509);
+                clist.add(x509);
             }
         }
     }

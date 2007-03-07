@@ -21,14 +21,81 @@
  */
 
 #include "internal.h"
+#include "exceptions.h"
 #include "handler/AbstractHandler.h"
 
+#include <saml/saml1/core/Protocols.h>
+#include <saml/saml2/core/Protocols.h>
+#include <saml/util/SAMLConstants.h>
+
 using namespace shibsp;
+using namespace samlconstants;
+using namespace opensaml;
+using namespace xmltooling;
 using namespace xercesc;
 using namespace std;
 
+namespace shibsp {
+    SHIBSP_DLLLOCAL PluginManager<Handler,const DOMElement*>::Factory SAML1ConsumerFactory;
+};
+
+void SHIBSP_API shibsp::registerHandlers()
+{
+    SPConfig& conf=SPConfig::getConfig();
+    conf.AssertionConsumerServiceManager.registerFactory(SAML1_PROFILE_BROWSER_ARTIFACT, SAML1ConsumerFactory);
+    conf.AssertionConsumerServiceManager.registerFactory(SAML1_PROFILE_BROWSER_POST, SAML1ConsumerFactory);
+}
+
 AbstractHandler::AbstractHandler(
-    const DOMElement* e, DOMNodeFilter* filter, const map<string,string>* remapper
-    ) {
-    load(e,log4cpp::Category::getInstance(SHIBSP_LOGCAT".Handler"),filter,remapper);
+    const DOMElement* e, log4cpp::Category& log, DOMNodeFilter* filter, const map<string,string>* remapper
+    ) : m_log(log) {
+    load(e,log,filter,remapper);
+}
+
+void AbstractHandler::checkError(const XMLObject* response) const
+{
+    const saml2p::StatusResponseType* r2 = dynamic_cast<const saml2p::StatusResponseType*>(response);
+    if (r2) {
+        const saml2p::Status* status = r2->getStatus();
+        if (status) {
+            const saml2p::StatusCode* sc = status->getStatusCode();
+            const XMLCh* code = sc ? sc->getValue() : NULL;
+            if (code && !XMLString::equals(code,saml2p::StatusCode::SUCCESS)) {
+                FatalProfileException ex("SAML Response message contained an error.");
+                auto_ptr_char c1(code);
+                ex.addProperty("code", c1.get());
+                if (sc->getStatusCode()) {
+                    code = sc->getStatusCode()->getValue();
+                    auto_ptr_char c2(code);
+                    ex.addProperty("code2", c2.get());
+                }
+                if (status->getStatusMessage()) {
+                    auto_ptr_char msg(status->getStatusMessage()->getMessage());
+                    ex.addProperty("message", msg.get());
+                }
+            }
+        }
+    }
+
+    const saml1p::Response* r1 = dynamic_cast<const saml1p::Response*>(response);
+    if (r1) {
+        const saml1p::Status* status = r1->getStatus();
+        if (status) {
+            const saml1p::StatusCode* sc = status->getStatusCode();
+            const QName* code = sc ? sc->getValue() : NULL;
+            if (code && *code != saml1p::StatusCode::SUCCESS) {
+                FatalProfileException ex("SAML Response message contained an error.");
+                ex.addProperty("code", code->toString().c_str());
+                if (sc->getStatusCode()) {
+                    code = sc->getStatusCode()->getValue();
+                    if (code)
+                        ex.addProperty("code2", code->toString().c_str());
+                }
+                if (status->getStatusMessage()) {
+                    auto_ptr_char msg(status->getStatusMessage()->getMessage());
+                    ex.addProperty("message", msg.get());
+                }
+            }
+        }
+    }
 }

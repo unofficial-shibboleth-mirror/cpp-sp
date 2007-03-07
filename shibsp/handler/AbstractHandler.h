@@ -25,6 +25,8 @@
 
 #include <shibsp/handler/Handler.h>
 #include <shibsp/util/DOMPropertySet.h>
+#include <log4cpp/Category.hh>
+#include <xmltooling/XMLObject.h>
 
 namespace shibsp {
 
@@ -47,11 +49,25 @@ namespace shibsp {
          * @param remapper  optional map of property rename rules for legacy property support
          */
         AbstractHandler(
-            const xercesc::DOMElement* e,
-            xercesc::DOMNodeFilter* filter=NULL,
+            const DOMElement* e,
+            log4cpp::Category& log,
+            DOMNodeFilter* filter=NULL,
             const std::map<std::string,std::string>* remapper=NULL
             );
+
+        /**
+         * Examines a protocol response message for errors and raises an annotated exception
+         * if an error is found.
+         * 
+         * <p>The base class version understands SAML 1.x and SAML 2.0 responses.
+         * 
+         * @param response      a response message of some known protocol
+         */
+        virtual void checkError(const xmltooling::XMLObject* response) const;
         
+        /** Logging object. */
+        log4cpp::Category& m_log; 
+    
     public:
         virtual ~AbstractHandler() {}
     };

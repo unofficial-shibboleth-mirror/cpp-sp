@@ -349,7 +349,15 @@
 						>
 					</File>
 					<File
+						RelativePath=".\handler\impl\AssertionConsumerService.cpp"
+						>
+					</File>
+					<File
 						RelativePath=".\handler\impl\RemotedHandler.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\handler\impl\SAML1Consumer.cpp"
 						>
 					</File>
 				</Filter>
@@ -513,6 +521,10 @@
 				>
 				<File
 					RelativePath=".\handler\AbstractHandler.h"
+					>
+				</File>
+				<File
+					RelativePath=".\handler\AssertionConsumerService.h"
 					>
 				</File>
 				<File

@@ -22,6 +22,7 @@
 
 #include "internal.h"
 #include "Application.h"
+#include "ServiceProvider.h"
 #include "SessionCache.h"
 #include "attribute/AttributeDecoder.h"
 #include "attribute/resolver/AttributeResolver.h"
@@ -35,10 +36,12 @@
 #include <saml/saml1/binding/SAML1SOAPClient.h>
 #include <saml/saml1/core/Assertions.h>
 #include <saml/saml1/core/Protocols.h>
+#include <saml/saml1/profile/AssertionValidator.h>
 #include <saml/saml2/binding/SAML2SOAPClient.h>
 #include <saml/saml2/core/Protocols.h>
 #include <saml/saml2/metadata/Metadata.h>
 #include <saml/saml2/metadata/MetadataProvider.h>
+#include <saml/saml2/profile/AssertionValidator.h>
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/ReloadableXMLFile.h>
 #include <xmltooling/util/XMLHelper.h>
@@ -471,6 +474,8 @@ void SimpleResolverImpl::query(ResolutionContext& ctx, const NameIdentifier& nam
 
     SecurityPolicy policy;
     shibsp::SOAPClient soaper(ctx.getApplication(),policy);
+    const PropertySet* policySettings = ctx.getApplication().getServiceProvider().getPolicySettings(ctx.getApplication().getString("policyId").second);
+    pair<bool,bool> signedAssertions = policySettings->getBool("signedAssertions");
 
     auto_ptr_XMLCh binding(samlconstants::SAML1_BINDING_SOAP);
     saml1p::Response* response=NULL;
@@ -504,44 +509,32 @@ void SimpleResolverImpl::query(ResolutionContext& ctx, const NameIdentifier& nam
         return;
     }
 
-    time_t now = time(NULL);
-    const Validator* tokval = ctx.getApplication().getTokenValidator(now, AA);
     const vector<saml1::Assertion*>& assertions = const_cast<const saml1p::Response*>(response)->getAssertions();
-    if (assertions.size()==1) {
-        auto_ptr<saml1p::Response> wrapper(response);
-        saml1::Assertion* newtoken = assertions.front();
-        if (!XMLString::equals(policy.getIssuer() ? policy.getIssuer()->getName() : NULL, newtoken->getIssuer())) {
-            log.error("assertion issued by someone other than AA, rejecting it");
-            return;
-        }
-        try {
-            tokval->validate(newtoken);
-        }
-        catch (exception& ex) {
-            log.error("assertion failed validation check: %s", ex.what());
-        }
-        newtoken->detach();
-        wrapper.release();
-        ctx.getResolvedAssertions().push_back(newtoken);
-        resolve(ctx, newtoken, attributes);
+    if (assertions.size()>1)
+        log.warn("simple resolver only supports one assertion in the query response");
+
+    auto_ptr<saml1p::Response> wrapper(response);
+    saml1::Assertion* newtoken = assertions.front();
+
+    if (!newtoken->getSignature() && signedAssertions.first && signedAssertions.second) {
+        log.error("assertion unsigned, rejecting it based on signedAssertions policy");
+        return;
     }
-    else {
-        auto_ptr<saml1p::Response> wrapper(response);
-        for (vector<saml1::Assertion*>::const_iterator a = assertions.begin(); a!=assertions.end(); ++a) {
-            if (!XMLString::equals(policy.getIssuer() ? policy.getIssuer()->getName() : NULL, (*a)->getIssuer())) {
-                log.error("assertion issued by someone other than AA, rejecting it");
-                continue;
-            }
-            try {
-                tokval->validate(*a);
-            }
-            catch (exception& ex) {
-                log.error("assertion failed validation check: %s", ex.what());
-            }
-            resolve(ctx, *a, attributes);
-            ctx.getResolvedAssertions().push_back((*a)->cloneAssertion());
-        }
+
+    try {
+        policy.evaluate(*newtoken);
+        if (!policy.isSecure())
+            throw SecurityPolicyException("Security of SAML 1.x query result not established.");
+        saml1::AssertionValidator tokval(ctx.getApplication().getAudiences(), time(NULL));
+        tokval.validateAssertion(*newtoken);
     }
+    catch (exception& ex) {
+        log.error("assertion failed policy/validation: %s", ex.what());
+    }
+    newtoken->detach();
+    wrapper.release();
+    ctx.getResolvedAssertions().push_back(newtoken);
+    resolve(ctx, newtoken, attributes);
 }
 
 void SimpleResolverImpl::query(ResolutionContext& ctx, const NameID& nameid, const vector<const char*>* attributes) const
@@ -564,6 +557,8 @@ void SimpleResolverImpl::query(ResolutionContext& ctx, const NameID& nameid, con
 
     SecurityPolicy policy;
     shibsp::SOAPClient soaper(ctx.getApplication(),policy);
+    const PropertySet* policySettings = ctx.getApplication().getServiceProvider().getPolicySettings(ctx.getApplication().getString("policyId").second);
+    pair<bool,bool> signedAssertions = policySettings->getBool("signedAssertions");
 
     auto_ptr_XMLCh binding(samlconstants::SAML20_BINDING_SOAP);
     saml2p::StatusResponseType* srt=NULL;
@@ -602,44 +597,32 @@ void SimpleResolverImpl::query(ResolutionContext& ctx, const NameID& nameid, con
         return;
     }
 
-    time_t now = time(NULL);
-    const Validator* tokval = ctx.getApplication().getTokenValidator(now, AA);
     const vector<saml2::Assertion*>& assertions = const_cast<const saml2p::Response*>(response)->getAssertions();
-    if (assertions.size()==1) {
-        auto_ptr<saml2p::Response> wrapper(response);
-        saml2::Assertion* newtoken = assertions.front();
-        if (!XMLString::equals(policy.getIssuer() ? policy.getIssuer()->getName() : NULL, newtoken->getIssuer() ? newtoken->getIssuer()->getName() : NULL)) {
-            log.error("assertion issued by someone other than AA, rejecting it");
-            return;
-        }
-        try {
-            tokval->validate(newtoken);
-        }
-        catch (exception& ex) {
-            log.error("assertion failed validation check: %s", ex.what());
-        }
-        newtoken->detach();
-        wrapper.release();
-        ctx.getResolvedAssertions().push_back(newtoken);
-        resolve(ctx, newtoken, attributes);
+    if (assertions.size()>1)
+        log.warn("simple resolver only supports one assertion in the query response");
+
+    auto_ptr<saml2p::Response> wrapper(response);
+    saml2::Assertion* newtoken = assertions.front();
+
+    if (!newtoken->getSignature() && signedAssertions.first && signedAssertions.second) {
+        log.error("assertion unsigned, rejecting it based on signedAssertions policy");
+        return;
     }
-    else {
-        auto_ptr<saml2p::Response> wrapper(response);
-        for (vector<saml2::Assertion*>::const_iterator a = assertions.begin(); a!=assertions.end(); ++a) {
-            if (!XMLString::equals(policy.getIssuer() ? policy.getIssuer()->getName() : NULL, (*a)->getIssuer() ? (*a)->getIssuer()->getName() : NULL)) {
-                log.error("assertion issued by someone other than AA, rejecting it");
-                return;
-            }
-            try {
-                tokval->validate(*a);
-            }
-            catch (exception& ex) {
-                log.error("assertion failed validation check: %s", ex.what());
-            }
-            resolve(ctx, *a, attributes);
-            ctx.getResolvedAssertions().push_back((*a)->cloneAssertion());
-        }
+
+    try {
+        policy.evaluate(*newtoken);
+        if (!policy.isSecure())
+            throw SecurityPolicyException("Security of SAML 2.0 query result not established.");
+        saml2::AssertionValidator tokval(ctx.getApplication().getAudiences(), time(NULL));
+        tokval.validateAssertion(*newtoken);
     }
+    catch (exception& ex) {
+        log.error("assertion failed policy/validation: %s", ex.what());
+    }
+    newtoken->detach();
+    wrapper.release();
+    ctx.getResolvedAssertions().push_back(newtoken);
+    resolve(ctx, newtoken, attributes);
 }
 
 void SimpleResolver::resolveAttributes(ResolutionContext& ctx, const vector<const char*>* attributes) const

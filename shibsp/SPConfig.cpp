@@ -109,6 +109,7 @@ bool SPInternalConfig::init(const char* catalog_path)
     registerAttributeDecoders();
     registerAttributeFactories();
     registerAttributeResolvers();
+    registerHandlers();
     registerListenerServices();
     registerRequestMappers();
     registerSessionCaches();

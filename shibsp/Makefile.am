@@ -54,6 +54,7 @@ bindinclude_HEADERS = \
 
 handinclude_HEADERS = \
 	handler/AbstractHandler.h \
+	handler/AssertionConsumerService.h \
 	handler/Handler.h \
 	handler/RemotedHandler.h
 
@@ -90,8 +91,10 @@ libshibsp_la_SOURCES = \
 	attribute/resolver/impl/AttributeResolver.cpp \
 	attribute/resolver/impl/SimpleAttributeResolver.cpp \
 	binding/impl/SOAPClient.cpp \
-	handler/impl/RemotedHandler.cpp \
 	handler/impl/AbstractHandler.cpp \
+	handler/impl/AssertionConsumerService.cpp \
+	handler/impl/RemotedHandler.cpp \
+	handler/impl/SAML1Consumer.cpp \
 	impl/RemotedSessionCache.cpp \
 	impl/StorageServiceSessionCache.cpp \
 	impl/XMLAccessControl.cpp \

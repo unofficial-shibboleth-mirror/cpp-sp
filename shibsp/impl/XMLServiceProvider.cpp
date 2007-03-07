@@ -66,18 +66,6 @@ namespace {
     #pragma warning( disable : 4250 )
 #endif
 
-    class SHIBSP_DLLLOCAL TokenValidator : public Validator
-    {
-    public:
-        TokenValidator(const Application& app, time_t ts=0, const RoleDescriptor* role=NULL) : m_app(app), m_ts(ts), m_role(role) {}
-        void validate(const XMLObject*) const;
-
-    private:
-        const Application& m_app;
-        time_t m_ts;
-        const RoleDescriptor* m_role;
-    };
-
     static vector<const Handler*> g_noHandlers;
 
     // Application configuration wrapper
@@ -121,9 +109,6 @@ namespace {
 
         const vector<const XMLCh*>& getAudiences() const {
             return (m_audiences.empty() && m_base) ? m_base->getAudiences() : m_audiences;
-        }
-        Validator* getTokenValidator(time_t ts=0, const saml2md::RoleDescriptor* role=NULL) const {
-            return new TokenValidator(*this, ts, role);
         }
 
         // Provides filter to exclude special config elements.
@@ -357,122 +342,6 @@ namespace shibsp {
         return new XMLConfig(e);
     }
 };
-
-void TokenValidator::validate(const XMLObject* xmlObject) const
-{
-#ifdef _DEBUG
-    xmltooling::NDC ndc("validate");
-#endif
-    Category& log=Category::getInstance(SHIBSP_LOGCAT".Application");
-
-    const opensaml::Assertion* root = NULL;
-    const saml2::Assertion* token2 = dynamic_cast<const saml2::Assertion*>(xmlObject);
-    if (token2) {
-        const saml2::Conditions* conds = token2->getConditions();
-        // First verify the time conditions, using the specified timestamp, if non-zero.
-        if (m_ts>0 && conds) {
-            unsigned int skew = XMLToolingConfig::getConfig().clock_skew_secs;
-            time_t t=conds->getNotBeforeEpoch();
-            if (m_ts+skew < t)
-                throw ValidationException("Assertion is not yet valid.");
-            t=conds->getNotOnOrAfterEpoch();
-            if (t <= m_ts-skew)
-                throw ValidationException("Assertion is no longer valid.");
-        }
-
-        // Now we process conditions. Only audience restrictions at the moment.
-        const vector<saml2::Condition*>& convec = conds->getConditions();
-        for (vector<saml2::Condition*>::const_iterator c = convec.begin(); c!=convec.end(); ++c) {
-            const saml2::AudienceRestriction* ac=dynamic_cast<const saml2::AudienceRestriction*>(*c);
-            if (!ac) {
-                log.error("unrecognized Condition in assertion (%s)",
-                    (*c)->getSchemaType() ? (*c)->getSchemaType()->toString().c_str() : (*c)->getElementQName().toString().c_str());
-                throw ValidationException("Assertion contains an unrecognized condition.");
-            }
-
-            bool found = false;
-            const vector<saml2::Audience*>& auds1 = ac->getAudiences();
-            const vector<const XMLCh*>& auds2 = m_app.getAudiences();
-            for (vector<saml2::Audience*>::const_iterator a = auds1.begin(); !found && a!=auds1.end(); ++a) {
-                for (vector<const XMLCh*>::const_iterator a2 = auds2.begin(); !found && a2!=auds2.end(); ++a2) {
-                    found = XMLString::equals((*a)->getAudienceURI(), *a2);
-                }
-            }
-
-            if (!found) {
-                ostringstream os;
-                os << *ac;
-                log.error("unacceptable AudienceRestriction in assertion (%s)", os.str().c_str());
-                throw ValidationException("Assertion contains an unacceptable AudienceRestriction.");
-            }
-        }
-
-        root = token2;
-    }
-    else {
-        const saml1::Assertion* token1 = dynamic_cast<const saml1::Assertion*>(xmlObject);
-        if (token1) {
-            const saml1::Conditions* conds = token1->getConditions();
-            // First verify the time conditions, using the specified timestamp, if non-zero.
-            if (m_ts>0 && conds) {
-                unsigned int skew = XMLToolingConfig::getConfig().clock_skew_secs;
-                time_t t=conds->getNotBeforeEpoch();
-                if (m_ts+skew < t)
-                    throw ValidationException("Assertion is not yet valid.");
-                t=conds->getNotOnOrAfterEpoch();
-                if (t <= m_ts-skew)
-                    throw ValidationException("Assertion is no longer valid.");
-            }
-
-            // Now we process conditions. Only audience restrictions at the moment.
-            const vector<saml1::Condition*>& convec = conds->getConditions();
-            for (vector<saml1::Condition*>::const_iterator c = convec.begin(); c!=convec.end(); ++c) {
-                const saml1::AudienceRestrictionCondition* ac=dynamic_cast<const saml1::AudienceRestrictionCondition*>(*c);
-                if (!ac) {
-                    log.error("unrecognized Condition in assertion (%s)",
-                        (*c)->getSchemaType() ? (*c)->getSchemaType()->toString().c_str() : (*c)->getElementQName().toString().c_str());
-                    throw ValidationException("Assertion contains an unrecognized condition.");
-                }
-
-                bool found = false;
-                const vector<saml1::Audience*>& auds1 = ac->getAudiences();
-                const vector<const XMLCh*>& auds2 = m_app.getAudiences();
-                for (vector<saml1::Audience*>::const_iterator a = auds1.begin(); !found && a!=auds1.end(); ++a) {
-                    for (vector<const XMLCh*>::const_iterator a2 = auds2.begin(); !found && a2!=auds2.end(); ++a2) {
-                        found = XMLString::equals((*a)->getAudienceURI(), *a2);
-                    }
-                }
-
-                if (!found) {
-                    ostringstream os;
-                    os << *ac;
-                    log.error("unacceptable AudienceRestrictionCondition in assertion (%s)", os.str().c_str());
-                    throw ValidationException("Assertion contains an unacceptable AudienceRestrictionCondition.");
-                }
-            }
-
-            root = token1;
-        }
-        else {
-            throw ValidationException("Unknown object type passed to token validator.");
-        }
-    }
-
-    if (!m_role || !m_app.getTrustEngine()) {
-        log.warn("no issuer role or TrustEngine provided, so no signature validation performed");
-        return;
-    }
-
-    const PropertySet* policy=m_app.getServiceProvider().getPolicySettings(m_app.getString("policyId").second);
-    pair<bool,bool> signedAssertions=policy ? policy->getBool("signedAssertions") : make_pair(false,false);
-
-    if (root->getSignature()) {
-        if (!m_app.getTrustEngine()->validate(*(root->getSignature()),*m_role))
-            throw ValidationException("Assertion signature did not validate.");
-    }
-    else if (signedAssertions.first && signedAssertions.second)
-        throw ValidationException("Assertion was unsigned, violating policy.");
-}
 
 XMLApplication::XMLApplication(
     const ServiceProvider* sp,

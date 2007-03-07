@@ -52,6 +52,9 @@ namespace shibsp {
          */
         virtual std::pair<bool,long> run(SPRequest& request, bool isHandler=true) const=0;
     };
+    
+    /** Registers Handler implementations. */
+    void SHIBSP_API registerHandlers();
 };
 
 #endif /* __shibsp_handler_h__ */

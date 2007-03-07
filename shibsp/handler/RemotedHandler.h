@@ -35,22 +35,21 @@ namespace shibsp {
     class SHIBSP_API RemotedHandler : public virtual Handler, public Remoted 
     {
     public:
-        virtual ~RemotedHandler() {}
+        virtual ~RemotedHandler();
 
     protected:
-        RemotedHandler() {}
+        RemotedHandler();
 
         /**
-         * Wraps a request by annotating an outgoing data flow with the data needed
+         * Wraps a request by creating an outgoing data flow with the data needed
          * to remote the request information.
          *
          * @param request   an SPRequest to remote
-         * @param in        the dataflow object to annotate
          * @param headers   array of request headers to copy to remote request
          * @param certs     true iff client certificates should be available for the remote request
          * @return  the input dataflow object
          */
-        const DDF& wrap(const SPRequest& request, DDF& in, const std::vector<std::string>& headers, bool certs=false) const;
+        DDF wrap(const SPRequest& request, const std::vector<std::string>* headers=NULL, bool certs=false) const;
         
         /**
          * Unwraps a response by examining an incoming data flow to determine
@@ -77,6 +76,12 @@ namespace shibsp {
          * @return  a call-specific response object, to be freed by the caller 
          */
         opensaml::HTTPResponse* getResponse(DDF& out) const;
+        
+        /** Message address for remote half. */
+        std::string m_address;
+        
+    private:
+        static unsigned int m_counter;
     };
 };
 
