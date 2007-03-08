@@ -37,9 +37,11 @@ namespace shibsp {
         /**
          * Constructor
          * 
+         * @param e     an exception to supply additional parameters
          * @param props a PropertySet to supply additional parameters
          */
-        TemplateParameters(const PropertySet* props=NULL) {
+        TemplateParameters(const std::exception* e=NULL, const PropertySet* props=NULL)
+            : m_exception(e), m_toolingException(dynamic_cast<const xmltooling::XMLToolingException*>(e)) {
             setPropertySet(props);
         }
 
@@ -52,10 +54,30 @@ namespace shibsp {
          */
         void setPropertySet(const PropertySet* props);
         
+        /**
+         * Returns the exception passed to the object, if it contains rich information.
+         *
+         * @return  an exception, or NULL
+         */
+        const xmltooling::XMLToolingException* getRichException() const {
+            return m_toolingException;
+        }
+
         const char* getParameter(const char* name) const;
+        
+        /**
+         * Returns a set of query string name/value pairs, URL-encoded,
+         * representing all known parameters. If an exception is
+         * present, it's type, message, and parameters will be included.
+         *
+         * @return  the query string representation
+         */
+        std::string toQueryString() const;
 
     private:
         const PropertySet* m_props;
+        const std::exception* m_exception;
+        const xmltooling::XMLToolingException* m_toolingException;
     };
 };
 

@@ -48,10 +48,19 @@ using namespace std;
 namespace shibsp {
     SHIBSP_DLLLOCAL PluginManager<ServiceProvider,const DOMElement*>::Factory XMLServiceProviderFactory;
 
-    long SHIBSP_DLLLOCAL sendError(
-        SPRequest& request, const Application* app, const char* page, TemplateParameters& tp, const XMLToolingException* ex=NULL
-        )
+    long SHIBSP_DLLLOCAL sendError(SPRequest& request, const Application* app, const char* page, TemplateParameters& tp, bool mayRedirect=false)
     {
+        if (mayRedirect) {
+            // Check for redirection on errors instead of template.
+            const PropertySet* sessions=app ? app->getPropertySet("Sessions") : NULL;
+            pair<bool,const char*> redirectErrors = sessions ? sessions->getString("redirectErrors") : pair<bool,const char*>(false,NULL);
+            if (redirectErrors.first) {
+                string loc(redirectErrors.second);
+                loc = loc + '?' + tp.toQueryString();
+                return request.sendRedirect(loc.c_str());
+            }
+        }
+
         request.setContentType("text/html");
         request.setResponseHeader("Expires","01-Jan-1997 12:00:00 GMT");
         request.setResponseHeader("Cache-Control","private,no-store,no-cache");
@@ -64,7 +73,7 @@ namespace shibsp {
                 if (infile) {
                     tp.setPropertySet(props);
                     stringstream str;
-                    XMLToolingConfig::getConfig().getTemplateEngine()->run(infile, str, tp, ex);
+                    XMLToolingConfig::getConfig().getTemplateEngine()->run(infile, str, tp, tp.getRichException());
                     return request.sendResponse(str);
                 }
             }
@@ -120,7 +129,6 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
 #endif
 
     const Application* app=NULL;
-    const char* procState = "Request Processing Error";
     string targetURL = request.getRequestURL();
 
     try {
@@ -184,8 +192,6 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
         // Fix for secadv 20050901
         clearHeaders(request);
 
-        procState = "Session Processing Error";
-
         Session* session = NULL;
         try {
             session = request.getSession();
@@ -203,7 +209,6 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
                 return make_pair(true,request.returnOK());
 
             // No session, but we require one. Initiate a new session using the indicated method.
-            procState = "Session Initiator Error";
             const Handler* initiator=NULL;
             if (requireSessionWith.first) {
                 initiator=app->getSessionInitiatorById(requireSessionWith.second);
@@ -227,24 +232,15 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
         request.log(SPRequest::SPDebug, "doAuthentication succeeded");
         return make_pair(false,0);
     }
-    catch (XMLToolingException& e) {
-        TemplateParameters tp;
-        tp.m_map["errorType"] = procState;
-        tp.m_map["errorText"] = e.what();
-        tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
-        return make_pair(true,sendError(request, app, "session", tp, &e));
-    }
     catch (exception& e) {
-        TemplateParameters tp;
-        tp.m_map["errorType"] = procState;
-        tp.m_map["errorText"] = e.what();
+        TemplateParameters tp(&e);
         tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
         return make_pair(true,sendError(request, app, "session", tp));
     }
 #ifndef _DEBUG
     catch (...) {
         TemplateParameters tp;
-        tp.m_map["errorType"] = procState;
+        tp.m_map["errorType"] = "Unexpected Error";
         tp.m_map["errorText"] = "Caught an unknown exception.";
         tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
         return make_pair(true,sendError(request, app, "session", tp));
@@ -259,7 +255,6 @@ pair<bool,long> ServiceProvider::doAuthorization(SPRequest& request) const
 #endif
 
     const Application* app=NULL;
-    const char* procState = "Authorization Processing Error";
     string targetURL = request.getRequestURL();
 
     try {
@@ -309,24 +304,15 @@ pair<bool,long> ServiceProvider::doAuthorization(SPRequest& request) const
         else
             return make_pair(true,request.returnDecline());
     }
-    catch (XMLToolingException& e) {
-        TemplateParameters tp;
-        tp.m_map["errorType"] = procState;
-        tp.m_map["errorText"] = e.what();
-        tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
-        return make_pair(true,sendError(request, app, "session", tp, &e));
-    }
     catch (exception& e) {
-        TemplateParameters tp;
-        tp.m_map["errorType"] = procState;
-        tp.m_map["errorText"] = e.what();
+        TemplateParameters tp(&e);
         tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
         return make_pair(true,sendError(request, app, "access", tp));
     }
 #ifndef _DEBUG
     catch (...) {
         TemplateParameters tp;
-        tp.m_map["errorType"] = procState;
+        tp.m_map["errorType"] = "Unexpected Error";
         tp.m_map["errorText"] = "Caught an unknown exception.";
         tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
         return make_pair(true,sendError(request, app, "access", tp));
@@ -341,7 +327,6 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
 #endif
 
     const Application* app=NULL;
-    const char* procState = "Attribute Processing Error";
     string targetURL = request.getRequestURL();
 
     try {
@@ -420,24 +405,15 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
     
         return make_pair(false,0);
     }
-    catch (XMLToolingException& e) {
-        TemplateParameters tp;
-        tp.m_map["errorType"] = procState;
-        tp.m_map["errorText"] = e.what();
-        tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
-        return make_pair(true,sendError(request, app, "rm", tp, &e));
-    }
     catch (exception& e) {
-        TemplateParameters tp;
-        tp.m_map["errorType"] = procState;
-        tp.m_map["errorText"] = e.what();
+        TemplateParameters tp(&e);
         tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
         return make_pair(true,sendError(request, app, "rm", tp));
     }
 #ifndef _DEBUG
     catch (...) {
         TemplateParameters tp;
-        tp.m_map["errorType"] = procState;
+        tp.m_map["errorType"] = "Unexpected Error";
         tp.m_map["errorText"] = "Caught an unknown exception.";
         tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
         return make_pair(true,sendError(request, app, "rm", tp));
@@ -452,7 +428,6 @@ pair<bool,long> ServiceProvider::doHandler(SPRequest& request) const
 #endif
 
     const Application* app=NULL;
-    const char* procState = "Shibboleth Handler Error";
     string targetURL = request.getRequestURL();
 
     try {
@@ -484,14 +459,6 @@ pair<bool,long> ServiceProvider::doHandler(SPRequest& request) const
         if (!handler)
             throw BindingException("Shibboleth handler invoked at an unconfigured location.");
 
-        if (XMLHelper::isNodeNamed(handler->getElement(),samlconstants::SAML20MD_NS,AssertionConsumerService::LOCAL_NAME))
-            procState = "Session Creation Error";
-        else if (XMLString::equals(handler->getElement()->getLocalName(),SessionInitiator))
-            procState = "Session Initiator Error";
-        else if (XMLHelper::isNodeNamed(handler->getElement(),samlconstants::SAML20MD_NS,SingleLogoutService::LOCAL_NAME))
-            procState = "Session Termination Error";
-        else
-            procState = "Protocol Handler Error";
         pair<bool,long> hret=handler->run(request);
 
         // Did the handler run successfully?
@@ -501,41 +468,29 @@ pair<bool,long> ServiceProvider::doHandler(SPRequest& request) const
         throw BindingException("Configured Shibboleth handler failed to process the request.");
     }
     catch (MetadataException& e) {
-        TemplateParameters tp;
-        tp.m_map["errorText"] = e.what();
+        TemplateParameters tp(&e);
+        tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
         // See if a metadata error page is installed.
-        const PropertySet* props=app->getPropertySet("Errors");
+        const PropertySet* props=app ? app->getPropertySet("Errors") : NULL;
         if (props) {
             pair<bool,const char*> p=props->getString("metadata");
-            if (p.first) {
-                tp.m_map["errorType"] = procState;
-                tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
-                return make_pair(true,sendError(request, app, "metadata", tp, &e));
-            }
+            if (p.first)
+                return make_pair(true,sendError(request, app, "metadata", tp, true));
         }
-        throw;
-    }
-    catch (XMLToolingException& e) {
-        TemplateParameters tp;
-        tp.m_map["errorType"] = procState;
-        tp.m_map["errorText"] = e.what();
-        tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
-        return make_pair(true,sendError(request, app, "session", tp, &e));
+        return make_pair(true,sendError(request, app, "session", tp, true));
     }
     catch (exception& e) {
-        TemplateParameters tp;
-        tp.m_map["errorType"] = procState;
-        tp.m_map["errorText"] = e.what();
+        TemplateParameters tp(&e);
         tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
-        return make_pair(true,sendError(request, app, "session", tp));
+        return make_pair(true,sendError(request, app, "session", tp, true));
     }
 #ifndef _DEBUG
     catch (...) {
         TemplateParameters tp;
-        tp.m_map["errorType"] = procState;
+        tp.m_map["errorType"] = "Unexpected Error";
         tp.m_map["errorText"] = "Caught an unknown exception.";
         tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
-        return make_pair(true,sendError(request, app, "session", tp));
+        return make_pair(true,sendError(request, app, "session", tp, true));
     }
 #endif
 }
