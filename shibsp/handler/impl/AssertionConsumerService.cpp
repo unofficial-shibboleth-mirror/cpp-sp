@@ -59,19 +59,30 @@ pair<bool,long> AssertionConsumerService::run(SPRequest& request, bool isHandler
 {
     SPConfig& conf = SPConfig::getConfig();
     if (conf.isEnabled(SPConfig::OutOfProcess)) {
+        // When out of process, we run natively and directly process the message.
+        // RelayState will be fully handled during message processing.
         string relayState, providerId;
         string key = processMessage(request.getApplication(), request, providerId, relayState);
         return sendRedirect(request, key.c_str(), providerId.c_str(), relayState.c_str());
     }
     else {
+        // When not out of process, we remote all the message processing.
         DDF in = wrap(request);
         DDFJanitor jin(in);
         in.addmember("application_id").string(request.getApplication().getId());
         DDF out=request.getServiceProvider().getListenerService()->send(in);
         DDFJanitor jout(out);
+        
+        // If it worked, we have a session key.
         if (!out["key"].isstring())
-            throw FatalProfileException("Remote processing of SAML 1.x Browser profile did not return a usable session key.");
-        return sendRedirect(request, out["key"].string(), out["provider_id"].string(), out["RelayState"].string());
+            throw FatalProfileException("Remote processing of SSO profile did not return a usable session key.");
+            
+        // We invoke the RelayState method one last time on this side of the process boundary.
+        string relayState;
+        if (out["RelayState"].isstring())
+            relayState = out["RelayState"].string(); 
+        recoverRelayState(request, relayState);
+        return sendRedirect(request, out["key"].string(), out["provider_id"].string(), relayState.c_str());
     }
 }
 
@@ -105,7 +116,7 @@ void AssertionConsumerService::receive(DDF& in, ostream& out)
 }
 
 string AssertionConsumerService::processMessage(
-    const Application& application, const HTTPRequest& httpRequest, string& providerId, string& relayState
+    const Application& application, HTTPRequest& httpRequest, string& providerId, string& relayState
     ) const
 {
     // Locate policy key.
@@ -131,6 +142,7 @@ string AssertionConsumerService::processMessage(
     
     // Decode the message and process it in a protocol-specific way.
     auto_ptr<XMLObject> msg(m_decoder->decode(relayState, httpRequest, policy));
+    recoverRelayState(httpRequest, relayState);
     string key = implementProtocol(application, httpRequest, policy, settings, *msg.get());
 
     auto_ptr_char issuer(policy.getIssuer() ? policy.getIssuer()->getName() : NULL);
@@ -144,40 +156,16 @@ pair<bool,long> AssertionConsumerService::sendRedirect(
     SPRequest& request, const char* key, const char* providerId, const char* relayState
     ) const
 {
-    string s,k(key);
-    
-    if (relayState && !strcmp(relayState,"default")) {
-        pair<bool,const char*> homeURL=request.getApplication().getString("homeURL");
-        relayState=homeURL.first ? homeURL.second : "/";
-    }
-    else if (!relayState || !strcmp(relayState,"cookie")) {
-        // Pull the value from the "relay state" cookie.
-        pair<string,const char*> relay_cookie = request.getApplication().getCookieNameProps("_shibstate_");
-        relayState = request.getCookie(relay_cookie.first.c_str());
-        if (!relayState || !*relayState) {
-            // No apparent relay state value to use, so fall back on the default.
-            pair<bool,const char*> homeURL=request.getApplication().getString("homeURL");
-            relayState=homeURL.first ? homeURL.second : "/";
-        }
-        else {
-            char* rscopy=strdup(relayState);
-            SAMLConfig::getConfig().getURLEncoder()->decode(rscopy);
-            s=rscopy;
-            free(rscopy);
-            relayState=s.c_str();
-        }
-        request.setCookie(relay_cookie.first.c_str(),relay_cookie.second);
-    }
-
     // We've got a good session, so set the session cookie.
     pair<string,const char*> shib_cookie=request.getApplication().getCookieNameProps("_shibsession_");
+    string k(key);
     k += shib_cookie.second;
     request.setCookie(shib_cookie.first.c_str(), k.c_str());
 
     // History cookie.
     maintainHistory(request, providerId, shib_cookie.second);
 
-    // Now redirect to the target.
+    // Now redirect to the state value. By now, it should be set to *something* usable.
     return make_pair(true, request.sendRedirect(relayState));
 }
 

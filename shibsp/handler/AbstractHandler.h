@@ -25,7 +25,9 @@
 
 #include <shibsp/handler/Handler.h>
 #include <shibsp/util/DOMPropertySet.h>
+
 #include <log4cpp/Category.hh>
+#include <saml/binding/HTTPRequest.h>
 #include <xmltooling/XMLObject.h>
 
 namespace shibsp {
@@ -65,9 +67,21 @@ namespace shibsp {
          */
         virtual void checkError(const xmltooling::XMLObject* response) const;
         
+        /**
+         * Implements various mechanisms to recover RelayState,
+         * such as cookies or StorageService-backed keys.
+         * 
+         * <p>If a supported mechanism can be identified, the input parameter will be
+         * replaced with the recovered state information.
+         * 
+         * @param httpRequest   incoming HTTP request
+         * @param relayState    RelayState token supplied with message
+         */
+        virtual void recoverRelayState(opensaml::HTTPRequest& httpRequest, std::string& relayState) const;
+        
         /** Logging object. */
-        log4cpp::Category& m_log; 
-    
+        log4cpp::Category& m_log;
+        
     public:
         virtual ~AbstractHandler() {}
     };

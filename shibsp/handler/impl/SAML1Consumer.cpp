@@ -118,6 +118,7 @@ string SAML1Consumer::implementProtocol(
 
     // With this flag on, we ignore any unsigned assertions.
     pair<bool,bool> flag = settings->getBool("signedAssertions");
+
     for (vector<saml1::Assertion*>::const_iterator a = assertions.begin(); a!=assertions.end(); ++a) {
         // Skip unsigned assertion?
         if (!(*a)->getSignature() && flag.first && flag.second) {

@@ -105,7 +105,7 @@ namespace shibsp {
     private:
         std::string processMessage(
             const Application& application,
-            const opensaml::HTTPRequest& httpRequest,
+            opensaml::HTTPRequest& httpRequest,
             std::string& providerId,
             std::string& relayState
             ) const;

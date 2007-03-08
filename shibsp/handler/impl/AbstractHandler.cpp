@@ -21,9 +21,13 @@
  */
 
 #include "internal.h"
+#include "Application.h"
 #include "exceptions.h"
+#include "SPRequest.h"
 #include "handler/AbstractHandler.h"
 
+#include <saml/SAMLConfig.h>
+#include <saml/binding/URLEncoder.h>
 #include <saml/saml1/core/Protocols.h>
 #include <saml/saml2/core/Protocols.h>
 #include <saml/util/SAMLConstants.h>
@@ -96,6 +100,43 @@ void AbstractHandler::checkError(const XMLObject* response) const
                     ex.addProperty("message", msg.get());
                 }
             }
+        }
+    }
+}
+
+void AbstractHandler::recoverRelayState(HTTPRequest& httpRequest, string& relayState) const
+{
+    SPConfig& conf = SPConfig::getConfig();
+    if (conf.isEnabled(SPConfig::OutOfProcess)) {
+        // Out of process, we look for StorageService-backed state.
+        // TODO
+    }
+    
+    if (conf.isEnabled(SPConfig::InProcess)) {
+        // In process, we should be able to cast down to a full SPRequest.
+        SPRequest& request = dynamic_cast<SPRequest&>(httpRequest);
+        if (relayState.empty() || relayState == "cookie") {
+            // Pull the value from the "relay state" cookie.
+            pair<string,const char*> relay_cookie = request.getApplication().getCookieNameProps("_shibstate_");
+            const char* state = request.getCookie(relay_cookie.first.c_str());
+            if (state && *state) {
+                // URL-decode the value.
+                char* rscopy=strdup(state);
+                SAMLConfig::getConfig().getURLEncoder()->decode(rscopy);
+                relayState = rscopy;
+                free(rscopy);
+                
+                // Clear the cookie.
+                request.setCookie(relay_cookie.first.c_str(),relay_cookie.second);
+            }
+            else
+                relayState = "default"; // fall through...
+        }
+        
+        // Check for "default" value.
+        if (relayState == "default") {
+            pair<bool,const char*> homeURL=request.getApplication().getString("homeURL");
+            relayState=homeURL.first ? homeURL.second : "/";
         }
     }
 }
