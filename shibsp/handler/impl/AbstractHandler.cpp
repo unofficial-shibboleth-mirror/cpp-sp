@@ -67,15 +67,15 @@ void AbstractHandler::checkError(const XMLObject* response) const
             if (code && !XMLString::equals(code,saml2p::StatusCode::SUCCESS)) {
                 FatalProfileException ex("SAML Response message contained an error.");
                 auto_ptr_char c1(code);
-                ex.addProperty("code", c1.get());
+                ex.addProperty("StatusCode", c1.get());
                 if (sc->getStatusCode()) {
                     code = sc->getStatusCode()->getValue();
                     auto_ptr_char c2(code);
-                    ex.addProperty("code2", c2.get());
+                    ex.addProperty("StatusCode2", c2.get());
                 }
                 if (status->getStatusMessage()) {
                     auto_ptr_char msg(status->getStatusMessage()->getMessage());
-                    ex.addProperty("message", msg.get());
+                    ex.addProperty("StatusMessage", msg.get());
                 }
             }
         }
@@ -89,15 +89,15 @@ void AbstractHandler::checkError(const XMLObject* response) const
             const QName* code = sc ? sc->getValue() : NULL;
             if (code && *code != saml1p::StatusCode::SUCCESS) {
                 FatalProfileException ex("SAML Response message contained an error.");
-                ex.addProperty("code", code->toString().c_str());
+                ex.addProperty("StatusCode", code->toString().c_str());
                 if (sc->getStatusCode()) {
                     code = sc->getStatusCode()->getValue();
                     if (code)
-                        ex.addProperty("code2", code->toString().c_str());
+                        ex.addProperty("StatusCode2", code->toString().c_str());
                 }
                 if (status->getStatusMessage()) {
                     auto_ptr_char msg(status->getStatusMessage()->getMessage());
-                    ex.addProperty("message", msg.get());
+                    ex.addProperty("StatusMessage", msg.get());
                 }
             }
         }

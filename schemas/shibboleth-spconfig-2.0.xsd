@@ -397,6 +397,7 @@
 			</choice>
 			<attribute name="handlerURL" type="anyURI"/>
 			<attribute name="handlerSSL" type="boolean" default="true"/>
+			<attribute name="redirectErrors" type="anyURI"/>
 			<attribute name="cookieName" type="conf:string"/>
 			<attribute name="cookieProps" type="conf:string"/>
 			<attribute name="idpHistory" type="boolean" default="true"/>
@@ -408,6 +409,13 @@
 			<anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>
+	
+	<attribute name="policyId" type="conf:string">
+		<annotation>
+			<documentation>Used to reference Policy elements from profile endpoints.</documentation>
+		</annotation>
+	</attribute>
+
 	<element name="SessionInitiator">
 		<annotation>
 			<documentation>Used to specify handlers that can issue AuthnRequests</documentation>
@@ -418,10 +426,11 @@
 			</sequence>
 			<attribute name="Location" type="anyURI" use="required"/>
 			<attribute name="Binding" type="anyURI" use="required"/>
+			<attribute name="id" type="conf:string"/>
+			<attribute name="isDefault" type="boolean"/>
 			<attribute name="wayfURL" type="anyURI"/>
 			<attribute name="wayfBinding" type="anyURI"/>
-			<attribute name="isDefault" type="boolean"/>
-			<attribute name="id" type="conf:string"/>
+			<attribute name="relayState" type="conf:string"/>
 			<anyAttribute namespace="##any" processContents="lax"/>
 		</complexType>
 	</element>

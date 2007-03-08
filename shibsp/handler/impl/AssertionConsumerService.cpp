@@ -56,32 +56,57 @@ AssertionConsumerService::~AssertionConsumerService()
 
 pair<bool,long> AssertionConsumerService::run(SPRequest& request, bool isHandler) const
 {
+    string relayState;
     SPConfig& conf = SPConfig::getConfig();
-    if (conf.isEnabled(SPConfig::OutOfProcess)) {
-        // When out of process, we run natively and directly process the message.
-        // RelayState will be fully handled during message processing.
-        string relayState, providerId;
-        string key = processMessage(request.getApplication(), request, providerId, relayState);
-        return sendRedirect(request, key.c_str(), providerId.c_str(), relayState.c_str());
-    }
-    else {
-        // When not out of process, we remote all the message processing.
-        DDF in = wrap(request);
-        DDFJanitor jin(in);
-        in.addmember("application_id").string(request.getApplication().getId());
-        DDF out=request.getServiceProvider().getListenerService()->send(in);
-        DDFJanitor jout(out);
-        
-        // If it worked, we have a session key.
-        if (!out["key"].isstring())
-            throw FatalProfileException("Remote processing of SSO profile did not return a usable session key.");
+    
+    try {
+        if (conf.isEnabled(SPConfig::OutOfProcess)) {
+            // When out of process, we run natively and directly process the message.
+            // RelayState will be fully handled during message processing.
+            string providerId;
+            string key = processMessage(request.getApplication(), request, providerId, relayState);
+            return sendRedirect(request, key.c_str(), providerId.c_str(), relayState.c_str());
+        }
+        else {
+            // When not out of process, we remote all the message processing.
+            DDF out,in = wrap(request);
+            DDFJanitor jin(in), jout(out);
             
-        // We invoke the RelayState method one last time on this side of the process boundary.
-        string relayState;
-        if (out["RelayState"].isstring())
-            relayState = out["RelayState"].string(); 
-        recoverRelayState(request, relayState);
-        return sendRedirect(request, out["key"].string(), out["provider_id"].string(), relayState.c_str());
+            in.addmember("application_id").string(request.getApplication().getId());
+            try {
+                out=request.getServiceProvider().getListenerService()->send(in);
+            }
+            catch (XMLToolingException& ex) {
+                // Try for RelayState recovery.
+                if (ex.getProperty("RelayState"))
+                    relayState = ex.getProperty("RelayState");
+                try {
+                    recoverRelayState(request, relayState);
+                }
+                catch (exception& ex2) {
+                    m_log.error("trapped an error during RelayState recovery while handling an error: %s", ex2.what());
+                }
+                throw;
+            }
+                
+            // We invoke RelayState recovery one last time on this side of the boundary.
+            if (out["RelayState"].isstring())
+                relayState = out["RelayState"].string(); 
+            recoverRelayState(request, relayState);
+    
+            // If it worked, we have a session key.
+            if (!out["key"].isstring())
+                throw FatalProfileException("Remote processing of SSO profile did not return a usable session key.");
+            
+            // Take care of cookie business and wrap it up.
+            return sendRedirect(request, out["key"].string(), out["provider_id"].string(), relayState.c_str());
+        }
+    }
+    catch (XMLToolingException& ex) {
+        // Try and preserve RelayState.
+        if (!relayState.empty())
+            ex.addProperty("RelayState", relayState.c_str());
+        throw;
     }
 }
 
@@ -101,17 +126,25 @@ void AssertionConsumerService::receive(DDF& in, ostream& out)
     
     // Do the work.
     string relayState, providerId;
-    string key = processMessage(*app, *http.get(), providerId, relayState);
-    
-    // Repack for return to caller.
-    DDF ret=DDF(NULL).structure();
-    DDFJanitor jret(ret);
-    ret.addmember("key").string(key.c_str());
-    if (!providerId.empty())
-        ret.addmember("provider_id").string(providerId.c_str());
-    if (!relayState.empty())
-        ret.addmember("RelayState").string(relayState.c_str());
-    out << ret;
+    try {
+        string key = processMessage(*app, *http.get(), providerId, relayState);
+
+        // Repack for return to caller.
+        DDF ret=DDF(NULL).structure();
+        DDFJanitor jret(ret);
+        ret.addmember("key").string(key.c_str());
+        if (!providerId.empty())
+            ret.addmember("provider_id").string(providerId.c_str());
+        if (!relayState.empty())
+            ret.addmember("RelayState").string(relayState.c_str());
+        out << ret;
+    }
+    catch (XMLToolingException& ex) {
+        // Try and preserve RelayState if we can.
+        if (!relayState.empty())
+            ex.addProperty("RelayState", relayState.c_str());
+        throw;
+    }
 }
 
 string AssertionConsumerService::processMessage(
