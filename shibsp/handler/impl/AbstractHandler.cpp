@@ -26,11 +26,11 @@
 #include "SPRequest.h"
 #include "handler/AbstractHandler.h"
 
-#include <saml/SAMLConfig.h>
-#include <saml/binding/URLEncoder.h>
 #include <saml/saml1/core/Protocols.h>
 #include <saml/saml2/core/Protocols.h>
 #include <saml/util/SAMLConstants.h>
+#include <xmltooling/XMLToolingConfig.h>
+#include <xmltooling/util/URLEncoder.h>
 
 using namespace shibsp;
 using namespace samlconstants;
@@ -109,7 +109,7 @@ void AbstractHandler::recoverRelayState(HTTPRequest& httpRequest, string& relayS
     SPConfig& conf = SPConfig::getConfig();
     if (conf.isEnabled(SPConfig::OutOfProcess)) {
         // Out of process, we look for StorageService-backed state.
-        // TODO
+        // TODO: something like ss:SSID:key?
     }
     
     if (conf.isEnabled(SPConfig::InProcess)) {
@@ -122,7 +122,7 @@ void AbstractHandler::recoverRelayState(HTTPRequest& httpRequest, string& relayS
             if (state && *state) {
                 // URL-decode the value.
                 char* rscopy=strdup(state);
-                SAMLConfig::getConfig().getURLEncoder()->decode(rscopy);
+                XMLToolingConfig::getConfig().getURLEncoder()->decode(rscopy);
                 relayState = rscopy;
                 free(rscopy);
                 

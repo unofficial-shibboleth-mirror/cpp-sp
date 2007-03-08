@@ -30,7 +30,6 @@
 #include "util/SPConstants.h"
 
 #include <saml/SAMLConfig.h>
-#include <saml/binding/URLEncoder.h>
 #include <saml/saml1/core/Assertions.h>
 #include <saml/util/CommonDomainCookie.h>
 
