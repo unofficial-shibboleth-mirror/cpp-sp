@@ -74,7 +74,8 @@ namespace shibsp {
             const EntityDescriptor* issuer,
             const NameID& nameid,
             const vector<const opensaml::Assertion*>* tokens=NULL
-            ) : m_app(application), m_session(NULL), m_client_addr(client_addr), m_entity(issuer), m_nameid(nameid), m_tokens(tokens) {
+            ) : m_app(application), m_session(NULL), m_client_addr(client_addr), m_metadata(NULL), m_entity(issuer),
+                m_nameid(nameid), m_tokens(tokens) {
         }
         
         ~SimpleContext() {
@@ -297,12 +298,12 @@ SimpleResolverImpl::SimpleResolverImpl(const DOMElement* e) : m_document(NULL), 
             continue;
         }
 
-        if (log.isDebugEnabled()) {
+        if (log.isInfoEnabled()) {
 #ifdef HAVE_GOOD_STL
             auto_ptr_char n(name);
             auto_ptr_char f(format);
 #endif
-            log.debug("creating declaration for Attribute %s%s%s", n.get(), *f.get() ? ", Format/Namespace:" : "", f.get());
+            log.info("creating declaration for Attribute %s%s%s", n.get(), *f.get() ? ", Format/Namespace:" : "", f.get());
         }
         
         decl.first = decoder;

@@ -120,18 +120,22 @@
 		<annotation>
 			<documentation>Ties ReplayCache to a custom StorageService</documentation>
 		</annotation>
-		<sequence/>
-		<attribute name="StorageService" type="IDREF" use="required"/>
+		<complexType>
+			<sequence/>
+			<attribute name="StorageService" type="IDREF" use="required"/>
+		</complexType>
 	</element>
 	
 	<element name="ArtifactMap">
 		<annotation>
 			<documentation>Customizes an ArtifactMap</documentation>
 		</annotation>
-		<sequence/>
-		<attribute name="StorageService" type="IDREF"/>
-		<attribute name="context" type="conf:string"/>
-		<attribute name="artifactTTL" type="unsignedInt" default="180"/>
+		<complexType>
+			<sequence/>
+			<attribute name="StorageService" type="IDREF"/>
+			<attribute name="context" type="conf:string"/>
+			<attribute name="artifactTTL" type="unsignedInt" default="180"/>
+		</complexType>
 	</element>
 	
 	<element name="OutOfProcess">
@@ -177,6 +181,7 @@
 		<complexType>
 			<sequence>
 				<element ref="conf:Extensions" minOccurs="0"/>
+				<element ref="conf:SessionCache" minOccurs="0"/>
 				<element name="RequestMapper" type="conf:PluggableType"/>
 				<element name="Implementation" minOccurs="0">
 					<complexType>
@@ -189,7 +194,6 @@
 				<any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
 			</sequence>
 			<attribute name="logger" type="anyURI"/>
-			<attribute name="localRelayState" type="boolean" default="false"/>
 			<anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>

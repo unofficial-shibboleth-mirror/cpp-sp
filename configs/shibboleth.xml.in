@@ -44,7 +44,7 @@
 	</OutOfProcess>
     
 	<!-- The InProcess section pertains to components that support transient process pools like most web servers. -->
-	<InProcess logger="@-PKGSYSCONFDIR-@/native.logger" localRelayState="true">
+	<InProcess logger="@-PKGSYSCONFDIR-@/native.logger">
 		<!--
 		To customize behavior, map hostnames and path components to applicationId and other settings.
 		The following provider types are available with the delivered code:

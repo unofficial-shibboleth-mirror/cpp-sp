@@ -42,7 +42,7 @@ using namespace log4cpp;
 using namespace std;
 
 AssertionConsumerService::AssertionConsumerService(const DOMElement* e, Category& log)
-    : AbstractHandler(e, log), m_configNS(SHIB2SPCONFIG_NS),
+    : AbstractHandler(e, log), m_decoder(NULL), m_configNS(SHIB2SPCONFIG_NS),
         m_role(samlconstants::SAML20MD_NS, opensaml::saml2md::IDPSSODescriptor::LOCAL_NAME)
 {
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess))
@@ -174,6 +174,8 @@ string AssertionConsumerService::processMessage(
     
     // Decode the message and process it in a protocol-specific way.
     auto_ptr<XMLObject> msg(m_decoder->decode(relayState, httpRequest, policy));
+    if (!msg.get())
+        throw BindingException("Failed to decode an SSO protocol response.");
     recoverRelayState(httpRequest, relayState);
     string key = implementProtocol(application, httpRequest, policy, settings, *msg.get());
 

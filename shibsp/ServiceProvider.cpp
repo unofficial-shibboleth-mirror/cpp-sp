@@ -451,13 +451,13 @@ pair<bool,long> ServiceProvider::doHandler(SPRequest& request) const
       
         // Make sure this is SSL, if it should be
         if ((!handlerSSL.first || handlerSSL.second) && !request.isSecure())
-            throw FatalProfileException("Blocked non-SSL access to Shibboleth handler.");
+            throw SecurityPolicyException("Blocked non-SSL access to Shibboleth handler.");
 
         // We dispatch based on our path info. We know the request URL begins with or equals the handler URL,
         // so the path info is the next character (or null).
         const Handler* handler=app->getHandler(targetURL.c_str() + strlen(handlerURL));
         if (!handler)
-            throw BindingException("Shibboleth handler invoked at an unconfigured location.");
+            throw ConfigurationException("Shibboleth handler invoked at an unconfigured location.");
 
         pair<bool,long> hret=handler->run(request);
 
@@ -465,7 +465,7 @@ pair<bool,long> ServiceProvider::doHandler(SPRequest& request) const
         if (hret.first)
             return hret;
        
-        throw BindingException("Configured Shibboleth handler failed to process the request.");
+        throw ConfigurationException("Configured Shibboleth handler failed to process the request.");
     }
     catch (MetadataException& e) {
         TemplateParameters tp(&e);

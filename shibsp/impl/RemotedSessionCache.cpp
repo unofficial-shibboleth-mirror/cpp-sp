@@ -607,17 +607,16 @@ void RemotedCache::cleanup()
     xmltooling::NDC ndc("cleanup");
 #endif
 
-    int rerun_timer = 0;
     Mutex* mutex = Mutex::create();
   
     // Load our configuration details...
     static const XMLCh cleanupInterval[] = UNICODE_LITERAL_15(c,l,e,a,n,u,p,I,n,t,e,r,v,a,l);
-    const XMLCh* tag=m_root->getAttributeNS(NULL,cleanupInterval);
+    const XMLCh* tag=m_root ? m_root->getAttributeNS(NULL,cleanupInterval) : NULL;
+    int rerun_timer = 900;
     if (tag && *tag)
         rerun_timer = XMLString::parseInt(tag);
-
     if (rerun_timer <= 0)
-        rerun_timer = 900;        // rerun every 5 minutes
+        rerun_timer = 900;
 
     mutex->lock();
 

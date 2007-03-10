@@ -321,15 +321,19 @@ public:
   }
   const char* getQueryString() const { return m_req->args; }
   const char* getRequestBody() const {
-    if (m_gotBody)
+    if (m_gotBody || m_req->method_number==M_GET)
         return m_body.c_str();
     // Read the posted data
-    if (ap_setup_client_block(m_req, REQUEST_CHUNKED_ERROR))
-        throw opensaml::BindingException("Apache function (setup_client_block) failed while reading POST request body.");
-    if (!ap_should_client_block(m_req))
-        throw opensaml::BindingException("Apache function (should_client_block) failed while reading POST request body.");
+    if (ap_setup_client_block(m_req, REQUEST_CHUNKED_DECHUNK)) {
+        m_gotBody=true;
+        log(SPError, "Apache function (setup_client_block) failed while reading request body.");
+    }
+    if (!ap_should_client_block(m_req)) {
+        m_gotBody=true;
+        log(SPError, "Apache function (should_client_block) failed while reading request body.");
+    }
     if (m_req->remaining > 1024*1024)
-        throw opensaml::BindingException("Blocked POST request body larger than size limit.");
+        throw opensaml::SecurityPolicyException("Blocked request body larger than 1M size limit.");
     m_gotBody=true;
     char buff[HUGE_STRING_LEN];
     ap_hard_timeout("[mod_shib] getRequestBody", m_req);
@@ -1014,6 +1018,7 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
     g_Config=&SPConfig::getConfig();
     g_Config->setFeatures(
         SPConfig::Listener |
+        SPConfig::Caching |
         SPConfig::Metadata |
         SPConfig::RequestMapping |
         SPConfig::InProcess |
@@ -1114,8 +1119,10 @@ typedef const char* (*config_fn_t)(void);
 static command_rec shire_cmds[] = {
   {"ShibConfig", (config_fn_t)ap_set_global_string_slot, &g_szSHIBConfig,
    RSRC_CONF, TAKE1, "Path to shibboleth.xml config file"},
+  {"ShibCatalogs", (config_fn_t)ap_set_global_string_slot, &g_szSchemaDir,
+   RSRC_CONF, TAKE1, "Paths of XML schema catalogs"},
   {"ShibSchemaDir", (config_fn_t)ap_set_global_string_slot, &g_szSchemaDir,
-   RSRC_CONF, TAKE1, "Path to Shibboleth XML schema directory"},
+   RSRC_CONF, TAKE1, "Paths of XML schema catalogs (deprecated in favor of ShibCatalogs)"},
 
   {"ShibURLScheme", (config_fn_t)shib_set_server_string_slot,
    (void *) XtOffsetOf (shib_server_config, szScheme),
@@ -1208,9 +1215,12 @@ static command_rec shib_cmds[] = {
   AP_INIT_TAKE1("ShibConfig",
 		(config_fn_t)ap_set_global_string_slot, &g_szSHIBConfig,
 		RSRC_CONF, "Path to shibboleth.xml config file"),
+  AP_INIT_TAKE1("ShibCatalogs",
+     (config_fn_t)ap_set_global_string_slot, &g_szSchemaDir,
+      RSRC_CONF, "Paths of XML schema catalogs"),
   AP_INIT_TAKE1("ShibSchemaDir",
      (config_fn_t)ap_set_global_string_slot, &g_szSchemaDir,
-      RSRC_CONF, "Path to Shibboleth XML schema directory"),
+      RSRC_CONF, "Paths of XML schema catalogs (deprecated in favor of ShibCatalogs)"),
 
   AP_INIT_TAKE1("ShibURLScheme",
      (config_fn_t)shib_set_server_string_slot,

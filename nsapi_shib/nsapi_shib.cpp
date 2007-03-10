@@ -116,17 +116,18 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, ::Session* sn, Request* 
 
     const char* schemadir=pblock_findval("shib-schemas",pb);
     if (!schemadir)
-        schemadir=getenv("SHIBSCHEMAS");
+        schemadir=getenv("SHIBSP_SCHEMAS");
     if (!schemadir)
         schemadir=SHIBSP_SCHEMAS;
     const char* config=pblock_findval("shib-config",pb);
     if (!config)
-        config=getenv("SHIBCONFIG");
+        config=getenv("SHIBSP_CONFIG");
     if (!config)
         config=SHIBSP_CONFIG;
     g_Config=&SPConfig::getConfig();
     g_Config->setFeatures(
         SPConfig::Listener |
+        SPConfig::Caching |
         SPConfig::Metadata |
         SPConfig::RequestMapping |
         SPConfig::InProcess |
@@ -264,9 +265,8 @@ public:
     if (m_gotBody)
         return m_body.c_str();
     char* content_length=NULL;
-    if (request_header("content-length", &content_length, m_sn, m_rq)!=REQ_PROCEED ||
-         atoi(content_length) > 1024*1024) // 1MB?
-      throw opensaml::BindingException("Blocked POST request body exceeding size limit.");
+    if (request_header("content-length", &content_length, m_sn, m_rq)!=REQ_PROCEED || atoi(content_length) > 1024*1024) // 1MB?
+      throw opensaml::SecurityPolicyException("Blocked request body exceeding 1M size limit.");
     else {
       char ch=IO_EOF+1;
       int cl=atoi(content_length);
@@ -280,7 +280,7 @@ public:
         cl--;
       }
       if (cl)
-        throw opensaml::BindingException("Error reading POST request body from browser.");
+        throw IOException("Error reading request body from browser.");
       return m_body.c_str();
     }
   }

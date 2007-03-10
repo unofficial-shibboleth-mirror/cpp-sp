@@ -144,15 +144,16 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
         return TRUE;
     }
 
-    LPCSTR schemadir=getenv("SHIBSCHEMAS");
+    LPCSTR schemadir=getenv("SHIBSP_SCHEMAS");
     if (!schemadir)
         schemadir=SHIBSP_SCHEMAS;
-    LPCSTR config=getenv("SHIBCONFIG");
+    LPCSTR config=getenv("SHIBSP_CONFIG");
     if (!config)
         config=SHIBSP_CONFIG;
     g_Config=&SPConfig::getConfig();
     g_Config->setFeatures(
         SPConfig::Listener |
+        SPConfig::Caching |
         SPConfig::Metadata |
         SPConfig::RequestMapping |
         SPConfig::InProcess |
@@ -754,8 +755,8 @@ public:
     if (m_gotBody)
         return m_body.c_str();
     if (m_lpECB->cbTotalBytes > 1024*1024) // 1MB?
-        throw opensaml::BindingException("Size of POST request body exceeded limit.");
-    else if (m_lpECB->cbTotalBytes != m_lpECB->cbAvailable) {
+        throw opensaml::SecurityPolicyException("Size of request body exceeded 1M size limit.");
+    else if (m_lpECB->cbTotalBytes > m_lpECB->cbAvailable) {
       m_gotBody=true;
       char buf[8192];
       DWORD datalen=m_lpECB->cbTotalBytes;
@@ -763,12 +764,12 @@ public:
         DWORD buflen=8192;
         BOOL ret = m_lpECB->ReadClient(m_lpECB->ConnID, buf, &buflen);
         if (!ret || !buflen)
-            throw IOException("Error reading POST request body from browser.");
+            throw IOException("Error reading request body from browser.");
         m_body.append(buf, buflen);
         datalen-=buflen;
       }
     }
-    else {
+    else if (m_lpECB->cbAvailable) {
         m_gotBody=true;
         m_body.assign(reinterpret_cast<char*>(m_lpECB->lpbData),m_lpECB->cbAvailable);
     }

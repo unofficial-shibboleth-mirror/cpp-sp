@@ -943,8 +943,16 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                     }
                 }
                 else {
-                    log.info("building in-process SessionCache of type %s...",REMOTED_SESSION_CACHE);
-                    m_outer->m_sessionCache=conf.SessionCacheManager.newPlugin(REMOTED_SESSION_CACHE,NULL);
+                    child=XMLHelper::getFirstChildElement(SHIRE,_SessionCache);
+                    if (child) {
+                        auto_ptr_char type(child->getAttributeNS(NULL,_type));
+                        log.info("building SessionCache of type %s...",type.get());
+                        m_outer->m_sessionCache=conf.SessionCacheManager.newPlugin(type.get(),child);
+                    }
+                    else {
+                        log.warn("SessionCache unspecified, building SessionCache of type %s...",REMOTED_SESSION_CACHE);
+                        m_outer->m_sessionCache=conf.SessionCacheManager.newPlugin(REMOTED_SESSION_CACHE,child);
+                    }
                 }
             }
         } // end of first-time-only stuff
