@@ -156,12 +156,12 @@ namespace shibsp {
         /**
          * Manages factories for Handler plugins that implement AssertionConsumerService functionality.
          */
-        xmltooling::PluginManager<Handler,const xercesc::DOMElement*> AssertionConsumerServiceManager;
+        xmltooling::PluginManager< Handler,std::pair<const xercesc::DOMElement*,const char*> > AssertionConsumerServiceManager;
 
         /**
          * Manages factories for Handler plugins that implement customized functionality.
          */
-        xmltooling::PluginManager<Handler,const xercesc::DOMElement*> HandlerManager;
+        xmltooling::PluginManager< Handler,std::pair<const xercesc::DOMElement*,const char*> > HandlerManager;
 
         /**
          * Manages factories for ListenerService plugins.
@@ -171,7 +171,7 @@ namespace shibsp {
         /**
          * Manages factories for Handler plugins that implement ManageNameIDService functionality.
          */
-        xmltooling::PluginManager<Handler,const xercesc::DOMElement*> ManageNameIDServiceManager;
+        xmltooling::PluginManager< Handler,std::pair<const xercesc::DOMElement*,const char*> > ManageNameIDServiceManager;
 
         /**
          * Manages factories for RequestMapper plugins.
@@ -191,12 +191,12 @@ namespace shibsp {
         /**
          * Manages factories for Handler plugins that implement SessionInitiator functionality.
          */
-        xmltooling::PluginManager<Handler,const xercesc::DOMElement*> SessionInitiatorManager;
+        xmltooling::PluginManager< Handler,std::pair<const xercesc::DOMElement*,const char*> > SessionInitiatorManager;
 
         /**
          * Manages factories for Handler plugins that implement SingleLogoutService functionality.
          */
-        xmltooling::PluginManager<Handler,const xercesc::DOMElement*> SingleLogoutServiceManager;
+        xmltooling::PluginManager< Handler,std::pair<const xercesc::DOMElement*,const char*> > SingleLogoutServiceManager;
 
     protected:
         SPConfig() : attribute_value_delimeter(';'), m_serviceProvider(NULL), m_features(0) {}

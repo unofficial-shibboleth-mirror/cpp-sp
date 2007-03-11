@@ -54,7 +54,9 @@ namespace shibsp {
     class SHIBSP_DLLLOCAL SAML1Consumer : public AssertionConsumerService
     {
     public:
-        SAML1Consumer(const DOMElement* e) : AssertionConsumerService(e, Category::getInstance(SHIBSP_LOGCAT".SAML1")) {}
+        SAML1Consumer(const DOMElement* e, const char* appId)
+            : AssertionConsumerService(e, appId, Category::getInstance(SHIBSP_LOGCAT".SAML1")) {
+        }
         virtual ~SAML1Consumer() {}
         
     private:
@@ -71,9 +73,9 @@ namespace shibsp {
     #pragma warning( pop )
 #endif
 
-    Handler* SHIBSP_DLLLOCAL SAML1ConsumerFactory(const DOMElement* const & e)
+    Handler* SHIBSP_DLLLOCAL SAML1ConsumerFactory(const pair<const DOMElement*,const char*>& p)
     {
-        return new SAML1Consumer(e);
+        return new SAML1Consumer(p.first, p.second);
     }
     
 };

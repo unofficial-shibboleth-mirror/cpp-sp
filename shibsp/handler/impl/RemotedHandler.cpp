@@ -21,6 +21,7 @@
  */
 
 #include "internal.h"
+#include "exceptions.h"
 #include "ServiceProvider.h"
 #include "handler/RemotedHandler.h"
 
@@ -202,13 +203,11 @@ long RemotedResponse::sendRedirect(const char* url)
 }
 
 
-unsigned int RemotedHandler::m_counter = 0;
-
-RemotedHandler::RemotedHandler()
+void RemotedHandler::setAddress(const char* address)
 {
-    m_address += ('A' + (m_counter++));
-    m_address += "::run::RemotedHandler";
-
+    if (!m_address.empty())
+        throw ConfigurationException("Cannot register a remoting address twice for the same Handler.");
+    m_address = address;
     SPConfig& conf = SPConfig::getConfig();
     if (conf.isEnabled(SPConfig::OutOfProcess)) {
         ListenerService* listener = conf.getServiceProvider()->getListenerService(false);
@@ -225,7 +224,6 @@ RemotedHandler::~RemotedHandler()
     ListenerService* listener=conf.getServiceProvider()->getListenerService(false);
     if (listener && conf.isEnabled(SPConfig::OutOfProcess))
         listener->unregListener(m_address.c_str(),this);
-    m_counter--;
 }
 
 DDF RemotedHandler::wrap(const SPRequest& request, const vector<string>* headers, bool certs) const

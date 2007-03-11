@@ -38,7 +38,14 @@ namespace shibsp {
         virtual ~RemotedHandler();
 
     protected:
-        RemotedHandler();
+        RemotedHandler() {}
+
+        /**
+         * Establishes message remoting using the supplied address.
+         * 
+         * @param address   a unique "address" for remote message handling
+         */
+        void setAddress(const char* address);
 
         /**
          * Wraps a request by creating an outgoing data flow with the data needed
@@ -79,9 +86,6 @@ namespace shibsp {
         
         /** Message address for remote half. */
         std::string m_address;
-        
-    private:
-        static unsigned int m_counter;
     };
 };
 

@@ -49,7 +49,14 @@ namespace shibsp {
         void receive(DDF& in, std::ostream& out);
 
     protected:
-        AssertionConsumerService(const DOMElement* e, log4cpp::Category& log);
+        /**
+         * Constructor
+         * 
+         * @param e     root of DOM configuration
+         * @param appId ID of application that "owns" the handler
+         * @param log   a logging object to use
+         */
+        AssertionConsumerService(const DOMElement* e, const char* appId, log4cpp::Category& log);
         
         /**
          * Implement protocol-specific handling of the incoming decoded message.

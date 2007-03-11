@@ -41,10 +41,14 @@ using namespace xmltooling;
 using namespace log4cpp;
 using namespace std;
 
-AssertionConsumerService::AssertionConsumerService(const DOMElement* e, Category& log)
+AssertionConsumerService::AssertionConsumerService(const DOMElement* e, const char* appId, Category& log)
     : AbstractHandler(e, log), m_decoder(NULL), m_configNS(SHIB2SPCONFIG_NS),
         m_role(samlconstants::SAML20MD_NS, opensaml::saml2md::IDPSSODescriptor::LOCAL_NAME)
 {
+    string address(appId);
+    address += getString("Location").second;
+    address += "::run::ACS";
+    setAddress(address.c_str());
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess))
         m_decoder = SAMLConfig::getConfig().MessageDecoderManager.newPlugin(getString("Binding").second,e);
 }

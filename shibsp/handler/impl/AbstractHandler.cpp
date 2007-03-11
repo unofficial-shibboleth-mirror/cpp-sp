@@ -40,7 +40,7 @@ using namespace xercesc;
 using namespace std;
 
 namespace shibsp {
-    SHIBSP_DLLLOCAL PluginManager<Handler,const DOMElement*>::Factory SAML1ConsumerFactory;
+    SHIBSP_DLLLOCAL PluginManager<Handler,pair<const DOMElement*,const char*>>::Factory SAML1ConsumerFactory;
 };
 
 void SHIBSP_API shibsp::registerHandlers()
