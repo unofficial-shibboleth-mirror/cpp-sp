@@ -384,7 +384,7 @@ XMLApplication::XMLApplication(
                         child = XMLHelper::getNextSiblingElement(child);
                         continue;
                     }
-                    handler=conf.AssertionConsumerServiceManager.newPlugin(bindprop.get(),child);
+                    handler=conf.AssertionConsumerServiceManager.newPlugin(bindprop.get(),make_pair(child, getId()));
                     // Map by binding (may be > 1 per binding, e.g. SAML 1.0 vs 1.1)
 #ifdef HAVE_GOOD_STL
                     m_acsBindingMap[handler->getXMLString("Binding").second].push_back(handler);
@@ -412,7 +412,7 @@ XMLApplication::XMLApplication(
                         child = XMLHelper::getNextSiblingElement(child);
                         continue;
                     }
-                    handler=conf.SessionInitiatorManager.newPlugin(bindprop.get(),child);
+                    handler=conf.SessionInitiatorManager.newPlugin(bindprop.get(),make_pair(child, getId()));
                     pair<bool,const char*> si_id=handler->getString("id");
                     if (si_id.first && si_id.second)
                         m_sessionInitMap[si_id.second]=handler;
@@ -435,7 +435,7 @@ XMLApplication::XMLApplication(
                         child = XMLHelper::getNextSiblingElement(child);
                         continue;
                     }
-                    handler=conf.SingleLogoutServiceManager.newPlugin(bindprop.get(),child);
+                    handler=conf.SingleLogoutServiceManager.newPlugin(bindprop.get(),make_pair(child, getId()));
                 }
                 else if (XMLHelper::isNodeNamed(child,samlconstants::SAML20MD_NS,ManageNameIDService::LOCAL_NAME)) {
                     auto_ptr_char bindprop(child->getAttributeNS(NULL,EndpointType::BINDING_ATTRIB_NAME));
@@ -444,7 +444,7 @@ XMLApplication::XMLApplication(
                         child = XMLHelper::getNextSiblingElement(child);
                         continue;
                     }
-                    handler=conf.ManageNameIDServiceManager.newPlugin(bindprop.get(),child);
+                    handler=conf.ManageNameIDServiceManager.newPlugin(bindprop.get(),make_pair(child, getId()));
                 }
                 else {
                     auto_ptr_char type(child->getAttributeNS(NULL,_type));
@@ -453,7 +453,7 @@ XMLApplication::XMLApplication(
                         child = XMLHelper::getNextSiblingElement(child);
                         continue;
                     }
-                    handler=conf.HandlerManager.newPlugin(type.get(),child);
+                    handler=conf.HandlerManager.newPlugin(type.get(),make_pair(child, getId()));
                 }
 
                 // Save off the objects after giving the property set to the handler for its use.
