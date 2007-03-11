@@ -110,10 +110,11 @@ namespace shibsp {
         }
         const vector<const char*>& getAssertionIDs() const {
             if (m_ids.empty()) {
-                DDF id = m_obj["assertions"].first();
+                DDF ids = m_obj["assertions"];
+                DDF id = ids.first();
                 while (id.isstring()) {
                     m_ids.push_back(id.string());
-                    id = id.next();
+                    id = ids.next();
                 }
             }
             return m_ids;
@@ -181,7 +182,8 @@ StoredSession::~StoredSession()
 void StoredSession::unmarshallAttributes() const
 {
     Attribute* attribute;
-    DDF attr = m_obj["attributes"].first();
+    DDF attrs = m_obj["attributes"];
+    DDF attr = attrs.first();
     while (!attr.isnull()) {
         try {
             attribute = Attribute::unmarshall(attr);
@@ -194,7 +196,7 @@ void StoredSession::unmarshallAttributes() const
             const char* id = attr.first().name();
             m_cache->m_log.error("error unmarshalling attribute (ID: %s): %s", id ? id : "none", ex.what());
         }
-        attr = attr.next();
+        attr = attrs.next();
     }
 }
 

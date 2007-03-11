@@ -75,7 +75,7 @@ namespace shibsp {
                 pch = val["SPProvidedID"].string();
                 if (pch)
                     v.m_SPProvidedID = pch;
-                val = val.next();
+                val = in.first().next();
             }
         }
         

@@ -61,7 +61,7 @@ namespace shibsp {
             DDF val = in.first().first();
             while (val.name() && val.string()) {
                 m_values.push_back(std::make_pair(val.name(), val.string()));
-                val = val.next();
+                val = in.first().next();
             }
         }
         

@@ -336,21 +336,20 @@ void SimpleResolverImpl::resolve(
     // Check the NameID based on the format.
     const XMLCh* name;
     const XMLCh* format = ctx.getNameID().getFormat();
-    if (!format) {
+    if (!format || !*format)
         format = NameID::UNSPECIFIED;
 #ifdef HAVE_GOOD_STL
-        if ((rule=m_attrMap.find(make_pair(format,xstring()))) != m_attrMap.end()) {
+    if ((rule=m_attrMap.find(make_pair(format,xstring()))) != m_attrMap.end()) {
 #else
-        auto_ptr_char temp(format);
-        if ((rule=m_attrMap.find(make_pair(temp.get(),string()))) != m_attrMap.end()) {
+    auto_ptr_char temp(format);
+    if ((rule=m_attrMap.find(make_pair(temp.get(),string()))) != m_attrMap.end()) {
 #endif
-            if (aset.empty() || aset.count(rule->second.second)) {
-                resolved.push_back(
-                    rule->second.first->decode(
-                        rule->second.second.c_str(), &ctx.getNameID(), assertingParty.get(), relyingParty
-                        )
-                    );
-            }
+        if (aset.empty() || aset.count(rule->second.second)) {
+            resolved.push_back(
+                rule->second.first->decode(
+                    rule->second.second.c_str(), &ctx.getNameID(), assertingParty.get(), relyingParty
+                    )
+                );
         }
     }
 
@@ -362,7 +361,7 @@ void SimpleResolverImpl::resolve(
             format = (*a)->getAttributeNamespace();
             if (!name || !*name)
                 continue;
-            if (!format)
+            if (!format || XMLString::equals(format, shibspconstants::SHIB1_ATTRIBUTE_NAMESPACE_URI))
                 format = &chNull;
 #ifdef HAVE_GOOD_STL
             if ((rule=m_attrMap.find(make_pair(name,format))) != m_attrMap.end()) {
@@ -404,21 +403,20 @@ void SimpleResolverImpl::resolve(
     // Check the NameID based on the format.
     const XMLCh* name;
     const XMLCh* format = ctx.getNameID().getFormat();
-    if (!format) {
+    if (!format || !*format)
         format = NameID::UNSPECIFIED;
 #ifdef HAVE_GOOD_STL
-        if ((rule=m_attrMap.find(make_pair(format,xstring()))) != m_attrMap.end()) {
+    if ((rule=m_attrMap.find(make_pair(format,xstring()))) != m_attrMap.end()) {
 #else
-        auto_ptr_char temp(format);
-        if ((rule=m_attrMap.find(make_pair(temp.get(),string()))) != m_attrMap.end()) {
+    auto_ptr_char temp(format);
+    if ((rule=m_attrMap.find(make_pair(temp.get(),string()))) != m_attrMap.end()) {
 #endif
-            if (aset.empty() || aset.count(rule->second.second)) {
-                resolved.push_back(
-                    rule->second.first->decode(
-                        rule->second.second.c_str(), &ctx.getNameID(), assertingParty.get(), relyingParty
-                        )
-                    );
-            }
+        if (aset.empty() || aset.count(rule->second.second)) {
+            resolved.push_back(
+                rule->second.first->decode(
+                    rule->second.second.c_str(), &ctx.getNameID(), assertingParty.get(), relyingParty
+                    )
+                );
         }
     }
 
@@ -430,7 +428,9 @@ void SimpleResolverImpl::resolve(
             format = (*a)->getNameFormat();
             if (!name || !*name)
                 continue;
-            if (!format)
+            if (!format || !*format)
+                format = saml2::Attribute::UNSPECIFIED;
+            else if (XMLString::equals(format, saml2::Attribute::URI_REFERENCE))
                 format = &chNull;
 #ifdef HAVE_GOOD_STL
             if ((rule=m_attrMap.find(make_pair(name,format))) != m_attrMap.end()) {

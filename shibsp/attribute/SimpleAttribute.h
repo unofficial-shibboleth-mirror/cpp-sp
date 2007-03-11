@@ -49,7 +49,7 @@ namespace shibsp {
             DDF val = in.first().first();
             while (val.string()) {
                 m_serialized.push_back(val.string());
-                val = val.next();
+                val = in.first().next();
             }
         }
         

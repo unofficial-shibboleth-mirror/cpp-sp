@@ -83,7 +83,7 @@ shibsp::Attribute* ScopedAttributeDecoder::decode(
         else {
             const opensaml::saml1::Attribute* saml1attr = dynamic_cast<const opensaml::saml1::Attribute*>(xmlObject);
             if (saml1attr) {
-                const vector<XMLObject*>& values = saml2attr->getAttributeValues();
+                const vector<XMLObject*>& values = saml1attr->getAttributeValues();
                 v = values.begin();
                 stop = values.end();
                 if (log.isDebugEnabled()) {
