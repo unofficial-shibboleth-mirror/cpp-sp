@@ -886,7 +886,7 @@ bool htAccessControl::authorized(
                             }
                             else {
                                 st->log(ShibTarget::LogLevelDebug, string("htAccessControl plugin expecting ") + w +
-                                    ", got " + val + ": authoritzation not granted.");
+                                    ", got " + val + ": authorization not granted.");
                             }
                         }
                     }
