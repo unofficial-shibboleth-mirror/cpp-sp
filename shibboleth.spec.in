@@ -10,7 +10,7 @@ Source0:	http://shibboleth.internet2.edu/downloads/%{name}-%{version}.tar.gz
 Source1:	http://shibboleth.internet2.edu/downloads/%{name}-%{version}.tar.gz.asc
 BuildRoot:	%{_tmppath}/%{name}-%{version}-root
 
-BuildRequires:	openssl-devel, curl-devel >= 7.10.6, xerces-c-devel >= 2.6.1
+BuildRequires:	openssl-devel, curl-devel >= 7.10.6, xerces%{?xercesver}-c-devel >= 2.6.1
 BuildRequires:	xml-security-c-devel >= 1.1.0, log4cpp-devel >= 0.3.5
 BuildRequires:	zlib-devel, opensaml-devel >= 1.1-6
 %if "%{_vendor}" == "redhat"
