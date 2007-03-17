@@ -120,6 +120,10 @@ string SAML1Consumer::implementProtocol(
     const AuthenticationStatement* ssoStatement=NULL;
     vector<const opensaml::Assertion*> tokens;
 
+    // Also track "bad" tokens that we'll cache but not use.
+    // This is necessary because there may be valid tokens not aimed at us.
+    vector<const opensaml::Assertion*> badtokens;
+
     // Profile validator.
     time_t now = time(NULL);
     BrowserSSOProfileValidator ssoValidator(application.getAudiences(), now);
@@ -131,6 +135,7 @@ string SAML1Consumer::implementProtocol(
         // Skip unsigned assertion?
         if (!(*a)->getSignature() && flag.first && flag.second) {
             m_log.warn("found unsigned assertion in SAML response, ignoring it per signedAssertions policy");
+            badtokens.push_back(*a);
             continue;
         }
 
@@ -143,8 +148,11 @@ string SAML1Consumer::implementProtocol(
             policy.evaluate(*(*a));
             
             // If no security is in place now, we kick it.
-            if (!alreadySecured && !policy.isSecure())
-                throw SecurityPolicyException("Unable to establish security of the assertion.");
+            if (!alreadySecured && !policy.isSecure()) {
+                m_log.warn("unable to establish security of assertion");
+                badtokens.push_back(*a);
+                continue;
+            }
 
             // Now do profile and core semantic validation to ensure we can use it for SSO.
             ssoValidator.validateAssertion(*(*a));
@@ -158,6 +166,7 @@ string SAML1Consumer::implementProtocol(
         }
         catch (exception& ex) {
             m_log.warn("detected a problem with assertion: %s", ex.what());
+            badtokens.push_back(*a);
         }
     }
 
@@ -192,6 +201,9 @@ string SAML1Consumer::implementProtocol(
 
     // Copy over any new tokens, but leave them in the context for cleanup.
     tokens.insert(tokens.end(), ctx->getResolvedAssertions().begin(), ctx->getResolvedAssertions().end());
+
+    // Now merge in bad tokens for caching.
+    tokens.insert(tokens.end(), badtokens.begin(), badtokens.end());
 
     // Now we have to extract the authentication details for session setup.
 
