@@ -55,7 +55,8 @@ namespace shibsp {
     {
     public:
         SAML1Consumer(const DOMElement* e, const char* appId)
-            : AssertionConsumerService(e, appId, Category::getInstance(SHIBSP_LOGCAT".SAML1")) {
+                : AssertionConsumerService(e, appId, Category::getInstance(SHIBSP_LOGCAT".SAML1")) {
+            m_post = XMLString::equals(getString("Binding").second, samlconstants::SAML1_PROFILE_BROWSER_POST);
         }
         virtual ~SAML1Consumer() {}
         
@@ -67,6 +68,8 @@ namespace shibsp {
             const PropertySet* settings,
             const XMLObject& xmlObject
             ) const;
+
+        bool m_post;
     };
 
 #if defined (_MSC_VER)
@@ -92,12 +95,15 @@ string SAML1Consumer::implementProtocol(
     m_log.debug("processing message against SAML 1.x SSO profile");
 
     // With the binding aspects now moved out to the MessageDecoder,
-    // the focus here is on the assertion content. For SAML 1.x,
+    // the focus here is on the assertion content. For SAML 1.x POST,
     // all the security comes from the protocol layer, and signing
     // the assertion isn't sufficient. So we can check the policy
     // object now and bail if it's not a secure message.
-    if (!policy.isSecure())
-        throw SecurityPolicyException("Security of SAML 1.x SSO response not established.");
+    if (m_post && !policy.isSecure())
+        throw SecurityPolicyException("Security of SAML 1.x SSO POST response not established.");
+        
+    // Remember whether we already established trust.
+    bool alreadySecured = policy.isSecure();
 
     // Check for errors...this will throw if it's not a successful message.
     checkError(&xmlObject);
@@ -129,9 +135,16 @@ string SAML1Consumer::implementProtocol(
         }
 
         try {
+            // We clear the security flag, so we can tell whether the token was secured on its own.
+            policy.setSecure(false);
+            
             // Run the policy over the assertion. Handles issuer consistency, replay, freshness,
             // and signature verification, assuming the relevant rules are configured.
             policy.evaluate(*(*a));
+            
+            // If no security is in place now, we kick it.
+            if (!alreadySecured && !policy.isSecure())
+                throw SecurityPolicyException("Unable to establish security of the assertion.");
 
             // Now do profile and core semantic validation to ensure we can use it for SSO.
             ssoValidator.validateAssertion(*(*a));
@@ -144,7 +157,7 @@ string SAML1Consumer::implementProtocol(
                 ssoStatement = (*a)->getAuthenticationStatements().front();
         }
         catch (exception& ex) {
-            m_log.warn("profile validation error in assertion: %s", ex.what());
+            m_log.warn("detected a problem with assertion: %s", ex.what());
         }
     }
 
