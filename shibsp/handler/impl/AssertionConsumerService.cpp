@@ -233,7 +233,7 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
     const Application& application,
     const HTTPRequest& httpRequest,
     const saml2md::EntityDescriptor* issuer,
-    const saml2::NameID& nameid,
+    const saml2::NameID* nameid,
     const vector<const Assertion*>* tokens
     ) const
 {

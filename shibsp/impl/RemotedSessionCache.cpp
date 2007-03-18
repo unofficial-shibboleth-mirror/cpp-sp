@@ -52,16 +52,16 @@ namespace shibsp {
         RemotedSession(RemotedCache* cache, DDF& obj) : m_version(obj["version"].integer()), m_obj(obj),
                 m_nameid(NULL), m_expires(0), m_lastAccess(time(NULL)), m_cache(cache), m_lock(NULL) {
             const char* nameid = obj["nameid"].string();
-            if (!nameid)
-                throw FatalProfileException("NameID missing from remotely cached session.");
-            
-            // Parse and bind the NameID into an XMLObject.
-            istringstream instr(nameid);
-            DOMDocument* doc = XMLToolingConfig::getConfig().getParser().parse(instr); 
-            XercesJanitor<DOMDocument> janitor(doc);
-            auto_ptr<saml2::NameID> n(saml2::NameIDBuilder::buildNameID());
-            n->unmarshall(doc->getDocumentElement(), true);
-            janitor.release();
+            if (nameid) {
+                // Parse and bind the NameID into an XMLObject.
+                istringstream instr(nameid);
+                DOMDocument* doc = XMLToolingConfig::getConfig().getParser().parse(instr); 
+                XercesJanitor<DOMDocument> janitor(doc);
+                auto_ptr<saml2::NameID> n(saml2::NameIDBuilder::buildNameID());
+                n->unmarshall(doc->getDocumentElement(), true);
+                janitor.release();
+                m_nameid = n.release();
+            }
             
             auto_ptr_XMLCh exp(m_obj["expires"].string());
             if (exp.get()) {
@@ -71,7 +71,6 @@ namespace shibsp {
             }
 
             m_lock = Mutex::create();
-            m_nameid = n.release();
         }
         
         ~RemotedSession() {
@@ -102,8 +101,8 @@ namespace shibsp {
         const char* getAuthnInstant() const {
             return m_obj["authn_instant"].string();
         }
-        const opensaml::saml2::NameID& getNameID() const {
-            return *m_nameid;
+        const opensaml::saml2::NameID* getNameID() const {
+            return m_nameid;
         }
         const char* getSessionIndex() const {
             return m_obj["session_index"].string();
@@ -167,9 +166,9 @@ namespace shibsp {
         string insert(
             time_t expires,
             const Application& application,
-            const char* client_addr,
-            const saml2md::EntityDescriptor* issuer,
-            const saml2::NameID& nameid,
+            const char* client_addr=NULL,
+            const saml2md::EntityDescriptor* issuer=NULL,
+            const saml2::NameID* nameid=NULL,
             const char* authn_instant=NULL,
             const char* session_index=NULL,
             const char* authncontext_class=NULL,
@@ -356,7 +355,7 @@ string RemotedCache::insert(
     const Application& application,
     const char* client_addr,
     const saml2md::EntityDescriptor* issuer,
-    const saml2::NameID& nameid,
+    const saml2::NameID* nameid,
     const char* authn_instant,
     const char* session_index,
     const char* authncontext_class,
@@ -380,7 +379,8 @@ string RemotedCache::insert(
         in.addmember("expires").string(timebuf);
     }
     in.addmember("application_id").string(application.getId());
-    in.addmember("client_addr").string(client_addr);
+    if (client_addr)
+        in.addmember("client_addr").string(client_addr);
     if (issuer) {
         auto_ptr_char provid(issuer->getEntityID());
         in.addmember("entity_id").string(provid.get());
@@ -394,9 +394,11 @@ string RemotedCache::insert(
     if (authncontext_decl)
         in.addmember("authncontext_decl").string(authncontext_decl);
     
-    ostringstream namestr;
-    namestr << nameid;
-    in.addmember("nameid").string(namestr.str().c_str());
+    if (nameid) {
+        ostringstream namestr;
+        namestr << nameid;
+        in.addmember("nameid").string(namestr.str().c_str());
+    }
 
     if (tokens) {
         in.addmember("assertions").list();
@@ -425,7 +427,7 @@ string RemotedCache::insert(
     DDFJanitor jout(out);
     if (out["key"].isstring()) {
         // Transaction Logging
-        auto_ptr_char name(nameid.getName());
+        auto_ptr_char name(nameid ? nameid->getName() : NULL);
         const char* pid = in["entity_id"].string();
         TransactionLog* xlog = application.getServiceProvider().getTransactionLog();
         Locker locker(xlog);
@@ -437,9 +439,9 @@ string RemotedCache::insert(
             ") for principal from (IdP: " <<
                 (pid ? pid : "none") <<
             ") at (ClientAddress: " <<
-                client_addr <<
+                (client_addr ? client_addr : "none") <<
             ") with (NameIdentifier: " <<
-                name.get() <<
+                (name.get() ? name.get() : "none") <<
             ")";
 
         if (attributes) {

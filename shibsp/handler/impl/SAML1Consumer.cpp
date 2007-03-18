@@ -186,8 +186,8 @@ string SAML1Consumer::implementProtocol(
     // To complete processing, we need to resolve attributes and then create the session.
 
     // First, normalize the SAML 1.x NameIdentifier...
-    auto_ptr<NameID> nameid(NameIDBuilder::buildNameID());
     NameIdentifier* n = ssoStatement->getSubject()->getNameIdentifier();
+    auto_ptr<NameID> nameid(n ? NameIDBuilder::buildNameID() : NULL);
     if (n) {
         nameid->setName(n->getName());
         nameid->setFormat(n->getFormat());
@@ -196,7 +196,7 @@ string SAML1Consumer::implementProtocol(
 
     const EntityDescriptor* issuerMetadata = dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent());
     auto_ptr<ResolutionContext> ctx(
-        resolveAttributes(application, httpRequest, issuerMetadata, *nameid.get(), &tokens)
+        resolveAttributes(application, httpRequest, issuerMetadata, nameid.get(), &tokens)
         );
 
     // Copy over any new tokens, but leave them in the context for cleanup.
@@ -223,7 +223,7 @@ string SAML1Consumer::implementProtocol(
         application,
         httpRequest.getRemoteAddr().c_str(),
         issuerMetadata,
-        *nameid.get(),
+        nameid.get(),
         authnInstant.get(),
         NULL,
         authnMethod.get(),

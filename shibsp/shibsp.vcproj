@@ -360,6 +360,10 @@
 						RelativePath=".\handler\impl\SAML1Consumer.cpp"
 						>
 					</File>
+					<File
+						RelativePath=".\handler\impl\SAML2Consumer.cpp"
+						>
+					</File>
 				</Filter>
 			</Filter>
 		</Filter>

@@ -66,9 +66,9 @@ namespace shibsp {
          * 
          * <p>SAML 1.x identifiers will be promoted to the 2.0 type.
          * 
-         * @return reference to a SAML 2.0 NameID
+         * @return a SAML 2.0 NameID associated with the session, if any
          */
-        virtual const opensaml::saml2::NameID& getNameID() const=0;
+        virtual const opensaml::saml2::NameID* getNameID() const=0;
 
         /**
          * Returns the SessionIndex provided with the session.
@@ -175,11 +175,11 @@ namespace shibsp {
          * @param application       reference to Application that owns the Session
          * @param client_addr       network address of client
          * @param issuer            issuing metadata of assertion issuer, if known
-         * @param nameid            principal identifier, normalized to SAML 2
-         * @param authn_instant     UTC timestamp of authentication at IdP
-         * @param session_index     index of session between principal and IdP
-         * @param authncontext_class    method/category of authentication event
-         * @param authncontext_decl specifics of authentication event 
+         * @param nameid            principal identifier, normalized to SAML 2, if any
+         * @param authn_instant     UTC timestamp of authentication at IdP, if known
+         * @param session_index     index of session between principal and IdP, if any
+         * @param authncontext_class    method/category of authentication event, if known
+         * @param authncontext_decl specifics of authentication event, if known
          * @param tokens            assertions to cache with session, if any
          * @param attributes        optional set of resolved Attributes to cache with session
          * @return  newly created session's key
@@ -187,9 +187,9 @@ namespace shibsp {
         virtual std::string insert(
             time_t expires,
             const Application& application,
-            const char* client_addr,
-            const opensaml::saml2md::EntityDescriptor* issuer,
-            const opensaml::saml2::NameID& nameid,
+            const char* client_addr=NULL,
+            const opensaml::saml2md::EntityDescriptor* issuer=NULL,
+            const opensaml::saml2::NameID* nameid=NULL,
             const char* authn_instant=NULL,
             const char* session_index=NULL,
             const char* authncontext_class=NULL,

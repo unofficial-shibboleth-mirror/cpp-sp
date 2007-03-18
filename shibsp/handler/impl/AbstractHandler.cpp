@@ -41,6 +41,7 @@ using namespace std;
 
 namespace shibsp {
     SHIBSP_DLLLOCAL PluginManager<Handler,pair<const DOMElement*,const char*>>::Factory SAML1ConsumerFactory;
+    SHIBSP_DLLLOCAL PluginManager<Handler,pair<const DOMElement*,const char*>>::Factory SAML2ConsumerFactory;
 };
 
 void SHIBSP_API shibsp::registerHandlers()
@@ -48,6 +49,9 @@ void SHIBSP_API shibsp::registerHandlers()
     SPConfig& conf=SPConfig::getConfig();
     conf.AssertionConsumerServiceManager.registerFactory(SAML1_PROFILE_BROWSER_ARTIFACT, SAML1ConsumerFactory);
     conf.AssertionConsumerServiceManager.registerFactory(SAML1_PROFILE_BROWSER_POST, SAML1ConsumerFactory);
+    conf.AssertionConsumerServiceManager.registerFactory(SAML20_BINDING_HTTP_ARTIFACT, SAML2ConsumerFactory);
+    conf.AssertionConsumerServiceManager.registerFactory(SAML20_BINDING_HTTP_POST, SAML2ConsumerFactory);
+    conf.AssertionConsumerServiceManager.registerFactory(SAML20_BINDING_HTTP_POST_SIMPLESIGN, SAML2ConsumerFactory);
 }
 
 AbstractHandler::AbstractHandler(

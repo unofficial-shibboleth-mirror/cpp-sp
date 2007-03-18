@@ -61,7 +61,7 @@ namespace shibsp {
          * @param application       reference to Application that owns the eventual Session
          * @param client_addr       network address of client
          * @param issuer            issuing metadata of assertion issuer, if known
-         * @param nameid            principal identifier, normalized to SAML 2
+         * @param nameid            principal identifier, normalized to SAML 2, if any
          * @param tokens            assertions initiating the session, if any
          * @return  newly created ResolutionContext, owned by caller
          */
@@ -69,7 +69,7 @@ namespace shibsp {
             const Application& application,
             const char* client_addr,
             const opensaml::saml2md::EntityDescriptor* issuer,
-            const opensaml::saml2::NameID& nameid,
+            const opensaml::saml2::NameID* nameid,
             const std::vector<const opensaml::Assertion*>* tokens=NULL
             ) const=0;
 

@@ -104,8 +104,8 @@ namespace shibsp {
         ResolutionContext* resolveAttributes(
             const Application& application,
             const opensaml::HTTPRequest& httpRequest,
-            const opensaml::saml2md::EntityDescriptor* issuer,
-            const opensaml::saml2::NameID& nameid,
+            const opensaml::saml2md::EntityDescriptor* issuer=NULL,
+            const opensaml::saml2::NameID* nameid=NULL,
             const std::vector<const opensaml::Assertion*>* tokens=NULL
             ) const;
         

@@ -71,9 +71,9 @@ namespace shibsp {
          * 
          * <p>SAML 1.x identifiers will be promoted to the 2.0 type.
          * 
-         * @return reference to a SAML 2.0 NameID
+         * @return a SAML 2.0 NameID associated with the subject, if any
          */
-        virtual const opensaml::saml2::NameID& getNameID() const=0;
+        virtual const opensaml::saml2::NameID* getNameID() const=0;
 
         /**
          * Returns unresolved tokens associated with the subject, if any.

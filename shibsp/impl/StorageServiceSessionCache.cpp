@@ -58,19 +58,18 @@ namespace shibsp {
     class StoredSession : public virtual Session
     {
     public:
-        StoredSession(SSCache* cache, DDF& obj) : m_obj(obj), m_cache(cache) {
+        StoredSession(SSCache* cache, DDF& obj) : m_obj(obj), m_nameid(NULL), m_cache(cache) {
             const char* nameid = obj["nameid"].string();
-            if (!nameid)
-                throw FatalProfileException("NameID missing from cached session.");
-            
-            // Parse and bind the document into an XMLObject.
-            istringstream instr(nameid);
-            DOMDocument* doc = XMLToolingConfig::getConfig().getParser().parse(instr); 
-            XercesJanitor<DOMDocument> janitor(doc);
-            auto_ptr<saml2::NameID> n(saml2::NameIDBuilder::buildNameID());
-            n->unmarshall(doc->getDocumentElement(), true);
-            janitor.release();
-            m_nameid = n.release();
+            if (nameid) {
+                // Parse and bind the document into an XMLObject.
+                istringstream instr(nameid);
+                DOMDocument* doc = XMLToolingConfig::getConfig().getParser().parse(instr); 
+                XercesJanitor<DOMDocument> janitor(doc);
+                auto_ptr<saml2::NameID> n(saml2::NameIDBuilder::buildNameID());
+                n->unmarshall(doc->getDocumentElement(), true);
+                janitor.release();
+                m_nameid = n.release();
+            }
         }
         
         ~StoredSession();
@@ -91,8 +90,8 @@ namespace shibsp {
         const char* getAuthnInstant() const {
             return m_obj["authn_instant"].string();
         }
-        const opensaml::saml2::NameID& getNameID() const {
-            return *m_nameid;
+        const opensaml::saml2::NameID* getNameID() const {
+            return m_nameid;
         }
         const char* getSessionIndex() const {
             return m_obj["session_index"].string();
@@ -146,9 +145,9 @@ namespace shibsp {
         string insert(
             time_t expires,
             const Application& application,
-            const char* client_addr,
-            const saml2md::EntityDescriptor* issuer,
-            const saml2::NameID& nameid,
+            const char* client_addr=NULL,
+            const saml2md::EntityDescriptor* issuer=NULL,
+            const saml2::NameID* nameid=NULL,
             const char* authn_instant=NULL,
             const char* session_index=NULL,
             const char* authncontext_class=NULL,
@@ -452,7 +451,7 @@ string SSCache::insert(
     const Application& application,
     const char* client_addr,
     const saml2md::EntityDescriptor* issuer,
-    const saml2::NameID& nameid,
+    const saml2::NameID* nameid,
     const char* authn_instant,
     const char* session_index,
     const char* authncontext_class,
@@ -485,7 +484,8 @@ string SSCache::insert(
         strftime(timebuf,32,"%Y-%m-%dT%H:%M:%SZ",ptime);
         obj.addmember("expires").string(timebuf);
     }
-    obj.addmember("client_addr").string(client_addr);
+    if (client_addr)
+        obj.addmember("client_addr").string(client_addr);
     if (issuer) {
         auto_ptr_char entity_id(issuer->getEntityID());
         obj.addmember("entity_id").string(entity_id.get());
@@ -499,10 +499,12 @@ string SSCache::insert(
     if (authncontext_decl)
         obj.addmember("authncontext_decl").string(authncontext_decl);
 
-    ostringstream namestr;
-    namestr << nameid;
-    obj.addmember("nameid").string(namestr.str().c_str());
-    
+    if (nameid) {
+        ostringstream namestr;
+        namestr << nameid;
+        obj.addmember("nameid").string(namestr.str().c_str());
+    }
+
     if (tokens) {
         obj.addmember("assertions").list();
         for (vector<const Assertion*>::const_iterator t = tokens->begin(); t!=tokens->end(); ++t) {
@@ -545,7 +547,7 @@ string SSCache::insert(
     m_log.debug("new session created: SessionID (%s) IdP (%s) Address (%s)", key.get(), pid ? pid : "none", client_addr);
 
     // Transaction Logging
-    auto_ptr_char name(nameid.getName());
+    auto_ptr_char name(nameid ? nameid->getName() : NULL);
     TransactionLog* xlog = application.getServiceProvider().getTransactionLog();
     Locker locker(xlog);
     xlog->log.infoStream() <<
@@ -556,9 +558,9 @@ string SSCache::insert(
         ") for principal from (IdP: " <<
             (pid ? pid : "none") <<
         ") at (ClientAddress: " <<
-            client_addr <<
+            (client_addr ? client_addr : "none") <<
         ") with (NameIdentifier: " <<
-            name.get() <<
+            (name.get() ? name.get() : "none") <<
         ")";
     
     if (attributes) {

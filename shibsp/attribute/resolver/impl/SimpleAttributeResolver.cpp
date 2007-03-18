@@ -72,7 +72,7 @@ namespace shibsp {
             const Application& application,
             const char* client_addr,
             const EntityDescriptor* issuer,
-            const NameID& nameid,
+            const NameID* nameid,
             const vector<const opensaml::Assertion*>* tokens=NULL
             ) : m_app(application), m_session(NULL), m_client_addr(client_addr), m_metadata(NULL), m_entity(issuer),
                 m_nameid(nameid), m_tokens(tokens) {
@@ -103,7 +103,7 @@ namespace shibsp {
             }
             return NULL;
         }
-        const NameID& getNameID() const {
+        const NameID* getNameID() const {
             return m_nameid;
         }
         const vector<const opensaml::Assertion*>* getTokens() const {
@@ -125,7 +125,7 @@ namespace shibsp {
         const char* m_client_addr;
         mutable MetadataProvider* m_metadata;
         mutable const EntityDescriptor* m_entity;
-        const NameID& m_nameid;
+        const NameID* m_nameid;
         const vector<const opensaml::Assertion*>* m_tokens;
         vector<shibsp::Attribute*> m_attributes;
         vector<opensaml::Assertion*> m_assertions;
@@ -188,7 +188,7 @@ namespace shibsp {
             const Application& application,
             const char* client_addr,
             const EntityDescriptor* issuer,
-            const NameID& nameid,
+            const NameID* nameid,
             const vector<const opensaml::Assertion*>* tokens=NULL
             ) const {
             return new SimpleContext(application,client_addr,issuer,nameid,tokens);
@@ -333,23 +333,27 @@ void SimpleResolverImpl::resolve(
     map< pair<string,string>,pair<const AttributeDecoder*,string> >::const_iterator rule;
 #endif
 
-    // Check the NameID based on the format.
     const XMLCh* name;
-    const XMLCh* format = ctx.getNameID().getFormat();
-    if (!format || !*format)
-        format = NameID::UNSPECIFIED;
+    const XMLCh* format;
+    
+    // Check the NameID based on the format.
+    if (ctx.getNameID()) {
+        format = ctx.getNameID()->getFormat();
+        if (!format || !*format)
+            format = NameID::UNSPECIFIED;
 #ifdef HAVE_GOOD_STL
-    if ((rule=m_attrMap.find(make_pair(format,xstring()))) != m_attrMap.end()) {
+        if ((rule=m_attrMap.find(make_pair(format,xstring()))) != m_attrMap.end()) {
 #else
-    auto_ptr_char temp(format);
-    if ((rule=m_attrMap.find(make_pair(temp.get(),string()))) != m_attrMap.end()) {
+        auto_ptr_char temp(format);
+        if ((rule=m_attrMap.find(make_pair(temp.get(),string()))) != m_attrMap.end()) {
 #endif
-        if (aset.empty() || aset.count(rule->second.second)) {
-            resolved.push_back(
-                rule->second.first->decode(
-                    rule->second.second.c_str(), &ctx.getNameID(), assertingParty.get(), relyingParty
-                    )
-                );
+            if (aset.empty() || aset.count(rule->second.second)) {
+                resolved.push_back(
+                    rule->second.first->decode(
+                        rule->second.second.c_str(), ctx.getNameID(), assertingParty.get(), relyingParty
+                        )
+                    );
+            }
         }
     }
 
@@ -400,23 +404,27 @@ void SimpleResolverImpl::resolve(
     map< pair<string,string>,pair<const AttributeDecoder*,string> >::const_iterator rule;
 #endif
 
-    // Check the NameID based on the format.
     const XMLCh* name;
-    const XMLCh* format = ctx.getNameID().getFormat();
-    if (!format || !*format)
-        format = NameID::UNSPECIFIED;
+    const XMLCh* format;
+    
+    // Check the NameID based on the format.
+    if (ctx.getNameID()) {
+        format = ctx.getNameID()->getFormat();
+        if (!format || !*format)
+            format = NameID::UNSPECIFIED;
 #ifdef HAVE_GOOD_STL
-    if ((rule=m_attrMap.find(make_pair(format,xstring()))) != m_attrMap.end()) {
+        if ((rule=m_attrMap.find(make_pair(format,xstring()))) != m_attrMap.end()) {
 #else
-    auto_ptr_char temp(format);
-    if ((rule=m_attrMap.find(make_pair(temp.get(),string()))) != m_attrMap.end()) {
+        auto_ptr_char temp(format);
+        if ((rule=m_attrMap.find(make_pair(temp.get(),string()))) != m_attrMap.end()) {
 #endif
-        if (aset.empty() || aset.count(rule->second.second)) {
-            resolved.push_back(
-                rule->second.first->decode(
-                    rule->second.second.c_str(), &ctx.getNameID(), assertingParty.get(), relyingParty
-                    )
-                );
+            if (aset.empty() || aset.count(rule->second.second)) {
+                resolved.push_back(
+                    rule->second.first->decode(
+                        rule->second.second.c_str(), ctx.getNameID(), assertingParty.get(), relyingParty
+                        )
+                    );
+            }
         }
     }
 
@@ -659,11 +667,17 @@ void SimpleResolver::resolveAttributes(ResolutionContext& ctx, const vector<cons
 
     if (query) {
         if (token1 && !token1->getAuthenticationStatements().empty()) {
-            log.debug("attempting SAML 1.x attribute query");
-            return m_impl->query(ctx, *(token1->getAuthenticationStatements().front()->getSubject()->getNameIdentifier()), attributes);
+            const AuthenticationStatement* statement = token1->getAuthenticationStatements().front();
+            if (statement && statement->getSubject() && statement->getSubject()->getNameIdentifier()) {
+                log.debug("attempting SAML 1.x attribute query");
+                return m_impl->query(ctx, *(statement->getSubject()->getNameIdentifier()), attributes);
+            }
         }
-        log.debug("attempting SAML 2.0 attribute query");
-        m_impl->query(ctx, ctx.getNameID(), attributes);
+        else if (token2 && ctx.getNameID()) {
+            log.debug("attempting SAML 2.0 attribute query");
+            return m_impl->query(ctx, *ctx.getNameID(), attributes);
+        }
+        log.warn("can't attempt attribute query, no identifier in assertion subject");
     }
 }
 
