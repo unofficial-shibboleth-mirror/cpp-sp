@@ -454,6 +454,47 @@ void SimpleResolverImpl::resolve(
                 }
             }
         }
+
+        CredentialResolver* cr=NULL;
+        const vector<saml2::EncryptedAttribute*>& encattrs = const_cast<const saml2::AttributeStatement*>(*s)->getEncryptedAttributes();
+        if (!encattrs.empty()) {
+            const PropertySet* credUse = ctx.getApplication().getCredentialUse(ctx.getEntityDescriptor());
+            if (credUse)
+                cr = ctx.getApplication().getServiceProvider().getCredentialResolver(credUse->getString("Encryption").second);
+            if (!cr) {
+                Category::getInstance(SHIBSP_LOGCAT".AttributeResolver").warn(
+                    "found encrypted attributes, but no decryption credential was available"
+                    );
+                return;
+            }
+            Locker credlocker(cr);
+            const XMLCh* recipient = ctx.getApplication().getXMLString("providerId").second;
+            for (vector<saml2::EncryptedAttribute*>::const_iterator ea = encattrs.begin(); ea!=encattrs.end(); ++ea) {
+                auto_ptr<XMLObject> decrypted((*ea)->decrypt(cr, recipient));
+                const saml2::Attribute* decattr = dynamic_cast<const saml2::Attribute*>(decrypted.get());
+                name = decattr->getName();
+                format = decattr->getNameFormat();
+                if (!name || !*name)
+                    continue;
+                if (!format || !*format)
+                    format = saml2::Attribute::UNSPECIFIED;
+                else if (XMLString::equals(format, saml2::Attribute::URI_REFERENCE))
+                    format = &chNull;
+#ifdef HAVE_GOOD_STL
+                if ((rule=m_attrMap.find(make_pair(name,format))) != m_attrMap.end()) {
+#else
+                auto_ptr_char temp1(name);
+                auto_ptr_char temp2(format);
+                if ((rule=m_attrMap.find(make_pair(temp1.get(),temp2.get()))) != m_attrMap.end()) {
+#endif
+                    if (aset.empty() || aset.count(rule->second.second)) {
+                        resolved.push_back(
+                            rule->second.first->decode(rule->second.second.c_str(), decattr, assertingParty.get(), relyingParty)
+                            );
+                    }
+                }
+            }
+        }
     }
 }
 
