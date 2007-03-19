@@ -647,6 +647,8 @@ const PropertySet* XMLApplication::getCredentialUse(const EntityDescriptor* prov
 {
     if (!m_credDefault && m_base)
         return m_base->getCredentialUse(provider);
+    else if (!provider)
+        return m_credDefault;
         
 #ifdef HAVE_GOOD_STL
     map<xstring,PropertySet*>::const_iterator i=m_credMap.find(provider->getEntityID());
