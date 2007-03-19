@@ -179,7 +179,7 @@
 			styleSheet="/shibboleth-sp/main.css"/>
 
 		<!-- Indicates what credentials to use when communicating -->
-		<CredentialUse TLS="defcreds" Signing="defcreds"/>
+		<CredentialUse TLS="defcreds" Signing="defcreds" Encryption="defcreds"/>
 			
 		<!-- When adding multiple metadata sources, uncomment the chained provider around them. -->
 		<!-- <MetadataProvider type="Chaining"> -->

@@ -95,6 +95,7 @@ libshibsp_la_SOURCES = \
 	handler/impl/AssertionConsumerService.cpp \
 	handler/impl/RemotedHandler.cpp \
 	handler/impl/SAML1Consumer.cpp \
+	handler/impl/SAML2Consumer.cpp \
 	impl/RemotedSessionCache.cpp \
 	impl/StorageServiceSessionCache.cpp \
 	impl/XMLAccessControl.cpp \
