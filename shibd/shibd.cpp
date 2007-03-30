@@ -49,6 +49,7 @@
 #include <shibsp/remoting/ListenerService.h>
 #include <xercesc/util/XMLUniDefs.hpp>
 #include <xmltooling/XMLToolingConfig.h>
+#include <xmltooling/util/XMLConstants.h>
 #include <xmltooling/util/XMLHelper.h>
 
 using namespace shibsp;

@@ -52,10 +52,10 @@ namespace shibsp {
          * Override handles message signing for SAML payloads.
          * 
          * @param env       SOAP envelope to send
-         * @param peer      peer to send message to, expressed in TrustEngine terms
+         * @param peer      peer to send message to, expressed in metadata terms
          * @param endpoint  URL of endpoint to recieve message
          */
-        void send(const soap11::Envelope& env, const xmltooling::KeyInfoSource& peer, const char* endpoint);
+        void send(const soap11::Envelope& env, opensaml::saml2md::MetadataCredentialCriteria& peer, const char* endpoint);
 
         void reset();
 
@@ -73,8 +73,8 @@ namespace shibsp {
         /** Properties associated with the Application's security policy. */
         const PropertySet* m_settings;
 
-        /** CredentialUse properties, set after transport prep. */
-        const PropertySet* m_credUse;
+        /** RelyingParty properties, set after transport prep. */
+        const PropertySet* m_relyingParty;
 
         /** Locked CredentialResolver for transport, set after transport prep. */
         xmltooling::CredentialResolver* m_credResolver;

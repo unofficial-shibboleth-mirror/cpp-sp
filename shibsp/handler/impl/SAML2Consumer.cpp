@@ -185,21 +185,23 @@ string SAML2Consumer::implementProtocol(
         }
     }
 
-    CredentialResolver* cr=NULL;
-    const PropertySet* credUse = application.getCredentialUse(
-        policy.getIssuerMetadata() ? dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL
-        );
-    if (credUse)
-        cr = application.getServiceProvider().getCredentialResolver(credUse->getString("Encryption").second);
+    // We look up decryption credentials based on the peer who did the encrypting.
+    CredentialCriteria cc;
+    if (policy.getIssuerMetadata()) {
+        auto_ptr_char assertingParty(dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent())->getEntityID());
+        cc.setPeerName(assertingParty.get());
+    }
+    CredentialResolver* cr=application.getCredentialResolver();
+
     if (!cr && !encassertions.empty())
-        m_log.warn("found encrypted assertions, but no decryption credential was available");
+        m_log.warn("found encrypted assertions, but no CredentialResolver was available");
 
     for (vector<saml2::EncryptedAssertion*>::const_iterator ea = encassertions.begin(); cr && ea!=encassertions.end(); ++ea) {
         // Attempt to decrypt it.
         saml2::Assertion* decrypted=NULL;
         try {
             Locker credlocker(cr);
-            auto_ptr<XMLObject> wrapper((*ea)->decrypt(cr, application.getXMLString("providerId").second));
+            auto_ptr<XMLObject> wrapper((*ea)->decrypt(*cr, application.getXMLString("providerId").second, &cc));
             decrypted = dynamic_cast<saml2::Assertion*>(wrapper.get());
             if (decrypted) {
                 wrapper.release();
@@ -289,7 +291,7 @@ string SAML2Consumer::implementProtocol(
             else {
                 Locker credlocker(cr);
                 try {
-                    auto_ptr<XMLObject> decryptedID(encname->decrypt(cr,application.getXMLString("providerId").second));
+                    auto_ptr<XMLObject> decryptedID(encname->decrypt(*cr,application.getXMLString("providerId").second,&cc));
                     ssoName = dynamic_cast<NameID*>(decryptedID.get());
                     if (ssoName) {
                         ownedName = true;

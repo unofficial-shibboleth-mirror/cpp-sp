@@ -47,7 +47,6 @@
 				<element ref="conf:OutOfProcess"/>
 				<element ref="conf:InProcess"/>
 				<element ref="conf:Applications"/>
-				<element ref="conf:Credentials" minOccurs="0"/>
 				<element ref="conf:SecurityPolicies"/>
 			</sequence>
 			<attribute name="logger" type="anyURI"/>
@@ -339,11 +338,12 @@
 			<sequence>
 				<element ref="conf:Sessions"/>
 				<element ref="conf:Errors"/>
-				<element ref="conf:CredentialUse" minOccurs="0"/>
+				<element ref="conf:DefaultRelyingParty"/>
 				<element ref="saml:Audience" minOccurs="0" maxOccurs="unbounded"/>
                 <element name="MetadataProvider" type="conf:PluggableType"/>
 				<element name="TrustEngine" type="conf:PluggableType"/>
 				<element name="AttributeResolver" type="conf:PluggableType"/>
+				<element name="CredentialResolver" type="conf:PluggableType" minOccurs="0"/>
 				<element ref="conf:Application" minOccurs="0" maxOccurs="unbounded"/>
 			</sequence>
 			<attribute name="id" type="conf:string" fixed="default"/>
@@ -362,11 +362,12 @@
 			<sequence>
 				<element ref="conf:Sessions" minOccurs="0"/>
 				<element ref="conf:Errors" minOccurs="0"/>
-				<element ref="conf:CredentialUse" minOccurs="0"/>
+				<element ref="conf:DefaultRelyingParty" minOccurs="0"/>
 				<element ref="saml:Audience" minOccurs="0" maxOccurs="unbounded"/>
 				<element name="MetadataProvider" type="conf:PluggableType" minOccurs="0"/>
 				<element name="TrustEngine" type="conf:PluggableType" minOccurs="0"/>
 				<element name="AttributeResolver" type="conf:PluggableType" minOccurs="0"/>
+				<element name="CredentialResolver" type="conf:PluggableType" minOccurs="0"/>
 			</sequence>
 			<attribute name="id" type="conf:string" use="required"/>
 			<attribute name="providerId" type="anyURI"/>
@@ -459,27 +460,7 @@
 		</complexType>
 	</element>
 
-	<attributeGroup name="CredentialUseGroup">
-		<attribute name="TLS" type="conf:string"/>
-		<attribute name="Signing" type="conf:string"/>
-		<attribute name="Encryption" type="conf:string"/>
-		<attribute name="signRequests" type="boolean" default="false"/>
-		<attribute name="signatureAlg" type="anyURI"/>
-		<attribute name="authType">
-			<simpleType>
-				<restriction base="conf:string">
-					<enumeration value="basic"/>
-					<enumeration value="digest"/>
-					<enumeration value="ntlm"/>
-					<enumeration value="gss"/>
-				</restriction>
-			</simpleType>
-		</attribute>
-		<attribute name="authUsername"/>
-		<attribute name="authPassword"/>
-	</attributeGroup>
-
-	<element name="CredentialUse">
+	<element name="DefaultRelyingParty">
 		<annotation>
 			<documentation>Container for specifying security methods to use with particular peers</documentation>
 		</annotation>
@@ -487,46 +468,26 @@
 			<sequence>
 				<element name="RelyingParty" minOccurs="0" maxOccurs="unbounded">
 					<complexType>
-						<sequence>
-							<any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
-						</sequence>
+						<sequence/>
 						<attribute name="Name" type="conf:string" use="required"/>
-						<attributeGroup ref="conf:CredentialUseGroup"/>
+						<attributeGroup ref="conf:RelyingPartyGroup"/>
 						<anyAttribute namespace="##other" processContents="lax"/>
 					</complexType>
 				</element>
-				<any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
 			</sequence>
-			<attributeGroup ref="conf:CredentialUseGroup"/>
+			<attributeGroup ref="conf:RelyingPartyGroup"/>
 	        <anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>
 	
-	<element name="Credentials">
-		<annotation>
-			<documentation>Container for specifying sources of credentials</documentation>
-		</annotation>
-		<complexType>
-			<sequence>
-				<element name="CredentialResolver" minOccurs="1" maxOccurs="unbounded">
-					<annotation>
-						<documentation>References CredentialResolver plugins</documentation>
-					</annotation>
-					<complexType>
-						<complexContent>
-							<restriction base="conf:PluggableType">
-								<sequence>
-									<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
-								</sequence>
-								<attribute name="id" type="conf:string" use="required"/>
-								<anyAttribute namespace="##any" processContents="lax"/>
-							</restriction>
-						</complexContent>
-					</complexType>
-				</element>
-			</sequence>
-		</complexType>
-	</element>
+	<attributeGroup name="RelyingPartyGroup">
+		<attribute name="authType" type="conf:string" default="TLS"/>
+		<attribute name="authUsername" type="conf:string"/>
+		<attribute name="authPassword" type="conf:string"/>
+		<attribute name="signRequests" type="boolean" default="false"/>
+		<attribute name="signatureAlg" type="anyURI"/>
+		<attribute name="encryptRequests" type="boolean" default="true"/>
+	</attributeGroup>
 	
 	<element name="SecurityPolicies">
 		<annotation>

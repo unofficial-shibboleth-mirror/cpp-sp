@@ -455,22 +455,24 @@ void SimpleResolverImpl::resolve(
             }
         }
 
-        CredentialResolver* cr=NULL;
         const vector<saml2::EncryptedAttribute*>& encattrs = const_cast<const saml2::AttributeStatement*>(*s)->getEncryptedAttributes();
         if (!encattrs.empty()) {
-            const PropertySet* credUse = ctx.getApplication().getCredentialUse(ctx.getEntityDescriptor());
-            if (credUse)
-                cr = ctx.getApplication().getServiceProvider().getCredentialResolver(credUse->getString("Encryption").second);
+            const XMLCh* recipient = ctx.getApplication().getXMLString("providerId").second;
+            CredentialResolver* cr = ctx.getApplication().getCredentialResolver();
             if (!cr) {
                 Category::getInstance(SHIBSP_LOGCAT".AttributeResolver").warn(
-                    "found encrypted attributes, but no decryption credential was available"
+                    "found encrypted attributes, but no CredentialResolver was available"
                     );
                 return;
             }
+
+            // We look up credentials based on the peer who did the encrypting.
+            CredentialCriteria cc;
+            cc.setPeerName(assertingParty.get());
+
             Locker credlocker(cr);
-            const XMLCh* recipient = ctx.getApplication().getXMLString("providerId").second;
             for (vector<saml2::EncryptedAttribute*>::const_iterator ea = encattrs.begin(); ea!=encattrs.end(); ++ea) {
-                auto_ptr<XMLObject> decrypted((*ea)->decrypt(cr, recipient));
+                auto_ptr<XMLObject> decrypted((*ea)->decrypt(*cr, recipient, &cc));
                 const saml2::Attribute* decattr = dynamic_cast<const saml2::Attribute*>(decrypted.get());
                 name = decattr->getName();
                 format = decattr->getNameFormat();
@@ -523,6 +525,7 @@ void SimpleResolverImpl::query(ResolutionContext& ctx, const NameIdentifier& nam
     }
 
     SecurityPolicy policy;
+    MetadataCredentialCriteria mcc(*AA);
     shibsp::SOAPClient soaper(ctx.getApplication(),policy);
     const PropertySet* policySettings = ctx.getApplication().getServiceProvider().getPolicySettings(ctx.getApplication().getString("policyId").second);
     pair<bool,bool> signedAssertions = policySettings->getBool("signedAssertions");
@@ -545,7 +548,7 @@ void SimpleResolverImpl::query(ResolutionContext& ctx, const NameIdentifier& nam
             query->setResource(issuer.get());
             request->setMinorVersion(version);
             SAML1SOAPClient client(soaper);
-            client.sendSAML(request, *AA, loc.get());
+            client.sendSAML(request, mcc, loc.get());
             response = client.receiveSAML();
         }
         catch (exception& ex) {
@@ -606,6 +609,7 @@ void SimpleResolverImpl::query(ResolutionContext& ctx, const NameID& nameid, con
     }
 
     SecurityPolicy policy;
+    MetadataCredentialCriteria mcc(*AA);
     shibsp::SOAPClient soaper(ctx.getApplication(),policy);
     const PropertySet* policySettings = ctx.getApplication().getServiceProvider().getPolicySettings(ctx.getApplication().getString("policyId").second);
     pair<bool,bool> signedAssertions = policySettings->getBool("signedAssertions");
@@ -627,7 +631,7 @@ void SimpleResolverImpl::query(ResolutionContext& ctx, const NameID& nameid, con
             query->setIssuer(iss);
             iss->setName(issuer.get());
             SAML2SOAPClient client(soaper);
-            client.sendSAML(query, *AA, loc.get());
+            client.sendSAML(query, mcc, loc.get());
             srt = client.receiveSAML();
         }
         catch (exception& ex) {

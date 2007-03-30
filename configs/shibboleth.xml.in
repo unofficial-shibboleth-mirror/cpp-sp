@@ -11,7 +11,7 @@
 	</Extensions>
 	-->
 
-	<!-- The OutOfProcess section pertains to components that rely on a single long-lived process. -->
+	<!-- The OutOfProcess section pertains to components that run in the shibd daemon. -->
 	<OutOfProcess logger="@-PKGSYSCONFDIR-@/shibd.logger">
 		
 		<!--
@@ -43,7 +43,7 @@
 		-->
 	</OutOfProcess>
     
-	<!-- The InProcess section pertains to components that support transient process pools like most web servers. -->
+	<!-- The InProcess section pertains to components that run inside the web server. -->
 	<InProcess logger="@-PKGSYSCONFDIR-@/native.logger">
 		<!--
 		To customize behavior, map hostnames and path components to applicationId and other settings.
@@ -177,15 +177,15 @@
 			supportContact="root@localhost"
 			logoLocation="/shibboleth-sp/logo.jpg"
 			styleSheet="/shibboleth-sp/main.css"/>
+		
+		<!-- Configure handling of outgoing messages. -->
+		<DefaultRelyingParty authType="TLS" signRequests="false" encryptRequests="true"/>
 
-		<!-- Indicates what credentials to use when communicating -->
-		<CredentialUse TLS="defcreds" Signing="defcreds" Encryption="defcreds"/>
-			
-		<!-- When adding multiple metadata sources, uncomment the chained provider around them. -->
-		<!-- <MetadataProvider type="Chaining"> -->
+		<!-- Chains together all your metadata sources. -->
+		<MetadataProvider type="Chaining">
 			<!-- Dummy metadata for private testing, delete for production deployments. -->
 			<MetadataProvider type="XML" path="@-PKGSYSCONFDIR-@/example-metadata.xml"/>
-		<!-- </MetadataProvider> -->
+		</MetadataProvider>
 
 		<!-- Chain the two built-in trust engines together. -->
 		<TrustEngine type="Chaining">
@@ -193,12 +193,11 @@
 			<TrustEngine type="PKIX"/>
 		</TrustEngine>
 
+		<!-- Built-in attribute resolver to extract data from SAML assertions. -->
 		<AttributeResolver type="Simple" path="@-PKGSYSCONFDIR-@/resolver-simple.xml"/>
-	</Applications>
-	
-	<!-- Define all the private keys and certificates here that you reference from <CredentialUse>. -->
-	<Credentials>
-		<CredentialResolver id="defcreds">
+
+		<!-- Simple file-based resolver for key/certificate information. -->
+		<CredentialResolver type="File">
 			<Key>
 				<Path>@-PKGSYSCONFDIR-@/sp-example.key</Path>
 			</Key>
@@ -206,8 +205,8 @@
 				<Path>@-PKGSYSCONFDIR-@/sp-example.crt</Path>
 			</Certificate>
 		</CredentialResolver>
-	</Credentials>
-
+	</Applications>
+	
 	<!-- Each policy defines a set of rules to use to secure SAML and SOAP messages. -->
 	<SecurityPolicies>
 		<!-- The predefined policy handles SAML 1 and 2 protocols and permits signing and client TLS. -->

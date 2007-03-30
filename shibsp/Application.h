@@ -25,6 +25,7 @@
 
 #include <shibsp/util/PropertySet.h>
 #include <saml/saml2/metadata/MetadataProvider.h>
+#include <xmltooling/security/CredentialResolver.h>
 #include <xmltooling/security/TrustEngine.h>
 
 namespace shibsp {
@@ -98,12 +99,19 @@ namespace shibsp {
         virtual AttributeResolver* getAttributeResolver() const=0;
 
         /**
-         * Returns configuration properties governing security interactions with a peer entity.
+         * Returns the CredentialResolver instance associated with this Application.
+         * 
+         * @return  a CredentialResolver, or NULL
+         */
+        virtual xmltooling::CredentialResolver* getCredentialResolver() const=0;
+
+        /**
+         * Returns configuration properties governing security interactions with a peer.
          * 
          * @param provider  a peer entity's metadata
          * @return  the applicable PropertySet
          */
-        virtual const PropertySet* getCredentialUse(const opensaml::saml2md::EntityDescriptor* provider) const=0;
+        virtual const PropertySet* getRelyingParty(const opensaml::saml2md::EntityDescriptor* provider) const=0;
 
         /**
          * Returns the default SessionInitiator Handler when automatically

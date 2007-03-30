@@ -97,8 +97,10 @@ namespace {
         AttributeResolver* getAttributeResolver() const {
             return (!m_attrResolver && m_base) ? m_base->getAttributeResolver() : m_attrResolver;
         }
-
-        const PropertySet* getCredentialUse(const EntityDescriptor* provider) const;
+        CredentialResolver* getCredentialResolver() const {
+            return (!m_credResolver && m_base) ? m_base->getCredentialResolver() : m_credResolver;
+        }
+        const PropertySet* getRelyingParty(const EntityDescriptor* provider) const;
 
         const Handler* getDefaultSessionInitiator() const;
         const Handler* getSessionInitiatorById(const char* id) const;
@@ -122,6 +124,7 @@ namespace {
         MetadataProvider* m_metadata;
         TrustEngine* m_trust;
         AttributeResolver* m_attrResolver;
+        CredentialResolver* m_credResolver;
         vector<const XMLCh*> m_audiences;
 
         // manage handler objects
@@ -150,11 +153,12 @@ namespace {
         // pointer to default session initiator
         const Handler* m_sessionInitDefault;
 
-        DOMPropertySet* m_credDefault;
+        // RelyingParty properties
+        DOMPropertySet* m_partyDefault;
 #ifdef HAVE_GOOD_STL
-        map<xstring,PropertySet*> m_credMap;
+        map<xstring,PropertySet*> m_partyMap;
 #else
-        map<const XMLCh*,PropertySet*> m_credMap;
+        map<const XMLCh*,PropertySet*> m_partyMap;
 #endif
     };
 
@@ -168,7 +172,6 @@ namespace {
         
         RequestMapper* m_requestMapper;
         map<string,Application*> m_appmap;
-        map<string,CredentialResolver*> m_credResolverMap;
         map< string,pair< PropertySet*,vector<const SecurityPolicyRule*> > > m_policyMap;
         
         // Provides filter to exclude special config elements.
@@ -254,15 +257,6 @@ namespace {
             return (i!=m_impl->m_appmap.end()) ? i->second : NULL;
         }
 
-        CredentialResolver* getCredentialResolver(const char* id) const {
-            if (id) {
-                map<string,CredentialResolver*>::const_iterator i=m_impl->m_credResolverMap.find(id);
-                if (i!=m_impl->m_credResolverMap.end())
-                    return i->second;
-            }
-            return NULL;
-        }
-
         const PropertySet* getPolicySettings(const char* id) const {
             map<string,pair<PropertySet*,vector<const SecurityPolicyRule*> > >::const_iterator i = m_impl->m_policyMap.find(id);
             if (i!=m_impl->m_policyMap.end())
@@ -297,8 +291,8 @@ namespace {
     static const XMLCh Applications[] =         UNICODE_LITERAL_12(A,p,p,l,i,c,a,t,i,o,n,s);
     static const XMLCh _ArtifactMap[] =         UNICODE_LITERAL_11(A,r,t,i,f,a,c,t,M,a,p);
     static const XMLCh _AttributeResolver[] =   UNICODE_LITERAL_17(A,t,t,r,i,b,u,t,e,R,e,s,o,l,v,e,r);
-    static const XMLCh Credentials[] =          UNICODE_LITERAL_11(C,r,e,d,e,n,t,i,a,l,s);
-    static const XMLCh CredentialUse[] =        UNICODE_LITERAL_13(C,r,e,d,e,n,t,i,a,l,U,s,e);
+    static const XMLCh _CredentialResolver[] =  UNICODE_LITERAL_18(C,r,e,d,e,n,t,i,a,l,R,e,s,o,l,v,e,r);
+    static const XMLCh DefaultRelyingParty[] =  UNICODE_LITERAL_19(D,e,f,a,u,l,t,R,e,l,y,i,n,g,P,a,r,t,y);
     static const XMLCh fatal[] =                UNICODE_LITERAL_5(f,a,t,a,l);
     static const XMLCh _Handler[] =             UNICODE_LITERAL_7(H,a,n,d,l,e,r);
     static const XMLCh _id[] =                  UNICODE_LITERAL_2(i,d);
@@ -347,8 +341,8 @@ XMLApplication::XMLApplication(
     const ServiceProvider* sp,
     const DOMElement* e,
     const XMLApplication* base
-    ) : m_sp(sp), m_base(base), m_metadata(NULL), m_trust(NULL), m_attrResolver(NULL),
-        m_credDefault(NULL), m_sessionInitDefault(NULL), m_acsDefault(NULL)
+    ) : m_sp(sp), m_base(base), m_metadata(NULL), m_trust(NULL), m_attrResolver(NULL), m_credResolver(NULL),
+        m_partyDefault(NULL), m_sessionInitDefault(NULL), m_acsDefault(NULL)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("XMLApplication");
@@ -526,16 +520,31 @@ XMLApplication::XMLApplication(
             }
         }
 
-        // Finally, load credential mappings.
-        child = XMLHelper::getFirstChildElement(e,CredentialUse);
+        if (conf.isEnabled(SPConfig::Credentials)) {
+            child = XMLHelper::getFirstChildElement(e,_CredentialResolver);
+            if (child) {
+                auto_ptr_char type(child->getAttributeNS(NULL,_type));
+                log.info("building CredentialResolver of type %s...",type.get());
+                try {
+                    m_credResolver = xmlConf.CredentialResolverManager.newPlugin(type.get(),child);
+                }
+                catch (exception& ex) {
+                    log.crit("error building CredentialResolver: %s", ex.what());
+                }
+            }
+        }
+
+
+        // Finally, load relying parties.
+        child = XMLHelper::getFirstChildElement(e,DefaultRelyingParty);
         if (child) {
-            m_credDefault=new DOMPropertySet();
-            m_credDefault->load(child,log,this);
+            m_partyDefault=new DOMPropertySet();
+            m_partyDefault->load(child,log,this);
             child = XMLHelper::getFirstChildElement(child,RelyingParty);
             while (child) {
-                DOMPropertySet* rp=new DOMPropertySet();
+                auto_ptr<DOMPropertySet> rp(new DOMPropertySet());
                 rp->load(child,log,this);
-                m_credMap[child->getAttributeNS(NULL,saml2::Attribute::NAME_ATTRIB_NAME)]=rp;
+                m_partyMap[child->getAttributeNS(NULL,saml2::Attribute::NAME_ATTRIB_NAME)]=rp.release();
                 child = XMLHelper::getNextSiblingElement(child,RelyingParty);
             }
         }
@@ -559,15 +568,14 @@ XMLApplication::XMLApplication(
 
 void XMLApplication::cleanup()
 {
-    for_each(m_handlers.begin(),m_handlers.end(),xmltooling::cleanup<Handler>());
-    
-    delete m_credDefault;
+    delete m_partyDefault;
 #ifdef HAVE_GOOD_STL
-    for_each(m_credMap.begin(),m_credMap.end(),cleanup_pair<xstring,PropertySet>());
+    for_each(m_partyMap.begin(),m_partyMap.end(),cleanup_pair<xstring,PropertySet>());
 #else
-    for_each(m_credMap.begin(),m_credMap.end(),cleanup_pair<const XMLCh*,PropertySet>());
+    for_each(m_partyMap.begin(),m_partyMap.end(),cleanup_pair<const XMLCh*,PropertySet>());
 #endif
-
+    for_each(m_handlers.begin(),m_handlers.end(),xmltooling::cleanup<Handler>());
+    delete m_credResolver;
     delete m_attrResolver;
     delete m_trust;
     delete m_metadata;
@@ -585,10 +593,11 @@ short XMLApplication::acceptNode(const DOMNode* node) const
         XMLString::equals(name,SingleLogoutService::LOCAL_NAME) ||
         XMLString::equals(name,ManageNameIDService::LOCAL_NAME) ||
         XMLString::equals(name,SessionInitiator) ||
-        XMLString::equals(name,CredentialUse) ||
+        XMLString::equals(name,DefaultRelyingParty) ||
         XMLString::equals(name,RelyingParty) ||
         XMLString::equals(name,_MetadataProvider) ||
         XMLString::equals(name,_TrustEngine) ||
+        XMLString::equals(name,_CredentialResolver) ||
         XMLString::equals(name,_AttributeResolver))
         return FILTER_REJECT;
 
@@ -643,29 +652,29 @@ const PropertySet* XMLApplication::getPropertySet(const char* name, const char* 
     return m_base->getPropertySet(name,ns);
 }
 
-const PropertySet* XMLApplication::getCredentialUse(const EntityDescriptor* provider) const
+const PropertySet* XMLApplication::getRelyingParty(const EntityDescriptor* provider) const
 {
-    if (!m_credDefault && m_base)
-        return m_base->getCredentialUse(provider);
+    if (!m_partyDefault && m_base)
+        return m_base->getRelyingParty(provider);
     else if (!provider)
-        return m_credDefault;
+        return m_partyDefault;
         
 #ifdef HAVE_GOOD_STL
-    map<xstring,PropertySet*>::const_iterator i=m_credMap.find(provider->getEntityID());
-    if (i!=m_credMap.end())
+    map<xstring,PropertySet*>::const_iterator i=m_partyMap.find(provider->getEntityID());
+    if (i!=m_partyMap.end())
         return i->second;
     const EntitiesDescriptor* group=dynamic_cast<const EntitiesDescriptor*>(provider->getParent());
     while (group) {
         if (group->getName()) {
-            i=m_credMap.find(group->getName());
-            if (i!=m_credMap.end())
+            i=m_partyMap.find(group->getName());
+            if (i!=m_partyMap.end())
                 return i->second;
         }
         group=dynamic_cast<const EntitiesDescriptor*>(group->getParent());
     }
 #else
-    map<const XMLCh*,PropertySet*>::const_iterator i=m_credMap.begin();
-    for (; i!=m_credMap.end(); i++) {
+    map<const XMLCh*,PropertySet*>::const_iterator i=m_partyMap.begin();
+    for (; i!=m_partyMap.end(); i++) {
         if (XMLString::equals(i->first,provider->getId()))
             return i->second;
         const EntitiesDescriptor* group=dynamic_cast<const EntitiesDescriptor*>(provider->getParent());
@@ -676,7 +685,7 @@ const PropertySet* XMLApplication::getCredentialUse(const EntityDescriptor* prov
         }
     }
 #endif
-    return m_credDefault;
+    return m_partyDefault;
 }
 
 const Handler* XMLApplication::getDefaultSessionInitiator() const
@@ -734,7 +743,6 @@ short XMLConfigImpl::acceptNode(const DOMNode* node) const
     const XMLCh* name=node->getLocalName();
     if (XMLString::equals(name,Applications) ||
         XMLString::equals(name,_ArtifactMap) ||
-        XMLString::equals(name,Credentials) ||
         XMLString::equals(name,Extensions::LOCAL_NAME) ||
         XMLString::equals(name,Implementation) ||
         XMLString::equals(name,Listener) ||
@@ -969,27 +977,6 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
             }
         }
         
-        // Now we load the credentials map.
-        if (conf.isEnabled(SPConfig::Credentials)) {
-            child = XMLHelper::getLastChildElement(e,Credentials);
-            if (child) {
-                // Step down and process resolvers.
-                child=XMLHelper::getFirstChildElement(child);
-                while (child) {
-                    auto_ptr_char id(child->getAttributeNS(NULL,_id));
-                    auto_ptr_char type(child->getAttributeNS(NULL,_type));
-                    try {
-                        CredentialResolver* cr=xmlConf.CredentialResolverManager.newPlugin(type.get(),child);
-                        m_credResolverMap[id.get()] = cr;
-                    }
-                    catch (exception& ex) {
-                        log.crit("failed to instantiate CredentialResolver (%s): %s", id.get(), ex.what());
-                    }
-                    child = XMLHelper::getNextSiblingElement(child);
-                }
-            }
-        }
-
         // Load security policies.
         child = XMLHelper::getLastChildElement(e,SecurityPolicies);
         if (child) {
@@ -1053,7 +1040,6 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
 XMLConfigImpl::~XMLConfigImpl()
 {
     for_each(m_appmap.begin(),m_appmap.end(),cleanup_pair<string,Application>());
-    for_each(m_credResolverMap.begin(),m_credResolverMap.end(),cleanup_pair<string,CredentialResolver>());
     for (map< string,pair<PropertySet*,vector<const SecurityPolicyRule*> > >::iterator i=m_policyMap.begin(); i!=m_policyMap.end(); ++i) {
         delete i->second.first;
         for_each(i->second.second.begin(), i->second.second.end(), xmltooling::cleanup<SecurityPolicyRule>());

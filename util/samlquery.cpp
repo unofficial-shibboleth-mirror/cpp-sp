@@ -161,6 +161,7 @@ int main(int argc,char* argv[])
 
         SecurityPolicy policy;
         shibsp::SOAPClient soaper(*app,policy);
+        MetadataCredentialCriteria mcc(*AA);
 
         if (ver == v20) {
             auto_ptr_XMLCh binding(samlconstants::SAML20_BINDING_SOAP);
@@ -183,7 +184,7 @@ int main(int argc,char* argv[])
                     nameid->setNameQualifier(domain.get());
                     iss->setName(issuer.get());
                     SAML2SOAPClient client(soaper);
-                    client.sendSAML(query, *AA, loc.get());
+                    client.sendSAML(query, mcc, loc.get());
                     srt = client.receiveSAML();
                 }
                 catch (exception& ex) {
@@ -226,7 +227,7 @@ int main(int argc,char* argv[])
                     query->setResource(issuer.get());
                     request->setMinorVersion(ver==v11 ? 1 : 0);
                     SAML1SOAPClient client(soaper);
-                    client.sendSAML(request, *AA, loc.get());
+                    client.sendSAML(request, mcc, loc.get());
                     response = client.receiveSAML();
                 }
                 catch (exception& ex) {

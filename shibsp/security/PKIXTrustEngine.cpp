@@ -25,8 +25,12 @@
 #include "security/PKIXTrustEngine.h"
 
 #include <saml/saml2/metadata/Metadata.h>
+#include <saml/saml2/metadata/MetadataCredentialCriteria.h>
+#include <saml/saml2/metadata/ObservableMetadataProvider.h>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/security/AbstractPKIXTrustEngine.h>
+#include <xmltooling/security/KeyInfoResolver.h>
+#include <xmltooling/security/X509Credential.h>
 
 using namespace shibsp;
 using namespace opensaml::saml2md;
@@ -35,27 +39,86 @@ using namespace xmltooling;
 using namespace std;
 
 namespace shibsp {
-    /**
-     * Adapter between shibmd:KeyAuthority extension and the PKIXValidationInfoIterator interface. 
-     */
-    class SHIBSP_API MetadataPKIXIterator : public AbstractPKIXTrustEngine::PKIXValidationInfoIterator
+
+    class SHIBSP_DLLLOCAL PKIXTrustEngine : public AbstractPKIXTrustEngine, public ObservableMetadataProvider::Observer
     {
-        const XMLObject* m_obj;
-        const Extensions* m_extBlock;
-        const KeyAuthority* m_current;
-        vector<XMLObject*>::const_iterator m_iter;
-        
-        bool m_certsOwned;
-        vector<XSECCryptoX509*> m_certs;
-        vector<XSECCryptoX509CRL*> m_crls;
-        
     public:
-        MetadataPKIXIterator(const RoleDescriptor& role, const KeyResolver& keyResolver)
-            : PKIXValidationInfoIterator(keyResolver), m_obj(role.getParent()), m_extBlock(NULL), m_current(NULL), m_certsOwned(false) {
+        PKIXTrustEngine(const DOMElement* e=NULL) : AbstractPKIXTrustEngine(e), m_credLock(RWLock::create()) {
+        }
+        virtual ~PKIXTrustEngine() {
+            delete m_credLock;
+        }
+        
+        AbstractPKIXTrustEngine::PKIXValidationInfoIterator* getPKIXValidationInfoIterator(
+            const CredentialResolver& pkixSource, CredentialCriteria* criteria=NULL
+            ) const;
+
+        void onEvent(const MetadataProvider& metadata) const {
+            m_credLock->wrlock();
+            m_credentialMap[&metadata].clear();
+            m_credLock->unlock();
+        }
+
+        const KeyInfoResolver* getKeyInfoResolver() const {
+            return m_keyInfoResolver ? m_keyInfoResolver : XMLToolingConfig::getConfig().getKeyInfoResolver();
+        }
+
+    private:
+        friend class SHIBSP_DLLLOCAL MetadataPKIXIterator;
+        mutable RWLock* m_credLock;
+        typedef map< const KeyAuthority*,vector<X509Credential*> > credmap_t;
+        mutable map<const MetadataProvider*,credmap_t> m_credentialMap;
+    };
+    
+    SHIBSP_DLLLOCAL PluginManager<TrustEngine,const DOMElement*>::Factory PKIXTrustEngineFactory;
+
+    TrustEngine* SHIBSP_DLLLOCAL PKIXTrustEngineFactory(const DOMElement* const & e)
+    {
+        return new PKIXTrustEngine(e);
+    }
+
+    class SHIBSP_DLLLOCAL MetadataPKIXIterator : public AbstractPKIXTrustEngine::PKIXValidationInfoIterator
+    {
+    public:
+        MetadataPKIXIterator(const PKIXTrustEngine& engine, const MetadataProvider& pkixSource, MetadataCredentialCriteria& criteria)
+                : m_caching(false), m_engine(engine), m_obj(criteria.getRole().getParent()), m_extBlock(NULL), m_current(NULL) {
+            m_engine.m_credLock->rdlock();
+
+            const ObservableMetadataProvider* observable = dynamic_cast<const ObservableMetadataProvider*>(&pkixSource);
+
+            // While holding read lock, see if this metadata plugin has been seen before.
+            m_credCache = m_engine.m_credentialMap.find(&pkixSource);
+            if (m_credCache==m_engine.m_credentialMap.end()) {
+
+                // We need to elevate the lock and retry.
+                m_engine.m_credLock->unlock();
+                m_engine.m_credLock->wrlock();
+                m_credCache = m_engine.m_credentialMap.find(&pkixSource);
+                if (m_credCache==m_engine.m_credentialMap.end()) {
+
+                    // It's still brand new, so see if we can hook it for cache activation.
+                    if (observable)
+                        observable->addObserver(&m_engine);
+
+                    // Prime the map reference with an empty credential map.
+                    m_credCache = m_engine.m_credentialMap.insert(make_pair(&pkixSource,PKIXTrustEngine::credmap_t())).first;
+                    
+                    // Downgrade the lock.
+                    // We don't have to recheck because we never erase the master map entry entirely, even on changes.
+                    m_engine.m_credLock->unlock();
+                    m_engine.m_credLock->rdlock();
+                }
+            }
+            
+            if (observable) {
+                // We've hooked the metadata for changes, and we know we can cache against it.
+                m_caching = true;
+            }
         }
 
         virtual ~MetadataPKIXIterator() {
-            clear();
+            m_engine.m_credLock->unlock();
+            for_each(m_ownedCreds.begin(), m_ownedCreds.end(), xmltooling::cleanup<Credential>());
         }
 
         bool next();
@@ -75,33 +138,17 @@ namespace shibsp {
     
     private:
         void populate();
-
-        void clear() {
-            if (m_certsOwned)
-                for_each(m_certs.begin(), m_certs.end(), xmltooling::cleanup<XSECCryptoX509>());
-            m_certs.clear();
-            for_each(m_crls.begin(), m_crls.end(), xmltooling::cleanup<XSECCryptoX509CRL>());
-            m_crls.clear();
-        }
+        bool m_caching;
+        const PKIXTrustEngine& m_engine;
+        map<const MetadataProvider*,PKIXTrustEngine::credmap_t>::iterator m_credCache;
+        const XMLObject* m_obj;
+        const Extensions* m_extBlock;
+        const KeyAuthority* m_current;
+        vector<XMLObject*>::const_iterator m_iter;
+        vector<XSECCryptoX509*> m_certs;
+        vector<XSECCryptoX509CRL*> m_crls;
+        vector<X509Credential*> m_ownedCreds;
     };
-
-    class SHIBSP_DLLLOCAL PKIXTrustEngine : public AbstractPKIXTrustEngine
-    {
-    public:
-        PKIXTrustEngine(const DOMElement* e=NULL) : AbstractPKIXTrustEngine(e) {}
-        virtual ~PKIXTrustEngine() {}
-        
-        AbstractPKIXTrustEngine::PKIXValidationInfoIterator* getPKIXValidationInfoIterator(
-            const KeyInfoSource& pkixSource, const KeyResolver& keyResolver
-            ) const;
-    };
-    
-    SHIBSP_DLLLOCAL PluginManager<TrustEngine,const DOMElement*>::Factory PKIXTrustEngineFactory;
-
-    TrustEngine* SHIBSP_DLLLOCAL PKIXTrustEngineFactory(const DOMElement* const & e)
-    {
-        return new PKIXTrustEngine(e);
-    }
 };
 
 void shibsp::registerPKIXTrustEngine()
@@ -110,10 +157,16 @@ void shibsp::registerPKIXTrustEngine()
 }
 
 AbstractPKIXTrustEngine::PKIXValidationInfoIterator* PKIXTrustEngine::getPKIXValidationInfoIterator(
-    const KeyInfoSource& pkixSource, const KeyResolver& keyResolver
+    const CredentialResolver& pkixSource, CredentialCriteria* criteria
     ) const
 {
-    return new MetadataPKIXIterator(dynamic_cast<const RoleDescriptor&>(pkixSource),keyResolver);
+    // Make sure these are metadata objects.
+    const MetadataProvider& metadata = dynamic_cast<const MetadataProvider&>(pkixSource);
+    MetadataCredentialCriteria* metacrit = dynamic_cast<MetadataCredentialCriteria*>(criteria);
+    if (!metacrit)
+        throw MetadataException("Cannot obtain PKIX information without a MetadataCredentialCriteria object.");
+
+    return new MetadataPKIXIterator(*this, metadata,*metacrit);
 }
 
 bool MetadataPKIXIterator::next()
@@ -165,31 +218,53 @@ bool MetadataPKIXIterator::next()
 void MetadataPKIXIterator::populate()
 {
     // Dump anything old.
-    clear();
+    m_certs.clear();
+    m_crls.clear();
+    for_each(m_ownedCreds.begin(), m_ownedCreds.end(), xmltooling::cleanup<Credential>());
 
-    // We have to aggregate the resolution results.
-    KeyResolver::ResolvedCertificates certs;
-    XSECCryptoX509CRL* crl;
+    if (m_caching) {
+        // We're holding a read lock. Search for "resolved" creds.
+        PKIXTrustEngine::credmap_t::iterator cached = m_credCache->second.find(m_current);
+        if (cached!=m_credCache->second.end()) {
+            // Copy over the information.
+            for (vector<X509Credential*>::const_iterator c=cached->second.begin(); c!=cached->second.end(); ++c) {
+                m_certs.insert(m_certs.end(), (*c)->getEntityCertificateChain().begin(), (*c)->getEntityCertificateChain().end());
+                m_crls.push_back((*c)->getCRL());
+            }
+        }
+    }
+
+    // We're either not caching or didn't find the results we need, so we have to resolve them.
     const vector<KeyInfo*>& keyInfos = m_current->getKeyInfos();
     for (vector<KeyInfo*>::const_iterator k = keyInfos.begin(); k!=keyInfos.end(); ++k) {
-        vector<XSECCryptoX509*>::size_type count = m_keyResolver.resolveCertificates(*k,certs); 
-        if (count > 0) {
-            // Transfer certificates out of wrapper. 
-            bool own = certs.release(m_certs);
-            if (!m_certs.empty() && own != m_certsOwned) {
-                // Ugh. We have a mashup of "owned" and "unowned".
-                // The ones we just added need to be removed and perhaps freed.
-                do {
-                    if (own)
-                        delete m_certs.back();
-                    m_certs.pop_back();
-                } while (--count > 0);
-            }
-            m_certsOwned = own;
+        auto_ptr<Credential> cred (m_engine.getKeyInfoResolver()->resolve(*k));
+        X509Credential* xcred = dynamic_cast<X509Credential*>(cred.get());
+        if (xcred) {
+            m_ownedCreds.push_back(xcred);
+            cred.release();
         }
+    }
 
-        crl = m_keyResolver.resolveCRL(*k);
-        if (crl)
-            m_crls.push_back(crl);
+    // Copy over the new information.
+    for (vector<X509Credential*>::const_iterator c=m_ownedCreds.begin(); c!=m_ownedCreds.end(); ++c) {
+        m_certs.insert(m_certs.end(), (*c)->getEntityCertificateChain().begin(), (*c)->getEntityCertificateChain().end());
+        m_crls.push_back((*c)->getCRL());
+    }
+
+    // As a last step, if we're caching, try and elevate to a write lock for cache insertion.
+    if (m_caching) {
+        m_engine.m_credLock->unlock();
+        m_engine.m_credLock->wrlock();
+        PKIXTrustEngine::credmap_t::iterator cached = m_credCache->second.find(m_current);
+        if (m_credCache->second.count(m_current)==0) {
+            // Transfer objects into cache.
+            m_credCache->second[m_current] = m_ownedCreds;
+            m_ownedCreds.clear();
+        }
+        m_engine.m_credLock->unlock();
+        m_engine.m_credLock->rdlock();
+
+        // In theory we could have lost the objects but that shouldn't be possible
+        // since the metadata itself is locked and shouldn't change behind us.
     }
 }
