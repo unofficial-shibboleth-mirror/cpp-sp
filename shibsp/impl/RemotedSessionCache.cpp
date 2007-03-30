@@ -396,7 +396,7 @@ string RemotedCache::insert(
     
     if (nameid) {
         ostringstream namestr;
-        namestr << nameid;
+        namestr << *nameid;
         in.addmember("nameid").string(namestr.str().c_str());
     }
 

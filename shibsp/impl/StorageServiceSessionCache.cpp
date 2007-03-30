@@ -501,7 +501,7 @@ string SSCache::insert(
 
     if (nameid) {
         ostringstream namestr;
-        namestr << nameid;
+        namestr << *nameid;
         obj.addmember("nameid").string(namestr.str().c_str());
     }
 
