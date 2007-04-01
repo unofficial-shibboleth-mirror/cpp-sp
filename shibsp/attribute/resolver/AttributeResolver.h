@@ -87,11 +87,11 @@ namespace shibsp {
          * Gets the attributes for a given subject and returns them in the supplied context.
          * 
          * @param ctx           resolution context to use to resolve attributes
-         * @param attributes    list of attributes to resolve or NULL to resolve all attributes
+         * @param attributes    set of attributes to resolve or NULL to resolve all attributes
          * 
          * @throws AttributeResolutionException thrown if there is a problem resolving the attributes for the subject
          */
-        virtual void resolveAttributes(ResolutionContext& ctx, const std::vector<const char*>* attributes=NULL) const=0;
+        virtual void resolveAttributes(ResolutionContext& ctx, const std::set<std::string>* attributes=NULL) const=0;
     };
 
 #if defined (_MSC_VER)

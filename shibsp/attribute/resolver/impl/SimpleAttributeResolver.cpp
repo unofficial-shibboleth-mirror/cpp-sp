@@ -151,27 +151,32 @@ namespace shibsp {
         }
 
         void query(
-            ResolutionContext& ctx, const NameIdentifier& nameid, const vector<const char*>* attributes=NULL
+            ResolutionContext& ctx, const NameIdentifier& nameid, const set<string>* attributes=NULL
             ) const;
         void query(
-            ResolutionContext& ctx, const NameID& nameid, const vector<const char*>* attributes=NULL
+            ResolutionContext& ctx, const NameID& nameid, const set<string>* attributes=NULL
             ) const;
         void resolve(
-            ResolutionContext& ctx, const saml1::Assertion* token, const vector<const char*>* attributes=NULL
+            ResolutionContext& ctx, const saml1::Assertion* token, const set<string>* attributes=NULL
             ) const;
         void resolve(
-            ResolutionContext& ctx, const saml2::Assertion* token, const vector<const char*>* attributes=NULL
+            ResolutionContext& ctx, const saml2::Assertion* token, const set<string>* attributes=NULL
             ) const;
 
         bool m_allowQuery;
+
     private:
+        void populateQuery(saml1p::AttributeQuery& query, const string& id) const;
+        void populateQuery(saml2p::AttributeQuery& query, const string& id) const;
+
         DOMDocument* m_document;
         map<string,AttributeDecoder*> m_decoderMap;
 #ifdef HAVE_GOOD_STL
-        map< pair<xstring,xstring>,pair<const AttributeDecoder*,string> > m_attrMap;
+        typedef map< pair<xstring,xstring>,pair<const AttributeDecoder*,string> > attrmap_t;
 #else
-        map< pair<string,string>,pair<const AttributeDecoder*,string> > m_attrMap;
+        typedef map< pair<string,string>,pair<const AttributeDecoder*,string> > attrmap_t;
 #endif
+        attrmap_t m_attrMap;
     };
     
     class SimpleResolver : public AttributeResolver, public ReloadableXMLFile
@@ -198,7 +203,7 @@ namespace shibsp {
             return new SimpleContext(application,session);
         }
         
-        void resolveAttributes(ResolutionContext& ctx, const vector<const char*>* attributes=NULL) const;
+        void resolveAttributes(ResolutionContext& ctx, const set<string>* attributes=NULL) const;
 
     protected:
         pair<bool,DOMElement*> load();
@@ -314,14 +319,9 @@ SimpleResolverImpl::SimpleResolverImpl(const DOMElement* e) : m_document(NULL), 
 }
 
 void SimpleResolverImpl::resolve(
-    ResolutionContext& ctx, const saml1::Assertion* token, const vector<const char*>* attributes
+    ResolutionContext& ctx, const saml1::Assertion* token, const set<string>* attributes
     ) const
 {
-    set<string> aset;
-    if (attributes)
-        for(vector<const char*>::const_iterator i=attributes->begin(); i!=attributes->end(); ++i)
-            aset.insert(*i);
-
     vector<shibsp::Attribute*>& resolved = ctx.getResolvedAttributes();
 
     auto_ptr_char assertingParty(ctx.getEntityDescriptor() ? ctx.getEntityDescriptor()->getEntityID() : NULL);
@@ -347,7 +347,7 @@ void SimpleResolverImpl::resolve(
         auto_ptr_char temp(format);
         if ((rule=m_attrMap.find(make_pair(temp.get(),string()))) != m_attrMap.end()) {
 #endif
-            if (aset.empty() || aset.count(rule->second.second)) {
+            if (!attributes || attributes->count(rule->second.second)) {
                 resolved.push_back(
                     rule->second.first->decode(
                         rule->second.second.c_str(), ctx.getNameID(), assertingParty.get(), relyingParty
@@ -374,7 +374,7 @@ void SimpleResolverImpl::resolve(
             auto_ptr_char temp2(format);
             if ((rule=m_attrMap.find(make_pair(temp1.get(),temp2.get()))) != m_attrMap.end()) {
 #endif
-                if (aset.empty() || aset.count(rule->second.second)) {
+                if (!attributes || attributes->count(rule->second.second)) {
                     resolved.push_back(
                         rule->second.first->decode(rule->second.second.c_str(), *a, assertingParty.get(), relyingParty)
                         );
@@ -385,14 +385,9 @@ void SimpleResolverImpl::resolve(
 }
 
 void SimpleResolverImpl::resolve(
-    ResolutionContext& ctx, const saml2::Assertion* token, const vector<const char*>* attributes
+    ResolutionContext& ctx, const saml2::Assertion* token, const set<string>* attributes
     ) const
 {
-    set<string> aset;
-    if (attributes)
-        for(vector<const char*>::const_iterator i=attributes->begin(); i!=attributes->end(); ++i)
-            aset.insert(*i);
-
     vector<shibsp::Attribute*>& resolved = ctx.getResolvedAttributes();
 
     auto_ptr_char assertingParty(ctx.getEntityDescriptor() ? ctx.getEntityDescriptor()->getEntityID() : NULL);
@@ -418,7 +413,7 @@ void SimpleResolverImpl::resolve(
         auto_ptr_char temp(format);
         if ((rule=m_attrMap.find(make_pair(temp.get(),string()))) != m_attrMap.end()) {
 #endif
-            if (aset.empty() || aset.count(rule->second.second)) {
+            if (!attributes || attributes->count(rule->second.second)) {
                 resolved.push_back(
                     rule->second.first->decode(
                         rule->second.second.c_str(), ctx.getNameID(), assertingParty.get(), relyingParty
@@ -447,7 +442,7 @@ void SimpleResolverImpl::resolve(
             auto_ptr_char temp2(format);
             if ((rule=m_attrMap.find(make_pair(temp1.get(),temp2.get()))) != m_attrMap.end()) {
 #endif
-                if (aset.empty() || aset.count(rule->second.second)) {
+                if (!attributes || attributes->count(rule->second.second)) {
                     resolved.push_back(
                         rule->second.first->decode(rule->second.second.c_str(), *a, assertingParty.get(), relyingParty)
                         );
@@ -489,7 +484,7 @@ void SimpleResolverImpl::resolve(
                 auto_ptr_char temp2(format);
                 if ((rule=m_attrMap.find(make_pair(temp1.get(),temp2.get()))) != m_attrMap.end()) {
 #endif
-                    if (aset.empty() || aset.count(rule->second.second)) {
+                    if (!attributes || attributes->count(rule->second.second)) {
                         resolved.push_back(
                             rule->second.first->decode(rule->second.second.c_str(), decattr, assertingParty.get(), relyingParty)
                             );
@@ -500,7 +495,7 @@ void SimpleResolverImpl::resolve(
     }
 }
 
-void SimpleResolverImpl::query(ResolutionContext& ctx, const NameIdentifier& nameid, const vector<const char*>* attributes) const
+void SimpleResolverImpl::query(ResolutionContext& ctx, const NameIdentifier& nameid, const set<string>* attributes) const
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("query");
@@ -547,6 +542,11 @@ void SimpleResolverImpl::query(ResolutionContext& ctx, const NameIdentifier& nam
             request->setAttributeQuery(query);
             query->setResource(issuer.get());
             request->setMinorVersion(version);
+            if (attributes) {
+                for (set<string>::const_iterator a = attributes->begin(); a!=attributes->end(); ++a)
+                    populateQuery(*query, *a);
+            }
+
             SAML1SOAPClient client(soaper);
             client.sendSAML(request, mcc, loc.get());
             response = client.receiveSAML();
@@ -590,7 +590,30 @@ void SimpleResolverImpl::query(ResolutionContext& ctx, const NameIdentifier& nam
     resolve(ctx, newtoken, attributes);
 }
 
-void SimpleResolverImpl::query(ResolutionContext& ctx, const NameID& nameid, const vector<const char*>* attributes) const
+void SimpleResolverImpl::populateQuery(saml1p::AttributeQuery& query, const string& id) const
+{
+    for (attrmap_t::const_iterator i = m_attrMap.begin(); i!=m_attrMap.end(); ++i) {
+        if (i->second.second == id) {
+            AttributeDesignator* a = AttributeDesignatorBuilder::buildAttributeDesignator();
+#ifdef HAVE_GOOD_STL
+            a->setAttributeName(i->first.second.c_str());
+            a->setAttributeNamespace(i->first.first.empty() ? shibspconstants::SHIB1_ATTRIBUTE_NAMESPACE_URI : i->first.first.c_str());
+#else
+            auto_ptr_XMLCh n(i->first.second);
+            a->setAttributeName(n.get());
+            if (i->first.first.empty())
+                a->setAttributeNamespace(shibspconstants::SHIB1_ATTRIBUTE_NAMESPACE_URI);
+            else {
+                auto_ptr_XMLCh ns(i->first.first);
+                a->setAttributeNamespace(ns.get());
+            }
+#endif
+            query.getAttributeDesignators().push_back(a);
+        }
+    }
+}
+
+void SimpleResolverImpl::query(ResolutionContext& ctx, const NameID& nameid, const set<string>* attributes) const
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("query");
@@ -630,6 +653,11 @@ void SimpleResolverImpl::query(ResolutionContext& ctx, const NameID& nameid, con
             Issuer* iss = IssuerBuilder::buildIssuer();
             query->setIssuer(iss);
             iss->setName(issuer.get());
+            if (attributes) {
+                for (set<string>::const_iterator a = attributes->begin(); a!=attributes->end(); ++a)
+                    populateQuery(*query, *a);
+            }
+
             SAML2SOAPClient client(soaper);
             client.sendSAML(query, mcc, loc.get());
             srt = client.receiveSAML();
@@ -679,7 +707,30 @@ void SimpleResolverImpl::query(ResolutionContext& ctx, const NameID& nameid, con
     resolve(ctx, newtoken, attributes);
 }
 
-void SimpleResolver::resolveAttributes(ResolutionContext& ctx, const vector<const char*>* attributes) const
+void SimpleResolverImpl::populateQuery(saml2p::AttributeQuery& query, const string& id) const
+{
+    for (attrmap_t::const_iterator i = m_attrMap.begin(); i!=m_attrMap.end(); ++i) {
+        if (i->second.second == id) {
+            saml2::Attribute* a = saml2::AttributeBuilder::buildAttribute();
+#ifdef HAVE_GOOD_STL
+            a->setName(i->first.second.c_str());
+            a->setNameFormat(i->first.first.empty() ? saml2::Attribute::URI_REFERENCE : i->first.first.c_str());
+#else
+            auto_ptr_XMLCh n(i->first.second);
+            a->setName(n.get());
+            if (i->first.first.empty())
+                a->setNameFormat(saml2::Attribute::URI_REFERENCE);
+            else {
+                auto_ptr_XMLCh ns(i->first.first);
+                a->setNameFormat(ns.get());
+            }
+#endif
+            query.getAttributes().push_back(a);
+        }
+    }
+}
+
+void SimpleResolver::resolveAttributes(ResolutionContext& ctx, const set<string>* attributes) const
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("resolveAttributes");
