@@ -350,6 +350,7 @@
 			<attribute name="providerId" type="anyURI" use="required"/>
 			<attribute name="policyId" type="conf:string" use="required"/>
 			<attribute name="homeURL" type="anyURI"/>
+			<attribute name="attributeIds" type="conf:listOfStrings"/>
 	        <anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>
@@ -373,7 +374,8 @@
 			<attribute name="providerId" type="anyURI"/>
 			<attribute name="policyId" type="conf:string"/>
 			<attribute name="homeURL" type="anyURI"/>
-	        <anyAttribute namespace="##other" processContents="lax"/>
+			<attribute name="attributeIds" type="conf:listOfStrings"/>
+			<anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>
 

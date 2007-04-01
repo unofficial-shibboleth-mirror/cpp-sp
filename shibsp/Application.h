@@ -99,6 +99,13 @@ namespace shibsp {
         virtual AttributeResolver* getAttributeResolver() const=0;
 
         /**
+         * Returns a set of attribute IDs to resolve for the Application.
+         *
+         * @return  a set of attribute IDs, or an empty set
+         */
+        virtual const std::set<std::string>* getAttributeIds() const=0;
+
+        /**
          * Returns the CredentialResolver instance associated with this Application.
          * 
          * @return  a CredentialResolver, or NULL

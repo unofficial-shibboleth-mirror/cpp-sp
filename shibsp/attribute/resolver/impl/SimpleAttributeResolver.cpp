@@ -596,15 +596,15 @@ void SimpleResolverImpl::populateQuery(saml1p::AttributeQuery& query, const stri
         if (i->second.second == id) {
             AttributeDesignator* a = AttributeDesignatorBuilder::buildAttributeDesignator();
 #ifdef HAVE_GOOD_STL
-            a->setAttributeName(i->first.second.c_str());
-            a->setAttributeNamespace(i->first.first.empty() ? shibspconstants::SHIB1_ATTRIBUTE_NAMESPACE_URI : i->first.first.c_str());
+            a->setAttributeName(i->first.first.c_str());
+            a->setAttributeNamespace(i->first.second.empty() ? shibspconstants::SHIB1_ATTRIBUTE_NAMESPACE_URI : i->first.second.c_str());
 #else
-            auto_ptr_XMLCh n(i->first.second);
+            auto_ptr_XMLCh n(i->first.first.c_str());
             a->setAttributeName(n.get());
-            if (i->first.first.empty())
+            if (i->first.second.empty())
                 a->setAttributeNamespace(shibspconstants::SHIB1_ATTRIBUTE_NAMESPACE_URI);
             else {
-                auto_ptr_XMLCh ns(i->first.first);
+                auto_ptr_XMLCh ns(i->first.second.c_str());
                 a->setAttributeNamespace(ns.get());
             }
 #endif
@@ -713,15 +713,15 @@ void SimpleResolverImpl::populateQuery(saml2p::AttributeQuery& query, const stri
         if (i->second.second == id) {
             saml2::Attribute* a = saml2::AttributeBuilder::buildAttribute();
 #ifdef HAVE_GOOD_STL
-            a->setName(i->first.second.c_str());
-            a->setNameFormat(i->first.first.empty() ? saml2::Attribute::URI_REFERENCE : i->first.first.c_str());
+            a->setName(i->first.first.c_str());
+            a->setNameFormat(i->first.second.empty() ? saml2::Attribute::URI_REFERENCE : i->first.second.c_str());
 #else
-            auto_ptr_XMLCh n(i->first.second);
+            auto_ptr_XMLCh n(i->first.first.c_str());
             a->setName(n.get());
-            if (i->first.first.empty())
+            if (i->first.second.empty())
                 a->setNameFormat(saml2::Attribute::URI_REFERENCE);
             else {
-                auto_ptr_XMLCh ns(i->first.first);
+                auto_ptr_XMLCh ns(i->first.second.c_str());
                 a->setNameFormat(ns.get());
             }
 #endif

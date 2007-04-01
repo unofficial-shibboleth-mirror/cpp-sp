@@ -248,7 +248,7 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
         auto_ptr<ResolutionContext> ctx(
             resolver->createResolutionContext(application, httpRequest.getRemoteAddr().c_str(), issuer, nameid, tokens)
             );
-        resolver->resolveAttributes(*ctx.get());
+        resolver->resolveAttributes(*ctx.get(), application.getAttributeIds());
         return ctx.release();
     }
     catch (exception& ex) {
