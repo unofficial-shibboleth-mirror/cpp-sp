@@ -209,6 +209,61 @@ if test ! "$WANT_NSAPI" = "no" ; then
     WANT_SUBDIRS="$WANT_SUBDIRS nsapi_shib"
 fi
 
+#
+# If no --enable-apache-xx specified 
+# find a default and fake the specific parameters
+#
+
+# simple macro to peek at an enable or a with
+AC_DEFUN([Peek],
+if test "[${[$1]_][$2]+set}" = set; then
+  peekval="${[$1]_[$2]}"
+  $3
+fi; dnl
+)
+
+AC_MSG_CHECKING(if default apache needed)
+need_default=yes
+Peek(enable,apache_13,need_default=no)
+Peek(enable,apache_20,need_default=no)
+Peek(enable,apache_22,need_default=no)
+AC_MSG_RESULT($need_default)
+
+if test "$need_default" = "yes"; then
+  # find an apxs, then the httpd
+  xs=
+  Peek(with,apxs,xs="$peekval")
+  Peek(with,apxs2,xs="$peekval")
+  Peek(with,apxs22,xs="$peekval")
+  if test "x$xs" = "x"; then
+     AC_PATH_PROGS(xs, apxs2 apxs,
+        AC_MSG_ERROR(No apxs, no apache found.  Try --with-apxs),
+        [/usr/local/apache2/bin:/usr/local/apache/bin:/usr/sbin:$PATH])
+  fi
+  # ask the daemon for the version and set parameters
+  AC_MSG_CHECKING(default apache version)
+  httpd="`$xs -q SBINDIR`/`$xs -q TARGET`"
+  if test "x$httpd" != "x"; then
+     v=`$httpd -v|$SED -n -e 's/.*Apache\/\.*//p'`
+     case $v in
+       1.3*)   [enable_apache_13]=yes
+               [with_apxs]=$xs
+               AC_MSG_RESULT(1.3)
+               ;;
+       2.0*)   [enable_apache_20]=yes
+               [with_apxs2]=$xs
+               AC_MSG_RESULT(2.0)
+               ;;
+       2.2*)   [enable_apache_22]=yes
+               [with_apxs22]=$xs
+               AC_MSG_RESULT(2.2)
+               ;;
+       *)      AC_MSG_ERROR(unusable apache versions: $v. Try setting --with-apxs)
+     esac
+  else 
+     AC_MSG_RESULT(cannot determine version.  Try setting --with-apxs)
+  fi
+fi
 
 # Apache 1.3 (mod_shib_13)
 #   --enable-apache-13
