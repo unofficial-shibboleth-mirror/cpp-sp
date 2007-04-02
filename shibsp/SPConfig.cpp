@@ -30,6 +30,7 @@
 #include "SPConfig.h"
 #include "attribute/AttributeDecoder.h"
 #include "attribute/resolver/AttributeResolver.h"
+#include "binding/ArtifactResolver.h"
 #include "handler/Handler.h"
 #include "metadata/MetadataExt.h"
 #include "remoting/ListenerService.h"
@@ -114,6 +115,9 @@ bool SPInternalConfig::init(const char* catalog_path)
     registerRequestMappers();
     registerSessionCaches();
     registerServiceProviders();
+
+    if (isEnabled(OutOfProcess))
+        m_artifactResolver = new ArtifactResolver();
     
     log.info("library initialization complete");
     return true;
@@ -127,8 +131,8 @@ void SPInternalConfig::term()
     Category& log=Category::getInstance(SHIBSP_LOGCAT".Config");
     log.info("shutting down the library");
 
-    delete m_serviceProvider;
-    m_serviceProvider = NULL;
+    setServiceProvider(NULL);
+    setArtifactResolver(NULL);
 
     AssertionConsumerServiceManager.deregisterFactories();
     ManageNameIDServiceManager.deregisterFactories();

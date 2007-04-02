@@ -24,6 +24,7 @@
 #define __shibsp_config_h__
 
 #include <shibsp/base.h>
+#include <saml/binding/MessageDecoder.h>
 #include <xmltooling/PluginManager.h>
 #include <xercesc/dom/DOM.hpp>
 
@@ -135,6 +136,28 @@ namespace shibsp {
             return m_serviceProvider;
         }
 
+        /**
+         * Sets the global ArtifactResolver instance.
+         *
+         * <p>This method must be externally synchronized with any code that uses the object.
+         * Any previously set object is destroyed.
+         * 
+         * @param artifactResolver   new ArtifactResolver instance to store
+         */
+        void setArtifactResolver(opensaml::MessageDecoder::ArtifactResolver* artifactResolver) {
+            delete m_artifactResolver;
+            m_artifactResolver = artifactResolver;
+        }
+        
+        /**
+         * Returns the global ArtifactResolver instance.
+         * 
+         * @return  global ArtifactResolver or NULL
+         */
+        opensaml::MessageDecoder::ArtifactResolver* getArtifactResolver() const {
+            return m_artifactResolver;
+        }
+
         /** Separator for serialized values of multi-valued attributes. */
         char attribute_value_delimeter;
         
@@ -199,10 +222,13 @@ namespace shibsp {
         xmltooling::PluginManager< Handler,std::pair<const xercesc::DOMElement*,const char*> > SingleLogoutServiceManager;
 
     protected:
-        SPConfig() : attribute_value_delimeter(';'), m_serviceProvider(NULL), m_features(0) {}
+        SPConfig() : attribute_value_delimeter(';'), m_serviceProvider(NULL), m_artifactResolver(NULL), m_features(0) {}
         
         /** Global ServiceProvider instance. */
         ServiceProvider* m_serviceProvider;
+
+        /** Global ArtifactResolver instance. */
+        opensaml::MessageDecoder::ArtifactResolver* m_artifactResolver;
 
     private:
         unsigned long m_features;

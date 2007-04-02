@@ -50,6 +50,7 @@ attrresinclude_HEADERS = \
 	attribute/resolver/ResolutionContext.h
 
 bindinclude_HEADERS = \
+	binding/ArtifactResolver.h \
 	binding/SOAPClient.h
 
 handinclude_HEADERS = \
@@ -91,6 +92,7 @@ libshibsp_la_SOURCES = \
 	attribute/ScopedAttributeDecoder.cpp \
 	attribute/resolver/impl/AttributeResolver.cpp \
 	attribute/resolver/impl/SimpleAttributeResolver.cpp \
+	binding/impl/ArtifactResolver.cpp \
 	binding/impl/SOAPClient.cpp \
 	handler/impl/AbstractHandler.cpp \
 	handler/impl/AssertionConsumerService.cpp \

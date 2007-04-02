@@ -337,6 +337,10 @@
 					Name="impl"
 					>
 					<File
+						RelativePath=".\binding\impl\ArtifactResolver.cpp"
+						>
+					</File>
+					<File
 						RelativePath=".\binding\impl\SOAPClient.cpp"
 						>
 					</File>
@@ -523,6 +527,10 @@
 			<Filter
 				Name="binding"
 				>
+				<File
+					RelativePath=".\binding\ArtifactResolver.h"
+					>
+				</File>
 				<File
 					RelativePath=".\binding\SOAPClient.h"
 					>

@@ -29,6 +29,8 @@
 
 namespace shibsp {
 
+    class SHIBSP_API PropertySet;
+
     /**
      * Specialized SOAPClient for SP environment.
      */

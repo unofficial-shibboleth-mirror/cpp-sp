@@ -49,8 +49,10 @@ AssertionConsumerService::AssertionConsumerService(const DOMElement* e, const ch
     address += getString("Location").second;
     address += "::run::ACS";
     setAddress(address.c_str());
-    if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess))
+    if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
         m_decoder = SAMLConfig::getConfig().MessageDecoderManager.newPlugin(getString("Binding").second,e);
+        m_decoder->setArtifactResolver(SPConfig::getConfig().getArtifactResolver());
+    }
 }
 
 AssertionConsumerService::~AssertionConsumerService()
