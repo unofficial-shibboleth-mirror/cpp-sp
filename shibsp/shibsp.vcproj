@@ -225,6 +225,10 @@
 					RelativePath=".\security\PKIXTrustEngine.cpp"
 					>
 				</File>
+				<File
+					RelativePath=".\security\SecurityPolicy.cpp"
+					>
+				</File>
 			</Filter>
 			<Filter
 				Name="metadata"
@@ -453,6 +457,10 @@
 				>
 				<File
 					RelativePath=".\security\PKIXTrustEngine.h"
+					>
+				</File>
+				<File
+					RelativePath=".\security\SecurityPolicy.h"
 					>
 				</File>
 			</Filter>

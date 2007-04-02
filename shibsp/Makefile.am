@@ -66,7 +66,8 @@ reminclude_HEADERS = \
 	remoting/ListenerService.h
 	
 secinclude_HEADERS = \
-	security/PKIXTrustEngine.h
+	security/PKIXTrustEngine.h \
+	security/SecurityPolicy.h
 
 utilinclude_HEADERS = \
 	util/DOMPropertySet.h \
@@ -109,6 +110,7 @@ libshibsp_la_SOURCES = \
 	remoting/impl/TCPListener.cpp \
 	remoting/impl/UnixListener.cpp \
 	security/PKIXTrustEngine.cpp \
+	security/SecurityPolicy.cpp \
 	util/DOMPropertySet.cpp \
 	util/SPConstants.cpp \
 	util/TemplateParameters.cpp

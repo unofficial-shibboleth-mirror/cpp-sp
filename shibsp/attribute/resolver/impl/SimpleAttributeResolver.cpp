@@ -519,9 +519,9 @@ void SimpleResolverImpl::query(ResolutionContext& ctx, const NameIdentifier& nam
         return;
     }
 
-    SecurityPolicy policy;
+    shibsp::SecurityPolicy policy(ctx.getApplication());
     MetadataCredentialCriteria mcc(*AA);
-    shibsp::SOAPClient soaper(ctx.getApplication(),policy);
+    shibsp::SOAPClient soaper(policy);
     const PropertySet* policySettings = ctx.getApplication().getServiceProvider().getPolicySettings(ctx.getApplication().getString("policyId").second);
     pair<bool,bool> signedAssertions = policySettings->getBool("signedAssertions");
 
@@ -631,9 +631,9 @@ void SimpleResolverImpl::query(ResolutionContext& ctx, const NameID& nameid, con
         return;
     }
 
-    SecurityPolicy policy;
+    shibsp::SecurityPolicy policy(ctx.getApplication());
     MetadataCredentialCriteria mcc(*AA);
-    shibsp::SOAPClient soaper(ctx.getApplication(),policy);
+    shibsp::SOAPClient soaper(policy);
     const PropertySet* policySettings = ctx.getApplication().getServiceProvider().getPolicySettings(ctx.getApplication().getString("policyId").second);
     pair<bool,bool> signedAssertions = policySettings->getBool("signedAssertions");
 

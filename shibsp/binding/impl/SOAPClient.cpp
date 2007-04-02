@@ -21,6 +21,7 @@
  */
 
 #include "internal.h"
+#include "Application.h"
 #include "exceptions.h"
 #include "ServiceProvider.h"
 #include "binding/SOAPClient.h"
@@ -38,16 +39,10 @@ using namespace xmltooling;
 using namespace log4cpp;
 using namespace std;
 
-SOAPClient::SOAPClient(const Application& application, opensaml::SecurityPolicy& policy)
-    : opensaml::SOAPClient(policy), m_app(application), m_settings(NULL), m_relyingParty(NULL), m_credResolver(NULL)
+SOAPClient::SOAPClient(SecurityPolicy& policy)
+    : opensaml::SOAPClient(policy), m_app(policy.getApplication()), m_settings(NULL), m_relyingParty(NULL), m_credResolver(NULL)
 {
-    pair<bool,const char*> policyId = m_app.getString("policyId");
-    m_settings = application.getServiceProvider().getPolicySettings(policyId.second);
-    const vector<const opensaml::SecurityPolicyRule*>& rules = application.getServiceProvider().getPolicyRules(policyId.second);
-    for (vector<const opensaml::SecurityPolicyRule*>::const_iterator rule=rules.begin(); rule!=rules.end(); ++rule)
-        policy.addRule(*rule);
-    policy.setMetadataProvider(application.getMetadataProvider());
-    policy.setTrustEngine(application.getTrustEngine());
+    m_settings = m_app.getServiceProvider().getPolicySettings(m_app.getString("policyId").second);
     pair<bool,bool> validate = m_settings->getBool("validate");
     policy.setValidating(validate.first && validate.second);
     setValidating(validate.first && validate.second);

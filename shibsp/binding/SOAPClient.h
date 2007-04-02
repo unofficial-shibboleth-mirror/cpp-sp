@@ -23,7 +23,7 @@
 #ifndef __shibsp_soap11client_h__
 #define __shibsp_soap11client_h__
 
-#include <shibsp/Application.h>
+#include <shibsp/security/SecurityPolicy.h>
 #include <saml/binding/SOAPClient.h>
 #include <xmltooling/security/CredentialResolver.h>
 
@@ -38,10 +38,9 @@ namespace shibsp {
         /**
          * Creates a SOAP client instance for an Application to use.
          * 
-         * @param application   reference to Application
-         * @param policy        reference to (empty) SecurityPolicy to apply
+         * @param policy        reference to SP-SecurityPolicy to apply
          */
-        SOAPClient(const Application& application, opensaml::SecurityPolicy& policy);
+        SOAPClient(SecurityPolicy& policy);
         
         virtual ~SOAPClient() {
             if (m_credResolver)

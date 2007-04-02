@@ -159,8 +159,8 @@ int main(int argc,char* argv[])
         else
             throw MetadataException("No AttributeAuthority role found in metadata.");
 
-        SecurityPolicy policy;
-        shibsp::SOAPClient soaper(*app,policy);
+        shibsp::SecurityPolicy policy(*app);
+        shibsp::SOAPClient soaper(policy);
         MetadataCredentialCriteria mcc(*AA);
 
         if (ver == v20) {
