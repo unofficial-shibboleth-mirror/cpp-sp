@@ -325,7 +325,7 @@ void SimpleResolverImpl::resolve(
     vector<shibsp::Attribute*>& resolved = ctx.getResolvedAttributes();
 
     auto_ptr_char assertingParty(ctx.getEntityDescriptor() ? ctx.getEntityDescriptor()->getEntityID() : NULL);
-    const char* relyingParty = ctx.getApplication().getString("providerId").second;
+    const char* relyingParty = ctx.getApplication().getString("entityID").second;
 
 #ifdef HAVE_GOOD_STL
     map< pair<xstring,xstring>,pair<const AttributeDecoder*,string> >::const_iterator rule;
@@ -391,7 +391,7 @@ void SimpleResolverImpl::resolve(
     vector<shibsp::Attribute*>& resolved = ctx.getResolvedAttributes();
 
     auto_ptr_char assertingParty(ctx.getEntityDescriptor() ? ctx.getEntityDescriptor()->getEntityID() : NULL);
-    const char* relyingParty = ctx.getApplication().getString("providerId").second;
+    const char* relyingParty = ctx.getApplication().getString("entityID").second;
 
 #ifdef HAVE_GOOD_STL
     map< pair<xstring,xstring>,pair<const AttributeDecoder*,string> >::const_iterator rule;
@@ -452,7 +452,7 @@ void SimpleResolverImpl::resolve(
 
         const vector<saml2::EncryptedAttribute*>& encattrs = const_cast<const saml2::AttributeStatement*>(*s)->getEncryptedAttributes();
         if (!encattrs.empty()) {
-            const XMLCh* recipient = ctx.getApplication().getXMLString("providerId").second;
+            const XMLCh* recipient = ctx.getApplication().getXMLString("entityID").second;
             CredentialResolver* cr = ctx.getApplication().getCredentialResolver();
             if (!cr) {
                 Category::getInstance(SHIBSP_LOGCAT".AttributeResolver").warn(
@@ -533,7 +533,7 @@ void SimpleResolverImpl::query(ResolutionContext& ctx, const NameIdentifier& nam
             if (!XMLString::equals((*ep)->getBinding(),binding.get()))
                 continue;
             auto_ptr_char loc((*ep)->getLocation());
-            auto_ptr_XMLCh issuer(ctx.getApplication().getString("providerId").second);
+            auto_ptr_XMLCh issuer(ctx.getApplication().getString("entityID").second);
             saml1::Subject* subject = saml1::SubjectBuilder::buildSubject();
             subject->setNameIdentifier(nameid.cloneNameIdentifier());
             saml1p::AttributeQuery* query = saml1p::AttributeQueryBuilder::buildAttributeQuery();
@@ -645,7 +645,7 @@ void SimpleResolverImpl::query(ResolutionContext& ctx, const NameID& nameid, con
             if (!XMLString::equals((*ep)->getBinding(),binding.get()))
                 continue;
             auto_ptr_char loc((*ep)->getLocation());
-            auto_ptr_XMLCh issuer(ctx.getApplication().getString("providerId").second);
+            auto_ptr_XMLCh issuer(ctx.getApplication().getString("entityID").second);
             saml2::Subject* subject = saml2::SubjectBuilder::buildSubject();
             subject->setNameID(nameid.cloneNameID());
             saml2p::AttributeQuery* query = saml2p::AttributeQueryBuilder::buildAttributeQuery();

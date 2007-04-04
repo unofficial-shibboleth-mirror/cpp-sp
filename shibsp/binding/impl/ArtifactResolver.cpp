@@ -106,7 +106,7 @@ ArtifactResponse* ArtifactResolver::resolve(
             if (!XMLString::equals((*ep)->getBinding(),binding.get()))
                 continue;
             auto_ptr_char loc((*ep)->getLocation());
-            auto_ptr_XMLCh issuer(sppolicy.getApplication().getString("providerId").second);
+            auto_ptr_XMLCh issuer(sppolicy.getApplication().getString("entityID").second);
             ArtifactResolve* request = ArtifactResolveBuilder::buildArtifactResolve();
             Issuer* iss = IssuerBuilder::buildIssuer();
             request->setIssuer(iss);

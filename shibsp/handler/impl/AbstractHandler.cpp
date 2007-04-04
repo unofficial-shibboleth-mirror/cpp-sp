@@ -23,35 +23,46 @@
 #include "internal.h"
 #include "Application.h"
 #include "exceptions.h"
+#include "ServiceProvider.h"
 #include "SPRequest.h"
 #include "handler/AbstractHandler.h"
+#include "remoting/ListenerService.h"
 
+#include <log4cpp/Category.hh>
 #include <saml/saml1/core/Protocols.h>
 #include <saml/saml2/core/Protocols.h>
 #include <saml/util/SAMLConstants.h>
 #include <xmltooling/XMLToolingConfig.h>
+#include <xmltooling/util/StorageService.h>
 #include <xmltooling/util/URLEncoder.h>
 
 using namespace shibsp;
 using namespace samlconstants;
 using namespace opensaml;
 using namespace xmltooling;
+using namespace log4cpp;
 using namespace xercesc;
 using namespace std;
 
 namespace shibsp {
     SHIBSP_DLLLOCAL PluginManager<Handler,pair<const DOMElement*,const char*>>::Factory SAML1ConsumerFactory;
     SHIBSP_DLLLOCAL PluginManager<Handler,pair<const DOMElement*,const char*>>::Factory SAML2ConsumerFactory;
+    SHIBSP_DLLLOCAL PluginManager<Handler,pair<const DOMElement*,const char*>>::Factory ChainingSessionInitiatorFactory;
+    SHIBSP_DLLLOCAL PluginManager<Handler,pair<const DOMElement*,const char*>>::Factory Shib1SessionInitiatorFactory;
 };
 
 void SHIBSP_API shibsp::registerHandlers()
 {
     SPConfig& conf=SPConfig::getConfig();
+    
     conf.AssertionConsumerServiceManager.registerFactory(SAML1_PROFILE_BROWSER_ARTIFACT, SAML1ConsumerFactory);
     conf.AssertionConsumerServiceManager.registerFactory(SAML1_PROFILE_BROWSER_POST, SAML1ConsumerFactory);
     conf.AssertionConsumerServiceManager.registerFactory(SAML20_BINDING_HTTP_ARTIFACT, SAML2ConsumerFactory);
     conf.AssertionConsumerServiceManager.registerFactory(SAML20_BINDING_HTTP_POST, SAML2ConsumerFactory);
     conf.AssertionConsumerServiceManager.registerFactory(SAML20_BINDING_HTTP_POST_SIMPLESIGN, SAML2ConsumerFactory);
+
+    conf.SessionInitiatorManager.registerFactory(CHAINING_SESSION_INITIATOR, ChainingSessionInitiatorFactory);
+    conf.SessionInitiatorManager.registerFactory(SHIB1_SESSION_INITIATOR, Shib1SessionInitiatorFactory);
 }
 
 AbstractHandler::AbstractHandler(
@@ -108,15 +119,84 @@ void AbstractHandler::checkError(const XMLObject* response) const
     }
 }
 
+void AbstractHandler::preserveRelayState(SPRequest& request, string& relayState) const
+{
+    pair<bool,const char*> mech=getString("relayState");
+    const URLEncoder* urlenc = XMLToolingConfig::getConfig().getURLEncoder();
+
+    // No setting means just pass it by value.
+    if (!mech.first || !mech.second || !*mech.second) {
+        relayState = urlenc->encode(relayState.c_str());
+    }
+    else if (!strcmp(mech.second, "cookie")) {
+        // Here we store the state in a cookie and send a fixed
+        // value so we can recognize it on the way back.
+        pair<string,const char*> shib_cookie=request.getApplication().getCookieNameProps("_shibstate_");
+        string stateval = urlenc->encode(relayState.c_str()) + shib_cookie.second;
+        request.setCookie(shib_cookie.first.c_str(),stateval.c_str());
+        relayState = "cookie";
+    }
+    else if (strstr(mech.second,"ss:")==mech.second) {
+        mech.second+=3;
+        if (*mech.second) {
+            DDF out,in = DDF("set::RelayState").structure();
+            in.addmember("id").string(mech.second);
+            in.addmember("value").string(relayState.c_str());
+            DDFJanitor jin(in),jout(out);
+            out = request.getServiceProvider().getListenerService()->send(in);
+            if (!out.isstring())
+                throw IOException("StorageService-backed RelayState mechanism did not return a state key.");
+            relayState = string(mech.second-3) + ':' + urlenc->encode(out.string());
+        }
+    }
+    else
+        throw ConfigurationException("Unsupported relayState mechanism ($1).", params(1,mech.second));
+}
+
 void AbstractHandler::recoverRelayState(HTTPRequest& httpRequest, string& relayState) const
 {
     SPConfig& conf = SPConfig::getConfig();
-    if (conf.isEnabled(SPConfig::OutOfProcess)) {
-        // Out of process, we look for StorageService-backed state.
-        // TODO: something like ss:SSID:key?
+
+    // Look for StorageService-backed state of the form "ss:SSID:key".
+    const char* state = relayState.c_str();
+    if (strstr(state,"ss:")==state) {
+        state += 3;
+        const char* key = strchr(state,':');
+        if (key) {
+            string ssid = relayState.substr(3, key - state);
+            key++;
+            if (!ssid.empty() && *key) {
+                if (conf.isEnabled(SPConfig::OutOfProcess)) {
+                    StorageService* storage = conf.getServiceProvider()->getStorageService(ssid.c_str());
+                    if (storage) {
+                        if (storage->readString("RelayState",key,&relayState)>0)
+                            storage->deleteString("RelayState",key);
+                        else
+                            relayState = "default";
+                    }
+                    else {
+                        Category::getInstance(SHIBSP_LOGCAT".Handler").error(
+                            "Storage-backed RelayState with invalid StorageService ID (%s)", ssid.c_str()
+                            );
+                        relayState = "default";
+                    }
+                }
+                else if (conf.isEnabled(SPConfig::InProcess)) {
+                    // In process, we should be able to cast down to a full SPRequest.
+                    SPRequest& request = dynamic_cast<SPRequest&>(httpRequest);
+                    DDF out,in = DDF("get::RelayState").structure();
+                    in.addmember("id").string(ssid.c_str());
+                    in.addmember("key").string(key);
+                    DDFJanitor jin(in),jout(out);
+                    out = request.getServiceProvider().getListenerService()->send(in);
+                    if (!out.isstring())
+                        throw IOException("StorageService-backed RelayState mechanism did not return a state value.");
+                    relayState = out.string();
+                }
+            }
+        }
     }
-    
-    if (conf.isEnabled(SPConfig::InProcess)) {
+    else if (conf.isEnabled(SPConfig::InProcess)) {
         // In process, we should be able to cast down to a full SPRequest.
         SPRequest& request = dynamic_cast<SPRequest&>(httpRequest);
         if (relayState.empty() || relayState == "cookie") {

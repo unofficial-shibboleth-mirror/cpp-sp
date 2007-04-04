@@ -113,15 +113,15 @@ namespace shibsp {
         std::string processMessage(
             const Application& application,
             opensaml::HTTPRequest& httpRequest,
-            std::string& providerId,
+            std::string& entityID,
             std::string& relayState
             ) const;
             
         std::pair<bool,long> sendRedirect(
-            SPRequest& request, const char* key, const char* providerId, const char* relayState
+            SPRequest& request, const char* key, const char* entityID, const char* relayState
             ) const;
         
-        void maintainHistory(SPRequest& request, const char* providerId, const char* cookieProps) const;
+        void maintainHistory(SPRequest& request, const char* entityID, const char* cookieProps) const;
                 
         opensaml::MessageDecoder* m_decoder;
         xmltooling::auto_ptr_char m_configNS;

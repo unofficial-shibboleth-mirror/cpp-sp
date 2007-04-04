@@ -96,9 +96,11 @@ libshibsp_la_SOURCES = \
 	binding/impl/SOAPClient.cpp \
 	handler/impl/AbstractHandler.cpp \
 	handler/impl/AssertionConsumerService.cpp \
+	handler/impl/ChainingSessionInitiator.cpp \
 	handler/impl/RemotedHandler.cpp \
 	handler/impl/SAML1Consumer.cpp \
 	handler/impl/SAML2Consumer.cpp \
+	handler/impl/Shib1SessionInitiator.cpp \
 	impl/RemotedSessionCache.cpp \
 	impl/StorageServiceSessionCache.cpp \
 	impl/XMLAccessControl.cpp \

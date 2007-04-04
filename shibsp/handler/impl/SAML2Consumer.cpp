@@ -201,7 +201,7 @@ string SAML2Consumer::implementProtocol(
         saml2::Assertion* decrypted=NULL;
         try {
             Locker credlocker(cr);
-            auto_ptr<XMLObject> wrapper((*ea)->decrypt(*cr, application.getXMLString("providerId").second, &cc));
+            auto_ptr<XMLObject> wrapper((*ea)->decrypt(*cr, application.getXMLString("entityID").second, &cc));
             decrypted = dynamic_cast<saml2::Assertion*>(wrapper.get());
             if (decrypted) {
                 wrapper.release();
@@ -291,7 +291,7 @@ string SAML2Consumer::implementProtocol(
             else {
                 Locker credlocker(cr);
                 try {
-                    auto_ptr<XMLObject> decryptedID(encname->decrypt(*cr,application.getXMLString("providerId").second,&cc));
+                    auto_ptr<XMLObject> decryptedID(encname->decrypt(*cr,application.getXMLString("entityID").second,&cc));
                     ssoName = dynamic_cast<NameID*>(decryptedID.get());
                     if (ssoName) {
                         ownedName = true;

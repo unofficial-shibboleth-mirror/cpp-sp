@@ -32,6 +32,8 @@
 
 namespace shibsp {
 
+    class SHIBSP_API SPRequest;
+
 #if defined (_MSC_VER)
     #pragma warning( push )
     #pragma warning( disable : 4250 )
@@ -67,6 +69,18 @@ namespace shibsp {
          */
         virtual void checkError(const xmltooling::XMLObject* response) const;
         
+        /**
+         * Implements various mechanisms to preserve RelayState,
+         * such as cookies or StorageService-backed keys.
+         * 
+         * <p>If a supported mechanism can be identified, the input parameter will be
+         * replaced with a suitable state key, URL-encoded.
+         * 
+         * @param request       the active SPRequest
+         * @param relayState    RelayState token to supply with message
+         */
+        virtual void preserveRelayState(SPRequest& request, std::string& relayState) const;
+
         /**
          * Implements various mechanisms to recover RelayState,
          * such as cookies or StorageService-backed keys.

@@ -40,6 +40,13 @@ namespace shibsp {
         virtual ~PropertySet() {}
 
         /**
+         * Establishes a "parent" PropertySet to supply inherited settings.
+         *
+         * @param parent    the parent PropertySet to use
+         */
+        virtual void setParent(const PropertySet* parent)=0;
+
+        /**
          * Returns a boolean-valued property.
          * 
          * @param name  property name

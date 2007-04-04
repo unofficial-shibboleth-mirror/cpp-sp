@@ -34,9 +34,13 @@ namespace shibsp {
     class SHIBSP_API DOMPropertySet : public virtual PropertySet
     {
     public:
-        DOMPropertySet() : m_root(NULL) {}
+        DOMPropertySet() : m_parent(NULL), m_root(NULL) {}
         
         virtual ~DOMPropertySet();
+
+        void setParent(const PropertySet* parent) {
+            m_parent = parent;
+        }
 
         std::pair<bool,bool> getBool(const char* name, const char* ns=NULL) const;
         std::pair<bool,const char*> getString(const char* name, const char* ns=NULL) const;
@@ -65,6 +69,7 @@ namespace shibsp {
             );
 
     private:
+        const PropertySet* m_parent;
         const xercesc::DOMElement* m_root;
         std::map<std::string,std::pair<char*,const XMLCh*> > m_map;
         std::map<std::string,DOMPropertySet*> m_nested;

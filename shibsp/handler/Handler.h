@@ -55,6 +55,12 @@ namespace shibsp {
     
     /** Registers Handler implementations. */
     void SHIBSP_API registerHandlers();
+
+    /** SessionInitiator that iterates through a set of protocol-specific versions. */
+    #define CHAINING_SESSION_INITIATOR "Chaining"
+
+    /** SessionInitiator that supports Shibboleth V1 AuthnRequest/WAYF redirects. */
+    #define SHIB1_SESSION_INITIATOR "Shibboleth"
 };
 
 #endif /* __shibsp_handler_h__ */

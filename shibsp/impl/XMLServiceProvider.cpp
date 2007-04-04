@@ -75,14 +75,6 @@ namespace {
         XMLApplication(const ServiceProvider*, const DOMElement* e, const XMLApplication* base=NULL);
         ~XMLApplication() { cleanup(); }
     
-        // PropertySet
-        pair<bool,bool> getBool(const char* name, const char* ns=NULL) const;
-        pair<bool,const char*> getString(const char* name, const char* ns=NULL) const;
-        pair<bool,const XMLCh*> getXMLString(const char* name, const char* ns=NULL) const;
-        pair<bool,unsigned int> getUnsignedInt(const char* name, const char* ns=NULL) const;
-        pair<bool,int> getInt(const char* name, const char* ns=NULL) const;
-        const PropertySet* getPropertySet(const char* name, const char* ns="urn:mace:shibboleth:sp:config:2.0") const;
-
         // Application
         const ServiceProvider& getServiceProvider() const {return *m_sp;}
         const char* getId() const {return getString("id").second;}
@@ -214,6 +206,7 @@ namespace {
         }
 
         // PropertySet
+        void setParent(const PropertySet* parent) {return m_impl->setParent(parent);}
         pair<bool,bool> getBool(const char* name, const char* ns=NULL) const {return m_impl->getBool(name,ns);}
         pair<bool,const char*> getString(const char* name, const char* ns=NULL) const {return m_impl->getString(name,ns);}
         pair<bool,const XMLCh*> getXMLString(const char* name, const char* ns=NULL) const {return m_impl->getXMLString(name,ns);}
@@ -356,13 +349,15 @@ XMLApplication::XMLApplication(
     try {
         // First load any property sets.
         load(e,log,this);
+        if (base)
+            setParent(base);
 
         SPConfig& conf=SPConfig::getConfig();
         SAMLConfig& samlConf=SAMLConfig::getConfig();
         XMLToolingConfig& xmlConf=XMLToolingConfig::getConfig();
 
         m_hash=getId();
-        m_hash+=getString("providerId").second;
+        m_hash+=getString("entityID").second;
         m_hash=samlConf.hashSHA1(m_hash.c_str(), true);
 
         pair<bool,const char*> attributes = getString("attributeIds");
@@ -423,13 +418,13 @@ XMLApplication::XMLApplication(
                     }
                 }
                 else if (XMLString::equals(child->getLocalName(),SessionInitiator)) {
-                    auto_ptr_char bindprop(child->getAttributeNS(NULL,EndpointType::BINDING_ATTRIB_NAME));
-                    if (!bindprop.get() || !*(bindprop.get())) {
-                        log.warn("SessionInitiator element has no Binding attribute, skipping it...");
+                    auto_ptr_char type(child->getAttributeNS(NULL,_type));
+                    if (!type.get() || !*(type.get())) {
+                        log.warn("SessionInitiator element has no type attribute, skipping it...");
                         child = XMLHelper::getNextSiblingElement(child);
                         continue;
                     }
-                    handler=conf.SessionInitiatorManager.newPlugin(bindprop.get(),make_pair(child, getId()));
+                    handler=conf.SessionInitiatorManager.newPlugin(type.get(),make_pair(child, getId()));
                     pair<bool,const char*> si_id=handler->getString("id");
                     if (si_id.first && si_id.second)
                         m_sessionInitMap[si_id.second]=handler;
@@ -496,8 +491,8 @@ XMLApplication::XMLApplication(
             if (nlist->item(i)->getParentNode()->isSameNode(e) && nlist->item(i)->hasChildNodes())
                 m_audiences.push_back(nlist->item(i)->getFirstChild()->getNodeValue());
 
-        // Always include our own providerId as an audience.
-        m_audiences.push_back(getXMLString("providerId").second);
+        // Always include our own entityID as an audience.
+        m_audiences.push_back(getXMLString("entityID").second);
 
         if (conf.isEnabled(SPConfig::Metadata)) {
             child = XMLHelper::getFirstChildElement(e,_MetadataProvider);
@@ -625,54 +620,6 @@ short XMLApplication::acceptNode(const DOMNode* node) const
         return FILTER_REJECT;
 
     return FILTER_ACCEPT;
-}
-
-pair<bool,bool> XMLApplication::getBool(const char* name, const char* ns) const
-{
-    pair<bool,bool> ret=DOMPropertySet::getBool(name,ns);
-    if (ret.first)
-        return ret;
-    return m_base ? m_base->getBool(name,ns) : ret;
-}
-
-pair<bool,const char*> XMLApplication::getString(const char* name, const char* ns) const
-{
-    pair<bool,const char*> ret=DOMPropertySet::getString(name,ns);
-    if (ret.first)
-        return ret;
-    return m_base ? m_base->getString(name,ns) : ret;
-}
-
-pair<bool,const XMLCh*> XMLApplication::getXMLString(const char* name, const char* ns) const
-{
-    pair<bool,const XMLCh*> ret=DOMPropertySet::getXMLString(name,ns);
-    if (ret.first)
-        return ret;
-    return m_base ? m_base->getXMLString(name,ns) : ret;
-}
-
-pair<bool,unsigned int> XMLApplication::getUnsignedInt(const char* name, const char* ns) const
-{
-    pair<bool,unsigned int> ret=DOMPropertySet::getUnsignedInt(name,ns);
-    if (ret.first)
-        return ret;
-    return m_base ? m_base->getUnsignedInt(name,ns) : ret;
-}
-
-pair<bool,int> XMLApplication::getInt(const char* name, const char* ns) const
-{
-    pair<bool,int> ret=DOMPropertySet::getInt(name,ns);
-    if (ret.first)
-        return ret;
-    return m_base ? m_base->getInt(name,ns) : ret;
-}
-
-const PropertySet* XMLApplication::getPropertySet(const char* name, const char* ns) const
-{
-    const PropertySet* ret=DOMPropertySet::getPropertySet(name,ns);
-    if (ret || !m_base)
-        return ret;
-    return m_base->getPropertySet(name,ns);
 }
 
 const PropertySet* XMLApplication::getRelyingParty(const EntityDescriptor* provider) const

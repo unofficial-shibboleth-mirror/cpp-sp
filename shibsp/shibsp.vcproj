@@ -361,6 +361,10 @@
 						>
 					</File>
 					<File
+						RelativePath=".\handler\impl\ChainingSessionInitiator.cpp"
+						>
+					</File>
+					<File
 						RelativePath=".\handler\impl\RemotedHandler.cpp"
 						>
 					</File>
@@ -370,6 +374,10 @@
 					</File>
 					<File
 						RelativePath=".\handler\impl\SAML2Consumer.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\handler\impl\Shib1SessionInitiator.cpp"
 						>
 					</File>
 				</Filter>

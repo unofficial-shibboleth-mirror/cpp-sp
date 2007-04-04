@@ -109,7 +109,7 @@
 	Resource requests are mapped in the Local section into an applicationId that
 	points into to this section.
 	-->
-	<Applications id="default" policyId="default" providerId="https://sp.example.org/shibboleth"
+	<Applications id="default" policyId="default" entityID="https://sp.example.org/shibboleth"
 		homeURL="https://sp.example.org/index.html">
 
 		<!--
@@ -126,28 +126,29 @@
 			handlerURL="/Shibboleth.sso" handlerSSL="false" idpHistory="true" idpHistoryDays="7">
 			
 			<!--
-			SessionInitiators handle session requests and relay them to a WAYF or directly
-			to an IdP, if possible. Automatic session setup will use the default or first
+			SessionInitiators handle session requests and relay them to a Discovery page,
+			or to an IdP if possible. Automatic session setup will use the default or first
 			element (or requireSessionWith can specify a specific id to use). Lazy sessions
-			can be started with any initiator by redirecting to it. The only Binding supported
-			is the "urn:mace:shibboleth:sp:1.3:SessionInit" lazy session profile using query
-			string parameters:
-		         *  target      the resource to direct back to later (or homeURL will be used)
-		         *  acsIndex    optional index of an ACS to use on the way back in
-		         *  providerId  optional direct invocation of a specific IdP
-			-->
+			can be started with any initiator by redirecting to it using query string parameters:
 			
-			<!-- This default example directs users to a specific IdP's SSO service. -->
-			<SessionInitiator isDefault="true" id="default" Location="/Login"
-				Binding="urn:mace:shibboleth:sp:1.3:SessionInit" relayState="cookie"
-				wayfURL="https://idp.example.org/shibboleth-idp/SSO"
-				wayfBinding="urn:mace:shibboleth:1.0:profiles:AuthnRequest"/>
+		         *  entityID  	optional direct invocation of a specific IdP
+		         *  target      optional resource to direct back to later (or homeURL will be used)
+		         *  acsIndex    optional index of an ACS to use on the way back in
+			-->
+
+			<!-- Default example directs to a specific IdP's Shibboleth 1.x SSO service. -->
+			<SessionInitiator type="Shibboleth" Location="/Login" isDefault="true" id="example.org"
+				relayState="cookie" entityID="https://idp.example.org/shibboleth"/>
+			
+			<!-- An example using the Shibboleth 1.x protocol but with an external WAYF. -->
+			<SessionInitiator type="Shibboleth" Location="/WAYF" id="wayf"
+				relayState="cookie" wayfURL="https://wayf.example.org/WAYF"/>
 				
 			<!--
-			md:AssertionConsumerService elements replace the old shireURL function with an
-			explicit handler for particular profiles, such as SAML 1.1 POST or Artifact.
-			The isDefault and index attributes are used when sessions are initiated
-			to determine how to tell the IdP where and how to return the response.
+			md:AssertionConsumerService elements handle specific SSO protocol bindings,
+			such as SAML 2.0 POST or SAML 1.1 Artifact. The isDefault and index attributes
+			are used when sessions are initiated to determine how to tell the IdP where and
+			how to return the response.
 			-->
 			<md:AssertionConsumerService Location="/SAML/POST" isDefault="true" index="1"
 				Binding="urn:oasis:names:tc:SAML:1.0:profiles:browser-post"/>

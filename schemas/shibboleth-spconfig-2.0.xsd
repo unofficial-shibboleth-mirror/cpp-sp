@@ -347,9 +347,9 @@
 				<element ref="conf:Application" minOccurs="0" maxOccurs="unbounded"/>
 			</sequence>
 			<attribute name="id" type="conf:string" fixed="default"/>
-			<attribute name="providerId" type="anyURI" use="required"/>
+			<attribute name="entityID" type="anyURI" use="required"/>
 			<attribute name="policyId" type="conf:string" use="required"/>
-			<attribute name="homeURL" type="anyURI"/>
+			<attribute name="homeURL" type="anyURI" default="/"/>
 			<attribute name="attributeIds" type="conf:listOfStrings"/>
 	        <anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
@@ -371,9 +371,9 @@
 				<element name="CredentialResolver" type="conf:PluggableType" minOccurs="0"/>
 			</sequence>
 			<attribute name="id" type="conf:string" use="required"/>
-			<attribute name="providerId" type="anyURI"/>
+			<attribute name="entityID" type="anyURI"/>
 			<attribute name="policyId" type="conf:string"/>
-			<attribute name="homeURL" type="anyURI"/>
+			<attribute name="homeURL" type="anyURI" default="/"/>
 			<attribute name="attributeIds" type="conf:listOfStrings"/>
 			<anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
@@ -425,23 +425,26 @@
 
 	<element name="SessionInitiator">
 		<annotation>
-			<documentation>Used to specify handlers that can issue AuthnRequests</documentation>
+			<documentation>Used to specify handlers that can issue AuthnRequests or perform discovery</documentation>
 		</annotation>
 		<complexType>
-			<sequence>
-				<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
-			</sequence>
-			<attribute name="Location" type="anyURI" use="required"/>
-			<attribute name="Binding" type="anyURI" use="required"/>
-			<attribute name="id" type="conf:string"/>
-			<attribute name="isDefault" type="boolean"/>
-			<attribute name="wayfURL" type="anyURI"/>
-			<attribute name="wayfBinding" type="anyURI"/>
-			<attribute name="relayState" type="conf:string"/>
-			<anyAttribute namespace="##any" processContents="lax"/>
+			<complexContent>
+				<restriction base="conf:PluggableType">
+					<sequence>
+						<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+					</sequence>
+					<attribute name="Location" type="anyURI"/>
+					<attribute name="id" type="conf:string"/>
+					<attribute name="isDefault" type="boolean"/>
+					<attribute name="wayfURL" type="anyURI"/>
+					<attribute name="relayState" type="conf:string"/>
+					<attribute name="entityID" type="anyURI"/>
+					<anyAttribute namespace="##any" processContents="lax"/>
+				</restriction>
+			</complexContent>
 		</complexType>
 	</element>
-
+	
 	<element name="Errors">
 		<annotation>
 			<documentation>Container for error templates and associated details</documentation>

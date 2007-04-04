@@ -127,7 +127,6 @@ void DOMPropertySet::load(
 
 pair<bool,bool> DOMPropertySet::getBool(const char* name, const char* ns) const
 {
-    pair<bool,bool> ret(false,false);
     map<string,pair<char*,const XMLCh*> >::const_iterator i;
 
     if (ns)
@@ -135,11 +134,11 @@ pair<bool,bool> DOMPropertySet::getBool(const char* name, const char* ns) const
     else
         i=m_map.find(name);
 
-    if (i!=m_map.end()) {
-        ret.first=true;
-        ret.second=(!strcmp(i->second.first,"true") || !strcmp(i->second.first,"1"));
-    }
-    return ret;
+    if (i!=m_map.end())
+        return make_pair(true,(!strcmp(i->second.first,"true") || !strcmp(i->second.first,"1")));
+    else if (m_parent)
+        return m_parent->getBool(name,ns);
+    return make_pair(false,false);
 }
 
 pair<bool,const char*> DOMPropertySet::getString(const char* name, const char* ns) const
@@ -152,16 +151,15 @@ pair<bool,const char*> DOMPropertySet::getString(const char* name, const char* n
     else
         i=m_map.find(name);
 
-    if (i!=m_map.end()) {
-        ret.first=true;
-        ret.second=i->second.first;
-    }
-    return ret;
+    if (i!=m_map.end())
+        return make_pair(true,i->second.first);
+    else if (m_parent)
+        return m_parent->getString(name,ns);
+    return pair<bool,const char*>(false,NULL);
 }
 
 pair<bool,const XMLCh*> DOMPropertySet::getXMLString(const char* name, const char* ns) const
 {
-    pair<bool,const XMLCh*> ret(false,NULL);
     map<string,pair<char*,const XMLCh*> >::const_iterator i;
 
     if (ns)
@@ -169,16 +167,15 @@ pair<bool,const XMLCh*> DOMPropertySet::getXMLString(const char* name, const cha
     else
         i=m_map.find(name);
 
-    if (i!=m_map.end()) {
-        ret.first=true;
-        ret.second=i->second.second;
-    }
-    return ret;
+    if (i!=m_map.end())
+        return make_pair(true,i->second.second);
+    else if (m_parent)
+        return m_parent->getXMLString(name,ns);
+    return pair<bool,const XMLCh*>(false,NULL);
 }
 
 pair<bool,unsigned int> DOMPropertySet::getUnsignedInt(const char* name, const char* ns) const
 {
-    pair<bool,unsigned int> ret(false,0);
     map<string,pair<char*,const XMLCh*> >::const_iterator i;
 
     if (ns)
@@ -186,16 +183,15 @@ pair<bool,unsigned int> DOMPropertySet::getUnsignedInt(const char* name, const c
     else
         i=m_map.find(name);
 
-    if (i!=m_map.end()) {
-        ret.first=true;
-        ret.second=strtol(i->second.first,NULL,10);
-    }
-    return ret;
+    if (i!=m_map.end())
+        return pair<bool,unsigned int>(true,strtol(i->second.first,NULL,10));
+    else if (m_parent)
+        return m_parent->getUnsignedInt(name,ns);
+    return pair<bool,unsigned int>(false,0);
 }
 
 pair<bool,int> DOMPropertySet::getInt(const char* name, const char* ns) const
 {
-    pair<bool,int> ret(false,0);
     map<string,pair<char*,const XMLCh*> >::const_iterator i;
 
     if (ns)
@@ -203,11 +199,11 @@ pair<bool,int> DOMPropertySet::getInt(const char* name, const char* ns) const
     else
         i=m_map.find(name);
 
-    if (i!=m_map.end()) {
-        ret.first=true;
-        ret.second=atoi(i->second.first);
-    }
-    return ret;
+    if (i!=m_map.end())
+        return pair<bool,int>(true,atoi(i->second.first));
+    else if (m_parent)
+        return m_parent->getInt(name,ns);
+    return pair<bool,int>(false,0);
 }
 
 const PropertySet* DOMPropertySet::getPropertySet(const char* name, const char* ns) const
@@ -219,5 +215,5 @@ const PropertySet* DOMPropertySet::getPropertySet(const char* name, const char* 
     else
         i=m_nested.find(name);
 
-    return (i!=m_nested.end()) ? i->second : NULL;
+    return (i!=m_nested.end()) ? i->second : (m_parent ? m_parent->getPropertySet(name,ns) : NULL);
 }

@@ -139,7 +139,7 @@ int main(int argc,char* argv[])
         auto_ptr_XMLCh domain(q_param);
         auto_ptr_XMLCh name(n_param);
         auto_ptr_XMLCh format(f_param);
-        auto_ptr_XMLCh issuer(app->getString("providerId").second);
+        auto_ptr_XMLCh issuer(app->getString("entityID").second);
 
         MetadataProvider* m=app->getMetadataProvider();
         xmltooling::Locker mlocker(m);
