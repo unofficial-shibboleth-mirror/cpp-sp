@@ -59,7 +59,7 @@ namespace shibsp {
     /** SessionInitiator that iterates through a set of protocol-specific versions. */
     #define CHAINING_SESSION_INITIATOR "Chaining"
 
-    /** SessionInitiator that supports Shibboleth V1 AuthnRequest/WAYF redirects. */
+    /** SessionInitiator that supports Shibboleth V1 AuthnRequest redirects. */
     #define SHIB1_SESSION_INITIATOR "Shibboleth"
 };
 

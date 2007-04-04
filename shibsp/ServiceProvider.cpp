@@ -28,7 +28,7 @@
 #include "SessionCache.h"
 #include "SPRequest.h"
 #include "attribute/Attribute.h"
-#include "handler/Handler.h"
+#include "handler/SessionInitiator.h"
 #include "util/TemplateParameters.h"
 
 #include <fstream>

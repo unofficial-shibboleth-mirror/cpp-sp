@@ -57,7 +57,8 @@ handinclude_HEADERS = \
 	handler/AbstractHandler.h \
 	handler/AssertionConsumerService.h \
 	handler/Handler.h \
-	handler/RemotedHandler.h
+	handler/RemotedHandler.h \
+	handler/SessionInitiator.h
 
 mdinclude_HEADERS = \
 	metadata/MetadataExt.h
@@ -100,6 +101,7 @@ libshibsp_la_SOURCES = \
 	handler/impl/RemotedHandler.cpp \
 	handler/impl/SAML1Consumer.cpp \
 	handler/impl/SAML2Consumer.cpp \
+	handler/impl/SessionInitiator.cpp \
 	handler/impl/Shib1SessionInitiator.cpp \
 	impl/RemotedSessionCache.cpp \
 	impl/StorageServiceSessionCache.cpp \

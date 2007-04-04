@@ -17,7 +17,7 @@
 /**
  * Shib1SessionInitiator.cpp
  * 
- * Shibboleth 1.x AuthnRequest/WAYF support.
+ * Shibboleth 1.x AuthnRequest support.
  */
 
 #include "internal.h"
@@ -25,6 +25,7 @@
 #include "exceptions.h"
 #include "SPRequest.h"
 #include "handler/AbstractHandler.h"
+#include "handler/SessionInitiator.h"
 #include "util/SPConstants.h"
 
 #include <saml/saml2/metadata/Metadata.h>
@@ -48,100 +49,83 @@ namespace shibsp {
     #pragma warning( disable : 4250 )
 #endif
 
-    class SHIBSP_DLLLOCAL Shib1SessionInitiator : public AbstractHandler
+    class SHIBSP_DLLLOCAL Shib1SessionInitiator : public SessionInitiator, public AbstractHandler
     {
     public:
         Shib1SessionInitiator(const DOMElement* e, const char* appId)
             : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator")) {}
         virtual ~Shib1SessionInitiator() {}
         
-        pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
-
-    private:
-        pair<bool,long> doAuthnRequest(SPRequest& request, const Handler* shire, const char* dest, string& target) const;
+        pair<bool,long> run(SPRequest& request, const char* entityID=NULL, bool isHandler=true) const;
     };
 
 #if defined (_MSC_VER)
     #pragma warning( pop )
 #endif
 
-    Handler* SHIBSP_DLLLOCAL Shib1SessionInitiatorFactory(const pair<const DOMElement*,const char*>& p)
+    SessionInitiator* SHIBSP_DLLLOCAL Shib1SessionInitiatorFactory(const pair<const DOMElement*,const char*>& p)
     {
         return new Shib1SessionInitiator(p.first, p.second);
     }
 
 };
 
-pair<bool,long> Shib1SessionInitiator::run(SPRequest& request, bool isHandler) const
+pair<bool,long> Shib1SessionInitiator::run(SPRequest& request, const char* entityID, bool isHandler) const
 {
+    // We have to know the IdP to function.
+    if (!entityID || !*entityID)
+        return make_pair(false,0);
+
     string target;
-    const char* entityID=NULL;
     const Handler* ACS=NULL;
     const Application& app=request.getApplication();
-    
+
     if (isHandler) {
-        entityID=request.getParameter("acsIndex");
-        if (entityID)
-            ACS=app.getAssertionConsumerServiceByIndex(atoi(entityID));
+        const char* option=request.getParameter("acsIndex");
+        if (option)
+            ACS=app.getAssertionConsumerServiceByIndex(atoi(option));
 
-        entityID = request.getParameter("target");
-        if (entityID)
-            target = entityID;
+        option = request.getParameter("target");
+        if (option)
+            target = option;
         recoverRelayState(request, target);
-
-        // Try and establish which IdP to use.
-        entityID=request.getParameter("entityID");
-        if (!entityID || !*entityID)
-            entityID=request.getParameter("providerId");
-        if (!entityID || !*entityID)
-            entityID=getString("entityID").second;
     }
     else {
         // We're running as a "virtual handler" from within the filter.
         // The target resource is the current one and everything else is defaulted.
-        entityID=getString("entityID").second;
         target=request.getRequestURL();
     }
         
-    if (entityID && *entityID) {
-        m_log.debug("attempting to initiate session using SAML 1.x with provider (%s)", entityID);
+    m_log.debug("attempting to initiate session using SAML 1.x with provider (%s)", entityID);
 
-        // Use metadata to invoke the SSO service directly.
-        MetadataProvider* m=app.getMetadataProvider();
-        Locker locker(m);
-        const EntityDescriptor* entity=m->getEntityDescriptor(entityID);
-        if (!entity) {
-            m_log.error("unable to locate metadata for provider (%s)", entityID);
-            return make_pair(false,0);
-        }
-        const IDPSSODescriptor* role=entity->getIDPSSODescriptor(shibspconstants::SHIB1_PROTOCOL_ENUM);
-        if (!role) {
-            m_log.error("unable to locate Shibboleth-aware identity provider role for provider (%s)", entityID);
-            return make_pair(false,0);
-        }
-        const EndpointType* ep=EndpointManager<SingleSignOnService>(role->getSingleSignOnServices()).getByBinding(
-            shibspconstants::SHIB1_AUTHNREQUEST_PROFILE_URI
-            );
-        if (!ep) {
-            m_log.error("unable to locate compatible SSO service for provider (%s)", entityID);
-            return make_pair(false,0);
-        }
-        auto_ptr_char dest(ep->getLocation());
-        return doAuthnRequest(request, ACS ? ACS : app.getDefaultAssertionConsumerService(), dest.get(), target);
-    }
-    
-    // Fall back to optional legacy discovery service.
-    pair<bool,const char*> wayfURL=getString("wayfURL");
-    if (!wayfURL.first)
+    // Use metadata to invoke the SSO service directly.
+    MetadataProvider* m=app.getMetadataProvider();
+    Locker locker(m);
+    const EntityDescriptor* entity=m->getEntityDescriptor(entityID);
+    if (!entity) {
+        m_log.error("unable to locate metadata for provider (%s)", entityID);
         return make_pair(false,0);
-    return doAuthnRequest(request, ACS ? ACS : app.getDefaultAssertionConsumerService(), wayfURL.second, target);
-}
+    }
+    const IDPSSODescriptor* role=entity->getIDPSSODescriptor(shibspconstants::SHIB1_PROTOCOL_ENUM);
+    if (!role) {
+        m_log.error("unable to locate Shibboleth-aware identity provider role for provider (%s)", entityID);
+        return make_pair(false,0);
+    }
+    const EndpointType* ep=EndpointManager<SingleSignOnService>(role->getSingleSignOnServices()).getByBinding(
+        shibspconstants::SHIB1_AUTHNREQUEST_PROFILE_URI
+        );
+    if (!ep) {
+        m_log.error("unable to locate compatible SSO service for provider (%s)", entityID);
+        return make_pair(false,0);
+    }
+    auto_ptr_char dest(ep->getLocation());
 
-pair<bool,long> Shib1SessionInitiator::doAuthnRequest(SPRequest& request, const Handler* shire, const char* dest, string& target) const
-{
+    if (!ACS)
+        ACS = app.getDefaultAssertionConsumerService();
+
     // Compute the ACS URL. We add the ACS location to the base handlerURL.
     string ACSloc=request.getHandlerURL(target.c_str());
-    pair<bool,const char*> loc=shire ? shire->getString("Location") : pair<bool,const char*>(false,NULL);
+    pair<bool,const char*> loc=ACS ? ACS->getString("Location") : pair<bool,const char*>(false,NULL);
     if (loc.first) ACSloc+=loc.second;
 
     preserveRelayState(request, target);
@@ -149,8 +133,8 @@ pair<bool,long> Shib1SessionInitiator::doAuthnRequest(SPRequest& request, const 
     char timebuf[16];
     sprintf(timebuf,"%u",time(NULL));
     const URLEncoder* urlenc = XMLToolingConfig::getConfig().getURLEncoder();
-    string req=string(dest) + "?shire=" + urlenc->encode(ACSloc.c_str()) + "&time=" + timebuf + "&target=" + target +
-        "&providerId=" + urlenc->encode(request.getApplication().getString("entityID").second);
+    string req=string(dest.get()) + "?shire=" + urlenc->encode(ACSloc.c_str()) + "&time=" + timebuf + "&target=" + target +
+        "&providerId=" + urlenc->encode(app.getString("entityID").second);
 
     return make_pair(true, request.sendRedirect(req.c_str()));
 }

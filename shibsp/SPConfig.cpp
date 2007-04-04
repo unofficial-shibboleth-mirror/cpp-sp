@@ -31,7 +31,7 @@
 #include "attribute/AttributeDecoder.h"
 #include "attribute/resolver/AttributeResolver.h"
 #include "binding/ArtifactResolver.h"
-#include "handler/Handler.h"
+#include "handler/SessionInitiator.h"
 #include "metadata/MetadataExt.h"
 #include "remoting/ListenerService.h"
 #include "security/PKIXTrustEngine.h"
@@ -111,6 +111,7 @@ bool SPInternalConfig::init(const char* catalog_path)
     registerAttributeFactories();
     registerAttributeResolvers();
     registerHandlers();
+    registerSessionInitiators();
     registerListenerServices();
     registerRequestMappers();
     registerSessionCaches();

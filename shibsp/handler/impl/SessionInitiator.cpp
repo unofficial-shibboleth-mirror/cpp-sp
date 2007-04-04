@@ -1,0 +1,58 @@
+/*
+ *  Copyright 2001-2007 Internet2
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/**
+ * SessionInitiator.cpp
+ * 
+ * Pluggable runtime functionality that handles initiating sessions.
+ */
+
+#include "internal.h"
+#include "SPRequest.h"
+#include "handler/SessionInitiator.h"
+
+using namespace shibsp;
+using namespace xmltooling;
+using namespace std;
+
+namespace shibsp {
+    SHIBSP_DLLLOCAL PluginManager<SessionInitiator,pair<const DOMElement*,const char*>>::Factory ChainingSessionInitiatorFactory;
+    SHIBSP_DLLLOCAL PluginManager<SessionInitiator,pair<const DOMElement*,const char*>>::Factory Shib1SessionInitiatorFactory;
+};
+
+void SHIBSP_API shibsp::registerSessionInitiators()
+{
+    SPConfig& conf=SPConfig::getConfig();
+    
+    conf.SessionInitiatorManager.registerFactory(CHAINING_SESSION_INITIATOR, ChainingSessionInitiatorFactory);
+    conf.SessionInitiatorManager.registerFactory(SHIB1_SESSION_INITIATOR, Shib1SessionInitiatorFactory);
+}
+
+pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
+{
+    const char* entityID=NULL;
+    pair<bool,const char*> param = getString("entityIDParam");
+
+    if (isHandler) {
+        entityID=request.getParameter(param.first ? param.second : "entityID");
+        if (!param.first && (!entityID || !*entityID))
+            entityID=request.getParameter("providerId");
+    }
+    if (!entityID || !*entityID)
+        entityID=getString("entityID").second;
+
+    return run(request, entityID, isHandler);
+}

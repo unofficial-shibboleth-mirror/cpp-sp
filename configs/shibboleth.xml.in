@@ -131,19 +131,42 @@
 			element (or requireSessionWith can specify a specific id to use). Lazy sessions
 			can be started with any initiator by redirecting to it using query string parameters:
 			
-		         *  entityID  	optional direct invocation of a specific IdP
-		         *  target      optional resource to direct back to later (or homeURL will be used)
-		         *  acsIndex    optional index of an ACS to use on the way back in
+		         * entityID				optional direct invocation of a specific IdP
+		         * target				optional resource to direct back to later (or homeURL will be used)
+		         * acsIndex				optional index of an ACS to use on the way back in
+		         
+		  	The following options can be set against content in the RequestMap or supplied on a query string
+		  	to override default or AuthnRequest template content when using SAML 2.0. They will be ignored
+		  	if the outgoing SSO protocol doesn't support them.
+		  	
+		         * forceAuthn				insist on user reauthentication at IdP
+		         * isPassive				preclude interaction at IdP or discovery service
+		         * authnContextClassRef		URI reference of an AuthnContextClass to request
+		         * authnContextDeclRef		URI reference of an AuthnContextDecl to request
+		         * authnContextComparison	comparison operator to apply to AuthnContext reference 
 			-->
 
-			<!-- Default example directs to a specific IdP's Shibboleth 1.x SSO service. -->
-			<SessionInitiator type="Shibboleth" Location="/Login" isDefault="true" id="example.org"
-				relayState="cookie" entityID="https://idp.example.org/shibboleth"/>
+			<!-- Default example directs to a specific IdP's SSO service (favoring SAML 2 over Shib 1). -->
+			<SessionInitiator type="Chaining" Location="/Login" isDefault="true" id="example.org"
+					relayState="cookie" entityID="https://idp.example.org/shibboleth">
+				<SessionInitiator type="SAML2"/>
+				<SessionInitiator type="Shibboleth"/>
+			</SessionInitiator>
 			
-			<!-- An example using the Shibboleth 1.x protocol but with an external WAYF. -->
-			<SessionInitiator type="Shibboleth" Location="/WAYF" id="wayf"
-				relayState="cookie" wayfURL="https://wayf.example.org/WAYF"/>
-				
+			<!-- An example using an old-style WAYF, which means Shib 1 only unless an entityID is provided. -->
+			<SessionInitiator type="Chaining" Location="/WAYF" id="WAYF" relayState="cookie">
+				<SessionInitiator type="SAML2"/>
+				<SessionInitiator type="Shibboleth"/>
+				<SessionInitiator type="WAYF" URL="https://wayf.example.org/WAYF"/>
+			</SessionInitiator>
+
+			<!-- An example supporting the new-style of discovery service. -->
+			<SessionInitiator type="Chaining" Location="/DS" id="DS" relayState="cookie">
+				<SessionInitiator type="SAML2"/>
+				<SessionInitiator type="Shibboleth"/>
+				<SessionInitiator type="SAMLDS" URL="https://ds.example.org/DS"/>
+			</SessionInitiator>
+			
 			<!--
 			md:AssertionConsumerService elements handle specific SSO protocol bindings,
 			such as SAML 2.0 POST or SAML 1.1 Artifact. The isDefault and index attributes

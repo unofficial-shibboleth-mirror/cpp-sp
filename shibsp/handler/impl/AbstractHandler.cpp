@@ -47,8 +47,6 @@ using namespace std;
 namespace shibsp {
     SHIBSP_DLLLOCAL PluginManager<Handler,pair<const DOMElement*,const char*>>::Factory SAML1ConsumerFactory;
     SHIBSP_DLLLOCAL PluginManager<Handler,pair<const DOMElement*,const char*>>::Factory SAML2ConsumerFactory;
-    SHIBSP_DLLLOCAL PluginManager<Handler,pair<const DOMElement*,const char*>>::Factory ChainingSessionInitiatorFactory;
-    SHIBSP_DLLLOCAL PluginManager<Handler,pair<const DOMElement*,const char*>>::Factory Shib1SessionInitiatorFactory;
 };
 
 void SHIBSP_API shibsp::registerHandlers()
@@ -60,9 +58,6 @@ void SHIBSP_API shibsp::registerHandlers()
     conf.AssertionConsumerServiceManager.registerFactory(SAML20_BINDING_HTTP_ARTIFACT, SAML2ConsumerFactory);
     conf.AssertionConsumerServiceManager.registerFactory(SAML20_BINDING_HTTP_POST, SAML2ConsumerFactory);
     conf.AssertionConsumerServiceManager.registerFactory(SAML20_BINDING_HTTP_POST_SIMPLESIGN, SAML2ConsumerFactory);
-
-    conf.SessionInitiatorManager.registerFactory(CHAINING_SESSION_INITIATOR, ChainingSessionInitiatorFactory);
-    conf.SessionInitiatorManager.registerFactory(SHIB1_SESSION_INITIATOR, Shib1SessionInitiatorFactory);
 }
 
 AbstractHandler::AbstractHandler(

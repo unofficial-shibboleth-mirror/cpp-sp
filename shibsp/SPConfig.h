@@ -42,6 +42,7 @@ namespace shibsp {
     class SHIBSP_API RequestMapper;
     class SHIBSP_API ServiceProvider;
     class SHIBSP_API SessionCache;
+    class SHIBSP_API SessionInitiator;
 
 #if defined (_MSC_VER)
     #pragma warning( push )
@@ -214,7 +215,7 @@ namespace shibsp {
         /**
          * Manages factories for Handler plugins that implement SessionInitiator functionality.
          */
-        xmltooling::PluginManager< Handler,std::pair<const xercesc::DOMElement*,const char*> > SessionInitiatorManager;
+        xmltooling::PluginManager< SessionInitiator,std::pair<const xercesc::DOMElement*,const char*> > SessionInitiatorManager;
 
         /**
          * Manages factories for Handler plugins that implement SingleLogoutService functionality.

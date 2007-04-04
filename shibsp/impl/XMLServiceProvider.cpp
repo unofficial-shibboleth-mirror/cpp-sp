@@ -31,7 +31,7 @@
 #include "SPRequest.h"
 #include "TransactionLog.h"
 #include "attribute/resolver/AttributeResolver.h"
-#include "handler/Handler.h"
+#include "handler/SessionInitiator.h"
 #include "remoting/ListenerService.h"
 #include "security/PKIXTrustEngine.h"
 #include "util/DOMPropertySet.h"
@@ -97,8 +97,8 @@ namespace {
         }
         const PropertySet* getRelyingParty(const EntityDescriptor* provider) const;
 
-        const Handler* getDefaultSessionInitiator() const;
-        const Handler* getSessionInitiatorById(const char* id) const;
+        const SessionInitiator* getDefaultSessionInitiator() const;
+        const SessionInitiator* getSessionInitiatorById(const char* id) const;
         const Handler* getDefaultAssertionConsumerService() const;
         const Handler* getAssertionConsumerServiceByIndex(unsigned short index) const;
         const vector<const Handler*>& getAssertionConsumerServicesByBinding(const XMLCh* binding) const;
@@ -143,11 +143,11 @@ namespace {
 #endif
         ACSBindingMap m_acsBindingMap;
 
-        // maps unique ID strings to session initiators
-        map<string,const Handler*> m_sessionInitMap;
-
         // pointer to default session initiator
-        const Handler* m_sessionInitDefault;
+        const SessionInitiator* m_sessionInitDefault;
+
+        // maps unique ID strings to session initiators
+        map<string,const SessionInitiator*> m_sessionInitMap;
 
         // RelyingParty properties
         DOMPropertySet* m_partyDefault;
@@ -309,7 +309,7 @@ namespace {
     static const XMLCh Rule[] =                 UNICODE_LITERAL_4(R,u,l,e);
     static const XMLCh SecurityPolicies[] =     UNICODE_LITERAL_16(S,e,c,u,r,i,t,y,P,o,l,i,c,i,e,s);
     static const XMLCh _SessionCache[] =        UNICODE_LITERAL_12(S,e,s,s,i,o,n,C,a,c,h,e);
-    static const XMLCh SessionInitiator[] =     UNICODE_LITERAL_16(S,e,s,s,i,o,n,I,n,i,t,i,a,t,o,r);
+    static const XMLCh _SessionInitiator[] =    UNICODE_LITERAL_16(S,e,s,s,i,o,n,I,n,i,t,i,a,t,o,r);
     static const XMLCh _StorageService[] =      UNICODE_LITERAL_14(S,t,o,r,a,g,e,S,e,r,v,i,c,e);
     static const XMLCh TCPListener[] =          UNICODE_LITERAL_11(T,C,P,L,i,s,t,e,n,e,r);
     static const XMLCh _TrustEngine[] =         UNICODE_LITERAL_11(T,r,u,s,t,E,n,g,i,n,e);
@@ -417,27 +417,28 @@ XMLApplication::XMLApplication(
                             m_acsDefault=handler;
                     }
                 }
-                else if (XMLString::equals(child->getLocalName(),SessionInitiator)) {
+                else if (XMLString::equals(child->getLocalName(),_SessionInitiator)) {
                     auto_ptr_char type(child->getAttributeNS(NULL,_type));
                     if (!type.get() || !*(type.get())) {
                         log.warn("SessionInitiator element has no type attribute, skipping it...");
                         child = XMLHelper::getNextSiblingElement(child);
                         continue;
                     }
-                    handler=conf.SessionInitiatorManager.newPlugin(type.get(),make_pair(child, getId()));
+                    SessionInitiator* sihandler=conf.SessionInitiatorManager.newPlugin(type.get(),make_pair(child, getId()));
+                    handler=sihandler;
                     pair<bool,const char*> si_id=handler->getString("id");
                     if (si_id.first && si_id.second)
-                        m_sessionInitMap[si_id.second]=handler;
+                        m_sessionInitMap[si_id.second]=sihandler;
                     if (!hardSessionInit) {
                         pair<bool,bool> defprop=handler->getBool("isDefault");
                         if (defprop.first) {
                             if (defprop.second) {
                                 hardSessionInit=true;
-                                m_sessionInitDefault=handler;
+                                m_sessionInitDefault=sihandler;
                             }
                         }
                         else if (!m_sessionInitDefault)
-                            m_sessionInitDefault=handler;
+                            m_sessionInitDefault=sihandler;
                     }
                 }
                 else if (XMLHelper::isNodeNamed(child,samlconstants::SAML20MD_NS,SingleLogoutService::LOCAL_NAME)) {
@@ -610,7 +611,7 @@ short XMLApplication::acceptNode(const DOMNode* node) const
         XMLString::equals(name,AssertionConsumerService::LOCAL_NAME) ||
         XMLString::equals(name,SingleLogoutService::LOCAL_NAME) ||
         XMLString::equals(name,ManageNameIDService::LOCAL_NAME) ||
-        XMLString::equals(name,SessionInitiator) ||
+        XMLString::equals(name,_SessionInitiator) ||
         XMLString::equals(name,DefaultRelyingParty) ||
         XMLString::equals(name,RelyingParty) ||
         XMLString::equals(name,_MetadataProvider) ||
@@ -658,15 +659,15 @@ const PropertySet* XMLApplication::getRelyingParty(const EntityDescriptor* provi
     return m_partyDefault;
 }
 
-const Handler* XMLApplication::getDefaultSessionInitiator() const
+const SessionInitiator* XMLApplication::getDefaultSessionInitiator() const
 {
     if (m_sessionInitDefault) return m_sessionInitDefault;
     return m_base ? m_base->getDefaultSessionInitiator() : NULL;
 }
 
-const Handler* XMLApplication::getSessionInitiatorById(const char* id) const
+const SessionInitiator* XMLApplication::getSessionInitiatorById(const char* id) const
 {
-    map<string,const Handler*>::const_iterator i=m_sessionInitMap.find(id);
+    map<string,const SessionInitiator*>::const_iterator i=m_sessionInitMap.find(id);
     if (i!=m_sessionInitMap.end()) return i->second;
     return m_base ? m_base->getSessionInitiatorById(id) : NULL;
 }

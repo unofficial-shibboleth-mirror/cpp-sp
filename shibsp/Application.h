@@ -33,6 +33,7 @@ namespace shibsp {
     class SHIBSP_API AttributeResolver;
     class SHIBSP_API Handler;
     class SHIBSP_API ServiceProvider;
+    class SHIBSP_API SessionInitiator;
 
     /**
      * Interface to a Shibboleth Application instance.
@@ -121,21 +122,19 @@ namespace shibsp {
         virtual const PropertySet* getRelyingParty(const opensaml::saml2md::EntityDescriptor* provider) const=0;
 
         /**
-         * Returns the default SessionInitiator Handler when automatically
-         * requesting a session.
+         * Returns the default SessionInitiator when automatically requesting a session.
          * 
          * @return the default SessionInitiator, or NULL
          */
-        virtual const Handler* getDefaultSessionInitiator() const=0;
+        virtual const SessionInitiator* getDefaultSessionInitiator() const=0;
         
         /**
-         * Returns a SessionInitiator Handler with a particular ID when automatically
-         * requesting a session.
+         * Returns a SessionInitiator with a particular ID when automatically requesting a session.
          * 
          * @param id    an identifier unique to the Application
          * @return the designated SessionInitiator, or NULL
          */
-        virtual const Handler* getSessionInitiatorById(const char* id) const=0;
+        virtual const SessionInitiator* getSessionInitiatorById(const char* id) const=0;
         
         /**
          * Returns the default AssertionConsumerService Handler

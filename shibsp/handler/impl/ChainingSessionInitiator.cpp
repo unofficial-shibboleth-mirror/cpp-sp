@@ -23,6 +23,7 @@
 #include "internal.h"
 #include "exceptions.h"
 #include "handler/AbstractHandler.h"
+#include "handler/SessionInitiator.h"
 #include "util/SPConstants.h"
 
 #include <xercesc/util/XMLUniDefs.hpp>
@@ -40,43 +41,43 @@ namespace shibsp {
     #pragma warning( disable : 4250 )
 #endif
 
-    class SHIBSP_DLLLOCAL ChainingSessionInitiator : public AbstractHandler
+    class SHIBSP_DLLLOCAL ChainingSessionInitiator : public SessionInitiator, public AbstractHandler
     {
     public:
         ChainingSessionInitiator(const DOMElement* e, const char* appId);
         virtual ~ChainingSessionInitiator() {
-            for_each(m_handlers.begin(), m_handlers.end(), xmltooling::cleanup<Handler>());
+            for_each(m_handlers.begin(), m_handlers.end(), xmltooling::cleanup<SessionInitiator>());
         }
         
-        pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
+        pair<bool,long> run(SPRequest& request, const char* entityID=NULL, bool isHandler=true) const;
 
     private:
-        vector<Handler*> m_handlers;
+        vector<SessionInitiator*> m_handlers;
     };
 
 #if defined (_MSC_VER)
     #pragma warning( pop )
 #endif
 
-    Handler* SHIBSP_DLLLOCAL ChainingSessionInitiatorFactory(const pair<const DOMElement*,const char*>& p)
-    {
-        return new ChainingSessionInitiator(p.first, p.second);
-    }
-
-    static const XMLCh SessionInitiator[] = UNICODE_LITERAL_16(S,e,s,s,i,o,n,I,n,i,t,i,a,t,o,r);
-    static const XMLCh _type[] =            UNICODE_LITERAL_4(t,y,p,e);
+    static const XMLCh _SessionInitiator[] =    UNICODE_LITERAL_16(S,e,s,s,i,o,n,I,n,i,t,i,a,t,o,r);
+    static const XMLCh _type[] =                UNICODE_LITERAL_4(t,y,p,e);
 
     class SHIBSP_DLLLOCAL SessionInitiatorNodeFilter : public DOMNodeFilter
     {
     public:
         short acceptNode(const DOMNode* node) const {
-            if (XMLHelper::isNodeNamed(node,shibspconstants::SHIB2SPCONFIG_NS,SessionInitiator))
+            if (XMLHelper::isNodeNamed(node,shibspconstants::SHIB2SPCONFIG_NS,_SessionInitiator))
                 return FILTER_REJECT;
             return FILTER_ACCEPT;
         }
     };
 
     static SHIBSP_DLLLOCAL SessionInitiatorNodeFilter g_SINFilter;
+
+    SessionInitiator* SHIBSP_DLLLOCAL ChainingSessionInitiatorFactory(const pair<const DOMElement*,const char*>& p)
+    {
+        return new ChainingSessionInitiator(p.first, p.second);
+    }
 };
 
 ChainingSessionInitiator::ChainingSessionInitiator(const DOMElement* e, const char* appId)
@@ -85,22 +86,27 @@ ChainingSessionInitiator::ChainingSessionInitiator(const DOMElement* e, const ch
     SPConfig& conf = SPConfig::getConfig();
 
     // Load up the chain of handlers.
-    e = e ? XMLHelper::getFirstChildElement(e, SessionInitiator) : NULL;
+    e = e ? XMLHelper::getFirstChildElement(e, _SessionInitiator) : NULL;
     while (e) {
         auto_ptr_char type(e->getAttributeNS(NULL,_type));
         if (type.get() && *(type.get())) {
-            m_handlers.push_back(conf.SessionInitiatorManager.newPlugin(type.get(),make_pair(e, appId)));
-            m_handlers.back()->setParent(this);
+            try {
+                m_handlers.push_back(conf.SessionInitiatorManager.newPlugin(type.get(),make_pair(e, appId)));
+                m_handlers.back()->setParent(this);
+            }
+            catch (exception& ex) {
+                m_log.error("caught exception processing embedded SessionInitiator element: %s", ex.what());
+            }
         }
-        e = XMLHelper::getNextSiblingElement(e, SessionInitiator);
+        e = XMLHelper::getNextSiblingElement(e, _SessionInitiator);
     }
 }
 
-pair<bool,long> ChainingSessionInitiator::run(SPRequest& request, bool isHandler) const
+pair<bool,long> ChainingSessionInitiator::run(SPRequest& request, const char* entityID, bool isHandler) const
 {
     pair<bool,long> ret;
-    for (vector<Handler*>::const_iterator i = m_handlers.begin(); i!=m_handlers.end(); ++i) {
-        ret = (*i)->run(request, isHandler);
+    for (vector<SessionInitiator*>::const_iterator i = m_handlers.begin(); i!=m_handlers.end(); ++i) {
+        ret = (*i)->run(request, entityID, isHandler);
         if (ret.first)
             return ret;
     }

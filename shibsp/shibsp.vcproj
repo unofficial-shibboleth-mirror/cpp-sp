@@ -377,6 +377,10 @@
 						>
 					</File>
 					<File
+						RelativePath=".\handler\impl\SessionInitiator.cpp"
+						>
+					</File>
+					<File
 						RelativePath=".\handler\impl\Shib1SessionInitiator.cpp"
 						>
 					</File>
@@ -561,6 +565,10 @@
 				</File>
 				<File
 					RelativePath=".\handler\RemotedHandler.h"
+					>
+				</File>
+				<File
+					RelativePath=".\handler\SessionInitiator.h"
 					>
 				</File>
 			</Filter>
