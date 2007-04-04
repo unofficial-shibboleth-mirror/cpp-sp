@@ -575,6 +575,7 @@ public:
     void unlock() { m_staKey->setData(NULL); m_propsKey->setData(NULL); m_mapper->unlock(); }
     Settings getSettings(const SPRequest& request) const;
     
+    void setParent(const PropertySet*) {}
     pair<bool,bool> getBool(const char* name, const char* ns=NULL) const;
     pair<bool,const char*> getString(const char* name, const char* ns=NULL) const;
     pair<bool,const XMLCh*> getXMLString(const char* name, const char* ns=NULL) const;
@@ -1075,6 +1076,12 @@ static void set_error_filter(request_rec *r)
    ap_add_output_filter("SHIB_HEADERS_ERR", NULL, r, r->connection);
 }
 
+static int _table_add(void *v, const char *key, const char *value)
+{
+    apr_table_addn((apr_table_t*)v, key, value);
+    return 1;
+}
+
 static apr_status_t do_output_filter(ap_filter_t *f, apr_bucket_brigade *in)
 {
     request_rec *r = f->r;
@@ -1082,7 +1089,9 @@ static apr_status_t do_output_filter(ap_filter_t *f, apr_bucket_brigade *in)
 
     if (rc) {
         ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_out_filter: merging %d headers", apr_table_elts(rc->hdr_out)->nelts);
-        apr_table_overlap(r->headers_out, rc->hdr_out, APR_OVERLAP_TABLES_MERGE);
+        apr_table_do(_table_add,r->headers_out, rc->hdr_out,NULL);
+        // can't use overlap call because it will collapse Set-Cookie headers
+        //apr_table_overlap(r->headers_out, rc->hdr_out, APR_OVERLAP_TABLES_MERGE);
     }
 
     /* remove ourselves from the filter chain */
@@ -1099,7 +1108,9 @@ static apr_status_t do_error_filter(ap_filter_t *f, apr_bucket_brigade *in)
 
     if (rc) {
         ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_err_filter: merging %d headers", apr_table_elts(rc->hdr_err)->nelts);
-        apr_table_overlap(r->err_headers_out, rc->hdr_err, APR_OVERLAP_TABLES_MERGE);
+        apr_table_do(_table_add,r->err_headers_out, rc->hdr_err,NULL);
+        // can't use overlap call because it will collapse Set-Cookie headers
+        //apr_table_overlap(r->err_headers_out, rc->hdr_err, APR_OVERLAP_TABLES_MERGE);
     }
 
     /* remove ourselves from the filter chain */
