@@ -377,11 +377,19 @@
 						>
 					</File>
 					<File
+						RelativePath=".\handler\impl\SAMLDSSessionInitiator.cpp"
+						>
+					</File>
+					<File
 						RelativePath=".\handler\impl\SessionInitiator.cpp"
 						>
 					</File>
 					<File
 						RelativePath=".\handler\impl\Shib1SessionInitiator.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\handler\impl\WAYFSessionInitiator.cpp"
 						>
 					</File>
 				</Filter>

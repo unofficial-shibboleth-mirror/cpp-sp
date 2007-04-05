@@ -101,8 +101,10 @@ libshibsp_la_SOURCES = \
 	handler/impl/RemotedHandler.cpp \
 	handler/impl/SAML1Consumer.cpp \
 	handler/impl/SAML2Consumer.cpp \
+	handler/impl/SAMLDSSessionInitiator.cpp \
 	handler/impl/SessionInitiator.cpp \
 	handler/impl/Shib1SessionInitiator.cpp \
+	handler/impl/WAYFSessionInitiator.cpp \
 	impl/RemotedSessionCache.cpp \
 	impl/StorageServiceSessionCache.cpp \
 	impl/XMLAccessControl.cpp \

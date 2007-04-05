@@ -15,25 +15,22 @@
  */
 
 /**
- * Shib1SessionInitiator.cpp
+ * WAYFSessionInitiator.cpp
  * 
- * Shibboleth 1.x AuthnRequest support.
+ * Shibboleth WAYF support.
  */
 
 #include "internal.h"
 #include "Application.h"
+#include "exceptions.h"
 #include "SPRequest.h"
 #include "handler/AbstractHandler.h"
 #include "handler/SessionInitiator.h"
-#include "util/SPConstants.h"
 
-#include <saml/saml2/metadata/Metadata.h>
-#include <saml/saml2/metadata/EndpointManager.h>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/URLEncoder.h>
 
 using namespace shibsp;
-using namespace opensaml::saml2md;
 using namespace opensaml;
 using namespace xmltooling;
 using namespace log4cpp;
@@ -46,31 +43,40 @@ namespace shibsp {
     #pragma warning( disable : 4250 )
 #endif
 
-    class SHIBSP_DLLLOCAL Shib1SessionInitiator : public SessionInitiator, public AbstractHandler
+    class SHIBSP_DLLLOCAL WAYFSessionInitiator : public SessionInitiator, public AbstractHandler
     {
     public:
-        Shib1SessionInitiator(const DOMElement* e, const char* appId)
-            : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator")) {}
-        virtual ~Shib1SessionInitiator() {}
+        WAYFSessionInitiator(const DOMElement* e, const char* appId)
+                : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator")), m_url(NULL) {
+            pair<bool,const char*> url = getString("URL");
+            if (!url.first)
+                throw ConfigurationException("WAYF SessionInitiator requires a URL property.");
+            m_url = url.second;
+        }
+        virtual ~WAYFSessionInitiator() {}
         
         pair<bool,long> run(SPRequest& request, const char* entityID=NULL, bool isHandler=true) const;
+
+    private:
+        const char* m_url;
     };
 
 #if defined (_MSC_VER)
     #pragma warning( pop )
 #endif
 
-    SessionInitiator* SHIBSP_DLLLOCAL Shib1SessionInitiatorFactory(const pair<const DOMElement*,const char*>& p)
+    SessionInitiator* SHIBSP_DLLLOCAL WAYFSessionInitiatorFactory(const pair<const DOMElement*,const char*>& p)
     {
-        return new Shib1SessionInitiator(p.first, p.second);
+        return new WAYFSessionInitiator(p.first, p.second);
     }
 
 };
 
-pair<bool,long> Shib1SessionInitiator::run(SPRequest& request, const char* entityID, bool isHandler) const
+pair<bool,long> WAYFSessionInitiator::run(SPRequest& request, const char* entityID, bool isHandler) const
 {
-    // We have to know the IdP to function.
-    if (!entityID || !*entityID)
+    // The IdP CANNOT be specified for us to run. Otherwise, we'd be redirecting to a WAYF
+    // anytime the IdP's metadata was wrong.
+    if (entityID && *entityID)
         return make_pair(false,0);
 
     string target;
@@ -92,33 +98,11 @@ pair<bool,long> Shib1SessionInitiator::run(SPRequest& request, const char* entit
         // The target resource is the current one and everything else is defaulted.
         target=request.getRequestURL();
     }
-        
-    m_log.debug("attempting to initiate session using SAML 1.x with provider (%s)", entityID);
-
-    // Use metadata to invoke the SSO service directly.
-    MetadataProvider* m=app.getMetadataProvider();
-    Locker locker(m);
-    const EntityDescriptor* entity=m->getEntityDescriptor(entityID);
-    if (!entity) {
-        m_log.error("unable to locate metadata for provider (%s)", entityID);
-        return make_pair(false,0);
-    }
-    const IDPSSODescriptor* role=entity->getIDPSSODescriptor(shibspconstants::SHIB1_PROTOCOL_ENUM);
-    if (!role) {
-        m_log.error("unable to locate Shibboleth-aware identity provider role for provider (%s)", entityID);
-        return make_pair(false,0);
-    }
-    const EndpointType* ep=EndpointManager<SingleSignOnService>(role->getSingleSignOnServices()).getByBinding(
-        shibspconstants::SHIB1_AUTHNREQUEST_PROFILE_URI
-        );
-    if (!ep) {
-        m_log.error("unable to locate compatible SSO service for provider (%s)", entityID);
-        return make_pair(false,0);
-    }
-    auto_ptr_char dest(ep->getLocation());
-
+    
     if (!ACS)
         ACS = app.getDefaultAssertionConsumerService();
+
+    m_log.debug("sending request to WAYF (%s)", m_url);
 
     // Compute the ACS URL. We add the ACS location to the base handlerURL.
     string ACSloc=request.getHandlerURL(target.c_str());
@@ -130,7 +114,8 @@ pair<bool,long> Shib1SessionInitiator::run(SPRequest& request, const char* entit
     char timebuf[16];
     sprintf(timebuf,"%u",time(NULL));
     const URLEncoder* urlenc = XMLToolingConfig::getConfig().getURLEncoder();
-    string req=string(dest.get()) + "?shire=" + urlenc->encode(ACSloc.c_str()) + "&time=" + timebuf + "&target=" + target +
+    string req=string(m_url) + (strchr(m_url,'?') ? '&' : '?') + "shire=" + urlenc->encode(ACSloc.c_str()) +
+        "&time=" + timebuf + "&target=" + target +
         "&providerId=" + urlenc->encode(app.getString("entityID").second);
 
     return make_pair(true, request.sendRedirect(req.c_str()));
