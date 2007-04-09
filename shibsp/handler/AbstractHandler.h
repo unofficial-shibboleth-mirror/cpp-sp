@@ -74,7 +74,7 @@ namespace shibsp {
          * such as cookies or StorageService-backed keys.
          * 
          * <p>If a supported mechanism can be identified, the input parameter will be
-         * replaced with a suitable state key, URL-encoded.
+         * replaced with a suitable state key.
          * 
          * @param request       the active SPRequest
          * @param relayState    RelayState token to supply with message
@@ -90,8 +90,9 @@ namespace shibsp {
          * 
          * @param httpRequest   incoming HTTP request
          * @param relayState    RelayState token supplied with message
+         * @param clear         true iff the token state should be cleared
          */
-        virtual void recoverRelayState(opensaml::HTTPRequest& httpRequest, std::string& relayState) const;
+        virtual void recoverRelayState(opensaml::HTTPRequest& httpRequest, std::string& relayState, bool clear=true) const;
         
         /** Logging object. */
         log4cpp::Category& m_log;

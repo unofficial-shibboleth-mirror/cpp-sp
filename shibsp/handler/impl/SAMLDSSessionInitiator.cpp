@@ -84,14 +84,15 @@ pair<bool,long> SAMLDSSessionInitiator::run(SPRequest& request, const char* enti
         return make_pair(false,0);
 
     string target;
+    const char* option;
     bool isPassive=false;
     const Application& app=request.getApplication();
 
     if (isHandler) {
-        const char* option = request.getParameter("target");
+        option = request.getParameter("target");
         if (option)
             target = option;
-        recoverRelayState(request, target);
+        recoverRelayState(request, target, false);
 
         option = request.getParameter("isPassive");
         if (option)
@@ -113,8 +114,16 @@ pair<bool,long> SAMLDSSessionInitiator::run(SPRequest& request, const char* enti
     pair<bool,const char*> thisloc = getString("Location");
     if (thisloc.first) returnURL += thisloc.second;
 
+    if (isHandler) {
+        // We may already have RelayState set if we looped back here,
+        // but just in case target is a resource, we reset it back.
+        option = request.getParameter("target");
+        if (option)
+            target = option;
+    }
     preserveRelayState(request, target);
 
+    const URLEncoder* urlenc = XMLToolingConfig::getConfig().getURLEncoder();
     if (isHandler) {
         // Now the hard part. The base assumption is to append the entire query string, if any,
         // to the self-link. But we want to replace target with the RelayState-preserved value
@@ -150,15 +159,12 @@ pair<bool,long> SAMLDSSessionInitiator::run(SPRequest& request, const char* enti
 
         // Now append the sanitized target as needed.
         if (!target.empty())
-            returnURL = returnURL + (returnURL.rfind('?')==string::npos ? '?' : '&') + "target=" + target;
+            returnURL = returnURL + (returnURL.rfind('?')==string::npos ? '?' : '&') + "target=" + urlenc->encode(target.c_str());
     }
     else if (!target.empty()) {
         // For a virtual handler, we just append target to the return link.
-        returnURL = returnURL + "?target=" + target;
+        returnURL = returnURL + "?target=" + urlenc->encode(target.c_str());;
     }
-
-
-    const URLEncoder* urlenc = XMLToolingConfig::getConfig().getURLEncoder();
 
     string req=string(m_url) + (strchr(m_url,'?') ? '&' : '?') + "entityID=" + urlenc->encode(app.getString("entityID").second) +
         "&return=" + urlenc->encode(returnURL.c_str());

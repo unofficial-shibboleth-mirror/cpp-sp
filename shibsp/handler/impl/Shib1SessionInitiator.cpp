@@ -74,18 +74,19 @@ pair<bool,long> Shib1SessionInitiator::run(SPRequest& request, const char* entit
         return make_pair(false,0);
 
     string target;
+    const char* option;
     const Handler* ACS=NULL;
     const Application& app=request.getApplication();
 
     if (isHandler) {
-        const char* option=request.getParameter("acsIndex");
+        option=request.getParameter("acsIndex");
         if (option)
             ACS=app.getAssertionConsumerServiceByIndex(atoi(option));
 
         option = request.getParameter("target");
         if (option)
             target = option;
-        recoverRelayState(request, target);
+        recoverRelayState(request, target, false);
     }
     else {
         // We're running as a "virtual handler" from within the filter.
@@ -125,12 +126,24 @@ pair<bool,long> Shib1SessionInitiator::run(SPRequest& request, const char* entit
     pair<bool,const char*> loc=ACS ? ACS->getString("Location") : pair<bool,const char*>(false,NULL);
     if (loc.first) ACSloc+=loc.second;
 
+    if (isHandler) {
+        // We may already have RelayState set if we looped back here,
+        // but just in case target is a resource, we reset it back.
+        option = request.getParameter("target");
+        if (option)
+            target = option;
+    }
     preserveRelayState(request, target);
+
+    // Shib 1.x requires a target value.
+    if (target.empty())
+        target = "default";
 
     char timebuf[16];
     sprintf(timebuf,"%u",time(NULL));
     const URLEncoder* urlenc = XMLToolingConfig::getConfig().getURLEncoder();
-    string req=string(dest.get()) + "?shire=" + urlenc->encode(ACSloc.c_str()) + "&time=" + timebuf + "&target=" + target +
+    string req=string(dest.get()) + (strchr(dest.get(),'?') ? '&' : '?') + "shire=" + urlenc->encode(ACSloc.c_str()) +
+        "&time=" + timebuf + "&target=" + urlenc->encode(target.c_str()) +
         "&providerId=" + urlenc->encode(app.getString("entityID").second);
 
     return make_pair(true, request.sendRedirect(req.c_str()));
