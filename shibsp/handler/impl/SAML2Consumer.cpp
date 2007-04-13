@@ -228,7 +228,6 @@ string SAML2Consumer::implementProtocol(
             // Run the policy over the assertion. Handles issuer consistency, replay, freshness,
             // and signature verification, assuming the relevant rules are configured.
             // We have to marshall the object first to ensure signatures can be checked.
-            decrypted->marshall();
             policy.evaluate(*decrypted);
             
             // If no security is in place now, we kick it.
