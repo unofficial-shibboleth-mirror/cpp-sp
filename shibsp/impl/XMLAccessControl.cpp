@@ -81,7 +81,8 @@ namespace {
     class XMLAccessControl : public AccessControl, public ReloadableXMLFile
     {
     public:
-        XMLAccessControl(const DOMElement* e) : ReloadableXMLFile(e), m_rootAuthz(NULL) {
+        XMLAccessControl(const DOMElement* e)
+                : ReloadableXMLFile(e, log4cpp::Category::getInstance(SHIBSP_LOGCAT".AccessControl")), m_rootAuthz(NULL) {
             load(); // guarantees an exception or the policy is loaded
         }
         

@@ -163,7 +163,7 @@ namespace {
     class SHIBSP_DLLLOCAL XMLConfigImpl : public DOMPropertySet, public DOMNodeFilter
     {
     public:
-        XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* outer);
+        XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* outer, Category& log);
         ~XMLConfigImpl();
         
         RequestMapper* m_requestMapper;
@@ -187,8 +187,8 @@ namespace {
     class SHIBSP_DLLLOCAL XMLConfig : public ServiceProvider, public ReloadableXMLFile
     {
     public:
-        XMLConfig(const DOMElement* e)
-            : ReloadableXMLFile(e), m_impl(NULL), m_listener(NULL), m_sessionCache(NULL), m_tranLog(NULL) {
+        XMLConfig(const DOMElement* e) : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT".Config")),
+            m_impl(NULL), m_listener(NULL), m_sessionCache(NULL), m_tranLog(NULL) {
         }
         
         void init() {
@@ -758,12 +758,12 @@ void XMLConfigImpl::doExtensions(const DOMElement* e, const char* label, Categor
     }
 }
 
-XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* outer) : m_requestMapper(NULL), m_outer(outer), m_document(NULL)
+XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* outer, Category& log)
+    : m_requestMapper(NULL), m_outer(outer), m_document(NULL)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("XMLConfigImpl");
 #endif
-    Category& log=Category::getInstance(SHIBSP_LOGCAT".Config");
 
     try {
         SPConfig& conf=SPConfig::getConfig();
@@ -1028,7 +1028,7 @@ pair<bool,DOMElement*> XMLConfig::load()
     // If we own it, wrap it.
     XercesJanitor<DOMDocument> docjanitor(raw.first ? raw.second->getOwnerDocument() : NULL);
 
-    XMLConfigImpl* impl = new XMLConfigImpl(raw.second,(m_impl==NULL),this);
+    XMLConfigImpl* impl = new XMLConfigImpl(raw.second,(m_impl==NULL),this,m_log);
     
     // If we held the document, transfer it to the impl. If we didn't, it's a no-op.
     impl->setDocument(docjanitor.release());

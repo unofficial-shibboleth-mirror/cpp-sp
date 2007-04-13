@@ -113,8 +113,7 @@ namespace shibsp {
     class XMLRequestMapper : public RequestMapper, public ReloadableXMLFile
     {
     public:
-        XMLRequestMapper(const DOMElement* e)
-                : ReloadableXMLFile(e), m_impl(NULL), m_log(Category::getInstance(SHIBSP_LOGCAT".RequestMapper")) {
+        XMLRequestMapper(const DOMElement* e) : ReloadableXMLFile(e,Category::getInstance(SHIBSP_LOGCAT".RequestMapper")), m_impl(NULL) {
             load();
         }
 
@@ -129,7 +128,6 @@ namespace shibsp {
 
     private:
         XMLRequestMapperImpl* m_impl;
-        Category& m_log;
     };
 
 #if defined (_MSC_VER)

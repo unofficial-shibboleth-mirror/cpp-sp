@@ -30,8 +30,6 @@
 #include "binding/SOAPClient.h"
 #include "util/SPConstants.h"
 
-
-#include <log4cpp/Category.hh>
 #include <saml/binding/SecurityPolicy.h>
 #include <saml/saml1/binding/SAML1SOAPClient.h>
 #include <saml/saml1/core/Assertions.h>
@@ -139,7 +137,7 @@ namespace shibsp {
     class SimpleResolverImpl
     {
     public:
-        SimpleResolverImpl(const DOMElement* e);
+        SimpleResolverImpl(const DOMElement* e, Category& log);
         ~SimpleResolverImpl() {
             for_each(m_decoderMap.begin(), m_decoderMap.end(), cleanup_pair<string,AttributeDecoder>());
             if (m_document)
@@ -169,6 +167,7 @@ namespace shibsp {
         void populateQuery(saml1p::AttributeQuery& query, const string& id) const;
         void populateQuery(saml2p::AttributeQuery& query, const string& id) const;
 
+        Category& m_log;
         DOMDocument* m_document;
         map<string,AttributeDecoder*> m_decoderMap;
 #ifdef HAVE_GOOD_STL
@@ -182,7 +181,7 @@ namespace shibsp {
     class SimpleResolver : public AttributeResolver, public ReloadableXMLFile
     {
     public:
-        SimpleResolver(const DOMElement* e) : ReloadableXMLFile(e), m_impl(NULL) {
+        SimpleResolver(const DOMElement* e) : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT".AttributeResolver")), m_impl(NULL) {
             load();
         }
         ~SimpleResolver() {
@@ -234,19 +233,18 @@ namespace shibsp {
     static const XMLCh _type[] =                UNICODE_LITERAL_4(t,y,p,e);
 };
 
-SimpleResolverImpl::SimpleResolverImpl(const DOMElement* e) : m_document(NULL), m_allowQuery(true)
+SimpleResolverImpl::SimpleResolverImpl(const DOMElement* e, Category& log) : m_log(log), m_document(NULL), m_allowQuery(true)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("SimpleResolverImpl");
 #endif
-    Category& log=Category::getInstance(SHIBSP_LOGCAT".AttributeResolver");
     
     if (!XMLHelper::isNodeNamed(e, SIMPLE_NS, _AttributeResolver))
         throw ConfigurationException("Simple resolver requires resolver:AttributeResolver at root of configuration.");
     
     const XMLCh* flag = e->getAttributeNS(NULL,allowQuery);
     if (flag && (*flag==chLatin_f || *flag==chDigit_0)) {
-        log.info("SAML attribute queries disabled");
+        m_log.info("SAML attribute queries disabled");
         m_allowQuery = false;
     }
 
@@ -255,11 +253,11 @@ SimpleResolverImpl::SimpleResolverImpl(const DOMElement* e) : m_document(NULL), 
         auto_ptr_char id(child->getAttributeNS(NULL, _id));
         auto_ptr_char type(child->getAttributeNS(NULL, _type));
         try {
-            log.info("building AttributeDecoder (%s) of type %s", id.get(), type.get());
+            m_log.info("building AttributeDecoder (%s) of type %s", id.get(), type.get());
             m_decoderMap[id.get()] = SPConfig::getConfig().AttributeDecoderManager.newPlugin(type.get(), child);
         }
         catch (exception& ex) {
-            log.error("error building AttributeDecoder (%s): %s", id.get(), ex.what());
+            m_log.error("error building AttributeDecoder (%s): %s", id.get(), ex.what());
         }
         child = XMLHelper::getNextSiblingElement(child, SIMPLE_NS, _AttributeDecoder);
     }
@@ -269,7 +267,7 @@ SimpleResolverImpl::SimpleResolverImpl(const DOMElement* e) : m_document(NULL), 
         // Check for missing Name.
         const XMLCh* name = child->getAttributeNS(NULL, saml2::Attribute::NAME_ATTRIB_NAME);
         if (!name || !*name) {
-            log.warn("skipping saml:Attribute declared with no Name");
+            m_log.warn("skipping saml:Attribute declared with no Name");
             child = XMLHelper::getNextSiblingElement(child, samlconstants::SAML20_NS, saml2::Attribute::LOCAL_NAME);
             continue;
         }
@@ -278,7 +276,7 @@ SimpleResolverImpl::SimpleResolverImpl(const DOMElement* e) : m_document(NULL), 
         auto_ptr_char id(child->getAttributeNS(NULL, saml2::Attribute::FRIENDLYNAME_ATTRIB_NAME));
         auto_ptr_char d(child->getAttributeNS(SIMPLE_NS, decoderId));
         if (!id.get() || !*id.get() || !d.get() || !*d.get() || !(decoder=m_decoderMap[d.get()])) {
-            log.warn("skipping saml:Attribute declared with no FriendlyName or resolvable AttributeDecoder");
+            m_log.warn("skipping saml:Attribute declared with no FriendlyName or resolvable AttributeDecoder");
             child = XMLHelper::getNextSiblingElement(child, samlconstants::SAML20_NS, saml2::Attribute::LOCAL_NAME);
             continue;
         }
@@ -298,17 +296,17 @@ SimpleResolverImpl::SimpleResolverImpl(const DOMElement* e) : m_document(NULL), 
         pair<const AttributeDecoder*,string>& decl = m_attrMap[make_pair(n.get(),f.get())];
 #endif
         if (decl.first) {
-            log.warn("skipping duplicate saml:Attribute declaration (same Name and NameFormat)");
+            m_log.warn("skipping duplicate saml:Attribute declaration (same Name and NameFormat)");
             child = XMLHelper::getNextSiblingElement(child, samlconstants::SAML20_NS, saml2::Attribute::LOCAL_NAME);
             continue;
         }
 
-        if (log.isInfoEnabled()) {
+        if (m_log.isInfoEnabled()) {
 #ifdef HAVE_GOOD_STL
             auto_ptr_char n(name);
             auto_ptr_char f(format);
 #endif
-            log.info("creating declaration for Attribute %s%s%s", n.get(), *f.get() ? ", Format/Namespace:" : "", f.get());
+            m_log.info("creating declaration for Attribute %s%s%s", n.get(), *f.get() ? ", Format/Namespace:" : "", f.get());
         }
         
         decl.first = decoder;
@@ -500,11 +498,10 @@ void SimpleResolverImpl::query(ResolutionContext& ctx, const NameIdentifier& nam
 #ifdef _DEBUG
     xmltooling::NDC ndc("query");
 #endif
-    Category& log=Category::getInstance(SHIBSP_LOGCAT".AttributeResolver");
 
     const EntityDescriptor* entity = ctx.getEntityDescriptor();
     if (!entity) {
-        log.debug("no issuer information available, skipping query");
+        m_log.debug("no issuer information available, skipping query");
         return;
     }
 
@@ -515,7 +512,7 @@ void SimpleResolverImpl::query(ResolutionContext& ctx, const NameIdentifier& nam
         version = 0;
     }
     if (!AA) {
-        log.info("no SAML 1.x AttributeAuthority role found in metadata");
+        m_log.info("no SAML 1.x AttributeAuthority role found in metadata");
         return;
     }
 
@@ -552,25 +549,25 @@ void SimpleResolverImpl::query(ResolutionContext& ctx, const NameIdentifier& nam
             response = client.receiveSAML();
         }
         catch (exception& ex) {
-            log.error("exception making SAML query: %s", ex.what());
+            m_log.error("exception making SAML query: %s", ex.what());
             soaper.reset();
         }
     }
 
     if (!response) {
-        log.error("unable to successfully query for attributes");
+        m_log.error("unable to successfully query for attributes");
         return;
     }
 
     const vector<saml1::Assertion*>& assertions = const_cast<const saml1p::Response*>(response)->getAssertions();
     if (assertions.size()>1)
-        log.warn("simple resolver only supports one assertion in the query response");
+        m_log.warn("simple resolver only supports one assertion in the query response");
 
     auto_ptr<saml1p::Response> wrapper(response);
     saml1::Assertion* newtoken = assertions.front();
 
     if (!newtoken->getSignature() && signedAssertions.first && signedAssertions.second) {
-        log.error("assertion unsigned, rejecting it based on signedAssertions policy");
+        m_log.error("assertion unsigned, rejecting it based on signedAssertions policy");
         return;
     }
 
@@ -582,7 +579,7 @@ void SimpleResolverImpl::query(ResolutionContext& ctx, const NameIdentifier& nam
         tokval.validateAssertion(*newtoken);
     }
     catch (exception& ex) {
-        log.error("assertion failed policy/validation: %s", ex.what());
+        m_log.error("assertion failed policy/validation: %s", ex.what());
     }
     newtoken->detach();
     wrapper.release();
@@ -618,16 +615,15 @@ void SimpleResolverImpl::query(ResolutionContext& ctx, const NameID& nameid, con
 #ifdef _DEBUG
     xmltooling::NDC ndc("query");
 #endif
-    Category& log=Category::getInstance(SHIBSP_LOGCAT".AttributeResolver");
 
     const EntityDescriptor* entity = ctx.getEntityDescriptor();
     if (!entity) {
-        log.debug("no issuer information available, skipping query");
+        m_log.debug("no issuer information available, skipping query");
         return;
     }
     const AttributeAuthorityDescriptor* AA = entity->getAttributeAuthorityDescriptor(samlconstants::SAML20P_NS);
     if (!AA) {
-        log.info("no SAML 2 AttributeAuthority role found in metadata");
+        m_log.info("no SAML 2 AttributeAuthority role found in metadata");
         return;
     }
 
@@ -663,31 +659,31 @@ void SimpleResolverImpl::query(ResolutionContext& ctx, const NameID& nameid, con
             srt = client.receiveSAML();
         }
         catch (exception& ex) {
-            log.error("exception making SAML query: %s", ex.what());
+            m_log.error("exception making SAML query: %s", ex.what());
             soaper.reset();
         }
     }
 
     if (!srt) {
-        log.error("unable to successfully query for attributes");
+        m_log.error("unable to successfully query for attributes");
         return;
     }
     saml2p::Response* response = dynamic_cast<saml2p::Response*>(srt);
     if (!response) {
         delete srt;
-        log.error("message was not a samlp:Response");
+        m_log.error("message was not a samlp:Response");
         return;
     }
 
     const vector<saml2::Assertion*>& assertions = const_cast<const saml2p::Response*>(response)->getAssertions();
     if (assertions.size()>1)
-        log.warn("simple resolver only supports one assertion in the query response");
+        m_log.warn("simple resolver only supports one assertion in the query response");
 
     auto_ptr<saml2p::Response> wrapper(response);
     saml2::Assertion* newtoken = assertions.front();
 
     if (!newtoken->getSignature() && signedAssertions.first && signedAssertions.second) {
-        log.error("assertion unsigned, rejecting it based on signedAssertions policy");
+        m_log.error("assertion unsigned, rejecting it based on signedAssertions policy");
         return;
     }
 
@@ -699,7 +695,7 @@ void SimpleResolverImpl::query(ResolutionContext& ctx, const NameID& nameid, con
         tokval.validateAssertion(*newtoken);
     }
     catch (exception& ex) {
-        log.error("assertion failed policy/validation: %s", ex.what());
+        m_log.error("assertion failed policy/validation: %s", ex.what());
     }
     newtoken->detach();
     wrapper.release();
@@ -735,9 +731,8 @@ void SimpleResolver::resolveAttributes(ResolutionContext& ctx, const set<string>
 #ifdef _DEBUG
     xmltooling::NDC ndc("resolveAttributes");
 #endif
-    Category& log=Category::getInstance(SHIBSP_LOGCAT".AttributeResolver");
     
-    log.debug("examining tokens to resolve");
+    m_log.debug("examining tokens to resolve");
 
     bool query = m_impl->m_allowQuery;
     const saml1::Assertion* token1;
@@ -746,14 +741,14 @@ void SimpleResolver::resolveAttributes(ResolutionContext& ctx, const set<string>
         for (vector<const opensaml::Assertion*>::const_iterator t = ctx.getTokens()->begin(); t!=ctx.getTokens()->end(); ++t) {
             token2 = dynamic_cast<const saml2::Assertion*>(*t);
             if (token2 && !token2->getAttributeStatements().empty()) {
-                log.debug("resolving SAML 2 token with an AttributeStatement");
+                m_log.debug("resolving SAML 2 token with an AttributeStatement");
                 m_impl->resolve(ctx, token2, attributes);
                 query = false;
             }
             else {
                 token1 = dynamic_cast<const saml1::Assertion*>(*t);
                 if (token1 && !token1->getAttributeStatements().empty()) {
-                    log.debug("resolving SAML 1 token with an AttributeStatement");
+                    m_log.debug("resolving SAML 1 token with an AttributeStatement");
                     m_impl->resolve(ctx, token1, attributes);
                     query = false;
                 }
@@ -765,15 +760,15 @@ void SimpleResolver::resolveAttributes(ResolutionContext& ctx, const set<string>
         if (token1 && !token1->getAuthenticationStatements().empty()) {
             const AuthenticationStatement* statement = token1->getAuthenticationStatements().front();
             if (statement && statement->getSubject() && statement->getSubject()->getNameIdentifier()) {
-                log.debug("attempting SAML 1.x attribute query");
+                m_log.debug("attempting SAML 1.x attribute query");
                 return m_impl->query(ctx, *(statement->getSubject()->getNameIdentifier()), attributes);
             }
         }
         else if (token2 && ctx.getNameID()) {
-            log.debug("attempting SAML 2.0 attribute query");
+            m_log.debug("attempting SAML 2.0 attribute query");
             return m_impl->query(ctx, *ctx.getNameID(), attributes);
         }
-        log.warn("can't attempt attribute query, no identifier in assertion subject");
+        m_log.warn("can't attempt attribute query, no identifier in assertion subject");
     }
 }
 
@@ -785,7 +780,7 @@ pair<bool,DOMElement*> SimpleResolver::load()
     // If we own it, wrap it.
     XercesJanitor<DOMDocument> docjanitor(raw.first ? raw.second->getOwnerDocument() : NULL);
 
-    SimpleResolverImpl* impl = new SimpleResolverImpl(raw.second);
+    SimpleResolverImpl* impl = new SimpleResolverImpl(raw.second, m_log);
     
     // If we held the document, transfer it to the impl. If we didn't, it's a no-op.
     impl->setDocument(docjanitor.release());
