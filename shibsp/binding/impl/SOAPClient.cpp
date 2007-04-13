@@ -59,11 +59,13 @@ void SOAPClient::send(const soap11::Envelope& env, MetadataCredentialCriteria& p
             m_credResolver->lock();
             // Fill in criteria to use.
             peer.setUsage(CredentialCriteria::SIGNING_CREDENTIAL);
-            pair<bool,const char*> algcrit = m_relyingParty->getString("sigAlgorithm");
-            if (algcrit.first)
-                peer.setKeyAlgorithm(algcrit.second);
+            pair<bool,const XMLCh*> sigalg = m_relyingParty->getXMLString("signatureAlg");
+            if (sigalg.first)
+                peer.setXMLAlgorithm(sigalg.second);
             const Credential* cred = m_credResolver->resolve(&peer);
+            // Reset criteria back.
             peer.setKeyAlgorithm(NULL);
+            peer.setKeySize(0);
 
             if (cred) {
                 // Check for message.
@@ -74,9 +76,11 @@ void SOAPClient::send(const soap11::Envelope& env, MetadataCredentialCriteria& p
                         // Build a Signature.
                         Signature* sig = SignatureBuilder::buildSignature();
                         msg->setSignature(sig);
-                        pair<bool,const XMLCh*> alg = m_relyingParty->getXMLString("sigAlgorithm");
-                        if (alg.first)
-                            sig->setSignatureAlgorithm(alg.second);
+                        if (sigalg.first)
+                            sig->setSignatureAlgorithm(sigalg.second);
+                        sigalg = m_relyingParty->getXMLString("digestAlg");
+                        if (sigalg.first)
+                            dynamic_cast<opensaml::ContentReference*>(sig->getContentReference())->setDigestAlgorithm(sigalg.second);
 
                         // Sign it. The marshalling step in the base class should be a no-op.
                         vector<Signature*> sigs(1,sig);
