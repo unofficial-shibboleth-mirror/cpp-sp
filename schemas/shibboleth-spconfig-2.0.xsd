@@ -28,6 +28,10 @@
 	<simpleType name="listOfStrings">
 		<list itemType="conf:string"/>
 	</simpleType>
+
+	<simpleType name="listOfURIs">
+		<list itemType="anyURI"/>
+	</simpleType>
 	
 	<complexType name="PluggableType">
 		<sequence>
@@ -445,6 +449,9 @@
 					<attribute name="entityIDParam" type="conf:string"/>
 					<attribute name="entityID" type="anyURI"/>
 					<attribute name="URL" type="anyURI"/>
+					<attribute name="outgoingBindings" type="conf:listOfURIs"/>
+					<attribute name="template" type="anyURI"/>
+					<attribute name="acsByIndex" type="boolean"/>
 					<anyAttribute namespace="##any" processContents="lax"/>
 				</restriction>
 			</complexContent>

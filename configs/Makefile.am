@@ -33,6 +33,7 @@ CONFIGFILES = \
 	rmError.html \
 	sessionError.html \
 	metadataError.html \
+	bindingTemplate.html \
 	sslError.html \
 	sp-example.key \
 	sp-example.crt

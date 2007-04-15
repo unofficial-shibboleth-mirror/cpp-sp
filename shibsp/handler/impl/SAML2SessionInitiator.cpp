@@ -1,0 +1,403 @@
+/*
+ *  Copyright 2001-2007 Internet2
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/**
+ * SAML2SessionInitiator.cpp
+ * 
+ * SAML 2.0 AuthnRequest support.
+ */
+
+#include "internal.h"
+#include "Application.h"
+#include "exceptions.h"
+#include "ServiceProvider.h"
+#include "SPRequest.h"
+#include "handler/AbstractHandler.h"
+#include "handler/RemotedHandler.h"
+#include "handler/SessionInitiator.h"
+#include "util/SPConstants.h"
+
+#include <saml/SAMLConfig.h>
+#include <saml/binding/MessageEncoder.h>
+#include <saml/saml2/core/Protocols.h>
+#include <saml/saml2/metadata/EndpointManager.h>
+#include <saml/saml2/metadata/Metadata.h>
+#include <saml/saml2/metadata/MetadataCredentialCriteria.h>
+
+using namespace shibsp;
+using namespace opensaml::saml2;
+using namespace opensaml::saml2p;
+using namespace opensaml::saml2md;
+using namespace opensaml;
+using namespace xmltooling;
+using namespace log4cpp;
+using namespace std;
+
+namespace shibsp {
+
+#if defined (_MSC_VER)
+    #pragma warning( push )
+    #pragma warning( disable : 4250 )
+#endif
+
+    class SHIBSP_DLLLOCAL SAML2SessionInitiator : public SessionInitiator, public AbstractHandler, public RemotedHandler
+    {
+    public:
+        SAML2SessionInitiator(const DOMElement* e, const char* appId);
+        virtual ~SAML2SessionInitiator() {
+            if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
+                XMLString::release(&m_outgoing);
+                for_each(m_encoders.begin(), m_encoders.end(), cleanup_pair<const XMLCh*,MessageEncoder>());
+            }
+        }
+        
+        void setParent(const PropertySet* parent);
+        void receive(DDF& in, ostream& out);
+        pair<bool,long> run(SPRequest& request, const char* entityID=NULL, bool isHandler=true) const;
+
+    private:
+        pair<bool,long> doRequest(
+            const Application& application,
+            HTTPResponse& httpResponse,
+            const char* entityID,
+            const XMLCh* acsIndex,
+            const XMLCh* acsLocation,
+            const XMLCh* acsBinding,
+            string& relayState
+            ) const;
+
+        string m_appId;
+        XMLCh* m_outgoing;
+        vector<const XMLCh*> m_bindings;
+        map<const XMLCh*,MessageEncoder*> m_encoders;
+    };
+
+#if defined (_MSC_VER)
+    #pragma warning( pop )
+#endif
+
+    SessionInitiator* SHIBSP_DLLLOCAL SAML2SessionInitiatorFactory(const pair<const DOMElement*,const char*>& p)
+    {
+        return new SAML2SessionInitiator(p.first, p.second);
+    }
+
+};
+
+SAML2SessionInitiator::SAML2SessionInitiator(const DOMElement* e, const char* appId)
+    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator")), m_appId(appId), m_outgoing(NULL)
+{
+    // If Location isn't set, defer address registration until the setParent call.
+    pair<bool,const char*> loc = getString("Location");
+    if (loc.first) {
+        string address = m_appId + loc.second + "::run::SAML2SI";
+        setAddress(address.c_str());
+    }
+
+    if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
+        pair<bool,const XMLCh*> outgoing = getXMLString("outgoingBindings");
+        if (outgoing.first) {
+            m_outgoing = XMLString::replicate(outgoing.second);
+        }
+        else {
+            // No override, so we'll install a default binding precedence.
+            string prec = string(samlconstants::SAML20_BINDING_HTTP_REDIRECT) + ' ' + samlconstants::SAML20_BINDING_HTTP_POST + ' ' +
+                samlconstants::SAML20_BINDING_HTTP_POST_SIMPLESIGN + ' ' + samlconstants::SAML20_BINDING_HTTP_ARTIFACT;
+            m_outgoing = XMLString::transcode(prec.c_str());
+            XMLString::trim(m_outgoing);
+        }
+
+        int pos;
+        XMLCh* start = m_outgoing;
+        while (start && *start) {
+            pos = XMLString::indexOf(start,chSpace);
+            if (pos != -1)
+                *(start + pos)=chNull;
+            m_bindings.push_back(start);
+            try {
+                auto_ptr_char b(start);
+                MessageEncoder * encoder = SAMLConfig::getConfig().MessageEncoderManager.newPlugin(b.get(),e);
+                m_encoders[start] = encoder;
+                m_log.info("supporting outgoing binding (%s)", b.get());
+            }
+            catch (exception& ex) {
+                m_log.error("error building MessageEncoder: %s", ex.what());
+            }
+            if (pos != -1)
+                start = start + pos + 1;
+            else
+                break;
+        }
+    }
+}
+
+void SAML2SessionInitiator::setParent(const PropertySet* parent)
+{
+    DOMPropertySet::setParent(parent);
+    pair<bool,const char*> loc = getString("Location");
+    if (loc.first) {
+        string address = m_appId + loc.second + "::run::SAML2SI";
+        setAddress(address.c_str());
+    }
+    else {
+        m_log.warn("no Location property in SAML2 SessionInitiator (or parent), can't register as remoted handler");
+    }
+}
+
+pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, const char* entityID, bool isHandler) const
+{
+    // We have to know the IdP to function.
+    if (!entityID || !*entityID)
+        return make_pair(false,0);
+
+    string target;
+    const Handler* ACS=NULL;
+    const char* option;
+    const Application& app=request.getApplication();
+    pair<bool,bool> acsByIndex = getBool("acsByIndex");
+
+    if (isHandler) {
+        option=request.getParameter("acsIndex");
+        if (option)
+            ACS = app.getAssertionConsumerServiceByIndex(atoi(option));
+
+        option = request.getParameter("target");
+        if (option)
+            target = option;
+        if (!acsByIndex.first || !acsByIndex.second) {
+            // Since we're passing the ACS by value, we need to compute the return URL,
+            // so we'll need the target resource for real.
+            recoverRelayState(request.getApplication(), request, target, false);
+        }
+    }
+    else {
+        // We're running as a "virtual handler" from within the filter.
+        // The target resource is the current one and everything else is defaulted.
+        target=request.getRequestURL();
+    }
+
+    m_log.debug("attempting to initiate session using SAML 2.0 with provider (%s)", entityID);
+
+    // To invoke the request builder, the key requirement is to figure out how and whether
+    // to express the ACS, by index or value, and if by value, where.
+
+    SPConfig& conf = SPConfig::getConfig();
+    if (conf.isEnabled(SPConfig::OutOfProcess)) {
+        if (acsByIndex.first && acsByIndex.second) {
+            // Pass by Index. This also allows for defaulting it entirely and sending nothing.
+            if (isHandler) {
+                // We may already have RelayState set if we looped back here,
+                // but just in case target is a resource, we reset it back.
+                target.erase();
+                option = request.getParameter("target");
+                if (option)
+                    target = option;
+            }
+            return doRequest(app, request, entityID, ACS ? ACS->getXMLString("index").second : NULL, NULL, NULL, target);
+        }
+
+        // Since we're not passing by index, we need to fully compute the return URL and binding.
+        if (!ACS)
+            ACS = app.getDefaultAssertionConsumerService();
+
+        // Compute the ACS URL. We add the ACS location to the base handlerURL.
+        string ACSloc=request.getHandlerURL(target.c_str());
+        pair<bool,const char*> loc=ACS ? ACS->getString("Location") : pair<bool,const char*>(false,NULL);
+        if (loc.first) ACSloc+=loc.second;
+
+        if (isHandler) {
+            // We may already have RelayState set if we looped back here,
+            // but just in case target is a resource, we reset it back.
+            target.erase();
+            option = request.getParameter("target");
+            if (option)
+                target = option;
+        }
+
+        auto_ptr_XMLCh wideloc(ACSloc.c_str());
+        return doRequest(app, request, entityID, NULL, wideloc.get(), ACS ? ACS->getXMLString("Binding").second : NULL, target);
+    }
+
+    // Remote the call.
+    DDF out,in = DDF(m_address.c_str()).structure();
+    DDFJanitor jin(in), jout(out);
+    in.addmember("application_id").string(app.getId());
+    in.addmember("entity_id").string(entityID);
+    if (acsByIndex.first && acsByIndex.second) {
+        if (ACS)
+            in.addmember("acsIndex").string(ACS->getString("index").second);
+    }
+    else {
+        // Since we're not passing by index, we need to fully compute the return URL and binding.
+        if (!ACS)
+            ACS = app.getDefaultAssertionConsumerService();
+
+        // Compute the ACS URL. We add the ACS location to the base handlerURL.
+        string ACSloc=request.getHandlerURL(target.c_str());
+        pair<bool,const char*> loc=ACS ? ACS->getString("Location") : pair<bool,const char*>(false,NULL);
+        if (loc.first) ACSloc+=loc.second;
+        in.addmember("acsLocation").string(ACSloc.c_str());
+        if (ACS)
+            in.addmember("acsBinding").string(ACS->getString("Binding").second);
+    }
+
+    if (isHandler) {
+        // We may already have RelayState set if we looped back here,
+        // but just in case target is a resource, we reset it back.
+        target.erase();
+        option = request.getParameter("target");
+        if (option)
+            target = option;
+    }
+    if (!target.empty())
+        in.addmember("RelayState").string(target.c_str());
+
+    // Remote the processing.
+    out = request.getServiceProvider().getListenerService()->send(in);
+    return unwrap(request, out);
+}
+
+void SAML2SessionInitiator::receive(DDF& in, ostream& out)
+{
+    // Find application.
+    const char* aid=in["application_id"].string();
+    const Application* app=aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : NULL;
+    if (!app) {
+        // Something's horribly wrong.
+        m_log.error("couldn't find application (%s) to generate AuthnRequest", aid ? aid : "(missing)");
+        throw ConfigurationException("Unable to locate application for new session, deleted?");
+    }
+
+    const char* entityID = in["entity_id"].string();
+    if (!entityID)
+        throw ConfigurationException("No entityID parameter supplied to remoted SessionInitiator.");
+
+    DDF ret(NULL);
+    DDFJanitor jout(ret);
+
+    // Wrap the outgoing object with a Response facade.
+    auto_ptr<HTTPResponse> http(getResponse(ret));
+
+    auto_ptr_XMLCh index(in["acsIndex"].string());
+    auto_ptr_XMLCh loc(in["acsLocation"].string());
+    auto_ptr_XMLCh bind(in["acsBinding"].string());
+
+    string relayState(in["RelayState"].string() ? in["RelayState"].string() : "");
+
+    // Since we're remoted, the result should either be a throw, which we pass on,
+    // a false/0 return, which we just return as an empty structure, or a response/redirect,
+    // which we capture in the facade and send back.
+    doRequest(*app, *http.get(), entityID, index.get(), loc.get(), bind.get(), relayState);
+    out << ret;
+}
+
+pair<bool,long> SAML2SessionInitiator::doRequest(
+    const Application& app,
+    HTTPResponse& httpResponse,
+    const char* entityID,
+    const XMLCh* acsIndex,
+    const XMLCh* acsLocation,
+    const XMLCh* acsBinding,
+    string& relayState
+    ) const
+{
+    // Use metadata to locate the IdP's SSO service.
+    MetadataProvider* m=app.getMetadataProvider();
+    Locker locker(m);
+    const EntityDescriptor* entity=m->getEntityDescriptor(entityID);
+    if (!entity) {
+        m_log.error("unable to locate metadata for provider (%s)", entityID);
+        return make_pair(false,0);
+    }
+    const IDPSSODescriptor* role=entity->getIDPSSODescriptor(samlconstants::SAML20P_NS);
+    if (!role) {
+        m_log.error("unable to locate SAML 2.0 identity provider role for provider (%s)", entityID);
+        return make_pair(false,0);
+    }
+
+    // Loop over the supportable outgoing bindings.
+    const EndpointType* ep=NULL;
+    const MessageEncoder* encoder=NULL;
+    vector<const XMLCh*>::const_iterator b;
+    for (b = m_bindings.begin(); b!=m_bindings.end(); ++b) {
+        if (ep=EndpointManager<SingleSignOnService>(role->getSingleSignOnServices()).getByBinding(*b)) {
+            map<const XMLCh*,MessageEncoder*>::const_iterator enc = m_encoders.find(*b);
+            if (enc!=m_encoders.end())
+                encoder = enc->second;
+            break;
+        }
+    }
+    if (!ep || !encoder) {
+        m_log.error("unable to locate compatible SSO service for provider (%s)", entityID);
+        return make_pair(false,0);
+    }
+
+    preserveRelayState(app, httpResponse, relayState);
+
+    // For now just build a dummy AuthnRequest.
+    auto_ptr<AuthnRequest> req(AuthnRequestBuilder::buildAuthnRequest());
+    req->setDestination(ep->getLocation());
+    if (acsIndex)
+        req->setAssertionConsumerServiceIndex(acsIndex);
+    if (acsLocation)
+        req->setAssertionConsumerServiceURL(acsLocation);
+    if (acsBinding)
+        req->setProtocolBinding(acsBinding);
+    Issuer* issuer = IssuerBuilder::buildIssuer();
+    req->setIssuer(issuer);
+    issuer->setName(app.getXMLString("providerId").second);
+
+    auto_ptr_char dest(ep->getLocation());
+
+    // Check for signing.
+    const PropertySet* relyingParty = app.getRelyingParty(entity);
+    pair<bool,bool> flag = relyingParty->getBool("signRequests");
+    if ((flag.first && flag.second) || role->WantAuthnRequestsSigned()) {
+        CredentialResolver* credResolver=app.getCredentialResolver();
+        if (credResolver) {
+            Locker credLocker(credResolver);
+            // Fill in criteria to use.
+            MetadataCredentialCriteria mcc(*role);
+            mcc.setUsage(CredentialCriteria::SIGNING_CREDENTIAL);
+            pair<bool,const XMLCh*> sigalg = relyingParty->getXMLString("signatureAlg");
+            if (sigalg.first)
+                mcc.setXMLAlgorithm(sigalg.second);
+            const Credential* cred = credResolver->resolve(&mcc);
+            if (cred) {
+                // Signed request.
+                long ret = encoder->encode(
+                    httpResponse,
+                    req.get(),
+                    dest.get(),
+                    entityID,
+                    relayState.c_str(),
+                    cred,
+                    sigalg.second,
+                    relyingParty->getXMLString("digestAlg").second
+                    );
+                req.release();  // freed by encoder
+                return make_pair(true,ret);
+            }
+            else {
+                m_log.warn("no signing credential resolved, leaving AuthnRequest unsigned");
+            }
+        }
+    }
+
+    // Unsigned request.
+    long ret = encoder->encode(httpResponse, req.get(), dest.get(), entityID, relayState.c_str());
+    req.release();  // freed by encoder
+    return make_pair(true,ret);
+}

@@ -155,7 +155,6 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
     g_Config->setFeatures(
         SPConfig::Listener |
         SPConfig::Caching |
-        SPConfig::Metadata |
         SPConfig::RequestMapping |
         SPConfig::InProcess |
         SPConfig::Logging

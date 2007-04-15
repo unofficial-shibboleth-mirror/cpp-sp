@@ -92,7 +92,7 @@ pair<bool,long> SAMLDSSessionInitiator::run(SPRequest& request, const char* enti
         option = request.getParameter("target");
         if (option)
             target = option;
-        recoverRelayState(request, target, false);
+        recoverRelayState(request.getApplication(), request, target, false);
 
         option = request.getParameter("isPassive");
         if (option)
@@ -121,7 +121,7 @@ pair<bool,long> SAMLDSSessionInitiator::run(SPRequest& request, const char* enti
         if (option)
             target = option;
     }
-    preserveRelayState(request, target);
+    preserveRelayState(request.getApplication(), request, target);
 
     const URLEncoder* urlenc = XMLToolingConfig::getConfig().getURLEncoder();
     if (isHandler) {

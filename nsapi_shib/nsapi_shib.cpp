@@ -129,7 +129,6 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, ::Session* sn, Request* 
     g_Config->setFeatures(
         SPConfig::Listener |
         SPConfig::Caching |
-        SPConfig::Metadata |
         SPConfig::RequestMapping |
         SPConfig::InProcess |
         SPConfig::Logging

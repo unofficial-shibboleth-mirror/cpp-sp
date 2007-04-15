@@ -1020,7 +1020,6 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
     g_Config->setFeatures(
         SPConfig::Listener |
         SPConfig::Caching |
-        SPConfig::Metadata |
         SPConfig::RequestMapping |
         SPConfig::InProcess |
         SPConfig::Logging

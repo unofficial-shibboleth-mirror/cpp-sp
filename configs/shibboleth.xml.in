@@ -149,20 +149,20 @@
 			<!-- Default example directs to a specific IdP's SSO service (favoring SAML 2 over Shib 1). -->
 			<SessionInitiator type="Chaining" Location="/Login" isDefault="true" id="example.org"
 					relayState="cookie" entityID="https://idp.example.org/shibboleth">
-				<SessionInitiator type="SAML2"/>
+				<SessionInitiator type="SAML2" template="@-PKGSYSCONFDIR-@/bindingTemplate.html"/>
 				<SessionInitiator type="Shibboleth"/>
 			</SessionInitiator>
 			
 			<!-- An example using an old-style WAYF, which means Shib 1 only unless an entityID is provided. -->
 			<SessionInitiator type="Chaining" Location="/WAYF" id="WAYF" relayState="cookie">
-				<SessionInitiator type="SAML2"/>
+				<SessionInitiator type="SAML2" template="@-PKGSYSCONFDIR-@/bindingTemplate.html"/>
 				<SessionInitiator type="Shibboleth"/>
 				<SessionInitiator type="WAYF" URL="https://wayf.example.org/WAYF"/>
 			</SessionInitiator>
 
 			<!-- An example supporting the new-style of discovery service. -->
 			<SessionInitiator type="Chaining" Location="/DS" id="DS" relayState="cookie">
-				<SessionInitiator type="SAML2"/>
+				<SessionInitiator type="SAML2" template="@-PKGSYSCONFDIR-@/bindingTemplate.html"/>
 				<SessionInitiator type="Shibboleth"/>
 				<SessionInitiator type="SAMLDS" URL="https://ds.example.org/DS"/>
 			</SessionInitiator>
@@ -173,9 +173,13 @@
 			are used when sessions are initiated to determine how to tell the IdP where and
 			how to return the response.
 			-->
-			<md:AssertionConsumerService Location="/SAML/POST" isDefault="true" index="1"
+			<md:AssertionConsumerService Location="/SAML2/POST" index="1" isDefault="true"
+				Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"/>
+			<md:AssertionConsumerService Location="/SAML2/Artifact" index="2"
+				Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact"/>
+			<md:AssertionConsumerService Location="/SAML/POST" index="3"
 				Binding="urn:oasis:names:tc:SAML:1.0:profiles:browser-post"/>
-			<md:AssertionConsumerService Location="/SAML/Artifact" index="2"
+			<md:AssertionConsumerService Location="/SAML/Artifact" index="4"
 				Binding="urn:oasis:names:tc:SAML:1.0:profiles:artifact-01"/>
 			
 			<!--

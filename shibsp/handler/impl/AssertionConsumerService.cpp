@@ -87,7 +87,7 @@ pair<bool,long> AssertionConsumerService::run(SPRequest& request, bool isHandler
                 if (ex.getProperty("RelayState"))
                     relayState = ex.getProperty("RelayState");
                 try {
-                    recoverRelayState(request, relayState);
+                    recoverRelayState(request.getApplication(), request, relayState);
                 }
                 catch (exception& ex2) {
                     m_log.error("trapped an error during RelayState recovery while handling an error: %s", ex2.what());
@@ -98,7 +98,7 @@ pair<bool,long> AssertionConsumerService::run(SPRequest& request, bool isHandler
             // We invoke RelayState recovery one last time on this side of the boundary.
             if (out["RelayState"].isstring())
                 relayState = out["RelayState"].string(); 
-            recoverRelayState(request, relayState);
+            recoverRelayState(request.getApplication(), request, relayState);
     
             // If it worked, we have a session key.
             if (!out["key"].isstring())
@@ -182,7 +182,7 @@ string AssertionConsumerService::processMessage(
     auto_ptr<XMLObject> msg(m_decoder->decode(relayState, httpRequest, policy));
     if (!msg.get())
         throw BindingException("Failed to decode an SSO protocol response.");
-    recoverRelayState(httpRequest, relayState);
+    recoverRelayState(application, httpRequest, relayState);
     string key = implementProtocol(application, httpRequest, policy, settings, *msg.get());
 
     auto_ptr_char issuer(policy.getIssuer() ? policy.getIssuer()->getName() : NULL);

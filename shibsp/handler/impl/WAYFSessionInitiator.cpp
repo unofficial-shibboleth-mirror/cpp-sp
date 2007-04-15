@@ -92,7 +92,7 @@ pair<bool,long> WAYFSessionInitiator::run(SPRequest& request, const char* entity
         option = request.getParameter("target");
         if (option)
             target = option;
-        recoverRelayState(request, target, false);
+        recoverRelayState(request.getApplication(), request, target, false);
     }
     else {
         // We're running as a "virtual handler" from within the filter.
@@ -117,7 +117,7 @@ pair<bool,long> WAYFSessionInitiator::run(SPRequest& request, const char* entity
         if (option)
             target = option;
     }
-    preserveRelayState(request, target);
+    preserveRelayState(request.getApplication(), request, target);
 
     // WAYF requires a target value.
     if (target.empty())

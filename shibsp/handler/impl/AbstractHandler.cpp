@@ -28,7 +28,8 @@
 #include "handler/AbstractHandler.h"
 #include "remoting/ListenerService.h"
 
-#include <log4cpp/Category.hh>
+#include <saml/SAMLConfig.h>
+#include <saml/binding/SAMLArtifact.h>
 #include <saml/saml1/core/Protocols.h>
 #include <saml/saml2/core/Protocols.h>
 #include <saml/util/SAMLConstants.h>
@@ -114,7 +115,7 @@ void AbstractHandler::checkError(const XMLObject* response) const
     }
 }
 
-void AbstractHandler::preserveRelayState(SPRequest& request, string& relayState) const
+void AbstractHandler::preserveRelayState(const Application& application, HTTPResponse& response, string& relayState) const
 {
     if (relayState.empty())
         return;
@@ -129,9 +130,9 @@ void AbstractHandler::preserveRelayState(SPRequest& request, string& relayState)
         // value so we can recognize it on the way back.
         if (relayState != "cookie") {
             const URLEncoder* urlenc = XMLToolingConfig::getConfig().getURLEncoder();
-            pair<string,const char*> shib_cookie=request.getApplication().getCookieNameProps("_shibstate_");
+            pair<string,const char*> shib_cookie=application.getCookieNameProps("_shibstate_");
             string stateval = urlenc->encode(relayState.c_str()) + shib_cookie.second;
-            request.setCookie(shib_cookie.first.c_str(),stateval.c_str());
+            response.setCookie(shib_cookie.first.c_str(),stateval.c_str());
             relayState = "cookie";
         }
     }
@@ -139,14 +140,30 @@ void AbstractHandler::preserveRelayState(SPRequest& request, string& relayState)
         if (relayState.find("ss:")!=0) {
             mech.second+=3;
             if (*mech.second) {
-                DDF out,in = DDF("set::RelayState").structure();
-                in.addmember("id").string(mech.second);
-                in.addmember("value").string(relayState.c_str());
-                DDFJanitor jin(in),jout(out);
-                out = request.getServiceProvider().getListenerService()->send(in);
-                if (!out.isstring())
-                    throw IOException("StorageService-backed RelayState mechanism did not return a state key.");
-                relayState = string(mech.second-3) + ':' + out.string();
+                if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
+                    StorageService* storage = application.getServiceProvider().getStorageService(mech.second);
+                    if (storage) {
+                        string rsKey;
+                        SAMLConfig::getConfig().generateRandomBytes(rsKey,20);
+                        rsKey = SAMLArtifact::toHex(rsKey);
+                        storage->createString("RelayState", rsKey.c_str(), relayState.c_str(), time(NULL) + 600);
+                        relayState = string(mech.second-3) + ':' + rsKey;
+                    }
+                    else {
+                        m_log.error("Storage-backed RelayState with invalid StorageService ID (%s)", mech.second);
+                        relayState.erase();
+                    }
+                }
+                else if (SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {
+                    DDF out,in = DDF("set::RelayState").structure();
+                    in.addmember("id").string(mech.second);
+                    in.addmember("value").string(relayState.c_str());
+                    DDFJanitor jin(in),jout(out);
+                    out = application.getServiceProvider().getListenerService()->send(in);
+                    if (!out.isstring())
+                        throw IOException("StorageService-backed RelayState mechanism did not return a state key.");
+                    relayState = string(mech.second-3) + ':' + out.string();
+                }
             }
         }
     }
@@ -154,7 +171,7 @@ void AbstractHandler::preserveRelayState(SPRequest& request, string& relayState)
         throw ConfigurationException("Unsupported relayState mechanism ($1).", params(1,mech.second));
 }
 
-void AbstractHandler::recoverRelayState(HTTPRequest& httpRequest, string& relayState, bool clear) const
+void AbstractHandler::recoverRelayState(const Application& application, HTTPRequest& httpRequest, string& relayState, bool clear) const
 {
     SPConfig& conf = SPConfig::getConfig();
 
@@ -186,18 +203,14 @@ void AbstractHandler::recoverRelayState(HTTPRequest& httpRequest, string& relayS
                     }
                 }
                 else if (conf.isEnabled(SPConfig::InProcess)) {
-                    // In process, we should be able to cast down to a full SPRequest.
-                    SPRequest& request = dynamic_cast<SPRequest&>(httpRequest);
                     DDF out,in = DDF("get::RelayState").structure();
                     in.addmember("id").string(ssid.c_str());
                     in.addmember("key").string(key);
                     in.addmember("clear").integer(clear ? 1 : 0);
                     DDFJanitor jin(in),jout(out);
-                    out = request.getServiceProvider().getListenerService()->send(in);
+                    out = application.getServiceProvider().getListenerService()->send(in);
                     if (!out.isstring()) {
-                        Category::getInstance(SHIBSP_LOGCAT".Handler").error(
-                            "StorageService-backed RelayState mechanism did not return a state value."
-                            );
+                        m_log.error("StorageService-backed RelayState mechanism did not return a state value.");
                         relayState.erase();
                     }
                     else {
@@ -210,11 +223,11 @@ void AbstractHandler::recoverRelayState(HTTPRequest& httpRequest, string& relayS
     }
     
     if (conf.isEnabled(SPConfig::InProcess)) {
-        // In process, we should be able to cast down to a full SPRequest.
-        SPRequest& request = dynamic_cast<SPRequest&>(httpRequest);
         if (relayState == "cookie") {
             // Pull the value from the "relay state" cookie.
-            pair<string,const char*> relay_cookie = request.getApplication().getCookieNameProps("_shibstate_");
+            pair<string,const char*> relay_cookie = application.getCookieNameProps("_shibstate_");
+            // In process, we should be able to cast down to a full SPRequest.
+            SPRequest& request = dynamic_cast<SPRequest&>(httpRequest);
             const char* state = request.getCookie(relay_cookie.first.c_str());
             if (state && *state) {
                 // URL-decode the value.
@@ -233,7 +246,7 @@ void AbstractHandler::recoverRelayState(HTTPRequest& httpRequest, string& relayS
 
         // Check for "default" value.
         if (relayState.empty() || relayState == "default") {
-            pair<bool,const char*> homeURL=request.getApplication().getString("homeURL");
+            pair<bool,const char*> homeURL=application.getString("homeURL");
             relayState=homeURL.first ? homeURL.second : "/";
             return;
         }

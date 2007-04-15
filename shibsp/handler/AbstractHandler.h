@@ -28,10 +28,12 @@
 
 #include <log4cpp/Category.hh>
 #include <saml/binding/HTTPRequest.h>
+#include <saml/binding/HTTPResponse.h>
 #include <xmltooling/XMLObject.h>
 
 namespace shibsp {
 
+    class SHIBSP_API Application;
     class SHIBSP_API SPRequest;
 
 #if defined (_MSC_VER)
@@ -76,10 +78,11 @@ namespace shibsp {
          * <p>If a supported mechanism can be identified, the input parameter will be
          * replaced with a suitable state key.
          * 
-         * @param request       the active SPRequest
+         * @param application   the associated Application
+         * @param response      outgoing HTTP response
          * @param relayState    RelayState token to supply with message
          */
-        virtual void preserveRelayState(SPRequest& request, std::string& relayState) const;
+        virtual void preserveRelayState(const Application& application, opensaml::HTTPResponse& response, std::string& relayState) const;
 
         /**
          * Implements various mechanisms to recover RelayState,
@@ -88,11 +91,14 @@ namespace shibsp {
          * <p>If a supported mechanism can be identified, the input parameter will be
          * replaced with the recovered state information.
          * 
-         * @param httpRequest   incoming HTTP request
+         * @param application   the associated Application
+         * @param request       incoming HTTP request
          * @param relayState    RelayState token supplied with message
          * @param clear         true iff the token state should be cleared
          */
-        virtual void recoverRelayState(opensaml::HTTPRequest& httpRequest, std::string& relayState, bool clear=true) const;
+        virtual void recoverRelayState(
+            const Application& application, opensaml::HTTPRequest& request, std::string& relayState, bool clear=true
+            ) const;
         
         /** Logging object. */
         log4cpp::Category& m_log;

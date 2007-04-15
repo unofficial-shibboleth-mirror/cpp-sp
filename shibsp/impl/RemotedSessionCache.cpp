@@ -260,12 +260,7 @@ void RemotedSession::validate(const Application& application, const char* client
     time_t now = time(NULL);
     if (now > m_expires) {
         m_cache->m_log.info("session expired (ID: %s)", m_obj.name());
-        RetryableProfileException ex("Your session has expired, and you must re-authenticate.");
-        if (!getEntityID())
-            throw ex;
-        MetadataProvider* m=application.getMetadataProvider();
-        Locker locker(m);
-        annotateException(&ex,m->getEntityDescriptor(getEntityID(),false)); // throws it
+        throw RetryableProfileException("Your session has expired, and you must re-authenticate.");
     }
 
     // Address check?
@@ -274,15 +269,10 @@ void RemotedSession::validate(const Application& application, const char* client
             m_cache->m_log.debug("comparing client address %s against %s", client_addr, getClientAddress());
         if (strcmp(getClientAddress(),client_addr)) {
             m_cache->m_log.warn("client address mismatch");
-            RetryableProfileException ex(
+            throw RetryableProfileException(
                 "Your IP address ($1) does not match the address recorded at the time the session was established.",
                 params(1,client_addr)
                 );
-            if (!getEntityID())
-                throw ex;
-            MetadataProvider* m=application.getMetadataProvider();
-            Locker locker(m);
-            annotateException(&ex,m->getEntityDescriptor(getEntityID(),false)); // throws it
         }
     }
 

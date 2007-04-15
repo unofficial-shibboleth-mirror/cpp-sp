@@ -1,0 +1,55 @@
+<html>
+	<head>
+		<title>Shibboleth Authentication Request</title>
+	</head>
+	<body onload="document.forms[0].submit()">
+
+		<h1>Shibboleth Authentication Request</h1>
+		
+		<script type="text/javascript">
+		<!--	
+		document.write("<p>You are automatically being redirected to the authentication service. ");
+		document.write("If the browser appears to be hung up after 15-20 seconds, try reloading ");
+		document.write("the page before contacting the technical support staff in charge of the ");
+		document.write("authentication service you are trying to access.</p>");
+		document.write("<h2>Redirecting...</h2>");
+		// -->
+		</script>
+		
+		<noscript>
+		<p>
+		<strong>Note:</strong> Since your browser does not support JavaScript, you must press the
+		Continue button once to proceed to the authentication service.
+		</p>
+		</noscript>
+	
+		<form method="POST" action="<mlp action/>">
+		<mlpif TARGET>
+			<input type="hidden" name="TARGET" value="<mlp TARGET/>"/>
+		</mlpif>
+		<mlpif RelayState>
+			<input type="hidden" name="RelayState" value="<mlp RelayState/>"/>
+		</mlpif>
+		<mlpif SAMLRequest>
+			<input type="hidden" name="SAMLRequest" value="<mlp SAMLRequest/>"/>
+		</mlpif>
+		<mlpif SAMLResponse>
+			<input type="hidden" name="SAMLResponse" value="<mlp SAMLResponse/>"/>
+		</mlpif>
+		<mlpif SAMLart>
+			<input type="hidden" name="SAMLart" value="<mlp SAMLart/>"/>
+		</mlpif>
+		<mlpif SigAlg>
+			<input type="hidden" name="SigAlg" value="<mlp SigAlg/>"/>
+		</mlpif>
+		<mlpif Signature>
+			<input type="hidden" name="Signature" value="<mlp Signature/>"/>
+		</mlpif>
+		<noscript>
+		<div>
+		<input type="submit" value="Continue"/>
+		</div>
+		</noscript>
+		</form>
+	</body>
+</html>

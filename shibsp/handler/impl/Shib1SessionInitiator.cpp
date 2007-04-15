@@ -22,8 +22,11 @@
 
 #include "internal.h"
 #include "Application.h"
+#include "exceptions.h"
+#include "ServiceProvider.h"
 #include "SPRequest.h"
 #include "handler/AbstractHandler.h"
+#include "handler/RemotedHandler.h"
 #include "handler/SessionInitiator.h"
 #include "util/SPConstants.h"
 
@@ -46,14 +49,34 @@ namespace shibsp {
     #pragma warning( disable : 4250 )
 #endif
 
-    class SHIBSP_DLLLOCAL Shib1SessionInitiator : public SessionInitiator, public AbstractHandler
+    class SHIBSP_DLLLOCAL Shib1SessionInitiator : public SessionInitiator, public AbstractHandler, public RemotedHandler
     {
     public:
         Shib1SessionInitiator(const DOMElement* e, const char* appId)
-            : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator")) {}
+                : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator")), m_appId(appId) {
+            // If Location isn't set, defer address registration until the setParent call.
+            pair<bool,const char*> loc = getString("Location");
+            if (loc.first) {
+                string address = m_appId + loc.second + "::run::Shib1SI";
+                setAddress(address.c_str());
+            }
+        }
         virtual ~Shib1SessionInitiator() {}
         
+        void setParent(const PropertySet* parent);
+        void receive(DDF& in, ostream& out);
         pair<bool,long> run(SPRequest& request, const char* entityID=NULL, bool isHandler=true) const;
+
+    private:
+        pair<bool,long> doRequest(
+            const Application& application,
+            HTTPResponse& httpResponse,
+            const char* entityID,
+            const char* acsLocation,
+            string& relayState
+            ) const;
+
+        string m_appId;
     };
 
 #if defined (_MSC_VER)
@@ -67,6 +90,19 @@ namespace shibsp {
 
 };
 
+void Shib1SessionInitiator::setParent(const PropertySet* parent)
+{
+    DOMPropertySet::setParent(parent);
+    pair<bool,const char*> loc = getString("Location");
+    if (loc.first) {
+        string address = m_appId + loc.second + "::run::Shib1SI";
+        setAddress(address.c_str());
+    }
+    else {
+        m_log.warn("no Location property in Shib1 SessionInitiator (or parent), can't register as remoted handler");
+    }
+}
+
 pair<bool,long> Shib1SessionInitiator::run(SPRequest& request, const char* entityID, bool isHandler) const
 {
     // We have to know the IdP to function.
@@ -74,28 +110,105 @@ pair<bool,long> Shib1SessionInitiator::run(SPRequest& request, const char* entit
         return make_pair(false,0);
 
     string target;
-    const char* option;
     const Handler* ACS=NULL;
+    const char* option;
     const Application& app=request.getApplication();
 
     if (isHandler) {
         option=request.getParameter("acsIndex");
         if (option)
-            ACS=app.getAssertionConsumerServiceByIndex(atoi(option));
+            ACS = app.getAssertionConsumerServiceByIndex(atoi(option));
 
         option = request.getParameter("target");
         if (option)
             target = option;
-        recoverRelayState(request, target, false);
+
+        // Since we're passing the ACS by value, we need to compute the return URL,
+        // so we'll need the target resource for real.
+        recoverRelayState(request.getApplication(), request, target, false);
     }
     else {
         // We're running as a "virtual handler" from within the filter.
         // The target resource is the current one and everything else is defaulted.
         target=request.getRequestURL();
     }
-        
-    m_log.debug("attempting to initiate session using SAML 1.x with provider (%s)", entityID);
 
+    // Since we're not passing by index, we need to fully compute the return URL and binding.
+    if (!ACS)
+        ACS = app.getDefaultAssertionConsumerService();
+
+    // Compute the ACS URL. We add the ACS location to the base handlerURL.
+    string ACSloc=request.getHandlerURL(target.c_str());
+    pair<bool,const char*> loc=ACS ? ACS->getString("Location") : pair<bool,const char*>(false,NULL);
+    if (loc.first) ACSloc+=loc.second;
+
+    if (isHandler) {
+        // We may already have RelayState set if we looped back here,
+        // but just in case target is a resource, we reset it back.
+        target.erase();
+        option = request.getParameter("target");
+        if (option)
+            target = option;
+    }
+
+    m_log.debug("attempting to initiate session using Shibboleth with provider (%s)", entityID);
+
+    if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess))
+        return doRequest(app, request, entityID, ACSloc.c_str(), target);
+
+    // Remote the call.
+    DDF out,in = DDF(m_address.c_str()).structure();
+    DDFJanitor jin(in), jout(out);
+    in.addmember("application_id").string(app.getId());
+    in.addmember("entity_id").string(entityID);
+    in.addmember("acsLocation").string(ACSloc.c_str());
+    if (!target.empty())
+        in.addmember("RelayState").string(target.c_str());
+
+    // Remote the processing.
+    out = request.getServiceProvider().getListenerService()->send(in);
+    return unwrap(request, out);
+}
+
+void Shib1SessionInitiator::receive(DDF& in, ostream& out)
+{
+    // Find application.
+    const char* aid=in["application_id"].string();
+    const Application* app=aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : NULL;
+    if (!app) {
+        // Something's horribly wrong.
+        m_log.error("couldn't find application (%s) to generate AuthnRequest", aid ? aid : "(missing)");
+        throw ConfigurationException("Unable to locate application for new session, deleted?");
+    }
+
+    const char* entityID = in["entity_id"].string();
+    const char* acsLocation = in["acsLocation"].string();
+    if (!entityID || !acsLocation)
+        throw ConfigurationException("No entityID or acsLocation parameter supplied to remoted SessionInitiator.");
+
+    DDF ret(NULL);
+    DDFJanitor jout(ret);
+
+    // Wrap the outgoing object with a Response facade.
+    auto_ptr<HTTPResponse> http(getResponse(ret));
+
+    string relayState(in["RelayState"].string() ? in["RelayState"].string() : "");
+
+    // Since we're remoted, the result should either be a throw, which we pass on,
+    // a false/0 return, which we just return as an empty structure, or a response/redirect,
+    // which we capture in the facade and send back.
+    doRequest(*app, *http.get(), entityID, acsLocation, relayState);
+    out << ret;
+}
+
+pair<bool,long> Shib1SessionInitiator::doRequest(
+    const Application& app,
+    HTTPResponse& httpResponse,
+    const char* entityID,
+    const char* acsLocation,
+    string& relayState
+    ) const
+{
     // Use metadata to invoke the SSO service directly.
     MetadataProvider* m=app.getMetadataProvider();
     Locker locker(m);
@@ -116,35 +229,20 @@ pair<bool,long> Shib1SessionInitiator::run(SPRequest& request, const char* entit
         m_log.error("unable to locate compatible SSO service for provider (%s)", entityID);
         return make_pair(false,0);
     }
-    auto_ptr_char dest(ep->getLocation());
 
-    if (!ACS)
-        ACS = app.getDefaultAssertionConsumerService();
-
-    // Compute the ACS URL. We add the ACS location to the base handlerURL.
-    string ACSloc=request.getHandlerURL(target.c_str());
-    pair<bool,const char*> loc=ACS ? ACS->getString("Location") : pair<bool,const char*>(false,NULL);
-    if (loc.first) ACSloc+=loc.second;
-
-    if (isHandler) {
-        // We may already have RelayState set if we looped back here,
-        // but just in case target is a resource, we reset it back.
-        option = request.getParameter("target");
-        if (option)
-            target = option;
-    }
-    preserveRelayState(request, target);
+    preserveRelayState(app, httpResponse, relayState);
 
     // Shib 1.x requires a target value.
-    if (target.empty())
-        target = "default";
+    if (relayState.empty())
+        relayState = "default";
 
     char timebuf[16];
     sprintf(timebuf,"%u",time(NULL));
     const URLEncoder* urlenc = XMLToolingConfig::getConfig().getURLEncoder();
-    string req=string(dest.get()) + (strchr(dest.get(),'?') ? '&' : '?') + "shire=" + urlenc->encode(ACSloc.c_str()) +
-        "&time=" + timebuf + "&target=" + urlenc->encode(target.c_str()) +
+    auto_ptr_char dest(ep->getLocation());
+    string req=string(dest.get()) + (strchr(dest.get(),'?') ? '&' : '?') + "shire=" + urlenc->encode(acsLocation) +
+        "&time=" + timebuf + "&target=" + urlenc->encode(relayState.c_str()) +
         "&providerId=" + urlenc->encode(app.getString("entityID").second);
 
-    return make_pair(true, request.sendRedirect(req.c_str()));
+    return make_pair(true, httpResponse.sendRedirect(req.c_str()));
 }
