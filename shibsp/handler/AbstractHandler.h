@@ -55,9 +55,9 @@ namespace shibsp {
          * @param remapper  optional map of property rename rules for legacy property support
          */
         AbstractHandler(
-            const DOMElement* e,
+            const xercesc::DOMElement* e,
             log4cpp::Category& log,
-            DOMNodeFilter* filter=NULL,
+            xercesc::DOMNodeFilter* filter=NULL,
             const std::map<std::string,std::string>* remapper=NULL
             );
 

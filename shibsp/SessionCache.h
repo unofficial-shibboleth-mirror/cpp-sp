@@ -157,7 +157,7 @@ namespace shibsp {
          * 
          * @param e root of DOM tree to configure the cache
          */
-        SessionCache(const DOMElement* e);
+        SessionCache(const xercesc::DOMElement* e);
         
         /** maximum lifetime in seconds for unused sessions to be cached */
         unsigned long m_cacheTimeout;

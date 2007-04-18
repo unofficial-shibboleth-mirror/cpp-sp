@@ -43,6 +43,8 @@
 #include "base.h"
 #include "SPConfig.h"
 
+using namespace xercesc;
+
 namespace shibsp {
     
     /// @cond OFF

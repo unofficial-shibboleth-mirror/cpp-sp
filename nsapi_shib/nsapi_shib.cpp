@@ -78,7 +78,7 @@ namespace {
     static const XMLCh validate[] = UNICODE_LITERAL_8(v,a,l,i,d,a,t,e);
 }
 
-PluginManager<RequestMapper,const DOMElement*>::Factory SunRequestMapFactory;
+PluginManager<RequestMapper,const xercesc::DOMElement*>::Factory SunRequestMapFactory;
 
 extern "C" NSAPI_PUBLIC void nsapi_shib_exit(void*)
 {
@@ -142,9 +142,9 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, ::Session* sn, Request* 
     g_Config->RequestMapperManager.registerFactory(XML_REQUEST_MAPPER,&SunRequestMapFactory);
 
     try {
-        DOMDocument* dummydoc=XMLToolingConfig::getConfig().getParser().newDocument();
-        XercesJanitor<DOMDocument> docjanitor(dummydoc);
-        DOMElement* dummy = dummydoc->createElementNS(NULL,path);
+        xercesc::DOMDocument* dummydoc=XMLToolingConfig::getConfig().getParser().newDocument();
+        XercesJanitor<xercesc::DOMDocument> docjanitor(dummydoc);
+        xercesc::DOMElement* dummy = dummydoc->createElementNS(NULL,path);
         auto_ptr_XMLCh src(config);
         dummy->setAttributeNS(NULL,path,src.get());
         dummy->setAttributeNS(NULL,validate,xmlconstants::XML_ONE);
@@ -432,7 +432,7 @@ extern "C" NSAPI_PUBLIC int shib_handler(pblock* pb, ::Session* sn, Request* rq)
 class SunRequestMapper : public virtual RequestMapper, public virtual PropertySet
 {
 public:
-    SunRequestMapper(const DOMElement* e);
+    SunRequestMapper(const xercesc::DOMElement* e);
     ~SunRequestMapper() { delete m_mapper; delete m_stKey; delete m_propsKey; }
     Lockable* lock() { return m_mapper->lock(); }
     void unlock() { m_stKey->setData(NULL); m_propsKey->setData(NULL); m_mapper->unlock(); }
@@ -445,7 +445,7 @@ public:
     pair<bool,unsigned int> getUnsignedInt(const char* name, const char* ns=NULL) const;
     pair<bool,int> getInt(const char* name, const char* ns=NULL) const;
     const PropertySet* getPropertySet(const char* name, const char* ns="urn:mace:shibboleth:target:config:1.0") const;
-    const DOMElement* getElement() const;
+    const xercesc::DOMElement* getElement() const;
 
 private:
     RequestMapper* m_mapper;
@@ -453,12 +453,12 @@ private:
     ThreadKey* m_propsKey;
 };
 
-RequestMapper* SunRequestMapFactory(const DOMElement* const & e)
+RequestMapper* SunRequestMapFactory(const xercesc::DOMElement* const & e)
 {
     return new SunRequestMapper(e);
 }
 
-SunRequestMapper::SunRequestMapper(const DOMElement* e) : m_mapper(NULL), m_stKey(NULL), m_propsKey(NULL)
+SunRequestMapper::SunRequestMapper(const xercesc::DOMElement* e) : m_mapper(NULL), m_stKey(NULL), m_propsKey(NULL)
 {
     m_mapper = SPConfig::getConfig().RequestMapperManager.newPlugin(XML_REQUEST_MAPPER,e);
     m_stKey=ThreadKey::create(NULL);
@@ -541,7 +541,7 @@ const PropertySet* SunRequestMapper::getPropertySet(const char* name, const char
     return s ? s->getPropertySet(name,ns) : NULL;
 }
 
-const DOMElement* SunRequestMapper::getElement() const
+const xercesc::DOMElement* SunRequestMapper::getElement() const
 {
     const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
     return s ? s->getElement() : NULL;

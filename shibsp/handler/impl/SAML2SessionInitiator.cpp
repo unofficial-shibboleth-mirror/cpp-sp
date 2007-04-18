@@ -74,8 +74,10 @@ namespace shibsp {
             HTTPResponse& httpResponse,
             const char* entityID,
             const XMLCh* acsIndex,
-            const XMLCh* acsLocation,
+            const char* acsLocation,
             const XMLCh* acsBinding,
+            bool isPassive,
+            bool forceAuthn,
             string& relayState
             ) const;
 
@@ -165,6 +167,9 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, const char* entit
     string target;
     const Handler* ACS=NULL;
     const char* option;
+    pair<bool,const char*> acClass;
+    pair<bool,const char*> acComp;
+    bool isPassive=false,forceAuthn=false;
     const Application& app=request.getApplication();
     pair<bool,bool> acsByIndex = getBool("acsByIndex");
 
@@ -181,11 +186,34 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, const char* entit
             // so we'll need the target resource for real.
             recoverRelayState(request.getApplication(), request, target, false);
         }
+
+        option = request.getParameter("isPassive");
+        isPassive = (option && (*option=='1' || *option=='t'));
+        if (!isPassive) {
+            option = request.getParameter("forceAuthn");
+            forceAuthn = (option && (*option=='1' || *option=='t'));
+        }
+
+        acClass.second = request.getParameter("authnContextClassRef");
+        acClass.first = (acClass.second!=NULL);
+        acComp.second = request.getParameter("authnContextComparison");
+        acComp.first = (acComp.second!=NULL);
     }
     else {
         // We're running as a "virtual handler" from within the filter.
         // The target resource is the current one and everything else is defaulted.
         target=request.getRequestURL();
+        const PropertySet* settings = request.getRequestSettings().first;
+
+        pair<bool,bool> flag = settings->getBool("isPassive");
+        isPassive = flag.first && flag.second;
+        if (!isPassive) {
+            flag = settings->getBool("forceAuthn");
+            forceAuthn = flag.first && flag.second;
+        }
+
+        acClass = settings->getString("authnContextClassRef");
+        acComp = settings->getString("authnContextComparison");
     }
 
     m_log.debug("attempting to initiate session using SAML 2.0 with provider (%s)", entityID);
@@ -205,7 +233,9 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, const char* entit
                 if (option)
                     target = option;
             }
-            return doRequest(app, request, entityID, ACS ? ACS->getXMLString("index").second : NULL, NULL, NULL, target);
+            return doRequest(
+                app, request, entityID, ACS ? ACS->getXMLString("index").second : NULL, NULL, NULL, isPassive, forceAuthn, target
+                );
         }
 
         // Since we're not passing by index, we need to fully compute the return URL and binding.
@@ -226,8 +256,9 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, const char* entit
                 target = option;
         }
 
-        auto_ptr_XMLCh wideloc(ACSloc.c_str());
-        return doRequest(app, request, entityID, NULL, wideloc.get(), ACS ? ACS->getXMLString("Binding").second : NULL, target);
+        return doRequest(
+            app, request, entityID, NULL, ACSloc.c_str(), ACS ? ACS->getXMLString("Binding").second : NULL, isPassive, forceAuthn, target
+            );
     }
 
     // Remote the call.
@@ -235,6 +266,14 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, const char* entit
     DDFJanitor jin(in), jout(out);
     in.addmember("application_id").string(app.getId());
     in.addmember("entity_id").string(entityID);
+    if (isPassive)
+        in.addmember("isPassive").integer(1);
+    else if (forceAuthn)
+        in.addmember("forceAuthn").integer(1);
+    if (acClass.first)
+        in.addmember("authnContextClassRef").string(acClass.second);
+    if (acComp.first)
+        in.addmember("authnContextComparison").string(acComp.second);
     if (acsByIndex.first && acsByIndex.second) {
         if (ACS)
             in.addmember("acsIndex").string(ACS->getString("index").second);
@@ -291,7 +330,6 @@ void SAML2SessionInitiator::receive(DDF& in, ostream& out)
     auto_ptr<HTTPResponse> http(getResponse(ret));
 
     auto_ptr_XMLCh index(in["acsIndex"].string());
-    auto_ptr_XMLCh loc(in["acsLocation"].string());
     auto_ptr_XMLCh bind(in["acsBinding"].string());
 
     string relayState(in["RelayState"].string() ? in["RelayState"].string() : "");
@@ -299,7 +337,12 @@ void SAML2SessionInitiator::receive(DDF& in, ostream& out)
     // Since we're remoted, the result should either be a throw, which we pass on,
     // a false/0 return, which we just return as an empty structure, or a response/redirect,
     // which we capture in the facade and send back.
-    doRequest(*app, *http.get(), entityID, index.get(), loc.get(), bind.get(), relayState);
+    doRequest(
+        *app, *http.get(), entityID,
+        index.get(), in["acsLocation"].string(), bind.get(),
+        in["isPassive"].integer()==1, in["forceAuthn"].integer()==1,
+        relayState
+        );
     out << ret;
 }
 
@@ -308,8 +351,10 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
     HTTPResponse& httpResponse,
     const char* entityID,
     const XMLCh* acsIndex,
-    const XMLCh* acsLocation,
+    const char* acsLocation,
     const XMLCh* acsBinding,
+    bool isPassive,
+    bool forceAuthn,
     string& relayState
     ) const
 {
@@ -351,10 +396,16 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
     req->setDestination(ep->getLocation());
     if (acsIndex)
         req->setAssertionConsumerServiceIndex(acsIndex);
-    if (acsLocation)
-        req->setAssertionConsumerServiceURL(acsLocation);
+    if (acsLocation) {
+        auto_ptr_XMLCh wideloc(acsLocation);
+        req->setAssertionConsumerServiceURL(wideloc.get());
+    }
     if (acsBinding)
         req->setProtocolBinding(acsBinding);
+    if (isPassive)
+        req->IsPassive(isPassive);
+    else if (forceAuthn)
+        req->ForceAuthn(forceAuthn);
     Issuer* issuer = IssuerBuilder::buildIssuer();
     req->setIssuer(issuer);
     issuer->setName(app.getXMLString("providerId").second);

@@ -142,7 +142,6 @@
 		         * forceAuthn				insist on user reauthentication at IdP
 		         * isPassive				preclude interaction at IdP or discovery service
 		         * authnContextClassRef		URI reference of an AuthnContextClass to request
-		         * authnContextDeclRef		URI reference of an AuthnContextDecl to request
 		         * authnContextComparison	comparison operator to apply to AuthnContext reference 
 			-->
 

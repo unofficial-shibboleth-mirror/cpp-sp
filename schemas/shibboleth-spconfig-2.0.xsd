@@ -268,7 +268,6 @@
 		<attribute name="isPassive" type="boolean"/>
 		<attribute name="forceAuthn" type="boolean"/>
 		<attribute name="authnContextClassRef" type="anyURI"/>
-		<attribute name="authnContextDeclRef" type="anyURI"/>
 		<attribute name="authnContextComparison" type="conf:string"/>
 		<anyAttribute namespace="##other" processContents="lax"/>
 	</attributeGroup>

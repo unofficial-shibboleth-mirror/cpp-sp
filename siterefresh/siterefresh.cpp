@@ -52,6 +52,7 @@ using namespace xmltooling;
 using namespace samlconstants;
 using namespace opensaml::saml2md;
 using namespace opensaml;
+using namespace xercesc;
 using namespace log4cpp;
 using namespace std;
 

@@ -561,7 +561,7 @@ public:
     bool authorized(const SPRequest& request, const Session* session) const;
 };
 
-AccessControl* htAccessFactory(const DOMElement* const & e)
+AccessControl* htAccessFactory(const xercesc::DOMElement* const & e)
 {
     return new htAccessControl();
 }
@@ -569,7 +569,7 @@ AccessControl* htAccessFactory(const DOMElement* const & e)
 class ApacheRequestMapper : public virtual RequestMapper, public virtual PropertySet
 {
 public:
-    ApacheRequestMapper(const DOMElement* e);
+    ApacheRequestMapper(const xercesc::DOMElement* e);
     ~ApacheRequestMapper() { delete m_mapper; delete m_htaccess; delete m_staKey; delete m_propsKey; }
     Lockable* lock() { return m_mapper->lock(); }
     void unlock() { m_staKey->setData(NULL); m_propsKey->setData(NULL); m_mapper->unlock(); }
@@ -582,7 +582,7 @@ public:
     pair<bool,unsigned int> getUnsignedInt(const char* name, const char* ns=NULL) const;
     pair<bool,int> getInt(const char* name, const char* ns=NULL) const;
     const PropertySet* getPropertySet(const char* name, const char* ns="urn:mace:shibboleth:target:config:1.0") const;
-    const DOMElement* getElement() const;
+    const xercesc::DOMElement* getElement() const;
 
 private:
     RequestMapper* m_mapper;
@@ -591,12 +591,12 @@ private:
     AccessControl* m_htaccess;
 };
 
-RequestMapper* ApacheRequestMapFactory(const DOMElement* const & e)
+RequestMapper* ApacheRequestMapFactory(const xercesc::DOMElement* const & e)
 {
     return new ApacheRequestMapper(e);
 }
 
-ApacheRequestMapper::ApacheRequestMapper(const DOMElement* e) : m_mapper(NULL), m_staKey(NULL), m_propsKey(NULL), m_htaccess(NULL)
+ApacheRequestMapper::ApacheRequestMapper(const xercesc::DOMElement* e) : m_mapper(NULL), m_staKey(NULL), m_propsKey(NULL), m_htaccess(NULL)
 {
     m_mapper=SPConfig::getConfig().RequestMapperManager.newPlugin(XML_REQUEST_MAPPER,e);
     m_htaccess=new htAccessControl();
@@ -687,7 +687,7 @@ const PropertySet* ApacheRequestMapper::getPropertySet(const char* name, const c
     return s ? s->getPropertySet(name,ns) : NULL;
 }
 
-const DOMElement* ApacheRequestMapper::getElement() const
+const xercesc::DOMElement* ApacheRequestMapper::getElement() const
 {
     const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
     return s ? s->getElement() : NULL;
@@ -808,14 +808,14 @@ bool htAccessControl::authorized(const SPRequest& request, const Session* sessio
                     try {
                         // To do regex matching, we have to convert from UTF-8.
                         auto_ptr<XMLCh> trans(fromUTF8(w));
-                        RegularExpression re(trans.get());
+                        xercesc::RegularExpression re(trans.get());
                         auto_ptr<XMLCh> trans2(fromUTF8(remote_user.c_str()));
                         if (re.matches(trans2.get())) {
                             request.log(SPRequest::SPDebug, string("htAccessControl plugin accepting user (") + w + ")");
                             SHIB_AP_CHECK_IS_OK;
                         }
                     }
-                    catch (XMLException& ex) {
+                    catch (xercesc::XMLException& ex) {
                         auto_ptr_char tmp(ex.getMessage());
                         request.log(SPRequest::SPError,
                             string("htAccessControl plugin caught exception while parsing regular expression (") + w + "): " + tmp.get());
@@ -870,11 +870,11 @@ bool htAccessControl::authorized(const SPRequest& request, const Session* sessio
                 }
 
                 try {
-                    auto_ptr<RegularExpression> re;
+                    auto_ptr<xercesc::RegularExpression> re;
                     if (regexp) {
                         delete re.release();
                         auto_ptr<XMLCh> trans(fromUTF8(w));
-                        auto_ptr<RegularExpression> temp(new RegularExpression(trans.get()));
+                        auto_ptr<xercesc::RegularExpression> temp(new xercesc::RegularExpression(trans.get()));
                         re=temp;
                     }
                     
@@ -901,7 +901,7 @@ bool htAccessControl::authorized(const SPRequest& request, const Session* sessio
                         }
                     }
                 }
-                catch (XMLException& ex) {
+                catch (xercesc::XMLException& ex) {
                     auto_ptr_char tmp(ex.getMessage());
                     request.log(SPRequest::SPError,
                         string("htAccessControl plugin caught exception while parsing regular expression (") + w + "): " + tmp.get()
@@ -1032,9 +1032,9 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
     g_Config->RequestMapperManager.registerFactory(NATIVE_REQUEST_MAPPER,&ApacheRequestMapFactory);
     
     try {
-        DOMDocument* dummydoc=XMLToolingConfig::getConfig().getParser().newDocument();
-        XercesJanitor<DOMDocument> docjanitor(dummydoc);
-        DOMElement* dummy = dummydoc->createElementNS(NULL,path);
+        xercesc::DOMDocument* dummydoc=XMLToolingConfig::getConfig().getParser().newDocument();
+        XercesJanitor<xercesc::DOMDocument> docjanitor(dummydoc);
+        xercesc::DOMElement* dummy = dummydoc->createElementNS(NULL,path);
         auto_ptr_XMLCh src(g_szSHIBConfig);
         dummy->setAttributeNS(NULL,path,src.get());
         dummy->setAttributeNS(NULL,validate,xmlconstants::XML_ONE);
