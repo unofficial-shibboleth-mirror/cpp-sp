@@ -61,6 +61,7 @@ namespace shibsp {
             if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
                 XMLString::release(&m_outgoing);
                 for_each(m_encoders.begin(), m_encoders.end(), cleanup_pair<const XMLCh*,MessageEncoder>());
+                delete m_requestTemplate;
             }
         }
         
@@ -78,6 +79,8 @@ namespace shibsp {
             const XMLCh* acsBinding,
             bool isPassive,
             bool forceAuthn,
+            const char* authnContextClassRef,
+            const char* authnContextComparison,
             string& relayState
             ) const;
 
@@ -85,6 +88,7 @@ namespace shibsp {
         XMLCh* m_outgoing;
         vector<const XMLCh*> m_bindings;
         map<const XMLCh*,MessageEncoder*> m_encoders;
+        AuthnRequest* m_requestTemplate;
     };
 
 #if defined (_MSC_VER)
@@ -99,16 +103,15 @@ namespace shibsp {
 };
 
 SAML2SessionInitiator::SAML2SessionInitiator(const DOMElement* e, const char* appId)
-    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator")), m_appId(appId), m_outgoing(NULL)
+    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator")), m_appId(appId), m_outgoing(NULL), m_requestTemplate(NULL)
 {
-    // If Location isn't set, defer address registration until the setParent call.
-    pair<bool,const char*> loc = getString("Location");
-    if (loc.first) {
-        string address = m_appId + loc.second + "::run::SAML2SI";
-        setAddress(address.c_str());
-    }
-
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
+        // Check for a template AuthnRequest to build from.
+        DOMElement* child = XMLHelper::getFirstChildElement(e, samlconstants::SAML20P_NS, AuthnRequest::LOCAL_NAME);
+        if (child)
+            m_requestTemplate = dynamic_cast<AuthnRequest*>(AuthnRequestBuilder::buildOneFromElement(child));
+
+        // Handle outgoing binding setup.
         pair<bool,const XMLCh*> outgoing = getXMLString("outgoingBindings");
         if (outgoing.first) {
             m_outgoing = XMLString::replicate(outgoing.second);
@@ -142,6 +145,13 @@ SAML2SessionInitiator::SAML2SessionInitiator(const DOMElement* e, const char* ap
             else
                 break;
         }
+    }
+
+    // If Location isn't set, defer address registration until the setParent call.
+    pair<bool,const char*> loc = getString("Location");
+    if (loc.first) {
+        string address = m_appId + loc.second + "::run::SAML2SI";
+        setAddress(address.c_str());
     }
 }
 
@@ -234,7 +244,12 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, const char* entit
                     target = option;
             }
             return doRequest(
-                app, request, entityID, ACS ? ACS->getXMLString("index").second : NULL, NULL, NULL, isPassive, forceAuthn, target
+                app, request, entityID,
+                ACS ? ACS->getXMLString("index").second : NULL, NULL, NULL,
+                isPassive, forceAuthn,
+                acClass.first ? acClass.second : NULL,
+                acComp.first ? acComp.second : NULL,
+                target
                 );
         }
 
@@ -257,7 +272,12 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, const char* entit
         }
 
         return doRequest(
-            app, request, entityID, NULL, ACSloc.c_str(), ACS ? ACS->getXMLString("Binding").second : NULL, isPassive, forceAuthn, target
+            app, request, entityID,
+            NULL, ACSloc.c_str(), ACS ? ACS->getXMLString("Binding").second : NULL,
+            isPassive, forceAuthn,
+            acClass.first ? acClass.second : NULL,
+            acComp.first ? acComp.second : NULL,
+            target
             );
     }
 
@@ -341,6 +361,7 @@ void SAML2SessionInitiator::receive(DDF& in, ostream& out)
         *app, *http.get(), entityID,
         index.get(), in["acsLocation"].string(), bind.get(),
         in["isPassive"].integer()==1, in["forceAuthn"].integer()==1,
+        in["authnContextClassRef"].string(), in["authnContextComparison"].string(),
         relayState
         );
     out << ret;
@@ -355,6 +376,8 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
     const XMLCh* acsBinding,
     bool isPassive,
     bool forceAuthn,
+    const char* authnContextClassRef,
+    const char* authnContextComparison,
     string& relayState
     ) const
 {
@@ -391,8 +414,13 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
 
     preserveRelayState(app, httpResponse, relayState);
 
-    // For now just build a dummy AuthnRequest.
-    auto_ptr<AuthnRequest> req(AuthnRequestBuilder::buildAuthnRequest());
+    auto_ptr<AuthnRequest> req(m_requestTemplate ? m_requestTemplate->cloneAuthnRequest() : AuthnRequestBuilder::buildAuthnRequest());
+    if (m_requestTemplate) {
+        // Freshen TS and ID.
+        req->setID(NULL);
+        req->setIssueInstant(time(NULL));
+    }
+
     req->setDestination(ep->getLocation());
     if (acsIndex)
         req->setAssertionConsumerServiceIndex(acsIndex);
@@ -406,9 +434,35 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
         req->IsPassive(isPassive);
     else if (forceAuthn)
         req->ForceAuthn(forceAuthn);
-    Issuer* issuer = IssuerBuilder::buildIssuer();
-    req->setIssuer(issuer);
-    issuer->setName(app.getXMLString("providerId").second);
+    if (!req->getIssuer()) {
+        Issuer* issuer = IssuerBuilder::buildIssuer();
+        req->setIssuer(issuer);
+        issuer->setName(app.getXMLString("providerId").second);
+    }
+    if (!req->getNameIDPolicy()) {
+        NameIDPolicy* namepol = NameIDPolicyBuilder::buildNameIDPolicy();
+        req->setNameIDPolicy(namepol);
+        namepol->AllowCreate(true);
+    }
+    if (authnContextClassRef || authnContextComparison) {
+        RequestedAuthnContext* reqContext = req->getRequestedAuthnContext();
+        if (!reqContext) {
+            reqContext = RequestedAuthnContextBuilder::buildRequestedAuthnContext();
+            req->setRequestedAuthnContext(reqContext);
+        }
+        if (authnContextClassRef) {
+            reqContext->getAuthnContextDeclRefs().clear();
+            auto_ptr_XMLCh wideclass(authnContextClassRef);
+            AuthnContextClassRef* cref = AuthnContextClassRefBuilder::buildAuthnContextClassRef();
+            cref->setReference(wideclass.get());
+            reqContext->getAuthnContextClassRefs().push_back(cref);
+        }
+        if (authnContextComparison &&
+                (!reqContext->getAuthnContextClassRefs().empty() || !reqContext->getAuthnContextDeclRefs().empty())) {
+            auto_ptr_XMLCh widecomp(authnContextComparison);
+            reqContext->setComparison(widecomp.get());
+        }
+    }
 
     auto_ptr_char dest(ep->getLocation());
 

@@ -3,6 +3,7 @@
 	xmlns="http://www.w3.org/2001/XMLSchema"
 	xmlns:conf="urn:mace:shibboleth:sp:config:2.0"
 	xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"
+	xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"
 	xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"
 	elementFormDefault="qualified"
 	attributeFormDefault="unqualified"
@@ -10,6 +11,7 @@
 	version="2.0">
 
 	<import namespace="urn:oasis:names:tc:SAML:2.0:assertion" schemaLocation="saml-schema-assertion-2.0.xsd"/>
+	<import namespace="urn:oasis:names:tc:SAML:2.0:protocol" schemaLocation="saml-schema-protocol-2.0.xsd"/>
 	<import namespace="urn:oasis:names:tc:SAML:2.0:metadata" schemaLocation="saml-schema-metadata-2.0.xsd"/>
 
 	<annotation>
@@ -268,7 +270,7 @@
 		<attribute name="isPassive" type="boolean"/>
 		<attribute name="forceAuthn" type="boolean"/>
 		<attribute name="authnContextClassRef" type="anyURI"/>
-		<attribute name="authnContextComparison" type="conf:string"/>
+		<attribute name="authnContextComparison" type="samlp:AuthnContextComparisonType"/>
 		<anyAttribute namespace="##other" processContents="lax"/>
 	</attributeGroup>
 	<element name="AccessControlProvider" type="conf:PluggableType"/>
