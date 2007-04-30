@@ -224,6 +224,9 @@
 
 		<!-- Map to extract attributes from SAML assertions. -->
 		<AttributeExtractor type="XML" path="@-PKGSYSCONFDIR-@/attribute-map.xml"/>
+		
+		<!-- Use a SAML query if no attributes are supplied during SSO. -->
+		<AttributeResolver type="Query"/>
 
 		<!-- Simple file-based resolver for key/certificate information. -->
 		<CredentialResolver type="File">

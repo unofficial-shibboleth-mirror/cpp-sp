@@ -162,7 +162,7 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log) : m_log(l
         AttributeDecoder* decoder=NULL;
         try {
             DOMElement* dchild = XMLHelper::getFirstChildElement(child, shibspconstants::SHIB2ATTRIBUTEMAP_NS, _AttributeDecoder);
-            if (child) {
+            if (dchild) {
                 auto_ptr<QName> q(XMLHelper::getXSIType(dchild));
                 if (q.get())
                     decoder = SPConfig::getConfig().AttributeDecoderManager.newPlugin(*q.get(), dchild);
@@ -194,7 +194,7 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log) : m_log(l
         pair<AttributeDecoder*,string>& decl = m_attrMap[make_pair(n.get(),f.get())];
 #endif
         if (decl.first) {
-            m_log.warn("skipping duplicate Attribute declaration (same name and nameFormat)");
+            m_log.warn("skipping duplicate Attribute mapping (same name and nameFormat)");
             delete decoder;
             child = XMLHelper::getNextSiblingElement(child, shibspconstants::SHIB2ATTRIBUTEMAP_NS, saml1::Attribute::LOCAL_NAME);
             continue;
@@ -205,7 +205,7 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log) : m_log(l
             auto_ptr_char n(name);
             auto_ptr_char f(format);
 #endif
-            m_log.info("creating declaration for Attribute %s%s%s", n.get(), *f.get() ? ", Format/Namespace:" : "", f.get());
+            m_log.info("creating mapping for Attribute %s%s%s", n.get(), *f.get() ? ", Format/Namespace:" : "", f.get());
         }
         
         decl.first = decoder;
@@ -356,6 +356,7 @@ void XMLExtractor::extractAttributes(
                 for (vector<saml2::EncryptedAttribute*>::const_iterator ea = encattrs.begin(); ea!=encattrs.end(); ++ea)
                     extractAttributes(application, issuer, *(*ea), attributes);
             }
+            return;
         }
 
         const saml1::Assertion* token1 = dynamic_cast<const saml1::Assertion*>(&xmlObject);
@@ -367,6 +368,7 @@ void XMLExtractor::extractAttributes(
                 for (vector<saml1::Attribute*>::const_iterator a = attrs.begin(); a!=attrs.end(); ++a)
                     m_impl->extractAttributes(application, assertingParty.get(), *(*a), attributes);
             }
+            return;
         }
 
         throw AttributeExtractionException("Unable to extract attributes, unknown object type.");

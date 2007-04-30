@@ -120,11 +120,11 @@ namespace shibsp {
                         m_formatter,
                         xmltooling::namedparams(
                             5,
-                            "Name", i->m_Name,
-                            "Format", i->m_Format,
-                            "NameQualifier", i->m_NameQualifier,
-                            "SPNameQualifier", i->m_SPNameQualifier,
-                            "SPProvidedID", i->m_SPProvidedID
+                            "Name", i->m_Name.c_str(),
+                            "Format", i->m_Format.c_str(),
+                            "NameQualifier", i->m_NameQualifier.c_str(),
+                            "SPNameQualifier", i->m_SPNameQualifier.c_str(),
+                            "SPProvidedID", i->m_SPProvidedID.c_str()
                             )
                         );
                     m_serialized.push_back(e.what());

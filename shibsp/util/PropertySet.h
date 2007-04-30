@@ -98,7 +98,7 @@ namespace shibsp {
          * @param ns    nested property set namespace, or NULL
          * @return the nested property set, or NULL
          */        
-        virtual const PropertySet* getPropertySet(const char* name, const char* ns="urn:mace:shibboleth:sp:config:2.0") const=0;
+        virtual const PropertySet* getPropertySet(const char* name, const char* ns="urn:mace:shibboleth:2.0:native:sp:config") const=0;
         
         /**
          * Returns a DOM element representing the property container, if any.

@@ -444,7 +444,7 @@ public:
     pair<bool,const XMLCh*> getXMLString(const char* name, const char* ns=NULL) const;
     pair<bool,unsigned int> getUnsignedInt(const char* name, const char* ns=NULL) const;
     pair<bool,int> getInt(const char* name, const char* ns=NULL) const;
-    const PropertySet* getPropertySet(const char* name, const char* ns="urn:mace:shibboleth:target:config:1.0") const;
+    const PropertySet* getPropertySet(const char* name, const char* ns="urn:mace:shibboleth:2.0:native:sp:config") const;
     const xercesc::DOMElement* getElement() const;
 
 private:
