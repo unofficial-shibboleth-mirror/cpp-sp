@@ -46,8 +46,8 @@ using namespace xercesc;
 using namespace std;
 
 namespace shibsp {
-    SHIBSP_DLLLOCAL PluginManager<Handler,pair<const DOMElement*,const char*>>::Factory SAML1ConsumerFactory;
-    SHIBSP_DLLLOCAL PluginManager<Handler,pair<const DOMElement*,const char*>>::Factory SAML2ConsumerFactory;
+    SHIBSP_DLLLOCAL PluginManager<Handler,string,pair<const DOMElement*,const char*>>::Factory SAML1ConsumerFactory;
+    SHIBSP_DLLLOCAL PluginManager<Handler,string,pair<const DOMElement*,const char*>>::Factory SAML2ConsumerFactory;
 };
 
 void SHIBSP_API shibsp::registerHandlers()

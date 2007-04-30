@@ -25,21 +25,24 @@
 #include "exceptions.h"
 #include "ServiceProvider.h"
 #include "SessionCache.h"
+#include "attribute/Attribute.h"
+#include "attribute/resolver/AttributeExtractor.h"
 #include "attribute/resolver/ResolutionContext.h"
 #include "handler/AssertionConsumerService.h"
 
 #include <saml/saml2/core/Protocols.h>
 #include <saml/saml2/profile/BrowserSSOProfileValidator.h>
 #include <saml/saml2/metadata/Metadata.h>
+#include <saml/saml2/metadata/MetadataCredentialCriteria.h>
 
 using namespace shibsp;
 using namespace opensaml::saml2;
 using namespace opensaml::saml2p;
+using namespace opensaml::saml2md;
 using namespace opensaml;
 using namespace xmltooling;
 using namespace log4cpp;
 using namespace std;
-using saml2md::EntityDescriptor;
 
 namespace shibsp {
 
@@ -185,14 +188,8 @@ string SAML2Consumer::implementProtocol(
         }
     }
 
-    // We look up decryption credentials based on the peer who did the encrypting.
-    CredentialCriteria cc;
-    if (policy.getIssuerMetadata()) {
-        auto_ptr_char assertingParty(dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent())->getEntityID());
-        cc.setPeerName(assertingParty.get());
-    }
+    // In case we need decryption...
     CredentialResolver* cr=application.getCredentialResolver();
-
     if (!cr && !encassertions.empty())
         m_log.warn("found encrypted assertions, but no CredentialResolver was available");
 
@@ -201,7 +198,10 @@ string SAML2Consumer::implementProtocol(
         saml2::Assertion* decrypted=NULL;
         try {
             Locker credlocker(cr);
-            auto_ptr<XMLObject> wrapper((*ea)->decrypt(*cr, application.getXMLString("entityID").second, &cc));
+            auto_ptr<MetadataCredentialCriteria> mcc(
+                policy.getIssuerMetadata() ? new MetadataCredentialCriteria(*policy.getIssuerMetadata()) : NULL
+                );
+            auto_ptr<XMLObject> wrapper((*ea)->decrypt(*cr, application.getXMLString("entityID").second, mcc.get()));
             decrypted = dynamic_cast<saml2::Assertion*>(wrapper.get());
             if (decrypted) {
                 wrapper.release();
@@ -289,8 +289,11 @@ string SAML2Consumer::implementProtocol(
                 m_log.warn("found encrypted NameID, but no decryption credential was available");
             else {
                 Locker credlocker(cr);
+                auto_ptr<MetadataCredentialCriteria> mcc(
+                    policy.getIssuerMetadata() ? new MetadataCredentialCriteria(*policy.getIssuerMetadata()) : NULL
+                    );
                 try {
-                    auto_ptr<XMLObject> decryptedID(encname->decrypt(*cr,application.getXMLString("entityID").second,&cc));
+                    auto_ptr<XMLObject> decryptedID(encname->decrypt(*cr,application.getXMLString("entityID").second,mcc.get()));
                     ssoName = dynamic_cast<NameID*>(decryptedID.get());
                     if (ssoName) {
                         ownedName = true;
@@ -307,16 +310,37 @@ string SAML2Consumer::implementProtocol(
     m_log.debug("SSO profile processing completed successfully");
 
     // We've successfully "accepted" at least one SSO token, along with any additional valid tokens.
-    // To complete processing, we need to resolve attributes and then create the session.
+    // To complete processing, we need to extract and resolve attributes and then create the session.
+
+    multimap<string,Attribute*> resolvedAttributes;
+    AttributeExtractor* extractor = application.getAttributeExtractor();
+    if (extractor) {
+        Locker extlocker(extractor);
+        for (vector<const opensaml::Assertion*>::const_iterator t = tokens.begin(); t!=tokens.end(); ++t) {
+            try {
+                extractor->extractAttributes(application, policy.getIssuerMetadata(), *(*t), resolvedAttributes);
+            }
+            catch (exception& ex) {
+                m_log.error("caught exception extracting attributes: %s", ex.what());
+            }
+        }
+    }
 
     try {
-        const EntityDescriptor* issuerMetadata = dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent());
+        const EntityDescriptor* issuerMetadata =
+            policy.getIssuerMetadata() ? dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL;
         auto_ptr<ResolutionContext> ctx(
-            resolveAttributes(application, httpRequest, issuerMetadata, ssoName, &tokens)
+            resolveAttributes(application, issuerMetadata, ssoName, &tokens, &resolvedAttributes)
             );
 
-        // Copy over any new tokens, but leave them in the context for cleanup.
-        tokens.insert(tokens.end(), ctx->getResolvedAssertions().begin(), ctx->getResolvedAssertions().end());
+        if (ctx.get()) {
+            // Copy over any new tokens, but leave them in the context for cleanup.
+            tokens.insert(tokens.end(), ctx->getResolvedAssertions().begin(), ctx->getResolvedAssertions().end());
+
+            // Copy over new attributes, and transfer ownership.
+            resolvedAttributes.insert(ctx->getResolvedAttributes().begin(), ctx->getResolvedAttributes().end());
+            ctx->getResolvedAttributes().clear();
+        }
 
         // Now merge in bad tokens for caching.
         tokens.insert(tokens.end(), badtokens.begin(), badtokens.end());
@@ -343,7 +367,6 @@ string SAML2Consumer::implementProtocol(
         auto_ptr_char index(ssoStatement->getSessionIndex());
         auto_ptr_char authnInstant(ssoStatement->getAuthnInstant() ? ssoStatement->getAuthnInstant()->getRawData() : NULL);
 
-        vector<shibsp::Attribute*>& attrs = ctx->getResolvedAttributes();
         string key = application.getServiceProvider().getSessionCache()->insert(
             sessionExp,
             application,
@@ -355,9 +378,9 @@ string SAML2Consumer::implementProtocol(
             authnClass.get(),
             authnDecl.get(),
             &tokens,
-            &attrs
+            &resolvedAttributes
             );
-        attrs.clear();  // Attributes are owned by cache now.
+        resolvedAttributes.clear();  // Attributes are owned by cache now.
 
         if (ownedName)
             delete ssoName;
@@ -369,6 +392,7 @@ string SAML2Consumer::implementProtocol(
         if (ownedName)
             delete ssoName;
         for_each(ownedtokens.begin(), ownedtokens.end(), xmltooling::cleanup<saml2::Assertion>());
+        for_each(resolvedAttributes.begin(), resolvedAttributes.end(), cleanup_pair<string,Attribute>());
         throw;
     }
 }

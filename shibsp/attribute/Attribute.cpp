@@ -21,12 +21,14 @@
  */
 
 #include "internal.h"
+#include "SPConfig.h"
 #include "attribute/AttributeDecoder.h"
 #include "attribute/SimpleAttribute.h"
 #include "attribute/ScopedAttribute.h"
 #include "attribute/NameIDAttribute.h"
+#include "util/SPConstants.h"
 
-#include <shibsp/SPConfig.h>
+#include <xercesc/util/XMLUniDefs.hpp>
 
 using namespace shibsp;
 using namespace xmltooling;
@@ -46,17 +48,27 @@ namespace shibsp {
         return new NameIDAttribute(in);
     }
     
-    SHIBSP_DLLLOCAL PluginManager<AttributeDecoder,const DOMElement*>::Factory SimpleAttributeDecoderFactory;
-    SHIBSP_DLLLOCAL PluginManager<AttributeDecoder,const DOMElement*>::Factory ScopedAttributeDecoderFactory;
-    SHIBSP_DLLLOCAL PluginManager<AttributeDecoder,const DOMElement*>::Factory NameIDAttributeDecoderFactory;
+    SHIBSP_DLLLOCAL PluginManager<AttributeDecoder,QName,const DOMElement*>::Factory StringAttributeDecoderFactory;
+    SHIBSP_DLLLOCAL PluginManager<AttributeDecoder,QName,const DOMElement*>::Factory ScopedAttributeDecoderFactory;
+    SHIBSP_DLLLOCAL PluginManager<AttributeDecoder,QName,const DOMElement*>::Factory NameIDAttributeDecoderFactory;
+
+    static const XMLCh _StringAttributeDecoder[] = UNICODE_LITERAL_22(S,t,r,i,n,g,A,t,t,r,i,b,u,t,e,D,e,c,o,d,e,r);
+    static const XMLCh _ScopedAttributeDecoder[] = UNICODE_LITERAL_22(S,c,o,p,e,d,A,t,t,r,i,b,u,t,e,D,e,c,o,d,e,r);
+    static const XMLCh _NameIDAttributeDecoder[] = UNICODE_LITERAL_22(N,a,m,e,I,D,A,t,t,r,i,b,u,t,e,D,e,c,o,d,e,r);
+
+    static const XMLCh caseSensitive[] =           UNICODE_LITERAL_13(c,a,s,e,S,e,n,s,i,t,i,v,e);
 };
+
+QName shibsp::StringAttributeDecoderType(shibspconstants::SHIB2ATTRIBUTEMAP_NS, _StringAttributeDecoder);
+QName shibsp::ScopedAttributeDecoderType(shibspconstants::SHIB2ATTRIBUTEMAP_NS, _ScopedAttributeDecoder);
+QName shibsp::NameIDAttributeDecoderType(shibspconstants::SHIB2ATTRIBUTEMAP_NS, _NameIDAttributeDecoder);
 
 void shibsp::registerAttributeDecoders()
 {
     SPConfig& conf = SPConfig::getConfig();
-    conf.AttributeDecoderManager.registerFactory(SIMPLE_ATTRIBUTE_DECODER, SimpleAttributeDecoderFactory);
-    conf.AttributeDecoderManager.registerFactory(SCOPED_ATTRIBUTE_DECODER, ScopedAttributeDecoderFactory);
-    conf.AttributeDecoderManager.registerFactory(NAMEID_ATTRIBUTE_DECODER, NameIDAttributeDecoderFactory);
+    conf.AttributeDecoderManager.registerFactory(StringAttributeDecoderType, StringAttributeDecoderFactory);
+    conf.AttributeDecoderManager.registerFactory(ScopedAttributeDecoderType, ScopedAttributeDecoderFactory);
+    conf.AttributeDecoderManager.registerFactory(NameIDAttributeDecoderType, NameIDAttributeDecoderFactory);
 }
 
 void shibsp::registerAttributeFactories()
@@ -75,4 +87,13 @@ Attribute* Attribute::unmarshall(DDF& in)
     if (i == m_factoryMap.end())
         throw AttributeException("No registered factory for Attribute of type ($1).", xmltooling::params(1,in.name()));
     return (i->second)(in);
+}
+
+AttributeDecoder::AttributeDecoder(const DOMElement *e) : m_caseSensitive(true)
+{
+    if (e) {
+        const XMLCh* flag = e->getAttributeNS(NULL,caseSensitive);
+        if (flag && (*flag == chLatin_f || *flag == chDigit_0))
+            m_caseSensitive = false;
+    }
 }

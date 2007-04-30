@@ -79,7 +79,7 @@ namespace shibsp {
         mutable map<const ObservableMetadataProvider*,credmap_t> m_credentialMap;
     };
     
-    SHIBSP_DLLLOCAL PluginManager<TrustEngine,const DOMElement*>::Factory PKIXTrustEngineFactory;
+    SHIBSP_DLLLOCAL PluginManager<TrustEngine,string,const DOMElement*>::Factory PKIXTrustEngineFactory;
 
     TrustEngine* SHIBSP_DLLLOCAL PKIXTrustEngineFactory(const DOMElement* const & e)
     {

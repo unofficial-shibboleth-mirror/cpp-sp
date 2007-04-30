@@ -36,6 +36,7 @@ namespace shibsp {
 
     class SHIBSP_API AccessControl;
     class SHIBSP_API AttributeDecoder;
+    class SHIBSP_API AttributeExtractor;
     class SHIBSP_API AttributeResolver;
     class SHIBSP_API Handler;
     class SHIBSP_API ListenerService;
@@ -165,62 +166,67 @@ namespace shibsp {
         /**
          * Manages factories for AccessControl plugins.
          */
-        xmltooling::PluginManager<AccessControl,const xercesc::DOMElement*> AccessControlManager;
+        xmltooling::PluginManager<AccessControl,std::string,const xercesc::DOMElement*> AccessControlManager;
 
         /**
          * Manages factories for AttributeDecoder plugins.
          */
-        xmltooling::PluginManager<AttributeDecoder,const xercesc::DOMElement*> AttributeDecoderManager;
+        xmltooling::PluginManager<AttributeDecoder,xmltooling::QName,const xercesc::DOMElement*> AttributeDecoderManager;
+
+        /**
+         * Manages factories for AttributeExtractor plugins.
+         */
+        xmltooling::PluginManager<AttributeExtractor,std::string,const xercesc::DOMElement*> AttributeExtractorManager;
 
         /**
          * Manages factories for AttributeResolver plugins.
          */
-        xmltooling::PluginManager<AttributeResolver,const xercesc::DOMElement*> AttributeResolverManager;
+        xmltooling::PluginManager<AttributeResolver,std::string,const xercesc::DOMElement*> AttributeResolverManager;
 
         /**
          * Manages factories for Handler plugins that implement AssertionConsumerService functionality.
          */
-        xmltooling::PluginManager< Handler,std::pair<const xercesc::DOMElement*,const char*> > AssertionConsumerServiceManager;
+        xmltooling::PluginManager< Handler,std::string,std::pair<const xercesc::DOMElement*,const char*> > AssertionConsumerServiceManager;
 
         /**
          * Manages factories for Handler plugins that implement customized functionality.
          */
-        xmltooling::PluginManager< Handler,std::pair<const xercesc::DOMElement*,const char*> > HandlerManager;
+        xmltooling::PluginManager< Handler,std::string,std::pair<const xercesc::DOMElement*,const char*> > HandlerManager;
 
         /**
          * Manages factories for ListenerService plugins.
          */
-        xmltooling::PluginManager<ListenerService,const xercesc::DOMElement*> ListenerServiceManager;
+        xmltooling::PluginManager<ListenerService,std::string,const xercesc::DOMElement*> ListenerServiceManager;
 
         /**
          * Manages factories for Handler plugins that implement ManageNameIDService functionality.
          */
-        xmltooling::PluginManager< Handler,std::pair<const xercesc::DOMElement*,const char*> > ManageNameIDServiceManager;
+        xmltooling::PluginManager< Handler,std::string,std::pair<const xercesc::DOMElement*,const char*> > ManageNameIDServiceManager;
 
         /**
          * Manages factories for RequestMapper plugins.
          */
-        xmltooling::PluginManager<RequestMapper,const xercesc::DOMElement*> RequestMapperManager;
+        xmltooling::PluginManager<RequestMapper,std::string,const xercesc::DOMElement*> RequestMapperManager;
 
         /**
          * Manages factories for ServiceProvider plugins.
          */
-        xmltooling::PluginManager<ServiceProvider,const xercesc::DOMElement*> ServiceProviderManager;
+        xmltooling::PluginManager<ServiceProvider,std::string,const xercesc::DOMElement*> ServiceProviderManager;
 
         /**
          * Manages factories for SessionCache plugins.
          */
-        xmltooling::PluginManager<SessionCache,const xercesc::DOMElement*> SessionCacheManager;
+        xmltooling::PluginManager<SessionCache,std::string,const xercesc::DOMElement*> SessionCacheManager;
 
         /**
          * Manages factories for Handler plugins that implement SessionInitiator functionality.
          */
-        xmltooling::PluginManager< SessionInitiator,std::pair<const xercesc::DOMElement*,const char*> > SessionInitiatorManager;
+        xmltooling::PluginManager< SessionInitiator,std::string,std::pair<const xercesc::DOMElement*,const char*> > SessionInitiatorManager;
 
         /**
          * Manages factories for Handler plugins that implement SingleLogoutService functionality.
          */
-        xmltooling::PluginManager< Handler,std::pair<const xercesc::DOMElement*,const char*> > SingleLogoutServiceManager;
+        xmltooling::PluginManager< Handler,std::string,std::pair<const xercesc::DOMElement*,const char*> > SingleLogoutServiceManager;
 
     protected:
         SPConfig() : attribute_value_delimeter(';'), m_serviceProvider(NULL), m_artifactResolver(NULL), m_features(0) {}

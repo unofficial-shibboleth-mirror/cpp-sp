@@ -25,6 +25,8 @@
 #include "exceptions.h"
 #include "ServiceProvider.h"
 #include "SessionCache.h"
+#include "attribute/Attribute.h"
+#include "attribute/resolver/AttributeExtractor.h"
 #include "attribute/resolver/ResolutionContext.h"
 #include "handler/AssertionConsumerService.h"
 
@@ -183,7 +185,20 @@ string SAML1Consumer::implementProtocol(
     m_log.debug("SSO profile processing completed successfully");
 
     // We've successfully "accepted" at least one SSO token, along with any additional valid tokens.
-    // To complete processing, we need to resolve attributes and then create the session.
+    // To complete processing, we need to extract and resolve attributes and then create the session.
+    multimap<string,Attribute*> resolvedAttributes;
+    AttributeExtractor* extractor = application.getAttributeExtractor();
+    if (extractor) {
+        Locker extlocker(extractor);
+        for (vector<const opensaml::Assertion*>::const_iterator t = tokens.begin(); t!=tokens.end(); ++t) {
+            try {
+                extractor->extractAttributes(application, policy.getIssuerMetadata(), *(*t), resolvedAttributes);
+            }
+            catch (exception& ex) {
+                m_log.error("caught exception extracting attributes: %s", ex.what());
+            }
+        }
+    }
 
     // First, normalize the SAML 1.x NameIdentifier...
     NameIdentifier* n = ssoStatement->getSubject()->getNameIdentifier();
@@ -194,13 +209,20 @@ string SAML1Consumer::implementProtocol(
         nameid->setNameQualifier(n->getNameQualifier());
     }
 
-    const EntityDescriptor* issuerMetadata = dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent());
+    const EntityDescriptor* issuerMetadata =
+        policy.getIssuerMetadata() ? dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL;
     auto_ptr<ResolutionContext> ctx(
-        resolveAttributes(application, httpRequest, issuerMetadata, nameid.get(), &tokens)
+        resolveAttributes(application, issuerMetadata, nameid.get(), &tokens, &resolvedAttributes)
         );
 
-    // Copy over any new tokens, but leave them in the context for cleanup.
-    tokens.insert(tokens.end(), ctx->getResolvedAssertions().begin(), ctx->getResolvedAssertions().end());
+    if (ctx.get()) {
+        // Copy over any new tokens, but leave them in the context for cleanup.
+        tokens.insert(tokens.end(), ctx->getResolvedAssertions().begin(), ctx->getResolvedAssertions().end());
+
+        // Copy over new attributes, and transfer ownership.
+        resolvedAttributes.insert(ctx->getResolvedAttributes().begin(), ctx->getResolvedAttributes().end());
+        ctx->getResolvedAttributes().clear();
+    }
 
     // Now merge in bad tokens for caching.
     tokens.insert(tokens.end(), badtokens.begin(), badtokens.end());
@@ -217,20 +239,25 @@ string SAML1Consumer::implementProtocol(
         );
     auto_ptr_char authnMethod(ssoStatement->getAuthenticationMethod());
 
-    vector<shibsp::Attribute*>& attrs = ctx->getResolvedAttributes();
-    string key = application.getServiceProvider().getSessionCache()->insert(
-        lifetime.second ? now + lifetime.second : 0,
-        application,
-        httpRequest.getRemoteAddr().c_str(),
-        issuerMetadata,
-        nameid.get(),
-        authnInstant.get(),
-        NULL,
-        authnMethod.get(),
-        NULL,
-        &tokens,
-        &attrs
-        );
-    attrs.clear();  // Attributes are owned by cache now.
-    return key;
+    try {
+        string key = application.getServiceProvider().getSessionCache()->insert(
+            lifetime.second ? now + lifetime.second : 0,
+            application,
+            httpRequest.getRemoteAddr().c_str(),
+            issuerMetadata,
+            nameid.get(),
+            authnInstant.get(),
+            NULL,
+            authnMethod.get(),
+            NULL,
+            &tokens,
+            &resolvedAttributes
+            );
+        resolvedAttributes.clear();  // Attributes are owned by cache now.
+        return key;
+    }
+    catch (exception&) {
+        for_each(resolvedAttributes.begin(), resolvedAttributes.end(), cleanup_pair<string,Attribute>());
+        throw;
+    }
 }

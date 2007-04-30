@@ -30,6 +30,7 @@
 #include "SPConfig.h"
 #include "SPRequest.h"
 #include "TransactionLog.h"
+#include "attribute/resolver/AttributeExtractor.h"
 #include "attribute/resolver/AttributeResolver.h"
 #include "handler/SessionInitiator.h"
 #include "remoting/ListenerService.h"
@@ -86,11 +87,11 @@ namespace {
         TrustEngine* getTrustEngine() const {
             return (!m_trust && m_base) ? m_base->getTrustEngine() : m_trust;
         }
+        AttributeExtractor* getAttributeExtractor() const {
+            return (!m_attrExtractor && m_base) ? m_base->getAttributeExtractor() : m_attrExtractor;
+        }
         AttributeResolver* getAttributeResolver() const {
             return (!m_attrResolver && m_base) ? m_base->getAttributeResolver() : m_attrResolver;
-        }
-        const set<string>* getAttributeIds() const {
-            return (m_attributeIds.empty() && m_base) ? m_base->getAttributeIds() : (m_attributeIds.empty() ? NULL : &m_attributeIds);
         }
         CredentialResolver* getCredentialResolver() const {
             return (!m_credResolver && m_base) ? m_base->getCredentialResolver() : m_credResolver;
@@ -118,10 +119,10 @@ namespace {
         string m_hash;
         MetadataProvider* m_metadata;
         TrustEngine* m_trust;
+        AttributeExtractor* m_attrExtractor;
         AttributeResolver* m_attrResolver;
         CredentialResolver* m_credResolver;
         vector<const XMLCh*> m_audiences;
-        set<string> m_attributeIds;
 
         // manage handler objects
         vector<Handler*> m_handlers;
@@ -287,6 +288,8 @@ namespace {
     static const XMLCh _Application[] =         UNICODE_LITERAL_11(A,p,p,l,i,c,a,t,i,o,n);
     static const XMLCh Applications[] =         UNICODE_LITERAL_12(A,p,p,l,i,c,a,t,i,o,n,s);
     static const XMLCh _ArtifactMap[] =         UNICODE_LITERAL_11(A,r,t,i,f,a,c,t,M,a,p);
+    static const XMLCh _AttributeExtractor[] =  UNICODE_LITERAL_18(A,t,t,r,i,b,u,t,e,E,x,t,r,a,c,t,o,r);
+    static const XMLCh _AttributeFilter[] =     UNICODE_LITERAL_15(A,t,t,r,i,b,u,t,e,F,i,l,t,e,r);
     static const XMLCh _AttributeResolver[] =   UNICODE_LITERAL_17(A,t,t,r,i,b,u,t,e,R,e,s,o,l,v,e,r);
     static const XMLCh _CredentialResolver[] =  UNICODE_LITERAL_18(C,r,e,d,e,n,t,i,a,l,R,e,s,o,l,v,e,r);
     static const XMLCh DefaultRelyingParty[] =  UNICODE_LITERAL_19(D,e,f,a,u,l,t,R,e,l,y,i,n,g,P,a,r,t,y);
@@ -338,8 +341,8 @@ XMLApplication::XMLApplication(
     const ServiceProvider* sp,
     const DOMElement* e,
     const XMLApplication* base
-    ) : m_sp(sp), m_base(base), m_metadata(NULL), m_trust(NULL), m_attrResolver(NULL), m_credResolver(NULL),
-        m_partyDefault(NULL), m_sessionInitDefault(NULL), m_acsDefault(NULL)
+    ) : m_sp(sp), m_base(base), m_metadata(NULL), m_trust(NULL), m_attrExtractor(NULL), m_attrResolver(NULL),
+        m_credResolver(NULL), m_partyDefault(NULL), m_sessionInitDefault(NULL), m_acsDefault(NULL)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("XMLApplication");
@@ -359,25 +362,6 @@ XMLApplication::XMLApplication(
         m_hash=getId();
         m_hash+=getString("entityID").second;
         m_hash=samlConf.hashSHA1(m_hash.c_str(), true);
-
-        pair<bool,const char*> attributes = getString("attributeIds");
-        if (attributes.first) {
-            char* dup = strdup(attributes.second);
-            char* pos;
-            char* start = dup;
-            while (start && *start) {
-                while (*start && isspace(*start))
-                    start++;
-                if (!*start)
-                    break;
-                pos = strchr(start,' ');
-                if (pos)
-                    *pos=0;
-                m_attributeIds.insert(start);
-                start = pos ? pos+1 : NULL;
-            }
-            free(dup);
-        }
 
         const PropertySet* sessions = getPropertySet("Sessions");
 
@@ -526,6 +510,18 @@ XMLApplication::XMLApplication(
         }
 
         if (conf.isEnabled(SPConfig::AttributeResolution)) {
+            child = XMLHelper::getFirstChildElement(e,_AttributeExtractor);
+            if (child) {
+                auto_ptr_char type(child->getAttributeNS(NULL,_type));
+                log.info("building AttributeExtractor of type %s...",type.get());
+                try {
+                    m_attrExtractor = conf.AttributeExtractorManager.newPlugin(type.get(),child);
+                }
+                catch (exception& ex) {
+                    log.crit("error building AttributeExtractor: %s", ex.what());
+                }
+            }
+
             child = XMLHelper::getFirstChildElement(e,_AttributeResolver);
             if (child) {
                 auto_ptr_char type(child->getAttributeNS(NULL,_type));
@@ -596,6 +592,7 @@ void XMLApplication::cleanup()
     for_each(m_handlers.begin(),m_handlers.end(),xmltooling::cleanup<Handler>());
     delete m_credResolver;
     delete m_attrResolver;
+    delete m_attrExtractor;
     delete m_trust;
     delete m_metadata;
 }
@@ -617,6 +614,8 @@ short XMLApplication::acceptNode(const DOMNode* node) const
         XMLString::equals(name,_MetadataProvider) ||
         XMLString::equals(name,_TrustEngine) ||
         XMLString::equals(name,_CredentialResolver) ||
+        XMLString::equals(name,_AttributeFilter) ||
+        XMLString::equals(name,_AttributeExtractor) ||
         XMLString::equals(name,_AttributeResolver))
         return FILTER_REJECT;
 

@@ -46,7 +46,7 @@ using namespace xmltooling;
 using namespace std;
 
 namespace shibsp {
-    SHIBSP_DLLLOCAL PluginManager<ServiceProvider,const DOMElement*>::Factory XMLServiceProviderFactory;
+    SHIBSP_DLLLOCAL PluginManager<ServiceProvider,string,const DOMElement*>::Factory XMLServiceProviderFactory;
 
     long SHIBSP_DLLLOCAL sendError(SPRequest& request, const Application* app, const char* page, TemplateParameters& tp, bool mayRedirect=false)
     {
@@ -376,13 +376,13 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
         }
 
         // Export the attributes.
-        const map<string,const Attribute*>& attributes = session->getAttributes();
-        for (map<string,const Attribute*>::const_iterator a = attributes.begin(); a!=attributes.end(); ++a) {
+        const multimap<string,Attribute*>& attributes = session->getAttributes();
+        for (multimap<string,Attribute*>::const_iterator a = attributes.begin(); a!=attributes.end(); ++a) {
             const vector<string>& vals = a->second->getSerializedValues();
-            if (!strcmp(a->second->getId(), "REMOTE_USER") && !vals.empty())
+            if (a->first == "REMOTE_USER" && !vals.empty())
                 request.setRemoteUser(vals.front().c_str());
             else {
-                string header(request.getSecureHeader(a->second->getId()));
+                string header(request.getSecureHeader(a->first.c_str()));
                 for (vector<string>::const_iterator v = vals.begin(); v!=vals.end(); ++v) {
                     if (!header.empty())
                         header += ";";
@@ -399,7 +399,7 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
                         header += (*v);
                     }
                 }
-                request.setHeader(a->second->getId(), header.c_str());
+                request.setHeader(a->first.c_str(), header.c_str());
             }
         }
     

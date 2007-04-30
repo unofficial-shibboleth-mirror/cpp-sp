@@ -35,7 +35,16 @@ namespace shibsp {
     {
         MAKE_NONCOPYABLE(AttributeDecoder);
     protected:
-        AttributeDecoder() {}
+        /**
+         * Constructor.
+         *
+         * @param e root of DOM to configure the decoder
+         */
+        AttributeDecoder(const xercesc::DOMElement* e);
+
+        /** Flag for case sensitivity of decoded attributes. */
+        bool m_caseSensitive;
+
     public:
         virtual ~AttributeDecoder() {}
         
@@ -53,14 +62,15 @@ namespace shibsp {
             ) const=0;
     };
 
-    /** Decodes SimpleAttributes */
-    #define SIMPLE_ATTRIBUTE_DECODER "Simple"
-    
-    /** Decodes ScopedAttributes */
-    #define SCOPED_ATTRIBUTE_DECODER "Scoped"
 
-    /** Decodes NameIDAttributes */
-    #define NAMEID_ATTRIBUTE_DECODER "NameID"
+    /** Decodes into a SimpleAttribute. */
+    extern SHIBSP_API xmltooling::QName StringAttributeDecoderType;
+    
+    /** Decodes into a ScopedAttribute. */
+    extern SHIBSP_API xmltooling::QName ScopedAttributeDecoderType;
+
+    /** Decodes into a NameIDAttribute. */
+    extern SHIBSP_API xmltooling::QName NameIDAttributeDecoderType;
 
     /** Registers built-in AttributeDecoders into the runtime. */
     void registerAttributeDecoders();

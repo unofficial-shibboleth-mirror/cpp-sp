@@ -41,11 +41,19 @@ const XMLCh shibspconstants::SHIBMD_NS[] = // urn:mace:shibboleth:metadata:1.0
 
 const XMLCh shibspconstants::SHIBMD_PREFIX[] = UNICODE_LITERAL_6(s,h,i,b,m,d);
 
-const XMLCh shibspconstants::SHIB2SPCONFIG_NS[] = // urn:mace:shibboleth:sp:config:2.0
+const XMLCh shibspconstants::SHIB2SPCONFIG_NS[] = // urn:mace:shibboleth:2.0:native:sp:config
 { chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
   chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
-  chLatin_s, chLatin_p, chColon, chLatin_c, chLatin_o, chLatin_n, chLatin_f, chLatin_i, chLatin_g, chColon,
-  chDigit_2, chPeriod, chDigit_0, chNull
+  chDigit_2, chPeriod, chDigit_0, chColon, chLatin_n, chLatin_a, chLatin_t, chLatin_i, chLatin_v, chLatin_e, chColon,
+  chLatin_s, chLatin_p, chColon, chLatin_c, chLatin_o, chLatin_n, chLatin_f, chLatin_i, chLatin_g, chNull
+};
+
+const XMLCh shibspconstants::SHIB2ATTRIBUTEMAP_NS[] = // urn:mace:shibboleth:2.0:attribute-map
+{ chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
+  chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
+  chDigit_2, chPeriod, chDigit_0, chColon,
+  chLatin_a, chLatin_t, chLatin_t, chLatin_r, chLatin_i, chLatin_b, chLatin_u, chLatin_t, chLatin_e, chDash,
+  chLatin_m, chLatin_a, chLatin_p, chNull
 };
 
 const XMLCh shibspconstants::SHIB1_ATTRIBUTE_NAMESPACE_URI[] = // urn:mace:shibboleth:1.0:attributeNamespace:uri

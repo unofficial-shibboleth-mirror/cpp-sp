@@ -37,8 +37,11 @@ namespace shibspconstants {
     /** Shibboleth Metadata QName prefix ("shibmd") */
     extern SHIBSP_API const XMLCh SHIBMD_PREFIX[];
 
-    /** Shibboleth 2.0 SP configuration namespace ("urn:mace:shibboleth:sp:config:2.0") */
+    /** Shibboleth 2.0 SP configuration namespace ("urn:mace:shibboleth:2.0:native:sp:config") */
     extern SHIBSP_API const XMLCh SHIB2SPCONFIG_NS[];
+
+    /** Shibboleth 2.0 attribute mapping namespace ("urn:mace:shibboleth:2.0:attribute-map") */
+    extern SHIBSP_API const XMLCh SHIB2ATTRIBUTEMAP_NS[];
 
     /** Shibboleth 1.x Protocol Enumeration constant ("urn:mace:shibboleth:1.0") */
     extern SHIBSP_API const XMLCh SHIB1_PROTOCOL_ENUM[];

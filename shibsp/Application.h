@@ -30,6 +30,7 @@
 
 namespace shibsp {
     
+    class SHIBSP_API AttributeExtractor;
     class SHIBSP_API AttributeResolver;
     class SHIBSP_API Handler;
     class SHIBSP_API ServiceProvider;
@@ -93,18 +94,18 @@ namespace shibsp {
         virtual xmltooling::TrustEngine* getTrustEngine() const=0;
 
         /**
+         * Returns an AttributeExtractor for use with this Application.
+         * 
+         * @return  an AttributeExtractor, or NULL
+         */
+        virtual AttributeExtractor* getAttributeExtractor() const=0;
+
+        /**
          * Returns an AttributeResolver for use with this Application.
          * 
          * @return  an AttributeResolver, or NULL
          */
         virtual AttributeResolver* getAttributeResolver() const=0;
-
-        /**
-         * Returns a set of attribute IDs to resolve for the Application.
-         *
-         * @return  a set of attribute IDs, or an empty set
-         */
-        virtual const std::set<std::string>* getAttributeIds() const=0;
 
         /**
          * Returns the CredentialResolver instance associated with this Application.

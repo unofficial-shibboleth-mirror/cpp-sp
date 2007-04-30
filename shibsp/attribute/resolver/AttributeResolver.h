@@ -17,7 +17,7 @@
 /**
  * @file shibsp/attribute/resolver/AttributeResolver.h
  * 
- * The service that resolves the attributes for a particular subject.
+ * A service that transforms or resolves additional attributes for a particular subject.
  */
 
 #ifndef __shibsp_resolver_h__
@@ -59,18 +59,18 @@ namespace shibsp {
          * Attributes can be supplied while creating the session.
          * 
          * @param application       reference to Application that owns the eventual Session
-         * @param client_addr       network address of client
          * @param issuer            issuing metadata of assertion issuer, if known
          * @param nameid            principal identifier, normalized to SAML 2, if any
          * @param tokens            assertions initiating the session, if any
+         * @param attributes        map of previously resolved attributes, if any
          * @return  newly created ResolutionContext, owned by caller
          */
         virtual ResolutionContext* createResolutionContext(
             const Application& application,
-            const char* client_addr,
             const opensaml::saml2md::EntityDescriptor* issuer,
             const opensaml::saml2::NameID* nameid,
-            const std::vector<const opensaml::Assertion*>* tokens=NULL
+            const std::vector<const opensaml::Assertion*>* tokens=NULL,
+            const std::multimap<std::string,Attribute*>* attributes=NULL
             ) const=0;
 
         /**
@@ -84,14 +84,13 @@ namespace shibsp {
         
 
         /**
-         * Gets the attributes for a given subject and returns them in the supplied context.
+         * Resolves attributes for a given subject and returns them in the supplied context.
          * 
          * @param ctx           resolution context to use to resolve attributes
-         * @param attributes    set of attributes to resolve or NULL to resolve all attributes
          * 
          * @throws AttributeResolutionException thrown if there is a problem resolving the attributes for the subject
          */
-        virtual void resolveAttributes(ResolutionContext& ctx, const std::set<std::string>* attributes=NULL) const=0;
+        virtual void resolveAttributes(ResolutionContext& ctx) const=0;
     };
 
 #if defined (_MSC_VER)
@@ -103,8 +102,8 @@ namespace shibsp {
      */
     void SHIBSP_API registerAttributeResolvers();
 
-    /** AttributeResolver based on a simple mapping of SAML information. */
-    #define SIMPLE_ATTRIBUTE_RESOLVER "Simple"
+    /** AttributeResolver based on SAML queries to an IdP during SSO. */
+    #define QUERY_ATTRIBUTE_RESOLVER "Query"
 };
 
 #endif /* __shibsp_resolver_h__ */

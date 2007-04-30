@@ -36,23 +36,34 @@ using namespace log4cpp;
 using namespace std;
 
 namespace shibsp {
+    static const XMLCh Scope[] =            UNICODE_LITERAL_5(S,c,o,p,e);
+    static const XMLCh scopeDelimeter[] =   UNICODE_LITERAL_14(s,c,o,p,e,D,e,l,i,m,e,t,e,r);
+
     class SHIBSP_DLLLOCAL ScopedAttributeDecoder : virtual public AttributeDecoder
     {
     public:
-        ScopedAttributeDecoder(const DOMElement* e) {}
+        ScopedAttributeDecoder(const DOMElement* e) : AttributeDecoder(e), m_delimeter('@') {
+            if (e) {
+                if (e->hasAttributeNS(NULL,scopeDelimeter)) {
+                    auto_ptr_char d(e->getAttributeNS(NULL,scopeDelimeter));
+                    m_delimeter = *(d.get());
+                }
+            }
+        }
         ~ScopedAttributeDecoder() {}
 
         shibsp::Attribute* decode(
             const char* id, const XMLObject* xmlObject, const char* assertingParty=NULL, const char* relyingParty=NULL
             ) const;
+
+    private:
+        char m_delimeter;
     };
 
     AttributeDecoder* SHIBSP_DLLLOCAL ScopedAttributeDecoderFactory(const DOMElement* const & e)
     {
         return new ScopedAttributeDecoder(e);
     }
-
-    static const XMLCh Scope[] = UNICODE_LITERAL_5(S,c,o,p,e);
 };
 
 shibsp::Attribute* ScopedAttributeDecoder::decode(
@@ -64,6 +75,7 @@ shibsp::Attribute* ScopedAttributeDecoder::decode(
     const XMLCh* xmlscope;
     QName scopeqname(NULL,Scope);
     auto_ptr<ScopedAttribute> scoped(new ScopedAttribute(id));
+    scoped->setCaseSensitive(m_caseSensitive);
     vector< pair<string,string> >& dest = scoped->getValues();
     vector<XMLObject*>::const_iterator v,stop;
 
@@ -109,7 +121,7 @@ shibsp::Attribute* ScopedAttributeDecoder::decode(
                         delete[] scope;
                     }
                     else {
-                        scope = strchr(val, '@');
+                        scope = strchr(val, m_delimeter);
                         if (scope) {
                             *scope++ = 0;
                             if (*scope)
@@ -158,8 +170,8 @@ shibsp::Attribute* ScopedAttributeDecoder::decode(
         }
     }
 
-    if (val && *val && *val!='@') {
-        scope = strchr(val, '@');
+    if (val && *val && *val!=m_delimeter) {
+        scope = strchr(val, m_delimeter);
         if (scope) {
             *scope++ = 0;
             if (*scope)
@@ -168,7 +180,7 @@ shibsp::Attribute* ScopedAttributeDecoder::decode(
                 log.warn("ignoring NameID with no scope");
         }
         else {
-            log.warn("ignoring NameID with no scope delimiter (@)");
+            log.warn("ignoring NameID with no scope delimiter (%c)", m_delimeter);
         }
     }
     else {

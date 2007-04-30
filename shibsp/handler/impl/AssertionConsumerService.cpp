@@ -233,24 +233,26 @@ void AssertionConsumerService::checkAddress(
 
 ResolutionContext* AssertionConsumerService::resolveAttributes(
     const Application& application,
-    const HTTPRequest& httpRequest,
     const saml2md::EntityDescriptor* issuer,
     const saml2::NameID* nameid,
-    const vector<const Assertion*>* tokens
+    const vector<const Assertion*>* tokens,
+    const multimap<string,Attribute*>* attributes
     ) const
 {
-    AttributeResolver* resolver = application.getAttributeResolver();
-    if (!resolver) {
-        m_log.info("no AttributeResolver available, skipping resolution");
-        return NULL;
-    }
-    
     try {
+        AttributeResolver* resolver = application.getAttributeResolver();
+        if (!resolver) {
+            m_log.info("no AttributeResolver available, skipping resolution");
+            return NULL;
+        }
+        
         m_log.debug("resolving attributes...");
+
+        Locker locker(resolver);
         auto_ptr<ResolutionContext> ctx(
-            resolver->createResolutionContext(application, httpRequest.getRemoteAddr().c_str(), issuer, nameid, tokens)
+            resolver->createResolutionContext(application, issuer, nameid, tokens, attributes)
             );
-        resolver->resolveAttributes(*ctx.get(), application.getAttributeIds());
+        resolver->resolveAttributes(*ctx.get());
         return ctx.release();
     }
     catch (exception& ex) {

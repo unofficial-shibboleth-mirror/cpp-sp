@@ -36,9 +36,9 @@ using namespace std;
 
 namespace shibsp {
     //SHIBSP_DLLLOCAL PluginManager<ListenerService,const DOMElement*>::Factory MemoryListenerServiceFactory;
-    SHIBSP_DLLLOCAL PluginManager<ListenerService,const DOMElement*>::Factory TCPListenerServiceFactory;
+    SHIBSP_DLLLOCAL PluginManager<ListenerService,string,const DOMElement*>::Factory TCPListenerServiceFactory;
 #ifndef WIN32
-    SHIBSP_DLLLOCAL PluginManager<ListenerService,const DOMElement*>::Factory UnixListenerServiceFactory;
+    SHIBSP_DLLLOCAL PluginManager<ListenerService,string,const DOMElement*>::Factory UnixListenerServiceFactory;
 #endif
 };
 

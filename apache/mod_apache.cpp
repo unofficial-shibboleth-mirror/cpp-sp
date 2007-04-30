@@ -77,6 +77,8 @@
 using namespace shibsp;
 using namespace xmltooling;
 using namespace std;
+using xercesc::RegularExpression;
+using xercesc::XMLException;
 
 extern "C" module MODULE_VAR_EXPORT mod_shib;
 
@@ -559,6 +561,8 @@ public:
     Lockable* lock() {return this;}
     void unlock() {}
     bool authorized(const SPRequest& request, const Session* session) const;
+private:
+    bool checkAttribute(const SPRequest& request, const Attribute* attr, const char* toMatch, RegularExpression* re) const;
 };
 
 AccessControl* htAccessFactory(const xercesc::DOMElement* const & e)
@@ -741,6 +745,35 @@ static SH_AP_TABLE* groups_for_user(request_rec* r, const char* user, char* grpf
     return grps;
 }
 
+bool htAccessControl::checkAttribute(const SPRequest& request, const Attribute* attr, const char* toMatch, RegularExpression* re) const
+{
+    bool caseSensitive = attr->isCaseSensitive();
+    const vector<string>& vals = attr->getSerializedValues();
+    for (vector<string>::const_iterator v=vals.begin(); v!=vals.end(); ++v) {
+        if (re) {
+            auto_ptr<XMLCh> trans(fromUTF8(v->c_str()));
+            if (re->matches(trans.get())) {
+                request.log(SPRequest::SPDebug,
+                    string("htAccessControl plugin expecting regexp ") + toMatch + ", got " + *v + ": authorization granted"
+                    );
+                return true;
+            }
+        }
+        else if ((caseSensitive && *v == toMatch) || (!caseSensitive && !strcasecmp(v->c_str(), toMatch))) {
+            request.log(SPRequest::SPDebug,
+                string("htAccessControl plugin expecting ") + toMatch + ", got " + *v + ": authorization granted."
+                );
+            return true;
+        }
+        else {
+            request.log(SPRequest::SPDebug,
+                string("htAccessControl plugin expecting ") + toMatch + ", got " + *v + ": authorization not granted."
+                );
+        }
+    }
+    return false;
+}
+
 bool htAccessControl::authorized(const SPRequest& request, const Session* session) const
 {
     // Make sure the object is our type.
@@ -808,14 +841,14 @@ bool htAccessControl::authorized(const SPRequest& request, const Session* sessio
                     try {
                         // To do regex matching, we have to convert from UTF-8.
                         auto_ptr<XMLCh> trans(fromUTF8(w));
-                        xercesc::RegularExpression re(trans.get());
+                        RegularExpression re(trans.get());
                         auto_ptr<XMLCh> trans2(fromUTF8(remote_user.c_str()));
                         if (re.matches(trans2.get())) {
                             request.log(SPRequest::SPDebug, string("htAccessControl plugin accepting user (") + w + ")");
                             SHIB_AP_CHECK_IS_OK;
                         }
                     }
-                    catch (xercesc::XMLException& ex) {
+                    catch (XMLException& ex) {
                         auto_ptr_char tmp(ex.getMessage());
                         request.log(SPRequest::SPError,
                             string("htAccessControl plugin caught exception while parsing regular expression (") + w + "): " + tmp.get());
@@ -851,16 +884,15 @@ bool htAccessControl::authorized(const SPRequest& request, const Session* sessio
                 continue;
             }
             
-            // Find the attribute matching the require rule.
-            map<string,const Attribute*>::const_iterator attr = session->getAttributes().find(w);
-            if (attr == session->getAttributes().end()) {
+            // Find the attribute(s) matching the require rule.
+            pair<multimap<string,Attribute*>::const_iterator,multimap<string,Attribute*>::const_iterator> attrs =
+                session->getAttributes().equal_range(w);
+            if (attrs.first == attrs.second) {
                 request.log(SPRequest::SPWarn, string("htAccessControl rule requires attribute (") + w + "), not found in session");
                 continue;
             }
 
             bool regexp=false;
-            bool caseSensitive = attr->second->isCaseSensitive();
-            const vector<string>& vals = attr->second->getSerializedValues();
 
             while (!auth_OK[x] && *t) {
                 w=ap_getword_conf(sta->m_req->pool,&t);
@@ -870,7 +902,7 @@ bool htAccessControl::authorized(const SPRequest& request, const Session* sessio
                 }
 
                 try {
-                    auto_ptr<xercesc::RegularExpression> re;
+                    auto_ptr<RegularExpression> re;
                     if (regexp) {
                         delete re.release();
                         auto_ptr<XMLCh> trans(fromUTF8(w));
@@ -878,30 +910,13 @@ bool htAccessControl::authorized(const SPRequest& request, const Session* sessio
                         re=temp;
                     }
                     
-                    for (vector<string>::const_iterator v=vals.begin(); !auth_OK[x] && v!=vals.end(); ++v) {
-                        if (regexp) {
-                            auto_ptr<XMLCh> trans(fromUTF8(v->c_str()));
-                            if (re->matches(trans.get())) {
-                                request.log(SPRequest::SPDebug,
-                                    string("htAccessControl plugin expecting ") + w + ", got " + *v + ": authorization granted"
-                                    );
-                                SHIB_AP_CHECK_IS_OK;
-                            }
-                        }
-                        else if ((caseSensitive && *v == w) || (!caseSensitive && !strcasecmp(v->c_str(),w))) {
-                            request.log(SPRequest::SPDebug,
-                                string("htAccessControl plugin expecting ") + w + ", got " + *v + ": authorization granted."
-                                );
+                    for (; !auth_OK[x] && attrs.first!=attrs.second; ++attrs.first) {
+                        if (checkAttribute(request, attrs.first->second, w, regexp ? re.get() : NULL)) {
                             SHIB_AP_CHECK_IS_OK;
-                        }
-                        else {
-                            request.log(SPRequest::SPDebug,
-                                string("htAccessControl plugin expecting ") + w + ", got " + *v + ": authorization not granted."
-                                );
                         }
                     }
                 }
-                catch (xercesc::XMLException& ex) {
+                catch (XMLException& ex) {
                     auto_ptr_char tmp(ex.getMessage());
                     request.log(SPRequest::SPError,
                         string("htAccessControl plugin caught exception while parsing regular expression (") + w + "): " + tmp.get()

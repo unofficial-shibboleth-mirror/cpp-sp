@@ -28,8 +28,8 @@ using namespace xmltooling;
 
 namespace shibsp {
 
-    SHIBSP_DLLLOCAL PluginManager<SessionCache,const DOMElement*>::Factory RemotedCacheFactory;
-    SHIBSP_DLLLOCAL PluginManager<SessionCache,const DOMElement*>::Factory StorageServiceCacheFactory;
+    SHIBSP_DLLLOCAL PluginManager<SessionCache,std::string,const DOMElement*>::Factory RemotedCacheFactory;
+    SHIBSP_DLLLOCAL PluginManager<SessionCache,std::string,const DOMElement*>::Factory StorageServiceCacheFactory;
 
     static const XMLCh cacheTimeout[] =     UNICODE_LITERAL_12(c,a,c,h,e,T,i,m,e,o,u,t);
 }

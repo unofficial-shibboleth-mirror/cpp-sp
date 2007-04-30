@@ -41,7 +41,7 @@ namespace shibsp {
     class SHIBSP_DLLLOCAL NameIDAttributeDecoder : virtual public AttributeDecoder
     {
     public:
-        NameIDAttributeDecoder(const DOMElement* e) : m_formatter(e ? e->getAttributeNS(NULL,formatter) : NULL) {}
+        NameIDAttributeDecoder(const DOMElement* e) : AttributeDecoder(e), m_formatter(e ? e->getAttributeNS(NULL,formatter) : NULL) {}
         ~NameIDAttributeDecoder() {}
 
         shibsp::Attribute* decode(
@@ -71,6 +71,7 @@ shibsp::Attribute* NameIDAttributeDecoder::decode(
     auto_ptr<NameIDAttribute> nameid(
         new NameIDAttribute(id, (m_formatter.get() && *m_formatter.get()) ? m_formatter.get() : DEFAULT_NAMEID_FORMATTER)
         );
+    nameid->setCaseSensitive(m_caseSensitive);
     vector<NameIDAttribute::Value>& dest = nameid->getValues();
     vector<XMLObject*>::const_iterator v,stop;
 

@@ -29,6 +29,8 @@
 namespace shibsp {
     
     DECL_XMLTOOLING_EXCEPTION(AttributeException,SHIBSP_EXCEPTIONAPI(SHIBSP_API),shibsp,xmltooling::XMLToolingException,Exceptions during attribute processing.);
+    DECL_XMLTOOLING_EXCEPTION(AttributeExtractionException,SHIBSP_EXCEPTIONAPI(SHIBSP_API),shibsp,shibsp::AttributeException,Exceptions during attribute extraction.);
+    DECL_XMLTOOLING_EXCEPTION(AttributeFilteringException,SHIBSP_EXCEPTIONAPI(SHIBSP_API),shibsp,shibsp::AttributeException,Exceptions during attribute filtering.);
     DECL_XMLTOOLING_EXCEPTION(AttributeResolutionException,SHIBSP_EXCEPTIONAPI(SHIBSP_API),shibsp,shibsp::AttributeException,Exceptions during attribute resolution.);
     DECL_XMLTOOLING_EXCEPTION(ConfigurationException,SHIBSP_EXCEPTIONAPI(SHIBSP_API),shibsp,xmltooling::XMLToolingException,Exceptions during configuration.);
     DECL_XMLTOOLING_EXCEPTION(ListenerException,SHIBSP_EXCEPTIONAPI(SHIBSP_API),shibsp,xmltooling::XMLToolingException,Exceptions during inter-process communication.);

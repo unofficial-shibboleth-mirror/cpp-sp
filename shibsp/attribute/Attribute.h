@@ -59,7 +59,7 @@ namespace shibsp {
          * 
          * @param id    Attribute identifier 
          */
-        Attribute(const char* id) : m_id(id ? id : "") {
+        Attribute(const char* id) : m_id(id ? id : ""), m_caseSensitive(true) {
         }
 
         /**
@@ -71,7 +71,7 @@ namespace shibsp {
          * 
          * @param in    input object containing marshalled Attribute
          */
-        Attribute(DDF& in) {
+        Attribute(DDF& in) : m_caseSensitive(in["case_insensitive"].isnull()) {
             const char* id = in.first().name();
             if (id && *id)
                 m_id = id;
@@ -100,12 +100,21 @@ namespace shibsp {
         }
 
         /**
+         * Sets whether case sensitivity should apply to basic value comparisons.
+         *
+         * @param caseSensitive  true iff value comparisons should be case sensitive
+         */
+        void setCaseSensitive(bool caseSensitive) {
+            m_caseSensitive = caseSensitive;
+        }
+
+        /**
          * Indicates whether case sensitivity should apply to basic value comparisons.
          *
          * @return  true iff value comparisons should be case sensitive
          */
-        virtual bool isCaseSensitive() const {
-            return true;
+        bool isCaseSensitive() const {
+            return m_caseSensitive;
         }
         
         /**
@@ -143,6 +152,8 @@ namespace shibsp {
         virtual DDF marshall() const {
             DDF ddf(NULL);
             ddf.structure().addmember(m_id.c_str()).list();
+            if (!m_caseSensitive)
+                ddf.addmember("case_insensitive");
             return ddf;
         }
         
@@ -186,6 +197,7 @@ namespace shibsp {
     private:
         static std::map<std::string,AttributeFactory*> m_factoryMap;
         std::string m_id;
+        bool m_caseSensitive;
     };
 
 #if defined (_MSC_VER)

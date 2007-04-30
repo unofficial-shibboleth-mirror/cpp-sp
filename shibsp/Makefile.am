@@ -46,6 +46,7 @@ attrinclude_HEADERS = \
 	attribute/SimpleAttribute.h
 
 attrresinclude_HEADERS = \
+	attribute/resolver/AttributeExtractor.h \
 	attribute/resolver/AttributeResolver.h \
 	attribute/resolver/ResolutionContext.h
 
@@ -89,10 +90,10 @@ libshibsp_la_SOURCES = \
 	SPConfig.cpp \
 	attribute/Attribute.cpp \
 	attribute/NameIDAttributeDecoder.cpp \
-	attribute/SimpleAttributeDecoder.cpp \
 	attribute/ScopedAttributeDecoder.cpp \
-	attribute/resolver/impl/AttributeResolver.cpp \
-	attribute/resolver/impl/SimpleAttributeResolver.cpp \
+	attribute/StringAttributeDecoder.cpp \
+	attribute/resolver/impl/QueryAttributeResolver.cpp \
+	attribute/resolver/impl/XMLAttributeExtractor.cpp \
 	binding/impl/ArtifactResolver.cpp \
 	binding/impl/SOAPClient.cpp \
 	handler/impl/AbstractHandler.cpp \

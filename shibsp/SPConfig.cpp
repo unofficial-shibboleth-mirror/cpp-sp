@@ -29,6 +29,7 @@
 #include "SessionCache.h"
 #include "SPConfig.h"
 #include "attribute/AttributeDecoder.h"
+#include "attribute/resolver/AttributeExtractor.h"
 #include "attribute/resolver/AttributeResolver.h"
 #include "binding/ArtifactResolver.h"
 #include "handler/SessionInitiator.h"
@@ -47,6 +48,8 @@ using namespace xmltooling;
 using namespace log4cpp;
 
 DECL_XMLTOOLING_EXCEPTION_FACTORY(AttributeException,shibsp);
+DECL_XMLTOOLING_EXCEPTION_FACTORY(AttributeExtractionException,shibsp);
+DECL_XMLTOOLING_EXCEPTION_FACTORY(AttributeFilteringException,shibsp);
 DECL_XMLTOOLING_EXCEPTION_FACTORY(AttributeResolutionException,shibsp);
 DECL_XMLTOOLING_EXCEPTION_FACTORY(ConfigurationException,shibsp);
 DECL_XMLTOOLING_EXCEPTION_FACTORY(ListenerException,shibsp);
@@ -99,6 +102,8 @@ bool SPInternalConfig::init(const char* catalog_path)
     XMLToolingConfig::getConfig().getTemplateEngine()->setTagPrefix("shibmlp");
     
     REGISTER_XMLTOOLING_EXCEPTION_FACTORY(AttributeException,shibsp);
+    REGISTER_XMLTOOLING_EXCEPTION_FACTORY(AttributeExtractionException,shibsp);
+    REGISTER_XMLTOOLING_EXCEPTION_FACTORY(AttributeFilteringException,shibsp);
     REGISTER_XMLTOOLING_EXCEPTION_FACTORY(AttributeResolutionException,shibsp);
     REGISTER_XMLTOOLING_EXCEPTION_FACTORY(ConfigurationException,shibsp);
     REGISTER_XMLTOOLING_EXCEPTION_FACTORY(ListenerException,shibsp);
@@ -108,6 +113,7 @@ bool SPInternalConfig::init(const char* catalog_path)
 
     registerAccessControls();
     registerAttributeDecoders();
+    registerAttributeExtractors();
     registerAttributeFactories();
     registerAttributeResolvers();
     registerHandlers();
@@ -145,8 +151,9 @@ void SPInternalConfig::term()
     RequestMapperManager.deregisterFactories();
     ListenerServiceManager.deregisterFactories();
     HandlerManager.deregisterFactories();
-    AttributeResolverManager.deregisterFactories();
     AttributeDecoderManager.deregisterFactories();
+    AttributeExtractorManager.deregisterFactories();
+    AttributeResolverManager.deregisterFactories();
     Attribute::deregisterFactories();
     AccessControlManager.deregisterFactories();
 

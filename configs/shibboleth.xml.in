@@ -1,5 +1,5 @@
-<SPConfig xmlns="urn:mace:shibboleth:sp:config:2.0"
-	xmlns:conf="urn:mace:shibboleth:sp:config:2.0"
+<SPConfig xmlns="urn:mace:shibboleth:2.0:native:sp:config"
+	xmlns:conf="urn:mace:shibboleth:2.0:native:sp:config"
 	xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"
 	xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"	
 	xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"
@@ -222,8 +222,8 @@
 			<TrustEngine type="PKIX"/>
 		</TrustEngine>
 
-		<!-- Built-in attribute resolver to extract data from SAML assertions. -->
-		<AttributeResolver type="Simple" path="@-PKGSYSCONFDIR-@/resolver-simple.xml"/>
+		<!-- Map to extract attributes from SAML assertions. -->
+		<AttributeExtractor type="XML" path="@-PKGSYSCONFDIR-@/attribute-map.xml"/>
 
 		<!-- Simple file-based resolver for key/certificate information. -->
 		<CredentialResolver type="File">

@@ -158,22 +158,25 @@ bool Rule::authorized(const SPRequest& request, const Session* session) const
         return false;
     }
     
-    // Find the attribute matching the require rule.
-    map<string,const Attribute*>::const_iterator attr = session->getAttributes().find(m_alias);
-    if (attr == session->getAttributes().end()) {
+    // Find the attribute(s) matching the require rule.
+    pair<multimap<string,Attribute*>::const_iterator, multimap<string,Attribute*>::const_iterator> attrs =
+        session->getAttributes().equal_range(m_alias);
+    if (attrs.first == attrs.second) {
         request.log(SPRequest::SPWarn, string("rule requires attribute (") + m_alias + "), not found in session");
         return false;
     }
 
-    bool caseSensitive = attr->second->isCaseSensitive();
+    for (; attrs.first != attrs.second; ++attrs.first) {
+        bool caseSensitive = attrs.first->second->isCaseSensitive();
 
-    // Now we have to intersect the attribute's values against the rule's list.
-    const vector<string>& vals = attr->second->getSerializedValues();
-    for (vector<string>::const_iterator i=m_vals.begin(); i!=m_vals.end(); ++i) {
-        for (vector<string>::const_iterator j=vals.begin(); j!=vals.end(); ++j) {
-            if ((caseSensitive && *i == *j) || (!caseSensitive && !strcasecmp(i->c_str(),j->c_str()))) {
-                request.log(SPRequest::SPDebug, string("AccessControl plugin expecting ") + *j + ", authz granted");
-                return true;
+        // Now we have to intersect the attribute's values against the rule's list.
+        const vector<string>& vals = attrs.first->second->getSerializedValues();
+        for (vector<string>::const_iterator i=m_vals.begin(); i!=m_vals.end(); ++i) {
+            for (vector<string>::const_iterator j=vals.begin(); j!=vals.end(); ++j) {
+                if ((caseSensitive && *i == *j) || (!caseSensitive && !strcasecmp(i->c_str(),j->c_str()))) {
+                    request.log(SPRequest::SPDebug, string("AccessControl plugin expecting ") + *j + ", authz granted");
+                    return true;
+                }
             }
         }
     }

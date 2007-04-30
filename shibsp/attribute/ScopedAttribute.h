@@ -50,14 +50,14 @@ namespace shibsp {
          * 
          * @param id    Attribute identifier
          */
-        ScopedAttribute(const char* id) : Attribute(id), m_caseSensitive(true) {}
+        ScopedAttribute(const char* id) : Attribute(id) {}
 
         /**
          * Constructs based on a remoted ScopedAttribute.
          * 
          * @param in    input object containing marshalled ScopedAttribute
          */
-        ScopedAttribute(DDF& in) : Attribute(in), m_caseSensitive(in["case_insensitive"].isnull()) {
+        ScopedAttribute(DDF& in) : Attribute(in) {
             DDF val = in.first().first();
             while (val.name() && val.string()) {
                 m_values.push_back(std::make_pair(val.name(), val.string()));
@@ -66,10 +66,6 @@ namespace shibsp {
         }
         
         virtual ~ScopedAttribute() {}
-
-        bool isCaseSensitive() const {
-            return m_caseSensitive;
-        }
 
         /**
          * Returns the set of values encoded as UTF-8 strings.
@@ -101,8 +97,6 @@ namespace shibsp {
         DDF marshall() const {
             DDF ddf = Attribute::marshall();
             ddf.name("Scoped");
-            if (!m_caseSensitive)
-                ddf.addmember("case_insensitive");
             DDF vlist = ddf.first();
             for (std::vector< std::pair<std::string,std::string> >::const_iterator i=m_values.begin(); i!=m_values.end(); ++i) {
                 DDF val = DDF(i->first.c_str()).string(i->second.c_str());
@@ -112,7 +106,6 @@ namespace shibsp {
         }
     
     private:
-        bool m_caseSensitive;
         std::vector< std::pair<std::string,std::string> > m_values;
     };
 

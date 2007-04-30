@@ -15,7 +15,7 @@
  */
 
 /**
- * SimpleAttributeDecoder.cpp
+ * StringAttributeDecoder.cpp
  * 
  * Decodes SAML into SimpleAttributes
  */
@@ -36,29 +36,30 @@ using namespace log4cpp;
 using namespace std;
 
 namespace shibsp {
-    class SHIBSP_DLLLOCAL SimpleAttributeDecoder : virtual public AttributeDecoder
+    class SHIBSP_DLLLOCAL StringAttributeDecoder : virtual public AttributeDecoder
     {
     public:
-        SimpleAttributeDecoder(const DOMElement* e) {}
-        ~SimpleAttributeDecoder() {}
+        StringAttributeDecoder(const DOMElement* e) : AttributeDecoder(e) {}
+        ~StringAttributeDecoder() {}
 
         shibsp::Attribute* decode(
             const char* id, const XMLObject* xmlObject, const char* assertingParty=NULL, const char* relyingParty=NULL
             ) const;
     };
 
-    AttributeDecoder* SHIBSP_DLLLOCAL SimpleAttributeDecoderFactory(const DOMElement* const & e)
+    AttributeDecoder* SHIBSP_DLLLOCAL StringAttributeDecoderFactory(const DOMElement* const & e)
     {
-        return new SimpleAttributeDecoder(e);
+        return new StringAttributeDecoder(e);
     }
 };
 
-shibsp::Attribute* SimpleAttributeDecoder::decode(
+shibsp::Attribute* StringAttributeDecoder::decode(
     const char* id, const XMLObject* xmlObject, const char* assertingParty, const char* relyingParty
     ) const
 {
     char* val;
     auto_ptr<SimpleAttribute> simple(new SimpleAttribute(id));
+    simple->setCaseSensitive(m_caseSensitive);
     vector<string>& dest = simple->getValues();
     vector<XMLObject*>::const_iterator v,stop;
 
@@ -87,7 +88,7 @@ shibsp::Attribute* SimpleAttributeDecoder::decode(
                 }
             }
             else {
-                log.warn("XMLObject type not recognized by SimpleAttributeDecoder, no values returned");
+                log.warn("XMLObject type not recognized by StringAttributeDecoder, no values returned");
                 return NULL;
             }
         }
@@ -127,7 +128,7 @@ shibsp::Attribute* SimpleAttributeDecoder::decode(
             val = toUTF8(saml1name->getName());
         }
         else {
-            log.warn("XMLObject type not recognized by SimpleAttributeDecoder, no values returned");
+            log.warn("XMLObject type not recognized by StringAttributeDecoder, no values returned");
             return NULL;
         }
     }

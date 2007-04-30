@@ -98,7 +98,7 @@ namespace shibsp {
          * 
          * @return an immutable map of attributes keyed by attribute ID
          */
-        virtual const std::map<std::string,const Attribute*>& getAttributes() const=0;
+        virtual const std::multimap<std::string,Attribute*>& getAttributes() const=0;
         
         /**
          * Adds additional attributes to the session.
@@ -181,7 +181,7 @@ namespace shibsp {
          * @param authncontext_class    method/category of authentication event, if known
          * @param authncontext_decl specifics of authentication event, if known
          * @param tokens            assertions to cache with session, if any
-         * @param attributes        optional set of resolved Attributes to cache with session
+         * @param attributes        optional map of resolved Attributes to cache with session
          * @return  newly created session's key
          */
         virtual std::string insert(
@@ -195,7 +195,7 @@ namespace shibsp {
             const char* authncontext_class=NULL,
             const char* authncontext_decl=NULL,
             const std::vector<const opensaml::Assertion*>* tokens=NULL,
-            const std::vector<Attribute*>* attributes=NULL
+            const std::multimap<std::string,Attribute*>* attributes=NULL
             )=0;
 
         /**

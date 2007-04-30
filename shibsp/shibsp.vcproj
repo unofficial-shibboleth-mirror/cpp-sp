@@ -310,7 +310,7 @@
 					>
 				</File>
 				<File
-					RelativePath=".\attribute\SimpleAttributeDecoder.cpp"
+					RelativePath=".\attribute\StringAttributeDecoder.cpp"
 					>
 				</File>
 				<Filter
@@ -320,11 +320,11 @@
 						Name="impl"
 						>
 						<File
-							RelativePath=".\attribute\resolver\impl\AttributeResolver.cpp"
+							RelativePath=".\attribute\resolver\impl\QueryAttributeResolver.cpp"
 							>
 						</File>
 						<File
-							RelativePath=".\attribute\resolver\impl\SimpleAttributeResolver.cpp"
+							RelativePath=".\attribute\resolver\impl\XMLAttributeExtractor.cpp"
 							>
 						</File>
 					</Filter>
@@ -538,6 +538,10 @@
 				<Filter
 					Name="resolver"
 					>
+					<File
+						RelativePath=".\attribute\resolver\AttributeExtractor.h"
+						>
+					</File>
 					<File
 						RelativePath=".\attribute\resolver\AttributeResolver.h"
 						>

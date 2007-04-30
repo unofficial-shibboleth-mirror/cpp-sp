@@ -78,7 +78,7 @@ namespace {
     static const XMLCh validate[] = UNICODE_LITERAL_8(v,a,l,i,d,a,t,e);
 }
 
-PluginManager<RequestMapper,const xercesc::DOMElement*>::Factory SunRequestMapFactory;
+PluginManager<RequestMapper,string,const xercesc::DOMElement*>::Factory SunRequestMapFactory;
 
 extern "C" NSAPI_PUBLIC void nsapi_shib_exit(void*)
 {

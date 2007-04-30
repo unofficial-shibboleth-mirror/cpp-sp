@@ -38,14 +38,14 @@ namespace shibsp {
          * 
          * @param id    Attribute identifier
          */
-        SimpleAttribute(const char* id) : Attribute(id), m_caseSensitive(true) {}
+        SimpleAttribute(const char* id) : Attribute(id) {}
 
         /**
          * Constructs based on a remoted SimpleAttribute.
          * 
          * @param in    input object containing marshalled SimpleAttribute
          */
-        SimpleAttribute(DDF& in) : Attribute(in), m_caseSensitive(in["case_insensitive"].isnull()) {
+        SimpleAttribute(DDF& in) : Attribute(in) {
             DDF val = in.first().first();
             while (val.string()) {
                 m_serialized.push_back(val.string());
@@ -54,10 +54,6 @@ namespace shibsp {
         }
         
         virtual ~SimpleAttribute() {}
-
-        bool isCaseSensitive() const {
-            return m_caseSensitive;
-        }
 
         /**
          * Returns the set of values encoded as UTF-8 strings.
@@ -77,16 +73,11 @@ namespace shibsp {
         
         DDF marshall() const {
             DDF ddf = Attribute::marshall();
-            if (!m_caseSensitive)
-                ddf.addmember("case_insensitive");
             DDF vlist = ddf.first();
             for (std::vector<std::string>::const_iterator i=m_serialized.begin(); i!=m_serialized.end(); ++i)
                 vlist.add(DDF(NULL).string(i->c_str()));
             return ddf;
         }
-
-    private:
-        bool m_caseSensitive;
     };
 
 };

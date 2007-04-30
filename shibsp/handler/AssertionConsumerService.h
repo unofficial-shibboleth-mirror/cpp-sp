@@ -96,17 +96,17 @@ namespace shibsp {
          * <p>The caller must free the returned context handle.
          * 
          * @param application   reference to application receiving message
-         * @param httpRequest   client request that initiated session
          * @param issuer        source of SSO tokens
          * @param nameid        identifier of principal
-         * @param tokens        tokens to resolve, if any
+         * @param tokens        available assertions, if any
+         * @param attributes    attributes already extracted, if any
          */
         ResolutionContext* resolveAttributes(
             const Application& application,
-            const opensaml::HTTPRequest& httpRequest,
             const opensaml::saml2md::EntityDescriptor* issuer=NULL,
             const opensaml::saml2::NameID* nameid=NULL,
-            const std::vector<const opensaml::Assertion*>* tokens=NULL
+            const std::vector<const opensaml::Assertion*>* tokens=NULL,
+            const std::multimap<std::string,Attribute*>* attributes=NULL
             ) const;
         
     private:
