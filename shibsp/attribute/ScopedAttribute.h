@@ -48,17 +48,21 @@ namespace shibsp {
         /**
          * Constructor
          * 
-         * @param id    Attribute identifier
+         * @param id        Attribute identifier
+         * @param delimeter value/scope delimeter when serializing
          */
-        ScopedAttribute(const char* id) : Attribute(id) {}
+        ScopedAttribute(const char* id, char delimeter='@') : Attribute(id), m_delimeter(delimeter) {}
 
         /**
          * Constructs based on a remoted ScopedAttribute.
          * 
          * @param in    input object containing marshalled ScopedAttribute
          */
-        ScopedAttribute(DDF& in) : Attribute(in) {
-            DDF val = in.first().first();
+        ScopedAttribute(DDF& in) : Attribute(in), m_delimeter('@') {
+            DDF val = in["_delimeter"];
+            if (val.isint())
+                m_delimeter = static_cast<char>(val.integer());
+            val = in.first().first();
             while (val.name() && val.string()) {
                 m_values.push_back(std::make_pair(val.name(), val.string()));
                 val = in.first().next();
@@ -89,7 +93,7 @@ namespace shibsp {
         const std::vector<std::string>& getSerializedValues() const {
             if (m_serialized.empty()) {
                 for (std::vector< std::pair<std::string,std::string> >::const_iterator i=m_values.begin(); i!=m_values.end(); ++i)
-                    m_serialized.push_back(i->first + '@' + i->second);
+                    m_serialized.push_back(i->first + m_delimeter + i->second);
             }
             return Attribute::getSerializedValues();
         }
@@ -97,6 +101,8 @@ namespace shibsp {
         DDF marshall() const {
             DDF ddf = Attribute::marshall();
             ddf.name("Scoped");
+            if (m_delimeter != '@')
+                ddf.addmember("_delimeter").integer(m_delimeter);
             DDF vlist = ddf.first();
             for (std::vector< std::pair<std::string,std::string> >::const_iterator i=m_values.begin(); i!=m_values.end(); ++i) {
                 DDF val = DDF(i->first.c_str()).string(i->second.c_str());
@@ -106,6 +112,7 @@ namespace shibsp {
         }
     
     private:
+        char m_delimeter;
         std::vector< std::pair<std::string,std::string> > m_values;
     };
 

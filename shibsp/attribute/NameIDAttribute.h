@@ -57,8 +57,13 @@ namespace shibsp {
          * @param in    input object containing marshalled NameIDAttribute
          */
         NameIDAttribute(DDF& in) : Attribute(in) {
+            DDF val = in["_formatter"];
+            if (val.isstring())
+                m_formatter = val.string();
+            else
+                m_formatter = DEFAULT_NAMEID_FORMATTER;
             const char* pch;
-            DDF val = in.first().first();
+            val = in.first().first();
             while (val.name()) {
                 m_values.push_back(Value());
                 Value& v = m_values.back();
@@ -136,6 +141,7 @@ namespace shibsp {
         DDF marshall() const {
             DDF ddf = Attribute::marshall();
             ddf.name("NameID");
+            ddf.addmember("_formatter").string(m_formatter.c_str());
             DDF vlist = ddf.first();
             for (std::vector<Value>::const_iterator i=m_values.begin(); i!=m_values.end(); ++i) {
                 DDF val = DDF(i->m_Name.c_str()).structure();

@@ -315,7 +315,14 @@ string SAML2Consumer::implementProtocol(
     multimap<string,Attribute*> resolvedAttributes;
     AttributeExtractor* extractor = application.getAttributeExtractor();
     if (extractor) {
+        m_log.debug("extracting pushed attributes...");
         Locker extlocker(extractor);
+        try {
+            extractor->extractAttributes(application, policy.getIssuerMetadata(), *ssoName, resolvedAttributes);
+        }
+        catch (exception& ex) {
+            m_log.error("caught exception extracting attributes: %s", ex.what());
+        }
         for (vector<const opensaml::Assertion*>::const_iterator t = tokens.begin(); t!=tokens.end(); ++t) {
             try {
                 extractor->extractAttributes(application, policy.getIssuerMetadata(), *(*t), resolvedAttributes);

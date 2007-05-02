@@ -184,12 +184,23 @@ string SAML1Consumer::implementProtocol(
 
     m_log.debug("SSO profile processing completed successfully");
 
+    NameIdentifier* n = ssoStatement->getSubject()->getNameIdentifier();
+
     // We've successfully "accepted" at least one SSO token, along with any additional valid tokens.
     // To complete processing, we need to extract and resolve attributes and then create the session.
     multimap<string,Attribute*> resolvedAttributes;
     AttributeExtractor* extractor = application.getAttributeExtractor();
     if (extractor) {
+        m_log.debug("extracting pushed attributes...");
         Locker extlocker(extractor);
+        if (n) {
+            try {
+                extractor->extractAttributes(application, policy.getIssuerMetadata(), *n, resolvedAttributes);
+            }
+            catch (exception& ex) {
+                m_log.error("caught exception extracting attributes: %s", ex.what());
+            }
+        }
         for (vector<const opensaml::Assertion*>::const_iterator t = tokens.begin(); t!=tokens.end(); ++t) {
             try {
                 extractor->extractAttributes(application, policy.getIssuerMetadata(), *(*t), resolvedAttributes);
@@ -201,7 +212,6 @@ string SAML1Consumer::implementProtocol(
     }
 
     // First, normalize the SAML 1.x NameIdentifier...
-    NameIdentifier* n = ssoStatement->getSubject()->getNameIdentifier();
     auto_ptr<NameID> nameid(n ? NameIDBuilder::buildNameID() : NULL);
     if (n) {
         nameid->setName(n->getName());
