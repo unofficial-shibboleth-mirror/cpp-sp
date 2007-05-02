@@ -104,6 +104,9 @@ namespace shibsp {
 
     /** AttributeResolver based on SAML queries to an IdP during SSO. */
     #define QUERY_ATTRIBUTE_RESOLVER "Query"
+
+    /** AttributeResolver based on chaining together other resolvers. */
+    #define CHAINING_ATTRIBUTE_RESOLVER "Chaining"
 };
 
 #endif /* __shibsp_resolver_h__ */

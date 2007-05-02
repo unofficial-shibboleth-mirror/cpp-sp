@@ -149,6 +149,9 @@ namespace shibsp {
             for_each(m_SAML1Designators.begin(), m_SAML1Designators.end(), xmltooling::cleanup<AttributeDesignator>());
             for_each(m_SAML2Designators.begin(), m_SAML2Designators.end(), xmltooling::cleanup<saml2::Attribute>());
         }
+
+        Lockable* lock() {return this;}
+        void unlock() {}
         
         ResolutionContext* createResolutionContext(
             const Application& application,
@@ -164,9 +167,6 @@ namespace shibsp {
             return new QueryContext(application,session);
         }
 
-        Lockable* lock() {return this;}
-        void unlock() {}
-        
         void resolveAttributes(ResolutionContext& ctx) const;
 
     private:

@@ -320,6 +320,10 @@
 						Name="impl"
 						>
 						<File
+							RelativePath=".\attribute\resolver\impl\ChainingAttributeResolver.cpp"
+							>
+						</File>
+						<File
 							RelativePath=".\attribute\resolver\impl\QueryAttributeResolver.cpp"
 							>
 						</File>

@@ -29,8 +29,6 @@
 
 namespace shibsp {
 
-    class SHIBSP_API Application;
-    class SHIBSP_API Session;
     class SHIBSP_API Attribute;
 
     /**
