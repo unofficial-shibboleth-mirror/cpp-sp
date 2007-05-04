@@ -27,6 +27,7 @@
 #include "attribute/resolver/AttributeResolver.h"
 #include "attribute/resolver/ResolutionContext.h"
 #include "handler/AssertionConsumerService.h"
+#include "security/SecurityPolicy.h"
 #include "util/SPConstants.h"
 
 #include <saml/SAMLConfig.h>
@@ -170,13 +171,7 @@ string AssertionConsumerService::processMessage(
     Locker metadataLocker(application.getMetadataProvider());
 
     // Create the policy.
-    SecurityPolicy policy(
-        application.getServiceProvider().getPolicyRules(policyId.second), 
-        application.getMetadataProvider(),
-        &m_role,
-        application.getTrustEngine(),
-        validate.first && validate.second
-        );
+    shibsp::SecurityPolicy policy(application, &m_role, validate.first && validate.second);
     
     // Decode the message and process it in a protocol-specific way.
     auto_ptr<XMLObject> msg(m_decoder->decode(relayState, httpRequest, policy));

@@ -185,13 +185,16 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, const char* entit
 
     if (isHandler) {
         option=request.getParameter("acsIndex");
-        if (option)
+        if (option) {
             ACS = app.getAssertionConsumerServiceByIndex(atoi(option));
+            if (!ACS)
+                throw ConfigurationException("AssertionConsumerService with index ($1) not found, check configuration.", params(1,option));
+        }
 
         option = request.getParameter("target");
         if (option)
             target = option;
-        if (!acsByIndex.first || !acsByIndex.second) {
+        if (acsByIndex.first && !acsByIndex.second) {
             // Since we're passing the ACS by value, we need to compute the return URL,
             // so we'll need the target resource for real.
             recoverRelayState(request.getApplication(), request, target, false);
@@ -233,7 +236,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, const char* entit
 
     SPConfig& conf = SPConfig::getConfig();
     if (conf.isEnabled(SPConfig::OutOfProcess)) {
-        if (acsByIndex.first && acsByIndex.second) {
+        if (!acsByIndex.first || acsByIndex.second) {
             // Pass by Index. This also allows for defaulting it entirely and sending nothing.
             if (isHandler) {
                 // We may already have RelayState set if we looped back here,
@@ -294,7 +297,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, const char* entit
         in.addmember("authnContextClassRef").string(acClass.second);
     if (acComp.first)
         in.addmember("authnContextComparison").string(acComp.second);
-    if (acsByIndex.first && acsByIndex.second) {
+    if (!acsByIndex.first || acsByIndex.second) {
         if (ACS)
             in.addmember("acsIndex").string(ACS->getString("index").second);
     }
@@ -422,13 +425,13 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
     }
 
     req->setDestination(ep->getLocation());
-    if (acsIndex)
+    if (acsIndex && *acsIndex)
         req->setAssertionConsumerServiceIndex(acsIndex);
     if (acsLocation) {
         auto_ptr_XMLCh wideloc(acsLocation);
         req->setAssertionConsumerServiceURL(wideloc.get());
     }
-    if (acsBinding)
+    if (acsBinding && *acsBinding)
         req->setProtocolBinding(acsBinding);
     if (isPassive)
         req->IsPassive(isPassive);
