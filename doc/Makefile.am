@@ -11,7 +11,6 @@ pkgdoc_DATA = \
 	README.txt \
 	OPENSSL.LICENSE \
 	LOG4CPP.LICENSE \
-	CURL.LICENSE \
 	mysql-4.0.12.diff \
 	main.css \
 	logo.jpg
