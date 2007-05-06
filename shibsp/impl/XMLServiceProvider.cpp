@@ -30,6 +30,7 @@
 #include "SPConfig.h"
 #include "SPRequest.h"
 #include "TransactionLog.h"
+#include "attribute/filtering/AttributeFilter.h"
 #include "attribute/resolver/AttributeExtractor.h"
 #include "attribute/resolver/AttributeResolver.h"
 #include "handler/SessionInitiator.h"
@@ -90,6 +91,9 @@ namespace {
         AttributeExtractor* getAttributeExtractor() const {
             return (!m_attrExtractor && m_base) ? m_base->getAttributeExtractor() : m_attrExtractor;
         }
+        AttributeFilter* getAttributeFilter() const {
+            return (!m_attrFilter && m_base) ? m_base->getAttributeFilter() : m_attrFilter;
+        }
         AttributeResolver* getAttributeResolver() const {
             return (!m_attrResolver && m_base) ? m_base->getAttributeResolver() : m_attrResolver;
         }
@@ -120,6 +124,7 @@ namespace {
         MetadataProvider* m_metadata;
         TrustEngine* m_trust;
         AttributeExtractor* m_attrExtractor;
+        AttributeFilter* m_attrFilter;
         AttributeResolver* m_attrResolver;
         CredentialResolver* m_credResolver;
         vector<const XMLCh*> m_audiences;
@@ -341,7 +346,7 @@ XMLApplication::XMLApplication(
     const ServiceProvider* sp,
     const DOMElement* e,
     const XMLApplication* base
-    ) : m_sp(sp), m_base(base), m_metadata(NULL), m_trust(NULL), m_attrExtractor(NULL), m_attrResolver(NULL),
+    ) : m_sp(sp), m_base(base), m_metadata(NULL), m_trust(NULL), m_attrExtractor(NULL), m_attrFilter(NULL), m_attrResolver(NULL),
         m_credResolver(NULL), m_partyDefault(NULL), m_sessionInitDefault(NULL), m_acsDefault(NULL)
 {
 #ifdef _DEBUG
@@ -522,6 +527,18 @@ XMLApplication::XMLApplication(
                 }
             }
 
+            child = XMLHelper::getFirstChildElement(e,_AttributeFilter);
+            if (child) {
+                auto_ptr_char type(child->getAttributeNS(NULL,_type));
+                log.info("building AttributeFilter of type %s...",type.get());
+                try {
+                    m_attrFilter = conf.AttributeFilterManager.newPlugin(type.get(),child);
+                }
+                catch (exception& ex) {
+                    log.crit("error building AttributeFilter: %s", ex.what());
+                }
+            }
+
             child = XMLHelper::getFirstChildElement(e,_AttributeResolver);
             if (child) {
                 auto_ptr_char type(child->getAttributeNS(NULL,_type));
@@ -592,6 +609,7 @@ void XMLApplication::cleanup()
     for_each(m_handlers.begin(),m_handlers.end(),xmltooling::cleanup<Handler>());
     delete m_credResolver;
     delete m_attrResolver;
+    delete m_attrFilter;
     delete m_attrExtractor;
     delete m_trust;
     delete m_metadata;

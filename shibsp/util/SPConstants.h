@@ -43,6 +43,9 @@ namespace shibspconstants {
     /** Shibboleth 2.0 attribute mapping namespace ("urn:mace:shibboleth:2.0:attribute-map") */
     extern SHIBSP_API const XMLCh SHIB2ATTRIBUTEMAP_NS[];
 
+    /** Shibboleth 2.0 attribute filter policy namespace ("urn:mace:shibboleth:2.0:afp") */
+    extern SHIBSP_API const XMLCh SHIB2ATTRIBUTEFILTER_NS[];
+
     /** Shibboleth 1.x Protocol Enumeration constant ("urn:mace:shibboleth:1.0") */
     extern SHIBSP_API const XMLCh SHIB1_PROTOCOL_ENUM[];
 

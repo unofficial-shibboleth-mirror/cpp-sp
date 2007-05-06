@@ -29,6 +29,8 @@
 #include "SessionCache.h"
 #include "SPConfig.h"
 #include "attribute/AttributeDecoder.h"
+#include "attribute/filtering/AttributeFilter.h"
+#include "attribute/filtering/MatchFunctor.h"
 #include "attribute/resolver/AttributeExtractor.h"
 #include "attribute/resolver/AttributeResolver.h"
 #include "binding/ArtifactResolver.h"
@@ -108,20 +110,34 @@ bool SPInternalConfig::init(const char* catalog_path)
     REGISTER_XMLTOOLING_EXCEPTION_FACTORY(ConfigurationException,shibsp);
     REGISTER_XMLTOOLING_EXCEPTION_FACTORY(ListenerException,shibsp);
     
-    registerMetadataExtClasses();
-    registerPKIXTrustEngine();
+    if (isEnabled(Metadata))
+        registerMetadataExtClasses();
+    if (isEnabled(Trust))
+        registerPKIXTrustEngine();
 
-    registerAccessControls();
-    registerAttributeDecoders();
-    registerAttributeExtractors();
     registerAttributeFactories();
-    registerAttributeResolvers();
     registerHandlers();
     registerSessionInitiators();
-    registerListenerServices();
-    registerRequestMappers();
-    registerSessionCaches();
     registerServiceProviders();
+
+    if (isEnabled(AttributeResolution)) {
+        registerAttributeDecoders();
+        registerAttributeExtractors();
+        registerAttributeFilters();
+        registerAttributeResolvers();
+        registerMatchFunctors();
+    }
+
+    if (isEnabled(Listener))
+        registerListenerServices();
+
+    if (isEnabled(RequestMapping)) {
+        registerAccessControls();
+        registerRequestMappers();
+    }
+
+    if (isEnabled(Caching))
+        registerSessionCaches();
 
     if (isEnabled(OutOfProcess))
         m_artifactResolver = new ArtifactResolver();
@@ -145,17 +161,28 @@ void SPInternalConfig::term()
     ManageNameIDServiceManager.deregisterFactories();
     SessionInitiatorManager.deregisterFactories();
     SingleLogoutServiceManager.deregisterFactories();
-    
-    ServiceProviderManager.deregisterFactories();
-    SessionCacheManager.deregisterFactories();
-    RequestMapperManager.deregisterFactories();
-    ListenerServiceManager.deregisterFactories();
     HandlerManager.deregisterFactories();
-    AttributeDecoderManager.deregisterFactories();
-    AttributeExtractorManager.deregisterFactories();
-    AttributeResolverManager.deregisterFactories();
+    ServiceProviderManager.deregisterFactories();
     Attribute::deregisterFactories();
-    AccessControlManager.deregisterFactories();
+
+    if (isEnabled(AttributeResolution)) {
+        MatchFunctorManager.deregisterFactories();
+        AttributeDecoderManager.deregisterFactories();
+        AttributeFilterManager.deregisterFactories();
+        AttributeExtractorManager.deregisterFactories();
+        AttributeResolverManager.deregisterFactories();
+    }
+
+    if (isEnabled(Listener))
+        ListenerServiceManager.deregisterFactories();
+
+    if (isEnabled(RequestMapping)) {
+        AccessControlManager.deregisterFactories();
+        RequestMapperManager.deregisterFactories();
+    }
+
+    if (isEnabled(Caching))
+        SessionCacheManager.deregisterFactories();
 
     SAMLConfig::getConfig().term();
     log.info("library shutdown complete");

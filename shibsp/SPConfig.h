@@ -37,9 +37,11 @@ namespace shibsp {
     class SHIBSP_API AccessControl;
     class SHIBSP_API AttributeDecoder;
     class SHIBSP_API AttributeExtractor;
+    class SHIBSP_API AttributeFilter;
     class SHIBSP_API AttributeResolver;
     class SHIBSP_API Handler;
     class SHIBSP_API ListenerService;
+    class SHIBSP_API MatchFunctor;
     class SHIBSP_API RequestMapper;
     class SHIBSP_API ServiceProvider;
     class SHIBSP_API SessionCache;
@@ -179,6 +181,11 @@ namespace shibsp {
         xmltooling::PluginManager<AttributeExtractor,std::string,const xercesc::DOMElement*> AttributeExtractorManager;
 
         /**
+         * Manages factories for AttributeFilter plugins.
+         */
+        xmltooling::PluginManager<AttributeFilter,std::string,const xercesc::DOMElement*> AttributeFilterManager;
+
+        /**
          * Manages factories for AttributeResolver plugins.
          */
         xmltooling::PluginManager<AttributeResolver,std::string,const xercesc::DOMElement*> AttributeResolverManager;
@@ -197,6 +204,11 @@ namespace shibsp {
          * Manages factories for ListenerService plugins.
          */
         xmltooling::PluginManager<ListenerService,std::string,const xercesc::DOMElement*> ListenerServiceManager;
+
+        /**
+         * Manages factories for MatchFunctor plugins.
+         */
+        xmltooling::PluginManager<MatchFunctor,xmltooling::QName,const xercesc::DOMElement*> MatchFunctorManager;
 
         /**
          * Manages factories for Handler plugins that implement ManageNameIDService functionality.

@@ -26,6 +26,8 @@
 #include "ServiceProvider.h"
 #include "SessionCache.h"
 #include "attribute/Attribute.h"
+#include "attribute/filtering/AttributeFilter.h"
+#include "attribute/filtering/BasicFilteringContext.h"
 #include "attribute/resolver/AttributeExtractor.h"
 #include "attribute/resolver/ResolutionContext.h"
 #include "handler/AssertionConsumerService.h"
@@ -330,6 +332,21 @@ string SAML2Consumer::implementProtocol(
             catch (exception& ex) {
                 m_log.error("caught exception extracting attributes: %s", ex.what());
             }
+        }
+    }
+
+    AttributeFilter* filter = application.getAttributeFilter();
+    if (filter && !resolvedAttributes.empty()) {
+        BasicFilteringContext fc(application, policy.getIssuerMetadata());
+        Locker filtlocker(filter);
+        try {
+            filter->filterAttributes(fc, resolvedAttributes);
+        }
+        catch (exception& ex) {
+            m_log.error("caught exception filtering attributes: %s", ex.what());
+            m_log.error("dumping extracted attributes due to filtering exception");
+            for_each(resolvedAttributes.begin(), resolvedAttributes.end(), cleanup_pair<string,shibsp::Attribute>());
+            resolvedAttributes.clear();
         }
     }
 

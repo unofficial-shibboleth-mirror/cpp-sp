@@ -18,7 +18,7 @@
     </element>
     <complexType name="AttributeFilterPolicyGroupType">
         <complexContent>
-            <extension base="afp:IndentityType">
+            <extension base="afp:IdentityType">
                 <sequence>
                     <element ref="afp:PolicyRequirementRule" minOccurs="0" maxOccurs="unbounded">
                         <annotation>
@@ -28,17 +28,17 @@
                             </documentation>
                         </annotation>
                     </element>
+                    <element ref="afp:PermitValueRule" minOccurs="0" maxOccurs="unbounded">
+                        <annotation>
+                            <documentation>
+                                Defines an attribute value filter that may be reused across multiple attribute rules.
+                            </documentation>
+                        </annotation>
+                    </element>
                     <element ref="afp:AttributeRule" minOccurs="0" maxOccurs="unbounded">
                         <annotation>
                             <documentation>
                                 Defines an attribute rule that may be reused across multiple filter policies.
-                            </documentation>
-                        </annotation>
-                    </element>
-                    <element ref="afp:PermitValueRule" minOccurs="0" maxOccurs="unbounded">
-                        <annotation>
-                            <documentation>
-                                Defines an attribute value filter that may be reused across multiple attribtue rules.
                             </documentation>
                         </annotation>
                     </element>
@@ -73,7 +73,7 @@
     </element>
     <complexType name="AttributeFilterPolicyType">
         <complexContent>
-            <extension base="afp:IndentityType">
+            <extension base="afp:IdentityType">
                 <sequence>
                     <choice>
                         <element ref="afp:PolicyRequirementRule">
@@ -119,7 +119,7 @@
     </element>
     <complexType name="AttributeRuleType">
         <complexContent>
-            <extension base="afp:IndentityType">
+            <extension base="afp:IdentityType">
                 <choice>
                     <element ref="afp:PermitValueRule">
                         <annotation>
@@ -161,11 +161,11 @@
     </element>
     <complexType name="MatchFunctorType" abstract="true">
         <complexContent>
-            <extension base="afp:IndentityType" />
+            <extension base="afp:IdentityType" />
         </complexContent>
     </complexType>
 
-    <complexType name="IndentityType">
+    <complexType name="IdentityType">
         <attribute name="id" type="string">
             <annotation>
                 <documentation>An ID, unique within the policy and component type.</documentation>

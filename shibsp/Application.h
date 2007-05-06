@@ -31,6 +31,7 @@
 namespace shibsp {
     
     class SHIBSP_API AttributeExtractor;
+    class SHIBSP_API AttributeFilter;
     class SHIBSP_API AttributeResolver;
     class SHIBSP_API Handler;
     class SHIBSP_API ServiceProvider;
@@ -99,6 +100,13 @@ namespace shibsp {
          * @return  an AttributeExtractor, or NULL
          */
         virtual AttributeExtractor* getAttributeExtractor() const=0;
+
+        /**
+         * Returns an AttributeFilter for use with this Application.
+         * 
+         * @return  an AttributeFilter, or NULL
+         */
+        virtual AttributeFilter* getAttributeFilter() const=0;
 
         /**
          * Returns an AttributeResolver for use with this Application.

@@ -191,6 +191,18 @@
 				>
 			</File>
 			<File
+				RelativePath=".\attribute\filtering\impl\AttributeFilter.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\attribute\filtering\impl\ChainingAttributeFilter.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\attribute\filtering\impl\MatchFunctor.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\ServiceProvider.cpp"
 				>
 			</File>
@@ -200,6 +212,10 @@
 			</File>
 			<File
 				RelativePath=".\SPConfig.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\attribute\filtering\impl\XMLAttributeFilter.cpp"
 				>
 			</File>
 			<Filter
@@ -333,6 +349,14 @@
 						</File>
 					</Filter>
 				</Filter>
+				<Filter
+					Name="filtering"
+					>
+					<Filter
+						Name="impl"
+						>
+					</Filter>
+				</Filter>
 			</Filter>
 			<Filter
 				Name="binding"
@@ -425,11 +449,19 @@
 				>
 			</File>
 			<File
+				RelativePath=".\attribute\filtering\BasicFilteringContext.h"
+				>
+			</File>
+			<File
 				RelativePath=".\exceptions.h"
 				>
 			</File>
 			<File
 				RelativePath=".\internal.h"
+				>
+			</File>
+			<File
+				RelativePath=".\attribute\filtering\MatchFunctor.h"
 				>
 			</File>
 			<File
@@ -552,6 +584,18 @@
 					</File>
 					<File
 						RelativePath=".\attribute\resolver\ResolutionContext.h"
+						>
+					</File>
+				</Filter>
+				<Filter
+					Name="filtering"
+					>
+					<File
+						RelativePath=".\attribute\filtering\AttributeFilter.h"
+						>
+					</File>
+					<File
+						RelativePath=".\attribute\filtering\FilteringContext.h"
 						>
 					</File>
 				</Filter>

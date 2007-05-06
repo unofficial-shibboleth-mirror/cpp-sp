@@ -45,6 +45,12 @@ attrinclude_HEADERS = \
 	attribute/ScopedAttribute.h \
 	attribute/SimpleAttribute.h
 
+attrfiltinclude_HEADERS = \
+	attribute/filtering/AttributeFilter.h \
+	attribute/filtering/BasicFilteringContext.h \
+	attribute/filtering/FilteringContext.h \
+	attribute/filtering/MatchFunctor.h
+
 attrresinclude_HEADERS = \
 	attribute/resolver/AttributeExtractor.h \
 	attribute/resolver/AttributeResolver.h \
@@ -92,6 +98,10 @@ libshibsp_la_SOURCES = \
 	attribute/NameIDAttributeDecoder.cpp \
 	attribute/ScopedAttributeDecoder.cpp \
 	attribute/StringAttributeDecoder.cpp \
+	attribute/filtering/AttributeFilter.cpp \
+	attribute/filtering/ChainingAttributeFilter.cpp \
+	attribute/filtering/MatchFunctor.cpp \
+	attribute/filtering/XMLAttributeFilter.cpp \
 	attribute/resolver/impl/ChainingAttributeResolver.cpp \
 	attribute/resolver/impl/QueryAttributeResolver.cpp \
 	attribute/resolver/impl/XMLAttributeExtractor.cpp \

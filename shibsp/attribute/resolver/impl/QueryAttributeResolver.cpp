@@ -25,6 +25,8 @@
 #include "ServiceProvider.h"
 #include "SessionCache.h"
 #include "attribute/Attribute.h"
+#include "attribute/filtering/AttributeFilter.h"
+#include "attribute/filtering/BasicFilteringContext.h"
 #include "attribute/resolver/AttributeExtractor.h"
 #include "attribute/resolver/AttributeResolver.h"
 #include "attribute/resolver/ResolutionContext.h"
@@ -321,9 +323,18 @@ bool QueryResolver::SAML1Query(QueryContext& ctx) const
             Locker extlocker(extractor);
             extractor->extractAttributes(ctx.getApplication(), AA, *newtoken, ctx.getResolvedAttributes());
         }
+
+        AttributeFilter* filter = ctx.getApplication().getAttributeFilter();
+        if (filter) {
+            BasicFilteringContext fc(ctx.getApplication(), AA);
+            Locker filtlocker(filter);
+            filter->filterAttributes(fc, ctx.getResolvedAttributes());
+        }
     }
     catch (exception& ex) {
         m_log.error("caught exception extracting/filtering attributes from query result: %s", ex.what());
+        for_each(ctx.getResolvedAttributes().begin(), ctx.getResolvedAttributes().end(), cleanup_pair<string,shibsp::Attribute>());
+        ctx.getResolvedAttributes().clear();
     }
 
     return true;
@@ -423,9 +434,18 @@ bool QueryResolver::SAML2Query(QueryContext& ctx) const
             Locker extlocker(extractor);
             extractor->extractAttributes(ctx.getApplication(), AA, *newtoken, ctx.getResolvedAttributes());
         }
+
+        AttributeFilter* filter = ctx.getApplication().getAttributeFilter();
+        if (filter) {
+            BasicFilteringContext fc(ctx.getApplication(), AA);
+            Locker filtlocker(filter);
+            filter->filterAttributes(fc, ctx.getResolvedAttributes());
+        }
     }
     catch (exception& ex) {
         m_log.error("caught exception extracting/filtering attributes from query result: %s", ex.what());
+        for_each(ctx.getResolvedAttributes().begin(), ctx.getResolvedAttributes().end(), cleanup_pair<string,shibsp::Attribute>());
+        ctx.getResolvedAttributes().clear();
     }
 
     return true;

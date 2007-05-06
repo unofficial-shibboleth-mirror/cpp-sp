@@ -56,6 +56,12 @@ const XMLCh shibspconstants::SHIB2ATTRIBUTEMAP_NS[] = // urn:mace:shibboleth:2.0
   chLatin_m, chLatin_a, chLatin_p, chNull
 };
 
+const XMLCh shibspconstants::SHIB2ATTRIBUTEFILTER_NS[] = // urn:mace:shibboleth:2.0:afp
+{ chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
+  chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
+  chDigit_2, chPeriod, chDigit_0, chColon, chLatin_a, chLatin_f, chLatin_p, chNull
+};
+
 const XMLCh shibspconstants::SHIB1_ATTRIBUTE_NAMESPACE_URI[] = // urn:mace:shibboleth:1.0:attributeNamespace:uri
 { chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
   chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
