@@ -35,9 +35,15 @@ namespace shibsp {
          *
          * @param app   reference to Application
          * @param role  metadata role of attribute issuer, if any
+         * @param authncontext_class    method/category of authentication event, if known
+         * @param authncontext_decl specifics of authentication event, if known
          */
-        BasicFilteringContext(const Application& app, const opensaml::saml2md::RoleDescriptor* role)
-                : m_app(app), m_role(role), m_issuer(NULL) {
+        BasicFilteringContext(
+            const Application& app,
+            const opensaml::saml2md::RoleDescriptor* role=NULL,
+            const char* authncontext_class=NULL,
+            const char* authncontext_decl=NULL
+            ) : m_app(app), m_role(role), m_issuer(NULL), m_class(authncontext_class), m_decl(authncontext_decl) {
             if (role)
                 m_issuer = dynamic_cast<opensaml::saml2md::EntityDescriptor*>(role->getParent())->getEntityID();
         }
@@ -46,6 +52,12 @@ namespace shibsp {
 
         const Application& getApplication() const {
             return m_app;
+        }
+        const char* getAuthnContextClassRef() const {
+            return m_class;
+        }
+        const char* getAuthnContextDeclRef() const {
+            return m_decl;
         }
         const XMLCh* getAttributeRequester() const {
             return m_app.getXMLString("entityID").second;
@@ -64,6 +76,8 @@ namespace shibsp {
         const Application& m_app;
         const opensaml::saml2md::RoleDescriptor* m_role;
         const XMLCh* m_issuer;
+        const char* m_class;
+        const char* m_decl;
     };
 };
 

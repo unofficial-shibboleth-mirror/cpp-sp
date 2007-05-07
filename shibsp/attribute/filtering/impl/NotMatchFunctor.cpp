@@ -60,7 +60,7 @@ namespace shibsp {
         const MatchFunctor* m_functor;
     };
 
-    MatchFunctor* SHIBSP_DLLLOCAL NotFunctorFactory(const pair<const FilterPolicyContext*,const DOMElement*>& p)
+    MatchFunctor* SHIBSP_DLLLOCAL NotMatchFunctorFactory(const pair<const FilterPolicyContext*,const DOMElement*>& p)
     {
         return new NotMatchFunctor(p);
     }

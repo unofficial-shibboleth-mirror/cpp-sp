@@ -61,6 +61,8 @@ namespace shibsp {
          * @param application       reference to Application that owns the eventual Session
          * @param issuer            issuing metadata of assertion issuer, if known
          * @param nameid            principal identifier, normalized to SAML 2, if any
+         * @param authncontext_class    method/category of authentication event, if known
+         * @param authncontext_decl specifics of authentication event, if known
          * @param tokens            assertions initiating the session, if any
          * @param attributes        map of previously resolved attributes, if any
          * @return  newly created ResolutionContext, owned by caller
@@ -69,6 +71,8 @@ namespace shibsp {
             const Application& application,
             const opensaml::saml2md::EntityDescriptor* issuer,
             const opensaml::saml2::NameID* nameid,
+            const char* authncontext_class=NULL,
+            const char* authncontext_decl=NULL,
             const std::vector<const opensaml::Assertion*>* tokens=NULL,
             const std::multimap<std::string,Attribute*>* attributes=NULL
             ) const=0;

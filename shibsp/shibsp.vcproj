@@ -203,6 +203,18 @@
 				>
 			</File>
 			<File
+				RelativePath=".\attribute\filtering\impl\AttributeIssuerStringFunctor.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\attribute\filtering\impl\AttributeRequesterStringFunctor.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\attribute\filtering\impl\AuthenticationMethodStringFunctor.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\attribute\filtering\impl\ChainingAttributeFilter.cpp"
 				>
 			</File>

@@ -30,28 +30,50 @@ using namespace shibsp;
 using namespace xmltooling;
 using namespace std;
 
-namespace shibsp {
-    SHIBSP_DLLLOCAL PluginManager< MatchFunctor,QName,pair<const FilterPolicyContext*,const DOMElement*> >::Factory AnyFunctorFactory;
-    SHIBSP_DLLLOCAL PluginManager< MatchFunctor,QName,pair<const FilterPolicyContext*,const DOMElement*> >::Factory AndFunctorFactory;
-    SHIBSP_DLLLOCAL PluginManager< MatchFunctor,QName,pair<const FilterPolicyContext*,const DOMElement*> >::Factory OrFunctorFactory;
-    SHIBSP_DLLLOCAL PluginManager< MatchFunctor,QName,pair<const FilterPolicyContext*,const DOMElement*> >::Factory NotFunctorFactory;
+#define DECL_FACTORY(name) \
+    SHIBSP_DLLLOCAL PluginManager< MatchFunctor,QName,pair<const FilterPolicyContext*,const DOMElement*> >::Factory name##Factory
 
-    static const XMLCh ANY[] =                  UNICODE_LITERAL_3(A,N,Y);
-    static const XMLCh AND[] =                  UNICODE_LITERAL_3(A,N,D);
-    static const XMLCh OR[] =                   UNICODE_LITERAL_2(O,R);
-    static const XMLCh NOT[] =                  UNICODE_LITERAL_3(N,O,T);
+#define DECL_BASIC_QNAME(name,lit) \
+    QName shibsp::name##Type(shibspconstants::SHIB2ATTRIBUTEFILTER_MF_BASIC_NS, lit)
+
+#define REGISTER_FACTORY(name) \
+    mgr.registerFactory(name##Type, name##Factory)
+
+namespace shibsp {
+    DECL_FACTORY(AnyMatchFunctor);
+    DECL_FACTORY(AndMatchFunctor);
+    DECL_FACTORY(OrMatchFunctor);
+    DECL_FACTORY(NotMatchFunctor);
+    DECL_FACTORY(AttributeRequesterString);
+    DECL_FACTORY(AttributeIssuerString);
+    DECL_FACTORY(AuthenticationMethodString);
+
+    static const XMLCh ANY[] =                          UNICODE_LITERAL_3(A,N,Y);
+    static const XMLCh AND[] =                          UNICODE_LITERAL_3(A,N,D);
+    static const XMLCh OR[] =                           UNICODE_LITERAL_2(O,R);
+    static const XMLCh NOT[] =                          UNICODE_LITERAL_3(N,O,T);
+    static const XMLCh AttributeRequesterString[] =     UNICODE_LITERAL_24(A,t,t,r,i,b,u,t,e,R,e,q,u,e,s,t,e,r,S,t,r,i,n,g);
+    static const XMLCh AttributeIssuerString[] =        UNICODE_LITERAL_21(A,t,t,r,i,b,u,t,e,I,s,s,u,e,r,S,t,r,i,n,g);
+    static const XMLCh AuthenticationMethodString[] =   UNICODE_LITERAL_26(A,u,t,h,e,n,t,i,c,a,t,i,o,n,M,e,t,h,o,d,S,t,r,i,n,g);
 };
 
-QName shibsp::AnyMatchFunctorType(shibspconstants::SHIB2ATTRIBUTEFILTER_MF_BASIC_NS, ANY);
-QName shibsp::AndMatchFunctorType(shibspconstants::SHIB2ATTRIBUTEFILTER_MF_BASIC_NS, AND);
-QName shibsp::OrMatchFunctorType(shibspconstants::SHIB2ATTRIBUTEFILTER_MF_BASIC_NS, OR);
-QName shibsp::NotMatchFunctorType(shibspconstants::SHIB2ATTRIBUTEFILTER_MF_BASIC_NS, NOT);
+DECL_BASIC_QNAME(AnyMatchFunctor, ANY);
+DECL_BASIC_QNAME(AndMatchFunctor, AND);
+DECL_BASIC_QNAME(OrMatchFunctor, OR);
+DECL_BASIC_QNAME(NotMatchFunctor, NOT);
+DECL_BASIC_QNAME(AttributeRequesterString, AttributeRequesterString);
+DECL_BASIC_QNAME(AttributeIssuerString, AttributeIssuerString);
+DECL_BASIC_QNAME(AuthenticationMethodString, AuthenticationMethodString);
 
 void SHIBSP_API shibsp::registerMatchFunctors()
 {
-    SPConfig& conf = SPConfig::getConfig();
-    conf.MatchFunctorManager.registerFactory(AnyMatchFunctorType, AnyFunctorFactory);
-    conf.MatchFunctorManager.registerFactory(AndMatchFunctorType, AndFunctorFactory);
-    conf.MatchFunctorManager.registerFactory(OrMatchFunctorType, OrFunctorFactory);
-    conf.MatchFunctorManager.registerFactory(NotMatchFunctorType, NotFunctorFactory);
+    PluginManager< MatchFunctor,QName,pair<const FilterPolicyContext*,const DOMElement*> >& mgr =
+        SPConfig::getConfig().MatchFunctorManager;
+    REGISTER_FACTORY(AnyMatchFunctor);
+    REGISTER_FACTORY(AndMatchFunctor);
+    REGISTER_FACTORY(OrMatchFunctor);
+    REGISTER_FACTORY(NotMatchFunctor);
+    REGISTER_FACTORY(AttributeRequesterString);
+    REGISTER_FACTORY(AttributeIssuerString);
+    REGISTER_FACTORY(AuthenticationMethodString);
 }

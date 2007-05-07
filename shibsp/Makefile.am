@@ -107,6 +107,9 @@ libshibsp_la_SOURCES = \
 	attribute/filtering/AnyMatchFunctor.cpp \
 	attribute/filtering/NotMatchFunctor.cpp \
 	attribute/filtering/OrMatchFunctor.cpp \
+	attribute/filtering/AttributeIssuerStringFunctor.cpp \
+	attribute/filtering/AttributeRequesterStringFunctor.cpp \
+	attribute/filtering/AuthenticationMethodStringFunctor.cpp \
 	attribute/resolver/impl/ChainingAttributeResolver.cpp \
 	attribute/resolver/impl/QueryAttributeResolver.cpp \
 	attribute/resolver/impl/XMLAttributeExtractor.cpp \

@@ -42,7 +42,7 @@ namespace shibsp {
         }
     };
 
-    MatchFunctor* SHIBSP_DLLLOCAL AnyFunctorFactory(const std::pair<const FilterPolicyContext*,const DOMElement*>& p)
+    MatchFunctor* SHIBSP_DLLLOCAL AnyMatchFunctorFactory(const std::pair<const FilterPolicyContext*,const DOMElement*>& p)
     {
         return new AnyMatchFunctor();
     }

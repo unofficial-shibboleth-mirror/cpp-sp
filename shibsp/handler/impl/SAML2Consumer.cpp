@@ -351,24 +351,6 @@ string SAML2Consumer::implementProtocol(
     }
 
     try {
-        const EntityDescriptor* issuerMetadata =
-            policy.getIssuerMetadata() ? dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL;
-        auto_ptr<ResolutionContext> ctx(
-            resolveAttributes(application, issuerMetadata, ssoName, &tokens, &resolvedAttributes)
-            );
-
-        if (ctx.get()) {
-            // Copy over any new tokens, but leave them in the context for cleanup.
-            tokens.insert(tokens.end(), ctx->getResolvedAssertions().begin(), ctx->getResolvedAssertions().end());
-
-            // Copy over new attributes, and transfer ownership.
-            resolvedAttributes.insert(ctx->getResolvedAttributes().begin(), ctx->getResolvedAttributes().end());
-            ctx->getResolvedAttributes().clear();
-        }
-
-        // Now merge in bad tokens for caching.
-        tokens.insert(tokens.end(), badtokens.begin(), badtokens.end());
-
         // Now we have to extract the authentication details for session setup.
 
         // Session expiration for SAML 2.0 is jointly IdP- and SP-driven.
@@ -390,6 +372,24 @@ string SAML2Consumer::implementProtocol(
         auto_ptr_char authnDecl((authnContext && authnContext->getAuthnContextDeclRef()) ? authnContext->getAuthnContextDeclRef()->getReference() : NULL);
         auto_ptr_char index(ssoStatement->getSessionIndex());
         auto_ptr_char authnInstant(ssoStatement->getAuthnInstant() ? ssoStatement->getAuthnInstant()->getRawData() : NULL);
+
+        const EntityDescriptor* issuerMetadata =
+            policy.getIssuerMetadata() ? dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL;
+        auto_ptr<ResolutionContext> ctx(
+            resolveAttributes(application, issuerMetadata, ssoName, authnClass.get(), authnDecl.get(), &tokens, &resolvedAttributes)
+            );
+
+        if (ctx.get()) {
+            // Copy over any new tokens, but leave them in the context for cleanup.
+            tokens.insert(tokens.end(), ctx->getResolvedAssertions().begin(), ctx->getResolvedAssertions().end());
+
+            // Copy over new attributes, and transfer ownership.
+            resolvedAttributes.insert(ctx->getResolvedAttributes().begin(), ctx->getResolvedAttributes().end());
+            ctx->getResolvedAttributes().clear();
+        }
+
+        // Now merge in bad tokens for caching.
+        tokens.insert(tokens.end(), badtokens.begin(), badtokens.end());
 
         string key = application.getServiceProvider().getSessionCache()->insert(
             sessionExp,

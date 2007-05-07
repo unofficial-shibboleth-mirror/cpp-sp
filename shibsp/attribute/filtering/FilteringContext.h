@@ -51,6 +51,22 @@ namespace shibsp {
         virtual const Application& getApplication() const=0;
 
         /**
+         * Returns a URI containing an AuthnContextClassRef associated with the subject.
+         * 
+         * <p>SAML 1.x AuthenticationMethods will be returned as class references.
+         * 
+         * @return  a URI identifying the authentication context class
+         */
+        virtual const char* getAuthnContextClassRef() const=0;
+
+        /**
+         * Returns a URI containing an AuthnContextDeclRef associated with the subject.
+         * 
+         * @return  a URI identifying the authentication context declaration
+         */
+        virtual const char* getAuthnContextDeclRef() const=0;
+
+        /**
          * Gets the ID of the requester of the attributes, if known.
          * 
          * @return requester of the attributes, or NULL

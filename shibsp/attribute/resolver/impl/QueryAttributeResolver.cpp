@@ -66,16 +66,19 @@ namespace shibsp {
     {
     public:
         QueryContext(const Application& application, const Session& session)
-            : m_query(true), m_app(application), m_session(&session), m_metadata(NULL), m_entity(NULL), m_nameid(session.getNameID()) {
+            : m_query(true), m_app(application), m_session(&session), m_metadata(NULL), m_entity(NULL), m_nameid(NULL) {
         }
         
         QueryContext(
             const Application& application,
             const EntityDescriptor* issuer,
             const NameID* nameid,
+            const char* authncontext_class=NULL,
+            const char* authncontext_decl=NULL,
             const vector<const opensaml::Assertion*>* tokens=NULL,
             const multimap<string,Attribute*>* attributes=NULL
-            ) : m_query(true), m_app(application), m_session(NULL), m_metadata(NULL), m_entity(issuer), m_nameid(nameid) {
+            ) : m_query(true), m_app(application), m_session(NULL), m_metadata(NULL), m_entity(issuer),
+                m_nameid(nameid), m_class(authncontext_class), m_decl(authncontext_decl) {
 
             if (tokens) {
                 for (vector<const opensaml::Assertion*>::const_iterator t = tokens->begin(); t!=tokens->end(); ++t) {
@@ -120,11 +123,17 @@ namespace shibsp {
             return NULL;
         }
         const NameID* getNameID() const {
-            return m_nameid;
+            return m_session ? m_session->getNameID() : m_nameid;
+        }
+        const char* getClassRef() const {
+            return m_session ? m_session->getAuthnContextClassRef() :  m_class;
+        }
+        const char* getDeclRef() const {
+            return m_session ? m_session->getAuthnContextDeclRef() : m_decl;
         }
         const Session* getSession() const {
             return m_session;
-        }        
+        }
         multimap<string,shibsp::Attribute*>& getResolvedAttributes() {
             return m_attributes;
         }
@@ -139,6 +148,8 @@ namespace shibsp {
         mutable MetadataProvider* m_metadata;
         mutable const EntityDescriptor* m_entity;
         const NameID* m_nameid;
+        const char* m_class;
+        const char* m_decl;
         multimap<string,shibsp::Attribute*> m_attributes;
         vector<opensaml::Assertion*> m_assertions;
     };
@@ -159,10 +170,12 @@ namespace shibsp {
             const Application& application,
             const EntityDescriptor* issuer,
             const NameID* nameid,
+            const char* authncontext_class=NULL,
+            const char* authncontext_decl=NULL,
             const vector<const opensaml::Assertion*>* tokens=NULL,
             const multimap<string,shibsp::Attribute*>* attributes=NULL
             ) const {
-            return new QueryContext(application,issuer,nameid,tokens,attributes);
+            return new QueryContext(application,issuer,nameid,authncontext_class,authncontext_decl,tokens,attributes);
         }
 
         ResolutionContext* createResolutionContext(const Application& application, const Session& session) const {
@@ -326,7 +339,7 @@ bool QueryResolver::SAML1Query(QueryContext& ctx) const
 
         AttributeFilter* filter = ctx.getApplication().getAttributeFilter();
         if (filter) {
-            BasicFilteringContext fc(ctx.getApplication(), AA);
+            BasicFilteringContext fc(ctx.getApplication(), AA, ctx.getClassRef(), ctx.getDeclRef());
             Locker filtlocker(filter);
             filter->filterAttributes(fc, ctx.getResolvedAttributes());
         }
@@ -437,7 +450,7 @@ bool QueryResolver::SAML2Query(QueryContext& ctx) const
 
         AttributeFilter* filter = ctx.getApplication().getAttributeFilter();
         if (filter) {
-            BasicFilteringContext fc(ctx.getApplication(), AA);
+            BasicFilteringContext fc(ctx.getApplication(), AA, ctx.getClassRef(), ctx.getDeclRef());
             Locker filtlocker(filter);
             filter->filterAttributes(fc, ctx.getResolvedAttributes());
         }

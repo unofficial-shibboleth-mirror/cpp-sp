@@ -236,10 +236,22 @@ string SAML1Consumer::implementProtocol(
         nameid->setNameQualifier(n->getNameQualifier());
     }
 
+    // Now we have to extract the authentication details for session setup.
+
+    // Session expiration for SAML 1.x is purely SP-driven, and the method is mapped to a ctx class.
+    const PropertySet* sessionProps = application.getPropertySet("Sessions");
+    pair<bool,unsigned int> lifetime = sessionProps ? sessionProps->getUnsignedInt("lifetime") : make_pair(true,28800);
+    if (!lifetime.first)
+        lifetime.second = 28800;
+    auto_ptr_char authnInstant(
+        ssoStatement->getAuthenticationInstant() ? ssoStatement->getAuthenticationInstant()->getRawData() : NULL
+        );
+    auto_ptr_char authnMethod(ssoStatement->getAuthenticationMethod());
+
     const EntityDescriptor* issuerMetadata =
         policy.getIssuerMetadata() ? dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL;
     auto_ptr<ResolutionContext> ctx(
-        resolveAttributes(application, issuerMetadata, nameid.get(), &tokens, &resolvedAttributes)
+        resolveAttributes(application, issuerMetadata, nameid.get(), authnMethod.get(), NULL, &tokens, &resolvedAttributes)
         );
 
     if (ctx.get()) {
@@ -253,18 +265,6 @@ string SAML1Consumer::implementProtocol(
 
     // Now merge in bad tokens for caching.
     tokens.insert(tokens.end(), badtokens.begin(), badtokens.end());
-
-    // Now we have to extract the authentication details for session setup.
-
-    // Session expiration for SAML 1.x is purely SP-driven, and the method is mapped to a ctx class.
-    const PropertySet* sessionProps = application.getPropertySet("Sessions");
-    pair<bool,unsigned int> lifetime = sessionProps ? sessionProps->getUnsignedInt("lifetime") : make_pair(true,28800);
-    if (!lifetime.first)
-        lifetime.second = 28800;
-    auto_ptr_char authnInstant(
-        ssoStatement->getAuthenticationInstant() ? ssoStatement->getAuthenticationInstant()->getRawData() : NULL
-        );
-    auto_ptr_char authnMethod(ssoStatement->getAuthenticationMethod());
 
     try {
         string key = application.getServiceProvider().getSessionCache()->insert(

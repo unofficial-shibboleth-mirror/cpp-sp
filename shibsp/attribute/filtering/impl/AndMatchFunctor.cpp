@@ -66,7 +66,7 @@ namespace shibsp {
         vector<const MatchFunctor*> m_functors;
     };
 
-    MatchFunctor* SHIBSP_DLLLOCAL AndFunctorFactory(const pair<const FilterPolicyContext*,const DOMElement*>& p)
+    MatchFunctor* SHIBSP_DLLLOCAL AndMatchFunctorFactory(const pair<const FilterPolicyContext*,const DOMElement*>& p)
     {
         return new AndMatchFunctor(p);
     }

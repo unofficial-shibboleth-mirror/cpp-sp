@@ -62,7 +62,7 @@ namespace shibsp {
         vector<const MatchFunctor*> m_functors;
     };
 
-    MatchFunctor* SHIBSP_DLLLOCAL OrFunctorFactory(const pair<const FilterPolicyContext*,const DOMElement*>& p)
+    MatchFunctor* SHIBSP_DLLLOCAL OrMatchFunctorFactory(const pair<const FilterPolicyContext*,const DOMElement*>& p)
     {
         return new OrMatchFunctor(p);
     }

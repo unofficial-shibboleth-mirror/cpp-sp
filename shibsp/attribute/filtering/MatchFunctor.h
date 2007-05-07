@@ -76,6 +76,15 @@ namespace shibsp {
     /** Negating MatchFunctor. */
     extern SHIBSP_API xmltooling::QName NotMatchFunctorType;
 
+    /** Matches the requesting entity's name. */
+    extern SHIBSP_API xmltooling::QName AttributeRequesterStringType;
+
+    /** Matches the issuing entity's name. */
+    extern SHIBSP_API xmltooling::QName AttributeIssuerStringType;
+
+    /** Matches the principal's authentication method/class or context reference. */
+    extern SHIBSP_API xmltooling::QName AuthenticationMethodStringType;
+
     /**
      * Registers MatchFunctor classes into the runtime.
      */
