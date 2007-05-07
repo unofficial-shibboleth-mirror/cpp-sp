@@ -172,7 +172,6 @@ restorecon %{_sbindir}/shibd
 %config(noreplace) %{_sysconfdir}/shibboleth/*.xml
 %config(noreplace) %{_sysconfdir}/shibboleth/*.html
 %config(noreplace) %{_sysconfdir}/shibboleth/*.logger
-%config %{_sysconfdir}/shibboleth/inqueue.pem
 %config %{_sysconfdir}/shibboleth/sp-example.crt
 %config %{_sysconfdir}/shibboleth/sp-example.key
 %{_sysconfdir}/shibboleth/*.dist
