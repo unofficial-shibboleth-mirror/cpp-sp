@@ -80,16 +80,6 @@ if (Err = 0) then
   End If
   FileSystemObj.MoveFile ConfigFile, DistDir & "example-metadata.xml"
 
-  ConfigFile = DistDir & "IQ-metadata.xml.in"
-  ReplaceInFile ConfigFile, "@-PKGXMLDIR-@", ConvertedDir & "/share/xml/shibboleth"
-  If (NOT FileSystemObj.FileExists(ConfigDir & "IQ-metadata.xml")) then
-    FileSystemObj.CopyFile ConfigFile, ConfigDir & "IQ-metadata.xml", false
-  End If
-  If (FileSystemObj.FileExists(DistDir & "IQ-metadata.xml")) then
-    FileSystemObj.DeleteFile DistDir & "IQ-metadata.xml", true
-  End If
-  FileSystemObj.MoveFile ConfigFile, DistDir & "IQ-metadata.xml"
-
   ConfigFile = DistDir & "shibboleth.xml.in"
   ReplaceInFile ConfigFile, "@-PKGXMLDIR-@", ConvertedDir & "/share/xml/shibboleth"
   ReplaceInFile ConfigFile, "@-PKGSYSCONFDIR-@", ConvertedDir & "/etc/shibboleth"
@@ -170,10 +160,6 @@ if (Err = 0) then
 
   If (NOT FileSystemObj.FileExists(ConfigDir & "accessError.html")) then
     FileSystemObj.CopyFile DistDir & "accessError.html", ConfigDir, false
-  End If
-
-  If (NOT FileSystemObj.FileExists(ConfigDir & "inqueue.pem")) then
-    FileSystemObj.CopyFile DistDir & "inqueue.pem", ConfigDir, false
   End If
 
   If (NOT FileSystemObj.FileExists(ConfigDir & "metadataError.html")) then
