@@ -22,17 +22,36 @@
 
 #include "internal.h"
 #include "attribute/filtering/MatchFunctor.h"
+#include "util/SPConstants.h"
+
+#include <xercesc/util/XMLUniDefs.hpp>
 
 using namespace shibsp;
 using namespace xmltooling;
 using namespace std;
 
 namespace shibsp {
-    //SHIBSP_DLLLOCAL PluginManager<MatchFunctor,QName,const DOMElement*>::Factory FunctorFactory;
+    SHIBSP_DLLLOCAL PluginManager< MatchFunctor,QName,pair<const FilterPolicyContext*,const DOMElement*> >::Factory AnyFunctorFactory;
+    SHIBSP_DLLLOCAL PluginManager< MatchFunctor,QName,pair<const FilterPolicyContext*,const DOMElement*> >::Factory AndFunctorFactory;
+    SHIBSP_DLLLOCAL PluginManager< MatchFunctor,QName,pair<const FilterPolicyContext*,const DOMElement*> >::Factory OrFunctorFactory;
+    SHIBSP_DLLLOCAL PluginManager< MatchFunctor,QName,pair<const FilterPolicyContext*,const DOMElement*> >::Factory NotFunctorFactory;
+
+    static const XMLCh ANY[] =                  UNICODE_LITERAL_3(A,N,Y);
+    static const XMLCh AND[] =                  UNICODE_LITERAL_3(A,N,D);
+    static const XMLCh OR[] =                   UNICODE_LITERAL_2(O,R);
+    static const XMLCh NOT[] =                  UNICODE_LITERAL_3(N,O,T);
 };
+
+QName shibsp::AnyMatchFunctorType(shibspconstants::SHIB2ATTRIBUTEFILTER_MF_BASIC_NS, ANY);
+QName shibsp::AndMatchFunctorType(shibspconstants::SHIB2ATTRIBUTEFILTER_MF_BASIC_NS, AND);
+QName shibsp::OrMatchFunctorType(shibspconstants::SHIB2ATTRIBUTEFILTER_MF_BASIC_NS, OR);
+QName shibsp::NotMatchFunctorType(shibspconstants::SHIB2ATTRIBUTEFILTER_MF_BASIC_NS, NOT);
 
 void SHIBSP_API shibsp::registerMatchFunctors()
 {
     SPConfig& conf = SPConfig::getConfig();
-    //conf.MatchFunctorManager.registerFactory("", FunctorFactory);
+    conf.MatchFunctorManager.registerFactory(AnyMatchFunctorType, AnyFunctorFactory);
+    conf.MatchFunctorManager.registerFactory(AndMatchFunctorType, AndFunctorFactory);
+    conf.MatchFunctorManager.registerFactory(OrMatchFunctorType, OrFunctorFactory);
+    conf.MatchFunctorManager.registerFactory(NotMatchFunctorType, NotFunctorFactory);
 }

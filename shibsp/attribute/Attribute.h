@@ -142,6 +142,16 @@ namespace shibsp {
         virtual void clearSerializedValues()=0;
         
         /**
+         * Removes the value at the specified position (starting from zero).
+         *
+         * @param index position of value to remove
+         */
+        virtual void removeValue(size_t index) {
+            if (index < m_serialized.size())
+                m_serialized.erase(m_serialized.begin() + index);
+        }
+
+        /**
          * Marshalls an Attribute for remoting.
          * 
          * <p>This allows Attribute objects to be communicated across process boundaries

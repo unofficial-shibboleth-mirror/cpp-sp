@@ -64,6 +64,18 @@ namespace shibsp {
         virtual bool evaluatePermitValue(const FilteringContext& filterContext, const Attribute& attribute, size_t index) const=0;
     };
 
+    /** Always evaluates to true. */
+    extern SHIBSP_API xmltooling::QName AnyMatchFunctorType;
+
+    /** Conjunction MatchFunctor. */
+    extern SHIBSP_API xmltooling::QName AndMatchFunctorType;
+
+    /** Disjunction MatchFunctor. */
+    extern SHIBSP_API xmltooling::QName OrMatchFunctorType;
+
+    /** Negating MatchFunctor. */
+    extern SHIBSP_API xmltooling::QName NotMatchFunctorType;
+
     /**
      * Registers MatchFunctor classes into the runtime.
      */

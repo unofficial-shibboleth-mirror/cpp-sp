@@ -46,6 +46,12 @@ namespace shibspconstants {
     /** Shibboleth 2.0 attribute filter policy namespace ("urn:mace:shibboleth:2.0:afp") */
     extern SHIBSP_API const XMLCh SHIB2ATTRIBUTEFILTER_NS[];
 
+    /** Shibboleth 2.0 basic matching function namespace ("urn:mace:shibboleth:2.0:afp:mf:basic") */
+    extern SHIBSP_API const XMLCh SHIB2ATTRIBUTEFILTER_MF_BASIC_NS[];
+
+    /** Shibboleth 2.0 SAML matching function namespace ("urn:mace:shibboleth:2.0:afp:mf:saml") */
+    extern SHIBSP_API const XMLCh SHIB2ATTRIBUTEFILTER_MF_SAML_NS[];
+
     /** Shibboleth 1.x Protocol Enumeration constant ("urn:mace:shibboleth:1.0") */
     extern SHIBSP_API const XMLCh SHIB1_PROTOCOL_ENUM[];
 

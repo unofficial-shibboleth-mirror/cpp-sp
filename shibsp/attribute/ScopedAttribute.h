@@ -90,6 +90,12 @@ namespace shibsp {
             m_serialized.clear();
         }
         
+        void removeValue(size_t index) {
+            Attribute::removeValue(index);
+            if (index < m_values.size())
+                m_values.erase(m_values.begin() + index);
+        }
+
         const std::vector<std::string>& getSerializedValues() const {
             if (m_serialized.empty()) {
                 for (std::vector< std::pair<std::string,std::string> >::const_iterator i=m_values.begin(); i!=m_values.end(); ++i)

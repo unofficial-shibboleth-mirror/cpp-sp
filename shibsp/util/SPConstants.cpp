@@ -62,6 +62,20 @@ const XMLCh shibspconstants::SHIB2ATTRIBUTEFILTER_NS[] = // urn:mace:shibboleth:
   chDigit_2, chPeriod, chDigit_0, chColon, chLatin_a, chLatin_f, chLatin_p, chNull
 };
 
+const XMLCh shibspconstants::SHIB2ATTRIBUTEFILTER_MF_BASIC_NS[] = // urn:mace:shibboleth:2.0:afp:mf:basic
+{ chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
+  chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
+  chDigit_2, chPeriod, chDigit_0, chColon, chLatin_a, chLatin_f, chLatin_p, chColon, chLatin_m, chLatin_f, chColon,
+  chLatin_b, chLatin_a, chLatin_s, chLatin_i, chLatin_c, chNull
+};
+
+const XMLCh shibspconstants::SHIB2ATTRIBUTEFILTER_MF_SAML_NS[] = // urn:mace:shibboleth:2.0:afp:mf:saml
+{ chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
+  chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
+  chDigit_2, chPeriod, chDigit_0, chColon, chLatin_a, chLatin_f, chLatin_p, chColon, chLatin_m, chLatin_f, chColon,
+  chLatin_s, chLatin_a, chLatin_m, chLatin_l, chNull
+};
+
 const XMLCh shibspconstants::SHIB1_ATTRIBUTE_NAMESPACE_URI[] = // urn:mace:shibboleth:1.0:attributeNamespace:uri
 { chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
   chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,

@@ -25,7 +25,7 @@
 #include "ServiceProvider.h"
 #include "attribute/Attribute.h"
 #include "attribute/filtering/AttributeFilter.h"
-#include "attribute/filtering/MatchFunctor.h"
+#include "attribute/filtering/FilterPolicyContext.h"
 #include "util/SPConstants.h"
 
 #include <xmltooling/util/NDC.h>
@@ -74,9 +74,9 @@ namespace shibsp {
 
     private:
         MatchFunctor* buildFunctor(
-            const DOMElement* e, multimap<string,MatchFunctor*>& functorMap, const char* logname, bool standalone
+            const DOMElement* e, const FilterPolicyContext& functorMap, const char* logname, bool standalone
             );
-        pair<string,const MatchFunctor*> buildAttributeRule(const DOMElement* e, bool standalone);
+        pair<string,const MatchFunctor*> buildAttributeRule(const DOMElement* e, const FilterPolicyContext& functorMap, bool standalone);
 
         Category& m_log;
         DOMDocument* m_document;
@@ -138,22 +138,25 @@ XMLFilterImpl::XMLFilterImpl(const DOMElement* e, Category& log) : m_log(log), m
     if (!XMLHelper::isNodeNamed(e, shibspconstants::SHIB2ATTRIBUTEFILTER_NS, AttributeFilterPolicyGroup))
         throw ConfigurationException("XML AttributeFilter requires afp:AttributeFilterPolicyGroup at root of configuration.");
 
+    FilterPolicyContext reqFunctors(m_policyReqRules);
+    FilterPolicyContext valFunctors(m_permitValRules);
+
     DOMElement* child = XMLHelper::getFirstChildElement(e);
     while (child) {
         if (XMLHelper::isNodeNamed(child, shibspconstants::SHIB2ATTRIBUTEFILTER_NS, PolicyRequirementRule)) {
-            buildFunctor(child, m_policyReqRules, "PolicyRequirementRule", true);
+            buildFunctor(child, reqFunctors, "PolicyRequirementRule", true);
         }
         else if (XMLHelper::isNodeNamed(child, shibspconstants::SHIB2ATTRIBUTEFILTER_NS, PermitValueRule)) {
-            buildFunctor(child, m_permitValRules, "PermitValueRule", true);
+            buildFunctor(child, valFunctors, "PermitValueRule", true);
         }
         else if (XMLHelper::isNodeNamed(child, shibspconstants::SHIB2ATTRIBUTEFILTER_NS, AttributeRule)) {
-            buildAttributeRule(child, true);
+            buildAttributeRule(child, valFunctors, true);
         }
         else if (XMLHelper::isNodeNamed(child, shibspconstants::SHIB2ATTRIBUTEFILTER_NS, AttributeFilterPolicy)) {
             e = XMLHelper::getFirstChildElement(child);
-            MatchFunctor* func;
+            MatchFunctor* func = NULL;
             if (e && XMLHelper::isNodeNamed(e, shibspconstants::SHIB2ATTRIBUTEFILTER_NS, PolicyRequirementRule)) {
-                func = buildFunctor(e, m_policyReqRules, "PolicyRequirementRule", false);
+                func = buildFunctor(e, reqFunctors, "PolicyRequirementRule", false);
             }
             else if (e && XMLHelper::isNodeNamed(e, shibspconstants::SHIB2ATTRIBUTEFILTER_NS, PolicyRequirementRuleReference)) {
                 auto_ptr_char ref(e->getAttributeNS(NULL, _ref));
@@ -168,7 +171,7 @@ XMLFilterImpl::XMLFilterImpl(const DOMElement* e, Category& log) : m_log(log), m
                 e = XMLHelper::getNextSiblingElement(e);
                 while (e) {
                     if (e && XMLHelper::isNodeNamed(e, shibspconstants::SHIB2ATTRIBUTEFILTER_NS, AttributeRule)) {
-                        pair<string,const MatchFunctor*> rule = buildAttributeRule(e, false);
+                        pair<string,const MatchFunctor*> rule = buildAttributeRule(e, valFunctors, false);
                         if (rule.second)
                             m_policies.back().m_rules.insert(rule);
                     }
@@ -194,7 +197,7 @@ XMLFilterImpl::XMLFilterImpl(const DOMElement* e, Category& log) : m_log(log), m
 }
 
 MatchFunctor* XMLFilterImpl::buildFunctor(
-    const DOMElement* e, multimap<string,MatchFunctor*>& functorMap, const char* logname, bool standalone
+    const DOMElement* e, const FilterPolicyContext& functorMap, const char* logname, bool standalone
     )
 {
     auto_ptr_char temp(e->getAttributeNS(NULL,_id));
@@ -204,7 +207,7 @@ MatchFunctor* XMLFilterImpl::buildFunctor(
         m_log.warn("skipping stand-alone %s with no id", logname);
         return NULL;
     }
-    else if (*id && functorMap.count(id)) {
+    else if (*id && functorMap.getMatchFunctors().count(id)) {
         if (standalone) {
             m_log.warn("skipping duplicate stand-alone %s with id (%s)", logname, id);
             return NULL;
@@ -216,8 +219,8 @@ MatchFunctor* XMLFilterImpl::buildFunctor(
     auto_ptr<QName> type(XMLHelper::getXSIType(e));
     if (type.get()) {
         try {
-            MatchFunctor* func = SPConfig::getConfig().MatchFunctorManager.newPlugin(*type.get(), e);
-            functorMap.insert(make_pair(id, func));
+            MatchFunctor* func = SPConfig::getConfig().MatchFunctorManager.newPlugin(*type.get(), make_pair(&functorMap,e));
+            functorMap.getMatchFunctors().insert(make_pair(id, func));
             return func;
         }
         catch (exception& ex) {
@@ -232,7 +235,7 @@ MatchFunctor* XMLFilterImpl::buildFunctor(
     return NULL;
 }
 
-pair<string,const MatchFunctor*> XMLFilterImpl::buildAttributeRule(const DOMElement* e, bool standalone)
+pair<string,const MatchFunctor*> XMLFilterImpl::buildAttributeRule(const DOMElement* e, const FilterPolicyContext& functorMap, bool standalone)
 {
     auto_ptr_char temp(e->getAttributeNS(NULL,_id));
     const char* id = (temp.get() && *temp.get()) ? temp.get() : "";
@@ -257,7 +260,7 @@ pair<string,const MatchFunctor*> XMLFilterImpl::buildAttributeRule(const DOMElem
     e = XMLHelper::getFirstChildElement(e);
     MatchFunctor* func=NULL;
     if (e && XMLHelper::isNodeNamed(e, shibspconstants::SHIB2ATTRIBUTEFILTER_NS, PermitValueRule)) {
-        func = buildFunctor(e, m_permitValRules, "PermitValueRule", false);
+        func = buildFunctor(e, functorMap, "PermitValueRule", false);
     }
     else if (e && XMLHelper::isNodeNamed(e, shibspconstants::SHIB2ATTRIBUTEFILTER_NS, PermitValueRuleReference)) {
         auto_ptr_char ref(e->getAttributeNS(NULL, _ref));
@@ -315,10 +318,17 @@ void XMLFilterImpl::filterAttributes(const FilteringContext& context, multimap<s
                         count = a->second->valueCount();
                         for (index=0; index < count;) {
                             // The return value tells us whether to index past the accepted value, or stay put and decrement the count.
-                            if (rules.first->second->evaluatePermitValue(context, *(a->second), index))
+                            if (rules.first->second->evaluatePermitValue(context, *(a->second), index)) {
                                 index++;
-                            else
+                            }
+                            else {
+                                m_log.warn(
+                                    "filtered value at position (%lu) of attribute (%s) from (%s)",
+                                    index, a->second->getId(), issuer.get() ? issuer.get() : "unknown source"
+                                    );
+                                a->second->removeValue(index);
                                 count--;
+                            }
                         }
                     }
                     // See if any values are left, delete if not.

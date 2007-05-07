@@ -187,6 +187,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\attribute\filtering\impl\AndMatchFunctor.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\attribute\filtering\impl\AnyMatchFunctor.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\Application.cpp"
 				>
 			</File>
@@ -200,6 +208,14 @@
 			</File>
 			<File
 				RelativePath=".\attribute\filtering\impl\MatchFunctor.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\attribute\filtering\impl\NotMatchFunctor.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\attribute\filtering\impl\OrMatchFunctor.cpp"
 				>
 			</File>
 			<File
@@ -454,6 +470,10 @@
 			</File>
 			<File
 				RelativePath=".\exceptions.h"
+				>
+			</File>
+			<File
+				RelativePath=".\attribute\filtering\FilterPolicyContext.h"
 				>
 			</File>
 			<File
