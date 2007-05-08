@@ -253,7 +253,7 @@ DDF SocketListener::send(const DDF& in)
     NDC ndc("send");
 #endif
 
-    log->debug("sending message: %s", in.name());
+    log->debug("sending message (%s)", in.name() ? in.name() : "unnamed");
 
     // Serialize data for transmission.
     ostringstream os;
@@ -324,6 +324,7 @@ DDF SocketListener::send(const DDF& in)
         XMLToolingException* except=NULL;
         try { 
             except=XMLToolingException::fromString(out.string());
+            log->error("remoted message returned an error: %s", except->what());
         }
         catch (XMLToolingException& e) {
             log->error("caught XMLToolingException while building the XMLToolingException: %s", e.what());
@@ -447,6 +448,7 @@ bool ServerThread::job()
 {
     Category& log = Category::getInstance("shibd.Listener");
 
+    bool incomingError = true;  // set false once incoming message is received
     ostringstream sink;
 #ifdef WIN32
     u_long len;
@@ -479,17 +481,23 @@ bool ServerThread::job()
         DDFJanitor jin(in);
         is >> in;
 
+        log.debug("dispatching message (%s)", in.name() ? in.name() : "unnamed");
+
+        incomingError = false;
+
         // Dispatch the message.
         m_listener->receive(in, sink);
     }
     catch (XMLToolingException& e) {
-        log.error("error processing incoming message: %s", e.what());
+        if (incomingError)
+            log.error("error processing incoming message: %s", e.what());
         DDF out=DDF("exception").string(e.toString().c_str());
         DDFJanitor jout(out);
         sink << out;
     }
     catch (exception& e) {
-        log.error("error processing incoming message: %s", e.what());
+        if (incomingError)
+            log.error("error processing incoming message: %s", e.what());
         ListenerException ex(e.what());
         DDF out=DDF("exception").string(ex.toString().c_str());
         DDFJanitor jout(out);
@@ -497,7 +505,8 @@ bool ServerThread::job()
     }
 #ifndef _DEBUG
     catch (...) {
-        log.error("unexpected error processing incoming message");
+        if (incomingError)
+            log.error("unexpected error processing incoming message");
         ListenerException ex("An unexpected error occurred while processing an incoming message.");
         DDF out=DDF("exception").string(ex.toString().c_str());
         DDFJanitor jout(out);

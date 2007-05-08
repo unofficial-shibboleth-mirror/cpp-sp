@@ -390,7 +390,8 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
     const EntityDescriptor* entity=m->getEntityDescriptor(entityID);
     if (!entity) {
         m_log.error("unable to locate metadata for provider (%s)", entityID);
-        return make_pair(false,0);
+        throw MetadataException("Unable to locate metadata for identity provider ($entityID)",
+            namedparams(1, "entityID", entityID));
     }
     const IDPSSODescriptor* role=entity->getIDPSSODescriptor(samlconstants::SAML20P_NS);
     if (!role) {

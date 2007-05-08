@@ -215,7 +215,8 @@ pair<bool,long> Shib1SessionInitiator::doRequest(
     const EntityDescriptor* entity=m->getEntityDescriptor(entityID);
     if (!entity) {
         m_log.error("unable to locate metadata for provider (%s)", entityID);
-        return make_pair(false,0);
+        throw MetadataException("Unable to locate metadata for identity provider ($entityID)",
+            namedparams(1, "entityID", entityID));
     }
     const IDPSSODescriptor* role=entity->getIDPSSODescriptor(shibspconstants::SHIB1_PROTOCOL_ENUM);
     if (!role) {
