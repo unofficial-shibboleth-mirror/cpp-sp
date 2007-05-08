@@ -291,6 +291,11 @@
                         <documentation>The regular expression values are matched against.</documentation>
                     </annotation>
                 </attribute>
+                <attribute name="options" type="string">
+                    <annotation>
+                        <documentation>The regular expression options to apply.</documentation>
+                    </annotation>
+                </attribute>
             </extension>
         </complexContent>
     </complexType>

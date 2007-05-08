@@ -76,11 +76,11 @@ namespace shibsp {
     /** Negating MatchFunctor. */
     extern SHIBSP_API xmltooling::QName NotMatchFunctorType;
 
-    /** Matches the requesting entity's name. */
-    extern SHIBSP_API xmltooling::QName AttributeRequesterStringType;
-
     /** Matches the issuing entity's name. */
     extern SHIBSP_API xmltooling::QName AttributeIssuerStringType;
+
+    /** Matches the requesting entity's name. */
+    extern SHIBSP_API xmltooling::QName AttributeRequesterStringType;
 
     /** Matches the principal's authentication method/class or context reference. */
     extern SHIBSP_API xmltooling::QName AuthenticationMethodStringType;
@@ -90,6 +90,21 @@ namespace shibsp {
 
     /** Matches an attribute's "scope". */
     extern SHIBSP_API xmltooling::QName AttributeScopeStringType;
+
+    /** Matches the issuing entity's name. */
+    extern SHIBSP_API xmltooling::QName AttributeIssuerRegexType;
+
+    /** Matches the requesting entity's name. */
+    extern SHIBSP_API xmltooling::QName AttributeRequesterRegexType;
+
+    /** Matches the principal's authentication method/class or context reference. */
+    extern SHIBSP_API xmltooling::QName AuthenticationMethodRegexType;
+
+    /** Matches an attribute's string value. */
+    extern SHIBSP_API xmltooling::QName AttributeValueRegexType;
+
+    /** Matches an attribute's "scope". */
+    extern SHIBSP_API xmltooling::QName AttributeScopeRegexType;
 
     /**
      * Registers MatchFunctor classes into the runtime.

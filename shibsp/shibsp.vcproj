@@ -203,7 +203,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\attribute\filtering\impl\AttributeIssuerRegexFunctor.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\attribute\filtering\impl\AttributeIssuerStringFunctor.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\attribute\filtering\impl\AttributeRequesterRegexFunctor.cpp"
 				>
 			</File>
 			<File
@@ -211,11 +219,23 @@
 				>
 			</File>
 			<File
+				RelativePath=".\attribute\filtering\impl\AttributeScopeRegexFunctor.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\attribute\filtering\impl\AttributeScopeStringFunctor.cpp"
 				>
 			</File>
 			<File
+				RelativePath=".\attribute\filtering\impl\AttributeValueRegexFunctor.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\attribute\filtering\impl\AttributeValueStringFunctor.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\attribute\filtering\impl\AuthenticationMethodRegexFunctor.cpp"
 				>
 			</File>
 			<File
