@@ -124,7 +124,7 @@ namespace shibsp {
     static const XMLCh PermitValueRuleReference[] =     UNICODE_LITERAL_24(P,e,r,m,i,t,V,a,l,u,e,R,u,l,e,R,e,f,e,r,e,n,c,e);
     static const XMLCh PolicyRequirementRule[] =        UNICODE_LITERAL_21(P,o,l,i,c,y,R,e,q,u,i,r,e,m,e,n,t,R,u,l,e);
     static const XMLCh PolicyRequirementRuleReference[]=UNICODE_LITERAL_30(P,o,l,i,c,y,R,e,q,u,i,r,e,m,e,n,t,R,u,l,e,R,e,f,e,r,e,n,c,e);
-    static const XMLCh attributeId[] =                  UNICODE_LITERAL_11(a,t,t,r,i,b,u,t,e,I,d);
+    static const XMLCh attributeID[] =                  UNICODE_LITERAL_11(a,t,t,r,i,b,u,t,e,I,D);
     static const XMLCh _id[] =                          UNICODE_LITERAL_2(i,d);
     static const XMLCh _ref[] =                         UNICODE_LITERAL_3(r,e,f);
 };
@@ -253,9 +253,9 @@ pair<string,const MatchFunctor*> XMLFilterImpl::buildAttributeRule(const DOMElem
             id = "";
     }
 
-    auto_ptr_char attrId(e->getAttributeNS(NULL,attributeId));
-    if (!attrId.get() || !*attrId.get())
-        m_log.warn("skipping AttributeRule with no attributeId");
+    auto_ptr_char attrID(e->getAttributeNS(NULL,attributeID));
+    if (!attrID.get() || !*attrID.get())
+        m_log.warn("skipping AttributeRule with no attributeID");
 
     e = XMLHelper::getFirstChildElement(e);
     MatchFunctor* func=NULL;
@@ -272,9 +272,9 @@ pair<string,const MatchFunctor*> XMLFilterImpl::buildAttributeRule(const DOMElem
 
     if (func) {
         if (*id)
-            return m_attrRules[id] = make_pair(attrId.get(), func);
+            return m_attrRules[id] = make_pair(attrID.get(), func);
         else
-            return make_pair(attrId.get(), func);
+            return make_pair(attrID.get(), func);
     }
 
     m_log.warn("skipping AttributeRule (%s), PermitValueRule invalid or missing", id);
