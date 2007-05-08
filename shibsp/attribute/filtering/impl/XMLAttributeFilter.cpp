@@ -301,17 +301,10 @@ void XMLFilterImpl::filterAttributes(const FilteringContext& context, multimap<s
         if (p->m_applies->evaluatePolicyRequirement(context)) {
             // Loop over the attributes and look for possible rules to run.
             for (multimap<string,Attribute*>::iterator a=attributes.begin(); a!=attributes.end();) {
+                bool ruleFound = false;
                 pair<Policy::rules_t::const_iterator,Policy::rules_t::const_iterator> rules = p->m_rules.equal_range(a->second->getId());
-                if (rules.first == rules.second) {
-                    // No rule found, so we're filtering it out.
-                    m_log.warn(
-                        "no rule found, filtering out values of attribute (%s) from (%s)", a->second->getId(), issuer.get() ? issuer.get() : "unknown source"
-                        );
-                    multimap<string,Attribute*>::iterator dead = a++;
-                    delete dead->second;
-                    attributes.erase(dead);
-                }
-                else {
+                if (rules.first != rules.second) {
+                    ruleFound = true;
                     // Run each rule in sequence.
                     m_log.debug("filtering values of attribute (%s) from (%s)", a->second->getId(), issuer.get() ? issuer.get() : "unknown source");
                     for (; rules.first!=rules.second; ++rules.first) {
@@ -331,15 +324,48 @@ void XMLFilterImpl::filterAttributes(const FilteringContext& context, multimap<s
                             }
                         }
                     }
-                    // See if any values are left, delete if not.
-                    if (count>0) {
-                        ++a;
+                }
+
+                rules = p->m_rules.equal_range("*");
+                if (rules.first != rules.second) {
+                    // Run each rule in sequence.
+                    if (!ruleFound) {
+                        m_log.debug("filtering values of attribute (%s) from (%s)", a->second->getId(), issuer.get() ? issuer.get() : "unknown source");
+                        ruleFound = true;
                     }
-                    else {
-                        multimap<string,Attribute*>::iterator dead = a++;
-                        delete dead->second;
-                        attributes.erase(dead);
+                    for (; rules.first!=rules.second; ++rules.first) {
+                        count = a->second->valueCount();
+                        for (index=0; index < count;) {
+                            // The return value tells us whether to index past the accepted value, or stay put and decrement the count.
+                            if (rules.first->second->evaluatePermitValue(context, *(a->second), index)) {
+                                index++;
+                            }
+                            else {
+                                m_log.warn(
+                                    "filtered value at position (%lu) of attribute (%s) from (%s)",
+                                    index, a->second->getId(), issuer.get() ? issuer.get() : "unknown source"
+                                    );
+                                a->second->removeValue(index);
+                                count--;
+                            }
+                        }
                     }
+                }
+
+                if (!ruleFound || a->second->valueCount() == 0) {
+                    if (!ruleFound) {
+                        // No rule found, so we're filtering it out.
+                        m_log.warn(
+                            "no rule found, filtering out values of attribute (%s) from (%s)",
+                            a->second->getId(), issuer.get() ? issuer.get() : "unknown source"
+                            );
+                    }
+                    multimap<string,Attribute*>::iterator dead = a++;
+                    delete dead->second;
+                    attributes.erase(dead);
+                }
+                else {
+                    ++a;
                 }
             }
         }
