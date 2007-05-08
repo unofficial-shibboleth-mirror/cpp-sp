@@ -33,17 +33,19 @@ namespace shibsp {
         /**
          * Constructor.
          *
-         * @param app   reference to Application
-         * @param role  metadata role of attribute issuer, if any
+         * @param app                   reference to Application
+         * @param attributes            attributes being filtered
+         * @param role                  metadata role of Attribute issuer, if any
          * @param authncontext_class    method/category of authentication event, if known
-         * @param authncontext_decl specifics of authentication event, if known
+         * @param authncontext_decl     specifics of authentication event, if known
          */
         BasicFilteringContext(
             const Application& app,
+            const std::multimap<std::string,Attribute*>& attributes,
             const opensaml::saml2md::RoleDescriptor* role=NULL,
             const char* authncontext_class=NULL,
             const char* authncontext_decl=NULL
-            ) : m_app(app), m_role(role), m_issuer(NULL), m_class(authncontext_class), m_decl(authncontext_decl) {
+            ) : m_app(app), m_attributes(attributes), m_role(role), m_issuer(NULL), m_class(authncontext_class), m_decl(authncontext_decl) {
             if (role)
                 m_issuer = dynamic_cast<opensaml::saml2md::EntityDescriptor*>(role->getParent())->getEntityID();
         }
@@ -71,9 +73,13 @@ namespace shibsp {
         const opensaml::saml2md::RoleDescriptor* getAttributeIssuerMetadata() const {
             return m_role;
         }
+        const std::multimap<std::string,Attribute*>& getAttributes() const {
+            return m_attributes;
+        }
 
     private:
         const Application& m_app;
+        const std::multimap<std::string,Attribute*>& m_attributes;
         const opensaml::saml2md::RoleDescriptor* m_role;
         const XMLCh* m_issuer;
         const char* m_class;

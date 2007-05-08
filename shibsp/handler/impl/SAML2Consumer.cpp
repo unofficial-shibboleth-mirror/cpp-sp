@@ -314,6 +314,28 @@ string SAML2Consumer::implementProtocol(
     // We've successfully "accepted" at least one SSO token, along with any additional valid tokens.
     // To complete processing, we need to extract and resolve attributes and then create the session.
 
+    // Now we have to extract the authentication details for session setup.
+
+    // Session expiration for SAML 2.0 is jointly IdP- and SP-driven.
+    time_t sessionExp = ssoStatement->getSessionNotOnOrAfter() ? ssoStatement->getSessionNotOnOrAfterEpoch() : 0;
+    const PropertySet* sessionProps = application.getPropertySet("Sessions");
+    pair<bool,unsigned int> lifetime = sessionProps ? sessionProps->getUnsignedInt("lifetime") : make_pair(true,28800);
+    if (!lifetime.first)
+        lifetime.second = 28800;
+    if (lifetime.second != 0) {
+        if (sessionExp == 0)
+            sessionExp = now + lifetime.second;     // IdP says nothing, calulate based on SP.
+        else
+            sessionExp = min(sessionExp, now + lifetime.second);    // Use the lowest.
+    }
+
+    // Other details...
+    const AuthnContext* authnContext = ssoStatement->getAuthnContext();
+    auto_ptr_char authnClass((authnContext && authnContext->getAuthnContextClassRef()) ? authnContext->getAuthnContextClassRef()->getReference() : NULL);
+    auto_ptr_char authnDecl((authnContext && authnContext->getAuthnContextDeclRef()) ? authnContext->getAuthnContextDeclRef()->getReference() : NULL);
+    auto_ptr_char index(ssoStatement->getSessionIndex());
+    auto_ptr_char authnInstant(ssoStatement->getAuthnInstant() ? ssoStatement->getAuthnInstant()->getRawData() : NULL);
+
     multimap<string,Attribute*> resolvedAttributes;
     AttributeExtractor* extractor = application.getAttributeExtractor();
     if (extractor) {
@@ -337,7 +359,7 @@ string SAML2Consumer::implementProtocol(
 
     AttributeFilter* filter = application.getAttributeFilter();
     if (filter && !resolvedAttributes.empty()) {
-        BasicFilteringContext fc(application, policy.getIssuerMetadata());
+        BasicFilteringContext fc(application, resolvedAttributes, policy.getIssuerMetadata(), authnClass.get(), authnDecl.get());
         Locker filtlocker(filter);
         try {
             filter->filterAttributes(fc, resolvedAttributes);
@@ -351,28 +373,6 @@ string SAML2Consumer::implementProtocol(
     }
 
     try {
-        // Now we have to extract the authentication details for session setup.
-
-        // Session expiration for SAML 2.0 is jointly IdP- and SP-driven.
-        time_t sessionExp = ssoStatement->getSessionNotOnOrAfter() ? ssoStatement->getSessionNotOnOrAfterEpoch() : 0;
-        const PropertySet* sessionProps = application.getPropertySet("Sessions");
-        pair<bool,unsigned int> lifetime = sessionProps ? sessionProps->getUnsignedInt("lifetime") : make_pair(true,28800);
-        if (!lifetime.first)
-            lifetime.second = 28800;
-        if (lifetime.second != 0) {
-            if (sessionExp == 0)
-                sessionExp = now + lifetime.second;     // IdP says nothing, calulate based on SP.
-            else
-                sessionExp = min(sessionExp, now + lifetime.second);    // Use the lowest.
-        }
-
-        // Other details...
-        const AuthnContext* authnContext = ssoStatement->getAuthnContext();
-        auto_ptr_char authnClass((authnContext && authnContext->getAuthnContextClassRef()) ? authnContext->getAuthnContextClassRef()->getReference() : NULL);
-        auto_ptr_char authnDecl((authnContext && authnContext->getAuthnContextDeclRef()) ? authnContext->getAuthnContextDeclRef()->getReference() : NULL);
-        auto_ptr_char index(ssoStatement->getSessionIndex());
-        auto_ptr_char authnInstant(ssoStatement->getAuthnInstant() ? ssoStatement->getAuthnInstant()->getRawData() : NULL);
-
         const EntityDescriptor* issuerMetadata =
             policy.getIssuerMetadata() ? dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL;
         auto_ptr<ResolutionContext> ctx(

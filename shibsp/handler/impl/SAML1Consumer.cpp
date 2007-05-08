@@ -188,6 +188,18 @@ string SAML1Consumer::implementProtocol(
 
     NameIdentifier* n = ssoStatement->getSubject()->getNameIdentifier();
 
+    // Now we have to extract the authentication details for attribute and session setup.
+
+    // Session expiration for SAML 1.x is purely SP-driven, and the method is mapped to a ctx class.
+    const PropertySet* sessionProps = application.getPropertySet("Sessions");
+    pair<bool,unsigned int> lifetime = sessionProps ? sessionProps->getUnsignedInt("lifetime") : make_pair(true,28800);
+    if (!lifetime.first)
+        lifetime.second = 28800;
+    auto_ptr_char authnInstant(
+        ssoStatement->getAuthenticationInstant() ? ssoStatement->getAuthenticationInstant()->getRawData() : NULL
+        );
+    auto_ptr_char authnMethod(ssoStatement->getAuthenticationMethod());
+
     // We've successfully "accepted" at least one SSO token, along with any additional valid tokens.
     // To complete processing, we need to extract and resolve attributes and then create the session.
     multimap<string,Attribute*> resolvedAttributes;
@@ -214,7 +226,7 @@ string SAML1Consumer::implementProtocol(
 
         AttributeFilter* filter = application.getAttributeFilter();
         if (filter && !resolvedAttributes.empty()) {
-            BasicFilteringContext fc(application, policy.getIssuerMetadata());
+            BasicFilteringContext fc(application, resolvedAttributes, policy.getIssuerMetadata(), authnMethod.get());
             Locker filtlocker(filter);
             try {
                 filter->filterAttributes(fc, resolvedAttributes);
@@ -228,25 +240,13 @@ string SAML1Consumer::implementProtocol(
         }
     }
 
-    // First, normalize the SAML 1.x NameIdentifier...
+    // Normalize the SAML 1.x NameIdentifier...
     auto_ptr<NameID> nameid(n ? NameIDBuilder::buildNameID() : NULL);
     if (n) {
         nameid->setName(n->getName());
         nameid->setFormat(n->getFormat());
         nameid->setNameQualifier(n->getNameQualifier());
     }
-
-    // Now we have to extract the authentication details for session setup.
-
-    // Session expiration for SAML 1.x is purely SP-driven, and the method is mapped to a ctx class.
-    const PropertySet* sessionProps = application.getPropertySet("Sessions");
-    pair<bool,unsigned int> lifetime = sessionProps ? sessionProps->getUnsignedInt("lifetime") : make_pair(true,28800);
-    if (!lifetime.first)
-        lifetime.second = 28800;
-    auto_ptr_char authnInstant(
-        ssoStatement->getAuthenticationInstant() ? ssoStatement->getAuthenticationInstant()->getRawData() : NULL
-        );
-    auto_ptr_char authnMethod(ssoStatement->getAuthenticationMethod());
 
     const EntityDescriptor* issuerMetadata =
         policy.getIssuerMetadata() ? dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL;

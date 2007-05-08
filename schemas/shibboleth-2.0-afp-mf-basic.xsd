@@ -166,7 +166,7 @@
         </complexContent>
     </complexType>
 
-    <complexType name="AttributeTargetedStringMatchType">
+    <complexType name="AttributeTargetedStringMatchType" abstract="true">
         <complexContent>
             <extension base="basic:StringMatchType">
                 <attribute name="attributeID" type="string">

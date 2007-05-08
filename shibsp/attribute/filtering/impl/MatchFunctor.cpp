@@ -47,6 +47,8 @@ namespace shibsp {
     DECL_FACTORY(AttributeRequesterString);
     DECL_FACTORY(AttributeIssuerString);
     DECL_FACTORY(AuthenticationMethodString);
+    DECL_FACTORY(AttributeValueString);
+    DECL_FACTORY(AttributeScopeString);
 
     static const XMLCh ANY[] =                          UNICODE_LITERAL_3(A,N,Y);
     static const XMLCh AND[] =                          UNICODE_LITERAL_3(A,N,D);
@@ -55,6 +57,8 @@ namespace shibsp {
     static const XMLCh AttributeRequesterString[] =     UNICODE_LITERAL_24(A,t,t,r,i,b,u,t,e,R,e,q,u,e,s,t,e,r,S,t,r,i,n,g);
     static const XMLCh AttributeIssuerString[] =        UNICODE_LITERAL_21(A,t,t,r,i,b,u,t,e,I,s,s,u,e,r,S,t,r,i,n,g);
     static const XMLCh AuthenticationMethodString[] =   UNICODE_LITERAL_26(A,u,t,h,e,n,t,i,c,a,t,i,o,n,M,e,t,h,o,d,S,t,r,i,n,g);
+    static const XMLCh AttributeValueString[] =         UNICODE_LITERAL_20(A,t,t,r,i,b,u,t,e,V,a,l,u,e,S,t,r,i,n,g);
+    static const XMLCh AttributeScopeString[] =         UNICODE_LITERAL_20(A,t,t,r,i,b,u,t,e,S,c,o,p,e,S,t,r,i,n,g);
 };
 
 DECL_BASIC_QNAME(AnyMatchFunctor, ANY);
@@ -64,6 +68,8 @@ DECL_BASIC_QNAME(NotMatchFunctor, NOT);
 DECL_BASIC_QNAME(AttributeRequesterString, AttributeRequesterString);
 DECL_BASIC_QNAME(AttributeIssuerString, AttributeIssuerString);
 DECL_BASIC_QNAME(AuthenticationMethodString, AuthenticationMethodString);
+DECL_BASIC_QNAME(AttributeValueString, AttributeValueString);
+DECL_BASIC_QNAME(AttributeScopeString, AttributeScopeString);
 
 void SHIBSP_API shibsp::registerMatchFunctors()
 {
@@ -76,4 +82,6 @@ void SHIBSP_API shibsp::registerMatchFunctors()
     REGISTER_FACTORY(AttributeRequesterString);
     REGISTER_FACTORY(AttributeIssuerString);
     REGISTER_FACTORY(AuthenticationMethodString);
+    REGISTER_FACTORY(AttributeValueString);
+    REGISTER_FACTORY(AttributeScopeString);
 }

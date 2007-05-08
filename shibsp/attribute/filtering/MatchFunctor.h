@@ -85,6 +85,12 @@ namespace shibsp {
     /** Matches the principal's authentication method/class or context reference. */
     extern SHIBSP_API xmltooling::QName AuthenticationMethodStringType;
 
+    /** Matches an attribute's string value. */
+    extern SHIBSP_API xmltooling::QName AttributeValueStringType;
+
+    /** Matches an attribute's "scope". */
+    extern SHIBSP_API xmltooling::QName AttributeScopeStringType;
+
     /**
      * Registers MatchFunctor classes into the runtime.
      */

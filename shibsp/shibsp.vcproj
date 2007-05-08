@@ -211,6 +211,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\attribute\filtering\impl\AttributeScopeStringFunctor.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\attribute\filtering\impl\AttributeValueStringFunctor.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\attribute\filtering\impl\AuthenticationMethodStringFunctor.cpp"
 				>
 			</File>

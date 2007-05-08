@@ -339,7 +339,7 @@ bool QueryResolver::SAML1Query(QueryContext& ctx) const
 
         AttributeFilter* filter = ctx.getApplication().getAttributeFilter();
         if (filter) {
-            BasicFilteringContext fc(ctx.getApplication(), AA, ctx.getClassRef(), ctx.getDeclRef());
+            BasicFilteringContext fc(ctx.getApplication(), ctx.getResolvedAttributes(), AA, ctx.getClassRef(), ctx.getDeclRef());
             Locker filtlocker(filter);
             filter->filterAttributes(fc, ctx.getResolvedAttributes());
         }
@@ -450,7 +450,7 @@ bool QueryResolver::SAML2Query(QueryContext& ctx) const
 
         AttributeFilter* filter = ctx.getApplication().getAttributeFilter();
         if (filter) {
-            BasicFilteringContext fc(ctx.getApplication(), AA, ctx.getClassRef(), ctx.getDeclRef());
+            BasicFilteringContext fc(ctx.getApplication(), ctx.getResolvedAttributes(), AA, ctx.getClassRef(), ctx.getDeclRef());
             Locker filtlocker(filter);
             filter->filterAttributes(fc, ctx.getResolvedAttributes());
         }

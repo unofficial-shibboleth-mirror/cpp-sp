@@ -142,6 +142,26 @@ namespace shibsp {
         virtual void clearSerializedValues()=0;
         
         /**
+         * Gets the string equivalent of the value at the specified position (starting from zero).
+         *
+         * @param index position of value
+         * @return the specified value in its "string" form, or NULL if undefined
+         */
+        virtual const char* getString(size_t index) const {
+            return m_serialized[index].c_str();
+        }
+
+        /**
+         * Gets the "scope" of the value at the specified position (starting from zero).
+         *
+         * @param index position of value
+         * @return the specified value's "scope", or NULL if attribute is unscoped
+         */
+        virtual const char* getScope(size_t index) const {
+            return NULL;
+        }
+
+        /**
          * Removes the value at the specified position (starting from zero).
          *
          * @param index position of value to remove

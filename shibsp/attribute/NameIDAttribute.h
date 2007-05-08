@@ -117,6 +117,14 @@ namespace shibsp {
             m_serialized.clear();
         }
 
+        const char* getString(size_t index) const {
+            return m_values[index].m_Name.c_str();
+        }
+
+        const char* getScope(size_t index) const {
+            return m_values[index].m_NameQualifier.c_str();
+        }
+
         void removeValue(size_t index) {
             Attribute::removeValue(index);
             if (index < m_values.size())

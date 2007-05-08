@@ -93,6 +93,17 @@ namespace shibsp {
          * @return SAML metadata for the attribute issuing role, or NULL
          */
         virtual const opensaml::saml2md::RoleDescriptor* getAttributeIssuerMetadata() const=0;
+
+        /**
+         * Returns the set of Attributes being filtered.
+         * 
+         * <p>No modifications should be performed, access is provided only for use by
+         * MatchFunctors based on the presence of Attribute data.
+         * 
+         * @return  an immutable map of Attributes.
+         */
+        virtual const std::multimap<std::string,Attribute*>& getAttributes() const=0;
+
     };
 };
 
