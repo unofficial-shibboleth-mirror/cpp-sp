@@ -203,6 +203,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\attribute\filtering\impl\AttributeIssuerInEntityGroupFunctor.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\attribute\filtering\impl\AttributeIssuerRegexFunctor.cpp"
 				>
 			</File>
@@ -211,11 +215,19 @@
 				>
 			</File>
 			<File
+				RelativePath=".\attribute\filtering\impl\AttributeRequesterInEntityGroupFunctor.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\attribute\filtering\impl\AttributeRequesterRegexFunctor.cpp"
 				>
 			</File>
 			<File
 				RelativePath=".\attribute\filtering\impl\AttributeRequesterStringFunctor.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\attribute\filtering\impl\AttributeScopeMatchesShibMDScopeFunctor.cpp"
 				>
 			</File>
 			<File

@@ -109,6 +109,15 @@ namespace shibsp {
     /** Matches based on the number of values. */
     extern SHIBSP_API xmltooling::QName NumberOfAttributeValuesType;
 
+    /** Matches based on metadata groups of issuer. */
+    extern SHIBSP_API xmltooling::QName AttributeIssuerInEntityGroupType;
+
+    /** Matches based on metadata groups of requester. */
+    extern SHIBSP_API xmltooling::QName AttributeRequesterInEntityGroupType;
+
+    /** Matches based on metadata Scope extensions. */
+    extern SHIBSP_API xmltooling::QName AttributeScopeMatchesShibMDScopeType;
+
     /**
      * Registers MatchFunctor classes into the runtime.
      */

@@ -35,7 +35,7 @@
         </complexContent>
     </complexType>
 
-    <complexType name="EntityGroupMatchType">
+    <complexType name="EntityGroupMatchType" abstract="true">
         <complexContent>
             <extension base="afp:MatchFunctorType">
                 <attribute name="groupID" type="string" use="required">

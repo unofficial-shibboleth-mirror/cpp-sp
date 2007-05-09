@@ -37,7 +37,8 @@ namespace shibsp {
     static const XMLCh minimum[] =      UNICODE_LITERAL_7(m,i,n,i,m,u,m);
 
     /**
-     * A match function that matches the scope of an attribute value against the specified value.
+     * A match function that evaluates to true if the given attribute has as a number
+     * of values that falls between the minimum and maximum.
      */
     class SHIBSP_DLLLOCAL NumberOfAttributeValuesFunctor : public MatchFunctor
     {

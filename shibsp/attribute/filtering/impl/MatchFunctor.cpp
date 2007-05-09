@@ -36,6 +36,9 @@ using namespace std;
 #define DECL_BASIC_QNAME(name,lit) \
     QName shibsp::name##Type(shibspconstants::SHIB2ATTRIBUTEFILTER_MF_BASIC_NS, lit)
 
+#define DECL_SAML_QNAME(name,lit) \
+    QName shibsp::name##Type(shibspconstants::SHIB2ATTRIBUTEFILTER_MF_SAML_NS, lit)
+
 #define REGISTER_FACTORY(name) \
     mgr.registerFactory(name##Type, name##Factory)
 
@@ -55,6 +58,10 @@ namespace shibsp {
     DECL_FACTORY(AttributeValueRegex);
     DECL_FACTORY(AttributeScopeRegex);
     DECL_FACTORY(NumberOfAttributeValues);
+    DECL_FACTORY(AttributeIssuerInEntityGroup);
+    DECL_FACTORY(AttributeRequesterInEntityGroup);
+    DECL_FACTORY(AttributeScopeMatchesShibMDScope);
+
 
     static const XMLCh ANY[] =                          UNICODE_LITERAL_3(A,N,Y);
     static const XMLCh AND[] =                          UNICODE_LITERAL_3(A,N,D);
@@ -71,6 +78,9 @@ namespace shibsp {
     static const XMLCh AttributeValueRegex[] =          UNICODE_LITERAL_19(A,t,t,r,i,b,u,t,e,V,a,l,u,e,R,e,g,e,x);
     static const XMLCh AttributeScopeRegex[] =          UNICODE_LITERAL_19(A,t,t,r,i,b,u,t,e,S,c,o,p,e,R,e,g,e,x);
     static const XMLCh NumberOfAttributeValues[] =      UNICODE_LITERAL_23(N,u,m,b,e,r,O,f,A,t,t,r,i,b,u,t,e,V,a,l,u,e,s);
+    static const XMLCh AttributeIssuerInEntityGroup[] = UNICODE_LITERAL_28(A,t,t,r,i,b,u,t,e,I,s,s,u,e,r,I,n,E,n,t,i,t,y,G,r,o,u,p);
+    static const XMLCh AttributeRequesterInEntityGroup[] = UNICODE_LITERAL_31(A,t,t,r,i,b,u,t,e,R,e,q,u,e,s,t,e,r,I,n,E,n,t,i,t,y,G,r,o,u,p);
+    static const XMLCh AttributeScopeMatchesShibMDScope[] = UNICODE_LITERAL_32(A,t,t,r,i,b,u,t,e,S,c,o,p,e,M,a,t,c,h,e,s,S,h,i,b,M,D,S,c,o,p,e);
 };
 
 DECL_BASIC_QNAME(AnyMatchFunctor, ANY);
@@ -88,6 +98,9 @@ DECL_BASIC_QNAME(AuthenticationMethodRegex, AuthenticationMethodRegex);
 DECL_BASIC_QNAME(AttributeValueRegex, AttributeValueRegex);
 DECL_BASIC_QNAME(AttributeScopeRegex, AttributeScopeRegex);
 DECL_BASIC_QNAME(NumberOfAttributeValues, NumberOfAttributeValues);
+DECL_SAML_QNAME(AttributeIssuerInEntityGroup, AttributeIssuerInEntityGroup);
+DECL_SAML_QNAME(AttributeRequesterInEntityGroup, AttributeRequesterInEntityGroup);
+DECL_SAML_QNAME(AttributeScopeMatchesShibMDScope, AttributeScopeMatchesShibMDScope);
 
 void SHIBSP_API shibsp::registerMatchFunctors()
 {
@@ -108,4 +121,7 @@ void SHIBSP_API shibsp::registerMatchFunctors()
     REGISTER_FACTORY(AttributeValueRegex);
     REGISTER_FACTORY(AttributeScopeRegex);
     REGISTER_FACTORY(NumberOfAttributeValues);
+    REGISTER_FACTORY(AttributeIssuerInEntityGroup);
+    REGISTER_FACTORY(AttributeRequesterInEntityGroup);
+    REGISTER_FACTORY(AttributeScopeMatchesShibMDScope);
 }
