@@ -82,10 +82,14 @@ namespace {
         const char* getId() const {return getString("id").second;}
         const char* getHash() const {return m_hash.c_str();}
 
-        MetadataProvider* getMetadataProvider() const {
+        MetadataProvider* getMetadataProvider(bool required=true) const {
+            if (required && !m_base && !m_metadata)
+                throw ConfigurationException("No MetadataProvider available.");
             return (!m_metadata && m_base) ? m_base->getMetadataProvider() : m_metadata;
         }
-        TrustEngine* getTrustEngine() const {
+        TrustEngine* getTrustEngine(bool required=true) const {
+            if (required && !m_base && !m_trust)
+                throw ConfigurationException("No TrustEngine available.");
             return (!m_trust && m_base) ? m_base->getTrustEngine() : m_trust;
         }
         AttributeExtractor* getAttributeExtractor() const {

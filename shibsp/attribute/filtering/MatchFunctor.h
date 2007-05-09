@@ -106,6 +106,9 @@ namespace shibsp {
     /** Matches an attribute's "scope". */
     extern SHIBSP_API xmltooling::QName AttributeScopeRegexType;
 
+    /** Matches based on the number of values. */
+    extern SHIBSP_API xmltooling::QName NumberOfAttributeValuesType;
+
     /**
      * Registers MatchFunctor classes into the runtime.
      */

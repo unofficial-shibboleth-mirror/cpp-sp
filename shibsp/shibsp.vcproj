@@ -255,6 +255,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\attribute\filtering\impl\NumberOfAttributeValuesFunctor.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\attribute\filtering\impl\OrMatchFunctor.cpp"
 				>
 			</File>

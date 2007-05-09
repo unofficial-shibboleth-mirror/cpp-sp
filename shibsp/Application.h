@@ -83,16 +83,18 @@ namespace shibsp {
         /**
          * Returns a MetadataProvider for use with this Application.
          * 
+         * @param required  true iff an exception should be thrown if no MetadataProvider is available
          * @return  a MetadataProvider instance, or NULL
          */
-        virtual opensaml::saml2md::MetadataProvider* getMetadataProvider() const=0;
+        virtual opensaml::saml2md::MetadataProvider* getMetadataProvider(bool required=true) const=0;
         
         /**
          * Returns a TrustEngine for use with this Application.
          * 
+         * @param required  true iff an exception should be thrown if no TrustEngine is available
          * @return  a TrustEngine instance, or NULL
          */
-        virtual xmltooling::TrustEngine* getTrustEngine() const=0;
+        virtual xmltooling::TrustEngine* getTrustEngine(bool required=true) const=0;
 
         /**
          * Returns an AttributeExtractor for use with this Application.

@@ -346,7 +346,7 @@
         </annotation>
         <complexContent>
             <extension base="afp:MatchFunctorType">
-                <attribute name="attributeID" type="string">
+                <attribute name="attributeID" type="string" use="required">
                     <annotation>
                         <documentation>The ID of the attribute whose value should be matched.</documentation>
                     </annotation>
