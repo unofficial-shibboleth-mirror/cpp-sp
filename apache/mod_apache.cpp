@@ -326,13 +326,15 @@ public:
     if (m_gotBody || m_req->method_number==M_GET)
         return m_body.c_str();
     // Read the posted data
-    if (ap_setup_client_block(m_req, REQUEST_CHUNKED_DECHUNK)) {
+    if (ap_setup_client_block(m_req, REQUEST_CHUNKED_DECHUNK) != OK) {
         m_gotBody=true;
         log(SPError, "Apache function (setup_client_block) failed while reading request body.");
+        return m_body.c_str();
     }
     if (!ap_should_client_block(m_req)) {
         m_gotBody=true;
         log(SPError, "Apache function (should_client_block) failed while reading request body.");
+        return m_body.c_str();
     }
     if (m_req->remaining > 1024*1024)
         throw opensaml::SecurityPolicyException("Blocked request body larger than 1M size limit.");
