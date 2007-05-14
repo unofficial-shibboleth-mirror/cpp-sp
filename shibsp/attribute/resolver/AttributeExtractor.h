@@ -32,6 +32,7 @@ namespace shibsp {
 
     class SHIBSP_API Application;
     class SHIBSP_API Attribute;
+    class SHIBSP_API SPRequest;
 
     /**
      * A service that extracts and decodes attributes from XML objects.
@@ -60,6 +61,14 @@ namespace shibsp {
             const xmltooling::XMLObject& xmlObject,
             std::multimap<std::string,Attribute*>& attributes
             ) const=0;
+
+        /**
+         * Clears possible HTTP request headers that might be populated
+         * during attribute export.
+         *
+         * @param request   the SP request being processed
+         */
+        virtual void clearHeaders(SPRequest& request) const=0;
     };
 
     /**

@@ -44,7 +44,7 @@ namespace shibsp {
     {
     public:
         bool evaluatePolicyRequirement(const FilteringContext& filterContext) const {
-            return false;
+            throw AttributeFilteringException("Metadata scope matching not usable as a PolicyRequirement.");
         }
 
         bool evaluatePermitValue(const FilteringContext& filterContext, const Attribute& attribute, size_t index) const {

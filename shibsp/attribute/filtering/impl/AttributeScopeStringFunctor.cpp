@@ -58,9 +58,9 @@ namespace shibsp {
         }
 
         bool evaluatePermitValue(const FilteringContext& filterContext, const Attribute& attribute, size_t index) const {
-            if (!XMLString::equals(m_attributeID.get(), attribute.getId()))
-                return hasScope(filterContext);
-            return XMLString::equals(attribute.getScope(index), m_value.get());
+            if (!m_attributeID.get() || !*m_attributeID.get() || XMLString::equals(m_attributeID.get(), attribute.getId()))
+                return XMLString::equals(attribute.getScope(index), m_value.get());
+            return hasScope(filterContext);
         }
     };
 

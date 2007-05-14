@@ -23,6 +23,7 @@
 #include "internal.h"
 #include "Application.h"
 #include "ServiceProvider.h"
+#include "SPRequest.h"
 #include "attribute/AttributeDecoder.h"
 #include "attribute/resolver/AttributeExtractor.h"
 #include "util/SPConstants.h"
@@ -80,6 +81,11 @@ namespace shibsp {
             const Application& application, const char* assertingParty, const saml2::Attribute& attr, multimap<string,Attribute*>& attributes
             ) const;
 
+        void clearHeaders(SPRequest& request) const {
+            for (vector<string>::const_iterator i = m_attributeIds.begin(); i!=m_attributeIds.end(); ++i)
+                request.clearHeader(i->c_str());
+        }
+
     private:
         Category& m_log;
         DOMDocument* m_document;
@@ -89,6 +95,7 @@ namespace shibsp {
         typedef map< pair<string,string>,pair<AttributeDecoder*,string> > attrmap_t;
 #endif
         attrmap_t m_attrMap;
+        vector<string> m_attributeIds;
     };
     
     class XMLExtractor : public AttributeExtractor, public ReloadableXMLFile
@@ -104,6 +111,11 @@ namespace shibsp {
         void extractAttributes(
             const Application& application, const RoleDescriptor* issuer, const XMLObject& xmlObject, multimap<string,Attribute*>& attributes
             ) const;
+
+        void clearHeaders(SPRequest& request) const {
+            if (m_impl)
+                m_impl->clearHeaders(request);
+        }
 
     protected:
         pair<bool,DOMElement*> load();
@@ -155,6 +167,11 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log) : m_log(l
         auto_ptr_char id(child->getAttributeNS(NULL, _id));
         if (!id.get() || !*id.get()) {
             m_log.warn("skipping Attribute with no id");
+            child = XMLHelper::getNextSiblingElement(child, shibspconstants::SHIB2ATTRIBUTEMAP_NS, saml1::Attribute::LOCAL_NAME);
+            continue;
+        }
+        else if (!strcmp(id.get(), "REMOTE_USER")) {
+            m_log.warn("skipping Attribute, id of REMOTE_USER is a reserved name");
             child = XMLHelper::getNextSiblingElement(child, shibspconstants::SHIB2ATTRIBUTEMAP_NS, saml1::Attribute::LOCAL_NAME);
             continue;
         }
@@ -210,6 +227,7 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log) : m_log(l
         
         decl.first = decoder;
         decl.second = id.get();
+        m_attributeIds.push_back(id.get());
         
         child = XMLHelper::getNextSiblingElement(child, shibspconstants::SHIB2ATTRIBUTEMAP_NS, saml1::Attribute::LOCAL_NAME);
     }
@@ -341,6 +359,9 @@ void XMLExtractor::extractAttributes(
     const Application& application, const RoleDescriptor* issuer, const XMLObject& xmlObject, multimap<string,Attribute*>& attributes
     ) const
 {
+    if (!m_impl)
+        return;
+
     // Check for assertions.
     if (XMLString::equals(xmlObject.getElementQName().getLocalPart(), saml1::Assertion::LOCAL_NAME)) {
         const saml2::Assertion* token2 = dynamic_cast<const saml2::Assertion*>(&xmlObject);

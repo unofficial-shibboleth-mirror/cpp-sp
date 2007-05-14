@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schema targetNamespace="urn:mace:shibboleth:2.0:attribute-map"
         xmlns="http://www.w3.org/2001/XMLSchema"
-        xmlns:am="urn:mace:shibboleth:2.0:attribute-map">
+        xmlns:am="urn:mace:shibboleth:2.0:attribute-map"
+        elementFormDefault="qualified">
 
     <annotation>
         <documentation>

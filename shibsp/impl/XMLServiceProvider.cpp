@@ -101,6 +101,9 @@ namespace {
         AttributeResolver* getAttributeResolver() const {
             return (!m_attrResolver && m_base) ? m_base->getAttributeResolver() : m_attrResolver;
         }
+        const set<string>& getRemoteUserAttributeIds() const {
+            return (m_attributeIds.empty() && m_base) ? m_base->getRemoteUserAttributeIds() : m_attributeIds;
+        }
         CredentialResolver* getCredentialResolver() const {
             return (!m_credResolver && m_base) ? m_base->getCredentialResolver() : m_credResolver;
         }
@@ -132,6 +135,7 @@ namespace {
         AttributeResolver* m_attrResolver;
         CredentialResolver* m_credResolver;
         vector<const XMLCh*> m_audiences;
+        set<string> m_attributeIds;
 
         // manage handler objects
         vector<Handler*> m_handlers;
@@ -371,6 +375,25 @@ XMLApplication::XMLApplication(
         m_hash=getId();
         m_hash+=getString("entityID").second;
         m_hash=samlConf.hashSHA1(m_hash.c_str(), true);
+
+        pair<bool,const char*> attributes = getString("REMOTE_USER");
+        if (attributes.first) {
+            char* dup = strdup(attributes.second);
+            char* pos;
+            char* start = dup;
+            while (start && *start) {
+                while (*start && isspace(*start))
+                    start++;
+                if (!*start)
+                    break;
+                pos = strchr(start,' ');
+                if (pos)
+                    *pos=0;
+                m_attributeIds.insert(start);
+                start = pos ? pos+1 : NULL;
+            }
+            free(dup);
+        }
 
         const PropertySet* sessions = getPropertySet("Sessions");
 

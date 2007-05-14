@@ -184,6 +184,10 @@ namespace shibsp {
 
         void resolveAttributes(ResolutionContext& ctx) const;
 
+        void clearHeaders(SPRequest& request) const {
+            // Doesn't have to do anything, the extractor is the only possibly source of attributes.
+        }
+
     private:
         bool SAML1Query(QueryContext& ctx) const;
         bool SAML2Query(QueryContext& ctx) const;
@@ -478,10 +482,11 @@ void QueryResolver::resolveAttributes(ResolutionContext& ctx) const
 
     if (qctx.getNameID() && qctx.getEntityDescriptor()) {
         m_log.debug("attempting SAML 2.0 attribute query");
-        if (!SAML2Query(qctx)) {
-            m_log.debug("attempting SAML 1.x attribute query");
-            SAML1Query(qctx);
-        }
+        if (SAML2Query(qctx))
+            return;
+        m_log.debug("attempting SAML 1.x attribute query");
+        SAML1Query(qctx);
+        return;
     }
     m_log.warn("can't attempt attribute query, either no NameID or no metadata to use");
 }

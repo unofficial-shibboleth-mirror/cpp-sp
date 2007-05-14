@@ -28,6 +28,8 @@
 #include "SessionCache.h"
 #include "SPRequest.h"
 #include "attribute/Attribute.h"
+#include "attribute/resolver/AttributeExtractor.h"
+#include "attribute/resolver/AttributeResolver.h"
 #include "handler/SessionInitiator.h"
 #include "util/TemplateParameters.h"
 
@@ -98,23 +100,18 @@ namespace shibsp {
         request.clearHeader("Shib-Attributes");
         request.clearHeader("Shib-Application-ID");
     
-        // Clear out the list of mapped attributes
-        /* TODO: need some kind of master attribute list via the new resolver
-        Iterator<IAAP*> provs=dynamic_cast<const IApplication&>(getApplication()).getAAPProviders();
-        while (provs.hasNext()) {
-            IAAP* aap=provs.next();
-            xmltooling::Locker locker(aap);
-            Iterator<const IAttributeRule*> rules=aap->getAttributeRules();
-            while (rules.hasNext()) {
-                const char* header=rules.next()->getHeader();
-                if (header)
-                    request.clearHeader(header);
-            }
+        // Let plugins do the rest.
+        AttributeExtractor* extractor = request.getApplication().getAttributeExtractor();
+        if (extractor) {
+            Locker locker(extractor);
+            extractor->clearHeaders(request);
         }
-        */
+        AttributeResolver* resolver = request.getApplication().getAttributeResolver();
+        if (resolver) {
+            Locker locker(resolver);
+            resolver->clearHeaders(request);
+        }
     }
-
-    static const XMLCh SessionInitiator[] =     UNICODE_LITERAL_16(S,e,s,s,i,o,n,I,n,i,t,i,a,t,o,r);
 };
 
 void SHIBSP_API shibsp::registerServiceProviders()
@@ -376,31 +373,36 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
         }
 
         // Export the attributes.
+        bool remoteUserSet = false;
         const multimap<string,Attribute*>& attributes = session->getAttributes();
         for (multimap<string,Attribute*>::const_iterator a = attributes.begin(); a!=attributes.end(); ++a) {
             const vector<string>& vals = a->second->getSerializedValues();
-            if (a->first == "REMOTE_USER" && !vals.empty())
+
+            // See if this needs to be set as the REMOTE_USER value.
+            if (!remoteUserSet && !vals.empty() && app->getRemoteUserAttributeIds().count(a->first)) {
                 request.setRemoteUser(vals.front().c_str());
-            else {
-                string header(request.getSecureHeader(a->first.c_str()));
-                for (vector<string>::const_iterator v = vals.begin(); v!=vals.end(); ++v) {
-                    if (!header.empty())
-                        header += ";";
-                    string::size_type pos = v->find_first_of(';',string::size_type(0));
-                    if (pos!=string::npos) {
-                        string value(*v);
-                        for (; pos != string::npos; pos = value.find_first_of(';',pos)) {
-                            value.insert(pos, "\\");
-                            pos += 2;
-                        }
-                        header += value;
-                    }
-                    else {
-                        header += (*v);
-                    }
-                }
-                request.setHeader(a->first.c_str(), header.c_str());
+                remoteUserSet = true;
             }
+
+            // Handle the normal export case.
+            string header(request.getSecureHeader(a->first.c_str()));
+            for (vector<string>::const_iterator v = vals.begin(); v!=vals.end(); ++v) {
+                if (!header.empty())
+                    header += ";";
+                string::size_type pos = v->find_first_of(';',string::size_type(0));
+                if (pos!=string::npos) {
+                    string value(*v);
+                    for (; pos != string::npos; pos = value.find_first_of(';',pos)) {
+                        value.insert(pos, "\\");
+                        pos += 2;
+                    }
+                    header += value;
+                }
+                else {
+                    header += (*v);
+                }
+            }
+            request.setHeader(a->first.c_str(), header.c_str());
         }
     
         return make_pair(false,0);

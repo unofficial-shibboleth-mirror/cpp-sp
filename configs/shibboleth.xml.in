@@ -228,6 +228,9 @@
 		<!-- Use a SAML query if no attributes are supplied during SSO. -->
 		<AttributeResolver type="Query"/>
 
+		<!-- Default filtering policy for recognized attributes, lets other data pass. -->
+		<AttributeFilter type="XML" path="@-PKGSYSCONFDIR-@/attribute-policy.xml"/>
+
 		<!-- Simple file-based resolver for key/certificate information. -->
 		<CredentialResolver type="File">
 			<Key>

@@ -22,6 +22,7 @@ BUILTCONFIGFILES = \
 	native.logger \
 	shibd.logger \
 	attribute-map.xml \
+	attribute-policy.xml \
 	example-metadata.xml
 
 # While BUILTCONFIGFILES are processed, these are not; so we should pull
@@ -78,6 +79,9 @@ shibboleth.xml: ${srcdir}/shibboleth.xml.in Makefile ${top_builddir}/config.stat
 attribute-map.xml: ${srcdir}/attribute-map.xml.in Makefile ${top_builddir}/config.status
 	$(MAKE) do-build-file FILE=$@
 
+attribute-policy.xml: ${srcdir}/attribute-policy.xml.in Makefile ${top_builddir}/config.status
+	$(MAKE) do-build-file FILE=$@
+
 example-metadata.xml: ${srcdir}/example-metadata.xml.in Makefile ${top_builddir}/config.status
 	$(MAKE) do-build-file FILE=$@
 
@@ -112,11 +116,13 @@ CLEANFILES = \
 	native.logger \
 	shibboleth.xml \
 	attribute-map.xml \
+	attribute-policy.xml \
 	example-metadata.xml
 
 EXTRA_DIST =
 	shibboleth.xml.in \
 	attribute-map.xml.in \
+	attribute-policy.xml.in \
 	example-metadata.xml.in \
 	native.logger.in \
 	shibd.logger.in \

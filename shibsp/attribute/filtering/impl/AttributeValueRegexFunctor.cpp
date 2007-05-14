@@ -70,9 +70,9 @@ namespace shibsp {
         }
 
         bool evaluatePermitValue(const FilteringContext& filterContext, const Attribute& attribute, size_t index) const {
-            if (!XMLString::equals(m_attributeID.get(), attribute.getId()))
-                return hasValue(filterContext);
-            return matches(attribute, index);
+            if (!m_attributeID.get() || !*m_attributeID.get() || XMLString::equals(m_attributeID.get(), attribute.getId()))
+                return matches(attribute, index);
+            return hasValue(filterContext);
         }
     };
 

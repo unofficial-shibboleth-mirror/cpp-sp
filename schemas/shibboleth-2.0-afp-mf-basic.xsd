@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<schema targetNamespace="urn:mace:shibboleth:2.0:afp:mf:basic" xmlns="http://www.w3.org/2001/XMLSchema"
-    xmlns:basic="urn:mace:shibboleth:2.0:afp:mf:basic" xmlns:afp="urn:mace:shibboleth:2.0:afp">
+<schema targetNamespace="urn:mace:shibboleth:2.0:afp:mf:basic"
+    xmlns="http://www.w3.org/2001/XMLSchema"
+    xmlns:basic="urn:mace:shibboleth:2.0:afp:mf:basic"
+    xmlns:afp="urn:mace:shibboleth:2.0:afp"
+    elementFormDefault="qualified">
 
     <import namespace="urn:mace:shibboleth:2.0:afp" schemaLocation="classpath:/schema/shibboleth-2.0-afp.xsd" />
 

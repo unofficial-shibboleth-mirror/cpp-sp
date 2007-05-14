@@ -339,7 +339,7 @@
            	<attributeGroup ref="conf:ContentSettings"/>
         </complexType>
     </element>
-
+	
 	<element name="Applications">
 		<annotation>
 			<documentation>Container for global settings and application-specific overrides</documentation>
@@ -362,6 +362,7 @@
 			<attribute name="entityID" type="anyURI" use="required"/>
 			<attribute name="policyId" type="conf:string" use="required"/>
 			<attribute name="homeURL" type="anyURI" default="/"/>
+			<attribute name="REMOTE_USER" type="conf:listOfStrings"/>
 	        <anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>
@@ -387,6 +388,7 @@
 			<attribute name="entityID" type="anyURI"/>
 			<attribute name="policyId" type="conf:string"/>
 			<attribute name="homeURL" type="anyURI" default="/"/>
+			<attribute name="REMOTE_USER" type="conf:listOfStrings"/>
 			<anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>

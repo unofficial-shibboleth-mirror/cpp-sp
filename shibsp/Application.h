@@ -118,6 +118,14 @@ namespace shibsp {
         virtual AttributeResolver* getAttributeResolver() const=0;
 
         /**
+         * Returns a set of attribute IDs to use as a REMOTE_USER value.
+         * <p>The first attribute with a value (and only a single value) will be used.
+         *
+         * @return  a set of attribute IDs, or an empty set
+         */
+        virtual const std::set<std::string>& getRemoteUserAttributeIds() const=0;
+
+        /**
          * Returns the CredentialResolver instance associated with this Application.
          * 
          * @return  a CredentialResolver, or NULL
