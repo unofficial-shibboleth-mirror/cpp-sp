@@ -94,9 +94,6 @@
 /* Define to 1 if you have the <unistd.h> header file. */
 /* #undef HAVE_UNISTD_H */
 
-/* Define if RPC SVC macros work on this platform */
-#define HAVE_WORKING_SVC_DESTROY 1
-
 /* Name of package */
 #define PACKAGE "shibboleth"
 
@@ -124,9 +121,6 @@
 
 /* Define to 1 if your <sys/time.h> declares `struct tm'. */
 /* #undef TM_IN_SYS_TIME */
-
-/* Define if using embedded version of ONC RPC. */
-#define USE_OUR_ONCRPC 1
 
 /* Version number of package */
 #define VERSION "2.0"

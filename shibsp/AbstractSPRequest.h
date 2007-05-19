@@ -25,10 +25,19 @@
 
 #include <shibsp/exceptions.h>
 #include <shibsp/SPRequest.h>
-#include <saml/util/CGIParser.h>
+#ifndef SHIBSP_LITE
+# include <saml/util/CGIParser.h>
+#else
+# include <shibsp/lite/CGIParser.h>
+#endif
 
 namespace shibsp {
     
+#if defined (_MSC_VER)
+    #pragma warning( push )
+    #pragma warning( disable : 4251 )
+#endif
+
     /**
      * Abstract base for SPRequest implementations
      */
@@ -77,6 +86,11 @@ namespace shibsp {
         mutable std::map<std::string,std::string> m_cookieMap;
         mutable opensaml::CGIParser* m_parser;
     };
+
+#if defined (_MSC_VER)
+    #pragma warning( pop )
+#endif
+
 };
 
 #endif /* __shibsp_abstreq_h__ */

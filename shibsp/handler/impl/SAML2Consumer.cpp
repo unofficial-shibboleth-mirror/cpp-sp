@@ -21,27 +21,29 @@
  */
 
 #include "internal.h"
-#include "Application.h"
-#include "exceptions.h"
-#include "ServiceProvider.h"
-#include "SessionCache.h"
-#include "attribute/Attribute.h"
-#include "attribute/filtering/AttributeFilter.h"
-#include "attribute/filtering/BasicFilteringContext.h"
-#include "attribute/resolver/AttributeExtractor.h"
-#include "attribute/resolver/ResolutionContext.h"
 #include "handler/AssertionConsumerService.h"
 
-#include <saml/saml2/core/Protocols.h>
-#include <saml/saml2/profile/BrowserSSOProfileValidator.h>
-#include <saml/saml2/metadata/Metadata.h>
-#include <saml/saml2/metadata/MetadataCredentialCriteria.h>
-
-using namespace shibsp;
+#ifndef SHIBSP_LITE
+# include "exceptions.h"
+# include "Application.h"
+# include "ServiceProvider.h"
+# include "SessionCache.h"
+# include "attribute/Attribute.h"
+# include "attribute/filtering/AttributeFilter.h"
+# include "attribute/filtering/BasicFilteringContext.h"
+# include "attribute/resolver/AttributeExtractor.h"
+# include "attribute/resolver/ResolutionContext.h"
+# include <saml/saml2/core/Protocols.h>
+# include <saml/saml2/profile/BrowserSSOProfileValidator.h>
+# include <saml/saml2/metadata/Metadata.h>
+# include <saml/saml2/metadata/MetadataCredentialCriteria.h>
 using namespace opensaml::saml2;
 using namespace opensaml::saml2p;
 using namespace opensaml::saml2md;
 using namespace opensaml;
+#endif
+
+using namespace shibsp;
 using namespace xmltooling;
 using namespace log4cpp;
 using namespace std;
@@ -57,11 +59,12 @@ namespace shibsp {
     {
     public:
         SAML2Consumer(const DOMElement* e, const char* appId)
-                : AssertionConsumerService(e, appId, Category::getInstance(SHIBSP_LOGCAT".SAML2")) {
+            : AssertionConsumerService(e, appId, Category::getInstance(SHIBSP_LOGCAT".SAML2")) {
         }
         virtual ~SAML2Consumer() {}
         
     private:
+#ifndef SHIBSP_LITE
         string implementProtocol(
             const Application& application,
             const HTTPRequest& httpRequest,
@@ -69,6 +72,7 @@ namespace shibsp {
             const PropertySet* settings,
             const XMLObject& xmlObject
             ) const;
+#endif
     };
 
 #if defined (_MSC_VER)
@@ -81,6 +85,8 @@ namespace shibsp {
     }
     
 };
+
+#ifndef SHIBSP_LITE
 
 string SAML2Consumer::implementProtocol(
     const Application& application,
@@ -420,3 +426,5 @@ string SAML2Consumer::implementProtocol(
         throw;
     }
 }
+
+#endif

@@ -25,20 +25,19 @@
 #include "exceptions.h"
 #include "ServiceProvider.h"
 #include "SessionCache.h"
-#include "TransactionLog.h"
 #include "attribute/Attribute.h"
 #include "remoting/ListenerService.h"
 #include "util/SPConstants.h"
 
+#include <ctime>
 #include <sstream>
 #include <log4cpp/Category.hh>
 #include <xmltooling/XMLToolingConfig.h>
+#include <xmltooling/util/DateTime.h>
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/XMLHelper.h>
 
 using namespace shibsp;
-using namespace opensaml::saml2md;
-using namespace opensaml;
 using namespace xmltooling;
 using namespace log4cpp;
 using namespace std;
@@ -50,19 +49,7 @@ namespace shibsp {
     {
     public:
         RemotedSession(RemotedCache* cache, DDF& obj) : m_version(obj["version"].integer()), m_obj(obj),
-                m_nameid(NULL), m_expires(0), m_lastAccess(time(NULL)), m_cache(cache), m_lock(NULL) {
-            const char* nameid = obj["nameid"].string();
-            if (nameid) {
-                // Parse and bind the NameID into an XMLObject.
-                istringstream instr(nameid);
-                DOMDocument* doc = XMLToolingConfig::getConfig().getParser().parse(instr); 
-                XercesJanitor<DOMDocument> janitor(doc);
-                auto_ptr<saml2::NameID> n(saml2::NameIDBuilder::buildNameID());
-                n->unmarshall(doc->getDocumentElement(), true);
-                janitor.release();
-                m_nameid = n.release();
-            }
-            
+                m_expires(0), m_lastAccess(time(NULL)), m_cache(cache), m_lock(NULL) {
             auto_ptr_XMLCh exp(m_obj["expires"].string());
             if (exp.get()) {
                 DateTime iso(exp.get());
@@ -76,9 +63,7 @@ namespace shibsp {
         ~RemotedSession() {
             delete m_lock;
             m_obj.destroy();
-            delete m_nameid;
             for_each(m_attributes.begin(), m_attributes.end(), cleanup_pair<string,Attribute>());
-            for_each(m_tokens.begin(), m_tokens.end(), cleanup_pair<string,Assertion>());
         }
         
         Lockable* lock() {
@@ -100,9 +85,6 @@ namespace shibsp {
         }
         const char* getAuthnInstant() const {
             return m_obj["authn_instant"].string();
-        }
-        const opensaml::saml2::NameID* getNameID() const {
-            return m_nameid;
         }
         const char* getSessionIndex() const {
             return m_obj["session_index"].string();
@@ -130,15 +112,6 @@ namespace shibsp {
             return m_ids;
         }
         
-        const Assertion* getAssertion(const char* id) const;
-
-        void addAttributes(const vector<Attribute*>& attributes) {
-            throw ConfigurationException("addAttributes method not implemented by this session cache plugin.");
-        }
-        void addAssertion(Assertion* assertion) {
-            throw ConfigurationException("addAssertion method not implemented by this session cache plugin.");
-        }
-
         time_t expires() const { return m_expires; }
         time_t lastAccess() const { return m_lastAccess; }
         void validate(const Application& application, const char* client_addr, time_t timeout, bool local=true);
@@ -148,10 +121,8 @@ namespace shibsp {
 
         int m_version;
         mutable DDF m_obj;
-        saml2::NameID* m_nameid;
         mutable multimap<string,Attribute*> m_attributes;
         mutable vector<const char*> m_ids;
-        mutable map<string,Assertion*> m_tokens;
         time_t m_expires,m_lastAccess;
         RemotedCache* m_cache;
         Mutex* m_lock;
@@ -163,19 +134,6 @@ namespace shibsp {
         RemotedCache(const DOMElement* e);
         ~RemotedCache();
     
-        string insert(
-            time_t expires,
-            const Application& application,
-            const char* client_addr=NULL,
-            const saml2md::EntityDescriptor* issuer=NULL,
-            const saml2::NameID* nameid=NULL,
-            const char* authn_instant=NULL,
-            const char* session_index=NULL,
-            const char* authncontext_class=NULL,
-            const char* authncontext_decl=NULL,
-            const vector<const Assertion*>* tokens=NULL,
-            const multimap<string,Attribute*>* attributes=NULL
-            );
         Session* find(const char* key, const Application& application, const char* client_addr=NULL, time_t timeout=0);
         void remove(const char* key, const Application& application, const char* client_addr);
         
@@ -221,46 +179,13 @@ void RemotedSession::unmarshallAttributes() const
     }
 }
 
-const Assertion* RemotedSession::getAssertion(const char* id) const
-{
-    map<string,Assertion*>::const_iterator i = m_tokens.find(id);
-    if (i!=m_tokens.end())
-        return i->second;
-
-    // Fetch from remoted cache.
-    DDF in("getAssertion::"REMOTED_SESSION_CACHE"::SessionCache");
-    DDFJanitor jin(in);
-    in.structure();
-    in.addmember("key").string(m_obj.name());
-    in.addmember("id").string(id);
-
-    DDF out=SPConfig::getConfig().getServiceProvider()->getListenerService()->send(in);
-    DDFJanitor jout(out);
-    
-    // Parse and bind the document into an XMLObject.
-    istringstream instr(out.string());
-    DOMDocument* doc = XMLToolingConfig::getConfig().getParser().parse(instr); 
-    XercesJanitor<DOMDocument> janitor(doc);
-    auto_ptr<XMLObject> xmlObject(XMLObjectBuilder::buildOneFromElement(doc->getDocumentElement(), true));
-    janitor.release();
-    
-    Assertion* token = dynamic_cast<Assertion*>(xmlObject.get());
-    if (!token)
-        throw FatalProfileException("Cached assertion was of an unknown object type.");
-
-    // Transfer ownership to us.
-    xmlObject.release();
-    m_tokens[id]=token;
-    return token;
-}
-
 void RemotedSession::validate(const Application& application, const char* client_addr, time_t timeout, bool local)
 {
     // Basic expiration?
     time_t now = time(NULL);
     if (now > m_expires) {
         m_cache->m_log.info("session expired (ID: %s)", m_obj.name());
-        throw RetryableProfileException("Your session has expired, and you must re-authenticate.");
+        throw opensaml::RetryableProfileException("Your session has expired, and you must re-authenticate.");
     }
 
     // Address check?
@@ -269,7 +194,7 @@ void RemotedSession::validate(const Application& application, const char* client
             m_cache->m_log.debug("comparing client address %s against %s", client_addr, getClientAddress());
         if (strcmp(getClientAddress(),client_addr)) {
             m_cache->m_log.warn("client address mismatch");
-            throw RetryableProfileException(
+            throw opensaml::RetryableProfileException(
                 "Your IP address ($1) does not match the address recorded at the time the session was established.",
                 params(1,client_addr)
                 );
@@ -338,118 +263,6 @@ RemotedCache::~RemotedCache()
     for_each(m_hashtable.begin(),m_hashtable.end(),xmltooling::cleanup_pair<string,RemotedSession>());
     delete m_lock;
     delete shutdown_wait;
-}
-
-string RemotedCache::insert(
-    time_t expires,
-    const Application& application,
-    const char* client_addr,
-    const saml2md::EntityDescriptor* issuer,
-    const saml2::NameID* nameid,
-    const char* authn_instant,
-    const char* session_index,
-    const char* authncontext_class,
-    const char* authncontext_decl,
-    const vector<const Assertion*>* tokens,
-    const multimap<string,Attribute*>* attributes
-    )
-{
-    DDF in("insert::"REMOTED_SESSION_CACHE"::SessionCache");
-    DDFJanitor jin(in);
-    in.structure();
-    if (expires) {
-#ifndef HAVE_GMTIME_R
-        struct tm* ptime=gmtime(&expires);
-#else
-        struct tm res;
-        struct tm* ptime=gmtime_r(&expires,&res);
-#endif
-        char timebuf[32];
-        strftime(timebuf,32,"%Y-%m-%dT%H:%M:%SZ",ptime);
-        in.addmember("expires").string(timebuf);
-    }
-    in.addmember("application_id").string(application.getId());
-    if (client_addr)
-        in.addmember("client_addr").string(client_addr);
-    if (issuer) {
-        auto_ptr_char provid(issuer->getEntityID());
-        in.addmember("entity_id").string(provid.get());
-    }
-    if (authn_instant)
-        in.addmember("authn_instant").string(authn_instant);
-    if (session_index)
-        in.addmember("session_index").string(session_index);
-    if (authncontext_class)
-        in.addmember("authncontext_class").string(authncontext_class);
-    if (authncontext_decl)
-        in.addmember("authncontext_decl").string(authncontext_decl);
-    
-    if (nameid) {
-        ostringstream namestr;
-        namestr << *nameid;
-        in.addmember("nameid").string(namestr.str().c_str());
-    }
-
-    if (tokens) {
-        in.addmember("assertions").list();
-        in.addmember("tokens").list();
-        for (vector<const Assertion*>::const_iterator t = tokens->begin(); t!=tokens->end(); ++t) {
-            ostringstream tokenstr;
-            tokenstr << *(*t);
-            auto_ptr_char tokenid((*t)->getID());
-            DDF tokid = DDF(NULL).string(tokenid.get());
-            in["assertions"].add(tokid);
-            DDF tok = DDF(tokenid.get()).string(tokenstr.str().c_str());
-            in["tokens"].add(tok);
-        }
-    }
-    
-    if (attributes) {
-        DDF attr;
-        DDF attrs = in.addmember("attributes").list();
-        for (multimap<string,Attribute*>::const_iterator a=attributes->begin(); a!=attributes->end(); ++a) {
-            attr = a->second->marshall();
-            attrs.add(attr);
-        }
-    }
-
-    DDF out=application.getServiceProvider().getListenerService()->send(in);
-    DDFJanitor jout(out);
-    if (out["key"].isstring()) {
-        // Transaction Logging
-        auto_ptr_char name(nameid ? nameid->getName() : NULL);
-        const char* pid = in["entity_id"].string();
-        TransactionLog* xlog = application.getServiceProvider().getTransactionLog();
-        Locker locker(xlog);
-        xlog->log.infoStream() <<
-            "New session (ID: " <<
-                out["key"].string() <<
-            ") with (applicationId: " <<
-                application.getId() <<
-            ") for principal from (IdP: " <<
-                (pid ? pid : "none") <<
-            ") at (ClientAddress: " <<
-                (client_addr ? client_addr : "none") <<
-            ") with (NameIdentifier: " <<
-                (name.get() ? name.get() : "none") <<
-            ")";
-
-        if (attributes) {
-            xlog->log.infoStream() <<
-                "Cached the following attributes with session (ID: " <<
-                    out["key"].string() <<
-                ") for (applicationId: " <<
-                    application.getId() <<
-                ") {";
-            for (multimap<string,Attribute*>::const_iterator a=attributes->begin(); a!=attributes->end(); ++a)
-                xlog->log.infoStream() << "\t" << a->second->getId() << " (" << a->second->valueCount() << " values)";
-            xlog->log.info("}");
-            for_each(attributes->begin(), attributes->end(), cleanup_pair<string,Attribute>());
-        }
-
-        return out["key"].string();
-    }
-    throw RetryableProfileException("A remoted cache insertion operation did not return a usable session key.");
 }
 
 Session* RemotedCache::find(const char* key, const Application& application, const char* client_addr, time_t timeout)
@@ -672,57 +485,3 @@ void* RemotedCache::cleanup_fn(void* cache_p)
     cache->cleanup();
     return NULL;
 }
-
-/* These are currently unimplemented.
-
-void RemotedSession::addAttributes(const vector<Attribute*>& attributes)
-{
-    DDF in("addAttributes::"REMOTED_SESSION_CACHE);
-    DDFJanitor jin(in);
-    in.structure();
-    in.addmember("key").string(m_key.c_str());
-    in.addmember("application_id").string(m_appId.c_str());
-
-    DDF attr;
-    DDF attrs = in.addmember("attributes").list();
-    for (vector<Attribute*>::const_iterator a=attributes.begin(); a!=attributes.end(); ++a) {
-        attr = (*a)->marshall();
-        attrs.add(attr);
-    }
-
-    attr=SPConfig::getConfig().getServiceProvider()->getListenerService()->send(in);
-    DDFJanitor jout(attr);
-    
-    // Transfer ownership to us.
-    m_attributes.insert(m_attributes.end(), attributes.begin(), attributes.end());
-}
-
-void RemotedSession::addAssertion(Assertion* assertion)
-{
-    if (!assertion)
-        throw FatalProfileException("Unknown object type passed to session cache for storage.");
-
-    DDF in("addAssertion::"REMOTED_SESSION_CACHE);
-    DDFJanitor jin(in);
-    in.structure();
-    in.addmember("key").string(m_key.c_str());
-    in.addmember("application_id").string(m_appId.c_str());
-    
-    ostringstream os;
-    os << *assertion;
-    string token(os.str());
-    auto_ptr_char tokenid(assertion->getID());
-    in.addmember("assertion_id").string(tokenid.get());
-    in.addmember("assertion").string(token.c_str());
-
-    DDF out = SPConfig::getConfig().getServiceProvider()->getListenerService()->send(in);
-    out.destroy();
-    
-    // Add to local record and token map.
-    // Next attempt to find and lock session will refresh from remote store anyway.
-    m_obj["assertions"].addmember(tokenid.get()).string(token.c_str());
-    m_ids.clear();
-    m_tokens[tokenid.get()] = assertion;
-}
-
-*/

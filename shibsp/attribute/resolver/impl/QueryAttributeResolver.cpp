@@ -184,10 +184,6 @@ namespace shibsp {
 
         void resolveAttributes(ResolutionContext& ctx) const;
 
-        void clearHeaders(SPRequest& request) const {
-            // Doesn't have to do anything, the extractor is the only possibly source of attributes.
-        }
-
     private:
         bool SAML1Query(QueryContext& ctx) const;
         bool SAML2Query(QueryContext& ctx) const;

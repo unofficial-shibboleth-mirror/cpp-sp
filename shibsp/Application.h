@@ -24,15 +24,21 @@
 #define __shibsp_app_h__
 
 #include <shibsp/util/PropertySet.h>
-#include <saml/saml2/metadata/MetadataProvider.h>
-#include <xmltooling/security/CredentialResolver.h>
-#include <xmltooling/security/TrustEngine.h>
+
+#include <set>
+#ifndef SHIBSP_LITE
+# include <saml/saml2/metadata/MetadataProvider.h>
+# include <xmltooling/security/CredentialResolver.h>
+# include <xmltooling/security/TrustEngine.h>
+#endif
 
 namespace shibsp {
     
+#ifndef SHIBSP_LITE
     class SHIBSP_API AttributeExtractor;
     class SHIBSP_API AttributeFilter;
     class SHIBSP_API AttributeResolver;
+#endif
     class SHIBSP_API Handler;
     class SHIBSP_API ServiceProvider;
     class SHIBSP_API SessionInitiator;
@@ -68,7 +74,7 @@ namespace shibsp {
         /**
          * Returns a unique hash for the Application.
          * 
-         * @return a value resulting from a hash of the Application's ID  
+         * @return a value resulting from a computation over the Application's configuration
          */
         virtual const char* getHash() const=0;
 
@@ -80,6 +86,7 @@ namespace shibsp {
          */
         virtual std::pair<std::string,const char*> getCookieNameProps(const char* prefix) const;
 
+#ifndef SHIBSP_LITE
         /**
          * Returns a MetadataProvider for use with this Application.
          * 
@@ -118,14 +125,6 @@ namespace shibsp {
         virtual AttributeResolver* getAttributeResolver() const=0;
 
         /**
-         * Returns a set of attribute IDs to use as a REMOTE_USER value.
-         * <p>The first attribute with a value (and only a single value) will be used.
-         *
-         * @return  a set of attribute IDs, or an empty set
-         */
-        virtual const std::set<std::string>& getRemoteUserAttributeIds() const=0;
-
-        /**
          * Returns the CredentialResolver instance associated with this Application.
          * 
          * @return  a CredentialResolver, or NULL
@@ -139,6 +138,22 @@ namespace shibsp {
          * @return  the applicable PropertySet
          */
         virtual const PropertySet* getRelyingParty(const opensaml::saml2md::EntityDescriptor* provider) const=0;
+
+        /**
+         * Returns the set of audience values associated with this Application.
+         * 
+         * @return set of audience values associated with the Application
+         */
+        virtual const std::vector<const XMLCh*>& getAudiences() const=0;
+#endif
+
+        /**
+         * Returns a set of attribute IDs to use as a REMOTE_USER value.
+         * <p>The first attribute with a value (and only a single value) will be used.
+         *
+         * @return  a set of attribute IDs, or an empty set
+         */
+        virtual const std::set<std::string>& getRemoteUserAttributeIds() const=0;
 
         /**
          * Returns the default SessionInitiator when automatically requesting a session.
@@ -189,13 +204,6 @@ namespace shibsp {
          * @return the mapped Handler, or NULL 
          */
         virtual const Handler* getHandler(const char* path) const=0;
-
-        /**
-         * Returns the set of audience values associated with this Application.
-         * 
-         * @return set of audience values associated with the Application
-         */
-        virtual const std::vector<const XMLCh*>& getAudiences() const=0;
     };
 };
 

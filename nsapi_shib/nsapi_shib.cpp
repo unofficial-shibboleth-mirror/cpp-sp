@@ -180,7 +180,7 @@ class ShibTargetNSAPI : public AbstractSPRequest
   string m_uri;
   mutable string m_body;
   mutable bool m_gotBody;
-  vector<XSECCryptoX509*> m_certs;
+  vector<string> m_certs;
 
 public:
   ShibTargetNSAPI(pblock* pb, ::Session* sn, Request* rq) : m_gotBody(false) {
@@ -341,7 +341,7 @@ public:
   }
   long returnDecline() { return REQ_NOACTION; }
   long returnOK() { return REQ_PROCEED; }
-  const vector<XSECCryptoX509*>& getClientCertificates() const {
+  const vector<string>& getClientCertificates() const {
       return m_certs;
   }
 

@@ -24,8 +24,11 @@
 #define __shibsp_sessioncache_h__
 
 #include <shibsp/base.h>
-#include <saml/saml1/core/Assertions.h>
-#include <saml/saml2/metadata/Metadata.h>
+
+#ifndef SHIBSP_LITE
+# include <saml/saml1/core/Assertions.h>
+# include <saml/saml2/metadata/Metadata.h>
+#endif
 #include <xmltooling/Lockable.h>
 
 namespace shibsp {
@@ -61,6 +64,7 @@ namespace shibsp {
          */
         virtual const char* getAuthnInstant() const=0;
 
+#ifndef SHIBSP_LITE
         /**
          * Returns the NameID associated with a session.
          * 
@@ -69,6 +73,7 @@ namespace shibsp {
          * @return a SAML 2.0 NameID associated with the session, if any
          */
         virtual const opensaml::saml2::NameID* getNameID() const=0;
+#endif
 
         /**
          * Returns the SessionIndex provided with the session.
@@ -101,13 +106,6 @@ namespace shibsp {
         virtual const std::multimap<std::string,Attribute*>& getAttributes() const=0;
         
         /**
-         * Adds additional attributes to the session.
-         * 
-         * @param attributes    reference to an array of Attributes to cache (will be freed by cache)
-         */
-        virtual void addAttributes(const std::vector<Attribute*>& attributes)=0;
-        
-        /**
          * Returns the identifiers of the assertion(s) cached by the session.
          * 
          * <p>The SSO assertion is guaranteed to be first in the set.
@@ -116,6 +114,14 @@ namespace shibsp {
          */
         virtual const std::vector<const char*>& getAssertionIDs() const=0;
         
+#ifndef SHIBSP_LITE
+        /**
+         * Adds additional attributes to the session.
+         * 
+         * @param attributes    reference to an array of Attributes to cache (will be freed by cache)
+         */
+        virtual void addAttributes(const std::vector<Attribute*>& attributes)=0;
+
         /**
          * Returns an assertion cached by the session.
          * 
@@ -130,6 +136,7 @@ namespace shibsp {
          * @param assertion pointer to an assertion to cache (will be freed by cache)
          */
         virtual void addAssertion(opensaml::Assertion* assertion)=0;        
+#endif
     };
     
     /**
@@ -165,6 +172,7 @@ namespace shibsp {
     public:
         virtual ~SessionCache() {}
         
+#ifndef SHIBSP_LITE
         /**
          * Inserts a new session into the cache.
          * 
@@ -197,6 +205,7 @@ namespace shibsp {
             const std::vector<const opensaml::Assertion*>* tokens=NULL,
             const std::multimap<std::string,Attribute*>* attributes=NULL
             )=0;
+#endif
 
         /**
          * Locates an existing session.
@@ -222,11 +231,13 @@ namespace shibsp {
         virtual void remove(const char* key, const Application& application, const char* client_addr)=0;
     };
 
-    /** SessionCache implementation that delegates to a remoted version. */
-    #define REMOTED_SESSION_CACHE    "Remoted"
-
+#ifndef SHIBSP_LITE
     /** SessionCache implementation backed by a StorageService. */
     #define STORAGESERVICE_SESSION_CACHE    "StorageService"
+#endif
+
+    /** SessionCache implementation for lite builds that delegates to a remoted version. */
+    #define REMOTED_SESSION_CACHE    "Remoted"
 
     /**
      * Registers SessionCache classes into the runtime.

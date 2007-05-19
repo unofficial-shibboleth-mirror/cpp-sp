@@ -33,9 +33,8 @@ namespace shibsp {
 
     class SHIBSP_API Application;
     class SHIBSP_API Attribute;
-    class SHIBSP_API ResolutionContext;
     class SHIBSP_API Session;
-    class SHIBSP_API SPRequest;
+    class SHIBSP_API ResolutionContext;
 
 #if defined (_MSC_VER)
     #pragma warning( push )
@@ -96,14 +95,6 @@ namespace shibsp {
          * @throws AttributeResolutionException thrown if there is a problem resolving the attributes for the subject
          */
         virtual void resolveAttributes(ResolutionContext& ctx) const=0;
-
-        /**
-         * Clears possible HTTP request headers that might be populated
-         * during attribute export.
-         *
-         * @param request   the SP request being processed
-         */
-        virtual void clearHeaders(SPRequest& request) const=0;
     };
 
 #if defined (_MSC_VER)

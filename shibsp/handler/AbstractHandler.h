@@ -27,9 +27,10 @@
 #include <shibsp/util/DOMPropertySet.h>
 
 #include <log4cpp/Category.hh>
-#include <saml/binding/HTTPRequest.h>
-#include <saml/binding/HTTPResponse.h>
+
 #include <xmltooling/XMLObject.h>
+#include <xmltooling/io/HTTPRequest.h>
+#include <xmltooling/io/HTTPResponse.h>
 
 namespace shibsp {
 
@@ -61,6 +62,7 @@ namespace shibsp {
             const std::map<std::string,std::string>* remapper=NULL
             );
 
+#ifndef SHIBSP_LITE
         /**
          * Examines a protocol response message for errors and raises an annotated exception
          * if an error is found.
@@ -70,7 +72,8 @@ namespace shibsp {
          * @param response      a response message of some known protocol
          */
         virtual void checkError(const xmltooling::XMLObject* response) const;
-        
+#endif
+
         /**
          * Implements various mechanisms to preserve RelayState,
          * such as cookies or StorageService-backed keys.
@@ -82,7 +85,7 @@ namespace shibsp {
          * @param response      outgoing HTTP response
          * @param relayState    RelayState token to supply with message
          */
-        virtual void preserveRelayState(const Application& application, opensaml::HTTPResponse& response, std::string& relayState) const;
+        virtual void preserveRelayState(const Application& application, xmltooling::HTTPResponse& response, std::string& relayState) const;
 
         /**
          * Implements various mechanisms to recover RelayState,
@@ -97,7 +100,7 @@ namespace shibsp {
          * @param clear         true iff the token state should be cleared
          */
         virtual void recoverRelayState(
-            const Application& application, opensaml::HTTPRequest& request, std::string& relayState, bool clear=true
+            const Application& application, xmltooling::HTTPRequest& request, std::string& relayState, bool clear=true
             ) const;
         
         /** Logging object. */

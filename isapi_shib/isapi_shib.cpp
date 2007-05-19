@@ -40,6 +40,7 @@
 #include <fstream>
 #include <process.h>
 
+#include <windows.h>
 #include <httpfilt.h>
 #include <httpext.h>
 
@@ -338,7 +339,7 @@ class ShibTargetIsapiF : public AbstractSPRequest
   PHTTP_FILTER_CONTEXT m_pfc;
   PHTTP_FILTER_PREPROC_HEADERS m_pn;
   map<string,string> m_headers;
-  vector<XSECCryptoX509*> m_certs;
+  vector<string> m_certs;
   int m_port;
   string m_scheme,m_hostname,m_uri;
   mutable string m_remote_addr,m_content_type,m_method;
@@ -464,9 +465,9 @@ public:
     hdr += "\r\n";
     const char* codestr="200 OK";
     switch (status) {
-        case SAML_HTTP_STATUS_FORBIDDEN:codestr="403 Forbidden"; break;
-        case SAML_HTTP_STATUS_NOTFOUND: codestr="404 Not Found"; break;
-        case SAML_HTTP_STATUS_ERROR:    codestr="500 Server Error"; break;
+        case XMLTOOLING_HTTP_STATUS_FORBIDDEN:codestr="403 Forbidden"; break;
+        case XMLTOOLING_HTTP_STATUS_NOTFOUND: codestr="404 Not Found"; break;
+        case XMLTOOLING_HTTP_STATUS_ERROR:    codestr="500 Server Error"; break;
     }
     m_pfc->ServerSupportFunction(m_pfc, SF_REQ_SEND_RESPONSE_HEADER, (void*)codestr, (DWORD)hdr.c_str(), 0);
     char buf[1024];
@@ -500,7 +501,7 @@ public:
     return SF_STATUS_REQ_NEXT_NOTIFICATION;
   }
 
-  const vector<XSECCryptoX509*>& getClientCertificates() const {
+  const vector<string>& getClientCertificates() const {
       return m_certs;
   }
   
@@ -614,7 +615,7 @@ class ShibTargetIsapiE : public AbstractSPRequest
 {
   LPEXTENSION_CONTROL_BLOCK m_lpECB;
   map<string,string> m_headers;
-  vector<XSECCryptoX509*> m_certs;
+  vector<string> m_certs;
   mutable string m_body;
   mutable bool m_gotBody;
   int m_port;
@@ -782,9 +783,9 @@ public:
     hdr += "\r\n";
     const char* codestr="200 OK";
     switch (status) {
-        case SAML_HTTP_STATUS_FORBIDDEN:codestr="403 Forbidden"; break;
-        case SAML_HTTP_STATUS_NOTFOUND: codestr="404 Not Found"; break;
-        case SAML_HTTP_STATUS_ERROR:    codestr="500 Server Error"; break;
+        case XMLTOOLING_HTTP_STATUS_FORBIDDEN:codestr="403 Forbidden"; break;
+        case XMLTOOLING_HTTP_STATUS_NOTFOUND: codestr="404 Not Found"; break;
+        case XMLTOOLING_HTTP_STATUS_ERROR:    codestr="500 Server Error"; break;
     }
     m_lpECB->ServerSupportFunction(m_lpECB->ConnID, HSE_REQ_SEND_RESPONSE_HEADER, (void*)codestr, 0, (LPDWORD)hdr.c_str());
     char buf[1024];
@@ -823,7 +824,7 @@ public:
       return HSE_STATUS_SUCCESS;
   }
 
-  const vector<XSECCryptoX509*>& getClientCertificates() const {
+  const vector<string>& getClientCertificates() const {
       return m_certs;
   }
 

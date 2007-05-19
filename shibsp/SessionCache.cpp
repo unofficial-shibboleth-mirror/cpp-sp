@@ -23,22 +23,29 @@
 #include "internal.h"
 #include "SessionCache.h"
 
+#include <xercesc/util/XMLUniDefs.hpp>
+
 using namespace shibsp;
 using namespace xmltooling;
 
 namespace shibsp {
 
-    SHIBSP_DLLLOCAL PluginManager<SessionCache,std::string,const DOMElement*>::Factory RemotedCacheFactory;
+#ifndef SHIBSP_LITE
     SHIBSP_DLLLOCAL PluginManager<SessionCache,std::string,const DOMElement*>::Factory StorageServiceCacheFactory;
+#else
+    SHIBSP_DLLLOCAL PluginManager<SessionCache,std::string,const DOMElement*>::Factory RemotedCacheFactory;
+#endif
 
     static const XMLCh cacheTimeout[] =     UNICODE_LITERAL_12(c,a,c,h,e,T,i,m,e,o,u,t);
 }
 
 void SHIBSP_API shibsp::registerSessionCaches()
 {
-    SPConfig& conf = SPConfig::getConfig();
-    conf.SessionCacheManager.registerFactory(REMOTED_SESSION_CACHE, RemotedCacheFactory);
-    conf.SessionCacheManager.registerFactory(STORAGESERVICE_SESSION_CACHE, StorageServiceCacheFactory);
+#ifndef SHIBSP_LITE
+    SPConfig::getConfig().SessionCacheManager.registerFactory(STORAGESERVICE_SESSION_CACHE, StorageServiceCacheFactory);
+#else
+    SPConfig::getConfig().SessionCacheManager.registerFactory(REMOTED_SESSION_CACHE, RemotedCacheFactory);
+#endif
 }
 
 SessionCache::SessionCache(const DOMElement* e) : m_cacheTimeout(60*60*8)

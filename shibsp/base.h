@@ -24,7 +24,12 @@
 #ifndef __shibsp_base_h__
 #define __shibsp_base_h__
 
-#include <saml/base.h>
+#ifdef SHIBSP_LITE
+# define XMLTOOLING_LITE
+# include <xmltooling/base.h>
+#else
+# include <saml/base.h>
+#endif
 
 // Windows and GCC4 Symbol Visibility Macros
 #ifdef WIN32

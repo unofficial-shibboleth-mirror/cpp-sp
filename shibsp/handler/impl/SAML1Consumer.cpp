@@ -21,32 +21,36 @@
  */
 
 #include "internal.h"
-#include "Application.h"
-#include "exceptions.h"
-#include "ServiceProvider.h"
-#include "SessionCache.h"
-#include "attribute/Attribute.h"
-#include "attribute/filtering/AttributeFilter.h"
-#include "attribute/filtering/BasicFilteringContext.h"
-#include "attribute/resolver/AttributeExtractor.h"
-#include "attribute/resolver/ResolutionContext.h"
 #include "handler/AssertionConsumerService.h"
 
-#include <saml/saml1/core/Assertions.h>
-#include <saml/saml1/core/Protocols.h>
-#include <saml/saml1/profile/BrowserSSOProfileValidator.h>
-#include <saml/saml2/metadata/Metadata.h>
-
-using namespace shibsp;
+#ifndef SHIBSP_LITE
+# include "exceptions.h"
+# include "Application.h"
+# include "ServiceProvider.h"
+# include "SessionCache.h"
+# include "attribute/Attribute.h"
+# include "attribute/filtering/AttributeFilter.h"
+# include "attribute/filtering/BasicFilteringContext.h"
+# include "attribute/resolver/AttributeExtractor.h"
+# include "attribute/resolver/ResolutionContext.h"
+# include <saml/saml1/core/Assertions.h>
+# include <saml/saml1/core/Protocols.h>
+# include <saml/saml1/profile/BrowserSSOProfileValidator.h>
+# include <saml/saml2/metadata/Metadata.h>
 using namespace opensaml::saml1;
 using namespace opensaml::saml1p;
 using namespace opensaml;
-using namespace xmltooling;
-using namespace log4cpp;
-using namespace std;
 using saml2::NameID;
 using saml2::NameIDBuilder;
 using saml2md::EntityDescriptor;
+#else
+# include "lite/SAMLConstants.h"
+#endif
+
+using namespace shibsp;
+using namespace xmltooling;
+using namespace log4cpp;
+using namespace std;
 
 namespace shibsp {
 
@@ -60,11 +64,14 @@ namespace shibsp {
     public:
         SAML1Consumer(const DOMElement* e, const char* appId)
                 : AssertionConsumerService(e, appId, Category::getInstance(SHIBSP_LOGCAT".SAML1")) {
+#ifndef SHIBSP_LITE
             m_post = XMLString::equals(getString("Binding").second, samlconstants::SAML1_PROFILE_BROWSER_POST);
+#endif
         }
         virtual ~SAML1Consumer() {}
         
     private:
+#ifndef SHIBSP_LITE
         string implementProtocol(
             const Application& application,
             const HTTPRequest& httpRequest,
@@ -72,8 +79,8 @@ namespace shibsp {
             const PropertySet* settings,
             const XMLObject& xmlObject
             ) const;
-
         bool m_post;
+#endif
     };
 
 #if defined (_MSC_VER)
@@ -86,6 +93,8 @@ namespace shibsp {
     }
     
 };
+
+#ifndef SHIBSP_LITE
 
 string SAML1Consumer::implementProtocol(
     const Application& application,
@@ -288,3 +297,5 @@ string SAML1Consumer::implementProtocol(
         throw;
     }
 }
+
+#endif

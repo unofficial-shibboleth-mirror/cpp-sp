@@ -24,9 +24,11 @@
 #define __shibsp_sp_h__
 
 #include <shibsp/util/PropertySet.h>
-#include <saml/binding/SecurityPolicyRule.h>
+#ifndef SHIBSP_LITE
+# include <saml/binding/SecurityPolicyRule.h>
+# include <xmltooling/util/StorageService.h>
+#endif
 #include <xmltooling/Lockable.h>
-#include <xmltooling/util/StorageService.h>
 
 namespace shibsp {
 
@@ -37,7 +39,9 @@ namespace shibsp {
     class SHIBSP_API SessionCache;
     class SHIBSP_API SPRequest;
     class SHIBSP_API TemplateParameters;
+#ifndef SHIBSP_LITE
     class SHIBSP_API TransactionLog;
+#endif
 
     /**
      * Interface to a Shibboleth ServiceProvider instance.
@@ -62,6 +66,7 @@ namespace shibsp {
          */
         virtual void init()=0;
 
+#ifndef SHIBSP_LITE
         /**
          * Returns a TransactionLog instance.
          * 
@@ -76,6 +81,7 @@ namespace shibsp {
          * @return  a StorageService if available, or NULL
          */
         virtual xmltooling::StorageService* getStorageService(const char* id) const=0;
+#endif
 
         /**
          * Returns a SessionCache instance.
@@ -93,6 +99,7 @@ namespace shibsp {
          */
         virtual ListenerService* getListenerService(bool required=true) const=0;
         
+#ifndef SHIBSP_LITE
         /**
 		 * Returns the security policy settings for an identified policy.
          *
@@ -108,6 +115,7 @@ namespace shibsp {
          * @return an array of policy rules
 		 */
         virtual const std::vector<const opensaml::SecurityPolicyRule*>& getPolicyRules(const char* id) const=0;
+#endif
 
         /**
          * Returns a RequestMapper instance.

@@ -23,7 +23,6 @@
 #include "internal.h"
 #include "Application.h"
 #include "ServiceProvider.h"
-#include "SPRequest.h"
 #include "attribute/AttributeDecoder.h"
 #include "attribute/resolver/AttributeExtractor.h"
 #include "util/SPConstants.h"
@@ -81,10 +80,12 @@ namespace shibsp {
             const Application& application, const char* assertingParty, const saml2::Attribute& attr, multimap<string,Attribute*>& attributes
             ) const;
 
+        /*
         void clearHeaders(SPRequest& request) const {
             for (vector<string>::const_iterator i = m_attributeIds.begin(); i!=m_attributeIds.end(); ++i)
                 request.clearHeader(i->c_str());
         }
+        */
 
     private:
         Category& m_log;
@@ -95,7 +96,7 @@ namespace shibsp {
         typedef map< pair<string,string>,pair<AttributeDecoder*,string> > attrmap_t;
 #endif
         attrmap_t m_attrMap;
-        vector<string> m_attributeIds;
+        //vector<string> m_attributeIds;
     };
     
     class XMLExtractor : public AttributeExtractor, public ReloadableXMLFile
@@ -112,10 +113,12 @@ namespace shibsp {
             const Application& application, const RoleDescriptor* issuer, const XMLObject& xmlObject, multimap<string,Attribute*>& attributes
             ) const;
 
+        /*
         void clearHeaders(SPRequest& request) const {
             if (m_impl)
                 m_impl->clearHeaders(request);
         }
+        */
 
     protected:
         pair<bool,DOMElement*> load();
@@ -227,7 +230,7 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log) : m_log(l
         
         decl.first = decoder;
         decl.second = id.get();
-        m_attributeIds.push_back(id.get());
+        //m_attributeIds.push_back(id.get());
         
         child = XMLHelper::getNextSiblingElement(child, shibspconstants::SHIB2ATTRIBUTEMAP_NS, saml1::Attribute::LOCAL_NAME);
     }

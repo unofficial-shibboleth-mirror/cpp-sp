@@ -22,7 +22,9 @@
 
 #include "internal.h"
 #include "SPConfig.h"
-#include "attribute/AttributeDecoder.h"
+#ifndef SHIBSP_LITE
+# include "attribute/AttributeDecoder.h"
+#endif
 #include "attribute/SimpleAttribute.h"
 #include "attribute/ScopedAttribute.h"
 #include "attribute/NameIDAttribute.h"
@@ -48,6 +50,7 @@ namespace shibsp {
         return new NameIDAttribute(in);
     }
     
+#ifndef SHIBSP_LITE
     SHIBSP_DLLLOCAL PluginManager<AttributeDecoder,QName,const DOMElement*>::Factory StringAttributeDecoderFactory;
     SHIBSP_DLLLOCAL PluginManager<AttributeDecoder,QName,const DOMElement*>::Factory ScopedAttributeDecoderFactory;
     SHIBSP_DLLLOCAL PluginManager<AttributeDecoder,QName,const DOMElement*>::Factory NameIDAttributeDecoderFactory;
@@ -57,8 +60,10 @@ namespace shibsp {
     static const XMLCh _NameIDAttributeDecoder[] = UNICODE_LITERAL_22(N,a,m,e,I,D,A,t,t,r,i,b,u,t,e,D,e,c,o,d,e,r);
 
     static const XMLCh caseSensitive[] =           UNICODE_LITERAL_13(c,a,s,e,S,e,n,s,i,t,i,v,e);
+#endif
 };
 
+#ifndef SHIBSP_LITE
 QName shibsp::StringAttributeDecoderType(shibspconstants::SHIB2ATTRIBUTEMAP_NS, _StringAttributeDecoder);
 QName shibsp::ScopedAttributeDecoderType(shibspconstants::SHIB2ATTRIBUTEMAP_NS, _ScopedAttributeDecoder);
 QName shibsp::NameIDAttributeDecoderType(shibspconstants::SHIB2ATTRIBUTEMAP_NS, _NameIDAttributeDecoder);
@@ -70,6 +75,16 @@ void shibsp::registerAttributeDecoders()
     conf.AttributeDecoderManager.registerFactory(ScopedAttributeDecoderType, ScopedAttributeDecoderFactory);
     conf.AttributeDecoderManager.registerFactory(NameIDAttributeDecoderType, NameIDAttributeDecoderFactory);
 }
+
+AttributeDecoder::AttributeDecoder(const DOMElement *e) : m_caseSensitive(true)
+{
+    if (e) {
+        const XMLCh* flag = e->getAttributeNS(NULL,caseSensitive);
+        if (flag && (*flag == chLatin_f || *flag == chDigit_0))
+            m_caseSensitive = false;
+    }
+}
+#endif
 
 void shibsp::registerAttributeFactories()
 {
@@ -87,13 +102,4 @@ Attribute* Attribute::unmarshall(DDF& in)
     if (i == m_factoryMap.end())
         throw AttributeException("No registered factory for Attribute of type ($1).", xmltooling::params(1,in.name()));
     return (i->second)(in);
-}
-
-AttributeDecoder::AttributeDecoder(const DOMElement *e) : m_caseSensitive(true)
-{
-    if (e) {
-        const XMLCh* flag = e->getAttributeNS(NULL,caseSensitive);
-        if (flag && (*flag == chLatin_f || *flag == chDigit_0))
-            m_caseSensitive = false;
-    }
 }

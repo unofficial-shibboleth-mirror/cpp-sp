@@ -102,11 +102,6 @@ namespace shibsp {
 
         void resolveAttributes(ResolutionContext& ctx) const;
 
-        void clearHeaders(SPRequest& request) const {
-            for (vector<AttributeResolver*>::const_iterator i=m_resolvers.begin(); i!=m_resolvers.end(); ++i)
-                (*i)->clearHeaders(request);
-        }
-
     private:
         vector<AttributeResolver*> m_resolvers;
     };

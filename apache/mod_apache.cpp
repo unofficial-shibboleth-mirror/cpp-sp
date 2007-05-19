@@ -44,6 +44,7 @@
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/Threads.h>
+#include <xmltooling/util/XMLConstants.h>
 #include <xmltooling/util/XMLHelper.h>
 
 #ifdef WIN32
@@ -268,7 +269,7 @@ class ShibTargetApache : public AbstractSPRequest
 {
   mutable string m_body;
   mutable bool m_gotBody;
-  vector<XSECCryptoX509*> m_certs;
+  vector<string> m_certs;
 
 public:
   request_rec* m_req;
@@ -417,13 +418,13 @@ public:
         in.read(buf,1024);
         ap_rwrite(buf,in.gcount(),m_req);
     }
-    return ((status==SAML_HTTP_STATUS_OK) ? DONE : status);
+    return ((status==XMLTOOLING_HTTP_STATUS_OK) ? DONE : status);
   }
   long sendRedirect(const char* url) {
     ap_table_set(m_req->headers_out, "Location", url);
     return REDIRECT;
   }
-  const vector<XSECCryptoX509*>& getClientCertificates() const {
+  const vector<string>& getClientCertificates() const {
       return m_certs;
   }
   long returnDecline(void) { return DECLINED; }

@@ -30,17 +30,19 @@
 #include "handler/SessionInitiator.h"
 #include "util/SPConstants.h"
 
-#include <saml/SAMLConfig.h>
-#include <saml/binding/MessageEncoder.h>
-#include <saml/saml2/core/Protocols.h>
-#include <saml/saml2/metadata/EndpointManager.h>
-#include <saml/saml2/metadata/Metadata.h>
-#include <saml/saml2/metadata/MetadataCredentialCriteria.h>
-
-using namespace shibsp;
+#ifndef SHIBSP_LITE
+# include <saml/SAMLConfig.h>
+# include <saml/binding/MessageEncoder.h>
+# include <saml/saml2/core/Protocols.h>
+# include <saml/saml2/metadata/EndpointManager.h>
+# include <saml/saml2/metadata/Metadata.h>
+# include <saml/saml2/metadata/MetadataCredentialCriteria.h>
 using namespace opensaml::saml2;
 using namespace opensaml::saml2p;
 using namespace opensaml::saml2md;
+#endif
+
+using namespace shibsp;
 using namespace opensaml;
 using namespace xmltooling;
 using namespace log4cpp;
@@ -58,11 +60,13 @@ namespace shibsp {
     public:
         SAML2SessionInitiator(const DOMElement* e, const char* appId);
         virtual ~SAML2SessionInitiator() {
+#ifndef SHIBSP_LITE
             if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
                 XMLString::release(&m_outgoing);
                 for_each(m_encoders.begin(), m_encoders.end(), cleanup_pair<const XMLCh*,MessageEncoder>());
                 delete m_requestTemplate;
             }
+#endif
         }
         
         void setParent(const PropertySet* parent);
@@ -85,10 +89,12 @@ namespace shibsp {
             ) const;
 
         string m_appId;
+#ifndef SHIBSP_LITE
         XMLCh* m_outgoing;
         vector<const XMLCh*> m_bindings;
         map<const XMLCh*,MessageEncoder*> m_encoders;
         AuthnRequest* m_requestTemplate;
+#endif
     };
 
 #if defined (_MSC_VER)
@@ -103,8 +109,11 @@ namespace shibsp {
 };
 
 SAML2SessionInitiator::SAML2SessionInitiator(const DOMElement* e, const char* appId)
-    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator")), m_appId(appId), m_outgoing(NULL), m_requestTemplate(NULL)
+    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator")), m_appId(appId)
 {
+#ifndef SHIBSP_LITE
+    m_outgoing=NULL;
+    m_requestTemplate=NULL;
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
         // Check for a template AuthnRequest to build from.
         DOMElement* child = XMLHelper::getFirstChildElement(e, samlconstants::SAML20P_NS, AuthnRequest::LOCAL_NAME);
@@ -146,6 +155,7 @@ SAML2SessionInitiator::SAML2SessionInitiator(const DOMElement* e, const char* ap
                 break;
         }
     }
+#endif
 
     // If Location isn't set, defer address registration until the setParent call.
     pair<bool,const char*> loc = getString("Location");
@@ -384,6 +394,7 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
     string& relayState
     ) const
 {
+#ifndef SHIBSP_LITE
     // Use metadata to locate the IdP's SSO service.
     MetadataProvider* m=app.getMetadataProvider();
     Locker locker(m);
@@ -509,4 +520,7 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
     long ret = encoder->encode(httpResponse, req.get(), dest.get(), entityID, relayState.c_str());
     req.release();  // freed by encoder
     return make_pair(true,ret);
+#else
+    return make_pair(false,0);
+#endif
 }

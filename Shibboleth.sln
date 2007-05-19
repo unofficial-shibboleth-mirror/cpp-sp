@@ -6,7 +6,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "isapi_shib", "isapi_shib\is
 		Release.AspNetCompiler.Debug = "False"
 	EndProjectSection
 	ProjectSection(ProjectDependencies) = postProject
-		{81F0F7A6-DC36-46EF-957F-F9E81D4403F6} = {81F0F7A6-DC36-46EF-957F-F9E81D4403F6}
+		{81F0F7A6-DC36-46EF-957F-F9E81D4403F7} = {81F0F7A6-DC36-46EF-957F-F9E81D4403F7}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "isapi_shib_gui", "isapi_shib_gui\isapi_shib_gui.vcproj", "{D341DCD8-7DCD-43A2-8559-C07DAB838711}"
@@ -21,7 +21,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mod_shib13", "apache\mod_sh
 		Release.AspNetCompiler.Debug = "False"
 	EndProjectSection
 	ProjectSection(ProjectDependencies) = postProject
-		{81F0F7A6-DC36-46EF-957F-F9E81D4403F6} = {81F0F7A6-DC36-46EF-957F-F9E81D4403F6}
+		{81F0F7A6-DC36-46EF-957F-F9E81D4403F7} = {81F0F7A6-DC36-46EF-957F-F9E81D4403F7}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mod_shib20", "apache\mod_shib20.vcproj", "{68E9568B-476C-4289-B93C-893432378ADC}"
@@ -30,7 +30,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mod_shib20", "apache\mod_sh
 		Release.AspNetCompiler.Debug = "False"
 	EndProjectSection
 	ProjectSection(ProjectDependencies) = postProject
-		{81F0F7A6-DC36-46EF-957F-F9E81D4403F6} = {81F0F7A6-DC36-46EF-957F-F9E81D4403F6}
+		{81F0F7A6-DC36-46EF-957F-F9E81D4403F7} = {81F0F7A6-DC36-46EF-957F-F9E81D4403F7}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nsapi_shib", "nsapi_shib\nsapi_shib.vcproj", "{1396D80A-8672-4224-9B02-95F3F4207CDB}"
@@ -39,7 +39,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nsapi_shib", "nsapi_shib\ns
 		Release.AspNetCompiler.Debug = "False"
 	EndProjectSection
 	ProjectSection(ProjectDependencies) = postProject
-		{81F0F7A6-DC36-46EF-957F-F9E81D4403F6} = {81F0F7A6-DC36-46EF-957F-F9E81D4403F6}
+		{81F0F7A6-DC36-46EF-957F-F9E81D4403F7} = {81F0F7A6-DC36-46EF-957F-F9E81D4403F7}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "siterefresh", "siterefresh\siterefresh.vcproj", "{4D02F36E-D2CD-4FD1-AC50-2941E27BB3FB}"
@@ -54,7 +54,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mod_shib22", "apache\mod_sh
 		Release.AspNetCompiler.Debug = "False"
 	EndProjectSection
 	ProjectSection(ProjectDependencies) = postProject
-		{81F0F7A6-DC36-46EF-957F-F9E81D4403F6} = {81F0F7A6-DC36-46EF-957F-F9E81D4403F6}
+		{81F0F7A6-DC36-46EF-957F-F9E81D4403F7} = {81F0F7A6-DC36-46EF-957F-F9E81D4403F7}
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Server Modules", "Server Modules", "{26BA8F84-6E42-41FA-9B13-5D3F4B5B2050}"
@@ -103,6 +103,12 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "samlquery", "util\samlquery
 	EndProjectSection
 	ProjectSection(ProjectDependencies) = postProject
 		{81F0F7A6-DC36-46EF-957F-F9E81D4403F6} = {81F0F7A6-DC36-46EF-957F-F9E81D4403F6}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "shibsp-lite", "shibsp\shibsp-lite.vcproj", "{81F0F7A6-DC36-46EF-957F-F9E81D4403F7}"
+	ProjectSection(WebsiteProperties) = preProject
+		Debug.AspNetCompiler.Debug = "True"
+		Release.AspNetCompiler.Debug = "False"
 	EndProjectSection
 EndProject
 Global
@@ -155,6 +161,10 @@ Global
 		{F13141B6-6C87-40BB-8D4E-5CC56EBB4C59}.Debug|Win32.Build.0 = Debug|Win32
 		{F13141B6-6C87-40BB-8D4E-5CC56EBB4C59}.Release|Win32.ActiveCfg = Release|Win32
 		{F13141B6-6C87-40BB-8D4E-5CC56EBB4C59}.Release|Win32.Build.0 = Release|Win32
+		{81F0F7A6-DC36-46EF-957F-F9E81D4403F7}.Debug|Win32.ActiveCfg = Debug|Win32
+		{81F0F7A6-DC36-46EF-957F-F9E81D4403F7}.Debug|Win32.Build.0 = Debug|Win32
+		{81F0F7A6-DC36-46EF-957F-F9E81D4403F7}.Release|Win32.ActiveCfg = Release|Win32
+		{81F0F7A6-DC36-46EF-957F-F9E81D4403F7}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

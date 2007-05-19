@@ -25,11 +25,15 @@
 
 #include <shibsp/handler/AbstractHandler.h>
 #include <shibsp/handler/RemotedHandler.h>
-#include <saml/binding/MessageDecoder.h>
-#include <saml/saml2/metadata/Metadata.h>
+#ifndef SHIBSP_LITE
+# include <saml/binding/MessageDecoder.h>
+# include <saml/saml2/metadata/Metadata.h>
+#endif
+#include <xmltooling/unicode.h>
 
 namespace shibsp {
 
+    class SHIBSP_API Attribute;
     class SHIBSP_API ResolutionContext;
 
 #if defined (_MSC_VER)
@@ -58,6 +62,7 @@ namespace shibsp {
          */
         AssertionConsumerService(const xercesc::DOMElement* e, const char* appId, log4cpp::Category& log);
         
+#ifndef SHIBSP_LITE
         /**
          * Implement protocol-specific handling of the incoming decoded message.
          * 
@@ -73,23 +78,12 @@ namespace shibsp {
          */
         virtual std::string implementProtocol(
             const Application& application,
-            const opensaml::HTTPRequest& httpRequest,
+            const xmltooling::HTTPRequest& httpRequest,
             opensaml::SecurityPolicy& policy,
             const PropertySet* settings,
             const xmltooling::XMLObject& xmlObject
             ) const=0;
-            
-        /**
-         * Enforce address checking requirements.
-         * 
-         * @param application   reference to application receiving message
-         * @param httpRequest   client request that initiated session
-         * @param issuedTo      address for which security assertion was issued
-         */
-        void checkAddress(
-            const Application& application, const opensaml::HTTPRequest& httpRequest, const char* issuedTo
-            ) const;
-        
+
         /**
          * Attempt SSO-initiated attribute resolution using the supplied information.
          * 
@@ -112,11 +106,23 @@ namespace shibsp {
             const std::vector<const opensaml::Assertion*>* tokens=NULL,
             const std::multimap<std::string,Attribute*>* attributes=NULL
             ) const;
+#endif
+        
+        /**
+         * Enforce address checking requirements.
+         * 
+         * @param application   reference to application receiving message
+         * @param httpRequest   client request that initiated session
+         * @param issuedTo      address for which security assertion was issued
+         */
+        void checkAddress(
+            const Application& application, const xmltooling::HTTPRequest& httpRequest, const char* issuedTo
+            ) const;
         
     private:
         std::string processMessage(
             const Application& application,
-            opensaml::HTTPRequest& httpRequest,
+            xmltooling::HTTPRequest& httpRequest,
             std::string& entityID,
             std::string& relayState
             ) const;
@@ -127,9 +133,11 @@ namespace shibsp {
         
         void maintainHistory(SPRequest& request, const char* entityID, const char* cookieProps) const;
                 
+#ifndef SHIBSP_LITE
         opensaml::MessageDecoder* m_decoder;
-        xmltooling::auto_ptr_char m_configNS;
         xmltooling::QName m_role;
+#endif
+        xmltooling::auto_ptr_char m_configNS;
     };
 
 #if defined (_MSC_VER)

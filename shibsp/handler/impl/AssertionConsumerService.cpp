@@ -24,18 +24,23 @@
 #include "Application.h"
 #include "exceptions.h"
 #include "ServiceProvider.h"
-#include "attribute/resolver/AttributeResolver.h"
-#include "attribute/resolver/ResolutionContext.h"
 #include "handler/AssertionConsumerService.h"
-#include "security/SecurityPolicy.h"
 #include "util/SPConstants.h"
 
-#include <saml/SAMLConfig.h>
-#include <saml/saml1/core/Assertions.h>
-#include <saml/util/CommonDomainCookie.h>
+# include <ctime>
+#ifndef SHIBSP_LITE
+# include "attribute/resolver/AttributeResolver.h"
+# include "attribute/resolver/ResolutionContext.h"
+# include "security/SecurityPolicy.h"
+# include <saml/SAMLConfig.h>
+# include <saml/saml1/core/Assertions.h>
+# include <saml/util/CommonDomainCookie.h>
+using namespace samlconstants;
+#else
+# include "lite/CommonDomainCookie.h"
+#endif
 
 using namespace shibspconstants;
-using namespace samlconstants;
 using namespace shibsp;
 using namespace opensaml;
 using namespace xmltooling;
@@ -43,22 +48,30 @@ using namespace log4cpp;
 using namespace std;
 
 AssertionConsumerService::AssertionConsumerService(const DOMElement* e, const char* appId, Category& log)
-    : AbstractHandler(e, log), m_decoder(NULL), m_configNS(SHIB2SPCONFIG_NS),
-        m_role(samlconstants::SAML20MD_NS, opensaml::saml2md::IDPSSODescriptor::LOCAL_NAME)
+    : AbstractHandler(e, log),
+#ifndef SHIBSP_LITE
+        m_decoder(NULL), m_role(samlconstants::SAML20MD_NS, opensaml::saml2md::IDPSSODescriptor::LOCAL_NAME),
+#endif
+        m_configNS(SHIB2SPCONFIG_NS)
+        
 {
     string address(appId);
     address += getString("Location").second;
     address += "::run::ACS";
     setAddress(address.c_str());
+#ifndef SHIBSP_LITE
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
         m_decoder = SAMLConfig::getConfig().MessageDecoderManager.newPlugin(getString("Binding").second,e);
         m_decoder->setArtifactResolver(SPConfig::getConfig().getArtifactResolver());
     }
+#endif
 }
 
 AssertionConsumerService::~AssertionConsumerService()
 {
+#ifndef SHIBSP_LITE
     delete m_decoder;
+#endif
 }
 
 pair<bool,long> AssertionConsumerService::run(SPRequest& request, bool isHandler) const
@@ -158,6 +171,7 @@ string AssertionConsumerService::processMessage(
     const Application& application, HTTPRequest& httpRequest, string& entityID, string& relayState
     ) const
 {
+#ifndef SHIBSP_LITE
     // Locate policy key.
     pair<bool,const char*> policyId = getString("policyId", m_configNS.get());  // namespace-qualified if inside handler element
     if (!policyId.first)
@@ -185,6 +199,9 @@ string AssertionConsumerService::processMessage(
         entityID = issuer.get();
     
     return key;
+#else
+    throw ConfigurationException("Cannot process message using lite version of shibsp library.");
+#endif
 }
 
 pair<bool,long> AssertionConsumerService::sendRedirect(
@@ -226,6 +243,7 @@ void AssertionConsumerService::checkAddress(
     }
 }
 
+#ifndef SHIBSP_LITE
 ResolutionContext* AssertionConsumerService::resolveAttributes(
     const Application& application,
     const saml2md::EntityDescriptor* issuer,
@@ -258,6 +276,7 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
     
     return NULL;
 }
+#endif
 
 void AssertionConsumerService::maintainHistory(SPRequest& request, const char* entityID, const char* cookieProps) const
 {

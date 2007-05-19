@@ -28,22 +28,16 @@
 #include "SessionCache.h"
 #include "SPRequest.h"
 #include "attribute/Attribute.h"
-#include "attribute/resolver/AttributeExtractor.h"
-#include "attribute/resolver/AttributeResolver.h"
 #include "handler/SessionInitiator.h"
 #include "util/TemplateParameters.h"
 
 #include <fstream>
 #include <sstream>
-#include <saml/saml2/metadata/Metadata.h>
-#include <saml/util/SAMLConstants.h>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/XMLHelper.h>
 
 using namespace shibsp;
-using namespace opensaml::saml2md;
-using namespace opensaml;
 using namespace xmltooling;
 using namespace std;
 
@@ -81,7 +75,7 @@ namespace shibsp {
             }
             else if (!strcmp(page,"access")) {
                 istringstream msg("Access Denied");
-                return static_cast<opensaml::GenericResponse&>(request).sendResponse(msg, HTTPResponse::SAML_HTTP_STATUS_FORBIDDEN);
+                return request.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_FORBIDDEN);
             }
         }
     
@@ -100,7 +94,8 @@ namespace shibsp {
         request.clearHeader("Shib-Attributes");
         request.clearHeader("Shib-Application-ID");
     
-        // Let plugins do the rest.
+        // TODO: Figure out a way to clear attribute headers...
+        /*
         AttributeExtractor* extractor = request.getApplication().getAttributeExtractor();
         if (extractor) {
             Locker locker(extractor);
@@ -111,6 +106,7 @@ namespace shibsp {
             Locker locker(resolver);
             resolver->clearHeaders(request);
         }
+        */
     }
 };
 
@@ -196,7 +192,7 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
         catch (exception& e) {
             request.log(SPRequest::SPWarn, string("error during session lookup: ") + e.what());
             // If it's not a retryable session failure, we throw to the outer handler for reporting.
-            if (dynamic_cast<RetryableProfileException*>(&e)==NULL)
+            if (dynamic_cast<opensaml::RetryableProfileException*>(&e)==NULL)
                 throw;
         }
 
@@ -344,7 +340,7 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
 		// Still no data?
         if (!session) {
         	if (requireSession)
-        		throw RetryableProfileException("Unable to obtain session to export to request.");
+                throw opensaml::RetryableProfileException("Unable to obtain session to export to request.");
         	else
         		return make_pair(false,0);	// just bail silently
         }
@@ -453,7 +449,7 @@ pair<bool,long> ServiceProvider::doHandler(SPRequest& request) const
       
         // Make sure this is SSL, if it should be
         if ((!handlerSSL.first || handlerSSL.second) && !request.isSecure())
-            throw SecurityPolicyException("Blocked non-SSL access to Shibboleth handler.");
+            throw opensaml::FatalProfileException("Blocked non-SSL access to Shibboleth handler.");
 
         // We dispatch based on our path info. We know the request URL begins with or equals the handler URL,
         // so the path info is the next character (or null).
@@ -469,7 +465,7 @@ pair<bool,long> ServiceProvider::doHandler(SPRequest& request) const
        
         throw ConfigurationException("Configured Shibboleth handler failed to process the request.");
     }
-    catch (MetadataException& e) {
+    catch (opensaml::saml2md::MetadataException& e) {
         TemplateParameters tp(&e);
         tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
         // See if a metadata error page is installed.

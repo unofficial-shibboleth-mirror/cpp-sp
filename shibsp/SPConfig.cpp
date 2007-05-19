@@ -28,19 +28,25 @@
 #include "ServiceProvider.h"
 #include "SessionCache.h"
 #include "SPConfig.h"
-#include "attribute/AttributeDecoder.h"
-#include "attribute/filtering/AttributeFilter.h"
-#include "attribute/filtering/MatchFunctor.h"
-#include "attribute/resolver/AttributeExtractor.h"
-#include "attribute/resolver/AttributeResolver.h"
-#include "binding/ArtifactResolver.h"
+#include "attribute/Attribute.h"
 #include "handler/SessionInitiator.h"
-#include "metadata/MetadataExt.h"
 #include "remoting/ListenerService.h"
-#include "security/PKIXTrustEngine.h"
+
+#ifndef SHIBSP_LITE
+# include "attribute/AttributeDecoder.h"
+# include "attribute/filtering/AttributeFilter.h"
+# include "attribute/filtering/MatchFunctor.h"
+# include "attribute/resolver/AttributeExtractor.h"
+# include "attribute/resolver/AttributeResolver.h"
+# include "binding/ArtifactResolver.h"
+# include "metadata/MetadataExt.h"
+# include "security/PKIXTrustEngine.h"
+# include <saml/SAMLConfig.h>
+#else
+# include <xmltooling/XMLToolingConfig.h>
+#endif
 
 #include <log4cpp/Category.hh>
-#include <saml/SAMLConfig.h>
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/TemplateEngine.h>
 
@@ -55,6 +61,14 @@ DECL_XMLTOOLING_EXCEPTION_FACTORY(AttributeFilteringException,shibsp);
 DECL_XMLTOOLING_EXCEPTION_FACTORY(AttributeResolutionException,shibsp);
 DECL_XMLTOOLING_EXCEPTION_FACTORY(ConfigurationException,shibsp);
 DECL_XMLTOOLING_EXCEPTION_FACTORY(ListenerException,shibsp);
+
+#ifdef SHIBSP_LITE
+DECL_XMLTOOLING_EXCEPTION_FACTORY(MetadataException,opensaml::saml2md);
+DECL_XMLTOOLING_EXCEPTION_FACTORY(SecurityPolicyException,opensaml);
+DECL_XMLTOOLING_EXCEPTION_FACTORY(ProfileException,opensaml);
+DECL_XMLTOOLING_EXCEPTION_FACTORY(FatalProfileException,opensaml);
+DECL_XMLTOOLING_EXCEPTION_FACTORY(RetryableProfileException,opensaml);
+#endif
 
 namespace shibsp {
    SPInternalConfig g_config;
@@ -95,10 +109,17 @@ bool SPInternalConfig::init(const char* catalog_path)
         catalog_path = SHIBSP_SCHEMAS;
     XMLToolingConfig::getConfig().catalog_path = catalog_path;
 
+#ifndef SHIBSP_LITE
     if (!SAMLConfig::getConfig().init()) {
         log.fatal("failed to initialize OpenSAML library");
         return false;
     }
+#else
+    if (!XMLToolingConfig::getConfig().init()) {
+        log.fatal("failed to initialize XMLTooling library");
+        return false;
+    }
+#endif
 
     XMLToolingConfig::getConfig().setTemplateEngine(new TemplateEngine());
     XMLToolingConfig::getConfig().getTemplateEngine()->setTagPrefix("shibmlp");
@@ -109,24 +130,36 @@ bool SPInternalConfig::init(const char* catalog_path)
     REGISTER_XMLTOOLING_EXCEPTION_FACTORY(AttributeResolutionException,shibsp);
     REGISTER_XMLTOOLING_EXCEPTION_FACTORY(ConfigurationException,shibsp);
     REGISTER_XMLTOOLING_EXCEPTION_FACTORY(ListenerException,shibsp);
-    
+
+#ifdef SHIBSP_LITE
+    REGISTER_XMLTOOLING_EXCEPTION_FACTORY(SecurityPolicyException,opensaml);
+    REGISTER_XMLTOOLING_EXCEPTION_FACTORY(ProfileException,opensaml);
+    REGISTER_XMLTOOLING_EXCEPTION_FACTORY(FatalProfileException,opensaml);
+    REGISTER_XMLTOOLING_EXCEPTION_FACTORY(RetryableProfileException,opensaml);
+    REGISTER_XMLTOOLING_EXCEPTION_FACTORY(MetadataException,opensaml::saml2md);
+#endif
+
+#ifndef SHIBSP_LITE
     if (isEnabled(Metadata))
         registerMetadataExtClasses();
     if (isEnabled(Trust))
         registerPKIXTrustEngine();
+#endif
 
     registerAttributeFactories();
     registerHandlers();
     registerSessionInitiators();
     registerServiceProviders();
 
+#ifndef SHIBSP_LITE
     if (isEnabled(AttributeResolution)) {
-        registerAttributeDecoders();
         registerAttributeExtractors();
-        registerAttributeFilters();
+        registerAttributeDecoders();
         registerAttributeResolvers();
+        registerAttributeFilters();
         registerMatchFunctors();
     }
+#endif
 
     if (isEnabled(Listener))
         registerListenerServices();
@@ -139,9 +172,11 @@ bool SPInternalConfig::init(const char* catalog_path)
     if (isEnabled(Caching))
         registerSessionCaches();
 
+#ifndef SHIBSP_LITE
     if (isEnabled(OutOfProcess))
         m_artifactResolver = new ArtifactResolver();
-    
+#endif
+
     log.info("library initialization complete");
     return true;
 }
@@ -155,7 +190,9 @@ void SPInternalConfig::term()
     log.info("shutting down the library");
 
     setServiceProvider(NULL);
+#ifndef SHIBSP_LITE
     setArtifactResolver(NULL);
+#endif
 
     AssertionConsumerServiceManager.deregisterFactories();
     ManageNameIDServiceManager.deregisterFactories();
@@ -165,13 +202,15 @@ void SPInternalConfig::term()
     ServiceProviderManager.deregisterFactories();
     Attribute::deregisterFactories();
 
+#ifndef SHIBSP_LITE
     if (isEnabled(AttributeResolution)) {
         MatchFunctorManager.deregisterFactories();
-        AttributeDecoderManager.deregisterFactories();
         AttributeFilterManager.deregisterFactories();
+        AttributeDecoderManager.deregisterFactories();
         AttributeExtractorManager.deregisterFactories();
         AttributeResolverManager.deregisterFactories();
     }
+#endif
 
     if (isEnabled(Listener))
         ListenerServiceManager.deregisterFactories();
@@ -184,6 +223,10 @@ void SPInternalConfig::term()
     if (isEnabled(Caching))
         SessionCacheManager.deregisterFactories();
 
+#ifndef SHIBSP_LITE
     SAMLConfig::getConfig().term();
+#else
+    XMLToolingConfig::getConfig().term();
+#endif
     log.info("library shutdown complete");
 }

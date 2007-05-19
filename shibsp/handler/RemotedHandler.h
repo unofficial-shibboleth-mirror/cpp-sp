@@ -67,14 +67,14 @@ namespace shibsp {
          * @return  a pair containing a "request completed" indicator and a server-specific response code
          */
         virtual std::pair<bool,long> unwrap(SPRequest& request, DDF& out) const;
-        
+
         /**
          * Builds a new request instance around a remoted data object.
          * 
          * @param in    the dataflow object containing the remoted request
          * @return  a call-specific request object based on the input, to be freed by the caller 
          */
-        opensaml::HTTPRequest* getRequest(DDF& in) const;
+        xmltooling::HTTPRequest* getRequest(DDF& in) const;
         
         /**
          * Builds a new response instance around an outgoing data object.
@@ -82,8 +82,8 @@ namespace shibsp {
          * @param out   the dataflow object to be returned by the caller
          * @return  a call-specific response object, to be freed by the caller 
          */
-        opensaml::HTTPResponse* getResponse(DDF& out) const;
-        
+        xmltooling::HTTPResponse* getResponse(DDF& out) const;
+
         /** Message address for remote half. */
         std::string m_address;
     };

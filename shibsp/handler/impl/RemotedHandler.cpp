@@ -27,12 +27,15 @@
 
 #include <algorithm>
 #include <log4cpp/Category.hh>
-#include <saml/util/CGIParser.h>
 #include <xmltooling/unicode.h>
-#include <xsec/enc/OpenSSL/OpenSSLCryptoX509.hpp>
-#include <xsec/enc/XSECCryptoException.hpp>
-#include <xsec/framework/XSECException.hpp>
-#include <xsec/framework/XSECProvider.hpp>
+
+#ifndef SHIBSP_LITE
+# include <saml/util/CGIParser.h>
+# include <xsec/enc/OpenSSL/OpenSSLCryptoX509.hpp>
+# include <xsec/enc/XSECCryptoException.hpp>
+# include <xsec/framework/XSECException.hpp>
+# include <xsec/framework/XSECProvider.hpp>
+#endif
 
 using namespace shibsp;
 using namespace opensaml;
@@ -41,8 +44,9 @@ using namespace log4cpp;
 using namespace xercesc;
 using namespace std;
 
+#ifndef SHIBSP_LITE
 namespace shibsp {
-    class SHIBSP_DLLLOCAL RemotedRequest : public virtual opensaml::HTTPRequest 
+    class SHIBSP_DLLLOCAL RemotedRequest : public virtual HTTPRequest 
     {
         DDF& m_input;
         mutable CGIParser* m_parser;
@@ -108,7 +112,7 @@ namespace shibsp {
         }
     };
 
-    class SHIBSP_DLLLOCAL RemotedResponse : public virtual opensaml::HTTPResponse 
+    class SHIBSP_DLLLOCAL RemotedResponse : public virtual HTTPResponse 
     {
         DDF& m_output;
     public:
@@ -199,9 +203,10 @@ long RemotedResponse::sendRedirect(const char* url)
     if (!m_output.isstruct())
         m_output.structure();
     m_output.addmember("redirect").string(url);
-    return HTTPResponse::SAML_HTTP_STATUS_MOVED;
+    return HTTPResponse::XMLTOOLING_HTTP_STATUS_MOVED;
 }
 
+#endif
 
 void RemotedHandler::setAddress(const char* address)
 {
@@ -253,6 +258,7 @@ DDF RemotedHandler::wrap(const SPRequest& request, const vector<string>* headers
     }
 
     if (certs) {
+#ifndef SHIBSP_LITE
         const vector<XSECCryptoX509*>& xvec = request.getClientCertificates();
         if (!xvec.empty()) {
             DDF clist = in.addmember("certificates").list();
@@ -261,6 +267,16 @@ DDF RemotedHandler::wrap(const SPRequest& request, const vector<string>* headers
                 clist.add(x509);
             }
         }
+#else
+        const vector<string>& xvec = request.getClientCertificates();
+        if (!xvec.empty()) {
+            DDF clist = in.addmember("certificates").list();
+            for (vector<string>::const_iterator x = xvec.begin(); x!=xvec.end(); ++x) {
+                DDF x509 = DDF(NULL).string(x->c_str());
+                clist.add(x509);
+            }
+        }
+#endif
     }
 
     return in;
@@ -280,17 +296,25 @@ pair<bool,long> RemotedHandler::unwrap(SPRequest& request, DDF& out) const
     h = out["response"];
     if (h.isstruct()) {
         istringstream s(h["data"].string());
-        return make_pair(true, static_cast<GenericResponse&>(request).sendResponse(s, h["status"].integer()));
+        return make_pair(true, request.sendResponse(s, h["status"].integer()));
     }
     return make_pair(false,0);
 }
 
 HTTPRequest* RemotedHandler::getRequest(DDF& in) const
 {
+#ifndef SHIBSP_LITE
     return new RemotedRequest(in);
+#else
+    throw ConfigurationException("Cannot process message using lite version of shibsp library.");
+#endif
 }
 
 HTTPResponse* RemotedHandler::getResponse(DDF& out) const
 {
+#ifndef SHIBSP_LITE
     return new RemotedResponse(out);
+#else
+    throw ConfigurationException("Cannot process message using lite version of shibsp library.");
+#endif
 }

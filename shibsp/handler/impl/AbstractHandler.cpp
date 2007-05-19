@@ -28,13 +28,18 @@
 #include "handler/AbstractHandler.h"
 #include "remoting/ListenerService.h"
 
-#include <saml/SAMLConfig.h>
-#include <saml/binding/SAMLArtifact.h>
-#include <saml/saml1/core/Protocols.h>
-#include <saml/saml2/core/Protocols.h>
-#include <saml/util/SAMLConstants.h>
+#ifndef SHIBSP_LITE
+# include <saml/SAMLConfig.h>
+# include <saml/binding/SAMLArtifact.h>
+# include <saml/saml1/core/Protocols.h>
+# include <saml/saml2/core/Protocols.h>
+# include <saml/util/SAMLConstants.h>
+# include <xmltooling/util/StorageService.h>
+#else
+# include "lite/SAMLConstants.h"
+#endif
+
 #include <xmltooling/XMLToolingConfig.h>
-#include <xmltooling/util/StorageService.h>
 #include <xmltooling/util/URLEncoder.h>
 
 using namespace shibsp;
@@ -67,6 +72,7 @@ AbstractHandler::AbstractHandler(
     load(e,log,filter,remapper);
 }
 
+#ifndef SHIBSP_LITE
 void AbstractHandler::checkError(const XMLObject* response) const
 {
     const saml2p::StatusResponseType* r2 = dynamic_cast<const saml2p::StatusResponseType*>(response);
@@ -114,6 +120,7 @@ void AbstractHandler::checkError(const XMLObject* response) const
         }
     }
 }
+#endif
 
 void AbstractHandler::preserveRelayState(const Application& application, HTTPResponse& response, string& relayState) const
 {
@@ -141,6 +148,7 @@ void AbstractHandler::preserveRelayState(const Application& application, HTTPRes
             mech.second+=3;
             if (*mech.second) {
                 if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
+#ifndef SHIBSP_LITE
                     StorageService* storage = application.getServiceProvider().getStorageService(mech.second);
                     if (storage) {
                         string rsKey;
@@ -153,6 +161,7 @@ void AbstractHandler::preserveRelayState(const Application& application, HTTPRes
                         m_log.error("Storage-backed RelayState with invalid StorageService ID (%s)", mech.second);
                         relayState.erase();
                     }
+#endif
                 }
                 else if (SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {
                     DDF out,in = DDF("set::RelayState").structure();
@@ -185,6 +194,7 @@ void AbstractHandler::recoverRelayState(const Application& application, HTTPRequ
             key++;
             if (!ssid.empty() && *key) {
                 if (conf.isEnabled(SPConfig::OutOfProcess)) {
+#ifndef SHIBSP_LITE
                     StorageService* storage = conf.getServiceProvider()->getStorageService(ssid.c_str());
                     if (storage) {
                         if (storage->readString("RelayState",key,&relayState)>0) {
@@ -201,6 +211,7 @@ void AbstractHandler::recoverRelayState(const Application& application, HTTPRequ
                             );
                         relayState.erase();
                     }
+#endif
                 }
                 else if (conf.isEnabled(SPConfig::InProcess)) {
                     DDF out,in = DDF("get::RelayState").structure();

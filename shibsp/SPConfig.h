@@ -24,7 +24,9 @@
 #define __shibsp_config_h__
 
 #include <shibsp/base.h>
-#include <saml/binding/MessageDecoder.h>
+#ifndef SHIBSP_LITE
+# include <saml/binding/MessageDecoder.h>
+#endif
 #include <xmltooling/PluginManager.h>
 #include <xercesc/dom/DOM.hpp>
 
@@ -35,18 +37,21 @@
 namespace shibsp {
 
     class SHIBSP_API AccessControl;
+    class SHIBSP_API Handler;
+    class SHIBSP_API ListenerService;
+    class SHIBSP_API RequestMapper;
+    class SHIBSP_API ServiceProvider;
+    class SHIBSP_API SessionCache;
+    class SHIBSP_API SessionInitiator;
+
+#ifndef SHIBSP_LITE
     class SHIBSP_API AttributeDecoder;
     class SHIBSP_API AttributeExtractor;
     class SHIBSP_API AttributeFilter;
     class SHIBSP_API AttributeResolver;
     class SHIBSP_API FilterPolicyContext;
-    class SHIBSP_API Handler;
-    class SHIBSP_API ListenerService;
     class SHIBSP_API MatchFunctor;
-    class SHIBSP_API RequestMapper;
-    class SHIBSP_API ServiceProvider;
-    class SHIBSP_API SessionCache;
-    class SHIBSP_API SessionInitiator;
+#endif
 
 #if defined (_MSC_VER)
     #pragma warning( push )
@@ -75,10 +80,12 @@ namespace shibsp {
         enum components_t {
             Listener = 1,
             Caching = 2,
+#ifndef SHIBSP_LITE
             Metadata = 4,
             Trust = 8,
             Credentials = 16,
             AttributeResolution = 32,
+#endif
             RequestMapping = 64,
             OutOfProcess = 128,
             InProcess = 256,
@@ -141,6 +148,7 @@ namespace shibsp {
             return m_serviceProvider;
         }
 
+#ifndef SHIBSP_LITE
         /**
          * Sets the global ArtifactResolver instance.
          *
@@ -162,6 +170,7 @@ namespace shibsp {
         opensaml::MessageDecoder::ArtifactResolver* getArtifactResolver() const {
             return m_artifactResolver;
         }
+#endif
 
         /** Separator for serialized values of multi-valued attributes. */
         char attribute_value_delimeter;
@@ -171,6 +180,7 @@ namespace shibsp {
          */
         xmltooling::PluginManager<AccessControl,std::string,const xercesc::DOMElement*> AccessControlManager;
 
+#ifndef SHIBSP_LITE
         /**
          * Manages factories for AttributeDecoder plugins.
          */
@@ -192,6 +202,12 @@ namespace shibsp {
         xmltooling::PluginManager<AttributeResolver,std::string,const xercesc::DOMElement*> AttributeResolverManager;
 
         /**
+         * Manages factories for MatchFunctor plugins.
+         */
+        xmltooling::PluginManager< MatchFunctor,xmltooling::QName,std::pair<const FilterPolicyContext*,const xercesc::DOMElement*> > MatchFunctorManager;
+#endif
+
+        /**
          * Manages factories for Handler plugins that implement AssertionConsumerService functionality.
          */
         xmltooling::PluginManager< Handler,std::string,std::pair<const xercesc::DOMElement*,const char*> > AssertionConsumerServiceManager;
@@ -205,11 +221,6 @@ namespace shibsp {
          * Manages factories for ListenerService plugins.
          */
         xmltooling::PluginManager<ListenerService,std::string,const xercesc::DOMElement*> ListenerServiceManager;
-
-        /**
-         * Manages factories for MatchFunctor plugins.
-         */
-        xmltooling::PluginManager< MatchFunctor,xmltooling::QName,std::pair<const FilterPolicyContext*,const xercesc::DOMElement*> > MatchFunctorManager;
 
         /**
          * Manages factories for Handler plugins that implement ManageNameIDService functionality.
@@ -242,13 +253,19 @@ namespace shibsp {
         xmltooling::PluginManager< Handler,std::string,std::pair<const xercesc::DOMElement*,const char*> > SingleLogoutServiceManager;
 
     protected:
-        SPConfig() : attribute_value_delimeter(';'), m_serviceProvider(NULL), m_artifactResolver(NULL), m_features(0) {}
+        SPConfig() : attribute_value_delimeter(';'), m_serviceProvider(NULL),
+#ifndef SHIBSP_LITE
+            m_artifactResolver(NULL),
+#endif
+            m_features(0) {}
         
         /** Global ServiceProvider instance. */
         ServiceProvider* m_serviceProvider;
 
+#ifndef SHIBSP_LITE
         /** Global ArtifactResolver instance. */
         opensaml::MessageDecoder::ArtifactResolver* m_artifactResolver;
+#endif
 
     private:
         unsigned long m_features;

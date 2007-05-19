@@ -27,7 +27,6 @@
 #include "SessionCache.h"
 
 #include <log4cpp/Category.hh>
-#include <saml/util/CGIParser.h>
 
 using namespace shibsp;
 using namespace opensaml;

@@ -30,8 +30,10 @@
 #include "handler/SessionInitiator.h"
 #include "util/SPConstants.h"
 
-#include <saml/saml2/metadata/Metadata.h>
-#include <saml/saml2/metadata/EndpointManager.h>
+#ifndef SHIBSP_LITE
+# include <saml/saml2/metadata/Metadata.h>
+# include <saml/saml2/metadata/EndpointManager.h>
+#endif
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/URLEncoder.h>
 
@@ -75,7 +77,6 @@ namespace shibsp {
             const char* acsLocation,
             string& relayState
             ) const;
-
         string m_appId;
     };
 
@@ -209,6 +210,7 @@ pair<bool,long> Shib1SessionInitiator::doRequest(
     string& relayState
     ) const
 {
+#ifndef SHIBSP_LITE
     // Use metadata to invoke the SSO service directly.
     MetadataProvider* m=app.getMetadataProvider();
     Locker locker(m);
@@ -246,4 +248,7 @@ pair<bool,long> Shib1SessionInitiator::doRequest(
         "&providerId=" + urlenc->encode(app.getString("entityID").second);
 
     return make_pair(true, httpResponse.sendRedirect(req.c_str()));
+#else
+    return make_pair(false,0);
+#endif
 }

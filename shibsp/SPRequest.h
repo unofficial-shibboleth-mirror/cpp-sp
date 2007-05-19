@@ -24,8 +24,8 @@
 #define __shibsp_req_h__
 
 #include <shibsp/RequestMapper.h>
-#include <saml/binding/HTTPRequest.h>
-#include <saml/binding/HTTPResponse.h>
+#include <xmltooling/io/HTTPRequest.h>
+#include <xmltooling/io/HTTPResponse.h>
 
 namespace shibsp {
     
@@ -42,7 +42,7 @@ namespace shibsp {
      * 
      * <p>This interface need not be threadsafe.
      */
-    class SHIBSP_API SPRequest : public virtual opensaml::HTTPRequest, public virtual opensaml::HTTPResponse
+    class SHIBSP_API SPRequest : public virtual xmltooling::HTTPRequest, public virtual xmltooling::HTTPResponse
     {
     protected:
         SPRequest() {}

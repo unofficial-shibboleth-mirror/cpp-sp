@@ -24,7 +24,11 @@
 #define __shibsp_constants_h__
 
 #include <shibsp/base.h>
-#include <saml/util/SAMLConstants.h>
+#ifndef SHIBSP_LITE
+# include <saml/util/SAMLConstants.h>
+#else
+# include <xmltooling/util/XMLConstants.h>
+#endif
 
 /**
  * Shibboleth SP XML constants.

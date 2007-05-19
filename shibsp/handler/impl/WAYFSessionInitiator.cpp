@@ -27,6 +27,7 @@
 #include "handler/AbstractHandler.h"
 #include "handler/SessionInitiator.h"
 
+#include <ctime>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/URLEncoder.h>
 

@@ -8,7 +8,7 @@
         
     <item id="org.eclipse.cdt.core.pathentry">
 <pathentry kind="out" path=""/>
-<pathentry excluding="util/|impl/|security/|metadata/|remoting/|remoting/impl/|attribute/|binding/|binding/impl/|attribute/resolver/|attribute/resolver/impl/|handler/|handler/impl/|attribute/filtering/|attribute/filtering/impl/" kind="src" path="shibsp"/>
+<pathentry excluding="util/|impl/|security/|metadata/|remoting/|remoting/impl/|attribute/|binding/|binding/impl/|attribute/resolver/|attribute/resolver/impl/|handler/|handler/impl/|attribute/filtering/|attribute/filtering/impl/|lite/" kind="src" path="shibsp"/>
 <pathentry excluding="resolver/|resolver/impl/|filtering/|filtering/impl/" kind="src" path="shibsp/attribute"/>
 <pathentry excluding="impl/" kind="src" path="shibsp/attribute/filtering"/>
 <pathentry kind="src" path="shibsp/attribute/filtering/impl"/>
@@ -19,6 +19,7 @@
 <pathentry excluding="impl/" kind="src" path="shibsp/handler"/>
 <pathentry kind="src" path="shibsp/handler/impl"/>
 <pathentry kind="src" path="shibsp/impl"/>
+<pathentry kind="src" path="shibsp/lite"/>
 <pathentry kind="src" path="shibsp/metadata"/>
 <pathentry excluding="impl/" kind="src" path="shibsp/remoting"/>
 <pathentry kind="src" path="shibsp/remoting/impl"/>
