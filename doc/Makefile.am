@@ -1,7 +1,8 @@
 AUTOMAKE_OPTIONS = foreign
 
 pkgdocdir = $(prefix)/doc/@PACKAGE@
-pkgdoc_DATA = \
+
+docfiles = \
 	CREDITS.txt \
 	INSTALL.txt \
 	INSTALL-WIN32.txt \
@@ -14,3 +15,8 @@ pkgdoc_DATA = \
 	mysql-4.0.12.diff \
 	main.css \
 	logo.jpg
+	
+pkgdoc_DATA = $(docfiles)
+
+EXTRA_DIST = $(docfiles)
+

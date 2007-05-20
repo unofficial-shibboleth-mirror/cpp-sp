@@ -11,29 +11,39 @@ AC_ARG_ENABLE(debug,
     enable_debug=$enableval, enable_debug=no)
 
 if test "$enable_debug" = "yes" ; then
-    GCC_CFLAGS="$CFLAGS -Wall -g -D_DEBUG"
-    GCC_CXXFLAGS="$CXXFLAGS -Wall -g -D_DEBUG"
+    GCC_CFLAGS="$CFLAGS -g -D_DEBUG"
+    GCC_CXXFLAGS="$CXXFLAGS -g -D_DEBUG"
 else
-    GCC_CFLAGS="$CFLAGS -Wall -O2 -DNDEBUG"
-    GCC_CXXFLAGS="$CXXFLAGS -Wall -O2 -DNDEBUG"
+    GCC_CFLAGS="$CFLAGS -O2 -DNDEBUG"
+    GCC_CXXFLAGS="$CXXFLAGS -O2 -DNDEBUG"
 fi
 
 AC_PROG_CC([gcc gcc3 cc])
 AC_PROG_CXX([g++ g++3 c++ CC])
 
 if test "$GCC" = "yes" ; then
-    CFLAGS="$GCC_CFLAGS"
-    CXXFLAGS="$GCC_CXXFLAGS"
+#    AC_HAVE_GCC_VERSION(4,0,0,0,
+#        [
+#        AC_DEFINE(GCC_HASCLASSVISIBILITY,1,
+#            [Define to enable class visibility control in gcc.])
+#        GCC_CFLAGS="$GCC_CFLAGS -fvisibility=hidden -fvisibility-inlines-hidden"
+#        GCC_CXXFLAGS="$GCC_CXXFLAGS -fvisibility=hidden -fvisibility-inlines-hidden"
+#        ])
+    CFLAGS="-Wall $GCC_CFLAGS"
+    CXXFLAGS="-Wall $GCC_CXXFLAGS"
+else
+# Fix for Sun Workshop compiler in debug mode, may be Sun case #6360993
+	case "${host_cpu}-${host_os}" in
+	        *solaris*)
+			if test "$CXX" = "CC" ; then
+				CXXFLAGS="$CXXFLAGS -Qoption ccfe -stabs=no%dfltlit+no%dflthlp"
+			fi
+	        ;;
+	esac
 fi
 
 AC_DISABLE_STATIC
 AC_PROG_LIBTOOL
-
-AC_LANG(C++)
-
-# C++ requirements
-AC_CXX_REQUIRE_STL
-AC_CXX_NAMESPACES
 
 AC_LANG(C)
 
@@ -47,12 +57,6 @@ AC_FUNC_STRFTIME
 AC_FUNC_STRERROR_R
 AC_CHECK_FUNCS([strchr strdup strstr gmtime_r ctime_r strtok_r strcasecmp])
 
-# old_LIBS="$LIBS"
-# AC_SEARCH_LIBS(xdr_uint64_t,nsl,,
-# 	[CFLAGS="$CFLAGS -DNEED_XDR_LONGLONG"
-# 	 CXXFLAGS="$CXXFLAGS -DNEED_XDR_LONGLONG"])
-# LIBS="$old_LIBS"
-
 # checks for pthreads
 ACX_PTHREAD([enable_threads="pthread"],[enable_threads="no"])
 if test $enable_threads != "pthread"; then
@@ -65,6 +69,10 @@ else
 fi
 
 AC_LANG(C++)
+
+# C++ requirements
+AC_CXX_REQUIRE_STL
+AC_CXX_NAMESPACES
 
 # log4cpp settings
 AC_PATH_PROG(LOG4CPP_CONFIG,log4cpp-config)
@@ -121,33 +129,46 @@ if test x_$with_xmlsec != x_/usr; then
     LDFLAGS="-L${with_xmlsec}/lib $LDFLAGS"
     CPPFLAGS="-I${with_xmlsec}/include $CPPFLAGS"
 fi        
-LIBS="-lxml-security-c $LIBS"
+XMLSEC_LIBS="-lxml-security-c"
+
+# save and append master libs
+save_LIBS="$LIBS"
+LIBS="$XMLSEC_LIBS $LIBS"
+
 AC_CHECK_HEADER([xsec/utils/XSECPlatformUtils.hpp],,AC_MSG_ERROR([unable to find XML-Security header files]))
 AC_MSG_CHECKING([XML-Security version])
 AC_PREPROC_IFELSE(
     [AC_LANG_PROGRAM([#include <xsec/utils/XSECPlatformUtils.hpp>],
-    [#if XSEC_VERSION_MAJOR > 1 || XSEC_VERSION_MEDIUM >2 
+    [#if XSEC_VERSION_MAJOR > 1 || (XSEC_VERSION_MAJOR == 1 && XSEC_VERSION_MEDIUM > 3) || (XSEC_VERSION_MAJOR == 1 && XSEC_VERSION_MEDIUM == 3 && XSEC_VERSION_MINOR > 0)
 int i = 0;
 #else
-#error need version 1.3 or later
+#error need version 1.3.1 or later
 #endif])],
     [AC_MSG_RESULT(OK)],
-    [AC_MSG_FAILURE([XML-Security version 1.3 or greater is required.])])
+    [AC_MSG_FAILURE([XML-Security version 1.3.1 or greater is required.])])
 AC_TRY_LINK(
         [#include <xsec/utils/XSECPlatformUtils.hpp>],
         [XSECPlatformUtils::Initialise()],,
         [AC_MSG_ERROR([unable to link with XML-Sec])])
 
+# restore master libs
+LIBS="$save_LIBS"
+
 # OpenSAML settings
 AC_ARG_WITH(saml,
-            AC_HELP_STRING([--with-saml=PATH], [where saml is installed]),
-            [if test x_$with_saml != x_/usr; then
-                LDFLAGS="-L${with_saml}/lib $LDFLAGS"
-                CPPFLAGS="-I${with_saml}/include $CPPFLAGS"
-            fi])
+    AC_HELP_STRING([--with-saml=PATH], [where saml is installed]),
+    [if test x_$with_saml != x_/usr; then
+        LDFLAGS="-L${with_saml}/lib $LDFLAGS"
+        CPPFLAGS="-I${with_saml}/include $CPPFLAGS"
+    fi])
+XMLSEC_LIBS="-lsaml $XMLSEC_LIBS"
+
+# save and append master libs
+save_LIBS="$LIBS"
+LIBS="$XMLSEC_LIBS $LIBS"
+
 AC_CHECK_HEADER([saml/saml.h],,
                 AC_MSG_ERROR([unable to find saml header files]))
-LIBS="-lsaml $LIBS"
 AC_TRY_LINK(
 	[#include <saml/saml.h>
 #include <saml/version.h>],
@@ -159,12 +180,16 @@ opensaml::SAMLConfig::getConfig();
         [AC_DEFINE(HAVE_SAML,1,[Define if saml library was found])],
         [AC_MSG_ERROR([unable to link with OpenSAML, or version was too old])])
 
-# output the underlying makefiles
-WANT_SUBDIRS="doc schemas configs shibsp shibd siterefresh test"
-AC_CONFIG_FILES([Makefile doc/Makefile schemas/Makefile \
-		 configs/Makefile shibsp/Makefile shibd/Makefile siterefresh/Makefile \
-		 util/Makefile selinux/Makefile])
+# restore master libs
+LIBS="$save_LIBS"
 
+AC_SUBST(XMLSEC_LIBS)
+
+# output the underlying makefiles
+WANT_SUBDIRS="doc schemas configs shibsp shibd siterefresh util"
+AC_CONFIG_FILES([Makefile doc/Makefile schemas/Makefile \
+	configs/Makefile shibsp/Makefile shibd/Makefile siterefresh/Makefile \
+	util/Makefile selinux/Makefile])
 
 #
 # Build NSAPI module?
@@ -525,100 +550,100 @@ fi
 # 3) If the user specifically requested no-odbc, don't build it.
 #
 
-AC_CONFIG_FILES([odbc_ccache/Makefile])
+#AC_CONFIG_FILES([odbc_ccache/Makefile])
 
 # determine whether we should enable the odbc ccache
-AC_ARG_ENABLE([odbc],
-	AC_HELP_STRING([--disable-odbc], [disable the ODBC Credential Cache]),
-	[odbc_enabled=$enableval], [odbc_enabled=default])
+#AC_ARG_ENABLE([odbc],
+#	AC_HELP_STRING([--disable-odbc], [disable the ODBC Credential Cache]),
+#	[odbc_enabled=$enableval], [odbc_enabled=default])
 
-if test "x$odbc_enabled" = "x" ; then
-   odbc_enabled=yes
-fi
+#if test "x$odbc_enabled" = "x" ; then
+#   odbc_enabled=yes
+#fi
 
 # Are we trying to build ODBC?
-AC_MSG_CHECKING(whether to build the ODBC ccache)
-if test "$odbc_enabled" = "yes" ; then
-   build_odbc=yes
-   AC_MSG_RESULT(yes)
-elif test "$odbc_enabled" = "default" ; then
-   build_odbc=yes
-   AC_MSG_RESULT([yes, if it can be found])
-else
-   build_odbc=no
-   AC_MSG_RESULT(no)
-fi
+#AC_MSG_CHECKING(whether to build the ODBC ccache)
+#if test "$odbc_enabled" = "yes" ; then
+#   build_odbc=yes
+#   AC_MSG_RESULT(yes)
+#elif test "$odbc_enabled" = "default" ; then
+#   build_odbc=yes
+#   AC_MSG_RESULT([yes, if it can be found])
+#else
+#   build_odbc=no
+#   AC_MSG_RESULT(no)
+#fi
 
 # If we're trying to build ODBC, try to find the odbc_config program.
-if test "$build_odbc" = "yes" ; then
-   odbc_dir=""
-   AC_ARG_WITH(odbc,
-	AC_HELP_STRING([--with-odbc=PATH], [directory where odbc is installed]),
-	    [if test "$with_odbc" = no ; then
-               AC_MSG_ERROR([Try running --disable-odbc instead.])
-             elif test "$with_odbc" != yes ; then
-               odbc_dir="$with_odbc/bin"
-             fi ])
+#if test "$build_odbc" = "yes" ; then
+#   odbc_dir=""
+#   AC_ARG_WITH(odbc,
+#	AC_HELP_STRING([--with-odbc=PATH], [directory where odbc is installed]),
+#	    [if test "$with_odbc" = no ; then
+#               AC_MSG_ERROR([Try running --disable-odbc instead.])
+#             elif test "$with_odbc" != yes ; then
+#               odbc_dir="$with_odbc/bin"
+#             fi ])
 
    # Try to find the mysql_config program
-   AC_PATH_PROG(ODBC_CONFIG, odbc_config, no, $odbc_dir $PATH )
+#   AC_PATH_PROG(ODBC_CONFIG, odbc_config, no, $odbc_dir $PATH )
 
-   if test "$ODBC_CONFIG" = no ; then
-      if test "$odbc_enabled" = "yes" ; then
-        AC_MSG_ERROR(Cannot find odbc_config)
-      else
-        AC_MSG_WARN(ODBC not found, skipping.)
-      fi
-   fi
-fi
+#   if test "$ODBC_CONFIG" = no ; then
+#      if test "$odbc_enabled" = "yes" ; then
+#        AC_MSG_ERROR(Cannot find odbc_config)
+#      else
+#        AC_MSG_WARN(ODBC not found, skipping.)
+#      fi
+#   fi
+#fi
 
-if test "$build_odbc" = yes ; then
-   ODBC_CFLAGS=`$ODBC_CONFIG --cflags`
-   ODBC_CFLAGS=`eval echo $ODBC_CFLAGS`
-   ODBC_LIBS=`$ODBC_CONFIG --libs`
-   ODBC_LIBS=`eval echo $ODBC_LIBS`
+#if test "$build_odbc" = yes ; then
+#   ODBC_CFLAGS=`$ODBC_CONFIG --cflags`
+#   ODBC_CFLAGS=`eval echo $ODBC_CFLAGS`
+#   ODBC_LIBS=`$ODBC_CONFIG --libs`
+#   ODBC_LIBS=`eval echo $ODBC_LIBS`
 
-   save_CPPFLAGS="$CPPFLAGS"
-   CPPFLAGS="$CPPFLAGS $ODBC_CFLAGS"
+#   save_CPPFLAGS="$CPPFLAGS"
+#   CPPFLAGS="$CPPFLAGS $ODBC_CFLAGS"
 
-   AC_CHECK_HEADER([sql.h], [have_sql_h=yes], [have_sql_h=no])
-   if test "$have_sql_h" = no -a "$odbc_enabled" = "yes" ; then
-     AC_MSG_ERROR(unable to find ODBC header files)
-   fi
+#   AC_CHECK_HEADER([sql.h], [have_sql_h=yes], [have_sql_h=no])
+#   if test "$have_sql_h" = no -a "$odbc_enabled" = "yes" ; then
+#     AC_MSG_ERROR(unable to find ODBC header files)
+#   fi
 
-   if test "$have_sql_h" = yes ; then
-      save_LIBS="$LIBS"
-      LIBS="$LIBS $ODBC_LIBS"
-      AC_MSG_CHECKING(if we can link againt ODBC)
-      AC_TRY_LINK(
-        [#include <sql.h>
-         #include <sqlext.h>
-         #include <stdio.h>],
-        [SQLSetEnvAttr(SQL_NULL_HANDLE, SQL_ATTR_CONNECTION_POOLING, (void*)SQL_CP_ONE_PER_HENV, 0)],
-        [have_odbc_libs=yes],
-        [have_odbc_libs=no])
-      LIBS="$save_LIBS"
+#   if test "$have_sql_h" = yes ; then
+#      save_LIBS="$LIBS"
+#      LIBS="$LIBS $ODBC_LIBS"
+#      AC_MSG_CHECKING(if we can link againt ODBC)
+#      AC_TRY_LINK(
+#        [#include <sql.h>
+#         #include <sqlext.h>
+#         #include <stdio.h>],
+#        [SQLSetEnvAttr(SQL_NULL_HANDLE, SQL_ATTR_CONNECTION_POOLING, (void*)SQL_CP_ONE_PER_HENV, 0)],
+#        [have_odbc_libs=yes],
+#        [have_odbc_libs=no])
+#      LIBS="$save_LIBS"
 
-      if test "$have_odbc_libs" = no ; then
-         if test "$odbc_enabled" = "yes" ; then
-            AC_MSG_ERROR([unable to link with ODBC Library])
-         else
-            AC_MSG_RESULT(no, skipping ODBC)
-         fi
-      fi
-   fi
+#      if test "$have_odbc_libs" = no ; then
+#         if test "$odbc_enabled" = "yes" ; then
+#            AC_MSG_ERROR([unable to link with ODBC Library])
+#         else
+#            AC_MSG_RESULT(no, skipping ODBC)
+#         fi
+#      fi
+#   fi
 
-   CPPFLAGS="$save_CPPFLAGS"
-fi
+#   CPPFLAGS="$save_CPPFLAGS"
+#fi
 
 # if have_odbc_libs=yes then go ahead with building ODBC
-if test "$have_odbc_libs" = yes ; then
-   # this AC_MSG_RESULT is from above!
-   AC_MSG_RESULT(yes)
-   WANT_SUBDIRS="$WANT_SUBDIRS odbc_ccache"
-   AC_SUBST(ODBC_CFLAGS)
-   AC_SUBST(ODBC_LIBS)
-fi
+#if test "$have_odbc_libs" = yes ; then
+#   # this AC_MSG_RESULT is from above!
+#   AC_MSG_RESULT(yes)
+#   WANT_SUBDIRS="$WANT_SUBDIRS odbc_ccache"
+#   AC_SUBST(ODBC_CFLAGS)
+#   AC_SUBST(ODBC_LIBS)
+#fi
 
 
 AC_SUBST(WANT_SUBDIRS)
@@ -637,11 +662,23 @@ fi
 
 if test -n "$APXS2_CC" && test "$APXS2_CC" != "$CC" ; then
   echo "=================================================================="
-  echo "WARNING: You have chosen to compile Apache-2 modules with a different"
+  echo "WARNING: You have chosen to compile Apache-2.0 modules with a different"
   echo "         compiler than the one used to compile Apache."
   echo ""
   echo "    Current compiler:      $CC"
   echo "   Apache's compiler:      $APXS2_CC"
+  echo ""
+  echo "This could cause problems."
+  echo "=================================================================="
+fi
+
+if test -n "$APXS22_CC" && test "$APXS22_CC" != "$CC" ; then
+  echo "=================================================================="
+  echo "WARNING: You have chosen to compile Apache-2.2 modules with a different"
+  echo "         compiler than the one used to compile Apache."
+  echo ""
+  echo "    Current compiler:      $CC"
+  echo "   Apache's compiler:      $APXS22_CC"
   echo ""
   echo "This could cause problems."
   echo "=================================================================="

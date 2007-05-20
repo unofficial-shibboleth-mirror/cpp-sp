@@ -20,6 +20,8 @@
  * Shibboleth NSAPI filter
  */
 
+#define SHIBSP_LITE
+
 #if defined (_MSC_VER) || defined(__BORLANDC__)
 # include "config_win32.h"
 #else

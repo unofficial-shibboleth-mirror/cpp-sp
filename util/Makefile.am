@@ -2,9 +2,17 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-bin_PROGRAMS = samlquery
+bin_PROGRAMS = samlquery siterefresh
 
-shibtest_SOURCES = samlquery.cpp
+samlquery_SOURCES = samlquery.cpp
 
-shibtest_LDADD = \
+samlquery_LDADD = \
 	$(top_builddir)/shibsp/libshibsp.la
+
+samlquery_LDFLAGS = $(XMLSEC_LIBS)
+
+siterefresh_SOURCES = siterefresh.cpp
+
+siterefresh_LDFLAGS = $(XMLSEC_LIBS)
+
+EXTRA_DIST = samlquery.vcproj siterefresh.vcproj

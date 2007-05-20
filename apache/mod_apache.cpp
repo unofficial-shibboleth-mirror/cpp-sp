@@ -22,6 +22,8 @@
  * $Id$
  */
 
+#define SHIBSP_LITE
+
 #ifdef SOLARIS2
 #undef _XOPEN_SOURCE    // causes gethostname conflict in unistd.h
 #endif

@@ -20,6 +20,7 @@
  * Shibboleth ISAPI filter
  */
 
+#define SHIBSP_LITE
 #include "config_win32.h"
 
 #define _CRT_NONSTDC_NO_DEPRECATE 1

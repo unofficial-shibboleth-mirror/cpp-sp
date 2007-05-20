@@ -3,7 +3,7 @@ AUTOMAKE_OPTIONS = foreign
 pkgsysconfdir = $(sysconfdir)/@PACKAGE@
 xmldir = $(datadir)/xml
 
-lib_LTLIBRARIES = libshibsp.la
+lib_LTLIBRARIES = libshibsp.la libshibsp-lite.la
 
 libshibspincludedir = $(includedir)/shibsp
 
@@ -68,6 +68,11 @@ handinclude_HEADERS = \
 	handler/RemotedHandler.h \
 	handler/SessionInitiator.h
 
+liteinclude_HEADERS = \
+	lite/CGIParser.h \
+	lite/CommonDomainCookie.h \
+	lite/SAMLConstants.h
+
 mdinclude_HEADERS = \
 	metadata/MetadataExt.h
 
@@ -89,13 +94,45 @@ noinst_HEADERS = \
 	internal.h \
 	remoting/impl/SocketListener.h
 
-libshibsp_la_SOURCES = \
+common_sources = \
 	AbstractSPRequest.cpp \
 	Application.cpp \
 	ServiceProvider.cpp \
 	SessionCache.cpp \
 	SPConfig.cpp \
 	attribute/Attribute.cpp \
+	handler/impl/AbstractHandler.cpp \
+	handler/impl/AssertionConsumerService.cpp \
+	handler/impl/ChainingSessionInitiator.cpp \
+	handler/impl/RemotedHandler.cpp \
+	handler/impl/SAML1Consumer.cpp \
+	handler/impl/SAML2Consumer.cpp \
+	handler/impl/SAML2SessionInitiator.cpp \
+	handler/impl/SAMLDSSessionInitiator.cpp \
+	handler/impl/SessionInitiator.cpp \
+	handler/impl/Shib1SessionInitiator.cpp \
+	handler/impl/WAYFSessionInitiator.cpp \
+	impl/XMLAccessControl.cpp \
+	impl/XMLRequestMapper.cpp \
+	impl/XMLServiceProvider.cpp \
+	remoting/impl/ddf.cpp \
+	remoting/impl/ListenerService.cpp \
+	remoting/impl/SocketListener.cpp \
+	remoting/impl/TCPListener.cpp \
+	remoting/impl/UnixListener.cpp \
+	util/DOMPropertySet.cpp \
+	util/SPConstants.cpp \
+	util/TemplateParameters.cpp
+
+libshibsp_lite_la_SOURCES = \
+	${common_sources} \
+	impl/RemotedSessionCache.cpp \
+	lite/CGIParser.cpp \
+	lite/CommonDomainCookie.cpp \
+	lite/SAMLConstants.cpp
+
+libshibsp_la_SOURCES = \
+	${common_sources} \
 	attribute/NameIDAttributeDecoder.cpp \
 	attribute/ScopedAttributeDecoder.cpp \
 	attribute/StringAttributeDecoder.cpp \
@@ -126,38 +163,17 @@ libshibsp_la_SOURCES = \
 	attribute/resolver/impl/XMLAttributeExtractor.cpp \
 	binding/impl/ArtifactResolver.cpp \
 	binding/impl/SOAPClient.cpp \
-	handler/impl/AbstractHandler.cpp \
-	handler/impl/AssertionConsumerService.cpp \
-	handler/impl/ChainingSessionInitiator.cpp \
-	handler/impl/RemotedHandler.cpp \
-	handler/impl/SAML1Consumer.cpp \
-	handler/impl/SAML2Consumer.cpp \
-	handler/impl/SAML2SessionInitiator.cpp \
-	handler/impl/SAMLDSSessionInitiator.cpp \
-	handler/impl/SessionInitiator.cpp \
-	handler/impl/Shib1SessionInitiator.cpp \
-	handler/impl/WAYFSessionInitiator.cpp \
-	impl/RemotedSessionCache.cpp \
 	impl/StorageServiceSessionCache.cpp \
-	impl/XMLAccessControl.cpp \
-	impl/XMLRequestMapper.cpp \
-	impl/XMLServiceProvider.cpp \
 	metadata/MetadataExtImpl.cpp \
 	metadata/MetadataExtSchemaValidators.cpp \
-	remoting/impl/ddf.cpp \
-	remoting/impl/ListenerService.cpp \
-	remoting/impl/SocketListener.cpp \
-	remoting/impl/TCPListener.cpp \
-	remoting/impl/UnixListener.cpp \
 	security/PKIXTrustEngine.cpp \
-	security/SecurityPolicy.cpp \
-	util/DOMPropertySet.cpp \
-	util/SPConstants.cpp \
-	util/TemplateParameters.cpp
+	security/SecurityPolicy.cpp
 
 # this is different from the project version
 # http://sources.redhat.com/autobook/autobook/autobook_91.html
-libshibsp_la_LDFLAGS = -version-info 1:0:0
+libshibsp_la_LDFLAGS = $(XMLSEC_LIBS) -version-info 1:0:0
+libshibsp_lite_la_LDFLAGS = -version-info 1:0:0
+libshibsp_lite_la_CPPFLAGS = -DSHIBSP_LITE
 
 paths.h: ${srcdir}/paths.h.in Makefile ${top_builddir}/config.status
 	rm -f $@.tmp
@@ -170,5 +186,5 @@ paths.h: ${srcdir}/paths.h.in Makefile ${top_builddir}/config.status
 install-exec-hook:
 	for la in $(lib_LTLIBRARIES) ; do rm -f $(DESTDIR)$(libdir)/$$la ; done
 
-EXTRA_DIST = shibsp.vcproj paths.h.in resource.h shibsp.rc
+EXTRA_DIST = shibsp.vcproj shibsp-lite.vcproj paths.h.in resource.h shibsp.rc
 BUILT_SOURCES = paths.h

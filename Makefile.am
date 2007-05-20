@@ -3,21 +3,18 @@ AUTOMAKE_OPTIONS = foreign
 ACLOCAL_AMFLAGS = -I .
 
 EXTRA_DIST = \
-	schemas doc isapi_shib isapi_shib_gui \
-	Shibboleth.sln libtool.m4 acx_pthread.m4 acx_rpctest.m4 depcomp \
+	isapi_shib isapi_shib_gui \
+	Shibboleth.sln libtool.m4 acx_pthread.m4 depcomp \
 	config_win32.h shibboleth.spec.in shibboleth.spec pkginfo.in pkginfo checkinstall
 
 dist-hook:
-	rm -rf `find $(distdir)/schemas -name Makefile`
 	rm -rf `find $(distdir)/configs -name Makefile`
-	rm -rf `find $(distdir)/doc -name Makefile`
 
 WANT_SUBDIRS = @WANT_SUBDIRS@
 
 SUBDIRS = $(WANT_SUBDIRS)
 
-DIST_SUBDIRS = doc schemas configs shibsp shibd util \
-	apache siterefresh odbc-store nsapi_shib selinux
+DIST_SUBDIRS = doc schemas configs shibsp shibd util apache odbc-store nsapi_shib selinux
 
 all-local: shibboleth.spec pkginfo
 
