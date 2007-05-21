@@ -637,6 +637,7 @@ XMLApplication::XMLApplication(
             while (child) {
                 auto_ptr<DOMPropertySet> rp(new DOMPropertySet());
                 rp->load(child,log,this);
+                rp->setParent(m_partyDefault);
                 m_partyMap[child->getAttributeNS(NULL,saml2::Attribute::NAME_ATTRIB_NAME)]=rp.release();
                 child = XMLHelper::getNextSiblingElement(child,RelyingParty);
             }
