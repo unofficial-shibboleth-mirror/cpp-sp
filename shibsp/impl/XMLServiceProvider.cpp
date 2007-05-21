@@ -230,9 +230,9 @@ namespace {
 #ifndef SHIBSP_LITE
             delete m_tranLog;
             SAMLConfig::getConfig().setArtifactMap(NULL);
+            XMLToolingConfig::getConfig().setReplayCache(NULL);
             for_each(m_storage.begin(), m_storage.end(), cleanup_pair<string,StorageService>());
 #endif
-            XMLToolingConfig::getConfig().setReplayCache(NULL);
         }
 
         // PropertySet
