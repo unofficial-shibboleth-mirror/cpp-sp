@@ -207,8 +207,13 @@
 			logoLocation="/shibboleth-sp/logo.jpg"
 			styleSheet="/shibboleth-sp/main.css"/>
 		
-		<!-- Configure handling of outgoing messages. -->
-		<DefaultRelyingParty authType="TLS" signRequests="false" encryptRequests="true"/>
+		<!-- Configure handling of outgoing messages and SOAP client authentication. -->
+		<DefaultRelyingParty authType="TLS" signRequests="false" encryptRequests="true">
+			<!-- Uncomment and modify to tweak settings for specific IdPs or groups. -->
+			<!--
+			<RelyingParty Name="SpecialFederation" keyName="SpecialKey"/>
+			-->
+		</DefaultRelyingParty>
 
 		<!-- Chains together all your metadata sources. -->
 		<MetadataProvider type="Chaining">
@@ -231,7 +236,7 @@
 		<!-- Default filtering policy for recognized attributes, lets other data pass. -->
 		<AttributeFilter type="XML" path="@-PKGSYSCONFDIR-@/attribute-policy.xml"/>
 
-		<!-- Simple file-based resolver for key/certificate information. -->
+		<!-- Simple file-based resolver for using a single keypair. -->
 		<CredentialResolver type="File">
 			<Key>
 				<Path>@-PKGSYSCONFDIR-@/sp-example.key</Path>
@@ -240,6 +245,30 @@
 				<Path>@-PKGSYSCONFDIR-@/sp-example.crt</Path>
 			</Certificate>
 		</CredentialResolver>
+
+		<!-- Advanced resolver allowing for multiple keypairs. -->
+		<!--
+		<CredentialResolver type="Chaining">
+			<CredentialResolver type="File">
+				<Key>
+					<Name>DefaultKey</Name>
+					<Path>@-PKGSYSCONFDIR-@/sp-example.key</Path>
+				</Key>
+				<Certificate>
+					<Path>@-PKGSYSCONFDIR-@/sp-example.crt</Path>
+				</Certificate>
+			</CredentialResolver>
+			<CredentialResolver type="File">
+				<Key>
+					<Name>SpecialKey</Name>
+					<Path>@-PKGSYSCONFDIR-@/special.key</Path>
+				</Key>
+				<Certificate>
+					<Path>@-PKGSYSCONFDIR-@/special.crt</Path>
+				</Certificate>
+			</CredentialResolver>
+		</CredentialResolver>
+		-->
 	</Applications>
 	
 	<!-- Each policy defines a set of rules to use to secure SAML and SOAP messages. -->

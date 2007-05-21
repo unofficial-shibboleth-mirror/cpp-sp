@@ -188,91 +188,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\attribute\filtering\impl\AndMatchFunctor.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\attribute\filtering\impl\AnyMatchFunctor.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\Application.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\attribute\filtering\impl\AttributeFilter.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\attribute\filtering\impl\AttributeIssuerInEntityGroupFunctor.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\attribute\filtering\impl\AttributeIssuerRegexFunctor.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\attribute\filtering\impl\AttributeIssuerStringFunctor.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\attribute\filtering\impl\AttributeRequesterInEntityGroupFunctor.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\attribute\filtering\impl\AttributeRequesterRegexFunctor.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\attribute\filtering\impl\AttributeRequesterStringFunctor.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\attribute\filtering\impl\AttributeScopeMatchesShibMDScopeFunctor.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\attribute\filtering\impl\AttributeScopeRegexFunctor.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\attribute\filtering\impl\AttributeScopeStringFunctor.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\attribute\filtering\impl\AttributeValueRegexFunctor.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\attribute\filtering\impl\AttributeValueStringFunctor.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\attribute\filtering\impl\AuthenticationMethodRegexFunctor.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\attribute\filtering\impl\AuthenticationMethodStringFunctor.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\attribute\filtering\impl\ChainingAttributeFilter.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\attribute\filtering\impl\MatchFunctor.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\attribute\filtering\impl\NotMatchFunctor.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\attribute\filtering\impl\NumberOfAttributeValuesFunctor.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\attribute\filtering\impl\OrMatchFunctor.cpp"
 				>
 			</File>
 			<File
@@ -285,10 +201,6 @@
 			</File>
 			<File
 				RelativePath=".\SPConfig.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\attribute\filtering\impl\XMLAttributeFilter.cpp"
 				>
 			</File>
 			<Filter
@@ -424,6 +336,94 @@
 					<Filter
 						Name="impl"
 						>
+						<File
+							RelativePath=".\attribute\filtering\impl\AndMatchFunctor.cpp"
+							>
+						</File>
+						<File
+							RelativePath=".\attribute\filtering\impl\AnyMatchFunctor.cpp"
+							>
+						</File>
+						<File
+							RelativePath=".\attribute\filtering\impl\AttributeFilter.cpp"
+							>
+						</File>
+						<File
+							RelativePath=".\attribute\filtering\impl\AttributeIssuerInEntityGroupFunctor.cpp"
+							>
+						</File>
+						<File
+							RelativePath=".\attribute\filtering\impl\AttributeIssuerRegexFunctor.cpp"
+							>
+						</File>
+						<File
+							RelativePath=".\attribute\filtering\impl\AttributeIssuerStringFunctor.cpp"
+							>
+						</File>
+						<File
+							RelativePath=".\attribute\filtering\impl\AttributeRequesterInEntityGroupFunctor.cpp"
+							>
+						</File>
+						<File
+							RelativePath=".\attribute\filtering\impl\AttributeRequesterRegexFunctor.cpp"
+							>
+						</File>
+						<File
+							RelativePath=".\attribute\filtering\impl\AttributeRequesterStringFunctor.cpp"
+							>
+						</File>
+						<File
+							RelativePath=".\attribute\filtering\impl\AttributeScopeMatchesShibMDScopeFunctor.cpp"
+							>
+						</File>
+						<File
+							RelativePath=".\attribute\filtering\impl\AttributeScopeRegexFunctor.cpp"
+							>
+						</File>
+						<File
+							RelativePath=".\attribute\filtering\impl\AttributeScopeStringFunctor.cpp"
+							>
+						</File>
+						<File
+							RelativePath=".\attribute\filtering\impl\AttributeValueRegexFunctor.cpp"
+							>
+						</File>
+						<File
+							RelativePath=".\attribute\filtering\impl\AttributeValueStringFunctor.cpp"
+							>
+						</File>
+						<File
+							RelativePath=".\attribute\filtering\impl\AuthenticationMethodRegexFunctor.cpp"
+							>
+						</File>
+						<File
+							RelativePath=".\attribute\filtering\impl\AuthenticationMethodStringFunctor.cpp"
+							>
+						</File>
+						<File
+							RelativePath=".\attribute\filtering\impl\ChainingAttributeFilter.cpp"
+							>
+						</File>
+						<File
+							RelativePath=".\attribute\filtering\impl\MatchFunctor.cpp"
+							>
+						</File>
+						<File
+							RelativePath=".\attribute\filtering\impl\NotMatchFunctor.cpp"
+							>
+						</File>
+						<File
+							RelativePath=".\attribute\filtering\impl\NumberOfAttributeValuesFunctor.cpp"
+							>
+						</File>
+						<File
+							RelativePath=".\attribute\filtering\impl\OrMatchFunctor.cpp"
+							>
+						</File>
+						<File
+							RelativePath=".\attribute\filtering\impl\XMLAttributeFilter.cpp"
+							>
+						</File>
 					</Filter>
 				</Filter>
 			</Filter>
@@ -518,23 +518,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\attribute\filtering\BasicFilteringContext.h"
-				>
-			</File>
-			<File
 				RelativePath=".\exceptions.h"
 				>
 			</File>
 			<File
-				RelativePath=".\attribute\filtering\FilterPolicyContext.h"
-				>
-			</File>
-			<File
 				RelativePath=".\internal.h"
-				>
-			</File>
-			<File
-				RelativePath=".\attribute\filtering\MatchFunctor.h"
 				>
 			</File>
 			<File
@@ -668,7 +656,19 @@
 						>
 					</File>
 					<File
+						RelativePath=".\attribute\filtering\BasicFilteringContext.h"
+						>
+					</File>
+					<File
 						RelativePath=".\attribute\filtering\FilteringContext.h"
+						>
+					</File>
+					<File
+						RelativePath=".\attribute\filtering\FilterPolicyContext.h"
+						>
+					</File>
+					<File
+						RelativePath=".\attribute\filtering\MatchFunctor.h"
 						>
 					</File>
 				</Filter>

@@ -491,6 +491,9 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
             // Fill in criteria to use.
             MetadataCredentialCriteria mcc(*role);
             mcc.setUsage(CredentialCriteria::SIGNING_CREDENTIAL);
+            pair<bool,const char*> keyName = relyingParty->getString("keyName");
+            if (keyName.first)
+                mcc.getKeyNames().insert(keyName.second);
             pair<bool,const XMLCh*> sigalg = relyingParty->getXMLString("signatureAlg");
             if (sigalg.first)
                 mcc.setXMLAlgorithm(sigalg.second);

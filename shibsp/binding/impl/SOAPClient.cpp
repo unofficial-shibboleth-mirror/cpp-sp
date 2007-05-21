@@ -59,6 +59,9 @@ void SOAPClient::send(const soap11::Envelope& env, MetadataCredentialCriteria& p
             m_credResolver->lock();
             // Fill in criteria to use.
             peer.setUsage(CredentialCriteria::SIGNING_CREDENTIAL);
+            pair<bool,const char*> keyName = m_relyingParty->getString("keyName");
+            if (keyName.first)
+                peer.getKeyNames().insert(keyName.second);
             pair<bool,const XMLCh*> sigalg = m_relyingParty->getXMLString("signatureAlg");
             if (sigalg.first)
                 peer.setXMLAlgorithm(sigalg.second);
@@ -128,6 +131,9 @@ void SOAPClient::prepareTransport(SOAPTransport& transport)
         }
         if (m_credResolver) {
             m_criteria->setUsage(CredentialCriteria::TLS_CREDENTIAL);
+            authType = m_relyingParty->getString("keyName");
+            if (authType.first)
+                m_criteria->getKeyNames().insert(authType.second);
             const Credential* cred = m_credResolver->resolve(m_criteria);
             if (cred) {
                 if (!transport.setCredential(cred))
