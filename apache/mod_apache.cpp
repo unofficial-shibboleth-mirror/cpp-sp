@@ -299,7 +299,7 @@ public:
   virtual string getArgs(void) { return string(m_req->args ? m_req->args : ""); }
   virtual string getPostData(void) {
     // Read the posted data
-    if (ap_setup_client_block(m_req, REQUEST_CHUNKED_ERROR))
+    if (ap_setup_client_block(m_req, REQUEST_CHUNKED_DECHUNK) != OK)
         throw FatalProfileException("Apache function (setup_client_block) failed while reading profile submission.");
     if (!ap_should_client_block(m_req))
         throw FatalProfileException("Apache function (should_client_block) failed while reading profile submission.");
