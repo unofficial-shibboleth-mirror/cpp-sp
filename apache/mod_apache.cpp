@@ -342,13 +342,12 @@ public:
     if (m_req->remaining > 1024*1024)
         throw opensaml::SecurityPolicyException("Blocked request body larger than 1M size limit.");
     m_gotBody=true;
+    int len;
     char buff[HUGE_STRING_LEN];
     ap_hard_timeout("[mod_shib] getRequestBody", m_req);
-    memset(buff, 0, sizeof(buff));
-    while (ap_get_client_block(m_req, buff, sizeof(buff)-1) > 0) {
+    while ((len=ap_get_client_block(m_req, buff, sizeof(buff))) > 0) {
       ap_reset_timeout(m_req);
-      m_body += buff;
-      memset(buff, 0, sizeof(buff));
+      m_body.append(buff, len);
     }
     ap_kill_timeout(m_req);
     return m_body.c_str();
