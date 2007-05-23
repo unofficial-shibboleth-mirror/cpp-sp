@@ -75,7 +75,7 @@ namespace shibsp {
         void unlock() {
             for_each(m_resolvers.begin(), m_resolvers.end(), mem_fun(&AttributeResolver::unlock));
         }
-        
+
         ResolutionContext* createResolutionContext(
             const Application& application,
             const EntityDescriptor* issuer,
@@ -102,6 +102,11 @@ namespace shibsp {
 
         void resolveAttributes(ResolutionContext& ctx) const;
 
+        void getAttributeIds(vector<string>& attributes) const {
+            for (vector<AttributeResolver*>::const_iterator i=m_resolvers.begin(); i!=m_resolvers.end(); ++i)
+                (*i)->getAttributeIds(attributes);
+        }
+        
     private:
         vector<AttributeResolver*> m_resolvers;
     };

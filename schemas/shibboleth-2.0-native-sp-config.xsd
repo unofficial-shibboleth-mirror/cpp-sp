@@ -199,6 +199,7 @@
 				<any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
 			</sequence>
 			<attribute name="logger" type="anyURI"/>
+			<attribute name="unsetHeaderValue" type="string" use="optional"/>
 			<anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>
@@ -363,6 +364,7 @@
 			<attribute name="policyId" type="conf:string" use="required"/>
 			<attribute name="homeURL" type="anyURI" default="/"/>
 			<attribute name="REMOTE_USER" type="conf:listOfStrings"/>
+			<attribute name="unsetHeaders" type="conf:listOfStrings"/>
 	        <anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>
@@ -389,6 +391,7 @@
 			<attribute name="policyId" type="conf:string"/>
 			<attribute name="homeURL" type="anyURI" default="/"/>
 			<attribute name="REMOTE_USER" type="conf:listOfStrings"/>
+			<attribute name="unsetHeaders" type="conf:listOfStrings"/>
 			<anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>

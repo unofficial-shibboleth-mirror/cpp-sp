@@ -95,6 +95,13 @@ namespace shibsp {
          * @throws AttributeResolutionException thrown if there is a problem resolving the attributes for the subject
          */
         virtual void resolveAttributes(ResolutionContext& ctx) const=0;
+
+        /**
+         * Populates an array with the set of Attribute IDs that might be generated.
+         *
+         * @param attributes    array to populate
+         */
+        virtual void getAttributeIds(std::vector<std::string>& attributes) const=0;
     };
 
 #if defined (_MSC_VER)

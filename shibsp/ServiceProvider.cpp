@@ -86,27 +86,13 @@ namespace shibsp {
     }
     
     void SHIBSP_DLLLOCAL clearHeaders(SPRequest& request) {
-        // Clear invariant stuff.
         request.clearHeader("Shib-Identity-Provider");
         request.clearHeader("Shib-Authentication-Method");
         request.clearHeader("Shib-AuthnContext-Class");
         request.clearHeader("Shib-AuthnContext-Decl");
         request.clearHeader("Shib-Attributes");
-        request.clearHeader("Shib-Application-ID");
-    
-        // TODO: Figure out a way to clear attribute headers...
-        /*
-        AttributeExtractor* extractor = request.getApplication().getAttributeExtractor();
-        if (extractor) {
-            Locker locker(extractor);
-            extractor->clearHeaders(request);
-        }
-        AttributeResolver* resolver = request.getApplication().getAttributeResolver();
-        if (resolver) {
-            Locker locker(resolver);
-            resolver->clearHeaders(request);
-        }
-        */
+        //request.clearHeader("Shib-Application-ID");   handle inside app method
+        request.getApplication().clearAttributeHeaders(request);
     }
 };
 

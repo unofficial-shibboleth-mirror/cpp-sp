@@ -74,7 +74,7 @@ namespace {
     static vector<const Handler*> g_noHandlers;
 
     // Application configuration wrapper
-    class SHIBSP_DLLLOCAL XMLApplication : public virtual Application, public DOMPropertySet, public DOMNodeFilter
+    class SHIBSP_DLLLOCAL XMLApplication : public virtual Application, public Remoted, public DOMPropertySet, public DOMNodeFilter
     {
     public:
         XMLApplication(const ServiceProvider*, const DOMElement* e, const XMLApplication* base=NULL);
@@ -114,15 +114,27 @@ namespace {
         }
 #endif
         const set<string>& getRemoteUserAttributeIds() const {
-            return (m_attributeIds.empty() && m_base) ? m_base->getRemoteUserAttributeIds() : m_attributeIds;
+            return (m_remoteUsers.empty() && m_base) ? m_base->getRemoteUserAttributeIds() : m_remoteUsers;
         }
 
+        void clearAttributeHeaders(SPRequest& request) const;
         const SessionInitiator* getDefaultSessionInitiator() const;
         const SessionInitiator* getSessionInitiatorById(const char* id) const;
         const Handler* getDefaultAssertionConsumerService() const;
         const Handler* getAssertionConsumerServiceByIndex(unsigned short index) const;
         const vector<const Handler*>& getAssertionConsumerServicesByBinding(const XMLCh* binding) const;
         const Handler* getHandler(const char* path) const;
+
+        void receive(DDF& in, ostream& out) {
+            DDF header;
+            DDF ret=DDF(NULL).list();
+            DDFJanitor jret(ret);
+            for (vector<string>::const_iterator i = m_unsetHeaders.begin(); i!=m_unsetHeaders.end(); ++i) {
+                header = DDF(NULL).string(i->c_str());
+                ret.add(header);
+            }
+            out << ret;
+        }
 
         // Provides filter to exclude special config elements.
         short acceptNode(const DOMNode* node) const;
@@ -141,7 +153,9 @@ namespace {
         CredentialResolver* m_credResolver;
         vector<const XMLCh*> m_audiences;
 #endif
-        set<string> m_attributeIds;
+        set<string> m_remoteUsers;
+        mutable vector<string> m_unsetHeaders;
+        RWLock* m_unsetLock;
 
         // manage handler objects
         vector<Handler*> m_handlers;
@@ -386,7 +400,7 @@ XMLApplication::XMLApplication(
 #ifndef SHIBSP_LITE
         m_metadata(NULL), m_trust(NULL), m_attrExtractor(NULL), m_attrFilter(NULL), m_attrResolver(NULL), m_credResolver(NULL), m_partyDefault(NULL),
 #endif
-        m_sessionInitDefault(NULL), m_acsDefault(NULL)
+        m_sessionInitDefault(NULL), m_unsetLock(NULL), m_acsDefault(NULL)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("XMLApplication");
@@ -405,28 +419,55 @@ XMLApplication::XMLApplication(
 #endif
         XMLToolingConfig& xmlConf=XMLToolingConfig::getConfig();
 
-        m_hash=getId();
-        m_hash+=getString("entityID").second;
-        // TODO: some kind of non-hash method
-        //m_hash=samlConf.hashSHA1(m_hash.c_str(), true);
+        // This used to be an actual hash, but now it's just a hex-encode to avoid xmlsec.
+        static char DIGITS[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+        string tohash=getId();
+        tohash+=getString("entityID").second;
+        for (const char* ch = tohash.c_str(); *ch; ++ch) {
+            m_hash += (DIGITS[((unsigned char)(0xF0 & *ch)) >> 4 ]);
+            m_hash += (DIGITS[0x0F & *ch]);
+        }
 
-        pair<bool,const char*> attributes = getString("REMOTE_USER");
-        if (attributes.first) {
-            char* dup = strdup(attributes.second);
-            char* pos;
-            char* start = dup;
-            while (start && *start) {
-                while (*start && isspace(*start))
-                    start++;
-                if (!*start)
-                    break;
-                pos = strchr(start,' ');
-                if (pos)
-                    *pos=0;
-                m_attributeIds.insert(start);
-                start = pos ? pos+1 : NULL;
+        // Load attribute ID lists for REMOTE_USER and header clearing.
+        if (conf.isEnabled(SPConfig::InProcess)) {
+            pair<bool,const char*> attributes = getString("REMOTE_USER");
+            if (attributes.first) {
+                char* dup = strdup(attributes.second);
+                char* pos;
+                char* start = dup;
+                while (start && *start) {
+                    while (*start && isspace(*start))
+                        start++;
+                    if (!*start)
+                        break;
+                    pos = strchr(start,' ');
+                    if (pos)
+                        *pos=0;
+                    m_remoteUsers.insert(start);
+                    start = pos ? pos+1 : NULL;
+                }
+                free(dup);
             }
-            free(dup);
+
+            attributes = getString("unsetHeaders");
+            if (attributes.first) {
+                char* dup = strdup(attributes.second);
+                char* pos;
+                char* start = dup;
+                while (start && *start) {
+                    while (*start && isspace(*start))
+                        start++;
+                    if (!*start)
+                        break;
+                    pos = strchr(start,' ');
+                    if (pos)
+                        *pos=0;
+                    m_unsetHeaders.push_back(start);
+                    start = pos ? pos+1 : NULL;
+                }
+                free(dup);
+                m_unsetHeaders.push_back("Shib-Application-ID");
+            }
         }
 
         const PropertySet* sessions = getPropertySet("Sessions");
@@ -612,6 +653,21 @@ XMLApplication::XMLApplication(
                     log.crit("error building AttributeResolver: %s", ex.what());
                 }
             }
+
+            if (m_unsetHeaders.empty()) {
+                if (m_attrExtractor) {
+                    Locker extlock(m_attrExtractor);
+                    m_attrExtractor->getAttributeIds(m_unsetHeaders);
+                }
+                if (m_attrResolver) {
+                    Locker reslock(m_attrResolver);
+                    m_attrResolver->getAttributeIds(m_unsetHeaders);
+                }
+                if (m_base && m_unsetHeaders.empty())
+                    m_unsetHeaders.insert(m_unsetHeaders.end(), m_base->m_unsetHeaders.begin(), m_base->m_unsetHeaders.end());
+                else
+                    m_unsetHeaders.push_back("Shib-Application-ID");
+            }
         }
 
         if (conf.isEnabled(SPConfig::Credentials)) {
@@ -642,7 +698,21 @@ XMLApplication::XMLApplication(
                 child = XMLHelper::getNextSiblingElement(child,RelyingParty);
             }
         }
-#endif        
+#endif
+
+        // In process only, we need a shared lock around accessing the header clearing list.
+        if (!conf.isEnabled(SPConfig::OutOfProcess)) {
+            m_unsetLock = RWLock::create();
+        }
+        else if (!conf.isEnabled(SPConfig::InProcess)) {
+            ListenerService* listener = sp->getListenerService(false);
+            if (listener) {
+                string addr=string(getId()) + "::getHeaders::Application";
+                listener->regListener(addr.c_str(),this);
+            }
+            else
+                log.info("no ListenerService available, Application remoting disabled");
+        }
     }
     catch (exception&) {
         cleanup();
@@ -658,6 +728,12 @@ XMLApplication::XMLApplication(
 
 void XMLApplication::cleanup()
 {
+    ListenerService* listener=getServiceProvider().getListenerService(false);
+    if (listener && SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess) && !SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {
+        string addr=string(getId()) + "::getHeaders::Application";
+        listener->unregListener(addr.c_str(),this);
+    }
+    delete m_unsetLock;
     for_each(m_handlers.begin(),m_handlers.end(),xmltooling::cleanup<Handler>());
 #ifndef SHIBSP_LITE
     delete m_partyDefault;
@@ -783,6 +859,45 @@ const Handler* XMLApplication::getHandler(const char* path) const
     if (i!=m_handlerMap.end())
         return i->second;
     return m_base ? m_base->getHandler(path) : NULL;
+}
+
+void XMLApplication::clearAttributeHeaders(SPRequest& request) const
+{
+    if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
+        for (vector<string>::const_iterator i = m_unsetHeaders.begin(); i!=m_unsetHeaders.end(); ++i)
+            request.clearHeader(i->c_str());
+        return;
+    }
+
+    m_unsetLock->rdlock();
+    if (m_unsetHeaders.empty()) {
+        // No headers yet, so we have to request them from the remote half.
+        m_unsetLock->unlock();
+        m_unsetLock->wrlock();
+        if (m_unsetHeaders.empty()) {
+            SharedLock wrlock(m_unsetLock, false);
+            string addr=string(getId()) + "::getHeaders::Application";
+            DDF out,in = DDF(addr.c_str());
+            DDFJanitor jin(in),jout(out);
+            out = getServiceProvider().getListenerService()->send(in);
+            if (out.islist()) {
+                DDF header = out.first();
+                while (header.isstring()) {
+                    m_unsetHeaders.push_back(header.string());
+                    header = out.next();
+                }
+            }
+        }
+        else {
+            m_unsetLock->unlock();
+        }
+        m_unsetLock->rdlock();
+    }
+
+    // Now holding read lock.
+    SharedLock unsetLock(m_unsetLock, false);
+    for (vector<string>::const_iterator i = m_unsetHeaders.begin(); i!=m_unsetHeaders.end(); ++i)
+        request.clearHeader(i->c_str());
 }
 
 short XMLConfigImpl::acceptNode(const DOMNode* node) const

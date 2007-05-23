@@ -184,6 +184,10 @@ namespace shibsp {
 
         void resolveAttributes(ResolutionContext& ctx) const;
 
+        void getAttributeIds(vector<string>& attributes) const {
+            // Nothing to do, only the extractor would actually generate them.
+        }
+
     private:
         bool SAML1Query(QueryContext& ctx) const;
         bool SAML2Query(QueryContext& ctx) const;

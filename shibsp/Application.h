@@ -42,6 +42,7 @@ namespace shibsp {
     class SHIBSP_API Handler;
     class SHIBSP_API ServiceProvider;
     class SHIBSP_API SessionInitiator;
+    class SHIBSP_API SPRequest;
 
     /**
      * Interface to a Shibboleth Application instance.
@@ -154,6 +155,13 @@ namespace shibsp {
          * @return  a set of attribute IDs, or an empty set
          */
         virtual const std::set<std::string>& getRemoteUserAttributeIds() const=0;
+
+        /**
+         * Clears any headers that may be used to hold attributes after export.
+         *
+         * @param request   SP request to clear
+         */
+        virtual void clearAttributeHeaders(SPRequest& request) const=0;
 
         /**
          * Returns the default SessionInitiator when automatically requesting a session.

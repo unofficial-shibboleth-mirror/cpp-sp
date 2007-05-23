@@ -59,6 +59,13 @@ namespace shibsp {
             const xmltooling::XMLObject& xmlObject,
             std::multimap<std::string,Attribute*>& attributes
             ) const=0;
+
+        /**
+         * Populates an array with the set of Attribute IDs that might be generated.
+         *
+         * @param attributes    array to populate
+         */
+        virtual void getAttributeIds(std::vector<std::string>& attributes) const=0;
     };
 
     /**
