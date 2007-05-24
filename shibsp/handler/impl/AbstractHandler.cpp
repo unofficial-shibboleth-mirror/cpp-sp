@@ -152,7 +152,7 @@ void AbstractHandler::preserveRelayState(const Application& application, HTTPRes
                     StorageService* storage = application.getServiceProvider().getStorageService(mech.second);
                     if (storage) {
                         string rsKey;
-                        SAMLConfig::getConfig().generateRandomBytes(rsKey,20);
+                        SAMLConfig::getConfig().generateRandomBytes(rsKey,10);
                         rsKey = SAMLArtifact::toHex(rsKey);
                         storage->createString("RelayState", rsKey.c_str(), relayState.c_str(), time(NULL) + 600);
                         relayState = string(mech.second-3) + ':' + rsKey;
@@ -197,9 +197,10 @@ void AbstractHandler::recoverRelayState(const Application& application, HTTPRequ
 #ifndef SHIBSP_LITE
                     StorageService* storage = conf.getServiceProvider()->getStorageService(ssid.c_str());
                     if (storage) {
-                        if (storage->readString("RelayState",key,&relayState)>0) {
+                        ssid = key;
+                        if (storage->readString("RelayState",ssid.c_str(),&relayState)>0) {
                             if (clear)
-                                storage->deleteString("RelayState",key);
+                                storage->deleteString("RelayState",ssid.c_str());
                             return;
                         }
                         else

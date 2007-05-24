@@ -214,7 +214,7 @@ void RemotedHandler::setAddress(const char* address)
         throw ConfigurationException("Cannot register a remoting address twice for the same Handler.");
     m_address = address;
     SPConfig& conf = SPConfig::getConfig();
-    if (conf.isEnabled(SPConfig::OutOfProcess) && !conf.isEnabled(SPConfig::InProcess)) {
+    if (!conf.isEnabled(SPConfig::InProcess)) {
         ListenerService* listener = conf.getServiceProvider()->getListenerService(false);
         if (listener)
             listener->regListener(m_address.c_str(),this);

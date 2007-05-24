@@ -50,6 +50,7 @@
 # include "security/PKIXTrustEngine.h"
 # include <saml/SAMLConfig.h>
 # include <saml/binding/ArtifactMap.h>
+# include <saml/binding/SAMLArtifact.h>
 # include <saml/saml1/core/Assertions.h>
 # include <saml/saml2/metadata/ChainingMetadataProvider.h>
 # include <xmltooling/security/ChainingTrustEngine.h>
@@ -126,6 +127,7 @@ namespace {
         const Handler* getHandler(const char* path) const;
 
         void receive(DDF& in, ostream& out) {
+            // Only current function is to return the headers to clear.
             DDF header;
             DDF ret=DDF(NULL).list();
             DDFJanitor jret(ret);
@@ -222,7 +224,7 @@ namespace {
         DOMDocument* m_document;
     };
 
-    class SHIBSP_DLLLOCAL XMLConfig : public ServiceProvider, public ReloadableXMLFile
+    class SHIBSP_DLLLOCAL XMLConfig : public ServiceProvider, public ReloadableXMLFile, public Remoted
     {
     public:
         XMLConfig(const DOMElement* e) : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT".Config")),
@@ -258,6 +260,9 @@ namespace {
         pair<bool,int> getInt(const char* name, const char* ns=NULL) const {return m_impl->getInt(name,ns);}
         const PropertySet* getPropertySet(const char* name, const char* ns="urn:mace:shibboleth:2.0:native:sp:config") const {return m_impl->getPropertySet(name,ns);}
         const DOMElement* getElement() const {return m_impl->getElement();}
+
+        // Remoted
+        void receive(DDF& in, ostream& out);
 
         // ServiceProvider
 #ifndef SHIBSP_LITE
@@ -1042,6 +1047,11 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                 }
             }
 
+            if (m_outer->m_listener && conf.isEnabled(SPConfig::OutOfProcess) && !conf.isEnabled(SPConfig::InProcess)) {
+                m_outer->m_listener->regListener("set::RelayState",m_outer->m_listener);
+                m_outer->m_listener->regListener("get::RelayState",m_outer->m_listener);
+            }
+
             if (conf.isEnabled(SPConfig::Caching)) {
                 if (conf.isEnabled(SPConfig::OutOfProcess)) {
 #ifndef SHIBSP_LITE
@@ -1221,6 +1231,61 @@ XMLConfigImpl::~XMLConfigImpl()
     delete m_requestMapper;
     if (m_document)
         m_document->release();
+}
+
+void XMLConfig::receive(DDF& in, ostream& out)
+{
+#ifndef SHIBSP_LITE
+    if (!strcmp(in.name(), "get::RelayState")) {
+        const char* id = in["id"].string();
+        const char* key = in["key"].string();
+        if (!id || !key)
+            throw ListenerException("Required parameters missing for RelayState recovery.");
+
+        string relayState;
+        StorageService* storage = getStorageService(id);
+        if (storage) {
+            if (storage->readString("RelayState",key,&relayState)>0) {
+                if (in["clear"].integer())
+                    storage->deleteString("RelayState",key);
+            }
+        }
+        else {
+            Category::getInstance(SHIBSP_LOGCAT".ServiceProvider").error(
+                "Storage-backed RelayState with invalid StorageService ID (%s)", id
+                );
+        }
+
+        // Repack for return to caller.
+        DDF ret=DDF(NULL).string(relayState.c_str());
+        DDFJanitor jret(ret);
+        out << ret;
+    }
+    else if (!strcmp(in.name(), "set::RelayState")) {
+        const char* id = in["id"].string();
+        const char* value = in["value"].string();
+        if (!id || !value)
+            throw ListenerException("Required parameters missing for RelayState creation.");
+
+        string rsKey;
+        StorageService* storage = getStorageService(id);
+        if (storage) {
+            SAMLConfig::getConfig().generateRandomBytes(rsKey,20);
+            rsKey = SAMLArtifact::toHex(rsKey);
+            storage->createString("RelayState", rsKey.c_str(), value, time(NULL) + 600);
+        }
+        else {
+            Category::getInstance(SHIBSP_LOGCAT".ServiceProvider").error(
+                "Storage-backed RelayState with invalid StorageService ID (%s)", id
+                );
+        }
+
+        // Repack for return to caller.
+        DDF ret=DDF(NULL).string(rsKey.c_str());
+        DDFJanitor jret(ret);
+        out << ret;
+    }
+#endif
 }
 
 pair<bool,DOMElement*> XMLConfig::load()
