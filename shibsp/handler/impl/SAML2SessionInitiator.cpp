@@ -504,7 +504,7 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
                     httpResponse,
                     req.get(),
                     dest.get(),
-                    entityID,
+                    entity,
                     relayState.c_str(),
                     cred,
                     sigalg.second,
@@ -520,7 +520,7 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
     }
 
     // Unsigned request.
-    long ret = encoder->encode(httpResponse, req.get(), dest.get(), entityID, relayState.c_str());
+    long ret = encoder->encode(httpResponse, req.get(), dest.get(), entity, relayState.c_str());
     req.release();  // freed by encoder
     return make_pair(true,ret);
 #else
