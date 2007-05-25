@@ -182,6 +182,13 @@
 				Binding="urn:oasis:names:tc:SAML:1.0:profiles:browser-post"/>
 			<md:AssertionConsumerService Location="/SAML/Artifact" index="4"
 				Binding="urn:oasis:names:tc:SAML:1.0:profiles:artifact-01"/>
+
+			<!--
+			md:ArtifactResolutionService elements resolve artifacts issued when using the
+			SAML 2.0 HTTP-Artifact binding on outgoing messages, generally uses SOAP.
+			-->
+            <md:ArtifactResolutionService Location="/SOAP/Artifact" index="1"
+                Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP"/>
 			
 			<!--
 			md:SingleLogoutService elements are mostly a placeholder for 2.0, but a simple
@@ -208,7 +215,7 @@
 			styleSheet="/shibboleth-sp/main.css"/>
 		
 		<!-- Configure handling of outgoing messages and SOAP client authentication. -->
-		<DefaultRelyingParty authType="TLS" signRequests="false" encryptRequests="true">
+		<DefaultRelyingParty authType="TLS" signRequests="false" encryptRequests="true" artifactEndpointIndex="1">
 			<!-- Uncomment and modify to tweak settings for specific IdPs or groups. -->
 			<!--
 			<RelyingParty Name="SpecialFederation" keyName="SpecialKey"/>

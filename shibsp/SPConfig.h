@@ -208,6 +208,11 @@ namespace shibsp {
 #endif
 
         /**
+         * Manages factories for Handler plugins that implement ArtifactResolutionService functionality.
+         */
+        xmltooling::PluginManager< Handler,std::string,std::pair<const xercesc::DOMElement*,const char*> > ArtifactResolutionServiceManager;
+
+        /**
          * Manages factories for Handler plugins that implement AssertionConsumerService functionality.
          */
         xmltooling::PluginManager< Handler,std::string,std::pair<const xercesc::DOMElement*,const char*> > AssertionConsumerServiceManager;

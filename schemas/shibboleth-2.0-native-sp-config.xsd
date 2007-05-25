@@ -401,9 +401,10 @@
 			<documentation>Container for specifying protocol handlers and session policy</documentation>
 		</annotation>
 		<complexType>
-			<choice maxOccurs="unbounded">
+			<choice minOccurs="0" maxOccurs="unbounded">
 				<element ref="conf:SessionInitiator"/>
 				<element ref="md:AssertionConsumerService"/>
+				<element ref="md:ArtifactResolutionService"/>
 				<element ref="md:SingleLogoutService"/>
 				<element ref="md:ManageNameIDService"/>
 				<element name="Handler">
@@ -459,6 +460,7 @@
 					<attribute name="URL" type="anyURI"/>
 					<attribute name="outgoingBindings" type="conf:listOfURIs"/>
 					<attribute name="template" type="anyURI"/>
+					<attribute name="postArtifact" type="boolean"/>
 					<attribute name="acsByIndex" type="boolean"/>
 					<anyAttribute namespace="##any" processContents="lax"/>
 				</restriction>
@@ -516,6 +518,7 @@
 		<attribute name="encryptRequests" type="boolean"/>
 		<attribute name="encryptionAlg" type="anyURI"/>
 		<attribute name="keyName" type="conf:string"/>
+		<attribute name="artifactEndpointIndex" type="unsignedShort"/>
 	</attributeGroup>
 	
 	<element name="SecurityPolicies">

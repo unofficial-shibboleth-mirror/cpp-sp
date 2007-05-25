@@ -52,10 +52,12 @@
 # include <saml/binding/ArtifactMap.h>
 # include <saml/binding/SAMLArtifact.h>
 # include <saml/saml1/core/Assertions.h>
+# include <saml/saml2/binding/SAML2ArtifactType0004.h>
 # include <saml/saml2/metadata/ChainingMetadataProvider.h>
 # include <xmltooling/security/ChainingTrustEngine.h>
 #include <xmltooling/util/ReplayCache.h>
 using namespace opensaml::saml2;
+using namespace opensaml::saml2p;
 using namespace opensaml::saml2md;
 using namespace opensaml;
 #endif
@@ -75,7 +77,7 @@ namespace {
     static vector<const Handler*> g_noHandlers;
 
     // Application configuration wrapper
-    class SHIBSP_DLLLOCAL XMLApplication : public virtual Application, public Remoted, public DOMPropertySet, public DOMNodeFilter
+    class SHIBSP_DLLLOCAL XMLApplication : public Application, public Remoted, public DOMPropertySet, public DOMNodeFilter
     {
     public:
         XMLApplication(const ServiceProvider*, const DOMElement* e, const XMLApplication* base=NULL);
@@ -87,6 +89,19 @@ namespace {
         const char* getHash() const {return m_hash.c_str();}
 
 #ifndef SHIBSP_LITE
+        SAMLArtifact* generateSAML1Artifact(const EntityDescriptor* relyingParty) const {
+            throw ConfigurationException("No support for SAML 1.x artifact generation.");
+        }
+        SAML2Artifact* generateSAML2Artifact(const EntityDescriptor* relyingParty) const {
+            pair<bool,int> index = make_pair(false,0);
+            const PropertySet* props = getRelyingParty(relyingParty);
+            if (props)
+                index = getInt("artifactEndpointIndex");
+            if (!index.first)
+                index = getArtifactEndpointIndex();
+            return new SAML2ArtifactType0004(SAMLConfig::getConfig().hashSHA1(getString("entityID").second),index.first ? index.second : 1);
+        }
+
         MetadataProvider* getMetadataProvider(bool required=true) const {
             if (required && !m_base && !m_metadata)
                 throw ConfigurationException("No MetadataProvider available.");
@@ -154,6 +169,14 @@ namespace {
         AttributeResolver* m_attrResolver;
         CredentialResolver* m_credResolver;
         vector<const XMLCh*> m_audiences;
+
+        // RelyingParty properties
+        DOMPropertySet* m_partyDefault;
+#ifdef HAVE_GOOD_STL
+        map<xstring,PropertySet*> m_partyMap;
+#else
+        map<const XMLCh*,PropertySet*> m_partyMap;
+#endif
 #endif
         set<string> m_remoteUsers;
         mutable vector<string> m_unsetHeaders;
@@ -185,15 +208,13 @@ namespace {
         // maps unique ID strings to session initiators
         map<string,const SessionInitiator*> m_sessionInitMap;
 
-#ifndef SHIBSP_LITE
-        // RelyingParty properties
-        DOMPropertySet* m_partyDefault;
-#ifdef HAVE_GOOD_STL
-        map<xstring,PropertySet*> m_partyMap;
-#else
-        map<const XMLCh*,PropertySet*> m_partyMap;
-#endif
-#endif
+        // pointer to default artifact resolution service
+        const Handler* m_artifactResolutionDefault;
+
+        pair<bool,int> getArtifactEndpointIndex() const {
+            if (m_artifactResolutionDefault) return m_artifactResolutionDefault->getInt("index");
+            return m_base ? m_base->getArtifactEndpointIndex() : make_pair(false,0);
+        }
     };
 
     // Top-level configuration implementation
@@ -346,6 +367,7 @@ namespace {
     static const XMLCh _AttributeFilter[] =     UNICODE_LITERAL_15(A,t,t,r,i,b,u,t,e,F,i,l,t,e,r);
     static const XMLCh _AttributeResolver[] =   UNICODE_LITERAL_17(A,t,t,r,i,b,u,t,e,R,e,s,o,l,v,e,r);
     static const XMLCh _AssertionConsumerService[] = UNICODE_LITERAL_24(A,s,s,e,r,t,i,o,n,C,o,n,s,u,m,e,r,S,e,r,v,i,c,e);
+    static const XMLCh _ArtifactResolutionService[] =UNICODE_LITERAL_25(A,r,t,i,f,a,c,t,R,e,s,o,l,u,t,i,o,n,S,e,r,v,i,c,e);
     static const XMLCh _Audience[] =            UNICODE_LITERAL_8(A,u,d,i,e,n,c,e);
     static const XMLCh Binding[] =              UNICODE_LITERAL_7(B,i,n,d,i,n,g);
     static const XMLCh _CredentialResolver[] =  UNICODE_LITERAL_18(C,r,e,d,e,n,t,i,a,l,R,e,s,o,l,v,e,r);
@@ -403,9 +425,11 @@ XMLApplication::XMLApplication(
     const XMLApplication* base
     ) : m_sp(sp), m_base(base),
 #ifndef SHIBSP_LITE
-        m_metadata(NULL), m_trust(NULL), m_attrExtractor(NULL), m_attrFilter(NULL), m_attrResolver(NULL), m_credResolver(NULL), m_partyDefault(NULL),
+        m_metadata(NULL), m_trust(NULL),
+        m_attrExtractor(NULL), m_attrFilter(NULL), m_attrResolver(NULL),
+        m_credResolver(NULL), m_partyDefault(NULL),
 #endif
-        m_sessionInitDefault(NULL), m_unsetLock(NULL), m_acsDefault(NULL)
+        m_unsetLock(NULL), m_acsDefault(NULL), m_sessionInitDefault(NULL), m_artifactResolutionDefault(NULL)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("XMLApplication");
@@ -479,7 +503,7 @@ XMLApplication::XMLApplication(
 
         // Process handlers.
         Handler* handler=NULL;
-        bool hardACS=false, hardSessionInit=false;
+        bool hardACS=false, hardSessionInit=false, hardArt=false;
         const DOMElement* child = sessions ? XMLHelper::getFirstChildElement(sessions->getElement()) : NULL;
         while (child) {
             try {
@@ -537,6 +561,27 @@ XMLApplication::XMLApplication(
                             m_sessionInitDefault=sihandler;
                     }
                 }
+                else if (XMLString::equals(child->getLocalName(),_ArtifactResolutionService)) {
+                    auto_ptr_char bindprop(child->getAttributeNS(NULL,Binding));
+                    if (!bindprop.get() || !*(bindprop.get())) {
+                        log.warn("md:ArtifactResolutionService element has no Binding attribute, skipping it...");
+                        child = XMLHelper::getNextSiblingElement(child);
+                        continue;
+                    }
+                    handler=conf.ArtifactResolutionServiceManager.newPlugin(bindprop.get(),make_pair(child, getId()));
+                    
+                    if (!hardArt) {
+                        pair<bool,bool> defprop=handler->getBool("isDefault");
+                        if (defprop.first) {
+                            if (defprop.second) {
+                                hardArt=true;
+                                m_artifactResolutionDefault=handler;
+                            }
+                        }
+                        else if (!m_artifactResolutionDefault)
+                            m_artifactResolutionDefault=handler;
+                    }
+                }
                 else if (XMLString::equals(child->getLocalName(),_SingleLogoutService)) {
                     auto_ptr_char bindprop(child->getAttributeNS(NULL,Binding));
                     if (!bindprop.get() || !*(bindprop.get())) {
@@ -565,7 +610,6 @@ XMLApplication::XMLApplication(
                     handler=conf.HandlerManager.newPlugin(type.get(),make_pair(child, getId()));
                 }
 
-                // Save off the objects after giving the property set to the handler for its use.
                 m_handlers.push_back(handler);
 
                 // Insert into location map.
@@ -762,6 +806,7 @@ short XMLApplication::acceptNode(const DOMNode* node) const
     if (XMLString::equals(name,_Application) ||
         XMLString::equals(name,_Audience) ||
         XMLString::equals(name,_AssertionConsumerService) ||
+        XMLString::equals(name,_ArtifactResolutionService) ||
         XMLString::equals(name,_SingleLogoutService) ||
         XMLString::equals(name,_ManageNameIDService) ||
         XMLString::equals(name,_SessionInitiator) ||

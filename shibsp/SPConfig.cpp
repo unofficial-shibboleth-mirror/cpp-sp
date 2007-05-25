@@ -194,6 +194,7 @@ void SPInternalConfig::term()
     setArtifactResolver(NULL);
 #endif
 
+    ArtifactResolutionServiceManager.deregisterFactories();
     AssertionConsumerServiceManager.deregisterFactories();
     ManageNameIDServiceManager.deregisterFactories();
     SessionInitiatorManager.deregisterFactories();

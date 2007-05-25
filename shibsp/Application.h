@@ -27,6 +27,7 @@
 
 #include <set>
 #ifndef SHIBSP_LITE
+# include <saml/binding/MessageEncoder.h>
 # include <saml/saml2/metadata/MetadataProvider.h>
 # include <xmltooling/security/CredentialResolver.h>
 # include <xmltooling/security/TrustEngine.h>
@@ -51,6 +52,9 @@ namespace shibsp {
      * of session management and policy.
      */
     class SHIBSP_API Application : public virtual PropertySet
+#ifndef SHIBSP_LITE
+        ,public virtual opensaml::MessageEncoder::ArtifactGenerator
+#endif
     {
         MAKE_NONCOPYABLE(Application);
     protected:
@@ -177,7 +181,7 @@ namespace shibsp {
          * @return the designated SessionInitiator, or NULL
          */
         virtual const SessionInitiator* getSessionInitiatorById(const char* id) const=0;
-        
+
         /**
          * Returns the default AssertionConsumerService Handler
          * for use in AuthnRequest messages.

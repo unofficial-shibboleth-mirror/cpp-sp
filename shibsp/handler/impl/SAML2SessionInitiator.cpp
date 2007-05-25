@@ -32,7 +32,6 @@
 
 #ifndef SHIBSP_LITE
 # include <saml/SAMLConfig.h>
-# include <saml/binding/MessageEncoder.h>
 # include <saml/saml2/core/Protocols.h>
 # include <saml/saml2/metadata/EndpointManager.h>
 # include <saml/saml2/metadata/Metadata.h>
@@ -144,7 +143,7 @@ SAML2SessionInitiator::SAML2SessionInitiator(const DOMElement* e, const char* ap
                 auto_ptr_char b(start);
                 MessageEncoder * encoder = SAMLConfig::getConfig().MessageEncoderManager.newPlugin(b.get(),e);
                 m_encoders[start] = encoder;
-                m_log.info("supporting outgoing binding (%s)", b.get());
+                m_log.debug("supporting outgoing binding (%s)", b.get());
             }
             catch (exception& ex) {
                 m_log.error("error building MessageEncoder: %s", ex.what());
@@ -506,6 +505,7 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
                     dest.get(),
                     entity,
                     relayState.c_str(),
+                    &app,
                     cred,
                     sigalg.second,
                     relyingParty->getXMLString("digestAlg").second
@@ -520,7 +520,7 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
     }
 
     // Unsigned request.
-    long ret = encoder->encode(httpResponse, req.get(), dest.get(), entity, relayState.c_str());
+    long ret = encoder->encode(httpResponse, req.get(), dest.get(), entity, relayState.c_str(), &app);
     req.release();  // freed by encoder
     return make_pair(true,ret);
 #else
