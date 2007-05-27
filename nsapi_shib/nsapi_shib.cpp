@@ -182,7 +182,7 @@ class ShibTargetNSAPI : public AbstractSPRequest
   string m_uri;
   mutable string m_body;
   mutable bool m_gotBody;
-  vector<string> m_certs;
+  mutable vector<string> m_certs;
 
 public:
   ShibTargetNSAPI(pblock* pb, ::Session* sn, Request* rq) : m_gotBody(false) {
@@ -344,6 +344,11 @@ public:
   long returnDecline() { return REQ_NOACTION; }
   long returnOK() { return REQ_PROCEED; }
   const vector<string>& getClientCertificates() const {
+      if (m_certs.empty()) {
+          const char* cert = pblock_findval("auth-cert", m_rq->vars);
+          if (cert)
+              m_certs.push_back(cert);
+      }
       return m_certs;
   }
 
