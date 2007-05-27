@@ -214,8 +214,9 @@
 			logoLocation="/shibboleth-sp/logo.jpg"
 			styleSheet="/shibboleth-sp/main.css"/>
 		
-		<!-- Configure handling of outgoing messages and SOAP client authentication. -->
-		<DefaultRelyingParty authType="TLS" signRequests="false" encryptRequests="true" artifactEndpointIndex="1">
+		<!-- Configure handling of outgoing messages and SOAP authentication. -->
+		<DefaultRelyingParty authType="TLS" artifactEndpointIndex="1"
+			signRequests="true" encryptRequests="true" signResponses="true" encryptResponses="true">
 			<!-- Uncomment and modify to tweak settings for specific IdPs or groups. -->
 			<!--
 			<RelyingParty Name="SpecialFederation" keyName="SpecialKey"/>

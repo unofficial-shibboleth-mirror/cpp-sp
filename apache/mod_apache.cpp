@@ -271,7 +271,7 @@ class ShibTargetApache : public AbstractSPRequest
 {
   mutable string m_body;
   mutable bool m_gotBody;
-  vector<string> m_certs;
+  mutable vector<string> m_certs;
 
 public:
   request_rec* m_req;
@@ -419,13 +419,26 @@ public:
         in.read(buf,1024);
         ap_rwrite(buf,in.gcount(),m_req);
     }
-    return ((status==XMLTOOLING_HTTP_STATUS_OK) ? DONE : status);
+    if (status!=XMLTOOLING_HTTP_STATUS_OK)
+        m_req->status = status;
+    return DONE;
   }
   long sendRedirect(const char* url) {
     ap_table_set(m_req->headers_out, "Location", url);
     return REDIRECT;
   }
   const vector<string>& getClientCertificates() const {
+      if (m_certs.empty()) {
+          const char* cert = ap_table_get(m_req->subprocess_env, "SSL_CLIENT_CERT");
+          if (cert)
+              m_certs.push_back(cert);
+          int i = 0;
+          do {
+              cert = ap_table_get(m_req->subprocess_env, ap_psprintf(m_req->pool, "SSL_CLIENT_CERT_CHAIN_%d", i++));
+              if (cert)
+                  m_certs.push_back(cert);
+          } while (cert);
+      }
       return m_certs;
   }
   long returnDecline(void) { return DECLINED; }

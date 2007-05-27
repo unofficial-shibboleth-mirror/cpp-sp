@@ -34,6 +34,7 @@
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/XMLConstants.h>
 #include <xmltooling/util/XMLHelper.h>
+#include <xercesc/util/Base64.hpp>
 #include <xercesc/util/XMLUniDefs.hpp>
 
 #include <set>
@@ -93,6 +94,7 @@ namespace {
     SPConfig* g_Config = NULL;
     map<string,site_t> g_Sites;
     bool g_bNormalizeRequest = true;
+    vector<string> g_NoCerts;
 }
 
 BOOL LogEvent(
@@ -191,7 +193,7 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
     // Access the implementation-specifics for site mappings.
     ServiceProvider* sp=g_Config->getServiceProvider();
     xmltooling::Locker locker(sp);
-    const PropertySet* props=sp->getPropertySet("Local");
+    const PropertySet* props=sp->getPropertySet("InProcess");
     if (props) {
         const DOMElement* impl=XMLHelper::getFirstChildElement(props->getElement(),Implementation);
         if (impl && (impl=XMLHelper::getFirstChildElement(impl,ISAPI))) {
@@ -340,7 +342,6 @@ class ShibTargetIsapiF : public AbstractSPRequest
   PHTTP_FILTER_CONTEXT m_pfc;
   PHTTP_FILTER_PREPROC_HEADERS m_pn;
   map<string,string> m_headers;
-  vector<string> m_certs;
   int m_port;
   string m_scheme,m_hostname,m_uri;
   mutable string m_remote_addr,m_content_type,m_method;
@@ -503,7 +504,7 @@ public:
   }
 
   const vector<string>& getClientCertificates() const {
-      return m_certs;
+      return g_NoCerts;
   }
   
   // The filter never processes the POST, so stub these methods.
@@ -616,12 +617,12 @@ class ShibTargetIsapiE : public AbstractSPRequest
 {
   LPEXTENSION_CONTROL_BLOCK m_lpECB;
   map<string,string> m_headers;
-  vector<string> m_certs;
+  mutable vector<string> m_certs;
   mutable string m_body;
   mutable bool m_gotBody;
   int m_port;
   string m_scheme,m_hostname,m_uri;
-  mutable string m_remote_addr;
+  mutable string m_remote_addr,m_remote_user;
   
 public:
   ShibTargetIsapiE(LPEXTENSION_CONTROL_BLOCK lpECB, const site_t& site) : m_lpECB(lpECB), m_gotBody(false) {
@@ -717,6 +718,15 @@ public:
   long getContentLength() const {
       return m_lpECB->cbTotalBytes;
   }
+  string getRemoteUser() const {
+    if (m_remote_user.empty()) {
+        dynabuf var(16);
+        GetServerVariable(m_lpECB, "REMOTE_USER", var, 32, false);
+        if (!var.empty())
+            m_remote_user = var;
+    }
+    return m_remote_user;
+  }
   string getRemoteAddr() const {
     if (m_remote_addr.empty()) {
         dynabuf var(16);
@@ -726,7 +736,7 @@ public:
     }
     return m_remote_addr;
   }
-  void log(SPLogLevel level, const string& msg) {
+  void log(SPLogLevel level, const string& msg) const {
       AbstractSPRequest::log(level,msg);
       if (level >= SPError)
           LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, msg.c_str());
@@ -826,6 +836,22 @@ public:
   }
 
   const vector<string>& getClientCertificates() const {
+      if (m_certs.empty()) {
+        char CertificateBuf[8192];
+        CERT_CONTEXT_EX ccex;
+        ccex.cbAllocated = sizeof(CertificateBuf);
+        ccex.CertContext.pbCertEncoded = (BYTE*)CertificateBuf;
+        DWORD dwSize = sizeof(ccex);
+
+        if (m_lpECB->ServerSupportFunction(m_lpECB->ConnID, HSE_REQ_GET_CERT_INFO_EX, (LPVOID)&ccex, (LPDWORD)dwSize, NULL)) {
+            if (ccex.CertContext.cbCertEncoded) {
+                unsigned int outlen;
+                XMLByte* serialized = Base64::encode(reinterpret_cast<XMLByte*>(CertificateBuf), ccex.CertContext.cbCertEncoded, &outlen);
+                m_certs.push_back(reinterpret_cast<char*>(serialized));
+                XMLString::release(&serialized);
+            }
+        }
+      }
       return m_certs;
   }
 
@@ -833,7 +859,6 @@ public:
   virtual void clearHeader(const char* name) { throw runtime_error("clearHeader not implemented"); }
   virtual void setHeader(const char* name, const char* value) { throw runtime_error("setHeader not implemented"); }
   virtual void setRemoteUser(const char* user) { throw runtime_error("setRemoteUser not implemented"); }
-  virtual string getRemoteUser() const { throw runtime_error("getRemoteUser not implemented"); }
 };
 
 extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)

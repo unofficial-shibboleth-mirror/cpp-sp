@@ -513,9 +513,11 @@
 		<attribute name="authUsername" type="conf:string"/>
 		<attribute name="authPassword" type="conf:string"/>
 		<attribute name="signRequests" type="boolean"/>
+		<attribute name="signResponses" type="boolean"/>
 		<attribute name="signatureAlg" type="anyURI"/>
 		<attribute name="digestAlg" type="anyURI"/>
 		<attribute name="encryptRequests" type="boolean"/>
+		<attribute name="encryptResponses" type="boolean"/>
 		<attribute name="encryptionAlg" type="anyURI"/>
 		<attribute name="keyName" type="conf:string"/>
 		<attribute name="artifactEndpointIndex" type="unsignedShort"/>

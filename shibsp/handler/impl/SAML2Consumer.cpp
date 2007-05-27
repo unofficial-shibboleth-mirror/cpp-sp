@@ -59,7 +59,7 @@ namespace shibsp {
     {
     public:
         SAML2Consumer(const DOMElement* e, const char* appId)
-            : AssertionConsumerService(e, appId, Category::getInstance(SHIBSP_LOGCAT".SAML2")) {
+            : AssertionConsumerService(e, appId, Category::getInstance(SHIBSP_LOGCAT".SAML2SSO")) {
         }
         virtual ~SAML2Consumer() {}
         

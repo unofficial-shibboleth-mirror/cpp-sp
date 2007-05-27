@@ -470,6 +470,10 @@
 						>
 					</File>
 					<File
+						RelativePath=".\handler\impl\SAML2ArtifactResolution.cpp"
+						>
+					</File>
+					<File
 						RelativePath=".\handler\impl\SAML2Consumer.cpp"
 						>
 					</File>

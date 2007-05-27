@@ -48,12 +48,10 @@ using namespace log4cpp;
 using namespace std;
 
 AssertionConsumerService::AssertionConsumerService(const DOMElement* e, const char* appId, Category& log)
-    : AbstractHandler(e, log),
+    : AbstractHandler(e, log)
 #ifndef SHIBSP_LITE
-        m_decoder(NULL), m_role(samlconstants::SAML20MD_NS, opensaml::saml2md::IDPSSODescriptor::LOCAL_NAME),
+        ,m_decoder(NULL), m_role(samlconstants::SAML20MD_NS, opensaml::saml2md::IDPSSODescriptor::LOCAL_NAME)
 #endif
-        m_configNS(SHIB2SPCONFIG_NS)
-        
 {
     string address(appId);
     address += getString("Location").second;

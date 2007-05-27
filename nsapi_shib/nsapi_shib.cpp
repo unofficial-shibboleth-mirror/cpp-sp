@@ -255,7 +255,7 @@ public:
   string getRemoteAddr() const {
     return pblock_findval("ip", m_sn->client);
   }
-  void log(SPLogLevel level, const string& msg) {
+  void log(SPLogLevel level, const string& msg) const {
     AbstractSPRequest::log(level,msg);
     if (level>=SPError)
         log_error(LOG_FAILURE, "nsapi_shib", m_sn, m_rq, const_cast<char*>(msg.c_str()));

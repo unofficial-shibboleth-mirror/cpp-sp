@@ -27,6 +27,7 @@
 #include "SPRequest.h"
 #include "handler/AbstractHandler.h"
 #include "remoting/ListenerService.h"
+#include "util/SPConstants.h"
 
 #ifndef SHIBSP_LITE
 # include <saml/SAMLConfig.h>
@@ -53,6 +54,7 @@ using namespace std;
 namespace shibsp {
     SHIBSP_DLLLOCAL PluginManager<Handler,string,pair<const DOMElement*,const char*>>::Factory SAML1ConsumerFactory;
     SHIBSP_DLLLOCAL PluginManager<Handler,string,pair<const DOMElement*,const char*>>::Factory SAML2ConsumerFactory;
+    SHIBSP_DLLLOCAL PluginManager<Handler,string,pair<const DOMElement*,const char*>>::Factory SAML2ArtifactResolutionFactory;
 };
 
 void SHIBSP_API shibsp::registerHandlers()
@@ -64,11 +66,13 @@ void SHIBSP_API shibsp::registerHandlers()
     conf.AssertionConsumerServiceManager.registerFactory(SAML20_BINDING_HTTP_ARTIFACT, SAML2ConsumerFactory);
     conf.AssertionConsumerServiceManager.registerFactory(SAML20_BINDING_HTTP_POST, SAML2ConsumerFactory);
     conf.AssertionConsumerServiceManager.registerFactory(SAML20_BINDING_HTTP_POST_SIMPLESIGN, SAML2ConsumerFactory);
+
+    conf.ArtifactResolutionServiceManager.registerFactory(SAML20_BINDING_SOAP, SAML2ArtifactResolutionFactory);
 }
 
 AbstractHandler::AbstractHandler(
     const DOMElement* e, log4cpp::Category& log, DOMNodeFilter* filter, const map<string,string>* remapper
-    ) : m_log(log) {
+    ) : m_log(log), m_configNS(shibspconstants::SHIB2SPCONFIG_NS) {
     load(e,log,filter,remapper);
 }
 
@@ -119,6 +123,27 @@ void AbstractHandler::checkError(const XMLObject* response) const
             }
         }
     }
+}
+
+void AbstractHandler::prepareResponse(saml2p::StatusResponseType& response, const XMLCh* code, const XMLCh* subcode, const char* msg) const
+{
+    saml2p::Status* status = saml2p::StatusBuilder::buildStatus();
+    saml2p::StatusCode* scode = saml2p::StatusCodeBuilder::buildStatusCode();
+    status->setStatusCode(scode);
+    scode->setValue(code);
+    if (subcode) {
+        saml2p::StatusCode* ssubcode = saml2p::StatusCodeBuilder::buildStatusCode();
+        scode->setStatusCode(ssubcode);
+        ssubcode->setValue(subcode);
+    }
+    if (msg) {
+        pair<bool,bool> flag = getBool("detailedErrors", m_configNS.get());
+        auto_ptr_XMLCh widemsg((flag.first && flag.second) ? msg : "Error processing request.");
+        saml2p::StatusMessage* sm = saml2p::StatusMessageBuilder::buildStatusMessage();
+        status->setStatusMessage(sm);
+        sm->setMessage(widemsg.get());
+    }
+    response.setStatus(status);
 }
 #endif
 

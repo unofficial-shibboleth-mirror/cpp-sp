@@ -107,6 +107,7 @@ common_sources = \
 	handler/impl/RemotedHandler.cpp \
 	handler/impl/SAML1Consumer.cpp \
 	handler/impl/SAML2Consumer.cpp \
+	handler/impl/SAML2ArtifactResolution.cpp \
 	handler/impl/SAML2SessionInitiator.cpp \
 	handler/impl/SAMLDSSessionInitiator.cpp \
 	handler/impl/SessionInitiator.cpp \

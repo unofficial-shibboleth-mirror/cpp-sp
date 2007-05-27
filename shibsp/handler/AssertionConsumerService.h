@@ -137,7 +137,6 @@ namespace shibsp {
         opensaml::MessageDecoder* m_decoder;
         xmltooling::QName m_role;
 #endif
-        xmltooling::auto_ptr_char m_configNS;
     };
 
 #if defined (_MSC_VER)

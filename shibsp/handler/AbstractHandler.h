@@ -27,7 +27,9 @@
 #include <shibsp/util/DOMPropertySet.h>
 
 #include <log4cpp/Category.hh>
-
+#ifndef SHIBSP_LITE
+# include <saml/saml2/core/Protocols.h>
+#endif
 #include <xmltooling/XMLObject.h>
 #include <xmltooling/io/HTTPRequest.h>
 #include <xmltooling/io/HTTPResponse.h>
@@ -72,6 +74,17 @@ namespace shibsp {
          * @param response      a response message of some known protocol
          */
         virtual void checkError(const xmltooling::XMLObject* response) const;
+
+        /**
+         * Prepares Status information in a SAML 2.0 response.
+         * 
+         * @param response  a SAML 2.0 response message
+         * @param code      SAML status code
+         * @param ex        optional message to pass back
+         */
+        void prepareResponse(
+            opensaml::saml2p::StatusResponseType& response, const XMLCh* code, const XMLCh* subcode=NULL, const char* msg=NULL
+            ) const;
 #endif
 
         /**
@@ -106,6 +119,9 @@ namespace shibsp {
         /** Logging object. */
         log4cpp::Category& m_log;
         
+        /** Configuration namespace for custom properties. */
+        xmltooling::auto_ptr_char m_configNS;
+
     public:
         virtual ~AbstractHandler() {}
     };

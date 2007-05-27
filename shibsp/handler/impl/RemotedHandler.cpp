@@ -153,11 +153,15 @@ std::vector<const char*>::size_type RemotedRequest::getParameters(const char* na
 const std::vector<XSECCryptoX509*>& RemotedRequest::getClientCertificates() const
 {
     if (m_certs.empty()) {
-        DDF cert = m_input["certificates"].first();
-        while (cert.isstring()) {
+        DDF certs = m_input["certificates"];
+        DDF cert = certs.first();
+        while (cert.string()) {
             try {
                 auto_ptr<XSECCryptoX509> x509(XSECPlatformUtils::g_cryptoProvider->X509());
-                x509->loadX509Base64Bin(cert.string(), cert.strlen());
+                if (strstr(cert.string(), "BEGIN"))
+                    x509->loadX509PEM(cert.string(), cert.strlen());
+                else
+                    x509->loadX509Base64Bin(cert.string(), cert.strlen());
                 m_certs.push_back(x509.release());
             }
             catch(XSECException& e) {
@@ -167,7 +171,7 @@ const std::vector<XSECCryptoX509*>& RemotedRequest::getClientCertificates() cons
             catch(XSECCryptoException& e) {
                 Category::getInstance(SHIBSP_LOGCAT".SPRequest").error("XML-Security exception loading client certificate: %s", e.getMsg());
             }
-            cert = cert.next();
+            cert = certs.next();
         }
     }
     return m_certs;
@@ -285,10 +289,16 @@ DDF RemotedHandler::wrap(const SPRequest& request, const vector<string>* headers
 pair<bool,long> RemotedHandler::unwrap(SPRequest& request, DDF& out) const
 {
     DDF h = out["headers"];
-    h = h.first();
-    while (h.isstring()) {
-        request.setResponseHeader(h.name(), h.string());
-        h = h.next();
+    DDF hdr = h.first();
+    while (hdr.isstring()) {
+#ifdef HAVE_STRCASECMP
+        if (!strcasecmp(hdr.name(), "Content-Type"))
+#else
+        if (!stricmp(hdr.name(), "Content-Type"))
+#endif
+            request.setContentType(hdr.string());
+        request.setResponseHeader(hdr.name(), hdr.string());
+        hdr = h.next();
     }
     h = out["redirect"];
     if (h.isstring())

@@ -63,7 +63,7 @@ namespace shibsp {
     {
     public:
         SAML1Consumer(const DOMElement* e, const char* appId)
-                : AssertionConsumerService(e, appId, Category::getInstance(SHIBSP_LOGCAT".SAML1")) {
+                : AssertionConsumerService(e, appId, Category::getInstance(SHIBSP_LOGCAT".SAML1SSO")) {
 #ifndef SHIBSP_LITE
             m_post = XMLString::equals(getString("Binding").second, samlconstants::SAML1_PROFILE_BROWSER_POST);
 #endif
