@@ -57,7 +57,7 @@ namespace shibsp {
 
         const Application& getApplication() const;
         
-        Session* getSession() const;
+        Session* getSession(bool checkTimeout=true) const;
 
         const char* getRequestURL() const;
         

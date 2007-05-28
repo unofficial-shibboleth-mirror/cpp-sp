@@ -260,7 +260,7 @@ pair<bool,long> ServiceProvider::doAuthorization(SPRequest& request) const
         if (settings.second) {
             const Session* session = NULL;
             try {
-                session = request.getSession();
+                session = request.getSession(false);
             }
             catch (exception& e) {
                 request.log(SPRequest::SPWarn, string("unable to obtain session to pass to access control provider: ") + e.what());
@@ -314,7 +314,7 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
 
         const Session* session = NULL;
         try {
-            session = request.getSession();
+            session = request.getSession(false);
         }
         catch (exception& e) {
             request.log(SPRequest::SPWarn, string("unable to obtain session to export to request: ") +  e.what());

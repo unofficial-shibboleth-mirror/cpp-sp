@@ -155,7 +155,7 @@ namespace shibsp {
             const vector<const Assertion*>* tokens=NULL,
             const multimap<string,Attribute*>* attributes=NULL
             );
-        Session* find(const char* key, const Application& application, const char* client_addr=NULL, time_t timeout=0);
+        Session* find(const char* key, const Application& application, const char* client_addr=NULL, time_t* timeout=NULL);
         void remove(const char* key, const Application& application, const char* client_addr);
 
         Category& m_log;
@@ -579,7 +579,7 @@ string SSCache::insert(
     return key.get();
 }
 
-Session* SSCache::find(const char* key, const Application& application, const char* client_addr, time_t timeout)
+Session* SSCache::find(const char* key, const Application& application, const char* client_addr, time_t* timeout)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("find");
@@ -628,7 +628,7 @@ Session* SSCache::find(const char* key, const Application& application, const ch
     lastAccess -= m_cacheTimeout;   // adjusts it back to the last time the record's timestamp was touched
     time_t now=time(NULL);
     
-    if (timeout > 0 && now - lastAccess >= timeout) {
+    if (timeout && *timeout > 0 && now - lastAccess >= *timeout) {
         m_log.info("session timed out (ID: %s)", key);
         remove(key, application, client_addr);
         RetryableProfileException ex("Your session has expired, and you must re-authenticate.");
@@ -659,12 +659,14 @@ Session* SSCache::find(const char* key, const Application& application, const ch
         }
     }
     
-    // Update storage expiration, if possible.
-    try {
-        m_storage->updateContext(key, now + m_cacheTimeout);
-    }
-    catch (exception& ex) {
-        m_log.error("failed to update session expiration: %s", ex.what());
+    if (timeout) {
+        // Update storage expiration, if possible.
+        try {
+            m_storage->updateContext(key, now + m_cacheTimeout);
+        }
+        catch (exception& ex) {
+            m_log.error("failed to update session expiration: %s", ex.what());
+        }
     }
 
     // Finally build the Session object.
@@ -750,26 +752,26 @@ void SSCache::receive(DDF& in, ostream& out)
         time_t now=time(NULL);
 
         // See if we need to check for a timeout.
-        time_t timeout = 0;
-        auto_ptr_XMLCh dt(in["timeout"].string());
-        if (dt.get()) {
+        if (in["timeout"].string()) {
+            time_t timeout = 0;
+            auto_ptr_XMLCh dt(in["timeout"].string());
             DateTime dtobj(dt.get());
             dtobj.parseDateTime();
             timeout = dtobj.getEpoch();
-        }
-                
-        if (timeout > 0 && now - lastAccess >= timeout) {
-            m_log.info("session timed out (ID: %s)", key);
-            remove(key,*(SPConfig::getConfig().getServiceProvider()->getApplication("default")),NULL);
-            throw RetryableProfileException("Your session has expired, and you must re-authenticate.");
-        } 
+                    
+            if (timeout > 0 && now - lastAccess >= timeout) {
+                m_log.info("session timed out (ID: %s)", key);
+                remove(key,*(SPConfig::getConfig().getServiceProvider()->getApplication("default")),NULL);
+                throw RetryableProfileException("Your session has expired, and you must re-authenticate.");
+            } 
 
-        // Update storage expiration, if possible.
-        try {
-            m_storage->updateContext(key, now + m_cacheTimeout);
-        }
-        catch (exception& ex) {
-            m_log.error("failed to update session expiration: %s", ex.what());
+            // Update storage expiration, if possible.
+            try {
+                m_storage->updateContext(key, now + m_cacheTimeout);
+            }
+            catch (exception& ex) {
+                m_log.error("failed to update session expiration: %s", ex.what());
+            }
         }
             
         // Send the record back.

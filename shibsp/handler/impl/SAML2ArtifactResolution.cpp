@@ -275,9 +275,6 @@ pair<bool,long> SAML2ArtifactResolution::processMessage(const Application& appli
         throw FatalProfileException("Decoded message was not a samlp::ArtifactResolve request.");
 
     try {
-        if (!policy.isSecure())
-            return samlError(application, *req, httpResponse, StatusCode::REQUESTER, StatusCode::AUTHN_FAILED, "Unable to authenticate request.");
-
         auto_ptr_char artifact(req->getArtifact() ? req->getArtifact()->getArtifact() : NULL);
         if (!artifact.get() || !*artifact.get())
             return samlError(application, *req, httpResponse, StatusCode::REQUESTER, NULL, "Request did not contain an artifact to resolve.");
@@ -288,6 +285,11 @@ pair<bool,long> SAML2ArtifactResolution::processMessage(const Application& appli
         // Parse the artifact and retrieve the object.
         auto_ptr<SAMLArtifact> artobj(SAMLArtifact::parse(artifact.get()));
         auto_ptr<XMLObject> payload(artmap->retrieveContent(artobj.get(), issuer.get()));
+
+        if (!policy.isSecure()) {
+            m_log.error("request for artifact was unauthenticated, purging the artifact mapping");
+            return samlError(application, *req, httpResponse, StatusCode::REQUESTER, StatusCode::AUTHN_FAILED, "Unable to authenticate request.");
+        }
 
         m_log.debug("artifact resolved, preparing response");
 

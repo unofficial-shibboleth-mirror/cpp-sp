@@ -114,7 +114,7 @@ namespace shibsp {
         
         time_t expires() const { return m_expires; }
         time_t lastAccess() const { return m_lastAccess; }
-        void validate(const Application& application, const char* client_addr, time_t timeout, bool local=true);
+        void validate(const Application& application, const char* client_addr, time_t* timeout);
 
     private:
         void unmarshallAttributes() const;
@@ -134,7 +134,7 @@ namespace shibsp {
         RemotedCache(const DOMElement* e);
         ~RemotedCache();
     
-        Session* find(const char* key, const Application& application, const char* client_addr=NULL, time_t timeout=0);
+        Session* find(const char* key, const Application& application, const char* client_addr=NULL, time_t* timeout=NULL);
         void remove(const char* key, const Application& application, const char* client_addr);
         
         void cleanup();
@@ -179,7 +179,7 @@ void RemotedSession::unmarshallAttributes() const
     }
 }
 
-void RemotedSession::validate(const Application& application, const char* client_addr, time_t timeout, bool local)
+void RemotedSession::validate(const Application& application, const char* client_addr, time_t* timeout)
 {
     // Basic expiration?
     time_t now = time(NULL);
@@ -201,7 +201,7 @@ void RemotedSession::validate(const Application& application, const char* client
         }
     }
 
-    if (local)
+    if (!timeout)
         return;
     
     DDF in("touch::"REMOTED_SESSION_CACHE"::SessionCache"), out;
@@ -209,13 +209,13 @@ void RemotedSession::validate(const Application& application, const char* client
     in.structure();
     in.addmember("key").string(m_obj.name());
     in.addmember("version").integer(m_obj["version"].integer());
-    if (timeout) {
+    if (*timeout) {
         // On 64-bit Windows, time_t doesn't fit in a long, so I'm using ISO timestamps.  
 #ifndef HAVE_GMTIME_R
-        struct tm* ptime=gmtime(&timeout);
+        struct tm* ptime=gmtime(timeout);
 #else
         struct tm res;
-        struct tm* ptime=gmtime_r(&timeout,&res);
+        struct tm* ptime=gmtime_r(timeout,&res);
 #endif
         char timebuf[32];
         strftime(timebuf,32,"%Y-%m-%dT%H:%M:%SZ",ptime);
@@ -265,13 +265,12 @@ RemotedCache::~RemotedCache()
     delete shutdown_wait;
 }
 
-Session* RemotedCache::find(const char* key, const Application& application, const char* client_addr, time_t timeout)
+Session* RemotedCache::find(const char* key, const Application& application, const char* client_addr, time_t* timeout)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("find");
 #endif
 
-    bool localValidation = false;
     RemotedSession* session=NULL;
     m_log.debug("searching local cache for session (%s)", key);
     m_lock->rdlock();
@@ -284,13 +283,13 @@ Session* RemotedCache::find(const char* key, const Application& application, con
         DDFJanitor jin(in);
         in.structure();
         in.addmember("key").string(key);
-        if (timeout) {
+        if (timeout && *timeout) {
             // On 64-bit Windows, time_t doesn't fit in a long, so I'm using ISO timestamps.  
 #ifndef HAVE_GMTIME_R
-            struct tm* ptime=gmtime(&timeout);
+            struct tm* ptime=gmtime(timeout);
 #else
             struct tm res;
-            struct tm* ptime=gmtime_r(&timeout,&res);
+            struct tm* ptime=gmtime_r(timeout,&res);
 #endif
             char timebuf[32];
             strftime(timebuf,32,"%Y-%m-%dT%H:%M:%SZ",ptime);
@@ -308,7 +307,7 @@ Session* RemotedCache::find(const char* key, const Application& application, con
             // Wrap the results in a local entry and save it.
             session = new RemotedSession(this, out);
             // The remote end has handled timeout issues, we handle address and expiration checks.
-            localValidation = true;
+            timeout = NULL;
         }
         catch (...) {
             out.destroy();
@@ -319,9 +318,8 @@ Session* RemotedCache::find(const char* key, const Application& application, con
         m_lock->wrlock();
         SharedLock shared(m_lock, false);
         if (m_hashtable.count(key)) {
+            // We're using an existing session entry.
             delete session;
-            // We're using an existing session entry, so we have to switch back to full validation.
-            localValidation = false;
             session = m_hashtable[key];
             session->lock();
         }
@@ -345,10 +343,9 @@ Session* RemotedCache::find(const char* key, const Application& application, con
         return NULL;
     }
 
-    // Verify currency and update the timestamp.
-    // If the local switch is false, we also update the access time.
+    // Verify currency and update the timestamp if indicated by caller.
     try {
-        session->validate(application, client_addr, timeout, localValidation);
+        session->validate(application, client_addr, timeout);
     }
     catch (...) {
         session->unlock();

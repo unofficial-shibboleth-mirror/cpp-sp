@@ -216,10 +216,12 @@ namespace shibsp {
          * @param key           session key
          * @param application   reference to Application that owns the Session
          * @param client_addr   network address of client (if known)
-         * @param timeout       inactivity timeout to enforce (0 for none)
+         * @param timeout       inactivity timeout to enforce (0 for none, NULL to bypass check/update of last access)
          * @return  pointer to locked Session, or NULL
          */
-        virtual Session* find(const char* key, const Application& application, const char* client_addr=NULL, time_t timeout=0)=0;
+        virtual Session* find(
+            const char* key, const Application& application, const char* client_addr=NULL, time_t* timeout=NULL
+            )=0;
             
         /**
          * Deletes an existing session.

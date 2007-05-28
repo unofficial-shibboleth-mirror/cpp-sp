@@ -76,7 +76,7 @@ const Application& AbstractSPRequest::getApplication() const
     return *m_app;
 }
 
-Session* AbstractSPRequest::getSession() const
+Session* AbstractSPRequest::getSession(bool checkTimeout) const
 {
     // Only attempt this once.
     if (m_sessionTried)
@@ -91,13 +91,15 @@ Session* AbstractSPRequest::getSession() const
         return NULL;
 
     // Need address checking and timeout settings.
-    int timeout=0;
+    time_t timeout=0;
     bool consistent=true;
     const PropertySet* props=app.getPropertySet("Sessions");
     if (props) {
-        pair<bool,unsigned int> p=props->getUnsignedInt("timeout");
-        if (p.first)
-            timeout = p.second;
+        if (checkTimeout) {
+            pair<bool,unsigned int> p=props->getUnsignedInt("timeout");
+            if (p.first)
+                timeout = p.second;
+        }
         pair<bool,bool> pcheck=props->getBool("consistentAddress");
         if (pcheck.first)
             consistent = pcheck.second;
@@ -105,7 +107,7 @@ Session* AbstractSPRequest::getSession() const
 
     // The cache will either silently pass a session or NULL back, or throw an exception out.
     return m_session = getServiceProvider().getSessionCache()->find(
-        session_id, app, consistent ? getRemoteAddr().c_str() : NULL, timeout
+        session_id, app, consistent ? getRemoteAddr().c_str() : NULL, checkTimeout ? &timeout : NULL
         );
 }
 
