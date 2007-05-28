@@ -74,6 +74,9 @@ namespace shibsp {
             m_lock->unlock();
         }
 
+        const char* getID() const {
+            return m_obj.name();
+        }
         const char* getApplicationID() const {
             return m_obj["application_id"].string();
         }
@@ -184,7 +187,7 @@ void RemotedSession::validate(const Application& application, const char* client
     // Basic expiration?
     time_t now = time(NULL);
     if (now > m_expires) {
-        m_cache->m_log.info("session expired (ID: %s)", m_obj.name());
+        m_cache->m_log.info("session expired (ID: %s)", getID());
         throw opensaml::RetryableProfileException("Your session has expired, and you must re-authenticate.");
     }
 
@@ -207,7 +210,7 @@ void RemotedSession::validate(const Application& application, const char* client
     DDF in("touch::"REMOTED_SESSION_CACHE"::SessionCache"), out;
     DDFJanitor jin(in);
     in.structure();
-    in.addmember("key").string(m_obj.name());
+    in.addmember("key").string(getID());
     in.addmember("version").integer(m_obj["version"].integer());
     if (*timeout) {
         // On 64-bit Windows, time_t doesn't fit in a long, so I'm using ISO timestamps.  

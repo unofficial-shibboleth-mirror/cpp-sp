@@ -81,6 +81,9 @@ namespace shibsp {
             delete this;
         }
         
+        const char* getID() const {
+            return m_obj.name();
+        }
         const char* getClientAddress() const {
             return m_obj["client_addr"].string();
         }
@@ -205,7 +208,7 @@ void StoredSession::addAttributes(const vector<Attribute*>& attributes)
     xmltooling::NDC ndc("addAttributes");
 #endif
 
-    m_cache->m_log.debug("adding attributes to session (%s)", m_obj.name());
+    m_cache->m_log.debug("adding attributes to session (%s)", getID());
     
     int ver;
     do {
@@ -226,7 +229,7 @@ void StoredSession::addAttributes(const vector<Attribute*>& attributes)
         string record(str.str()); 
 
         try {
-            ver = m_cache->m_storage->updateText(m_obj.name(), "session", record.c_str(), 0, m_obj["version"].integer()-1);
+            ver = m_cache->m_storage->updateText(getID(), "session", record.c_str(), 0, m_obj["version"].integer()-1);
         }
         catch (exception&) {
             // Roll back modification to record.
@@ -251,9 +254,9 @@ void StoredSession::addAttributes(const vector<Attribute*>& attributes)
         else if (ver < 0) {
             // Out of sync.
             m_cache->m_log.warn("storage service indicates the record is out of sync, updating with a fresh copy...");
-            ver = m_cache->m_storage->readText(m_obj.name(), "session", &record, NULL);
+            ver = m_cache->m_storage->readText(getID(), "session", &record, NULL);
             if (!ver) {
-                m_cache->m_log.error("readText failed on StorageService for session (%s)", m_obj.name());
+                m_cache->m_log.error("readText failed on StorageService for session (%s)", getID());
                 throw IOException("Unable to read back stored session.");
             }
             
@@ -277,7 +280,7 @@ void StoredSession::addAttributes(const vector<Attribute*>& attributes)
     Locker locker(xlog);
     xlog->log.infoStream() <<
         "Added the following attributes to session (ID: " <<
-            m_obj.name() <<
+            getID() <<
         ") for (applicationId: " <<
             m_obj["application_id"].string() <<
         ") {";
@@ -296,7 +299,7 @@ const Assertion* StoredSession::getAssertion(const char* id) const
         return i->second;
     
     string tokenstr;
-    if (!m_cache->m_storage->readText(m_obj.name(), id, &tokenstr, NULL))
+    if (!m_cache->m_storage->readText(getID(), id, &tokenstr, NULL))
         throw FatalProfileException("Assertion not found in cache.");
 
     // Parse and bind the document into an XMLObject.
@@ -327,15 +330,15 @@ void StoredSession::addAssertion(Assertion* assertion)
 
     auto_ptr_char id(assertion->getID());
 
-    m_cache->m_log.debug("adding assertion (%s) to session (%s)", id.get(), m_obj.name());
+    m_cache->m_log.debug("adding assertion (%s) to session (%s)", id.get(), getID());
 
     time_t exp;
-    if (!m_cache->m_storage->readText(m_obj.name(), "session", NULL, &exp))
+    if (!m_cache->m_storage->readText(getID(), "session", NULL, &exp))
         throw IOException("Unable to load expiration time for stored session.");
 
     ostringstream tokenstr;
     tokenstr << *assertion;
-    m_cache->m_storage->createText(m_obj.name(), id.get(), tokenstr.str().c_str(), exp);
+    m_cache->m_storage->createText(getID(), id.get(), tokenstr.str().c_str(), exp);
     
     int ver;
     do {
@@ -350,12 +353,12 @@ void StoredSession::addAssertion(Assertion* assertion)
         string record(str.str()); 
 
         try {
-            ver = m_cache->m_storage->updateText(m_obj.name(), "session", record.c_str(), 0, m_obj["version"].integer()-1);
+            ver = m_cache->m_storage->updateText(getID(), "session", record.c_str(), 0, m_obj["version"].integer()-1);
         }
         catch (exception&) {
             token.destroy();
             m_obj["version"].integer(m_obj["version"].integer()-1);
-            m_cache->m_storage->deleteText(m_obj.name(), id.get());
+            m_cache->m_storage->deleteText(getID(), id.get());
             throw;
         }
 
@@ -365,17 +368,17 @@ void StoredSession::addAssertion(Assertion* assertion)
         }            
         if (!ver) {
             // Fatal problem with update.
-            m_cache->m_log.error("updateText failed on StorageService for session (%s)", m_obj.name());
-            m_cache->m_storage->deleteText(m_obj.name(), id.get());
+            m_cache->m_log.error("updateText failed on StorageService for session (%s)", getID());
+            m_cache->m_storage->deleteText(getID(), id.get());
             throw IOException("Unable to update stored session.");
         }
         else if (ver < 0) {
             // Out of sync.
             m_cache->m_log.warn("storage service indicates the record is out of sync, updating with a fresh copy...");
-            ver = m_cache->m_storage->readText(m_obj.name(), "session", &record, NULL);
+            ver = m_cache->m_storage->readText(getID(), "session", &record, NULL);
             if (!ver) {
-                m_cache->m_log.error("readText failed on StorageService for session (%s)", m_obj.name());
-                m_cache->m_storage->deleteText(m_obj.name(), id.get());
+                m_cache->m_log.error("readText failed on StorageService for session (%s)", getID());
+                m_cache->m_storage->deleteText(getID(), id.get());
                 throw IOException("Unable to read back stored session.");
             }
             
@@ -402,7 +405,7 @@ void StoredSession::addAssertion(Assertion* assertion)
     Locker locker(xlog);
     xlog->log.info(
         "Added assertion (ID: %s) to session for (applicationId: %s) with (ID: %s)",
-        id.get(), m_obj["application_id"].string(), m_obj.name()
+        id.get(), m_obj["application_id"].string(), getID()
         );
 }
 

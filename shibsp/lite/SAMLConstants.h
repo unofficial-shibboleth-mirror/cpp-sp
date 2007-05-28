@@ -135,6 +135,9 @@ namespace samlconstants {
     /** SAML 2.0 SOAP binding ("urn:oasis:names:tc:SAML:2.0:bindings:SOAP") */
     extern SHIBSP_API const char SAML20_BINDING_SOAP[];
 
+    /** SAML 2.0 URI binding ("urn:oasis:names:tc:SAML:2.0:bindings:URI") */
+    extern SHIBSP_API const char SAML20_BINDING_URI[];
+
     /** SAML 2.0 HTTP-Artifact binding ("urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact") */
     extern SHIBSP_API const char SAML20_BINDING_HTTP_ARTIFACT[];
 

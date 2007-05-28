@@ -192,6 +192,8 @@ const char samlconstants::SAML1_PROFILE_BROWSER_POST[] = "urn:oasis:names:tc:SAM
 
 const char samlconstants::SAML20_BINDING_SOAP[] = "urn:oasis:names:tc:SAML:2.0:bindings:SOAP";
 
+const char samlconstants::SAML20_BINDING_URI[] = "urn:oasis:names:tc:SAML:2.0:bindings:URI";
+
 const char samlconstants::SAML20_BINDING_HTTP_ARTIFACT[] = "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact";
 
 const char samlconstants::SAML20_BINDING_HTTP_POST[] = "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST";

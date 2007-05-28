@@ -44,6 +44,13 @@ namespace shibsp {
         virtual ~Session() {}
     public:
         /**
+         * Returns the session key.
+         *
+         * @return unique ID of session
+         */
+        virtual const char* getID() const=0;
+
+        /**
          * Returns the address of the client associated with the session.
          * 
          * @return  the client's network address
