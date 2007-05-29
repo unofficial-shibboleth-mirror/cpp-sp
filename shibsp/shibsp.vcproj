@@ -458,6 +458,10 @@
 						>
 					</File>
 					<File
+						RelativePath=".\handler\impl\AssertionLookup.cpp"
+						>
+					</File>
+					<File
 						RelativePath=".\handler\impl\ChainingSessionInitiator.cpp"
 						>
 					</File>

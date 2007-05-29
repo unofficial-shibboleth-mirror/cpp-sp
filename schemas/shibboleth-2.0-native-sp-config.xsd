@@ -422,6 +422,8 @@
 			</choice>
 			<attribute name="handlerURL" type="anyURI"/>
 			<attribute name="handlerSSL" type="boolean" default="true"/>
+			<attribute name="exportLocation" type="conf:string"/>
+			<attribute name="exportACL" type="conf:listOfStrings" default="127.0.0.1"/>
 			<attribute name="redirectErrors" type="anyURI"/>
 			<attribute name="cookieName" type="conf:string"/>
 			<attribute name="cookieProps" type="conf:string"/>

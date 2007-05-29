@@ -55,6 +55,7 @@ namespace shibsp {
     SHIBSP_DLLLOCAL PluginManager<Handler,string,pair<const DOMElement*,const char*>>::Factory SAML1ConsumerFactory;
     SHIBSP_DLLLOCAL PluginManager<Handler,string,pair<const DOMElement*,const char*>>::Factory SAML2ConsumerFactory;
     SHIBSP_DLLLOCAL PluginManager<Handler,string,pair<const DOMElement*,const char*>>::Factory SAML2ArtifactResolutionFactory;
+    SHIBSP_DLLLOCAL PluginManager<Handler,string,pair<const DOMElement*,const char*>>::Factory AssertionLookupFactory;
 };
 
 void SHIBSP_API shibsp::registerHandlers()
@@ -68,6 +69,8 @@ void SHIBSP_API shibsp::registerHandlers()
     conf.AssertionConsumerServiceManager.registerFactory(SAML20_BINDING_HTTP_POST_SIMPLESIGN, SAML2ConsumerFactory);
 
     conf.ArtifactResolutionServiceManager.registerFactory(SAML20_BINDING_SOAP, SAML2ArtifactResolutionFactory);
+
+    conf.HandlerManager.registerFactory(SAML20_BINDING_URI, AssertionLookupFactory);
 }
 
 AbstractHandler::AbstractHandler(

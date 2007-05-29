@@ -103,6 +103,7 @@ common_sources = \
 	attribute/Attribute.cpp \
 	handler/impl/AbstractHandler.cpp \
 	handler/impl/AssertionConsumerService.cpp \
+	handler/impl/AssertionLookup.cpp \
 	handler/impl/ChainingSessionInitiator.cpp \
 	handler/impl/RemotedHandler.cpp \
 	handler/impl/SAML1Consumer.cpp \

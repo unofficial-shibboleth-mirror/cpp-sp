@@ -27,7 +27,7 @@
 #ifndef SHIBSP_LITE
 # include <saml/util/SAMLConstants.h>
 #else
-# include <xmltooling/util/XMLConstants.h>
+# include <shibsp/lite/SAMLConstants.h>
 #endif
 
 /**

@@ -55,7 +55,7 @@
 # include <saml/saml2/binding/SAML2ArtifactType0004.h>
 # include <saml/saml2/metadata/ChainingMetadataProvider.h>
 # include <xmltooling/security/ChainingTrustEngine.h>
-#include <xmltooling/util/ReplayCache.h>
+# include <xmltooling/util/ReplayCache.h>
 using namespace opensaml::saml2;
 using namespace opensaml::saml2p;
 using namespace opensaml::saml2md;
@@ -499,10 +499,28 @@ XMLApplication::XMLApplication(
             }
         }
 
+        Handler* handler=NULL;
         const PropertySet* sessions = getPropertySet("Sessions");
 
-        // Process handlers.
-        Handler* handler=NULL;
+        // Process assertion export handler.
+        pair<bool,const char*> location = sessions ? sessions->getString("exportLocation") : pair<bool,const char*>(false,NULL);
+        if (location.first) {
+            try {
+                handler = conf.HandlerManager.newPlugin(samlconstants::SAML20_BINDING_URI, make_pair(sessions->getElement(), getId()));
+                m_handlers.push_back(handler);
+
+                // Insert into location map.
+                if (*location.second == '/')
+                    m_handlerMap[location.second]=handler;
+                else
+                    m_handlerMap[string("/") + location.second]=handler;
+            }
+            catch (exception& ex) {
+                log.error("caught exception installing assertion lookup handler: %s", ex.what());
+            }
+        }
+
+        // Process other handlers.
         bool hardACS=false, hardSessionInit=false, hardArt=false;
         const DOMElement* child = sessions ? XMLHelper::getFirstChildElement(sessions->getElement()) : NULL;
         while (child) {
@@ -613,7 +631,7 @@ XMLApplication::XMLApplication(
                 m_handlers.push_back(handler);
 
                 // Insert into location map.
-                pair<bool,const char*> location=handler->getString("Location");
+                location=handler->getString("Location");
                 if (location.first && *location.second == '/')
                     m_handlerMap[location.second]=handler;
                 else if (location.first)

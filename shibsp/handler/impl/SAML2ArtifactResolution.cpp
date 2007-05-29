@@ -57,9 +57,6 @@ using namespace std;
 
 namespace shibsp {
 
-    class SHIBSP_API Attribute;
-    class SHIBSP_API ResolutionContext;
-
 #if defined (_MSC_VER)
     #pragma warning( push )
     #pragma warning( disable : 4250 )
@@ -145,7 +142,6 @@ pair<bool,long> SAML2ArtifactResolution::run(SPRequest& request, bool isHandler)
     try {
         if (conf.isEnabled(SPConfig::OutOfProcess)) {
             // When out of process, we run natively and directly process the message.
-            string entityID;
             return processMessage(request.getApplication(), request, request);
         }
         else {
@@ -199,7 +195,7 @@ void SAML2ArtifactResolution::receive(DDF& in, ostream& out)
     if (!app) {
         // Something's horribly wrong.
         m_log.error("couldn't find application (%s) for artifact resolution", aid ? aid : "(missing)");
-        throw ConfigurationException("Unable to locate application for new session, deleted?");
+        throw ConfigurationException("Unable to locate application for artifact resolution, deleted?");
     }
     
     // Unpack the request.

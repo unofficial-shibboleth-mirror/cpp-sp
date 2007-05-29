@@ -35,6 +35,7 @@
 #include <sstream>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/NDC.h>
+#include <xmltooling/util/URLEncoder.h>
 #include <xmltooling/util/XMLHelper.h>
 
 using namespace shibsp;
@@ -91,6 +92,7 @@ namespace shibsp {
         request.clearHeader("Shib-AuthnContext-Class");
         request.clearHeader("Shib-AuthnContext-Decl");
         request.clearHeader("Shib-Attributes");
+        request.clearHeader("Shib-Assertion-Count");
         //request.clearHeader("Shib-Application-ID");   handle inside app method
         request.getApplication().clearAttributeHeaders(request);
     }
@@ -349,9 +351,26 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
         // Maybe export the assertion keys.
         pair<bool,bool> exp=settings.first->getBool("exportAssertion");
         if (exp.first && exp.second) {
-            //setHeader("Shib-Attributes", reinterpret_cast<char*>(serialized));
-            // TODO: export lookup URLs to access assertions by ID
-            const vector<const char*>& tokens = session->getAssertionIDs();
+            const PropertySet* sessions=app->getPropertySet("Sessions");
+            pair<bool,const char*> exportLocation = sessions ? sessions->getString("exportLocation") : pair<bool,const char*>(false,NULL);
+            if (!exportLocation.first)
+                request.log(SPRequest::SPWarn, "can't export assertions without an exportLocation Sessions property");
+            else {
+                const URLEncoder* encoder = XMLToolingConfig::getConfig().getURLEncoder();
+                string exportName = "Shib-Assertion-00";
+                const char* handlerURL=request.getHandlerURL(targetURL.c_str());
+                string baseURL = string(handlerURL) + exportLocation.second + "?key=" + session->getID() + "&ID=";
+                const vector<const char*>& tokens = session->getAssertionIDs();
+                vector<const char*>::size_type count = 0;
+                for (vector<const char*>::const_iterator tokenids = tokens.begin(); tokenids!=tokens.end(); ++tokenids) {
+                    count++;
+                    *(exportName.rbegin()) = '0' + (count%10);
+                    *(++exportName.rbegin()) = '0' + (count/10);
+                    string fullURL = baseURL + encoder->encode(*tokenids);
+                    request.setHeader(exportName.c_str(), fullURL.c_str());
+                }
+                request.setHeader("Shib-Assertion-Count", exportName.c_str() + 15);
+            }
         }
 
         // Export the attributes.
