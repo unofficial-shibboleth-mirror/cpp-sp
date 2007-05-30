@@ -21,6 +21,7 @@
  */
 
 #include "internal.h"
+#include "Application.h"
 #include "exceptions.h"
 #include "ServiceProvider.h"
 #include "handler/RemotedHandler.h"
@@ -238,6 +239,7 @@ RemotedHandler::~RemotedHandler()
 DDF RemotedHandler::wrap(const SPRequest& request, const vector<string>* headers, bool certs) const
 {
     DDF in = DDF(m_address.c_str()).structure();
+    in.addmember("application_id").string(request.getApplication().getId());
     in.addmember("scheme").string(request.getScheme());
     in.addmember("hostname").string(request.getHostname());
     in.addmember("port").integer(request.getPort());

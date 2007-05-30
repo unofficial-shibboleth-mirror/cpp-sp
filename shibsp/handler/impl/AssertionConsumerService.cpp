@@ -90,7 +90,6 @@ pair<bool,long> AssertionConsumerService::run(SPRequest& request, bool isHandler
             DDF out,in = wrap(request);
             DDFJanitor jin(in), jout(out);
             
-            in.addmember("application_id").string(request.getApplication().getId());
             try {
                 out=request.getServiceProvider().getListenerService()->send(in);
             }
