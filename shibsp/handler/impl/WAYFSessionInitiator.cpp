@@ -87,8 +87,11 @@ pair<bool,long> WAYFSessionInitiator::run(SPRequest& request, const char* entity
 
     if (isHandler) {
         option=request.getParameter("acsIndex");
-        if (option)
+        if (option) {
             ACS=app.getAssertionConsumerServiceByIndex(atoi(option));
+            if (!ACS)
+                request.log(SPRequest::SPWarn, "invalid acsIndex specified in request, using default ACS location");
+        }
 
         option = request.getParameter("target");
         if (option)
@@ -101,8 +104,17 @@ pair<bool,long> WAYFSessionInitiator::run(SPRequest& request, const char* entity
         target=request.getRequestURL();
     }
     
-    if (!ACS)
-        ACS = app.getDefaultAssertionConsumerService();
+    // Since we're not passing by index, we need to fully compute the return URL.
+    if (!ACS) {
+        pair<bool,unsigned int> index = getUnsignedInt("defaultACSIndex");
+        if (index.first) {
+            ACS = app.getAssertionConsumerServiceByIndex(index.second);
+            if (!ACS)
+                request.log(SPRequest::SPWarn, "invalid defaultACSIndex, using default ACS location");
+        }
+        if (!ACS)
+            ACS = app.getDefaultAssertionConsumerService();
+    }
 
     m_log.debug("sending request to WAYF (%s)", m_url);
 

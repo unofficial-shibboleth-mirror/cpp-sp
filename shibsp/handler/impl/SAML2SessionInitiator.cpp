@@ -197,7 +197,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, const char* entit
         if (option) {
             ACS = app.getAssertionConsumerServiceByIndex(atoi(option));
             if (!ACS)
-                throw ConfigurationException("AssertionConsumerService with index ($1) not found, check configuration.", params(1,option));
+                request.log(SPRequest::SPWarn, "invalid acsIndex specified in request, using default ACS location");
         }
 
         option = request.getParameter("target");
@@ -240,13 +240,24 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, const char* entit
 
     m_log.debug("attempting to initiate session using SAML 2.0 with provider (%s)", entityID);
 
-    // To invoke the request builder, the key requirement is to figure out how and whether
+    if (!ACS) {
+        pair<bool,unsigned int> index = getUnsignedInt("defaultACSIndex");
+        if (index.first) {
+            ACS = app.getAssertionConsumerServiceByIndex(index.second);
+            if (!ACS)
+                request.log(SPRequest::SPWarn, "invalid defaultACSIndex, using default ACS location");
+        }
+        if (!ACS)
+            ACS = app.getDefaultAssertionConsumerService();
+    }
+
+    // To invoke the request builder, the key requirement is to figure out how
     // to express the ACS, by index or value, and if by value, where.
 
     SPConfig& conf = SPConfig::getConfig();
     if (conf.isEnabled(SPConfig::OutOfProcess)) {
         if (!acsByIndex.first || acsByIndex.second) {
-            // Pass by Index. This also allows for defaulting it entirely and sending nothing.
+            // Pass by Index.
             if (isHandler) {
                 // We may already have RelayState set if we looped back here,
                 // but just in case target is a resource, we reset it back.
@@ -266,9 +277,6 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, const char* entit
         }
 
         // Since we're not passing by index, we need to fully compute the return URL and binding.
-        if (!ACS)
-            ACS = app.getDefaultAssertionConsumerService();
-
         // Compute the ACS URL. We add the ACS location to the base handlerURL.
         string ACSloc=request.getHandlerURL(target.c_str());
         pair<bool,const char*> loc=ACS ? ACS->getString("Location") : pair<bool,const char*>(false,NULL);
@@ -312,9 +320,6 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, const char* entit
     }
     else {
         // Since we're not passing by index, we need to fully compute the return URL and binding.
-        if (!ACS)
-            ACS = app.getDefaultAssertionConsumerService();
-
         // Compute the ACS URL. We add the ACS location to the base handlerURL.
         string ACSloc=request.getHandlerURL(target.c_str());
         pair<bool,const char*> loc=ACS ? ACS->getString("Location") : pair<bool,const char*>(false,NULL);

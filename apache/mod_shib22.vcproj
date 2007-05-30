@@ -75,7 +75,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="log4cpp.lib xerces-c_2.lib xmltooling-lite1.lib libapr-1.lib libhttpd.lib"
+				AdditionalDependencies="log4cpp.lib xerces-c_2.lib xmltooling-lite1.lib libapr-1.lib libaprutil-1.lib libhttpd.lib"
 				OutputFile="mod_shib22___Win32_Release/mod_shib_22.so"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
@@ -174,7 +174,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="log4cppD.lib xerces-c_2D.lib xmltooling-lite1D.lib libapr-1.lib libhttpd.lib"
+				AdditionalDependencies="log4cppD.lib xerces-c_2D.lib xmltooling-lite1D.lib libapr-1.lib libaprutil-1.lib libhttpd.lib"
 				OutputFile="mod_shib22___Win32_Debug/mod_shib_22.so"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"

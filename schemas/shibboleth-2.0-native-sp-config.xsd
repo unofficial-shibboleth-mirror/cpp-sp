@@ -464,6 +464,7 @@
 					<attribute name="template" type="anyURI"/>
 					<attribute name="postArtifact" type="boolean"/>
 					<attribute name="acsByIndex" type="boolean"/>
+					<attribute name="defaultACSIndex" type="unsignedShort"/>
 					<anyAttribute namespace="##any" processContents="lax"/>
 				</restriction>
 			</complexContent>

@@ -66,6 +66,7 @@
 
 #ifndef SHIB_APACHE_13
 #include <http_request.h>
+#include <apr_buckets.h>
 #include <apr_strings.h>
 #include <apr_pools.h>
 #endif
@@ -328,6 +329,7 @@ public:
   const char* getRequestBody() const {
     if (m_gotBody || m_req->method_number==M_GET)
         return m_body.c_str();
+#ifdef SHIB_APACHE_13
     // Read the posted data
     if (ap_setup_client_block(m_req, REQUEST_CHUNKED_DECHUNK) != OK) {
         m_gotBody=true;
@@ -350,6 +352,39 @@ public:
       m_body.append(buff, len);
     }
     ap_kill_timeout(m_req);
+#else
+    const char *data;
+    apr_size_t len;
+    int seen_eos = 0;
+    apr_bucket_brigade* bb = apr_brigade_create(m_req->pool, m_req->connection->bucket_alloc);
+    do {
+        apr_bucket *bucket;
+        apr_status_t rv = ap_get_brigade(m_req->input_filters, bb, AP_MODE_READBYTES, APR_BLOCK_READ, HUGE_STRING_LEN);
+        if (rv != APR_SUCCESS) {
+            log(SPError, "Apache function (ap_get_brigade) failed while reading request body.");
+            break;
+        }
+
+        for (bucket = APR_BRIGADE_FIRST(bb); bucket != APR_BRIGADE_SENTINEL(bb); bucket = APR_BUCKET_NEXT(bucket)) {
+            if (APR_BUCKET_IS_EOS(bucket)) {
+                seen_eos = 1;
+                break;
+            }
+
+            /* We can't do much with this. */
+            if (APR_BUCKET_IS_FLUSH(bucket))
+                continue;
+
+            /* read */
+            apr_bucket_read(bucket, &data, &len, APR_BLOCK_READ);
+            if (len > 0)
+                m_body.append(data, len);
+        }
+        apr_brigade_cleanup(bb);
+    } while (!seen_eos);
+    apr_brigade_destroy(bb);
+    m_gotBody=true;
+#endif
     return m_body.c_str();
   }
   void clearHeader(const char* name) {

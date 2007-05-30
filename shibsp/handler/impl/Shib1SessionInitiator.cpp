@@ -117,8 +117,11 @@ pair<bool,long> Shib1SessionInitiator::run(SPRequest& request, const char* entit
 
     if (isHandler) {
         option=request.getParameter("acsIndex");
-        if (option)
+        if (option) {
             ACS = app.getAssertionConsumerServiceByIndex(atoi(option));
+            if (!ACS)
+                request.log(SPRequest::SPWarn, "invalid acsIndex specified in request, using default ACS location");
+        }
 
         option = request.getParameter("target");
         if (option)
@@ -134,9 +137,17 @@ pair<bool,long> Shib1SessionInitiator::run(SPRequest& request, const char* entit
         target=request.getRequestURL();
     }
 
-    // Since we're not passing by index, we need to fully compute the return URL and binding.
-    if (!ACS)
-        ACS = app.getDefaultAssertionConsumerService();
+    // Since we're not passing by index, we need to fully compute the return URL.
+    if (!ACS) {
+        pair<bool,unsigned int> index = getUnsignedInt("defaultACSIndex");
+        if (index.first) {
+            ACS = app.getAssertionConsumerServiceByIndex(index.second);
+            if (!ACS)
+                request.log(SPRequest::SPWarn, "invalid defaultACSIndex, using default ACS location");
+        }
+        if (!ACS)
+            ACS = app.getDefaultAssertionConsumerService();
+    }
 
     // Compute the ACS URL. We add the ACS location to the base handlerURL.
     string ACSloc=request.getHandlerURL(target.c_str());

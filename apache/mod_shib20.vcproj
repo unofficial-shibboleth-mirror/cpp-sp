@@ -76,11 +76,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="log4cpp.lib xerces-c_2.lib libapr.lib libhttpd.lib xmltooling-lite1.lib"
+				AdditionalDependencies="log4cpp.lib xerces-c_2.lib libapr.lib libaprutil.lib libhttpd.lib xmltooling-lite1.lib"
 				OutputFile="mod_shib20___Win32_Release/mod_shib_20.so"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="&quot;..\..\cpp-xmltooling\Release&quot;,\httpd-2.0.52\srclib\apr\Release,\httpd-2.0.52\Release"
+				AdditionalLibraryDirectories="&quot;..\..\cpp-xmltooling\Release&quot;;\Apache2\lib"
 				ProgramDatabaseFile=".\mod_shib20___Win32_Release/mod_shib_20.pdb"
 				ImportLibrary=".\mod_shib20___Win32_Release/mod_shib_20.lib"
 				TargetMachine="1"
@@ -173,11 +173,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="log4cppD.lib xerces-c_2D.lib libapr.lib libhttpd.lib xmltooling-lite1D.lib"
+				AdditionalDependencies="log4cppD.lib xerces-c_2D.lib libapr.lib libaprutil.lib libhttpd.lib xmltooling-lite1D.lib"
 				OutputFile="mod_shib20___Win32_Debug/mod_shib_20.so"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="&quot;..\..\cpp-xmltooling\Debug&quot;;\httpd-2.0.52\srclib\apr\Debug,\httpd-2.0.52\Debug"
+				AdditionalLibraryDirectories="&quot;..\..\cpp-xmltooling\Debug&quot;;\Apache2D\lib"
 				GenerateDebugInformation="true"
 				ImportLibrary=".\mod_shib20___Win32_Debug/mod_shib_20.lib"
 				TargetMachine="1"
