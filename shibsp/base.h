@@ -78,6 +78,12 @@
  */
 # define SHIBSP_CONFIG "c:\\opt\\shibboleth-sp\\etc\\shibboleth\\shibboleth.xml"
 
+/**
+ * Controls default logging level of console tools and other situations
+ * where fully-configured logging isn't used.
+ */
+#define SHIBSP_LOGGING "c:\\opt\\shibboleth-sp\\etc\\shibboleth\\console.logger"
+
 #else
 # include <shibsp/paths.h>
 #endif
@@ -91,11 +97,5 @@
  * Logging category for Service Provider auditing.
  */
 #define SHIBSP_TX_LOGCAT "Shibboleth-TRANSACTION"
-
-/**
- * Controls default logging level of console tools and other situations
- * where fully-configured logging isn't used.
- */
-#define SHIBSP_LOGGING "c:\\opt\\shibboleth-sp\\etc\\shibboleth\\console.logger"
 
 #endif /* __shibsp_base_h__ */
