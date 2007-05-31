@@ -145,7 +145,7 @@ namespace shibsp {
     static const XMLCh Host[] =                     UNICODE_LITERAL_4(H,o,s,t);
     static const XMLCh Path[] =                     UNICODE_LITERAL_4(P,a,t,h);
     static const XMLCh name[] =                     UNICODE_LITERAL_4(n,a,m,e);
-    static const XMLCh type[] =                     UNICODE_LITERAL_4(t,y,p,e);
+    static const XMLCh _type[] =                    UNICODE_LITERAL_4(t,y,p,e);
 }
 
 void SHIBSP_API shibsp::registerRequestMappers()
@@ -190,7 +190,7 @@ void Override::loadACL(const DOMElement* e, Category& log)
             else {
                 acl=XMLHelper::getFirstChildElement(e,AccessControlProvider);
                 if (acl) {
-                    xmltooling::auto_ptr_char type(acl->getAttributeNS(NULL,type));
+                    auto_ptr_char type(acl->getAttributeNS(NULL,_type));
                     log.info("building AccessControl provider of type %s...",type.get());
                     m_acl=SPConfig::getConfig().AccessControlManager.newPlugin(type.get(),acl);
                 }

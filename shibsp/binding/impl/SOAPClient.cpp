@@ -190,3 +190,4 @@ void SOAPClient::reset()
     m_credResolver = NULL;
     opensaml::SOAPClient::reset();
 }
+

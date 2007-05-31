@@ -373,7 +373,7 @@ namespace {
     static const XMLCh _CredentialResolver[] =  UNICODE_LITERAL_18(C,r,e,d,e,n,t,i,a,l,R,e,s,o,l,v,e,r);
     static const XMLCh DefaultRelyingParty[] =  UNICODE_LITERAL_19(D,e,f,a,u,l,t,R,e,l,y,i,n,g,P,a,r,t,y);
     static const XMLCh _Extensions[] =          UNICODE_LITERAL_10(E,x,t,e,n,s,i,o,n,s);
-    static const XMLCh fatal[] =                UNICODE_LITERAL_5(f,a,t,a,l);
+    static const XMLCh _fatal[] =               UNICODE_LITERAL_5(f,a,t,a,l);
     static const XMLCh _Handler[] =             UNICODE_LITERAL_7(H,a,n,d,l,e,r);
     static const XMLCh _id[] =                  UNICODE_LITERAL_2(i,d);
     static const XMLCh Implementation[] =       UNICODE_LITERAL_14(I,m,p,l,e,m,e,n,t,a,t,i,o,n);
@@ -1005,7 +1005,7 @@ void XMLConfigImpl::doExtensions(const DOMElement* e, const char* label, Categor
                 }
             }
             catch (exception& e) {
-                const XMLCh* fatal=exts->getAttributeNS(NULL,fatal);
+                const XMLCh* fatal=exts->getAttributeNS(NULL,_fatal);
                 if (fatal && (*fatal==chLatin_t || *fatal==chDigit_1)) {
                     log.fatal("unable to load mandatory %s extension library %s: %s", label, path.get(), e.what());
                     throw;

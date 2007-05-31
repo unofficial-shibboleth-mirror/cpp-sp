@@ -251,7 +251,7 @@ pair<bool,long> Shib1SessionInitiator::doRequest(
         relayState = "default";
 
     char timebuf[16];
-    sprintf(timebuf,"%u",time(NULL));
+    sprintf(timebuf,"%lu",time(NULL));
     const URLEncoder* urlenc = XMLToolingConfig::getConfig().getURLEncoder();
     auto_ptr_char dest(ep->getLocation());
     string req=string(dest.get()) + (strchr(dest.get(),'?') ? '&' : '?') + "shire=" + urlenc->encode(acsLocation) +

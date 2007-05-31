@@ -142,28 +142,28 @@ libshibsp_la_SOURCES = \
 	attribute/NameIDAttributeDecoder.cpp \
 	attribute/ScopedAttributeDecoder.cpp \
 	attribute/StringAttributeDecoder.cpp \
-	attribute/filtering/AttributeFilter.cpp \
-	attribute/filtering/ChainingAttributeFilter.cpp \
-	attribute/filtering/XMLAttributeFilter.cpp \
-	attribute/filtering/MatchFunctor.cpp \
-	attribute/filtering/AndMatchFunctor.cpp \
-	attribute/filtering/AnyMatchFunctor.cpp \
-	attribute/filtering/NotMatchFunctor.cpp \
-	attribute/filtering/OrMatchFunctor.cpp \
-	attribute/filtering/AttributeIssuerStringFunctor.cpp \
-	attribute/filtering/AttributeRequesterStringFunctor.cpp \
-	attribute/filtering/AttributeScopeStringFunctor.cpp \
-	attribute/filtering/AttributeValueStringFunctor.cpp \
-	attribute/filtering/AuthenticationMethodStringFunctor.cpp \
-	attribute/filtering/AttributeIssuerRegexFunctor.cpp \
-	attribute/filtering/AttributeRequesterRegexFunctor.cpp \
-	attribute/filtering/AttributeScopeRegexFunctor.cpp \
-	attribute/filtering/AttributeValueRegexFunctor.cpp \
-	attribute/filtering/AuthenticationMethodRegexFunctor.cpp \
-	attribute/filtering/NumberOfAttributeValuesFunctor.cpp \
-	attribute/filtering/AttributeIssuerInEntityGroupFunctor.cpp \
-	attribute/filtering/AttributeRequesterInEntityGroupFunctor.cpp \
-	attribute/filtering/AttributeScopeMatchesShibMDScopeFunctor.cpp \
+	attribute/filtering/impl/AttributeFilter.cpp \
+	attribute/filtering/impl/ChainingAttributeFilter.cpp \
+	attribute/filtering/impl/XMLAttributeFilter.cpp \
+	attribute/filtering/impl/MatchFunctor.cpp \
+	attribute/filtering/impl/AndMatchFunctor.cpp \
+	attribute/filtering/impl/AnyMatchFunctor.cpp \
+	attribute/filtering/impl/NotMatchFunctor.cpp \
+	attribute/filtering/impl/OrMatchFunctor.cpp \
+	attribute/filtering/impl/AttributeIssuerStringFunctor.cpp \
+	attribute/filtering/impl/AttributeRequesterStringFunctor.cpp \
+	attribute/filtering/impl/AttributeScopeStringFunctor.cpp \
+	attribute/filtering/impl/AttributeValueStringFunctor.cpp \
+	attribute/filtering/impl/AuthenticationMethodStringFunctor.cpp \
+	attribute/filtering/impl/AttributeIssuerRegexFunctor.cpp \
+	attribute/filtering/impl/AttributeRequesterRegexFunctor.cpp \
+	attribute/filtering/impl/AttributeScopeRegexFunctor.cpp \
+	attribute/filtering/impl/AttributeValueRegexFunctor.cpp \
+	attribute/filtering/impl/AuthenticationMethodRegexFunctor.cpp \
+	attribute/filtering/impl/NumberOfAttributeValuesFunctor.cpp \
+	attribute/filtering/impl/AttributeIssuerInEntityGroupFunctor.cpp \
+	attribute/filtering/impl/AttributeRequesterInEntityGroupFunctor.cpp \
+	attribute/filtering/impl/AttributeScopeMatchesShibMDScopeFunctor.cpp \
 	attribute/resolver/impl/ChainingAttributeResolver.cpp \
 	attribute/resolver/impl/QueryAttributeResolver.cpp \
 	attribute/resolver/impl/XMLAttributeExtractor.cpp \

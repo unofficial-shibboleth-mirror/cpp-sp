@@ -896,6 +896,7 @@ SHIBSP_API ostream& shibsp::operator<<(ostream& os, const DDF& obj)
 // This is a DTD internal subset based on a compatible permutation of the WDDX spec, with the
 // extension of a name attribute on all the typed elements, which DDF has, but WDDX does not.
 
+/*
 static const char* g_DocType=
 "\
 <!DOCTYPE wddxPacket [\n\
@@ -919,6 +920,7 @@ static const char* g_DocType=
 <!ELEMENT var (null | number | string | array | struct)>\n\
 <!ATTLIST var name CDATA #REQUIRED>\n\
 ]>\n";
+*/
 
 // This function constructs a DDF object equivalent to the wddx data element rooted
 // by the input.

@@ -30,8 +30,8 @@
 #include <shibsp/SPConfig.h>
 #include <xmltooling/util/NDC.h>
 
-#ifdef HAVE_UNISTD_H
-# include <unistd.h>
+#ifndef WIN32
+# include <netinet/in.h>
 #endif
 
 using namespace shibsp;
@@ -54,9 +54,9 @@ namespace shibsp {
   
     private:
         SocketListener::ShibSocket connect();
-        
+       
+        Category& m_log; 
         const SocketListener* m_listener;
-        Category& m_log;
         auto_ptr<Mutex> m_lock;
         stack<SocketListener::ShibSocket> m_pool;
     };
@@ -155,7 +155,7 @@ void SocketPool::put(SocketListener::ShibSocket s)
 }
 
 SocketListener::SocketListener(const DOMElement* e) : log(&Category::getInstance(SHIBSP_LOGCAT".Listener")),
-    m_shutdown(NULL), m_child_lock(NULL), m_child_wait(NULL), m_socketpool(NULL), m_socket((ShibSocket)0)
+    m_socketpool(NULL), m_shutdown(NULL), m_child_lock(NULL), m_child_wait(NULL), m_socket((ShibSocket)0)
 {
     // Are we a client?
     if (SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {

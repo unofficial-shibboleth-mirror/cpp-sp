@@ -97,7 +97,7 @@ pair<bool,long> AssertionLookup::run(SPRequest& request, bool isHandler) const
     SPConfig& conf = SPConfig::getConfig();
     if (conf.isEnabled(SPConfig::InProcess)) {
         if (m_acl.count(request.getRemoteAddr()) == 0) {
-            m_log.error("request for assertion lookup blocked from invalid address (%s)", request.getRemoteAddr());
+            m_log.error("request for assertion lookup blocked from invalid address (%s)", request.getRemoteAddr().c_str());
             istringstream msg("Assertion Lookup Blocked");
             return make_pair(true,request.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_FORBIDDEN));
         }

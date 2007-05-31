@@ -170,7 +170,7 @@ LIBS="$XMLSEC_LIBS $LIBS"
 AC_CHECK_HEADER([saml/saml.h],,
                 AC_MSG_ERROR([unable to find saml header files]))
 AC_TRY_LINK(
-	[#include <saml/saml.h>
+	[#include <saml/SAMLConfig.h>
 #include <saml/version.h>],
 	[#if _OPENSAML_VERSION >= 20000
 opensaml::SAMLConfig::getConfig();
@@ -186,9 +186,9 @@ LIBS="$save_LIBS"
 AC_SUBST(XMLSEC_LIBS)
 
 # output the underlying makefiles
-WANT_SUBDIRS="doc schemas configs shibsp shibd siterefresh util"
+WANT_SUBDIRS="doc schemas configs shibsp shibd util"
 AC_CONFIG_FILES([Makefile doc/Makefile schemas/Makefile \
-	configs/Makefile shibsp/Makefile shibd/Makefile siterefresh/Makefile \
+	configs/Makefile shibsp/Makefile shibd/Makefile \
 	util/Makefile selinux/Makefile])
 
 #

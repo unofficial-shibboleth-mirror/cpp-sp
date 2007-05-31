@@ -41,6 +41,9 @@ using namespace opensaml::saml2;
 using namespace opensaml::saml2p;
 using namespace opensaml::saml2md;
 using namespace opensaml;
+# ifndef min
+#  define min(a,b)            (((a) < (b)) ? (a) : (b))
+# endif
 #endif
 
 using namespace shibsp;
@@ -325,7 +328,7 @@ string SAML2Consumer::implementProtocol(
     // Session expiration for SAML 2.0 is jointly IdP- and SP-driven.
     time_t sessionExp = ssoStatement->getSessionNotOnOrAfter() ? ssoStatement->getSessionNotOnOrAfterEpoch() : 0;
     const PropertySet* sessionProps = application.getPropertySet("Sessions");
-    pair<bool,unsigned int> lifetime = sessionProps ? sessionProps->getUnsignedInt("lifetime") : make_pair(true,28800);
+    pair<bool,unsigned int> lifetime = sessionProps ? sessionProps->getUnsignedInt("lifetime") : pair<bool,unsigned int>(true,28800);
     if (!lifetime.first)
         lifetime.second = 28800;
     if (lifetime.second != 0) {

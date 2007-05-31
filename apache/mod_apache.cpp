@@ -41,7 +41,7 @@
 #include <shibsp/ServiceProvider.h>
 #include <shibsp/SessionCache.h>
 #include <shibsp/attribute/Attribute.h>
-
+#include <xercesc/util/XMLUniDefs.hpp>
 #include <xercesc/util/regx/RegularExpression.hpp>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/NDC.h>

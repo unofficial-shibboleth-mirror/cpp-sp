@@ -292,9 +292,9 @@ int main(int argc, char *argv[])
         fprintf(stderr, "loading configuration file: %s\n", shar_config);
         static const XMLCh path[] = UNICODE_LITERAL_4(p,a,t,h);
         static const XMLCh validate[] = UNICODE_LITERAL_8(v,a,l,i,d,a,t,e);
-        DOMDocument* dummydoc=XMLToolingConfig::getConfig().getParser().newDocument();
-        XercesJanitor<DOMDocument> docjanitor(dummydoc);
-        DOMElement* dummy = dummydoc->createElementNS(NULL,path);
+        xercesc::DOMDocument* dummydoc=XMLToolingConfig::getConfig().getParser().newDocument();
+        XercesJanitor<xercesc::DOMDocument> docjanitor(dummydoc);
+        xercesc::DOMElement* dummy = dummydoc->createElementNS(NULL,path);
         auto_ptr_XMLCh src(shar_config);
         dummy->setAttributeNS(NULL,path,src.get());
         dummy->setAttributeNS(NULL,validate,xmlconstants::XML_ONE);

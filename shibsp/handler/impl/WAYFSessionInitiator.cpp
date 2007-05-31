@@ -137,7 +137,7 @@ pair<bool,long> WAYFSessionInitiator::run(SPRequest& request, const char* entity
         target = "default";
 
     char timebuf[16];
-    sprintf(timebuf,"%u",time(NULL));
+    sprintf(timebuf,"%lu",time(NULL));
     const URLEncoder* urlenc = XMLToolingConfig::getConfig().getURLEncoder();
     string req=string(m_url) + (strchr(m_url,'?') ? '&' : '?') + "shire=" + urlenc->encode(ACSloc.c_str()) +
         "&time=" + timebuf + "&target=" + urlenc->encode(target.c_str()) +
