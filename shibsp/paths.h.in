@@ -26,7 +26,7 @@
 /**
  * Default schema catalogs.
  */
-#define SHIBSP_SCHEMAS "@-XMLDIR-@/xmltooling/catalog.xml:@-XMLDIR-@/opensaml/catalog.xml:@-XMLDIR-@/shibboleth/catalog.xml"
+#define SHIBSP_SCHEMAS "@-XMLDIR-@/xmltooling/catalog.xml:@-XMLDIR-@/opensaml/saml20-catalog.xml:@-XMLDIR-@/opensaml/saml11-catalog.xml:@-XMLDIR-@/shibboleth/catalog.xml"
 
 /**
  * Default location of SP configuration file.
