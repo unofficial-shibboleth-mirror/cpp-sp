@@ -11,9 +11,13 @@ attrincludedir = $(includedir)/shibsp/attribute
 
 attrresincludedir = $(includedir)/shibsp/attribute/resolver
 
+attrfiltincludedir = $(includedir)/shibsp/attribute/filtering
+
 bindincludedir = $(includedir)/shibsp/binding
 
 handincludedir = $(includedir)/shibsp/handler
+
+liteincludedir = $(includedir)/shibsp/lite
 
 mdincludedir = $(includedir)/shibsp/metadata
 
