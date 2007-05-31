@@ -151,20 +151,20 @@
 			<SessionInitiator type="Chaining" Location="/Login" isDefault="true" id="idp.example.org"
 					relayState="cookie" entityID="https://idp.example.org/shibboleth">
 				<SessionInitiator type="SAML2" defaultACSIndex="1" template="@-PKGSYSCONFDIR-@/bindingTemplate.html"/>
-				<SessionInitiator type="Shibboleth" defaultACSIndex="3"/>
+				<SessionInitiator type="Shib1" defaultACSIndex="3"/>
 			</SessionInitiator>
 			
 			<!-- An example using an old-style WAYF, which means Shib 1 only unless an entityID is provided. -->
 			<SessionInitiator type="Chaining" Location="/WAYF" id="WAYF" relayState="cookie">
 				<SessionInitiator type="SAML2" defaultACSIndex="1" template="@-PKGSYSCONFDIR-@/bindingTemplate.html"/>
-				<SessionInitiator type="Shibboleth" defaultACSIndex="3"/>
+				<SessionInitiator type="Shib1" defaultACSIndex="3"/>
 				<SessionInitiator type="WAYF" defaultACSIndex="3" URL="https://wayf.example.org/WAYF"/>
 			</SessionInitiator>
 
 			<!-- An example supporting the new-style of discovery service. -->
 			<SessionInitiator type="Chaining" Location="/DS" id="DS" relayState="cookie">
 				<SessionInitiator type="SAML2" template="@-PKGSYSCONFDIR-@/bindingTemplate.html"/>
-				<SessionInitiator type="Shibboleth" defaultACSIndex="3"/>
+				<SessionInitiator type="Shib1" defaultACSIndex="3"/>
 				<SessionInitiator type="SAMLDS" URL="https://ds.example.org/DS"/>
 			</SessionInitiator>
 			

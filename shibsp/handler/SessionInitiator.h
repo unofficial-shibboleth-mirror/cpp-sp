@@ -70,7 +70,7 @@ namespace shibsp {
     #define SAMLDS_SESSION_INITIATOR "SAMLDS"
 
     /** SessionInitiator that supports Shibboleth V1 AuthnRequest redirects. */
-    #define SHIB1_SESSION_INITIATOR "Shibboleth"
+    #define SHIB1_SESSION_INITIATOR "Shib1"
 
     /** SessionInitiator that supports Shibboleth V1 WAYF redirects when no IdP is supplied. */
     #define WAYF_SESSION_INITIATOR "WAYF"
