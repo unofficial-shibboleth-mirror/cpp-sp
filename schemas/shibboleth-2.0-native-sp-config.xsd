@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="US-ASCII"?>
 <schema targetNamespace="urn:mace:shibboleth:2.0:native:sp:config"
 	xmlns="http://www.w3.org/2001/XMLSchema"
-	xmlns:conf="urn:mace:shibboleth:sp:config:2.0"
+	xmlns:conf="urn:mace:shibboleth:native:sp:config:2.0"
 	xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"
 	xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"
 	xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"
