@@ -29,11 +29,11 @@ using namespace xmltooling;
 using namespace std;
 
 namespace shibsp {
-    SHIBSP_DLLLOCAL PluginManager<SessionInitiator,string,pair<const DOMElement*,const char*>>::Factory ChainingSessionInitiatorFactory;
-    SHIBSP_DLLLOCAL PluginManager<SessionInitiator,string,pair<const DOMElement*,const char*>>::Factory Shib1SessionInitiatorFactory;
-    SHIBSP_DLLLOCAL PluginManager<SessionInitiator,string,pair<const DOMElement*,const char*>>::Factory SAML2SessionInitiatorFactory;
-    SHIBSP_DLLLOCAL PluginManager<SessionInitiator,string,pair<const DOMElement*,const char*>>::Factory WAYFSessionInitiatorFactory;
-    SHIBSP_DLLLOCAL PluginManager<SessionInitiator,string,pair<const DOMElement*,const char*>>::Factory SAMLDSSessionInitiatorFactory;
+    SHIBSP_DLLLOCAL PluginManager< SessionInitiator,string,pair<const DOMElement*,const char*> >::Factory ChainingSessionInitiatorFactory;
+    SHIBSP_DLLLOCAL PluginManager< SessionInitiator,string,pair<const DOMElement*,const char*> >::Factory Shib1SessionInitiatorFactory;
+    SHIBSP_DLLLOCAL PluginManager< SessionInitiator,string,pair<const DOMElement*,const char*> >::Factory SAML2SessionInitiatorFactory;
+    SHIBSP_DLLLOCAL PluginManager< SessionInitiator,string,pair<const DOMElement*,const char*> >::Factory WAYFSessionInitiatorFactory;
+    SHIBSP_DLLLOCAL PluginManager< SessionInitiator,string,pair<const DOMElement*,const char*> >::Factory SAMLDSSessionInitiatorFactory;
 };
 
 void SHIBSP_API shibsp::registerSessionInitiators()
