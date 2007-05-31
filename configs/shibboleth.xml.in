@@ -49,30 +49,17 @@
 	<InProcess logger="@-PKGSYSCONFDIR-@/native.logger">
 		<!--
 		To customize behavior, map hostnames and path components to applicationId and other settings.
-		The following provider types are available with the delivered code:
-			type="Native"
-				- Web-server-specific plugin that allows native commands (like Apache's
-					ShibRequireSession) to override or supplement the XML syntax. The Apache
-					version also supplies an htaccess authz plugin for all content.
-
-			type="XML"
-				- portable plugin that does not support the older Apache-specific commands and works
-					the same on all web platforms, this plugin does NOT support htaccess files
-					for authz unless you also place an <htaccess/> element somewhere in the map
-
-			By default, the "native" plugin (the first one above) is used, since it matches older
-			behavior on both Apache and IIS.
 		-->
 		<RequestMapper type="Native">
 			<RequestMap applicationId="default">
 				<!--
-				This requires a session for documents in /secure on the containing host with http and
+				The example requires a session for documents in /secure on the containing host with http and
 				https on the default ports. Note that the name and port in the <Host> elements MUST match
 				Apache's ServerName and Port directives or the IIS Site name in the <ISAPI> element
 				below.
 				-->
 				<Host name="sp.example.org">
-					<Path name="secure" authType="shibboleth" requireSession="true" exportAssertion="true">
+					<Path name="secure" authType="shibboleth" requireSession="true">
 						<!-- Example shows the folder "/secure/admin" assigned to a separate <Application> -->
 						<!--
 						<Path name="admin" applicationId="foo-admin"/>
@@ -90,18 +77,8 @@
 				having to cover every possible DNS/IP combination the user might enter.
 				The port and scheme can	usually be omitted, so the HTTP request's port and
 				scheme will be used.
-				
-				<Alias> elements can specify alternate permissible client-specified server names.
-				If a client request uses such a name, normalized redirects will use it, but the
-				request map processing is still based on the default name attribute for the
-				site. This reduces duplicate data entry in the request map for every legal
-				hostname a site might permit. In the example below, only sp.example.org needs a
-				<Host> element in the map, but spalias.example.org could be used by a client
-				and those requests will map to sp.example.org for configuration settings.
 				-->
-				<Site id="1" name="sp.example.org">
-					<Alias>spalias.example.org</Alias>
-				</Site>
+				<Site id="1" name="sp.example.org"/>
 			</ISAPI>
 		</Implementation>
 	</InProcess>
@@ -130,21 +107,7 @@
 			<!--
 			SessionInitiators handle session requests and relay them to a Discovery page,
 			or to an IdP if possible. Automatic session setup will use the default or first
-			element (or requireSessionWith can specify a specific id to use). Lazy sessions
-			can be started with any initiator by redirecting to it using query string parameters:
-			
-		         * entityID				optional direct invocation of a specific IdP
-		         * target				optional resource to direct back to later (or homeURL will be used)
-		         * acsIndex				optional index of an ACS to use on the way back in
-		         
-		  	The following options can be set against content in the RequestMap or supplied on a query string
-		  	to override default or AuthnRequest template content when using SAML 2.0. They will be ignored
-		  	if the outgoing SSO protocol doesn't support them.
-		  	
-		         * forceAuthn				insist on user reauthentication at IdP
-		         * isPassive				preclude interaction at IdP or discovery service
-		         * authnContextClassRef		URI reference of an AuthnContextClass to request
-		         * authnContextComparison	comparison operator to apply to AuthnContext reference 
+			element (or requireSessionWith can specify a specific id to use).
 			-->
 
 			<!-- Default example directs to a specific IdP's SSO service (favoring SAML 2 over Shib 1). -->
