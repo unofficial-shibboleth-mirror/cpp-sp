@@ -31,7 +31,7 @@
 #include <xmltooling/unicode.h>
 
 #ifndef SHIBSP_LITE
-# include <saml/util/CGIParser.h>
+# include "util/CGIParser.h"
 # include <xsec/enc/OpenSSL/OpenSSLCryptoX509.hpp>
 # include <xsec/enc/XSECCryptoException.hpp>
 # include <xsec/framework/XSECException.hpp>

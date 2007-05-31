@@ -69,7 +69,6 @@ handinclude_HEADERS = \
 	handler/SessionInitiator.h
 
 liteinclude_HEADERS = \
-	lite/CGIParser.h \
 	lite/CommonDomainCookie.h \
 	lite/SAMLConstants.h
 
@@ -85,6 +84,7 @@ secinclude_HEADERS = \
 	security/SecurityPolicy.h
 
 utilinclude_HEADERS = \
+	util/CGIParser.h \
 	util/DOMPropertySet.h \
 	util/PropertySet.h \
 	util/SPConstants.h \
@@ -122,6 +122,7 @@ common_sources = \
 	remoting/impl/SocketListener.cpp \
 	remoting/impl/TCPListener.cpp \
 	remoting/impl/UnixListener.cpp \
+	util/CGIParser.cpp \
 	util/DOMPropertySet.cpp \
 	util/SPConstants.cpp \
 	util/TemplateParameters.cpp
@@ -129,7 +130,6 @@ common_sources = \
 libshibsp_lite_la_SOURCES = \
 	${common_sources} \
 	impl/RemotedSessionCache.cpp \
-	lite/CGIParser.cpp \
 	lite/CommonDomainCookie.cpp \
 	lite/SAMLConstants.cpp
 

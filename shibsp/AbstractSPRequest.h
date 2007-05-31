@@ -25,11 +25,7 @@
 
 #include <shibsp/exceptions.h>
 #include <shibsp/SPRequest.h>
-#ifndef SHIBSP_LITE
-# include <saml/util/CGIParser.h>
-#else
-# include <shibsp/lite/CGIParser.h>
-#endif
+#include <shibsp/util/CGIParser.h>
 
 namespace shibsp {
     
@@ -84,7 +80,7 @@ namespace shibsp {
         void* m_log; // declared void* to avoid log4cpp header conflicts in Apache
         mutable std::string m_handlerURL;
         mutable std::map<std::string,std::string> m_cookieMap;
-        mutable opensaml::CGIParser* m_parser;
+        mutable CGIParser* m_parser;
     };
 
 #if defined (_MSC_VER)

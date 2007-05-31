@@ -21,12 +21,12 @@
  */
 
 #include "internal.h"
-#include "lite/CGIParser.h"
+#include "util/CGIParser.h"
 
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/URLEncoder.h>
 
-using namespace opensaml;
+using namespace shibsp;
 using namespace xmltooling;
 using namespace std;
 

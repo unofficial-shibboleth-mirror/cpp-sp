@@ -15,7 +15,7 @@
  */
 
 /**
- * @file shibsp/lite/CGIParser.h
+ * @file shibsp/util/CGIParser.h
  * 
  * CGI GET/POST parameter parsing
  */
@@ -26,7 +26,7 @@
 #include <shibsp/base.h>
 #include <xmltooling/io/HTTPRequest.h>
 
-namespace opensaml {
+namespace shibsp {
 
 #if defined (_MSC_VER)
     #pragma warning( push )
@@ -61,7 +61,7 @@ namespace opensaml {
         std::pair<walker,walker> getParameters(const char* name) const;
         
     private:
-        char* fmakeword(char stop, unsigned int *cl, const char** ppch);
+        char* fmakeword(char stop, size_t *cl, const char** ppch);
         char* makeword(char *line, char stop);
         void plustospace(char *str);
 
