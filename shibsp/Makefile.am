@@ -184,8 +184,8 @@ libshibsp_lite_la_CPPFLAGS = -DSHIBSP_LITE
 paths.h: ${srcdir}/paths.h.in Makefile ${top_builddir}/config.status
 	rm -f $@.tmp
 	sed < ${srcdir}/$@.in > $@.tmp \
-	    -e 's:@-PKGSYSCONFDIR-@:${pkgsysconfdir}:' \
-	    -e 's:@-XMLDIR-@:${xmldir}:'
+	    -e 's:@-PKGSYSCONFDIR-@:${pkgsysconfdir}:g' \
+	    -e 's:@-XMLDIR-@:${xmldir}:g'
 	cmp -s $@ $@.tmp || mv $@.tmp $@
 	rm -f $@.tmp
 

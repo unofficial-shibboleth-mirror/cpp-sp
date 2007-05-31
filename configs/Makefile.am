@@ -45,13 +45,13 @@ CONFIGFILES = \
 do-build-file:
 	rm -f ${FILE}.tmp
 	sed < ${srcdir}/${FILE}.in > ${FILE}.tmp \
-	    -e 's:@-PREFIX-@:${prefix}:' \
-	    -e 's:@-LIBEXECDIR-@:${libexecdir}:' \
-	    -e 's:@-PKGSYSCONFDIR-@:${pkgsysconfdir}:' \
-	    -e 's:@-PKGXMLDIR-@:${pkgxmldir}:' \
-	    -e 's:@-PKGLOGDIR-@:${pkglogdir}:' \
-	    -e 's:@-SHIRELOGDIR-@:${shirelogdir}:' \
-	    -e 's:@-VARRUNDIR-@:${varrundir}:'
+	    -e 's:@-PREFIX-@:${prefix}:g' \
+	    -e 's:@-LIBEXECDIR-@:${libexecdir}:g' \
+	    -e 's:@-PKGSYSCONFDIR-@:${pkgsysconfdir}:g' \
+	    -e 's:@-PKGXMLDIR-@:${pkgxmldir}:g' \
+	    -e 's:@-PKGLOGDIR-@:${pkglogdir}:g' \
+	    -e 's:@-SHIRELOGDIR-@:${shirelogdir}:g' \
+	    -e 's:@-VARRUNDIR-@:${varrundir}:g'
 	cmp -s ${FILE} ${FILE}.tmp || mv ${FILE}.tmp ${FILE}
 	rm -f ${FILE}.tmp
 
@@ -119,7 +119,7 @@ CLEANFILES = \
 	attribute-policy.xml \
 	example-metadata.xml
 
-EXTRA_DIST =
+EXTRA_DIST = \
 	shibboleth.xml.in \
 	attribute-map.xml.in \
 	attribute-policy.xml.in \
