@@ -120,6 +120,19 @@ AC_TRY_LINK(
         [AC_MSG_ERROR([unable to link with Xerces])])
 
 
+#XML-Tooling settings
+AC_ARG_WITH(xmltooling,
+            AC_HELP_STRING([--with-xmltooling=PATH], [where xmltooling-c is installed]),
+            [if test x_$with_xmltooling != x_/usr; then
+                LDFLAGS="-L${with_xmltooling}/lib $LDFLAGS"
+                CPPFLAGS="-I${with_xmltooling}/include $CPPFLAGS"
+            fi])
+LITE_LIBS="-lxmltooling-lite"
+XMLSEC_LIBS="-lxmltooling"
+AC_CHECK_HEADER([xmltooling/base.h],,
+                AC_MSG_ERROR([unable to find xmltooling header files]))
+
+
 # XML-Security settings
 AC_ARG_WITH(xmlsec,
             AC_HELP_STRING([--with-xmlsec=PATH], [where xmlsec is installed]),,
@@ -129,7 +142,7 @@ if test x_$with_xmlsec != x_/usr; then
     LDFLAGS="-L${with_xmlsec}/lib $LDFLAGS"
     CPPFLAGS="-I${with_xmlsec}/include $CPPFLAGS"
 fi        
-XMLSEC_LIBS="-lxml-security-c"
+XMLSEC_LIBS="-lxml-security-c $XMLSEC_LIBS"
 
 # save and append master libs
 save_LIBS="$LIBS"
@@ -183,6 +196,7 @@ opensaml::SAMLConfig::getConfig();
 # restore master libs
 LIBS="$save_LIBS"
 
+AC_SUBST(LITE_LIBS)
 AC_SUBST(XMLSEC_LIBS)
 
 # output the underlying makefiles

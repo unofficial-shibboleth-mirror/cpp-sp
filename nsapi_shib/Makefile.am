@@ -5,7 +5,7 @@ nsapi_shibdir = $(libexecdir)
 nsapi_shib_LTLIBRARIES = nsapi_shib.la
 nsapi_shib_la_SOURCES = nsapi_shib.cpp
 nsapi_shib_la_CXXFLAGS = $(NSAPI_INCLUDE)
-nsapi_shib_la_LDFLAGS = -module -avoid-version
+nsapi_shib_la_LDFLAGS = $(LITE_LIBS) -module -avoid-version
 nsapi_shib_la_LIBADD = \
   $(top_builddir)/shibsp/libshibsp.la
 
