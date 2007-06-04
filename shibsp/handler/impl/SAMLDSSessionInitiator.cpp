@@ -89,6 +89,10 @@ pair<bool,long> SAMLDSSessionInitiator::run(SPRequest& request, const char* enti
     const Application& app=request.getApplication();
 
     if (isHandler) {
+        option = request.getParameter("SAMLDS");
+        if (option && !strcmp(option,"1"))
+            throw MetadataException("No identity provider was selected by user.");
+        
         option = request.getParameter("target");
         if (option)
             target = option;
@@ -113,6 +117,7 @@ pair<bool,long> SAMLDSSessionInitiator::run(SPRequest& request, const char* enti
     string returnURL=request.getHandlerURL(target.c_str());
     pair<bool,const char*> thisloc = getString("Location");
     if (thisloc.first) returnURL += thisloc.second;
+    returnURL += "?SAMLDS=1"; // signals us not to loop if we get no answer back
 
     if (isHandler) {
         // We may already have RelayState set if we looped back here,
@@ -136,14 +141,14 @@ pair<bool,long> SAMLDSSessionInitiator::run(SPRequest& request, const char* enti
                 query = strchr(query, '&');
                 // If we still have more, just append it.
                 if (query && *(++query))
-                    returnURL = returnURL + '?' + query;
+                    returnURL = returnURL + '&' + query;
             }
             else {
                 // There's something in the query before target appears, so we have to find it.
                 thisloc.second = strstr(query,"&target=");
                 if (thisloc.second) {
                     // We found it, so first append everything up to it.
-                    returnURL += '?';
+                    returnURL += '&';
                     returnURL.append(query, thisloc.second - query);
                     query = thisloc.second + 8; // move up just past the equals sign.
                     thisloc.second = strchr(query, '&');
@@ -152,18 +157,18 @@ pair<bool,long> SAMLDSSessionInitiator::run(SPRequest& request, const char* enti
                 }
                 else {
                     // No target in the existing query, so just append it as is.
-                    returnURL = returnURL + '?' + query;
+                    returnURL = returnURL + '&' + query;
                 }
             }
         }
 
         // Now append the sanitized target as needed.
         if (!target.empty())
-            returnURL = returnURL + (returnURL.rfind('?')==string::npos ? '?' : '&') + "target=" + urlenc->encode(target.c_str());
+            returnURL = returnURL + "&target=" + urlenc->encode(target.c_str());
     }
     else if (!target.empty()) {
         // For a virtual handler, we just append target to the return link.
-        returnURL = returnURL + "?target=" + urlenc->encode(target.c_str());;
+        returnURL = returnURL + "&target=" + urlenc->encode(target.c_str());;
     }
 
     string req=string(m_url) + (strchr(m_url,'?') ? '&' : '?') + "entityID=" + urlenc->encode(app.getString("entityID").second) +

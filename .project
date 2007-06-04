@@ -1,10 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>Shibboleth-C</name>
+	<name>cpp-sp</name>
 	<comment></comment>
-	<projects>
-		<project>OpenSAML-C</project>
-	</projects>
 	<buildSpec>
 		<buildCommand>
 			<name>org.eclipse.cdt.make.core.makeBuilder</name>
