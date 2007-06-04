@@ -111,9 +111,10 @@ namespace shibsp {
         /**
          * Ensures no value exists for a request header.
          * 
-         * @param name  name of header to clear 
+         * @param rawname  raw name of header to clear
+         * @param cginame  CGI-equivalent name of header
          */
-        virtual void clearHeader(const char* name)=0;
+        virtual void clearHeader(const char* rawname, const char* cginame)=0;
 
         /**
          * Sets a value for a request header.

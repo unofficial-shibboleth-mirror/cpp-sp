@@ -146,8 +146,8 @@ namespace {
             DDF header;
             DDF ret=DDF(NULL).list();
             DDFJanitor jret(ret);
-            for (vector<string>::const_iterator i = m_unsetHeaders.begin(); i!=m_unsetHeaders.end(); ++i) {
-                header = DDF(NULL).string(i->c_str());
+            for (vector< pair<string,string> >::const_iterator i = m_unsetHeaders.begin(); i!=m_unsetHeaders.end(); ++i) {
+                header = DDF(i->first.c_str()).string(i->second.c_str());
                 ret.add(header);
             }
             out << ret;
@@ -179,7 +179,7 @@ namespace {
 #endif
 #endif
         set<string> m_remoteUsers;
-        mutable vector<string> m_unsetHeaders;
+        mutable vector< pair<string,string> > m_unsetHeaders;
         RWLock* m_unsetLock;
 
         // manage handler objects
@@ -491,11 +491,18 @@ XMLApplication::XMLApplication(
                     pos = strchr(start,' ');
                     if (pos)
                         *pos=0;
-                    m_unsetHeaders.push_back(start);
+
+                    string transformed("HTTP_");
+                    const char* pch = start;
+                    while (*pch) {
+                        transformed += (isalnum(*pch) ? toupper(*pch) : '_');
+                        pch++;
+                    }
+                    m_unsetHeaders.push_back(pair<string,string>(start,transformed));
                     start = pos ? pos+1 : NULL;
                 }
                 free(dup);
-                m_unsetHeaders.push_back("Shib-Application-ID");
+                m_unsetHeaders.push_back(pair<string,string>("Shib-Application-ID","HTTP_SHIB_APPLICATION_ID"));
             }
         }
 
@@ -722,18 +729,33 @@ XMLApplication::XMLApplication(
             }
 
             if (m_unsetHeaders.empty()) {
+                vector<string> unsetHeaders;
                 if (m_attrExtractor) {
                     Locker extlock(m_attrExtractor);
-                    m_attrExtractor->getAttributeIds(m_unsetHeaders);
+                    m_attrExtractor->getAttributeIds(unsetHeaders);
                 }
                 if (m_attrResolver) {
                     Locker reslock(m_attrResolver);
-                    m_attrResolver->getAttributeIds(m_unsetHeaders);
+                    m_attrResolver->getAttributeIds(unsetHeaders);
                 }
-                if (m_base && m_unsetHeaders.empty())
-                    m_unsetHeaders.insert(m_unsetHeaders.end(), m_base->m_unsetHeaders.begin(), m_base->m_unsetHeaders.end());
-                else
-                    m_unsetHeaders.push_back("Shib-Application-ID");
+                if (unsetHeaders.empty()) {
+                    if (m_base)
+                        m_unsetHeaders.insert(m_unsetHeaders.end(), m_base->m_unsetHeaders.begin(), m_base->m_unsetHeaders.end());
+                    else
+                        m_unsetHeaders.push_back(pair<string,string>("Shib-Application-ID","HTTP_SHIB_APPLICATION_ID"));
+                }
+                else {
+                    for (vector<string>::const_iterator hdr = unsetHeaders.begin(); hdr!=unsetHeaders.end(); ++hdr) {
+                        string transformed("HTTP_");
+                        const char* pch = hdr->c_str();
+                        while (*pch) {
+                            transformed += (isalnum(*pch) ? toupper(*pch) : '_');
+                            pch++;
+                        }
+                        m_unsetHeaders.push_back(pair<string,string>(*hdr,transformed));
+                    }
+                    m_unsetHeaders.push_back(pair<string,string>("Shib-Application-ID","HTTP_SHIB_APPLICATION_ID"));
+                }
             }
         }
 
@@ -932,8 +954,8 @@ const Handler* XMLApplication::getHandler(const char* path) const
 void XMLApplication::clearAttributeHeaders(SPRequest& request) const
 {
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
-        for (vector<string>::const_iterator i = m_unsetHeaders.begin(); i!=m_unsetHeaders.end(); ++i)
-            request.clearHeader(i->c_str());
+        for (vector< pair<string,string> >::const_iterator i = m_unsetHeaders.begin(); i!=m_unsetHeaders.end(); ++i)
+            request.clearHeader(i->first.c_str(), i->second.c_str());
         return;
     }
 
@@ -951,7 +973,7 @@ void XMLApplication::clearAttributeHeaders(SPRequest& request) const
             if (out.islist()) {
                 DDF header = out.first();
                 while (header.isstring()) {
-                    m_unsetHeaders.push_back(header.string());
+                    m_unsetHeaders.push_back(pair<string,string>(header.name(),header.string()));
                     header = out.next();
                 }
             }
@@ -964,8 +986,8 @@ void XMLApplication::clearAttributeHeaders(SPRequest& request) const
 
     // Now holding read lock.
     SharedLock unsetLock(m_unsetLock, false);
-    for (vector<string>::const_iterator i = m_unsetHeaders.begin(); i!=m_unsetHeaders.end(); ++i)
-        request.clearHeader(i->c_str());
+    for (vector< pair<string,string> >::const_iterator i = m_unsetHeaders.begin(); i!=m_unsetHeaders.end(); ++i)
+        request.clearHeader(i->first.c_str(), i->second.c_str());
 }
 
 short XMLConfigImpl::acceptNode(const DOMNode* node) const

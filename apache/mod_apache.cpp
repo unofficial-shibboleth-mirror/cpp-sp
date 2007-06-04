@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-/*
- * mod_apache.cpp -- the core Apache Module code
- *
- * Created by:	Derek Atkins <derek@ihtfp.com>
- *
- * $Id$
+/**
+ * mod_apache.cpp
+ * 
+ * Apache module implementation
  */
 
 #define SHIBSP_LITE
@@ -63,9 +61,9 @@
 #define CORE_PRIVATE
 #include <http_core.h>
 #include <http_log.h>
+#include <http_request.h>
 
 #ifndef SHIB_APACHE_13
-#include <http_request.h>
 #include <apr_buckets.h>
 #include <apr_strings.h>
 #include <apr_pools.h>
@@ -91,6 +89,7 @@ namespace {
     char* g_szSchemaDir = SHIBSP_SCHEMAS;
     SPConfig* g_Config = NULL;
     string g_unsetHeaderValue;
+    bool g_checkSpoofing = true;
     static const char* g_UserDataKey = "_shib_check_user_";
     static const XMLCh path[] = UNICODE_LITERAL_4(p,a,t,h);
     static const XMLCh validate[] = UNICODE_LITERAL_8(v,a,l,i,d,a,t,e);
@@ -273,6 +272,7 @@ class ShibTargetApache : public AbstractSPRequest
   mutable string m_body;
   mutable bool m_gotBody;
   mutable vector<string> m_certs;
+  set<string> m_allhttp;
 
 public:
   request_rec* m_req;
@@ -387,14 +387,40 @@ public:
 #endif
     return m_body.c_str();
   }
-  void clearHeader(const char* name) {
+  void clearHeader(const char* rawname, const char* cginame) {
     if (m_dc->bUseEnvVars!=0) {
        // ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_clear_header: env\n");
-       if (m_rc && m_rc->env) ap_table_unset(m_rc->env, name);
+       if (m_rc && m_rc->env) ap_table_unset(m_rc->env, rawname);
     } else {
        // ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_clear_header: hdr\n");
-       ap_table_unset(m_req->headers_in, name);
-       ap_table_set(m_req->headers_in, name, g_unsetHeaderValue.c_str());
+        if (g_checkSpoofing && ap_is_initial_req(m_req)) {
+            if (m_allhttp.empty()) {
+                // First time, so populate set with "CGI" versions of client-supplied headers.
+#ifdef SHIB_APACHE_13
+                array_header *hdrs_arr = ap_table_elts(m_req->headers_in);
+                table_entry *hdrs = (table_entry *) hdrs_arr->elts;
+#else
+                const apr_array_header_t *hdrs_arr = apr_table_elts(m_req->headers_in);
+                const apr_table_entry_t *hdrs = (const apr_table_entry_t *) hdrs_arr->elts;
+#endif
+                for (int i = 0; i < hdrs_arr->nelts; ++i) {
+                    if (!hdrs[i].key)
+                        continue;
+                    string cgiversion("HTTP_");
+                    const char* pch = hdrs[i].key;
+                    while (*pch) {
+                        cgiversion += (isalnum(*pch) ? toupper(*pch) : '_');
+                        pch++;
+                    }
+                    m_allhttp.insert(cgiversion);
+                }
+            }
+
+            if (m_allhttp.count(cginame) > 0)
+                throw opensaml::SecurityPolicyException("Attempt to spoof header ($1) was detected.", params(1, rawname));
+        }
+        ap_table_unset(m_req->headers_in, rawname);
+        ap_table_set(m_req->headers_in, rawname, g_unsetHeaderValue.c_str());
     }
   }
   void setHeader(const char* name, const char* value) {
@@ -1122,6 +1148,9 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
         pair<bool,const char*> unsetValue=props->getString("unsetHeaderValue");
         if (unsetValue.first)
             g_unsetHeaderValue = unsetValue.second;
+        pair<bool,bool> checkSpoofing=props->getBool("checkSpoofing");
+        if (checkSpoofing.first && !checkSpoofing.second)
+            g_checkSpoofing = false;
     }
 
     // Set the cleanup handler
@@ -1326,8 +1355,8 @@ static command_rec shib_cmds[] = {
         (void *) offsetof (shib_dir_config, szRedirectToSSL),
         OR_AUTHCFG, "Redirect non-SSL requests to designated port"),
   AP_INIT_TAKE1("AuthGroupFile", (config_fn_t)shib_ap_set_file_slot,
-		(void *) offsetof (shib_dir_config, szAuthGrpFile),
-		OR_AUTHCFG, "Text file containing group names and member user IDs"),
+        (void *) offsetof (shib_dir_config, szAuthGrpFile),
+        OR_AUTHCFG, "Text file containing group names and member user IDs"),
   AP_INIT_FLAG("ShibRequireAll", (config_fn_t)ap_set_flag_slot,
         (void *) offsetof (shib_dir_config, bRequireAll),
         OR_AUTHCFG, "All require directives must match"),
@@ -1349,7 +1378,7 @@ module AP_MODULE_DECLARE_DATA mod_shib = {
 };
 
 #else
-#error "undefined APACHE version"
+#error "unsupported Apache version"
 #endif
 
 }

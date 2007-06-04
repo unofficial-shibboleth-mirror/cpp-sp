@@ -87,12 +87,12 @@ namespace shibsp {
     }
     
     void SHIBSP_DLLLOCAL clearHeaders(SPRequest& request) {
-        request.clearHeader("Shib-Identity-Provider");
-        request.clearHeader("Shib-Authentication-Method");
-        request.clearHeader("Shib-AuthnContext-Class");
-        request.clearHeader("Shib-AuthnContext-Decl");
-        request.clearHeader("Shib-Attributes");
-        request.clearHeader("Shib-Assertion-Count");
+        request.clearHeader("Shib-Identity-Provider", "HTTP_SHIB_IDENTITY_PROVIDER");
+        request.clearHeader("Shib-Authentication-Method", "HTTP_SHIB_AUTHENTICATION_METHOD");
+        request.clearHeader("Shib-AuthnContext-Class", "HTTP_SHIB_AUTHNCONTEXT_CLASS");
+        request.clearHeader("Shib-AuthnContext-Decl", "HTTP_SHIB_AUTHNCONTEXT_DECL");
+        request.clearHeader("Shib-Attributes", "HTTP_SHIB_ATTRIBUTES");
+        request.clearHeader("Shib-Assertion-Count", "HTTP_SHIB_ASSERTION_COUNT");
         //request.clearHeader("Shib-Application-ID");   handle inside app method
         request.getApplication().clearAttributeHeaders(request);
     }
@@ -411,7 +411,7 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
     catch (exception& e) {
         TemplateParameters tp(&e);
         tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
-        return make_pair(true,sendError(request, app, "rm", tp));
+        return make_pair(true,sendError(request, app, "session", tp));
     }
 #ifndef _DEBUG
     catch (...) {
@@ -419,7 +419,7 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
         tp.m_map["errorType"] = "Unexpected Error";
         tp.m_map["errorText"] = "Caught an unknown exception.";
         tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
-        return make_pair(true,sendError(request, app, "rm", tp));
+        return make_pair(true,sendError(request, app, "session", tp));
     }
 #endif
 }

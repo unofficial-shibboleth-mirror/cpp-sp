@@ -7,25 +7,25 @@
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 	<link rel="stylesheet" type="text/css" href="<shibmlp styleSheet/>" />
-	<title>Session Creation Failure</title>
+	<title><shibmlp errorType/></title>
 </head>
 
 <body>
 <div class="head">
 <img src="<shibmlp logoLocation/>" alt="Logo" />
-<h1>Session Creation Failure</h1>
+<h1><shibmlp errorType/></h1>
 </div>
 
-<p>The inter-institutional access system was unable to successfully build a
-login session for you at <shibmlp now /></p>
+<p>The inter-institutional access system encountered an error at <shibmlp now /></p>
 
 <p>To report this problem, please contact the site administrator at
 <a href="mailto:<shibmlp supportContact/>"><shibmlp supportContact/></a>.
 </p>
 
 <p>Please include the following message in any email:</p>
-<p class="error">Session creation failure at (<shibmlp requestURL/>)</p>
-<p><shibmlp errorType/></p>
+<p class="error"><shibmlp errorType/> at (<shibmlp requestURL/>)</p>
+
+<p><shibmlp errorText/></p>
 
 </body>
 </html>

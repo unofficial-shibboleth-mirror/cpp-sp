@@ -16,10 +16,10 @@
 
 	<annotation>
 		<documentation>
-    	2.0 schema for XML-based configuration of Shibboleth Native SP instances.
-    	First appearing in Shibboleth 2.0 release.
-    	</documentation>
-    </annotation>
+		2.0 schema for XML-based configuration of Shibboleth Native SP instances.
+		First appearing in Shibboleth 2.0 release.
+    		</documentation>
+	</annotation>
 
 	<simpleType name="string">
 		<restriction base="string">
@@ -199,7 +199,8 @@
 				<any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
 			</sequence>
 			<attribute name="logger" type="anyURI"/>
-			<attribute name="unsetHeaderValue" type="string" use="optional"/>
+			<attribute name="unsetHeaderValue" type="string"/>
+			<attribute name="checkSpoofing" type="boolean"/>
 			<anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>

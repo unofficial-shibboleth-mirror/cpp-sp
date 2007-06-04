@@ -31,7 +31,6 @@ CONFIGFILES = \
 	console.logger \
 	syslog.logger \
 	accessError.html \
-	rmError.html \
 	sessionError.html \
 	metadataError.html \
 	bindingTemplate.html \
@@ -133,7 +132,6 @@ EXTRA_DIST = \
 	console.logger \
 	syslog.logger \
 	accessError.html \
-	rmError.html \
 	sessionError.html \
 	metadataError.html \
 	sslError.html \
