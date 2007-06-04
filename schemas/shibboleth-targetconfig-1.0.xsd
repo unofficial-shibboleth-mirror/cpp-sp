@@ -179,6 +179,7 @@
 		<attribute name="logger" type="anyURI" use="optional"/>
 		<attribute name="localRelayState" type="boolean" use="optional" default="false"/>
 		<attribute name="unsetHeaderValue" type="string" use="optional"/>
+		<attribute name="checkSpoofing" type="boolean" use="optional"/>
 		<anyAttribute namespace="##other" processContents="lax"/>
 	</complexType>
 	

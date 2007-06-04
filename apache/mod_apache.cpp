@@ -43,9 +43,9 @@
 #define CORE_PRIVATE
 #include <http_core.h>
 #include <http_log.h>
+#include <http_request.h>
 
 #ifndef SHIB_APACHE_13
-#include <http_request.h>
 #include <apr_strings.h>
 #include <apr_pools.h>
 #endif
@@ -69,6 +69,7 @@ namespace {
     char* g_szSchemaDir = NULL;
     ShibTargetConfig* g_Config = NULL;
     string g_unsetHeaderValue;
+    bool g_checkSpoofing = true;
     static const char* g_UserDataKey = "_shib_check_user_";
 }
 
@@ -299,7 +300,7 @@ public:
   virtual string getArgs(void) { return string(m_req->args ? m_req->args : ""); }
   virtual string getPostData(void) {
     // Read the posted data
-    if (ap_setup_client_block(m_req, REQUEST_CHUNKED_DECHUNK) != OK)
+    if (ap_setup_client_block(m_req, REQUEST_CHUNKED_ERROR))
         throw FatalProfileException("Apache function (setup_client_block) failed while reading profile submission.");
     if (!ap_should_client_block(m_req))
         throw FatalProfileException("Apache function (should_client_block) failed while reading profile submission.");
@@ -320,12 +321,46 @@ public:
   }
   virtual void clearHeader(const string &name) {
     if (m_dc->bUseEnvVars==1) {
-       // ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_clear_header: env");
-       if (m_rc && m_rc->env) ap_table_unset(m_rc->env, name.c_str());
+        // ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_clear_header: env");
+        if (m_rc && m_rc->env) ap_table_unset(m_rc->env, name.c_str());
     } else {
-       // ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_clear_header: hdr");
-       ap_table_unset(m_req->headers_in, name.c_str());
-       ap_table_set(m_req->headers_in, name.c_str(), g_unsetHeaderValue.c_str());
+        // ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_clear_header: hdr");
+        if (g_checkSpoofing && ap_is_initial_req(m_req)) {
+            if (m_allhttp.empty()) {
+                // First time, so populate set with "CGI" versions of client-supplied headers.
+#ifdef SHIB_APACHE_13
+                array_header *hdrs_arr = ap_table_elts(m_req->headers_in);
+                table_entry *hdrs = (table_entry *) hdrs_arr->elts;
+#else
+                const apr_array_header_t *hdrs_arr = apr_table_elts(m_req->headers_in);
+                const apr_table_entry_t *hdrs = (const apr_table_entry_t *) hdrs_arr->elts;
+#endif
+                for (int i = 0; i < hdrs_arr->nelts; ++i) {
+                    if (!hdrs[i].key)
+                        continue;
+                    string cgiversion("HTTP_");
+                    const char* pch = hdrs[i].key;
+                    while (*pch) {
+                        cgiversion += (isalnum(*pch) ? toupper(*pch) : '_');
+                        pch++;
+                    }
+                    m_allhttp.insert(cgiversion);
+                }
+            }
+
+            // Map to the expected CGI variable name.
+            string transformed("HTTP_");
+            const char* pch = name.c_str();
+            while (*pch) {
+                transformed += (isalnum(*pch) ? toupper(*pch) : '_');
+                pch++;
+            }
+            if (m_allhttp.count(transformed) > 0)
+                throw SAMLException("Attempt to spoof header ($1) was detected.", params(1, name.c_str()));
+        }
+
+        ap_table_unset(m_req->headers_in, name.c_str());
+        ap_table_set(m_req->headers_in, name.c_str(), g_unsetHeaderValue.c_str());
     }
   }
   virtual void setHeader(const string &name, const string &value) {
@@ -387,6 +422,7 @@ public:
   shib_dir_config* m_dc;
   shib_server_config* m_sc;
   shib_request_config* m_rc;
+  set<string> m_allhttp;
 };
 
 /********************************************************************************/
@@ -1056,6 +1092,9 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
             pair<bool,const char*> unsetValue=props->getString("unsetHeaderValue");
             if (unsetValue.first)
                 g_unsetHeaderValue = unsetValue.second;
+            pair<bool,bool> checkSpoofing=props->getBool("checkSpoofing");
+            if (checkSpoofing.first && !checkSpoofing.second)
+                g_checkSpoofing = false;
         }
     }
     catch (...) {
@@ -1081,12 +1120,6 @@ static void set_error_filter(request_rec *r)
    ap_add_output_filter("SHIB_HEADERS_ERR", NULL, r, r->connection);
 }
 
-static int _table_add(void *v, const char *key, const char *value)
-{
-    apr_table_addn((apr_table_t*)v, key, value);
-    return 1;
-}
-
 static apr_status_t do_output_filter(ap_filter_t *f, apr_bucket_brigade *in)
 {
     request_rec *r = f->r;
@@ -1094,9 +1127,7 @@ static apr_status_t do_output_filter(ap_filter_t *f, apr_bucket_brigade *in)
 
     if (rc) {
         ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_out_filter: merging %d headers", apr_table_elts(rc->hdr_out)->nelts);
-        apr_table_do(_table_add,r->headers_out, rc->hdr_out,NULL);
-        // can't use overlap call because it will collapse Set-Cookie headers
-        //apr_table_overlap(r->headers_out, rc->hdr_out, APR_OVERLAP_TABLES_MERGE);
+        apr_table_overlap(r->headers_out, rc->hdr_out, APR_OVERLAP_TABLES_MERGE);
     }
 
     /* remove ourselves from the filter chain */
@@ -1113,9 +1144,7 @@ static apr_status_t do_error_filter(ap_filter_t *f, apr_bucket_brigade *in)
 
     if (rc) {
         ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_err_filter: merging %d headers", apr_table_elts(rc->hdr_err)->nelts);
-        apr_table_do(_table_add,r->err_headers_out, rc->hdr_err,NULL);
-        // can't use overlap call because it will collapse Set-Cookie headers
-        //apr_table_overlap(r->err_headers_out, rc->hdr_err, APR_OVERLAP_TABLES_MERGE);
+        apr_table_overlap(r->err_headers_out, rc->hdr_err, APR_OVERLAP_TABLES_MERGE);
     }
 
     /* remove ourselves from the filter chain */
