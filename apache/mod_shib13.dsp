@@ -43,7 +43,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "MOD_SHIB13_EXPORTS" /YX /FD /c
-# ADD CPP /nologo /MD /W3 /GR /GX /O2 /I ".." /I "..\..\..\opensaml\c" /I "\Apache\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "EAPI" /YX /FD /c
+# ADD CPP /nologo /MD /W3 /GR /GX /O2 /I "\Apache\include" /I ".." /I "..\..\cpp-opensaml1" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "EAPI" /YX /FD /c
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
@@ -53,7 +53,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386
-# ADD LINK32 log4cpp.lib xerces-c_2.lib ApacheCore.lib saml_5.lib /nologo /dll /machine:I386 /out:"Release/mod_shib_13.so" /libpath:"../../../opensaml/c/saml/Release" /libpath:"\Apache\libexec"
+# ADD LINK32 log4cpp.lib xerces-c_2.lib ApacheCore.lib saml_5.lib /nologo /dll /machine:I386 /out:"Release/mod_shib_13.so" /libpath:"\Apache\libexec" /libpath:"..\..\cpp-opensaml1\saml\Release"
 
 !ELSEIF  "$(CFG)" == "mod_shib13 - Win32 Debug"
 
@@ -69,7 +69,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "MOD_SHIB13_EXPORTS" /YX /FD /GZ /c
-# ADD CPP /nologo /MDd /W3 /Gm /GR /GX /ZI /Od /I ".." /I "..\..\..\opensaml\c" /I "\ApacheD\include" /D "_WINDOWS" /D "EAPI" /D "WIN32" /D "_DEBUG" /D "_MBCS" /FR /YX /FD /GZ /c
+# ADD CPP /nologo /MDd /W3 /Gm /GR /GX /ZI /Od /I "\Apache\include" /I ".." /I "..\..\cpp-opensaml1" /D "_WINDOWS" /D "EAPI" /D "WIN32" /D "_DEBUG" /D "_MBCS" /FR /YX /FD /GZ /c
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
@@ -79,7 +79,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 log4cppD.lib xerces-c_2D.lib ApacheCore.lib saml_5D.lib /nologo /dll /debug /machine:I386 /out:"Debug/mod_shib_13.so" /pdbtype:sept /libpath:"../../../opensaml/c/saml/Debug" /libpath:"\Apache\libexec"
+# ADD LINK32 log4cppD.lib xerces-c_2D.lib ApacheCore.lib saml_5D.lib /nologo /dll /debug /machine:I386 /out:"Debug/mod_shib_13.so" /pdbtype:sept /libpath:"\Apache\libexec" /libpath:"..\..\cpp-opensaml1\saml\Debug"
 
 !ENDIF 
 
