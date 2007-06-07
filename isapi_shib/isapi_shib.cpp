@@ -87,6 +87,7 @@ namespace {
     map<string,site_t> g_Sites;
     bool g_bNormalizeRequest = true;
     string g_unsetHeaderValue;
+    bool g_checkSpoofing = true;
 }
 
 BOOL LogEvent(
@@ -182,6 +183,9 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
             pair<bool,const char*> unsetValue=props->getString("unsetHeaderValue");
             if (unsetValue.first)
                 g_unsetHeaderValue = unsetValue.second;
+            pair<bool,bool> checkSpoofing=props->getBool("checkSpoofing");
+            if (checkSpoofing.first && !checkSpoofing.second)
+                g_checkSpoofing = false;
             const DOMElement* impl=saml::XML::getFirstChildElement(
                 props->getElement(),shibtarget::XML::SHIBTARGET_NS,Implementation
                 );
@@ -345,8 +349,11 @@ class ShibTargetIsapiF : public ShibTarget
   PHTTP_FILTER_CONTEXT m_pfc;
   PHTTP_FILTER_PREPROC_HEADERS m_pn;
   string m_cookie;
+  dynabuf m_allhttp;
+
 public:
-  ShibTargetIsapiF(PHTTP_FILTER_CONTEXT pfc, PHTTP_FILTER_PREPROC_HEADERS pn, const site_t& site) {
+    ShibTargetIsapiF(PHTTP_FILTER_CONTEXT pfc, PHTTP_FILTER_PREPROC_HEADERS pn, const site_t& site)
+        : m_pfc(pfc), m_pn(pn), m_allhttp(4096) {
 
     // URL path always come from IIS.
     dynabuf url(256);
@@ -383,11 +390,8 @@ public:
         host=site.m_name.c_str();
 
     init(scheme, host, atoi(port), url, content_type, remote_addr, method); 
-
-    m_pfc = pfc;
-    m_pn = pn;
   }
-  ~ShibTargetIsapiF() { }
+  ~ShibTargetIsapiF() {}
 
   virtual void log(ShibLogLevel level, const string &msg) {
     ShibTarget::log(level,msg);
@@ -399,6 +403,22 @@ public:
   }
   
   virtual void clearHeader(const string &name) {
+    if (g_checkSpoofing) {
+        if (m_allhttp.empty())
+	        GetServerVariable(m_pfc,"ALL_HTTP",m_allhttp,4096);
+
+        // Map to the expected CGI variable name.
+        string transformed("HTTP_");
+        const char* pch = name.c_str();
+        while (*pch) {
+            transformed += (isalnum(*pch) ? toupper(*pch) : '_');
+            pch++;
+        }
+        transformed += ':';
+
+        if (strstr(m_allhttp, transformed.c_str()))
+            throw SAMLException("Attempt to spoof header ($1) was detected.", params(1, name.c_str()));
+    }
     string hdr = (name=="REMOTE_USER" ? "remote-user" : name) + ":";
     m_pn->SetHeader(m_pfc, const_cast<char*>(hdr.c_str()), const_cast<char*>(g_unsetHeaderValue.c_str()));
   }
