@@ -163,6 +163,9 @@ FileResolver::FileResolver(const DOMElement* e)
         }
 
     }
+    else {
+        throw CredentialException("FileResolver can't access key file, no Key element specified.");
+    }
         
     // Check for Certificate
     e=saml::XML::getFirstChildElement(root,::XML::CREDS_NS,SHIB_L(Certificate));
