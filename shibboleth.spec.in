@@ -7,7 +7,6 @@ Group:		System Environment/Libraries
 License:	Apache style
 URL:		http://shibboleth.internet2.edu/
 Source0:	http://shibboleth.internet2.edu/downloads/%{name}-%{version}.tar.gz
-Source1:	http://shibboleth.internet2.edu/downloads/%{name}-%{version}.tar.gz.asc
 BuildRoot:	%{_tmppath}/%{name}-%{version}-root
 
 BuildRequires:	openssl-devel, curl-devel >= 7.10.6, xerces%{?xercesver}-c-devel >= 2.6.1
