@@ -73,7 +73,6 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="log4cpp.lib xerces-c_2.lib xsec_1.lib saml2.lib"
-				OutputFile=".\Release/siterefresh.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="..\..\cpp-opensaml2\Release;..\..\cpp-xmltooling\Release"
@@ -166,7 +165,6 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="log4cppD.lib xerces-c_2D.lib xsec_1D.lib saml2D.lib xmltooling1D.lib"
-				OutputFile=".\Debug/siterefresh.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="..\..\cpp-opensaml2\Debug;..\..\cpp-xmltooling\Debug"

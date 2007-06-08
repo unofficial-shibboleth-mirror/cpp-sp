@@ -15,8 +15,8 @@
 	<Configurations>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory=".\Release"
-			IntermediateDirectory=".\Release"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="2"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
@@ -79,7 +79,6 @@
 				Name="VCLinkerTool"
 				AdditionalOptions="/export:GetExtensionVersion /export:GetFilterVersion /export:TerminateExtension /export:TerminateFilter /export:HttpFilterProc /export:HttpExtensionProc"
 				AdditionalDependencies="log4cpp.lib xerces-c_2.lib xmltooling-lite1.lib"
-				OutputFile=".\Release/isapi_shib.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="..\..\cpp-xmltooling\Release"
@@ -114,8 +113,8 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory=".\Debug"
-			IntermediateDirectory=".\Debug"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="2"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
@@ -177,7 +176,6 @@
 				Name="VCLinkerTool"
 				AdditionalOptions="/export:GetExtensionVersion /export:GetFilterVersion /export:TerminateExtension /export:TerminateFilter /export:HttpFilterProc /export:HttpExtensionProc"
 				AdditionalDependencies="log4cppD.lib xerces-c_2D.lib xmltooling-lite1D.lib"
-				OutputFile=".\Debug/isapi_shib.dll"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="&quot;..\..\cpp-xmltooling\Debug&quot;"

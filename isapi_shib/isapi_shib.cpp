@@ -94,6 +94,8 @@ namespace {
     SPConfig* g_Config = NULL;
     map<string,site_t> g_Sites;
     bool g_bNormalizeRequest = true;
+    string g_unsetHeaderValue;
+    bool g_checkSpoofing = true;
     vector<string> g_NoCerts;
 }
 
@@ -192,9 +194,15 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
     
     // Access the implementation-specifics for site mappings.
     ServiceProvider* sp=g_Config->getServiceProvider();
-    xmltooling::Locker locker(sp);
+    Locker locker(sp);
     const PropertySet* props=sp->getPropertySet("InProcess");
     if (props) {
+        pair<bool,const char*> unsetValue=props->getString("unsetHeaderValue");
+        if (unsetValue.first)
+            g_unsetHeaderValue = unsetValue.second;
+        pair<bool,bool> checkSpoofing=props->getBool("checkSpoofing");
+        if (checkSpoofing.first && !checkSpoofing.second)
+            g_checkSpoofing = false;
         const DOMElement* impl=XMLHelper::getFirstChildElement(props->getElement(),Implementation);
         if (impl && (impl=XMLHelper::getFirstChildElement(impl,ISAPI))) {
             const XMLCh* flag=impl->getAttributeNS(NULL,normalizeRequest);
@@ -345,12 +353,11 @@ class ShibTargetIsapiF : public AbstractSPRequest
   int m_port;
   string m_scheme,m_hostname,m_uri;
   mutable string m_remote_addr,m_content_type,m_method;
+  dynabuf m_allhttp;
 
 public:
-  ShibTargetIsapiF(PHTTP_FILTER_CONTEXT pfc, PHTTP_FILTER_PREPROC_HEADERS pn, const site_t& site) {
-
-    m_pfc = pfc;
-    m_pn = pn;
+  ShibTargetIsapiF(PHTTP_FILTER_CONTEXT pfc, PHTTP_FILTER_PREPROC_HEADERS pn, const site_t& site)
+      : m_pfc(pfc), m_pn(pn), m_allhttp(4096) {
 
     // URL path always come from IIS.
     dynabuf var(256);
@@ -430,10 +437,16 @@ public:
     if (level >= SPError)
         LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, msg.c_str());
   }
-  void clearHeader(const char* name) {
-    string hdr(!strcmp(name,"REMOTE_USER") ? "remote-user" : name);
+  void clearHeader(const char* rawname, const char* cginame) {
+    if (g_checkSpoofing) {
+        if (m_allhttp.empty())
+	        GetServerVariable(m_pfc,"ALL_HTTP",m_allhttp,4096);
+        if (strstr(m_allhttp, cginame))
+            throw opensaml::SecurityPolicyException("Attempt to spoof header ($1) was detected.", params(1, rawname));
+    }
+    string hdr(!strcmp(rawname,"REMOTE_USER") ? "remote-user" : rawname);
     hdr += ':';
-    m_pn->SetHeader(m_pfc, const_cast<char*>(hdr.c_str()), "");
+    m_pn->SetHeader(m_pfc, const_cast<char*>(hdr.c_str()), const_cast<char*>(g_unsetHeaderValue.c_str()));
   }
   void setHeader(const char* name, const char* value) {
     string hdr(name);
@@ -443,8 +456,8 @@ public:
   string getHeader(const char* name) const {
     string hdr(name);
     hdr += ':';
-    dynabuf buf(1024);
-    GetHeader(m_pn, m_pfc, const_cast<char*>(hdr.c_str()), buf, 1024, false);
+    dynabuf buf(256);
+    GetHeader(m_pn, m_pfc, const_cast<char*>(hdr.c_str()), buf, 256, false);
     return string(buf);
   }
   void setRemoteUser(const char* user) {
@@ -856,9 +869,9 @@ public:
   }
 
   // Not used in the extension.
-  virtual void clearHeader(const char* name) { throw runtime_error("clearHeader not implemented"); }
-  virtual void setHeader(const char* name, const char* value) { throw runtime_error("setHeader not implemented"); }
-  virtual void setRemoteUser(const char* user) { throw runtime_error("setRemoteUser not implemented"); }
+  void clearHeader(const char* rawname, const char* cginame) { throw runtime_error("clearHeader not implemented"); }
+  void setHeader(const char* name, const char* value) { throw runtime_error("setHeader not implemented"); }
+  void setRemoteUser(const char* user) { throw runtime_error("setRemoteUser not implemented"); }
 };
 
 extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)

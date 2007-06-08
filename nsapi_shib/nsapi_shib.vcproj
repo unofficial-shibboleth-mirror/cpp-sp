@@ -15,8 +15,8 @@
 	<Configurations>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory=".\Release"
-			IntermediateDirectory=".\Release"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="2"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
@@ -77,7 +77,6 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="log4cpp.lib xerces-c_2.lib xmltooling-lite1.lib ns-httpd30.lib"
-				OutputFile=".\Release/nsapi_shib.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="&quot;..\..\cpp-xmltooling\Release&quot;"
@@ -112,8 +111,8 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory=".\Debug"
-			IntermediateDirectory=".\Debug"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="2"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
@@ -174,7 +173,6 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="log4cppD.lib xerces-c_2D.lib xmltooling-lite1D.lib ns-httpd30.lib"
-				OutputFile=".\Debug/nsapi_shib.dll"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="&quot;..\..\cpp-xmltooling\Debug&quot;"
