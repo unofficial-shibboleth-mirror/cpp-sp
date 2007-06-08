@@ -91,7 +91,7 @@ pair<bool,long> SAMLDSSessionInitiator::run(SPRequest& request, const char* enti
     if (isHandler) {
         option = request.getParameter("SAMLDS");
         if (option && !strcmp(option,"1"))
-            throw MetadataException("No identity provider was selected by user.");
+            throw saml2md::MetadataException("No identity provider was selected by user.");
         
         option = request.getParameter("target");
         if (option)
