@@ -218,7 +218,7 @@ static void usage(char* whoami)
 {
     fprintf(stderr, "usage: %s [-fcdt]\n", whoami);
     fprintf(stderr, "  -c\tconfig file to use.\n");
-    fprintf(stderr, "  -d\tschema directory to use.\n");
+    fprintf(stderr, "  -x\tXML schema catalogs to use.\n");
     fprintf(stderr, "  -t\tcheck configuration file for problems.\n");
     fprintf(stderr, "  -f\tforce removal of listener socket.\n");
     fprintf(stderr, "  -p\tpid file to use.\n");
@@ -230,12 +230,12 @@ static int parse_args(int argc, char* argv[])
 {
     int opt;
 
-    while ((opt = getopt(argc, argv, "c:d:p:fth")) > 0) {
+    while ((opt = getopt(argc, argv, "c:x:p:fth")) > 0) {
         switch (opt) {
             case 'c':
                 shar_config=optarg;
                 break;
-            case 'd':
+            case 'x':
                 shar_schemadir=optarg;
                 break;
             case 'f':

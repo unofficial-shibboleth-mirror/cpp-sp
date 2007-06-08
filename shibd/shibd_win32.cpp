@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
             if (argc > ++i)
                 shar_config = argv[i++];
         }
-        else if (_stricmp( "schemadir", argv[i]+1) == 0)
+        else if (_stricmp( "catalogs", argv[i]+1) == 0)
         {
             if (argc > ++i)
                 shar_schemadir = argv[i++];
@@ -153,7 +153,7 @@ int main(int argc, char *argv[])
         printf("%s -console          to run as a console app for debugging\n", argv[0]);
         printf("%s -check            to run as a console app and check configuration\n", argv[0]);
         printf("\t-config <file> to specify the config file to use\n");
-        printf("\t-schemadir <dir> to specify where schemas are\n");
+        printf("\t-catalogs <dir> to specify schema catalogs\n");
         printf("\nService starting.\nThis may take several seconds. Please wait.\n" );
 
     SERVICE_TABLE_ENTRY dispatchTable[] =
@@ -354,7 +354,7 @@ void CmdInstallService(LPCSTR name)
     }
     
     sprintf(dispName,"Shibboleth %s Daemon (%s)",PACKAGE_VERSION,name);
-    sprintf(realName,"shibd2_%s",name);
+    sprintf(realName,"shibd_%s",name);
     if (shar_config && shar_schemadir)
         sprintf(cmd,"%s -config %s -schemadir %s",szPath,shar_config,shar_schemadir);
     else if (shar_config)
@@ -410,7 +410,7 @@ void CmdRemoveService(LPCSTR name)
     SC_HANDLE   schSCManager;
     char        realName[512];
 
-    sprintf(realName,"shibd2_%s",name);
+    sprintf(realName,"shibd_%s",name);
 
     schSCManager = OpenSCManager(
                         NULL,                   // machine (NULL == local)
