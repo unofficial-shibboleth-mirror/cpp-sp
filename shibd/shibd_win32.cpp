@@ -354,7 +354,7 @@ void CmdInstallService(LPCSTR name)
     }
     
     sprintf(dispName,"Shibboleth %s Daemon (%s)",PACKAGE_VERSION,name);
-    sprintf(realName,"shibd_%s",name);
+    sprintf(realName,"shibd2_%s",name);
     if (shar_config && shar_schemadir)
         sprintf(cmd,"%s -config %s -schemadir %s",szPath,shar_config,shar_schemadir);
     else if (shar_config)
@@ -410,7 +410,7 @@ void CmdRemoveService(LPCSTR name)
     SC_HANDLE   schSCManager;
     char        realName[512];
 
-    sprintf(realName,"shibd_%s",name);
+    sprintf(realName,"shibd2_%s",name);
 
     schSCManager = OpenSCManager(
                         NULL,                   // machine (NULL == local)
