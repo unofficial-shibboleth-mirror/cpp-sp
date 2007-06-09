@@ -67,7 +67,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="wsock32.lib log4cpp.lib xmltooling1.lib"
+				AdditionalDependencies="wsock32.lib log4cpp.lib xmltooling1.lib xerces-c_2.lib"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="&quot;..\..\cpp-opensaml2\Release&quot;;&quot;..\..\cpp-xmltooling\Release&quot;"

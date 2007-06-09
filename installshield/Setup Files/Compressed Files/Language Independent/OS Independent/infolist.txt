@@ -1,2 +1,0 @@
-Add your readme file in the Setup pane of the
-InstallShield IDE.

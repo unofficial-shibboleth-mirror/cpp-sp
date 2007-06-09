@@ -2,3 +2,5 @@
 /Debug
 /*.aps
 /shibsp-lite-Debug
+/Release
+/shibsp-lite-Release

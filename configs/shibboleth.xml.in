@@ -150,8 +150,8 @@
 			md:ArtifactResolutionService locations resolve artifacts issued when using the
 			SAML 2.0 HTTP-Artifact binding on outgoing messages, generally uses SOAP.
 			-->
-            <md:ArtifactResolutionService Location="/SOAP/Artifact" index="1"
-                Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP"/>
+			<md:ArtifactResolutionService Location="/SOAP/Artifact" index="1"
+				Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP"/>
 			
 			<!--
 			md:SingleLogoutService elements are mostly a placeholder for 2.0, but a simple

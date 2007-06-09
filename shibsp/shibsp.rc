@@ -53,7 +53,7 @@ BEGIN
 #else
             VALUE "InternalName", "shibsp1_0\0"
 #endif
-            VALUE "LegalCopyright", "Copyright © 2006 Internet2\0"
+            VALUE "LegalCopyright", "Copyright © 2007 Internet2\0"
             VALUE "LegalTrademarks", "\0"
 #ifdef _DEBUG
             VALUE "OriginalFilename", "shibsp1_0D.dll\0"
