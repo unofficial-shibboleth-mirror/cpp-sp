@@ -425,7 +425,6 @@ SSCache::SSCache(const DOMElement* e)
 
     ListenerService* listener=conf.getServiceProvider()->getListenerService(false);
     if (listener && conf.isEnabled(SPConfig::OutOfProcess)) {
-        listener->regListener("insert::"REMOTED_SESSION_CACHE"::SessionCache",this);
         listener->regListener("find::"REMOTED_SESSION_CACHE"::SessionCache",this);
         listener->regListener("remove::"REMOTED_SESSION_CACHE"::SessionCache",this);
         listener->regListener("touch::"REMOTED_SESSION_CACHE"::SessionCache",this);
@@ -441,7 +440,6 @@ SSCache::~SSCache()
     SPConfig& conf = SPConfig::getConfig();
     ListenerService* listener=conf.getServiceProvider()->getListenerService(false);
     if (listener && conf.isEnabled(SPConfig::OutOfProcess)) {
-        listener->unregListener("insert::"REMOTED_SESSION_CACHE"::SessionCache",this);
         listener->unregListener("find::"REMOTED_SESSION_CACHE"::SessionCache",this);
         listener->unregListener("remove::"REMOTED_SESSION_CACHE"::SessionCache",this);
         listener->unregListener("touch::"REMOTED_SESSION_CACHE"::SessionCache",this);
@@ -547,7 +545,7 @@ string SSCache::insert(
     }
 
     const char* pid = obj["entity_id"].string();
-    m_log.debug("new session created: SessionID (%s) IdP (%s) Address (%s)", key.get(), pid ? pid : "none", client_addr);
+    m_log.info("new session created: SessionID (%s) IdP (%s) Address (%s)", key.get(), pid ? pid : "none", client_addr);
 
     // Transaction Logging
     auto_ptr_char name(nameid ? nameid->getName() : NULL);
@@ -688,9 +686,8 @@ void SSCache::remove(const char* key, const Application& application, const char
     xmltooling::NDC ndc("remove");
 #endif
 
-    m_log.debug("removing session (%s)", key);
-
     m_storage->deleteContext(key);
+    m_log.info("removed session (%s)", key);
 
     TransactionLog* xlog = application.getServiceProvider().getTransactionLog();
     Locker locker(xlog);
@@ -703,39 +700,7 @@ void SSCache::receive(DDF& in, ostream& out)
     xmltooling::NDC ndc("receive");
 #endif
 
-    if (!strcmp(in.name(),"insert::"REMOTED_SESSION_CACHE"::SessionCache")) {
-        auto_ptr_char key(SAMLConfig::getConfig().generateIdentifier());
-        in.name(key.get());
-
-        DDF tokens = in["tokens"].remove();
-        DDFJanitor tjan(tokens);
-        
-        m_log.debug("storing new session...");
-        ostringstream record;
-        record << in;
-        time_t now = time(NULL);
-        m_storage->createText(key.get(), "session", record.str().c_str(), now + m_cacheTimeout);
-        if (tokens.islist()) {
-            try {
-                DDF token = tokens.first();
-                while (token.isstring()) {
-                    m_storage->createText(key.get(), token.name(), token.string(), now + m_cacheTimeout);
-                    token = tokens.next();
-                }
-            }
-            catch (IOException& ex) {
-                m_log.error("error storing assertion along with session: %s", ex.what());
-            }
-        }
-        const char* pid = in["entity_id"].string();
-        m_log.debug("new session created: SessionID (%s) IdP (%s) Address (%s)", key.get(), pid ? pid : "none", in["client_addr"].string());
-    
-        DDF ret = DDF(NULL).structure();
-        DDFJanitor jan(ret);
-        ret.addmember("key").string(key.get());
-        out << ret;
-    }
-    else if (!strcmp(in.name(),"find::"REMOTED_SESSION_CACHE"::SessionCache")) {
+    if (!strcmp(in.name(),"find::"REMOTED_SESSION_CACHE"::SessionCache")) {
         const char* key=in["key"].string();
         if (!key)
             throw ListenerException("Required parameters missing for session removal.");

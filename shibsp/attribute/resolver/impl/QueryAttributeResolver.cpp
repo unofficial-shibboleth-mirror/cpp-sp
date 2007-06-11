@@ -255,7 +255,7 @@ bool QueryResolver::SAML1Query(QueryContext& ctx) const
         version = 0;
     }
     if (!AA) {
-        m_log.info("no SAML 1.x AttributeAuthority role found in metadata");
+        m_log.debug("no SAML 1.x AttributeAuthority role found in metadata");
         return false;
     }
 
@@ -365,7 +365,7 @@ bool QueryResolver::SAML2Query(QueryContext& ctx) const
 
     const AttributeAuthorityDescriptor* AA = ctx.getEntityDescriptor()->getAttributeAuthorityDescriptor(samlconstants::SAML20P_NS);
     if (!AA) {
-        m_log.info("no SAML 2 AttributeAuthority role found in metadata");
+        m_log.debug("no SAML 2 AttributeAuthority role found in metadata");
         return false;
     }
 
