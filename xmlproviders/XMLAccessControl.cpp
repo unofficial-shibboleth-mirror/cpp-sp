@@ -159,8 +159,11 @@ bool Rule::authorized(ShibTarget* st, ISessionCacheEntry* entry) const
                         while (vals.hasNext()) {
                             const string& v=vals.next();
                             if ((wrapper->getCaseSensitive() && v == *ival) || (!wrapper->getCaseSensitive() && !strcasecmp(v.c_str(),ival->c_str()))) {
-                                st->log(ShibTarget::LogLevelDebug, string("XMLAccessControl plugin expecting " + *ival + ", authz granted"));
+                                st->log(ShibTarget::LogLevelDebug, string("XMLAccessControl plugin expecting (" + *ival + "), got it, authz granted"));
                                 return true;
+                            }
+                            else {
+                                st->log(ShibTarget::LogLevelDebug, string("XMLAccessControl plugin expecting (" + *ival + "), got (" + v + "), authz not granted"));
                             }
                         }
                     }
