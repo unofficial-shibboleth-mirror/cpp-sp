@@ -31,7 +31,7 @@
 /**
  * Default location of SP configuration file.
  */
-#define SHIBSP_CONFIG "@-PKGSYSCONFDIR-@/shibboleth.xml"
+#define SHIBSP_CONFIG "@-PKGSYSCONFDIR-@/shibboleth2.xml"
 
 /**
  * Default location of SP configuration file.

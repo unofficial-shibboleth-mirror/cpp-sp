@@ -76,7 +76,7 @@
 /**
  * Default path to configuration file on Windows.
  */
-# define SHIBSP_CONFIG "c:\\opt\\shibboleth-sp\\etc\\shibboleth\\shibboleth.xml"
+# define SHIBSP_CONFIG "c:\\opt\\shibboleth-sp\\etc\\shibboleth\\shibboleth2.xml"
 
 /**
  * Controls default logging level of console tools and other situations

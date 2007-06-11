@@ -14,8 +14,8 @@ LoadModule mod_shib @-LIBEXECDIR-@/mod_shib_13.so
 # This is the XML file that contains all the global, non-apache-specific
 # configuration.  Look at this file for most of your configuration parameters.
 #
-ShibSchemaDir @-PKGXMLDIR-@
-ShibConfig @-PKGSYSCONFDIR-@/shibboleth.xml
+ShibSchemaDir @-XMLDIR-@/xmltooling/catalog.xml:@-XMLDIR-@/opensaml/saml20-catalog.xml:@-XMLDIR-@/opensaml/saml11-catalog.xml:@-XMLDIR-@/shibboleth/catalog.xml
+ShibConfig @-PKGSYSCONFDIR-@/shibboleth2.xml
 
 #
 # An Apache handler needs to be established for the "handler" location.

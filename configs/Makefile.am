@@ -4,6 +4,7 @@ AUTOMAKE_OPTIONS = foreign
 
 pkglogdir = ${localstatedir}/log/@PACKAGE@
 shirelogdir = ${localstatedir}/log/httpd
+xmldir = $(datadir)/xml
 pkgxmldir = $(datadir)/xml/@PACKAGE@
 varrundir = $(localstatedir)/run
 pkgsysconfdir = $(sysconfdir)/@PACKAGE@
@@ -18,7 +19,7 @@ pkgsysconf_DATA = \
 # installed as "foo" if "foo" does not already exist.  In other words,
 # the config files will not overwrite existing versions.
 BUILTCONFIGFILES = \
-	shibboleth.xml \
+	shibboleth2.xml \
 	native.logger \
 	shibd.logger \
 	attribute-map.xml \
@@ -48,6 +49,7 @@ do-build-file:
 	    -e 's:@-LIBEXECDIR-@:${libexecdir}:g' \
 	    -e 's:@-PKGSYSCONFDIR-@:${pkgsysconfdir}:g' \
 	    -e 's:@-PKGXMLDIR-@:${pkgxmldir}:g' \
+            -e 's:@-XMLDIR-@:${xmldir}:g' \
 	    -e 's:@-PKGLOGDIR-@:${pkglogdir}:g' \
 	    -e 's:@-SHIRELOGDIR-@:${shirelogdir}:g' \
 	    -e 's:@-VARRUNDIR-@:${varrundir}:g'
@@ -72,7 +74,7 @@ shibd.logger: ${srcdir}/shibd.logger.in Makefile ${top_builddir}/config.status
 native.logger: ${srcdir}/native.logger.in Makefile ${top_builddir}/config.status
 	$(MAKE) do-build-file FILE=$@
 
-shibboleth.xml: ${srcdir}/shibboleth.xml.in Makefile ${top_builddir}/config.status
+shibboleth2.xml: ${srcdir}/shibboleth2.xml.in Makefile ${top_builddir}/config.status
 	$(MAKE) do-build-file FILE=$@
 
 attribute-map.xml: ${srcdir}/attribute-map.xml.in Makefile ${top_builddir}/config.status
@@ -113,13 +115,13 @@ CLEANFILES = \
 	shibd \
 	shibd.logger \
 	native.logger \
-	shibboleth.xml \
+	shibboleth2.xml \
 	attribute-map.xml \
 	attribute-policy.xml \
 	example-metadata.xml
 
 EXTRA_DIST = \
-	shibboleth.xml.in \
+	shibboleth2.xml.in \
 	attribute-map.xml.in \
 	attribute-policy.xml.in \
 	example-metadata.xml.in \
