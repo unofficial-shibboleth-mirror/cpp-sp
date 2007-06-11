@@ -12,7 +12,6 @@ docfiles = \
 	README.txt \
 	OPENSSL.LICENSE \
 	LOG4CPP.LICENSE \
-	mysql-4.0.12.diff \
 	main.css \
 	logo.jpg
 	
