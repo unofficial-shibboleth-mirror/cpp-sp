@@ -90,7 +90,7 @@ if (Err = 0) then
   End If
   FileSystemObj.MoveFile ConfigFile, DistDir & "example-metadata.xml"
 
-  ConfigFile = DistDir & "shibboleth.xml.in"
+  ConfigFile = DistDir & "shibboleth2.xml.in"
   ReplaceInFile ConfigFile, "@-PKGXMLDIR-@", ConvertedDir & "/share/xml/shibboleth"
   ReplaceInFile ConfigFile, "@-PKGSYSCONFDIR-@", ConvertedDir & "/etc/shibboleth"
   ReplaceInFile ConfigFile, "@-LIBEXECDIR-@", ConvertedDir & "/libexec"
@@ -98,13 +98,13 @@ if (Err = 0) then
   ReplaceInFile ConfigFile, "@-PREFIX-@", ConvertedDir
   ReplaceInFile ConfigFile, "   <UnixListener address=""@-VARRUNDIR-@/shib-shar.sock""/>", "<!-- <UnixListener address=""@-VARRUNDIR-@/shib-shar.sock""/> -->"
   ReplaceInFile ConfigFile, "<!-- <TCPListener address=""127.0.0.1"" port=""12345"" acl=""127.0.0.1""/> -->", "<TCPListener address=""127.0.0.1"" port=""" & ShibdPort & """ acl=""127.0.0.1""/>"
-  If (NOT FileSystemObj.FileExists(ConfigDir & "shibboleth.xml")) then
-    FileSystemObj.CopyFile ConfigFile, ConfigDir & "shibboleth.xml", false
+  If (NOT FileSystemObj.FileExists(ConfigDir & "shibboleth2.xml")) then
+    FileSystemObj.CopyFile ConfigFile, ConfigDir & "shibboleth2.xml", false
   End If
-  If (FileSystemObj.FileExists(DistDir & "shibboleth.xml")) then
-    FileSystemObj.DeleteFile DistDir & "shibboleth.xml", true
+  If (FileSystemObj.FileExists(DistDir & "shibboleth2.xml")) then
+    FileSystemObj.DeleteFile DistDir & "shibboleth2.xml", true
   End If
-  FileSystemObj.MoveFile ConfigFile, DistDir & "shibboleth.xml"
+  FileSystemObj.MoveFile ConfigFile, DistDir & "shibboleth2.xml"
 
   ConfigFile = DistDir & "shibd.logger.in"
   ReplaceInFile ConfigFile, "@-PKGLOGDIR-@", ConvertedDir & "/var/log/shibboleth"
@@ -127,7 +127,7 @@ if (Err = 0) then
   FileSystemObj.MoveFile ConfigFile, DistDir & "native.logger"
 
   ConfigFile = DistDir & "apache.config.in"
-  ReplaceInFile ConfigFile, "@-PKGXMLDIR-@", ConvertedDir & "/share/xml/shibboleth"
+  ReplaceInFile ConfigFile, "@-XMLDIR-@", ConvertedDir & "/share/xml"
   ReplaceInFile ConfigFile, "@-PKGSYSCONFDIR-@", ConvertedDir & "/etc/shibboleth"
   ReplaceInFile ConfigFile, "@-LIBEXECDIR-@", ConvertedDir & "/libexec"
   ReplaceInFile ConfigFile, "@-PREFIX-@", ConvertedDir
@@ -140,7 +140,7 @@ if (Err = 0) then
   FileSystemObj.MoveFile ConfigFile, DistDir & "apache.config"
 
   ConfigFile = DistDir & "apache2.config.in"
-  ReplaceInFile ConfigFile, "@-PKGXMLDIR-@", ConvertedDir & "/share/xml/shibboleth"
+  ReplaceInFile ConfigFile, "@-XMLDIR-@", ConvertedDir & "/share/xml"
   ReplaceInFile ConfigFile, "@-PKGSYSCONFDIR-@", ConvertedDir & "/etc/shibboleth"
   ReplaceInFile ConfigFile, "@-LIBEXECDIR-@", ConvertedDir & "/libexec"
   ReplaceInFile ConfigFile, "@-PREFIX-@", ConvertedDir
@@ -153,7 +153,7 @@ if (Err = 0) then
   FileSystemObj.MoveFile ConfigFile, DistDir & "apache2.config"
 
   ConfigFile = DistDir & "apache22.config.in"
-  ReplaceInFile ConfigFile, "@-PKGXMLDIR-@", ConvertedDir & "/share/xml/shibboleth"
+  ReplaceInFile ConfigFile, "@-XMLDIR-@", ConvertedDir & "/share/xml"
   ReplaceInFile ConfigFile, "@-PKGSYSCONFDIR-@", ConvertedDir & "/etc/shibboleth"
   ReplaceInFile ConfigFile, "@-LIBEXECDIR-@", ConvertedDir & "/libexec"
   ReplaceInFile ConfigFile, "@-PREFIX-@", ConvertedDir
@@ -210,25 +210,20 @@ if (Err = 0) then
   ' Finally, fix up schema catalogs.
   
   XMLDir = InstallDir & "\share\xml\xmltooling\"
-  ConfigFile = XMLDir & "catalog.xml.in"
-  ReplaceInFile ConfigFile, "@-PKGXMLDIR-@", XMLDir
-  FileSystemObj.MoveFile ConfigFile, XMLDir & "catalog.xml"
+  ConfigFile = XMLDir & "catalog.xml"
+  ReplaceInFile ConfigFile, "@-PKGXMLDIR-@/", XMLDir
 
   XMLDir = InstallDir & "\share\xml\opensaml\"
-  ConfigFile = XMLDir & "saml20-catalog.xml.in"
-  ReplaceInFile ConfigFile, "@-PKGXMLDIR-@", XMLDir
-  FileSystemObj.MoveFile ConfigFile, XMLDir & "saml20-catalog.xml"
-  ConfigFile = XMLDir & "saml11-catalog.xml.in"
-  ReplaceInFile ConfigFile, "@-PKGXMLDIR-@", XMLDir
-  FileSystemObj.MoveFile ConfigFile, XMLDir & "saml11-catalog.xml"
-  ConfigFile = XMLDir & "saml10-catalog.xml.in"
-  ReplaceInFile ConfigFile, "@-PKGXMLDIR-@", XMLDir
-  FileSystemObj.MoveFile ConfigFile, XMLDir & "saml10-catalog.xml"
+  ConfigFile = XMLDir & "saml20-catalog.xml"
+  ReplaceInFile ConfigFile, "@-PKGXMLDIR-@/", XMLDir
+  ConfigFile = XMLDir & "saml11-catalog.xml"
+  ReplaceInFile ConfigFile, "@-PKGXMLDIR-@/", XMLDir
+  ConfigFile = XMLDir & "saml10-catalog.xml"
+  ReplaceInFile ConfigFile, "@-PKGXMLDIR-@/", XMLDir
 
   XMLDir = InstallDir & "\share\xml\shibboleth\"
-  ConfigFile = XMLDir & "catalog.xml.in"
-  ReplaceInFile ConfigFile, "@-PKGXMLDIR-@", XMLDir
-  FileSystemObj.MoveFile ConfigFile, XMLDir & "catalog.xml"
+  ConfigFile = XMLDir & "catalog.xml"
+  ReplaceInFile ConfigFile, "@-PKGXMLDIR-@/", XMLDir
 
 'Last End If
 End If

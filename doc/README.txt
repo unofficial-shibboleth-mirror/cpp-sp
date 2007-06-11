@@ -1,5 +1,5 @@
-9/1/05
-Version 1.3a
+June 10, 2007
+Version 2.0alpha1
 
 Welcome to Internet2's Shibboleth
 
@@ -13,16 +13,16 @@ A wealth of information about Shibboleth can be found at
 http://shibboleth.internet2.edu/
 
 Shibboleth is divided into identity and service provider components, with the
-IdP in Java and the SP in C and C++. A Java SP is in development.
+IdP in Java and the SP in C and C++.
 
 Source and binary distributions are available from
-http://wayf.internet2.edu/shibboleth/
+http://shibboleth.internet2.edu/downloads/
 
-A CVS is available for anonymous access, as described at the Shibboleth
-site. Mailing lists and a bugzilla (http://bugzilla.internet2.edu/) are also
+SVN is available for anonymous access, as described at the Shibboleth
+site. Mailing lists and a bug database (http://bugs.internet2.edu/) are also
 available. Not all of the lists are open, but a general support list is
 available and is open.
 
 For basic information on installing binaries and deploying Shibboleth, refer
-to the web site for the latest documentation. For source build assistance,
-see the INSTALL.txt file.
+to the web site and Wiki for the latest documentation. For source build assistance,
+see the INSTALL.txt file and the Wiki.
