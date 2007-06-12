@@ -15,8 +15,8 @@
 	<Configurations>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory=".\mod_shib20___Win32_Release"
-			IntermediateDirectory=".\mod_shib20___Win32_Release"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			IntermediateDirectory=".\mod_shib20___Win32_$(ConfigurationName)"
 			ConfigurationType="2"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
@@ -77,10 +77,10 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="log4cpp.lib xerces-c_2.lib libapr.lib libaprutil.lib libhttpd.lib xmltooling-lite1.lib"
-				OutputFile="mod_shib20___Win32_Release/mod_shib_20.so"
+				OutputFile="$(OutDir)\mod_shib_20.so"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="&quot;..\..\cpp-xmltooling\Release&quot;;\Apache2\lib"
+				AdditionalLibraryDirectories="&quot;..\..\cpp-xmltooling\$(ConfigurationName)&quot;;\Apache2\lib"
 				ProgramDatabaseFile=".\mod_shib20___Win32_Release/mod_shib_20.pdb"
 				ImportLibrary=".\mod_shib20___Win32_Release/mod_shib_20.lib"
 				TargetMachine="1"
@@ -112,8 +112,8 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory=".\mod_shib20___Win32_Debug"
-			IntermediateDirectory=".\mod_shib20___Win32_Debug"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			IntermediateDirectory=".\mod_shib20___Win32_$(ConfigurationName)"
 			ConfigurationType="2"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
@@ -174,10 +174,10 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="log4cppD.lib xerces-c_2D.lib libapr.lib libaprutil.lib libhttpd.lib xmltooling-lite1D.lib"
-				OutputFile="mod_shib20___Win32_Debug/mod_shib_20.so"
+				OutputFile="$(OutDir)\mod_shib_20.so"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="&quot;..\..\cpp-xmltooling\Debug&quot;;\Apache2\lib"
+				AdditionalLibraryDirectories="&quot;..\..\cpp-xmltooling\$(ConfigurationName)&quot;;\Apache2\lib"
 				GenerateDebugInformation="true"
 				ImportLibrary=".\mod_shib20___Win32_Debug/mod_shib_20.lib"
 				TargetMachine="1"

@@ -70,7 +70,7 @@
 				AdditionalDependencies="wsock32.lib log4cpp.lib xmltooling1.lib xerces-c_2.lib"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="&quot;..\..\cpp-opensaml2\Release&quot;;&quot;..\..\cpp-xmltooling\Release&quot;"
+				AdditionalLibraryDirectories="..\..\cpp-opensaml2\$(ConfigurationName);..\..\cpp-xmltooling\$(ConfigurationName)"
 				SubSystem="1"
 				TargetMachine="1"
 			/>
@@ -155,7 +155,7 @@
 				AdditionalDependencies="wsock32.lib log4cppD.lib xmltooling1D.lib"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="&quot;..\..\cpp-opensaml2\Debug&quot;;&quot;..\..\cpp-xmltooling\Debug&quot;"
+				AdditionalLibraryDirectories="..\..\cpp-opensaml2\$(ConfigurationName);..\..\cpp-xmltooling\$(ConfigurationName)"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="1"
