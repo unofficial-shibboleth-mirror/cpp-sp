@@ -93,16 +93,17 @@ make check
 /sbin/ldconfig
 
 # Plug the SP into Apache on a recognized system.
+APACHE_CONFIG="no"
 if [ -f $RPM_BUILD_ROOT/%{_libexecdir}/mod_shib_13.so ] ; then
-%define apache_config apache.config
+	APACHE_CONFIG="apache.config"
 fi
 if [ -f $RPM_BUILD_ROOT/%{_libexecdir}/mod_shib_20.so ] ; then
-%define apache_config apache2.config
+	APACHE_CONFIG="apache2.config"
 fi
 if [ -f $RPM_BUILD_ROOT/%{_libexecdir}/mod_shib_22.so ] ; then
-%define apache_config apache22.config
+	APACHE_CONFIG="apache22.config"
 fi
-%if %{?apache_config:1}
+if [ "$APACHE_CONFIG" != "no" ] ; then
 	APACHE_CONFD="no"
 	if [ -d %{_sysconfdir}/httpd/conf.d ] ; then
     		APACHE_CONFD="%{_sysconfdir}/httpd/conf.d"
@@ -113,11 +114,11 @@ fi
 	if [ "$APACHE_CONFD" != "no" ] ; then
 		if [ ! -f $APACHE_CONFD/shib.conf ] ; then
 			sed "s/\/usr\/doc\/%{name}/\/usr\/share\/doc\/%{name}-@-VERSION-@/g" \
-				%{_sysconfdir}/%{name}/%{?apache_config} \
+				%{_sysconfdir}/%{name}/$APACHE_CONFIG \
 				> $APACHE_CONFD/shib.conf
 		fi
 	fi
-%endif
+fi
 
 # Install the shibd init.d scripts and service
 %if "%{_vendor}" == "redhat"
