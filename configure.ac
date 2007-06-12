@@ -180,8 +180,8 @@ XMLSEC_LIBS="-lsaml $XMLSEC_LIBS"
 save_LIBS="$LIBS"
 LIBS="$XMLSEC_LIBS $LIBS"
 
-AC_CHECK_HEADER([saml/saml.h],,
-                AC_MSG_ERROR([unable to find saml header files]))
+AC_CHECK_HEADER([saml/saml2/metadata/Metadata.h],,
+                AC_MSG_ERROR([unable to find OpenSAML header files]))
 AC_TRY_LINK(
 	[#include <saml/SAMLConfig.h>
 #include <saml/version.h>],
