@@ -48,7 +48,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="..;\Apache22\include;&quot;..\..\cpp-xmltooling&quot;"
+				AdditionalIncludeDirectories="..;\Apache2.2\include;&quot;..\..\cpp-xmltooling&quot;"
 				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -79,7 +79,7 @@
 				OutputFile="mod_shib22___Win32_Release/mod_shib_22.so"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="&quot;..\..\cpp-xmltooling\Release&quot;;\Apache22\lib"
+				AdditionalLibraryDirectories="&quot;..\..\cpp-xmltooling\Release&quot;;\Apache2.2\lib"
 				ProgramDatabaseFile=".\mod_shib22___Win32_Release/mod_shib_22.pdb"
 				ImportLibrary=".\mod_shib22___Win32_Release/mod_shib_22.lib"
 				TargetMachine="1"
@@ -145,7 +145,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..;\Apache22D\include;&quot;..\..\cpp-xmltooling&quot;"
+				AdditionalIncludeDirectories="..;\Apache2.2\include;&quot;..\..\cpp-xmltooling&quot;"
 				PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -178,7 +178,7 @@
 				OutputFile="mod_shib22___Win32_Debug/mod_shib_22.so"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="&quot;..\..\cpp-xmltooling\Debug&quot;;\Apache22D\lib"
+				AdditionalLibraryDirectories="&quot;..\..\cpp-xmltooling\Debug&quot;;\Apache2.2\lib"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile=".\mod_shib22___Win32_Debug/mod_shib_22.pdb"
 				ImportLibrary=".\mod_shib22___Win32_Debug/mod_shib_22.lib"
@@ -218,6 +218,14 @@
 		<File
 			RelativePath=".\mod_apache.cpp"
 			>
+			<FileConfiguration
+				Name="Release|Win32"
+				ExcludedFromBuild="true"
+				>
+				<Tool
+					Name="VCCLCompilerTool"
+				/>
+			</FileConfiguration>
 			<FileConfiguration
 				Name="Debug|Win32"
 				ExcludedFromBuild="true"

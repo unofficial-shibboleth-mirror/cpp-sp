@@ -177,7 +177,7 @@
 				OutputFile="mod_shib20___Win32_Debug/mod_shib_20.so"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="&quot;..\..\cpp-xmltooling\Debug&quot;;\Apache2D\lib"
+				AdditionalLibraryDirectories="&quot;..\..\cpp-xmltooling\Debug&quot;;\Apache2\lib"
 				GenerateDebugInformation="true"
 				ImportLibrary=".\mod_shib20___Win32_Debug/mod_shib_20.lib"
 				TargetMachine="1"
@@ -214,6 +214,14 @@
 		<File
 			RelativePath=".\mod_apache.cpp"
 			>
+			<FileConfiguration
+				Name="Release|Win32"
+				ExcludedFromBuild="true"
+				>
+				<Tool
+					Name="VCCLCompilerTool"
+				/>
+			</FileConfiguration>
 			<FileConfiguration
 				Name="Debug|Win32"
 				ExcludedFromBuild="true"
