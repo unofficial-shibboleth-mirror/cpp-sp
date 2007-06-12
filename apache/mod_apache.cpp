@@ -1078,11 +1078,12 @@ extern "C" apr_status_t shib_child_exit(void* data)
 {
   server_rec* s = NULL;
 #endif
-
-    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_child_exit(%d) dealing with g_Config..", (int)getpid());
-    g_Config->term();
-    g_Config = NULL;
-    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_child_exit() done");
+    if (g_Config) {
+        ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_child_exit(%d) dealing with g_Config..", (int)getpid());
+        g_Config->term();
+        g_Config = NULL;
+        ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_child_exit() done");
+    }
 
 #ifndef SHIB_APACHE_13
     return OK;
