@@ -300,24 +300,55 @@ public:
   virtual string getArgs(void) { return string(m_req->args ? m_req->args : ""); }
   virtual string getPostData(void) {
     // Read the posted data
-    if (ap_setup_client_block(m_req, REQUEST_CHUNKED_DECHUNK) != OK)
+#ifdef SHIB_APACHE_13
+    if (ap_setup_client_block(m_req, REQUEST_CHUNKED_DECHUNK))
         throw FatalProfileException("Apache function (setup_client_block) failed while reading profile submission.");
     if (!ap_should_client_block(m_req))
         throw FatalProfileException("Apache function (should_client_block) failed while reading profile submission.");
     if (m_req->remaining > 1024*1024)
         throw FatalProfileException("Blocked too-large a submission to profile endpoint.");
+    int len;
     string cgistr;
     char buff[HUGE_STRING_LEN];
     ap_hard_timeout("[mod_shib] getPostData", m_req);
-    memset(buff, 0, sizeof(buff));
-    while (ap_get_client_block(m_req, buff, sizeof(buff)-1) > 0) {
+    while ((len=ap_get_client_block(m_req, buff, sizeof(buff))) > 0) {
       ap_reset_timeout(m_req);
-      cgistr += buff;
-      memset(buff, 0, sizeof(buff));
+      cgistr.append(buff, len);
     }
     ap_kill_timeout(m_req);
-
     return cgistr;
+#else
+    string cgistr;
+    const char *data;
+    apr_size_t len;
+    int seen_eos = 0;
+    apr_bucket_brigade* bb = apr_brigade_create(m_req->pool, m_req->connection->bucket_alloc);
+    do {
+        apr_bucket *bucket;
+        apr_status_t rv = ap_get_brigade(m_req->input_filters, bb, AP_MODE_READBYTES, APR_BLOCK_READ, HUGE_STRING_LEN);
+        if (rv != APR_SUCCESS)
+            throw FatalProfileException("Apache function (ap_get_brigade) failed while reading profile submission.");
+
+        for (bucket = APR_BRIGADE_FIRST(bb); bucket != APR_BRIGADE_SENTINEL(bb); bucket = APR_BUCKET_NEXT(bucket)) {
+            if (APR_BUCKET_IS_EOS(bucket)) {
+                seen_eos = 1;
+                break;
+            }
+
+            /* We can't do much with this. */
+            if (APR_BUCKET_IS_FLUSH(bucket))
+                continue;
+
+            /* read */
+            apr_bucket_read(bucket, &data, &len, APR_BLOCK_READ);
+            if (len > 0)
+                cgistr.append(data, len);
+        }
+        apr_brigade_cleanup(bb);
+    } while (!seen_eos);
+    apr_brigade_destroy(bb);
+    return cgistr;
+#endif
   }
   virtual void clearHeader(const string &name) {
     if (m_dc->bUseEnvVars==1) {
