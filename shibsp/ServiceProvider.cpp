@@ -93,6 +93,7 @@ namespace shibsp {
         request.clearHeader("Shib-AuthnContext-Decl", "HTTP_SHIB_AUTHNCONTEXT_DECL");
         request.clearHeader("Shib-Attributes", "HTTP_SHIB_ATTRIBUTES");
         request.clearHeader("Shib-Assertion-Count", "HTTP_SHIB_ASSERTION_COUNT");
+        request.clearHeader("REMOTE_USER", "HTTP_REMOTE_USER");
         //request.clearHeader("Shib-Application-ID");   handle inside app method
         request.getApplication().clearAttributeHeaders(request);
     }
