@@ -14,7 +14,7 @@ WANT_SUBDIRS = @WANT_SUBDIRS@
 
 SUBDIRS = $(WANT_SUBDIRS)
 
-DIST_SUBDIRS = doc schemas configs shibsp shibd util apache odbc-store nsapi_shib selinux
+DIST_SUBDIRS = doc schemas configs shibsp shibd util apache nsapi_shib selinux
 
 all-local: shibboleth.spec pkginfo
 

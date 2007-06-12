@@ -22,4 +22,4 @@ shibshar.fc: ${srcdir}/shibshar.fc.in Makefile ${top_builddir}/config.status
 	cmp -s $@ $@.tmp || mv $@.tmp $@
 	rm -f $@.tmp
 
-EXTRA_DIST = .cvsignore shibshar.fc.in shibshar.te
+EXTRA_DIST = shibshar.fc.in shibshar.te

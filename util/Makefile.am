@@ -2,7 +2,8 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-bin_PROGRAMS = samlquery siterefresh
+bin_PROGRAMS = samlquery
+sbin_PROGRAMS = siterefresh
 
 samlquery_SOURCES = samlquery.cpp
 
