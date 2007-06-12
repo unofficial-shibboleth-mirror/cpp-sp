@@ -1,18 +1,24 @@
 Name:		shibboleth
 Summary:	Open source system to enable inter-institutional resource sharing
 Version:	@-VERSION-@
-Release:	6
-#Copyright:	University Corporation for Advanced Internet Development, Inc.
+Release:	1
+#Copyright:	Internet2
 Group:		System Environment/Libraries
 License:	Apache style
 URL:		http://shibboleth.internet2.edu/
-Source0:	http://wayf.internet2.edu/shibboleth/%{name}-%{version}.tar.gz
-Source1:	http://wayf.internet2.edu/shibboleth/%{name}-%{version}.tar.gz.asc
+Source0:	http://shibboleth.internet2.edu/downloads/%{name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-root
 
-BuildRequires:	openssl-devel, curl-devel >= 7.10.6, xerces-c-devel >= 2.6.1
-BuildRequires:	xml-security-c-devel >= 1.1.0, log4cpp-devel >= 0.3.5
-BuildRequires:	zlib-devel, opensaml-devel >= 1.1, httpd-devel
+BuildRequires:	openssl-devel, curl-devel >= 7.10.6, xerces%{?xercesver}-c-devel >= 2.6.1
+BuildRequires:	xml-security-c-devel >= 1.3.1, log4cpp-devel >= 0.3.5
+BuildRequires:	zlib-devel, opensaml-devel >= 2.0
+%if "%{_vendor}" == "redhat"
+BuildRequires:	httpd-devel
+%endif
+%if "%{_vendor}" == "suse"
+BuildRequires:	apache2-devel
+%endif
+
 
 %description
 Shibboleth, a project of Internet2/MACE, is developing architectures,
@@ -63,17 +69,16 @@ installed.
 %setup -q
 
 %build
-%configure --enable-apache-20
+%configure %{?shib_options}
 make
-make -C selinux
+#make -C selinux
 
 %install
 [ "$RPM_BUILD_ROOT" != "/" ] && rm -rf $RPM_BUILD_ROOT
 rm -rf _docs
-
 make install DESTDIR=$RPM_BUILD_ROOT
 make -C selinux install DESTDIR=$RPM_BUILD_ROOT
-mv $RPM_BUILD_ROOT/usr/doc/shibboleth _docs
+mv $RPM_BUILD_ROOT/usr/doc/%{name} _docs
 
 find $RPM_BUILD_ROOT/%{_libexecdir} -type f -or -type l | grep \.so |
   sed -e "s|$RPM_BUILD_ROOT||" | sort > rpm.filelist
@@ -87,36 +92,60 @@ make check
 %post
 /sbin/ldconfig
 
-# Plug the shibboleth SP into Apache2 on a Red Hat system.
-if [ -d %{_sysconfdir}/httpd/conf.d ] ; then 
-	if [ ! -f %{_sysconfdir}/httpd/conf.d/shib.conf ] ; then
-		sed "s/\/usr\/doc\/shibboleth/\/usr\/share\/doc\/shibboleth-@-VERSION-@/g" \
-			%{_sysconfdir}/shibboleth/apache2.config \
-			> %{_sysconfdir}/httpd/conf.d/shib.conf
-	fi
+# Plug the SP into Apache on a recognized system.
+if [ -f $RPM_BUILD_ROOT/%{_libexecdir}/mod_shib_13.so ] ; then
+%define apache_config apache.config
 fi
+if [ -f $RPM_BUILD_ROOT/%{_libexecdir}/mod_shib_20.so ] ; then
+%define apache_config apache2.config
+fi
+if [ -f $RPM_BUILD_ROOT/%{_libexecdir}/mod_shib_22.so ] ; then
+%define apache_config apache22.config
+fi
+%if %{?apache_config:1}
+	APACHE_CONFD="no"
+	if [ -d %{_sysconfdir}/httpd/conf.d ] ; then
+    		APACHE_CONFD="%{_sysconfdir}/httpd/conf.d"
+	fi
+	if [ -d %{_sysconfdir}/apache2/conf.d ] ; then
+    		APACHE_CONFD="%{_sysconfdir}/apache2/conf.d"
+	fi
+	if [ "$APACHE_CONFD" != "no" ] ; then
+		if [ ! -f $APACHE_CONFD/shib.conf ] ; then
+			sed "s/\/usr\/doc\/%{name}/\/usr\/share\/doc\/%{name}-@-VERSION-@/g" \
+				%{_sysconfdir}/%{name}/%{?apache_config} \
+				> $APACHE_CONFD/shib.conf
+		fi
+	fi
+%endif
 
 # Install the shibd init.d scripts and service
-if [ -d %{_sysconfdir}/init.d ] ; then
-	if [ ! -f %{_sysconfdir}/init.d/shibd ] ; then
-		cp -p %{_sysconfdir}/shibboleth/shibd %{_sysconfdir}/init.d/shibd
-		chmod 755 %{_sysconfdir}/init.d/shibd
-		chkconfig --add shibd
+%if "%{_vendor}" == "redhat"
+	if [ -d %{_sysconfdir}/init.d ] ; then
+		if [ ! -f %{_sysconfdir}/init.d/shibd ] ; then
+			cp -p %{_sysconfdir}/%{name}/shibd %{_sysconfdir}/init.d/shibd
+			chmod 755 %{_sysconfdir}/init.d/shibd
+			chkconfig --add shibd
+		fi
 	fi
-fi
+%endif
 
 %postun
 /sbin/ldconfig
 
-# delete the shibboleth apache configuration if we're being removed
+# delete the Apache configuration if we're being removed
 [ "$1" = 0 ] || exit 0
 [ -f %{_sysconfdir}/httpd/conf.d/shib.conf ] && \
     rm -f %{_sysconfdir}/httpd/conf.d/shib.conf
+[ -f %{_sysconfdir}/apache2/conf.d/shib.conf ] && \
+    rm -f %{_sysconfdir}/apache2/conf.d/shib.conf
 
 # clear init.d state
-chkconfig --del shibd
-[ -f %{_sysconfdir}/init.d/shibd ] && \
-    rm -f %{_sysconfdir}/init.d/shibd
+%if "%{_vendor}" == "redhat"
+	chkconfig --del shibd
+	[ -f %{_sysconfdir}/init.d/shibd ] && \
+	    rm -f %{_sysconfdir}/init.d/shibd
+%endif
 
 %triggerin selinux-policy-targeted -- %{name}
 restorecon %{_sbindir}/shibd
@@ -130,36 +159,31 @@ restorecon %{_sbindir}/shibd
 %files -f rpm.filelist
 %defattr(-,root,root,-)
 %doc _docs/CREDITS.txt _docs/NOTICE.txt _docs/NEWS.txt _docs/logo.jpg
-%doc _docs/main.css _docs/README.txt _docs/LICENSE.txt _docs/mysql-4.0.12.diff
+%doc _docs/main.css _docs/README.txt _docs/LICENSE.txt
 %{_sbindir}/shibd
 %{_sbindir}/siterefresh
-%{_bindir}/shibtest
-%{_libdir}/libshib.so.*
-%{_libdir}/libshib-target.so.*
-%dir /var/log/shibboleth
-%dir %{_datadir}/xml/shibboleth
-%{_datadir}/xml/shibboleth/*.xsd
-%{_datadir}/xml/shibboleth/*.xsl
-%dir %{_sysconfdir}/shibboleth
-%config(noreplace) %{_sysconfdir}/shibboleth/*.xml
-%config(noreplace) %{_sysconfdir}/shibboleth/*.html
-%config(noreplace) %{_sysconfdir}/shibboleth/*.logger
-%config %{_sysconfdir}/shibboleth/inqueue.pem
-%config %{_sysconfdir}/shibboleth/sp-example.crt
-%config %{_sysconfdir}/shibboleth/sp-example.key
-%{_sysconfdir}/shibboleth/*.dist
-%{_sysconfdir}/shibboleth/apache*.config
-%{_sysconfdir}/shibboleth/shibd
-
-%exclude %{_bindir}/posttest
-%exclude %{_bindir}/test-client
+%{_bindir}/samlquery
+%{_libdir}/libshibsp.so.*
+%{_libdir}/libshibsp-lite.so.*
+%dir %{_localstatedir}/log/%{name}
+%dir %{_datadir}/xml/%{name}
+%{_datadir}/xml/%{name}
+%dir %{_sysconfdir}/%{name}
+%config(noreplace) %{_sysconfdir}/%{name}/*.xml
+%config(noreplace) %{_sysconfdir}/%{name}/*.html
+%config(noreplace) %{_sysconfdir}/%{name}/*.logger
+%config %{_sysconfdir}/%{name}/sp-example.crt
+%config %{_sysconfdir}/%{name}/sp-example.key
+%{_sysconfdir}/%{name}/*.dist
+%{_sysconfdir}/%{name}/apache*.config
+%{_sysconfdir}/%{name}/shibd
 %exclude %{_libexecdir}/*.la
 
 %files devel
 %defattr(-,root,root,-)
 %{_includedir}
-%{_libdir}/libshib.so
-%{_libdir}/libshib-target.so
+%{_libdir}/libshibsp.so
+%{_libdir}/libshibsp-lite.so
 
 %files selinux-policy-targeted
 %defattr(-,root,root,-)
@@ -167,6 +191,22 @@ restorecon %{_sbindir}/shibd
 %{_sysconfdir}/selinux/targeted/src/policy/domains/program/*.te
 
 %changelog
+* Mon Oct 2 2006 Scott Cantor	<cantor.2@osu.edu>  - 1.3-11
+- Applied fix for secadv 20061002
+- Fix for metadata loader loop
+
+* Wed Jun 15 2006 Scott Cantor  <cantor.2@osu.edu>  - 1.3-10
+- Applied fix for sec 20060615
+
+* Fri Apr 15 2006 Scott Cantor  <cantor.2@osu.edu>  - 1.3-9
+- Misc. patches, SuSE, Apache 2.2, gcc 4.1, and 64-bit support
+
+* Mon Jan 9 2006 Scott Cantor  <cantor.2@osu.edu>  - 1.3-8
+- Applied new fix for secadv 20060109
+
+* Tue Nov 8 2005 Scott Cantor  <cantor.2@osu.edu>  - 1.3-7
+- Applied new fix for secadv 20050901 plus rollup
+
 * Fri Sep 23 2005 Scott Cantor  <cantor.2@osu.edu>  - 1.3-6
 - Minor patches and default config changes
 - pidfile patch
