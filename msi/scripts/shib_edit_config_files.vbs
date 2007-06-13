@@ -128,6 +128,7 @@ if (Err = 0) then
 
   ConfigFile = DistDir & "apache.config.in"
   ReplaceInFile ConfigFile, "@-XMLDIR-@", ConvertedDir & "/share/xml"
+  ReplaceInFile ConfigFile, "catalog.xml:", "catalog.xml;"
   ReplaceInFile ConfigFile, "@-PKGSYSCONFDIR-@", ConvertedDir & "/etc/shibboleth"
   ReplaceInFile ConfigFile, "@-LIBEXECDIR-@", ConvertedDir & "/libexec"
   ReplaceInFile ConfigFile, "@-PREFIX-@", ConvertedDir
@@ -141,6 +142,7 @@ if (Err = 0) then
 
   ConfigFile = DistDir & "apache2.config.in"
   ReplaceInFile ConfigFile, "@-XMLDIR-@", ConvertedDir & "/share/xml"
+  ReplaceInFile ConfigFile, "catalog.xml:", "catalog.xml;"
   ReplaceInFile ConfigFile, "@-PKGSYSCONFDIR-@", ConvertedDir & "/etc/shibboleth"
   ReplaceInFile ConfigFile, "@-LIBEXECDIR-@", ConvertedDir & "/libexec"
   ReplaceInFile ConfigFile, "@-PREFIX-@", ConvertedDir
@@ -154,6 +156,7 @@ if (Err = 0) then
 
   ConfigFile = DistDir & "apache22.config.in"
   ReplaceInFile ConfigFile, "@-XMLDIR-@", ConvertedDir & "/share/xml"
+  ReplaceInFile ConfigFile, "catalog.xml:", "catalog.xml;"
   ReplaceInFile ConfigFile, "@-PKGSYSCONFDIR-@", ConvertedDir & "/etc/shibboleth"
   ReplaceInFile ConfigFile, "@-LIBEXECDIR-@", ConvertedDir & "/libexec"
   ReplaceInFile ConfigFile, "@-PREFIX-@", ConvertedDir
