@@ -250,12 +250,9 @@ void XMLExtractorImpl::extractAttributes(
     auto_ptr_char temp(format);
     if ((rule=m_attrMap.find(make_pair(temp.get(),string()))) != m_attrMap.end()) {
 #endif
-        attributes.insert(
-            make_pair(
-                rule->second.second,
-                rule->second.first->decode(rule->second.second.c_str(), &nameid, assertingParty, application.getString("entityID").second)
-                )
-            );
+        Attribute* a = rule->second.first->decode(rule->second.second.c_str(), &nameid, assertingParty, application.getString("entityID").second);
+        if (a)
+            attributes.insert(make_pair(rule->second.second, a));
     }
 }
 
@@ -278,12 +275,9 @@ void XMLExtractorImpl::extractAttributes(
     auto_ptr_char temp(format);
     if ((rule=m_attrMap.find(make_pair(temp.get(),string()))) != m_attrMap.end()) {
 #endif
-        attributes.insert(
-            make_pair(
-                rule->second.second,
-                rule->second.first->decode(rule->second.second.c_str(), &nameid, assertingParty, application.getString("entityID").second)
-                )
-            );
+        Attribute* a = rule->second.first->decode(rule->second.second.c_str(), &nameid, assertingParty, application.getString("entityID").second);
+        if (a)
+            attributes.insert(make_pair(rule->second.second, a));
     }
 }
 
@@ -310,12 +304,9 @@ void XMLExtractorImpl::extractAttributes(
     auto_ptr_char temp2(format);
     if ((rule=m_attrMap.find(make_pair(temp1.get(),temp2.get()))) != m_attrMap.end()) {
 #endif
-        attributes.insert(
-            make_pair(
-                rule->second.second,
-                rule->second.first->decode(rule->second.second.c_str(), &attr, assertingParty, application.getString("entityID").second)
-                )
-            );
+        Attribute* a = rule->second.first->decode(rule->second.second.c_str(), &attr, assertingParty, application.getString("entityID").second);
+        if (a)
+            attributes.insert(make_pair(rule->second.second, a));
     }
 }
 
@@ -344,12 +335,9 @@ void XMLExtractorImpl::extractAttributes(
     auto_ptr_char temp2(format);
     if ((rule=m_attrMap.find(make_pair(temp1.get(),temp2.get()))) != m_attrMap.end()) {
 #endif
-        attributes.insert(
-            make_pair(
-                rule->second.second,
-                rule->second.first->decode(rule->second.second.c_str(), &attr, assertingParty, application.getString("entityID").second)
-                )
-            );
+        Attribute* a = rule->second.first->decode(rule->second.second.c_str(), &attr, assertingParty, application.getString("entityID").second);
+        if (a)
+            attributes.insert(make_pair(rule->second.second, a));
     }
 }
 

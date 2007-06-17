@@ -152,13 +152,6 @@
 			-->
 			<md:ArtifactResolutionService Location="/SOAP/Artifact" index="1"
 				Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP"/>
-			
-			<!--
-			md:SingleLogoutService elements are mostly a placeholder for 2.0, but a simple
-			cookie-clearing option with a ResponseLocation or a return URL parameter is
-			supported via the "urn:mace:shibboleth:sp:1.3:Logout" Binding value.
-			-->
-			<md:SingleLogoutService Location="/Logout" Binding="urn:mace:shibboleth:sp:1.3:Logout"/>
 
 		</Sessions>
 

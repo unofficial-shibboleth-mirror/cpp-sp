@@ -55,7 +55,7 @@ namespace shibsp {
          * @param xmlObject         XMLObject to decode
          * @param assertingParty    name of the party asserting the attribute
          * @param relyingParty      name of the party relying on the attribute
-         * @return a resolved Attribute
+         * @return a resolved Attribute, or NULL
          */
         virtual Attribute* decode(
             const char* id, const xmltooling::XMLObject* xmlObject, const char* assertingParty=NULL, const char* relyingParty=NULL
