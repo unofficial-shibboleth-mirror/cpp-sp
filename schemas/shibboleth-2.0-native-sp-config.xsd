@@ -69,15 +69,12 @@
 			<sequence>
 				<element name="Library" minOccurs="0" maxOccurs="unbounded">
 					<complexType>
-						<complexContent>
-							<restriction base="conf:PluggableType">
-								<sequence>
-									<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
-								</sequence>
-								<attribute name="path" type="anyURI" use="required"/>
-								<attribute name="fatal" type="boolean" default="true"/>
-							</restriction>
-						</complexContent>
+						<sequence>
+							<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+						</sequence>
+						<attribute name="path" type="anyURI" use="required"/>
+						<attribute name="fatal" type="boolean" default="true"/>
+						<anyAttribute namespace="##any" processContents="lax"/>
 					</complexType>
 				</element>
 				<any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
