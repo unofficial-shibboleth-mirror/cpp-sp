@@ -43,7 +43,17 @@ namespace shibsp {
     #pragma warning( disable : 4250 )
 #endif
 
-    class SHIBSP_API AssertionLookup : public AbstractHandler, public RemotedHandler 
+    class SHIBSP_DLLLOCAL Blocker : public DOMNodeFilter
+    {
+    public:
+        short acceptNode(const DOMNode* node) const {
+            return FILTER_REJECT;
+        }
+    };
+
+    static SHIBSP_DLLLOCAL Blocker g_Blocker;
+
+    class SHIBSP_API AssertionLookup : public AbstractHandler, public RemotedHandler
     {
     public:
         AssertionLookup(const DOMElement* e, const char* appId);
@@ -70,7 +80,7 @@ namespace shibsp {
 };
 
 AssertionLookup::AssertionLookup(const DOMElement* e, const char* appId)
-    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".AssertionLookup"))
+    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".AssertionLookup"), &g_Blocker)
 {
     setAddress("run::AssertionLookup");
     if (SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {
