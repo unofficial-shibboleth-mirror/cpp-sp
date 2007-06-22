@@ -774,7 +774,7 @@ void xml_encode(ostream& os, const char* start)
 {
     while (start && *start) {
         switch (*start) {
-            case '\'':  os << "&apos;";     break;
+            case '"':   os << "&quot;";     break;
             case '<':   os << "&lt;";       break;
             case '>':   os << "&gt;";       break;
             case '&':   os << "&amp;";      break;
@@ -792,76 +792,76 @@ void serialize(ddf_body_t* p, ostream& os, bool name_attr=true)
             case ddf_body_t::DDF_STRING:
                 os << "<string";
                 if (name_attr && p->name) {
-                    os << " name='";
+                    os << " name=\"";
                     xml_encode(os,p->name);
-                    os << '\'';
+                    os << '"';
                 }
                 if (p->value.string) {
                     os << '>';
                     xml_encode(os,p->value.string);
-                    os << "</string>\n";
+                    os << "</string>";
                 }
                 else
-                    os << "/>\n";
+                    os << "/>";
                 break;
 
             case ddf_body_t::DDF_INT:
                 os << "<number";
                 if (name_attr && p->name) {
-                    os << " name='";
+                    os << " name=\"";
                     xml_encode(os,p->name);
-                    os << '\'';
+                    os << '"';
                 }
-                os << '>' << p->value.integer << "</number>\n";
+                os << '>' << p->value.integer << "</number>";
                 break;
 
             case ddf_body_t::DDF_FLOAT:
                 os << "<number";
                 if (name_attr && p->name) {
-                    os << " name='";
+                    os << " name=\"";
                     xml_encode(os,p->name);
-                    os << '\'';
+                    os << '"';
                 }
-                os << '>' << fixed << p->value.floating << dec << "</number>\n";
+                os << '>' << fixed << p->value.floating << dec << "</number>";
                 break;
 
             case ddf_body_t::DDF_STRUCT:
             {
                 os << "<struct";
                 if (name_attr && p->name) {
-                    os << " name='";
+                    os << " name=\"";
                     xml_encode(os,p->name);
-                    os << '\'';
+                    os << '"';
                 }
-                os << ">\n";
+                os << '>';
                 ddf_body_t* child=p->value.children.first;
                 while (child) {
-                    os << "<var name='";
+                    os << "<var name=\"";
                     xml_encode(os,child->name);
-                    os << "'>\n";
+                    os << "\">";
                     serialize(child,os,false);
-                    os << "</var>\n";
+                    os << "</var>";
                     child=child->next;
                 }
-                os << "</struct>\n";
+                os << "</struct>";
                 break;
             }
 
             case ddf_body_t::DDF_LIST:
             {
-                os << "<array length='" << p->value.children.count << '\'';
+                os << "<array length=\"" << p->value.children.count << '"';
                 if (name_attr && p->name) {
-                    os << " name='";
+                    os << " name=\"";
                     xml_encode(os,p->name);
-                    os << '\'';
+                    os << '"';
                 }
-                os << ">\n";
+                os << '>';
                 ddf_body_t* child=p->value.children.first;
                 while (child) {
                     serialize(child,os);
                     child=child->next;
                 }
-                os << "</array>\n";
+                os << "</array>";
                 break;
             }
 
@@ -870,16 +870,16 @@ void serialize(ddf_body_t* p, ostream& os, bool name_attr=true)
             default:
                 os << "<null";
                 if (name_attr && p->name) {
-                    os << " name='";
+                    os << " name=\"";
                     xml_encode(os,p->name);
-                    os << '\'';
+                    os << '"';
                 }
-                os << "/>\n";
+                os << "/>";
                 break;
         }
     }
     else
-        os << "<null/>\n";
+        os << "<null/>";
 }
 
 // The stream insertion will work for any ostream-based object.
@@ -887,9 +887,9 @@ void serialize(ddf_body_t* p, ostream& os, bool name_attr=true)
 SHIBSP_API ostream& shibsp::operator<<(ostream& os, const DDF& obj)
 {
     os.precision(15);
-    os << "<wddxPacket version=\"1.0\" lowercase=\"no\">\n<header/>\n<data>\n";
+    os << "<wddxPacket version=\"1.0\" lowercase=\"no\"><header/><data>";
     serialize(obj.m_handle,os);
-    os << "</data>\n</wddxPacket>\n";
+    os << "</data></wddxPacket>";
     return os;
 }
 
