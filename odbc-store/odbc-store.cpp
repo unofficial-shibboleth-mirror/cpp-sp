@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-/*
- * odbc-store.cpp - Storage service using ODBC
+/**
+ * odbc-store.cpp
  *
- * $Id$
+ * Storage Service using ODBC
  */
 
-// eventually we might be able to support autoconf via cygwin...
 #if defined (_MSC_VER) || defined(__BORLANDC__)
 # include "config_win32.h"
 #else
@@ -30,326 +29,165 @@
 #ifdef WIN32
 # define _CRT_NONSTDC_NO_DEPRECATE 1
 # define _CRT_SECURE_NO_DEPRECATE 1
-# define NOMINMAX
-# define SHIBODBC_EXPORTS __declspec(dllexport)
-#else
-# define SHIBODBC_EXPORTS
 #endif
 
-#include <shib-target/shib-target.h>
-#include <shibsp/exceptions.h>
-#include <log4cpp/Category.hh>
-#include <xmltooling/util/NDC.h>
-#include <xmltooling/util/Threads.h>
+#ifdef WIN32
+# define ODBCSTORE_EXPORTS __declspec(dllexport)
+#else
+# define ODBCSTORE_EXPORTS
+#endif
 
-#include <ctime>
-#include <algorithm>
-#include <sstream>
+#include <log4cpp/Category.hh>
+#include <xercesc/util/XMLUniDefs.hpp>
+#include <xmltooling/XMLToolingConfig.h>
+#include <xmltooling/util/NDC.h>
+#include <xmltooling/util/StorageService.h>
+#include <xmltooling/util/Threads.h>
+#include <xmltooling/util/XMLHelper.h>
 
 #include <sql.h>
 #include <sqlext.h>
 
-#ifdef HAVE_LIBDMALLOCXX
-#include <dmalloc.h>
-#endif
-
-using namespace shibsp;
-using namespace shibtarget;
-using namespace opensaml::saml2md;
-using namespace saml;
 using namespace xmltooling;
+using namespace xercesc;
 using namespace log4cpp;
 using namespace std;
 
-#define PLUGIN_VER_MAJOR 3
+#define PLUGIN_VER_MAJOR 1
 #define PLUGIN_VER_MINOR 0
 
-#define COLSIZE_KEY 64
-#define COLSIZE_CONTEXT 256
-#define COLSIZE_STRING_VALUE 256
+#define LONGDATA_BUFLEN 16384
 
+#define COLSIZE_KEY 255
+#define COLSIZE_CONTEXT 255
+#define COLSIZE_STRING_VALUE 255
 
-/* tables definitions - not used here */
+#define STRING_TABLE "STRING_TABLE"
+#define TEXT_TABLE "TEXT_TABLE"
 
-#define STRING_TABLE "STRING_STORE"
+/* tables definitions - not used here
 
 #define STRING_TABLE \
-  "CREATE TABLE STRING_TABLE ( "\
-  "context VARCHAR( COLSIZE_CONTEXT ), " \
-  "key VARCHAR( COLSIZE_KEY ), " \
-  "value VARCHAR( COLSIZE_STRING_VALUE ), " \
-  "expires TIMESTAMP, "
-  "PRIMARY KEY (context, key), "
-  "INDEX (context))"
+  "CREATE TABLE STRING_TABLE ( " \
+    "context varchar(255), " \
+    "key varchar(255), " \
+    "value varchar(255), " \
+    "expires datetime, " \
+    "version smallint, " \
+    "PRIMARY KEY (context, key)" \
+    ")"
 
-
-#define TEXT_TABLE "TEXT_STORE"
 
 #define TEXT_TABLE \
   "CREATE TABLE TEXT_TABLE ( "\
-  "context VARCHAR( COLSIZE_CONTEXT ), " \
-  "key VARCHAR( COLSIZE_KEY ), " \
-  "value LONG TEXT, " \
-  "expires TIMESTAMP, "
-  "PRIMARY KEY (context, key), "
-  "INDEX (context))"
+    "context varchar(255), " \
+    "key varchar(255), " \
+    "value text, " \
+    "expires datetime, " \
+    "version smallint, " \
+    "PRIMARY KEY (context, key)" \
+    ")"
+*/
 
+namespace {
+    static const XMLCh cleanupInterval[] =  UNICODE_LITERAL_15(c,l,e,a,n,u,p,I,n,t,e,r,v,a,l);
+    static const XMLCh ConnectionString[] = UNICODE_LITERAL_16(C,o,n,n,e,c,t,i,o,n,S,t,r,i,n,g);
 
-
-
-static const XMLCh ConnectionString[] =
-{ chLatin_C, chLatin_o, chLatin_n, chLatin_n, chLatin_e, chLatin_c, chLatin_t, chLatin_i, chLatin_o, chLatin_n,
-  chLatin_S, chLatin_t, chLatin_r, chLatin_i, chLatin_n, chLatin_g, chNull
-};
-static const XMLCh cleanupInterval[] =
-{ chLatin_c, chLatin_l, chLatin_e, chLatin_a, chLatin_n, chLatin_u, chLatin_p,
-  chLatin_I, chLatin_n, chLatin_t, chLatin_e, chLatin_r, chLatin_v, chLatin_a, chLatin_l, chNull
-};
-static const XMLCh cacheTimeout[] =
-{ chLatin_c, chLatin_a, chLatin_c, chLatin_h, chLatin_e, chLatin_T, chLatin_i, chLatin_m, chLatin_e, chLatin_o, chLatin_u, chLatin_t, chNull };
-static const XMLCh odbcTimeout[] =
-{ chLatin_o, chLatin_d, chLatin_b, chLatin_c, chLatin_T, chLatin_i, chLatin_m, chLatin_e, chLatin_o, chLatin_u, chLatin_t, chNull };
-static const XMLCh storeAttributes[] =
-{ chLatin_s, chLatin_t, chLatin_o, chLatin_r, chLatin_e, chLatin_A, chLatin_t, chLatin_t, chLatin_r, chLatin_i, chLatin_b, chLatin_u, chLatin_t, chLatin_e, chLatin_s, chNull };
-
-static const XMLCh cleanupInterval[] = UNICODE_LITERAL_15(c,l,e,a,n,u,p,I,n,t,e,r,v,a,l);
-
-
-// ODBC tools
-
-struct ODBCConn {
-    ODBCConn(SQLHDBC conn) : handle(conn) {}
-    ~ODBCConn() {SQLFreeHandle(SQL_HANDLE_DBC,handle);}
-    operator SQLHDBC() {return handle;}
-    SQLHDBC handle;
-};
-
-class ODBCBase : public virtual saml::IPlugIn
-{
-public:
-    ODBCBase(const DOMElement* e);
-    virtual ~ODBCBase();
-
-    SQLHDBC getHDBC();
-
-    Category* log;
-
-protected:
-    const DOMElement* m_root; // can only use this during initialization
-    string m_connstring;
-
-    static SQLHENV m_henv;          // single handle for both plugins
-    bool m_bInitializedODBC;        // tracks which class handled the process
-    static const char* p_connstring;
-
-    pair<int,int> getVersion(SQLHDBC);
-    void log_error(SQLHANDLE handle, SQLSMALLINT htype);
-};
-
-SQLHENV ODBCBase::m_henv = SQL_NULL_HANDLE;
-const char* ODBCBase::p_connstring = NULL;
-
-ODBCBase::ODBCBase(const DOMElement* e) : m_root(e), m_bInitializedODBC(false)
-{
-#ifdef _DEBUG
-    xmltooling::NDC ndc("ODBCBase");
-#endif
-    log = &(Category::getInstance("shibtarget.ODBC"));
-
-    if (m_henv == SQL_NULL_HANDLE) {
-        // Enable connection pooling.
-        SQLSetEnvAttr(SQL_NULL_HANDLE, SQL_ATTR_CONNECTION_POOLING, (void*)SQL_CP_ONE_PER_HENV, 0);
-
-        // Allocate the environment.
-        if (!SQL_SUCCEEDED(SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &m_henv)))
-            throw ConfigurationException("ODBC failed to initialize.");
-
-        // Specify ODBC 3.x
-        SQLSetEnvAttr(m_henv, SQL_ATTR_ODBC_VERSION, (void*)SQL_OV_ODBC3, 0);
-
-        log->info("ODBC initialized");
-        m_bInitializedODBC = true;
-    }
-
-    // Grab connection string from the configuration.
-    e=XMLHelper::getFirstChildElement(e,ConnectionString);
-    if (!e || !e->hasChildNodes()) {
-        if (!p_connstring) {
-            this->~ODBCBase();
-            throw ConfigurationException("ODBC cache requires ConnectionString element in configuration.");
+    // RAII for ODBC handles
+    struct ODBCConn {
+        ODBCConn(SQLHDBC conn) : handle(conn) {}
+        ~ODBCConn() {
+            SQLRETURN sr = SQLEndTran(SQL_HANDLE_DBC, handle, SQL_COMMIT);
+            SQLFreeHandle(SQL_HANDLE_DBC,handle);
+            if (!SQL_SUCCEEDED(sr))
+                throw IOException("Failed to commit connection.");
         }
-        m_connstring=p_connstring;
-    }
-    else {
-        xmltooling::auto_ptr_char arg(e->getFirstChild()->getNodeValue());
-        m_connstring=arg.get();
-        p_connstring=m_connstring.c_str();
-    }
+        operator SQLHDBC() {return handle;}
+        SQLHDBC handle;
+    };
 
-    // Connect and check version.
-    SQLHDBC conn=getHDBC();
-    pair<int,int> v=getVersion(conn);
-    SQLFreeHandle(SQL_HANDLE_DBC,conn);
+    struct ODBCStatement {
+        ODBCStatement(SQLHSTMT statement) : handle(statement) {}
+        ~ODBCStatement() {SQLFreeHandle(SQL_HANDLE_STMT,handle);}
+        operator SQLHSTMT() {return handle;}
+        SQLHSTMT handle;
+    };
 
-    // Make sure we've got the right version.
-    if (v.first != PLUGIN_VER_MAJOR) {
-        this->~ODBCBase();
-        log->crit("unknown database version: %d.%d", v.first, v.second);
-        throw SAMLException("Unknown cache database version.");
-    }
-}
+    class ODBCStorageService : public StorageService
+    {
+    public:
+        ODBCStorageService(const DOMElement* e);
+        virtual ~ODBCStorageService();
 
-ODBCBase::~ODBCBase()
-{
-    //delete m_mysql;
-    if (m_bInitializedODBC)
-        SQLFreeHandle(SQL_HANDLE_ENV,m_henv);
-    m_bInitializedODBC=false;
-    m_henv = SQL_NULL_HANDLE;
-    p_connstring=NULL;
-}
+        void createString(const char* context, const char* key, const char* value, time_t expiration) {
+            return createRow(STRING_TABLE, context, key, value, expiration);
+        }
+        int readString(const char* context, const char* key, string* pvalue=NULL, time_t* pexpiration=NULL, int version=0) {
+            return readRow(STRING_TABLE, context, key, pvalue, pexpiration, version, false);
+        }
+        int updateString(const char* context, const char* key, const char* value=NULL, time_t expiration=0, int version=0) {
+            return updateRow(STRING_TABLE, context, key, value, expiration, version);
+        }
+        bool deleteString(const char* context, const char* key) {
+            return deleteRow(STRING_TABLE, context, key);
+        }
 
-void ODBCBase::log_error(SQLHANDLE handle, SQLSMALLINT htype)
-{
-    SQLSMALLINT	 i = 0;
-    SQLINTEGER	 native;
-    SQLCHAR	 state[7];
-    SQLCHAR	 text[256];
-    SQLSMALLINT	 len;
-    SQLRETURN	 ret;
+        void createText(const char* context, const char* key, const char* value, time_t expiration) {
+            return createRow(TEXT_TABLE, context, key, value, expiration);
+        }
+        int readText(const char* context, const char* key, string* pvalue=NULL, time_t* pexpiration=NULL, int version=0) {
+            return readRow(TEXT_TABLE, context, key, pvalue, pexpiration, version, true);
+        }
+        int updateText(const char* context, const char* key, const char* value=NULL, time_t expiration=0, int version=0) {
+            return updateRow(TEXT_TABLE, context, key, value, expiration, version);
+        }
+        bool deleteText(const char* context, const char* key) {
+            return deleteRow(TEXT_TABLE, context, key);
+        }
 
-    do {
-        ret = SQLGetDiagRec(htype, handle, ++i, state, &native, text, sizeof(text), &len);
-        if (SQL_SUCCEEDED(ret))
-            log->error("ODBC Error: %s:%ld:%ld:%s", state, i, native, text);
-    } while(SQL_SUCCEEDED(ret));
-}
+        void reap(const char* context) {
+            reap(STRING_TABLE, context);
+            reap(TEXT_TABLE, context);
+        }
 
-SQLHDBC ODBCBase::getHDBC()
-{
-#ifdef _DEBUG
-    xmltooling::NDC ndc("getMYSQL");
-#endif
+        void updateContext(const char* context, time_t expiration) {
+            updateContext(STRING_TABLE, context, expiration);
+            updateContext(TEXT_TABLE, context, expiration);
+        }
 
-    // Get a handle.
-    SQLHDBC handle;
-    SQLRETURN sr=SQLAllocHandle(SQL_HANDLE_DBC, m_henv, &handle);
-    if (!SQL_SUCCEEDED(sr)) {
-        log->error("failed to allocate connection handle");
-        log_error(m_henv, SQL_HANDLE_ENV);
-        throw SAMLException("ODBCBase::getHDBC failed to allocate connection handle");
-    }
+        void deleteContext(const char* context) {
+            deleteContext(STRING_TABLE, context);
+            deleteContext(TEXT_TABLE, context);
+        }
+         
 
-    sr=SQLDriverConnect(handle,NULL,(SQLCHAR*)m_connstring.c_str(),m_connstring.length(),NULL,0,NULL,SQL_DRIVER_NOPROMPT);
-    if (!SQL_SUCCEEDED(sr)) {
-        log->error("failed to connect to database");
-        log_error(handle, SQL_HANDLE_DBC);
-        throw SAMLException("ODBCBase::getHDBC failed to connect to database");
-    }
+    private:
+        void createRow(const char *table, const char* context, const char* key, const char* value, time_t expiration);
+        int readRow(const char *table, const char* context, const char* key, string* pvalue, time_t* pexpiration, int version, bool text);
+        int updateRow(const char *table, const char* context, const char* key, const char* value, time_t expiration, int version);
+        bool deleteRow(const char *table, const char* context, const char* key);
 
-    return handle;
-}
+        void reap(const char* table, const char* context);
+        void updateContext(const char* table, const char* context, time_t expiration);
+        void deleteContext(const char* table, const char* context);
 
-pair<int,int> ODBCBase::getVersion(SQLHDBC conn)
-{
-    // Grab the version number from the database.
-    SQLHSTMT hstmt;
-    SQLAllocHandle(SQL_HANDLE_STMT,conn,&hstmt);
-    
-    SQLRETURN sr=SQLExecDirect(hstmt, (SQLCHAR*)"SELECT major,minor FROM version", SQL_NTS);
-    if (!SQL_SUCCEEDED(sr)) {
-        log->error("failed to read version from database");
-        log_error(hstmt, SQL_HANDLE_STMT);
-        throw SAMLException("ODBCBase::getVersion failed to read version from database");
-    }
+        SQLHDBC getHDBC();
+        SQLHSTMT getHSTMT(SQLHDBC);
+        pair<int,int> getVersion(SQLHDBC);
+        void log_error(SQLHANDLE handle, SQLSMALLINT htype);
 
-    SQLINTEGER major;
-    SQLINTEGER minor;
-    SQLBindCol(hstmt,1,SQL_C_SLONG,&major,0,NULL);
-    SQLBindCol(hstmt,2,SQL_C_SLONG,&minor,0,NULL);
+        static void* cleanup_fn(void*); 
+        void cleanup();
 
-    if ((sr=SQLFetch(hstmt)) != SQL_NO_DATA) {
-        SQLFreeHandle(SQL_HANDLE_STMT,hstmt);
-        return pair<int,int>(major,minor);
-    }
+        Category& m_log;
+        int m_cleanupInterval;
+        CondWait* shutdown_wait;
+        Thread* cleanup_thread;
+        bool shutdown;
 
-    SQLFreeHandle(SQL_HANDLE_STMT,hstmt);
-    log->error("no rows returned in version query");
-    throw SAMLException("ODBCBase::getVersion failed to read version from database");
-}
-
-
-// ------------------------------------------------------------
-
-// ODBC Storage Service class
-
-class ODBCStorageService : public ODBCBase, public StorageService
-{
-    string stringTable = STRING_TABLE;
-    string textTable = TEXT_TABLE;
-
-public:
-    ODBCStorageService(const DOMElement* e);
-    virtual ~ODBCStorageService();
-
-    void createString(const char* context, const char* key, const char* value, time_t expiration) {
-        return createRow(string_table, context, key, value, expiration);
-    }
-    bool readString(const char* context, const char* key, string* pvalue=NULL, time_t* pexpiration=NULL) {
-        return readRow(string_table, context, key, value, expiration, COLSIZE_STRING_VALUE);
-    }
-    bool updateString(const char* context, const char* key, const char* value=NULL, time_t expiration=0) {
-        return updateRow(string_table, context, key, value, expiration);
-    }
-    bool deleteString(const char* context, const char* key) {
-        return deleteRow(string_table, context, key, value, expiration);
-    }
-
-    void createText(const char* context, const char* key, const char* value, time_t expiration) {
-        return createRow(text_table, context, key, value, expiration);
-    }
-    bool readText(const char* context, const char* key, string* pvalue=NULL, time_t* pexpiration=NULL) {
-        return readRow(text_table, context, key, value, expiration, 0);
-    }
-    bool updateText(const char* context, const char* key, const char* value=NULL, time_t expiration=0) {
-        return updateRow(text_table, context, key, value, expiration);
-    }
-    bool deleteText(const char* context, const char* key) {
-        return deleteRow(text_table, context, key, value, expiration);
-    }
-
-    void reap(const char* context) {
-        reap(string_table, context);
-        reap(text_table, context);
-    }
-    void deleteContext(const char* context) {
-        deleteCtx(string_table, context);
-        deleteCtx(text_table, context);
-    }
-     
-
-private:
-
-    void createRow(const char *table, const char* context, const char* key, const char* value, time_t expiration);
-    bool readRow(const char *table, const char* context, const char* key, string* pvalue, time_t* pexpiration, int maxsize);
-    bool updateRow(const char *table, const char* context, const char* key, const char* value, time_t expiration);
-    bool deleteRow(const char *table, const char* context, const char* key);
-
-    void reapRows(const char* table, const char* context);
-    void deleteCtx(const char* table, const char* context);
-
-    xmltooling::CondWait* shutdown_wait;
-    bool shutdown;
-    xmltooling::Thread* cleanup_thread;
-
-    static void* cleanup_fcn(void*); 
-    void cleanup();
-
-    CondWait* shutdown_wait;
-    Thread* cleanup_thread;
-    bool shutdown;
-    int m_cleanupInterval;
-    Category& log;
+        SQLHENV m_henv;
+        string m_connstring;
+    };
 
     StorageService* ODBCStorageServiceFactory(const DOMElement* const & e)
     {
@@ -377,20 +215,20 @@ private:
     }
 
     // conver time_t to SQL string
-    void timestampFromTime(time_t t, char &ret)
+    void timestampFromTime(time_t t, char* ret)
     {
 #ifdef HAVE_GMTIME_R
         struct tm res;
-        struct tm* ptime=gmtime_r(&created,&res);
+        struct tm* ptime=gmtime_r(&t,&res);
 #else
-        struct tm* ptime=gmtime(&created);
+        struct tm* ptime=gmtime(&t);
 #endif
         strftime(ret,32,"{ts '%Y-%m-%d %H:%M:%S'}",ptime);
     }
 
     // make a string safe for SQL command
     // result to be free'd only if it isn't the input
-    char *makeSafeSQL(const char *src)
+    static char *makeSafeSQL(const char *src)
     {
        int ns = 0;
        int nc = 0;
@@ -400,7 +238,7 @@ private:
        for (s=(char*)src; *s; nc++,s++) if (*s=='\''||*s=='\\') ns++;
        if (ns==0) return ((char*)src);
     
-       char *safe = (char*) malloc(nc+2*ns+1);
+       char *safe = new char[(nc+2*ns+1)];
        for (s=safe; *src; src++) {
            if (*src=='\''||*src=='\\') *s++ = '\\';
            *s++ = (char)*src;
@@ -411,35 +249,61 @@ private:
 
     void freeSafeSQL(char *safe, const char *src)
     {
-        if (safe!=src) free(safe);
+        if (safe!=src)
+            delete[](safe);
     }
-
 };
 
-// class constructor
-
-ODBCStorageService::ODBCStorageService(const DOMElement* e):
-   ODBCBase(e),
-   shutdown(false),
-   m_cleanupInterval(0)
-
+ODBCStorageService::ODBCStorageService(const DOMElement* e) : m_log(Category::getInstance("XMLTooling.StorageService")),
+   m_cleanupInterval(900), shutdown_wait(NULL), cleanup_thread(NULL), shutdown(false), m_henv(SQL_NULL_HANDLE)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("ODBCStorageService");
 #endif
-    log = &(Category::getInstance("shibtarget.StorageService.ODBC"));
 
     const XMLCh* tag=e ? e->getAttributeNS(NULL,cleanupInterval) : NULL;
-    if (tag && *tag) {
+    if (tag && *tag)
         m_cleanupInterval = XMLString::parseInt(tag);
-    }
-    if (!m_cleanupInterval) m_cleanupInterval=300;
+    if (!m_cleanupInterval)
+        m_cleanupInterval = 900;
 
-    contextLock = Mutex::create();
-    shutdown_wait = CondWait::create();
+    if (m_henv == SQL_NULL_HANDLE) {
+        // Enable connection pooling.
+        SQLSetEnvAttr(SQL_NULL_HANDLE, SQL_ATTR_CONNECTION_POOLING, (void*)SQL_CP_ONE_PER_HENV, 0);
+
+        // Allocate the environment.
+        if (!SQL_SUCCEEDED(SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &m_henv)))
+            throw XMLToolingException("ODBC failed to initialize.");
+
+        // Specify ODBC 3.x
+        SQLSetEnvAttr(m_henv, SQL_ATTR_ODBC_VERSION, (void*)SQL_OV_ODBC3, 0);
+
+        m_log.info("ODBC initialized");
+    }
+
+    // Grab connection string from the configuration.
+    e = e ? XMLHelper::getFirstChildElement(e,ConnectionString) : NULL;
+    if (!e || !e->hasChildNodes()) {
+        SQLFreeHandle(SQL_HANDLE_ENV, m_henv);
+        throw XMLToolingException("ODBC StorageService requires ConnectionString element in configuration.");
+    }
+    auto_ptr_char arg(e->getFirstChild()->getNodeValue());
+    m_connstring=arg.get();
+
+    // Connect and check version.
+    ODBCConn conn(getHDBC());
+    pair<int,int> v=getVersion(conn);
+
+    // Make sure we've got the right version.
+    if (v.first != PLUGIN_VER_MAJOR) {
+        SQLFreeHandle(SQL_HANDLE_ENV, m_henv);
+        m_log.crit("unknown database version: %d.%d", v.first, v.second);
+        throw XMLToolingException("Unknown database version for ODBC StorageService.");
+    }
 
     // Initialize the cleanup thread
-    cleanup_thread = Thread::create(&cleanup_fcn, (void*)this);
+    shutdown_wait = CondWait::create();
+    cleanup_thread = Thread::create(&cleanup_fn, (void*)this);
 }
 
 ODBCStorageService::~ODBCStorageService()
@@ -447,12 +311,93 @@ ODBCStorageService::~ODBCStorageService()
     shutdown = true;
     shutdown_wait->signal();
     cleanup_thread->join(NULL);
-
     delete shutdown_wait;
+    SQLFreeHandle(SQL_HANDLE_ENV, m_henv);
 }
 
+void ODBCStorageService::log_error(SQLHANDLE handle, SQLSMALLINT htype)
+{
+    SQLSMALLINT	 i = 0;
+    SQLINTEGER	 native;
+    SQLCHAR	 state[7];
+    SQLCHAR	 text[256];
+    SQLSMALLINT	 len;
+    SQLRETURN	 ret;
 
-// create 
+    do {
+        ret = SQLGetDiagRec(htype, handle, ++i, state, &native, text, sizeof(text), &len);
+        if (SQL_SUCCEEDED(ret))
+            m_log.error("ODBC Error: %s:%ld:%ld:%s", state, i, native, text);
+    } while(SQL_SUCCEEDED(ret));
+}
+
+SQLHDBC ODBCStorageService::getHDBC()
+{
+#ifdef _DEBUG
+    xmltooling::NDC ndc("getHDBC");
+#endif
+
+    // Get a handle.
+    SQLHDBC handle;
+    SQLRETURN sr=SQLAllocHandle(SQL_HANDLE_DBC, m_henv, &handle);
+    if (!SQL_SUCCEEDED(sr)) {
+        m_log.error("failed to allocate connection handle");
+        log_error(m_henv, SQL_HANDLE_ENV);
+        throw IOException("ODBC StorageService failed to allocate a connection handle.");
+    }
+
+    sr=SQLDriverConnect(handle,NULL,(SQLCHAR*)m_connstring.c_str(),m_connstring.length(),NULL,0,NULL,SQL_DRIVER_NOPROMPT);
+    if (!SQL_SUCCEEDED(sr)) {
+        m_log.error("failed to connect to database");
+        log_error(handle, SQL_HANDLE_DBC);
+        throw IOException("ODBC StorageService failed to connect to database.");
+    }
+
+    sr = SQLSetConnectAttr(handle, SQL_ATTR_AUTOCOMMIT, SQL_AUTOCOMMIT_OFF, NULL);
+    if (!SQL_SUCCEEDED(sr))
+        throw IOException("ODBC StorageService failed to disable auto-commit mode.");
+    sr = SQLSetConnectAttr(handle, SQL_ATTR_TXN_ISOLATION, (SQLPOINTER)SQL_TXN_SERIALIZABLE, NULL);
+    if (!SQL_SUCCEEDED(sr))
+        throw IOException("ODBC StorageService failed to enable transaction isolation.");
+
+    return handle;
+}
+
+SQLHSTMT ODBCStorageService::getHSTMT(SQLHDBC conn)
+{
+    SQLHSTMT hstmt;
+    SQLRETURN sr=SQLAllocHandle(SQL_HANDLE_STMT,conn,&hstmt);
+    if (!SQL_SUCCEEDED(sr)) {
+        m_log.error("failed to allocate statement handle");
+        log_error(conn, SQL_HANDLE_DBC);
+        throw IOException("ODBC StorageService failed to allocate a statement handle.");
+    }
+    return hstmt;
+}
+
+pair<int,int> ODBCStorageService::getVersion(SQLHDBC conn)
+{
+    // Grab the version number from the database.
+    ODBCStatement stmt(getHSTMT(conn));
+    
+    SQLRETURN sr=SQLExecDirect(stmt, (SQLCHAR*)"SELECT major,minor FROM version", SQL_NTS);
+    if (!SQL_SUCCEEDED(sr)) {
+        m_log.error("failed to read version from database");
+        log_error(stmt, SQL_HANDLE_STMT);
+        throw IOException("ODBC StorageService failed to read version from database.");
+    }
+
+    SQLINTEGER major;
+    SQLINTEGER minor;
+    SQLBindCol(stmt,1,SQL_C_SLONG,&major,0,NULL);
+    SQLBindCol(stmt,2,SQL_C_SLONG,&minor,0,NULL);
+
+    if ((sr=SQLFetch(stmt)) != SQL_NO_DATA)
+        return pair<int,int>(major,minor);
+
+    m_log.error("no rows returned in version query");
+    throw IOException("ODBC StorageService failed to read version from database.");
+}
 
 void ODBCStorageService::createRow(const char *table, const char* context, const char* key, const char* value, time_t expiration)
 {
@@ -464,151 +409,171 @@ void ODBCStorageService::createRow(const char *table, const char* context, const
     timestampFromTime(expiration, timebuf);
 
     // Get statement handle.
-    SQLHSTMT hstmt;
     ODBCConn conn(getHDBC());
-    SQLAllocHandle(SQL_HANDLE_STMT,conn,&hstmt);
+    ODBCStatement stmt(getHSTMT(conn));
 
     // Prepare and exectute insert statement.
     char *scontext = makeSafeSQL(context);
+    char *skey = makeSafeSQL(key);
     char *svalue = makeSafeSQL(value);
-    string q  = string("INSERT ") + table + " VALUES ('" + scontext + "','" + key + "','" + svalue + "'," + timebuf + "')";
-    freeSafeSQL(scontext, context)
-    freeSafeSQL(svalue, value)
-    log->debug("SQL: %s", q.str());
+    string q  = string("INSERT ") + table + " VALUES ('" + scontext + "','" + skey + "','" + svalue + "'," + timebuf + "', 1)";
+    freeSafeSQL(scontext, context);
+    freeSafeSQL(skey, key);
+    freeSafeSQL(svalue, value);
+    m_log.debug("SQL: %s", q.c_str());
 
-    SQLRETURN sr=SQLExecDirect(hstmt, (SQLCHAR*)q.str().c_str(), SQL_NTS);
+    SQLRETURN sr=SQLExecDirect(stmt, (SQLCHAR*)q.c_str(), SQL_NTS);
     if (!SQL_SUCCEEDED(sr)) {
-        log->error("insert record failed (t=%s, c=%s, k=%s", table, context, key);
-        log_error(hstmt, SQL_HANDLE_STMT);
+        m_log.error("insert record failed (t=%s, c=%s, k=%s)", table, context, key);
+        log_error(stmt, SQL_HANDLE_STMT);
+        throw IOException("ODBC StorageService failed to insert record.");
     }
-
-    SQLFreeHandle(SQL_HANDLE_STMT,hstmt);
 }
 
-// read
-
-bool ODBCStorageService::readRow(const char *table, const char* context, const char* key, string& pvalue, time_t& pexpiration, int maxsize)
+int ODBCStorageService::readRow(
+    const char *table, const char* context, const char* key, string* pvalue, time_t* pexpiration, int version, bool text
+    )
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("readRow");
 #endif
 
     SQLCHAR *tvalue = NULL;
-    SQL_TIMESTAMP_STRUCT expires;
-    time_t exp;
 
     // Get statement handle.
-    SQLHSTMT hstmt;
     ODBCConn conn(getHDBC());
-    SQLAllocHandle(SQL_HANDLE_STMT,conn,&hstmt);
+    ODBCStatement stmt(getHSTMT(conn));
 
     // Prepare and exectute select statement.
     char *scontext = makeSafeSQL(context);
-    string q = string("SELECT expires,value FROM ") + table +
-               " WHERE context='" + scontext + "' AND key='" + key + "'";
-    freeSafeSQL(scontext, context)
-    log->debug("SQL: %s", q.str());
+    char *skey = makeSafeSQL(key);
+    string q("SELECT version");
+    if (pexpiration)
+        q += ",expires";
+    if (pvalue)
+        q += ",value";
+    q = q + " FROM " + table + " WHERE context='" + scontext + "' AND key='" + skey + "' AND expires > NOW()";
+    freeSafeSQL(scontext, context);
+    freeSafeSQL(skey, key);
+    m_log.debug("SQL: %s", q.c_str());
 
-    SQLRETURN sr=SQLExecDirect(hstmt, (SQLCHAR*)q.c_str(), SQL_NTS);
+    SQLRETURN sr=SQLExecDirect(stmt, (SQLCHAR*)q.c_str(), SQL_NTS);
     if (!SQL_SUCCEEDED(sr)) {
-        log->error("error searching for (t=%s, c=%s, k=%s)", table, context, key);
-        log_error(hstmt, SQL_HANDLE_STMT);
-        SQLFreeHandle(SQL_HANDLE_STMT,hstmt);
-        return false;
+        m_log.error("error searching for (t=%s, c=%s, k=%s)", table, context, key);
+        log_error(stmt, SQL_HANDLE_STMT);
+        throw IOException("ODBC StorageService search failed.");
     }
 
-    // retrieve data 
-    SQLBindCol(hstmt,1,SQL_C_TYPE_TIMESTAMP,&expires,0,NULL);
+    SQLSMALLINT ver;
+    SQL_TIMESTAMP_STRUCT expiration;
 
-    if ((sr=SQLFetch(hstmt)) == SQL_NO_DATA) {
-        SQLFreeHandle(SQL_HANDLE_STMT,hstmt);
-        return false;
-    }
+    SQLBindCol(stmt,1,SQL_C_SSHORT,&ver,0,NULL);
+    if (pexpiration)
+        SQLBindCol(stmt,2,SQL_C_TYPE_TIMESTAMP,&expiration,0,NULL);
 
-    // expire time from bound col
-    exp = timeFromTimestamp(expires);
-    if (time(NULL)>ezp) {
-        log->debug(".. expired");
-        SQLFreeHandle(SQL_HANDLE_STMT,hstmt);
-        return false;
-    }
-    if (pexpiration) pexpiration = exp;
+    if ((sr=SQLFetch(stmt)) == SQL_NO_DATA)
+        return 0;
 
-    // value by getdata
+    if (pexpiration)
+        *pexpiration = timeFromTimestamp(expiration);
 
-    // see how much text there is
-    if (maxsize==0) {
-         SQLINTEGER nch;
-         SQLCHAR tv[12];
-         sr = SQLGetData(hstmt, 2, SQL_C_CHAR, tvp, BUFSIZE_TEXT_BLOCK, &nch);
-         if (sr==SQL_SUCCESS || sr==SQL_SUCCESS_WITH_INFO) {
-             maxsize = nch;
-         }
-    }
+    if (version == ver)
+        return version; // nothing's changed, so just echo back the version
 
-    tvalue = (SQLCHAR*) malloc(maxsize+1);
-    sr = SQLGetData(hstmt, 2, SQL_C_CHAR, tvalue, maxsize, &nch);
-        if (sr!=SQL_SUCCESS) {
-            log->error("error retriving value for (t=%s, c=%s, k=%s)", table, context, key);
-            log_error(hstmt, SQL_HANDLE_STMT);
-            SQLFreeHandle(SQL_HANDLE_STMT,hstmt);
-            return false;
+    if (pvalue) {
+        SQLINTEGER len;
+        SQLCHAR buf[LONGDATA_BUFLEN];
+        while ((sr=SQLGetData(stmt,pexpiration ? 3 : 2,SQL_C_CHAR,buf,sizeof(buf),&len)) != SQL_NO_DATA) {
+            if (!SQL_SUCCEEDED(sr)) {
+                m_log.error("error while reading text field from result set");
+                log_error(stmt, SQL_HANDLE_STMT);
+                throw IOException("ODBC StorageService search failed to read data from result set.");
+            }
+            pvalue->append((char*)buf);
         }
     }
-    pvalue = string(tvalue);
-    free(tvalue);
-
-    log->debug(".. value found");
-
-    SQLFreeHandle(SQL_HANDLE_STMT,hstmt);
-    return true;
+    
+    return ver;
 }
 
-
-// update 
-
-bool ODBCStorageService::updateRow(const char *table, const char* context, const char* key, const char* value, time_t expiration)
+int ODBCStorageService::updateRow(const char *table, const char* context, const char* key, const char* value, time_t expiration, int version)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("updateRow");
 #endif
 
-    bool ret = true;
-
-    char timebuf[32];
-    timestampFromTime(expiration, timebuf);
+    if (!value && !expiration)
+        throw IOException("ODBC StorageService given invalid update instructions.");
 
     // Get statement handle.
-    SQLHSTMT hstmt;
     ODBCConn conn(getHDBC());
-    SQLAllocHandle(SQL_HANDLE_STMT,conn,&hstmt);
+    ODBCStatement stmt(getHSTMT(conn));
 
-    // Prepare and exectute update statement.
-
-    string expstr = "";
-    if (expiration) expstr = string(",expires = '") + timebuf + "' ";
-
+    // First, fetch the current version for later, which also ensures the record still exists.
     char *scontext = makeSafeSQL(context);
-    char *svalue = makeSafeSQL(value);
-    string q  = string("UPDATE ") + table + " SET value='" + svalue + "'" + expstr + 
-               " WHERE context='" + scontext + "' AND key='" + key + "' AND expires > NOW()";
-    freeSafeSQL(scontext, context)
-    freeSafeSQL(svalue, value)
-    log->debug("SQL: %s", q.str());
+    char *skey = makeSafeSQL(key);
+    string q("SELECT version FROM ");
+    q = q + table + " WHERE context='" + scontext + "' AND key='" + key + "' AND expires > NOW()";
 
-    SQLRETURN sr=SQLExecDirect(hstmt, (SQLCHAR*)q.str().c_str(), SQL_NTS);
+    m_log.debug("SQL: %s", q.c_str());
+
+    SQLRETURN sr=SQLExecDirect(stmt, (SQLCHAR*)q.c_str(), SQL_NTS);
     if (!SQL_SUCCEEDED(sr)) {
-        log->error("update record failed (t=%s, c=%s, k=%s", table, context, key);
-        log_error(hstmt, SQL_HANDLE_STMT);
-        ret = false;
+        freeSafeSQL(scontext, context);
+        freeSafeSQL(skey, key);
+        m_log.error("error searching for (t=%s, c=%s, k=%s)", table, context, key);
+        log_error(stmt, SQL_HANDLE_STMT);
+        throw IOException("ODBC StorageService search failed.");
     }
 
-    SQLFreeHandle(SQL_HANDLE_STMT,hstmt);
-    return ret;
+    SQLSMALLINT ver;
+    SQLBindCol(stmt,1,SQL_C_SSHORT,&ver,0,NULL);
+    if ((sr=SQLFetch(stmt)) == SQL_NO_DATA) {
+        freeSafeSQL(scontext, context);
+        freeSafeSQL(skey, key);
+        return 0;
+    }
+
+    // Check version?
+    if (version > 0 && version != ver) {
+        freeSafeSQL(scontext, context);
+        freeSafeSQL(skey, key);
+        return -1;
+    }
+
+    // Prepare and exectute update statement.
+    q = string("UPDATE ") + table + " SET ";
+
+    if (value) {
+        char *svalue = makeSafeSQL(value);
+        q = q + "value='" + svalue + "'" + ",version=version+1";
+        freeSafeSQL(svalue, value);
+    }
+
+    if (expiration) {
+        char timebuf[32];
+        timestampFromTime(expiration, timebuf);
+        if (value)
+            q += ',';
+        q = q + "expires = '" + timebuf + "' ";
+    }
+
+    q = q + " WHERE context='" + scontext + "' AND key='" + key + "'";
+    freeSafeSQL(scontext, context);
+    freeSafeSQL(skey, key);
+
+    m_log.debug("SQL: %s", q.c_str());
+    sr=SQLExecDirect(stmt, (SQLCHAR*)q.c_str(), SQL_NTS);
+    if (sr==SQL_NO_DATA)
+        return 0;   // went missing?
+    else if (!SQL_SUCCEEDED(sr)) {
+        m_log.error("update of record failed (t=%s, c=%s, k=%s", table, context, key);
+        log_error(stmt, SQL_HANDLE_STMT);
+        throw IOException("ODBC StorageService failed to update record.");
+    }
+
+    return ver + 1;
 }
-
-
-// delete
 
 bool ODBCStorageService::deleteRow(const char *table, const char *context, const char* key)
 {
@@ -616,35 +581,30 @@ bool ODBCStorageService::deleteRow(const char *table, const char *context, const
     xmltooling::NDC ndc("deleteRow");
 #endif
 
-    bool ret = true;
-
     // Get statement handle.
-    SQLHSTMT hstmt;
     ODBCConn conn(getHDBC());
-    SQLAllocHandle(SQL_HANDLE_STMT,conn,&hstmt);
+    ODBCStatement stmt(getHSTMT(conn));
 
     // Prepare and execute delete statement.
     char *scontext = makeSafeSQL(context);
-    string q = string("DELETE FROM ") + table + " WHERE context='" + scontext + "' AND key='" + key + "'";
-    freeSafeSQL(scontext, context)
-    log->debug("SQL: %s", q.str());
+    char *skey = makeSafeSQL(key);
+    string q = string("DELETE FROM ") + table + " WHERE context='" + scontext + "' AND key='" + skey + "'";
+    freeSafeSQL(scontext, context);
+    freeSafeSQL(skey, key);
+    m_log.debug("SQL: %s", q.c_str());
 
-    SQLRETURN sr=SQLExecDirect(hstmt, (SQLCHAR*)q.c_str(), SQL_NTS);
- 
-    if (sr==SQL_NO_DATA) {
-        ret = false;
-    } else if (!SQL_SUCCEEDED(sr)) {
-        log->error("error deleting record (t=%s, c=%s, k=%s)", table, context, key);
-        log_error(hstmt, SQL_HANDLE_STMT);
-        ret = false;
+    SQLRETURN sr=SQLExecDirect(stmt, (SQLCHAR*)q.c_str(), SQL_NTS);
+     if (sr==SQL_NO_DATA)
+        return false;
+    else if (!SQL_SUCCEEDED(sr)) {
+        m_log.error("error deleting record (t=%s, c=%s, k=%s)", table, context, key);
+        log_error(stmt, SQL_HANDLE_STMT);
+        throw IOException("ODBC StorageService failed to delete record.");
     }
 
-    SQLFreeHandle(SQL_HANDLE_STMT,hstmt);
-    return ret;
+    return true;
 }
 
-
-// cleanup - delete expired entries
 
 void ODBCStorageService::cleanup()
 {
@@ -652,31 +612,32 @@ void ODBCStorageService::cleanup()
     xmltooling::NDC ndc("cleanup");
 #endif
 
-    Mutex* mutex = xmltooling::Mutex::create();
-
-    int rerun_timer = 0;
-    int timeout_life = 0;
+    Mutex* mutex = Mutex::create();
 
     mutex->lock();
 
-    log->info("cleanup thread started... running every %d secs", m_cleanupInterval);
+    m_log.info("cleanup thread started... running every %d secs", m_cleanupInterval);
 
     while (!shutdown) {
         shutdown_wait->timedwait(mutex, m_cleanupInterval);
-
-        if (shutdown) break;
-
-        reap(NULL);
+        if (shutdown)
+            break;
+        try {
+            reap(NULL);
+        }
+        catch (exception& ex) {
+            m_log.error("cleanup thread swallowed exception: %s", ex.what());
+        }
     }
 
-    log->info("cleanup thread exiting...");
+    m_log.info("cleanup thread exiting...");
 
     mutex->unlock();
     delete mutex;
-    xmltooling::Thread::exit(NULL);
+    Thread::exit(NULL);
 }
 
-void* ODBCStorageService::cleanup_fcn(void* cache_p)
+void* ODBCStorageService::cleanup_fn(void* cache_p)
 {
   ODBCStorageService* cache = (ODBCStorageService*)cache_p;
 
@@ -690,68 +651,96 @@ void* ODBCStorageService::cleanup_fcn(void* cache_p)
   return NULL;
 }
 
-
-// remove expired entries for a context
-
-void ODBCStorageService::reapRows(const char *table, const char* context)
+void ODBCStorageService::updateContext(const char *table, const char* context, time_t expiration)
 {
 #ifdef _DEBUG
-    xmltooling::NDC ndc("reapRows");
+    xmltooling::NDC ndc("updateContext");
 #endif
 
     // Get statement handle.
-    SQLHSTMT hstmt;
     ODBCConn conn(getHDBC());
-    SQLAllocHandle(SQL_HANDLE_STMT,conn,&hstmt);
+    ODBCStatement stmt(getHSTMT(conn));
+
+    char timebuf[32];
+    timestampFromTime(expiration, timebuf);
+
+    char *scontext = makeSafeSQL(context);
+    string q("UPDATE ");
+    q = q + table + " SET expires = '" + timebuf + "' WHERE context='" + scontext + "' AND expires > NOW()";
+    freeSafeSQL(scontext, context);
+
+    m_log.debug("SQL: %s", q.c_str());
+
+    SQLRETURN sr=SQLExecDirect(stmt, (SQLCHAR*)q.c_str(), SQL_NTS);
+    if ((sr!=SQL_NO_DATA) && !SQL_SUCCEEDED(sr)) {
+        m_log.error("error updating records (t=%s, c=%s)", table, context ? context : "all");
+        log_error(stmt, SQL_HANDLE_STMT);
+        throw IOException("ODBC StorageService failed to update context expiration.");
+    }
+}
+
+void ODBCStorageService::reap(const char *table, const char* context)
+{
+#ifdef _DEBUG
+    xmltooling::NDC ndc("reap");
+#endif
+
+    // Get statement handle.
+    ODBCConn conn(getHDBC());
+    ODBCStatement stmt(getHSTMT(conn));
 
     // Prepare and execute delete statement.
     string q;
     if (context) {
         char *scontext = makeSafeSQL(context);
-        q = string("DELETE FROM ") + table + " WHERE context='" + scontext + "' AND expires<NOW()";
-        freeSafeSQL(scontext, context)
-    } else {
-        q = string("DELETE FROM ") + table + " WHERE expires<NOW()";
+        q = string("DELETE FROM ") + table + " WHERE context='" + scontext + "' AND expires <= NOW()";
+        freeSafeSQL(scontext, context);
     }
-    log->debug("SQL: %s", q.str());
+    else {
+        q = string("DELETE FROM ") + table + " WHERE expires <= NOW()";
+    }
+    m_log.debug("SQL: %s", q.c_str());
 
-    SQLRETURN sr=SQLExecDirect(hstmt, (SQLCHAR*)q.c_str(), SQL_NTS);
- 
+    SQLRETURN sr=SQLExecDirect(stmt, (SQLCHAR*)q.c_str(), SQL_NTS);
     if ((sr!=SQL_NO_DATA) && !SQL_SUCCEEDED(sr)) {
-        log->error("error expiring records (t=%s, c=%s)", table, context?context:"null");
-        log_error(hstmt, SQL_HANDLE_STMT);
+        m_log.error("error expiring records (t=%s, c=%s)", table, context ? context : "all");
+        log_error(stmt, SQL_HANDLE_STMT);
+        throw IOException("ODBC StorageService failed to purge expired records.");
     }
-
-    SQLFreeHandle(SQL_HANDLE_STMT,hstmt);
 }
 
-
-
-// remove all entries for a context
-
-void ODBCStorageService::deleteCtx(const char *table, const char* context)
+void ODBCStorageService::deleteContext(const char *table, const char* context)
 {
 #ifdef _DEBUG
-    xmltooling::NDC ndc("deleteCtx");
+    xmltooling::NDC ndc("deleteContext");
 #endif
 
     // Get statement handle.
-    SQLHSTMT hstmt;
     ODBCConn conn(getHDBC());
-    SQLAllocHandle(SQL_HANDLE_STMT,conn,&hstmt);
+    ODBCStatement stmt(getHSTMT(conn));
 
     // Prepare and execute delete statement.
     char *scontext = makeSafeSQL(context);
     string q = string("DELETE FROM ") + table + " WHERE context='" + scontext + "'";
-    freeSafeSQL(scontext, context)
-    log->debug("SQL: %s", q.str());
+    freeSafeSQL(scontext, context);
+    m_log.debug("SQL: %s", q.c_str());
 
-    SQLRETURN sr=SQLExecDirect(hstmt, (SQLCHAR*)q.c_str(), SQL_NTS);
- 
+    SQLRETURN sr=SQLExecDirect(stmt, (SQLCHAR*)q.c_str(), SQL_NTS);
     if ((sr!=SQL_NO_DATA) && !SQL_SUCCEEDED(sr)) {
-        log->error("error deleting context (t=%s, c=%s)", table, context);
-        log_error(hstmt, SQL_HANDLE_STMT);
+        m_log.error("error deleting context (t=%s, c=%s)", table, context);
+        log_error(stmt, SQL_HANDLE_STMT);
+        throw IOException("ODBC StorageService failed to delete context.");
     }
+}
 
-    SQLFreeHandle(SQL_HANDLE_STMT,hstmt);
+extern "C" int ODBCSTORE_EXPORTS xmltooling_extension_init(void*)
+{
+    // Register this SS type
+    XMLToolingConfig::getConfig().StorageServiceManager.registerFactory("ODBC", ODBCStorageServiceFactory);
+    return 0;
+}
+
+extern "C" void ODBCSTORE_EXPORTS xmltooling_extension_term()
+{
+    XMLToolingConfig::getConfig().StorageServiceManager.deregisterFactory("ODBC");
 }
