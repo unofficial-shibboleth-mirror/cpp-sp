@@ -240,6 +240,7 @@ namespace {
 
     private:
         void doExtensions(const DOMElement* e, const char* label, Category& log);
+        void cleanup();
 
         const XMLConfig* m_outer;
         DOMDocument* m_document;
@@ -823,20 +824,30 @@ void XMLApplication::cleanup()
         listener->unregListener(addr.c_str(),this);
     }
     delete m_unsetLock;
+    m_unsetLock = NULL;
     for_each(m_handlers.begin(),m_handlers.end(),xmltooling::cleanup<Handler>());
+    m_handlers.clear();
 #ifndef SHIBSP_LITE
     delete m_partyDefault;
+    m_partyDefault = NULL;
 #ifdef HAVE_GOOD_STL
     for_each(m_partyMap.begin(),m_partyMap.end(),cleanup_pair<xstring,PropertySet>());
 #else
     for_each(m_partyMap.begin(),m_partyMap.end(),cleanup_pair<const XMLCh*,PropertySet>());
 #endif
+    m_partyMap.clear();
     delete m_credResolver;
+    m_credResolver = NULL;
     delete m_attrResolver;
+    m_attrResolver = NULL;
     delete m_attrFilter;
+    m_attrFilter = NULL;
     delete m_attrExtractor;
+    m_attrExtractor = NULL;
     delete m_trust;
+    m_trust = NULL;
     delete m_metadata;
+    m_metadata = NULL;
 #endif
 }
 
@@ -1293,12 +1304,12 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
         }
     }
     catch (exception&) {
-        this->~XMLConfigImpl();
+        cleanup();
         throw;
     }
 #ifndef _DEBUG
     catch (...) {
-        this->~XMLConfigImpl();
+        cleanup();
         throw;
     }
 #endif
@@ -1306,16 +1317,25 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
 
 XMLConfigImpl::~XMLConfigImpl()
 {
+    cleanup();
+}
+
+void XMLConfigImpl::cleanup()
+{
     for_each(m_appmap.begin(),m_appmap.end(),cleanup_pair<string,Application>());
+    m_appmap.clear();
 #ifndef SHIBSP_LITE
     for (map< string,pair<PropertySet*,vector<const SecurityPolicyRule*> > >::iterator i=m_policyMap.begin(); i!=m_policyMap.end(); ++i) {
         delete i->second.first;
         for_each(i->second.second.begin(), i->second.second.end(), xmltooling::cleanup<SecurityPolicyRule>());
     }
+    m_policyMap.clear();
 #endif
     delete m_requestMapper;
+    m_requestMapper = NULL;
     if (m_document)
         m_document->release();
+    m_document = NULL;
 }
 
 void XMLConfig::receive(DDF& in, ostream& out)
