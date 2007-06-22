@@ -58,35 +58,36 @@ using namespace std;
 
 #define LONGDATA_BUFLEN 16384
 
-#define COLSIZE_KEY 255
 #define COLSIZE_CONTEXT 255
+#define COLSIZE_ID 255
 #define COLSIZE_STRING_VALUE 255
 
-#define STRING_TABLE "STRING_TABLE"
-#define TEXT_TABLE "TEXT_TABLE"
+#define STRING_TABLE "strings"
+#define TEXT_TABLE "texts"
 
-/* tables definitions - not used here
+/* tables definitions
+CREATE TABLE version (
+    major tinyint NOT NULL,
+    minor tinyint NOT NULL
+    )
 
-#define STRING_TABLE \
-  "CREATE TABLE STRING_TABLE ( " \
-    "context varchar(255), " \
-    "key varchar(255), " \
-    "value varchar(255), " \
-    "expires datetime, " \
-    "version smallint, " \
-    "PRIMARY KEY (context, key)" \
-    ")"
+CREATE TABLE strings (
+    context varchar(255) not null,
+    id varchar(255) not null,
+    expires datetime not null,
+    version smallint not null,
+    value varchar(255) not null,
+    PRIMARY KEY (context, id)
+    )
 
-
-#define TEXT_TABLE \
-  "CREATE TABLE TEXT_TABLE ( "\
-    "context varchar(255), " \
-    "key varchar(255), " \
-    "value text, " \
-    "expires datetime, " \
-    "version smallint, " \
-    "PRIMARY KEY (context, key)" \
-    ")"
+CREATE TABLE texts (
+    context varchar(255) not null,
+    id varchar(255) not null,
+    expires datetime not null,
+    version smallint not null,
+    value text not null,
+    PRIMARY KEY (context, id)
+    )
 */
 
 namespace {
@@ -235,12 +236,12 @@ namespace {
        char *s;
     
        // see if any conversion needed
-       for (s=(char*)src; *s; nc++,s++) if (*s=='\''||*s=='\\') ns++;
+       for (s=(char*)src; *s; nc++,s++) if (*s=='\'') ns++;
        if (ns==0) return ((char*)src);
     
        char *safe = new char[(nc+2*ns+1)];
        for (s=safe; *src; src++) {
-           if (*src=='\''||*src=='\\') *s++ = '\\';
+           if (*src=='\'') *s++ = '\'';
            *s++ = (char)*src;
        }
        *s = '\0';
@@ -416,7 +417,7 @@ void ODBCStorageService::createRow(const char *table, const char* context, const
     char *scontext = makeSafeSQL(context);
     char *skey = makeSafeSQL(key);
     char *svalue = makeSafeSQL(value);
-    string q  = string("INSERT ") + table + " VALUES ('" + scontext + "','" + skey + "','" + svalue + "'," + timebuf + "', 1)";
+    string q  = string("INSERT ") + table + " VALUES ('" + scontext + "','" + skey + "'," + timebuf + ",1,'" + svalue + "')";
     freeSafeSQL(scontext, context);
     freeSafeSQL(skey, key);
     freeSafeSQL(svalue, value);
@@ -438,13 +439,13 @@ int ODBCStorageService::readRow(
     xmltooling::NDC ndc("readRow");
 #endif
 
-    SQLCHAR *tvalue = NULL;
-
     // Get statement handle.
     ODBCConn conn(getHDBC());
     ODBCStatement stmt(getHSTMT(conn));
 
     // Prepare and exectute select statement.
+    char timebuf[32];
+    timestampFromTime(time(NULL), timebuf);
     char *scontext = makeSafeSQL(context);
     char *skey = makeSafeSQL(key);
     string q("SELECT version");
@@ -452,7 +453,7 @@ int ODBCStorageService::readRow(
         q += ",expires";
     if (pvalue)
         q += ",value";
-    q = q + " FROM " + table + " WHERE context='" + scontext + "' AND key='" + skey + "' AND expires > NOW()";
+    q = q + " FROM " + table + " WHERE context='" + scontext + "' AND id='" + skey + "' AND expires > " + timebuf;
     freeSafeSQL(scontext, context);
     freeSafeSQL(skey, key);
     m_log.debug("SQL: %s", q.c_str());
@@ -510,10 +511,12 @@ int ODBCStorageService::updateRow(const char *table, const char* context, const 
     ODBCStatement stmt(getHSTMT(conn));
 
     // First, fetch the current version for later, which also ensures the record still exists.
+    char timebuf[32];
+    timestampFromTime(time(NULL), timebuf);
     char *scontext = makeSafeSQL(context);
     char *skey = makeSafeSQL(key);
     string q("SELECT version FROM ");
-    q = q + table + " WHERE context='" + scontext + "' AND key='" + key + "' AND expires > NOW()";
+    q = q + table + " WHERE context='" + scontext + "' AND id='" + key + "' AND expires > " + timebuf;
 
     m_log.debug("SQL: %s", q.c_str());
 
@@ -551,14 +554,13 @@ int ODBCStorageService::updateRow(const char *table, const char* context, const 
     }
 
     if (expiration) {
-        char timebuf[32];
         timestampFromTime(expiration, timebuf);
         if (value)
             q += ',';
-        q = q + "expires = '" + timebuf + "' ";
+        q = q + "expires = " + timebuf;
     }
 
-    q = q + " WHERE context='" + scontext + "' AND key='" + key + "'";
+    q = q + " WHERE context='" + scontext + "' AND id='" + key + "'";
     freeSafeSQL(scontext, context);
     freeSafeSQL(skey, key);
 
@@ -588,7 +590,7 @@ bool ODBCStorageService::deleteRow(const char *table, const char *context, const
     // Prepare and execute delete statement.
     char *scontext = makeSafeSQL(context);
     char *skey = makeSafeSQL(key);
-    string q = string("DELETE FROM ") + table + " WHERE context='" + scontext + "' AND key='" + skey + "'";
+    string q = string("DELETE FROM ") + table + " WHERE context='" + scontext + "' AND id='" + skey + "'";
     freeSafeSQL(scontext, context);
     freeSafeSQL(skey, key);
     m_log.debug("SQL: %s", q.c_str());
@@ -664,9 +666,12 @@ void ODBCStorageService::updateContext(const char *table, const char* context, t
     char timebuf[32];
     timestampFromTime(expiration, timebuf);
 
+    char nowbuf[32];
+    timestampFromTime(time(NULL), nowbuf);
+
     char *scontext = makeSafeSQL(context);
     string q("UPDATE ");
-    q = q + table + " SET expires = '" + timebuf + "' WHERE context='" + scontext + "' AND expires > NOW()";
+    q = q + table + " SET expires = " + timebuf + " WHERE context='" + scontext + "' AND expires > " + nowbuf;
     freeSafeSQL(scontext, context);
 
     m_log.debug("SQL: %s", q.c_str());
@@ -690,14 +695,16 @@ void ODBCStorageService::reap(const char *table, const char* context)
     ODBCStatement stmt(getHSTMT(conn));
 
     // Prepare and execute delete statement.
+    char nowbuf[32];
+    timestampFromTime(time(NULL), nowbuf);
     string q;
     if (context) {
         char *scontext = makeSafeSQL(context);
-        q = string("DELETE FROM ") + table + " WHERE context='" + scontext + "' AND expires <= NOW()";
+        q = string("DELETE FROM ") + table + " WHERE context='" + scontext + "' AND expires <= " + nowbuf;
         freeSafeSQL(scontext, context);
     }
     else {
-        q = string("DELETE FROM ") + table + " WHERE expires <= NOW()";
+        q = string("DELETE FROM ") + table + " WHERE expires <= " + nowbuf;
     }
     m_log.debug("SQL: %s", q.c_str());
 
