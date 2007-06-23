@@ -99,6 +99,7 @@ namespace {
         ODBCConn(SQLHDBC conn) : handle(conn) {}
         ~ODBCConn() {
             SQLRETURN sr = SQLEndTran(SQL_HANDLE_DBC, handle, SQL_COMMIT);
+            SQLDisconnect(handle);
             SQLFreeHandle(SQL_HANDLE_DBC,handle);
             if (!SQL_SUCCEEDED(sr))
                 throw IOException("Failed to commit connection.");
@@ -448,17 +449,19 @@ int ODBCStorageService::readRow(
     timestampFromTime(time(NULL), timebuf);
     char *scontext = makeSafeSQL(context);
     char *skey = makeSafeSQL(key);
-    string q("SELECT version");
+    ostringstream q;
+    q << "SELECT version";
     if (pexpiration)
-        q += ",expires";
+        q << ",expires";
     if (pvalue)
-        q += ",value";
-    q = q + " FROM " + table + " WHERE context='" + scontext + "' AND id='" + skey + "' AND expires > " + timebuf;
+        q << ",CASE version WHEN " << version << " THEN NULL ELSE value END";
+    q << " FROM " << table << " WHERE context='" << scontext << "' AND id='" << skey << "' AND expires > " << timebuf;
     freeSafeSQL(scontext, context);
     freeSafeSQL(skey, key);
-    m_log.debug("SQL: %s", q.c_str());
+    if (m_log.isDebugEnabled())
+        m_log.debug("SQL: %s", q.str().c_str());
 
-    SQLRETURN sr=SQLExecDirect(stmt, (SQLCHAR*)q.c_str(), SQL_NTS);
+    SQLRETURN sr=SQLExecDirect(stmt, (SQLCHAR*)q.str().c_str(), SQL_NTS);
     if (!SQL_SUCCEEDED(sr)) {
         m_log.error("error searching for (t=%s, c=%s, k=%s)", table, context, key);
         log_error(stmt, SQL_HANDLE_STMT);
