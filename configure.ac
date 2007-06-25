@@ -557,107 +557,106 @@ fi
 
 
 #
-# Implement the checks of the ODBC Credential Cache
+# Implement the checks of the ODBC Storage Service
 #
 # 1) Assume the user wants ODBC; if it's not found then just continue without
 # 2) If the user specifically requested odbc, look for it and ERROR if not found
-# 3) If the user specifically requested no-odbc, don't build it.
+# 3) If the user specifically requested no odbc, don't build it.
 #
 
-#AC_CONFIG_FILES([odbc_ccache/Makefile])
+AC_CONFIG_FILES([odbc-store/Makefile])
 
 # determine whether we should enable the odbc ccache
-#AC_ARG_ENABLE([odbc],
-#	AC_HELP_STRING([--disable-odbc], [disable the ODBC Credential Cache]),
-#	[odbc_enabled=$enableval], [odbc_enabled=default])
+AC_ARG_ENABLE([odbc],
+	AC_HELP_STRING([--disable-odbc], [disable the ODBC Storage Service]),
+	[odbc_enabled=$enableval], [odbc_enabled=default])
 
-#if test "x$odbc_enabled" = "x" ; then
-#   odbc_enabled=yes
-#fi
+if test "x$odbc_enabled" = "x" ; then
+   odbc_enabled=yes
+fi
 
 # Are we trying to build ODBC?
-#AC_MSG_CHECKING(whether to build the ODBC ccache)
-#if test "$odbc_enabled" = "yes" ; then
-#   build_odbc=yes
-#   AC_MSG_RESULT(yes)
-#elif test "$odbc_enabled" = "default" ; then
-#   build_odbc=yes
-#   AC_MSG_RESULT([yes, if it can be found])
-#else
-#   build_odbc=no
-#   AC_MSG_RESULT(no)
-#fi
+AC_MSG_CHECKING(whether to build the ODBC storage service)
+if test "$odbc_enabled" = "yes" ; then
+   build_odbc=yes
+   AC_MSG_RESULT(yes)
+elif test "$odbc_enabled" = "default" ; then
+   build_odbc=yes
+   AC_MSG_RESULT([yes, if it can be found])
+else
+   build_odbc=no
+   AC_MSG_RESULT(no)
+fi
 
 # If we're trying to build ODBC, try to find the odbc_config program.
-#if test "$build_odbc" = "yes" ; then
-#   odbc_dir=""
-#   AC_ARG_WITH(odbc,
-#	AC_HELP_STRING([--with-odbc=PATH], [directory where odbc is installed]),
-#	    [if test "$with_odbc" = no ; then
-#               AC_MSG_ERROR([Try running --disable-odbc instead.])
-#             elif test "$with_odbc" != yes ; then
-#               odbc_dir="$with_odbc/bin"
-#             fi ])
+if test "$build_odbc" = "yes" ; then
+   odbc_dir=""
+   AC_ARG_WITH(odbc,
+	AC_HELP_STRING([--with-odbc=PATH], [directory where odbc is installed]),
+	    [if test "$with_odbc" = no ; then
+               AC_MSG_ERROR([Try running --disable-odbc instead.])
+             elif test "$with_odbc" != yes ; then
+               odbc_dir="$with_odbc/bin"
+             fi ])
 
-   # Try to find the mysql_config program
-#   AC_PATH_PROG(ODBC_CONFIG, odbc_config, no, $odbc_dir $PATH )
+   AC_PATH_PROG(ODBC_CONFIG, odbc_config, no, $odbc_dir $PATH )
 
-#   if test "$ODBC_CONFIG" = no ; then
-#      if test "$odbc_enabled" = "yes" ; then
-#        AC_MSG_ERROR(Cannot find odbc_config)
-#      else
-#        AC_MSG_WARN(ODBC not found, skipping.)
-#      fi
-#   fi
-#fi
+   if test "$ODBC_CONFIG" = no ; then
+      if test "$odbc_enabled" = "yes" ; then
+        AC_MSG_ERROR(Cannot find odbc_config)
+      else
+        AC_MSG_WARN(ODBC not found, skipping.)
+      fi
+   fi
+fi
 
-#if test "$build_odbc" = yes ; then
-#   ODBC_CFLAGS=`$ODBC_CONFIG --cflags`
-#   ODBC_CFLAGS=`eval echo $ODBC_CFLAGS`
-#   ODBC_LIBS=`$ODBC_CONFIG --libs`
-#   ODBC_LIBS=`eval echo $ODBC_LIBS`
+if test "$build_odbc" = yes ; then
+   ODBC_CFLAGS=`$ODBC_CONFIG --cflags`
+   ODBC_CFLAGS=`eval echo $ODBC_CFLAGS`
+   ODBC_LIBS=`$ODBC_CONFIG --libs`
+   ODBC_LIBS=`eval echo $ODBC_LIBS`
 
-#   save_CPPFLAGS="$CPPFLAGS"
-#   CPPFLAGS="$CPPFLAGS $ODBC_CFLAGS"
+   save_CPPFLAGS="$CPPFLAGS"
+   CPPFLAGS="$CPPFLAGS $ODBC_CFLAGS"
 
-#   AC_CHECK_HEADER([sql.h], [have_sql_h=yes], [have_sql_h=no])
-#   if test "$have_sql_h" = no -a "$odbc_enabled" = "yes" ; then
-#     AC_MSG_ERROR(unable to find ODBC header files)
-#   fi
+   AC_CHECK_HEADER([sql.h], [have_sql_h=yes], [have_sql_h=no])
+   if test "$have_sql_h" = no -a "$odbc_enabled" = "yes" ; then
+     AC_MSG_ERROR(unable to find ODBC header files)
+   fi
 
-#   if test "$have_sql_h" = yes ; then
-#      save_LIBS="$LIBS"
-#      LIBS="$LIBS $ODBC_LIBS"
-#      AC_MSG_CHECKING(if we can link againt ODBC)
-#      AC_TRY_LINK(
-#        [#include <sql.h>
-#         #include <sqlext.h>
-#         #include <stdio.h>],
-#        [SQLSetEnvAttr(SQL_NULL_HANDLE, SQL_ATTR_CONNECTION_POOLING, (void*)SQL_CP_ONE_PER_HENV, 0)],
-#        [have_odbc_libs=yes],
-#        [have_odbc_libs=no])
-#      LIBS="$save_LIBS"
+   if test "$have_sql_h" = yes ; then
+      save_LIBS="$LIBS"
+      LIBS="$LIBS $ODBC_LIBS"
+      AC_MSG_CHECKING(if we can link againt ODBC)
+      AC_TRY_LINK(
+        [#include <sql.h>
+         #include <sqlext.h>
+         #include <stdio.h>],
+        [SQLSetEnvAttr(SQL_NULL_HANDLE, SQL_ATTR_CONNECTION_POOLING, (void*)SQL_CP_ONE_PER_HENV, 0)],
+        [have_odbc_libs=yes],
+        [have_odbc_libs=no])
+      LIBS="$save_LIBS"
 
-#      if test "$have_odbc_libs" = no ; then
-#         if test "$odbc_enabled" = "yes" ; then
-#            AC_MSG_ERROR([unable to link with ODBC Library])
-#         else
-#            AC_MSG_RESULT(no, skipping ODBC)
-#         fi
-#      fi
-#   fi
+      if test "$have_odbc_libs" = no ; then
+         if test "$odbc_enabled" = "yes" ; then
+            AC_MSG_ERROR([unable to link with ODBC Library])
+         else
+            AC_MSG_RESULT(no, skipping ODBC)
+         fi
+      fi
+   fi
 
-#   CPPFLAGS="$save_CPPFLAGS"
-#fi
+   CPPFLAGS="$save_CPPFLAGS"
+fi
 
 # if have_odbc_libs=yes then go ahead with building ODBC
-#if test "$have_odbc_libs" = yes ; then
-#   # this AC_MSG_RESULT is from above!
-#   AC_MSG_RESULT(yes)
-#   WANT_SUBDIRS="$WANT_SUBDIRS odbc_ccache"
-#   AC_SUBST(ODBC_CFLAGS)
-#   AC_SUBST(ODBC_LIBS)
-#fi
+if test "$have_odbc_libs" = yes ; then
+   # this AC_MSG_RESULT is from above!
+   AC_MSG_RESULT(yes)
+   WANT_SUBDIRS="$WANT_SUBDIRS odbc-store"
+   AC_SUBST(ODBC_CFLAGS)
+   AC_SUBST(ODBC_LIBS)
+fi
 
 
 AC_SUBST(WANT_SUBDIRS)

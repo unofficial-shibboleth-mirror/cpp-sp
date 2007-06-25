@@ -180,6 +180,14 @@
 			RelativePath=".\odbc-store.cpp"
 			>
 		</File>
+		<File
+			RelativePath=".\odbc-store.rc"
+			>
+		</File>
+		<File
+			RelativePath=".\resource.h"
+			>
+		</File>
 	</Files>
 	<Globals>
 	</Globals>
