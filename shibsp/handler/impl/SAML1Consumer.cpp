@@ -289,7 +289,7 @@ string SAML1Consumer::implementProtocol(
             &tokens,
             &resolvedAttributes
             );
-        resolvedAttributes.clear();  // Attributes are owned by cache now.
+        for_each(resolvedAttributes.begin(), resolvedAttributes.end(), cleanup_pair<string,Attribute>());
         return key;
     }
     catch (exception&) {

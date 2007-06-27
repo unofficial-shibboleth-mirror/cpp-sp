@@ -418,7 +418,7 @@ string SAML2Consumer::implementProtocol(
         if (ownedName)
             delete ssoName;
         for_each(ownedtokens.begin(), ownedtokens.end(), xmltooling::cleanup<saml2::Assertion>());
-
+        for_each(resolvedAttributes.begin(), resolvedAttributes.end(), cleanup_pair<string,Attribute>());
         return key;
     }
     catch (exception&) {

@@ -574,7 +574,6 @@ string SSCache::insert(
         for (multimap<string,Attribute*>::const_iterator a=attributes->begin(); a!=attributes->end(); ++a)
             xlog->log.infoStream() << "\t" << a->second->getId() << " (" << a->second->valueCount() << " values)";
         xlog->log.info("}");
-        for_each(attributes->begin(), attributes->end(), cleanup_pair<string,Attribute>());
     }
 
     return key.get();

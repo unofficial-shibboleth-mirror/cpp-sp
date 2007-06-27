@@ -183,8 +183,7 @@ namespace shibsp {
         /**
          * Inserts a new session into the cache.
          * 
-         * <p>The SSO token remains owned by the caller and is copied by the
-         * cache. Any Attributes supplied become the property of the cache.  
+         * <p>The SSO tokens and Attributes remain owned by the caller and are copied by the cache.
          * 
          * @param expires           expiration time of session
          * @param application       reference to Application that owns the Session
