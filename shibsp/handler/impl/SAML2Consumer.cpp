@@ -329,14 +329,12 @@ string SAML2Consumer::implementProtocol(
     time_t sessionExp = ssoStatement->getSessionNotOnOrAfter() ? ssoStatement->getSessionNotOnOrAfterEpoch() : 0;
     const PropertySet* sessionProps = application.getPropertySet("Sessions");
     pair<bool,unsigned int> lifetime = sessionProps ? sessionProps->getUnsignedInt("lifetime") : pair<bool,unsigned int>(true,28800);
-    if (!lifetime.first)
+    if (!lifetime.first || lifetime.second == 0)
         lifetime.second = 28800;
-    if (lifetime.second != 0) {
-        if (sessionExp == 0)
-            sessionExp = now + lifetime.second;     // IdP says nothing, calulate based on SP.
-        else
-            sessionExp = min(sessionExp, now + lifetime.second);    // Use the lowest.
-    }
+    if (sessionExp == 0)
+        sessionExp = now + lifetime.second;     // IdP says nothing, calulate based on SP.
+    else
+        sessionExp = min(sessionExp, now + lifetime.second);    // Use the lowest.
 
     // Other details...
     const AuthnContext* authnContext = ssoStatement->getAuthnContext();

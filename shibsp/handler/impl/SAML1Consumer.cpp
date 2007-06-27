@@ -202,7 +202,7 @@ string SAML1Consumer::implementProtocol(
     // Session expiration for SAML 1.x is purely SP-driven, and the method is mapped to a ctx class.
     const PropertySet* sessionProps = application.getPropertySet("Sessions");
     pair<bool,unsigned int> lifetime = sessionProps ? sessionProps->getUnsignedInt("lifetime") : pair<bool,unsigned int>(true,28800);
-    if (!lifetime.first)
+    if (!lifetime.first || lifetime.second == 0)
         lifetime.second = 28800;
     auto_ptr_char authnInstant(
         ssoStatement->getAuthenticationInstant() ? ssoStatement->getAuthenticationInstant()->getRawData() : NULL
@@ -277,7 +277,7 @@ string SAML1Consumer::implementProtocol(
 
     try {
         string key = application.getServiceProvider().getSessionCache()->insert(
-            lifetime.second ? now + lifetime.second : 0,
+            now + lifetime.second,
             application,
             httpRequest.getRemoteAddr().c_str(),
             issuerMetadata,
