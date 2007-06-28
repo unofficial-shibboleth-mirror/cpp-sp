@@ -121,7 +121,7 @@ namespace {
         ODBCStorageService(const DOMElement* e);
         virtual ~ODBCStorageService();
 
-        void createString(const char* context, const char* key, const char* value, time_t expiration) {
+        bool createString(const char* context, const char* key, const char* value, time_t expiration) {
             return createRow(STRING_TABLE, context, key, value, expiration);
         }
         int readString(const char* context, const char* key, string* pvalue=NULL, time_t* pexpiration=NULL, int version=0) {
@@ -134,7 +134,7 @@ namespace {
             return deleteRow(STRING_TABLE, context, key);
         }
 
-        void createText(const char* context, const char* key, const char* value, time_t expiration) {
+        bool createText(const char* context, const char* key, const char* value, time_t expiration) {
             return createRow(TEXT_TABLE, context, key, value, expiration);
         }
         int readText(const char* context, const char* key, string* pvalue=NULL, time_t* pexpiration=NULL, int version=0) {
@@ -164,7 +164,7 @@ namespace {
          
 
     private:
-        void createRow(const char *table, const char* context, const char* key, const char* value, time_t expiration);
+        bool createRow(const char *table, const char* context, const char* key, const char* value, time_t expiration);
         int readRow(const char *table, const char* context, const char* key, string* pvalue, time_t* pexpiration, int version, bool text);
         int updateRow(const char *table, const char* context, const char* key, const char* value, time_t expiration, int version);
         bool deleteRow(const char *table, const char* context, const char* key);
@@ -176,7 +176,7 @@ namespace {
         SQLHDBC getHDBC();
         SQLHSTMT getHSTMT(SQLHDBC);
         pair<int,int> getVersion(SQLHDBC);
-        void log_error(SQLHANDLE handle, SQLSMALLINT htype);
+        bool log_error(SQLHANDLE handle, SQLSMALLINT htype, const char* checkfor=NULL);
 
         static void* cleanup_fn(void*); 
         void cleanup();
@@ -317,7 +317,7 @@ ODBCStorageService::~ODBCStorageService()
     SQLFreeHandle(SQL_HANDLE_ENV, m_henv);
 }
 
-void ODBCStorageService::log_error(SQLHANDLE handle, SQLSMALLINT htype)
+bool ODBCStorageService::log_error(SQLHANDLE handle, SQLSMALLINT htype, const char* checkfor)
 {
     SQLSMALLINT	 i = 0;
     SQLINTEGER	 native;
@@ -326,11 +326,16 @@ void ODBCStorageService::log_error(SQLHANDLE handle, SQLSMALLINT htype)
     SQLSMALLINT	 len;
     SQLRETURN	 ret;
 
+    bool res = false;
     do {
         ret = SQLGetDiagRec(htype, handle, ++i, state, &native, text, sizeof(text), &len);
-        if (SQL_SUCCEEDED(ret))
+        if (SQL_SUCCEEDED(ret)) {
             m_log.error("ODBC Error: %s:%ld:%ld:%s", state, i, native, text);
+            if (checkfor && !strcmp(checkfor, (const char*)state))
+                res = true;
+        }
     } while(SQL_SUCCEEDED(ret));
+    return res;
 }
 
 SQLHDBC ODBCStorageService::getHDBC()
@@ -401,7 +406,7 @@ pair<int,int> ODBCStorageService::getVersion(SQLHDBC conn)
     throw IOException("ODBC StorageService failed to read version from database.");
 }
 
-void ODBCStorageService::createRow(const char *table, const char* context, const char* key, const char* value, time_t expiration)
+bool ODBCStorageService::createRow(const char *table, const char* context, const char* key, const char* value, time_t expiration)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("createRow");
@@ -427,9 +432,11 @@ void ODBCStorageService::createRow(const char *table, const char* context, const
     SQLRETURN sr=SQLExecDirect(stmt, (SQLCHAR*)q.c_str(), SQL_NTS);
     if (!SQL_SUCCEEDED(sr)) {
         m_log.error("insert record failed (t=%s, c=%s, k=%s)", table, context, key);
-        log_error(stmt, SQL_HANDLE_STMT);
+        if (log_error(stmt, SQL_HANDLE_STMT, "23000"))
+            return false;   // supposedly integrity violation?
         throw IOException("ODBC StorageService failed to insert record.");
     }
+    return true;
 }
 
 int ODBCStorageService::readRow(
