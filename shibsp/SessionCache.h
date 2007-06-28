@@ -211,6 +211,22 @@ namespace shibsp {
             const std::vector<const opensaml::Assertion*>* tokens=NULL,
             const std::multimap<std::string,Attribute*>* attributes=NULL
             )=0;
+
+        /**
+         * Deletes an existing session or sessions.
+         * 
+         * @param issuer        source of session(s)
+         * @param nameid        name identifier associated with the session(s) to terminate
+         * @param index         index of session, or NULL for all sessions associated with other parameters
+         * @param application   reference to Application that owns the session(s)
+         * @return  number of sessions removed
+         */
+        virtual unsigned int remove(
+            const opensaml::saml2md::EntityDescriptor& issuer,
+            const opensaml::saml2::NameID& nameid,
+            const char* index,
+            const Application& application
+            )=0;
 #endif
 
         /**

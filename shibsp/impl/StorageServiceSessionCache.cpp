@@ -160,9 +160,18 @@ namespace shibsp {
             );
         Session* find(const char* key, const Application& application, const char* client_addr=NULL, time_t* timeout=NULL);
         void remove(const char* key, const Application& application, const char* client_addr);
+        unsigned int remove(
+            const saml2md::EntityDescriptor& issuer, const saml2::NameID& nameid, const char* index, const Application& application
+            );
 
         Category& m_log;
         StorageService* m_storage;
+
+    private:
+        // maintain back-mappings of NameID/SessionIndex -> session key
+        void insert(const char* key, time_t expires, const char* name, const char* index);
+
+        bool stronglyMatches(const XMLCh* idp, const XMLCh* sp, const saml2::NameID& n1, const saml2::NameID& n2) const;
     };
 
     SessionCache* SHIBSP_DLLLOCAL StorageServiceCacheFactory(const DOMElement* const & e)
@@ -338,7 +347,8 @@ void StoredSession::addAssertion(Assertion* assertion)
 
     ostringstream tokenstr;
     tokenstr << *assertion;
-    m_cache->m_storage->createText(getID(), id.get(), tokenstr.str().c_str(), exp);
+    if (!m_cache->m_storage->createText(getID(), id.get(), tokenstr.str().c_str(), exp))
+        throw IOException("Attempted to insert duplicate assertion ID into session.");
     
     int ver;
     do {
@@ -447,6 +457,57 @@ SSCache::~SSCache()
     }
 }
 
+void SSCache::insert(const char* key, time_t expires, const char* name, const char* index)
+{
+    string dup;
+    if (strlen(name) > 255) {
+        dup = string(name).substr(0,255);
+        name = dup.c_str();
+    }
+
+    DDF obj;
+    DDFJanitor jobj(obj);
+
+    // Since we can't guarantee uniqueness, check for an existing record.
+    string record;
+    time_t recordexp;
+    int ver = m_storage->readText("Logout", name, &record, &recordexp);
+    if (ver > 0) {
+        // Existing record, so we need to unmarshall it.
+        istringstream in(record);
+        in >> obj;
+    }
+    else {
+        // New record.
+        obj.structure();
+    }
+
+    if (!index)
+        index = "_shibnull";
+    DDF sessions = obj.addmember(index);
+    if (!sessions.islist())
+        sessions.list();
+    DDF session = DDF(NULL).string(key);
+    sessions.add(session);
+
+    // Remarshall the record.
+    ostringstream out;
+    out << obj;
+
+    // Try and store it back...
+    if (ver > 0) {
+        ver = m_storage->updateText("Logout", name, out.str().c_str(), max(expires, recordexp), ver);
+        if (ver <= 0) {
+            // Out of sync, or went missing, so retry.
+            return insert(key, expires, name, index);
+        }
+    }
+    else if (!m_storage->createText("Logout", name, out.str().c_str(), expires)) {
+        // Hit a dup, so just retry, hopefully hitting the other branch.
+        return insert(key, expires, name, index);
+    }
+}
+
 string SSCache::insert(
     time_t expires,
     const Application& application,
@@ -473,18 +534,18 @@ string SSCache::insert(
     DDF obj = DDF(key.get()).structure();
     obj.addmember("version").integer(1);
     obj.addmember("application_id").string(application.getId());
-    if (expires > 0) {
-        // On 64-bit Windows, time_t doesn't fit in a long, so I'm using ISO timestamps.  
+
+    // On 64-bit Windows, time_t doesn't fit in a long, so I'm using ISO timestamps.  
 #ifndef HAVE_GMTIME_R
-        struct tm* ptime=gmtime(&expires);
+    struct tm* ptime=gmtime(&expires);
 #else
-        struct tm res;
-        struct tm* ptime=gmtime_r(&expires,&res);
+    struct tm res;
+    struct tm* ptime=gmtime_r(&expires,&res);
 #endif
-        char timebuf[32];
-        strftime(timebuf,32,"%Y-%m-%dT%H:%M:%SZ",ptime);
-        obj.addmember("expires").string(timebuf);
-    }
+    char timebuf[32];
+    strftime(timebuf,32,"%Y-%m-%dT%H:%M:%SZ",ptime);
+    obj.addmember("expires").string(timebuf);
+
     if (client_addr)
         obj.addmember("client_addr").string(client_addr);
     if (issuer) {
@@ -529,14 +590,27 @@ string SSCache::insert(
     
     m_log.debug("storing new session...");
     time_t now = time(NULL);
-    m_storage->createText(key.get(), "session", record.str().c_str(), now + m_cacheTimeout);
+    if (!m_storage->createText(key.get(), "session", record.str().c_str(), now + m_cacheTimeout))
+        throw FatalProfileException("Attempted to create a session with a duplicate key.");
+    
+    // Store the reverse mapping for logout.
+    auto_ptr_char name(nameid ? nameid->getName() : NULL);
+    try {
+        if (name.get())
+            insert(key.get(), expires, name.get(), session_index);
+    }
+    catch (exception& ex) {
+        m_log.error("error storing back mapping of NameID for logout: %s", ex.what());
+    }
+
     if (tokens) {
         try {
             for (vector<const Assertion*>::const_iterator t = tokens->begin(); t!=tokens->end(); ++t) {
                 ostringstream tokenstr;
                 tokenstr << *(*t);
                 auto_ptr_char tokenid((*t)->getID());
-                m_storage->createText(key.get(), tokenid.get(), tokenstr.str().c_str(), now + m_cacheTimeout);
+                if (!m_storage->createText(key.get(), tokenid.get(), tokenstr.str().c_str(), now + m_cacheTimeout))
+                    throw IOException("duplicate assertion ID ($1)", params(1, tokenid.get()));
             }
         }
         catch (exception& ex) {
@@ -548,7 +622,6 @@ string SSCache::insert(
     m_log.info("new session created: SessionID (%s) IdP (%s) Address (%s)", key.get(), pid ? pid : "none", client_addr);
 
     // Transaction Logging
-    auto_ptr_char name(nameid ? nameid->getName() : NULL);
     TransactionLog* xlog = application.getServiceProvider().getTransactionLog();
     Locker locker(xlog);
     xlog->log.infoStream() <<
@@ -691,6 +764,134 @@ void SSCache::remove(const char* key, const Application& application, const char
     TransactionLog* xlog = application.getServiceProvider().getTransactionLog();
     Locker locker(xlog);
     xlog->log.info("Destroyed session (applicationId: %s) (ID: %s)", application.getId(), key);
+}
+
+unsigned int SSCache::remove(
+    const saml2md::EntityDescriptor& issuer, const saml2::NameID& nameid, const char* index, const Application& application
+    )
+{
+#ifdef _DEBUG
+    xmltooling::NDC ndc("remove");
+#endif
+
+    unsigned int count = 0;
+    auto_ptr_char entityID(issuer.getEntityID());
+    auto_ptr_char name(nameid.getName());
+
+    m_log.info("request to logout sessions from (%s) for (%s) for session index (%s)", entityID.get(), name.get(), index ? index : "all");
+
+    if (strlen(name.get()) > 255)
+        const_cast<char*>(name.get())[255] = 0;
+
+    // Read in potentially matching sessions.
+    string record;
+    int ver = m_storage->readText("Logout", name.get(), &record);
+    if (ver == 0) {
+        m_log.debug("no active sessions to remove for supplied issuer and name identifier");
+        return count;
+    }
+
+    DDF obj;
+    DDFJanitor jobj(obj);
+    istringstream in(record);
+    in >> obj;
+
+    // The record contains child lists for each known session index.
+    DDF key;
+    DDF sessions = obj.first();
+    while (sessions.islist()) {
+        if (!index || !strcmp(sessions.name(), index)) {
+            key = sessions.first();
+            while (key.isstring()) {
+                // Fetch the session for comparison and possible removal.
+                Session* session = find(key.string(), application);
+                Locker locker(session);
+                if (session) {
+                    // Same issuer?
+                    if (session->getEntityID() && !strcmp(session->getEntityID(), entityID.get())) {
+                        // Same NameID?
+                        if (stronglyMatches(issuer.getEntityID(), application.getXMLString("entityID").second, nameid, *session->getNameID())) {
+                            remove(key.string(), application, NULL);  // let this throw to detect errors in case logout failed
+                            count++;
+                            key.destroy();
+                        }
+                        else {
+                            m_log.debug("session (%s) contained a non-matching NameID, leaving it alone", key.string());
+                        }
+                    }
+                    else {
+                        m_log.debug("session (%s) established by different IdP, leaving it alone", key.string());
+                    }
+                }
+                else {
+                    // Session's gone, so...
+                    key.destroy();
+                }
+                key = sessions.next();
+            }
+
+            // No sessions left for this index?
+            if (sessions.first().isnull())
+                sessions.destroy();
+        }
+        sessions = obj.next();
+    }
+    
+    if (obj.first().isnull())
+        obj.destroy();
+
+    // If possible, write back the mapping record (this isn't crucial).
+    try {
+        if (obj.isnull()) {
+            m_storage->deleteText("Logout", name.get());
+        }
+        else {
+            ostringstream out;
+            out << obj;
+            if (m_storage->updateText("Logout", name.get(), out.str().c_str(), 0, ver) <= 0)
+                m_log.warn("logout mapping record changed behind us, leaving it alone");
+        }
+    }
+    catch (exception& ex) {
+        m_log.error("error updating logout mapping record: %s", ex.what());
+    }
+
+    return count;
+}
+
+bool SSCache::stronglyMatches(const XMLCh* idp, const XMLCh* sp, const saml2::NameID& n1, const saml2::NameID& n2) const
+{
+    if (!XMLString::equals(n1.getName(), n2.getName()))
+        return false;
+    
+    const XMLCh* s1 = n1.getFormat();
+    const XMLCh* s2 = n2.getFormat();
+    if (!s1 || !*s1)
+        s1 = saml2::NameID::UNSPECIFIED;
+    if (!s2 || !*s2)
+        s2 = saml2::NameID::UNSPECIFIED;
+    if (!XMLString::equals(s1,s2))
+        return false;
+    
+    s1 = n1.getNameQualifier();
+    s2 = n2.getNameQualifier();
+    if (!s1 || !*s1)
+        s1 = idp;
+    if (!s2 || !*s2)
+        s2 = idp;
+    if (!XMLString::equals(s1,s2))
+        return false;
+
+    s1 = n1.getSPNameQualifier();
+    s2 = n2.getSPNameQualifier();
+    if (!s1 || !*s1)
+        s1 = sp;
+    if (!s2 || !*s2)
+        s2 = sp;
+    if (!XMLString::equals(s1,s2))
+        return false;
+
+    return true;
 }
 
 void SSCache::receive(DDF& in, ostream& out)

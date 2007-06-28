@@ -182,7 +182,8 @@ void AbstractHandler::preserveRelayState(const Application& application, HTTPRes
                         string rsKey;
                         SAMLConfig::getConfig().generateRandomBytes(rsKey,10);
                         rsKey = SAMLArtifact::toHex(rsKey);
-                        storage->createString("RelayState", rsKey.c_str(), relayState.c_str(), time(NULL) + 600);
+                        if (!storage->createString("RelayState", rsKey.c_str(), relayState.c_str(), time(NULL) + 600))
+                            throw IOException("Attempted to insert duplicate storage key.");
                         relayState = string(mech.second-3) + ':' + rsKey;
                     }
                     else {
