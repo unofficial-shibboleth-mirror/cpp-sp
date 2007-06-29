@@ -87,11 +87,11 @@ namespace shibsp {
     }
     
     void SHIBSP_DLLLOCAL clearHeaders(SPRequest& request) {
+        request.clearHeader("Shib-Session-ID", "HTTP_SHIB_SESSION_ID");
         request.clearHeader("Shib-Identity-Provider", "HTTP_SHIB_IDENTITY_PROVIDER");
         request.clearHeader("Shib-Authentication-Method", "HTTP_SHIB_AUTHENTICATION_METHOD");
         request.clearHeader("Shib-AuthnContext-Class", "HTTP_SHIB_AUTHNCONTEXT_CLASS");
         request.clearHeader("Shib-AuthnContext-Decl", "HTTP_SHIB_AUTHNCONTEXT_DECL");
-        request.clearHeader("Shib-Attributes", "HTTP_SHIB_ATTRIBUTES");
         request.clearHeader("Shib-Assertion-Count", "HTTP_SHIB_ASSERTION_COUNT");
         request.clearHeader("REMOTE_USER", "HTTP_REMOTE_USER");
         //request.clearHeader("Shib-Application-ID");   handle inside app method
@@ -335,6 +335,7 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
         }
         
         request.setHeader("Shib-Application-ID", app->getId());
+        request.setHeader("Shib-Session-ID", session->getID());
 
         // Export the IdP name and Authn method/context info.
         const char* hval = session->getEntityID();
