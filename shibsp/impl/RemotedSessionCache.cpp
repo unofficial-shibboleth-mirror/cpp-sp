@@ -138,7 +138,7 @@ namespace shibsp {
         ~RemotedCache();
     
         Session* find(const char* key, const Application& application, const char* client_addr=NULL, time_t* timeout=NULL);
-        void remove(const char* key, const Application& application, const char* client_addr);
+        void remove(const char* key, const Application& application);
         
         void cleanup();
     
@@ -286,6 +286,7 @@ Session* RemotedCache::find(const char* key, const Application& application, con
         DDFJanitor jin(in);
         in.structure();
         in.addmember("key").string(key);
+        in.addmember("application_id").string(application.getId());
         if (timeout && *timeout) {
             // On 64-bit Windows, time_t doesn't fit in a long, so I'm using ISO timestamps.  
 #ifndef HAVE_GMTIME_R
@@ -352,14 +353,14 @@ Session* RemotedCache::find(const char* key, const Application& application, con
     }
     catch (...) {
         session->unlock();
-        remove(key, application, client_addr);
+        remove(key, application);
         throw;
     }
     
     return session;
 }
 
-void RemotedCache::remove(const char* key, const Application& application, const char* client_addr)
+void RemotedCache::remove(const char* key, const Application& application)
 {
     // Take care of local copy.
     dormant(key);
@@ -370,7 +371,6 @@ void RemotedCache::remove(const char* key, const Application& application, const
     in.structure();
     in.addmember("key").string(key);
     in.addmember("application_id").string(application.getId());
-    in.addmember("client_addr").string(client_addr);
     
     DDF out = application.getServiceProvider().getListenerService()->send(in);
     out.destroy();

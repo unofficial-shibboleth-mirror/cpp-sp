@@ -159,9 +159,13 @@ namespace shibsp {
             const multimap<string,Attribute*>* attributes=NULL
             );
         Session* find(const char* key, const Application& application, const char* client_addr=NULL, time_t* timeout=NULL);
-        void remove(const char* key, const Application& application, const char* client_addr);
-        unsigned int remove(
-            const saml2md::EntityDescriptor& issuer, const saml2::NameID& nameid, const char* index, const Application& application
+        void remove(const char* key, const Application& application);
+        void remove(
+            const saml2md::EntityDescriptor& issuer,
+            const saml2::NameID& nameid,
+            const char* index,
+            const Application& application,
+            vector<string>& sessions
             );
 
         Category& m_log;
@@ -683,7 +687,7 @@ Session* SSCache::find(const char* key, const Application& application, const ch
             m_log.debug("comparing client address %s against %s", client_addr, obj["client_addr"].string());
         if (strcmp(obj["client_addr"].string(),client_addr)) {
             m_log.warn("client address mismatch");
-            remove(key, application, client_addr);
+            remove(key, application);
             RetryableProfileException ex(
                 "Your IP address ($1) does not match the address recorded at the time the session was established.",
                 params(1,client_addr)
@@ -703,7 +707,7 @@ Session* SSCache::find(const char* key, const Application& application, const ch
     
     if (timeout && *timeout > 0 && now - lastAccess >= *timeout) {
         m_log.info("session timed out (ID: %s)", key);
-        remove(key, application, client_addr);
+        remove(key, application);
         RetryableProfileException ex("Your session has expired, and you must re-authenticate.");
         string eid(obj["entity_id"].string());
         obj.destroy();
@@ -720,7 +724,7 @@ Session* SSCache::find(const char* key, const Application& application, const ch
         iso.parseDateTime();
         if (now > iso.getEpoch()) {
             m_log.info("session expired (ID: %s)", key);
-            remove(key, application, client_addr);
+            remove(key, application);
             RetryableProfileException ex("Your session has expired, and you must re-authenticate.");
             string eid(obj["entity_id"].string());
             obj.destroy();
@@ -752,7 +756,7 @@ Session* SSCache::find(const char* key, const Application& application, const ch
     }
 }
 
-void SSCache::remove(const char* key, const Application& application, const char* client_addr)
+void SSCache::remove(const char* key, const Application& application)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("remove");
@@ -766,15 +770,18 @@ void SSCache::remove(const char* key, const Application& application, const char
     xlog->log.info("Destroyed session (applicationId: %s) (ID: %s)", application.getId(), key);
 }
 
-unsigned int SSCache::remove(
-    const saml2md::EntityDescriptor& issuer, const saml2::NameID& nameid, const char* index, const Application& application
+void SSCache::remove(
+    const saml2md::EntityDescriptor& issuer,
+    const saml2::NameID& nameid,
+    const char* index,
+    const Application& application,
+    vector<string>& sessionsKilled
     )
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("remove");
 #endif
 
-    unsigned int count = 0;
     auto_ptr_char entityID(issuer.getEntityID());
     auto_ptr_char name(nameid.getName());
 
@@ -788,7 +795,7 @@ unsigned int SSCache::remove(
     int ver = m_storage->readText("Logout", name.get(), &record);
     if (ver == 0) {
         m_log.debug("no active sessions to remove for supplied issuer and name identifier");
-        return count;
+        return;
     }
 
     DDF obj;
@@ -811,8 +818,8 @@ unsigned int SSCache::remove(
                     if (session->getEntityID() && !strcmp(session->getEntityID(), entityID.get())) {
                         // Same NameID?
                         if (stronglyMatches(issuer.getEntityID(), application.getXMLString("entityID").second, nameid, *session->getNameID())) {
-                            remove(key.string(), application, NULL);  // let this throw to detect errors in case logout failed
-                            count++;
+                            remove(key.string(), application);  // let this throw to detect errors in case logout failed
+                            sessionsKilled.push_back(key.string());
                             key.destroy();
                         }
                         else {
@@ -825,6 +832,7 @@ unsigned int SSCache::remove(
                 }
                 else {
                     // Session's gone, so...
+                    sessionsKilled.push_back(key.string());
                     key.destroy();
                 }
                 key = sessions.next();
@@ -855,8 +863,6 @@ unsigned int SSCache::remove(
     catch (exception& ex) {
         m_log.error("error updating logout mapping record: %s", ex.what());
     }
-
-    return count;
 }
 
 bool SSCache::stronglyMatches(const XMLCh* idp, const XMLCh* sp, const saml2::NameID& n1, const saml2::NameID& n2) const
@@ -905,6 +911,10 @@ void SSCache::receive(DDF& in, ostream& out)
         if (!key)
             throw ListenerException("Required parameters missing for session removal.");
 
+        const Application* app = SPConfig::getConfig().getServiceProvider()->getApplication(in["application_id"].string());
+        if (!app)
+            throw ListenerException("Application not found, check configuration?");
+
         // Do an unversioned read.
         string record;
         time_t lastAccess;
@@ -929,7 +939,7 @@ void SSCache::receive(DDF& in, ostream& out)
                     
             if (timeout > 0 && now - lastAccess >= timeout) {
                 m_log.info("session timed out (ID: %s)", key);
-                remove(key,*(SPConfig::getConfig().getServiceProvider()->getApplication("default")),NULL);
+                remove(key,*app);
                 throw RetryableProfileException("Your session has expired, and you must re-authenticate.");
             } 
 
@@ -1000,8 +1010,12 @@ void SSCache::receive(DDF& in, ostream& out)
         const char* key=in["key"].string();
         if (!key)
             throw ListenerException("Required parameter missing for session removal.");
-        
-        remove(key,*(SPConfig::getConfig().getServiceProvider()->getApplication("default")),NULL);
+
+        const Application* app = SPConfig::getConfig().getServiceProvider()->getApplication(in["application_id"].string());
+        if (!app)
+            throw ListenerException("Application not found, check configuration?");
+
+        remove(key,*app);
         DDF ret(NULL);
         DDFJanitor jan(ret);
         out << ret;

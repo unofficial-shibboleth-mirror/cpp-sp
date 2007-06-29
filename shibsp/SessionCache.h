@@ -219,13 +219,14 @@ namespace shibsp {
          * @param nameid        name identifier associated with the session(s) to terminate
          * @param index         index of session, or NULL for all sessions associated with other parameters
          * @param application   reference to Application that owns the session(s)
-         * @return  number of sessions removed
+         * @param sessions      on exit, contains the IDs of the matching sessions removed
          */
-        virtual unsigned int remove(
+        virtual void remove(
             const opensaml::saml2md::EntityDescriptor& issuer,
             const opensaml::saml2::NameID& nameid,
             const char* index,
-            const Application& application
+            const Application& application,
+            std::vector<std::string>& sessions
             )=0;
 #endif
 
@@ -250,9 +251,8 @@ namespace shibsp {
          * 
          * @param key           session key
          * @param application   reference to Application that owns the Session
-         * @param client_addr   network address of client (if known)
          */
-        virtual void remove(const char* key, const Application& application, const char* client_addr)=0;
+        virtual void remove(const char* key, const Application& application)=0;
     };
 
 #ifndef SHIBSP_LITE
