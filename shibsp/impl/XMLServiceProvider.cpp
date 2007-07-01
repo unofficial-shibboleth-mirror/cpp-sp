@@ -129,6 +129,8 @@ namespace {
             return (m_audiences.empty() && m_base) ? m_base->getAudiences() : m_audiences;
         }
 #endif
+        string getLogoutNotification(const HTTPRequest& request, bool front, unsigned int index) const;
+
         const set<string>& getRemoteUserAttributeIds() const {
             return (m_remoteUsers.empty() && m_base) ? m_base->getRemoteUserAttributeIds() : m_remoteUsers;
         }
@@ -178,6 +180,7 @@ namespace {
         map<const XMLCh*,PropertySet*> m_partyMap;
 #endif
 #endif
+        vector<string> m_frontLogout,m_backLogout;
         set<string> m_remoteUsers;
         mutable vector< pair<string,string> > m_unsetHeaders;
         RWLock* m_unsetLock;
@@ -371,6 +374,7 @@ namespace {
     static const XMLCh _ArtifactResolutionService[] =UNICODE_LITERAL_25(A,r,t,i,f,a,c,t,R,e,s,o,l,u,t,i,o,n,S,e,r,v,i,c,e);
     static const XMLCh _Audience[] =            UNICODE_LITERAL_8(A,u,d,i,e,n,c,e);
     static const XMLCh Binding[] =              UNICODE_LITERAL_7(B,i,n,d,i,n,g);
+    static const XMLCh Channel[]=               UNICODE_LITERAL_7(C,h,a,n,n,e,l);
     static const XMLCh _CredentialResolver[] =  UNICODE_LITERAL_18(C,r,e,d,e,n,t,i,a,l,R,e,s,o,l,v,e,r);
     static const XMLCh DefaultRelyingParty[] =  UNICODE_LITERAL_19(D,e,f,a,u,l,t,R,e,l,y,i,n,g,P,a,r,t,y);
     static const XMLCh _Extensions[] =          UNICODE_LITERAL_10(E,x,t,e,n,s,i,o,n,s);
@@ -381,10 +385,12 @@ namespace {
     static const XMLCh InProcess[] =            UNICODE_LITERAL_9(I,n,P,r,o,c,e,s,s);
     static const XMLCh Library[] =              UNICODE_LITERAL_7(L,i,b,r,a,r,y);
     static const XMLCh Listener[] =             UNICODE_LITERAL_8(L,i,s,t,e,n,e,r);
+    static const XMLCh Location[] =             UNICODE_LITERAL_8(L,o,c,a,t,i,o,n);
     static const XMLCh logger[] =               UNICODE_LITERAL_6(l,o,g,g,e,r);
     static const XMLCh _ManageNameIDService[] = UNICODE_LITERAL_19(M,a,n,a,g,e,N,a,m,e,I,D,S,e,r,v,i,c,e);
     static const XMLCh MemoryListener[] =       UNICODE_LITERAL_14(M,e,m,o,r,y,L,i,s,t,e,n,e,r);
     static const XMLCh _MetadataProvider[] =    UNICODE_LITERAL_16(M,e,t,a,d,a,t,a,P,r,o,v,i,d,e,r);
+    static const XMLCh NotifyOnLogout[] =       UNICODE_LITERAL_14(N,o,t,i,f,y,O,n,L,o,g,o,u,t);
     static const XMLCh OutOfProcess[] =         UNICODE_LITERAL_12(O,u,t,O,f,P,r,o,c,e,s,s);
     static const XMLCh _path[] =                UNICODE_LITERAL_4(p,a,t,h);
     static const XMLCh Policy[] =               UNICODE_LITERAL_6(P,o,l,i,c,y);
@@ -401,6 +407,7 @@ namespace {
     static const XMLCh _TrustEngine[] =         UNICODE_LITERAL_11(T,r,u,s,t,E,n,g,i,n,e);
     static const XMLCh _type[] =                UNICODE_LITERAL_4(t,y,p,e);
     static const XMLCh UnixListener[] =         UNICODE_LITERAL_12(U,n,i,x,L,i,s,t,e,n,e,r);
+
 
     class SHIBSP_DLLLOCAL PolicyNodeFilter : public DOMNodeFilter
     {
@@ -653,8 +660,23 @@ XMLApplication::XMLApplication(
             child = XMLHelper::getNextSiblingElement(child);
         }
 
+        // Logout notification.
+        DOMNodeList* nlist=e->getElementsByTagNameNS(shibspconstants::SHIB2SPCONFIG_NS,NotifyOnLogout);
+        for (XMLSize_t i=0; nlist && i<nlist->getLength(); i++) {
+            if (nlist->item(i)->getParentNode()->isSameNode(e)) {
+                const XMLCh* channel = static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,Channel);
+                auto_ptr_char loc(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,Location));
+                if (loc.get() && *loc.get()) {
+                    if (channel && *channel == chLatin_f)
+                        m_frontLogout.push_back(loc.get());
+                    else
+                        m_backLogout.push_back(loc.get());
+                }
+            }
+        }
+
 #ifndef SHIBSP_LITE
-        DOMNodeList* nlist=e->getElementsByTagNameNS(samlconstants::SAML20_NS,Audience::LOCAL_NAME);
+        nlist=e->getElementsByTagNameNS(samlconstants::SAML20_NS,Audience::LOCAL_NAME);
         for (XMLSize_t i=0; nlist && i<nlist->getLength(); i++)
             if (nlist->item(i)->getParentNode()->isSameNode(e) && nlist->item(i)->hasChildNodes())
                 m_audiences.push_back(nlist->item(i)->getFirstChild()->getNodeValue());
@@ -856,6 +878,7 @@ short XMLApplication::acceptNode(const DOMNode* node) const
     const XMLCh* name=node->getLocalName();
     if (XMLString::equals(name,_Application) ||
         XMLString::equals(name,_Audience) ||
+        XMLString::equals(name,NotifyOnLogout) ||
         XMLString::equals(name,_AssertionConsumerService) ||
         XMLString::equals(name,_ArtifactResolutionService) ||
         XMLString::equals(name,_SingleLogoutService) ||
@@ -913,6 +936,79 @@ const PropertySet* XMLApplication::getRelyingParty(const EntityDescriptor* provi
 }
 
 #endif
+
+string XMLApplication::getLogoutNotification(const HTTPRequest& request, bool front, unsigned int index) const
+{
+    const vector<string>& locs = front ? m_frontLogout : m_backLogout;
+    if (locs.empty())
+        return m_base ? m_base->getLogoutNotification(request, front, index) : string();
+    else if (index >= locs.size())
+        return string();
+
+    const char* resource = request.getRequestURL();
+#ifdef HAVE_STRCASECMP
+    if (!resource || (strncasecmp(resource,"http://",7) && strncasecmp(resource,"https://",8)))
+#else
+    if (!resource || (strnicmp(resource,"http://",7) && strnicmp(resource,"https://",8)))
+#endif
+        throw ConfigurationException("Request URL was not absolute.");
+
+    const char* handler=locs[index].c_str();
+    
+    // Should never happen...
+    if (!handler || (*handler!='/' && strncmp(handler,"http:",5) && strncmp(handler,"https:",6)))
+        throw ConfigurationException(
+            "Invalid Location property ($1) in logout notification for Application ($2)",
+            params(2, handler ? handler : "null", getId())
+            );
+
+    // The "Location" property can be in one of three formats:
+    //
+    // 1) a full URI:       http://host/foo/bar
+    // 2) a hostless URI:   http:///foo/bar
+    // 3) a relative path:  /foo/bar
+    //
+    // #  Protocol  Host        Path
+    // 1  handler   handler     handler
+    // 2  handler   resource    handler
+    // 3  resource  resource    handler
+
+    const char* path = NULL;
+
+    // Decide whether to use the handler or the resource for the "protocol"
+    const char* prot;
+    if (*handler != '/') {
+        prot = handler;
+    }
+    else {
+        prot = resource;
+        path = handler;
+    }
+
+    // break apart the "protocol" string into protocol, host, and "the rest"
+    const char* colon=strchr(prot,':');
+    colon += 3;
+    const char* slash=strchr(colon,'/');
+    if (!path)
+        path = slash;
+
+    // Compute the actual protocol and store.
+    string notifyURL(prot, colon-prot);
+
+    // create the "host" from either the colon/slash or from the target string
+    // If prot == handler then we're in either #1 or #2, else #3.
+    // If slash == colon then we're in #2.
+    if (prot != handler || slash == colon) {
+        colon = strchr(resource, ':');
+        colon += 3;      // Get past the ://
+        slash = strchr(colon, '/');
+    }
+    string host(colon, (slash ? slash-colon : strlen(colon)));
+
+    // Build the URL
+    notifyURL += host + path;
+    return notifyURL;
+}
 
 const SessionInitiator* XMLApplication::getDefaultSessionInitiator() const
 {

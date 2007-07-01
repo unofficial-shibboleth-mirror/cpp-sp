@@ -376,6 +376,7 @@
 				<element ref="conf:Sessions" minOccurs="0"/>
 				<element ref="conf:Errors" minOccurs="0"/>
 				<element ref="conf:DefaultRelyingParty" minOccurs="0"/>
+				<element ref="conf:NotifyOnLogout" minOccurs="0" maxOccurs="unbounded"/>
 				<element ref="saml:Audience" minOccurs="0" maxOccurs="unbounded"/>
 				<element name="MetadataProvider" type="conf:PluggableType" minOccurs="0"/>
 				<element name="TrustEngine" type="conf:PluggableType" minOccurs="0"/>
@@ -489,6 +490,25 @@
 		</complexType>
 	</element>
 
+	<element name="NotifyOnLogout">
+		<annotation>
+			<documentation>Used to specify locations to receive application notifications of logout</documentation>
+		</annotation>
+		<complexType>
+			<sequence/>
+			<attribute name="Channel" use="required">
+				<simpleType>
+					<restriction base="string">
+						<enumeration value="front"/>
+						<enumeration value="back"/>
+					</restriction>
+				</simpleType>
+			</attribute>
+			<attribute name="Location" type="anyURI" use="required"/>
+			<anyAttribute namespace="##any" processContents="lax"/>
+		</complexType>
+	</element>
+	
 	<element name="DefaultRelyingParty">
 		<annotation>
 			<documentation>Container for specifying security methods to use with particular peers</documentation>
