@@ -55,7 +55,6 @@ AssertionConsumerService::AssertionConsumerService(const DOMElement* e, const ch
 {
     string address(appId);
     address += getString("Location").second;
-    address += "::run::ACS";
     setAddress(address.c_str());
 #ifndef SHIBSP_LITE
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {

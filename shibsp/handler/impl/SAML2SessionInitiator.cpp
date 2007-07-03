@@ -123,13 +123,13 @@ SAML2SessionInitiator::SAML2SessionInitiator(const DOMElement* e, const char* ap
         pair<bool,const XMLCh*> outgoing = getXMLString("outgoingBindings");
         if (outgoing.first) {
             m_outgoing = XMLString::replicate(outgoing.second);
+            XMLString::trim(m_outgoing);
         }
         else {
             // No override, so we'll install a default binding precedence.
             string prec = string(samlconstants::SAML20_BINDING_HTTP_REDIRECT) + ' ' + samlconstants::SAML20_BINDING_HTTP_POST + ' ' +
                 samlconstants::SAML20_BINDING_HTTP_POST_SIMPLESIGN + ' ' + samlconstants::SAML20_BINDING_HTTP_ARTIFACT;
             m_outgoing = XMLString::transcode(prec.c_str());
-            XMLString::trim(m_outgoing);
         }
 
         int pos;
@@ -487,8 +487,8 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
 
     // Check for signing.
     const PropertySet* relyingParty = app.getRelyingParty(entity);
-    pair<bool,bool> flag = relyingParty->getBool("signRequests");
-    if ((flag.first && flag.second) || role->WantAuthnRequestsSigned()) {
+    pair<bool,const char*> flag = relyingParty->getString("signRequests");
+    if (role->WantAuthnRequestsSigned() || (flag.first && (!strcmp(flag.second, "true") || !strcmp(flag.second, "front")))) {
         CredentialResolver* credResolver=app.getCredentialResolver();
         if (credResolver) {
             Locker credLocker(credResolver);

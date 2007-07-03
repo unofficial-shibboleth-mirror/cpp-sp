@@ -160,13 +160,24 @@ namespace shibsp {
             );
         Session* find(const char* key, const Application& application, const char* client_addr=NULL, time_t* timeout=NULL);
         void remove(const char* key, const Application& application);
+        void find(
+            const saml2md::EntityDescriptor& issuer,
+            const saml2::NameID& nameid,
+            const char* index,
+            const Application& application,
+            vector<string>& sessions
+            ) {
+            byname(issuer, nameid, index, application, sessions, false);
+        }
         void remove(
             const saml2md::EntityDescriptor& issuer,
             const saml2::NameID& nameid,
             const char* index,
             const Application& application,
             vector<string>& sessions
-            );
+            ) {
+            byname(issuer, nameid, index, application, sessions, true);
+        }
 
         Category& m_log;
         StorageService* m_storage;
@@ -174,6 +185,14 @@ namespace shibsp {
     private:
         // maintain back-mappings of NameID/SessionIndex -> session key
         void insert(const char* key, time_t expires, const char* name, const char* index);
+        void byname(
+            const saml2md::EntityDescriptor& issuer,
+            const saml2::NameID& nameid,
+            const char* index,
+            const Application& application,
+            vector<string>& sessions,
+            bool logout
+            );
 
         bool stronglyMatches(const XMLCh* idp, const XMLCh* sp, const saml2::NameID& n1, const saml2::NameID& n2) const;
     };
@@ -770,12 +789,13 @@ void SSCache::remove(const char* key, const Application& application)
     xlog->log.info("Destroyed session (applicationId: %s) (ID: %s)", application.getId(), key);
 }
 
-void SSCache::remove(
+void SSCache::byname(
     const saml2md::EntityDescriptor& issuer,
     const saml2::NameID& nameid,
     const char* index,
     const Application& application,
-    vector<string>& sessionsKilled
+    vector<string>& sessionsKilled,
+    bool logout
     )
 {
 #ifdef _DEBUG
@@ -785,7 +805,10 @@ void SSCache::remove(
     auto_ptr_char entityID(issuer.getEntityID());
     auto_ptr_char name(nameid.getName());
 
-    m_log.info("request to logout sessions from (%s) for (%s) for session index (%s)", entityID.get(), name.get(), index ? index : "all");
+    m_log.info(
+        "request to %s sessions from (%s) for (%s) for session index (%s)",
+        logout ? "logout" : "locate", entityID.get(), name.get(), index ? index : "all"
+        );
 
     if (strlen(name.get()) > 255)
         const_cast<char*>(name.get())[255] = 0;
@@ -818,9 +841,11 @@ void SSCache::remove(
                     if (session->getEntityID() && !strcmp(session->getEntityID(), entityID.get())) {
                         // Same NameID?
                         if (stronglyMatches(issuer.getEntityID(), application.getXMLString("entityID").second, nameid, *session->getNameID())) {
-                            remove(key.string(), application);  // let this throw to detect errors in case logout failed
+                            if (logout) {
+                                remove(key.string(), application);  // let this throw to detect errors in case the full logout fails?
+                                key.destroy();
+                            }
                             sessionsKilled.push_back(key.string());
-                            key.destroy();
                         }
                         else {
                             m_log.debug("session (%s) contained a non-matching NameID, leaving it alone", key.string());
@@ -853,7 +878,7 @@ void SSCache::remove(
         if (obj.isnull()) {
             m_storage->deleteText("Logout", name.get());
         }
-        else {
+        else if (!sessionsKilled.empty()) {
             ostringstream out;
             out << obj;
             if (m_storage->updateText("Logout", name.get(), out.str().c_str(), 0, ver) <= 0)

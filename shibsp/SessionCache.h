@@ -213,6 +213,23 @@ namespace shibsp {
             )=0;
 
         /**
+         * Locates an existing session or sessions by subject identifier.
+         * 
+         * @param issuer        source of session(s)
+         * @param nameid        name identifier associated with the session(s) to locate
+         * @param index         index of session, or NULL for all sessions associated with other parameters
+         * @param application   reference to Application that owns the session(s)
+         * @param sessions      on exit, contains the IDs of the matching sessions
+         */
+        virtual void find(
+            const opensaml::saml2md::EntityDescriptor& issuer,
+            const opensaml::saml2::NameID& nameid,
+            const char* index,
+            const Application& application,
+            std::vector<std::string>& sessions
+            )=0;
+
+        /**
          * Deletes an existing session or sessions.
          * 
          * @param issuer        source of session(s)

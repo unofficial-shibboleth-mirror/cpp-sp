@@ -34,6 +34,15 @@
 	<simpleType name="listOfURIs">
 		<list itemType="anyURI"/>
 	</simpleType>
+
+	<simpleType name="bindingBoolean">
+		<restriction base="string">
+			<enumeration value="true"/>
+			<enumeration value="false"/>
+			<enumeration value="front"/>
+			<enumeration value="back"/>
+		</restriction>
+	</simpleType>
 	
 	<complexType name="PluggableType">
 		<sequence>
@@ -533,12 +542,12 @@
 		<attribute name="authType" type="conf:string"/>
 		<attribute name="authUsername" type="conf:string"/>
 		<attribute name="authPassword" type="conf:string"/>
-		<attribute name="signRequests" type="boolean"/>
-		<attribute name="signResponses" type="boolean"/>
+		<attribute name="signRequests" type="bindingBoolean"/>
+		<attribute name="signResponses" type="bindingBoolean"/>
 		<attribute name="signatureAlg" type="anyURI"/>
 		<attribute name="digestAlg" type="anyURI"/>
-		<attribute name="encryptRequests" type="boolean"/>
-		<attribute name="encryptResponses" type="boolean"/>
+		<attribute name="encryptRequests" type="bindingBoolean"/>
+		<attribute name="encryptResponses" type="bindingBoolean"/>
 		<attribute name="encryptionAlg" type="anyURI"/>
 		<attribute name="keyName" type="conf:string"/>
 		<attribute name="artifactEndpointIndex" type="unsignedShort"/>
