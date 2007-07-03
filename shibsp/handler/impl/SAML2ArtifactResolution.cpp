@@ -298,7 +298,7 @@ pair<bool,long> SAML2ArtifactResolution::processMessage(const Application& appli
         const EntityDescriptor* entity =
             policy.getIssuerMetadata() ? dynamic_cast<EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL;
         const PropertySet* relyingParty = application.getRelyingParty(entity);
-        pair<bool,const char*> flag = relyingParty->getBool("signResponses");
+        pair<bool,const char*> flag = relyingParty->getString("signResponses");
         if (policy.getIssuerMetadata() && flag.first && (!strcmp(flag.second, "true") || !strcmp(flag.second, "back"))) {
             CredentialResolver* credResolver=application.getCredentialResolver();
             if (credResolver) {
