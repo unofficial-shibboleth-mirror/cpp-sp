@@ -129,7 +129,7 @@ namespace {
             return (m_audiences.empty() && m_base) ? m_base->getAudiences() : m_audiences;
         }
 #endif
-        string getLogoutNotification(const HTTPRequest& request, bool front, unsigned int index) const;
+        string getNotificationURL(const HTTPRequest& request, bool front, unsigned int index) const;
 
         const set<string>& getRemoteUserAttributeIds() const {
             return (m_remoteUsers.empty() && m_base) ? m_base->getRemoteUserAttributeIds() : m_remoteUsers;
@@ -390,7 +390,7 @@ namespace {
     static const XMLCh _ManageNameIDService[] = UNICODE_LITERAL_19(M,a,n,a,g,e,N,a,m,e,I,D,S,e,r,v,i,c,e);
     static const XMLCh MemoryListener[] =       UNICODE_LITERAL_14(M,e,m,o,r,y,L,i,s,t,e,n,e,r);
     static const XMLCh _MetadataProvider[] =    UNICODE_LITERAL_16(M,e,t,a,d,a,t,a,P,r,o,v,i,d,e,r);
-    static const XMLCh NotifyOnLogout[] =       UNICODE_LITERAL_14(N,o,t,i,f,y,O,n,L,o,g,o,u,t);
+    static const XMLCh Notify[] =               UNICODE_LITERAL_6(N,o,t,i,f,y);
     static const XMLCh OutOfProcess[] =         UNICODE_LITERAL_12(O,u,t,O,f,P,r,o,c,e,s,s);
     static const XMLCh _path[] =                UNICODE_LITERAL_4(p,a,t,h);
     static const XMLCh Policy[] =               UNICODE_LITERAL_6(P,o,l,i,c,y);
@@ -660,8 +660,8 @@ XMLApplication::XMLApplication(
             child = XMLHelper::getNextSiblingElement(child);
         }
 
-        // Logout notification.
-        DOMNodeList* nlist=e->getElementsByTagNameNS(shibspconstants::SHIB2SPCONFIG_NS,NotifyOnLogout);
+        // Notification.
+        DOMNodeList* nlist=e->getElementsByTagNameNS(shibspconstants::SHIB2SPCONFIG_NS,Notify);
         for (XMLSize_t i=0; nlist && i<nlist->getLength(); i++) {
             if (nlist->item(i)->getParentNode()->isSameNode(e)) {
                 const XMLCh* channel = static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(NULL,Channel);
@@ -878,7 +878,7 @@ short XMLApplication::acceptNode(const DOMNode* node) const
     const XMLCh* name=node->getLocalName();
     if (XMLString::equals(name,_Application) ||
         XMLString::equals(name,_Audience) ||
-        XMLString::equals(name,NotifyOnLogout) ||
+        XMLString::equals(name,Notify) ||
         XMLString::equals(name,_AssertionConsumerService) ||
         XMLString::equals(name,_ArtifactResolutionService) ||
         XMLString::equals(name,_SingleLogoutService) ||
@@ -937,11 +937,11 @@ const PropertySet* XMLApplication::getRelyingParty(const EntityDescriptor* provi
 
 #endif
 
-string XMLApplication::getLogoutNotification(const HTTPRequest& request, bool front, unsigned int index) const
+string XMLApplication::getNotificationURL(const HTTPRequest& request, bool front, unsigned int index) const
 {
     const vector<string>& locs = front ? m_frontLogout : m_backLogout;
     if (locs.empty())
-        return m_base ? m_base->getLogoutNotification(request, front, index) : string();
+        return m_base ? m_base->getNotificationURL(request, front, index) : string();
     else if (index >= locs.size())
         return string();
 
@@ -958,7 +958,7 @@ string XMLApplication::getLogoutNotification(const HTTPRequest& request, bool fr
     // Should never happen...
     if (!handler || (*handler!='/' && strncmp(handler,"http:",5) && strncmp(handler,"https:",6)))
         throw ConfigurationException(
-            "Invalid Location property ($1) in logout notification for Application ($2)",
+            "Invalid Location property ($1) in Notify element for Application ($2)",
             params(2, handler ? handler : "null", getId())
             );
 

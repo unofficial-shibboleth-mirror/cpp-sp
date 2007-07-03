@@ -499,9 +499,9 @@
 		</complexType>
 	</element>
 
-	<element name="NotifyOnLogout">
+	<element name="Notify">
 		<annotation>
-			<documentation>Used to specify locations to receive application notifications of logout</documentation>
+			<documentation>Used to specify locations to receive application notifications</documentation>
 		</annotation>
 		<complexType>
 			<sequence/>

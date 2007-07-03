@@ -154,14 +154,14 @@ namespace shibsp {
 #endif
 
         /**
-         * Returns the designated logout notification URL, or an empty string if no more locations are specified.
+         * Returns the designated notification URL, or an empty string if no more locations are specified.
          *
          * @param request   SP request to use to fill in missing pieces of URL
          * @param front     true iff front channel notification is desired, false iff back channel is desired
          * @param index     zero-based index of URL to return
          * @return  the designated URL, or an empty string
          */
-        virtual std::string getLogoutNotification(const xmltooling::HTTPRequest& request, bool front, unsigned int index) const=0;
+        virtual std::string getNotificationURL(const xmltooling::HTTPRequest& request, bool front, unsigned int index) const=0;
 
         /**
          * Returns a set of attribute IDs to use as a REMOTE_USER value.

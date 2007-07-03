@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?fileVersion 4.0.0?>
+
+<cproject>
+<storageModule moduleId="org.eclipse.cdt.core.settings">
+<cconfiguration id="converted.config.1630818620">
+<storageModule moduleId="org.eclipse.cdt.core.pathentry">
+<pathentry kind="out" path=""/>
+<pathentry excluding="util/|impl/|security/|metadata/|remoting/|remoting/impl/|attribute/|binding/|binding/impl/|attribute/resolver/|attribute/resolver/impl/|handler/|handler/impl/|attribute/filtering/|attribute/filtering/impl/|lite/" kind="src" path="shibsp"/>
+<pathentry excluding="resolver/|resolver/impl/|filtering/|filtering/impl/" kind="src" path="shibsp/attribute"/>
+<pathentry excluding="impl/" kind="src" path="shibsp/attribute/filtering"/>
+<pathentry kind="src" path="shibsp/attribute/filtering/impl"/>
+<pathentry excluding="impl/" kind="src" path="shibsp/attribute/resolver"/>
+<pathentry kind="src" path="shibsp/attribute/resolver/impl"/>
+<pathentry excluding="impl/" kind="src" path="shibsp/binding"/>
+<pathentry kind="src" path="shibsp/binding/impl"/>
+<pathentry excluding="impl/" kind="src" path="shibsp/handler"/>
+<pathentry kind="src" path="shibsp/handler/impl"/>
+<pathentry kind="src" path="shibsp/impl"/>
+<pathentry kind="src" path="shibsp/lite"/>
+<pathentry kind="src" path="shibsp/metadata"/>
+<pathentry excluding="impl/" kind="src" path="shibsp/remoting"/>
+<pathentry kind="src" path="shibsp/remoting/impl"/>
+<pathentry kind="src" path="shibsp/security"/>
+<pathentry kind="src" path="shibsp/util"/>
+<pathentry kind="src" path="shibd"/>
+<pathentry kind="src" path="apache"/>
+<pathentry kind="src" path="isapi_shib"/>
+<pathentry kind="src" path="nsapi_shib"/>
+<pathentry kind="src" path="odbc-store"/>
+<pathentry kind="src" path="util"/>
+</storageModule>
+<storageModule buildSystemId="org.eclipse.cdt.core.defaultConfigDataProvider" id="converted.config.1630818620" moduleId="org.eclipse.cdt.core.settings" name="convertedConfig">
+<externalSettings/>
+<extensions>
+<extension id="org.eclipse.cdt.core.domsourceindexer" point="org.eclipse.cdt.core.CIndexer"/>
+<extension id="org.eclipse.cdt.core.PE" point="org.eclipse.cdt.core.BinaryParser"/>
+</extensions>
+</storageModule>
+</cconfiguration>
+</storageModule>
+</cproject>
