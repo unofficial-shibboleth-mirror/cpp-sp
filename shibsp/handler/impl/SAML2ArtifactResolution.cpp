@@ -38,7 +38,6 @@
 # include <saml/saml2/core/Assertions.h>
 # include <saml/saml2/core/Protocols.h>
 # include <saml/saml2/metadata/Metadata.h>
-# include <saml/saml2/metadata/MetadataCredentialCriteria.h>
 using namespace opensaml::saml2md;
 using namespace opensaml::saml2p;
 using namespace opensaml::saml2;
@@ -295,47 +294,9 @@ pair<bool,long> SAML2ArtifactResolution::processMessage(const Application& appli
         me->setName(application.getXMLString("entityID").second);
         resp->setPayload(payload.release());
 
-        const EntityDescriptor* entity =
-            policy.getIssuerMetadata() ? dynamic_cast<EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL;
-        const PropertySet* relyingParty = application.getRelyingParty(entity);
-        pair<bool,const char*> flag = relyingParty->getString("signResponses");
-        if (policy.getIssuerMetadata() && flag.first && (!strcmp(flag.second, "true") || !strcmp(flag.second, "back"))) {
-            CredentialResolver* credResolver=application.getCredentialResolver();
-            if (credResolver) {
-                Locker credLocker(credResolver);
-                // Fill in criteria to use.
-                MetadataCredentialCriteria mcc(*policy.getIssuerMetadata());
-                mcc.setUsage(CredentialCriteria::SIGNING_CREDENTIAL);
-                pair<bool,const char*> keyName = relyingParty->getString("keyName");
-                if (keyName.first)
-                    mcc.getKeyNames().insert(keyName.second);
-                pair<bool,const XMLCh*> sigalg = relyingParty->getXMLString("signatureAlg");
-                if (sigalg.first)
-                    mcc.setXMLAlgorithm(sigalg.second);
-                const Credential* cred = credResolver->resolve(&mcc);
-                if (cred) {
-                    // Signed request.
-                    long ret = m_encoder->encode(
-                        httpResponse,
-                        resp.get(),
-                        NULL,
-                        entity,
-                        relayState.c_str(),
-                        NULL,
-                        cred,
-                        sigalg.second,
-                        relyingParty->getXMLString("digestAlg").second
-                        );
-                    resp.release();  // freed by encoder
-                    return make_pair(true,ret);
-                }
-                else {
-                    m_log.warn("no signing credential resolved, leaving response unsigned");
-                }
-            }
-        }
-
-        long ret = m_encoder->encode(httpResponse, resp.get(), NULL, entity, relayState.c_str());
+        long ret = sendMessage(
+            *m_encoder, resp.get(), relayState.c_str(), NULL, policy.getIssuerMetadata(), application, httpResponse, "signResponses"
+            );
         resp.release();  // freed by encoder
         return make_pair(true,ret);
     }
@@ -358,7 +319,7 @@ pair<bool,long> SAML2ArtifactResolution::samlError(
     resp->setInResponseTo(request.getID());
     Issuer* me = IssuerBuilder::buildIssuer();
     me->setName(app.getXMLString("entityID").second);
-    prepareResponse(*resp.get(), code, subcode, msg);
+    fillStatus(*resp.get(), code, subcode, msg);
     long ret = m_encoder->encode(httpResponse, resp.get(), NULL);
     resp.release();  // freed by encoder
     return make_pair(true,ret);

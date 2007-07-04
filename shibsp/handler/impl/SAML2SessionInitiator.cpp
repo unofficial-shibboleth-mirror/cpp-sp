@@ -485,47 +485,9 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
 
     auto_ptr_char dest(ep->getLocation());
 
-    // Check for signing.
-    const PropertySet* relyingParty = app.getRelyingParty(entity);
-    pair<bool,const char*> flag = relyingParty->getString("signRequests");
-    if (role->WantAuthnRequestsSigned() || (flag.first && (!strcmp(flag.second, "true") || !strcmp(flag.second, "front")))) {
-        CredentialResolver* credResolver=app.getCredentialResolver();
-        if (credResolver) {
-            Locker credLocker(credResolver);
-            // Fill in criteria to use.
-            MetadataCredentialCriteria mcc(*role);
-            mcc.setUsage(CredentialCriteria::SIGNING_CREDENTIAL);
-            pair<bool,const char*> keyName = relyingParty->getString("keyName");
-            if (keyName.first)
-                mcc.getKeyNames().insert(keyName.second);
-            pair<bool,const XMLCh*> sigalg = relyingParty->getXMLString("signatureAlg");
-            if (sigalg.first)
-                mcc.setXMLAlgorithm(sigalg.second);
-            const Credential* cred = credResolver->resolve(&mcc);
-            if (cred) {
-                // Signed request.
-                long ret = encoder->encode(
-                    httpResponse,
-                    req.get(),
-                    dest.get(),
-                    entity,
-                    relayState.c_str(),
-                    &app,
-                    cred,
-                    sigalg.second,
-                    relyingParty->getXMLString("digestAlg").second
-                    );
-                req.release();  // freed by encoder
-                return make_pair(true,ret);
-            }
-            else {
-                m_log.warn("no signing credential resolved, leaving AuthnRequest unsigned");
-            }
-        }
-    }
-
-    // Unsigned request.
-    long ret = encoder->encode(httpResponse, req.get(), dest.get(), entity, relayState.c_str(), &app);
+    long ret = sendMessage(
+        *encoder, req.get(), relayState.c_str(), dest.get(), role, app, httpResponse, "signRequests", role->WantAuthnRequestsSigned()
+        );
     req.release();  // freed by encoder
     return make_pair(true,ret);
 #else

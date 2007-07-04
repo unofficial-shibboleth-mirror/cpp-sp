@@ -28,6 +28,7 @@
 
 #include <log4cpp/Category.hh>
 #ifndef SHIBSP_LITE
+# include <saml/binding/MessageEncoder.h>
 # include <saml/saml2/core/Protocols.h>
 #endif
 #include <xmltooling/XMLObject.h>
@@ -82,8 +83,35 @@ namespace shibsp {
          * @param code      SAML status code
          * @param ex        optional message to pass back
          */
-        void prepareResponse(
+        void fillStatus(
             opensaml::saml2p::StatusResponseType& response, const XMLCh* code, const XMLCh* subcode=NULL, const char* msg=NULL
+            ) const;
+
+        /**
+         * Encodes and sends SAML 2.0 message, optionally signing it in the process.
+         * If the method returns, the message MUST NOT be freed by the caller.
+         *
+         * @param encoder           the MessageEncoder to use
+         * @param msg               the message to send
+         * @param relayState        any RelayState to include with the message
+         * @param destination       location to send message, if not a backchannel response
+         * @param role              recipient of message, if known
+         * @param application       the Application sending the message
+         * @param httpResponse      channel for sending message
+         * @param signingOption     name of property to lookup controlling signing
+         * @param signIfPossible    true iff signing should be attempted regardless of property
+         * @return  the result of sending the message using the encoder
+         */
+        long sendMessage(
+            const opensaml::MessageEncoder& encoder,
+            xmltooling::XMLObject* msg,
+            const char* relayState,
+            const char* destination,
+            const opensaml::saml2md::RoleDescriptor* role,
+            const Application& application,
+            xmltooling::HTTPResponse& httpResponse,
+            const char* signingOption,
+            bool signIfPossible=false
             ) const;
 #endif
 

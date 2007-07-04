@@ -34,8 +34,11 @@
 # include <saml/binding/SAMLArtifact.h>
 # include <saml/saml1/core/Protocols.h>
 # include <saml/saml2/core/Protocols.h>
+# include <saml/saml2/metadata/Metadata.h>
+# include <saml/saml2/metadata/MetadataCredentialCriteria.h>
 # include <saml/util/SAMLConstants.h>
 # include <xmltooling/util/StorageService.h>
+using namespace opensaml::saml2md;
 #else
 # include "lite/SAMLConstants.h"
 #endif
@@ -80,6 +83,7 @@ AbstractHandler::AbstractHandler(
 }
 
 #ifndef SHIBSP_LITE
+
 void AbstractHandler::checkError(const XMLObject* response) const
 {
     const saml2p::StatusResponseType* r2 = dynamic_cast<const saml2p::StatusResponseType*>(response);
@@ -128,7 +132,7 @@ void AbstractHandler::checkError(const XMLObject* response) const
     }
 }
 
-void AbstractHandler::prepareResponse(saml2p::StatusResponseType& response, const XMLCh* code, const XMLCh* subcode, const char* msg) const
+void AbstractHandler::fillStatus(saml2p::StatusResponseType& response, const XMLCh* code, const XMLCh* subcode, const char* msg) const
 {
     saml2p::Status* status = saml2p::StatusBuilder::buildStatus();
     saml2p::StatusCode* scode = saml2p::StatusCodeBuilder::buildStatusCode();
@@ -148,6 +152,63 @@ void AbstractHandler::prepareResponse(saml2p::StatusResponseType& response, cons
     }
     response.setStatus(status);
 }
+
+long AbstractHandler::sendMessage(
+    const MessageEncoder& encoder,
+    XMLObject* msg,
+    const char* relayState,
+    const char* destination,
+    const saml2md::RoleDescriptor* role,
+    const Application& application,
+    HTTPResponse& httpResponse,
+    const char* signingOption,
+    bool signIfPossible
+    ) const
+{
+    const EntityDescriptor* entity = role ? dynamic_cast<const EntityDescriptor*>(role->getParent()) : NULL;
+    const PropertySet* relyingParty = application.getRelyingParty(entity);
+    pair<bool,const char*> flag = signIfPossible ? make_pair(true,"true") : relyingParty->getString(signingOption);
+    if (role && flag.first &&
+        (!strcmp(flag.second, "true") ||
+            (encoder.isUserAgentPresent() && !strcmp(flag.second, "front")) ||
+            ((!encoder.isUserAgentPresent() && !strcmp(flag.second, "back"))))) {
+        CredentialResolver* credResolver=application.getCredentialResolver();
+        if (credResolver) {
+            Locker credLocker(credResolver);
+            // Fill in criteria to use.
+            MetadataCredentialCriteria mcc(*role);
+            mcc.setUsage(CredentialCriteria::SIGNING_CREDENTIAL);
+            pair<bool,const char*> keyName = relyingParty->getString("keyName");
+            if (keyName.first)
+                mcc.getKeyNames().insert(keyName.second);
+            pair<bool,const XMLCh*> sigalg = relyingParty->getXMLString("signatureAlg");
+            if (sigalg.first)
+                mcc.setXMLAlgorithm(sigalg.second);
+            const Credential* cred = credResolver->resolve(&mcc);
+            if (cred) {
+                // Signed request.
+                return encoder.encode(
+                    httpResponse,
+                    msg,
+                    destination,
+                    entity,
+                    relayState,
+                    &application,
+                    cred,
+                    sigalg.second,
+                    relyingParty->getXMLString("digestAlg").second
+                    );
+            }
+            else {
+                m_log.warn("no signing credential resolved, leaving message unsigned");
+            }
+        }
+    }
+
+    // Unsigned request.
+    return encoder.encode(httpResponse, msg, destination, entity, relayState, &application);
+}
+
 #endif
 
 void AbstractHandler::preserveRelayState(const Application& application, HTTPResponse& response, string& relayState) const
