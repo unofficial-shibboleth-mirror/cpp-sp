@@ -49,8 +49,7 @@ namespace shibsp {
     {
         if (mayRedirect) {
             // Check for redirection on errors instead of template.
-            const PropertySet* sessions=app ? app->getPropertySet("Sessions") : NULL;
-            pair<bool,const char*> redirectErrors = sessions ? sessions->getString("redirectErrors") : pair<bool,const char*>(false,NULL);
+            pair<bool,const char*> redirectErrors = app ? app->getString("redirectErrors") : pair<bool,const char*>(false,NULL);
             if (redirectErrors.first) {
                 string loc(redirectErrors.second);
                 loc = loc + '?' + tp.toQueryString();

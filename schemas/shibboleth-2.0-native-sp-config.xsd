@@ -355,7 +355,7 @@
 		<complexType>
 			<sequence>
 				<element ref="conf:Sessions"/>
-				<element ref="conf:Errors"/>
+				<element ref="conf:Errors" minOccurs="0"/>
 				<element ref="conf:DefaultRelyingParty"/>
 				<element ref="saml:Audience" minOccurs="0" maxOccurs="unbounded"/>
                 <element name="MetadataProvider" type="conf:PluggableType"/>
@@ -369,10 +369,8 @@
 			<attribute name="id" type="conf:string" fixed="default"/>
 			<attribute name="entityID" type="anyURI" use="required"/>
 			<attribute name="policyId" type="conf:string" use="required"/>
-			<attribute name="homeURL" type="anyURI" default="/"/>
-			<attribute name="REMOTE_USER" type="conf:listOfStrings"/>
-			<attribute name="unsetHeaders" type="conf:listOfStrings"/>
-	        <anyAttribute namespace="##other" processContents="lax"/>
+			<attributeGroup ref="conf:ApplicationGroup"/>
+			<anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>
 	
@@ -397,13 +395,20 @@
 			<attribute name="id" type="conf:string" use="required"/>
 			<attribute name="entityID" type="anyURI"/>
 			<attribute name="policyId" type="conf:string"/>
-			<attribute name="homeURL" type="anyURI" default="/"/>
-			<attribute name="REMOTE_USER" type="conf:listOfStrings"/>
-			<attribute name="unsetHeaders" type="conf:listOfStrings"/>
+			<attributeGroup ref="conf:ApplicationGroup"/>
 			<anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>
 
+	<attributeGroup name="ApplicationGroup">
+		<attribute name="homeURL" type="anyURI" default="/"/>
+		<attribute name="REMOTE_USER" type="conf:listOfStrings"/>
+		<attribute name="unsetHeaders" type="conf:listOfStrings"/>
+		<attribute name="redirectErrors" type="anyURI"/>
+		<attribute name="localLogout" type="anyURI"/>
+		<attribute name="globalLogout" type="anyURI"/>
+	</attributeGroup>
+		
 	<element name="Sessions">
 		<annotation>
 			<documentation>Container for specifying protocol handlers and session policy</documentation>
@@ -432,7 +437,6 @@
 			<attribute name="handlerSSL" type="boolean" default="true"/>
 			<attribute name="exportLocation" type="conf:string"/>
 			<attribute name="exportACL" type="conf:listOfStrings" default="127.0.0.1"/>
-			<attribute name="redirectErrors" type="anyURI"/>
 			<attribute name="cookieName" type="conf:string"/>
 			<attribute name="cookieProps" type="conf:string"/>
 			<attribute name="idpHistory" type="boolean" default="true"/>
@@ -444,7 +448,7 @@
 			<anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>
-	
+
 	<attribute name="policyId" type="conf:string">
 		<annotation>
 			<documentation>Used to reference Policy elements from profile endpoints.</documentation>
