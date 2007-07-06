@@ -183,7 +183,7 @@ int main(int argc,char* argv[])
                     nameid->setFormat(format.get() ? format.get() : NameID::TRANSIENT);
                     nameid->setNameQualifier(domain.get());
                     iss->setName(issuer.get());
-                    SAML2SOAPClient client(soaper);
+                    SAML2SOAPClient client(soaper, false);
                     client.sendSAML(query, mcc, loc.get());
                     srt = client.receiveSAML();
                 }
@@ -194,7 +194,11 @@ int main(int argc,char* argv[])
             }
 
             if (!srt)
-                throw BindingException("Unable to successfully query for attributes.");
+                throw BindingException("Unable to obtain a SAML response from attribute authority.");
+            else if (!XMLString::equals(srt->getStatus()->getStatusCode()->getValue(), saml2p::StatusCode::SUCCESS)) {
+                delete srt;
+                throw BindingException("Attribute authority returned a SAML error.");
+            }
             const opensaml::saml2p::Response* response = dynamic_cast<opensaml::saml2p::Response*>(srt);
 
             const vector<opensaml::saml2::Assertion*>& assertions = response->getAssertions();
@@ -226,7 +230,7 @@ int main(int argc,char* argv[])
                     nameid->setNameQualifier(domain.get());
                     query->setResource(issuer.get());
                     request->setMinorVersion(ver==v11 ? 1 : 0);
-                    SAML1SOAPClient client(soaper);
+                    SAML1SOAPClient client(soaper, false);
                     client.sendSAML(request, mcc, loc.get());
                     response = client.receiveSAML();
                 }
@@ -237,7 +241,11 @@ int main(int argc,char* argv[])
             }
 
             if (!response)
-                throw BindingException("Unable to successfully query for attributes.");
+                throw BindingException("Unable to obtain a SAML response from attribute authority.");
+            else if (*(response->getStatus()->getStatusCode()->getValue()) != saml1p::StatusCode::SUCCESS) {
+                delete const_cast<opensaml::saml1p::Response*>(response);
+                throw BindingException("Attribute authority returned a SAML error.");
+            }
 
             const vector<opensaml::saml1::Assertion*>& assertions = response->getAssertions();
             if (assertions.size())
