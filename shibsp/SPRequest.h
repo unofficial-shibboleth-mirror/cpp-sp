@@ -74,10 +74,12 @@ namespace shibsp {
         /**
          * Returns a locked Session associated with the request.
          *
-         * @param touch true iff the last-used timestamp should be updated and any timeout policy enforced
+         * @param checkTimeout  true iff the last-used timestamp should be updated and any timeout policy enforced
+         * @param ignoreAddress true iff all address checking should be ignored, regardless of policy
+         * @param cache         true iff the request should hold the Session lock itself and unlock during cleanup
          * @return pointer to Session, or NULL
          */
-        virtual Session* getSession(bool checkTimeout=true) const=0;
+        virtual Session* getSession(bool checkTimeout=true, bool ignoreAddress=false, bool cache=true) const=0;
 
         /**
          * Returns the effective base Handler URL for a resource,

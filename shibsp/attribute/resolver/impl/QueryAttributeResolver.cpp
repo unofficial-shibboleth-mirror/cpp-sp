@@ -66,19 +66,23 @@ namespace shibsp {
     {
     public:
         QueryContext(const Application& application, const Session& session)
-            : m_query(true), m_app(application), m_session(&session), m_metadata(NULL), m_entity(NULL), m_nameid(NULL) {
+                : m_query(true), m_app(application), m_session(&session), m_metadata(NULL), m_entity(NULL), m_nameid(NULL) {
+            m_protocol = XMLString::transcode(session.getProtocol());
+            m_class = XMLString::transcode(session.getAuthnContextClassRef());
+            m_decl = XMLString::transcode(session.getAuthnContextDeclRef());
         }
         
         QueryContext(
             const Application& application,
             const EntityDescriptor* issuer,
+            const XMLCh* protocol,
             const NameID* nameid,
-            const char* authncontext_class=NULL,
-            const char* authncontext_decl=NULL,
+            const XMLCh* authncontext_class=NULL,
+            const XMLCh* authncontext_decl=NULL,
             const vector<const opensaml::Assertion*>* tokens=NULL,
             const multimap<string,Attribute*>* attributes=NULL
             ) : m_query(true), m_app(application), m_session(NULL), m_metadata(NULL), m_entity(issuer),
-                m_nameid(nameid), m_class(authncontext_class), m_decl(authncontext_decl) {
+                m_protocol(protocol), m_nameid(nameid), m_class(authncontext_class), m_decl(authncontext_decl) {
 
             if (tokens) {
                 for (vector<const opensaml::Assertion*>::const_iterator t = tokens->begin(); t!=tokens->end(); ++t) {
@@ -97,6 +101,11 @@ namespace shibsp {
         }
         
         ~QueryContext() {
+            if (m_session) {
+                XMLString::release((XMLCh**)&m_protocol);
+                XMLString::release((XMLCh**)&m_class);
+                XMLString::release((XMLCh**)&m_decl);
+            }
             if (m_metadata)
                 m_metadata->unlock();
             for_each(m_attributes.begin(), m_attributes.end(), cleanup_pair<string,shibsp::Attribute>());
@@ -122,14 +131,17 @@ namespace shibsp {
             }
             return NULL;
         }
+        const XMLCh* getProtocol() const {
+            return m_protocol;
+        }
         const NameID* getNameID() const {
             return m_session ? m_session->getNameID() : m_nameid;
         }
-        const char* getClassRef() const {
-            return m_session ? m_session->getAuthnContextClassRef() :  m_class;
+        const XMLCh* getClassRef() const {
+            return m_class;
         }
-        const char* getDeclRef() const {
-            return m_session ? m_session->getAuthnContextDeclRef() : m_decl;
+        const XMLCh* getDeclRef() const {
+            return m_decl;
         }
         const Session* getSession() const {
             return m_session;
@@ -147,9 +159,10 @@ namespace shibsp {
         const Session* m_session;
         mutable MetadataProvider* m_metadata;
         mutable const EntityDescriptor* m_entity;
+        const XMLCh* m_protocol;
         const NameID* m_nameid;
-        const char* m_class;
-        const char* m_decl;
+        const XMLCh* m_class;
+        const XMLCh* m_decl;
         multimap<string,shibsp::Attribute*> m_attributes;
         vector<opensaml::Assertion*> m_assertions;
     };
@@ -169,13 +182,14 @@ namespace shibsp {
         ResolutionContext* createResolutionContext(
             const Application& application,
             const EntityDescriptor* issuer,
+            const XMLCh* protocol,
             const NameID* nameid,
-            const char* authncontext_class=NULL,
-            const char* authncontext_decl=NULL,
+            const XMLCh* authncontext_class=NULL,
+            const XMLCh* authncontext_decl=NULL,
             const vector<const opensaml::Assertion*>* tokens=NULL,
             const multimap<string,shibsp::Attribute*>* attributes=NULL
             ) const {
-            return new QueryContext(application,issuer,nameid,authncontext_class,authncontext_decl,tokens,attributes);
+            return new QueryContext(application,issuer,protocol,nameid,authncontext_class,authncontext_decl,tokens,attributes);
         }
 
         ResolutionContext* createResolutionContext(const Application& application, const Session& session) const {
@@ -290,7 +304,7 @@ bool QueryResolver::SAML1Query(QueryContext& ctx) const
             request->setAttributeQuery(query);
             request->setMinorVersion(version);
 
-            SAML1SOAPClient client(soaper);
+            SAML1SOAPClient client(soaper, false);
             client.sendSAML(request, mcc, loc.get());
             response = client.receiveSAML();
         }
@@ -301,8 +315,14 @@ bool QueryResolver::SAML1Query(QueryContext& ctx) const
     }
 
     if (!response) {
-        m_log.error("unable to successfully query for attributes");
+        m_log.error("unable to obtain a SAML response from attribute authority");
         return false;
+    }
+    else if (!response->getStatus() || !response->getStatus()->getStatusCode() || response->getStatus()->getStatusCode()->getValue()==NULL ||
+            *(response->getStatus()->getStatusCode()->getValue()) != saml1p::StatusCode::SUCCESS) {
+        delete response;
+        m_log.error("attribute authority returned a SAML error");
+        return true;
     }
 
     const vector<saml1::Assertion*>& assertions = const_cast<const saml1p::Response*>(response)->getAssertions();
@@ -395,7 +415,7 @@ bool QueryResolver::SAML2Query(QueryContext& ctx) const
             for (vector<saml2::Attribute*>::const_iterator ad = m_SAML2Designators.begin(); ad!=m_SAML2Designators.end(); ++ad)
                 query->getAttributes().push_back((*ad)->cloneAttribute());
 
-            SAML2SOAPClient client(soaper);
+            SAML2SOAPClient client(soaper, false);
             client.sendSAML(query, mcc, loc.get());
             srt = client.receiveSAML();
         }
@@ -406,13 +426,19 @@ bool QueryResolver::SAML2Query(QueryContext& ctx) const
     }
 
     if (!srt) {
-        m_log.error("unable to successfully query for attributes");
+        m_log.error("unable to obtain a SAML response from attribute authority");
         return false;
     }
     saml2p::Response* response = dynamic_cast<saml2p::Response*>(srt);
     if (!response) {
         delete srt;
         m_log.error("message was not a samlp:Response");
+        return true;
+    }
+    else if (!response->getStatus() || !response->getStatus()->getStatusCode() ||
+            !XMLString::equals(response->getStatus()->getStatusCode()->getValue(), saml2p::StatusCode::SUCCESS)) {
+        delete srt;
+        m_log.error("attribute authority returned a SAML error");
         return true;
     }
 

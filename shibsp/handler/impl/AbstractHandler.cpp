@@ -59,6 +59,9 @@ namespace shibsp {
     SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory SAML2ConsumerFactory;
     SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory SAML2ArtifactResolutionFactory;
     SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory AssertionLookupFactory;
+    SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory ChainingLogoutInitiatorFactory;
+    SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory LocalLogoutInitiatorFactory;
+    SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory SAML2LogoutInitiatorFactory;
 };
 
 void SHIBSP_API shibsp::registerHandlers()
@@ -74,6 +77,10 @@ void SHIBSP_API shibsp::registerHandlers()
     conf.ArtifactResolutionServiceManager.registerFactory(SAML20_BINDING_SOAP, SAML2ArtifactResolutionFactory);
 
     conf.HandlerManager.registerFactory(SAML20_BINDING_URI, AssertionLookupFactory);
+
+    conf.LogoutInitiatorManager.registerFactory(CHAINING_LOGOUT_INITIATOR, ChainingLogoutInitiatorFactory);
+    conf.LogoutInitiatorManager.registerFactory(LOCAL_LOGOUT_INITIATOR, LocalLogoutInitiatorFactory);
+    conf.LogoutInitiatorManager.registerFactory(SAML2_LOGOUT_INITIATOR, SAML2LogoutInitiatorFactory);
 }
 
 AbstractHandler::AbstractHandler(
@@ -171,7 +178,7 @@ long AbstractHandler::sendMessage(
     if (role && flag.first &&
         (!strcmp(flag.second, "true") ||
             (encoder.isUserAgentPresent() && !strcmp(flag.second, "front")) ||
-            ((!encoder.isUserAgentPresent() && !strcmp(flag.second, "back"))))) {
+            (!encoder.isUserAgentPresent() && !strcmp(flag.second, "back")))) {
         CredentialResolver* credResolver=application.getCredentialResolver();
         if (credResolver) {
             Locker credLocker(credResolver);
@@ -202,6 +209,9 @@ long AbstractHandler::sendMessage(
             else {
                 m_log.warn("no signing credential resolved, leaving message unsigned");
             }
+        }
+        else {
+            m_log.warn("no credential resolver installed, leaving message unsigned");
         }
     }
 

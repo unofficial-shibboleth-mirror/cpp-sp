@@ -86,6 +86,9 @@ namespace shibsp {
         const char* getEntityID() const {
             return m_obj["entity_id"].string();
         }
+        const char* getProtocol() const {
+            return m_obj["protocol"].string();
+        }
         const char* getAuthnInstant() const {
             return m_obj["authn_instant"].string();
         }

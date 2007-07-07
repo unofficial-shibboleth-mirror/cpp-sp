@@ -196,6 +196,7 @@ void SPInternalConfig::term()
 
     ArtifactResolutionServiceManager.deregisterFactories();
     AssertionConsumerServiceManager.deregisterFactories();
+    LogoutInitiatorManager.deregisterFactories();
     ManageNameIDServiceManager.deregisterFactories();
     SessionInitiatorManager.deregisterFactories();
     SingleLogoutServiceManager.deregisterFactories();

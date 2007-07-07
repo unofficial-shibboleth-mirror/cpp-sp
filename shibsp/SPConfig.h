@@ -228,6 +228,11 @@ namespace shibsp {
         xmltooling::PluginManager<ListenerService,std::string,const xercesc::DOMElement*> ListenerServiceManager;
 
         /**
+         * Manages factories for Handler plugins that implement LogoutInitiator functionality.
+         */
+        xmltooling::PluginManager< Handler,std::string,std::pair<const xercesc::DOMElement*,const char*> > LogoutInitiatorManager;
+
+        /**
          * Manages factories for Handler plugins that implement ManageNameIDService functionality.
          */
         xmltooling::PluginManager< Handler,std::string,std::pair<const xercesc::DOMElement*,const char*> > ManageNameIDServiceManager;

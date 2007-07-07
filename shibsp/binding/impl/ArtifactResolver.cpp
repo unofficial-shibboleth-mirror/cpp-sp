@@ -73,7 +73,7 @@ saml1p::Response* ArtifactResolver::resolve(
                 request->getAssertionArtifacts().push_back(aa);
             }
 
-            SAML1SOAPClient client(soaper);
+            SAML1SOAPClient client(soaper, false);
             client.sendSAML(request, mcc, loc.get());
             response = client.receiveSAML();
         }
@@ -84,7 +84,13 @@ saml1p::Response* ArtifactResolver::resolve(
     }
 
     if (!response)
-        throw BindingException("Unable to successfully resolve artifact(s).");
+        throw BindingException("Unable to resolve artifact(s) into a SAML response.");
+    const QName* code = (response->getStatus() && response->getStatus()->getStatusCode()) ? response->getStatus()->getStatusCode()->getValue() : NULL;
+    if (!code || *code != saml1p::StatusCode::SUCCESS) {
+        delete response;
+        throw BindingException("Identity provider returned a SAML error in response to artifact(s).");
+    }
+
     return response;
 }
 
@@ -116,7 +122,7 @@ ArtifactResponse* ArtifactResolver::resolve(
             a->setArtifact(artbuf.get());
             request->setArtifact(a);
 
-            SAML2SOAPClient client(soaper);
+            SAML2SOAPClient client(soaper, false);
             client.sendSAML(request, mcc, loc.get());
             StatusResponseType* srt = client.receiveSAML();
             if (!(response = dynamic_cast<ArtifactResponse*>(srt))) {
@@ -131,6 +137,11 @@ ArtifactResponse* ArtifactResolver::resolve(
     }
 
     if (!response)
-        throw BindingException("Unable to successfully resolve artifact.");
+        throw BindingException("Unable to resolve artifact(s) into a SAML response.");
+    if (!response->getStatus() || !response->getStatus()->getStatusCode() ||
+           !XMLString::equals(response->getStatus()->getStatusCode()->getValue(), saml2p::StatusCode::SUCCESS)) {
+        delete response;
+        throw BindingException("Identity provider returned a SAML error in response to artifact.");
+    }
     return response;
 }

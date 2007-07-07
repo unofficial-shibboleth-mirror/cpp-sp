@@ -76,12 +76,13 @@ const Application& AbstractSPRequest::getApplication() const
     return *m_app;
 }
 
-Session* AbstractSPRequest::getSession(bool checkTimeout) const
+Session* AbstractSPRequest::getSession(bool checkTimeout, bool ignoreAddress, bool cache) const
 {
     // Only attempt this once.
-    if (m_sessionTried)
+    if (cache && m_sessionTried)
         return m_session;
-    m_sessionTried = true;
+    else if (cache)
+        m_sessionTried = true;
 
     // Get session ID from cookie.
     const Application& app = getApplication();
@@ -92,23 +93,27 @@ Session* AbstractSPRequest::getSession(bool checkTimeout) const
 
     // Need address checking and timeout settings.
     time_t timeout=0;
-    bool consistent=true;
-    const PropertySet* props=app.getPropertySet("Sessions");
-    if (props) {
-        if (checkTimeout) {
-            pair<bool,unsigned int> p=props->getUnsignedInt("timeout");
-            if (p.first)
-                timeout = p.second;
+    if (checkTimeout || !ignoreAddress) {
+        const PropertySet* props=app.getPropertySet("Sessions");
+        if (props) {
+            if (checkTimeout) {
+                pair<bool,unsigned int> p=props->getUnsignedInt("timeout");
+                if (p.first)
+                    timeout = p.second;
+            }
+            pair<bool,bool> pcheck=props->getBool("consistentAddress");
+            if (pcheck.first)
+                ignoreAddress = !pcheck.second;
         }
-        pair<bool,bool> pcheck=props->getBool("consistentAddress");
-        if (pcheck.first)
-            consistent = pcheck.second;
     }
 
     // The cache will either silently pass a session or NULL back, or throw an exception out.
-    return m_session = getServiceProvider().getSessionCache()->find(
-        session_id, app, consistent ? getRemoteAddr().c_str() : NULL, checkTimeout ? &timeout : NULL
+    Session* session = getServiceProvider().getSessionCache()->find(
+        session_id, app, ignoreAddress ? NULL : getRemoteAddr().c_str(), checkTimeout ? &timeout : NULL
         );
+    if (cache)
+        m_session = session;
+    return session;
 }
 
 const char* AbstractSPRequest::getRequestURL() const {
@@ -184,6 +189,9 @@ const char* AbstractSPRequest::getCookie(const char* name) const
 
 const char* AbstractSPRequest::getHandlerURL(const char* resource) const
 {
+    if (!resource)
+        resource = getRequestURL();
+
     if (!m_handlerURL.empty() && resource && !strcmp(getRequestURL(),resource))
         return m_handlerURL.c_str();
         

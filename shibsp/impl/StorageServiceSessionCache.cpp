@@ -90,6 +90,9 @@ namespace shibsp {
         const char* getEntityID() const {
             return m_obj["entity_id"].string();
         }
+        const char* getProtocol() const {
+            return m_obj["protocol"].string();
+        }
         const char* getAuthnInstant() const {
             return m_obj["authn_instant"].string();
         }
@@ -150,34 +153,24 @@ namespace shibsp {
             const Application& application,
             const char* client_addr=NULL,
             const saml2md::EntityDescriptor* issuer=NULL,
+            const XMLCh* protocol=NULL,
             const saml2::NameID* nameid=NULL,
-            const char* authn_instant=NULL,
-            const char* session_index=NULL,
-            const char* authncontext_class=NULL,
-            const char* authncontext_decl=NULL,
+            const XMLCh* authn_instant=NULL,
+            const XMLCh* session_index=NULL,
+            const XMLCh* authncontext_class=NULL,
+            const XMLCh* authncontext_decl=NULL,
             const vector<const Assertion*>* tokens=NULL,
             const multimap<string,Attribute*>* attributes=NULL
             );
         Session* find(const char* key, const Application& application, const char* client_addr=NULL, time_t* timeout=NULL);
         void remove(const char* key, const Application& application);
-        void find(
-            const saml2md::EntityDescriptor& issuer,
-            const saml2::NameID& nameid,
-            const char* index,
-            const Application& application,
-            vector<string>& sessions
-            ) {
-            byname(issuer, nameid, index, application, sessions, false);
-        }
         void remove(
-            const saml2md::EntityDescriptor& issuer,
+            const saml2md::EntityDescriptor* issuer,
             const saml2::NameID& nameid,
             const char* index,
             const Application& application,
             vector<string>& sessions
-            ) {
-            byname(issuer, nameid, index, application, sessions, true);
-        }
+            );
 
         Category& m_log;
         StorageService* m_storage;
@@ -185,14 +178,6 @@ namespace shibsp {
     private:
         // maintain back-mappings of NameID/SessionIndex -> session key
         void insert(const char* key, time_t expires, const char* name, const char* index);
-        void byname(
-            const saml2md::EntityDescriptor& issuer,
-            const saml2::NameID& nameid,
-            const char* index,
-            const Application& application,
-            vector<string>& sessions,
-            bool logout
-            );
 
         bool stronglyMatches(const XMLCh* idp, const XMLCh* sp, const saml2::NameID& n1, const saml2::NameID& n2) const;
     };
@@ -494,7 +479,7 @@ void SSCache::insert(const char* key, time_t expires, const char* name, const ch
     // Since we can't guarantee uniqueness, check for an existing record.
     string record;
     time_t recordexp;
-    int ver = m_storage->readText("Logout", name, &record, &recordexp);
+    int ver = m_storage->readText("NameID", name, &record, &recordexp);
     if (ver > 0) {
         // Existing record, so we need to unmarshall it.
         istringstream in(record);
@@ -505,7 +490,7 @@ void SSCache::insert(const char* key, time_t expires, const char* name, const ch
         obj.structure();
     }
 
-    if (!index)
+    if (!index || !*index)
         index = "_shibnull";
     DDF sessions = obj.addmember(index);
     if (!sessions.islist())
@@ -519,13 +504,13 @@ void SSCache::insert(const char* key, time_t expires, const char* name, const ch
 
     // Try and store it back...
     if (ver > 0) {
-        ver = m_storage->updateText("Logout", name, out.str().c_str(), max(expires, recordexp), ver);
+        ver = m_storage->updateText("NameID", name, out.str().c_str(), max(expires, recordexp), ver);
         if (ver <= 0) {
             // Out of sync, or went missing, so retry.
             return insert(key, expires, name, index);
         }
     }
-    else if (!m_storage->createText("Logout", name, out.str().c_str(), expires)) {
+    else if (!m_storage->createText("NameID", name, out.str().c_str(), expires)) {
         // Hit a dup, so just retry, hopefully hitting the other branch.
         return insert(key, expires, name, index);
     }
@@ -536,11 +521,12 @@ string SSCache::insert(
     const Application& application,
     const char* client_addr,
     const saml2md::EntityDescriptor* issuer,
+    const XMLCh* protocol,
     const saml2::NameID* nameid,
-    const char* authn_instant,
-    const char* session_index,
-    const char* authncontext_class,
-    const char* authncontext_decl,
+    const XMLCh* authn_instant,
+    const XMLCh* session_index,
+    const XMLCh* authncontext_class,
+    const XMLCh* authncontext_decl,
     const vector<const Assertion*>* tokens,
     const multimap<string,Attribute*>* attributes
     )
@@ -575,14 +561,25 @@ string SSCache::insert(
         auto_ptr_char entity_id(issuer->getEntityID());
         obj.addmember("entity_id").string(entity_id.get());
     }
-    if (authn_instant)
-        obj.addmember("authn_instant").string(authn_instant);
+    if (protocol) {
+        auto_ptr_char prot(protocol);
+        obj.addmember("protocol").string(prot.get());
+    }
+    if (authn_instant) {
+        auto_ptr_char instant(authn_instant);
+        obj.addmember("authn_instant").string(instant.get());
+    }
+    auto_ptr_char index(session_index);
     if (session_index)
-        obj.addmember("session_index").string(session_index);
-    if (authncontext_class)
-        obj.addmember("authncontext_class").string(authncontext_class);
-    if (authncontext_decl)
-        obj.addmember("authncontext_decl").string(authncontext_decl);
+        obj.addmember("session_index").string(index.get());
+    if (authncontext_class) {
+        auto_ptr_char ac(authncontext_class);
+        obj.addmember("authncontext_class").string(ac.get());
+    }
+    if (authncontext_decl) {
+        auto_ptr_char ad(authncontext_decl);
+        obj.addmember("authncontext_decl").string(ad.get());
+    }
 
     if (nameid) {
         ostringstream namestr;
@@ -620,7 +617,7 @@ string SSCache::insert(
     auto_ptr_char name(nameid ? nameid->getName() : NULL);
     try {
         if (name.get())
-            insert(key.get(), expires, name.get(), session_index);
+            insert(key.get(), expires, name.get(), index.get());
     }
     catch (exception& ex) {
         m_log.error("error storing back mapping of NameID for logout: %s", ex.what());
@@ -789,25 +786,24 @@ void SSCache::remove(const char* key, const Application& application)
     xlog->log.info("Destroyed session (applicationId: %s) (ID: %s)", application.getId(), key);
 }
 
-void SSCache::byname(
-    const saml2md::EntityDescriptor& issuer,
+void SSCache::remove(
+    const saml2md::EntityDescriptor* issuer,
     const saml2::NameID& nameid,
     const char* index,
     const Application& application,
-    vector<string>& sessionsKilled,
-    bool logout
+    vector<string>& sessionsKilled
     )
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("remove");
 #endif
 
-    auto_ptr_char entityID(issuer.getEntityID());
+    auto_ptr_char entityID(issuer ? issuer->getEntityID() : NULL);
     auto_ptr_char name(nameid.getName());
 
     m_log.info(
-        "request to %s sessions from (%s) for (%s) for session index (%s)",
-        logout ? "logout" : "locate", entityID.get(), name.get(), index ? index : "all"
+        "request to logout sessions from (%s) for (%s) for session index (%s)",
+        entityID.get() ? entityID.get() : "unknown", name.get(), index ? index : "all"
         );
 
     if (strlen(name.get()) > 255)
@@ -815,7 +811,7 @@ void SSCache::byname(
 
     // Read in potentially matching sessions.
     string record;
-    int ver = m_storage->readText("Logout", name.get(), &record);
+    int ver = m_storage->readText("NameID", name.get(), &record);
     if (ver == 0) {
         m_log.debug("no active sessions to remove for supplied issuer and name identifier");
         return;
@@ -838,14 +834,12 @@ void SSCache::byname(
                 Locker locker(session);
                 if (session) {
                     // Same issuer?
-                    if (session->getEntityID() && !strcmp(session->getEntityID(), entityID.get())) {
+                    if (XMLString::equals(session->getEntityID(), entityID.get())) {
                         // Same NameID?
-                        if (stronglyMatches(issuer.getEntityID(), application.getXMLString("entityID").second, nameid, *session->getNameID())) {
-                            if (logout) {
-                                remove(key.string(), application);  // let this throw to detect errors in case the full logout fails?
-                                key.destroy();
-                            }
+                        if (stronglyMatches(issuer->getEntityID(), application.getXMLString("entityID").second, nameid, *session->getNameID())) {
                             sessionsKilled.push_back(key.string());
+                            remove(key.string(), application);  // let this throw to detect errors in case the full logout fails?
+                            key.destroy();
                         }
                         else {
                             m_log.debug("session (%s) contained a non-matching NameID, leaving it alone", key.string());
@@ -876,12 +870,12 @@ void SSCache::byname(
     // If possible, write back the mapping record (this isn't crucial).
     try {
         if (obj.isnull()) {
-            m_storage->deleteText("Logout", name.get());
+            m_storage->deleteText("NameID", name.get());
         }
         else if (!sessionsKilled.empty()) {
             ostringstream out;
             out << obj;
-            if (m_storage->updateText("Logout", name.get(), out.str().c_str(), 0, ver) <= 0)
+            if (m_storage->updateText("NameID", name.get(), out.str().c_str(), 0, ver) <= 0)
                 m_log.warn("logout mapping record changed behind us, leaving it alone");
         }
     }

@@ -63,7 +63,14 @@ namespace shibsp {
          * @return the IdP's entityID
          */
         virtual const char* getEntityID() const=0;
-        
+
+        /**
+         * Returns the protocol family used to initiate the session.
+         *
+         * @return the protocol constant that represents the general SSO protocol used
+         */
+        virtual const char* getProtocol() const=0;
+
         /**
          * Returns the UTC timestamp on the authentication event at the IdP.
          * 
@@ -189,6 +196,7 @@ namespace shibsp {
          * @param application       reference to Application that owns the Session
          * @param client_addr       network address of client
          * @param issuer            issuing metadata of assertion issuer, if known
+         * @param protocol          protocol family used to initiate the session
          * @param nameid            principal identifier, normalized to SAML 2, if any
          * @param authn_instant     UTC timestamp of authentication at IdP, if known
          * @param session_index     index of session between principal and IdP, if any
@@ -203,30 +211,14 @@ namespace shibsp {
             const Application& application,
             const char* client_addr=NULL,
             const opensaml::saml2md::EntityDescriptor* issuer=NULL,
+            const XMLCh* protocol=NULL,
             const opensaml::saml2::NameID* nameid=NULL,
-            const char* authn_instant=NULL,
-            const char* session_index=NULL,
-            const char* authncontext_class=NULL,
-            const char* authncontext_decl=NULL,
+            const XMLCh* authn_instant=NULL,
+            const XMLCh* session_index=NULL,
+            const XMLCh* authncontext_class=NULL,
+            const XMLCh* authncontext_decl=NULL,
             const std::vector<const opensaml::Assertion*>* tokens=NULL,
             const std::multimap<std::string,Attribute*>* attributes=NULL
-            )=0;
-
-        /**
-         * Locates an existing session or sessions by subject identifier.
-         * 
-         * @param issuer        source of session(s)
-         * @param nameid        name identifier associated with the session(s) to locate
-         * @param index         index of session, or NULL for all sessions associated with other parameters
-         * @param application   reference to Application that owns the session(s)
-         * @param sessions      on exit, contains the IDs of the matching sessions
-         */
-        virtual void find(
-            const opensaml::saml2md::EntityDescriptor& issuer,
-            const opensaml::saml2::NameID& nameid,
-            const char* index,
-            const Application& application,
-            std::vector<std::string>& sessions
             )=0;
 
         /**
@@ -239,7 +231,7 @@ namespace shibsp {
          * @param sessions      on exit, contains the IDs of the matching sessions removed
          */
         virtual void remove(
-            const opensaml::saml2md::EntityDescriptor& issuer,
+            const opensaml::saml2md::EntityDescriptor* issuer,
             const opensaml::saml2::NameID& nameid,
             const char* index,
             const Application& application,

@@ -79,16 +79,17 @@ namespace shibsp {
         ResolutionContext* createResolutionContext(
             const Application& application,
             const EntityDescriptor* issuer,
+            const XMLCh* protocol,
             const NameID* nameid,
-            const char* authncontext_class=NULL,
-            const char* authncontext_decl=NULL,
+            const XMLCh* authncontext_class=NULL,
+            const XMLCh* authncontext_decl=NULL,
             const vector<const opensaml::Assertion*>* tokens=NULL,
             const multimap<string,shibsp::Attribute*>* attributes=NULL
             ) const {
             auto_ptr<ChainingContext> chain(new ChainingContext());
             for (vector<AttributeResolver*>::const_iterator i=m_resolvers.begin(); i!=m_resolvers.end(); ++i)
                 chain->m_contexts.push_back(
-                    (*i)->createResolutionContext(application, issuer, nameid, authncontext_class, authncontext_decl, tokens, attributes)
+                    (*i)->createResolutionContext(application, issuer, protocol, nameid, authncontext_class, authncontext_decl, tokens, attributes)
                     );
             return chain.release();
         }

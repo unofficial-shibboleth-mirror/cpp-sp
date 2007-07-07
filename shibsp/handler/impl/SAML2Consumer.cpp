@@ -336,13 +336,6 @@ string SAML2Consumer::implementProtocol(
     else
         sessionExp = min(sessionExp, now + lifetime.second);    // Use the lowest.
 
-    // Other details...
-    const AuthnContext* authnContext = ssoStatement->getAuthnContext();
-    auto_ptr_char authnClass((authnContext && authnContext->getAuthnContextClassRef()) ? authnContext->getAuthnContextClassRef()->getReference() : NULL);
-    auto_ptr_char authnDecl((authnContext && authnContext->getAuthnContextDeclRef()) ? authnContext->getAuthnContextDeclRef()->getReference() : NULL);
-    auto_ptr_char index(ssoStatement->getSessionIndex());
-    auto_ptr_char authnInstant(ssoStatement->getAuthnInstant() ? ssoStatement->getAuthnInstant()->getRawData() : NULL);
-
     multimap<string,Attribute*> resolvedAttributes;
     AttributeExtractor* extractor = application.getAttributeExtractor();
     if (extractor) {
@@ -364,9 +357,17 @@ string SAML2Consumer::implementProtocol(
         }
     }
 
+    const AuthnContext* authnContext = ssoStatement->getAuthnContext();
+
     AttributeFilter* filter = application.getAttributeFilter();
     if (filter && !resolvedAttributes.empty()) {
-        BasicFilteringContext fc(application, resolvedAttributes, policy.getIssuerMetadata(), authnClass.get(), authnDecl.get());
+        BasicFilteringContext fc(
+            application,
+            resolvedAttributes,
+            policy.getIssuerMetadata(),
+            (authnContext && authnContext->getAuthnContextClassRef()) ? authnContext->getAuthnContextClassRef()->getReference() : NULL,
+            (authnContext && authnContext->getAuthnContextDeclRef()) ? authnContext->getAuthnContextDeclRef()->getReference() : NULL
+            );
         Locker filtlocker(filter);
         try {
             filter->filterAttributes(fc, resolvedAttributes);
@@ -383,7 +384,16 @@ string SAML2Consumer::implementProtocol(
         const EntityDescriptor* issuerMetadata =
             policy.getIssuerMetadata() ? dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL;
         auto_ptr<ResolutionContext> ctx(
-            resolveAttributes(application, issuerMetadata, ssoName, authnClass.get(), authnDecl.get(), &tokens, &resolvedAttributes)
+            resolveAttributes(
+                application,
+                issuerMetadata,
+                samlconstants::SAML20P_NS,
+                ssoName,
+                (authnContext && authnContext->getAuthnContextClassRef()) ? authnContext->getAuthnContextClassRef()->getReference() : NULL,
+                (authnContext && authnContext->getAuthnContextDeclRef()) ? authnContext->getAuthnContextDeclRef()->getReference() : NULL,
+                &tokens,
+                &resolvedAttributes
+                )
             );
 
         if (ctx.get()) {
@@ -403,11 +413,12 @@ string SAML2Consumer::implementProtocol(
             application,
             httpRequest.getRemoteAddr().c_str(),
             issuerMetadata,
+            samlconstants::SAML20P_NS,
             ssoName,
-            authnInstant.get(),
-            index.get(),
-            authnClass.get(),
-            authnDecl.get(),
+            ssoStatement->getAuthnInstant() ? ssoStatement->getAuthnInstant()->getRawData() : NULL,
+            ssoStatement->getSessionIndex(),
+            (authnContext && authnContext->getAuthnContextClassRef()) ? authnContext->getAuthnContextClassRef()->getReference() : NULL,
+            (authnContext && authnContext->getAuthnContextDeclRef()) ? authnContext->getAuthnContextDeclRef()->getReference() : NULL,
             &tokens,
             &resolvedAttributes
             );

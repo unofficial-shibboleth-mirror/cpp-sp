@@ -34,21 +34,21 @@ namespace shibsp {
      */
     class SHIBSP_DLLLOCAL AuthenticationMethodStringFunctor : public MatchFunctor
     {
-        xmltooling::auto_ptr_char m_value;
+        const XMLCh* m_value;
     public:
         AuthenticationMethodStringFunctor(const DOMElement* e) : m_value(e ? e->getAttributeNS(NULL,value) : NULL) {
-            if (!m_value.get() || !*m_value.get())
+            if (!m_value || !*m_value)
                 throw ConfigurationException("AuthenticationMethodString MatchFunctor requires non-empty value attribute.");
         }
 
         bool evaluatePolicyRequirement(const FilteringContext& filterContext) const {
-            return XMLString::equals(m_value.get(), filterContext.getAuthnContextClassRef()) ||
-                XMLString::equals(m_value.get(), filterContext.getAuthnContextDeclRef());
+            return XMLString::equals(m_value, filterContext.getAuthnContextClassRef()) ||
+                XMLString::equals(m_value, filterContext.getAuthnContextDeclRef());
         }
 
         bool evaluatePermitValue(const FilteringContext& filterContext, const Attribute& attribute, size_t index) const {
-            return XMLString::equals(m_value.get(), filterContext.getAuthnContextClassRef()) ||
-                XMLString::equals(m_value.get(), filterContext.getAuthnContextDeclRef());
+            return XMLString::equals(m_value, filterContext.getAuthnContextClassRef()) ||
+                XMLString::equals(m_value, filterContext.getAuthnContextDeclRef());
         }
     };
 

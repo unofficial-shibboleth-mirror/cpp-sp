@@ -416,6 +416,7 @@
 		<complexType>
 			<choice minOccurs="0" maxOccurs="unbounded">
 				<element ref="conf:SessionInitiator"/>
+				<element ref="conf:LogoutInitiator"/>
 				<element ref="md:AssertionConsumerService"/>
 				<element ref="md:ArtifactResolutionService"/>
 				<element ref="md:SingleLogoutService"/>
@@ -477,6 +478,27 @@
 					<attribute name="postArtifact" type="boolean"/>
 					<attribute name="acsByIndex" type="boolean"/>
 					<attribute name="defaultACSIndex" type="unsignedShort"/>
+					<anyAttribute namespace="##any" processContents="lax"/>
+				</restriction>
+			</complexContent>
+		</complexType>
+	</element>
+
+	<element name="LogoutInitiator">
+		<annotation>
+			<documentation>Used to specify handlers that can issue LogoutRequests</documentation>
+		</annotation>
+		<complexType>
+			<complexContent>
+				<restriction base="conf:PluggableType">
+					<sequence>
+						<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+					</sequence>
+					<attribute name="Location" type="anyURI"/>
+					<attribute name="relayState" type="conf:string"/>
+					<attribute name="outgoingBindings" type="conf:listOfURIs"/>
+					<attribute name="template" type="anyURI"/>
+					<attribute name="postArtifact" type="boolean"/>
 					<anyAttribute namespace="##any" processContents="lax"/>
 				</restriction>
 			</complexContent>

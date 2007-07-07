@@ -387,6 +387,7 @@ namespace {
     static const XMLCh Listener[] =             UNICODE_LITERAL_8(L,i,s,t,e,n,e,r);
     static const XMLCh Location[] =             UNICODE_LITERAL_8(L,o,c,a,t,i,o,n);
     static const XMLCh logger[] =               UNICODE_LITERAL_6(l,o,g,g,e,r);
+    static const XMLCh _LogoutInitiator[] =     UNICODE_LITERAL_15(L,o,g,o,u,t,I,n,i,t,i,a,t,o,r);
     static const XMLCh _ManageNameIDService[] = UNICODE_LITERAL_19(M,a,n,a,g,e,N,a,m,e,I,D,S,e,r,v,i,c,e);
     static const XMLCh MemoryListener[] =       UNICODE_LITERAL_14(M,e,m,o,r,y,L,i,s,t,e,n,e,r);
     static const XMLCh _MetadataProvider[] =    UNICODE_LITERAL_16(M,e,t,a,d,a,t,a,P,r,o,v,i,d,e,r);
@@ -593,6 +594,15 @@ XMLApplication::XMLApplication(
                         else if (!m_sessionInitDefault)
                             m_sessionInitDefault=sihandler;
                     }
+                }
+                else if (XMLString::equals(child->getLocalName(),_LogoutInitiator)) {
+                    auto_ptr_char type(child->getAttributeNS(NULL,_type));
+                    if (!type.get() || !*(type.get())) {
+                        log.warn("LogoutInitiator element has no type attribute, skipping it...");
+                        child = XMLHelper::getNextSiblingElement(child);
+                        continue;
+                    }
+                    handler=conf.LogoutInitiatorManager.newPlugin(type.get(),make_pair(child, getId()));
                 }
                 else if (XMLString::equals(child->getLocalName(),_ArtifactResolutionService)) {
                     auto_ptr_char bindprop(child->getAttributeNS(NULL,Binding));
@@ -881,9 +891,10 @@ short XMLApplication::acceptNode(const DOMNode* node) const
         XMLString::equals(name,Notify) ||
         XMLString::equals(name,_AssertionConsumerService) ||
         XMLString::equals(name,_ArtifactResolutionService) ||
-        XMLString::equals(name,_SingleLogoutService) ||
+        XMLString::equals(name,_LogoutInitiator) ||
         XMLString::equals(name,_ManageNameIDService) ||
         XMLString::equals(name,_SessionInitiator) ||
+        XMLString::equals(name,_SingleLogoutService) ||
         XMLString::equals(name,DefaultRelyingParty) ||
         XMLString::equals(name,RelyingParty) ||
         XMLString::equals(name,_MetadataProvider) ||

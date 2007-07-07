@@ -204,10 +204,6 @@ string SAML1Consumer::implementProtocol(
     pair<bool,unsigned int> lifetime = sessionProps ? sessionProps->getUnsignedInt("lifetime") : pair<bool,unsigned int>(true,28800);
     if (!lifetime.first || lifetime.second == 0)
         lifetime.second = 28800;
-    auto_ptr_char authnInstant(
-        ssoStatement->getAuthenticationInstant() ? ssoStatement->getAuthenticationInstant()->getRawData() : NULL
-        );
-    auto_ptr_char authnMethod(ssoStatement->getAuthenticationMethod());
 
     // We've successfully "accepted" at least one SSO token, along with any additional valid tokens.
     // To complete processing, we need to extract and resolve attributes and then create the session.
@@ -235,7 +231,7 @@ string SAML1Consumer::implementProtocol(
 
         AttributeFilter* filter = application.getAttributeFilter();
         if (filter && !resolvedAttributes.empty()) {
-            BasicFilteringContext fc(application, resolvedAttributes, policy.getIssuerMetadata(), authnMethod.get());
+            BasicFilteringContext fc(application, resolvedAttributes, policy.getIssuerMetadata(), ssoStatement->getAuthenticationMethod());
             Locker filtlocker(filter);
             try {
                 filter->filterAttributes(fc, resolvedAttributes);
@@ -260,7 +256,17 @@ string SAML1Consumer::implementProtocol(
     const EntityDescriptor* issuerMetadata =
         policy.getIssuerMetadata() ? dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL;
     auto_ptr<ResolutionContext> ctx(
-        resolveAttributes(application, issuerMetadata, nameid.get(), authnMethod.get(), NULL, &tokens, &resolvedAttributes)
+        resolveAttributes(
+            application,
+            issuerMetadata,
+            (!response->getMinorVersion().first || response->getMinorVersion().second==1) ?
+                samlconstants::SAML11_PROTOCOL_ENUM : samlconstants::SAML10_PROTOCOL_ENUM,
+            nameid.get(),
+            ssoStatement->getAuthenticationMethod(),
+            NULL,
+            &tokens,
+            &resolvedAttributes
+            )
         );
 
     if (ctx.get()) {
@@ -281,10 +287,12 @@ string SAML1Consumer::implementProtocol(
             application,
             httpRequest.getRemoteAddr().c_str(),
             issuerMetadata,
+            (!response->getMinorVersion().first || response->getMinorVersion().second==1) ?
+                samlconstants::SAML11_PROTOCOL_ENUM : samlconstants::SAML10_PROTOCOL_ENUM,
             nameid.get(),
-            authnInstant.get(),
+            ssoStatement->getAuthenticationInstant() ? ssoStatement->getAuthenticationInstant()->getRawData() : NULL,
             NULL,
-            authnMethod.get(),
+            ssoStatement->getAuthenticationMethod(),
             NULL,
             &tokens,
             &resolvedAttributes

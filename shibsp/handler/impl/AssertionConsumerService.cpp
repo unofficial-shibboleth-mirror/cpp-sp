@@ -243,9 +243,10 @@ void AssertionConsumerService::checkAddress(
 ResolutionContext* AssertionConsumerService::resolveAttributes(
     const Application& application,
     const saml2md::EntityDescriptor* issuer,
+    const XMLCh* protocol,
     const saml2::NameID* nameid,
-    const char* authncontext_class,
-    const char* authncontext_decl,
+    const XMLCh* authncontext_class,
+    const XMLCh* authncontext_decl,
     const vector<const Assertion*>* tokens,
     const multimap<string,Attribute*>* attributes
     ) const
@@ -261,7 +262,7 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
 
         Locker locker(resolver);
         auto_ptr<ResolutionContext> ctx(
-            resolver->createResolutionContext(application, issuer, nameid, authncontext_class, authncontext_decl, tokens, attributes)
+            resolver->createResolutionContext(application, issuer, protocol, nameid, authncontext_class, authncontext_decl, tokens, attributes)
             );
         resolver->resolveAttributes(*ctx.get());
         return ctx.release();

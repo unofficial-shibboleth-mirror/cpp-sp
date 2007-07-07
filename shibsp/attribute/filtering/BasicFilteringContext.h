@@ -43,8 +43,8 @@ namespace shibsp {
             const Application& app,
             const std::multimap<std::string,Attribute*>& attributes,
             const opensaml::saml2md::RoleDescriptor* role=NULL,
-            const char* authncontext_class=NULL,
-            const char* authncontext_decl=NULL
+            const XMLCh* authncontext_class=NULL,
+            const XMLCh* authncontext_decl=NULL
             ) : m_app(app), m_attributes(attributes), m_role(role), m_issuer(NULL), m_class(authncontext_class), m_decl(authncontext_decl) {
             if (role)
                 m_issuer = dynamic_cast<opensaml::saml2md::EntityDescriptor*>(role->getParent())->getEntityID();
@@ -55,10 +55,10 @@ namespace shibsp {
         const Application& getApplication() const {
             return m_app;
         }
-        const char* getAuthnContextClassRef() const {
+        const XMLCh* getAuthnContextClassRef() const {
             return m_class;
         }
-        const char* getAuthnContextDeclRef() const {
+        const XMLCh* getAuthnContextDeclRef() const {
             return m_decl;
         }
         const XMLCh* getAttributeRequester() const {
@@ -82,8 +82,8 @@ namespace shibsp {
         const std::multimap<std::string,Attribute*>& m_attributes;
         const opensaml::saml2md::RoleDescriptor* m_role;
         const XMLCh* m_issuer;
-        const char* m_class;
-        const char* m_decl;
+        const XMLCh* m_class;
+        const XMLCh* m_decl;
     };
 };
 

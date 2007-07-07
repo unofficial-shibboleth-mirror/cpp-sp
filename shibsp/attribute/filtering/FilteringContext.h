@@ -57,14 +57,14 @@ namespace shibsp {
          * 
          * @return  a URI identifying the authentication context class
          */
-        virtual const char* getAuthnContextClassRef() const=0;
+        virtual const XMLCh* getAuthnContextClassRef() const=0;
 
         /**
          * Returns a URI containing an AuthnContextDeclRef associated with the subject.
          * 
          * @return  a URI identifying the authentication context declaration
          */
-        virtual const char* getAuthnContextDeclRef() const=0;
+        virtual const XMLCh* getAuthnContextDeclRef() const=0;
 
         /**
          * Gets the ID of the requester of the attributes, if known.

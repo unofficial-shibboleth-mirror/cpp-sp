@@ -91,6 +91,7 @@ namespace shibsp {
          * 
          * @param application   reference to application receiving message
          * @param issuer        source of SSO tokens
+         * @param protocol      SSO protocol used
          * @param nameid        identifier of principal
          * @param authncontext_class    method/category of authentication event, if known
          * @param authncontext_decl specifics of authentication event, if known
@@ -100,9 +101,10 @@ namespace shibsp {
         ResolutionContext* resolveAttributes(
             const Application& application,
             const opensaml::saml2md::EntityDescriptor* issuer=NULL,
+            const XMLCh* protocol=NULL,
             const opensaml::saml2::NameID* nameid=NULL,
-            const char* authncontext_class=NULL,
-            const char* authncontext_decl=NULL,
+            const XMLCh* authncontext_class=NULL,
+            const XMLCh* authncontext_decl=NULL,
             const std::vector<const opensaml::Assertion*>* tokens=NULL,
             const std::multimap<std::string,Attribute*>* attributes=NULL
             ) const;

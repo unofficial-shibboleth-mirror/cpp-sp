@@ -55,6 +55,15 @@ namespace shibsp {
     
     /** Registers Handler implementations. */
     void SHIBSP_API registerHandlers();
+
+    /** LogoutInitiator that iterates through a set of protocol-specific versions. */
+    #define CHAINING_LOGOUT_INITIATOR "Chaining"
+
+    /** LogoutInitiator that supports SAML 2.0 LogoutRequests. */
+    #define SAML2_LOGOUT_INITIATOR "SAML2"
+
+    /** LogoutInitiator that supports local-only logout. */
+    #define LOCAL_LOGOUT_INITIATOR "Local"
 };
 
 #endif /* __shibsp_handler_h__ */
