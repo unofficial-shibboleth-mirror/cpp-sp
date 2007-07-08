@@ -466,7 +466,19 @@
 						>
 					</File>
 					<File
+						RelativePath=".\handler\impl\ChainingLogoutInitiator.cpp"
+						>
+					</File>
+					<File
 						RelativePath=".\handler\impl\ChainingSessionInitiator.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\handler\impl\LocalLogoutInitiator.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\handler\impl\LogoutHandler.cpp"
 						>
 					</File>
 					<File
@@ -483,6 +495,10 @@
 					</File>
 					<File
 						RelativePath=".\handler\impl\SAML2Consumer.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\handler\impl\SAML2LogoutInitiator.cpp"
 						>
 					</File>
 					<File
@@ -714,6 +730,10 @@
 				</File>
 				<File
 					RelativePath=".\handler\Handler.h"
+					>
+				</File>
+				<File
+					RelativePath=".\handler\LogoutHandler.h"
 					>
 				</File>
 				<File

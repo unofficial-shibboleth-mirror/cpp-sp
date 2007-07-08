@@ -69,6 +69,7 @@ handinclude_HEADERS = \
 	handler/AbstractHandler.h \
 	handler/AssertionConsumerService.h \
 	handler/Handler.h \
+	handler/LogoutHandler.h \
 	handler/RemotedHandler.h \
 	handler/SessionInitiator.h
 
@@ -108,11 +109,15 @@ common_sources = \
 	handler/impl/AbstractHandler.cpp \
 	handler/impl/AssertionConsumerService.cpp \
 	handler/impl/AssertionLookup.cpp \
+	handler/impl/ChainingLogoutInitiator.cpp \
 	handler/impl/ChainingSessionInitiator.cpp \
+	handler/impl/LocalLogoutInitiator.cpp \
+	handler/impl/LogoutHandler.cpp \
 	handler/impl/RemotedHandler.cpp \
 	handler/impl/SAML1Consumer.cpp \
 	handler/impl/SAML2Consumer.cpp \
 	handler/impl/SAML2ArtifactResolution.cpp \
+	handler/impl/SAML2LogoutInitiator.cpp \
 	handler/impl/SAML2SessionInitiator.cpp \
 	handler/impl/SAMLDSSessionInitiator.cpp \
 	handler/impl/SessionInitiator.cpp \
