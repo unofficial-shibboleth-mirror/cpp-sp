@@ -45,44 +45,15 @@ pair<bool,long> LogoutHandler::run(SPRequest& request, bool isHandler) const
     // If no location for this handler, we're inside a chain, so do nothing.
     if (!getString("Location").first)
         return make_pair(false,0);
-
-    string session_id;
-    try {
-        // Get the session, ignoring most checks and don't cache the lock.
-        Session* session = request.getSession(false,true,false);
-        if (session)
-            session_id = session->getID();
-        session->unlock();
-    }
-    catch (exception& ex) {
-        log4cpp::Category::getInstance(SHIBSP_LOGCAT".Logout").error("error accessing current session: %s", ex.what());
-    }
-
-    if (session_id.empty())
-        return sendLogoutPage(request.getApplication(), request, true, "The local logout process was only partially completed.");
+    
+    // If this isn't a LogoutInitiator, we only "continue" a notification loop, rather than starting one.
+    if (!m_initiator && !request.getParameter("notifying"))
+        return make_pair(false,0);
 
     // Try another front-channel notification. No extra parameters and the session is implicit.
     pair<bool,long> ret = notifyFrontChannel(request.getApplication(), request, request);
     if (ret.first)
         return ret;
-
-    // Now we complete with back-channel notification, which has to be out of process.
-
-    if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
-        // When out of process, we run natively.
-        vector<string> sessions(1,session_id);
-        notifyBackChannel(request.getApplication(), sessions);
-    }
-    else {
-        // When not out of process, we remote the back channel work.
-        DDF out,in(m_address.c_str());
-        DDFJanitor jin(in), jout(out);
-        in.addmember("notify").integer(1);
-        in.addmember("application_id").string(request.getApplication().getId());
-        DDF s = DDF(NULL).string(session_id.c_str());
-        in.addmember("sessions").list().add(s);
-        out=request.getServiceProvider().getListenerService()->send(in);
-    }
 
     return make_pair(false,0);
 }
@@ -109,7 +80,8 @@ void LogoutHandler::receive(DDF& in, ostream& out)
     while (temp.isstring()) {
         sessions.push_back(temp.string());
         temp = s.next();
-        notifyBackChannel(*app, sessions);
+        if (notifyBackChannel(*app, sessions))
+            ret.integer(1);
     }
 
     out << ret;
@@ -119,8 +91,7 @@ pair<bool,long> LogoutHandler::notifyFrontChannel(
     const Application& application,
     const HTTPRequest& request,
     HTTPResponse& response,
-    const map<string,string>* params,
-    const vector<string>* sessions
+    const map<string,string>* params
     ) const
 {
     // Index of notification point starts at 0.
@@ -138,20 +109,6 @@ pair<bool,long> LogoutHandler::notifyFrontChannel(
 
     // Start with an "action" telling the application what this is about.
     loc = loc + (strchr(loc.c_str(),'?') ? '&' : '?') + "action=logout";
-
-    // Attach the "sessions" parameter, if any.
-    if (sessions) {
-        string keys;
-        for (vector<string>::const_iterator k = sessions->begin(); k!=sessions->end(); ++k) {
-            if (!keys.empty())
-                keys += ',';
-            keys += *k;
-        }
-        loc = loc + "&sessions=" + keys;
-    }
-    else if (param = request.getParameter("sessions")) {
-        loc = loc + "&sessions=" + request.getParameter("sessions");
-    }
 
     // Now we create a second URL representing the return location back to us.
     const char* start = request.getRequestURL();
@@ -179,11 +136,26 @@ pair<bool,long> LogoutHandler::notifyFrontChannel(
 
 bool LogoutHandler::notifyBackChannel(const Application& application, const vector<string>& sessions) const
 {
+    if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
 #ifndef SHIBSP_LITE
-    return false;
+        return true;
 #else
-    throw ConfigurationException("Cannot perform back channel notification using lite version of shibsp library.");
+        return false;
 #endif
+    }
+
+    // When not out of process, we remote the back channel work.
+    DDF out,in(m_address.c_str());
+    DDFJanitor jin(in), jout(out);
+    in.addmember("notify").integer(1);
+    in.addmember("application_id").string(application.getId());
+    DDF s = in.addmember("sessions").list();
+    for (vector<string>::const_iterator i = sessions.begin(); i!=sessions.end(); ++i) {
+        DDF temp = DDF(NULL).string(i->c_str());
+        s.add(temp);
+    }
+    out=application.getServiceProvider().getListenerService()->send(in);
+    return (out.integer() == 1);
 }
 
 pair<bool,long> LogoutHandler::sendLogoutPage(const Application& application, HTTPResponse& response, bool local, const char* status) const

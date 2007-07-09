@@ -81,8 +81,15 @@ pair<bool,long> LocalLogoutInitiator::run(SPRequest& request, bool isHandler) co
     // Get session ID from cookie.
     pair<string,const char*> shib_cookie = request.getApplication().getCookieNameProps("_shibsession_");
     const char* session_id = request.getCookie(shib_cookie.first.c_str());
-    if (session_id)
+    if (session_id) {
+        // Do back channel notification.
+        vector<string> sessions(1, session_id);
+        if (!notifyBackChannel(request.getApplication(), sessions)) {
+            request.getApplication().getServiceProvider().getSessionCache()->remove(session_id, request.getApplication());
+            return sendLogoutPage(request.getApplication(), request, true, "Partial logout failure.");
+        }
         request.getServiceProvider().getSessionCache()->remove(session_id, request.getApplication());
+    }
 
     return sendLogoutPage(request.getApplication(), request, true, "Logout was successful.");
 }

@@ -33,9 +33,6 @@ namespace shibsp {
      */
     class SHIBSP_API LogoutHandler : public RemotedHandler
     {
-    protected:
-        LogoutHandler() {}
-
     public:
         virtual ~LogoutHandler() {}
 
@@ -67,6 +64,11 @@ namespace shibsp {
         void receive(DDF& in, std::ostream& out);
 
     protected:
+        LogoutHandler() : m_initiator(true) {}
+        
+        /** Flag indicating whether the subclass is acting as a LogoutInitiator. */
+        bool m_initiator;
+
         /**
          * Perform front-channel logout notifications for an Application.
          *
@@ -77,15 +79,13 @@ namespace shibsp {
          * @param request       last request from browser
          * @param response      response to use for next notification
          * @param params        map of query string parameters to preserve across notifications, optionally with initial values
-         * @param sessions      optional array of session keys being logged out
          * @return  indicator of a completed response along with the status code to return from the handler
          */
         std::pair<bool,long> notifyFrontChannel(
             const Application& application,
             const xmltooling::HTTPRequest& request,
             xmltooling::HTTPResponse& response,
-            const std::map<std::string,std::string>* params=NULL,
-            const std::vector<std::string>* sessions=NULL
+            const std::map<std::string,std::string>* params=NULL
             ) const;
 
         /**

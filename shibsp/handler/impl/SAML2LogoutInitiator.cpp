@@ -166,10 +166,13 @@ void SAML2LogoutInitiator::setParent(const PropertySet* parent)
 
 pair<bool,long> SAML2LogoutInitiator::run(SPRequest& request, bool isHandler) const
 {
-    // Defer to base class first.
+    // Defer to base class for front-channel loop first.
     pair<bool,long> ret = LogoutHandler::run(request, isHandler);
     if (ret.first)
         return ret;
+
+    // At this point we know the front-channel is handled.
+    // We need the session to do any other work.
 
     Session* session = NULL;
     try {
@@ -178,15 +181,15 @@ pair<bool,long> SAML2LogoutInitiator::run(SPRequest& request, bool isHandler) co
             return make_pair(false,0);
 
         // We only handle SAML 2.0 sessions.
-        if (!XMLString::equals(session->getProtocol(), m_protocol.get()))
+        if (!XMLString::equals(session->getProtocol(), m_protocol.get())) {
+            session->unlock();
             return make_pair(false,0);
+        }
     }
     catch (exception& ex) {
         m_log.error("error accessing current session: %s", ex.what());
         return make_pair(false,0);
     }
-
-    // At this point, notification is completed, and we're ready to issue a LogoutRequest.
 
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
         // When out of process, we run natively.
@@ -256,6 +259,14 @@ void SAML2LogoutInitiator::receive(DDF& in, ostream& out)
 
 pair<bool,long> SAML2LogoutInitiator::doRequest(const Application& application, Session* session, HTTPResponse& response) const
 {
+    // Do back channel notification.
+    vector<string> sessions(1, session->getID());
+    if (!notifyBackChannel(application, sessions)) {
+        session->unlock();
+        application.getServiceProvider().getSessionCache()->remove(sessions.front().c_str(), application);
+        return sendLogoutPage(application, response, true, "Partial logout failure.");
+    }
+
 #ifndef SHIBSP_LITE
     pair<bool,long> ret = make_pair(false,0);
     try {
