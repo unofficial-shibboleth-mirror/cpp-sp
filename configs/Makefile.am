@@ -133,6 +133,7 @@ EXTRA_DIST = \
 	shibd.in \
 	console.logger \
 	syslog.logger \
+	bindingTemplate.html \
 	accessError.html \
 	sessionError.html \
 	metadataError.html \
