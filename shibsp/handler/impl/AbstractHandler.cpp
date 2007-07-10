@@ -91,7 +91,7 @@ AbstractHandler::AbstractHandler(
 
 #ifndef SHIBSP_LITE
 
-void AbstractHandler::checkError(const XMLObject* response) const
+void AbstractHandler::checkError(const XMLObject* response, const saml2md::RoleDescriptor* role) const
 {
     const saml2p::StatusResponseType* r2 = dynamic_cast<const saml2p::StatusResponseType*>(response);
     if (r2) {
@@ -100,18 +100,8 @@ void AbstractHandler::checkError(const XMLObject* response) const
             const saml2p::StatusCode* sc = status->getStatusCode();
             const XMLCh* code = sc ? sc->getValue() : NULL;
             if (code && !XMLString::equals(code,saml2p::StatusCode::SUCCESS)) {
-                FatalProfileException ex("SAML Response message contained an error.");
-                auto_ptr_char c1(code);
-                ex.addProperty("StatusCode", c1.get());
-                if (sc->getStatusCode()) {
-                    code = sc->getStatusCode()->getValue();
-                    auto_ptr_char c2(code);
-                    ex.addProperty("StatusCode2", c2.get());
-                }
-                if (status->getStatusMessage()) {
-                    auto_ptr_char msg(status->getStatusMessage()->getMessage());
-                    ex.addProperty("StatusMessage", msg.get());
-                }
+                FatalProfileException ex("SAML response contained an error.");
+                annotateException(&ex, role, status);   // throws it
             }
         }
     }
@@ -123,17 +113,19 @@ void AbstractHandler::checkError(const XMLObject* response) const
             const saml1p::StatusCode* sc = status->getStatusCode();
             const QName* code = sc ? sc->getValue() : NULL;
             if (code && *code != saml1p::StatusCode::SUCCESS) {
-                FatalProfileException ex("SAML Response message contained an error.");
-                ex.addProperty("StatusCode", code->toString().c_str());
+                FatalProfileException ex("SAML response contained an error.");
+                ex.addProperty("statusCode", code->toString().c_str());
                 if (sc->getStatusCode()) {
                     code = sc->getStatusCode()->getValue();
                     if (code)
-                        ex.addProperty("StatusCode2", code->toString().c_str());
+                        ex.addProperty("statusCode2", code->toString().c_str());
                 }
                 if (status->getStatusMessage()) {
                     auto_ptr_char msg(status->getStatusMessage()->getMessage());
-                    ex.addProperty("StatusMessage", msg.get());
+                    if (msg.get() && *msg.get())
+                        ex.addProperty("statusMessage", msg.get());
                 }
+                ex.raise();
             }
         }
     }

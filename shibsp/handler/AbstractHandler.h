@@ -72,9 +72,13 @@ namespace shibsp {
          * 
          * <p>The base class version understands SAML 1.x and SAML 2.0 responses.
          * 
-         * @param response      a response message of some known protocol
+         * @param response  a response message of some known protocol
+         * @param role      issuer of message
          */
-        virtual void checkError(const xmltooling::XMLObject* response) const;
+        virtual void checkError(
+            const xmltooling::XMLObject* response,
+            const opensaml::saml2md::RoleDescriptor* role=NULL
+            ) const;
 
         /**
          * Prepares Status information in a SAML 2.0 response.
