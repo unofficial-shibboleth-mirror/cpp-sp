@@ -299,7 +299,8 @@ pair<bool,long> RemotedHandler::unwrap(SPRequest& request, DDF& out) const
         if (!stricmp(hdr.name(), "Content-Type"))
 #endif
             request.setContentType(hdr.string());
-        request.setResponseHeader(hdr.name(), hdr.string());
+        else
+            request.setResponseHeader(hdr.name(), hdr.string());
         hdr = h.next();
     }
     h = out["redirect"];
