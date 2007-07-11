@@ -223,7 +223,6 @@ struct shib_request_config
     SH_AP_TABLE *env;        // environment vars
 #ifdef SHIB_DEFERRED_HEADERS
     SH_AP_TABLE *hdr_out;    // headers to browser
-    SH_AP_TABLE *hdr_err;    // err headers to browser
 #endif
 };
 
@@ -269,6 +268,7 @@ extern "C" const char* shib_ap_set_file_slot(cmd_parms* parms,
 
 class ShibTargetApache : public AbstractSPRequest
 {
+  bool m_handler;
   mutable string m_body;
   mutable bool m_gotBody;
   mutable vector<string> m_certs;
@@ -280,7 +280,7 @@ public:
   shib_server_config* m_sc;
   shib_request_config* m_rc;
 
-  ShibTargetApache(request_rec* req) : m_gotBody(false) {
+  ShibTargetApache(request_rec* req, bool handler) : m_handler(handler), m_gotBody(false) {
     m_sc = (shib_server_config*)ap_get_module_config(req->server->module_config, &mod_shib);
     m_dc = (shib_dir_config*)ap_get_module_config(req->per_dir_config, &mod_shib);
     m_rc = (shib_request_config*)ap_get_module_config(req->request_config, &mod_shib);
@@ -467,11 +467,11 @@ public:
    if (!m_rc)
       // this happens on subrequests
       m_rc = init_request_config(m_req);
-    ap_table_add(m_rc->hdr_err, name, value);
-    ap_table_add(m_rc->hdr_out, name, value);
-#else
-    ap_table_add(m_req->err_headers_out, name, value);
+    if (m_handler)
+        ap_table_add(m_rc->hdr_out, name, value);
+    else
 #endif
+    ap_table_add(m_req->err_headers_out, name, value);
   }
   long sendResponse(istream& in, long status) {
     ap_send_http_header(m_req);
@@ -515,14 +515,14 @@ extern "C" int shib_check_user(request_rec* r)
   if (((shib_dir_config*)ap_get_module_config(r->per_dir_config, &mod_shib))->bOff==1)
     return DECLINED;
     
-  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_check_user(%d): ENTER\n", (int)getpid());
+  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_check_user(%d): ENTER", (int)getpid());
 
   ostringstream threadid;
   threadid << "[" << getpid() << "] shib_check_user" << '\0';
   xmltooling::NDC ndc(threadid.str().c_str());
 
   try {
-    ShibTargetApache sta(r);
+    ShibTargetApache sta(r,false);
 
     // Check user authentication and export information, then set the handler bypass
     pair<bool,long> res = sta.getServiceProvider().doAuthentication(sta,true);
@@ -573,7 +573,7 @@ extern "C" int shib_handler(request_rec* r)
   ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_handler(%d): ENTER: %s", (int)getpid(), r->handler);
 
   try {
-    ShibTargetApache sta(r);
+    ShibTargetApache sta(r,true);
 
     pair<bool,long> res = sta.getServiceProvider().doHandler(sta);
     if (res.first) return res.second;
@@ -610,7 +610,7 @@ extern "C" int shib_auth_checker(request_rec* r)
   xmltooling::NDC ndc(threadid.str().c_str());
 
   try {
-    ShibTargetApache sta(r);
+    ShibTargetApache sta(r,false);
 
     pair<bool,long> res = sta.getServiceProvider().doAuthorization(sta);
     if (res.first) return res.second;
@@ -1041,7 +1041,6 @@ static int shib_post_read(request_rec *r)
 
 #ifdef SHIB_DEFERRED_HEADERS
     rc->hdr_out = ap_make_table(r->pool, 5);
-    rc->hdr_err = ap_make_table(r->pool, 5);
 #endif
     return DECLINED;
 }
@@ -1203,10 +1202,10 @@ static apr_status_t do_error_filter(ap_filter_t *f, apr_bucket_brigade *in)
     shib_request_config *rc = (shib_request_config*) ap_get_module_config(r->request_config, &mod_shib);
 
     if (rc) {
-        ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_err_filter: merging %d headers", apr_table_elts(rc->hdr_err)->nelts);
-        apr_table_do(_table_add,r->err_headers_out, rc->hdr_err,NULL);
+        ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_err_filter: merging %d headers", apr_table_elts(rc->hdr_out)->nelts);
+        apr_table_do(_table_add,r->err_headers_out, rc->hdr_out,NULL);
         // can't use overlap call because it will collapse Set-Cookie headers
-        //apr_table_overlap(r->err_headers_out, rc->hdr_err, APR_OVERLAP_TABLES_MERGE);
+        //apr_table_overlap(r->err_headers_out, rc->hdr_out, APR_OVERLAP_TABLES_MERGE);
     }
 
     /* remove ourselves from the filter chain */
