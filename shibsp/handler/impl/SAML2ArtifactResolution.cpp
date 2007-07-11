@@ -108,8 +108,12 @@ SAML2ArtifactResolution::SAML2ArtifactResolution(const DOMElement* e, const char
 #ifndef SHIBSP_LITE
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
         try {
-            m_encoder = SAMLConfig::getConfig().MessageEncoderManager.newPlugin(getString("Binding").second,e);
-            m_decoder = SAMLConfig::getConfig().MessageDecoderManager.newPlugin(getString("Binding").second,e);
+            m_encoder = SAMLConfig::getConfig().MessageEncoderManager.newPlugin(
+                getString("Binding").second,pair<const DOMElement*,const XMLCh*>(e,NULL)
+                );
+            m_decoder = SAMLConfig::getConfig().MessageDecoderManager.newPlugin(
+                getString("Binding").second,pair<const DOMElement*,const XMLCh*>(e,NULL)
+                );
         }
         catch (exception& ex) {
             m_log.error("error building MessageEncoder/Decoder pair for binding (%s)", getString("Binding").second);

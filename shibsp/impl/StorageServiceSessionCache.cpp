@@ -164,10 +164,18 @@ namespace shibsp {
             );
         Session* find(const char* key, const Application& application, const char* client_addr=NULL, time_t* timeout=NULL);
         void remove(const char* key, const Application& application);
-        void remove(
+        bool matches(
+            const char* key,
             const saml2md::EntityDescriptor* issuer,
             const saml2::NameID& nameid,
-            const char* index,
+            const set<string>* indexes,
+            const Application& application
+            );
+        vector<string>::size_type logout(
+            const saml2md::EntityDescriptor* issuer,
+            const saml2::NameID& nameid,
+            const set<string>* indexes,
+            time_t expires,
             const Application& application,
             vector<string>& sessions
             );
@@ -479,7 +487,7 @@ void SSCache::insert(const char* key, time_t expires, const char* name, const ch
     // Since we can't guarantee uniqueness, check for an existing record.
     string record;
     time_t recordexp;
-    int ver = m_storage->readText("NameID", name, &record, &recordexp);
+    int ver = m_storage->readText("Logout", name, &record, &recordexp);
     if (ver > 0) {
         // Existing record, so we need to unmarshall it.
         istringstream in(record);
@@ -504,13 +512,13 @@ void SSCache::insert(const char* key, time_t expires, const char* name, const ch
 
     // Try and store it back...
     if (ver > 0) {
-        ver = m_storage->updateText("NameID", name, out.str().c_str(), max(expires, recordexp), ver);
+        ver = m_storage->updateText("Logout", name, out.str().c_str(), max(expires, recordexp), ver);
         if (ver <= 0) {
             // Out of sync, or went missing, so retry.
             return insert(key, expires, name, index);
         }
     }
-    else if (!m_storage->createText("NameID", name, out.str().c_str(), expires)) {
+    else if (!m_storage->createText("Logout", name, out.str().c_str(), expires)) {
         // Hit a dup, so just retry, hopefully hitting the other branch.
         return insert(key, expires, name, index);
     }
@@ -786,35 +794,58 @@ void SSCache::remove(const char* key, const Application& application)
     xlog->log.info("Destroyed session (applicationId: %s) (ID: %s)", application.getId(), key);
 }
 
-void SSCache::remove(
+bool SSCache::matches(
+    const char* key,
     const saml2md::EntityDescriptor* issuer,
     const saml2::NameID& nameid,
-    const char* index,
+    const set<string>* indexes,
+    const Application& application
+    )
+{
+    auto_ptr_char entityID(issuer ? issuer->getEntityID() : NULL);
+    try {
+        Session* session = find(key, application);
+        if (session) {
+            Locker locker(session);
+            if (XMLString::equals(session->getEntityID(), entityID.get()) && session->getNameID() &&
+                    stronglyMatches(issuer->getEntityID(), application.getXMLString("entityID").second, nameid, *session->getNameID())) {
+                return (!indexes || indexes->empty() || (session->getSessionIndex() ? (indexes->count(session->getSessionIndex())>0) : false));
+            }
+        }
+    }
+    catch (exception& ex) {
+        m_log.error("error while matching session (%s): %s", key, ex.what());
+    }
+    return false;
+}
+
+vector<string>::size_type SSCache::logout(
+    const saml2md::EntityDescriptor* issuer,
+    const saml2::NameID& nameid,
+    const set<string>* indexes,
+    time_t expires,
     const Application& application,
     vector<string>& sessionsKilled
     )
 {
 #ifdef _DEBUG
-    xmltooling::NDC ndc("remove");
+    xmltooling::NDC ndc("logout");
 #endif
 
     auto_ptr_char entityID(issuer ? issuer->getEntityID() : NULL);
     auto_ptr_char name(nameid.getName());
 
-    m_log.info(
-        "request to logout sessions from (%s) for (%s) for session index (%s)",
-        entityID.get() ? entityID.get() : "unknown", name.get(), index ? index : "all"
-        );
+    m_log.info("request to logout sessions from (%s) for (%s)", entityID.get() ? entityID.get() : "unknown", name.get());
 
     if (strlen(name.get()) > 255)
         const_cast<char*>(name.get())[255] = 0;
 
     // Read in potentially matching sessions.
     string record;
-    int ver = m_storage->readText("NameID", name.get(), &record);
+    int ver = m_storage->readText("Logout", name.get(), &record);
     if (ver == 0) {
-        m_log.debug("no active sessions to remove for supplied issuer and name identifier");
-        return;
+        m_log.debug("no active sessions to logout for supplied issuer and subject");
+        return 0;
     }
 
     DDF obj;
@@ -826,19 +857,25 @@ void SSCache::remove(
     DDF key;
     DDF sessions = obj.first();
     while (sessions.islist()) {
-        if (!index || !strcmp(sessions.name(), index)) {
+        if (!indexes || indexes->empty() || indexes->count(sessions.name())) {
             key = sessions.first();
             while (key.isstring()) {
-                // Fetch the session for comparison and possible removal.
-                Session* session = find(key.string(), application);
-                Locker locker(session);
+                // Fetch the session for comparison.
+                Session* session = NULL;
+                try {
+                    session = find(key.string(), application);
+                }
+                catch (exception& ex) {
+                    m_log.error("error locating session (%s): %s", key.string(), ex.what());
+                }
+
                 if (session) {
+                    Locker locker(session);
                     // Same issuer?
                     if (XMLString::equals(session->getEntityID(), entityID.get())) {
                         // Same NameID?
                         if (stronglyMatches(issuer->getEntityID(), application.getXMLString("entityID").second, nameid, *session->getNameID())) {
                             sessionsKilled.push_back(key.string());
-                            remove(key.string(), application);  // let this throw to detect errors in case the full logout fails?
                             key.destroy();
                         }
                         else {
@@ -870,18 +907,20 @@ void SSCache::remove(
     // If possible, write back the mapping record (this isn't crucial).
     try {
         if (obj.isnull()) {
-            m_storage->deleteText("NameID", name.get());
+            m_storage->deleteText("Logout", name.get());
         }
         else if (!sessionsKilled.empty()) {
             ostringstream out;
             out << obj;
-            if (m_storage->updateText("NameID", name.get(), out.str().c_str(), 0, ver) <= 0)
+            if (m_storage->updateText("Logout", name.get(), out.str().c_str(), 0, ver) <= 0)
                 m_log.warn("logout mapping record changed behind us, leaving it alone");
         }
     }
     catch (exception& ex) {
         m_log.error("error updating logout mapping record: %s", ex.what());
     }
+
+    return sessionsKilled.size();
 }
 
 bool SSCache::stronglyMatches(const XMLCh* idp, const XMLCh* sp, const saml2::NameID& n1, const saml2::NameID& n2) const

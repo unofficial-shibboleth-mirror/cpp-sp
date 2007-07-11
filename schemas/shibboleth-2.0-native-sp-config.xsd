@@ -495,7 +495,6 @@
 						<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
 					</sequence>
 					<attribute name="Location" type="anyURI"/>
-					<attribute name="relayState" type="conf:string"/>
 					<attribute name="outgoingBindings" type="conf:listOfURIs"/>
 					<attribute name="template" type="anyURI"/>
 					<attribute name="postArtifact" type="boolean"/>
@@ -568,12 +567,12 @@
 		<attribute name="authType" type="conf:string"/>
 		<attribute name="authUsername" type="conf:string"/>
 		<attribute name="authPassword" type="conf:string"/>
-		<attribute name="signRequests" type="bindingBoolean"/>
-		<attribute name="signResponses" type="bindingBoolean"/>
+		<attribute name="signRequests" type="conf:bindingBoolean"/>
+		<attribute name="signResponses" type="conf:bindingBoolean"/>
 		<attribute name="signatureAlg" type="anyURI"/>
 		<attribute name="digestAlg" type="anyURI"/>
-		<attribute name="encryptRequests" type="bindingBoolean"/>
-		<attribute name="encryptResponses" type="bindingBoolean"/>
+		<attribute name="encryptRequests" type="conf:bindingBoolean"/>
+		<attribute name="encryptResponses" type="conf:bindingBoolean"/>
 		<attribute name="encryptionAlg" type="anyURI"/>
 		<attribute name="keyName" type="conf:string"/>
 		<attribute name="artifactEndpointIndex" type="unsignedShort"/>

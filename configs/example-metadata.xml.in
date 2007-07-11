@@ -217,7 +217,18 @@ gmYsTmak+kxO93JprrOd9xp8aZPMEprL7VCdrhbZEfyYER0=
 			    </ds:KeyInfo>
 			</KeyDescriptor>
 			
-			<!-- This tells IdPs that you support only transient identifiers. -->
+			<!-- This tells IdPs that Single Logout is supported and where/how to request it. -->
+			<SingleLogoutService Location="https://sp.example.org/Shibboleth.sso/SLO/SOAP"
+				Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP"/>
+			<SingleLogoutService Location="https://sp.example.org/Shibboleth.sso/SLO/Redirect"
+				Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"/>
+			<SingleLogoutService Location="https://sp.example.org/Shibboleth.sso/SLO/POST"
+				Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"/>
+			<SingleLogoutService Location="https://sp.example.org/Shibboleth.sso/SLO/Artifact"
+				Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact"/>
+			
+			
+			<!-- This tells IdPs that you only need transient identifiers. -->
 			<NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:transient</NameIDFormat>
 			<NameIDFormat>urn:mace:shibboleth:1.0:nameIdentifier</NameIDFormat>
 		    

@@ -498,6 +498,10 @@
 						>
 					</File>
 					<File
+						RelativePath=".\handler\impl\SAML2Logout.cpp"
+						>
+					</File>
+					<File
 						RelativePath=".\handler\impl\SAML2LogoutInitiator.cpp"
 						>
 					</File>

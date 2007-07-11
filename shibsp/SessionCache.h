@@ -222,20 +222,48 @@ namespace shibsp {
             )=0;
 
         /**
-         * Deletes an existing session or sessions.
+         * Returns active sessions that match particular parameters and records the logout
+         * to prevent race conditions.
+         *
+         * <p>On exit, the mapping between these sessions and the associated information MAY be
+         * removed by the cache, so subsequent calls to this method may not return anything.
+         *
+         * <p>Until logout expiration, any attempt to create a session with the same parameters
+         * will be blocked by the cache.
          * 
          * @param issuer        source of session(s)
          * @param nameid        name identifier associated with the session(s) to terminate
-         * @param index         index of session, or NULL for all sessions associated with other parameters
+         * @param indexes       indexes of sessions, or NULL for all sessions associated with other parameters
+         * @param expires       logout expiration
          * @param application   reference to Application that owns the session(s)
-         * @param sessions      on exit, contains the IDs of the matching sessions removed
+         * @param sessions      on exit, contains the IDs of the matching sessions found
          */
-        virtual void remove(
+        virtual std::vector<std::string>::size_type logout(
             const opensaml::saml2md::EntityDescriptor* issuer,
             const opensaml::saml2::NameID& nameid,
-            const char* index,
+            const std::set<std::string>* indexes,
+            time_t expires,
             const Application& application,
             std::vector<std::string>& sessions
+            )=0;
+
+        /**
+         * Determines whether a given session (based on its ID) matches a set of input
+         * criteria.
+         * 
+         * @param key           session key to check
+         * @param issuer        required source of session(s)
+         * @param nameid        required name identifier
+         * @param indexes       session indexes
+         * @param application   reference to Application that owns the Session
+         * @return  true iff the session matches the input criteria
+         */
+        virtual bool matches(
+            const char* key,
+            const opensaml::saml2md::EntityDescriptor* issuer,
+            const opensaml::saml2::NameID& nameid,
+            const std::set<std::string>* indexes,
+            const Application& application
             )=0;
 #endif
 

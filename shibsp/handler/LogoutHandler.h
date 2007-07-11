@@ -28,6 +28,11 @@
 
 namespace shibsp {
 
+#if defined (_MSC_VER)
+    #pragma warning( push )
+    #pragma warning( disable : 4251 )
+#endif
+
     /**
      * Base class for logout-related handlers.
      */
@@ -69,16 +74,16 @@ namespace shibsp {
         /** Flag indicating whether the subclass is acting as a LogoutInitiator. */
         bool m_initiator;
 
+        /** Array of query string parameters to preserve across front-channel notifications, if present. */
+        std::vector<std::string> m_preserve;
+
         /**
          * Perform front-channel logout notifications for an Application.
-         *
-         * If no sessions are supplied directly, the request object's "sessions" query string
-         * parameter will be used.
          *
          * @param application   the Application to notify
          * @param request       last request from browser
          * @param response      response to use for next notification
-         * @param params        map of query string parameters to preserve across notifications, optionally with initial values
+         * @param params        map of query string parameters to preserve across this notification
          * @return  indicator of a completed response along with the status code to return from the handler
          */
         std::pair<bool,long> notifyFrontChannel(
@@ -109,6 +114,19 @@ namespace shibsp {
          */
         bool notifyBackChannel(const Application& application, const std::vector<std::string>& sessions) const;
     };
+
+#if defined (_MSC_VER)
+    #pragma warning( pop )
+#endif
+
+    /** LogoutInitiator that iterates through a set of protocol-specific versions. */
+    #define CHAINING_LOGOUT_INITIATOR "Chaining"
+
+    /** LogoutInitiator that supports SAML 2.0 LogoutRequests. */
+    #define SAML2_LOGOUT_INITIATOR "SAML2"
+
+    /** LogoutInitiator that supports local-only logout. */
+    #define LOCAL_LOGOUT_INITIATOR "Local"
 
 };
 

@@ -119,13 +119,16 @@ pair<bool,long> LogoutHandler::notifyFrontChannel(
     // Add a signal that we're coming back from notification and the next index.
     locstr << "?notifying=1&index=" << index;
 
-    // Now we preserve anything we're instructed to (or populate the initial values from the map).
+    // We preserve anything we're instructed to directly.
     if (params) {
-        for (map<string,string>::const_iterator p = params->begin(); p!=params->end(); ++p) {
-            if (!p->second.empty())
-                locstr << '&' << p->first << '=' << encoder->encode(p->second.c_str());
-            else if (param = request.getParameter(p->first.c_str()))
-                locstr << '&' << p->first << '=' << encoder->encode(param);
+        for (map<string,string>::const_iterator p = params->begin(); p!=params->end(); ++p)
+            locstr << '&' << p->first << '=' << encoder->encode(p->second.c_str());
+    }
+    else {
+        for (vector<string>::const_iterator q = m_preserve.begin(); q!=m_preserve.end(); ++q) {
+            param = request.getParameter(q->c_str());
+            if (param)
+                locstr << '&' << *q << '=' << encoder->encode(param);
         }
     }
 

@@ -26,6 +26,7 @@
 #include "ServiceProvider.h"
 #include "SPRequest.h"
 #include "handler/AbstractHandler.h"
+#include "handler/LogoutHandler.h"
 #include "remoting/ListenerService.h"
 #include "util/SPConstants.h"
 
@@ -62,6 +63,7 @@ namespace shibsp {
     SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory ChainingLogoutInitiatorFactory;
     SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory LocalLogoutInitiatorFactory;
     SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory SAML2LogoutInitiatorFactory;
+    SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory SAML2LogoutFactory;
 };
 
 void SHIBSP_API shibsp::registerHandlers()
@@ -70,9 +72,9 @@ void SHIBSP_API shibsp::registerHandlers()
     
     conf.AssertionConsumerServiceManager.registerFactory(SAML1_PROFILE_BROWSER_ARTIFACT, SAML1ConsumerFactory);
     conf.AssertionConsumerServiceManager.registerFactory(SAML1_PROFILE_BROWSER_POST, SAML1ConsumerFactory);
-    conf.AssertionConsumerServiceManager.registerFactory(SAML20_BINDING_HTTP_ARTIFACT, SAML2ConsumerFactory);
     conf.AssertionConsumerServiceManager.registerFactory(SAML20_BINDING_HTTP_POST, SAML2ConsumerFactory);
     conf.AssertionConsumerServiceManager.registerFactory(SAML20_BINDING_HTTP_POST_SIMPLESIGN, SAML2ConsumerFactory);
+    conf.AssertionConsumerServiceManager.registerFactory(SAML20_BINDING_HTTP_ARTIFACT, SAML2ConsumerFactory);
 
     conf.ArtifactResolutionServiceManager.registerFactory(SAML20_BINDING_SOAP, SAML2ArtifactResolutionFactory);
 
@@ -81,6 +83,11 @@ void SHIBSP_API shibsp::registerHandlers()
     conf.LogoutInitiatorManager.registerFactory(CHAINING_LOGOUT_INITIATOR, ChainingLogoutInitiatorFactory);
     conf.LogoutInitiatorManager.registerFactory(LOCAL_LOGOUT_INITIATOR, LocalLogoutInitiatorFactory);
     conf.LogoutInitiatorManager.registerFactory(SAML2_LOGOUT_INITIATOR, SAML2LogoutInitiatorFactory);
+    conf.SingleLogoutServiceManager.registerFactory(SAML20_BINDING_SOAP, SAML2LogoutFactory);
+    conf.SingleLogoutServiceManager.registerFactory(SAML20_BINDING_HTTP_REDIRECT, SAML2LogoutFactory);
+    conf.SingleLogoutServiceManager.registerFactory(SAML20_BINDING_HTTP_POST, SAML2LogoutFactory);
+    conf.SingleLogoutServiceManager.registerFactory(SAML20_BINDING_HTTP_POST_SIMPLESIGN, SAML2LogoutFactory);
+    conf.SingleLogoutServiceManager.registerFactory(SAML20_BINDING_HTTP_ARTIFACT, SAML2LogoutFactory);
 }
 
 AbstractHandler::AbstractHandler(

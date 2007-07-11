@@ -141,7 +141,9 @@ SAML2SessionInitiator::SAML2SessionInitiator(const DOMElement* e, const char* ap
             m_bindings.push_back(start);
             try {
                 auto_ptr_char b(start);
-                MessageEncoder * encoder = SAMLConfig::getConfig().MessageEncoderManager.newPlugin(b.get(),e);
+                MessageEncoder * encoder = SAMLConfig::getConfig().MessageEncoderManager.newPlugin(
+                    b.get(),pair<const DOMElement*,const XMLCh*>(e,NULL)
+                    );
                 m_encoders[start] = encoder;
                 m_log.debug("supporting outgoing binding (%s)", b.get());
             }
