@@ -262,14 +262,10 @@ bool QueryResolver::SAML1Query(QueryContext& ctx) const
     xmltooling::NDC ndc("query");
 #endif
 
-    int version = 1;
-    const AttributeAuthorityDescriptor* AA = ctx.getEntityDescriptor()->getAttributeAuthorityDescriptor(samlconstants::SAML11_PROTOCOL_ENUM);
+    int version = XMLString::equals(ctx.getProtocol(), samlconstants::SAML11_PROTOCOL_ENUM) ? 1 : 0;
+    const AttributeAuthorityDescriptor* AA = ctx.getEntityDescriptor()->getAttributeAuthorityDescriptor(ctx.getProtocol());
     if (!AA) {
-        AA = ctx.getEntityDescriptor()->getAttributeAuthorityDescriptor(samlconstants::SAML10_PROTOCOL_ENUM);
-        version = 0;
-    }
-    if (!AA) {
-        m_log.debug("no SAML 1.x AttributeAuthority role found in metadata");
+        m_log.warn("no SAML 1.%d AttributeAuthority role found in metadata", version);
         return false;
     }
 
@@ -385,7 +381,7 @@ bool QueryResolver::SAML2Query(QueryContext& ctx) const
 
     const AttributeAuthorityDescriptor* AA = ctx.getEntityDescriptor()->getAttributeAuthorityDescriptor(samlconstants::SAML20P_NS);
     if (!AA) {
-        m_log.debug("no SAML 2 AttributeAuthority role found in metadata");
+        m_log.warn("no SAML 2 AttributeAuthority role found in metadata");
         return false;
     }
 
@@ -507,12 +503,18 @@ void QueryResolver::resolveAttributes(ResolutionContext& ctx) const
     }
 
     if (qctx.getNameID() && qctx.getEntityDescriptor()) {
-        m_log.debug("attempting SAML 2.0 attribute query");
-        if (SAML2Query(qctx))
-            return;
-        m_log.debug("attempting SAML 1.x attribute query");
-        SAML1Query(qctx);
-        return;
+        if (XMLString::equals(qctx.getProtocol(), samlconstants::SAML20P_NS)) {
+            m_log.debug("attempting SAML 2.0 attribute query");
+            SAML2Query(qctx);
+        }
+        else if (XMLString::equals(qctx.getProtocol(), samlconstants::SAML11_PROTOCOL_ENUM) ||
+                XMLString::equals(qctx.getProtocol(), samlconstants::SAML10_PROTOCOL_ENUM)) {
+            m_log.debug("attempting SAML 1.x attribute query");
+            SAML1Query(qctx);
+        }
+        else
+            m_log.warn("SSO protocol does not allow for attribute query");
     }
-    m_log.warn("can't attempt attribute query, either no NameID or no metadata to use");
+    else
+        m_log.warn("can't attempt attribute query, either no NameID or no metadata to use");
 }
