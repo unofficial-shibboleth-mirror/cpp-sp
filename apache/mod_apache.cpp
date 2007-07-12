@@ -201,7 +201,6 @@ struct shib_request_config
     SH_AP_TABLE *env;        // environment vars 
 #ifdef SHIB_DEFERRED_HEADERS
     SH_AP_TABLE *hdr_out;    // headers to browser
-    SH_AP_TABLE *hdr_err;    // err headers to browser
 #endif
 };
 
@@ -248,7 +247,7 @@ extern "C" const char* shib_ap_set_file_slot(cmd_parms* parms,
 class ShibTargetApache : public ShibTarget
 {
 public:
-  ShibTargetApache(request_rec* req) {
+  ShibTargetApache(request_rec* req, bool handler) : m_handler(handler) {
     m_sc = (shib_server_config*)ap_get_module_config(req->server->module_config, &mod_shib);
     m_dc = (shib_dir_config*)ap_get_module_config(req->per_dir_config, &mod_shib);
     m_rc = (shib_request_config*)ap_get_module_config(req->request_config, &mod_shib);
@@ -291,11 +290,11 @@ public:
       ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_setheader: no_m_rc");
       m_rc = init_request_config(m_req);
     }
-    ap_table_addn(m_rc->hdr_err, "Set-Cookie", val);
-    ap_table_addn(m_rc->hdr_out, "Set-Cookie", val);
-#else
-    ap_table_addn(m_req->err_headers_out, "Set-Cookie", val);
+    if (m_handler)
+        ap_table_addn(m_rc->hdr_out, "Set-Cookie", val);
+    else
 #endif
+    ap_table_addn(m_req->err_headers_out, "Set-Cookie", val);
   }
   virtual string getArgs(void) { return string(m_req->args ? m_req->args : ""); }
   virtual string getPostData(void) {
@@ -449,6 +448,7 @@ public:
   virtual void* returnDecline(void) { return (void*)DECLINED; }
   virtual void* returnOK(void) { return (void*)OK; }
 
+  bool m_handler;
   request_rec* m_req;
   shib_dir_config* m_dc;
   shib_server_config* m_sc;
@@ -472,7 +472,7 @@ extern "C" int shib_check_user(request_rec* r)
   saml::NDC ndc(threadid.str().c_str());
 
   try {
-    ShibTargetApache sta(r);
+    ShibTargetApache sta(r, false);
 
     // Check user authentication and export information, then set the handler bypass
     pair<bool,void*> res = sta.doCheckAuthN(true);
@@ -523,7 +523,7 @@ extern "C" int shib_handler(request_rec* r)
   ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_handler(%d): ENTER: %s", (int)getpid(), r->handler);
 
   try {
-    ShibTargetApache sta(r);
+    ShibTargetApache sta(r, true);
 
     pair<bool,void*> res = sta.doHandler();
     if (res.first) return (int)(long)res.second;
@@ -560,7 +560,7 @@ extern "C" int shib_auth_checker(request_rec* r)
   saml::NDC ndc(threadid.str().c_str());
 
   try {
-    ShibTargetApache sta(r);
+    ShibTargetApache sta(r, false);
 
     pair<bool,void*> res = sta.doCheckAuthZ();
     if (res.first) return (int)(long)res.second;
@@ -1023,7 +1023,6 @@ static int shib_post_read(request_rec *r)
 
 #ifdef SHIB_DEFERRED_HEADERS
     rc->hdr_out = ap_make_table(r->pool, 5);
-    rc->hdr_err = ap_make_table(r->pool, 5);
 #endif
     return DECLINED;
 }
@@ -1182,8 +1181,8 @@ static apr_status_t do_error_filter(ap_filter_t *f, apr_bucket_brigade *in)
     shib_request_config *rc = (shib_request_config*) ap_get_module_config(r->request_config, &mod_shib);
 
     if (rc) {
-        ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_err_filter: merging %d headers", apr_table_elts(rc->hdr_err)->nelts);
-        apr_table_do(_table_add,r->err_headers_out, rc->hdr_err,NULL);
+        ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_err_filter: merging %d headers", apr_table_elts(rc->hdr_out)->nelts);
+        apr_table_do(_table_add,r->err_headers_out, rc->hdr_out,NULL);
         // can't use overlap call because it will collapse Set-Cookie headers
         // apr_table_overlap(r->err_headers_out, rc->hdr_err, APR_OVERLAP_TABLES_MERGE);
     }
