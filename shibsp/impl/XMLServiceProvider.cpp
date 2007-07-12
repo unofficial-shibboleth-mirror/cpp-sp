@@ -277,6 +277,7 @@ namespace {
         }
 
         // PropertySet
+        const PropertySet* getParent() const { return m_impl->getParent(); }
         void setParent(const PropertySet* parent) {return m_impl->setParent(parent);}
         pair<bool,bool> getBool(const char* name, const char* ns=NULL) const {return m_impl->getBool(name,ns);}
         pair<bool,const char*> getString(const char* name, const char* ns=NULL) const {return m_impl->getString(name,ns);}

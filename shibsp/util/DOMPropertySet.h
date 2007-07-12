@@ -38,6 +38,10 @@ namespace shibsp {
         
         virtual ~DOMPropertySet();
 
+        const PropertySet* getParent() const {
+            return m_parent;
+        }
+
         void setParent(const PropertySet* parent) {
             m_parent = parent;
         }

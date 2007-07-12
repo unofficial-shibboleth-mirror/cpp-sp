@@ -100,12 +100,6 @@ ChainingLogoutInitiator::ChainingLogoutInitiator(const DOMElement* e, const char
         }
         e = XMLHelper::getNextSiblingElement(e, _LogoutInitiator);
     }
-
-    pair<bool,const char*> loc = getString("Location");
-    if (loc.first) {
-        string address = string(appId) + loc.second + "::run::ChainingLI";
-        setAddress(address.c_str());
-    }
 }
 
 pair<bool,long> ChainingLogoutInitiator::run(SPRequest& request, bool isHandler) const

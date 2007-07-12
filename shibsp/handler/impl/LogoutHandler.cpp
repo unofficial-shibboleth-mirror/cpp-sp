@@ -42,8 +42,8 @@ using namespace std;
 
 pair<bool,long> LogoutHandler::run(SPRequest& request, bool isHandler) const
 {
-    // If no location for this handler, we're inside a chain, so do nothing.
-    if (!getString("Location").first)
+    // If we're inside a chain, so do nothing.
+    if (getParent())
         return make_pair(false,0);
     
     // If this isn't a LogoutInitiator, we only "continue" a notification loop, rather than starting one.

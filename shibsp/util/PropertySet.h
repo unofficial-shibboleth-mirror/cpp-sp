@@ -40,6 +40,13 @@ namespace shibsp {
         virtual ~PropertySet() {}
 
         /**
+         * Returns parent of this PropertySet, if any.
+         *
+         * @return the parent object, or NULL
+         */
+        virtual const PropertySet* getParent() const=0;
+
+        /**
          * Establishes a "parent" PropertySet to supply inherited settings.
          *
          * @param parent    the parent PropertySet to use

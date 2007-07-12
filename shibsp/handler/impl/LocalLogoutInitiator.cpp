@@ -45,9 +45,11 @@ namespace shibsp {
         LocalLogoutInitiator(const DOMElement* e, const char* appId);
         virtual ~LocalLogoutInitiator() {}
         
+        void setParent(const PropertySet* parent);
         pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
 
     private:
+        string m_appId;
         vector<Handler*> m_handlers;
     };
 
@@ -62,12 +64,25 @@ namespace shibsp {
 };
 
 LocalLogoutInitiator::LocalLogoutInitiator(const DOMElement* e, const char* appId)
-    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".LogoutInitiator"))
+    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".LogoutInitiator")), m_appId(appId)
 {
     pair<bool,const char*> loc = getString("Location");
     if (loc.first) {
         string address = string(appId) + loc.second + "::run::LocalLI";
         setAddress(address.c_str());
+    }
+}
+
+void LocalLogoutInitiator::setParent(const PropertySet* parent)
+{
+    DOMPropertySet::setParent(parent);
+    pair<bool,const char*> loc = getString("Location");
+    if (loc.first) {
+        string address = m_appId + loc.second + "::run::LocalLI";
+        setAddress(address.c_str());
+    }
+    else {
+        m_log.warn("no Location property in Local LogoutInitiator (or parent), can't register as remoted handler");
     }
 }
 

@@ -657,6 +657,7 @@ public:
     void unlock() { m_staKey->setData(NULL); m_propsKey->setData(NULL); m_mapper->unlock(); }
     Settings getSettings(const SPRequest& request) const;
     
+    const PropertySet* getParent() const { return NULL; }
     void setParent(const PropertySet*) {}
     pair<bool,bool> getBool(const char* name, const char* ns=NULL) const;
     pair<bool,const char*> getString(const char* name, const char* ns=NULL) const;
