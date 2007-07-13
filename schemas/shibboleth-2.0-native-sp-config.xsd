@@ -357,6 +357,7 @@
 				<element ref="conf:Sessions"/>
 				<element ref="conf:Errors" minOccurs="0"/>
 				<element ref="conf:DefaultRelyingParty"/>
+				<element ref="conf:Notify" minOccurs="0" maxOccurs="unbounded"/>
 				<element ref="saml:Audience" minOccurs="0" maxOccurs="unbounded"/>
                 <element name="MetadataProvider" type="conf:PluggableType"/>
 				<element name="TrustEngine" type="conf:PluggableType"/>
@@ -383,7 +384,7 @@
 				<element ref="conf:Sessions" minOccurs="0"/>
 				<element ref="conf:Errors" minOccurs="0"/>
 				<element ref="conf:DefaultRelyingParty" minOccurs="0"/>
-				<element ref="conf:NotifyOnLogout" minOccurs="0" maxOccurs="unbounded"/>
+				<element ref="conf:Notify" minOccurs="0" maxOccurs="unbounded"/>
 				<element ref="saml:Audience" minOccurs="0" maxOccurs="unbounded"/>
 				<element name="MetadataProvider" type="conf:PluggableType" minOccurs="0"/>
 				<element name="TrustEngine" type="conf:PluggableType" minOccurs="0"/>
