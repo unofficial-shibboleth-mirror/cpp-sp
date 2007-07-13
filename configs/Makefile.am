@@ -35,6 +35,8 @@ CONFIGFILES = \
 	sessionError.html \
 	metadataError.html \
 	bindingTemplate.html \
+	localLogout.html \
+	globalLogout.html \
 	sslError.html \
 	sp-example.key \
 	sp-example.crt
@@ -131,12 +133,4 @@ EXTRA_DIST = \
 	apache2.config.in \
 	apache22.config.in \
 	shibd.in \
-	console.logger \
-	syslog.logger \
-	bindingTemplate.html \
-	accessError.html \
-	sessionError.html \
-	metadataError.html \
-	sslError.html \
-	sp-example.key \
-	sp-example.crt
+	$(CONFIGFILES)

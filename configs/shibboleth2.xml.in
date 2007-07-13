@@ -89,7 +89,9 @@
 	points into to this section.
 	-->
 	<Applications id="default" policyId="default" entityID="https://sp.example.org/shibboleth"
-		homeURL="https://sp.example.org/index.html">
+		homeURL="https://sp.example.org/index.html" REMOTE_USER="eppn persistent-id"
+		localLogout="@-PKGSYSCONFDIR-@/localLogout.html"
+		globalLogout="@-PKGSYSCONFDIR-@/globalLogout.html">
 
 		<!--
 		Controls session lifetimes, address checks, cookie handling, and the protocol handlers.
