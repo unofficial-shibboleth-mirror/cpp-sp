@@ -7,9 +7,9 @@ docfiles = \
 	INSTALL.txt \
 	INSTALL-WIN32.txt \
 	LICENSE.txt \
-	NEWS.txt \
 	NOTICE.txt \
 	README.txt \
+	RELEASE.txt \
 	OPENSSL.LICENSE \
 	LOG4CPP.LICENSE \
 	main.css \

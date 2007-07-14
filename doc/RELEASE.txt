@@ -1,0 +1,85 @@
+Release Notes
+
+Shibboleth Native SP
+2.0alpha2
+7/13/2007
+
+Fully Supported (no major changes planned prior to stable release)
+
+- SAML 1.0, 1.1, 2.0 Single Sign-On
+	- Shibboleth 1.x request profile
+	- 1.x POST/Artifact profiles
+	- 2.0 HTTP-Redirect/POST/POST-SimpleSign/Artifact bindings
+
+- SAML 1.0, 1.1, 2.0 Attribute Query via Attribute Resolver plugin
+	- SAML SOAP binding
+
+- Shibboleth WAYF and SAML DS protocols for IdP Discovery
+
+- Metadata Providers
+	- Bulk resolution via local file, or URL with local file backup
+	- Filtering based on whitelist, blacklist, or signature verification  
+
+- Trust Engines
+	- Explicit key via metadata and PKIX engines, superset compatible with 1.3
+	
+- Configurable per-endpoint Security Policy rules
+	- SAML 1/2 message processing
+	- Replay and freshness detection
+	- XML signing
+	- Simple "blob" signing
+	- TLS client certificates
+
+- Client transport authentication to SOAP endpoints
+	- TLS client certificates
+	- Basic-Auth
+	- Digest-Auth
+	- NTLM
+
+- Encryption
+	- All incoming SAML 2 encrypted element types (Assertion, NameID, Attribute)
+	- Optional outgoing encryption of NameID in requests and responses
+
+- Attributes
+	- Decoding and exporting SAML 1 and 2 attributes
+		- Strings
+		- Value/scope pairs (legacy and value@scope syntaxes supported)
+		- NameIDs
+
+- Attribute Filtering
+	- Policy language compatible with IdP filtering, except that references
+		only work within policy files, not across them
+	- Rules based on, attribute issuer, requester, scope, and value, authentication
+		method, based on exact string and regular expressions.
+    - Boolean functions supporting AND, OR, and NOT for use in composing rules
+    - Wildcard rules allowing all unspecified attributes through with no filtering
+
+- Assertion Export
+	- Oversized header replaced with Shib-Assertion-Count and Shib-Assertion-NN headers
+		containing local URL to fetch SAML assertion using HTTP GET
+
+- Enhanced Spoofing Detection
+	- Detects and blocks client headers that would match known attribute headers
+
+- ODBC Clustering Support
+	- Only tested against Microsoft SQL Server using MS and FreeDTS ODBC drivers
+
+------
+
+Partially Supported (lightly or untested, probably contain bugs, may change significantly)
+
+- SAML 2.0 Single Logout and Local-Only Logout
+	- Full support implemented but untested and unlikely to work
+	- Race detection to prevent late arriving assertions not yet implemented
+	- Front channel application notification implemented but intested
+	- Back channel application notification not yet implemented
+
+------
+
+Not Yet Supported
+
+- ADFS / WS-Federation Support
+- Upgrade installations on Windows
+- Migrating 1.3 configuration files
+
+------

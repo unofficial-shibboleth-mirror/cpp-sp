@@ -1,5 +1,5 @@
-June 10, 2007
-Version 2.0alpha1
+July 13, 2007
+Version 2.0alpha2
 
 Welcome to Internet2's Shibboleth
 
