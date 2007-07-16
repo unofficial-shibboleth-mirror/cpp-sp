@@ -422,7 +422,6 @@ string SAML2Consumer::implementProtocol(
             &tokens,
             &resolvedAttributes
             );
-        resolvedAttributes.clear();  // Attributes are owned by cache now.
 
         if (ownedName)
             delete ssoName;
