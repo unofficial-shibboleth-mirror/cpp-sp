@@ -116,20 +116,20 @@
 			<SessionInitiator type="Chaining" Location="/Login" isDefault="true" id="idp.example.org"
 					relayState="cookie" entityID="https://idp.example.org/shibboleth">
 				<SessionInitiator type="SAML2" defaultACSIndex="1" template="@-PKGSYSCONFDIR-@/bindingTemplate.html"/>
-				<SessionInitiator type="Shib1" defaultACSIndex="3"/>
+				<SessionInitiator type="Shib1" defaultACSIndex="4"/>
 			</SessionInitiator>
 			
 			<!-- An example using an old-style WAYF, which means Shib 1 only unless an entityID is provided. -->
 			<SessionInitiator type="Chaining" Location="/WAYF" id="WAYF" relayState="cookie">
 				<SessionInitiator type="SAML2" defaultACSIndex="1" template="@-PKGSYSCONFDIR-@/bindingTemplate.html"/>
-				<SessionInitiator type="Shib1" defaultACSIndex="3"/>
-				<SessionInitiator type="WAYF" defaultACSIndex="3" URL="https://wayf.example.org/WAYF"/>
+				<SessionInitiator type="Shib1" defaultACSIndex="4"/>
+				<SessionInitiator type="WAYF" defaultACSIndex="4" URL="https://wayf.example.org/WAYF"/>
 			</SessionInitiator>
 
 			<!-- An example supporting the new-style of discovery service. -->
 			<SessionInitiator type="Chaining" Location="/DS" id="DS" relayState="cookie">
 				<SessionInitiator type="SAML2" defaultACSIndex="1" template="@-PKGSYSCONFDIR-@/bindingTemplate.html"/>
-				<SessionInitiator type="Shib1" defaultACSIndex="3"/>
+				<SessionInitiator type="Shib1" defaultACSIndex="4"/>
 				<SessionInitiator type="SAMLDS" URL="https://ds.example.org/DS"/>
 			</SessionInitiator>
 			
@@ -141,11 +141,13 @@
 			-->
 			<md:AssertionConsumerService Location="/SAML2/POST" index="1"
 				Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"/>
-			<md:AssertionConsumerService Location="/SAML2/Artifact" index="2"
+			<md:AssertionConsumerService Location="/SAML2/POST-SimpleSign" index="2"
+				Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST-SimpleSign"/>
+			<md:AssertionConsumerService Location="/SAML2/Artifact" index="3"
 				Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact"/>
-			<md:AssertionConsumerService Location="/SAML/POST" index="3"
+			<md:AssertionConsumerService Location="/SAML/POST" index="4"
 				Binding="urn:oasis:names:tc:SAML:1.0:profiles:browser-post"/>
-			<md:AssertionConsumerService Location="/SAML/Artifact" index="4"
+			<md:AssertionConsumerService Location="/SAML/Artifact" index="5"
 				Binding="urn:oasis:names:tc:SAML:1.0:profiles:artifact-01"/>
 
 			<!-- LogoutInitiators enable SP-initiated local or global/single logout of sessions. -->
