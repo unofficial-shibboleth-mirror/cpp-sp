@@ -73,7 +73,7 @@ namespace shibsp {
         pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
 
     private:
-        pair<bool,long> doRequest(const Application& application, Session* session_id, HTTPResponse& httpResponse) const;
+        pair<bool,long> doRequest(const Application& application, const char* requestURL, Session* session_id, HTTPResponse& httpResponse) const;
 
         string m_appId;
 #ifndef SHIBSP_LITE
@@ -194,7 +194,7 @@ pair<bool,long> SAML2LogoutInitiator::run(SPRequest& request, bool isHandler) co
 
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
         // When out of process, we run natively.
-        return doRequest(request.getApplication(), session, request);
+        return doRequest(request.getApplication(), request.getRequestURL(), session, request);
     }
     else {
         // When not out of process, we remote the request.
@@ -203,6 +203,7 @@ pair<bool,long> SAML2LogoutInitiator::run(SPRequest& request, bool isHandler) co
         DDFJanitor jin(in), jout(out);
         in.addmember("application_id").string(request.getApplication().getId());
         in.addmember("session_id").string(session->getID());
+        in.addmember("url").string(request.getRequestURL());
         out=request.getServiceProvider().getListenerService()->send(in);
         return unwrap(request, out);
     }
@@ -243,7 +244,7 @@ void SAML2LogoutInitiator::receive(DDF& in, ostream& out)
             // Since we're remoted, the result should either be a throw, which we pass on,
             // a false/0 return, which we just return as an empty structure, or a response/redirect,
             // which we capture in the facade and send back.
-            doRequest(*app, session, *resp.get());
+            doRequest(*app, in["url"].string(), session, *resp.get());
         }
         else {
              m_log.error("no NameID or issuing entityID found in session");
@@ -258,11 +259,13 @@ void SAML2LogoutInitiator::receive(DDF& in, ostream& out)
 #endif
 }
 
-pair<bool,long> SAML2LogoutInitiator::doRequest(const Application& application, Session* session, HTTPResponse& response) const
+pair<bool,long> SAML2LogoutInitiator::doRequest(
+    const Application& application, const char* requestURL, Session* session, HTTPResponse& response
+    ) const
 {
     // Do back channel notification.
     vector<string> sessions(1, session->getID());
-    if (!notifyBackChannel(application, sessions)) {
+    if (!notifyBackChannel(application, requestURL, sessions, false)) {
         session->unlock();
         application.getServiceProvider().getSessionCache()->remove(sessions.front().c_str(), application);
         return sendLogoutPage(application, response, true, "Partial logout failure.");

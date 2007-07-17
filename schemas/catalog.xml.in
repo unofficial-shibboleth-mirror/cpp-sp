@@ -6,5 +6,6 @@
     <system systemId="urn:mace:shibboleth:2.0:afp:mf:basic" uri="@-PKGXMLDIR-@/shibboleth-2.0-afp-mf-basic.xsd"/>
     <system systemId="urn:mace:shibboleth:2.0:afp:mf:saml" uri="@-PKGXMLDIR-@/shibboleth-2.0-afp-mf-saml.xsd"/>
     <system systemId="urn:mace:shibboleth:2.0:attribute-map" uri="@-PKGXMLDIR-@/shibboleth-2.0-attribute-map.xsd"/>
+    <system systemId="urn:mace:shibboleth:2.0:sp:notify" uri="@-PKGXMLDIR-@/shibboleth-2.0-sp-notify.xsd"/>
     <system systemId="urn:mace:shibboleth:1.0" uri="@-PKGXMLDIR-@/shibboleth.xsd"/>
 </catalog>

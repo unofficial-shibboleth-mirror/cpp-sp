@@ -33,12 +33,33 @@
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/URLEncoder.h>
 
-#ifndef SHIBSP_LITE
-#endif
-
 using namespace shibsp;
 using namespace xmltooling;
 using namespace std;
+
+pair<bool,long> LogoutHandler::sendLogoutPage(const Application& application, HTTPResponse& response, bool local, const char* status) const
+{
+    pair<bool,const char*> prop = application.getString(local ? "localLogout" : "globalLogout");
+    if (prop.first) {
+        response.setContentType("text/html");
+        response.setResponseHeader("Expires","01-Jan-1997 12:00:00 GMT");
+        response.setResponseHeader("Cache-Control","private,no-store,no-cache");
+        ifstream infile(prop.second);
+        if (!infile)
+            throw ConfigurationException("Unable to access $1 HTML template.", params(1,local ? "localLogout" : "globalLogout"));
+        TemplateParameters tp;
+        tp.setPropertySet(application.getPropertySet("Errors"));
+        if (status)
+            tp.m_map["logoutStatus"] = status;
+        stringstream str;
+        XMLToolingConfig::getConfig().getTemplateEngine()->run(infile, str, tp);
+        return make_pair(true,response.sendResponse(str));
+    }
+    prop = application.getString("homeURL");
+    if (!prop.first)
+        prop.second = "/";
+    return make_pair(true,response.sendRedirect(prop.second));
+}
 
 pair<bool,long> LogoutHandler::run(SPRequest& request, bool isHandler) const
 {
@@ -80,7 +101,7 @@ void LogoutHandler::receive(DDF& in, ostream& out)
     while (temp.isstring()) {
         sessions.push_back(temp.string());
         temp = s.next();
-        if (notifyBackChannel(*app, sessions))
+        if (notifyBackChannel(*app, in["url"].string(), sessions, in["local"].integer()==1))
             ret.integer(1);
     }
 
@@ -101,7 +122,7 @@ pair<bool,long> LogoutHandler::notifyFrontChannel(
         index = atoi(param);
 
     // Fetch the next front notification URL and bump the index for the next round trip.
-    string loc = application.getNotificationURL(request, true, index++);
+    string loc = application.getNotificationURL(request.getRequestURL(), true, index++);
     if (loc.empty())
         return make_pair(false,0);
 
@@ -137,11 +158,71 @@ pair<bool,long> LogoutHandler::notifyFrontChannel(
     return make_pair(true,response.sendRedirect(loc.c_str()));
 }
 
-bool LogoutHandler::notifyBackChannel(const Application& application, const vector<string>& sessions) const
+#ifndef SHIBSP_LITE
+#include "util/SPConstants.h"
+#include <xmltooling/impl/AnyElement.h>
+#include <xmltooling/soap/SOAP.h>
+#include <xmltooling/soap/SOAPClient.h>
+using namespace soap11;
+namespace {
+    static const XMLCh LogoutNotification[] =   UNICODE_LITERAL_18(L,o,g,o,u,t,N,o,t,i,f,i,c,a,t,i,o,n);
+    static const XMLCh SessionID[] =            UNICODE_LITERAL_9(S,e,s,s,i,o,n,I,D);
+    static const XMLCh _type[] =                UNICODE_LITERAL_4(t,y,p,e);
+    static const XMLCh _local[] =               UNICODE_LITERAL_5(l,o,c,a,l);
+    static const XMLCh _global[] =              UNICODE_LITERAL_6(g,l,o,b,a,l);
+
+    class SHIBSP_DLLLOCAL SOAPNotifier : public soap11::SOAPClient
+    {
+    public:
+        SOAPNotifier() {}
+        virtual ~SOAPNotifier() {}
+    private:
+        void prepareTransport(SOAPTransport& transport) {
+            transport.setVerifyHost(false);
+        }
+    };
+};
+#endif
+
+bool LogoutHandler::notifyBackChannel(
+    const Application& application, const char* requestURL, const vector<string>& sessions, bool local
+    ) const
 {
+    unsigned int index = 0;
+    string endpoint = application.getNotificationURL(requestURL, false, index++);
+    if (endpoint.empty())
+        return true;
+
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
 #ifndef SHIBSP_LITE
-        return true;
+        auto_ptr<Envelope> env(EnvelopeBuilder::buildEnvelope());
+        Body* body = BodyBuilder::buildBody();
+        env->setBody(body);
+        ElementProxy* msg = new AnyElementImpl(shibspconstants::SHIB2SPNOTIFY_NS, LogoutNotification);
+        body->getUnknownXMLObjects().push_back(msg);
+        msg->setAttribute(QName(NULL, _type), local ? _local : _global);
+        for (vector<string>::const_iterator s = sessions.begin(); s!=sessions.end(); ++s) {
+            auto_ptr_XMLCh temp(s->c_str());
+            ElementProxy* child = new AnyElementImpl(shibspconstants::SHIB2SPNOTIFY_NS, SessionID);
+            child->setTextContent(temp.get());
+            msg->getUnknownXMLObjects().push_back(child);
+        }
+
+        bool result = true;
+        SOAPNotifier soaper;
+        while (!endpoint.empty()) {
+            try {
+                soaper.send(*env.get(), application.getId(), endpoint.c_str());
+                delete soaper.receive();
+            }
+            catch (exception& ex) {
+                log4cpp::Category::getInstance(SHIBSP_LOGCAT".Logout").error("error notifying application of logout event: %s", ex.what());
+                result = false;
+            }
+            soaper.reset();
+            endpoint = application.getNotificationURL(requestURL, false, index++);
+        }
+        return result;
 #else
         return false;
 #endif
@@ -152,6 +233,9 @@ bool LogoutHandler::notifyBackChannel(const Application& application, const vect
     DDFJanitor jin(in), jout(out);
     in.addmember("notify").integer(1);
     in.addmember("application_id").string(application.getId());
+    in.addmember("url").string(requestURL);
+    if (local)
+        in.addmember("local").integer(1);
     DDF s = in.addmember("sessions").list();
     for (vector<string>::const_iterator i = sessions.begin(); i!=sessions.end(); ++i) {
         DDF temp = DDF(NULL).string(i->c_str());
@@ -159,28 +243,4 @@ bool LogoutHandler::notifyBackChannel(const Application& application, const vect
     }
     out=application.getServiceProvider().getListenerService()->send(in);
     return (out.integer() == 1);
-}
-
-pair<bool,long> LogoutHandler::sendLogoutPage(const Application& application, HTTPResponse& response, bool local, const char* status) const
-{
-    pair<bool,const char*> prop = application.getString(local ? "localLogout" : "globalLogout");
-    if (prop.first) {
-        response.setContentType("text/html");
-        response.setResponseHeader("Expires","01-Jan-1997 12:00:00 GMT");
-        response.setResponseHeader("Cache-Control","private,no-store,no-cache");
-        ifstream infile(prop.second);
-        if (!infile)
-            throw ConfigurationException("Unable to access $1 HTML template.", params(1,local ? "localLogout" : "globalLogout"));
-        TemplateParameters tp;
-        tp.setPropertySet(application.getPropertySet("Errors"));
-        if (status)
-            tp.m_map["logoutStatus"] = status;
-        stringstream str;
-        XMLToolingConfig::getConfig().getTemplateEngine()->run(infile, str, tp);
-        return make_pair(true,response.sendResponse(str));
-    }
-    prop = application.getString("homeURL");
-    if (!prop.first)
-        prop.second = "/";
-    return make_pair(true,response.sendRedirect(prop.second));
 }

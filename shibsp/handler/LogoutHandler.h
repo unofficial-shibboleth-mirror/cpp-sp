@@ -109,10 +109,14 @@ namespace shibsp {
          * Perform back-channel logout notifications for an Application.
          *
          * @param application   the Application to notify
+         * @param requestURL    requestURL that resulted in method call
          * @param sessions      array of session keys being logged out
+         * @param local         true iff the logout operation is local to the SP, false iff global
          * @return  true iff all notifications succeeded
          */
-        bool notifyBackChannel(const Application& application, const std::vector<std::string>& sessions) const;
+        bool notifyBackChannel(
+            const Application& application, const char* requestURL, const std::vector<std::string>& sessions, bool local
+            ) const;
     };
 
 #if defined (_MSC_VER)

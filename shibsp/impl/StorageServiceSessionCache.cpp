@@ -487,7 +487,7 @@ void SSCache::insert(const char* key, time_t expires, const char* name, const ch
     // Since we can't guarantee uniqueness, check for an existing record.
     string record;
     time_t recordexp;
-    int ver = m_storage->readText("Logout", name, &record, &recordexp);
+    int ver = m_storage->readText("NameID", name, &record, &recordexp);
     if (ver > 0) {
         // Existing record, so we need to unmarshall it.
         istringstream in(record);
@@ -512,13 +512,13 @@ void SSCache::insert(const char* key, time_t expires, const char* name, const ch
 
     // Try and store it back...
     if (ver > 0) {
-        ver = m_storage->updateText("Logout", name, out.str().c_str(), max(expires, recordexp), ver);
+        ver = m_storage->updateText("NameID", name, out.str().c_str(), max(expires, recordexp), ver);
         if (ver <= 0) {
             // Out of sync, or went missing, so retry.
             return insert(key, expires, name, index);
         }
     }
-    else if (!m_storage->createText("Logout", name, out.str().c_str(), expires)) {
+    else if (!m_storage->createText("NameID", name, out.str().c_str(), expires)) {
         // Hit a dup, so just retry, hopefully hitting the other branch.
         return insert(key, expires, name, index);
     }
@@ -545,6 +545,38 @@ string SSCache::insert(
 
     m_log.debug("creating new session");
 
+    time_t now = time(NULL);
+    auto_ptr_char index(session_index);
+    auto_ptr_char entity_id(issuer ? issuer->getEntityID() : NULL);
+    auto_ptr_char name(nameid ? nameid->getName() : NULL);
+
+    if (nameid) {
+        // Check for a pending logout.
+        if (strlen(name.get()) > 255)
+            const_cast<char*>(name.get())[255] = 0;
+        string pending;
+        int ver = m_storage->readText("Logout", name.get(), &pending);
+        if (ver > 0) {
+            DDF pendobj;
+            DDFJanitor jpend(pendobj);
+            istringstream pstr(pending);
+            pstr >> pendobj;
+            // IdP.SP.index contains logout expiration, if any.
+            DDF deadmenwalking = pendobj[issuer ? entity_id.get() : "_shibnull"][application.getString("entityID").second];
+            const char* logexpstr = deadmenwalking[session_index ? index.get() : "_shibnull"].string();
+            if (!logexpstr && session_index)    // we tried an exact session match, now try for NULL
+                logexpstr = deadmenwalking["_shibnull"].string();
+            if (logexpstr) {
+                auto_ptr_XMLCh dt(logexpstr);
+                DateTime dtobj(dt.get());
+                dtobj.parseDateTime();
+                time_t logexp = dtobj.getEpoch();
+                if (now - XMLToolingConfig::getConfig().clock_skew_secs < logexp)
+                    throw FatalProfileException("A logout message from your identity provider has blocked your login attempt.");
+            }
+        }
+    }
+
     auto_ptr_char key(SAMLConfig::getConfig().generateIdentifier());
 
     // Store session properties in DDF.
@@ -552,7 +584,7 @@ string SSCache::insert(
     obj.addmember("version").integer(1);
     obj.addmember("application_id").string(application.getId());
 
-    // On 64-bit Windows, time_t doesn't fit in a long, so I'm using ISO timestamps.  
+    // On 64-bit Windows, time_t doesn't fit in a long, so I'm using ISO timestamps.
 #ifndef HAVE_GMTIME_R
     struct tm* ptime=gmtime(&expires);
 #else
@@ -565,10 +597,8 @@ string SSCache::insert(
 
     if (client_addr)
         obj.addmember("client_addr").string(client_addr);
-    if (issuer) {
-        auto_ptr_char entity_id(issuer->getEntityID());
+    if (issuer)
         obj.addmember("entity_id").string(entity_id.get());
-    }
     if (protocol) {
         auto_ptr_char prot(protocol);
         obj.addmember("protocol").string(prot.get());
@@ -577,7 +607,6 @@ string SSCache::insert(
         auto_ptr_char instant(authn_instant);
         obj.addmember("authn_instant").string(instant.get());
     }
-    auto_ptr_char index(session_index);
     if (session_index)
         obj.addmember("session_index").string(index.get());
     if (authncontext_class) {
@@ -617,14 +646,12 @@ string SSCache::insert(
     record << obj;
     
     m_log.debug("storing new session...");
-    time_t now = time(NULL);
     if (!m_storage->createText(key.get(), "session", record.str().c_str(), now + m_cacheTimeout))
         throw FatalProfileException("Attempted to create a session with a duplicate key.");
     
     // Store the reverse mapping for logout.
-    auto_ptr_char name(nameid ? nameid->getName() : NULL);
     try {
-        if (name.get())
+        if (nameid)
             insert(key.get(), expires, name.get(), index.get());
     }
     catch (exception& ex) {
@@ -662,7 +689,7 @@ string SSCache::insert(
         ") at (ClientAddress: " <<
             (client_addr ? client_addr : "none") <<
         ") with (NameIdentifier: " <<
-            (name.get() ? name.get() : "none") <<
+            (nameid ? name.get() : "none") <<
         ")";
     
     if (attributes) {
@@ -840,16 +867,70 @@ vector<string>::size_type SSCache::logout(
     if (strlen(name.get()) > 255)
         const_cast<char*>(name.get())[255] = 0;
 
-    // Read in potentially matching sessions.
+    DDF obj;
+    DDFJanitor jobj(obj);
     string record;
-    int ver = m_storage->readText("Logout", name.get(), &record);
+    int ver;
+
+    if (expires) {
+        // Record the logout to prevent post-delivered assertions.
+        // On 64-bit Windows, time_t doesn't fit in a long, so I'm using ISO timestamps.
+#ifndef HAVE_GMTIME_R
+        struct tm* ptime=gmtime(&expires);
+#else
+        struct tm res;
+        struct tm* ptime=gmtime_r(&expires,&res);
+#endif
+        char timebuf[32];
+        strftime(timebuf,32,"%Y-%m-%dT%H:%M:%SZ",ptime);
+
+        time_t oldexp = 0;
+        ver = m_storage->readText("Logout", name.get(), &record, &oldexp);
+        if (ver > 0) {
+            istringstream lin(record);
+            lin >> obj;
+        }
+        else {
+            obj = DDF(NULL).structure();
+        }
+
+        // Structure is keyed by the IdP and SP, with a member per session index containing the expiration.
+        DDF root = obj.addmember(issuer ? entityID.get() : "_shibnull").addmember(application.getString("entityID").second);
+        if (indexes) {
+            for (set<string>::const_iterator x = indexes->begin(); x!=indexes->end(); ++x)
+                root.addmember(x->c_str()).string(timebuf);
+        }
+        else {
+            root.addmember("_shibnull").string(timebuf);
+        }
+
+        // Write it back.
+        ostringstream lout;
+        lout << obj;
+
+        if (ver > 0) {
+            ver = m_storage->updateText("Logout", name.get(), lout.str().c_str(), max(expires, oldexp), ver);
+            if (ver <= 0) {
+                // Out of sync, or went missing, so retry.
+                return logout(issuer, nameid, indexes, expires, application, sessionsKilled);
+            }
+        }
+        else if (!m_storage->createText("Logout", name.get(), lout.str().c_str(), expires)) {
+            // Hit a dup, so just retry, hopefully hitting the other branch.
+            return logout(issuer, nameid, indexes, expires, application, sessionsKilled);
+        }
+
+        obj.destroy();
+        record.erase();
+    }
+
+    // Read in potentially matching sessions.
+    ver = m_storage->readText("NameID", name.get(), &record);
     if (ver == 0) {
         m_log.debug("no active sessions to logout for supplied issuer and subject");
         return 0;
     }
 
-    DDF obj;
-    DDFJanitor jobj(obj);
     istringstream in(record);
     in >> obj;
 
@@ -907,12 +988,12 @@ vector<string>::size_type SSCache::logout(
     // If possible, write back the mapping record (this isn't crucial).
     try {
         if (obj.isnull()) {
-            m_storage->deleteText("Logout", name.get());
+            m_storage->deleteText("NameID", name.get());
         }
         else if (!sessionsKilled.empty()) {
             ostringstream out;
             out << obj;
-            if (m_storage->updateText("Logout", name.get(), out.str().c_str(), 0, ver) <= 0)
+            if (m_storage->updateText("NameID", name.get(), out.str().c_str(), 0, ver) <= 0)
                 m_log.warn("logout mapping record changed behind us, leaving it alone");
         }
     }

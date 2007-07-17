@@ -252,7 +252,7 @@ pair<bool,long> SAML2Logout::doRequest(
         bool worked1 = false,worked2 = false;
         if (session_id) {
             vector<string> sessions(1,session_id);
-            worked1 = notifyBackChannel(application, sessions);
+            worked1 = notifyBackChannel(application, request.getRequestURL(), sessions, false);
             try {
                 cache->remove(session_id, application);
                 worked2 = true;
@@ -452,7 +452,7 @@ pair<bool,long> SAML2Logout::doRequest(
         
         // For back-channel requests, or if no front-channel notification is needed...
         bool worked1 = false,worked2 = false;
-        worked1 = notifyBackChannel(application, sessions);
+        worked1 = notifyBackChannel(application, request.getRequestURL(), sessions, false);
         if (session_id) {
             // One last session to yoink...
             try {

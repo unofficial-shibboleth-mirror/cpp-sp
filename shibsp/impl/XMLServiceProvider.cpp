@@ -129,7 +129,7 @@ namespace {
             return (m_audiences.empty() && m_base) ? m_base->getAudiences() : m_audiences;
         }
 #endif
-        string getNotificationURL(const HTTPRequest& request, bool front, unsigned int index) const;
+        string getNotificationURL(const char* resource, bool front, unsigned int index) const;
 
         const set<string>& getRemoteUserAttributeIds() const {
             return (m_remoteUsers.empty() && m_base) ? m_base->getRemoteUserAttributeIds() : m_remoteUsers;
@@ -949,15 +949,14 @@ const PropertySet* XMLApplication::getRelyingParty(const EntityDescriptor* provi
 
 #endif
 
-string XMLApplication::getNotificationURL(const HTTPRequest& request, bool front, unsigned int index) const
+string XMLApplication::getNotificationURL(const char* resource, bool front, unsigned int index) const
 {
     const vector<string>& locs = front ? m_frontLogout : m_backLogout;
     if (locs.empty())
-        return m_base ? m_base->getNotificationURL(request, front, index) : string();
+        return m_base ? m_base->getNotificationURL(resource, front, index) : string();
     else if (index >= locs.size())
         return string();
 
-    const char* resource = request.getRequestURL();
 #ifdef HAVE_STRCASECMP
     if (!resource || (strncasecmp(resource,"http://",7) && strncasecmp(resource,"https://",8)))
 #else

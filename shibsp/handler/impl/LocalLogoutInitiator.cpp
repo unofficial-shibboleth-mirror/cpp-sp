@@ -99,7 +99,7 @@ pair<bool,long> LocalLogoutInitiator::run(SPRequest& request, bool isHandler) co
     if (session_id) {
         // Do back channel notification.
         vector<string> sessions(1, session_id);
-        if (!notifyBackChannel(request.getApplication(), sessions)) {
+        if (!notifyBackChannel(request.getApplication(), request.getRequestURL(), sessions, true)) {
             request.getApplication().getServiceProvider().getSessionCache()->remove(session_id, request.getApplication());
             return sendLogoutPage(request.getApplication(), request, true, "Partial logout failure.");
         }
