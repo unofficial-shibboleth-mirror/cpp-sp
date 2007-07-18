@@ -934,7 +934,7 @@ const PropertySet* XMLApplication::getRelyingParty(const EntityDescriptor* provi
 #else
     map<const XMLCh*,PropertySet*>::const_iterator i=m_partyMap.begin();
     for (; i!=m_partyMap.end(); i++) {
-        if (XMLString::equals(i->first,provider->getId()))
+        if (XMLString::equals(i->first,provider->getEntityID()))
             return i->second;
         const EntitiesDescriptor* group=dynamic_cast<const EntitiesDescriptor*>(provider->getParent());
         while (group) {
