@@ -200,10 +200,10 @@ AC_SUBST(LITE_LIBS)
 AC_SUBST(XMLSEC_LIBS)
 
 # output the underlying makefiles
-WANT_SUBDIRS="doc schemas configs shibsp shibd util"
+WANT_SUBDIRS="doc schemas configs shibsp shibd adfs util"
 AC_CONFIG_FILES([Makefile doc/Makefile schemas/Makefile \
 	configs/Makefile shibsp/Makefile shibd/Makefile \
-	util/Makefile selinux/Makefile])
+	adfs/Makefile util/Makefile selinux/Makefile])
 
 #
 # Build NSAPI module?
