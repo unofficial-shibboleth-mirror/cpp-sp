@@ -104,7 +104,8 @@
 		disabled.
 		-->
 		<Sessions lifetime="28800" timeout="3600" checkAddress="false"
-			handlerURL="/Shibboleth.sso" handlerSSL="false" idpHistory="true" idpHistoryDays="7">
+			handlerURL="/Shibboleth.sso" handlerSSL="false" exportLocation="/GetAssertion"
+			idpHistory="true" idpHistoryDays="7">
 			
 			<!--
 			SessionInitiators handle session requests and relay them to a Discovery page,
