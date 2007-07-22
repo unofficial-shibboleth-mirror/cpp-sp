@@ -400,7 +400,7 @@ pair<bool,void*> ADFSHandler::run(ShibTarget* st, const IPropertySet* handler, b
         string query=st->getArgs();
         CgiParse parser(query.c_str(),query.length());
         const char* wa=parser.get_value("wa");
-        if (!wa || strcmp(wa,"wsignoutcleanup1.0"))
+        if (!wa || (strcmp(wa,"wsignout1.0") && strcmp(wa,"wsignoutcleanup1.0")))
             throw FatalProfileException("ADFS protocol handler received invalid action request ($1)", params(1,wa ? wa : "none"));
         
         // Recover the session key.
