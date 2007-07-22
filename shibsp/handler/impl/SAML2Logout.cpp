@@ -112,7 +112,7 @@ namespace shibsp {
 };
 
 SAML2Logout::SAML2Logout(const DOMElement* e, const char* appId)
-    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SAML2Logout"))
+    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".Logout.SAML2"))
 #ifndef SHIBSP_LITE
         ,m_role(samlconstants::SAML20MD_NS, IDPSSODescriptor::LOCAL_NAME), m_decoder(NULL), m_outgoing(NULL)
 #endif

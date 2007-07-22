@@ -73,7 +73,7 @@ namespace shibsp {
         pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
 
     private:
-        pair<bool,long> doRequest(const Application& application, const char* requestURL, Session* session_id, HTTPResponse& httpResponse) const;
+        pair<bool,long> doRequest(const Application& application, const char* requestURL, Session* session, HTTPResponse& httpResponse) const;
 
         string m_appId;
 #ifndef SHIBSP_LITE

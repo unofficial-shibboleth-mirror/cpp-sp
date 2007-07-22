@@ -50,7 +50,6 @@ namespace shibsp {
 
     private:
         string m_appId;
-        vector<Handler*> m_handlers;
     };
 
 #if defined (_MSC_VER)
