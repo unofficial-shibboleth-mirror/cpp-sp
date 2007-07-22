@@ -38,6 +38,7 @@
 #include <shibsp/exceptions.h>
 #include <shibsp/Application.h>
 #include <shibsp/ServiceProvider.h>
+#include <shibsp/SessionCache.h>
 #include <shibsp/SPConfig.h>
 #include <shibsp/handler/AssertionConsumerService.h>
 #include <shibsp/handler/LogoutHandler.h>
@@ -49,7 +50,6 @@
 #include <xercesc/util/XMLUniDefs.hpp>
 
 #ifndef SHIBSP_LITE
-# include <shibsp/SessionCache.h>
 # include <shibsp/attribute/Attribute.h>
 # include <shibsp/attribute/filtering/AttributeFilter.h>
 # include <shibsp/attribute/filtering/BasicFilteringContext.h>
@@ -64,9 +64,9 @@
 # include <xmltooling/impl/AnyElement.h>
 # include <xmltooling/validation/ValidatorSuite.h>
 using namespace opensaml::saml2md;
-using namespace opensaml;
 #endif
 using namespace shibsp;
+using namespace opensaml;
 using namespace xmltooling;
 using namespace xercesc;
 using namespace log4cpp;
@@ -96,7 +96,18 @@ namespace {
         }
         virtual ~ADFSSessionInitiator() {}
         
-        void setParent(const PropertySet* parent);
+        void setParent(const PropertySet* parent) {
+            DOMPropertySet::setParent(parent);
+            pair<bool,const char*> loc = getString("Location");
+            if (loc.first) {
+                string address = m_appId + loc.second + "::run::ADFSSI";
+                setAddress(address.c_str());
+            }
+            else {
+                m_log.warn("no Location property in ADFS SessionInitiator (or parent), can't register as remoted handler");
+            }
+        }
+
         void receive(DDF& in, ostream& out);
         pair<bool,long> run(SPRequest& request, const char* entityID=NULL, bool isHandler=true) const;
 
@@ -136,6 +147,64 @@ namespace {
 #endif
     };
 
+    class SHIBSP_DLLLOCAL ADFSLogoutInitiator : public AbstractHandler, public LogoutHandler
+    {
+    public:
+        ADFSLogoutInitiator(const DOMElement* e, const char* appId)
+                : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator")), m_appId(appId), m_binding(WSFED_NS) {
+            // If Location isn't set, defer address registration until the setParent call.
+            pair<bool,const char*> loc = getString("Location");
+            if (loc.first) {
+                string address = m_appId + loc.second + "::run::ADFSLI";
+                setAddress(address.c_str());
+            }
+        }
+        virtual ~ADFSLogoutInitiator() {}
+        
+        void setParent(const PropertySet* parent) {
+            DOMPropertySet::setParent(parent);
+            pair<bool,const char*> loc = getString("Location");
+            if (loc.first) {
+                string address = m_appId + loc.second + "::run::ADFSLI";
+                setAddress(address.c_str());
+            }
+            else {
+                m_log.warn("no Location property in ADFS LogoutInitiator (or parent), can't register as remoted handler");
+            }
+        }
+
+        void receive(DDF& in, ostream& out);
+        pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
+
+    private:
+        pair<bool,long> doRequest(
+            const Application& application, const char* requestURL, Session* session, HTTPResponse& httpResponse
+            ) const;
+
+        string m_appId;
+        auto_ptr_XMLCh m_binding;
+    };
+
+    class SHIBSP_DLLLOCAL ADFSLogout : public AbstractHandler, public LogoutHandler
+    {
+    public:
+        ADFSLogout(const DOMElement* e, const char* appId)
+                : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".Logout.ADFS")), m_login(e, appId) {
+#ifndef SHIBSP_LITE
+            m_initiator = false;
+            m_preserve.push_back("wreply");
+            string address = string(appId) + getString("Location").second + "::run::ADFSLO";
+            setAddress(address.c_str());
+#endif
+        }
+        virtual ~ADFSLogout() {}
+
+        pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
+
+    private:
+        ADFSConsumer m_login;
+    };
+
 #if defined (_MSC_VER)
     #pragma warning( pop )
 #endif
@@ -162,9 +231,14 @@ namespace {
         return new ADFSSessionInitiator(p.first, p.second);
     }
 
-    Handler* ADFSConsumerFactory(const pair<const DOMElement*,const char*>& p)
+    Handler* ADFSLogoutFactory(const pair<const DOMElement*,const char*>& p)
     {
-        return new ADFSConsumer(p.first, p.second);
+        return new ADFSLogout(p.first, p.second);
+    }
+
+    Handler* ADFSLogoutInitiatorFactory(const pair<const DOMElement*,const char*>& p)
+    {
+        return new ADFSLogoutInitiator(p.first, p.second);
     }
 
     const XMLCh RequestedSecurityToken[] =      UNICODE_LITERAL_22(R,e,q,u,e,s,t,e,d,S,e,c,u,r,i,t,y,T,o,k,e,n);
@@ -175,8 +249,9 @@ extern "C" int ADFS_EXPORTS xmltooling_extension_init(void*)
 {
     SPConfig& conf=SPConfig::getConfig();
     conf.SessionInitiatorManager.registerFactory("ADFS", ADFSSessionInitiatorFactory);
-    conf.AssertionConsumerServiceManager.registerFactory("ADFS", ADFSConsumerFactory);
-    conf.AssertionConsumerServiceManager.registerFactory(WSFED_NS, ADFSConsumerFactory);
+    conf.LogoutInitiatorManager.registerFactory("ADFS", ADFSLogoutInitiatorFactory);
+    conf.AssertionConsumerServiceManager.registerFactory("ADFS", ADFSLogoutFactory);
+    conf.AssertionConsumerServiceManager.registerFactory(WSFED_NS, ADFSLogoutFactory);
 #ifndef SHIBSP_LITE
     SAMLConfig::getConfig().MessageDecoderManager.registerFactory(WSFED_NS, ADFSDecoderFactory);
     XMLObjectBuilder::registerBuilder(QName(WSTRUST_NS,"RequestedSecurityToken"), new AnyElementBuilder());
@@ -190,25 +265,13 @@ extern "C" void ADFS_EXPORTS xmltooling_extension_term()
     /* should get unregistered during normal shutdown...
     SPConfig& conf=SPConfig::getConfig();
     conf.SessionInitiatorManager.deregisterFactory("ADFS");
+    conf.LogoutInitiatorManager.deregisterFactory("ADFS");
     conf.AssertionConsumerServiceManager.deregisterFactory("ADFS");
     conf.AssertionConsumerServiceManager.deregisterFactory(WSFED_NS);
 #ifndef SHIBSP_LITE
     SAMLConfig::getConfig().MessageDecoderManager.deregisterFactory(WSFED_NS);
 #endif
     */
-}
-
-void ADFSSessionInitiator::setParent(const PropertySet* parent)
-{
-    DOMPropertySet::setParent(parent);
-    pair<bool,const char*> loc = getString("Location");
-    if (loc.first) {
-        string address = m_appId + loc.second + "::run::ADFSSI";
-        setAddress(address.c_str());
-    }
-    else {
-        m_log.warn("no Location property in ADFS SessionInitiator (or parent), can't register as remoted handler");
-    }
 }
 
 pair<bool,long> ADFSSessionInitiator::run(SPRequest& request, const char* entityID, bool isHandler) const
@@ -591,3 +654,208 @@ string ADFSConsumer::implementProtocol(
 }
 
 #endif
+
+pair<bool,long> ADFSLogoutInitiator::run(SPRequest& request, bool isHandler) const
+{
+    // Defer to base class for front-channel loop first.
+    pair<bool,long> ret = LogoutHandler::run(request, isHandler);
+    if (ret.first)
+        return ret;
+
+    // At this point we know the front-channel is handled.
+    // We need the session to do any other work.
+
+    Session* session = NULL;
+    try {
+        session = request.getSession(false, true, false);  // don't cache it and ignore all checks
+        if (!session)
+            return make_pair(false,0);
+
+        // We only handle SAML 2.0 sessions.
+        if (!XMLString::equals(session->getProtocol(), WSFED_NS)) {
+            session->unlock();
+            return make_pair(false,0);
+        }
+    }
+    catch (exception& ex) {
+        m_log.error("error accessing current session: %s", ex.what());
+        return make_pair(false,0);
+    }
+
+    if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
+        // When out of process, we run natively.
+        return doRequest(request.getApplication(), request.getRequestURL(), session, request);
+    }
+    else {
+        // When not out of process, we remote the request.
+        Locker locker(session);
+        DDF out,in(m_address.c_str());
+        DDFJanitor jin(in), jout(out);
+        in.addmember("application_id").string(request.getApplication().getId());
+        in.addmember("session_id").string(session->getID());
+        in.addmember("url").string(request.getRequestURL());
+        out=request.getServiceProvider().getListenerService()->send(in);
+        return unwrap(request, out);
+    }
+}
+
+void ADFSLogoutInitiator::receive(DDF& in, ostream& out)
+{
+#ifndef SHIBSP_LITE
+    // Find application.
+    const char* aid=in["application_id"].string();
+    const Application* app=aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : NULL;
+    if (!app) {
+        // Something's horribly wrong.
+        m_log.error("couldn't find application (%s) for logout", aid ? aid : "(missing)");
+        throw ConfigurationException("Unable to locate application for logout, deleted?");
+    }
+    
+    // Set up a response shim.
+    DDF ret(NULL);
+    DDFJanitor jout(ret);
+    auto_ptr<HTTPResponse> resp(getResponse(ret));
+    
+    Session* session = NULL;
+    try {
+         session = app->getServiceProvider().getSessionCache()->find(in["session_id"].string(), *app, NULL, NULL);
+    }
+    catch (exception& ex) {
+        m_log.error("error accessing current session: %s", ex.what());
+    }
+
+    // With no session, we just skip the request and let it fall through to an empty struct return.
+    if (session) {
+        if (session->getEntityID()) {
+            // Since we're remoted, the result should either be a throw, which we pass on,
+            // a false/0 return, which we just return as an empty structure, or a response/redirect,
+            // which we capture in the facade and send back.
+            doRequest(*app, in["url"].string(), session, *resp.get());
+        }
+        else {
+             m_log.error("no issuing entityID found in session");
+             session->unlock();
+             session = NULL;
+             app->getServiceProvider().getSessionCache()->remove(in["session_id"].string(), *app);
+         }
+    }
+    out << ret;
+#else
+    throw ConfigurationException("Cannot perform logout using lite version of shibsp library.");
+#endif
+}
+
+pair<bool,long> ADFSLogoutInitiator::doRequest(
+    const Application& application, const char* requestURL, Session* session, HTTPResponse& response
+    ) const
+{
+    string entityID(session->getEntityID());
+    vector<string> sessions(1, session->getID());
+
+    // Do back channel notification.
+    if (!notifyBackChannel(application, requestURL, sessions, false)) {
+        session->unlock();
+        application.getServiceProvider().getSessionCache()->remove(sessions.front().c_str(), application);
+        return sendLogoutPage(application, response, true, "Partial logout failure.");
+    }
+
+    session->unlock();
+    application.getServiceProvider().getSessionCache()->remove(sessions.front().c_str(), application);
+
+#ifndef SHIBSP_LITE
+    try {
+        // With a session in hand, we can create a request message, if we can find a compatible endpoint.
+        Locker metadataLocker(application.getMetadataProvider());
+        const EntityDescriptor* entity = application.getMetadataProvider()->getEntityDescriptor(entityID.c_str());
+        if (!entity) {
+            throw MetadataException(
+                "Unable to locate metadata for identity provider ($entityID)",
+                namedparams(1, "entityID", entityID.c_str())
+                );
+        }
+        const IDPSSODescriptor* role = entity->getIDPSSODescriptor(m_binding.get());
+        if (!role) {
+            throw MetadataException(
+                "Unable to locate ADFS IdP role for identity provider ($entityID).",
+                namedparams(1, "entityID", entityID.c_str())
+                );
+        }
+
+        const EndpointType* ep = EndpointManager<SingleLogoutService>(role->getSingleLogoutServices()).getByBinding(m_binding.get());
+        if (!ep) {
+            throw MetadataException(
+                "Unable to locate ADFS single logout service for identity provider ($entityID).",
+                namedparams(1, "entityID", entityID.c_str())
+                );
+        }
+
+        auto_ptr_char dest(ep->getLocation());
+
+        string req=string(dest.get()) + (strchr(dest.get(),'?') ? '&' : '?') + "wa=wsignout1.0";
+        return make_pair(true,response.sendRedirect(req.c_str()));
+    }
+    catch (exception& ex) {
+        m_log.error("error issuing ADFS logout request: %s", ex.what());
+    }
+
+    return make_pair(false,0);
+#else
+    throw ConfigurationException("Cannot perform logout using lite version of shibsp library.");
+#endif
+}
+
+pair<bool,long> ADFSLogout::run(SPRequest& request, bool isHandler) const
+{
+    // Defer to base class for front-channel loop first.
+    // This won't initiate the loop, only continue/end it.
+    pair<bool,long> ret = LogoutHandler::run(request, isHandler);
+    if (ret.first)
+        return ret;
+
+    // wa parameter indicates the "action" to perform
+    bool returning = false;
+    const char* param = request.getParameter("wa");
+    if (param) {
+        if (!strcmp(param, "wsignin1.0"))
+            return m_login.run(request, isHandler);
+        else if (strcmp(param, "wsignout1.0") && strcmp(param, "wsignoutcleanup1.0"))
+            throw FatalProfileException("Unsupported WS-Federation action paremeter ($1).", params(1, param));
+    }
+    else if (strcmp(request.getMethod(),"GET") || !request.getParameter("notifying"))
+        throw FatalProfileException("Unsupported request to ADFS protocol endpoint.");
+    else
+        returning = true;
+
+    param = request.getParameter("wreply");
+    const Application& app = request.getApplication();
+
+    // Get the session_id.
+    pair<string,const char*> shib_cookie = app.getCookieNameProps("_shibsession_");
+    const char* session_id = request.getCookie(shib_cookie.first.c_str());
+
+    if (!returning) {
+        // Pass control to the first front channel notification point, if any.
+        map<string,string> parammap;
+        if (param)
+            parammap["wreply"] = param;
+        pair<bool,long> result = notifyFrontChannel(app, request, request, &parammap);
+        if (result.first)
+            return result;
+    }
+
+    // Best effort on back channel and to remove the user agent's session.
+    if (session_id) {
+        vector<string> sessions(1,session_id);
+        notifyBackChannel(app, request.getRequestURL(), sessions, false);
+        try {
+            app.getServiceProvider().getSessionCache()->remove(session_id, app);
+        }
+        catch (exception& ex) {
+            m_log.error("error removing session (%s): %s", session_id, ex.what());
+        }
+    }
+
+    if (param)
+        return make_pair(true, request.sendRedirect(param));
+    return sendLogoutPage(app, request, false, "Logout complete.");
+}
