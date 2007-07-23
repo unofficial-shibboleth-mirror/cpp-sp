@@ -526,7 +526,10 @@ XMLApplication::XMLApplication(
                 handler = conf.HandlerManager.newPlugin(samlconstants::SAML20_BINDING_URI, make_pair(sessions->getElement(), getId()));
                 m_handlers.push_back(handler);
 
-                // Insert into location map.
+                // Insert into location map. If it contains the handlerURL, we skip past that part.
+                const char* pch = strstr(location.second, sessions->getString("handlerURL").second);
+                if (pch)
+                    location.second = pch + strlen(sessions->getString("handlerURL").second);
                 if (*location.second == '/')
                     m_handlerMap[location.second]=handler;
                 else

@@ -359,8 +359,12 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
             else {
                 const URLEncoder* encoder = XMLToolingConfig::getConfig().getURLEncoder();
                 string exportName = "Shib-Assertion-00";
-                const char* handlerURL=request.getHandlerURL(targetURL.c_str());
-                string baseURL = string(handlerURL) + exportLocation.second + "?key=" + session->getID() + "&ID=";
+                string baseURL;
+                if (!strncmp(exportLocation.second, "http", 4))
+                    baseURL = exportLocation.second;
+                else
+                    baseURL = string(request.getHandlerURL(targetURL.c_str())) + exportLocation.second;
+                baseURL = baseURL + "?key=" + session->getID() + "&ID=";
                 const vector<const char*>& tokens = session->getAssertionIDs();
                 vector<const char*>::size_type count = 0;
                 for (vector<const char*>::const_iterator tokenids = tokens.begin(); tokenids!=tokens.end(); ++tokenids) {
