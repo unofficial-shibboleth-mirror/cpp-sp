@@ -20,6 +20,7 @@
  */
 
 #include "internal.h"
+#include "exceptions.h"
 #include "AccessControl.h"
 #include "RequestMapper.h"
 #include "SPRequest.h"
@@ -30,6 +31,7 @@
 #include <xmltooling/util/ReloadableXMLFile.h>
 #include <xmltooling/util/XMLHelper.h>
 #include <xercesc/util/XMLUniDefs.hpp>
+#include <xercesc/util/regx/RegularExpression.hpp>
 
 using namespace shibsp;
 using namespace xmltooling;
@@ -78,6 +80,7 @@ namespace shibsp {
         void loadACL(const DOMElement* e, Category& log);
         
         map<string,Override*> m_map;
+        vector< pair<RegularExpression*,Override*> > m_regexps;
     
     private:
         const Override* m_base;
@@ -139,12 +142,17 @@ namespace shibsp {
         return new XMLRequestMapper(e);
     }
 
-    static const XMLCh _AccessControl[] =            UNICODE_LITERAL_13(A,c,c,e,s,s,C,o,n,t,r,o,l);
+    static const XMLCh _AccessControl[] =           UNICODE_LITERAL_13(A,c,c,e,s,s,C,o,n,t,r,o,l);
     static const XMLCh AccessControlProvider[] =    UNICODE_LITERAL_21(A,c,c,e,s,s,C,o,n,t,r,o,l,P,r,o,v,i,d,e,r);
-    static const XMLCh htaccess[] =                 UNICODE_LITERAL_8(h,t,a,c,c,e,s,s);
     static const XMLCh Host[] =                     UNICODE_LITERAL_4(H,o,s,t);
+    static const XMLCh HostRegex[] =                UNICODE_LITERAL_9(H,o,s,t,R,e,g,e,x);
+    static const XMLCh htaccess[] =                 UNICODE_LITERAL_8(h,t,a,c,c,e,s,s);
+    static const XMLCh ignoreCase[] =               UNICODE_LITERAL_10(i,g,n,o,r,e,C,a,s,e);
+    static const XMLCh ignoreOption[] =             UNICODE_LITERAL_1(i);
     static const XMLCh Path[] =                     UNICODE_LITERAL_4(P,a,t,h);
+    static const XMLCh PathRegex[] =                UNICODE_LITERAL_9(P,a,t,h,R,e,g,e,x);
     static const XMLCh name[] =                     UNICODE_LITERAL_4(n,a,m,e);
+    static const XMLCh regex[] =                    UNICODE_LITERAL_5(r,e,g,e,x);
     static const XMLCh _type[] =                    UNICODE_LITERAL_4(t,y,p,e);
 }
 
@@ -275,7 +283,37 @@ Override::Override(const DOMElement* e, Category& log, const Override* base) : m
                 continue;
             }
             m_map[dup]=o;
+            log.debug("Added Path mapping (%s)", dup);
             free(dup);
+        }
+
+        if (!XMLString::equals(e->getLocalName(), PathRegex)) {
+            // Handle nested PathRegexs.
+            path = XMLHelper::getFirstChildElement(e,PathRegex);
+            for (int i=1; path; ++i, path=XMLHelper::getNextSiblingElement(path,PathRegex)) {
+                const XMLCh* n=path->getAttributeNS(NULL,regex);
+                if (!n || !*n) {
+                    log.warn("Skipping PathRegex element (%d) with empty regex attribute",i);
+                    continue;
+                }
+
+                auto_ptr<Override> o(new Override(path,log,this));
+
+                const XMLCh* flag=path->getAttributeNS(NULL,ignoreCase);
+                try {
+                    auto_ptr<RegularExpression> re(
+                        new RegularExpression(n, (flag && (*flag==chLatin_f || *flag==chDigit_0)) ? &chNull : ignoreOption)
+                        );
+                    m_regexps.push_back(make_pair(re.release(), o.release()));
+                }
+                catch (XMLException& ex) {
+                    auto_ptr_char tmp(ex.getMessage());
+                    log.error("caught exception while parsing PathRegex regular expression (%d): %s", i, tmp.get());
+                    throw ConfigurationException("Invalid regular expression in PathRegex element.");
+                }
+
+                log.debug("Added <PathRegex> mapping (%s)", m_regexps.back().second->getString("regex").second);
+            }
         }
     }
     catch (exception&) {
@@ -289,6 +327,10 @@ Override::~Override()
 {
     delete m_acl;
     for_each(m_map.begin(),m_map.end(),xmltooling::cleanup_pair<string,Override>());
+    for (vector< pair<RegularExpression*,Override*> >::iterator i = m_regexps.begin(); i != m_regexps.end(); ++i) {
+        delete i->first;
+        delete i->second;
+    }
 }
 
 pair<bool,bool> Override::getBool(const char* name, const char* ns) const
@@ -341,27 +383,45 @@ const PropertySet* Override::getPropertySet(const char* name, const char* ns) co
 
 const Override* Override::locate(const char* path) const
 {
+    // This function is confusing because it's *not* recursive.
+    // The whole path is tokenized and mapped in a loop, so the
+    // path parameter starts with the entire request path and
+    // we can skip the leading slash as irrelevant.
+    if (*path == '/')
+        path++;
+
+    // Now we copy the path, chop the query string, and lower case it.
     char* dup=strdup(path);
     char* sep=strchr(dup,'?');
     if (sep)
         *sep=0;
     for (char* pch=dup; *pch; pch++)
         *pch=tolower(*pch);
-        
+
+    // Default is for the current object to provide settings.
     const Override* o=this;
-    
+
+    // Tokenize the path by segment and try and map each segment.
 #ifdef HAVE_STRTOK_R
     char* pos=NULL;
     const char* token=strtok_r(dup,"/",&pos);
 #else
     const char* token=strtok(dup,"/");
 #endif
-    while (token)
-    {
+    while (token) {
         map<string,Override*>::const_iterator i=o->m_map.find(token);
         if (i==o->m_map.end())
-            break;
+            break;  // Once there's no match, we've consumed as much of the path as possible here.
+        // We found a match, so reset the settings pointer.
         o=i->second;
+        
+        // We descended a step down the path, so we need to advance the original
+        // parameter for the regex step later.
+        path += strlen(token);
+        if (*path == '/')
+            path++;
+
+        // Get the next segment, if any.
 #ifdef HAVE_STRTOK_R
         token=strtok_r(NULL,"/",&pos);
 #else
@@ -370,6 +430,15 @@ const Override* Override::locate(const char* path) const
     }
 
     free(dup);
+
+    // If there's anything left, we try for a regex match on the rest of the path.
+    if (*path) {
+        for (vector< pair<RegularExpression*,Override*> >::const_iterator re = o->m_regexps.begin(); re != o->m_regexps.end(); ++re) {
+            if (re->first->matches(path))
+                return re->second;
+        }
+    }
+
     return o;
 }
 
@@ -385,8 +454,34 @@ XMLRequestMapperImpl::XMLRequestMapperImpl(const DOMElement* e, Category& log) :
     // Load any AccessControl provider.
     loadACL(e,log);
 
+    // Loop over the HostRegex elements.
+    const DOMElement* host = XMLHelper::getFirstChildElement(e,HostRegex);
+    for (int i=1; host; ++i, host=XMLHelper::getNextSiblingElement(host,HostRegex)) {
+        const XMLCh* n=host->getAttributeNS(NULL,regex);
+        if (!n || !*n) {
+            log.warn("Skipping HostRegex element (%d) with empty regex attribute",i);
+            continue;
+        }
+
+        auto_ptr<Override> o(new Override(host,log,this));
+
+        const XMLCh* flag=host->getAttributeNS(NULL,ignoreCase);
+        try {
+            auto_ptr<RegularExpression> re(
+                new RegularExpression(n, (flag && (*flag==chLatin_f || *flag==chDigit_0)) ? &chNull : ignoreOption)
+                );
+            m_regexps.push_back(make_pair(re.release(), o.release()));
+        }
+        catch (XMLException& ex) {
+            auto_ptr_char tmp(ex.getMessage());
+            log.error("caught exception while parsing HostRegex regular expression (%d): %s", i, tmp.get());
+        }
+
+        log.debug("Added <HostRegex> mapping for %s", m_regexps.back().second->getString("regex").second);
+    }
+
     // Loop over the Host elements.
-    const DOMElement* host = XMLHelper::getFirstChildElement(e,Host);
+    host = XMLHelper::getFirstChildElement(e,Host);
     for (int i=1; host; ++i, host=XMLHelper::getNextSiblingElement(host,Host)) {
         const XMLCh* n=host->getAttributeNS(NULL,name);
         if (!n || !*n) {
@@ -509,6 +604,12 @@ const Override* XMLRequestMapperImpl::findOverride(const char* vhost, const char
         i=m_extras.find(vhost);
         if (i!=m_extras.end())
             o=i->second;
+        else {
+            for (vector< pair<RegularExpression*,Override*> >::const_iterator re = m_regexps.begin(); !o && re != m_regexps.end(); ++re) {
+                if (re->first->matches(vhost))
+                    o=re->second;
+            }
+        }
     }
     
     return o ? o->locate(path) : this;
