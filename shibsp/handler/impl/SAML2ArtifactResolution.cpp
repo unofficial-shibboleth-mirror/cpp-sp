@@ -100,7 +100,7 @@ namespace shibsp {
 };
 
 SAML2ArtifactResolution::SAML2ArtifactResolution(const DOMElement* e, const char* appId)
-    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SAML2ArtifactResolution"))
+    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".ArtifactResolution.SAML2"))
 #ifndef SHIBSP_LITE
         ,m_encoder(NULL), m_decoder(NULL), m_role(samlconstants::SAML20MD_NS, opensaml::saml2md::IDPSSODescriptor::LOCAL_NAME)
 #endif

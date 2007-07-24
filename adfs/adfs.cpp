@@ -127,7 +127,7 @@ namespace {
     {
     public:
         ADFSConsumer(const DOMElement* e, const char* appId)
-            : shibsp::AssertionConsumerService(e, appId, Category::getInstance(SHIBSP_LOGCAT".ADFSSSO"))
+            : shibsp::AssertionConsumerService(e, appId, Category::getInstance(SHIBSP_LOGCAT".SSO.ADFS"))
 #ifndef SHIBSP_LITE
                 ,m_binding(WSFED_NS)
 #endif
