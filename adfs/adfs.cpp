@@ -423,8 +423,8 @@ pair<bool,long> ADFSSessionInitiator::doRequest(
     preserveRelayState(app, httpResponse, relayState);
 
     // UTC timestamp
-#ifndef HAVE_GMTIME_R
     time_t epoch=time(NULL);
+#ifndef HAVE_GMTIME_R
     struct tm* ptime=gmtime(&epoch);
 #else
     struct tm res;
