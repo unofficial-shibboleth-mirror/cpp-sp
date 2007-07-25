@@ -953,8 +953,11 @@ DDF deserialize(DOMElement* root, bool lowercase)
     if (!XMLString::compareString(tag,_string)) {
         DOMNode* child=root->getFirstChild();
         if (child && child->getNodeType()==DOMNode::TEXT_NODE) {
-            auto_ptr_char val(child->getNodeValue());
-            obj.string(val.get());
+            char* val = toUTF8(child->getNodeValue());
+            if (val) {
+                obj.string(val);
+                delete[] val;
+            }
         }
     }
     else if (!XMLString::compareString(tag,_number)) {
