@@ -37,12 +37,12 @@
 
 	<!-- Second, the new version (note the OID-style name): -->
 	<Attribute name="urn:oid:1.3.6.1.4.1.5923.1.1.1.10" id="persistent-id">
-		<AttributeDecoder xsi:type="NameIDAttributeDecoder" formatter="$Name!!$NameQualifier!!$SPNameQualifier"/>
+		<AttributeDecoder xsi:type="NameIDAttributeDecoder" formatter="$NameQualifier!$SPNameQualifier!$Name"/>
 	</Attribute>
 
 	<!-- Third, the SAML 2.0 NameID Format: -->
 	<Attribute name="urn:oasis:names:tc:SAML:2.0:nameid-format:persistent" id="persistent-id">
-		<AttributeDecoder xsi:type="NameIDAttributeDecoder" formatter="$Name!!$NameQualifier!!$SPNameQualifier"/>
+		<AttributeDecoder xsi:type="NameIDAttributeDecoder" formatter="$NameQualifier!$SPNameQualifier!$Name"/>
 	</Attribute>
 	
 	<!-- Some more eduPerson attributes, uncomment these to use them... -->
