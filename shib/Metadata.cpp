@@ -218,8 +218,10 @@ void AAP::apply(const saml::Iterator<IAAP*>& aaps, const IProvider* originSite, 
     Iterator<SAMLStatement*> statements=assertion.getStatements();
     for (unsigned int scount=0; scount < statements.size();) {
         SAMLAttributeStatement* s=dynamic_cast<SAMLAttributeStatement*>(statements[scount]);
-        if (!s)
+        if (!s) {
+            scount++;
             continue;
+        }
         
         // Check each attribute.
         Iterator<SAMLAttribute*> attrs=s->getAttributes();
