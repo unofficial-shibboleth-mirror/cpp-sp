@@ -306,7 +306,7 @@ void XMLFilterImpl::filterAttributes(const FilteringContext& context, multimap<s
                 if (rules.first != rules.second) {
                     ruleFound = true;
                     // Run each rule in sequence.
-                    m_log.debug("filtering values of attribute (%s) from (%s)", a->second->getId(), issuer.get() ? issuer.get() : "unknown source");
+                    m_log.debug("applying filtering rule(s) for attribute (%s) from (%s)", a->second->getId(), issuer.get() ? issuer.get() : "unknown source");
                     for (; rules.first!=rules.second; ++rules.first) {
                         count = a->second->valueCount();
                         for (index=0; index < count;) {
