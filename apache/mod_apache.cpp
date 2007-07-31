@@ -1016,22 +1016,6 @@ bool htAccessControl::authorized(const SPRequest& request, const Session* sessio
     return false;
 }
 
-#ifndef SHIB_APACHE_13
-/*
- * shib_exit()
- *  Empty cleanup hook, Apache 2.x doesn't check NULL very well...
- */
-extern "C" apr_status_t shib_exit(void* data)
-{
-    if (g_Config) {
-        g_Config->term();
-        g_Config = NULL;
-    }
-    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,NULL,"shib_exit() done");
-    return OK;
-}
-#endif
-
 
 // Initial look at a request - create the per-request structure
 static int shib_post_read(request_rec *r)
@@ -1066,29 +1050,35 @@ extern "C" int shib_fixups(request_rec* r)
   return OK;
 }
 
+#ifdef SHIB_APACHE_13
 /*
  * shib_child_exit()
  *  Cleanup the (per-process) pool info.
  */
-#ifdef SHIB_APACHE_13
 extern "C" void shib_child_exit(server_rec* s, SH_AP_POOL* p)
 {
-#else
-extern "C" apr_status_t shib_child_exit(void* data)
-{
-  server_rec* s = NULL;
-#endif
     if (g_Config) {
         ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_child_exit(%d) dealing with g_Config..", (int)getpid());
         g_Config->term();
         g_Config = NULL;
         ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_child_exit() done");
     }
-
-#ifndef SHIB_APACHE_13
-    return OK;
-#endif
 }
+#else
+/*
+ * shib_exit()
+ *  Apache 2.x doesn't allow for per-child cleanup, causes CGI forks to hang.
+ */
+extern "C" apr_status_t shib_exit(void* data)
+{
+    if (g_Config) {
+        g_Config->term();
+        g_Config = NULL;
+    }
+    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,NULL,"shib_exit() done");
+    return OK;
+}
+#endif
 
 /* 
  * shire_child_init()
@@ -1155,7 +1145,7 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
     }
 
     // Set the cleanup handler
-    apr_pool_cleanup_register(p, NULL, &shib_exit, &shib_child_exit);
+    apr_pool_cleanup_register(p, NULL, &shib_exit, apr_pool_cleanup_null);
 
     ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() done");
 }

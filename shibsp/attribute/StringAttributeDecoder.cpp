@@ -24,7 +24,6 @@
 #include "attribute/AttributeDecoder.h"
 #include "attribute/SimpleAttribute.h"
 
-#include <log4cpp/Category.hh>
 #include <saml/saml1/core/Assertions.h>
 #include <saml/saml2/core/Assertions.h>
 
@@ -32,7 +31,6 @@ using namespace shibsp;
 using namespace opensaml::saml1;
 using namespace opensaml::saml2;
 using namespace xmltooling;
-using namespace log4cpp;
 using namespace std;
 
 namespace shibsp {

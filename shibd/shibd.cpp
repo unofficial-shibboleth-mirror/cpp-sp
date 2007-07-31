@@ -44,7 +44,6 @@
 
 #include <stdio.h>
 #include <signal.h>
-#include <log4cpp/Category.hh>
 #include <shibsp/ServiceProvider.h>
 #include <shibsp/remoting/ListenerService.h>
 #include <xercesc/util/XMLUniDefs.hpp>
@@ -53,7 +52,6 @@
 #include <xmltooling/util/XMLHelper.h>
 
 using namespace shibsp;
-using namespace log4cpp;
 using namespace xmltooling;
 using namespace std;
 

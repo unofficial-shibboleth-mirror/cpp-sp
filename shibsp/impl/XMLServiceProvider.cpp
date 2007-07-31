@@ -34,8 +34,13 @@
 #include "util/DOMPropertySet.h"
 #include "util/SPConstants.h"
 
-#include <log4cpp/Category.hh>
-#include <log4cpp/PropertyConfigurator.hh>
+#if defined(XMLTOOLING_LOG4SHIB)
+# include <log4shib/PropertyConfigurator.hh>
+#elif defined(XMLTOOLING_LOG4CPP)
+# include <log4cpp/PropertyConfigurator.hh>
+#else
+# error "Supported logging library not available."
+#endif
 #include <xercesc/util/XMLUniDefs.hpp>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/NDC.h>
@@ -64,7 +69,6 @@ using namespace opensaml;
 
 using namespace shibsp;
 using namespace xmltooling;
-using namespace log4cpp;
 using namespace std;
 
 namespace {

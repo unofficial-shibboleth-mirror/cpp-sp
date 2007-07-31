@@ -29,7 +29,6 @@
 #include "util/TemplateParameters.h"
 
 #include <fstream>
-#include <log4cpp/Category.hh>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/URLEncoder.h>
 
@@ -91,7 +90,7 @@ void LogoutHandler::receive(DDF& in, ostream& out)
     const Application* app=aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : NULL;
     if (!app) {
         // Something's horribly wrong.
-        log4cpp::Category::getInstance(SHIBSP_LOGCAT".Logout").error("couldn't find application (%s) for logout", aid ? aid : "(missing)");
+        Category::getInstance(SHIBSP_LOGCAT".Logout").error("couldn't find application (%s) for logout", aid ? aid : "(missing)");
         throw ConfigurationException("Unable to locate application for logout, deleted?");
     }
 
@@ -216,7 +215,7 @@ bool LogoutHandler::notifyBackChannel(
                 delete soaper.receive();
             }
             catch (exception& ex) {
-                log4cpp::Category::getInstance(SHIBSP_LOGCAT".Logout").error("error notifying application of logout event: %s", ex.what());
+                Category::getInstance(SHIBSP_LOGCAT".Logout").error("error notifying application of logout event: %s", ex.what());
                 result = false;
             }
             soaper.reset();

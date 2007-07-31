@@ -26,12 +26,9 @@
 #include "ServiceProvider.h"
 #include "SessionCache.h"
 
-#include <log4cpp/Category.hh>
-
 using namespace shibsp;
 using namespace opensaml;
 using namespace xmltooling;
-using namespace log4cpp;
 using namespace std;
 
 AbstractSPRequest::AbstractSPRequest()
@@ -277,10 +274,10 @@ const char* AbstractSPRequest::getHandlerURL(const char* resource) const
 void AbstractSPRequest::log(SPLogLevel level, const std::string& msg) const
 {
     reinterpret_cast<Category*>(m_log)->log(
-        (level == SPDebug ? log4cpp::Priority::DEBUG :
-        (level == SPInfo ? log4cpp::Priority::INFO :
-        (level == SPWarn ? log4cpp::Priority::WARN :
-        (level == SPError ? log4cpp::Priority::ERROR : log4cpp::Priority::CRIT)))),
+        (level == SPDebug ? Priority::DEBUG :
+        (level == SPInfo ? Priority::INFO :
+        (level == SPWarn ? Priority::WARN :
+        (level == SPError ? Priority::ERROR : Priority::CRIT)))),
         msg
         );
 }
@@ -288,9 +285,9 @@ void AbstractSPRequest::log(SPLogLevel level, const std::string& msg) const
 bool AbstractSPRequest::isPriorityEnabled(SPLogLevel level) const
 {
     return reinterpret_cast<Category*>(m_log)->isPriorityEnabled(
-        (level == SPDebug ? log4cpp::Priority::DEBUG :
-        (level == SPInfo ? log4cpp::Priority::INFO :
-        (level == SPWarn ? log4cpp::Priority::WARN :
-        (level == SPError ? log4cpp::Priority::ERROR : log4cpp::Priority::CRIT))))
+        (level == SPDebug ? Priority::DEBUG :
+        (level == SPInfo ? Priority::INFO :
+        (level == SPWarn ? Priority::WARN :
+        (level == SPError ? Priority::ERROR : Priority::CRIT))))
         );
 }

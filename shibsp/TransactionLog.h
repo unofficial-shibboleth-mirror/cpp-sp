@@ -24,7 +24,7 @@
 #define __shibsp_txlog_h__
 
 #include <shibsp/base.h>
-#include <log4cpp/Category.hh>
+#include <xmltooling/logging.h>
 #include <xmltooling/Lockable.h>
 #include <xmltooling/util/Threads.h>
 
@@ -40,7 +40,7 @@ namespace shibsp {
         MAKE_NONCOPYABLE(TransactionLog);
     public:
         TransactionLog()
-            : log(log4cpp::Category::getInstance(SHIBSP_TX_LOGCAT)), m_lock(xmltooling::Mutex::create()) {
+            : log(xmltooling::logging::Category::getInstance(SHIBSP_TX_LOGCAT)), m_lock(xmltooling::Mutex::create()) {
         }
 
         virtual ~TransactionLog() {
@@ -57,7 +57,7 @@ namespace shibsp {
         }
 
         /** Logging object. */
-        log4cpp::Category& log;
+        xmltooling::logging::Category& log;
 
     private:
         xmltooling::Mutex* m_lock;

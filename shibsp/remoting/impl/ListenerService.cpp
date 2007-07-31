@@ -25,12 +25,10 @@
 #include "ServiceProvider.h"
 #include "remoting/ListenerService.h"
 
-#include <log4cpp/Category.hh>
 #include <xercesc/dom/DOM.hpp>
 
 using namespace shibsp;
 using namespace xmltooling;
-using namespace log4cpp;
 using namespace xercesc;
 using namespace std;
 

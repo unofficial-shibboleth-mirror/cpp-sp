@@ -26,11 +26,11 @@
 #include <shibsp/handler/Handler.h>
 #include <shibsp/util/DOMPropertySet.h>
 
-#include <log4cpp/Category.hh>
 #ifndef SHIBSP_LITE
 # include <saml/binding/MessageEncoder.h>
 # include <saml/saml2/core/Protocols.h>
 #endif
+#include <xmltooling/logging.h>
 #include <xmltooling/XMLObject.h>
 #include <xmltooling/io/HTTPRequest.h>
 #include <xmltooling/io/HTTPResponse.h>
@@ -60,7 +60,7 @@ namespace shibsp {
          */
         AbstractHandler(
             const xercesc::DOMElement* e,
-            log4cpp::Category& log,
+            xmltooling::logging::Category& log,
             xercesc::DOMNodeFilter* filter=NULL,
             const std::map<std::string,std::string>* remapper=NULL
             );
@@ -149,7 +149,7 @@ namespace shibsp {
             ) const;
         
         /** Logging object. */
-        log4cpp::Category& m_log;
+        xmltooling::logging::Category& m_log;
         
         /** Configuration namespace for custom properties. */
         xmltooling::auto_ptr_char m_configNS;

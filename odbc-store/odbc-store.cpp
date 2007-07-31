@@ -37,8 +37,8 @@
 # define ODBCSTORE_EXPORTS
 #endif
 
-#include <log4cpp/Category.hh>
 #include <xercesc/util/XMLUniDefs.hpp>
+#include <xmltooling/logging.h>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/StorageService.h>
@@ -48,9 +48,9 @@
 #include <sql.h>
 #include <sqlext.h>
 
+using namespace xmltooling::logging;
 using namespace xmltooling;
 using namespace xercesc;
-using namespace log4cpp;
 using namespace std;
 
 #define PLUGIN_VER_MAJOR 1

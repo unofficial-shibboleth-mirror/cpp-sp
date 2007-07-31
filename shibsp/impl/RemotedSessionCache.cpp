@@ -31,7 +31,6 @@
 
 #include <ctime>
 #include <sstream>
-#include <log4cpp/Category.hh>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/DateTime.h>
 #include <xmltooling/util/NDC.h>
@@ -39,7 +38,6 @@
 
 using namespace shibsp;
 using namespace xmltooling;
-using namespace log4cpp;
 using namespace std;
 
 namespace shibsp {

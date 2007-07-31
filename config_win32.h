@@ -28,8 +28,11 @@
 /* Define to 1 if you have the `dmallocxx' library (-ldmallocxx). */
 /* #undef HAVE_LIBDMALLOCXX */
 
-/* Define if log4cpp library was found */
-#define HAVE_LIBLOG4CPP 1
+/* Define if log4shib library is used. */
+#define SHIBSP_LOG4SHIB 1
+
+/* Define if log4cpp library is used. */
+/* #undef SHIBSP_LOG4CPP */
 
 /* Define to 1 if you have the `ssl' library (-lssl). */
 #define HAVE_LIBSSL 1

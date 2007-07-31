@@ -44,7 +44,6 @@ using namespace shibspconstants;
 using namespace shibsp;
 using namespace opensaml;
 using namespace xmltooling;
-using namespace log4cpp;
 using namespace std;
 
 AssertionConsumerService::AssertionConsumerService(const DOMElement* e, const char* appId, Category& log)

@@ -24,13 +24,11 @@
 #include "attribute/filtering/AttributeFilter.h"
 #include "attribute/filtering/FilteringContext.h"
 
-#include <log4cpp/Category.hh>
 #include <xercesc/util/XMLUniDefs.hpp>
 #include <xmltooling/util/XMLHelper.h>
 
 using namespace shibsp;
 using namespace xmltooling;
-using namespace log4cpp;
 using namespace std;
 
 namespace shibsp {

@@ -60,7 +60,7 @@ namespace shibsp {
          * @param appId ID of application that "owns" the handler
          * @param log   a logging object to use
          */
-        AssertionConsumerService(const xercesc::DOMElement* e, const char* appId, log4cpp::Category& log);
+        AssertionConsumerService(const xercesc::DOMElement* e, const char* appId, xmltooling::logging::Category& log);
         
 #ifndef SHIBSP_LITE
         /**

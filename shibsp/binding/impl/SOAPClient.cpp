@@ -26,7 +26,6 @@
 #include "ServiceProvider.h"
 #include "binding/SOAPClient.h"
 
-#include <log4cpp/Category.hh>
 #include <saml/saml2/metadata/Metadata.h>
 #include <xmltooling/soap/SOAP.h>
 #include <xmltooling/soap/HTTPSOAPTransport.h>
@@ -36,7 +35,6 @@ using namespace shibsp;
 using namespace opensaml::saml2md;
 using namespace xmlsignature;
 using namespace xmltooling;
-using namespace log4cpp;
 using namespace std;
 
 SOAPClient::SOAPClient(SecurityPolicy& policy)

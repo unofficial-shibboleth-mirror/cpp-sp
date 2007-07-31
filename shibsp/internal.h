@@ -43,6 +43,9 @@
 #include "base.h"
 #include "SPConfig.h"
 
+#include <xmltooling/logging.h>
+
+using namespace xmltooling::logging;
 using namespace xercesc;
 
 namespace shibsp {

@@ -24,7 +24,7 @@
 #define __shibsp_dompropset_h__
 
 #include <shibsp/util/PropertySet.h>
-#include <log4cpp/Category.hh>
+#include <xmltooling/logging.h>
 
 namespace shibsp {
 
@@ -67,7 +67,7 @@ namespace shibsp {
          */
         void load(
             const xercesc::DOMElement* e,
-            log4cpp::Category& log,
+            xmltooling::logging::Category& log,
             xercesc::DOMNodeFilter* filter,
             const std::map<std::string,std::string>* remapper=NULL
             );

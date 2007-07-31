@@ -35,15 +35,12 @@
 #include <saml/saml2/metadata/MetadataCredentialCriteria.h>
 #include <saml/util/SAMLConstants.h>
 
-#include <log4cpp/Category.hh>
-
 using namespace shibsp;
 using namespace opensaml::saml1p;
 using namespace opensaml::saml2;
 using namespace opensaml::saml2p;
 using namespace opensaml::saml2md;
 using namespace opensaml;
-using namespace log4cpp;
 using namespace xmltooling;
 using namespace std;
 
@@ -56,6 +53,7 @@ saml1p::Response* ArtifactResolver::resolve(
     MetadataCredentialCriteria mcc(idpDescriptor);
     shibsp::SOAPClient soaper(dynamic_cast<shibsp::SecurityPolicy&>(policy));
 
+    bool foundEndpoint = false;
     auto_ptr_XMLCh binding(samlconstants::SAML1_BINDING_SOAP);
     saml1p::Response* response=NULL;
     const vector<ArtifactResolutionService*>& endpoints=idpDescriptor.getArtifactResolutionServices();
@@ -63,6 +61,7 @@ saml1p::Response* ArtifactResolver::resolve(
         try {
             if (!XMLString::equals((*ep)->getBinding(),binding.get()))
                 continue;
+            foundEndpoint = true;
             auto_ptr_char loc((*ep)->getLocation());
             saml1p::Request* request = saml1p::RequestBuilder::buildRequest();
             request->setMinorVersion(idpDescriptor.hasSupport(samlconstants::SAML11_PROTOCOL_ENUM) ? 1 : 0);
@@ -83,7 +82,9 @@ saml1p::Response* ArtifactResolver::resolve(
         }
     }
 
-    if (!response)
+    if (!foundEndpoint)
+        throw MetadataException("No compatible endpoint found in issuer's metadata.");
+    else if (!response)
         throw BindingException("Unable to resolve artifact(s) into a SAML response.");
     const QName* code = (response->getStatus() && response->getStatus()->getStatusCode()) ? response->getStatus()->getStatusCode()->getValue() : NULL;
     if (!code || *code != saml1p::StatusCode::SUCCESS) {
@@ -104,6 +105,7 @@ ArtifactResponse* ArtifactResolver::resolve(
     shibsp::SecurityPolicy& sppolicy = dynamic_cast<shibsp::SecurityPolicy&>(policy);
     shibsp::SOAPClient soaper(sppolicy);
 
+    bool foundEndpoint = false;
     auto_ptr_XMLCh binding(samlconstants::SAML20_BINDING_SOAP);
     ArtifactResponse* response=NULL;
     const vector<ArtifactResolutionService*>& endpoints=ssoDescriptor.getArtifactResolutionServices();
@@ -111,6 +113,7 @@ ArtifactResponse* ArtifactResolver::resolve(
         try {
             if (!XMLString::equals((*ep)->getBinding(),binding.get()))
                 continue;
+            foundEndpoint = true;
             auto_ptr_char loc((*ep)->getLocation());
             auto_ptr_XMLCh issuer(sppolicy.getApplication().getString("entityID").second);
             ArtifactResolve* request = ArtifactResolveBuilder::buildArtifactResolve();
@@ -136,9 +139,11 @@ ArtifactResponse* ArtifactResolver::resolve(
         }
     }
 
-    if (!response)
+    if (!foundEndpoint)
+        throw MetadataException("No compatible endpoint found in issuer's metadata.");
+    else if (!response)
         throw BindingException("Unable to resolve artifact(s) into a SAML response.");
-    if (!response->getStatus() || !response->getStatus()->getStatusCode() ||
+    else if (!response->getStatus() || !response->getStatus()->getStatusCode() ||
            !XMLString::equals(response->getStatus()->getStatusCode()->getValue(), saml2p::StatusCode::SUCCESS)) {
         delete response;
         throw BindingException("Identity provider returned a SAML error in response to artifact.");

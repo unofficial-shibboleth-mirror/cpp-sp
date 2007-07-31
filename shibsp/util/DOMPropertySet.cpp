@@ -29,7 +29,6 @@
 
 using namespace shibsp;
 using namespace xmltooling;
-using namespace log4cpp;
 using namespace xercesc;
 using namespace std;
 

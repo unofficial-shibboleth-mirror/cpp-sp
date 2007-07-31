@@ -78,7 +78,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/export:GetExtensionVersion /export:GetFilterVersion /export:TerminateExtension /export:TerminateFilter /export:HttpFilterProc /export:HttpExtensionProc"
-				AdditionalDependencies="log4cpp.lib xerces-c_2.lib xmltooling-lite1.lib"
+				AdditionalDependencies="xerces-c_2.lib xmltooling-lite1.lib"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="&quot;..\..\cpp-xmltooling\$(ConfigurationName)&quot;"
@@ -175,7 +175,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/export:GetExtensionVersion /export:GetFilterVersion /export:TerminateExtension /export:TerminateFilter /export:HttpFilterProc /export:HttpExtensionProc"
-				AdditionalDependencies="log4cppD.lib xerces-c_2D.lib xmltooling-lite1D.lib"
+				AdditionalDependencies="xerces-c_2D.lib xmltooling-lite1D.lib"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="&quot;..\..\cpp-xmltooling\$(ConfigurationName)&quot;"

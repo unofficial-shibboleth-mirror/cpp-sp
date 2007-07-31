@@ -51,7 +51,6 @@ using namespace shibsp;
 using namespace samlconstants;
 using namespace opensaml;
 using namespace xmltooling;
-using namespace log4cpp;
 using namespace xercesc;
 using namespace std;
 
@@ -91,7 +90,7 @@ void SHIBSP_API shibsp::registerHandlers()
 }
 
 AbstractHandler::AbstractHandler(
-    const DOMElement* e, log4cpp::Category& log, DOMNodeFilter* filter, const map<string,string>* remapper
+    const DOMElement* e, Category& log, DOMNodeFilter* filter, const map<string,string>* remapper
     ) : m_log(log), m_configNS(shibspconstants::SHIB2SPCONFIG_NS) {
     load(e,log,filter,remapper);
 }

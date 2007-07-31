@@ -43,10 +43,10 @@
 #include <shibsp/handler/AssertionConsumerService.h>
 #include <shibsp/handler/LogoutHandler.h>
 #include <shibsp/handler/SessionInitiator.h>
+#include <xmltooling/logging.h>
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/URLEncoder.h>
 #include <xmltooling/util/XMLHelper.h>
-#include <log4cpp/Category.hh>
 #include <xercesc/util/XMLUniDefs.hpp>
 
 #ifndef SHIBSP_LITE
@@ -67,9 +67,9 @@ using namespace opensaml::saml2md;
 #endif
 using namespace shibsp;
 using namespace opensaml;
+using namespace xmltooling::logging;
 using namespace xmltooling;
 using namespace xercesc;
-using namespace log4cpp;
 using namespace std;
 
 #define WSFED_NS "http://schemas.xmlsoap.org/ws/2003/07/secext"

@@ -38,7 +38,6 @@
 #include "remoting/ListenerService.h"
 #include "util/SPConstants.h"
 
-#include <log4cpp/Category.hh>
 #include <saml/SAMLConfig.h>
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/StorageService.h>
@@ -49,7 +48,6 @@ using namespace shibsp;
 using namespace opensaml::saml2md;
 using namespace opensaml;
 using namespace xmltooling;
-using namespace log4cpp;
 using namespace std;
 
 namespace shibsp {

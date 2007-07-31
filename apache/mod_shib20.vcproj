@@ -76,7 +76,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="log4cpp.lib xerces-c_2.lib libapr.lib libaprutil.lib libhttpd.lib xmltooling-lite1.lib"
+				AdditionalDependencies="xerces-c_2.lib libapr.lib libaprutil.lib libhttpd.lib xmltooling-lite1.lib"
 				OutputFile="$(OutDir)\mod_shib_20.so"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
@@ -173,7 +173,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="log4cppD.lib xerces-c_2D.lib libapr.lib libaprutil.lib libhttpd.lib xmltooling-lite1D.lib"
+				AdditionalDependencies="xerces-c_2D.lib libapr.lib libaprutil.lib libhttpd.lib xmltooling-lite1D.lib"
 				OutputFile="$(OutDir)\mod_shib_20.so"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"

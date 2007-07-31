@@ -27,7 +27,6 @@
 #include "attribute/resolver/AttributeResolver.h"
 #include "attribute/resolver/ResolutionContext.h"
 
-#include <log4cpp/Category.hh>
 #include <xercesc/util/XMLUniDefs.hpp>
 #include <xmltooling/util/XMLHelper.h>
 
@@ -35,7 +34,6 @@ using namespace shibsp;
 using namespace opensaml::saml2;
 using namespace opensaml::saml2md;
 using namespace xmltooling;
-using namespace log4cpp;
 using namespace std;
 
 namespace shibsp {

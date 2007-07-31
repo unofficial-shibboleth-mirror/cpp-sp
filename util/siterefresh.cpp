@@ -19,19 +19,23 @@
    Scott Cantor
    5/12/03
 
-   $Id$
+   $Id:siterefresh.cpp 2252 2007-05-20 20:20:57Z cantor $
 */
 
 #include <saml/SAMLConfig.h>
 #include <saml/saml2/metadata/Metadata.h>
 #include <saml/util/SAMLConstants.h>
+#include <xmltooling/logging.h>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/signature/Signature.h>
 #include <xmltooling/util/XMLHelper.h>
 
 #include <fstream>
-#include <log4cpp/Category.hh>
-#include <log4cpp/OstreamAppender.hh>
+#if defined(XMLTOOLING_LOG4SHIB)
+# include <log4shib/OstreamAppender.hh>
+#elif defined(XMLTOOLING_LOG4CPP)
+# include <log4cpp/OstreamAppender.hh>
+#endif
 #include <xercesc/framework/URLInputSource.hpp>
 #include <xercesc/framework/StdInInputSource.hpp>
 #include <xercesc/framework/Wrapper4InputSource.hpp>
@@ -48,12 +52,12 @@
 
 using namespace xmlsignature;
 using namespace xmlconstants;
+using namespace xmltooling::logging;
 using namespace xmltooling;
 using namespace samlconstants;
 using namespace opensaml::saml2md;
 using namespace opensaml;
 using namespace xercesc;
-using namespace log4cpp;
 using namespace std;
 
 void verifySignature(DOMDocument* doc, DOMNode* sigNode, const char* cert=NULL)

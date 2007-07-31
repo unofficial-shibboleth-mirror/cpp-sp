@@ -22,6 +22,19 @@
  */
 
 #include "internal.h"
+
+#if defined(XMLTOOLING_LOG4SHIB)
+# ifndef SHIBSP_LOG4SHIB
+#  error "Logging library mismatch (XMLTooling is using log4shib)."
+# endif
+#elif defined(XMLTOOLING_LOG4CPP)
+# ifndef SHIBSP_LOG4CPP
+#  error "Logging library mismatch (XMLTooling is using log4cpp)."
+# endif
+#else
+# error "No supported logging library."
+#endif
+
 #include "AccessControl.h"
 #include "exceptions.h"
 #include "RequestMapper.h"
@@ -46,14 +59,12 @@
 # include <xmltooling/XMLToolingConfig.h>
 #endif
 
-#include <log4cpp/Category.hh>
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/TemplateEngine.h>
 
 using namespace shibsp;
 using namespace opensaml;
 using namespace xmltooling;
-using namespace log4cpp;
 
 DECL_XMLTOOLING_EXCEPTION_FACTORY(AttributeException,shibsp);
 DECL_XMLTOOLING_EXCEPTION_FACTORY(AttributeExtractionException,shibsp);

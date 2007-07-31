@@ -27,7 +27,6 @@
 #include "handler/RemotedHandler.h"
 
 #include <algorithm>
-#include <log4cpp/Category.hh>
 #include <xmltooling/unicode.h>
 
 #ifndef SHIBSP_LITE
@@ -41,7 +40,6 @@
 using namespace shibsp;
 using namespace opensaml;
 using namespace xmltooling;
-using namespace log4cpp;
 using namespace xercesc;
 using namespace std;
 

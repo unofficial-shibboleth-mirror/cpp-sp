@@ -31,7 +31,6 @@
 
 using namespace shibsp;
 using namespace xmltooling;
-using namespace log4cpp;
 using namespace std;
 
 namespace shibsp {

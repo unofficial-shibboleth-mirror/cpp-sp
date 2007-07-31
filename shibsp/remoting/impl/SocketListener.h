@@ -29,8 +29,8 @@
 
 #include <shibsp/remoting/ListenerService.h>
 
-#include <log4cpp/Category.hh>
 #include <xercesc/dom/DOM.hpp>
+#include <xmltooling/logging.h>
 #include <xmltooling/util/Threads.h>
 
 #ifdef WIN32
@@ -71,7 +71,7 @@ namespace shibsp {
 
     protected:
         bool log_error() const; // for OS-level errors
-        log4cpp::Category* log;
+        xmltooling::logging::Category* log;
         /// @endcond
     
     private:

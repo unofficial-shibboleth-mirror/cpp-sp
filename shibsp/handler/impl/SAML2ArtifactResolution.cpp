@@ -51,7 +51,6 @@ using namespace shibsp;
 using namespace opensaml;
 using namespace soap11;
 using namespace xmltooling;
-using namespace log4cpp;
 using namespace std;
 
 namespace shibsp {

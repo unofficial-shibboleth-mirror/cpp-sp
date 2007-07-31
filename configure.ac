@@ -74,24 +74,55 @@ AC_LANG(C++)
 AC_CXX_REQUIRE_STL
 AC_CXX_NAMESPACES
 
-# log4cpp settings
-AC_PATH_PROG(LOG4CPP_CONFIG,log4cpp-config)
-AC_ARG_WITH(log4cpp,
-            AC_HELP_STRING([--with-log4cpp=PATH], [where log4cpp is installed]),
-            [LOG4CPP_CONFIG="${with_log4cpp}/bin/log4cpp-config"])
-if test -f "${LOG4CPP_CONFIG}"; then
-    LDFLAGS="`${LOG4CPP_CONFIG} --libs` $LDFLAGS"
-    CPPFLAGS="`${LOG4CPP_CONFIG} --cflags` $CPPFLAGS"
+# log4shib settings (favor this version over the log4cpp code)
+AC_PATH_PROG(LOG4SHIB_CONFIG,log4shib-config)
+AC_ARG_WITH(log4shib,
+    AC_HELP_STRING([--with-log4shib=PATH], [where log4shib-config is installed]),
+    [
+    LOG4SHIB_CONFIG="${with_log4shib}"
+    if ! test -f "${LOG4SHIB_CONFIG}" ; then
+    	LOG4SHIB_CONFIG="${with_log4shib}/bin/log4shib-config"
+    fi
+    ])
+if test -f "${LOG4SHIB_CONFIG}"; then
+    LDFLAGS="`${LOG4SHIB_CONFIG} --libs` $LDFLAGS"
+    CPPFLAGS="`${LOG4SHIB_CONFIG} --cflags` $CPPFLAGS"
 else
-    AC_MSG_WARN([log4cpp-config not found, guessing at log4cpp build settings])
-    LIBS="-llog4cpp $LIBS"
+    AC_MSG_WARN([log4shib-config not found, may need to use --with-log4shib option])
+    AC_MSG_WARN([will look for original log4cpp library])
+    
+	# log4cpp settings
+	AC_PATH_PROG(LOG4CPP_CONFIG,log4cpp-config)
+	AC_ARG_WITH(log4cpp,
+	    AC_HELP_STRING([--with-log4cpp=PATH], [where log4cpp-config is installed]),
+	    [
+	    LOG4CPP_CONFIG="${with_log4cpp}"
+	    if ! test -f "${LOG4CPP_CONFIG}" ; then
+	    	LOG4CPP_CONFIG="${with_log4cpp}/bin/log4cpp-config"
+	    fi
+	    ])
+	if test -f "${LOG4CPP_CONFIG}"; then
+		AC_MSG_WARN([will try to use log4cpp, note that most non-Internet2 supplied versions are not thread-safe])
+	    LDFLAGS="`${LOG4CPP_CONFIG} --libs` $LDFLAGS"
+	    CPPFLAGS="`${LOG4CPP_CONFIG} --cflags` $CPPFLAGS"
+	else
+	    AC_MSG_ERROR([log4cpp-config not found, may need to use --with-log4cpp option])
+	fi
+	AC_CHECK_HEADER([log4cpp/Category.hh],,AC_MSG_ERROR([unable to find log4cpp header files]))
+	AC_CHECK_HEADER([log4cpp/PropertyConfigurator.hh],,AC_MSG_ERROR([you need at least log4cpp 0.3.x]))
+	AC_TRY_LINK(
+		[#include <log4cpp/Category.hh>],
+		[log4cpp::Category::getInstance("foo")],
+		[AC_DEFINE(SHIBSP_LOG4CPP,1,[Define if log4cpp library is used.])],
+		[AC_MSG_ERROR([unable to link with log4cpp])])
 fi
-AC_CHECK_HEADER([log4cpp/Category.hh],,AC_MSG_ERROR([unable to find log4cpp header files]))
+AC_CHECK_HEADER([log4shib/Category.hh],,AC_MSG_ERROR([unable to find log4shib header files]))
 AC_TRY_LINK(
-	[#include <log4cpp/Category.hh>],
-	[log4cpp::Category::getInstance("foo")],
-	[AC_DEFINE(HAVE_LIBLOG4CPP,1,[Define if log4cpp library was found])],
-	[AC_MSG_ERROR([unable to link with log4cpp])])
+	[#include <log4shib/Category.hh>],
+	[log4shib::Category::getInstance("foo")],
+	[AC_DEFINE(SHIBSP_LOG4SHIB,1,[Define if log4shib library is used.])],
+	[AC_MSG_ERROR([unable to link with log4shib])])
+
 
 # Xerces settings
 AC_ARG_WITH(xerces, 

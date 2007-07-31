@@ -33,7 +33,6 @@
 #include "binding/SOAPClient.h"
 #include "util/SPConstants.h"
 
-#include <log4cpp/Category.hh>
 #include <saml/exceptions.h>
 #include <saml/binding/SecurityPolicy.h>
 #include <saml/saml1/binding/SAML1SOAPClient.h>
@@ -57,7 +56,6 @@ using namespace opensaml::saml2p;
 using namespace opensaml::saml2md;
 using namespace opensaml;
 using namespace xmltooling;
-using namespace log4cpp;
 using namespace std;
 
 namespace shibsp {
