@@ -87,6 +87,12 @@ AC_ARG_WITH(log4shib,
 if test -f "${LOG4SHIB_CONFIG}"; then
     LDFLAGS="`${LOG4SHIB_CONFIG} --libs` $LDFLAGS"
     CPPFLAGS="`${LOG4SHIB_CONFIG} --cflags` $CPPFLAGS"
+	AC_CHECK_HEADER([log4shib/Category.hh],,AC_MSG_ERROR([unable to find log4shib header files]))
+	AC_TRY_LINK(
+		[#include <log4shib/Category.hh>],
+		[log4shib::Category::getInstance("foo")],
+		[AC_DEFINE(SHIBSP_LOG4SHIB,1,[Define if log4shib library is used.])],
+		[AC_MSG_ERROR([unable to link with log4shib])])
 else
     AC_MSG_WARN([log4shib-config not found, may need to use --with-log4shib option])
     AC_MSG_WARN([will look for original log4cpp library])
@@ -105,24 +111,17 @@ else
 		AC_MSG_WARN([will try to use log4cpp, note that most non-Internet2 supplied versions are not thread-safe])
 	    LDFLAGS="`${LOG4CPP_CONFIG} --libs` $LDFLAGS"
 	    CPPFLAGS="`${LOG4CPP_CONFIG} --cflags` $CPPFLAGS"
+		AC_CHECK_HEADER([log4cpp/Category.hh],,AC_MSG_ERROR([unable to find log4cpp header files]))
+		AC_CHECK_HEADER([log4cpp/PropertyConfigurator.hh],,AC_MSG_ERROR([you need at least log4cpp 0.3.x]))
+		AC_TRY_LINK(
+			[#include <log4cpp/Category.hh>],
+			[log4cpp::Category::getInstance("foo")],
+			[AC_DEFINE(SHIBSP_LOG4CPP,1,[Define if log4cpp library is used.])],
+			[AC_MSG_ERROR([unable to link with log4cpp])])
 	else
 	    AC_MSG_ERROR([log4cpp-config not found, may need to use --with-log4cpp option])
 	fi
-	AC_CHECK_HEADER([log4cpp/Category.hh],,AC_MSG_ERROR([unable to find log4cpp header files]))
-	AC_CHECK_HEADER([log4cpp/PropertyConfigurator.hh],,AC_MSG_ERROR([you need at least log4cpp 0.3.x]))
-	AC_TRY_LINK(
-		[#include <log4cpp/Category.hh>],
-		[log4cpp::Category::getInstance("foo")],
-		[AC_DEFINE(SHIBSP_LOG4CPP,1,[Define if log4cpp library is used.])],
-		[AC_MSG_ERROR([unable to link with log4cpp])])
 fi
-AC_CHECK_HEADER([log4shib/Category.hh],,AC_MSG_ERROR([unable to find log4shib header files]))
-AC_TRY_LINK(
-	[#include <log4shib/Category.hh>],
-	[log4shib::Category::getInstance("foo")],
-	[AC_DEFINE(SHIBSP_LOG4SHIB,1,[Define if log4shib library is used.])],
-	[AC_MSG_ERROR([unable to link with log4shib])])
-
 
 # Xerces settings
 AC_ARG_WITH(xerces, 
