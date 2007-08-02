@@ -26,6 +26,7 @@
 #include <shibsp/util/PropertySet.h>
 #ifndef SHIBSP_LITE
 # include <saml/binding/SecurityPolicyRule.h>
+# include <xmltooling/soap/SOAPTransport.h>
 # include <xmltooling/util/StorageService.h>
 #endif
 #include <xmltooling/Lockable.h>
@@ -115,6 +116,15 @@ namespace shibsp {
          * @return an array of policy rules
 		 */
         virtual const std::vector<const opensaml::SecurityPolicyRule*>& getPolicyRules(const char* id) const=0;
+
+        /**
+         * Sets implementation-specific transport options for an identified policy.
+         *
+		 * @param id        identifies the policy to return
+         * @param transport a SOAPTransport object
+         * @return  true iff all options were successfully set
+         */
+        virtual bool setTransportOptions(const char* id, xmltooling::SOAPTransport& transport) const=0;
 #endif
 
         /**

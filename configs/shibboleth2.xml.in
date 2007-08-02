@@ -263,7 +263,7 @@
 			signedAssertions="false"
 			requireConfidentiality="true"
 			requireTransportAuth="true"
-			chunkedEncoding="true"
+			chunkedEncoding="false"
 			connectTimeout="15" timeout="30"
 			>
 			<Rule type="SAML1Message"/>

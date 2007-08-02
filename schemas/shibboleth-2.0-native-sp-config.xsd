@@ -636,6 +636,7 @@
 					</annotation>
 					<complexType>
 						<sequence>
+							<element ref="conf:TransportOption" minOccurs="0" maxOccurs="unbounded"/>
 							<element name="Rule" type="conf:PluggableType" minOccurs="1" maxOccurs="unbounded"/>
 						</sequence>
 						<attribute name="id" type="conf:string" use="required"/>
@@ -650,6 +651,20 @@
 					</complexType>
 				</element>
 			</sequence>
+		</complexType>
+	</element>
+
+	<element name="TransportOption">
+		<annotation>
+			<documentation>Implementation-specific option to pass to SOAPTransport provider.</documentation>
+		</annotation>
+		<complexType>
+			<simpleContent>
+				<extension base="anySimpleType">
+					<attribute name="provider" type="conf:string" use="required"/>
+					<attribute name="option" type="conf:string" use="required"/>
+				</extension>
+			</simpleContent>
 		</complexType>
 	</element>
 	

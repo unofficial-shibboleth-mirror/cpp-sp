@@ -236,6 +236,7 @@ namespace {
         map<string,Application*> m_appmap;
 #ifndef SHIBSP_LITE
         map< string,pair< PropertySet*,vector<const SecurityPolicyRule*> > > m_policyMap;
+        map< string, vector< pair< string, pair<string,string> > > > m_transportOptionMap;
 #endif
         
         // Provides filter to exclude special config elements.
@@ -349,6 +350,22 @@ namespace {
                 return i->second.second;
             throw ConfigurationException("Security Policy ($1) not found, check <SecurityPolicies> element.", params(1,id));
         }
+
+        bool setTransportOptions(const char* id, SOAPTransport& transport) const {
+            bool ret = true;
+            map< string, vector< pair< string, pair<string,string> > > >::const_iterator p =
+                m_impl->m_transportOptionMap.find(id);
+            if (p == m_impl->m_transportOptionMap.end())
+                return ret;
+            vector< pair< string, pair<string,string> > >::const_iterator opt;
+            for (opt = p->second.begin(); opt != p->second.end(); ++opt) {
+                if (!transport.setProviderOption(opt->first.c_str(), opt->second.first.c_str(), opt->second.second.c_str())) {
+                    m_log.error("failed to set SOAPTransport option (%s)", opt->second.first.c_str());
+                    ret = false;
+                }
+            }
+            return ret;
+        }
 #endif
 
     protected:
@@ -397,9 +414,11 @@ namespace {
     static const XMLCh MemoryListener[] =       UNICODE_LITERAL_14(M,e,m,o,r,y,L,i,s,t,e,n,e,r);
     static const XMLCh _MetadataProvider[] =    UNICODE_LITERAL_16(M,e,t,a,d,a,t,a,P,r,o,v,i,d,e,r);
     static const XMLCh Notify[] =               UNICODE_LITERAL_6(N,o,t,i,f,y);
+    static const XMLCh _option[] =              UNICODE_LITERAL_6(o,p,t,i,o,n);
     static const XMLCh OutOfProcess[] =         UNICODE_LITERAL_12(O,u,t,O,f,P,r,o,c,e,s,s);
     static const XMLCh _path[] =                UNICODE_LITERAL_4(p,a,t,h);
     static const XMLCh Policy[] =               UNICODE_LITERAL_6(P,o,l,i,c,y);
+    static const XMLCh _provider[] =            UNICODE_LITERAL_8(p,r,o,v,i,d,e,r);
     static const XMLCh RelyingParty[] =         UNICODE_LITERAL_12(R,e,l,y,i,n,g,P,a,r,t,y);
     static const XMLCh _ReplayCache[] =         UNICODE_LITERAL_11(R,e,p,l,a,y,C,a,c,h,e);
     static const XMLCh _RequestMapper[] =       UNICODE_LITERAL_13(R,e,q,u,e,s,t,M,a,p,p,e,r);
@@ -410,20 +429,20 @@ namespace {
     static const XMLCh _SingleLogoutService[] = UNICODE_LITERAL_19(S,i,n,g,l,e,L,o,g,o,u,t,S,e,r,v,i,c,e);
     static const XMLCh _StorageService[] =      UNICODE_LITERAL_14(S,t,o,r,a,g,e,S,e,r,v,i,c,e);
     static const XMLCh TCPListener[] =          UNICODE_LITERAL_11(T,C,P,L,i,s,t,e,n,e,r);
+    static const XMLCh TransportOption[] =      UNICODE_LITERAL_15(T,r,a,n,s,p,o,r,t,O,p,t,i,o,n);
     static const XMLCh _TrustEngine[] =         UNICODE_LITERAL_11(T,r,u,s,t,E,n,g,i,n,e);
     static const XMLCh _type[] =                UNICODE_LITERAL_4(t,y,p,e);
     static const XMLCh UnixListener[] =         UNICODE_LITERAL_12(U,n,i,x,L,i,s,t,e,n,e,r);
 
-
+#ifndef SHIBSP_LITE
     class SHIBSP_DLLLOCAL PolicyNodeFilter : public DOMNodeFilter
     {
     public:
         short acceptNode(const DOMNode* node) const {
-            if (XMLHelper::isNodeNamed(node,shibspconstants::SHIB2SPCONFIG_NS,Rule))
-                return FILTER_REJECT;
-            return FILTER_ACCEPT;
+            return FILTER_REJECT;
         }
     };
+#endif
 };
 
 namespace shibsp {
@@ -1380,6 +1399,8 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                 auto_ptr<DOMPropertySet> settings(new DOMPropertySet());
                 settings->load(child, log, &filter);
                 rules.first = settings.release();
+                
+                // Process Rule elements.
                 const DOMElement* rule = XMLHelper::getFirstChildElement(child,Rule);
                 while (rule) {
                     auto_ptr_char type(rule->getAttributeNS(NULL,_type));
@@ -1391,6 +1412,23 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                     }
                     rule = XMLHelper::getNextSiblingElement(rule,Rule);
                 }
+                
+                // Process TransportOption elements.
+                rule = XMLHelper::getFirstChildElement(child,TransportOption);
+                while (rule) {
+                    if (rule->hasChildNodes()) {
+                        auto_ptr_char provider(rule->getAttributeNS(NULL,_provider));
+                        auto_ptr_char option(rule->getAttributeNS(NULL,_option));
+                        auto_ptr_char value(rule->getFirstChild()->getNodeValue());
+                        if (provider.get() && *provider.get() && option.get() && *option.get() && value.get() && *value.get()) {
+                            m_transportOptionMap[id.get()].push_back(
+                                make_pair(provider.get(), make_pair(option.get(), value.get()))
+                                );
+                        }
+                    }
+                    rule = XMLHelper::getNextSiblingElement(rule,TransportOption);
+                }
+                
                 child = XMLHelper::getNextSiblingElement(child,Policy);
             }
         }
