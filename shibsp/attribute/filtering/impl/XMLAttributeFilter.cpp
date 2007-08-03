@@ -329,7 +329,7 @@ void XMLFilterImpl::filterAttributes(const FilteringContext& context, multimap<s
                 if (rules.first != rules.second) {
                     // Run each rule in sequence.
                     if (!ruleFound) {
-                        m_log.debug("filtering values of attribute (%s) from (%s)", a->second->getId(), issuer.get() ? issuer.get() : "unknown source");
+                        m_log.debug("applying wildcard rule(s) for attribute (%s) from (%s)", a->second->getId(), issuer.get() ? issuer.get() : "unknown source");
                         ruleFound = true;
                     }
                     for (; rules.first!=rules.second; ++rules.first) {
