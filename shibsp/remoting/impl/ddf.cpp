@@ -351,10 +351,10 @@ DDF& DDF::empty()
     return *this;
 }
 
-DDF& DDF::string(const char* val)
+DDF& DDF::string(char* val, bool copyit)
 {
     if (empty().m_handle) {
-        m_handle->value.string=ddf_strdup(val);
+        m_handle->value.string = copyit ? ddf_strdup(val) : val;
         if (!m_handle->value.string && val && *val)
             return destroy();
         m_handle->type=ddf_body_t::DDF_STRING;
@@ -772,15 +772,23 @@ void DDF::dump(FILE* f, int indent) const
 
 void xml_encode(ostream& os, const char* start)
 {
+    size_t pos;
     while (start && *start) {
-        switch (*start) {
-            case '"':   os << "&quot;";     break;
-            case '<':   os << "&lt;";       break;
-            case '>':   os << "&gt;";       break;
-            case '&':   os << "&amp;";      break;
-            default:    os << *start;
+        pos = strcspn(start, "\"<>&");
+        if (pos > 0) {
+            os.write(start,pos);
+            start += pos;
         }
-        start++;
+        else {
+            switch (*start) {
+                case '"':   os << "&quot;";     break;
+                case '<':   os << "&lt;";       break;
+                case '>':   os << "&gt;";       break;
+                case '&':   os << "&amp;";      break;
+                default:    os << *start;
+            }
+            start++;
+        }
     }
 }
 
@@ -945,22 +953,20 @@ DDF deserialize(DOMElement* root, bool lowercase)
     }
 
     const XMLCh* tag=root->getTagName();
-    if (!XMLString::compareString(tag,_var)) {
+    if (XMLString::equals(tag,_var)) {
         root=XMLHelper::getFirstChildElement(root);
         tag=(root ? root->getTagName() : &chNull);
     }
 
-    if (!XMLString::compareString(tag,_string)) {
+    if (XMLString::equals(tag,_string)) {
         DOMNode* child=root->getFirstChild();
         if (child && child->getNodeType()==DOMNode::TEXT_NODE) {
-            char* val = toUTF8(child->getNodeValue());
-            if (val) {
-                obj.string(val);
-                delete[] val;
-            }
+            char* val = toUTF8(child->getNodeValue(), true);    // use malloc
+            if (val)
+                obj.string(val, false); // don't re-copy the string
         }
     }
-    else if (!XMLString::compareString(tag,_number)) {
+    else if (XMLString::equals(tag,_number)) {
         DOMNode* child=root->getFirstChild();
         if (child && child->getNodeType()==DOMNode::TEXT_NODE) {
             auto_ptr_char val(child->getNodeValue());
@@ -970,7 +976,7 @@ DDF deserialize(DOMElement* root, bool lowercase)
                 obj.integer(val.get());
         }
     }
-    else if (!XMLString::compareString(tag,_array)) {
+    else if (XMLString::equals(tag,_array)) {
         obj.list();
         DOMNodeList* children=root->getChildNodes();
         for (unsigned int i=0; children && i<children->getLength(); i++)
@@ -979,7 +985,7 @@ DDF deserialize(DOMElement* root, bool lowercase)
                 obj.add(temp);
             }
     }
-    else if (!XMLString::compareString(tag,_struct)) {
+    else if (XMLString::equals(tag,_struct)) {
         obj.structure();
         DOMNodeList* children=root->getChildNodes();
         for (unsigned int i=0; children && i<children->getLength(); i++)

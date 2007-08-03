@@ -77,7 +77,10 @@ namespace shibsp {
     
         // destructive node conversion methods
         DDF& empty();
-        DDF& string(const char* val);
+        DDF& string(const char* val) {
+            return string(const_cast<char*>(val), true);
+        }
+        DDF& string(char* val, bool copyit=true);
         DDF& string(long val);
         DDF& string(double val);
         DDF& integer(long val);
