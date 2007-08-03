@@ -171,6 +171,7 @@ void SOAPClient::prepareTransport(SOAPTransport& transport)
     
     transport.setConnectTimeout(m_settings->getUnsignedInt("connectTimeout").second);
     transport.setTimeout(m_settings->getUnsignedInt("timeout").second);
+    m_app.getServiceProvider().setTransportOptions(m_app.getString("policyId").second, transport);
 
     HTTPSOAPTransport* http = dynamic_cast<HTTPSOAPTransport*>(&transport);
     if (http) {
