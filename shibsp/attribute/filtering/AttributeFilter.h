@@ -44,11 +44,11 @@ namespace shibsp {
          * Filters values out of a set of attributes.
          * 
          * @param context       a FilteringContext interface
-         * @param attributes    a mutable map containing the attributes to filter
+         * @param attributes    a mutable array containing the attributes to filter
          * 
          * @throws AttributeFileringException thrown if there is a problem filtering attributes
          */
-        virtual void filterAttributes(const FilteringContext& context, std::multimap<std::string,Attribute*>& attributes) const=0;
+        virtual void filterAttributes(const FilteringContext& context, std::vector<Attribute*>& attributes) const=0;
     };
 
     /**

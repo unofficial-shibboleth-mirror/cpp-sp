@@ -335,7 +335,7 @@ string SAML2Consumer::implementProtocol(
     else
         sessionExp = min(sessionExp, now + lifetime.second);    // Use the lowest.
 
-    multimap<string,Attribute*> resolvedAttributes;
+    vector<Attribute*> resolvedAttributes;
     AttributeExtractor* extractor = application.getAttributeExtractor();
     if (extractor) {
         m_log.debug("extracting pushed attributes...");
@@ -374,7 +374,7 @@ string SAML2Consumer::implementProtocol(
         catch (exception& ex) {
             m_log.error("caught exception filtering attributes: %s", ex.what());
             m_log.error("dumping extracted attributes due to filtering exception");
-            for_each(resolvedAttributes.begin(), resolvedAttributes.end(), cleanup_pair<string,shibsp::Attribute>());
+            for_each(resolvedAttributes.begin(), resolvedAttributes.end(), xmltooling::cleanup<shibsp::Attribute>());
             resolvedAttributes.clear();
         }
     }
@@ -400,7 +400,7 @@ string SAML2Consumer::implementProtocol(
             tokens.insert(tokens.end(), ctx->getResolvedAssertions().begin(), ctx->getResolvedAssertions().end());
 
             // Copy over new attributes, and transfer ownership.
-            resolvedAttributes.insert(ctx->getResolvedAttributes().begin(), ctx->getResolvedAttributes().end());
+            resolvedAttributes.insert(resolvedAttributes.end(), ctx->getResolvedAttributes().begin(), ctx->getResolvedAttributes().end());
             ctx->getResolvedAttributes().clear();
         }
 
@@ -425,14 +425,14 @@ string SAML2Consumer::implementProtocol(
         if (ownedName)
             delete ssoName;
         for_each(ownedtokens.begin(), ownedtokens.end(), xmltooling::cleanup<saml2::Assertion>());
-        for_each(resolvedAttributes.begin(), resolvedAttributes.end(), cleanup_pair<string,Attribute>());
+        for_each(resolvedAttributes.begin(), resolvedAttributes.end(), xmltooling::cleanup<shibsp::Attribute>());
         return key;
     }
     catch (exception&) {
         if (ownedName)
             delete ssoName;
         for_each(ownedtokens.begin(), ownedtokens.end(), xmltooling::cleanup<saml2::Assertion>());
-        for_each(resolvedAttributes.begin(), resolvedAttributes.end(), cleanup_pair<string,Attribute>());
+        for_each(resolvedAttributes.begin(), resolvedAttributes.end(), xmltooling::cleanup<shibsp::Attribute>());
         throw;
     }
 }

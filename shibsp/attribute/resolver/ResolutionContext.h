@@ -51,7 +51,7 @@ namespace shibsp {
          * 
          * @return  a mutable array of Attributes.
          */
-        virtual std::multimap<std::string,Attribute*>& getResolvedAttributes()=0;
+        virtual std::vector<Attribute*>& getResolvedAttributes()=0;
 
         /**
          * Returns the set of assertions resolved and added to the context.

@@ -106,10 +106,15 @@ namespace shibsp {
         const char* getAuthnContextDeclRef() const {
             return m_obj["authncontext_decl"].string();
         }
-        const multimap<string,Attribute*>& getAttributes() const {
+        const vector<Attribute*>& getAttributes() const {
             if (m_attributes.empty())
                 unmarshallAttributes();
             return m_attributes;
+        }
+        const multimap<string,const Attribute*>& getIndexedAttributes() const {
+            if (m_attributes.empty())
+                unmarshallAttributes();
+            return m_attributeIndex;
         }
         const vector<const char*>& getAssertionIDs() const {
             if (m_ids.empty()) {
@@ -132,7 +137,8 @@ namespace shibsp {
 
         DDF m_obj;
         saml2::NameID* m_nameid;
-        mutable multimap<string,Attribute*> m_attributes;
+        mutable vector<Attribute*> m_attributes;
+        mutable multimap<string,const Attribute*> m_attributeIndex;
         mutable vector<const char*> m_ids;
         mutable map<string,Assertion*> m_tokens;
         SSCache* m_cache;
@@ -158,7 +164,7 @@ namespace shibsp {
             const XMLCh* authncontext_class=NULL,
             const XMLCh* authncontext_decl=NULL,
             const vector<const Assertion*>* tokens=NULL,
-            const multimap<string,Attribute*>* attributes=NULL
+            const vector<Attribute*>* attributes=NULL
             );
         Session* find(const char* key, const Application& application, const char* client_addr=NULL, time_t* timeout=NULL);
         void remove(const char* key, const Application& application);
@@ -200,7 +206,7 @@ StoredSession::~StoredSession()
 {
     m_obj.destroy();
     delete m_nameid;
-    for_each(m_attributes.begin(), m_attributes.end(), cleanup_pair<string,Attribute>());
+    for_each(m_attributes.begin(), m_attributes.end(), xmltooling::cleanup<Attribute>());
     for_each(m_tokens.begin(), m_tokens.end(), cleanup_pair<string,Assertion>());
 }
 
@@ -212,7 +218,8 @@ void StoredSession::unmarshallAttributes() const
     while (!attr.isnull()) {
         try {
             attribute = Attribute::unmarshall(attr);
-            m_attributes.insert(make_pair(attribute->getId(), attribute));
+            m_attributes.push_back(attribute);
+            m_attributeIndex.insert(make_pair(attribute->getId(), attribute));
             if (m_cache->m_log.isDebugEnabled())
                 m_cache->m_log.debug("unmarshalled attribute (ID: %s) with %d value%s",
                     attribute->getId(), attr.first().integer(), attr.first().integer()!=1 ? "s" : "");
@@ -289,8 +296,9 @@ void StoredSession::addAttributes(const vector<Attribute*>& attributes)
             in >> newobj;
 
             m_ids.clear();
-            for_each(m_attributes.begin(), m_attributes.end(), cleanup_const_pair<string,Attribute>());
+            for_each(m_attributes.begin(), m_attributes.end(), xmltooling::cleanup<Attribute>());
             m_attributes.clear();
+            m_attributeIndex.clear();
             newobj["version"].integer(ver);
             m_obj.destroy();
             m_obj = newobj;
@@ -412,8 +420,9 @@ void StoredSession::addAssertion(Assertion* assertion)
             in >> newobj;
 
             m_ids.clear();
-            for_each(m_attributes.begin(), m_attributes.end(), cleanup_const_pair<string,Attribute>());
+            for_each(m_attributes.begin(), m_attributes.end(), xmltooling::cleanup<Attribute>());
             m_attributes.clear();
+            m_attributeIndex.clear();
             newobj["version"].integer(ver);
             m_obj.destroy();
             m_obj = newobj;
@@ -534,7 +543,7 @@ string SSCache::insert(
     const XMLCh* authncontext_class,
     const XMLCh* authncontext_decl,
     const vector<const Assertion*>* tokens,
-    const multimap<string,Attribute*>* attributes
+    const vector<Attribute*>* attributes
     )
 {
 #ifdef _DEBUG
@@ -634,8 +643,8 @@ string SSCache::insert(
     if (attributes) {
         DDF attr;
         DDF attrlist = obj.addmember("attributes").list();
-        for (multimap<string,Attribute*>::const_iterator a=attributes->begin(); a!=attributes->end(); ++a) {
-            attr = a->second->marshall();
+        for (vector<Attribute*>::const_iterator a=attributes->begin(); a!=attributes->end(); ++a) {
+            attr = (*a)->marshall();
             attrlist.add(attr);
         }
     }
@@ -697,8 +706,8 @@ string SSCache::insert(
             ") for (applicationId: " <<
                 application.getId() <<
             ") {";
-        for (multimap<string,Attribute*>::const_iterator a=attributes->begin(); a!=attributes->end(); ++a)
-            xlog->log.infoStream() << "\t" << a->second->getId() << " (" << a->second->valueCount() << " values)";
+        for (vector<Attribute*>::const_iterator a=attributes->begin(); a!=attributes->end(); ++a)
+            xlog->log.infoStream() << "\t" << (*a)->getId() << " (" << (*a)->valueCount() << " values)";
         xlog->log.info("}");
     }
 

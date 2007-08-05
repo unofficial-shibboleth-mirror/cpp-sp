@@ -380,8 +380,8 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
 
         // Export the attributes.
         bool remoteUserSet = false;
-        const multimap<string,Attribute*>& attributes = session->getAttributes();
-        for (multimap<string,Attribute*>::const_iterator a = attributes.begin(); a!=attributes.end(); ++a) {
+        const multimap<string,const Attribute*>& attributes = session->getIndexedAttributes();
+        for (multimap<string,const Attribute*>::const_iterator a = attributes.begin(); a!=attributes.end(); ++a) {
             const vector<string>& vals = a->second->getSerializedValues();
 
             // See if this needs to be set as the REMOTE_USER value.

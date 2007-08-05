@@ -159,8 +159,8 @@ bool Rule::authorized(const SPRequest& request, const Session* session) const
     }
     
     // Find the attribute(s) matching the require rule.
-    pair<multimap<string,Attribute*>::const_iterator, multimap<string,Attribute*>::const_iterator> attrs =
-        session->getAttributes().equal_range(m_alias);
+    pair<multimap<string,const Attribute*>::const_iterator, multimap<string,const Attribute*>::const_iterator> attrs =
+        session->getIndexedAttributes().equal_range(m_alias);
     if (attrs.first == attrs.second) {
         request.log(SPRequest::SPWarn, string("rule requires attribute (") + m_alias + "), not found in session");
         return false;

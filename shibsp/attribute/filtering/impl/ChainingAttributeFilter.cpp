@@ -47,7 +47,7 @@ namespace shibsp {
         void unlock() {
         }
         
-        void filterAttributes(const FilteringContext& context, multimap<string,Attribute*>& attributes) const {
+        void filterAttributes(const FilteringContext& context, vector<Attribute*>& attributes) const {
             for (vector<AttributeFilter*>::const_iterator i=m_filters.begin(); i!=m_filters.end(); ++i) {
                 Locker locker(*i);
                 (*i)->filterAttributes(context, attributes);

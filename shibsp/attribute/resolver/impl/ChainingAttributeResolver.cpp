@@ -42,11 +42,11 @@ namespace shibsp {
     {
         ~ChainingContext() {
             for_each(m_contexts.begin(), m_contexts.end(), xmltooling::cleanup<ResolutionContext>());
-            for_each(m_attributes.begin(), m_attributes.end(), cleanup_pair<string,shibsp::Attribute>());
+            for_each(m_attributes.begin(), m_attributes.end(), xmltooling::cleanup<shibsp::Attribute>());
             for_each(m_assertions.begin(), m_assertions.end(), xmltooling::cleanup<opensaml::Assertion>());
         }
 
-        multimap<string,shibsp::Attribute*>& getResolvedAttributes() {
+        vector<shibsp::Attribute*>& getResolvedAttributes() {
             return m_attributes;
         }
         vector<opensaml::Assertion*>& getResolvedAssertions() {
@@ -54,7 +54,7 @@ namespace shibsp {
         }
 
         vector<ResolutionContext*> m_contexts;
-        multimap<string,shibsp::Attribute*> m_attributes;
+        vector<shibsp::Attribute*> m_attributes;
         vector<opensaml::Assertion*> m_assertions;
     };
 
@@ -82,7 +82,7 @@ namespace shibsp {
             const XMLCh* authncontext_class=NULL,
             const XMLCh* authncontext_decl=NULL,
             const vector<const opensaml::Assertion*>* tokens=NULL,
-            const multimap<string,shibsp::Attribute*>* attributes=NULL
+            const vector<shibsp::Attribute*>* attributes=NULL
             ) const {
             auto_ptr<ChainingContext> chain(new ChainingContext());
             for (vector<AttributeResolver*>::const_iterator i=m_resolvers.begin(); i!=m_resolvers.end(); ++i)
@@ -147,7 +147,7 @@ void ChainingAttributeResolver::resolveAttributes(ResolutionContext& ctx) const
     vector<ResolutionContext*>::iterator ictx = chain.m_contexts.begin();
     for (vector<AttributeResolver*>::const_iterator i=m_resolvers.begin(); i!=m_resolvers.end(); ++i, ++ictx) {
         (*i)->resolveAttributes(*(*ictx));
-        chain.getResolvedAttributes().insert((*ictx)->getResolvedAttributes().begin(), (*ictx)->getResolvedAttributes().end());
+        chain.getResolvedAttributes().insert(chain.getResolvedAttributes().end(), (*ictx)->getResolvedAttributes().begin(), (*ictx)->getResolvedAttributes().end());
         (*ictx)->getResolvedAttributes().clear();
         chain.getResolvedAssertions().insert(chain.getResolvedAssertions().end(), (*ictx)->getResolvedAssertions().begin(), (*ictx)->getResolvedAssertions().end());
         (*ictx)->getResolvedAssertions().clear();

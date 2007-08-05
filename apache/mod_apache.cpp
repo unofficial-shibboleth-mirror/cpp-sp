@@ -964,8 +964,8 @@ bool htAccessControl::authorized(const SPRequest& request, const Session* sessio
             }
             
             // Find the attribute(s) matching the require rule.
-            pair<multimap<string,Attribute*>::const_iterator,multimap<string,Attribute*>::const_iterator> attrs =
-                session->getAttributes().equal_range(w);
+            pair<multimap<string,const Attribute*>::const_iterator,multimap<string,const Attribute*>::const_iterator> attrs =
+                session->getIndexedAttributes().equal_range(w);
             if (attrs.first == attrs.second) {
                 request.log(SPRequest::SPWarn, string("htAccessControl rule requires attribute (") + w + "), not found in session");
                 continue;

@@ -67,16 +67,16 @@ namespace shibsp {
         }
 
         void extractAttributes(
-            const Application& application, const char* assertingParty, const NameIdentifier& nameid, multimap<string,Attribute*>& attributes
+            const Application& application, const char* assertingParty, const NameIdentifier& nameid, vector<Attribute*>& attributes
             ) const;
         void extractAttributes(
-            const Application& application, const char* assertingParty, const NameID& nameid, multimap<string,Attribute*>& attributes
+            const Application& application, const char* assertingParty, const NameID& nameid, vector<Attribute*>& attributes
             ) const;
         void extractAttributes(
-            const Application& application, const char* assertingParty, const saml1::Attribute& attr, multimap<string,Attribute*>& attributes
+            const Application& application, const char* assertingParty, const saml1::Attribute& attr, vector<Attribute*>& attributes
             ) const;
         void extractAttributes(
-            const Application& application, const char* assertingParty, const saml2::Attribute& attr, multimap<string,Attribute*>& attributes
+            const Application& application, const char* assertingParty, const saml2::Attribute& attr, vector<Attribute*>& attributes
             ) const;
 
         void getAttributeIds(vector<string>& attributes) const {
@@ -106,7 +106,7 @@ namespace shibsp {
         }
         
         void extractAttributes(
-            const Application& application, const RoleDescriptor* issuer, const XMLObject& xmlObject, multimap<string,Attribute*>& attributes
+            const Application& application, const RoleDescriptor* issuer, const XMLObject& xmlObject, vector<Attribute*>& attributes
             ) const;
 
         void getAttributeIds(std::vector<std::string>& attributes) const {
@@ -231,7 +231,7 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log) : m_log(l
 }
 
 void XMLExtractorImpl::extractAttributes(
-    const Application& application, const char* assertingParty, const NameIdentifier& nameid, multimap<string,Attribute*>& attributes
+    const Application& application, const char* assertingParty, const NameIdentifier& nameid, vector<Attribute*>& attributes
     ) const
 {
 #ifdef HAVE_GOOD_STL
@@ -251,12 +251,12 @@ void XMLExtractorImpl::extractAttributes(
 #endif
         Attribute* a = rule->second.first->decode(rule->second.second.c_str(), &nameid, assertingParty, application.getString("entityID").second);
         if (a)
-            attributes.insert(make_pair(rule->second.second, a));
+            attributes.push_back(a);
     }
 }
 
 void XMLExtractorImpl::extractAttributes(
-    const Application& application, const char* assertingParty, const NameID& nameid, multimap<string,Attribute*>& attributes
+    const Application& application, const char* assertingParty, const NameID& nameid, vector<Attribute*>& attributes
     ) const
 {
 #ifdef HAVE_GOOD_STL
@@ -276,12 +276,12 @@ void XMLExtractorImpl::extractAttributes(
 #endif
         Attribute* a = rule->second.first->decode(rule->second.second.c_str(), &nameid, assertingParty, application.getString("entityID").second);
         if (a)
-            attributes.insert(make_pair(rule->second.second, a));
+            attributes.push_back(a);
     }
 }
 
 void XMLExtractorImpl::extractAttributes(
-    const Application& application, const char* assertingParty, const saml1::Attribute& attr, multimap<string,Attribute*>& attributes
+    const Application& application, const char* assertingParty, const saml1::Attribute& attr, vector<Attribute*>& attributes
     ) const
 {
 #ifdef HAVE_GOOD_STL
@@ -305,12 +305,12 @@ void XMLExtractorImpl::extractAttributes(
 #endif
         Attribute* a = rule->second.first->decode(rule->second.second.c_str(), &attr, assertingParty, application.getString("entityID").second);
         if (a)
-            attributes.insert(make_pair(rule->second.second, a));
+            attributes.push_back(a);
     }
 }
 
 void XMLExtractorImpl::extractAttributes(
-    const Application& application, const char* assertingParty, const saml2::Attribute& attr, multimap<string,Attribute*>& attributes
+    const Application& application, const char* assertingParty, const saml2::Attribute& attr, vector<Attribute*>& attributes
     ) const
 {
 #ifdef HAVE_GOOD_STL
@@ -336,12 +336,12 @@ void XMLExtractorImpl::extractAttributes(
 #endif
         Attribute* a = rule->second.first->decode(rule->second.second.c_str(), &attr, assertingParty, application.getString("entityID").second);
         if (a)
-            attributes.insert(make_pair(rule->second.second, a));
+            attributes.push_back(a);
     }
 }
 
 void XMLExtractor::extractAttributes(
-    const Application& application, const RoleDescriptor* issuer, const XMLObject& xmlObject, multimap<string,Attribute*>& attributes
+    const Application& application, const RoleDescriptor* issuer, const XMLObject& xmlObject, vector<Attribute*>& attributes
     ) const
 {
     if (!m_impl)

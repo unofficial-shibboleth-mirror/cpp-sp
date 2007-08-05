@@ -65,7 +65,7 @@ namespace shibsp {
          * @param authncontext_class    method/category of authentication event, if known
          * @param authncontext_decl specifics of authentication event, if known
          * @param tokens            assertions initiating the Session, if any
-         * @param attributes        map of previously resolved attributes, if any
+         * @param attributes        array of previously resolved attributes, if any
          * @return  newly created ResolutionContext, owned by caller
          */
         virtual ResolutionContext* createResolutionContext(
@@ -76,7 +76,7 @@ namespace shibsp {
             const XMLCh* authncontext_class=NULL,
             const XMLCh* authncontext_decl=NULL,
             const std::vector<const opensaml::Assertion*>* tokens=NULL,
-            const std::multimap<std::string,Attribute*>* attributes=NULL
+            const std::vector<Attribute*>* attributes=NULL
             ) const=0;
 
         /**

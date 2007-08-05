@@ -78,7 +78,7 @@ namespace shibsp {
             const XMLCh* authncontext_class=NULL,
             const XMLCh* authncontext_decl=NULL,
             const vector<const opensaml::Assertion*>* tokens=NULL,
-            const multimap<string,Attribute*>* attributes=NULL
+            const vector<Attribute*>* attributes=NULL
             ) : m_query(true), m_app(application), m_session(NULL), m_metadata(NULL), m_entity(issuer),
                 m_protocol(protocol), m_nameid(nameid), m_class(authncontext_class), m_decl(authncontext_decl) {
 
@@ -106,7 +106,7 @@ namespace shibsp {
             }
             if (m_metadata)
                 m_metadata->unlock();
-            for_each(m_attributes.begin(), m_attributes.end(), cleanup_pair<string,shibsp::Attribute>());
+            for_each(m_attributes.begin(), m_attributes.end(), xmltooling::cleanup<shibsp::Attribute>());
             for_each(m_assertions.begin(), m_assertions.end(), xmltooling::cleanup<opensaml::Assertion>());
         }
     
@@ -144,7 +144,7 @@ namespace shibsp {
         const Session* getSession() const {
             return m_session;
         }
-        multimap<string,shibsp::Attribute*>& getResolvedAttributes() {
+        vector<shibsp::Attribute*>& getResolvedAttributes() {
             return m_attributes;
         }
         vector<opensaml::Assertion*>& getResolvedAssertions() {
@@ -161,7 +161,7 @@ namespace shibsp {
         const NameID* m_nameid;
         const XMLCh* m_class;
         const XMLCh* m_decl;
-        multimap<string,shibsp::Attribute*> m_attributes;
+        vector<shibsp::Attribute*> m_attributes;
         vector<opensaml::Assertion*> m_assertions;
     };
     
@@ -185,7 +185,7 @@ namespace shibsp {
             const XMLCh* authncontext_class=NULL,
             const XMLCh* authncontext_decl=NULL,
             const vector<const opensaml::Assertion*>* tokens=NULL,
-            const multimap<string,shibsp::Attribute*>* attributes=NULL
+            const vector<shibsp::Attribute*>* attributes=NULL
             ) const {
             return new QueryContext(application,issuer,protocol,nameid,authncontext_class,authncontext_decl,tokens,attributes);
         }
@@ -364,7 +364,7 @@ bool QueryResolver::SAML1Query(QueryContext& ctx) const
     }
     catch (exception& ex) {
         m_log.error("caught exception extracting/filtering attributes from query result: %s", ex.what());
-        for_each(ctx.getResolvedAttributes().begin(), ctx.getResolvedAttributes().end(), cleanup_pair<string,shibsp::Attribute>());
+        for_each(ctx.getResolvedAttributes().begin(), ctx.getResolvedAttributes().end(), xmltooling::cleanup<shibsp::Attribute>());
         ctx.getResolvedAttributes().clear();
     }
 
@@ -481,7 +481,7 @@ bool QueryResolver::SAML2Query(QueryContext& ctx) const
     }
     catch (exception& ex) {
         m_log.error("caught exception extracting/filtering attributes from query result: %s", ex.what());
-        for_each(ctx.getResolvedAttributes().begin(), ctx.getResolvedAttributes().end(), cleanup_pair<string,shibsp::Attribute>());
+        for_each(ctx.getResolvedAttributes().begin(), ctx.getResolvedAttributes().end(), xmltooling::cleanup<shibsp::Attribute>());
         ctx.getResolvedAttributes().clear();
     }
 

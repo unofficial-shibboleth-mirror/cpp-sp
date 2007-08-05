@@ -41,13 +41,15 @@ namespace shibsp {
          */
         BasicFilteringContext(
             const Application& app,
-            const std::multimap<std::string,Attribute*>& attributes,
+            const std::vector<Attribute*>& attributes,
             const opensaml::saml2md::RoleDescriptor* role=NULL,
             const XMLCh* authncontext_class=NULL,
             const XMLCh* authncontext_decl=NULL
-            ) : m_app(app), m_attributes(attributes), m_role(role), m_issuer(NULL), m_class(authncontext_class), m_decl(authncontext_decl) {
+            ) : m_app(app), m_role(role), m_issuer(NULL), m_class(authncontext_class), m_decl(authncontext_decl) {
             if (role)
                 m_issuer = dynamic_cast<opensaml::saml2md::EntityDescriptor*>(role->getParent())->getEntityID();
+            for (std::vector<Attribute*>::const_iterator a = attributes.begin(); a != attributes.end(); ++a)
+                m_attributes.insert(std::make_pair((*a)->getId(), *a));
         }
 
         virtual ~BasicFilteringContext() {}
@@ -79,7 +81,7 @@ namespace shibsp {
 
     private:
         const Application& m_app;
-        const std::multimap<std::string,Attribute*>& m_attributes;
+        std::multimap<std::string,Attribute*> m_attributes;
         const opensaml::saml2md::RoleDescriptor* m_role;
         const XMLCh* m_issuer;
         const XMLCh* m_class;

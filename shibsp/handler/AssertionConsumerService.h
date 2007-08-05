@@ -106,7 +106,7 @@ namespace shibsp {
             const XMLCh* authncontext_class=NULL,
             const XMLCh* authncontext_decl=NULL,
             const std::vector<const opensaml::Assertion*>* tokens=NULL,
-            const std::multimap<std::string,Attribute*>* attributes=NULL
+            const std::vector<Attribute*>* attributes=NULL
             ) const;
 #endif
         

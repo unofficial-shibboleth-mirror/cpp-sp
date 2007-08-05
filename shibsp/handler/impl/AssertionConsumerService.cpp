@@ -249,7 +249,7 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
     const XMLCh* authncontext_class,
     const XMLCh* authncontext_decl,
     const vector<const Assertion*>* tokens,
-    const multimap<string,Attribute*>* attributes
+    const vector<Attribute*>* attributes
     ) const
 {
     try {

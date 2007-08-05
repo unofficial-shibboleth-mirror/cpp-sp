@@ -206,7 +206,7 @@ string SAML1Consumer::implementProtocol(
 
     // We've successfully "accepted" at least one SSO token, along with any additional valid tokens.
     // To complete processing, we need to extract and resolve attributes and then create the session.
-    multimap<string,Attribute*> resolvedAttributes;
+    vector<Attribute*> resolvedAttributes;
     AttributeExtractor* extractor = application.getAttributeExtractor();
     if (extractor) {
         m_log.debug("extracting pushed attributes...");
@@ -238,7 +238,7 @@ string SAML1Consumer::implementProtocol(
             catch (exception& ex) {
                 m_log.error("caught exception filtering attributes: %s", ex.what());
                 m_log.error("dumping extracted attributes due to filtering exception");
-                for_each(resolvedAttributes.begin(), resolvedAttributes.end(), cleanup_pair<string,shibsp::Attribute>());
+                for_each(resolvedAttributes.begin(), resolvedAttributes.end(), xmltooling::cleanup<shibsp::Attribute>());
                 resolvedAttributes.clear();
             }
         }
@@ -273,7 +273,7 @@ string SAML1Consumer::implementProtocol(
         tokens.insert(tokens.end(), ctx->getResolvedAssertions().begin(), ctx->getResolvedAssertions().end());
 
         // Copy over new attributes, and transfer ownership.
-        resolvedAttributes.insert(ctx->getResolvedAttributes().begin(), ctx->getResolvedAttributes().end());
+        resolvedAttributes.insert(resolvedAttributes.end(), ctx->getResolvedAttributes().begin(), ctx->getResolvedAttributes().end());
         ctx->getResolvedAttributes().clear();
     }
 
@@ -296,11 +296,11 @@ string SAML1Consumer::implementProtocol(
             &tokens,
             &resolvedAttributes
             );
-        for_each(resolvedAttributes.begin(), resolvedAttributes.end(), cleanup_pair<string,Attribute>());
+        for_each(resolvedAttributes.begin(), resolvedAttributes.end(), xmltooling::cleanup<shibsp::Attribute>());
         return key;
     }
     catch (exception&) {
-        for_each(resolvedAttributes.begin(), resolvedAttributes.end(), cleanup_pair<string,Attribute>());
+        for_each(resolvedAttributes.begin(), resolvedAttributes.end(), xmltooling::cleanup<shibsp::Attribute>());
         throw;
     }
 }

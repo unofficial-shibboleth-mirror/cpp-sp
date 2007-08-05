@@ -61,7 +61,7 @@ namespace shibsp {
         ~RemotedSession() {
             delete m_lock;
             m_obj.destroy();
-            for_each(m_attributes.begin(), m_attributes.end(), cleanup_pair<string,Attribute>());
+            for_each(m_attributes.begin(), m_attributes.end(), xmltooling::cleanup<Attribute>());
         }
         
         Lockable* lock() {
@@ -99,10 +99,15 @@ namespace shibsp {
         const char* getAuthnContextDeclRef() const {
             return m_obj["authncontext_decl"].string();
         }
-        const multimap<string,Attribute*>& getAttributes() const {
+        const vector<Attribute*>& getAttributes() const {
             if (m_attributes.empty())
                 unmarshallAttributes();
             return m_attributes;
+        }
+        const multimap<string,const Attribute*>& getIndexedAttributes() const {
+            if (m_attributes.empty())
+                unmarshallAttributes();
+            return m_attributeIndex;
         }
         const vector<const char*>& getAssertionIDs() const {
             if (m_ids.empty()) {
@@ -125,7 +130,8 @@ namespace shibsp {
 
         int m_version;
         mutable DDF m_obj;
-        mutable multimap<string,Attribute*> m_attributes;
+        mutable vector<Attribute*> m_attributes;
+        mutable multimap<string,const Attribute*> m_attributeIndex;
         mutable vector<const char*> m_ids;
         time_t m_expires,m_lastAccess;
         RemotedCache* m_cache;
@@ -170,7 +176,8 @@ void RemotedSession::unmarshallAttributes() const
     while (!attr.isnull()) {
         try {
             attribute = Attribute::unmarshall(attr);
-            m_attributes.insert(make_pair(attribute->getId(),attribute));
+            m_attributes.push_back(attribute);
+            m_attributeIndex.insert(make_pair(attribute->getId(),attribute));
             if (m_cache->m_log.isDebugEnabled())
                 m_cache->m_log.debug("unmarshalled attribute (ID: %s) with %d value%s",
                     attribute->getId(), attr.first().integer(), attr.first().integer()!=1 ? "s" : "");
@@ -237,8 +244,9 @@ void RemotedSession::validate(const Application& application, const char* client
     if (out.isstruct()) {
         // We got an updated record back.
         m_ids.clear();
-        for_each(m_attributes.begin(), m_attributes.end(), cleanup_const_pair<string,Attribute>());
+        for_each(m_attributes.begin(), m_attributes.end(), xmltooling::cleanup<Attribute>());
         m_attributes.clear();
+        m_attributeIndex.clear();
         m_obj.destroy();
         m_obj = out;
     }

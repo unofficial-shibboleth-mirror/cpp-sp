@@ -49,7 +49,7 @@ namespace shibsp {
          * @param application   Application performing the extraction
          * @param issuer        source of object, if known
          * @param xmlObject     object to extract
-         * @param attributes    a map to populate with the extracted attributes, keyed by id
+         * @param attributes    an array to populate with the extracted attributes
          * 
          * @throws AttributeExtractionException thrown if there is a problem extracting attributes
          */
@@ -57,7 +57,7 @@ namespace shibsp {
             const Application& application,
             const opensaml::saml2md::RoleDescriptor* issuer,
             const xmltooling::XMLObject& xmlObject,
-            std::multimap<std::string,Attribute*>& attributes
+            std::vector<Attribute*>& attributes
             ) const=0;
 
         /**

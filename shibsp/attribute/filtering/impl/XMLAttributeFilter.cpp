@@ -69,7 +69,7 @@ namespace shibsp {
             m_document = doc;
         }
 
-        void filterAttributes(const FilteringContext& context, multimap<string,Attribute*>& attributes) const;
+        void filterAttributes(const FilteringContext& context, vector<Attribute*>& attributes) const;
 
     private:
         MatchFunctor* buildFunctor(
@@ -95,7 +95,7 @@ namespace shibsp {
             delete m_impl;
         }
         
-        void filterAttributes(const FilteringContext& context, multimap<string,Attribute*>& attributes) const {
+        void filterAttributes(const FilteringContext& context, vector<Attribute*>& attributes) const {
             m_impl->filterAttributes(context, attributes);
         }
 
@@ -280,7 +280,7 @@ pair<string,const MatchFunctor*> XMLFilterImpl::buildAttributeRule(const DOMElem
     return make_pair(string(),(MatchFunctor*)NULL);
 }
 
-void XMLFilterImpl::filterAttributes(const FilteringContext& context, multimap<string,Attribute*>& attributes) const
+void XMLFilterImpl::filterAttributes(const FilteringContext& context, vector<Attribute*>& attributes) const
 {
     auto_ptr_char issuer(context.getAttributeIssuer());
 
@@ -288,7 +288,7 @@ void XMLFilterImpl::filterAttributes(const FilteringContext& context, multimap<s
 
     if (m_policies.empty()) {
         m_log.warn("no filter policies were loaded, filtering out all attributes from (%s)", issuer.get() ? issuer.get() : "unknown source");
-        for_each(attributes.begin(), attributes.end(), cleanup_pair<string,Attribute>());
+        for_each(attributes.begin(), attributes.end(), xmltooling::cleanup<Attribute>());
         attributes.clear();
         return;
     }
@@ -299,26 +299,30 @@ void XMLFilterImpl::filterAttributes(const FilteringContext& context, multimap<s
     for (vector<Policy>::const_iterator p=m_policies.begin(); p!=m_policies.end(); ++p) {
         if (p->m_applies->evaluatePolicyRequirement(context)) {
             // Loop over the attributes and look for possible rules to run.
-            for (multimap<string,Attribute*>::iterator a=attributes.begin(); a!=attributes.end();) {
+            for (vector<Attribute*>::size_type a=0; a<attributes.size();) {
                 bool ruleFound = false;
-                pair<Policy::rules_t::const_iterator,Policy::rules_t::const_iterator> rules = p->m_rules.equal_range(a->second->getId());
+                Attribute* attr = attributes[a];
+                pair<Policy::rules_t::const_iterator,Policy::rules_t::const_iterator> rules = p->m_rules.equal_range(attr->getId());
                 if (rules.first != rules.second) {
                     ruleFound = true;
                     // Run each rule in sequence.
-                    m_log.debug("applying filtering rule(s) for attribute (%s) from (%s)", a->second->getId(), issuer.get() ? issuer.get() : "unknown source");
+                    m_log.debug(
+                        "applying filtering rule(s) for attribute (%s) from (%s)",
+                        attr->getId(), issuer.get() ? issuer.get() : "unknown source"
+                        );
                     for (; rules.first!=rules.second; ++rules.first) {
-                        count = a->second->valueCount();
+                        count = attr->valueCount();
                         for (index=0; index < count;) {
                             // The return value tells us whether to index past the accepted value, or stay put and decrement the count.
-                            if (rules.first->second->evaluatePermitValue(context, *(a->second), index)) {
+                            if (rules.first->second->evaluatePermitValue(context, *attr, index)) {
                                 index++;
                             }
                             else {
                                 m_log.warn(
                                     "filtered value at position (%lu) of attribute (%s) from (%s)",
-                                    index, a->second->getId(), issuer.get() ? issuer.get() : "unknown source"
+                                    index, attr->getId(), issuer.get() ? issuer.get() : "unknown source"
                                     );
-                                a->second->removeValue(index);
+                                attr->removeValue(index);
                                 count--;
                             }
                         }
@@ -329,39 +333,41 @@ void XMLFilterImpl::filterAttributes(const FilteringContext& context, multimap<s
                 if (rules.first != rules.second) {
                     // Run each rule in sequence.
                     if (!ruleFound) {
-                        m_log.debug("applying wildcard rule(s) for attribute (%s) from (%s)", a->second->getId(), issuer.get() ? issuer.get() : "unknown source");
+                        m_log.debug(
+                            "applying wildcard rule(s) for attribute (%s) from (%s)",
+                            attr->getId(), issuer.get() ? issuer.get() : "unknown source"
+                            );
                         ruleFound = true;
                     }
                     for (; rules.first!=rules.second; ++rules.first) {
-                        count = a->second->valueCount();
+                        count = attr->valueCount();
                         for (index=0; index < count;) {
                             // The return value tells us whether to index past the accepted value, or stay put and decrement the count.
-                            if (rules.first->second->evaluatePermitValue(context, *(a->second), index)) {
+                            if (rules.first->second->evaluatePermitValue(context, *attr, index)) {
                                 index++;
                             }
                             else {
                                 m_log.warn(
                                     "filtered value at position (%lu) of attribute (%s) from (%s)",
-                                    index, a->second->getId(), issuer.get() ? issuer.get() : "unknown source"
+                                    index, attr->getId(), issuer.get() ? issuer.get() : "unknown source"
                                     );
-                                a->second->removeValue(index);
+                                attr->removeValue(index);
                                 count--;
                             }
                         }
                     }
                 }
 
-                if (!ruleFound || a->second->valueCount() == 0) {
+                if (!ruleFound || attr->valueCount() == 0) {
                     if (!ruleFound) {
                         // No rule found, so we're filtering it out.
                         m_log.warn(
                             "no rule found, filtering out values of attribute (%s) from (%s)",
-                            a->second->getId(), issuer.get() ? issuer.get() : "unknown source"
+                            attr->getId(), issuer.get() ? issuer.get() : "unknown source"
                             );
                     }
-                    multimap<string,Attribute*>::iterator dead = a++;
-                    delete dead->second;
-                    attributes.erase(dead);
+                    delete attr;
+                    attributes.erase(attributes.begin() + a);
                 }
                 else {
                     ++a;
