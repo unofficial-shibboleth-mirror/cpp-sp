@@ -153,7 +153,8 @@ struct shib_dir_config
     int bBasicHijack;       // activate for AuthType Basic?
     int bRequireSession;    // require a session?
     int bExportAssertion;   // export SAML assertion to the environment?
-    int bUseEnvVars;        // use environment instead of headers?
+    int bUseEnvVars;        // use environment?
+    int bUseHeaders;        // use headers?
 };
 
 // creates per-directory config structure
@@ -170,6 +171,7 @@ extern "C" void* create_shib_dir_config (SH_AP_POOL* p, char* d)
     dc->szApplicationId = NULL;
     dc->szRequireWith = NULL;
     dc->bUseEnvVars = -1;
+    dc->bUseHeaders = -1;
     return dc;
 }
 
@@ -214,6 +216,7 @@ extern "C" void* merge_shib_dir_config (SH_AP_POOL* p, void* base, void* sub)
     dc->bExportAssertion=((child->bExportAssertion==-1) ? parent->bExportAssertion : child->bExportAssertion);
     dc->bRequireAll=((child->bRequireAll==-1) ? parent->bRequireAll : child->bRequireAll);
     dc->bUseEnvVars=((child->bUseEnvVars==-1) ? parent->bUseEnvVars : child->bUseEnvVars);
+    dc->bUseHeaders=((child->bUseHeaders==-1) ? parent->bUseHeaders : child->bUseHeaders);
     return dc;
 }
 
@@ -388,10 +391,11 @@ public:
     return m_body.c_str();
   }
   void clearHeader(const char* rawname, const char* cginame) {
-    if (m_dc->bUseEnvVars!=0) {
+    if (m_dc->bUseEnvVars != 0) {
        // ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_clear_header: env\n");
        if (m_rc && m_rc->env) ap_table_unset(m_rc->env, rawname);
-    } else {
+    }
+    if (m_dc->bUseHeaders == 1) {
        // ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_clear_header: hdr\n");
         if (g_checkSpoofing && ap_is_initial_req(m_req)) {
             if (m_allhttp.empty()) {
@@ -424,26 +428,26 @@ public:
     }
   }
   void setHeader(const char* name, const char* value) {
-    if (m_dc->bUseEnvVars!=0) {
+    if (m_dc->bUseEnvVars != 0) {
        if (!m_rc) {
           // this happens on subrequests
           // ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_setheader: no_m_rc\n");
           m_rc = init_request_config(m_req);
        }
-       if (!m_rc->env) m_rc->env = ap_make_table(m_req->pool, 10);
+       if (!m_rc->env)
+           m_rc->env = ap_make_table(m_req->pool, 10);
        // ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_set_env: %s=%s\n", name, value?value:"Null");
-       ap_table_set(m_rc->env, name, value?value:"");
+       ap_table_set(m_rc->env, name, value ? value : "");
     }
-    else {
+    if (m_dc->bUseHeaders == 1)
        ap_table_set(m_req->headers_in, name, value);
-    }
   }
   string getHeader(const char* name) const {
     const char* hdr = ap_table_get(m_req->headers_in, name);
     return string(hdr ? hdr : "");
   }
   string getSecureHeader(const char* name) const {
-    if (m_dc->bUseEnvVars!=0) {
+    if (m_dc->bUseEnvVars != 0) {
        const char *hdr;
        if (m_rc && m_rc->env)
            hdr = ap_table_get(m_rc->env, name);
@@ -1022,7 +1026,7 @@ static int shib_post_read(request_rec *r)
 {
     shib_request_config* rc = init_request_config(r);
 
-    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_post_read: E=%s", rc->env?"env":"hdr");
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_post_read");
 
 #ifdef SHIB_DEFERRED_HEADERS
     rc->hdr_out = ap_make_table(r->pool, 5);
@@ -1254,7 +1258,10 @@ static command_rec shire_cmds[] = {
    OR_AUTHCFG, FLAG, "All require directives must match"},
   {"ShibUseEnvironment", (config_fn_t)ap_set_flag_slot,
    (void *) XtOffsetOf (shib_dir_config, bUseEnvVars),
-   OR_AUTHCFG, FLAG, "Export data in environment instead of headers (default)"},
+   OR_AUTHCFG, FLAG, "Export attributes using environment variables (default)"},
+  {"ShibUseHeaders", (config_fn_t)ap_set_flag_slot,
+   (void *) XtOffsetOf (shib_dir_config, bUseHeaders),
+   OR_AUTHCFG, FLAG, "Export attributes using custom HTTP headers"},
 
   {NULL}
 };
@@ -1353,7 +1360,10 @@ static command_rec shib_cmds[] = {
         OR_AUTHCFG, "All require directives must match"),
   AP_INIT_FLAG("ShibUseEnvironment", (config_fn_t)ap_set_flag_slot,
         (void *) offsetof (shib_dir_config, bUseEnvVars),
-        OR_AUTHCFG, "Export data in environment instead of headers (default)"),
+        OR_AUTHCFG, "Export attributes using environment variables (default)"),
+  AP_INIT_FLAG("ShibUseHeaders", (config_fn_t)ap_set_flag_slot,
+        (void *) offsetof (shib_dir_config, bUseHeaders),
+        OR_AUTHCFG, "Export attributes using custom HTTP headers"),
 
   {NULL}
 };
