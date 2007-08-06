@@ -41,7 +41,7 @@ namespace shibsp {
         ~StringAttributeDecoder() {}
 
         shibsp::Attribute* decode(
-            const char* id, const XMLObject* xmlObject, const char* assertingParty=NULL, const char* relyingParty=NULL
+            const vector<string>& ids, const XMLObject* xmlObject, const char* assertingParty=NULL, const char* relyingParty=NULL
             ) const;
     };
 
@@ -52,11 +52,11 @@ namespace shibsp {
 };
 
 shibsp::Attribute* StringAttributeDecoder::decode(
-    const char* id, const XMLObject* xmlObject, const char* assertingParty, const char* relyingParty
+    const vector<string>& ids, const XMLObject* xmlObject, const char* assertingParty, const char* relyingParty
     ) const
 {
     char* val;
-    auto_ptr<SimpleAttribute> simple(new SimpleAttribute(id));
+    auto_ptr<SimpleAttribute> simple(new SimpleAttribute(ids));
     simple->setCaseSensitive(m_caseSensitive);
     vector<string>& dest = simple->getValues();
     vector<XMLObject*>::const_iterator v,stop;
@@ -71,7 +71,10 @@ shibsp::Attribute* StringAttributeDecoder::decode(
             stop = values.end();
             if (log.isDebugEnabled()) {
                 auto_ptr_char n(saml2attr->getName());
-                log.debug("decoding SimpleAttribute (%s) from SAML 2 Attribute (%s) with %lu value(s)", id, n.get() ? n.get() : "unnamed", values.size());
+                log.debug(
+                    "decoding SimpleAttribute (%s) from SAML 2 Attribute (%s) with %lu value(s)",
+                    ids.front().c_str(), n.get() ? n.get() : "unnamed", values.size()
+                    );
             }
         }
         else {
@@ -82,7 +85,10 @@ shibsp::Attribute* StringAttributeDecoder::decode(
                 stop = values.end();
                 if (log.isDebugEnabled()) {
                     auto_ptr_char n(saml1attr->getAttributeName());
-                    log.debug("decoding SimpleAttribute (%s) from SAML 1 Attribute (%s) with %lu value(s)", id, n.get() ? n.get() : "unnamed", values.size());
+                log.debug(
+                    "decoding SimpleAttribute (%s) from SAML 1 Attribute (%s) with %lu value(s)",
+                    ids.front().c_str(), n.get() ? n.get() : "unnamed", values.size()
+                    );
                 }
             }
             else {
@@ -112,7 +118,7 @@ shibsp::Attribute* StringAttributeDecoder::decode(
     if (saml2name) {
         if (log.isDebugEnabled()) {
             auto_ptr_char f(saml2name->getFormat());
-            log.debug("decoding SimpleAttribute (%s) from SAML 2 NameID with Format (%s)", id, f.get() ? f.get() : "unspecified");
+            log.debug("decoding SimpleAttribute (%s) from SAML 2 NameID with Format (%s)", ids.front().c_str(), f.get() ? f.get() : "unspecified");
         }
         val = toUTF8(saml2name->getName());
     }
@@ -121,7 +127,10 @@ shibsp::Attribute* StringAttributeDecoder::decode(
         if (saml1name) {
             if (log.isDebugEnabled()) {
                 auto_ptr_char f(saml1name->getFormat());
-                log.debug("decoding SimpleAttribute (%s) from SAML 1 NameIdentifier with Format (%s)", id, f.get() ? f.get() : "unspecified");
+                log.debug(
+                    "decoding SimpleAttribute (%s) from SAML 1 NameIdentifier with Format (%s)",
+                    ids.front().c_str(), f.get() ? f.get() : "unspecified"
+                    );
             }
             val = toUTF8(saml1name->getName());
         }

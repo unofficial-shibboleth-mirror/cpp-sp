@@ -43,12 +43,12 @@ namespace shibsp {
     {
     public:
         /**
-         * Constructor
+         * Constructor.
          * 
-         * @param id    Attribute identifier
+         * @param ids   array with primary identifier in first position, followed by any aliases
          */
-        NameIDAttribute(const char* id, const char* formatter=DEFAULT_NAMEID_FORMATTER)
-            : Attribute(id), m_formatter(formatter) {
+        NameIDAttribute(const std::vector<std::string>& ids, const char* formatter=DEFAULT_NAMEID_FORMATTER)
+            : Attribute(ids), m_formatter(formatter) {
         }
 
         /**

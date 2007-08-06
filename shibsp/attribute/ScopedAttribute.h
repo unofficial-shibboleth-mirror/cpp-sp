@@ -46,12 +46,14 @@ namespace shibsp {
     {
     public:
         /**
-         * Constructor
+         * Constructor.
          * 
-         * @param id        Attribute identifier
+         * @param ids   array with primary identifier in first position, followed by any aliases
          * @param delimeter value/scope delimeter when serializing
          */
-        ScopedAttribute(const char* id, char delimeter='@') : Attribute(id), m_delimeter(delimeter) {}
+        ScopedAttribute(const std::vector<std::string>& ids, char delimeter='@')
+            : Attribute(ids), m_delimeter(delimeter) {
+        }
 
         /**
          * Constructs based on a remoted ScopedAttribute.

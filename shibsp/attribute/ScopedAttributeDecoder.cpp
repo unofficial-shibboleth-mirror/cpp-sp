@@ -51,7 +51,7 @@ namespace shibsp {
         ~ScopedAttributeDecoder() {}
 
         shibsp::Attribute* decode(
-            const char* id, const XMLObject* xmlObject, const char* assertingParty=NULL, const char* relyingParty=NULL
+            const vector<string>& ids, const XMLObject* xmlObject, const char* assertingParty=NULL, const char* relyingParty=NULL
             ) const;
 
     private:
@@ -65,14 +65,14 @@ namespace shibsp {
 };
 
 shibsp::Attribute* ScopedAttributeDecoder::decode(
-    const char* id, const XMLObject* xmlObject, const char* assertingParty, const char* relyingParty
+    const vector<string>& ids, const XMLObject* xmlObject, const char* assertingParty, const char* relyingParty
     ) const
 {
     char* val;
     char* scope;
     const XMLCh* xmlscope;
     QName scopeqname(NULL,Scope);
-    auto_ptr<ScopedAttribute> scoped(new ScopedAttribute(id,m_delimeter));
+    auto_ptr<ScopedAttribute> scoped(new ScopedAttribute(ids, m_delimeter));
     scoped->setCaseSensitive(m_caseSensitive);
     vector< pair<string,string> >& dest = scoped->getValues();
     vector<XMLObject*>::const_iterator v,stop;
@@ -87,7 +87,10 @@ shibsp::Attribute* ScopedAttributeDecoder::decode(
             stop = values.end();
             if (log.isDebugEnabled()) {
                 auto_ptr_char n(saml2attr->getName());
-                log.debug("decoding ScopedAttribute (%s) from SAML 2 Attribute (%s) with %lu value(s)", id, n.get() ? n.get() : "unnamed", values.size());
+                log.debug(
+                    "decoding ScopedAttribute (%s) from SAML 2 Attribute (%s) with %lu value(s)",
+                    ids.front().c_str(), n.get() ? n.get() : "unnamed", values.size()
+                    );
             }
         }
         else {
@@ -98,7 +101,10 @@ shibsp::Attribute* ScopedAttributeDecoder::decode(
                 stop = values.end();
                 if (log.isDebugEnabled()) {
                     auto_ptr_char n(saml1attr->getAttributeName());
-                    log.debug("decoding ScopedAttribute (%s) from SAML 1 Attribute (%s) with %lu value(s)", id, n.get() ? n.get() : "unnamed", values.size());
+                    log.debug(
+                        "decoding ScopedAttribute (%s) from SAML 1 Attribute (%s) with %lu value(s)",
+                        ids.front().c_str(), n.get() ? n.get() : "unnamed", values.size()
+                        );
                 }
             }
             else {
@@ -149,7 +155,7 @@ shibsp::Attribute* ScopedAttributeDecoder::decode(
     if (saml2name) {
         if (log.isDebugEnabled()) {
             auto_ptr_char f(saml2name->getFormat());
-            log.debug("decoding ScopedAttribute (%s) from SAML 2 NameID with Format (%s)", id, f.get() ? f.get() : "unspecified");
+            log.debug("decoding ScopedAttribute (%s) from SAML 2 NameID with Format (%s)", ids.front().c_str(), f.get() ? f.get() : "unspecified");
         }
         val = toUTF8(saml2name->getName());
     }
@@ -158,7 +164,10 @@ shibsp::Attribute* ScopedAttributeDecoder::decode(
         if (saml1name) {
             if (log.isDebugEnabled()) {
                 auto_ptr_char f(saml1name->getFormat());
-                log.debug("decoding ScopedAttribute (%s) from SAML 1 NameIdentifier with Format (%s)", id, f.get() ? f.get() : "unspecified");
+                log.debug(
+                    "decoding ScopedAttribute (%s) from SAML 1 NameIdentifier with Format (%s)",
+                    ids.front().c_str(), f.get() ? f.get() : "unspecified"
+                    );
             }
             val = toUTF8(saml1name->getName());
         }

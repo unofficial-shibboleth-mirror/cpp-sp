@@ -34,11 +34,11 @@ namespace shibsp {
     {
     public:
         /**
-         * Constructor
+         * Constructor.
          * 
-         * @param id    Attribute identifier
+         * @param ids   array with primary identifier in first position, followed by any aliases
          */
-        SimpleAttribute(const char* id) : Attribute(id) {}
+        SimpleAttribute(const std::vector<std::string>& ids) : Attribute(ids) {}
 
         /**
          * Constructs based on a remoted SimpleAttribute.

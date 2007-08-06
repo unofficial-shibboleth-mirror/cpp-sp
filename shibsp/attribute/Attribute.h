@@ -57,9 +57,9 @@ namespace shibsp {
         /**
          * Constructor
          * 
-         * @param id    Attribute identifier 
+         * @param ids   array with primary identifier in first position, followed by any aliases
          */
-        Attribute(const char* id) : m_id(id ? id : ""), m_caseSensitive(true) {
+        Attribute(const std::vector<std::string>& ids) : m_id(ids), m_caseSensitive(true) {
         }
 
         /**
@@ -74,12 +74,19 @@ namespace shibsp {
         Attribute(DDF& in) : m_caseSensitive(in["case_insensitive"].isnull()) {
             const char* id = in.first().name();
             if (id && *id)
-                m_id = id;
+                m_id.push_back(id);
             else
                 throw AttributeException("No id found in marshalled attribute content.");
+            DDF aliases = in["aliases"];
+            if (aliases.islist()) {
+                DDF alias = aliases.first();
+                while (alias.isstring()) {
+                    m_id.push_back(alias.string());
+                    alias = aliases.next();
+                }
+            }
         }
         
-
         /**
          * Maintains a copy of serialized attribute values, when possible.
          * 
@@ -93,10 +100,19 @@ namespace shibsp {
         /**
          * Returns the Attribute identifier.
          * 
-         * @return Attribute identifier
+         * @return the Attribute identifier
          */
         const char* getId() const {
-            return m_id.c_str();
+            return m_id.front().c_str();
+        }
+
+        /**
+         * Returns all of the effective names for the Attribute.
+         *
+         * @return immutable array of identifiers, with the primary ID in the first position
+         */
+        const std::vector<std::string>& getAliases() const {
+            return m_id;
         }
 
         /**
@@ -181,9 +197,17 @@ namespace shibsp {
          */
         virtual DDF marshall() const {
             DDF ddf(NULL);
-            ddf.structure().addmember(m_id.c_str()).list();
+            ddf.structure().addmember(m_id.front().c_str()).list();
             if (!m_caseSensitive)
                 ddf.addmember("case_insensitive");
+            if (m_id.size() > 1) {
+                DDF alias;
+                DDF aliases = ddf.addmember("aliases").list();
+                for (std::vector<std::string>::const_iterator a = m_id.begin() + 1; a != m_id.end(); ++a) {
+                    alias = DDF(NULL).string(a->c_str());
+                    aliases.add(alias);
+                }
+            }
             return ddf;
         }
         
@@ -226,7 +250,7 @@ namespace shibsp {
         
     private:
         static std::map<std::string,AttributeFactory*> m_factoryMap;
-        std::string m_id;
+        std::vector<std::string> m_id;
         bool m_caseSensitive;
     };
 

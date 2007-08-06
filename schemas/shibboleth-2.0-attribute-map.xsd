@@ -15,6 +15,10 @@
             <minLength value="1"/>
         </restriction>
     </simpleType>
+
+    <simpleType name="listOfStrings">
+        <list itemType="am:string"/>
+    </simpleType>
     
     <element name="Attributes">
         <annotation>
@@ -37,6 +41,11 @@
         <attribute name="id" type="am:string" use="required">
             <annotation>
                 <documentation>The internal attribute ID to which this SAML attribute maps.</documentation>
+            </annotation>
+        </attribute>
+        <attribute name="aliases" type="am:listOfStrings">
+            <annotation>
+                <documentation>Optional aliases for the internal attribute to which this SAML attribute maps.</documentation>
             </annotation>
         </attribute>
         <attribute name="name" type="am:string" use="required">

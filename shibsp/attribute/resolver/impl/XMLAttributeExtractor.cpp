@@ -87,9 +87,9 @@ namespace shibsp {
         Category& m_log;
         DOMDocument* m_document;
 #ifdef HAVE_GOOD_STL
-        typedef map< pair<xstring,xstring>,pair<AttributeDecoder*,string> > attrmap_t;
+        typedef map< pair<xstring,xstring>,pair< AttributeDecoder*,vector<string> > > attrmap_t;
 #else
-        typedef map< pair<string,string>,pair<AttributeDecoder*,string> > attrmap_t;
+        typedef map< pair<string,string>,pair< AttributeDecoder*,vector<string> > > attrmap_t;
 #endif
         attrmap_t m_attrMap;
         vector<string> m_attributeIds;
@@ -133,6 +133,7 @@ namespace shibsp {
     static const XMLCh _AttributeDecoder[] =    UNICODE_LITERAL_16(A,t,t,r,i,b,u,t,e,D,e,c,o,d,e,r);
     static const XMLCh Attributes[] =           UNICODE_LITERAL_10(A,t,t,r,i,b,u,t,e,s);
     static const XMLCh _id[] =                  UNICODE_LITERAL_2(i,d);
+    static const XMLCh _aliases[] =             UNICODE_LITERAL_7(a,l,i,a,s,e,s);
     static const XMLCh _name[] =                UNICODE_LITERAL_4(n,a,m,e);
     static const XMLCh nameFormat[] =           UNICODE_LITERAL_10(n,a,m,e,F,o,r,m,a,t);
 };
@@ -201,11 +202,11 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log) : m_log(l
 
         // Fetch/create the map entry and see if it's a duplicate rule.
 #ifdef HAVE_GOOD_STL
-        pair<AttributeDecoder*,string>& decl = m_attrMap[make_pair(name,format)];
+        pair< AttributeDecoder*,vector<string> >& decl = m_attrMap[make_pair(name,format)];
 #else
         auto_ptr_char n(name);
         auto_ptr_char f(format);
-        pair<AttributeDecoder*,string>& decl = m_attrMap[make_pair(n.get(),f.get())];
+        pair< AttributeDecoder*,vector<string> >& decl = m_attrMap[make_pair(n.get(),f.get())];
 #endif
         if (decl.first) {
             m_log.warn("skipping duplicate Attribute mapping (same name and nameFormat)");
@@ -223,8 +224,32 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log) : m_log(l
         }
         
         decl.first = decoder;
-        decl.second = id.get();
+        decl.second.push_back(id.get());
         m_attributeIds.push_back(id.get());
+
+        name = child->getAttributeNS(NULL, _aliases);
+        if (name && *name) {
+            auto_ptr_char aliases(name);
+            char* pos;
+            char* start = const_cast<char*>(aliases.get());
+            while (start && *start) {
+                while (*start && isspace(*start))
+                    start++;
+                if (!*start)
+                    break;
+                pos = strchr(start,' ');
+                if (pos)
+                    *pos=0;
+                if (strcmp(start, "REMOTE_USER")) {
+                    decl.second.push_back(start);
+                    m_attributeIds.push_back(start);
+                }
+                else {
+                    m_log.warn("skipping alias, REMOTE_USER is a reserved name");
+                }
+                start = pos ? pos+1 : NULL;
+            }
+        }
         
         child = XMLHelper::getNextSiblingElement(child, shibspconstants::SHIB2ATTRIBUTEMAP_NS, saml1::Attribute::LOCAL_NAME);
     }
@@ -235,9 +260,9 @@ void XMLExtractorImpl::extractAttributes(
     ) const
 {
 #ifdef HAVE_GOOD_STL
-    map< pair<xstring,xstring>,pair<AttributeDecoder*,string> >::const_iterator rule;
+    map< pair<xstring,xstring>,pair< AttributeDecoder*,vector<string> > >::const_iterator rule;
 #else
-    map< pair<string,string>,pair<AttributeDecoder*,string> >::const_iterator rule;
+    map< pair<string,string>,pair< AttributeDecoder*,vector<string> > >::const_iterator rule;
 #endif
 
     const XMLCh* format = nameid.getFormat();
@@ -249,7 +274,7 @@ void XMLExtractorImpl::extractAttributes(
     auto_ptr_char temp(format);
     if ((rule=m_attrMap.find(make_pair(temp.get(),string()))) != m_attrMap.end()) {
 #endif
-        Attribute* a = rule->second.first->decode(rule->second.second.c_str(), &nameid, assertingParty, application.getString("entityID").second);
+        Attribute* a = rule->second.first->decode(rule->second.second, &nameid, assertingParty, application.getString("entityID").second);
         if (a)
             attributes.push_back(a);
     }
@@ -260,9 +285,9 @@ void XMLExtractorImpl::extractAttributes(
     ) const
 {
 #ifdef HAVE_GOOD_STL
-    map< pair<xstring,xstring>,pair<AttributeDecoder*,string> >::const_iterator rule;
+    map< pair<xstring,xstring>,pair< AttributeDecoder*,vector<string> > >::const_iterator rule;
 #else
-    map< pair<string,string>,pair<AttributeDecoder*,string> >::const_iterator rule;
+    map< pair<string,string>,pair< AttributeDecoder*,vector<string> > >::const_iterator rule;
 #endif
 
     const XMLCh* format = nameid.getFormat();
@@ -274,7 +299,7 @@ void XMLExtractorImpl::extractAttributes(
     auto_ptr_char temp(format);
     if ((rule=m_attrMap.find(make_pair(temp.get(),string()))) != m_attrMap.end()) {
 #endif
-        Attribute* a = rule->second.first->decode(rule->second.second.c_str(), &nameid, assertingParty, application.getString("entityID").second);
+        Attribute* a = rule->second.first->decode(rule->second.second, &nameid, assertingParty, application.getString("entityID").second);
         if (a)
             attributes.push_back(a);
     }
@@ -285,9 +310,9 @@ void XMLExtractorImpl::extractAttributes(
     ) const
 {
 #ifdef HAVE_GOOD_STL
-    map< pair<xstring,xstring>,pair<AttributeDecoder*,string> >::const_iterator rule;
+    map< pair<xstring,xstring>,pair< AttributeDecoder*,vector<string> > >::const_iterator rule;
 #else
-    map< pair<string,string>,pair<AttributeDecoder*,string> >::const_iterator rule;
+    map< pair<string,string>,pair< AttributeDecoder*,vector<string> > >::const_iterator rule;
 #endif
 
     const XMLCh* name = attr.getAttributeName();
@@ -303,7 +328,7 @@ void XMLExtractorImpl::extractAttributes(
     auto_ptr_char temp2(format);
     if ((rule=m_attrMap.find(make_pair(temp1.get(),temp2.get()))) != m_attrMap.end()) {
 #endif
-        Attribute* a = rule->second.first->decode(rule->second.second.c_str(), &attr, assertingParty, application.getString("entityID").second);
+        Attribute* a = rule->second.first->decode(rule->second.second, &attr, assertingParty, application.getString("entityID").second);
         if (a)
             attributes.push_back(a);
     }
@@ -314,9 +339,9 @@ void XMLExtractorImpl::extractAttributes(
     ) const
 {
 #ifdef HAVE_GOOD_STL
-    map< pair<xstring,xstring>,pair<AttributeDecoder*,string> >::const_iterator rule;
+    map< pair<xstring,xstring>,pair< AttributeDecoder*,vector<string> > >::const_iterator rule;
 #else
-    map< pair<string,string>,pair<AttributeDecoder*,string> >::const_iterator rule;
+    map< pair<string,string>,pair< AttributeDecoder*,vector<string> > >::const_iterator rule;
 #endif
 
     const XMLCh* name = attr.getName();
@@ -334,7 +359,7 @@ void XMLExtractorImpl::extractAttributes(
     auto_ptr_char temp2(format);
     if ((rule=m_attrMap.find(make_pair(temp1.get(),temp2.get()))) != m_attrMap.end()) {
 #endif
-        Attribute* a = rule->second.first->decode(rule->second.second.c_str(), &attr, assertingParty, application.getString("entityID").second);
+        Attribute* a = rule->second.first->decode(rule->second.second, &attr, assertingParty, application.getString("entityID").second);
         if (a)
             attributes.push_back(a);
     }
