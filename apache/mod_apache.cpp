@@ -391,10 +391,6 @@ public:
     return m_body.c_str();
   }
   void clearHeader(const char* rawname, const char* cginame) {
-    if (m_dc->bUseEnvVars != 0) {
-       // ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_clear_header: env\n");
-       if (m_rc && m_rc->env) ap_table_unset(m_rc->env, rawname);
-    }
     if (m_dc->bUseHeaders == 1) {
        // ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_clear_header: hdr\n");
         if (g_checkSpoofing && ap_is_initial_req(m_req)) {
