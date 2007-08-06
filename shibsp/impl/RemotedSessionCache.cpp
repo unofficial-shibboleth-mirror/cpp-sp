@@ -261,7 +261,7 @@ void RemotedSession::validate(const Application& application, const char* client
 }
 
 RemotedCache::RemotedCache(const DOMElement* e)
-    : SessionCache(e), m_log(Category::getInstance(SHIBSP_LOGCAT".SessionCache")), m_root(e), m_lock(NULL), shutdown(false)
+    : SessionCache(e, 900), m_log(Category::getInstance(SHIBSP_LOGCAT".SessionCache")), m_root(e), m_lock(NULL), shutdown(false)
 {
     if (!SPConfig::getConfig().getServiceProvider()->getListenerService())
         throw ConfigurationException("RemotedCacheService requires a ListenerService, but none available.");

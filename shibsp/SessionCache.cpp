@@ -48,14 +48,14 @@ void SHIBSP_API shibsp::registerSessionCaches()
 #endif
 }
 
-SessionCache::SessionCache(const DOMElement* e) : m_cacheTimeout(60*60*8)
+SessionCache::SessionCache(const DOMElement* e, unsigned long defaultTimeout) : m_cacheTimeout(defaultTimeout)
 {
     if (e) {
         const XMLCh* tag=e->getAttributeNS(NULL,cacheTimeout);
         if (tag && *tag) {
             m_cacheTimeout = XMLString::parseInt(tag);
             if (!m_cacheTimeout)
-                m_cacheTimeout=60*60*8;
+                m_cacheTimeout=defaultTimeout;
         }
     }
 }

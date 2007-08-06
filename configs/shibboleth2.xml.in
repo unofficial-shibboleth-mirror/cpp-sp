@@ -47,6 +47,8 @@
     
 	<!-- The InProcess section pertains to components that run inside the web server. -->
 	<InProcess logger="@-PKGSYSCONFDIR-@/native.logger">
+		<SessionCache type="Remoted" cleanupInterval="900" cacheTimeout="900"/>
+	
 		<!--
 		To customize behavior, map hostnames and path components to applicationId and other settings.
 		-->

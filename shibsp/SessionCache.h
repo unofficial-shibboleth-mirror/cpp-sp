@@ -183,11 +183,12 @@ namespace shibsp {
          *  <dd>attribute containing maximum lifetime in seconds for unused sessions to remain in cache</dd>
          * </dl>
          * 
-         * @param e root of DOM tree to configure the cache
+         * @param e                 root of DOM tree to configure the cache
+         * @param defaultTimeout    default cacheTimeout setting to use if none specified in DOM
          */
-        SessionCache(const xercesc::DOMElement* e);
+        SessionCache(const xercesc::DOMElement* e, unsigned long defaultTimeout=3600);
         
-        /** maximum lifetime in seconds for unused sessions to be cached */
+        /** Maximum lifetime in seconds for unused sessions to be cached. */
         unsigned long m_cacheTimeout;
         
     public:

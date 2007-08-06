@@ -450,7 +450,7 @@ void StoredSession::addAssertion(Assertion* assertion)
 }
 
 SSCache::SSCache(const DOMElement* e)
-    : SessionCache(e), m_log(Category::getInstance(SHIBSP_LOGCAT".SessionCache")), m_storage(NULL)
+    : SessionCache(e, 3600), m_log(Category::getInstance(SHIBSP_LOGCAT".SessionCache")), m_storage(NULL)
 {
     SPConfig& conf = SPConfig::getConfig();
     const XMLCh* tag = e ? e->getAttributeNS(NULL,_StorageService) : NULL;
