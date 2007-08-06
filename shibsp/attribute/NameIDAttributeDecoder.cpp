@@ -167,11 +167,11 @@ void NameIDAttributeDecoder::extract(
     const NameIDType* n, vector<NameIDAttribute::Value>& dest, const char* assertingParty, const char* relyingParty
     ) const
 {
-    char* name = toUTF8(n->getName());
-    if (name && *name) {
+    auto_arrayptr<char> name(toUTF8(n->getName()));
+    if (name.get() && *name.get()) {
         dest.push_back(NameIDAttribute::Value());
         NameIDAttribute::Value& val = dest.back();
-        val.m_Name = name;
+        val.m_Name = name.get();
         char* str = toUTF8(n->getFormat());
         if (str) {
             val.m_Format = str;
@@ -198,18 +198,17 @@ void NameIDAttributeDecoder::extract(
             delete[] str;
         }
     }
-    delete[] name;
 }
 
 void NameIDAttributeDecoder::extract(
     const NameIdentifier* n, vector<NameIDAttribute::Value>& dest, const char* assertingParty, const char* relyingParty
     ) const
 {
-    char* name = toUTF8(n->getName());
-    if (name && *name) {
+    auto_arrayptr<char> name(toUTF8(n->getName()));
+    if (name.get() && *name.get()) {
         dest.push_back(NameIDAttribute::Value());
         NameIDAttribute::Value& val = dest.back();
-        val.m_Name = name;
+        val.m_Name = name.get();
         char* str = toUTF8(n->getFormat());
         if (str) {
             val.m_Format = str;
@@ -226,5 +225,4 @@ void NameIDAttributeDecoder::extract(
         if (relyingParty)
             val.m_SPNameQualifier = relyingParty;
     }
-    delete[] name;
 }
