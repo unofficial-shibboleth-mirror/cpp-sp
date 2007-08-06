@@ -830,7 +830,7 @@ bool htAccessControl::checkAttribute(const SPRequest& request, const Attribute* 
     const vector<string>& vals = attr->getSerializedValues();
     for (vector<string>::const_iterator v=vals.begin(); v!=vals.end(); ++v) {
         if (re) {
-            auto_ptr<XMLCh> trans(fromUTF8(v->c_str()));
+            auto_arrayptr<XMLCh> trans(fromUTF8(v->c_str()));
             if (re->matches(trans.get())) {
                 request.log(SPRequest::SPDebug,
                     string("htAccessControl plugin expecting regexp ") + toMatch + ", got " + *v + ": authorization granted"
@@ -919,9 +919,9 @@ bool htAccessControl::authorized(const SPRequest& request, const Session* sessio
                 if (regexp) {
                     try {
                         // To do regex matching, we have to convert from UTF-8.
-                        auto_ptr<XMLCh> trans(fromUTF8(w));
+                        auto_arrayptr<XMLCh> trans(fromUTF8(w));
                         RegularExpression re(trans.get());
-                        auto_ptr<XMLCh> trans2(fromUTF8(remote_user.c_str()));
+                        auto_arrayptr<XMLCh> trans2(fromUTF8(remote_user.c_str()));
                         if (re.matches(trans2.get())) {
                             request.log(SPRequest::SPDebug, string("htAccessControl plugin accepting user (") + w + ")");
                             SHIB_AP_CHECK_IS_OK;
@@ -984,7 +984,7 @@ bool htAccessControl::authorized(const SPRequest& request, const Session* sessio
                     auto_ptr<RegularExpression> re;
                     if (regexp) {
                         delete re.release();
-                        auto_ptr<XMLCh> trans(fromUTF8(w));
+                        auto_arrayptr<XMLCh> trans(fromUTF8(w));
                         auto_ptr<xercesc::RegularExpression> temp(new xercesc::RegularExpression(trans.get()));
                         re=temp;
                     }
