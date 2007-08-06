@@ -66,7 +66,7 @@ namespace shibsp {
         ServerThread(SocketListener::ShibSocket& s, SocketListener* listener, unsigned long id);
         ~ServerThread();
         void run();
-        bool job();
+        int job();  // Return -1 on error, 1 for closed, 0 for success
 
     private:
         SocketListener::ShibSocket m_sock;
@@ -410,6 +410,7 @@ void ServerThread::run()
     m_listener->m_children[m_sock] = m_child;
     m_listener->m_child_lock->unlock();
     
+    int result;
     fd_set readfds;
     struct timeval tv = { 0, 0 };
 
@@ -433,9 +434,12 @@ void ServerThread::run()
             break;
 
         default:
-            if (!job()) {
-                m_listener->log_error();
-                m_listener->log->error("I/O failure processing request on socket (%u)", m_sock);
+            result = job();
+            if (result) {
+                if (result < 0) {
+                    m_listener->log_error();
+                    m_listener->log->error("I/O failure processing request on socket (%u)", m_sock);
+                }
                 m_listener->close(m_sock);
                 return;
             }
@@ -443,7 +447,7 @@ void ServerThread::run()
     }
 }
 
-bool ServerThread::job()
+int ServerThread::job()
 {
     Category& log = Category::getInstance("shibd.Listener");
 
@@ -457,9 +461,14 @@ bool ServerThread::job()
 
     try {
         // Read the message.
-        if (m_listener->recv(m_sock,(char*)&len,sizeof(len)) != sizeof(len)) {
+        int readlength = m_listener->recv(m_sock,(char*)&len,sizeof(len));
+        if (readlength == 0) {
+            log.info("detected socket closure, shutting down worker thread");
+            return 1;
+        }
+        else if (readlength != sizeof(len)) {
             log.error("error reading size of input message");
-            return false;
+            return -1;
         }
         len = ntohl(len);
         
@@ -472,7 +481,7 @@ bool ServerThread::job()
         
         if (len) {
             log.error("error reading input message from socket");
-            return false;
+            return -1;
         }
         
         // Unmarshall the message.
@@ -519,12 +528,12 @@ bool ServerThread::job()
     len = htonl(outlen);
     if (m_listener->send(m_sock,(char*)&len,sizeof(len)) != sizeof(len)) {
         log.error("error sending output message size");
-        return false;
+        return -1;
     }
     if (m_listener->send(m_sock,response.c_str(),outlen) != outlen) {
         log.error("error sending output message");
-        return false;
+        return -1;
     }
     
-    return true;
+    return 0;
 }
