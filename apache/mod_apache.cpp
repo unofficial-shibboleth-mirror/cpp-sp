@@ -131,7 +131,8 @@ struct shib_dir_config
     int bBasicHijack;       // activate for AuthType Basic?
     int bRequireSession;    // require a session?
     int bExportAssertion;   // export SAML assertion to the environment?
-    int bUseEnvVars;        // use environment instead of headers?
+    int bUseEnvVars;        // use environment variables?
+    int bUseHeaders;        // use HTTP headers?
 };
 
 // creates per-directory config structure
@@ -148,6 +149,7 @@ extern "C" void* create_shib_dir_config (SH_AP_POOL* p, char* d)
     dc->szApplicationId = NULL;
     dc->szRequireWith = NULL;
     dc->bUseEnvVars = -1;
+    dc->bUseHeaders = -1;
     return dc;
 }
 
@@ -192,6 +194,7 @@ extern "C" void* merge_shib_dir_config (SH_AP_POOL* p, void* base, void* sub)
     dc->bExportAssertion=((child->bExportAssertion==-1) ? parent->bExportAssertion : child->bExportAssertion);
     dc->bRequireAll=((child->bRequireAll==-1) ? parent->bRequireAll : child->bRequireAll);
     dc->bUseEnvVars=((child->bUseEnvVars==-1) ? parent->bUseEnvVars : child->bUseEnvVars);
+    dc->bUseHeaders=((child->bUseHeaders==-1) ? parent->bUseHeaders : child->bUseHeaders);
     return dc;
 }
 
@@ -350,10 +353,11 @@ public:
 #endif
   }
   virtual void clearHeader(const string &name) {
-    if (m_dc->bUseEnvVars==1) {
+    if (m_dc->bUseEnvVars == 1) {
         // ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_clear_header: env");
         if (m_rc && m_rc->env) ap_table_unset(m_rc->env, name.c_str());
-    } else {
+    }
+    if (m_dc->bUseHeaders != 0) {
         // ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_clear_header: hdr");
         if (g_checkSpoofing && ap_is_initial_req(m_req)) {
             if (m_allhttp.empty()) {
@@ -394,29 +398,34 @@ public:
     }
   }
   virtual void setHeader(const string &name, const string &value) {
-    if (m_dc->bUseEnvVars==1) {
+    if (m_dc->bUseEnvVars == 1) {
        if (!m_rc) {
           // this happens on subrequests
           ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_setheader: no_m_rc");
           m_rc = init_request_config(m_req);
        }
-       if (!m_rc->env) m_rc->env = ap_make_table(m_req->pool, 10);
-       ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_set_env: %s=%s", name.c_str(), value.c_str()?value.c_str():"Null");
-       ap_table_set(m_rc->env, name.c_str(), value.c_str()?value.c_str():"");
-    } else {
-       ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_set_hdr: %s=%s", name.c_str(), value.c_str()?value.c_str():"Null");
-       ap_table_set(m_req->headers_in, name.c_str(), value.c_str());
+       if (!m_rc->env)
+           m_rc->env = ap_make_table(m_req->pool, 10);
+       //ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_set_env: %s=%s", name.c_str(), value.c_str()?value.c_str():"Null");
+       ap_table_set(m_rc->env, name.c_str(), value.c_str() ? value.c_str() : "");
+    }
+    if (m_dc->bUseHeaders != 0) {
+       //ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_set_hdr: %s=%s", name.c_str(), value.c_str()?value.c_str():"Null");
+       ap_table_set(m_req->headers_in, name.c_str(), value.c_str() ? value.c_str() : "");
     }
   }
   virtual string getHeader(const string &name) {
     const char *hdr;
-    if (m_dc->bUseEnvVars==1) {
-       if (m_rc && m_rc->env) hdr = ap_table_get(m_rc->env, name.c_str());
-       else hdr = NULL;
-       ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_get_hdr_env: %s=%s", name.c_str(), hdr?hdr:"NULL");
-    } else {
+    if (m_dc->bUseEnvVars == 1) {
+       if (m_rc && m_rc->env)
+           hdr = ap_table_get(m_rc->env, name.c_str());
+       else
+           hdr = NULL;
+       //ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_get_hdr_env: %s=%s", name.c_str(), hdr?hdr:"NULL");
+    }
+    else {
        hdr = ap_table_get(m_req->headers_in, name.c_str());
-       ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_get_hdr: %s=%s", name.c_str(), hdr?hdr:"NULL");
+       //ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_get_hdr: %s=%s", name.c_str(), hdr?hdr:"NULL");
     }
     return string(hdr ? hdr : "");
   }
@@ -655,10 +664,10 @@ pair<bool,bool> ApacheRequestMapper::getBool(const char* name, const char* ns) c
     const IPropertySet* s=reinterpret_cast<const IPropertySet*>(m_propsKey->getData());
     if (sta && !ns) {
         // Override Apache-settable boolean properties.
-        if (name && !strcmp(name,"requireSession") && sta->m_dc->bRequireSession==1)
-            return make_pair(true,true);
-        else if (name && !strcmp(name,"exportAssertion") && sta->m_dc->bExportAssertion==1)
-            return make_pair(true,true);
+        if (name && !strcmp(name,"requireSession") && sta->m_dc->bRequireSession != -1)
+            return make_pair(true, sta->m_dc->bRequireSession==1);
+        else if (name && !strcmp(name,"exportAssertion") && sta->m_dc->bExportAssertion != -1)
+            return make_pair(true, sta->m_dc->bExportAssertion==1);
     }
     return s ? s->getBool(name,ns) : make_pair(false,false);
 }
@@ -997,29 +1006,12 @@ bool htAccessControl::authorized(
     return false;
 }
 
-
-#ifndef SHIB_APACHE_13
-/*
- * shib_exit()
- *  Empty cleanup hook, Apache 2.x doesn't check NULL very well...
- */
-extern "C" apr_status_t shib_exit(void* data)
-{
-    if (g_Config) {
-        g_Config->shutdown();
-        g_Config = NULL;
-    }
-    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,NULL,"shib_exit() done");
-    return OK;
-}
-#endif
-
 // Initial look at a request - create the per-request structure
 static int shib_post_read(request_rec *r)
 {
     shib_request_config* rc = init_request_config(r);
 
-    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_post_read: E=%s", rc->env?"env":"hdr");
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_post_read");
 
 #ifdef SHIB_DEFERRED_HEADERS
     rc->hdr_out = ap_make_table(r->pool, 5);
@@ -1047,29 +1039,35 @@ extern "C" int shib_fixups(request_rec* r)
   return OK;
 }
 
-
+#ifdef SHIB_APACHE_13
 /*
  * shib_child_exit()
  *  Cleanup the (per-process) pool info.
  */
-#ifdef SHIB_APACHE_13
 extern "C" void shib_child_exit(server_rec* s, SH_AP_POOL* p)
 {
-#else
-extern "C" apr_status_t shib_child_exit(void* data)
-{
-  server_rec* s = NULL;
-#endif
-
-    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_child_exit(%d) dealing with g_Config..", (int)getpid());
-    g_Config->shutdown();
-    g_Config = NULL;
-    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_child_exit() done");
-
-#ifndef SHIB_APACHE_13
-    return OK;
-#endif
+    if (g_Config) {
+        ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_child_exit(%d) dealing with g_Config..", (int)getpid());
+        g_Config->shutdown();
+        g_Config = NULL;
+        ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_child_exit() done");
+    }
 }
+#else
+/*
+ * shib_exit()
+ *  Apache 2.x doesn't allow for per-child cleanup, causes CGI forks to hang.
+ */
+extern "C" apr_status_t shib_exit(void* data)
+{
+    if (g_Config) {
+        g_Config->shutdown();
+        g_Config = NULL;
+    }
+    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,NULL,"shib_exit() done");
+    return OK;
+}
+#endif
 
 /* 
  * shire_child_init()
@@ -1133,7 +1131,7 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
     }
 
     // Set the cleanup handler
-    apr_pool_cleanup_register(p, NULL, &shib_exit, &shib_child_exit);
+    apr_pool_cleanup_register(p, NULL, &shib_exit, apr_pool_cleanup_null);
 
     ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() done");
 }
@@ -1243,7 +1241,10 @@ static command_rec shire_cmds[] = {
    OR_AUTHCFG, FLAG, "All require directives must match"},
   {"ShibUseEnvironment", (config_fn_t)ap_set_flag_slot,
    (void *) XtOffsetOf (shib_dir_config, bUseEnvVars),
-   OR_AUTHCFG, FLAG, "Export data in environment instead of headers"},
+   OR_AUTHCFG, FLAG, "Export attributes using environment variables"},
+  {"ShibUseHeaders", (config_fn_t)ap_set_flag_slot,
+   (void *) XtOffsetOf (shib_dir_config, bUseHeaders),
+   OR_AUTHCFG, FLAG, "Export attributes using custom HTTP headers (default)"},
 
   {NULL}
 };
@@ -1339,7 +1340,10 @@ static command_rec shib_cmds[] = {
         OR_AUTHCFG, "All require directives must match"),
   AP_INIT_FLAG("ShibUseEnvironment", (config_fn_t)ap_set_flag_slot,
         (void *) offsetof (shib_dir_config, bUseEnvVars),
-        OR_AUTHCFG, "Export data in environment instead of headers"),
+        OR_AUTHCFG, "Export attributes using environment variables"),
+  AP_INIT_FLAG("ShibUseHeaders", (config_fn_t)ap_set_flag_slot,
+        (void *) offsetof (shib_dir_config, bUseHeaders),
+        OR_AUTHCFG, "Export attributes using custom HTTP headers (default)"),
 
   {NULL}
 };
