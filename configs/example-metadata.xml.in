@@ -179,7 +179,7 @@ w14fpgtAk2x8xD7cpHsZ073JHxEcjEetD8PTtrFdNu6GwIrv6Sk=
 			<Extensions>
 				<!-- Extension to permit the SP to receive IdP discovery responses. -->
 				<idpdisc:DiscoveryResponse xmlns:idpdisc="urn:oasis:names:tc:SAML:profiles:SSO:idp-discovery-protocol"
-					Binding="urn:oasis:names:tc:SAML:profiles:SSO:idp-discovery-protocol"
+					index="1" Binding="urn:oasis:names:tc:SAML:profiles:SSO:idp-discovery-protocol"
 					Location="https://sp.example.org/Shibboleth.sso/DS"/>
 			</Extensions>
 		
