@@ -176,6 +176,13 @@ w14fpgtAk2x8xD7cpHsZ073JHxEcjEetD8PTtrFdNu6GwIrv6Sk=
 		<!-- An SP supporting SAML 1 and 2 contains this element with protocol support as shown. -->
 		<SPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol urn:oasis:names:tc:SAML:1.1:protocol">
 		
+			<Extensions>
+				<!-- Extension to permit the SP to receive IdP discovery responses. -->
+				<idpdisc:DiscoveryResponse xmlns:idpdisc="urn:oasis:names:tc:SAML:profiles:SSO:idp-discovery-protocol"
+					Binding="urn:oasis:names:tc:SAML:profiles:SSO:idp-discovery-protocol"
+					Location="https://sp.example.org/Shibboleth.sso/DS"/>
+			</Extensions>
+		
 			<!--
 			One or more KeyDescriptors tell IdPs how the SP will authenticate itself. A single
 			descriptor can be used for both signing and for client-TLS if its use attribute
