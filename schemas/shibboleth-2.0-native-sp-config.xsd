@@ -279,6 +279,10 @@
 		<attribute name="forceAuthn" type="boolean"/>
 		<attribute name="authnContextClassRef" type="anyURI"/>
 		<attribute name="authnContextComparison" type="samlp:AuthnContextComparisonType"/>
+		<attribute name="sessionError" type="anyURI"/>
+		<attribute name="metadataError" type="anyURI"/>
+		<attribute name="accessError" type="anyURI"/>
+		<attribute name="sslError" type="anyURI"/>
 		<anyAttribute namespace="##other" processContents="lax"/>
 	</attributeGroup>
 	<element name="AccessControlProvider" type="conf:PluggableType"/>
@@ -560,7 +564,6 @@
 			</sequence>
 			<attribute name="session" type="anyURI" use="required"/>
 			<attribute name="metadata" type="anyURI"/>
-			<attribute name="rm" type="anyURI"/>
 			<attribute name="access" type="anyURI"/>
 			<attribute name="ssl" type="anyURI"/>
 			<attribute name="supportContact" type="conf:string"/>

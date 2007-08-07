@@ -47,10 +47,12 @@
 #define ap_clear_pool apr_pool_clear
 #define ap_destroy_pool apr_pool_destroy
 #define ap_make_table apr_table_make
+#define ap_copy_table apr_table_copy
 #define ap_overlay_tables apr_table_overlay
+#define ap_overlap_tables apr_table_overlap
 #define ap_table_elts apr_table_elts
 #define ap_is_empty_table apr_is_empty_table
-
+#define AP_OVERLAP_TABLES_SET APR_OVERLAP_TABLES_SET
 
 #define ap_send_http_header(r)
 #define ap_hard_timeout(str,r)

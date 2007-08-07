@@ -61,22 +61,36 @@ namespace shibsp {
         request.setResponseHeader("Expires","01-Jan-1997 12:00:00 GMT");
         request.setResponseHeader("Cache-Control","private,no-store,no-cache");
     
+        // Error templates come from the request's settings or from the Errors property set.
+        pair<bool,const char*> pathname = pair<bool,const char*>(false,NULL);
+        try {
+            RequestMapper::Settings settings = request.getRequestSettings();
+            string pagename(page);
+            pagename += "Error";
+            pathname = settings.first->getString(pagename.c_str());
+        }
+        catch (exception& ex) {
+            request.log(SPRequest::SPError, ex.what());
+        }
+
+        // Nothing for request, so check app properties.
         const PropertySet* props=app ? app->getPropertySet("Errors") : NULL;
-        if (props) {
-            pair<bool,const char*> p=props->getString(page);
-            if (p.first) {
-                ifstream infile(p.second);
-                if (infile) {
-                    tp.setPropertySet(props);
-                    stringstream str;
-                    XMLToolingConfig::getConfig().getTemplateEngine()->run(infile, str, tp, tp.getRichException());
-                    return request.sendResponse(str);
-                }
+        if (!pathname.first && props)
+            pathname=props->getString(page);
+
+        if (pathname.first) {
+            ifstream infile(pathname.second);
+            if (infile) {
+                tp.setPropertySet(props);
+                stringstream str;
+                XMLToolingConfig::getConfig().getTemplateEngine()->run(infile, str, tp, tp.getRichException());
+                return request.sendResponse(str);
             }
-            else if (!strcmp(page,"access")) {
-                istringstream msg("Access Denied");
-                return request.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_FORBIDDEN);
-            }
+        }
+        
+        if (!strcmp(page,"access")) {
+            istringstream msg("Access Denied");
+            return request.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_FORBIDDEN);
         }
     
         string errstr = string("sendError could not process error template (") + page + ")";

@@ -141,6 +141,8 @@ extern "C" void* merge_shib_server_config (SH_AP_POOL* p, void* base, void* sub)
 // per-dir module configuration structure
 struct shib_dir_config
 {
+    SH_AP_TABLE* tSettings; // generic table of extensible settings
+
     // RM Configuration
     char* szAuthGrpFile;    // Auth GroupFile name
     int bRequireAll;        // all require directives must match, otherwise OR logic
@@ -161,15 +163,16 @@ struct shib_dir_config
 extern "C" void* create_shib_dir_config (SH_AP_POOL* p, char* d)
 {
     shib_dir_config* dc=(shib_dir_config*)ap_pcalloc(p,sizeof(shib_dir_config));
+    dc->tSettings = NULL;
+    dc->szAuthGrpFile = NULL;
+    dc->bRequireAll = -1;
+    dc->szApplicationId = NULL;
+    dc->szRequireWith = NULL;
+    dc->szRedirectToSSL = NULL;
     dc->bOff = -1;
     dc->bBasicHijack = -1;
     dc->bRequireSession = -1;
     dc->bExportAssertion = -1;
-    dc->bRequireAll = -1;
-    dc->szRedirectToSSL = NULL;
-    dc->szAuthGrpFile = NULL;
-    dc->szApplicationId = NULL;
-    dc->szRequireWith = NULL;
     dc->bUseEnvVars = -1;
     dc->bUseHeaders = -1;
     return dc;
@@ -181,6 +184,17 @@ extern "C" void* merge_shib_dir_config (SH_AP_POOL* p, void* base, void* sub)
     shib_dir_config* dc=(shib_dir_config*)ap_pcalloc(p,sizeof(shib_dir_config));
     shib_dir_config* parent=(shib_dir_config*)base;
     shib_dir_config* child=(shib_dir_config*)sub;
+
+    // The child supersedes any matching table settings in the parent.
+    dc->tSettings = NULL;
+    if (parent->tSettings)
+        dc->tSettings = ap_copy_table(p, parent->tSettings);
+    if (child->tSettings) {
+        if (dc->tSettings)
+            ap_overlap_tables(dc->tSettings, child->tSettings, AP_OVERLAP_TABLES_SET);
+        else
+            dc->tSettings = ap_copy_table(p, child->tSettings);
+    }
 
     if (child->szAuthGrpFile)
         dc->szAuthGrpFile=ap_pstrdup(p,child->szAuthGrpFile);
@@ -264,6 +278,14 @@ extern "C" const char* shib_ap_set_file_slot(cmd_parms* parms,
 {
   ap_set_file_slot(parms, arg1, arg2);
   return DECLINE_CMD;
+}
+
+extern "C" const char* shib_table_set(cmd_parms* parms, shib_dir_config* dc, const char* arg1, const char* arg2)
+{
+    if (!dc->tSettings)
+        dc->tSettings = ap_make_table(parms->pool, 4);
+    ap_table_set(dc->tSettings, arg1, arg2);
+    return NULL;
 }
 
 /********************************************************************************/
@@ -701,10 +723,15 @@ pair<bool,bool> ApacheRequestMapper::getBool(const char* name, const char* ns) c
     const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
     if (sta && !ns) {
         // Override Apache-settable boolean properties.
-        if (name && !strcmp(name,"requireSession") && sta->m_dc->bRequireSession==1)
-            return make_pair(true,true);
-        else if (name && !strcmp(name,"exportAssertion") && sta->m_dc->bExportAssertion==1)
-            return make_pair(true,true);
+        if (name && !strcmp(name,"requireSession") && sta->m_dc->bRequireSession != -1)
+            return make_pair(true, sta->m_dc->bRequireSession==1);
+        else if (name && !strcmp(name,"exportAssertion") && sta->m_dc->bExportAssertion != -1)
+            return make_pair(true, sta->m_dc->bExportAssertion==1);
+        else if (sta->m_dc->tSettings) {
+            const char* prop = ap_table_get(sta->m_dc->tSettings, name);
+            if (prop)
+                return make_pair(true, !strcmp(prop, "true") || !strcmp(prop, "1") || !strcmp(prop, "On"));
+        }
     }
     return s ? s->getBool(name,ns) : make_pair(false,false);
 }
@@ -730,6 +757,11 @@ pair<bool,const char*> ApacheRequestMapper::getString(const char* name, const ch
             return pair<bool,const char*>(true,sta->m_dc->szRequireWith);
         else if (name && !strcmp(name,"redirectToSSL") && sta->m_dc->szRedirectToSSL)
             return pair<bool,const char*>(true,sta->m_dc->szRedirectToSSL);
+        else if (sta->m_dc->tSettings) {
+            const char* prop = ap_table_get(sta->m_dc->tSettings, name);
+            if (prop)
+                return make_pair(true, prop);
+        }
     }
     return s ? s->getString(name,ns) : pair<bool,const char*>(false,NULL);
 }
@@ -747,7 +779,12 @@ pair<bool,unsigned int> ApacheRequestMapper::getUnsignedInt(const char* name, co
     if (sta && !ns) {
         // Override Apache-settable int properties.
         if (name && !strcmp(name,"redirectToSSL") && sta->m_dc->szRedirectToSSL)
-            return pair<bool,unsigned int>(true,strtol(sta->m_dc->szRedirectToSSL,NULL,10));
+            return pair<bool,unsigned int>(true, strtol(sta->m_dc->szRedirectToSSL, NULL, 10));
+        else if (sta->m_dc->tSettings) {
+            const char* prop = ap_table_get(sta->m_dc->tSettings, name);
+            if (prop)
+                return make_pair(true, strtol(prop, NULL, 10));
+        }
     }
     return s ? s->getUnsignedInt(name,ns) : pair<bool,unsigned int>(false,0);
 }
@@ -760,6 +797,11 @@ pair<bool,int> ApacheRequestMapper::getInt(const char* name, const char* ns) con
         // Override Apache-settable int properties.
         if (name && !strcmp(name,"redirectToSSL") && sta->m_dc->szRedirectToSSL)
             return pair<bool,int>(true,atoi(sta->m_dc->szRedirectToSSL));
+        else if (sta->m_dc->tSettings) {
+            const char* prop = ap_table_get(sta->m_dc->tSettings, name);
+            if (prop)
+                return make_pair(true, atoi(prop));
+        }
     }
     return s ? s->getInt(name,ns) : pair<bool,int>(false,0);
 }
@@ -1225,6 +1267,9 @@ static command_rec shire_cmds[] = {
    (void *) XtOffsetOf (shib_server_config, szScheme),
    RSRC_CONF, TAKE1, "URL scheme to force into generated URLs for a vhost"},
    
+  {"ShibRequestSetting", (config_fn_t)shib_table_set, NULL,
+   OR_AUTHCFG, TAKE2, "Set arbitrary Shibboleth request property for content"},
+
   {"ShibDisable", (config_fn_t)ap_set_flag_slot,
    (void *) XtOffsetOf (shib_dir_config, bOff),
    OR_AUTHCFG, FLAG, "Disable all Shib module activity here to save processing effort"},
@@ -1282,12 +1327,12 @@ module MODULE_VAR_EXPORT mod_shib = {
     shib_auth_checker,		/* check auth */
     NULL,			/* check access */
     NULL,			/* type_checker */
-    shib_fixups,		/* fixups */
+    NULL,//shib_fixups,		/* fixups */
     NULL,			/* logger */
     NULL,			/* header parser */
     shib_child_init,		/* child_init */
     shib_child_exit,		/* child_exit */
-    shib_post_read		/* post read-request */
+    NULL//shib_post_read		/* post read-request */
 };
 
 #elif defined(SHIB_APACHE_20) || defined(SHIB_APACHE_22)
@@ -1312,56 +1357,55 @@ extern "C" void shib_register_hooks (apr_pool_t *p)
 
 extern "C" {
 static command_rec shib_cmds[] = {
-  AP_INIT_TAKE1("ShibConfig",
-		(config_fn_t)ap_set_global_string_slot, &g_szSHIBConfig,
-		RSRC_CONF, "Path to shibboleth.xml config file"),
-  AP_INIT_TAKE1("ShibCatalogs",
-     (config_fn_t)ap_set_global_string_slot, &g_szSchemaDir,
-      RSRC_CONF, "Paths of XML schema catalogs"),
-  AP_INIT_TAKE1("ShibSchemaDir",
-     (config_fn_t)ap_set_global_string_slot, &g_szSchemaDir,
-      RSRC_CONF, "Paths of XML schema catalogs (deprecated in favor of ShibCatalogs)"),
+    AP_INIT_TAKE1("ShibConfig", (config_fn_t)ap_set_global_string_slot, &g_szSHIBConfig,
+        RSRC_CONF, "Path to shibboleth.xml config file"),
+    AP_INIT_TAKE1("ShibCatalogs", (config_fn_t)ap_set_global_string_slot, &g_szSchemaDir,
+        RSRC_CONF, "Paths of XML schema catalogs"),
+    AP_INIT_TAKE1("ShibSchemaDir", (config_fn_t)ap_set_global_string_slot, &g_szSchemaDir,
+        RSRC_CONF, "Paths of XML schema catalogs (deprecated in favor of ShibCatalogs)"),
 
-  AP_INIT_TAKE1("ShibURLScheme",
-     (config_fn_t)shib_set_server_string_slot,
-     (void *) offsetof (shib_server_config, szScheme),
-      RSRC_CONF, "URL scheme to force into generated URLs for a vhost"),
+    AP_INIT_TAKE1("ShibURLScheme", (config_fn_t)shib_set_server_string_slot,
+        (void *) offsetof (shib_server_config, szScheme),
+        RSRC_CONF, "URL scheme to force into generated URLs for a vhost"),
 
-  AP_INIT_FLAG("ShibDisable", (config_fn_t)ap_set_flag_slot,
+    AP_INIT_TAKE2("ShibRequestSetting", (config_fn_t)shib_table_set, NULL,
+        OR_AUTHCFG, "Set arbitrary Shibboleth request property for content"),
+
+    AP_INIT_FLAG("ShibDisable", (config_fn_t)ap_set_flag_slot,
         (void *) offsetof (shib_dir_config, bOff),
         OR_AUTHCFG, "Disable all Shib module activity here to save processing effort"),
-  AP_INIT_TAKE1("ShibApplicationId", (config_fn_t)ap_set_string_slot,
+    AP_INIT_TAKE1("ShibApplicationId", (config_fn_t)ap_set_string_slot,
         (void *) offsetof (shib_dir_config, szApplicationId),
         OR_AUTHCFG, "Set Shibboleth applicationId property for content"),
-  AP_INIT_FLAG("ShibBasicHijack", (config_fn_t)ap_set_flag_slot,
+    AP_INIT_FLAG("ShibBasicHijack", (config_fn_t)ap_set_flag_slot,
         (void *) offsetof (shib_dir_config, bBasicHijack),
         OR_AUTHCFG, "Respond to AuthType Basic and convert to shibboleth"),
-  AP_INIT_FLAG("ShibRequireSession", (config_fn_t)ap_set_flag_slot,
+    AP_INIT_FLAG("ShibRequireSession", (config_fn_t)ap_set_flag_slot,
         (void *) offsetof (shib_dir_config, bRequireSession),
         OR_AUTHCFG, "Initiates a new session if one does not exist"),
-  AP_INIT_TAKE1("ShibRequireSessionWith", (config_fn_t)ap_set_string_slot,
+    AP_INIT_TAKE1("ShibRequireSessionWith", (config_fn_t)ap_set_string_slot,
         (void *) offsetof (shib_dir_config, szRequireWith),
         OR_AUTHCFG, "Initiates a new session if one does not exist using a specific SessionInitiator"),
-  AP_INIT_FLAG("ShibExportAssertion", (config_fn_t)ap_set_flag_slot,
+    AP_INIT_FLAG("ShibExportAssertion", (config_fn_t)ap_set_flag_slot,
         (void *) offsetof (shib_dir_config, bExportAssertion),
         OR_AUTHCFG, "Export SAML attribute assertion(s) to Shib-Attributes header"),
-  AP_INIT_TAKE1("ShibRedirectToSSL", (config_fn_t)ap_set_string_slot,
+    AP_INIT_TAKE1("ShibRedirectToSSL", (config_fn_t)ap_set_string_slot,
         (void *) offsetof (shib_dir_config, szRedirectToSSL),
         OR_AUTHCFG, "Redirect non-SSL requests to designated port"),
-  AP_INIT_TAKE1("AuthGroupFile", (config_fn_t)shib_ap_set_file_slot,
+    AP_INIT_TAKE1("AuthGroupFile", (config_fn_t)shib_ap_set_file_slot,
         (void *) offsetof (shib_dir_config, szAuthGrpFile),
         OR_AUTHCFG, "Text file containing group names and member user IDs"),
-  AP_INIT_FLAG("ShibRequireAll", (config_fn_t)ap_set_flag_slot,
+    AP_INIT_FLAG("ShibRequireAll", (config_fn_t)ap_set_flag_slot,
         (void *) offsetof (shib_dir_config, bRequireAll),
         OR_AUTHCFG, "All require directives must match"),
-  AP_INIT_FLAG("ShibUseEnvironment", (config_fn_t)ap_set_flag_slot,
+    AP_INIT_FLAG("ShibUseEnvironment", (config_fn_t)ap_set_flag_slot,
         (void *) offsetof (shib_dir_config, bUseEnvVars),
         OR_AUTHCFG, "Export attributes using environment variables (default)"),
-  AP_INIT_FLAG("ShibUseHeaders", (config_fn_t)ap_set_flag_slot,
+    AP_INIT_FLAG("ShibUseHeaders", (config_fn_t)ap_set_flag_slot,
         (void *) offsetof (shib_dir_config, bUseHeaders),
         OR_AUTHCFG, "Export attributes using custom HTTP headers"),
 
-  {NULL}
+    {NULL}
 };
 
 module AP_MODULE_DECLARE_DATA mod_shib = {
