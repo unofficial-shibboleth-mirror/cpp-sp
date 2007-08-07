@@ -110,9 +110,15 @@ make check
 	fi
 	if [ "$APACHE_CONFD" != "no" ] ; then
 		if [ ! -f $APACHE_CONFD/shib.conf ] ; then
-			sed "s/\/usr\/doc\/shibboleth/\/usr\/share\/doc\/shibboleth-@-VERSION-@/g" \
-				%{_sysconfdir}/shibboleth/%{?apache_config} \
+%if "%{_vendor}" == "suse"
+		    sed "s/\/usr\/doc\/%{name}/\/usr\/share\/doc\/packages\/%{name}/g" \
+				%{_sysconfdir}/%{name}/$APACHE_CONFIG \
 				> $APACHE_CONFD/shib.conf
+%else
+			sed "s/\/usr\/doc\/%{name}/\/usr\/share\/doc\/%{name}-@-VERSION-@/g" \
+			    %{_sysconfdir}/%{name}/$APACHE_CONFIG \
+			    > $APACHE_CONFD/shib.conf
+%endif
 		fi
 	fi
 %endif
