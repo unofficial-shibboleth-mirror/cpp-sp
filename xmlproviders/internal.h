@@ -25,10 +25,33 @@
 #ifndef __internal_h__
 #define __internal_h__
 
+// eventually we might be able to support autoconf via cygwin...
+#if defined (_MSC_VER) || defined(__BORLANDC__)
+# include "config_win32.h"
+#else
+# include "config.h"
+#endif
+
 #include <saml/saml.h>
 #include <shib/shib.h>
 #include <shib/shib-threads.h>
 #include <openssl/ssl.h>
+
+#if defined(HAVE_LOG4SHIB)
+# include <log4shib/Category.hh>
+# include <log4shib/CategoryStream.hh>
+namespace xmlproviders {
+    namespace logging = log4shib;
+};
+#elif defined(HAVE_LOG4CPP)
+# include <log4cpp/Category.hh>
+# include <log4cpp/CategoryStream.hh>
+namespace xmlproviders {
+    namespace logging = log4cpp;
+};
+#else
+# error "Supported logging library not available."
+#endif
 
 #define XMLPROVIDERS_LOGCAT "XMLProviders"
 

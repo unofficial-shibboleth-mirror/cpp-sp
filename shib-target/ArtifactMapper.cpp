@@ -25,10 +25,10 @@
 #include "internal.h"
 
 using namespace std;
-using namespace log4cpp;
 using namespace saml;
 using namespace shibboleth;
 using namespace shibtarget;
+using namespace shibtarget::logging;
 
 SAMLResponse* STArtifactMapper::resolve(SAMLRequest* request)
 {

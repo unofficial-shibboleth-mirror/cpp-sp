@@ -39,8 +39,23 @@
 #include "shib-target.h"
 #include "hresult.h"
 
-#include <log4cpp/Category.hh>
-#include <log4cpp/FixedContextCategory.hh>
+#if defined(HAVE_LOG4SHIB)
+# include <log4shib/Category.hh>
+# include <log4shib/CategoryStream.hh>
+# include <log4shib/FixedContextCategory.hh>
+namespace shibtarget {
+    namespace logging = log4shib;
+};
+#elif defined(HAVE_LOG4CPP)
+# include <log4cpp/Category.hh>
+# include <log4cpp/CategoryStream.hh>
+# include <log4cpp/FixedContextCategory.hh>
+namespace shibtarget {
+    namespace logging = log4cpp;
+};
+#else
+# error "Supported logging library not available."
+#endif
 
 #define SHIBT_L(s) shibtarget::XML::Literals::s
 #define SHIBT_L_QNAME(p,s) shibtarget::XML::Literals::p##_##s
@@ -89,7 +104,7 @@ namespace shibtarget {
         virtual void* getClientHandle(ShibSocket& s, u_long program, u_long version) const=0;
 
     protected:
-        log4cpp::Category* log;
+        logging::Category* log;
     
     private:
         mutable RPCHandlePool* m_rpcpool;
@@ -120,7 +135,7 @@ namespace shibtarget {
     
         void load(
             const DOMElement* e,    // root element of property set
-            log4cpp::Category& log, // log object for tracing
+            logging::Category& log, // log object for tracing
             DOMNodeFilter* filter,  // control what subelements to include
             const std::map<std::string,std::string>* remapper=NULL   // on the fly property renaming for legacy support
             );
@@ -190,10 +205,10 @@ namespace shibtarget {
         bool load(const char* config);
         void shutdown();
         
-        log4cpp::Category& getTransactionLog() { m_tranLogLock->lock(); return *m_tranLog; }
+        logging::Category& getTransactionLog() { m_tranLogLock->lock(); return *m_tranLog; }
         void releaseTransactionLog() { m_tranLogLock->unlock();}
     private:
-        log4cpp::FixedContextCategory* m_tranLog;
+        logging::FixedContextCategory* m_tranLog;
         shibboleth::Mutex* m_tranLogLock;
         static IConfig* ShibTargetConfigFactory(const DOMElement* e);
     };

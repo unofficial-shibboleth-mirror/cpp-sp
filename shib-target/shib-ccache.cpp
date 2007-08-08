@@ -31,7 +31,6 @@
 
 #include <shib/shib-threads.h>
 
-#include <log4cpp/Category.hh>
 
 #include <sstream>
 #include <stdexcept>
@@ -41,10 +40,10 @@
 #endif
 
 using namespace std;
-using namespace log4cpp;
 using namespace saml;
 using namespace shibboleth;
 using namespace shibtarget;
+using namespace shibtarget::logging;
 
 static const XMLCh cleanupInterval[] =
 { chLatin_c, chLatin_l, chLatin_e, chLatin_a, chLatin_n, chLatin_u, chLatin_p,
@@ -169,7 +168,7 @@ private:
   RWLock *lock;
   map<string,InternalCCacheEntry*> m_hashtable;
 
-  log4cpp::Category* log;
+  Category* log;
 
   static void*	cleanup_fcn(void*); // Assumes an InternalCCache
   bool		shutdown;

@@ -28,11 +28,11 @@
 #include <openssl/ssl.h>
 #include <openssl/x509_vfy.h>
 
-using namespace std;
-using namespace log4cpp;
+using namespace shibtarget::logging;
 using namespace shibtarget;
 using namespace shibboleth;
 using namespace saml;
+using namespace std;
 
 /*
  * Our verifier callback is a front-end for invoking each trust plugin until

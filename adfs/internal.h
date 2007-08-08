@@ -30,7 +30,28 @@
 #include <shib-target/shib-target.h>
 #include <shib-target/hresult.h>
 
-#include <log4cpp/Category.hh>
+#if defined (_MSC_VER) || defined(__BORLANDC__)
+# include "config_win32.h"
+#else
+# include "config.h"
+#endif
+
+#if defined(HAVE_LOG4SHIB)
+# include <log4shib/Category.hh>
+# include <log4shib/FixedContextCategory.hh>
+namespace adfs {
+    namespace logging = log4shib;
+};
+#elif defined(HAVE_LOG4CPP)
+# include <log4cpp/Category.hh>
+# include <log4cpp/FixedContextCategory.hh>
+namespace adfs {
+    namespace logging = log4cpp;
+};
+#else
+# error "Supported logging library not available."
+#endif
+
 
 #define ADFS_LOGCAT "shibtarget"
 #define SHIBTRAN_LOGCAT "Shibboleth-TRANSACTION"

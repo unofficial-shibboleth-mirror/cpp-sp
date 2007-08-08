@@ -28,7 +28,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include <log4cpp/Category.hh>
 #include <xercesc/util/XMLChar.hpp>
 #include <xsec/dsig/DSIGTransformC14n.hpp>
 #include <xsec/dsig/DSIGReference.hpp>
@@ -39,9 +38,9 @@
 #include <xsec/framework/XSECException.hpp>
 #include <xsec/framework/XSECProvider.hpp>
 
+using namespace xmlproviders::logging;
 using namespace shibboleth;
 using namespace saml;
-using namespace log4cpp;
 using namespace std;
 
 namespace {

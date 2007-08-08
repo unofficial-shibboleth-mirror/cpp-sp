@@ -24,9 +24,29 @@
 
 #include <shib-target/shib-target.h>
 
+#if defined (_MSC_VER) || defined(__BORLANDC__)
+# include "config_win32.h"
+#else
+# include "config.h"
+#endif
+
+#if defined(HAVE_LOG4SHIB)
+# include <log4shib/Category.hh>
+# include <log4shib/OstreamAppender.hh>
+namespace siterefresh {
+    namespace logging = log4shib;
+};
+#elif defined(HAVE_LOG4CPP)
+# include <log4cpp/Category.hh>
+# include <log4cpp/OstreamAppender.hh>
+namespace siterefresh {
+    namespace logging = log4cpp;
+};
+#else
+# error "Supported logging library not available."
+#endif
+
 #include <fstream>
-#include <log4cpp/Category.hh>
-#include <log4cpp/OstreamAppender.hh>
 #include <xercesc/framework/URLInputSource.hpp>
 #include <xercesc/framework/StdInInputSource.hpp>
 #include <xsec/enc/XSECCryptoProvider.hpp>
@@ -43,7 +63,7 @@
 using namespace std;
 using namespace saml;
 using namespace shibboleth;
-using namespace log4cpp;
+using namespace siterefresh::logging;
 
 static const XMLCh TRUST_NS[] = // urn:mace:shibboleth:trust:1.0
 { chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,

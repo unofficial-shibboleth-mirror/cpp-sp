@@ -185,7 +185,7 @@ void AAP::apply(const saml::Iterator<IAAP*>& aaps, saml::SAMLAssertion& assertio
 #ifdef _DEBUG
     saml::NDC("apply");
 #endif
-    log4cpp::Category& log=log4cpp::Category::getInstance(SHIB_LOGCAT".AAP");
+    logging::Category& log=logging::Category::getInstance(SHIB_LOGCAT".AAP");
     
     // First check for no providers or AnyAttribute.
     if (aaps.size()==0) {

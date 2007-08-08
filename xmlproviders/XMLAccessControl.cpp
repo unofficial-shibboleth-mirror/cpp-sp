@@ -23,17 +23,15 @@
 #include "internal.h"
 #include <shib-target/shib-target.h>
 
-#include <log4cpp/Category.hh>
-
 #ifndef HAVE_STRCASECMP
 # define strcasecmp stricmp
 #endif
 
 using namespace std;
-using namespace log4cpp;
 using namespace saml;
 using namespace shibboleth;
 using namespace shibtarget;
+using namespace xmlproviders::logging;
 
 namespace {
     struct IAuthz {

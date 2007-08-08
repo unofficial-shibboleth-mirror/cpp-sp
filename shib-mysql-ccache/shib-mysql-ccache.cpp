@@ -49,7 +49,20 @@
 
 #include <shib-target/shib-target.h>
 #include <shib/shib-threads.h>
-#include <log4cpp/Category.hh>
+
+#if defined(HAVE_LOG4SHIB)
+# include <log4shib/Category.hh>
+namespace shibmysql {
+    namespace logging = log4shib;
+};
+#elif defined(HAVE_LOG4CPP)
+# include <log4cpp/Category.hh>
+namespace shibmysql {
+    namespace logging = log4cpp;
+};
+#else
+# error "Supported logging library not available."
+#endif
 
 #include <sstream>
 #include <stdexcept>
@@ -67,7 +80,7 @@ using namespace std;
 using namespace saml;
 using namespace shibboleth;
 using namespace shibtarget;
-using namespace log4cpp;
+using namespace shibmysql::logging;
 
 #define PLUGIN_VER_MAJOR 2
 #define PLUGIN_VER_MINOR 0
@@ -114,7 +127,7 @@ public:
   MYSQL* getMYSQL() const;
   bool repairTable(MYSQL*&, const char* table);
 
-  log4cpp::Category* log;
+  Category* log;
 
 protected:
   ThreadKey* m_mysql;

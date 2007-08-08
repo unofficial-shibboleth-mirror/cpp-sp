@@ -38,7 +38,21 @@
 
 #include "shib.h"
 
-#include <log4cpp/Category.hh>
+#if defined(HAVE_LOG4SHIB)
+# include <log4shib/Category.hh>
+# include <log4shib/CategoryStream.hh>
+namespace shibboleth {
+    namespace logging = log4shib;
+};
+#elif defined(HAVE_LOG4CPP)
+# include <log4cpp/Category.hh>
+# include <log4cpp/CategoryStream.hh>
+namespace shibboleth {
+    namespace logging = log4cpp;
+};
+#else
+# error "Supported logging library not available."
+#endif
 
 #define SHIB_LOGCAT "Shibboleth"
 

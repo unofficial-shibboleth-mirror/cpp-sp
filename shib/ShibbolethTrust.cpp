@@ -30,9 +30,9 @@
 #include <xsec/dsig/DSIGKeyInfoX509.hpp>
 #include <xsec/enc/OpenSSL/OpenSSLCryptoX509.hpp>
 
+using namespace shibboleth::logging;
 using namespace shibboleth;
 using namespace saml;
-using namespace log4cpp;
 using namespace std;
 
 namespace {

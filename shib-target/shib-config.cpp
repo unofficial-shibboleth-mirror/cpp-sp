@@ -24,13 +24,19 @@
 
 #include "internal.h"
 
-#include <log4cpp/OstreamAppender.hh>
+#if defined(HAVE_LOG4SHIB)
+# include <log4shib/OstreamAppender.hh>
+#elif defined(HAVE_LOG4CPP)
+# include <log4cpp/OstreamAppender.hh>
+#else
+# error "Supported logging library not available."
+#endif
 
 using namespace std;
-using namespace log4cpp;
 using namespace saml;
 using namespace shibboleth;
 using namespace shibtarget;
+using namespace shibtarget::logging;
 
 namespace {
     STConfig g_Config;

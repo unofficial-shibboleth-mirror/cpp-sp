@@ -24,15 +24,14 @@
 
 #include "internal.h"
 
-#include <log4cpp/FixedContextCategory.hh>
 #include <xercesc/framework/MemBufInputSource.hpp>
 
 using namespace std;
-using namespace log4cpp;
 using namespace saml;
 using namespace shibboleth;
 using namespace shibtarget;
 using namespace adfs;
+using namespace adfs::logging;
 
 namespace {
     class ADFSListener : public virtual IListener

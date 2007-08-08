@@ -41,7 +41,7 @@ using namespace std;
 using namespace saml;
 using namespace shibboleth;
 using namespace shibtarget;
-using namespace log4cpp;
+using namespace shibtarget::logging;
 
 static const XMLCh address[] = { chLatin_a, chLatin_d, chLatin_d, chLatin_r, chLatin_e, chLatin_s, chLatin_s, chNull };
 static const XMLCh port[] = { chLatin_p, chLatin_o, chLatin_r, chLatin_t, chNull };

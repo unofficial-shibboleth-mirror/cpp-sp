@@ -27,19 +27,18 @@
 #include <sstream>
 #include <ctype.h>
 #include <xercesc/util/XercesDefs.hpp>
-#include <log4cpp/Category.hh>
 
 using namespace std;
-using namespace log4cpp;
 using namespace saml;
 using namespace shibboleth;
 using namespace shibtarget;
+using namespace shibtarget::logging;
 
 class shibtarget::ShibMLPPriv {
 public:
   ShibMLPPriv();
   ~ShibMLPPriv() {}
-  log4cpp::Category *log;
+  Category *log;
 
   static void html_encode(string& os, const char* start);
 };  
@@ -71,7 +70,7 @@ void ShibMLPPriv::html_encode(string& os, const char* start)
     }
 }
 
-ShibMLPPriv::ShibMLPPriv() : log(&(log4cpp::Category::getInstance("shibtarget.ShibMLP"))) {}
+ShibMLPPriv::ShibMLPPriv() : log(&(Category::getInstance("shibtarget.ShibMLP"))) {}
 
 static void trimspace (string& s)
 {

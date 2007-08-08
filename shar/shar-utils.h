@@ -29,6 +29,20 @@
 #include <shib-target/shibrpc.h>
 #include <shib-target/shib-target.h>
 
+#if defined(HAVE_LOG4SHIB)
+# include <log4shib/Category.hh>
+namespace shibd {
+    namespace logging = log4shib;
+};
+#elif defined(HAVE_LOG4CPP)
+# include <log4cpp/Category.hh>
+namespace shibd {
+    namespace logging = log4cpp;
+};
+#else
+# error "Supported logging library not available."
+#endif
+
 extern "C" {
     typedef void (*dispatch_fn)(struct svc_req* rqstp, register SVCXPRT* transp);
 }

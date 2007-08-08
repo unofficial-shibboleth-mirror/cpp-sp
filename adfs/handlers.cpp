@@ -32,7 +32,7 @@ using namespace saml;
 using namespace shibboleth;
 using namespace shibtarget;
 using namespace adfs;
-using namespace log4cpp;
+using namespace adfs::logging;
 
 namespace {
   

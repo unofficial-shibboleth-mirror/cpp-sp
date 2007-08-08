@@ -27,11 +27,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include <log4cpp/Category.hh>
-
+using namespace xmlproviders::logging;
 using namespace shibboleth;
 using namespace saml;
-using namespace log4cpp;
 using namespace std;
 
 namespace {

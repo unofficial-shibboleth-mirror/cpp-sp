@@ -31,15 +31,14 @@
 #include <openssl/x509v3.h>
 #include <openssl/x509_vfy.h>
 
-#include <log4cpp/Category.hh>
 #include <xercesc/framework/URLInputSource.hpp>
 #include <xercesc/util/regx/RegularExpression.hpp>
 #include <xsec/enc/XSECCryptoException.hpp>
 #include <xsec/enc/XSECKeyInfoResolverDefault.hpp>
 
+using namespace xmlproviders::logging;
 using namespace shibboleth;
 using namespace saml;
-using namespace log4cpp;
 using namespace std;
 
 namespace {

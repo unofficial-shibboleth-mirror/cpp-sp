@@ -30,12 +30,11 @@
 
 #include "internal.h"
 #include <shib-target/shib-target.h>
-#include <log4cpp/Category.hh>
 #include <openssl/err.h>
 
-using namespace saml;
+using namespace xmlproviders::logging;
 using namespace shibboleth;
-using namespace log4cpp;
+using namespace saml;
 using namespace std;
 
 // Metadata Factories

@@ -45,7 +45,6 @@
 #include "shar-utils.h"
 
 #include <shib/shib-threads.h>
-#include <log4cpp/Category.hh>
 
 // Deal with inadequate Sun RPC libraries
 
@@ -66,7 +65,7 @@ using namespace std;
 using namespace saml;
 using namespace shibboleth;
 using namespace shibtarget;
-using namespace log4cpp;
+using namespace shibd::logging;
 
 namespace {
   map<IListener::ShibSocket,Thread*> children;

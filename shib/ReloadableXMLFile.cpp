@@ -29,9 +29,9 @@
 
 #include <xercesc/framework/LocalFileInputSource.hpp>
 
+using namespace shibboleth::logging;
 using namespace shibboleth;
 using namespace saml;
-using namespace log4cpp;
 using namespace std;
 
 ReloadableXMLFileImpl::ReloadableXMLFileImpl(const DOMElement* e) : m_doc(NULL), m_root(e) {}

@@ -28,9 +28,9 @@
 
 #include <openssl/x509v3.h>
 
+using namespace shibboleth::logging;
 using namespace shibboleth;
 using namespace saml;
-using namespace log4cpp;
 using namespace std;
 
 ShibBrowserProfile::ShibBrowserProfile(const Iterator<IMetadata*>& metadatas, const Iterator<ITrust*>& trusts)

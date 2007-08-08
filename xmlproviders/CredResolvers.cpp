@@ -28,15 +28,14 @@
 #include <sys/stat.h>
 
 #include <openssl/pkcs12.h>
-#include <log4cpp/Category.hh>
 #include <xsec/enc/OpenSSL/OpenSSLCryptoX509.hpp>
 #include <xsec/enc/OpenSSL/OpenSSLCryptoKeyRSA.hpp>
 #include <xsec/enc/OpenSSL/OpenSSLCryptoKeyDSA.hpp>
 
+using namespace std;
 using namespace saml;
 using namespace shibboleth;
-using namespace log4cpp;
-using namespace std;
+using namespace xmlproviders::logging;
 
 // OpenSSL password callback...
 static int passwd_callback(char* buf, int len, int verify, void* passwd)

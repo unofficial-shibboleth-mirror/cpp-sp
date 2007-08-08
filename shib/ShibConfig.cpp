@@ -33,9 +33,9 @@
 
 #include <openssl/err.h>
 
-using namespace saml;
+using namespace shibboleth::logging;
 using namespace shibboleth;
-using namespace log4cpp;
+using namespace saml;
 using namespace std;
 
 

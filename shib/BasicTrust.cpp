@@ -27,9 +27,9 @@
 #include <openssl/x509.h>
 #include <xsec/enc/OpenSSL/OpenSSLCryptoX509.hpp>
 
+using namespace shibboleth::logging;
 using namespace shibboleth;
 using namespace saml;
-using namespace log4cpp;
 using namespace std;
 
 IPlugIn* BasicTrustFactory(const DOMElement* e)

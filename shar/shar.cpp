@@ -39,14 +39,12 @@
 #include <signal.h>
 
 #include "shar-utils.h"
-#include <log4cpp/Category.hh>
-
 
 using namespace std;
 using namespace saml;
 using namespace shibboleth;
 using namespace shibtarget;
-using namespace log4cpp;
+using namespace shibd::logging;
 
 #ifndef FD_SETSIZE
 # define FD_SETSIZE 1024

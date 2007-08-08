@@ -23,8 +23,13 @@
 #include "internal.h"
 
 #include <shib/shib-threads.h>
-#include <log4cpp/Category.hh>
-#include <log4cpp/PropertyConfigurator.hh>
+#if defined(HAVE_LOG4SHIB)
+# include <log4shib/PropertyConfigurator.hh>
+#elif defined(HAVE_LOG4CPP)
+# include <log4cpp/PropertyConfigurator.hh>
+#else
+# error "Supported logging library not available."
+#endif
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -33,7 +38,7 @@ using namespace std;
 using namespace saml;
 using namespace shibboleth;
 using namespace shibtarget;
-using namespace log4cpp;
+using namespace shibtarget::logging;
 
 namespace shibtarget {
 

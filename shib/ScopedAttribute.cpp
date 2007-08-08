@@ -24,11 +24,10 @@
 
 #include "internal.h"
 #include <xercesc/util/regx/RegularExpression.hpp>
-#include <log4cpp/Category.hh>
 
+using namespace shibboleth::logging;
 using namespace shibboleth;
 using namespace saml;
-using namespace log4cpp;
 using namespace std;
 
 const XMLCh ScopedAttribute::Scope[] = { chLatin_S, chLatin_c, chLatin_o, chLatin_p, chLatin_e, chNull };

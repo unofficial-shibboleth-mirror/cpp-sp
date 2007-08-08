@@ -24,11 +24,9 @@
 
 #include "internal.h"
 
-#include <log4cpp/Category.hh>
-
+using namespace xmlproviders::logging;
 using namespace shibboleth;
 using namespace saml;
-using namespace log4cpp;
 using namespace std;
 
 #include <xercesc/util/regx/RegularExpression.hpp>
