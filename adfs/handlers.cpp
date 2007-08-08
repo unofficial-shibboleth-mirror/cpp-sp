@@ -356,8 +356,8 @@ pair<bool,void*> SessionInitiator::ADFSAuthnRequest(
     if (shire) ACSloc+=shire->getString("Location").second;
     
     // UTC timestamp
-#ifndef HAVE_GMTIME_R
     time_t epoch=time(NULL);
+#ifndef HAVE_GMTIME_R
     struct tm* ptime=gmtime(&epoch);
 #else
     struct tm res;
