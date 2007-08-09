@@ -28,12 +28,9 @@
 using namespace shibsp;
 
 SecurityPolicy::SecurityPolicy(const Application& application, const xmltooling::QName* role, bool validate)
-    : opensaml::SecurityPolicy(
-        application.getServiceProvider().getPolicyRules(application.getString("policyId").second),
-        application.getMetadataProvider(),
-        role,
-        application.getTrustEngine(),
-        validate),
-        m_application(application)
-{
+    : opensaml::SecurityPolicy(application.getMetadataProvider(), role, application.getTrustEngine(), validate), m_application(application) {
+
+    const std::vector<const opensaml::SecurityPolicyRule*>& rules =
+        application.getServiceProvider().getPolicyRules(application.getString("policyId").second);
+    getRules().assign(rules.begin(), rules.end());
 }
