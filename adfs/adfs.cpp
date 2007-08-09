@@ -689,7 +689,7 @@ pair<bool,long> ADFSLogoutInitiator::run(SPRequest& request, bool isHandler) con
     }
     else {
         // When not out of process, we remote the request.
-        Locker locker(session);
+        Locker locker(session, false);
         DDF out,in(m_address.c_str());
         DDFJanitor jin(in), jout(out);
         in.addmember("application_id").string(request.getApplication().getId());
