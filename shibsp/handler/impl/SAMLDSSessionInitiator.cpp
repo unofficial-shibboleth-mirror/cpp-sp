@@ -46,7 +46,7 @@ namespace shibsp {
     {
     public:
         SAMLDSSessionInitiator(const DOMElement* e, const char* appId)
-                : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator")), m_url(NULL), m_returnParam(NULL) {
+                : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator.SAMLDS")), m_url(NULL), m_returnParam(NULL) {
             pair<bool,const char*> url = getString("URL");
             if (!url.first)
                 throw ConfigurationException("SAMLDS SessionInitiator requires a URL property.");

@@ -98,7 +98,7 @@ namespace shibsp {
 };
 
 SAML2LogoutInitiator::SAML2LogoutInitiator(const DOMElement* e, const char* appId)
-    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".LogoutInitiator")), m_appId(appId),
+    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".LogoutInitiator.SAML2")), m_appId(appId),
 #ifndef SHIBSP_LITE
         m_outgoing(NULL),
 #endif
@@ -269,6 +269,10 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
         application.getServiceProvider().getSessionCache()->remove(sessions.front().c_str(), application);
         return sendLogoutPage(application, response, true, "Partial logout failure.");
     }
+
+    // Clear the cookie.
+    pair<string,const char*> shib_cookie=application.getCookieNameProps("_shibsession_");
+    response.setCookie(shib_cookie.first.c_str(), shib_cookie.second);
 
 #ifndef SHIBSP_LITE
     pair<bool,long> ret = make_pair(false,0);

@@ -62,7 +62,7 @@ namespace shibsp {
 };
 
 LocalLogoutInitiator::LocalLogoutInitiator(const DOMElement* e, const char* appId)
-    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".LogoutInitiator")), m_appId(appId)
+    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".LogoutInitiator.Local")), m_appId(appId)
 {
     pair<bool,const char*> loc = getString("Location");
     if (loc.first) {
@@ -102,6 +102,10 @@ pair<bool,long> LocalLogoutInitiator::run(SPRequest& request, bool isHandler) co
             return sendLogoutPage(request.getApplication(), request, true, "Partial logout failure.");
         }
         request.getServiceProvider().getSessionCache()->remove(session_id, request.getApplication());
+
+        // Clear the cookie.
+        pair<string,const char*> shib_cookie=request.getApplication().getCookieNameProps("_shibsession_");
+        request.setCookie(shib_cookie.first.c_str(), shib_cookie.second);
     }
 
     return sendLogoutPage(request.getApplication(), request, true, "Logout was successful.");

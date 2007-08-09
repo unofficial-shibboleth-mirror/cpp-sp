@@ -80,7 +80,7 @@ namespace shibsp {
 };
 
 ChainingSessionInitiator::ChainingSessionInitiator(const DOMElement* e, const char* appId)
-    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator"), &g_SINFilter)
+    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator.Chaining"), &g_SINFilter)
 {
     SPConfig& conf = SPConfig::getConfig();
 

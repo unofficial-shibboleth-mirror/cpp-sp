@@ -94,18 +94,6 @@ namespace shibsp {
             ) const;
 
         /**
-         * Sends a response template to the user agent informing it of the results of a logout attempt.
-         *
-         * @param application   the Application to use in determining the logout template
-         * @param response      the HTTP response to use
-         * @param local         true iff the logout operation was local to the SP, false iff global
-         * @param status        optional logoutStatus key value to add to template
-         */
-        std::pair<bool,long> sendLogoutPage(
-            const Application& application, xmltooling::HTTPResponse& response, bool local=true, const char* status=NULL
-            ) const;
-
-        /**
          * Perform back-channel logout notifications for an Application.
          *
          * @param application   the Application to notify
@@ -116,6 +104,18 @@ namespace shibsp {
          */
         bool notifyBackChannel(
             const Application& application, const char* requestURL, const std::vector<std::string>& sessions, bool local
+            ) const;
+
+        /**
+         * Sends a response template to the user agent informing it of the results of a logout attempt.
+         *
+         * @param application   the Application to use in determining the logout template
+         * @param response      the HTTP response to use
+         * @param local         true iff the logout operation was local to the SP, false iff global
+         * @param status        optional logoutStatus key value to add to template
+         */
+        std::pair<bool,long> sendLogoutPage(
+            const Application& application, xmltooling::HTTPResponse& response, bool local=true, const char* status=NULL
             ) const;
     };
 

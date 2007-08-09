@@ -242,8 +242,12 @@ pair<bool,long> SAML2Logout::doRequest(
         // This is returning from a front-channel notification, so we have to do the back-channel and then
         // respond. To do that, we need state from the original request.
         if (!request.getParameter("entityID")) {
-            if (session_id)
+            if (session_id) {
                 cache->remove(session_id, application);
+                // Clear the cookie.
+                pair<string,const char*> shib_cookie=application.getCookieNameProps("_shibsession_");
+                response.setCookie(shib_cookie.first.c_str(), shib_cookie.second);
+            }
             throw FatalProfileException("Application notification loop did not return entityID for LogoutResponse.");
         }
 
@@ -259,6 +263,10 @@ pair<bool,long> SAML2Logout::doRequest(
             catch (exception& ex) {
                 m_log.error("error removing session (%s): %s", session_id, ex.what());
             }
+
+            // Clear the cookie.
+            pair<string,const char*> shib_cookie=application.getCookieNameProps("_shibsession_");
+            response.setCookie(shib_cookie.first.c_str(), shib_cookie.second);
         }
         else {
             worked1 = worked2 = true;
@@ -461,6 +469,10 @@ pair<bool,long> SAML2Logout::doRequest(
             catch (exception& ex) {
                 m_log.error("error removing active session (%s): %s", session_id, ex.what());
             }
+
+            // Clear the cookie.
+            pair<string,const char*> shib_cookie=application.getCookieNameProps("_shibsession_");
+            response.setCookie(shib_cookie.first.c_str(), shib_cookie.second);
         }
 
         return sendResponse(

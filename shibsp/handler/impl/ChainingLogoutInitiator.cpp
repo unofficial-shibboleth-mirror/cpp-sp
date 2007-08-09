@@ -80,7 +80,7 @@ namespace shibsp {
 };
 
 ChainingLogoutInitiator::ChainingLogoutInitiator(const DOMElement* e, const char* appId)
-    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".LogoutInitiator"), &g_LINFilter)
+    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".LogoutInitiator.Chaining"), &g_LINFilter)
 {
     SPConfig& conf = SPConfig::getConfig();
 
