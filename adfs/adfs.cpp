@@ -92,25 +92,6 @@ namespace {
     {
         return new ADFSDecoder();
     }
-
-    class SHIBSP_DLLLOCAL ADFSMessageRule : public SecurityPolicyRule
-    {
-    public:
-        ADFSMessageRule(const DOMElement* e) : m_protocol(WSFED_NS) {}
-        virtual ~ADFSMessageRule() {}
-        
-        const char* getType() const {
-            return "ADFSMessage";
-        }
-        void evaluate(const XMLObject& message, const GenericRequest* request, const XMLCh* protocol, SecurityPolicy& policy) const;
-
-        auto_ptr_XMLCh m_protocol;
-    };
-
-    SecurityPolicyRule* ADFSMessageRuleFactory(const DOMElement* const & e)
-    {
-        return new ADFSMessageRule(e);
-    }
 #endif
 
 #if defined (_MSC_VER)
@@ -165,7 +146,7 @@ namespace {
         ADFSConsumer(const DOMElement* e, const char* appId)
             : shibsp::AssertionConsumerService(e, appId, Category::getInstance(SHIBSP_LOGCAT".SSO.ADFS"))
 #ifndef SHIBSP_LITE
-                ,m_messageRule(e)
+                ,m_protocol(WSFED_NS)
 #endif
             {}
         virtual ~ADFSConsumer() {}
@@ -179,7 +160,7 @@ namespace {
             const PropertySet* settings,
             const XMLObject& xmlObject
             ) const;
-        ADFSMessageRule m_messageRule;
+        auto_ptr_XMLCh m_protocol;
 #endif
     };
 
@@ -273,7 +254,6 @@ extern "C" int ADFS_EXPORTS xmltooling_extension_init(void*)
     conf.AssertionConsumerServiceManager.registerFactory(WSFED_NS, ADFSLogoutFactory);
 #ifndef SHIBSP_LITE
     SAMLConfig::getConfig().MessageDecoderManager.registerFactory(WSFED_NS, ADFSDecoderFactory);
-    SAMLConfig::getConfig().SecurityPolicyRuleManager.registerFactory("ADFSMessage", ADFSMessageRuleFactory);
     XMLObjectBuilder::registerBuilder(QName(WSTRUST_NS,"RequestedSecurityToken"), new AnyElementBuilder());
     XMLObjectBuilder::registerBuilder(QName(WSTRUST_NS,"RequestSecurityTokenResponse"), new AnyElementBuilder());
 #endif
@@ -290,7 +270,6 @@ extern "C" void ADFS_EXPORTS xmltooling_extension_term()
     conf.AssertionConsumerServiceManager.deregisterFactory(WSFED_NS);
 #ifndef SHIBSP_LITE
     SAMLConfig::getConfig().MessageDecoderManager.deregisterFactory(WSFED_NS);
-    SAMLConfig::getConfig().SecurityPolicyRuleManager.deregisterFactory("ADFSMessage");
 #endif
     */
 }
@@ -516,61 +495,6 @@ XMLObject* ADFSDecoder::decode(string& relayState, const GenericRequest& generic
     return xmlObject.release();
 }
 
-void ADFSMessageRule::evaluate(const XMLObject& message, const GenericRequest* request, const XMLCh* protocol, SecurityPolicy& policy) const
-{
-    Category& log=Category::getInstance(SHIBSP_LOGCAT".SecurityPolicyRule.ADFSMessage");
-
-    if (!XMLString::equals(protocol, m_protocol.get()))
-        return;
-
-    const QName& q = message.getElementQName();
-    if (!XMLString::equals(q.getNamespaceURI(), samlconstants::SAML1_NS) ||
-        !XMLString::equals(q.getLocalPart(), saml1::Assertion::LOCAL_NAME))
-        return;
-
-    try {
-        const saml1::Assertion& token = dynamic_cast<const saml1::Assertion&>(message);
-        policy.setMessageID(token.getAssertionID());
-        policy.setIssueInstant(token.getIssueInstantEpoch());
-
-        log.debug("extracting issuer from message");
-
-        policy.setIssuer(token.getIssuer());
-
-        if (log.isDebugEnabled()) {
-            auto_ptr_char iname(token.getIssuer());
-            log.debug("message from (%s)", iname.get());
-        }
-        
-        if (policy.getIssuerMetadata()) {
-            log.debug("metadata for issuer already set, leaving in place");
-            return;
-        }
-        
-        if (policy.getMetadataProvider() && policy.getRole()) {
-            log.debug("searching metadata for message issuer...");
-            const EntityDescriptor* entity = policy.getMetadataProvider()->getEntityDescriptor(token.getIssuer());
-            if (!entity) {
-                auto_ptr_char temp(token.getIssuer());
-                log.warn("no metadata found, can't establish identity of issuer (%s)", temp.get());
-                return;
-            }
-    
-            log.debug("matched message issuer against metadata, searching for applicable role...");
-            const RoleDescriptor* roledesc=entity->getRoleDescriptor(*policy.getRole(), m_protocol.get());
-            if (!roledesc) {
-                log.warn("unable to find compatible role (%s) in metadata", policy.getRole()->toString().c_str());
-                return;
-            }
-            policy.setIssuerMetadata(roledesc);
-        }
-    }
-    catch (bad_cast&) {
-        // Just trap it.
-        log.warn("caught a bad_cast while examining message");
-    }
-}
-
 string ADFSConsumer::implementProtocol(
     const Application& application,
     const HTTPRequest& httpRequest,
@@ -596,8 +520,7 @@ string ADFSConsumer::implementProtocol(
 
     // Run the policy over the assertion. Handles issuer consistency, replay, freshness,
     // and signature verification, assuming the relevant rules are configured.
-    policy.getRules().insert(policy.getRules().begin(), &m_messageRule);
-    policy.evaluate(*token, NULL, m_messageRule.m_protocol.get());
+    policy.evaluate(*token, NULL, m_protocol.get());
     
     // If no security is in place now, we kick it.
     if (!policy.isSecure())
@@ -688,7 +611,7 @@ string ADFSConsumer::implementProtocol(
         resolveAttributes(
             application,
             issuerMetadata,
-            m_messageRule.m_protocol.get(),
+            m_protocol.get(),
             nameid.get(),
             ssoStatement->getAuthenticationMethod(),
             NULL,
@@ -712,7 +635,7 @@ string ADFSConsumer::implementProtocol(
             application,
             httpRequest.getRemoteAddr().c_str(),
             issuerMetadata,
-            m_messageRule.m_protocol.get(),
+            m_protocol.get(),
             nameid.get(),
             ssoStatement->getAuthenticationInstant() ? ssoStatement->getAuthenticationInstant()->getRawData() : NULL,
             NULL,
