@@ -145,8 +145,9 @@ ArtifactResponse* ArtifactResolver::resolve(
         throw BindingException("Unable to resolve artifact(s) into a SAML response.");
     else if (!response->getStatus() || !response->getStatus()->getStatusCode() ||
            !XMLString::equals(response->getStatus()->getStatusCode()->getValue(), saml2p::StatusCode::SUCCESS)) {
-        delete response;
-        throw BindingException("Identity provider returned a SAML error in response to artifact.");
+        auto_ptr<ArtifactResponse> wrapper(response);
+        BindingException ex("Identity provider returned a SAML error in response to artifact.");
+        annotateException(&ex, &ssoDescriptor, response->getStatus());  // rethrow
     }
     return response;
 }

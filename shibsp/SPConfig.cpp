@@ -74,11 +74,12 @@ DECL_XMLTOOLING_EXCEPTION_FACTORY(ConfigurationException,shibsp);
 DECL_XMLTOOLING_EXCEPTION_FACTORY(ListenerException,shibsp);
 
 #ifdef SHIBSP_LITE
-DECL_XMLTOOLING_EXCEPTION_FACTORY(MetadataException,opensaml::saml2md);
+DECL_XMLTOOLING_EXCEPTION_FACTORY(BindingException,opensaml);
 DECL_XMLTOOLING_EXCEPTION_FACTORY(SecurityPolicyException,opensaml);
 DECL_XMLTOOLING_EXCEPTION_FACTORY(ProfileException,opensaml);
 DECL_XMLTOOLING_EXCEPTION_FACTORY(FatalProfileException,opensaml);
 DECL_XMLTOOLING_EXCEPTION_FACTORY(RetryableProfileException,opensaml);
+DECL_XMLTOOLING_EXCEPTION_FACTORY(MetadataException,opensaml::saml2md);
 #endif
 
 namespace shibsp {
@@ -143,6 +144,7 @@ bool SPInternalConfig::init(const char* catalog_path)
     REGISTER_XMLTOOLING_EXCEPTION_FACTORY(ListenerException,shibsp);
 
 #ifdef SHIBSP_LITE
+    REGISTER_XMLTOOLING_EXCEPTION_FACTORY(BindingException,opensaml);
     REGISTER_XMLTOOLING_EXCEPTION_FACTORY(SecurityPolicyException,opensaml);
     REGISTER_XMLTOOLING_EXCEPTION_FACTORY(ProfileException,opensaml);
     REGISTER_XMLTOOLING_EXCEPTION_FACTORY(FatalProfileException,opensaml);
