@@ -460,6 +460,8 @@ void RemotedCache::cleanup()
         vector<string> stale_keys;
         time_t stale = time(NULL) - m_cacheTimeout;
     
+        m_log.debug("cleanup thread running");
+
         m_lock->rdlock();
         for (map<string,RemotedSession*>::const_iterator i=m_hashtable.begin(); i!=m_hashtable.end(); ++i) {
             // If the last access was BEFORE the stale timeout...
@@ -478,6 +480,8 @@ void RemotedCache::cleanup()
             for (vector<string>::const_iterator j = stale_keys.begin(); j != stale_keys.end(); ++j)
                 dormant(j->c_str());
         }
+
+        m_log.debug("cleanup thread completed");
     }
 
     m_log.info("cleanup thread exiting");

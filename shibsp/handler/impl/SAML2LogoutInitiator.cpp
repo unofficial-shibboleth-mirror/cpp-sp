@@ -197,7 +197,7 @@ pair<bool,long> SAML2LogoutInitiator::run(SPRequest& request, bool isHandler) co
     }
     else {
         // When not out of process, we remote the request.
-        Locker locker(session);
+        Locker locker(session, false);
         DDF out,in(m_address.c_str());
         DDFJanitor jin(in), jout(out);
         in.addmember("application_id").string(request.getApplication().getId());
@@ -248,9 +248,12 @@ void SAML2LogoutInitiator::receive(DDF& in, ostream& out)
         else {
              m_log.error("no NameID or issuing entityID found in session");
              session->unlock();
-             session = NULL;
              app->getServiceProvider().getSessionCache()->remove(in["session_id"].string(), *app);
-         }
+
+            // Clear the cookie.
+            pair<string,const char*> shib_cookie=app->getCookieNameProps("_shibsession_");
+            resp->setCookie(shib_cookie.first.c_str(), shib_cookie.second);
+        }
     }
     out << ret;
 #else
@@ -262,6 +265,10 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
     const Application& application, const char* requestURL, Session* session, HTTPResponse& response
     ) const
 {
+    // Clear the cookie.
+    pair<string,const char*> shib_cookie=application.getCookieNameProps("_shibsession_");
+    response.setCookie(shib_cookie.first.c_str(), shib_cookie.second);
+
     // Do back channel notification.
     vector<string> sessions(1, session->getID());
     if (!notifyBackChannel(application, requestURL, sessions, false)) {
@@ -269,10 +276,6 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
         application.getServiceProvider().getSessionCache()->remove(sessions.front().c_str(), application);
         return sendLogoutPage(application, response, true, "Partial logout failure.");
     }
-
-    // Clear the cookie.
-    pair<string,const char*> shib_cookie=application.getCookieNameProps("_shibsession_");
-    response.setCookie(shib_cookie.first.c_str(), shib_cookie.second);
 
 #ifndef SHIBSP_LITE
     pair<bool,long> ret = make_pair(false,0);
@@ -336,14 +339,24 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
             }
 
             if (!logoutResponse)
-                return sendLogoutPage(application, response, false, "Identity provider did not respond to logout request.");
-            if (!logoutResponse->getStatus() || !logoutResponse->getStatus()->getStatusCode() ||
+                ret = sendLogoutPage(application, response, false, "Identity provider did not respond to logout request.");
+            else if (!logoutResponse->getStatus() || !logoutResponse->getStatus()->getStatusCode() ||
                    !XMLString::equals(logoutResponse->getStatus()->getStatusCode()->getValue(), saml2p::StatusCode::SUCCESS)) {
                 delete logoutResponse;
-                return sendLogoutPage(application, response, false, "Identity provider returned a SAML error in response to logout request.");
+                ret = sendLogoutPage(application, response, false, "Identity provider returned a SAML error in response to logout request.");
             }
-            delete logoutResponse;
-            return sendLogoutPage(application, response, false, "Logout completed successfully.");
+            else {
+                delete logoutResponse;
+                ret = sendLogoutPage(application, response, false, "Logout completed successfully.");
+            }
+
+            if (session) {
+                string session_id = session->getID();
+                session->unlock();
+                session = NULL;
+                application.getServiceProvider().getSessionCache()->remove(session_id.c_str(), application);
+            }
+            return ret;
         }
 
         auto_ptr<LogoutRequest> msg(buildRequest(application, *session, *role, encoder));
