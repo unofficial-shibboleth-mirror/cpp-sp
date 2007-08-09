@@ -103,7 +103,7 @@ namespace {
     {
     public:
         ADFSSessionInitiator(const DOMElement* e, const char* appId)
-                : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator")), m_appId(appId), m_binding(WSFED_NS) {
+                : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator.ADFS")), m_appId(appId), m_binding(WSFED_NS) {
             // If Location isn't set, defer address registration until the setParent call.
             pair<bool,const char*> loc = getString("Location");
             if (loc.first) {
@@ -164,11 +164,11 @@ namespace {
 #endif
     };
 
-    class SHIBSP_DLLLOCAL ADFSLogoutInitiator : public AbstractHandler, public LogoutHandler
+    class SHIBSP_DLLLOCAL ADFSLogoutInitiator : public AbstractHandler, public RemotedHandler
     {
     public:
         ADFSLogoutInitiator(const DOMElement* e, const char* appId)
-                : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator")), m_appId(appId), m_binding(WSFED_NS) {
+                : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".LogoutInitiator.ADFS")), m_appId(appId), m_binding(WSFED_NS) {
             // If Location isn't set, defer address registration until the setParent call.
             pair<bool,const char*> loc = getString("Location");
             if (loc.first) {
@@ -195,7 +195,7 @@ namespace {
 
     private:
         pair<bool,long> doRequest(
-            const Application& application, const char* requestURL, Session* session, HTTPResponse& httpResponse
+            const Application& application, const char* requestURL, const char* entityID, HTTPResponse& httpResponse
             ) const;
 
         string m_appId;
@@ -657,13 +657,11 @@ string ADFSConsumer::implementProtocol(
 
 pair<bool,long> ADFSLogoutInitiator::run(SPRequest& request, bool isHandler) const
 {
-    // Defer to base class for front-channel loop first.
-    pair<bool,long> ret = LogoutHandler::run(request, isHandler);
-    if (ret.first)
-        return ret;
-
-    // At this point we know the front-channel is handled.
-    // We need the session to do any other work.
+    // Normally we'd do notifications and session clearage here, but ADFS logout
+    // is missing the needed request/response features, so we have to rely on
+    // the IdP half to notify us back about the logout and do the work there.
+    // Basically we have no way to tell in the Logout receiving handler whether
+    // we initiated the logout or not.
 
     Session* session = NULL;
     try {
@@ -671,8 +669,8 @@ pair<bool,long> ADFSLogoutInitiator::run(SPRequest& request, bool isHandler) con
         if (!session)
             return make_pair(false,0);
 
-        // We only handle SAML 2.0 sessions.
-        if (!XMLString::equals(session->getProtocol(), WSFED_NS)) {
+        // We only handle ADFS sessions.
+        if (!XMLString::equals(session->getProtocol(), WSFED_NS) || !session->getEntityID()) {
             session->unlock();
             return make_pair(false,0);
         }
@@ -682,9 +680,12 @@ pair<bool,long> ADFSLogoutInitiator::run(SPRequest& request, bool isHandler) con
         return make_pair(false,0);
     }
 
+    string entityID(session->getEntityID());
+    session->unlock();
+
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
         // When out of process, we run natively.
-        return doRequest(request.getApplication(), request.getRequestURL(), session, request);
+        return doRequest(request.getApplication(), request.getRequestURL(), entityID.c_str(), request);
     }
     else {
         // When not out of process, we remote the request.
@@ -692,8 +693,8 @@ pair<bool,long> ADFSLogoutInitiator::run(SPRequest& request, bool isHandler) con
         DDF out,in(m_address.c_str());
         DDFJanitor jin(in), jout(out);
         in.addmember("application_id").string(request.getApplication().getId());
-        in.addmember("session_id").string(session->getID());
         in.addmember("url").string(request.getRequestURL());
+        in.addmember("entity_id").string(entityID.c_str());
         out=request.getServiceProvider().getListenerService()->send(in);
         return unwrap(request, out);
     }
@@ -716,29 +717,11 @@ void ADFSLogoutInitiator::receive(DDF& in, ostream& out)
     DDFJanitor jout(ret);
     auto_ptr<HTTPResponse> resp(getResponse(ret));
     
-    Session* session = NULL;
-    try {
-         session = app->getServiceProvider().getSessionCache()->find(in["session_id"].string(), *app, NULL, NULL);
-    }
-    catch (exception& ex) {
-        m_log.error("error accessing current session: %s", ex.what());
-    }
+    // Since we're remoted, the result should either be a throw, which we pass on,
+    // a false/0 return, which we just return as an empty structure, or a response/redirect,
+    // which we capture in the facade and send back.
+    doRequest(*app, in["url"].string(), in["entity_id"].string(), *resp.get());
 
-    // With no session, we just skip the request and let it fall through to an empty struct return.
-    if (session) {
-        if (session->getEntityID()) {
-            // Since we're remoted, the result should either be a throw, which we pass on,
-            // a false/0 return, which we just return as an empty structure, or a response/redirect,
-            // which we capture in the facade and send back.
-            doRequest(*app, in["url"].string(), session, *resp.get());
-        }
-        else {
-             m_log.error("no issuing entityID found in session");
-             session->unlock();
-             session = NULL;
-             app->getServiceProvider().getSessionCache()->remove(in["session_id"].string(), *app);
-         }
-    }
     out << ret;
 #else
     throw ConfigurationException("Cannot perform logout using lite version of shibsp library.");
@@ -746,38 +729,28 @@ void ADFSLogoutInitiator::receive(DDF& in, ostream& out)
 }
 
 pair<bool,long> ADFSLogoutInitiator::doRequest(
-    const Application& application, const char* requestURL, Session* session, HTTPResponse& response
+    const Application& application, const char* requestURL, const char* entityID, HTTPResponse& response
     ) const
 {
-    string entityID(session->getEntityID());
-    vector<string> sessions(1, session->getID());
-
-    // Do back channel notification.
-    if (!notifyBackChannel(application, requestURL, sessions, false)) {
-        session->unlock();
-        application.getServiceProvider().getSessionCache()->remove(sessions.front().c_str(), application);
-        return sendLogoutPage(application, response, true, "Partial logout failure.");
-    }
-
-    session->unlock();
-    application.getServiceProvider().getSessionCache()->remove(sessions.front().c_str(), application);
-
 #ifndef SHIBSP_LITE
     try {
+        if (!entityID)
+            throw ConfigurationException("Missing entityID parameter.");
+
         // With a session in hand, we can create a request message, if we can find a compatible endpoint.
         Locker metadataLocker(application.getMetadataProvider());
-        const EntityDescriptor* entity = application.getMetadataProvider()->getEntityDescriptor(entityID.c_str());
+        const EntityDescriptor* entity = application.getMetadataProvider()->getEntityDescriptor(entityID);
         if (!entity) {
             throw MetadataException(
                 "Unable to locate metadata for identity provider ($entityID)",
-                namedparams(1, "entityID", entityID.c_str())
+                namedparams(1, "entityID", entityID)
                 );
         }
         const IDPSSODescriptor* role = entity->getIDPSSODescriptor(m_binding.get());
         if (!role) {
             throw MetadataException(
                 "Unable to locate ADFS IdP role for identity provider ($entityID).",
-                namedparams(1, "entityID", entityID.c_str())
+                namedparams(1, "entityID", entityID)
                 );
         }
 
@@ -785,7 +758,7 @@ pair<bool,long> ADFSLogoutInitiator::doRequest(
         if (!ep) {
             throw MetadataException(
                 "Unable to locate ADFS single logout service for identity provider ($entityID).",
-                namedparams(1, "entityID", entityID.c_str())
+                namedparams(1, "entityID", entityID)
                 );
         }
 
@@ -853,6 +826,7 @@ pair<bool,long> ADFSLogout::run(SPRequest& request, bool isHandler) const
         catch (exception& ex) {
             m_log.error("error removing session (%s): %s", session_id, ex.what());
         }
+        request.setCookie(shib_cookie.first.c_str(), shib_cookie.second);
     }
 
     if (param)
