@@ -589,14 +589,18 @@ pair<bool,long> SAML2Logout::sendResponse(
     // Prepare response.
     auto_ptr<LogoutResponse> logout(LogoutResponseBuilder::buildLogoutResponse());
     logout->setInResponseTo(requestID);
-    if (ep)
-        logout->setDestination(ep->getLocation());
+    if (ep) {
+        const XMLCh* loc = ep->getResponseLocation();
+        if (!loc || !*loc)
+            loc = ep->getLocation();
+        logout->setDestination(loc);
+    }
     Issuer* issuer = IssuerBuilder::buildIssuer();
     logout->setIssuer(issuer);
     issuer->setName(application.getXMLString("entityID").second);
     fillStatus(*logout.get(), code, subcode, msg);
 
-    auto_ptr_char dest(ep ? ep->getLocation() : NULL);
+    auto_ptr_char dest(logout->getDestination());
 
     long ret = sendMessage(*encoder, logout.get(), relayState, dest.get(), role, application, httpResponse, "signResponses");
     logout.release();  // freed by encoder
