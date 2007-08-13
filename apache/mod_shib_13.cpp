@@ -29,6 +29,10 @@
 #define SH_AP_R(r) r
 #define SH_AP_USER(r) r->connection->user
 
+#ifdef WIN32
+# define _USE_32BIT_TIME_T
+#endif
+
 #define apr_pool_userdata_setn(n,k,d,p)
 #define apr_pool_cleanup_register(p1,p2,f,d)
 
