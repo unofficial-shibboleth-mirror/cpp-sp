@@ -9,9 +9,14 @@ URL:		http://shibboleth.internet2.edu/
 Source0:	http://shibboleth.internet2.edu/downloads/%{name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-root
 
-BuildRequires:	openssl-devel, curl-devel >= 7.10.6, xerces%{?xercesver}-c-devel >= 2.6.1
-BuildRequires:	xml-security-c-devel >= 1.1.0, log4cpp-devel >= 0.3.5
-BuildRequires:	zlib-devel, opensaml-devel >= 1.1-6
+BuildRequires:	openssl-devel, curl-devel >= 7.10.6
+BuildRequires:	xerces%{?xercesver}-c-devel >= 2.6.1, xml-security-c-devel >= 1.1.0
+BuildRequires:	zlib-devel, opensaml-devel >= 1.1-6, opensaml-devel < 2.0
+%if %{?_with_log4cpp:1}
+BuildRequires:	log4cpp-devel >= 0.3.5
+%else
+BuildRequires:	log4shib-devel
+%endif
 %if "%{_vendor}" == "redhat"
 BuildRequires:	httpd-devel
 %endif
@@ -69,12 +74,9 @@ installed.
 %setup -q
 
 %build
-# Default value is --enable-apache-20
-# If no Apache macro exists, then add the default definition
-%{!?_with_apache13: %{!?_with_apache20: %{!?_with_apache22: %define _with_apache20 1}}}
-%configure %{?shib_options} %{?_with_apache13: --enable-apache-13} %{?_with_apache20: --enable-apache-20} %{?_with_apache22: --enable-apache-22}
+%configure %{?shib_options}
 make
-make -C selinux
+#make -C selinux
 
 %install
 [ "$RPM_BUILD_ROOT" != "/" ] && rm -rf $RPM_BUILD_ROOT
@@ -102,10 +104,17 @@ make check
 /sbin/ldconfig
 
 # Plug the SP into Apache on a recognized system.
-%{?_with_apache13: %define apache_config apache.config}
-%{?_with_apache20: %define apache_config apache2.config}
-%{?_with_apache22: %define apache_config apache22.config}
-%if %{?apache_config:1}
+APACHE_CONFIG="no"
+if [ -f $RPM_BUILD_ROOT/%{_libexecdir}/mod_shib_13.so ] ; then
+	APACHE_CONFIG="apache.config"
+fi
+if [ -f $RPM_BUILD_ROOT/%{_libexecdir}/mod_shib_20.so ] ; then
+	APACHE_CONFIG="apache2.config"
+fi
+if [ -f $RPM_BUILD_ROOT/%{_libexecdir}/mod_shib_22.so ] ; then
+	APACHE_CONFIG="apache22.config"
+fi
+if [ "$APACHE_CONFIG" != "no" ] ; then
 	APACHE_CONFD="no"
 	if [ -d %{_sysconfdir}/httpd/conf.d ] ; then
     		APACHE_CONFD="%{_sysconfdir}/httpd/conf.d"
@@ -126,7 +135,7 @@ make check
 %endif
 		fi
 	fi
-%endif
+fi
 
 # Install the shibd init.d scripts and service
 %if "%{_vendor}" == "redhat"
