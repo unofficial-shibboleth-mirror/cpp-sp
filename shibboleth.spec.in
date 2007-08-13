@@ -75,7 +75,7 @@ installed.
 %setup -q
 
 %build
-%configure %{?shib_options}
+%configure %{?_without_odbc:--disable-odbc} %{?_without_adfs:--disable-adfs} %{?shib_options}
 make
 #make -C selinux
 

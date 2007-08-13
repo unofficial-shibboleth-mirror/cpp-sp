@@ -230,10 +230,27 @@ AC_SUBST(LITE_LIBS)
 AC_SUBST(XMLSEC_LIBS)
 
 # output the underlying makefiles
-WANT_SUBDIRS="doc schemas configs shibsp shibd adfs util"
+WANT_SUBDIRS="doc schemas configs shibsp shibd util"
 AC_CONFIG_FILES([Makefile doc/Makefile schemas/Makefile \
 	configs/Makefile shibsp/Makefile shibd/Makefile \
 	adfs/Makefile util/Makefile selinux/Makefile])
+
+## ADFS?
+AC_CONFIG_FILES([adfs/Makefile])
+AC_ARG_ENABLE([adfs],
+	AC_HELP_STRING([--disable-adfs], [don't build the ADFS module]),
+	[adfs_enabled=$enableval], [adfs_enabled=yes])
+if test "x$adfs_enabled" = "x" ; then
+   adfs_enabled=yes
+fi
+AC_MSG_CHECKING(whether to build the ADFS module)
+if test "$adfs_enabled" = "no" ; then
+   AC_MSG_RESULT(no)
+else
+   AC_MSG_RESULT(yes)
+   WANT_SUBDIRS="$WANT_SUBDIRS adfs"
+fi
+
 
 #
 # Build NSAPI module?
