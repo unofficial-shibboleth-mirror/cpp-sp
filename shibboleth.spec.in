@@ -80,6 +80,11 @@ make install DESTDIR=$RPM_BUILD_ROOT
 make -C selinux install DESTDIR=$RPM_BUILD_ROOT
 mv $RPM_BUILD_ROOT/usr/doc/%{name} _docs
 
+%if "%{_vendor}" == "suse"
+	sed -i "s/\/var\/log\/httpd/\/var\/log\/apache2/g" \
+		$RPM_BUILD_ROOT/%{_sysconfdir}/%{name}/native.logger
+%endif
+
 find $RPM_BUILD_ROOT/%{_libexecdir} -type f -or -type l | grep \.so |
   sed -e "s|$RPM_BUILD_ROOT||" | sort > rpm.filelist
 
