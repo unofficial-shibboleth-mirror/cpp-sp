@@ -194,7 +194,8 @@ restorecon %{_sbindir}/shibd
 %config %{_sysconfdir}/%{name}/sp-example.key
 %{_sysconfdir}/%{name}/*.dist
 %{_sysconfdir}/%{name}/apache*.config
-%{_sysconfdir}/%{name}/shibd
+%{_sysconfdir}/%{name}/shibd-redhat
+%{_sysconfdir}/%{name}/shibd-debian
 %exclude %{_libexecdir}/*.la
 
 %files devel
