@@ -8,7 +8,8 @@ pkgxmldir = $(datadir)/xml/@PACKAGE@
 varrundir = $(localstatedir)/run
 pkgsysconfdir = $(sysconfdir)/@PACKAGE@
 pkgsysconf_DATA = \
-	shibd \
+	shibd-redhat \
+	shibd-debian \
 	apache.config \
 	apache2.config \
 	apache22.config
@@ -61,7 +62,10 @@ apache2.config: ${srcdir}/apache2.config.in Makefile ${top_builddir}/config.stat
 apache22.config: ${srcdir}/apache22.config.in Makefile ${top_builddir}/config.status
 	$(MAKE) do-build-file FILE=$@
 
-shibd: ${srcdir}/shibd.in Makefile ${top_builddir}/config.status
+shibd-redhat: ${srcdir}/shibd-redhat.in Makefile ${top_builddir}/config.status
+	$(MAKE) do-build-file FILE=$@
+
+shibd-debian: ${srcdir}/shibd-debian.in Makefile ${top_builddir}/config.status
 	$(MAKE) do-build-file FILE=$@
 
 shibd.logger: ${srcdir}/shibd.logger.in Makefile ${top_builddir}/config.status
@@ -105,21 +109,23 @@ CLEANFILES = \
 	apache.config \
 	apache2.config \
 	apache22.config \
-	shibd \
+	shibd-redhat \
+	shibd-debian \
 	shibd.logger \
 	native.logger \
 	shibboleth.xml \
 	AAP.xml \
 	example-metadata.xml
 
-EXTRA_DIST = .cvsignore \
+EXTRA_DIST = \
 	shibboleth.xml.in \
 	native.logger.in \
 	shibd.logger.in \
 	apache.config.in \
 	apache2.config.in \
 	apache22.config.in \
-	shibd.in \
+	shibd-redhat.in \
+	shibd-debian.in \
 	shibboleth.logger \
 	accessError.html \
 	rmError.html \
