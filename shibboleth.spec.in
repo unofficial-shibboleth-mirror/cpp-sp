@@ -11,7 +11,7 @@ BuildRoot:	%{_tmppath}/%{name}-%{version}-root
 
 BuildRequires:	openssl-devel, curl-devel >= 7.10.6
 BuildRequires:	xerces%{?xercesver}-c-devel >= 2.6.1, xml-security-c-devel >= 1.3.1
-BuildRequires:	zlib-devel, unixODBC-devel, opensaml-devel >= 2.0
+BuildRequires:	zlib-devel, opensaml-devel >= 2.0
 %if %{?_with_log4cpp:1}
 BuildRequires:	log4cpp-devel >= 0.3.5
 %else
@@ -19,10 +19,10 @@ BuildRequires:	log4shib-devel
 %endif
 %{!?_without_odbc:BuildRequires: unixODBC-devel}
 %if "%{_vendor}" == "redhat"
-BuildRequires:	httpd-devel
+%{!?_without_builtinapache:BuildRequires: httpd-devel}
 %endif
 %if "%{_vendor}" == "suse"
-BuildRequires:	apache2-devel
+%{!?_without_builtinapache:BuildRequires: apache2-devel}
 %endif
 
 
