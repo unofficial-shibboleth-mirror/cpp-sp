@@ -18,10 +18,10 @@ BuildRequires:	log4cpp-devel >= 0.3.5
 BuildRequires:	log4shib-devel
 %endif
 %if "%{_vendor}" == "redhat"
-BuildRequires:	httpd-devel
+%{!?_without_builtinapache:BuildRequires: httpd-devel}
 %endif
 %if "%{_vendor}" == "suse"
-BuildRequires:	apache2-devel
+%{!?_without_builtinapache:BuildRequires: apache2-devel}
 %endif
 
 
