@@ -22,11 +22,10 @@
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 DESC="Shibboleth 2 daemon"
 NAME=shibd
-SHIB_HOME=/opt/shibboleth-sp
-SHIB_ETC=$SHIB_HOME/etc/shibboleth
-SHIBSP_CONFIG=$SHIB_ETC/shibboleth2.xml
-LD_LIBRARY_PATH=$SHIB_HOME/lib
-DAEMON=$SHIB_HOME/sbin/$NAME
+SHIB_HOME=@-PREFIX-@
+SHIBSP_CONFIG=@-PKGSYSCONFDIR-@/shibboleth2.xml
+LD_LIBRARY_PATH=@-PREFIX-@/lib
+DAEMON=@-PREFIX-@/sbin/$NAME
 SCRIPTNAME=/etc/init.d/$NAME
 PIDFILE=/var/run/$NAME.pid
 DAEMON_OPTS=""
@@ -58,22 +57,22 @@ start)
     fi
     echo -n "Starting $DESC: "
     start-stop-daemon --background --start --quiet \
-        --pidfile /var/run/$NAME.pid --exec $DAEMON -- $DAEMON_OPTS
+        --pidfile $PIDFILE --exec $DAEMON -- $DAEMON_OPTS
     echo "$NAME."
     ;;
 stop)
     echo -n "Stopping $DESC: "
-    start-stop-daemon --stop --quiet --pidfile /var/run/$NAME.pid \
+    start-stop-daemon --stop --quiet --pidfile $PIDFILE \
         --exec $DAEMON
     echo "$NAME."
     ;;
 restart|force-reload)
     echo -n "Restarting $DESC: "
-    start-stop-daemon --stop --quiet --pidfile /var/run/$NAME.pid \
+    start-stop-daemon --stop --quiet --pidfile $PIDFILE \
         --exec $DAEMON
     sleep 1
     start-stop-daemon --background --start --quiet \
-        --pidfile /var/run/$NAME.pid --exec $DAEMON -- $DAEMON_OPTS
+        --pidfile $PIDFILE --exec $DAEMON -- $DAEMON_OPTS
     echo "$NAME."
     ;;
 *)
