@@ -11,6 +11,7 @@ pkgsysconfdir = $(sysconfdir)/@PACKAGE@
 pkgsysconf_DATA = \
 	shibd-redhat \
 	shibd-debian \
+	shibd-osx.plist \
 	apache.config \
 	apache2.config \
 	apache22.config
@@ -74,6 +75,9 @@ shibd-redhat: ${srcdir}/shibd-redhat.in Makefile ${top_builddir}/config.status
 shibd-debian: ${srcdir}/shibd-debian.in Makefile ${top_builddir}/config.status
 	$(MAKE) do-build-file FILE=$@
 
+shibd-osx.plist: ${srcdir}/shibd-osx.plist.in Makefile ${top_builddir}/config.status
+	$(MAKE) do-build-file FILE=$@
+
 shibd.logger: ${srcdir}/shibd.logger.in Makefile ${top_builddir}/config.status
 	$(MAKE) do-build-file FILE=$@
 
@@ -120,6 +124,7 @@ CLEANFILES = \
 	apache22.config \
 	shibd-redhat \
 	shibd-debian \
+	shibd-osx.plist \
 	shibd.logger \
 	native.logger \
 	shibboleth2.xml \
@@ -139,4 +144,5 @@ EXTRA_DIST = \
 	apache22.config.in \
 	shibd-redhat.in \
 	shibd-debian.in \
+	shibd-osx.plist.in \
 	$(CONFIGFILES)

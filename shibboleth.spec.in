@@ -196,6 +196,7 @@ restorecon %{_sbindir}/shibd
 %{_sysconfdir}/%{name}/apache*.config
 %{_sysconfdir}/%{name}/shibd-redhat
 %{_sysconfdir}/%{name}/shibd-debian
+%{_sysconfdir}/%{name}/shibd-osx.plist
 %exclude %{_libexecdir}/*.la
 
 %files devel
