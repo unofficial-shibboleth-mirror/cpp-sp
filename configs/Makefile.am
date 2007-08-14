@@ -10,6 +10,7 @@ varrundir = $(localstatedir)/run
 pkgsysconfdir = $(sysconfdir)/@PACKAGE@
 pkgsysconf_DATA = \
 	shibd-redhat \
+	shibd-debian \
 	apache.config \
 	apache2.config \
 	apache22.config
@@ -70,6 +71,9 @@ apache22.config: ${srcdir}/apache22.config.in Makefile ${top_builddir}/config.st
 shibd-redhat: ${srcdir}/shibd-redhat.in Makefile ${top_builddir}/config.status
 	$(MAKE) do-build-file FILE=$@
 
+shibd-debian: ${srcdir}/shibd-debian.in Makefile ${top_builddir}/config.status
+	$(MAKE) do-build-file FILE=$@
+
 shibd.logger: ${srcdir}/shibd.logger.in Makefile ${top_builddir}/config.status
 	$(MAKE) do-build-file FILE=$@
 
@@ -115,6 +119,7 @@ CLEANFILES = \
 	apache2.config \
 	apache22.config \
 	shibd-redhat \
+	shibd-debian \
 	shibd.logger \
 	native.logger \
 	shibboleth2.xml \
@@ -133,4 +138,5 @@ EXTRA_DIST = \
 	apache2.config.in \
 	apache22.config.in \
 	shibd-redhat.in \
+	shibd-debian.in \
 	$(CONFIGFILES)

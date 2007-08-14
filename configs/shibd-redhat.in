@@ -3,10 +3,10 @@
 # Startup script for the Shibboleth Service Provider Daemon
 #
 # chkconfig: - 98 02
-# description: Shibboleth Service Provider Daemon
+# description: Shibboleth 2 Service Provider Daemon
 # processname: shibd
 # pidfile: @-VARRUNDIR-@/shibd.pid
-# config: @-PKGSYSCONFDIR-@/shibboleth.xml
+# config: @-PKGSYSCONFDIR-@/shibboleth2.xml
 
 # Source function library.
 . /etc/rc.d/init.d/functions
