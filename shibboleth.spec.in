@@ -197,6 +197,7 @@ restorecon %{_sbindir}/shibd
 %{_sysconfdir}/shibboleth/apache*.config
 %{_sysconfdir}/%{name}/shibd-redhat
 %{_sysconfdir}/%{name}/shibd-debian
+%{_sysconfdir}/%{name}/shibd-osx.plist
 
 %exclude %{_bindir}/posttest
 %exclude %{_bindir}/test-client
