@@ -320,7 +320,12 @@ bool QueryResolver::SAML1Query(QueryContext& ctx) const
     }
 
     const vector<saml1::Assertion*>& assertions = const_cast<const saml1p::Response*>(response)->getAssertions();
-    if (assertions.size()>1)
+    if (assertions.empty()) {
+        delete response;
+        m_log.warn("response from attribute authority was empty");
+        return true;
+    }
+    else if (assertions.size()>1)
         m_log.warn("simple resolver only supports one assertion in the query response");
 
     auto_ptr<saml1p::Response> wrapper(response);
@@ -437,10 +442,15 @@ bool QueryResolver::SAML2Query(QueryContext& ctx) const
     }
 
     const vector<saml2::Assertion*>& assertions = const_cast<const saml2p::Response*>(response)->getAssertions();
-    if (assertions.size()>1)
+    if (assertions.empty()) {
+        delete srt;
+        m_log.warn("response from attribute authority was empty");
+        return true;
+    }
+    else if (assertions.size()>1)
         m_log.warn("simple resolver only supports one assertion in the query response");
 
-    auto_ptr<saml2p::Response> wrapper(response);
+    auto_ptr<saml2p::StatusResponseType> wrapper(srt);
     saml2::Assertion* newtoken = assertions.front();
 
     if (!newtoken->getSignature() && signedAssertions.first && signedAssertions.second) {
