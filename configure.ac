@@ -233,7 +233,7 @@ AC_SUBST(XMLSEC_LIBS)
 WANT_SUBDIRS="doc schemas configs shibsp shibd util"
 AC_CONFIG_FILES([Makefile doc/Makefile schemas/Makefile \
 	configs/Makefile shibsp/Makefile shibd/Makefile \
-	adfs/Makefile util/Makefile selinux/Makefile])
+	util/Makefile selinux/Makefile])
 
 ## ADFS?
 AC_CONFIG_FILES([adfs/Makefile])
