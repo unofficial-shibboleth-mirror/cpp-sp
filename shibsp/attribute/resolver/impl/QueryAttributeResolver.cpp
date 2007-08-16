@@ -203,6 +203,7 @@ namespace shibsp {
     private:
         bool SAML1Query(QueryContext& ctx) const;
         bool SAML2Query(QueryContext& ctx) const;
+        void signMessage(const Application& app, const RoleDescriptor& role, SignableObject& msg) const;
 
         Category& m_log;
         vector<AttributeDesignator*> m_SAML1Designators;
@@ -254,6 +255,50 @@ QueryResolver::QueryResolver(const DOMElement* e) : m_log(Category::getInstance(
     }
 }
 
+void QueryResolver::signMessage(const Application& application, const RoleDescriptor& role, SignableObject& msg) const
+{
+    const PropertySet* relyingParty = application.getRelyingParty(dynamic_cast<const EntityDescriptor*>(role.getParent()));
+    pair<bool,const char*> prop = relyingParty->getString("signing");
+    if (prop.first && (!strcmp(prop.second, "true") || !strcmp(prop.second, "back"))) {
+        CredentialResolver* credResolver=application.getCredentialResolver();
+        if (credResolver) {
+            Locker credLocker(credResolver);
+            // Fill in criteria to use.
+            MetadataCredentialCriteria mcc(role);
+            mcc.setUsage(CredentialCriteria::SIGNING_CREDENTIAL);
+            prop = relyingParty->getString("keyName");
+            if (prop.first)
+                mcc.getKeyNames().insert(prop.second);
+            pair<bool,const XMLCh*> sigalg = relyingParty->getXMLString("signingAlg");
+            if (sigalg.first)
+                mcc.setXMLAlgorithm(sigalg.second);
+            const Credential* cred = credResolver->resolve(&mcc);
+            if (cred) {
+                xmlsignature::Signature* sig = xmlsignature::SignatureBuilder::buildSignature();
+                msg.setSignature(sig);
+                if (sigalg.first)
+                    sig->setSignatureAlgorithm(sigalg.second);
+                sigalg = relyingParty->getXMLString("digestAlg");
+                if (sigalg.first) {
+                    ContentReference* cr = dynamic_cast<ContentReference*>(sig->getContentReference());
+                    if (cr)
+                        cr->setDigestAlgorithm(sigalg.second);
+                }
+        
+                // Sign response while marshalling.
+                vector<xmlsignature::Signature*> sigs(1,sig);
+                msg.marshall((DOMDocument*)NULL,&sigs,cred);
+            }
+            else {
+                m_log.warn("no signing credential resolved, leaving query unsigned");
+            }
+        }
+        else {
+            m_log.warn("no credential resolver installed, leaving query unsigned");
+        }
+    }
+}
+
 bool QueryResolver::SAML1Query(QueryContext& ctx) const
 {
 #ifdef _DEBUG
@@ -297,6 +342,7 @@ bool QueryResolver::SAML1Query(QueryContext& ctx) const
             Request* request = RequestBuilder::buildRequest();
             request->setAttributeQuery(query);
             request->setMinorVersion(version);
+            signMessage(ctx.getApplication(), *AA, *request);
 
             SAML1SOAPClient client(soaper, false);
             client.sendSAML(request, mcc, loc.get());
@@ -395,6 +441,9 @@ bool QueryResolver::SAML2Query(QueryContext& ctx) const
         ctx.getApplication().getServiceProvider().getPolicySettings(ctx.getApplication().getString("policyId").second);
     pair<bool,bool> signedAssertions = policySettings->getBool("signedAssertions");
 
+    const PropertySet* relyingParty = ctx.getApplication().getRelyingParty(ctx.getEntityDescriptor());
+    pair<bool,const char*> encryption = relyingParty->getString("encryption");
+
     auto_ptr_XMLCh binding(samlconstants::SAML20_BINDING_SOAP);
     saml2p::StatusResponseType* srt=NULL;
     const vector<AttributeService*>& endpoints=AA->getAttributeServices();
@@ -404,15 +453,34 @@ bool QueryResolver::SAML2Query(QueryContext& ctx) const
                 continue;
             auto_ptr_char loc((*ep)->getLocation());
             auto_ptr_XMLCh issuer(ctx.getApplication().getString("entityID").second);
-            saml2::Subject* subject = saml2::SubjectBuilder::buildSubject();
-            subject->setNameID(ctx.getNameID()->cloneNameID());
+
+            auto_ptr<saml2::Subject> subject(saml2::SubjectBuilder::buildSubject());
+
+            // Encrypt the NameID?
+            if (encryption.first && (!strcmp(encryption.second, "true") || !strcmp(encryption.second, "back"))) {
+                auto_ptr<EncryptedID> encrypted(EncryptedIDBuilder::buildEncryptedID());
+                MetadataCredentialCriteria mcc(*AA);
+                encrypted->encrypt(
+                    *ctx.getNameID(),
+                    *(ctx.getApplication().getMetadataProvider()),
+                    mcc,
+                    false,
+                    relyingParty->getXMLString("encryptionAlg").second
+                    );
+                subject->setEncryptedID(encrypted.release());
+            }
+            else {
+                subject->setNameID(ctx.getNameID()->cloneNameID());
+            }
+
             saml2p::AttributeQuery* query = saml2p::AttributeQueryBuilder::buildAttributeQuery();
-            query->setSubject(subject);
+            query->setSubject(subject.release());
             Issuer* iss = IssuerBuilder::buildIssuer();
             iss->setName(issuer.get());
             query->setIssuer(iss);
             for (vector<saml2::Attribute*>::const_iterator ad = m_SAML2Designators.begin(); ad!=m_SAML2Designators.end(); ++ad)
                 query->getAttributes().push_back((*ad)->cloneAttribute());
+            signMessage(ctx.getApplication(), *AA, *query);
 
             SAML2SOAPClient client(soaper, false);
             client.sendSAML(query, mcc, loc.get());
