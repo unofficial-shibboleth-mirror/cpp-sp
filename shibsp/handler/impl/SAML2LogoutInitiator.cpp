@@ -363,7 +363,7 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
 
         msg->setDestination(ep->getLocation());
         auto_ptr_char dest(ep->getLocation());
-        ret.second = sendMessage(*encoder, msg.get(), NULL, dest.get(), role, application, response, "signRequests");
+        ret.second = sendMessage(*encoder, msg.get(), NULL, dest.get(), role, application, response);
         ret.first = true;
         msg.release();  // freed by encoder
     }
@@ -406,7 +406,7 @@ LogoutRequest* SAML2LogoutInitiator::buildRequest(
 
     const NameID* nameid = session.getNameID();
     const PropertySet* relyingParty = application.getRelyingParty(dynamic_cast<EntityDescriptor*>(role.getParent()));
-    pair<bool,const char*> flag = relyingParty->getString("encryptRequests");
+    pair<bool,const char*> flag = relyingParty->getString("encryption");
     if (flag.first &&
         (!strcmp(flag.second, "true") || (encoder && !strcmp(flag.second, "front")) || (!encoder && !strcmp(flag.second, "back")))) {
         auto_ptr<EncryptedID> encrypted(EncryptedIDBuilder::buildEncryptedID());
@@ -423,7 +423,7 @@ LogoutRequest* SAML2LogoutInitiator::buildRequest(
 
     if (!encoder) {
         // No encoder being used, so sign for SOAP client manually.
-        flag = relyingParty->getString("signRequests");
+        flag = relyingParty->getString("signing");
         if (flag.first && (!strcmp(flag.second, "true") || !strcmp(flag.second, "back"))) {
             CredentialResolver* credResolver=application.getCredentialResolver();
             if (credResolver) {
@@ -434,21 +434,20 @@ LogoutRequest* SAML2LogoutInitiator::buildRequest(
                 pair<bool,const char*> keyName = relyingParty->getString("keyName");
                 if (keyName.first)
                     mcc.getKeyNames().insert(keyName.second);
-                pair<bool,const XMLCh*> sigalg = relyingParty->getXMLString("signatureAlg");
+                pair<bool,const XMLCh*> sigalg = relyingParty->getXMLString("signingAlg");
                 if (sigalg.first)
                     mcc.setXMLAlgorithm(sigalg.second);
                 const Credential* cred = credResolver->resolve(&mcc);
                 if (cred) {
                     xmlsignature::Signature* sig = xmlsignature::SignatureBuilder::buildSignature();
                     msg->setSignature(sig);
-                    pair<bool, const XMLCh*> alg = relyingParty->getXMLString("signatureAlg");
-                    if (alg.first)
-                        sig->setSignatureAlgorithm(alg.second);
-                    alg = relyingParty->getXMLString("digestAlg");
-                    if (alg.first) {
+                    if (sigalg.first)
+                        sig->setSignatureAlgorithm(sigalg.second);
+                    sigalg = relyingParty->getXMLString("digestAlg");
+                    if (sigalg.first) {
                         ContentReference* cr = dynamic_cast<ContentReference*>(sig->getContentReference());
                         if (cr)
-                            cr->setDigestAlgorithm(alg.second);
+                            cr->setDigestAlgorithm(sigalg.second);
                     }
             
                     // Sign response while marshalling.

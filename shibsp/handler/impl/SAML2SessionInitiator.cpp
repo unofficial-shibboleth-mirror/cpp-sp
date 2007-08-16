@@ -487,7 +487,7 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
     auto_ptr_char dest(ep->getLocation());
 
     long ret = sendMessage(
-        *encoder, req.get(), relayState.c_str(), dest.get(), role, app, httpResponse, "signRequests", role->WantAuthnRequestsSigned()
+        *encoder, req.get(), relayState.c_str(), dest.get(), role, app, httpResponse, role->WantAuthnRequestsSigned()
         );
     req.release();  // freed by encoder
     return make_pair(true,ret);

@@ -102,8 +102,7 @@ namespace shibsp {
          * @param role              recipient of message, if known
          * @param application       the Application sending the message
          * @param httpResponse      channel for sending message
-         * @param signingOption     name of property to lookup controlling signing
-         * @param signIfPossible    true iff signing should be attempted regardless of property
+         * @param signIfPossible    true iff signing should be attempted regardless of "signing" property
          * @return  the result of sending the message using the encoder
          */
         long sendMessage(
@@ -114,7 +113,6 @@ namespace shibsp {
             const opensaml::saml2md::RoleDescriptor* role,
             const Application& application,
             xmltooling::HTTPResponse& httpResponse,
-            const char* signingOption,
             bool signIfPossible=false
             ) const;
 #endif

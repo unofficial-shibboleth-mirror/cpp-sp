@@ -193,8 +193,7 @@
 			styleSheet="/shibboleth-sp/main.css"/>
 		
 		<!-- Configure handling of outgoing messages and SOAP authentication. -->
-		<DefaultRelyingParty authType="TLS" artifactEndpointIndex="1"
-			signRequests="front" encryptRequests="front" signResponses="true" encryptResponses="true">
+		<DefaultRelyingParty authType="TLS" artifactEndpointIndex="1" signing="front" encryption="front">
 			<!-- Uncomment and modify to tweak settings for specific IdPs or groups. -->
 			<!--
 			<RelyingParty Name="SpecialFederation" keyName="SpecialKey"/>

@@ -50,7 +50,7 @@ void SOAPClient::send(const soap11::Envelope& env, MetadataCredentialCriteria& p
 {
     // Check for message signing requirements.   
     m_relyingParty = m_app.getRelyingParty(dynamic_cast<const EntityDescriptor*>(peer.getRole().getParent()));
-    pair<bool,const char*> flag = m_relyingParty->getString("signRequests");
+    pair<bool,const char*> flag = m_relyingParty->getString("signing");
     if (flag.first && (!strcmp(flag.second, "true") || !strcmp(flag.second, "back"))) {
         m_credResolver=m_app.getCredentialResolver();
         if (m_credResolver) {
@@ -60,7 +60,7 @@ void SOAPClient::send(const soap11::Envelope& env, MetadataCredentialCriteria& p
             pair<bool,const char*> keyName = m_relyingParty->getString("keyName");
             if (keyName.first)
                 peer.getKeyNames().insert(keyName.second);
-            pair<bool,const XMLCh*> sigalg = m_relyingParty->getXMLString("signatureAlg");
+            pair<bool,const XMLCh*> sigalg = m_relyingParty->getXMLString("signingAlg");
             if (sigalg.first)
                 peer.setXMLAlgorithm(sigalg.second);
             const Credential* cred = m_credResolver->resolve(&peer);

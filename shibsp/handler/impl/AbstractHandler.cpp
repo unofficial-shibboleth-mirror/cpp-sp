@@ -166,13 +166,12 @@ long AbstractHandler::sendMessage(
     const saml2md::RoleDescriptor* role,
     const Application& application,
     HTTPResponse& httpResponse,
-    const char* signingOption,
     bool signIfPossible
     ) const
 {
     const EntityDescriptor* entity = role ? dynamic_cast<const EntityDescriptor*>(role->getParent()) : NULL;
     const PropertySet* relyingParty = application.getRelyingParty(entity);
-    pair<bool,const char*> flag = signIfPossible ? make_pair(true,"true") : relyingParty->getString(signingOption);
+    pair<bool,const char*> flag = signIfPossible ? make_pair(true,"true") : relyingParty->getString("signing");
     if (role && flag.first &&
         (!strcmp(flag.second, "true") ||
             (encoder.isUserAgentPresent() && !strcmp(flag.second, "front")) ||
@@ -186,7 +185,7 @@ long AbstractHandler::sendMessage(
             pair<bool,const char*> keyName = relyingParty->getString("keyName");
             if (keyName.first)
                 mcc.getKeyNames().insert(keyName.second);
-            pair<bool,const XMLCh*> sigalg = relyingParty->getXMLString("signatureAlg");
+            pair<bool,const XMLCh*> sigalg = relyingParty->getXMLString("signingAlg");
             if (sigalg.first)
                 mcc.setXMLAlgorithm(sigalg.second);
             const Credential* cred = credResolver->resolve(&mcc);
