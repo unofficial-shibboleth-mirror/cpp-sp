@@ -267,11 +267,12 @@ bool QueryResolver::SAML1Query(QueryContext& ctx) const
         return false;
     }
 
-    shibsp::SecurityPolicy policy(ctx.getApplication());
+    const Application& application = ctx.getApplication();
+    shibsp::SecurityPolicy policy(application);
     MetadataCredentialCriteria mcc(*AA);
     shibsp::SOAPClient soaper(policy);
     const PropertySet* policySettings =
-        ctx.getApplication().getServiceProvider().getPolicySettings(ctx.getApplication().getString("policyId").second);
+        application.getServiceProvider().getPolicySettings(application.getString("policyId").second);
     pair<bool,bool> signedAssertions = policySettings->getBool("signedAssertions");
 
     auto_ptr_XMLCh binding(samlconstants::SAML1_BINDING_SOAP);
@@ -282,7 +283,7 @@ bool QueryResolver::SAML1Query(QueryContext& ctx) const
             if (!XMLString::equals((*ep)->getBinding(),binding.get()))
                 continue;
             auto_ptr_char loc((*ep)->getLocation());
-            auto_ptr_XMLCh issuer(ctx.getApplication().getString("entityID").second);
+            auto_ptr_XMLCh issuer(application.getString("entityID").second);
             NameIdentifier* nameid = NameIdentifierBuilder::buildNameIdentifier();
             nameid->setName(ctx.getNameID()->getName());
             nameid->setFormat(ctx.getNameID()->getFormat());
@@ -299,7 +300,7 @@ bool QueryResolver::SAML1Query(QueryContext& ctx) const
             request->setMinorVersion(version);
 
             SAML1SOAPClient client(soaper, false);
-            client.sendSAML(request, mcc, loc.get());
+            client.sendSAML(request, application.getId(), mcc, loc.get());
             response = client.receiveSAML();
         }
         catch (exception& ex) {
@@ -340,7 +341,7 @@ bool QueryResolver::SAML1Query(QueryContext& ctx) const
         policy.evaluate(*newtoken);
         if (!policy.isSecure())
             throw SecurityPolicyException("Security of SAML 1.x query result not established.");
-        saml1::AssertionValidator tokval(ctx.getApplication().getAudiences(), time(NULL));
+        saml1::AssertionValidator tokval(application.getAudiences(), time(NULL));
         tokval.validateAssertion(*newtoken);
     }
     catch (exception& ex) {
@@ -354,15 +355,15 @@ bool QueryResolver::SAML1Query(QueryContext& ctx) const
 
     // Finally, extract and filter the result.
     try {
-        AttributeExtractor* extractor = ctx.getApplication().getAttributeExtractor();
+        AttributeExtractor* extractor = application.getAttributeExtractor();
         if (extractor) {
             Locker extlocker(extractor);
-            extractor->extractAttributes(ctx.getApplication(), AA, *newtoken, ctx.getResolvedAttributes());
+            extractor->extractAttributes(application, AA, *newtoken, ctx.getResolvedAttributes());
         }
 
-        AttributeFilter* filter = ctx.getApplication().getAttributeFilter();
+        AttributeFilter* filter = application.getAttributeFilter();
         if (filter) {
-            BasicFilteringContext fc(ctx.getApplication(), ctx.getResolvedAttributes(), AA, ctx.getClassRef(), ctx.getDeclRef());
+            BasicFilteringContext fc(application, ctx.getResolvedAttributes(), AA, ctx.getClassRef(), ctx.getDeclRef());
             Locker filtlocker(filter);
             filter->filterAttributes(fc, ctx.getResolvedAttributes());
         }
@@ -388,14 +389,14 @@ bool QueryResolver::SAML2Query(QueryContext& ctx) const
         return false;
     }
 
-    shibsp::SecurityPolicy policy(ctx.getApplication());
+    const Application& application = ctx.getApplication();
+    shibsp::SecurityPolicy policy(application);
     MetadataCredentialCriteria mcc(*AA);
     shibsp::SOAPClient soaper(policy);
-    const PropertySet* policySettings =
-        ctx.getApplication().getServiceProvider().getPolicySettings(ctx.getApplication().getString("policyId").second);
+    const PropertySet* policySettings = application.getServiceProvider().getPolicySettings(application.getString("policyId").second);
     pair<bool,bool> signedAssertions = policySettings->getBool("signedAssertions");
 
-    const PropertySet* relyingParty = ctx.getApplication().getRelyingParty(ctx.getEntityDescriptor());
+    const PropertySet* relyingParty = application.getRelyingParty(ctx.getEntityDescriptor());
     pair<bool,const char*> encryption = relyingParty->getString("encryption");
 
     auto_ptr_XMLCh binding(samlconstants::SAML20_BINDING_SOAP);
@@ -406,7 +407,7 @@ bool QueryResolver::SAML2Query(QueryContext& ctx) const
             if (!XMLString::equals((*ep)->getBinding(),binding.get()))
                 continue;
             auto_ptr_char loc((*ep)->getLocation());
-            auto_ptr_XMLCh issuer(ctx.getApplication().getString("entityID").second);
+            auto_ptr_XMLCh issuer(application.getString("entityID").second);
 
             auto_ptr<saml2::Subject> subject(saml2::SubjectBuilder::buildSubject());
 
@@ -416,7 +417,7 @@ bool QueryResolver::SAML2Query(QueryContext& ctx) const
                 MetadataCredentialCriteria mcc(*AA);
                 encrypted->encrypt(
                     *ctx.getNameID(),
-                    *(ctx.getApplication().getMetadataProvider()),
+                    *(application.getMetadataProvider()),
                     mcc,
                     false,
                     relyingParty->getXMLString("encryptionAlg").second
@@ -436,7 +437,7 @@ bool QueryResolver::SAML2Query(QueryContext& ctx) const
                 query->getAttributes().push_back((*ad)->cloneAttribute());
 
             SAML2SOAPClient client(soaper, false);
-            client.sendSAML(query, mcc, loc.get());
+            client.sendSAML(query, application.getId(), mcc, loc.get());
             srt = client.receiveSAML();
         }
         catch (exception& ex) {
@@ -483,7 +484,7 @@ bool QueryResolver::SAML2Query(QueryContext& ctx) const
         policy.evaluate(*newtoken);
         if (!policy.isSecure())
             throw SecurityPolicyException("Security of SAML 2.0 query result not established.");
-        saml2::AssertionValidator tokval(ctx.getApplication().getAudiences(), time(NULL));
+        saml2::AssertionValidator tokval(application.getAudiences(), time(NULL));
         tokval.validateAssertion(*newtoken);
     }
     catch (exception& ex) {
@@ -497,15 +498,15 @@ bool QueryResolver::SAML2Query(QueryContext& ctx) const
 
     // Finally, extract and filter the result.
     try {
-        AttributeExtractor* extractor = ctx.getApplication().getAttributeExtractor();
+        AttributeExtractor* extractor = application.getAttributeExtractor();
         if (extractor) {
             Locker extlocker(extractor);
-            extractor->extractAttributes(ctx.getApplication(), AA, *newtoken, ctx.getResolvedAttributes());
+            extractor->extractAttributes(application, AA, *newtoken, ctx.getResolvedAttributes());
         }
 
-        AttributeFilter* filter = ctx.getApplication().getAttributeFilter();
+        AttributeFilter* filter = application.getAttributeFilter();
         if (filter) {
-            BasicFilteringContext fc(ctx.getApplication(), ctx.getResolvedAttributes(), AA, ctx.getClassRef(), ctx.getDeclRef());
+            BasicFilteringContext fc(application, ctx.getResolvedAttributes(), AA, ctx.getClassRef(), ctx.getDeclRef());
             Locker filtlocker(filter);
             filter->filterAttributes(fc, ctx.getResolvedAttributes());
         }

@@ -325,7 +325,7 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
                     auto_ptr_char dest((*epit)->getLocation());
 
                     SAML2SOAPClient client(soaper, false);
-                    client.sendSAML(msg, mcc, dest.get());
+                    client.sendSAML(msg, application.getId(), mcc, dest.get());
                     StatusResponseType* srt = client.receiveSAML();
                     if (!(logoutResponse = dynamic_cast<LogoutResponse*>(srt))) {
                         delete srt;

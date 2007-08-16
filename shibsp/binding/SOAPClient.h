@@ -53,10 +53,11 @@ namespace shibsp {
          * Override handles message signing for SAML payloads.
          * 
          * @param env       SOAP envelope to send
-         * @param peer      peer to send message to, expressed in metadata terms
+         * @param from      identity of sending application
+         * @param to        peer to send message to, expressed in metadata terms
          * @param endpoint  URL of endpoint to recieve message
          */
-        void send(const soap11::Envelope& env, opensaml::saml2md::MetadataCredentialCriteria& peer, const char* endpoint);
+        void send(const soap11::Envelope& env, const char* from, opensaml::saml2md::MetadataCredentialCriteria& to, const char* endpoint);
 
         void reset();
 

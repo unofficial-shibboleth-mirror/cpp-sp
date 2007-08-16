@@ -184,7 +184,7 @@ int main(int argc,char* argv[])
                     nameid->setNameQualifier(domain.get());
                     iss->setName(issuer.get());
                     SAML2SOAPClient client(soaper, false);
-                    client.sendSAML(query, mcc, loc.get());
+                    client.sendSAML(query, app->getId(), mcc, loc.get());
                     srt = client.receiveSAML();
                 }
                 catch (exception& ex) {
@@ -231,7 +231,7 @@ int main(int argc,char* argv[])
                     query->setResource(issuer.get());
                     request->setMinorVersion(ver==v11 ? 1 : 0);
                     SAML1SOAPClient client(soaper, false);
-                    client.sendSAML(request, mcc, loc.get());
+                    client.sendSAML(request, app->getId(), mcc, loc.get());
                     response = client.receiveSAML();
                 }
                 catch (exception& ex) {

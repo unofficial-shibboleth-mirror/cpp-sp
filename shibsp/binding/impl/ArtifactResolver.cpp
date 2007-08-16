@@ -51,7 +51,8 @@ saml1p::Response* ArtifactResolver::resolve(
     ) const
 {
     MetadataCredentialCriteria mcc(idpDescriptor);
-    shibsp::SOAPClient soaper(dynamic_cast<shibsp::SecurityPolicy&>(policy));
+    shibsp::SecurityPolicy& sppolicy = dynamic_cast<shibsp::SecurityPolicy&>(policy);
+    shibsp::SOAPClient soaper(sppolicy);
 
     bool foundEndpoint = false;
     auto_ptr_XMLCh binding(samlconstants::SAML1_BINDING_SOAP);
@@ -73,7 +74,7 @@ saml1p::Response* ArtifactResolver::resolve(
             }
 
             SAML1SOAPClient client(soaper, false);
-            client.sendSAML(request, mcc, loc.get());
+            client.sendSAML(request, sppolicy.getApplication().getId(), mcc, loc.get());
             response = client.receiveSAML();
         }
         catch (exception& ex) {
@@ -115,18 +116,17 @@ ArtifactResponse* ArtifactResolver::resolve(
                 continue;
             foundEndpoint = true;
             auto_ptr_char loc((*ep)->getLocation());
-            auto_ptr_XMLCh issuer(sppolicy.getApplication().getString("entityID").second);
             ArtifactResolve* request = ArtifactResolveBuilder::buildArtifactResolve();
             Issuer* iss = IssuerBuilder::buildIssuer();
             request->setIssuer(iss);
-            iss->setName(issuer.get());
+            iss->setName(sppolicy.getApplication().getXMLString("entityID").second);
             auto_ptr_XMLCh artbuf(artifact.encode().c_str());
             Artifact* a = ArtifactBuilder::buildArtifact();
             a->setArtifact(artbuf.get());
             request->setArtifact(a);
 
             SAML2SOAPClient client(soaper, false);
-            client.sendSAML(request, mcc, loc.get());
+            client.sendSAML(request, sppolicy.getApplication().getId(), mcc, loc.get());
             StatusResponseType* srt = client.receiveSAML();
             if (!(response = dynamic_cast<ArtifactResponse*>(srt))) {
                 delete srt;

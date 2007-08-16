@@ -46,27 +46,27 @@ SOAPClient::SOAPClient(SecurityPolicy& policy)
     setValidating(validate.first && validate.second);
 }
 
-void SOAPClient::send(const soap11::Envelope& env, MetadataCredentialCriteria& peer, const char* endpoint)
+void SOAPClient::send(const soap11::Envelope& env, const char* from, MetadataCredentialCriteria& to, const char* endpoint)
 {
     // Check for message signing requirements.   
-    m_relyingParty = m_app.getRelyingParty(dynamic_cast<const EntityDescriptor*>(peer.getRole().getParent()));
+    m_relyingParty = m_app.getRelyingParty(dynamic_cast<const EntityDescriptor*>(to.getRole().getParent()));
     pair<bool,const char*> flag = m_relyingParty->getString("signing");
     if (flag.first && (!strcmp(flag.second, "true") || !strcmp(flag.second, "back"))) {
         m_credResolver=m_app.getCredentialResolver();
         if (m_credResolver) {
             m_credResolver->lock();
             // Fill in criteria to use.
-            peer.setUsage(CredentialCriteria::SIGNING_CREDENTIAL);
+            to.setUsage(CredentialCriteria::SIGNING_CREDENTIAL);
             pair<bool,const char*> keyName = m_relyingParty->getString("keyName");
             if (keyName.first)
-                peer.getKeyNames().insert(keyName.second);
+                to.getKeyNames().insert(keyName.second);
             pair<bool,const XMLCh*> sigalg = m_relyingParty->getXMLString("signingAlg");
             if (sigalg.first)
-                peer.setXMLAlgorithm(sigalg.second);
-            const Credential* cred = m_credResolver->resolve(&peer);
+                to.setXMLAlgorithm(sigalg.second);
+            const Credential* cred = m_credResolver->resolve(&to);
             // Reset criteria back.
-            peer.setKeyAlgorithm(NULL);
-            peer.setKeySize(0);
+            to.setKeyAlgorithm(NULL);
+            to.setKeySize(0);
 
             if (cred) {
                 // Check for message.
@@ -98,7 +98,7 @@ void SOAPClient::send(const soap11::Envelope& env, MetadataCredentialCriteria& p
         }
     }
     
-    opensaml::SOAPClient::send(env, peer, endpoint);
+    opensaml::SOAPClient::send(env, from, to, endpoint);
 }
 
 void SOAPClient::prepareTransport(SOAPTransport& transport)

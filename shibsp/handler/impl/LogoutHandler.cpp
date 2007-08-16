@@ -211,7 +211,7 @@ bool LogoutHandler::notifyBackChannel(
         SOAPNotifier soaper;
         while (!endpoint.empty()) {
             try {
-                soaper.send(*env.get(), application.getId(), endpoint.c_str());
+                soaper.send(*env.get(), SOAPTransport::Address(application.getId(), application.getId(), endpoint.c_str()));
                 delete soaper.receive();
             }
             catch (exception& ex) {
