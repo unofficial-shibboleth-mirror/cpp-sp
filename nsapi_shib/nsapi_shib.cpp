@@ -187,41 +187,23 @@ class ShibTargetNSAPI : public AbstractSPRequest
   mutable string m_body;
   mutable bool m_gotBody;
   mutable vector<string> m_certs;
-  char** m_env;
+  set<string> m_allhttp;
 
 public:
-  ShibTargetNSAPI(pblock* pb, ::Session* sn, Request* rq) : m_gotBody(false), m_env(NULL) {
+  ShibTargetNSAPI(pblock* pb, ::Session* sn, Request* rq) : m_gotBody(false) {
     m_pb = pb;
     m_sn = sn;
     m_rq = rq;
 
-    // Get everything but hostname...
     const char* uri=pblock_findval("uri", rq->reqpb);
     const char* qstr=pblock_findval("query", rq->reqpb);
 
-    string url;
-    if (uri) {
-        url = uri;
+    if (uri)
         m_uri = uri;
-    }
     if (qstr)
-        url=url + '?' + qstr;
-    
-    const char* host=NULL;
-#ifdef vs_is_default_vs
-    // This is 6.0 or later, so we can distinguish requests to name-based vhosts.
-    if (!vs_is_default_vs)
-        // The beauty here is, a non-default vhost can *only* be accessed if the client
-        // specified the exact name in the Host header. So we can trust the Host header.
-        host=pblock_findval("host", rq->headers);
-    else
-#endif
-    // In other cases, we're going to rely on the initialization process...
-    host=g_ServerName.c_str();
+        m_uri = m_uri + '?' + qstr;
   }
   ~ShibTargetNSAPI() {
-      if (m_env)
-          util_env_free(m_env);
   }
 
   const char* getScheme() const {
@@ -230,7 +212,7 @@ public:
   const char* getHostname() const {
 #ifdef vs_is_default_vs
     // This is 6.0 or later, so we can distinguish requests to name-based vhosts.
-    if (!vs_is_default_vs)
+    if (!vs_is_default_vs(request_get_vs(m_rq)))
         // The beauty here is, a non-default vhost can *only* be accessed if the client
         // specified the exact name in the Host header. So we can trust the Host header.
         return pblock_findval("host", m_rq->headers);
@@ -296,12 +278,24 @@ public:
   }
   void clearHeader(const char* rawname, const char* cginame) {
     if (g_checkSpoofing) {
-        if (!m_env) {
+        if (m_allhttp.empty()) {
             // Populate the set of client-supplied headers for spoof checking.
-            //m_env = util_env_create();
-            m_env = pblock_pb2env(m_rq->headers, NULL);
+            const pb_entry* entry;
+            for (int i=0; i<m_rq->headers->hsize; ++i) {
+                entry = m_rq->headers->ht[i];
+                while (entry) {
+                    string cgiversion("HTTP_");
+                    const char* pch = entry->param->name;
+                    while (*pch) {
+                        cgiversion += (isalnum(*pch) ? toupper(*pch) : '_');
+                        pch++;
+                    }
+                    m_allhttp.insert(cgiversion);
+                    entry = entry->next;
+                }
+            }
         }
-        if (util_env_find(m_env, const_cast<char*>(cginame)))
+        if (m_allhttp.count(cginame) > 0)
             throw opensaml::SecurityPolicyException("Attempt to spoof header ($1) was detected.", params(1, rawname));
     }
     if (!strcmp(rawname,"REMOTE_USER")) {
@@ -314,12 +308,25 @@ public:
     }
   }
   void setHeader(const char* name, const char* value) {
+    param_free(pblock_remove(name, m_rq->headers));
     pblock_nvinsert(name, value, m_rq->headers);
   }
   string getHeader(const char* name) const {
+    // NSAPI headers tend to be lower case. We'll special case "cookie" since it's used a lot.
     char* hdr = NULL;
-    if (request_header(const_cast<char*>(name), &hdr, m_sn, m_rq) != REQ_PROCEED)
-      hdr = NULL;
+    int cookie = strcmp(name, "Cookie");
+    if (cookie == 0)
+        name = "cookie";
+    if (request_header(const_cast<char*>(name), &hdr, m_sn, m_rq) != REQ_PROCEED) {
+      // We didn't get a hit, so we'll try a lower-casing operation, unless we already did...
+      if (cookie == 0)
+          return "";
+      string n;
+      while (*name)
+          n += tolower(*(name++));
+      if (request_header(const_cast<char*>(n.c_str()), &hdr, m_sn, m_rq) != REQ_PROCEED)
+          return "";
+    }
     return string(hdr ? hdr : "");
   }
   void setRemoteUser(const char* user) {
@@ -327,7 +334,8 @@ public:
     pblock_nvinsert("auth-user", user, m_rq->vars);
   }
   string getRemoteUser() const {
-    return getHeader("remote-user");
+    const char* ru = pblock_findval("auth-user", m_rq->vars);
+    return ru ? ru : "";
   }
   void setResponseHeader(const char* name, const char* value) {
     pblock_nvinsert(name, value, m_rq->srvhdrs);
