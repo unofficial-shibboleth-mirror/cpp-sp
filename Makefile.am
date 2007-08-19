@@ -3,8 +3,7 @@ AUTOMAKE_OPTIONS = foreign
 ACLOCAL_AMFLAGS = -I .
 
 EXTRA_DIST = \
-	isapi_shib isapi_shib_gui \
-	Shibboleth.sln libtool.m4 acx_pthread.m4 depcomp \
+	isapi_shib Shibboleth.sln libtool.m4 acx_pthread.m4 depcomp \
 	config_win32.h shibboleth.spec.in shibboleth.spec pkginfo.in pkginfo checkinstall
 
 dist-hook:

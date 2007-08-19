@@ -75,6 +75,7 @@ namespace {
     string g_ServerName;
     string g_ServerScheme;
     string g_unsetHeaderValue;
+    bool g_checkSpoofing = true;
 
     static const XMLCh path[] =     UNICODE_LITERAL_4(p,a,t,h);
     static const XMLCh validate[] = UNICODE_LITERAL_8(v,a,l,i,d,a,t,e);
@@ -170,6 +171,9 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, ::Session* sn, Request* 
         pair<bool,const char*> unsetValue=props->getString("unsetHeaderValue");
         if (unsetValue.first)
             g_unsetHeaderValue = unsetValue.second;
+        pair<bool,bool> checkSpoofing=props->getBool("checkSpoofing");
+        if (checkSpoofing.first && !checkSpoofing.second)
+            g_checkSpoofing = false;
     }
     return REQ_PROCEED;
 }
@@ -183,9 +187,10 @@ class ShibTargetNSAPI : public AbstractSPRequest
   mutable string m_body;
   mutable bool m_gotBody;
   mutable vector<string> m_certs;
+  char** m_env;
 
 public:
-  ShibTargetNSAPI(pblock* pb, ::Session* sn, Request* rq) : m_gotBody(false) {
+  ShibTargetNSAPI(pblock* pb, ::Session* sn, Request* rq) : m_gotBody(false), m_env(NULL) {
     m_pb = pb;
     m_sn = sn;
     m_rq = rq;
@@ -214,7 +219,10 @@ public:
     // In other cases, we're going to rely on the initialization process...
     host=g_ServerName.c_str();
   }
-  ~ShibTargetNSAPI() {}
+  ~ShibTargetNSAPI() {
+      if (m_env)
+          util_env_free(m_env);
+  }
 
   const char* getScheme() const {
     return security_active ? "https" : "http";
@@ -286,14 +294,23 @@ public:
       return m_body.c_str();
     }
   }
-  void clearHeader(const char* name) {
-    if (!strcmp(name,"REMOTE_USER")) {
+  void clearHeader(const char* rawname, const char* cginame) {
+    if (g_checkSpoofing) {
+        if (!m_env) {
+            // Populate the set of client-supplied headers for spoof checking.
+            //m_env = util_env_create();
+            m_env = pblock_pb2env(m_rq->headers, NULL);
+        }
+        if (util_env_find(m_env, const_cast<char*>(cginame)))
+            throw opensaml::SecurityPolicyException("Attempt to spoof header ($1) was detected.", params(1, rawname));
+    }
+    if (!strcmp(rawname,"REMOTE_USER")) {
         param_free(pblock_remove("auth-user",m_rq->vars));
         param_free(pblock_remove("remote-user",m_rq->headers));
     }
     else {
-        param_free(pblock_remove(name, m_rq->headers));
-        pblock_nvinsert(name, g_unsetHeaderValue.c_str() ,m_rq->headers);
+        param_free(pblock_remove(rawname, m_rq->headers));
+        pblock_nvinsert(rawname, g_unsetHeaderValue.c_str(), m_rq->headers);
     }
   }
   void setHeader(const char* name, const char* value) {
@@ -445,6 +462,7 @@ public:
     void unlock() { m_stKey->setData(NULL); m_propsKey->setData(NULL); m_mapper->unlock(); }
     Settings getSettings(const SPRequest& request) const;
     
+    const PropertySet* getParent() const { return NULL; }
     void setParent(const PropertySet*) {}
     pair<bool,bool> getBool(const char* name, const char* ns=NULL) const;
     pair<bool,const char*> getString(const char* name, const char* ns=NULL) const;
