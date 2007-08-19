@@ -7,17 +7,12 @@
 	xsi:schemaLocation="urn:mace:shibboleth:2.0:native:sp:config @-PKGXMLDIR-@/shibboleth-2.0-native-sp-config.xsd"
 	logger="@-PKGSYSCONFDIR-@/syslog.logger" clockSkew="180">
 
-	<!--
-	<Extensions>
-		<Library path="@-LIBEXECDIR-@/adfs.so" fatal="true"/>
-	</Extensions>
-	-->
-
 	<!-- The OutOfProcess section pertains to components that run in the shibd daemon. -->
 	<OutOfProcess logger="@-PKGSYSCONFDIR-@/shibd.logger">
 		
 		<!--
 		<Extensions>
+			<Library path="@-LIBEXECDIR-@/adfs.so" fatal="true"/>
 			<Library path="@-LIBEXECDIR-@/odbc-store.so" fatal="true"/>
 		</Extensions>
 		-->
@@ -47,6 +42,13 @@
     
 	<!-- The InProcess section pertains to components that run inside the web server. -->
 	<InProcess logger="@-PKGSYSCONFDIR-@/native.logger">
+
+		<!--
+		<Extensions>
+			<Library path="@-LIBEXECDIR-@/adfs-lite.so" fatal="true"/>
+		</Extensions>
+		-->
+		
 		<SessionCache type="Remoted" cleanupInterval="900" cacheTimeout="900"/>
 	
 		<!--
