@@ -68,7 +68,7 @@
 			may provide specific guidance on this.
 			-->
 			<KeyDescriptor use="signing">
-			    <ds:KeyInfo>
+			    <ds:KeyInfo Id="examplekey">
 			        <ds:X509Data>
 			        	<ds:X509Certificate>
 MIICkjCCAfugAwIBAgIJAK7VCxPsh8yrMA0GCSqGSIb3DQEBBAUAMDsxCzAJBgNV
@@ -89,6 +89,13 @@ w14fpgtAk2x8xD7cpHsZ073JHxEcjEetD8PTtrFdNu6GwIrv6Sk=
 			        </ds:X509Data>
 			    </ds:KeyInfo>
 			</KeyDescriptor>
+
+			<!-- Reusing a single key for encryption can be done with a reference to it. -->
+		    <KeyDescriptor use="encryption">
+				<ds:KeyInfo>
+					<ds:RetrievalMethod URI="#examplekey" Type="http://www.w3.org/2000/09/xmldsig#X509Data"/>
+				</ds:KeyInfo>
+		    </KeyDescriptor>
 
 			<!-- This tells SPs where/how to resolve SAML 1.x artifacts into SAML assertions. -->
 			<ArtifactResolutionService index="1"
