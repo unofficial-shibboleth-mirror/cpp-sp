@@ -108,7 +108,8 @@
 		disabled.
 		-->
 		<Sessions lifetime="28800" timeout="3600" checkAddress="false"
-			handlerURL="/Shibboleth.sso" handlerSSL="false" exportLocation="/GetAssertion"
+			handlerURL="/Shibboleth.sso" handlerSSL="false"
+			exportLocation="http://localhost/Shibboleth.sso/GetAssertion"
 			idpHistory="true" idpHistoryDays="7">
 			
 			<!--
