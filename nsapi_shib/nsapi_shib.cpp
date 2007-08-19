@@ -67,6 +67,7 @@ namespace {
     string g_ServerName;
     string g_ServerScheme;
     string g_unsetHeaderValue;
+    bool g_checkSpoofing = true;
 }
 
 PlugManager::Factory SunRequestMapFactory;
@@ -153,6 +154,9 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, Session* sn, Request* rq
             pair<bool,const char*> unsetValue=props->getString("unsetHeaderValue");
             if (unsetValue.first)
                 g_unsetHeaderValue = unsetValue.second;
+            pair<bool,bool> checkSpoofing=props->getBool("checkSpoofing");
+            if (checkSpoofing.first && !checkSpoofing.second)
+                g_checkSpoofing = false;
         }
 #ifndef _DEBUG
     }
@@ -191,7 +195,7 @@ public:
     
 #ifdef vs_is_default_vs
     // This is 6.0 or later, so we can distinguish requests to name-based vhosts.
-    if (!vs_is_default_vs)
+    if (!vs_is_default_vs(request_get_vs(m_rq)))
         // The beauty here is, a non-default vhost can *only* be accessed if the client
         // specified the exact name in the Host header. So we can trust the Host header.
         host=pblock_findval("host", rq->headers);
@@ -208,7 +212,8 @@ public:
 
     init(scheme, host, port, url.c_str(), content_type, remote_ip, method);
   }
-  ~ShibTargetNSAPI() {}
+  ~ShibTargetNSAPI() {
+  }
 
   virtual void log(ShibLogLevel level, const string &msg) {
     ShibTarget::log(level,msg);
@@ -253,13 +258,43 @@ public:
     }
   }
   virtual void clearHeader(const string &name) {
+    if (g_checkSpoofing && m_allhttp.empty()) {
+      // Populate the set of client-supplied headers for spoof checking.
+      const pb_entry* entry;
+      for (int i=0; i<m_rq->headers->hsize; ++i) {
+          entry = m_rq->headers->ht[i];
+          while (entry) {
+              string cgiversion("HTTP_");
+              const char* pch = entry->param->name;
+              while (*pch) {
+                  cgiversion += (isalnum(*pch) ? toupper(*pch) : '_');
+                  pch++;
+              }
+              m_allhttp.insert(cgiversion);
+              entry = entry->next;
+          }
+      }
+    }
     if (name=="REMOTE_USER") {
+        if (g_checkSpoofing && m_allhttp.count("HTTP_REMOTE_USER") > 0)
+            throw SAMLException("Attempt to spoof header ($1) was detected.", params(1, name.c_str()));
         param_free(pblock_remove("auth-user",m_rq->vars));
         param_free(pblock_remove("remote-user",m_rq->headers));
     }
     else {
+        if (g_checkSpoofing) {
+            // Map to the expected CGI variable name.
+            string transformed("HTTP_");
+            const char* pch = name.c_str();
+            while (*pch) {
+                transformed += (isalnum(*pch) ? toupper(*pch) : '_');
+                pch++;
+            }
+            if (m_allhttp.count(transformed) > 0)
+                throw SAMLException("Attempt to spoof header ($1) was detected.", params(1, name.c_str()));
+        }
         param_free(pblock_remove(name.c_str(), m_rq->headers));
-        pblock_nvinsert(name.c_str(), g_unsetHeaderValue.c_str() ,m_rq->headers);
+        pblock_nvinsert(name.c_str(), g_unsetHeaderValue.c_str(), m_rq->headers);
     }
   }
   virtual void setHeader(const string &name, const string &value) {
@@ -268,8 +303,14 @@ public:
   }
   virtual string getHeader(const string &name) {
     char *hdr = NULL;
-    if (request_header(const_cast<char*>(name.c_str()), &hdr, m_sn, m_rq) != REQ_PROCEED)
-      hdr = NULL;
+    if (request_header(const_cast<char*>(name.c_str()), &hdr, m_sn, m_rq) != REQ_PROCEED) {
+      string n;
+      const char* pch = name.c_str();
+      while (*pch)
+          n += tolower(*(pch++));
+      if (request_header(const_cast<char*>(n.c_str()), &hdr, m_sn, m_rq) != REQ_PROCEED)
+          return "";
+    }
     return string(hdr ? hdr : "");
   }
   virtual void setRemoteUser(const string &user) {
@@ -277,7 +318,8 @@ public:
     pblock_nvinsert("auth-user", user.c_str(), m_rq->vars);
   }
   virtual string getRemoteUser(void) {
-    return getHeader("remote-user");
+    const char* ru = pblock_findval("auth-user", m_rq->vars);
+    return ru ? ru : "";
   }
 
   virtual void* sendPage(
@@ -316,6 +358,7 @@ public:
   pblock* m_pb;
   Session* m_sn;
   Request* m_rq;
+  set<string> m_allhttp;
 };
 
 /********************************************************************************/
