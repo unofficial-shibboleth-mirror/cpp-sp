@@ -78,6 +78,9 @@ namespace shibsp {
         void extractAttributes(
             const Application& application, const char* assertingParty, const saml2::Attribute& attr, vector<Attribute*>& attributes
             ) const;
+        void extractAttributes(
+            const Application& application, const char* assertingParty, const Extensions& ext, vector<Attribute*>& attributes
+            ) const;
 
         void getAttributeIds(vector<string>& attributes) const {
             attributes.insert(attributes.end(), m_attributeIds.begin(), m_attributeIds.end());
@@ -365,6 +368,18 @@ void XMLExtractorImpl::extractAttributes(
     }
 }
 
+void XMLExtractorImpl::extractAttributes(
+    const Application& application, const char* assertingParty, const Extensions& ext, vector<Attribute*>& attributes
+    ) const
+{
+    const vector<XMLObject*> exts = ext.getUnknownXMLObjects();
+    for (vector<XMLObject*>::const_iterator i = exts.begin(); i!=exts.end(); ++i) {
+        const saml2::Attribute* attr = dynamic_cast<const saml2::Attribute*>(*i);
+        if (attr)
+            extractAttributes(application, assertingParty, *attr, attributes);
+    }
+}
+
 void XMLExtractor::extractAttributes(
     const Application& application, const RoleDescriptor* issuer, const XMLObject& xmlObject, vector<Attribute*>& attributes
     ) const
@@ -403,6 +418,25 @@ void XMLExtractor::extractAttributes(
         }
 
         throw AttributeExtractionException("Unable to extract attributes, unknown object type.");
+    }
+
+    // Check for metadata.
+    if (XMLString::equals(xmlObject.getElementQName().getNamespaceURI(), samlconstants::SAML20MD_NS)) {
+        const EntityDescriptor* entity = dynamic_cast<const EntityDescriptor*>(&xmlObject);
+        if (!entity)
+            throw AttributeExtractionException("Unable to extract attributes, unknown metadata object type.");
+        auto_ptr_char assertingParty(issuer ? dynamic_cast<const EntityDescriptor*>(issuer->getParent())->getEntityID() : NULL);
+        const Extensions* ext = entity->getExtensions();
+        if (ext)
+            m_impl->extractAttributes(application, assertingParty.get(), *ext, attributes);
+        const EntitiesDescriptor* group = dynamic_cast<const EntitiesDescriptor*>(entity->getParent());
+        while (group) {
+            ext = group->getExtensions();
+            if (ext)
+                m_impl->extractAttributes(application, assertingParty.get(), *ext, attributes);
+            group = dynamic_cast<const EntitiesDescriptor*>(group->getParent());
+        }
+        return;
     }
 
     // Check for attributes.

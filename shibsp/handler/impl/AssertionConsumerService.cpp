@@ -281,12 +281,23 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
     const vector<const Assertion*>* tokens
     ) const
 {
-    // First we do the extraction of any pushed information.
+    const saml2md::EntityDescriptor* entity = dynamic_cast<const saml2md::EntityDescriptor*>(issuer->getParent());
+
+    // First we do the extraction of any pushed information, including from metadata.
     vector<Attribute*> resolvedAttributes;
     AttributeExtractor* extractor = application.getAttributeExtractor();
     if (extractor) {
-        m_log.debug("extracting pushed attributes...");
         Locker extlocker(extractor);
+        if (entity) {
+            m_log.debug("extracting metadata-derived attributes...");
+            try {
+                extractor->extractAttributes(application, issuer, *entity, resolvedAttributes);
+            }
+            catch (exception& ex) {
+                m_log.error("caught exception extracting attributes: %s", ex.what());
+            }
+        }
+        m_log.debug("extracting pushed attributes...");
         if (v1nameid) {
             try {
                 extractor->extractAttributes(application, issuer, *v1nameid, resolvedAttributes);
@@ -332,28 +343,28 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
     
     try {
         AttributeResolver* resolver = application.getAttributeResolver();
-        if (!resolver && !resolvedAttributes.empty()) {
-            m_log.info("no AttributeResolver available, skipping resolution");
-            return new DummyContext(resolvedAttributes);
-        }
-        
-        m_log.debug("resolving attributes...");
+        if (resolver) {
+            m_log.debug("resolving attributes...");
 
-        Locker locker(resolver);
-        auto_ptr<ResolutionContext> ctx(
-            resolver->createResolutionContext(
-                application,
-                dynamic_cast<const saml2md::EntityDescriptor*>(issuer->getParent()),
-                protocol,
-                nameid,
-                authncontext_class,
-                authncontext_decl,
-                tokens,
-                &resolvedAttributes
-                )
-            );
-        resolver->resolveAttributes(*ctx.get());
-        return ctx.release();
+            Locker locker(resolver);
+            auto_ptr<ResolutionContext> ctx(
+                resolver->createResolutionContext(
+                    application,
+                    entity,
+                    protocol,
+                    nameid,
+                    authncontext_class,
+                    authncontext_decl,
+                    tokens,
+                    &resolvedAttributes
+                    )
+                );
+            resolver->resolveAttributes(*ctx.get());
+            // Copy over any pushed attributes.
+            if (!resolvedAttributes.empty())
+                ctx->getResolvedAttributes().insert(ctx->getResolvedAttributes().end(), resolvedAttributes.begin(), resolvedAttributes.end());
+            return ctx.release();
+        }
     }
     catch (exception& ex) {
         m_log.error("attribute resolution failed: %s", ex.what());
