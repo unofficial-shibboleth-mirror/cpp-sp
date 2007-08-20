@@ -298,14 +298,8 @@ public:
         if (m_allhttp.count(cginame) > 0)
             throw opensaml::SecurityPolicyException("Attempt to spoof header ($1) was detected.", params(1, rawname));
     }
-    if (!strcmp(rawname,"REMOTE_USER")) {
-        param_free(pblock_remove("auth-user",m_rq->vars));
-        param_free(pblock_remove("remote-user",m_rq->headers));
-    }
-    else {
-        param_free(pblock_remove(rawname, m_rq->headers));
-        pblock_nvinsert(rawname, g_unsetHeaderValue.c_str(), m_rq->headers);
-    }
+    param_free(pblock_remove(rawname, m_rq->headers));
+    pblock_nvinsert(rawname, g_unsetHeaderValue.c_str(), m_rq->headers);
   }
   void setHeader(const char* name, const char* value) {
     param_free(pblock_remove(name, m_rq->headers));
@@ -330,7 +324,6 @@ public:
     return string(hdr ? hdr : "");
   }
   void setRemoteUser(const char* user) {
-    pblock_nvinsert("remote-user", user, m_rq->headers);
     pblock_nvinsert("auth-user", user, m_rq->vars);
   }
   string getRemoteUser() const {
