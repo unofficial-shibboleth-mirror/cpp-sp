@@ -28,10 +28,6 @@
 # include "Application.h"
 # include "ServiceProvider.h"
 # include "SessionCache.h"
-# include "attribute/Attribute.h"
-# include "attribute/filtering/AttributeFilter.h"
-# include "attribute/filtering/BasicFilteringContext.h"
-# include "attribute/resolver/AttributeExtractor.h"
 # include "attribute/resolver/ResolutionContext.h"
 # include <saml/saml1/core/Assertions.h>
 # include <saml/saml1/core/Protocols.h>
@@ -206,43 +202,6 @@ string SAML1Consumer::implementProtocol(
 
     // We've successfully "accepted" at least one SSO token, along with any additional valid tokens.
     // To complete processing, we need to extract and resolve attributes and then create the session.
-    vector<Attribute*> resolvedAttributes;
-    AttributeExtractor* extractor = application.getAttributeExtractor();
-    if (extractor) {
-        m_log.debug("extracting pushed attributes...");
-        Locker extlocker(extractor);
-        if (n) {
-            try {
-                extractor->extractAttributes(application, policy.getIssuerMetadata(), *n, resolvedAttributes);
-            }
-            catch (exception& ex) {
-                m_log.error("caught exception extracting attributes: %s", ex.what());
-            }
-        }
-        for (vector<const opensaml::Assertion*>::const_iterator t = tokens.begin(); t!=tokens.end(); ++t) {
-            try {
-                extractor->extractAttributes(application, policy.getIssuerMetadata(), *(*t), resolvedAttributes);
-            }
-            catch (exception& ex) {
-                m_log.error("caught exception extracting attributes: %s", ex.what());
-            }
-        }
-
-        AttributeFilter* filter = application.getAttributeFilter();
-        if (filter && !resolvedAttributes.empty()) {
-            BasicFilteringContext fc(application, resolvedAttributes, policy.getIssuerMetadata(), ssoStatement->getAuthenticationMethod());
-            Locker filtlocker(filter);
-            try {
-                filter->filterAttributes(fc, resolvedAttributes);
-            }
-            catch (exception& ex) {
-                m_log.error("caught exception filtering attributes: %s", ex.what());
-                m_log.error("dumping extracted attributes due to filtering exception");
-                for_each(resolvedAttributes.begin(), resolvedAttributes.end(), xmltooling::cleanup<shibsp::Attribute>());
-                resolvedAttributes.clear();
-            }
-        }
-    }
 
     // Normalize the SAML 1.x NameIdentifier...
     auto_ptr<NameID> nameid(n ? NameIDBuilder::buildNameID() : NULL);
@@ -252,57 +211,44 @@ string SAML1Consumer::implementProtocol(
         nameid->setNameQualifier(n->getNameQualifier());
     }
 
-    const EntityDescriptor* issuerMetadata =
-        policy.getIssuerMetadata() ? dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL;
+    // The context will handle deleting attributes and new tokens.
     auto_ptr<ResolutionContext> ctx(
         resolveAttributes(
             application,
-            issuerMetadata,
+            policy.getIssuerMetadata(),
             (!response->getMinorVersion().first || response->getMinorVersion().second==1) ?
                 samlconstants::SAML11_PROTOCOL_ENUM : samlconstants::SAML10_PROTOCOL_ENUM,
+            n,
             nameid.get(),
             ssoStatement->getAuthenticationMethod(),
             NULL,
-            &tokens,
-            &resolvedAttributes
+            &tokens
             )
         );
 
     if (ctx.get()) {
         // Copy over any new tokens, but leave them in the context for cleanup.
         tokens.insert(tokens.end(), ctx->getResolvedAssertions().begin(), ctx->getResolvedAssertions().end());
-
-        // Copy over new attributes, and transfer ownership.
-        resolvedAttributes.insert(resolvedAttributes.end(), ctx->getResolvedAttributes().begin(), ctx->getResolvedAttributes().end());
-        ctx->getResolvedAttributes().clear();
     }
 
     // Now merge in bad tokens for caching.
     tokens.insert(tokens.end(), badtokens.begin(), badtokens.end());
 
-    try {
-        string key = application.getServiceProvider().getSessionCache()->insert(
-            now + lifetime.second,
-            application,
-            httpRequest.getRemoteAddr().c_str(),
-            issuerMetadata,
-            (!response->getMinorVersion().first || response->getMinorVersion().second==1) ?
-                samlconstants::SAML11_PROTOCOL_ENUM : samlconstants::SAML10_PROTOCOL_ENUM,
-            nameid.get(),
-            ssoStatement->getAuthenticationInstant() ? ssoStatement->getAuthenticationInstant()->getRawData() : NULL,
-            NULL,
-            ssoStatement->getAuthenticationMethod(),
-            NULL,
-            &tokens,
-            &resolvedAttributes
-            );
-        for_each(resolvedAttributes.begin(), resolvedAttributes.end(), xmltooling::cleanup<shibsp::Attribute>());
-        return key;
-    }
-    catch (exception&) {
-        for_each(resolvedAttributes.begin(), resolvedAttributes.end(), xmltooling::cleanup<shibsp::Attribute>());
-        throw;
-    }
+    return application.getServiceProvider().getSessionCache()->insert(
+        now + lifetime.second,
+        application,
+        httpRequest.getRemoteAddr().c_str(),
+        policy.getIssuerMetadata() ? dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL,
+        (!response->getMinorVersion().first || response->getMinorVersion().second==1) ?
+            samlconstants::SAML11_PROTOCOL_ENUM : samlconstants::SAML10_PROTOCOL_ENUM,
+        nameid.get(),
+        ssoStatement->getAuthenticationInstant() ? ssoStatement->getAuthenticationInstant()->getRawData() : NULL,
+        NULL,
+        ssoStatement->getAuthenticationMethod(),
+        NULL,
+        &tokens,
+        ctx.get() ? &ctx->getResolvedAttributes() : NULL
+        );
 }
 
 #endif

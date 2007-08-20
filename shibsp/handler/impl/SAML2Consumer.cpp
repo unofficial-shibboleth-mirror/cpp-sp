@@ -28,10 +28,6 @@
 # include "Application.h"
 # include "ServiceProvider.h"
 # include "SessionCache.h"
-# include "attribute/Attribute.h"
-# include "attribute/filtering/AttributeFilter.h"
-# include "attribute/filtering/BasicFilteringContext.h"
-# include "attribute/resolver/AttributeExtractor.h"
 # include "attribute/resolver/ResolutionContext.h"
 # include <saml/saml2/core/Protocols.h>
 # include <saml/saml2/profile/BrowserSSOProfileValidator.h>
@@ -335,73 +331,26 @@ string SAML2Consumer::implementProtocol(
     else
         sessionExp = min(sessionExp, now + lifetime.second);    // Use the lowest.
 
-    vector<Attribute*> resolvedAttributes;
-    AttributeExtractor* extractor = application.getAttributeExtractor();
-    if (extractor) {
-        m_log.debug("extracting pushed attributes...");
-        Locker extlocker(extractor);
-        try {
-            extractor->extractAttributes(application, policy.getIssuerMetadata(), *ssoName, resolvedAttributes);
-        }
-        catch (exception& ex) {
-            m_log.error("caught exception extracting attributes: %s", ex.what());
-        }
-        for (vector<const opensaml::Assertion*>::const_iterator t = tokens.begin(); t!=tokens.end(); ++t) {
-            try {
-                extractor->extractAttributes(application, policy.getIssuerMetadata(), *(*t), resolvedAttributes);
-            }
-            catch (exception& ex) {
-                m_log.error("caught exception extracting attributes: %s", ex.what());
-            }
-        }
-    }
-
     const AuthnContext* authnContext = ssoStatement->getAuthnContext();
 
-    AttributeFilter* filter = application.getAttributeFilter();
-    if (filter && !resolvedAttributes.empty()) {
-        BasicFilteringContext fc(
-            application,
-            resolvedAttributes,
-            policy.getIssuerMetadata(),
-            (authnContext && authnContext->getAuthnContextClassRef()) ? authnContext->getAuthnContextClassRef()->getReference() : NULL,
-            (authnContext && authnContext->getAuthnContextDeclRef()) ? authnContext->getAuthnContextDeclRef()->getReference() : NULL
-            );
-        Locker filtlocker(filter);
-        try {
-            filter->filterAttributes(fc, resolvedAttributes);
-        }
-        catch (exception& ex) {
-            m_log.error("caught exception filtering attributes: %s", ex.what());
-            m_log.error("dumping extracted attributes due to filtering exception");
-            for_each(resolvedAttributes.begin(), resolvedAttributes.end(), xmltooling::cleanup<shibsp::Attribute>());
-            resolvedAttributes.clear();
-        }
-    }
-
     try {
-        const EntityDescriptor* issuerMetadata =
-            policy.getIssuerMetadata() ? dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL;
+        // The context will handle deleting attributes and new tokens.
         auto_ptr<ResolutionContext> ctx(
             resolveAttributes(
                 application,
-                issuerMetadata,
+                policy.getIssuerMetadata(),
                 samlconstants::SAML20P_NS,
+                NULL,
                 ssoName,
                 (authnContext && authnContext->getAuthnContextClassRef()) ? authnContext->getAuthnContextClassRef()->getReference() : NULL,
                 (authnContext && authnContext->getAuthnContextDeclRef()) ? authnContext->getAuthnContextDeclRef()->getReference() : NULL,
-                &tokens,
-                &resolvedAttributes
+                &tokens
                 )
             );
 
         if (ctx.get()) {
             // Copy over any new tokens, but leave them in the context for cleanup.
             tokens.insert(tokens.end(), ctx->getResolvedAssertions().begin(), ctx->getResolvedAssertions().end());
-
-            // Copy over new attributes, and transfer ownership.
-            resolvedAttributes.insert(resolvedAttributes.end(), ctx->getResolvedAttributes().begin(), ctx->getResolvedAttributes().end());
-            ctx->getResolvedAttributes().clear();
         }
 
         // Now merge in bad tokens for caching.
@@ -411,7 +360,7 @@ string SAML2Consumer::implementProtocol(
             sessionExp,
             application,
             httpRequest.getRemoteAddr().c_str(),
-            issuerMetadata,
+            policy.getIssuerMetadata() ? dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL,
             samlconstants::SAML20P_NS,
             ssoName,
             ssoStatement->getAuthnInstant() ? ssoStatement->getAuthnInstant()->getRawData() : NULL,
@@ -419,20 +368,18 @@ string SAML2Consumer::implementProtocol(
             (authnContext && authnContext->getAuthnContextClassRef()) ? authnContext->getAuthnContextClassRef()->getReference() : NULL,
             (authnContext && authnContext->getAuthnContextDeclRef()) ? authnContext->getAuthnContextDeclRef()->getReference() : NULL,
             &tokens,
-            &resolvedAttributes
+            ctx.get() ? &ctx->getResolvedAttributes() : NULL
             );
 
         if (ownedName)
             delete ssoName;
         for_each(ownedtokens.begin(), ownedtokens.end(), xmltooling::cleanup<saml2::Assertion>());
-        for_each(resolvedAttributes.begin(), resolvedAttributes.end(), xmltooling::cleanup<shibsp::Attribute>());
         return key;
     }
     catch (exception&) {
         if (ownedName)
             delete ssoName;
         for_each(ownedtokens.begin(), ownedtokens.end(), xmltooling::cleanup<saml2::Assertion>());
-        for_each(resolvedAttributes.begin(), resolvedAttributes.end(), xmltooling::cleanup<shibsp::Attribute>());
         throw;
     }
 }

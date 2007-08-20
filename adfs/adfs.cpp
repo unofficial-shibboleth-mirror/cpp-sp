@@ -50,10 +50,6 @@
 #include <xercesc/util/XMLUniDefs.hpp>
 
 #ifndef SHIBSP_LITE
-# include <shibsp/attribute/Attribute.h>
-# include <shibsp/attribute/filtering/AttributeFilter.h>
-# include <shibsp/attribute/filtering/BasicFilteringContext.h>
-# include <shibsp/attribute/resolver/AttributeExtractor.h>
 # include <shibsp/attribute/resolver/ResolutionContext.h>
 # include <saml/SAMLConfig.h>
 # include <saml/saml1/core/Assertions.h>
@@ -561,41 +557,6 @@ string ADFSConsumer::implementProtocol(
 
     // We've successfully "accepted" the SSO token.
     // To complete processing, we need to extract and resolve attributes and then create the session.
-    vector<Attribute*> resolvedAttributes;
-    AttributeExtractor* extractor = application.getAttributeExtractor();
-    if (extractor) {
-        m_log.debug("extracting pushed attributes...");
-        Locker extlocker(extractor);
-        if (n) {
-            try {
-                extractor->extractAttributes(application, policy.getIssuerMetadata(), *n, resolvedAttributes);
-            }
-            catch (exception& ex) {
-                m_log.error("caught exception extracting attributes: %s", ex.what());
-            }
-        }
-        try {
-            extractor->extractAttributes(application, policy.getIssuerMetadata(), *token, resolvedAttributes);
-        }
-        catch (exception& ex) {
-            m_log.error("caught exception extracting attributes: %s", ex.what());
-        }
-
-        AttributeFilter* filter = application.getAttributeFilter();
-        if (filter && !resolvedAttributes.empty()) {
-            BasicFilteringContext fc(application, resolvedAttributes, policy.getIssuerMetadata(), ssoStatement->getAuthenticationMethod());
-            Locker filtlocker(filter);
-            try {
-                filter->filterAttributes(fc, resolvedAttributes);
-            }
-            catch (exception& ex) {
-                m_log.error("caught exception filtering attributes: %s", ex.what());
-                m_log.error("dumping extracted attributes due to filtering exception");
-                for_each(resolvedAttributes.begin(), resolvedAttributes.end(), xmltooling::cleanup<shibsp::Attribute>());
-                resolvedAttributes.clear();
-            }
-        }
-    }
 
     // Normalize the SAML 1.x NameIdentifier...
     auto_ptr<saml2::NameID> nameid(n ? saml2::NameIDBuilder::buildNameID() : NULL);
@@ -605,52 +566,39 @@ string ADFSConsumer::implementProtocol(
         nameid->setNameQualifier(n->getNameQualifier());
     }
 
-    const EntityDescriptor* issuerMetadata =
-        policy.getIssuerMetadata() ? dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL;
-    auto_ptr<ResolutionContext> ctx(
+    // The context will handle deleting attributes and new tokens.
+        auto_ptr<ResolutionContext> ctx(
         resolveAttributes(
             application,
-            issuerMetadata,
+            policy.getIssuerMetadata(),
             m_protocol.get(),
+            n,
             nameid.get(),
             ssoStatement->getAuthenticationMethod(),
             NULL,
-            &tokens,
-            &resolvedAttributes
+            &tokens
             )
         );
 
     if (ctx.get()) {
         // Copy over any new tokens, but leave them in the context for cleanup.
         tokens.insert(tokens.end(), ctx->getResolvedAssertions().begin(), ctx->getResolvedAssertions().end());
-
-        // Copy over new attributes, and transfer ownership.
-        resolvedAttributes.insert(resolvedAttributes.end(), ctx->getResolvedAttributes().begin(), ctx->getResolvedAttributes().end());
-        ctx->getResolvedAttributes().clear();
     }
 
-    try {
-        string key = application.getServiceProvider().getSessionCache()->insert(
-            now + lifetime.second,
-            application,
-            httpRequest.getRemoteAddr().c_str(),
-            issuerMetadata,
-            m_protocol.get(),
-            nameid.get(),
-            ssoStatement->getAuthenticationInstant() ? ssoStatement->getAuthenticationInstant()->getRawData() : NULL,
-            NULL,
-            ssoStatement->getAuthenticationMethod(),
-            NULL,
-            &tokens,
-            &resolvedAttributes
-            );
-        for_each(resolvedAttributes.begin(), resolvedAttributes.end(), xmltooling::cleanup<shibsp::Attribute>());
-        return key;
-    }
-    catch (exception&) {
-        for_each(resolvedAttributes.begin(), resolvedAttributes.end(), xmltooling::cleanup<shibsp::Attribute>());
-        throw;
-    }
+    return application.getServiceProvider().getSessionCache()->insert(
+        now + lifetime.second,
+        application,
+        httpRequest.getRemoteAddr().c_str(),
+        policy.getIssuerMetadata() ? dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL,
+        m_protocol.get(),
+        nameid.get(),
+        ssoStatement->getAuthenticationInstant() ? ssoStatement->getAuthenticationInstant()->getRawData() : NULL,
+        NULL,
+        ssoStatement->getAuthenticationMethod(),
+        NULL,
+        &tokens,
+        ctx.get() ? &ctx->getResolvedAttributes() : NULL
+        );
 }
 
 #endif

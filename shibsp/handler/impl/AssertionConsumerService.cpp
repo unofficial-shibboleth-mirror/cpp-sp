@@ -29,6 +29,10 @@
 
 # include <ctime>
 #ifndef SHIBSP_LITE
+# include "attribute/Attribute.h"
+# include "attribute/filtering/AttributeFilter.h"
+# include "attribute/filtering/BasicFilteringContext.h"
+# include "attribute/resolver/AttributeExtractor.h"
 # include "attribute/resolver/AttributeResolver.h"
 # include "attribute/resolver/ResolutionContext.h"
 # include "security/SecurityPolicy.h"
@@ -241,29 +245,112 @@ void AssertionConsumerService::checkAddress(
 }
 
 #ifndef SHIBSP_LITE
+
+class SHIBSP_DLLLOCAL DummyContext : public ResolutionContext
+{
+public:
+    DummyContext(const vector<Attribute*>& attributes) : m_attributes(attributes) {
+    }
+
+    virtual ~DummyContext() {
+        for_each(m_attributes.begin(), m_attributes.end(), xmltooling::cleanup<Attribute>());
+    }
+
+    vector<Attribute*>& getResolvedAttributes() {
+        return m_attributes;
+    }
+    vector<Assertion*>& getResolvedAssertions() {
+        return m_tokens;
+    }
+
+private:
+    vector<Attribute*> m_attributes;
+    static vector<Assertion*> m_tokens; // never any tokens, so just share an empty vector
+};
+
+vector<Assertion*> DummyContext::m_tokens;
+
 ResolutionContext* AssertionConsumerService::resolveAttributes(
     const Application& application,
-    const saml2md::EntityDescriptor* issuer,
+    const saml2md::RoleDescriptor* issuer,
     const XMLCh* protocol,
+    const saml1::NameIdentifier* v1nameid,
     const saml2::NameID* nameid,
     const XMLCh* authncontext_class,
     const XMLCh* authncontext_decl,
-    const vector<const Assertion*>* tokens,
-    const vector<Attribute*>* attributes
+    const vector<const Assertion*>* tokens
     ) const
 {
+    // First we do the extraction of any pushed information.
+    vector<Attribute*> resolvedAttributes;
+    AttributeExtractor* extractor = application.getAttributeExtractor();
+    if (extractor) {
+        m_log.debug("extracting pushed attributes...");
+        Locker extlocker(extractor);
+        if (v1nameid) {
+            try {
+                extractor->extractAttributes(application, issuer, *v1nameid, resolvedAttributes);
+            }
+            catch (exception& ex) {
+                m_log.error("caught exception extracting attributes: %s", ex.what());
+            }
+        }
+        else if (nameid) {
+            try {
+                extractor->extractAttributes(application, issuer, *nameid, resolvedAttributes);
+            }
+            catch (exception& ex) {
+                m_log.error("caught exception extracting attributes: %s", ex.what());
+            }
+        }
+        if (tokens) {
+            for (vector<const Assertion*>::const_iterator t = tokens->begin(); t!=tokens->end(); ++t) {
+                try {
+                    extractor->extractAttributes(application, issuer, *(*t), resolvedAttributes);
+                }
+                catch (exception& ex) {
+                    m_log.error("caught exception extracting attributes: %s", ex.what());
+                }
+            }
+        }
+
+        AttributeFilter* filter = application.getAttributeFilter();
+        if (filter && !resolvedAttributes.empty()) {
+            BasicFilteringContext fc(application, resolvedAttributes, issuer, authncontext_class);
+            Locker filtlocker(filter);
+            try {
+                filter->filterAttributes(fc, resolvedAttributes);
+            }
+            catch (exception& ex) {
+                m_log.error("caught exception filtering attributes: %s", ex.what());
+                m_log.error("dumping extracted attributes due to filtering exception");
+                for_each(resolvedAttributes.begin(), resolvedAttributes.end(), xmltooling::cleanup<shibsp::Attribute>());
+                resolvedAttributes.clear();
+            }
+        }
+    }
+    
     try {
         AttributeResolver* resolver = application.getAttributeResolver();
-        if (!resolver) {
+        if (!resolver && !resolvedAttributes.empty()) {
             m_log.info("no AttributeResolver available, skipping resolution");
-            return NULL;
+            return new DummyContext(resolvedAttributes);
         }
         
         m_log.debug("resolving attributes...");
 
         Locker locker(resolver);
         auto_ptr<ResolutionContext> ctx(
-            resolver->createResolutionContext(application, issuer, protocol, nameid, authncontext_class, authncontext_decl, tokens, attributes)
+            resolver->createResolutionContext(
+                application,
+                dynamic_cast<const saml2md::EntityDescriptor*>(issuer->getParent()),
+                protocol,
+                nameid,
+                authncontext_class,
+                authncontext_decl,
+                tokens,
+                &resolvedAttributes
+                )
             );
         resolver->resolveAttributes(*ctx.get());
         return ctx.release();
@@ -272,6 +359,8 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
         m_log.error("attribute resolution failed: %s", ex.what());
     }
     
+    if (!resolvedAttributes.empty())
+        return new DummyContext(resolvedAttributes);
     return NULL;
 }
 #endif

@@ -27,6 +27,7 @@
 #include <shibsp/handler/RemotedHandler.h>
 #ifndef SHIBSP_LITE
 # include <saml/binding/MessageDecoder.h>
+# include <saml/saml1/core/Assertions.h>
 # include <saml/saml2/metadata/Metadata.h>
 #endif
 #include <xmltooling/unicode.h>
@@ -85,28 +86,30 @@ namespace shibsp {
             ) const=0;
 
         /**
-         * Attempt SSO-initiated attribute resolution using the supplied information.
+         * Attempt SSO-initiated attribute resolution using the supplied information,
+         * including NameID and token extraction and filtering followed by
+         * secondary resolution.
          * 
          * <p>The caller must free the returned context handle.
          * 
-         * @param application   reference to application receiving message
-         * @param issuer        source of SSO tokens
-         * @param protocol      SSO protocol used
-         * @param nameid        identifier of principal
+         * @param application           reference to application receiving message
+         * @param issuer                source of SSO tokens
+         * @param protocol              SSO protocol used
+         * @param v1nameid              identifier of principal in SAML 1.x form, if any
+         * @param nameid                identifier of principal in SAML 2.0 form
          * @param authncontext_class    method/category of authentication event, if known
-         * @param authncontext_decl specifics of authentication event, if known
-         * @param tokens        available assertions, if any
-         * @param attributes    attributes already extracted, if any
+         * @param authncontext_decl     specifics of authentication event, if known
+         * @param tokens                available assertions, if any
          */
         ResolutionContext* resolveAttributes(
             const Application& application,
-            const opensaml::saml2md::EntityDescriptor* issuer=NULL,
+            const opensaml::saml2md::RoleDescriptor* issuer=NULL,
             const XMLCh* protocol=NULL,
+            const opensaml::saml1::NameIdentifier* v1nameid=NULL,
             const opensaml::saml2::NameID* nameid=NULL,
             const XMLCh* authncontext_class=NULL,
             const XMLCh* authncontext_decl=NULL,
-            const std::vector<const opensaml::Assertion*>* tokens=NULL,
-            const std::vector<Attribute*>* attributes=NULL
+            const std::vector<const opensaml::Assertion*>* tokens=NULL
             ) const;
 #endif
         
