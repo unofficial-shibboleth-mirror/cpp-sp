@@ -44,8 +44,6 @@
 			<Extensions>
 				<!-- This is a Shibboleth extension to express attribute scope rules. -->
 				<shibmd:Scope>example.org</shibmd:Scope>
-				<!-- This enables testing against Internet2's test site. -->
-				<shibmd:Scope>example.edu</shibmd:Scope>
 			</Extensions>
 			
 			<!--
@@ -68,7 +66,7 @@
 			may provide specific guidance on this.
 			-->
 			<KeyDescriptor use="signing">
-			    <ds:KeyInfo Id="examplekey">
+			    <ds:KeyInfo>
 			        <ds:X509Data>
 			        	<ds:X509Certificate>
 MIICkjCCAfugAwIBAgIJAK7VCxPsh8yrMA0GCSqGSIb3DQEBBAUAMDsxCzAJBgNV
@@ -124,8 +122,6 @@ w14fpgtAk2x8xD7cpHsZ073JHxEcjEetD8PTtrFdNu6GwIrv6Sk=
 			<Extensions>
 				<!-- This is a Shibboleth extension to express attribute scope rules. -->
 				<shibmd:Scope>example.org</shibmd:Scope>
-				<!-- This enables testing against Internet2's test site. -->
-				<shibmd:Scope>example.edu</shibmd:Scope>
 			</Extensions>
 			
 			<!-- The certificate has to be repeated here (or a different one specified if necessary). -->
@@ -192,40 +188,34 @@ w14fpgtAk2x8xD7cpHsZ073JHxEcjEetD8PTtrFdNu6GwIrv6Sk=
 		
 			<!--
 			One or more KeyDescriptors tell IdPs how the SP will authenticate itself. A single
-			descriptor can be used for both signing and for client-TLS if its use attribute
-			is set to "signing". You can place an X.509 certificate directly in this element
+			descriptor can be used for signing, TLS, and encryption if its use attribute is
+			omitted. You can place an X.509 certificate directly in this element
 			to specify the exact public key certificate to use. This only reflects the public
-			half of the keypair used by the IdP.
+			half of the keypair used by the SP.
 			
 			The SP uses the private key included in its Credentials	configuration element
 			for both XML signing and client-side TLS. An IdP will then try to match the
 			certificates in the KeyDescriptors here to the ones presented in the XML
 			Signature or SSL session.
-			
-			When an inline certificate is used, do not assume that an expired certificate
-			will be detected and rejected. Often only the key will be extracted without
-			regard for the certificate, but at the same time, it may be risky to include
-			an expired certificate and assume it will work. Your SAML implementation
-			may provide specific guidance on this.
 			-->
-			<KeyDescriptor use="signing">
+			<KeyDescriptor>
 			    <ds:KeyInfo>
 			        <ds:X509Data>
 			        	<ds:X509Certificate>
-MIICjzCCAfigAwIBAgIJAKk8t1hYcMkhMA0GCSqGSIb3DQEBBAUAMDoxCzAJBgNV
-BAYTAlVTMRIwEAYDVQQKEwlJbnRlcm5ldDIxFzAVBgNVBAMTDnNwLmV4YW1wbGUu
-b3JnMB4XDTA1MDYyMDE1NDgzNFoXDTMyMTEwNTE1NDgzNFowOjELMAkGA1UEBhMC
-VVMxEjAQBgNVBAoTCUludGVybmV0MjEXMBUGA1UEAxMOc3AuZXhhbXBsZS5vcmcw
-gZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBANlZ1L1mKzYbUVKiMQLhZlfGDyYa
-/jjCiaXP0WhLNgvJpOTeajvsrApYNnFX5MLNzuC3NeQIjXUNLN2Yo2MCSthBIOL5
-qE5dka4z9W9zytoflW1LmJ8vXpx8Ay/meG4z//J5iCpYVEquA0xl28HUIlownZUF
-7w7bx0cF/02qrR23AgMBAAGjgZwwgZkwHQYDVR0OBBYEFJZiO1qsyAyc3HwMlL9p
-JpN6fbGwMGoGA1UdIwRjMGGAFJZiO1qsyAyc3HwMlL9pJpN6fbGwoT6kPDA6MQsw
-CQYDVQQGEwJVUzESMBAGA1UEChMJSW50ZXJuZXQyMRcwFQYDVQQDEw5zcC5leGFt
-cGxlLm9yZ4IJAKk8t1hYcMkhMAwGA1UdEwQFMAMBAf8wDQYJKoZIhvcNAQEEBQAD
-gYEAMFq/UeSQyngE0GpZueyD2UW0M358uhseYOgGEIfm+qXIFQF6MYwNoX7WFzhC
-LJZ2E6mEvZZFHCHUtl7mGDvsRwgZ85YCtRbvleEpqfgNQToto9pLYe+X6vvH9Z6p
-gmYsTmak+kxO93JprrOd9xp8aZPMEprL7VCdrhbZEfyYER0=
+						MIICjzCCAfigAwIBAgIJAKk8t1hYcMkhMA0GCSqGSIb3DQEBBAUAMDoxCzAJBgNV
+						BAYTAlVTMRIwEAYDVQQKEwlJbnRlcm5ldDIxFzAVBgNVBAMTDnNwLmV4YW1wbGUu
+						b3JnMB4XDTA1MDYyMDE1NDgzNFoXDTMyMTEwNTE1NDgzNFowOjELMAkGA1UEBhMC
+						VVMxEjAQBgNVBAoTCUludGVybmV0MjEXMBUGA1UEAxMOc3AuZXhhbXBsZS5vcmcw
+						gZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBANlZ1L1mKzYbUVKiMQLhZlfGDyYa
+						/jjCiaXP0WhLNgvJpOTeajvsrApYNnFX5MLNzuC3NeQIjXUNLN2Yo2MCSthBIOL5
+						qE5dka4z9W9zytoflW1LmJ8vXpx8Ay/meG4z//J5iCpYVEquA0xl28HUIlownZUF
+						7w7bx0cF/02qrR23AgMBAAGjgZwwgZkwHQYDVR0OBBYEFJZiO1qsyAyc3HwMlL9p
+						JpN6fbGwMGoGA1UdIwRjMGGAFJZiO1qsyAyc3HwMlL9pJpN6fbGwoT6kPDA6MQsw
+						CQYDVQQGEwJVUzESMBAGA1UEChMJSW50ZXJuZXQyMRcwFQYDVQQDEw5zcC5leGFt
+						cGxlLm9yZ4IJAKk8t1hYcMkhMAwGA1UdEwQFMAMBAf8wDQYJKoZIhvcNAQEEBQAD
+						gYEAMFq/UeSQyngE0GpZueyD2UW0M358uhseYOgGEIfm+qXIFQF6MYwNoX7WFzhC
+						LJZ2E6mEvZZFHCHUtl7mGDvsRwgZ85YCtRbvleEpqfgNQToto9pLYe+X6vvH9Z6p
+						gmYsTmak+kxO93JprrOd9xp8aZPMEprL7VCdrhbZEfyYER0=
 			        	</ds:X509Certificate>
 			        </ds:X509Data>
 			    </ds:KeyInfo>
