@@ -116,6 +116,15 @@ namespace shibsp {
         }
 
         /**
+         * Returns all of the effective names for the Attribute.
+         *
+         * @return mutable array of identifiers, with the primary ID in the first position
+         */
+        std::vector<std::string>& getAliases() {
+            return m_id;
+        }
+
+        /**
          * Sets whether case sensitivity should apply to basic value comparisons.
          *
          * @param caseSensitive  true iff value comparisons should be case sensitive

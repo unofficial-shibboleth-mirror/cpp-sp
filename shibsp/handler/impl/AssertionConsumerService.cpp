@@ -281,11 +281,30 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
     const vector<const Assertion*>* tokens
     ) const
 {
+    const saml2md::EntityDescriptor* entity = issuer ? dynamic_cast<const saml2md::EntityDescriptor*>(issuer->getParent()) : NULL;
+
     // First we do the extraction of any pushed information, including from metadata.
     vector<Attribute*> resolvedAttributes;
     AttributeExtractor* extractor = application.getAttributeExtractor();
     if (extractor) {
         Locker extlocker(extractor);
+        if (entity) {
+            pair<bool,const char*> prefix = application.getString("metadataAttributePrefix");
+            if (prefix.first) {
+                m_log.debug("extracting metadata-derived attributes...");
+                try {
+                    extractor->extractAttributes(application, issuer, *entity, resolvedAttributes);
+                    for (vector<Attribute*>::iterator a = resolvedAttributes.begin(); a != resolvedAttributes.end(); ++a) {
+                        vector<string>& ids = (*a)->getAliases();
+                        for (vector<string>::iterator id = ids.begin(); id != ids.end(); ++id)
+                            *id = prefix.second + *id;
+                    }
+                }
+                catch (exception& ex) {
+                    m_log.error("caught exception extracting attributes: %s", ex.what());
+                }
+            }
+        }
         m_log.debug("extracting pushed attributes...");
         if (v1nameid) {
             try {
@@ -339,7 +358,7 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
             auto_ptr<ResolutionContext> ctx(
                 resolver->createResolutionContext(
                     application,
-                    issuer ? dynamic_cast<const saml2md::EntityDescriptor*>(issuer->getParent()) : NULL,
+                    entity,
                     protocol,
                     nameid,
                     authncontext_class,

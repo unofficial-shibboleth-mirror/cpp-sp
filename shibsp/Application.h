@@ -79,9 +79,6 @@ namespace shibsp {
         /** Shared lock for manipulating application state. */
         mutable xmltooling::RWLock* m_lock;
 
-        /** Cache of entity attributes. */
-        mutable std::map< std::string,std::multimap<std::string,const Attribute*> > m_entityAttributes;
-
         /** Pairs of raw and normalized CGI header names to clear. */
         mutable std::vector< std::pair<std::string,std::string> > m_unsetHeaders;
 
@@ -206,14 +203,6 @@ namespace shibsp {
          * @param request   SP request to clear
          */
         virtual void clearAttributeHeaders(SPRequest& request) const;
-
-        /**
-         * Returns an indexed set of attributes associated with an entity (as opposed to a user).
-         *
-         * @param entityID  unique ID of entity
-         * @return a map of attributes keyed by their ID
-         */
-        virtual const std::multimap<std::string,const Attribute*>& getEntityAttributes(const char* entityID) const;
 
         /**
          * Returns the default SessionInitiator when automatically requesting a session.

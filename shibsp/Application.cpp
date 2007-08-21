@@ -40,8 +40,6 @@ Application::Application(const ServiceProvider* sp) : m_sp(sp), m_lock(RWLock::c
 Application::~Application()
 {
     delete m_lock;
-    for (map< string,multimap<string,const Attribute*> >::iterator i = m_entityAttributes.begin(); i!=m_entityAttributes.end(); ++i)
-        for_each(i->second.begin(), i->second.end(), cleanup_const_pair<string,Attribute>());
 }
 
 pair<string,const char*> Application::getCookieNameProps(const char* prefix) const
@@ -100,10 +98,4 @@ void Application::clearAttributeHeaders(SPRequest& request) const
     SharedLock unsetLock(m_lock, false);
     for (vector< pair<string,string> >::const_iterator i = m_unsetHeaders.begin(); i!=m_unsetHeaders.end(); ++i)
         request.clearHeader(i->first.c_str(), i->second.c_str());
-}
-
-const multimap<string,const Attribute*>& Application::getEntityAttributes(const char* entityID) const
-{
-    // TODO
-    return m_entityAttributes[entityID];
 }
