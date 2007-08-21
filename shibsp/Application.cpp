@@ -22,9 +22,27 @@
 
 #include "internal.h"
 #include "Application.h"
+#include "SPRequest.h"
+#include "ServiceProvider.h"
+#include "attribute/Attribute.h"
+#include "remoting/ListenerService.h"
+
+#include <algorithm>
 
 using namespace shibsp;
+using namespace xmltooling;
 using namespace std;
+
+Application::Application(const ServiceProvider* sp) : m_sp(sp), m_lock(RWLock::create())
+{
+}
+
+Application::~Application()
+{
+    delete m_lock;
+    for (map< string,multimap<string,const Attribute*> >::iterator i = m_entityAttributes.begin(); i!=m_entityAttributes.end(); ++i)
+        for_each(i->second.begin(), i->second.end(), cleanup_const_pair<string,Attribute>());
+}
 
 pair<string,const char*> Application::getCookieNameProps(const char* prefix) const
 {
@@ -43,4 +61,49 @@ pair<string,const char*> Application::getCookieNameProps(const char* prefix) con
     
     // Shouldn't happen, but just in case..
     return pair<string,const char*>(prefix,defProps);
+}
+
+void Application::clearAttributeHeaders(SPRequest& request) const
+{
+    if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
+        for (vector< pair<string,string> >::const_iterator i = m_unsetHeaders.begin(); i!=m_unsetHeaders.end(); ++i)
+            request.clearHeader(i->first.c_str(), i->second.c_str());
+        return;
+    }
+
+    m_lock->rdlock();
+    if (m_unsetHeaders.empty()) {
+        // No headers yet, so we have to request them from the remote half.
+        m_lock->unlock();
+        m_lock->wrlock();
+        if (m_unsetHeaders.empty()) {
+            SharedLock wrlock(m_lock, false);
+            string addr=string(getId()) + "::getHeaders::Application";
+            DDF out,in = DDF(addr.c_str());
+            DDFJanitor jin(in),jout(out);
+            out = getServiceProvider().getListenerService()->send(in);
+            if (out.islist()) {
+                DDF header = out.first();
+                while (header.isstring()) {
+                    m_unsetHeaders.push_back(pair<string,string>(header.name(),header.string()));
+                    header = out.next();
+                }
+            }
+        }
+        else {
+            m_lock->unlock();
+        }
+        m_lock->rdlock();
+    }
+
+    // Now holding read lock.
+    SharedLock unsetLock(m_lock, false);
+    for (vector< pair<string,string> >::const_iterator i = m_unsetHeaders.begin(); i!=m_unsetHeaders.end(); ++i)
+        request.clearHeader(i->first.c_str(), i->second.c_str());
+}
+
+const multimap<string,const Attribute*>& Application::getEntityAttributes(const char* entityID) const
+{
+    // TODO
+    return m_entityAttributes[entityID];
 }

@@ -424,6 +424,34 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
             }
             request.setHeader(a->first.c_str(), header.c_str());
         }
+
+        // Maybe export metadata attributes.
+        pair<bool,const char*> prefix = app->getString("metadataAttributePrefix");
+        if (prefix.first && session->getEntityID()) {
+            const multimap<string,const Attribute*>& eattributes = app->getEntityAttributes(session->getEntityID());
+            for (multimap<string,const Attribute*>::const_iterator a = eattributes.begin(); a!=eattributes.end(); ++a) {
+                string hname = string(prefix.second) + a->first;
+                string header(request.getSecureHeader(hname.c_str()));
+                const vector<string>& vals = a->second->getSerializedValues();
+                for (vector<string>::const_iterator v = vals.begin(); v!=vals.end(); ++v) {
+                    if (!header.empty())
+                        header += ";";
+                    string::size_type pos = v->find_first_of(';',string::size_type(0));
+                    if (pos!=string::npos) {
+                        string value(*v);
+                        for (; pos != string::npos; pos = value.find_first_of(';',pos)) {
+                            value.insert(pos, "\\");
+                            pos += 2;
+                        }
+                        header += value;
+                    }
+                    else {
+                        header += (*v);
+                    }
+                }
+                request.setHeader(hname.c_str(), header.c_str());
+            }
+        }
     
         return make_pair(false,0);
     }

@@ -28,7 +28,6 @@
 #include "ServiceProvider.h"
 #include "SessionCache.h"
 #include "SPConfig.h"
-#include "SPRequest.h"
 #include "handler/SessionInitiator.h"
 #include "remoting/ListenerService.h"
 #include "util/DOMPropertySet.h"
@@ -87,9 +86,6 @@ namespace {
         XMLApplication(const ServiceProvider*, const DOMElement* e, const XMLApplication* base=NULL);
         ~XMLApplication() { cleanup(); }
     
-        // Application
-        const ServiceProvider& getServiceProvider() const {return *m_sp;}
-        const char* getId() const {return getString("id").second;}
         const char* getHash() const {return m_hash.c_str();}
 
 #ifndef SHIBSP_LITE
@@ -139,7 +135,6 @@ namespace {
             return (m_remoteUsers.empty() && m_base) ? m_base->getRemoteUserAttributeIds() : m_remoteUsers;
         }
 
-        void clearAttributeHeaders(SPRequest& request) const;
         const SessionInitiator* getDefaultSessionInitiator() const;
         const SessionInitiator* getSessionInitiatorById(const char* id) const;
         const Handler* getDefaultAssertionConsumerService() const;
@@ -164,7 +159,6 @@ namespace {
     
     private:
         void cleanup();
-        const ServiceProvider* m_sp;   // this is ok because its locking scope includes us
         const XMLApplication* m_base;
         string m_hash;
 #ifndef SHIBSP_LITE
@@ -184,10 +178,8 @@ namespace {
         map<const XMLCh*,PropertySet*> m_partyMap;
 #endif
 #endif
+        std::set<std::string> m_remoteUsers;
         vector<string> m_frontLogout,m_backLogout;
-        set<string> m_remoteUsers;
-        mutable vector< pair<string,string> > m_unsetHeaders;
-        RWLock* m_unsetLock;
 
         // manage handler objects
         vector<Handler*> m_handlers;
@@ -456,13 +448,13 @@ XMLApplication::XMLApplication(
     const ServiceProvider* sp,
     const DOMElement* e,
     const XMLApplication* base
-    ) : m_sp(sp), m_base(base),
+    ) : Application(sp), m_base(base),
 #ifndef SHIBSP_LITE
         m_metadata(NULL), m_trust(NULL),
         m_attrExtractor(NULL), m_attrFilter(NULL), m_attrResolver(NULL),
         m_credResolver(NULL), m_partyDefault(NULL),
 #endif
-        m_unsetLock(NULL), m_acsDefault(NULL), m_sessionInitDefault(NULL), m_artifactResolutionDefault(NULL)
+        m_acsDefault(NULL), m_sessionInitDefault(NULL), m_artifactResolutionDefault(NULL)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("XMLApplication");
@@ -513,6 +505,16 @@ XMLApplication::XMLApplication(
 
             attributes = getString("unsetHeaders");
             if (attributes.first) {
+                string transformedprefix("HTTP_");
+                const char* pch;
+                pair<bool,const char*> prefix = getString("metadataAttributePrefix");
+                if (prefix.first) {
+                    pch = prefix.second;
+                    while (*pch) {
+                        transformedprefix += (isalnum(*pch) ? toupper(*pch) : '_');
+                        pch++;
+                    }
+                }
                 char* dup = strdup(attributes.second);
                 char* pos;
                 char* start = dup;
@@ -525,13 +527,15 @@ XMLApplication::XMLApplication(
                     if (pos)
                         *pos=0;
 
-                    string transformed("HTTP_");
-                    const char* pch = start;
+                    string transformed;
+                    pch = start;
                     while (*pch) {
                         transformed += (isalnum(*pch) ? toupper(*pch) : '_');
                         pch++;
                     }
-                    m_unsetHeaders.push_back(pair<string,string>(start,transformed));
+                    m_unsetHeaders.push_back(pair<string,string>(start,string("HTTP_") + transformed));
+                    if (prefix.first)
+                        m_unsetHeaders.push_back(pair<string,string>(string(prefix.second) + start, transformedprefix + transformed));
                     start = pos ? pos+1 : NULL;
                 }
                 free(dup);
@@ -805,14 +809,26 @@ XMLApplication::XMLApplication(
                         m_unsetHeaders.push_back(pair<string,string>("Shib-Application-ID","HTTP_SHIB_APPLICATION_ID"));
                 }
                 else {
+                    string transformedprefix("HTTP_");
+                    const char* pch;
+                    pair<bool,const char*> prefix = getString("metadataAttributePrefix");
+                    if (prefix.first) {
+                        pch = prefix.second;
+                        while (*pch) {
+                            transformedprefix += (isalnum(*pch) ? toupper(*pch) : '_');
+                            pch++;
+                        }
+                    }
                     for (vector<string>::const_iterator hdr = unsetHeaders.begin(); hdr!=unsetHeaders.end(); ++hdr) {
-                        string transformed("HTTP_");
-                        const char* pch = hdr->c_str();
+                        string transformed;
+                        pch = hdr->c_str();
                         while (*pch) {
                             transformed += (isalnum(*pch) ? toupper(*pch) : '_');
                             pch++;
                         }
-                        m_unsetHeaders.push_back(pair<string,string>(*hdr,transformed));
+                        m_unsetHeaders.push_back(pair<string,string>(*hdr, string("HTTP_") + transformed));
+                        if (prefix.first)
+                            m_unsetHeaders.push_back(pair<string,string>(string(prefix.second) + *hdr, transformedprefix + transformed));
                     }
                     m_unsetHeaders.push_back(pair<string,string>("Shib-Application-ID","HTTP_SHIB_APPLICATION_ID"));
                 }
@@ -849,11 +865,8 @@ XMLApplication::XMLApplication(
         }
 #endif
 
-        // In process only, we need a shared lock around accessing the header clearing list.
-        if (!conf.isEnabled(SPConfig::OutOfProcess)) {
-            m_unsetLock = RWLock::create();
-        }
-        else if (!conf.isEnabled(SPConfig::InProcess)) {
+        // Out of process only, we register a listener endpoint.
+        if (!conf.isEnabled(SPConfig::InProcess)) {
             ListenerService* listener = sp->getListenerService(false);
             if (listener) {
                 string addr=string(getId()) + "::getHeaders::Application";
@@ -882,8 +895,6 @@ void XMLApplication::cleanup()
         string addr=string(getId()) + "::getHeaders::Application";
         listener->unregListener(addr.c_str(),this);
     }
-    delete m_unsetLock;
-    m_unsetLock = NULL;
     for_each(m_handlers.begin(),m_handlers.end(),xmltooling::cleanup<Handler>());
     m_handlers.clear();
 #ifndef SHIBSP_LITE
@@ -1093,45 +1104,6 @@ const Handler* XMLApplication::getHandler(const char* path) const
     if (i!=m_handlerMap.end())
         return i->second;
     return m_base ? m_base->getHandler(path) : NULL;
-}
-
-void XMLApplication::clearAttributeHeaders(SPRequest& request) const
-{
-    if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
-        for (vector< pair<string,string> >::const_iterator i = m_unsetHeaders.begin(); i!=m_unsetHeaders.end(); ++i)
-            request.clearHeader(i->first.c_str(), i->second.c_str());
-        return;
-    }
-
-    m_unsetLock->rdlock();
-    if (m_unsetHeaders.empty()) {
-        // No headers yet, so we have to request them from the remote half.
-        m_unsetLock->unlock();
-        m_unsetLock->wrlock();
-        if (m_unsetHeaders.empty()) {
-            SharedLock wrlock(m_unsetLock, false);
-            string addr=string(getId()) + "::getHeaders::Application";
-            DDF out,in = DDF(addr.c_str());
-            DDFJanitor jin(in),jout(out);
-            out = getServiceProvider().getListenerService()->send(in);
-            if (out.islist()) {
-                DDF header = out.first();
-                while (header.isstring()) {
-                    m_unsetHeaders.push_back(pair<string,string>(header.name(),header.string()));
-                    header = out.next();
-                }
-            }
-        }
-        else {
-            m_unsetLock->unlock();
-        }
-        m_unsetLock->rdlock();
-    }
-
-    // Now holding read lock.
-    SharedLock unsetLock(m_unsetLock, false);
-    for (vector< pair<string,string> >::const_iterator i = m_unsetHeaders.begin(); i!=m_unsetHeaders.end(); ++i)
-        request.clearHeader(i->first.c_str(), i->second.c_str());
 }
 
 short XMLConfigImpl::acceptNode(const DOMNode* node) const

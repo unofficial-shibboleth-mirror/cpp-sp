@@ -33,6 +33,7 @@
 # include <xmltooling/security/TrustEngine.h>
 #endif
 #include <xmltooling/io/HTTPRequest.h>
+#include <xmltooling/util/Threads.h>
 
 namespace shibsp {
     
@@ -41,10 +42,16 @@ namespace shibsp {
     class SHIBSP_API AttributeFilter;
     class SHIBSP_API AttributeResolver;
 #endif
+    class SHIBSP_API Attribute;
     class SHIBSP_API Handler;
     class SHIBSP_API ServiceProvider;
     class SHIBSP_API SessionInitiator;
     class SHIBSP_API SPRequest;
+
+#if defined (_MSC_VER)
+    #pragma warning( push )
+    #pragma warning( disable : 4251 )
+#endif
 
     /**
      * Interface to a Shibboleth Application instance.
@@ -59,23 +66,45 @@ namespace shibsp {
     {
         MAKE_NONCOPYABLE(Application);
     protected:
-        Application() {}
+        /**
+         * Constructor.
+         *
+         * @param sp    parent ServiceProvider instance
+         */
+        Application(const ServiceProvider* sp);
+        
+        /** Pointer to parent SP instance. */
+        const ServiceProvider* m_sp;
+
+        /** Shared lock for manipulating application state. */
+        mutable xmltooling::RWLock* m_lock;
+
+        /** Cache of entity attributes. */
+        mutable std::map< std::string,std::multimap<std::string,const Attribute*> > m_entityAttributes;
+
+        /** Pairs of raw and normalized CGI header names to clear. */
+        mutable std::vector< std::pair<std::string,std::string> > m_unsetHeaders;
+
     public:
-        virtual ~Application() {}
+        virtual ~Application();
 
         /**
          * Returns the owning ServiceProvider instance.
          *
          * @return a locked ServiceProvider
          */
-        virtual const ServiceProvider& getServiceProvider() const=0;
+        const ServiceProvider& getServiceProvider() const {
+            return *m_sp;
+        }
 
         /**
          * Returns the Application's ID.
          * 
          * @return  the ID
          */        
-        virtual const char* getId() const=0;
+        virtual const char* getId() const {
+            return getString("id").second;
+        }
 
         /**
          * Returns a unique hash for the Application.
@@ -176,7 +205,15 @@ namespace shibsp {
          *
          * @param request   SP request to clear
          */
-        virtual void clearAttributeHeaders(SPRequest& request) const=0;
+        virtual void clearAttributeHeaders(SPRequest& request) const;
+
+        /**
+         * Returns an indexed set of attributes associated with an entity (as opposed to a user).
+         *
+         * @param entityID  unique ID of entity
+         * @return a map of attributes keyed by their ID
+         */
+        virtual const std::multimap<std::string,const Attribute*>& getEntityAttributes(const char* entityID) const;
 
         /**
          * Returns the default SessionInitiator when automatically requesting a session.
@@ -228,6 +265,11 @@ namespace shibsp {
          */
         virtual const Handler* getHandler(const char* path) const=0;
     };
+
+#if defined (_MSC_VER)
+    #pragma warning( pop )
+#endif
+
 };
 
 #endif /* __shibsp_app_h__ */
