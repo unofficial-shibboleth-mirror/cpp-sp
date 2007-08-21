@@ -521,22 +521,6 @@
 					>
 				</File>
 				<File
-					RelativePath=".\lite\GenericRequest.h"
-					>
-				</File>
-				<File
-					RelativePath=".\lite\GenericResponse.h"
-					>
-				</File>
-				<File
-					RelativePath=".\lite\HTTPRequest.h"
-					>
-				</File>
-				<File
-					RelativePath=".\lite\HTTPResponse.h"
-					>
-				</File>
-				<File
 					RelativePath=".\lite\SAMLConstants.h"
 					>
 				</File>
