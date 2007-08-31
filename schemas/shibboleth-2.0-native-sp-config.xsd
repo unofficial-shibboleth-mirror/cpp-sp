@@ -322,6 +322,7 @@
     			<choice minOccurs="0" maxOccurs="unbounded">
     				<element ref="conf:Path"/>
     				<element ref="conf:PathRegex"/>
+    				<element ref="conf:Query"/>
     			</choice>
     		</sequence>
     		<attribute name="scheme">
@@ -353,6 +354,7 @@
 				<choice minOccurs="0" maxOccurs="unbounded">
 					<element ref="conf:Path"/>
 					<element ref="conf:PathRegex"/>
+					<element ref="conf:Query"/>
 				</choice>
 			</sequence>
 			<attribute name="regex" type="conf:string" use="required"/>
@@ -373,6 +375,7 @@
     			<choice minOccurs="0" maxOccurs="unbounded">
     				<element ref="conf:Path"/>
     				<element ref="conf:PathRegex"/>
+    				<element ref="conf:Query"/>
     			</choice>
     		</sequence>
 			<attribute name="name" type="conf:string" use="required"/>
@@ -389,10 +392,27 @@
 					<element ref="conf:AccessControl"/>
 					<element ref="conf:AccessControlProvider"/>
 				</choice>
+				<element ref="conf:Query" minOccurs="0" maxOccurs="unbounded"/>
 			</sequence>
 			<attribute name="regex" type="conf:string" use="required"/>
 			<attribute name="ignoreCase" type="boolean" default="true"/>
 			<attribute name="applicationId" type="conf:string"/>
+			<attributeGroup ref="conf:ContentSettings"/>
+		</complexType>
+	</element>
+	
+	<element name="Query">
+		<complexType>
+			<sequence>
+				<choice minOccurs="0">
+					<element ref="conf:htaccess"/>
+					<element ref="conf:AccessControl"/>
+					<element ref="conf:AccessControlProvider"/>
+				</choice>
+				<element ref="conf:Query" minOccurs="0" maxOccurs="unbounded"/>
+			</sequence>
+			<attribute name="name" type="conf:string" use="required"/>
+			<attribute name="regex" type="conf:string"/>
 			<attributeGroup ref="conf:ContentSettings"/>
 		</complexType>
 	</element>

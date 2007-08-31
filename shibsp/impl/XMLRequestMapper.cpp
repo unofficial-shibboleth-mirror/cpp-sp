@@ -70,9 +70,11 @@ namespace shibsp {
         const PropertySet* getPropertySet(const char* name, const char* ns="urn:mace:shibboleth:2.0:native:sp:config") const;
         
         // Provides filter to exclude special config elements.
-        short acceptNode(const DOMNode* node) const;
+        short acceptNode(const DOMNode* node) const {
+            return FILTER_REJECT;
+        }
 
-        const Override* locate(const char* path) const;
+        const Override* locate(const SPRequest& request) const;
         AccessControl* getAC() const { return (m_acl ? m_acl : (m_base ? m_base->getAC() : NULL)); }
         
     protected:
@@ -80,6 +82,7 @@ namespace shibsp {
         
         map<string,Override*> m_map;
         vector< pair<RegularExpression*,Override*> > m_regexps;
+        vector< pair< pair<string,RegularExpression*>,Override*> > m_queries;
     
     private:
         const Override* m_base;
@@ -100,7 +103,7 @@ namespace shibsp {
             m_document = doc;
         }
     
-        const Override* findOverride(const char* vhost, const char* path) const;
+        const Override* findOverride(const char* vhost, const SPRequest& request) const;
 
     private:    
         map<string,Override*> m_extras;
@@ -150,6 +153,7 @@ namespace shibsp {
     static const XMLCh ignoreOption[] =             UNICODE_LITERAL_1(i);
     static const XMLCh Path[] =                     UNICODE_LITERAL_4(P,a,t,h);
     static const XMLCh PathRegex[] =                UNICODE_LITERAL_9(P,a,t,h,R,e,g,e,x);
+    static const XMLCh Query[] =                    UNICODE_LITERAL_5(Q,u,e,r,y);
     static const XMLCh name[] =                     UNICODE_LITERAL_4(n,a,m,e);
     static const XMLCh regex[] =                    UNICODE_LITERAL_5(r,e,g,e,x);
     static const XMLCh _type[] =                    UNICODE_LITERAL_4(t,y,p,e);
@@ -159,25 +163,7 @@ void SHIBSP_API shibsp::registerRequestMappers()
 {
     SPConfig& conf=SPConfig::getConfig();
     conf.RequestMapperManager.registerFactory(XML_REQUEST_MAPPER, XMLRequestMapperFactory);
-    conf.RequestMapperManager.registerFactory("edu.internet2.middleware.shibboleth.sp.provider.XMLRequestMapProvider", XMLRequestMapperFactory);
-    conf.RequestMapperManager.registerFactory("edu.internet2.middleware.shibboleth.target.provider.XMLRequestMap", XMLRequestMapperFactory);
     conf.RequestMapperManager.registerFactory(NATIVE_REQUEST_MAPPER, XMLRequestMapperFactory);
-    conf.RequestMapperManager.registerFactory("edu.internet2.middleware.shibboleth.sp.provider.NativeRequestMapProvider", XMLRequestMapperFactory);
-}
-
-short Override::acceptNode(const DOMNode* node) const
-{
-    if (!XMLString::equals(node->getNamespaceURI(),shibspconstants::SHIB2SPCONFIG_NS))
-        return FILTER_ACCEPT;
-    const XMLCh* name=node->getLocalName();
-    if (XMLString::equals(name,Host) ||
-        XMLString::equals(name,Path) ||
-        XMLString::equals(name,_AccessControl) ||
-        XMLString::equals(name,htaccess) ||
-        XMLString::equals(name,AccessControlProvider))
-        return FILTER_REJECT;
-
-    return FILTER_ACCEPT;
 }
 
 void Override::loadACL(const DOMElement* e, Category& log)
@@ -276,13 +262,13 @@ Override::Override(const DOMElement* e, Category& log, const Override* base) : m
             for (char* pch=dup; *pch; pch++)
                 *pch=tolower(*pch);
             if (m_map.count(dup)) {
-                log.warn("Skipping duplicate Path element (%s)",dup);
+                log.warn("skipping duplicate Path element (%s)",dup);
                 free(dup);
                 delete o;
                 continue;
             }
             m_map[dup]=o;
-            log.debug("Added Path mapping (%s)", dup);
+            log.debug("added Path mapping (%s)", dup);
             free(dup);
         }
 
@@ -292,7 +278,7 @@ Override::Override(const DOMElement* e, Category& log, const Override* base) : m
             for (int i=1; path; ++i, path=XMLHelper::getNextSiblingElement(path,PathRegex)) {
                 const XMLCh* n=path->getAttributeNS(NULL,regex);
                 if (!n || !*n) {
-                    log.warn("Skipping PathRegex element (%d) with empty regex attribute",i);
+                    log.warn("skipping PathRegex element (%d) with empty regex attribute",i);
                     continue;
                 }
 
@@ -311,8 +297,36 @@ Override::Override(const DOMElement* e, Category& log, const Override* base) : m
                     throw ConfigurationException("Invalid regular expression in PathRegex element.");
                 }
 
-                log.debug("Added <PathRegex> mapping (%s)", m_regexps.back().second->getString("regex").second);
+                if (log.isDebugEnabled())
+                    log.debug("added <PathRegex> mapping (%s)", m_regexps.back().second->getString("regex").second);
             }
+        }
+
+        // Handle nested Querys.
+        path = XMLHelper::getFirstChildElement(e,Query);
+        for (int i=1; path; ++i, path=XMLHelper::getNextSiblingElement(path,Query)) {
+            const XMLCh* n=path->getAttributeNS(NULL,name);
+            if (!n || !*n) {
+                log.warn("skipping Query element (%d) with empty name attribute",i);
+                continue;
+            }
+            auto_ptr_char ntemp(n);
+            const XMLCh* v=path->getAttributeNS(NULL,regex);
+
+            auto_ptr<Override> o(new Override(path,log,this));
+            try {
+                RegularExpression* re = NULL;
+                if (v && *v)
+                    re = new RegularExpression(v);
+                m_queries.push_back(make_pair(make_pair(ntemp.get(),re), o.release()));
+            }
+            catch (XMLException& ex) {
+                auto_ptr_char tmp(ex.getMessage());
+                log.error("caught exception while parsing Query regular expression (%d): %s", i, tmp.get());
+                throw ConfigurationException("Invalid regular expression in Query element.");
+            }
+            
+            log.debug("added <Query> mapping (%s)", ntemp.get());
         }
     }
     catch (exception&) {
@@ -329,6 +343,10 @@ Override::~Override()
     for (vector< pair<RegularExpression*,Override*> >::iterator i = m_regexps.begin(); i != m_regexps.end(); ++i) {
         delete i->first;
         delete i->second;
+    }
+    for (vector< pair< pair<string,RegularExpression*>,Override*> >::iterator j = m_queries.begin(); j != m_queries.end(); ++j) {
+        delete j->first.second;
+        delete j->second;
     }
 }
 
@@ -380,12 +398,13 @@ const PropertySet* Override::getPropertySet(const char* name, const char* ns) co
     return m_base->getPropertySet(name,ns);
 }
 
-const Override* Override::locate(const char* path) const
+const Override* Override::locate(const SPRequest& request) const
 {
     // This function is confusing because it's *not* recursive.
     // The whole path is tokenized and mapped in a loop, so the
     // path parameter starts with the entire request path and
     // we can skip the leading slash as irrelevant.
+    const char* path = request.getRequestURI();
     if (*path == '/')
         path++;
 
@@ -430,13 +449,44 @@ const Override* Override::locate(const char* path) const
 
     free(dup);
 
-    // If there's anything left, we try for a regex match on the rest of the path.
+    // If there's anything left, we try for a regex match on the rest of the path minus the query string.
     if (*path) {
+        string path2(path);
+        path2 = path2.substr(0,path2.find('?'));
+
         for (vector< pair<RegularExpression*,Override*> >::const_iterator re = o->m_regexps.begin(); re != o->m_regexps.end(); ++re) {
-            if (re->first->matches(path))
-                return re->second;
+            if (re->first->matches(path2.c_str())) {
+                o = re->second;
+                break;
+            }
         }
     }
+
+    // Finally, check for query string matches. This is another "unrolled" recursive descent in a loop.
+    bool descended;
+    do {
+        descended = false;
+        for (vector< pair< pair<string,RegularExpression*>,Override*> >::const_iterator q = o->m_queries.begin(); !descended && q != o->m_queries.end(); ++q) {
+            vector<const char*> vals;
+            if (request.getParameters(q->first.first.c_str(), vals)) {
+                if (q->first.second) {
+                    // We have to match one of the values.
+                    for (vector<const char*>::const_iterator v = vals.begin(); v != vals.end(); ++v) {
+                        if (q->first.second->matches(*v)) {
+                            o = q->second;
+                            descended = true;
+                            break;
+                        }
+                    }
+                }
+                else {
+                    // The simple presence of the parameter is sufficient to match.
+                    o = q->second;
+                    descended = true;
+                }
+            }
+        }
+    } while (descended);
 
     return o;
 }
@@ -593,7 +643,7 @@ XMLRequestMapperImpl::XMLRequestMapperImpl(const DOMElement* e, Category& log) :
     }
 }
 
-const Override* XMLRequestMapperImpl::findOverride(const char* vhost, const char* path) const
+const Override* XMLRequestMapperImpl::findOverride(const char* vhost, const SPRequest& request) const
 {
     const Override* o=NULL;
     map<string,Override*>::const_iterator i=m_map.find(vhost);
@@ -611,7 +661,7 @@ const Override* XMLRequestMapperImpl::findOverride(const char* vhost, const char
         }
     }
     
-    return o ? o->locate(path) : this;
+    return o ? o->locate(request) : this;
 }
 
 pair<bool,DOMElement*> XMLRequestMapper::load()
@@ -638,7 +688,7 @@ RequestMapper::Settings XMLRequestMapper::getSettings(const SPRequest& request) 
     ostringstream vhost;
     vhost << request.getScheme() << "://" << request.getHostname() << ':' << request.getPort();
 
-    const Override* o=m_impl->findOverride(vhost.str().c_str(), request.getRequestURI());
+    const Override* o=m_impl->findOverride(vhost.str().c_str(), request);
 
     if (m_log.isDebugEnabled()) {
 #ifdef _DEBUG
