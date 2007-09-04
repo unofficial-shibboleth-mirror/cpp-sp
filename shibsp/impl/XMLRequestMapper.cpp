@@ -332,6 +332,14 @@ Override::Override(const DOMElement* e, Category& log, const Override* base) : m
     catch (exception&) {
         delete m_acl;
         for_each(m_map.begin(),m_map.end(),xmltooling::cleanup_pair<string,Override>());
+        for (vector< pair<RegularExpression*,Override*> >::iterator i = m_regexps.begin(); i != m_regexps.end(); ++i) {
+            delete i->first;
+            delete i->second;
+        }
+        for (vector< pair< pair<string,RegularExpression*>,Override*> >::iterator j = m_queries.begin(); j != m_queries.end(); ++j) {
+            delete j->first.second;
+            delete j->second;
+        }
         throw;
     }
 }
