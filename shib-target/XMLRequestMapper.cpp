@@ -24,11 +24,14 @@
 
 #include "internal.h"
 
-using namespace std;
-using namespace saml;
-using namespace shibboleth;
-using namespace shibtarget;
+#include <xercesc/util/XMLUniDefs.hpp>
+#include <xercesc/util/regx/RegularExpression.hpp>
+
 using namespace shibtarget::logging;
+using namespace shibtarget;
+using namespace shibboleth;
+using namespace saml;
+using namespace std;
 
 namespace shibtarget {
 
@@ -48,7 +51,9 @@ namespace shibtarget {
         const IPropertySet* getPropertySet(const char* name, const char* ns="urn:mace:shibboleth:target:config:1.0") const;
         
         // Provides filter to exclude special config elements.
-        short acceptNode(const DOMNode* node) const;
+        short acceptNode(const DOMNode* node) const {
+            return FILTER_REJECT;
+        }
 
         const Override* locate(const char* path) const;
         IAccessControl* getAC() const { return (m_acl ? m_acl : (m_base ? m_base->getAC() : NULL)); }
@@ -57,6 +62,7 @@ namespace shibtarget {
         void loadACL(const DOMElement* e, Category& log);
         
         map<string,Override*> m_map;
+        vector< pair<RegularExpression*,Override*> > m_regexps;
     
     private:
         const Override* m_base;
@@ -91,6 +97,12 @@ namespace shibtarget {
         virtual ReloadableXMLFileImpl* newImplementation(const char* pathname, bool first=true) const;
         virtual ReloadableXMLFileImpl* newImplementation(const DOMElement* e, bool first=true) const;
     };
+
+    static const XMLCh HostRegex[] =    { chLatin_H, chLatin_o, chLatin_s, chLatin_t, chLatin_R, chLatin_e, chLatin_g, chLatin_e, chLatin_x, chNull };
+    static const XMLCh ignoreCase[] =   { chLatin_i, chLatin_g, chLatin_n, chLatin_o, chLatin_r, chLatin_e, chLatin_C, chLatin_a, chLatin_s, chLatin_e, chNull };
+    static const XMLCh ignoreOption[] = { chLatin_i, chNull };
+    static const XMLCh PathRegex[] =    { chLatin_P, chLatin_a, chLatin_t, chLatin_h, chLatin_R, chLatin_e, chLatin_g, chLatin_e, chLatin_x, chNull };
+    static const XMLCh regex[] =        { chLatin_r, chLatin_e, chLatin_g, chLatin_e, chLatin_x, chNull };
 }
 
 IPlugIn* XMLRequestMapFactory(const DOMElement* e)
@@ -98,21 +110,6 @@ IPlugIn* XMLRequestMapFactory(const DOMElement* e)
     auto_ptr<XMLRequestMapper> m(new XMLRequestMapper(e));
     m->getImplementation();
     return m.release();
-}
-
-short Override::acceptNode(const DOMNode* node) const
-{
-    if (XMLString::compareString(node->getNamespaceURI(),shibtarget::XML::SHIBTARGET_NS))
-        return FILTER_ACCEPT;
-    const XMLCh* name=node->getLocalName();
-    if (!XMLString::compareString(name,SHIBT_L(Host)) ||
-        !XMLString::compareString(name,SHIBT_L(Path)) ||
-        !XMLString::compareString(name,SHIBT_L(AccessControl)) ||
-        !XMLString::compareString(name,SHIBT_L(htaccess)) ||
-        !XMLString::compareString(name,SHIBT_L(AccessControlProvider)))
-        return FILTER_REJECT;
-
-    return FILTER_ACCEPT;
 }
 
 void Override::loadACL(const DOMElement* e, Category& log)
@@ -126,14 +123,14 @@ void Override::loadACL(const DOMElement* e, Category& log)
     else {
         acl=saml::XML::getFirstChildElement(e,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(AccessControl));
         if (acl) {
-            log.info("building XML-based Access Control provider...");
+            log.info("building XML-based AccessControl provider...");
             plugin=SAMLConfig::getConfig().getPlugMgr().newPlugin(shibtarget::XML::XMLAccessControlType,acl);
         }
         else {
             acl=saml::XML::getFirstChildElement(e,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(AccessControlProvider));
             if (acl) {
                 auto_ptr_char type(acl->getAttributeNS(NULL,SHIBT_L(type)));
-                log.info("building Access Control provider of type %s...",type.get());
+                log.info("building AccessControl provider of type %s...",type.get());
                 plugin=SAMLConfig::getConfig().getPlugMgr().newPlugin(type.get(),acl);
             }
         }
@@ -144,7 +141,7 @@ void Override::loadACL(const DOMElement* e, Category& log)
             m_acl=acl;
         else {
             delete plugin;
-            log.fatal("plugin was not an Access Control provider");
+            log.fatal("plugin was not an AccessControl provider");
             throw UnsupportedExtensionException("plugin was not an Access Control provider");
         }
     }
@@ -228,9 +225,46 @@ Override::Override(const DOMElement* e, Category& log, const Override* base) : m
             
             path=saml::XML::getNextSiblingElement(path,shibtarget::XML::SHIBTARGET_NS,SHIBT_L(Path));
         }
+
+        if (!XMLString::equals(e->getLocalName(), PathRegex)) {
+            // Handle nested PathRegexs.
+            path = saml::XML::getFirstChildElement(e,shibtarget::XML::SHIBTARGET_NS,PathRegex);
+            for (int i=1; path; ++i, path=saml::XML::getNextSiblingElement(path,shibtarget::XML::SHIBTARGET_NS,PathRegex)) {
+                const XMLCh* n=path->getAttributeNS(NULL,regex);
+                if (!n || !*n) {
+                    log.warn("skipping PathRegex element (%d) with empty regex attribute",i);
+                    continue;
+                }
+
+                auto_ptr<Override> o(new Override(path,log,this));
+
+                const XMLCh* flag=path->getAttributeNS(NULL,ignoreCase);
+                try {
+                    auto_ptr<RegularExpression> re(
+                        new RegularExpression(n, (flag && (*flag==chLatin_f || *flag==chDigit_0)) ? &chNull : ignoreOption)
+                        );
+                    m_regexps.push_back(make_pair(re.release(), o.release()));
+                }
+                catch (XMLException& ex) {
+                    auto_ptr_char tmp(ex.getMessage());
+                    log.error("caught exception while parsing PathRegex regular expression (%d): %s", i, tmp.get());
+                    throw ConfigurationException("Invalid regular expression in PathRegex element.");
+                }
+
+                if (log.isDebugEnabled())
+                    log.debug("added <PathRegex> mapping (%s)", m_regexps.back().second->getString("regex").second);
+            }
+        }
     }
     catch (...) {
-        this->~Override();
+        delete m_acl;
+
+        for (map<string,Override*>::iterator m=m_map.begin(); m!=m_map.end(); m++)
+            delete m->second;
+        for (vector< pair<RegularExpression*,Override*> >::iterator i = m_regexps.begin(); i != m_regexps.end(); ++i) {
+            delete i->first;
+            delete i->second;
+        }
         throw;
     }
 }
@@ -238,8 +272,12 @@ Override::Override(const DOMElement* e, Category& log, const Override* base) : m
 Override::~Override()
 {
     delete m_acl;
-    for (map<string,Override*>::iterator i=m_map.begin(); i!=m_map.end(); i++)
+    for (map<string,Override*>::iterator m=m_map.begin(); m!=m_map.end(); m++)
+        delete m->second;
+    for (vector< pair<RegularExpression*,Override*> >::iterator i = m_regexps.begin(); i != m_regexps.end(); ++i) {
+        delete i->first;
         delete i->second;
+    }
 }
 
 pair<bool,bool> Override::getBool(const char* name, const char* ns) const
@@ -292,6 +330,14 @@ const IPropertySet* Override::getPropertySet(const char* name, const char* ns) c
 
 const Override* Override::locate(const char* path) const
 {
+    // This function is confusing because it's *not* recursive.
+    // The whole path is tokenized and mapped in a loop, so the
+    // path parameter starts with the entire request path and
+    // we can skip the leading slash as irrelevant.
+    if (*path == '/')
+        path++;
+
+    // Now we copy the path, chop the query string, and lower case it.
     char* dup=strdup(path);
     char* sep=strchr(dup,'?');
     if (sep)
@@ -299,8 +345,10 @@ const Override* Override::locate(const char* path) const
     for (char* pch=dup; *pch; pch++)
         *pch=tolower(*pch);
         
+    // Default is for the current object to provide settings.
     const Override* o=this;
     
+    // Tokenize the path by segment and try and map each segment.
 #ifdef HAVE_STRTOK_R
     char* pos=NULL;
     const char* token=strtok_r(dup,"/",&pos);
@@ -311,8 +359,16 @@ const Override* Override::locate(const char* path) const
     {
         map<string,Override*>::const_iterator i=o->m_map.find(token);
         if (i==o->m_map.end())
-            break;
+            break;  // Once there's no match, we've consumed as much of the path as possible here.
+        // We found a match, so reset the settings pointer.
         o=i->second;
+
+        // We descended a step down the path, so we need to advance the original
+        // parameter for the regex step later.
+        path += strlen(token);
+        if (*path == '/')
+            path++;
+        
 #ifdef HAVE_STRTOK_R
         token=strtok_r(NULL,"/",&pos);
 #else
@@ -321,6 +377,20 @@ const Override* Override::locate(const char* path) const
     }
 
     free(dup);
+
+    // If there's anything left, we try for a regex match on the rest of the path minus the query string.
+    if (*path) {
+        string path2(path);
+        path2 = path2.substr(0,path2.find('?'));
+
+        for (vector< pair<RegularExpression*,Override*> >::const_iterator re = o->m_regexps.begin(); re != o->m_regexps.end(); ++re) {
+            if (re->first->matches(path2.c_str())) {
+                o = re->second;
+                break;
+            }
+        }
+    }
+    
     return o;
 }
 

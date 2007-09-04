@@ -270,7 +270,10 @@
 					<element ref="conf:AccessControl"/>
 	            	<element ref="conf:AccessControlProvider"/>
 	            </choice>
-                <element ref="conf:Host" minOccurs="0" maxOccurs="unbounded"/>
+            	<choice minOccurs="0" maxOccurs="unbounded">
+            		<element ref="conf:Host"/>
+            		<element ref="conf:HostRegex"/>
+            	</choice>
             </sequence>
             <attribute name="applicationId" type="string" fixed="default"/>
          	<attributeGroup ref="conf:ContentSettings"/>
@@ -285,7 +288,10 @@
 					<element ref="conf:AccessControl"/>
 	            	<element ref="conf:AccessControlProvider"/>
 	            </choice>
-    			<element ref="conf:Path" minOccurs="0" maxOccurs="unbounded"/>
+    			<choice minOccurs="0" maxOccurs="unbounded">
+    				<element ref="conf:Path"/>
+    				<element ref="conf:PathRegex"/>
+    			</choice>
     		</sequence>
     		<attribute name="scheme" use="optional">
 			    <simpleType>
@@ -305,6 +311,26 @@
     	</complexType>
     </element>
 
+	<element name="HostRegex">
+		<complexType>
+			<sequence>
+				<choice minOccurs="0">
+					<element ref="conf:htaccess"/>
+					<element ref="conf:AccessControl"/>
+					<element ref="conf:AccessControlProvider"/>
+				</choice>
+				<choice minOccurs="0" maxOccurs="unbounded">
+					<element ref="conf:Path"/>
+					<element ref="conf:PathRegex"/>
+				</choice>
+			</sequence>
+			<attribute name="regex" type="conf:string" use="required"/>
+			<attribute name="ignoreCase" type="boolean" default="true"/>
+			<attribute name="applicationId" type="conf:string"/>
+			<attributeGroup ref="conf:ContentSettings"/>
+		</complexType>
+	</element>
+	
     <element name="Path">
         <complexType>
     		<sequence>
@@ -313,7 +339,10 @@
 					<element ref="conf:AccessControl"/>
 	            	<element ref="conf:AccessControlProvider"/>
 	            </choice>
-    			<element ref="conf:Path" minOccurs="0" maxOccurs="unbounded"/>
+    			<choice minOccurs="0" maxOccurs="unbounded">
+    				<element ref="conf:Path"/>
+    				<element ref="conf:PathRegex"/>
+    			</choice>
     		</sequence>
     		<attribute name="name" type="string" use="required"/>
     		<attribute name="applicationId" type="string" use="optional"/>
@@ -321,6 +350,22 @@
         </complexType>
     </element>
 
+	<element name="PathRegex">
+		<complexType>
+			<sequence>
+				<choice minOccurs="0">
+					<element ref="conf:htaccess"/>
+					<element ref="conf:AccessControl"/>
+					<element ref="conf:AccessControlProvider"/>
+				</choice>
+			</sequence>
+			<attribute name="regex" type="conf:string" use="required"/>
+			<attribute name="ignoreCase" type="boolean" default="true"/>
+			<attribute name="applicationId" type="conf:string"/>
+			<attributeGroup ref="conf:ContentSettings"/>
+		</complexType>
+	</element>
+	
 	<element name="Applications">
 		<annotation>
 			<documentation>Container for global target settings and application-specific overrides</documentation>
