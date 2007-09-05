@@ -48,25 +48,6 @@ education community.
 This package contains the headers and other necessary files to build
 applications that use the shibboleth library.
 
-%package selinux-policy-targeted
-Summary: SELinux policy targeted configuration for Shibboleth SP
-Group: System Environment/Base
-Requires: selinux-policy-targeted-sources
-
-%description selinux-policy-targeted
-Shibboleth, a project of Internet2/MACE, is developing architectures,
-policy structures, practical technologies, and an open source
-implementation to support inter-institutional sharing of web resources
-subject to access controls. In addition, Shibboleth will develop a
-policy framework that will allow inter-operation within the higher
-education community.
-
-This package contains the SELinux Policy (source) Configuration to
-enable the Shibboleth SP to integrate into Apache HTTPD in Red Hat /
-Fedora's Policy Targeted SELinux implementation.  It requires
-rebuilding your policy, so you must have the policy-targeted-source
-installed.
-
 %prep
 %setup -q
 
@@ -161,15 +142,6 @@ fi
 	    rm -f %{_sysconfdir}/init.d/shibd
 %endif
 
-%triggerin selinux-policy-targeted -- %{name}
-restorecon %{_sbindir}/shibd
-
-%triggerin selinux-policy-targeted -- selinux-policy-targeted-sources
-cd %{_sysconfdir}/selinux/targeted/src/policy || exit 1
-make -W install
-make load
-restorecon %{_sbindir}/shibd
-
 %files -f rpm.filelist
 %defattr(-,root,root,-)
 %doc _docs/CREDITS.txt _docs/LICENSE.txt _docs/NOTICE.txt _docs/README.txt _docs/RELEASE.txt
@@ -200,11 +172,6 @@ restorecon %{_sbindir}/shibd
 %{_includedir}
 %{_libdir}/libshibsp.so
 %{_libdir}/libshibsp-lite.so
-
-%files selinux-policy-targeted
-%defattr(-,root,root,-)
-%{_sysconfdir}/selinux/targeted/src/policy/file_contexts/program/*.fc
-%{_sysconfdir}/selinux/targeted/src/policy/domains/program/*.te
 
 %changelog
 * Thu Aug 16 2007 Scott Cantor  <cantor.2@osu.edu>  - 2.0-3
