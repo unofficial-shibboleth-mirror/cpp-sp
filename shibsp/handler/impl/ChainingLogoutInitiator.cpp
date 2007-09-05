@@ -94,7 +94,7 @@ ChainingLogoutInitiator::ChainingLogoutInitiator(const DOMElement* e, const char
                 m_handlers.back()->setParent(this);
             }
             catch (exception& ex) {
-                m_log.error("caught exception processing embedded SessionInitiator element: %s", ex.what());
+                m_log.error("caught exception processing embedded LogoutInitiator element: %s", ex.what());
             }
         }
         e = XMLHelper::getNextSiblingElement(e, _LogoutInitiator);
