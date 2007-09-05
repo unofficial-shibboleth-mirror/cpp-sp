@@ -37,39 +37,34 @@
 #include <shibsp/ServiceProvider.h>
 #include <shibsp/util/SPConstants.h>
 #include <saml/saml2/metadata/Metadata.h>
+#include <xmltooling/logging.h>
 
 using namespace shibsp;
 using namespace opensaml::saml2md;
 using namespace opensaml;
+using namespace xmltooling::logging;
 using namespace xmltooling;
 using namespace std;
 
 int main(int argc,char* argv[])
 {
-    /*
-    char* n_param=NULL;
-    char* q_param=NULL;
-    char* f_param=NULL;
-    char* a_param=NULL;
+    char* entityID = NULL;
+    char* appID = "default";
+    bool strict = true;
 
     for (int i=1; i<argc; i++) {
-        if (!strcmp(argv[i],"-n") && i+1<argc)
-            n_param=argv[++i];
-        else if (!strcmp(argv[i],"-q") && i+1<argc)
-            q_param=argv[++i];
-        else if (!strcmp(argv[i],"-f") && i+1<argc)
-            f_param=argv[++i];
+        if (!strcmp(argv[i],"-e") && i+1<argc)
+            entityID=argv[++i];
         else if (!strcmp(argv[i],"-a") && i+1<argc)
-            a_param=argv[++i];
+            appID=argv[++i];
+        else if (!strcmp(argv[i],"--nostrict"))
+            strict = false;
     }
 
-    if (!n_param || !q_param) {
-        cerr << "usage: samlquery -n <name> -q <IdP> [-f <format URI> -a <application id>]" << endl;
+    if (!entityID) {
+        cerr << "usage: mdquery -e <entityID> [-a <application id> --nostrict]" << endl;
         exit(0);
     }
-    if (!a_param)
-        a_param="default";
-    */
 
     char* path=getenv("SHIBSP_SCHEMAS");
     if (!path)
@@ -83,7 +78,7 @@ int main(int argc,char* argv[])
     SPConfig& conf=SPConfig::getConfig();
     conf.setFeatures(SPConfig::Metadata | SPConfig::OutOfProcess);
     if (!conf.init(path))
-        return -10;
+        return -1;
 
     try {
         static const XMLCh _path[] = UNICODE_LITERAL_4(p,a,t,h);
@@ -99,11 +94,32 @@ int main(int argc,char* argv[])
     }
     catch (exception&) {
         conf.term();
-        return -20;
+        return -2;
     }
 
     ServiceProvider* sp=conf.getServiceProvider();
     sp->lock();
+
+    Category& log = Category::getInstance(SHIBSP_LOGCAT".Utility.MDQuery");
+
+    const Application* app = sp->getApplication(appID);
+    if (!app) {
+        log.error("unknown application ID (%s)", appID);
+        sp->unlock();
+        conf.term();
+        return -3;
+    }
+
+    app->getMetadataProvider()->lock();
+    const EntityDescriptor* entity = app->getMetadataProvider()->getEntityDescriptor(entityID, strict);
+    if (entity) {
+        XMLHelper::serialize(entity->marshall(), cout, true);
+    }
+    else {
+        log.error("no metadata found for (%s)", entityID);
+    }
+
+    app->getMetadataProvider()->unlock();
 
     sp->unlock();
     conf.term();
