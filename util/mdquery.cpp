@@ -46,24 +46,54 @@ using namespace xmltooling::logging;
 using namespace xmltooling;
 using namespace std;
 
+void usage()
+{
+    cerr << "usage: mdquery -e <entityID> [-a <app id> -nostrict]" << endl;
+    cerr << "       mdquery -e <entityID> -r <role> -p <protocol> [-a <app id> -ns <namespace> -nostrict]" << endl;
+}
+
 int main(int argc,char* argv[])
 {
     char* entityID = NULL;
     char* appID = "default";
     bool strict = true;
+    char* prot = NULL;
+    const XMLCh* protocol = NULL;
+    char* rname = NULL;
+    char* rns = NULL;
 
     for (int i=1; i<argc; i++) {
         if (!strcmp(argv[i],"-e") && i+1<argc)
             entityID=argv[++i];
         else if (!strcmp(argv[i],"-a") && i+1<argc)
             appID=argv[++i];
-        else if (!strcmp(argv[i],"--nostrict"))
+        else if (!strcmp(argv[i],"-p") && i+1<argc)
+            prot=argv[++i];
+        else if (!strcmp(argv[i],"-r") && i+1<argc)
+            rname=argv[++i];
+        else if (!strcmp(argv[i],"-ns") && i+1<argc)
+            rns=argv[++i];
+        else if (!strcmp(argv[i],"-saml10"))
+            protocol=samlconstants::SAML10_PROTOCOL_ENUM;
+        else if (!strcmp(argv[i],"-saml11"))
+            protocol=samlconstants::SAML11_PROTOCOL_ENUM;
+        else if (!strcmp(argv[i],"-saml2"))
+            protocol=samlconstants::SAML20P_NS;
+        else if (!strcmp(argv[i],"-idp"))
+            rname="IDPSSODescriptor";
+        else if (!strcmp(argv[i],"-aa"))
+            rname="AttributeAuthorityDescriptor";
+        else if (!strcmp(argv[i],"-pdp"))
+            rname="PDPDescriptor";
+        else if (!strcmp(argv[i],"-sp"))
+            rname="SPSSODescriptor";
+        else if (!strcmp(argv[i],"-nostrict"))
             strict = false;
     }
 
     if (!entityID) {
-        cerr << "usage: mdquery -e <entityID> [-a <application id> --nostrict]" << endl;
-        exit(0);
+        usage();
+        exit(-10);
     }
 
     char* path=getenv("SHIBSP_SCHEMAS");
@@ -79,6 +109,18 @@ int main(int argc,char* argv[])
     conf.setFeatures(SPConfig::Metadata | SPConfig::OutOfProcess);
     if (!conf.init(path))
         return -1;
+
+    if (rname) {
+        if (!protocol) {
+            if (prot)
+                protocol = XMLString::transcode(prot);
+        }
+        if (!protocol) {
+            conf.term();
+            usage();
+            exit(-10);
+        }
+    }
 
     try {
         static const XMLCh _path[] = UNICODE_LITERAL_4(p,a,t,h);
@@ -113,7 +155,21 @@ int main(int argc,char* argv[])
     app->getMetadataProvider()->lock();
     const EntityDescriptor* entity = app->getMetadataProvider()->getEntityDescriptor(entityID, strict);
     if (entity) {
-        XMLHelper::serialize(entity->marshall(), cout, true);
+        if (rname) {
+            const XMLCh* ns = rns ? XMLString::transcode(rns) : samlconstants::SAML20MD_NS;
+            auto_ptr_XMLCh n(rname);
+            QName q(ns, n.get());
+            const RoleDescriptor* role = entity->getRoleDescriptor(q, protocol);
+            if (role) {
+                XMLHelper::serialize(role->marshall(), cout, true);
+            }
+            else {
+                log.error("compatible role %s not found for (%s)", q.toString().c_str(), entityID);
+            }
+        }
+        else {
+            XMLHelper::serialize(entity->marshall(), cout, true);
+        }
     }
     else {
         log.error("no metadata found for (%s)", entityID);
