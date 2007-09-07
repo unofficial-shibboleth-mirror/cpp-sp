@@ -234,7 +234,6 @@ int real_main(int preinit)
         // Run the listener
         if (!shar_checkonly) {
             shar_svc_run(sock, ArrayIterator<ShibRPCProtocols>(protos,1));
-            fprintf(stdout,"shar_svc_run returned\n");
 
             // Finalize the SHAR, close all clients
             SHARUtils::fini();
@@ -243,7 +242,6 @@ int real_main(int preinit)
 
         delete g_MemoryListener;
         conf.shutdown();
-        fprintf(stdout, "shibd shutdown complete\n");
     }
     return 0;
 }
@@ -420,16 +418,13 @@ int main(int argc, char *argv[])
     
         /* Finalize the SHAR, close all clients */
         SHARUtils::fini();
-        fprintf(stderr, "shar utils finalized\n");
     
         listener->close(sock);
-        fprintf(stderr, "shib socket closed\n");
     }
 
     conf.shutdown();
     if (pidfile)
         unlink(pidfile);
-    fprintf(stderr, "shibd shutdown complete\n");
     return 0;
 }
 
