@@ -33,6 +33,9 @@ start() {
 	export SHIBD_PID=$pidfile
  	touch $pidfile
  	chown $SHIBD_USER:$SHIBD_USER $pidfile
+	if [ -x /usr/sbin/selinuxenabled ] && /usr/sbin/selinuxenabled; then
+		/sbin/restorecon $pidfile
+	fi
 	# daemon function just hangs, so I'm using su directly
 	su - $SHIBD_USER -c "$shibd -p $pidfile -f &"
 
