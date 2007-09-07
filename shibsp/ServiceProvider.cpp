@@ -283,21 +283,27 @@ pair<bool,long> ServiceProvider::doAuthorization(SPRequest& request) const
             }
 	
             Locker acllock(settings.second);
-            if (settings.second->authorized(request,session)) {
-                // Let the caller decide how to proceed.
-                request.log(SPRequest::SPDebug, "access control provider granted access");
-                return make_pair(false,0);
+            switch (settings.second->authorized(request,session)) {
+                case AccessControl::shib_acl_true:
+                    request.log(SPRequest::SPDebug, "access control provider granted access");
+                    return make_pair(true,request.returnOK());
+
+                case AccessControl::shib_acl_false:
+                {
+                    request.log(SPRequest::SPWarn, "access control provider denied access");
+                    TemplateParameters tp;
+                    tp.m_map["requestURL"] = targetURL;
+                    return make_pair(true,sendError(request, app, "access", tp));
+                }
+
+                default:
+                    // Use the "DECLINE" interface to signal we don't know what to do.
+                    return make_pair(true,request.returnDecline());
             }
-            else {
-                request.log(SPRequest::SPWarn, "access control provider denied access");
-                TemplateParameters tp;
-                tp.m_map["requestURL"] = targetURL;
-                return make_pair(true,sendError(request, app, "access", tp));
-            }
-            return make_pair(false,0);
         }
-        else
+        else {
             return make_pair(true,request.returnDecline());
+        }
     }
     catch (exception& e) {
         TemplateParameters tp(&e);

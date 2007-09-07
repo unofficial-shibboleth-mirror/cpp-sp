@@ -49,8 +49,8 @@ namespace shibsp {
         
         void unlock() {}
     
-        bool authorized(const SPRequest& request, const Session* session) const {
-            return false;
+        aclresult_t authorized(const SPRequest& request, const Session* session) const {
+            return shib_acl_false;
         }
     };
 

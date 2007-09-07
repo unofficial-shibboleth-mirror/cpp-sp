@@ -50,7 +50,7 @@ namespace {
         Lockable* lock() {return this;}
         void unlock() {}
 
-        bool authorized(const SPRequest& request, const Session* session) const;
+        aclresult_t authorized(const SPRequest& request, const Session* session) const;
     
     private:
         string m_alias;
@@ -66,7 +66,7 @@ namespace {
         Lockable* lock() {return this;}
         void unlock() {}
 
-        bool authorized(const SPRequest& request, const Session* session) const;
+        aclresult_t authorized(const SPRequest& request, const Session* session) const;
         
     private:
         enum operator_t { OP_NOT, OP_AND, OP_OR } m_op;
@@ -90,7 +90,7 @@ namespace {
             delete m_rootAuthz;
         }
 
-        bool authorized(const SPRequest& request, const Session* session) const;
+        aclresult_t authorized(const SPRequest& request, const Session* session) const;
 
     protected:
         pair<bool,DOMElement*> load();
@@ -147,7 +147,7 @@ Rule::Rule(const DOMElement* e)
     }
 }
 
-bool Rule::authorized(const SPRequest& request, const Session* session) const
+AccessControl::aclresult_t Rule::authorized(const SPRequest& request, const Session* session) const
 {
     // We can make this more complex later using pluggable comparison functions,
     // but for now, just a straight port to the new Attribute API.
@@ -155,7 +155,7 @@ bool Rule::authorized(const SPRequest& request, const Session* session) const
     // Map alias in rule to the attribute.
     if (!session) {
         request.log(SPRequest::SPWarn, "AccessControl plugin not given a valid session to evaluate, are you using lazy sessions?");
-        return false;
+        return shib_acl_false;
     }
     
     // Find the attribute(s) matching the require rule.
@@ -163,7 +163,7 @@ bool Rule::authorized(const SPRequest& request, const Session* session) const
         session->getIndexedAttributes().equal_range(m_alias);
     if (attrs.first == attrs.second) {
         request.log(SPRequest::SPWarn, string("rule requires attribute (") + m_alias + "), not found in session");
-        return false;
+        return shib_acl_false;
     }
 
     for (; attrs.first != attrs.second; ++attrs.first) {
@@ -175,13 +175,13 @@ bool Rule::authorized(const SPRequest& request, const Session* session) const
             for (vector<string>::const_iterator j=vals.begin(); j!=vals.end(); ++j) {
                 if ((caseSensitive && *i == *j) || (!caseSensitive && !strcasecmp(i->c_str(),j->c_str()))) {
                     request.log(SPRequest::SPDebug, string("AccessControl plugin expecting ") + *j + ", authz granted");
-                    return true;
+                    return shib_acl_true;
                 }
             }
         }
     }
 
-    return false;
+    return shib_acl_false;
 }
 
 Operator::Operator(const DOMElement* e)
@@ -225,32 +225,39 @@ Operator::~Operator()
     for_each(m_operands.begin(),m_operands.end(),xmltooling::cleanup<AccessControl>());
 }
 
-bool Operator::authorized(const SPRequest& request, const Session* session) const
+AccessControl::aclresult_t Operator::authorized(const SPRequest& request, const Session* session) const
 {
     switch (m_op) {
         case OP_NOT:
-            return !m_operands[0]->authorized(request,session);
+            switch (m_operands[0]->authorized(request,session)) {
+                case shib_acl_true:
+                    return shib_acl_false;
+                case shib_acl_false:
+                    return shib_acl_true;
+                default:
+                    return shib_acl_indeterminate;
+            }
         
         case OP_AND:
         {
             for (vector<AccessControl*>::const_iterator i=m_operands.begin(); i!=m_operands.end(); i++) {
                 if (!(*i)->authorized(request,session))
-                    return false;
+                    return shib_acl_false;
             }
-            return true;
+            return shib_acl_true;
         }
         
         case OP_OR:
         {
             for (vector<AccessControl*>::const_iterator i=m_operands.begin(); i!=m_operands.end(); i++) {
                 if ((*i)->authorized(request,session))
-                    return true;
+                    return shib_acl_true;
             }
-            return false;
+            return shib_acl_false;
         }
     }
     request.log(SPRequest::SPWarn,"unknown operation in access control policy, denying access");
-    return false;
+    return shib_acl_false;
 }
 
 pair<bool,DOMElement*> XMLAccessControl::load()
@@ -276,7 +283,7 @@ pair<bool,DOMElement*> XMLAccessControl::load()
     return make_pair(false,(DOMElement*)NULL);
 }
 
-bool XMLAccessControl::authorized(const SPRequest& request, const Session* session) const
+AccessControl::aclresult_t XMLAccessControl::authorized(const SPRequest& request, const Session* session) const
 {
-    return m_rootAuthz ? m_rootAuthz->authorized(request,session) : false;
+    return m_rootAuthz ? m_rootAuthz->authorized(request,session) : shib_acl_false;
 }

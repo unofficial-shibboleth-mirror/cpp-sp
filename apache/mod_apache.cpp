@@ -145,7 +145,8 @@ struct shib_dir_config
 
     // RM Configuration
     char* szAuthGrpFile;    // Auth GroupFile name
-    int bRequireAll;        // all require directives must match, otherwise OR logic
+    int bRequireAll;        // all "known" require directives must match, otherwise OR logic
+    int bAuthoritative;     // allow htaccess plugin to DECLINE when authz fails
 
     // Content Configuration
     char* szApplicationId;  // Shib applicationId value
@@ -166,6 +167,7 @@ extern "C" void* create_shib_dir_config (SH_AP_POOL* p, char* d)
     dc->tSettings = NULL;
     dc->szAuthGrpFile = NULL;
     dc->bRequireAll = -1;
+    dc->bAuthoritative = -1;
     dc->szApplicationId = NULL;
     dc->szRequireWith = NULL;
     dc->szRedirectToSSL = NULL;
@@ -229,6 +231,7 @@ extern "C" void* merge_shib_dir_config (SH_AP_POOL* p, void* base, void* sub)
     dc->bRequireSession=((child->bRequireSession==-1) ? parent->bRequireSession : child->bRequireSession);
     dc->bExportAssertion=((child->bExportAssertion==-1) ? parent->bExportAssertion : child->bExportAssertion);
     dc->bRequireAll=((child->bRequireAll==-1) ? parent->bRequireAll : child->bRequireAll);
+    dc->bAuthoritative=((child->bAuthoritative==-1) ? parent->bAuthoritative : child->bAuthoritative);
     dc->bUseEnvVars=((child->bUseEnvVars==-1) ? parent->bUseEnvVars : child->bUseEnvVars);
     dc->bUseHeaders=((child->bUseHeaders==-1) ? parent->bUseHeaders : child->bUseHeaders);
     return dc;
@@ -637,8 +640,9 @@ extern "C" int shib_auth_checker(request_rec* r)
     pair<bool,long> res = sta.getServiceProvider().doAuthorization(sta);
     if (res.first) return res.second;
 
-    // We're all okay.
-    return OK;
+    // The SP method should always return true, so if we get this far, something unusual happened.
+    // Just let Apache (or some other module) decide what to do.
+    return DECLINED;
   }
   catch (exception& e) {
     ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_auth_checker threw an exception: %s", e.what());
@@ -660,7 +664,7 @@ public:
     ~htAccessControl() {}
     Lockable* lock() {return this;}
     void unlock() {}
-    bool authorized(const SPRequest& request, const Session* session) const;
+    aclresult_t authorized(const SPRequest& request, const Session* session) const;
 private:
     bool checkAttribute(const SPRequest& request, const Attribute* attr, const char* toMatch, RegularExpression* re) const;
 };
@@ -895,7 +899,7 @@ bool htAccessControl::checkAttribute(const SPRequest& request, const Attribute* 
     return false;
 }
 
-bool htAccessControl::authorized(const SPRequest& request, const Session* session) const
+AccessControl::aclresult_t htAccessControl::authorized(const SPRequest& request, const Session* session) const
 {
     // Make sure the object is our type.
     const ShibTargetApache* sta=dynamic_cast<const ShibTargetApache*>(&request);
@@ -910,7 +914,7 @@ bool htAccessControl::authorized(const SPRequest& request, const Session* sessio
     
     const array_header* reqs_arr=ap_requires(sta->m_req);
     if (!reqs_arr)
-        return true;
+        return shib_acl_indeterminate;  // should never happen
 
     require_line* reqs=(require_line*)reqs_arr->elts;
     
@@ -921,7 +925,7 @@ bool htAccessControl::authorized(const SPRequest& request, const Session* sessio
 
 #define SHIB_AP_CHECK_IS_OK {           \
      if (sta->m_dc->bRequireAll < 1)    \
-         return true;                   \
+         return shib_acl_true;          \
      auth_OK[x] = true;                 \
      continue;                          \
 }
@@ -946,8 +950,9 @@ bool htAccessControl::authorized(const SPRequest& request, const Session* sessio
                 request.log(SPRequest::SPDebug,"htAccessControl plugin accepting valid-user based on active session");
                 SHIB_AP_CHECK_IS_OK;
             }
-            else
+            else {
                 request.log(SPRequest::SPError,"htAccessControl plugin rejecting access for valid-user rule, no session is active");
+            }
         }
         else if (!strcmp(w,"user") && !remote_user.empty()) {
             bool regexp=false;
@@ -1047,15 +1052,15 @@ bool htAccessControl::authorized(const SPRequest& request, const Session* sessio
         }
     }
 
-    // check if all require directives are true
+    // If we get here, we either "failed" or we're in require all mode.
     bool auth_all_OK = true;
     for (int i= 0; i<reqs_arr->nelts; i++) {
         auth_all_OK &= auth_OK[i];
     }
     if (auth_all_OK || !method_restricted)
-        return true;
+        return shib_acl_true;
 
-    return false;
+    return (sta->m_dc->bAuthoritative != 0) ? shib_acl_false : shib_acl_indeterminate;
 }
 
 
@@ -1148,7 +1153,8 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
         SPConfig::Caching |
         SPConfig::RequestMapping |
         SPConfig::InProcess |
-        SPConfig::Logging
+        SPConfig::Logging |
+        SPConfig::Handlers
         );
     if (!g_Config->init(g_szSchemaDir)) {
         ap_log_error(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() failed to initialize libraries");
@@ -1297,6 +1303,9 @@ static command_rec shire_cmds[] = {
   {"ShibRequireAll", (config_fn_t)ap_set_flag_slot,
    (void *) XtOffsetOf (shib_dir_config, bRequireAll),
    OR_AUTHCFG, FLAG, "All require directives must match"},
+  {"AuthzShibAuthoritative", (config_fn_t)ap_set_flag_slot,
+   (void *) XtOffsetOf (shib_dir_config, bAuthoritative),
+   OR_AUTHCFG, FLAG, "Allow failed mod_shib htaccess authorization to fall through to other modules"},
   {"ShibUseEnvironment", (config_fn_t)ap_set_flag_slot,
    (void *) XtOffsetOf (shib_dir_config, bUseEnvVars),
    OR_AUTHCFG, FLAG, "Export attributes using environment variables (default)"},
@@ -1398,6 +1407,9 @@ static command_rec shib_cmds[] = {
     AP_INIT_FLAG("ShibRequireAll", (config_fn_t)ap_set_flag_slot,
         (void *) offsetof (shib_dir_config, bRequireAll),
         OR_AUTHCFG, "All require directives must match"),
+    AP_INIT_FLAG("AuthzShibAuthoritative", (config_fn_t)ap_set_flag_slot,
+        (void *) offsetof (shib_dir_config, bAuthoritative),
+        OR_AUTHCFG, "Allow failed mod_shib htaccess authorization to fall through to other modules"),
     AP_INIT_FLAG("ShibUseEnvironment", (config_fn_t)ap_set_flag_slot,
         (void *) offsetof (shib_dir_config, bUseEnvVars),
         OR_AUTHCFG, "Export attributes using environment variables (default)"),

@@ -47,13 +47,22 @@ namespace shibsp {
         virtual ~AccessControl() {}
 
         /**
+         * Possible results from an access control decision.
+         */
+        enum aclresult_t {
+            shib_acl_true,
+            shib_acl_false,
+            shib_acl_indeterminate
+        };
+        
+        /**
          * Perform an authorization check.
          * 
          * @param request   SP request information
          * @param session   active user session, if any
          * @return true iff access should be granted
          */
-        virtual bool authorized(const SPRequest& request, const Session* session) const=0;
+        virtual aclresult_t authorized(const SPRequest& request, const Session* session) const=0;
     };
 
     /**
