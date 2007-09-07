@@ -89,7 +89,8 @@ namespace shibsp {
             RequestMapping = 64,
             OutOfProcess = 128,
             InProcess = 256,
-            Logging = 512
+            Logging = 512,
+            Handlers = 1024
         };
         
         /**
