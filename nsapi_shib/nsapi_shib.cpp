@@ -134,7 +134,8 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, ::Session* sn, Request* 
         SPConfig::Caching |
         SPConfig::RequestMapping |
         SPConfig::InProcess |
-        SPConfig::Logging
+        SPConfig::Logging |
+        SPConfig::Handlers
         );
     if (!g_Config->init(schemadir)) {
         g_Config=NULL;

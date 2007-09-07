@@ -163,7 +163,8 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
         SPConfig::Caching |
         SPConfig::RequestMapping |
         SPConfig::InProcess |
-        SPConfig::Logging
+        SPConfig::Logging |
+        SPConfig::Handlers
         );
     if (!g_Config->init(schemadir)) {
         g_Config=NULL;
