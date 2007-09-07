@@ -114,6 +114,7 @@ int real_main(int preinit)
             SPConfig::Trust |
             SPConfig::Credentials |
             SPConfig::AttributeResolution |
+            SPConfig::Handlers |
             SPConfig::OutOfProcess |
             (shar_checkonly ? SPConfig::RequestMapping : SPConfig::Logging)
             );
@@ -278,6 +279,7 @@ int main(int argc, char *argv[])
         SPConfig::Trust |
         SPConfig::Credentials |
         SPConfig::AttributeResolution |
+        SPConfig::Handlers |
         SPConfig::OutOfProcess |
         (shar_checkonly ? SPConfig::RequestMapping : SPConfig::Logging)
         );
