@@ -147,7 +147,6 @@ fi
 %doc _docs/CREDITS.txt _docs/LICENSE.txt _docs/NOTICE.txt _docs/README.txt _docs/RELEASE.txt
 %doc _docs/logo.jpg _docs/main.css
 %{_sbindir}/shibd
-%{_sbindir}/siterefresh
 %{_bindir}/samlquery
 %{_bindir}/mdquery
 %{_libdir}/libshibsp.so.*
