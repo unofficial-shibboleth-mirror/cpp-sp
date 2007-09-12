@@ -56,6 +56,8 @@ AssertionConsumerService::AssertionConsumerService(const DOMElement* e, const ch
         ,m_decoder(NULL), m_role(samlconstants::SAML20MD_NS, opensaml::saml2md::IDPSSODescriptor::LOCAL_NAME)
 #endif
 {
+    if (!e)
+        return;
     string address(appId);
     address += getString("Location").second;
     setAddress(address.c_str());

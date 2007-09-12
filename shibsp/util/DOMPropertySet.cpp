@@ -49,6 +49,8 @@ void DOMPropertySet::load(
 #ifdef _DEBUG
     NDC ndc("load");
 #endif
+    if (!e)
+        return;
     m_root=e;
 
     // Process each attribute as a property.
