@@ -102,19 +102,22 @@ string SAML1Consumer::implementProtocol(
     // Implementation of SAML 1.x SSO profile(s).
     m_log.debug("processing message against SAML 1.x SSO profile");
 
+    // Check for errors...this will throw if it's not a successful message.
+    checkError(&xmlObject);
+
     // With the binding aspects now moved out to the MessageDecoder,
     // the focus here is on the assertion content. For SAML 1.x POST,
     // all the security comes from the protocol layer, and signing
     // the assertion isn't sufficient. So we can check the policy
     // object now and bail if it's not a secure message.
-    if (m_post && !policy.isSecure())
+    if (m_post && !policy.isSecure()) {
+        if (policy.getIssuer() && !policy.getIssuerMetadata())
+            throw MetadataException("Security of SAML 1.x SSO POST response not established.");
         throw SecurityPolicyException("Security of SAML 1.x SSO POST response not established.");
+    }
         
     // Remember whether we already established trust.
     bool alreadySecured = policy.isSecure();
-
-    // Check for errors...this will throw if it's not a successful message.
-    checkError(&xmlObject);
 
     const Response* response = dynamic_cast<const Response*>(&xmlObject);
     if (!response)
