@@ -275,6 +275,7 @@
 		<attribute name="requireSessionWith" type="conf:string"/>
 		<attribute name="exportAssertion" type="boolean"/>
 		<attribute name="redirectToSSL" type="unsignedInt"/>
+		<attribute name="entityID" type="anyURI"/>
 		<attribute name="isPassive" type="boolean"/>
 		<attribute name="forceAuthn" type="boolean"/>
 		<attribute name="authnContextClassRef" type="anyURI"/>
