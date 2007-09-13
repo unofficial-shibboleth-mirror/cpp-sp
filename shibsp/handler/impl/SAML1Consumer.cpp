@@ -39,6 +39,7 @@ using namespace opensaml;
 using saml2::NameID;
 using saml2::NameIDBuilder;
 using saml2md::EntityDescriptor;
+using saml2md::MetadataException;
 #else
 # include "lite/SAMLConstants.h"
 #endif
