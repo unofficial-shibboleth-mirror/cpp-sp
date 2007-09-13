@@ -55,6 +55,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="_UNICODE;UNICODE;SHIBSP_LITE;_DEBUG"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
@@ -132,6 +133,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="_UNICODE;UNICODE;SHIBSP_LITE"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"

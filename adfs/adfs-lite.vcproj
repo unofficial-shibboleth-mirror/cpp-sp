@@ -56,6 +56,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="SHIBSP_LITE;_DEBUG"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
@@ -133,6 +134,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="SHIBSP_LITE"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
