@@ -46,19 +46,39 @@ BEGIN
         BEGIN
             VALUE "Comments", "\0"
             VALUE "CompanyName", "Internet2\0"
+#ifdef SHIBSP_LITE
+            VALUE "FileDescription", "Shibboleth SP Lite Library\0"
+#else
             VALUE "FileDescription", "Shibboleth SP Library\0"
+#endif
             VALUE "FileVersion", "1, 0, 0, 0\0"
+#ifdef SHIBSP_LITE
+#ifdef _DEBUG
+            VALUE "InternalName", "shibsp-lite1_0D\0"
+#else
+            VALUE "InternalName", "shibsp-lite1_0\0"
+#endif
+#else
 #ifdef _DEBUG
             VALUE "InternalName", "shibsp1_0D\0"
 #else
             VALUE "InternalName", "shibsp1_0\0"
 #endif
+#endif
             VALUE "LegalCopyright", "Copyright © 2007 Internet2\0"
             VALUE "LegalTrademarks", "\0"
+#ifdef SHIBSP_LITE
+#ifdef _DEBUG
+            VALUE "OriginalFilename", "shibsp-lite1_0D.dll\0"
+#else
+            VALUE "OriginalFilename", "shibsp-lite1_0.dll\0"
+#endif
+#else
 #ifdef _DEBUG
             VALUE "OriginalFilename", "shibsp1_0D.dll\0"
 #else
             VALUE "OriginalFilename", "shibsp1_0.dll\0"
+#endif
 #endif
             VALUE "PrivateBuild", "\0"
             VALUE "ProductName", "Shibboleth 2.0\0"
