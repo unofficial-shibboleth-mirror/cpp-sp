@@ -56,6 +56,12 @@ pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
         if (!param.first && (!entityID || !*entityID))
             entityID=request.getParameter("providerId");
     }
+    if (!entityID || !*entityID) {
+        RequestMapper::Settings settings = request.getRequestSettings();
+        param = settings.first->getString("entityID");
+        if (param.first)
+            entityID = param.second;
+    }
     if (!entityID || !*entityID)
         entityID=getString("entityID").second;
 
