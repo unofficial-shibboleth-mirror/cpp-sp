@@ -23,7 +23,7 @@ WANT_SUBDIRS = @WANT_SUBDIRS@
 SUBDIRS = $(WANT_SUBDIRS)
 
 DIST_SUBDIRS = adfs doc oncrpc shib schemas configs shib-target shar test \
-	apache siterefresh shib-mysql-ccache xmlproviders nsapi_shib selinux
+	apache fastcgi siterefresh shib-mysql-ccache xmlproviders nsapi_shib selinux
 
 all-local: shibboleth.spec pkginfo
 
