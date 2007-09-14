@@ -47,28 +47,29 @@ class ShibTargetFCGIAuth : public ShibTarget
 public:
     map<string,string> m_headers;
 
-    ShibTargetFCGIAuth(FCGX_Request* req) : m_req(req) {
-        char* server_name_str = FCGX_GetParam("SHIBSP_SERVER_NAME", req->envp);
+    ShibTargetFCGIAuth(FCGX_Request* req, const char* scheme=NULL, const char* hostname=NULL, int port=0) : m_req(req) {
+        const char* server_name_str = hostname;
         if (!server_name_str || !*server_name_str)
             server_name_str = FCGX_GetParam("SERVER_NAME", req->envp);
 
-        char* server_port_str = FCGX_GetParam("SHIBSP_SERVER_PORT", req->envp);
-        if (!server_port_str || !*server_port_str)
-            server_port_str = FCGX_GetParam("SERVER_PORT", req->envp);
-        int server_port = strtol(server_port_str, &server_port_str, 10);
-        if (*server_port_str) {
-            cerr << "can't parse SERVER_PORT (" << FCGX_GetParam("SERVER_PORT", req->envp) << ")" << endl;
-            throw SAMLException("Unable to determine server port.");
+        int server_port = port;
+        if (!port) {
+            char* server_port_str = FCGX_GetParam("SERVER_PORT", req->envp);
+            server_port = strtol(server_port_str, &server_port_str, 10);
+            if (*server_port_str) {
+                cerr << "can't parse SERVER_PORT (" << FCGX_GetParam("SERVER_PORT", req->envp) << ")" << endl;
+                throw SAMLException("Unable to determine server port.");
+            }
         }
 
-        char* server_scheme_str = FCGX_GetParam("SHIBSP_SERVER_SCHEME", req->envp);
+        const char* server_scheme_str = scheme;
         if (!server_scheme_str || !*server_scheme_str)
             server_scheme_str = (server_port == 443 || server_port == 8443) ? "https" : "http";
 
-        char* request_uri_str = FCGX_GetParam("REQUEST_URI", req->envp);
-        char* content_type_str = FCGX_GetParam("CONTENT_TYPE", req->envp);
-        char* remote_addr_str = FCGX_GetParam("REMOTE_ADDR", req->envp);
-        char* request_method_str = FCGX_GetParam("REQUEST_METHOD", req->envp);
+        const char* request_uri_str = FCGX_GetParam("REQUEST_URI", req->envp);
+        const char* content_type_str = FCGX_GetParam("CONTENT_TYPE", req->envp);
+        const char* remote_addr_str = FCGX_GetParam("REMOTE_ADDR", req->envp);
+        const char* request_method_str = FCGX_GetParam("REQUEST_METHOD", req->envp);
 
         init(server_scheme_str,
              server_name_str,
@@ -202,6 +203,9 @@ int main(void)
     cerr << "SHIB_CONFIG = " << shib_config << endl
          << "SHIB_SCHEMA = " << shib_schema << endl;
 
+    string g_ServerScheme;
+    string g_ServerName;
+    int g_ServerPort = 0;
     ShibTargetConfig* g_Config;
 
     try {
@@ -229,6 +233,17 @@ int main(void)
         exit(1);
     }
 
+    // Load "authoritative" URL fields.
+    char* var = getenv("SHIBSP_SERVER_NAME");
+    if (var)
+        g_ServerName = var;
+    var = getenv("SHIBSP_SERVER_SCHEME");
+    if (var)
+        g_ServerScheme = var;
+    var = getenv("SHIBSP_SERVER_PORT");
+    if (var)
+        g_ServerPort = atoi(var);
+
     streambuf* cout_streambuf = cout.rdbuf();
     streambuf* cerr_streambuf = cerr.rdbuf();
 
@@ -251,7 +266,7 @@ int main(void)
 
         try {
             saml::NDC ndc("FastCGI shibauthorizer");
-            ShibTargetFCGIAuth sta(&request);
+            ShibTargetFCGIAuth sta(&request, g_ServerScheme.c_str(), g_ServerName.c_str(), g_ServerPort);
           
             pair<bool,void*> res = sta.doCheckAuthN();
             if (res.first) {
