@@ -3,7 +3,7 @@ Microsoft Developer Studio Workspace File, Format Version 6.00
 
 ###############################################################################
 
-Project: "adfs"=.\adfs\adfs.dsp - Package Owner=<4>
+Project: "adfs"=".\adfs\adfs.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -21,7 +21,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "isapi_shib"=.\isapi_shib\isapi_shib.dsp - Package Owner=<4>
+Project: "isapi_shib"=".\isapi_shib\isapi_shib.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -39,7 +39,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "mod_shib13"=.\apache\mod_shib13.dsp - Package Owner=<4>
+Project: "mod_shib13"=".\apache\mod_shib13.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -57,7 +57,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "mod_shib20"=.\apache\mod_shib20.dsp - Package Owner=<4>
+Project: "mod_shib20"=".\apache\mod_shib20.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -75,7 +75,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "mod_shib22"=.\apache\mod_shib22.dsp - Package Owner=<4>
+Project: "mod_shib22"=".\apache\mod_shib22.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -93,7 +93,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "nsapi_shib"=.\nsapi_shib\nsapi_shib.dsp - Package Owner=<4>
+Project: "nsapi_shib"=".\nsapi_shib\nsapi_shib.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -111,7 +111,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "oncrpc"=.\oncrpc\oncrpc.dsp - Package Owner=<4>
+Project: "oncrpc"=".\oncrpc\oncrpc.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -123,7 +123,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "posttest"=.\posttest\posttest.dsp - Package Owner=<4>
+Project: "posttest"=".\posttest\posttest.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -138,7 +138,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "shar"=.\shar\shar.dsp - Package Owner=<4>
+Project: "shar"=".\shar\shar.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -159,7 +159,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "shib"=.\shib\shib.dsp - Package Owner=<4>
+Project: "shib"=".\shib\shib.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -189,6 +189,36 @@ Package=<4>
 
 ###############################################################################
 
+Project: "shibauthorizer"=".\fastcgi\shibauthorizer.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name shibtarget
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "shibresponder"=".\fastcgi\shibresponder.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name shibtarget
+    End Project Dependency
+}}}
+
+###############################################################################
+
 Project: "shibtarget"=".\shib-target\shibtarget.dsp" - Package Owner=<4>
 
 Package=<5>
@@ -207,7 +237,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "shibtest"=.\shibtest\shibtest.dsp - Package Owner=<4>
+Project: "shibtest"=".\shibtest\shibtest.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -225,7 +255,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "siterefresh"=.\siterefresh\siterefresh.dsp - Package Owner=<4>
+Project: "siterefresh"=".\siterefresh\siterefresh.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -243,7 +273,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "testclient"=.\shar\testclient.dsp - Package Owner=<4>
+Project: "testclient"=".\shar\testclient.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -264,7 +294,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "xmlproviders"=.\xmlproviders\xmlproviders.dsp - Package Owner=<4>
+Project: "xmlproviders"=".\xmlproviders\xmlproviders.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -286,10 +316,6 @@ Global:
 
 Package=<5>
 {{{
-    begin source code control
-    "$/NSAPI", WNAAAAAA
-    ..\..\..\..\documents and settings\cantor.2\my documents\projects\nsapi
-    end source code control
 }}}
 
 Package=<3>
