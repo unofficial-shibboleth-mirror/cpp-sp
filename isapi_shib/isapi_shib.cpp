@@ -702,6 +702,9 @@ public:
             m_uri += lpECB->lpszPathInfo;
         }
     }
+    else {
+        m_uri = url;
+    }
     
     // For consistency with Apache, let's add the query string.
     if (lpECB->lpszQueryString && *(lpECB->lpszQueryString)) {
