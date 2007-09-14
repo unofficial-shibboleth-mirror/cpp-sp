@@ -658,9 +658,12 @@ public:
             // Pretty good chance we're in bad mode, unless the PathInfo repeats the path itself.
             fullurl=lpECB->lpszPathInfo;
         else {
-            fullurl+=url;
+            fullurl = url;
             fullurl+=lpECB->lpszPathInfo;
         }
+    }
+    else {
+        fullurl = url;
     }
     
     // For consistency with Apache, let's add the query string.
