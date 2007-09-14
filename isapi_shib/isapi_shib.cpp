@@ -719,7 +719,7 @@ public:
     int code=200,
     const string& content_type="text/html",
     const Iterator<header_t>& headers=EMPTY(header_t)) {
-    string hdr = string ("Connection: close\r\nContent-type: ") + content_type + "\r\n";
+    string hdr = m_cookie + "Connection: close\r\nContent-type: " + content_type + "\r\n";
     for (int k = 0; k < headers.size(); k++) {
       hdr += headers[k].first + ": " + headers[k].second + "\r\n";
     }
