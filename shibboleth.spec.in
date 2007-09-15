@@ -1,22 +1,19 @@
 Name:		shibboleth
 Summary:	Open source system to enable inter-institutional resource sharing
 Version:	@-VERSION-@
-Release:	11
-#Copyright:	Internet2
+Release:	1
 Group:		System Environment/Libraries
-License:	Apache style
+Vendor:     Internet2
+License:    Apache 2.0
 URL:		http://shibboleth.internet2.edu/
 Source0:	http://shibboleth.internet2.edu/downloads/%{name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-root
 
 BuildRequires:	openssl-devel, curl-devel >= 7.10.6
-BuildRequires:	xerces%{?xercesver}-c-devel >= 2.6.1, xml-security-c-devel >= 1.1.0
-BuildRequires:	zlib-devel, opensaml-devel >= 1.1-6, opensaml-devel < 2.0
-%if %{?_with_log4cpp:1}
-BuildRequires:	log4cpp-devel >= 0.3.5
-%else
-BuildRequires:	log4shib-devel
-%endif
+BuildRequires:	xerces%{?xercesver}-c-devel >= 2.8.0, xml-security-c-devel >= 1.1.0
+BuildRequires:	zlib-devel, opensaml-devel >= 1.1.1, opensaml-devel < 2.0
+%{?_with_log4cpp:BuildRequires: log4cpp-devel >= 0.3.5}
+%{!?_with_log4cpp:BuildRequires: log4shib-devel}
 %if "%{_vendor}" == "redhat"
 %{!?_without_builtinapache:BuildRequires: httpd-devel}
 %endif
@@ -148,7 +145,7 @@ fi
 %files -f rpm.filelist
 %defattr(-,root,root,-)
 %doc _docs/CREDITS.txt _docs/NOTICE.txt _docs/NEWS.txt _docs/logo.jpg
-%doc _docs/main.css _docs/README.txt _docs/LICENSE.txt _docs/mysql-4.0.12.diff
+%doc _docs/main.css _docs/README.txt _docs/LICENSE.txt
 %{_sbindir}/shibd
 %{_sbindir}/siterefresh
 %{_bindir}/shibtest
@@ -181,6 +178,9 @@ fi
 %{_libdir}/libshib-target.so
 
 %changelog
+* Sat Sep 15 2007 Scott Cantor   <cantor.2@osu.edu>  - 1.3.1-1
+- 1.3.1 release
+
 * Mon Oct 2 2006 Scott Cantor	<cantor.2@osu.edu>  - 1.3-11
 - Applied fix for secadv 20061002
 - Fix for metadata loader loop

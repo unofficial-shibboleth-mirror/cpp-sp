@@ -1,5 +1,5 @@
-Oct 2, 2006
-Version 1.3f
+Sep 15, 2007
+Version 1.3.1
 
 Welcome to Internet2's Shibboleth
 
@@ -19,7 +19,7 @@ Source and binary distributions are available from
 http://shibboleth.internet2.edu/downloads/
 
 SVN is available for anonymous access, as described at the Shibboleth
-site. Mailing lists and a bugzilla (http://bugzilla.internet2.edu/) are also
+site. Mailing lists and a Jira instance (https://bugs.internet2.edu/) are also
 available. Not all of the lists are open, but a general support list is
 available and is open.
 
