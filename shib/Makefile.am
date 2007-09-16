@@ -22,10 +22,9 @@ libshib_la_SOURCES = \
 
 # this is different from the project version
 # http://sources.redhat.com/autobook/autobook/autobook_91.html
-libshib_la_LDFLAGS = -version-info 6:0:0
+libshib_la_LDFLAGS = -version-info 6:1:1
 
 install-exec-hook:
 	for la in $(lib_LTLIBRARIES) ; do rm -f $(DESTDIR)$(libdir)/$$la ; done
 
 EXTRA_DIST = shib.dsp shib-threads-win32.cpp resource.h shib.rc
-
