@@ -335,10 +335,11 @@ AC_ARG_WITH(fastcgi,
 AC_MSG_RESULT($WANT_FASTCGI)
 
 if test "$WANT_FASTCGI" != "no"; then
-    AC_MSG_CHECKING(for FastCGI include files)
-    if test x_$WANT_FASTCGI != x_/usr; then
-        FASTCGI_INCLUDE="-I$WANT_FASTCGI/include"
-        FASTCGI_LDFLAGS="-L$WANT_FASTCGI/lib"
+    if test "$WANT_FASTCGI" != "yes"; then
+        if test x_$WANT_FASTCGI != x_/usr; then
+            FASTCGI_INCLUDE="-I$WANT_FASTCGI/include"
+            FASTCGI_LDFLAGS="-L$WANT_FASTCGI/lib"
+        fi
     fi
     FASTCGI_LIBS="-lfcgi -lfcgi++"
     AC_CHECK_HEADER([fcgio.h])
