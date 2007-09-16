@@ -273,7 +273,7 @@ int main(void)
 #ifdef _DEBUG
                 cerr << "shib: doCheckAuthN handled the request" << endl;
 #endif
-                switch((int)res.second) {
+                switch((long)res.second) {
                     case SHIB_RETURN_OK:
                         print_ok(sta.m_headers);
                         continue;
@@ -297,7 +297,7 @@ int main(void)
 #ifdef _DEBUG
                 cerr << "shib: doExportAssertions handled request" << endl;
 #endif
-                switch((int)res.second) {
+                switch((long)res.second) {
                     case SHIB_RETURN_OK:
                         print_ok(sta.m_headers);
                         continue;
@@ -321,7 +321,7 @@ int main(void)
 #ifdef _DEBUG
                 cerr << "shib: doCheckAuthZ handled request" << endl;
 #endif
-                switch((int)res.second) {
+                switch((long)res.second) {
                     case SHIB_RETURN_OK:
                         print_ok(sta.m_headers);
                         continue;

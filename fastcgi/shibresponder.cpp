@@ -314,7 +314,7 @@ int main(void)
 #ifdef _DEBUG
                 cerr << "shib: doHandler handled the request" << endl;
 #endif
-                switch((int)res.second) {
+                switch((long)res.second) {
                     case SHIB_RETURN_OK:
                         print_ok();
                         break;
