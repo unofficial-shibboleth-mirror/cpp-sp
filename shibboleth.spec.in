@@ -53,32 +53,33 @@ applications that use the shibboleth library.
 
 %build
 %configure %{?_without_odbc:--disable-odbc} %{?_without_adfs:--disable-adfs} %{?shib_options}
-make
-#make -C selinux
+%{__make}
 
 %install
-[ "$RPM_BUILD_ROOT" != "/" ] && rm -rf $RPM_BUILD_ROOT
-rm -rf _docs
-make install DESTDIR=$RPM_BUILD_ROOT
-make -C selinux install DESTDIR=$RPM_BUILD_ROOT
-mv $RPM_BUILD_ROOT/usr/doc/%{name} _docs
+[ "$RPM_BUILD_ROOT" != "/" ] && %{__rm} -rf $RPM_BUILD_ROOT
+%{__rm} -rf _docs
+%{__make} install DESTDIR=$RPM_BUILD_ROOT
+%{__mv} $RPM_BUILD_ROOT/usr/doc/%{name} _docs
 
 %if "%{_vendor}" == "suse"
-	sed -i "s/\/var\/log\/httpd/\/var\/log\/apache2/g" \
+	%{__sed} -i "s/\/var\/log\/httpd/\/var\/log\/apache2/g" \
 		$RPM_BUILD_ROOT/%{_sysconfdir}/%{name}/native.logger
 %endif
 
-find $RPM_BUILD_ROOT/%{_libexecdir} -type f -or -type l | grep \.so |
-  sed -e "s|$RPM_BUILD_ROOT||" | sort > rpm.filelist
+find $RPM_BUILD_ROOT/%{_libexecdir} -type f -or -type l |
+  %{__sed} -e "s|$RPM_BUILD_ROOT||" | sort > rpm.filelist
 
 %check || :
-make check
+%{__make} check
 
 %clean
-[ "$RPM_BUILD_ROOT" != "/" ] && rm -rf $RPM_BUILD_ROOT
+[ "$RPM_BUILD_ROOT" != "/" ] && %{__rm} -rf $RPM_BUILD_ROOT
 
 %post
+%ifnos solaris2.8 solaris2.9 solaris2.10
 /sbin/ldconfig
+%endif
+
 
 # Plug the SP into Apache on a recognized system.
 APACHE_CONFIG="no"
@@ -102,11 +103,11 @@ if [ "$APACHE_CONFIG" != "no" ] ; then
 	if [ "$APACHE_CONFD" != "no" ] ; then
 		if [ ! -f $APACHE_CONFD/shib.conf ] ; then
 %if "%{_vendor}" == "suse"
-		    sed "s/\/usr\/doc\/%{name}/\/usr\/share\/doc\/packages\/%{name}/g" \
+		    %{__sed} "s/\/usr\/doc\/%{name}/\/usr\/share\/doc\/packages\/%{name}/g" \
 				%{_sysconfdir}/%{name}/$APACHE_CONFIG \
 				> $APACHE_CONFD/shib.conf
 %else
-			sed "s/\/usr\/doc\/%{name}/\/usr\/share\/doc\/%{name}-@-VERSION-@/g" \
+			%{__sed} "s/\/usr\/doc\/%{name}/\/usr\/share\/doc\/%{name}-@-VERSION-@/g" \
 			    %{_sysconfdir}/%{name}/$APACHE_CONFIG \
 			    > $APACHE_CONFD/shib.conf
 %endif
@@ -118,28 +119,30 @@ fi
 %if "%{_vendor}" == "redhat"
 	if [ -d %{_sysconfdir}/init.d ] ; then
 		if [ ! -f %{_sysconfdir}/init.d/shibd ] ; then
-			cp -p %{_sysconfdir}/%{name}/shibd-%{_vendor} %{_sysconfdir}/init.d/shibd
-			chmod 755 %{_sysconfdir}/init.d/shibd
+			%{__cp} -p %{_sysconfdir}/%{name}/shibd-%{_vendor} %{_sysconfdir}/init.d/shibd
+			%{__chmod} 755 %{_sysconfdir}/init.d/shibd
 			chkconfig --add shibd
 		fi
 	fi
 %endif
 
 %postun
+%ifnos solaris2.8 solaris2.9 solaris2.10
 /sbin/ldconfig
+%endif
 
 # delete the Apache configuration if we're being removed
 [ "$1" = 0 ] || exit 0
 [ -f %{_sysconfdir}/httpd/conf.d/shib.conf ] && \
-    rm -f %{_sysconfdir}/httpd/conf.d/shib.conf
+    %{__rm} -f %{_sysconfdir}/httpd/conf.d/shib.conf
 [ -f %{_sysconfdir}/apache2/conf.d/shib.conf ] && \
-    rm -f %{_sysconfdir}/apache2/conf.d/shib.conf
+    %{__rm} -f %{_sysconfdir}/apache2/conf.d/shib.conf
 
 # clear init.d state
 %if "%{_vendor}" == "redhat"
 	chkconfig --del shibd
 	[ -f %{_sysconfdir}/init.d/shibd ] && \
-	    rm -f %{_sysconfdir}/init.d/shibd
+	    %{__rm} -f %{_sysconfdir}/init.d/shibd
 %endif
 
 %files -f rpm.filelist
