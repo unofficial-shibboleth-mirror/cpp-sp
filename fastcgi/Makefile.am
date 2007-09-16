@@ -8,12 +8,14 @@ shibauthorizer_SOURCES = shibauthorizer.cpp
 shibauthorizer_CXXFLAGS = -I$(FASTCGI_INCLUDE)
 shibauthorizer_LDFLAGS = $(FASTCGI_LDFLAGS) $(FASTCGI_LIBS)
 shibauthorizer_LDADD = \
+  $(top_builddir)/shib/libshib.la \
   $(top_builddir)/shib-target/libshib-target.la
 
 shibresponder_SOURCES = shibresponder.cpp
 shibresponder_CXXFLAGS = -I$(FASTCGI_INCLUDE)
 shibresponder_LDFLAGS = $(FASTCGI_LDFLAGS) $(FASTCGI_LIBS)
 shibresponder_LDADD = \
+  $(top_builddir)/shib/libshib.la \
   $(top_builddir)/shib-target/libshib-target.la
 
 endif
