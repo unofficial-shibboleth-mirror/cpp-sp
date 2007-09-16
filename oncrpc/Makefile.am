@@ -46,7 +46,6 @@ liboncrpc_la_SOURCES = \
 liboncrpc_la_LDFLAGS = -version-info 2:0:0
 
 EXTRA_DIST = \
-  .cvsignore \
   makefile.bc \
   makefile.nt \
   oncbcimp.def \
