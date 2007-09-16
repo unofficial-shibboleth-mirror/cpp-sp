@@ -14,6 +14,7 @@ BuildRequires:	xerces%{?xercesver}-c-devel >= 2.8.0, xml-security-c-devel >= 1.1
 BuildRequires:	zlib-devel, opensaml-devel >= 1.1.1, opensaml-devel < 2.0
 %{?_with_log4cpp:BuildRequires: log4cpp-devel >= 0.3.5}
 %{!?_with_log4cpp:BuildRequires: log4shib-devel}
+%{?_with_fastcgi:BuildRequires: fcgi-devel}
 %if "%{_vendor}" == "redhat"
 %{!?_without_builtinapache:BuildRequires: httpd-devel}
 %endif
@@ -52,7 +53,7 @@ applications that use the shibboleth library.
 %setup -q
 
 %build
-%configure %{?shib_options}
+%configure %{?_with_fastcgi} %{?shib_options}
 %{__make}
 
 %install
