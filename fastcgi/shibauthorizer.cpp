@@ -286,7 +286,7 @@ int main(void)
                         continue;
               
                     default:
-                        cerr << "shib: doCheckAuthN returned an unexpected result: " << (int)res.second << endl;
+                        cerr << "shib: doCheckAuthN returned an unexpected result: " << (long)res.second << endl;
                         print_error("<html><body>FastCGI Shibboleth authorizer returned an unexpected result.</body></html>");
                         continue;
                 }
@@ -310,7 +310,7 @@ int main(void)
                         continue;
               
                     default:
-                        cerr << "shib: doExportAssertions returned an unexpected result: " << (int)res.second << endl;
+                        cerr << "shib: doExportAssertions returned an unexpected result: " << (long)res.second << endl;
                         print_error("<html><body>FastCGI Shibboleth authorizer returned an unexpected result.</body></html>");
                         continue;
                 }
@@ -334,7 +334,7 @@ int main(void)
                         continue;
               
                     default:
-                        cerr << "shib: doCheckAuthZ returned an unexpected result: " << (int)res.second << endl;
+                        cerr << "shib: doCheckAuthZ returned an unexpected result: " << (long)res.second << endl;
                         print_error("<html><body>FastCGI Shibboleth authorizer returned an unexpected result.</body></html>");
                         continue;
                 }

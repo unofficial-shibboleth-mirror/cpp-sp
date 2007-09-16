@@ -329,7 +329,7 @@ int main(void)
                         break;
               
                     default:
-                        cerr << "shib: doHandler returned an unexpected result: " << (int)res.second << endl;
+                        cerr << "shib: doHandler returned an unexpected result: " << (long)res.second << endl;
                         print_error("<html><body>FastCGI Shibboleth responder returned an unexpected result.</body></html>");
                         break;
                 }
