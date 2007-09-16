@@ -56,11 +56,11 @@ applications that use the shibboleth library.
 %{__make}
 
 %install
-[ "$RPM_BUILD_ROOT" != "/" ] && {__rm} -rf $RPM_BUILD_ROOT
-{__rm} -rf _docs
+[ "$RPM_BUILD_ROOT" != "/" ] && %{__rm} -rf $RPM_BUILD_ROOT
+%{__rm} -rf _docs
 
 %{__make} install DESTDIR=$RPM_BUILD_ROOT
-{__mv} $RPM_BUILD_ROOT/usr/doc/shibboleth _docs
+%{__mv} $RPM_BUILD_ROOT/usr/doc/shibboleth _docs
 
 %if "%{_vendor}" == "suse"
 	%{__sed} -i "s/\/var\/log\/httpd/\/var\/log\/apache2/g" \
@@ -74,7 +74,7 @@ find $RPM_BUILD_ROOT/%{_libexecdir} -type f -or -type l |
 %{__make} check
 
 %clean
-[ "$RPM_BUILD_ROOT" != "/" ] && {__rm} -rf $RPM_BUILD_ROOT
+[ "$RPM_BUILD_ROOT" != "/" ] && %{__rm} -rf $RPM_BUILD_ROOT
 
 %ifnos solaris2.8 solaris2.9 solaris2.10 
 %post -p /sbin/ldconfig
@@ -118,7 +118,7 @@ fi
 %if "%{_vendor}" == "redhat"
 	if [ -d %{_sysconfdir}/init.d ] ; then
 		if [ ! -f %{_sysconfdir}/init.d/shibd ] ; then
-			{__cp} -p %{_sysconfdir}/shibboleth/%{_vendor} %{_sysconfdir}/init.d/shibd
+			%{__cp} -p %{_sysconfdir}/shibboleth/%{_vendor} %{_sysconfdir}/init.d/shibd
 			%{__chmod} 755 %{_sysconfdir}/init.d/shibd
 			chkconfig --add shibd
 		fi
@@ -132,15 +132,15 @@ fi
 # delete the Apache configuration if we're being removed
 [ "$1" = 0 ] || exit 0
 [ -f %{_sysconfdir}/httpd/conf.d/shib.conf ] && \
-    {__rm} -f %{_sysconfdir}/httpd/conf.d/shib.conf
+    %{__rm} -f %{_sysconfdir}/httpd/conf.d/shib.conf
 [ -f %{_sysconfdir}/apache2/conf.d/shib.conf ] && \
-    {__rm} -f %{_sysconfdir}/apache2/conf.d/shib.conf
+    %{__rm} -f %{_sysconfdir}/apache2/conf.d/shib.conf
 
 # clear init.d state
 %if "%{_vendor}" == "redhat"
 	chkconfig --del shibd
 	[ -f %{_sysconfdir}/init.d/shibd ] && \
-	    {__rm} -f %{_sysconfdir}/init.d/shibd
+	    %{__rm} -f %{_sysconfdir}/init.d/shibd
 %endif
 
 %files -f rpm.filelist
