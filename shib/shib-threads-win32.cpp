@@ -31,13 +31,13 @@
 #include "shib-threads.h"
 
 #ifndef WIN32
-#error "This implementaiton is just for windows 32"
+#error "This implementation is only for Win32."
 #endif
 
 #include <stdexcept>
 
-using namespace std;
 using namespace shibboleth;
+using namespace std;
 
 // base error code for a routine to return onf failure
 #define THREAD_ERROR_TIMEOUT 	(1)

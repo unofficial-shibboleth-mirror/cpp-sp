@@ -25,22 +25,20 @@
 #include "internal.h"
 #include "shib-threads.h"
 
-#include <log4cpp/Category.hh>
-
 #ifdef HAVE_PTHREAD
 #include <pthread.h>
 #ifndef HAVE_PTHREAD_RWLOCK_INIT
 #include <synch.h>
 #endif
 #else
-#error "You need to create the proper thread implementation"
+#error "You need to create the proper thread implementation."
 #endif
 
 #include <stdexcept>
 
-using namespace std;
+using namespace shibboleth::logging;
 using namespace shibboleth;
-using namespace log4cpp;
+using namespace std;
 
 // pthread implementation of the Shib Target Threads API
 
