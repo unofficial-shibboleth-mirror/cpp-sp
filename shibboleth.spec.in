@@ -77,8 +77,9 @@ find $RPM_BUILD_ROOT/%{_libexecdir} -type f -or -type l |
 %clean
 [ "$RPM_BUILD_ROOT" != "/" ] && %{__rm} -rf $RPM_BUILD_ROOT
 
-%ifnos solaris2.8 solaris2.9 solaris2.10 
-%post -p /sbin/ldconfig
+%post
+%ifnos solaris2.8 solaris2.9 solaris2.10
+/sbin/ldconfig
 %endif
 
 # Plug the SP into Apache on a recognized system.
@@ -126,8 +127,9 @@ fi
 	fi
 %endif
 
+%postun
 %ifnos solaris2.8 solaris2.9 solaris2.10 
-%postun -p /sbin/ldconfig
+/sbin/ldconfig
 %endif
 
 # delete the Apache configuration if we're being removed
