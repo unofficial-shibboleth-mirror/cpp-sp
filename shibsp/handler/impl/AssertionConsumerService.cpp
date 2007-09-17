@@ -40,6 +40,8 @@
 # include <saml/saml1/core/Assertions.h>
 # include <saml/util/CommonDomainCookie.h>
 using namespace samlconstants;
+using opensaml::saml2md::EntityDescriptor;
+using opensaml::saml2md::IDPSSODescriptor;
 #else
 # include "lite/CommonDomainCookie.h"
 #endif
@@ -384,6 +386,45 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
         return new DummyContext(resolvedAttributes);
     return NULL;
 }
+
+void AssertionConsumerService::extractMessageDetails(const Assertion& assertion, const XMLCh* protocol, opensaml::SecurityPolicy& policy) const
+{
+    policy.setMessageID(assertion.getID());
+    policy.setIssueInstant(assertion.getIssueInstantEpoch());
+
+    if (XMLString::equals(assertion.getElementQName().getNamespaceURI(), samlconstants::SAML20P_NS)) {
+        const saml2::Assertion* a2 = dynamic_cast<const saml2::Assertion*>(&assertion);
+        if (a2) {
+            m_log.debug("extracting issuer from SAML 2.0 assertion");
+            policy.setIssuer(a2->getIssuer());
+        }
+    }
+    else {
+        const saml1::Assertion* a1 = dynamic_cast<const saml1::Assertion*>(&assertion);
+        if (a1) {
+            m_log.debug("extracting issuer from SAML 1.x assertion");
+            policy.setIssuer(a1->getIssuer());
+        }
+    }
+
+    if (policy.getIssuer() && !policy.getIssuerMetadata() && policy.getMetadataProvider()) {
+        m_log.debug("searching metadata for assertion issuer...");
+        const EntityDescriptor* entity = policy.getMetadataProvider()->getEntityDescriptor(policy.getIssuer()->getName());
+        if (entity) {
+            m_log.debug("matched assertion issuer against metadata, searching for applicable role...");
+            const IDPSSODescriptor* idp=entity->getIDPSSODescriptor(protocol);
+            if (idp)
+                policy.setIssuerMetadata(idp);
+            else if (m_log.isWarnEnabled())
+                m_log.warn("unable to find compatible IdP role in metadata");
+        }
+        else if (m_log.isWarnEnabled()) {
+            auto_ptr_char iname(policy.getIssuer()->getName());
+            m_log.warn("no metadata found, can't establish identity of issuer (%s)", iname.get());
+        }
+    }
+}
+
 #endif
 
 void AssertionConsumerService::maintainHistory(SPRequest& request, const char* entityID, const char* cookieProps) const

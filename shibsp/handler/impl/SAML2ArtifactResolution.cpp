@@ -283,7 +283,7 @@ pair<bool,long> SAML2ArtifactResolution::processMessage(const Application& appli
         auto_ptr<SAMLArtifact> artobj(SAMLArtifact::parse(artifact.get()));
         auto_ptr<XMLObject> payload(artmap->retrieveContent(artobj.get(), issuer.get()));
 
-        if (!policy.isSecure()) {
+        if (!policy.isAuthenticated()) {
             m_log.error("request for artifact was unauthenticated, purging the artifact mapping");
             return samlError(application, *req, httpResponse, StatusCode::REQUESTER, StatusCode::AUTHN_FAILED, "Unable to authenticate request.");
         }

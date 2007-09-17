@@ -86,6 +86,17 @@ namespace shibsp {
             ) const=0;
 
         /**
+         * Extracts policy-relevant assertion details.
+         * 
+         * @param assertion the incoming assertion
+         * @param protocol  the protocol family in use
+         * @param policy    SecurityPolicy to provide various components and track message data
+         */
+        virtual void extractMessageDetails(
+            const opensaml::Assertion& assertion, const XMLCh* protocol, opensaml::SecurityPolicy& policy
+            ) const;
+
+        /**
          * Attempt SSO-initiated attribute resolution using the supplied information,
          * including NameID and token extraction and filtering followed by
          * secondary resolution.

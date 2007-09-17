@@ -338,9 +338,19 @@ bool QueryResolver::SAML1Query(QueryContext& ctx) const
     }
 
     try {
+        // We're going to insist that the assertion issuer is the same as the peer.
+        // Reset the policy's message bits and extract them from the assertion.
+        policy.reset(true);
+        policy.setMessageID(newtoken->getAssertionID());
+        policy.setIssueInstant(newtoken->getIssueInstantEpoch());
+        policy.setIssuer(newtoken->getIssuer());
         policy.evaluate(*newtoken);
-        if (!policy.isSecure())
+
+        // Now we can check the security status of the policy.
+        if (!policy.isAuthenticated())
             throw SecurityPolicyException("Security of SAML 1.x query result not established.");
+
+        // Lastly, check it over.
         saml1::AssertionValidator tokval(application.getAudiences(), time(NULL));
         tokval.validateAssertion(*newtoken);
     }
@@ -481,9 +491,19 @@ bool QueryResolver::SAML2Query(QueryContext& ctx) const
     }
 
     try {
+        // We're going to insist that the assertion issuer is the same as the peer.
+        // Reset the policy's message bits and extract them from the assertion.
+        policy.reset(true);
+        policy.setMessageID(newtoken->getID());
+        policy.setIssueInstant(newtoken->getIssueInstantEpoch());
+        policy.setIssuer(newtoken->getIssuer());
         policy.evaluate(*newtoken);
-        if (!policy.isSecure())
+
+        // Now we can check the security status of the policy.
+        if (!policy.isAuthenticated())
             throw SecurityPolicyException("Security of SAML 2.0 query result not established.");
+
+        // Lastly, check it over.
         saml2::AssertionValidator tokval(application.getAudiences(), time(NULL));
         tokval.validateAssertion(*newtoken);
     }

@@ -99,7 +99,7 @@ string SAML2Consumer::implementProtocol(
 
     // Remember whether we already established trust.
     // None of the SAML 2 bindings require security at the protocol layer.
-    bool alreadySecured = policy.isSecure();
+    bool alreadySecured = policy.isAuthenticated();
 
     // Check for errors...this will throw if it's not a successful message.
     checkError(&xmlObject);
@@ -146,14 +146,18 @@ string SAML2Consumer::implementProtocol(
 
         try {
             // We clear the security flag, so we can tell whether the token was secured on its own.
-            policy.setSecure(false);
-            
-            // Run the policy over the assertion. Handles issuer consistency, replay, freshness,
-            // and signature verification, assuming the relevant rules are configured.
+            policy.setAuthenticated(false);
+            policy.reset(true);
+
+            // Extract message bits and re-verify Issuer information.
+            extractMessageDetails(*(*a), samlconstants::SAML20P_NS, policy);
+
+            // Run the policy over the assertion. Handles replay, freshness, and
+            // signature verification, assuming the relevant rules are configured.
             policy.evaluate(*(*a));
             
             // If no security is in place now, we kick it.
-            if (!alreadySecured && !policy.isSecure()) {
+            if (!alreadySecured && !policy.isAuthenticated()) {
                 m_log.warn("unable to establish security of assertion");
                 badtokens.push_back(*a);
                 continue;
@@ -229,15 +233,21 @@ string SAML2Consumer::implementProtocol(
 
         try {
             // We clear the security flag, so we can tell whether the token was secured on its own.
-            policy.setSecure(false);
-            
-            // Run the policy over the assertion. Handles issuer consistency, replay, freshness,
-            // and signature verification, assuming the relevant rules are configured.
+            policy.setAuthenticated(false);
+            policy.reset(true);
+
+            // Extract message bits and re-verify Issuer information.
+            extractMessageDetails(*decrypted, samlconstants::SAML20P_NS, policy);
+
+            // Run the policy over the assertion. Handles replay, freshness, and
+            // signature verification, assuming the relevant rules are configured.
             // We have to marshall the object first to ensure signatures can be checked.
+            if (!decrypted->getDOM())
+                decrypted->marshall();
             policy.evaluate(*decrypted);
             
             // If no security is in place now, we kick it.
-            if (!alreadySecured && !policy.isSecure()) {
+            if (!alreadySecured && !policy.isAuthenticated()) {
                 m_log.warn("unable to establish security of assertion");
                 badtokens.push_back(decrypted);
                 continue;

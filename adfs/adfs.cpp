@@ -82,6 +82,12 @@ namespace {
         virtual ~ADFSDecoder() {}
         
         XMLObject* decode(string& relayState, const GenericRequest& genericRequest, SecurityPolicy& policy) const;
+
+    protected:
+        void extractMessageDetails(
+            const XMLObject& message, const GenericRequest& req, const XMLCh* protocol, SecurityPolicy& policy
+            ) const {
+        }
     };
 
     MessageDecoder* ADFSDecoderFactory(const pair<const DOMElement*,const XMLCh*>& p)
@@ -514,12 +520,15 @@ string ADFSConsumer::implementProtocol(
     if (!token || !token->getSignature())
         throw FatalProfileException("Incoming message did not contain a signed SAML 1.1 assertion.");
 
-    // Run the policy over the assertion. Handles issuer consistency, replay, freshness,
-    // and signature verification, assuming the relevant rules are configured.
-    policy.evaluate(*token, NULL, m_protocol.get());
+    // Extract message and issuer details from assertion.
+    extractMessageDetails(*token, m_protocol.get(), policy);
+
+    // Run the policy over the assertion. Handles replay, freshness, and
+    // signature verification, assuming the relevant rules are configured.
+    policy.evaluate(*token);
     
     // If no security is in place now, we kick it.
-    if (!policy.isSecure())
+    if (!policy.isAuthenticated())
         throw SecurityPolicyException("Unable to establish security of incoming assertion.");
 
     // Now do profile and core semantic validation to ensure we can use it for SSO.

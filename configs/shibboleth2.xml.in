@@ -270,8 +270,6 @@
 			chunkedEncoding="false"
 			connectTimeout="15" timeout="30"
 			>
-			<Rule type="SAML1Message"/>
-			<Rule type="SAML2Message"/>
 			<Rule type="MessageFlow" checkReplay="true" expires="60"/>
 			<Rule type="ClientCertAuth" errorFatal="true"/>
 			<Rule type="XMLSigning" errorFatal="true"/>

@@ -110,15 +110,15 @@ string SAML1Consumer::implementProtocol(
     // the focus here is on the assertion content. For SAML 1.x POST,
     // all the security comes from the protocol layer, and signing
     // the assertion isn't sufficient. So we can check the policy
-    // object now and bail if it's not a secure message.
-    if (m_post && !policy.isSecure()) {
+    // object now and bail if it's not a secured message.
+    if (m_post && !policy.isAuthenticated()) {
         if (policy.getIssuer() && !policy.getIssuerMetadata())
             throw MetadataException("Security of SAML 1.x SSO POST response not established.");
         throw SecurityPolicyException("Security of SAML 1.x SSO POST response not established.");
     }
         
     // Remember whether we already established trust.
-    bool alreadySecured = policy.isSecure();
+    bool alreadySecured = policy.isAuthenticated();
 
     const Response* response = dynamic_cast<const Response*>(&xmlObject);
     if (!response)
@@ -127,6 +127,8 @@ string SAML1Consumer::implementProtocol(
     const vector<saml1::Assertion*>& assertions = response->getAssertions();
     if (assertions.empty())
         throw FatalProfileException("Incoming message contained no SAML assertions.");
+
+    pair<bool,int> minor = response->getMinorVersion();
 
     // Maintain list of "legit" tokens to feed to SP subsystems.
     const AuthenticationStatement* ssoStatement=NULL;
@@ -153,14 +155,20 @@ string SAML1Consumer::implementProtocol(
 
         try {
             // We clear the security flag, so we can tell whether the token was secured on its own.
-            policy.setSecure(false);
-            
-            // Run the policy over the assertion. Handles issuer consistency, replay, freshness,
-            // and signature verification, assuming the relevant rules are configured.
+            policy.setAuthenticated(false);
+            policy.reset(true);
+
+            // Extract message bits and re-verify Issuer information.
+            extractMessageDetails(
+                *(*a), (minor.first && minor.second==0) ? samlconstants::SAML10_PROTOCOL_ENUM : samlconstants::SAML11_PROTOCOL_ENUM, policy
+                );
+
+            // Run the policy over the assertion. Handles replay, freshness, and
+            // signature verification, assuming the relevant rules are configured.
             policy.evaluate(*(*a));
             
             // If no security is in place now, we kick it.
-            if (!alreadySecured && !policy.isSecure()) {
+            if (!alreadySecured && !policy.isAuthenticated()) {
                 m_log.warn("unable to establish security of assertion");
                 badtokens.push_back(*a);
                 continue;

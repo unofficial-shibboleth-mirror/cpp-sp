@@ -93,6 +93,8 @@ saml1p::Response* ArtifactResolver::resolve(
         throw BindingException("Identity provider returned a SAML error in response to artifact(s).");
     }
 
+    // The SOAP client handles policy evaluation against the SOAP and Response layer,
+    // but no security checking is done here.
     return response;
 }
 
@@ -149,5 +151,8 @@ ArtifactResponse* ArtifactResolver::resolve(
         BindingException ex("Identity provider returned a SAML error in response to artifact.");
         annotateException(&ex, &ssoDescriptor, response->getStatus());  // rethrow
     }
+
+    // The SOAP client handles policy evaluation against the SOAP and Response layer,
+    // but no security checking is done here.
     return response;
 }

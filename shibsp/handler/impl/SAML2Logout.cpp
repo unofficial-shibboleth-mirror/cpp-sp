@@ -329,7 +329,7 @@ pair<bool,long> SAML2Logout::doRequest(
     auto_ptr<XMLObject> msg(m_decoder->decode(relayState, request, policy));
     const LogoutRequest* logoutRequest = dynamic_cast<LogoutRequest*>(msg.get());
     if (logoutRequest) {
-        if (!policy.isSecure())
+        if (!policy.isAuthenticated())
             throw SecurityPolicyException("Security of LogoutRequest not established.");
 
         // Message from IdP to logout one or more sessions.
@@ -491,7 +491,7 @@ pair<bool,long> SAML2Logout::doRequest(
     // A LogoutResponse completes an SP-initiated logout sequence.
     const LogoutResponse* logoutResponse = dynamic_cast<LogoutResponse*>(msg.get());
     if (logoutResponse) {
-        if (!policy.isSecure()) {
+        if (!policy.isAuthenticated()) {
             SecurityPolicyException ex("Security of LogoutResponse not established.");
             if (policy.getIssuerMetadata())
                 annotateException(&ex, policy.getIssuerMetadata()); // throws it
