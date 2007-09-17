@@ -15,6 +15,7 @@
 <pathentry kind="src" path="apache"/>
 <pathentry kind="src" path="isapi_shib"/>
 <pathentry kind="src" path="nsapi_shib"/>
+<pathentry kind="src" path="fastcgi"/>
 <pathentry kind="src" path="shib-mysql-ccache"/>
 <pathentry kind="src" path="siterefresh"/>
 <pathentry kind="src" path="test"/>
