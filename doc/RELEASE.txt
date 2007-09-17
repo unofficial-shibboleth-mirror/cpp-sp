@@ -1,8 +1,8 @@
 Release Notes
 
 Shibboleth Native SP
-2.0alpha2
-7/13/2007
+2.0beta1
+9/15/2007
 
 Fully Supported (no major changes planned prior to stable release)
 
@@ -14,24 +14,33 @@ Fully Supported (no major changes planned prior to stable release)
 - SAML 1.0, 1.1, 2.0 Attribute Query via Attribute Resolver plugin
 	- SAML SOAP binding
 
+- SAML 2.0 Single Logout
+    - HTTP-Redirect/POST/POST-SimpleSign/Artifact bindings
+    - Front and back-channel application notification of logout
+    - Race detection of late arriving assertions
+
+- ADFS WS-Federation Support
+    - SSO and SLO
+
 - Shibboleth WAYF and SAML DS protocols for IdP Discovery
 
 - Metadata Providers
 	- Bulk resolution via local file, or URL with local file backup
+	- Dynamic resolution and caching based on entityID 
 	- Filtering based on whitelist, blacklist, or signature verification  
 
 - Trust Engines
-	- Explicit key via metadata and PKIX engines, superset compatible with 1.3
+	- Explicit key and PKIX engines via metadata, superset compatible with 1.3
+	- PKIX trust engine with static root list
 	
 - Configurable per-endpoint Security Policy rules
-	- SAML 1/2 message processing
 	- Replay and freshness detection
 	- XML signing
 	- Simple "blob" signing
-	- TLS client certificates
+	- TLS X.509 certificate authentication
 
 - Client transport authentication to SOAP endpoints
-	- TLS client certificates
+	- TLS X.509 client certificates
 	- Basic-Auth
 	- Digest-Auth
 	- NTLM
@@ -64,22 +73,32 @@ Fully Supported (no major changes planned prior to stable release)
 - ODBC Clustering Support
 	- Only tested against Microsoft SQL Server using MS and FreeDTS ODBC drivers
 
-------
+- RequestMap enhancements
+    - Regular expression matching for hosts and paths
+    - Query string parameter matching
 
-Partially Supported (lightly or untested, probably contain bugs, may change significantly)
+- Error handling enhancements
+    - Reporting of SAML status errors
+    - Optional redirection to custom error handler
 
-- SAML 2.0 Single Logout and Local-Only Logout
-	- Full support implemented but untested and unlikely to work
-	- Race detection to prevent late arriving assertions not yet implemented
-	- Front channel application notification implemented but intested
-	- Back channel application notification not yet implemented
+- Apache module enhancements
+    - "OR" coexistence with other authorization modules
+    - htaccess-based override of any valid RequestMap property 
+
+- Command line tools
+    - samlsign for manual XML signing and verification
+    - mdquery for interrogating via metadata configuration
+    - resolvertest for exercising attribute extraction, filtering, and resolution
 
 ------
 
 Not Yet Supported
 
-- ADFS / WS-Federation Support
+- Metadata generation
+- Status handler
+- Embedded discovery UI
 - Upgrade installations on Windows
 - Migrating 1.3 configuration files
+- NameID management
 
 ------
