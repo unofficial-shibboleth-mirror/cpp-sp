@@ -10,6 +10,7 @@ docfiles = \
 	NEWS.txt \
 	NOTICE.txt \
 	README.txt \
+	FASTCGI.LICENSE \
 	OPENSSL.LICENSE \
 	LOG4CPP.LICENSE \
 	CURL.LICENSE \
