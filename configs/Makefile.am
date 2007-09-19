@@ -5,6 +5,7 @@ AUTOMAKE_OPTIONS = foreign
 pkglogdir = ${localstatedir}/log/@PACKAGE@
 shirelogdir = ${localstatedir}/log/httpd
 pkgxmldir = $(datadir)/xml/@PACKAGE@
+pkgdocdir = $(datadir)/doc/@PACKAGE@
 varrundir = $(localstatedir)/run
 pkgsysconfdir = $(sysconfdir)/@PACKAGE@
 pkgsysconf_DATA = \
@@ -48,6 +49,7 @@ do-build-file:
 	    -e 's:@-LIBEXECDIR-@:${libexecdir}:' \
 	    -e 's:@-PKGSYSCONFDIR-@:${pkgsysconfdir}:' \
 	    -e 's:@-PKGXMLDIR-@:${pkgxmldir}:' \
+	    -e 's:@-PKGDOCDIR-@:${pkgdocdir}:' \
 	    -e 's:@-PKGLOGDIR-@:${pkglogdir}:' \
 	    -e 's:@-SHIRELOGDIR-@:${shirelogdir}:' \
 	    -e 's:@-VARRUNDIR-@:${varrundir}:'
