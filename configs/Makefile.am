@@ -3,6 +3,7 @@
 AUTOMAKE_OPTIONS = foreign
 
 pkglogdir = ${localstatedir}/log/@PACKAGE@
+pkgdocdir = ${datadir}/doc/@PACKAGE@
 shirelogdir = ${localstatedir}/log/httpd
 xmldir = $(datadir)/xml
 pkgxmldir = $(datadir)/xml/@PACKAGE@
@@ -49,14 +50,15 @@ CONFIGFILES = \
 do-build-file:
 	rm -f ${FILE}.tmp
 	sed < ${srcdir}/${FILE}.in > ${FILE}.tmp \
-	    -e 's:@-PREFIX-@:${prefix}:g' \
-	    -e 's:@-LIBEXECDIR-@:${libexecdir}:g' \
-	    -e 's:@-PKGSYSCONFDIR-@:${pkgsysconfdir}:g' \
-	    -e 's:@-PKGXMLDIR-@:${pkgxmldir}:g' \
-            -e 's:@-XMLDIR-@:${xmldir}:g' \
-	    -e 's:@-PKGLOGDIR-@:${pkglogdir}:g' \
-	    -e 's:@-SHIRELOGDIR-@:${shirelogdir}:g' \
-	    -e 's:@-VARRUNDIR-@:${varrundir}:g'
+        -e 's:@-PREFIX-@:${prefix}:g' \
+        -e 's:@-LIBEXECDIR-@:${libexecdir}:g' \
+        -e 's:@-PKGSYSCONFDIR-@:${pkgsysconfdir}:g' \
+        -e 's:@-PKGXMLDIR-@:${pkgxmldir}:g' \
+        -e 's:@-PKGDOCDIR-@:${pkgdocdir}:g' \
+        -e 's:@-XMLDIR-@:${xmldir}:g' \
+        -e 's:@-PKGLOGDIR-@:${pkglogdir}:g' \
+        -e 's:@-SHIRELOGDIR-@:${shirelogdir}:g' \
+        -e 's:@-VARRUNDIR-@:${varrundir}:g'
 	cmp -s ${FILE} ${FILE}.tmp || mv ${FILE}.tmp ${FILE}
 	rm -f ${FILE}.tmp
 
@@ -100,10 +102,10 @@ all-data-local: $(BUILTCONFIGFILES)
 
 install-data-local:	all-data-local
 	$(mkinstalldirs) $(DESTDIR)$(pkglogdir)
+	$(mkinstalldirs) $(DESTDIR)$(pkgdocdir)
 	$(mkinstalldirs) $(DESTDIR)$(shirelogdir)
 	$(mkinstalldirs) $(DESTDIR)$(varrundir)
 	$(mkinstalldirs) $(DESTDIR)$(pkgxmldir)
-	$(mkinstalldirs) $(DESTDIR)$(prefix)/data
 	$(mkinstalldirs) $(DESTDIR)$(pkgsysconfdir)
 	for f in $(BUILTCONFIGFILES); do \
 		if test ! -f $(DESTDIR)${pkgsysconfdir}/$$f; then \

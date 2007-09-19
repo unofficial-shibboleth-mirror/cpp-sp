@@ -24,8 +24,8 @@ ShibConfig @-PKGSYSCONFDIR-@/shibboleth2.xml
   <Location /shibboleth-sp>
     Allow from all
   </Location>
-  Alias /shibboleth-sp/main.css @-PREFIX-@/doc/shibboleth/main.css
-  Alias /shibboleth-sp/logo.jpg @-PREFIX-@/doc/shibboleth/logo.jpg
+  Alias /shibboleth-sp/main.css @-PKGDOCDIR-@/main.css
+  Alias /shibboleth-sp/logo.jpg @-PKGDOCDIR-@/logo.jpg
 </IfModule>
 
 #

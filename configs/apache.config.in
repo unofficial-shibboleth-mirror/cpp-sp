@@ -37,8 +37,8 @@ SetHandler shib-handler
 # Used for example logo and style sheet in error templates.
 #
 <IfModule mod_alias.c>
-  Alias /shibboleth-sp/main.css @-PREFIX-@/doc/shibboleth/main.css
-  Alias /shibboleth-sp/logo.jpg @-PREFIX-@/doc/shibboleth/logo.jpg
+  Alias /shibboleth-sp/main.css @-PKGDOCDIR-@/main.css
+  Alias /shibboleth-sp/logo.jpg @-PKGDOCDIR-@/logo.jpg
 </IfModule>
 
 #
