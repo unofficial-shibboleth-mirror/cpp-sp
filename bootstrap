@@ -13,11 +13,11 @@ find_program()
 }
 
 # Find appropriate versions of the auto tools
-find_program aclocal 1.7
+find_program aclocal 1.9
 aclocal="$program"
 find_program autoheader 2.53
 autoheader="$program"
-find_program automake 1.7
+find_program automake 1.9
 automake="$program"
 find_program autoconf 2.53
 autoconf="$program"
