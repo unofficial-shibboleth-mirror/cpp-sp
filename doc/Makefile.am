@@ -1,6 +1,6 @@
 AUTOMAKE_OPTIONS = foreign
 
-pkgdocdir = $(prefix)/doc/@PACKAGE@
+pkgdocdir = $(datadir)/doc/@PACKAGE@
 
 docfiles = \
 	CREDITS.txt \

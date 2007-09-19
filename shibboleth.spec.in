@@ -57,9 +57,7 @@ applications that use the shibboleth library.
 
 %install
 [ "$RPM_BUILD_ROOT" != "/" ] && %{__rm} -rf $RPM_BUILD_ROOT
-%{__rm} -rf _docs
 %{__make} install DESTDIR=$RPM_BUILD_ROOT
-%{__mv} $RPM_BUILD_ROOT/usr/doc/%{name} _docs
 
 %if "%{_vendor}" == "suse"
 	%{__sed} -i "s/\/var\/log\/httpd/\/var\/log\/apache2/g" \
@@ -147,8 +145,6 @@ fi
 
 %files -f rpm.filelist
 %defattr(-,root,root,-)
-%doc _docs/CREDITS.txt _docs/LICENSE.txt _docs/NOTICE.txt _docs/README.txt _docs/RELEASE.txt
-%doc _docs/logo.jpg _docs/main.css
 %{_sbindir}/shibd
 %{_bindir}/mdquery
 %{_bindir}/resolvertest
@@ -169,6 +165,8 @@ fi
 %{_sysconfdir}/%{name}/shibd-debian
 %{_sysconfdir}/%{name}/shibd-osx.plist
 %exclude %{_libexecdir}/*.la
+%docdir %{_datadir}/doc/%{name}
+%{_datadir}/doc/%{name}
 
 %files devel
 %defattr(-,root,root,-)
