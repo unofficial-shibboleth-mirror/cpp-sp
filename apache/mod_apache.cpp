@@ -1336,12 +1336,12 @@ module MODULE_VAR_EXPORT mod_shib = {
     shib_auth_checker,		/* check auth */
     NULL,			/* check access */
     NULL,			/* type_checker */
-    NULL,//shib_fixups,		/* fixups */
+    shib_fixups,		/* fixups */
     NULL,			/* logger */
     NULL,			/* header parser */
     shib_child_init,		/* child_init */
     shib_child_exit,		/* child_exit */
-    NULL//shib_post_read		/* post read-request */
+    shib_post_read		/* post read-request */
 };
 
 #elif defined(SHIB_APACHE_20) || defined(SHIB_APACHE_22)
