@@ -341,8 +341,9 @@ if test "$WANT_FASTCGI" != "no"; then
             FASTCGI_LDFLAGS="-L$WANT_FASTCGI/lib"
         fi
     fi
+    AC_CHECK_HEADER([fcgio.h],,
+        AC_MSG_ERROR([unable to find FastCGI header files]))
     FASTCGI_LIBS="-lfcgi -lfcgi++"
-    AC_CHECK_HEADER([fcgio.h])
 fi
 
 AC_SUBST(FASTCGI_INCLUDE)
