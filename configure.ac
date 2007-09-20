@@ -55,7 +55,7 @@ AC_STRUCT_TM
 # Checks for library functions.
 AC_FUNC_STRFTIME
 AC_FUNC_STRERROR_R
-AC_CHECK_FUNCS([strchr strdup strstr gmtime_r ctime_r strtok_r strcasecmp])
+AC_CHECK_FUNCS([strchr strdup strstr timegm gmtime_r ctime_r strtok_r strcasecmp])
 
 # checks for pthreads
 ACX_PTHREAD([enable_threads="pthread"],[enable_threads="no"])
