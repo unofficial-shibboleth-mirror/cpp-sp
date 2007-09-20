@@ -5,14 +5,6 @@
 	<key>Label</key> <string>edu.internet2.shibboleth.shibd</string>
 	<key>ServiceDescription</key> <string>Shibboleth 2.0 Service Provider daemon</string>
 
-	<key>EnvironmentVariables</key>
-	<dict>
-		<key>DYLD_INSERT_LIBRARIES</key>
-		<string>@-PREFIX-@/lib/libshibsp-lite.dylib</string>
-		<key>DYLD_LIBRARY_PATH</key>
-		<string>@-PREFIX-@/lib</string>
-	</dict>
-
 	<key>ProgramArguments</key>
 	<array>
 		<string>@-PREFIX-@/sbin/shibd</string>
