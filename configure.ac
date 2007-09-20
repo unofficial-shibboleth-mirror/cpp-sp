@@ -329,7 +329,7 @@ if test "$need_default" = "yes"; then
   # ask the daemon for the version and set parameters
   AC_MSG_CHECKING(default apache version)
   httpd="`$xs -q SBINDIR`/`$xs -q TARGET`"
-  if test "x$httpd" != "x"; then
+  if test "x$httpd" != "x" && test -f $httpd ; then
      v=`$httpd -v|$SED -n -e 's/.*Apache\/\.*//p'`
      case $v in
        1.3*)   [enable_apache_13]=yes
