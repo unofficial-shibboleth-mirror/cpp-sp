@@ -132,7 +132,6 @@ int real_main(int preinit)
         }
         
         try {
-            fprintf(stderr, "loading configuration file: %s\n", shar_config);
             static const XMLCh path[] = UNICODE_LITERAL_4(p,a,t,h);
             static const XMLCh validate[] = UNICODE_LITERAL_8(v,a,l,i,d,a,t,e);
             xercesc::DOMDocument* dummydoc=XMLToolingConfig::getConfig().getParser().newDocument();
@@ -289,7 +288,6 @@ int main(int argc, char *argv[])
     }
 
     try {
-        fprintf(stderr, "loading configuration file: %s\n", shar_config);
         static const XMLCh path[] = UNICODE_LITERAL_4(p,a,t,h);
         static const XMLCh validate[] = UNICODE_LITERAL_8(v,a,l,i,d,a,t,e);
         xercesc::DOMDocument* dummydoc=XMLToolingConfig::getConfig().getParser().newDocument();
