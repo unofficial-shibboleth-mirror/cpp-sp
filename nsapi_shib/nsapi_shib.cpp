@@ -68,6 +68,7 @@ namespace {
     string g_ServerScheme;
     string g_unsetHeaderValue;
     bool g_checkSpoofing = true;
+    bool g_catchAll = true;
 }
 
 PlugManager::Factory SunRequestMapFactory;
@@ -107,9 +108,7 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, Session* sn, Request* rq
 
     log_error(LOG_INFORM,"nsapi_shib_init",sn,rq,"nsapi_shib loaded for host (%s)",g_ServerName.c_str());
 
-#ifndef _DEBUG
     try {
-#endif
         const char* schemadir=pblock_findval("shib-schemas",pb);
         if (!schemadir)
             schemadir=getenv("SHIBSCHEMAS");
@@ -154,18 +153,17 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, Session* sn, Request* rq
             pair<bool,const char*> unsetValue=props->getString("unsetHeaderValue");
             if (unsetValue.first)
                 g_unsetHeaderValue = unsetValue.second;
-            pair<bool,bool> checkSpoofing=props->getBool("checkSpoofing");
-            if (checkSpoofing.first && !checkSpoofing.second)
-                g_checkSpoofing = false;
+            pair<bool,bool> flag=props->getBool("checkSpoofing");
+            g_checkSpoofing = !flag.first || flag.second;
+            flag=props->getBool("catchAll");
+            g_catchAll = !flag.first || flag.second;
         }
-#ifndef _DEBUG
     }
-    catch (...) {
+    catch (exception&) {
         g_Config=NULL;
         pblock_nvinsert("error","caught exception, unable to initialize Shibboleth libraries",pb);
         return REQ_ABORTED;
     }
-#endif
     return REQ_PROCEED;
 }
 
@@ -374,41 +372,41 @@ int WriteClientError(Session* sn, Request* rq, char* func, char* msg)
 #define FUNC "shibboleth"
 extern "C" NSAPI_PUBLIC int nsapi_shib(pblock* pb, Session* sn, Request* rq)
 {
-  ostringstream threadid;
-  threadid << "[" << getpid() << "] nsapi_shib" << '\0';
-  saml::NDC ndc(threadid.str().c_str());
-
-  try {
-    ShibTargetNSAPI stn(pb, sn, rq);
-
-    // Check user authentication
-    pair<bool,void*> res = stn.doCheckAuthN();
-    if (res.first) return (int)res.second;
-
-    // user authN was okay -- export the assertions now
-    param_free(pblock_remove("auth-user",rq->vars));
-    // This seems to be required in order to eventually set
-    // the auth-user var.
-    pblock_nvinsert("auth-type","shibboleth",rq->vars);
-    res = stn.doExportAssertions();
-    if (res.first) return (int)res.second;
-
-    // Check the Authorization
-    res = stn.doCheckAuthZ();
-    if (res.first) return (int)res.second;
-
-    // this user is ok.
-    return REQ_PROCEED;
-  }
-  catch (SAMLException& e) {
-    log_error(LOG_FAILURE,FUNC,sn,rq,const_cast<char*>(e.what()));
-    return WriteClientError(sn, rq, FUNC, "Shibboleth filter threw an exception, see web server log for error.");
-  }
-#ifndef _DEBUG
-  catch (...) {
-    return WriteClientError(sn, rq, FUNC, "Shibboleth filter threw an uncaught exception.");
-  }
-#endif
+    ostringstream threadid;
+    threadid << "[" << getpid() << "] nsapi_shib" << '\0';
+    saml::NDC ndc(threadid.str().c_str());
+    
+    try {
+        ShibTargetNSAPI stn(pb, sn, rq);
+    
+        // Check user authentication
+        pair<bool,void*> res = stn.doCheckAuthN();
+        if (res.first) return (int)res.second;
+    
+        // user authN was okay -- export the assertions now
+        param_free(pblock_remove("auth-user",rq->vars));
+        // This seems to be required in order to eventually set
+        // the auth-user var.
+        pblock_nvinsert("auth-type","shibboleth",rq->vars);
+        res = stn.doExportAssertions();
+        if (res.first) return (int)res.second;
+    
+        // Check the Authorization
+        res = stn.doCheckAuthZ();
+        if (res.first) return (int)res.second;
+    
+        // this user is ok.
+        return REQ_PROCEED;
+    }
+    catch (exception& e) {
+        log_error(LOG_FAILURE,FUNC,sn,rq,const_cast<char*>(e.what()));
+        return WriteClientError(sn, rq, FUNC, "Shibboleth filter threw an exception, see web server log for error.");
+    }
+    catch (...) {
+        if (g_catchAll)
+            return WriteClientError(sn, rq, FUNC, "Shibboleth filter threw an uncaught exception.");
+        throw;
+    }
 }
 
 
@@ -416,27 +414,27 @@ extern "C" NSAPI_PUBLIC int nsapi_shib(pblock* pb, Session* sn, Request* rq)
 #define FUNC "shib_handler"
 extern "C" NSAPI_PUBLIC int shib_handler(pblock* pb, Session* sn, Request* rq)
 {
-  ostringstream threadid;
-  threadid << "[" << getpid() << "] shib_handler" << '\0';
-  saml::NDC ndc(threadid.str().c_str());
-
-  try {
-    ShibTargetNSAPI stn(pb, sn, rq);
-
-    pair<bool,void*> res = stn.doHandler();
-    if (res.first) return (int)res.second;
-
-    return WriteClientError(sn, rq, FUNC, "Shibboleth handler did not do anything.");
-  }
-  catch (SAMLException& e) {
-    log_error(LOG_FAILURE,FUNC,sn,rq,const_cast<char*>(e.what()));
-    return WriteClientError(sn, rq, FUNC, "Shibboleth handler threw an exception, see web server log for error.");
-  }
-#ifndef _DEBUG
-  catch (...) {
-    return WriteClientError(sn, rq, FUNC, "Shibboleth handler threw an unknown exception.");
-  }
-#endif
+    ostringstream threadid;
+    threadid << "[" << getpid() << "] shib_handler" << '\0';
+    saml::NDC ndc(threadid.str().c_str());
+    
+    try {
+        ShibTargetNSAPI stn(pb, sn, rq);
+    
+        pair<bool,void*> res = stn.doHandler();
+        if (res.first) return (int)res.second;
+    
+        return WriteClientError(sn, rq, FUNC, "Shibboleth handler did not do anything.");
+    }
+    catch (exception& e) {
+        log_error(LOG_FAILURE,FUNC,sn,rq,const_cast<char*>(e.what()));
+        return WriteClientError(sn, rq, FUNC, "Shibboleth handler threw an exception, see web server log for error.");
+    }
+    catch (...) {
+        if (g_catchAll)
+            return WriteClientError(sn, rq, FUNC, "Shibboleth handler threw an unknown exception.");
+        throw;
+    }
 }
 
 

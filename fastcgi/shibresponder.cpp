@@ -31,7 +31,6 @@
 #include <fcgio.h>
 
 using namespace shibtarget;
-using namespace saml;
 using namespace std;
 
 typedef enum {
@@ -61,7 +60,7 @@ public:
             server_port = strtol(server_port_str, &server_port_str, 10);
             if (*server_port_str) {
                 cerr << "can't parse SERVER_PORT (" << FCGX_GetParam("SERVER_PORT", req->envp) << ")" << endl;
-                throw SAMLException("Unable to determine server port.");
+                throw exception("Unable to determine server port.");
             }
         }
 
@@ -121,30 +120,30 @@ public:
     }
 
     virtual void clearHeader(const string &name) {
-        throw SAMLException("clearHeader not implemented by FastCGI responder.");
+        throw exception("clearHeader not implemented by FastCGI responder.");
     }
   
     virtual void setHeader(const string &name, const string &value) {
-        throw SAMLException("setHeader not implemented by FastCGI responder.");
+        throw exception("setHeader not implemented by FastCGI responder.");
     }
 
     virtual string getHeader(const string &name) {
-        throw SAMLException("getHeader not implemented by FastCGI responder.");
+        throw exception("getHeader not implemented by FastCGI responder.");
     }
 
     virtual void setRemoteUser(const string &user) {
-        throw SAMLException("setRemoteUser not implemented by FastCGI responder.");
+        throw exception("setRemoteUser not implemented by FastCGI responder.");
     }
 
     virtual string getRemoteUser(void) {
-        throw SAMLException("getRemoteUser not implemented by FastCGI responder.");
+        throw exception("getRemoteUser not implemented by FastCGI responder.");
     }
 
     virtual void* sendPage(
         const string& msg,
         int code=200,
         const string& content_type="text/html",
-        const Iterator<header_t>& headers=EMPTY(header_t)) {
+        const saml::Iterator<header_t>& headers=EMPTY(header_t)) {
 
         string hdr = string ("Connection: close\r\nContent-type: ") + content_type + "\r\n" + m_cookie;
         while (headers.hasNext()) {
@@ -261,8 +260,8 @@ int main(void)
             exit(1);
         }
     }
-    catch (...) {
-        cerr << "exception while initializing Shibboleth configuration" << endl;
+    catch (exception& e) {
+        cerr << "exception while initializing Shibboleth configuration:" << e.what() << endl;
         exit(1);
     }
 
@@ -340,7 +339,7 @@ int main(void)
             }          
           
         }
-        catch (SAMLException& e) {
+        catch (exception& e) {
             cerr << "shib: FastCGI responder caught an exception: " << e.what() << endl;
             print_error("<html><body>FastCGI Shibboleth responder caught an exception, check log for details.</body></html>");
         }

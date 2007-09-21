@@ -44,6 +44,8 @@ using namespace shibtarget;
 
 // globals
 namespace {
+    static const XMLCh catchAll[] =
+    { chLatin_c, chLatin_a, chLatin_t, chLatin_c, chLatin_h, chLatin_A, chLatin_l, chLatin_l, chNull };
     static const XMLCh name[] = { chLatin_n, chLatin_a, chLatin_m, chLatin_e, chNull };
     static const XMLCh port[] = { chLatin_p, chLatin_o, chLatin_r, chLatin_t, chNull };
     static const XMLCh sslport[] = { chLatin_s, chLatin_s, chLatin_l, chLatin_p, chLatin_o, chLatin_r, chLatin_t, chNull };
@@ -88,6 +90,7 @@ namespace {
     bool g_bNormalizeRequest = true;
     string g_unsetHeaderValue;
     bool g_checkSpoofing = true;
+    bool g_catchAll = true;
 }
 
 BOOL LogEvent(
@@ -143,10 +146,7 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
         return TRUE;
     }
 
-#ifndef _DEBUG
-    try
-    {
-#endif
+    try {
         LPCSTR schemadir=getenv("SHIBSCHEMAS");
         if (!schemadir)
             schemadir=SHIB_SCHEMAS;
@@ -183,15 +183,17 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
             pair<bool,const char*> unsetValue=props->getString("unsetHeaderValue");
             if (unsetValue.first)
                 g_unsetHeaderValue = unsetValue.second;
-            pair<bool,bool> checkSpoofing=props->getBool("checkSpoofing");
-            if (checkSpoofing.first && !checkSpoofing.second)
-                g_checkSpoofing = false;
+            pair<bool,bool> flag=props->getBool("checkSpoofing");
+            g_checkSpoofing = !flag.first || flag.second;
+            flag=props->getBool("checkAll");
+            g_catchAll = !flag.first || flag.second;
+            
             const DOMElement* impl=saml::XML::getFirstChildElement(
                 props->getElement(),shibtarget::XML::SHIBTARGET_NS,Implementation
                 );
             if (impl && (impl=saml::XML::getFirstChildElement(impl,shibtarget::XML::SHIBTARGET_NS,ISAPI))) {
-                const XMLCh* flag=impl->getAttributeNS(NULL,normalizeRequest);
-                g_bNormalizeRequest=(!flag || !*flag || *flag==chDigit_1 || *flag==chLatin_t);
+                const XMLCh* ch=impl->getAttributeNS(NULL,normalizeRequest);
+                g_bNormalizeRequest=(!ch || !*ch || *ch==chDigit_1 || *ch==chLatin_t);
                 impl=saml::XML::getFirstChildElement(impl,shibtarget::XML::SHIBTARGET_NS,Site);
                 while (impl) {
                     auto_ptr_char id(impl->getAttributeNS(NULL,id));
@@ -201,14 +203,11 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
                 }
             }
         }
-#ifndef _DEBUG
     }
-    catch (...)
-    {
+    catch (exception&) {
         LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, "Filter startup failed with an exception.");
         return FALSE;
     }
-#endif
 
     pVer->dwFilterVersion=HTTP_FILTER_REVISION;
     strncpy(pVer->lpszFilterDesc,"Shibboleth ISAPI Filter",SF_MAX_FILTER_DESC_LEN);
@@ -508,16 +507,14 @@ DWORD WriteClientError(PHTTP_FILTER_CONTEXT pfc, const char* msg)
 extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificationType, LPVOID pvNotification)
 {
     // Is this a log notification?
-    if (notificationType==SF_NOTIFY_LOG)
-    {
+    if (notificationType==SF_NOTIFY_LOG) {
         if (pfc->pFilterContext)
             ((PHTTP_FILTER_LOG)pvNotification)->pszClientUserName=static_cast<LPCSTR>(pfc->pFilterContext);
         return SF_STATUS_REQ_NEXT_NOTIFICATION;
     }
 
     PHTTP_FILTER_PREPROC_HEADERS pn=(PHTTP_FILTER_PREPROC_HEADERS)pvNotification;
-    try
-    {
+    try {
         // Determine web site number. This can't really fail, I don't think.
         dynabuf buf(128);
         GetServerVariable(pfc,"INSTANCE_ID",buf,10);
@@ -555,15 +552,15 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
         else
             return WriteClientError(pfc,"Shibboleth Filter detected unexpected IIS error.");
     }
-    catch (SAMLException& e) {
+    catch (exception& e) {
         LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, e.what());
         return WriteClientError(pfc,"Shibboleth Filter caught an exception, ask administrator to check Event Log for details.");
     }
-#ifndef _DEBUG
     catch(...) {
-        return WriteClientError(pfc,"Shibboleth Filter caught an unknown exception.");
+        if (g_catchAll)
+            return WriteClientError(pfc,"Shibboleth Filter caught an unknown exception.");
+        throw;
     }
-#endif
 
     return WriteClientError(pfc,"Shibboleth Filter reached unreachable code, save my walrus!");
 }
@@ -798,15 +795,15 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
         else
             return WriteClientError(lpECB,"Server detected unexpected IIS error.");
     }
-    catch (SAMLException& e) {
+    catch (exception& e) {
         LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, e.what());
         return WriteClientError(lpECB,"Shibboleth Extension caught an exception, check Event Log for details.");
     }
-#ifndef _DEBUG
     catch(...) {
-        return WriteClientError(lpECB,"Shibboleth Extension caught an unknown exception.");
+        if (g_catchAll)
+            return WriteClientError(lpECB,"Shibboleth Extension caught an unknown exception.");
+        throw;
     }
-#endif
 
     // If we get here we've got an error.
     return HSE_STATUS_ERROR;

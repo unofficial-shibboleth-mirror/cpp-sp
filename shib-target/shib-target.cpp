@@ -40,11 +40,11 @@
 # define strcasecmp stricmp
 #endif
 
-using namespace std;
-using namespace saml;
-using namespace shibboleth;
-using namespace shibtarget;
 using namespace shibtarget::logging;
+using namespace shibtarget;
+using namespace shibboleth;
+using namespace saml;
+using namespace std;
 
 namespace shibtarget {
   class ShibTargetPriv
@@ -313,11 +313,9 @@ pair<bool,void*> ShibTarget::doCheckAuthN(bool handler)
     catch (SAMLException& e) {
         mlp.insert(e);
     }
-#ifndef _DEBUG
-    catch (...) {
-        mlp.insert("errorText", "Caught an unknown exception.");
+    catch (exception& e) {
+        mlp.insert("errorText", e.what());
     }
-#endif
 
     // If we get here then we've got an error.
     mlp.insert("errorType", procState);
@@ -420,11 +418,9 @@ pair<bool,void*> ShibTarget::doHandler(void)
     catch (SAMLException& e) {
         mlp.insert(e);
     }
-#ifndef _DEBUG
-    catch (...) {
-        mlp.insert("errorText", "Caught an unknown exception.");
+    catch (exception& e) {
+        mlp.insert("errorText", e.what());
     }
-#endif
 
     // If we get here then we've got an error.
     mlp.insert("errorType", procState);
@@ -506,11 +502,9 @@ pair<bool,void*> ShibTarget::doCheckAuthZ(void)
     catch (SAMLException& e) {
         mlp.insert(e);
     }
-#ifndef _DEBUG
-    catch (...) {
-        mlp.insert("errorText", "Caught an unknown exception.");
+    catch (exception& e) {
+        mlp.insert("errorText", e.what());
     }
-#endif
 
     // If we get here then we've got an error.
     mlp.insert("errorType", procState);
@@ -676,11 +670,9 @@ pair<bool,void*> ShibTarget::doExportAssertions(bool requireSession)
     catch (SAMLException& e) {
         mlp.insert(e);
     }
-#ifndef _DEBUG
-    catch (...) {
-        mlp.insert("errorText", "Caught an unknown exception.");
+    catch (exception& e) {
+        mlp.insert("errorText", e.what());
     }
-#endif
 
     // If we get here then we've got an error.
     mlp.insert("errorType", procState);

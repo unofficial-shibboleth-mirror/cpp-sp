@@ -31,7 +31,6 @@
 #include <fcgio.h>
 
 using namespace shibtarget;
-using namespace saml;
 using namespace std;
 
 typedef enum {
@@ -58,7 +57,7 @@ public:
             server_port = strtol(server_port_str, &server_port_str, 10);
             if (*server_port_str) {
                 cerr << "can't parse SERVER_PORT (" << FCGX_GetParam("SERVER_PORT", req->envp) << ")" << endl;
-                throw SAMLException("Unable to determine server port.");
+                throw exception("Unable to determine server port.");
             }
         }
 
@@ -104,7 +103,7 @@ public:
     }
 
     virtual string getPostData(void) {
-        throw SAMLException("getPostData not implemented by FastCGI authorizer.");
+        throw exception("getPostData not implemented by FastCGI authorizer.");
     }
 
     virtual void clearHeader(const string& name) {
@@ -141,7 +140,7 @@ public:
         const string& msg,
         int code=200,
         const string& content_type="text/html",
-        const Iterator<header_t>& headers=EMPTY(header_t)) {
+        const saml::Iterator<header_t>& headers=EMPTY(header_t)) {
 
         string hdr = m_cookie + "Connection: close\r\nContent-type: " + content_type + "\r\n";
         while (headers.hasNext()) {
@@ -228,8 +227,8 @@ int main(void)
             exit(1);
         }
     }
-    catch (...) {
-        cerr << "exception while initializing Shibboleth configuration" << endl;
+    catch (exception& e) {
+        cerr << "exception while initializing Shibboleth configuration: " << e.what() << endl;
         exit(1);
     }
 
@@ -343,7 +342,7 @@ int main(void)
             print_ok(sta.m_headers);
           
         }
-        catch (SAMLException& e) {
+        catch (exception& e) {
             cerr << "shib: FastCGI authorizer caught an exception: " << e.what() << endl;
             print_error("<html><body>FastCGI Shibboleth authorizer caught an exception, check log for details.</body></html>");
         }

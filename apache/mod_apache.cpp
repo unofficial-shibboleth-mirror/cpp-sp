@@ -57,10 +57,10 @@
 #include <unistd.h>		// for getpid()
 #endif
 
-using namespace std;
-using namespace saml;
-using namespace shibboleth;
 using namespace shibtarget;
+using namespace shibboleth;
+using namespace saml;
+using namespace std;
 
 extern "C" module MODULE_VAR_EXPORT mod_shib;
 
@@ -70,6 +70,7 @@ namespace {
     ShibTargetConfig* g_Config = NULL;
     string g_unsetHeaderValue;
     bool g_checkSpoofing = true;
+    bool g_catchAll = true;
     static const char* g_UserDataKey = "_shib_check_user_";
 }
 
@@ -470,86 +471,88 @@ public:
 
 extern "C" int shib_check_user(request_rec* r)
 {
-  // Short-circuit entirely?
-  if (((shib_dir_config*)ap_get_module_config(r->per_dir_config, &mod_shib))->bOff==1)
-    return DECLINED;
+    // Short-circuit entirely?
+    if (((shib_dir_config*)ap_get_module_config(r->per_dir_config, &mod_shib))->bOff==1)
+        return DECLINED;
+        
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_check_user(%d): ENTER", (int)getpid());
     
-  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_check_user(%d): ENTER", (int)getpid());
-
-  ostringstream threadid;
-  threadid << "[" << getpid() << "] shib_check_user" << '\0';
-  saml::NDC ndc(threadid.str().c_str());
-
-  try {
-    ShibTargetApache sta(r, false);
-
-    // Check user authentication and export information, then set the handler bypass
-    pair<bool,void*> res = sta.doCheckAuthN(true);
-    apr_pool_userdata_setn((const void*)42,g_UserDataKey,NULL,r->pool);
-    if (res.first) return (int)(long)res.second;
-
-    // user auth was okay -- export the assertions now
-    res = sta.doExportAssertions();
-    if (res.first) return (int)(long)res.second;
-
-    // export happened successfully..  this user is ok.
-    return OK;
-  }
-  catch (SAMLException& e) {
-    ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_check_user threw an exception: %s", e.what());
-    return SERVER_ERROR;
-  }
-#ifndef _DEBUG
-  catch (...) {
-    ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_check_user threw an uncaught exception!");
-    return SERVER_ERROR;
-  }
-#endif
+    ostringstream threadid;
+    threadid << "[" << getpid() << "] shib_check_user" << '\0';
+    saml::NDC ndc(threadid.str().c_str());
+    
+    try {
+        ShibTargetApache sta(r, false);
+    
+        // Check user authentication and export information, then set the handler bypass
+        pair<bool,void*> res = sta.doCheckAuthN(true);
+        apr_pool_userdata_setn((const void*)42,g_UserDataKey,NULL,r->pool);
+        if (res.first) return (int)(long)res.second;
+    
+        // user auth was okay -- export the assertions now
+        res = sta.doExportAssertions();
+        if (res.first) return (int)(long)res.second;
+    
+        // export happened successfully..  this user is ok.
+        return OK;
+    }
+    catch (exception& e) {
+        ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_check_user threw an exception: %s", e.what());
+        return SERVER_ERROR;
+    }
+    catch (...) {
+        if (g_catchAll) {
+            ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_check_user threw an uncaught exception!");
+            return SERVER_ERROR;
+        }
+        throw;
+    }
 }
 
 extern "C" int shib_handler(request_rec* r)
 {
-  // Short-circuit entirely?
-  if (((shib_dir_config*)ap_get_module_config(r->per_dir_config, &mod_shib))->bOff==1)
-    return DECLINED;
-
-  ostringstream threadid;
-  threadid << "[" << getpid() << "] shib_handler" << '\0';
-  saml::NDC ndc(threadid.str().c_str());
+    // Short-circuit entirely?
+    if (((shib_dir_config*)ap_get_module_config(r->per_dir_config, &mod_shib))->bOff==1)
+        return DECLINED;
+    
+    ostringstream threadid;
+    threadid << "[" << getpid() << "] shib_handler" << '\0';
+    saml::NDC ndc(threadid.str().c_str());
 
 #ifndef SHIB_APACHE_13
-  // With 2.x, this handler always runs, though last.
-  // We check if shib_check_user ran, because it will detect a handler request
-  // and dispatch it directly.
-  void* data;
-  apr_pool_userdata_get(&data,g_UserDataKey,r->pool);
-  if (data==(const void*)42) {
-    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_handler skipped since check_user ran");
-    return DECLINED;
-  }
+    // With 2.x, this handler always runs, though last.
+    // We check if shib_check_user ran, because it will detect a handler request
+    // and dispatch it directly.
+    void* data;
+    apr_pool_userdata_get(&data,g_UserDataKey,r->pool);
+    if (data==(const void*)42) {
+        ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_handler skipped since check_user ran");
+        return DECLINED;
+    }
 #endif
 
-  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_handler(%d): ENTER: %s", (int)getpid(), r->handler);
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_handler(%d): ENTER: %s", (int)getpid(), r->handler);
 
-  try {
-    ShibTargetApache sta(r, true);
-
-    pair<bool,void*> res = sta.doHandler();
-    if (res.first) return (int)(long)res.second;
-
-    ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "doHandler() did not do anything.");
-    return SERVER_ERROR;
-  }
-  catch (SAMLException& e) {
-    ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_handler threw an exception: %s", e.what());
-    return SERVER_ERROR;
-  }
-#ifndef _DEBUG
-  catch (...) {
-    ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_handler threw an uncaught exception!");
-    return SERVER_ERROR;
-  }
-#endif
+    try {
+        ShibTargetApache sta(r, true);
+    
+        pair<bool,void*> res = sta.doHandler();
+        if (res.first) return (int)(long)res.second;
+    
+        ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "doHandler() did not do anything.");
+        return SERVER_ERROR;
+    }
+    catch (exception& e) {
+        ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_handler threw an exception: %s", e.what());
+        return SERVER_ERROR;
+    }
+    catch (...) {
+        if (g_catchAll) {
+            ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_handler threw an uncaught exception!");
+            return SERVER_ERROR;
+        }
+        throw;
+    }
 }
 
 /*
@@ -558,35 +561,36 @@ extern "C" int shib_handler(request_rec* r)
  */
 extern "C" int shib_auth_checker(request_rec* r)
 {
-  // Short-circuit entirely?
-  if (((shib_dir_config*)ap_get_module_config(r->per_dir_config, &mod_shib))->bOff==1)
-    return DECLINED;
-
-  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_auth_checker(%d): ENTER", (int)getpid());
-
-  ostringstream threadid;
-  threadid << "[" << getpid() << "] shib_auth_checker" << '\0';
-  saml::NDC ndc(threadid.str().c_str());
-
-  try {
-    ShibTargetApache sta(r, false);
-
-    pair<bool,void*> res = sta.doCheckAuthZ();
-    if (res.first) return (int)(long)res.second;
-
-    // We're all okay.
-    return OK;
-  }
-  catch (SAMLException& e) {
-    ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_auth_checker threw an exception: %s", e.what());
-    return SERVER_ERROR;
-  }
-#ifndef _DEBUG
-  catch (...) {
-    ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_auth_checker threw an uncaught exception!");
-    return SERVER_ERROR;
-  }
-#endif
+    // Short-circuit entirely?
+    if (((shib_dir_config*)ap_get_module_config(r->per_dir_config, &mod_shib))->bOff==1)
+        return DECLINED;
+    
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_auth_checker(%d): ENTER", (int)getpid());
+    
+    ostringstream threadid;
+    threadid << "[" << getpid() << "] shib_auth_checker" << '\0';
+    saml::NDC ndc(threadid.str().c_str());
+    
+    try {
+        ShibTargetApache sta(r, false);
+    
+        pair<bool,void*> res = sta.doCheckAuthZ();
+        if (res.first) return (int)(long)res.second;
+    
+        // We're all okay.
+        return OK;
+    }
+    catch (exception& e) {
+        ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_auth_checker threw an exception: %s", e.what());
+        return SERVER_ERROR;
+    }
+    catch (...) {
+        if (g_catchAll) {
+            ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_auth_checker threw an uncaught exception!");
+            return SERVER_ERROR;
+        }
+        throw;
+    }
 }
 
 // Access control plugin that enforces htaccess rules
@@ -639,7 +643,7 @@ IPlugIn* ApacheRequestMapFactory(const DOMElement* e)
 
 ApacheRequestMapper::ApacheRequestMapper(const DOMElement* e) : m_mapper(NULL), m_staKey(NULL), m_propsKey(NULL), m_htaccess(NULL)
 {
-    IPlugIn* p=SAMLConfig::getConfig().getPlugMgr().newPlugin(shibtarget::XML::XMLRequestMapType,e);
+    IPlugIn* p=saml::SAMLConfig::getConfig().getPlugMgr().newPlugin(shibtarget::XML::XMLRequestMapType,e);
     m_mapper=dynamic_cast<IRequestMapper*>(p);
     if (!m_mapper) {
         delete p;
@@ -1103,10 +1107,11 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
             ap_log_error(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() failed to initialize libraries");
             exit(1);
         }
-        SAMLConfig::getConfig().getPlugMgr().regFactory(shibtarget::XML::htAccessControlType,&htAccessFactory);
-        SAMLConfig::getConfig().getPlugMgr().regFactory(shibtarget::XML::NativeRequestMapType,&ApacheRequestMapFactory);
+        PlugManager& mgr = SAMLConfig::getConfig().getPlugMgr();
+        mgr.regFactory(shibtarget::XML::htAccessControlType,&htAccessFactory);
+        mgr.regFactory(shibtarget::XML::NativeRequestMapType,&ApacheRequestMapFactory);
         // We hijack the legacy type so that 1.2 config files will load this plugin
-        SAMLConfig::getConfig().getPlugMgr().regFactory(shibtarget::XML::LegacyRequestMapType,&ApacheRequestMapFactory);
+        mgr.regFactory(shibtarget::XML::LegacyRequestMapType,&ApacheRequestMapFactory);
         
         if (!g_Config->load(g_szSHIBConfig)) {
             ap_log_error(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() failed to load configuration");
@@ -1114,18 +1119,19 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
         }
 
         IConfig* conf=g_Config->getINI();
-        Locker locker(conf);
+        saml::Locker locker(conf);
         const IPropertySet* props=conf->getPropertySet("Local");
         if (props) {
             pair<bool,const char*> unsetValue=props->getString("unsetHeaderValue");
             if (unsetValue.first)
                 g_unsetHeaderValue = unsetValue.second;
-            pair<bool,bool> checkSpoofing=props->getBool("checkSpoofing");
-            if (checkSpoofing.first && !checkSpoofing.second)
-                g_checkSpoofing = false;
+            pair<bool,bool> flag=props->getBool("checkSpoofing");
+            g_checkSpoofing = !flag.first || flag.second;
+            flag=props->getBool("catchAll");
+            g_catchAll = !flag.first || flag.second;
         }
     }
-    catch (...) {
+    catch (exception&) {
         ap_log_error(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() failed to initialize system");
         exit(1);
     }
