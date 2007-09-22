@@ -13,7 +13,6 @@ BuildRequires:	xerces%{?xercesver}-c-devel >= 2.6.1, xml-security-c-devel >= 1.4
 BuildRequires:	zlib-devel, opensaml-devel >= 2.0
 %{?_with_log4cpp:BuildRequires:	log4cpp-devel >= 0.3.5}
 %{!?_with_log4cpp:BuildRequires: log4shib-devel}
-%{!?_without_odbc:BuildRequires: unixODBC-devel}
 %if "%{_vendor}" == "redhat"
 %{!?_without_builtinapache:BuildRequires: httpd-devel}
 %endif
