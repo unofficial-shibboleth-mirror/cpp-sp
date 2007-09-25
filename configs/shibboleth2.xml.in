@@ -18,11 +18,10 @@
 		-->
     
 		<!-- Only one listener can be defined. -->
-		   <UnixListener address="@-VARRUNDIR-@/shib-shar.sock"/>
+		<UnixListener address="@-PKGRUNDIR-@/shibd.sock"/>
 		
 		<!-- <TCPListener address="127.0.0.1" port="12345" acl="127.0.0.1"/> -->
 		
-
 		<StorageService type="Memory" id="memory" cleanupInterval="900"/>
 		<SessionCache type="StorageService" StorageService="memory" cacheTimeout="3600"/>
 		<ReplayCache StorageService="memory"/>

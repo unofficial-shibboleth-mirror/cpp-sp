@@ -96,7 +96,7 @@ if (Err = 0) then
   ReplaceInFile ConfigFile, "@-LIBEXECDIR-@", ConvertedDir & "/libexec"
   ReplaceInFile ConfigFile, "@-LOGDIR-@", ConvertedDir & "/var/log/shibboleth"
   ReplaceInFile ConfigFile, "@-PREFIX-@", ConvertedDir
-  ReplaceInFile ConfigFile, "   <UnixListener address=""@-VARRUNDIR-@/shib-shar.sock""/>", "<!-- <UnixListener address=""@-VARRUNDIR-@/shib-shar.sock""/> -->"
+  ReplaceInFile ConfigFile, "   <UnixListener address=""@-PKGRUNDIR-@/shibd.sock""/>", "<!-- <UnixListener address=""@-PKGRUNDIR-@/shibd.sock""/> -->"
   ReplaceInFile ConfigFile, "<!-- <TCPListener address=""127.0.0.1"" port=""12345"" acl=""127.0.0.1""/> -->", "<TCPListener address=""127.0.0.1"" port=""" & ShibdPort & """ acl=""127.0.0.1""/>"
   If (NOT FileSystemObj.FileExists(ConfigDir & "shibboleth2.xml")) then
     FileSystemObj.CopyFile ConfigFile, ConfigDir & "shibboleth2.xml", false

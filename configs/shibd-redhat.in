@@ -5,14 +5,14 @@
 # chkconfig: - 98 02
 # description: Shibboleth 2 Service Provider Daemon
 # processname: shibd
-# pidfile: @-VARRUNDIR-@/shibd.pid
+# pidfile: @-PKGRUNDIR-@/shibd.pid
 # config: @-PKGSYSCONFDIR-@/shibboleth2.xml
 
 # Source function library.
 . /etc/rc.d/init.d/functions
 shibd="@-PREFIX-@/sbin/shibd"
 SHIBD_USER=root
-pidfile=@-VARRUNDIR-@/shibd.pid
+pidfile=@-PKGRUNDIR-@/shibd.pid
 prog=shibd
 RETVAL=0
 

@@ -7,7 +7,7 @@ pkgdocdir = ${datadir}/doc/@PACKAGE@
 shirelogdir = ${localstatedir}/log/httpd
 xmldir = $(datadir)/xml
 pkgxmldir = $(datadir)/xml/@PACKAGE@
-varrundir = $(localstatedir)/run
+pkgrundir = $(localstatedir)/run/@PACKAGE@
 pkgsysconfdir = $(sysconfdir)/@PACKAGE@
 pkgsysconf_DATA = \
 	shibd-redhat \
@@ -58,7 +58,7 @@ do-build-file:
         -e 's:@-XMLDIR-@:${xmldir}:g' \
         -e 's:@-PKGLOGDIR-@:${pkglogdir}:g' \
         -e 's:@-SHIRELOGDIR-@:${shirelogdir}:g' \
-        -e 's:@-VARRUNDIR-@:${varrundir}:g'
+        -e 's:@-PKGRUNDIR-@:${pkgrundir}:g'
 	cmp -s ${FILE} ${FILE}.tmp || mv ${FILE}.tmp ${FILE}
 	rm -f ${FILE}.tmp
 
@@ -104,7 +104,7 @@ install-data-local:	all-data-local
 	$(mkinstalldirs) $(DESTDIR)$(pkglogdir)
 	$(mkinstalldirs) $(DESTDIR)$(pkgdocdir)
 	$(mkinstalldirs) $(DESTDIR)$(shirelogdir)
-	$(mkinstalldirs) $(DESTDIR)$(varrundir)
+	$(mkinstalldirs) $(DESTDIR)$(pkgrundir)
 	$(mkinstalldirs) $(DESTDIR)$(pkgxmldir)
 	$(mkinstalldirs) $(DESTDIR)$(pkgsysconfdir)
 	for f in $(BUILTCONFIGFILES); do \

@@ -27,7 +27,7 @@ SHIBSP_CONFIG=@-PKGSYSCONFDIR-@/shibboleth2.xml
 LD_LIBRARY_PATH=@-PREFIX-@/lib
 DAEMON=@-PREFIX-@/sbin/$NAME
 SCRIPTNAME=/etc/init.d/$NAME
-PIDFILE=/var/run/$NAME.pid
+PIDFILE=@-PKGRUNDIR-@/$NAME.pid
 DAEMON_OPTS=""
 
 # Force removal of socket
