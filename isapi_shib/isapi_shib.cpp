@@ -350,7 +350,7 @@ class ShibTargetIsapiF : public AbstractSPRequest
 {
   PHTTP_FILTER_CONTEXT m_pfc;
   PHTTP_FILTER_PREPROC_HEADERS m_pn;
-  map<string,string> m_headers;
+  multimap<string,string> m_headers;
   int m_port;
   string m_scheme,m_hostname,m_uri;
   mutable string m_remote_addr,m_content_type,m_method;
@@ -470,13 +470,13 @@ public:
   void setResponseHeader(const char* name, const char* value) {
     // Set for later.
     if (value)
-        m_headers[name] = value;
+        m_headers.insert(make_pair(name,value));
     else
         m_headers.erase(name);
   }
   long sendResponse(istream& in, long status) {
     string hdr = string("Connection: close\r\n");
-    for (map<string,string>::const_iterator i=m_headers.begin(); i!=m_headers.end(); ++i)
+    for (multimap<string,string>::const_iterator i=m_headers.begin(); i!=m_headers.end(); ++i)
         hdr += i->first + ": " + i->second + "\r\n";
     hdr += "\r\n";
     const char* codestr="200 OK";
@@ -501,7 +501,7 @@ public:
       "Content-Length: 40\r\n"
       "Expires: 01-Jan-1997 12:00:00 GMT\r\n"
       "Cache-Control: private,no-store,no-cache\r\n";
-    for (map<string,string>::const_iterator i=m_headers.begin(); i!=m_headers.end(); ++i)
+    for (multimap<string,string>::const_iterator i=m_headers.begin(); i!=m_headers.end(); ++i)
         hdr += i->first + ": " + i->second + "\r\n";
     hdr += "\r\n";
     m_pfc->ServerSupportFunction(m_pfc, SF_REQ_SEND_RESPONSE_HEADER, "302 Please Wait", (DWORD)hdr.c_str(), 0);
@@ -630,7 +630,7 @@ DWORD WriteClientError(LPEXTENSION_CONTROL_BLOCK lpECB, const char* msg)
 class ShibTargetIsapiE : public AbstractSPRequest
 {
   LPEXTENSION_CONTROL_BLOCK m_lpECB;
-  map<string,string> m_headers;
+  multimap<string,string> m_headers;
   mutable vector<string> m_certs;
   mutable string m_body;
   mutable bool m_gotBody;
@@ -773,7 +773,7 @@ public:
   void setResponseHeader(const char* name, const char* value) {
     // Set for later.
     if (value)
-        m_headers[name] = value;
+        m_headers.insert(make_pair(name,value));
     else
         m_headers.erase(name);
   }
@@ -806,7 +806,7 @@ public:
   }
   long sendResponse(istream& in, long status) {
     string hdr = string("Connection: close\r\n");
-    for (map<string,string>::const_iterator i=m_headers.begin(); i!=m_headers.end(); ++i)
+    for (multimap<string,string>::const_iterator i=m_headers.begin(); i!=m_headers.end(); ++i)
         hdr += i->first + ": " + i->second + "\r\n";
     hdr += "\r\n";
     const char* codestr="200 OK";
@@ -830,7 +830,7 @@ public:
       "Content-Length: 40\r\n"
       "Expires: 01-Jan-1997 12:00:00 GMT\r\n"
       "Cache-Control: private,no-store,no-cache\r\n";
-    for (map<string,string>::const_iterator i=m_headers.begin(); i!=m_headers.end(); ++i)
+    for (multimap<string,string>::const_iterator i=m_headers.begin(); i!=m_headers.end(); ++i)
         hdr += i->first + ": " + i->second + "\r\n";
     hdr += "\r\n";
     m_lpECB->ServerSupportFunction(m_lpECB->ConnID, HSE_REQ_SEND_RESPONSE_HEADER, "302 Moved", 0, (LPDWORD)hdr.c_str());
