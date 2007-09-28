@@ -190,6 +190,14 @@ if (Err = 0) then
     FileSystemObj.CopyFile DistDir & "bindingTemplate.html", ConfigDir, false
   End If
 
+  If (NOT FileSystemObj.FileExists(ConfigDir & "localLogout.html")) then
+    FileSystemObj.CopyFile DistDir & "localLogout.html", ConfigDir, false
+  End If
+
+  If (NOT FileSystemObj.FileExists(ConfigDir & "globalLogout.html")) then
+    FileSystemObj.CopyFile DistDir & "globalLogout.html", ConfigDir, false
+  End If
+
   If (NOT FileSystemObj.FileExists(ConfigDir & "openssl.cnf")) then
     FileSystemObj.CopyFile DistDir & "openssl.cnf", ConfigDir, false
   End If
