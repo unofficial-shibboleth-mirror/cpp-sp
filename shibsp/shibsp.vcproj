@@ -483,6 +483,10 @@
 						>
 					</File>
 					<File
+						RelativePath=".\handler\impl\MetadataGenerator.cpp"
+						>
+					</File>
+					<File
 						RelativePath=".\handler\impl\RemotedHandler.cpp"
 						>
 					</File>

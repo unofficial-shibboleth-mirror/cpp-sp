@@ -42,6 +42,7 @@
 using namespace samlconstants;
 using opensaml::saml2md::EntityDescriptor;
 using opensaml::saml2md::IDPSSODescriptor;
+using opensaml::saml2md::SPSSODescriptor;
 #else
 # include "lite/CommonDomainCookie.h"
 #endif
@@ -249,6 +250,20 @@ void AssertionConsumerService::checkAddress(
 }
 
 #ifndef SHIBSP_LITE
+
+void AssertionConsumerService::generateMetadata(SPSSODescriptor& role, const char* handlerURL) const {
+    const char* loc = getString("Location").second;
+    string hurl(handlerURL);
+    if (*loc != '/')
+        hurl += '/';
+    hurl += loc;
+    auto_ptr_XMLCh widen(hurl.c_str());
+    saml2md::AssertionConsumerService* ep = saml2md::AssertionConsumerServiceBuilder::buildAssertionConsumerService();
+    ep->setLocation(widen.get());
+    ep->setBinding(getXMLString("Binding").second);
+    ep->setIndex(getXMLString("index").second);
+    role.getAssertionConsumerServices().push_back(ep);
+}
 
 class SHIBSP_DLLLOCAL DummyContext : public ResolutionContext
 {

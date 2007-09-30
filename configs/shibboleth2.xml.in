@@ -178,6 +178,9 @@
 			<md:ArtifactResolutionService Location="/Artifact/SOAP" index="1"
 				Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP"/>
 
+            <!-- Extension service that generates "approximate" metadata based on SP configuration. -->
+            <Handler type="MetadataGenerator" Location="/Metadata" signing="true"/>
+
 		</Sessions>
 
 		<!--

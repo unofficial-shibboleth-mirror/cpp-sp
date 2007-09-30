@@ -24,6 +24,9 @@
 #define __shibsp_handler_h__
 
 #include <shibsp/util/PropertySet.h>
+#ifndef SHIBSP_LITE
+# include <saml/saml2/metadata/Metadata.h>
+#endif
 
 namespace shibsp {
 
@@ -51,6 +54,19 @@ namespace shibsp {
          * @return  a pair containing a "request completed" indicator and a server-specific response code
          */
         virtual std::pair<bool,long> run(SPRequest& request, bool isHandler=true) const=0;
+
+#ifndef SHIBSP_LITE
+        /**
+         * Generates and/or modifies metadata reflecting the handler.
+         *
+         * <p>The default implementation does nothing.
+         *
+         * @param role          metadata role to decorate
+         * @param handlerURL    base location of handler's endpoint
+         */
+        virtual void generateMetadata(opensaml::saml2md::SPSSODescriptor& role, const char* handlerURL) const {
+        }
+#endif
     };
     
     /** Registers Handler implementations. */

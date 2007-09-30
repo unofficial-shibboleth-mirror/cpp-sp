@@ -153,8 +153,15 @@ namespace {
             {}
         virtual ~ADFSConsumer() {}
 
-    private:
 #ifndef SHIBSP_LITE
+        void generateMetadata(SPSSODescriptor& role, const char* handlerURL) const {
+            AssertionConsumerService::generateMetadata(role, handlerURL);
+            role.addSupport(m_protocol.get());
+        }
+
+        auto_ptr_XMLCh m_protocol;
+
+    private:
         string implementProtocol(
             const Application& application,
             const HTTPRequest& httpRequest,
@@ -162,7 +169,6 @@ namespace {
             const PropertySet* settings,
             const XMLObject& xmlObject
             ) const;
-        auto_ptr_XMLCh m_protocol;
 #endif
     };
 
@@ -219,6 +225,22 @@ namespace {
         virtual ~ADFSLogout() {}
 
         pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
+
+#ifndef SHIBSP_LITE
+        void generateMetadata(SPSSODescriptor& role, const char* handlerURL) const {
+            m_login.generateMetadata(role, handlerURL);
+            const char* loc = getString("Location").second;
+            string hurl(handlerURL);
+            if (*loc != '/')
+                hurl += '/';
+            hurl += loc;
+            auto_ptr_XMLCh widen(hurl.c_str());
+            SingleLogoutService* ep = SingleLogoutServiceBuilder::buildSingleLogoutService();
+            ep->setLocation(widen.get());
+            ep->setBinding(m_login.m_protocol.get());
+            role.getSingleLogoutServices().push_back(ep);
+        }
+#endif
 
     private:
         ADFSConsumer m_login;

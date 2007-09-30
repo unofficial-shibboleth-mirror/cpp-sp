@@ -253,6 +253,13 @@ namespace shibsp {
          * @return the mapped Handler, or NULL 
          */
         virtual const Handler* getHandler(const char* path) const=0;
+
+        /**
+         * Returns all registered Handlers.
+         *
+         * @param handlers  array to populate
+         */
+        virtual void getHandlers(std::vector<const Handler*>& handlers) const=0;
     };
 
 #if defined (_MSC_VER)

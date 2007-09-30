@@ -72,6 +72,22 @@ namespace shibsp {
         void receive(DDF& in, ostream& out);
         pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
 
+#ifndef SHIBSP_LITE
+        void generateMetadata(SPSSODescriptor& role, const char* handlerURL) const {
+            const char* loc = getString("Location").second;
+            string hurl(handlerURL);
+            if (*loc != '/')
+                hurl += '/';
+            hurl += loc;
+            auto_ptr_XMLCh widen(hurl.c_str());
+            SingleLogoutService* ep = SingleLogoutServiceBuilder::buildSingleLogoutService();
+            ep->setLocation(widen.get());
+            ep->setBinding(getXMLString("Binding").second);
+            role.getSingleLogoutServices().push_back(ep);
+            role.addSupport(samlconstants::SAML20P_NS);
+        }
+#endif
+
     private:
         pair<bool,long> doRequest(
             const Application& application, const char* session_id, const HTTPRequest& httpRequest, HTTPResponse& httpResponse

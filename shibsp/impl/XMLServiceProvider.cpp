@@ -141,6 +141,7 @@ namespace {
         const Handler* getAssertionConsumerServiceByIndex(unsigned short index) const;
         const vector<const Handler*>& getAssertionConsumerServicesByBinding(const XMLCh* binding) const;
         const Handler* getHandler(const char* path) const;
+        void getHandlers(vector<const Handler*>& handlers) const;
 
         void receive(DDF& in, ostream& out) {
             // Only current function is to return the headers to clear.
@@ -178,7 +179,7 @@ namespace {
         map<const XMLCh*,PropertySet*> m_partyMap;
 #endif
 #endif
-        std::set<std::string> m_remoteUsers;
+        set<string> m_remoteUsers;
         vector<string> m_frontLogout,m_backLogout;
 
         // manage handler objects
@@ -1104,6 +1105,17 @@ const Handler* XMLApplication::getHandler(const char* path) const
     if (i!=m_handlerMap.end())
         return i->second;
     return m_base ? m_base->getHandler(path) : NULL;
+}
+
+void XMLApplication::getHandlers(vector<const Handler*>& handlers) const
+{
+    handlers.insert(handlers.end(), m_handlers.begin(), m_handlers.end());
+    if (m_base) {
+        for (map<string,const Handler*>::const_iterator h = m_base->m_handlerMap.begin(); h != m_base->m_handlerMap.end(); ++h) {
+            if (m_handlerMap.count(h->first) == 0)
+                handlers.push_back(h->second);
+        }
+    }
 }
 
 short XMLConfigImpl::acceptNode(const DOMNode* node) const

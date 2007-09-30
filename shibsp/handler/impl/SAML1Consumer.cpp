@@ -39,6 +39,7 @@ using namespace opensaml;
 using saml2::NameID;
 using saml2::NameIDBuilder;
 using saml2md::EntityDescriptor;
+using saml2md::SPSSODescriptor;
 using saml2md::MetadataException;
 #else
 # include "lite/SAMLConstants.h"
@@ -66,8 +67,14 @@ namespace shibsp {
         }
         virtual ~SAML1Consumer() {}
         
-    private:
 #ifndef SHIBSP_LITE
+        void generateMetadata(SPSSODescriptor& role, const char* handlerURL) const {
+            AssertionConsumerService::generateMetadata(role, handlerURL);
+            role.addSupport(samlconstants::SAML11_PROTOCOL_ENUM);
+            role.addSupport(samlconstants::SAML10_PROTOCOL_ENUM);
+        }
+
+    private:
         string implementProtocol(
             const Application& application,
             const HTTPRequest& httpRequest,

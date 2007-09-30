@@ -64,6 +64,8 @@ namespace shibsp {
         AssertionConsumerService(const xercesc::DOMElement* e, const char* appId, xmltooling::logging::Category& log);
         
 #ifndef SHIBSP_LITE
+        void generateMetadata(opensaml::saml2md::SPSSODescriptor& role, const char* handlerURL) const;
+
         /**
          * Implement protocol-specific handling of the incoming decoded message.
          * 

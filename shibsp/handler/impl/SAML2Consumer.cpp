@@ -61,8 +61,13 @@ namespace shibsp {
         }
         virtual ~SAML2Consumer() {}
         
-    private:
 #ifndef SHIBSP_LITE
+        void generateMetadata(SPSSODescriptor& role, const char* handlerURL) const {
+            AssertionConsumerService::generateMetadata(role, handlerURL);
+            role.addSupport(samlconstants::SAML20P_NS);
+        }
+
+    private:
         string implementProtocol(
             const Application& application,
             const HTTPRequest& httpRequest,

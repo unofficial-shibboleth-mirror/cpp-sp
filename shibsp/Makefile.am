@@ -113,6 +113,7 @@ common_sources = \
 	handler/impl/ChainingSessionInitiator.cpp \
 	handler/impl/LocalLogoutInitiator.cpp \
 	handler/impl/LogoutHandler.cpp \
+	handler/impl/MetadataGenerator.cpp \
 	handler/impl/RemotedHandler.cpp \
 	handler/impl/SAML1Consumer.cpp \
 	handler/impl/SAML2Consumer.cpp \

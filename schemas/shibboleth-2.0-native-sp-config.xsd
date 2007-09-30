@@ -501,6 +501,7 @@
 									<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
 								</sequence>
 								<attribute name="Location" type="anyURI" use="required"/>
+								<anyAttribute namespace="##any" processContents="lax"/>
 							</restriction>
 						</complexContent>
 					</complexType>
