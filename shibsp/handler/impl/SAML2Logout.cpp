@@ -406,6 +406,8 @@ pair<bool,long> SAML2Logout::doRequest(
                 );
         }
 
+        auto_ptr<NameID> namewrapper(ownedName ? nameid : NULL);
+
         // Suck indexes out of the request for next steps.
         set<string> indexes;
         EntityDescriptor* entity = policy.getIssuerMetadata() ? dynamic_cast<EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL;
