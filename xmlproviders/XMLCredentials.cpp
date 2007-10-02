@@ -94,7 +94,7 @@ void XMLCredentialsImpl::init()
         DOMElement* child=saml::XML::getFirstChildElement(m_root);
         while (child) {
             string cr_type;
-            auto_ptr<char> id(XMLString::transcode(child->getAttributeNS(NULL,SHIB_L(Id))));
+            auto_ptr_char id(child->getAttributeNS(NULL,SHIB_L(Id)));
             
             if (saml::XML::isElementNamed(child,::XML::CREDS_NS,SHIB_L(FileResolver)))
                 cr_type="edu.internet2.middleware.shibboleth.common.Credentials.FileCredentialResolver";
@@ -129,13 +129,15 @@ void XMLCredentialsImpl::init()
     }
     catch (SAMLException& e) {
         log.errorStream() << "Error while parsing creds configuration: " << e.what() << CategoryStream::ENDLINE;
-        this->~XMLCredentialsImpl();
+        for (resolvermap_t::iterator j=m_resolverMap.begin(); j!=m_resolverMap.end(); j++)
+            delete j->second;
         throw;
     }
 #ifndef _DEBUG
     catch (...) {
         log.error("Unexpected error while parsing creds configuration");
-        this->~XMLCredentialsImpl();
+        for (resolvermap_t::iterator j=m_resolverMap.begin(); j!=m_resolverMap.end(); j++)
+            delete j->second;
         throw;
     }
 #endif

@@ -53,12 +53,16 @@ namespace {
         {
         public:
             ContactPerson(const DOMElement* e);
-            ~ContactPerson() {}
+            ~ContactPerson() {
+                delete[] m_givenName;
+                delete[] m_surName;
+                delete[] m_company;
+            }
         
             ContactType getType() const { return m_type; }
-            const char* getCompany() const { return m_company.get(); }
-            const char* getGivenName() const { return m_givenName.get(); }
-            const char* getSurName() const { return m_surName.get(); }
+            const char* getCompany() const { return m_company; }
+            const char* getGivenName() const { return m_givenName; }
+            const char* getSurName() const { return m_surName; }
             Iterator<string> getEmailAddresses() const { return m_emails; }
             Iterator<string> getTelephoneNumbers() const { return m_phones; }
             const DOMElement* getElement() const { return m_root; }
@@ -66,7 +70,9 @@ namespace {
         private:
             const DOMElement* m_root;
             ContactType m_type;
-            auto_ptr<char> m_givenName,m_surName,m_company;
+            char* m_givenName;
+            char* m_surName;
+            char* m_company;
             vector<string> m_emails,m_phones;
         };
         
@@ -354,13 +360,13 @@ namespace {
             const DOMElement* getElement() const {return m_root;}
 
             // Used internally
-            const char* getErrorURL() const {return m_errorURL.get();}
+            const char* getErrorURL() const {return m_errorURL;}
             time_t getValidUntil() const {return m_validUntil;}
         private:
             const DOMElement* m_root;
             const IEntitiesDescriptor* m_parent;
             const XMLCh* m_id;
-            auto_ptr<char> m_errorURL;
+            char* m_errorURL;
             IOrganization* m_org;
             vector<const IContactPerson*> m_contacts;
             vector<const IRoleDescriptor*> m_roles;
@@ -467,11 +473,12 @@ XMLMetadataImpl::ContactPerson::ContactPerson(const DOMElement* e) : m_root(e), 
     // Old metadata or new?
     if (saml::XML::isElementNamed(e,::XML::SHIB_NS,SHIB_L(Contact))) {
         type=e->getAttributeNS(NULL,SHIB_L(Type));
-        m_surName=auto_ptr<char>(toUTF8(e->getAttributeNS(NULL,SHIB_L(Name))));
+        m_surName=toUTF8(e->getAttributeNS(NULL,SHIB_L(Name)));
         if (e->hasAttributeNS(NULL,SHIB_L(Email))) {
-            auto_ptr<char> temp(toUTF8(e->getAttributeNS(NULL,SHIB_L(Email))));
-            if (temp.get())
-                m_emails.push_back(temp.get());
+            char* temp = toUTF8(e->getAttributeNS(NULL,SHIB_L(Email)));
+            if (temp)
+                m_emails.push_back(temp);
+            delete[] temp;
         }
     }
     else if (saml::XML::isElementNamed(e,::XML::SAML2META_NS,SHIB_L(ContactPerson))) {
@@ -481,28 +488,30 @@ XMLMetadataImpl::ContactPerson::ContactPerson(const DOMElement* e) : m_root(e), 
         while (e) {
             if (saml::XML::isElementNamed(e,::XML::SAML2META_NS,SHIB_L(Company))) {
                 n=e->getFirstChild();
-                if (n) m_company=auto_ptr<char>(toUTF8(n->getNodeValue()));
+                if (n) m_company=toUTF8(n->getNodeValue());
             }
             else if (saml::XML::isElementNamed(e,::XML::SAML2META_NS,SHIB_L(GivenName))) {
                 n=e->getFirstChild();
-                if (n) m_givenName=auto_ptr<char>(toUTF8(n->getNodeValue()));
+                if (n) m_givenName=toUTF8(n->getNodeValue());
             }
             else if (saml::XML::isElementNamed(e,::XML::SAML2META_NS,SHIB_L(SurName))) {
                 n=e->getFirstChild();
-                if (n) m_surName=auto_ptr<char>(toUTF8(n->getNodeValue()));
+                if (n) m_surName=toUTF8(n->getNodeValue());
             }
             else if (saml::XML::isElementNamed(e,::XML::SAML2META_NS,SHIB_L(EmailAddress))) {
                 n=e->getFirstChild();
                 if (n) {
-                    auto_ptr<char> temp(toUTF8(n->getNodeValue()));
-                    if (temp.get()) m_emails.push_back(temp.get());
+                    char* temp = toUTF8(n->getNodeValue());
+                    if (temp) m_emails.push_back(temp);
+                    delete[] temp;
                 }
             }
             else if (saml::XML::isElementNamed(e,::XML::SAML2META_NS,SHIB_L(TelephoneNumber))) {
                 n=e->getFirstChild();
                 if (n) {
-                    auto_ptr<char> temp(toUTF8(n->getNodeValue()));
-                    if (temp.get()) m_phones.push_back(temp.get());
+                    char* temp = toUTF8(n->getNodeValue());
+                    if (temp) m_phones.push_back(temp);
+                    delete[] temp;
                 }
             }
             e=saml::XML::getNextSiblingElement(e);
@@ -527,25 +536,28 @@ XMLMetadataImpl::Organization::Organization(const DOMElement* e) : m_root(e)
         if (saml::XML::isElementNamed(e,::XML::SAML2META_NS,SHIB_L(OrganizationName))) {
             n=e->getFirstChild();
             if (n) {
-                auto_ptr<char> name(toUTF8(n->getNodeValue()));
+                char* name = toUTF8(n->getNodeValue());
                 auto_ptr_char lang(e->getAttributeNS(saml::XML::XML_NS,L(lang)));
-                m_names[lang.get()]=name.get();
+                m_names[lang.get()]=name;
+                delete[] name;
             }
         }
         else if (saml::XML::isElementNamed(e,::XML::SAML2META_NS,SHIB_L(OrganizationDisplayName))) {
             n=e->getFirstChild();
             if (n) {
-                auto_ptr<char> display(toUTF8(n->getNodeValue()));
+                char* display = toUTF8(n->getNodeValue());
                 auto_ptr_char lang(e->getAttributeNS(saml::XML::XML_NS,L(lang)));
-                m_displays[lang.get()]=display.get();
+                m_displays[lang.get()]=display;
+                delete[] display;
             }
         }
         else if (saml::XML::isElementNamed(e,::XML::SAML2META_NS,SHIB_L(OrganizationURL))) {
             n=e->getFirstChild();
             if (n) {
-                auto_ptr<char> url(toUTF8(n->getNodeValue()));
+                char* url = toUTF8(n->getNodeValue());
                 auto_ptr_char lang(e->getAttributeNS(saml::XML::XML_NS,L(lang)));
-                m_urls[lang.get()]=url.get();
+                m_urls[lang.get()]=url;
+                delete[] url;
             }
         }
         e=saml::XML::getNextSiblingElement(e);
@@ -1005,7 +1017,7 @@ XMLMetadataImpl::EntityDescriptor::EntityDescriptor(
     }
     else {
         m_id=e->getAttributeNS(NULL,SHIB_L(Name));
-        m_errorURL=auto_ptr<char>(toUTF8(e->getAttributeNS(NULL,SHIB_L(ErrorURL))));
+        m_errorURL=toUTF8(e->getAttributeNS(NULL,SHIB_L(ErrorURL)));
         
         bool idp=false,aa=false;    // only want to build a role once
         DOMElement* child=saml::XML::getFirstChildElement(e);
@@ -1076,6 +1088,7 @@ const IAttributeAuthorityDescriptor* XMLMetadataImpl::EntityDescriptor::getAttri
 
 XMLMetadataImpl::EntityDescriptor::~EntityDescriptor()
 {
+    delete[] m_errorURL;
     delete m_org;
     for (vector<const IContactPerson*>::iterator i=m_contacts.begin(); i!=m_contacts.end(); i++)
         delete const_cast<IContactPerson*>(*i);
