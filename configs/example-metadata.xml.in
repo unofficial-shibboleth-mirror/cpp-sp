@@ -267,7 +267,16 @@ w14fpgtAk2x8xD7cpHsZ073JHxEcjEetD8PTtrFdNu6GwIrv6Sk=
 				Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"/>
 			<SingleLogoutService Location="https://sp.example.org/Shibboleth.sso/SLO/Artifact"
 				Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact"/>
-			
+
+            <!-- This tells IdPs that NameID Management is supported and where/how to request it. -->
+            <ManageNameIDService Location="https://sp.example.org/Shibboleth.sso/NIM/SOAP"
+                Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP"/>
+            <ManageNameIDService Location="https://sp.example.org/Shibboleth.sso/NIM/Redirect"
+                Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"/>
+            <ManageNameIDService Location="https://sp.example.org/Shibboleth.sso/NIM/POST"
+                Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"/>
+            <ManageNameIDService Location="https://sp.example.org/Shibboleth.sso/NIM/Artifact"
+                Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact"/>			
 			
 			<!-- This tells IdPs that you only need transient identifiers. -->
 			<NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:transient</NameIDFormat>

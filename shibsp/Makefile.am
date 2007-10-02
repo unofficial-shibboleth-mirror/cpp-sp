@@ -120,6 +120,7 @@ common_sources = \
 	handler/impl/SAML2ArtifactResolution.cpp \
 	handler/impl/SAML2Logout.cpp \
 	handler/impl/SAML2LogoutInitiator.cpp \
+	handler/impl/SAML2NameIDMgmt.cpp \
 	handler/impl/SAML2SessionInitiator.cpp \
 	handler/impl/SAMLDSSessionInitiator.cpp \
 	handler/impl/SessionInitiator.cpp \

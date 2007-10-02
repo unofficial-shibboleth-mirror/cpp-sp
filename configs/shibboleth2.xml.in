@@ -171,6 +171,16 @@
 			<md:SingleLogoutService Location="/SLO/Artifact" conf:template="@-PKGSYSCONFDIR-@/bindingTemplate.html"
 				Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact"/>
 
+            <!-- md:ManageNameIDService locations handle NameID management (NIM) protocol messages. -->
+            <md:ManageNameIDService Location="/NIM/SOAP"
+                Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP"/>
+            <md:ManageNameIDService Location="/NIM/Redirect" conf:template="@-PKGSYSCONFDIR-@/bindingTemplate.html"
+                Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"/>
+            <md:ManageNameIDService Location="/NIM/POST" conf:template="@-PKGSYSCONFDIR-@/bindingTemplate.html"
+                Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"/>
+            <md:ManageNameIDService Location="/NIM/Artifact" conf:template="@-PKGSYSCONFDIR-@/bindingTemplate.html"
+                Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact"/>
+
 			<!--
 			md:ArtifactResolutionService locations resolve artifacts issued when using the
 			SAML 2.0 HTTP-Artifact binding on outgoing messages, generally uses SOAP.

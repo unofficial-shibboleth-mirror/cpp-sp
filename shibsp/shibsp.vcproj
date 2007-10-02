@@ -511,6 +511,10 @@
 						>
 					</File>
 					<File
+						RelativePath=".\handler\impl\SAML2NameIDMgmt.cpp"
+						>
+					</File>
+					<File
 						RelativePath=".\handler\impl\SAML2SessionInitiator.cpp"
 						>
 					</File>

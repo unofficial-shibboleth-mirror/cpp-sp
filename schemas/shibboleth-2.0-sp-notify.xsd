@@ -2,6 +2,8 @@
 <schema targetNamespace="urn:mace:shibboleth:2.0:sp:notify"
         xmlns="http://www.w3.org/2001/XMLSchema"
         xmlns:notify="urn:mace:shibboleth:2.0:sp:notify"
+        xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"
+        xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"
         elementFormDefault="qualified">
 
     <annotation>
@@ -10,12 +12,12 @@
         </documentation>
     </annotation>
 
-    <simpleType name="string">
-        <restriction base="string">
-            <minLength value="1"/>
-        </restriction>
-    </simpleType>
+    <import namespace="urn:oasis:names:tc:SAML:2.0:assertion"
+        schemaLocation="saml-schema-assertion-2.0.xsd"/>
 
+    <import namespace="urn:oasis:names:tc:SAML:2.0:protocol"
+        schemaLocation="saml-schema-protocol-2.0.xsd"/>
+    
     <element name="OK" type="notify:OKType"/>
     <complexType name="OKType">
         <sequence/>
@@ -37,6 +39,20 @@
                 </restriction>
             </simpleType>
         </attribute>
+    </complexType>
+
+    <element name="NameIDNotification" type="notify:NameIDNotificationType"/>
+    <complexType name="NameIDNotificationType">
+        <annotation>
+            <documentation>Notifies application of a NameID management event.</documentation>
+        </annotation>
+        <sequence>
+            <element ref="saml:NameID"/>
+            <choice>
+                <element ref="samlp:NewID"/>
+                <element ref="samlp:Terminate"/>
+            </choice>
+        </sequence>
     </complexType>
 
 </schema>
