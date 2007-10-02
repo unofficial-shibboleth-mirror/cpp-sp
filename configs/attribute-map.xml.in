@@ -31,7 +31,7 @@
 	<!-- A persistent id attribute that supports personalized anonymous access. -->
 	
 	<!-- First, the deprecated version: -->
-	<Attribute name="urn:mace:dir:attribute-def:eduPersonTargetedID" id="persistent-id">
+	<Attribute name="urn:mace:dir:attribute-def:eduPersonTargetedID" id="targeted-id">
 		<AttributeDecoder xsi:type="ScopedAttributeDecoder"/>
 	</Attribute>
 
