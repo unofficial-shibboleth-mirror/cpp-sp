@@ -182,17 +182,17 @@ AC_CHECK_HEADER([xsec/utils/XSECPlatformUtils.hpp],,AC_MSG_ERROR([unable to find
 AC_MSG_CHECKING([XML-Security version])
 AC_PREPROC_IFELSE(
     [AC_LANG_PROGRAM([#include <xsec/utils/XSECPlatformUtils.hpp>],
-    [#if XSEC_VERSION_MAJOR > 1 || (XSEC_VERSION_MAJOR == 1 && XSEC_VERSION_MEDIUM > 3) || (XSEC_VERSION_MAJOR == 1 && XSEC_VERSION_MEDIUM == 3 && XSEC_VERSION_MINOR > 0)
+    [#if XSEC_VERSION_MAJOR > 1 || (XSEC_VERSION_MAJOR == 1 && XSEC_VERSION_MEDIUM > 3)
 int i = 0;
 #else
-#error need version 1.3.1 or later
+#error need version 1.4.0 or later
 #endif])],
     [AC_MSG_RESULT(OK)],
-    [AC_MSG_FAILURE([XML-Security version 1.3.1 or greater is required.])])
+    [AC_MSG_FAILURE([XML-Security version 1.4.0 or greater is required.])])
 AC_TRY_LINK(
         [#include <xsec/utils/XSECPlatformUtils.hpp>],
         [XSECPlatformUtils::Initialise()],,
-        [AC_MSG_ERROR([unable to link with XML-Sec])])
+        [AC_MSG_ERROR([unable to link with XML-Security])])
 
 # restore master libs
 LIBS="$save_LIBS"
