@@ -122,7 +122,6 @@ MetadataGenerator::MetadataGenerator(const DOMElement* e, const char* appId)
 
 pair<bool,long> MetadataGenerator::run(SPRequest& request, bool isHandler) const
 {
-    string relayState;
     SPConfig& conf = SPConfig::getConfig();
     if (conf.isEnabled(SPConfig::InProcess)) {
         if (!m_acl.empty() && m_acl.count(request.getRemoteAddr()) == 0) {
@@ -223,9 +222,13 @@ pair<bool,long> MetadataGenerator::processMessage(const Application& application
     vector<const Handler*> handlers;
     application.getHandlers(handlers);
     for (vector<const Handler*>::const_iterator h = handlers.begin(); h != handlers.end(); ++h) {
-        (*h)->generateMetadata(*role, handlerURL);
-        for (vector<string>::const_iterator b = m_bases.begin(); b != m_bases.end(); ++b)
-            (*h)->generateMetadata(*role, b->c_str());
+        if (m_bases.empty()) {
+            (*h)->generateMetadata(*role, handlerURL);
+        }
+        else {
+            for (vector<string>::const_iterator b = m_bases.begin(); b != m_bases.end(); ++b)
+                (*h)->generateMetadata(*role, b->c_str());
+        }
     }
 
     CredentialResolver* credResolver=application.getCredentialResolver();
