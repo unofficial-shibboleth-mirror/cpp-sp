@@ -158,6 +158,13 @@ AccessControl::aclresult_t Rule::authorized(const SPRequest& request, const Sess
         return shib_acl_false;
     }
     
+    if (m_alias == "valid-user") {
+        if (session) {
+            request.log(SPRequest::SPDebug,"AccessControl plugin accepting valid-user based on active session");
+            return shib_acl_true;
+        }
+        return shib_acl_false;
+    }
     if (m_alias == "user") {
         for (vector<string>::const_iterator i=m_vals.begin(); i!=m_vals.end(); ++i) {
             if (*i == request.getRemoteUser()) {
