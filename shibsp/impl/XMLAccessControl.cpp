@@ -229,7 +229,7 @@ AccessControl::aclresult_t Operator::authorized(const SPRequest& request, const 
 {
     switch (m_op) {
         case OP_NOT:
-            switch (m_operands[0]->authorized(request,session)) {
+            switch (m_operands.front()->authorized(request,session)) {
                 case shib_acl_true:
                     return shib_acl_false;
                 case shib_acl_false:
@@ -241,7 +241,7 @@ AccessControl::aclresult_t Operator::authorized(const SPRequest& request, const 
         case OP_AND:
         {
             for (vector<AccessControl*>::const_iterator i=m_operands.begin(); i!=m_operands.end(); i++) {
-                if (!(*i)->authorized(request,session))
+                if ((*i)->authorized(request,session) != shib_acl_true)
                     return shib_acl_false;
             }
             return shib_acl_true;
@@ -250,7 +250,7 @@ AccessControl::aclresult_t Operator::authorized(const SPRequest& request, const 
         case OP_OR:
         {
             for (vector<AccessControl*>::const_iterator i=m_operands.begin(); i!=m_operands.end(); i++) {
-                if ((*i)->authorized(request,session))
+                if ((*i)->authorized(request,session) == shib_acl_true)
                     return shib_acl_true;
             }
             return shib_acl_false;
