@@ -158,6 +158,36 @@ AccessControl::aclresult_t Rule::authorized(const SPRequest& request, const Sess
         return shib_acl_false;
     }
     
+    if (m_alias == "user") {
+        for (vector<string>::const_iterator i=m_vals.begin(); i!=m_vals.end(); ++i) {
+            if (*i == request.getRemoteUser()) {
+                request.log(SPRequest::SPDebug, string("AccessControl plugin expecting REMOTE_USER (") + *i + "), authz granted");
+                return shib_acl_true;
+            }
+        }
+        return shib_acl_false;
+    }
+    else if (m_alias == "authnContextClassRef") {
+        const char* ref = session->getAuthnContextClassRef();
+        for (vector<string>::const_iterator i=m_vals.begin(); ref && i!=m_vals.end(); ++i) {
+            if (!strcmp(i->c_str(),ref)) {
+                request.log(SPRequest::SPDebug, string("AccessControl plugin expecting authnContextClassRef (") + *i + "), authz granted");
+                return shib_acl_true;
+            }
+        }
+        return shib_acl_false;
+    }
+    else if (m_alias == "authnContextDeclRef") {
+        const char* ref = session->getAuthnContextDeclRef();
+        for (vector<string>::const_iterator i=m_vals.begin(); ref && i!=m_vals.end(); ++i) {
+            if (!strcmp(i->c_str(),ref)) {
+                request.log(SPRequest::SPDebug, string("AccessControl plugin expecting authnContextDeclRef (") + *i + "), authz granted");
+                return shib_acl_true;
+            }
+        }
+        return shib_acl_false;
+    }
+
     // Find the attribute(s) matching the require rule.
     pair<multimap<string,const Attribute*>::const_iterator, multimap<string,const Attribute*>::const_iterator> attrs =
         session->getIndexedAttributes().equal_range(m_alias);
@@ -174,7 +204,7 @@ AccessControl::aclresult_t Rule::authorized(const SPRequest& request, const Sess
         for (vector<string>::const_iterator i=m_vals.begin(); i!=m_vals.end(); ++i) {
             for (vector<string>::const_iterator j=vals.begin(); j!=vals.end(); ++j) {
                 if ((caseSensitive && *i == *j) || (!caseSensitive && !strcasecmp(i->c_str(),j->c_str()))) {
-                    request.log(SPRequest::SPDebug, string("AccessControl plugin expecting ") + *j + ", authz granted");
+                    request.log(SPRequest::SPDebug, string("AccessControl plugin expecting (") + *j + "), authz granted");
                     return shib_acl_true;
                 }
             }

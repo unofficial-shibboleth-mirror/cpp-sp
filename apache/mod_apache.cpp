@@ -1003,6 +1003,26 @@ AccessControl::aclresult_t htAccessControl::authorized(const SPRequest& request,
                 }
             }
         }
+        else if (!strcmp(w,"authnContextClassRef")) {
+            const char* ref = session->getAuthnContextClassRef();
+            while (ref && *t) {
+                w=ap_getword_conf(sta->m_req->pool,&t);
+                if (!strcmp(w, ref)) {
+                    request.log(SPRequest::SPDebug, string("htAccessControl plugin accepting authnContextClassRef (") + w + ")");
+                    SHIB_AP_CHECK_IS_OK;
+                }
+            }
+        }
+        else if (!strcmp(w,"authnContextDeclRef")) {
+            const char* ref = session->getAuthnContextDeclRef();
+            while (ref && *t) {
+                w=ap_getword_conf(sta->m_req->pool,&t);
+                if (!strcmp(w, ref)) {
+                    request.log(SPRequest::SPDebug, string("htAccessControl plugin accepting authnContextDeclRef (") + w + ")");
+                    SHIB_AP_CHECK_IS_OK;
+                }
+            }
+        }
         else {
             // Map alias in rule to the attribute.
             if (!session) {
