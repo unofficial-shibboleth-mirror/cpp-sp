@@ -17,6 +17,12 @@
 
     <import namespace="urn:oasis:names:tc:SAML:2.0:protocol"
         schemaLocation="saml-schema-protocol-2.0.xsd"/>
+
+    <simpleType name="string">
+        <restriction base="string">
+            <minLength value="1"/>
+        </restriction>
+    </simpleType>
     
     <element name="OK" type="notify:OKType"/>
     <complexType name="OKType">
