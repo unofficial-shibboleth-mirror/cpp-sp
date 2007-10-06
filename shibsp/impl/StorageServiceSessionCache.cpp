@@ -190,6 +190,7 @@ namespace shibsp {
             const Application& application,
             vector<string>& sessions
             );
+        void test();
 
         Category& m_log;
         StorageService* m_storage;
@@ -485,6 +486,17 @@ SSCache::~SSCache()
         listener->unregListener("touch::"REMOTED_SESSION_CACHE"::SessionCache",this);
         listener->unregListener("getAssertion::"REMOTED_SESSION_CACHE"::SessionCache",this);
     }
+}
+
+void SSCache::test()
+{
+#ifdef _DEBUG
+    xmltooling::NDC ndc("test");
+#endif
+
+    auto_ptr_char temp(SAMLConfig::getConfig().generateIdentifier());
+    m_storage->createString("SessionCacheTest", temp.get(), "Test", time(NULL) + 60);
+    m_storage->deleteString("SessionCacheTest", temp.get());
 }
 
 void SSCache::insert(const char* key, time_t expires, const char* name, const char* index)

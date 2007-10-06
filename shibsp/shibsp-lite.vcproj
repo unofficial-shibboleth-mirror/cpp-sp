@@ -364,6 +364,10 @@
 						>
 					</File>
 					<File
+						RelativePath=".\handler\impl\StatusHandler.cpp"
+						>
+					</File>
+					<File
 						RelativePath=".\handler\impl\WAYFSessionInitiator.cpp"
 						>
 					</File>

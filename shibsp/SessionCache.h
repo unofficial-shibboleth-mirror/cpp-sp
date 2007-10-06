@@ -273,6 +273,11 @@ namespace shibsp {
             const std::set<std::string>* indexes,
             const Application& application
             )=0;
+
+        /**
+         * Executes a test of the cache's general health.
+         */
+        virtual void test()=0;
 #endif
 
         /**
