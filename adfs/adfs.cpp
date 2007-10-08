@@ -201,6 +201,12 @@ namespace {
         void receive(DDF& in, ostream& out);
         pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
 
+#ifndef SHIBSP_LITE
+        const char* getType() const {
+            return "LogoutInitiator";
+        }
+#endif
+
     private:
         pair<bool,long> doRequest(
             const Application& application, const char* requestURL, const char* entityID, HTTPResponse& httpResponse
@@ -239,6 +245,10 @@ namespace {
             ep->setLocation(widen.get());
             ep->setBinding(m_login.m_protocol.get());
             role.getSingleLogoutServices().push_back(ep);
+        }
+
+        const char* getType() const {
+            return m_login.getType();
         }
 #endif
 

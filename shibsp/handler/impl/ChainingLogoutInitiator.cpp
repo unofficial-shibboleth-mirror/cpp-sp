@@ -50,6 +50,12 @@ namespace shibsp {
         
         pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
 
+#ifndef SHIBSP_LITE
+        const char* getType() const {
+            return "LogoutInitiator";
+        }
+#endif
+
     private:
         vector<Handler*> m_handlers;
     };

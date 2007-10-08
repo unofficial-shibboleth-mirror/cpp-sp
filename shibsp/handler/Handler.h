@@ -57,7 +57,7 @@ namespace shibsp {
 
 #ifndef SHIBSP_LITE
         /**
-         * Generates and/or modifies metadata reflecting the handler.
+         * Generates and/or modifies metadata reflecting the Handler.
          *
          * <p>The default implementation does nothing.
          *
@@ -65,6 +65,15 @@ namespace shibsp {
          * @param handlerURL    base location of handler's endpoint
          */
         virtual void generateMetadata(opensaml::saml2md::SPSSODescriptor& role, const char* handlerURL) const {
+        }
+
+        /**
+         * Returns the "type" of the Handler plugin.
+         *
+         * @return  a Handler type
+         */
+        virtual const char* getType() const {
+            return getString("type").second;
         }
 #endif
     };

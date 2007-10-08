@@ -86,6 +86,10 @@ namespace shibsp {
             role.getManageNameIDServices().push_back(ep);
             role.addSupport(samlconstants::SAML20P_NS);
         }
+
+        const char* getType() const {
+            return "ManageNameIDService";
+        }
 #endif
 
     private:

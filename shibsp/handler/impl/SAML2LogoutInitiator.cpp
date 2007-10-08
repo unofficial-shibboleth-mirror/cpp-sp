@@ -71,6 +71,12 @@ namespace shibsp {
         void receive(DDF& in, ostream& out);
         pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
 
+#ifndef SHIBSP_LITE
+        const char* getType() const {
+            return "LogoutInitiator";
+        }
+#endif
+
     private:
         pair<bool,long> doRequest(const Application& application, const char* requestURL, Session* session, HTTPResponse& httpResponse) const;
 

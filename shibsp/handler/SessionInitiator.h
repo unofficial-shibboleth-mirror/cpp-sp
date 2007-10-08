@@ -55,6 +55,12 @@ namespace shibsp {
         virtual std::pair<bool,long> run(SPRequest& request, const char* entityID=NULL, bool isHandler=true) const=0;
 
         std::pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
+
+#ifndef SHIBSP_LITE
+        const char* getType() const {
+            return "SessionInitiator";
+        }
+#endif
     };
     
     /** Registers SessionInitiator implementations. */

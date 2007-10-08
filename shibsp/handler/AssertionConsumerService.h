@@ -62,10 +62,21 @@ namespace shibsp {
          * @param log   a logging object to use
          */
         AssertionConsumerService(const xercesc::DOMElement* e, const char* appId, xmltooling::logging::Category& log);
+
+        /**
+         * Enforce address checking requirements.
+         * 
+         * @param application   reference to application receiving message
+         * @param httpRequest   client request that initiated session
+         * @param issuedTo      address for which security assertion was issued
+         */
+        void checkAddress(
+            const Application& application, const xmltooling::HTTPRequest& httpRequest, const char* issuedTo
+            ) const;
         
 #ifndef SHIBSP_LITE
         void generateMetadata(opensaml::saml2md::SPSSODescriptor& role, const char* handlerURL) const;
-
+        
         /**
          * Implement protocol-specific handling of the incoming decoded message.
          * 
@@ -124,19 +135,13 @@ namespace shibsp {
             const XMLCh* authncontext_decl=NULL,
             const std::vector<const opensaml::Assertion*>* tokens=NULL
             ) const;
+
+    public:
+        const char* getType() const {
+            return "AssertionConsumerService";
+        }
+
 #endif
-        
-        /**
-         * Enforce address checking requirements.
-         * 
-         * @param application   reference to application receiving message
-         * @param httpRequest   client request that initiated session
-         * @param issuedTo      address for which security assertion was issued
-         */
-        void checkAddress(
-            const Application& application, const xmltooling::HTTPRequest& httpRequest, const char* issuedTo
-            ) const;
-        
     private:
         std::string processMessage(
             const Application& application,

@@ -69,6 +69,12 @@ namespace shibsp {
         pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
         void receive(DDF& in, ostream& out);
 
+#ifndef SHIBSP_LITE
+        const char* getType() const {
+            return "ArtifactResolutionService";
+        }
+#endif
+
     private:
         pair<bool,long> processMessage(const Application& application, HTTPRequest& httpRequest, HTTPResponse& httpResponse) const;
 #ifndef SHIBSP_LITE

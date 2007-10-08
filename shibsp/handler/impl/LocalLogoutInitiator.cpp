@@ -47,6 +47,12 @@ namespace shibsp {
         void setParent(const PropertySet* parent);
         pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
 
+#ifndef SHIBSP_LITE
+        const char* getType() const {
+            return "LogoutInitiator";
+        }
+#endif
+
     private:
         string m_appId;
     };
