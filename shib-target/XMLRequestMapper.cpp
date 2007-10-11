@@ -528,7 +528,7 @@ void XMLRequestMapperImpl::init()
         }
     }
     catch (SAMLException& e) {
-        log->errorStream() << "Error while parsing request mapping configuration: " << e.what() << CategoryStream::ENDLINE;
+        log->errorStream() << "Error while parsing request mapping configuration: " << e.what() << logging::eol;
         throw;
     }
 #ifndef _DEBUG

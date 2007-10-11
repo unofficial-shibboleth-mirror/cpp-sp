@@ -264,7 +264,7 @@ void XMLAccessControlImpl::init()
             m_rootAuthz=new Operator(rootElement);
     }
     catch (SAMLException& e) {
-        log->errorStream() << "Error while parsing access control configuration: " << e.what() << CategoryStream::ENDLINE;
+        log->errorStream() << "Error while parsing access control configuration: " << e.what() << xmlproviders::logging::eol;
         throw;
     }
 #ifndef _DEBUG

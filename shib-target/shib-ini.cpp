@@ -580,7 +580,7 @@ XMLApplication::XMLApplication(
         }
     }
     catch (SAMLException& e) {
-        log.errorStream() << "Error while processing applicaton element: " << e.what() << CategoryStream::ENDLINE;
+        log.errorStream() << "Error while processing applicaton element: " << e.what() << logging::eol;
         cleanup();
         throw;
     }
@@ -1150,7 +1150,7 @@ void XMLConfigImpl::init(bool first)
         }
     }
     catch (SAMLException& e) {
-        log.errorStream() << "Error while loading SP configuration: " << e.what() << CategoryStream::ENDLINE;
+        log.errorStream() << "Error while loading SP configuration: " << e.what() << logging::eol;
         throw;
     }
 #ifndef _DEBUG

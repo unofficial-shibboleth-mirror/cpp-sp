@@ -1194,7 +1194,7 @@ void XMLMetadataImpl::init()
     }
     catch (SAMLException& e)
     {
-        log.errorStream() << "Error while parsing SAML metadata: " << e.what() << CategoryStream::ENDLINE;
+        log.errorStream() << "Error while parsing SAML metadata: " << e.what() << xmlproviders::logging::eol;
         this->~XMLMetadataImpl();
         throw;
     }
@@ -1366,13 +1366,13 @@ bool XMLMetadata::verifySignature(DOMDocument* doc, const DOMElement* parent, bo
     }
     catch(XSECException& e) {
         auto_ptr_char msg(e.getMsg());
-        log.errorStream() << "caught XMLSec exception while verifying metadata signature: " << msg.get() << CategoryStream::ENDLINE;
+        log.errorStream() << "caught XMLSec exception while verifying metadata signature: " << msg.get() << xmlproviders::logging::eol;
         if (sig)
             prov.releaseSignature(sig);
         return false;
     }
     catch(XSECCryptoException& e) {
-        log.errorStream() << "caught XMLSecCrypto exception while verifying metadata signature: " << e.getMsg() << CategoryStream::ENDLINE;
+        log.errorStream() << "caught XMLSecCrypto exception while verifying metadata signature: " << e.getMsg() << xmlproviders::logging::eol;
         if (sig)
             prov.releaseSignature(sig);
         return false;

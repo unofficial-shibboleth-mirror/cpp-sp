@@ -128,7 +128,7 @@ void XMLCredentialsImpl::init()
         }
     }
     catch (SAMLException& e) {
-        log.errorStream() << "Error while parsing creds configuration: " << e.what() << CategoryStream::ENDLINE;
+        log.errorStream() << "Error while parsing creds configuration: " << e.what() << xmlproviders::logging::eol;
         for (resolvermap_t::iterator j=m_resolverMap.begin(); j!=m_resolverMap.end(); j++)
             delete j->second;
         throw;

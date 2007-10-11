@@ -45,9 +45,9 @@ namespace {
         unsigned long code=ERR_get_error_line_data(&file,&line,&data,&flags);
         while (code) {
             Category& log=Category::getInstance("OpenSSL");
-            log.errorStream() << "error code: " << code << " in " << file << ", line " << line << CategoryStream::ENDLINE;
+            log.errorStream() << "error code: " << code << " in " << file << ", line " << line << logging::eol;
             if (data && (flags & ERR_TXT_STRING))
-                log.errorStream() << "error data: " << data << CategoryStream::ENDLINE;
+                log.errorStream() << "error data: " << data << logging::eol;
             code=ERR_get_error_line_data(&file,&line,&data,&flags);
         }
     }
@@ -312,7 +312,7 @@ bool ShibbolethTrust::validate(void* certEE, const Iterator<void*>& certChain, c
                 buf[len] = '\0';
                 subjectstr+=buf;
             }
-            log.infoStream() << "certificate subject: " << subjectstr << CategoryStream::ENDLINE;
+            log.infoStream() << "certificate subject: " << subjectstr << logging::eol;
             // The flags give us LDAP order instead of X.500, with a comma plus space separator.
             len=X509_NAME_print_ex(b2,subject,0,XN_FLAG_RFC2253 + XN_FLAG_SEP_CPLUS_SPC - XN_FLAG_SEP_COMMA_PLUS);
             BIO_flush(b2);

@@ -197,7 +197,7 @@ void XMLAAPImpl::init()
     }
     catch (SAMLException& e)
     {
-        log.errorStream() << "Error while parsing AAP: " << e.what() << CategoryStream::ENDLINE;
+        log.errorStream() << "Error while parsing AAP: " << e.what() << xmlproviders::logging::eol;
         this->~XMLAAPImpl();
         throw;
     }
@@ -395,7 +395,7 @@ namespace {
         {
             auto_ptr<char> tmp(XMLString::transcode(ex.getMessage()));
             Category::getInstance(XMLPROVIDERS_LOGCAT".XMLAAPImpl").errorStream()
-                << "caught exception while parsing regular expression: " << tmp.get() << CategoryStream::ENDLINE;
+                << "caught exception while parsing regular expression: " << tmp.get() << xmlproviders::logging::eol;
         }
         return false;
     }

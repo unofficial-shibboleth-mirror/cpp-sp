@@ -99,7 +99,7 @@ SAMLResponse* STArtifactMapper::resolve(SAMLRequest* request)
 		        try {
 		            response = binding->send(ep->getLocation(),*request,&callCtx);
 		            if (log.isDebugEnabled())
-		            	log.debugStream() << "SAML response from artifact request:\n" << *response << CategoryStream::ENDLINE;
+		            	log.debugStream() << "SAML response from artifact request:\n" << *response << logging::eol;
 		            
 		            if (!response->getAssertions().hasNext()) {
 		                delete response;
@@ -138,7 +138,7 @@ SAMLResponse* STArtifactMapper::resolve(SAMLRequest* request)
 			        try {
 			            response = binding->send(ep->getLocation(),*request,&callCtx);
 			            if (log.isDebugEnabled())
-			            	log.debugStream() << "SAML response from artifact request:\n" << *response << CategoryStream::ENDLINE;
+			            	log.debugStream() << "SAML response from artifact request:\n" << *response << logging::eol;
 			            
 			            if (!response->getAssertions().hasNext()) {
 			                delete response;

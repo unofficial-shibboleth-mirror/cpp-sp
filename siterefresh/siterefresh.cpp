@@ -289,25 +289,25 @@ int main(int argc,char* argv[])
         ret=-1;
     }
     catch(SAMLException& e) {
-        log.errorStream() << "caught a SAML exception: " << e.what() << CategoryStream::ENDLINE;
+        log.errorStream() << "caught a SAML exception: " << e.what() << siterefresh::logging::eol;
         ret=-2;
     }
     catch(XMLException& e) {
         auto_ptr_char temp(e.getMessage());
-        log.errorStream() << "caught an XML exception: " << temp.get() << CategoryStream::ENDLINE;
+        log.errorStream() << "caught an XML exception: " << temp.get() << siterefresh::logging::eol;
         ret=-3;
     }
     catch(XSECException& e) {
         auto_ptr_char temp(e.getMsg());
-        log.errorStream() << "caught an XMLSec exception: " << temp.get() << CategoryStream::ENDLINE;
+        log.errorStream() << "caught an XMLSec exception: " << temp.get() << siterefresh::logging::eol;
         ret=-4;
     }
     catch(XSECCryptoException& e) {
-        log.errorStream() << "caught an XMLSecCrypto exception: " << e.getMsg() << CategoryStream::ENDLINE;
+        log.errorStream() << "caught an XMLSecCrypto exception: " << e.getMsg() << siterefresh::logging::eol;
         ret=-5;
     }
     catch(...) {
-        log.errorStream() << "caught an unknown exception" << CategoryStream::ENDLINE;
+        log.errorStream() << "caught an unknown exception" << siterefresh::logging::eol;
         ret=-6;
     }
 
