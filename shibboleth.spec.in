@@ -118,7 +118,7 @@ fi
 %if "%{_vendor}" == "redhat"
 	if [ -d %{_sysconfdir}/init.d ] ; then
 		if [ ! -f %{_sysconfdir}/init.d/shibd ] ; then
-			%{__cp} -p %{_sysconfdir}/shibboleth/%{_vendor} %{_sysconfdir}/init.d/shibd
+			%{__cp} -p %{_sysconfdir}/shibboleth/shibd-%{_vendor} %{_sysconfdir}/init.d/shibd
 			%{__chmod} 755 %{_sysconfdir}/init.d/shibd
 			chkconfig --add shibd
 		fi
