@@ -56,7 +56,7 @@ void SOAPClient::send(const soap11::Envelope& env, const char* from, MetadataCre
         if (m_credResolver) {
             m_credResolver->lock();
             // Fill in criteria to use.
-            to.setUsage(CredentialCriteria::SIGNING_CREDENTIAL);
+            to.setUsage(Credential::SIGNING_CREDENTIAL);
             pair<bool,const char*> keyName = m_relyingParty->getString("keyName");
             if (keyName.first)
                 to.getKeyNames().insert(keyName.second);
@@ -128,7 +128,7 @@ void SOAPClient::prepareTransport(SOAPTransport& transport)
                 m_credResolver->lock();
         }
         if (m_credResolver) {
-            m_criteria->setUsage(CredentialCriteria::TLS_CREDENTIAL);
+            m_criteria->setUsage(Credential::TLS_CREDENTIAL);
             authType = m_relyingParty->getString("keyName");
             if (authType.first)
                 m_criteria->getKeyNames().insert(authType.second);

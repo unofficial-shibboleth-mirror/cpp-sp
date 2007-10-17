@@ -244,7 +244,7 @@ pair<bool,long> MetadataGenerator::processMessage(const Application& application
     if (credResolver) {
         Locker credLocker(credResolver);
         CredentialCriteria cc;
-        cc.setUsage(CredentialCriteria::SIGNING_CREDENTIAL);
+        cc.setUsage(Credential::SIGNING_CREDENTIAL);
         vector<const Credential*> creds;
         credResolver->resolve(creds,&cc);
         for (vector<const Credential*>::const_iterator c = creds.begin(); c != creds.end(); ++c) {
@@ -257,7 +257,7 @@ pair<bool,long> MetadataGenerator::processMessage(const Application& application
             }
         }
 
-        cc.setUsage(CredentialCriteria::ENCRYPTION_CREDENTIAL);
+        cc.setUsage(Credential::ENCRYPTION_CREDENTIAL);
         creds.clear();
         credResolver->resolve(creds,&cc);
         for (vector<const Credential*>::const_iterator c = creds.begin(); c != creds.end(); ++c) {
@@ -278,7 +278,7 @@ pair<bool,long> MetadataGenerator::processMessage(const Application& application
             Locker credLocker(credResolver);
             // Fill in criteria to use.
             CredentialCriteria cc;
-            cc.setUsage(CredentialCriteria::SIGNING_CREDENTIAL);
+            cc.setUsage(Credential::SIGNING_CREDENTIAL);
             prop = getString("keyName");
             if (prop.first)
                 cc.getKeyNames().insert(prop.second);

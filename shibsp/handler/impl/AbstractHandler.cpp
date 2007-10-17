@@ -192,7 +192,7 @@ long AbstractHandler::sendMessage(
             Locker credLocker(credResolver);
             // Fill in criteria to use.
             MetadataCredentialCriteria mcc(*role);
-            mcc.setUsage(CredentialCriteria::SIGNING_CREDENTIAL);
+            mcc.setUsage(Credential::SIGNING_CREDENTIAL);
             pair<bool,const char*> keyName = relyingParty->getString("keyName");
             if (keyName.first)
                 mcc.getKeyNames().insert(keyName.second);

@@ -222,6 +222,19 @@ pair<bool,long> StatusHandler::processMessage(
         }
     }
 
+    s << "<Application id='" << application.getId() << "' entityID='" << application.getString("entityID").second << "'/>";
+
+    s << "<Handlers>";
+    vector<const Handler*> handlers;
+    application.getHandlers(handlers);
+    for (vector<const Handler*>::const_iterator h = handlers.begin(); h != handlers.end(); ++h) {
+        s << "<Handler type='" << (*h)->getType() << "' Location='" << (*h)->getString("Location").second << "'";
+        if ((*h)->getString("Binding").first)
+            s << " Binding='" << (*h)->getString("Binding").second << "'";
+        s << "/>";
+    }
+    s << "</Handlers>";
+
     s << "<Status>" << status << "</Status></StatusHandler>";
 
     httpResponse.setContentType("text/xml");
