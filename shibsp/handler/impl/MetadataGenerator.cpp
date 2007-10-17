@@ -219,6 +219,15 @@ pair<bool,long> MetadataGenerator::processMessage(const Application& application
         role = entity->getSPSSODescriptors().front();
     }
 
+    // Policy flags.
+    prop = application.getRelyingParty(NULL)->getString("signing");
+    if (prop.first && (!strcmp(prop.second,"true") || !strcmp(prop.second,"front")))
+        role->AuthnRequestsSigned(true);
+    pair<bool,bool> flagprop =
+        application.getServiceProvider().getPolicySettings(application.getString("policyId").second)->getBool("signedAssertions");
+    if (flagprop.first && flagprop.second)
+        role->WantAssertionsSigned(true);
+
     vector<const Handler*> handlers;
     application.getHandlers(handlers);
     for (vector<const Handler*>::const_iterator h = handlers.begin(); h != handlers.end(); ++h) {
