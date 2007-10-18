@@ -61,6 +61,10 @@ namespace shibsp {
         pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
         void receive(DDF& in, ostream& out);
 
+        const char* getType() const {
+            return "AssertionLookup";
+        }
+
     private:
         pair<bool,long> processMessage(const Application& application, HTTPRequest& httpRequest, HTTPResponse& httpResponse) const;
 

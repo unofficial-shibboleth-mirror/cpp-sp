@@ -551,7 +551,14 @@ XMLApplication::XMLApplication(
         pair<bool,const char*> location = sessions ? sessions->getString("exportLocation") : pair<bool,const char*>(false,NULL);
         if (location.first) {
             try {
-                handler = conf.HandlerManager.newPlugin(samlconstants::SAML20_BINDING_URI, make_pair(sessions->getElement(), getId()));
+                DOMElement* exportElement = e->getOwnerDocument()->createElementNS(shibspconstants::SHIB2SPCONFIG_NS,_Handler);
+                exportElement->setAttributeNS(NULL,Location,sessions->getXMLString("exportLocation").second);
+                pair<bool,const XMLCh*> exportACL = sessions->getXMLString("exportACL");
+                if (exportACL.first) {
+                    static const XMLCh _acl[] = UNICODE_LITERAL_9(e,x,p,o,r,t,A,C,L);
+                    exportElement->setAttributeNS(NULL,_acl,exportACL.second);
+                }
+                handler = conf.HandlerManager.newPlugin(samlconstants::SAML20_BINDING_URI, make_pair(exportElement, getId()));
                 m_handlers.push_back(handler);
 
                 // Insert into location map. If it contains the handlerURL, we skip past that part.

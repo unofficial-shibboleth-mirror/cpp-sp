@@ -33,6 +33,7 @@ using namespace shibsp;
 # include <saml/version.h>
 using namespace opensaml::saml2md;
 using namespace opensaml;
+using namespace xmlsignature;
 #endif
 using namespace xmltooling;
 using namespace std;
@@ -220,20 +221,64 @@ pair<bool,long> StatusHandler::processMessage(
             s << "<SessionCache><Exception type='std::exception'>" << ex.what() << "</Exception></SessionCache>";
             status = "<Partial/>";
         }
-    }
 
-    s << "<Application id='" << application.getId() << "' entityID='" << application.getString("entityID").second << "'/>";
+        s << "<Application id='" << application.getId() << "' entityID='" << application.getString("entityID").second << "'/>";
 
-    s << "<Handlers>";
-    vector<const Handler*> handlers;
-    application.getHandlers(handlers);
-    for (vector<const Handler*>::const_iterator h = handlers.begin(); h != handlers.end(); ++h) {
-        s << "<Handler type='" << (*h)->getType() << "' Location='" << (*h)->getString("Location").second << "'";
-        if ((*h)->getString("Binding").first)
-            s << " Binding='" << (*h)->getString("Binding").second << "'";
-        s << "/>";
+        s << "<Handlers>";
+        vector<const Handler*> handlers;
+        application.getHandlers(handlers);
+        for (vector<const Handler*>::const_iterator h = handlers.begin(); h != handlers.end(); ++h) {
+            s << "<Handler type='" << (*h)->getType() << "' Location='" << (*h)->getString("Location").second << "'";
+            if ((*h)->getString("Binding").first)
+                s << " Binding='" << (*h)->getString("Binding").second << "'";
+            s << "/>";
+        }
+        s << "</Handlers>";
+
+        const PropertySet* relyingParty=NULL;
+        const char* entityID=httpRequest.getParameter("entityID");
+        if (entityID) {
+            Locker mlock(application.getMetadataProvider());
+            relyingParty = application.getRelyingParty(application.getMetadataProvider()->getEntityDescriptor(entityID));
+        }
+        if (!relyingParty)
+            relyingParty = application.getRelyingParty(NULL);
+        CredentialResolver* credResolver=application.getCredentialResolver();
+        if (credResolver) {
+            Locker credLocker(credResolver);
+            CredentialCriteria cc;
+            cc.setUsage(Credential::SIGNING_CREDENTIAL);
+            pair<bool,const char*> keyName = relyingParty->getString("keyName");
+            if (keyName.first)
+                cc.getKeyNames().insert(keyName.second);
+            vector<const Credential*> creds;
+            credResolver->resolve(creds,&cc);
+            for (vector<const Credential*>::const_iterator c = creds.begin(); c != creds.end(); ++c) {
+                KeyInfo* kinfo = (*c)->getKeyInfo();
+                if (kinfo) {
+                    auto_ptr<KeyDescriptor> kd(KeyDescriptorBuilder::buildKeyDescriptor());
+                    kd->setUse(KeyDescriptor::KEYTYPE_SIGNING);
+                    kd->setKeyInfo(kinfo);
+                    s << *(kd.get());
+                }
+            }
+
+            cc.setUsage(Credential::ENCRYPTION_CREDENTIAL);
+            creds.clear();
+            cc.getKeyNames().clear();
+            credResolver->resolve(creds,&cc);
+            for (vector<const Credential*>::const_iterator c = creds.begin(); c != creds.end(); ++c) {
+                KeyInfo* kinfo = (*c)->getKeyInfo();
+                if (kinfo) {
+                    auto_ptr<KeyDescriptor> kd(KeyDescriptorBuilder::buildKeyDescriptor());
+                    kd->setUse(KeyDescriptor::KEYTYPE_ENCRYPTION);
+                    kd->setKeyInfo(kinfo);
+                    s << *(kd.get());
+                }
+            }
+        }
+
     }
-    s << "</Handlers>";
 
     s << "<Status>" << status << "</Status></StatusHandler>";
 

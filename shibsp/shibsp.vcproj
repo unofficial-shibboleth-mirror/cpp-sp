@@ -637,14 +637,14 @@
 					RelativePath=".\security\SecurityPolicy.h"
 					>
 				</File>
-			</Filter>
-			<Filter
-				Name="metadata"
-				>
-				<File
-					RelativePath=".\metadata\MetadataExt.h"
+				<Filter
+					Name="metadata"
 					>
-				</File>
+					<File
+						RelativePath=".\metadata\MetadataExt.h"
+						>
+					</File>
+				</Filter>
 			</Filter>
 			<Filter
 				Name="remoting"
