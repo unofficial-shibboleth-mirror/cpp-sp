@@ -569,6 +569,8 @@ void SunRequestMapper::getAll(map<string,const char*>& properties) const
     const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
     if (s)
         s->getAll(properties);
+    if (!stn)
+        return;
     properties["authType"] = "shibboleth";
     const pb_entry* entry;
     for (int i=0; i<stn->m_pb->hsize; ++i) {

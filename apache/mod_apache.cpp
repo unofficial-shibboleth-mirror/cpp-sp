@@ -818,6 +818,8 @@ void ApacheRequestMapper::getAll(map<string,const char*>& properties) const
 
     if (s)
         s->getAll(properties);
+    if (!sta)
+        return;
 
     const char* auth_type=ap_auth_type(sta->m_req);
     if (auth_type) {

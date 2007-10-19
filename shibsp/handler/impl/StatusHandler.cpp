@@ -26,6 +26,7 @@
 #include "ServiceProvider.h"
 #include "handler/AbstractHandler.h"
 #include "handler/RemotedHandler.h"
+#include "util/CGIParser.h"
 
 using namespace shibsp;
 #ifndef SHIBSP_LITE
@@ -79,6 +80,139 @@ namespace shibsp {
         return new StatusHandler(p.first, p.second);
     }
 
+#ifndef XMLTOOLING_NO_XMLSEC
+    vector<XSECCryptoX509*> g_NoCerts;
+#else
+    vector<string> g_NoCerts;
+#endif
+
+    class DummyRequest : public HTTPRequest
+    {
+    public:
+        DummyRequest(const char* url) : m_parser(NULL), m_url(url), m_scheme(NULL), m_query(NULL), m_port(0) {
+#ifdef HAVE_STRCASECMP
+            if (url && !strncasecmp(url,"http://",7)) {
+                m_scheme="http";
+                url+=7;
+            }
+            else if (url && !strncasecmp(url,"https://",8)) {
+                m_scheme="https";
+                url+=8;
+            }
+            else
+#else
+            if (url && !strnicmp(url,"http://",7)) {
+                m_scheme="http";
+                m_port = 80;
+                url+=7;
+            }
+            else if (url && !strnicmp(url,"https://",8)) {
+                m_scheme="https";
+                m_port = 443;
+                url+=8;
+            }
+            else
+#endif
+                throw exception("Target parameter was not an absolute URL.");
+
+            m_query = strchr(url,'?');
+            if (m_query)
+                m_query++;
+
+            const char* slash = strchr(url, '/');
+            const char* colon = strchr(url, ':');
+            if (colon && colon < slash) {
+                m_hostname.assign(url, colon-url);
+                string port(colon + 1, slash - colon);
+                m_port = atoi(port.c_str());
+            }
+            else {
+                m_hostname.assign(url, slash - url);
+            }
+            m_uri = slash;
+        }
+
+        ~DummyRequest() {
+            delete m_parser;
+        }
+
+        const char* getRequestURL() const {
+            return m_url;
+        }
+        const char* getScheme() const {
+            return m_scheme;
+        }
+        const char* getHostname() const {
+            return m_hostname.c_str();
+        }
+        int getPort() const {
+            return m_port;
+        }
+        const char* getRequestURI() const {
+            return m_uri.c_str();
+        }
+        const char* getMethod() const {
+            return "GET";
+        }
+        string getContentType() const {
+            return "";
+        }
+        long getContentLength() const {
+            return 0;
+        }
+        string getRemoteAddr() const {
+            return "";
+        }
+        string getRemoteUser() const {
+            return "";
+        }
+        const char* getRequestBody() const {
+            return NULL;
+        }
+        const char* getQueryString() const {
+            return m_query;
+        }
+        const char* getParameter(const char* name) const
+        {
+            if (!m_parser)
+                m_parser=new CGIParser(*this);
+            
+            pair<CGIParser::walker,CGIParser::walker> bounds=m_parser->getParameters(name);
+            return (bounds.first==bounds.second) ? NULL : bounds.first->second;
+        }
+        vector<const char*>::size_type getParameters(const char* name, vector<const char*>& values) const
+        {
+            if (!m_parser)
+                m_parser=new CGIParser(*this);
+
+            pair<CGIParser::walker,CGIParser::walker> bounds=m_parser->getParameters(name);
+            while (bounds.first!=bounds.second) {
+                values.push_back(bounds.first->second);
+                ++bounds.first;
+            }
+            return values.size();
+        }
+        string getHeader(const char* name) const {
+            return "";
+        }
+        virtual const
+#ifndef XMLTOOLING_NO_XMLSEC
+            std::vector<XSECCryptoX509*>&
+#else
+            std::vector<std::string>& 
+#endif
+            getClientCertificates() const {
+                return g_NoCerts;
+        }
+
+    private:
+        mutable CGIParser* m_parser;
+        const char* m_url;
+        const char* m_scheme;
+        const char* m_query;
+        int m_port;
+        string m_hostname,m_uri;
+    };
 };
 
 StatusHandler::StatusHandler(const DOMElement* e, const char* appId)
@@ -112,6 +246,32 @@ pair<bool,long> StatusHandler::run(SPRequest& request, bool isHandler) const
             istringstream msg("Status Handler Blocked");
             return make_pair(true,request.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_FORBIDDEN));
         }
+    }
+
+    const char* target = request.getParameter("target");
+    if (target) {
+        // RequestMap query, so handle it inproc.
+        DummyRequest dummy(target);
+        RequestMapper::Settings settings = request.getApplication().getServiceProvider().getRequestMapper()->getSettings(dummy);
+        map<string,const char*> props;
+        settings.first->getAll(props);
+
+        request.setContentType("text/xml");
+        stringstream msg;
+        msg << "<StatusHandler>";
+            msg << "<Version Xerces-C='" << XERCES_FULLVERSIONDOT
+#ifndef SHIBSP_LITE
+                << "' XML-Security-C='" << XSEC_FULLVERSIONDOT
+                << "' OpenSAML-C='" << OPENSAML_FULLVERSIONDOT
+#endif
+                << "' Shibboleth='" << PACKAGE_VERSION << "'/>";
+            msg << "<RequestSettings";
+            for (map<string,const char*>::const_iterator p = props.begin(); p != props.end(); ++p)
+                msg << ' ' << p->first << "='" << p->second << "'";
+            msg << '>' << target << "</RequestSettings>";
+            msg << "<Status><OK/></Status>";
+        msg << "</StatusHandler>";
+        return make_pair(true,request.sendResponse(msg));
     }
     
     try {
@@ -199,7 +359,8 @@ pair<bool,long> StatusHandler::processMessage(
         << "' OpenSAML-C='" << OPENSAML_FULLVERSIONDOT
         << "' Shibboleth='" << PACKAGE_VERSION << "'/>";
 
-    if (false) {
+    const char* param = NULL;
+    if (param) {
     }
     else {
         // General configuration and status report.
@@ -236,10 +397,10 @@ pair<bool,long> StatusHandler::processMessage(
         s << "</Handlers>";
 
         const PropertySet* relyingParty=NULL;
-        const char* entityID=httpRequest.getParameter("entityID");
-        if (entityID) {
+        param=httpRequest.getParameter("entityID");
+        if (param) {
             Locker mlock(application.getMetadataProvider());
-            relyingParty = application.getRelyingParty(application.getMetadataProvider()->getEntityDescriptor(entityID));
+            relyingParty = application.getRelyingParty(application.getMetadataProvider()->getEntityDescriptor(param));
         }
         if (!relyingParty)
             relyingParty = application.getRelyingParty(NULL);
@@ -277,7 +438,6 @@ pair<bool,long> StatusHandler::processMessage(
                 }
             }
         }
-
     }
 
     s << "<Status>" << status << "</Status></StatusHandler>";
