@@ -57,25 +57,17 @@ namespace shibsp {
     class Override : public DOMPropertySet, public DOMNodeFilter
     {
     public:
-        Override() : m_base(NULL), m_acl(NULL) {}
+        Override() : m_acl(NULL) {}
         Override(const DOMElement* e, Category& log, const Override* base=NULL);
         ~Override();
 
-        // PropertySet
-        pair<bool,bool> getBool(const char* name, const char* ns=NULL) const;
-        pair<bool,const char*> getString(const char* name, const char* ns=NULL) const;
-        pair<bool,const XMLCh*> getXMLString(const char* name, const char* ns=NULL) const;
-        pair<bool,unsigned int> getUnsignedInt(const char* name, const char* ns=NULL) const;
-        pair<bool,int> getInt(const char* name, const char* ns=NULL) const;
-        const PropertySet* getPropertySet(const char* name, const char* ns="urn:mace:shibboleth:2.0:native:sp:config") const;
-        
         // Provides filter to exclude special config elements.
         short acceptNode(const DOMNode* node) const {
             return FILTER_REJECT;
         }
 
-        const Override* locate(const SPRequest& request) const;
-        AccessControl* getAC() const { return (m_acl ? m_acl : (m_base ? m_base->getAC() : NULL)); }
+        const Override* locate(const HTTPRequest& request) const;
+        AccessControl* getAC() const { return (m_acl ? m_acl : (getParent() ? dynamic_cast<const Override*>(getParent())->getAC() : NULL)); }
         
     protected:
         void loadACL(const DOMElement* e, Category& log);
@@ -85,7 +77,6 @@ namespace shibsp {
         vector< pair< pair<string,RegularExpression*>,Override*> > m_queries;
     
     private:
-        const Override* m_base;
         AccessControl* m_acl;
     };
 
@@ -103,7 +94,7 @@ namespace shibsp {
             m_document = doc;
         }
     
-        const Override* findOverride(const char* vhost, const SPRequest& request) const;
+        const Override* findOverride(const char* vhost, const HTTPRequest& request) const;
 
     private:    
         map<string,Override*> m_extras;
@@ -126,7 +117,7 @@ namespace shibsp {
             delete m_impl;
         }
 
-        Settings getSettings(const SPRequest& request) const;
+        Settings getSettings(const HTTPRequest& request) const;
 
     protected:
         pair<bool,DOMElement*> load();
@@ -196,11 +187,12 @@ void Override::loadACL(const DOMElement* e, Category& log)
     }
 }
 
-Override::Override(const DOMElement* e, Category& log, const Override* base) : m_base(base), m_acl(NULL)
+Override::Override(const DOMElement* e, Category& log, const Override* base) : m_acl(NULL)
 {
     try {
         // Load the property set.
         load(e,log,this);
+        setParent(base);
         
         // Load any AccessControl provider.
         loadACL(e,log);
@@ -358,55 +350,7 @@ Override::~Override()
     }
 }
 
-pair<bool,bool> Override::getBool(const char* name, const char* ns) const
-{
-    pair<bool,bool> ret=DOMPropertySet::getBool(name,ns);
-    if (ret.first)
-        return ret;
-    return m_base ? m_base->getBool(name,ns) : ret;
-}
-
-pair<bool,const char*> Override::getString(const char* name, const char* ns) const
-{
-    pair<bool,const char*> ret=DOMPropertySet::getString(name,ns);
-    if (ret.first)
-        return ret;
-    return m_base ? m_base->getString(name,ns) : ret;
-}
-
-pair<bool,const XMLCh*> Override::getXMLString(const char* name, const char* ns) const
-{
-    pair<bool,const XMLCh*> ret=DOMPropertySet::getXMLString(name,ns);
-    if (ret.first)
-        return ret;
-    return m_base ? m_base->getXMLString(name,ns) : ret;
-}
-
-pair<bool,unsigned int> Override::getUnsignedInt(const char* name, const char* ns) const
-{
-    pair<bool,unsigned int> ret=DOMPropertySet::getUnsignedInt(name,ns);
-    if (ret.first)
-        return ret;
-    return m_base ? m_base->getUnsignedInt(name,ns) : ret;
-}
-
-pair<bool,int> Override::getInt(const char* name, const char* ns) const
-{
-    pair<bool,int> ret=DOMPropertySet::getInt(name,ns);
-    if (ret.first)
-        return ret;
-    return m_base ? m_base->getInt(name,ns) : ret;
-}
-
-const PropertySet* Override::getPropertySet(const char* name, const char* ns) const
-{
-    const PropertySet* ret=DOMPropertySet::getPropertySet(name,ns);
-    if (ret || !m_base)
-        return ret;
-    return m_base->getPropertySet(name,ns);
-}
-
-const Override* Override::locate(const SPRequest& request) const
+const Override* Override::locate(const HTTPRequest& request) const
 {
     // This function is confusing because it's *not* recursive.
     // The whole path is tokenized and mapped in a loop, so the
@@ -651,7 +595,7 @@ XMLRequestMapperImpl::XMLRequestMapperImpl(const DOMElement* e, Category& log) :
     }
 }
 
-const Override* XMLRequestMapperImpl::findOverride(const char* vhost, const SPRequest& request) const
+const Override* XMLRequestMapperImpl::findOverride(const char* vhost, const HTTPRequest& request) const
 {
     const Override* o=NULL;
     map<string,Override*>::const_iterator i=m_map.find(vhost);
@@ -691,7 +635,7 @@ pair<bool,DOMElement*> XMLRequestMapper::load()
     return make_pair(false,(DOMElement*)NULL);
 }
 
-RequestMapper::Settings XMLRequestMapper::getSettings(const SPRequest& request) const
+RequestMapper::Settings XMLRequestMapper::getSettings(const HTTPRequest& request) const
 {
     ostringstream vhost;
     vhost << request.getScheme() << "://" << request.getHostname() << ':' << request.getPort();

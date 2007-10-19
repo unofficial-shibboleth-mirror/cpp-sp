@@ -24,6 +24,7 @@
 #define __shibsp_propset_h__
 
 #include <shibsp/base.h>
+#include <map>
 #include <xercesc/dom/DOM.hpp>
 
 namespace shibsp {
@@ -97,6 +98,13 @@ namespace shibsp {
          * @return a pair consisting of a NULL indicator and the property value iff the indicator is true
          */
         virtual std::pair<bool,int> getInt(const char* name, const char* ns=NULL) const=0;
+
+        /**
+         * Returns a map of all known properties in string form.
+         *
+         * @param properties    map to populate
+         */
+        virtual void getAll(std::map<std::string,const char*>& properties) const=0;
 
         /**
          * Returns a nested property set.

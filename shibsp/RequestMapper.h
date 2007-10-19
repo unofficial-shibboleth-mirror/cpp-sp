@@ -25,12 +25,12 @@
 
 #include <shibsp/base.h>
 #include <xmltooling/Lockable.h>
+#include <xmltooling/io/HTTPRequest.h>
 
 namespace shibsp {
 
     class SHIBSP_API AccessControl;
     class SHIBSP_API PropertySet;
-    class SHIBSP_API SPRequest;
 
     /**
      * Interface to a request mapping plugin
@@ -55,7 +55,7 @@ namespace shibsp {
          * @param request   SP request
          * @return configuration settings and effective AccessControl plugin, if any
          */        
-        virtual Settings getSettings(const SPRequest& request) const=0;
+        virtual Settings getSettings(const xmltooling::HTTPRequest& request) const=0;
     };
 
     /**

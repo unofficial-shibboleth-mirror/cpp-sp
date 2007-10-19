@@ -462,7 +462,7 @@ public:
     ~SunRequestMapper() { delete m_mapper; delete m_stKey; delete m_propsKey; }
     Lockable* lock() { return m_mapper->lock(); }
     void unlock() { m_stKey->setData(NULL); m_propsKey->setData(NULL); m_mapper->unlock(); }
-    Settings getSettings(const SPRequest& request) const;
+    Settings getSettings(const HTTPRequest& request) const;
     
     const PropertySet* getParent() const { return NULL; }
     void setParent(const PropertySet*) {}
@@ -471,6 +471,7 @@ public:
     pair<bool,const XMLCh*> getXMLString(const char* name, const char* ns=NULL) const;
     pair<bool,unsigned int> getUnsignedInt(const char* name, const char* ns=NULL) const;
     pair<bool,int> getInt(const char* name, const char* ns=NULL) const;
+    void getAll(map<string,const char*>& properties) const;
     const PropertySet* getPropertySet(const char* name, const char* ns="urn:mace:shibboleth:2.0:native:sp:config") const;
     const xercesc::DOMElement* getElement() const;
 
@@ -492,7 +493,7 @@ SunRequestMapper::SunRequestMapper(const xercesc::DOMElement* e) : m_mapper(NULL
     m_propsKey=ThreadKey::create(NULL);
 }
 
-RequestMapper::Settings SunRequestMapper::getSettings(const SPRequest& request) const
+RequestMapper::Settings SunRequestMapper::getSettings(const HTTPRequest& request) const
 {
     Settings s=m_mapper->getSettings(request);
     m_stKey->setData((void*)dynamic_cast<const ShibTargetNSAPI*>(&request));
@@ -560,6 +561,23 @@ pair<bool,int> SunRequestMapper::getInt(const char* name, const char* ns) const
             return pair<bool,int>(true,atoi(param));
     }
     return s ? s->getInt(name,ns) : pair<bool,int>(false,0);
+}
+
+void SunRequestMapper::getAll(map<string,const char*>& properties) const
+{
+    const ShibTargetNSAPI* stn=reinterpret_cast<const ShibTargetNSAPI*>(m_stKey->getData());
+    const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
+    if (s)
+        s->getAll(properties);
+    properties["authType"] = "shibboleth";
+    const pb_entry* entry;
+    for (int i=0; i<stn->m_pb->hsize; ++i) {
+        entry = stn->m_pb->ht[i];
+        while (entry) {
+            properties[entry->param->name] = entry->param->value;
+            entry = entry->next;
+        }
+    }
 }
 
 const PropertySet* SunRequestMapper::getPropertySet(const char* name, const char* ns) const

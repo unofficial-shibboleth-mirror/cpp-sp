@@ -207,6 +207,14 @@ pair<bool,int> DOMPropertySet::getInt(const char* name, const char* ns) const
     return pair<bool,int>(false,0);
 }
 
+void DOMPropertySet::getAll(std::map<std::string,const char*>& properties) const
+{
+    if (m_parent)
+        m_parent->getAll(properties);
+    for (map< string,pair<char*,const XMLCh*> >::const_iterator i = m_map.begin(); i != m_map.end(); ++i)
+        properties[i->first] = i->second.first;
+}
+
 const PropertySet* DOMPropertySet::getPropertySet(const char* name, const char* ns) const
 {
     map<string,DOMPropertySet*>::const_iterator i;

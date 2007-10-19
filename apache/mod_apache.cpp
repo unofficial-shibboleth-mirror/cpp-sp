@@ -681,7 +681,7 @@ public:
     ~ApacheRequestMapper() { delete m_mapper; delete m_htaccess; delete m_staKey; delete m_propsKey; }
     Lockable* lock() { return m_mapper->lock(); }
     void unlock() { m_staKey->setData(NULL); m_propsKey->setData(NULL); m_mapper->unlock(); }
-    Settings getSettings(const SPRequest& request) const;
+    Settings getSettings(const HTTPRequest& request) const;
     
     const PropertySet* getParent() const { return NULL; }
     void setParent(const PropertySet*) {}
@@ -690,6 +690,7 @@ public:
     pair<bool,const XMLCh*> getXMLString(const char* name, const char* ns=NULL) const;
     pair<bool,unsigned int> getUnsignedInt(const char* name, const char* ns=NULL) const;
     pair<bool,int> getInt(const char* name, const char* ns=NULL) const;
+    void getAll(map<string,const char*>& properties) const;
     const PropertySet* getPropertySet(const char* name, const char* ns="urn:mace:shibboleth:2.0:native:sp:config") const;
     const xercesc::DOMElement* getElement() const;
 
@@ -713,7 +714,7 @@ ApacheRequestMapper::ApacheRequestMapper(const xercesc::DOMElement* e) : m_mappe
     m_propsKey=ThreadKey::create(NULL);
 }
 
-RequestMapper::Settings ApacheRequestMapper::getSettings(const SPRequest& request) const
+RequestMapper::Settings ApacheRequestMapper::getSettings(const HTTPRequest& request) const
 {
     Settings s=m_mapper->getSettings(request);
     m_staKey->setData((void*)dynamic_cast<const ShibTargetApache*>(&request));
@@ -808,6 +809,34 @@ pair<bool,int> ApacheRequestMapper::getInt(const char* name, const char* ns) con
         }
     }
     return s ? s->getInt(name,ns) : pair<bool,int>(false,0);
+}
+
+void ApacheRequestMapper::getAll(map<string,const char*>& properties) const
+{
+    const ShibTargetApache* sta=reinterpret_cast<const ShibTargetApache*>(m_staKey->getData());
+    const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
+
+    if (s)
+        s->getAll(properties);
+
+    const char* auth_type=ap_auth_type(sta->m_req);
+    if (auth_type) {
+        // Check for Basic Hijack
+        if (!strcasecmp(auth_type, "basic") && sta->m_dc->bBasicHijack == 1)
+            auth_type = "shibboleth";
+        properties["authType"] = auth_type;
+    }
+
+    if (sta->m_dc->szApplicationId)
+        properties["applicationId"] = sta->m_dc->szApplicationId;
+    if (sta->m_dc->szRequireWith)
+        properties["requireSessionWith"] = sta->m_dc->szRequireWith;
+    if (sta->m_dc->szRedirectToSSL)
+        properties["redirectToSSL"] = sta->m_dc->szRedirectToSSL;
+    if (sta->m_dc->bRequireSession != 0)
+        properties["requireSession"] = (sta->m_dc->bRequireSession==1) ? "true" : "false";
+    if (sta->m_dc->bExportAssertion != 0)
+        properties["exportAssertion"] = (sta->m_dc->bExportAssertion==1) ? "true" : "false";
 }
 
 const PropertySet* ApacheRequestMapper::getPropertySet(const char* name, const char* ns) const
