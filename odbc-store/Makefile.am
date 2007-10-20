@@ -1,6 +1,6 @@
 AUTOMAKE_OPTIONS = foreign
 
-plugindir = $(libexecdir)
+plugindir = $(libdir)/@PACKAGE@
 plugin_LTLIBRARIES = odbc-store.la
 
 AM_CFLAGS = $(ODBC_CFLAGS)

@@ -294,6 +294,41 @@ if test ! "$WANT_NSAPI" = "no" ; then
     WANT_SUBDIRS="$WANT_SUBDIRS nsapi_shib"
 fi
 
+
+#
+# Build FastCGI support?
+#
+AC_MSG_CHECKING(for FastCGI support)
+AC_ARG_WITH(fastcgi,
+    AC_HELP_STRING([--with-fastcgi=DIR], [Build FastCGI support]),
+    [WANT_FASTCGI=$withval],[WANT_FASTCGI=no])
+AC_MSG_RESULT($WANT_FASTCGI)
+
+if test "$WANT_FASTCGI" != "no"; then
+    if test "$WANT_FASTCGI" != "yes"; then
+        if test x_$WANT_FASTCGI != x_/usr; then
+            FASTCGI_INCLUDE="-I$WANT_FASTCGI/include"
+            FASTCGI_LDFLAGS="-L$WANT_FASTCGI/lib"
+        fi
+    fi
+    AC_CHECK_HEADER([fcgio.h],,
+        AC_MSG_ERROR([unable to find FastCGI header files]))
+    FASTCGI_LIBS="-lfcgi -lfcgi++"
+fi
+
+AC_SUBST(FASTCGI_INCLUDE)
+AC_SUBST(FASTCGI_LDFLAGS)
+AC_SUBST(FASTCGI_LIBS)
+
+# always output the Makefile, even if you don't use it
+AC_CONFIG_FILES([fastcgi/Makefile])
+AM_CONDITIONAL(BUILD_FASTCGI,test ! "$WANT_FASTCGI" = "no")
+
+if test ! "$WANT_FASTCGI" = "no" ; then
+    WANT_SUBDIRS="$WANT_SUBDIRS fastcgi"
+fi
+
+
 #
 # If no --enable-apache-xx specified 
 # find a default and fake the specific parameters

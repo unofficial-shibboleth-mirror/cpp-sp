@@ -12,8 +12,8 @@
 		
 		<!--
 		<Extensions>
-			<Library path="@-LIBEXECDIR-@/adfs.so" fatal="true"/>
-			<Library path="@-LIBEXECDIR-@/odbc-store.so" fatal="true"/>
+			<Library path="@-PKGLIBDIR-@/adfs.so" fatal="true"/>
+			<Library path="@-PKGLIBDIR-@/odbc-store.so" fatal="true"/>
 		</Extensions>
 		-->
     
@@ -44,7 +44,7 @@
 
 		<!--
 		<Extensions>
-			<Library path="@-LIBEXECDIR-@/adfs-lite.so" fatal="true"/>
+			<Library path="@-PKGLIBDIR-@/adfs-lite.so" fatal="true"/>
 		</Extensions>
 		-->
 		

@@ -1,9 +1,7 @@
-## $Id$
-
 AUTOMAKE_OPTIONS = foreign
 
 if BUILD_AP13
-modshib13dir = $(libexecdir)
+modshib13dir = $(libdir)/@PACKAGE@
 modshib13_LTLIBRARIES = mod_shib_13.la
 mod_shib_13_la_SOURCES = mod_shib_13.cpp
 mod_shib_13_la_CXXFLAGS = $(APXS_CFLAGS) -I$(APXS_INCLUDE)
@@ -17,7 +15,7 @@ install-exec-hook:
 endif
 
 if BUILD_AP20
-modshib20dir = $(libexecdir)
+modshib20dir = $(libdir)/@PACKAGE@
 modshib20_LTLIBRARIES = mod_shib_20.la
 mod_shib_20_la_SOURCES = mod_shib_20.cpp
 mod_shib_20_la_CXXFLAGS = $(APXS2_CFLAGS) -I$(APXS2_INCLUDE)
@@ -31,7 +29,7 @@ install-exec-hook:
 endif
 
 if BUILD_AP22
-modshib22dir = $(libexecdir)
+modshib22dir = $(libdir)/@PACKAGE@
 modshib22_LTLIBRARIES = mod_shib_22.la
 mod_shib_22_la_SOURCES = mod_shib_22.cpp
 mod_shib_22_la_CXXFLAGS = $(APXS22_CFLAGS) -I$(APXS22_INCLUDE)

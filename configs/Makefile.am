@@ -2,6 +2,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
+pkglibdir = ${libdir}/@PACKAGE@
 pkglogdir = ${localstatedir}/log/@PACKAGE@
 pkgdocdir = ${datadir}/doc/@PACKAGE@
 shirelogdir = ${localstatedir}/log/httpd
@@ -51,7 +52,7 @@ do-build-file:
 	rm -f ${FILE}.tmp
 	sed < ${srcdir}/${FILE}.in > ${FILE}.tmp \
         -e 's:@-PREFIX-@:${prefix}:g' \
-        -e 's:@-LIBEXECDIR-@:${libexecdir}:g' \
+        -e 's:@-PKGLIBDIR-@:${pkglibdir}:g' \
         -e 's:@-PKGSYSCONFDIR-@:${pkgsysconfdir}:g' \
         -e 's:@-PKGXMLDIR-@:${pkgxmldir}:g' \
         -e 's:@-PKGDOCDIR-@:${pkgdocdir}:g' \

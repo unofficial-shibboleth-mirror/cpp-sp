@@ -1,7 +1,7 @@
 AUTOMAKE_OPTIONS = foreign
 
 if BUILD_NSAPI
-nsapi_shibdir = $(libexecdir)
+nsapi_shibdir = $(libdir)/@PACKAGE@
 nsapi_shib_LTLIBRARIES = nsapi_shib.la
 nsapi_shib_la_SOURCES = nsapi_shib.cpp
 nsapi_shib_la_CXXFLAGS = $(NSAPI_INCLUDE)
@@ -15,4 +15,3 @@ install-exec-hook:
 endif
 
 EXTRA_DIST = nsapi_shib.vcproj resource.h nsapi_shib.rc nsapi_shib.cpp
-

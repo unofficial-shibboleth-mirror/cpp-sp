@@ -7,7 +7,7 @@
 #
 # Load the Shibboleth module.
 #
-LoadModule mod_shib @-LIBEXECDIR-@/mod_shib_13.so
+LoadModule mod_shib @-PKGLIBDIR-@/mod_shib_13.so
 
 #
 # Global Configuration

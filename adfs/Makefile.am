@@ -1,8 +1,6 @@
-## $Id$
-
 AUTOMAKE_OPTIONS = foreign
 
-plugindir = $(libexecdir)
+plugindir = $(libdir)/@PACKAGE@
 plugin_LTLIBRARIES = adfs.la adfs-lite.la
 
 adfs_la_LIBADD = \

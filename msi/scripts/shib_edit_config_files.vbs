@@ -93,7 +93,7 @@ if (Err = 0) then
   ConfigFile = DistDir & "shibboleth2.xml.in"
   ReplaceInFile ConfigFile, "@-PKGXMLDIR-@", ConvertedDir & "/share/xml/shibboleth"
   ReplaceInFile ConfigFile, "@-PKGSYSCONFDIR-@", ConvertedDir & "/etc/shibboleth"
-  ReplaceInFile ConfigFile, "@-LIBEXECDIR-@", ConvertedDir & "/libexec"
+  ReplaceInFile ConfigFile, "@-PKGLIBDIR-@", ConvertedDir & "/lib/shibboleth"
   ReplaceInFile ConfigFile, "@-LOGDIR-@", ConvertedDir & "/var/log/shibboleth"
   ReplaceInFile ConfigFile, "@-PREFIX-@", ConvertedDir
   ReplaceInFile ConfigFile, "   <UnixListener address=""@-PKGRUNDIR-@/shibd.sock""/>", "<!-- <UnixListener address=""@-PKGRUNDIR-@/shibd.sock""/> -->"
@@ -131,7 +131,7 @@ if (Err = 0) then
   ReplaceInFile ConfigFile, "catalog.xml:", "catalog.xml;"
   ReplaceInFile ConfigFile, "@-PKGDOCDIR-@", ConvertedDir & "/share/doc/shibboleth"
   ReplaceInFile ConfigFile, "@-PKGSYSCONFDIR-@", ConvertedDir & "/etc/shibboleth"
-  ReplaceInFile ConfigFile, "@-LIBEXECDIR-@", ConvertedDir & "/libexec"
+  ReplaceInFile ConfigFile, "@-PKGLIBDIR-@", ConvertedDir & "/lib/shibboleth"
   If (NOT FileSystemObj.FileExists(ConfigDir & "apache.config")) then
     FileSystemObj.CopyFile ConfigFile, ConfigDir & "apache.config", false
   End If
@@ -145,7 +145,7 @@ if (Err = 0) then
   ReplaceInFile ConfigFile, "catalog.xml:", "catalog.xml;"
   ReplaceInFile ConfigFile, "@-PKGDOCDIR-@", ConvertedDir & "/share/doc/shibboleth"
   ReplaceInFile ConfigFile, "@-PKGSYSCONFDIR-@", ConvertedDir & "/etc/shibboleth"
-  ReplaceInFile ConfigFile, "@-LIBEXECDIR-@", ConvertedDir & "/libexec"
+  ReplaceInFile ConfigFile, "@-PKGLIBDIR-@", ConvertedDir & "/lib/shibboleth"
   If (NOT FileSystemObj.FileExists(ConfigDir & "apache2.config")) then
     FileSystemObj.CopyFile ConfigFile, ConfigDir & "apache2.config", false
   End If
@@ -159,7 +159,7 @@ if (Err = 0) then
   ReplaceInFile ConfigFile, "catalog.xml:", "catalog.xml;"
   ReplaceInFile ConfigFile, "@-PKGDOCDIR-@", ConvertedDir & "/share/doc/shibboleth"
   ReplaceInFile ConfigFile, "@-PKGSYSCONFDIR-@", ConvertedDir & "/etc/shibboleth"
-  ReplaceInFile ConfigFile, "@-LIBEXECDIR-@", ConvertedDir & "/libexec"
+  ReplaceInFile ConfigFile, "@-PKGLIBDIR-@", ConvertedDir & "/lib/shibboleth"
   If (NOT FileSystemObj.FileExists(ConfigDir & "apache22.config")) then
     FileSystemObj.CopyFile ConfigFile, ConfigDir & "apache22.config", false
   End If
