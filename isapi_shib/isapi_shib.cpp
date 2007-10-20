@@ -44,8 +44,6 @@ using namespace shibtarget;
 
 // globals
 namespace {
-    static const XMLCh catchAll[] =
-    { chLatin_c, chLatin_a, chLatin_t, chLatin_c, chLatin_h, chLatin_A, chLatin_l, chLatin_l, chNull };
     static const XMLCh name[] = { chLatin_n, chLatin_a, chLatin_m, chLatin_e, chNull };
     static const XMLCh port[] = { chLatin_p, chLatin_o, chLatin_r, chLatin_t, chNull };
     static const XMLCh sslport[] = { chLatin_s, chLatin_s, chLatin_l, chLatin_p, chLatin_o, chLatin_r, chLatin_t, chNull };
@@ -185,7 +183,7 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
                 g_unsetHeaderValue = unsetValue.second;
             pair<bool,bool> flag=props->getBool("checkSpoofing");
             g_checkSpoofing = !flag.first || flag.second;
-            flag=props->getBool("checkAll");
+            flag=props->getBool("catchAll");
             g_catchAll = !flag.first || flag.second;
             
             const DOMElement* impl=saml::XML::getFirstChildElement(
