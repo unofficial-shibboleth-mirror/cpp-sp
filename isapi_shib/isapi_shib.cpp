@@ -54,7 +54,7 @@ using namespace std;
 // globals
 namespace {
     static const XMLCh path[] =             UNICODE_LITERAL_4(p,a,t,h);
-    static const XMLCh validate[] = UNICODE_LITERAL_8(v,a,l,i,d,a,t,e);
+    static const XMLCh validate[] =         UNICODE_LITERAL_8(v,a,l,i,d,a,t,e);
     static const XMLCh name[] =             UNICODE_LITERAL_4(n,a,m,e);
     static const XMLCh port[] =             UNICODE_LITERAL_4(p,o,r,t);
     static const XMLCh sslport[] =          UNICODE_LITERAL_7(s,s,l,p,o,r,t);
@@ -96,6 +96,7 @@ namespace {
     bool g_bNormalizeRequest = true;
     string g_unsetHeaderValue;
     bool g_checkSpoofing = true;
+    bool g_catchAll = false;
     vector<string> g_NoCerts;
 }
 
@@ -201,9 +202,11 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
         pair<bool,const char*> unsetValue=props->getString("unsetHeaderValue");
         if (unsetValue.first)
             g_unsetHeaderValue = unsetValue.second;
-        pair<bool,bool> checkSpoofing=props->getBool("checkSpoofing");
-        if (checkSpoofing.first && !checkSpoofing.second)
-            g_checkSpoofing = false;
+        pair<bool,bool> flag=props->getBool("checkSpoofing");
+        g_checkSpoofing = !flag.first || flag.second;
+        flag=props->getBool("catchAll");
+        g_catchAll = flag.first && flag.second;
+
         const DOMElement* impl=XMLHelper::getFirstChildElement(props->getElement(),Implementation);
         if (impl && (impl=XMLHelper::getFirstChildElement(impl,ISAPI))) {
             const XMLCh* flag=impl->getAttributeNS(NULL,normalizeRequest);
@@ -597,11 +600,11 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
         LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, e.what());
         return WriteClientError(pfc,"Shibboleth Filter caught an exception, check Event Log for details.");
     }
-#ifndef _DEBUG
     catch(...) {
-        return WriteClientError(pfc,"Shibboleth Filter caught an unknown exception.");
+        if (g_catchAll)
+            return WriteClientError(pfc,"Shibboleth Filter caught an unknown exception.");
+        throw;
     }
-#endif
 
     return WriteClientError(pfc,"Shibboleth Filter reached unreachable code, save my walrus!");
 }
@@ -914,11 +917,11 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
         LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, e.what());
         return WriteClientError(lpECB,"Shibboleth Extension caught an exception, check Event Log for details.");
     }
-#ifndef _DEBUG
     catch(...) {
-        return WriteClientError(lpECB,"Shibboleth Extension caught an unknown exception.");
+        if (g_catchAll)
+            return WriteClientError(lpECB,"Shibboleth Extension caught an unknown exception.");
+        throw;
     }
-#endif
 
     // If we get here we've got an error.
     return HSE_STATUS_ERROR;

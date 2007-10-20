@@ -76,6 +76,7 @@ namespace {
     string g_ServerScheme;
     string g_unsetHeaderValue;
     bool g_checkSpoofing = true;
+    bool g_catchAll = false;
 
     static const XMLCh path[] =     UNICODE_LITERAL_4(p,a,t,h);
     static const XMLCh validate[] = UNICODE_LITERAL_8(v,a,l,i,d,a,t,e);
@@ -172,9 +173,10 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, ::Session* sn, Request* 
         pair<bool,const char*> unsetValue=props->getString("unsetHeaderValue");
         if (unsetValue.first)
             g_unsetHeaderValue = unsetValue.second;
-        pair<bool,bool> checkSpoofing=props->getBool("checkSpoofing");
-        if (checkSpoofing.first && !checkSpoofing.second)
-            g_checkSpoofing = false;
+        pair<bool,bool> flag=props->getBool("checkSpoofing");
+        g_checkSpoofing = !flag.first || flag.second;
+        flag=props->getBool("catchAll");
+        g_catchAll = flag.first && flag.second;
     }
     return REQ_PROCEED;
 }
@@ -419,11 +421,11 @@ extern "C" NSAPI_PUBLIC int nsapi_shib(pblock* pb, ::Session* sn, Request* rq)
     log_error(LOG_FAILURE,FUNC,sn,rq,const_cast<char*>(e.what()));
     return WriteClientError(sn, rq, FUNC, "Shibboleth module threw an exception, see web server log for error.");
   }
-#ifndef _DEBUG
   catch (...) {
-    return WriteClientError(sn, rq, FUNC, "Shibboleth module threw an uncaught exception.");
+    if (g_catchAll)
+        return WriteClientError(sn, rq, FUNC, "Shibboleth module threw an uncaught exception.");
+    throw;
   }
-#endif
 }
 
 
@@ -447,11 +449,11 @@ extern "C" NSAPI_PUBLIC int shib_handler(pblock* pb, ::Session* sn, Request* rq)
     log_error(LOG_FAILURE,FUNC,sn,rq,const_cast<char*>(e.what()));
     return WriteClientError(sn, rq, FUNC, "Shibboleth handler threw an exception, see web server log for error.");
   }
-#ifndef _DEBUG
   catch (...) {
-    return WriteClientError(sn, rq, FUNC, "Shibboleth handler threw an unknown exception.");
+    if (g_catchAll)
+        return WriteClientError(sn, rq, FUNC, "Shibboleth handler threw an unknown exception.");
+    throw;
   }
-#endif
 }
 
 

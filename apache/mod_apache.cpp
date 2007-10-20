@@ -90,6 +90,7 @@ namespace {
     SPConfig* g_Config = NULL;
     string g_unsetHeaderValue;
     bool g_checkSpoofing = true;
+    bool g_catchAll = false;
     static const char* g_UserDataKey = "_shib_check_user_";
     static const XMLCh path[] = UNICODE_LITERAL_4(p,a,t,h);
     static const XMLCh validate[] = UNICODE_LITERAL_8(v,a,l,i,d,a,t,e);
@@ -565,12 +566,13 @@ extern "C" int shib_check_user(request_rec* r)
     ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_check_user threw an exception: %s", e.what());
     return SERVER_ERROR;
   }
-#ifndef _DEBUG
   catch (...) {
-    ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_check_user threw an uncaught exception!");
-    return SERVER_ERROR;
+    if (g_catchAll) {
+      ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_check_user threw an uncaught exception!");
+      return SERVER_ERROR;
+    }
+    throw;
   }
-#endif
 }
 
 extern "C" int shib_handler(request_rec* r)
@@ -610,12 +612,13 @@ extern "C" int shib_handler(request_rec* r)
     ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_handler threw an exception: %s", e.what());
     return SERVER_ERROR;
   }
-#ifndef _DEBUG
   catch (...) {
-    ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_handler threw an uncaught exception!");
-    return SERVER_ERROR;
+    if (g_catchAll) {
+      ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_handler threw an uncaught exception!");
+      return SERVER_ERROR;
+    }
+    throw;
   }
-#endif
 }
 
 /*
@@ -648,12 +651,13 @@ extern "C" int shib_auth_checker(request_rec* r)
     ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_auth_checker threw an exception: %s", e.what());
     return SERVER_ERROR;
   }
-#ifndef _DEBUG
   catch (...) {
-    ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_auth_checker threw an uncaught exception!");
-    return SERVER_ERROR;
+    if (g_catchAll) {
+      ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_auth_checker threw an uncaught exception!");
+      return SERVER_ERROR;
+    }
+    throw;
   }
-#endif
 }
 
 // Access control plugin that enforces htaccess rules
@@ -1238,9 +1242,10 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
         pair<bool,const char*> unsetValue=props->getString("unsetHeaderValue");
         if (unsetValue.first)
             g_unsetHeaderValue = unsetValue.second;
-        pair<bool,bool> checkSpoofing=props->getBool("checkSpoofing");
-        if (checkSpoofing.first && !checkSpoofing.second)
-            g_checkSpoofing = false;
+        pair<bool,bool> flag=props->getBool("checkSpoofing");
+        g_checkSpoofing = !flag.first || flag.second;
+        flag=props->getBool("catchAll");
+        g_catchAll = flag.first && flag.second;
     }
 
     // Set the cleanup handler
