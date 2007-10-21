@@ -1,7 +1,7 @@
 Name:		shibboleth
 Summary:	Open source system to enable inter-institutional resource sharing
 Version:	@-VERSION-@
-Release:	3
+Release:	4
 #Copyright:	Internet2
 Group:		System Environment/Libraries
 License:	Apache style
@@ -63,9 +63,6 @@ applications that use the shibboleth library.
 		$RPM_BUILD_ROOT/%{_sysconfdir}/%{name}/native.logger
 %endif
 
-find $RPM_BUILD_ROOT/%{_libexecdir} -type f -or -type l |
-  %{__sed} -e "s|$RPM_BUILD_ROOT||" | sort > rpm.filelist
-
 %check || :
 %{__make} check
 
@@ -80,13 +77,13 @@ find $RPM_BUILD_ROOT/%{_libexecdir} -type f -or -type l |
 
 # Plug the SP into Apache on a recognized system.
 APACHE_CONFIG="no"
-if [ -f $RPM_BUILD_ROOT/%{_libexecdir}/mod_shib_13.so ] ; then
+if [ -f $RPM_BUILD_ROOT/%{_libdir}/%{name}/mod_shib_13.so ] ; then
 	APACHE_CONFIG="apache.config"
 fi
-if [ -f $RPM_BUILD_ROOT/%{_libexecdir}/mod_shib_20.so ] ; then
+if [ -f $RPM_BUILD_ROOT/%{_libdir}/%{name}/mod_shib_20.so ] ; then
 	APACHE_CONFIG="apache2.config"
 fi
-if [ -f $RPM_BUILD_ROOT/%{_libexecdir}/mod_shib_22.so ] ; then
+if [ -f $RPM_BUILD_ROOT/%{_libdir}/%{name}/mod_shib_22.so ] ; then
 	APACHE_CONFIG="apache22.config"
 fi
 if [ "$APACHE_CONFIG" != "no" ] ; then
@@ -142,13 +139,15 @@ fi
 	    %{__rm} -f %{_sysconfdir}/init.d/shibd
 %endif
 
-%files -f rpm.filelist
 %defattr(-,root,root,-)
 %{_sbindir}/shibd
 %{_bindir}/mdquery
 %{_bindir}/resolvertest
 %{_libdir}/libshibsp.so.*
 %{_libdir}/libshibsp-lite.so.*
+%dir %{_libdir}/%{name}
+%{_libdir}/%{name}/*.so
+%exclude %{_libdir}/%{name}/*.la
 %dir %{_localstatedir}/log/%{name}
 %dir %{_datadir}/xml/%{name}
 %{_datadir}/xml/%{name}
@@ -163,7 +162,6 @@ fi
 %{_sysconfdir}/%{name}/shibd-redhat
 %{_sysconfdir}/%{name}/shibd-debian
 %{_sysconfdir}/%{name}/shibd-osx.plist
-%exclude %{_libexecdir}/*.la
 %docdir %{_datadir}/doc/%{name}
 %{_datadir}/doc/%{name}
 
@@ -174,6 +172,9 @@ fi
 %{_libdir}/libshibsp-lite.so
 
 %changelog
+* Sun Oct 21 2007 Scott Cantor  <cantor.2@osu.edu>  - 2.0-4
+- libexec -> lib/shibboleth changes
+
 * Thu Aug 16 2007 Scott Cantor  <cantor.2@osu.edu>  - 2.0-3
 - First public beta.
 
