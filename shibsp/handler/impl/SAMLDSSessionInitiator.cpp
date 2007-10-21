@@ -89,8 +89,12 @@ pair<bool,long> SAMLDSSessionInitiator::run(SPRequest& request, const char* enti
 
     if (isHandler) {
         option = request.getParameter("SAMLDS");
-        if (option && !strcmp(option,"1"))
-            throw saml2md::MetadataException("No identity provider was selected by user.");
+        if (option && !strcmp(option,"1")) {
+            saml2md::MetadataException ex("No identity provider was selected by user.");
+            ex.addProperty("statusCode", "urn:oasis:names:tc:SAML:2.0:status:Requester");
+            ex.addProperty("statusCode2", "urn:oasis:names:tc:SAML:2.0:status:NoAvailableIDP");
+            ex.raise();
+        }
         
         option = request.getParameter("target");
         if (option)
