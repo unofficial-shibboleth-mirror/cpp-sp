@@ -567,10 +567,9 @@ extern "C" int shib_check_user(request_rec* r)
     return SERVER_ERROR;
   }
   catch (...) {
-    if (g_catchAll) {
-      ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_check_user threw an uncaught exception!");
+    ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_check_user threw an unknown exception!");
+    if (g_catchAll)
       return SERVER_ERROR;
-    }
     throw;
   }
 }
@@ -613,10 +612,9 @@ extern "C" int shib_handler(request_rec* r)
     return SERVER_ERROR;
   }
   catch (...) {
-    if (g_catchAll) {
-      ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_handler threw an uncaught exception!");
+    ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_handler threw an unknown exception!");
+    if (g_catchAll)
       return SERVER_ERROR;
-    }
     throw;
   }
 }
@@ -652,10 +650,9 @@ extern "C" int shib_auth_checker(request_rec* r)
     return SERVER_ERROR;
   }
   catch (...) {
-    if (g_catchAll) {
-      ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_auth_checker threw an uncaught exception!");
+    ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_auth_checker threw an unknown exception!");
+    if (g_catchAll)
       return SERVER_ERROR;
-    }
     throw;
   }
 }

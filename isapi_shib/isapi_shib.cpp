@@ -601,8 +601,9 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
         return WriteClientError(pfc,"Shibboleth Filter caught an exception, check Event Log for details.");
     }
     catch(...) {
+        LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, "Shibboleth Filter threw an unknown exception.");
         if (g_catchAll)
-            return WriteClientError(pfc,"Shibboleth Filter caught an unknown exception.");
+            return WriteClientError(pfc,"Shibboleth Filter threw an unknown exception.");
         throw;
     }
 
@@ -918,8 +919,9 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
         return WriteClientError(lpECB,"Shibboleth Extension caught an exception, check Event Log for details.");
     }
     catch(...) {
+        LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, "Shibboleth Extension threw an unknown exception.");
         if (g_catchAll)
-            return WriteClientError(lpECB,"Shibboleth Extension caught an unknown exception.");
+            return WriteClientError(lpECB,"Shibboleth Extension threw an unknown exception.");
         throw;
     }
 

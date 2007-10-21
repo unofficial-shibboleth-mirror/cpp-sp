@@ -22,6 +22,7 @@
 
 #include "internal.h"
 #include "exceptions.h"
+#include "ServiceProvider.h"
 #include "remoting/impl/SocketListener.h"
 
 #include <errno.h>
@@ -153,7 +154,7 @@ void SocketPool::put(SocketListener::ShibSocket s)
     m_lock->unlock();
 }
 
-SocketListener::SocketListener(const DOMElement* e) : log(&Category::getInstance(SHIBSP_LOGCAT".Listener")),
+SocketListener::SocketListener(const DOMElement* e) : m_catchAll(false), log(&Category::getInstance(SHIBSP_LOGCAT".Listener")),
     m_socketpool(NULL), m_shutdown(NULL), m_child_lock(NULL), m_child_wait(NULL), m_socket((ShibSocket)0)
 {
     // Are we a client?
@@ -181,6 +182,15 @@ bool SocketListener::run(bool* shutdown)
 #endif
     log->info("listener service starting");
 
+    ServiceProvider* sp = SPConfig::getConfig().getServiceProvider();
+    sp->lock();
+    const PropertySet* props = sp->getPropertySet("OutOfProcess");
+    if (props) {
+        pair<bool,bool> flag = props->getBool("catchAll");
+        m_catchAll = flag.first && flag.second;
+    }
+    sp->unlock();
+    
     // Save flag to monitor for shutdown request.
     m_shutdown=shutdown;
     unsigned long count = 0;
@@ -229,6 +239,8 @@ bool SocketListener::run(bool* shutdown)
                 }
                 catch (...) {
                     log->crit("error starting new server thread to service incoming request");
+                    if (!m_catchAll)
+                        *m_shutdown = true;
                 }
             }
         }
@@ -511,16 +523,16 @@ int ServerThread::job()
         DDFJanitor jout(out);
         sink << out;
     }
-#ifndef _DEBUG
     catch (...) {
         if (incomingError)
             log.error("unexpected error processing incoming message");
+        if (!m_listener->m_catchAll)
+            throw;
         ListenerException ex("An unexpected error occurred while processing an incoming message.");
         DDF out=DDF("exception").string(ex.toString().c_str());
         DDFJanitor jout(out);
         sink << out;
     }
-#endif
     
     // Return whatever's available.
     string response(sink.str());

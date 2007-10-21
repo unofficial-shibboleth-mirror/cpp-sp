@@ -69,6 +69,7 @@ namespace shibsp {
         virtual int send(ShibSocket& s, const char* buf, int len) const=0;
         virtual int recv(ShibSocket& s, char* buf, int buflen) const=0;
 
+        bool m_catchAll;
     protected:
         bool log_error() const; // for OS-level errors
         xmltooling::logging::Category* log;

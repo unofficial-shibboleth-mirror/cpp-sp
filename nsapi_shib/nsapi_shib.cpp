@@ -422,8 +422,9 @@ extern "C" NSAPI_PUBLIC int nsapi_shib(pblock* pb, ::Session* sn, Request* rq)
     return WriteClientError(sn, rq, FUNC, "Shibboleth module threw an exception, see web server log for error.");
   }
   catch (...) {
+    log_error(LOG_FAILURE,FUNC,sn,rq,const_cast<char*>("Shibboleth module threw an unknown exception."));
     if (g_catchAll)
-        return WriteClientError(sn, rq, FUNC, "Shibboleth module threw an uncaught exception.");
+        return WriteClientError(sn, rq, FUNC, "Shibboleth module threw an unknown exception.");
     throw;
   }
 }
