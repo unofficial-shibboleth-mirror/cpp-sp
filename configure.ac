@@ -89,7 +89,7 @@ if test -f "${LOG4SHIB_CONFIG}"; then
     CPPFLAGS="`${LOG4SHIB_CONFIG} --cflags` $CPPFLAGS"
 	AC_CHECK_HEADER([log4shib/CategoryStream.hh],,AC_MSG_ERROR([unable to find log4shib header files]))
 	AC_TRY_LINK(
-		[#include <log4shib/CategoryStream.hh>],
+		[#include <log4shib/Category.hh> #include <log4shib/CategoryStream.hh>],
 		[log4shib::Category::getInstance("foo").errorStream() << log4shib::eol],
 		[AC_DEFINE(SHIBSP_LOG4SHIB,1,[Define if log4shib library is used.])],
 		[AC_MSG_ERROR([unable to link with log4shib])])
@@ -113,7 +113,7 @@ else
 	    CPPFLAGS="`${LOG4CPP_CONFIG} --cflags` $CPPFLAGS"
 		AC_CHECK_HEADER([log4cpp/CategoryStream.hh],,AC_MSG_ERROR([unable to find log4cpp header files]))
 		AC_TRY_LINK(
-			[#include <log4cpp/CategoryStream.hh>],
+			[#include <log4cpp/Category.hh> #include <log4cpp/CategoryStream.hh>],
 			[log4cpp::Category::getInstance("foo").errorStream() << log4cpp::eol],
 			[AC_DEFINE(SHIBSP_LOG4CPP,1,[Define if log4cpp library is used.])],
 			[AC_MSG_ERROR([unable to link with log4cpp, need version 1.0 or later])])
