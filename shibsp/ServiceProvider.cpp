@@ -232,15 +232,6 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
         tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
         return make_pair(true,sendError(request, app, "session", tp));
     }
-#ifndef _DEBUG
-    catch (...) {
-        TemplateParameters tp;
-        tp.m_map["errorType"] = "Unexpected Error";
-        tp.m_map["errorText"] = "Caught an unknown exception.";
-        tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
-        return make_pair(true,sendError(request, app, "session", tp));
-    }
-#endif
 }
 
 pair<bool,long> ServiceProvider::doAuthorization(SPRequest& request) const
@@ -310,15 +301,6 @@ pair<bool,long> ServiceProvider::doAuthorization(SPRequest& request) const
         tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
         return make_pair(true,sendError(request, app, "access", tp));
     }
-#ifndef _DEBUG
-    catch (...) {
-        TemplateParameters tp;
-        tp.m_map["errorType"] = "Unexpected Error";
-        tp.m_map["errorText"] = "Caught an unknown exception.";
-        tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
-        return make_pair(true,sendError(request, app, "access", tp));
-    }
-#endif
 }
 
 pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSession) const
@@ -438,15 +420,6 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
         tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
         return make_pair(true,sendError(request, app, "session", tp));
     }
-#ifndef _DEBUG
-    catch (...) {
-        TemplateParameters tp;
-        tp.m_map["errorType"] = "Unexpected Error";
-        tp.m_map["errorText"] = "Caught an unknown exception.";
-        tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
-        return make_pair(true,sendError(request, app, "session", tp));
-    }
-#endif
 }
 
 pair<bool,long> ServiceProvider::doHandler(SPRequest& request) const
@@ -512,13 +485,4 @@ pair<bool,long> ServiceProvider::doHandler(SPRequest& request) const
         tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
         return make_pair(true,sendError(request, app, "session", tp, true));
     }
-#ifndef _DEBUG
-    catch (...) {
-        TemplateParameters tp;
-        tp.m_map["errorType"] = "Unexpected Error";
-        tp.m_map["errorText"] = "Caught an unknown exception.";
-        tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
-        return make_pair(true,sendError(request, app, "session", tp, true));
-    }
-#endif
 }
