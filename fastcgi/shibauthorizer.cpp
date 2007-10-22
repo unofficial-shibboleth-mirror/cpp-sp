@@ -103,7 +103,7 @@ public:
     }
 
     virtual string getPostData(void) {
-        throw exception("getPostData not implemented by FastCGI authorizer.");
+        throw runtime_error("getPostData not implemented by FastCGI authorizer.");
     }
 
     virtual void clearHeader(const string& name) {

@@ -120,23 +120,23 @@ public:
     }
 
     virtual void clearHeader(const string &name) {
-        throw exception("clearHeader not implemented by FastCGI responder.");
+        throw runtime_error("clearHeader not implemented by FastCGI responder.");
     }
   
     virtual void setHeader(const string &name, const string &value) {
-        throw exception("setHeader not implemented by FastCGI responder.");
+        throw runtime_error("setHeader not implemented by FastCGI responder.");
     }
 
     virtual string getHeader(const string &name) {
-        throw exception("getHeader not implemented by FastCGI responder.");
+        throw runtime_error("getHeader not implemented by FastCGI responder.");
     }
 
     virtual void setRemoteUser(const string &user) {
-        throw exception("setRemoteUser not implemented by FastCGI responder.");
+        throw runtime_error("setRemoteUser not implemented by FastCGI responder.");
     }
 
     virtual string getRemoteUser(void) {
-        throw exception("getRemoteUser not implemented by FastCGI responder.");
+        throw runtime_error("getRemoteUser not implemented by FastCGI responder.");
     }
 
     virtual void* sendPage(
