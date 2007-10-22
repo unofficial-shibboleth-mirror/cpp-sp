@@ -2,12 +2,9 @@ AUTOMAKE_OPTIONS = foreign
 
 ACLOCAL_AMFLAGS = -I .
 
-EXTRA_DIST = \
-	isapi_shib Shibboleth.sln libtool.m4 acx_pthread.m4 depcomp \
-	config_win32.h shibboleth.spec.in shibboleth.spec pkginfo.in pkginfo checkinstall
+include doxygen.am
 
-dist-hook:
-	rm -rf `find $(distdir)/configs -name Makefile`
+MOSTLYCLEANFILES = $(DX_CLEANFILES)
 
 WANT_SUBDIRS = @WANT_SUBDIRS@
 
@@ -15,7 +12,16 @@ SUBDIRS = $(WANT_SUBDIRS)
 
 DIST_SUBDIRS = doc schemas configs shibsp shibd adfs util apache nsapi_shib odbc-store selinux
 
+if DX_COND_doc
+all-local: shibboleth.spec pkginfo doxygen-doc
+APIDOCS = doc/api
+else
 all-local: shibboleth.spec pkginfo
+endif
+
+install-data-hook:
+    rm -rf $(DESTDIR)$(datadir)/doc/@PACKAGE@/api
+    cp -r doc/api $(DESTDIR)$(datadir)/doc/@PACKAGE@
 
 shibboleth.spec: shibboleth.spec.in Makefile
 	rm -f $@.tmp
@@ -28,5 +34,20 @@ pkginfo: pkginfo.in Makefile
 	sed < $< > $@.tmp \
 	    -e 's:@-VERSION-@:${VERSION}:'
 	mv $@.tmp $@
+
+EXTRA_DIST = $(DX_CONFIG) \
+    $(APIDOCS) \
+    isapi_shib \
+    Shibboleth.sln \
+    libtool.m4 \
+    doxygen.m4 \
+    acx_pthread.m4 \
+    depcomp \
+    config_win32.h \
+    shibboleth.spec.in \
+    shibboleth.spec \
+    pkginfo.in \
+    pkginfo \
+    checkinstall
 
 DISTCLEANFILES = shibboleth.spec pkginfo

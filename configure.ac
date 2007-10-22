@@ -3,7 +3,20 @@ AC_INIT([shibboleth], [2.0], [shibboleth-users@internet2.edu], [shibboleth])
 AM_CONFIG_HEADER(config.h)
 AM_INIT_AUTOMAKE([shibboleth],[2.0])
 
+sinclude(doxygen.m4)
 sinclude(acx_pthread.m4)
+
+# Docygen features
+DX_HTML_FEATURE(ON)
+DX_CHM_FEATURE(OFF)
+DX_CHI_FEATURE(OFF)
+DX_MAN_FEATURE(OFF)
+DX_RTF_FEATURE(OFF)
+DX_XML_FEATURE(OFF)
+DX_PDF_FEATURE(OFF)
+DX_PS_FEATURE(OFF)
+DX_INIT_DOXYGEN(shibboleth, doxygen.cfg, doc/api)
+DX_INCLUDE=
 
 AC_ARG_ENABLE(debug,
     AC_HELP_STRING(--enable-debug, [Have GCC compile with symbols (Default = no)
@@ -20,6 +33,7 @@ fi
 
 AC_PROG_CC([gcc gcc3 cc])
 AC_PROG_CXX([g++ g++3 c++ CC])
+AC_CANONICAL_HOST
 
 if test "$GCC" = "yes" ; then
 #    AC_HAVE_GCC_VERSION(4,0,0,0,
