@@ -23,6 +23,9 @@ install-data-hook:
 	rm -rf $(DESTDIR)$(datadir)/doc/@PACKAGE@/api
 	cp -r doc/api $(DESTDIR)$(datadir)/doc/@PACKAGE@
 
+dist-hook:
+	rm -rf `find $(distdir)/doc/api -name .svn`
+
 shibboleth.spec: shibboleth.spec.in Makefile
 	rm -f $@.tmp
 	sed < $< > $@.tmp \
