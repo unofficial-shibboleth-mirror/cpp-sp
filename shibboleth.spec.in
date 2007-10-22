@@ -160,7 +160,7 @@ fi
 %exclude %{_libdir}/%{name}/*.la
 %dir %{_localstatedir}/log/%{name}
 %dir %{_datadir}/xml/%{name}
-%{_datadir}/xml/%{name}
+%{_datadir}/xml/%{name}/*
 %dir %{_sysconfdir}/%{name}
 %config(noreplace) %{_sysconfdir}/%{name}/*.xml
 %config(noreplace) %{_sysconfdir}/%{name}/*.html
