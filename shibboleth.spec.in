@@ -156,7 +156,7 @@ fi
 %{_libdir}/libshibsp.so.*
 %{_libdir}/libshibsp-lite.so.*
 %dir %{_libdir}/%{name}
-%{_libdir}/%{name}/*.so
+%{_libdir}/%{name}/*
 %exclude %{_libdir}/%{name}/*.la
 %dir %{_localstatedir}/log/%{name}
 %dir %{_datadir}/xml/%{name}
@@ -183,6 +183,7 @@ fi
 %{_datadir}/doc/%{name}/OPENSSL.LICENSE
 %{_datadir}/doc/%{name}/logo.jpg
 %{_datadir}/doc/%{name}/main.css
+%exclude %{_datadir}/doc/%{name}/INSTALL-WIN32.txt
 
 %files devel
 %defattr(-,root,root,-)
