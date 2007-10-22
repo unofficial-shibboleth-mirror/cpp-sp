@@ -61,7 +61,7 @@ public:
             server_port = strtol(server_port_str, &server_port_str, 10);
             if (*server_port_str) {
                 cerr << "can't parse SERVER_PORT (" << FCGX_GetParam("SERVER_PORT", req->envp) << ")" << endl;
-                throw exception("Unable to determine server port.");
+                throw runtime_error("Unable to determine server port.");
             }
         }
 
