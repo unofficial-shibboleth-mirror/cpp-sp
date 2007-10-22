@@ -23,6 +23,7 @@
 #include <saml/saml.h>
 #include <shib-target/shib-target.h>
 
+#include <stdexcept>
 #include <stdlib.h>
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
