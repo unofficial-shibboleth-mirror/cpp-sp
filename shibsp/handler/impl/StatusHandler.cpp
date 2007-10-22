@@ -113,7 +113,7 @@ namespace shibsp {
             }
             else
 #endif
-                throw exception("Target parameter was not an absolute URL.");
+                throw invalid_argument("Target parameter was not an absolute URL.");
 
             m_query = strchr(url,'?');
             if (m_query)

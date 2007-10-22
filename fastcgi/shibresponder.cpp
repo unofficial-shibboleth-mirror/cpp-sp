@@ -206,15 +206,15 @@ public:
     // Not used in the extension.
 
     virtual void clearHeader(const char* rawname, const char* cginame) {
-        throw exception("clearHeader not implemented by FastCGI responder.");
+        throw runtime_error("clearHeader not implemented by FastCGI responder.");
     }
   
     virtual void setHeader(const char* name, const char* value) {
-        throw exception("setHeader not implemented by FastCGI responder.");
+        throw runtime_error("setHeader not implemented by FastCGI responder.");
     }
 
     virtual void setRemoteUser(const char* user) {
-        throw exception("setRemoteUser not implemented by FastCGI responder.");
+        throw runtime_error("setRemoteUser not implemented by FastCGI responder.");
     }
 };
 

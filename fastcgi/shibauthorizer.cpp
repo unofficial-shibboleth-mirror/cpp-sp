@@ -166,7 +166,7 @@ public:
         return FCGX_GetParam("QUERY_STRING", m_req->envp);
     }
     const char* getRequestBody() const {
-        throw exception("getRequestBody not implemented by FastCGI authorizer.");
+        throw runtime_error("getRequestBody not implemented by FastCGI authorizer.");
     }
  
     long sendResponse(istream& in, long status) {
