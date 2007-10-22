@@ -20,8 +20,8 @@ all-local: shibboleth.spec pkginfo
 endif
 
 install-data-hook:
-    rm -rf $(DESTDIR)$(datadir)/doc/@PACKAGE@/api
-    cp -r doc/api $(DESTDIR)$(datadir)/doc/@PACKAGE@
+	rm -rf $(DESTDIR)$(datadir)/doc/@PACKAGE@/api
+	cp -r doc/api $(DESTDIR)$(datadir)/doc/@PACKAGE@
 
 shibboleth.spec: shibboleth.spec.in Makefile
 	rm -f $@.tmp
