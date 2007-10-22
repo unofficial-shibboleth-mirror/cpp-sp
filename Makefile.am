@@ -10,7 +10,7 @@ WANT_SUBDIRS = @WANT_SUBDIRS@
 
 SUBDIRS = $(WANT_SUBDIRS)
 
-DIST_SUBDIRS = doc schemas configs shibsp shibd adfs util apache nsapi_shib odbc-store selinux
+DIST_SUBDIRS = doc schemas configs shibsp shibd adfs util apache nsapi_shib fastcgi odbc-store selinux
 
 if DX_COND_doc
 all-local: shibboleth.spec pkginfo doxygen-doc
