@@ -148,6 +148,7 @@ fi
 	    %{__rm} -f %{_sysconfdir}/init.d/shibd
 %endif
 
+%files
 %defattr(-,root,root,-)
 %{_sbindir}/shibd
 %{_bindir}/mdquery
