@@ -33,9 +33,9 @@
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/XMLConstants.h>
-#include <xmltooling/util/XMLHelper.h>
 #include <xercesc/util/XMLUniDefs.hpp>
 
+#include <stdexcept>
 #include <stdlib.h>
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
@@ -80,7 +80,7 @@ public:
             m_port = strtol(server_port_str, &server_port_str, 10);
             if (*server_port_str) {
                 cerr << "can't parse SERVER_PORT (" << FCGX_GetParam("SERVER_PORT", req->envp) << ")" << endl;
-                throw exception("Unable to determine server port.");
+                throw runtime_error("Unable to determine server port.");
             }
         }
 
