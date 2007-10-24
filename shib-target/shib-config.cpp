@@ -110,25 +110,25 @@ bool STConfig::init(const char* schemadir)
         samlConf.schema_dir = schemadir;
     try {
         if (!samlConf.init()) {
-            log.fatal("Failed to initialize SAML Library");
+            log.fatal("failed to initialize SAML Library");
             return false;
         }
     }
     catch (...) {
-        log.fatal("Died initializing SAML Library");
+        log.fatal("died initializing SAML Library");
         return false;
     }
     
     ShibConfig& shibConf=ShibConfig::getConfig();
     try { 
         if (!shibConf.init()) {
-            log.fatal("Failed to initialize Shib library");
+            log.fatal("failed to initialize Shib library");
             samlConf.term();
             return false;
         }
     }
     catch (...) {
-        log.fatal("Died initializing Shib library.");
+        log.fatal("died initializing Shib library.");
         samlConf.term();
         return false;
     }
@@ -160,7 +160,7 @@ bool STConfig::init(const char* schemadir)
     saml::XML::registerSchema(shibtarget::XML::SAML2ASSERT_NS,shibtarget::XML::SAML2ASSERT_SCHEMA_ID,NULL,false);
     saml::XML::registerSchema(shibtarget::XML::XMLENC_NS,shibtarget::XML::XMLENC_SCHEMA_ID,NULL,false);
     
-    log.info("finished initializing");
+    log.info("%s %s libraries finished initializing", PACKAGE_NAME, PACKAGE_VERSION);
     return true;
 }
 
@@ -208,7 +208,7 @@ bool STConfig::load(const char* config)
     }
 #endif
 
-    log.info("finished loading configuration");
+    log.info("%s %s finished loading configuration", PACKAGE_NAME, PACKAGE_VERSION);
     return true;
 }
 
@@ -226,5 +226,5 @@ void STConfig::shutdown()
     m_ini = NULL;
     ShibConfig::getConfig().term();
     SAMLConfig::getConfig().term();
-    log.info("library shutdown complete");
+    log.info("%s %s library shutdown complete", PACKAGE_NAME, PACKAGE_VERSION);
 }
