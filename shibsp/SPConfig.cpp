@@ -108,7 +108,7 @@ bool SPInternalConfig::init(const char* catalog_path)
     NDC ndc("init");
 #endif
     Category& log=Category::getInstance(SHIBSP_LOGCAT".Config");
-    log.debug("library initialization started");
+    log.debug("%s library initialization started", PACKAGE_STRING);
 
     const char* loglevel=getenv("SHIBSP_LOGGING");
     if (!loglevel)
@@ -190,7 +190,7 @@ bool SPInternalConfig::init(const char* catalog_path)
         m_artifactResolver = new ArtifactResolver();
 #endif
 
-    log.info("library initialization complete");
+    log.info("%s library initialization complete", PACKAGE_STRING);
     return true;
 }
 
@@ -200,7 +200,7 @@ void SPInternalConfig::term()
     NDC ndc("term");
 #endif
     Category& log=Category::getInstance(SHIBSP_LOGCAT".Config");
-    log.info("shutting down the library");
+    log.info("%s library shutting down", PACKAGE_STRING);
 
     setServiceProvider(NULL);
 #ifndef SHIBSP_LITE
@@ -243,5 +243,5 @@ void SPInternalConfig::term()
 #else
     XMLToolingConfig::getConfig().term();
 #endif
-    log.info("library shutdown complete");
+    log.info("%s library shutdown complete", PACKAGE_STRING);
 }
