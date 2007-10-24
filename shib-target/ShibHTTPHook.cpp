@@ -145,7 +145,9 @@ bool ShibHTTPHook::outgoing(HTTPClient* conn, void* globalCtx, void* callCtx)
     if (!conn->setSSLCallback(ssl_ctx_callback,callCtx))
         return false;
     
-    if (!conn->setRequestHeader("Shibboleth", PACKAGE_VERSION))
+    if (!conn->setRequestHeader("User-Agent", PACKAGE_NAME))
+        return false;
+    if (!conn->setRequestHeader(PACKAGE_NAME, PACKAGE_VERSION))
         return false;
     if (!conn->setRequestHeader("Xerces-C", XERCES_FULLVERSIONDOT))
         return false;
