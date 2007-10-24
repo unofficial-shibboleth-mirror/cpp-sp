@@ -59,6 +59,7 @@ int shar_run = 1;
 const char* shar_config = NULL;
 const char* shar_schemadir = NULL;
 bool shar_checkonly = false;
+bool shar_version = false;
 static int unlink_socket = 0;
 const char* pidfile = NULL;
 
@@ -298,6 +299,7 @@ static void usage(char* whoami)
     fprintf(stderr, "  -t\tcheck configuration file for problems.\n");
     fprintf(stderr, "  -f\tforce removal of listener socket.\n");
     fprintf(stderr, "  -p\tpid file to use.\n");
+    fprintf(stderr, "  -v\tprint software version.\n");
     fprintf(stderr, "  -h\tprint this help message.\n");
     exit(1);
 }
@@ -306,7 +308,7 @@ static int parse_args(int argc, char* argv[])
 {
     int opt;
 
-    while ((opt = getopt(argc, argv, "c:d:p:fth")) > 0) {
+    while ((opt = getopt(argc, argv, "c:d:p:ftvh")) > 0) {
         switch (opt) {
             case 'c':
                 shar_config=optarg;
@@ -319,6 +321,9 @@ static int parse_args(int argc, char* argv[])
                 break;
             case 't':
                 shar_checkonly=true;
+                break;
+            case 'v':
+                shar_version=true;
                 break;
             case 'p':
                 pidfile=optarg;
@@ -337,11 +342,15 @@ int main(int argc, char *argv[])
         { SHIBRPC_PROG, SHIBRPC_VERS_2, shibrpc_prog_2 }
     };
 
-    if (setup_signals() != 0)
-        return -1;
-
     if (parse_args(argc, argv) != 0)
         usage(argv[0]);
+    else if (shar_version) {
+        fprintf(stdout, PACKAGE_STRING);
+        return 0;
+    }
+
+    if (setup_signals() != 0)
+        return -1;
 
     if (!shar_config)
         shar_config=getenv("SHIBCONFIG");
