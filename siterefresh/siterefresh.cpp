@@ -163,7 +163,7 @@ int main(int argc,char* argv[])
 {
     int ret=0;
     SAMLConfig& conf=SAMLConfig::getConfig();
-    bool verify=true;
+    bool verify=true,quiet=false;
     char* url_param=NULL;
     char* cert_param=NULL;
     char* out_param=NULL;
@@ -178,6 +178,8 @@ int main(int argc,char* argv[])
             url_param=argv[++i];
         else if (!strcmp(argv[i],"--noverify"))
             verify=false;
+        else if (!strcmp(argv[i],"--quiet") || !strcmp(argv[i],"-q"))
+            quiet=true;
         else if (!strcmp(argv[i],"--cert") && i+1<argc)
             cert_param=argv[++i];
         else if (!strcmp(argv[i],"--out") && i+1<argc)
@@ -195,7 +197,8 @@ int main(int argc,char* argv[])
             "\t[--out <pathname to copy data to>]" << endl <<
             "\t[--schema <schema path>]" << endl <<
             "\t[--rootns <root element XML namespace>]" << endl <<
-            "\t[--rootname <root element name>]" << endl;
+            "\t[--rootname <root element name>]" << endl <<
+            "\t[--quiet]" << endl;
         return -100;
     }
 
@@ -264,11 +267,13 @@ int main(int argc,char* argv[])
             }
         }
         else if (rootSig) {
-            log.warn("verification of signer disabled, make sure you trust the source of this file!");
+            if (!quiet)
+                log.warn("verification of signer disabled, make sure you trust the source of this file!");
             verifySignature(doc,rootSig,cert_param);
         }
         else {
-            log.warn("verification disabled, and file is unsigned!");
+            if (!quiet)
+                log.warn("verification disabled, and file is unsigned!");
         }
 
         // Verify all signatures.
