@@ -177,7 +177,8 @@ void SOAPClient::prepareTransport(SOAPTransport& transport)
     if (http) {
         flag = m_settings->getBool("chunkedEncoding");
         http->useChunkedEncoding(!flag.first || flag.second);
-        http->setRequestHeader("Shibboleth", PACKAGE_VERSION);
+        http->setRequestHeader("User-Agent", PACKAGE_NAME);
+        http->setRequestHeader(PACKAGE_NAME, PACKAGE_VERSION);
     }
 }
 
