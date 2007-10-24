@@ -237,7 +237,17 @@ AC_ARG_WITH(xmlsec,
                 CPPFLAGS="-I${with_xmlsec}/include $CPPFLAGS"
             fi])
 LIBS="-lxml-security-c $LIBS"
-AC_CHECK_HEADER([xsec/xenc/XENCEncryptionMethod.hpp],,AC_MSG_ERROR([unable to find xml-security 1.1 header files]),[#include <xercesc/dom/DOM.hpp>])
+AC_CHECK_HEADER([xsec/xenc/XENCEncryptionMethod.hpp],,AC_MSG_ERROR([unable to find xml-security header files]),[#include <xercesc/dom/DOM.hpp>])
+AC_MSG_CHECKING([XML-Security version])
+AC_PREPROC_IFELSE(
+    [AC_LANG_PROGRAM([#include <xsec/utils/XSECPlatformUtils.hpp>],
+        [#if XSEC_VERSION_MAJOR > 1 || (XSEC_VERSION_MAJOR == 1 && XSEC_VERSION_MEDIUM > 2)
+int i = 0;
+#else
+#error need version 1.3.0 or later
+#endif])],
+    [AC_MSG_RESULT(OK)],
+    [AC_MSG_FAILURE([XML-Security version 1.3.0 or greater is required.])])
 AC_TRY_LINK(
         [#include <xsec/utils/XSECPlatformUtils.hpp>],
         [XSECPlatformUtils::Initialise()],
