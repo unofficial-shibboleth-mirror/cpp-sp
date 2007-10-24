@@ -311,9 +311,11 @@ pair<bool,void*> ShibTarget::doCheckAuthN(bool handler)
         return pair<bool,void*>(false,NULL);
     }
     catch (SAMLException& e) {
+        log(LogLevelError, e.what());
         mlp.insert(e);
     }
     catch (exception& e) {
+        log(LogLevelError, e.what());
         mlp.insert("errorText", e.what());
     }
 
@@ -402,6 +404,7 @@ pair<bool,void*> ShibTarget::doHandler(void)
         return m_priv->dispatch(this, sessionProps, true, binding.get());
     }
     catch (MetadataException& e) {
+        log(LogLevelError, e.what());
         mlp.insert(e);
         // See if a metadata error page is installed.
         const IPropertySet* props=m_priv->m_app->getPropertySet("Errors");
@@ -416,9 +419,11 @@ pair<bool,void*> ShibTarget::doHandler(void)
         }
     }
     catch (SAMLException& e) {
+        log(LogLevelError, e.what());
         mlp.insert(e);
     }
     catch (exception& e) {
+        log(LogLevelError, e.what());
         mlp.insert("errorText", e.what());
     }
 
@@ -500,9 +505,11 @@ pair<bool,void*> ShibTarget::doCheckAuthZ(void)
             return make_pair(true,returnDecline());
     }
     catch (SAMLException& e) {
+        log(LogLevelError, e.what());
         mlp.insert(e);
     }
     catch (exception& e) {
+        log(LogLevelError, e.what());
         mlp.insert("errorText", e.what());
     }
 
@@ -668,9 +675,11 @@ pair<bool,void*> ShibTarget::doExportAssertions(bool requireSession)
         return pair<bool,void*>(false,NULL);
     }
     catch (SAMLException& e) {
+        log(LogLevelError, e.what());
         mlp.insert(e);
     }
     catch (exception& e) {
+        log(LogLevelError, e.what());
         mlp.insert("errorText", e.what());
     }
 
