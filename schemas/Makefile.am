@@ -13,10 +13,7 @@ schemafiles = \
     shibboleth-2.0-afp-mf-saml.xsd \
     shibboleth-2.0-attribute-map.xsd \
     shibboleth-2.0-sp-notify.xsd \
-    WS-Trust.xsd \
-    metadata_v12_to_v13.xsl \
-    metadata_v13_to_v12.xsl \
-    trust_v13_to_v12.xsl
+    WS-Trust.xsd
 
 pkgxml_DATA = \
 	catalog.xml \
