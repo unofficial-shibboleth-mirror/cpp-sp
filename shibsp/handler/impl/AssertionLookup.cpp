@@ -112,7 +112,7 @@ pair<bool,long> AssertionLookup::run(SPRequest& request, bool isHandler) const
         if (m_acl.count(request.getRemoteAddr()) == 0) {
             m_log.error("request for assertion lookup blocked from invalid address (%s)", request.getRemoteAddr().c_str());
             istringstream msg("Assertion Lookup Blocked");
-            return make_pair(true,request.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_FORBIDDEN));
+            return make_pair(true,request.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_UNAUTHORIZED));
         }
     }
     

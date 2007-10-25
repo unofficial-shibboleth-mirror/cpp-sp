@@ -244,7 +244,7 @@ pair<bool,long> StatusHandler::run(SPRequest& request, bool isHandler) const
         if (!m_acl.empty() && m_acl.count(request.getRemoteAddr()) == 0) {
             m_log.error("status handler request blocked from invalid address (%s)", request.getRemoteAddr().c_str());
             istringstream msg("Status Handler Blocked");
-            return make_pair(true,request.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_FORBIDDEN));
+            return make_pair(true,request.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_UNAUTHORIZED));
         }
     }
 

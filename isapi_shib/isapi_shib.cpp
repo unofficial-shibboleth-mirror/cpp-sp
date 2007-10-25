@@ -484,9 +484,10 @@ public:
     hdr += "\r\n";
     const char* codestr="200 OK";
     switch (status) {
-        case XMLTOOLING_HTTP_STATUS_FORBIDDEN:codestr="403 Forbidden"; break;
-        case XMLTOOLING_HTTP_STATUS_NOTFOUND: codestr="404 Not Found"; break;
-        case XMLTOOLING_HTTP_STATUS_ERROR:    codestr="500 Server Error"; break;
+        case XMLTOOLING_HTTP_STATUS_UNAUTHORIZED:   codestr="401 Authorization Required"; break;
+        case XMLTOOLING_HTTP_STATUS_FORBIDDEN:      codestr="403 Forbidden"; break;
+        case XMLTOOLING_HTTP_STATUS_NOTFOUND:       codestr="404 Not Found"; break;
+        case XMLTOOLING_HTTP_STATUS_ERROR:          codestr="500 Server Error"; break;
     }
     m_pfc->ServerSupportFunction(m_pfc, SF_REQ_SEND_RESPONSE_HEADER, (void*)codestr, (DWORD)hdr.c_str(), 0);
     char buf[1024];
@@ -815,9 +816,10 @@ public:
     hdr += "\r\n";
     const char* codestr="200 OK";
     switch (status) {
-        case XMLTOOLING_HTTP_STATUS_FORBIDDEN:codestr="403 Forbidden"; break;
-        case XMLTOOLING_HTTP_STATUS_NOTFOUND: codestr="404 Not Found"; break;
-        case XMLTOOLING_HTTP_STATUS_ERROR:    codestr="500 Server Error"; break;
+        case XMLTOOLING_HTTP_STATUS_UNAUTHORIZED:   codestr="401 Authorization Required"; break;
+        case XMLTOOLING_HTTP_STATUS_FORBIDDEN:      codestr="403 Forbidden"; break;
+        case XMLTOOLING_HTTP_STATUS_NOTFOUND:       codestr="404 Not Found"; break;
+        case XMLTOOLING_HTTP_STATUS_ERROR:          codestr="500 Server Error"; break;
     }
     m_lpECB->ServerSupportFunction(m_lpECB->ConnID, HSE_REQ_SEND_RESPONSE_HEADER, (void*)codestr, 0, (LPDWORD)hdr.c_str());
     char buf[1024];
