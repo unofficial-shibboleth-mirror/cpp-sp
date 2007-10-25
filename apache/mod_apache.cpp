@@ -507,7 +507,7 @@ public:
         ap_rwrite(buf,in.gcount(),m_req);
     }
     if (status!=XMLTOOLING_HTTP_STATUS_OK)
-        m_req->status = status;
+        return m_req->status = status;
     return DONE;
   }
   long sendRedirect(const char* url) {
@@ -910,22 +910,18 @@ bool htAccessControl::checkAttribute(const SPRequest& request, const Attribute* 
         if (re) {
             auto_arrayptr<XMLCh> trans(fromUTF8(v->c_str()));
             if (re->matches(trans.get())) {
-                request.log(SPRequest::SPDebug,
-                    string("htAccessControl plugin expecting regexp ") + toMatch + ", got " + *v + ": authorization granted"
-                    );
+                if (request.isPriorityEnabled(SPRequest::SPDebug))
+                    request.log(SPRequest::SPDebug, string("htaccess: expecting regexp ") + toMatch + ", got " + *v + ": acccepted");
                 return true;
             }
         }
         else if ((caseSensitive && *v == toMatch) || (!caseSensitive && !strcasecmp(v->c_str(), toMatch))) {
-            request.log(SPRequest::SPDebug,
-                string("htAccessControl plugin expecting ") + toMatch + ", got " + *v + ": authorization granted."
-                );
+            if (request.isPriorityEnabled(SPRequest::SPDebug))
+                request.log(SPRequest::SPDebug, string("htaccess: expecting ") + toMatch + ", got " + *v + ": accepted");
             return true;
         }
-        else {
-            request.log(SPRequest::SPDebug,
-                string("htAccessControl plugin expecting ") + toMatch + ", got " + *v + ": authorization not granted."
-                );
+        else if (request.isPriorityEnabled(SPRequest::SPDebug)) {
+            request.log(SPRequest::SPDebug, string("htaccess: expecting ") + toMatch + ", got " + *v + ": rejected");
         }
     }
     return false;
@@ -949,24 +945,18 @@ AccessControl::aclresult_t htAccessControl::authorized(const SPRequest& request,
         return shib_acl_indeterminate;  // should never happen
 
     require_line* reqs=(require_line*)reqs_arr->elts;
-    
-    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(sta->m_req),"REQUIRE nelts: %d", reqs_arr->nelts);
-    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(sta->m_req),"REQUIRE all: %d", sta->m_dc->bRequireAll);
-
-    vector<bool> auth_OK(reqs_arr->nelts,false);
-
-#define SHIB_AP_CHECK_IS_OK {           \
-     if (sta->m_dc->bRequireAll < 1)    \
-         return shib_acl_true;          \
-     auth_OK[x] = true;                 \
-     continue;                          \
-}
 
     for (int x=0; x<reqs_arr->nelts; x++) {
-        auth_OK[x] = false;
+        // This rule should be completely ignored, the method doesn't fit.
+        // The rule just doesn't exist for our purposes.
         if (!(reqs[x].method_mask & (1 << m)))
             continue;
-        method_restricted=true;
+
+        method_restricted=true; // this lets us know at the end that at least one rule was potentially enforcable.
+
+        // Tracks status of this rule's evaluation.
+        bool status = false;
+
         string remote_user = request.getRemoteUser();
 
         t = reqs[x].requirement;
@@ -975,104 +965,135 @@ AccessControl::aclresult_t htAccessControl::authorized(const SPRequest& request,
         if (!strcasecmp(w,"shibboleth")) {
             // This is a dummy rule needed because Apache conflates authn and authz.
             // Without some require rule, AuthType is ignored and no check_user hooks run.
-            SHIB_AP_CHECK_IS_OK;
+            status = true;  // treat it as an "accepted" rule
         }
-        else if (!strcmp(w,"valid-user")) {
-            if (session) {
-                request.log(SPRequest::SPDebug,"htAccessControl plugin accepting valid-user based on active session");
-                SHIB_AP_CHECK_IS_OK;
-            }
-            else {
-                request.log(SPRequest::SPError,"htAccessControl plugin rejecting access for valid-user rule, no session is active");
-            }
+        else if (!strcmp(w,"valid-user") && session) {
+            request.log(SPRequest::SPDebug, "htaccess: accepting valid-user based on active session");
+            status = true;
         }
         else if (!strcmp(w,"user") && !remote_user.empty()) {
-            bool regexp=false;
+            bool regexp=false,negate=false;
             while (*t) {
                 w=ap_getword_conf(sta->m_req->pool,&t);
                 if (*w=='~') {
                     regexp=true;
                     continue;
                 }
-                
+                else if (*w=='!') {
+                    negate=true;
+                    if (*(w+1)=='~')
+                        regexp=true;
+                    continue;
+                }
+
+                // Figure out if there's a match.
+                bool match = false;
                 if (regexp) {
                     try {
                         // To do regex matching, we have to convert from UTF-8.
                         auto_arrayptr<XMLCh> trans(fromUTF8(w));
                         RegularExpression re(trans.get());
                         auto_arrayptr<XMLCh> trans2(fromUTF8(remote_user.c_str()));
-                        if (re.matches(trans2.get())) {
-                            request.log(SPRequest::SPDebug, string("htAccessControl plugin accepting user (") + w + ")");
-                            SHIB_AP_CHECK_IS_OK;
-                        }
+                        match = re.matches(trans2.get());
                     }
                     catch (XMLException& ex) {
                         auto_ptr_char tmp(ex.getMessage());
                         request.log(SPRequest::SPError,
-                            string("htAccessControl plugin caught exception while parsing regular expression (") + w + "): " + tmp.get());
+                            string("htaccess plugin caught exception while parsing regular expression (") + w + "): " + tmp.get());
                     }
                 }
                 else if (remote_user==w) {
-                    request.log(SPRequest::SPDebug, string("htAccessControl plugin accepting user (") + w + ")");
-                    SHIB_AP_CHECK_IS_OK;
+                    match = true;
+                }
+
+                if (match) {
+                    // If we matched, then we're done with this rule either way and status is set to reflect the outcome.
+                    status = !negate;
+                    if (request.isPriorityEnabled(SPRequest::SPDebug))
+                        request.log(SPRequest::SPDebug,
+                            string("htaccess: require user ") + (negate ? "rejecting (" : "accepting (") + remote_user + ")");
+                    break;
                 }
             }
         }
-        else if (!strcmp(w,"group")) {
+        else if (!strcmp(w,"group")  && !remote_user.empty()) {
             SH_AP_TABLE* grpstatus=NULL;
-            if (sta->m_dc->szAuthGrpFile && !remote_user.empty()) {
-                request.log(SPRequest::SPDebug,string("htAccessControl plugin using groups file: ") + sta->m_dc->szAuthGrpFile);
+            if (sta->m_dc->szAuthGrpFile) {
+                if (request.isPriorityEnabled(SPRequest::SPDebug))
+                    request.log(SPRequest::SPDebug,string("htaccess plugin using groups file: ") + sta->m_dc->szAuthGrpFile);
                 grpstatus=groups_for_user(sta->m_req,remote_user.c_str(),sta->m_dc->szAuthGrpFile);
             }
-            if (!grpstatus)
-                continue;
     
+            bool negate=false;
             while (*t) {
                 w=ap_getword_conf(sta->m_req->pool,&t);
-                if (ap_table_get(grpstatus,w)) {
-                    request.log(SPRequest::SPDebug, string("htAccessControl plugin accepting group (") + w + ")");
-                    SHIB_AP_CHECK_IS_OK;
+                if (*w=='!') {
+                    negate=true;
+                    continue;
+                }
+
+                if (grpstatus && ap_table_get(grpstatus,w)) {
+                    // If we matched, then we're done with this rule either way and status is set to reflect the outcome.
+                    status = !negate;
+                    request.log(SPRequest::SPDebug, string("htaccess: require group ") + (negate ? "rejecting (" : "accepting (") + w + ")");
+                    break;
                 }
             }
         }
-        else if (!strcmp(w,"authnContextClassRef")) {
-            const char* ref = session->getAuthnContextClassRef();
+        else if (!strcmp(w,"authnContextClassRef") || !strcmp(w,"authnContextDeclRef")) {
+            const char* ref = !strcmp(w,"authnContextClassRef") ? session->getAuthnContextClassRef() : session->getAuthnContextDeclRef();
+            bool regexp=false,negate=false;
             while (ref && *t) {
                 w=ap_getword_conf(sta->m_req->pool,&t);
-                if (!strcmp(w, ref)) {
-                    request.log(SPRequest::SPDebug, string("htAccessControl plugin accepting authnContextClassRef (") + w + ")");
-                    SHIB_AP_CHECK_IS_OK;
+                if (*w=='~') {
+                    regexp=true;
+                    continue;
+                }
+                else if (*w=='!') {
+                    negate=true;
+                    if (*(w+1)=='~')
+                        regexp=true;
+                    continue;
+                }
+
+                // Figure out if there's a match.
+                bool match = false;
+                if (regexp) {
+                    try {
+                        // To do regex matching, we have to convert from UTF-8.
+                        RegularExpression re(w);
+                        match = re.matches(ref);
+                    }
+                    catch (XMLException& ex) {
+                        auto_ptr_char tmp(ex.getMessage());
+                        request.log(SPRequest::SPError,
+                            string("htaccess plugin caught exception while parsing regular expression (") + w + "): " + tmp.get());
+                    }
+                }
+                else if (!strcmp(w,ref)) {
+                    match = true;
+                }
+
+                if (match) {
+                    // If we matched, then we're done with this rule either way and status is set to reflect the outcome.
+                    status = !negate;
+                    if (request.isPriorityEnabled(SPRequest::SPDebug))
+                        request.log(SPRequest::SPDebug,
+                            string("htaccess: require authnContext ") + (negate ? "rejecting (" : "accepting (") + ref + ")");
+                    break;
                 }
             }
         }
-        else if (!strcmp(w,"authnContextDeclRef")) {
-            const char* ref = session->getAuthnContextDeclRef();
-            while (ref && *t) {
-                w=ap_getword_conf(sta->m_req->pool,&t);
-                if (!strcmp(w, ref)) {
-                    request.log(SPRequest::SPDebug, string("htAccessControl plugin accepting authnContextDeclRef (") + w + ")");
-                    SHIB_AP_CHECK_IS_OK;
-                }
-            }
+        else if (!session) {
+            request.log(SPRequest::SPError, string("htaccess: require ") + w + " not given a valid session, are you using lazy sessions?");
         }
         else {
-            // Map alias in rule to the attribute.
-            if (!session) {
-                request.log(SPRequest::SPError, "htAccessControl plugin not given a valid session to evaluate, are you using lazy sessions?");
-                continue;
-            }
-            
             // Find the attribute(s) matching the require rule.
             pair<multimap<string,const Attribute*>::const_iterator,multimap<string,const Attribute*>::const_iterator> attrs =
                 session->getIndexedAttributes().equal_range(w);
-            if (attrs.first == attrs.second) {
-                request.log(SPRequest::SPWarn, string("htAccessControl rule requires attribute (") + w + "), not found in session");
-                continue;
-            }
 
             bool regexp=false;
-
-            while (!auth_OK[x] && *t) {
+            while (!status && attrs.first!=attrs.second && *t) {
                 w=ap_getword_conf(sta->m_req->pool,&t);
                 if (*w=='~') {
                     regexp=true;
@@ -1088,31 +1109,62 @@ AccessControl::aclresult_t htAccessControl::authorized(const SPRequest& request,
                         re=temp;
                     }
                     
-                    for (; !auth_OK[x] && attrs.first!=attrs.second; ++attrs.first) {
+                    for (; !status && attrs.first!=attrs.second; ++attrs.first) {
                         if (checkAttribute(request, attrs.first->second, w, regexp ? re.get() : NULL)) {
-                            SHIB_AP_CHECK_IS_OK;
+                            status = true;
                         }
                     }
                 }
                 catch (XMLException& ex) {
                     auto_ptr_char tmp(ex.getMessage());
                     request.log(SPRequest::SPError,
-                        string("htAccessControl plugin caught exception while parsing regular expression (") + w + "): " + tmp.get()
+                        string("htaccess plugin caught exception while parsing regular expression (") + w + "): " + tmp.get()
                         );
                 }
             }
         }
+
+        // If status is false, we found a rule we couldn't satisfy.
+        // Could be an unknown rule to us, or it just didn't match.
+
+        if (status && sta->m_dc->bRequireAll != 1) {
+            // If we're not insisting that all rules be met, then we're done.
+            request.log(SPRequest::SPDebug, "htaccess: a rule was successful, granting access");
+            return shib_acl_true;
+        }
+        else if (!status && sta->m_dc->bRequireAll == 1) {
+            // If we're insisting that all rules be met, which is not something Apache really handles well,
+            // then we either return false or indeterminate based on the authoritative option, which defaults on.
+            if (sta->m_dc->bAuthoritative != 0) {
+                request.log(SPRequest::SPDebug, "htaccess: a rule was unsuccessful, denying access");
+                return shib_acl_false;
+            }
+
+            request.log(SPRequest::SPDebug, "htaccess: a rule was unsuccessful but not authoritative, leaving it up to Apache");
+            return shib_acl_indeterminate;
+        }
+
+        // Otherwise, we keep going. If we're requring all, then we have to check every rule.
+        // If not we just didn't find a successful rule yet, so we keep going anyway.
     }
 
-    // If we get here, we either "failed" or we're in require all mode.
-    bool auth_all_OK = true;
-    for (int i= 0; i<reqs_arr->nelts; i++) {
-        auth_all_OK &= auth_OK[i];
-    }
-    if (auth_all_OK || !method_restricted)
+    // If we get here, we either "failed" or we're in require all mode (but not both).
+    // If no rules possibly apply or we insisted that all rules check out, then we're good.
+    if (!method_restricted) {
+        request.log(SPRequest::SPDebug, "htaccess: no rules applied to this request method, granting access");
         return shib_acl_true;
+    }
+    else if (sta->m_dc->bRequireAll == 1) {
+        request.log(SPRequest::SPDebug, "htaccess: all rules successful, granting access");
+        return shib_acl_true;
+    }
+    else if (sta->m_dc->bAuthoritative != 0) {
+        request.log(SPRequest::SPDebug, "htaccess: no rules were successful, denying access");
+        return shib_acl_false;
+    }
 
-    return (sta->m_dc->bAuthoritative != 0) ? shib_acl_false : shib_acl_indeterminate;
+    request.log(SPRequest::SPDebug, "htaccess: no rules were successful but not authoritative, leaving it up to Apache");
+    return shib_acl_indeterminate;
 }
 
 
