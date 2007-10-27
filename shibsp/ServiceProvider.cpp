@@ -45,11 +45,34 @@ using namespace std;
 namespace shibsp {
     SHIBSP_DLLLOCAL PluginManager<ServiceProvider,string,const DOMElement*>::Factory XMLServiceProviderFactory;
 
-    long SHIBSP_DLLLOCAL sendError(SPRequest& request, const Application* app, const char* page, TemplateParameters& tp, bool mayRedirect=false)
+    long SHIBSP_DLLLOCAL sendError(SPRequest& request, const Application* app, const char* page, TemplateParameters& tp, bool mayRedirect=true)
     {
+        // The properties we need can be set in the RequestMap, or the Errors element.
+        bool mderror = dynamic_cast<const opensaml::saml2md::MetadataException*>(tp.getRichException())!=NULL;
+        pair<bool,const char*> redirectErrors = pair<bool,const char*>(false,NULL);
+        pair<bool,const char*> pathname = pair<bool,const char*>(false,NULL);
+        const PropertySet* props=app ? app->getPropertySet("Errors") : NULL;
+
+        try {
+            RequestMapper::Settings settings = request.getRequestSettings();
+            if (mderror)
+                pathname = settings.first->getString("metadataError");
+            if (!pathname.first) {
+                string pagename(page);
+                pagename += "Error";
+                pathname = settings.first->getString(pagename.c_str());
+            }
+            if (mayRedirect)
+                redirectErrors = settings.first->getString("redirectErrors");
+        }
+        catch (exception& ex) {
+            request.log(SPRequest::SPError, ex.what());
+        }
+
         if (mayRedirect) {
             // Check for redirection on errors instead of template.
-            pair<bool,const char*> redirectErrors = app ? app->getString("redirectErrors") : pair<bool,const char*>(false,NULL);
+            if (!redirectErrors.first && props)
+                redirectErrors = props->getString("redirectErrors");
             if (redirectErrors.first) {
                 string loc(redirectErrors.second);
                 loc = loc + '?' + tp.toQueryString();
@@ -61,23 +84,12 @@ namespace shibsp {
         request.setResponseHeader("Expires","01-Jan-1997 12:00:00 GMT");
         request.setResponseHeader("Cache-Control","private,no-store,no-cache");
     
-        // Error templates come from the request's settings or from the Errors property set.
-        pair<bool,const char*> pathname = pair<bool,const char*>(false,NULL);
-        try {
-            RequestMapper::Settings settings = request.getRequestSettings();
-            string pagename(page);
-            pagename += "Error";
-            pathname = settings.first->getString(pagename.c_str());
+        if (!pathname.first && props) {
+            if (mderror)
+                pathname=props->getString("metadata");
+            if (!pathname.first)
+                pathname=props->getString(page);
         }
-        catch (exception& ex) {
-            request.log(SPRequest::SPError, ex.what());
-        }
-
-        // Nothing for request, so check app properties.
-        const PropertySet* props=app ? app->getPropertySet("Errors") : NULL;
-        if (!pathname.first && props)
-            pathname=props->getString(page);
-
         if (pathname.first) {
             ifstream infile(pathname.second);
             if (infile) {
@@ -90,7 +102,7 @@ namespace shibsp {
         
         if (!strcmp(page,"access")) {
             istringstream msg("Access Denied");
-            return request.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_FORBIDDEN);
+            return request.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_UNAUTHORIZED);
         }
     
         string errstr = string("sendError could not process error template (") + page + ")";
@@ -150,7 +162,7 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
                 else {
                     TemplateParameters tp;
                     tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
-                    return make_pair(true,sendError(request, app, "ssl", tp));
+                    return make_pair(true,sendError(request, app, "ssl", tp, false));
                 }
             }
         }
@@ -284,7 +296,7 @@ pair<bool,long> ServiceProvider::doAuthorization(SPRequest& request) const
                     request.log(SPRequest::SPWarn, "access control provider denied access");
                     TemplateParameters tp;
                     tp.m_map["requestURL"] = targetURL;
-                    return make_pair(true,sendError(request, app, "access", tp));
+                    return make_pair(true,sendError(request, app, "access", tp, false));
                 }
 
                 default:
@@ -468,21 +480,9 @@ pair<bool,long> ServiceProvider::doHandler(SPRequest& request) const
        
         throw ConfigurationException("Configured Shibboleth handler failed to process the request.");
     }
-    catch (opensaml::saml2md::MetadataException& e) {
-        TemplateParameters tp(&e);
-        tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
-        // See if a metadata error page is installed.
-        const PropertySet* props=app ? app->getPropertySet("Errors") : NULL;
-        if (props) {
-            pair<bool,const char*> p=props->getString("metadata");
-            if (p.first)
-                return make_pair(true,sendError(request, app, "metadata", tp, true));
-        }
-        return make_pair(true,sendError(request, app, "session", tp, true));
-    }
     catch (exception& e) {
         TemplateParameters tp(&e);
         tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
-        return make_pair(true,sendError(request, app, "session", tp, true));
+        return make_pair(true,sendError(request, app, "session", tp));
     }
 }
