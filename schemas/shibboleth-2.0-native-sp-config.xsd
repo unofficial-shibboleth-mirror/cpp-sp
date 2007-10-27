@@ -286,6 +286,7 @@
 		<attribute name="metadataError" type="anyURI"/>
 		<attribute name="accessError" type="anyURI"/>
 		<attribute name="sslError" type="anyURI"/>
+        <attribute name="redirectErrors" type="anyURI"/>
 		<anyAttribute namespace="##other" processContents="lax"/>
 	</attributeGroup>
 	<element name="AccessControlProvider" type="conf:PluggableType"/>
@@ -478,7 +479,6 @@
 		<attribute name="REMOTE_USER" type="conf:listOfStrings"/>
 		<attribute name="unsetHeaders" type="conf:listOfStrings"/>
 		<attribute name="metadataAttributePrefix" type="conf:string"/>
-		<attribute name="redirectErrors" type="anyURI"/>
 		<attribute name="localLogout" type="anyURI"/>
 		<attribute name="globalLogout" type="anyURI"/>
 	</attributeGroup>
@@ -587,7 +587,8 @@
 			<sequence>
 				<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
 			</sequence>
-			<attribute name="session" type="anyURI" use="required"/>
+            <attribute name="redirectErrors" type="anyURI"/>
+			<attribute name="session" type="anyURI"/>
 			<attribute name="metadata" type="anyURI"/>
 			<attribute name="access" type="anyURI"/>
 			<attribute name="ssl" type="anyURI"/>
