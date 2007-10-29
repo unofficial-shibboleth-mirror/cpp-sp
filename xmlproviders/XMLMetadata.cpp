@@ -466,7 +466,8 @@ ReloadableXMLFileImpl* XMLMetadata::newImplementation(const char* pathname, bool
     return new XMLMetadataImpl(pathname,this);
 }
 
-XMLMetadataImpl::ContactPerson::ContactPerson(const DOMElement* e) : m_root(e), m_type(IContactPerson::other)
+XMLMetadataImpl::ContactPerson::ContactPerson(const DOMElement* e)
+    : m_root(e), m_type(IContactPerson::other), m_givenName(NULL), m_surName(NULL), m_company(NULL)
 {
     const XMLCh* type=NULL;
     
@@ -969,7 +970,7 @@ XMLMetadataImpl::AARole::~AARole()
 
 XMLMetadataImpl::EntityDescriptor::EntityDescriptor(
     const DOMElement* e, XMLMetadataImpl* wrapper, time_t validUntil, const IEntitiesDescriptor* parent
-    ) : m_root(e), m_parent(parent), m_org(NULL), m_validUntil(validUntil)
+    ) : m_root(e), m_parent(parent), m_id(NULL), m_errorURL(NULL), m_org(NULL), m_validUntil(validUntil)
 {
     // Check the root element namespace. If SAML2, assume it's the std schema.
     if (!XMLString::compareString(e->getNamespaceURI(),::XML::SAML2META_NS)) {
