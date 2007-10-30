@@ -40,7 +40,9 @@ using namespace std;
  */
 static int verify_callback(X509_STORE_CTX* x509_ctx, void* arg)
 {
-    Category::getInstance("OpenSSL").debug("invoking default X509 verify callback");
+    Category& log = Category::getInstance("OpenSSL");
+    log.debug("invoking default X509 verify callback");
+    
 #if (OPENSSL_VERSION_NUMBER >= 0x00907000L)
     ShibHTTPHook::ShibHTTPHookCallContext* ctx = reinterpret_cast<ShibHTTPHook::ShibHTTPHookCallContext*>(arg);
 #else
@@ -65,6 +67,8 @@ static int verify_callback(X509_STORE_CTX* x509_ctx, void* arg)
         x509_ctx->error=X509_V_ERR_APPLICATION_VERIFICATION;     // generic error, check log for plugin specifics
         return 0;
     }
+    
+    log.info("verified server's TLS key/certificate");
     
     // Signal success. Hopefully it doesn't matter what's actually in the structure now.
     return 1;

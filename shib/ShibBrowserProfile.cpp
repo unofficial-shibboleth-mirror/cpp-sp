@@ -130,6 +130,7 @@ SAMLBrowserProfile::BrowserProfileResponse ShibBrowserProfile::receive(
                 TrustException ex("unable to verify signed profile response");
                 annotateException(&ex,role); // throws it
             }
+            log.info("verified digital signature over SSO response");
         }    
         // SSO assertion signed?
         if (bpr.assertion->isSigned()) {
@@ -140,6 +141,7 @@ SAMLBrowserProfile::BrowserProfileResponse ShibBrowserProfile::receive(
                 TrustException ex("unable to verify signed authentication assertion");
                 annotateException(&ex,role); // throws it
             }
+            log.info("verified digital signature over SSO assertion");
         }
         
         // Finally, discard any assertions not issued by the same entity that issued the authn.

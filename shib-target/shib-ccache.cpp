@@ -611,7 +611,7 @@ void InternalCCacheEntry::populate()
         m_response_post=new_responses.second;
         m_responseCreated=time(NULL);
         m_lastRetry=0;
-        m_cache->log->debug("fetched and stored new response");
+        m_cache->log->info("stored new attribute response");
     	STConfig& stc=static_cast<STConfig&>(ShibTargetConfig::getConfig());
         stc.getTransactionLog().infoStream() <<  "Successful attribute query for session (ID: " << m_id << ")";
         stc.releaseTransactionLog();
@@ -645,7 +645,7 @@ pair<SAMLResponse*,SAMLResponse*> InternalCCacheEntry::getNewResponse()
         m_cache->log->debug("retry interval exceeded, so trying again");
     m_lastRetry=now;
 
-    m_cache->log->info("trying to get new attributes for session (ID=%s)", m_id.c_str());
+    m_cache->log->debug("trying to get new attributes for session (ID=%s)", m_id.c_str());
     
     // Transaction Logging
     STConfig& stc=static_cast<STConfig&>(ShibTargetConfig::getConfig());
@@ -731,8 +731,6 @@ pair<SAMLResponse*,SAMLResponse*> InternalCCacheEntry::getNewResponse()
                 m_cache->log->error("unable to sign SAML 1.0 attribute query, only SAML 1.1 defines signing adequately");
         }
             
-        m_cache->log->debug("trying to query an AA...");
-
         // Call context object
         Trust t(application->getTrustProviders());
         ShibHTTPHook::ShibHTTPHookCallContext ctx(credUse,AA);
@@ -754,6 +752,7 @@ pair<SAMLResponse*,SAMLResponse*> InternalCCacheEntry::getNewResponse()
                 if (r->isSigned()) {
                 	if (!t.validate(*r,AA))
 	                    throw TrustException("Unable to verify signed response message.");
+                	m_cache->log->info("verified digital signature over attribute response");
                 }
                 else if (!ctx.isAuthenticated() || XMLString::compareNString(ep->getLocation(),https,6))
                 	throw TrustException("Response message was unauthenticated.");
@@ -826,10 +825,15 @@ SAMLResponse* InternalCCacheEntry::filter(SAMLResponse* r, const IApplication* a
             continue;
         
         // Check token signature.
-        if (assertions[i]->isSigned() && !t.validate(*(assertions[i]),source)) {
-            m_cache->log->warn("signed assertion failed to validate, removing it");
-            r->removeAssertion(i);
-            continue;
+        if (assertions[i]->isSigned()) {
+            if (t.validate(*(assertions[i]),source)) {
+                m_cache->log->info("verified digital signature over attribute assertion");
+            }
+            else {
+                m_cache->log->warn("signed assertion failed to validate, removing it");
+                r->removeAssertion(i);
+                continue;
+            }
         }
         i++;
     }

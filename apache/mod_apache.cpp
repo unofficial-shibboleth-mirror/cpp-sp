@@ -214,7 +214,7 @@ static shib_request_config *init_request_config(request_rec *r)
     shib_request_config* rc=(shib_request_config*)ap_pcalloc(r->pool,sizeof(shib_request_config));
     ap_set_module_config (r->request_config, &mod_shib, rc);
     memset(rc, 0, sizeof(shib_request_config));
-    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_init_rc\n");
+    //ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_init_rc\n");
     return rc;
 }
 
@@ -1014,8 +1014,7 @@ bool htAccessControl::authorized(
 static int shib_post_read(request_rec *r)
 {
     shib_request_config* rc = init_request_config(r);
-
-    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_post_read");
+    //ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_post_read");
 
 #ifdef SHIB_DEFERRED_HEADERS
     rc->hdr_out = ap_make_table(r->pool, 5);
@@ -1032,7 +1031,7 @@ extern "C" int shib_fixups(request_rec* r)
   if (dc->bOff==1 || dc->bUseEnvVars!=1) 
     return DECLINED;
     
-  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_fixup(%d): ENTER", (int)getpid());
+  //ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_fixup(%d): ENTER", (int)getpid());
 
   if (rc==NULL || rc->env==NULL || ap_is_empty_table(rc->env))
         return DECLINED;

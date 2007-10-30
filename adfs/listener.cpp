@@ -210,9 +210,10 @@ void ADFSListener::sessionNew(
                                 log->debug("passing signed ADFS assertion to trust layer");
                                 Trust t(app->getTrustProviders());
                                 if (!t.validate(*assertion,role)) {
-                                    log->error("unable to verify signed authentication assertion");
+                                    log->error("unable to verify signed ADFS assertion");
                                     throw TrustException("unable to verify signed authentication assertion");
                                 }
+                                log->info("verified digital signature over ADFS assertion");
                                 
                                 // Now dummy up the SAML profile response wrapper.
                                 param=parser.get_value("wctx");
@@ -351,7 +352,6 @@ void ADFSListener::sessionNew(
     }
 
     // It passes all our tests -- create a new session.
-    log->info("creating new session");
 
     // Are attributes present?
     bool attributesPushed=false;

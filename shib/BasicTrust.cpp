@@ -202,7 +202,7 @@ bool BasicTrust::validate(const saml::SAMLSignedObject& token, const IRoleDescri
                 log.debug("KeyDescriptor resolved into a key, trying it...");
                 try {
                     token.verify(key);
-                    log.info("signature verified with KeyDescriptor");
+                    log.debug("signature verified with KeyDescriptor");
                     return true;
                 }
                 catch (SAMLException& e) {

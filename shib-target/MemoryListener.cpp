@@ -219,7 +219,6 @@ void MemoryListener::sessionNew(
 #endif
 
     // It passes all our tests -- create a new session.
-    log->info("creating new session");
 
     // Are attributes present?
     bool attributesPushed=false;

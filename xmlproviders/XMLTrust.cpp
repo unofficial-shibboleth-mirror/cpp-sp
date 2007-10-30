@@ -470,7 +470,8 @@ bool XMLTrust::validate(void* certEE, const Iterator<void*>& certChain, const IR
                 buf[len] = '\0';
                 subjectstr+=buf;
             }
-            log.infoStream() << "certificate subject: " << subjectstr << xmlproviders::logging::eol;
+            if (log.isDebugEnabled())
+                log.debugStream() << "certificate subject: " << subjectstr << xmlproviders::logging::eol;
             // The flags give us LDAP order instead of X.500, with a comma plus space separator.
             len=X509_NAME_print_ex(b2,subject,0,XN_FLAG_RFC2253 + XN_FLAG_SEP_CPLUS_SPC - XN_FLAG_SEP_COMMA_PLUS);
             BIO_flush(b2);
@@ -486,7 +487,7 @@ bool XMLTrust::validate(void* certEE, const Iterator<void*>& certChain, const IR
 #else
                 if (!stricmp(n->c_str(),subjectstr.c_str()) || !stricmp(n->c_str(),subjectstr2.c_str())) {
 #endif
-                    log.info("matched full subject DN to a key name (%s)", n->c_str());
+                    log.debug("matched full subject DN to a key name (%s)", n->c_str());
                     checkName=false;
                     break;
                 }
@@ -511,7 +512,7 @@ bool XMLTrust::validate(void* certEE, const Iterator<void*>& certChain, const IR
 #else
                                 if (!strnicmp(altptr,n->c_str(),altlen)) {
 #endif
-                                    log.info("matched DNS/URI subjectAltName to a key name (%s)", n->c_str());
+                                    log.debug("matched DNS/URI subjectAltName to a key name (%s)", n->c_str());
                                     checkName=false;
                                     break;
                                 }
@@ -531,7 +532,7 @@ bool XMLTrust::validate(void* certEE, const Iterator<void*>& certChain, const IR
 #else
                             if (!stricmp(buf,n->c_str())) {
 #endif
-                                log.info("matched subject CN to a key name (%s)", n->c_str());
+                                log.debug("matched subject CN to a key name (%s)", n->c_str());
                                 checkName=false;
                                 break;
                             }
@@ -597,7 +598,7 @@ bool XMLTrust::validate(void* certEE, const Iterator<void*>& certChain, const IR
                         kauth=*keyauths;
                         if (log.isInfoEnabled()) {
                             auto_ptr_char temp(*name);
-                            log.info("KeyAuthority match on %s",temp.get());
+                            log.debug("KeyAuthority match on %s",temp.get());
                         }
                     }
                 }
@@ -665,7 +666,7 @@ bool XMLTrust::validate(void* certEE, const Iterator<void*>& certChain, const IR
             X509_STORE_free(store);
 
             if (ret==1) {
-                log.info("successfully validated certificate chain");
+                log.debug("successfully validated certificate chain");
                 unlock();
                 return true;
             }
@@ -741,7 +742,7 @@ bool XMLTrust::validate(const saml::SAMLSignedObject& token, const IRoleDescript
                         KIL=*keybinds;
                         if (log.isInfoEnabled()) {
                             auto_ptr_char temp(*name);
-                            log.info("KeyInfo match on %s",temp.get());
+                            log.debug("KeyInfo match on %s",temp.get());
                         }
                     }
                 }
@@ -759,7 +760,7 @@ bool XMLTrust::validate(const saml::SAMLSignedObject& token, const IRoleDescript
                     try {
                         token.verify(key);
                         unlock();
-                        log.info("token verified with KeyInfo, nothing more to verify");
+                        log.debug("token verified with KeyInfo, nothing more to verify");
                         return true;
                     }
                     catch (SAMLException& e) {

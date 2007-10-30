@@ -245,7 +245,7 @@ bool ShibbolethTrust::validate(X509* EE, STACK_OF(X509)* untrusted, const IKeyAu
     sk_X509_free(CAstack);
 
     if (ret==1) {
-        log.info("successfully validated certificate chain");
+        log.debug("successfully validated certificate chain");
         return true;
     }
     
@@ -312,7 +312,8 @@ bool ShibbolethTrust::validate(void* certEE, const Iterator<void*>& certChain, c
                 buf[len] = '\0';
                 subjectstr+=buf;
             }
-            log.infoStream() << "certificate subject: " << subjectstr << logging::eol;
+            if (log.isDebugEnabled())
+                log.debugStream() << "certificate subject: " << subjectstr << logging::eol;
             // The flags give us LDAP order instead of X.500, with a comma plus space separator.
             len=X509_NAME_print_ex(b2,subject,0,XN_FLAG_RFC2253 + XN_FLAG_SEP_CPLUS_SPC - XN_FLAG_SEP_COMMA_PLUS);
             BIO_flush(b2);
@@ -328,7 +329,7 @@ bool ShibbolethTrust::validate(void* certEE, const Iterator<void*>& certChain, c
 #else
                 if (!stricmp(n->c_str(),subjectstr.c_str()) || !stricmp(n->c_str(),subjectstr2.c_str())) {
 #endif
-                    log.info("matched full subject DN to a key name (%s)", n->c_str());
+                    log.debug("matched full subject DN to a key name (%s)", n->c_str());
                     checkName=false;
                     break;
                 }
@@ -354,7 +355,7 @@ bool ShibbolethTrust::validate(void* certEE, const Iterator<void*>& certChain, c
                                 if ((check->type==GEN_DNS && !strnicmp(altptr,n->c_str(),altlen))
 #endif
                                         || (check->type==GEN_URI && !strncmp(altptr,n->c_str(),altlen))) {
-                                    log.info("matched DNS/URI subjectAltName to a key name (%s)", n->c_str());
+                                    log.debug("matched DNS/URI subjectAltName to a key name (%s)", n->c_str());
                                     checkName=false;
                                     break;
                                 }
@@ -374,7 +375,7 @@ bool ShibbolethTrust::validate(void* certEE, const Iterator<void*>& certChain, c
 #else
                             if (!stricmp(buf,n->c_str())) {
 #endif
-                                log.info("matched subject CN to a key name (%s)", n->c_str());
+                                log.debug("matched subject CN to a key name (%s)", n->c_str());
                                 checkName=false;
                                 break;
                             }
@@ -515,7 +516,7 @@ bool ShibbolethTrust::validate(const saml::SAMLSignedObject& token, const IRoleD
             chain.push_back(static_cast<OpenSSLCryptoX509*>(c)->getOpenSSLX509());
             if (!certEE) {
                 token.verify(*c);
-                log.info("signature verified with key inside signature, attempting certificate validation...");
+                log.debug("signature verified with key inside signature, attempting certificate validation...");
                 certEE=static_cast<OpenSSLCryptoX509*>(c)->getOpenSSLX509();
             }
         }
