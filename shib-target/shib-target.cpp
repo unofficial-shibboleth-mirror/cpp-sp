@@ -146,6 +146,17 @@ void ShibTarget::init(
                 m_uri += uri;
                 break;
             }
+            else if (*uri == ';') {
+                // If this is Java being stupid, skip everything up to the query string, if any.
+                if (!strncmp(uri, ";jsessionid=", 12)) {
+                    if (uri = strchr(uri, '?'))
+                        m_uri += uri;
+                    break;
+                }
+                else {
+                    m_uri += *uri;
+                }
+            }
             else if (*uri != '%') {
                 m_uri += *uri;
             }
@@ -159,7 +170,7 @@ void ShibTarget::init(
             ++uri;
         }
     }
-  
+
     m_priv->m_Config = &ShibTargetConfig::getConfig();
     m_priv->get_application(this, protocol, hostname, port, m_uri);
 }
