@@ -186,7 +186,6 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, ::Session* sn, Request* 
 
 class ShibTargetNSAPI : public AbstractSPRequest
 {
-  string m_uri;
   mutable string m_body;
   mutable bool m_gotBody;
   mutable vector<string> m_certs;
@@ -201,13 +200,15 @@ public:
     const char* uri=pblock_findval("uri", rq->reqpb);
     const char* qstr=pblock_findval("query", rq->reqpb);
 
-    if (uri)
-        m_uri = uri;
-    if (qstr)
-        m_uri = m_uri + '?' + qstr;
+    if (qstr) {
+        string temp = string(uri) + '?' + qstr;
+        setRequestURI(temp.c_str());
+    }
+    else {
+        setRequestURI(uri);
+    }
   }
-  ~ShibTargetNSAPI() {
-  }
+  ~ShibTargetNSAPI() { }
 
   const char* getScheme() const {
     return security_active ? "https" : "http";
@@ -226,9 +227,6 @@ public:
   }
   int getPort() const {
     return server_portnum;
-  }
-  const char* getRequestURI() const {
-    return m_uri.c_str();
   }
   const char* getMethod() const {
     return pblock_findval("method", m_rq->reqpb);

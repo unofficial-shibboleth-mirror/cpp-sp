@@ -113,7 +113,55 @@ Session* AbstractSPRequest::getSession(bool checkTimeout, bool ignoreAddress, bo
     return session;
 }
 
-const char* AbstractSPRequest::getRequestURL() const {
+static char _x2c(const char *what)
+{
+    register char digit;
+
+    digit = (what[0] >= 'A' ? ((what[0] & 0xdf) - 'A')+10 : (what[0] - '0'));
+    digit *= 16;
+    digit += (what[1] >= 'A' ? ((what[1] & 0xdf) - 'A')+10 : (what[1] - '0'));
+    return(digit);
+}
+
+void AbstractSPRequest::setRequestURI(const char* uri)
+{
+    // Fix for bug 574, secadv 20061002
+    // Unescape URI up to query string delimiter by looking for %XX escapes.
+    // Adapted from Apache's util.c, ap_unescape_url function.
+    if (uri) {
+        while (*uri) {
+            if (*uri == '?') {
+                m_uri += uri;
+                break;
+            }
+            else if (*uri == ';') {
+                // If this is Java being stupid, skip everything up to the query string, if any.
+                if (!strncmp(uri, ";jsessionid=", 12)) {
+                    if (uri = strchr(uri, '?'))
+                        m_uri += uri;
+                    break;
+                }
+                else {
+                    m_uri += *uri;
+                }
+            }
+            else if (*uri != '%') {
+                m_uri += *uri;
+            }
+            else {
+                ++uri;
+                if (!isxdigit(*uri) || !isxdigit(*(uri+1)))
+                    throw ConfigurationException("Bad request, contained unsupported encoded characters.");
+                m_uri += _x2c(uri);
+                ++uri;
+            }
+            ++uri;
+        }
+    }
+}
+
+const char* AbstractSPRequest::getRequestURL() const
+{
     if (m_url.empty()) {
         // Compute the full target URL
         int port = getPort();
@@ -124,9 +172,7 @@ const char* AbstractSPRequest::getRequestURL() const {
             portstr << port;
             m_url += ":" + portstr.str();
         }
-        scheme = getRequestURI();
-        if (scheme)
-            m_url += scheme;
+        m_url += m_uri;
     }
     return m_url.c_str();
 }

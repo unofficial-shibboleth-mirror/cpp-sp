@@ -355,7 +355,7 @@ class ShibTargetIsapiF : public AbstractSPRequest
   PHTTP_FILTER_PREPROC_HEADERS m_pn;
   multimap<string,string> m_headers;
   int m_port;
-  string m_scheme,m_hostname,m_uri;
+  string m_scheme,m_hostname;
   mutable string m_remote_addr,m_content_type,m_method;
   dynabuf m_allhttp;
 
@@ -366,7 +366,7 @@ public:
     // URL path always come from IIS.
     dynabuf var(256);
     GetHeader(pn,pfc,"url",var,256,false);
-    m_uri = var;
+    setRequestURI(var);
 
     // Port may come from IIS or from site def.
     if (!g_bNormalizeRequest || (pfc->fIsSecurePort && site.m_sslport.empty()) || (!pfc->fIsSecurePort && site.m_port.empty())) {
@@ -402,9 +402,6 @@ public:
   }
   int getPort() const {
     return m_port;
-  }
-  const char* getRequestURI() const {
-    return m_uri.c_str();
   }
   const char* getMethod() const {
     if (m_method.empty()) {
@@ -697,25 +694,29 @@ public:
      *      PathInfo:   /SAML/POST
      */
     
+    string uri;
+
     // Clearly we're only in bad mode if path info exists at all.
     if (lpECB->lpszPathInfo && *(lpECB->lpszPathInfo)) {
         if (strstr(lpECB->lpszPathInfo,url))
             // Pretty good chance we're in bad mode, unless the PathInfo repeats the path itself.
-            m_uri = lpECB->lpszPathInfo;
+            uri = lpECB->lpszPathInfo;
         else {
-            m_uri = url;
-            m_uri += lpECB->lpszPathInfo;
+            uri = url;
+            uri += lpECB->lpszPathInfo;
         }
     }
     else {
-        m_uri = url;
+        uri = url;
     }
     
     // For consistency with Apache, let's add the query string.
     if (lpECB->lpszQueryString && *(lpECB->lpszQueryString)) {
-        m_uri += '?';
-        m_uri += lpECB->lpszQueryString;
+        uri += '?';
+        uri += lpECB->lpszQueryString;
     }
+
+    setRequestURI(uri.c_str());
   }
   ~ShibTargetIsapiE() { }
 
@@ -727,9 +728,6 @@ public:
   }
   int getPort() const {
     return m_port;
-  }
-  const char* getRequestURI() const {
-    return m_uri.c_str();
   }
   const char* getMethod() const {
     return m_lpECB->lpszMethod;

@@ -42,6 +42,14 @@ namespace shibsp {
     protected:
         AbstractSPRequest();
         
+        /**
+         * Stores a normalized request URI to ensure it contains no %-encoded characters
+         * or other undesirable artifacts, such as ;jsessionid appendage.
+         *
+         * @param uri   the request URI as obtained from the client
+         */
+        void setRequestURI(const char* uri);
+
     public:
         virtual ~AbstractSPRequest();
 
@@ -54,6 +62,10 @@ namespace shibsp {
         const Application& getApplication() const;
         
         Session* getSession(bool checkTimeout=true, bool ignoreAddress=false, bool cache=true) const;
+
+        const char* getRequestURI() const {
+            return m_uri.c_str();
+        }
 
         const char* getRequestURL() const;
         
@@ -76,6 +88,7 @@ namespace shibsp {
         mutable const Application* m_app;
         mutable bool m_sessionTried;
         mutable Session* m_session;
+        std::string m_uri;
         mutable std::string m_url;
         void* m_log; // declared void* to avoid log4cpp header conflicts in Apache
         mutable std::string m_handlerURL;

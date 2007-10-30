@@ -87,6 +87,8 @@ public:
         if (!server_scheme_str || !*server_scheme_str)
             server_scheme_str = (m_port == 443 || m_port == 8443) ? "https" : "http";
         m_scheme = server_scheme_str;
+
+        setRequestURI(FCGX_GetParam("REQUEST_URI", m_req->envp));
     }
 
     ~ShibTargetFCGIAuth() { }
@@ -99,9 +101,6 @@ public:
     }
     int getPort() const {
         return m_port;
-    }
-    const char* getRequestURI() const {
-        return FCGX_GetParam("REQUEST_URI", m_req->envp);
     }
     const char* getMethod() const {
         return FCGX_GetParam("REQUEST_METHOD", m_req->envp);

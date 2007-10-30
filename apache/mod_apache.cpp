@@ -314,6 +314,8 @@ public:
     m_dc = (shib_dir_config*)ap_get_module_config(req->per_dir_config, &mod_shib);
     m_rc = (shib_request_config*)ap_get_module_config(req->request_config, &mod_shib);
     m_req = req;
+
+    setRequestURI(m_req->unparsed_uri);
   }
   virtual ~ShibTargetApache() {}
 
@@ -325,9 +327,6 @@ public:
   }
   int getPort() const {
     return ap_get_server_port(m_req);
-  }
-  const char* getRequestURI() const {
-    return m_req->unparsed_uri;
   }
   const char* getMethod() const {
     return m_req->method;

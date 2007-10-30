@@ -282,11 +282,11 @@
 		<attribute name="forceAuthn" type="boolean"/>
 		<attribute name="authnContextClassRef" type="anyURI"/>
 		<attribute name="authnContextComparison" type="samlp:AuthnContextComparisonType"/>
+        <attribute name="redirectErrors" type="anyURI"/>
 		<attribute name="sessionError" type="anyURI"/>
 		<attribute name="metadataError" type="anyURI"/>
 		<attribute name="accessError" type="anyURI"/>
 		<attribute name="sslError" type="anyURI"/>
-        <attribute name="redirectErrors" type="anyURI"/>
 		<anyAttribute namespace="##other" processContents="lax"/>
 	</attributeGroup>
 	<element name="AccessControlProvider" type="conf:PluggableType"/>
