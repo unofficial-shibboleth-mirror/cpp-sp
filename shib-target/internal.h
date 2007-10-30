@@ -159,28 +159,28 @@ namespace shibtarget {
     };
 
     // Error template class
-    class ShibMLPPriv;
     class ShibMLP {
     public:
-        ShibMLP();
-        ~ShibMLP();
+        ShibMLP() {}
+        ~ShibMLP() {}
 
-        void insert (const std::string& key, const std::string& value);
+        void insert (const std::string& key, const std::string& value) {
+            m_map[key] = value;
+        }
         void insert (const std::string& key, const char* value) {
-          std::string v = value;
-          insert (key, v);
+            m_map[key] = value;
         }
         void insert (const char* key, const std::string& value) {
-          std::string k = key;
-          insert (k, value);
+            m_map[key] = value;
         }
         void insert (const char* key, const char* value) {
-          std::string k = key, v = value;
-          insert(k,v);
+            m_map[key] = value;
         }
         void insert (saml::SAMLException& e);
 
-        void clear () { m_map.clear(); }
+        void clear () {
+            m_map.clear();
+        }
 
         const char* run (std::istream& s, const IPropertySet* props=NULL, std::string* output=NULL);
         const char* run (const std::string& input, const IPropertySet* props=NULL, std::string* output=NULL);
@@ -190,7 +190,8 @@ namespace shibtarget {
         }
 
     private:
-        ShibMLPPriv *m_priv;
+        static void html_encode(std::string& os, const char* start);
+
         std::map<std::string,std::string> m_map;
         std::string m_generated;
     };

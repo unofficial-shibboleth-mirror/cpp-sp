@@ -32,19 +32,8 @@ using namespace std;
 using namespace saml;
 using namespace shibboleth;
 using namespace shibtarget;
-using namespace shibtarget::logging;
 
-class shibtarget::ShibMLPPriv {
-public:
-  ShibMLPPriv();
-  ~ShibMLPPriv() {}
-  Category *log;
-
-  static void html_encode(string& os, const char* start);
-};  
-
-
-void ShibMLPPriv::html_encode(string& os, const char* start)
+void ShibMLP::html_encode(string& os, const char* start)
 {
     while (start && *start) {
         switch (*start) {
@@ -70,8 +59,6 @@ void ShibMLPPriv::html_encode(string& os, const char* start)
     }
 }
 
-ShibMLPPriv::ShibMLPPriv() : log(&(Category::getInstance("shibtarget.ShibMLP"))) {}
-
 static void trimspace (string& s)
 {
   int end = s.size() - 1, start = 0;
@@ -84,16 +71,6 @@ static void trimspace (string& s)
 
   // Modify the string.
   s = s.substr(start, end - start + 1);
-}
-
-ShibMLP::ShibMLP()
-{
-  m_priv = new ShibMLPPriv ();
-}
-
-ShibMLP::~ShibMLP ()
-{
-  delete m_priv;
 }
 
 const char* ShibMLP::run(const string& is, const IPropertySet* props, std::string* output)
@@ -112,8 +89,6 @@ const char* ShibMLP::run(const string& is, const IPropertySet* props, std::strin
   const char* line = is.c_str();
   const char* lastpos = line;
   const char* thispos;
-
-  m_priv->log->debug("Processing string");
 
   //
   // Search for SHIBMLP tags.  These are of the form:
@@ -145,12 +120,12 @@ const char* ShibMLP::run(const string& is, const IPropertySet* props, std::strin
     
             map<string,string>::const_iterator i=m_map.find(key);
             if (i != m_map.end()) {
-                m_priv->html_encode(*output,i->second.c_str());
+                html_encode(*output,i->second.c_str());
             }
             else {
                 pair<bool,const char*> p=props ? props->getString(key.c_str()) : pair<bool,const char*>(false,NULL);
                 if (p.first) {
-                    m_priv->html_encode(*output,p.second);
+                    html_encode(*output,p.second);
                 }
                 else {
                     static const char* s1 = "<!-- Unknown SHIBMLP key: ";
@@ -278,8 +253,6 @@ const char* ShibMLP::run(istream& is, const IPropertySet* props, std::string* ou
   static string eol = "\r\n";
   string str, line;
 
-  m_priv->log->debug("processing stream");
-
   while (getline(is, line))
     str += line + eol;
 
@@ -304,10 +277,4 @@ void ShibMLP::insert(SAMLException& e)
         else
             insert("originContactEmail", email);
     }
-}
-
-void ShibMLP::insert (const std::string& key, const std::string& value)
-{
-  m_priv->log->debug("inserting %s -> %s", key.c_str(), value.c_str());
-  m_map[key] = value;
 }
