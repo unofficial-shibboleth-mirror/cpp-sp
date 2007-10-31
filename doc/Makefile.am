@@ -10,6 +10,7 @@ docfiles = \
 	NOTICE.txt \
 	README.txt \
 	RELEASE.txt \
+	FASTCGI.LICENSE \
 	OPENSSL.LICENSE \
 	LOG4CPP.LICENSE \
 	main.css \
