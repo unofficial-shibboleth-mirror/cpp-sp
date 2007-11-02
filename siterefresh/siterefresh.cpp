@@ -108,7 +108,8 @@ void verifySignature(DOMDocument* doc, DOMNode* sigNode, const char* cert=NULL)
                     for (unsigned int i=0; tlist && i<tlist->getSize(); i++) {
                         if (tlist->item(i)->getTransformType()==TRANSFORM_ENVELOPED_SIGNATURE)
                             valid=true;
-                        else if (tlist->item(i)->getTransformType()!=TRANSFORM_EXC_C14N) {
+                        else if (tlist->item(i)->getTransformType()!=TRANSFORM_EXC_C14N &&
+                                 tlist->item(i)->getTransformType()!=TRANSFORM_C14N) {
                             valid=false;
                             break;
                         }
