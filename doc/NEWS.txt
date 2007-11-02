@@ -2,7 +2,13 @@ Sep 15, 2007
 Version 1.3.1
 
 Refresh of branch with numerous bug and portability fixes
-Enhancements to RequestMap
+Expanded support for more 64-bit platforms (but not Windows)
+Auto-detection of Apache version during build
+Enhancements to RequestMap to support Host and Path regex matches
+Trust engine changes to align behavior with 2.0 release
+Optional header spoofing detection by modules
+Apache module cleanup, including use of environment variables
+Minor logging improvements
 FastCGI support
 
 Oct 2, 2006
