@@ -98,7 +98,7 @@ void verifySignature(DOMDocument* doc, DOMNode* sigNode, const char* cert=NULL)
 
         // Verify the signature coverage.
         DSIGReferenceList* refs=sig->getReferenceList();
-        if (sig->getSignatureMethod()==SIGNATURE_RSA && refs && refs->getSize()==1) {
+        if (refs && refs->getSize()==1) {
             DSIGReference* ref=refs->item(0);
             if (ref) {
                 const XMLCh* URI=ref->getURI();
@@ -141,7 +141,6 @@ void verifySignature(DOMDocument* doc, DOMNode* sigNode, const char* cert=NULL)
             sig->setSigningKey(x509->clonePublicKey());
         }
         else {
-            log.warn("verifying with key inside signature, this is a sanity check but provides no security");
             XSECKeyInfoResolverDefault resolver;
             sig->setKeyInfoResolver(resolver.clone());
         }
@@ -280,7 +279,8 @@ int main(int argc,char* argv[])
         // Verify all signatures.
         DOMNodeList* siglist=doc->getElementsByTagNameNS(saml::XML::XMLSIG_NS,L(Signature));
         for (XMLSize_t i=0; siglist && i<siglist->getLength(); i++)
-            verifySignature(doc,siglist->item(i),cert_param);
+            if (siglist->item(i) != rootSig)
+                verifySignature(doc,siglist->item(i),cert_param);
 
         if (out_param) {
             // Output the data to the specified file.
