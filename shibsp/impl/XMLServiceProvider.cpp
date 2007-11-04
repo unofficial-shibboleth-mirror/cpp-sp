@@ -936,6 +936,7 @@ short XMLApplication::acceptNode(const DOMNode* node) const
     if (XMLString::equals(name,_Application) ||
         XMLString::equals(name,_Audience) ||
         XMLString::equals(name,Notify) ||
+        XMLString::equals(name,_Handler) ||
         XMLString::equals(name,_AssertionConsumerService) ||
         XMLString::equals(name,_ArtifactResolutionService) ||
         XMLString::equals(name,_LogoutInitiator) ||
