@@ -55,6 +55,7 @@
 # include "metadata/MetadataExt.h"
 # include "security/PKIXTrustEngine.h"
 # include <saml/SAMLConfig.h>
+# include <xmltooling/util/CurlNetAccessor.hpp>
 #else
 # include <xmltooling/XMLToolingConfig.h>
 #endif
@@ -126,6 +127,7 @@ bool SPInternalConfig::init(const char* catalog_path)
         log.fatal("failed to initialize OpenSAML library");
         return false;
     }
+    XMLPlatformUtils::fgNetAccessor = new CurlNetAccessor();
 #else
     if (!XMLToolingConfig::getConfig().init()) {
         log.fatal("failed to initialize XMLTooling library");
