@@ -293,15 +293,16 @@ pair<bool,long> SAML2Logout::doRequest(
         }
 
         // We need metadata to issue a response.
-        Locker metadataLocker(application.getMetadataProvider());
-        const EntityDescriptor* entity = application.getMetadataProvider()->getEntityDescriptor(request.getParameter("entityID"));
-        if (!entity) {
+        MetadataProvider* m = application.getMetadataProvider();
+        Locker metadataLocker(m);
+        MetadataProvider::Criteria mc(request.getParameter("entityID"), &IDPSSODescriptor::ELEMENT_QNAME, samlconstants::SAML20P_NS);
+        pair<const EntityDescriptor*,const RoleDescriptor*> entity = m->getEntityDescriptor(mc);
+        if (!entity.first) {
             throw MetadataException(
                 "Unable to locate metadata for identity provider ($entityID)", namedparams(1, "entityID", request.getParameter("entityID"))
                 );
         }
-        const IDPSSODescriptor* idp = find_if(entity->getIDPSSODescriptors(), isValidForProtocol(samlconstants::SAML20P_NS));
-        if (!idp) {
+        else if (!entity.second) {
             throw MetadataException(
                 "Unable to locate SAML 2.0 IdP role for identity provider ($entityID).",
                 namedparams(1, "entityID", request.getParameter("entityID"))
@@ -312,7 +313,7 @@ pair<bool,long> SAML2Logout::doRequest(
         if (worked1 && worked2) {
             // Successful LogoutResponse. Has to be front-channel or we couldn't be here.
             return sendResponse(
-                reqid.get(), StatusCode::SUCCESS, NULL, NULL, request.getParameter("RelayState"), idp, application, response, true
+                reqid.get(), StatusCode::SUCCESS, NULL, NULL, request.getParameter("RelayState"), entity.second, application, response, true
                 );
         }
 
@@ -320,7 +321,7 @@ pair<bool,long> SAML2Logout::doRequest(
             reqid.get(),
             StatusCode::RESPONDER, NULL, "Unable to fully destroy principal's session.",
             request.getParameter("RelayState"),
-            idp,
+            entity.second,
             application,
             response,
             true

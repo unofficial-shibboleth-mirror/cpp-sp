@@ -215,8 +215,9 @@ int main(int argc,char* argv[])
 
             MetadataProvider* m=app->getMetadataProvider();
             xmltooling::Locker mlocker(m);
-            const EntityDescriptor* site=m->getEntityDescriptor(issuer.get());
-            if (!site)
+            MetadataProvider::Criteria mc(i_param, &IDPSSODescriptor::ELEMENT_QNAME, protocol);
+            pair<const EntityDescriptor*,const RoleDescriptor*> site=m->getEntityDescriptor(mc);
+            if (!site.first)
                 throw MetadataException("Unable to locate metadata for IdP ($1).", params(1,i_param));
 
             // Build NameID(s).
@@ -233,9 +234,7 @@ int main(int argc,char* argv[])
 
             ResolverTest rt(NULL, a_param);
             try {
-                ctx = rt.resolveAttributes(
-                    *app, find_if(site->getIDPSSODescriptors(), isValidForProtocol(protocol)), protocol, v1name, v2name.get(), NULL, NULL, NULL
-                    );
+                ctx = rt.resolveAttributes(*app, site.second, protocol, v1name, v2name.get(), NULL, NULL, NULL);
             }
             catch (...) {
                 delete v1name;
@@ -287,8 +286,9 @@ int main(int argc,char* argv[])
 
             MetadataProvider* m=app->getMetadataProvider();
             xmltooling::Locker mlocker(m);
-            const EntityDescriptor* site=m->getEntityDescriptor(issuer);
-            if (!site) {
+            MetadataProvider::Criteria mc(issuer, &IDPSSODescriptor::ELEMENT_QNAME, protocol);
+            pair<const EntityDescriptor*,const RoleDescriptor*> site=m->getEntityDescriptor(mc);
+            if (!site.first) {
                 auto_ptr_char temp(issuer);
                 throw MetadataException("Unable to locate metadata for IdP ($1).", params(1,temp.get()));
             }
@@ -296,9 +296,7 @@ int main(int argc,char* argv[])
             vector<const Assertion*> tokens(1, dynamic_cast<Assertion*>(token.get()));
             ResolverTest rt(NULL, a_param);
             try {
-                ctx = rt.resolveAttributes(
-                    *app, find_if(site->getIDPSSODescriptors(), isValidForProtocol(protocol)), protocol, v1name, v2name, NULL, NULL, &tokens
-                    );
+                ctx = rt.resolveAttributes(*app, site.second, protocol, v1name, v2name, NULL, NULL, &tokens);
             }
             catch (...) {
                 if (v1name)

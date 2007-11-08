@@ -83,7 +83,7 @@ namespace shibsp {
         string m_appId;
 #ifndef SHIBSP_LITE
         LogoutRequest* buildRequest(
-            const Application& application, const Session& session, const IDPSSODescriptor& role, const MessageEncoder* encoder=NULL
+            const Application& application, const Session& session, const RoleDescriptor& role, const MessageEncoder* encoder=NULL
             ) const;
 
         XMLCh* m_outgoing;
@@ -287,22 +287,22 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
     pair<bool,long> ret = make_pair(false,0);
     try {
         // With a session in hand, we can create a LogoutRequest message, if we can find a compatible endpoint.
-        Locker metadataLocker(application.getMetadataProvider());
-        const EntityDescriptor* entity = application.getMetadataProvider()->getEntityDescriptor(session->getEntityID());
-        if (!entity) {
+        MetadataProvider* m = application.getMetadataProvider();
+        Locker metadataLocker(m);
+        MetadataProvider::Criteria mc(session->getEntityID(), &IDPSSODescriptor::ELEMENT_QNAME, samlconstants::SAML20P_NS);
+        pair<const EntityDescriptor*,const RoleDescriptor*> entity = m->getEntityDescriptor(mc);
+        if (!entity.first) {
             throw MetadataException(
-                "Unable to locate metadata for identity provider ($entityID)",
-                namedparams(1, "entityID", session->getEntityID())
+                "Unable to locate metadata for identity provider ($entityID)", namedparams(1, "entityID", session->getEntityID())
                 );
         }
-        const IDPSSODescriptor* role = find_if(entity->getIDPSSODescriptors(), isValidForProtocol(samlconstants::SAML20P_NS));
-        if (!role) {
+        else if (!entity.second) {
             throw MetadataException(
-                "Unable to locate SAML 2.0 IdP role for identity provider ($entityID).",
-                namedparams(1, "entityID", session->getEntityID())
+                "Unable to locate SAML 2.0 IdP role for identity provider ($entityID).", namedparams(1, "entityID", session->getEntityID())
                 );
         }
 
+        const IDPSSODescriptor* role = dynamic_cast<const IDPSSODescriptor*>(entity.second);
         const EndpointType* ep=NULL;
         const MessageEncoder* encoder=NULL;
         vector<const XMLCh*>::const_iterator b;
@@ -396,7 +396,7 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
 #ifndef SHIBSP_LITE
 
 LogoutRequest* SAML2LogoutInitiator::buildRequest(
-    const Application& application, const Session& session, const IDPSSODescriptor& role, const MessageEncoder* encoder
+    const Application& application, const Session& session, const RoleDescriptor& role, const MessageEncoder* encoder
     ) const
 {
     auto_ptr<LogoutRequest> msg(LogoutRequestBuilder::buildLogoutRequest());

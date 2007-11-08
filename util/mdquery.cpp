@@ -153,26 +153,25 @@ int main(int argc,char* argv[])
     }
 
     app->getMetadataProvider()->lock();
-    const EntityDescriptor* entity = app->getMetadataProvider()->getEntityDescriptor(entityID, strict);
-    if (entity) {
-        if (rname) {
-            const XMLCh* ns = rns ? XMLString::transcode(rns) : samlconstants::SAML20MD_NS;
-            auto_ptr_XMLCh n(rname);
-            QName q(ns, n.get());
-            const RoleDescriptor* role = entity->getRoleDescriptor(q, protocol);
-            if (role) {
-                XMLHelper::serialize(role->marshall(), cout, true);
-            }
-            else {
-                log.error("compatible role %s not found for (%s)", q.toString().c_str(), entityID);
-            }
-        }
-        else {
-            XMLHelper::serialize(entity->marshall(), cout, true);
-        }
+    MetadataProvider::Criteria mc(entityID, NULL, NULL, strict);
+    if (rname) {
+        const XMLCh* ns = rns ? XMLString::transcode(rns) : samlconstants::SAML20MD_NS;
+        auto_ptr_XMLCh n(rname);
+        QName q(ns, n.get());
+        mc.role = &q;
+        mc.protocol = protocol;
+        const RoleDescriptor* role = app->getMetadataProvider()->getEntityDescriptor(mc).second;
+        if (role)
+            XMLHelper::serialize(role->marshall(), cout, true);
+        else
+            log.error("compatible role %s not found for (%s)", q.toString().c_str(), entityID);
     }
     else {
-        log.error("no metadata found for (%s)", entityID);
+        const EntityDescriptor* entity = app->getMetadataProvider()->getEntityDescriptor(mc).first;
+        if (entity)
+            XMLHelper::serialize(entity->marshall(), cout, true);
+        else
+            log.error("no metadata found for (%s)", entityID);
     }
 
     app->getMetadataProvider()->unlock();

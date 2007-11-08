@@ -40,10 +40,11 @@
 # include <saml/saml1/core/Assertions.h>
 # include <saml/util/CommonDomainCookie.h>
 using namespace samlconstants;
+using opensaml::saml2md::MetadataProvider;
+using opensaml::saml2md::RoleDescriptor;
 using opensaml::saml2md::EntityDescriptor;
 using opensaml::saml2md::IDPSSODescriptor;
 using opensaml::saml2md::SPSSODescriptor;
-using opensaml::saml2md::isValidForProtocol;
 #else
 # include "lite/CommonDomainCookie.h"
 #endif
@@ -425,18 +426,17 @@ void AssertionConsumerService::extractMessageDetails(const Assertion& assertion,
 
     if (policy.getIssuer() && !policy.getIssuerMetadata() && policy.getMetadataProvider()) {
         m_log.debug("searching metadata for assertion issuer...");
-        const EntityDescriptor* entity = policy.getMetadataProvider()->getEntityDescriptor(policy.getIssuer()->getName());
-        if (entity) {
-            m_log.debug("matched assertion issuer against metadata, searching for applicable role...");
-            const IDPSSODescriptor* idp=find_if(entity->getIDPSSODescriptors(), isValidForProtocol(protocol));
-            if (idp)
-                policy.setIssuerMetadata(idp);
-            else if (m_log.isWarnEnabled())
-                m_log.warn("unable to find compatible IdP role in metadata");
-        }
-        else if (m_log.isWarnEnabled()) {
+        MetadataProvider::Criteria mc(policy.getIssuer()->getName(), &IDPSSODescriptor::ELEMENT_QNAME, protocol);
+        pair<const EntityDescriptor*,const RoleDescriptor*> entity = policy.getMetadataProvider()->getEntityDescriptor(mc);
+        if (!entity.first) {
             auto_ptr_char iname(policy.getIssuer()->getName());
             m_log.warn("no metadata found, can't establish identity of issuer (%s)", iname.get());
+        }
+        else if (!entity.second) {
+            m_log.warn("unable to find compatible IdP role in metadata");
+        }
+        else {
+            policy.setIssuerMetadata(entity.second);
         }
     }
 }

@@ -224,20 +224,19 @@ pair<bool,long> Shib1SessionInitiator::doRequest(
     // Use metadata to invoke the SSO service directly.
     MetadataProvider* m=app.getMetadataProvider();
     Locker locker(m);
-    const EntityDescriptor* entity=m->getEntityDescriptor(entityID);
-    if (!entity) {
+    MetadataProvider::Criteria mc(entityID, &IDPSSODescriptor::ELEMENT_QNAME, shibspconstants::SHIB1_PROTOCOL_ENUM);
+    pair<const EntityDescriptor*,const RoleDescriptor*> entity = m->getEntityDescriptor(mc);
+    if (!entity.first) {
         m_log.error("unable to locate metadata for provider (%s)", entityID);
-        throw MetadataException("Unable to locate metadata for identity provider ($entityID)",
-            namedparams(1, "entityID", entityID));
+        throw MetadataException("Unable to locate metadata for identity provider ($entityID)", namedparams(1, "entityID", entityID));
     }
-    const IDPSSODescriptor* role=find_if(entity->getIDPSSODescriptors(), isValidForProtocol(shibspconstants::SHIB1_PROTOCOL_ENUM));
-    if (!role) {
+    else if (!entity.second) {
         m_log.error("unable to locate Shibboleth-aware identity provider role for provider (%s)", entityID);
         return make_pair(false,0);
     }
-    const EndpointType* ep=EndpointManager<SingleSignOnService>(role->getSingleSignOnServices()).getByBinding(
-        shibspconstants::SHIB1_AUTHNREQUEST_PROFILE_URI
-        );
+    const EndpointType* ep=EndpointManager<SingleSignOnService>(
+        dynamic_cast<const IDPSSODescriptor*>(entity.second)->getSingleSignOnServices()
+        ).getByBinding(shibspconstants::SHIB1_AUTHNREQUEST_PROFILE_URI);
     if (!ep) {
         m_log.error("unable to locate compatible SSO service for provider (%s)", entityID);
         return make_pair(false,0);

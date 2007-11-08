@@ -403,19 +403,19 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
     // Use metadata to locate the IdP's SSO service.
     MetadataProvider* m=app.getMetadataProvider();
     Locker locker(m);
-    const EntityDescriptor* entity=m->getEntityDescriptor(entityID);
-    if (!entity) {
+    MetadataProvider::Criteria mc(entityID, &IDPSSODescriptor::ELEMENT_QNAME, samlconstants::SAML20P_NS);
+    pair<const EntityDescriptor*,const RoleDescriptor*> entity=m->getEntityDescriptor(mc);
+    if (!entity.first) {
         m_log.error("unable to locate metadata for provider (%s)", entityID);
-        throw MetadataException("Unable to locate metadata for identity provider ($entityID)",
-            namedparams(1, "entityID", entityID));
+        throw MetadataException("Unable to locate metadata for identity provider ($entityID)", namedparams(1, "entityID", entityID));
     }
-    const IDPSSODescriptor* role=find_if(entity->getIDPSSODescriptors(), isValidForProtocol(samlconstants::SAML20P_NS));
-    if (!role) {
+    else if (!entity.second) {
         m_log.error("unable to locate SAML 2.0 identity provider role for provider (%s)", entityID);
         return make_pair(false,0);
     }
 
     // Loop over the supportable outgoing bindings.
+    const IDPSSODescriptor* role = dynamic_cast<const IDPSSODescriptor*>(entity.second);
     const EndpointType* ep=NULL;
     const MessageEncoder* encoder=NULL;
     vector<const XMLCh*>::const_iterator b;
@@ -486,9 +486,7 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
 
     auto_ptr_char dest(ep->getLocation());
 
-    long ret = sendMessage(
-        *encoder, req.get(), relayState.c_str(), dest.get(), role, app, httpResponse, role->WantAuthnRequestsSigned()
-        );
+    long ret = sendMessage(*encoder, req.get(), relayState.c_str(), dest.get(), role, app, httpResponse, role->WantAuthnRequestsSigned());
     req.release();  // freed by encoder
     return make_pair(true,ret);
 #else

@@ -399,8 +399,9 @@ pair<bool,long> StatusHandler::processMessage(
         const PropertySet* relyingParty=NULL;
         param=httpRequest.getParameter("entityID");
         if (param) {
-            Locker mlock(application.getMetadataProvider());
-            relyingParty = application.getRelyingParty(application.getMetadataProvider()->getEntityDescriptor(param));
+            MetadataProvider* m = application.getMetadataProvider();
+            Locker mlock(m);
+            relyingParty = application.getRelyingParty(m->getEntityDescriptor(MetadataProvider::Criteria(param)).first);
         }
         if (!relyingParty)
             relyingParty = application.getRelyingParty(NULL);

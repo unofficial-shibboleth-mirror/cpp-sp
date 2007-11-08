@@ -769,13 +769,16 @@ Session* SSCache::find(const char* key, const Application& application, const ch
                 "Your IP address ($1) does not match the address recorded at the time the session was established.",
                 params(1,client_addr)
                 );
-            string eid(obj["entity_id"].string());
-            obj.destroy();
-            if (eid.empty())
+            const char* eid = obj["entity_id"].string();
+            if (!eid) {
+                obj.destroy();
                 throw ex;
+            }
+            string eid2(eid);
+            obj.destroy();
             MetadataProvider* m=application.getMetadataProvider();
             Locker locker(m);
-            annotateException(&ex,m->getEntityDescriptor(eid.c_str(),false)); // throws it
+            annotateException(&ex,m->getEntityDescriptor(MetadataProvider::Criteria(eid2.c_str(),NULL,NULL,false)).first); // throws it
         }
     }
 
@@ -786,13 +789,16 @@ Session* SSCache::find(const char* key, const Application& application, const ch
         m_log.info("session timed out (ID: %s)", key);
         remove(key, application);
         RetryableProfileException ex("Your session has expired, and you must re-authenticate.");
-        string eid(obj["entity_id"].string());
-        obj.destroy();
-        if (eid.empty())
+        const char* eid = obj["entity_id"].string();
+        if (!eid) {
+            obj.destroy();
             throw ex;
+        }
+        string eid2(eid);
+        obj.destroy();
         MetadataProvider* m=application.getMetadataProvider();
         Locker locker(m);
-        annotateException(&ex,m->getEntityDescriptor(eid.c_str(),false)); // throws it
+        annotateException(&ex,m->getEntityDescriptor(MetadataProvider::Criteria(eid2.c_str(),NULL,NULL,false)).first); // throws it
     }
     
     auto_ptr_XMLCh exp(obj["expires"].string());
@@ -803,13 +809,16 @@ Session* SSCache::find(const char* key, const Application& application, const ch
             m_log.info("session expired (ID: %s)", key);
             remove(key, application);
             RetryableProfileException ex("Your session has expired, and you must re-authenticate.");
-            string eid(obj["entity_id"].string());
-            obj.destroy();
-            if (eid.empty())
+            const char* eid = obj["entity_id"].string();
+            if (!eid) {
+                obj.destroy();
                 throw ex;
+            }
+            string eid2(eid);
+            obj.destroy();
             MetadataProvider* m=application.getMetadataProvider();
             Locker locker(m);
-            annotateException(&ex,m->getEntityDescriptor(eid.c_str(),false)); // throws it
+            annotateException(&ex,m->getEntityDescriptor(MetadataProvider::Criteria(eid2.c_str(),NULL,NULL,false)).first); // throws it
         }
     }
     

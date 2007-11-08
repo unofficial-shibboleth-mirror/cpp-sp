@@ -121,10 +121,10 @@ namespace shibsp {
             if (m_entity)
                 return m_entity;
             if (m_session && m_session->getEntityID()) {
-                m_metadata = m_app.getMetadataProvider();
+                m_metadata = m_app.getMetadataProvider(false);
                 if (m_metadata) {
                     m_metadata->lock();
-                    return m_entity = m_metadata->getEntityDescriptor(m_session->getEntityID());
+                    return m_entity = m_metadata->getEntityDescriptor(MetadataProvider::Criteria(m_session->getEntityID())).first;
                 }
             }
             return NULL;
