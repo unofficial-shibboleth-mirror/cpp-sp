@@ -300,7 +300,7 @@ pair<bool,long> SAML2Logout::doRequest(
                 "Unable to locate metadata for identity provider ($entityID)", namedparams(1, "entityID", request.getParameter("entityID"))
                 );
         }
-        const IDPSSODescriptor* idp = entity->getIDPSSODescriptor(samlconstants::SAML20P_NS);
+        const IDPSSODescriptor* idp = find_if(entity->getIDPSSODescriptors(), isValidForProtocol(samlconstants::SAML20P_NS));
         if (!idp) {
             throw MetadataException(
                 "Unable to locate SAML 2.0 IdP role for identity provider ($entityID).",

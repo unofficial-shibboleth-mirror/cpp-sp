@@ -261,7 +261,8 @@ bool QueryResolver::SAML1Query(QueryContext& ctx) const
 #endif
 
     int version = XMLString::equals(ctx.getProtocol(), samlconstants::SAML11_PROTOCOL_ENUM) ? 1 : 0;
-    const AttributeAuthorityDescriptor* AA = ctx.getEntityDescriptor()->getAttributeAuthorityDescriptor(ctx.getProtocol());
+    const AttributeAuthorityDescriptor* AA =
+        find_if(ctx.getEntityDescriptor()->getAttributeAuthorityDescriptors(), isValidForProtocol(ctx.getProtocol()));
     if (!AA) {
         m_log.warn("no SAML 1.%d AttributeAuthority role found in metadata", version);
         return false;
@@ -393,7 +394,8 @@ bool QueryResolver::SAML2Query(QueryContext& ctx) const
     xmltooling::NDC ndc("query");
 #endif
 
-    const AttributeAuthorityDescriptor* AA = ctx.getEntityDescriptor()->getAttributeAuthorityDescriptor(samlconstants::SAML20P_NS);
+    const AttributeAuthorityDescriptor* AA =
+        find_if(ctx.getEntityDescriptor()->getAttributeAuthorityDescriptors(), isValidForProtocol(samlconstants::SAML20P_NS));
     if (!AA) {
         m_log.warn("no SAML 2 AttributeAuthority role found in metadata");
         return false;

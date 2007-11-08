@@ -443,7 +443,7 @@ pair<bool,long> ADFSSessionInitiator::doRequest(
         throw MetadataException("Unable to locate metadata for identity provider ($entityID)",
             namedparams(1, "entityID", entityID));
     }
-    const IDPSSODescriptor* role=entity->getIDPSSODescriptor(m_binding.get());
+    const IDPSSODescriptor* role=find_if(entity->getIDPSSODescriptors(), isValidForProtocol(m_binding.get()));
     if (!role) {
         m_log.error("unable to locate ADFS-aware identity provider role for provider (%s)", entityID);
         return make_pair(false,0);
@@ -735,7 +735,7 @@ pair<bool,long> ADFSLogoutInitiator::doRequest(
                 namedparams(1, "entityID", entityID)
                 );
         }
-        const IDPSSODescriptor* role = entity->getIDPSSODescriptor(m_binding.get());
+        const IDPSSODescriptor* role = find_if(entity->getIDPSSODescriptors(), isValidForProtocol(m_binding.get()));
         if (!role) {
             throw MetadataException(
                 "Unable to locate ADFS IdP role for identity provider ($entityID).",

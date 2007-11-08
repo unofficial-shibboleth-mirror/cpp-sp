@@ -43,6 +43,7 @@ using namespace samlconstants;
 using opensaml::saml2md::EntityDescriptor;
 using opensaml::saml2md::IDPSSODescriptor;
 using opensaml::saml2md::SPSSODescriptor;
+using opensaml::saml2md::isValidForProtocol;
 #else
 # include "lite/CommonDomainCookie.h"
 #endif
@@ -427,7 +428,7 @@ void AssertionConsumerService::extractMessageDetails(const Assertion& assertion,
         const EntityDescriptor* entity = policy.getMetadataProvider()->getEntityDescriptor(policy.getIssuer()->getName());
         if (entity) {
             m_log.debug("matched assertion issuer against metadata, searching for applicable role...");
-            const IDPSSODescriptor* idp=entity->getIDPSSODescriptor(protocol);
+            const IDPSSODescriptor* idp=find_if(entity->getIDPSSODescriptors(), isValidForProtocol(protocol));
             if (idp)
                 policy.setIssuerMetadata(idp);
             else if (m_log.isWarnEnabled())

@@ -233,7 +233,9 @@ int main(int argc,char* argv[])
 
             ResolverTest rt(NULL, a_param);
             try {
-                ctx = rt.resolveAttributes(*app, site->getIDPSSODescriptor(protocol), protocol, v1name, v2name.get(), NULL, NULL, NULL);
+                ctx = rt.resolveAttributes(
+                    *app, find_if(site->getIDPSSODescriptors(), isValidForProtocol(protocol)), protocol, v1name, v2name.get(), NULL, NULL, NULL
+                    );
             }
             catch (...) {
                 delete v1name;
@@ -294,7 +296,9 @@ int main(int argc,char* argv[])
             vector<const Assertion*> tokens(1, dynamic_cast<Assertion*>(token.get()));
             ResolverTest rt(NULL, a_param);
             try {
-                ctx = rt.resolveAttributes(*app, site->getIDPSSODescriptor(protocol), protocol, v1name, v2name, NULL, NULL, &tokens);
+                ctx = rt.resolveAttributes(
+                    *app, find_if(site->getIDPSSODescriptors(), isValidForProtocol(protocol)), protocol, v1name, v2name, NULL, NULL, &tokens
+                    );
             }
             catch (...) {
                 if (v1name)

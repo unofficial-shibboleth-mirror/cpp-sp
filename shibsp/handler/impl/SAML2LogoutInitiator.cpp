@@ -295,7 +295,7 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
                 namedparams(1, "entityID", session->getEntityID())
                 );
         }
-        const IDPSSODescriptor* role = entity->getIDPSSODescriptor(samlconstants::SAML20P_NS);
+        const IDPSSODescriptor* role = find_if(entity->getIDPSSODescriptors(), isValidForProtocol(samlconstants::SAML20P_NS));
         if (!role) {
             throw MetadataException(
                 "Unable to locate SAML 2.0 IdP role for identity provider ($entityID).",
