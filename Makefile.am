@@ -17,6 +17,9 @@ DIST_SUBDIRS = adfs doc oncrpc shib schemas configs shib-target shar test \
 
 all-local: shibboleth.spec pkginfo
 
+dist-hook:
+	rm -rf `find $(distdir)/isapi -name .svn`
+
 shibboleth.spec: shibboleth.spec.in Makefile
 	rm -f $@.tmp
 	sed < $< > $@.tmp \
