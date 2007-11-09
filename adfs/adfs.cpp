@@ -335,28 +335,26 @@ pair<bool,long> ADFSSessionInitiator::run(SPRequest& request, const char* entity
     }
 
     // Since we're not passing by index, we need to fully compute the return URL.
-    if (!ACS) {
-        // Get all the ADFS endpoints.
-        const vector<const Handler*>& handlers = app.getAssertionConsumerServicesByBinding(m_binding.get());
+    // Get all the ADFS endpoints.
+    const vector<const Handler*>& handlers = app.getAssertionConsumerServicesByBinding(m_binding.get());
 
-        // Index comes from request, or default set in the handler, or we just pick the first endpoint.
-        pair<bool,unsigned int> index = make_pair(false,0);
-        if (isHandler) {
-            option = request.getParameter("acsIndex");
-            if (option)
-                index = make_pair(true, atoi(option));
+    // Index comes from request, or default set in the handler, or we just pick the first endpoint.
+    pair<bool,unsigned int> index = make_pair(false,0);
+    if (isHandler) {
+        option = request.getParameter("acsIndex");
+        if (option)
+            index = make_pair(true, atoi(option));
+    }
+    if (!index.first)
+        index = getUnsignedInt("defaultACSIndex");
+    if (index.first) {
+        for (vector<const Handler*>::const_iterator h = handlers.begin(); !ACS && h!=handlers.end(); ++h) {
+            if (index.second == (*h)->getUnsignedInt("index").second)
+                ACS = *h;
         }
-        if (!index.first)
-            index = getUnsignedInt("defaultACSIndex");
-        if (index.first) {
-            for (vector<const Handler*>::const_iterator h = handlers.begin(); !ACS && h!=handlers.end(); ++h) {
-                if (index.second == (*h)->getUnsignedInt("index").second)
-                    ACS = *h;
-            }
-        }
-        else if (!handlers.empty()) {
-            ACS = handlers.front();
-        }
+    }
+    else if (!handlers.empty()) {
+        ACS = handlers.front();
     }
     if (!ACS)
         throw ConfigurationException("Unable to locate ADFS response endpoint.");
