@@ -131,7 +131,7 @@ namespace shibsp {
          * Returns a RequestMapper instance.
          * 
          * @param required  true iff an exception should be thrown if no RequestMapper is available
-         * @param a RequestMapper
+         * @return  a RequestMapper
          */
         virtual RequestMapper* getRequestMapper(bool required=true) const=0;
         

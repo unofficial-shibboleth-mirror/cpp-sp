@@ -45,7 +45,8 @@ namespace shibsp {
         /**
          * Constructor.
          * 
-         * @param ids   array with primary identifier in first position, followed by any aliases
+         * @param ids       array with primary identifier in first position, followed by any aliases
+         * @param formatter template for serialization of tuple
          */
         NameIDAttribute(const std::vector<std::string>& ids, const char* formatter=DEFAULT_NAMEID_FORMATTER)
             : Attribute(ids), m_formatter(formatter) {

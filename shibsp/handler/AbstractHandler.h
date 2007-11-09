@@ -54,7 +54,8 @@ namespace shibsp {
         /**
          * Constructor
          * 
-         * @param e         DOM element to load as property set. 
+         * @param e         DOM element to load as property set.
+         * @param log       logging category to use
          * @param filter    optional filter controls what child elements to include as nested PropertySets
          * @param remapper  optional map of property rename rules for legacy property support
          */
@@ -83,9 +84,10 @@ namespace shibsp {
         /**
          * Prepares Status information in a SAML 2.0 response.
          * 
-         * @param response  a SAML 2.0 response message
+         * @param response  SAML 2.0 response message
          * @param code      SAML status code
-         * @param ex        optional message to pass back
+         * @param subcode   optional SAML substatus code
+         * @param msg       optional message to pass back
          */
         void fillStatus(
             opensaml::saml2p::StatusResponseType& response, const XMLCh* code, const XMLCh* subcode=NULL, const char* msg=NULL
