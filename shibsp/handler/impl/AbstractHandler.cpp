@@ -190,16 +190,27 @@ long AbstractHandler::sendMessage(
         CredentialResolver* credResolver=application.getCredentialResolver();
         if (credResolver) {
             Locker credLocker(credResolver);
-            // Fill in criteria to use.
-            MetadataCredentialCriteria mcc(*role);
-            mcc.setUsage(Credential::SIGNING_CREDENTIAL);
+            const Credential* cred = NULL;
             pair<bool,const char*> keyName = relyingParty->getString("keyName");
-            if (keyName.first)
-                mcc.getKeyNames().insert(keyName.second);
             pair<bool,const XMLCh*> sigalg = relyingParty->getXMLString("signingAlg");
-            if (sigalg.first)
-                mcc.setXMLAlgorithm(sigalg.second);
-            const Credential* cred = credResolver->resolve(&mcc);
+            if (role) {
+                MetadataCredentialCriteria mcc(*role);
+                mcc.setUsage(Credential::SIGNING_CREDENTIAL);
+                if (keyName.first)
+                    mcc.getKeyNames().insert(keyName.second);
+                if (sigalg.first)
+                    mcc.setXMLAlgorithm(sigalg.second);
+                cred = credResolver->resolve(&mcc);
+            }
+            else {
+                CredentialCriteria cc;
+                cc.setUsage(Credential::SIGNING_CREDENTIAL);
+                if (keyName.first)
+                    cc.getKeyNames().insert(keyName.second);
+                if (sigalg.first)
+                    cc.setXMLAlgorithm(sigalg.second);
+                cred = credResolver->resolve(&cc);
+            }
             if (cred) {
                 // Signed request.
                 return encoder.encode(
