@@ -39,6 +39,8 @@
 using namespace opensaml::saml2;
 using namespace opensaml::saml2p;
 using namespace opensaml::saml2md;
+#else
+#include <xercesc/util/XMLUniDefs.hpp>
 #endif
 
 using namespace shibsp;
@@ -87,11 +89,16 @@ namespace shibsp {
             ) const;
 
         string m_appId;
+        auto_ptr_char m_paosNS,m_ecpNS;
+        auto_ptr_XMLCh m_paosBinding;
 #ifndef SHIBSP_LITE
         XMLCh* m_outgoing;
         vector<const XMLCh*> m_bindings;
         map<const XMLCh*,MessageEncoder*> m_encoders;
+        MessageEncoder* m_ecp;
         AuthnRequest* m_requestTemplate;
+#else
+        bool m_ecp;
 #endif
     };
 
@@ -107,16 +114,35 @@ namespace shibsp {
 };
 
 SAML2SessionInitiator::SAML2SessionInitiator(const DOMElement* e, const char* appId)
-    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator.SAML2")), m_appId(appId)
+    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator.SAML2")), m_appId(appId),
+        m_paosNS(samlconstants::PAOS_NS), m_ecpNS(samlconstants::SAML20ECP_NS), m_paosBinding(samlconstants::SAML20_BINDING_PAOS)
 {
-#ifndef SHIBSP_LITE
+    static const XMLCh ECP[] = UNICODE_LITERAL_3(E,C,P);
+    const XMLCh* flag = e ? e->getAttributeNS(NULL,ECP) : NULL;
+#ifdef SHIBSP_LITE
+    m_ecp = (flag && (*flag == chLatin_t || *flag == chDigit_1));
+#else
     m_outgoing=NULL;
+    m_ecp = NULL;
     m_requestTemplate=NULL;
+
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
         // Check for a template AuthnRequest to build from.
         DOMElement* child = XMLHelper::getFirstChildElement(e, samlconstants::SAML20P_NS, AuthnRequest::LOCAL_NAME);
         if (child)
             m_requestTemplate = dynamic_cast<AuthnRequest*>(AuthnRequestBuilder::buildOneFromElement(child));
+
+        // If directed, build an ECP encoder.
+        if (flag && (*flag == chLatin_t || *flag == chDigit_1)) {
+            try {
+                m_ecp = SAMLConfig::getConfig().MessageEncoderManager.newPlugin(
+                    samlconstants::SAML20_BINDING_PAOS, pair<const DOMElement*,const XMLCh*>(e,NULL)
+                    );
+            }
+            catch (exception& ex) {
+                m_log.error("error building PAOS/ECP MessageEncoder: %s", ex.what());
+            }
+        }
 
         // Handle outgoing binding setup.
         pair<bool,const XMLCh*> outgoing = getXMLString("outgoingBindings");
@@ -180,8 +206,16 @@ void SAML2SessionInitiator::setParent(const PropertySet* parent)
 
 pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, const char* entityID, bool isHandler) const
 {
-    // We have to know the IdP to function.
-    if (!entityID || !*entityID)
+    // First check for ECP support, since that doesn't require an IdP to be known.
+    bool ECP = false;
+    if (m_ecp && request.getHeader("Accept").find("application/vnd.paos+xml") != string::npos) {
+        string PAOS = request.getHeader("PAOS");
+        if (PAOS.find(m_paosNS.get()) != string::npos && PAOS.find(m_ecpNS.get()) != string::npos)
+            ECP = true;
+    }
+
+    // We have to know the IdP to function unless this is ECP.
+    if (!ECP && (!entityID || !*entityID))
         return make_pair(false,0);
 
     string target;
@@ -191,7 +225,9 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, const char* entit
     pair<bool,const char*> acComp;
     bool isPassive=false,forceAuthn=false;
     const Application& app=request.getApplication();
-    pair<bool,bool> acsByIndex = getBool("acsByIndex");
+
+    // ECP means the ACS will be by value no matter what.
+    pair<bool,bool> acsByIndex = ECP ? make_pair(true,false) : getBool("acsByIndex");
 
     if (isHandler) {
         option=request.getParameter("acsIndex");
@@ -199,6 +235,10 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, const char* entit
             ACS = app.getAssertionConsumerServiceByIndex(atoi(option));
             if (!ACS)
                 request.log(SPRequest::SPWarn, "invalid acsIndex specified in request, using default ACS location");
+            else if (ECP && !XMLString::equals(ACS->getString("Binding").second, samlconstants::SAML20_BINDING_PAOS)) {
+                request.log(SPRequest::SPWarn, "acsIndex in request referenced a non-PAOS ACS, using default ACS location");
+                ACS = NULL;
+            }
         }
 
         option = request.getParameter("target");
@@ -239,17 +279,28 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, const char* entit
         acComp = settings->getString("authnContextComparison");
     }
 
-    m_log.debug("attempting to initiate session using SAML 2.0 with provider (%s)", entityID);
+    if (ECP)
+        m_log.debug("attempting to initiate session using SAML 2.0 Enhanced Client Profile");
+    else
+        m_log.debug("attempting to initiate session using SAML 2.0 with provider (%s)", entityID);
 
     if (!ACS) {
-        pair<bool,unsigned int> index = getUnsignedInt("defaultACSIndex");
-        if (index.first) {
-            ACS = app.getAssertionConsumerServiceByIndex(index.second);
-            if (!ACS)
-                request.log(SPRequest::SPWarn, "invalid defaultACSIndex, using default ACS location");
+        if (ECP) {
+            const vector<const Handler*>& handlers = app.getAssertionConsumerServicesByBinding(m_paosBinding.get());
+            if (handlers.empty())
+                throw ConfigurationException("Unable to locate PAOS response endpoint.");
+            ACS = handlers.front();
         }
-        if (!ACS)
-            ACS = app.getDefaultAssertionConsumerService();
+        else {
+            pair<bool,unsigned int> index = getUnsignedInt("defaultACSIndex");
+            if (index.first) {
+                ACS = app.getAssertionConsumerServiceByIndex(index.second);
+                if (!ACS)
+                    request.log(SPRequest::SPWarn, "invalid defaultACSIndex, using default ACS location");
+            }
+            if (!ACS)
+                ACS = app.getDefaultAssertionConsumerService();
+        }
     }
 
     // To invoke the request builder, the key requirement is to figure out how
@@ -306,7 +357,8 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, const char* entit
     DDF out,in = DDF(m_address.c_str()).structure();
     DDFJanitor jin(in), jout(out);
     in.addmember("application_id").string(app.getId());
-    in.addmember("entity_id").string(entityID);
+    if (entityID)
+        in.addmember("entity_id").string(entityID);
     if (isPassive)
         in.addmember("isPassive").integer(1);
     else if (forceAuthn)
@@ -357,10 +409,6 @@ void SAML2SessionInitiator::receive(DDF& in, ostream& out)
         throw ConfigurationException("Unable to locate application for new session, deleted?");
     }
 
-    const char* entityID = in["entity_id"].string();
-    if (!entityID)
-        throw ConfigurationException("No entityID parameter supplied to remoted SessionInitiator.");
-
     DDF ret(NULL);
     DDFJanitor jout(ret);
 
@@ -376,7 +424,7 @@ void SAML2SessionInitiator::receive(DDF& in, ostream& out)
     // a false/0 return, which we just return as an empty structure, or a response/redirect,
     // which we capture in the facade and send back.
     doRequest(
-        *app, *http.get(), entityID,
+        *app, *http.get(), in["entity_id"].string(),
         index.get(), in["acsLocation"].string(), bind.get(),
         in["isPassive"].integer()==1, in["forceAuthn"].integer()==1,
         in["authnContextClassRef"].string(), in["authnContextComparison"].string(),
@@ -384,6 +432,18 @@ void SAML2SessionInitiator::receive(DDF& in, ostream& out)
         );
     out << ret;
 }
+
+#ifndef SHIBSP_LITE
+namespace {
+    class _sameIdP : public binary_function<const IDPEntry*, const XMLCh*, bool>
+    {
+    public:
+        bool operator()(const IDPEntry* entry, const XMLCh* entityID) const {
+            return entry ? XMLString::equals(entry->getProviderID(), entityID) : false;
+        }
+    };
+};
+#endif
 
 pair<bool,long> SAML2SessionInitiator::doRequest(
     const Application& app,
@@ -400,36 +460,50 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
     ) const
 {
 #ifndef SHIBSP_LITE
-    // Use metadata to locate the IdP's SSO service.
-    MetadataProvider* m=app.getMetadataProvider();
-    Locker locker(m);
-    MetadataProvider::Criteria mc(entityID, &IDPSSODescriptor::ELEMENT_QNAME, samlconstants::SAML20P_NS);
-    pair<const EntityDescriptor*,const RoleDescriptor*> entity=m->getEntityDescriptor(mc);
-    if (!entity.first) {
-        m_log.error("unable to locate metadata for provider (%s)", entityID);
-        throw MetadataException("Unable to locate metadata for identity provider ($entityID)", namedparams(1, "entityID", entityID));
-    }
-    else if (!entity.second) {
-        m_log.error("unable to locate SAML 2.0 identity provider role for provider (%s)", entityID);
-        return make_pair(false,0);
-    }
+    bool ECP = XMLString::equals(acsBinding, m_paosBinding.get());
 
-    // Loop over the supportable outgoing bindings.
-    const IDPSSODescriptor* role = dynamic_cast<const IDPSSODescriptor*>(entity.second);
-    const EndpointType* ep=NULL;
-    const MessageEncoder* encoder=NULL;
-    vector<const XMLCh*>::const_iterator b;
-    for (b = m_bindings.begin(); b!=m_bindings.end(); ++b) {
-        if (ep=EndpointManager<SingleSignOnService>(role->getSingleSignOnServices()).getByBinding(*b)) {
-            map<const XMLCh*,MessageEncoder*>::const_iterator enc = m_encoders.find(*b);
-            if (enc!=m_encoders.end())
-                encoder = enc->second;
-            break;
+    pair<const EntityDescriptor*,const RoleDescriptor*> entity = pair<const EntityDescriptor*,const RoleDescriptor*>(NULL,NULL);
+    const IDPSSODescriptor* role = NULL;
+    const EndpointType* ep = NULL;
+    const MessageEncoder* encoder = NULL;
+    
+    if (ECP) {
+        encoder = m_ecp;
+        if (!encoder) {
+            m_log.error("MessageEncoder for PAOS binding not available");
+            return make_pair(false,0);
         }
     }
-    if (!ep || !encoder) {
-        m_log.error("unable to locate compatible SSO service for provider (%s)", entityID);
-        return make_pair(false,0);
+    else {
+        // Use metadata to locate the IdP's SSO service.
+        MetadataProvider* m=app.getMetadataProvider();
+        Locker locker(m);
+        MetadataProvider::Criteria mc(entityID, &IDPSSODescriptor::ELEMENT_QNAME, samlconstants::SAML20P_NS);
+        entity=m->getEntityDescriptor(mc);
+        if (!entity.first) {
+            m_log.error("unable to locate metadata for provider (%s)", entityID);
+            throw MetadataException("Unable to locate metadata for identity provider ($entityID)", namedparams(1, "entityID", entityID));
+        }
+        else if (!entity.second) {
+            m_log.error("unable to locate SAML 2.0 identity provider role for provider (%s)", entityID);
+            return make_pair(false,0);
+        }
+
+        // Loop over the supportable outgoing bindings.
+        role = dynamic_cast<const IDPSSODescriptor*>(entity.second);
+        vector<const XMLCh*>::const_iterator b;
+        for (b = m_bindings.begin(); b!=m_bindings.end(); ++b) {
+            if (ep=EndpointManager<SingleSignOnService>(role->getSingleSignOnServices()).getByBinding(*b)) {
+                map<const XMLCh*,MessageEncoder*>::const_iterator enc = m_encoders.find(*b);
+                if (enc!=m_encoders.end())
+                    encoder = enc->second;
+                break;
+            }
+        }
+        if (!ep || !encoder) {
+            m_log.error("unable to locate compatible SSO service for provider (%s)", entityID);
+            return make_pair(false,0);
+        }
     }
 
     preserveRelayState(app, httpResponse, relayState);
@@ -441,7 +515,8 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
         req->setIssueInstant(time(NULL));
     }
 
-    req->setDestination(ep->getLocation());
+    if (ep)
+        req->setDestination(ep->getLocation());
     if (acsIndex && *acsIndex)
         req->setAssertionConsumerServiceIndex(acsIndex);
     if (acsLocation) {
@@ -484,9 +559,31 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
         }
     }
 
-    auto_ptr_char dest(ep->getLocation());
+    if (ECP && entityID) {
+        auto_ptr_XMLCh wideid(entityID);
+        Scoping* scoping = req->getScoping();
+        if (!scoping) {
+            scoping = ScopingBuilder::buildScoping();
+            req->setScoping(scoping);
+        }
+        IDPList* idplist = scoping->getIDPList();
+        if (!idplist) {
+            idplist = IDPListBuilder::buildIDPList();
+            scoping->setIDPList(idplist);
+        }
+        VectorOf(IDPEntry) entries = idplist->getIDPEntrys();
+        if (find_if(entries, bind2nd(_sameIdP(), wideid.get())) == NULL) {
+            IDPEntry* entry = IDPEntryBuilder::buildIDPEntry();
+            entry->setProviderID(wideid.get());
+            entries.push_back(entry);
+        }
+    }
 
-    long ret = sendMessage(*encoder, req.get(), relayState.c_str(), dest.get(), role, app, httpResponse, role->WantAuthnRequestsSigned());
+    auto_ptr_char dest(ep ? ep->getLocation() : NULL);
+
+    long ret = sendMessage(
+        *encoder, req.get(), relayState.c_str(), dest.get(), role, app, httpResponse, role ? role->WantAuthnRequestsSigned() : false
+        );
     req.release();  // freed by encoder
     return make_pair(true,ret);
 #else
