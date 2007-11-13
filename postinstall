@@ -1,0 +1,26 @@
+#!/bin/sh
+
+cd /opt/shibboleth-sp/etc/shibboleth
+
+CONFIGFILES=" \
+    native.logger \
+    shibd.logger \
+    shibboleth.logger \
+    accessError.html \
+    rmError.html \
+    sessionError.html \
+    metadataError.html \
+    sslError.html \
+    sp-example.key \
+    sp-example.crt \
+    AAP.xml \
+    shibboleth.xml \
+    example-metadata.xml"
+
+for f in $CONFIGFILES; do
+    if test ! -f $f; then
+        cp $f.dist $f
+    fi;
+    done
+
+exit 0
