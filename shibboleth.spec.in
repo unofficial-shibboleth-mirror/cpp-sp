@@ -9,7 +9,8 @@ URL:		http://shibboleth.internet2.edu/
 Source0:	http://shibboleth.internet2.edu/downloads/%{name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-root
 BuildRequires:	openssl-devel, curl-devel >= 7.10.6
-BuildRequires:	xerces%{?xercesver}-c-devel >= 2.8.0, xml-security-c-devel >= 1.4.0
+BuildRequires:	xerces%{?xercesver}-c-devel >= 2.8.0
+BuildRequires:  xml-security-c-devel >= 1.4.0
 BuildRequires:	zlib-devel, opensaml-devel >= 2.0
 %{?_with_log4cpp:BuildRequires:	log4cpp-devel >= 1.0}
 %{!?_with_log4cpp:BuildRequires: log4shib-devel}
