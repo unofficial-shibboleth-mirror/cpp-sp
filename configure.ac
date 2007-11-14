@@ -197,7 +197,7 @@ if test "x$XMLTOOLINGXMLDIR" = "x" ; then
     AC_MSG_ERROR([xmltooling XML catalog not found, may need to use --with-xmltooling option])
 fi
 XMLTOOLINGXMLDIR="$XMLTOOLINGXMLDIR/share/xml/xmltooling"
-AC_SUBST(XMLTOOLINGXMLDIR);
+AC_SUBST(XMLTOOLINGXMLDIR)
 
 # XML-Security settings
 AC_ARG_WITH(xmlsec,
@@ -286,7 +286,7 @@ if test "x$OPENSAMLXMLDIR" = "x" ; then
     AC_MSG_ERROR([opensaml XML catalogs not found, may need to use --with-saml option])
 fi
 OPENSAMLXMLDIR="$OPENSAMLXMLDIR/share/xml/opensaml"
-AC_SUBST(OPENSAMLXMLDIR);
+AC_SUBST(OPENSAMLXMLDIR)
 
 AC_SUBST(LITE_LIBS)
 AC_SUBST(XMLSEC_LIBS)
