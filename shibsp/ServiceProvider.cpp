@@ -115,6 +115,7 @@ namespace shibsp {
         request.clearHeader("Shib-Session-ID", "HTTP_SHIB_SESSION_ID");
         request.clearHeader("Shib-Identity-Provider", "HTTP_SHIB_IDENTITY_PROVIDER");
         request.clearHeader("Shib-Authentication-Method", "HTTP_SHIB_AUTHENTICATION_METHOD");
+        request.clearHeader("Shib-Authentication-Instant", "HTTP_SHIB_AUTHENTICATION_INSTANT");
         request.clearHeader("Shib-AuthnContext-Class", "HTTP_SHIB_AUTHNCONTEXT_CLASS");
         request.clearHeader("Shib-AuthnContext-Decl", "HTTP_SHIB_AUTHNCONTEXT_DECL");
         request.clearHeader("Shib-Assertion-Count", "HTTP_SHIB_ASSERTION_COUNT");
@@ -354,6 +355,9 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
         const char* hval = session->getEntityID();
         if (hval)
             request.setHeader("Shib-Identity-Provider", hval);
+        hval = session->getAuthnInstant();
+        if (hval)
+            request.setHeader("Shib-Authentication-Instant", hval);
         hval = session->getAuthnContextClassRef();
         if (hval) {
             request.setHeader("Shib-Authentication-Method", hval);
