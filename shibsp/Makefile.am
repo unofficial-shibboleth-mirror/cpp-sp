@@ -1,7 +1,7 @@
 AUTOMAKE_OPTIONS = foreign
 
 pkgsysconfdir = $(sysconfdir)/@PACKAGE@
-xmldir = $(datadir)/xml
+pkgxmldir = $(datadir)/xml/@PACKAGE@
 
 lib_LTLIBRARIES = libshibsp.la libshibsp-lite.la
 
@@ -194,7 +194,9 @@ paths.h: ${srcdir}/paths.h.in Makefile ${top_builddir}/config.status
 	rm -f $@.tmp
 	sed < ${srcdir}/$@.in > $@.tmp \
 	    -e 's:@-PKGSYSCONFDIR-@:${pkgsysconfdir}:g' \
-	    -e 's:@-XMLDIR-@:${xmldir}:g'
+	    -e 's:@-PKGXMLDIR-@:${pkgxmldir}:g'
+	    -e 's:@-XMLTOOLINGXMLDIR-@:${XMLTOOLINGXMLDIR}:g'
+	    -e 's:@-OPENSAMLXMLDIR-@:${OPENSAMLXMLDIR}:g'
 	cmp -s $@ $@.tmp || mv $@.tmp $@
 	rm -f $@.tmp
 

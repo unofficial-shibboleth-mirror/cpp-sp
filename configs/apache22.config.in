@@ -14,7 +14,7 @@ LoadModule mod_shib @-PKGLIBDIR-@/mod_shib_22.so
 # This is the XML file that contains all the global, non-apache-specific
 # configuration.  Look at this file for most of your configuration parameters.
 #
-ShibSchemaDir @-XMLDIR-@/xmltooling/catalog.xml:@-XMLDIR-@/opensaml/saml20-catalog.xml:@-XMLDIR-@/opensaml/saml11-catalog.xml:@-XMLDIR-@/shibboleth/catalog.xml
+ShibSchemaDir @-XMLTOOLINGXMLDIR-@/catalog.xml:@-OPENSAMLXMLDIR-@/saml20-catalog.xml:@-OPENSAMLXMLDIR-@/saml11-catalog.xml:@-PKGXMLDIR-@/catalog.xml
 ShibConfig @-PKGSYSCONFDIR-@/shibboleth2.xml
 
 #

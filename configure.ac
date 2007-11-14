@@ -177,6 +177,27 @@ XMLSEC_LIBS="-lxmltooling"
 AC_CHECK_HEADER([xmltooling/base.h],,
                 AC_MSG_ERROR([unable to find xmltooling header files]))
 
+# Establish location of xmltooling catalog.
+XMLTOOLINGXMLDIR=""
+if test "x$with_xmltooling" = "x" ; then
+   with_xmltooling="/usr"
+fi
+if test -f $with_xmltooling/share/xml/xmltooling/catalog.xml ; then
+    XMLTOOLINGXMLDIR="$with_xmltooling"
+else
+    if test -f $with_xerces/share/xml/xmltooling/catalog.xml ; then
+        XMLTOOLINGXMLDIR="$with_xerces"
+    else
+        if test -f $with_log4shib/share/xml/xmltooling/catalog.xml ; then
+            XMLTOOLINGXMLDIR="$with_log4shib"
+        fi
+    fi
+fi
+if test "x$XMLTOOLINGXMLDIR" = "x" ; then
+    AC_MSG_ERROR([xmltooling XML catalog not found, may need to use --with-xmltooling option])
+fi
+XMLTOOLINGXMLDIR="$XMLTOOLINGXMLDIR/share/xml/xmltooling"
+AC_SUBST(XMLTOOLINGXMLDIR);
 
 # XML-Security settings
 AC_ARG_WITH(xmlsec,
@@ -240,6 +261,32 @@ opensaml::SAMLConfig::getConfig();
 
 # restore master libs
 LIBS="$save_LIBS"
+
+# Establish location of opensaml catalogs.
+OPENSAMLXMLDIR=""
+if test "x$with_saml" = "x" ; then
+    with_saml="/usr"
+fi
+if test -f $with_saml/share/xml/opensaml/saml20-catalog.xml ; then
+    OPENSAMLXMLDIR="$with_saml"
+else
+    if test -f $with_xmltooling/share/xml/opensaml/saml20-catalog.xml ; then
+        OPENSAMLXMLDIR="$with_xmltooling"
+    else
+        if test -f $with_xerces/share/xml/opensaml/saml20-catalog.xml ; then
+            OPENSAMLXMLDIR="$with_xerces"
+        else
+            if test -f $with_log4shib/share/xml/opensaml/saml20-catalog.xml ; then
+                OPENSAMLXMLDIR="$with_log4shib"
+            fi
+        fi
+    fi
+fi
+if test "x$OPENSAMLXMLDIR" = "x" ; then
+    AC_MSG_ERROR([opensaml XML catalogs not found, may need to use --with-saml option])
+fi
+OPENSAMLXMLDIR="$OPENSAMLXMLDIR/share/xml/opensaml"
+AC_SUBST(OPENSAMLXMLDIR);
 
 AC_SUBST(LITE_LIBS)
 AC_SUBST(XMLSEC_LIBS)

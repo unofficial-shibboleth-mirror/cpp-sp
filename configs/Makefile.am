@@ -6,7 +6,6 @@ pkglibdir = ${libdir}/@PACKAGE@
 pkglogdir = ${localstatedir}/log/@PACKAGE@
 pkgdocdir = ${datadir}/doc/@PACKAGE@
 shirelogdir = ${localstatedir}/log/httpd
-xmldir = $(datadir)/xml
 pkgxmldir = $(datadir)/xml/@PACKAGE@
 pkgrundir = $(localstatedir)/run/@PACKAGE@
 pkgsysconfdir = $(sysconfdir)/@PACKAGE@
@@ -54,9 +53,10 @@ do-build-file:
         -e 's:@-PREFIX-@:${prefix}:g' \
         -e 's:@-PKGLIBDIR-@:${pkglibdir}:g' \
         -e 's:@-PKGSYSCONFDIR-@:${pkgsysconfdir}:g' \
-        -e 's:@-PKGXMLDIR-@:${pkgxmldir}:g' \
         -e 's:@-PKGDOCDIR-@:${pkgdocdir}:g' \
-        -e 's:@-XMLDIR-@:${xmldir}:g' \
+        -e 's:@-PKGXMLDIR-@:${pkgxmldir}:g'
+        -e 's:@-XMLTOOLINGXMLDIR-@:${XMLTOOLINGXMLDIR}:g'
+        -e 's:@-OPENSAMLXMLDIR-@:${OPENSAMLXMLDIR}:g'
         -e 's:@-PKGLOGDIR-@:${pkglogdir}:g' \
         -e 's:@-SHIRELOGDIR-@:${shirelogdir}:g' \
         -e 's:@-PKGRUNDIR-@:${pkgrundir}:g'

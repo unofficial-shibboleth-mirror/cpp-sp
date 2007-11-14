@@ -52,6 +52,7 @@ EXTRA_DIST = $(DX_CONFIG) \
     shibboleth.spec \
     pkginfo.in \
     pkginfo \
-    checkinstall
+    depend \
+    postinstall
 
 DISTCLEANFILES = shibboleth.spec pkginfo
