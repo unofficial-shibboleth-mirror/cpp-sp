@@ -194,8 +194,8 @@ paths.h: ${srcdir}/paths.h.in Makefile ${top_builddir}/config.status
 	rm -f $@.tmp
 	sed < ${srcdir}/$@.in > $@.tmp \
 	    -e 's:@-PKGSYSCONFDIR-@:${pkgsysconfdir}:g' \
-	    -e 's:@-PKGXMLDIR-@:${pkgxmldir}:g'
-	    -e 's:@-XMLTOOLINGXMLDIR-@:${XMLTOOLINGXMLDIR}:g'
+	    -e 's:@-PKGXMLDIR-@:${pkgxmldir}:g' \
+	    -e 's:@-XMLTOOLINGXMLDIR-@:${XMLTOOLINGXMLDIR}:g' \
 	    -e 's:@-OPENSAMLXMLDIR-@:${OPENSAMLXMLDIR}:g'
 	cmp -s $@ $@.tmp || mv $@.tmp $@
 	rm -f $@.tmp
