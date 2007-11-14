@@ -580,7 +580,7 @@ if test "$WANT_APACHE_20" = "yes" ; then
         fi
         ],
         [
-        AC_PATH_PROG(APR_CONFIG, apr-config)
+        AC_PATH_PROG(APR_CONFIG, apr-config,,[`$APXS2 -q SBINDIR`]:[$PATH]])
         ])
 	if test -f "${APR_CONFIG}"; then
         APR_CFLAGS="`${APR_CONFIG} --cflags` `${APR_CONFIG} --cppflags` `${APR_CONFIG} --includes`"
@@ -671,7 +671,7 @@ if test "$WANT_APACHE_22" = "yes" ; then
         fi
         ],
         [
-        AC_PATH_PROG(APR1_CONFIG, apr-1-config)
+        AC_PATH_PROG(APR1_CONFIG, apr-1-config,,[`$APXS22 -q SBINDIR`]:[$PATH])
         ])
 	if test -f "${APR1_CONFIG}"; then
         APR1_CFLAGS="`${APR1_CONFIG} --cflags` `${APR1_CONFIG} --cppflags` `${APR1_CONFIG} --includes`"
