@@ -580,7 +580,7 @@ if test "$WANT_APACHE_20" = "yes" ; then
         fi
         ],
         [
-        AC_PATH_PROG(APR_CONFIG, apr-config,,[`$APXS2 -q SBINDIR`]:[$PATH]])
+        AC_PATH_PROG(APR_CONFIG, apr-config,,[`$APXS2 -q SBINDIR`]:[$PATH])
         ])
 	if test -f "${APR_CONFIG}"; then
         APR_CFLAGS="`${APR_CONFIG} --cflags` `${APR_CONFIG} --cppflags` `${APR_CONFIG} --includes`"
