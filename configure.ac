@@ -499,7 +499,7 @@ if test "$WANT_APACHE_13" = "yes" ; then
 
     # extract settings we need from APXS -q
     APXS_CC="`$APXS -q CC`"
-    APXS_CFLAGS="`$APXS -q CPPFLAGS` `$APXS -q CFLAGS` `$APXS -q CFLAGS_SHLIB`"
+    APXS_CFLAGS="`$APXS -q CFLAGS` `$APXS -q CFLAGS_SHLIB`"
     APXS_INCLUDE="`$APXS -q INCLUDEDIR`"
 fi
 
@@ -590,7 +590,7 @@ if test "$WANT_APACHE_20" = "yes" ; then
 
     # extract settings we need from APXS2 -q
     APXS2_CC="`$APXS2 -q CC`"
-    APXS2_CFLAGS="`$APXS2 -q CPPFLAGS` `$APXS2 -q CFLAGS` `$APXS2 -q CFLAGS_SHLIB` $APR_CFLAGS"
+    APXS2_CFLAGS="`$APXS2 -q CPPFLAGS` `$APXS2 -q CFLAGS` $APR_CFLAGS"
     APXS2_INCLUDE="`$APXS2 -q INCLUDEDIR`"
 fi
 
@@ -681,7 +681,7 @@ if test "$WANT_APACHE_22" = "yes" ; then
 
     # extract settings we need from APXS22 -q
     APXS22_CC="`$APXS22 -q CC`"
-    APXS22_CFLAGS="`$APXS22 -q CPPFLAGS` `$APXS22 -q CFLAGS` `$APXS22 -q CFLAGS_SHLIB` $APR1_CFLAGS"
+    APXS22_CFLAGS="`$APXS22 -q CPPFLAGS` `$APXS22 -q CFLAGS` $APR1_CFLAGS"
     APXS22_INCLUDE="`$APXS22 -q INCLUDEDIR`"
 fi
 
