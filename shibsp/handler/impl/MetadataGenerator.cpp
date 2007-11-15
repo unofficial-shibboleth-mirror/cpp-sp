@@ -310,6 +310,6 @@ pair<bool,long> MetadataGenerator::processMessage(const Application& application
     httpResponse.setContentType("application/samlmetadata+xml");
     return make_pair(true, httpResponse.sendResponse(s));
 #else
-    return make_pair(false,0);
+    return make_pair(false,0L);
 #endif
 }

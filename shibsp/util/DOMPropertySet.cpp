@@ -153,7 +153,7 @@ pair<bool,const char*> DOMPropertySet::getString(const char* name, const char* n
         i=m_map.find(name);
 
     if (i!=m_map.end())
-        return make_pair(true,i->second.first);
+        return pair<bool,const char*>(true,i->second.first);
     else if (m_parent)
         return m_parent->getString(name,ns);
     return pair<bool,const char*>(false,NULL);

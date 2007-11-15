@@ -111,7 +111,7 @@ namespace shibsp {
                 for (vector<Attribute*>::const_iterator a = m_attributes.begin(); a != m_attributes.end(); ++a) {
                     const vector<string>& aliases = (*a)->getAliases();
                     for (vector<string>::const_iterator alias = aliases.begin(); alias != aliases.end(); ++alias)
-                        m_attributeIndex.insert(make_pair(*alias, *a));
+                        m_attributeIndex.insert(multimap<string,const Attribute*>::value_type(*alias, *a));
                 }
             }
             return m_attributeIndex;

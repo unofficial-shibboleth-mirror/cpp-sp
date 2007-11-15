@@ -172,14 +172,14 @@ XMLFilterImpl::XMLFilterImpl(const DOMElement* e, Category& log) : m_log(log), m
                     if (e && XMLHelper::isNodeNamed(e, shibspconstants::SHIB2ATTRIBUTEFILTER_NS, AttributeRule)) {
                         pair<string,const MatchFunctor*> rule = buildAttributeRule(e, valFunctors, false);
                         if (rule.second)
-                            m_policies.back().m_rules.insert(rule);
+                            m_policies.back().m_rules.insert(Policy::rules_t::value_type(rule.first, rule.second));
                     }
                     else if (e && XMLHelper::isNodeNamed(e, shibspconstants::SHIB2ATTRIBUTEFILTER_NS, AttributeRuleReference)) {
                         auto_ptr_char ref(e->getAttributeNS(NULL, _ref));
                         if (ref.get() && *ref.get()) {
                             map< string,pair<string,const MatchFunctor*> >::const_iterator ar = m_attrRules.find(ref.get());
                             if (ar != m_attrRules.end())
-                                m_policies.back().m_rules.insert(ar->second);
+                                m_policies.back().m_rules.insert(Policy::rules_t::value_type(ar->second.first, ar->second.second));
                             else
                                 m_log.warn("skipping invalid AttributeRuleReference (%s)", ref.get());
                         }
@@ -219,7 +219,7 @@ MatchFunctor* XMLFilterImpl::buildFunctor(
     if (type.get()) {
         try {
             MatchFunctor* func = SPConfig::getConfig().MatchFunctorManager.newPlugin(*type.get(), make_pair(&functorMap,e));
-            functorMap.getMatchFunctors().insert(make_pair(id, func));
+            functorMap.getMatchFunctors().insert(multimap<string,MatchFunctor*>::value_type(id, func));
             return func;
         }
         catch (exception& ex) {
@@ -241,12 +241,12 @@ pair<string,const MatchFunctor*> XMLFilterImpl::buildAttributeRule(const DOMElem
 
     if (standalone && !*id) {
         m_log.warn("skipping stand-alone AttributeRule with no id");
-        return make_pair(string(),(MatchFunctor*)NULL);
+        return make_pair(string(),(const MatchFunctor*)NULL);
     }
     else if (*id && m_attrRules.count(id)) {
         if (standalone) {
             m_log.warn("skipping duplicate stand-alone AttributeRule with id (%s)", id);
-            return make_pair(string(),(MatchFunctor*)NULL);
+            return make_pair(string(),(const MatchFunctor*)NULL);
         }
         else
             id = "";
@@ -271,13 +271,13 @@ pair<string,const MatchFunctor*> XMLFilterImpl::buildAttributeRule(const DOMElem
 
     if (func) {
         if (*id)
-            return m_attrRules[id] = make_pair(attrID.get(), func);
+            return m_attrRules[id] = pair<string,const MatchFunctor*>(attrID.get(), func);
         else
-            return make_pair(attrID.get(), func);
+            return pair<string,const MatchFunctor*>(attrID.get(), func);
     }
 
     m_log.warn("skipping AttributeRule (%s), PermitValueRule invalid or missing", id);
-    return make_pair(string(),(MatchFunctor*)NULL);
+    return make_pair(string(),(const MatchFunctor*)NULL);
 }
 
 void XMLFilterImpl::filterAttributes(const FilteringContext& context, vector<Attribute*>& attributes) const

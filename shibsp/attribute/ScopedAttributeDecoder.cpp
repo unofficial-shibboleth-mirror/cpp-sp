@@ -121,7 +121,7 @@ shibsp::Attribute* ScopedAttributeDecoder::decode(
                     xmlscope = aexo->getAttribute(scopeqname);
                     if (xmlscope && *xmlscope) {
                         scope = toUTF8(xmlscope);
-                        dest.push_back(make_pair(val,scope));
+                        dest.push_back(pair<string,string>(val,scope));
                         delete[] scope;
                     }
                     else {
@@ -129,7 +129,7 @@ shibsp::Attribute* ScopedAttributeDecoder::decode(
                         if (scope) {
                             *scope++ = 0;
                             if (*scope)
-                                dest.push_back(make_pair(val,scope));
+                                dest.push_back(pair<string,string>(val,scope));
                             else
                                 log.warn("ignoring unscoped AttributeValue");
                         }
@@ -182,7 +182,7 @@ shibsp::Attribute* ScopedAttributeDecoder::decode(
         if (scope) {
             *scope++ = 0;
             if (*scope)
-                dest.push_back(make_pair(val,scope));
+                dest.push_back(pair<string,string>(val,scope));
             else
                 log.warn("ignoring NameID with no scope");
         }

@@ -315,7 +315,7 @@ pair<bool,long> SAML2ArtifactResolution::processMessage(const Application& appli
         return samlError(application, *req, httpResponse, StatusCode::RESPONDER, NULL, ex.what());
     }
 #else
-    return make_pair(false,0);
+    return make_pair(false,0L);
 #endif
 }
 

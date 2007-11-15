@@ -107,7 +107,7 @@ pair<bool,long> Shib1SessionInitiator::run(SPRequest& request, const char* entit
 {
     // We have to know the IdP to function.
     if (!entityID || !*entityID)
-        return make_pair(false,0);
+        return make_pair(false,0L);
 
     string target;
     const Handler* ACS=NULL;
@@ -232,14 +232,14 @@ pair<bool,long> Shib1SessionInitiator::doRequest(
     }
     else if (!entity.second) {
         m_log.error("unable to locate Shibboleth-aware identity provider role for provider (%s)", entityID);
-        return make_pair(false,0);
+        return make_pair(false,0L);
     }
     const EndpointType* ep=EndpointManager<SingleSignOnService>(
         dynamic_cast<const IDPSSODescriptor*>(entity.second)->getSingleSignOnServices()
         ).getByBinding(shibspconstants::SHIB1_AUTHNREQUEST_PROFILE_URI);
     if (!ep) {
         m_log.error("unable to locate compatible SSO service for provider (%s)", entityID);
-        return make_pair(false,0);
+        return make_pair(false,0L);
     }
 
     preserveRelayState(app, httpResponse, relayState);
@@ -258,6 +258,6 @@ pair<bool,long> Shib1SessionInitiator::doRequest(
 
     return make_pair(true, httpResponse.sendRedirect(req.c_str()));
 #else
-    return make_pair(false,0);
+    return make_pair(false,0L);
 #endif
 }

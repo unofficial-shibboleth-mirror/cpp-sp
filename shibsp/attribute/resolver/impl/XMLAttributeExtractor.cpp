@@ -205,11 +205,11 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log) : m_log(l
 
         // Fetch/create the map entry and see if it's a duplicate rule.
 #ifdef HAVE_GOOD_STL
-        pair< AttributeDecoder*,vector<string> >& decl = m_attrMap[make_pair(name,format)];
+        pair< AttributeDecoder*,vector<string> >& decl = m_attrMap[pair<xstring,xstring>(name,format)];
 #else
         auto_ptr_char n(name);
         auto_ptr_char f(format);
-        pair< AttributeDecoder*,vector<string> >& decl = m_attrMap[make_pair(n.get(),f.get())];
+        pair< AttributeDecoder*,vector<string> >& decl = m_attrMap[pair<string,string>(n.get(),f.get())];
 #endif
         if (decl.first) {
             m_log.warn("skipping duplicate Attribute mapping (same name and nameFormat)");
@@ -272,10 +272,10 @@ void XMLExtractorImpl::extractAttributes(
     if (!format || !*format)
         format = NameIdentifier::UNSPECIFIED;
 #ifdef HAVE_GOOD_STL
-    if ((rule=m_attrMap.find(make_pair(format,xstring()))) != m_attrMap.end()) {
+    if ((rule=m_attrMap.find(pair<xstring,xstring>(format,xstring()))) != m_attrMap.end()) {
 #else
     auto_ptr_char temp(format);
-    if ((rule=m_attrMap.find(make_pair(temp.get(),string()))) != m_attrMap.end()) {
+    if ((rule=m_attrMap.find(pair<string,string>(temp.get(),string()))) != m_attrMap.end()) {
 #endif
         Attribute* a = rule->second.first->decode(rule->second.second, &nameid, assertingParty, application.getString("entityID").second);
         if (a)
@@ -297,10 +297,10 @@ void XMLExtractorImpl::extractAttributes(
     if (!format || !*format)
         format = NameID::UNSPECIFIED;
 #ifdef HAVE_GOOD_STL
-    if ((rule=m_attrMap.find(make_pair(format,xstring()))) != m_attrMap.end()) {
+    if ((rule=m_attrMap.find(pair<xstring,xstring>(format,xstring()))) != m_attrMap.end()) {
 #else
     auto_ptr_char temp(format);
-    if ((rule=m_attrMap.find(make_pair(temp.get(),string()))) != m_attrMap.end()) {
+    if ((rule=m_attrMap.find(pair<string,string>(temp.get(),string()))) != m_attrMap.end()) {
 #endif
         Attribute* a = rule->second.first->decode(rule->second.second, &nameid, assertingParty, application.getString("entityID").second);
         if (a)
@@ -325,11 +325,11 @@ void XMLExtractorImpl::extractAttributes(
     if (!format || XMLString::equals(format, shibspconstants::SHIB1_ATTRIBUTE_NAMESPACE_URI))
         format = &chNull;
 #ifdef HAVE_GOOD_STL
-    if ((rule=m_attrMap.find(make_pair(name,format))) != m_attrMap.end()) {
+    if ((rule=m_attrMap.find(pair<xstring,xstring>(name,format))) != m_attrMap.end()) {
 #else
     auto_ptr_char temp1(name);
     auto_ptr_char temp2(format);
-    if ((rule=m_attrMap.find(make_pair(temp1.get(),temp2.get()))) != m_attrMap.end()) {
+    if ((rule=m_attrMap.find(pair<string,string>(temp1.get(),temp2.get()))) != m_attrMap.end()) {
 #endif
         Attribute* a = rule->second.first->decode(rule->second.second, &attr, assertingParty, application.getString("entityID").second);
         if (a)
@@ -356,11 +356,11 @@ void XMLExtractorImpl::extractAttributes(
     else if (XMLString::equals(format, saml2::Attribute::URI_REFERENCE))
         format = &chNull;
 #ifdef HAVE_GOOD_STL
-    if ((rule=m_attrMap.find(make_pair(name,format))) != m_attrMap.end()) {
+    if ((rule=m_attrMap.find(pair<xstring,xstring>(name,format))) != m_attrMap.end()) {
 #else
     auto_ptr_char temp1(name);
     auto_ptr_char temp2(format);
-    if ((rule=m_attrMap.find(make_pair(temp1.get(),temp2.get()))) != m_attrMap.end()) {
+    if ((rule=m_attrMap.find(pair<string,string>(temp1.get(),temp2.get()))) != m_attrMap.end()) {
 #endif
         Attribute* a = rule->second.first->decode(rule->second.second, &attr, assertingParty, application.getString("entityID").second);
         if (a)

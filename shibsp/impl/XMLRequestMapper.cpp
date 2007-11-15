@@ -310,7 +310,7 @@ Override::Override(const DOMElement* e, Category& log, const Override* base) : m
                 RegularExpression* re = NULL;
                 if (v && *v)
                     re = new RegularExpression(v);
-                m_queries.push_back(make_pair(make_pair(ntemp.get(),re), o.release()));
+                m_queries.push_back(make_pair(make_pair(string(ntemp.get()),re), o.release()));
             }
             catch (XMLException& ex) {
                 auto_ptr_char tmp(ex.getMessage());

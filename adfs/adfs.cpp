@@ -312,7 +312,7 @@ pair<bool,long> ADFSSessionInitiator::run(SPRequest& request, const char* entity
 {
     // We have to know the IdP to function.
     if (!entityID || !*entityID)
-        return make_pair(false,0);
+        return make_pair(false,0L);
 
     string target;
     const Handler* ACS=NULL;
@@ -339,11 +339,11 @@ pair<bool,long> ADFSSessionInitiator::run(SPRequest& request, const char* entity
     const vector<const Handler*>& handlers = app.getAssertionConsumerServicesByBinding(m_binding.get());
 
     // Index comes from request, or default set in the handler, or we just pick the first endpoint.
-    pair<bool,unsigned int> index = make_pair(false,0);
+    pair<bool,unsigned int> index(false,0);
     if (isHandler) {
         option = request.getParameter("acsIndex");
         if (option)
-            index = make_pair(true, atoi(option));
+            index = pair<bool,unsigned int>(true, atoi(option));
     }
     if (!index.first)
         index = getUnsignedInt("defaultACSIndex");
@@ -443,14 +443,14 @@ pair<bool,long> ADFSSessionInitiator::doRequest(
     }
     else if (!entity.second) {
         m_log.error("unable to locate ADFS-aware identity provider role for provider (%s)", entityID);
-        return make_pair(false,0);
+        return make_pair(false,0L);
     }
     const EndpointType* ep = EndpointManager<SingleSignOnService>(
         dynamic_cast<const IDPSSODescriptor*>(entity.second)->getSingleSignOnServices()
         ).getByBinding(m_binding.get());
     if (!ep) {
         m_log.error("unable to locate compatible SSO service for provider (%s)", entityID);
-        return make_pair(false,0);
+        return make_pair(false,0L);
     }
 
     preserveRelayState(app, httpResponse, relayState);
@@ -476,7 +476,7 @@ pair<bool,long> ADFSSessionInitiator::doRequest(
 
     return make_pair(true, httpResponse.sendRedirect(req.c_str()));
 #else
-    return make_pair(false,0);
+    return make_pair(false,0L);
 #endif
 }
 
@@ -655,17 +655,17 @@ pair<bool,long> ADFSLogoutInitiator::run(SPRequest& request, bool isHandler) con
     try {
         session = request.getSession(false, true, false);  // don't cache it and ignore all checks
         if (!session)
-            return make_pair(false,0);
+            return make_pair(false,0L);
 
         // We only handle ADFS sessions.
         if (!XMLString::equals(session->getProtocol(), WSFED_NS) || !session->getEntityID()) {
             session->unlock();
-            return make_pair(false,0);
+            return make_pair(false,0L);
         }
     }
     catch (exception& ex) {
         m_log.error("error accessing current session: %s", ex.what());
-        return make_pair(false,0);
+        return make_pair(false,0L);
     }
 
     string entityID(session->getEntityID());
@@ -754,7 +754,7 @@ pair<bool,long> ADFSLogoutInitiator::doRequest(
         m_log.error("error issuing ADFS logout request: %s", ex.what());
     }
 
-    return make_pair(false,0);
+    return make_pair(false,0L);
 #else
     throw ConfigurationException("Cannot perform logout using lite version of shibsp library.");
 #endif

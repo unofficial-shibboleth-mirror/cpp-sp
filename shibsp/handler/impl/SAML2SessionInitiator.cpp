@@ -216,7 +216,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, const char* entit
 
     // We have to know the IdP to function unless this is ECP.
     if (!ECP && (!entityID || !*entityID))
-        return make_pair(false,0);
+        return make_pair(false,0L);
 
     string target;
     const Handler* ACS=NULL;
@@ -471,7 +471,7 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
         encoder = m_ecp;
         if (!encoder) {
             m_log.error("MessageEncoder for PAOS binding not available");
-            return make_pair(false,0);
+            return make_pair(false,0L);
         }
     }
     else {
@@ -486,7 +486,7 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
         }
         else if (!entity.second) {
             m_log.error("unable to locate SAML 2.0 identity provider role for provider (%s)", entityID);
-            return make_pair(false,0);
+            return make_pair(false,0L);
         }
 
         // Loop over the supportable outgoing bindings.
@@ -502,7 +502,7 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
         }
         if (!ep || !encoder) {
             m_log.error("unable to locate compatible SSO service for provider (%s)", entityID);
-            return make_pair(false,0);
+            return make_pair(false,0L);
         }
     }
 
@@ -587,6 +587,6 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
     req.release();  // freed by encoder
     return make_pair(true,ret);
 #else
-    return make_pair(false,0);
+    return make_pair(false,0L);
 #endif
 }

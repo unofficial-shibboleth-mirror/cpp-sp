@@ -142,7 +142,9 @@ SAML2NameIDMgmt::SAML2NameIDMgmt(const DOMElement* e, const char* appId)
         SAMLConfig& conf = SAMLConfig::getConfig();
 
         // Handle incoming binding.
-        m_decoder = conf.MessageDecoderManager.newPlugin(getString("Binding").second,make_pair(e,shibspconstants::SHIB2SPCONFIG_NS));
+        m_decoder = conf.MessageDecoderManager.newPlugin(
+            getString("Binding").second, pair<const DOMElement*,const XMLCh*>(e,shibspconstants::SHIB2SPCONFIG_NS)
+            );
         m_decoder->setArtifactResolver(SPConfig::getConfig().getArtifactResolver());
 
         if (m_decoder->isUserAgentPresent()) {
@@ -168,7 +170,9 @@ SAML2NameIDMgmt::SAML2NameIDMgmt(const DOMElement* e, const char* appId)
                 m_bindings.push_back(start);
                 try {
                     auto_ptr_char b(start);
-                    MessageEncoder * encoder = conf.MessageEncoderManager.newPlugin(b.get(),make_pair(e,shibspconstants::SHIB2SPCONFIG_NS));
+                    MessageEncoder * encoder = conf.MessageEncoderManager.newPlugin(
+                        b.get(), pair<const DOMElement*,const XMLCh*>(e,shibspconstants::SHIB2SPCONFIG_NS)
+                        );
                     m_encoders[start] = encoder;
                     m_log.debug("supporting outgoing front-channel binding (%s)", b.get());
                 }
@@ -183,7 +187,7 @@ SAML2NameIDMgmt::SAML2NameIDMgmt(const DOMElement* e, const char* appId)
         }
         else {
             MessageEncoder* encoder = conf.MessageEncoderManager.newPlugin(
-                getString("Binding").second,make_pair(e,shibspconstants::SHIB2SPCONFIG_NS)
+                getString("Binding").second, pair<const DOMElement*,const XMLCh*>(e,shibspconstants::SHIB2SPCONFIG_NS)
                 );
             m_encoders.insert(pair<const XMLCh*,MessageEncoder*>(NULL, encoder));
         }
@@ -464,7 +468,7 @@ pair<bool,long> SAML2NameIDMgmt::doRequest(
     if (policy.getIssuerMetadata())
         annotateException(&ex, policy.getIssuerMetadata()); // throws it
     ex.raise();
-    return make_pair(false,0);  // never happen, satisfies compiler
+    return make_pair(false,0L);  // never happen, satisfies compiler
 #else
     throw ConfigurationException("Cannot process NameID mgmt message using lite version of shibsp library.");
 #endif

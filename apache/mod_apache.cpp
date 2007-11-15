@@ -788,7 +788,7 @@ pair<bool,unsigned int> ApacheRequestMapper::getUnsignedInt(const char* name, co
         else if (sta->m_dc->tSettings) {
             const char* prop = ap_table_get(sta->m_dc->tSettings, name);
             if (prop)
-                return make_pair(true, strtol(prop, NULL, 10));
+                return pair<bool,unsigned int>(true, atoi(prop));
         }
     }
     return s ? s->getUnsignedInt(name,ns) : pair<bool,unsigned int>(false,0);

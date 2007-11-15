@@ -118,7 +118,7 @@ namespace shibsp {
                 for (vector<Attribute*>::const_iterator a = m_attributes.begin(); a != m_attributes.end(); ++a) {
                     const vector<string>& aliases = (*a)->getAliases();
                     for (vector<string>::const_iterator alias = aliases.begin(); alias != aliases.end(); ++alias)
-                        m_attributeIndex.insert(make_pair(*alias, *a));
+                        m_attributeIndex.insert(multimap<string,const Attribute*>::value_type(*alias, *a));
                 }
             }
             return m_attributeIndex;
@@ -227,7 +227,7 @@ void StoredSession::unmarshallAttributes() const
         try {
             attribute = Attribute::unmarshall(attr);
             m_attributes.push_back(attribute);
-            m_attributeIndex.insert(make_pair(attribute->getId(), attribute));
+            m_attributeIndex.insert(multimap<string,const Attribute*>::value_type(attribute->getId(), attribute));
             if (m_cache->m_log.isDebugEnabled())
                 m_cache->m_log.debug("unmarshalled attribute (ID: %s) with %d value%s",
                     attribute->getId(), attr.first().integer(), attr.first().integer()!=1 ? "s" : "");

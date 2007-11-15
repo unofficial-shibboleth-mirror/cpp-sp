@@ -184,17 +184,17 @@ pair<bool,long> SAML2LogoutInitiator::run(SPRequest& request, bool isHandler) co
     try {
         session = request.getSession(false, true, false);  // don't cache it and ignore all checks
         if (!session)
-            return make_pair(false,0);
+            return make_pair(false,0L);
 
         // We only handle SAML 2.0 sessions.
         if (!XMLString::equals(session->getProtocol(), m_protocol.get())) {
             session->unlock();
-            return make_pair(false,0);
+            return make_pair(false,0L);
         }
     }
     catch (exception& ex) {
         m_log.error("error accessing current session: %s", ex.what());
-        return make_pair(false,0);
+        return make_pair(false,0L);
     }
 
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
@@ -284,7 +284,7 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
     }
 
 #ifndef SHIBSP_LITE
-    pair<bool,long> ret = make_pair(false,0);
+    pair<bool,long> ret = make_pair(false,0L);
     try {
         // With a session in hand, we can create a LogoutRequest message, if we can find a compatible endpoint.
         MetadataProvider* m = application.getMetadataProvider();

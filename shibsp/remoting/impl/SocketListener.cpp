@@ -35,6 +35,10 @@
 # include <netinet/in.h>
 #endif
 
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
+
 using namespace shibsp;
 using namespace xmltooling;
 using namespace std;

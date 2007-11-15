@@ -446,6 +446,6 @@ pair<bool,long> StatusHandler::processMessage(
     httpResponse.setContentType("text/xml");
     return make_pair(true, httpResponse.sendResponse(s));
 #else
-    return make_pair(false,0);
+    return make_pair(false,0L);
 #endif
 }

@@ -114,6 +114,6 @@ MatchFunctor* AndMatchFunctor::buildFunctor(const DOMElement* e, const FilterPol
         throw ConfigurationException("Child Rule found with no xsi:type.");
 
     MatchFunctor* func = SPConfig::getConfig().MatchFunctorManager.newPlugin(*type.get(), make_pair(functorMap,e));
-    functorMap->getMatchFunctors().insert(make_pair(id, func));
+    functorMap->getMatchFunctors().insert(multimap<string,MatchFunctor*>::value_type(id, func));
     return func;
 }

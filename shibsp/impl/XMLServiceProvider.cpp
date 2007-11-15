@@ -559,7 +559,9 @@ XMLApplication::XMLApplication(
                     static const XMLCh _acl[] = UNICODE_LITERAL_9(e,x,p,o,r,t,A,C,L);
                     exportElement->setAttributeNS(NULL,_acl,exportACL.second);
                 }
-                handler = conf.HandlerManager.newPlugin(samlconstants::SAML20_BINDING_URI, make_pair(exportElement, getId()));
+                handler = conf.HandlerManager.newPlugin(
+                    samlconstants::SAML20_BINDING_URI, pair<const DOMElement*,const char*>(exportElement, getId())
+                    );
                 m_handlers.push_back(handler);
 
                 // Insert into location map. If it contains the handlerURL, we skip past that part.
@@ -1415,7 +1417,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                         auto_ptr_char value(rule->getFirstChild()->getNodeValue());
                         if (provider.get() && *provider.get() && option.get() && *option.get() && value.get() && *value.get()) {
                             m_transportOptionMap[id.get()].push_back(
-                                make_pair(provider.get(), make_pair(option.get(), value.get()))
+                                make_pair(string(provider.get()), make_pair(string(option.get()), string(value.get())))
                                 );
                         }
                     }
