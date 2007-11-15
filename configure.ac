@@ -184,14 +184,10 @@ if test "x$with_xmltooling" = "x" ; then
 fi
 if test -f $with_xmltooling/share/xml/xmltooling/catalog.xml ; then
     XMLTOOLINGXMLDIR="$with_xmltooling"
-else
-    if test -f $with_xerces/share/xml/xmltooling/catalog.xml ; then
-        XMLTOOLINGXMLDIR="$with_xerces"
-    else
-        if test -f $with_log4shib/share/xml/xmltooling/catalog.xml ; then
-            XMLTOOLINGXMLDIR="$with_log4shib"
-        fi
-    fi
+elif test -f $with_xerces/share/xml/xmltooling/catalog.xml ; then
+    XMLTOOLINGXMLDIR="$with_xerces"
+elif test -f $with_log4shib/share/xml/xmltooling/catalog.xml ; then
+    XMLTOOLINGXMLDIR="$with_log4shib"
 fi
 if test "x$XMLTOOLINGXMLDIR" = "x" ; then
     AC_MSG_ERROR([xmltooling XML catalog not found, may need to use --with-xmltooling option])
@@ -269,18 +265,12 @@ if test "x$with_saml" = "x" ; then
 fi
 if test -f $with_saml/share/xml/opensaml/saml20-catalog.xml ; then
     OPENSAMLXMLDIR="$with_saml"
-else
-    if test -f $with_xmltooling/share/xml/opensaml/saml20-catalog.xml ; then
-        OPENSAMLXMLDIR="$with_xmltooling"
-    else
-        if test -f $with_xerces/share/xml/opensaml/saml20-catalog.xml ; then
-            OPENSAMLXMLDIR="$with_xerces"
-        else
-            if test -f $with_log4shib/share/xml/opensaml/saml20-catalog.xml ; then
-                OPENSAMLXMLDIR="$with_log4shib"
-            fi
-        fi
-    fi
+elif test -f $with_xmltooling/share/xml/opensaml/saml20-catalog.xml ; then
+    OPENSAMLXMLDIR="$with_xmltooling"
+elif test -f $with_xerces/share/xml/opensaml/saml20-catalog.xml ; then
+    OPENSAMLXMLDIR="$with_xerces"
+elif test -f $with_log4shib/share/xml/opensaml/saml20-catalog.xml ; then
+    OPENSAMLXMLDIR="$with_log4shib"
 fi
 if test "x$OPENSAMLXMLDIR" = "x" ; then
     AC_MSG_ERROR([opensaml XML catalogs not found, may need to use --with-saml option])
@@ -741,24 +731,19 @@ if test "$build_odbc" = "yes" ; then
                AC_MSG_ERROR([Try running --disable-odbc instead.])
              elif test "$with_odbc" != yes ; then
                odbc_dir="$with_odbc/bin"
+               if test "$with_odbc" != /usr ; then
+                 ODBC_CFLAGS="-I$with_odbc/include"
+                 ODBC_LIBS="-L$with_odbc/lib -lodbc"
+               fi
              fi ])
 
    AC_PATH_PROG(ODBC_CONFIG, odbc_config, no, $odbc_dir $PATH )
-
    if test "$ODBC_CONFIG" = no ; then
-      if test "$odbc_enabled" = "yes" ; then
-        AC_MSG_ERROR(Cannot find odbc_config)
-      else
-        AC_MSG_WARN(ODBC not found, skipping.)
-      fi
+      AC_MSG_WARN(Cannot find odbc_config, will try to guess settings.)
+   else
+      ODBC_CFLAGS=`$ODBC_CONFIG --cflags`
+      ODBC_LIBS=`$ODBC_CONFIG --libs`
    fi
-fi
-
-if test "$build_odbc" = yes ; then
-   ODBC_CFLAGS=`$ODBC_CONFIG --cflags`
-   ODBC_CFLAGS=`eval echo $ODBC_CFLAGS`
-   ODBC_LIBS=`$ODBC_CONFIG --libs`
-   ODBC_LIBS=`eval echo $ODBC_LIBS`
 
    save_CPPFLAGS="$CPPFLAGS"
    CPPFLAGS="$CPPFLAGS $ODBC_CFLAGS"
