@@ -739,7 +739,7 @@ if test "$build_odbc" = "yes" ; then
 
    AC_PATH_PROG(ODBC_CONFIG, odbc_config, no, $odbc_dir $PATH )
    if test "$ODBC_CONFIG" = no ; then
-      AC_MSG_WARN(Cannot find odbc_config, will try to guess settings.)
+      AC_MSG_WARN([Cannot find odbc_config, will try to guess settings.])
       ODBC_LIBS="$ODBC_LIBS -lodbc"
    else
       ODBC_CFLAGS=`$ODBC_CONFIG --cflags`
