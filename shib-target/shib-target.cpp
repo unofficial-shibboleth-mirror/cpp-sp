@@ -601,6 +601,10 @@ pair<bool,void*> ShibTarget::doExportAssertions(bool requireSession)
         setHeader("Shib-Identity-Provider", m_priv->m_cacheEntry->getProviderId());
         auto_ptr_char am(m_priv->m_cacheEntry->getAuthnStatement()->getAuthMethod());
         setHeader("Shib-Authentication-Method", am.get());
+        if (m_priv->m_cacheEntry->getAuthnStatement()->getAuthInstant()) {
+            auto_ptr_char ai(m_priv->m_cacheEntry->getAuthnStatement()->getAuthInstant()->getRawData());
+            setHeader("Shib-Authentication-Instant", ai.get());
+        }
         
         // Get the AAP providers, which contain the attribute policy info.
         Iterator<IAAP*> provs=m_priv->m_app->getAAPProviders();
@@ -977,6 +981,7 @@ void ShibTargetPriv::clearHeaders(ShibTarget* st)
     st->clearHeader("Shib-Origin-Site");
     st->clearHeader("Shib-Identity-Provider");
     st->clearHeader("Shib-Authentication-Method");
+    st->clearHeader("Shib-Authentication-Instant");
     st->clearHeader("Shib-NameIdentifier-Format");
     st->clearHeader("Shib-Attributes");
     st->clearHeader("Shib-Application-ID");
