@@ -238,7 +238,7 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
         // We're done.  Everything is okay.  Nothing to report.  Nothing to do..
         // Let the caller decide how to proceed.
         request.log(SPRequest::SPDebug, "doAuthentication succeeded");
-        return make_pair(false,0);
+        return make_pair(false,0L);
     }
     catch (exception& e) {
         TemplateParameters tp(&e);
@@ -345,7 +345,7 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
         	if (requireSession)
                 throw opensaml::RetryableProfileException("Unable to obtain session to export to request.");
         	else
-        		return make_pair(false,0);	// just bail silently
+        		return make_pair(false,0L);	// just bail silently
         }
         
         request.setHeader("Shib-Application-ID", app->getId());
@@ -429,7 +429,7 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
             request.setHeader(a->first.c_str(), header.c_str());
         }
 
-        return make_pair(false,0);
+        return make_pair(false,0L);
     }
     catch (exception& e) {
         TemplateParameters tp(&e);

@@ -64,18 +64,18 @@ pair<bool,long> LogoutHandler::run(SPRequest& request, bool isHandler) const
 {
     // If we're inside a chain, so do nothing.
     if (getParent())
-        return make_pair(false,0);
+        return make_pair(false,0L);
     
     // If this isn't a LogoutInitiator, we only "continue" a notification loop, rather than starting one.
     if (!m_initiator && !request.getParameter("notifying"))
-        return make_pair(false,0);
+        return make_pair(false,0L);
 
     // Try another front-channel notification. No extra parameters and the session is implicit.
     pair<bool,long> ret = notifyFrontChannel(request.getApplication(), request, request);
     if (ret.first)
         return ret;
 
-    return make_pair(false,0);
+    return make_pair(false,0L);
 }
 
 void LogoutHandler::receive(DDF& in, ostream& out)
@@ -123,7 +123,7 @@ pair<bool,long> LogoutHandler::notifyFrontChannel(
     // Fetch the next front notification URL and bump the index for the next round trip.
     string loc = application.getNotificationURL(request.getRequestURL(), true, index++);
     if (loc.empty())
-        return make_pair(false,0);
+        return make_pair(false,0L);
 
     const URLEncoder* encoder = XMLToolingConfig::getConfig().getURLEncoder();
 

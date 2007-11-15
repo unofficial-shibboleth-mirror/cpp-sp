@@ -309,7 +309,7 @@ pair<bool,long> RemotedHandler::unwrap(SPRequest& request, DDF& out) const
         istringstream s(h["data"].string());
         return make_pair(true, request.sendResponse(s, h["status"].integer()));
     }
-    return make_pair(false,0);
+    return make_pair(false,0L);
 }
 
 HTTPRequest* RemotedHandler::getRequest(DDF& in) const

@@ -66,7 +66,7 @@ namespace shibsp {
                 m_delimeter = static_cast<char>(val.integer());
             val = in.first().first();
             while (val.name() && val.string()) {
-                m_values.push_back(std::make_pair(val.name(), val.string()));
+                m_values.push_back(std::make_pair(std::string(val.name()), std::string(val.string())));
                 val = in.first().next();
             }
         }

@@ -183,7 +183,7 @@ long AbstractHandler::sendMessage(
 {
     const EntityDescriptor* entity = role ? dynamic_cast<const EntityDescriptor*>(role->getParent()) : NULL;
     const PropertySet* relyingParty = application.getRelyingParty(entity);
-    pair<bool,const char*> flag = signIfPossible ? make_pair(true,"true") : relyingParty->getString("signing");
+    pair<bool,const char*> flag = signIfPossible ? make_pair(true,(const char*)"true") : relyingParty->getString("signing");
     if (role && flag.first &&
         (!strcmp(flag.second, "true") ||
             (encoder.isUserAgentPresent() && !strcmp(flag.second, "front")) ||

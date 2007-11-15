@@ -69,7 +69,7 @@ AssertionConsumerService::AssertionConsumerService(const DOMElement* e, const ch
 #ifndef SHIBSP_LITE
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
         m_decoder = SAMLConfig::getConfig().MessageDecoderManager.newPlugin(
-            getString("Binding").second,make_pair(e,shibspconstants::SHIB2SPCONFIG_NS)
+            getString("Binding").second, pair<const DOMElement*,const XMLCh*>(e,shibspconstants::SHIB2SPCONFIG_NS)
             );
         m_decoder->setArtifactResolver(SPConfig::getConfig().getArtifactResolver());
     }

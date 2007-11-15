@@ -49,7 +49,7 @@ namespace shibsp {
             if (role)
                 m_issuer = dynamic_cast<opensaml::saml2md::EntityDescriptor*>(role->getParent())->getEntityID();
             for (std::vector<Attribute*>::const_iterator a = attributes.begin(); a != attributes.end(); ++a)
-                m_attributes.insert(std::make_pair((*a)->getId(), *a));
+                m_attributes.insert(std::multimap<std::string,Attribute*>::value_type((*a)->getId(), *a));
         }
 
         virtual ~BasicFilteringContext() {}
