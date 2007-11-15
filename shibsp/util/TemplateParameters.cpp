@@ -37,7 +37,10 @@ void TemplateParameters::setPropertySet(const PropertySet* props)
 
     // Create a timestamp.
     time_t now = time(NULL);
-#ifdef HAVE_CTIME_R
+#if defined(HAVE_CTIME_R_2)
+    char timebuf[32];
+    m_map["now"] = ctime_r(&now,timebuf);
+#elif defined(HAVE_CTIME_R_3)
     char timebuf[32];
     m_map["now"] = ctime_r(&now,timebuf,sizeof(timebuf));
 #else
