@@ -346,14 +346,14 @@ if test "$WANT_NSAPI" != "no"; then
   if test -d $WANT_NSAPI/include ; then
     NSAPI_INCLUDE=$WANT_NSAPI/include
     AC_MSG_RESULT(Netscape-Enterprise 3.x style)
-    AC_CHECK_HEADERS([$NSAPI_INCLUDE/nsapi.h],,[#define XP_UNIX])
+    AC_CHECK_HEADERS([$NSAPI_INCLUDE/nsapi.h],,,[#define XP_UNIX])
     NSAPI_INCLUDE="$NSAPI_INC_DIR -I$NSAPI_INCLUDE"
   fi
   if test -d $WANT_NSAPI/plugins/include ; then
     test -n "$NSAPI_INCLUDE" && NSAPI_INC_DIR="-I$NSAPI_INCLUDE"
     NSAPI_INCLUDE="$WANT_NSAPI/plugins/include"
     AC_MSG_RESULT(iPlanet 4.x / SunONE 6.x style)
-    AC_CHECK_HEADERS([$NSAPI_INCLUDE/nsapi.h],,[#define XP_UNIX])
+    AC_CHECK_HEADERS([$NSAPI_INCLUDE/nsapi.h],,,[#define XP_UNIX])
     NSAPI_INCLUDE="$NSAPI_INC_DIR -I$NSAPI_INCLUDE"
   fi
   if test "$NSAPI_INCLUDE" = ""; then
