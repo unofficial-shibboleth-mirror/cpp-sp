@@ -77,11 +77,14 @@ const char* ShibMLP::run(const string& is, const IPropertySet* props, std::strin
 {
   // Create a timestamp
   time_t now = time(NULL);
-#ifdef HAVE_CTIME_R
-  char timebuf[32];
-  insert("now", ctime_r(&now,timebuf,sizeof(timebuf)));
+#if defined(HAVE_CTIME_R_2)
+    char timebuf[32];
+    insert("now", ctime_r(&now,timebuf));
+#elif defined(HAVE_CTIME_R_3)
+    char timebuf[32];
+    insert("now", ctime_r(&now,timebuf,sizeof(timebuf)));
 #else
-  insert("now", ctime(&now));
+    insert("now", ctime(&now));
 #endif
 
   if (!output)
