@@ -105,9 +105,9 @@ AC_MSG_CHECKING(for ctime_r)
      AC_MSG_RESULT(no)
  else
      if test "$ac_cv_ctime_args" = 2; then
-         AC_DEFINE(HAVE_CTIME_R_2)
+         AC_DEFINE(HAVE_CTIME_R_2,1,[Define if ctime_r is present with 2 parameters.])
      elif test "$ac_cv_ctime_args" = 3; then
-         AC_DEFINE(HAVE_CTIME_R_3)
+         AC_DEFINE(HAVE_CTIME_R_3,1,[Define if ctime_r is present with 3 parameters.])
      fi
      AC_MSG_RESULT([yes, and it takes $ac_cv_ctime_args arguments])
  fi 
