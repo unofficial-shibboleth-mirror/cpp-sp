@@ -86,6 +86,16 @@ namespace shibsp {
     vector<string> g_NoCerts;
 #endif
 
+    static char _x2c(const char *what)
+    {
+        register char digit;
+
+        digit = (what[0] >= 'A' ? ((what[0] & 0xdf) - 'A')+10 : (what[0] - '0'));
+        digit *= 16;
+        digit += (what[1] >= 'A' ? ((what[1] & 0xdf) - 'A')+10 : (what[1] - '0'));
+        return(digit);
+    }
+
     class DummyRequest : public HTTPRequest
     {
     public:
@@ -129,7 +139,35 @@ namespace shibsp {
             else {
                 m_hostname.assign(url, slash - url);
             }
-            m_uri = slash;
+
+            while (*slash) {
+                if (*slash == '?') {
+                    m_uri += slash;
+                    break;
+                }
+                else if (*slash == ';') {
+                    // If this is Java being stupid, skip everything up to the query string, if any.
+                    if (!strncmp(slash, ";jsessionid=", 12)) {
+                        if (slash = strchr(slash, '?'))
+                            m_uri += slash;
+                        break;
+                    }
+                    else {
+                        m_uri += *slash;
+                    }
+                }
+                else if (*slash != '%') {
+                    m_uri += *slash;
+                }
+                else {
+                    ++slash;
+                    if (!isxdigit(*slash) || !isxdigit(*(slash+1)))
+                        throw invalid_argument("Bad request, contained unsupported encoded characters.");
+                    m_uri += _x2c(slash);
+                    ++slash;
+                }
+                ++slash;
+            }
         }
 
         ~DummyRequest() {
