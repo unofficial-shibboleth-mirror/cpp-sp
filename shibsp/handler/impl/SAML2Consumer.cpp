@@ -138,8 +138,12 @@ string SAML2Consumer::implementProtocol(
     // With this flag on, we ignore any unsigned assertions.
     pair<bool,bool> flag = settings->getBool("signedAssertions");
 
-    // Saves off IP-mismatch error message because it's potentially helpful for users.
-    string addressMismatch;
+    // authnskew allows rejection of SSO if AuthnInstant is too old.
+    const PropertySet* sessionProps = application.getPropertySet("Sessions");
+    pair<bool,unsigned int> authnskew = sessionProps ? sessionProps->getUnsignedInt("authnskew") : pair<bool,unsigned int>(false,0);
+
+    // Saves off error messages potentially helpful for users.
+    string contextualError;
 
     for (vector<saml2::Assertion*>::const_iterator a = assertions.begin(); a!=assertions.end(); ++a) {
         // Skip unsigned assertion?
@@ -179,7 +183,7 @@ string SAML2Consumer::implementProtocol(
             catch (exception& ex) {
                 // We save off the message if there's no SSO statement yet.
                 if (!ssoStatement)
-                    addressMismatch = ex.what();
+                    contextualError = ex.what();
                 throw;
             }
 
@@ -189,7 +193,9 @@ string SAML2Consumer::implementProtocol(
             // Save off the first valid SSO statement, but favor the "soonest" session expiration.
             const vector<AuthnStatement*>& statements = const_cast<const saml2::Assertion*>(*a)->getAuthnStatements();
             for (vector<AuthnStatement*>::const_iterator s = statements.begin(); s!=statements.end(); ++s) {
-                if (!ssoStatement || (*s)->getSessionNotOnOrAfterEpoch() < ssoStatement->getSessionNotOnOrAfterEpoch())
+                if (authnskew.first && authnskew.second && (*s)->getAuthnInstant() && (now - (*s)->getAuthnInstantEpoch() > authnskew.second))
+                    contextualError = "The gap between now and the time you logged into your identity provider exceeds the limit.";
+                else if (!ssoStatement || (*s)->getSessionNotOnOrAfterEpoch() < ssoStatement->getSessionNotOnOrAfterEpoch())
                     ssoStatement = *s;
             }
 
@@ -269,7 +275,7 @@ string SAML2Consumer::implementProtocol(
             catch (exception& ex) {
                 // We save off the message if there's no SSO statement yet.
                 if (!ssoStatement)
-                    addressMismatch = ex.what();
+                    contextualError = ex.what();
                 throw;
             }
 
@@ -279,7 +285,9 @@ string SAML2Consumer::implementProtocol(
             // Save off the first valid SSO statement, but favor the "soonest" session expiration.
             const vector<AuthnStatement*>& statements = const_cast<const saml2::Assertion*>(decrypted)->getAuthnStatements();
             for (vector<AuthnStatement*>::const_iterator s = statements.begin(); s!=statements.end(); ++s) {
-                if (!ssoStatement || (*s)->getSessionNotOnOrAfterEpoch() < ssoStatement->getSessionNotOnOrAfterEpoch())
+                if (authnskew.first && authnskew.second && (*s)->getAuthnInstant() && (now - (*s)->getAuthnInstantEpoch() > authnskew.second))
+                    contextualError = "The gap between now and the time you logged into your identity provider exceeds the limit.";
+                else if (!ssoStatement || (*s)->getSessionNotOnOrAfterEpoch() < ssoStatement->getSessionNotOnOrAfterEpoch())
                     ssoStatement = *s;
             }
 
@@ -295,9 +303,9 @@ string SAML2Consumer::implementProtocol(
 
     if (!ssoStatement) {
         for_each(ownedtokens.begin(), ownedtokens.end(), xmltooling::cleanup<saml2::Assertion>());
-        if (addressMismatch.empty())
+        if (contextualError.empty())
             throw FatalProfileException("A valid authentication statement was not found in the incoming message.");
-        throw FatalProfileException(addressMismatch.c_str());
+        throw FatalProfileException(contextualError.c_str());
     }
 
     // May need to decrypt NameID.
@@ -337,7 +345,6 @@ string SAML2Consumer::implementProtocol(
 
     // Session expiration for SAML 2.0 is jointly IdP- and SP-driven.
     time_t sessionExp = ssoStatement->getSessionNotOnOrAfter() ? ssoStatement->getSessionNotOnOrAfterEpoch() : 0;
-    const PropertySet* sessionProps = application.getPropertySet("Sessions");
     pair<bool,unsigned int> lifetime = sessionProps ? sessionProps->getUnsignedInt("lifetime") : pair<bool,unsigned int>(true,28800);
     if (!lifetime.first || lifetime.second == 0)
         lifetime.second = 28800;

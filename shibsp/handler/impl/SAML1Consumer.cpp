@@ -152,6 +152,13 @@ string SAML1Consumer::implementProtocol(
     // With this flag on, we ignore any unsigned assertions.
     pair<bool,bool> flag = settings->getBool("signedAssertions");
 
+    // authnskew allows rejection of SSO if AuthnInstant is too old.
+    const PropertySet* sessionProps = application.getPropertySet("Sessions");
+    pair<bool,unsigned int> authnskew = sessionProps ? sessionProps->getUnsignedInt("authnskew") : pair<bool,unsigned int>(false,0);
+
+    // Saves off error messages potentially helpful for users.
+    string contextualError;
+
     for (vector<saml1::Assertion*>::const_iterator a = assertions.begin(); a!=assertions.end(); ++a) {
         // Skip unsigned assertion?
         if (!(*a)->getSignature() && flag.first && flag.second) {
@@ -188,8 +195,16 @@ string SAML1Consumer::implementProtocol(
             tokens.push_back(*a);
 
             // Save off the first valid SSO statement.
-            if (!ssoStatement && !(*a)->getAuthenticationStatements().empty())
-                ssoStatement = (*a)->getAuthenticationStatements().front();
+            const vector<AuthenticationStatement*>& statements = const_cast<const saml1::Assertion*>(*a)->getAuthenticationStatements();
+            for (vector<AuthenticationStatement*>::const_iterator s = statements.begin(); s!=statements.end(); ++s) {
+                if (authnskew.first && authnskew.second &&
+                    (*s)->getAuthenticationInstant() && (now - (*s)->getAuthenticationInstantEpoch() > authnskew.second))
+                    contextualError = "The gap between now and the time you logged into your identity provider exceeds the limit.";
+                else if (!ssoStatement) {
+                    ssoStatement = *s;
+                    break;
+                }
+            }
         }
         catch (exception& ex) {
             m_log.warn("detected a problem with assertion: %s", ex.what());
@@ -197,8 +212,11 @@ string SAML1Consumer::implementProtocol(
         }
     }
 
-    if (!ssoStatement)
-        throw FatalProfileException("A valid authentication statement was not found in the incoming message.");
+    if (!ssoStatement) {
+        if (contextualError.empty())
+            throw FatalProfileException("A valid authentication statement was not found in the incoming message.");
+        throw FatalProfileException(contextualError.c_str());
+    }
 
     // Address checking.
     SubjectLocality* locality = ssoStatement->getSubjectLocality();
@@ -214,7 +232,6 @@ string SAML1Consumer::implementProtocol(
     // Now we have to extract the authentication details for attribute and session setup.
 
     // Session expiration for SAML 1.x is purely SP-driven, and the method is mapped to a ctx class.
-    const PropertySet* sessionProps = application.getPropertySet("Sessions");
     pair<bool,unsigned int> lifetime = sessionProps ? sessionProps->getUnsignedInt("lifetime") : pair<bool,unsigned int>(true,28800);
     if (!lifetime.first || lifetime.second == 0)
         lifetime.second = 28800;

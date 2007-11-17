@@ -571,10 +571,19 @@ string ADFSConsumer::implementProtocol(
         throw FatalProfileException("Assertion did not contain time conditions.");
     else if (token->getAuthenticationStatements().empty())
         throw FatalProfileException("Assertion did not contain an authentication statement.");
+    
 
     // With ADFS, we only have one token, but we need to put it in a vector.
     vector<const Assertion*> tokens(1,token);
     const saml1::AuthenticationStatement* ssoStatement=token->getAuthenticationStatements().front();
+
+    // authnskew allows rejection of SSO if AuthnInstant is too old.
+    const PropertySet* sessionProps = application.getPropertySet("Sessions");
+    pair<bool,unsigned int> authnskew = sessionProps ? sessionProps->getUnsignedInt("authnskew") : pair<bool,unsigned int>(false,0);
+
+    if (authnskew.first && authnskew.second &&
+            ssoStatement->getAuthenticationInstant() && (now - ssoStatement->getAuthenticationInstantEpoch() > authnskew.second))
+        throw FatalProfileException("The gap between now and the time you logged into your identity provider exceeds the limit.");
 
     // Address checking.
     saml1::SubjectLocality* locality = ssoStatement->getSubjectLocality();
@@ -590,7 +599,6 @@ string ADFSConsumer::implementProtocol(
     // Now we have to extract the authentication details for attribute and session setup.
 
     // Session expiration for ADFS is purely SP-driven, and the method is mapped to a ctx class.
-    const PropertySet* sessionProps = application.getPropertySet("Sessions");
     pair<bool,unsigned int> lifetime = sessionProps ? sessionProps->getUnsignedInt("lifetime") : pair<bool,unsigned int>(true,28800);
     if (!lifetime.first || lifetime.second == 0)
         lifetime.second = 28800;
