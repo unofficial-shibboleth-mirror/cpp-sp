@@ -80,16 +80,6 @@ if (Err = 0) then
   End If
   FileSystemObj.MoveFile ConfigFile, DistDir & "attribute-policy.xml"
   
-  ConfigFile = DistDir & "example-metadata.xml.in"
-  ReplaceInFile ConfigFile, "@-PKGXMLDIR-@", ConvertedDir & "/share/xml/shibboleth"
-  If (NOT FileSystemObj.FileExists(ConfigDir & "example-metadata.xml")) then
-    FileSystemObj.CopyFile ConfigFile, ConfigDir & "example-metadata.xml", false
-  End If
-  If (FileSystemObj.FileExists(DistDir & "example-metadata.xml")) then
-    FileSystemObj.DeleteFile DistDir & "example-metadata.xml", true
-  End If
-  FileSystemObj.MoveFile ConfigFile, DistDir & "example-metadata.xml"
-
   ConfigFile = DistDir & "shibboleth2.xml.in"
   ReplaceInFile ConfigFile, "@-PKGXMLDIR-@", ConvertedDir & "/share/xml/shibboleth"
   ReplaceInFile ConfigFile, "@-PKGSYSCONFDIR-@", ConvertedDir & "/etc/shibboleth"

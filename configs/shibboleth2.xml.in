@@ -103,13 +103,12 @@
 		The system can compute a relative value based on the virtual host. Using handlerSSL="true"
 		will force the protocol to be https. You should also add a cookieProps setting of "; path=/; secure"
 		in that case. Note that while we default checkAddress to "false", this has a negative
-		impact on the security of the SP. Stealing cookies/sessions is much easier with this
-		disabled.
+		impact on the security of the SP. Stealing cookies/sessions is much easier with this disabled.
 		-->
 		<Sessions lifetime="28800" timeout="3600" checkAddress="false"
 			handlerURL="/Shibboleth.sso" handlerSSL="false"
 			exportLocation="http://localhost/Shibboleth.sso/GetAssertion"
-			idpHistory="true" idpHistoryDays="7">
+			idpHistory="false" idpHistoryDays="7">
 			
 			<!--
 			SessionInitiators handle session requests and relay them to a Discovery page,
@@ -118,23 +117,26 @@
 			-->
 
 			<!-- Default example directs to a specific IdP's SSO service (favoring SAML 2 over Shib 1). -->
-			<SessionInitiator type="Chaining" Location="/Login" isDefault="true" id="idp.example.org"
+			<SessionInitiator type="Chaining" Location="/Login" isDefault="true" id="Intranet"
 					relayState="cookie" entityID="https://idp.example.org/shibboleth">
 				<SessionInitiator type="SAML2" defaultACSIndex="1" template="@-PKGSYSCONFDIR-@/bindingTemplate.html"/>
-				<SessionInitiator type="Shib1" defaultACSIndex="4"/>
+				<SessionInitiator type="Shib1" defaultACSIndex="5"/>
+				<!-- <SessionInitiator type="ADFS"/> -->
 			</SessionInitiator>
 			
 			<!-- An example using an old-style WAYF, which means Shib 1 only unless an entityID is provided. -->
 			<SessionInitiator type="Chaining" Location="/WAYF" id="WAYF" relayState="cookie">
 				<SessionInitiator type="SAML2" defaultACSIndex="1" template="@-PKGSYSCONFDIR-@/bindingTemplate.html"/>
-				<SessionInitiator type="Shib1" defaultACSIndex="4"/>
-				<SessionInitiator type="WAYF" defaultACSIndex="4" URL="https://wayf.example.org/WAYF"/>
+				<SessionInitiator type="Shib1" defaultACSIndex="5"/>
+                <!-- <SessionInitiator type="ADFS"/> -->
+				<SessionInitiator type="WAYF" defaultACSIndex="5" URL="https://wayf.example.org/WAYF"/>
 			</SessionInitiator>
 
 			<!-- An example supporting the new-style of discovery service. -->
 			<SessionInitiator type="Chaining" Location="/DS" id="DS" relayState="cookie">
 				<SessionInitiator type="SAML2" defaultACSIndex="1" template="@-PKGSYSCONFDIR-@/bindingTemplate.html"/>
-				<SessionInitiator type="Shib1" defaultACSIndex="4"/>
+				<SessionInitiator type="Shib1" defaultACSIndex="5"/>
+                <!-- <SessionInitiator type="ADFS"/> -->
 				<SessionInitiator type="SAMLDS" URL="https://ds.example.org/DS"/>
 			</SessionInitiator>
 			
@@ -150,14 +152,22 @@
 				Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST-SimpleSign"/>
 			<md:AssertionConsumerService Location="/SAML2/Artifact" index="3"
 				Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact"/>
-			<md:AssertionConsumerService Location="/SAML/POST" index="4"
+            <md:AssertionConsumerService Location="/SAML2/ECP" index="4"
+                Binding="urn:oasis:names:tc:SAML:2.0:bindings:PAOS"/>
+			<md:AssertionConsumerService Location="/SAML/POST" index="5"
 				Binding="urn:oasis:names:tc:SAML:1.0:profiles:browser-post"/>
-			<md:AssertionConsumerService Location="/SAML/Artifact" index="5"
+			<md:AssertionConsumerService Location="/SAML/Artifact" index="6"
 				Binding="urn:oasis:names:tc:SAML:1.0:profiles:artifact-01"/>
+		    
+		    <!--
+            <md:AssertionConsumerService Location="/ADFS" index="7"
+                Binding="http://schemas.xmlsoap.org/ws/2003/07/secext"/>
+            -->
 
 			<!-- LogoutInitiators enable SP-initiated local or global/single logout of sessions. -->
 			<LogoutInitiator type="Chaining" Location="/Logout">
 				<LogoutInitiator type="SAML2" template="@-PKGSYSCONFDIR-@/bindingTemplate.html"/>
+				<!-- <LogoutInitiator type="ADFS"/>	-->
 				<LogoutInitiator type="Local"/>
 			</LogoutInitiator>
 
@@ -189,7 +199,7 @@
 				Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP"/>
 
             <!-- Extension service that generates "approximate" metadata based on SP configuration. -->
-            <Handler type="MetadataGenerator" Location="/Metadata" signing="true"/>
+            <Handler type="MetadataGenerator" Location="/Metadata" signing="false"/>
 
             <!-- Status reporting service. -->
             <Handler type="Status" Location="/Status" acl="127.0.0.1"/>
@@ -211,18 +221,26 @@
 			styleSheet="/shibboleth-sp/main.css"/>
 		
 		<!-- Configure handling of outgoing messages and SOAP authentication. -->
-		<DefaultRelyingParty authType="TLS" artifactEndpointIndex="1" signing="front" encryption="front">
+		<DefaultRelyingParty authType="TLS" artifactEndpointIndex="1" signing="false" encryption="false">
 			<!-- Uncomment and modify to tweak settings for specific IdPs or groups. -->
-			<!--
-			<RelyingParty Name="SpecialFederation" keyName="SpecialKey"/>
-			-->
+			<!-- <RelyingParty Name="SpecialFederation" keyName="SpecialKey"/> -->
 		</DefaultRelyingParty>
 
-		<!-- Chains together all your metadata sources. -->
-		<MetadataProvider type="Chaining">
-			<!-- Dummy metadata for private testing, delete for production deployments. -->
-			<MetadataProvider type="XML" path="@-PKGSYSCONFDIR-@/example-metadata.xml"/>
-		</MetadataProvider>
+        <!-- Chains together all your metadata sources. -->
+        <MetadataProvider type="Chaining">
+        	<!-- Example of remotely supplied batch of signed metadata. -->
+        	<!--
+        	<MetadataProvider type="XML" uri="http://federation.org/federation-metadata.xml"
+        	     backingFilePath="@-PKGRUNDIR-@/federation-metadata.xml" reloadInterval="7200">
+        	   <SignatureMetadataFilter certificate="@-PKGSYSCONFDIR-@/fedsigner.pem"/>
+            </MetadataProvider>
+            -->
+
+            <!-- Example of locally maintained metadata. -->
+            <!--
+            <MetadataProvider type="XML" file="@-PKGSYSCONFDIR-@/partner-metadata.xml"/>
+            -->
+        </MetadataProvider>
 
 		<!-- Chain the two built-in trust engines together. -->
 		<TrustEngine type="Chaining">
@@ -272,11 +290,12 @@
 			</CredentialResolver>
 		</CredentialResolver>
 		-->
+		
 	</Applications>
 	
-	<!-- Each policy defines a set of rules to use to secure SAML and SOAP messages. -->
+	<!-- Each policy defines a set of rules to use to secure messages. -->
 	<SecurityPolicies>
-		<!-- The predefined policy handles SAML 1 and 2 protocols and permits signing and client TLS. -->
+		<!-- The predefined policy enforces replay/freshness and permits signing and client TLS. -->
 		<Policy id="default"
 			validate="false"
 			signedAssertions="false"

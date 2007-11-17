@@ -18,8 +18,7 @@ CONFIGFILES=" \
     sp-example.crt \
     attribute-map.xml \
     attribute-policy.xml \
-    shibboleth2.xml \
-    example-metadata.xml"
+    shibboleth2.xml"
 
 for f in $CONFIGFILES; do
     if test ! -f $f; then
