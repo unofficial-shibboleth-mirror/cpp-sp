@@ -1,4 +1,7 @@
-# ADD THIS TO THE END OF YOUR APACHE'S HTTPD.CONF
+# RPM installations on platforms with a conf.d directory will
+# result in this file being copied into that directory for you.
+# For non-RPM installs, you can add this file to your
+# configuration using an Include command in httpd.conf
 
 ######
 ## SHIB Config
