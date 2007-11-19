@@ -128,8 +128,8 @@ namespace shibsp {
             return m_ids;
         }
         
-        time_t expires() const { return m_expires; }
-        time_t lastAccess() const { return m_lastAccess; }
+        time_t getExpiration() const { return m_expires; }
+        time_t getLastAccess() const { return m_lastAccess; }
         void validate(const Application& application, const char* client_addr, time_t* timeout);
 
     private:
@@ -466,7 +466,7 @@ void RemotedCache::cleanup()
         for (map<string,RemotedSession*>::const_iterator i=m_hashtable.begin(); i!=m_hashtable.end(); ++i) {
             // If the last access was BEFORE the stale timeout...
             i->second->lock();
-            time_t last=i->second->lastAccess();
+            time_t last=i->second->getLastAccess();
             i->second->unlock();
             if (last < stale)
                 stale_keys.push_back(i->first);

@@ -503,6 +503,7 @@
 									<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
 								</sequence>
 								<attribute name="Location" type="anyURI" use="required"/>
+							    <attribute name="acl" type="conf:listOfStrings"/>
 								<anyAttribute namespace="##any" processContents="lax"/>
 							</restriction>
 						</complexContent>

@@ -116,6 +116,7 @@ common_sources = \
 	handler/impl/MetadataGenerator.cpp \
 	handler/impl/RemotedHandler.cpp \
 	handler/impl/StatusHandler.cpp \
+	handler/impl/SessionHandler.cpp \
 	handler/impl/SAML1Consumer.cpp \
 	handler/impl/SAML2Consumer.cpp \
 	handler/impl/SAML2ArtifactResolution.cpp \

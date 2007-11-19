@@ -56,7 +56,7 @@ namespace shibsp {
     class StoredSession : public virtual Session
     {
     public:
-        StoredSession(SSCache* cache, DDF& obj) : m_obj(obj), m_nameid(NULL), m_cache(cache) {
+        StoredSession(SSCache* cache, DDF& obj) : m_obj(obj), m_nameid(NULL), m_cache(cache), m_lastAccess(time(NULL)) {
             const char* nameid = obj["nameid"].string();
             if (nameid) {
                 // Parse and bind the document into an XMLObject.
@@ -139,6 +139,19 @@ namespace shibsp {
         const Assertion* getAssertion(const char* id) const;
         void addAssertion(Assertion* assertion);
 
+        time_t getExpiration() const {
+            auto_ptr_XMLCh exp(m_obj["expires"].string());
+            if (exp.get()) {
+                DateTime iso(exp.get());
+                iso.parseDateTime();
+                return iso.getEpoch();
+            }
+            return 0;
+        }
+        time_t getLastAccess() const {
+            return m_lastAccess;
+        }
+
     private:
         void unmarshallAttributes() const;
 
@@ -149,6 +162,7 @@ namespace shibsp {
         mutable vector<const char*> m_ids;
         mutable map<string,Assertion*> m_tokens;
         SSCache* m_cache;
+        time_t m_lastAccess;
     };
     
     class SSCache : public SessionCache, public virtual Remoted

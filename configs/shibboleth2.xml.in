@@ -204,6 +204,9 @@
             <!-- Status reporting service. -->
             <Handler type="Status" Location="/Status" acl="127.0.0.1"/>
 
+            <!-- Session diagnostic service. -->
+            <Handler type="Session" Location="/Session"/>
+
 		</Sessions>
 
 		<!--

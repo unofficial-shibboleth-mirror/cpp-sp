@@ -51,6 +51,20 @@ namespace shibsp {
         virtual const char* getID() const=0;
 
         /**
+         * Returns the session expiration.
+         *
+         * @return  the session's expiration time or 0 for none
+         */
+        virtual time_t getExpiration() const=0;
+
+        /**
+         * Returns the last access time of the session.
+         *
+         * @return  the session's last access time
+         */
+        virtual time_t getLastAccess() const=0;
+
+        /**
          * Returns the address of the client associated with the session.
          * 
          * @return  the client's network address

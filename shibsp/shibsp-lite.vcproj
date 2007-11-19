@@ -356,6 +356,10 @@
 						>
 					</File>
 					<File
+						RelativePath=".\handler\impl\SessionHandler.cpp"
+						>
+					</File>
+					<File
 						RelativePath=".\handler\impl\SessionInitiator.cpp"
 						>
 					</File>

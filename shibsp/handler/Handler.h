@@ -80,6 +80,15 @@ namespace shibsp {
     
     /** Registers Handler implementations. */
     void SHIBSP_API registerHandlers();
+
+    /** Handler for metadata generation. */
+    #define METADATA_GENERATOR_HANDLER "MetadataGenerator"
+
+    /** Handler for status information. */
+    #define STATUS_HANDLER "Status"
+
+    /** Handler for session diagnostic information. */
+    #define SESSION_HANDLER "Session"
 };
 
 #endif /* __shibsp_handler_h__ */
