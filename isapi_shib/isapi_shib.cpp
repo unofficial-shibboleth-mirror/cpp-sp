@@ -360,7 +360,7 @@ class ShibTargetIsapiF : public AbstractSPRequest
 
 public:
   ShibTargetIsapiF(PHTTP_FILTER_CONTEXT pfc, PHTTP_FILTER_PREPROC_HEADERS pn, const site_t& site)
-      : m_pfc(pfc), m_pn(pn), m_allhttp(4096) {
+      : AbstractSPRequest(SHIBSP_LOGCAT".ISAPI"), m_pfc(pfc), m_pn(pn), m_allhttp(4096) {
 
     // URL path always come from IIS.
     dynabuf var(256);
@@ -640,7 +640,8 @@ class ShibTargetIsapiE : public AbstractSPRequest
   mutable string m_remote_addr,m_remote_user;
   
 public:
-  ShibTargetIsapiE(LPEXTENSION_CONTROL_BLOCK lpECB, const site_t& site) : m_lpECB(lpECB), m_gotBody(false) {
+  ShibTargetIsapiE(LPEXTENSION_CONTROL_BLOCK lpECB, const site_t& site)
+      : AbstractSPRequest(SHIBSP_LOGCAT".ISAPI"), m_lpECB(lpECB), m_gotBody(false) {
     dynabuf ssl(5);
     GetServerVariable(lpECB,"HTTPS",ssl,5);
     bool SSL=(ssl=="on" || ssl=="ON");

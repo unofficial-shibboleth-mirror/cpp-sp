@@ -192,7 +192,7 @@ class ShibTargetNSAPI : public AbstractSPRequest
   set<string> m_allhttp;
 
 public:
-  ShibTargetNSAPI(pblock* pb, ::Session* sn, Request* rq) : m_gotBody(false) {
+  ShibTargetNSAPI(pblock* pb, ::Session* sn, Request* rq) : AbstractSPRequest(SHIBSP_LOGCAT".NSAPI"), m_gotBody(false) {
     m_pb = pb;
     m_sn = sn;
     m_rq = rq;

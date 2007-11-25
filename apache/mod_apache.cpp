@@ -309,7 +309,7 @@ public:
   shib_server_config* m_sc;
   shib_request_config* m_rc;
 
-  ShibTargetApache(request_rec* req, bool handler) : m_handler(handler), m_gotBody(false) {
+  ShibTargetApache(request_rec* req, bool handler) : AbstractSPRequest(SHIBSP_LOGCAT".Apache"), m_handler(handler), m_gotBody(false) {
     m_sc = (shib_server_config*)ap_get_module_config(req->server->module_config, &mod_shib);
     m_dc = (shib_dir_config*)ap_get_module_config(req->per_dir_config, &mod_shib);
     m_rc = (shib_request_config*)ap_get_module_config(req->request_config, &mod_shib);

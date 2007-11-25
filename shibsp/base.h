@@ -91,7 +91,7 @@
 /**
  * Logging category for Service Provider functions.
  */
-#define SHIBSP_LOGCAT "Shibboleth.SP"
+#define SHIBSP_LOGCAT "Shibboleth"
 
 /**
  * Logging category for Service Provider auditing.

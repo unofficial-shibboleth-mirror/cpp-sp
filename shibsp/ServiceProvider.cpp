@@ -39,13 +39,16 @@
 #include <xmltooling/util/XMLHelper.h>
 
 using namespace shibsp;
+using namespace xmltooling::logging;
 using namespace xmltooling;
 using namespace std;
 
 namespace shibsp {
     SHIBSP_DLLLOCAL PluginManager<ServiceProvider,string,const DOMElement*>::Factory XMLServiceProviderFactory;
 
-    long SHIBSP_DLLLOCAL sendError(SPRequest& request, const Application* app, const char* page, TemplateParameters& tp, bool mayRedirect=true)
+    long SHIBSP_DLLLOCAL sendError(
+        Category& log, SPRequest& request, const Application* app, const char* page, TemplateParameters& tp, bool mayRedirect=true
+        )
     {
         // The properties we need can be set in the RequestMap, or the Errors element.
         bool mderror = dynamic_cast<const opensaml::saml2md::MetadataException*>(tp.getRichException())!=NULL;
@@ -66,7 +69,7 @@ namespace shibsp {
                 redirectErrors = settings.first->getString("redirectErrors");
         }
         catch (exception& ex) {
-            request.log(SPRequest::SPError, ex.what());
+            log.error(ex.what());
         }
 
         if (mayRedirect) {
@@ -105,8 +108,7 @@ namespace shibsp {
             return request.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_UNAUTHORIZED);
         }
     
-        string errstr = string("sendError could not process error template (") + page + ")";
-        request.log(SPRequest::SPError, errstr);
+        log.error("sendError could not process error template (%s)", page);
         istringstream msg("Internal Server Error. Please contact the site administrator.");
         return request.sendError(msg);
     }
@@ -135,6 +137,7 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
 #ifdef _DEBUG
     xmltooling::NDC ndc("doAuthentication");
 #endif
+    Category& log = Category::getInstance(SHIBSP_LOGCAT".ServiceProvider");
 
     const Application* app=NULL;
     string targetURL = request.getRequestURL();
@@ -163,7 +166,7 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
                 else {
                     TemplateParameters tp;
                     tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
-                    return make_pair(true,sendError(request, app, "ssl", tp, false));
+                    return make_pair(true,sendError(log, request, app, "ssl", tp, false));
                 }
             }
         }
@@ -205,7 +208,7 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
             session = request.getSession();
         }
         catch (exception& e) {
-            request.log(SPRequest::SPWarn, string("error during session lookup: ") + e.what());
+            log.warn("error during session lookup: %s", e.what());
             // If it's not a retryable session failure, we throw to the outer handler for reporting.
             if (dynamic_cast<opensaml::RetryableProfileException*>(&e)==NULL)
                 throw;
@@ -220,11 +223,11 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
             const Handler* initiator=NULL;
             if (requireSessionWith.first) {
                 initiator=app->getSessionInitiatorById(requireSessionWith.second);
-                if (!initiator)
+                if (!initiator) {
                     throw ConfigurationException(
-                        "No session initiator found with id ($1), check requireSessionWith command.",
-                        params(1,requireSessionWith.second)
+                        "No session initiator found with id ($1), check requireSessionWith command.", params(1,requireSessionWith.second)
                         );
+                }
             }
             else {
                 initiator=app->getDefaultSessionInitiator();
@@ -237,13 +240,13 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
 
         // We're done.  Everything is okay.  Nothing to report.  Nothing to do..
         // Let the caller decide how to proceed.
-        request.log(SPRequest::SPDebug, "doAuthentication succeeded");
+        log.debug("doAuthentication succeeded");
         return make_pair(false,0L);
     }
     catch (exception& e) {
         TemplateParameters tp(&e);
         tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
-        return make_pair(true,sendError(request, app, "session", tp));
+        return make_pair(true,sendError(log, request, app, "session", tp));
     }
 }
 
@@ -252,6 +255,7 @@ pair<bool,long> ServiceProvider::doAuthorization(SPRequest& request) const
 #ifdef _DEBUG
     xmltooling::NDC ndc("doAuthorization");
 #endif
+    Category& log = Category::getInstance(SHIBSP_LOGCAT".ServiceProvider");
 
     const Application* app=NULL;
     string targetURL = request.getRequestURL();
@@ -283,21 +287,21 @@ pair<bool,long> ServiceProvider::doAuthorization(SPRequest& request) const
                 session = request.getSession(false);
             }
             catch (exception& e) {
-                request.log(SPRequest::SPWarn, string("unable to obtain session to pass to access control provider: ") + e.what());
+                log.warn("unable to obtain session to pass to access control provider: %s", e.what());
             }
 	
             Locker acllock(settings.second);
             switch (settings.second->authorized(request,session)) {
                 case AccessControl::shib_acl_true:
-                    request.log(SPRequest::SPDebug, "access control provider granted access");
+                    log.debug("access control provider granted access");
                     return make_pair(true,request.returnOK());
 
                 case AccessControl::shib_acl_false:
                 {
-                    request.log(SPRequest::SPWarn, "access control provider denied access");
+                    log.warn("access control provider denied access");
                     TemplateParameters tp;
                     tp.m_map["requestURL"] = targetURL;
-                    return make_pair(true,sendError(request, app, "access", tp, false));
+                    return make_pair(true,sendError(log, request, app, "access", tp, false));
                 }
 
                 default:
@@ -312,7 +316,7 @@ pair<bool,long> ServiceProvider::doAuthorization(SPRequest& request) const
     catch (exception& e) {
         TemplateParameters tp(&e);
         tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
-        return make_pair(true,sendError(request, app, "access", tp));
+        return make_pair(true,sendError(log, request, app, "access", tp));
     }
 }
 
@@ -321,6 +325,7 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
 #ifdef _DEBUG
     xmltooling::NDC ndc("doExport");
 #endif
+    Category& log = Category::getInstance(SHIBSP_LOGCAT".ServiceProvider");
 
     const Application* app=NULL;
     string targetURL = request.getRequestURL();
@@ -334,7 +339,7 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
             session = request.getSession(false);
         }
         catch (exception& e) {
-            request.log(SPRequest::SPWarn, string("unable to obtain session to export to request: ") +  e.what());
+            log.warn("unable to obtain session to export to request: %s", e.what());
         	// If we have to have a session, then this is a fatal error.
         	if (requireSession)
         		throw;
@@ -373,7 +378,7 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
             const PropertySet* sessions=app->getPropertySet("Sessions");
             pair<bool,const char*> exportLocation = sessions ? sessions->getString("exportLocation") : pair<bool,const char*>(false,NULL);
             if (!exportLocation.first)
-                request.log(SPRequest::SPWarn, "can't export assertions without an exportLocation Sessions property");
+                log.warn("can't export assertions without an exportLocation Sessions property");
             else {
                 const URLEncoder* encoder = XMLToolingConfig::getConfig().getURLEncoder();
                 string exportName = "Shib-Assertion-00";
@@ -434,7 +439,7 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
     catch (exception& e) {
         TemplateParameters tp(&e);
         tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
-        return make_pair(true,sendError(request, app, "session", tp));
+        return make_pair(true,sendError(log, request, app, "session", tp));
     }
 }
 
@@ -443,6 +448,7 @@ pair<bool,long> ServiceProvider::doHandler(SPRequest& request) const
 #ifdef _DEBUG
     xmltooling::NDC ndc("doHandler");
 #endif
+    Category& log = Category::getInstance(SHIBSP_LOGCAT".ServiceProvider");
 
     const Application* app=NULL;
     string targetURL = request.getRequestURL();
@@ -487,6 +493,6 @@ pair<bool,long> ServiceProvider::doHandler(SPRequest& request) const
     catch (exception& e) {
         TemplateParameters tp(&e);
         tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
-        return make_pair(true,sendError(request, app, "session", tp));
+        return make_pair(true,sendError(log, request, app, "session", tp));
     }
 }

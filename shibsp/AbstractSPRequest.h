@@ -40,7 +40,12 @@ namespace shibsp {
     class SHIBSP_API AbstractSPRequest : public virtual SPRequest
     {
     protected:
-        AbstractSPRequest();
+        /**
+         * Constructor.
+         *
+         * @param category  logging category to use
+         */
+        AbstractSPRequest(const char* category);
         
         /**
          * Stores a normalized request URI to ensure it contains no %-encoded characters

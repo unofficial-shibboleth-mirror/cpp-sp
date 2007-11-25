@@ -31,9 +31,9 @@ using namespace opensaml;
 using namespace xmltooling;
 using namespace std;
 
-AbstractSPRequest::AbstractSPRequest()
+AbstractSPRequest::AbstractSPRequest(const char* category)
     : m_sp(NULL), m_mapper(NULL), m_app(NULL), m_sessionTried(false), m_session(NULL),
-        m_log(&Category::getInstance(SHIBSP_LOGCAT".SPRequest")), m_parser(NULL)
+        m_log(&Category::getInstance(category)), m_parser(NULL)
 {
     m_sp=SPConfig::getConfig().getServiceProvider();
     m_sp->lock();

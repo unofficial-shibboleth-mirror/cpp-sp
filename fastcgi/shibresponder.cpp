@@ -68,7 +68,7 @@ class ShibTargetFCGI : public AbstractSPRequest
 
 public:
     ShibTargetFCGI(FCGX_Request* req, char* post_data, const char* scheme=NULL, const char* hostname=NULL, int port=0)
-        : m_req(req), m_body(post_data) {
+        : AbstractSPRequest(SHIBSP_LOGCAT".FastCGI"), m_req(req), m_body(post_data) {
 
         const char* server_name_str = hostname;
         if (!server_name_str || !*server_name_str)
