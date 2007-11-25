@@ -91,14 +91,6 @@ namespace shibsp {
         virtual const char* getHandlerURL(const char* resource=NULL) const=0;
 
         /**
-         * Get a cookie value supplied by the client.
-         * 
-         * @param name  name of cookie
-         * @return  cookie value or NULL
-         */
-        virtual const char* getCookie(const char* name) const=0;
-        
-        /**
          * Returns a non-spoofable request header value, if possible.
          * Platforms that support environment export can redirect header
          * lookups by overriding this method.

@@ -78,8 +78,6 @@ namespace shibsp {
 
         std::vector<const char*>::size_type getParameters(const char* name, std::vector<const char*>& values) const;
 
-        const char* getCookie(const char* name) const;
-
         const char* getHandlerURL(const char* resource=NULL) const;
 
         void log(SPLogLevel level, const std::string& msg) const;
@@ -97,7 +95,6 @@ namespace shibsp {
         mutable std::string m_url;
         void* m_log; // declared void* to avoid log4cpp header conflicts in Apache
         mutable std::string m_handlerURL;
-        mutable std::map<std::string,std::string> m_cookieMap;
         mutable CGIParser* m_parser;
     };
 

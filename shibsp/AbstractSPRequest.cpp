@@ -199,37 +199,6 @@ vector<const char*>::size_type AbstractSPRequest::getParameters(const char* name
     return values.size();
 }
 
-const char* AbstractSPRequest::getCookie(const char* name) const
-{
-    if (m_cookieMap.empty()) {
-        string cookies=getHeader("Cookie");
-
-        string::size_type pos=0,cname,namelen,val,vallen;
-        while (pos !=string::npos && pos < cookies.length()) {
-            while (isspace(cookies[pos])) pos++;
-            cname=pos;
-            pos=cookies.find_first_of("=",pos);
-            if (pos == string::npos)
-                break;
-            namelen=pos-cname;
-            pos++;
-            if (pos==cookies.length())
-                break;
-            val=pos;
-            pos=cookies.find_first_of(";",pos);
-            if (pos != string::npos) {
-                vallen=pos-val;
-                pos++;
-                m_cookieMap.insert(make_pair(cookies.substr(cname,namelen),cookies.substr(val,vallen)));
-            }
-            else
-                m_cookieMap.insert(make_pair(cookies.substr(cname,namelen),cookies.substr(val)));
-        }
-    }
-    map<string,string>::const_iterator lookup=m_cookieMap.find(name);
-    return (lookup==m_cookieMap.end()) ? NULL : lookup->second.c_str();
-}
-
 const char* AbstractSPRequest::getHandlerURL(const char* resource) const
 {
     if (!resource)
