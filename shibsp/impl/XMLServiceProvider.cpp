@@ -247,7 +247,10 @@ namespace {
         DOMDocument* m_document;
     };
 
-    class SHIBSP_DLLLOCAL XMLConfig : public ServiceProvider, public ReloadableXMLFile, public Remoted
+    class SHIBSP_DLLLOCAL XMLConfig : public ServiceProvider, public ReloadableXMLFile
+#ifndef SHIBSP_LITE
+        ,public Remoted
+#endif
     {
     public:
         XMLConfig(const DOMElement* e) : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT".Config")),
@@ -286,11 +289,11 @@ namespace {
         const PropertySet* getPropertySet(const char* name, const char* ns="urn:mace:shibboleth:2.0:native:sp:config") const {return m_impl->getPropertySet(name,ns);}
         const DOMElement* getElement() const {return m_impl->getElement();}
 
+        // ServiceProvider
+#ifndef SHIBSP_LITE
         // Remoted
         void receive(DDF& in, ostream& out);
 
-        // ServiceProvider
-#ifndef SHIBSP_LITE
         TransactionLog* getTransactionLog() const {
             if (m_tranLog)
                 return m_tranLog;
@@ -397,7 +400,6 @@ namespace {
     static const XMLCh _fatal[] =               UNICODE_LITERAL_5(f,a,t,a,l);
     static const XMLCh _Handler[] =             UNICODE_LITERAL_7(H,a,n,d,l,e,r);
     static const XMLCh _id[] =                  UNICODE_LITERAL_2(i,d);
-    static const XMLCh Implementation[] =       UNICODE_LITERAL_14(I,m,p,l,e,m,e,n,t,a,t,i,o,n);
     static const XMLCh InProcess[] =            UNICODE_LITERAL_9(I,n,P,r,o,c,e,s,s);
     static const XMLCh Library[] =              UNICODE_LITERAL_7(L,i,b,r,a,r,y);
     static const XMLCh Listener[] =             UNICODE_LITERAL_8(L,i,s,t,e,n,e,r);
@@ -405,7 +407,6 @@ namespace {
     static const XMLCh logger[] =               UNICODE_LITERAL_6(l,o,g,g,e,r);
     static const XMLCh _LogoutInitiator[] =     UNICODE_LITERAL_15(L,o,g,o,u,t,I,n,i,t,i,a,t,o,r);
     static const XMLCh _ManageNameIDService[] = UNICODE_LITERAL_19(M,a,n,a,g,e,N,a,m,e,I,D,S,e,r,v,i,c,e);
-    static const XMLCh MemoryListener[] =       UNICODE_LITERAL_14(M,e,m,o,r,y,L,i,s,t,e,n,e,r);
     static const XMLCh _MetadataProvider[] =    UNICODE_LITERAL_16(M,e,t,a,d,a,t,a,P,r,o,v,i,d,e,r);
     static const XMLCh Notify[] =               UNICODE_LITERAL_6(N,o,t,i,f,y);
     static const XMLCh _option[] =              UNICODE_LITERAL_6(o,p,t,i,o,n);
@@ -421,6 +422,7 @@ namespace {
     static const XMLCh _SessionCache[] =        UNICODE_LITERAL_12(S,e,s,s,i,o,n,C,a,c,h,e);
     static const XMLCh _SessionInitiator[] =    UNICODE_LITERAL_16(S,e,s,s,i,o,n,I,n,i,t,i,a,t,o,r);
     static const XMLCh _SingleLogoutService[] = UNICODE_LITERAL_19(S,i,n,g,l,e,L,o,g,o,u,t,S,e,r,v,i,c,e);
+    static const XMLCh Site[] =                 UNICODE_LITERAL_4(S,i,t,e);
     static const XMLCh _StorageService[] =      UNICODE_LITERAL_14(S,t,o,r,a,g,e,S,e,r,v,i,c,e);
     static const XMLCh TCPListener[] =          UNICODE_LITERAL_11(T,C,P,L,i,s,t,e,n,e,r);
     static const XMLCh TransportOption[] =      UNICODE_LITERAL_15(T,r,a,n,s,p,o,r,t,O,p,t,i,o,n);
@@ -1137,13 +1139,12 @@ short XMLConfigImpl::acceptNode(const DOMNode* node) const
     if (XMLString::equals(name,Applications) ||
         XMLString::equals(name,_ArtifactMap) ||
         XMLString::equals(name,_Extensions) ||
-        XMLString::equals(name,Implementation) ||
         XMLString::equals(name,Listener) ||
-        XMLString::equals(name,MemoryListener) ||
         XMLString::equals(name,Policy) ||
         XMLString::equals(name,_RequestMapper) ||
         XMLString::equals(name,_ReplayCache) ||
         XMLString::equals(name,_SessionCache) ||
+        XMLString::equals(name,Site) ||
         XMLString::equals(name,_StorageService) ||
         XMLString::equals(name,TCPListener) ||
         XMLString::equals(name,UnixListener))
@@ -1240,30 +1241,25 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
             
             // Instantiate the ListenerService and SessionCache objects.
             if (conf.isEnabled(SPConfig::Listener)) {
-                child=XMLHelper::getFirstChildElement(SHAR,UnixListener);
+                child=XMLHelper::getFirstChildElement(e,UnixListener);
                 if (child)
                     plugtype=UNIX_LISTENER_SERVICE;
                 else {
-                    child=XMLHelper::getFirstChildElement(SHAR,TCPListener);
+                    child=XMLHelper::getFirstChildElement(e,TCPListener);
                     if (child)
                         plugtype=TCP_LISTENER_SERVICE;
                     else {
-                        child=XMLHelper::getFirstChildElement(SHAR,MemoryListener);
-                        if (child)
-                            plugtype=MEMORY_LISTENER_SERVICE;
-                        else {
-                            child=XMLHelper::getFirstChildElement(SHAR,Listener);
-                            if (child) {
-                                auto_ptr_char type(child->getAttributeNS(NULL,_type));
-                                if (type.get())
-                                    plugtype=type.get();
-                            }
+                        child=XMLHelper::getFirstChildElement(e,Listener);
+                        if (child) {
+                            auto_ptr_char type(child->getAttributeNS(NULL,_type));
+                            if (type.get())
+                                plugtype=type.get();
                         }
                     }
                 }
                 if (child) {
                     log.info("building ListenerService of type %s...", plugtype.c_str());
-                    m_outer->m_listener = conf.ListenerServiceManager.newPlugin(plugtype.c_str(),child);
+                    m_outer->m_listener = conf.ListenerServiceManager.newPlugin(plugtype.c_str(), child);
                 }
                 else {
                     log.fatal("can't build ListenerService, missing conf:Listener element?");
@@ -1271,54 +1267,34 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                 }
             }
 
+#ifndef SHIBSP_LITE
             if (m_outer->m_listener && conf.isEnabled(SPConfig::OutOfProcess) && !conf.isEnabled(SPConfig::InProcess)) {
-                m_outer->m_listener->regListener("set::RelayState",m_outer->m_listener);
-                m_outer->m_listener->regListener("get::RelayState",m_outer->m_listener);
+                m_outer->m_listener->regListener("set::RelayState", m_outer->m_listener);
+                m_outer->m_listener->regListener("get::RelayState", m_outer->m_listener);
             }
+#endif
 
             if (conf.isEnabled(SPConfig::Caching)) {
                 if (conf.isEnabled(SPConfig::OutOfProcess)) {
 #ifndef SHIBSP_LITE
                     // First build any StorageServices.
-                    string inmemID;
-                    child=XMLHelper::getFirstChildElement(SHAR,_StorageService);
+                    child=XMLHelper::getFirstChildElement(e,_StorageService);
                     while (child) {
                         auto_ptr_char id(child->getAttributeNS(NULL,_id));
                         auto_ptr_char type(child->getAttributeNS(NULL,_type));
                         try {
                             log.info("building StorageService (%s) of type %s...", id.get(), type.get());
                             m_outer->m_storage[id.get()] = xmlConf.StorageServiceManager.newPlugin(type.get(),child);
-                            if (!strcmp(type.get(),MEMORY_STORAGE_SERVICE))
-                                inmemID = id.get();
                         }
                         catch (exception& ex) {
                             log.crit("failed to instantiate StorageService (%s): %s", id.get(), ex.what());
                         }
                         child=XMLHelper::getNextSiblingElement(child,_StorageService);
                     }
-                
-                    child=XMLHelper::getFirstChildElement(SHAR,_SessionCache);
-                    if (child) {
-                        auto_ptr_char type(child->getAttributeNS(NULL,_type));
-                        log.info("building SessionCache of type %s...",type.get());
-                        m_outer->m_sessionCache=conf.SessionCacheManager.newPlugin(type.get(),child);
-                    }
-                    else {
-                        log.warn("SessionCache unspecified, building SessionCache of type %s...",STORAGESERVICE_SESSION_CACHE);
-                        if (inmemID.empty()) {
-                            inmemID = "memory";
-                            log.info("no StorageServices configured, providing in-memory version for session cache");
-                            m_outer->m_storage[inmemID] = xmlConf.StorageServiceManager.newPlugin(MEMORY_STORAGE_SERVICE,NULL);
-                        }
-                        child = e->getOwnerDocument()->createElementNS(NULL,_SessionCache);
-                        auto_ptr_XMLCh ssid(inmemID.c_str());
-                        const_cast<DOMElement*>(child)->setAttributeNS(NULL,_StorageService,ssid.get());
-                        m_outer->m_sessionCache=conf.SessionCacheManager.newPlugin(STORAGESERVICE_SESSION_CACHE,child);
-                    }
 
                     // Replay cache.
                     StorageService* replaySS=NULL;
-                    child=XMLHelper::getFirstChildElement(SHAR,_ReplayCache);
+                    child=XMLHelper::getFirstChildElement(e,_ReplayCache);
                     if (child) {
                         auto_ptr_char ssid(child->getAttributeNS(NULL,_StorageService));
                         if (ssid.get() && *ssid.get()) {
@@ -1327,22 +1303,16 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                             if (replaySS)
                                 log.info("building ReplayCache on top of StorageService (%s)...", ssid.get());
                             else
-                                log.crit("unable to locate StorageService (%s) in configuration", ssid.get());
+                                log.warn("unable to locate StorageService (%s) for ReplayCache, using dedicated in-memory instance", ssid.get());
                         }
+                        xmlConf.setReplayCache(new ReplayCache(replaySS));
                     }
-                    if (!replaySS) {
-                        log.info("building ReplayCache using in-memory StorageService...");
-                        if (inmemID.empty()) {
-                            inmemID = "memory";
-                            log.info("no StorageServices configured, providing in-memory version for legacy config");
-                            m_outer->m_storage[inmemID] = xmlConf.StorageServiceManager.newPlugin(MEMORY_STORAGE_SERVICE,NULL);
-                        }
-                        replaySS = m_outer->m_storage[inmemID];
+                    else {
+                        log.warn("no ReplayCache built, missing conf:ReplayCache element?");
                     }
-                    xmlConf.setReplayCache(new ReplayCache(replaySS));
                     
                     // ArtifactMap
-                    child=XMLHelper::getFirstChildElement(SHAR,_ArtifactMap);
+                    child=XMLHelper::getFirstChildElement(e,_ArtifactMap);
                     if (child) {
                         auto_ptr_char ssid(child->getAttributeNS(NULL,_StorageService));
                         if (ssid.get() && *ssid.get() && m_outer->m_storage.count(ssid.get())) {
@@ -1356,28 +1326,30 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                     }
 #endif
                 }
+                child=XMLHelper::getFirstChildElement(e,_SessionCache);
+                if (child) {
+                    auto_ptr_char type(child->getAttributeNS(NULL,_type));
+                    log.info("building SessionCache of type %s...",type.get());
+                    m_outer->m_sessionCache=conf.SessionCacheManager.newPlugin(type.get(), child);
+                }
                 else {
-                    child=XMLHelper::getFirstChildElement(SHIRE,_SessionCache);
-                    if (child) {
-                        auto_ptr_char type(child->getAttributeNS(NULL,_type));
-                        log.info("building SessionCache of type %s...",type.get());
-                        m_outer->m_sessionCache=conf.SessionCacheManager.newPlugin(type.get(),child);
-                    }
-                    else {
-                        log.warn("SessionCache unspecified, building SessionCache of type %s...",REMOTED_SESSION_CACHE);
-                        m_outer->m_sessionCache=conf.SessionCacheManager.newPlugin(REMOTED_SESSION_CACHE,child);
-                    }
+                    log.fatal("can't build SessionCache, missing conf:SessionCache element?");
+                    throw ConfigurationException("Can't build SessionCache, missing conf:SessionCache element?");
                 }
             }
         } // end of first-time-only stuff
         
         // Back to the fully dynamic stuff...next up is the RequestMapper.
         if (conf.isEnabled(SPConfig::RequestMapping)) {
-            child=XMLHelper::getFirstChildElement(SHIRE,_RequestMapper);
+            child=XMLHelper::getFirstChildElement(e,_RequestMapper);
             if (child) {
                 auto_ptr_char type(child->getAttributeNS(NULL,_type));
                 log.info("building RequestMapper of type %s...",type.get());
                 m_requestMapper=conf.RequestMapperManager.newPlugin(type.get(),child);
+            }
+            else {
+                log.fatal("can't build RequestMapper, missing conf:RequestMapper element?");
+                throw ConfigurationException("Can't build RequestMapper, missing conf:RequestMapper element?");
             }
         }
         
@@ -1454,12 +1426,6 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
         cleanup();
         throw;
     }
-#ifndef _DEBUG
-    catch (...) {
-        cleanup();
-        throw;
-    }
-#endif
 }
 
 XMLConfigImpl::~XMLConfigImpl()
@@ -1485,9 +1451,9 @@ void XMLConfigImpl::cleanup()
     m_document = NULL;
 }
 
+#ifndef SHIBSP_LITE
 void XMLConfig::receive(DDF& in, ostream& out)
 {
-#ifndef SHIBSP_LITE
     if (!strcmp(in.name(), "get::RelayState")) {
         const char* id = in["id"].string();
         const char* key = in["key"].string();
@@ -1537,8 +1503,8 @@ void XMLConfig::receive(DDF& in, ostream& out)
         DDFJanitor jret(ret);
         out << ret;
     }
-#endif
 }
+#endif
 
 pair<bool,DOMElement*> XMLConfig::load()
 {

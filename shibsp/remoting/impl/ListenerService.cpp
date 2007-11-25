@@ -33,7 +33,6 @@ using namespace xercesc;
 using namespace std;
 
 namespace shibsp {
-    //SHIBSP_DLLLOCAL PluginManager<ListenerService,const DOMElement*>::Factory MemoryListenerServiceFactory;
     SHIBSP_DLLLOCAL PluginManager<ListenerService,string,const DOMElement*>::Factory TCPListenerServiceFactory;
 #ifndef WIN32
     SHIBSP_DLLLOCAL PluginManager<ListenerService,string,const DOMElement*>::Factory UnixListenerServiceFactory;
@@ -43,7 +42,6 @@ namespace shibsp {
 void SHIBSP_API shibsp::registerListenerServices()
 {
     SPConfig& conf=SPConfig::getConfig();
-    //conf.ListenerServiceManager.registerFactory(MEMORY_LISTENER_SERVICE, MemoryListenerServiceFactory);
     conf.ListenerServiceManager.registerFactory(TCP_LISTENER_SERVICE, TCPListenerServiceFactory);
 #ifndef WIN32
     conf.ListenerServiceManager.registerFactory(UNIX_LISTENER_SERVICE, UnixListenerServiceFactory);

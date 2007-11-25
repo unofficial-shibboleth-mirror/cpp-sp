@@ -60,7 +60,6 @@ namespace {
     static const XMLCh sslport[] =          UNICODE_LITERAL_7(s,s,l,p,o,r,t);
     static const XMLCh scheme[] =           UNICODE_LITERAL_6(s,c,h,e,m,e);
     static const XMLCh id[] =               UNICODE_LITERAL_2(i,d);
-    static const XMLCh Implementation[] =   UNICODE_LITERAL_14(I,m,p,l,e,m,e,n,t,a,t,i,o,n);
     static const XMLCh ISAPI[] =            UNICODE_LITERAL_5(I,S,A,P,I);
     static const XMLCh Alias[] =            UNICODE_LITERAL_5(A,l,i,a,s);
     static const XMLCh normalizeRequest[] = UNICODE_LITERAL_16(n,o,r,m,a,l,i,z,e,R,e,q,u,e,s,t);
@@ -194,7 +193,7 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
         return FALSE;
     }
     
-    // Access the implementation-specifics for site mappings.
+    // Access implementation-specifics and site mappings.
     ServiceProvider* sp=g_Config->getServiceProvider();
     Locker locker(sp);
     const PropertySet* props=sp->getPropertySet("InProcess");
@@ -207,16 +206,16 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
         flag=props->getBool("catchAll");
         g_catchAll = flag.first && flag.second;
 
-        const DOMElement* impl=XMLHelper::getFirstChildElement(props->getElement(),Implementation);
-        if (impl && (impl=XMLHelper::getFirstChildElement(impl,ISAPI))) {
-            const XMLCh* flag=impl->getAttributeNS(NULL,normalizeRequest);
-            g_bNormalizeRequest=(!flag || !*flag || *flag==chDigit_1 || *flag==chLatin_t);
-            impl=XMLHelper::getFirstChildElement(impl,Site);
-            while (impl) {
-                auto_ptr_char id(impl->getAttributeNS(NULL,id));
+        props = props->getPropertySet("ISAPI");
+        if (props) {
+            flag = props->getBool("normalizeRequest");
+            g_bNormalizeRequest = !flag.first || flag.second;
+            const DOMElement* child = XMLHelper::getFirstChildElement(props->getElement(),Site);
+            while (child) {
+                auto_ptr_char id(child->getAttributeNS(NULL,id));
                 if (id.get())
-                    g_Sites.insert(pair<string,site_t>(id.get(),site_t(impl)));
-                impl=XMLHelper::getNextSiblingElement(impl,Site);
+                    g_Sites.insert(pair<string,site_t>(id.get(),site_t(child)));
+                child=XMLHelper::getNextSiblingElement(child,Site);
             }
         }
     }

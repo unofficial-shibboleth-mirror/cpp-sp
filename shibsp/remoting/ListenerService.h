@@ -137,9 +137,6 @@ namespace shibsp {
      */
     void SHIBSP_API registerListenerServices();
 
-    /** Listener based on in-memory simulated remoting. */
-    #define MEMORY_LISTENER_SERVICE "MemoryListener"
-
     /** Listener based on TCP socket remoting. */
     #define TCP_LISTENER_SERVICE "TCPListener"
 

@@ -61,6 +61,26 @@
 				<element ref="conf:Extensions" minOccurs="0"/>
 				<element ref="conf:OutOfProcess"/>
 				<element ref="conf:InProcess"/>
+                <choice minOccurs="0">
+                    <element name="UnixListener">
+                        <complexType>
+                            <attribute name="address" type="conf:string" use="required"/>
+                        </complexType>
+                    </element>
+                    <element name="TCPListener">
+                        <complexType>
+                            <attribute name="address" type="conf:string" use="required"/>
+                            <attribute name="port" type="unsignedInt" use="required"/>
+                            <attribute name="acl" type="conf:listOfStrings" default="127.0.0.1"/>
+                        </complexType>
+                    </element>
+                    <element name="Listener" type="conf:PluggableType"/>
+                </choice>
+                <element ref="conf:StorageService" minOccurs="0" maxOccurs="unbounded"/>
+                <element ref="conf:SessionCache" minOccurs="0"/>
+                <element ref="conf:ReplayCache" minOccurs="0"/>
+                <element ref="conf:ArtifactMap" minOccurs="0"/>
+                <element name="RequestMapper" type="conf:PluggableType" minOccurs="0"/>
 				<element ref="conf:Applications"/>
 				<element ref="conf:SecurityPolicies"/>
 			</sequence>
@@ -151,30 +171,11 @@
 	
 	<element name="OutOfProcess">
 		<annotation>
-			<documentation>Container for shibd out-of-process configuration</documentation>
+			<documentation>Container for out-of-process (shibd) configuration</documentation>
 		</annotation>
 		<complexType>
 			<sequence>
 				<element ref="conf:Extensions" minOccurs="0"/>
-				<choice>
-					<element name="UnixListener">
-						<complexType>
-							<attribute name="address" type="conf:string" use="required"/>
-						</complexType>
-					</element>
-					<element name="TCPListener">
-						<complexType>
-							<attribute name="address" type="conf:string" use="required"/>
-							<attribute name="port" type="unsignedInt" use="required"/>
-							<attribute name="acl" type="conf:listOfStrings" default="127.0.0.1"/>
-						</complexType>
-					</element>
-					<element name="Listener" type="conf:PluggableType"/>
-				</choice>
-				<element ref="conf:StorageService" minOccurs="0" maxOccurs="unbounded"/>
-				<element ref="conf:SessionCache" minOccurs="0"/>
-				<element ref="conf:ReplayCache" minOccurs="0"/>
-				<element ref="conf:ArtifactMap" minOccurs="0"/>
 				<any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
 			</sequence>
 			<attribute name="logger" type="anyURI"/>
@@ -193,16 +194,7 @@
 		<complexType>
 			<sequence>
 				<element ref="conf:Extensions" minOccurs="0"/>
-				<element ref="conf:SessionCache" minOccurs="0"/>
-				<element name="RequestMapper" type="conf:PluggableType"/>
-				<element name="Implementation" minOccurs="0">
-					<complexType>
-						<sequence>
-							<element ref="conf:ISAPI" minOccurs="0"/>
-							<any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
-						</sequence>
-					</complexType>
-				</element>
+				<element ref="conf:ISAPI" minOccurs="0"/>
 				<any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
 			</sequence>
 			<attribute name="logger" type="anyURI"/>

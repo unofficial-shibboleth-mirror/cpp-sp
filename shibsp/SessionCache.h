@@ -51,6 +51,13 @@ namespace shibsp {
         virtual const char* getID() const=0;
 
         /**
+         * Returns the session's application ID.
+         *
+         * @return unique ID of application bound to session
+         */
+        virtual const char* getApplicationID() const=0;
+
+        /**
          * Returns the session expiration.
          *
          * @return  the session's expiration time or 0 for none
@@ -187,24 +194,7 @@ namespace shibsp {
     {
         MAKE_NONCOPYABLE(SessionCache);
     protected:
-    
-        /**
-         * Constructor
-         * 
-         * <p>The following XML content is supported to configure the cache:
-         * <dl>
-         *  <dt>cacheTimeout</dt>
-         *  <dd>attribute containing maximum lifetime in seconds for unused sessions to remain in cache</dd>
-         * </dl>
-         * 
-         * @param e                 root of DOM tree to configure the cache
-         * @param defaultTimeout    default cacheTimeout setting to use if none specified in DOM
-         */
-        SessionCache(const xercesc::DOMElement* e, unsigned long defaultTimeout=3600);
-        
-        /** Maximum lifetime in seconds for unused sessions to be cached. */
-        unsigned long m_cacheTimeout;
-        
+        SessionCache() {}
     public:
         virtual ~SessionCache() {}
         
@@ -319,13 +309,8 @@ namespace shibsp {
         virtual void remove(const char* key, const Application& application)=0;
     };
 
-#ifndef SHIBSP_LITE
     /** SessionCache implementation backed by a StorageService. */
     #define STORAGESERVICE_SESSION_CACHE    "StorageService"
-#endif
-
-    /** SessionCache implementation for lite builds that delegates to a remoted version. */
-    #define REMOTED_SESSION_CACHE    "Remoted"
 
     /**
      * Registers SessionCache classes into the runtime.

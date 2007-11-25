@@ -197,10 +197,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\SessionCache.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\SPConfig.cpp"
 				>
 			</File>

@@ -103,7 +103,6 @@ common_sources = \
 	AbstractSPRequest.cpp \
 	Application.cpp \
 	ServiceProvider.cpp \
-	SessionCache.cpp \
 	SPConfig.cpp \
 	attribute/Attribute.cpp \
 	handler/impl/AbstractHandler.cpp \
@@ -128,6 +127,7 @@ common_sources = \
 	handler/impl/SessionInitiator.cpp \
 	handler/impl/Shib1SessionInitiator.cpp \
 	handler/impl/WAYFSessionInitiator.cpp \
+    impl/StorageServiceSessionCache.cpp \
 	impl/XMLAccessControl.cpp \
 	impl/XMLRequestMapper.cpp \
 	impl/XMLServiceProvider.cpp \
@@ -143,7 +143,6 @@ common_sources = \
 
 libshibsp_lite_la_SOURCES = \
 	${common_sources} \
-	impl/RemotedSessionCache.cpp \
 	lite/CommonDomainCookie.cpp \
 	lite/SAMLConstants.cpp
 
@@ -179,7 +178,6 @@ libshibsp_la_SOURCES = \
 	attribute/resolver/impl/XMLAttributeExtractor.cpp \
 	binding/impl/ArtifactResolver.cpp \
 	binding/impl/SOAPClient.cpp \
-	impl/StorageServiceSessionCache.cpp \
 	metadata/MetadataExtImpl.cpp \
 	metadata/MetadataExtSchemaValidators.cpp \
 	security/PKIXTrustEngine.cpp \

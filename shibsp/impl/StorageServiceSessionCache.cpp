@@ -38,25 +38,120 @@
 #include "remoting/ListenerService.h"
 #include "util/SPConstants.h"
 
-#include <saml/SAMLConfig.h>
 #include <xmltooling/util/NDC.h>
-#include <xmltooling/util/StorageService.h>
 #include <xmltooling/util/XMLHelper.h>
 #include <xercesc/util/XMLUniDefs.hpp>
 
-using namespace shibsp;
+#ifndef SHIBSP_LITE
+# include <saml/SAMLConfig.h>
+# include <xmltooling/util/StorageService.h>
 using namespace opensaml::saml2md;
+#else
+# include <ctime>
+# include <xmltooling/util/DateTime.h>
+#endif
+
+using namespace shibsp;
 using namespace opensaml;
 using namespace xmltooling;
 using namespace std;
 
 namespace shibsp {
 
-    class SSCache;
+    class StoredSession;
+    class SSCache : public SessionCache
+#ifndef SHIBSP_LITE
+        ,public virtual Remoted
+#endif
+    {
+    public:
+        SSCache(const DOMElement* e);
+        ~SSCache();
+
+#ifndef SHIBSP_LITE
+        void receive(DDF& in, ostream& out);
+
+        string insert(
+            time_t expires,
+            const Application& application,
+            const char* client_addr=NULL,
+            const saml2md::EntityDescriptor* issuer=NULL,
+            const XMLCh* protocol=NULL,
+            const saml2::NameID* nameid=NULL,
+            const XMLCh* authn_instant=NULL,
+            const XMLCh* session_index=NULL,
+            const XMLCh* authncontext_class=NULL,
+            const XMLCh* authncontext_decl=NULL,
+            const vector<const Assertion*>* tokens=NULL,
+            const vector<Attribute*>* attributes=NULL
+            );
+        vector<string>::size_type logout(
+            const saml2md::EntityDescriptor* issuer,
+            const saml2::NameID& nameid,
+            const set<string>* indexes,
+            time_t expires,
+            const Application& application,
+            vector<string>& sessions
+            );
+        bool matches(
+            const char* key,
+            const saml2md::EntityDescriptor* issuer,
+            const saml2::NameID& nameid,
+            const set<string>* indexes,
+            const Application& application
+            );
+#endif
+        Session* find(const char* key, const Application& application, const char* client_addr=NULL, time_t* timeout=NULL);
+        void remove(const char* key, const Application& application);
+        void test();
+
+        void cleanup();
+
+        Category& m_log;
+        bool inproc;
+        unsigned long m_cacheTimeout;
+#ifndef SHIBSP_LITE
+        StorageService* m_storage;
+#endif
+
+    private:
+#ifndef SHIBSP_LITE
+        // maintain back-mappings of NameID/SessionIndex -> session key
+        void insert(const char* key, time_t expires, const char* name, const char* index);
+        bool stronglyMatches(const XMLCh* idp, const XMLCh* sp, const saml2::NameID& n1, const saml2::NameID& n2) const;
+#endif
+
+        const DOMElement* m_root;         // Only valid during initialization
+        unsigned long m_inprocTimeout;
+
+        // inproc means we buffer sessions in memory
+        RWLock* m_lock;
+        map<string,StoredSession*> m_hashtable;
+    
+        // management of buffered sessions
+        void dormant(const char* key);
+        static void* cleanup_fn(void*);
+        bool shutdown;
+        CondWait* shutdown_wait;
+        Thread* cleanup_thread;
+    };
+
     class StoredSession : public virtual Session
     {
     public:
-        StoredSession(SSCache* cache, DDF& obj) : m_obj(obj), m_nameid(NULL), m_cache(cache), m_lastAccess(time(NULL)) {
+        StoredSession(SSCache* cache, DDF& obj) : m_obj(obj),
+#ifndef SHIBSP_LITE
+                m_nameid(NULL),
+#endif
+                m_cache(cache), m_expires(0), m_lastAccess(time(NULL)), m_lock(NULL) {
+            auto_ptr_XMLCh exp(m_obj["expires"].string());
+            if (exp.get()) {
+                DateTime iso(exp.get());
+                iso.parseDateTime();
+                m_expires = iso.getEpoch();
+            }
+
+#ifndef SHIBSP_LITE
             const char* nameid = obj["nameid"].string();
             if (nameid) {
                 // Parse and bind the document into an XMLObject.
@@ -68,19 +163,38 @@ namespace shibsp {
                 janitor.release();
                 m_nameid = n.release();
             }
+#endif            
+            if (cache->inproc)
+                m_lock = Mutex::create();
         }
         
-        ~StoredSession();
+        ~StoredSession() {
+            delete m_lock;
+            m_obj.destroy();
+            for_each(m_attributes.begin(), m_attributes.end(), xmltooling::cleanup<Attribute>());
+#ifndef SHIBSP_LITE
+            delete m_nameid;
+            for_each(m_tokens.begin(), m_tokens.end(), cleanup_pair<string,Assertion>());
+#endif
+        }
         
         Lockable* lock() {
+            if (m_lock)
+                m_lock->lock();
             return this;
         }
         void unlock() {
-            delete this;
+            if (m_lock)
+                m_lock->unlock();
+            else
+                delete this;
         }
-        
+
         const char* getID() const {
             return m_obj.name();
+        }
+        const char* getApplicationID() const {
+            return m_obj["application_id"].string();
         }
         const char* getClientAddress() const {
             return m_obj["client_addr"].string();
@@ -94,9 +208,11 @@ namespace shibsp {
         const char* getAuthnInstant() const {
             return m_obj["authn_instant"].string();
         }
-        const opensaml::saml2::NameID* getNameID() const {
+#ifndef SHIBSP_LITE
+        const saml2::NameID* getNameID() const {
             return m_nameid;
         }
+#endif
         const char* getSessionIndex() const {
             return m_obj["session_index"].string();
         }
@@ -135,101 +251,43 @@ namespace shibsp {
             return m_ids;
         }
         
+        void validate(const Application& application, const char* client_addr, time_t* timeout);
+
+#ifndef SHIBSP_LITE
         void addAttributes(const vector<Attribute*>& attributes);
         const Assertion* getAssertion(const char* id) const;
         void addAssertion(Assertion* assertion);
+#endif
 
-        time_t getExpiration() const {
-            auto_ptr_XMLCh exp(m_obj["expires"].string());
-            if (exp.get()) {
-                DateTime iso(exp.get());
-                iso.parseDateTime();
-                return iso.getEpoch();
-            }
-            return 0;
-        }
-        time_t getLastAccess() const {
-            return m_lastAccess;
-        }
+        time_t getExpiration() const { return m_expires; }
+        time_t getLastAccess() const { return m_lastAccess; }
 
     private:
         void unmarshallAttributes() const;
 
         DDF m_obj;
+#ifndef SHIBSP_LITE
         saml2::NameID* m_nameid;
+        mutable map<string,Assertion*> m_tokens;
+#endif
         mutable vector<Attribute*> m_attributes;
         mutable multimap<string,const Attribute*> m_attributeIndex;
         mutable vector<const char*> m_ids;
-        mutable map<string,Assertion*> m_tokens;
+
         SSCache* m_cache;
-        time_t m_lastAccess;
+        time_t m_expires,m_lastAccess;
+        Mutex* m_lock;
     };
     
-    class SSCache : public SessionCache, public virtual Remoted
-    {
-    public:
-        SSCache(const DOMElement* e);
-        ~SSCache();
-    
-        void receive(DDF& in, ostream& out);
-        
-        string insert(
-            time_t expires,
-            const Application& application,
-            const char* client_addr=NULL,
-            const saml2md::EntityDescriptor* issuer=NULL,
-            const XMLCh* protocol=NULL,
-            const saml2::NameID* nameid=NULL,
-            const XMLCh* authn_instant=NULL,
-            const XMLCh* session_index=NULL,
-            const XMLCh* authncontext_class=NULL,
-            const XMLCh* authncontext_decl=NULL,
-            const vector<const Assertion*>* tokens=NULL,
-            const vector<Attribute*>* attributes=NULL
-            );
-        Session* find(const char* key, const Application& application, const char* client_addr=NULL, time_t* timeout=NULL);
-        void remove(const char* key, const Application& application);
-        bool matches(
-            const char* key,
-            const saml2md::EntityDescriptor* issuer,
-            const saml2::NameID& nameid,
-            const set<string>* indexes,
-            const Application& application
-            );
-        vector<string>::size_type logout(
-            const saml2md::EntityDescriptor* issuer,
-            const saml2::NameID& nameid,
-            const set<string>* indexes,
-            time_t expires,
-            const Application& application,
-            vector<string>& sessions
-            );
-        void test();
-
-        Category& m_log;
-        StorageService* m_storage;
-
-    private:
-        // maintain back-mappings of NameID/SessionIndex -> session key
-        void insert(const char* key, time_t expires, const char* name, const char* index);
-
-        bool stronglyMatches(const XMLCh* idp, const XMLCh* sp, const saml2::NameID& n1, const saml2::NameID& n2) const;
-    };
-
     SessionCache* SHIBSP_DLLLOCAL StorageServiceCacheFactory(const DOMElement* const & e)
     {
         return new SSCache(e);
     }
-
-    static const XMLCh _StorageService[] =   UNICODE_LITERAL_14(S,t,o,r,a,g,e,S,e,r,v,i,c,e);
 }
 
-StoredSession::~StoredSession()
+void SHIBSP_API shibsp::registerSessionCaches()
 {
-    m_obj.destroy();
-    delete m_nameid;
-    for_each(m_attributes.begin(), m_attributes.end(), xmltooling::cleanup<Attribute>());
-    for_each(m_tokens.begin(), m_tokens.end(), cleanup_pair<string,Assertion>());
+    SPConfig::getConfig().SessionCacheManager.registerFactory(STORAGESERVICE_SESSION_CACHE, StorageServiceCacheFactory);
 }
 
 void StoredSession::unmarshallAttributes() const
@@ -241,7 +299,6 @@ void StoredSession::unmarshallAttributes() const
         try {
             attribute = Attribute::unmarshall(attr);
             m_attributes.push_back(attribute);
-            m_attributeIndex.insert(multimap<string,const Attribute*>::value_type(attribute->getId(), attribute));
             if (m_cache->m_log.isDebugEnabled())
                 m_cache->m_log.debug("unmarshalled attribute (ID: %s) with %d value%s",
                     attribute->getId(), attr.first().integer(), attr.first().integer()!=1 ? "s" : "");
@@ -254,11 +311,131 @@ void StoredSession::unmarshallAttributes() const
     }
 }
 
+void StoredSession::validate(const Application& application, const char* client_addr, time_t* timeout)
+{
+    time_t now = time(NULL);
+
+    // Basic expiration?
+    if (m_expires > 0) {
+        if (now > m_expires) {
+            m_cache->m_log.info("session expired (ID: %s)", getID());
+            throw RetryableProfileException("Your session has expired, and you must re-authenticate.");
+        }
+    }
+
+    // Address check?
+    if (client_addr) {
+        if (m_cache->m_log.isDebugEnabled())
+            m_cache->m_log.debug("comparing client address %s against %s", client_addr, getClientAddress());
+        if (!XMLString::equals(getClientAddress(),client_addr)) {
+            m_cache->m_log.warn("client address mismatch");
+            throw RetryableProfileException(
+                "Your IP address ($1) does not match the address recorded at the time the session was established.",
+                params(1,client_addr)
+                );
+        }
+    }
+
+    if (!timeout)
+        return;
+    
+    if (!SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
+        DDF in("touch::"STORAGESERVICE_SESSION_CACHE"::SessionCache"), out;
+        DDFJanitor jin(in);
+        in.structure();
+        in.addmember("key").string(getID());
+        in.addmember("version").integer(m_obj["version"].integer());
+        if (*timeout) {
+            // On 64-bit Windows, time_t doesn't fit in a long, so I'm using ISO timestamps.  
+#ifndef HAVE_GMTIME_R
+            struct tm* ptime=gmtime(timeout);
+#else
+            struct tm res;
+            struct tm* ptime=gmtime_r(timeout,&res);
+#endif
+            char timebuf[32];
+            strftime(timebuf,32,"%Y-%m-%dT%H:%M:%SZ",ptime);
+            in.addmember("timeout").string(timebuf);
+        }
+
+        try {
+            out=application.getServiceProvider().getListenerService()->send(in);
+        }
+        catch (...) {
+            out.destroy();
+            throw;
+        }
+
+        if (out.isstruct()) {
+            // We got an updated record back.
+            m_ids.clear();
+            for_each(m_attributes.begin(), m_attributes.end(), xmltooling::cleanup<Attribute>());
+            m_attributes.clear();
+            m_attributeIndex.clear();
+            m_obj.destroy();
+            m_obj = out;
+        }
+    }
+    else {
+#ifndef SHIBSP_LITE
+        if (!m_cache->m_storage)
+            throw ConfigurationException("Session touch requires a StorageService.");
+
+        // Do a versioned read.
+        string record;
+        time_t lastAccess;
+        int curver = m_obj["version"].integer();
+        int ver = m_cache->m_storage->readText(getID(), "session", &record, &lastAccess, curver);
+        if (ver == 0) {
+            m_cache->m_log.warn("unsuccessful versioned read of session (ID: %s), cache out of sync?", getID());
+            throw RetryableProfileException("Your session has expired, and you must re-authenticate.");
+        }
+
+        // Adjust for expiration to recover last access time and check timeout.
+        lastAccess -= m_cache->m_cacheTimeout;
+        if (*timeout > 0 && now - lastAccess >= *timeout) {
+            m_cache->m_log.info("session timed out (ID: %s)", getID());
+            throw RetryableProfileException("Your session has expired, and you must re-authenticate.");
+        } 
+
+        // Update storage expiration, if possible.
+        try {
+            m_cache->m_storage->updateContext(getID(), now + m_cache->m_cacheTimeout);
+        }
+        catch (exception& ex) {
+            m_cache->m_log.error("failed to update session expiration: %s", ex.what());
+        }
+            
+        if (ver > curver) {
+            // We got an updated record back.
+            DDF newobj;
+            istringstream in(record);
+            in >> newobj;
+            m_ids.clear();
+            for_each(m_attributes.begin(), m_attributes.end(), xmltooling::cleanup<Attribute>());
+            m_attributes.clear();
+            m_attributeIndex.clear();
+            m_obj.destroy();
+            m_obj = newobj;
+        }
+#else
+        throw ConfigurationException("Session touch requires a StorageService.");
+#endif
+    }
+
+    m_lastAccess = now;
+}
+
+#ifndef SHIBSP_LITE
+
 void StoredSession::addAttributes(const vector<Attribute*>& attributes)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("addAttributes");
 #endif
+
+    if (!m_cache->m_storage)
+        throw ConfigurationException("Session modification requires a StorageService.");
 
     m_cache->m_log.debug("adding attributes to session (%s)", getID());
     
@@ -347,6 +524,9 @@ void StoredSession::addAttributes(const vector<Attribute*>& attributes)
 
 const Assertion* StoredSession::getAssertion(const char* id) const
 {
+    if (!m_cache->m_storage)
+        throw ConfigurationException("Assertion retrieval requires a StorageService.");
+
     map<string,Assertion*>::const_iterator i = m_tokens.find(id);
     if (i!=m_tokens.end())
         return i->second;
@@ -377,7 +557,10 @@ void StoredSession::addAssertion(Assertion* assertion)
 #ifdef _DEBUG
     xmltooling::NDC ndc("addAssertion");
 #endif
-    
+
+    if (!m_cache->m_storage)
+        throw ConfigurationException("Session modification requires a StorageService.");
+
     if (!assertion)
         throw FatalProfileException("Unknown object type passed to session for storage.");
 
@@ -464,50 +647,104 @@ void StoredSession::addAssertion(Assertion* assertion)
         );
 }
 
+#endif
+
 SSCache::SSCache(const DOMElement* e)
-    : SessionCache(e, 3600), m_log(Category::getInstance(SHIBSP_LOGCAT".SessionCache")), m_storage(NULL)
+    : m_log(Category::getInstance(SHIBSP_LOGCAT".SessionCache")), inproc(true), m_cacheTimeout(3600),
+#ifndef SHIBSP_LITE
+        m_storage(NULL),
+#endif
+        m_root(e), m_inprocTimeout(900), m_lock(NULL), shutdown(false), shutdown_wait(NULL), cleanup_thread(NULL)
 {
+    static const XMLCh cacheTimeout[] =     UNICODE_LITERAL_12(c,a,c,h,e,T,i,m,e,o,u,t);
+    static const XMLCh inprocTimeout[] =    UNICODE_LITERAL_13(i,n,p,r,o,c,T,i,m,e,o,u,t);
+    static const XMLCh _StorageService[] =  UNICODE_LITERAL_14(S,t,o,r,a,g,e,S,e,r,v,i,c,e);
+
     SPConfig& conf = SPConfig::getConfig();
-    const XMLCh* tag = e ? e->getAttributeNS(NULL,_StorageService) : NULL;
-    if (tag && *tag) {
-        auto_ptr_char ssid(tag);
-        m_storage = conf.getServiceProvider()->getStorageService(ssid.get());
-        if (m_storage)
-            m_log.info("bound to StorageService (%s)", ssid.get());
-        else
-            throw ConfigurationException("SessionCache unable to locate StorageService, check configuration.");
+    inproc = conf.isEnabled(SPConfig::InProcess);
+
+    if (e) {
+        const XMLCh* tag=e->getAttributeNS(NULL,cacheTimeout);
+        if (tag && *tag) {
+            m_cacheTimeout = XMLString::parseInt(tag);
+            if (!m_cacheTimeout)
+                m_cacheTimeout=3600;
+        }
+        if (inproc) {
+            const XMLCh* tag=e->getAttributeNS(NULL,inprocTimeout);
+            if (tag && *tag) {
+                m_inprocTimeout = XMLString::parseInt(tag);
+                if (!m_inprocTimeout)
+                    m_inprocTimeout=900;
+            }
+        }
     }
 
+#ifndef SHIBSP_LITE
+    if (conf.isEnabled(SPConfig::OutOfProcess)) {
+        const XMLCh* tag = e ? e->getAttributeNS(NULL,_StorageService) : NULL;
+        if (tag && *tag) {
+            auto_ptr_char ssid(tag);
+            m_storage = conf.getServiceProvider()->getStorageService(ssid.get());
+            if (m_storage)
+                m_log.info("bound to StorageService (%s)", ssid.get());
+        }
+        if (!m_storage)
+            throw ConfigurationException("SessionCache unable to locate StorageService, check configuration.");
+    }
+#endif
+
     ListenerService* listener=conf.getServiceProvider()->getListenerService(false);
-    if (listener && conf.isEnabled(SPConfig::OutOfProcess)) {
-        listener->regListener("find::"REMOTED_SESSION_CACHE"::SessionCache",this);
-        listener->regListener("remove::"REMOTED_SESSION_CACHE"::SessionCache",this);
-        listener->regListener("touch::"REMOTED_SESSION_CACHE"::SessionCache",this);
-        listener->regListener("getAssertion::"REMOTED_SESSION_CACHE"::SessionCache",this);
+    if (inproc ) {
+        if (!conf.isEnabled(SPConfig::OutOfProcess) && !listener)
+            throw ConfigurationException("SessionCache requires a ListenerService, but none available.");
+        m_lock = RWLock::create();
+        shutdown_wait = CondWait::create();
+        cleanup_thread = Thread::create(&cleanup_fn, (void*)this);
     }
+#ifndef SHIBSP_LITE
     else {
-        m_log.info("no ListenerService available, cache remoting disabled");
+        if (listener && conf.isEnabled(SPConfig::OutOfProcess)) {
+            listener->regListener("find::"STORAGESERVICE_SESSION_CACHE"::SessionCache",this);
+            listener->regListener("remove::"STORAGESERVICE_SESSION_CACHE"::SessionCache",this);
+            listener->regListener("touch::"STORAGESERVICE_SESSION_CACHE"::SessionCache",this);
+        }
+        else {
+            m_log.info("no ListenerService available, cache remoting disabled");
+        }
     }
+#endif
 }
 
 SSCache::~SSCache()
 {
-    SPConfig& conf = SPConfig::getConfig();
-    ListenerService* listener=conf.getServiceProvider()->getListenerService(false);
-    if (listener && conf.isEnabled(SPConfig::OutOfProcess)) {
-        listener->unregListener("find::"REMOTED_SESSION_CACHE"::SessionCache",this);
-        listener->unregListener("remove::"REMOTED_SESSION_CACHE"::SessionCache",this);
-        listener->unregListener("touch::"REMOTED_SESSION_CACHE"::SessionCache",this);
-        listener->unregListener("getAssertion::"REMOTED_SESSION_CACHE"::SessionCache",this);
+    if (inproc) {
+        // Shut down the cleanup thread and let it know...
+        shutdown = true;
+        shutdown_wait->signal();
+        cleanup_thread->join(NULL);
+
+        for_each(m_hashtable.begin(),m_hashtable.end(),cleanup_pair<string,StoredSession>());
+        delete m_lock;
+        delete shutdown_wait;
     }
+#ifndef SHIBSP_LITE
+    else {
+        SPConfig& conf = SPConfig::getConfig();
+        ListenerService* listener=conf.getServiceProvider()->getListenerService(false);
+        if (listener && conf.isEnabled(SPConfig::OutOfProcess)) {
+            listener->unregListener("find::"STORAGESERVICE_SESSION_CACHE"::SessionCache",this);
+            listener->unregListener("remove::"STORAGESERVICE_SESSION_CACHE"::SessionCache",this);
+            listener->unregListener("touch::"STORAGESERVICE_SESSION_CACHE"::SessionCache",this);
+        }
+    }
+#endif
 }
+
+#ifndef SHIBSP_LITE
 
 void SSCache::test()
 {
-#ifdef _DEBUG
-    xmltooling::NDC ndc("test");
-#endif
-
     auto_ptr_char temp(SAMLConfig::getConfig().generateIdentifier());
     m_storage->createString("SessionCacheTest", temp.get(), "Test", time(NULL) + 60);
     m_storage->deleteString("SessionCacheTest", temp.get());
@@ -582,6 +819,8 @@ string SSCache::insert(
 #ifdef _DEBUG
     xmltooling::NDC ndc("insert");
 #endif
+    if (!m_storage)
+        throw ConfigurationException("SessionCache insertion requires a StorageService.");
 
     m_log.debug("creating new session");
 
@@ -747,129 +986,6 @@ string SSCache::insert(
     return key.get();
 }
 
-Session* SSCache::find(const char* key, const Application& application, const char* client_addr, time_t* timeout)
-{
-#ifdef _DEBUG
-    xmltooling::NDC ndc("find");
-#endif
-
-    m_log.debug("searching for session (%s)", key);
-    
-    time_t lastAccess;
-    string record;
-    int ver = m_storage->readText(key, "session", &record, &lastAccess);
-    if (!ver)
-        return NULL;
-    
-    m_log.debug("reconstituting session and checking validity");
-    
-    DDF obj;
-    istringstream in(record);
-    in >> obj;
-    
-    if (!XMLString::equals(obj["application_id"].string(), application.getId())) {
-        m_log.error("an application (%s) tried to access another application's session", application.getId());
-        obj.destroy();
-        return NULL;
-    }
-
-    if (client_addr) {
-        if (m_log.isDebugEnabled())
-            m_log.debug("comparing client address %s against %s", client_addr, obj["client_addr"].string());
-        if (strcmp(obj["client_addr"].string(),client_addr)) {
-            m_log.warn("client address mismatch");
-            remove(key, application);
-            RetryableProfileException ex(
-                "Your IP address ($1) does not match the address recorded at the time the session was established.",
-                params(1,client_addr)
-                );
-            const char* eid = obj["entity_id"].string();
-            if (!eid) {
-                obj.destroy();
-                throw ex;
-            }
-            string eid2(eid);
-            obj.destroy();
-            MetadataProvider* m=application.getMetadataProvider();
-            Locker locker(m);
-            annotateException(&ex,m->getEntityDescriptor(MetadataProvider::Criteria(eid2.c_str(),NULL,NULL,false)).first); // throws it
-        }
-    }
-
-    lastAccess -= m_cacheTimeout;   // adjusts it back to the last time the record's timestamp was touched
-    time_t now=time(NULL);
-    
-    if (timeout && *timeout > 0 && now - lastAccess >= *timeout) {
-        m_log.info("session timed out (ID: %s)", key);
-        remove(key, application);
-        RetryableProfileException ex("Your session has expired, and you must re-authenticate.");
-        const char* eid = obj["entity_id"].string();
-        if (!eid) {
-            obj.destroy();
-            throw ex;
-        }
-        string eid2(eid);
-        obj.destroy();
-        MetadataProvider* m=application.getMetadataProvider();
-        Locker locker(m);
-        annotateException(&ex,m->getEntityDescriptor(MetadataProvider::Criteria(eid2.c_str(),NULL,NULL,false)).first); // throws it
-    }
-    
-    auto_ptr_XMLCh exp(obj["expires"].string());
-    if (exp.get()) {
-        DateTime iso(exp.get());
-        iso.parseDateTime();
-        if (now > iso.getEpoch()) {
-            m_log.info("session expired (ID: %s)", key);
-            remove(key, application);
-            RetryableProfileException ex("Your session has expired, and you must re-authenticate.");
-            const char* eid = obj["entity_id"].string();
-            if (!eid) {
-                obj.destroy();
-                throw ex;
-            }
-            string eid2(eid);
-            obj.destroy();
-            MetadataProvider* m=application.getMetadataProvider();
-            Locker locker(m);
-            annotateException(&ex,m->getEntityDescriptor(MetadataProvider::Criteria(eid2.c_str(),NULL,NULL,false)).first); // throws it
-        }
-    }
-    
-    if (timeout) {
-        // Update storage expiration, if possible.
-        try {
-            m_storage->updateContext(key, now + m_cacheTimeout);
-        }
-        catch (exception& ex) {
-            m_log.error("failed to update session expiration: %s", ex.what());
-        }
-    }
-
-    // Finally build the Session object.
-    try {
-        return new StoredSession(this, obj);
-    }
-    catch (exception&) {
-        obj.destroy();
-        throw;
-    }
-}
-
-void SSCache::remove(const char* key, const Application& application)
-{
-#ifdef _DEBUG
-    xmltooling::NDC ndc("remove");
-#endif
-
-    m_storage->deleteContext(key);
-    m_log.info("removed session (%s)", key);
-
-    TransactionLog* xlog = application.getServiceProvider().getTransactionLog();
-    Locker locker(xlog);
-    xlog->log.info("Destroyed session (applicationId: %s) (ID: %s)", application.getId(), key);
-}
-
 bool SSCache::matches(
     const char* key,
     const saml2md::EntityDescriptor* issuer,
@@ -882,7 +998,7 @@ bool SSCache::matches(
     try {
         Session* session = find(key, application);
         if (session) {
-            Locker locker(session);
+            Locker locker(session, false);
             if (XMLString::equals(session->getEntityID(), entityID.get()) && session->getNameID() &&
                     stronglyMatches(issuer->getEntityID(), application.getXMLString("entityID").second, nameid, *session->getNameID())) {
                 return (!indexes || indexes->empty() || (session->getSessionIndex() ? (indexes->count(session->getSessionIndex())>0) : false));
@@ -907,6 +1023,9 @@ vector<string>::size_type SSCache::logout(
 #ifdef _DEBUG
     xmltooling::NDC ndc("logout");
 #endif
+
+    if (!m_storage)
+        throw ConfigurationException("SessionCache insertion requires a StorageService.");
 
     auto_ptr_char entityID(issuer ? issuer->getEntityID() : NULL);
     auto_ptr_char name(nameid.getName());
@@ -1000,7 +1119,7 @@ vector<string>::size_type SSCache::logout(
                 }
 
                 if (session) {
-                    Locker locker(session);
+                    Locker locker(session, false);
                     // Same issuer?
                     if (XMLString::equals(session->getEntityID(), entityID.get())) {
                         // Same NameID?
@@ -1088,16 +1207,324 @@ bool SSCache::stronglyMatches(const XMLCh* idp, const XMLCh* sp, const saml2::Na
     return true;
 }
 
+#endif
+
+Session* SSCache::find(const char* key, const Application& application, const char* client_addr, time_t* timeout)
+{
+#ifdef _DEBUG
+    xmltooling::NDC ndc("find");
+#endif
+    StoredSession* session=NULL;
+
+    if (inproc) {
+        m_log.debug("searching local cache for session (%s)", key);
+        m_lock->rdlock();
+        map<string,StoredSession*>::const_iterator i=m_hashtable.find(key);
+        if (i!=m_hashtable.end()) {
+            // Save off and lock the session.
+            session = i->second;
+            session->lock();
+            m_lock->unlock();
+            m_log.debug("session found locally, validating it for use");
+        }
+        else {
+            m_lock->unlock();
+        }
+    }
+
+    if (!session) {
+        if (!SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
+            m_log.debug("session not found locally, remoting the search");
+            // Remote the request.
+            DDF in("find::"STORAGESERVICE_SESSION_CACHE"::SessionCache"), out;
+            DDFJanitor jin(in);
+            in.structure();
+            in.addmember("key").string(key);
+            in.addmember("application_id").string(application.getId());
+            if (timeout && *timeout) {
+                // On 64-bit Windows, time_t doesn't fit in a long, so I'm using ISO timestamps.  
+#ifndef HAVE_GMTIME_R
+                struct tm* ptime=gmtime(timeout);
+#else
+                struct tm res;
+                struct tm* ptime=gmtime_r(timeout,&res);
+#endif
+                char timebuf[32];
+                strftime(timebuf,32,"%Y-%m-%dT%H:%M:%SZ",ptime);
+                in.addmember("timeout").string(timebuf);
+            }
+            
+            try {
+                out=application.getServiceProvider().getListenerService()->send(in);
+                if (!out.isstruct()) {
+                    out.destroy();
+                    m_log.debug("session not found in remote cache");
+                    return NULL;
+                }
+                
+                // Wrap the results in a local entry and save it.
+                session = new StoredSession(this, out);
+                // The remote end has handled timeout issues, we handle address and expiration checks.
+                timeout = NULL;
+            }
+            catch (...) {
+                out.destroy();
+                throw;
+            }
+        }
+        else {
+            // We're out of process, so we can search the storage service directly.
+#ifndef SHIBSP_LITE
+            if (!m_storage)
+                throw ConfigurationException("SessionCache lookup requires a StorageService.");
+
+            m_log.debug("searching for session (%s)", key);
+            
+            DDF obj;
+            time_t lastAccess;
+            string record;
+            int ver = m_storage->readText(key, "session", &record, &lastAccess);
+            if (!ver)
+                return NULL;
+            
+            m_log.debug("reconstituting session and checking validity");
+            
+            istringstream in(record);
+            in >> obj;
+            
+            lastAccess -= m_cacheTimeout;   // adjusts it back to the last time the record's timestamp was touched
+            time_t now=time(NULL);
+            
+            if (timeout && *timeout > 0 && now - lastAccess >= *timeout) {
+                m_log.info("session timed out (ID: %s)", key);
+                remove(key, application);
+                RetryableProfileException ex("Your session has expired, and you must re-authenticate.");
+                const char* eid = obj["entity_id"].string();
+                if (!eid) {
+                    obj.destroy();
+                    throw ex;
+                }
+                string eid2(eid);
+                obj.destroy();
+                MetadataProvider* m=application.getMetadataProvider();
+                Locker locker(m);
+                annotateException(&ex,m->getEntityDescriptor(MetadataProvider::Criteria(eid2.c_str(),NULL,NULL,false)).first); // throws it
+            }
+            
+            if (timeout) {
+                // Update storage expiration, if possible.
+                try {
+                    m_storage->updateContext(key, now + m_cacheTimeout);
+                }
+                catch (exception& ex) {
+                    m_log.error("failed to update session expiration: %s", ex.what());
+                }
+            }
+
+            // Wrap the results in a local entry and save it.
+            session = new StoredSession(this, obj);
+            // We handled timeout issues, still need to handle address and expiration checks.
+            timeout = NULL;
+#else
+            throw ConfigurationException("SessionCache search requires a StorageService.");
+#endif
+        }
+
+        if (inproc) {
+            // Lock for writing and repeat the search to avoid duplication.
+            m_lock->wrlock();
+            SharedLock shared(m_lock, false);
+            if (m_hashtable.count(key)) {
+                // We're using an existing session entry.
+                delete session;
+                session = m_hashtable[key];
+                session->lock();
+            }
+            else {
+                m_hashtable[key]=session;
+                session->lock();
+            }
+        }
+    }
+
+    if (!XMLString::equals(session->getApplicationID(), application.getId())) {
+        m_log.error("an application (%s) tried to access another application's session", application.getId());
+        session->unlock();
+        return NULL;
+    }
+
+    // Verify currency and update the timestamp if indicated by caller.
+    try {
+        session->validate(application, client_addr, timeout);
+    }
+    catch (...) {
+        session->unlock();
+        remove(key, application);
+        throw;
+    }
+    
+    return session;
+}
+
+void SSCache::remove(const char* key, const Application& application)
+{
+#ifdef _DEBUG
+    xmltooling::NDC ndc("remove");
+#endif
+    // Take care of local copy.
+    if (inproc)
+        dormant(key);
+    
+    if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
+        // Remove the session from storage directly.
+#ifndef SHIBSP_LITE
+        m_storage->deleteContext(key);
+        m_log.info("removed session (%s)", key);
+
+        TransactionLog* xlog = application.getServiceProvider().getTransactionLog();
+        Locker locker(xlog);
+        xlog->log.info("Destroyed session (applicationId: %s) (ID: %s)", application.getId(), key);
+#else
+        throw ConfigurationException("SessionCache removal requires a StorageService.");
+#endif
+    }
+    else {
+        // Remote the request.
+        DDF in("remove::"STORAGESERVICE_SESSION_CACHE"::SessionCache");
+        DDFJanitor jin(in);
+        in.structure();
+        in.addmember("key").string(key);
+        in.addmember("application_id").string(application.getId());
+        
+        DDF out = application.getServiceProvider().getListenerService()->send(in);
+        out.destroy();
+    }
+}
+
+void SSCache::dormant(const char* key)
+{
+#ifdef _DEBUG
+    xmltooling::NDC ndc("dormant");
+#endif
+
+    m_log.debug("deleting local copy of session (%s)", key);
+
+    // lock the cache for writing, which means we know nobody is sitting in find()
+    m_lock->wrlock();
+
+    // grab the entry from the table
+    map<string,StoredSession*>::const_iterator i=m_hashtable.find(key);
+    if (i==m_hashtable.end()) {
+        m_lock->unlock();
+        return;
+    }
+
+    // ok, remove the entry and lock it
+    StoredSession* entry=i->second;
+    m_hashtable.erase(key);
+    entry->lock();
+    
+    // unlock the cache
+    m_lock->unlock();
+
+    // we can release the cache entry lock because we know we're not in the cache anymore
+    entry->unlock();
+
+    delete entry;
+}
+
+void SSCache::cleanup()
+{
+#ifdef _DEBUG
+    xmltooling::NDC ndc("cleanup");
+#endif
+
+    Mutex* mutex = Mutex::create();
+  
+    // Load our configuration details...
+    static const XMLCh cleanupInterval[] = UNICODE_LITERAL_15(c,l,e,a,n,u,p,I,n,t,e,r,v,a,l);
+    const XMLCh* tag=m_root ? m_root->getAttributeNS(NULL,cleanupInterval) : NULL;
+    int rerun_timer = 900;
+    if (tag && *tag)
+        rerun_timer = XMLString::parseInt(tag);
+    if (rerun_timer <= 0)
+        rerun_timer = 900;
+
+    mutex->lock();
+
+    m_log.info("cleanup thread started...run every %d secs; timeout after %d secs", rerun_timer, m_inprocTimeout);
+
+    while (!shutdown) {
+        shutdown_wait->timedwait(mutex,rerun_timer);
+        if (shutdown)
+            break;
+
+        // Ok, let's run through the cleanup process and clean out
+        // really old sessions.  This is a two-pass process.  The
+        // first pass is done holding a read-lock while we iterate over
+        // the cache.  The second pass doesn't need a lock because
+        // the 'deletes' will lock the cache.
+    
+        // Pass 1: iterate over the map and find all entries that have not been
+        // used in the allotted timeout.
+        vector<string> stale_keys;
+        time_t stale = time(NULL) - m_inprocTimeout;
+    
+        m_log.debug("cleanup thread running");
+
+        m_lock->rdlock();
+        for (map<string,StoredSession*>::const_iterator i=m_hashtable.begin(); i!=m_hashtable.end(); ++i) {
+            // If the last access was BEFORE the stale timeout...
+            i->second->lock();
+            time_t last=i->second->getLastAccess();
+            i->second->unlock();
+            if (last < stale)
+                stale_keys.push_back(i->first);
+        }
+        m_lock->unlock();
+    
+        if (!stale_keys.empty()) {
+            m_log.info("purging %d old sessions", stale_keys.size());
+    
+            // Pass 2: walk through the list of stale entries and remove them from the cache
+            for (vector<string>::const_iterator j = stale_keys.begin(); j != stale_keys.end(); ++j)
+                dormant(j->c_str());
+        }
+
+        m_log.debug("cleanup thread completed");
+    }
+
+    m_log.info("cleanup thread exiting");
+
+    mutex->unlock();
+    delete mutex;
+    Thread::exit(NULL);
+}
+
+void* SSCache::cleanup_fn(void* cache_p)
+{
+#ifndef WIN32
+    // First, let's block all signals 
+    Thread::mask_all_signals();
+#endif
+
+    // Now run the cleanup process.
+    reinterpret_cast<SSCache*>(cache_p)->cleanup();
+    return NULL;
+}
+
+#ifndef SHIBSP_LITE
+
 void SSCache::receive(DDF& in, ostream& out)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("receive");
 #endif
 
-    if (!strcmp(in.name(),"find::"REMOTED_SESSION_CACHE"::SessionCache")) {
+    if (!strcmp(in.name(),"find::"STORAGESERVICE_SESSION_CACHE"::SessionCache")) {
         const char* key=in["key"].string();
         if (!key)
-            throw ListenerException("Required parameters missing for session removal.");
+            throw ListenerException("Required parameters missing for session lookup.");
 
         const Application* app = SPConfig::getConfig().getServiceProvider()->getApplication(in["application_id"].string());
         if (!app)
@@ -1143,7 +1570,7 @@ void SSCache::receive(DDF& in, ostream& out)
         // Send the record back.
         out << record;
     }
-    else if (!strcmp(in.name(),"touch::"REMOTED_SESSION_CACHE"::SessionCache")) {
+    else if (!strcmp(in.name(),"touch::"STORAGESERVICE_SESSION_CACHE"::SessionCache")) {
         const char* key=in["key"].string();
         if (!key)
             throw ListenerException("Required parameters missing for session check.");
@@ -1194,28 +1621,20 @@ void SSCache::receive(DDF& in, ostream& out)
             out << ret;
         }
     }
-    else if (!strcmp(in.name(),"remove::"REMOTED_SESSION_CACHE"::SessionCache")) {
+    else if (!strcmp(in.name(),"remove::"STORAGESERVICE_SESSION_CACHE"::SessionCache")) {
         const char* key=in["key"].string();
         if (!key)
             throw ListenerException("Required parameter missing for session removal.");
 
         const Application* app = SPConfig::getConfig().getServiceProvider()->getApplication(in["application_id"].string());
         if (!app)
-            throw ListenerException("Application not found, check configuration?");
+            throw ConfigurationException("Application not found, check configuration?");
 
         remove(key,*app);
         DDF ret(NULL);
         DDFJanitor jan(ret);
         out << ret;
     }
-    else if (!strcmp(in.name(),"getAssertion::"REMOTED_SESSION_CACHE"::SessionCache")) {
-        const char* key=in["key"].string();
-        const char* id=in["id"].string();
-        if (!key || !id)
-            throw ListenerException("Required parameters missing for assertion retrieval.");
-        string token;
-        if (!m_storage->readText(key, id, &token, NULL))
-            throw FatalProfileException("Assertion not found in cache.");
-        out << token;
-    }
 }
+
+#endif
