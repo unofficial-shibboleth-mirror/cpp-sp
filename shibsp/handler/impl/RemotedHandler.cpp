@@ -197,8 +197,9 @@ void RemotedResponse::setResponseHeader(const char* name, const char* value)
         m_output.structure();
     DDF hdrs = m_output["headers"];
     if (hdrs.isnull())
-        hdrs = m_output.addmember("headers").structure();
-    hdrs.addmember(name).string(value);
+        hdrs = m_output.addmember("headers").list();
+    DDF h = DDF(name).string(value);
+    hdrs.add(h);
 }
 
 long RemotedResponse::sendRedirect(const char* url)
