@@ -130,7 +130,9 @@ namespace shibsp {
          * @param response      outgoing HTTP response
          * @param relayState    RelayState token to supply with message
          */
-        virtual void preserveRelayState(const Application& application, xmltooling::HTTPResponse& response, std::string& relayState) const;
+        virtual void preserveRelayState(
+            const Application& application, xmltooling::HTTPResponse& response, std::string& relayState
+            ) const;
 
         /**
          * Implements various mechanisms to recover RelayState,
@@ -141,11 +143,16 @@ namespace shibsp {
          * 
          * @param application   the associated Application
          * @param request       incoming HTTP request
+         * @param response      outgoing HTTP response
          * @param relayState    RelayState token supplied with message
          * @param clear         true iff the token state should be cleared
          */
         virtual void recoverRelayState(
-            const Application& application, xmltooling::HTTPRequest& request, std::string& relayState, bool clear=true
+            const Application& application,
+            const xmltooling::HTTPRequest& request,
+            xmltooling::HTTPResponse& response,
+            std::string& relayState,
+            bool clear=true
             ) const;
         
         /** Logging object. */

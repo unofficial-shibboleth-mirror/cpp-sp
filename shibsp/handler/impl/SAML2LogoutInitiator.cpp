@@ -78,7 +78,9 @@ namespace shibsp {
 #endif
 
     private:
-        pair<bool,long> doRequest(const Application& application, const char* requestURL, Session* session, HTTPResponse& httpResponse) const;
+        pair<bool,long> doRequest(
+            const Application& application, const HTTPRequest& request, HTTPResponse& httpResponse, Session* session
+            ) const;
 
         string m_appId;
 #ifndef SHIBSP_LITE
@@ -199,16 +201,14 @@ pair<bool,long> SAML2LogoutInitiator::run(SPRequest& request, bool isHandler) co
 
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
         // When out of process, we run natively.
-        return doRequest(request.getApplication(), request.getRequestURL(), session, request);
+        return doRequest(request.getApplication(), request, request, session);
     }
     else {
         // When not out of process, we remote the request.
-        Locker locker(session, false);
-        DDF out,in(m_address.c_str());
+        session->unlock();
+        vector<string> headers(1,"Cookie");
+        DDF out,in = wrap(request,&headers);
         DDFJanitor jin(in), jout(out);
-        in.addmember("application_id").string(request.getApplication().getId());
-        in.addmember("session_id").string(session->getID());
-        in.addmember("url").string(request.getRequestURL());
         out=request.getServiceProvider().getListenerService()->send(in);
         return unwrap(request, out);
     }
@@ -230,6 +230,9 @@ void SAML2LogoutInitiator::receive(DDF& in, ostream& out)
         throw ConfigurationException("Unable to locate application for logout, deleted?");
     }
     
+    // Unpack the request.
+    auto_ptr<HTTPRequest> req(getRequest(in));
+
     // Set up a response shim.
     DDF ret(NULL);
     DDFJanitor jout(ret);
@@ -237,7 +240,7 @@ void SAML2LogoutInitiator::receive(DDF& in, ostream& out)
     
     Session* session = NULL;
     try {
-         session = app->getServiceProvider().getSessionCache()->find(in["session_id"].string(), *app, NULL, NULL);
+         session = app->getServiceProvider().getSessionCache()->find(*req.get(), *app, NULL, NULL);
     }
     catch (exception& ex) {
         m_log.error("error accessing current session: %s", ex.what());
@@ -249,16 +252,12 @@ void SAML2LogoutInitiator::receive(DDF& in, ostream& out)
             // Since we're remoted, the result should either be a throw, which we pass on,
             // a false/0 return, which we just return as an empty structure, or a response/redirect,
             // which we capture in the facade and send back.
-            doRequest(*app, in["url"].string(), session, *resp.get());
+            doRequest(*app, *req.get(), *resp.get(), session);
         }
         else {
              m_log.error("no NameID or issuing entityID found in session");
              session->unlock();
-             app->getServiceProvider().getSessionCache()->remove(in["session_id"].string(), *app);
-
-            // Clear the cookie.
-            pair<string,const char*> shib_cookie=app->getCookieNameProps("_shibsession_");
-            resp->setCookie(shib_cookie.first.c_str(), shib_cookie.second);
+             app->getServiceProvider().getSessionCache()->remove(*req.get(), resp.get(), *app);
         }
     }
     out << ret;
@@ -268,19 +267,15 @@ void SAML2LogoutInitiator::receive(DDF& in, ostream& out)
 }
 
 pair<bool,long> SAML2LogoutInitiator::doRequest(
-    const Application& application, const char* requestURL, Session* session, HTTPResponse& response
+    const Application& application, const HTTPRequest& httpRequest, HTTPResponse& httpResponse, Session* session
     ) const
 {
-    // Clear the cookie.
-    pair<string,const char*> shib_cookie=application.getCookieNameProps("_shibsession_");
-    response.setCookie(shib_cookie.first.c_str(), shib_cookie.second);
-
     // Do back channel notification.
     vector<string> sessions(1, session->getID());
-    if (!notifyBackChannel(application, requestURL, sessions, false)) {
+    if (!notifyBackChannel(application, httpRequest.getRequestURL(), sessions, false)) {
         session->unlock();
-        application.getServiceProvider().getSessionCache()->remove(sessions.front().c_str(), application);
-        return sendLogoutPage(application, response, true, "Partial logout failure.");
+        application.getServiceProvider().getSessionCache()->remove(httpRequest, &httpResponse, application);
+        return sendLogoutPage(application, httpResponse, true, "Partial logout failure.");
     }
 
 #ifndef SHIBSP_LITE
@@ -345,22 +340,21 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
             }
 
             if (!logoutResponse)
-                ret = sendLogoutPage(application, response, false, "Identity provider did not respond to logout request.");
+                ret = sendLogoutPage(application, httpResponse, false, "Identity provider did not respond to logout request.");
             else if (!logoutResponse->getStatus() || !logoutResponse->getStatus()->getStatusCode() ||
                    !XMLString::equals(logoutResponse->getStatus()->getStatusCode()->getValue(), saml2p::StatusCode::SUCCESS)) {
                 delete logoutResponse;
-                ret = sendLogoutPage(application, response, false, "Identity provider returned a SAML error in response to logout request.");
+                ret = sendLogoutPage(application, httpResponse, false, "Identity provider returned a SAML error in response to logout request.");
             }
             else {
                 delete logoutResponse;
-                ret = sendLogoutPage(application, response, false, "Logout completed successfully.");
+                ret = sendLogoutPage(application, httpResponse, false, "Logout completed successfully.");
             }
 
             if (session) {
-                string session_id = session->getID();
                 session->unlock();
                 session = NULL;
-                application.getServiceProvider().getSessionCache()->remove(session_id.c_str(), application);
+                application.getServiceProvider().getSessionCache()->remove(httpRequest, &httpResponse, application);
             }
             return ret;
         }
@@ -369,7 +363,7 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
 
         msg->setDestination(ep->getLocation());
         auto_ptr_char dest(ep->getLocation());
-        ret.second = sendMessage(*encoder, msg.get(), NULL, dest.get(), role, application, response);
+        ret.second = sendMessage(*encoder, msg.get(), NULL, dest.get(), role, application, httpResponse);
         ret.first = true;
         msg.release();  // freed by encoder
     }
@@ -378,17 +372,15 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
     }
 
     if (session) {
-        string session_id = session->getID();
         session->unlock();
         session = NULL;
-        application.getServiceProvider().getSessionCache()->remove(session_id.c_str(), application);
+        application.getServiceProvider().getSessionCache()->remove(httpRequest, &httpResponse, application);
     }
 
     return ret;
 #else
-    string session_id = session->getID();
     session->unlock();
-    application.getServiceProvider().getSessionCache()->remove(session_id.c_str(), application);
+    application.getServiceProvider().getSessionCache()->remove(httpRequest, &httpResponse, application);
     throw ConfigurationException("Cannot perform logout using lite version of shibsp library.");
 #endif
 }

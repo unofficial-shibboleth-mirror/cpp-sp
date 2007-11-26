@@ -162,9 +162,10 @@ namespace {
         auto_ptr_XMLCh m_protocol;
 
     private:
-        string implementProtocol(
+        void implementProtocol(
             const Application& application,
             const HTTPRequest& httpRequest,
+            HTTPResponse& httpResponse,
             SecurityPolicy& policy,
             const PropertySet* settings,
             const XMLObject& xmlObject
@@ -208,9 +209,7 @@ namespace {
 #endif
 
     private:
-        pair<bool,long> doRequest(
-            const Application& application, const char* requestURL, const char* entityID, HTTPResponse& httpResponse
-            ) const;
+        pair<bool,long> doRequest(const Application& application, const char* entityID, HTTPResponse& httpResponse) const;
 
         string m_appId;
         auto_ptr_XMLCh m_binding;
@@ -326,7 +325,7 @@ pair<bool,long> ADFSSessionInitiator::run(SPRequest& request, const char* entity
 
         // Since we're passing the ACS by value, we need to compute the return URL,
         // so we'll need the target resource for real.
-        recoverRelayState(request.getApplication(), request, target, false);
+        recoverRelayState(request.getApplication(), request, request, target, false);
     }
     else {
         // We're running as a "virtual handler" from within the filter.
@@ -528,9 +527,10 @@ XMLObject* ADFSDecoder::decode(string& relayState, const GenericRequest& generic
     return xmlObject.release();
 }
 
-string ADFSConsumer::implementProtocol(
+void ADFSConsumer::implementProtocol(
     const Application& application,
     const HTTPRequest& httpRequest,
+    HTTPResponse& httpResponse,
     SecurityPolicy& policy,
     const PropertySet* settings,
     const XMLObject& xmlObject
@@ -615,7 +615,7 @@ string ADFSConsumer::implementProtocol(
     }
 
     // The context will handle deleting attributes and new tokens.
-        auto_ptr<ResolutionContext> ctx(
+    auto_ptr<ResolutionContext> ctx(
         resolveAttributes(
             application,
             policy.getIssuerMetadata(),
@@ -633,10 +633,11 @@ string ADFSConsumer::implementProtocol(
         tokens.insert(tokens.end(), ctx->getResolvedAssertions().begin(), ctx->getResolvedAssertions().end());
     }
 
-    return application.getServiceProvider().getSessionCache()->insert(
+    application.getServiceProvider().getSessionCache()->insert(
         now + lifetime.second,
         application,
-        httpRequest.getRemoteAddr().c_str(),
+        httpRequest,
+        httpResponse,
         policy.getIssuerMetadata() ? dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL,
         m_protocol.get(),
         nameid.get(),
@@ -681,7 +682,7 @@ pair<bool,long> ADFSLogoutInitiator::run(SPRequest& request, bool isHandler) con
 
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
         // When out of process, we run natively.
-        return doRequest(request.getApplication(), request.getRequestURL(), entityID.c_str(), request);
+        return doRequest(request.getApplication(), entityID.c_str(), request);
     }
     else {
         // When not out of process, we remote the request.
@@ -689,7 +690,6 @@ pair<bool,long> ADFSLogoutInitiator::run(SPRequest& request, bool isHandler) con
         DDF out,in(m_address.c_str());
         DDFJanitor jin(in), jout(out);
         in.addmember("application_id").string(request.getApplication().getId());
-        in.addmember("url").string(request.getRequestURL());
         in.addmember("entity_id").string(entityID.c_str());
         out=request.getServiceProvider().getListenerService()->send(in);
         return unwrap(request, out);
@@ -716,7 +716,7 @@ void ADFSLogoutInitiator::receive(DDF& in, ostream& out)
     // Since we're remoted, the result should either be a throw, which we pass on,
     // a false/0 return, which we just return as an empty structure, or a response/redirect,
     // which we capture in the facade and send back.
-    doRequest(*app, in["url"].string(), in["entity_id"].string(), *resp.get());
+    doRequest(*app, in["entity_id"].string(), *resp.get());
 
     out << ret;
 #else
@@ -724,9 +724,7 @@ void ADFSLogoutInitiator::receive(DDF& in, ostream& out)
 #endif
 }
 
-pair<bool,long> ADFSLogoutInitiator::doRequest(
-    const Application& application, const char* requestURL, const char* entityID, HTTPResponse& response
-    ) const
+pair<bool,long> ADFSLogoutInitiator::doRequest(const Application& application, const char* entityID, HTTPResponse& response) const
 {
 #ifndef SHIBSP_LITE
     try {
@@ -793,10 +791,6 @@ pair<bool,long> ADFSLogout::run(SPRequest& request, bool isHandler) const
     param = request.getParameter("wreply");
     const Application& app = request.getApplication();
 
-    // Get the session_id.
-    pair<string,const char*> shib_cookie = app.getCookieNameProps("_shibsession_");
-    const char* session_id = request.getCookie(shib_cookie.first.c_str());
-
     if (!returning) {
         // Pass control to the first front channel notification point, if any.
         map<string,string> parammap;
@@ -808,16 +802,16 @@ pair<bool,long> ADFSLogout::run(SPRequest& request, bool isHandler) const
     }
 
     // Best effort on back channel and to remove the user agent's session.
-    if (session_id) {
+    string session_id = app.getServiceProvider().getSessionCache()->active(request, app);
+    if (!session_id.empty()) {
         vector<string> sessions(1,session_id);
         notifyBackChannel(app, request.getRequestURL(), sessions, false);
         try {
-            app.getServiceProvider().getSessionCache()->remove(session_id, app);
+            app.getServiceProvider().getSessionCache()->remove(request, &request, app);
         }
         catch (exception& ex) {
-            m_log.error("error removing session (%s): %s", session_id, ex.what());
+            m_log.error("error removing session (%s): %s", session_id.c_str(), ex.what());
         }
-        request.setCookie(shib_cookie.first.c_str(), shib_cookie.second);
     }
 
     if (param)

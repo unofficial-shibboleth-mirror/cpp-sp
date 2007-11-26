@@ -68,9 +68,10 @@ namespace shibsp {
         }
 
     private:
-        string implementProtocol(
+        void implementProtocol(
             const Application& application,
             const HTTPRequest& httpRequest,
+            HTTPResponse& httpResponse,
             SecurityPolicy& policy,
             const PropertySet* settings,
             const XMLObject& xmlObject
@@ -91,9 +92,10 @@ namespace shibsp {
 
 #ifndef SHIBSP_LITE
 
-string SAML2Consumer::implementProtocol(
+void SAML2Consumer::implementProtocol(
     const Application& application,
     const HTTPRequest& httpRequest,
+    HTTPResponse& httpResponse,
     SecurityPolicy& policy,
     const PropertySet* settings,
     const XMLObject& xmlObject
@@ -378,10 +380,11 @@ string SAML2Consumer::implementProtocol(
         // Now merge in bad tokens for caching.
         tokens.insert(tokens.end(), badtokens.begin(), badtokens.end());
 
-        string key = application.getServiceProvider().getSessionCache()->insert(
+        application.getServiceProvider().getSessionCache()->insert(
             sessionExp,
             application,
-            httpRequest.getRemoteAddr().c_str(),
+            httpRequest,
+            httpResponse,
             policy.getIssuerMetadata() ? dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL,
             samlconstants::SAML20P_NS,
             ssoName,
@@ -396,7 +399,6 @@ string SAML2Consumer::implementProtocol(
         if (ownedName)
             delete ssoName;
         for_each(ownedtokens.begin(), ownedtokens.end(), xmltooling::cleanup<saml2::Assertion>());
-        return key;
     }
     catch (exception&) {
         if (ownedName)

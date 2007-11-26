@@ -81,17 +81,10 @@ Session* AbstractSPRequest::getSession(bool checkTimeout, bool ignoreAddress, bo
     else if (cache)
         m_sessionTried = true;
 
-    // Get session ID from cookie.
-    const Application& app = getApplication();
-    pair<string,const char*> shib_cookie = app.getCookieNameProps("_shibsession_");
-    const char* session_id = getCookie(shib_cookie.first.c_str());
-    if (!session_id || !*session_id)
-        return NULL;
-
     // Need address checking and timeout settings.
     time_t timeout=0;
     if (checkTimeout || !ignoreAddress) {
-        const PropertySet* props=app.getPropertySet("Sessions");
+        const PropertySet* props=getApplication().getPropertySet("Sessions");
         if (props) {
             if (checkTimeout) {
                 pair<bool,unsigned int> p=props->getUnsignedInt("timeout");
@@ -106,7 +99,7 @@ Session* AbstractSPRequest::getSession(bool checkTimeout, bool ignoreAddress, bo
 
     // The cache will either silently pass a session or NULL back, or throw an exception out.
     Session* session = getServiceProvider().getSessionCache()->find(
-        session_id, app, ignoreAddress ? NULL : getRemoteAddr().c_str(), checkTimeout ? &timeout : NULL
+        *this, getApplication(), ignoreAddress ? NULL : getRemoteAddr().c_str(), checkTimeout ? &timeout : NULL
         );
     if (cache)
         m_session = session;

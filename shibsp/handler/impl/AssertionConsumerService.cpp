@@ -88,53 +88,17 @@ pair<bool,long> AssertionConsumerService::run(SPRequest& request, bool isHandler
     string relayState;
     SPConfig& conf = SPConfig::getConfig();
     
-    try {
-        if (conf.isEnabled(SPConfig::OutOfProcess)) {
-            // When out of process, we run natively and directly process the message.
-            // RelayState will be fully handled during message processing.
-            string entityID;
-            string key = processMessage(request.getApplication(), request, entityID, relayState);
-            return sendRedirect(request, key.c_str(), entityID.c_str(), relayState.c_str());
-        }
-        else {
-            // When not out of process, we remote all the message processing.
-            DDF out,in = wrap(request);
-            DDFJanitor jin(in), jout(out);
-            
-            try {
-                out=request.getServiceProvider().getListenerService()->send(in);
-            }
-            catch (XMLToolingException& ex) {
-                // Try for RelayState recovery.
-                if (ex.getProperty("RelayState"))
-                    relayState = ex.getProperty("RelayState");
-                try {
-                    recoverRelayState(request.getApplication(), request, relayState);
-                }
-                catch (exception& ex2) {
-                    m_log.error("trapped an error during RelayState recovery while handling an error: %s", ex2.what());
-                }
-                throw;
-            }
-                
-            // We invoke RelayState recovery one last time on this side of the boundary.
-            if (out["RelayState"].isstring())
-                relayState = out["RelayState"].string(); 
-            recoverRelayState(request.getApplication(), request, relayState);
-    
-            // If it worked, we have a session key.
-            if (!out["key"].isstring())
-                throw FatalProfileException("Remote processing of SSO profile did not return a usable session key.");
-            
-            // Take care of cookie business and wrap it up.
-            return sendRedirect(request, out["key"].string(), out["entity_id"].string(), relayState.c_str());
-        }
+    if (conf.isEnabled(SPConfig::OutOfProcess)) {
+        // When out of process, we run natively and directly process the message.
+        return processMessage(request.getApplication(), request, request);
     }
-    catch (XMLToolingException& ex) {
-        // Try and preserve RelayState.
-        if (!relayState.empty())
-            ex.addProperty("RelayState", relayState.c_str());
-        throw;
+    else {
+        // When not out of process, we remote all the message processing.
+        vector<string> headers(1, "Cookie");
+        DDF out,in = wrap(request, &headers);
+        DDFJanitor jin(in), jout(out);
+        out=request.getServiceProvider().getListenerService()->send(in);
+        return unwrap(request, out);
     }
 }
 
@@ -150,33 +114,22 @@ void AssertionConsumerService::receive(DDF& in, ostream& out)
     }
     
     // Unpack the request.
-    auto_ptr<HTTPRequest> http(getRequest(in));
-    
-    // Do the work.
-    string relayState, entityID;
-    try {
-        string key = processMessage(*app, *http.get(), entityID, relayState);
+    auto_ptr<HTTPRequest> req(getRequest(in));
 
-        // Repack for return to caller.
-        DDF ret=DDF(NULL).structure();
-        DDFJanitor jret(ret);
-        ret.addmember("key").string(key.c_str());
-        if (!entityID.empty())
-            ret.addmember("entity_id").string(entityID.c_str());
-        if (!relayState.empty())
-            ret.addmember("RelayState").string(relayState.c_str());
-        out << ret;
-    }
-    catch (XMLToolingException& ex) {
-        // Try and preserve RelayState if we can.
-        if (!relayState.empty())
-            ex.addProperty("RelayState", relayState.c_str());
-        throw;
-    }
+    // Wrap a response shim.
+    DDF ret(NULL);
+    DDFJanitor jout(ret);
+    auto_ptr<HTTPResponse> resp(getResponse(ret));
+
+    // Since we're remoted, the result should either be a throw, a false/0 return,
+    // which we just return as an empty structure, or a response/redirect,
+    // which we capture in the facade and send back.
+    processMessage(*app, *req.get(), *resp.get());
+    out << ret;
 }
 
-string AssertionConsumerService::processMessage(
-    const Application& application, HTTPRequest& httpRequest, string& entityID, string& relayState
+pair<bool,long> AssertionConsumerService::processMessage(
+    const Application& application, const HTTPRequest& httpRequest, HTTPResponse& httpResponse
     ) const
 {
 #ifndef SHIBSP_LITE
@@ -195,43 +148,36 @@ string AssertionConsumerService::processMessage(
     // Create the policy.
     shibsp::SecurityPolicy policy(application, &m_role, validate.first && validate.second);
     
-    // Decode the message and process it in a protocol-specific way.
-    auto_ptr<XMLObject> msg(m_decoder->decode(relayState, httpRequest, policy));
-    if (!msg.get())
-        throw BindingException("Failed to decode an SSO protocol response.");
-    recoverRelayState(application, httpRequest, relayState);
-    string key = implementProtocol(application, httpRequest, policy, settings, *msg.get());
+    string relayState;
 
-    auto_ptr_char issuer(policy.getIssuer() ? policy.getIssuer()->getName() : NULL);
-    if (issuer.get())
-        entityID = issuer.get();
-    
-    return key;
+    try {
+        // Decode the message and process it in a protocol-specific way.
+        auto_ptr<XMLObject> msg(m_decoder->decode(relayState, httpRequest, policy));
+        if (!msg.get())
+            throw BindingException("Failed to decode an SSO protocol response.");
+        recoverRelayState(application, httpRequest, httpResponse, relayState);
+        implementProtocol(application, httpRequest, httpResponse, policy, settings, *msg.get());
+
+        auto_ptr_char issuer(policy.getIssuer() ? policy.getIssuer()->getName() : NULL);
+        
+        // History cookie.
+        if (issuer.get() && *issuer.get())
+            maintainHistory(application, httpRequest, httpResponse, issuer.get());
+
+        // Now redirect to the state value. By now, it should be set to *something* usable.
+        return make_pair(true, httpResponse.sendRedirect(relayState.c_str()));
+    }
+    catch (XMLToolingException& ex) {
+        if (!relayState.empty())
+            ex.addProperty("RelayState", relayState.c_str());
+        throw;
+    }
 #else
     throw ConfigurationException("Cannot process message using lite version of shibsp library.");
 #endif
 }
 
-pair<bool,long> AssertionConsumerService::sendRedirect(
-    SPRequest& request, const char* key, const char* entityID, const char* relayState
-    ) const
-{
-    // We've got a good session, so set the session cookie.
-    pair<string,const char*> shib_cookie=request.getApplication().getCookieNameProps("_shibsession_");
-    string k(key);
-    k += shib_cookie.second;
-    request.setCookie(shib_cookie.first.c_str(), k.c_str());
-
-    // History cookie.
-    maintainHistory(request, entityID, shib_cookie.second);
-
-    // Now redirect to the state value. By now, it should be set to *something* usable.
-    return make_pair(true, request.sendRedirect(relayState));
-}
-
-void AssertionConsumerService::checkAddress(
-    const Application& application, const HTTPRequest& httpRequest, const char* issuedTo
-    ) const
+void AssertionConsumerService::checkAddress(const Application& application, const HTTPRequest& httpRequest, const char* issuedTo) const
 {
     const PropertySet* props=application.getPropertySet("Sessions");
     pair<bool,bool> checkAddress = props ? props->getBool("checkAddress") : make_pair(false,true);
@@ -443,22 +389,28 @@ void AssertionConsumerService::extractMessageDetails(const Assertion& assertion,
 
 #endif
 
-void AssertionConsumerService::maintainHistory(SPRequest& request, const char* entityID, const char* cookieProps) const
+void AssertionConsumerService::maintainHistory(
+    const Application& application, const HTTPRequest& request, HTTPResponse& response, const char* entityID
+    ) const
 {
-    if (!entityID)
-        return;
-        
-    const PropertySet* sessionProps=request.getApplication().getPropertySet("Sessions");
+    static const char* defProps="; path=/";
+
+    const PropertySet* sessionProps=application.getPropertySet("Sessions");
     pair<bool,bool> idpHistory=sessionProps->getBool("idpHistory");
+
     if (!idpHistory.first || idpHistory.second) {
+        pair<bool,const char*> cookieProps=sessionProps->getString("cookieProps");
+        if (!cookieProps.first)
+            cookieProps.second=defProps;
+
         // Set an IdP history cookie locally (essentially just a CDC).
         CommonDomainCookie cdc(request.getCookie(CommonDomainCookie::CDCName));
 
         // Either leave in memory or set an expiration.
         pair<bool,unsigned int> days=sessionProps->getUnsignedInt("idpHistoryDays");
         if (!days.first || days.second==0) {
-            string c = string(cdc.set(entityID)) + cookieProps;
-            request.setCookie(CommonDomainCookie::CDCName, c.c_str());
+            string c = string(cdc.set(entityID)) + cookieProps.second;
+            response.setCookie(CommonDomainCookie::CDCName, c.c_str());
         }
         else {
             time_t now=time(NULL) + (days.second * 24 * 60 * 60);
@@ -470,8 +422,8 @@ void AssertionConsumerService::maintainHistory(SPRequest& request, const char* e
 #endif
             char timebuf[64];
             strftime(timebuf,64,"%a, %d %b %Y %H:%M:%S GMT",ptime);
-            string c = string(cdc.set(entityID)) + cookieProps + "; expires=" + timebuf;
-            request.setCookie(CommonDomainCookie::CDCName, c.c_str());
+            string c = string(cdc.set(entityID)) + cookieProps.second + "; expires=" + timebuf;
+            response.setCookie(CommonDomainCookie::CDCName, c.c_str());
         }
     }
 }

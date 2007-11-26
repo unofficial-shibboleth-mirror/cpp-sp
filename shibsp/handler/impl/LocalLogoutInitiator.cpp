@@ -97,22 +97,17 @@ pair<bool,long> LocalLogoutInitiator::run(SPRequest& request, bool isHandler) co
     if (ret.first)
         return ret;
 
-    // Get session ID from cookie.
-    pair<string,const char*> shib_cookie = request.getApplication().getCookieNameProps("_shibsession_");
-    const char* session_id = request.getCookie(shib_cookie.first.c_str());
-    if (session_id) {
+    const Application& app = request.getApplication();
+    string session_id = app.getServiceProvider().getSessionCache()->active(request, app);
+    if (!session_id.empty()) {
         // Do back channel notification.
         vector<string> sessions(1, session_id);
-        if (!notifyBackChannel(request.getApplication(), request.getRequestURL(), sessions, true)) {
-            request.getApplication().getServiceProvider().getSessionCache()->remove(session_id, request.getApplication());
-            return sendLogoutPage(request.getApplication(), request, true, "Partial logout failure.");
+        if (!notifyBackChannel(app, request.getRequestURL(), sessions, true)) {
+            app.getServiceProvider().getSessionCache()->remove(request, &request, app);
+            return sendLogoutPage(app, request, true, "Partial logout failure.");
         }
-        request.getServiceProvider().getSessionCache()->remove(session_id, request.getApplication());
-
-        // Clear the cookie.
-        pair<string,const char*> shib_cookie=request.getApplication().getCookieNameProps("_shibsession_");
-        request.setCookie(shib_cookie.first.c_str(), shib_cookie.second);
+        request.getServiceProvider().getSessionCache()->remove(request, &request, app);
     }
 
-    return sendLogoutPage(request.getApplication(), request, true, "Logout was successful.");
+    return sendLogoutPage(app, request, true, "Logout was successful.");
 }

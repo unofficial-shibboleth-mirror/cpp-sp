@@ -247,7 +247,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, const char* entit
         if (acsByIndex.first && !acsByIndex.second) {
             // Since we're passing the ACS by value, we need to compute the return URL,
             // so we'll need the target resource for real.
-            recoverRelayState(request.getApplication(), request, target, false);
+            recoverRelayState(request.getApplication(), request, request, target, false);
         }
 
         option = request.getParameter("isPassive");

@@ -99,7 +99,7 @@ pair<bool,long> SAMLDSSessionInitiator::run(SPRequest& request, const char* enti
         option = request.getParameter("target");
         if (option)
             target = option;
-        recoverRelayState(request.getApplication(), request, target, false);
+        recoverRelayState(request.getApplication(), request, request, target, false);
 
         option = request.getParameter("isPassive");
         if (option)

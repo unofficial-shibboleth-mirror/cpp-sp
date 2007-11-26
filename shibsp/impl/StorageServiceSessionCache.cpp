@@ -71,10 +71,11 @@ namespace shibsp {
 #ifndef SHIBSP_LITE
         void receive(DDF& in, ostream& out);
 
-        string insert(
+        void insert(
             time_t expires,
             const Application& application,
-            const char* client_addr=NULL,
+            const HTTPRequest& httpRequest,
+            HTTPResponse& httpResponse,
             const saml2md::EntityDescriptor* issuer=NULL,
             const XMLCh* protocol=NULL,
             const saml2::NameID* nameid=NULL,
@@ -94,7 +95,7 @@ namespace shibsp {
             vector<string>& sessions
             );
         bool matches(
-            const char* key,
+            const xmltooling::HTTPRequest& request,
             const saml2md::EntityDescriptor* issuer,
             const saml2::NameID& nameid,
             const set<string>* indexes,
@@ -104,6 +105,29 @@ namespace shibsp {
         Session* find(const char* key, const Application& application, const char* client_addr=NULL, time_t* timeout=NULL);
         void remove(const char* key, const Application& application);
         void test();
+
+        string active(const xmltooling::HTTPRequest& request, const Application& application) const {
+            pair<string,const char*> shib_cookie = application.getCookieNameProps("_shibsession_");
+            const char* session_id = request.getCookie(shib_cookie.first.c_str());
+            return (session_id ? session_id : "");
+        }
+
+        Session* find(const HTTPRequest& request, const Application& application, const char* client_addr=NULL, time_t* timeout=NULL) {
+            string id = active(request, application);
+            if (!id.empty())
+                return find(id.c_str(), application, client_addr, timeout);
+            return NULL;
+        }
+
+        void remove(const HTTPRequest& request, HTTPResponse* response, const Application& application) {
+            pair<string,const char*> shib_cookie = application.getCookieNameProps("_shibsession_");
+            const char* session_id = request.getCookie(shib_cookie.first.c_str());
+            if (session_id && *session_id) {
+                if (response)
+                    response->setCookie(shib_cookie.first.c_str(), shib_cookie.second);
+                remove(session_id, application);
+            }
+        }
 
         void cleanup();
 
@@ -801,10 +825,11 @@ void SSCache::insert(const char* key, time_t expires, const char* name, const ch
     }
 }
 
-string SSCache::insert(
+void SSCache::insert(
     time_t expires,
     const Application& application,
-    const char* client_addr,
+    const HTTPRequest& httpRequest,
+    HTTPResponse& httpResponse,
     const saml2md::EntityDescriptor* issuer,
     const XMLCh* protocol,
     const saml2::NameID* nameid,
@@ -874,8 +899,7 @@ string SSCache::insert(
     strftime(timebuf,32,"%Y-%m-%dT%H:%M:%SZ",ptime);
     obj.addmember("expires").string(timebuf);
 
-    if (client_addr)
-        obj.addmember("client_addr").string(client_addr);
+    obj.addmember("client_addr").string(httpRequest.getRemoteAddr().c_str());
     if (issuer)
         obj.addmember("entity_id").string(entity_id.get());
     if (protocol) {
@@ -953,7 +977,7 @@ string SSCache::insert(
     }
 
     const char* pid = obj["entity_id"].string();
-    m_log.info("new session created: SessionID (%s) IdP (%s) Address (%s)", key.get(), pid ? pid : "none", client_addr);
+    m_log.info("new session created: SessionID (%s) IdP (%s) Address (%s)", key.get(), pid ? pid : "none", httpRequest.getRemoteAddr().c_str());
 
     // Transaction Logging
     TransactionLog* xlog = application.getServiceProvider().getTransactionLog();
@@ -966,7 +990,7 @@ string SSCache::insert(
         ") for principal from (IdP: " <<
             (pid ? pid : "none") <<
         ") at (ClientAddress: " <<
-            (client_addr ? client_addr : "none") <<
+            httpRequest.getRemoteAddr() <<
         ") with (NameIdentifier: " <<
             (nameid ? name.get() : "none") <<
         ")";
@@ -983,11 +1007,14 @@ string SSCache::insert(
         xlog->log.info("}");
     }
 
-    return key.get();
+    pair<string,const char*> shib_cookie = application.getCookieNameProps("_shibsession_");
+    string k(key.get());
+    k += shib_cookie.second;
+    httpResponse.setCookie(shib_cookie.first.c_str(), k.c_str());
 }
 
 bool SSCache::matches(
-    const char* key,
+    const xmltooling::HTTPRequest& request,
     const saml2md::EntityDescriptor* issuer,
     const saml2::NameID& nameid,
     const set<string>* indexes,
@@ -996,7 +1023,7 @@ bool SSCache::matches(
 {
     auto_ptr_char entityID(issuer ? issuer->getEntityID() : NULL);
     try {
-        Session* session = find(key, application);
+        Session* session = find(request, application);
         if (session) {
             Locker locker(session, false);
             if (XMLString::equals(session->getEntityID(), entityID.get()) && session->getNameID() &&
@@ -1006,7 +1033,7 @@ bool SSCache::matches(
         }
     }
     catch (exception& ex) {
-        m_log.error("error while matching session (%s): %s", key, ex.what());
+        m_log.error("error while matching session: %s", ex.what());
     }
     return false;
 }

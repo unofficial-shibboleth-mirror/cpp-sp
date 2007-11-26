@@ -93,13 +93,9 @@ namespace shibsp {
 #endif
 
     private:
-        pair<bool,long> doRequest(
-            const Application& application, const char* session_id, const HTTPRequest& httpRequest, HTTPResponse& httpResponse
-            ) const;
+        pair<bool,long> doRequest(const Application& application, const HTTPRequest& httpRequest, HTTPResponse& httpResponse) const;
 
 #ifndef SHIBSP_LITE
-        bool stronglyMatches(const XMLCh* idp, const XMLCh* sp, const saml2::NameID& n1, const saml2::NameID& n2) const;
-
         pair<bool,long> sendResponse(
             const XMLCh* requestID,
             const XMLCh* code,
@@ -211,21 +207,16 @@ pair<bool,long> SAML2Logout::run(SPRequest& request, bool isHandler) const
     if (ret.first)
         return ret;
 
-    // Get the session_id in case this is a front-channel LogoutRequest.
-    pair<string,const char*> shib_cookie = request.getApplication().getCookieNameProps("_shibsession_");
-    const char* session_id = request.getCookie(shib_cookie.first.c_str());
-
     SPConfig& conf = SPConfig::getConfig();
     if (conf.isEnabled(SPConfig::OutOfProcess)) {
         // When out of process, we run natively and directly process the message.
-        return doRequest(request.getApplication(), session_id, request, request);
+        return doRequest(request.getApplication(), request, request);
     }
     else {
         // When not out of process, we remote all the message processing.
-        DDF out,in = wrap(request, NULL, true);
+        vector<string> headers(1,"Cookie");
+        DDF out,in = wrap(request, &headers, true);
         DDFJanitor jin(in), jout(out);
-        if (session_id)
-            in.addmember("session_id").string(session_id);
         out=request.getServiceProvider().getListenerService()->send(in);
         return unwrap(request, out);
     }
@@ -243,54 +234,47 @@ void SAML2Logout::receive(DDF& in, ostream& out)
     }
     
     // Unpack the request.
+    auto_ptr<HTTPRequest> req(getRequest(in));
+
+    // Wrap a response shim.
     DDF ret(NULL);
     DDFJanitor jout(ret);
-    auto_ptr<HTTPRequest> req(getRequest(in));
     auto_ptr<HTTPResponse> resp(getResponse(ret));
     
     // Since we're remoted, the result should either be a throw, which we pass on,
     // a false/0 return, which we just return as an empty structure, or a response/redirect,
     // which we capture in the facade and send back.
-    doRequest(*app, in["session_id"].string(), *req.get(), *resp.get());
+    doRequest(*app, *req.get(), *resp.get());
     out << ret;
 }
 
-pair<bool,long> SAML2Logout::doRequest(
-    const Application& application, const char* session_id, const HTTPRequest& request, HTTPResponse& response
-    ) const
+pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTTPRequest& request, HTTPResponse& response) const
 {
 #ifndef SHIBSP_LITE
+    // First capture the active session ID.
     SessionCache* cache = application.getServiceProvider().getSessionCache();
-    if (!strcmp(request.getMethod(),"GET") && request.getParameter("notifying")) {
+    string session_id = cache->active(request, application);
 
+    if (!strcmp(request.getMethod(),"GET") && request.getParameter("notifying")) {
         // This is returning from a front-channel notification, so we have to do the back-channel and then
         // respond. To do that, we need state from the original request.
         if (!request.getParameter("entityID")) {
-            if (session_id) {
-                cache->remove(session_id, application);
-                // Clear the cookie.
-                pair<string,const char*> shib_cookie=application.getCookieNameProps("_shibsession_");
-                response.setCookie(shib_cookie.first.c_str(), shib_cookie.second);
-            }
+            cache->remove(request, &response, application);
             throw FatalProfileException("Application notification loop did not return entityID for LogoutResponse.");
         }
 
         // Best effort on back channel and to remove the user agent's session.
         bool worked1 = false,worked2 = false;
-        if (session_id) {
+        if (!session_id.empty()) {
             vector<string> sessions(1,session_id);
             worked1 = notifyBackChannel(application, request.getRequestURL(), sessions, false);
             try {
-                cache->remove(session_id, application);
+                cache->remove(request, &response, application);
                 worked2 = true;
             }
             catch (exception& ex) {
                 m_log.error("error removing session (%s): %s", session_id, ex.what());
             }
-
-            // Clear the cookie.
-            pair<string,const char*> shib_cookie=application.getCookieNameProps("_shibsession_");
-            response.setCookie(shib_cookie.first.c_str(), shib_cookie.second);
         }
         else {
             worked1 = worked2 = true;
@@ -360,7 +344,7 @@ pair<bool,long> SAML2Logout::doRequest(
         // Message from IdP to logout one or more sessions.
         
         // If this is front-channel, we have to have a session_id to use already.
-        if (m_decoder->isUserAgentPresent() && !session_id) {
+        if (m_decoder->isUserAgentPresent() && session_id.empty()) {
             m_log.error("no active session");
             return sendResponse(
                 logoutRequest->getID(),
@@ -428,11 +412,11 @@ pair<bool,long> SAML2Logout::doRequest(
 
         // For a front-channel LogoutRequest, we have to match the information in the request
         // against the current session.
-        if (session_id) {
-            if (!cache->matches(session_id, entity, *nameid, &indexes, application)) {
+        if (!session_id.empty()) {
+            if (!cache->matches(request, entity, *nameid, &indexes, application)) {
                 return sendResponse(
                     logoutRequest->getID(),
-                    StatusCode::REQUESTER, StatusCode::REQUEST_DENIED, "Active sessions did not match logout request.",
+                    StatusCode::REQUESTER, StatusCode::REQUEST_DENIED, "Active session did not match logout request.",
                     relayState.c_str(),
                     policy.getIssuerMetadata(),
                     application,
@@ -452,8 +436,8 @@ pair<bool,long> SAML2Logout::doRequest(
             // Now we actually terminate everything except for the active session,
             // if this is front-channel, for notification purposes.
             for (vector<string>::const_iterator sit = sessions.begin(); sit != sessions.end(); ++sit)
-                if (session_id && strcmp(sit->c_str(), session_id))
-                    cache->remove(sit->c_str(), application);
+                if (*sit != session_id)
+                    cache->remove(sit->c_str(), application);   // using the ID-based removal operation
         }
         catch (exception& ex) {
             m_log.error("error while logging out matching sessions: %s", ex.what());
@@ -487,19 +471,15 @@ pair<bool,long> SAML2Logout::doRequest(
         // For back-channel requests, or if no front-channel notification is needed...
         bool worked1 = false,worked2 = false;
         worked1 = notifyBackChannel(application, request.getRequestURL(), sessions, false);
-        if (session_id) {
+        if (!session_id.empty()) {
             // One last session to yoink...
             try {
-                cache->remove(session_id, application);
+                cache->remove(request, &response, application);
                 worked2 = true;
             }
             catch (exception& ex) {
-                m_log.error("error removing active session (%s): %s", session_id, ex.what());
+                m_log.error("error removing active session (%s): %s", session_id.c_str(), ex.what());
             }
-
-            // Clear the cookie.
-            pair<string,const char*> shib_cookie=application.getCookieNameProps("_shibsession_");
-            response.setCookie(shib_cookie.first.c_str(), shib_cookie.second);
         }
 
         return sendResponse(
@@ -541,41 +521,6 @@ pair<bool,long> SAML2Logout::doRequest(
 }
 
 #ifndef SHIBSP_LITE
-
-bool SAML2Logout::stronglyMatches(const XMLCh* idp, const XMLCh* sp, const saml2::NameID& n1, const saml2::NameID& n2) const
-{
-    if (!XMLString::equals(n1.getName(), n2.getName()))
-        return false;
-    
-    const XMLCh* s1 = n1.getFormat();
-    const XMLCh* s2 = n2.getFormat();
-    if (!s1 || !*s1)
-        s1 = saml2::NameID::UNSPECIFIED;
-    if (!s2 || !*s2)
-        s2 = saml2::NameID::UNSPECIFIED;
-    if (!XMLString::equals(s1,s2))
-        return false;
-    
-    s1 = n1.getNameQualifier();
-    s2 = n2.getNameQualifier();
-    if (!s1 || !*s1)
-        s1 = idp;
-    if (!s2 || !*s2)
-        s2 = idp;
-    if (!XMLString::equals(s1,s2))
-        return false;
-
-    s1 = n1.getSPNameQualifier();
-    s2 = n2.getSPNameQualifier();
-    if (!s1 || !*s1)
-        s1 = sp;
-    if (!s2 || !*s2)
-        s2 = sp;
-    if (!XMLString::equals(s1,s2))
-        return false;
-
-    return true;
-}
 
 pair<bool,long> SAML2Logout::sendResponse(
     const XMLCh* requestID,

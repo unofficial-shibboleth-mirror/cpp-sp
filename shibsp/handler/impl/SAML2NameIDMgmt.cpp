@@ -93,12 +93,9 @@ namespace shibsp {
 #endif
 
     private:
-        pair<bool,long> doRequest(
-            const Application& application, const char* session_id, const HTTPRequest& httpRequest, HTTPResponse& httpResponse
-            ) const;
+        pair<bool,long> doRequest(const Application& application, const HTTPRequest& httpRequest, HTTPResponse& httpResponse) const;
 
 #ifndef SHIBSP_LITE
-        bool stronglyMatches(const XMLCh* idp, const XMLCh* sp, const saml2::NameID& n1, const saml2::NameID& n2) const;
         bool notifyBackChannel(const Application& application, const char* requestURL, const NameID& nameid, const NewID* newid) const;
 
         pair<bool,long> sendResponse(
@@ -201,21 +198,16 @@ SAML2NameIDMgmt::SAML2NameIDMgmt(const DOMElement* e, const char* appId)
 
 pair<bool,long> SAML2NameIDMgmt::run(SPRequest& request, bool isHandler) const
 {
-    // Get the session_id in case this is a front-channel request.
-    pair<string,const char*> shib_cookie = request.getApplication().getCookieNameProps("_shibsession_");
-    const char* session_id = request.getCookie(shib_cookie.first.c_str());
-
     SPConfig& conf = SPConfig::getConfig();
     if (conf.isEnabled(SPConfig::OutOfProcess)) {
         // When out of process, we run natively and directly process the message.
-        return doRequest(request.getApplication(), session_id, request, request);
+        return doRequest(request.getApplication(), request, request);
     }
     else {
         // When not out of process, we remote all the message processing.
-        DDF out,in = wrap(request, NULL, true);
+        vector<string> headers(1,"Cookie");
+        DDF out,in = wrap(request, &headers, true);
         DDFJanitor jin(in), jout(out);
-        if (session_id)
-            in.addmember("session_id").string(session_id);
         out=request.getServiceProvider().getListenerService()->send(in);
         return unwrap(request, out);
     }
@@ -233,20 +225,22 @@ void SAML2NameIDMgmt::receive(DDF& in, ostream& out)
     }
     
     // Unpack the request.
+    auto_ptr<HTTPRequest> req(getRequest(in));
+
+    // Wrap a response shim.
     DDF ret(NULL);
     DDFJanitor jout(ret);
-    auto_ptr<HTTPRequest> req(getRequest(in));
     auto_ptr<HTTPResponse> resp(getResponse(ret));
     
     // Since we're remoted, the result should either be a throw, which we pass on,
     // a false/0 return, which we just return as an empty structure, or a response/redirect,
     // which we capture in the facade and send back.
-    doRequest(*app, in["session_id"].string(), *req.get(), *resp.get());
+    doRequest(*app, *req.get(), *resp.get());
     out << ret;
 }
 
 pair<bool,long> SAML2NameIDMgmt::doRequest(
-    const Application& application, const char* session_id, const HTTPRequest& request, HTTPResponse& response
+    const Application& application, const HTTPRequest& request, HTTPResponse& response
     ) const
 {
 #ifndef SHIBSP_LITE
@@ -276,9 +270,10 @@ pair<bool,long> SAML2NameIDMgmt::doRequest(
             throw SecurityPolicyException("Security of ManageNameIDRequest not established.");
 
         // Message from IdP to change or terminate a NameID.
-        
+
         // If this is front-channel, we have to have a session_id to use already.
-        if (m_decoder->isUserAgentPresent() && !session_id) {
+        string session_id = cache->active(request, application);
+        if (m_decoder->isUserAgentPresent() && session_id.empty()) {
             m_log.error("no active session");
             return sendResponse(
                 mgmtRequest->getID(),
@@ -290,7 +285,7 @@ pair<bool,long> SAML2NameIDMgmt::doRequest(
                 true
                 );
         }
-
+        
         bool ownedName = false;
         NameID* nameid = mgmtRequest->getNameID();
         if (!nameid) {
@@ -338,8 +333,8 @@ pair<bool,long> SAML2NameIDMgmt::doRequest(
         // For a front-channel request, we have to match the information in the request
         // against the current session.
         EntityDescriptor* entity = policy.getIssuerMetadata() ? dynamic_cast<EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL;
-        if (session_id) {
-            if (!cache->matches(session_id, entity, *nameid, NULL, application)) {
+        if (!session_id.empty()) {
+            if (!cache->matches(request, entity, *nameid, NULL, application)) {
                 return sendResponse(
                     mgmtRequest->getID(),
                     StatusCode::REQUESTER, StatusCode::REQUEST_DENIED, "Active session did not match NameID mgmt request.",
@@ -475,41 +470,6 @@ pair<bool,long> SAML2NameIDMgmt::doRequest(
 }
 
 #ifndef SHIBSP_LITE
-
-bool SAML2NameIDMgmt::stronglyMatches(const XMLCh* idp, const XMLCh* sp, const saml2::NameID& n1, const saml2::NameID& n2) const
-{
-    if (!XMLString::equals(n1.getName(), n2.getName()))
-        return false;
-    
-    const XMLCh* s1 = n1.getFormat();
-    const XMLCh* s2 = n2.getFormat();
-    if (!s1 || !*s1)
-        s1 = saml2::NameID::UNSPECIFIED;
-    if (!s2 || !*s2)
-        s2 = saml2::NameID::UNSPECIFIED;
-    if (!XMLString::equals(s1,s2))
-        return false;
-    
-    s1 = n1.getNameQualifier();
-    s2 = n2.getNameQualifier();
-    if (!s1 || !*s1)
-        s1 = idp;
-    if (!s2 || !*s2)
-        s2 = idp;
-    if (!XMLString::equals(s1,s2))
-        return false;
-
-    s1 = n1.getSPNameQualifier();
-    s2 = n2.getSPNameQualifier();
-    if (!s1 || !*s1)
-        s1 = sp;
-    if (!s2 || !*s2)
-        s2 = sp;
-    if (!XMLString::equals(s1,s2))
-        return false;
-
-    return true;
-}
 
 pair<bool,long> SAML2NameIDMgmt::sendResponse(
     const XMLCh* requestID,

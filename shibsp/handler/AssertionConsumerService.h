@@ -70,9 +70,7 @@ namespace shibsp {
          * @param httpRequest   client request that initiated session
          * @param issuedTo      address for which security assertion was issued
          */
-        void checkAddress(
-            const Application& application, const xmltooling::HTTPRequest& httpRequest, const char* issuedTo
-            ) const;
+        void checkAddress(const Application& application, const xmltooling::HTTPRequest& httpRequest, const char* issuedTo) const;
         
 #ifndef SHIBSP_LITE
         void generateMetadata(opensaml::saml2md::SPSSODescriptor& role, const char* handlerURL) const;
@@ -81,18 +79,20 @@ namespace shibsp {
          * Implement protocol-specific handling of the incoming decoded message.
          * 
          * <p>The result of implementing the protocol should be an exception or
-         * the key to a newly created session.
+         * modifications to the request/response objects to reflect processing
+         * of the message.
          * 
          * @param application   reference to application receiving message
          * @param httpRequest   client request that included message
+         * @param httpResponse  response to client
          * @param policy        the SecurityPolicy in effect, after having evaluated the message
          * @param settings      policy configuration settings in effect
          * @param xmlObject     a protocol-specific message object
-         * @return  the key to the newly created session
          */
-        virtual std::string implementProtocol(
+        virtual void implementProtocol(
             const Application& application,
             const xmltooling::HTTPRequest& httpRequest,
+            xmltooling::HTTPResponse& httpResponse,
             opensaml::SecurityPolicy& policy,
             const PropertySet* settings,
             const xmltooling::XMLObject& xmlObject
@@ -143,18 +143,21 @@ namespace shibsp {
 
 #endif
     private:
-        std::string processMessage(
-            const Application& application,
-            xmltooling::HTTPRequest& httpRequest,
-            std::string& entityID,
-            std::string& relayState
-            ) const;
-            
-        std::pair<bool,long> sendRedirect(
-            SPRequest& request, const char* key, const char* entityID, const char* relayState
+        std::pair<bool,long> processMessage(
+            const Application& application, const xmltooling::HTTPRequest& httpRequest, xmltooling::HTTPResponse& httpResponse
             ) const;
         
-        void maintainHistory(SPRequest& request, const char* entityID, const char* cookieProps) const;
+        std::pair<bool,long> sendRedirect(
+            const Application& application,
+            const xmltooling::HTTPRequest& request,
+            xmltooling::HTTPResponse& response,
+            const char* entityID,
+            const char* relayState
+            ) const;
+
+        void maintainHistory(
+            const Application& application, const xmltooling::HTTPRequest& request, xmltooling::HTTPResponse& response, const char* entityID
+            ) const;
                 
 #ifndef SHIBSP_LITE
         opensaml::MessageDecoder* m_decoder;

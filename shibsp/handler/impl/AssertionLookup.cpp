@@ -123,7 +123,7 @@ pair<bool,long> AssertionLookup::run(SPRequest& request, bool isHandler) const
         }
         else {
             // When not out of process, we remote all the message processing.
-            DDF out,in = wrap(request, NULL, true);
+            DDF out,in = wrap(request);
             DDFJanitor jin(in), jout(out);
             
             out=request.getServiceProvider().getListenerService()->send(in);
@@ -177,7 +177,7 @@ pair<bool,long> AssertionLookup::processMessage(const Application& application, 
     m_log.debug("processing assertion lookup request (session: %s, assertion: %s)", key, ID);
 
     // The cache will either silently pass a session or NULL back, or throw an exception out.
-    Session* session = application.getServiceProvider().getSessionCache()->find(key, application);
+    Session* session = application.getServiceProvider().getSessionCache()->find(httpRequest, application);
     if (!session) {
         m_log.error("valid session (%s) not found for assertion lookup", key);
         throw FatalProfileException("Session key not found.");

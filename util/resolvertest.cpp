@@ -84,9 +84,10 @@ public:
     }
 
 private:
-    string implementProtocol(
+    void implementProtocol(
         const Application& application,
         const HTTPRequest& httpRequest,
+        HTTPResponse& httpResponse,
         SecurityPolicy& policy,
         const PropertySet* settings,
         const XMLObject& xmlObject

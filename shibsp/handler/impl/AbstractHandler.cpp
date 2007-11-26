@@ -302,7 +302,9 @@ void AbstractHandler::preserveRelayState(const Application& application, HTTPRes
         throw ConfigurationException("Unsupported relayState mechanism ($1).", params(1,mech.second));
 }
 
-void AbstractHandler::recoverRelayState(const Application& application, HTTPRequest& httpRequest, string& relayState, bool clear) const
+void AbstractHandler::recoverRelayState(
+    const Application& application, const HTTPRequest& request, HTTPResponse& response, string& relayState, bool clear
+    ) const
 {
     SPConfig& conf = SPConfig::getConfig();
 
@@ -356,34 +358,30 @@ void AbstractHandler::recoverRelayState(const Application& application, HTTPRequ
         }
     }
     
-    if (conf.isEnabled(SPConfig::InProcess)) {
-        if (relayState == "cookie") {
-            // Pull the value from the "relay state" cookie.
-            pair<string,const char*> relay_cookie = application.getCookieNameProps("_shibstate_");
-            // In process, we should be able to cast down to a full SPRequest.
-            SPRequest& request = dynamic_cast<SPRequest&>(httpRequest);
-            const char* state = request.getCookie(relay_cookie.first.c_str());
-            if (state && *state) {
-                // URL-decode the value.
-                char* rscopy=strdup(state);
-                XMLToolingConfig::getConfig().getURLEncoder()->decode(rscopy);
-                relayState = rscopy;
-                free(rscopy);
-                
-                if (clear)
-                    request.setCookie(relay_cookie.first.c_str(),relay_cookie.second);
-                return;
-            }
-
-            relayState.erase();
-        }
-
-        // Check for "default" value.
-        if (relayState.empty() || relayState == "default") {
-            pair<bool,const char*> homeURL=application.getString("homeURL");
-            relayState=homeURL.first ? homeURL.second : "/";
+    if (relayState == "cookie") {
+        // Pull the value from the "relay state" cookie.
+        pair<string,const char*> relay_cookie = application.getCookieNameProps("_shibstate_");
+        const char* state = request.getCookie(relay_cookie.first.c_str());
+        if (state && *state) {
+            // URL-decode the value.
+            char* rscopy=strdup(state);
+            XMLToolingConfig::getConfig().getURLEncoder()->decode(rscopy);
+            relayState = rscopy;
+            free(rscopy);
+            
+            if (clear)
+                response.setCookie(relay_cookie.first.c_str(),relay_cookie.second);
             return;
         }
+
+        relayState.erase();
+    }
+
+    // Check for "default" value.
+    if (relayState.empty() || relayState == "default") {
+        pair<bool,const char*> homeURL=application.getString("homeURL");
+        relayState=homeURL.first ? homeURL.second : "/";
+        return;
     }
 
     if (relayState == "default")

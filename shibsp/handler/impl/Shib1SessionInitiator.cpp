@@ -128,7 +128,7 @@ pair<bool,long> Shib1SessionInitiator::run(SPRequest& request, const char* entit
 
         // Since we're passing the ACS by value, we need to compute the return URL,
         // so we'll need the target resource for real.
-        recoverRelayState(request.getApplication(), request, target, false);
+        recoverRelayState(request.getApplication(), request, request, target, false);
     }
     else {
         // We're running as a "virtual handler" from within the filter.
