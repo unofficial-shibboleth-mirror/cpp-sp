@@ -381,10 +381,10 @@ void SAML2Consumer::implementProtocol(
         tokens.insert(tokens.end(), badtokens.begin(), badtokens.end());
 
         application.getServiceProvider().getSessionCache()->insert(
-            sessionExp,
             application,
             httpRequest,
             httpResponse,
+            sessionExp,
             policy.getIssuerMetadata() ? dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL,
             samlconstants::SAML20P_NS,
             ssoName,

@@ -98,15 +98,15 @@ pair<bool,long> LocalLogoutInitiator::run(SPRequest& request, bool isHandler) co
         return ret;
 
     const Application& app = request.getApplication();
-    string session_id = app.getServiceProvider().getSessionCache()->active(request, app);
+    string session_id = app.getServiceProvider().getSessionCache()->active(app, request);
     if (!session_id.empty()) {
         // Do back channel notification.
         vector<string> sessions(1, session_id);
         if (!notifyBackChannel(app, request.getRequestURL(), sessions, true)) {
-            app.getServiceProvider().getSessionCache()->remove(request, &request, app);
+            app.getServiceProvider().getSessionCache()->remove(app, request, &request);
             return sendLogoutPage(app, request, true, "Partial logout failure.");
         }
-        request.getServiceProvider().getSessionCache()->remove(request, &request, app);
+        request.getServiceProvider().getSessionCache()->remove(app, request, &request);
     }
 
     return sendLogoutPage(app, request, true, "Logout was successful.");

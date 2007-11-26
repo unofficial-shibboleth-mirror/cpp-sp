@@ -240,7 +240,7 @@ void SAML2LogoutInitiator::receive(DDF& in, ostream& out)
     
     Session* session = NULL;
     try {
-         session = app->getServiceProvider().getSessionCache()->find(*req.get(), *app, NULL, NULL);
+         session = app->getServiceProvider().getSessionCache()->find(*app, *req.get(), NULL, NULL);
     }
     catch (exception& ex) {
         m_log.error("error accessing current session: %s", ex.what());
@@ -257,7 +257,7 @@ void SAML2LogoutInitiator::receive(DDF& in, ostream& out)
         else {
              m_log.error("no NameID or issuing entityID found in session");
              session->unlock();
-             app->getServiceProvider().getSessionCache()->remove(*req.get(), resp.get(), *app);
+             app->getServiceProvider().getSessionCache()->remove(*app, *req.get(), resp.get());
         }
     }
     out << ret;
@@ -274,7 +274,7 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
     vector<string> sessions(1, session->getID());
     if (!notifyBackChannel(application, httpRequest.getRequestURL(), sessions, false)) {
         session->unlock();
-        application.getServiceProvider().getSessionCache()->remove(httpRequest, &httpResponse, application);
+        application.getServiceProvider().getSessionCache()->remove(application, httpRequest, &httpResponse);
         return sendLogoutPage(application, httpResponse, true, "Partial logout failure.");
     }
 
@@ -354,7 +354,7 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
             if (session) {
                 session->unlock();
                 session = NULL;
-                application.getServiceProvider().getSessionCache()->remove(httpRequest, &httpResponse, application);
+                application.getServiceProvider().getSessionCache()->remove(application, httpRequest, &httpResponse);
             }
             return ret;
         }
@@ -374,13 +374,13 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
     if (session) {
         session->unlock();
         session = NULL;
-        application.getServiceProvider().getSessionCache()->remove(httpRequest, &httpResponse, application);
+        application.getServiceProvider().getSessionCache()->remove(application, httpRequest, &httpResponse);
     }
 
     return ret;
 #else
     session->unlock();
-    application.getServiceProvider().getSessionCache()->remove(httpRequest, &httpResponse, application);
+    application.getServiceProvider().getSessionCache()->remove(application, httpRequest, &httpResponse);
     throw ConfigurationException("Cannot perform logout using lite version of shibsp library.");
 #endif
 }

@@ -272,7 +272,7 @@ pair<bool,long> SAML2NameIDMgmt::doRequest(
         // Message from IdP to change or terminate a NameID.
 
         // If this is front-channel, we have to have a session_id to use already.
-        string session_id = cache->active(request, application);
+        string session_id = cache->active(application, request);
         if (m_decoder->isUserAgentPresent() && session_id.empty()) {
             m_log.error("no active session");
             return sendResponse(
@@ -334,7 +334,7 @@ pair<bool,long> SAML2NameIDMgmt::doRequest(
         // against the current session.
         EntityDescriptor* entity = policy.getIssuerMetadata() ? dynamic_cast<EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL;
         if (!session_id.empty()) {
-            if (!cache->matches(request, entity, *nameid, NULL, application)) {
+            if (!cache->matches(application, request, entity, *nameid, NULL)) {
                 return sendResponse(
                     mgmtRequest->getID(),
                     StatusCode::REQUESTER, StatusCode::REQUEST_DENIED, "Active session did not match NameID mgmt request.",

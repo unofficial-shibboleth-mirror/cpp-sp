@@ -99,7 +99,7 @@ Session* AbstractSPRequest::getSession(bool checkTimeout, bool ignoreAddress, bo
 
     // The cache will either silently pass a session or NULL back, or throw an exception out.
     Session* session = getServiceProvider().getSessionCache()->find(
-        *this, getApplication(), ignoreAddress ? NULL : getRemoteAddr().c_str(), checkTimeout ? &timeout : NULL
+        getApplication(), *this, ignoreAddress ? NULL : getRemoteAddr().c_str(), checkTimeout ? &timeout : NULL
         );
     if (cache)
         m_session = session;

@@ -37,6 +37,14 @@ namespace shibsp {
     class SHIBSP_API Application;
     class SHIBSP_API Attribute;
 
+    /**
+     * Encapsulates access to a user's security session.
+     *
+     * <p>The SessionCache does not itself require locking to manage
+     * concurrency, but access to each Session is generally exclusive
+     * or at least controlled, and the caller must unlock a Session
+     * to dispose of it.
+     */
     class SHIBSP_API Session : public virtual xmltooling::Lockable
     {
         MAKE_NONCOPYABLE(Session);
@@ -206,10 +214,10 @@ namespace shibsp {
          * 
          * <p>The SSO tokens and Attributes remain owned by the caller and are copied by the cache.
          * 
-         * @param expires           expiration time of session
          * @param application       reference to Application that owns the Session
          * @param httpRequest       request that initiated session
          * @param httpResponse      current response to client
+         * @param expires           expiration time of session
          * @param issuer            issuing metadata of assertion issuer, if known
          * @param protocol          protocol family used to initiate the session
          * @param nameid            principal identifier, normalized to SAML 2, if any
@@ -221,10 +229,10 @@ namespace shibsp {
          * @param attributes        optional array of resolved Attributes to cache with session
          */
         virtual void insert(
-            time_t expires,
             const Application& application,
             const xmltooling::HTTPRequest& httpRequest,
             xmltooling::HTTPResponse& httpResponse,
+            time_t expires,
             const opensaml::saml2md::EntityDescriptor* issuer=NULL,
             const XMLCh* protocol=NULL,
             const opensaml::saml2::NameID* nameid=NULL,
@@ -237,47 +245,21 @@ namespace shibsp {
             )=0;
 
         /**
-         * Returns active sessions that match particular parameters and records the logout
-         * to prevent race conditions.
-         *
-         * <p>On exit, the mapping between these sessions and the associated information MAY be
-         * removed by the cache, so subsequent calls to this method may not return anything.
-         *
-         * <p>Until logout expiration, any attempt to create a session with the same parameters
-         * will be blocked by the cache.
-         * 
-         * @param issuer        source of session(s)
-         * @param nameid        name identifier associated with the session(s) to terminate
-         * @param indexes       indexes of sessions, or NULL for all sessions associated with other parameters
-         * @param expires       logout expiration
-         * @param application   reference to Application that owns the session(s)
-         * @param sessions      on exit, contains the IDs of the matching sessions found
-         */
-        virtual std::vector<std::string>::size_type logout(
-            const opensaml::saml2md::EntityDescriptor* issuer,
-            const opensaml::saml2::NameID& nameid,
-            const std::set<std::string>* indexes,
-            time_t expires,
-            const Application& application,
-            std::vector<std::string>& sessions
-            )=0;
-
-        /**
          * Determines whether the Session bound to a client request matches a set of input criteria.
          * 
+         * @param application   reference to Application that owns the Session
          * @param request       request in which to locate Session
          * @param issuer        required source of session(s)
          * @param nameid        required name identifier
          * @param indexes       session indexes
-         * @param application   reference to Application that owns the Session
          * @return  true iff the Session exists and matches the input criteria
          */
         virtual bool matches(
+            const Application& application,
             const xmltooling::HTTPRequest& request,
             const opensaml::saml2md::EntityDescriptor* issuer,
             const opensaml::saml2::NameID& nameid,
-            const std::set<std::string>* indexes,
-            const Application& application
+            const std::set<std::string>* indexes
             )=0;
 
         /**
@@ -289,27 +271,11 @@ namespace shibsp {
         /**
          * Returns the ID of the session bound to the specified client request, if possible.
          * 
-         * @param request       request from client containing session, or a reference to it
          * @param application   reference to Application that owns the Session
+         * @param request       request from client containing session, or a reference to it
          * @return  ID of session, if any known, or an empty string
          */
-        virtual std::string active(const xmltooling::HTTPRequest& request, const Application& application) const=0;
-
-        /**
-         * Locates an existing session by ID.
-         * 
-         * <p>If the client address is supplied, then a check will be performed against
-         * the address recorded in the record.
-         * 
-         * @param key           session key
-         * @param application   reference to Application that owns the Session
-         * @param client_addr   network address of client (if known)
-         * @param timeout       inactivity timeout to enforce (0 for none, NULL to bypass check/update of last access)
-         * @return  pointer to locked Session, or NULL
-         */
-        virtual Session* find(
-            const char* key, const Application& application, const char* client_addr=NULL, time_t* timeout=NULL
-            )=0;
+        virtual std::string active(const Application& application, const xmltooling::HTTPRequest& request)=0;
 
         /**
          * Locates an existing session bound to a request.
@@ -317,32 +283,24 @@ namespace shibsp {
          * <p>If the client address is supplied, then a check will be performed against
          * the address recorded in the record.
          * 
-         * @param request       request from client containing session, or a reference to it
          * @param application   reference to Application that owns the Session
+         * @param request       request from client containing session, or a reference to it
          * @param client_addr   network address of client (if known)
          * @param timeout       inactivity timeout to enforce (0 for none, NULL to bypass check/update of last access)
          * @return  pointer to locked Session, or NULL
          */
         virtual Session* find(
-            const xmltooling::HTTPRequest& request, const Application& application, const char* client_addr=NULL, time_t* timeout=NULL
+            const Application& application, const xmltooling::HTTPRequest& request, const char* client_addr=NULL, time_t* timeout=NULL
             )=0;
-
-        /**
-         * Deletes an existing session.
-         * 
-         * @param key           session key
-         * @param application   reference to Application that owns the Session
-         */
-        virtual void remove(const char* key, const Application& application)=0;
 
         /**
          * Deletes an existing session bound to a request.
          * 
+         * @param application   reference to Application that owns the Session
          * @param request       request from client containing session, or a reference to it
          * @param response      optional response to client enabling removal of session or reference
-         * @param application   reference to Application that owns the Session
          */
-        virtual void remove(const xmltooling::HTTPRequest& request, xmltooling::HTTPResponse* response, const Application& application)=0;
+        virtual void remove(const Application& application, const xmltooling::HTTPRequest& request, xmltooling::HTTPResponse* response=NULL)=0;
     };
 
     /** SessionCache implementation backed by a StorageService. */

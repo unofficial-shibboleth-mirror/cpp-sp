@@ -24,7 +24,7 @@
 #include "Application.h"
 #include "exceptions.h"
 #include "ServiceProvider.h"
-#include "SessionCache.h"
+#include "SessionCacheEx.h"
 #include "handler/AbstractHandler.h"
 #include "handler/RemotedHandler.h"
 #include "util/SPConstants.h"
@@ -176,8 +176,14 @@ pair<bool,long> AssertionLookup::processMessage(const Application& application, 
 
     m_log.debug("processing assertion lookup request (session: %s, assertion: %s)", key, ID);
 
+    SessionCacheEx* cache = dynamic_cast<SessionCacheEx*>(application.getServiceProvider().getSessionCache());
+    if (!cache) {
+        m_log.error("session cache does not support extended API");
+        throw FatalProfileException("Session cache does not support assertion lookup.");
+    }
+
     // The cache will either silently pass a session or NULL back, or throw an exception out.
-    Session* session = application.getServiceProvider().getSessionCache()->find(httpRequest, application);
+    Session* session = cache->find(application, ID);
     if (!session) {
         m_log.error("valid session (%s) not found for assertion lookup", key);
         throw FatalProfileException("Session key not found.");

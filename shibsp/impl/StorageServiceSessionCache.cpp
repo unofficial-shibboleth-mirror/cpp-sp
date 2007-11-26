@@ -32,7 +32,7 @@
 #include "Application.h"
 #include "exceptions.h"
 #include "ServiceProvider.h"
-#include "SessionCache.h"
+#include "SessionCacheEx.h"
 #include "TransactionLog.h"
 #include "attribute/Attribute.h"
 #include "remoting/ListenerService.h"
@@ -59,7 +59,7 @@ using namespace std;
 namespace shibsp {
 
     class StoredSession;
-    class SSCache : public SessionCache
+    class SSCache : public SessionCacheEx
 #ifndef SHIBSP_LITE
         ,public virtual Remoted
 #endif
@@ -72,10 +72,10 @@ namespace shibsp {
         void receive(DDF& in, ostream& out);
 
         void insert(
-            time_t expires,
             const Application& application,
             const HTTPRequest& httpRequest,
             HTTPResponse& httpResponse,
+            time_t expires,
             const saml2md::EntityDescriptor* issuer=NULL,
             const XMLCh* protocol=NULL,
             const saml2::NameID* nameid=NULL,
@@ -87,45 +87,45 @@ namespace shibsp {
             const vector<Attribute*>* attributes=NULL
             );
         vector<string>::size_type logout(
+            const Application& application,
             const saml2md::EntityDescriptor* issuer,
             const saml2::NameID& nameid,
             const set<string>* indexes,
             time_t expires,
-            const Application& application,
             vector<string>& sessions
             );
         bool matches(
+            const Application& application,
             const xmltooling::HTTPRequest& request,
             const saml2md::EntityDescriptor* issuer,
             const saml2::NameID& nameid,
-            const set<string>* indexes,
-            const Application& application
+            const set<string>* indexes
             );
 #endif
-        Session* find(const char* key, const Application& application, const char* client_addr=NULL, time_t* timeout=NULL);
-        void remove(const char* key, const Application& application);
+        Session* find(const Application& application, const char* key, const char* client_addr=NULL, time_t* timeout=NULL);
+        void remove(const Application& application, const char* key);
         void test();
 
-        string active(const xmltooling::HTTPRequest& request, const Application& application) const {
+        string active(const Application& application, const xmltooling::HTTPRequest& request) {
             pair<string,const char*> shib_cookie = application.getCookieNameProps("_shibsession_");
             const char* session_id = request.getCookie(shib_cookie.first.c_str());
             return (session_id ? session_id : "");
         }
 
-        Session* find(const HTTPRequest& request, const Application& application, const char* client_addr=NULL, time_t* timeout=NULL) {
-            string id = active(request, application);
+        Session* find(const Application& application, const HTTPRequest& request, const char* client_addr=NULL, time_t* timeout=NULL) {
+            string id = active(application, request);
             if (!id.empty())
-                return find(id.c_str(), application, client_addr, timeout);
+                return find(application, id.c_str(), client_addr, timeout);
             return NULL;
         }
 
-        void remove(const HTTPRequest& request, HTTPResponse* response, const Application& application) {
+        void remove(const Application& application, const HTTPRequest& request, HTTPResponse* response=NULL) {
             pair<string,const char*> shib_cookie = application.getCookieNameProps("_shibsession_");
             const char* session_id = request.getCookie(shib_cookie.first.c_str());
             if (session_id && *session_id) {
                 if (response)
                     response->setCookie(shib_cookie.first.c_str(), shib_cookie.second);
-                remove(session_id, application);
+                remove(application, session_id);
             }
         }
 
@@ -826,10 +826,10 @@ void SSCache::insert(const char* key, time_t expires, const char* name, const ch
 }
 
 void SSCache::insert(
-    time_t expires,
     const Application& application,
     const HTTPRequest& httpRequest,
     HTTPResponse& httpResponse,
+    time_t expires,
     const saml2md::EntityDescriptor* issuer,
     const XMLCh* protocol,
     const saml2::NameID* nameid,
@@ -1014,16 +1014,16 @@ void SSCache::insert(
 }
 
 bool SSCache::matches(
+    const Application& application,
     const xmltooling::HTTPRequest& request,
     const saml2md::EntityDescriptor* issuer,
     const saml2::NameID& nameid,
-    const set<string>* indexes,
-    const Application& application
+    const set<string>* indexes
     )
 {
     auto_ptr_char entityID(issuer ? issuer->getEntityID() : NULL);
     try {
-        Session* session = find(request, application);
+        Session* session = find(application, request);
         if (session) {
             Locker locker(session, false);
             if (XMLString::equals(session->getEntityID(), entityID.get()) && session->getNameID() &&
@@ -1039,11 +1039,11 @@ bool SSCache::matches(
 }
 
 vector<string>::size_type SSCache::logout(
+    const Application& application,
     const saml2md::EntityDescriptor* issuer,
     const saml2::NameID& nameid,
     const set<string>* indexes,
     time_t expires,
-    const Application& application,
     vector<string>& sessionsKilled
     )
 {
@@ -1107,12 +1107,12 @@ vector<string>::size_type SSCache::logout(
             ver = m_storage->updateText("Logout", name.get(), lout.str().c_str(), max(expires, oldexp), ver);
             if (ver <= 0) {
                 // Out of sync, or went missing, so retry.
-                return logout(issuer, nameid, indexes, expires, application, sessionsKilled);
+                return logout(application, issuer, nameid, indexes, expires, sessionsKilled);
             }
         }
         else if (!m_storage->createText("Logout", name.get(), lout.str().c_str(), expires)) {
             // Hit a dup, so just retry, hopefully hitting the other branch.
-            return logout(issuer, nameid, indexes, expires, application, sessionsKilled);
+            return logout(application, issuer, nameid, indexes, expires, sessionsKilled);
         }
 
         obj.destroy();
@@ -1139,7 +1139,7 @@ vector<string>::size_type SSCache::logout(
                 // Fetch the session for comparison.
                 Session* session = NULL;
                 try {
-                    session = find(key.string(), application);
+                    session = find(application, key.string());
                 }
                 catch (exception& ex) {
                     m_log.error("error locating session (%s): %s", key.string(), ex.what());
@@ -1236,7 +1236,7 @@ bool SSCache::stronglyMatches(const XMLCh* idp, const XMLCh* sp, const saml2::Na
 
 #endif
 
-Session* SSCache::find(const char* key, const Application& application, const char* client_addr, time_t* timeout)
+Session* SSCache::find(const Application& application, const char* key, const char* client_addr, time_t* timeout)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("find");
@@ -1324,7 +1324,7 @@ Session* SSCache::find(const char* key, const Application& application, const ch
             
             if (timeout && *timeout > 0 && now - lastAccess >= *timeout) {
                 m_log.info("session timed out (ID: %s)", key);
-                remove(key, application);
+                remove(application, key);
                 RetryableProfileException ex("Your session has expired, and you must re-authenticate.");
                 const char* eid = obj["entity_id"].string();
                 if (!eid) {
@@ -1386,14 +1386,14 @@ Session* SSCache::find(const char* key, const Application& application, const ch
     }
     catch (...) {
         session->unlock();
-        remove(key, application);
+        remove(application, key);
         throw;
     }
     
     return session;
 }
 
-void SSCache::remove(const char* key, const Application& application)
+void SSCache::remove(const Application& application, const char* key)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("remove");
@@ -1581,7 +1581,7 @@ void SSCache::receive(DDF& in, ostream& out)
                     
             if (timeout > 0 && now - lastAccess >= timeout) {
                 m_log.info("session timed out (ID: %s)", key);
-                remove(key,*app);
+                remove(*app, key);
                 throw RetryableProfileException("Your session has expired, and you must re-authenticate.");
             } 
 
@@ -1657,7 +1657,7 @@ void SSCache::receive(DDF& in, ostream& out)
         if (!app)
             throw ConfigurationException("Application not found, check configuration?");
 
-        remove(key,*app);
+        remove(*app, key);
         DDF ret(NULL);
         DDFJanitor jan(ret);
         out << ret;

@@ -432,6 +432,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\SessionCacheEx.h"
+				>
+			</File>
+			<File
 				RelativePath=".\SPConfig.h"
 				>
 			</File>

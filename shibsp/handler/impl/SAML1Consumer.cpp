@@ -273,10 +273,10 @@ void SAML1Consumer::implementProtocol(
     tokens.insert(tokens.end(), badtokens.begin(), badtokens.end());
 
     application.getServiceProvider().getSessionCache()->insert(
-        now + lifetime.second,
         application,
         httpRequest,
         httpResponse,
+        now + lifetime.second,
         policy.getIssuerMetadata() ? dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL,
         (!response->getMinorVersion().first || response->getMinorVersion().second==1) ?
             samlconstants::SAML11_PROTOCOL_ENUM : samlconstants::SAML10_PROTOCOL_ENUM,

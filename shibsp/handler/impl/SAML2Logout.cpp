@@ -29,7 +29,7 @@
 #include "util/SPConstants.h"
 
 #ifndef SHIBSP_LITE
-# include "SessionCache.h"
+# include "SessionCacheEx.h"
 # include "security/SecurityPolicy.h"
 # include "util/TemplateParameters.h"
 # include <fstream>
@@ -253,13 +253,14 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
 #ifndef SHIBSP_LITE
     // First capture the active session ID.
     SessionCache* cache = application.getServiceProvider().getSessionCache();
-    string session_id = cache->active(request, application);
+    SessionCacheEx* cacheex = dynamic_cast<SessionCacheEx*>(cache);
+    string session_id = cache->active(application, request);
 
     if (!strcmp(request.getMethod(),"GET") && request.getParameter("notifying")) {
         // This is returning from a front-channel notification, so we have to do the back-channel and then
         // respond. To do that, we need state from the original request.
         if (!request.getParameter("entityID")) {
-            cache->remove(request, &response, application);
+            cache->remove(application, request, &response);
             throw FatalProfileException("Application notification loop did not return entityID for LogoutResponse.");
         }
 
@@ -269,7 +270,7 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
             vector<string> sessions(1,session_id);
             worked1 = notifyBackChannel(application, request.getRequestURL(), sessions, false);
             try {
-                cache->remove(request, &response, application);
+                cache->remove(application, request, &response);
                 worked2 = true;
             }
             catch (exception& ex) {
@@ -413,7 +414,7 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
         // For a front-channel LogoutRequest, we have to match the information in the request
         // against the current session.
         if (!session_id.empty()) {
-            if (!cache->matches(request, entity, *nameid, &indexes, application)) {
+            if (!cache->matches(application, request, entity, *nameid, &indexes)) {
                 return sendResponse(
                     logoutRequest->getID(),
                     StatusCode::REQUESTER, StatusCode::REQUEST_DENIED, "Active session did not match logout request.",
@@ -430,14 +431,21 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
         // Now we perform "logout" by finding the matching sessions.
         vector<string> sessions;
         try {
-            time_t expires = logoutRequest->getNotOnOrAfter() ? logoutRequest->getNotOnOrAfterEpoch() : 0;
-            cache->logout(entity, *nameid, &indexes, expires, application, sessions);
+            if (cacheex) {
+                time_t expires = logoutRequest->getNotOnOrAfter() ? logoutRequest->getNotOnOrAfterEpoch() : 0;
+                cacheex->logout(application, entity, *nameid, &indexes, expires, sessions);
 
-            // Now we actually terminate everything except for the active session,
-            // if this is front-channel, for notification purposes.
-            for (vector<string>::const_iterator sit = sessions.begin(); sit != sessions.end(); ++sit)
-                if (*sit != session_id)
-                    cache->remove(sit->c_str(), application);   // using the ID-based removal operation
+                // Now we actually terminate everything except for the active session,
+                // if this is front-channel, for notification purposes.
+                for (vector<string>::const_iterator sit = sessions.begin(); sit != sessions.end(); ++sit)
+                    if (*sit != session_id)
+                        cacheex->remove(application, sit->c_str());   // using the ID-based removal operation
+            }
+            else {
+                m_log.warn("session cache does not support extended API, can't implement indirect logout of sessions");
+                if (!session_id.empty())
+                    sessions.push_back(session_id);
+            }
         }
         catch (exception& ex) {
             m_log.error("error while logging out matching sessions: %s", ex.what());
@@ -474,7 +482,7 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
         if (!session_id.empty()) {
             // One last session to yoink...
             try {
-                cache->remove(request, &response, application);
+                cache->remove(application, request, &response);
                 worked2 = true;
             }
             catch (exception& ex) {

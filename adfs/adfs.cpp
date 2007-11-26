@@ -634,10 +634,10 @@ void ADFSConsumer::implementProtocol(
     }
 
     application.getServiceProvider().getSessionCache()->insert(
-        now + lifetime.second,
         application,
         httpRequest,
         httpResponse,
+        now + lifetime.second,
         policy.getIssuerMetadata() ? dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL,
         m_protocol.get(),
         nameid.get(),
@@ -802,12 +802,12 @@ pair<bool,long> ADFSLogout::run(SPRequest& request, bool isHandler) const
     }
 
     // Best effort on back channel and to remove the user agent's session.
-    string session_id = app.getServiceProvider().getSessionCache()->active(request, app);
+    string session_id = app.getServiceProvider().getSessionCache()->active(app, request);
     if (!session_id.empty()) {
         vector<string> sessions(1,session_id);
         notifyBackChannel(app, request.getRequestURL(), sessions, false);
         try {
-            app.getServiceProvider().getSessionCache()->remove(request, &request, app);
+            app.getServiceProvider().getSessionCache()->remove(app, request, &request);
         }
         catch (exception& ex) {
             m_log.error("error removing session (%s): %s", session_id.c_str(), ex.what());
