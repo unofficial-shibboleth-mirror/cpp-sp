@@ -174,17 +174,7 @@ fi
 %{_sysconfdir}/%{name}/shibd-debian
 %{_sysconfdir}/%{name}/shibd-osx.plist
 %docdir %{_datadir}/doc/%{name}
-%{_datadir}/doc/%{name}/CREDITS.txt
-%{_datadir}/doc/%{name}/INSTALL.txt
-%{_datadir}/doc/%{name}/LICENSE.txt
-%{_datadir}/doc/%{name}/NOTICE.txt
-%{_datadir}/doc/%{name}/README.txt
-%{_datadir}/doc/%{name}/RELEASE.txt
-%{_datadir}/doc/%{name}/LOG4CPP.LICENSE
-%{_datadir}/doc/%{name}/OPENSSL.LICENSE
-%{_datadir}/doc/%{name}/logo.jpg
-%{_datadir}/doc/%{name}/main.css
-%exclude %{_datadir}/doc/%{name}/INSTALL-WIN32.txt
+%{_datadir}/doc/%{name}
 
 %files devel
 %defattr(-,root,root,-)
