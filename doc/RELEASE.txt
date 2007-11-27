@@ -1,15 +1,15 @@
 Release Notes
 
 Shibboleth Native SP
-2.0beta1
-9/15/2007
+2.0beta2
+12/1/2007
 
 Fully Supported (no major changes planned prior to stable release)
 
 - SAML 1.0, 1.1, 2.0 Single Sign-On
 	- Shibboleth 1.x request profile
 	- 1.x POST/Artifact profiles
-	- 2.0 HTTP-Redirect/POST/POST-SimpleSign/Artifact bindings
+	- 2.0 HTTP-Redirect/POST/POST-SimpleSign/Artifact/PAOS bindings
 
 - SAML 1.0, 1.1, 2.0 Attribute Query via Attribute Resolver plugin
 	- SAML SOAP binding
@@ -18,6 +18,10 @@ Fully Supported (no major changes planned prior to stable release)
     - HTTP-Redirect/POST/POST-SimpleSign/Artifact bindings
     - Front and back-channel application notification of logout
     - Race detection of late arriving assertions
+
+- SAML 2.0 NameID Management (IdP-initiated only)
+    - HTTP-Redirect/POST/POST-SimpleSign/Artifact bindings
+    - Front and back-channel application notification of changes
 
 - ADFS WS-Federation Support
     - SSO and SLO
@@ -28,6 +32,15 @@ Fully Supported (no major changes planned prior to stable release)
 	- Bulk resolution via local file, or URL with local file backup
 	- Dynamic resolution and caching based on entityID 
 	- Filtering based on whitelist, blacklist, or signature verification  
+
+- Metadata Generation Handler
+    - Generates and optionally signs SAML metadata based on SP configuration
+
+- Status Handler
+    - Reports on status and configuration of SP
+    
+- Session Handler
+    - Dumps information about an active session 
 
 - Trust Engines
 	- Explicit key and PKIX engines via metadata, superset compatible with 1.3
@@ -94,11 +107,6 @@ Fully Supported (no major changes planned prior to stable release)
 
 Not Yet Supported
 
-- Metadata generation
-- Status handler
-- Embedded discovery UI
-- Upgrade installations on Windows
 - Migrating 1.3 configuration files
-- NameID management
 
 ------
