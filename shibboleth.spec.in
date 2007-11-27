@@ -175,7 +175,7 @@ fi
 %{_sysconfdir}/%{name}/shibd-osx.plist
 %docdir %{_datadir}/doc/%{name}
 %{_datadir}/doc/%{name}/CREDITS.txt
-%{_datadir}/doc/%{name}/FASTCGGI.LICENSE
+%{_datadir}/doc/%{name}/FASTCGI.LICENSE
 %{_datadir}/doc/%{name}/INSTALL.txt
 %{_datadir}/doc/%{name}/LICENSE.txt
 %{_datadir}/doc/%{name}/LOG4CPP.LICENSE
