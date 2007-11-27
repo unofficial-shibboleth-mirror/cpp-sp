@@ -160,6 +160,7 @@ fi
 %{_libdir}/%{name}/*
 %exclude %{_libdir}/%{name}/*.la
 %dir %{_localstatedir}/log/%{name}
+%dir %{_localstatedir}/run/%{name}
 %dir %{_datadir}/xml/%{name}
 %{_datadir}/xml/%{name}/*
 %dir %{_sysconfdir}/%{name}
