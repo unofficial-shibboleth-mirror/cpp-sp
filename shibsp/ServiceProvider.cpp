@@ -457,6 +457,31 @@ pair<bool,long> ServiceProvider::doHandler(SPRequest& request) const
         RequestMapper::Settings settings = request.getRequestSettings();
         app = &(request.getApplication());
 
+        // If not SSL, check to see if we should block or redirect it.
+        if (!request.isSecure()) {
+            pair<bool,const char*> redirectToSSL = settings.first->getString("redirectToSSL");
+            if (redirectToSSL.first) {
+#ifdef HAVE_STRCASECMP
+                if (!strcasecmp("GET",request.getMethod()) || !strcasecmp("HEAD",request.getMethod())) {
+#else
+                if (!stricmp("GET",request.getMethod()) || !stricmp("HEAD",request.getMethod())) {
+#endif
+                    // Compute the new target URL
+                    string redirectURL = string("https://") + request.getHostname();
+                    if (strcmp(redirectToSSL.second,"443")) {
+                        redirectURL = redirectURL + ':' + redirectToSSL.second;
+                    }
+                    redirectURL += request.getRequestURI();
+                    return make_pair(true, request.sendRedirect(redirectURL.c_str()));
+                }
+                else {
+                    TemplateParameters tp;
+                    tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
+                    return make_pair(true,sendError(log, request, app, "ssl", tp, false));
+                }
+            }
+        }
+
         const char* handlerURL=request.getHandlerURL(targetURL.c_str());
         if (!handlerURL)
             throw ConfigurationException("Cannot determine handler from resource URL, check configuration.");
