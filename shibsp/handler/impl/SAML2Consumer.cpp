@@ -148,14 +148,11 @@ void SAML2Consumer::implementProtocol(
     string contextualError;
 
     for (vector<saml2::Assertion*>::const_iterator a = assertions.begin(); a!=assertions.end(); ++a) {
-        // Skip unsigned assertion?
-        if (!(*a)->getSignature() && flag.first && flag.second) {
-            m_log.warn("found unsigned assertion in SAML response, ignoring it per signedAssertions policy");
-            badtokens.push_back(*a);
-            continue;
-        }
-
         try {
+            // Skip unsigned assertion?
+            if (!(*a)->getSignature() && flag.first && flag.second)
+                throw SecurityPolicyException("The incoming assertion was unsigned, violating local security policy.");
+
             // We clear the security flag, so we can tell whether the token was secured on its own.
             policy.setAuthenticated(false);
             policy.reset(true);
@@ -168,26 +165,15 @@ void SAML2Consumer::implementProtocol(
             policy.evaluate(*(*a));
             
             // If no security is in place now, we kick it.
-            if (!alreadySecured && !policy.isAuthenticated()) {
-                m_log.warn("unable to establish security of assertion");
-                badtokens.push_back(*a);
-                continue;
-            }
+            if (!alreadySecured && !policy.isAuthenticated())
+                throw SecurityPolicyException("Unable to establish security of incoming assertion.");
 
             // Now do profile and core semantic validation to ensure we can use it for SSO.
             ssoValidator.validateAssertion(*(*a));
 
             // Address checking.
-            try {
-                if (ssoValidator.getAddress())
-                    checkAddress(application, httpRequest, ssoValidator.getAddress());
-            }
-            catch (exception& ex) {
-                // We save off the message if there's no SSO statement yet.
-                if (!ssoStatement)
-                    contextualError = ex.what();
-                throw;
-            }
+            if (ssoValidator.getAddress())
+                checkAddress(application, httpRequest, ssoValidator.getAddress());
 
             // Track it as a valid token.
             tokens.push_back(*a);
@@ -207,6 +193,8 @@ void SAML2Consumer::implementProtocol(
         }
         catch (exception& ex) {
             m_log.warn("detected a problem with assertion: %s", ex.what());
+            if (!ssoStatement)
+                contextualError = ex.what();
             badtokens.push_back(*a);
         }
     }
@@ -237,14 +225,11 @@ void SAML2Consumer::implementProtocol(
         if (!decrypted)
             continue;
 
-        // Skip unsigned assertion?
-        if (!decrypted->getSignature() && flag.first && flag.second) {
-            m_log.warn("found unsigned assertion in SAML response, ignoring it per signedAssertions policy");
-            badtokens.push_back(decrypted);
-            continue;
-        }
-
         try {
+            // Skip unsigned assertion?
+            if (!decrypted->getSignature() && flag.first && flag.second)
+                throw SecurityPolicyException("The incoming assertion was unsigned, violating local security policy.");
+
             // We clear the security flag, so we can tell whether the token was secured on its own.
             policy.setAuthenticated(false);
             policy.reset(true);
@@ -260,26 +245,15 @@ void SAML2Consumer::implementProtocol(
             policy.evaluate(*decrypted);
             
             // If no security is in place now, we kick it.
-            if (!alreadySecured && !policy.isAuthenticated()) {
-                m_log.warn("unable to establish security of assertion");
-                badtokens.push_back(decrypted);
-                continue;
-            }
+            if (!alreadySecured && !policy.isAuthenticated())
+                throw SecurityPolicyException("Unable to establish security of incoming assertion.");
 
             // Now do profile and core semantic validation to ensure we can use it for SSO.
             ssoValidator.validateAssertion(*decrypted);
 
             // Address checking.
-            try {
-                if (ssoValidator.getAddress())
-                    checkAddress(application, httpRequest, ssoValidator.getAddress());
-            }
-            catch (exception& ex) {
-                // We save off the message if there's no SSO statement yet.
-                if (!ssoStatement)
-                    contextualError = ex.what();
-                throw;
-            }
+            if (ssoValidator.getAddress())
+                checkAddress(application, httpRequest, ssoValidator.getAddress());
 
             // Track it as a valid token.
             tokens.push_back(decrypted);
@@ -299,6 +273,8 @@ void SAML2Consumer::implementProtocol(
         }
         catch (exception& ex) {
             m_log.warn("detected a problem with assertion: %s", ex.what());
+            if (!ssoStatement)
+                contextualError = ex.what();
             badtokens.push_back(decrypted);
         }
     }
