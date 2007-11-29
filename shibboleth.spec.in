@@ -8,7 +8,7 @@ License:	Apache style
 URL:		http://shibboleth.internet2.edu/
 Source0:	http://shibboleth.internet2.edu/downloads/%{name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-root
-BuildRequires:	openssl-devel, curl-devel >= 7.10.6
+BuildRequires:	openssl-devel
 BuildRequires:	xerces%{?xercesver}-c-devel >= 2.8.0
 BuildRequires:  xml-security-c-devel >= 1.4.0
 BuildRequires:	zlib-devel, opensaml-devel >= 2.0
