@@ -84,7 +84,15 @@ LINK32=link.exe
 # Name "shibauthorizer - Win32 Debug"
 # Begin Source File
 
+SOURCE=.\resource.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\shibauthorizer.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\shibauthorizer.rc
 # End Source File
 # End Target
 # End Project
