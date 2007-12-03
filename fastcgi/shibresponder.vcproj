@@ -190,6 +190,10 @@
 	</References>
 	<Files>
 		<File
+			RelativePath=".\resource.h"
+			>
+		</File>
+		<File
 			RelativePath="shibresponder.cpp"
 			>
 			<FileConfiguration
@@ -210,6 +214,10 @@
 					PreprocessorDefinitions=""
 				/>
 			</FileConfiguration>
+		</File>
+		<File
+			RelativePath=".\shibresponder.rc"
+			>
 		</File>
 	</Files>
 	<Globals>
