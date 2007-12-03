@@ -67,7 +67,7 @@ namespace {
     string g_ServerName;
     string g_ServerScheme;
     string g_unsetHeaderValue;
-    bool g_checkSpoofing = true;
+    bool g_checkSpoofing = false;
     bool g_catchAll = true;
 }
 
@@ -173,11 +173,7 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, Session* sn, Request* rq
 class ShibTargetNSAPI : public ShibTarget
 {
 public:
-  ShibTargetNSAPI(pblock* pb, Session* sn, Request* rq) {
-    m_pb = pb;
-    m_sn = sn;
-    m_rq = rq;
-
+  ShibTargetNSAPI(pblock* pb, Session* sn, Request* rq) : m_pb(pb), m_sn(sn), m_rq(rq), m_firsttime(true) {
     // Get everything but hostname...
     const char* uri=pblock_findval("uri", rq->reqpb);
     const char* qstr=pblock_findval("query", rq->reqpb);
@@ -205,10 +201,17 @@ public:
     char* content_type = "";
     request_header("content-type", &content_type, sn, rq);
       
-    const char *remote_ip = pblock_findval("ip", sn->client);
-    const char *method = pblock_findval("method", rq->reqpb);
+    const char* remote_ip = pblock_findval("ip", sn->client);
+    const char* method = pblock_findval("method", rq->reqpb);
 
     init(scheme, host, port, url.c_str(), content_type, remote_ip, method);
+    
+    // See if this is the first time we've run.
+    method = pblock_findval("auth-type", rq->vars);
+    if (method && !strcmp(method, "shibboleth"))
+        m_firsttime = false;
+    if (!m_firsttime)
+        log(LogLevelDebug, "nsapi_shib function running more than once");
   }
   ~ShibTargetNSAPI() {
   }
@@ -256,7 +259,7 @@ public:
     }
   }
   virtual void clearHeader(const string &name) {
-    if (g_checkSpoofing && m_allhttp.empty()) {
+    if (m_firsttime && g_checkSpoofing && m_allhttp.empty()) {
       // Populate the set of client-supplied headers for spoof checking.
       const pb_entry* entry;
       for (int i=0; i<m_rq->headers->hsize; ++i) {
@@ -274,13 +277,13 @@ public:
       }
     }
     if (name=="REMOTE_USER") {
-        if (g_checkSpoofing && m_allhttp.count("HTTP_REMOTE_USER") > 0)
+        if (m_firsttime && g_checkSpoofing && m_allhttp.count("HTTP_REMOTE_USER") > 0)
             throw SAMLException("Attempt to spoof header ($1) was detected.", params(1, name.c_str()));
         param_free(pblock_remove("auth-user",m_rq->vars));
         param_free(pblock_remove("remote-user",m_rq->headers));
     }
     else {
-        if (g_checkSpoofing) {
+        if (m_firsttime && g_checkSpoofing) {
             // Map to the expected CGI variable name.
             string transformed("HTTP_");
             const char* pch = name.c_str();
@@ -357,6 +360,7 @@ public:
   Session* m_sn;
   Request* m_rq;
   set<string> m_allhttp;
+  bool m_firsttime;
 };
 
 /********************************************************************************/
