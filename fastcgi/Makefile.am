@@ -20,4 +20,11 @@ shibresponder_LDADD = \
 
 endif
 
-EXTRA_DIST = shibauthorizer.cpp shibresponder.cpp shibauthorizer.dsp shibresponder.dsp
+EXTRA_DIST = \
+    shibauthorizer.cpp \
+    shibauthorizer.dsp \
+    shibauthorizer.rc \
+    shibresponder.cpp \
+    shibresponder.dsp \
+    shibresponder.rc \
+    resource.h
