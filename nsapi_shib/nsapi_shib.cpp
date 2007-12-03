@@ -187,15 +187,17 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, ::Session* sn, Request* 
 class ShibTargetNSAPI : public AbstractSPRequest
 {
   mutable string m_body;
-  mutable bool m_gotBody;
+  mutable bool m_gotBody,m_firsttime;
   mutable vector<string> m_certs;
   set<string> m_allhttp;
 
 public:
-  ShibTargetNSAPI(pblock* pb, ::Session* sn, Request* rq) : AbstractSPRequest(SHIBSP_LOGCAT".NSAPI"), m_gotBody(false) {
-    m_pb = pb;
-    m_sn = sn;
-    m_rq = rq;
+  pblock* m_pb;
+  ::Session* m_sn;
+  Request* m_rq;
+
+  ShibTargetNSAPI(pblock* pb, ::Session* sn, Request* rq)
+      : AbstractSPRequest(SHIBSP_LOGCAT".NSAPI"), m_gotBody(false), m_firsttime(true), m_pb(pb), m_sn(sn), m_rq(rq) {
 
     const char* uri=pblock_findval("uri", rq->reqpb);
     const char* qstr=pblock_findval("query", rq->reqpb);
@@ -207,6 +209,13 @@ public:
     else {
         setRequestURI(uri);
     }
+
+    // See if this is the first time we've run.
+    qstr = pblock_findval("auth-type", rq->vars);
+    if (qstr && !strcmp(qstr, "shibboleth"))
+        m_firsttime = false;
+    if (!m_firsttime)
+        log(SPDebug, "nsapi_shib function running more than once");
   }
   ~ShibTargetNSAPI() { }
 
@@ -278,7 +287,7 @@ public:
     }
   }
   void clearHeader(const char* rawname, const char* cginame) {
-    if (g_checkSpoofing) {
+    if (m_firsttime && g_checkSpoofing) {
         if (m_allhttp.empty()) {
             // Populate the set of client-supplied headers for spoof checking.
             const pb_entry* entry;
@@ -370,10 +379,6 @@ public:
       }
       return m_certs;
   }
-
-  pblock* m_pb;
-  ::Session* m_sn;
-  Request* m_rq;
 };
 
 /********************************************************************************/
