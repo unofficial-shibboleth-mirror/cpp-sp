@@ -227,18 +227,18 @@ pair<bool,long> Shib1SessionInitiator::doRequest(
     MetadataProvider::Criteria mc(entityID, &IDPSSODescriptor::ELEMENT_QNAME, shibspconstants::SHIB1_PROTOCOL_ENUM);
     pair<const EntityDescriptor*,const RoleDescriptor*> entity = m->getEntityDescriptor(mc);
     if (!entity.first) {
-        m_log.error("unable to locate metadata for provider (%s)", entityID);
+        m_log.warn("unable to locate metadata for provider (%s)", entityID);
         throw MetadataException("Unable to locate metadata for identity provider ($entityID)", namedparams(1, "entityID", entityID));
     }
     else if (!entity.second) {
-        m_log.error("unable to locate Shibboleth-aware identity provider role for provider (%s)", entityID);
+        m_log.warn("unable to locate Shibboleth-aware identity provider role for provider (%s)", entityID);
         return make_pair(false,0L);
     }
     const EndpointType* ep=EndpointManager<SingleSignOnService>(
         dynamic_cast<const IDPSSODescriptor*>(entity.second)->getSingleSignOnServices()
         ).getByBinding(shibspconstants::SHIB1_AUTHNREQUEST_PROFILE_URI);
     if (!ep) {
-        m_log.error("unable to locate compatible SSO service for provider (%s)", entityID);
+        m_log.warn("unable to locate compatible SSO service for provider (%s)", entityID);
         return make_pair(false,0L);
     }
 

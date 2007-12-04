@@ -437,18 +437,18 @@ pair<bool,long> ADFSSessionInitiator::doRequest(
     MetadataProvider::Criteria mc(entityID, &IDPSSODescriptor::ELEMENT_QNAME, m_binding.get());
     pair<const EntityDescriptor*,const RoleDescriptor*> entity=m->getEntityDescriptor(mc);
     if (!entity.first) {
-        m_log.error("unable to locate metadata for provider (%s)", entityID);
+        m_log.warn("unable to locate metadata for provider (%s)", entityID);
         throw MetadataException("Unable to locate metadata for identity provider ($entityID)", namedparams(1, "entityID", entityID));
     }
     else if (!entity.second) {
-        m_log.error("unable to locate ADFS-aware identity provider role for provider (%s)", entityID);
+        m_log.warn("unable to locate ADFS-aware identity provider role for provider (%s)", entityID);
         return make_pair(false,0L);
     }
     const EndpointType* ep = EndpointManager<SingleSignOnService>(
         dynamic_cast<const IDPSSODescriptor*>(entity.second)->getSingleSignOnServices()
         ).getByBinding(m_binding.get());
     if (!ep) {
-        m_log.error("unable to locate compatible SSO service for provider (%s)", entityID);
+        m_log.warn("unable to locate compatible SSO service for provider (%s)", entityID);
         return make_pair(false,0L);
     }
 

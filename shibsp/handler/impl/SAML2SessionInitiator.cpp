@@ -481,11 +481,11 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
         MetadataProvider::Criteria mc(entityID, &IDPSSODescriptor::ELEMENT_QNAME, samlconstants::SAML20P_NS);
         entity=m->getEntityDescriptor(mc);
         if (!entity.first) {
-            m_log.error("unable to locate metadata for provider (%s)", entityID);
+            m_log.warn("unable to locate metadata for provider (%s)", entityID);
             throw MetadataException("Unable to locate metadata for identity provider ($entityID)", namedparams(1, "entityID", entityID));
         }
         else if (!entity.second) {
-            m_log.error("unable to locate SAML 2.0 identity provider role for provider (%s)", entityID);
+            m_log.warn("unable to locate SAML 2.0 identity provider role for provider (%s)", entityID);
             return make_pair(false,0L);
         }
 
@@ -501,7 +501,7 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
             }
         }
         if (!ep || !encoder) {
-            m_log.error("unable to locate compatible SSO service for provider (%s)", entityID);
+            m_log.warn("unable to locate compatible SSO service for provider (%s)", entityID);
             return make_pair(false,0L);
         }
     }
