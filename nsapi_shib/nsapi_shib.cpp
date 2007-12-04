@@ -210,7 +210,7 @@ public:
     method = pblock_findval("auth-type", rq->vars);
     if (method && !strcmp(method, "shibboleth"))
         m_firsttime = false;
-    if (!m_firsttime)
+    if (!m_firsttime || rq->orig_rq)
         log(LogLevelDebug, "nsapi_shib function running more than once");
   }
   ~ShibTargetNSAPI() {
@@ -259,7 +259,7 @@ public:
     }
   }
   virtual void clearHeader(const string &name) {
-    if (m_firsttime && g_checkSpoofing && m_allhttp.empty()) {
+    if (g_checkSpoofing && m_firsttime && !m_rq->orig_rq && m_allhttp.empty()) {
       // Populate the set of client-supplied headers for spoof checking.
       const pb_entry* entry;
       for (int i=0; i<m_rq->headers->hsize; ++i) {
@@ -277,13 +277,13 @@ public:
       }
     }
     if (name=="REMOTE_USER") {
-        if (m_firsttime && g_checkSpoofing && m_allhttp.count("HTTP_REMOTE_USER") > 0)
+        if (g_checkSpoofing && m_firsttime && !m_rq->orig_rq && m_allhttp.count("HTTP_REMOTE_USER") > 0)
             throw SAMLException("Attempt to spoof header ($1) was detected.", params(1, name.c_str()));
         param_free(pblock_remove("auth-user",m_rq->vars));
         param_free(pblock_remove("remote-user",m_rq->headers));
     }
     else {
-        if (m_firsttime && g_checkSpoofing) {
+        if (g_checkSpoofing && m_firsttime && !m_rq->orig_rq) {
             // Map to the expected CGI variable name.
             string transformed("HTTP_");
             const char* pch = name.c_str();
