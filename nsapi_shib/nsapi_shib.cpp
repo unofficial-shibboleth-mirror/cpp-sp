@@ -214,7 +214,7 @@ public:
     qstr = pblock_findval("auth-type", rq->vars);
     if (qstr && !strcmp(qstr, "shibboleth"))
         m_firsttime = false;
-    if (!m_firsttime)
+    if (!m_firsttime || rq->orig_rq)
         log(SPDebug, "nsapi_shib function running more than once");
   }
   ~ShibTargetNSAPI() { }
@@ -287,7 +287,7 @@ public:
     }
   }
   void clearHeader(const char* rawname, const char* cginame) {
-    if (m_firsttime && g_checkSpoofing) {
+    if (g_checkSpoofing && m_firsttime && !m_rq->orig_rq) {
         if (m_allhttp.empty()) {
             // Populate the set of client-supplied headers for spoof checking.
             const pb_entry* entry;
