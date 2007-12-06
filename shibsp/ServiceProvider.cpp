@@ -402,19 +402,10 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
         }
 
         // Export the attributes.
-        bool remoteUserSet = false;
         const multimap<string,const Attribute*>& attributes = session->getIndexedAttributes();
         for (multimap<string,const Attribute*>::const_iterator a = attributes.begin(); a!=attributes.end(); ++a) {
-            const vector<string>& vals = a->second->getSerializedValues();
-
-            // See if this needs to be set as the REMOTE_USER value.
-            if (!remoteUserSet && !vals.empty() && app->getRemoteUserAttributeIds().count(a->first)) {
-                request.setRemoteUser(vals.front().c_str());
-                remoteUserSet = true;
-            }
-
-            // Handle the normal export case.
             string header(request.getSecureHeader(a->first.c_str()));
+            const vector<string>& vals = a->second->getSerializedValues();
             for (vector<string>::const_iterator v = vals.begin(); v!=vals.end(); ++v) {
                 if (!header.empty())
                     header += ";";
@@ -432,6 +423,22 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
                 }
             }
             request.setHeader(a->first.c_str(), header.c_str());
+        }
+
+        // Check for REMOTE_USER.
+        bool remoteUserSet = false;
+        const vector<string>& rmids = app->getRemoteUserAttributeIds();
+        for (vector<string>::const_iterator rmid = rmids.begin(); !remoteUserSet && rmid != rmids.end(); ++rmid) {
+            pair<multimap<string,const Attribute*>::const_iterator,multimap<string,const Attribute*>::const_iterator> matches =
+                attributes.equal_range(*rmid);
+            while (matches.first != matches.second) {
+                const vector<string>& vals = matches.first->second->getSerializedValues();
+                if (!vals.empty()) {
+                    request.setRemoteUser(vals.front().c_str());
+                    remoteUserSet = true;
+                    break;
+                }
+            }
         }
 
         return make_pair(false,0L);

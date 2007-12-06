@@ -190,12 +190,11 @@ namespace shibsp {
         virtual std::string getNotificationURL(const char* request, bool front, unsigned int index) const=0;
 
         /**
-         * Returns a set of attribute IDs to use as a REMOTE_USER value.
-         * <p>The first attribute with a value (and only a single value) will be used.
+         * Returns an array of attribute IDs to use as a REMOTE_USER value, in order of preference.
          *
-         * @return  a set of attribute IDs, or an empty set
+         * @return  an array of attribute IDs, possibly empty
          */
-        virtual const std::set<std::string>& getRemoteUserAttributeIds() const=0;
+        virtual const std::vector<std::string>& getRemoteUserAttributeIds() const=0;
 
         /**
          * Clears any headers that may be used to hold attributes after export.

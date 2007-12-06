@@ -131,7 +131,7 @@ namespace {
 #endif
         string getNotificationURL(const char* resource, bool front, unsigned int index) const;
 
-        const set<string>& getRemoteUserAttributeIds() const {
+        const vector<string>& getRemoteUserAttributeIds() const {
             return (m_remoteUsers.empty() && m_base) ? m_base->getRemoteUserAttributeIds() : m_remoteUsers;
         }
 
@@ -179,8 +179,7 @@ namespace {
         map<const XMLCh*,PropertySet*> m_partyMap;
 #endif
 #endif
-        set<string> m_remoteUsers;
-        vector<string> m_frontLogout,m_backLogout;
+        vector<string> m_remoteUsers,m_frontLogout,m_backLogout;
 
         // manage handler objects
         vector<Handler*> m_handlers;
@@ -501,7 +500,7 @@ XMLApplication::XMLApplication(
                     pos = strchr(start,' ');
                     if (pos)
                         *pos=0;
-                    m_remoteUsers.insert(start);
+                    m_remoteUsers.push_back(start);
                     start = pos ? pos+1 : NULL;
                 }
                 free(dup);

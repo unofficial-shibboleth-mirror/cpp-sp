@@ -119,18 +119,18 @@ pair<bool,long> SessionHandler::run(SPRequest& request, bool isHandler) const
 
     s << "<u>Miscellaneous</u>" << endl;
 
-    s << "<strong>Client Address</strong>: " << (session->getClientAddress() ? session->getClientAddress() : "(none)") << endl;
-    s << "<strong>Identity Provider</strong>: " << (session->getEntityID() ? session->getEntityID() : "(none)") << endl;
-    s << "<strong>SSO Protocol</strong>: " << (session->getProtocol() ? session->getProtocol() : "(none)") << endl;
-    s << "<strong>Authentication Time</strong>: " << (session->getAuthnInstant() ? session->getAuthnInstant() : "(none)") << endl;
-    s << "<strong>Authentication Context Class</strong>: " << (session->getAuthnContextClassRef() ? session->getAuthnContextClassRef() : "(none)") << endl;
-    s << "<strong>Authentication Context Decl</strong>: " << (session->getAuthnContextDeclRef() ? session->getAuthnContextDeclRef() : "(none)") << endl;
-    s << "<strong>Session Expiration (barring inactivity)</strong>: ";
+    s << "<strong>Client Address:</strong> " << (session->getClientAddress() ? session->getClientAddress() : "(none)") << endl;
+    s << "<strong>Identity Provider:</strong> " << (session->getEntityID() ? session->getEntityID() : "(none)") << endl;
+    s << "<strong>SSO Protocol:</strong> " << (session->getProtocol() ? session->getProtocol() : "(none)") << endl;
+    s << "<strong>Authentication Time:</strong> " << (session->getAuthnInstant() ? session->getAuthnInstant() : "(none)") << endl;
+    s << "<strong>Authentication Context Class:</strong> " << (session->getAuthnContextClassRef() ? session->getAuthnContextClassRef() : "(none)") << endl;
+    s << "<strong>Authentication Context Decl:</strong> " << (session->getAuthnContextDeclRef() ? session->getAuthnContextDeclRef() : "(none)") << endl;
+    s << "<strong>Session Expiration (barring inactivity):</strong> ";
     if (session->getExpiration())
         s << ((session->getExpiration() - time(NULL)) / 60) << " minute(s)" << endl;
     else
         s << "Infinite" << endl;
-    
+
     s << endl << "<u>Attributes</u>" << endl;
 
     string key;
