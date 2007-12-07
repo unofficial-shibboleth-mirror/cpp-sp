@@ -94,9 +94,6 @@ metadata to you properly.
             </ds:KeyInfo>
         </KeyDescriptor>
 
-        <NameIDFormat>urn:mace:shibboleth:1.0:nameIdentifier</NameIDFormat>
-        <NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:transient</NameIDFormat>
-
         <!-- This tells the SP where/how to resolve SAML 1.x artifacts into SAML assertions. -->
         <ArtifactResolutionService index="1"
             Binding="urn:oasis:names:tc:SAML:1.0:bindings:SOAP-binding"
@@ -106,6 +103,9 @@ metadata to you properly.
         <ArtifactResolutionService index="1"
             Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP"
             Location="https://idp.example.org:8443/shibboleth/profile/saml2/soap/ArtifactResolution"/>
+
+        <NameIDFormat>urn:mace:shibboleth:1.0:nameIdentifier</NameIDFormat>
+        <NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:transient</NameIDFormat>
 
         <!-- This tells the SP how and where to request authentication. -->
         <SingleSignOnService Binding="urn:mace:shibboleth:1.0:profiles:AuthnRequest"
@@ -170,14 +170,15 @@ metadata to you properly.
             </ds:KeyInfo>
         </KeyDescriptor>
 
-       <NameIDFormat>urn:mace:shibboleth:1.0:nameIdentifier</NameIDFormat>
-       <NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:transient</NameIDFormat>
-
         <!-- This tells the SP how and where to send queries. -->
         <AttributeService Binding="urn:oasis:names:tc:SAML:1.0:bindings:SOAP-binding"
             Location="https://idp.example.org:8443/shibboleth/profiles/saml1/soap/AttributeQuery"/>
         <AttributeService Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP"
             Location="https://idp.example.org:8443/shibboleth/profiles/saml2/soap/AttributeQuery"/>
+
+       <NameIDFormat>urn:mace:shibboleth:1.0:nameIdentifier</NameIDFormat>
+       <NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:transient</NameIDFormat>
+
     </AttributeAuthorityDescriptor>
 
     <!-- This is just information about the entity in human terms. -->
