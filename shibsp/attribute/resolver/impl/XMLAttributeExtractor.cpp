@@ -281,6 +281,12 @@ void XMLExtractorImpl::extractAttributes(
         if (a)
             attributes.push_back(a);
     }
+    else if (m_log.isDebugEnabled()) {
+#ifdef HAVE_GOOD_STL
+        auto_ptr_char temp(format);
+#endif
+        m_log.debug("skipping unmapped NameIdentifier with format (%s)", temp.get());
+    }
 }
 
 void XMLExtractorImpl::extractAttributes(
@@ -305,6 +311,12 @@ void XMLExtractorImpl::extractAttributes(
         Attribute* a = rule->second.first->decode(rule->second.second, &nameid, assertingParty, application.getString("entityID").second);
         if (a)
             attributes.push_back(a);
+    }
+    else if (m_log.isDebugEnabled()) {
+#ifdef HAVE_GOOD_STL
+        auto_ptr_char temp(format);
+#endif
+        m_log.debug("skipping unmapped NameID with format (%s)", temp.get());
     }
 }
 
@@ -334,6 +346,13 @@ void XMLExtractorImpl::extractAttributes(
         Attribute* a = rule->second.first->decode(rule->second.second, &attr, assertingParty, application.getString("entityID").second);
         if (a)
             attributes.push_back(a);
+    }
+    else if (m_log.isInfoEnabled()) {
+#ifdef HAVE_GOOD_STL
+        auto_ptr_char temp1(name);
+        auto_ptr_char temp2(format);
+#endif
+        m_log.info("skipping unmapped SAML 1.x Attribute with Name: %s%s%s", temp1.get(), *temp2.get() ? ", Namespace:" : "", temp2.get());
     }
 }
 
@@ -365,6 +384,13 @@ void XMLExtractorImpl::extractAttributes(
         Attribute* a = rule->second.first->decode(rule->second.second, &attr, assertingParty, application.getString("entityID").second);
         if (a)
             attributes.push_back(a);
+    }
+    else if (m_log.isInfoEnabled()) {
+#ifdef HAVE_GOOD_STL
+        auto_ptr_char temp1(name);
+        auto_ptr_char temp2(format);
+#endif
+        m_log.info("skipping unmapped SAML 2.0 Attribute with Name: %s%s%s", temp1.get(), *temp2.get() ? ", Format:" : "", temp2.get());
     }
 }
 
