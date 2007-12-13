@@ -11,7 +11,6 @@
     <OutOfProcess logger="@-PKGSYSCONFDIR-@/shibd.logger">
         <!--
         <Extensions>
-            <Library path="@-PKGLIBDIR-@/adfs.so" fatal="true"/>
             <Library path="@-PKGLIBDIR-@/odbc-store.so" fatal="true"/>
         </Extensions>
         -->
@@ -19,12 +18,6 @@
     
     <!-- The InProcess section conrains settings affecting web server modules/filters. -->
     <InProcess logger="@-PKGSYSCONFDIR-@/native.logger">
-        <!--
-        <Extensions>
-            <Library path="@-PKGLIBDIR-@/adfs-lite.so" fatal="true"/>
-        </Extensions>
-        -->
-
         <ISAPI normalizeRequest="true">
             <!--
             Maps IIS Instance ID values to the host scheme/name/port/sslport. The name is
@@ -114,14 +107,12 @@
                     relayState="cookie" entityID="https://idp.example.org/shibboleth">
                 <SessionInitiator type="SAML2" defaultACSIndex="1" template="@-PKGSYSCONFDIR-@/bindingTemplate.html"/>
                 <SessionInitiator type="Shib1" defaultACSIndex="5"/>
-                <!-- <SessionInitiator type="ADFS"/> -->
             </SessionInitiator>
             
             <!-- An example using an old-style WAYF, which means Shib 1 only unless an entityID is provided. -->
             <SessionInitiator type="Chaining" Location="/WAYF" id="WAYF" relayState="cookie">
                 <SessionInitiator type="SAML2" defaultACSIndex="1" template="@-PKGSYSCONFDIR-@/bindingTemplate.html"/>
                 <SessionInitiator type="Shib1" defaultACSIndex="5"/>
-                <!-- <SessionInitiator type="ADFS"/> -->
                 <SessionInitiator type="WAYF" defaultACSIndex="5" URL="https://wayf.example.org/WAYF"/>
             </SessionInitiator>
 
@@ -129,7 +120,6 @@
             <SessionInitiator type="Chaining" Location="/DS" id="DS" relayState="cookie">
                 <SessionInitiator type="SAML2" defaultACSIndex="1" template="@-PKGSYSCONFDIR-@/bindingTemplate.html"/>
                 <SessionInitiator type="Shib1" defaultACSIndex="5"/>
-                <!-- <SessionInitiator type="ADFS"/> -->
                 <SessionInitiator type="SAMLDS" URL="https://ds.example.org/DS"/>
             </SessionInitiator>
             
@@ -151,16 +141,10 @@
                 Binding="urn:oasis:names:tc:SAML:1.0:profiles:browser-post"/>
             <md:AssertionConsumerService Location="/SAML/Artifact" index="6"
                 Binding="urn:oasis:names:tc:SAML:1.0:profiles:artifact-01"/>
-            
-            <!--
-            <md:AssertionConsumerService Location="/ADFS" index="7"
-                Binding="http://schemas.xmlsoap.org/ws/2003/07/secext"/>
-            -->
 
             <!-- LogoutInitiators enable SP-initiated local or global/single logout of sessions. -->
             <LogoutInitiator type="Chaining" Location="/Logout">
                 <LogoutInitiator type="SAML2" template="@-PKGSYSCONFDIR-@/bindingTemplate.html"/>
-                <!-- <LogoutInitiator type="ADFS"/>    -->
                 <LogoutInitiator type="Local"/>
             </LogoutInitiator>
 
