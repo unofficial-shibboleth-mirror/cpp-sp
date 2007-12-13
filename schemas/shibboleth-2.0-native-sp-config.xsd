@@ -547,6 +547,10 @@
 					<attribute name="postArtifact" type="boolean"/>
 					<attribute name="acsByIndex" type="boolean"/>
 					<attribute name="defaultACSIndex" type="unsignedShort"/>
+                    <attribute name="isPassive" type="boolean"/>
+                    <attribute name="forceAuthn" type="boolean"/>
+                    <attribute name="authnContextClassRef" type="anyURI"/>
+                    <attribute name="authnContextComparison" type="samlp:AuthnContextComparisonType"/>
 					<anyAttribute namespace="##any" processContents="lax"/>
 				</restriction>
 			</complexContent>

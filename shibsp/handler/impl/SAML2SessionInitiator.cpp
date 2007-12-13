@@ -250,17 +250,35 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, const char* entit
             recoverRelayState(request.getApplication(), request, request, target, false);
         }
 
+        pair<bool,bool> flag;
         option = request.getParameter("isPassive");
-        isPassive = (option && (*option=='1' || *option=='t'));
+        if (option) {
+            isPassive = (*option=='1' || *option=='t');
+        }
+        else {
+            flag = getBool("isPassive");
+            isPassive = (flag.first && flag.second);
+        }
         if (!isPassive) {
             option = request.getParameter("forceAuthn");
-            forceAuthn = (option && (*option=='1' || *option=='t'));
+            if (option) {
+                forceAuthn = (*option=='1' || *option=='t');
+            }
+            else {
+                flag = getBool("forceAuthn");
+                forceAuthn = (flag.first && flag.second);
+            }
         }
 
-        acClass.second = request.getParameter("authnContextClassRef");
-        acClass.first = (acClass.second!=NULL);
-        acComp.second = request.getParameter("authnContextComparison");
-        acComp.first = (acComp.second!=NULL);
+        if (acClass.second = request.getParameter("authnContextClassRef"))
+            acClass.first = true;
+        else
+            acClass = getString("authnContextClassRef");
+
+        if (acComp.second = request.getParameter("authnContextComparison"))
+            acComp.first = true;
+        else
+            acComp = getString("authnContextComparison");
     }
     else {
         // We're running as a "virtual handler" from within the filter.
@@ -269,14 +287,22 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, const char* entit
         const PropertySet* settings = request.getRequestSettings().first;
 
         pair<bool,bool> flag = settings->getBool("isPassive");
+        if (!flag.first)
+            flag = getBool("isPassive");
         isPassive = flag.first && flag.second;
         if (!isPassive) {
             flag = settings->getBool("forceAuthn");
+            if (!flag.first)
+                flag = getBool("forceAuthn");
             forceAuthn = flag.first && flag.second;
         }
 
         acClass = settings->getString("authnContextClassRef");
+        if (!acClass.first)
+            acClass = getString("authnContextClassRef");
         acComp = settings->getString("authnContextComparison");
+        if (!acComp.first)
+            acComp = getString("authnContextComparison");
     }
 
     if (ECP)
