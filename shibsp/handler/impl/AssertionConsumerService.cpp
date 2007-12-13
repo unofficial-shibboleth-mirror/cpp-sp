@@ -256,15 +256,15 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
     if (extractor) {
         Locker extlocker(extractor);
         if (entity) {
-            pair<bool,const char*> prefix = application.getString("metadataAttributePrefix");
-            if (prefix.first) {
+            pair<bool,const char*> mprefix = application.getString("metadataAttributePrefix");
+            if (mprefix.first) {
                 m_log.debug("extracting metadata-derived attributes...");
                 try {
                     extractor->extractAttributes(application, issuer, *entity, resolvedAttributes);
                     for (vector<Attribute*>::iterator a = resolvedAttributes.begin(); a != resolvedAttributes.end(); ++a) {
                         vector<string>& ids = (*a)->getAliases();
                         for (vector<string>::iterator id = ids.begin(); id != ids.end(); ++id)
-                            *id = prefix.second + *id;
+                            *id = mprefix.second + *id;
                     }
                 }
                 catch (exception& ex) {
@@ -338,6 +338,17 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
             // Copy over any pushed attributes.
             if (!resolvedAttributes.empty())
                 ctx->getResolvedAttributes().insert(ctx->getResolvedAttributes().end(), resolvedAttributes.begin(), resolvedAttributes.end());
+
+            // Attach global prefix if needed.
+            pair<bool,const char*> prefix = application.getString("attributePrefix");
+            if (prefix.first) {
+                for (vector<Attribute*>::iterator a = ctx->getResolvedAttributes().begin(); a != ctx->getResolvedAttributes().end(); ++a) {
+                    vector<string>& ids = (*a)->getAliases();
+                    for (vector<string>::iterator id = ids.begin(); id != ids.end(); ++id)
+                        *id = prefix.second + *id;
+                }
+            }
+
             return ctx.release();
         }
     }
@@ -345,8 +356,19 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
         m_log.error("attribute resolution failed: %s", ex.what());
     }
     
-    if (!resolvedAttributes.empty())
+    if (!resolvedAttributes.empty()) {
+        // Attach global prefix if needed.
+        pair<bool,const char*> prefix = application.getString("attributePrefix");
+        if (prefix.first) {
+            for (vector<Attribute*>::iterator a = resolvedAttributes.begin(); a != resolvedAttributes.end(); ++a) {
+                vector<string>& ids = (*a)->getAliases();
+                for (vector<string>::iterator id = ids.begin(); id != ids.end(); ++id)
+                    *id = prefix.second + *id;
+            }
+        }
+
         return new DummyContext(resolvedAttributes);
+    }
     return NULL;
 }
 

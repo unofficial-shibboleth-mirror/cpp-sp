@@ -471,6 +471,7 @@
 		<attribute name="REMOTE_USER" type="conf:listOfStrings"/>
 		<attribute name="unsetHeaders" type="conf:listOfStrings"/>
 		<attribute name="metadataAttributePrefix" type="conf:string"/>
+	    <attribute name="attributePrefix" type="conf:string"/>
 		<attribute name="localLogout" type="anyURI"/>
 		<attribute name="globalLogout" type="anyURI"/>
 	</attributeGroup>
