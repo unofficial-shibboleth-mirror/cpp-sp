@@ -65,7 +65,7 @@ using namespace std;
 #define STRING_TABLE "strings"
 #define TEXT_TABLE "texts"
 
-/* tables definitions
+/* table definitions
 CREATE TABLE version (
     major tinyint NOT NULL,
     minor tinyint NOT NULL
@@ -423,7 +423,7 @@ bool ODBCStorageService::createRow(const char *table, const char* context, const
     char *scontext = makeSafeSQL(context);
     char *skey = makeSafeSQL(key);
     char *svalue = makeSafeSQL(value);
-    string q  = string("INSERT ") + table + " VALUES ('" + scontext + "','" + skey + "'," + timebuf + ",1,'" + svalue + "')";
+    string q  = string("INSERT INTO ") + table + " VALUES ('" + scontext + "','" + skey + "'," + timebuf + ",1,'" + svalue + "')";
     freeSafeSQL(scontext, context);
     freeSafeSQL(skey, key);
     freeSafeSQL(svalue, value);
