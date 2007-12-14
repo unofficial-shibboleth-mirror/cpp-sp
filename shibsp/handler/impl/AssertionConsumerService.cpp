@@ -377,7 +377,7 @@ void AssertionConsumerService::extractMessageDetails(const Assertion& assertion,
     policy.setMessageID(assertion.getID());
     policy.setIssueInstant(assertion.getIssueInstantEpoch());
 
-    if (XMLString::equals(assertion.getElementQName().getNamespaceURI(), samlconstants::SAML20P_NS)) {
+    if (XMLString::equals(assertion.getElementQName().getNamespaceURI(), samlconstants::SAML20_NS)) {
         const saml2::Assertion* a2 = dynamic_cast<const saml2::Assertion*>(&assertion);
         if (a2) {
             m_log.debug("extracting issuer from SAML 2.0 assertion");
