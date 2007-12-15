@@ -393,6 +393,10 @@ void AssertionConsumerService::extractMessageDetails(const Assertion& assertion,
     }
 
     if (policy.getIssuer() && !policy.getIssuerMetadata() && policy.getMetadataProvider()) {
+        if (policy.getIssuer()->getFormat() && !XMLString::equals(policy.getIssuer()->getFormat(), saml2::NameIDType::ENTITY)) {
+            m_log.warn("non-system entity issuer, skipping metadata lookup");
+            return;
+        }
         m_log.debug("searching metadata for assertion issuer...");
         MetadataProvider::Criteria mc(policy.getIssuer()->getName(), &IDPSSODescriptor::ELEMENT_QNAME, protocol);
         pair<const EntityDescriptor*,const RoleDescriptor*> entity = policy.getMetadataProvider()->getEntityDescriptor(mc);
