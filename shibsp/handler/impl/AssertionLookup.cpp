@@ -183,7 +183,7 @@ pair<bool,long> AssertionLookup::processMessage(const Application& application, 
     }
 
     // The cache will either silently pass a session or NULL back, or throw an exception out.
-    Session* session = cache->find(application, ID);
+    Session* session = cache->find(application, key);
     if (!session) {
         m_log.error("valid session (%s) not found for assertion lookup", key);
         throw FatalProfileException("Session key not found.");
