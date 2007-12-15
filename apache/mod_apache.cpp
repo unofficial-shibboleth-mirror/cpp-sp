@@ -505,8 +505,11 @@ public:
         in.read(buf,1024);
         ap_rwrite(buf,in.gcount(),m_req);
     }
-    if (status!=XMLTOOLING_HTTP_STATUS_OK)
-        return m_req->status = status;
+    if (status != XMLTOOLING_HTTP_STATUS_OK) {
+        m_req->status = status;
+        if (status != XMLTOOLING_HTTP_STATUS_ERROR)
+            return status;
+    }
     return DONE;
   }
   long sendRedirect(const char* url) {
