@@ -172,8 +172,7 @@ void SAML2Consumer::implementProtocol(
             ssoValidator.validateAssertion(*(*a));
 
             // Address checking.
-            if (ssoValidator.getAddress())
-                checkAddress(application, httpRequest, ssoValidator.getAddress());
+            checkAddress(application, httpRequest, ssoValidator.getAddress());
 
             // Track it as a valid token.
             tokens.push_back(*a);
@@ -252,8 +251,7 @@ void SAML2Consumer::implementProtocol(
             ssoValidator.validateAssertion(*decrypted);
 
             // Address checking.
-            if (ssoValidator.getAddress())
-                checkAddress(application, httpRequest, ssoValidator.getAddress());
+            checkAddress(application, httpRequest, ssoValidator.getAddress());
 
             // Track it as a valid token.
             tokens.push_back(decrypted);

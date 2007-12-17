@@ -179,6 +179,9 @@ pair<bool,long> AssertionConsumerService::processMessage(
 
 void AssertionConsumerService::checkAddress(const Application& application, const HTTPRequest& httpRequest, const char* issuedTo) const
 {
+    if (!issuedTo || !*issuedTo)
+        return;
+    
     const PropertySet* props=application.getPropertySet("Sessions");
     pair<bool,bool> checkAddress = props ? props->getBool("checkAddress") : make_pair(false,true);
     if (!checkAddress.first)
