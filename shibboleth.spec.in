@@ -1,12 +1,12 @@
 Name:		shibboleth
 Summary:	Open source system to enable inter-institutional resource sharing
 Version:	@-VERSION-@
-Release:	1
+Release:	2
 Group:		System Environment/Libraries
 Vendor:		Internet2
 License:	Apache 2.0
 URL:		http://shibboleth.internet2.edu/
-Source0:	http://shibboleth.internet2.edu/downloads/%{name}-%{version}.tar.gz
+Source0:	%{name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-root
 
 BuildRequires:	openssl-devel, curl-devel >= 7.10.6
@@ -24,30 +24,25 @@ BuildRequires:	zlib-devel, opensaml-devel >= 1.1.1, opensaml-devel < 2.0
 
 
 %description
-Shibboleth, a project of Internet2/MACE, is developing architectures,
-policy structures, practical technologies, and an open source
-implementation to support inter-institutional sharing of web resources
-subject to access controls. In addition, Shibboleth will develop a
-policy framework that will allow inter-operation within the higher
-education community.
+Shibboleth, a project of Internet2/MACE, is is an open source,
+attribute-based, cross-domain web single sign-on package, primarily
+based on the SAML standard.
 
-This package contains the shibboleth runtime library and apache module.
+This package contains the Shibboleth runtime libraries and Apache
+server module.
 
 %package devel
-Summary: Shibboleth development Headers
+Summary: Shibboleth development files
 Group: Development/Libraries
 Requires: %{name} = %{version}
 
 %description devel
-Shibboleth, a project of Internet2/MACE, is developing architectures,
-policy structures, practical technologies, and an open source
-implementation to support inter-institutional sharing of web resources
-subject to access controls. In addition, Shibboleth will develop a
-policy framework that will allow inter-operation within the higher
-education community.
+Shibboleth, a project of Internet2/MACE, is is an open source,
+attribute-based, cross-domain web single sign-on package, primarily
+based on the SAML standard.
 
 This package contains the headers and other necessary files to build
-applications that use the shibboleth library.
+extensions using the Shibboleth runtime libraries.
 
 %prep
 %setup -q
@@ -179,8 +174,11 @@ fi
 %{_libdir}/libshib-target.so
 
 %changelog
+* Mon Dec 17 2007 Scott Cantor   <cantor.2@osu.edu>  - 1.3.1-2
+- 1.3.1 initial release
+
 * Sat Sep 15 2007 Scott Cantor   <cantor.2@osu.edu>  - 1.3.1-1
-- 1.3.1 release
+- 1.3.1 release candidate
 
 * Mon Oct 2 2006 Scott Cantor	<cantor.2@osu.edu>  - 1.3-11
 - Applied fix for secadv 20061002

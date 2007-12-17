@@ -25,9 +25,6 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #define HAVE_INTTYPES_H 1
 
-/* Define to 1 if you have the `crypto' library (-lcrypto). */
-#define HAVE_LIBCRYPTO 1
-
 /* Define to 1 if you have the `dmallocxx' library (-ldmallocxx). */
 /* #undef HAVE_LIBDMALLOCXX */
 
@@ -37,12 +34,6 @@
 /* Define if log4cpp library is used. */
 /* #undef HAVE_LOG4CPP */
 
-/* Define to 1 if you have the `ssl' library (-lssl). */
-#define HAVE_LIBSSL 1
-
-/* Define if Xerces-C library was found */
-#define HAVE_LIBXERCESC 1
-
 /* Define to 1 if you have the <memory.h> header file. */
 #define HAVE_MEMORY_H 1
 
@@ -51,9 +42,6 @@
 
 /* Define if you have POSIX threads libraries and header files. */
 /* #undef HAVE_PTHREAD */
-
-/* Define if saml library was found */
-#define HAVE_SAML 1
 
 /* Define to 1 if you have the <stdint.h> header file. */
 /* #undef HAVE_STDINT_H */

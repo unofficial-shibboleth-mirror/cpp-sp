@@ -1,38 +1,31 @@
-Shibboleth Implementation Team
+Shibboleth SP Implementation Team
 
- Documentation
+ Documentation, Testing, Quality Assurance, Yak Wrangling
 
    Nate Klingenstein
    Internet2
-   ndk@internet2.edu
 
- Programming
+ Design and Programming
 
    Derek Atkins
    IHTFP Consulting, Inc
-   derek@ihtfp.com
 
    Scott Cantor
    The Ohio State University
-   cantor.2@osu.edu
    
-   Walter Hoehn
-   The University of Memphis
-   wassa@memphis.edu
+   Jim Fox
+   University of Washington
 
  Project Management
 
    RL "Bob" Morgan
    University of Washington
-   rlmorgan@washington.edu
 
    Steven Carmody
    Brown University
-   Steven_Carmody@brown.edu
-
+   
    Ken Klingenstein
    Internet2
-   kjk@internet2.edu
 
 
 Thanks to: 
@@ -41,35 +34,16 @@ Thanks to:
 
     The National Science Foundation
     
-    National Research Council of Canada
-
-    Barbara Jenson (CMU), Parviz Dousti (CMU), Tom Dopirak (CMU), 
-      and Sridhar Muppidi (IBM/Tivoli); for helping to develop 
-      the initial shibboleth prototype
-
     Brian Pittman (WebAssign), Mark Earnest (PSU), James Shvarts (Columbia), 
       Ryan Muldoon (Wisconsin), John Hopkins (PSU), Noah Levitt (Columbia), 
-      and David Walker (UCOP); for much help with testing
+      David Walker (UCOP) and many more; for much help with testing
       
-    Dave Dearman (NRCC), for contributing a SQL Data Connector for the AA 
-      resolver
-
-    Noah Levitt (Columbia), for simplifying the  logging configuration.
-
     Joel Murphy (Buffalo), for much help with load testing and generally
       pushing the software to its limits.
 
-    Derek Morr (PSU) for improving the Crypto Handle Repository.
-    
-    Vishal Goenka (SunGard SCT) for contributing some useful resolver plugins
-
-    Chad La Joie (Georgetown) for lots of helpful patches leading up to the 
-      1.3 release
-      
-    Will Norris (Memphis) for creating the ant IdP install tasks
-
 	Ian Young for donating XSLT scripts for converting metadata across
-	  Shibboleth versions
+	  Shibboleth versions, SELinux policy work, and platform testing
+	  above and beyond the call.
 	  
 	Many, many community members who have donated time and machines to
       help test the software and packaging on newer platforms.
