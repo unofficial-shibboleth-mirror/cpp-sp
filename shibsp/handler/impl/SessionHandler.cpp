@@ -108,9 +108,20 @@ pair<bool,long> SessionHandler::run(SPRequest& request, bool isHandler) const
     stringstream s;
     s << "<html><head><title>Session Summary</title></head><body><pre>" << endl;
 
-    Session* session = request.getSession();
-    if (!session) {
-        s << "A valid session was not found.</pre></body></html>" << endl;
+    Session* session = NULL;
+    try {
+        session = request.getSession();
+        if (!session) {
+            s << "A valid session was not found.</pre></body></html>" << endl;
+            request.setContentType("text/html");
+            request.setResponseHeader("Expires","01-Jan-1997 12:00:00 GMT");
+            request.setResponseHeader("Cache-Control","private,no-store,no-cache");
+            return make_pair(true, request.sendResponse(s));
+        }
+    }
+    catch (exception& ex) {
+        s << "Exception while retrieving active session:" << endl
+            << '\t' << ex.what() << "</pre></body></html>" << endl;
         request.setContentType("text/html");
         request.setResponseHeader("Expires","01-Jan-1997 12:00:00 GMT");
         request.setResponseHeader("Cache-Control","private,no-store,no-cache");
