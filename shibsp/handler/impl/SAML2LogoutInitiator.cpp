@@ -348,6 +348,11 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
             }
             else {
                 delete logoutResponse;
+                const char* returnloc = httpRequest.getParameter("return");
+                if (returnloc) {
+                    ret.second = httpResponse.sendRedirect(returnloc);
+                    ret.first = true;
+                }
                 ret = sendLogoutPage(application, httpRequest, httpResponse, false, "Logout completed successfully.");
             }
 
@@ -359,11 +364,19 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
             return ret;
         }
 
+        // Save off return location as RelayState.
+        string relayState;
+        const char* returnloc = httpRequest.getParameter("return");
+        if (returnloc) {
+            relayState = returnloc;
+            preserveRelayState(application, httpResponse, relayState);
+        }
+
         auto_ptr<LogoutRequest> msg(buildRequest(application, *session, *role, encoder));
 
         msg->setDestination(ep->getLocation());
         auto_ptr_char dest(ep->getLocation());
-        ret.second = sendMessage(*encoder, msg.get(), NULL, dest.get(), role, application, httpResponse);
+        ret.second = sendMessage(*encoder, msg.get(), relayState.c_str(), dest.get(), role, application, httpResponse);
         ret.first = true;
         msg.release();  // freed by encoder
     }

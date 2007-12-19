@@ -109,5 +109,9 @@ pair<bool,long> LocalLogoutInitiator::run(SPRequest& request, bool isHandler) co
         request.getServiceProvider().getSessionCache()->remove(app, request, &request);
     }
 
+    // Route back to return location specified, or use the local template.
+    const char* dest = request.getParameter("return");
+    if (dest)
+        return make_pair(true, request.sendRedirect(dest));
     return sendLogoutPage(app, request, request, true, "Logout was successful.");
 }

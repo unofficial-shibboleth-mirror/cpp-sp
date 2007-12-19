@@ -514,6 +514,12 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
         }
         checkError(logoutResponse, policy.getIssuerMetadata()); // throws if Status doesn't look good...
 
+        // If relay state is set, recover the original return URL.
+        if (!relayState.empty())
+            recoverRelayState(application, request, response, relayState);
+        if (!relayState.empty())
+            return make_pair(true, response.sendRedirect(relayState.c_str()));
+
         // Return template for completion of global logout, or redirect to homeURL.
         return sendLogoutPage(application, request, response, false, "Global logout completed.");
     }

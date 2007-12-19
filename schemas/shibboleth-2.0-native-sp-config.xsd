@@ -569,6 +569,7 @@
 						<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
 					</sequence>
 					<attribute name="Location" type="anyURI"/>
+				    <attribute name="relayState" type="conf:string"/>
 					<attribute name="outgoingBindings" type="conf:listOfURIs"/>
 					<attribute name="template" type="anyURI"/>
 					<attribute name="postArtifact" type="boolean"/>

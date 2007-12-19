@@ -119,6 +119,9 @@ pair<bool,long> LogoutHandler::notifyFrontChannel(
     if (param)
         index = atoi(param);
 
+    // "return" is a backwards-compatible "eventual destination" to go back to after logout completes.
+    param = request.getParameter("return");
+
     // Fetch the next front notification URL and bump the index for the next round trip.
     string loc = application.getNotificationURL(request.getRequestURL(), true, index++);
     if (loc.empty())
@@ -138,6 +141,10 @@ pair<bool,long> LogoutHandler::notifyFrontChannel(
     // Add a signal that we're coming back from notification and the next index.
     locstr << "?notifying=1&index=" << index;
 
+    // Add return if set.
+    if (param)
+        locstr << "&return=" << encoder->encode(param);
+
     // We preserve anything we're instructed to directly.
     if (params) {
         for (map<string,string>::const_iterator p = params->begin(); p!=params->end(); ++p)
@@ -151,7 +158,8 @@ pair<bool,long> LogoutHandler::notifyFrontChannel(
         }
     }
 
-    // Add the return parameter to the destination location and redirect.
+    // Add the notifier's return parameter to the destination location and redirect.
+    // This is NOT the same as the return parameter that might be embedded inside it ;-)
     loc = loc + "&return=" + encoder->encode(locstr.str().c_str());
     return make_pair(true,response.sendRedirect(loc.c_str()));
 }

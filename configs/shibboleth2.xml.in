@@ -143,7 +143,7 @@
                 Binding="urn:oasis:names:tc:SAML:1.0:profiles:artifact-01"/>
 
             <!-- LogoutInitiators enable SP-initiated local or global/single logout of sessions. -->
-            <LogoutInitiator type="Chaining" Location="/Logout">
+            <LogoutInitiator type="Chaining" Location="/Logout" relayState="cookie">
                 <LogoutInitiator type="SAML2" template="@-PKGSYSCONFDIR-@/bindingTemplate.html"/>
                 <LogoutInitiator type="Local"/>
             </LogoutInitiator>
