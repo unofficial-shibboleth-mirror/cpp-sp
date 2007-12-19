@@ -820,5 +820,5 @@ pair<bool,long> ADFSLogout::run(SPRequest& request, bool isHandler) const
 
     if (param)
         return make_pair(true, request.sendRedirect(param));
-    return sendLogoutPage(app, request, false, "Logout complete.");
+    return sendLogoutPage(app, request, request, false, "Logout complete.");
 }

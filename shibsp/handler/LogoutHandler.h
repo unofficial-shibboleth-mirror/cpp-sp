@@ -110,12 +110,17 @@ namespace shibsp {
          * Sends a response template to the user agent informing it of the results of a logout attempt.
          *
          * @param application   the Application to use in determining the logout template
+         * @param request       the HTTP client request to supply to the template
          * @param response      the HTTP response to use
          * @param local         true iff the logout operation was local to the SP, false iff global
          * @param status        optional logoutStatus key value to add to template
          */
         std::pair<bool,long> sendLogoutPage(
-            const Application& application, xmltooling::HTTPResponse& response, bool local=true, const char* status=NULL
+            const Application& application,
+            const xmltooling::HTTPRequest& request,
+            xmltooling::HTTPResponse& response,
+            bool local=true,
+            const char* status=NULL
             ) const;
     };
 

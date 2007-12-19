@@ -104,10 +104,10 @@ pair<bool,long> LocalLogoutInitiator::run(SPRequest& request, bool isHandler) co
         vector<string> sessions(1, session_id);
         if (!notifyBackChannel(app, request.getRequestURL(), sessions, true)) {
             app.getServiceProvider().getSessionCache()->remove(app, request, &request);
-            return sendLogoutPage(app, request, true, "Partial logout failure.");
+            return sendLogoutPage(app, request, request, true, "Partial logout failure.");
         }
         request.getServiceProvider().getSessionCache()->remove(app, request, &request);
     }
 
-    return sendLogoutPage(app, request, true, "Logout was successful.");
+    return sendLogoutPage(app, request, request, true, "Logout was successful.");
 }

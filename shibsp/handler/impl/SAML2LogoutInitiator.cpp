@@ -275,7 +275,7 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
     if (!notifyBackChannel(application, httpRequest.getRequestURL(), sessions, false)) {
         session->unlock();
         application.getServiceProvider().getSessionCache()->remove(application, httpRequest, &httpResponse);
-        return sendLogoutPage(application, httpResponse, true, "Partial logout failure.");
+        return sendLogoutPage(application, httpRequest, httpResponse, true, "Partial logout failure.");
     }
 
 #ifndef SHIBSP_LITE
@@ -340,15 +340,15 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
             }
 
             if (!logoutResponse)
-                ret = sendLogoutPage(application, httpResponse, false, "Identity provider did not respond to logout request.");
+                ret = sendLogoutPage(application, httpRequest, httpResponse, false, "Identity provider did not respond to logout request.");
             else if (!logoutResponse->getStatus() || !logoutResponse->getStatus()->getStatusCode() ||
                    !XMLString::equals(logoutResponse->getStatus()->getStatusCode()->getValue(), saml2p::StatusCode::SUCCESS)) {
                 delete logoutResponse;
-                ret = sendLogoutPage(application, httpResponse, false, "Identity provider returned a SAML error in response to logout request.");
+                ret = sendLogoutPage(application, httpRequest, httpResponse, false, "Identity provider returned a SAML error in response to logout request.");
             }
             else {
                 delete logoutResponse;
-                ret = sendLogoutPage(application, httpResponse, false, "Logout completed successfully.");
+                ret = sendLogoutPage(application, httpRequest, httpResponse, false, "Logout completed successfully.");
             }
 
             if (session) {

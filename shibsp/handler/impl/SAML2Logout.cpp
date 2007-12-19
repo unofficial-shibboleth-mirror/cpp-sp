@@ -515,7 +515,7 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
         checkError(logoutResponse, policy.getIssuerMetadata()); // throws if Status doesn't look good...
 
         // Return template for completion of global logout, or redirect to homeURL.
-        return sendLogoutPage(application, response, false, "Global logout completed.");
+        return sendLogoutPage(application, request, response, false, "Global logout completed.");
     }
 
     FatalProfileException ex("Incoming message was not a samlp:LogoutRequest or samlp:LogoutResponse.");

@@ -36,7 +36,9 @@ using namespace shibsp;
 using namespace xmltooling;
 using namespace std;
 
-pair<bool,long> LogoutHandler::sendLogoutPage(const Application& application, HTTPResponse& response, bool local, const char* status) const
+pair<bool,long> LogoutHandler::sendLogoutPage(
+    const Application& application, const HTTPRequest& request, HTTPResponse& response, bool local, const char* status
+    ) const
 {
     pair<bool,const char*> prop = application.getString(local ? "localLogout" : "globalLogout");
     if (prop.first) {
@@ -47,6 +49,7 @@ pair<bool,long> LogoutHandler::sendLogoutPage(const Application& application, HT
         if (!infile)
             throw ConfigurationException("Unable to access $1 HTML template.", params(1,local ? "localLogout" : "globalLogout"));
         TemplateParameters tp;
+        tp.m_request = &request;
         tp.setPropertySet(application.getPropertySet("Errors"));
         if (status)
             tp.m_map["logoutStatus"] = status;
@@ -62,7 +65,7 @@ pair<bool,long> LogoutHandler::sendLogoutPage(const Application& application, HT
 
 pair<bool,long> LogoutHandler::run(SPRequest& request, bool isHandler) const
 {
-    // If we're inside a chain, so do nothing.
+    // If we're inside a chain, do nothing.
     if (getParent())
         return make_pair(false,0L);
     
@@ -71,11 +74,7 @@ pair<bool,long> LogoutHandler::run(SPRequest& request, bool isHandler) const
         return make_pair(false,0L);
 
     // Try another front-channel notification. No extra parameters and the session is implicit.
-    pair<bool,long> ret = notifyFrontChannel(request.getApplication(), request, request);
-    if (ret.first)
-        return ret;
-
-    return make_pair(false,0L);
+    return notifyFrontChannel(request.getApplication(), request, request);
 }
 
 void LogoutHandler::receive(DDF& in, ostream& out)

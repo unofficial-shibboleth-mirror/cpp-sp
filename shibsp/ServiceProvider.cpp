@@ -525,6 +525,7 @@ pair<bool,long> ServiceProvider::doHandler(SPRequest& request) const
     catch (exception& e) {
         TemplateParameters tp(&e);
         tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
+        tp.m_request = &request;
         return make_pair(true,sendError(log, request, app, "session", tp));
     }
 }
