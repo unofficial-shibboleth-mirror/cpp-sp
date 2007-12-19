@@ -512,7 +512,9 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
         }
         else if (!entity.second) {
             m_log.warn("unable to locate SAML 2.0 identity provider role for provider (%s)", entityID);
-            return make_pair(false,0L);
+            if (getParent())
+                return make_pair(false,0L);
+            throw MetadataException("Unable to locate SAML 2.0 identity provider role for provider ($entityID)", namedparams(1, "entityID", entityID));
         }
 
         // Loop over the supportable outgoing bindings.
@@ -528,7 +530,9 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
         }
         if (!ep || !encoder) {
             m_log.warn("unable to locate compatible SSO service for provider (%s)", entityID);
-            return make_pair(false,0L);
+            if (getParent())
+                return make_pair(false,0L);
+            throw MetadataException("Unable to locate compatible SSO service for provider ($entityID)", namedparams(1, "entityID", entityID));
         }
     }
 

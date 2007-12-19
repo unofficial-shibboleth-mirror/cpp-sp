@@ -442,14 +442,18 @@ pair<bool,long> ADFSSessionInitiator::doRequest(
     }
     else if (!entity.second) {
         m_log.warn("unable to locate ADFS-aware identity provider role for provider (%s)", entityID);
-        return make_pair(false,0L);
+        if (getParent())
+            return make_pair(false,0L);
+        throw MetadataException("Unable to locate ADFS-aware identity provider role for provider ($entityID)", namedparams(1, "entityID", entityID));
     }
     const EndpointType* ep = EndpointManager<SingleSignOnService>(
         dynamic_cast<const IDPSSODescriptor*>(entity.second)->getSingleSignOnServices()
         ).getByBinding(m_binding.get());
     if (!ep) {
         m_log.warn("unable to locate compatible SSO service for provider (%s)", entityID);
-        return make_pair(false,0L);
+        if (getParent())
+            return make_pair(false,0L);
+        throw MetadataException("Unable to locate compatible SSO service for provider ($entityID)", namedparams(1, "entityID", entityID));
     }
 
     preserveRelayState(app, httpResponse, relayState);

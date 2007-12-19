@@ -232,14 +232,18 @@ pair<bool,long> Shib1SessionInitiator::doRequest(
     }
     else if (!entity.second) {
         m_log.warn("unable to locate Shibboleth-aware identity provider role for provider (%s)", entityID);
-        return make_pair(false,0L);
+        if (getParent())
+            return make_pair(false,0L);
+        throw MetadataException("Unable to locate Shibboleth-aware identity provider role for provider ($entityID)", namedparams(1, "entityID", entityID));
     }
     const EndpointType* ep=EndpointManager<SingleSignOnService>(
         dynamic_cast<const IDPSSODescriptor*>(entity.second)->getSingleSignOnServices()
         ).getByBinding(shibspconstants::SHIB1_AUTHNREQUEST_PROFILE_URI);
     if (!ep) {
         m_log.warn("unable to locate compatible SSO service for provider (%s)", entityID);
-        return make_pair(false,0L);
+        if (getParent())
+            return make_pair(false,0L);
+        throw MetadataException("Unable to locate compatible SSO service for provider ($entityID)", namedparams(1, "entityID", entityID));
     }
 
     preserveRelayState(app, httpResponse, relayState);
