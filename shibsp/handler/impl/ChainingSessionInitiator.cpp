@@ -50,6 +50,13 @@ namespace shibsp {
         
         pair<bool,long> run(SPRequest& request, const char* entityID=NULL, bool isHandler=true) const;
 
+#ifndef SHIBSP_LITE
+        void generateMetadata(opensaml::saml2md::SPSSODescriptor& role, const char* handlerURL) const {
+            for (vector<SessionInitiator*>::const_iterator i = m_handlers.begin(); i!=m_handlers.end(); ++i)
+                (*i)->generateMetadata(role, handlerURL);
+        }
+#endif
+
     private:
         vector<SessionInitiator*> m_handlers;
     };

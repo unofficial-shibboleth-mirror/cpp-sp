@@ -54,6 +54,11 @@ namespace shibsp {
         const char* getType() const {
             return "LogoutInitiator";
         }
+
+        void generateMetadata(opensaml::saml2md::SPSSODescriptor& role, const char* handlerURL) const {
+            for (vector<Handler*>::const_iterator i = m_handlers.begin(); i!=m_handlers.end(); ++i)
+                (*i)->generateMetadata(role, handlerURL);
+        }
 #endif
 
     private:

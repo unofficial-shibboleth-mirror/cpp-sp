@@ -28,12 +28,17 @@
 #include "handler/SessionInitiator.h"
 
 #include <xmltooling/XMLToolingConfig.h>
+#include <xmltooling/impl/AnyElement.h>
 #include <xmltooling/util/URLEncoder.h>
 
 using namespace shibsp;
 using namespace opensaml;
 using namespace xmltooling;
 using namespace std;
+
+#ifndef SHIBSP_LITE
+using namespace opensaml::saml2md;
+#endif
 
 namespace shibsp {
 
@@ -46,7 +51,11 @@ namespace shibsp {
     {
     public:
         SAMLDSSessionInitiator(const DOMElement* e, const char* appId)
-                : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator.SAMLDS")), m_url(NULL), m_returnParam(NULL) {
+                : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator.SAMLDS")), m_url(NULL), m_returnParam(NULL)
+#ifndef SHIBSP_LITE
+                    ,m_discoNS("urn:oasis:names:tc:SAML:profiles:SSO:idp-discovery-protocol")
+#endif
+        {
             pair<bool,const char*> url = getString("URL");
             if (!url.first)
                 throw ConfigurationException("SAMLDS SessionInitiator requires a URL property.");
@@ -59,9 +68,36 @@ namespace shibsp {
         
         pair<bool,long> run(SPRequest& request, const char* entityID=NULL, bool isHandler=true) const;
 
+#ifndef SHIBSP_LITE
+        void generateMetadata(SPSSODescriptor& role, const char* handlerURL) const {
+            static const XMLCh LOCAL_NAME[] = UNICODE_LITERAL_17(D,i,s,c,o,v,e,r,y,R,e,s,p,o,n,s,e);
+            const char* loc = getString("Location").second;
+            string hurl(handlerURL);
+            if (*loc != '/')
+                hurl += '/';
+            hurl += loc;
+            auto_ptr_XMLCh widen(hurl.c_str());
+            ElementProxy* ep = new AnyElementImpl(m_discoNS.get(), LOCAL_NAME);
+            ep->setAttribute(QName(NULL,EndpointType::LOCATION_ATTRIB_NAME), widen.get());
+            ep->setAttribute(QName(NULL,EndpointType::BINDING_ATTRIB_NAME), getXMLString("Binding").second);
+            pair<bool,const XMLCh*> ix = getXMLString("index");
+            ep->setAttribute(QName(NULL,IndexedEndpointType::INDEX_ATTRIB_NAME), ix.first ? ix.second : xmlconstants::XML_ONE);
+            
+            Extensions* ext = role.getExtensions();
+            if (!ext) {
+                ext = ExtensionsBuilder::buildExtensions();
+                role.setExtensions(ext);
+            }
+            ext->getUnknownXMLObjects().push_back(ep);
+        }
+#endif
+
     private:
         const char* m_url;
         const char* m_returnParam;
+#ifndef SHIBSP_LITE
+        auto_ptr_XMLCh m_discoNS;
+#endif
     };
 
 #if defined (_MSC_VER)
