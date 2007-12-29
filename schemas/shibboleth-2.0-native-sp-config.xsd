@@ -243,6 +243,7 @@
 			<element ref="conf:OR"/>
 			<element ref="conf:NOT"/>
 			<element ref="conf:Rule"/>
+		    <element ref="conf:RuleRegex"/>
 		</choice>
 	</complexType>
 	<complexType name="MultiOperatorType">
@@ -251,6 +252,7 @@
 			<element ref="conf:OR"/>
 			<element ref="conf:NOT"/>
 			<element ref="conf:Rule"/>
+		    <element ref="conf:RuleRegex"/>
 		</choice>
 	</complexType>
 	<element name="Rule">
@@ -258,10 +260,21 @@
 			<simpleContent>
 				<extension base="conf:listOfStrings">
 					<attribute name="require" type="conf:string" use="required"/>
+				    <attribute name="list" type="boolean"/>
 				</extension>
 			</simpleContent>
 		</complexType>
 	</element>
+    <element name="RuleRegex">
+        <complexType>
+            <simpleContent>
+                <extension base="conf:string">
+                    <attribute name="require" type="conf:string" use="required"/>
+                    <attribute name="ignoreCase" type="boolean"/>
+                </extension>
+            </simpleContent>
+        </complexType>
+    </element>
 	
 	<attributeGroup name="ContentSettings">
 		<attribute name="authType" type="conf:string"/>
