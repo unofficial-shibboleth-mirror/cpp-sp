@@ -133,16 +133,16 @@ Rule::Rule(const DOMElement* e)
     xmltooling::auto_ptr_char vals(e->hasChildNodes() ? e->getFirstChild()->getNodeValue() : NULL);
 #ifdef HAVE_STRTOK_R
     char* pos=NULL;
-    const char* token=strtok_r(const_cast<char*>(vals.get()),"/",&pos);
+    const char* token=strtok_r(const_cast<char*>(vals.get())," ",&pos);
 #else
-    const char* token=strtok(const_cast<char*>(vals.get()),"/");
+    const char* token=strtok(const_cast<char*>(vals.get())," ");
 #endif
     while (token) {
         m_vals.push_back(token);
 #ifdef HAVE_STRTOK_R
-        token=strtok_r(NULL,"/",&pos);
+        token=strtok_r(NULL," ",&pos);
 #else
-        token=strtok(NULL,"/");
+        token=strtok(NULL," ");
 #endif
     }
 }
