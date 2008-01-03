@@ -272,9 +272,6 @@ bool QueryResolver::SAML1Query(QueryContext& ctx) const
     shibsp::SecurityPolicy policy(application);
     MetadataCredentialCriteria mcc(*AA);
     shibsp::SOAPClient soaper(policy);
-    const PropertySet* policySettings =
-        application.getServiceProvider().getPolicySettings(application.getString("policyId").second);
-    pair<bool,bool> signedAssertions = policySettings->getBool("signedAssertions");
 
     auto_ptr_XMLCh binding(samlconstants::SAML1_BINDING_SOAP);
     saml1p::Response* response=NULL;
@@ -333,6 +330,7 @@ bool QueryResolver::SAML1Query(QueryContext& ctx) const
     auto_ptr<saml1p::Response> wrapper(response);
     saml1::Assertion* newtoken = assertions.front();
 
+    pair<bool,bool> signedAssertions = application.getRelyingParty(ctx.getEntityDescriptor())->getBool("signedAssertions");
     if (!newtoken->getSignature() && signedAssertions.first && signedAssertions.second) {
         m_log.error("assertion unsigned, rejecting it based on signedAssertions policy");
         return true;
@@ -405,10 +403,9 @@ bool QueryResolver::SAML2Query(QueryContext& ctx) const
     shibsp::SecurityPolicy policy(application);
     MetadataCredentialCriteria mcc(*AA);
     shibsp::SOAPClient soaper(policy);
-    const PropertySet* policySettings = application.getServiceProvider().getPolicySettings(application.getString("policyId").second);
-    pair<bool,bool> signedAssertions = policySettings->getBool("signedAssertions");
 
     const PropertySet* relyingParty = application.getRelyingParty(ctx.getEntityDescriptor());
+    pair<bool,bool> signedAssertions = relyingParty->getBool("signedAssertions");
     pair<bool,const char*> encryption = relyingParty->getString("encryption");
 
     auto_ptr_XMLCh binding(samlconstants::SAML20_BINDING_SOAP);

@@ -109,13 +109,13 @@ void SOAPClient::prepareTransport(SOAPTransport& transport)
     Category& log=Category::getInstance(SHIBSP_LOGCAT".SOAPClient");
     log.debug("prepping SOAP transport for use by application (%s)", m_app.getId());
 
-    pair<bool,bool> flag = m_settings->getBool("requireConfidentiality");
+    pair<bool,bool> flag = m_relyingParty->getBool("requireConfidentiality");
     if ((!flag.first || flag.second) && !transport.isConfidential())
         throw opensaml::BindingException("Transport confidentiality required, but not available."); 
 
     flag = m_settings->getBool("validate");
     setValidating(flag.first && flag.second);
-    flag = m_settings->getBool("requireTransportAuth");
+    flag = m_relyingParty->getBool("requireTransportAuth");
     forceTransportAuthentication(!flag.first || flag.second);
 
     opensaml::SOAPClient::prepareTransport(transport);
@@ -169,14 +169,16 @@ void SOAPClient::prepareTransport(SOAPTransport& transport)
         }
     }
     
-    transport.setConnectTimeout(m_settings->getUnsignedInt("connectTimeout").second);
-    transport.setTimeout(m_settings->getUnsignedInt("timeout").second);
+    pair<bool,unsigned int> timeout = m_relyingParty->getUnsignedInt("connectTimeout"); 
+    transport.setConnectTimeout(timeout.first ? timeout.second : 10);
+    timeout = m_relyingParty->getUnsignedInt("timeout");
+    transport.setTimeout(timeout.first ? timeout.second : 20);
     m_app.getServiceProvider().setTransportOptions(m_app.getString("policyId").second, transport);
 
     HTTPSOAPTransport* http = dynamic_cast<HTTPSOAPTransport*>(&transport);
     if (http) {
-        flag = m_settings->getBool("chunkedEncoding");
-        http->useChunkedEncoding(!flag.first || flag.second);
+        flag = m_relyingParty->getBool("chunkedEncoding");
+        http->useChunkedEncoding(flag.first && flag.second);
         http->setRequestHeader("User-Agent", PACKAGE_NAME);
         http->setRequestHeader(PACKAGE_NAME, PACKAGE_VERSION);
     }

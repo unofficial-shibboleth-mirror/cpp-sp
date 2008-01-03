@@ -201,7 +201,16 @@
             styleSheet="/shibboleth-sp/main.css"/>
         
         <!-- Configure handling of outgoing messages and SOAP authentication. -->
-        <DefaultRelyingParty authType="TLS" artifactEndpointIndex="1" signing="false" encryption="false">
+        <DefaultRelyingParty authType="TLS"
+            artifactEndpointIndex="1"
+            signing="false"
+            encryption="false"
+            requireConfidentiality="true"
+            requireTransportAuth="true"
+            signedAssertions="false"
+            chunkedEncoding="false"
+            connectTimeout="15" timeout="30"
+            >
             <!-- Uncomment and modify to tweak settings for specific IdPs or groups. -->
             <!-- <RelyingParty Name="SpecialFederation" keyName="SpecialKey"/> -->
         </DefaultRelyingParty>
@@ -276,14 +285,7 @@
     <!-- Each policy defines a set of rules to use to secure messages. -->
     <SecurityPolicies>
         <!-- The predefined policy enforces replay/freshness and permits signing and client TLS. -->
-        <Policy id="default"
-            validate="false"
-            signedAssertions="false"
-            requireConfidentiality="true"
-            requireTransportAuth="true"
-            chunkedEncoding="false"
-            connectTimeout="15" timeout="30"
-            >
+        <Policy id="default" validate="false">
             <Rule type="MessageFlow" checkReplay="true" expires="60"/>
             <Rule type="ClientCertAuth" errorFatal="true"/>
             <Rule type="XMLSigning" errorFatal="true"/>

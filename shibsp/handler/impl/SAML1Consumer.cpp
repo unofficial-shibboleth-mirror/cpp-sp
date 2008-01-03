@@ -152,7 +152,8 @@ void SAML1Consumer::implementProtocol(
     BrowserSSOProfileValidator ssoValidator(application.getAudiences(), now);
 
     // With this flag on, we ignore any unsigned assertions.
-    pair<bool,bool> flag = settings->getBool("signedAssertions");
+    const EntityDescriptor* entity = policy.getIssuerMetadata() ? dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL;
+    pair<bool,bool> flag = application.getRelyingParty(entity)->getBool("signedAssertions");
 
     // authnskew allows rejection of SSO if AuthnInstant is too old.
     const PropertySet* sessionProps = application.getPropertySet("Sessions");
@@ -273,7 +274,7 @@ void SAML1Consumer::implementProtocol(
         httpRequest,
         httpResponse,
         now + lifetime.second,
-        policy.getIssuerMetadata() ? dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL,
+        entity,
         (!response->getMinorVersion().first || response->getMinorVersion().second==1) ?
             samlconstants::SAML11_PROTOCOL_ENUM : samlconstants::SAML10_PROTOCOL_ENUM,
         nameid.get(),

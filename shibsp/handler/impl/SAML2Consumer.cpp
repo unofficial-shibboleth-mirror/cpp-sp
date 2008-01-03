@@ -138,7 +138,12 @@ void SAML2Consumer::implementProtocol(
     BrowserSSOProfileValidator ssoValidator(application.getAudiences(), now, dest.substr(0,dest.find('?')).c_str());
 
     // With this flag on, we ignore any unsigned assertions.
-    pair<bool,bool> flag = settings->getBool("signedAssertions");
+    const EntityDescriptor* entity = NULL;
+    pair<bool,bool> flag = make_pair(false,false);
+    if (alreadySecured && policy.getIssuerMetadata()) {
+        entity = dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent());
+        flag = application.getRelyingParty(entity)->getBool("signedAssertions");
+    }
 
     // authnskew allows rejection of SSO if AuthnInstant is too old.
     const PropertySet* sessionProps = application.getPropertySet("Sessions");
@@ -167,6 +172,14 @@ void SAML2Consumer::implementProtocol(
             // If no security is in place now, we kick it.
             if (!alreadySecured && !policy.isAuthenticated())
                 throw SecurityPolicyException("Unable to establish security of incoming assertion.");
+
+            // If we hadn't established Issuer yet, redo the signedAssertions check.
+            if (!entity && policy.getIssuerMetadata()) {
+                entity = dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent());
+                flag = application.getRelyingParty(entity)->getBool("signedAssertions");
+                if (!(*a)->getSignature() && flag.first && flag.second)
+                    throw SecurityPolicyException("The incoming assertion was unsigned, violating local security policy.");
+            }
 
             // Now do profile and core semantic validation to ensure we can use it for SSO.
             ssoValidator.validateAssertion(*(*a));
@@ -359,7 +372,7 @@ void SAML2Consumer::implementProtocol(
             httpRequest,
             httpResponse,
             sessionExp,
-            policy.getIssuerMetadata() ? dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL,
+            entity,
             samlconstants::SAML20P_NS,
             ssoName,
             ssoStatement->getAuthnInstant() ? ssoStatement->getAuthnInstant()->getRawData() : NULL,

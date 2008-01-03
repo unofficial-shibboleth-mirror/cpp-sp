@@ -662,6 +662,12 @@
 		<attribute name="encryptionAlg" type="anyURI"/>
 		<attribute name="keyName" type="conf:string"/>
 		<attribute name="artifactEndpointIndex" type="unsignedShort"/>
+        <attribute name="chunkedEncoding" type="boolean"/>
+        <attribute name="connectTimeout" type="unsignedShort"/>
+        <attribute name="timeout" type="unsignedShort"/>
+        <attribute name="requireConfidentiality" type="boolean"/>
+        <attribute name="requireTransportAuth" type="boolean"/>
+        <attribute name="signedAssertions" type="boolean"/>
 	</attributeGroup>
 	
 	<element name="SecurityPolicies">
@@ -681,12 +687,6 @@
 						</sequence>
 						<attribute name="id" type="conf:string" use="required"/>
 						<attribute name="validate" type="boolean" default="false"/>
-						<attribute name="signedAssertions" type="boolean" default="false"/>
-						<attribute name="requireConfidentiality" type="boolean" default="true"/>
-						<attribute name="requireTransportAuth" type="boolean" default="true"/>
-						<attribute name="chunkedEncoding" type="boolean" default="true"/>
-						<attribute name="connectTimeout" type="unsignedShort" default="15"/>
-						<attribute name="timeout" type="unsignedShort" default="30"/>
 						<anyAttribute namespace="##any" processContents="lax"/>
 					</complexType>
 				</element>

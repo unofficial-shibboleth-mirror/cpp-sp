@@ -223,8 +223,7 @@ pair<bool,long> MetadataGenerator::processMessage(const Application& application
     prop = application.getRelyingParty(NULL)->getString("signing");
     if (prop.first && (!strcmp(prop.second,"true") || !strcmp(prop.second,"front")))
         role->AuthnRequestsSigned(true);
-    pair<bool,bool> flagprop =
-        application.getServiceProvider().getPolicySettings(application.getString("policyId").second)->getBool("signedAssertions");
+    pair<bool,bool> flagprop = application.getRelyingParty(NULL)->getBool("signedAssertions");
     if (flagprop.first && flagprop.second)
         role->WantAssertionsSigned(true);
 
