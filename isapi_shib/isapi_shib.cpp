@@ -82,6 +82,11 @@ namespace {
         set<string> m_aliases;
     };
     
+    struct context_t {
+        char* m_user;
+        bool m_checked;
+    };
+    
     HINSTANCE g_hinstDLL;
     ShibTargetConfig* g_Config = NULL;
     map<string,site_t> g_Sites;
@@ -386,7 +391,14 @@ public:
     if (site.m_name!=host && site.m_aliases.find(host)==site.m_aliases.end())
         host=site.m_name.c_str();
 
-    init(scheme, host, atoi(port), url, content_type, remote_addr, method); 
+    init(scheme, host, atoi(port), url, content_type, remote_addr, method);
+    if (!pfc->pFilterContext) {
+        pfc->pFilterContext = pfc->AllocMem(pfc, sizeof(context_t), NULL);
+        if (static_cast<context_t*>(pfc->pFilterContext)) {
+            static_cast<context_t*>(pfc->pFilterContext)->m_user = NULL;
+            static_cast<context_t*>(pfc->pFilterContext)->m_checked = false;
+        }
+    }
   }
   ~ShibTargetIsapiF() {}
 
@@ -400,7 +412,7 @@ public:
   }
   
   virtual void clearHeader(const string &name) {
-    if (g_checkSpoofing) {
+    if (g_checkSpoofing && m_pfc->pFilterContext && !static_cast<context_t*>(m_pfc->pFilterContext)->m_checked) {
         if (m_allhttp.empty())
 	        GetServerVariable(m_pfc,"ALL_HTTP",m_allhttp,4096);
 
@@ -432,6 +444,12 @@ public:
   }
   virtual void setRemoteUser(const string &user) {
     setHeader(string("remote-user"), user);
+    if (m_pfc->pFilterContext) {
+        if (user.empty())
+            static_cast<context_t*>(m_pfc->pFilterContext)->m_user = NULL;
+        else if (static_cast<context_t*>(m_pfc->pFilterContext)->m_user = (char*)m_pfc->AllocMem(m_pfc, sizeof(char) * (user.length() + 1), NULL))
+            strcpy(static_cast<context_t*>(m_pfc->pFilterContext)->m_user, user.c_str());
+    }
   }
   virtual string getRemoteUser(void) {
     return getHeader(string("remote-user"));
@@ -507,7 +525,7 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
     // Is this a log notification?
     if (notificationType==SF_NOTIFY_LOG) {
         if (pfc->pFilterContext)
-            ((PHTTP_FILTER_LOG)pvNotification)->pszClientUserName=static_cast<LPCSTR>(pfc->pFilterContext);
+            ((PHTTP_FILTER_LOG)pvNotification)->pszClientUserName=static_cast<context_t*>(pfc->pFilterContext)->m_user;
         return SF_STATUS_REQ_NEXT_NOTIFICATION;
     }
 
@@ -530,8 +548,10 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
 
         // "false" because we don't override the Shib settings
         pair<bool,void*> res = stf.doCheckAuthN();
+        if (pfc->pFilterContext)
+            static_cast<context_t*>(pfc->pFilterContext)->m_checked = true;
         if (res.first) return (DWORD)res.second;
-
+        
         // "false" because we don't override the Shib settings
         res = stf.doExportAssertions();
         if (res.first) return (DWORD)res.second;
