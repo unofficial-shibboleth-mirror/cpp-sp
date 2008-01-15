@@ -526,7 +526,7 @@
 			<attribute name="idpHistoryDays" type="unsignedInt"/>
 			<attribute name="lifetime" type="unsignedInt" default="28800"/>
 			<attribute name="timeout" type="unsignedInt" default="3600"/>
-		    <attribute name="authnskew" type="unsignedInt"/>
+		    <attribute name="maxTimeSinceAuthn" type="unsignedInt"/>
 			<attribute name="checkAddress" type="boolean" default="true"/>
 			<attribute name="consistentAddress" type="boolean" default="true"/>
 			<anyAttribute namespace="##other" processContents="lax"/>

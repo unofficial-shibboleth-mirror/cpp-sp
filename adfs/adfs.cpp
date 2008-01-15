@@ -583,7 +583,7 @@ void ADFSConsumer::implementProtocol(
 
     // authnskew allows rejection of SSO if AuthnInstant is too old.
     const PropertySet* sessionProps = application.getPropertySet("Sessions");
-    pair<bool,unsigned int> authnskew = sessionProps ? sessionProps->getUnsignedInt("authnskew") : pair<bool,unsigned int>(false,0);
+    pair<bool,unsigned int> authnskew = sessionProps ? sessionProps->getUnsignedInt("maxTimeSinceAuthn") : pair<bool,unsigned int>(false,0);
 
     if (authnskew.first && authnskew.second &&
             ssoStatement->getAuthenticationInstant() && (now - ssoStatement->getAuthenticationInstantEpoch() > authnskew.second))

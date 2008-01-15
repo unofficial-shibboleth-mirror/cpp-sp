@@ -147,7 +147,7 @@ void SAML2Consumer::implementProtocol(
 
     // authnskew allows rejection of SSO if AuthnInstant is too old.
     const PropertySet* sessionProps = application.getPropertySet("Sessions");
-    pair<bool,unsigned int> authnskew = sessionProps ? sessionProps->getUnsignedInt("authnskew") : pair<bool,unsigned int>(false,0);
+    pair<bool,unsigned int> authnskew = sessionProps ? sessionProps->getUnsignedInt("maxTimeSinceAuthn") : pair<bool,unsigned int>(false,0);
 
     // Saves off error messages potentially helpful for users.
     string contextualError;
