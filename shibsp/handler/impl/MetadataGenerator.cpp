@@ -70,6 +70,7 @@ namespace shibsp {
 
         set<string> m_acl;
 #ifndef SHIBSP_LITE
+        short m_http,m_https;
         vector<string> m_bases;
 #endif
     };
@@ -87,6 +88,9 @@ namespace shibsp {
 
 MetadataGenerator::MetadataGenerator(const DOMElement* e, const char* appId)
     : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".MetadataGenerator"), &g_Blocker)
+#ifndef SHIBSP_LITE
+        ,m_https(0), m_http(0)
+#endif
 {
     string address(appId);
     address += getString("Location").second;
@@ -107,7 +111,17 @@ MetadataGenerator::MetadataGenerator(const DOMElement* e, const char* appId)
     }
 
 #ifndef SHIBSP_LITE
+    static XMLCh _http[] = UNICODE_LITERAL_4(h,t,t,p);
+    static XMLCh _https[] = UNICODE_LITERAL_5(h,t,t,p,s);
     static XMLCh EndpointBase[] = UNICODE_LITERAL_12(E,n,d,p,o,i,n,t,B,a,s,e);
+    
+    pair<bool,bool> flag = getBool("http");
+    if (flag.first)
+        m_http = flag.second ? 1 : -1;
+    flag = getBool("https");
+    if (flag.first)
+        m_https = flag.second ? 1 : -1;
+    
     e = XMLHelper::getFirstChildElement(e, EndpointBase);
     while (e) {
         if (e->hasChildNodes()) {
@@ -227,11 +241,29 @@ pair<bool,long> MetadataGenerator::processMessage(const Application& application
     if (flagprop.first && flagprop.second)
         role->WantAssertionsSigned(true);
 
+    // Ask each handler to generate itself.
     vector<const Handler*> handlers;
     application.getHandlers(handlers);
     for (vector<const Handler*>::const_iterator h = handlers.begin(); h != handlers.end(); ++h) {
         if (m_bases.empty()) {
-            (*h)->generateMetadata(*role, handlerURL);
+            if (strncmp(handlerURL, "https", 5) == 0) {
+                if (m_https >= 0)
+                    (*h)->generateMetadata(*role, handlerURL);
+                if (m_http == 1) {
+                    string temp(handlerURL);
+                    temp.erase(4, 1);
+                    (*h)->generateMetadata(*role, temp.c_str());
+                }
+            }
+            else {
+                if (m_http >= 0)
+                    (*h)->generateMetadata(*role, handlerURL);
+                if (m_https == 1) {
+                    string temp(handlerURL);
+                    temp.insert(temp.begin() + 4, 's');
+                    (*h)->generateMetadata(*role, temp.c_str());
+                }
+            }
         }
         else {
             for (vector<string>::const_iterator b = m_bases.begin(); b != m_bases.end(); ++b)
