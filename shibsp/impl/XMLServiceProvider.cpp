@@ -172,7 +172,6 @@ namespace {
         vector<const XMLCh*> m_audiences;
 
         // RelyingParty properties
-        DOMPropertySet* m_partyDefault;
 #ifdef HAVE_GOOD_STL
         map<xstring,PropertySet*> m_partyMap;
 #else
@@ -394,7 +393,6 @@ namespace {
     static const XMLCh Binding[] =              UNICODE_LITERAL_7(B,i,n,d,i,n,g);
     static const XMLCh Channel[]=               UNICODE_LITERAL_7(C,h,a,n,n,e,l);
     static const XMLCh _CredentialResolver[] =  UNICODE_LITERAL_18(C,r,e,d,e,n,t,i,a,l,R,e,s,o,l,v,e,r);
-    static const XMLCh DefaultRelyingParty[] =  UNICODE_LITERAL_19(D,e,f,a,u,l,t,R,e,l,y,i,n,g,P,a,r,t,y);
     static const XMLCh _Extensions[] =          UNICODE_LITERAL_10(E,x,t,e,n,s,i,o,n,s);
     static const XMLCh _fatal[] =               UNICODE_LITERAL_5(f,a,t,a,l);
     static const XMLCh _Handler[] =             UNICODE_LITERAL_7(H,a,n,d,l,e,r);
@@ -455,7 +453,7 @@ XMLApplication::XMLApplication(
 #ifndef SHIBSP_LITE
         m_metadata(NULL), m_trust(NULL),
         m_attrExtractor(NULL), m_attrFilter(NULL), m_attrResolver(NULL),
-        m_credResolver(NULL), m_partyDefault(NULL),
+        m_credResolver(NULL),
 #endif
         m_acsDefault(NULL), m_sessionInitDefault(NULL), m_artifactResolutionDefault(NULL)
 {
@@ -862,18 +860,13 @@ XMLApplication::XMLApplication(
         }
 
         // Finally, load relying parties.
-        child = XMLHelper::getFirstChildElement(e,DefaultRelyingParty);
-        if (child) {
-            m_partyDefault=new DOMPropertySet();
-            m_partyDefault->load(child,log,this);
-            child = XMLHelper::getFirstChildElement(child,RelyingParty);
-            while (child) {
-                auto_ptr<DOMPropertySet> rp(new DOMPropertySet());
-                rp->load(child,log,this);
-                rp->setParent(m_partyDefault);
-                m_partyMap[child->getAttributeNS(NULL,saml2::Attribute::NAME_ATTRIB_NAME)]=rp.release();
-                child = XMLHelper::getNextSiblingElement(child,RelyingParty);
-            }
+        child = XMLHelper::getFirstChildElement(e,RelyingParty);
+        while (child) {
+            auto_ptr<DOMPropertySet> rp(new DOMPropertySet());
+            rp->load(child,log,this);
+            rp->setParent(this);
+            m_partyMap[child->getAttributeNS(NULL,saml2::Attribute::NAME_ATTRIB_NAME)]=rp.release();
+            child = XMLHelper::getNextSiblingElement(child,RelyingParty);
         }
 #endif
 
@@ -910,8 +903,6 @@ void XMLApplication::cleanup()
     for_each(m_handlers.begin(),m_handlers.end(),xmltooling::cleanup<Handler>());
     m_handlers.clear();
 #ifndef SHIBSP_LITE
-    delete m_partyDefault;
-    m_partyDefault = NULL;
 #ifdef HAVE_GOOD_STL
     for_each(m_partyMap.begin(),m_partyMap.end(),cleanup_pair<xstring,PropertySet>());
 #else
@@ -946,7 +937,6 @@ short XMLApplication::acceptNode(const DOMNode* node) const
         XMLString::equals(name,_ManageNameIDService) ||
         XMLString::equals(name,_SessionInitiator) ||
         XMLString::equals(name,_SingleLogoutService) ||
-        XMLString::equals(name,DefaultRelyingParty) ||
         XMLString::equals(name,RelyingParty) ||
         XMLString::equals(name,_MetadataProvider) ||
         XMLString::equals(name,_TrustEngine) ||
@@ -963,10 +953,8 @@ short XMLApplication::acceptNode(const DOMNode* node) const
 
 const PropertySet* XMLApplication::getRelyingParty(const EntityDescriptor* provider) const
 {
-    if (!m_partyDefault && m_base)
-        return m_base->getRelyingParty(provider);
-    else if (!provider)
-        return m_partyDefault;
+    if (!provider)
+        return this;
         
 #ifdef HAVE_GOOD_STL
     map<xstring,PropertySet*>::const_iterator i=m_partyMap.find(provider->getEntityID());
@@ -994,7 +982,7 @@ const PropertySet* XMLApplication::getRelyingParty(const EntityDescriptor* provi
         }
     }
 #endif
-    return m_partyDefault;
+    return this;
 }
 
 #endif

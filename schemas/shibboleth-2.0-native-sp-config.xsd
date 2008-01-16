@@ -434,7 +434,7 @@
 			<sequence>
 				<element ref="conf:Sessions"/>
 				<element ref="conf:Errors" minOccurs="0"/>
-				<element ref="conf:DefaultRelyingParty"/>
+				<element ref="conf:RelyingParty" minOccurs="0" maxOccurs="unbounded"/>
 				<element ref="conf:Notify" minOccurs="0" maxOccurs="unbounded"/>
 				<element ref="saml:Audience" minOccurs="0" maxOccurs="unbounded"/>
                 <element name="MetadataProvider" type="conf:PluggableType"/>
@@ -449,6 +449,7 @@
 			<attribute name="entityID" type="anyURI" use="required"/>
 			<attribute name="policyId" type="conf:string" use="required"/>
 			<attributeGroup ref="conf:ApplicationGroup"/>
+		    <attributeGroup ref="conf:RelyingPartyGroup"/>
 			<anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>
@@ -461,7 +462,7 @@
 			<sequence>
 				<element ref="conf:Sessions" minOccurs="0"/>
 				<element ref="conf:Errors" minOccurs="0"/>
-				<element ref="conf:DefaultRelyingParty" minOccurs="0"/>
+				<element ref="conf:RelyingParty" minOccurs="0" maxOccurs="unbounded"/>
 				<element ref="conf:Notify" minOccurs="0" maxOccurs="unbounded"/>
 				<element ref="saml:Audience" minOccurs="0" maxOccurs="unbounded"/>
 				<element name="MetadataProvider" type="conf:PluggableType" minOccurs="0"/>
@@ -475,6 +476,7 @@
 			<attribute name="entityID" type="anyURI"/>
 			<attribute name="policyId" type="conf:string"/>
 			<attributeGroup ref="conf:ApplicationGroup"/>
+		    <attributeGroup ref="conf:RelyingPartyGroup"/>
 			<anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>
@@ -488,7 +490,26 @@
 		<attribute name="localLogout" type="anyURI"/>
 		<attribute name="globalLogout" type="anyURI"/>
 	</attributeGroup>
-		
+
+    <attributeGroup name="RelyingPartyGroup">
+        <attribute name="authType" type="conf:string"/>
+        <attribute name="authUsername" type="conf:string"/>
+        <attribute name="authPassword" type="conf:string"/>
+        <attribute name="signing" type="conf:bindingBoolean"/>
+        <attribute name="signingAlg" type="anyURI"/>
+        <attribute name="digestAlg" type="anyURI"/>
+        <attribute name="encryption" type="conf:bindingBoolean"/>
+        <attribute name="encryptionAlg" type="anyURI"/>
+        <attribute name="keyName" type="conf:string"/>
+        <attribute name="artifactEndpointIndex" type="unsignedShort"/>
+        <attribute name="chunkedEncoding" type="boolean"/>
+        <attribute name="connectTimeout" type="unsignedShort"/>
+        <attribute name="timeout" type="unsignedShort"/>
+        <attribute name="requireConfidentiality" type="boolean"/>
+        <attribute name="requireTransportAuth" type="boolean"/>
+        <attribute name="signedAssertions" type="boolean"/>
+    </attributeGroup>
+    
 	<element name="Sessions">
 		<annotation>
 			<documentation>Container for specifying protocol handlers and session policy</documentation>
@@ -612,6 +633,18 @@
 		</complexType>
 	</element>
 
+    <element name="RelyingParty">
+        <annotation>
+            <documentation>Container for specifying settings to use with particular peers</documentation>
+        </annotation>
+        <complexType>
+            <sequence/>
+            <attribute name="Name" type="conf:string" use="required"/>
+            <attributeGroup ref="conf:RelyingPartyGroup"/>
+            <anyAttribute namespace="##other" processContents="lax"/>
+        </complexType>
+    </element>
+    
 	<element name="Notify">
 		<annotation>
 			<documentation>Used to specify locations to receive application notifications</documentation>
@@ -630,45 +663,6 @@
 			<anyAttribute namespace="##any" processContents="lax"/>
 		</complexType>
 	</element>
-	
-	<element name="DefaultRelyingParty">
-		<annotation>
-			<documentation>Container for specifying security methods to use with particular peers</documentation>
-		</annotation>
-		<complexType>
-			<sequence>
-				<element name="RelyingParty" minOccurs="0" maxOccurs="unbounded">
-					<complexType>
-						<sequence/>
-						<attribute name="Name" type="conf:string" use="required"/>
-						<attributeGroup ref="conf:RelyingPartyGroup"/>
-						<anyAttribute namespace="##other" processContents="lax"/>
-					</complexType>
-				</element>
-			</sequence>
-			<attributeGroup ref="conf:RelyingPartyGroup"/>
-	        <anyAttribute namespace="##other" processContents="lax"/>
-		</complexType>
-	</element>
-	
-	<attributeGroup name="RelyingPartyGroup">
-		<attribute name="authType" type="conf:string"/>
-		<attribute name="authUsername" type="conf:string"/>
-		<attribute name="authPassword" type="conf:string"/>
-		<attribute name="signing" type="conf:bindingBoolean"/>
-		<attribute name="signingAlg" type="anyURI"/>
-		<attribute name="digestAlg" type="anyURI"/>
-		<attribute name="encryption" type="conf:bindingBoolean"/>
-		<attribute name="encryptionAlg" type="anyURI"/>
-		<attribute name="keyName" type="conf:string"/>
-		<attribute name="artifactEndpointIndex" type="unsignedShort"/>
-        <attribute name="chunkedEncoding" type="boolean"/>
-        <attribute name="connectTimeout" type="unsignedShort"/>
-        <attribute name="timeout" type="unsignedShort"/>
-        <attribute name="requireConfidentiality" type="boolean"/>
-        <attribute name="requireTransportAuth" type="boolean"/>
-        <attribute name="signedAssertions" type="boolean"/>
-	</attributeGroup>
 	
 	<element name="SecurityPolicies">
 		<annotation>

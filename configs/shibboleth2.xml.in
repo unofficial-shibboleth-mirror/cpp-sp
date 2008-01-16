@@ -73,14 +73,25 @@
     </RequestMapper>
 
     <!--
-    The Applications section is where most of Shibboleth's SAML bits are defined.
-    Resource requests are mapped in the Local section into an applicationId that
+    The Applications element is where most of Shibboleth's SAML bits are defined.
+    Resource requests are mapped by the RequestMapper to an applicationId that
     points into to this section.
     -->
     <Applications id="default" policyId="default" entityID="https://sp.example.org/shibboleth"
-        homeURL="https://sp.example.org/index.html" REMOTE_USER="eppn persistent-id targeted-id"
+        homeURL="https://sp.example.org/index.html"
+        REMOTE_USER="eppn persistent-id targeted-id"
         localLogout="@-PKGSYSCONFDIR-@/localLogout.html"
-        globalLogout="@-PKGSYSCONFDIR-@/globalLogout.html">
+        globalLogout="@-PKGSYSCONFDIR-@/globalLogout.html
+        authType="TLS"
+        artifactEndpointIndex="1"
+        signing="false"
+        encryption="false"
+        requireConfidentiality="true"
+        requireTransportAuth="true"
+        signedAssertions="false"
+        chunkedEncoding="false"
+        connectTimeout="15" timeout="30"
+        >
 
         <!--
         Controls session lifetimes, address checks, cookie handling, and the protocol handlers.
@@ -200,20 +211,8 @@
             logoLocation="/shibboleth-sp/logo.jpg"
             styleSheet="/shibboleth-sp/main.css"/>
         
-        <!-- Configure handling of outgoing messages and SOAP authentication. -->
-        <DefaultRelyingParty authType="TLS"
-            artifactEndpointIndex="1"
-            signing="false"
-            encryption="false"
-            requireConfidentiality="true"
-            requireTransportAuth="true"
-            signedAssertions="false"
-            chunkedEncoding="false"
-            connectTimeout="15" timeout="30"
-            >
-            <!-- Uncomment and modify to tweak settings for specific IdPs or groups. -->
-            <!-- <RelyingParty Name="SpecialFederation" keyName="SpecialKey"/> -->
-        </DefaultRelyingParty>
+        <!-- Uncomment and modify to tweak settings for specific IdPs or groups. -->
+        <!-- <RelyingParty Name="SpecialFederation" keyName="SpecialKey"/> -->
 
         <!-- Chains together all your metadata sources. -->
         <MetadataProvider type="Chaining">
