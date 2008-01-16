@@ -72,6 +72,7 @@ namespace shibsp {
 #ifndef SHIBSP_LITE
         short m_http,m_https;
         vector<string> m_bases;
+        const char* m_mime;
 #endif
     };
 
@@ -89,7 +90,7 @@ namespace shibsp {
 MetadataGenerator::MetadataGenerator(const DOMElement* e, const char* appId)
     : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".MetadataGenerator"), &g_Blocker)
 #ifndef SHIBSP_LITE
-        ,m_https(0), m_http(0)
+        ,m_https(0), m_http(0), m_mime(NULL)
 #endif
 {
     string address(appId);
@@ -111,8 +112,6 @@ MetadataGenerator::MetadataGenerator(const DOMElement* e, const char* appId)
     }
 
 #ifndef SHIBSP_LITE
-    static XMLCh _http[] = UNICODE_LITERAL_4(h,t,t,p);
-    static XMLCh _https[] = UNICODE_LITERAL_5(h,t,t,p,s);
     static XMLCh EndpointBase[] = UNICODE_LITERAL_12(E,n,d,p,o,i,n,t,B,a,s,e);
     
     pair<bool,bool> flag = getBool("http");
@@ -122,6 +121,10 @@ MetadataGenerator::MetadataGenerator(const DOMElement* e, const char* appId)
     if (flag.first)
         m_https = flag.second ? 1 : -1;
     
+    pair<bool,const char*> mime = getString("mimeType");
+    if (mime.first)
+        m_mime = mime.second;
+
     e = XMLHelper::getFirstChildElement(e, EndpointBase);
     while (e) {
         if (e->hasChildNodes()) {
@@ -302,6 +305,9 @@ pair<bool,long> MetadataGenerator::processMessage(const Application& application
         }
     }
 
+    // Stream for response.
+    stringstream s;
+
     // Self-sign it?
     pair<bool,bool> flag = getBool("signing");
     if (flag.first && flag.second) {
@@ -320,8 +326,15 @@ pair<bool,long> MetadataGenerator::processMessage(const Application& application
             const Credential* cred = credResolver->resolve(&cc);
             if (!cred)
                 throw XMLSecurityException("Unable to obtain signing credential to use.");
+
+            // Pretty-print it first and then read it back in.
+            stringstream pretty;
+            XMLHelper::serialize(entity->marshall(), pretty, true);
+            DOMDocument* prettydoc = XMLToolingConfig::getConfig().getParser().parse(pretty);
+            auto_ptr<XMLObject> prettyentity(XMLObjectBuilder::buildOneFromElement(prettydoc->getDocumentElement(), true));
+    
             Signature* sig = SignatureBuilder::buildSignature();
-            entity->setSignature(sig);
+            dynamic_cast<EntityDescriptor*>(prettyentity.get())->setSignature(sig);
             if (sigalg.first)
                 sig->setSignatureAlgorithm(sigalg.second);
             if (digalg.first) {
@@ -329,16 +342,22 @@ pair<bool,long> MetadataGenerator::processMessage(const Application& application
                 if (cr)
                     cr->setDigestAlgorithm(digalg.second);
             }
-    
-            // Sign response while marshalling.
+
+            // Sign while marshalling.
             vector<Signature*> sigs(1,sig);
-            entity->marshall((DOMDocument*)NULL,&sigs,cred);
+            prettyentity->marshall(prettydoc,&sigs,cred);
+            s << *prettyentity;
+        }
+        else {
+            throw FatalProfileException("Can't self-sign metadata, no credential resolver found.");
         }
     }
+    else {
+        // Pretty-print it directly to client.
+        XMLHelper::serialize(entity->marshall(), s, true);
+    }
 
-    stringstream s;
-    s << *entity;
-    httpResponse.setContentType("application/samlmetadata+xml");
+    httpResponse.setContentType(m_mime ? m_mime : "application/samlmetadata+xml");
     return make_pair(true, httpResponse.sendResponse(s));
 #else
     return make_pair(false,0L);
