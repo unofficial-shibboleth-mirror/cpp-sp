@@ -285,7 +285,9 @@ pair<bool,long> SAML2NameIDMgmt::doRequest(
                 true
                 );
         }
-        
+
+        EntityDescriptor* entity = policy.getIssuerMetadata() ? dynamic_cast<EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL;
+
         bool ownedName = false;
         NameID* nameid = mgmtRequest->getNameID();
         if (!nameid) {
@@ -301,7 +303,7 @@ pair<bool,long> SAML2NameIDMgmt::doRequest(
                         policy.getIssuerMetadata() ? new MetadataCredentialCriteria(*policy.getIssuerMetadata()) : NULL
                         );
                     try {
-                        auto_ptr<XMLObject> decryptedID(encname->decrypt(*cr,application.getXMLString("entityID").second,mcc.get()));
+                        auto_ptr<XMLObject> decryptedID(encname->decrypt(*cr,application.getRelyingParty(entity)->getXMLString("entityID").second,mcc.get()));
                         nameid = dynamic_cast<NameID*>(decryptedID.get());
                         if (nameid) {
                             ownedName = true;
@@ -332,7 +334,6 @@ pair<bool,long> SAML2NameIDMgmt::doRequest(
 
         // For a front-channel request, we have to match the information in the request
         // against the current session.
-        EntityDescriptor* entity = policy.getIssuerMetadata() ? dynamic_cast<EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL;
         if (!session_id.empty()) {
             if (!cache->matches(application, request, entity, *nameid, NULL)) {
                 return sendResponse(
@@ -367,7 +368,7 @@ pair<bool,long> SAML2NameIDMgmt::doRequest(
                             policy.getIssuerMetadata() ? new MetadataCredentialCriteria(*policy.getIssuerMetadata()) : NULL
                             );
                         try {
-                            auto_ptr<XMLObject> decryptedID(encnewid->decrypt(*cr,application.getXMLString("entityID").second,mcc.get()));
+                            auto_ptr<XMLObject> decryptedID(encnewid->decrypt(*cr,application.getRelyingParty(entity)->getXMLString("entityID").second,mcc.get()));
                             newid = dynamic_cast<NewID*>(decryptedID.get());
                             if (newid) {
                                 ownedNewID = true;
@@ -518,7 +519,7 @@ pair<bool,long> SAML2NameIDMgmt::sendResponse(
     }
     Issuer* issuer = IssuerBuilder::buildIssuer();
     nim->setIssuer(issuer);
-    issuer->setName(application.getXMLString("entityID").second);
+    issuer->setName(application.getRelyingParty(dynamic_cast<EntityDescriptor*>(role->getParent()))->getXMLString("entityID").second);
     fillStatus(*nim.get(), code, subcode, msg);
 
     auto_ptr_char dest(nim->getDestination());

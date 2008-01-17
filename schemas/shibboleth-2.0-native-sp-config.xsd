@@ -641,6 +641,7 @@
             <sequence/>
             <attribute name="Name" type="conf:string" use="required"/>
             <attributeGroup ref="conf:RelyingPartyGroup"/>
+            <attribute name="entityID" type="anyURI"/>
             <anyAttribute namespace="##other" processContents="lax"/>
         </complexType>
     </element>

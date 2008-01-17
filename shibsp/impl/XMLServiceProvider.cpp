@@ -95,11 +95,10 @@ namespace {
         SAML2Artifact* generateSAML2Artifact(const EntityDescriptor* relyingParty) const {
             pair<bool,int> index = make_pair(false,0);
             const PropertySet* props = getRelyingParty(relyingParty);
-            if (props)
-                index = getInt("artifactEndpointIndex");
+            index = props->getInt("artifactEndpointIndex");
             if (!index.first)
                 index = getArtifactEndpointIndex();
-            return new SAML2ArtifactType0004(SAMLConfig::getConfig().hashSHA1(getString("entityID").second),index.first ? index.second : 1);
+            return new SAML2ArtifactType0004(SAMLConfig::getConfig().hashSHA1(props->getString("entityID").second),index.first ? index.second : 1);
         }
 
         MetadataProvider* getMetadataProvider(bool required=true) const {
@@ -125,8 +124,8 @@ namespace {
             return (!m_credResolver && m_base) ? m_base->getCredentialResolver() : m_credResolver;
         }
         const PropertySet* getRelyingParty(const EntityDescriptor* provider) const;
-        const vector<const XMLCh*>& getAudiences() const {
-            return (m_audiences.empty() && m_base) ? m_base->getAudiences() : m_audiences;
+        const vector<const XMLCh*>* getAudiences() const {
+            return (m_audiences.empty() && m_base) ? m_base->getAudiences() : &m_audiences;
         }
 #endif
         string getNotificationURL(const char* resource, bool front, unsigned int index) const;
@@ -731,9 +730,6 @@ XMLApplication::XMLApplication(
         for (XMLSize_t i=0; nlist && i<nlist->getLength(); i++)
             if (nlist->item(i)->getParentNode()->isSameNode(e) && nlist->item(i)->hasChildNodes())
                 m_audiences.push_back(nlist->item(i)->getFirstChild()->getNodeValue());
-
-        // Always include our own entityID as an audience.
-        m_audiences.push_back(getXMLString("entityID").second);
 
         if (conf.isEnabled(SPConfig::Metadata)) {
             child = XMLHelper::getFirstChildElement(e,_MetadataProvider);

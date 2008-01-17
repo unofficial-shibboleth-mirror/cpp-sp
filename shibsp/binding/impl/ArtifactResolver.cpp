@@ -121,7 +121,7 @@ ArtifactResponse* ArtifactResolver::resolve(
             ArtifactResolve* request = ArtifactResolveBuilder::buildArtifactResolve();
             Issuer* iss = IssuerBuilder::buildIssuer();
             request->setIssuer(iss);
-            iss->setName(sppolicy.getApplication().getXMLString("entityID").second);
+            iss->setName(sppolicy.getApplication().getRelyingParty(dynamic_cast<EntityDescriptor*>(ssoDescriptor.getParent()))->getXMLString("entityID").second);
             auto_ptr_XMLCh artbuf(artifact.encode().c_str());
             Artifact* a = ArtifactBuilder::buildArtifact();
             a->setArtifact(artbuf.get());

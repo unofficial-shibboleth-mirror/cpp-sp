@@ -566,10 +566,12 @@ void ADFSConsumer::implementProtocol(
     if (!policy.isAuthenticated())
         throw SecurityPolicyException("Unable to establish security of incoming assertion.");
 
+    const EntityDescriptor* entity = policy.getIssuerMetadata() ? dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL;
+
     // Now do profile and core semantic validation to ensure we can use it for SSO.
     // Profile validator.
     time_t now = time(NULL);
-    saml1::AssertionValidator ssoValidator(application.getAudiences(), now);
+    saml1::AssertionValidator ssoValidator(application.getRelyingParty(entity)->getXMLString("entityID").second, application.getAudiences(), now);
     ssoValidator.validateAssertion(*token);
     if (!token->getConditions() || !token->getConditions()->getNotBefore() || !token->getConditions()->getNotOnOrAfter())
         throw FatalProfileException("Assertion did not contain time conditions.");
@@ -642,7 +644,7 @@ void ADFSConsumer::implementProtocol(
         httpRequest,
         httpResponse,
         now + lifetime.second,
-        policy.getIssuerMetadata() ? dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL,
+        entity,
         m_protocol.get(),
         nameid.get(),
         ssoStatement->getAuthenticationInstant() ? ssoStatement->getAuthenticationInstant()->getRawData() : NULL,

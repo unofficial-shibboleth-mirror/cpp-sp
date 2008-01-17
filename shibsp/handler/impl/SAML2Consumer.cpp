@@ -132,11 +132,6 @@ void SAML2Consumer::implementProtocol(
     // And also track "owned" tokens that we decrypt here.
     vector<saml2::Assertion*> ownedtokens;
 
-    // Profile validator.
-    time_t now = time(NULL);
-    string dest = httpRequest.getRequestURL();
-    BrowserSSOProfileValidator ssoValidator(application.getAudiences(), now, dest.substr(0,dest.find('?')).c_str());
-
     // With this flag on, we ignore any unsigned assertions.
     const EntityDescriptor* entity = NULL;
     pair<bool,bool> flag = make_pair(false,false);
@@ -144,6 +139,9 @@ void SAML2Consumer::implementProtocol(
         entity = dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent());
         flag = application.getRelyingParty(entity)->getBool("signedAssertions");
     }
+
+    time_t now = time(NULL);
+    string dest = httpRequest.getRequestURL();
 
     // authnskew allows rejection of SSO if AuthnInstant is too old.
     const PropertySet* sessionProps = application.getPropertySet("Sessions");
@@ -182,6 +180,9 @@ void SAML2Consumer::implementProtocol(
             }
 
             // Now do profile and core semantic validation to ensure we can use it for SSO.
+            BrowserSSOProfileValidator ssoValidator(
+                application.getRelyingParty(entity)->getXMLString("entityID").second, application.getAudiences(), now, dest.substr(0,dest.find('?')).c_str()
+                );
             ssoValidator.validateAssertion(*(*a));
 
             // Address checking.
@@ -224,7 +225,7 @@ void SAML2Consumer::implementProtocol(
             auto_ptr<MetadataCredentialCriteria> mcc(
                 policy.getIssuerMetadata() ? new MetadataCredentialCriteria(*policy.getIssuerMetadata()) : NULL
                 );
-            auto_ptr<XMLObject> wrapper((*ea)->decrypt(*cr, application.getXMLString("entityID").second, mcc.get()));
+            auto_ptr<XMLObject> wrapper((*ea)->decrypt(*cr, application.getRelyingParty(entity)->getXMLString("entityID").second, mcc.get()));
             decrypted = dynamic_cast<saml2::Assertion*>(wrapper.get());
             if (decrypted) {
                 wrapper.release();
@@ -263,6 +264,9 @@ void SAML2Consumer::implementProtocol(
                 throw SecurityPolicyException("Unable to establish security of incoming assertion.");
 
             // Now do profile and core semantic validation to ensure we can use it for SSO.
+            BrowserSSOProfileValidator ssoValidator(
+                application.getRelyingParty(entity)->getXMLString("entityID").second, application.getAudiences(), now, dest.substr(0,dest.find('?')).c_str()
+                );
             ssoValidator.validateAssertion(*decrypted);
 
             // Address checking.
@@ -313,7 +317,7 @@ void SAML2Consumer::implementProtocol(
                     policy.getIssuerMetadata() ? new MetadataCredentialCriteria(*policy.getIssuerMetadata()) : NULL
                     );
                 try {
-                    auto_ptr<XMLObject> decryptedID(encname->decrypt(*cr,application.getXMLString("entityID").second,mcc.get()));
+                    auto_ptr<XMLObject> decryptedID(encname->decrypt(*cr,application.getRelyingParty(entity)->getXMLString("entityID").second,mcc.get()));
                     ssoName = dynamic_cast<NameID*>(decryptedID.get());
                     if (ssoName) {
                         ownedName = true;

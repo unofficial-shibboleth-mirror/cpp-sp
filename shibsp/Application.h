@@ -172,11 +172,11 @@ namespace shibsp {
         virtual const PropertySet* getRelyingParty(const opensaml::saml2md::EntityDescriptor* provider) const=0;
 
         /**
-         * Returns the set of audience values associated with this Application.
+         * Returns any additional audience values associated with this Application.
          * 
-         * @return set of audience values associated with the Application
+         * @return additional audience values associated with the Application, or NULL
          */
-        virtual const std::vector<const XMLCh*>& getAudiences() const=0;
+        virtual const std::vector<const XMLCh*>* getAudiences() const=0;
 #endif
 
         /**

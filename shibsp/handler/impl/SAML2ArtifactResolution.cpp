@@ -82,6 +82,7 @@ namespace shibsp {
             const Application& app,
             const ArtifactResolve& request,
             HTTPResponse& httpResponse,
+            const EntityDescriptor* recipient,
             const XMLCh* code,
             const XMLCh* subcode=NULL,
             const char* msg=NULL
@@ -277,10 +278,12 @@ pair<bool,long> SAML2ArtifactResolution::processMessage(const Application& appli
     if (!req)
         throw FatalProfileException("Decoded message was not a samlp::ArtifactResolve request.");
 
+    const EntityDescriptor* entity = policy.getIssuerMetadata() ? dynamic_cast<EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL;
+
     try {
         auto_ptr_char artifact(req->getArtifact() ? req->getArtifact()->getArtifact() : NULL);
         if (!artifact.get() || !*artifact.get())
-            return samlError(application, *req, httpResponse, StatusCode::REQUESTER, NULL, "Request did not contain an artifact to resolve.");
+            return samlError(application, *req, httpResponse, entity, StatusCode::REQUESTER, NULL, "Request did not contain an artifact to resolve.");
         auto_ptr_char issuer(policy.getIssuer() ? policy.getIssuer()->getName() : NULL);
 
         m_log.info("resolving artifact (%s) for (%s)", artifact.get(), issuer.get() ? issuer.get() : "unknown");
@@ -291,7 +294,7 @@ pair<bool,long> SAML2ArtifactResolution::processMessage(const Application& appli
 
         if (!policy.isAuthenticated()) {
             m_log.error("request for artifact was unauthenticated, purging the artifact mapping");
-            return samlError(application, *req, httpResponse, StatusCode::REQUESTER, StatusCode::AUTHN_FAILED, "Unable to authenticate request.");
+            return samlError(application, *req, httpResponse, entity, StatusCode::REQUESTER, StatusCode::AUTHN_FAILED, "Unable to authenticate request.");
         }
 
         m_log.debug("artifact resolved, preparing response");
@@ -300,7 +303,7 @@ pair<bool,long> SAML2ArtifactResolution::processMessage(const Application& appli
         auto_ptr<ArtifactResponse> resp(ArtifactResponseBuilder::buildArtifactResponse());
         resp->setInResponseTo(req->getID());
         Issuer* me = IssuerBuilder::buildIssuer();
-        me->setName(application.getXMLString("entityID").second);
+        me->setName(application.getRelyingParty(entity)->getXMLString("entityID").second);
         resp->setPayload(payload.release());
 
         long ret = sendMessage(
@@ -312,7 +315,7 @@ pair<bool,long> SAML2ArtifactResolution::processMessage(const Application& appli
     catch (exception& ex) {
         // Trap localized errors in a SAML Response.
         m_log.error("error processing artifact request, returning SAML error: %s", ex.what());
-        return samlError(application, *req, httpResponse, StatusCode::RESPONDER, NULL, ex.what());
+        return samlError(application, *req, httpResponse, entity, StatusCode::RESPONDER, NULL, ex.what());
     }
 #else
     return make_pair(false,0L);
@@ -321,13 +324,19 @@ pair<bool,long> SAML2ArtifactResolution::processMessage(const Application& appli
 
 #ifndef SHIBSP_LITE
 pair<bool,long> SAML2ArtifactResolution::samlError(
-    const Application& app, const ArtifactResolve& request, HTTPResponse& httpResponse, const XMLCh* code, const XMLCh* subcode, const char* msg
+    const Application& app,
+    const ArtifactResolve& request,
+    HTTPResponse& httpResponse,
+    const EntityDescriptor* recipient,
+    const XMLCh* code,
+    const XMLCh* subcode,
+    const char* msg
     ) const
 {
     auto_ptr<ArtifactResponse> resp(ArtifactResponseBuilder::buildArtifactResponse());
     resp->setInResponseTo(request.getID());
     Issuer* me = IssuerBuilder::buildIssuer();
-    me->setName(app.getXMLString("entityID").second);
+    me->setName(app.getRelyingParty(recipient)->getXMLString("entityID").second);
     fillStatus(*resp.get(), code, subcode, msg);
     long ret = m_encoder->encode(httpResponse, resp.get(), NULL);
     resp.release();  // freed by encoder

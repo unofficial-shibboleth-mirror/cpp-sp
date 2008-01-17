@@ -404,10 +404,12 @@ LogoutRequest* SAML2LogoutInitiator::buildRequest(
     const Application& application, const Session& session, const RoleDescriptor& role, const MessageEncoder* encoder
     ) const
 {
+    const PropertySet* relyingParty = application.getRelyingParty(dynamic_cast<EntityDescriptor*>(role.getParent()));
+
     auto_ptr<LogoutRequest> msg(LogoutRequestBuilder::buildLogoutRequest());
     Issuer* issuer = IssuerBuilder::buildIssuer();
     msg->setIssuer(issuer);
-    issuer->setName(application.getXMLString("entityID").second);
+    issuer->setName(relyingParty->getXMLString("entityID").second);
     auto_ptr_XMLCh index(session.getSessionIndex());
     if (index.get() && *index.get()) {
         SessionIndex* si = SessionIndexBuilder::buildSessionIndex();
@@ -416,7 +418,6 @@ LogoutRequest* SAML2LogoutInitiator::buildRequest(
     }
 
     const NameID* nameid = session.getNameID();
-    const PropertySet* relyingParty = application.getRelyingParty(dynamic_cast<EntityDescriptor*>(role.getParent()));
     pair<bool,const char*> flag = relyingParty->getString("encryption");
     if (flag.first &&
         (!strcmp(flag.second, "true") || (encoder && !strcmp(flag.second, "front")) || (!encoder && !strcmp(flag.second, "back")))) {

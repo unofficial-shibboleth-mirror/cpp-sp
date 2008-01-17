@@ -866,7 +866,7 @@ void SSCache::insert(
             istringstream pstr(pending);
             pstr >> pendobj;
             // IdP.SP.index contains logout expiration, if any.
-            DDF deadmenwalking = pendobj[issuer ? entity_id.get() : "_shibnull"][application.getString("entityID").second];
+            DDF deadmenwalking = pendobj[issuer ? entity_id.get() : "_shibnull"][application.getRelyingParty(issuer)->getString("entityID").second];
             const char* logexpstr = deadmenwalking[session_index ? index.get() : "_shibnull"].string();
             if (!logexpstr && session_index)    // we tried an exact session match, now try for NULL
                 logexpstr = deadmenwalking["_shibnull"].string();
@@ -1027,7 +1027,7 @@ bool SSCache::matches(
         if (session) {
             Locker locker(session, false);
             if (XMLString::equals(session->getEntityID(), entityID.get()) && session->getNameID() &&
-                    stronglyMatches(issuer->getEntityID(), application.getXMLString("entityID").second, nameid, *session->getNameID())) {
+                    stronglyMatches(issuer->getEntityID(), application.getRelyingParty(issuer)->getXMLString("entityID").second, nameid, *session->getNameID())) {
                 return (!indexes || indexes->empty() || (session->getSessionIndex() ? (indexes->count(session->getSessionIndex())>0) : false));
             }
         }
@@ -1090,7 +1090,7 @@ vector<string>::size_type SSCache::logout(
         }
 
         // Structure is keyed by the IdP and SP, with a member per session index containing the expiration.
-        DDF root = obj.addmember(issuer ? entityID.get() : "_shibnull").addmember(application.getString("entityID").second);
+        DDF root = obj.addmember(issuer ? entityID.get() : "_shibnull").addmember(application.getRelyingParty(issuer)->getString("entityID").second);
         if (indexes) {
             for (set<string>::const_iterator x = indexes->begin(); x!=indexes->end(); ++x)
                 root.addmember(x->c_str()).string(timebuf);
@@ -1150,7 +1150,7 @@ vector<string>::size_type SSCache::logout(
                     // Same issuer?
                     if (XMLString::equals(session->getEntityID(), entityID.get())) {
                         // Same NameID?
-                        if (stronglyMatches(issuer->getEntityID(), application.getXMLString("entityID").second, nameid, *session->getNameID())) {
+                        if (stronglyMatches(issuer->getEntityID(), application.getRelyingParty(issuer)->getXMLString("entityID").second, nameid, *session->getNameID())) {
                             sessionsKilled.push_back(key.string());
                             key.destroy();
                         }

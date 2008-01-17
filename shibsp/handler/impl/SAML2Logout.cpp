@@ -373,7 +373,13 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
                         policy.getIssuerMetadata() ? new MetadataCredentialCriteria(*policy.getIssuerMetadata()) : NULL
                         );
                     try {
-                        auto_ptr<XMLObject> decryptedID(encname->decrypt(*cr,application.getXMLString("entityID").second,mcc.get()));
+                        auto_ptr<XMLObject> decryptedID(
+                            encname->decrypt(
+                                *cr,
+                                application.getRelyingParty(policy.getIssuerMetadata() ? dynamic_cast<EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL)->getXMLString("entityID").second,
+                                mcc.get()
+                                )
+                            );
                         nameid = dynamic_cast<NameID*>(decryptedID.get());
                         if (nameid) {
                             ownedName = true;
@@ -583,7 +589,7 @@ pair<bool,long> SAML2Logout::sendResponse(
     }
     Issuer* issuer = IssuerBuilder::buildIssuer();
     logout->setIssuer(issuer);
-    issuer->setName(application.getXMLString("entityID").second);
+    issuer->setName(application.getRelyingParty(dynamic_cast<EntityDescriptor*>(role->getParent()))->getXMLString("entityID").second);
     fillStatus(*logout.get(), code, subcode, msg);
 
     auto_ptr_char dest(logout->getDestination());

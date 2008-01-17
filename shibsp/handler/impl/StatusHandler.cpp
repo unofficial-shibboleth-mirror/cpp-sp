@@ -421,7 +421,18 @@ pair<bool,long> StatusHandler::processMessage(
             status = "<Partial/>";
         }
 
-        s << "<Application id='" << application.getId() << "' entityID='" << application.getString("entityID").second << "'/>";
+        const PropertySet* relyingParty=NULL;
+        param=httpRequest.getParameter("entityID");
+        if (param) {
+            MetadataProvider* m = application.getMetadataProvider();
+            Locker mlock(m);
+            relyingParty = application.getRelyingParty(m->getEntityDescriptor(MetadataProvider::Criteria(param)).first);
+        }
+        else {
+            relyingParty = application.getRelyingParty(NULL);
+        }
+
+        s << "<Application id='" << application.getId() << "' entityID='" << relyingParty->getString("entityID").second << "'/>";
 
         s << "<Handlers>";
         vector<const Handler*> handlers;
@@ -434,15 +445,6 @@ pair<bool,long> StatusHandler::processMessage(
         }
         s << "</Handlers>";
 
-        const PropertySet* relyingParty=NULL;
-        param=httpRequest.getParameter("entityID");
-        if (param) {
-            MetadataProvider* m = application.getMetadataProvider();
-            Locker mlock(m);
-            relyingParty = application.getRelyingParty(m->getEntityDescriptor(MetadataProvider::Criteria(param)).first);
-        }
-        if (!relyingParty)
-            relyingParty = application.getRelyingParty(NULL);
         CredentialResolver* credResolver=application.getCredentialResolver();
         if (credResolver) {
             Locker credLocker(credResolver);

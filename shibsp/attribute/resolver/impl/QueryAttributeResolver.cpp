@@ -269,6 +269,7 @@ bool QueryResolver::SAML1Query(QueryContext& ctx) const
     }
 
     const Application& application = ctx.getApplication();
+    const PropertySet* relyingParty = application.getRelyingParty(ctx.getEntityDescriptor());
     shibsp::SecurityPolicy policy(application);
     MetadataCredentialCriteria mcc(*AA);
     shibsp::SOAPClient soaper(policy);
@@ -281,7 +282,6 @@ bool QueryResolver::SAML1Query(QueryContext& ctx) const
             if (!XMLString::equals((*ep)->getBinding(),binding.get()))
                 continue;
             auto_ptr_char loc((*ep)->getLocation());
-            auto_ptr_XMLCh issuer(application.getString("entityID").second);
             NameIdentifier* nameid = NameIdentifierBuilder::buildNameIdentifier();
             nameid->setName(ctx.getNameID()->getName());
             nameid->setFormat(ctx.getNameID()->getFormat());
@@ -290,7 +290,7 @@ bool QueryResolver::SAML1Query(QueryContext& ctx) const
             subject->setNameIdentifier(nameid);
             saml1p::AttributeQuery* query = saml1p::AttributeQueryBuilder::buildAttributeQuery();
             query->setSubject(subject);
-            query->setResource(issuer.get());
+            query->setResource(relyingParty->getXMLString("entityID").second);
             for (vector<AttributeDesignator*>::const_iterator ad = m_SAML1Designators.begin(); ad!=m_SAML1Designators.end(); ++ad)
                 query->getAttributeDesignators().push_back((*ad)->cloneAttributeDesignator());
             Request* request = RequestBuilder::buildRequest();
@@ -330,7 +330,7 @@ bool QueryResolver::SAML1Query(QueryContext& ctx) const
     auto_ptr<saml1p::Response> wrapper(response);
     saml1::Assertion* newtoken = assertions.front();
 
-    pair<bool,bool> signedAssertions = application.getRelyingParty(ctx.getEntityDescriptor())->getBool("signedAssertions");
+    pair<bool,bool> signedAssertions = relyingParty->getBool("signedAssertions");
     if (!newtoken->getSignature() && signedAssertions.first && signedAssertions.second) {
         m_log.error("assertion unsigned, rejecting it based on signedAssertions policy");
         return true;
@@ -350,7 +350,7 @@ bool QueryResolver::SAML1Query(QueryContext& ctx) const
             throw SecurityPolicyException("Security of SAML 1.x query result not established.");
 
         // Lastly, check it over.
-        saml1::AssertionValidator tokval(application.getAudiences(), time(NULL));
+        saml1::AssertionValidator tokval(relyingParty->getXMLString("entityID").second, application.getAudiences(), time(NULL));
         tokval.validateAssertion(*newtoken);
     }
     catch (exception& ex) {
@@ -416,8 +416,6 @@ bool QueryResolver::SAML2Query(QueryContext& ctx) const
             if (!XMLString::equals((*ep)->getBinding(),binding.get()))
                 continue;
             auto_ptr_char loc((*ep)->getLocation());
-            auto_ptr_XMLCh issuer(application.getString("entityID").second);
-
             auto_ptr<saml2::Subject> subject(saml2::SubjectBuilder::buildSubject());
 
             // Encrypt the NameID?
@@ -440,7 +438,7 @@ bool QueryResolver::SAML2Query(QueryContext& ctx) const
             saml2p::AttributeQuery* query = saml2p::AttributeQueryBuilder::buildAttributeQuery();
             query->setSubject(subject.release());
             Issuer* iss = IssuerBuilder::buildIssuer();
-            iss->setName(issuer.get());
+            iss->setName(relyingParty->getXMLString("entityID").second);
             query->setIssuer(iss);
             for (vector<saml2::Attribute*>::const_iterator ad = m_SAML2Designators.begin(); ad!=m_SAML2Designators.end(); ++ad)
                 query->getAttributes().push_back((*ad)->cloneAttribute());
@@ -503,7 +501,7 @@ bool QueryResolver::SAML2Query(QueryContext& ctx) const
             throw SecurityPolicyException("Security of SAML 2.0 query result not established.");
 
         // Lastly, check it over.
-        saml2::AssertionValidator tokval(application.getAudiences(), time(NULL));
+        saml2::AssertionValidator tokval(relyingParty->getXMLString("entityID").second, application.getAudiences(), time(NULL));
         tokval.validateAssertion(*newtoken);
     }
     catch (exception& ex) {

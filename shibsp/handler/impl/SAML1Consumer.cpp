@@ -147,10 +147,6 @@ void SAML1Consumer::implementProtocol(
     // This is necessary because there may be valid tokens not aimed at us.
     vector<const opensaml::Assertion*> badtokens;
 
-    // Profile validator.
-    time_t now = time(NULL);
-    BrowserSSOProfileValidator ssoValidator(application.getAudiences(), now);
-
     // With this flag on, we ignore any unsigned assertions.
     const EntityDescriptor* entity = policy.getIssuerMetadata() ? dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL;
     pair<bool,bool> flag = application.getRelyingParty(entity)->getBool("signedAssertions");
@@ -161,6 +157,10 @@ void SAML1Consumer::implementProtocol(
 
     // Saves off error messages potentially helpful for users.
     string contextualError;
+
+    // Profile validator.
+    time_t now = time(NULL);
+    BrowserSSOProfileValidator ssoValidator(application.getRelyingParty(entity)->getXMLString("entityID").second, application.getAudiences(), now);
 
     for (vector<saml1::Assertion*>::const_iterator a = assertions.begin(); a!=assertions.end(); ++a) {
         try {

@@ -258,7 +258,7 @@ pair<bool,long> Shib1SessionInitiator::doRequest(
     auto_ptr_char dest(ep->getLocation());
     string req=string(dest.get()) + (strchr(dest.get(),'?') ? '&' : '?') + "shire=" + urlenc->encode(acsLocation) +
         "&time=" + timebuf + "&target=" + urlenc->encode(relayState.c_str()) +
-        "&providerId=" + urlenc->encode(app.getString("entityID").second);
+        "&providerId=" + urlenc->encode(app.getRelyingParty(entity.first)->getString("entityID").second);
 
     return make_pair(true, httpResponse.sendRedirect(req.c_str()));
 #else

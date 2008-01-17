@@ -66,13 +66,17 @@ namespace shibsp {
         void receive(DDF& in, ostream& out);
 
     private:
-        pair<bool,long> processMessage(const Application& application, const char* handlerURL, HTTPResponse& httpResponse) const;
+        pair<bool,long> processMessage(
+            const Application& application,
+            const char* handlerURL,
+            const char* entityID,
+            HTTPResponse& httpResponse
+            ) const;
 
         set<string> m_acl;
 #ifndef SHIBSP_LITE
         short m_http,m_https;
         vector<string> m_bases;
-        const char* m_mime;
 #endif
     };
 
@@ -90,7 +94,7 @@ namespace shibsp {
 MetadataGenerator::MetadataGenerator(const DOMElement* e, const char* appId)
     : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".MetadataGenerator"), &g_Blocker)
 #ifndef SHIBSP_LITE
-        ,m_https(0), m_http(0), m_mime(NULL)
+        ,m_https(0), m_http(0)
 #endif
 {
     string address(appId);
@@ -121,10 +125,6 @@ MetadataGenerator::MetadataGenerator(const DOMElement* e, const char* appId)
     if (flag.first)
         m_https = flag.second ? 1 : -1;
     
-    pair<bool,const char*> mime = getString("mimeType");
-    if (mime.first)
-        m_mime = mime.second;
-
     e = XMLHelper::getFirstChildElement(e, EndpointBase);
     while (e) {
         if (e->hasChildNodes()) {
@@ -151,13 +151,15 @@ pair<bool,long> MetadataGenerator::run(SPRequest& request, bool isHandler) const
     try {
         if (conf.isEnabled(SPConfig::OutOfProcess)) {
             // When out of process, we run natively and directly process the message.
-            return processMessage(request.getApplication(), request.getHandlerURL(), request);
+            return processMessage(request.getApplication(), request.getHandlerURL(), request.getParameter("entityID"), request);
         }
         else {
             // When not out of process, we remote all the message processing.
             DDF out,in = DDF(m_address.c_str());
             in.addmember("application_id").string(request.getApplication().getId());
             in.addmember("handler_url").string(request.getHandlerURL());
+            if (request.getParameter("entityID"))
+                in.addmember("entity_id").string(request.getParameter("entityID"));
             DDFJanitor jin(in), jout(out);
             
             out=request.getServiceProvider().getListenerService()->send(in);
@@ -194,14 +196,27 @@ void MetadataGenerator::receive(DDF& in, ostream& out)
     // Since we're remoted, the result should either be a throw, a false/0 return,
     // which we just return as an empty structure, or a response/redirect,
     // which we capture in the facade and send back.
-    processMessage(*app, hurl, *resp.get());
+    processMessage(*app, hurl, in["entity_id"].string(), *resp.get());
     out << ret;
 }
 
-pair<bool,long> MetadataGenerator::processMessage(const Application& application, const char* handlerURL, HTTPResponse& httpResponse) const
+pair<bool,long> MetadataGenerator::processMessage(
+    const Application& application, const char* handlerURL, const char* entityID, HTTPResponse& httpResponse
+    ) const
 {
 #ifndef SHIBSP_LITE
     m_log.debug("processing metadata request");
+
+    const PropertySet* relyingParty=NULL;
+    if (entityID) {
+        MetadataProvider* m=application.getMetadataProvider();
+        Locker locker(m);
+        MetadataProvider::Criteria mc(entityID);
+        relyingParty = application.getRelyingParty(m->getEntityDescriptor(mc).first);
+    }
+    else {
+        relyingParty = application.getRelyingParty(NULL);
+    }
 
     EntityDescriptor* entity;
     pair<bool,const char*> prop = getString("template");
@@ -212,6 +227,7 @@ pair<bool,long> MetadataGenerator::processMessage(const Application& application
         DOMDocument* doc=XMLToolingConfig::getConfig().getParser().parse(dsrc);
         XercesJanitor<DOMDocument> docjan(doc);
         auto_ptr<XMLObject> xmlobj(XMLObjectBuilder::buildOneFromElement(doc->getDocumentElement(), true));
+        docjan.release();
         entity = dynamic_cast<EntityDescriptor*>(xmlobj.get());
         if (!entity)
             throw ConfigurationException("Template file ($1) did not contain an EntityDescriptor", params(1, prop.second));
@@ -225,7 +241,7 @@ pair<bool,long> MetadataGenerator::processMessage(const Application& application
     pair<bool,unsigned int> cache = getUnsignedInt("cacheDuration");
     if (cache.first)
         entity->setValidUntil(time(NULL) + cache.second);
-    entity->setEntityID(application.getXMLString("entityID").second);
+    entity->setEntityID(relyingParty->getXMLString("entityID").second);
 
     SPSSODescriptor* role;
     if (entity->getSPSSODescriptors().empty()) {
@@ -237,10 +253,10 @@ pair<bool,long> MetadataGenerator::processMessage(const Application& application
     }
 
     // Policy flags.
-    prop = application.getRelyingParty(NULL)->getString("signing");
+    prop = relyingParty->getString("signing");
     if (prop.first && (!strcmp(prop.second,"true") || !strcmp(prop.second,"front")))
         role->AuthnRequestsSigned(true);
-    pair<bool,bool> flagprop = application.getRelyingParty(NULL)->getBool("signedAssertions");
+    pair<bool,bool> flagprop = relyingParty->getBool("signedAssertions");
     if (flagprop.first && flagprop.second)
         role->WantAssertionsSigned(true);
 
@@ -278,6 +294,9 @@ pair<bool,long> MetadataGenerator::processMessage(const Application& application
     if (credResolver) {
         Locker credLocker(credResolver);
         CredentialCriteria cc;
+        prop = relyingParty->getString("keyName");
+        if (prop.first)
+            cc.getKeyNames().insert(prop.second);
         cc.setUsage(Credential::SIGNING_CREDENTIAL);
         vector<const Credential*> creds;
         credResolver->resolve(creds,&cc);
@@ -357,7 +376,8 @@ pair<bool,long> MetadataGenerator::processMessage(const Application& application
         XMLHelper::serialize(entity->marshall(), s, true);
     }
 
-    httpResponse.setContentType(m_mime ? m_mime : "application/samlmetadata+xml");
+    prop = getString("mimeType");
+    httpResponse.setContentType(prop.first ? prop.second : "application/samlmetadata+xml");
     return make_pair(true, httpResponse.sendResponse(s));
 #else
     return make_pair(false,0L);

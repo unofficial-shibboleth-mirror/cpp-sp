@@ -562,7 +562,7 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
     if (!req->getIssuer()) {
         Issuer* issuer = IssuerBuilder::buildIssuer();
         req->setIssuer(issuer);
-        issuer->setName(app.getXMLString("entityID").second);
+        issuer->setName(app.getRelyingParty(entity.first)->getXMLString("entityID").second);
     }
     if (!req->getNameIDPolicy()) {
         NameIDPolicy* namepol = NameIDPolicyBuilder::buildNameIDPolicy();
