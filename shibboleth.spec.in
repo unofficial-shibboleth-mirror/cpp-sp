@@ -1,7 +1,7 @@
 Name:		shibboleth
 Summary:	Open source system to enable inter-institutional resource sharing
 Version:	@-VERSION-@
-Release:	4
+Release:	5
 #Copyright:	Internet2
 Group:		System Environment/Libraries
 License:	Apache style
@@ -199,6 +199,9 @@ fi
 %doc %{_datadir}/doc/%{name}/api
 
 %changelog
+* Fri Jan 18 2008  Scott Cantor  <cantor.2@osu.edu>  - 2.0-5
+- Release candidate 1.
+
 * Sun Oct 21 2007 Scott Cantor  <cantor.2@osu.edu>  - 2.0-4
 - libexec -> lib/shibboleth changes
 - Added doc subpackage
