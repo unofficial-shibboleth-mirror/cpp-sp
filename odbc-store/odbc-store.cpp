@@ -314,7 +314,8 @@ ODBCStorageService::~ODBCStorageService()
     shutdown_wait->signal();
     cleanup_thread->join(NULL);
     delete shutdown_wait;
-    SQLFreeHandle(SQL_HANDLE_ENV, m_henv);
+    if (m_henv != SQL_NULL_HANDLE)
+        SQLFreeHandle(SQL_HANDLE_ENV, m_henv);
 }
 
 bool ODBCStorageService::log_error(SQLHANDLE handle, SQLSMALLINT htype, const char* checkfor)
