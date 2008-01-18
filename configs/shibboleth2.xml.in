@@ -81,7 +81,7 @@
         homeURL="https://sp.example.org/index.html"
         REMOTE_USER="eppn persistent-id targeted-id"
         localLogout="@-PKGSYSCONFDIR-@/localLogout.html"
-        globalLogout="@-PKGSYSCONFDIR-@/globalLogout.html
+        globalLogout="@-PKGSYSCONFDIR-@/globalLogout.html"
         authType="TLS"
         artifactEndpointIndex="1"
         signing="false"
