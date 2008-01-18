@@ -582,6 +582,9 @@ int ODBCStorageService::updateRow(const char *table, const char* context, const 
         return -1;
     }
 
+    SQLFreeHandle(SQL_HANDLE_STMT, stmt);
+    stmt = getHSTMT(conn);
+
     // Prepare and exectute update statement.
     q = string("UPDATE ") + table + " SET ";
 
