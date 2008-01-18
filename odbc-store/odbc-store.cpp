@@ -108,13 +108,6 @@ namespace {
         SQLHDBC handle;
     };
 
-    struct ODBCStatement {
-        ODBCStatement(SQLHSTMT statement) : handle(statement) {}
-        ~ODBCStatement() {SQLFreeHandle(SQL_HANDLE_STMT,handle);}
-        operator SQLHSTMT() {return handle;}
-        SQLHSTMT handle;
-    };
-
     class ODBCStorageService : public StorageService
     {
     public:
@@ -386,7 +379,7 @@ SQLHSTMT ODBCStorageService::getHSTMT(SQLHDBC conn)
 pair<int,int> ODBCStorageService::getVersion(SQLHDBC conn)
 {
     // Grab the version number from the database.
-    ODBCStatement stmt(getHSTMT(conn));
+    SQLHSTMT stmt = getHSTMT(conn);
     
     SQLRETURN sr=SQLExecDirect(stmt, (SQLCHAR*)"SELECT major,minor FROM version", SQL_NTS);
     if (!SQL_SUCCEEDED(sr)) {
@@ -418,7 +411,7 @@ bool ODBCStorageService::createRow(const char* table, const char* context, const
 
     // Get statement handle.
     ODBCConn conn(getHDBC());
-    ODBCStatement stmt(getHSTMT(conn));
+    SQLHSTMT stmt = getHSTMT(conn);
 
     // Prepare and exectute insert statement.
     //char *scontext = makeSafeSQL(context);
@@ -484,7 +477,7 @@ int ODBCStorageService::readRow(
 
     // Get statement handle.
     ODBCConn conn(getHDBC());
-    ODBCStatement stmt(getHSTMT(conn));
+    SQLHSTMT stmt = getHSTMT(conn);
 
     // Prepare and exectute select statement.
     char timebuf[32];
@@ -553,7 +546,7 @@ int ODBCStorageService::updateRow(const char *table, const char* context, const 
 
     // Get statement handle.
     ODBCConn conn(getHDBC());
-    ODBCStatement stmt(getHSTMT(conn));
+    SQLHSTMT stmt = getHSTMT(conn);
 
     // First, fetch the current version for later, which also ensures the record still exists.
     char timebuf[32];
@@ -645,7 +638,7 @@ bool ODBCStorageService::deleteRow(const char *table, const char *context, const
 
     // Get statement handle.
     ODBCConn conn(getHDBC());
-    ODBCStatement stmt(getHSTMT(conn));
+    SQLHSTMT stmt = getHSTMT(conn);
 
     // Prepare and execute delete statement.
     char *scontext = makeSafeSQL(context);
@@ -721,7 +714,7 @@ void ODBCStorageService::updateContext(const char *table, const char* context, t
 
     // Get statement handle.
     ODBCConn conn(getHDBC());
-    ODBCStatement stmt(getHSTMT(conn));
+    SQLHSTMT stmt = getHSTMT(conn);
 
     char timebuf[32];
     timestampFromTime(expiration, timebuf);
@@ -752,7 +745,7 @@ void ODBCStorageService::reap(const char *table, const char* context)
 
     // Get statement handle.
     ODBCConn conn(getHDBC());
-    ODBCStatement stmt(getHSTMT(conn));
+    SQLHSTMT stmt = getHSTMT(conn);
 
     // Prepare and execute delete statement.
     char nowbuf[32];
@@ -784,7 +777,7 @@ void ODBCStorageService::deleteContext(const char *table, const char* context)
 
     // Get statement handle.
     ODBCConn conn(getHDBC());
-    ODBCStatement stmt(getHSTMT(conn));
+    SQLHSTMT stmt = getHSTMT(conn);
 
     // Prepare and execute delete statement.
     char *scontext = makeSafeSQL(context);
