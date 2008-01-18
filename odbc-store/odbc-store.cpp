@@ -425,10 +425,10 @@ bool ODBCStorageService::createRow(const char* table, const char* context, const
         log_error(stmt, SQL_HANDLE_STMT);
         throw IOException("ODBC StorageService failed to insert record.");
     }
-    m_log.debug("SQLPrepare() succeded. SQL: %s", q.c_str());
+    m_log.debug("SQLPrepare succeded. SQL: %s", q.c_str());
 
     SQLINTEGER b_ind = SQL_NTS;
-    sr = SQLBindParam(stmt, 1, SQL_C_CHAR, SQL_VARCHAR, 0, 0, const_cast<char*>(context), &b_ind);
+    sr = SQLBindParam(stmt, 1, SQL_C_CHAR, SQL_VARCHAR, 255, 0, const_cast<char*>(context), &b_ind);
     if (!SQL_SUCCEEDED(sr)) {
         m_log.error("SQLBindParam failed (context = %s)", context);
         log_error(stmt, SQL_HANDLE_STMT);
@@ -436,7 +436,7 @@ bool ODBCStorageService::createRow(const char* table, const char* context, const
     }
     m_log.debug("SQLBindParam succeded (context = %s)", context);
 
-    sr = SQLBindParam(stmt, 2, SQL_C_CHAR, SQL_VARCHAR, 0, 0, const_cast<char*>(key), &b_ind);
+    sr = SQLBindParam(stmt, 2, SQL_C_CHAR, SQL_VARCHAR, 255, 0, const_cast<char*>(key), &b_ind);
     if (!SQL_SUCCEEDED(sr)) {
         m_log.error("SQLBindParam failed (key = %s)", key);
         log_error(stmt, SQL_HANDLE_STMT);
@@ -444,7 +444,10 @@ bool ODBCStorageService::createRow(const char* table, const char* context, const
     }
     m_log.debug("SQLBindParam succeded (key = %s)", key);
 
-    sr = SQLBindParam(stmt, 3, SQL_C_CHAR, (strcmp(table, TEXT_TABLE)==0 ? SQL_LONGVARCHAR : SQL_VARCHAR), 0, 0, const_cast<char*>(value), &b_ind);
+    if (strcmp(table, TEXT_TABLE)==0)
+        sr = SQLBindParam(stmt, 3, SQL_C_CHAR, SQL_LONGVARCHAR, strlen(value), 0, const_cast<char*>(value), &b_ind);
+    else
+        sr = SQLBindParam(stmt, 3, SQL_C_CHAR, SQL_VARCHAR, 255, 0, const_cast<char*>(value), &b_ind);
     if (!SQL_SUCCEEDED(sr)) {
         m_log.error("SQLBindParam failed (value = %s)", value);
         log_error(stmt, SQL_HANDLE_STMT);
@@ -464,6 +467,8 @@ bool ODBCStorageService::createRow(const char* table, const char* context, const
             return false;   // supposedly integrity violation?
         throw IOException("ODBC StorageService failed to insert record.");
     }
+
+    m_log.debug("SQLExecute of insert succeeded");
     return true;
 }
 
@@ -608,11 +613,14 @@ int ODBCStorageService::updateRow(const char *table, const char* context, const 
         log_error(stmt, SQL_HANDLE_STMT);
         throw IOException("ODBC StorageService failed to update record.");
     }
-    m_log.debug("SQLPrepare() succeded. SQL: %s", q.c_str());
+    m_log.debug("SQLPrepare succeded. SQL: %s", q.c_str());
 
     SQLINTEGER b_ind = SQL_NTS;
     if (value) {
-        sr = SQLBindParam(stmt, 1, SQL_C_CHAR, (strcmp(table, TEXT_TABLE)==0 ? SQL_LONGVARCHAR : SQL_VARCHAR), 0, 0, const_cast<char*>(value), &b_ind);
+        if (strcmp(table, TEXT_TABLE)==0)
+            sr = SQLBindParam(stmt, 1, SQL_C_CHAR, SQL_LONGVARCHAR, strlen(value), 0, const_cast<char*>(value), &b_ind);
+        else
+            sr = SQLBindParam(stmt, 1, SQL_C_CHAR, SQL_VARCHAR, 255, 0, const_cast<char*>(value), &b_ind);
         if (!SQL_SUCCEEDED(sr)) {
             m_log.error("SQLBindParam failed (context = %s)", context);
             log_error(stmt, SQL_HANDLE_STMT);
@@ -630,6 +638,7 @@ int ODBCStorageService::updateRow(const char *table, const char* context, const 
         throw IOException("ODBC StorageService failed to update record.");
     }
 
+    m_log.debug("SQLExecute of update succeeded");
     return ver + 1;
 }
 
