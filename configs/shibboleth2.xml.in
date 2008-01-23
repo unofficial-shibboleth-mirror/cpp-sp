@@ -248,7 +248,7 @@
             </Certificate>
         </CredentialResolver>
 
-    </Applications>
+    </ApplicationDefaults>
     
     <!-- Each policy defines a set of rules to use to secure messages. -->
     <SecurityPolicies>

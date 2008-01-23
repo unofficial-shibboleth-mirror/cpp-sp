@@ -81,7 +81,7 @@
                 <element ref="conf:ReplayCache" minOccurs="0"/>
                 <element ref="conf:ArtifactMap" minOccurs="0"/>
                 <element name="RequestMapper" type="conf:PluggableType" minOccurs="0"/>
-				<element ref="conf:Applications"/>
+				<element ref="conf:ApplicationDefaults"/>
 				<element ref="conf:SecurityPolicies"/>
 			</sequence>
 			<attribute name="logger" type="anyURI"/>
