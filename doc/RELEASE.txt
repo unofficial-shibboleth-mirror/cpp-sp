@@ -1,8 +1,8 @@
 Release Notes
 
 Shibboleth Native SP
-2.0beta2
-12/1/2007
+2.0RC1
+1/23/2007
 
 Fully Supported (no major changes planned prior to stable release)
 
