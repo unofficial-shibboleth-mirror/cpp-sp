@@ -380,8 +380,8 @@ namespace {
     #pragma warning( pop )
 #endif
 
-    static const XMLCh _Application[] =         UNICODE_LITERAL_11(A,p,p,l,i,c,a,t,i,o,n);
-    static const XMLCh Applications[] =         UNICODE_LITERAL_12(A,p,p,l,i,c,a,t,i,o,n,s);
+    static const XMLCh ApplicationOverride[] =  UNICODE_LITERAL_19(A,p,p,l,i,c,a,t,i,o,n,O,v,e,r,r,i,d,e);
+    static const XMLCh ApplicationDefaults[] =  UNICODE_LITERAL_19(A,p,p,l,i,c,a,t,i,o,n,D,e,f,a,u,l,t,s);
     static const XMLCh _ArtifactMap[] =         UNICODE_LITERAL_11(A,r,t,i,f,a,c,t,M,a,p);
     static const XMLCh _AttributeExtractor[] =  UNICODE_LITERAL_18(A,t,t,r,i,b,u,t,e,E,x,t,r,a,c,t,o,r);
     static const XMLCh _AttributeFilter[] =     UNICODE_LITERAL_15(A,t,t,r,i,b,u,t,e,F,i,l,t,e,r);
@@ -923,7 +923,7 @@ void XMLApplication::cleanup()
 short XMLApplication::acceptNode(const DOMNode* node) const
 {
     const XMLCh* name=node->getLocalName();
-    if (XMLString::equals(name,_Application) ||
+    if (XMLString::equals(name,ApplicationOverride) ||
         XMLString::equals(name,_Audience) ||
         XMLString::equals(name,Notify) ||
         XMLString::equals(name,_Handler) ||
@@ -1119,7 +1119,7 @@ short XMLConfigImpl::acceptNode(const DOMNode* node) const
     if (!XMLString::equals(node->getNamespaceURI(),shibspconstants::SHIB2SPCONFIG_NS))
         return FILTER_ACCEPT;
     const XMLCh* name=node->getLocalName();
-    if (XMLString::equals(name,Applications) ||
+    if (XMLString::equals(name,ApplicationDefaults) ||
         XMLString::equals(name,_ArtifactMap) ||
         XMLString::equals(name,_Extensions) ||
         XMLString::equals(name,Listener) ||
@@ -1385,24 +1385,24 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
 #endif
 
         // Load the default application. This actually has a fixed ID of "default". ;-)
-        child=XMLHelper::getLastChildElement(e,Applications);
+        child=XMLHelper::getLastChildElement(e,ApplicationDefaults);
         if (!child) {
-            log.fatal("can't build default Application object, missing conf:Applications element?");
-            throw ConfigurationException("can't build default Application object, missing conf:Applications element?");
+            log.fatal("can't build default Application object, missing conf:ApplicationDefaults element?");
+            throw ConfigurationException("can't build default Application object, missing conf:ApplicationDefaults element?");
         }
         XMLApplication* defapp=new XMLApplication(m_outer,child);
         m_appmap[defapp->getId()]=defapp;
         
         // Load any overrides.
-        child = XMLHelper::getFirstChildElement(child,_Application);
+        child = XMLHelper::getFirstChildElement(child,ApplicationOverride);
         while (child) {
             auto_ptr<XMLApplication> iapp(new XMLApplication(m_outer,child,defapp));
             if (m_appmap.count(iapp->getId()))
-                log.crit("found conf:Application element with duplicate id attribute (%s), skipping it", iapp->getId());
+                log.crit("found conf:ApplicationOverride element with duplicate id attribute (%s), skipping it", iapp->getId());
             else
                 m_appmap[iapp->getId()]=iapp.release();
 
-            child = XMLHelper::getNextSiblingElement(child,_Application);
+            child = XMLHelper::getNextSiblingElement(child,ApplicationOverride);
         }
     }
     catch (exception&) {

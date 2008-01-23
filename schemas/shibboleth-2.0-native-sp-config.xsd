@@ -426,9 +426,9 @@
 		</complexType>
 	</element>
 	
-	<element name="Applications">
+	<element name="ApplicationDefaults">
 		<annotation>
-			<documentation>Container for global settings and application-specific overrides</documentation>
+			<documentation>Container for default settings and application-specific overrides</documentation>
 		</annotation>
 		<complexType>
 			<sequence>
@@ -443,7 +443,7 @@
 				<element name="AttributeResolver" type="conf:PluggableType" minOccurs="0"/>
 				<element name="AttributeFilter" type="conf:PluggableType" minOccurs="0"/>
 				<element name="CredentialResolver" type="conf:PluggableType" minOccurs="0"/>
-				<element ref="conf:Application" minOccurs="0" maxOccurs="unbounded"/>
+				<element ref="conf:ApplicationOverride" minOccurs="0" maxOccurs="unbounded"/>
 			</sequence>
 			<attribute name="id" type="conf:string" fixed="default"/>
 			<attribute name="entityID" type="anyURI" use="required"/>
@@ -454,7 +454,7 @@
 		</complexType>
 	</element>
 	
-	<element name="Application">
+	<element name="ApplicationOverride">
 		<annotation>
 			<documentation>Container for application-specific overrides</documentation>
 		</annotation>

@@ -73,11 +73,11 @@
     </RequestMapper>
 
     <!--
-    The Applications element is where most of Shibboleth's SAML bits are defined.
+    The ApplicationDefaults element is where most of Shibboleth's SAML bits are defined.
     Resource requests are mapped by the RequestMapper to an applicationId that
     points into to this section.
     -->
-    <Applications id="default" policyId="default" entityID="https://sp.example.org/shibboleth"
+    <ApplicationDefaults id="default" policyId="default" entityID="https://sp.example.org/shibboleth"
         homeURL="https://sp.example.org/index.html"
         REMOTE_USER="eppn persistent-id targeted-id"
         localLogout="@-PKGSYSCONFDIR-@/localLogout.html"
@@ -255,30 +255,6 @@
             </Certificate>
         </CredentialResolver>
 
-        <!-- Advanced resolver allowing for multiple keypairs. -->
-        <!--
-        <CredentialResolver type="Chaining">
-            <CredentialResolver type="File">
-                <Key>
-                    <Name>DefaultKey</Name>
-                    <Path>@-PKGSYSCONFDIR-@/sp-example.key</Path>
-                </Key>
-                <Certificate>
-                    <Path>@-PKGSYSCONFDIR-@/sp-example.crt</Path>
-                </Certificate>
-            </CredentialResolver>
-            <CredentialResolver type="File">
-                <Key>
-                    <Name>SpecialKey</Name>
-                    <Path>@-PKGSYSCONFDIR-@/special.key</Path>
-                </Key>
-                <Certificate>
-                    <Path>@-PKGSYSCONFDIR-@/special.crt</Path>
-                </Certificate>
-            </CredentialResolver>
-        </CredentialResolver>
-        -->
-        
     </Applications>
     
     <!-- Each policy defines a set of rules to use to secure messages. -->
