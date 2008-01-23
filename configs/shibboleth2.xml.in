@@ -82,15 +82,6 @@
         REMOTE_USER="eppn persistent-id targeted-id"
         localLogout="@-PKGSYSCONFDIR-@/localLogout.html"
         globalLogout="@-PKGSYSCONFDIR-@/globalLogout.html"
-        authType="TLS"
-        artifactEndpointIndex="1"
-        signing="false"
-        encryption="false"
-        requireConfidentiality="true"
-        requireTransportAuth="true"
-        signedAssertions="false"
-        chunkedEncoding="false"
-        connectTimeout="15" timeout="30"
         >
 
         <!--

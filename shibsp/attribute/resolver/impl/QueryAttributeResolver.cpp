@@ -330,7 +330,7 @@ bool QueryResolver::SAML1Query(QueryContext& ctx) const
     auto_ptr<saml1p::Response> wrapper(response);
     saml1::Assertion* newtoken = assertions.front();
 
-    pair<bool,bool> signedAssertions = relyingParty->getBool("signedAssertions");
+    pair<bool,bool> signedAssertions = relyingParty->getBool("requireSignedAssertions");
     if (!newtoken->getSignature() && signedAssertions.first && signedAssertions.second) {
         m_log.error("assertion unsigned, rejecting it based on signedAssertions policy");
         return true;
@@ -405,7 +405,7 @@ bool QueryResolver::SAML2Query(QueryContext& ctx) const
     shibsp::SOAPClient soaper(policy);
 
     const PropertySet* relyingParty = application.getRelyingParty(ctx.getEntityDescriptor());
-    pair<bool,bool> signedAssertions = relyingParty->getBool("signedAssertions");
+    pair<bool,bool> signedAssertions = relyingParty->getBool("requireSignedAssertions");
     pair<bool,const char*> encryption = relyingParty->getString("encryption");
 
     auto_ptr_XMLCh binding(samlconstants::SAML20_BINDING_SOAP);

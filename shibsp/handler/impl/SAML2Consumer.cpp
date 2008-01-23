@@ -137,7 +137,7 @@ void SAML2Consumer::implementProtocol(
     pair<bool,bool> flag = make_pair(false,false);
     if (alreadySecured && policy.getIssuerMetadata()) {
         entity = dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent());
-        flag = application.getRelyingParty(entity)->getBool("signedAssertions");
+        flag = application.getRelyingParty(entity)->getBool("requireSignedAssertions");
     }
 
     time_t now = time(NULL);
@@ -174,7 +174,7 @@ void SAML2Consumer::implementProtocol(
             // If we hadn't established Issuer yet, redo the signedAssertions check.
             if (!entity && policy.getIssuerMetadata()) {
                 entity = dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent());
-                flag = application.getRelyingParty(entity)->getBool("signedAssertions");
+                flag = application.getRelyingParty(entity)->getBool("requireSignedAssertions");
                 if (!(*a)->getSignature() && flag.first && flag.second)
                     throw SecurityPolicyException("The incoming assertion was unsigned, violating local security policy.");
             }

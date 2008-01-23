@@ -149,7 +149,7 @@ void SAML1Consumer::implementProtocol(
 
     // With this flag on, we ignore any unsigned assertions.
     const EntityDescriptor* entity = policy.getIssuerMetadata() ? dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL;
-    pair<bool,bool> flag = application.getRelyingParty(entity)->getBool("signedAssertions");
+    pair<bool,bool> flag = application.getRelyingParty(entity)->getBool("requireSignedAssertions");
 
     // authnskew allows rejection of SSO if AuthnInstant is too old.
     const PropertySet* sessionProps = application.getPropertySet("Sessions");

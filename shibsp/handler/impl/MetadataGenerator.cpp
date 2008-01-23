@@ -256,7 +256,7 @@ pair<bool,long> MetadataGenerator::processMessage(
     prop = relyingParty->getString("signing");
     if (prop.first && (!strcmp(prop.second,"true") || !strcmp(prop.second,"front")))
         role->AuthnRequestsSigned(true);
-    pair<bool,bool> flagprop = relyingParty->getBool("signedAssertions");
+    pair<bool,bool> flagprop = relyingParty->getBool("requireSignedAssertions");
     if (flagprop.first && flagprop.second)
         role->WantAssertionsSigned(true);
 

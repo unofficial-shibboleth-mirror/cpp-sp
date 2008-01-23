@@ -505,7 +505,7 @@
         <attribute name="timeout" type="unsignedShort"/>
         <attribute name="requireConfidentiality" type="boolean"/>
         <attribute name="requireTransportAuth" type="boolean"/>
-        <attribute name="signedAssertions" type="boolean"/>
+        <attribute name="requireSignedAssertions" type="boolean"/>
     </attributeGroup>
     
 	<element name="Sessions">
