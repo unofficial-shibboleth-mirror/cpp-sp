@@ -40,7 +40,8 @@ pair<bool,long> LogoutHandler::sendLogoutPage(
     const Application& application, const HTTPRequest& request, HTTPResponse& response, bool local, const char* status
     ) const
 {
-    pair<bool,const char*> prop = application.getString(local ? "localLogout" : "globalLogout");
+    const PropertySet* props = application.getPropertySet("Errors");
+    pair<bool,const char*> prop = props ? props->getString(local ? "localLogout" : "globalLogout") : pair<bool,const char*>(false,NULL);
     if (prop.first) {
         response.setContentType("text/html");
         response.setResponseHeader("Expires","01-Jan-1997 12:00:00 GMT");
@@ -50,7 +51,7 @@ pair<bool,long> LogoutHandler::sendLogoutPage(
             throw ConfigurationException("Unable to access $1 HTML template.", params(1,local ? "localLogout" : "globalLogout"));
         TemplateParameters tp;
         tp.m_request = &request;
-        tp.setPropertySet(application.getPropertySet("Errors"));
+        tp.setPropertySet(props);
         if (status)
             tp.m_map["logoutStatus"] = status;
         stringstream str;

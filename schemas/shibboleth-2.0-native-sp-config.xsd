@@ -487,8 +487,6 @@
 		<attribute name="unsetHeaders" type="conf:listOfStrings"/>
 		<attribute name="metadataAttributePrefix" type="conf:string"/>
 	    <attribute name="attributePrefix" type="conf:string"/>
-		<attribute name="localLogout" type="anyURI"/>
-		<attribute name="globalLogout" type="anyURI"/>
 	</attributeGroup>
 
     <attributeGroup name="RelyingPartyGroup">
@@ -626,6 +624,8 @@
 			<attribute name="metadata" type="anyURI"/>
 			<attribute name="access" type="anyURI"/>
 			<attribute name="ssl" type="anyURI"/>
+            <attribute name="localLogout" type="anyURI"/>
+            <attribute name="globalLogout" type="anyURI"/>
 			<attribute name="supportContact" type="conf:string"/>
 			<attribute name="logoLocation" type="anyURI"/>
 			<attribute name="styleSheet" type="anyURI"/>
