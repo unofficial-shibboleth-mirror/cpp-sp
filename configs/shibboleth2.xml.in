@@ -77,11 +77,11 @@
     Resource requests are mapped by the RequestMapper to an applicationId that
     points into to this section.
     -->
-    <ApplicationDefaults id="default" policyId="default" entityID="https://sp.example.org/shibboleth"
+    <ApplicationDefaults id="default" policyId="default"
+        entityID="https://sp.example.org/shibboleth"
         homeURL="https://sp.example.org/index.html"
         REMOTE_USER="eppn persistent-id targeted-id"
-        localLogout="@-PKGSYSCONFDIR-@/localLogout.html"
-        globalLogout="@-PKGSYSCONFDIR-@/globalLogout.html"
+        signing="false" encryption="false"
         >
 
         <!--
@@ -198,6 +198,8 @@
             metadata="@-PKGSYSCONFDIR-@/metadataError.html"
             access="@-PKGSYSCONFDIR-@/accessError.html"
             ssl="@-PKGSYSCONFDIR-@/sslError.html"
+            localLogout="@-PKGSYSCONFDIR-@/localLogout.html"
+            globalLogout="@-PKGSYSCONFDIR-@/globalLogout.html"
             supportContact="root@localhost"
             logoLocation="/shibboleth-sp/logo.jpg"
             styleSheet="/shibboleth-sp/main.css"/>
