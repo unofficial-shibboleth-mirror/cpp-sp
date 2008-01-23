@@ -4,6 +4,11 @@ Shibboleth Native SP
 2.0RC1
 1/23/2007
 
+NOTE: The shibboleth2.xml configuration format in this release
+is not compatible with earlier releases. Please start from scratch
+or manually copy settings over. This version will remain compatible
+with the final release.
+
 Fully Supported (no major changes planned prior to stable release)
 
 - SAML 1.0, 1.1, 2.0 Single Sign-On
