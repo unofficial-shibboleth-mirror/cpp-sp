@@ -1325,17 +1325,14 @@ Session* SSCache::find(const Application& application, const char* key, const ch
             if (timeout && *timeout > 0 && now - lastAccess >= *timeout) {
                 m_log.info("session timed out (ID: %s)", key);
                 remove(application, key);
-                RetryableProfileException ex("Your session has expired, and you must re-authenticate.");
                 const char* eid = obj["entity_id"].string();
                 if (!eid) {
                     obj.destroy();
-                    throw ex;
+                    throw RetryableProfileException("Your session has expired, and you must re-authenticate.");
                 }
                 string eid2(eid);
                 obj.destroy();
-                MetadataProvider* m=application.getMetadataProvider();
-                Locker locker(m);
-                annotateException(&ex,m->getEntityDescriptor(MetadataProvider::Criteria(eid2.c_str(),NULL,NULL,false)).first); // throws it
+                throw RetryableProfileException("Your session has expired, and you must re-authenticate.", namedparams(1, "entityID", eid2.c_str()));
             }
             
             if (timeout) {
