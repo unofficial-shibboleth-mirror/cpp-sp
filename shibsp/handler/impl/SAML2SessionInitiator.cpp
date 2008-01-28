@@ -492,6 +492,10 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
     const IDPSSODescriptor* role = NULL;
     const EndpointType* ep = NULL;
     const MessageEncoder* encoder = NULL;
+
+    // We won't need this for ECP, but safety dictates we get the lock here.
+    MetadataProvider* m=app.getMetadataProvider();
+    Locker locker(m);
     
     if (ECP) {
         encoder = m_ecp;
@@ -502,8 +506,6 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
     }
     else {
         // Use metadata to locate the IdP's SSO service.
-        MetadataProvider* m=app.getMetadataProvider();
-        Locker locker(m);
         MetadataProvider::Criteria mc(entityID, &IDPSSODescriptor::ELEMENT_QNAME, samlconstants::SAML20P_NS);
         entity=m->getEntityDescriptor(mc);
         if (!entity.first) {
