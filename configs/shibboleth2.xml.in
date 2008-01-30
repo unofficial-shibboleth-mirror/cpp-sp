@@ -11,7 +11,7 @@
     <OutOfProcess logger="@-PKGSYSCONFDIR-@/shibd.logger">
         <!--
         <Extensions>
-            <Library path="@-PKGLIBDIR-@/odbc-store.so" fatal="true"/>
+            <Library path="odbc-store.so" fatal="true"/>
         </Extensions>
         -->
     </OutOfProcess>
@@ -107,20 +107,20 @@
             <!-- Default example directs to a specific IdP's SSO service (favoring SAML 2 over Shib 1). -->
             <SessionInitiator type="Chaining" Location="/Login" isDefault="true" id="Intranet"
                     relayState="cookie" entityID="https://idp.example.org/shibboleth">
-                <SessionInitiator type="SAML2" defaultACSIndex="1" template="@-PKGSYSCONFDIR-@/bindingTemplate.html"/>
+                <SessionInitiator type="SAML2" defaultACSIndex="1" template="bindingTemplate.html"/>
                 <SessionInitiator type="Shib1" defaultACSIndex="5"/>
             </SessionInitiator>
             
             <!-- An example using an old-style WAYF, which means Shib 1 only unless an entityID is provided. -->
             <SessionInitiator type="Chaining" Location="/WAYF" id="WAYF" relayState="cookie">
-                <SessionInitiator type="SAML2" defaultACSIndex="1" template="@-PKGSYSCONFDIR-@/bindingTemplate.html"/>
+                <SessionInitiator type="SAML2" defaultACSIndex="1" template="bindingTemplate.html"/>
                 <SessionInitiator type="Shib1" defaultACSIndex="5"/>
                 <SessionInitiator type="WAYF" defaultACSIndex="5" URL="https://wayf.example.org/WAYF"/>
             </SessionInitiator>
 
             <!-- An example supporting the new-style of discovery service. -->
             <SessionInitiator type="Chaining" Location="/DS" id="DS" relayState="cookie">
-                <SessionInitiator type="SAML2" defaultACSIndex="1" template="@-PKGSYSCONFDIR-@/bindingTemplate.html"/>
+                <SessionInitiator type="SAML2" defaultACSIndex="1" template="bindingTemplate.html"/>
                 <SessionInitiator type="Shib1" defaultACSIndex="5"/>
                 <SessionInitiator type="SAMLDS" URL="https://ds.example.org/DS"/>
             </SessionInitiator>
@@ -146,28 +146,28 @@
 
             <!-- LogoutInitiators enable SP-initiated local or global/single logout of sessions. -->
             <LogoutInitiator type="Chaining" Location="/Logout" relayState="cookie">
-                <LogoutInitiator type="SAML2" template="@-PKGSYSCONFDIR-@/bindingTemplate.html"/>
+                <LogoutInitiator type="SAML2" template="bindingTemplate.html"/>
                 <LogoutInitiator type="Local"/>
             </LogoutInitiator>
 
             <!-- md:SingleLogoutService locations handle single logout (SLO) protocol messages. -->
             <md:SingleLogoutService Location="/SLO/SOAP"
                 Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP"/>
-            <md:SingleLogoutService Location="/SLO/Redirect" conf:template="@-PKGSYSCONFDIR-@/bindingTemplate.html"
+            <md:SingleLogoutService Location="/SLO/Redirect" conf:template="bindingTemplate.html"
                 Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"/>
-            <md:SingleLogoutService Location="/SLO/POST" conf:template="@-PKGSYSCONFDIR-@/bindingTemplate.html"
+            <md:SingleLogoutService Location="/SLO/POST" conf:template="bindingTemplate.html"
                 Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"/>
-            <md:SingleLogoutService Location="/SLO/Artifact" conf:template="@-PKGSYSCONFDIR-@/bindingTemplate.html"
+            <md:SingleLogoutService Location="/SLO/Artifact" conf:template="bindingTemplate.html"
                 Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact"/>
 
             <!-- md:ManageNameIDService locations handle NameID management (NIM) protocol messages. -->
             <md:ManageNameIDService Location="/NIM/SOAP"
                 Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP"/>
-            <md:ManageNameIDService Location="/NIM/Redirect" conf:template="@-PKGSYSCONFDIR-@/bindingTemplate.html"
+            <md:ManageNameIDService Location="/NIM/Redirect" conf:template="bindingTemplate.html"
                 Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"/>
-            <md:ManageNameIDService Location="/NIM/POST" conf:template="@-PKGSYSCONFDIR-@/bindingTemplate.html"
+            <md:ManageNameIDService Location="/NIM/POST" conf:template="bindingTemplate.html"
                 Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"/>
-            <md:ManageNameIDService Location="/NIM/Artifact" conf:template="@-PKGSYSCONFDIR-@/bindingTemplate.html"
+            <md:ManageNameIDService Location="/NIM/Artifact" conf:template="bindingTemplate.html"
                 Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact"/>
 
             <!--
@@ -194,12 +194,12 @@
         standard 403 Forbidden error code if authorization fails, and then customize that condition
         using your web server.
         -->
-        <Errors session="@-PKGSYSCONFDIR-@/sessionError.html"
-            metadata="@-PKGSYSCONFDIR-@/metadataError.html"
-            access="@-PKGSYSCONFDIR-@/accessError.html"
-            ssl="@-PKGSYSCONFDIR-@/sslError.html"
-            localLogout="@-PKGSYSCONFDIR-@/localLogout.html"
-            globalLogout="@-PKGSYSCONFDIR-@/globalLogout.html"
+        <Errors session="sessionError.html"
+            metadata="metadataError.html"
+            access="accessError.html"
+            ssl="sslError.html"
+            localLogout="localLogout.html"
+            globalLogout="globalLogout.html"
             supportContact="root@localhost"
             logoLocation="/shibboleth-sp/logo.jpg"
             styleSheet="/shibboleth-sp/main.css"/>
@@ -212,14 +212,14 @@
             <!-- Example of remotely supplied batch of signed metadata. -->
             <!--
             <MetadataProvider type="XML" uri="http://federation.org/federation-metadata.xml"
-                 backingFilePath="@-PKGRUNDIR-@/federation-metadata.xml" reloadInterval="7200">
-               <SignatureMetadataFilter certificate="@-PKGSYSCONFDIR-@/fedsigner.pem"/>
+                 backingFilePath="federation-metadata.xml" reloadInterval="7200">
+               <SignatureMetadataFilter certificate="fedsigner.pem"/>
             </MetadataProvider>
             -->
 
             <!-- Example of locally maintained metadata. -->
             <!--
-            <MetadataProvider type="XML" file="@-PKGSYSCONFDIR-@/partner-metadata.xml"/>
+            <MetadataProvider type="XML" file="partner-metadata.xml"/>
             -->
         </MetadataProvider>
 
@@ -230,23 +230,16 @@
         </TrustEngine>
 
         <!-- Map to extract attributes from SAML assertions. -->
-        <AttributeExtractor type="XML" path="@-PKGSYSCONFDIR-@/attribute-map.xml"/>
+        <AttributeExtractor type="XML" path="attribute-map.xml"/>
         
         <!-- Use a SAML query if no attributes are supplied during SSO. -->
         <AttributeResolver type="Query"/>
 
         <!-- Default filtering policy for recognized attributes, lets other data pass. -->
-        <AttributeFilter type="XML" path="@-PKGSYSCONFDIR-@/attribute-policy.xml"/>
+        <AttributeFilter type="XML" path="attribute-policy.xml"/>
 
         <!-- Simple file-based resolver for using a single keypair. -->
-        <CredentialResolver type="File">
-            <Key>
-                <Path>@-PKGSYSCONFDIR-@/sp-example.key</Path>
-            </Key>
-            <Certificate>
-                <Path>@-PKGSYSCONFDIR-@/sp-example.crt</Path>
-            </Certificate>
-        </CredentialResolver>
+        <CredentialResolver type="File" key="sp-example.key" certificate="sp-example.crt"/>
 
     </ApplicationDefaults>
     
