@@ -80,20 +80,6 @@ if (Err = 0) then
   End If
   FileSystemObj.MoveFile ConfigFile, DistDir & "attribute-policy.xml"
   
-  ConfigFile = DistDir & "shibboleth2.xml.in"
-  ReplaceInFile ConfigFile, "@-PKGXMLDIR-@", ConvertedDir & "/share/xml/shibboleth"
-  ReplaceInFile ConfigFile, "@-PKGSYSCONFDIR-@", ConvertedDir & "/etc/shibboleth"
-  ReplaceInFile ConfigFile, "@-PKGLIBDIR-@", ConvertedDir & "/lib/shibboleth"
-  ReplaceInFile ConfigFile, "   <UnixListener address=""@-PKGRUNDIR-@/shibd.sock""/>", "<!-- <UnixListener address=""@-PKGRUNDIR-@/shibd.sock""/> -->"
-  ReplaceInFile ConfigFile, "<!-- <TCPListener address=""127.0.0.1"" port=""12345"" acl=""127.0.0.1""/> -->", "<TCPListener address=""127.0.0.1"" port=""" & ShibdPort & """ acl=""127.0.0.1""/>"
-  If (NOT FileSystemObj.FileExists(ConfigDir & "shibboleth2.xml")) then
-    FileSystemObj.CopyFile ConfigFile, ConfigDir & "shibboleth2.xml", false
-  End If
-  If (FileSystemObj.FileExists(DistDir & "shibboleth2.xml")) then
-    FileSystemObj.DeleteFile DistDir & "shibboleth2.xml", true
-  End If
-  FileSystemObj.MoveFile ConfigFile, DistDir & "shibboleth2.xml"
-
   ConfigFile = DistDir & "shibd.logger.in"
   ReplaceInFile ConfigFile, "@-PKGLOGDIR-@", ConvertedDir & "/var/log/shibboleth"
   If (NOT FileSystemObj.FileExists(ConfigDir & "shibd.logger")) then
@@ -161,6 +147,13 @@ if (Err = 0) then
     FileSystemObj.DeleteFile DistDir & "apache22.config", true
   End If
   FileSystemObj.MoveFile ConfigFile, DistDir & "apache22.config"
+
+  ConfigFile = DistDir & "shibboleth2.xml"
+  ReplaceInFile ConfigFile, "   <UnixListener address=""shibd.sock""/>", "<!-- <UnixListener address=""shibd.sock""/> -->"
+  ReplaceInFile ConfigFile, "<!-- <TCPListener address=""127.0.0.1"" port=""12345"" acl=""127.0.0.1""/> -->", "<TCPListener address=""127.0.0.1"" port=""" & ShibdPort & """ acl=""127.0.0.1""/>"
+  If (NOT FileSystemObj.FileExists(ConfigDir & "shibboleth2.xml")) then
+    FileSystemObj.CopyFile ConfigFile, ConfigDir & "shibboleth2.xml", false
+  End If
 
   'Now just copy the other non-edited files over as well (if possible)
 

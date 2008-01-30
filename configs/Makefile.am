@@ -22,7 +22,6 @@ pkgsysconf_DATA = \
 # installed as "foo" if "foo" does not already exist.  In other words,
 # the config files will not overwrite existing versions.
 BUILTCONFIGFILES = \
-	shibboleth2.xml \
 	native.logger \
 	shibd.logger \
 	attribute-map.xml \
@@ -31,6 +30,7 @@ BUILTCONFIGFILES = \
 # While BUILTCONFIGFILES are processed, these are not; so we should pull
 # them from SRCDIR.
 CONFIGFILES = \
+    shibboleth2.xml \
     example-metadata.xml \
 	console.logger \
 	syslog.logger \
@@ -87,9 +87,6 @@ shibd.logger: ${srcdir}/shibd.logger.in Makefile ${top_builddir}/config.status
 native.logger: ${srcdir}/native.logger.in Makefile ${top_builddir}/config.status
 	$(MAKE) do-build-file FILE=$@
 
-shibboleth2.xml: ${srcdir}/shibboleth2.xml.in Makefile ${top_builddir}/config.status
-	$(MAKE) do-build-file FILE=$@
-
 attribute-map.xml: ${srcdir}/attribute-map.xml.in Makefile ${top_builddir}/config.status
 	$(MAKE) do-build-file FILE=$@
 
@@ -127,12 +124,10 @@ CLEANFILES = \
 	shibd-osx.plist \
 	shibd.logger \
 	native.logger \
-	shibboleth2.xml \
 	attribute-map.xml \
 	attribute-policy.xml
 
 EXTRA_DIST = \
-	shibboleth2.xml.in \
 	attribute-map.xml.in \
 	attribute-policy.xml.in \
 	native.logger.in \

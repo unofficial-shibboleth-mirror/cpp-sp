@@ -3,12 +3,10 @@
     xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"
     xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"    
     xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="urn:mace:shibboleth:2.0:native:sp:config @-PKGXMLDIR-@/shibboleth-2.0-native-sp-config.xsd"
-    logger="@-PKGSYSCONFDIR-@/syslog.logger" clockSkew="180">
+    logger="syslog.logger" clockSkew="180">
 
     <!-- The OutOfProcess section contains properties affecting the shibd daemon. -->
-    <OutOfProcess logger="@-PKGSYSCONFDIR-@/shibd.logger">
+    <OutOfProcess logger="shibd.logger">
         <!--
         <Extensions>
             <Library path="odbc-store.so" fatal="true"/>
@@ -17,7 +15,7 @@
     </OutOfProcess>
     
     <!-- The InProcess section conrains settings affecting web server modules/filters. -->
-    <InProcess logger="@-PKGSYSCONFDIR-@/native.logger">
+    <InProcess logger="native.logger">
         <ISAPI normalizeRequest="true">
             <!--
             Maps IIS Instance ID values to the host scheme/name/port/sslport. The name is
@@ -31,7 +29,7 @@
     </InProcess>
 
     <!-- Only one listener can be defined, to connect in process modules to shibd. -->
-    <UnixListener address="@-PKGRUNDIR-@/shibd.sock"/>
+    <UnixListener address="shibd.sock"/>
     <!-- <TCPListener address="127.0.0.1" port="12345" acl="127.0.0.1"/> -->
     
     <!-- This set of components stores sessions and other persistent data in daemon memory. -->

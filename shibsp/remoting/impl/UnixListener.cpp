@@ -25,6 +25,7 @@
 
 #include <xercesc/util/XMLUniDefs.hpp>
 #include <xmltooling/unicode.h>
+#include <xmltooling/util/PathResolver.h>
 
 #ifdef HAVE_UNISTD_H
 # include <sys/socket.h>
@@ -81,11 +82,11 @@ namespace shibsp {
 
 UnixListener::UnixListener(const DOMElement* e) : SocketListener(e), m_address("/var/run/shar-socket"), m_bound(false)
 {
-    // We're stateless, but we need to load the configuration.
     const XMLCh* tag=e->getAttributeNS(NULL,address);
     if (tag && *tag) {
         auto_ptr_char a(tag);
         m_address=a.get();
+        XMLToolingConfig::getConfig().getPathResolver()->resolve(m_address, PathResolver::XMLTOOLING_RUN_FILE);
     }
 }
 
