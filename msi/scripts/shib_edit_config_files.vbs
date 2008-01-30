@@ -60,26 +60,6 @@ if (Err = 0) then
   'Afterwards, if the config file doesn't already exist, copy up to etc/shibboleth
   'Also strip *.in for files in dist
 
-  ConfigFile = DistDir & "attribute-map.xml.in"
-  ReplaceInFile ConfigFile, "@-PKGXMLDIR-@", ConvertedDir & "/share/xml/shibboleth"
-  If (NOT FileSystemObj.FileExists(ConfigDir & "attribute-map.xml")) then
-    FileSystemObj.CopyFile ConfigFile, ConfigDir & "attribute-map.xml", false
-  End If
-  If (FileSystemObj.FileExists(DistDir & "attribute-map.xml")) then
-    FileSystemObj.DeleteFile DistDir & "attribute-map.xml", true
-  End If
-  FileSystemObj.MoveFile ConfigFile, DistDir & "attribute-map.xml"
-
-  ConfigFile = DistDir & "attribute-policy.xml.in"
-  ReplaceInFile ConfigFile, "@-PKGXMLDIR-@", ConvertedDir & "/share/xml/shibboleth"
-  If (NOT FileSystemObj.FileExists(ConfigDir & "attribute-policy.xml")) then
-    FileSystemObj.CopyFile ConfigFile, ConfigDir & "attribute-policy.xml", false
-  End If
-  If (FileSystemObj.FileExists(DistDir & "attribute-policy.xml")) then
-    FileSystemObj.DeleteFile DistDir & "attribute-policy.xml", true
-  End If
-  FileSystemObj.MoveFile ConfigFile, DistDir & "attribute-policy.xml"
-  
   ConfigFile = DistDir & "shibd.logger.in"
   ReplaceInFile ConfigFile, "@-PKGLOGDIR-@", ConvertedDir & "/var/log/shibboleth"
   If (NOT FileSystemObj.FileExists(ConfigDir & "shibd.logger")) then
@@ -207,6 +187,14 @@ if (Err = 0) then
 
   If (NOT FileSystemObj.FileExists(ConfigDir & "example-metadata.xml")) then
     FileSystemObj.CopyFile DistDir & "example-metadata.xml", ConfigDir, false
+  End If
+
+  If (NOT FileSystemObj.FileExists(ConfigDir & "attribute-map.xml")) then
+    FileSystemObj.CopyFile DistDir & "attribute-map.xml", ConfigDir, false
+  End If
+
+  If (NOT FileSystemObj.FileExists(ConfigDir & "attribute-policy.xml")) then
+    FileSystemObj.CopyFile DistDir & "attribute-policy.xml", ConfigDir, false
   End If
 
   ' Finally, fix up schema catalogs.

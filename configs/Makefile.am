@@ -23,14 +23,14 @@ pkgsysconf_DATA = \
 # the config files will not overwrite existing versions.
 BUILTCONFIGFILES = \
 	native.logger \
-	shibd.logger \
-	attribute-map.xml \
-	attribute-policy.xml
+	shibd.logger
 
 # While BUILTCONFIGFILES are processed, these are not; so we should pull
 # them from SRCDIR.
 CONFIGFILES = \
     shibboleth2.xml \
+    attribute-map.xml \
+    attribute-policy.xml \
     example-metadata.xml \
 	console.logger \
 	syslog.logger \
@@ -87,12 +87,6 @@ shibd.logger: ${srcdir}/shibd.logger.in Makefile ${top_builddir}/config.status
 native.logger: ${srcdir}/native.logger.in Makefile ${top_builddir}/config.status
 	$(MAKE) do-build-file FILE=$@
 
-attribute-map.xml: ${srcdir}/attribute-map.xml.in Makefile ${top_builddir}/config.status
-	$(MAKE) do-build-file FILE=$@
-
-attribute-policy.xml: ${srcdir}/attribute-policy.xml.in Makefile ${top_builddir}/config.status
-	$(MAKE) do-build-file FILE=$@
-
 all-data-local: $(BUILTCONFIGFILES)
 
 install-data-local:	all-data-local
@@ -123,13 +117,9 @@ CLEANFILES = \
 	shibd-debian \
 	shibd-osx.plist \
 	shibd.logger \
-	native.logger \
-	attribute-map.xml \
-	attribute-policy.xml
+	native.logger
 
 EXTRA_DIST = \
-	attribute-map.xml.in \
-	attribute-policy.xml.in \
 	native.logger.in \
 	shibd.logger.in \
 	apache.config.in \

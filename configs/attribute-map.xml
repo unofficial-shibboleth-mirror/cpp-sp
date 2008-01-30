@@ -1,6 +1,4 @@
-<Attributes xmlns="urn:mace:shibboleth:2.0:attribute-map"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="urn:mace:shibboleth:2.0:attribute-map @-PKGXMLDIR-@/shibboleth-2.0-attribute-map.xsd">
+<Attributes xmlns="urn:mace:shibboleth:2.0:attribute-map" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
     <!-- First some useful eduPerson attributes that many sites might use. -->
     

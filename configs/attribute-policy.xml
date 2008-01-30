@@ -2,8 +2,7 @@
     xmlns="urn:mace:shibboleth:2.0:afp:mf:basic"
     xmlns:basic="urn:mace:shibboleth:2.0:afp:mf:basic"
     xmlns:afp="urn:mace:shibboleth:2.0:afp"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="urn:mace:shibboleth:2.0:afp @-PKGXMLDIR-@/shibboleth-2.0-afp.xsd urn:mace:shibboleth:2.0:afp:mf:basic @-PKGXMLDIR-@/shibboleth-2.0-afp-mf-basic.xsd urn:mace:shibboleth:2.0:afp:mf:saml @-PKGXMLDIR-@/shibboleth-2.0-afp-mf-saml.xsd">
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
     <!-- Shared rule for affiliation values. -->
     <afp:PermitValueRule id="eduPersonAffiliationValues" xsi:type="OR">
