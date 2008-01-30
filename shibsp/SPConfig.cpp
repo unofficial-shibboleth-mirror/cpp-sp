@@ -85,15 +85,10 @@ DECL_XMLTOOLING_EXCEPTION_FACTORY(MetadataException,opensaml::saml2md);
 #endif
 
 namespace shibsp {
-   SPInternalConfig g_config;
+   SPConfig g_config;
 }
 
 SPConfig& SPConfig::getConfig()
-{
-    return g_config;
-}
-
-SPInternalConfig& SPInternalConfig::getInternalConfig()
 {
     return g_config;
 }
@@ -104,7 +99,7 @@ void SPConfig::setServiceProvider(ServiceProvider* serviceProvider)
     m_serviceProvider = serviceProvider;
 }
 
-bool SPInternalConfig::init(const char* catalog_path)
+bool SPConfig::init(const char* catalog_path, const char* inst_prefix)
 {
 #ifdef _DEBUG
     NDC ndc("init");
@@ -117,6 +112,11 @@ bool SPInternalConfig::init(const char* catalog_path)
         loglevel = SHIBSP_LOGGING;
     XMLToolingConfig::getConfig().log_config(loglevel);
 
+    if (!inst_prefix)
+        inst_prefix = getenv("SHIBSP_PREFIX");
+    if (!inst_prefix)
+        inst_prefix = SHIBSP_PREFIX;
+    
     if (!catalog_path)
         catalog_path = getenv("SHIBSP_SCHEMAS");
     if (!catalog_path)
@@ -136,7 +136,7 @@ bool SPInternalConfig::init(const char* catalog_path)
     }
 #endif    
     XMLToolingConfig::getConfig().getPathResolver()->setDefaultPackageName(PACKAGE_NAME);
-    XMLToolingConfig::getConfig().getPathResolver()->setDefaultPrefix(getenv("SHIBSP_PREFIX") ? getenv("SHIBSP_PREFIX") : SHIBSP_PREFIX);
+    XMLToolingConfig::getConfig().getPathResolver()->setDefaultPrefix(inst_prefix);
     XMLToolingConfig::getConfig().setTemplateEngine(new TemplateEngine());
     XMLToolingConfig::getConfig().getTemplateEngine()->setTagPrefix("shibmlp");
     
@@ -198,7 +198,7 @@ bool SPInternalConfig::init(const char* catalog_path)
     return true;
 }
 
-void SPInternalConfig::term()
+void SPConfig::term()
 {
 #ifdef _DEBUG
     NDC ndc("term");

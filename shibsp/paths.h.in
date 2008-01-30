@@ -29,14 +29,14 @@
 #define SHIBSP_SCHEMAS "@-XMLTOOLINGXMLDIR-@/catalog.xml:@-OPENSAMLXMLDIR-@/saml20-catalog.xml:@-OPENSAMLXMLDIR-@/saml11-catalog.xml:@-PKGXMLDIR-@/catalog.xml"
 
 /**
- * Default location of SP configuration file.
+ * Default name of SP configuration file.
  */
-#define SHIBSP_CONFIG "@-PKGSYSCONFDIR-@/shibboleth2.xml"
+#define SHIBSP_CONFIG "shibboleth2.xml"
 
 /**
- * Default location of SP console tool logging file.
+ * Default name of SP console tool logging file.
  */
-#define SHIBSP_LOGGING "@-PKGSYSCONFDIR-@/console.logger"
+#define SHIBSP_LOGGING "console.logger"
 
 /**
  * Default prefix for installation (used to resolve relative paths).

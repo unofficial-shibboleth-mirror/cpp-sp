@@ -48,23 +48,4 @@
 using namespace xmltooling::logging;
 using namespace xercesc;
 
-namespace shibsp {
-    
-    /// @cond OFF
-    class SPInternalConfig : public SPConfig
-    {
-    public:
-        SPInternalConfig() {}
-
-        static SPInternalConfig& getInternalConfig();
-
-        bool init(const char* catalog_path);
-        void term();
-
-    private:
-    };
-    /// @endcond
-
-};
-
 #endif /* __shibsp_internal_h__ */

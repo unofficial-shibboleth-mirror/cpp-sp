@@ -63,8 +63,14 @@ namespace shibsp {
      */
     class SHIBSP_API SPConfig
     {
-    MAKE_NONCOPYABLE(SPConfig);
+        MAKE_NONCOPYABLE(SPConfig);
     public:
+        SPConfig() : attribute_value_delimeter(';'), m_serviceProvider(NULL),
+#ifndef SHIBSP_LITE
+            m_artifactResolver(NULL),
+#endif
+            m_features(0) {}
+
         virtual ~SPConfig() {}
 
         /**
@@ -119,9 +125,10 @@ namespace shibsp {
          * before using any library classes.
          * 
          * @param catalog_path  delimited set of schema catalog files to load
+         * @param inst_prefix   installation prefix for software
          * @return true iff initialization was successful 
          */
-        virtual bool init(const char* catalog_path)=0;
+        virtual bool init(const char* catalog_path=NULL, const char* inst_prefix=NULL);
         
         /**
          * Shuts down library
@@ -129,7 +136,7 @@ namespace shibsp {
          * Each process using the library SHOULD call this function exactly once
          * before terminating itself.
          */
-        virtual void term()=0;
+        virtual void term();
         
         /**
          * Sets the global ServiceProvider instance.
@@ -264,12 +271,6 @@ namespace shibsp {
         xmltooling::PluginManager< Handler,std::string,std::pair<const xercesc::DOMElement*,const char*> > SingleLogoutServiceManager;
 
     protected:
-        SPConfig() : attribute_value_delimeter(';'), m_serviceProvider(NULL),
-#ifndef SHIBSP_LITE
-            m_artifactResolver(NULL),
-#endif
-            m_features(0) {}
-        
         /** Global ServiceProvider instance. */
         ServiceProvider* m_serviceProvider;
 

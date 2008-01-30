@@ -30,6 +30,7 @@
 
 #include <fstream>
 #include <xmltooling/XMLToolingConfig.h>
+#include <xmltooling/util/PathResolver.h>
 #include <xmltooling/util/URLEncoder.h>
 
 using namespace shibsp;
@@ -46,7 +47,8 @@ pair<bool,long> LogoutHandler::sendLogoutPage(
         response.setContentType("text/html");
         response.setResponseHeader("Expires","01-Jan-1997 12:00:00 GMT");
         response.setResponseHeader("Cache-Control","private,no-store,no-cache");
-        ifstream infile(prop.second);
+        string fname(prop.second);
+        ifstream infile(XMLToolingConfig::getConfig().getPathResolver()->resolve(fname, PathResolver::XMLTOOLING_CFG_FILE).c_str());
         if (!infile)
             throw ConfigurationException("Unable to access $1 HTML template.", params(1,local ? "localLogout" : "globalLogout"));
         TemplateParameters tp;

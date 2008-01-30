@@ -85,8 +85,9 @@ using xercesc::XMLException;
 extern "C" module MODULE_VAR_EXPORT mod_shib;
 
 namespace {
-    char* g_szSHIBConfig = SHIBSP_CONFIG;
-    char* g_szSchemaDir = SHIBSP_SCHEMAS;
+    char* g_szSHIBConfig = NULL;
+    char* g_szSchemaDir = NULL;
+    char* g_szPrefix = NULL;
     SPConfig* g_Config = NULL;
     string g_unsetHeaderValue;
     bool g_checkSpoofing = true;
@@ -1262,12 +1263,17 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
         SPConfig::Logging |
         SPConfig::Handlers
         );
-    if (!g_Config->init(g_szSchemaDir)) {
+    if (!g_Config->init(g_szSchemaDir, g_szPrefix)) {
         ap_log_error(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() failed to initialize libraries");
         exit(1);
     }
     g_Config->AccessControlManager.registerFactory(HT_ACCESS_CONTROL,&htAccessFactory);
     g_Config->RequestMapperManager.registerFactory(NATIVE_REQUEST_MAPPER,&ApacheRequestMapFactory);
+
+    if (!g_szSHIBConfig)
+        g_szSHIBConfig=getenv("SHIBSP_CONFIG");
+    if (!g_szSHIBConfig)
+        g_szSHIBConfig=SHIBSP_CONFIG;
     
     try {
         xercesc::DOMDocument* dummydoc=XMLToolingConfig::getConfig().getParser().newDocument();
@@ -1369,6 +1375,8 @@ typedef const char* (*config_fn_t)(void);
 // SHIB Module commands
 
 static command_rec shire_cmds[] = {
+  {"ShibPrefix", (config_fn_t)ap_set_global_string_slot, &g_szPrefix,
+   RSRC_CONF, TAKE1, "Shibboleth installation directory"},
   {"ShibConfig", (config_fn_t)ap_set_global_string_slot, &g_szSHIBConfig,
    RSRC_CONF, TAKE1, "Path to shibboleth.xml config file"},
   {"ShibCatalogs", (config_fn_t)ap_set_global_string_slot, &g_szSchemaDir,
@@ -1473,6 +1481,8 @@ extern "C" void shib_register_hooks (apr_pool_t *p)
 
 extern "C" {
 static command_rec shib_cmds[] = {
+    AP_INIT_TAKE1("ShibPrefix", (config_fn_t)ap_set_global_string_slot, &g_szPrefix,
+        RSRC_CONF, "Shibboleth installation directory"),
     AP_INIT_TAKE1("ShibConfig", (config_fn_t)ap_set_global_string_slot, &g_szSHIBConfig,
         RSRC_CONF, "Path to shibboleth.xml config file"),
     AP_INIT_TAKE1("ShibCatalogs", (config_fn_t)ap_set_global_string_slot, &g_szSchemaDir,

@@ -58,6 +58,7 @@ using namespace std;
 bool shibd_shutdown = false;
 const char* shar_config = NULL;
 const char* shar_schemadir = NULL;
+const char* shar_prefix = NULL;
 bool shar_checkonly = false;
 bool shar_version = false;
 static int unlink_socket = 0;
@@ -119,19 +120,16 @@ int real_main(int preinit)
             SPConfig::OutOfProcess |
             (shar_checkonly ? SPConfig::RequestMapping : SPConfig::Logging)
             );
-        if (!shar_config)
-            shar_config=getenv("SHIBSP_CONFIG");
-        if (!shar_schemadir)
-            shar_schemadir=getenv("SHIBSP_SCHEMAS");
-        if (!shar_schemadir)
-            shar_schemadir=SHIBSP_SCHEMAS;
-        if (!shar_config)
-            shar_config=SHIBSP_CONFIG;
-        if (!conf.init(shar_schemadir)) {
+        if (!conf.init(shar_schemadir, shar_prefix)) {
             fprintf(stderr, "configuration is invalid, see console for specific problems\n");
             return -1;
         }
         
+        if (!shar_config)
+            shar_config=getenv("SHIBSP_CONFIG");
+        if (!shar_config)
+            shar_config=SHIBSP_CONFIG;
+
         try {
             static const XMLCh path[] = UNICODE_LITERAL_4(p,a,t,h);
             static const XMLCh validate[] = UNICODE_LITERAL_8(v,a,l,i,d,a,t,e);
@@ -215,7 +213,8 @@ static int setup_signals(void)
 
 static void usage(char* whoami)
 {
-    fprintf(stderr, "usage: %s [-fcdt]\n", whoami);
+    fprintf(stderr, "usage: %s [-dcxtfpvh]\n", whoami);
+    fprintf(stderr, "  -d\tinstallation prefix to use.\n");
     fprintf(stderr, "  -c\tconfig file to use.\n");
     fprintf(stderr, "  -x\tXML schema catalogs to use.\n");
     fprintf(stderr, "  -t\tcheck configuration file for problems.\n");
@@ -230,8 +229,11 @@ static int parse_args(int argc, char* argv[])
 {
     int opt;
 
-    while ((opt = getopt(argc, argv, "c:x:p:ftvh")) > 0) {
+    while ((opt = getopt(argc, argv, "d:c:x:p:ftvh")) > 0) {
         switch (opt) {
+            case 'd':
+                shar_prefix=optarg;
+                break;
             case 'c':
                 shar_config=optarg;
                 break;
@@ -269,15 +271,6 @@ int main(int argc, char *argv[])
     if (setup_signals() != 0)
         return -1;
 
-    if (!shar_config)
-        shar_config=getenv("SHIBSP_CONFIG");
-    if (!shar_schemadir)
-        shar_schemadir=getenv("SHIBSP_SCHEMAS");
-    if (!shar_schemadir)
-        shar_schemadir=SHIBSP_SCHEMAS;
-    if (!shar_config)
-        shar_config=SHIBSP_CONFIG;
-
     // initialize the shib-target library
     SPConfig& conf=SPConfig::getConfig();
     conf.setFeatures(
@@ -291,11 +284,16 @@ int main(int argc, char *argv[])
         SPConfig::OutOfProcess |
         (shar_checkonly ? SPConfig::RequestMapping : SPConfig::Logging)
         );
-    if (!conf.init(shar_schemadir)) {
+    if (!conf.init(shar_schemadir, shar_prefix)) {
         fprintf(stderr, "configuration is invalid, check console for specific problems\n");
         return -1;
     }
 
+    if (!shar_config)
+        shar_config=getenv("SHIBSP_CONFIG");
+    if (!shar_config)
+        shar_config=SHIBSP_CONFIG;
+    
     try {
         static const XMLCh path[] = UNICODE_LITERAL_4(p,a,t,h);
         static const XMLCh validate[] = UNICODE_LITERAL_8(v,a,l,i,d,a,t,e);

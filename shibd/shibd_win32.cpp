@@ -28,11 +28,15 @@
 #define _CRT_SECURE_NO_DEPRECATE 1
 
 #include <shibsp/base.h>
+#include <string>
 #include <windows.h>
+
+using namespace std;
 
 extern bool shibd_shutdown;                    // signals shutdown to Unix side
 extern const char* shar_schemadir;
 extern const char* shar_config;
+extern const char* shar_prefix;
 extern bool shar_checkonly;
 
 // internal variables
@@ -109,6 +113,11 @@ int main(int argc, char *argv[])
             if (argc > ++i)
                 shar_config = argv[i++];
         }
+        else if (_stricmp( "prefix", argv[i]+1) == 0)
+        {
+            if (argc > ++i)
+                shar_prefix = argv[i++];
+        }
         else if (_stricmp( "catalogs", argv[i]+1) == 0)
         {
             if (argc > ++i)
@@ -152,8 +161,9 @@ int main(int argc, char *argv[])
         printf("%s -remove <name>    to remove the named service\n", argv[0]);
         printf("%s -console          to run as a console app for debugging\n", argv[0]);
         printf("%s -check            to run as a console app and check configuration\n", argv[0]);
+        printf("\t-prefix <dir> to specify the installation directory\n");
         printf("\t-config <file> to specify the config file to use\n");
-        printf("\t-catalogs <dir> to specify schema catalogs\n");
+        printf("\t-catalogs <catalog1:catalog2> to specify schema catalogs\n");
         printf("\nService starting.\nThis may take several seconds. Please wait.\n" );
 
     SERVICE_TABLE_ENTRY dispatchTable[] =
@@ -343,9 +353,6 @@ void CmdInstallService(LPCSTR name)
     SC_HANDLE   schSCManager;
 
     char szPath[256];
-    char dispName[512];
-    char realName[512];
-    char cmd[2048];
 
     if ( GetModuleFileName( NULL, szPath, 256 ) == 0 )
     {
@@ -353,16 +360,15 @@ void CmdInstallService(LPCSTR name)
         return;
     }
     
-    sprintf(dispName,"Shibboleth %s Daemon (%s)",PACKAGE_VERSION,name);
-    sprintf(realName,"shibd_%s",name);
-    if (shar_config && shar_schemadir)
-        sprintf(cmd,"%s -config %s -schemadir %s",szPath,shar_config,shar_schemadir);
-    else if (shar_config)
-        sprintf(cmd,"%s -config %s",szPath,shar_config);
-    else if (shar_schemadir)
-        sprintf(cmd,"%s -schemadir %s",szPath,shar_schemadir);
-    else
-        sprintf(cmd,"%s",szPath);
+    string dispName = string("Shibboleth ") + PACKAGE_VERSION + " Daemon (" + name + ")";
+    string realName = string("shibd_") + name;
+    string cmd(szPath);
+    if (shar_prefix)
+        cmd = cmd + " -prefix " + shar_prefix;
+    if (shar_config)
+        cmd = cmd + " -config " + shar_config;
+    if (shar_schemadir)
+        cmd = cmd + " -schemadir " + shar_schemadir;
 
     schSCManager = OpenSCManager(
                         NULL,                   // machine (NULL == local)
@@ -375,13 +381,13 @@ void CmdInstallService(LPCSTR name)
     {
         schService = CreateService(
             schSCManager,               // SCManager database
-            realName,                   // name of service
-            dispName,                   // name to display
+            realName.c_str(),           // name of service
+            dispName.c_str(),           // name to display
             SERVICE_ALL_ACCESS,         // desired access
             SERVICE_WIN32_OWN_PROCESS,  // service type
             SERVICE_AUTO_START,         // start type
             SERVICE_ERROR_NORMAL,       // error control type
-            cmd,                        // service's command line
+            cmd.c_str(),                // service's command line
             NULL,                       // no load ordering group
             NULL,                       // no tag identifier
             NULL,                       // dependencies
@@ -390,7 +396,7 @@ void CmdInstallService(LPCSTR name)
 
         if ( schService )
         {
-            printf("%s installed.\n",realName);
+            printf("%s installed.\n", realName.c_str());
             CloseServiceHandle(schService);
         }
         else
@@ -410,7 +416,7 @@ void CmdRemoveService(LPCSTR name)
     SC_HANDLE   schSCManager;
     char        realName[512];
 
-    sprintf(realName,"shibd_%s",name);
+    _snprintf(realName,sizeof(realName),"shibd_%s",name);
 
     schSCManager = OpenSCManager(
                         NULL,                   // machine (NULL == local)

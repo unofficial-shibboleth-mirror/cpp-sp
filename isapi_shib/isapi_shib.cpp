@@ -151,12 +151,6 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
         return TRUE;
     }
 
-    LPCSTR schemadir=getenv("SHIBSP_SCHEMAS");
-    if (!schemadir)
-        schemadir=SHIBSP_SCHEMAS;
-    LPCSTR config=getenv("SHIBSP_CONFIG");
-    if (!config)
-        config=SHIBSP_CONFIG;
     g_Config=&SPConfig::getConfig();
     g_Config->setFeatures(
         SPConfig::Listener |
@@ -166,12 +160,16 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
         SPConfig::Logging |
         SPConfig::Handlers
         );
-    if (!g_Config->init(schemadir)) {
+    if (!g_Config->init()) {
         g_Config=NULL;
         LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL,
                 "Filter startup failed during library initialization, check native log for help.");
         return FALSE;
     }
+
+    LPCSTR config=getenv("SHIBSP_CONFIG");
+    if (!config)
+        config=SHIBSP_CONFIG;
 
     try {
         DOMDocument* dummydoc=XMLToolingConfig::getConfig().getParser().newDocument();

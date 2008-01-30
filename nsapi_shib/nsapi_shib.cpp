@@ -120,15 +120,8 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, ::Session* sn, Request* 
     log_error(LOG_INFORM,"nsapi_shib_init",sn,rq,"nsapi_shib loaded for host (%s)",g_ServerName.c_str());
 
     const char* schemadir=pblock_findval("shib-schemas",pb);
-    if (!schemadir)
-        schemadir=getenv("SHIBSP_SCHEMAS");
-    if (!schemadir)
-        schemadir=SHIBSP_SCHEMAS;
-    const char* config=pblock_findval("shib-config",pb);
-    if (!config)
-        config=getenv("SHIBSP_CONFIG");
-    if (!config)
-        config=SHIBSP_CONFIG;
+    const char* prefix=pblock_findval("shib-prefix",pb);
+
     g_Config=&SPConfig::getConfig();
     g_Config->setFeatures(
         SPConfig::Listener |
@@ -138,13 +131,19 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, ::Session* sn, Request* 
         SPConfig::Logging |
         SPConfig::Handlers
         );
-    if (!g_Config->init(schemadir)) {
+    if (!g_Config->init(schemadir,prefix)) {
         g_Config=NULL;
         pblock_nvinsert("error","unable to initialize Shibboleth libraries",pb);
         return REQ_ABORTED;
     }
 
     g_Config->RequestMapperManager.registerFactory(XML_REQUEST_MAPPER,&SunRequestMapFactory);
+
+    const char* config=pblock_findval("shib-config",pb);
+    if (!config)
+        config=getenv("SHIBSP_CONFIG");
+    if (!config)
+        config=SHIBSP_CONFIG;
 
     try {
         xercesc::DOMDocument* dummydoc=XMLToolingConfig::getConfig().getParser().newDocument();

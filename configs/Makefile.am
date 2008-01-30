@@ -55,8 +55,6 @@ do-build-file:
         -e 's:@-PKGSYSCONFDIR-@:${pkgsysconfdir}:g' \
         -e 's:@-PKGDOCDIR-@:${pkgdocdir}:g' \
         -e 's:@-PKGXMLDIR-@:${pkgxmldir}:g' \
-        -e 's:@-XMLTOOLINGXMLDIR-@:${XMLTOOLINGXMLDIR}:g' \
-        -e 's:@-OPENSAMLXMLDIR-@:${OPENSAMLXMLDIR}:g' \
         -e 's:@-PKGLOGDIR-@:${pkglogdir}:g' \
         -e 's:@-SHIRELOGDIR-@:${shirelogdir}:g' \
         -e 's:@-PKGRUNDIR-@:${pkgrundir}:g'

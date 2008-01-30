@@ -35,6 +35,7 @@
 #include <sstream>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/NDC.h>
+#include <xmltooling/util/PathResolver.h>
 #include <xmltooling/util/URLEncoder.h>
 #include <xmltooling/util/XMLHelper.h>
 
@@ -94,7 +95,8 @@ namespace shibsp {
                 pathname=props->getString(page);
         }
         if (pathname.first) {
-            ifstream infile(pathname.second);
+            string fname(pathname.second);
+            ifstream infile(XMLToolingConfig::getConfig().getPathResolver()->resolve(fname, PathResolver::XMLTOOLING_CFG_FILE).c_str());
             if (infile) {
                 tp.setPropertySet(props);
                 stringstream str;

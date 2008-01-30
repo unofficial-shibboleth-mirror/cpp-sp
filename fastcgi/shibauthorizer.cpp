@@ -236,16 +236,6 @@ static void print_error(const char* msg)
 
 int main(void)
 {
-    const char* schemadir=getenv("SHIBSP_SCHEMAS");
-    if (!schemadir)
-        schemadir=SHIBSP_SCHEMAS;
-    const char* config=getenv("SHIBSP_CONFIG");
-    if (!config)
-        config=SHIBSP_CONFIG;
-
-    cerr << "SHIBSP_CONFIG = " << config << endl
-         << "SHIBSP_SCHEMAS = " << schemadir << endl;
-
     SPConfig* g_Config=&SPConfig::getConfig();
     g_Config->setFeatures(
         SPConfig::Listener |
@@ -255,10 +245,14 @@ int main(void)
         SPConfig::Logging |
         SPConfig::Handlers
         );
-    if (!g_Config->init(schemadir)) {
+    if (!g_Config->init()) {
         cerr << "failed to initialize Shibboleth libraries" << endl;
         exit(1);
     }
+
+    const char* config=getenv("SHIBSP_CONFIG");
+    if (!config)
+        config=SHIBSP_CONFIG;
 
     try {
         DOMDocument* dummydoc=XMLToolingConfig::getConfig().getParser().newDocument();
