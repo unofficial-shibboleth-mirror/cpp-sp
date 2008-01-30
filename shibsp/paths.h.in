@@ -38,4 +38,9 @@
  */
 #define SHIBSP_LOGGING "@-PKGSYSCONFDIR-@/console.logger"
 
+/**
+ * Default prefix for installation (used to resolve relative paths).
+ */
+#define SHIBSP_PREFIX  "@-PREFIX-@"
+
 #endif /* __shibsp_paths_h__ */

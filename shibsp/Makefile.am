@@ -193,6 +193,7 @@ libshibsp_lite_la_CPPFLAGS = -DSHIBSP_LITE
 paths.h: ${srcdir}/paths.h.in Makefile ${top_builddir}/config.status
 	rm -f $@.tmp
 	sed < ${srcdir}/$@.in > $@.tmp \
+	    -e 's:@-PREFIX-@:${prefix}:g' \
 	    -e 's:@-PKGSYSCONFDIR-@:${pkgsysconfdir}:g' \
 	    -e 's:@-PKGXMLDIR-@:${pkgxmldir}:g' \
 	    -e 's:@-XMLTOOLINGXMLDIR-@:${XMLTOOLINGXMLDIR}:g' \

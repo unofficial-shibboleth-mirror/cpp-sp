@@ -61,6 +61,7 @@
 #endif
 
 #include <xmltooling/util/NDC.h>
+#include <xmltooling/util/PathResolver.h>
 #include <xmltooling/util/TemplateEngine.h>
 
 using namespace shibsp;
@@ -133,8 +134,9 @@ bool SPInternalConfig::init(const char* catalog_path)
         log.fatal("failed to initialize XMLTooling library");
         return false;
     }
-#endif
-
+#endif    
+    XMLToolingConfig::getConfig().getPathResolver()->setDefaultPackageName(PACKAGE_NAME);
+    XMLToolingConfig::getConfig().getPathResolver()->setDefaultPrefix(getenv("SHIBSP_PREFIX") ? getenv("SHIBSP_PREFIX") : SHIBSP_PREFIX);
     XMLToolingConfig::getConfig().setTemplateEngine(new TemplateEngine());
     XMLToolingConfig::getConfig().getTemplateEngine()->setTagPrefix("shibmlp");
     

@@ -71,18 +71,23 @@
 /**
  * Default catalog path on Windows.
  */
-# define SHIBSP_SCHEMAS "c:\\opt\\shibboleth-sp\\share\\xml\\xmltooling\\catalog.xml;c:\\opt\\shibboleth-sp\\share\\xml\\opensaml\\saml20-catalog.xml;c:\\opt\\shibboleth-sp\\share\\xml\\opensaml\\saml11-catalog.xml;c:\\opt\\shibboleth-sp\\share\\xml\\shibboleth\\catalog.xml"
+# define SHIBSP_SCHEMAS "c:/opt/shibboleth-sp/share/xml/xmltooling/catalog.xml;c:/opt/shibboleth-sp/share/xml/opensaml/saml20-catalog.xml;c:/opt/shibboleth-sp/share/xml/opensaml/saml11-catalog.xml;c:/opt/shibboleth-sp/share/xml/shibboleth/catalog.xml"
 
 /**
  * Default path to configuration file on Windows.
  */
-# define SHIBSP_CONFIG "c:\\opt\\shibboleth-sp\\etc\\shibboleth\\shibboleth2.xml"
+# define SHIBSP_CONFIG "c:/opt/shibboleth-sp/etc/shibboleth/shibboleth2.xml"
 
 /**
  * Controls default logging level of console tools and other situations
  * where fully-configured logging isn't used.
  */
-#define SHIBSP_LOGGING "c:\\opt\\shibboleth-sp\\etc\\shibboleth\\console.logger"
+#define SHIBSP_LOGGING "c:/opt/shibboleth-sp/etc/shibboleth/console.logger"
+
+/**
+ * Default prefix for installation (used to resolve relative paths).
+ */
+#define SHIBSP_PREFIX  "c:/opt/shibboleth-sp"
 
 #else
 # include <shibsp/paths.h>
