@@ -216,11 +216,6 @@ namespace shibsp {
     
 };
 
-void SHIBSP_API shibsp::registerAttributeResolvers()
-{
-    SPConfig::getConfig().AttributeResolverManager.registerFactory(QUERY_ATTRIBUTE_RESOLVER, QueryResolverFactory);
-}
-
 QueryResolver::QueryResolver(const DOMElement* e) : m_log(Category::getInstance(SHIBSP_LOGCAT".AttributeResolver"))
 {
 #ifdef _DEBUG

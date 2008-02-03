@@ -133,11 +133,18 @@ namespace shibsp {
     static const XMLCh _AttributeResolver[] =   UNICODE_LITERAL_17(A,t,t,r,i,b,u,t,e,R,e,s,o,l,v,e,r);
     static const XMLCh _type[] =                UNICODE_LITERAL_4(t,y,p,e);
 
-    AttributeResolver* SHIBSP_DLLLOCAL ChainingAttributeResolverFactory(const DOMElement* & e)
+    SHIBSP_DLLLOCAL PluginManager<AttributeResolver,string,const DOMElement*>::Factory QueryResolverFactory;
+    AttributeResolver* SHIBSP_DLLLOCAL ChainingResolverFactory(const DOMElement* const & e)
     {
         return new ChainingAttributeResolver(e);
     }
 };
+
+void SHIBSP_API shibsp::registerAttributeResolvers()
+{
+    SPConfig::getConfig().AttributeResolverManager.registerFactory(QUERY_ATTRIBUTE_RESOLVER, QueryResolverFactory);
+    SPConfig::getConfig().AttributeResolverManager.registerFactory(CHAINING_ATTRIBUTE_RESOLVER, ChainingResolverFactory);
+}
 
 ChainingAttributeResolver::ChainingAttributeResolver(const DOMElement* e)
 {
