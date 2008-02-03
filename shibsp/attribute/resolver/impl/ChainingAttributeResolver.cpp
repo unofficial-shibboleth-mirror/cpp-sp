@@ -40,22 +40,50 @@ namespace shibsp {
 
     struct SHIBSP_DLLLOCAL ChainingContext : public ResolutionContext
     {
+        ChainingContext(
+            const Application& application,
+            const EntityDescriptor* issuer,
+            const XMLCh* protocol,
+            const NameID* nameid,
+            const XMLCh* authncontext_class,
+            const XMLCh* authncontext_decl,
+            const vector<const opensaml::Assertion*>* tokens,
+            const vector<shibsp::Attribute*>* attributes
+            ) : m_app(application), m_issuer(issuer), m_protocol(protocol), m_authclass(authncontext_class), m_authdecl(authncontext_decl), m_session(NULL) {
+            if (tokens)
+                m_tokens.assign(tokens->begin(), tokens->end());
+            if (attributes)
+                m_attributes.assign(attributes->begin(), attributes->end());
+        }
+
+        ChainingContext(const Application& application, const Session& session) : m_app(application), m_session(&session) {
+        }
+
         ~ChainingContext() {
-            for_each(m_contexts.begin(), m_contexts.end(), xmltooling::cleanup<ResolutionContext>());
-            for_each(m_attributes.begin(), m_attributes.end(), xmltooling::cleanup<shibsp::Attribute>());
-            for_each(m_assertions.begin(), m_assertions.end(), xmltooling::cleanup<opensaml::Assertion>());
+            for_each(m_ownedAttributes.begin(), m_ownedAttributes.end(), xmltooling::cleanup<shibsp::Attribute>());
+            for_each(m_ownedAssertions.begin(), m_ownedAssertions.end(), xmltooling::cleanup<opensaml::Assertion>());
         }
 
         vector<shibsp::Attribute*>& getResolvedAttributes() {
-            return m_attributes;
+            return m_ownedAttributes;
         }
         vector<opensaml::Assertion*>& getResolvedAssertions() {
-            return m_assertions;
+            return m_ownedAssertions;
         }
 
-        vector<ResolutionContext*> m_contexts;
+        vector<shibsp::Attribute*> m_ownedAttributes;
+        vector<opensaml::Assertion*> m_ownedAssertions;
+
+        const Application& m_app;
+        const EntityDescriptor* m_issuer;
+        const XMLCh* m_protocol;
+        const NameID* m_nameid;
+        const XMLCh* m_authclass;
+        const XMLCh* m_authdecl;
+        vector<const opensaml::Assertion*> m_tokens;
         vector<shibsp::Attribute*> m_attributes;
-        vector<opensaml::Assertion*> m_assertions;
+
+        const Session* m_session;
     };
 
     class SHIBSP_DLLLOCAL ChainingAttributeResolver : public AttributeResolver
@@ -67,11 +95,9 @@ namespace shibsp {
         }
         
         Lockable* lock() {
-            for_each(m_resolvers.begin(), m_resolvers.end(), mem_fun(&AttributeResolver::lock));
             return this;
         }
         void unlock() {
-            for_each(m_resolvers.begin(), m_resolvers.end(), mem_fun(&AttributeResolver::unlock));
         }
 
         ResolutionContext* createResolutionContext(
@@ -84,26 +110,20 @@ namespace shibsp {
             const vector<const opensaml::Assertion*>* tokens=NULL,
             const vector<shibsp::Attribute*>* attributes=NULL
             ) const {
-            auto_ptr<ChainingContext> chain(new ChainingContext());
-            for (vector<AttributeResolver*>::const_iterator i=m_resolvers.begin(); i!=m_resolvers.end(); ++i)
-                chain->m_contexts.push_back(
-                    (*i)->createResolutionContext(application, issuer, protocol, nameid, authncontext_class, authncontext_decl, tokens, attributes)
-                    );
-            return chain.release();
+            return new ChainingContext(application, issuer, protocol, nameid, authncontext_class, authncontext_decl, tokens, attributes);
         }
 
         ResolutionContext* createResolutionContext(const Application& application, const Session& session) const {
-            auto_ptr<ChainingContext> chain(new ChainingContext());
-            for (vector<AttributeResolver*>::const_iterator i=m_resolvers.begin(); i!=m_resolvers.end(); ++i)
-                chain->m_contexts.push_back((*i)->createResolutionContext(application, session));
-            return chain.release();
+            return new ChainingContext(application, session);
         }
 
         void resolveAttributes(ResolutionContext& ctx) const;
 
         void getAttributeIds(vector<string>& attributes) const {
-            for (vector<AttributeResolver*>::const_iterator i=m_resolvers.begin(); i!=m_resolvers.end(); ++i)
+            for (vector<AttributeResolver*>::const_iterator i=m_resolvers.begin(); i!=m_resolvers.end(); ++i) {
+                Locker locker(*i);
                 (*i)->getAttributeIds(attributes);
+            }
         }
         
     private:
@@ -144,12 +164,24 @@ ChainingAttributeResolver::ChainingAttributeResolver(const DOMElement* e)
 void ChainingAttributeResolver::resolveAttributes(ResolutionContext& ctx) const
 {
     ChainingContext& chain = dynamic_cast<ChainingContext&>(ctx);
-    vector<ResolutionContext*>::iterator ictx = chain.m_contexts.begin();
-    for (vector<AttributeResolver*>::const_iterator i=m_resolvers.begin(); i!=m_resolvers.end(); ++i, ++ictx) {
-        (*i)->resolveAttributes(*(*ictx));
-        chain.getResolvedAttributes().insert(chain.getResolvedAttributes().end(), (*ictx)->getResolvedAttributes().begin(), (*ictx)->getResolvedAttributes().end());
-        (*ictx)->getResolvedAttributes().clear();
-        chain.getResolvedAssertions().insert(chain.getResolvedAssertions().end(), (*ictx)->getResolvedAssertions().begin(), (*ictx)->getResolvedAssertions().end());
-        (*ictx)->getResolvedAssertions().clear();
+    for (vector<AttributeResolver*>::const_iterator i=m_resolvers.begin(); i!=m_resolvers.end(); ++i) {
+        Locker locker(*i);
+        auto_ptr<ResolutionContext> context(
+            chain.m_session ?
+                (*i)->createResolutionContext(chain.m_app, *chain.m_session) :
+                (*i)->createResolutionContext(
+                    chain.m_app, chain.m_issuer, chain.m_protocol, chain.m_nameid, chain.m_authclass, chain.m_authdecl, &chain.m_tokens, &chain.m_attributes
+                    )
+            );
+
+        (*i)->resolveAttributes(*context.get());
+
+        chain.m_attributes.insert(chain.m_attributes.end(), context->getResolvedAttributes().begin(), context->getResolvedAttributes().end());
+        chain.m_ownedAttributes.insert(chain.m_attributes.end(), context->getResolvedAttributes().begin(), context->getResolvedAttributes().end());
+        context->getResolvedAttributes().clear();
+
+        chain.m_tokens.insert(chain.m_tokens.end(), context->getResolvedAssertions().begin(), context->getResolvedAssertions().end());
+        chain.m_ownedAssertions.insert(chain.m_ownedAssertions.end(), context->getResolvedAssertions().begin(), context->getResolvedAssertions().end());
+        context->getResolvedAssertions().clear();
     }
 }
