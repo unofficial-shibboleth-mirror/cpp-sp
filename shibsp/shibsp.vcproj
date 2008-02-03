@@ -318,6 +318,10 @@
 						Name="impl"
 						>
 						<File
+							RelativePath=".\attribute\resolver\impl\ChainingAttributeExtractor.cpp"
+							>
+						</File>
+						<File
 							RelativePath=".\attribute\resolver\impl\ChainingAttributeResolver.cpp"
 							>
 						</File>

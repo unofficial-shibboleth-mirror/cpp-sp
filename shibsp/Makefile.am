@@ -176,6 +176,7 @@ libshibsp_la_SOURCES = \
 	attribute/filtering/impl/AttributeScopeMatchesShibMDScopeFunctor.cpp \
 	attribute/resolver/impl/ChainingAttributeResolver.cpp \
 	attribute/resolver/impl/QueryAttributeResolver.cpp \
+	attribute/resolver/impl/ChainingAttributeExtractor.cpp \
 	attribute/resolver/impl/XMLAttributeExtractor.cpp \
 	binding/impl/ArtifactResolver.cpp \
 	binding/impl/SOAPClient.cpp \

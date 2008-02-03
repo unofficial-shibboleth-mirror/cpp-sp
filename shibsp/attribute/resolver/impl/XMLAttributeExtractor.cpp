@@ -141,11 +141,6 @@ namespace shibsp {
     static const XMLCh nameFormat[] =           UNICODE_LITERAL_10(n,a,m,e,F,o,r,m,a,t);
 };
 
-void SHIBSP_API shibsp::registerAttributeExtractors()
-{
-    SPConfig::getConfig().AttributeExtractorManager.registerFactory(XML_ATTRIBUTE_EXTRACTOR, XMLAttributeExtractorFactory);
-}
-
 XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log) : m_log(log), m_document(NULL)
 {
 #ifdef _DEBUG

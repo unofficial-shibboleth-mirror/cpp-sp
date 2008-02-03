@@ -75,6 +75,9 @@ namespace shibsp {
 
     /** AttributeExtractor based on an XML mapping schema. */
     #define XML_ATTRIBUTE_EXTRACTOR "XML"
+
+    /** AttributeExtractor based on chaining together other extractors. */
+    #define CHAINING_ATTRIBUTE_EXTRACTOR "Chaining"
 };
 
 #endif /* __shibsp_extractor_h__ */
