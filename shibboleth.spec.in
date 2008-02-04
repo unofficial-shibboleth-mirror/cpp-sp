@@ -167,8 +167,6 @@ fi
 %config(noreplace) %{_sysconfdir}/%{name}/*.xml
 %config(noreplace) %{_sysconfdir}/%{name}/*.html
 %config(noreplace) %{_sysconfdir}/%{name}/*.logger
-%config %{_sysconfdir}/%{name}/sp-example.crt
-%config %{_sysconfdir}/%{name}/sp-example.key
 %{_sysconfdir}/%{name}/*.dist
 %{_sysconfdir}/%{name}/apache*.config
 %{_sysconfdir}/%{name}/shibd-redhat
