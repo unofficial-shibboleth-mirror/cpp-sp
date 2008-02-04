@@ -14,8 +14,6 @@ CONFIGFILES=" \
     bindingTemplate.html \
     localLogout.html \
     globalLogout.html \
-    sp-example.key \
-    sp-example.crt \
     attribute-map.xml \
     attribute-policy.xml \
     shibboleth2.xml"

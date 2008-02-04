@@ -162,14 +162,6 @@ if (Err = 0) then
     FileSystemObj.CopyFile DistDir & "shibboleth.logger", ConfigDir, false
   End If
 
-  If (NOT FileSystemObj.FileExists(ConfigDir & "sp-example.crt")) then
-    FileSystemObj.CopyFile DistDir & "sp-example.crt", ConfigDir, false
-  End If
-
-  If (NOT FileSystemObj.FileExists(ConfigDir & "sp-example.key")) then
-    FileSystemObj.CopyFile DistDir & "sp-example.key", ConfigDir, false
-  End If
-
   If (NOT FileSystemObj.FileExists(ConfigDir & "example-metadata.xml")) then
     FileSystemObj.CopyFile DistDir & "example-metadata.xml", ConfigDir, false
   End If

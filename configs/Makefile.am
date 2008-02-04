@@ -40,9 +40,7 @@ CONFIGFILES = \
 	bindingTemplate.html \
 	localLogout.html \
 	globalLogout.html \
-	sslError.html \
-	sp-example.key \
-	sp-example.crt
+	sslError.html
 
 #
 # Some of these need building
