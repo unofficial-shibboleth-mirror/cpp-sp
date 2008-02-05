@@ -124,4 +124,5 @@ EXTRA_DIST = \
 	shibd-redhat.in \
 	shibd-debian.in \
 	shibd-osx.plist.in \
-	$(CONFIGFILES)
+	$(CONFIGFILES) \
+	keygen.bat
