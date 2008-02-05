@@ -27,7 +27,7 @@ if (Err = 0) then
   do while (mid(InstallDir,Len(InstallDir),1) = "\")
     InstallDir = mid(InstallDir,1,Len(InstallDir)-1)
   loop
-  ShibISAPIPath = InstallDir & "\libexec\isapi_shib.dll"
+  ShibISAPIPath = InstallDir & "\lib\shibboleth\isapi_shib.dll"
   'Make sure ShibFileExtension is in proper format
   'First, strip any preceding periods
   do while (mid(ShibFileExtension,1,1) = ".")

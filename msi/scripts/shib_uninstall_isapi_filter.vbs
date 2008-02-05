@@ -93,7 +93,7 @@ if (Err = 0) then
   do while (mid(InstallDir,Len(InstallDir),1) = "\")
     InstallDir = mid(InstallDir,1,Len(InstallDir)-1)
   loop
-  ShibISAPIPath = InstallDir & "\libexec\isapi_shib.dll"
+  ShibISAPIPath = InstallDir & "\lib\shibboleth\isapi_shib.dll"
 
   'Delete ISAPI Filter
   'First do the master service
