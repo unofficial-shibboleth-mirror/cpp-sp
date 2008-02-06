@@ -105,9 +105,9 @@ install-data-local:	all-data-local
 		fi; \
 		$(INSTALL_DATA) $(srcdir)/$$f $(DESTDIR)${pkgsysconfdir}/$$f.dist; \
         done
-    if test -z $NOKEYGEN ; then
-        cd $(DESTDIR)$(pkgsysconfdir)
-        sh ./keygen.sh -b
+    if test -z $NOKEYGEN ; then \
+        cd $(DESTDIR)$(pkgsysconfdir); \
+        sh ./keygen.sh -b ; \
     fi
 
 CLEANFILES = \
