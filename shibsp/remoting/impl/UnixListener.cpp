@@ -24,6 +24,7 @@
 #include "remoting/impl/SocketListener.h"
 
 #include <xercesc/util/XMLUniDefs.hpp>
+#include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/unicode.h>
 #include <xmltooling/util/PathResolver.h>
 

@@ -29,10 +29,10 @@ BUILTCONFIGFILES = \
 # While BUILTCONFIGFILES are processed, these are not; so we should pull
 # them from SRCDIR.
 CONFIGFILES = \
-    shibboleth2.xml \
-    attribute-map.xml \
-    attribute-policy.xml \
-    example-metadata.xml \
+	shibboleth2.xml \
+	attribute-map.xml \
+	attribute-policy.xml \
+	example-metadata.xml \
 	console.logger \
 	syslog.logger \
 	accessError.html \
@@ -105,10 +105,12 @@ install-data-local:	all-data-local
 		fi; \
 		$(INSTALL_DATA) $(srcdir)/$$f $(DESTDIR)${pkgsysconfdir}/$$f.dist; \
         done
-    if test -z $NOKEYGEN ; then \
-        cd $(DESTDIR)$(pkgsysconfdir); \
-        sh ./keygen.sh -b ; \
-    fi
+
+install-data-hook:
+	if test -z "$(NOKEYGEN)"; then \
+		cd $(DESTDIR)$(pkgsysconfdir); \
+		sh ./keygen.sh -b ; \
+	fi
 
 CLEANFILES = \
 	apache.config \
@@ -129,5 +131,6 @@ EXTRA_DIST = \
 	shibd-redhat.in \
 	shibd-debian.in \
 	shibd-osx.plist.in \
-    keygen.bat \
+	keygen.bat \
+	keygen.sh \
 	$(CONFIGFILES)
