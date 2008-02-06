@@ -1,8 +1,8 @@
 @echo off
 setlocal
 
-if exist %~p0sp-key.pem goto protect
-if exist %~p0sp-cert.pem goto protect
+if exist %~dp0sp-key.pem goto protect
+if exist %~dp0sp-cert.pem goto protect
 
 set DAYS=
 set FQDN=
@@ -23,8 +23,8 @@ set /a DAYS=%DAYS%*365
 if not defined FQDN goto guess_fqdn
 
 :generate
-set PATH=%~p0..\..\lib;%~p0..\..\bin
-%~p0..\..\bin\openssl.exe req -x509 -days %DAYS% -newkey rsa:2048 -nodes -keyout %~p0sp-key.pem -out %~p0sp-cert.pem -subj /CN=%FQDN% -config %~p0openssl.cnf -extensions usr_cert -set_serial 0
+set PATH=%~dp0..\..\lib;%~dp0..\..\bin
+%~dp0..\..\bin\openssl.exe req -x509 -days %DAYS% -newkey rsa:2048 -nodes -keyout %~dp0sp-key.pem -out %~dp0sp-cert.pem -subj /CN=%FQDN% -config %~dp0openssl.cnf -extensions usr_cert -set_serial 0
 exit /b
 
 :protect
