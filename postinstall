@@ -24,4 +24,6 @@ for f in $CONFIGFILES; do
     fi;
     done
 
+sh ./keygen.sh -b
+
 exit 0

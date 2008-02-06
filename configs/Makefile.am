@@ -15,7 +15,8 @@ pkgsysconf_DATA = \
 	shibd-osx.plist \
 	apache.config \
 	apache2.config \
-	apache22.config
+	apache22.config \
+	keygen.sh
 
 # The config files are installed "special".  Unlike the entries in
 # pkgsysconf_DATA, these files are installed as "foo.dist" and only
@@ -104,6 +105,10 @@ install-data-local:	all-data-local
 		fi; \
 		$(INSTALL_DATA) $(srcdir)/$$f $(DESTDIR)${pkgsysconfdir}/$$f.dist; \
         done
+    if test -z $NOKEYGEN ; then
+        cd $(DESTDIR)$(pkgsysconfdir)
+        sh ./keygen.sh -b
+    fi
 
 CLEANFILES = \
 	apache.config \

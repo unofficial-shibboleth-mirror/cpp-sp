@@ -12,8 +12,8 @@ set PARAM=
 :opt_start
 set PARAM=%1
 if not defined PARAM goto opt_end
-if %1==-cn goto opt_fqdn
-if %1==-years goto opt_years
+if %1==-h goto opt_fqdn
+if %1==-y goto opt_years
 goto usage
 :opt_end
 
@@ -44,7 +44,7 @@ shift
 goto opt_start
 
 :usage
-echo usage: keygen [-cn cert common name to use] [-years years to issue cert]
+echo usage: keygen [-h hostname/cn for cert] [-y years to issue cert]
 exit /b
 
 :guess_fqdn
