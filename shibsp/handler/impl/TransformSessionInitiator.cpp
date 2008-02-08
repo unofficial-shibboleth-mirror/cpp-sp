@@ -34,8 +34,9 @@
 # include <saml/saml2/metadata/Metadata.h>
 #endif
 #include <xmltooling/XMLToolingConfig.h>
-#include <xmltooling/signature/KeyInfo.h>
 #include <xmltooling/util/URLEncoder.h>
+#include <xercesc/util/XMLUniDefs.hpp>
+#include <xercesc/util/regx/RegularExpression.hpp>
 
 using namespace shibsp;
 using namespace opensaml::saml2md;
@@ -54,13 +55,19 @@ namespace shibsp {
     {
     public:
         short acceptNode(const DOMNode* node) const {
-            if (XMLString::equals(node->getLocalName(), xmlsignature::Transform::LOCAL_NAME))
-                return FILTER_REJECT;
-            return FILTER_ACCEPT;
+            return FILTER_REJECT;
         }
     };
 
     static SHIBSP_DLLLOCAL TransformSINodeFilter g_TSINFilter;
+
+#ifndef SHIBSP_LITE
+    static const XMLCh alwaysRun[] =    UNICODE_LITERAL_9(a,l,w,a,y,s,R,u,n);
+    static const XMLCh force[] =        UNICODE_LITERAL_5(f,o,r,c,e);
+    static const XMLCh match[] =        UNICODE_LITERAL_5(m,a,t,c,h);
+    static const XMLCh Regex[] =        UNICODE_LITERAL_5(R,e,g,e,x);
+    static const XMLCh Subst[] =        UNICODE_LITERAL_5(S,u,b,s,t);
+#endif
 
     class SHIBSP_DLLLOCAL TransformSessionInitiator : public SessionInitiator, public AbstractHandler, public RemotedHandler
     {
@@ -76,13 +83,24 @@ namespace shibsp {
 
 #ifndef SHIBSP_LITE
             if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
-                e = XMLHelper::getFirstChildElement(e, xmlsignature::Transform::LOCAL_NAME);
+                m_alwaysRun = getBool("alwaysRun").second;
+                e = XMLHelper::getFirstChildElement(e);
                 while (e) {
                     if (e->hasChildNodes()) {
-                        auto_ptr_char temp(e->getFirstChild()->getNodeValue());
-                        m_transforms.push_back(temp.get());
+                        const XMLCh* flag = e->getAttributeNS(NULL, force);
+                        if (!flag)
+                            flag = &chNull;
+                        if (XMLString::equals(e->getLocalName(), Subst)) {
+                            auto_ptr_char temp(e->getFirstChild()->getNodeValue());
+                            m_subst.push_back(pair<bool,string>((*flag==chDigit_1 || *flag==chLatin_t), temp.get()));
+                        }
+                        else if (XMLString::equals(e->getLocalName(), Regex) && e->hasAttributeNS(NULL, match)) {
+                            auto_ptr_char m(e->getAttributeNS(NULL, match));
+                            auto_ptr_char repl(e->getFirstChild()->getNodeValue());
+                            m_regex.push_back(make_pair((*flag==chDigit_1 || *flag==chLatin_t), pair<string,string>(m.get(), repl.get())));
+                        }
                     }
-                    e = XMLHelper::getNextSiblingElement(e, xmlsignature::Transform::LOCAL_NAME);
+                    e = XMLHelper::getNextSiblingElement(e);
                 }
             }
 #endif
@@ -98,7 +116,9 @@ namespace shibsp {
         void doRequest(const Application& application, string& entityID) const;
         string m_appId;
 #ifndef SHIBSP_LITE
-        vector<string> m_transforms;
+        bool m_alwaysRun;
+        vector< pair<bool, string> > m_subst;
+        vector< pair< bool, pair<string,string> > > m_regex;
 #endif
     };
 
@@ -183,28 +203,71 @@ void TransformSessionInitiator::doRequest(const Application& application, string
     MetadataProvider* m=application.getMetadataProvider();
     Locker locker(m);
 
-    // First check the original value, it might be valid already.
     MetadataProvider::Criteria mc(entityID.c_str(), &IDPSSODescriptor::ELEMENT_QNAME);
-    pair<const EntityDescriptor*,const RoleDescriptor*> entity = m->getEntityDescriptor(mc);
-    if (entity.first)
-        return;
+    pair<const EntityDescriptor*,const RoleDescriptor*> entity;
+    if (!m_alwaysRun) {
+        // First check the original value, it might be valid already.
+        entity = m->getEntityDescriptor(mc);
+        if (entity.first)
+            return;
+    }
 
-    // Guess not, try each transform.
+    m_log.debug("attempting transform of (%s)", entityID.c_str());
+
+    // Guess not, try each subst.
     string transform;
-    for (vector<string>::const_iterator t = m_transforms.begin(); t != m_transforms.end(); ++t) {
-        transform = *t;
-        string::size_type pos = transform.find("$entityID");
+    for (vector< pair<bool,string> >::const_iterator t = m_subst.begin(); t != m_subst.end(); ++t) {
+        string::size_type pos = t->second.find("$entityID");
         if (pos == string::npos)
             continue;
+        transform = t->second;
         transform.replace(pos, 9, entityID);
+        if (t->first) {
+            m_log.info("forcibly transformed entityID from (%s) to (%s)", entityID.c_str(), transform.c_str());
+            entityID = transform;
+        }
+
         m_log.debug("attempting lookup with entityID (%s)", transform.c_str());
     
         mc.entityID_ascii = transform.c_str();
         entity = m->getEntityDescriptor(mc);
         if (entity.first) {
             m_log.info("transformed entityID from (%s) to (%s)", entityID.c_str(), transform.c_str());
-            entityID = transform;
+            if (!t->first)
+                entityID = transform;
             return;
+        }
+    }
+
+    // Now try regexs.
+    for (vector< pair< bool, pair<string,string> > >::const_iterator r = m_regex.begin(); r != m_regex.end(); ++r) {
+        try {
+            RegularExpression exp(r->second.first.c_str());
+            XMLCh* temp = exp.replace(entityID.c_str(), r->second.second.c_str());
+            if (temp) {
+                auto_ptr_char narrow(temp);
+                XMLString::release(&temp);
+
+                if (r->first) {
+                    m_log.info("forcibly transformed entityID from (%s) to (%s)", entityID.c_str(), narrow.get());
+                    entityID = narrow.get();
+                }
+
+                m_log.debug("attempting lookup with entityID (%s)", narrow.get());
+
+                mc.entityID_ascii = narrow.get();
+                entity = m->getEntityDescriptor(mc);
+                if (entity.first) {
+                    m_log.info("transformed entityID from (%s) to (%s)", entityID.c_str(), narrow.get());
+                    if (!r->first)
+                        entityID = narrow.get();
+                    return;
+                }
+            }
+        }
+        catch (XMLException& ex) {
+            auto_ptr_char msg(ex.getMessage());
+            m_log.error("caught error applying regular expression: %s", msg.get());
         }
     }
 
