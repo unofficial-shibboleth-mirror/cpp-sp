@@ -127,6 +127,7 @@ common_sources = \
 	handler/impl/SAMLDSSessionInitiator.cpp \
 	handler/impl/SessionInitiator.cpp \
 	handler/impl/Shib1SessionInitiator.cpp \
+	handler/impl/TransformSessionInitiator.cpp \
 	handler/impl/WAYFSessionInitiator.cpp \
     impl/StorageServiceSessionCache.cpp \
 	impl/XMLAccessControl.cpp \
