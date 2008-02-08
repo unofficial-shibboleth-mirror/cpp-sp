@@ -368,6 +368,10 @@
 						>
 					</File>
 					<File
+						RelativePath=".\handler\impl\TransformSessionInitiator.cpp"
+						>
+					</File>
+					<File
 						RelativePath=".\handler\impl\WAYFSessionInitiator.cpp"
 						>
 					</File>

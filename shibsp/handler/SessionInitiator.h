@@ -52,7 +52,7 @@ namespace shibsp {
          * @param isHandler true iff executing in the context of a direct handler invocation
          * @return  a pair containing a "request completed" indicator and a server-specific response code
          */
-        virtual std::pair<bool,long> run(SPRequest& request, const char* entityID=NULL, bool isHandler=true) const=0;
+        virtual std::pair<bool,long> run(SPRequest& request, std::string& entityID, bool isHandler=true) const=0;
 
         std::pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
 
@@ -80,6 +80,9 @@ namespace shibsp {
 
     /** SessionInitiator that supports Shibboleth V1 WAYF redirects when no IdP is supplied. */
     #define WAYF_SESSION_INITIATOR "WAYF"
+    
+    /** SessionInitiator that attempts a sequence of transforms of an input until an entityID is found. */
+    #define TRANSFORM_SESSION_INITIATOR "Transform"
 };
 
 #endif /* __shibsp_initiator_h__ */

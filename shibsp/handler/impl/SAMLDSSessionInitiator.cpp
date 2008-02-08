@@ -66,7 +66,7 @@ namespace shibsp {
         }
         virtual ~SAMLDSSessionInitiator() {}
         
-        pair<bool,long> run(SPRequest& request, const char* entityID=NULL, bool isHandler=true) const;
+        pair<bool,long> run(SPRequest& request, string& entityID, bool isHandler=true) const;
 
 #ifndef SHIBSP_LITE
         void generateMetadata(SPSSODescriptor& role, const char* handlerURL) const {
@@ -111,11 +111,11 @@ namespace shibsp {
 
 };
 
-pair<bool,long> SAMLDSSessionInitiator::run(SPRequest& request, const char* entityID, bool isHandler) const
+pair<bool,long> SAMLDSSessionInitiator::run(SPRequest& request, string& entityID, bool isHandler) const
 {
     // The IdP CANNOT be specified for us to run. Otherwise, we'd be redirecting to a DS
     // anytime the IdP's metadata was wrong.
-    if (entityID && *entityID)
+    if (!entityID.empty())
         return make_pair(false,0L);
 
     string target;

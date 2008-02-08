@@ -128,7 +128,7 @@ namespace {
         }
 
         void receive(DDF& in, ostream& out);
-        pair<bool,long> run(SPRequest& request, const char* entityID=NULL, bool isHandler=true) const;
+        pair<bool,long> run(SPRequest& request, string& entityID, bool isHandler=true) const;
 
     private:
         pair<bool,long> doRequest(
@@ -307,10 +307,10 @@ extern "C" void ADFS_EXPORTS xmltooling_extension_term()
     */
 }
 
-pair<bool,long> ADFSSessionInitiator::run(SPRequest& request, const char* entityID, bool isHandler) const
+pair<bool,long> ADFSSessionInitiator::run(SPRequest& request, string& entityID, bool isHandler) const
 {
     // We have to know the IdP to function.
-    if (!entityID || !*entityID)
+    if (entityID.empty())
         return make_pair(false,0L);
 
     string target;
@@ -372,16 +372,16 @@ pair<bool,long> ADFSSessionInitiator::run(SPRequest& request, const char* entity
             target = option;
     }
 
-    m_log.debug("attempting to initiate session using ADFS with provider (%s)", entityID);
+    m_log.debug("attempting to initiate session using ADFS with provider (%s)", entityID.c_str());
 
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess))
-        return doRequest(app, request, entityID, ACSloc.c_str(), target);
+        return doRequest(app, request, entityID.c_str(), ACSloc.c_str(), target);
 
     // Remote the call.
     DDF out,in = DDF(m_address.c_str()).structure();
     DDFJanitor jin(in), jout(out);
     in.addmember("application_id").string(app.getId());
-    in.addmember("entity_id").string(entityID);
+    in.addmember("entity_id").string(entityID.c_str());
     in.addmember("acsLocation").string(ACSloc.c_str());
     if (!target.empty())
         in.addmember("RelayState").string(target.c_str());

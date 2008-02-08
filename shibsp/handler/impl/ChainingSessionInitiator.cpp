@@ -48,7 +48,7 @@ namespace shibsp {
             for_each(m_handlers.begin(), m_handlers.end(), xmltooling::cleanup<SessionInitiator>());
         }
         
-        pair<bool,long> run(SPRequest& request, const char* entityID=NULL, bool isHandler=true) const;
+        pair<bool,long> run(SPRequest& request, string& entityID, bool isHandler=true) const;
 
 #ifndef SHIBSP_LITE
         void generateMetadata(opensaml::saml2md::SPSSODescriptor& role, const char* handlerURL) const {
@@ -108,7 +108,7 @@ ChainingSessionInitiator::ChainingSessionInitiator(const DOMElement* e, const ch
     }
 }
 
-pair<bool,long> ChainingSessionInitiator::run(SPRequest& request, const char* entityID, bool isHandler) const
+pair<bool,long> ChainingSessionInitiator::run(SPRequest& request, string& entityID, bool isHandler) const
 {
     pair<bool,long> ret;
     for (vector<SessionInitiator*>::const_iterator i = m_handlers.begin(); i!=m_handlers.end(); ++i) {

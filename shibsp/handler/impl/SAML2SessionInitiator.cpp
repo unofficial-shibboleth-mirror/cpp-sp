@@ -71,7 +71,7 @@ namespace shibsp {
         
         void setParent(const PropertySet* parent);
         void receive(DDF& in, ostream& out);
-        pair<bool,long> run(SPRequest& request, const char* entityID=NULL, bool isHandler=true) const;
+        pair<bool,long> run(SPRequest& request, string& entityID, bool isHandler=true) const;
 
     private:
         pair<bool,long> doRequest(
@@ -204,7 +204,7 @@ void SAML2SessionInitiator::setParent(const PropertySet* parent)
     }
 }
 
-pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, const char* entityID, bool isHandler) const
+pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID, bool isHandler) const
 {
     // First check for ECP support, since that doesn't require an IdP to be known.
     bool ECP = false;
@@ -215,7 +215,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, const char* entit
     }
 
     // We have to know the IdP to function unless this is ECP.
-    if (!ECP && (!entityID || !*entityID))
+    if (!ECP && (entityID.empty()))
         return make_pair(false,0L);
 
     string target;
@@ -308,7 +308,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, const char* entit
     if (ECP)
         m_log.debug("attempting to initiate session using SAML 2.0 Enhanced Client Profile");
     else
-        m_log.debug("attempting to initiate session using SAML 2.0 with provider (%s)", entityID);
+        m_log.debug("attempting to initiate session using SAML 2.0 with provider (%s)", entityID.c_str());
 
     if (!ACS) {
         if (ECP) {
@@ -345,7 +345,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, const char* entit
                     target = option;
             }
             return doRequest(
-                app, request, entityID,
+                app, request, entityID.c_str(),
                 ACS ? ACS->getXMLString("index").second : NULL, NULL, NULL,
                 isPassive, forceAuthn,
                 acClass.first ? acClass.second : NULL,
@@ -370,7 +370,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, const char* entit
         }
 
         return doRequest(
-            app, request, entityID,
+            app, request, entityID.c_str(),
             NULL, ACSloc.c_str(), ACS ? ACS->getXMLString("Binding").second : NULL,
             isPassive, forceAuthn,
             acClass.first ? acClass.second : NULL,
@@ -383,8 +383,8 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, const char* entit
     DDF out,in = DDF(m_address.c_str()).structure();
     DDFJanitor jin(in), jout(out);
     in.addmember("application_id").string(app.getId());
-    if (entityID)
-        in.addmember("entity_id").string(entityID);
+    if (!entityID.empty())
+        in.addmember("entity_id").string(entityID.c_str());
     if (isPassive)
         in.addmember("isPassive").integer(1);
     else if (forceAuthn)
