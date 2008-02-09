@@ -12,6 +12,7 @@ CONFIGFILES=" \
     metadataError.html \
     sslError.html \
     bindingTemplate.html \
+    discoveryTemplate.html \
     localLogout.html \
     globalLogout.html \
     attribute-map.xml \

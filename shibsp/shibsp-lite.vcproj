@@ -304,6 +304,10 @@
 						>
 					</File>
 					<File
+						RelativePath=".\handler\impl\FormSessionInitiator.cpp"
+						>
+					</File>
+					<File
 						RelativePath=".\handler\impl\LocalLogoutInitiator.cpp"
 						>
 					</File>

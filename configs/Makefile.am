@@ -39,6 +39,7 @@ CONFIGFILES = \
 	sessionError.html \
 	metadataError.html \
 	bindingTemplate.html \
+	discoveryTemplate.html \
 	localLogout.html \
 	globalLogout.html \
 	sslError.html

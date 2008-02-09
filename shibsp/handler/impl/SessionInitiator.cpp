@@ -35,6 +35,7 @@ namespace shibsp {
     SHIBSP_DLLLOCAL PluginManager< SessionInitiator,string,pair<const DOMElement*,const char*> >::Factory WAYFSessionInitiatorFactory;
     SHIBSP_DLLLOCAL PluginManager< SessionInitiator,string,pair<const DOMElement*,const char*> >::Factory SAMLDSSessionInitiatorFactory;
     SHIBSP_DLLLOCAL PluginManager< SessionInitiator,string,pair<const DOMElement*,const char*> >::Factory TransformSessionInitiatorFactory;
+    SHIBSP_DLLLOCAL PluginManager< SessionInitiator,string,pair<const DOMElement*,const char*> >::Factory FormSessionInitiatorFactory;
 };
 
 void SHIBSP_API shibsp::registerSessionInitiators()
@@ -45,6 +46,7 @@ void SHIBSP_API shibsp::registerSessionInitiators()
     conf.SessionInitiatorManager.registerFactory(SAML2_SESSION_INITIATOR, SAML2SessionInitiatorFactory);
     conf.SessionInitiatorManager.registerFactory(WAYF_SESSION_INITIATOR, WAYFSessionInitiatorFactory);
     conf.SessionInitiatorManager.registerFactory(TRANSFORM_SESSION_INITIATOR, TransformSessionInitiatorFactory);
+    conf.SessionInitiatorManager.registerFactory(FORM_SESSION_INITIATOR, FormSessionInitiatorFactory);
 }
 
 pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const

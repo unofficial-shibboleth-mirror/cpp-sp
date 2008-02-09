@@ -99,6 +99,9 @@ namespace shibsp {
                             auto_ptr_char repl(e->getFirstChild()->getNodeValue());
                             m_regex.push_back(make_pair((*flag==chDigit_1 || *flag==chLatin_t), pair<string,string>(m.get(), repl.get())));
                         }
+                        else {
+                            m_log.warn("Unknown element found in Transform SessionInitiator configuration, check for errors.");
+                        }
                     }
                     e = XMLHelper::getNextSiblingElement(e);
                 }
@@ -247,6 +250,10 @@ void TransformSessionInitiator::doRequest(const Application& application, string
             if (temp) {
                 auto_ptr_char narrow(temp);
                 XMLString::release(&temp);
+
+                // For some reason it returns the match string if it doesn't match the expression.
+                if (entityID == narrow.get())
+                    continue;
 
                 if (r->first) {
                     m_log.info("forcibly transformed entityID from (%s) to (%s)", entityID.c_str(), narrow.get());
