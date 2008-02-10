@@ -29,4 +29,8 @@ fi
 
 DAYS=$(($DAYS*365))
 
-openssl req -x509 -days $DAYS -newkey rsa:2048 -nodes -keyout sp-key.pem -out sp-cert.pem -subj /CN=$FQDN -extensions usr_cert -set_serial 0
+if [ -z $BATCH ] ; then
+    openssl req -x509 -days $DAYS -newkey rsa:2048 -nodes -keyout sp-key.pem -out sp-cert.pem -subj /CN=$FQDN -extensions usr_cert -set_serial 0
+else
+    openssl req -x509 -days $DAYS -newkey rsa:2048 -nodes -keyout sp-key.pem -out sp-cert.pem -subj /CN=$FQDN -extensions usr_cert -set_serial 0 2> /dev/null
+fi
