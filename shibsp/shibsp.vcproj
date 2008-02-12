@@ -475,6 +475,10 @@
 						>
 					</File>
 					<File
+						RelativePath=".\handler\impl\CookieSessionInitiator.cpp"
+						>
+					</File>
+					<File
 						RelativePath=".\handler\impl\FormSessionInitiator.cpp"
 						>
 					</File>

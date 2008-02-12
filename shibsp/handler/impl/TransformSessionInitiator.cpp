@@ -62,7 +62,6 @@ namespace shibsp {
     static SHIBSP_DLLLOCAL TransformSINodeFilter g_TSINFilter;
 
 #ifndef SHIBSP_LITE
-    static const XMLCh alwaysRun[] =    UNICODE_LITERAL_9(a,l,w,a,y,s,R,u,n);
     static const XMLCh force[] =        UNICODE_LITERAL_5(f,o,r,c,e);
     static const XMLCh match[] =        UNICODE_LITERAL_5(m,a,t,c,h);
     static const XMLCh Regex[] =        UNICODE_LITERAL_5(R,e,g,e,x);

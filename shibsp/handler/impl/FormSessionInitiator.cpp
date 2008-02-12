@@ -76,14 +76,13 @@ pair<bool,long> FormSessionInitiator::run(SPRequest& request, string& entityID, 
 {
     string target;
     const char* option;
-    bool isPassive=false;
     const Application& app=request.getApplication();
 
     if (isHandler) {
         option = request.getParameter("target");
         if (option)
             target = option;
-        recoverRelayState(request.getApplication(), request, request, target, false);
+        recoverRelayState(app, request, request, target, false);
     }
     else {
         // We're running as a "virtual handler" from within the filter.
@@ -103,7 +102,7 @@ pair<bool,long> FormSessionInitiator::run(SPRequest& request, string& entityID, 
         if (option)
             target = option;
     }
-    preserveRelayState(request.getApplication(), request, target);
+    preserveRelayState(app, request, target);
 
     request.setContentType("text/html");
     request.setResponseHeader("Expires","01-Jan-1997 12:00:00 GMT");
@@ -114,7 +113,7 @@ pair<bool,long> FormSessionInitiator::run(SPRequest& request, string& entityID, 
         throw ConfigurationException("Unable to access HTML template ($1).", params(1, m_template));
     TemplateParameters tp;
     tp.m_request = &request;
-    tp.setPropertySet(request.getApplication().getPropertySet("Errors"));
+    tp.setPropertySet(app.getPropertySet("Errors"));
     tp.m_map["action"] = returnURL;
     if (!target.empty())
         tp.m_map["target"] = target;
