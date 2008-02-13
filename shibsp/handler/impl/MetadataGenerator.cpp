@@ -94,7 +94,7 @@ namespace shibsp {
 MetadataGenerator::MetadataGenerator(const DOMElement* e, const char* appId)
     : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".MetadataGenerator"), &g_Blocker)
 #ifndef SHIBSP_LITE
-        ,m_https(0), m_http(0)
+        ,m_http(0), m_https(0)
 #endif
 {
     string address(appId);
