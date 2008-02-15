@@ -500,17 +500,18 @@ public:
     ap_table_add(m_req->err_headers_out, name, value);
   }
   long sendResponse(istream& in, long status) {
+    if (status != XMLTOOLING_HTTP_STATUS_OK)
+        m_req->status = status;
     ap_send_http_header(m_req);
     char buf[1024];
     while (in) {
         in.read(buf,1024);
         ap_rwrite(buf,in.gcount(),m_req);
     }
-    if (status != XMLTOOLING_HTTP_STATUS_OK) {
-        m_req->status = status;
-        if (status != XMLTOOLING_HTTP_STATUS_ERROR)
-            return status;
-    }
+#if (defined(SHIB_APACHE_20) || defined(SHIB_APACHE_22))
+    if (status != XMLTOOLING_HTTP_STATUS_OK && status != XMLTOOLING_HTTP_STATUS_ERROR)
+        return status;
+#endif
     return DONE;
   }
   long sendRedirect(const char* url) {
