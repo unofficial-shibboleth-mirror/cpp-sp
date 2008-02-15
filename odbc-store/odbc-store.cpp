@@ -96,16 +96,19 @@ namespace {
 
     // RAII for ODBC handles
     struct ODBCConn {
-        ODBCConn(SQLHDBC conn) : handle(conn) {}
+        ODBCConn(SQLHDBC conn) : handle(conn), autoCommit(true) {}
         ~ODBCConn() {
-            SQLRETURN sr = SQLEndTran(SQL_HANDLE_DBC, handle, SQL_COMMIT);
+            SQLRETURN sr = SQL_SUCCESS;
+            if (!autoCommit)
+                sr = SQLSetConnectAttr(handle, SQL_ATTR_AUTOCOMMIT, (SQLPOINTER)SQL_AUTOCOMMIT_ON, NULL);
             SQLDisconnect(handle);
             SQLFreeHandle(SQL_HANDLE_DBC,handle);
             if (!SQL_SUCCEEDED(sr))
-                throw IOException("Failed to commit connection.");
+                throw IOException("Failed to commit connection and return to auto-commit mode.");
         }
         operator SQLHDBC() {return handle;}
         SQLHDBC handle;
+        bool autoCommit;
     };
 
     class ODBCStorageService : public StorageService
@@ -354,9 +357,6 @@ SQLHDBC ODBCStorageService::getHDBC()
         throw IOException("ODBC StorageService failed to connect to database.");
     }
 
-    sr = SQLSetConnectAttr(handle, SQL_ATTR_AUTOCOMMIT, SQL_AUTOCOMMIT_OFF, NULL);
-    if (!SQL_SUCCEEDED(sr))
-        throw IOException("ODBC StorageService failed to disable auto-commit mode.");
     sr = SQLSetConnectAttr(handle, SQL_ATTR_TXN_ISOLATION, (SQLPOINTER)SQL_TXN_SERIALIZABLE, NULL);
     if (!SQL_SUCCEEDED(sr))
         throw IOException("ODBC StorageService failed to enable transaction isolation.");
@@ -549,8 +549,12 @@ int ODBCStorageService::updateRow(const char *table, const char* context, const 
     if (!value && !expiration)
         throw IOException("ODBC StorageService given invalid update instructions.");
 
-    // Get statement handle.
+    // Get statement handle. Disable auto-commit mode to wrap select + update.
     ODBCConn conn(getHDBC());
+    SQLRETURN sr = SQLSetConnectAttr(conn, SQL_ATTR_AUTOCOMMIT, SQL_AUTOCOMMIT_OFF, NULL);
+    if (!SQL_SUCCEEDED(sr))
+        throw IOException("ODBC StorageService failed to disable auto-commit mode.");
+    conn.autoCommit = false;
     SQLHSTMT stmt = getHSTMT(conn);
 
     // First, fetch the current version for later, which also ensures the record still exists.
@@ -563,7 +567,7 @@ int ODBCStorageService::updateRow(const char *table, const char* context, const 
 
     m_log.debug("SQL: %s", q.c_str());
 
-    SQLRETURN sr=SQLExecDirect(stmt, (SQLCHAR*)q.c_str(), SQL_NTS);
+    sr=SQLExecDirect(stmt, (SQLCHAR*)q.c_str(), SQL_NTS);
     if (!SQL_SUCCEEDED(sr)) {
         freeSafeSQL(scontext, context);
         freeSafeSQL(skey, key);
