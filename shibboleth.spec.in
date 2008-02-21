@@ -177,6 +177,7 @@ sh ./keygen.sh -b
 %{_sysconfdir}/%{name}/shibd-debian
 %{_sysconfdir}/%{name}/shibd-osx.plist
 %{_sysconfdir}/%{name}/keygen.sh
+%{_sysconfdir}/%{name}/*.xsl
 %docdir %{_datadir}/doc/%{name}
 %{_datadir}/doc/%{name}/CREDITS.txt
 %{_datadir}/doc/%{name}/FASTCGI.LICENSE
