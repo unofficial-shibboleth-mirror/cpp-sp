@@ -16,7 +16,8 @@ pkgsysconf_DATA = \
 	apache.config \
 	apache2.config \
 	apache22.config \
-	keygen.sh
+	keygen.sh \
+    upgrade.xsl
 
 # The config files are installed "special".  Unlike the entries in
 # pkgsysconf_DATA, these files are installed as "foo.dist" and only
@@ -134,4 +135,6 @@ EXTRA_DIST = \
 	shibd-osx.plist.in \
 	keygen.bat \
 	keygen.sh \
+    upgrade.xsl \
+	xsltproc.js \
 	$(CONFIGFILES)
