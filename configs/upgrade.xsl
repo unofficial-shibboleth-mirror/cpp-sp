@@ -3,11 +3,14 @@
     xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"
     xmlns:oldconf="urn:mace:shibboleth:target:config:1.0"
     xmlns:cred="urn:mace:shibboleth:credentials:1.0"
+    xmlns:conf="urn:mace:shibboleth:2.0:native:sp:config"
     xmlns="urn:mace:shibboleth:2.0:native:sp:config"
     xmlns:saml1="urn:oasis:names:tc:SAML:1.0:assertion"
     xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"
     xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"
     exclude-result-prefixes="oldconf cred saml1">
+
+    <xsl:param name="idp"/>
 
     <!-- Add a comment to the start of the output file. -->
     <xsl:template match="/">
@@ -55,6 +58,21 @@
             <xsl:apply-templates select="oldconf:Local/oldconf:RequestMapProvider"/>
             <xsl:text>&#10;</xsl:text>
             <xsl:apply-templates select="oldconf:Applications"/>
+
+   &#160;<xsl:comment>
+       <xsl:text>&#160;Each policy defines a set of rules to use to secure messages.&#160;</xsl:text>
+    </xsl:comment>
+   &#160;<SecurityPolicies>
+       &#160;<xsl:comment>
+           <xsl:text>&#160;The predefined policy enforces replay/freshness and permits signing and client TLS.&#160;</xsl:text>
+        </xsl:comment>
+       &#160;<Policy id="default" validate="false">
+           &#160;<Rule type="MessageFlow" checkReplay="true" expires="60"/>
+           &#160;<Rule type="ClientCertAuth" errorFatal="true"/>
+           &#160;<Rule type="XMLSigning" errorFatal="true"/>
+           &#160;<Rule type="SimpleSigning" errorFatal="true"/>
+       &#160;</Policy>
+   &#160;</SecurityPolicies>
         </SPConfig>
     </xsl:template>
     
@@ -71,63 +89,305 @@
    &#160;</OutOfProcess>
     </xsl:template>
 
+    <!-- Turn <Local> into <InProcess> with the <ISAPI> element up a level. -->
     <xsl:template match="oldconf:Local">
    &#160;<InProcess logger="{@logger}">
-            
+        <xsl:if test="@unsetHeaderValue">
+            <xsl:attribute name="unsetHeaderValue"><xsl:value-of select="@unsetHeaderValue"/></xsl:attribute>
+        </xsl:if>
+        <xsl:apply-templates select="oldconf:Implementation/oldconf:ISAPI"/>
    &#160;</InProcess>
     </xsl:template>
-
-    <xsl:template match="oldconf:Global/oldconf:UnixListener">
-   &#160;<UnixListener address="shibd.sock"/>
+    <xsl:template match="oldconf:ISAPI">
+       &#160;<ISAPI>
+           <xsl:apply-templates select="@*"/>
+           <xsl:for-each select="oldconf:Site">
+           &#160;<Site>
+               <xsl:apply-templates select="@*"/>
+               <xsl:for-each select="oldconf:Alias">
+              &#160;<Alias><xsl:value-of select="text()"/></Alias>
+               </xsl:for-each>
+           &#160;</Site>
+           </xsl:for-each>
+       &#160;</ISAPI>
     </xsl:template>
 
-    <xsl:template match="oldconf:Global/oldconf:TCPListener">
+    <!-- Pull in listeners up to the top level. -->
+    <xsl:template match="oldconf:UnixListener">
+   &#160;<UnixListener address="shibd.sock"/>
+    </xsl:template>
+    <xsl:template match="oldconf:TCPListener">
    &#160;<TCPListener address="{@address}" port="{@port}" acl="{@acl}"/>
     </xsl:template>
 
     <!-- Transplant old RequestMap into the new namespace, but just copy all the settings. -->
     <xsl:template match="oldconf:RequestMapProvider">
    &#160;<RequestMapper type="Native">
-       <xsl:apply-templates select="oldconf:RequestMap"/>
+       <xsl:apply-templates select="./*"/>
    &#160;</RequestMapper>
-    </xsl:template>
-    <xsl:template match="oldconf:RequestMap">
-       &#160;<RequestMap>
-            <xsl:apply-templates select="@*"/>
-            <xsl:for-each select="oldconf:Host">
-           &#160;<Host>
-                <xsl:apply-templates select="@*"/>
-                <xsl:apply-templates select="oldconf:Path"/>
-           &#160;</Host>
-            </xsl:for-each>
-       &#160;</RequestMap>
-    </xsl:template>
-    <xsl:template match="oldconf:Path">
-               &#160;<Path>
-                        <xsl:apply-templates select="@*"/>
-                        <xsl:apply-templates select="oldconf:Path"/>
-               &#160;</Path>
     </xsl:template>
 
     <xsl:template match="oldconf:Applications">
-   &#160;<ApplicationDefaults>
+   &#160;<ApplicationDefaults id="{@id}" policyId="default"
+           entityID="{@providerId}" homeURL="{@homeURL}"
+           REMOTE_USER="eppn persistent-id targeted-id"
+           signing="false" encryption="false">
+        <xsl:attribute name="timeout"><xsl:value-of select="../oldconf:Global/oldconf:MemorySessionCache/@AATimeout"/></xsl:attribute>
+        <xsl:attribute name="connectTimeout"><xsl:value-of select="../oldconf:Global/oldconf:MemorySessionCache/@AAConnectTimeout"/></xsl:attribute>
+        <xsl:if test="oldconf:CredentialUse/@TLS!=../oldconf:CredentialsProvider/cred:Credentials/cred:FileResolver[1]/@Id">
+            <xsl:attribute name="keyName"><xsl:value-of select="oldconf:CredentialUse/@TLS"/></xsl:attribute>
+        </xsl:if>
+        <xsl:if test="oldconf:CredentialUse/@signedAssertions">
+            <xsl:attribute name="requireSignedAssertions"><xsl:value-of select="oldconf:CredentialUse/@signedAssertions"/></xsl:attribute>   
+        </xsl:if>
+        <xsl:text>&#10;</xsl:text>
+        <xsl:apply-templates select="oldconf:Sessions"/>
+        <xsl:text>&#10;</xsl:text>
+        <xsl:apply-templates select="oldconf:Errors"/>
+        <xsl:text>&#10;</xsl:text>
+        <xsl:apply-templates select="oldconf:CredentialUse"/>
+        <xsl:text>&#10;</xsl:text>
+       &#160;<MetadataProvider type="Chaining">
+        <xsl:for-each select="oldconf:MetadataProvider|oldconf:FederationProvider">
+           &#160;<MetadataProvider type="XML" file="{@uri}"/>
+        </xsl:for-each>
+       &#160;</MetadataProvider>
+
+       &#160;<xsl:comment>
+           <xsl:text>&#160;Chain the two built-in trust engines together.&#160;</xsl:text>
+        </xsl:comment>
+       &#160;<TrustEngine type="Chaining">
+           &#160;<TrustEngine type="ExplicitKey"/>
+           &#160;<TrustEngine type="PKIX"/>
+       &#160;</TrustEngine>
+
+       &#160;<xsl:comment>
+           <xsl:text>&#160;Map to extract attributes from SAML assertions.&#160;</xsl:text>
+       </xsl:comment>
+       &#160;<AttributeExtractor type="XML" path="attribute-map.xml"/>
+        
+       &#160;<xsl:comment>
+           <xsl:text>&#160;Use a SAML query if no attributes are supplied during SSO.&#160;</xsl:text>
+       </xsl:comment>
+       &#160;<AttributeResolver type="Query"/>
+
+       &#160;<xsl:comment>
+           <xsl:text>&#160;Default filtering policy for recognized attributes, lets other data pass.&#160;</xsl:text>
+       </xsl:comment>
+       &#160;<AttributeFilter type="XML" path="attribute-policy.xml"/>
+
+        <xsl:text>&#10;</xsl:text>
+       
         <!-- Step up and pull in credentials from the top level. -->
         <xsl:apply-templates select="../oldconf:CredentialsProvider"/>
+       
+        <xsl:for-each select="oldconf:Application">
+           &#160;<ApplicationOverride>
+            <xsl:apply-templates select="@*"/>
+            <xsl:apply-templates select="oldconf:Sessions"/>
+            <xsl:apply-templates select="oldconf:Errors"/>
+            <xsl:apply-templates select="oldconf:CredentialUse"/>
+            <xsl:if test="count(oldconf:MetadataProvider) + count(oldconf:FederationProvider) > 0">
+               &#160;<MetadataProvider type="Chaining">
+                <xsl:for-each select="oldconf:MetadataProvider|oldconf:FederationProvider">
+                   &#160;<MetadataProvider type="XML" file="{@uri}"/>
+                </xsl:for-each>
+                &#160;</MetadataProvider>
+            </xsl:if>
+           &#160;</ApplicationOverride>
+        </xsl:for-each>
+       
    &#160;</ApplicationDefaults>
     </xsl:template>
     
+    <xsl:template match="oldconf:Sessions">
+       &#160;<Sessions exportLocation="http://localhost/{@handlerURL}/GetAssertion">
+        <xsl:apply-templates select="@*"/>
+
+           &#160;<xsl:comment>
+            <xsl:text>
+           &#160;SessionInitiators handle session requests and relay them to a Discovery page,
+           &#160;or to an IdP if possible. Automatic session setup will use the default or first
+           &#160;element (or requireSessionWith can specify a specific one to use).
+            </xsl:text>
+           </xsl:comment>
+        <xsl:for-each select="oldconf:SessionInitiator">
+            <xsl:text>&#10;</xsl:text>
+            <xsl:apply-templates select="."/>
+        </xsl:for-each>
+
+           &#160;<xsl:comment>
+            <xsl:text>
+           &#160;md:AssertionConsumerService locations handle specific SSO protocol bindings,
+           &#160;such as SAML 2.0 POST or SAML 1.1 Artifact. The isDefault and index attributes
+           &#160;are used when sessions are initiated to determine how to tell the IdP where and
+           &#160;how to return the response.
+            </xsl:text>
+           </xsl:comment>
+           &#160;<md:AssertionConsumerService Location="/SAML2/POST" index="1"
+                Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"/>
+           &#160;<md:AssertionConsumerService Location="/SAML2/POST-SimpleSign" index="2"
+                Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST-SimpleSign"/>
+           &#160;<md:AssertionConsumerService Location="/SAML2/Artifact" index="3"
+                Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact"/>
+           &#160;<md:AssertionConsumerService Location="/SAML2/ECP" index="4"
+                Binding="urn:oasis:names:tc:SAML:2.0:bindings:PAOS"/>
+           &#160;<md:AssertionConsumerService Location="/SAML/POST" index="5"
+                Binding="urn:oasis:names:tc:SAML:1.0:profiles:browser-post"/>
+           &#160;<md:AssertionConsumerService Location="/SAML/Artifact" index="6"
+                Binding="urn:oasis:names:tc:SAML:1.0:profiles:artifact-01"/>
+
+           <!-- Turn the old local SLO location into the new LogoutInitiator location. -->
+           <xsl:variable name="LogoutLocation">
+               <xsl:choose>
+                   <xsl:when test="md:SingleLogoutService[1]">
+                       <xsl:value-of select="md:SingleLogoutService[1]/@Location"/>
+                   </xsl:when>
+                   <xsl:otherwise>/Logout</xsl:otherwise>
+               </xsl:choose>
+           </xsl:variable>
+           
+           &#160;<xsl:comment>
+           <xsl:text>&#160;LogoutInitiators enable SP-initiated local or global/single logout of sessions.&#160;</xsl:text>
+           </xsl:comment>
+           &#160;<LogoutInitiator type="Chaining" Location="{$LogoutLocation}" relayState="cookie">
+               &#160;<LogoutInitiator type="SAML2" template="bindingTemplate.html"/>
+               &#160;<LogoutInitiator type="Local"/>
+           &#160;</LogoutInitiator>
+
+           &#160;<xsl:comment>
+           <xsl:text>&#160;md:SingleLogoutService locations handle single logout (SLO) protocol messages.&#160;</xsl:text>
+           </xsl:comment>
+           &#160;<md:SingleLogoutService Location="/SLO/SOAP"
+                Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP"/>
+           &#160;<md:SingleLogoutService Location="/SLO/Redirect" conf:template="bindingTemplate.html"
+                Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"/>
+           &#160;<md:SingleLogoutService Location="/SLO/POST" conf:template="bindingTemplate.html"
+                Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"/>
+           &#160;<md:SingleLogoutService Location="/SLO/Artifact" conf:template="bindingTemplate.html"
+                Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact"/>
+
+           &#160;<xsl:comment>
+           <xsl:text>&#160;md:ManageNameIDService locations handle NameID management (NIM) protocol messages.&#160;</xsl:text>
+           </xsl:comment>
+           &#160;<md:ManageNameIDService Location="/NIM/SOAP"
+                Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP"/>
+           &#160;<md:ManageNameIDService Location="/NIM/Redirect" conf:template="bindingTemplate.html"
+                Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"/>
+           &#160;<md:ManageNameIDService Location="/NIM/POST" conf:template="bindingTemplate.html"
+                Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"/>
+           &#160;<md:ManageNameIDService Location="/NIM/Artifact" conf:template="bindingTemplate.html"
+                Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact"/>
+
+           &#160;<xsl:comment>
+            <xsl:text>
+           &#160;md:ArtifactResolutionService locations resolve artifacts issued when using the
+           &#160;SAML 2.0 HTTP-Artifact binding on outgoing messages, generally uses SOAP.
+            </xsl:text>
+           </xsl:comment>
+           &#160;<md:ArtifactResolutionService Location="/Artifact/SOAP" index="1"
+                Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP"/>
+
+           &#160;<xsl:comment>
+           <xsl:text>&#160;Extension service that generates "approximate" metadata based on SP configuration.&#160;</xsl:text>
+           </xsl:comment>
+           &#160;<Handler type="MetadataGenerator" Location="/Metadata" signing="false"/>
+           
+           &#160;<xsl:comment>
+           <xsl:text>&#160;Status reporting service.&#160;</xsl:text>
+           </xsl:comment>
+           &#160;<Handler type="Status" Location="Status" acl="127.0.0.1"/>
+
+           &#160;<xsl:comment>
+           <xsl:text>&#160;Session diagnostic service.&#160;</xsl:text>
+           </xsl:comment>
+           &#160;<Handler type="Session" Location="/Session"/>
+           
+       &#160;</Sessions>
+    </xsl:template>
+    
+    <xsl:template match="oldconf:SessionInitiator">
+           &#160;<SessionInitiator type="Chaining" Location="{@Location}" acsByIndex="false" relayState="cookie">
+               <xsl:if test="@id">
+                   <xsl:attribute name="id"><xsl:value-of select="@id"/></xsl:attribute>
+               </xsl:if>
+               <xsl:if test="@isDefault">
+                   <xsl:attribute name="isDefault"><xsl:value-of select="@isDefault"/></xsl:attribute>
+               </xsl:if>
+               <xsl:if test="@Location=../oldconf:SessionInitiator[1]/@Location">
+                   <xsl:if test="$idp">
+                       <xsl:attribute name="entityID"><xsl:value-of select="$idp"/></xsl:attribute>
+                   </xsl:if>
+               </xsl:if>
+               &#160;<SessionInitiator type="SAML2" defaultACSIndex="1" ECP="true" template="bindingTemplate.html"/>
+               &#160;<SessionInitiator type="Shib1" defaultACSIndex="4"/>
+               <xsl:if test="@wayfURL">
+                   <xsl:if test="@wayfBinding='urn:mace:shibboleth:1.0:profiles:AuthnRequest'">
+               &#160;<SessionInitiator type="WAYF" URL="{@wayfURL}"/>
+                   </xsl:if>
+               </xsl:if>
+           &#160;</SessionInitiator>
+    </xsl:template>
+    
+    <!-- Map <Errors> element across, adding logout templates. -->
+    <xsl:template match="oldconf:Errors">
+       &#160;<Errors>
+       <xsl:apply-templates select="@*"/>
+       <xsl:attribute name="localLogout">localLogout.html</xsl:attribute>
+       <xsl:attribute name="globalLogout">globalLogout.html</xsl:attribute>
+       &#160;</Errors>
+    </xsl:template>
+    
+    <!-- Map <CredentialUse> element content into relying party overrides. -->
+    <xsl:template match="oldconf:CredentialUse">
+        <xsl:for-each select="oldconf:RelyingParty">
+       &#160;<RelyingParty Name="{@Name}">
+           <xsl:if test="@TLS">
+               <xsl:attribute name="keyName"><xsl:value-of select="@TLS"/></xsl:attribute>
+           </xsl:if>
+       &#160;</RelyingParty>
+        </xsl:for-each>
+    </xsl:template>
+
     <!-- Map legacy <FileResolver> elements to CredentialResolver plugins. -->
     <xsl:template match="oldconf:CredentialsProvider">
-        <xsl:apply-templates select="//cred:FileResolver"/>
+        <xsl:choose>
+            <xsl:when test="count(//cred:FileResolver) > 1">
+       &#160;<CredentialResolver type="Chaining">
+                <xsl:apply-templates select="//cred:FileResolver"/>
+       &#160;</CredentialResolver>
+            </xsl:when>
+            <xsl:otherwise>
+               <xsl:apply-templates select="//cred:FileResolver"/>
+            </xsl:otherwise>
+        </xsl:choose>
     </xsl:template>
     <xsl:template match="cred:FileResolver">
        &#160;<CredentialResolver type="File" key="{cred:Key/cred:Path/text()}" certificate="{cred:Certificate/cred:Path/text()}" keyName="{@Id}"/>
     </xsl:template>
 
+    <!-- Generic rule to pass through all element node content while converting the namespace. -->
+    <xsl:template match="oldconf:RequestMap|oldconf:Host|oldconf:HostRegex|oldconf:Path|oldconf:PathRegex|oldconf:htaccess|oldconf:AccessControl|oldconf:AND|oldconf:OR|oldconf:NOT">
+       &#160;<xsl:element name="{name()}">
+            <xsl:apply-templates select="@*"/>
+            <xsl:apply-templates select="./*"/>
+       &#160;</xsl:element>
+    </xsl:template>
+
+    <!-- Generic rule to pass through all attributes plus text content while converting the namespace. -->
+    <xsl:template match="oldconf:Rule">
+       &#160;<xsl:element name="{name()}">
+            <xsl:apply-templates select="@*"/>
+            <xsl:value-of select="text()"/>
+       &#160;</xsl:element>
+    </xsl:template>
+
+    <!-- Generic rule to pass through an attribute unmodified. -->
     <xsl:template match="@*">
         <xsl:attribute name="{name()}"><xsl:value-of select="."/></xsl:attribute>
     </xsl:template>
 
+    <!-- Strips additional text nodes out of document. -->
     <xsl:template match="text()"/>
 
 </xsl:stylesheet>
