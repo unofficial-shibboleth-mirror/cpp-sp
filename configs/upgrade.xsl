@@ -12,15 +12,15 @@
 
     <xsl:param name="idp"/>
     
+    <!--Force UTF-8 encoding for the output.-->
+    <xsl:output omit-xml-declaration="no" method="xml" encoding="UTF-8"/>
+
     <xsl:variable name="spaces" select="string('                                                                                          ')"/>
 
     <xsl:template match="/">
         <xsl:apply-templates/>
     </xsl:template>
     
-    <!--Force UTF-8 encoding for the output.-->
-    <xsl:output omit-xml-declaration="no" method="xml" encoding="UTF-8"/>
-
     <xsl:template match="oldconf:SPConfig">
         <xsl:text>&#10;</xsl:text>
         <SPConfig logger="{@logger}" clockSkew="{@clockSkew}">
@@ -35,12 +35,11 @@
             <xsl:text>&#10;</xsl:text>
             <xsl:apply-templates select="oldconf:Global/oldconf:UnixListener"/>
             <xsl:apply-templates select="oldconf:Global/oldconf:TCPListener"/>
-            <xsl:text>&#10;</xsl:text>
-            <xsl:text>    </xsl:text>
+            <xsl:text>&#10;    </xsl:text>
             <xsl:comment>
                 <xsl:text> This set of components stores sessions and other persistent data in daemon memory. </xsl:text>
             </xsl:comment>
-            <xsl:text>    </xsl:text>
+            <xsl:text>&#10;    </xsl:text>
             <StorageService type="Memory" id="mem" cleanupInterval="900"/>
             <xsl:text>&#10;    </xsl:text>
             <SessionCache type="StorageService" StorageService="mem" cacheTimeout="{oldconf:Global/oldconf:MemorySessionCache/@cacheTimeout}" inprocTimeout="900" cleanupInterval="900"/>
@@ -48,12 +47,11 @@
             <ReplayCache StorageService="mem"/>
             <xsl:text>&#10;    </xsl:text>
             <ArtifactMap artifactTTL="180"/>
-            <xsl:text>&#10;&#10;</xsl:text>
-            <xsl:text>    </xsl:text>
+            <xsl:text>&#10;&#10;    </xsl:text>
             <xsl:comment>
                 <xsl:text> This set of components stores sessions and other persistent data in an ODBC database. </xsl:text>
             </xsl:comment>
-            <xsl:text>    </xsl:text>
+            <xsl:text>&#10;    </xsl:text>
             <xsl:comment>
                 <xsl:text>
     &lt;StorageService type="ODBC" id="db" cleanupInterval="900"&gt;
@@ -64,9 +62,7 @@
     &lt;ArtifactMap StorageService="db" artifactTTL="180"/&gt;
     </xsl:text>
             </xsl:comment>
-            <xsl:text>&#10;</xsl:text>
             <xsl:apply-templates select="oldconf:Local/oldconf:RequestMapProvider"/>
-            <xsl:text>&#10;</xsl:text>
             <xsl:apply-templates select="oldconf:Applications"/>
 
             <xsl:text>&#10;&#10;    </xsl:text>
@@ -99,7 +95,7 @@
     
     <!-- Turn <Global> into <OutOfProcess> with the ODBC extension commented out. -->
     <xsl:template match="oldconf:Global">
-        <xsl:text>    </xsl:text>
+        <xsl:text>&#10;    </xsl:text>
         <OutOfProcess logger="{@logger}">
             <xsl:text>&#10;        </xsl:text>
             <xsl:comment>
@@ -116,19 +112,18 @@
 
     <!-- Turn <Local> into <InProcess> with the <ISAPI> element up a level. -->
     <xsl:template match="oldconf:Local">
-        <xsl:text>    </xsl:text>
+        <xsl:text>&#10;    </xsl:text>
         <InProcess logger="{@logger}">
             <xsl:if test="@unsetHeaderValue">
                 <xsl:attribute name="unsetHeaderValue"><xsl:value-of select="@unsetHeaderValue"/></xsl:attribute>
             </xsl:if>
-            <xsl:text>&#10;</xsl:text>
             <xsl:apply-templates select="oldconf:Implementation/oldconf:ISAPI"/>
-            <xsl:text>    </xsl:text>
+            <xsl:text>&#10;    </xsl:text>
         </InProcess>
         <xsl:text>&#10;</xsl:text>
     </xsl:template>
     <xsl:template match="oldconf:ISAPI">
-        <xsl:text>        </xsl:text>
+        <xsl:text>&#10;        </xsl:text>
         <ISAPI>
             <xsl:apply-templates select="@*"/>
             <xsl:for-each select="oldconf:Site">
@@ -144,24 +139,23 @@
             </xsl:for-each>
             <xsl:text>&#10;        </xsl:text>
         </ISAPI>
-        <xsl:text>&#10;</xsl:text>
     </xsl:template>
 
     <!-- Pull in listeners up to the top level. -->
     <xsl:template match="oldconf:UnixListener">
-        <xsl:text>    </xsl:text>
+        <xsl:text>&#10;    </xsl:text>
         <UnixListener address="shibd.sock"/>
         <xsl:text>&#10;</xsl:text>
     </xsl:template>
     <xsl:template match="oldconf:TCPListener">
-        <xsl:text>    </xsl:text>
+        <xsl:text>&#10;    </xsl:text>
         <TCPListener address="{@address}" port="{@port}" acl="{@acl}"/>
         <xsl:text>&#10;</xsl:text>
     </xsl:template>
 
     <!-- Transplant old RequestMap into the new namespace, but just copy all the settings. -->
     <xsl:template match="oldconf:RequestMapProvider">
-        <xsl:text>    </xsl:text>
+        <xsl:text>&#10;&#10;    </xsl:text>
         <RequestMapper type="Native">
             <xsl:text>&#10;</xsl:text>
             <xsl:apply-templates select="./*">
@@ -173,7 +167,7 @@
     </xsl:template>
 
     <xsl:template match="oldconf:Applications">
-        <xsl:text>    </xsl:text>
+        <xsl:text>&#10;    </xsl:text>
         <ApplicationDefaults id="{@id}" policyId="default" entityID="{@providerId}" homeURL="{@homeURL}" REMOTE_USER="eppn persistent-id targeted-id" signing="false" encryption="false">
             <xsl:attribute name="timeout"><xsl:value-of select="../oldconf:Global/oldconf:MemorySessionCache/@AATimeout"/></xsl:attribute>
             <xsl:attribute name="connectTimeout"><xsl:value-of select="../oldconf:Global/oldconf:MemorySessionCache/@AAConnectTimeout"/></xsl:attribute>
@@ -183,13 +177,11 @@
             <xsl:if test="oldconf:CredentialUse/@signedAssertions">
                 <xsl:attribute name="requireSignedAssertions"><xsl:value-of select="oldconf:CredentialUse/@signedAssertions"/></xsl:attribute>   
             </xsl:if>
-            <xsl:text>&#10;&#10;</xsl:text>
+            <xsl:text>&#10;</xsl:text>
             <xsl:apply-templates select="oldconf:Sessions"/>
-            <xsl:text>&#10;</xsl:text>
             <xsl:apply-templates select="oldconf:Errors"/>
-            <xsl:text>&#10;</xsl:text>
             <xsl:apply-templates select="oldconf:CredentialUse"/>
-            <xsl:text>&#10;        </xsl:text>
+            <xsl:text>&#10;&#10;        </xsl:text>
             <MetadataProvider type="Chaining">
                 <xsl:for-each select="oldconf:MetadataProvider|oldconf:FederationProvider">
                     <xsl:text>&#10;            </xsl:text>
@@ -258,7 +250,7 @@
     </xsl:template>
     
     <xsl:template match="oldconf:Sessions">
-        <xsl:text>        </xsl:text>
+        <xsl:text>&#10;        </xsl:text>
         <Sessions exportLocation="http://localhost/{@handlerURL}/GetAssertion">
             <xsl:apply-templates select="@*"/>
             <xsl:text>&#10;&#10;            </xsl:text>
@@ -270,10 +262,9 @@
             </xsl:text>
             </xsl:comment>
             <xsl:for-each select="oldconf:SessionInitiator">
-                <xsl:text>&#10;</xsl:text>
                 <xsl:apply-templates select="."/>
             </xsl:for-each>
-            <xsl:text>&#10;            </xsl:text>
+            <xsl:text>&#10;&#10;            </xsl:text>
             <xsl:comment>
                 <xsl:text>
             md:AssertionConsumerService locations handle specific SSO protocol bindings,
@@ -380,7 +371,7 @@
     </xsl:template>
     
     <xsl:template match="oldconf:SessionInitiator">
-        <xsl:text>            </xsl:text>
+        <xsl:text>&#10;&#10;            </xsl:text>
         <SessionInitiator type="Chaining" Location="{@Location}" acsByIndex="false" relayState="cookie">
             <xsl:if test="@id">
                 <xsl:attribute name="id"><xsl:value-of select="@id"/></xsl:attribute>
@@ -397,22 +388,19 @@
             <SessionInitiator type="SAML2" defaultACSIndex="1" ECP="true" template="bindingTemplate.html"/>
             <xsl:text>&#10;                </xsl:text>
             <SessionInitiator type="Shib1" defaultACSIndex="4"/>
-            <xsl:text>&#10;</xsl:text>
             <xsl:if test="@wayfURL">
                 <xsl:if test="@wayfBinding='urn:mace:shibboleth:1.0:profiles:AuthnRequest'">
-                    <xsl:text>                </xsl:text>
+                    <xsl:text>&#10;                </xsl:text>
                     <SessionInitiator type="WAYF" URL="{@wayfURL}"/>
-                    <xsl:text>&#10;</xsl:text>
                 </xsl:if>
             </xsl:if>
-            <xsl:text>            </xsl:text>
+            <xsl:text>&#10;            </xsl:text>
         </SessionInitiator>
-        <xsl:text>&#10;</xsl:text>
     </xsl:template>
     
     <!-- Map <Errors> element across, adding logout templates. -->
     <xsl:template match="oldconf:Errors">
-        <xsl:text>        </xsl:text>
+        <xsl:text>&#10;        </xsl:text>
         <Errors>
             <xsl:apply-templates select="@*"/>
             <xsl:attribute name="localLogout">localLogout.html</xsl:attribute>
@@ -426,9 +414,8 @@
     <xsl:template match="oldconf:CredentialUse">
         <xsl:for-each select="oldconf:RelyingParty">
             <xsl:if test="@TLS">
-                <xsl:text>        </xsl:text>
+                <xsl:text>&#10;        </xsl:text>
                 <RelyingParty Name="{@Name}" keyName="{@TLS}"/>
-                <xsl:text>&#10;</xsl:text>
             </xsl:if>
         </xsl:for-each>
     </xsl:template>
@@ -456,7 +443,7 @@
     </xsl:template>
     <xsl:template match="cred:FileResolver">
         <xsl:param name="indent"/>
-        <xsl:value-of select="substring($spaces,0,$indent)"/>
+        <xsl:value-of select="substring($spaces,0,$indent+1)"/>
         <CredentialResolver type="File" key="{cred:Key/cred:Path/text()}" certificate="{cred:Certificate/cred:Path/text()}" keyName="{@Id}"/>
         <xsl:text>&#10;</xsl:text>
     </xsl:template>
@@ -464,14 +451,14 @@
     <!-- Generic rule to pass through all element node content while converting the namespace. -->
     <xsl:template match="oldconf:RequestMap|oldconf:Host|oldconf:HostRegex|oldconf:Path|oldconf:PathRegex|oldconf:htaccess|oldconf:AccessControl|oldconf:AND|oldconf:OR|oldconf:NOT">
         <xsl:param name="indent"/>
-        <xsl:value-of select="substring($spaces,0,$indent)"/>
+        <xsl:value-of select="substring($spaces,0,$indent+1)"/>
         <xsl:element name="{name()}">
             <xsl:apply-templates select="@*"/>
             <xsl:text>&#10;</xsl:text>
             <xsl:apply-templates select="./*">
                 <xsl:with-param name="indent" select="$indent + 4"/>
             </xsl:apply-templates>
-            <xsl:value-of select="substring($spaces,0,$indent)"/>
+            <xsl:value-of select="substring($spaces,0,$indent+1)"/>
         </xsl:element>
         <xsl:text>&#10;</xsl:text>
     </xsl:template>
@@ -479,7 +466,7 @@
     <!-- Generic rule to pass through all attributes plus text content while converting the namespace. -->
     <xsl:template match="oldconf:Rule">
         <xsl:param name="indent"/>
-        <xsl:value-of select="substring($spaces,0,$indent)"/>
+        <xsl:value-of select="substring($spaces,0,$indent+1)"/>
         <xsl:element name="{name()}">
             <xsl:apply-templates select="@*"/>
             <xsl:value-of select="text()"/>
