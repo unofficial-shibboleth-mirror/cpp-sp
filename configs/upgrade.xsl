@@ -5,10 +5,7 @@
     xmlns:cred="urn:mace:shibboleth:credentials:1.0"
     xmlns:conf="urn:mace:shibboleth:2.0:native:sp:config"
     xmlns="urn:mace:shibboleth:2.0:native:sp:config"
-    xmlns:saml1="urn:oasis:names:tc:SAML:1.0:assertion"
-    xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"
-    xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"
-    exclude-result-prefixes="oldconf cred saml1">
+    exclude-result-prefixes="oldconf cred">
 
     <xsl:param name="idp"/>
     
