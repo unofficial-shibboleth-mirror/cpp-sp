@@ -150,10 +150,6 @@ if (Err = 0) then
     FileSystemObj.CopyFile DistDir & "globalLogout.html", ConfigDir, false
   End If
 
-  If (NOT FileSystemObj.FileExists(ConfigDir & "openssl.cnf")) then
-    FileSystemObj.CopyFile DistDir & "openssl.cnf", ConfigDir, false
-  End If
-
   If (NOT FileSystemObj.FileExists(ConfigDir & "console.logger")) then
     FileSystemObj.CopyFile DistDir & "console.logger", ConfigDir, false
   End If
