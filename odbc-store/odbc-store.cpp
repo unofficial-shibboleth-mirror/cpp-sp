@@ -563,7 +563,7 @@ int ODBCStorageService::updateRow(const char *table, const char* context, const 
     char *scontext = makeSafeSQL(context);
     char *skey = makeSafeSQL(key);
     string q("SELECT version FROM ");
-    q = q + table + " WHERE context='" + scontext + "' AND id='" + key + "' AND expires > " + timebuf;
+    q = q + table + " WHERE context='" + scontext + "' AND id='" + skey + "' AND expires > " + timebuf;
 
     m_log.debug("SQL: %s", q.c_str());
 
@@ -607,7 +607,7 @@ int ODBCStorageService::updateRow(const char *table, const char* context, const 
         q = q + "expires = " + timebuf;
     }
 
-    q = q + " WHERE context='" + scontext + "' AND id='" + key + "'";
+    q = q + " WHERE context='" + scontext + "' AND id='" + skey + "'";
     freeSafeSQL(scontext, context);
     freeSafeSQL(skey, key);
 
