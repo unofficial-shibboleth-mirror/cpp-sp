@@ -94,6 +94,7 @@ namespace {
     static const XMLCh cleanupInterval[] =  UNICODE_LITERAL_15(c,l,e,a,n,u,p,I,n,t,e,r,v,a,l);
     static const XMLCh isolationLevel[] =   UNICODE_LITERAL_14(i,s,o,l,a,t,i,o,n,L,e,v,e,l);
     static const XMLCh ConnectionString[] = UNICODE_LITERAL_16(C,o,n,n,e,c,t,i,o,n,S,t,r,i,n,g);
+    static const XMLCh RetryOnError[] =     UNICODE_LITERAL_12(R,e,t,r,y,O,n,E,r,r,o,r);
 
     // RAII for ODBC handles
     struct ODBCConn {
@@ -173,7 +174,7 @@ namespace {
         SQLHDBC getHDBC();
         SQLHSTMT getHSTMT(SQLHDBC);
         pair<int,int> getVersion(SQLHDBC);
-        bool log_error(SQLHANDLE handle, SQLSMALLINT htype, const char* checkfor=NULL);
+        pair<bool,bool> log_error(SQLHANDLE handle, SQLSMALLINT htype, const char* checkfor=NULL);
 
         static void* cleanup_fn(void*); 
         void cleanup();
@@ -187,6 +188,7 @@ namespace {
         SQLHENV m_henv;
         string m_connstring;
         long m_isolation;
+        vector<SQLINTEGER> m_retries;
     };
 
     StorageService* ODBCStorageServiceFactory(const DOMElement* const & e)
@@ -315,6 +317,16 @@ ODBCStorageService::ODBCStorageService(const DOMElement* e) : m_log(Category::ge
         throw XMLToolingException("Unknown database version for ODBC StorageService.");
     }
 
+    // Load any retry errors to check.
+    e = XMLHelper::getNextSiblingElement(e,RetryOnError);
+    while (e) {
+        if (e->hasChildNodes()) {
+            m_retries.push_back(XMLString::parseInt(e->getFirstChild()->getNodeValue()));
+            m_log.info("will retry operations when native ODBC error (%ld) is returned", m_retries.back());
+        }
+        e = XMLHelper::getNextSiblingElement(e,RetryOnError);
+    }
+
     // Initialize the cleanup thread
     shutdown_wait = CondWait::create();
     cleanup_thread = Thread::create(&cleanup_fn, (void*)this);
@@ -330,7 +342,7 @@ ODBCStorageService::~ODBCStorageService()
         SQLFreeHandle(SQL_HANDLE_ENV, m_henv);
 }
 
-bool ODBCStorageService::log_error(SQLHANDLE handle, SQLSMALLINT htype, const char* checkfor)
+pair<bool,bool> ODBCStorageService::log_error(SQLHANDLE handle, SQLSMALLINT htype, const char* checkfor)
 {
     SQLSMALLINT	 i = 0;
     SQLINTEGER	 native;
@@ -339,13 +351,15 @@ bool ODBCStorageService::log_error(SQLHANDLE handle, SQLSMALLINT htype, const ch
     SQLSMALLINT	 len;
     SQLRETURN	 ret;
 
-    bool res = false;
+    pair<bool,bool> res = make_pair(false,false);
     do {
         ret = SQLGetDiagRec(htype, handle, ++i, state, &native, text, sizeof(text), &len);
         if (SQL_SUCCEEDED(ret)) {
             m_log.error("ODBC Error: %s:%ld:%ld:%s", state, i, native, text);
+            for (vector<SQLINTEGER>::const_iterator n = m_retries.begin(); !res.first && n != m_retries.end(); ++n)
+                res.first = (*n == native);
             if (checkfor && !strcmp(checkfor, (const char*)state))
-                res = true;
+                res.second = true;
         }
     } while(SQL_SUCCEEDED(ret));
     return res;
@@ -476,16 +490,23 @@ bool ODBCStorageService::createRow(const char* table, const char* context, const
     //freeSafeSQL(svalue, value);
     //m_log.debug("SQL: %s", q.c_str());
 
-    sr=SQLExecute(stmt);
-    if (!SQL_SUCCEEDED(sr)) {
+    int attempts = 3;
+    pair<bool,bool> logres;
+    do {
+        logres = make_pair(false,false);
+        attempts--;
+        sr=SQLExecute(stmt);
+        if (SQL_SUCCEEDED(sr)) {
+            m_log.debug("SQLExecute of insert succeeded");
+            return true;
+        }
         m_log.error("insert record failed (t=%s, c=%s, k=%s)", table, context, key);
-        if (log_error(stmt, SQL_HANDLE_STMT, "23000"))
+        logres = log_error(stmt, SQL_HANDLE_STMT, "23000");
+        if (logres.second)
             return false;   // supposedly integrity violation?
-        throw IOException("ODBC StorageService failed to insert record.");
-    }
+    } while (attempts && logres.first);
 
-    m_log.debug("SQLExecute of insert succeeded");
-    return true;
+    throw IOException("ODBC StorageService failed to insert record.");
 }
 
 int ODBCStorageService::readRow(
@@ -649,17 +670,24 @@ int ODBCStorageService::updateRow(const char *table, const char* context, const 
         m_log.debug("SQLBindParam succeded (context = %s)", context);
     }
 
-    sr=SQLExecute(stmt);
-    if (sr==SQL_NO_DATA)
-        return 0;   // went missing?
-    else if (!SQL_SUCCEEDED(sr)) {
-        m_log.error("update of record failed (t=%s, c=%s, k=%s", table, context, key);
-        log_error(stmt, SQL_HANDLE_STMT);
-        throw IOException("ODBC StorageService failed to update record.");
-    }
+    int attempts = 3;
+    pair<bool,bool> logres;
+    do {
+        logres = make_pair(false,false);
+        attempts--;
+        sr=SQLExecute(stmt);
+        if (sr==SQL_NO_DATA)
+            return 0;   // went missing?
+        else if (SQL_SUCCEEDED(sr)) {
+            m_log.debug("SQLExecute of update succeeded");
+            return ver + 1;
+        }
 
-    m_log.debug("SQLExecute of update succeeded");
-    return ver + 1;
+        m_log.error("update of record failed (t=%s, c=%s, k=%s", table, context, key);
+        logres = log_error(stmt, SQL_HANDLE_STMT);
+    } while (attempts && logres.first);
+
+    throw IOException("ODBC StorageService failed to update record.");
 }
 
 bool ODBCStorageService::deleteRow(const char *table, const char *context, const char* key)
