@@ -319,7 +319,7 @@ void XMLFilterImpl::filterAttributes(const FilteringContext& context, vector<Att
                             }
                             else {
                                 m_log.warn(
-                                    "filtered value at position (%lu) of attribute (%s) from (%s)",
+                                    "removed value at position (%lu) of attribute (%s) from (%s)",
                                     index, attr->getId(), issuer.get() ? issuer.get() : "unknown source"
                                     );
                                 attr->removeValue(index);
@@ -348,7 +348,7 @@ void XMLFilterImpl::filterAttributes(const FilteringContext& context, vector<Att
                             }
                             else {
                                 m_log.warn(
-                                    "filtered value at position (%lu) of attribute (%s) from (%s)",
+                                    "removed value at position (%lu) of attribute (%s) from (%s)",
                                     index, attr->getId(), issuer.get() ? issuer.get() : "unknown source"
                                     );
                                 attr->removeValue(index);
@@ -362,7 +362,7 @@ void XMLFilterImpl::filterAttributes(const FilteringContext& context, vector<Att
                     if (!ruleFound) {
                         // No rule found, so we're filtering it out.
                         m_log.warn(
-                            "no rule found, filtering out values of attribute (%s) from (%s)",
+                            "no rule found, removing all values of attribute (%s) from (%s)",
                             attr->getId(), issuer.get() ? issuer.get() : "unknown source"
                             );
                     }
