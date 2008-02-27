@@ -92,6 +92,7 @@ CREATE TABLE texts (
 
 namespace {
     static const XMLCh cleanupInterval[] =  UNICODE_LITERAL_15(c,l,e,a,n,u,p,I,n,t,e,r,v,a,l);
+    static const XMLCh isolationLevel[] =   UNICODE_LITERAL_14(i,s,o,l,a,t,i,o,n,L,e,v,e,l);
     static const XMLCh ConnectionString[] = UNICODE_LITERAL_16(C,o,n,n,e,c,t,i,o,n,S,t,r,i,n,g);
 
     // RAII for ODBC handles
@@ -185,6 +186,7 @@ namespace {
 
         SQLHENV m_henv;
         string m_connstring;
+        long m_isolation;
     };
 
     StorageService* ODBCStorageServiceFactory(const DOMElement* const & e)
@@ -253,7 +255,7 @@ namespace {
 };
 
 ODBCStorageService::ODBCStorageService(const DOMElement* e) : m_log(Category::getInstance("XMLTooling.StorageService")),
-   m_cleanupInterval(900), shutdown_wait(NULL), cleanup_thread(NULL), shutdown(false), m_henv(SQL_NULL_HANDLE)
+   m_cleanupInterval(900), shutdown_wait(NULL), cleanup_thread(NULL), shutdown(false), m_henv(SQL_NULL_HANDLE), m_isolation(SQL_TXN_SERIALIZABLE)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("ODBCStorageService");
@@ -264,6 +266,20 @@ ODBCStorageService::ODBCStorageService(const DOMElement* e) : m_log(Category::ge
         m_cleanupInterval = XMLString::parseInt(tag);
     if (!m_cleanupInterval)
         m_cleanupInterval = 900;
+
+    auto_ptr_char iso(e ? e->getAttributeNS(NULL,isolationLevel) : NULL);
+    if (iso.get() && *iso.get()) {
+        if (!strcmp(iso.get(),"SERIALIZABLE"))
+            m_isolation = SQL_TXN_SERIALIZABLE;
+        else if (!strcmp(iso.get(),"REPEATABLE_READ"))
+            m_isolation = SQL_TXN_REPEATABLE_READ;
+        else if (!strcmp(iso.get(),"READ_COMMITTED"))
+            m_isolation = SQL_TXN_READ_COMMITTED;
+        else if (!strcmp(iso.get(),"READ_UNCOMMITTED"))
+            m_isolation = SQL_TXN_READ_UNCOMMITTED;
+        else
+            throw XMLToolingException("Unknown transaction isolationLevel property.");
+    }
 
     if (m_henv == SQL_NULL_HANDLE) {
         // Enable connection pooling.
@@ -357,9 +373,9 @@ SQLHDBC ODBCStorageService::getHDBC()
         throw IOException("ODBC StorageService failed to connect to database.");
     }
 
-    sr = SQLSetConnectAttr(handle, SQL_ATTR_TXN_ISOLATION, (SQLPOINTER)SQL_TXN_SERIALIZABLE, NULL);
+    sr = SQLSetConnectAttr(handle, SQL_ATTR_TXN_ISOLATION, (SQLPOINTER)m_isolation, NULL);
     if (!SQL_SUCCEEDED(sr))
-        throw IOException("ODBC StorageService failed to enable transaction isolation.");
+        throw IOException("ODBC StorageService failed to set transaction isolation level.");
 
     return handle;
 }
