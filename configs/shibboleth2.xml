@@ -21,7 +21,7 @@
             Maps IIS Instance ID values to the host scheme/name/port/sslport. The name is
             required so that the proper <Host> in the request map above is found without
             having to cover every possible DNS/IP combination the user might enter.
-            The port and scheme can    usually be omitted, so the HTTP request's port and
+            The port and scheme can usually be omitted, so the HTTP request's port and
             scheme will be used.
             -->
             <Site id="1" name="sp.example.org"/>
@@ -60,13 +60,12 @@
             below.
             -->
             <Host name="sp.example.org">
-                <Path name="secure" authType="shibboleth" requireSession="true">
-                    <!-- Example shows the folder "/secure/admin" assigned to a separate <Application> -->
-                    <!--
-                    <Path name="admin" applicationId="foo-admin"/>
-                    -->
-                </Path>
+                <Path name="secure" authType="shibboleth" requireSession="true"/>
             </Host>
+            <!-- Example of a second vhost mapped to a different applicationId. -->
+            <!--
+            <Host name="admin.example.org" applicationId="admin" authType="shibboleth" requireSession="true"/>
+            -->
         </RequestMap>
     </RequestMapper>
 
@@ -238,6 +237,9 @@
 
         <!-- Simple file-based resolver for using a single keypair. -->
         <CredentialResolver type="File" key="sp-key.pem" certificate="sp-cert.pem"/>
+
+        <!-- Example of a second application (using a second vhost) that has a different entityID. -->
+        <!-- <ApplicationOverride id="admin" entityID="https://admin.example.org/shibboleth"/> -->
 
     </ApplicationDefaults>
     
