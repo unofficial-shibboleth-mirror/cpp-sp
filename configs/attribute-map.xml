@@ -86,6 +86,7 @@
     <Attribute name="urn:mace:dir:attribute-def:postalCode" id="postalCode"/>
     <Attribute name="urn:mace:dir:attribute-def:st" id="st"/>
     <Attribute name="urn:mace:dir:attribute-def:l" id="l"/>
+    <Attribute name="urn:mace:dir:attribute-def:o" id="o"/>
     <Attribute name="urn:mace:dir:attribute-def:ou" id="ou"/>
     <Attribute name="urn:mace:dir:attribute-def:businessCategory" id="businessCategory"/>
     <Attribute name="urn:mace:dir:attribute-def:physicalDeliveryOfficeName" id="physicalDeliveryOfficeName"/>
@@ -112,6 +113,7 @@
     <Attribute name="urn:oid:2.5.4.17" id="postalCode"/>
     <Attribute name="urn:oid:2.5.4.8" id="st"/>
     <Attribute name="urn:oid:2.5.4.7" id="l"/>
+    <Attribute name="urn:oid:2.5.4.10" id="o"/>
     <Attribute name="urn:oid:2.5.4.11" id="ou"/>
     <Attribute name="urn:oid:2.5.4.15" id="businessCategory"/>
     <Attribute name="urn:oid:2.5.4.19" id="physicalDeliveryOfficeName"/>
