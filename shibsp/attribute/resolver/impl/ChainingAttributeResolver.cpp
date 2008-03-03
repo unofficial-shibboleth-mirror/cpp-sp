@@ -49,7 +49,7 @@ namespace shibsp {
             const XMLCh* authncontext_decl,
             const vector<const opensaml::Assertion*>* tokens,
             const vector<shibsp::Attribute*>* attributes
-            ) : m_app(application), m_issuer(issuer), m_protocol(protocol), m_authclass(authncontext_class), m_authdecl(authncontext_decl), m_session(NULL) {
+            ) : m_app(application), m_issuer(issuer), m_protocol(protocol), m_nameid(nameid), m_authclass(authncontext_class), m_authdecl(authncontext_decl), m_session(NULL) {
             if (tokens)
                 m_tokens.assign(tokens->begin(), tokens->end());
             if (attributes)
@@ -104,7 +104,7 @@ namespace shibsp {
             const Application& application,
             const EntityDescriptor* issuer,
             const XMLCh* protocol,
-            const NameID* nameid,
+            const NameID* nameid=NULL,
             const XMLCh* authncontext_class=NULL,
             const XMLCh* authncontext_decl=NULL,
             const vector<const opensaml::Assertion*>* tokens=NULL,

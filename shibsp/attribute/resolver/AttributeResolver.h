@@ -72,7 +72,7 @@ namespace shibsp {
             const Application& application,
             const opensaml::saml2md::EntityDescriptor* issuer,
             const XMLCh* protocol,
-            const opensaml::saml2::NameID* nameid,
+            const opensaml::saml2::NameID* nameid=NULL,
             const XMLCh* authncontext_class=NULL,
             const XMLCh* authncontext_decl=NULL,
             const std::vector<const opensaml::Assertion*>* tokens=NULL,
