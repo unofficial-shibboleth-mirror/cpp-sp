@@ -463,7 +463,7 @@ XMLApplication::XMLApplication(
 
     try {
         // First load any property sets.
-        load(e,log,this);
+        load(e,NULL,this);
         if (base)
             setParent(base);
 
@@ -859,7 +859,7 @@ XMLApplication::XMLApplication(
         child = XMLHelper::getFirstChildElement(e,RelyingParty);
         while (child) {
             auto_ptr<DOMPropertySet> rp(new DOMPropertySet());
-            rp->load(child,log,this);
+            rp->load(child,NULL,this);
             rp->setParent(this);
             m_partyMap[child->getAttributeNS(NULL,saml2::Attribute::NAME_ATTRIB_NAME)]=rp.release();
             child = XMLHelper::getNextSiblingElement(child,RelyingParty);
@@ -1123,9 +1123,9 @@ short XMLConfigImpl::acceptNode(const DOMNode* node) const
         XMLString::equals(name,_ArtifactMap) ||
         XMLString::equals(name,_Extensions) ||
         XMLString::equals(name,Listener) ||
-        XMLString::equals(name,Policy) ||
         XMLString::equals(name,_RequestMapper) ||
         XMLString::equals(name,_ReplayCache) ||
+        XMLString::equals(name,SecurityPolicies) ||
         XMLString::equals(name,_SessionCache) ||
         XMLString::equals(name,Site) ||
         XMLString::equals(name,_StorageService) ||
@@ -1202,7 +1202,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
         }
         
         // First load any property sets.
-        load(e,log,this);
+        load(e,NULL,this);
 
         const DOMElement* child;
         string plugtype;
@@ -1347,7 +1347,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                 pair< PropertySet*,vector<const SecurityPolicyRule*> >& rules = m_policyMap[id.get()];
                 rules.first = NULL;
                 auto_ptr<DOMPropertySet> settings(new DOMPropertySet());
-                settings->load(child, log, &filter);
+                settings->load(child, NULL, &filter);
                 rules.first = settings.release();
                 
                 // Process Rule elements.

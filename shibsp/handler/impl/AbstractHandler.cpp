@@ -106,7 +106,7 @@ void SHIBSP_API shibsp::registerHandlers()
 AbstractHandler::AbstractHandler(
     const DOMElement* e, Category& log, DOMNodeFilter* filter, const map<string,string>* remapper
     ) : m_log(log), m_configNS(shibspconstants::SHIB2SPCONFIG_NS) {
-    load(e,log,filter,remapper);
+    load(e,NULL,filter,remapper);
 }
 
 #ifndef SHIBSP_LITE

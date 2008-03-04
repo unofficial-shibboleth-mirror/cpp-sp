@@ -62,14 +62,14 @@ namespace shibsp {
          * Loads the property set from a DOM element.
          * 
          * @param e         root element of property set
-         * @param log       log object for tracing
+         * @param log       optional log object for tracing
          * @param filter    optional filter controls what child elements to include as nested PropertySets
          * @param remapper  optional map of property rename rules for legacy property support
          */
         void load(
             const xercesc::DOMElement* e,
-            xmltooling::logging::Category& log,
-            xercesc::DOMNodeFilter* filter,
+            xmltooling::logging::Category* log=NULL,
+            xercesc::DOMNodeFilter* filter=NULL,
             const std::map<std::string,std::string>* remapper=NULL
             );
 

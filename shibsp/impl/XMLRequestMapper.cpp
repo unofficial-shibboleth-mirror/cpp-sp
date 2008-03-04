@@ -191,7 +191,7 @@ Override::Override(const DOMElement* e, Category& log, const Override* base) : m
 {
     try {
         // Load the property set.
-        load(e,log,this);
+        load(e,NULL,this);
         setParent(base);
         
         // Load any AccessControl provider.
@@ -450,7 +450,7 @@ XMLRequestMapperImpl::XMLRequestMapperImpl(const DOMElement* e, Category& log) :
 #endif
 
     // Load the property set.
-    load(e,log,this);
+    load(e,NULL,this);
     
     // Load any AccessControl provider.
     loadACL(e,log);

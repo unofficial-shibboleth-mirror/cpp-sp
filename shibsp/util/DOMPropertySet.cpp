@@ -41,7 +41,7 @@ DOMPropertySet::~DOMPropertySet()
 
 void DOMPropertySet::load(
     const DOMElement* e,
-    Category& log,
+    Category* log,
     DOMNodeFilter* filter,
     const std::map<std::string,std::string>* remapper
     )
@@ -52,6 +52,8 @@ void DOMPropertySet::load(
     if (!e)
         return;
     m_root=e;
+    if (!log)
+        log = &Category::getInstance(SHIBSP_LOGCAT".PropertySet");
 
     // Process each attribute as a property.
     DOMNamedNodeMap* attrs=m_root->getAttributes();
@@ -68,7 +70,7 @@ void DOMPropertySet::load(
             if (remapper) {
                 remap=remapper->find(realname);
                 if (remap!=remapper->end()) {
-                    log.warn("remapping property (%s) to (%s)",realname,remap->second.c_str());
+                    log->warn("remapping property (%s) to (%s)",realname,remap->second.c_str());
                     realname=remap->second.c_str();
                 }
             }
@@ -77,11 +79,11 @@ void DOMPropertySet::load(
                     m_map[string("{") + remap->second.c_str() + '}' + realname]=pair<char*,const XMLCh*>(val,a->getNodeValue());
                 else
                     m_map[string("{") + ns.get() + '}' + realname]=pair<char*,const XMLCh*>(val,a->getNodeValue());
-                log.debug("added property {%s}%s (%s)",ns.get(),realname,val);
+                log->debug("added property {%s}%s (%s)",ns.get(),realname,val);
             }
             else {
                 m_map[realname]=pair<char*,const XMLCh*>(val,a->getNodeValue());
-                log.debug("added property %s (%s)",realname,val);
+                log->debug("added property %s (%s)",realname,val);
             }
         }
     }
@@ -100,7 +102,7 @@ void DOMPropertySet::load(
         if (remapper) {
             remap=remapper->find(realname);
             if (remap!=remapper->end()) {
-                log.warn("remapping property set (%s) to (%s)",realname,remap->second.c_str());
+                log->warn("remapping property set (%s) to (%s)",realname,remap->second.c_str());
                 realname=remap->second.c_str();
             }
         }
@@ -114,12 +116,12 @@ void DOMPropertySet::load(
         else
             key=realname;
         if (m_nested.find(key)!=m_nested.end())
-            log.warn("load() skipping duplicate property set: %s",key.c_str());
+            log->warn("load() skipping duplicate property set: %s",key.c_str());
         else {
             DOMPropertySet* set=new DOMPropertySet();
             set->load(e,log,filter,remapper);
             m_nested[key]=set;
-            log.debug("added nested property set: %s",key.c_str());
+            log->debug("added nested property set: %s",key.c_str());
         }
         e=static_cast<DOMElement*>(walker->nextSibling());
     }
