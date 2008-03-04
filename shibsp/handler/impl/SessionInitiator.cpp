@@ -46,6 +46,7 @@ void SHIBSP_API shibsp::registerSessionInitiators()
     conf.SessionInitiatorManager.registerFactory(SHIB1_SESSION_INITIATOR, Shib1SessionInitiatorFactory);
     conf.SessionInitiatorManager.registerFactory(SAML2_SESSION_INITIATOR, SAML2SessionInitiatorFactory);
     conf.SessionInitiatorManager.registerFactory(WAYF_SESSION_INITIATOR, WAYFSessionInitiatorFactory);
+    conf.SessionInitiatorManager.registerFactory(SAMLDS_SESSION_INITIATOR, SAMLDSSessionInitiatorFactory);
     conf.SessionInitiatorManager.registerFactory(TRANSFORM_SESSION_INITIATOR, TransformSessionInitiatorFactory);
     conf.SessionInitiatorManager.registerFactory(FORM_SESSION_INITIATOR, FormSessionInitiatorFactory);
     conf.SessionInitiatorManager.registerFactory(COOKIE_SESSION_INITIATOR, CookieSessionInitiatorFactory);
