@@ -136,6 +136,7 @@ namespace {
             HTTPResponse& httpResponse,
             const char* entityID,
             const char* acsLocation,
+            const char* authnContextClassRef,
             string& relayState
             ) const;
         string m_appId;
@@ -316,6 +317,7 @@ pair<bool,long> ADFSSessionInitiator::run(SPRequest& request, string& entityID, 
     string target;
     const Handler* ACS=NULL;
     const char* option;
+    pair<bool,const char*> acClass;
     const Application& app=request.getApplication();
 
     if (isHandler) {
@@ -326,11 +328,21 @@ pair<bool,long> ADFSSessionInitiator::run(SPRequest& request, string& entityID, 
         // Since we're passing the ACS by value, we need to compute the return URL,
         // so we'll need the target resource for real.
         recoverRelayState(request.getApplication(), request, request, target, false);
+
+        if (acClass.second = request.getParameter("authnContextClassRef"))
+            acClass.first = true;
+        else
+            acClass = getString("authnContextClassRef");
     }
     else {
         // We're running as a "virtual handler" from within the filter.
         // The target resource is the current one and everything else is defaulted.
         target=request.getRequestURL();
+
+        const PropertySet* settings = request.getRequestSettings().first;
+        acClass = settings->getString("authnContextClassRef");
+        if (!acClass.first)
+            acClass = getString("authnContextClassRef");
     }
 
     // Since we're not passing by index, we need to fully compute the return URL.
@@ -375,7 +387,7 @@ pair<bool,long> ADFSSessionInitiator::run(SPRequest& request, string& entityID, 
     m_log.debug("attempting to initiate session using ADFS with provider (%s)", entityID.c_str());
 
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess))
-        return doRequest(app, request, entityID.c_str(), ACSloc.c_str(), target);
+        return doRequest(app, request, entityID.c_str(), ACSloc.c_str(), (acClass.first ? acClass.second : NULL), target);
 
     // Remote the call.
     DDF out,in = DDF(m_address.c_str()).structure();
@@ -385,6 +397,8 @@ pair<bool,long> ADFSSessionInitiator::run(SPRequest& request, string& entityID, 
     in.addmember("acsLocation").string(ACSloc.c_str());
     if (!target.empty())
         in.addmember("RelayState").string(target.c_str());
+    if (acClass.first)
+        in.addmember("authnContextClassRef").string(acClass.second);
 
     // Remote the processing.
     out = request.getServiceProvider().getListenerService()->send(in);
@@ -418,7 +432,7 @@ void ADFSSessionInitiator::receive(DDF& in, ostream& out)
     // Since we're remoted, the result should either be a throw, which we pass on,
     // a false/0 return, which we just return as an empty structure, or a response/redirect,
     // which we capture in the facade and send back.
-    doRequest(*app, *http.get(), entityID, acsLocation, relayState);
+    doRequest(*app, *http.get(), entityID, acsLocation, in["authnContextClassRef"].string(), relayState);
     out << ret;
 }
 
@@ -427,6 +441,7 @@ pair<bool,long> ADFSSessionInitiator::doRequest(
     HTTPResponse& httpResponse,
     const char* entityID,
     const char* acsLocation,
+    const char* authnContextClassRef,
     string& relayState
     ) const
 {
@@ -474,6 +489,8 @@ pair<bool,long> ADFSSessionInitiator::doRequest(
 
     string req=string(dest.get()) + (strchr(dest.get(),'?') ? '&' : '?') + "wa=wsignin1.0&wreply=" + urlenc->encode(acsLocation) +
         "&wct=" + urlenc->encode(timebuf) + "&wtrealm=" + urlenc->encode(app.getString("entityID").second);
+    if (authnContextClassRef)
+        req += "&wauth=" + urlenc->encode(authnContextClassRef);
     if (!relayState.empty())
         req += "&wctx=" + urlenc->encode(relayState.c_str());
 
