@@ -57,6 +57,7 @@
 # include <saml/saml2/core/Assertions.h>
 # include <saml/saml2/metadata/Metadata.h>
 # include <saml/saml2/metadata/EndpointManager.h>
+# include <saml/saml2/profile/AssertionValidator.h>
 # include <xmltooling/impl/AnyElement.h>
 # include <xmltooling/validation/ValidatorSuite.h>
 using namespace opensaml::saml2md;
@@ -568,9 +569,9 @@ void ADFSConsumer::implementProtocol(
     response = dynamic_cast<const ElementProxy*>(response->getUnknownXMLObjects().front());
     if (!response || !response->hasChildren())
         throw FatalProfileException("Token wrapper element did not contain a security token.");
-    const saml1::Assertion* token = dynamic_cast<const saml1::Assertion*>(response->getUnknownXMLObjects().front());
+    const Assertion* token = dynamic_cast<const Assertion*>(response->getUnknownXMLObjects().front());
     if (!token || !token->getSignature())
-        throw FatalProfileException("Incoming message did not contain a signed SAML 1.1 assertion.");
+        throw FatalProfileException("Incoming message did not contain a signed SAML assertion.");
 
     // Extract message and issuer details from assertion.
     extractMessageDetails(*token, m_protocol.get(), policy);
@@ -583,69 +584,121 @@ void ADFSConsumer::implementProtocol(
     if (!policy.isAuthenticated())
         throw SecurityPolicyException("Unable to establish security of incoming assertion.");
 
+    time_t now = time(NULL);
+    
+    const PropertySet* sessionProps = application.getPropertySet("Sessions");
     const EntityDescriptor* entity = policy.getIssuerMetadata() ? dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL;
 
-    // Now do profile and core semantic validation to ensure we can use it for SSO.
-    // Profile validator.
-    time_t now = time(NULL);
-    saml1::AssertionValidator ssoValidator(application.getRelyingParty(entity)->getXMLString("entityID").second, application.getAudiences(), now);
-    ssoValidator.validateAssertion(*token);
-    if (!token->getConditions() || !token->getConditions()->getNotBefore() || !token->getConditions()->getNotOnOrAfter())
-        throw FatalProfileException("Assertion did not contain time conditions.");
-    else if (token->getAuthenticationStatements().empty())
-        throw FatalProfileException("Assertion did not contain an authentication statement.");
+    saml1::NameIdentifier* saml1name=NULL;
+    saml2::NameID* saml2name=NULL;
+    const XMLCh* authMethod=NULL;
+    const XMLCh* authInstant=NULL;
+    time_t sessionExp = 0;
     
+    const saml1::Assertion* saml1token = dynamic_cast<const saml1::Assertion*>(token);
+    if (saml1token) {
+        // Now do profile and core semantic validation to ensure we can use it for SSO.
+        saml1::AssertionValidator ssoValidator(application.getRelyingParty(entity)->getXMLString("entityID").second, application.getAudiences(), now);
+        ssoValidator.validateAssertion(*saml1token);
+        if (!saml1token->getConditions() || !saml1token->getConditions()->getNotBefore() || !saml1token->getConditions()->getNotOnOrAfter())
+            throw FatalProfileException("Assertion did not contain time conditions.");
+        else if (saml1token->getAuthenticationStatements().empty())
+            throw FatalProfileException("Assertion did not contain an authentication statement.");
+        
+        // authnskew allows rejection of SSO if AuthnInstant is too old.
+        pair<bool,unsigned int> authnskew = sessionProps ? sessionProps->getUnsignedInt("maxTimeSinceAuthn") : pair<bool,unsigned int>(false,0);
 
-    // With ADFS, we only have one token, but we need to put it in a vector.
-    vector<const Assertion*> tokens(1,token);
-    const saml1::AuthenticationStatement* ssoStatement=token->getAuthenticationStatements().front();
+        const saml1::AuthenticationStatement* ssoStatement=saml1token->getAuthenticationStatements().front();
+        if (authnskew.first && authnskew.second &&
+                ssoStatement->getAuthenticationInstant() && (now - ssoStatement->getAuthenticationInstantEpoch() > authnskew.second))
+            throw FatalProfileException("The gap between now and the time you logged into your identity provider exceeds the limit.");
 
-    // authnskew allows rejection of SSO if AuthnInstant is too old.
-    const PropertySet* sessionProps = application.getPropertySet("Sessions");
-    pair<bool,unsigned int> authnskew = sessionProps ? sessionProps->getUnsignedInt("maxTimeSinceAuthn") : pair<bool,unsigned int>(false,0);
+        // Address checking.
+        saml1::SubjectLocality* locality = ssoStatement->getSubjectLocality();
+        if (locality && locality->getIPAddress()) {
+            auto_ptr_char ip(locality->getIPAddress());
+            checkAddress(application, httpRequest, ip.get());
+        }
 
-    if (authnskew.first && authnskew.second &&
-            ssoStatement->getAuthenticationInstant() && (now - ssoStatement->getAuthenticationInstantEpoch() > authnskew.second))
-        throw FatalProfileException("The gap between now and the time you logged into your identity provider exceeds the limit.");
+        saml1name = ssoStatement->getSubject()->getNameIdentifier();
+        authMethod = ssoStatement->getAuthenticationMethod();
+        if (ssoStatement->getAuthenticationInstant())
+            authInstant = ssoStatement->getAuthenticationInstant()->getRawData();
 
-    // Address checking.
-    saml1::SubjectLocality* locality = ssoStatement->getSubjectLocality();
-    if (locality && locality->getIPAddress()) {
-        auto_ptr_char ip(locality->getIPAddress());
-        checkAddress(application, httpRequest, ip.get());
+        // Session expiration.
+        pair<bool,unsigned int> lifetime = sessionProps ? sessionProps->getUnsignedInt("lifetime") : pair<bool,unsigned int>(true,28800);
+        if (!lifetime.first || lifetime.second == 0)
+            lifetime.second = 28800;
+        sessionExp = now + lifetime.second;
     }
+    else {
+        const saml2::Assertion* saml2token = dynamic_cast<const saml2::Assertion*>(token);
+        if (!saml2token)
+            throw FatalProfileException("Incoming message did not contain a recognized type of SAML assertion.");
 
+        // Now do profile and core semantic validation to ensure we can use it for SSO.
+        saml2::AssertionValidator ssoValidator(application.getRelyingParty(entity)->getXMLString("entityID").second, application.getAudiences(), now);
+        ssoValidator.validateAssertion(*saml2token);
+        if (!saml2token->getConditions() || !saml2token->getConditions()->getNotBefore() || !saml2token->getConditions()->getNotOnOrAfter())
+            throw FatalProfileException("Assertion did not contain time conditions.");
+        else if (saml2token->getAuthnStatements().empty())
+            throw FatalProfileException("Assertion did not contain an authentication statement.");
+        
+        // authnskew allows rejection of SSO if AuthnInstant is too old.
+        pair<bool,unsigned int> authnskew = sessionProps ? sessionProps->getUnsignedInt("maxTimeSinceAuthn") : pair<bool,unsigned int>(false,0);
+
+        const saml2::AuthnStatement* ssoStatement=saml2token->getAuthnStatements().front();
+        if (authnskew.first && authnskew.second &&
+                ssoStatement->getAuthnInstant() && (now - ssoStatement->getAuthnInstantEpoch() > authnskew.second))
+            throw FatalProfileException("The gap between now and the time you logged into your identity provider exceeds the limit.");
+
+        // Address checking.
+        saml2::SubjectLocality* locality = ssoStatement->getSubjectLocality();
+        if (locality && locality->getAddress()) {
+            auto_ptr_char ip(locality->getAddress());
+            checkAddress(application, httpRequest, ip.get());
+        }
+
+        saml2name = saml2token->getSubject() ? saml2token->getSubject()->getNameID() : NULL;
+        if (ssoStatement->getAuthnContext() && ssoStatement->getAuthnContext()->getAuthnContextClassRef())
+            authMethod = ssoStatement->getAuthnContext()->getAuthnContextClassRef()->getReference();
+        if (ssoStatement->getAuthnInstant())
+            authInstant = ssoStatement->getAuthnInstant()->getRawData();
+
+        // Session expiration for SAML 2.0 is jointly IdP- and SP-driven.
+        sessionExp = ssoStatement->getSessionNotOnOrAfter() ? ssoStatement->getSessionNotOnOrAfterEpoch() : 0;
+        pair<bool,unsigned int> lifetime = sessionProps ? sessionProps->getUnsignedInt("lifetime") : pair<bool,unsigned int>(true,28800);
+        if (!lifetime.first || lifetime.second == 0)
+            lifetime.second = 28800;
+        if (sessionExp == 0)
+            sessionExp = now + lifetime.second;     // IdP says nothing, calulate based on SP.
+        else
+            sessionExp = min(sessionExp, now + lifetime.second);    // Use the lowest.
+    }
+    
     m_log.debug("ADFS profile processing completed successfully");
-
-    saml1::NameIdentifier* n = ssoStatement->getSubject()->getNameIdentifier();
-
-    // Now we have to extract the authentication details for attribute and session setup.
-
-    // Session expiration for ADFS is purely SP-driven, and the method is mapped to a ctx class.
-    pair<bool,unsigned int> lifetime = sessionProps ? sessionProps->getUnsignedInt("lifetime") : pair<bool,unsigned int>(true,28800);
-    if (!lifetime.first || lifetime.second == 0)
-        lifetime.second = 28800;
 
     // We've successfully "accepted" the SSO token.
     // To complete processing, we need to extract and resolve attributes and then create the session.
 
-    // Normalize the SAML 1.x NameIdentifier...
-    auto_ptr<saml2::NameID> nameid(n ? saml2::NameIDBuilder::buildNameID() : NULL);
-    if (n) {
-        nameid->setName(n->getName());
-        nameid->setFormat(n->getFormat());
-        nameid->setNameQualifier(n->getNameQualifier());
+    // Normalize a SAML 1.x NameIdentifier...
+    auto_ptr<saml2::NameID> nameid(saml1name ? saml2::NameIDBuilder::buildNameID() : NULL);
+    if (saml1name) {
+        nameid->setName(saml1name->getName());
+        nameid->setFormat(saml1name->getFormat());
+        nameid->setNameQualifier(saml1name->getNameQualifier());
     }
 
     // The context will handle deleting attributes and new tokens.
+    vector<const Assertion*> tokens(1,token);
     auto_ptr<ResolutionContext> ctx(
         resolveAttributes(
             application,
             policy.getIssuerMetadata(),
             m_protocol.get(),
-            n,
-            nameid.get(),
-            ssoStatement->getAuthenticationMethod(),
+            saml1name,
+            (saml1name ? nameid.get() : saml2name),
+            authMethod,
             NULL,
             &tokens
             )
@@ -660,13 +713,13 @@ void ADFSConsumer::implementProtocol(
         application,
         httpRequest,
         httpResponse,
-        now + lifetime.second,
+        sessionExp,
         entity,
         m_protocol.get(),
-        nameid.get(),
-        ssoStatement->getAuthenticationInstant() ? ssoStatement->getAuthenticationInstant()->getRawData() : NULL,
+        (saml1name ? nameid.get() : saml2name),
+        authInstant,
         NULL,
-        ssoStatement->getAuthenticationMethod(),
+        authMethod,
         NULL,
         &tokens,
         ctx.get() ? &ctx->getResolvedAttributes() : NULL
