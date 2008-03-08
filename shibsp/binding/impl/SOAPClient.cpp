@@ -159,7 +159,7 @@ void SOAPClient::prepareTransport(SOAPTransport& transport)
             type = SOAPTransport::transport_auth_ntlm;
         else if (!strcmp(authType.second,"gss"))
             type = SOAPTransport::transport_auth_gss;
-        else
+        else if (strcmp(authType.second,"none"))
             log.error("unknown authType (%s) specified for RelyingParty", authType.second);
         if (type > SOAPTransport::transport_auth_none) {
             if (transport.setAuth(type,username.second,password.second))
