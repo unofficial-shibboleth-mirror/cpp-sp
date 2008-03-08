@@ -977,7 +977,9 @@ void SSCache::insert(
     }
 
     const char* pid = obj["entity_id"].string();
-    m_log.info("new session created: SessionID (%s) IdP (%s) Address (%s)", key.get(), pid ? pid : "none", httpRequest.getRemoteAddr().c_str());
+    const char* prot = obj["protocol"].string();
+    m_log.info("new session created: ID (%s) IdP (%s) Protocol(%s) Address (%s)",
+        key.get(), pid ? pid : "none", prot ? prot : "none", httpRequest.getRemoteAddr().c_str());
 
     // Transaction Logging
     TransactionLog* xlog = application.getServiceProvider().getTransactionLog();
@@ -993,6 +995,8 @@ void SSCache::insert(
             httpRequest.getRemoteAddr() <<
         ") with (NameIdentifier: " <<
             (nameid ? name.get() : "none") <<
+        ") using (Protocol: " <<
+            (prot ? prot : "none") <<
         ")";
     
     if (attributes) {
