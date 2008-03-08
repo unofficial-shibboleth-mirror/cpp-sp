@@ -273,10 +273,10 @@ bool QueryResolver::SAML1Query(QueryContext& ctx) const
     saml1p::Response* response=NULL;
     const vector<AttributeService*>& endpoints=AA->getAttributeServices();
     for (vector<AttributeService*>::const_iterator ep=endpoints.begin(); !response && ep!=endpoints.end(); ++ep) {
+        if (!XMLString::equals((*ep)->getBinding(),binding.get()))
+            continue;
+        auto_ptr_char loc((*ep)->getLocation());
         try {
-            if (!XMLString::equals((*ep)->getBinding(),binding.get()))
-                continue;
-            auto_ptr_char loc((*ep)->getLocation());
             NameIdentifier* nameid = NameIdentifierBuilder::buildNameIdentifier();
             nameid->setName(ctx.getNameID()->getName());
             nameid->setFormat(ctx.getNameID()->getFormat());
@@ -297,7 +297,7 @@ bool QueryResolver::SAML1Query(QueryContext& ctx) const
             response = client.receiveSAML();
         }
         catch (exception& ex) {
-            m_log.error("exception making SAML query: %s", ex.what());
+            m_log.error("exception during SAML query to %s: %s", loc.get(), ex.what());
             soaper.reset();
         }
     }
@@ -407,10 +407,10 @@ bool QueryResolver::SAML2Query(QueryContext& ctx) const
     saml2p::StatusResponseType* srt=NULL;
     const vector<AttributeService*>& endpoints=AA->getAttributeServices();
     for (vector<AttributeService*>::const_iterator ep=endpoints.begin(); !srt && ep!=endpoints.end(); ++ep) {
+        if (!XMLString::equals((*ep)->getBinding(),binding.get()))
+            continue;
+        auto_ptr_char loc((*ep)->getLocation());
         try {
-            if (!XMLString::equals((*ep)->getBinding(),binding.get()))
-                continue;
-            auto_ptr_char loc((*ep)->getLocation());
             auto_ptr<saml2::Subject> subject(saml2::SubjectBuilder::buildSubject());
 
             // Encrypt the NameID?
@@ -443,7 +443,7 @@ bool QueryResolver::SAML2Query(QueryContext& ctx) const
             srt = client.receiveSAML();
         }
         catch (exception& ex) {
-            m_log.error("exception making SAML query: %s", ex.what());
+            m_log.error("exception during SAML query to %s: %s", loc.get(), ex.what());
             soaper.reset();
         }
     }
