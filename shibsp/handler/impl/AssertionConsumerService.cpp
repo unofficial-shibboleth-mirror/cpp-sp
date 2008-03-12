@@ -212,7 +212,16 @@ void AssertionConsumerService::generateMetadata(SPSSODescriptor& role, const cha
     saml2md::AssertionConsumerService* ep = saml2md::AssertionConsumerServiceBuilder::buildAssertionConsumerService();
     ep->setLocation(widen.get());
     ep->setBinding(getXMLString("Binding").second);
-    ep->setIndex(getXMLString("index").second);
+    if (!strncmp(handlerURL, "https", 5)) {
+    	pair<bool,const XMLCh*> index = getXMLString("sslIndex", shibspconstants::ASCII_SHIB2SPCONFIG_NS);
+    	if (index.first)
+    		ep->setIndex(index.second);
+    	else
+    		ep->setIndex(getXMLString("index").second);
+    }
+    else {
+    	ep->setIndex(getXMLString("index").second);
+    }
     role.getAssertionConsumerServices().push_back(ep);
 }
 

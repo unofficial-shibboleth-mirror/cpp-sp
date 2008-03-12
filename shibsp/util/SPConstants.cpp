@@ -112,3 +112,5 @@ const XMLCh shibspconstants::SHIB1_AUTHNREQUEST_PROFILE_URI[] = // urn:mace:shib
 const char shibspconstants::SHIB1_SESSIONINIT_PROFILE_URI[] = "urn:mace:shibboleth:sp:1.3:SessionInit";
 
 const char shibspconstants::SHIB1_LOGOUT_PROFILE_URI[] = "urn:mace:shibboleth:sp:1.3:Logout";
+
+const char shibspconstants::ASCII_SHIB2SPCONFIG_NS[] = "urn:mace:shibboleth:2.0:native:sp:config";

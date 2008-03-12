@@ -331,10 +331,13 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
 
     // To invoke the request builder, the key requirement is to figure out how
     // to express the ACS, by index or value, and if by value, where.
-
+    // We have to compute the handlerURL no matter what, because we may need to
+    // flip the index to an SSL-version.
+    string ACSloc=request.getHandlerURL(target.c_str());
+    
     SPConfig& conf = SPConfig::getConfig();
     if (conf.isEnabled(SPConfig::OutOfProcess)) {
-        if (!acsByIndex.first || acsByIndex.second) {
+    	if (!acsByIndex.first || acsByIndex.second) {
             // Pass by Index.
             if (isHandler) {
                 // We may already have RelayState set if we looped back here,
@@ -344,9 +347,23 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
                 if (option)
                     target = option;
             }
+            
+            // Determine index to use.
+            pair<bool,const XMLCh*> ix = pair<bool,const XMLCh*>(false,NULL);
+            if (ACS) {
+            	if (!strncmp(ACSloc.c_str(), "https", 5)) {
+            		ix = ACS->getXMLString("sslIndex", shibspconstants::ASCII_SHIB2SPCONFIG_NS);
+            		if (!ix.first)
+            			ix = ACS->getXMLString("index");
+            	}
+            	else {
+            		ix = ACS->getXMLString("index");
+            	}
+            }
+            
             return doRequest(
                 app, request, entityID.c_str(),
-                ACS ? ACS->getXMLString("index").second : NULL, NULL, NULL,
+                ix.second, NULL, NULL,
                 isPassive, forceAuthn,
                 acClass.first ? acClass.second : NULL,
                 acComp.first ? acComp.second : NULL,
@@ -356,7 +373,6 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
 
         // Since we're not passing by index, we need to fully compute the return URL and binding.
         // Compute the ACS URL. We add the ACS location to the base handlerURL.
-        string ACSloc=request.getHandlerURL(target.c_str());
         pair<bool,const char*> loc=ACS ? ACS->getString("Location") : pair<bool,const char*>(false,NULL);
         if (loc.first) ACSloc+=loc.second;
 
@@ -394,13 +410,23 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
     if (acComp.first)
         in.addmember("authnContextComparison").string(acComp.second);
     if (!acsByIndex.first || acsByIndex.second) {
-        if (ACS)
-            in.addmember("acsIndex").string(ACS->getString("index").second);
+        if (ACS) {
+            // Determine index to use.
+            pair<bool,const char*> ix = pair<bool,const char*>(false,NULL);
+        	if (!strncmp(ACSloc.c_str(), "https", 5)) {
+        		ix = ACS->getString("sslIndex", shibspconstants::ASCII_SHIB2SPCONFIG_NS);
+        		if (!ix.first)
+        			ix = ACS->getString("index");
+        	}
+        	else {
+        		ix = ACS->getString("index");
+        	}
+            in.addmember("acsIndex").string(ix.second);
+        }
     }
     else {
         // Since we're not passing by index, we need to fully compute the return URL and binding.
         // Compute the ACS URL. We add the ACS location to the base handlerURL.
-        string ACSloc=request.getHandlerURL(target.c_str());
         pair<bool,const char*> loc=ACS ? ACS->getString("Location") : pair<bool,const char*>(false,NULL);
         if (loc.first) ACSloc+=loc.second;
         in.addmember("acsLocation").string(ACSloc.c_str());

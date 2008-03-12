@@ -76,6 +76,9 @@ namespace shibspconstants {
 
     /** Shibboleth 1.3 Local Logout binding/profile ("urn:mace:shibboleth:sp:1.3:Logout") */
     extern SHIBSP_API const char SHIB1_LOGOUT_PROFILE_URI[];
+    
+    /** Shibboleth 2.0 SP configuration namespace ("urn:mace:shibboleth:2.0:native:sp:config") */
+    extern SHIBSP_API const char ASCII_SHIB2SPCONFIG_NS[];
 };
 
 #endif /* __shibsp_constants_h__ */

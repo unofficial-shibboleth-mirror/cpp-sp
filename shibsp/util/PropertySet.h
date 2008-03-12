@@ -23,7 +23,7 @@
 #ifndef __shibsp_propset_h__
 #define __shibsp_propset_h__
 
-#include <shibsp/base.h>
+#include <shibsp/util/SPConstants.h>
 #include <map>
 #include <xercesc/dom/DOM.hpp>
 
@@ -113,7 +113,7 @@ namespace shibsp {
          * @param ns    nested property set namespace, or NULL
          * @return the nested property set, or NULL
          */        
-        virtual const PropertySet* getPropertySet(const char* name, const char* ns="urn:mace:shibboleth:2.0:native:sp:config") const=0;
+        virtual const PropertySet* getPropertySet(const char* name, const char* ns=shibspconstants::ASCII_SHIB2SPCONFIG_NS) const=0;
         
         /**
          * Returns a DOM element representing the property container, if any.

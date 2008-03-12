@@ -52,7 +52,7 @@ namespace shibsp {
         std::pair<bool,unsigned int> getUnsignedInt(const char* name, const char* ns=NULL) const;
         std::pair<bool,int> getInt(const char* name, const char* ns=NULL) const;
         void getAll(std::map<std::string,const char*>& properties) const;
-        const PropertySet* getPropertySet(const char* name, const char* ns="urn:mace:shibboleth:2.0:native:sp:config") const;
+        const PropertySet* getPropertySet(const char* name, const char* ns=shibspconstants::ASCII_SHIB2SPCONFIG_NS) const;
 
         const xercesc::DOMElement* getElement() const {
             return m_root;
