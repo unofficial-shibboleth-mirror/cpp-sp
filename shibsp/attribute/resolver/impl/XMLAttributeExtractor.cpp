@@ -491,13 +491,13 @@ void XMLExtractor::extractAttributes(
                     MetadataCredentialCriteria mcc(*issuer);
                     auto_ptr<XMLObject> decrypted(encattr->decrypt(*cr, recipient, &mcc));
                     if (m_log.isDebugEnabled())
-                        m_log.debugStream() << "decrypted Attribute:" << logging::eol << *(decrypted.get()) << logging::eol;
+                        m_log.debugStream() << "decrypted Attribute: " << *(decrypted.get()) << logging::eol;
                     return extractAttributes(application, issuer, *(decrypted.get()), attributes);
                 }
                 else {
                     auto_ptr<XMLObject> decrypted(encattr->decrypt(*cr, recipient));
                     if (m_log.isDebugEnabled())
-                        m_log.debugStream() << "decrypted Attribute:" << logging::eol << *(decrypted.get()) << logging::eol;
+                        m_log.debugStream() << "decrypted Attribute: " << *(decrypted.get()) << logging::eol;
                     return extractAttributes(application, issuer, *(decrypted.get()), attributes);
                 }
             }

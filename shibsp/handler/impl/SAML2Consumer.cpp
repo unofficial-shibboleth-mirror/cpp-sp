@@ -231,7 +231,7 @@ void SAML2Consumer::implementProtocol(
                 wrapper.release();
                 ownedtokens.push_back(decrypted);
                 if (m_log.isDebugEnabled())
-                    m_log.debugStream() << "decrypted Assertion:" << logging::eol << *decrypted << logging::eol;
+                    m_log.debugStream() << "decrypted Assertion: " << *decrypted << logging::eol;
             }
         }
         catch (exception& ex) {
@@ -323,7 +323,7 @@ void SAML2Consumer::implementProtocol(
                         ownedName = true;
                         decryptedID.release();
                         if (m_log.isDebugEnabled())
-                            m_log.debugStream() << "decrypted NameID:" << logging::eol << *ssoName << logging::eol;
+                            m_log.debugStream() << "decrypted NameID: " << *ssoName << logging::eol;
                     }
                 }
                 catch (exception& ex) {
