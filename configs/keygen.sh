@@ -13,7 +13,7 @@ while getopts h:e:y:bf c
          esac
      done
 
-if [ -n $FORCE ] ; then
+if [ -n "$FORCE" ] ; then
     rm sp-key.pem sp-cert.pem
 fi
 
@@ -37,9 +37,9 @@ fi
 DAYS=$(($YEARS*365))
 
 if [ -z $ENTITYID ] ; then
-    ALTNAME=subjectAltName=DNS:$FQDN
+    ALTNAME=DNS:$FQDN
 else
-    ALTNAME=subjectAltName=DNS:$FQDN,URI:$ENTITYID
+    ALTNAME=DNS:$FQDN,URI:$ENTITYID
 fi
 
 cat >sp-cert.cnf <<EOF
